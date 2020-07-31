@@ -2,11 +2,12 @@
 Goldfinch is a lending protocol built on the blockchain. This is the main repo.
 
 ## Getting Started
-You will the correct version of node/npm on your local machine.
+You will need the correct version of node/npm on your local machine.
 
 - Using nvm, you can do this with `nvm install 12.18.3`. If you don't have `nvm`, see [here](https://github.com/nvm-sh/nvm#installing-and-updating) for installation instructions.
 
 - Next install required packages of the protocol with `npm install`
+- Then, `cd client && npm install`
 
 ### Running a local blockchain
 This is required for interacting with the contracts
