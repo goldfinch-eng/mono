@@ -1,0 +1,50 @@
+{
+  "name": "starter-kit",
+  "version": "1.0.0",
+  "description": "OpenZeppelin kit containing React, & OpenZeppelin SDK",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "pre-push": "cd client && npm run pre-push",
+    "pre-commit": "cd client && npm run pre-commit"
+  },
+  "husky": {
+    "hooks": {
+      "pre-push": "npm run pre-push",
+      "pre-commit": "npm run pre-commit"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OpenZeppelin/starter-kit"
+  },
+  "keywords": [
+    "openzeppelin",
+    "truffle",
+    "react",
+    "dapp",
+    "infura",
+    "metamask",
+    "web3",
+    "ganache",
+    "web3js",
+    "ethereum"
+  ],
+  "author": "Ramon Recuero <ramon@dapis.io>, Igor Yalovoy <to@ylv.io>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/OpenZeppelin/starter-kit/issues"
+  },
+  "homepage": "https://github.com/OpenZeppelin/starter-kit/blob/stable/README.md",
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "truffle-hdwallet-provider": "^1.0.17"
+  },
+  "devDependencies": {
+    "@openzeppelin/cli": "^2.6.0",
+    "chai": "^4.2.0",
+    "ganache-cli": "^6.9.1",
+    "husky": "^3.1.0",
+    "openzeppelin-test-helpers": "^0.5.1"
+  }
+}
