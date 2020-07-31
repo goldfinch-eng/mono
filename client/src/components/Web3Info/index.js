@@ -38,9 +38,6 @@ export default function Web3Info(props) {
       </div>
       <div className={styles.dataPoint}>
         <div className={styles.label}>Your address:</div>
-        <div className={styles.value}>
-          <PublicAddress label="" address={accounts && accounts.length ? accounts[0] : 'Unknown'} />
-        </div>
       </div>
       <div className={styles.dataPoint}>
         <div className={styles.label}>Your ETH balance:</div>
