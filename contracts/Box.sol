@@ -1,6 +1,6 @@
-pragma solidity ^0.6.0;
+pragma solidity ^0.7.0;
 
-
+// This is just a test contract.
 contract Box {
     uint256 private value;
 
