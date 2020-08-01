@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "mocha --exit --recursive test",
-      "pre-push": "cd client && npm run pre-push",
+    "pre-push": "cd client && npm run pre-push",
     "pre-commit": "cd client && npm run pre-commit"
   },
   "husky": {
@@ -44,6 +44,7 @@
   "devDependencies": {
     "@openzeppelin/cli": "^2.6.0",
     "@openzeppelin/test-environment": "^0.1.4",
+    "@openzeppelin/test-helpers": "^0.5.6",
     "chai": "^4.2.0",
     "ganache-cli": "^6.9.1",
     "husky": "^3.1.0",
