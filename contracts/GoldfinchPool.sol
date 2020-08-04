@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.6.0;
+pragma solidity ^0.6.12;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -38,7 +38,7 @@ contract GoldfinchPool is Ownable {
     msg.sender.transfer(amount);
   }
 
-  function getNumShares(uint amount, uint multiplier, uint price) pure internal returns (uint) {
+  function getNumShares(uint amount, uint multiplier, uint price) internal pure returns (uint) {
     return amount.mul(multiplier).div(price);
   }
 }

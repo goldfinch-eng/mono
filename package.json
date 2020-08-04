@@ -4,7 +4,7 @@
   "description": "OpenZeppelin kit containing React, & OpenZeppelin SDK",
   "main": "index.js",
   "scripts": {
-    "test": "mocha --exit --recursive test",
+    "test": "npx oz compile && mocha --exit --recursive test",
     "pre-push": "cd client && npm run pre-push",
     "pre-commit": "cd client && npm run pre-commit"
   },
