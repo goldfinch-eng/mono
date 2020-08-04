@@ -13,10 +13,29 @@ contract GoldfinchPool is Ownable {
   mapping(address => uint) public capitalProviders;
 
   function deposit() external payable {
-    uint shares = capitalProviders[msg.sender];
-    uint newShares = getNumShares(msg.value, mantissa, sharePrice);
-    totalShares = totalShares.add(newShares);
-    capitalProviders[msg.sender] = shares.add(newShares);
+    // Determine current shares the address has, and the amount of new shares to be added
+    uint currentShares = capitalProviders[msg.sender];
+    uint depositShares = getNumShares(msg.value, mantissa, sharePrice);
+
+    // Add the new shares to both the pool and the address
+    totalShares = totalShares.add(depositShares);
+    capitalProviders[msg.sender] = currentShares.add(depositShares);
+  }
+
+  function withdraw(uint amount) external {
+    // Determine current shares the address has and the shares requested to withdraw
+    uint currentShares = capitalProviders[msg.sender];
+    uint withdrawShares = getNumShares(amount, mantissa, sharePrice);
+
+    // Ensure the address has enough value in the pool
+    require(withdrawShares <= currentShares, "Amount requested is greater than the amount owned for this address");
+
+    // Remove the new shares from both the pool and the address
+    totalShares = totalShares.sub(withdrawShares);
+    capitalProviders[msg.sender] = currentShares.sub(withdrawShares);
+
+    // Send the amount to the address
+    msg.sender.transfer(amount);
   }
 
   function getNumShares(uint amount, uint multiplier, uint price) pure internal returns (uint) {

@@ -1,10 +1,25 @@
 const { accounts, contract, web3 } = require('@openzeppelin/test-environment');
 const { BN, balance } = require('@openzeppelin/test-helpers');
-const { expect } = require('chai');
+const chai = require('chai');
+chai.use(require("chai-as-promised"))
+const expect = chai.expect
 
 const [ owner, person2 ] = accounts;
 const GoldfinchPool = contract.fromArtifact('TestGoldfinchPool');
+
 let pool;
+let depositAmount = new BN(web3.utils.toWei("4", "ether"));
+let withdrawAmount = new BN(web3.utils.toWei("2", "ether"));
+let makeDeposit = async (person, amount) => {
+  amount = amount || depositAmount;
+  person = person || person2;
+  await pool.deposit({from: person, value: String(amount)});
+}
+let makeWithdraw = async (person, amount) => {
+  amount = amount || withdrawAmount;
+  person = person || person2;
+  await pool.withdraw(amount, {from: person});
+}
 
 beforeEach(async () => {
   pool = await GoldfinchPool.new({ from: owner });
@@ -17,33 +32,27 @@ describe('GoldfinchPool', () => {
 });
 
 describe('deposit', () => {
-  let depositAmount = 10000;
-  let makeDeposit = async (person, amount) => {
-    amount = amount || depositAmount;
-    person = person || person2;
-    await pool.deposit({from: person, value: String(amount)});
-  }
-
   it('adds value to the contract when you call deposit', async () => {
     const balanceBefore = await balance.current(pool.address);
     await makeDeposit();
-    const balanceAfter = await balance.current(pool.address)
-    const delta = balanceAfter.toNumber() - balanceBefore.toNumber()
-    expect(delta).to.equal(depositAmount);
+    const balanceAfter = await balance.current(pool.address);
+    const delta = balanceAfter.sub(balanceBefore);
+    expect(delta.eq(depositAmount)).to.be.true;
   });
 
   it('saves the sender in the depositor mapping', async() => {
     await makeDeposit();
     const shares = await pool.capitalProviders(person2);
-    expect(shares.toNumber()).to.equal(depositAmount)
+    expect(shares.eq(depositAmount)).to.be.true;
   });
 
   it('increases the totalShares', async () => {
-    const secondDepositAmount = 15000;
+    const secondDepositAmount = new BN(web3.utils.toWei("1.5", "ether"));
     await makeDeposit();
     await makeDeposit(owner, secondDepositAmount);
     const totalShares = await pool.totalShares();
-    expect(totalShares.toNumber()).to.equal(depositAmount + secondDepositAmount);
+    const totalDeposited = depositAmount.add(secondDepositAmount);
+    expect(totalShares.eq(totalDeposited)).to.be.true;
   });
 });
 
@@ -55,4 +64,57 @@ describe('getNumShares', () => {
     const numShares = await pool._getNumShares(amount, mantissa, sharePrice);
     expect(numShares.toNumber()).to.equal(1500)
   });
+});
+
+describe('withdraw', () => {
+  it('withdraws value from the contract when you call withdraw', async () => {
+    await makeDeposit();
+    const balanceBefore = await balance.current(pool.address);
+    await makeWithdraw();
+    const balanceAfter = await balance.current(pool.address);
+    const delta = balanceBefore.sub(balanceAfter);
+    expect(delta.eq(withdrawAmount)).to.be.true;
+  });
+
+  it('sends the amount back to the address', async () => {
+    await makeDeposit();
+    const addressValueBefore = await balance.current(person2)
+    await makeWithdraw();
+    const addressValueAfter = await balance.current(person2)
+    const delta = addressValueAfter.sub(addressValueBefore);
+    const expMin = withdrawAmount * 0.999;
+    const expMax = withdrawAmount * 1.001;
+    expect(delta.gt(expMin) && delta.gt(expMax)).to.be.true;
+  });
+
+  it('reduces the shares by the withdraw amount', async () => {
+    await makeDeposit();
+    const sharesBefore = await pool.capitalProviders(person2);
+    await makeWithdraw();
+    const sharesAfter = await pool.capitalProviders(person2);
+    const expectedShares = sharesBefore.sub(withdrawAmount);
+    expect(sharesAfter.eq(expectedShares)).to.be.true;
+  });
+
+  it('decreases the totalShares', async () => {
+    await makeDeposit();
+    const sharesBefore = await pool.totalShares();
+    await makeWithdraw();
+    const sharesAfter = await pool.totalShares();
+    const expectedShares = sharesBefore.sub(withdrawAmount);
+    expect(sharesAfter.eq(expectedShares)).to.be.true;
+  });
+
+  it('prevents you from withdrawing more than you have', async () => {
+    const expectedErr = "Amount requested is greater than the amount owned for this address"
+    expect(makeWithdraw()).to.be.rejectedWith(expectedErr)
+  });
+
+  it('it lets you withdraw your exact total holdings', async () => {
+    await makeDeposit(person2, 123);
+    await makeWithdraw(person2, 123);
+    const sharesAfter = await pool.capitalProviders(person2);
+    expect(sharesAfter.toNumber()).to.equal(0);
+  });
+
 });
