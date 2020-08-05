@@ -9,7 +9,7 @@ const CreditDesk = contract.fromArtifact('CreditDesk');
 const CreditLine = contract.fromArtifact('CreditLine');
 let creditDesk;
 
-describe.only("CreditDesk", () => {
+describe("CreditDesk", () => {
   beforeEach(async () => {
     creditDesk = await CreditDesk.new({from: owner});
   })
@@ -77,7 +77,7 @@ describe.only("CreditDesk", () => {
         expect(e.reason).to.equal(expectedErr);
       }
     });
-    it.only("should not let you create a credit line above your limit, if the sum of your existing credit lines puts you over the limit", async () => {
+    it("should not let you create a credit line above your limit, if the sum of your existing credit lines puts you over the limit", async () => {
       const expectedErr = "The underwriter cannot create this credit line";
 
       await createCreditLine({_limit: new BN(300)})
