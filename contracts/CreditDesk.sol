@@ -33,18 +33,17 @@ contract CreditDesk is Ownable {
     uint _termInDays
   ) external {
     Underwriter storage underwriter = underwriters[msg.sender];
-    uint creditCurrentlyExtended = getCreditCurrentlyExtended(underwriter);
-    creditCurrentlyExtended += _limit;
-
-    require(creditCurrentlyExtended < underwriter.governanceLimit, "The underwriter cannot create this credit line");
+    require(underwriterCanCreateThisCreditLine(_limit, underwriter), "The underwriter cannot create this credit line");
 
     CreditLine cl = new CreditLine(_borrower, _limit, _interestApr, _minCollateralPercent, _paymentPeriodInDays, _termInDays);
-
     underwriter.creditLines.push(address(cl));
 	}
 
-  // function underwriterCanCreateThisCreditLine(uint newAmount, Underwriter storage underwriter) internal view returns(bool) {
-  // }
+  function underwriterCanCreateThisCreditLine(uint newAmount, Underwriter storage underwriter) internal view returns(bool) {
+    uint creditCurrentlyExtended = getCreditCurrentlyExtended(underwriter);
+    uint totalToBeExtended = creditCurrentlyExtended + newAmount;
+    return totalToBeExtended <= underwriter.governanceLimit;
+  }
 
   function getCreditCurrentlyExtended(Underwriter storage underwriter) internal view returns (uint) {
     uint creditExtended = 0;

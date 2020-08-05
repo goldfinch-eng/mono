@@ -30,29 +30,30 @@ describe.only("CreditDesk", () => {
   describe('createCreditLine', () => {
     let underwriterLimit;
     let underwriter;
+    let borrower = person3;
+    let limit = new BN(500);
+    let interestApr = new BN(5);
+    let minCollateralPercent = new BN(10);
+    let paymentPeriodInDays = new BN(30);
+    let termInDays = new BN(365);
+
+    let createCreditLine = async ({_borrower, _limit, _interestApr, _minCollateralPercent, _paymentPeriodInDays,_termInDays} = {}) => {
+      _borrower = _borrower || borrower;
+      _limit = _limit || limit;
+      _interestApr = _interestApr || interestApr;
+      _minCollateralPercent = _minCollateralPercent || minCollateralPercent;
+      _paymentPeriodInDays = _paymentPeriodInDays || paymentPeriodInDays;
+      _termInDays = _termInDays || termInDays;
+      await creditDesk.createCreditLine(_borrower, _limit, _interestApr, _minCollateralPercent, _paymentPeriodInDays,_termInDays, {from: underwriter});
+    }
     beforeEach(async () => {
       underwriter = person2;
-      underwriterLimit = new BN(537);
+      underwriterLimit = new BN(600);
       await creditDesk.setUnderwriterGovernanceLimit(underwriter, underwriterLimit, {from: owner});
     })
 
     it('should create and save a creditline', async () => {
-      let borrower = person3;
-      let limit = new BN(500);
-      let interestApr = new BN(5);
-      let minCollateralPercent = new BN(10);
-      let paymentPeriodInDays = new BN(30);
-      let termInDays = new BN(365);
-
-      await creditDesk.createCreditLine(
-        borrower,
-        limit,
-        interestApr,
-        minCollateralPercent,
-        paymentPeriodInDays,
-        termInDays,
-        {from: underwriter}
-      );
+      await createCreditLine();
 
       var ulCreditLines = await creditDesk.getUnderwriterCreditLines(underwriter);
       const creditLine = await CreditLine.at(ulCreditLines[0]);
@@ -64,6 +65,30 @@ describe.only("CreditDesk", () => {
       expect((await creditLine.minCollateralPercent()).eq(minCollateralPercent)).to.be.true;
       expect((await creditLine.paymentPeriodInDays()).eq(paymentPeriodInDays)).to.be.true;
       expect((await creditLine.termInDays()).eq(termInDays)).to.be.true;
+    });
+
+    it("should not let you create a credit line above your limit", async () => {
+      const expectedErr = "The underwriter cannot create this credit line";
+
+      try {
+        await createCreditLine({_limit: new BN(601)});
+        throw("This test should have failed earlier");
+      } catch(e) {
+        expect(e.reason).to.equal(expectedErr);
+      }
+    });
+    it.only("should not let you create a credit line above your limit, if the sum of your existing credit lines puts you over the limit", async () => {
+      const expectedErr = "The underwriter cannot create this credit line";
+
+      await createCreditLine({_limit: new BN(300)})
+      await createCreditLine({_limit: new BN(300)})
+
+      try {
+        await createCreditLine({_limit: new BN(1)});
+        throw("This test should have failed earlier");
+      } catch(e) {
+        expect(e.reason).to.equal(expectedErr);
+      }
     });
   });
 })
