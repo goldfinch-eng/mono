@@ -1,5 +1,5 @@
 const { accounts, contract, web3 } = require('@openzeppelin/test-environment');
-const { BN, balance } = require('@openzeppelin/test-helpers');
+const { BN, balance, time } = require('@openzeppelin/test-helpers');
 const chai = require('chai');
 chai.use(require("chai-as-promised"))
 const expect = chai.expect
@@ -10,6 +10,25 @@ const CreditLine = contract.fromArtifact('CreditLine');
 let creditDesk;
 
 describe("CreditDesk", () => {
+  let underwriterLimit;
+  let underwriter;
+  let borrower = person3;
+  let limit = new BN(500);
+  let interestApr = new BN(5);
+  let minCollateralPercent = new BN(10);
+  let paymentPeriodInDays = new BN(30);
+  let termInDays = new BN(365);
+
+  let createCreditLine = async ({_borrower, _limit, _interestApr, _minCollateralPercent, _paymentPeriodInDays,_termInDays} = {}) => {
+    _borrower = _borrower || borrower;
+    _limit = _limit || limit;
+    _interestApr = _interestApr || interestApr;
+    _minCollateralPercent = _minCollateralPercent || minCollateralPercent;
+    _paymentPeriodInDays = _paymentPeriodInDays || paymentPeriodInDays;
+    _termInDays = _termInDays || termInDays;
+    await creditDesk.createCreditLine(_borrower, _limit, _interestApr, _minCollateralPercent, _paymentPeriodInDays,_termInDays, {from: underwriter});
+  }
+
   beforeEach(async () => {
     creditDesk = await CreditDesk.new({from: owner});
   })
@@ -28,29 +47,19 @@ describe("CreditDesk", () => {
   });
 
   describe('createCreditLine', () => {
-    let underwriterLimit;
-    let underwriter;
-    let borrower = person3;
-    let limit = new BN(500);
-    let interestApr = new BN(5);
-    let minCollateralPercent = new BN(10);
-    let paymentPeriodInDays = new BN(30);
-    let termInDays = new BN(365);
-
-    let createCreditLine = async ({_borrower, _limit, _interestApr, _minCollateralPercent, _paymentPeriodInDays,_termInDays} = {}) => {
-      _borrower = _borrower || borrower;
-      _limit = _limit || limit;
-      _interestApr = _interestApr || interestApr;
-      _minCollateralPercent = _minCollateralPercent || minCollateralPercent;
-      _paymentPeriodInDays = _paymentPeriodInDays || paymentPeriodInDays;
-      _termInDays = _termInDays || termInDays;
-      await creditDesk.createCreditLine(_borrower, _limit, _interestApr, _minCollateralPercent, _paymentPeriodInDays,_termInDays, {from: underwriter});
-    }
     beforeEach(async () => {
       underwriter = person2;
       underwriterLimit = new BN(600);
       await creditDesk.setUnderwriterGovernanceLimit(underwriter, underwriterLimit, {from: owner});
     })
+
+    it('sets the CreditDesk as the owner', async () => {
+      await createCreditLine();
+      var ulCreditLines = await creditDesk.getUnderwriterCreditLines(underwriter);
+      const creditLine = await CreditLine.at(ulCreditLines[0]);
+
+      expect(await creditLine.owner()).to.equal(creditDesk.address);
+    });
 
     it('should create and save a creditline', async () => {
       await createCreditLine();
@@ -77,18 +86,47 @@ describe("CreditDesk", () => {
         expect(e.reason).to.equal(expectedErr);
       }
     });
+
     it("should not let you create a credit line above your limit, if the sum of your existing credit lines puts you over the limit", async () => {
+      await createCreditLine({_limit: new BN(300)})
+      await createCreditLine({_limit: new BN(300)})
+
       const expectedErr = "The underwriter cannot create this credit line";
-
-      await createCreditLine({_limit: new BN(300)})
-      await createCreditLine({_limit: new BN(300)})
-
       try {
         await createCreditLine({_limit: new BN(1)});
         throw("This test should have failed earlier");
       } catch(e) {
         expect(e.reason).to.equal(expectedErr);
       }
+    });
+  });
+
+  describe('drawdown', async () => {
+    let drawdown = async (amount, creditLineAddress) => {
+      return await creditDesk.drawdown(amount, creditLineAddress, {from: borrower});
+    }
+    let creditLine;
+    let blocksPerDay = 60 * 60 * 24 / 15;
+
+    beforeEach(async () => {
+      underwriter = person2;
+      underwriterLimit = new BN(600);
+      await creditDesk.setUnderwriterGovernanceLimit(underwriter, underwriterLimit, {from: owner});
+
+      await createCreditLine();
+      var ulCreditLines = await creditDesk.getUnderwriterCreditLines(underwriter);
+      creditLine = await CreditLine.at(ulCreditLines[0]);
+    });
+
+    it('should set the termEndAt correctly', async () => {
+      expect((await creditLine.termEndBlock()).eq(new BN(0))).to.be.true;
+
+      await drawdown(new BN(100), creditLine.address);
+      currentBlock = await time.latestBlock();
+      const blockLength = new BN(termInDays).mul(new BN(blocksPerDay));
+
+      const expectedTermEndBlock = currentBlock.add(blockLength);
+      expect((await creditLine.termEndBlock()).eq(expectedTermEndBlock)).to.be.true;
     });
   });
 })

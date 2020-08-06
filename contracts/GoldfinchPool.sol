@@ -2,8 +2,8 @@
 
 pragma solidity ^0.6.12;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "../node_modules/@openzeppelin/contracts/math/SafeMath.sol";
+import "../node_modules/@openzeppelin/contracts/access/Ownable.sol";
 
 contract GoldfinchPool is Ownable {
   using SafeMath for uint256;

@@ -3,9 +3,10 @@
 pragma solidity ^0.6.12;
 
 import './GoldfinchPool.sol';
+import "../node_modules/@openzeppelin/contracts/access/Ownable.sol";
 
 // TODO: This should be upgradable!
-contract CreditLine {
+contract CreditLine is Ownable {
   address public borrower;
   uint public collateral;
   uint public limit;
@@ -17,9 +18,9 @@ contract CreditLine {
   uint public interestOwed;
   uint public principalOwed;
   uint public prepaidBalance;
-  uint public termEndAt;
-  uint public nextDueAt;
-  uint public lastUpdatedAt;
+  uint public termEndBlock;
+  uint public nextDueBlock;
+  uint public lastUpdatedBlock;
   GoldfinchPool public goldfinchPool;
 
   constructor(
@@ -36,5 +37,10 @@ contract CreditLine {
     minCollateralPercent = _minCollateralPercent;
     paymentPeriodInDays = _paymentPeriodInDays;
     termInDays = _termInDays;
+    lastUpdatedBlock = block.number;
+  }
+
+  function setTermEndBlock(uint newTermEndBlock) public onlyOwner returns (uint) {
+    termEndBlock = newTermEndBlock;
   }
 }
