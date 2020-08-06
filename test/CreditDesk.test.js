@@ -5,7 +5,7 @@ chai.use(require("chai-as-promised"))
 const expect = chai.expect
 
 const [ owner, person2, person3 ] = accounts;
-const CreditDesk = contract.fromArtifact('CreditDesk');
+const CreditDesk = contract.fromArtifact('TestCreditDesk');
 const CreditLine = contract.fromArtifact('CreditLine');
 let creditDesk;
 

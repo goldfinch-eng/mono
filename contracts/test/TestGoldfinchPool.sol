@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.6.0;
-// pragma experimental ABIEncoderV2;
 
-import "./GoldfinchPool.sol";
+import "../GoldfinchPool.sol";
 
 contract TestGoldfinchPool is GoldfinchPool {
-    function _getNumShares(uint amount, uint multiplier, uint price) pure public returns (uint) {
+    function _getNumShares(uint amount, uint multiplier, uint price) public pure returns (uint) {
       return getNumShares(amount, multiplier, price);
     }
 }

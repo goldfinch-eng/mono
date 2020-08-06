@@ -6,7 +6,7 @@ pragma experimental ABIEncoderV2;
 import "../node_modules/@openzeppelin/contracts/access/Ownable.sol";
 import "./GoldfinchPool.sol";
 import "./CreditLine.sol";
-import * as ABDKMath from "./ABDKMath.sol";
+import "./FPMath.sol";
 
 contract CreditDesk is Ownable {
   // Approximate number of blocks
@@ -57,7 +57,7 @@ contract CreditDesk is Ownable {
     }
     // uint interestAccrued = calculateInterestAccrued(cl, blockNumber);
     // uint principalAccrued = calculatePrincipalAccrued(cl, blockNumber);
-    (uint interestAccrued, uint principalAccrued) = calculateInterestAndPrincipalAccrued(cl, blockNumber);
+    // (uint interestAccrued, uint principalAccrued) = calculateInterestAndPrincipalAccrued(cl, blockNumber);
 
     /* handle accounting
       2.) Update balance based on last updated at, interest rate, etc. This includes calculating interest and principal accrued since last time.
@@ -70,31 +70,49 @@ contract CreditDesk is Ownable {
     */
   }
 
-  function calculateInterestAccrued(CreditLine cl, uint blockNumber) internal returns(uint) {
+  function calculateInterestAccrued(CreditLine cl, uint blockNumber) internal view returns(uint) {
     uint numBlocksElapsed = blockNumber - cl.lastUpdatedBlock();
     uint totalInterestPerYear = (cl.balance() * cl.interestApr()) / interestDecimals;
     return totalInterestPerYear * numBlocksElapsed / blocksPerYear;
   }
 
-  function calculateInterestAndPrincipalAccrued(CreditLine cl, uint blockNumber) internal returns(uint) {
-    totalPayment = calculateTotalPayment()
-    interestAccrued = calculateInterestAccrued()
-    principalAccrued = totalPayment - interestApr
-    return interestAccrued, principalAccrued
+  function calculateInterestAndPrincipalAccrued(CreditLine cl, uint blockNumber) internal view returns(uint, uint) {
+    uint totalPayment = calculateAnnuityPayment(cl.balance(), cl.interestApr(), cl.termInDays(), cl.paymentPeriodInDays());
+    uint interestAccrued = calculateInterestAccrued(cl, blockNumber);
+    uint principalAccrued = totalPayment - interestAccrued;
+    return (interestAccrued, principalAccrued);
   }
 
-  function calculateEvenPaymentPerPeriod(CreditLine cl) internal view returns (uint) {
-    // Balance * interest per period / (1 - (1+interest_per_period) ^ (-periods_per_term))
-    uint interestPerPeriod = cl.interestApr() / 365 * cl.paymentPeriodInDays();
-    // cl.balance * interestPerPeriod / (1 - (1 + interestPerPeriod) ** )
+  function calculateAnnuityPayment(uint balance, uint interestApr, uint termInDays, uint paymentPeriodInDays) internal pure returns(uint) {
+    /*
+    This is the standard amortization formula for an annuity payment amount.
+    See: https://en.wikipedia.org/wiki/Amortization_calculator
 
-    uint annualInterest = cl.balance * interestPerPeriod / interestDecimals;
-    uint interestPerPayment = annualInterest / (1 - (1 + (interestPerPeriod ** periods_per_term / interestDecimals ** periods_per_term)))
+    The specific formula we're interested in can be expressed as:
+    `balance * periodRate / (1 - (1 / ((1 + periodRate) ^ periods_per_term)))`
 
-    uint fp_interestPerPeriod = fromInt(interestPerPeriod)
-    uint fp_interestDecimals = fromInt(interestDecimals)
+    FPMath is a library designed for emulating floating point numbers in solidity.
+    At a high level, we are just turning all our uint256 numbers into floating points and
+    doing the formula above, and then turning it back into an int64 at the end.
+    */
 
+    // Components used in the formula
+    int128 one = FPMath.fromInt(int256(1));
+    int128 annualRate = FPMath.divi(int256(interestApr), int256(interestDecimals));
+    int128 dailyRate = FPMath.div(annualRate, FPMath.fromInt(int256(365)));
+    int128 periodRate = FPMath.mul(dailyRate, FPMath.fromInt(int256(paymentPeriodInDays)));
+    uint periodsPerTerm = termInDays / paymentPeriodInDays;
+    int128 termRate = FPMath.pow(FPMath.add(one, periodRate), periodsPerTerm);
 
+    // Combine into the main parts of the formula
+    int128 numerator = FPMath.mul(FPMath.fromInt(int256(balance)), periodRate);
+    int128 denominator = FPMath.sub(one, FPMath.div(one, termRate));
+
+    // Actually execute the formula
+    int128 paymentPerPeriod = FPMath.div(numerator, denominator);
+
+    // Convert and return the result
+    return uint(FPMath.toInt(paymentPerPeriod));
   }
 
   // function calculatePrincipalAccrued(CreditLine cl) internal returns(uint) {

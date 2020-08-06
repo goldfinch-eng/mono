@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BSD-4
 /**********
 This is a direct copy from https://raw.githubusercontent.com/abdk-consulting/abdk-libraries-solidity/master/ABDKMath64x64.sol
 Their docs are at https://github.com/abdk-consulting/abdk-libraries-solidity/blob/master/ABDKMath64x64.md
@@ -7,6 +8,29 @@ We use this library to help us handle negative exponents for our fixed payment c
 /*
  * ABDK Math 64.64 Smart Contract Library.  Copyright © 2019 by ABDK Consulting.
  * Author: Mikhail Vladimirov <mikhail.vladimirov@gmail.com>
+
+Copyright (c) 2019, ABDK Consulting
+
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+Redistributions in binary form must reproduce the above copyright notice, this list of
+conditions and the following disclaimer in the documentation and/or other materials provided with
+the distribution. All advertising materials mentioning features or use of this software must display
+the following acknowledgement: This product includes software developed by ABDK Consulting.
+Neither the name of ABDK Consulting nor the names of its contributors may be used to endorse
+or promote products derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY ABDK CONSULTING ''AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
+INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL ABDK CONSULTING BE LIABLE FOR ANY DIRECT,
+INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 pragma solidity ^0.5.0 || ^0.6.0;
 
@@ -18,13 +42,16 @@ pragma solidity ^0.5.0 || ^0.6.0;
  * need to store it, thus in Solidity signed 64.64-bit fixed point numbers are
  * represented by int128 type holding only the numerator.
  */
-library ABDKMath64x64 {
+// Original name was ABDKMath64x64. I renamed to simply ABDKMath for convenience.
+library FPMath {
   /**
+  @dev
    * Minimum value signed 64.64-bit fixed point number may have.
    */
   int128 private constant MIN_64x64 = -0x80000000000000000000000000000000;
 
   /**
+  @dev
    * Maximum value signed 64.64-bit fixed point number may have.
    */
   int128 private constant MAX_64x64 = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
