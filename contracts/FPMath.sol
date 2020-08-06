@@ -2,7 +2,7 @@
 /**********
 This is a direct copy from https://raw.githubusercontent.com/abdk-consulting/abdk-libraries-solidity/master/ABDKMath64x64.sol
 Their docs are at https://github.com/abdk-consulting/abdk-libraries-solidity/blob/master/ABDKMath64x64.md
-We use this library to help us handle negative exponents for our fixed payment calculations.
+We use this library to help us handle exponents and floating points for our fixed payment calculations.
 ***********/
 
 /*

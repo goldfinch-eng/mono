@@ -129,4 +129,15 @@ describe("CreditDesk", () => {
       expect((await creditLine.termEndBlock()).eq(expectedTermEndBlock)).to.be.true;
     });
   });
+
+  describe("calculateAnnuityPayment", async () => {
+    it.only("should calculate things correctly", async () => {
+      var balanceMultiplier = new BN(String(1e18));
+      var rateMultiplier = new BN(String(1e18));
+      let [balance, interestApr, termInDays, paymentPeriodInDays] = [new BN(10000).mul(balanceMultiplier), new BN(12).mul(rateMultiplier).div(new BN(100)), new BN(360), new BN(30)];
+      let result = await creditDesk._calculateAnnuityPayment(balance, interestApr, termInDays, paymentPeriodInDays);
+      let expected = new BN("887719069147705830000");
+      expect(result.eq(expected)).to.be.true;
+    });
+  });
 })

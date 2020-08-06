@@ -89,7 +89,7 @@ contract CreditDesk is Ownable {
     See: https://en.wikipedia.org/wiki/Amortization_calculator
 
     The specific formula we're interested in can be expressed as:
-    `balance * periodRate / (1 - (1 / ((1 + periodRate) ^ periods_per_term)))`
+    `balance * (periodRate / (1 - (1 / ((1 + periodRate) ^ periods_per_term))))`
 
     FPMath is a library designed for emulating floating point numbers in solidity.
     At a high level, we are just turning all our uint256 numbers into floating points and
@@ -98,21 +98,17 @@ contract CreditDesk is Ownable {
 
     // Components used in the formula
     int128 one = FPMath.fromInt(int256(1));
+    uint periodsPerTerm = termInDays / paymentPeriodInDays;
     int128 annualRate = FPMath.divi(int256(interestApr), int256(interestDecimals));
     int128 dailyRate = FPMath.div(annualRate, FPMath.fromInt(int256(365)));
     int128 periodRate = FPMath.mul(dailyRate, FPMath.fromInt(int256(paymentPeriodInDays)));
-    uint periodsPerTerm = termInDays / paymentPeriodInDays;
     int128 termRate = FPMath.pow(FPMath.add(one, periodRate), periodsPerTerm);
 
-    // Combine into the main parts of the formula
-    int128 numerator = FPMath.mul(FPMath.fromInt(int256(balance)), periodRate);
     int128 denominator = FPMath.sub(one, FPMath.div(one, termRate));
+    int128 paymentFractionFP = FPMath.div(periodRate, denominator);
+    uint paymentFraction = uint(FPMath.muli(paymentFractionFP, int256(1e18)));
 
-    // Actually execute the formula
-    int128 paymentPerPeriod = FPMath.div(numerator, denominator);
-
-    // Convert and return the result
-    return uint(FPMath.toInt(paymentPerPeriod));
+    return (balance * paymentFraction) / 1e18;
   }
 
   // function calculatePrincipalAccrued(CreditLine cl) internal returns(uint) {
