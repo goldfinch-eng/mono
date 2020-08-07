@@ -1,5 +1,6 @@
 const { accounts, contract, web3 } = require('@openzeppelin/test-environment');
 const { BN, balance, time } = require('@openzeppelin/test-helpers');
+const mochaEach = require('mocha-each');
 const chai = require('chai');
 chai.use(require("chai-as-promised"))
 const expect = chai.expect
@@ -10,12 +11,16 @@ const CreditLine = contract.fromArtifact('CreditLine');
 let creditDesk;
 
 describe("CreditDesk", () => {
+  var decimals = new BN(String(1e18));
+  let bigVal = (number) => {
+    return new BN(number).mul(decimals);
+  }
   let underwriterLimit;
   let underwriter;
   let borrower = person3;
-  let limit = new BN(500);
-  let interestApr = new BN(5);
-  let minCollateralPercent = new BN(10);
+  let limit = bigVal(500);
+  let interestApr = bigVal(5).div(new BN(100));
+  let minCollateralPercent = bigVal(10);
   let paymentPeriodInDays = new BN(30);
   let termInDays = new BN(365);
 
@@ -39,7 +44,7 @@ describe("CreditDesk", () => {
 
   describe('setUnderwriterGovernanceLimit', () => {
     it('sets the correct limit', async () => {
-      const amount = new BN(537);
+      const amount = bigVal(537);
       await creditDesk.setUnderwriterGovernanceLimit(person2, amount, {from: owner});
       const underwriterLimit = await creditDesk.underwriters(person2);
       expect(underwriterLimit.eq(amount)).to.be.true;
@@ -49,7 +54,7 @@ describe("CreditDesk", () => {
   describe('createCreditLine', () => {
     beforeEach(async () => {
       underwriter = person2;
-      underwriterLimit = new BN(600);
+      underwriterLimit = bigVal(600);
       await creditDesk.setUnderwriterGovernanceLimit(underwriter, underwriterLimit, {from: owner});
     })
 
@@ -80,7 +85,7 @@ describe("CreditDesk", () => {
       const expectedErr = "The underwriter cannot create this credit line";
 
       try {
-        await createCreditLine({_limit: new BN(601)});
+        await createCreditLine({_limit: bigVal(601)});
         throw("This test should have failed earlier");
       } catch(e) {
         expect(e.reason).to.equal(expectedErr);
@@ -88,16 +93,23 @@ describe("CreditDesk", () => {
     });
 
     it("should not let you create a credit line above your limit, if the sum of your existing credit lines puts you over the limit", async () => {
-      await createCreditLine({_limit: new BN(300)})
-      await createCreditLine({_limit: new BN(300)})
+      await createCreditLine({_limit: bigVal(300)})
+      await createCreditLine({_limit: bigVal(300)})
 
       const expectedErr = "The underwriter cannot create this credit line";
       try {
-        await createCreditLine({_limit: new BN(1)});
+        await createCreditLine({_limit: bigVal(1)});
         throw("This test should have failed earlier");
       } catch(e) {
         expect(e.reason).to.equal(expectedErr);
       }
+    });
+
+    describe("Creating the credit line with invalid data", async () => {
+      // TOOD: Write more of these validations.
+      it.skip("should enforce the limit is above zero", async () => {
+
+      });
     });
   });
 
@@ -110,7 +122,7 @@ describe("CreditDesk", () => {
 
     beforeEach(async () => {
       underwriter = person2;
-      underwriterLimit = new BN(600);
+      underwriterLimit = bigVal(600);
       await creditDesk.setUnderwriterGovernanceLimit(underwriter, underwriterLimit, {from: owner});
 
       await createCreditLine();
@@ -118,10 +130,10 @@ describe("CreditDesk", () => {
       creditLine = await CreditLine.at(ulCreditLines[0]);
     });
 
-    it('should set the termEndAt correctly', async () => {
+    it.only('should set the termEndAt correctly', async () => {
       expect((await creditLine.termEndBlock()).eq(new BN(0))).to.be.true;
 
-      await drawdown(new BN(100), creditLine.address);
+      await drawdown(bigVal(100), creditLine.address);
       currentBlock = await time.latestBlock();
       const blockLength = new BN(termInDays).mul(new BN(blocksPerDay));
 
@@ -131,13 +143,44 @@ describe("CreditDesk", () => {
   });
 
   describe("calculateAnnuityPayment", async () => {
-    it.only("should calculate things correctly", async () => {
-      var balanceMultiplier = new BN(String(1e18));
-      var rateMultiplier = new BN(String(1e18));
-      let [balance, interestApr, termInDays, paymentPeriodInDays] = [new BN(10000).mul(balanceMultiplier), new BN(12).mul(rateMultiplier).div(new BN(100)), new BN(360), new BN(30)];
-      let result = await creditDesk._calculateAnnuityPayment(balance, interestApr, termInDays, paymentPeriodInDays);
-      let expected = new BN("887719069147705830000");
+    var tests = [
+      [10000, 12.000, 360, 30, "887719069147705830000"],
+      [10000, 6.000, 360, 30, "860286563187360300000"],
+      [2000000, 15.000, 360, 30, "180322762358335458000000"],
+      [123456, 12.345, 1800, 30, "2757196297755729374016"],
+      [50000, 10.000, 500, 10, "1071423534507233600000"],
+      [50000, 1.000, 3600, 30, "437723402324420700000"],
+      [1, 0.002, 3600, 30, "8334162127476676"],
+      [71601, 13.672, 493, 17, "2711812617616937811069"],
+      [10000, 0.0000, 360, 30, "833333333333333333333"],
+      [10000, 12.000, 1, 1, "10003287671232875100000"],
+      [0, 12.000, 360, 30, "0"],
+    ]
+    mochaEach(tests).it("should calculate things correctly", async (balance, interestApr, termInDays, paymentPeriodInDays, expected) => {
+      var rateDecimals = 1000; // This is just for convenience so we can denominate rates in decimals
+      var rateMultiplier = decimals.div(new BN(rateDecimals)).div(new BN(100));
+      balance = bigVal(balance);
+      interestApr = new BN(interestApr * rateDecimals).mul(rateMultiplier);
+      termInDays = new BN(termInDays);
+      paymentPeriodIndays = new BN(paymentPeriodInDays);
+      expected = new BN(expected);
+
+      const result = await creditDesk._calculateAnnuityPayment(balance, interestApr, termInDays, paymentPeriodInDays);
       expect(result.eq(expected)).to.be.true;
+    });
+
+    it("should gracefully handle extremely small, but > 0 interest rates", async () => {
+      const balance = bigVal(10000)
+      const interestApr = new BN(1);
+      const termInDays = new BN(360);
+      const paymentPeriodInDays = new BN(30);
+      expected = new BN("833333333333333333333");
+      const result = await creditDesk._calculateAnnuityPayment(balance, interestApr, termInDays, paymentPeriodInDays);
+      expect(result.eq(expected)).to.be.true;
+    });
+
+    describe("with invalid data", async () => {
+      // TODO: Consider if we need this.
     });
   });
 })

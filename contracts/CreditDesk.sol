@@ -4,7 +4,7 @@ pragma solidity ^0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "../node_modules/@openzeppelin/contracts/access/Ownable.sol";
-import "./GoldfinchPool.sol";
+import "./Pool.sol";
 import "./CreditLine.sol";
 import "./FPMath.sol";
 
@@ -13,6 +13,7 @@ contract CreditDesk is Ownable {
   uint public constant blocksPerDay = 5760;
   uint public constant blocksPerYear = (blocksPerDay * 365);
   uint public constant interestDecimals = 1e18;
+  address public poolAddress;
 
   struct Underwriter {
     uint governanceLimit;
@@ -28,6 +29,10 @@ contract CreditDesk is Ownable {
 
   function getUnderwriterCreditLines(address underwriterAddress) public view returns (address[] memory) {
     return underwriters[underwriterAddress].creditLines;
+  }
+
+  function setPoolAddress(address newPoolAddress) public onlyOwner returns (address) {
+    return poolAddress = newPoolAddress;
   }
 
   function createCreditLine(
@@ -47,27 +52,21 @@ contract CreditDesk is Ownable {
 
   function drawdown(uint amount, address creditLineAddress) external {
     CreditLine cl = CreditLine(creditLineAddress);
+    require(cl.borrower() == msg.sender, "You do not belong to this credit line");
     require(amountWithinLimit(amount, cl), "The borrower does not have enough credit limit for this drawdown");
-    uint blockNumber = block.number;
-    // TODO: Require borrower is msg.sender;
 
+    uint blockNumber = block.number;
     if (cl.balance() == 0) {
       uint newTermEndBlock = blockNumber + (blocksPerDay * cl.termInDays());
       cl.setTermEndBlock(newTermEndBlock);
     }
-    // uint interestAccrued = calculateInterestAccrued(cl, blockNumber);
-    // uint principalAccrued = calculatePrincipalAccrued(cl, blockNumber);
-    // (uint interestAccrued, uint principalAccrued) = calculateInterestAndPrincipalAccrued(cl, blockNumber);
+    (uint interestAccrued, uint principalAccrued) = calculateInterestAndPrincipalAccrued(cl, blockNumber);
+    cl.setBalance(cl.balance() + amount);
+    cl.setInterestOwed(cl.interestOwed() + interestAccrued);
+    cl.setPrincipalOwed(cl.principalOwed() + principalAccrued);
+    cl.setLastUpdatedBlock(blockNumber);
 
-    /* handle accounting
-      2.) Update balance based on last updated at, interest rate, etc. This includes calculating interest and principal accrued since last time.
-      3.) Update interest owed
-      4.) Update principal owed
-      5.) Update lastUpdatedAt
-    */
-    /* request transfer to sender
-      GoldfinchPool.transfer_funds(amount, msg.sender);
-    */
+    Pool(poolAddress).transferFunds(msg.sender, amount);
   }
 
   function calculateInterestAccrued(CreditLine cl, uint blockNumber) internal view returns(uint) {
@@ -96,15 +95,19 @@ contract CreditDesk is Ownable {
     doing the formula above, and then turning it back into an int64 at the end.
     */
 
+
     // Components used in the formula
-    int128 one = FPMath.fromInt(int256(1));
     uint periodsPerTerm = termInDays / paymentPeriodInDays;
+    int128 one = FPMath.fromInt(int256(1));
     int128 annualRate = FPMath.divi(int256(interestApr), int256(interestDecimals));
     int128 dailyRate = FPMath.div(annualRate, FPMath.fromInt(int256(365)));
     int128 periodRate = FPMath.mul(dailyRate, FPMath.fromInt(int256(paymentPeriodInDays)));
     int128 termRate = FPMath.pow(FPMath.add(one, periodRate), periodsPerTerm);
 
     int128 denominator = FPMath.sub(one, FPMath.div(one, termRate));
+    if (denominator == 0) {
+      return balance / periodsPerTerm;
+    }
     int128 paymentFractionFP = FPMath.div(periodRate, denominator);
     uint paymentFraction = uint(FPMath.muli(paymentFractionFP, int256(1e18)));
 

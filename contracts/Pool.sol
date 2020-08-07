@@ -4,8 +4,9 @@ pragma solidity ^0.6.12;
 
 import "../node_modules/@openzeppelin/contracts/math/SafeMath.sol";
 import "../node_modules/@openzeppelin/contracts/access/Ownable.sol";
+import "../node_modules/@openzeppelin/contracts/utils/Address.sol";
 
-contract GoldfinchPool is Ownable {
+contract Pool is Ownable {
   using SafeMath for uint256;
   uint public sharePrice = 1e18;
   uint mantissa = 1e18;
@@ -35,7 +36,11 @@ contract GoldfinchPool is Ownable {
     capitalProviders[msg.sender] = currentShares.sub(withdrawShares);
 
     // Send the amount to the address
-    msg.sender.transfer(amount);
+    Address.sendValue(msg.sender, amount);
+  }
+
+  function transferFunds(address payable recipient, uint amount) public payable onlyOwner returns (bool) {
+    Address.sendValue(recipient, amount);
   }
 
   function getNumShares(uint amount, uint multiplier, uint price) internal pure returns (uint) {

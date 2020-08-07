@@ -2,9 +2,9 @@
 
 pragma solidity ^0.6.0;
 
-import "../GoldfinchPool.sol";
+import "../Pool.sol";
 
-contract TestGoldfinchPool is GoldfinchPool {
+contract TestPool is Pool {
     function _getNumShares(uint amount, uint multiplier, uint price) public pure returns (uint) {
       return getNumShares(amount, multiplier, price);
     }
