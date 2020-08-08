@@ -3,7 +3,7 @@
 pragma solidity ^0.6.12;
 
 import './Pool.sol';
-import "../node_modules/@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 // TODO: This should be upgradable!
 contract CreditLine is Ownable {

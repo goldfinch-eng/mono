@@ -19,7 +19,7 @@ describe("CreditDesk", () => {
   }
   let underwriterLimit;
   let underwriter;
-  let borrower = person3;
+  let borrower;
   let limit = bigVal(500);
   let interestApr = bigVal(5).div(new BN(100));
   let minCollateralPercent = bigVal(10);
@@ -27,7 +27,7 @@ describe("CreditDesk", () => {
   let termInDays = new BN(365);
 
   let createCreditLine = async ({_borrower, _limit, _interestApr, _minCollateralPercent, _paymentPeriodInDays,_termInDays} = {}) => {
-    _borrower = _borrower || borrower;
+    _borrower = _borrower || person3;
     _limit = _limit || limit;
     _interestApr = _interestApr || interestApr;
     _minCollateralPercent = _minCollateralPercent || minCollateralPercent;
@@ -76,8 +76,8 @@ describe("CreditDesk", () => {
     }
     beforeEach(async () => {
       underwriter = person2;
-      underwriterLimit = bigVal(600);
       borrower = person3;
+      underwriterLimit = bigVal(600);
       await creditDesk.setUnderwriterGovernanceLimit(underwriter, underwriterLimit, {from: owner});
     })
 
@@ -135,7 +135,7 @@ describe("CreditDesk", () => {
     });
   });
 
-  describe('drawdown', async () => {
+  describe.only('drawdown', async () => {
     let drawdown = async (amount, creditLineAddress) => {
       return await creditDesk.drawdown(amount, creditLineAddress, {from: borrower});
     }
@@ -144,6 +144,7 @@ describe("CreditDesk", () => {
 
     beforeEach(async () => {
       underwriter = person2;
+      borrower = person3;
       underwriterLimit = bigVal(600);
       await creditDesk.setUnderwriterGovernanceLimit(underwriter, underwriterLimit, {from: owner});
 
@@ -152,7 +153,7 @@ describe("CreditDesk", () => {
       creditLine = await CreditLine.at(ulCreditLines[0]);
     });
 
-    it.only('should set the termEndAt correctly', async () => {
+    it('should set the termEndAt correctly', async () => {
       expect((await creditLine.termEndBlock()).eq(new BN(0))).to.be.true;
 
       await drawdown(bigVal(100), creditLine.address);

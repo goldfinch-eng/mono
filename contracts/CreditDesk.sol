@@ -3,7 +3,7 @@
 pragma solidity ^0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../node_modules/@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "./Pool.sol";
 import "./CreditLine.sol";
 import "./FPMath.sol";

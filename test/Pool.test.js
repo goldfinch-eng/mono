@@ -5,7 +5,7 @@ const expect = chai.expect
 let accounts;
 let owner;
 let person2;
-const GoldfinchPool = artifacts.require('TestPool');
+const Pool = artifacts.require('TestPool');
 let getBalance = async (address) => {
   return new BN((await web3.eth.getBalance(address)));
 }
