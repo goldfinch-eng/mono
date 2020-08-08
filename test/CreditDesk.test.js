@@ -10,6 +10,7 @@ let person2
 let person3;
 const CreditDesk = artifacts.require('TestCreditDesk');
 const CreditLine = artifacts.require('CreditLine');
+const Pool = artifacts.require('TestPool');
 let creditDesk;
 
 describe("CreditDesk", () => {
@@ -40,6 +41,10 @@ describe("CreditDesk", () => {
     accounts = await web3.eth.getAccounts();
     [ owner, person2, person3 ] = accounts;
     creditDesk = await CreditDesk.new({from: owner});
+    pool = await Pool.new({from: owner});
+    await pool.transferOwnership(creditDesk.address, {from: owner});
+    await pool.deposit({from: person2, value: String(bigVal(1000))})
+    await creditDesk.setPoolAddress(pool.address, {from: owner});
   })
 
   it('deployer is owner', async () => {
