@@ -71,3 +71,6 @@ build
 .vscode
 .openzeppelin/.session
 
+bin/
+cache/
+artifacts/

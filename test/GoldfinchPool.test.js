@@ -1,11 +1,14 @@
-const { accounts, contract, web3 } = require('@openzeppelin/test-environment');
-const { BN, balance } = require('@openzeppelin/test-helpers');
+const BN = require('bn.js');
 const chai = require('chai');
 chai.use(require("chai-as-promised"))
 const expect = chai.expect
-
-const [ owner, person2 ] = accounts;
-const GoldfinchPool = contract.fromArtifact('TestGoldfinchPool');
+let accounts;
+let owner;
+let person2;
+const GoldfinchPool = artifacts.require('TestGoldfinchPool');
+let getBalance = async (address) => {
+  return new BN((await web3.eth.getBalance(address)));
+}
 
 describe("GoldfinchPool", () => {
   let pool;
@@ -24,6 +27,8 @@ describe("GoldfinchPool", () => {
   }
 
   beforeEach(async () => {
+    accounts = await web3.eth.getAccounts();
+    [ owner, person2 ] = accounts;
     pool = await GoldfinchPool.new({ from: owner });
   });
 
@@ -35,9 +40,9 @@ describe("GoldfinchPool", () => {
 
   describe('deposit', () => {
     it('adds value to the contract when you call deposit', async () => {
-      const balanceBefore = await balance.current(pool.address);
+      const balanceBefore = await getBalance(pool.address);
       await makeDeposit();
-      const balanceAfter = await balance.current(pool.address);
+      const balanceAfter = await getBalance(pool.address);
       const delta = balanceAfter.sub(balanceBefore);
       expect(delta.eq(depositAmount)).to.be.true;
     });
@@ -71,18 +76,18 @@ describe("GoldfinchPool", () => {
   describe('withdraw', () => {
     it('withdraws value from the contract when you call withdraw', async () => {
       await makeDeposit();
-      const balanceBefore = await balance.current(pool.address);
+      const balanceBefore = await getBalance(pool.address);
       await makeWithdraw();
-      const balanceAfter = await balance.current(pool.address);
+      const balanceAfter = await getBalance(pool.address);
       const delta = balanceBefore.sub(balanceAfter);
       expect(delta.eq(withdrawAmount)).to.be.true;
     });
 
     it('sends the amount back to the address', async () => {
       await makeDeposit();
-      const addressValueBefore = await balance.current(person2)
+      const addressValueBefore = await getBalance(person2)
       await makeWithdraw();
-      const addressValueAfter = await balance.current(person2)
+      const addressValueAfter = await getBalance(person2)
       const delta = addressValueAfter.sub(addressValueBefore);
       const expMin = withdrawAmount * 0.999;
       const expMax = withdrawAmount * 1.001;
