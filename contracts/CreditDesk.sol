@@ -4,6 +4,8 @@ pragma solidity ^0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
+import "@nomiclabs/buidler/console.sol";
 import "./Pool.sol";
 import "./CreditLine.sol";
 import "./FPMath.sol";
@@ -114,16 +116,19 @@ contract CreditDesk is Ownable {
     return (balance * paymentFraction) / 1e18;
   }
 
-  // function calculatePrincipalAccrued(CreditLine cl) internal returns(uint) {
-  //   return 0;
-  // }
+  function prepayment(address payable creditLineAddress) external payable {
+    CreditLine cl = CreditLine(creditLineAddress);
+    cl.receivePrepayment{value: msg.value}();
+  }
 
-  function prepayment(uint amount) external {
-    // TODO: Implement me!
+  function addCollateral(address payable creditLineAddress) external payable {
+    CreditLine cl = CreditLine(creditLineAddress);
+    cl.receiveCollateral{value: msg.value}();
   }
 
   function payment() external {
     // TODO: Implement me!
+    // This will send money to the pool, and we need to do accounting
   }
 
   // Internal Functions

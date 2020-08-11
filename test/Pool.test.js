@@ -1,14 +1,8 @@
-const BN = require('bn.js');
-const chai = require('chai');
-chai.use(require("chai-as-promised"))
-const expect = chai.expect
+const {chai, expect, decimals, BN, bigVal, getBalance }  = require('./testHelpers.js');
 let accounts;
 let owner;
 let person2;
 const Pool = artifacts.require('TestPool');
-let getBalance = async (address) => {
-  return new BN((await web3.eth.getBalance(address)));
-}
 
 describe("Pool", () => {
   let pool;

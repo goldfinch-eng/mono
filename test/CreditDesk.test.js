@@ -1,9 +1,5 @@
+const {chai, expect, decimals, BN, bigVal, mochaEach, getBalance } = require('./testHelpers.js');
 const { time } = require('@openzeppelin/test-helpers');
-const mochaEach = require('mocha-each');
-const BN = require('bn.js');
-const chai = require('chai');
-chai.use(require("chai-as-promised"))
-const expect = chai.expect
 let accounts;
 let owner
 let person2
@@ -14,10 +10,6 @@ const Pool = artifacts.require('TestPool');
 let creditDesk;
 
 describe("CreditDesk", () => {
-  var decimals = new BN(String(1e18));
-  let bigVal = (number) => {
-    return new BN(number).mul(decimals);
-  }
   let underwriterLimit;
   let underwriter;
   let borrower;
@@ -43,7 +35,7 @@ describe("CreditDesk", () => {
     creditDesk = await CreditDesk.new({from: owner});
     pool = await Pool.new({from: owner});
     await pool.transferOwnership(creditDesk.address, {from: owner});
-    await pool.deposit({from: person2, value: String(bigVal(1000))})
+    await pool.deposit({from: person2, value: String(bigVal(90))})
     await creditDesk.setPoolAddress(pool.address, {from: owner});
   })
 
@@ -140,7 +132,7 @@ describe("CreditDesk", () => {
     });
   });
 
-  describe.only('drawdown', async () => {
+  describe('drawdown', async () => {
     let drawdown = async (amount, creditLineAddress) => {
       return await creditDesk.drawdown(amount, creditLineAddress, {from: borrower});
     }
@@ -161,7 +153,7 @@ describe("CreditDesk", () => {
     it('should set the termEndAt correctly', async () => {
       expect((await creditLine.termEndBlock()).eq(new BN(0))).to.be.true;
 
-      await drawdown(bigVal(100), creditLine.address);
+      await drawdown(bigVal(10), creditLine.address);
       currentBlock = await time.latestBlock();
       const blockLength = new BN(termInDays).mul(new BN(blocksPerDay));
 
@@ -211,4 +203,35 @@ describe("CreditDesk", () => {
       // TODO: Consider if we need this.
     });
   });
+
+  describe("prepayment", async () => {
+    let makePrepayment = async (creditLineAddress, amount, from=borrower) => {
+      return await creditDesk.prepayment(creditLineAddress, {from: from, value: String(bigVal(amount))});
+    }
+    describe("with a valid creditline id", async () => {
+      beforeEach(async () => {
+        underwriter = person2;
+        borrower = person3;
+        underwriterLimit = bigVal(600);
+        await creditDesk.setUnderwriterGovernanceLimit(underwriter, underwriterLimit, {from: owner});
+
+        await createCreditLine();
+        var ulCreditLines = await creditDesk.getUnderwriterCreditLines(underwriter);
+        creditLine = await CreditLine.at(ulCreditLines[0]);
+      })
+      it("should increment the prepaid balance", async () => {
+        const prepaymentAmount = 10;
+        expect((await (await getBalance(creditLine.address)).eq(bigVal(0)))).to.be.true;
+        await makePrepayment(creditLine.address, prepaymentAmount);
+        expect((await getBalance(creditLine.address)).eq(bigVal(prepaymentAmount))).to.be.true;
+        expect((await creditLine.prepaymentBalance()).eq(bigVal(prepaymentAmount))).to.be.true;
+
+        let secondPrepayment = 15;
+        let totalPrepayment = bigVal(prepaymentAmount).add(bigVal(secondPrepayment));
+        await makePrepayment(creditLine.address, secondPrepayment);
+        expect((await getBalance(creditLine.address)).eq(totalPrepayment)).to.be.true;
+        expect((await creditLine.prepaymentBalance()).eq(totalPrepayment)).to.be.true;
+      });
+    });
+  })
 })

@@ -17,7 +17,8 @@ contract CreditLine is Ownable {
   uint public balance;
   uint public interestOwed;
   uint public principalOwed;
-  uint public prepaidBalance;
+  uint public prepaymentBalance;
+  uint public collateralBalance;
   uint public termEndBlock;
   uint public nextDueBlock;
   uint public lastUpdatedBlock;
@@ -39,23 +40,31 @@ contract CreditLine is Ownable {
     lastUpdatedBlock = block.number;
   }
 
-  function setTermEndBlock(uint newTermEndBlock) public onlyOwner returns (uint) {
+  function setTermEndBlock(uint newTermEndBlock) external onlyOwner returns (uint) {
     return termEndBlock = newTermEndBlock;
   }
 
-  function setBalance(uint newBalance) public onlyOwner returns (uint) {
+  function setBalance(uint newBalance) external onlyOwner returns (uint) {
     return balance = newBalance;
   }
 
-  function setInterestOwed(uint newInterestOwed) public onlyOwner returns (uint) {
+  function setInterestOwed(uint newInterestOwed) external onlyOwner returns (uint) {
     return interestOwed = newInterestOwed;
   }
 
-  function setPrincipalOwed(uint newPrincipalOwed) public onlyOwner returns (uint) {
+  function setPrincipalOwed(uint newPrincipalOwed) external onlyOwner returns (uint) {
     return principalOwed = newPrincipalOwed;
   }
 
-  function setLastUpdatedBlock(uint newLastUpdatedBlock) public onlyOwner returns (uint) {
+  function setLastUpdatedBlock(uint newLastUpdatedBlock) external onlyOwner returns (uint) {
     return lastUpdatedBlock = newLastUpdatedBlock;
+  }
+
+  function receiveCollateral() external payable onlyOwner returns (uint) {
+    return collateralBalance = collateralBalance + msg.value;
+  }
+
+  function receivePrepayment() external payable onlyOwner returns (uint) {
+    return prepaymentBalance = prepaymentBalance + msg.value;
   }
 }
