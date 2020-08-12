@@ -4,7 +4,6 @@ pragma solidity ^0.6.8;
 
 import './Pool.sol';
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@nomiclabs/buidler/console.sol";
 
 // TODO: This should be upgradable!
 contract CreditLine is Ownable {
@@ -48,8 +47,8 @@ contract CreditLine is Ownable {
     return termEndBlock = newTermEndBlock;
   }
 
-  function setBalance(uint newBalance) external onlyOwner {
-    balance = newBalance;
+  function setBalance(uint newBalance) external onlyOwner returns(uint) {
+    return balance = newBalance;
   }
 
   function setInterestOwed(uint newInterestOwed) external onlyOwner returns (uint) {

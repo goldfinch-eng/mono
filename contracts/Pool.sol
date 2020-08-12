@@ -5,7 +5,6 @@ pragma solidity ^0.6.8;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
-import "@nomiclabs/buidler/console.sol";
 
 contract Pool is Ownable {
   using SafeMath for uint256;
