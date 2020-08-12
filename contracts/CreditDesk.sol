@@ -25,7 +25,6 @@ contract CreditDesk is Ownable {
   struct PaymentAllocation {
     uint interestPaidOff;
     uint principalPaidOff;
-    uint additionalBalancePaidOff;
     uint paymentRemaining;
     uint balanceRemaining;
   }
@@ -63,15 +62,15 @@ contract CreditDesk is Ownable {
       cl.setTermEndBlock(newTermEndBlock);
     }
     (uint interestAccrued, uint principalAccrued) = calculateInterestAndPrincipalAccrued(cl);
-    cl.setBalance(cl.balance() + amount);
-    cl.setInterestOwed(cl.interestOwed() + interestAccrued);
-    cl.setPrincipalOwed(cl.principalOwed() + principalAccrued);
-    cl.setLastUpdatedBlock(block.number);
+    uint balance = cl.balance() + amount;
+    uint interestOwed = cl.interestOwed() + interestAccrued;
+    uint principalOwed = cl.principalOwed() + principalAccrued;
 
+    updateCreditLineAccounting(cl, balance, interestOwed, principalOwed);
     Pool(poolAddress).transferFunds(msg.sender, amount);
   }
 
-  function prepayment(address payable creditLineAddress) external payable {
+  function prepay(address payable creditLineAddress) external payable {
     CreditLine(creditLineAddress).receivePrepayment{value: msg.value}();
   }
 
@@ -79,16 +78,18 @@ contract CreditDesk is Ownable {
     CreditLine(creditLineAddress).receiveCollateral{value: msg.value}();
   }
 
-  function payment(address creditLineAddress) external payable {
+  function pay(address creditLineAddress) external payable {
     CreditLine cl = CreditLine(creditLineAddress);
     (uint interestAccrued, uint principalAccrued) = calculateInterestAndPrincipalAccrued(cl);
     uint totalInterestOwed = cl.interestOwed() + interestAccrued;
     uint totalPrincipalOwed = cl.principalOwed() + principalAccrued;
 
     PaymentAllocation memory pa = allocatePayment(msg.value, cl.balance(), totalInterestOwed, totalPrincipalOwed);
+    uint newInterestOwed = totalInterestOwed - pa.interestPaidOff;
+    uint newPrincipalOwed = totalPrincipalOwed - pa.principalPaidOff;
 
     sendPaymentToPool(pa);
-    updateCreditLineAfterRepayment(cl, totalInterestOwed, totalPrincipalOwed, pa);
+    updateCreditLineAccounting(cl, pa.balanceRemaining, newInterestOwed, newPrincipalOwed);
 
     if (pa.paymentRemaining > 0 && pa.paymentRemaining <= msg.value) {
       cl.receiveCollateral{value: pa.paymentRemaining}();
@@ -100,7 +101,6 @@ contract CreditDesk is Ownable {
     Pool(poolAddress).receivePrincipalRepayment{value: pa.principalPaidOff}();
     Pool(poolAddress).receiveInterestRepayment{value: pa.interestPaidOff}();
   }
-
 
   /*
    * Internal Functions
@@ -159,11 +159,15 @@ contract CreditDesk is Ownable {
     return (balance * paymentFraction) / 1e18;
   }
 
-  function updateCreditLineAfterRepayment(CreditLine cl, uint totalInterestOwed, uint totalPrincipalOwed, PaymentAllocation memory pa) internal {
-    cl.setBalance(pa.balanceRemaining);
-    cl.setInterestOwed(totalInterestOwed - pa.interestPaidOff);
-    cl.setPrincipalOwed(totalPrincipalOwed - pa.principalPaidOff);
+  function updateCreditLineAccounting(CreditLine cl, uint balance, uint interestOwed, uint principalOwed) internal {
+    cl.setBalance(balance);
+    cl.setInterestOwed(interestOwed);
+    cl.setPrincipalOwed(principalOwed);
     cl.setLastUpdatedBlock(block.number);
+
+    if (balance == 0) {
+      cl.setTermEndBlock(0);
+    }
   }
 
   function amountWithinLimit(uint amount, CreditLine cl) internal view returns(bool) {
@@ -186,7 +190,6 @@ contract CreditDesk is Ownable {
     return PaymentAllocation({
       interestPaidOff: interestPaidOff,
       principalPaidOff: principalPaidOff,
-      additionalBalancePaidOff: additionalBalancePaidOff,
       paymentRemaining: paymentRemaining,
       balanceRemaining: balanceRemaining
     });

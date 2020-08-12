@@ -36,7 +36,7 @@ contract Pool is Ownable {
     capitalProviders[msg.sender] = currentShares.sub(withdrawShares);
 
     // Send the amount to the address
-    Address.sendValue(msg.sender, amount);
+    _transferFunds(msg.sender, amount);
   }
 
   function receiveInterestRepayment() external payable onlyOwner {
@@ -48,11 +48,15 @@ contract Pool is Ownable {
     // Purposefully does nothing. No share price updates.
   }
 
-  function transferFunds(address payable recipient, uint amount) public payable onlyOwner returns (bool) {
-    Address.sendValue(recipient, amount);
+  function transferFunds(address payable recipient, uint amount) public onlyOwner returns (bool) {
+    _transferFunds(recipient, amount);
   }
 
   function getNumShares(uint amount, uint multiplier, uint price) internal pure returns (uint) {
     return amount.mul(multiplier).div(price);
+  }
+
+  function _transferFunds(address payable recipient, uint amount) internal {
+    Address.sendValue(recipient, amount);
   }
 }

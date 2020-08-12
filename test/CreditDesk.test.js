@@ -221,7 +221,7 @@ describe("CreditDesk", () => {
 
   describe("prepayment", async () => {
     let makePrepayment = async (creditLineAddress, amount, from=borrower) => {
-      return await creditDesk.prepayment(creditLineAddress, {from: from, value: String(bigVal(amount))});
+      return await creditDesk.prepay(creditLineAddress, {from: from, value: String(bigVal(amount))});
     }
     describe("with a valid creditline id", async () => {
       let creditLine;
@@ -270,7 +270,7 @@ describe("CreditDesk", () => {
       it("should pay off interest first", async () => {
         await createAndSetCreditLineAttributes(10, 5, 3);
         const paymentAmount = 6;
-        await creditDesk.payment(creditLine.address, {from: borrower, value: String(bigVal(paymentAmount))});
+        await creditDesk.pay(creditLine.address, {from: borrower, value: String(bigVal(paymentAmount))});
 
         // We use closeTo because several blocks may have passed between creating the creditLine and
         // making the payment, which accrues a very small amount of interest and principal. Also note
@@ -285,7 +285,7 @@ describe("CreditDesk", () => {
 
         await createAndSetCreditLineAttributes(10, 5, 3);
         const paymentAmount = 6;
-        await creditDesk.payment(creditLine.address, {from: borrower, value: String(bigVal(paymentAmount))});
+        await creditDesk.pay(creditLine.address, {from: borrower, value: String(bigVal(paymentAmount))});
 
         var newPoolBalance = await getBalance(pool.address);
         var delta = newPoolBalance.sub(originalPoolBalance);
@@ -299,7 +299,7 @@ describe("CreditDesk", () => {
         var interestAmount = 5;
         const paymentAmount = 7;
         await createAndSetCreditLineAttributes(10, interestAmount, 3);
-        await creditDesk.payment(creditLine.address, {from: borrower, value: String(bigVal(paymentAmount))});
+        await creditDesk.pay(creditLine.address, {from: borrower, value: String(bigVal(paymentAmount))});
 
         var newSharePrice = await pool.sharePrice();
         var delta = newSharePrice.sub(originalSharePrice);
@@ -315,7 +315,7 @@ describe("CreditDesk", () => {
           const balance = 10;
           const paymentAmount = 15;
           await createAndSetCreditLineAttributes(balance, interestAmount, 3);
-          await creditDesk.payment(creditLine.address, {from: borrower, value: String(bigVal(paymentAmount))});
+          await creditDesk.pay(creditLine.address, {from: borrower, value: String(bigVal(paymentAmount))});
 
           const expected = bigVal(paymentAmount).sub(bigVal(interestAmount)).sub(bigVal(balance));
           expect(await creditLine.collateralBalance()).to.bignumber.closeTo(expected, new BN(1e14));
@@ -327,19 +327,18 @@ describe("CreditDesk", () => {
   describe("allocatePayment", async() => {
     const tests = [
       // payment, balance, totalInterestOwed, totalPrincipalOwed, expectedResults
-      [10, 40, 10, 20, {interestPaidOff: 10, principalPaidOff: 0, additionalBalancePaidOff: 0, balanceRemaining: 40, paymentRemaining: 0}],
-      [5, 40, 10, 20, {interestPaidOff: 5, principalPaidOff: 0, additionalBalancePaidOff: 0, balanceRemaining: 40, paymentRemaining: 0}],
-      [15, 40, 10, 20, {interestPaidOff: 10, principalPaidOff: 5, additionalBalancePaidOff: 0, balanceRemaining: 35, paymentRemaining: 0}],
-      [35, 40, 10, 20, {interestPaidOff: 10, principalPaidOff: 20, additionalBalancePaidOff: 5, balanceRemaining: 15, paymentRemaining: 0}],
-      [55, 40, 10, 20, {interestPaidOff: 10, principalPaidOff: 20, additionalBalancePaidOff: 20, balanceRemaining: 0, paymentRemaining: 5}],
-      [0, 40, 10, 20, {interestPaidOff: 0, principalPaidOff: 0, additionalBalancePaidOff: 0, balanceRemaining: 40, paymentRemaining: 0}],
+      [10, 40, 10, 20, {interestPaidOff: 10, principalPaidOff: 0, balanceRemaining: 40, paymentRemaining: 0}],
+      [5, 40, 10, 20, {interestPaidOff: 5, principalPaidOff: 0, balanceRemaining: 40, paymentRemaining: 0}],
+      [15, 40, 10, 20, {interestPaidOff: 10, principalPaidOff: 5, balanceRemaining: 35, paymentRemaining: 0}],
+      [35, 40, 10, 20, {interestPaidOff: 10, principalPaidOff: 20, balanceRemaining: 15, paymentRemaining: 0}],
+      [55, 40, 10, 20, {interestPaidOff: 10, principalPaidOff: 20,  balanceRemaining: 0, paymentRemaining: 5}],
+      [0, 40, 10, 20, {interestPaidOff: 0, principalPaidOff: 0, balanceRemaining: 40, paymentRemaining: 0}],
     ]
     mochaEach(tests).it("should calculate things correctly!", async(paymentAmount, balance, totalInterestOwed, totalPrincipalOwed, expected) => {
       var result = await creditDesk._allocatePayment(bigVal(paymentAmount), bigVal(balance), bigVal(totalInterestOwed), bigVal(totalPrincipalOwed));
 
       expect(result.interestPaidOff).to.be.bignumber.equals(bigVal(expected.interestPaidOff));
       expect(result.principalPaidOff).to.be.bignumber.equals(bigVal(expected.principalPaidOff));
-      expect(result.additionalBalancePaidOff).to.be.bignumber.equals(bigVal(expected.additionalBalancePaidOff));
       expect(result.balanceRemaining).to.be.bignumber.equals(bigVal(expected.balanceRemaining));
       expect(result.paymentRemaining).to.be.bignumber.equals(bigVal(expected.paymentRemaining));
     });
