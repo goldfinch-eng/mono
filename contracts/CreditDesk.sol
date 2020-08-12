@@ -45,14 +45,7 @@ contract CreditDesk is Ownable {
     return poolAddress = newPoolAddress;
   }
 
-  function createCreditLine(
-    address _borrower,
-    uint _limit,
-    uint _interestApr,
-    uint _minCollateralPercent,
-    uint _paymentPeriodInDays,
-    uint _termInDays
-  ) external {
+  function createCreditLine(address _borrower, uint _limit, uint _interestApr, uint _minCollateralPercent, uint _paymentPeriodInDays, uint _termInDays) external {
     Underwriter storage underwriter = underwriters[msg.sender];
     require(underwriterCanCreateThisCreditLine(_limit, underwriter), "The underwriter cannot create this credit line");
 
@@ -79,13 +72,11 @@ contract CreditDesk is Ownable {
   }
 
   function prepayment(address payable creditLineAddress) external payable {
-    CreditLine cl = CreditLine(creditLineAddress);
-    cl.receivePrepayment{value: msg.value}();
+    CreditLine(creditLineAddress).receivePrepayment{value: msg.value}();
   }
 
   function addCollateral(address payable creditLineAddress) external payable {
-    CreditLine cl = CreditLine(creditLineAddress);
-    cl.receiveCollateral{value: msg.value}();
+    CreditLine(creditLineAddress).receiveCollateral{value: msg.value}();
   }
 
   function payment(address creditLineAddress) external payable {
@@ -176,7 +167,6 @@ contract CreditDesk is Ownable {
   }
 
   function amountWithinLimit(uint amount, CreditLine cl) internal view returns(bool) {
-    // TODO: This should take into account collateral and min collateral percent
     return cl.balance() + amount <= cl.limit();
   }
 

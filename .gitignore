@@ -72,9 +72,5 @@ build
 .openzeppelin/.session
 
 bin/
-<<<<<<< HEAD
-
-=======
 cache/
 artifacts/
->>>>>>> 31c5382c8675873c98aaa80e80b9ebbf8ef3c51c

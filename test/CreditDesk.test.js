@@ -292,7 +292,7 @@ describe("CreditDesk", () => {
         expect(delta).to.be.bignumber.equal(bigVal(6));
       });
 
-      it("should increase the share price of the pool only based on the paid interest (not principal)", async() => {
+      it.only("should increase the share price of the pool only based on the paid interest (not principal)", async() => {
         var originalSharePrice = await pool.sharePrice();
         var originalTotalShares = await pool.totalShares();
 
