@@ -8,6 +8,7 @@ You will need the correct version of node/npm on your local machine.
 
 - Next install required packages of the protocol with `npm install`
 - Then, `cd client && npm install`
+- Then from the root, install the git pre-commit hooks `ln -s ./pre-commit.sh .git/hooks/pre-commit`
 
 ### Running a local blockchain
 This is required for interacting with the contracts

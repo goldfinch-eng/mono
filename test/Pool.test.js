@@ -1,16 +1,10 @@
-const BN = require('bn.js');
-const chai = require('chai');
-chai.use(require("chai-as-promised"))
-const expect = chai.expect
+const {chai, expect, decimals, BN, bigVal, getBalance }  = require('./testHelpers.js');
 let accounts;
 let owner;
 let person2;
-const GoldfinchPool = artifacts.require('TestGoldfinchPool');
-let getBalance = async (address) => {
-  return new BN((await web3.eth.getBalance(address)));
-}
+const Pool = artifacts.require('TestPool');
 
-describe("GoldfinchPool", () => {
+describe("Pool", () => {
   let pool;
   const mantissa = 10e18;
   let depositAmount = new BN(web3.utils.toWei("4", "ether"));
@@ -29,10 +23,10 @@ describe("GoldfinchPool", () => {
   beforeEach(async () => {
     accounts = await web3.eth.getAccounts();
     [ owner, person2 ] = accounts;
-    pool = await GoldfinchPool.new({ from: owner });
+    pool = await Pool.new({ from: owner });
   });
 
-  describe('GoldfinchPool', () => {
+  describe('Pool', () => {
     it('deployer is owner', async () => {
       expect(await pool.owner()).to.equal(owner);
     });
