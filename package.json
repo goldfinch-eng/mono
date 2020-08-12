@@ -52,6 +52,7 @@
     "ganache-cli": "^6.9.1",
     "husky": "^3.1.0",
     "mocha": "^8.1.0",
-    "mocha-each": "^2.0.1"
+    "mocha-each": "^2.0.1",
+    "chai-bn": "OpenZeppelin/chai-bn#v0.2.1"
   }
 }

@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.6.12;
+pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
+import "@openzeppelin/contracts/math/Math.sol";
 import "@nomiclabs/buidler/console.sol";
 import "./Pool.sol";
 import "./CreditLine.sol";
@@ -20,6 +21,14 @@ contract CreditDesk is Ownable {
   struct Underwriter {
     uint governanceLimit;
     address[] creditLines;
+  }
+
+  struct PaymentAllocation {
+    uint interestPaidOff;
+    uint principalPaidOff;
+    uint additionalBalancePaidOff;
+    uint paymentRemaining;
+    uint balanceRemaining;
   }
 
   mapping(address => Underwriter) public underwriters;
@@ -57,31 +66,75 @@ contract CreditDesk is Ownable {
     require(cl.borrower() == msg.sender, "You do not belong to this credit line");
     require(amountWithinLimit(amount, cl), "The borrower does not have enough credit limit for this drawdown");
 
-    uint blockNumber = block.number;
     if (cl.balance() == 0) {
-      uint newTermEndBlock = blockNumber + (blocksPerDay * cl.termInDays());
+      uint newTermEndBlock = block.number + (blocksPerDay * cl.termInDays());
       cl.setTermEndBlock(newTermEndBlock);
     }
-    (uint interestAccrued, uint principalAccrued) = calculateInterestAndPrincipalAccrued(cl, blockNumber);
+    (uint interestAccrued, uint principalAccrued) = calculateInterestAndPrincipalAccrued(cl);
     cl.setBalance(cl.balance() + amount);
     cl.setInterestOwed(cl.interestOwed() + interestAccrued);
     cl.setPrincipalOwed(cl.principalOwed() + principalAccrued);
-    cl.setLastUpdatedBlock(blockNumber);
+    cl.setLastUpdatedBlock(block.number);
 
     Pool(poolAddress).transferFunds(msg.sender, amount);
   }
 
-  function calculateInterestAccrued(CreditLine cl, uint blockNumber) internal view returns(uint) {
-    uint numBlocksElapsed = blockNumber - cl.lastUpdatedBlock();
-    uint totalInterestPerYear = (cl.balance() * cl.interestApr()) / interestDecimals;
-    return totalInterestPerYear * numBlocksElapsed / blocksPerYear;
+  function prepayment(address payable creditLineAddress) external payable {
+    CreditLine cl = CreditLine(creditLineAddress);
+    cl.receivePrepayment{value: msg.value}();
   }
 
-  function calculateInterestAndPrincipalAccrued(CreditLine cl, uint blockNumber) internal view returns(uint, uint) {
+  function addCollateral(address payable creditLineAddress) external payable {
+    CreditLine cl = CreditLine(creditLineAddress);
+    cl.receiveCollateral{value: msg.value}();
+  }
+
+  function payment(address creditLineAddress) external payable {
+    CreditLine cl = CreditLine(creditLineAddress);
+    (uint interestAccrued, uint principalAccrued) = calculateInterestAndPrincipalAccrued(cl);
+    uint totalInterestOwed = cl.interestOwed() + interestAccrued;
+    uint totalPrincipalOwed = cl.principalOwed() + principalAccrued;
+
+    PaymentAllocation memory pa = allocatePayment(msg.value, cl.balance(), totalInterestOwed, totalPrincipalOwed);
+
+    sendPaymentToPool(pa);
+    updateCreditLineAfterRepayment(cl, totalInterestOwed, totalPrincipalOwed, pa);
+
+    if (pa.paymentRemaining > 0 && pa.paymentRemaining <= msg.value) {
+      cl.receiveCollateral{value: pa.paymentRemaining}();
+    }
+  }
+
+  function sendPaymentToPool(PaymentAllocation memory pa) public payable {
+    require(pa.principalPaidOff + pa.interestPaidOff <= msg.value);
+    Pool(poolAddress).receivePrincipalRepayment{value: pa.principalPaidOff}();
+    Pool(poolAddress).receiveInterestRepayment{value: pa.interestPaidOff}();
+  }
+
+
+  /*
+   * Internal Functions
+  */
+
+  function calculateInterestAndPrincipalAccrued(CreditLine cl) internal view returns(uint, uint) {
     uint totalPayment = calculateAnnuityPayment(cl.balance(), cl.interestApr(), cl.termInDays(), cl.paymentPeriodInDays());
-    uint interestAccrued = calculateInterestAccrued(cl, blockNumber);
-    uint principalAccrued = totalPayment - interestAccrued;
+    uint interestAccrued = calculateInterestAccrued(cl);
+    uint principalAccrued = calculatePrincipalAccrued(cl, totalPayment, interestAccrued);
     return (interestAccrued, principalAccrued);
+  }
+
+  function calculatePrincipalAccrued(CreditLine cl, uint periodPayment, uint interestAccrued) internal view returns(uint) {
+    uint blocksPerPaymentPeriod = blocksPerDay * cl.paymentPeriodInDays();
+    uint numBlocksElapsed = block.number - cl.lastUpdatedBlock();
+    int128 fractionOfPeriod = FPMath.divi(int256(numBlocksElapsed), int256(blocksPerPaymentPeriod));
+    uint periodPaymentFraction = uint(FPMath.muli(fractionOfPeriod, int256(periodPayment)));
+    return periodPaymentFraction - interestAccrued;
+  }
+
+  function calculateInterestAccrued(CreditLine cl) internal view returns(uint) {
+    uint numBlocksElapsed = block.number - cl.lastUpdatedBlock();
+    uint totalInterestPerYear = (cl.balance() * cl.interestApr()) / interestDecimals;
+    return totalInterestPerYear * numBlocksElapsed / blocksPerYear;
   }
 
   function calculateAnnuityPayment(uint balance, uint interestApr, uint termInDays, uint paymentPeriodInDays) internal pure returns(uint) {
@@ -116,25 +169,38 @@ contract CreditDesk is Ownable {
     return (balance * paymentFraction) / 1e18;
   }
 
-  function prepayment(address payable creditLineAddress) external payable {
-    CreditLine cl = CreditLine(creditLineAddress);
-    cl.receivePrepayment{value: msg.value}();
+  function updateCreditLineAfterRepayment(CreditLine cl, uint totalInterestOwed, uint totalPrincipalOwed, PaymentAllocation memory pa) internal {
+    cl.setBalance(pa.balanceRemaining);
+    cl.setInterestOwed(totalInterestOwed - pa.interestPaidOff);
+    cl.setPrincipalOwed(totalPrincipalOwed - pa.principalPaidOff);
+    cl.setLastUpdatedBlock(block.number);
   }
 
-  function addCollateral(address payable creditLineAddress) external payable {
-    CreditLine cl = CreditLine(creditLineAddress);
-    cl.receiveCollateral{value: msg.value}();
-  }
-
-  function payment() external {
-    // TODO: Implement me!
-    // This will send money to the pool, and we need to do accounting
-  }
-
-  // Internal Functions
   function amountWithinLimit(uint amount, CreditLine cl) internal view returns(bool) {
     // TODO: This should take into account collateral and min collateral percent
     return cl.balance() + amount <= cl.limit();
+  }
+
+  function allocatePayment(uint paymentAmount, uint balanceRemaining, uint totalInterestAccrued, uint totalPrincipalAccrued) internal pure returns(PaymentAllocation memory) {
+    uint paymentRemaining = paymentAmount;
+    uint interestPaidOff = Math.min(totalInterestAccrued, paymentRemaining);
+    paymentRemaining = paymentRemaining - interestPaidOff;
+
+    uint principalPaidOff = Math.min(totalPrincipalAccrued, paymentRemaining);
+    paymentRemaining = paymentRemaining - principalPaidOff;
+    balanceRemaining = balanceRemaining - principalPaidOff;
+
+    uint additionalBalancePaidOff = Math.min(balanceRemaining, paymentRemaining);
+    paymentRemaining = paymentRemaining - additionalBalancePaidOff;
+    balanceRemaining = balanceRemaining - additionalBalancePaidOff;
+
+    return PaymentAllocation({
+      interestPaidOff: interestPaidOff,
+      principalPaidOff: principalPaidOff,
+      additionalBalancePaidOff: additionalBalancePaidOff,
+      paymentRemaining: paymentRemaining,
+      balanceRemaining: balanceRemaining
+    });
   }
 
   function underwriterCanCreateThisCreditLine(uint newAmount, Underwriter storage underwriter) internal view returns(bool) {

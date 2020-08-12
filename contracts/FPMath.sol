@@ -32,7 +32,7 @@ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABI
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-pragma solidity ^0.5.0 || ^0.6.0;
+pragma solidity ^0.6.8;
 
 /**
  * Smart contract library of mathematical functions operating with signed

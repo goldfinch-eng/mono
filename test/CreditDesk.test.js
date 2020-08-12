@@ -1,5 +1,6 @@
 const {chai, expect, decimals, BN, bigVal, mochaEach, getBalance } = require('./testHelpers.js');
 const { time } = require('@openzeppelin/test-helpers');
+const { before } = require('mocha');
 let accounts;
 let owner
 let person2
@@ -27,6 +28,16 @@ describe("CreditDesk", () => {
     _paymentPeriodInDays = _paymentPeriodInDays || paymentPeriodInDays;
     _termInDays = _termInDays || termInDays;
     await creditDesk.createCreditLine(_borrower, _limit, _interestApr, _minCollateralPercent, _paymentPeriodInDays,_termInDays, {from: underwriter});
+  }
+
+  let initializeCreditDeskWithCreditLine = async (underwriter, borrower) => {
+    underwriterLimit = bigVal(600);
+    await creditDesk.setUnderwriterGovernanceLimit(underwriter, underwriterLimit, {from: owner});
+
+    await createCreditLine();
+    var ulCreditLines = await creditDesk.getUnderwriterCreditLines(underwriter);
+    creditLine = await CreditLine.at(ulCreditLines[0]);
+    return creditLine;
   }
 
   beforeEach(async () => {
@@ -160,6 +171,10 @@ describe("CreditDesk", () => {
       const expectedTermEndBlock = currentBlock.add(blockLength);
       expect((await creditLine.termEndBlock()).eq(expectedTermEndBlock)).to.be.true;
     });
+
+    it.skip('should fail and not change accounting values if the pool has insufficient funds', async () => {
+
+    });
   });
 
   describe("calculateAnnuityPayment", async () => {
@@ -209,15 +224,11 @@ describe("CreditDesk", () => {
       return await creditDesk.prepayment(creditLineAddress, {from: from, value: String(bigVal(amount))});
     }
     describe("with a valid creditline id", async () => {
+      let creditLine;
       beforeEach(async () => {
         underwriter = person2;
-        borrower = person3;
-        underwriterLimit = bigVal(600);
-        await creditDesk.setUnderwriterGovernanceLimit(underwriter, underwriterLimit, {from: owner});
-
-        await createCreditLine();
-        var ulCreditLines = await creditDesk.getUnderwriterCreditLines(underwriter);
-        creditLine = await CreditLine.at(ulCreditLines[0]);
+        borrower = person2;
+        creditLine = await initializeCreditDeskWithCreditLine(underwriter, borrower);
       })
       it("should increment the prepaid balance", async () => {
         const prepaymentAmount = 10;
@@ -233,5 +244,104 @@ describe("CreditDesk", () => {
         expect((await creditLine.prepaymentBalance()).eq(totalPrepayment)).to.be.true;
       });
     });
-  })
+  });
+
+  describe("addCollateral", async () => {
+    it.skip("Should add collateral", async () => {
+
+    });
+  });
+
+  describe("payment", async () => {
+    describe("with an outstanding credit line", async () => {
+      let creditLine;
+      let createAndSetCreditLineAttributes = async (balance, interestOwed, principalOwed, ) => {
+        creditLine = await CreditLine.new(borrower, bigVal(500), bigVal(3), 5, 10, 360, {from: owner});
+        await creditLine.setBalance(bigVal(balance), {from: owner});
+        await creditLine.setInterestOwed(bigVal(interestOwed), {from: owner});
+        await creditLine.setPrincipalOwed(bigVal(principalOwed), {from: owner});
+        await creditLine.transferOwnership(creditDesk.address, {from: owner});
+      }
+      beforeEach(async () => {
+        underwriter = person2;
+        borrower = person3;
+      });
+
+      it("should pay off interest first", async () => {
+        await createAndSetCreditLineAttributes(10, 5, 3);
+        const paymentAmount = 6;
+        await creditDesk.payment(creditLine.address, {from: borrower, value: String(bigVal(paymentAmount))});
+
+        // We use closeTo because several blocks may have passed between creating the creditLine and
+        // making the payment, which accrues a very small amount of interest and principal. Also note
+        // that 1e14 is actually a very small tolerance, since we use 1e18 as our decimals
+        expect(await creditLine.interestOwed()).to.be.bignumber.closeTo(bigVal(0), new BN(1e14));
+        expect(await creditLine.principalOwed()).to.be.bignumber.closeTo(bigVal(2), new BN(1e14));
+        expect(await creditLine.balance()).to.be.bignumber.closeTo(bigVal(9), new BN(1e14));
+      });
+
+      it("should send the payment to the pool", async() => {
+        var originalPoolBalance = await getBalance(pool.address);
+
+        await createAndSetCreditLineAttributes(10, 5, 3);
+        const paymentAmount = 6;
+        await creditDesk.payment(creditLine.address, {from: borrower, value: String(bigVal(paymentAmount))});
+
+        var newPoolBalance = await getBalance(pool.address);
+        var delta = newPoolBalance.sub(originalPoolBalance);
+        expect(delta).to.be.bignumber.equal(bigVal(6));
+      });
+
+      it("should increase the share price of the pool only based on the paid interest (not principal)", async() => {
+        var originalSharePrice = await pool.sharePrice();
+        var originalTotalShares = await pool.totalShares();
+
+        var interestAmount = 5;
+        const paymentAmount = 7;
+        await createAndSetCreditLineAttributes(10, interestAmount, 3);
+        await creditDesk.payment(creditLine.address, {from: borrower, value: String(bigVal(paymentAmount))});
+
+        var newSharePrice = await pool.sharePrice();
+        var delta = newSharePrice.sub(originalSharePrice);
+        var expectedDelta = bigVal(interestAmount).mul(decimals).div(originalTotalShares)
+
+        expect(delta).to.bignumber.closeTo(expectedDelta, new BN(1e14));
+        expect(newSharePrice).to.bignumber.closeTo(originalSharePrice.add(expectedDelta), new BN(1e14));
+      });
+
+      describe("with extra payment left over", async () => {
+        it.only("should send the extra to the collateral of the credit line", async () => {
+          var interestAmount = 1;
+          const balance = 10;
+          const paymentAmount = 15;
+          await createAndSetCreditLineAttributes(balance, interestAmount, 3);
+          await creditDesk.payment(creditLine.address, {from: borrower, value: String(bigVal(paymentAmount))});
+
+          const expected = bigVal(paymentAmount).sub(bigVal(interestAmount)).sub(bigVal(balance));
+          expect(await creditLine.collateralBalance()).to.bignumber.closeTo(expected, new BN(1e14));
+        });
+      });
+    });
+  });
+
+  describe("allocatePayment", async() => {
+    const tests = [
+      // payment, balance, totalInterestOwed, totalPrincipalOwed, expectedResults
+      [10, 40, 10, 20, {interestPaidOff: 10, principalPaidOff: 0, additionalBalancePaidOff: 0, balanceRemaining: 40, paymentRemaining: 0}],
+      [5, 40, 10, 20, {interestPaidOff: 5, principalPaidOff: 0, additionalBalancePaidOff: 0, balanceRemaining: 40, paymentRemaining: 0}],
+      [15, 40, 10, 20, {interestPaidOff: 10, principalPaidOff: 5, additionalBalancePaidOff: 0, balanceRemaining: 35, paymentRemaining: 0}],
+      [35, 40, 10, 20, {interestPaidOff: 10, principalPaidOff: 20, additionalBalancePaidOff: 5, balanceRemaining: 15, paymentRemaining: 0}],
+      [55, 40, 10, 20, {interestPaidOff: 10, principalPaidOff: 20, additionalBalancePaidOff: 20, balanceRemaining: 0, paymentRemaining: 5}],
+      [0, 40, 10, 20, {interestPaidOff: 0, principalPaidOff: 0, additionalBalancePaidOff: 0, balanceRemaining: 40, paymentRemaining: 0}],
+    ]
+    mochaEach(tests).it("should calculate things correctly!", async(paymentAmount, balance, totalInterestOwed, totalPrincipalOwed, expected) => {
+      var result = await creditDesk._allocatePayment(bigVal(paymentAmount), bigVal(balance), bigVal(totalInterestOwed), bigVal(totalPrincipalOwed));
+
+      expect(result.interestPaidOff).to.be.bignumber.equals(bigVal(expected.interestPaidOff));
+      expect(result.principalPaidOff).to.be.bignumber.equals(bigVal(expected.principalPaidOff));
+      expect(result.additionalBalancePaidOff).to.be.bignumber.equals(bigVal(expected.additionalBalancePaidOff));
+      expect(result.balanceRemaining).to.be.bignumber.equals(bigVal(expected.balanceRemaining));
+      expect(result.paymentRemaining).to.be.bignumber.equals(bigVal(expected.paymentRemaining));
+    });
+  });
 })

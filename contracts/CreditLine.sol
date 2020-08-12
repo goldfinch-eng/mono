@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.6.12;
+pragma solidity ^0.6.8;
 
 import './Pool.sol';
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@nomiclabs/buidler/console.sol";
 
 // TODO: This should be upgradable!
 contract CreditLine is Ownable {
+  // Credit line terms
   address public borrower;
   uint public collateral;
   uint public limit;
@@ -14,6 +16,8 @@ contract CreditLine is Ownable {
   uint public minCollateralPercent;
   uint public paymentPeriodInDays;
   uint public termInDays;
+
+  // Accounting variables
   uint public balance;
   uint public interestOwed;
   uint public principalOwed;
@@ -44,8 +48,8 @@ contract CreditLine is Ownable {
     return termEndBlock = newTermEndBlock;
   }
 
-  function setBalance(uint newBalance) external onlyOwner returns (uint) {
-    return balance = newBalance;
+  function setBalance(uint newBalance) external onlyOwner {
+    balance = newBalance;
   }
 
   function setInterestOwed(uint newInterestOwed) external onlyOwner returns (uint) {

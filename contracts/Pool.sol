@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.6.12;
+pragma solidity ^0.6.8;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
+import "@nomiclabs/buidler/console.sol";
 
 contract Pool is Ownable {
   using SafeMath for uint256;
@@ -37,6 +38,15 @@ contract Pool is Ownable {
 
     // Send the amount to the address
     Address.sendValue(msg.sender, amount);
+  }
+
+  function receiveInterestRepayment() external payable onlyOwner {
+    uint increment = msg.value.mul(mantissa).div(totalShares);
+    sharePrice = sharePrice + increment;
+  }
+
+  function receivePrincipalRepayment() external payable onlyOwner {
+    // Purposefully does nothing. No share price updates.
   }
 
   function transferFunds(address payable recipient, uint amount) public payable onlyOwner returns (bool) {

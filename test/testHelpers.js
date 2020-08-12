@@ -4,7 +4,9 @@ const expect = chai.expect
 const mochaEach = require('mocha-each');
 const BN = require('bn.js');
 const decimals = new BN(String(1e18));
+chai.use(require('chai-bn')(BN));
 
+// Helper functions. These should be pretty generic.
 const bigVal = (number) => {
   return new BN(number).mul(decimals);
 }
