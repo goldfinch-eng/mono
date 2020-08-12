@@ -1,5 +1,5 @@
-echo "I'm running the pre-commit hook!"
-# pre-commit.sh
+#!/bin/sh
+pre-commit.sh
 STASH_NAME="pre-commit-$(date +%s)"
 git stash save -q --keep-index $STASH_NAME
 
@@ -8,9 +8,7 @@ FILES_PATTERN='\test.(js)(\..+)?$'
 FORBIDDEN='.only'
 git diff --cached --name-only | \
     grep -E $FILES_PATTERN | \
-    GREP_COLOR='4;5;37;41' xargs grep --color --with-filename -n $FORBIDDEN \
-    && echo 'COMMIT REJECTED Found "$FORBIDDEN" references. Please remove them before commiting' \
-    && exit 1
+    GREP_COLOR='4;5;37;41' xargs grep --color --with-filename -n $FORBIDDEN && echo 'COMMIT REJECTED Found "$FORBIDDEN" references. Please remove them before commiting' && exit 1
 
 STASHES=$(git stash list)
 if [[ $STASHES == "$STASH_NAME" ]]; then

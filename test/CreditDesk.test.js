@@ -292,7 +292,7 @@ describe("CreditDesk", () => {
         expect(delta).to.be.bignumber.equal(bigVal(6));
       });
 
-      it.only("should increase the share price of the pool only based on the paid interest (not principal)", async() => {
+      it("should increase the share price of the pool only based on the paid interest (not principal)", async() => {
         var originalSharePrice = await pool.sharePrice();
         var originalTotalShares = await pool.totalShares();
 
@@ -310,7 +310,7 @@ describe("CreditDesk", () => {
       });
 
       describe("with extra payment left over", async () => {
-        it.only("should send the extra to the collateral of the credit line", async () => {
+        it("should send the extra to the collateral of the credit line", async () => {
           var interestAmount = 1;
           const balance = 10;
           const paymentAmount = 15;
