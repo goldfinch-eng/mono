@@ -2,7 +2,7 @@
 
 pragma solidity ^0.6.8;
 
-import './Pool.sol';
+import "./Pool.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 // TODO: This should be upgradable!
@@ -47,6 +47,10 @@ contract CreditLine is Ownable {
     return termEndBlock = newTermEndBlock;
   }
 
+  function setNextDueBlock(uint newNextDueBlock) external onlyOwner returns (uint) {
+    return nextDueBlock = newNextDueBlock;
+  }
+
   function setBalance(uint newBalance) external onlyOwner returns(uint) {
     return balance = newBalance;
   }
@@ -59,8 +63,22 @@ contract CreditLine is Ownable {
     return principalOwed = newPrincipalOwed;
   }
 
+  function setPrepaymentBalance(uint newPrepaymentBalance) external onlyOwner returns (uint) {
+    return prepaymentBalance = newPrepaymentBalance;
+  }
+
   function setLastUpdatedBlock(uint newLastUpdatedBlock) external onlyOwner returns (uint) {
     return lastUpdatedBlock = newLastUpdatedBlock;
+  }
+
+  function sendInterestToPool(uint interestPayment, address payable poolAddress) external onlyOwner returns(uint) {
+    Pool(poolAddress).receiveInterestRepayment{value: interestPayment}();
+    return interestPayment;
+  }
+
+  function sendPrincipalToPool(uint principalPayment, address payable poolAddress) external onlyOwner returns(uint) {
+    Pool(poolAddress).receivePrincipalRepayment{value: principalPayment}();
+    return principalPayment;
   }
 
   function receiveCollateral() external payable onlyOwner returns (uint) {

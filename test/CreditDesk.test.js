@@ -9,6 +9,7 @@ const CreditDesk = artifacts.require('TestCreditDesk');
 const CreditLine = artifacts.require('CreditLine');
 const Pool = artifacts.require('TestPool');
 let creditDesk;
+const tolerance = bigVal(1).div(new BN(10)); // 1e17 as a BN;
 
 describe("CreditDesk", () => {
   let underwriterLimit;
@@ -28,6 +29,36 @@ describe("CreditDesk", () => {
     _paymentPeriodInDays = _paymentPeriodInDays || paymentPeriodInDays;
     _termInDays = _termInDays || termInDays;
     await creditDesk.createCreditLine(_borrower, _limit, _interestApr, _minCollateralPercent, _paymentPeriodInDays,_termInDays, {from: underwriter});
+  }
+
+  // This factory function is here because in order to call the `setX` functions
+  // which allow us to setup state to test specific scenarios, we have to call them from
+  // the "owner" of the creditLine, which would normally be the credit desk.
+  // The issue is we can't directly send transactions from the creditDesk because
+  // web3 doesn't know about that account, and the account isn't "unlocked".
+  // So instead we use this sort-of-hack, where we deploy a separate creditLine from the
+  // 'owner', and transfer ownership to the creditDesk, where we can then call external methods
+  // that manipulate this creditLine.
+  let createAndSetCreditLineAttributes = async (balance, interestOwed, principalOwed, prepaymentBalance = 0, nextDueBlock) => {
+    // 1000 is pretty high for test environments, and generally shouldn't be hit.
+    nextDueBlock = nextDueBlock || 1000;
+    const termInDays = 360;
+    const termInBlocks = (await creditDesk.blocksPerDay()).mul(new BN(termInDays));
+    const termEndBlock = (await time.latestBlock()).add(termInBlocks);
+
+    creditLine = await CreditLine.new(borrower, bigVal(500), bigVal(3), 5, 10, termInDays, {from: owner});
+
+    await Promise.all([
+      creditLine.setBalance(bigVal(balance), {from: owner}),
+      creditLine.setInterestOwed(bigVal(interestOwed), {from: owner}),
+      creditLine.setPrincipalOwed(bigVal(principalOwed), {from: owner}),
+      creditLine.receivePrepayment({from: owner, value: String(bigVal(prepaymentBalance))}),
+      creditLine.setNextDueBlock(nextDueBlock, {from: owner}),
+      creditLine.setTermEndBlock(termEndBlock, {from: owner}),
+      creditLine.transferOwnership(creditDesk.address, {from: owner}),
+    ]);
+
+    return creditLine;
   }
 
   let initializeCreditDeskWithCreditLine = async (underwriter, borrower) => {
@@ -172,6 +203,17 @@ describe("CreditDesk", () => {
       expect((await creditLine.termEndBlock()).eq(expectedTermEndBlock)).to.be.true;
     });
 
+    it('should set the nextDueAt correctly', async () => {
+      expect((await creditLine.nextDueBlock()).eq(new BN(0))).to.be.true;
+
+      await drawdown(bigVal(10), creditLine.address);
+      currentBlock = await time.latestBlock();
+      const blockLength = new BN(paymentPeriodInDays).mul(new BN(blocksPerDay));
+
+      const expectedNextDueBlock = currentBlock.add(blockLength);
+      expect((await creditLine.nextDueBlock())).to.bignumber.equal(expectedNextDueBlock);
+    });
+
     it.skip('should fail and not change accounting values if the pool has insufficient funds', async () => {
 
     });
@@ -254,36 +296,27 @@ describe("CreditDesk", () => {
 
   describe("payment", async () => {
     describe("with an outstanding credit line", async () => {
-      let creditLine;
-      let createAndSetCreditLineAttributes = async (balance, interestOwed, principalOwed, ) => {
-        creditLine = await CreditLine.new(borrower, bigVal(500), bigVal(3), 5, 10, 360, {from: owner});
-        await creditLine.setBalance(bigVal(balance), {from: owner});
-        await creditLine.setInterestOwed(bigVal(interestOwed), {from: owner});
-        await creditLine.setPrincipalOwed(bigVal(principalOwed), {from: owner});
-        await creditLine.transferOwnership(creditDesk.address, {from: owner});
-      }
       beforeEach(async () => {
-        underwriter = person2;
         borrower = person3;
       });
 
       it("should pay off interest first", async () => {
-        await createAndSetCreditLineAttributes(10, 5, 3);
+        const creditLine = await createAndSetCreditLineAttributes(10, 5, 3);
         const paymentAmount = 6;
         await creditDesk.pay(creditLine.address, {from: borrower, value: String(bigVal(paymentAmount))});
 
         // We use closeTo because several blocks may have passed between creating the creditLine and
         // making the payment, which accrues a very small amount of interest and principal. Also note
         // that 1e14 is actually a very small tolerance, since we use 1e18 as our decimals
-        expect(await creditLine.interestOwed()).to.be.bignumber.closeTo(bigVal(0), new BN(1e14));
-        expect(await creditLine.principalOwed()).to.be.bignumber.closeTo(bigVal(2), new BN(1e14));
-        expect(await creditLine.balance()).to.be.bignumber.closeTo(bigVal(9), new BN(1e14));
+        expect(await creditLine.interestOwed()).to.be.bignumber.closeTo(bigVal(0), tolerance);
+        expect(await creditLine.principalOwed()).to.be.bignumber.closeTo(bigVal(2), tolerance);
+        expect(await creditLine.balance()).to.be.bignumber.closeTo(bigVal(9), tolerance);
       });
 
       it("should send the payment to the pool", async() => {
         var originalPoolBalance = await getBalance(pool.address);
 
-        await createAndSetCreditLineAttributes(10, 5, 3);
+        const creditLine = await createAndSetCreditLineAttributes(10, 5, 3);
         const paymentAmount = 6;
         await creditDesk.pay(creditLine.address, {from: borrower, value: String(bigVal(paymentAmount))});
 
@@ -305,8 +338,8 @@ describe("CreditDesk", () => {
         var delta = newSharePrice.sub(originalSharePrice);
         var expectedDelta = bigVal(interestAmount).mul(decimals).div(originalTotalShares)
 
-        expect(delta).to.bignumber.closeTo(expectedDelta, new BN(1e14));
-        expect(newSharePrice).to.bignumber.closeTo(originalSharePrice.add(expectedDelta), new BN(1e14));
+        expect(delta).to.bignumber.closeTo(expectedDelta, tolerance);
+        expect(newSharePrice).to.bignumber.closeTo(originalSharePrice.add(expectedDelta), tolerance);
       });
 
       describe("with extra payment left over", async () => {
@@ -318,7 +351,7 @@ describe("CreditDesk", () => {
           await creditDesk.pay(creditLine.address, {from: borrower, value: String(bigVal(paymentAmount))});
 
           const expected = bigVal(paymentAmount).sub(bigVal(interestAmount)).sub(bigVal(balance));
-          expect(await creditLine.collateralBalance()).to.bignumber.closeTo(expected, new BN(1e14));
+          expect(await creditLine.collateralBalance()).to.bignumber.closeTo(expected, tolerance);
         });
       });
     });
@@ -327,20 +360,97 @@ describe("CreditDesk", () => {
   describe("allocatePayment", async() => {
     const tests = [
       // payment, balance, totalInterestOwed, totalPrincipalOwed, expectedResults
-      [10, 40, 10, 20, {interestPaidOff: 10, principalPaidOff: 0, balanceRemaining: 40, paymentRemaining: 0}],
-      [5, 40, 10, 20, {interestPaidOff: 5, principalPaidOff: 0, balanceRemaining: 40, paymentRemaining: 0}],
-      [15, 40, 10, 20, {interestPaidOff: 10, principalPaidOff: 5, balanceRemaining: 35, paymentRemaining: 0}],
-      [35, 40, 10, 20, {interestPaidOff: 10, principalPaidOff: 20, balanceRemaining: 15, paymentRemaining: 0}],
-      [55, 40, 10, 20, {interestPaidOff: 10, principalPaidOff: 20,  balanceRemaining: 0, paymentRemaining: 5}],
-      [0, 40, 10, 20, {interestPaidOff: 0, principalPaidOff: 0, balanceRemaining: 40, paymentRemaining: 0}],
+      [10, 40, 10, 20, {interestPayment: 10, principalPayment: 0, additionalBalancePayment: 0}],
+      [5, 40, 10, 20, {interestPayment: 5, principalPayment: 0, additionalBalancePayment: 0}],
+      [15, 40, 10, 20, {interestPayment: 10, principalPayment: 5, additionalBalancePayment: 0}],
+      [35, 40, 10, 20, {interestPayment: 10, principalPayment: 20, additionalBalancePayment: 5}],
+      [55, 40, 10, 20, {interestPayment: 10, principalPayment: 20,  additionalBalancePayment: 20}],
+      [0, 40, 10, 20, {interestPayment: 0, principalPayment: 0, additionalBalancePayment: 0}],
     ]
     mochaEach(tests).it("should calculate things correctly!", async(paymentAmount, balance, totalInterestOwed, totalPrincipalOwed, expected) => {
       var result = await creditDesk._allocatePayment(bigVal(paymentAmount), bigVal(balance), bigVal(totalInterestOwed), bigVal(totalPrincipalOwed));
 
-      expect(result.interestPaidOff).to.be.bignumber.equals(bigVal(expected.interestPaidOff));
-      expect(result.principalPaidOff).to.be.bignumber.equals(bigVal(expected.principalPaidOff));
-      expect(result.balanceRemaining).to.be.bignumber.equals(bigVal(expected.balanceRemaining));
-      expect(result.paymentRemaining).to.be.bignumber.equals(bigVal(expected.paymentRemaining));
+      expect(result.interestPayment).to.be.bignumber.equals(bigVal(expected.interestPayment));
+      expect(result.principalPayment).to.be.bignumber.equals(bigVal(expected.principalPayment));
+      expect(result.additionalBalancePayment).to.be.bignumber.equals(bigVal(expected.additionalBalancePayment));
+    });
+  });
+
+  describe("assessCreditLine", async () => {
+    let latestBlock;
+    beforeEach(async () => {
+      borrower = person3;
+      latestBlock = await time.latestBlock();
+    });
+    describe("when there is exactly enough prepaymentBalance", async() => {
+      it("should successfully process the payment and correctly update all attributes", async () => {
+        const prepaymentBalance = 8;
+        const interestOwed = 5;
+        var creditLine = await createAndSetCreditLineAttributes(10, interestOwed, 3, prepaymentBalance, latestBlock);
+        const originalPoolBalance = await getBalance(pool.address);
+
+        await creditDesk.assessCreditLine(creditLine.address);
+
+        const newPoolBalance = await getBalance(pool.address);
+        const expectedNextDueBlock = (await creditLine.paymentPeriodInDays()).mul(await creditDesk.blocksPerDay()).add(latestBlock);
+
+        expect(await creditLine.prepaymentBalance()).to.bignumber.equal("0");
+        expect(await creditLine.interestOwed()).to.bignumber.equal("0");
+        expect(await creditLine.principalOwed()).to.bignumber.equal("0");
+        const actualNextDueBlock = await creditLine.nextDueBlock();
+        expect(actualNextDueBlock).to.bignumber.closeTo(expectedNextDueBlock, actualNextDueBlock.div(new BN(100))); // 1% tolerance;
+        expect(newPoolBalance.sub(originalPoolBalance)).to.bignumber.equal(bigVal(8));
+      });
+
+      it("should only increase the share price from interest paid", async () => {
+        const prepaymentBalance = 8;
+        const interestOwed = 5;
+        const originalSharePrice = await pool.sharePrice();
+        var creditLine = await createAndSetCreditLineAttributes(10, interestOwed, 3, prepaymentBalance, latestBlock);
+
+        await creditDesk.assessCreditLine(creditLine.address);
+
+        const newSharePrice = await pool.sharePrice();
+        const expectedSharePrice = bigVal(interestOwed).mul(decimals).div((await pool.totalShares())).add(originalSharePrice);
+        expect(newSharePrice).to.bignumber.equal(expectedSharePrice);
+      });
+    });
+
+    describe("when there is only enough to pay interest", async () => {
+      it("should pay interest first", async() => {
+        const prepaymentBalance = 5;
+        const interestOwed = 5;
+        const principalOwed = 3;
+        var creditLine = await createAndSetCreditLineAttributes(10, interestOwed, principalOwed, prepaymentBalance, await time.latestBlock());
+        const originalPoolBalance = await getBalance(pool.address);
+        const originalSharePrice = await pool.sharePrice();
+
+        await creditDesk.assessCreditLine(creditLine.address);
+
+        const newPoolBalance = await getBalance(pool.address);
+
+        expect(await creditLine.prepaymentBalance()).to.bignumber.equal("0");
+        expect(await creditLine.interestOwed()).to.bignumber.equal("0");
+        expect(await creditLine.principalOwed()).to.bignumber.equal(bigVal(principalOwed));
+        expect(await pool.sharePrice()).to.bignumber.gt(originalSharePrice);
+        expect(newPoolBalance.sub(originalPoolBalance)).to.bignumber.equal(bigVal(interestOwed));
+      });
+    });
+
+    describe("when there is more prepayment than total amount owed", async () => {
+      it("should retain any extra as prepayment balance", async() => {
+        const prepaymentBalance = 10;
+        const interestOwed = 5;
+        const principalOwed = 3;
+        var creditLine = await createAndSetCreditLineAttributes(10, interestOwed, principalOwed, prepaymentBalance, await time.latestBlock());
+
+        await creditDesk.assessCreditLine(creditLine.address);
+
+        const expectedPrepaymentBalance = bigVal(prepaymentBalance).sub(bigVal(interestOwed)).sub(bigVal(principalOwed));
+        expect(await creditLine.prepaymentBalance()).to.bignumber.equal(expectedPrepaymentBalance);
+        expect(await creditLine.interestOwed()).to.bignumber.equal("0");
+        expect(await creditLine.principalOwed()).to.bignumber.equal(bigVal("0"));
+      });
     });
   });
 })
