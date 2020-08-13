@@ -85,9 +85,11 @@ contract CreditDesk is Ownable {
       return;
     }
 
-    uint paymentRemaining = handlePayment(cl, cl.prepaymentBalance(), cl.nextDueBlock(), false);
+    (uint paymentRemaining, uint interestPayment, uint principalPayment) = handlePayment(cl, cl.prepaymentBalance(), cl.nextDueBlock(), false);
 
     cl.setPrepaymentBalance(paymentRemaining);
+    cl.sendInterestToPool(interestPayment, payable(poolAddress));
+    cl.sendPrincipalToPool(principalPayment, payable(poolAddress));
     cl.setNextDueBlock(calculateNextDueBlock(cl));
     if (cl.principalOwed() > 0) {
       handleLatePayments(cl);
@@ -97,15 +99,13 @@ contract CreditDesk is Ownable {
   function pay(address creditLineAddress) external payable {
     CreditLine cl = CreditLine(creditLineAddress);
 
-    uint paymentRemaining = handlePayment(cl, msg.value, block.number, true);
+    (uint paymentRemaining, uint interestPayment, uint principalPayment) = handlePayment(cl, msg.value, block.number, true);
 
     if (paymentRemaining > 0 && paymentRemaining <= msg.value) {
       cl.receiveCollateral{value: paymentRemaining}();
     }
-  }
 
-  function sendPaymentToPool(uint interestPayment, uint principalPayment) public payable {
-    require(interestPayment.add(principalPayment) <= msg.value);
+    require(interestPayment.add(principalPayment) <= msg.value, "Can't send more money to pool than what was paid. Some calculation must have been wrong");
     Pool(poolAddress).receivePrincipalRepayment{value: principalPayment}();
     Pool(poolAddress).receiveInterestRepayment{value: interestPayment}();
   }
@@ -114,12 +114,10 @@ contract CreditDesk is Ownable {
    * Internal Functions
   */
 
-  function handlePayment(CreditLine cl, uint paymentAmount, uint asOfBlock, bool allowFullBalancePayOff) internal returns (uint) {
+  function handlePayment(CreditLine cl, uint paymentAmount, uint asOfBlock, bool allowFullBalancePayOff) internal returns (uint, uint, uint) {
     (uint interestOwed, uint principalOwed) = getInterestAndPrincipalOwedAsOf(cl, asOfBlock);
-    PaymentAllocation memory pa = allocatePayment(msg.value, cl.balance(), interestOwed, principalOwed);
+    PaymentAllocation memory pa = allocatePayment(paymentAmount, cl.balance(), interestOwed, principalOwed);
 
-    uint newInterestOwed = interestOwed.sub(pa.interestPayment);
-    uint newPrincipalOwed = principalOwed.sub(pa.principalPayment);
     uint newBalance = cl.balance().sub(pa.principalPayment);
     if (allowFullBalancePayOff) {
       newBalance = newBalance.sub(pa.additionalBalancePayment);
@@ -127,9 +125,8 @@ contract CreditDesk is Ownable {
     uint totalPrincipalPayment = cl.balance().sub(newBalance);
     uint paymentRemaining = paymentAmount.sub(pa.interestPayment).sub(totalPrincipalPayment);
 
-    sendPaymentToPool(pa.interestPayment, totalPrincipalPayment);
-    updateCreditLineAccounting(cl, newBalance, newInterestOwed, newPrincipalOwed);
-    return paymentRemaining;
+    updateCreditLineAccounting(cl, newBalance, interestOwed.sub(pa.interestPayment), principalOwed.sub(pa.principalPayment));
+    return (paymentRemaining, pa.interestPayment, totalPrincipalPayment);
   }
 
   function handleLatePayments(CreditLine cl) internal {
@@ -154,16 +151,28 @@ contract CreditDesk is Ownable {
 
   function calculatePrincipalAccrued(CreditLine cl, uint periodPayment, uint interestAccrued, uint blockNumber) internal view returns(uint) {
     uint blocksPerPaymentPeriod = blocksPerDay * cl.paymentPeriodInDays();
-    uint numBlocksElapsed = blockNumber.sub(cl.lastUpdatedBlock());
+    // Math.min guards against overflow. See comment in the calculateInterestAccrued for further explanation.
+    uint lastUpdatedBlock = Math.min(blockNumber, cl.lastUpdatedBlock());
+    uint numBlocksElapsed = blockNumber.sub(lastUpdatedBlock);
     int128 fractionOfPeriod = FPMath.divi(int256(numBlocksElapsed), int256(blocksPerPaymentPeriod));
     uint periodPaymentFraction = uint(FPMath.muli(fractionOfPeriod, int256(periodPayment)));
     return periodPaymentFraction.sub(interestAccrued);
   }
 
   function calculateInterestAccrued(CreditLine cl, uint blockNumber) internal view returns(uint) {
-    uint numBlocksElapsed = blockNumber.sub(cl.lastUpdatedBlock());
+    // We use Math.min here to prevent integer overflow (ie. go negative) when calculating
+    // numBlocksElapsed. Typically this shouldn't be possible, because
+    // the lastUpdatedBlock couldn't be *before* the current blockNumber. However, when assessing
+    // we allow this function to be called with a past block number, which raises the possibility
+    // of overflow.
+    // This use of min should not generate incorrect interest calculations, since
+    // this functions purpose is just to normalize balances, and  will be called any time
+    // a balance affecting action takes place (eg. drawdown, repayment, assessment)
+    uint lastUpdatedBlock = Math.min(blockNumber, cl.lastUpdatedBlock());
+
+    uint numBlocksElapsed = blockNumber.sub(lastUpdatedBlock);
     uint totalInterestPerYear = (cl.balance().mul(cl.interestApr())).div(interestDecimals);
-    return totalInterestPerYear * numBlocksElapsed / blocksPerYear;
+    return totalInterestPerYear.mul(numBlocksElapsed).div(blocksPerYear);
   }
 
   function calculateAnnuityPayment(uint balance, uint interestApr, uint termInDays, uint paymentPeriodInDays) internal pure returns(uint) {
@@ -238,7 +247,7 @@ contract CreditDesk is Ownable {
     // period later than the current nextDueBlock.
     uint blockForCalculation = Math.min(block.number, cl.nextDueBlock());
     uint blocksPerPeriod = cl.paymentPeriodInDays().mul(blocksPerDay);
-    uint blocksElapsed = startingBlock.sub(blockForCalculation);
+    uint blocksElapsed = blockForCalculation.sub(startingBlock);
 
     return blocksElapsed.div(blocksPerPeriod).add(1).mul(blocksPerPeriod);
   }

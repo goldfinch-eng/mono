@@ -39,12 +39,12 @@ contract Pool is Ownable {
     _transferFunds(msg.sender, amount);
   }
 
-  function receiveInterestRepayment() external payable onlyOwner {
+  function receiveInterestRepayment() external payable {
     uint increment = msg.value.mul(mantissa).div(totalShares);
     sharePrice = sharePrice + increment;
   }
 
-  function receivePrincipalRepayment() external payable onlyOwner {
+  function receivePrincipalRepayment() external payable {
     // Purposefully does nothing. No share price updates.
   }
 
