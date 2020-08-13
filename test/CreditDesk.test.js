@@ -1,7 +1,6 @@
 const {chai, expect, decimals, BN, bigVal, mochaEach, getBalance } = require('./testHelpers.js');
 const { time } = require('@openzeppelin/test-helpers');
 const { before } = require('mocha');
-const { latestBlock } = require('@openzeppelin/test-helpers/src/time');
 let accounts;
 let owner
 let person2
