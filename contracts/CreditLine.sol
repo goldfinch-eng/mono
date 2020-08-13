@@ -47,6 +47,10 @@ contract CreditLine is Ownable {
     return termEndBlock = newTermEndBlock;
   }
 
+  function setNextDueBlock(uint newNextDueBlock) external onlyOwner returns (uint) {
+    return nextDueBlock = newNextDueBlock;
+  }
+
   function setBalance(uint newBalance) external onlyOwner returns(uint) {
     return balance = newBalance;
   }
@@ -57,6 +61,10 @@ contract CreditLine is Ownable {
 
   function setPrincipalOwed(uint newPrincipalOwed) external onlyOwner returns (uint) {
     return principalOwed = newPrincipalOwed;
+  }
+
+  function setPrepaymentBalance(uint newPrepaymentBalance) external onlyOwner returns (uint) {
+    return prepaymentBalance = newPrepaymentBalance;
   }
 
   function setLastUpdatedBlock(uint newLastUpdatedBlock) external onlyOwner returns (uint) {

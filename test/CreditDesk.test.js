@@ -327,20 +327,19 @@ describe("CreditDesk", () => {
   describe("allocatePayment", async() => {
     const tests = [
       // payment, balance, totalInterestOwed, totalPrincipalOwed, expectedResults
-      [10, 40, 10, 20, {interestPaidOff: 10, principalPaidOff: 0, balanceRemaining: 40, paymentRemaining: 0}],
-      [5, 40, 10, 20, {interestPaidOff: 5, principalPaidOff: 0, balanceRemaining: 40, paymentRemaining: 0}],
-      [15, 40, 10, 20, {interestPaidOff: 10, principalPaidOff: 5, balanceRemaining: 35, paymentRemaining: 0}],
-      [35, 40, 10, 20, {interestPaidOff: 10, principalPaidOff: 20, balanceRemaining: 15, paymentRemaining: 0}],
-      [55, 40, 10, 20, {interestPaidOff: 10, principalPaidOff: 20,  balanceRemaining: 0, paymentRemaining: 5}],
-      [0, 40, 10, 20, {interestPaidOff: 0, principalPaidOff: 0, balanceRemaining: 40, paymentRemaining: 0}],
+      [10, 40, 10, 20, {interestPayment: 10, principalPayment: 0, additionalBalancePayment: 0}],
+      [5, 40, 10, 20, {interestPayment: 5, principalPayment: 0, additionalBalancePayment: 0}],
+      [15, 40, 10, 20, {interestPayment: 10, principalPayment: 5, additionalBalancePayment: 0}],
+      [35, 40, 10, 20, {interestPayment: 10, principalPayment: 20, additionalBalancePayment: 5}],
+      [55, 40, 10, 20, {interestPayment: 10, principalPayment: 20,  additionalBalancePayment: 20}],
+      [0, 40, 10, 20, {interestPayment: 0, principalPayment: 0, additionalBalancePayment: 0}],
     ]
     mochaEach(tests).it("should calculate things correctly!", async(paymentAmount, balance, totalInterestOwed, totalPrincipalOwed, expected) => {
       var result = await creditDesk._allocatePayment(bigVal(paymentAmount), bigVal(balance), bigVal(totalInterestOwed), bigVal(totalPrincipalOwed));
 
-      expect(result.interestPaidOff).to.be.bignumber.equals(bigVal(expected.interestPaidOff));
-      expect(result.principalPaidOff).to.be.bignumber.equals(bigVal(expected.principalPaidOff));
-      expect(result.balanceRemaining).to.be.bignumber.equals(bigVal(expected.balanceRemaining));
-      expect(result.paymentRemaining).to.be.bignumber.equals(bigVal(expected.paymentRemaining));
+      expect(result.interestPayment).to.be.bignumber.equals(bigVal(expected.interestPayment));
+      expect(result.principalPayment).to.be.bignumber.equals(bigVal(expected.principalPayment));
+      expect(result.additionalBalancePayment).to.be.bignumber.equals(bigVal(expected.additionalBalancePayment));
     });
   });
 })
