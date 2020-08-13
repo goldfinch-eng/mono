@@ -100,7 +100,6 @@ contract CreditDesk is Ownable {
     CreditLine cl = CreditLine(creditLineAddress);
 
     (uint paymentRemaining, uint interestPayment, uint principalPayment) = handlePayment(cl, msg.value, block.number, true);
-    require(paymentRemaining.add(interestPayment).add(principalPayment) <= msg.value, "Calculations for handlePayment must be wrong. Sum of amounts returned are greater than msg.value");
     if (paymentRemaining > 0) {
       cl.receiveCollateral{value: paymentRemaining}();
     }
@@ -128,6 +127,9 @@ contract CreditDesk is Ownable {
     uint paymentRemaining = paymentAmount.sub(pa.interestPayment).sub(totalPrincipalPayment);
 
     updateCreditLineAccounting(cl, newBalance, interestOwed.sub(pa.interestPayment), principalOwed.sub(pa.principalPayment));
+
+    require(paymentRemaining.add(pa.interestPayment).add(totalPrincipalPayment) == paymentAmount, "Calculations must be wrong. Sum of amounts returned do not equal paymentAmount");
+
     return (paymentRemaining, pa.interestPayment, totalPrincipalPayment);
   }
 

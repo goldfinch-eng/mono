@@ -436,5 +436,21 @@ describe("CreditDesk", () => {
         expect(newPoolBalance.sub(originalPoolBalance)).to.bignumber.equal(bigVal(interestOwed));
       });
     });
+
+    describe("when there is more prepayment than total amount owed", async () => {
+      it("should retain any extra as prepayment balance", async() => {
+        const prepaymentBalance = 10;
+        const interestOwed = 5;
+        const principalOwed = 3;
+        var creditLine = await createAndSetCreditLineAttributes(10, interestOwed, principalOwed, prepaymentBalance, await time.latestBlock());
+
+        await creditDesk.assessCreditLine(creditLine.address);
+
+        const expectedPrepaymentBalance = bigVal(prepaymentBalance).sub(bigVal(interestOwed)).sub(bigVal(principalOwed));
+        expect(await creditLine.prepaymentBalance()).to.bignumber.equal(expectedPrepaymentBalance);
+        expect(await creditLine.interestOwed()).to.bignumber.equal("0");
+        expect(await creditLine.principalOwed()).to.bignumber.equal(bigVal("0"));
+      });
+    });
   });
 })
