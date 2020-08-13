@@ -60,10 +60,10 @@ contract CreditDesk is Ownable {
     require(amountWithinLimit(amount, cl), "The borrower does not have enough credit limit for this drawdown");
 
     if (cl.balance() == 0) {
-      uint newTermEndBlock = block.number.add(blocksPerDay.mul(cl.termInDays()));
-      cl.setTermEndBlock(newTermEndBlock);
+      cl.setTermEndBlock(calculateNewTermEndBlock(cl));
+      cl.setNextDueBlock(calculateNextDueBlock(cl));
     }
-    (uint interestOwed, uint principalOwed) = getLatestInterestAndPrincipalOwed(cl);
+    (uint interestOwed, uint principalOwed) = getInterestAndPrincipalOwedAsOf(cl, block.number);
     uint balance = cl.balance().add(amount);
 
     updateCreditLineAccounting(cl, balance, interestOwed, principalOwed);
@@ -100,14 +100,16 @@ contract CreditDesk is Ownable {
     CreditLine cl = CreditLine(creditLineAddress);
 
     (uint paymentRemaining, uint interestPayment, uint principalPayment) = handlePayment(cl, msg.value, block.number, true);
-
-    if (paymentRemaining > 0 && paymentRemaining <= msg.value) {
+    require(paymentRemaining.add(interestPayment).add(principalPayment) <= msg.value, "Calculations for handlePayment must be wrong. Sum of amounts returned are greater than msg.value");
+    if (paymentRemaining > 0) {
       cl.receiveCollateral{value: paymentRemaining}();
     }
-
-    require(interestPayment.add(principalPayment) <= msg.value, "Can't send more money to pool than what was paid. Some calculation must have been wrong");
-    Pool(poolAddress).receivePrincipalRepayment{value: principalPayment}();
-    Pool(poolAddress).receiveInterestRepayment{value: interestPayment}();
+    if (interestPayment > 0) {
+      Pool(poolAddress).receiveInterestRepayment{value: interestPayment}();
+    }
+    if (principalPayment > 0) {
+      Pool(poolAddress).receivePrincipalRepayment{value: principalPayment}();
+    }
   }
 
   /*
@@ -131,10 +133,6 @@ contract CreditDesk is Ownable {
 
   function handleLatePayments(CreditLine cl) internal {
     // No op for now;
-  }
-
-  function getLatestInterestAndPrincipalOwed(CreditLine cl) internal view returns (uint, uint) {
-    return getInterestAndPrincipalOwedAsOf(cl, block.number);
   }
 
   function getInterestAndPrincipalOwedAsOf(CreditLine cl, uint blockNumber) internal view returns (uint, uint) {
@@ -162,7 +160,7 @@ contract CreditDesk is Ownable {
   function calculateInterestAccrued(CreditLine cl, uint blockNumber) internal view returns(uint) {
     // We use Math.min here to prevent integer overflow (ie. go negative) when calculating
     // numBlocksElapsed. Typically this shouldn't be possible, because
-    // the lastUpdatedBlock couldn't be *before* the current blockNumber. However, when assessing
+    // the lastUpdatedBlock couldn't be *after* the current blockNumber. However, when assessing
     // we allow this function to be called with a past block number, which raises the possibility
     // of overflow.
     // This use of min should not generate incorrect interest calculations, since
@@ -240,16 +238,19 @@ contract CreditDesk is Ownable {
     });
   }
 
-  function calculateNextDueBlock(CreditLine cl) internal view returns (uint) {
-    uint startingBlock = cl.termEndBlock().sub(cl.termInDays().mul(blocksPerDay));
-    // If for some reason we call this in the middle of a period, or
-    // after multiple periods have passed, we still only want to return one
-    // period later than the current nextDueBlock.
-    uint blockForCalculation = Math.min(block.number, cl.nextDueBlock());
-    uint blocksPerPeriod = cl.paymentPeriodInDays().mul(blocksPerDay);
-    uint blocksElapsed = blockForCalculation.sub(startingBlock);
+  function calculateNewTermEndBlock(CreditLine cl) internal view returns (uint) {
+    return block.number.add(blocksPerDay.mul(cl.termInDays()));
+  }
 
-    return blocksElapsed.div(blocksPerPeriod).add(1).mul(blocksPerPeriod);
+  function calculateNextDueBlock(CreditLine cl) internal view returns (uint) {
+    uint blocksPerPeriod = cl.paymentPeriodInDays().mul(blocksPerDay);
+    uint currentNextDueBlock;
+    if (cl.nextDueBlock() != 0) {
+      currentNextDueBlock = cl.nextDueBlock();
+    } else {
+      currentNextDueBlock = block.number;
+    }
+    return currentNextDueBlock.add(blocksPerPeriod);
   }
 
   function underwriterCanCreateThisCreditLine(uint newAmount, Underwriter storage underwriter) internal view returns(bool) {

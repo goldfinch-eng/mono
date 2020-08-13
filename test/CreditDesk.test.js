@@ -204,6 +204,17 @@ describe("CreditDesk", () => {
       expect((await creditLine.termEndBlock()).eq(expectedTermEndBlock)).to.be.true;
     });
 
+    it('should set the nextDueAt correctly', async () => {
+      expect((await creditLine.nextDueBlock()).eq(new BN(0))).to.be.true;
+
+      await drawdown(bigVal(10), creditLine.address);
+      currentBlock = await time.latestBlock();
+      const blockLength = new BN(paymentPeriodInDays).mul(new BN(blocksPerDay));
+
+      const expectedNextDueBlock = currentBlock.add(blockLength);
+      expect((await creditLine.nextDueBlock())).to.bignumber.equal(expectedNextDueBlock);
+    });
+
     it.skip('should fail and not change accounting values if the pool has insufficient funds', async () => {
 
     });
