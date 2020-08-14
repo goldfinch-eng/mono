@@ -27,6 +27,10 @@ export default function Web3Info(props) {
     }
   };
 
+  // const contractName = async(address) => {
+  //   web3Context
+  // }
+
   const { networkId, networkName, accounts, providerName } = web3Context;
 
   return (
