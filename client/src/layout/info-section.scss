@@ -1,0 +1,32 @@
+.info-section{
+  margin: 0 auto 80px;
+  max-width: $content-max-width;
+}
+
+.info-section h2{
+  color: $purp-dark;
+  font-size: $sans-size-xs;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 0 0 18px;
+}
+
+.info-section table{
+  border-top: 1px solid $purp-xxlight;
+  width: 100%;
+}
+
+.info-section tr{
+  border-bottom: 1px solid $purp-xxlight;
+}
+
+.info-section td{
+  padding: 26px 0;
+  vertical-align: middle;
+}
+
+.info-section td.info-section-number {
+  font-variant-numeric: tabular-nums;
+  font-size: $sans-size-xl;
+  text-align: right;
+}

@@ -1,20 +1,28 @@
 // Colors
-$primary: #0a2a5a;
-$blue: #3d9af1;
-$purple: #4420d8;
-$purple-aux: #917dff;
-$yellow: #ffbe44;
-$pink: #ff2972;
-$white: #fff;
-$black: #000;
+$sand-xxdark: #B4ADA7;
+$sand-xdark:  #C3BEB7;
+$sand-dark:   #D6D1CC;
+$sand:        #E1DDDA;
+$sand-light:  #EDEAE7;
+$sand-xlight: #F8F6F4;
 
-// Fonts (use typography.js)
-$font-size-base: 16px;
-$font-size-h1: 3.375em;
-// $font-family-sans-serif: 'Open Sans', sans-serif;
-$line-height-base: 1.42;
+$purp-dark:    #483E5E;
+$purp:         #675B81;
+$purp-light:   #897DA3;
+$purp-xlight:  #ADA5BF;
+$purp-xxlight: #D1CCDB;
 
-// Responsive
+// Type
+$sans-size-xs:   15px;
+$sans-size-s:    18px;
+$sans-size-m:    21px;
+$sans-size-base: 24px;
+$sans-size-xl:   36px;
+$sans-size-xxl:  48px;
+
+// Width
+$content-max-width: 650px;
+
 $screen-xs: 576px;
 $screen-sm-min: 768px;
 $screen-sm-max: 992px;

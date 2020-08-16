@@ -1,0 +1,101 @@
+.form-section{
+  margin: 0 auto 80px;
+  max-width: $content-max-width;
+}
+
+.form-start{
+  margin: 0 0 30px;
+}
+
+.form-start button{
+  width: calc(50% - 15px);
+
+  &:nth-of-type(2n) {
+    margin-left: 30px;
+  }
+}
+
+.form-full{
+  background-color: $sand-light;
+  border-radius: 12px;
+  box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.03);
+  padding: 24px 24px 36px;
+  margin: 40px 0 0 -24px;
+  width: calc(100% + 48px);
+}
+
+.form-nav{
+  border-bottom: 1px solid $purp-xxlight;
+  margin: 0 0 20px;
+}
+
+.form-nav-option{
+  color: $sand-xxdark;
+  cursor: pointer;
+  display: inline-block;
+  font-size: $sans-size-s;
+  margin: 0 24px 0 0;
+  padding: 0 0 16px;
+  vertical-align: bottom;
+
+  &:hover{
+    color: $purp-light;
+  }
+
+  &.selected{
+    border-bottom: 1px solid $purp-dark;
+    color: $purp-dark;
+    cursor: auto;
+    margin: 0 0 -1px;
+  }
+}
+
+.form-nav-option.cancel{
+  float: right;
+  margin: 0;
+}
+
+.form-message{
+  font-size: $sans-size-s;
+  line-height: 1.4;
+  margin: 0 0 30px;
+}
+
+.big-number-input{
+  border-bottom: 1px solid $purp-xxlight;
+  display: inline-block;
+  font-size: $sans-size-xxl;
+  line-height: 1.2;
+  padding: 0 0 12px 34px;
+  width: calc(60% - 30px);
+
+  &:focus{
+    border-bottom: 1px solid $purp-dark;
+  }
+}
+
+.form-inputs{
+  position: relative;
+}
+
+.input-container::before{
+  content: "$";
+  font-size: $sans-size-xxl;
+  line-height: 1.2;
+  position: absolute;
+}
+
+.form-section .submit-payment{
+  position: absolute;
+  right: 0;
+  top: 6px;
+  width: 40%;
+}
+
+.form-note{
+  color: $sand-xxdark;
+  font-size: $sans-size-xs;
+  line-height: 1.2;
+  margin: 16px 0 0;
+  width: calc(60% - 30px); 
+}

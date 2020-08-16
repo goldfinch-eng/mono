@@ -1,0 +1,55 @@
+$header-height: 70px;
+$connect-button-height: 40px;
+
+.header{
+  border-bottom: 2px solid $sand-light;
+  font-size: $sans-size-s;
+  margin: 0 0 60px;
+  min-height: $header-height;
+}
+
+.header-logo{
+  left: 16px;
+  position: absolute;
+  top: 14px;
+  width: 36px;
+}
+
+.header nav{
+  margin: 0 auto;
+  max-width: $content-max-width;
+}
+
+.header nav a{
+  display: inline-block;
+  height: $header-height;
+  line-height: $header-height - 4px;
+  margin: 0 28px -2px 0;
+  vertical-align: bottom;
+
+  &:hover{
+    border-bottom: 2px solid $sand-dark;
+  }
+
+  &.selected{
+    border-bottom: 2px solid $purp-dark;
+    cursor: auto;
+    font-weight: 500;  
+  }
+}
+
+.connect-wallet {
+  background: $sand-light;
+  border-radius: 10px;
+  display: inline-block;
+  height: $connect-button-height;
+  line-height: $connect-button-height;
+  padding: 0 20px;
+  position: absolute;
+  top: ($header-height - $connect-button-height) / 2;
+  right: 20px;
+  
+  &:hover{
+    background: $sand;
+  }
+}

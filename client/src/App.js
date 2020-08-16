@@ -6,6 +6,12 @@ import Pool from './components/Pool/pool.js';
 import * as PoolContract from '../../artifacts/Pool.json';
 import styles from './App.module.scss';
 
+// page sections
+import Footer from "./components/footer";
+import Header from "./components/header";
+import Stuff from "./components/stuff";
+
+
 const infuraToken = '95202223388e49f48b423ea50a70e336';
 
 function App() {
@@ -14,7 +20,7 @@ function App() {
   console.log("Pool abi is...", PoolContract.abi);
   let web3 = new Web3(Web3.givenProvider || "ws://localhost:8545");
   console.log("Web 3 is...", web3);
-  const pool = new web3.eth.Contract(PoolContract.abi, "0x2AdAc39Ed0B1817acCB57349253AbAf7eE55560a");
+  const pool = new web3.eth.Contract(PoolContract.abi, "0xe78A0F7E598Cc8b0Bb87894B0F60dD2a88d6a8Ab");
   console.log("instantiated pool is..", pool);
   const injected = useWeb3Injected();
   const isHttp = window.location.protocol === 'http:';
@@ -25,6 +31,8 @@ function App() {
 
   return (
     <>
+      <Header />
+      <Stuff />
       <h1>Goldfinch</h1>
       <Pool instance={pool}></Pool>
       <div className={styles.App}>
@@ -32,6 +40,7 @@ function App() {
         {isHttp && <Web3Info title="Local Web3 Node" web3Context={local} />}
         {infuraToken && <Web3Info title="Infura Web3" web3Context={network} />}
       </div>
+      <Footer />
     </>
   );
 }
