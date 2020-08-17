@@ -1,17 +1,51 @@
-import React from 'react';
+import React, {Component} from 'react';
+import web3 from '../../web3';
 import { Button } from 'rimble-ui';
 
-export default function Pool(props) {
-  const { instance } = props;
+class Pool extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      balance: 0,
+    };
+    web3.eth.getBalance(props.instance._address).then((result) => {
+      console.log("In the eth getBalance function with result", result);
+      var balance = web3.utils.fromWei(result);
+      this.setState({
+        balance: balance,
+      });
+    })
+  }
 
-  const deposit = async instance => {
-    console.log("Would deposit things!")
+
+  deposit = async() => {
+    var accounts = await web3.eth.getAccounts();
+    var account = accounts[0];
+    var balance = web3.utils.fromWei(await web3.eth.getBalance(this.props.instance._address));
+
+    console.log("Pool balance before..", balance);
+    var amountToDeposit = String(100000000)
+    var result = await this.props.instance.methods.deposit().send({value: amountToDeposit , from: account});
+    console.log("Result of depositing is...", result);
+    var balanceAfter = web3.utils.fromWei(await web3.eth.getBalance(this.props.instance._address));
+    this.setState({balance: balanceAfter});
+    console.log("Pool balance before..", balanceAfter);
   };
 
-  return (
-    <div>
-      <h1>Hey I'm the pool, and I'm at {instance.address}</h1>
-      <Button onClick={deposit}>Deposit funds now!</Button>
-    </div>
-  )
+  // getBalance = async() => {
+  //   return "hey"
+    // return web3.utils.fromWei(await web3.eth.getBalance(this.props.instance()), 'ether')
+  // }
+
+  render() {
+    return (
+      <div>
+        <h1>Hey Im the pool, and Im at {this.props.instance._address}</h1>
+        <h3>The balance of the pool is {this.state.balance}</h3>
+        <Button onClick={this.deposit}>Deposit funds now!</Button>
+      </div>
+    )
+  }
 }
+
+export default Pool;

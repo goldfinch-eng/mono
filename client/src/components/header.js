@@ -6,11 +6,11 @@ function Header() {
     <div className="header">
       <img className="header-logo" src={logoPurp} alt="Goldfinch" />
       <nav>
-        <a class="selected">Borrow</a>
+        <a className="selected">Borrow</a>
         <a>Deposit</a>
         <a>About</a>
       </nav>
-      <a class="connect-wallet">Connected</a>
+      <a className="connect-wallet">Connected</a>
     </div>
   );
 }
