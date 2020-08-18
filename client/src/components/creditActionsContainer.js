@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import InfoSection from './infoSection.js';
 import PaymentForm from './paymentForm.js';
 
 class CreditActionsContainer extends Component {
@@ -32,18 +31,18 @@ class CreditActionsContainer extends Component {
 
   render() {
     let formBody;
-    if (this.state.showAction == null) {
+    if (this.state.showAction === null) {
       formBody = (
         <div className="form-start">
           <button onClick={this.openDrawdown} className="button-dk big">Start Drawdown</button>
           <button onClick={this.openPayment} className="button-dk big">Start Payment</button>
         </div>
       )
-    } else if (this.state.showAction == "payment") {
+    } else if (this.state.showAction === "payment") {
       formBody = (
         <PaymentForm cancelAction={this.cancelAction}/>
       )
-    } else if (this.state.showAction == "drawdown") {
+    } else if (this.state.showAction === "drawdown") {
       formBody = (
         <div className="form-full">
           <nav className="form-nav">

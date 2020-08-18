@@ -7,8 +7,8 @@ function stuff() {
 
       <div className="form-section">
         <div className="form-start">
-          <button className="button-dk big">Start Drawdown</button>
-          <button className="button-dk big">Start Payment</button>
+          <Button className="button-dk big">Start Drawdown</Button>
+          <Button className="button-dk big">Start Payment</Button>
         </div>
         <div className="form-full">
           <nav className="form-nav">
@@ -19,7 +19,7 @@ function stuff() {
           <p class="form-message">Directly pay down your current balance. $182 will be applied to current accrued interest before paying down principal.</p>
           <div class="form-inputs">
             <div class="input-container"><input className="big-number-input"></input></div>
-            <button className="button-dk submit-payment">Submit Payment</button>            
+            <button className="button-dk submit-payment">Submit Payment</button>
           </div>
           <div class="form-note">Note: After a principal payment of $15,000.00, your next payment due will be $496.30 on Oct 6, 2020.</div>
         </div>
