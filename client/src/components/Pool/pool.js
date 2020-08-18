@@ -9,7 +9,6 @@ class Pool extends Component {
       balance: 0,
     };
     web3.eth.getBalance(props.instance._address).then((result) => {
-      console.log("In the eth getBalance function with result", result);
       var balance = web3.utils.fromWei(result);
       this.setState({
         balance: balance,
@@ -23,13 +22,10 @@ class Pool extends Component {
     var account = accounts[0];
     var balance = web3.utils.fromWei(await web3.eth.getBalance(this.props.instance._address));
 
-    console.log("Pool balance before..", balance);
     var amountToDeposit = String(100000000)
     var result = await this.props.instance.methods.deposit().send({value: amountToDeposit , from: account});
-    console.log("Result of depositing is...", result);
     var balanceAfter = web3.utils.fromWei(await web3.eth.getBalance(this.props.instance._address));
     this.setState({balance: balanceAfter});
-    console.log("Pool balance before..", balanceAfter);
   };
 
   // getBalance = async() => {

@@ -5,7 +5,6 @@ import CreditStatus from './creditStatus.js';
 
 class Earn extends Component {
   render() {
-    console.log("Earn top level is rendering!!!")
     return (
       <div>
         <div className="content-header">Your Account</div>

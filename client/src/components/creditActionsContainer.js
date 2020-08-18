@@ -9,17 +9,10 @@ class CreditActionsContainer extends Component {
     };
   }
 
-  openDrawdown = (e) => {
+  openAction = (e, action) => {
     e.preventDefault();
     this.setState({
-      showAction: "drawdown",
-    });
-  }
-
-  openPayment = (e) => {
-    e.preventDefault();
-    this.setState({
-      showAction: "payment",
+      showAction: action,
     });
   }
 
@@ -34,8 +27,8 @@ class CreditActionsContainer extends Component {
     if (this.state.showAction === null) {
       formBody = (
         <div className="form-start">
-          <button onClick={this.openDrawdown} className="button-dk big">Start Drawdown</button>
-          <button onClick={this.openPayment} className="button-dk big">Start Payment</button>
+          <button onClick={(e) => { this.openAction(e, "drawdown") } } className="button-dk big">Start Drawdown</button>
+          <button onClick={(e) => { this.openAction(e, "payment") } } className="button-dk big">Start Payment</button>
         </div>
       )
     } else if (this.state.showAction === "payment") {

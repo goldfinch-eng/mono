@@ -24,7 +24,6 @@ class EarnActionsContainer extends Component {
   }
 
   render() {
-    console.log("I'm rendering!!!")
     let formBody;
     if (this.state.showAction == null) {
       formBody = (
