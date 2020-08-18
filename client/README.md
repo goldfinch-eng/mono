@@ -1,5 +1,16 @@
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+## Installation
+- `npm install`
+
+## Developing
+- Run a local blockchain. `npx ganache-cli --deterministic`
+- Run the server. `npm start`
+- If you need certain contracts, you may need to deploy them using `npx oz deploy`. Deploy them to your local ("development") blockchain, copy the deployed addresses, and paste them into the code.
+
+- That's pretty much it! Make your changes. The local server will auto reload
+when you make your changes.
+
 ## Available Scripts
 
 In the project directory, you can run:

@@ -1,23 +1,10 @@
-#!/bin/sh
-STASH_NAME="pre-commit-$(date +%s)"
-git stash save -q --keep-index $STASH_NAME
-
-# Test prospective commit
-$(git diff --cached --name-only | \
-    grep -E .js | \
-    GREP_COLOR='4;5;37;41' xargs grep --color --with-filename -n .only)
-
-if [ $? -eq 1 ];
-then
-  echo 'COMMIT REJECTED Found "$FORBIDDEN" references. Please remove them before commiting'
-  STASHES=$(git stash list)
-  if [[ $STASHES == "$STASH_NAME" ]]; then
-    git stash pop -q
-  fi
-  exit 1
+#!/bin/bash
+git diff --cached --name-only | while read FILE; do
+if [[ $(echo "$FILE" | grep -E "^.js$") ]]; then
+    content=$(<"$FILE")
+    if [[ $(echo "$content" | grep -E ".only") ]]; then
+        echo -e "\e[1;31m\tCommit contains some text it should not.\e[0m" >&2
+        exit 1
+    fi
 fi
-
-STASHES=$(git stash list)
-if [[ $STASHES == "$STASH_NAME" ]]; then
-  git stash pop -q
-fi
+done
