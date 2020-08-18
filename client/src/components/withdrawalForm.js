@@ -16,7 +16,7 @@ class WithdrawalForm extends Component {
     return (
       <div className="form-full">
         <nav className="form-nav">
-          <div className="form-nav-option selected">Deposit</div>
+          <div className="form-nav-option selected">Withdrawal</div>
           <div onClick={this.props.cancelAction} className="form-nav-option cancel">Cancel</div>
         </nav>
         <div>
