@@ -7,6 +7,7 @@
     "@openzeppelin/solidity-loader": "^1.4.6",
     "classnames": "^2.2.6",
     "json-loader": "^0.5.7",
+    "moment": "^2.27.0",
     "node-sass": "^4.13.0",
     "prop-types": "^15.7.2",
     "react": "^16.12.0",
@@ -39,6 +40,7 @@
     "not op_mini all"
   ],
   "devDependencies": {
+    "@nomiclabs/buidler": "^1.4.4",
     "eslint": "^6.2.2",
     "eslint-config-prettier": "^6.7.0",
     "eslint-plugin-import": "^2.18.2",

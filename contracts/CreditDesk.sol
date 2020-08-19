@@ -25,6 +25,10 @@ contract CreditDesk is Ownable {
     address[] creditLines;
   }
 
+  struct Borrower {
+    address[] creditLines;
+  }
+
   struct PaymentAllocation {
     uint interestPayment;
     uint principalPayment;
@@ -32,6 +36,8 @@ contract CreditDesk is Ownable {
   }
 
   mapping(address => Underwriter) public underwriters;
+
+  mapping(address => Borrower) private borrowers;
 
   function setUnderwriterGovernanceLimit(address underwriterAddress, uint limit) external onlyOwner {
     Underwriter storage underwriter = underwriters[underwriterAddress];
@@ -42,16 +48,22 @@ contract CreditDesk is Ownable {
     return underwriters[underwriterAddress].creditLines;
   }
 
+  function getBorrowerCreditLines(address borrowerAddress) public view returns (address[] memory) {
+    return borrowers[borrowerAddress].creditLines;
+  }
+
   function setPoolAddress(address newPoolAddress) public onlyOwner returns (address) {
     return poolAddress = newPoolAddress;
   }
 
   function createCreditLine(address _borrower, uint _limit, uint _interestApr, uint _minCollateralPercent, uint _paymentPeriodInDays, uint _termInDays) external {
     Underwriter storage underwriter = underwriters[msg.sender];
+    Borrower storage borrower = borrowers[_borrower];
     require(underwriterCanCreateThisCreditLine(_limit, underwriter), "The underwriter cannot create this credit line");
 
     CreditLine cl = new CreditLine(_borrower, _limit, _interestApr, _minCollateralPercent, _paymentPeriodInDays, _termInDays);
     underwriter.creditLines.push(address(cl));
+    borrower.creditLines.push(address(cl));
 	}
 
   function drawdown(uint amount, address creditLineAddress) external {

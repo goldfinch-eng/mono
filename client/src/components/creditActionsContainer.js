@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import PaymentForm from './paymentForm.js';
+import DrawdownForm from './drawdownForm.js';
 
 class CreditActionsContainer extends Component {
   constructor(props) {
@@ -33,20 +34,11 @@ class CreditActionsContainer extends Component {
       )
     } else if (this.state.showAction === "payment") {
       formBody = (
-        <PaymentForm cancelAction={this.cancelAction}/>
+        <PaymentForm cancelAction={this.cancelAction} actionComplete={this.props.actionComplete} borrower={this.props.borrower}/>
       )
     } else if (this.state.showAction === "drawdown") {
       formBody = (
-        <div className="form-full">
-          <nav className="form-nav">
-            <div onClick={this.cancelAction} className="form-nav-option cancel">Cancel</div>
-          </nav>
-          <p className="form-message">You can drawdown some sweet sweet cash.</p>
-          <div className="form-inputs">
-            <div className="input-container"><input className="big-number-input"></input></div>
-            <button className="button-dk submit-payment">Make Drawdown</button>
-          </div>
-        </div>
+        <DrawdownForm cancelAction={this.cancelAction} actionComplete={this.props.actionComplete} borrower={this.props.borrower} creditLine={this.props.creditLine}/>
       )
     }
     return (

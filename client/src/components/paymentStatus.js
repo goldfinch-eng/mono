@@ -1,24 +1,48 @@
+import moment from 'moment';
 import React, { Component } from 'react';
 import InfoSection from './infoSection.js';
+import web3 from '../web3.js';
 
 class PaymentStatus extends Component {
-  deriveRows(userId) {
-    // Do stuff to load data...
-    const amountDue = "$543.60";
-    const prepaidAmount = 0;
-    const dueDate = 'Oct 6';
+  constructor(props) {
+    super(props);
+    this.state = {
+      rows: [],
+    };
+  }
 
-    return [
-      {text: `Payment Due On ${dueDate}`, value: amountDue},
-      {text: 'Prepaid Toward Payment Due', value: prepaidAmount}
-    ];
+  async componentDidUpdate(props) {
+    if (this.props === props) {
+      return
+    }
+    const [nextDueBlock, prepaidAmount, amountDue]  = await Promise.all([
+      this.props.creditLine.methods.nextDueBlock().call(),
+      this.props.creditLine.methods.prepaymentBalance().call(),
+      // TODO: This actually needs to be a new method that calculates expected amount due at your next due block
+      this.props.creditLine.methods.balance().call(),
+    ]);
+    const latestBlock = await web3.eth.getBlock('latest');
+    const numBlocksTillDueDate = nextDueBlock - latestBlock.number;
+    const dueDate = moment().add(numBlocksTillDueDate * 15, 's').format("MMM Do");
+    if (nextDueBlock > 0) {
+      this.setState({
+        rows: [
+          {text: `Payment Due On ${dueDate}`, value: web3.utils.fromWei(amountDue)},
+          {text: 'Prepaid Toward Payment Due', value: web3.utils.fromWei(prepaidAmount)}
+        ]
+      });
+    } else {
+      this.setState({
+        rows: [{text: "No upcoming payments due", value: ""}],
+      });
+    }
   }
 
   render() {
     return (
       <InfoSection
         title="Payment Status"
-        rows={this.deriveRows(this.props.userID)}
+        rows={this.state.rows}
       />
     )
   }

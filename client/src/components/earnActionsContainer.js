@@ -25,17 +25,17 @@ class EarnActionsContainer extends Component {
 
   render() {
     let formBody;
-    if (this.state.showAction == null) {
+    if (this.state.showAction === null) {
       formBody = (
         <div className="form-start">
           <button onClick={(e) => { this.openAction(e, "deposit") } } className="button-dk big">Start Deposit</button>
           <button onClick={(e) => { this.openAction(e, "withdrawal") } } className="button-dk big">Start Withdrawal</button>
         </div>)
-    } else if (this.state.showAction == "deposit") {
+    } else if (this.state.showAction === "deposit") {
       formBody = (
         <DepositForm cancelAction={this.cancelAction}/>
       )
-    } else if (this.state.showAction == "withdrawal") {
+    } else if (this.state.showAction === "withdrawal") {
       formBody = (
         <WithdrawalForm cancelAction={this.cancelAction}/>
       )

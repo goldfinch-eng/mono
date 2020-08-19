@@ -16,7 +16,7 @@ class PaymentForm extends Component {
   }
 
   isSelected = (navItem) => {
-    if (this.state.show == navItem) {
+    if (this.state.show === navItem) {
       return 'selected';
     };
   }

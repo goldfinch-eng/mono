@@ -6,7 +6,7 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 ## Developing
 - Run a local blockchain. `npx ganache-cli --deterministic`
 - Run the server. `npm start`
-- If you need certain contracts, you may need to deploy them using `npx oz deploy`. Deploy them to your local ("development") blockchain, copy the deployed addresses, and paste them into the code.
+- You will also need to deploy the Pool and CreditDesk contracts. To do that, run `npx oz deploy`. Follow the prompts to deploy them to your local blockchain (called "development" by `oz`). Copy the deployed addresses, and paste them into the `ethereum/creditDesk.js` and `ethereum/pool.js` file, respectively. This process will be cleaned up soon!
 
 - That's pretty much it! Make your changes. The local server will auto reload
 when you make your changes.
