@@ -4,9 +4,11 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 - `npm install`
 
 ## Developing
-- Run a local blockchain. `npx ganache-cli --deterministic`
+- Run a local blockchain. `npx buidler node`
 - Run the server. `npm start`
-- You will also need to deploy the Pool and CreditDesk contracts. To do that, run `npx oz deploy`. Follow the prompts to deploy them to your local blockchain (called "development" by `oz`). Copy the deployed addresses, and paste them into the `ethereum/creditDesk.js` and `ethereum/pool.js` file, respectively. This process will be cleaned up soon!
+- You will also likely want to run the deploy script so you have a usable testing
+environment. To do this, run `npx buidler run scripts/localTestingDeploy.js --network localhost`
+  --> Note this script does lots of useful things besides deploying the contracts. For example, it also creates an underwriter, gives them a limit, creates a creditLine, funds the pool, etc.
 
 - That's pretty much it! Make your changes. The local server will auto reload
 when you make your changes.
