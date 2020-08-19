@@ -33,7 +33,7 @@ class DrawdownForm extends Component {
           <div onClick={() => { this.setShow('prepayment') }} className='form-nav-option selected'>Drawdown</div>
           <div onClick={this.props.cancelAction} className="form-nav-option cancel">Cancel</div>
         </nav>
-        <p className="form-message">You can drawdown some sweet sweet cash.</p>
+        <p className="form-message">You can drawdown up to your credit limit.</p>
         <div className="form-inputs">
           <div className="input-container"><input value={this.state.value} onChange={this.handleChange} className="big-number-input"></input></div>
           <button onClick={() => {this.makeDrawdown()}} className="button-dk submit-payment">Make Drawdown</button>

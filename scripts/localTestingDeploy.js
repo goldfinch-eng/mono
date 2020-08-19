@@ -11,9 +11,6 @@ let borrower;
 let underwriter;
 let capitalProvider;
 
-// These are just a couple addresses that oz makes available on the local network.
-// You can see others if you run `npx oz accounts`
-
 async function deploy() {
   console.log("Starting deploy...");
   [borrower, owner, capitalProvider] = await web3.eth.getAccounts();

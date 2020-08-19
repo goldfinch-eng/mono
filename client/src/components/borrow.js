@@ -20,8 +20,6 @@ class Borrow extends Component {
     const borrowerCreditLines = await creditDesk.methods.getBorrowerCreditLines(borrower).call();
     const creditLine = getCreditLine(borrowerCreditLines[0]);
 
-    console.log("Should be setting state of the borrower and creditline", borrower, creditLine);
-
     this.setState({
       borrower: borrower,
       creditLine: creditLine,
@@ -29,7 +27,6 @@ class Borrow extends Component {
   }
 
   actionComplete = () => {
-    console.log("Action has completed...");
     this.setState({
       borrower: this.state.borrower,
       creditLine: this.state.creditLine,

@@ -12,7 +12,6 @@ class CreditStatus extends Component {
 
   async componentDidUpdate(props) {
     if (this.props === props) {
-      console.log("This.props", this.props, "and props are...", props);
       return;
     }
     const drawdownBalance = web3.utils.fromWei(await this.props.creditLine.methods.balance().call());
