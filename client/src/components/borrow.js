@@ -4,7 +4,7 @@ import PaymentStatus from './paymentStatus.js';
 import CreditStatus from './creditStatus.js';
 import web3 from '../web3.js';
 import creditDesk from '../ethereum/creditDesk.js';
-import getCreditLine from '../ethereum/creditLine.js';
+import { buildCreditLine } from '../ethereum/creditLine.js';
 
 class Borrow extends Component {
   constructor(props) {
@@ -18,7 +18,7 @@ class Borrow extends Component {
   async componentDidMount() {
     const [borrower] = await web3.eth.getAccounts();
     const borrowerCreditLines = await creditDesk.methods.getBorrowerCreditLines(borrower).call();
-    const creditLine = getCreditLine(borrowerCreditLines[0]);
+    const creditLine = buildCreditLine(borrowerCreditLines[0]);
 
     this.setState({
       borrower: borrower,

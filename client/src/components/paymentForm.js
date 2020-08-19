@@ -8,9 +8,9 @@ class PaymentForm extends Component {
     this.state = {
       show: 'principalPayment',
       showSuccess: false,
-      prepaymentValue: '0',
-      principalValue: '0',
-      interestOwed: '0',
+      prepaymentValue: '',
+      principalValue: '',
+      interestOwed: '',
     };
   }
 
@@ -73,7 +73,7 @@ class PaymentForm extends Component {
           <p className="form-message">Directly pay down your current balance.</p>
           <div className="form-inputs">
             <div className="input-container">
-              <input value={this.state.principalValue} onChange={(e) => {this.handleChange(e, "principalValue")}} className="big-number-input"></input>
+              <input value={this.state.principalValue} placeholder="10.0" onChange={(e) => {this.handleChange(e, "principalValue")}} className="big-number-input"></input>
             </div>
             <button onClick={this.submitPrincipalPayment} className="button-dk submit-payment">Submit Payment</button>
           </div>
@@ -84,10 +84,10 @@ class PaymentForm extends Component {
     } else {
       specificPaymentForm = (
         <div>
-          <p className="form-message">Pay down your upcoming balance now.</p>
+          <p className="form-message">Pre-pay your upcoming balance now. This will be debited on your due date, and will not affect your current balance.</p>
           <div className="form-inputs">
             <div className="input-container">
-              <input value={this.state.prepaymentValue} onChange={(e) => {this.handleChange(e, "prepaymentValue")}} className="big-number-input"></input>
+              <input value={this.state.prepaymentValue} placeholder="10.0" onChange={(e) => {this.handleChange(e, "prepaymentValue")}} className="big-number-input"></input>
             </div>
             <button onClick={this.submitPrepayment} className="button-dk submit-payment">Submit Pre-payment</button>
           </div>
@@ -97,8 +97,8 @@ class PaymentForm extends Component {
     return (
       <div className="form-full">
         <nav className="form-nav">
-          <div onClick={() => { this.setShow('prepayment') }} className={`form-nav-option ${this.isSelected('prepayment')}`}>Prepayment</div>
           <div onClick={() => { this.setShow('principalPayment'); this.setAccruedInterest(); }} className={`form-nav-option ${this.isSelected('principalPayment')}`}>Principal Payment</div>
+          <div onClick={() => { this.setShow('prepayment') }} className={`form-nav-option ${this.isSelected('prepayment')}`}>Prepayment</div>
           <div onClick={this.props.cancelAction} className="form-nav-option cancel">Cancel</div>
         </nav>
         {specificPaymentForm}

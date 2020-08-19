@@ -33,11 +33,21 @@ class EarnActionsContainer extends Component {
         </div>)
     } else if (this.state.showAction === "deposit") {
       formBody = (
-        <DepositForm cancelAction={this.cancelAction}/>
+        <DepositForm
+          cancelAction={this.cancelAction}
+          capitalProvider={this.props.capitalProvider}
+          poolData={this.props.poolData}
+          actionComplete={this.props.actionComplete}
+        />
       )
     } else if (this.state.showAction === "withdrawal") {
       formBody = (
-        <WithdrawalForm cancelAction={this.cancelAction}/>
+        <WithdrawalForm
+          cancelAction={this.cancelAction}
+          capitalProvider={this.props.capitalProvider}
+          poolData={this.props.poolData}
+          actionComplete={this.props.actionComplete}
+        />
       )
     }
     return (

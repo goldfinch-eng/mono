@@ -1,31 +1,46 @@
 import React, { Component } from 'react';
+import web3 from '../web3';
+import { pool } from '../ethereum/pool';
 
 class DepositForm extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      amount: 0,
+      value: '',
+      showSuccess: false,
     };
   }
 
-  submitDeposit = () => {
-    console.log("I would be submitting prepayment!!")
+  handleChange = (e) => {
+    this.setState({
+      value: e.target.value,
+      showSuccess: false,
+    });
+  }
+
+  action = () => {
+    const depositAmount = web3.utils.toWei(this.state.value);
+    return pool.methods.deposit().send({from: this.props.capitalProvider.address, value: String(depositAmount)}).then((result) => {
+      this.setState({value: '', showSuccess: true});
+      this.props.actionComplete();
+    });
   }
 
   render() {
     return (
       <div className="form-full">
         <nav className="form-nav">
-          <div className="form-nav-option selected">Deposit</div>
+          <div onClick={() => { this.setShow('deposit') }} className='form-nav-option selected'>Deposit</div>
           <div onClick={this.props.cancelAction} className="form-nav-option cancel">Cancel</div>
         </nav>
-        <div>
-          <p className="form-message">Deposit funds into the pool and receive a portion of future interest payments. The pool size is currently $120,500,000.00</p>
-          <div className="form-inputs">
-            <div className="input-container"><input className="big-number-input"></input></div>
-            <button className="button-dk submit-payment">Make Deposit</button>
+        <p className="form-message">Deposit funds into the pool, and receive a portion of future interest. The current pool size is {web3.utils.fromWei(this.props.poolData.balance)}.</p>
+        <div className="form-inputs">
+          <div className="input-container">
+            <input value={this.state.value} placeholder='10.0' onChange={this.handleChange} className="big-number-input"></input>
           </div>
+          <button onClick={() => {this.action()}} className="button-dk submit-payment">Make Deposit</button>
         </div>
+        {this.state.showSuccess ? <div className="form-message">Deposit successfully completed!</div> : ""}
       </div>
     )
   }
