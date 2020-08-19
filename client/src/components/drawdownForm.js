@@ -6,7 +6,7 @@ class DrawdownForm extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      value: '0',
+      value: '',
       showSuccess: false,
     };
   }
@@ -21,7 +21,7 @@ class DrawdownForm extends Component {
   makeDrawdown = () => {
     const drawdownAmount = web3.utils.toWei(this.state.value);
     return creditDesk.methods.drawdown(drawdownAmount, this.props.creditLine._address).send({from: this.props.borrower}).then((result) => {
-      this.setState({value: 0, showSuccess: true});
+      this.setState({value: '', showSuccess: true});
       this.props.actionComplete();
     });
   }
@@ -30,12 +30,14 @@ class DrawdownForm extends Component {
     return (
       <div className="form-full">
         <nav className="form-nav">
-          <div onClick={() => { this.setShow('prepayment') }} className='form-nav-option selected'>Drawdown</div>
+          <div onClick={() => { this.setShow('drawdown') }} className='form-nav-option selected'>Drawdown</div>
           <div onClick={this.props.cancelAction} className="form-nav-option cancel">Cancel</div>
         </nav>
         <p className="form-message">You can drawdown up to your credit limit.</p>
         <div className="form-inputs">
-          <div className="input-container"><input value={this.state.value} onChange={this.handleChange} className="big-number-input"></input></div>
+          <div className="input-container">
+            <input value={this.state.value} placeholder="10.0" onChange={this.handleChange} className="big-number-input"></input>
+          </div>
           <button onClick={() => {this.makeDrawdown()}} className="button-dk submit-payment">Make Drawdown</button>
         </div>
         {this.state.showSuccess ? <div className="form-message">Drawdown successfully completed!</div> : ""}

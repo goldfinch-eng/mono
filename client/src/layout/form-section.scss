@@ -46,7 +46,7 @@
     border-bottom: 1px solid $purp-dark;
     color: $purp-dark;
     cursor: auto;
-    margin: 0 0 -1px;
+    // margin: 0 0 -1px;
   }
 }
 
@@ -97,5 +97,5 @@
   font-size: $sans-size-xs;
   line-height: 1.2;
   margin: 16px 0 0;
-  width: calc(60% - 30px); 
+  width: calc(60% - 30px);
 }
