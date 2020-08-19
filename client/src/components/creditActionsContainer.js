@@ -34,7 +34,7 @@ class CreditActionsContainer extends Component {
       )
     } else if (this.state.showAction === "payment") {
       formBody = (
-        <PaymentForm cancelAction={this.cancelAction} actionComplete={this.props.actionComplete} borrower={this.props.borrower}/>
+        <PaymentForm cancelAction={this.cancelAction} actionComplete={this.props.actionComplete} borrower={this.props.borrower} creditLine={this.props.creditLine}/>
       )
     } else if (this.state.showAction === "drawdown") {
       formBody = (
