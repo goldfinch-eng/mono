@@ -11,6 +11,7 @@ function Header() {
         <NavLink to="/earn">Earn</NavLink>
         <NavLink to="/about">About</NavLink>
       </nav>
+      {/* <button onClick={() => { console.log("heyyy, trying to request stuff.."); window.ethereum.request({ method: 'eth_requestAccounts' }); }} className="enableEthereumButton">Enable Ethereum</button> */}
       <a className="connect-wallet">Connected</a>
     </div>
   );

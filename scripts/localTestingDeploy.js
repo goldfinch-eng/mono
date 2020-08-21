@@ -14,6 +14,9 @@ let capitalProvider;
 async function deploy() {
   console.log("Starting deploy...");
   [borrower, owner, capitalProvider] = await web3.eth.getAccounts();
+  if (process.env.BORROWER_ADDRESS) {
+    borrower = process.env.BORROWER_ADDRESS;
+  }
 
   const poolContract = new web3.eth.Contract(PoolContract.abi);
   const creditDeskContract = new web3.eth.Contract(CreditDeskContract.abi);
@@ -21,7 +24,6 @@ async function deploy() {
   const pool = await poolContract.deploy({data: PoolContract.bytecode}).send({from: owner, gasPrice: new BN('20000000000'), gas: new BN('6721975')});
   console.log("Deployed the pool");
 
-  console.log("Deploying the creditDesk");
   const creditDesk = await creditDeskContract.deploy({data: CreditDeskContract.bytecode}).send({from: owner, gasPrice: new BN('20000000000'), gas: new BN('6721975')});
   console.log("Deployed the creditDesk");
 
@@ -86,9 +88,8 @@ async function createCreditLineForBorrower(creditDesk, borrower) {
 
 async function depositFundsToThePool(pool, capitalProvider) {
   const balanceBefore = await web3.eth.getBalance(pool._address);
-  console.log("balance before deposit is..", String(balanceBefore));
-  console.log("Depositing funds into the pool!")
   const depositAmount = String(new BN(1000).mul(decimals));
+  console.log("Depositing", depositAmount, "into the pool!")
   await pool.methods.deposit().send({from: capitalProvider, value: depositAmount});
   const balance = await web3.eth.getBalance(pool._address);
   if (String(balance) != depositAmount) {

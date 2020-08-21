@@ -7,14 +7,14 @@ class PaymentStatus extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      rows: [],
+      rows: [{text: "No upcoming payments due", value: ""}],
     };
   }
 
   async componentDidUpdate(props) {
-    if (this.props === props) {
+    if (this.props === props || !this.props.creditLine.methods) {
       return
-    }
+    };
     const [nextDueBlock, prepaidAmount, amountDue]  = await Promise.all([
       this.props.creditLine.methods.nextDueBlock().call(),
       this.props.creditLine.methods.prepaymentBalance().call(),
