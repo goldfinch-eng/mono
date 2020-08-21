@@ -6,12 +6,16 @@ class CreditStatus extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      rows: [],
+      rows: [
+        {text: `Available To Draw Down`, value: '0'},
+        {text: 'Current Drawdown Balance', value: '0'},
+        {text: 'Total Credit Limit', value: '0'},
+      ],
     };
   }
 
   async componentDidUpdate(props) {
-    if (this.props === props) {
+    if (this.props === props || !this.props.creditLine.methods) {
       return;
     }
     const drawdownBalance = web3.utils.fromWei(await this.props.creditLine.methods.balance().call());

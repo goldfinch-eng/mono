@@ -16,7 +16,7 @@ class Earn extends Component {
   }
 
   async componentDidMount() {
-    const [_borrower, _owner, capitalProviderAddress] = await web3.eth.getAccounts();
+    const [capitalProviderAddress] = await web3.eth.getAccounts();
     this.refreshPoolData()
     this.refreshCapitalProviderData(capitalProviderAddress);
   }

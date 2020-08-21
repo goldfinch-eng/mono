@@ -11,14 +11,19 @@ class Borrow extends Component {
     super(props);
     this.state = {
       borrower: '',
-      creditLine: '',
+      creditLine: {},
     }
   }
 
   async componentDidMount() {
+    let creditLine = {};
     const [borrower] = await web3.eth.getAccounts();
-    const borrowerCreditLines = await creditDesk.methods.getBorrowerCreditLines(borrower).call();
-    const creditLine = buildCreditLine(borrowerCreditLines[0]);
+    if (borrower) {
+      const borrowerCreditLines = await creditDesk.methods.getBorrowerCreditLines(borrower).call();
+      if (borrowerCreditLines.length) {
+        creditLine = buildCreditLine(borrowerCreditLines[0]);
+      }
+    }
 
     this.setState({
       borrower: borrower,

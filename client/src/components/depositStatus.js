@@ -1,5 +1,3 @@
-import moment from 'moment';
-import BN from 'bn.js';
 import React, { Component } from 'react';
 import InfoSection from './infoSection.js';
 import web3 from '../web3.js';

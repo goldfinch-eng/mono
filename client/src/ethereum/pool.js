@@ -6,6 +6,9 @@ const mantissa = new BN(String(1e18));
 const pool = new web3.eth.Contract(PoolContract.abi, ProtocolConfig.pool.address);
 
 function fetchCapitalProviderData(capitalProviderAddress) {
+  if (!capitalProviderAddress) {
+    return {};
+  }
   const attributes = [
     {method: "totalShares"},
     {method: "sharePrice"},
