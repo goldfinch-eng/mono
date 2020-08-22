@@ -1,17 +1,16 @@
 const {chai, expect, decimals, BN, bigVal, mochaEach, getBalance } = require('./testHelpers.js');
 const { time } = require('@openzeppelin/test-helpers');
 const { before } = require('mocha');
-let accounts;
-let owner
-let person2
-let person3;
+
 const CreditDesk = artifacts.require('TestCreditDesk');
 const CreditLine = artifacts.require('CreditLine');
 const Pool = artifacts.require('TestPool');
-let creditDesk;
+const ERC20 = artifacts.require('TestERC20');
+
+let accounts, owner, person2, person3, creditDesk;
 const tolerance = bigVal(1).div(new BN(10)); // 1e17 as a BN;
 
-describe("CreditDesk", () => {
+describe.only("CreditDesk", () => {
   let underwriterLimit;
   let underwriter;
   let borrower;
@@ -75,9 +74,22 @@ describe("CreditDesk", () => {
     accounts = await web3.eth.getAccounts();
     [ owner, person2, person3 ] = accounts;
     creditDesk = await CreditDesk.new({from: owner});
+
+    // Deploy the ERC20 and give person2 some balance to play with
+    erc20 = await ERC20.new(new BN(10000).mul(decimals), { from: owner });
+    await erc20.transfer(person2, new BN(1000).mul(decimals), {from: owner});
+
+    // Approve and initialize the pool
     pool = await Pool.new({from: owner});
+    pool.initialize(erc20.address, "USDC", decimals, {from: owner});
+
+    // Approve approve transfers for our test accounts
+    await erc20.approve(pool.address, new BN(100000).mul(decimals), {from: person2});
+    await erc20.approve(pool.address, new BN(100000).mul(decimals), {from: owner});
+
+    // Some housekeeping so we have a usable creditDesk for tests, and a pool with funds
     await pool.transferOwnership(creditDesk.address, {from: owner});
-    await pool.deposit({from: person2, value: String(bigVal(90))})
+    await pool.deposit(String(bigVal(90)), {from: person2 })
     await creditDesk.setPoolAddress(pool.address, {from: owner});
   })
 

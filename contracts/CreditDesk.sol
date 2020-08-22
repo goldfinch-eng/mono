@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/math/Math.sol";
 import "./Pool.sol";
 import "./CreditLine.sol";
-import "./FPMath.sol";
+import "./external/FPMath.sol";
 
 contract CreditDesk is Ownable {
   using SafeMath for uint256;
