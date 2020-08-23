@@ -1,7 +1,6 @@
-const {chai, expect, decimals, BN, bigVal, mochaEach, getBalance } = require('./testHelpers.js');
-const { time } = require('@openzeppelin/test-helpers');
+const {chai, expect, MAX_UINT, decimals, BN, bigVal, mochaEach, getBalance } = require('./testHelpers.js');
 const { before } = require('mocha');
-
+const { time } = require('@openzeppelin/test-helpers');
 const CreditDesk = artifacts.require('TestCreditDesk');
 const CreditLine = artifacts.require('CreditLine');
 const Pool = artifacts.require('TestPool');
@@ -10,7 +9,7 @@ const ERC20 = artifacts.require('TestERC20');
 let accounts, owner, person2, person3, creditDesk;
 const tolerance = bigVal(1).div(new BN(10)); // 1e17 as a BN;
 
-describe.only("CreditDesk", () => {
+describe("CreditDesk", () => {
   let underwriterLimit;
   let underwriter;
   let borrower;
@@ -51,7 +50,8 @@ describe.only("CreditDesk", () => {
       creditLine.setBalance(bigVal(balance), {from: owner}),
       creditLine.setInterestOwed(bigVal(interestOwed), {from: owner}),
       creditLine.setPrincipalOwed(bigVal(principalOwed), {from: owner}),
-      creditLine.receivePrepayment({from: owner, value: String(bigVal(prepaymentBalance))}),
+      erc20.transfer(creditLine.address, String(bigVal(prepaymentBalance)), {from: owner}),
+      creditLine.setPrepaymentBalance(String(bigVal(prepaymentBalance)), {from: owner}),
       creditLine.setNextDueBlock(nextDueBlock, {from: owner}),
       creditLine.setTermEndBlock(termEndBlock, {from: owner}),
       creditLine.transferOwnership(creditDesk.address, {from: owner}),
@@ -84,6 +84,7 @@ describe.only("CreditDesk", () => {
     pool.initialize(erc20.address, "USDC", decimals, {from: owner});
 
     // Approve approve transfers for our test accounts
+    await erc20.approve(pool.address, new BN(100000).mul(decimals), {from: person3});
     await erc20.approve(pool.address, new BN(100000).mul(decimals), {from: person2});
     await erc20.approve(pool.address, new BN(100000).mul(decimals), {from: owner});
 
@@ -153,6 +154,7 @@ describe.only("CreditDesk", () => {
       expect((await creditLine.minCollateralPercent()).eq(minCollateralPercent)).to.be.true;
       expect((await creditLine.paymentPeriodInDays()).eq(paymentPeriodInDays)).to.be.true;
       expect((await creditLine.termInDays()).eq(termInDays)).to.be.true;
+      expect((await erc20.allowance(creditLine.address, pool.address))).to.bignumber.equal(MAX_UINT);
     });
 
     it("should not let you create a credit line above your limit", async () => {
@@ -275,7 +277,7 @@ describe.only("CreditDesk", () => {
 
   describe("prepayment", async () => {
     let makePrepayment = async (creditLineAddress, amount, from=borrower) => {
-      return await creditDesk.prepay(creditLineAddress, {from: from, value: String(bigVal(amount))});
+      return await creditDesk.prepay(creditLineAddress, String(bigVal(amount)), {from: from});
     }
     describe("with a valid creditline id", async () => {
       let creditLine;
@@ -286,16 +288,16 @@ describe.only("CreditDesk", () => {
       })
       it("should increment the prepaid balance", async () => {
         const prepaymentAmount = 10;
-        expect((await (await getBalance(creditLine.address)).eq(bigVal(0)))).to.be.true;
+        expect((await (await getBalance(creditLine.address, erc20)).eq(bigVal(0)))).to.be.true;
         await makePrepayment(creditLine.address, prepaymentAmount);
-        expect((await getBalance(creditLine.address)).eq(bigVal(prepaymentAmount))).to.be.true;
+        expect((await getBalance(creditLine.address, erc20)).eq(bigVal(prepaymentAmount))).to.be.true;
         expect((await creditLine.prepaymentBalance()).eq(bigVal(prepaymentAmount))).to.be.true;
 
         let secondPrepayment = 15;
         let totalPrepayment = bigVal(prepaymentAmount).add(bigVal(secondPrepayment));
         await makePrepayment(creditLine.address, secondPrepayment);
-        expect((await getBalance(creditLine.address)).eq(totalPrepayment)).to.be.true;
-        expect((await creditLine.prepaymentBalance()).eq(totalPrepayment)).to.be.true;
+        expect((await getBalance(creditLine.address, erc20))).to.bignumber.equal(totalPrepayment);
+        expect((await creditLine.prepaymentBalance())).to.bignumber.equal(totalPrepayment);
       });
     });
   });
@@ -310,12 +312,13 @@ describe.only("CreditDesk", () => {
     describe("with an outstanding credit line", async () => {
       beforeEach(async () => {
         borrower = person3;
+        erc20.transfer(borrower, bigVal(50), {from: owner});
       });
 
       it("should pay off interest first", async () => {
         const creditLine = await createAndSetCreditLineAttributes(10, 5, 3);
         const paymentAmount = 6;
-        await creditDesk.pay(creditLine.address, {from: borrower, value: String(bigVal(paymentAmount))});
+        await creditDesk.pay(creditLine.address, String(bigVal(paymentAmount)), {from: borrower});
 
         // We use closeTo because several blocks may have passed between creating the creditLine and
         // making the payment, which accrues a very small amount of interest and principal. Also note
@@ -326,13 +329,13 @@ describe.only("CreditDesk", () => {
       });
 
       it("should send the payment to the pool", async() => {
-        var originalPoolBalance = await getBalance(pool.address);
+        var originalPoolBalance = await getBalance(pool.address, erc20);
 
         const creditLine = await createAndSetCreditLineAttributes(10, 5, 3);
         const paymentAmount = 6;
-        await creditDesk.pay(creditLine.address, {from: borrower, value: String(bigVal(paymentAmount))});
+        await creditDesk.pay(creditLine.address, String(bigVal(paymentAmount)), {from: borrower});
 
-        var newPoolBalance = await getBalance(pool.address);
+        var newPoolBalance = await getBalance(pool.address, erc20);
         var delta = newPoolBalance.sub(originalPoolBalance);
         expect(delta).to.be.bignumber.equal(bigVal(6));
       });
@@ -344,7 +347,7 @@ describe.only("CreditDesk", () => {
         var interestAmount = 5;
         const paymentAmount = 7;
         await createAndSetCreditLineAttributes(10, interestAmount, 3);
-        await creditDesk.pay(creditLine.address, {from: borrower, value: String(bigVal(paymentAmount))});
+        await creditDesk.pay(creditLine.address, String(bigVal(paymentAmount)), {from: borrower});
 
         var newSharePrice = await pool.sharePrice();
         var delta = newSharePrice.sub(originalSharePrice);
@@ -360,7 +363,7 @@ describe.only("CreditDesk", () => {
           const balance = 10;
           const paymentAmount = 15;
           await createAndSetCreditLineAttributes(balance, interestAmount, 3);
-          await creditDesk.pay(creditLine.address, {from: borrower, value: String(bigVal(paymentAmount))});
+          await creditDesk.pay(creditLine.address, String(bigVal(paymentAmount)), {from: borrower});
 
           const expected = bigVal(paymentAmount).sub(bigVal(interestAmount)).sub(bigVal(balance));
           expect(await creditLine.collateralBalance()).to.bignumber.closeTo(expected, tolerance);
@@ -399,11 +402,11 @@ describe.only("CreditDesk", () => {
         const prepaymentBalance = 8;
         const interestOwed = 5;
         var creditLine = await createAndSetCreditLineAttributes(10, interestOwed, 3, prepaymentBalance, latestBlock);
-        const originalPoolBalance = await getBalance(pool.address);
+        const originalPoolBalance = await getBalance(pool.address, erc20);
 
         await creditDesk.assessCreditLine(creditLine.address);
 
-        const newPoolBalance = await getBalance(pool.address);
+        const newPoolBalance = await getBalance(pool.address, erc20);
         const expectedNextDueBlock = (await creditLine.paymentPeriodInDays()).mul(await creditDesk.blocksPerDay()).add(latestBlock);
 
         expect(await creditLine.prepaymentBalance()).to.bignumber.equal("0");
@@ -434,12 +437,12 @@ describe.only("CreditDesk", () => {
         const interestOwed = 5;
         const principalOwed = 3;
         var creditLine = await createAndSetCreditLineAttributes(10, interestOwed, principalOwed, prepaymentBalance, await time.latestBlock());
-        const originalPoolBalance = await getBalance(pool.address);
+        const originalPoolBalance = await getBalance(pool.address, erc20);
         const originalSharePrice = await pool.sharePrice();
 
         await creditDesk.assessCreditLine(creditLine.address);
 
-        const newPoolBalance = await getBalance(pool.address);
+        const newPoolBalance = await getBalance(pool.address, erc20);
 
         expect(await creditLine.prepaymentBalance()).to.bignumber.equal("0");
         expect(await creditLine.interestOwed()).to.bignumber.equal("0");
