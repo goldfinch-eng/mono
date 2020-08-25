@@ -15,8 +15,10 @@ function fetchCapitalProviderData(capitalProviderAddress) {
     {method: "capitalProviders", args: [capitalProviderAddress], name: "numShares"}
   ];
   return fetchDataFromAttributes(attributes).then((result) => {
-    result.availableToWithdrawal = new BN(result.numShares).div(decimals).mul(new BN(result.sharePrice));
+
+    result.availableToWithdrawal = new BN(result.numShares).mul(new BN(result.sharePrice)).div(decimals);
     result.address = capitalProviderAddress;
+
     return result;
   });
 }

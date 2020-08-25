@@ -1,13 +1,12 @@
 import React, { Component } from 'react';
-import { BN } from 'bn.js';
 import { pool } from '../ethereum/pool';
 import { erc20 } from '../ethereum/erc20';
 import { fromAtomic, toAtomic } from '../ethereum/erc20';
+import { sendFromUser } from '../ethereum/utils';
 
 class DepositForm extends Component {
   constructor(props) {
     super(props);
-    console.log("The pool balance is...", this.props.poolData.balance);
     this.state = {
       value: '',
       showSuccess: false,
@@ -23,17 +22,12 @@ class DepositForm extends Component {
 
   action = () => {
     const depositAmount = toAtomic(this.state.value);
-    console.log("Deposit Amount is...", depositAmount);
-    return erc20.methods.approve(pool._address, toAtomic(10000)).send({from: this.props.capitalProvider.address, gasPrice: new BN('20000000000'), gas: new BN('6721975')}).then((result) => {
-      console.log("Result of approval is..", result);
-      return pool.methods.deposit(depositAmount).send({from: this.props.capitalProvider.address, gasPrice: new BN('20000000000'), gas: new BN('6721975')}).then((result) => {
+    const userAddress = this.props.capitalProvider.address;
+    return sendFromUser(erc20.methods.approve(pool._address, toAtomic(10000)), userAddress).then((result) => {
+      return sendFromUser(pool.methods.deposit(depositAmount), userAddress).then((result) => {
         this.setState({value: '', showSuccess: true});
         this.props.actionComplete();
-      }).catch((error) => {
-        console.log("Error from depositing is...", error);
       });
-    }).catch((error) => {
-      console.log("Error from approval is...", error);
     });
   }
 

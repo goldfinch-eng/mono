@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
 import web3 from '../web3';
 import creditDesk from '../ethereum/creditDesk';
+import { sendFromUser } from '../ethereum/utils';
+import { toAtomic } from '../ethereum/erc20';
 
 class DrawdownForm extends Component {
   constructor(props) {
@@ -19,8 +21,8 @@ class DrawdownForm extends Component {
   }
 
   makeDrawdown = () => {
-    const drawdownAmount = web3.utils.toWei(this.state.value);
-    return creditDesk.methods.drawdown(drawdownAmount, this.props.creditLine._address).send({from: this.props.borrower}).then((result) => {
+    const drawdownAmount = toAtomic(this.state.value);
+    return sendFromUser(creditDesk.methods.drawdown(drawdownAmount, this.props.creditLine._address), this.props.borrower).then((result) => {
       this.setState({value: '', showSuccess: true});
       this.props.actionComplete();
     });

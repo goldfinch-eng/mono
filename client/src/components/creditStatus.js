@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import InfoSection from './infoSection.js';
-import web3 from '../web3.js';
+import { fromAtomic } from '../ethereum/erc20.js';
 
 class CreditStatus extends Component {
   constructor(props) {
@@ -18,8 +18,8 @@ class CreditStatus extends Component {
     if (this.props === props || !this.props.creditLine.methods) {
       return;
     }
-    const drawdownBalance = web3.utils.fromWei(await this.props.creditLine.methods.balance().call());
-    const totalCreditLimit = web3.utils.fromWei(await this.props.creditLine.methods.limit().call());
+    const drawdownBalance = fromAtomic(await this.props.creditLine.methods.balance().call());
+    const totalCreditLimit = fromAtomic(await this.props.creditLine.methods.limit().call());
     const availableToDrawdown = totalCreditLimit - drawdownBalance;
     const rows = [
       {text: `Available To Draw Down`, value: availableToDrawdown},

@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import InfoSection from './infoSection.js';
-import web3 from '../web3.js';
 import { fromAtomic } from '../ethereum/erc20';
 
 class DepositStatus extends Component {

@@ -247,6 +247,7 @@ contract CreditDesk is Ownable {
 
     if (balance == 0) {
       cl.setTermEndBlock(0);
+      cl.setNextDueBlock(0);
     }
   }
 

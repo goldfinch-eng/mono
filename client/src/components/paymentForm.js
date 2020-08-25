@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
-import web3 from '../web3';
 import creditDesk from '../ethereum/creditDesk';
+import { sendFromUser } from '../ethereum/utils';
+import { toAtomic } from '../ethereum/erc20';
 
 class PaymentForm extends Component {
   constructor(props) {
@@ -50,16 +51,16 @@ class PaymentForm extends Component {
   }
 
   submitPrepayment = () => {
-    const amount = web3.utils.toWei(this.state.prepaymentValue);
-    return creditDesk.methods.prepay(this.props.creditLine._address).send({from: this.props.borrower, value: amount}).then((result) => {
+    const amount = toAtomic(this.state.prepaymentValue);
+    return sendFromUser(creditDesk.methods.prepay(this.props.creditLine._address,  amount), this.props.borrower).then((result) => {
       this.setState({prepaymentValue: 0, showSuccess: true});
       this.props.actionComplete();
     });
   }
 
   submitPrincipalPayment = () => {
-    const amount = web3.utils.toWei(this.state.principalValue);
-    return creditDesk.methods.pay(this.props.creditLine._address).send({from: this.props.borrower, value: amount}).then((result) => {
+    const amount = toAtomic(this.state.principalValue);
+    return sendFromUser(creditDesk.methods.pay(this.props.creditLine._address, amount), this.props.borrower).then((result) => {
       this.setState({principalValue: 0, showSuccess: true});
       this.props.actionComplete();
     });

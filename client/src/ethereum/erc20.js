@@ -8,11 +8,11 @@ const decimals = new BN(String(10 ** decimalPlaces));
 const erc20 = new web3.eth.Contract(ERC20Contract.abi, ProtocolConfig.erc20.address);
 
 function fromAtomic(amount) {
-  return new BigNumber(amount).div(decimals).toString(10);
+  return new BigNumber(String(amount)).div(decimals).toString(10);
 }
 
 function toAtomic(amount) {
-  return new BigNumber(amount).multipliedBy(decimals).toString(10);
+  return new BigNumber(String(amount)).multipliedBy(decimals).toString(10);
 }
 
 export {
