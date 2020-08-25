@@ -4,8 +4,9 @@ pragma solidity ^0.6.8;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract FIDU is ERC20 {
-    constructor(uint256 initialSupply) public ERC20("FIDU", "FIDU") {
+contract TestERC20 is ERC20 {
+    constructor(uint256 initialSupply, uint8 decimals) public ERC20("USDC", "USDC") {
+        _setupDecimals(decimals);
         _mint(msg.sender, initialSupply);
     }
 }

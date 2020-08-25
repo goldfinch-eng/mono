@@ -76,7 +76,7 @@ describe("CreditDesk", () => {
     creditDesk = await CreditDesk.new({from: owner});
 
     // Deploy the ERC20 and give person2 some balance to play with
-    erc20 = await ERC20.new(new BN(10000).mul(decimals), { from: owner });
+    erc20 = await ERC20.new(new BN(10000).mul(decimals), decimals, { from: owner });
     await erc20.transfer(person2, new BN(1000).mul(decimals), {from: owner});
 
     // Approve and initialize the pool

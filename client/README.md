@@ -7,8 +7,11 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 - Run a local blockchain. `npx buidler node`
 - Run the server. `npm start`
 - You will also likely want to run the deploy script so you have a usable testing
-environment. To do this, run `npx buidler run scripts/localTestingDeploy.js --network localhost`
+environment. To really take advantage of this, you should login to your Metamask first, then copy your account number, and paste it in like the following:
+  - `TEST_USER_ADDRESS={YOUR_ACCOUNT_ADDRESS} npx buidler run scripts/localTestingDeploy.js --network localhost`
+  - By using the `TEST_USER_ADDRESS`, the script will automatically give that user an open Credit Line, as well as send them some test funds of ETH, plus USDC
   --> Note this script does lots of useful things besides deploying the contracts. For example, it also creates an underwriter, gives them a limit, creates a creditLine, funds the pool, etc.
+  -->
 
 - That's pretty much it! Make your changes. The local server will auto reload
 when you make your changes.

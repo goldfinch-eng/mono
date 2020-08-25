@@ -17,6 +17,7 @@ class Earn extends Component {
 
   async componentDidMount() {
     const [capitalProviderAddress] = await web3.eth.getAccounts();
+    console.log("Capital provider address is...", capitalProviderAddress);
     this.refreshPoolData()
     this.refreshCapitalProviderData(capitalProviderAddress);
   }
@@ -28,6 +29,7 @@ class Earn extends Component {
 
   async refreshCapitalProviderData(address) {
     const capitalProvider = await fetchCapitalProviderData(address);
+    console.log("Setting state of capital provider:", capitalProvider);
     this.setState({
       capitalProvider: capitalProvider,
     });

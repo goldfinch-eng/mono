@@ -28,7 +28,7 @@ describe("Pool", () => {
     [ owner, person2 ] = accounts;
 
     // Deploy the ERC20 and give person2 some balance to play with
-    erc20 = await ERC20.new(new BN(10000).mul(mantissa), { from: owner });
+    erc20 = await ERC20.new(new BN(10000).mul(mantissa), mantissa, { from: owner });
     await erc20.transfer(person2, new BN(1000).mul(mantissa), {from: owner});
 
     // Deploy and initialize a Pool for this ERC20
