@@ -103,7 +103,7 @@ describe("CreditDesk", () => {
       const amount = bigVal(537);
       await creditDesk.setUnderwriterGovernanceLimit(person2, amount, {from: owner});
       const underwriterLimit = await creditDesk.underwriters(person2);
-      expect(new BN(12)).to.bignumber.equal(amount);
+      expect(underwriterLimit).to.bignumber.equal(amount);
     });
   });
 
