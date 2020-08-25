@@ -3,7 +3,6 @@ import Web3 from 'web3';
 // const web3 = new Web3(Web3.givenProvider || "ws://localhost:8545");
 let web3;
 if (typeof window.ethereum !== 'undefined') {
-  console.log("Setting web3 to be the ethereum thing!");
   web3 = new Web3(window.ethereum);
 } else {
   // For local network testing.

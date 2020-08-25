@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
-import web3 from '../web3';
 import { pool } from '../ethereum/pool';
+import { fromAtomic, toAtomic } from '../ethereum/erc20';
+import { sendFromUser } from '../ethereum/utils.js';
 
 class WithdrawalForm extends Component {
   constructor(props) {
@@ -9,6 +10,7 @@ class WithdrawalForm extends Component {
       value: '',
       showSuccess: false,
     };
+    this.action = this.action.bind(this);
   }
 
   handleChange = (e) => {
@@ -18,9 +20,9 @@ class WithdrawalForm extends Component {
     });
   }
 
-  action = () => {
-    const withdrawalAmount = web3.utils.toWei(this.state.value);
-    return pool.methods.withdraw(withdrawalAmount).send({from: this.props.capitalProvider.address}).then((result) => {
+  async action () {
+    const withdrawalAmount = toAtomic(this.state.value);
+    return sendFromUser(pool.methods.withdraw(withdrawalAmount), this.props.capitalProvider.address).then((result) => {
       this.setState({value: '', showSuccess: true});
       this.props.actionComplete();
     });
@@ -33,7 +35,7 @@ class WithdrawalForm extends Component {
           <div onClick={() => { this.setShow('withdrawal') }} className='form-nav-option selected'>Withdrawal</div>
           <div onClick={this.props.cancelAction} className="form-nav-option cancel">Cancel</div>
         </nav>
-        <p className="form-message">Withdrawal funds from the pool, up to your balance of {web3.utils.fromWei(this.props.capitalProvider.availableToWithdrawal)}.</p>
+        <p className="form-message">Withdrawal funds from the pool, up to your balance of {fromAtomic(this.props.capitalProvider.availableToWithdrawal)}.</p>
         <div className="form-inputs">
           <div className="input-container">
             <input value={this.state.value} placeholder='10.0' onChange={this.handleChange} className="big-number-input"></input>

@@ -2,6 +2,7 @@ import moment from 'moment';
 import React, { Component } from 'react';
 import InfoSection from './infoSection.js';
 import web3 from '../web3.js';
+import { fromAtomic } from '../ethereum/erc20.js';
 
 class PaymentStatus extends Component {
   constructor(props) {
@@ -27,8 +28,8 @@ class PaymentStatus extends Component {
     if (nextDueBlock > 0) {
       this.setState({
         rows: [
-          {text: `Payment Due On ${dueDate}`, value: web3.utils.fromWei(amountDue)},
-          {text: 'Prepaid Toward Payment Due', value: web3.utils.fromWei(prepaidAmount)}
+          {text: `Payment Due On ${dueDate}`, value: fromAtomic(amountDue)},
+          {text: 'Prepaid Toward Payment Due', value: fromAtomic(prepaidAmount)}
         ]
       });
     } else {

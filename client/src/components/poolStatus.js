@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import InfoSection from './infoSection.js';
-import web3 from '../web3.js';
+import { fromAtomic } from '../ethereum/erc20';
 
 class DepositStatus extends Component {
 
@@ -9,9 +9,9 @@ class DepositStatus extends Component {
     let totalShares = '0';
     let sharePrice = '0';
     if (this.props.poolData.totalShares) {
-      balance = web3.utils.fromWei(this.props.poolData.balance);
-      totalShares = web3.utils.fromWei(this.props.poolData.totalShares);
-      sharePrice = web3.utils.fromWei(this.props.poolData.sharePrice);
+      balance = fromAtomic(this.props.poolData.balance);
+      totalShares = fromAtomic(this.props.poolData.totalShares);
+      sharePrice = fromAtomic(this.props.poolData.sharePrice);
     }
     return [
       {text: 'Total Shares', value: totalShares},

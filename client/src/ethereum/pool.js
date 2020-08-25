@@ -2,7 +2,7 @@ import web3 from '../web3';
 import BN from 'bn.js';
 import * as PoolContract from '../../../artifacts/Pool.json';
 import * as ProtocolConfig from '../../config/protocol-local.json';
-const mantissa = new BN(String(1e18));
+import { erc20, decimals } from "./erc20.js";
 const pool = new web3.eth.Contract(PoolContract.abi, ProtocolConfig.pool.address);
 
 function fetchCapitalProviderData(capitalProviderAddress) {
@@ -15,9 +15,24 @@ function fetchCapitalProviderData(capitalProviderAddress) {
     {method: "capitalProviders", args: [capitalProviderAddress], name: "numShares"}
   ];
   return fetchDataFromAttributes(attributes).then((result) => {
-    result.availableToWithdrawal = new BN(result.numShares).div(mantissa).mul(new BN(result.sharePrice));
+
+    result.availableToWithdrawal = new BN(result.numShares).mul(new BN(result.sharePrice)).div(decimals);
     result.address = capitalProviderAddress;
+
     return result;
+  });
+}
+
+function fetchPoolData() {
+  const attributes = [
+    {method: "totalShares"},
+    {method: "sharePrice"},
+  ];
+  return fetchDataFromAttributes(attributes).then((result) => {
+    return erc20.methods.balanceOf(pool._address).call().then((balance) => {
+      result.balance = balance;
+      return result;
+    })
   });
 }
 
@@ -29,19 +44,6 @@ function fetchDataFromAttributes(attributes) {
       result[methodInfo.name || methodInfo.method] = results[index];
     });
     return result;
-  });
-}
-
-function fetchPoolData() {
-  const attributes = [
-    {method: "totalShares"},
-    {method: "sharePrice"},
-  ];
-  return fetchDataFromAttributes(attributes).then((result) => {
-    return web3.eth.getBalance(pool._address).then((balance) => {
-      result.balance = balance;
-      return result;
-    })
   });
 }
 

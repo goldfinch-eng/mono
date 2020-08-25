@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/math/Math.sol";
 import "./Pool.sol";
 import "./CreditLine.sol";
-import "./FPMath.sol";
+import "./external/FPMath.sol";
 
 contract CreditDesk is Ownable {
   using SafeMath for uint256;
@@ -62,6 +62,8 @@ contract CreditDesk is Ownable {
     require(underwriterCanCreateThisCreditLine(_limit, underwriter), "The underwriter cannot create this credit line");
 
     CreditLine cl = new CreditLine(_borrower, _limit, _interestApr, _minCollateralPercent, _paymentPeriodInDays, _termInDays);
+    cl.authorizePool(poolAddress);
+
     underwriter.creditLines.push(address(cl));
     borrower.creditLines.push(address(cl));
 	}
@@ -79,15 +81,23 @@ contract CreditDesk is Ownable {
     uint balance = cl.balance().add(amount);
 
     updateCreditLineAccounting(cl, balance, interestOwed, principalOwed);
-    Pool(poolAddress).transferFunds(msg.sender, amount);
+    getPool().transferFrom(poolAddress, msg.sender, amount);
   }
 
-  function prepay(address payable creditLineAddress) external payable {
-    CreditLine(creditLineAddress).receivePrepayment{value: msg.value}();
+  function prepay(address payable creditLineAddress, uint amount) external payable {
+    CreditLine cl = CreditLine(creditLineAddress);
+
+    getPool().transferFrom(msg.sender, creditLineAddress, amount);
+    uint newPrepaymentBalance = cl.prepaymentBalance().add(amount);
+    cl.setPrepaymentBalance(newPrepaymentBalance);
   }
 
-  function addCollateral(address payable creditLineAddress) external payable {
-    CreditLine(creditLineAddress).receiveCollateral{value: msg.value}();
+  function addCollateral(address payable creditLineAddress, uint amount) external payable {
+    CreditLine cl = CreditLine(creditLineAddress);
+
+    getPool().transferFrom(msg.sender, creditLineAddress, amount);
+    uint newCollateralBalance = cl.collateralBalance().add(amount);
+    cl.setCollateralBalance(newCollateralBalance);
   }
 
   function assessCreditLine(address creditLineAddress) external {
@@ -100,26 +110,32 @@ contract CreditDesk is Ownable {
     (uint paymentRemaining, uint interestPayment, uint principalPayment) = handlePayment(cl, cl.prepaymentBalance(), cl.nextDueBlock(), false);
 
     cl.setPrepaymentBalance(paymentRemaining);
-    cl.sendInterestToPool(interestPayment, payable(poolAddress));
-    cl.sendPrincipalToPool(principalPayment, payable(poolAddress));
+    getPool().collectInterestRepayment(msg.sender, interestPayment);
+    getPool().collectPrincipalRepayment(msg.sender, principalPayment);
     cl.setNextDueBlock(calculateNextDueBlock(cl));
     if (cl.principalOwed() > 0) {
       handleLatePayments(cl);
     }
   }
 
-  function pay(address creditLineAddress) external payable {
+  function pay(address creditLineAddress, uint amount) external payable {
     CreditLine cl = CreditLine(creditLineAddress);
 
-    (uint paymentRemaining, uint interestPayment, uint principalPayment) = handlePayment(cl, msg.value, block.number, true);
+    // Not strictly necessary, but provides a better error message to the user
+    if (!getPool().enoughBalance(msg.sender, amount)) {
+      revert("Insufficient balance for payment");
+    }
+
+    (uint paymentRemaining, uint interestPayment, uint principalPayment) = handlePayment(cl, amount, block.number, true);
     if (paymentRemaining > 0) {
-      cl.receiveCollateral{value: paymentRemaining}();
+      getPool().transferFrom(msg.sender, creditLineAddress, paymentRemaining);
+      cl.setCollateralBalance(cl.collateralBalance().add(paymentRemaining));
     }
     if (interestPayment > 0) {
-      Pool(poolAddress).receiveInterestRepayment{value: interestPayment}();
+      getPool().collectInterestRepayment(msg.sender, interestPayment);
     }
     if (principalPayment > 0) {
-      Pool(poolAddress).receivePrincipalRepayment{value: principalPayment}();
+      getPool().collectPrincipalRepayment(msg.sender, principalPayment);
     }
   }
 
@@ -147,6 +163,10 @@ contract CreditDesk is Ownable {
 
   function handleLatePayments(CreditLine cl) internal {
     // No op for now;
+  }
+
+  function getPool() internal view returns (Pool) {
+    return Pool(poolAddress);
   }
 
   function getInterestAndPrincipalOwedAsOf(CreditLine cl, uint blockNumber) internal view returns (uint, uint) {
@@ -227,6 +247,7 @@ contract CreditDesk is Ownable {
 
     if (balance == 0) {
       cl.setTermEndBlock(0);
+      cl.setNextDueBlock(0);
     }
   }
 

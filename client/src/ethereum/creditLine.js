@@ -10,7 +10,6 @@ function fetchCreditLineData(creditLine) {
   return Promise.all(attributes.map((methodName) => {
     return creditLine.methods[methodName].call();
   })).then((results) => {
-    console.log("results are:", results);
     attributes.forEach((value, attribute) => {
       result[attribute] = value;
     });

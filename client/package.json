@@ -5,6 +5,7 @@
   "dependencies": {
     "@openzeppelin/network": "^0.4.1",
     "@openzeppelin/solidity-loader": "^1.4.6",
+    "bignumber.js": "^9.0.0",
     "classnames": "^2.2.6",
     "json-loader": "^0.5.7",
     "moment": "^2.27.0",
