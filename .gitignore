@@ -77,3 +77,5 @@ cache/
 artifacts/
 
 notes.txt
+
+client/config/protocol-local.json

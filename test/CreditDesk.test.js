@@ -83,7 +83,7 @@ describe("CreditDesk", () => {
     pool = await Pool.new({from: owner});
     pool.initialize(erc20.address, "USDC", decimals, {from: owner});
 
-    // Approve approve transfers for our test accounts
+    // Approve transfers for our test accounts
     await erc20.approve(pool.address, new BN(100000).mul(decimals), {from: person3});
     await erc20.approve(pool.address, new BN(100000).mul(decimals), {from: person2});
     await erc20.approve(pool.address, new BN(100000).mul(decimals), {from: owner});

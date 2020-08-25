@@ -27,14 +27,14 @@ You'll want some testnet ETH and USDC to play around with the app locally. Just 
 ### Running the front-end
 - `cd client`
 - `npm install` (if needed)
-- `npm run start`
+- `npm start`
 
 ### Testing
 - `npm test`
 
 ### Compiling Smart Contracts
-- `npx oz compile`
+- `npx buidler compile` (Though `npx buidler test` will compile automatically, so you generally shouldn't need to run this)
 
 ### Deploying smart contracts
-- `npx oz deploy` and then follow the prompts
+- If you want to deploy for local testing purposes, then see the front-end README in `client/README.md` and look under "developing".
 

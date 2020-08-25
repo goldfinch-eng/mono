@@ -37,7 +37,7 @@ class Earn extends Component {
     const poolData = await fetchPoolData();
     this.setState({
       poolData: poolData,
-    })
+    });
   }
 
   render() {

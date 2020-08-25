@@ -15,7 +15,7 @@ const bigVal = (number) => {
 
 const getBalance = async (address, erc20) => {
   if (erc20) {
-    return await erc20.balanceOf(address);
+    return new BN((await erc20.balanceOf(address)));
   }
   return new BN((await web3.eth.getBalance(address)));
 }
