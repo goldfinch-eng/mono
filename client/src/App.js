@@ -9,8 +9,15 @@ import Earn from './components/earn.js';
 import Footer from "./components/footer";
 import Header from "./components/header";
 
+import { Drizzle } from '@drizzle/store';
+import { DrizzleContext } from "@drizzle/react-plugin";
+import drizzleOptions from "./drizzleOptions";
+
+// const drizzle = new Drizzle(drizzleOptions);
+
 function App() {
   return (
+    // <DrizzleContext.Provider drizzle={drizzle}>
     <Router>
       <Header/>
       <div>
@@ -28,6 +35,7 @@ function App() {
       </div>
       <Footer />
     </Router>
+    // </DrizzleContext.Provider>
   )
 }
 

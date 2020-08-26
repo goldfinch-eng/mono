@@ -1,56 +1,47 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect } from 'react';
 import EarnActionsContainer from './earnActionsContainer.js';
 import DepositStatus from './depositStatus.js';
 import PoolStatus from './poolStatus.js';
 import web3 from '../web3.js';
 import { fetchCapitalProviderData, fetchPoolData } from '../ethereum/pool.js';
 
-class Earn extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      capitalProvider: {},
-      poolData: {},
+function Earn(props) {
+  const [capitalProvider, setCapitalProvider] = useState({});
+  const [poolData, setPoolData] = useState({});
+
+  useEffect(() => {
+    async function refreshAllData() {
+      const [capitalProviderAddress] = await web3.eth.getAccounts();
+      refreshPoolData();
+      refreshCapitalProviderData(capitalProviderAddress);;
     }
-    this.actionComplete = this.actionComplete.bind(this);
+    refreshAllData();
+  }, []);
+
+  function actionComplete () {
+    refreshPoolData();
+    refreshCapitalProviderData(capitalProvider.address);
   }
 
-  async componentDidMount() {
-    const [capitalProviderAddress] = await web3.eth.getAccounts();
-    this.refreshPoolData()
-    this.refreshCapitalProviderData(capitalProviderAddress);
-  }
-
-  actionComplete () {
-    this.refreshCapitalProviderData(this.state.capitalProvider.address);
-    this.refreshPoolData();
-  }
-
-  async refreshCapitalProviderData(address) {
+  async function refreshCapitalProviderData(address) {
     const capitalProvider = await fetchCapitalProviderData(address);
-    this.setState({
-      capitalProvider: capitalProvider,
-    });
+    setCapitalProvider(capitalProvider);
   }
 
-  async refreshPoolData() {
+  async function refreshPoolData() {
     const poolData = await fetchPoolData();
-    this.setState({
-      poolData: poolData,
-    });
+    setPoolData(poolData);
   }
 
-  render() {
-    return (
-      <div>
-        <div className="content-header">Your Account</div>
-        <EarnActionsContainer poolData={this.state.poolData} capitalProvider={this.state.capitalProvider} actionComplete={this.actionComplete}/>
-        {/* These need to be updated to be the correct fields for earning! */}
-        <DepositStatus capitalProvider={this.state.capitalProvider}/>
-        <PoolStatus poolData={this.state.poolData}/>
-      </div>
-    )
-  }
+  return (
+    <div>
+      <div className="content-header">Your Account</div>
+      <EarnActionsContainer poolData={poolData} capitalProvider={capitalProvider} actionComplete={actionComplete}/>
+      {/* These need to be updated to be the correct fields for earning! */}
+      <DepositStatus capitalProvider={capitalProvider}/>
+      <PoolStatus poolData={poolData}/>
+    </div>
+  )
 }
 
 export default Earn;

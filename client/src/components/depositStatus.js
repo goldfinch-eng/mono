@@ -1,15 +1,15 @@
-import React, { Component } from 'react';
+import React from 'react';
 import InfoSection from './infoSection.js';
 import { fromAtomic } from '../ethereum/erc20.js';
 
-class DepositStatus extends Component {
+function DepositStatus(props) {
 
-  deriveRows = () => {
+  function deriveRows() {
     let numShares = "0";
     let availableToWithdrawal = "0";
-    if (this.props.capitalProvider.numShares) {
-      numShares = fromAtomic(this.props.capitalProvider.numShares);
-      availableToWithdrawal = fromAtomic(this.props.capitalProvider.availableToWithdrawal);
+    if (props.capitalProvider.numShares) {
+      numShares = fromAtomic(props.capitalProvider.numShares);
+      availableToWithdrawal = fromAtomic(props.capitalProvider.availableToWithdrawal);
     }
     return [
       {text: 'Your Total Shares', value: numShares},
@@ -17,14 +17,12 @@ class DepositStatus extends Component {
     ]
   }
 
-  render() {
-    return (
-      <InfoSection
-        title="Deposit Status"
-        rows={this.deriveRows()}
-      />
-    )
-  }
+  return (
+    <InfoSection
+      title="Deposit Status"
+      rows={deriveRows()}
+    />
+  )
 }
 
 export default DepositStatus;
