@@ -8,6 +8,7 @@
     "bignumber.js": "^9.0.0",
     "classnames": "^2.2.6",
     "json-loader": "^0.5.7",
+    "lodash": "^4.17.20",
     "moment": "^2.27.0",
     "node-sass": "^4.13.0",
     "prop-types": "^15.7.2",

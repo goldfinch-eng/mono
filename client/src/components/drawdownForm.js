@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import web3 from '../web3';
 import creditDesk from '../ethereum/creditDesk';
 import { sendFromUser } from '../ethereum/utils';
 import { toAtomic } from '../ethereum/erc20';
@@ -32,7 +31,7 @@ class DrawdownForm extends Component {
     return (
       <div className="form-full">
         <nav className="form-nav">
-          <div onClick={() => { this.setShow('drawdown') }} className='form-nav-option selected'>Drawdown</div>
+          <div className='form-nav-option selected'>Drawdown</div>
           <div onClick={this.props.cancelAction} className="form-nav-option cancel">Cancel</div>
         </nav>
         <p className="form-message">You can drawdown up to your credit limit.</p>
