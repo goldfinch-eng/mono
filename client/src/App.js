@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   BrowserRouter as Router,
   Switch,
@@ -8,18 +8,23 @@ import Borrow from './components/borrow.js';
 import Earn from './components/earn.js';
 import Footer from "./components/footer";
 import Header from "./components/header";
-
-import { Drizzle } from '@drizzle/store';
-import { DrizzleContext } from "@drizzle/react-plugin";
-import drizzleOptions from "./drizzleOptions";
-
-// const drizzle = new Drizzle(drizzleOptions);
+import web3 from './web3';
 
 function App() {
+  const [connected, setConnected] = useState(undefined);
+  async function checkForAccounts() {
+    const accounts = await web3.eth.getAccounts();
+    if (accounts.length > 0) {
+      setConnected(true);
+    }
+  }
+  useEffect(() => {
+    checkForAccounts();
+  }, []);
+
   return (
-    // <DrizzleContext.Provider drizzle={drizzle}>
     <Router>
-      <Header/>
+      <Header connected={connected} connectionComplete={checkForAccounts}/>
       <div>
         <Switch>
           <Route exact path="/">
@@ -35,7 +40,6 @@ function App() {
       </div>
       <Footer />
     </Router>
-    // </DrizzleContext.Provider>
   )
 }
 
