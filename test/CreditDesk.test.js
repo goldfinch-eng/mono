@@ -1,7 +1,7 @@
 const {chai, expect, MAX_UINT, decimals, BN, bigVal, mochaEach, getBalance } = require('./testHelpers.js');
 const { time } = require('@openzeppelin/test-helpers');
 const Accountant = artifacts.require('Accountant');
-const CreditDesk = artifacts.require('TestCreditDesk');
+const CreditDesk = artifacts.require('CreditDesk');
 const CreditLine = artifacts.require('CreditLine');
 const Pool = artifacts.require('TestPool');
 const ERC20 = artifacts.require('TestERC20');
