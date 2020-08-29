@@ -9,7 +9,7 @@ describe("Pool", () => {
   let pool;
   let erc20;
   const mantissa = new BN(1e6);
-  let depositAmount = new BN(1).mul(mantissa).div(new BN(10));
+  let depositAmount = new BN(4).mul(mantissa);
   let withdrawAmount = new BN(2).mul(mantissa);
   let makeDeposit = async (person, amount) => {
     amount = amount || depositAmount;
@@ -50,7 +50,7 @@ describe("Pool", () => {
       });
     });
 
-    describe.only("after you have approved the pool to transfer funds", async() => {
+    describe("after you have approved the pool to transfer funds", async() => {
       beforeEach(async () => {
         await erc20.approve(pool.address, new BN(100000).mul(mantissa), {from: person2});
         await erc20.approve(pool.address, new BN(100000).mul(mantissa), {from: owner});
