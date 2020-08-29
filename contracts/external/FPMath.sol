@@ -42,7 +42,7 @@ pragma solidity ^0.6.8;
  * need to store it, thus in Solidity signed 64.64-bit fixed point numbers are
  * represented by int128 type holding only the numerator.
  */
-// Original name was ABDKMath64x64. I renamed to simply ABDKMath for convenience.
+// Original name was ABDKMath64x64. I renamed to simply FPMath (ie. Floating Point Math) for convenience.
 library FPMath {
   /**
   @dev

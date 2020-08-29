@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import creditDesk from '../ethereum/creditDesk';
+import React, { useState, useContext } from 'react';
 import { sendFromUser } from '../ethereum/utils';
 import { toAtomic } from '../ethereum/erc20';
+import { AppContext } from '../App';
 
 function PaymentForm(props) {
+  const { creditDesk } = useContext(AppContext);
   const [show, setShow] = useState('principalPayment');
   const [showSuccess, setShowSuccess] = useState(false);
   const [prepaymentValue, setPrepaymentValue] = useState('');

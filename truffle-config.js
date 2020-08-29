@@ -36,5 +36,6 @@ module.exports = {
       docker: false, // Use a version obtained through docker
       parser: "solcjs",  // Leverages solc-js purely for speedy parsing
     }
-  }
+  },
+  plugins: ["truffle-contract-size"]
 };

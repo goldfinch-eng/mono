@@ -8,16 +8,14 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/math/Math.sol";
 import "./Pool.sol";
+import "./Accountant.sol";
 import "./CreditLine.sol";
-import "./external/FPMath.sol";
 
 contract CreditDesk is Ownable {
   using SafeMath for uint256;
 
   // Approximate number of blocks
   uint public constant blocksPerDay = 5760;
-  uint public constant blocksPerYear = (blocksPerDay * 365);
-  uint public constant interestDecimals = 1e18;
   address public poolAddress;
 
   struct Underwriter {
@@ -27,12 +25,6 @@ contract CreditDesk is Ownable {
 
   struct Borrower {
     address[] creditLines;
-  }
-
-  struct PaymentAllocation {
-    uint interestPayment;
-    uint principalPayment;
-    uint additionalBalancePayment;
   }
 
   mapping(address => Underwriter) public underwriters;
@@ -145,7 +137,7 @@ contract CreditDesk is Ownable {
 
   function handlePayment(CreditLine cl, uint paymentAmount, uint asOfBlock, bool allowFullBalancePayOff) internal returns (uint, uint, uint) {
     (uint interestOwed, uint principalOwed) = getInterestAndPrincipalOwedAsOf(cl, asOfBlock);
-    PaymentAllocation memory pa = allocatePayment(paymentAmount, cl.balance(), interestOwed, principalOwed);
+    Accountant.PaymentAllocation memory pa = Accountant.allocatePayment(paymentAmount, cl.balance(), interestOwed, principalOwed);
 
     uint newBalance = cl.balance().sub(pa.principalPayment);
     if (allowFullBalancePayOff) {
@@ -170,107 +162,12 @@ contract CreditDesk is Ownable {
   }
 
   function getInterestAndPrincipalOwedAsOf(CreditLine cl, uint blockNumber) internal view returns (uint, uint) {
-    (uint interestAccrued, uint principalAccrued) = calculateInterestAndPrincipalAccrued(cl, blockNumber);
+    (uint interestAccrued, uint principalAccrued) = Accountant.calculateInterestAndPrincipalAccrued(cl, blockNumber);
     return (cl.interestOwed().add(interestAccrued), cl.principalOwed().add(principalAccrued));
-  }
-
-  function calculateInterestAndPrincipalAccrued(CreditLine cl, uint blockNumber) internal view returns(uint, uint) {
-    uint totalPayment = calculateAnnuityPayment(cl.balance(), cl.interestApr(), cl.termInDays(), cl.paymentPeriodInDays());
-    uint interestAccrued = calculateInterestAccrued(cl, blockNumber);
-    uint principalAccrued = calculatePrincipalAccrued(cl, totalPayment, interestAccrued, blockNumber);
-    return (interestAccrued, principalAccrued);
-  }
-
-  function calculatePrincipalAccrued(CreditLine cl, uint periodPayment, uint interestAccrued, uint blockNumber) internal view returns(uint) {
-    uint blocksPerPaymentPeriod = blocksPerDay * cl.paymentPeriodInDays();
-    // Math.min guards against overflow. See comment in the calculateInterestAccrued for further explanation.
-    uint lastUpdatedBlock = Math.min(blockNumber, cl.lastUpdatedBlock());
-    uint numBlocksElapsed = blockNumber.sub(lastUpdatedBlock);
-    int128 fractionOfPeriod = FPMath.divi(int256(numBlocksElapsed), int256(blocksPerPaymentPeriod));
-    uint periodPaymentFraction = uint(FPMath.muli(fractionOfPeriod, int256(periodPayment)));
-    return periodPaymentFraction.sub(interestAccrued);
-  }
-
-  function calculateInterestAccrued(CreditLine cl, uint blockNumber) internal view returns(uint) {
-    // We use Math.min here to prevent integer overflow (ie. go negative) when calculating
-    // numBlocksElapsed. Typically this shouldn't be possible, because
-    // the lastUpdatedBlock couldn't be *after* the current blockNumber. However, when assessing
-    // we allow this function to be called with a past block number, which raises the possibility
-    // of overflow.
-    // This use of min should not generate incorrect interest calculations, since
-    // this functions purpose is just to normalize balances, and  will be called any time
-    // a balance affecting action takes place (eg. drawdown, repayment, assessment)
-    uint lastUpdatedBlock = Math.min(blockNumber, cl.lastUpdatedBlock());
-
-    uint numBlocksElapsed = blockNumber.sub(lastUpdatedBlock);
-    uint totalInterestPerYear = (cl.balance().mul(cl.interestApr())).div(interestDecimals);
-    return totalInterestPerYear.mul(numBlocksElapsed).div(blocksPerYear);
-  }
-
-  function calculateAnnuityPayment(uint balance, uint interestApr, uint termInDays, uint paymentPeriodInDays) internal pure returns(uint) {
-    /*
-    This is the standard amortization formula for an annuity payment amount.
-    See: https://en.wikipedia.org/wiki/Amortization_calculator
-
-    The specific formula we're interested in can be expressed as:
-    `balance * (periodRate / (1 - (1 / ((1 + periodRate) ^ periods_per_term))))`
-
-    FPMath is a library designed for emulating floating point numbers in solidity.
-    At a high level, we are just turning all our uint256 numbers into floating points and
-    doing the formula above, and then turning it back into an int64 at the end.
-    */
-
-
-    // Components used in the formula
-    uint periodsPerTerm = termInDays / paymentPeriodInDays;
-    int128 one = FPMath.fromInt(int256(1));
-    int128 annualRate = FPMath.divi(int256(interestApr), int256(interestDecimals));
-    int128 dailyRate = FPMath.div(annualRate, FPMath.fromInt(int256(365)));
-    int128 periodRate = FPMath.mul(dailyRate, FPMath.fromInt(int256(paymentPeriodInDays)));
-    int128 termRate = FPMath.pow(FPMath.add(one, periodRate), periodsPerTerm);
-
-    int128 denominator = FPMath.sub(one, FPMath.div(one, termRate));
-    if (denominator == 0) {
-      return balance / periodsPerTerm;
-    }
-    int128 paymentFractionFP = FPMath.div(periodRate, denominator);
-    uint paymentFraction = uint(FPMath.muli(paymentFractionFP, int256(1e18)));
-
-    return (balance * paymentFraction) / 1e18;
-  }
-
-  function updateCreditLineAccounting(CreditLine cl, uint balance, uint interestOwed, uint principalOwed) internal {
-    cl.setBalance(balance);
-    cl.setInterestOwed(interestOwed);
-    cl.setPrincipalOwed(principalOwed);
-    cl.setLastUpdatedBlock(block.number);
-
-    if (balance == 0) {
-      cl.setTermEndBlock(0);
-      cl.setNextDueBlock(0);
-    }
   }
 
   function amountWithinLimit(uint amount, CreditLine cl) internal view returns(bool) {
     return cl.balance().add(amount) <= cl.limit();
-  }
-
-  function allocatePayment(uint paymentAmount, uint balance, uint interestOwed, uint principalOwed) internal pure returns(PaymentAllocation memory) {
-    uint paymentRemaining = paymentAmount;
-    uint interestPayment = Math.min(interestOwed, paymentRemaining);
-    paymentRemaining = paymentRemaining.sub(interestPayment);
-
-    uint principalPayment = Math.min(principalOwed, paymentRemaining);
-    paymentRemaining = paymentRemaining.sub(principalPayment);
-
-    uint balanceRemaining = balance.sub(principalPayment);
-    uint additionalBalancePayment = Math.min(paymentRemaining, balanceRemaining);
-
-    return PaymentAllocation({
-      interestPayment: interestPayment,
-      principalPayment: principalPayment,
-      additionalBalancePayment: additionalBalancePayment
-    });
   }
 
   function calculateNewTermEndBlock(CreditLine cl) internal view returns (uint) {
@@ -301,5 +198,17 @@ contract CreditDesk is Ownable {
       creditExtended = creditExtended.add(cl.limit());
     }
     return creditExtended;
+  }
+
+  function updateCreditLineAccounting(CreditLine cl, uint balance, uint interestOwed, uint principalOwed) internal {
+    cl.setBalance(balance);
+    cl.setInterestOwed(interestOwed);
+    cl.setPrincipalOwed(principalOwed);
+    cl.setLastUpdatedBlock(block.number);
+
+    if (balance == 0) {
+      cl.setTermEndBlock(0);
+      cl.setNextDueBlock(0);
+    }
   }
 }
