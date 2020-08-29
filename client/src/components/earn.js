@@ -14,11 +14,9 @@ function Earn(props) {
   useEffect(() => {
     async function refreshAllData() {
       const [capitalProviderAddress] = await web3.eth.getAccounts();
-      console.log("Capital provider address is...", capitalProviderAddress);
       refreshPoolData(pool, erc20);
       refreshCapitalProviderData(pool, capitalProviderAddress);;
     }
-    console.log("Running the earn use effect...");
     refreshAllData();
   }, [pool, erc20]);
 
@@ -29,7 +27,6 @@ function Earn(props) {
 
   async function refreshCapitalProviderData(pool, address) {
     const capitalProvider = await fetchCapitalProviderData(pool, address);
-    console.log("Setting the capital provider to", capitalProvider);
     setCapitalProvider(capitalProvider);
   }
 

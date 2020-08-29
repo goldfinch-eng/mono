@@ -2,7 +2,6 @@ const BN = require('bn.js');
 // Using 1e6, because that's what USDC is.
 const decimals = new BN(String(1e6));
 
-// This is the ROPSTEN address
 const ROPSTEN_USDC_ADDRESS = "0x07865c6e87b9f70255377e024ace6630c1eaa37f"
 const LOCAL = "local";
 const ROPSTEN = "ropsten";

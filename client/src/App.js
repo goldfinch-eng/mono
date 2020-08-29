@@ -22,7 +22,6 @@ function App() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    console.log("Running the app use effect");
     setupWeb3();
   }, []);
 

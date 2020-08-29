@@ -16,7 +16,6 @@ function WithdrawalForm(props) {
   async function action () {
     const withdrawalAmount = toAtomic(value);
     return sendFromUser(pool.methods.withdraw(withdrawalAmount), props.capitalProvider.address).then((result) => {
-      console.log("Result is...", result);
       setValue('')
       setShowSuccess(true);
       props.actionComplete();
