@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { pool } from '../ethereum/pool';
-import { erc20 } from '../ethereum/erc20';
+import React, { useState, useContext } from 'react';
 import { fromAtomic, toAtomic } from '../ethereum/erc20';
 import { sendFromUser } from '../ethereum/utils';
+import { AppContext } from '../App.js';
 
 function DepositForm(props) {
+  const { pool, erc20 } = useContext(AppContext);
   const [value, setValue] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
 

@@ -1,9 +1,12 @@
-import React, { useState } from "react";
+import React from "react";
 import { NavLink } from 'react-router-dom';
 import logoPurp from "../images/logomark-purp.svg";
 
 function Header(props) {
   function enableMetamask() {
+    if (props.user) {
+      return;
+    }
     window.ethereum.request({ method: 'eth_requestAccounts' }).then((_result) => {
       props.connectionComplete();
     }).catch((error) => {
@@ -11,14 +14,14 @@ function Header(props) {
     });
   }
 
-  let walletButton;
-  if (props.connected === undefined) {
-    walletButton = null;
-  } else if (props.connected === false) {
-    walletButton = <a onClick={enableMetamask} className="connect-wallet">Enable Metamask</a>
+  let walletButtonText;
+  if (!props.user) {
+    walletButtonText = "Enable Metamask"
   } else {
-    walletButton = <a className="connect-wallet">Connected</a>
+    walletButtonText = "Connected"
   }
+
+  let walletButton = <a onClick={enableMetamask} className="connect-wallet">{walletButtonText}</a>
   return (
     <div className="header">
       <img className="header-logo" src={logoPurp} alt="Goldfinch" />

@@ -1,6 +1,6 @@
 const {chai, expect, MAX_UINT, decimals, BN, bigVal, mochaEach, getBalance } = require('./testHelpers.js');
-const { before } = require('mocha');
 const { time } = require('@openzeppelin/test-helpers');
+const FPMath = artifacts.require('FPMath');
 const CreditDesk = artifacts.require('TestCreditDesk');
 const CreditLine = artifacts.require('CreditLine');
 const Pool = artifacts.require('TestPool');
@@ -69,6 +69,13 @@ describe("CreditDesk", () => {
     creditLine = await CreditLine.at(ulCreditLines[0]);
     return creditLine;
   }
+
+  before(async () => {
+    // Buidler will throw an error if this happens more than once
+    // which is why put it in a before block, rather than beforeEach;
+    fpmath = await FPMath.new({from: owner});
+    CreditDesk.link(fpmath);
+  });
 
   beforeEach(async () => {
     accounts = await web3.eth.getAccounts();

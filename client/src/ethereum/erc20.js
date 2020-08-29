@@ -2,10 +2,26 @@ import web3 from '../web3';
 import BN from 'bn.js';
 import BigNumber from "bignumber.js"
 import * as ERC20Contract from '../../../artifacts/TestERC20.json';
-import * as ProtocolConfig from '../../config/protocol-local.json';
+import { mapNetworkToID, transformedConfig } from './utils';
+const USDC_ADDRESSES = {
+  "ropsten": "0x07865c6e87b9f70255377e024ace6630c1eaa37f"
+}
 const decimalPlaces = 6;
 const decimals = new BN(String(10 ** decimalPlaces));
-const erc20 = new web3.eth.Contract(ERC20Contract.abi, ProtocolConfig.erc20.address);
+
+function getErc20(networkName) {
+  const networkId = mapNetworkToID[networkName];
+  const deployedErc20 = transformedConfig()[networkId].contracts.Erc20;
+  let address
+  if (deployedErc20) {
+    address = deployedErc20.address
+  } else {
+    // Assume we're on testnet or mainnet
+    address = USDC_ADDRESSES[networkName]
+  }
+  const erc20 = new web3.eth.Contract(ERC20Contract.abi, address);
+  return erc20;
+}
 
 function fromAtomic(amount) {
   return new BigNumber(String(amount)).div(decimals).toString(10);
@@ -16,7 +32,7 @@ function toAtomic(amount) {
 }
 
 export {
-  erc20,
+  getErc20,
   decimals,
   fromAtomic,
   toAtomic,
