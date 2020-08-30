@@ -4,6 +4,7 @@ import {
   Switch,
   Route,
 } from "react-router-dom";
+import _ from "lodash";
 import Borrow from './components/borrow.js';
 import Earn from './components/earn.js';
 import Footer from "./components/footer";
@@ -20,6 +21,7 @@ function App() {
   const [creditDesk, setCreditDesk] = useState(null);
   const [erc20, setErc20] = useState(null);
   const [user, setUser] = useState(null);
+  const [pendingTXs, setPendingTXs] = useState([]);
 
   useEffect(() => {
     setupWeb3();
@@ -36,17 +38,37 @@ function App() {
     }
   }
 
+  var addPendingTX = (pendingTX) => {
+    setPendingTXs((currentPendingTXs) => {
+      const newPendingTxs = _.concat(currentPendingTXs, pendingTX);
+      console.log("After setting... the pending txs are", pendingTXs);
+      return newPendingTxs;
+    })
+  }
+
+  var markTXSuccessful = (completedTX) => {
+    setPendingTXs((currentPendingTXs) => {
+      const matches = _.remove(currentPendingTXs, {id: completedTX.id});
+      const tx = matches && matches[0];
+      tx.status = "successful";
+      const newPendingTxs = _.concat(currentPendingTXs, tx);
+      return newPendingTxs;
+    })
+  }
+
   const store = {
     pool: pool,
     creditDesk: creditDesk,
     user: user,
     erc20: erc20,
+    addPendingTX: addPendingTX,
+    markTXSuccessful: markTXSuccessful
   }
 
   return (
     <AppContext.Provider value={store}>
       <Router>
-        <Header user={user} connectionComplete={setupWeb3}/>
+        <Header user={user} pendingTXs={pendingTXs} connectionComplete={setupWeb3}/>
         <div>
           <Switch>
             <Route exact path="/">

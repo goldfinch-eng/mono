@@ -1,6 +1,7 @@
 const BN = require('bn.js');
 // Using 1e6, because that's what USDC is.
-const decimals = new BN(String(1e6));
+const USDCDecimals = new BN(String(1e6));
+const ETHDecimals = new BN(String(1e18));
 
 const ROPSTEN_USDC_ADDRESS = "0x07865c6e87b9f70255377e024ace6630c1eaa37f"
 const LOCAL = "local";
@@ -18,6 +19,7 @@ module.exports = {
   ROPSTEN_USDC_ADDRESS: ROPSTEN_USDC_ADDRESS,
   LOCAL: LOCAL,
   MAINNET: MAINNET,
-  decimals: decimals,
+  USDCDecimals: USDCDecimals,
   MAX_UINT: MAX_UINT,
+  ETHDecimals: ETHDecimals,
 }

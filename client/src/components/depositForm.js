@@ -1,7 +1,9 @@
+import BN from 'bn.js';
 import React, { useState, useContext } from 'react';
 import { fromAtomic, toAtomic } from '../ethereum/erc20';
 import { sendFromUser } from '../ethereum/utils';
 import { AppContext } from '../App.js';
+import LoadingButton from './loadingButton';
 
 function DepositForm(props) {
   const { pool, erc20 } = useContext(AppContext);
@@ -16,13 +18,17 @@ function DepositForm(props) {
   function action() {
     const depositAmount = toAtomic(value);
     const userAddress = props.capitalProvider.address;
-    return sendFromUser(erc20.methods.approve(pool._address, toAtomic(10000)), userAddress).then((result) => {
+    if (props.capitalProvider.allowance.lte(new BN(depositAmount))) {
+      return sendFromUser(erc20.methods.approve(pool._address, toAtomic(100000)), userAddress).then((result) => {
+        props.actionComplete();
+      });
+    } else {
       return sendFromUser(pool.methods.deposit(depositAmount), userAddress).then((result) => {
         setValue('');
         setShowSuccess(true);
         props.actionComplete();
       });
-    });
+    };
   }
 
   return (
@@ -36,9 +42,9 @@ function DepositForm(props) {
         <div className="input-container">
           <input value={value} placeholder='10.0' onChange={handleChange} className="big-number-input"></input>
         </div>
-        <button onClick={() => {action()}} className="button-dk submit-payment">Make Deposit</button>
+        <LoadingButton action={action} text="Make Deposit"/>
       </div>
-      {showSuccess ? <div className="form-message">Deposit successfully completed!</div> : ""}
+      {showSuccess ? <div className="success-message">Deposit successfully completed!</div> : ""}
     </div>
   )
 }

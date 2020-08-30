@@ -2,16 +2,11 @@ import web3 from '../web3';
 import BN from 'bn.js';
 import BigNumber from "bignumber.js"
 import * as ERC20Contract from '../../../artifacts/TestERC20.json';
-import { mapNetworkToID, transformedConfig } from './utils';
-const USDC_ADDRESSES = {
-  "ropsten": "0x07865c6e87b9f70255377e024ace6630c1eaa37f"
-}
-const decimalPlaces = 6;
-const decimals = new BN(String(10 ** decimalPlaces));
+import { mapNetworkToID, transformedConfig, decimalPlaces, decimals, USDC_ADDRESSES } from './utils';
 
 function getErc20(networkName) {
   const networkId = mapNetworkToID[networkName];
-  const deployedErc20 = transformedConfig()[networkId].contracts.Erc20;
+  const deployedErc20 = transformedConfig()[networkId].contracts.TestERC20;
   let address
   if (deployedErc20) {
     address = deployedErc20.address

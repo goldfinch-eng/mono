@@ -79,4 +79,4 @@ artifacts/
 notes.txt
 
 client/config/protocol-local.json
-deployments/localhost*/*.json
+deployments/localhost_31337

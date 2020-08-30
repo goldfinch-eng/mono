@@ -1,63 +1,48 @@
 import web3 from '../web3';
 import BN from 'bn.js';
 import * as PoolContract from '../../../artifacts/Pool.json';
-import { mapNetworkToID, transformedConfig } from "./utils.js";
-import { decimals } from "./erc20";
+import { mapNetworkToID, transformedConfig, fetchDataFromAttributes } from "./utils.js";
+import { decimals, getErc20 } from "./erc20";
 
 let pool;
 
 function getPool(networkName) {
   const networkId = mapNetworkToID[networkName];
   pool = new web3.eth.Contract(PoolContract.abi, transformedConfig()[networkId].contracts.Pool.address);
+  pool.erc20 = getErc20(networkName);
   return pool;
 }
 
-function fetchCapitalProviderData(pool, capitalProviderAddress) {
-  if (!capitalProviderAddress) {
-    return {};
+async function fetchCapitalProviderData(pool, capitalProviderAddress) {
+  var result = {}
+  if (!capitalProviderAddress || !pool) {
+    return Promise.resolve(result);
   }
   const attributes = [
     {method: "totalShares"},
     {method: "sharePrice"},
     {method: "capitalProviders", args: [capitalProviderAddress], name: "numShares"}
   ];
-  return fetchDataFromAttributes(pool, attributes).then((result) => {
-
-    result.availableToWithdrawal = new BN(result.numShares).mul(new BN(result.sharePrice)).div(decimals);
-    result.address = capitalProviderAddress;
-
-    return result;
-  });
+  result = await fetchDataFromAttributes(pool, attributes);
+  result.availableToWithdrawal = new BN(result.numShares).mul(new BN(result.sharePrice)).div(decimals);
+  result.address = capitalProviderAddress;
+  const allowance = new BN(await pool.erc20.methods.allowance(capitalProviderAddress, pool._address).call());
+  result.allowance = allowance;
+  return result;
 }
 
-function fetchPoolData(pool, erc20) {
+async function fetchPoolData(pool, erc20) {
+  var result = {}
   if (!erc20 || !pool) {
-    return Promise.resolve({});
+    return Promise.resolve(result);
   }
   const attributes = [
     {method: "totalShares"},
     {method: "sharePrice"},
   ];
-  return fetchDataFromAttributes(pool, attributes).then((result) => {
-    return erc20.methods.balanceOf(pool._address).call().then((balance) => {
-      result.balance = balance;
-      return result;
-    })
-  });
-}
-
-function fetchDataFromAttributes(pool, attributes) {
-  const result = {};
-  if (!pool) {
-    return Promise.resolve(result);
-  }
-  var promises = attributes.map((methodInfo) => { return pool.methods[methodInfo.method](...(methodInfo.args || [])).call() });
-  return Promise.all(promises).then((results) => {
-    attributes.forEach((methodInfo, index) => {
-      result[methodInfo.name || methodInfo.method] = results[index];
-    });
-    return result;
-  });
+  result = await fetchDataFromAttributes(pool, attributes);
+  result.balance = await erc20.methods.balanceOf(pool._address).call();
+  return result;
 }
 
 export {

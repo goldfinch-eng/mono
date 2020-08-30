@@ -15,6 +15,17 @@
   }
 }
 
+.button-pending {
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+.success-message {
+  font-size: 18px;
+  line-height: 1.4;
+  margin-top: 15px;
+}
+
 .form-full{
   background-color: $sand-light;
   border-radius: 12px;
