@@ -8,7 +8,7 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 - Run the server. `npm start`
 - You will also likely want to run the deploy script so you have a usable testing
 environment. To really take advantage of this, you should login to your Metamask first, then copy your account number, and paste it in like the following:
-  - `TEST_USER_ADDRESS={YOUR_ACCOUNT_ADDRESS} npx buidler run scripts/localTestingDeploy.js --network localhost`
+  - `TEST_USER={YOUR_METAMASK_ADDRESS} npx buidler node --export-all ./config/deployments.json `
   - By using the `TEST_USER_ADDRESS`, the script will automatically give that user an open Credit Line, as well as send them some test funds of ETH, plus USDC
   --> Note this script does lots of useful things besides deploying the contracts. For example, it also creates an underwriter, gives them a limit, creates a creditLine, funds the pool, etc.
 
