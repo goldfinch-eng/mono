@@ -2,6 +2,7 @@ import React, { useState, useContext } from 'react';
 import { sendFromUser } from '../ethereum/utils';
 import { toAtomic } from '../ethereum/erc20';
 import { AppContext } from '../App';
+import LoadingButton from './loadingButton';
 
 function PaymentForm(props) {
   const { creditDesk } = useContext(AppContext);
@@ -23,7 +24,7 @@ function PaymentForm(props) {
 
   function submitPrepayment() {
     const amount = toAtomic(prepaymentValue);
-    return sendFromUser(creditDesk.methods.prepay(props.creditLine._address,  amount), props.borrower).then((_result) => {
+    return sendFromUser(creditDesk.methods.prepay(props.creditLine.address,  amount), props.borrower).then((_result) => {
       setPrepaymentValue(0)
       setShowSuccess(true);
       props.actionComplete();
@@ -32,7 +33,7 @@ function PaymentForm(props) {
 
   function submitPrincipalPayment() {
     const amount = toAtomic(principalValue);
-    return sendFromUser(creditDesk.methods.pay(props.creditLine._address, amount), props.borrower).then((_result) => {
+    return sendFromUser(creditDesk.methods.pay(props.creditLine.address, amount), props.borrower).then((_result) => {
       setPrincipalValue(0)
       setShowSuccess(true);
       props.actionComplete();
@@ -48,7 +49,7 @@ function PaymentForm(props) {
           <div className="input-container">
             <input value={principalValue} placeholder="10.0" onChange={(e) => {handleChange(e, setPrincipalValue)}} className="big-number-input"></input>
           </div>
-          <button onClick={submitPrincipalPayment} className="button-dk submit-payment">Submit Payment</button>
+          <LoadingButton action={submitPrincipalPayment} text="Submit Payment"/>
         </div>
         {/* Will need to add a new route or something to be able to display this text */}
         {/* <div className="form-note">Note: After a principal payment of $15,000.00, your next payment due will be $496.30 on Oct 6, 2020.</div> */}
@@ -62,7 +63,7 @@ function PaymentForm(props) {
           <div className="input-container">
             <input value={prepaymentValue} placeholder="10.0" onChange={(e) => {handleChange(e, setPrepaymentValue)}} className="big-number-input"></input>
           </div>
-          <button onClick={submitPrepayment} className="button-dk submit-payment">Submit Pre-payment</button>
+          <LoadingButton action={submitPrepayment} text="Submit Pre-payment"/>
         </div>
       </div>
     );

@@ -3,13 +3,14 @@ import CreditActionsContainer from './creditActionsContainer.js';
 import PaymentStatus from './paymentStatus.js';
 import CreditStatus from './creditStatus.js';
 import web3 from '../web3.js';
-import { buildCreditLine } from '../ethereum/creditLine.js';
+import { buildCreditLine, fetchCreditLineData } from '../ethereum/creditLine.js';
 import { AppContext } from '../App.js';
 
 function Borrow(props) {
   const { creditDesk } = useContext(AppContext);
   const [borrower, setBorrower] = useState('');
   const [creditLine, setCreditLine] = useState({});
+  const [creditLineFadtory, setCreditLineFactory] = useState({});
 
   useEffect(() => {
     if (!creditDesk) {
@@ -21,19 +22,23 @@ function Borrow(props) {
       if (borrower) {
         const borrowerCreditLines = await creditDesk.methods.getBorrowerCreditLines(borrower).call();
         if (borrowerCreditLines.length) {
-          creditLine = buildCreditLine(borrowerCreditLines[0]);
+          const factory = buildCreditLine(borrowerCreditLines[0]);
+          setCreditLineFactory(factory)
+          creditLine = await fetchCreditLineData(factory);
         }
       }
       setBorrower(borrower);
       setCreditLine(creditLine);
     }
+    console.log("Updating borrower credit lines");
     updateBorrowerAndCreditLine();
-  }, [borrower, creditLine, creditDesk])
+  }, [creditDesk]);
 
 
-  function actionComplete() {
+  async function actionComplete() {
+    const newCreditLine = await fetchCreditLineData(creditLineFadtory);
     setBorrower(borrower);
-    setCreditLine(creditLine);
+    setCreditLine(newCreditLine);
   }
 
   return (

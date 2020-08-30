@@ -2,6 +2,7 @@ import React, { useContext, useState } from 'react';
 import { fromAtomic, toAtomic } from '../ethereum/erc20';
 import { sendFromUser } from '../ethereum/utils.js';
 import { AppContext } from '../App.js';
+import LoadingButton from './loadingButton';
 
 function WithdrawalForm(props) {
   const { pool } = useContext(AppContext);
@@ -33,9 +34,9 @@ function WithdrawalForm(props) {
         <div className="input-container">
           <input value={value} placeholder='10.0' onChange={handleChange} className="big-number-input"></input>
         </div>
-        <button onClick={() => {action()}} className="button-dk submit-payment">Make Withdrawal</button>
+        <LoadingButton action={action} text="Make Withdrawal"/>
       </div>
-      {showSuccess ? <div className="form-message">Withdrawal successfully completed!</div> : ""}
+      {showSuccess ? <div className="success-message">Withdrawal successfully completed!</div> : ""}
     </div>
   )
 }

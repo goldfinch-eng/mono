@@ -30,7 +30,7 @@ module.exports = {
   namedAccounts: {
     admin: {
       default: 0,
-      3: `0x83CB0ec2f0013a9641654b344D34615f95b7D7FC`
+      3: `0x83CB0ec2f0013a9641654b344D34615f95b7D7FC`,
     }
   }
 };

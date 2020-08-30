@@ -1,52 +1,32 @@
 import moment from 'moment';
-import React, { Component } from 'react';
+import _ from 'lodash';
+import React, { useState, useEffect } from 'react';
 import InfoSection from './infoSection.js';
 import web3 from '../web3.js';
 import { fromAtomic } from '../ethereum/erc20.js';
 
-class PaymentStatus extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      rows: [{text: "No upcoming payments due", value: ""}],
-    };
+function PaymentStatus(props){
+  let rows;
+  if (props.creditLine.nextDueBlock > 0) {
+    rows = [
+      {text: `Next Payment Due ${props.creditLine.dueDate}`, value: fromAtomic(props.creditLine.nextDueAmount)},
+      {text: 'Prepaid Toward Payment Due', value: fromAtomic(props.creditLine.prepaymentBalance)},
+      {text: 'Final Payment Due', value: props.creditLine.termEndDate}
+    ];
+  } else {
+    rows = [
+      {text: "No upcoming payments due", value: ""}
+    ];
   }
 
-  async componentDidUpdate(props) {
-    if (this.props === props || !this.props.creditLine.methods) {
-      return
-    };
-    const [nextDueBlock, prepaidAmount, amountDue]  = await Promise.all([
-      this.props.creditLine.methods.nextDueBlock().call(),
-      this.props.creditLine.methods.prepaymentBalance().call(),
-      // TODO: This actually needs to be a new method that calculates expected amount due at your next due block
-      this.props.creditLine.methods.balance().call(),
-    ]);
-    const latestBlock = await web3.eth.getBlock('latest');
-    const numBlocksTillDueDate = nextDueBlock - latestBlock.number;
-    const dueDate = moment().add(numBlocksTillDueDate * 15, 's').format("MMM Do");
-    if (nextDueBlock > 0) {
-      this.setState({
-        rows: [
-          {text: `Payment Due On ${dueDate}`, value: fromAtomic(amountDue)},
-          {text: 'Prepaid Toward Payment Due', value: fromAtomic(prepaidAmount)}
-        ]
-      });
-    } else {
-      this.setState({
-        rows: [{text: "No upcoming payments due", value: ""}],
-      });
-    }
-  }
+  console.log("Rendering the payment status...");
 
-  render() {
-    return (
-      <InfoSection
-        title="Payment Status"
-        rows={this.state.rows}
-      />
-    )
-  }
+  return (
+    <InfoSection
+      title="Payment Status"
+      rows={rows}
+    />
+  )
 }
 
 export default PaymentStatus;

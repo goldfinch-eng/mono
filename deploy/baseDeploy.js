@@ -1,5 +1,5 @@
 const BN = require('bn.js');
-const {ROPSTEN_USDC_ADDRESS, CHAIN_MAPPING, LOCAL, decimals} = require("../deployHelpers.js");
+const {ROPSTEN_USDC_ADDRESS, CHAIN_MAPPING, LOCAL, USDCDecimals} = require("../deployHelpers.js");
 
 async function main({ getNamedAccounts, deployments, getChainId }) {
   console.log("Starting deploy...")
@@ -12,18 +12,19 @@ async function main({ getNamedAccounts, deployments, getChainId }) {
   const pool = await ethers.getContractAt("Pool", poolDeployResult.address);
 
   const chainID = await getChainId();
+  console.log("Chain ID is:", chainID);
   if (poolDeployResult.newlyDeployed) {
     let usdcAddress = ROPSTEN_USDC_ADDRESS
     if (CHAIN_MAPPING[chainID] === LOCAL) {
       console.log("We are local, so deploying a fake USDC");
-      const initialAmount = String(new BN("1000000").mul(decimals));
+      const initialAmount = String(new BN("1000000").mul(USDCDecimals));
       const decimalPlaces = String(new BN(6));
       const localUSDC = await deploy("TestERC20", {from: admin, gas: 4000000, args: [initialAmount, decimalPlaces]});
       console.log("Deployed the contract to:", localUSDC.address);
       usdcAddress = localUSDC.address;
     }
-    console.log("Initializing the pool...", String(decimals));
-    var receipt = await pool.initialize(usdcAddress, "USDC", String(decimals));
+    console.log("Initializing the pool...", String(USDCDecimals));
+    var receipt = await pool.initialize(usdcAddress, "USDC", String(USDCDecimals));
     await receipt.wait();
     console.log("Share price after initialization is:", String(await pool.sharePrice()));
   }
