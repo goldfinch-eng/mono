@@ -34,7 +34,7 @@ function Header(props) {
         </div>
         {props.pendingTXs.length} Pending
       </div>
-      )
+    )
   } else if (props.pendingTXs.length > 0 && _.every(props.pendingTXs, {status: "successful"})) {
     pendingTransactions = (
       <div className="header-widget fade-out">
