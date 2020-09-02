@@ -7,7 +7,7 @@ function LoadingButton(props) {
 
   let buttonText = props.text;
   if (isPending) {
-    buttonText = "Pending...";
+    buttonText = "Submitting...";
   }
 
   return (

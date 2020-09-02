@@ -16,7 +16,7 @@
 }
 
 .button-pending {
-  opacity: 0.8;
+  opacity: 0.6;
   pointer-events: none;
 }
 
@@ -57,7 +57,6 @@
     border-bottom: 1px solid $purp-dark;
     color: $purp-dark;
     cursor: auto;
-    // margin: 0 0 -1px;
   }
 }
 
