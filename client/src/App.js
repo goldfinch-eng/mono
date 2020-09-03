@@ -21,7 +21,7 @@ function App() {
   const [creditDesk, setCreditDesk] = useState(null);
   const [erc20, setErc20] = useState(null);
   const [user, setUser] = useState(null);
-  const [pendingTXs, setPendingTXs] = useState([]);
+  const [currentTXs, setCurrentTXs] = useState([]);
 
   useEffect(() => {
     setupWeb3();
@@ -39,15 +39,15 @@ function App() {
   }
 
   var addPendingTX = (pendingTX) => {
-    setPendingTXs((currentPendingTXs) => {
+    setCurrentTXs((currentPendingTXs) => {
       const newPendingTxs = _.concat(currentPendingTXs, pendingTX);
-      console.log("After setting... the pending txs are", pendingTXs);
+      console.log("After setting... the pending txs are", currentTXs);
       return newPendingTxs;
     })
   }
 
   var markTXSuccessful = (completedTX) => {
-    setPendingTXs((currentPendingTXs) => {
+    setCurrentTXs((currentPendingTXs) => {
       const matches = _.remove(currentPendingTXs, {id: completedTX.id});
       const tx = matches && matches[0];
       tx.status = "successful";
@@ -68,7 +68,7 @@ function App() {
   return (
     <AppContext.Provider value={store}>
       <Router>
-        <Header user={user} pendingTXs={pendingTXs} connectionComplete={setupWeb3}/>
+        <Header user={user} currentTXs={currentTXs} connectionComplete={setupWeb3}/>
         <div>
           <Switch>
             <Route exact path="/">
