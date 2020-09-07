@@ -27,21 +27,16 @@ contract CreditDesk is Ownable {
     address[] creditLines;
   }
 
-  mapping(address => Underwriter) public underwriters;
+  event PaymentMade(address indexed payer, address indexed creditLine, uint interestAmount, uint principalAmount, uint remainingAmount);
+  event PrepaymentMade(address indexed payer, address indexed creditLine, uint prepaymentAmount);
+  event DrawdownMade(address indexed borrower, address indexed creditLine, uint drawdownAmount);
 
+  mapping(address => Underwriter) public underwriters;
   mapping(address => Borrower) private borrowers;
 
   function setUnderwriterGovernanceLimit(address underwriterAddress, uint limit) external onlyOwner {
     Underwriter storage underwriter = underwriters[underwriterAddress];
     underwriter.governanceLimit = limit;
-  }
-
-  function getUnderwriterCreditLines(address underwriterAddress) public view returns (address[] memory) {
-    return underwriters[underwriterAddress].creditLines;
-  }
-
-  function getBorrowerCreditLines(address borrowerAddress) public view returns (address[] memory) {
-    return borrowers[borrowerAddress].creditLines;
   }
 
   function setPoolAddress(address newPoolAddress) public onlyOwner returns (address) {
@@ -74,6 +69,8 @@ contract CreditDesk is Ownable {
 
     updateCreditLineAccounting(cl, balance, interestOwed, principalOwed);
     getPool().transferFrom(poolAddress, msg.sender, amount);
+
+    emit DrawdownMade(msg.sender, address(cl), amount);
   }
 
   function prepay(address payable creditLineAddress, uint amount) external payable {
@@ -82,6 +79,8 @@ contract CreditDesk is Ownable {
     getPool().transferFrom(msg.sender, creditLineAddress, amount);
     uint newPrepaymentBalance = cl.prepaymentBalance().add(amount);
     cl.setPrepaymentBalance(newPrepaymentBalance);
+
+    emit PrepaymentMade(msg.sender, address(cl), amount);
   }
 
   function addCollateral(address payable creditLineAddress, uint amount) external payable {
@@ -108,6 +107,7 @@ contract CreditDesk is Ownable {
     if (cl.principalOwed() > 0) {
       handleLatePayments(cl);
     }
+    emit PaymentMade(cl.borrower(), address(cl), interestPayment, principalPayment, paymentRemaining);
   }
 
   function pay(address creditLineAddress, uint amount) external payable {
@@ -129,6 +129,18 @@ contract CreditDesk is Ownable {
     if (principalPayment > 0) {
       getPool().collectPrincipalRepayment(msg.sender, principalPayment);
     }
+
+    emit PaymentMade(cl.borrower(), address(cl), interestPayment, principalPayment, paymentRemaining);
+  }
+
+  // Public View Functions (Getters)
+
+  function getUnderwriterCreditLines(address underwriterAddress) public view returns (address[] memory) {
+    return underwriters[underwriterAddress].creditLines;
+  }
+
+  function getBorrowerCreditLines(address borrowerAddress) public view returns (address[] memory) {
+    return borrowers[borrowerAddress].creditLines;
   }
 
   /*

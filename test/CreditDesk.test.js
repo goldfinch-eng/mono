@@ -213,6 +213,16 @@ describe("CreditDesk", () => {
       creditLine = await CreditLine.at(ulCreditLines[0]);
     });
 
+    it("should emit an event with the correct data", async () => {
+      const response = await drawdown(bigVal(10), creditLine.address);
+      const event = response.logs[0];
+
+      expect(event.event).to.equal("DrawdownMade");
+      expect(event.args.borrower).to.equal(borrower);
+      expect(event.args.creditLine).to.equal(creditLine.address);
+      expect(event.args.drawdownAmount).to.bignumber.equal(bigVal(10));
+    });
+
     it('should set the termEndAt correctly', async () => {
       expect((await creditLine.termEndBlock()).eq(new BN(0))).to.be.true;
 
@@ -241,7 +251,7 @@ describe("CreditDesk", () => {
   });
 
   describe("prepayment", async () => {
-    let makePrepayment = async (creditLineAddress, amount, from=borrower) => {
+    let makePrepayment = async (creditLineAddress, amount, from) => {
       return await creditDesk.prepay(creditLineAddress, String(bigVal(amount)), {from: from});
     }
     describe("with a valid creditline id", async () => {
@@ -254,15 +264,26 @@ describe("CreditDesk", () => {
       it("should increment the prepaid balance", async () => {
         const prepaymentAmount = 10;
         expect((await (await getBalance(creditLine.address, erc20)).eq(bigVal(0)))).to.be.true;
-        await makePrepayment(creditLine.address, prepaymentAmount);
+        await makePrepayment(creditLine.address, prepaymentAmount, borrower);
         expect((await getBalance(creditLine.address, erc20)).eq(bigVal(prepaymentAmount))).to.be.true;
         expect((await creditLine.prepaymentBalance()).eq(bigVal(prepaymentAmount))).to.be.true;
 
         let secondPrepayment = 15;
         let totalPrepayment = bigVal(prepaymentAmount).add(bigVal(secondPrepayment));
-        await makePrepayment(creditLine.address, secondPrepayment);
+        await makePrepayment(creditLine.address, secondPrepayment, borrower);
         expect((await getBalance(creditLine.address, erc20))).to.bignumber.equal(totalPrepayment);
         expect((await creditLine.prepaymentBalance())).to.bignumber.equal(totalPrepayment);
+      });
+
+      it("should emit an event with the correct data", async () => {
+        const prepaymentAmount = 10;
+        const response = await makePrepayment(creditLine.address, prepaymentAmount, borrower);
+        const event = response.logs[0];
+
+        expect(event.event).to.equal("PrepaymentMade");
+        expect(event.args.payer).to.equal(borrower);
+        expect(event.args.creditLine).to.equal(creditLine.address);
+        expect(event.args.prepaymentAmount).to.bignumber.closeTo(bigVal(10), tolerance);
       });
     });
   });
@@ -273,6 +294,20 @@ describe("CreditDesk", () => {
         borrower = person3;
         erc20.transfer(borrower, bigVal(50), {from: owner});
       });
+
+      it("should emit an event with the correct data", async () => {
+        const creditLine = await createAndSetCreditLineAttributes(10, 5, 3);
+        const paymentAmount = 6;
+        const response = await creditDesk.pay(creditLine.address, String(bigVal(paymentAmount)), {from: borrower});
+        const event = response.logs[0];
+        expect(event.event).to.equal("PaymentMade");
+        expect(event.args.payer).to.equal(borrower);
+        expect(event.args.creditLine).to.equal(creditLine.address);
+        expect(event.args.interestAmount).to.bignumber.closeTo(bigVal(5), tolerance);
+        expect(event.args.principalAmount).to.bignumber.closeTo(bigVal(1), tolerance);
+        expect(event.args.remainingAmount).to.bignumber.equal(bigVal(0));
+      });
+
 
       it("should pay off interest first", async () => {
         const creditLine = await createAndSetCreditLineAttributes(10, 5, 3);
@@ -355,6 +390,21 @@ describe("CreditDesk", () => {
         const actualNextDueBlock = await creditLine.nextDueBlock();
         expect(actualNextDueBlock).to.bignumber.closeTo(expectedNextDueBlock, actualNextDueBlock.div(new BN(100))); // 1% tolerance;
         expect(newPoolBalance.sub(originalPoolBalance)).to.bignumber.equal(bigVal(8));
+      });
+
+      it("should emit an event with the correct data", async () => {
+        const prepaymentBalance = 9;
+        const interestOwed = 5;
+        var creditLine = await createAndSetCreditLineAttributes(10, interestOwed, 3, prepaymentBalance, latestBlock);
+        const response = await creditDesk.assessCreditLine(creditLine.address);
+        const event = response.logs[0];
+
+        expect(event.event).to.equal("PaymentMade");
+        expect(event.args.payer).to.equal(borrower);
+        expect(event.args.creditLine).to.equal(creditLine.address);
+        expect(event.args.interestAmount).to.bignumber.closeTo(bigVal(5), tolerance);
+        expect(event.args.principalAmount).to.bignumber.closeTo(bigVal(3), tolerance);
+        expect(event.args.remainingAmount).to.bignumber.equal(bigVal(1));
       });
 
       it("should only increase the share price from interest paid", async () => {
