@@ -7,7 +7,7 @@ RUN wget https://github.com/ethereum/solidity/releases/download/v0.6.8/solc-stat
 RUN mkdir -p /goldfinch-protocol
 WORKDIR /goldfinch-protocol
 
-COPY scripts/.bash_aliases $HOME
+COPY scripts/.bash_aliases.sh $HOME
 
 # Then rest of code and build
 COPY . /goldfinch-protocol
