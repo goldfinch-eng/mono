@@ -61,6 +61,9 @@ contract Pool is Ownable, Initializable {
     // Send the amount to the address
     doERC20Transfer(address(this), msg.sender, amount);
     emit WithdrawalMade(msg.sender, amount);
+
+
+
   }
 
   function enoughBalance(address user, uint amount) public view returns(bool) {
