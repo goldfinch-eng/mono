@@ -14,12 +14,12 @@ describe("Pool", () => {
   let makeDeposit = async (person, amount) => {
     amount = amount || depositAmount;
     person = person || person2;
-    await pool.deposit(String(amount), {from: person});
+    return await pool.deposit(String(amount), {from: person});
   }
   let makeWithdraw = async (person, amount) => {
     amount = amount || withdrawAmount;
     person = person || person2;
-    await pool.withdraw(amount, {from: person});
+    return await pool.withdraw(amount, {from: person});
   }
 
   beforeEach(async () => {
@@ -51,9 +51,11 @@ describe("Pool", () => {
     });
 
     describe("after you have approved the pool to transfer funds", async() => {
+      let capitalProvider;
       beforeEach(async () => {
         await erc20.approve(pool.address, new BN(100000).mul(mantissa), {from: person2});
         await erc20.approve(pool.address, new BN(100000).mul(mantissa), {from: owner});
+        capitalProvider = person2;
       });
 
       it('increases the pools balance of the ERC20 token when you call deposit', async () => {
@@ -63,10 +65,28 @@ describe("Pool", () => {
         const delta = balanceAfter.sub(balanceBefore);
         expect(delta).to.bignumber.equal(depositAmount);
       });
+
+      it('decreases the depositors balance of the ERC20 token when you call deposit', async () => {
+        const balanceBefore = await getBalance(capitalProvider, erc20);
+        await makeDeposit();
+        const balanceAfter = await getBalance(capitalProvider, erc20);
+        const delta = balanceBefore.sub(balanceAfter);
+        expect(delta).to.bignumber.equal(depositAmount);
+      });
+
       it('saves the sender in the depositor mapping', async() => {
         await makeDeposit();
         const shares = await pool.capitalProviders(person2);
         expect(shares.eq(depositAmount)).to.be.true;
+      });
+
+      it('emits an event with the correct data', async () => {
+        const result = await makeDeposit();
+        const event = result.logs[0];
+
+        expect(event.event).to.equal("DepositMade");
+        expect(event.args.capitalProvider).to.equal(capitalProvider);
+        expect(event.args.amount).to.bignumber.equal(depositAmount);
       });
 
       it('increases the totalShares, even when two different people deposit', async () => {
@@ -92,9 +112,11 @@ describe("Pool", () => {
   });
 
   describe('withdraw', () => {
+    let capitalProvider;
     beforeEach(async () => {
       await erc20.approve(pool.address, new BN(100000).mul(mantissa), {from: person2});
       await erc20.approve(pool.address, new BN(100000).mul(mantissa), {from: owner});
+      capitalProvider = person2
     });
 
     it('withdraws value from the contract when you call withdraw', async () => {
@@ -104,6 +126,16 @@ describe("Pool", () => {
       const balanceAfter = await getBalance(pool.address, erc20);
       const delta = balanceBefore.sub(balanceAfter);
       expect(delta.eq(withdrawAmount)).to.be.true;
+    });
+
+    it('emits an event with the correct data', async () => {
+      await makeDeposit();
+      const result = await makeWithdraw();
+      const event = result.logs[0];
+
+      expect(event.event).to.equal("WithdrawalMade");
+      expect(event.args.capitalProvider).to.equal(capitalProvider);
+      expect(event.args.amount).to.bignumber.equal(withdrawAmount);
     });
 
     it('sends the amount back to the address', async () => {

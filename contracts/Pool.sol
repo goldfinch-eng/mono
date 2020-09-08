@@ -16,6 +16,9 @@ contract Pool is Ownable, Initializable {
   address public erc20address;
   string name;
 
+  event DepositMade(address capitalProvider, uint amount);
+  event WithdrawalMade(address capitalProvider, uint amount);
+
   function initialize(address _erc20address, string memory _name, uint _mantissa) public initializer {
     name = _name;
     erc20address = _erc20address;
@@ -39,6 +42,8 @@ contract Pool is Ownable, Initializable {
     // Add the new shares to both the pool and the address
     totalShares = totalShares.add(depositShares);
     capitalProviders[msg.sender] = currentShares.add(depositShares);
+
+    emit DepositMade(msg.sender, amount);
   }
 
   function withdraw(uint amount) external {
@@ -55,6 +60,7 @@ contract Pool is Ownable, Initializable {
 
     // Send the amount to the address
     doERC20Transfer(address(this), msg.sender, amount);
+    emit WithdrawalMade(msg.sender, amount);
   }
 
   function enoughBalance(address user, uint amount) public view returns(bool) {
