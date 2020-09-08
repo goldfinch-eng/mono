@@ -22,6 +22,7 @@ WORKDIR /goldfinch-protocol
 
 # Then rest of code and build
 COPY . /goldfinch-protocol
+RUN cat ./scripts/bashrc.txt >> $HOME/.bashrc
 
 RUN apk del build-dependencies
 

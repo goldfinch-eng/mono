@@ -68,7 +68,6 @@ build
 
 .zos.session
 
-.vscode
 .openzeppelin/.session
 .openzeppelin/dev-*.json
 
