@@ -1,21 +1,28 @@
 FROM mhart/alpine-node:12.18.3
 
 RUN apk update && apk add --no-cache --virtual build-dependencies git
-RUN wget https://github.com/ethereum/solidity/releases/download/v0.7.0/solc-static-linux -O /bin/solc && chmod +x /bin/solc
+RUN apk add python3
+RUN wget https://github.com/ethereum/solidity/releases/download/v0.6.8/solc-static-linux -O /bin/solc && chmod +x /bin/solc
 
-RUN mkdir -p /goldfinch
-WORKDIR /goldfinch
+RUN mkdir -p /goldfinch-protocol
+WORKDIR /goldfinch-protocol
 
 # First add deps
-ADD ./package.json /goldfinch-protocol
-ADD ./yarn.lock /goldfinch-protocol
-RUN yarn install --lock-file
+COPY ./package.json .
+COPY ./package-lock.json .
+RUN npm install
+
+RUN mkdir -p /client
+COPY ./client/package.json ./client
+COPY ./client/package-lock.json ./client
+WORKDIR /client
+RUN npm install
+
+WORKDIR /goldfinch-protocol
 
 # Then rest of code and build
-ADD . /goldfinch-protocol
-
+COPY . /goldfinch-protocol
 
 RUN apk del build-dependencies
-RUN yarn cache clean
 
-CMD while :; do sleep 2073600; done
+# Need to add a while loop here I believe in order to actually run it.
