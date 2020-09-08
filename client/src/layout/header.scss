@@ -62,3 +62,17 @@ $header-widget-height: 40px;
 a.header-widget:hover{
   background: $sand;
 }
+
+@keyframes fadeOut {
+  0% {
+    opacity: 1;
+    visibility: visible;
+  }
+  90% {
+    opacity: 1;
+    visibility: visible;
+  }
+  100% {
+    opacity: 0;
+  }
+} 
