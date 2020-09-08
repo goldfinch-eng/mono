@@ -131,7 +131,7 @@ describe("CreditDesk", () => {
       _minCollateralPercent = _minCollateralPercent || minCollateralPercent;
       _paymentPeriodInDays = _paymentPeriodInDays || paymentPeriodInDays;
       _termInDays = _termInDays || termInDays;
-      await creditDesk.createCreditLine(_borrower, _limit, _interestApr, _minCollateralPercent, _paymentPeriodInDays, _termInDays, {from: underwriter});
+      return await creditDesk.createCreditLine(_borrower, _limit, _interestApr, _minCollateralPercent, _paymentPeriodInDays, _termInDays, {from: underwriter});
     }
     beforeEach(async () => {
       underwriter = person2;
@@ -146,6 +146,17 @@ describe("CreditDesk", () => {
       const creditLine = await CreditLine.at(ulCreditLines[0]);
 
       expect(await creditLine.owner()).to.equal(creditDesk.address);
+    });
+
+    it('emits an event with the correct data', async () => {
+      const response = await createCreditLine();
+      // Note we pick the 1st index, because the 0th is OwnershipTransferred, which
+      // also happens automatically when creating CreditLines, but we don't care about that.
+      const event = response.logs[1];
+
+      expect(event.event).to.equal("CreditLineCreated");
+      expect(event.args.borrower).to.equal(borrower);
+      expect(event.args.creditLine).to.not.be.empty;
     });
 
     it('should create and save a creditline', async () => {

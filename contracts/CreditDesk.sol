@@ -30,6 +30,7 @@ contract CreditDesk is Ownable {
   event PaymentMade(address indexed payer, address indexed creditLine, uint interestAmount, uint principalAmount, uint remainingAmount);
   event PrepaymentMade(address indexed payer, address indexed creditLine, uint prepaymentAmount);
   event DrawdownMade(address indexed borrower, address indexed creditLine, uint drawdownAmount);
+  event CreditLineCreated(address indexed borrower, address indexed creditLine);
 
   mapping(address => Underwriter) public underwriters;
   mapping(address => Borrower) private borrowers;
@@ -53,6 +54,7 @@ contract CreditDesk is Ownable {
 
     underwriter.creditLines.push(address(cl));
     borrower.creditLines.push(address(cl));
+    emit CreditLineCreated(_borrower, address(cl));
 	}
 
   function drawdown(uint amount, address creditLineAddress) external {
