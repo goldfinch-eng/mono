@@ -1,5 +1,5 @@
 $header-height: 70px;
-$connect-button-height: 40px;
+$header-widget-height: 40px;
 
 .header{
   border-bottom: 2px solid $sand-light;
@@ -38,80 +38,29 @@ $connect-button-height: 40px;
   }
 }
 
-.connect-wallet {
+.header-widget{
   background: $sand-light;
   border-radius: 10px;
   display: inline-block;
-  height: $connect-button-height;
-  line-height: $connect-button-height;
-  padding: 0 20px;
-  position: absolute;
-  top: ($header-height - $connect-button-height) / 2;
-  right: 20px;
+  font-size: $sans-size-xs;
+  float: right;
+  height: $header-widget-height;
+  line-height: $header-widget-height;
+  margin: ($header-height - $header-widget-height) / 2 18px 0 0;
+  padding: 0 18px;
 
-  &:hover{
-    background: $sand;
+
+  & .spinner{
+    vertical-align: top;
+    margin: ($header-widget-height - 20) / 2 8px 2px -2px
+  }
+
+  & .icon{
+    margin-right: 8px;
   }
 }
-
-.loading-transactions {
-  background: $sand-light;
-  border-radius: 10px;
-  display: inline-block;
-  height: $connect-button-height;
-  line-height: $connect-button-height;
-  padding: 0 20px 0px 10px;
-  position: absolute;
-  top: ($header-height - $connect-button-height) / 2;
-  right: 170px;
-
-  &:hover{
-    background: $sand;
-  }
-}
-
-.loading-text {
-  display: inline;
-  vertical-align: top;
-  margin: 0px 5px;
-}
-
-.lds-hourglass {
-  display: inline-block;
-  position: relative;
-  width: 40px;
-  height: 40px;
-  margin: 0px 0px 12px 0px;
-}
-.lds-hourglass:after {
-  content: " ";
-  display: block;
-  border-radius: 50%;
-  width: 0;
-  height: 0;
-  margin: 4px;
-  box-sizing: border-box;
-  border: 16px solid #fff;
-  border-color: $purp transparent $purp transparent;
-  animation: lds-hourglass 1.2s infinite;
-}
-@keyframes lds-hourglass {
-  0% {
-    transform: rotate(0);
-    animation-timing-function: cubic-bezier(0.55, 0.055, 0.675, 0.19);
-  }
-  50% {
-    transform: rotate(900deg);
-    animation-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1);
-  }
-  100% {
-    transform: rotate(1800deg);
-  }
-}
-
-.fade-out {
-  animation: 2s fadeOut;
-  animation-fill-mode: forwards;
+a.header-widget:hover{
+  background: $sand;
 }
 
 @keyframes fadeOut {

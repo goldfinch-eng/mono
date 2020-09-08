@@ -22,44 +22,40 @@ function Header(props) {
     walletButtonText = "Connected"
   }
 
-  let walletButton = <a onClick={enableMetamask} className="connect-wallet">{walletButtonText}</a>
+  let walletButton = <a onClick={enableMetamask} className="header-widget clickable">{walletButtonText}</a>
 
   let transactions = null;
   if (_.some(props.currentTXs, {status: "pending"})) {
     const pendingTXCount = _.countBy(props.currentTXs, {status: "pending"}).true;
     console.log("Pending TX Count is..", pendingTXCount);
     transactions = (
-      <div className="loading-transactions">
-        <div className="loading-container">
-          <div className="lds-hourglass"></div>
-          <div className="loading-text">
-            {pendingTXCount} Pending
-          </div>
+      <div className="header-widget">
+        <div class="spinner">
+          <div class="double-bounce1"></div>
+          <div class="double-bounce2"></div>
         </div>
+        {pendingTXCount} Pending
       </div>
     )
+
   } else if (props.currentTXs.length > 0 && _.every(props.currentTXs, {status: "successful"})) {
     transactions = (
-      <div className="loading-transactions fade-out">
-        <div className="successful-transactions-container">
-          <span className="successful-transactions">✓</span>
-          <div className="loading-text">
-            Success
-          </div>
-        </div>
+      <div className="header-widget fade-out">
+        <span className="icon">✓</span>
+        Success
       </div>
     )
   }
   return (
     <div className="header">
       <img className="header-logo" src={logoPurp} alt="Goldfinch" />
+      {walletButton}
+      {transactions}
       <nav>
         <NavLink to="/" exact={true}>Borrow</NavLink>
         <NavLink to="/earn">Earn</NavLink>
         <NavLink to="/about">About</NavLink>
       </nav>
-      {walletButton}
-      {transactions}
     </div>
   )
 }
