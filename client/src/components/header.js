@@ -24,19 +24,22 @@ function Header(props) {
 
   let walletButton = <a onClick={enableMetamask} className="header-widget clickable">{walletButtonText}</a>
 
-  let pendingTransactions = null;
-  if (_.some(props.pendingTXs, {status: "pending"})) {
-    pendingTransactions = (
+  let transactions = null;
+  if (_.some(props.currentTXs, {status: "pending"})) {
+    const pendingTXCount = _.countBy(props.currentTXs, {status: "pending"}).true;
+    console.log("Pending TX Count is..", pendingTXCount);
+    transactions = (
       <div className="header-widget">
         <div class="spinner">
           <div class="double-bounce1"></div>
           <div class="double-bounce2"></div>
         </div>
-        {props.pendingTXs.length} Pending
+        {pendingTXCount} Pending
       </div>
     )
-  } else if (props.pendingTXs.length > 0 && _.every(props.pendingTXs, {status: "successful"})) {
-    pendingTransactions = (
+
+  } else if (props.currentTXs.length > 0 && _.every(props.currentTXs, {status: "successful"})) {
+    transactions = (
       <div className="header-widget fade-out">
         <span className="icon">✓</span>
         Success
@@ -47,9 +50,9 @@ function Header(props) {
     <div className="header">
       <img className="header-logo" src={logoPurp} alt="Goldfinch" />
       {walletButton}
-      {pendingTransactions}
+      {transactions}
       <nav>
-        <NavLink to="/">Borrow</NavLink>
+        <NavLink to="/" exact={true}>Borrow</NavLink>
         <NavLink to="/earn">Earn</NavLink>
         <NavLink to="/about">About</NavLink>
       </nav>

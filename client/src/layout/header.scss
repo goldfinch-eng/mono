@@ -31,7 +31,7 @@ $header-widget-height: 40px;
     border-bottom: 2px solid $sand-dark;
   }
 
-  &.selected{
+  &.active{
     border-bottom: 2px solid $purp-dark;
     cursor: auto;
     font-weight: 500;
