@@ -25,4 +25,4 @@ COPY . /goldfinch-protocol
 
 RUN apk del build-dependencies
 
-# Need to add a while loop here I believe in order to actually run it.
+CMD while :; do sleep 2073600; done
