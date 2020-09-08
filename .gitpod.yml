@@ -1,5 +1,5 @@
 image:
-  file: Dockerfile
+  file: gitpod.Dockerfile
 
 tasks:
-  - init: npm install && cd client/ && npm install
+  - init: echo "Ready to code!"

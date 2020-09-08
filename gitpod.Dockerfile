@@ -7,11 +7,22 @@ RUN wget https://github.com/ethereum/solidity/releases/download/v0.6.8/solc-stat
 RUN mkdir -p /goldfinch-protocol
 WORKDIR /goldfinch-protocol
 
-COPY ./scripts/bashrc.txt .
-RUN cat bashrc.txt >> $HOME/.bashrc
+# First add deps
+COPY ./package.json .
+COPY ./package-lock.json .
+RUN npm install
+
+RUN mkdir -p /client
+COPY ./client/package.json ./client
+COPY ./client/package-lock.json ./client
+WORKDIR /client
+RUN npm install
+
+WORKDIR /goldfinch-protocol
 
 # Then rest of code and build
 COPY . /goldfinch-protocol
+RUN cat ./scripts/bashrc.txt >> $HOME/.bashrc
 
 RUN apk del build-dependencies
 
