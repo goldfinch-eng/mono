@@ -1,3 +1,5 @@
+[![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/goldfinch-eng/goldfinch-protocol)
+
 # Goldfinch Protocol
 Goldfinch is a lending protocol built on the blockchain. This is the main repo.
 
