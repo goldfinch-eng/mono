@@ -1,7 +1,7 @@
 {
-  "name": "starter-kit",
-  "version": "1.0.0",
-  "description": "OpenZeppelin kit containing React, & OpenZeppelin SDK",
+  "name": "goldfinch-protocol",
+  "version": "0.1.0",
+  "description": "A lending protocol built on the blockchain",
   "main": "index.js",
   "scripts": {
     "test": "npx buidler test --show-stack-traces",
@@ -11,7 +11,7 @@
   "husky": {
     "hooks": {
       "pre-push": "npm run pre-push",
-      "pre-commit": "npm run pre-commit"
+      "pre-commit": "./pre-commit.sh && npm run pre-commit"
     }
   },
   "repository": {
