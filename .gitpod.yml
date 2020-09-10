@@ -3,3 +3,7 @@ image:
 
 tasks:
   - init: echo "Ready to code!"
+
+vscode:
+  extensions:
+    - JuanBlanco.solidity@0.0.72:BaBkRlh505mZ1Y1AfDwOkA==

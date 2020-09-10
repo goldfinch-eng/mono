@@ -38,5 +38,5 @@ You'll want some testnet ETH and USDC to play around with the app locally. Just 
     - This will setup the main contracts as well as generate a credit line for the given user.
     - `TEST_USER={YOUR_METAMASK_ADDRESS} npx buidler deploy --network ropsten --export-all ./config/deployments.json`
 - Mainnet deployments:
-    - TBD.
+    - TBD
 
