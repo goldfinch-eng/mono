@@ -1,5 +1,5 @@
 const BN = require('bn.js');
-const {ROPSTEN_USDC_ADDRESS, MAINNET, LOCAL, CHAIN_MAPPING, ROPSTEN, USDC_MAPPING, USDCDecimals, ETHDecimals, MAX_UINT} = require("../blockchain_scripts/deployHelpers.js");
+const {MAINNET, LOCAL, CHAIN_MAPPING, getUSDCAddress, USDCDecimals, ETHDecimals} = require("../blockchain_scripts/deployHelpers.js");
 
 /*
 This deployment deposits some funds to the pool, and creates an underwriter, and a credit line.
@@ -17,9 +17,9 @@ async function main({ getNamedAccounts, deployments, getChainId }) {
   const creditDesk = await getDeployedAsEthersContract(getOrNull, "CreditDesk");
   let erc20 = await getDeployedAsEthersContract(getOrNull, "TestERC20");
 
-  if (USDC_MAPPING[chainID]) {
+  if (getUSDCAddress(chainID)) {
     console.log("On a network with known USDC address, so firing up that contract...")
-    erc20 = await ethers.getContractAt("TestERC20", USDC_MAPPING[chainID]);
+    erc20 = await ethers.getContractAt("TestERC20", getUSDCAddress(chainID));
   }
   if (process.env.TEST_USER) {
     borrower = process.env.TEST_USER;
