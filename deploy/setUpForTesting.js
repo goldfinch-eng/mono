@@ -1,12 +1,9 @@
 const BN = require('bn.js');
-const {ROPSTEN_USDC_ADDRESS, MAINNET, LOCAL, ROPSTEN, CHAIN_MAPPING, USDCDecimals, ETHDecimals, MAX_UINT} = require("../deployHelpers.js");
+const {ROPSTEN_USDC_ADDRESS, MAINNET, LOCAL, CHAIN_MAPPING, ROPSTEN, USDC_MAPPING, USDCDecimals, ETHDecimals, MAX_UINT} = require("../blockchain_scripts/deployHelpers.js");
 
 /*
-This does a basic deploy of just the main contracts, as well as a few
-housekeeping things like transferring ownership of the Pool to the CreditDesk.
-
-That's it! For other stuff, like creating credit lines and such, it's in a separate
-script made just for that purpose.
+This deployment deposits some funds to the pool, and creates an underwriter, and a credit line.
+It is only really used for test purposes, and should never be used on Mainnet (which it automatically never does);
 */
 
 async function main({ getNamedAccounts, deployments, getChainId }) {
@@ -20,9 +17,9 @@ async function main({ getNamedAccounts, deployments, getChainId }) {
   const creditDesk = await getDeployedAsEthersContract(getOrNull, "CreditDesk");
   let erc20 = await getDeployedAsEthersContract(getOrNull, "TestERC20");
 
-  if (CHAIN_MAPPING[chainID] === ROPSTEN) {
-    console.log("On Ropsten, so firing up the Ropsten erc20...")
-    erc20 = await ethers.getContractAt("TestERC20", ROPSTEN_USDC_ADDRESS);
+  if (USDC_MAPPING[chainID]) {
+    console.log("On a network with known USDC address, so firing up that contract...")
+    erc20 = await ethers.getContractAt("TestERC20", USDC_MAPPING[chainID]);
   }
   if (process.env.TEST_USER) {
     borrower = process.env.TEST_USER;
@@ -46,8 +43,8 @@ async function depositFundsToThePool(pool, admin, erc20) {
 
   // We don't have mad bank for testnet USDC, so divide by 10.
   const depositAmount = new BN(1).mul(USDCDecimals).div(new BN(10));
-  const erc20Result = await erc20.approve(pool.address, String(MAX_UINT));
-  const result = await pool.deposit(String(depositAmount));
+  const txn = await pool.deposit(String(depositAmount));
+  await txn.wait();
   const newBalance = await erc20.balanceOf(pool.address)
   if (String(newBalance) != String(depositAmount)) {
     throw new Error(`Expected to deposit ${depositAmount} but got ${newBalance}`);
@@ -81,7 +78,8 @@ async function createUnderwriter(creditDesk, newUnderwriter) {
     return;
   }
   console.log("Creating an underwriter with governance limit", newUnderwriter);
-  await creditDesk.setUnderwriterGovernanceLimit(newUnderwriter, String(new BN(1000000).mul(USDCDecimals)));
+  const txn = await creditDesk.setUnderwriterGovernanceLimit(newUnderwriter, String(new BN(1000000).mul(USDCDecimals)));
+  await txn.wait();
   const onChain = await creditDesk.underwriters(newUnderwriter);
   if (!onChain.gt(new BN(0))) {
     throw new Error(`The transaction did not seem to work. Could not find underwriter ${newUnderwriter} on the CreditDesk`);
@@ -89,7 +87,7 @@ async function createUnderwriter(creditDesk, newUnderwriter) {
 }
 
 async function createCreditLineForBorrower(creditDesk, borrower) {
-  console.log("Trying to create an Underwriter...");
+  console.log("Trying to create an CreditLine for the Borrower...");
   const existingCreditLines = await creditDesk.getBorrowerCreditLines(borrower)
   if (existingCreditLines.length) {
     console.log("We have already created a credit line for this borrower");
