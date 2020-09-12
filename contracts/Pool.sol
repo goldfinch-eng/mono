@@ -18,6 +18,7 @@ contract Pool is Ownable, Initializable {
 
   event DepositMade(address indexed capitalProvider, uint amount);
   event WithdrawalMade(address indexed capitalProvider, uint amount);
+  event TransferMade(address indexed from, address indexed to, uint amount);
   event InterestCollected(address indexed payer, uint amount);
   event PrincipalCollected(address indexed payer, uint amount);
 
@@ -78,14 +79,14 @@ contract Pool is Ownable, Initializable {
     emit PrincipalCollected(from, amount);
   }
 
-  // Non-state changing functions
+  function transferFrom(address from, address to, uint amount) public onlyOwner returns (bool) {
+    bool result = doERC20Transfer(from, to, amount);
+    emit TransferMade(from, to, amount);
+    return result;
+  }
 
   function enoughBalance(address user, uint amount) public view returns(bool) {
     return ERC20(erc20address).balanceOf(user) >= amount;
-  }
-
-  function transferFrom(address from, address to, uint amount) public onlyOwner returns (bool) {
-    return doERC20Transfer(from, to, amount);
   }
 
   /* Internal Functions */
