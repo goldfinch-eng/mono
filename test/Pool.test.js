@@ -179,4 +179,34 @@ describe("Pool", () => {
       expect(sharesAfter.toNumber()).to.equal(0);
     });
   });
+
+  describe("collectInterestRepayment", async () => {
+    beforeEach(async () => {
+      await erc20.approve(pool.address, new BN(100000).mul(mantissa), {from: person2});
+      await makeDeposit();
+    });
+    it("should emit an event with the right information", async () => {
+      const amount = new BN(1).mul(mantissa);
+      const response = await pool.collectInterestRepayment(person2, amount, {from: person2});
+      const event = response.logs[0];
+      expect(event.event).to.equal("InterestCollected");
+      expect(event.args.payer).to.equal(person2);
+      expect(event.args.amount).to.bignumber.equal(amount);
+    });
+  });
+
+  describe("collectPrincipalRepayment", async () => {
+    beforeEach(async () => {
+      await erc20.approve(pool.address, new BN(100000).mul(mantissa), {from: person2});
+      await makeDeposit();
+    });
+    it("should emit an event with the right information", async () => {
+      const amount = new BN(1).mul(mantissa);
+      const response = await pool.collectPrincipalRepayment(person2, amount, {from: person2});
+      const event = response.logs[0];
+      expect(event.event).to.equal("PrincipalCollected");
+      expect(event.args.payer).to.equal(person2);
+      expect(event.args.amount).to.bignumber.equal(amount);
+    });
+  });
 })

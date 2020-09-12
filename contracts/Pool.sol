@@ -16,8 +16,10 @@ contract Pool is Ownable, Initializable {
   address public erc20address;
   string name;
 
-  event DepositMade(address capitalProvider, uint amount);
-  event WithdrawalMade(address capitalProvider, uint amount);
+  event DepositMade(address indexed capitalProvider, uint amount);
+  event WithdrawalMade(address indexed capitalProvider, uint amount);
+  event InterestCollected(address indexed payer, uint amount);
+  event PrincipalCollected(address indexed payer, uint amount);
 
   function initialize(address _erc20address, string memory _name, uint _mantissa) public initializer {
     name = _name;
@@ -61,24 +63,25 @@ contract Pool is Ownable, Initializable {
     // Send the amount to the address
     doERC20Transfer(address(this), msg.sender, amount);
     emit WithdrawalMade(msg.sender, amount);
-
-
-
-  }
-
-  function enoughBalance(address user, uint amount) public view returns(bool) {
-    return ERC20(erc20address).balanceOf(user) >= amount;
   }
 
   function collectInterestRepayment(address from, uint amount) external {
     doERC20Transfer(from, address(this), amount);
     uint increment = amount.mul(mantissa).div(totalShares);
     sharePrice = sharePrice + increment;
+    emit InterestCollected(from, amount);
   }
 
   function collectPrincipalRepayment(address from, uint amount) external {
     // Purposefully does nothing except receive money. No share price updates for principal.
     doERC20Transfer(from, address(this), amount);
+    emit PrincipalCollected(from, amount);
+  }
+
+  // Non-state changing functions
+
+  function enoughBalance(address user, uint amount) public view returns(bool) {
+    return ERC20(erc20address).balanceOf(user) >= amount;
   }
 
   function transferFrom(address from, address to, uint amount) public onlyOwner returns (bool) {
@@ -92,22 +95,22 @@ contract Pool is Ownable, Initializable {
   }
 
   function doERC20Transfer(address from, address to, uint amount) internal returns (bool) {
-      ERC20 erc20 = ERC20(erc20address);
-      uint balanceBefore = erc20.balanceOf(to);
+    ERC20 erc20 = ERC20(erc20address);
+    uint balanceBefore = erc20.balanceOf(to);
 
-      bool success = erc20.transferFrom(from, to, amount);
+    bool success = erc20.transferFrom(from, to, amount);
 
-      // Calculate the amount that was *actually* transferred
-      uint balanceAfter = erc20.balanceOf(to);
-      require(balanceAfter >= balanceBefore, "Token Transfer Overflow Error");
-      return success;
+    // Calculate the amount that was *actually* transferred
+    uint balanceAfter = erc20.balanceOf(to);
+    require(balanceAfter >= balanceBefore, "Token Transfer Overflow Error");
+    return success;
   }
 
   function doERC20Withdraw(address payable to, uint amount) internal returns (bool) {
-      ERC20 erc20 = ERC20(erc20address);
-      bool success = erc20.transfer(to, amount);
+    ERC20 erc20 = ERC20(erc20address);
+    bool success = erc20.transfer(to, amount);
 
-      require(success, "Token Withdraw Failed");
-      return success;
+    require(success, "Token Withdraw Failed");
+    return success;
   }
 }
