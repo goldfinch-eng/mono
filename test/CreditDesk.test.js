@@ -105,12 +105,41 @@ describe("CreditDesk", () => {
     expect(await creditDesk.owner()).to.equal(owner);
   });
 
+  describe("setPoolAddress", async () => {
+    it("should emit an event when the pool address changes", async () => {
+      // Approve and initialize the pool
+      const newPool = await Pool.new({from: owner});
+      newPool.initialize(erc20.address, "USDC", decimals, {from: owner});
+
+      const response = await creditDesk.setPoolAddress(newPool.address, {from: owner});
+      const event = response.logs[0];
+
+      expect(event.event).to.equal("PoolAddressUpdated");
+      expect(event.args.oldAddress).to.equal(pool.address);
+      expect(event.args.newAddress).to.equal(newPool.address);
+    });
+  });
+
   describe('setUnderwriterGovernanceLimit', () => {
+    let underwriter;
+    beforeEach(() => {
+      underwriter = person2;
+    })
     it('sets the correct limit', async () => {
       const amount = bigVal(537);
-      await creditDesk.setUnderwriterGovernanceLimit(person2, amount, {from: owner});
-      const underwriterLimit = await creditDesk.underwriters(person2);
+      await creditDesk.setUnderwriterGovernanceLimit(underwriter, amount, {from: owner});
+      const underwriterLimit = await creditDesk.underwriters(underwriter);
       expect(underwriterLimit).to.bignumber.equal(amount);
+    });
+
+    it('emits an event with the correct data', async () => {
+      const amount = bigVal(537);
+      const response = await creditDesk.setUnderwriterGovernanceLimit(underwriter, amount, {from: owner});
+      const event = response.logs[0];
+
+      expect(event.event).to.equal("GovernanceUpdatedUnderwriterLimit");
+      expect(event.args.underwriter).to.equal(underwriter);
+      expect(event.args.newLimit).to.bignumber.equal(amount);
     });
   });
 
