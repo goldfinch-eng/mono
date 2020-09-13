@@ -43,14 +43,6 @@ contract CreditDesk is Ownable {
     emit GovernanceUpdatedUnderwriterLimit(underwriterAddress, limit);
   }
 
-  function setPoolAddress(address newPoolAddress) public onlyOwner returns (address) {
-    // Sanity check the new address;
-    Pool(newPoolAddress).totalShares();
-
-    emit PoolAddressUpdated(poolAddress, newPoolAddress);
-    return poolAddress = newPoolAddress;
-  }
-
   function createCreditLine(address _borrower, uint _limit, uint _interestApr, uint _minCollateralPercent, uint _paymentPeriodInDays, uint _termInDays) external {
     Underwriter storage underwriter = underwriters[msg.sender];
     Borrower storage borrower = borrowers[_borrower];
@@ -80,6 +72,29 @@ contract CreditDesk is Ownable {
     getPool().transferFrom(poolAddress, msg.sender, amount);
 
     emit DrawdownMade(msg.sender, address(cl), amount);
+  }
+
+  function pay(address creditLineAddress, uint amount) external payable {
+    CreditLine cl = CreditLine(creditLineAddress);
+
+    // Not strictly necessary, but provides a better error message to the user
+    if (!getPool().enoughBalance(msg.sender, amount)) {
+      revert("Insufficient balance for payment");
+    }
+
+    (uint paymentRemaining, uint interestPayment, uint principalPayment) = handlePayment(cl, amount, block.number, true);
+    if (paymentRemaining > 0) {
+      getPool().transferFrom(msg.sender, creditLineAddress, paymentRemaining);
+      cl.setCollateralBalance(cl.collateralBalance().add(paymentRemaining));
+    }
+    if (interestPayment > 0) {
+      getPool().collectInterestRepayment(msg.sender, interestPayment);
+    }
+    if (principalPayment > 0) {
+      getPool().collectPrincipalRepayment(msg.sender, principalPayment);
+    }
+
+    emit PaymentMade(cl.borrower(), address(cl), interestPayment, principalPayment, paymentRemaining);
   }
 
   function prepay(address payable creditLineAddress, uint amount) external payable {
@@ -119,27 +134,12 @@ contract CreditDesk is Ownable {
     emit PaymentMade(cl.borrower(), address(cl), interestPayment, principalPayment, paymentRemaining);
   }
 
-  function pay(address creditLineAddress, uint amount) external payable {
-    CreditLine cl = CreditLine(creditLineAddress);
+  function setPoolAddress(address newPoolAddress) public onlyOwner returns (address) {
+    // Sanity check the new address;
+    Pool(newPoolAddress).totalShares();
 
-    // Not strictly necessary, but provides a better error message to the user
-    if (!getPool().enoughBalance(msg.sender, amount)) {
-      revert("Insufficient balance for payment");
-    }
-
-    (uint paymentRemaining, uint interestPayment, uint principalPayment) = handlePayment(cl, amount, block.number, true);
-    if (paymentRemaining > 0) {
-      getPool().transferFrom(msg.sender, creditLineAddress, paymentRemaining);
-      cl.setCollateralBalance(cl.collateralBalance().add(paymentRemaining));
-    }
-    if (interestPayment > 0) {
-      getPool().collectInterestRepayment(msg.sender, interestPayment);
-    }
-    if (principalPayment > 0) {
-      getPool().collectPrincipalRepayment(msg.sender, principalPayment);
-    }
-
-    emit PaymentMade(cl.borrower(), address(cl), interestPayment, principalPayment, paymentRemaining);
+    emit PoolAddressUpdated(poolAddress, newPoolAddress);
+    return poolAddress = newPoolAddress;
   }
 
   // Public View Functions (Getters)
