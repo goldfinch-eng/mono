@@ -3,3 +3,9 @@ image:
 
 tasks:
   - init: echo "Ready to code!"
+
+vscode:
+  extensions:
+    - JuanBlanco.solidity@0.0.72:BaBkRlh505mZ1Y1AfDwOkA==
+    - mgmcdermott.vscode-language-babel@0.0.29:S51DUCuN3aq2IN94LSDd9A==
+    - esbenp.prettier-vscode@5.6.0:o6BL3Pchy5KVBxQAzrFZ2A==

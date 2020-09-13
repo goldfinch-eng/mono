@@ -31,6 +31,8 @@ contract CreditDesk is Ownable {
   event PrepaymentMade(address indexed payer, address indexed creditLine, uint prepaymentAmount);
   event DrawdownMade(address indexed borrower, address indexed creditLine, uint drawdownAmount);
   event CreditLineCreated(address indexed borrower, address indexed creditLine);
+  event PoolAddressUpdated(address indexed oldAddress, address indexed newAddress);
+  event GovernanceUpdatedUnderwriterLimit(address indexed underwriter, uint newLimit);
 
   mapping(address => Underwriter) public underwriters;
   mapping(address => Borrower) private borrowers;
@@ -38,9 +40,14 @@ contract CreditDesk is Ownable {
   function setUnderwriterGovernanceLimit(address underwriterAddress, uint limit) external onlyOwner {
     Underwriter storage underwriter = underwriters[underwriterAddress];
     underwriter.governanceLimit = limit;
+    emit GovernanceUpdatedUnderwriterLimit(underwriterAddress, limit);
   }
 
   function setPoolAddress(address newPoolAddress) public onlyOwner returns (address) {
+    // Sanity check the new address;
+    Pool(newPoolAddress).totalShares();
+
+    emit PoolAddressUpdated(poolAddress, newPoolAddress);
     return poolAddress = newPoolAddress;
   }
 
