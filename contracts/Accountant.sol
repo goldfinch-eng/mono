@@ -21,6 +21,13 @@ library Accountant {
     uint additionalBalancePayment;
   }
 
+  function calculateInterestAndPrincipalAccrued(CreditLine cl, uint blockNumber) public view returns(uint, uint) {
+    uint totalPayment = calculateAnnuityPayment(cl.balance(), cl.interestApr(), cl.termInDays(), cl.paymentPeriodInDays());
+    uint interestAccrued = calculateInterestAccrued(cl, blockNumber);
+    uint principalAccrued = calculatePrincipalAccrued(cl, totalPayment, interestAccrued, blockNumber);
+    return (interestAccrued, principalAccrued);
+  }
+
   function calculatePrincipalAccrued(CreditLine cl, uint periodPayment, uint interestAccrued, uint blockNumber) public view returns(uint) {
     uint blocksPerPaymentPeriod = blocksPerDay * cl.paymentPeriodInDays();
     // Math.min guards against overflow. See comment in the calculateInterestAccrued for further explanation.
@@ -29,13 +36,6 @@ library Accountant {
     int128 fractionOfPeriod = FPMath.divi(int256(numBlocksElapsed), int256(blocksPerPaymentPeriod));
     uint periodPaymentFraction = uint(FPMath.muli(fractionOfPeriod, int256(periodPayment)));
     return periodPaymentFraction.sub(interestAccrued);
-  }
-
-  function calculateInterestAndPrincipalAccrued(CreditLine cl, uint blockNumber) public view returns(uint, uint) {
-    uint totalPayment = calculateAnnuityPayment(cl.balance(), cl.interestApr(), cl.termInDays(), cl.paymentPeriodInDays());
-    uint interestAccrued = calculateInterestAccrued(cl, blockNumber);
-    uint principalAccrued = calculatePrincipalAccrued(cl, totalPayment, interestAccrued, blockNumber);
-    return (interestAccrued, principalAccrued);
   }
 
   function calculateInterestAccrued(CreditLine cl, uint blockNumber) public view returns(uint) {
