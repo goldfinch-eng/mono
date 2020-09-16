@@ -4,6 +4,7 @@
   "description": "A lending protocol built on the blockchain",
   "main": "index.js",
   "scripts": {
+    "start": "npx concurrently -n \"blockchain,web\"  \"npx buidler node\" \"cd client && npm start\" -k",
     "test": "npx buidler test --show-stack-traces",
     "pre-push": "cd client && npm run pre-push",
     "pre-commit": "cd client && npm run pre-commit"
@@ -54,6 +55,7 @@
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "chai-bn": "OpenZeppelin/chai-bn#v0.2.1",
+    "concurrently": "^5.3.0",
     "ganache-cli": "^6.9.1",
     "husky": "^3.1.0",
     "mocha": "^8.1.0",

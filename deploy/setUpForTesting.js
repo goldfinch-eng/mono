@@ -42,10 +42,13 @@ async function depositFundsToThePool(pool, admin, erc20) {
   }
 
   // Approve first
-  await erc20.approve(pool.address, String(new BN(10000).mul(USDCDecimals)));
+  console.log("Approving the owner to deposit funds...")
+  var txn = await erc20.approve(pool.address, String(new BN(10000).mul(USDCDecimals)));
+  await txn.wait(); 
   // We don't have mad bank for testnet USDC, so divide by 10.
+  console.log("Depositing funds...")
   const depositAmount = new BN(1).mul(USDCDecimals).div(new BN(10));
-  const txn = await pool.deposit(String(depositAmount));
+  var txn = await pool.deposit(String(depositAmount));
   await txn.wait();
   const newBalance = await erc20.balanceOf(pool.address)
   if (String(newBalance) != String(depositAmount)) {
