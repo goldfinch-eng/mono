@@ -41,6 +41,8 @@ async function depositFundsToThePool(pool, admin, erc20) {
     return;
   }
 
+  // Approve first
+  await erc20.approve(pool.address, String(new BN(10000).mul(USDCDecimals)));
   // We don't have mad bank for testnet USDC, so divide by 10.
   const depositAmount = new BN(1).mul(USDCDecimals).div(new BN(10));
   const txn = await pool.deposit(String(depositAmount));
@@ -62,7 +64,7 @@ async function giveMoneyToTestUser(testUser, erc20) {
 }
 
 async function getDeployedAsEthersContract(getter, name) {
-  console.log("Trying to get the deployed version...")
+  console.log("Trying to get the deployed version of...", name);
   const deployed = await getter(name);
   if (!deployed) {
     return null;
