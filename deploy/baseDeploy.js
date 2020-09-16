@@ -25,7 +25,10 @@ async function deployPool(deploy, admin, chainID) {
   const poolDeployResult = await deploy("Pool", {from: admin, gas: 4000000, args: []});
   console.log("Pool was deployed to:", poolDeployResult.address);
   const pool = await ethers.getContractAt("Pool", poolDeployResult.address);
-  const isInitialized = !!(await pool.erc20address());
+  const erc20Address = await pool.erc20address();
+
+  // This is testing if the erc20 address of the pool is the zero address, ie. has not been set.
+  const isInitialized = !/^0x0+$/.test(erc20Address);
   if (!isInitialized) {
     let usdcAddress = getUSDCAddress(chainID);
     if (!usdcAddress) {
