@@ -48,7 +48,8 @@ contract CreditDesk is Ownable {
     Borrower storage borrower = borrowers[_borrower];
     require(underwriterCanCreateThisCreditLine(_limit, underwriter), "The underwriter cannot create this credit line");
 
-    CreditLine cl = new CreditLine(_borrower, _limit, _interestApr, _minCollateralPercent, _paymentPeriodInDays, _termInDays);
+    CreditLine cl = new CreditLine();
+    cl.initialize(_borrower, _limit, _interestApr, _minCollateralPercent, _paymentPeriodInDays, _termInDays);
     cl.authorizePool(poolAddress);
 
     underwriter.creditLines.push(address(cl));

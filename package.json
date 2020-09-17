@@ -4,10 +4,11 @@
   "description": "A lending protocol built on the blockchain",
   "main": "index.js",
   "scripts": {
-    "start": "npx concurrently -n \"blockchain,web\"  \"npx buidler node\" \"cd client && npm start\" -k",
+    "start": "npx concurrently -n \"blockchain,web\"  \"npx buidler node\" \"cd client && npm start\" -k -c \"cyan, magenta\"",
     "test": "npx buidler test --show-stack-traces",
     "pre-push": "cd client && npm run pre-push",
-    "pre-commit": "cd client && npm run pre-commit"
+    "pre-commit": "cd client && npm run pre-commit",
+    "verify": "npx buidler etherscan-verify --api-key DQUC8Y678J5RN5P7XE9RT91SWI7SSEDD53 --solc-input --network"
   },
   "husky": {
     "hooks": {

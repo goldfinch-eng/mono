@@ -44,7 +44,8 @@ describe("CreditDesk", () => {
     const termInBlocks = (await creditDesk.blocksPerDay()).mul(new BN(termInDays));
     const termEndBlock = (await time.latestBlock()).add(termInBlocks);
 
-    creditLine = await CreditLine.new(borrower, bigVal(500), bigVal(3), 5, 10, termInDays, {from: owner});
+    creditLine = await CreditLine.new({from: owner});
+    await creditLine.initialize(borrower, bigVal(500), bigVal(3), 5, 10, termInDays);
 
     await Promise.all([
       creditLine.setBalance(bigVal(balance), {from: owner}),
