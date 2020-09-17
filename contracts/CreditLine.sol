@@ -5,8 +5,9 @@ pragma solidity ^0.6.8;
 import "./Pool.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/upgrades/contracts/Initializable.sol";
 
-contract CreditLine is Ownable {
+contract CreditLine is Ownable, Initializable {
   // Credit line terms
   address public borrower;
   uint public collateral;
@@ -26,14 +27,14 @@ contract CreditLine is Ownable {
   uint public nextDueBlock;
   uint public lastUpdatedBlock;
 
-  constructor(
+  function initialize(
     address _borrower,
     uint _limit,
     uint _interestApr,
     uint _minCollateralPercent,
     uint _paymentPeriodInDays,
     uint _termInDays
-  ) public {
+  ) public initializer {
     borrower = _borrower;
     limit = _limit;
     interestApr = _interestApr;
