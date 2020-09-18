@@ -99,7 +99,7 @@ describe("CreditDesk", () => {
     // Some housekeeping so we have a usable creditDesk for tests, and a pool with funds
     await pool.transferOwnership(creditDesk.address, {from: owner});
     await pool.deposit(String(bigVal(90)), {from: person2 })
-    await creditDesk.setPoolAddress(pool.address, {from: owner});
+    await creditDesk.initialize(pool.address, {from: owner});
   })
 
   it('deployer is owner', async () => {

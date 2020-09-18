@@ -9,10 +9,10 @@ It is only really used for test purposes, and should never be used on Mainnet (w
 async function main({ getNamedAccounts, deployments, getChainId }) {
   console.log("Running the setup for testing script!")
   const { getOrNull } = deployments;
-  const { admin } = await getNamedAccounts();
+  const { protocol_owner, proxy_owner } = await getNamedAccounts();
   let chainID = await getChainId();
-  let underwriter = admin;
-  let borrower = admin;
+  let underwriter = protocol_owner;
+  let borrower = protocol_owner;
   const pool = await getDeployedAsEthersContract(getOrNull, "Pool");
   const creditDesk = await getDeployedAsEthersContract(getOrNull, "CreditDesk");
   let erc20 = await getDeployedAsEthersContract(getOrNull, "TestERC20");
@@ -28,12 +28,12 @@ async function main({ getNamedAccounts, deployments, getChainId }) {
     }
   }
 
-  await depositFundsToThePool(pool, admin, erc20);
+  await depositFundsToThePool(pool, protocol_owner, erc20);
   await createUnderwriter(creditDesk, underwriter);
   await createCreditLineForBorrower(creditDesk, borrower);
 };
 
-async function depositFundsToThePool(pool, admin, erc20) {
+async function depositFundsToThePool(pool, protocol_owner, erc20) {
   console.log("Depositing funds into the pool...");
   const originalBalance = await erc20.balanceOf(pool.address)
   if (originalBalance.gt(new BN(0))) {
@@ -58,8 +58,8 @@ async function depositFundsToThePool(pool, admin, erc20) {
 
 async function giveMoneyToTestUser(testUser, erc20) {
   console.log("Sending money to the test user", testUser);
-  const [admin] = await ethers.getSigners();
-  await admin.sendTransaction({
+  const [protocol_owner] = await ethers.getSigners();
+  await protocol_owner.sendTransaction({
     to: testUser,
     value: ethers.utils.parseEther("10.0")
   });
@@ -76,7 +76,7 @@ async function getDeployedAsEthersContract(getter, name) {
 }
 
 async function createUnderwriter(creditDesk, newUnderwriter) {
-  console.log("Trying to create an Underwriter...");
+  console.log("Trying to create an Underwriter...", newUnderwriter);
   const alreadyUnderwriter = await creditDesk.underwriters(newUnderwriter)
   if (alreadyUnderwriter.gt(new BN(0))) {
     console.log("We have already created this address as an underwriter");

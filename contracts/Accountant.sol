@@ -5,8 +5,8 @@ pragma experimental ABIEncoderV2;
 
 import "./CreditLine.sol";
 import "./external/FPMath.sol";
-import "@openzeppelin/contracts/math/Math.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 
 library Accountant {
   using SafeMath for uint256;
