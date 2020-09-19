@@ -5,10 +5,10 @@ const {MAINNET, LOCAL, CHAIN_MAPPING, getUSDCAddress, USDCDecimals, ETHDecimals}
 This deployment deposits some funds to the pool, and creates an underwriter, and a credit line.
 It is only really used for test purposes, and should never be used on Mainnet (which it automatically never does);
 */
-
+let logger;
 async function main({ getNamedAccounts, deployments, getChainId }) {
-  console.log("Running the setup for testing script!")
-  const { getOrNull } = deployments;
+  const { getOrNull, log } = deployments;
+  logger = log;
   const { protocol_owner, proxy_owner } = await getNamedAccounts();
   let chainID = await getChainId();
   let underwriter = protocol_owner;
@@ -17,8 +17,7 @@ async function main({ getNamedAccounts, deployments, getChainId }) {
   const creditDesk = await getDeployedAsEthersContract(getOrNull, "CreditDesk");
   let erc20 = await getDeployedAsEthersContract(getOrNull, "TestERC20");
 
-  if (getUSDCAddress(chainID)) {
-    console.log("On a network with known USDC address, so firing up that contract...")
+  if (getUSDCAddress(chainID)) {logger("On a network with known USDC address, so firing up that contract...")
     erc20 = await ethers.getContractAt("TestERC20", getUSDCAddress(chainID));
   }
   if (process.env.TEST_USER) {
@@ -34,19 +33,19 @@ async function main({ getNamedAccounts, deployments, getChainId }) {
 };
 
 async function depositFundsToThePool(pool, protocol_owner, erc20) {
-  console.log("Depositing funds into the pool...");
+  logger("Depositing funds into the pool...");
   const originalBalance = await erc20.balanceOf(pool.address)
   if (originalBalance.gt(new BN(0))) {
-    console.log(`Looks like the pool already has ${originalBalance} of funds...`);
+    logger(`Looks like the pool already has ${originalBalance} of funds...`);
     return;
   }
 
   // Approve first
-  console.log("Approving the owner to deposit funds...")
+  logger("Approving the owner to deposit funds...")
   var txn = await erc20.approve(pool.address, String(new BN(10000).mul(USDCDecimals)));
   await txn.wait(); 
   // We don't have mad bank for testnet USDC, so divide by 10.
-  console.log("Depositing funds...")
+  logger("Depositing funds...")
   const depositAmount = new BN(1).mul(USDCDecimals).div(new BN(10));
   var txn = await pool.deposit(String(depositAmount));
   await txn.wait();
@@ -57,7 +56,7 @@ async function depositFundsToThePool(pool, protocol_owner, erc20) {
 }
 
 async function giveMoneyToTestUser(testUser, erc20) {
-  console.log("Sending money to the test user", testUser);
+  logger("Sending money to the test user", testUser);
   const [protocol_owner] = await ethers.getSigners();
   await protocol_owner.sendTransaction({
     to: testUser,
@@ -67,7 +66,7 @@ async function giveMoneyToTestUser(testUser, erc20) {
 }
 
 async function getDeployedAsEthersContract(getter, name) {
-  console.log("Trying to get the deployed version of...", name);
+  logger("Trying to get the deployed version of...", name);
   const deployed = await getter(name);
   if (!deployed) {
     return null;
@@ -76,13 +75,13 @@ async function getDeployedAsEthersContract(getter, name) {
 }
 
 async function createUnderwriter(creditDesk, newUnderwriter) {
-  console.log("Trying to create an Underwriter...", newUnderwriter);
+  logger("Trying to create an Underwriter...", newUnderwriter);
   const alreadyUnderwriter = await creditDesk.underwriters(newUnderwriter)
   if (alreadyUnderwriter.gt(new BN(0))) {
-    console.log("We have already created this address as an underwriter");
+    logger("We have already created this address as an underwriter");
     return;
   }
-  console.log("Creating an underwriter with governance limit", newUnderwriter);
+  logger("Creating an underwriter with governance limit", newUnderwriter);
   const txn = await creditDesk.setUnderwriterGovernanceLimit(newUnderwriter, String(new BN(1000000).mul(USDCDecimals)));
   await txn.wait();
   const onChain = await creditDesk.underwriters(newUnderwriter);
@@ -92,14 +91,14 @@ async function createUnderwriter(creditDesk, newUnderwriter) {
 }
 
 async function createCreditLineForBorrower(creditDesk, borrower) {
-  console.log("Trying to create an CreditLine for the Borrower...");
+  logger("Trying to create an CreditLine for the Borrower...");
   const existingCreditLines = await creditDesk.getBorrowerCreditLines(borrower)
   if (existingCreditLines.length) {
-    console.log("We have already created a credit line for this borrower");
+    logger("We have already created a credit line for this borrower");
     return;
   }
 
-  console.log("Creating a credit line for the borrower", borrower);
+  logger("Creating a credit line for the borrower", borrower);
   const limit = String(new BN(123).mul(USDCDecimals));
   // Divide by 100, because this should be given as a percentage. ie. 100 == 100%
   const interestApr = String(new BN(5).mul(ETHDecimals).div(new BN(100)));
@@ -107,11 +106,12 @@ async function createCreditLineForBorrower(creditDesk, borrower) {
   const paymentPeriodInDays = String(new BN(30));
   const termInDays = String(new BN(360));
   await creditDesk.createCreditLine(borrower, limit, interestApr, minCollateralPercent, paymentPeriodInDays, termInDays);
-  console.log("Created a credit line for the borrower", borrower);
+  logger("Created a credit line for the borrower", borrower);
 }
 
 module.exports = main;
 module.exports.dependencies = ["base_deploy"];
+module.exports.tags = ["setup_for_testing"];
 module.exports.skip = async ({getNamedAccounts, deployments, getChainId}) => {
   return (await getChainId()) === MAINNET;
 };
