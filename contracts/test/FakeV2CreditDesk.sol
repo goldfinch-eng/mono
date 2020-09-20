@@ -42,10 +42,12 @@ contract FakeV2CreditDesk is Initializable, OwnableUpgradeSafe {
     __Ownable_init();
   }
 
-  // This is just a silly function to test upgrades when you change function logic
-  function getUnderwriterCreditLines(address _underwriterAddress) public pure returns (uint) {
-    uint result = 5;
-    return result;
+  function someBrandNewFunction() public pure returns(uint) {
+    return 5;
+  }
+
+  function getUnderwriterCreditLines(address underwriterAddress) public view returns (address[] memory) {
+    return underwriters[underwriterAddress].creditLines;
   }
 
   /*

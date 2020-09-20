@@ -31,6 +31,50 @@ function getMultisigAddress(chainID) {
   return MULTISIG_MAPPING[chainID] || MULTISIG_MAPPING[CHAIN_MAPPING[chainID]];
 }
 
+async function upgrade(bre, contractName, deployOptions) {
+  const { deployments, ethers, getNamedAccounts } = bre;
+  const { deploy, log } = deployments;
+  const { protocol_owner, proxy_owner } = await getNamedAccounts();
+
+  const signers = await ethers.getSigners();
+  const proxyOwnerSigner = signers[1];
+  log("Attemping to upgrade", contractName);
+  
+  deployOptions.from = protocol_owner
+  if (!deployOptions.contract) {
+    deployOptions.contract = contractName;
+  }
+  log("Deploying implementation...");
+  const implementationReceipt = await deploy(contractName + "_Implementation", deployOptions);
+  log("Implementation deployed to", implementationReceipt.address);
+
+
+  const proxyVersion = await deployments.get(contractName + "_Proxy");
+  const regularVersion = await deployments.get(contractName);
+  const proxy = await ethers.getContractAt(proxyVersion.abi, proxyVersion.address, proxyOwnerSigner);
+
+  // If we want to run any post upgrade functions or initializations or anything after the implementation deployment, 
+  // then we would need to actually populate the data here. See https://github.com/wighawag/buidler-deploy/blob/e534fcdc7ffffe2511a48c04def54ae1acf532bc/src/helpers.ts#L854 for more
+  const data = "0x";
+  log("Changing implementation...");
+  await proxy.changeImplementation(implementationReceipt.address, data);
+  log("Upgrade complete");
+}
+
+async function getDeployedContract(deployments, contractName, signerAddress) {
+  const deployment = await deployments.get(contractName);
+  const implementation = await deployments.getOrNull(contractName + "_Implementation");
+  const abi = implementation ? implementation.abi : deployment.abi
+  let signer = undefined;
+  if (signerAddress && typeof(signerAddress) === "string") {
+    const signers = await ethers.getSigners();
+    signer = signers.find(signer => signer._address === signerAddress);
+  } else if (signerAddress && typeof(signerAddres) === "object") {
+    signer = signerAddress;
+  }
+  return await ethers.getContractAt(abi, deployment.address, signer);
+}
+
 module.exports = {
   CHAIN_MAPPING: CHAIN_MAPPING,
   ROPSTEN_USDC_ADDRESS: ROPSTEN_USDC_ADDRESS,
@@ -41,4 +85,6 @@ module.exports = {
   ETHDecimals: ETHDecimals,
   getMultisigAddress: getMultisigAddress,
   getUSDCAddress: getUSDCAddress,
+  upgrade: upgrade,
+  getDeployedContract: getDeployedContract,
 }
