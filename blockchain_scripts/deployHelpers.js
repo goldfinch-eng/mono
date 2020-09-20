@@ -35,9 +35,6 @@ async function upgrade(bre, contractName, deployOptions) {
   const { deployments, ethers, getNamedAccounts } = bre;
   const { deploy, log } = deployments;
   const { protocol_owner, proxy_owner } = await getNamedAccounts();
-
-  const signers = await ethers.getSigners();
-  const proxyOwnerSigner = signers[1];
   log("Attemping to upgrade", contractName);
   
   deployOptions.from = protocol_owner
@@ -48,15 +45,12 @@ async function upgrade(bre, contractName, deployOptions) {
   const implementationReceipt = await deploy(contractName + "_Implementation", deployOptions);
   log("Implementation deployed to", implementationReceipt.address);
 
+  const proxy = await getDeployedContract(deployments, contractName + "_Proxy", proxy_owner)
 
-  const proxyVersion = await deployments.get(contractName + "_Proxy");
-  const regularVersion = await deployments.get(contractName);
-  const proxy = await ethers.getContractAt(proxyVersion.abi, proxyVersion.address, proxyOwnerSigner);
-
-  // If we want to run any post upgrade functions or initializations or anything after the implementation deployment, 
+  // If we wanted to run any post upgrade functions or initializations or anything after the implementation deployment, 
   // then we would need to actually populate the data here. See https://github.com/wighawag/buidler-deploy/blob/e534fcdc7ffffe2511a48c04def54ae1acf532bc/src/helpers.ts#L854 for more
-  const data = "0x";
   log("Changing implementation...");
+  const data = "0x";
   await proxy.changeImplementation(implementationReceipt.address, data);
   log("Upgrade complete");
 }
