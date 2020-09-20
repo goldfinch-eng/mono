@@ -39,7 +39,7 @@
   },
   "homepage": "https://github.com/OpenZeppelin/starter-kit/blob/stable/README.md",
   "dependencies": {
-    "@openzeppelin/contracts": "^3.1.0",
+    "@openzeppelin/contracts-ethereum-package": "^3.0.0",
     "dotenv": "^8.2.0",
     "ethers": "^5.0.9",
     "react-router-dom": "^5.2.0",

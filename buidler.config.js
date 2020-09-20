@@ -32,10 +32,14 @@ module.exports = {
     }
   },
   namedAccounts: {
-    admin: {
+    protocol_owner: {
       default: 0,
       3: `0x83CB0ec2f0013a9641654b344D34615f95b7D7FC`,
       4: `0x83CB0ec2f0013a9641654b344D34615f95b7D7FC`,
+    },
+    proxy_owner: {
+      default: 1,
+      // Will need to add testnet accounts for the proxy owner
     }
   }
 };

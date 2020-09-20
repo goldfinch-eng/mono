@@ -3,11 +3,11 @@
 pragma solidity ^0.6.8;
 
 import "./Pool.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/upgrades/contracts/Initializable.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/ERC20.sol";
 
-contract CreditLine is Ownable, Initializable {
+contract CreditLine is Initializable, OwnableUpgradeSafe {
   // Credit line terms
   address public borrower;
   uint public collateral;
@@ -35,6 +35,7 @@ contract CreditLine is Ownable, Initializable {
     uint _paymentPeriodInDays,
     uint _termInDays
   ) public initializer {
+    __Ownable_init();
     borrower = _borrower;
     limit = _limit;
     interestApr = _interestApr;
@@ -80,6 +81,6 @@ contract CreditLine is Ownable, Initializable {
     address erc20address = Pool(poolAddress).erc20address();
 
     // Approve the pool for an infinite amount
-    ERC20(erc20address).approve(poolAddress, uint(-1));
+    ERC20UpgradeSafe(erc20address).approve(poolAddress, uint(-1));
   }
 }

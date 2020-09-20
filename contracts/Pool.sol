@@ -2,12 +2,12 @@
 
 pragma solidity ^0.6.8;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/upgrades/contracts/Initializable.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/ERC20.sol";
 
-contract Pool is Ownable, Initializable {
+contract Pool is Initializable, OwnableUpgradeSafe {
   using SafeMath for uint256;
   uint public sharePrice;
   uint mantissa;
@@ -23,16 +23,17 @@ contract Pool is Ownable, Initializable {
   event PrincipalCollected(address indexed payer, uint amount);
 
   function initialize(address _erc20address, string memory _name, uint _mantissa) public initializer {
+    __Ownable_init();
     name = _name;
     erc20address = _erc20address;
     mantissa = _mantissa;
     sharePrice = _mantissa;
 
     // Sanity check the address
-    ERC20(erc20address).totalSupply();
+    ERC20UpgradeSafe(erc20address).totalSupply();
 
     // Unlock self for infinite amount
-    ERC20(erc20address).approve(address(this), uint(-1));
+    ERC20UpgradeSafe(erc20address).approve(address(this), uint(-1));
   }
 
   function deposit(uint amount) external payable {
@@ -86,7 +87,7 @@ contract Pool is Ownable, Initializable {
   }
 
   function enoughBalance(address user, uint amount) public view returns(bool) {
-    return ERC20(erc20address).balanceOf(user) >= amount;
+    return ERC20UpgradeSafe(erc20address).balanceOf(user) >= amount;
   }
 
   /* Internal Functions */
@@ -96,7 +97,7 @@ contract Pool is Ownable, Initializable {
   }
 
   function doERC20Transfer(address from, address to, uint amount) internal returns (bool) {
-    ERC20 erc20 = ERC20(erc20address);
+    ERC20UpgradeSafe erc20 = ERC20UpgradeSafe(erc20address);
     uint balanceBefore = erc20.balanceOf(to);
 
     bool success = erc20.transferFrom(from, to, amount);
@@ -108,7 +109,7 @@ contract Pool is Ownable, Initializable {
   }
 
   function doERC20Withdraw(address payable to, uint amount) internal returns (bool) {
-    ERC20 erc20 = ERC20(erc20address);
+    ERC20UpgradeSafe erc20 = ERC20UpgradeSafe(erc20address);
     bool success = erc20.transfer(to, amount);
 
     require(success, "Token Withdraw Failed");

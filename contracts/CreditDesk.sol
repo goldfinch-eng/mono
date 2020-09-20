@@ -3,15 +3,16 @@
 pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin/contracts/math/Math.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/utils/Address.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 import "./Pool.sol";
 import "./Accountant.sol";
 import "./CreditLine.sol";
 
-contract CreditDesk is Ownable {
+contract CreditDesk is Initializable, OwnableUpgradeSafe {
   using SafeMath for uint256;
 
   // Approximate number of blocks
@@ -36,6 +37,11 @@ contract CreditDesk is Ownable {
 
   mapping(address => Underwriter) public underwriters;
   mapping(address => Borrower) private borrowers;
+
+  function initialize(address _poolAddress) public initializer {
+    __Ownable_init();
+    setPoolAddress(_poolAddress);
+  }
 
   function setUnderwriterGovernanceLimit(address underwriterAddress, uint limit) external onlyOwner {
     Underwriter storage underwriter = underwriters[underwriterAddress];
