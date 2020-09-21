@@ -3,22 +3,26 @@
 @import './normalize.scss';
 
 // Page sections
+@import './bar-viz.scss';
 @import './footer.scss';
 @import './form-section.scss';
 @import './header.scss';
 @import './info-section.scss';
+@import './sidebar.scss';
 @import './spinner.scss';
 
 
+
 html, * {
-  color: $purp-dark;
   font-family: aktiv-grotesk, sans-serif;
   font-size: $sans-size-base;
   font-weight: 400;
 }
 
 body {
+  color: $purp-dark;
   background-color: $sand-xlight;
+  padding: 0 60px 100px $nav-width + 60;
 }
 
 a {
@@ -26,33 +30,37 @@ a {
   cursor: pointer;
 }
 
-.content-header{
-  border-bottom: 1px solid $purp-light;
-  font-size: $sans-size-xl;
-  margin: 0 auto 40px;
+.content-section{
+  margin: 0 auto;
+  max-width: $content-max-width;
+}
+
+.page-header{
+  font-size: $sans-size-base;
+  font-weight: 500;
+  margin: 105px auto 20px;
   max-width: $content-max-width;
   padding: 0 0 20px;
 }
 
-.button-dk{
-  background-color: $purp-dark;
+.button{
+  background-color: $blue-xlight;
   border-radius: 8px;
-  color: white;
-  font-size: $sans-size-m;
-  font-weight: 500;
+  color: $purp-dark;
+  line-height: 30px;
   outline: none;
-  padding: 12px 14px;
-  touch-action: none;
+  padding: 20px 0;
 
   &:hover{
-    background-color: $purp;
+    background-color: $blue-light;
+  }
+
+  img{
+    vertical-align: middle;
+    margin: -4px 12px 0 0;
   }
 }
-.button-dk.big{
-  font-size: $sans-size-base;
-  border-radius: 10px;
-  padding: 14px 20px;
-}
+
 
 @media only screen and (max-width: 480px) {
   html {

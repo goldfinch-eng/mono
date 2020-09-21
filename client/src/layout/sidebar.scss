@@ -1,0 +1,37 @@
+.sidebar{
+  background-color: $sand-light;
+  bottom: 0;
+  font-size: $sans-size-s;
+  left: 0;
+  position: fixed;
+  top: 0;
+  width: $nav-width;
+}
+
+.sidebar-logo{
+  margin: 22px 0 0 20px;
+  position: absolute;
+  width: 32px;
+}
+
+.sidebar nav{
+  margin: 100px auto 0;
+}
+
+.sidebar nav a{
+  color: $purp-light;
+  display: block;
+  padding: 9px 0 9px 20px;
+  margin: 4px 0;
+
+  &:hover{
+    color: $purp-dark;
+  }
+
+  &.active{
+    border-right: 3px solid $purp-dark;
+    color: $purp-dark;
+    cursor: auto;
+    font-weight: 500;
+  }
+}

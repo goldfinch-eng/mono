@@ -1,7 +1,8 @@
 import React, { useState, useContext, useEffect } from 'react';
 import CreditActionsContainer from './creditActionsContainer.js';
+import CreditBarViz from './creditBarViz.js';
+import CreditTerms from './creditTerms.js';
 import PaymentStatus from './paymentStatus.js';
-import CreditStatus from './creditStatus.js';
 import web3 from '../web3.js';
 import { buildCreditLine, fetchCreditLineData } from '../ethereum/creditLine.js';
 import { AppContext } from '../App.js';
@@ -23,17 +24,16 @@ function Borrow(props) {
         const borrowerCreditLines = await creditDesk.methods.getBorrowerCreditLines(borrower).call();
         if (borrowerCreditLines.length) {
           const factory = buildCreditLine(borrowerCreditLines[0]);
-          setCreditLineFactory(factory)
+          setCreditLineFactory(factory);
           creditLine = await fetchCreditLineData(factory);
         }
       }
       setBorrower(borrower);
       setCreditLine(creditLine);
     }
-    console.log("Updating borrower credit lines");
+    console.log('Updating borrower credit lines');
     updateBorrowerAndCreditLine();
   }, [creditDesk]);
-
 
   async function actionComplete() {
     const newCreditLine = await fetchCreditLineData(creditLineFadtory);
@@ -42,13 +42,14 @@ function Borrow(props) {
   }
 
   return (
-    <div>
-      <div className="content-header">Your Credit Line</div>
-      <CreditActionsContainer borrower={borrower} creditLine={creditLine} actionComplete={actionComplete}/>
-      <PaymentStatus creditLine={creditLine}/>
-      <CreditStatus creditLine={creditLine}/>
+    <div className="content-section">
+      <div className="page-header">Credit Line / 0x25bf9...83065</div>
+      <CreditBarViz creditLine={creditLine} />
+      <CreditActionsContainer borrower={borrower} creditLine={creditLine} actionComplete={actionComplete} />
+      <PaymentStatus creditLine={creditLine} />
+      <CreditTerms creditLine={creditLine} />
     </div>
-  )
+  );
 }
 
 export default Borrow;

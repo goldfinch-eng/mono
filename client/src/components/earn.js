@@ -15,12 +15,12 @@ function Earn(props) {
     async function refreshAllData() {
       const [capitalProviderAddress] = await web3.eth.getAccounts();
       refreshPoolData(pool, erc20);
-      refreshCapitalProviderData(pool, capitalProviderAddress);;
+      refreshCapitalProviderData(pool, capitalProviderAddress);
     }
     refreshAllData();
   }, [pool, erc20]);
 
-  function actionComplete () {
+  function actionComplete() {
     refreshPoolData(pool, erc20);
     refreshCapitalProviderData(pool, capitalProvider.address);
   }
@@ -36,14 +36,14 @@ function Earn(props) {
   }
 
   return (
-    <div>
-      <div className="content-header">Your Account</div>
-      <EarnActionsContainer poolData={poolData} capitalProvider={capitalProvider} actionComplete={actionComplete}/>
+    <div className="content-section">
+      <div className="page-header">Your Account</div>
+      <EarnActionsContainer poolData={poolData} capitalProvider={capitalProvider} actionComplete={actionComplete} />
       {/* These need to be updated to be the correct fields for earning! */}
-      <DepositStatus capitalProvider={capitalProvider}/>
-      <PoolStatus poolData={poolData}/>
+      <DepositStatus capitalProvider={capitalProvider} />
+      <PoolStatus poolData={poolData} />
     </div>
-  )
+  );
 }
 
 export default Earn;

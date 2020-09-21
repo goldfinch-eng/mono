@@ -7,12 +7,19 @@ function LoadingButton(props) {
 
   let buttonText = props.text;
   if (isPending) {
-    buttonText = "Submitting...";
+    buttonText = 'Submitting...';
   }
 
   return (
-    <button onClick={() => {actionWithLoading()}} className={`button-dk submit-payment ${isPending ? "button-pending" : ""}`}>{buttonText}</button>
-  )
+    <button
+      onClick={() => {
+        actionWithLoading();
+      }}
+      className={`button submit-payment ${isPending ? 'button-pending' : ''}`}
+    >
+      {buttonText}
+    </button>
+  );
 }
 
 export default LoadingButton;
