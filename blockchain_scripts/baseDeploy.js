@@ -1,8 +1,9 @@
 const BN = require('bn.js');
-const {ROPSTEN_USDC_ADDRESS, getUSDCAddress, getMultisigAddress, USDCDecimals, upgrade} = require("./deployHelpers.js");
+const {getUSDCAddress, USDCDecimals, upgrade} = require("./deployHelpers.js");
 let logger;
+
 async function baseDeploy(bre, {shouldUpgrade}) {
-  const { deployments, getNamedAccounts } = bre;
+  const { deployments, getNamedAccounts, getChainId } = bre;
   const { deploy, log } = deployments;
   logger = log;
   logger("Starting deploy...")
@@ -91,6 +92,5 @@ async function baseDeploy(bre, {shouldUpgrade}) {
     }
   }
 }
-
 
 module.exports = baseDeploy;

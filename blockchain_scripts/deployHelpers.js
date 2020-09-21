@@ -32,7 +32,7 @@ function getMultisigAddress(chainID) {
 }
 
 async function upgrade(bre, contractName, deployOptions = {}) {
-  const { deployments, ethers, getNamedAccounts } = bre;
+  const { deployments, getNamedAccounts } = bre;
   const { deploy, log } = deployments;
   const { protocol_owner, proxy_owner } = await getNamedAccounts();
   log("Attemping to upgrade", contractName);
@@ -45,7 +45,6 @@ async function upgrade(bre, contractName, deployOptions = {}) {
   const implementationName = contractName + "_Implementation";
   const implementationReceipt = await deploy(implementationName, deployOptions);
   log("Implementation deployed to", implementationReceipt.address);
-  const implementationContract = getDeployedContract(deployments, implementationName);
 
   const proxy = await getDeployedContract(deployments, contractName + "_Proxy", proxy_owner)
 

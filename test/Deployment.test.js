@@ -9,15 +9,23 @@ describe("Deployment", async () => {
     beforeEach(async () => {
       await deployments.fixture("base_deploy");
     });
-    it("deploys the pool", async function() {
+    it("deploys the pool", async () => {
       const pool = await deployments.get("Pool");
       expect(pool.address).to.exist;
     });
-    it("deploys the credit desk", async function() {
+    it("deploys a proxy for the pool as well", async () => {
+      const poolProxy = await deployments.getOrNull("Pool_Proxy");
+      expect(poolProxy).to.exist;
+    });
+    it("deploys the credit desk", async () => {
       const creditDesk = await deployments.get("CreditDesk");
       expect(creditDesk.address).to.exist;
     });
-    it("sets the credit desk as the owner of the pool", async function() {
+    it("deploys a proxy for the credit desk as well", async () => {
+      const creditDeskProxy = await deployments.getOrNull("CreditDesk_Proxy");
+      expect(creditDeskProxy).to.exist;
+    })
+    it("sets the credit desk as the owner of the pool", async () => {
       const creditDesk = await deployments.get("CreditDesk");
       const pool = await getDeployedContract(deployments, "Pool");
       expect(await pool.owner()).to.equal(creditDesk.address);
@@ -94,7 +102,7 @@ describe("Deployment", async () => {
     })
   });
 
-  describe.only("Upgrading the whole protocol", async () => {
+  describe("Upgrading the whole protocol", async () => {
     beforeEach(async () => {
       await deployments.fixture();
     });
