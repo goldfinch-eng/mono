@@ -39,7 +39,8 @@ module.exports = {
     },
     proxy_owner: {
       default: 1,
-      // Will need to add testnet accounts for the proxy owner
+      3: `0xf3c9B38c155410456b5A98fD8bBf5E35B87F6d96`,
+      4: `0xf3c9B38c155410456b5A98fD8bBf5E35B87F6d96`,
     }
   }
 };
