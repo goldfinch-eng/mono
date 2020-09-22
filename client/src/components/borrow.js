@@ -23,17 +23,15 @@ function Borrow(props) {
         const borrowerCreditLines = await creditDesk.methods.getBorrowerCreditLines(borrower).call();
         if (borrowerCreditLines.length) {
           const factory = buildCreditLine(borrowerCreditLines[0]);
-          setCreditLineFactory(factory)
+          setCreditLineFactory(factory);
           creditLine = await fetchCreditLineData(factory);
         }
       }
       setBorrower(borrower);
       setCreditLine(creditLine);
     }
-    console.log("Updating borrower credit lines");
     updateBorrowerAndCreditLine();
   }, [creditDesk]);
-
 
   async function actionComplete() {
     const newCreditLine = await fetchCreditLineData(creditLineFadtory);
@@ -44,11 +42,11 @@ function Borrow(props) {
   return (
     <div>
       <div className="content-header">Your Credit Line</div>
-      <CreditActionsContainer borrower={borrower} creditLine={creditLine} actionComplete={actionComplete}/>
-      <PaymentStatus creditLine={creditLine}/>
-      <CreditStatus creditLine={creditLine}/>
+      <CreditActionsContainer borrower={borrower} creditLine={creditLine} actionComplete={actionComplete} />
+      <PaymentStatus creditLine={creditLine} />
+      <CreditStatus creditLine={creditLine} />
     </div>
-  )
+  );
 }
 
 export default Borrow;
