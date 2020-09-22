@@ -9,21 +9,14 @@ let pool;
 function getPool(networkName) {
   const networkId = mapNetworkToID[networkName];
   const poolAddress = transformedConfig()[networkId].contracts.Pool.address;
-  console.log('pool Address is:', poolAddress);
   pool = new web3.eth.Contract(PoolContract.abi, poolAddress);
-  web3.eth.getChainId().then(id => {
-    console.log('Chain ID is...', id);
-  });
   pool.erc20 = getErc20(networkName);
-  console.log('Got the pool...', pool);
   return pool;
 }
 
 async function fetchCapitalProviderData(pool, capitalProviderAddress) {
   var result = {};
-  console.log('Fetching capital provider data for', capitalProviderAddress);
   if (!capitalProviderAddress || !pool) {
-    console.log('Resolving result immediately...');
     return Promise.resolve(result);
   }
   const attributes = [
