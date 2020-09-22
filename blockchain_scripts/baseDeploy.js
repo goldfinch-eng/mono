@@ -1,5 +1,6 @@
 const BN = require('bn.js');
 const {getUSDCAddress, USDCDecimals, upgrade} = require("./deployHelpers.js");
+const PROTOCOL_CONFIG = require('../protocol_config.json');
 let logger;
 
 async function baseDeploy(bre, {shouldUpgrade}) {
@@ -46,8 +47,10 @@ async function baseDeploy(bre, {shouldUpgrade}) {
         usdcAddress = fakeUSDC.address;
       }
       logger("Initializing the pool...");
-      var receipt = await pool.initialize(usdcAddress, "USDC", String(USDCDecimals));
-      await receipt.wait();
+      await (await pool.initialize(usdcAddress, "USDC", String(USDCDecimals))).wait();
+      await (await pool.setTransactionLimit(PROTOCOL_CONFIG.transactionLimit)).wait();
+      await (await pool.setTotalFundsLimit(PROTOCOL_CONFIG.totalFundsLimit)).wait();
+
       logger("Share price after initialization is:", String(await pool.sharePrice()));
     }
     return pool;

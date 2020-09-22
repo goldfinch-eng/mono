@@ -15,12 +15,15 @@ contract Pool is Initializable, OwnableUpgradeSafe {
   mapping(address => uint) public capitalProviders;
   address public erc20address;
   string name;
+  uint public totalFundsLimit = 0;
+  uint public transactionLimit = 0;
 
   event DepositMade(address indexed capitalProvider, uint amount);
   event WithdrawalMade(address indexed capitalProvider, uint amount);
   event TransferMade(address indexed from, address indexed to, uint amount);
   event InterestCollected(address indexed payer, uint amount);
   event PrincipalCollected(address indexed payer, uint amount);
+  event LimitChanged(address indexed owner, string limitType, uint amount);
 
   function initialize(address _erc20address, string memory _name, uint _mantissa) public initializer {
     __Ownable_init();
@@ -38,8 +41,11 @@ contract Pool is Initializable, OwnableUpgradeSafe {
 
   function deposit(uint amount) external payable {
     // Determine current shares the address has, and the amount of new shares to be added
+    require(transactionWithinLimit(amount), "Amount is over the per-transaction limit.");
     uint currentShares = capitalProviders[msg.sender];
     uint depositShares = getNumShares(amount, mantissa, sharePrice);
+    uint potentialNewTotalShares = totalShares.add(depositShares);
+    require(poolWithinLimit(potentialNewTotalShares), "Deposit would put the Pool over the total limit.");
 
     doERC20Transfer(msg.sender, address(this), amount);
 
@@ -52,11 +58,12 @@ contract Pool is Initializable, OwnableUpgradeSafe {
 
   function withdraw(uint amount) external {
     // Determine current shares the address has and the shares requested to withdraw
+    require(transactionWithinLimit(amount), "Amount is over the per-transaction limit");
     uint currentShares = capitalProviders[msg.sender];
     uint withdrawShares = getNumShares(amount, mantissa, sharePrice);
 
     // Ensure the address has enough value in the pool
-    require(withdrawShares <= currentShares, "Amount requested is greater than the amount owned for this address");
+    require(withdrawShares <= currentShares, "Amount requested is greater than what this address owns");
 
     // Remove the new shares from both the pool and the address
     totalShares = totalShares.sub(withdrawShares);
@@ -80,6 +87,16 @@ contract Pool is Initializable, OwnableUpgradeSafe {
     emit PrincipalCollected(from, amount);
   }
 
+  function setTotalFundsLimit(uint amount) public onlyOwner {
+    totalFundsLimit = amount.mul(mantissa);
+    emit LimitChanged(msg.sender, "totalFundsLimit", amount);
+  }
+
+  function setTransactionLimit(uint amount) public onlyOwner {
+    transactionLimit = amount.mul(mantissa);
+    emit LimitChanged(msg.sender, "transactionLimit", amount);
+  }
+
   function transferFrom(address from, address to, uint amount) public onlyOwner returns (bool) {
     bool result = doERC20Transfer(from, to, amount);
     emit TransferMade(from, to, amount);
@@ -91,6 +108,14 @@ contract Pool is Initializable, OwnableUpgradeSafe {
   }
 
   /* Internal Functions */
+
+  function poolWithinLimit(uint _totalShares) internal view returns (bool) {
+    return _totalShares.mul(sharePrice).div(mantissa) <= totalFundsLimit;
+  }
+
+  function transactionWithinLimit(uint amount) internal view returns (bool) {
+    return amount <= transactionLimit;
+  }
 
   function getNumShares(uint amount, uint multiplier, uint price) internal pure returns (uint) {
     return amount.mul(multiplier).div(price);

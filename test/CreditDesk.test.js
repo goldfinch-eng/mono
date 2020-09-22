@@ -90,6 +90,8 @@ describe("CreditDesk", () => {
     // Approve and initialize the pool
     pool = await Pool.new({from: owner});
     pool.initialize(erc20.address, "USDC", decimals, {from: owner});
+    await pool.setTotalFundsLimit(1000000);
+    await pool.setTransactionLimit(1000000);
 
     // Approve transfers for our test accounts
     await erc20.approve(pool.address, new BN(100000).mul(decimals), {from: person3});

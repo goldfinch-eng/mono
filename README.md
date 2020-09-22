@@ -51,11 +51,12 @@ Generally speaking, you shouldn't need to do this, since the test command automa
 
 ### Deployment
 - Local deployments are handled through the `npm start` command.
+  - If you want to test an upgrade locally though, then while your localnetwork is running, you can run `npm run upgrade-protocol localhost`. This will re-compile the contracts and upgrade them "in place",
+  letting you refresh your frontend, and then testing your newly upgraded contracts.
 - Testnet deployments: 
     - Right now, we support Ropsten and Rinkeby testnets.
     - We are already deployed to these. Re-running is idempotent. But if we want to blow away the existing deployments for whatever reason, we can do the following:
-    - delete the `deployments/{network}` folder.
-    - Redeploy with: `TEST_USER={YOUR_METAMASK_ADDRESS} npx buidler deploy --network {ropsten|rinkeby} --export-all ./config/deployments.json`
+    - Redeploy with: `TEST_USER={YOUR_METAMASK_ADDRESS} npx buidler deploy --network {ropsten|rinkeby} --export-all ./config/deployments.json --reset`
 - Mainnet deployments:
     - TBD
 

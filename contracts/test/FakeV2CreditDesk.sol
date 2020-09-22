@@ -40,6 +40,7 @@ contract FakeV2CreditDesk is Initializable, OwnableUpgradeSafe {
 
   function initialize(address _poolAddress) public initializer {
     __Ownable_init();
+    poolAddress = _poolAddress;
   }
 
   function someBrandNewFunction() public pure returns(uint) {
