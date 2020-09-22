@@ -6,12 +6,12 @@
     "react-hooks/rules-of-hooks": "error",
     "react-hooks/exhaustive-deps": "warn",
     "quotes": [
-        "error",
-        "double"
+      "warn",
+      "double"
     ],
     "indent": [
-        "error",
-        2
-    ],
+      "error",
+      2
+    ]
   }
 }

@@ -1,7 +1,5 @@
 import React from 'react';
 import _ from 'lodash';
-import { NavLink } from 'react-router-dom';
-import logoPurp from '../images/logomark-purp.svg';
 
 function Header(props) {
   function enableMetamask() {
@@ -54,16 +52,8 @@ function Header(props) {
   }
   return (
     <div className="header">
-      <img className="header-logo" src={logoPurp} alt="Goldfinch" />
       {walletButton}
       {transactions}
-      <nav>
-        <NavLink to="/" exact={true}>
-          Borrow
-        </NavLink>
-        <NavLink to="/earn">Earn</NavLink>
-        <NavLink to="/about">About</NavLink>
-      </nav>
     </div>
   );
 }

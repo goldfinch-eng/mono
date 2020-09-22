@@ -1,27 +1,17 @@
 import React, { Component } from 'react';
 
 class InfoSection extends Component {
-
   convertRowToTR(row, index) {
     return (
-      <tr key={index}>
-        <td>{row.text}</td>
-        <td className="info-section-number">{row.value}</td>
-      </tr>
-    )
+      <div className="info-section-row" key={index}>
+        <span className="info-section-label">{row.text}</span>
+        <span className="info-section-value">{row.value}</span>
+      </div>
+    );
   }
 
   render() {
-    return (
-      <div className="info-section">
-        <h2>{this.props.title}</h2>
-        <table>
-          <tbody>
-            {this.props.rows.map(this.convertRowToTR)}
-          </tbody>
-        </table>
-      </div>
-    )
+    return <div className="info-section">{this.props.rows.map(this.convertRowToTR)}</div>;
   }
 }
 

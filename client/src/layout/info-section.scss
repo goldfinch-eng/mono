@@ -1,28 +1,49 @@
 .info-section{
-  margin: 0 auto 80px;
-  max-width: $content-max-width;
+  margin: 80px auto 0;
 }
 
-.info-section h2{
-  color: $purp-dark;
-  font-size: $sans-size-xs;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  margin: 0 0 18px;
+.info-container{
+  background-color: $sand-light;
+  border-radius: 6px;
+  padding: 35px;
+  margin: 20px 0 0 -35px;
+  width: calc(100% + 70px);
+
+  &.small-items{
+    padding-bottom: 0;
+  }
 }
 
-.info-section table{
-  border-top: 1px solid $purp-xxlight;
-  width: 100%;
+.small-info-item{
+  display: inline-block;
+  margin: 0 0 35px;
+  width: 33%;
 }
 
-.info-section tr{
-  border-bottom: 1px solid $purp-xxlight;
+.small-info-item .value{
+  font-size: $sans-size-base;
 }
 
-.info-section td{
-  padding: 26px 0;
-  vertical-align: middle;
+.small-info-item .label{
+  font-size: $sans-size-s;
+  margin: 8px 0 0;
+}
+
+.info-section-row{
+  background-color: $sand-light;
+  border-radius: 8px;
+  margin: 20px 0;
+  padding: 20px;
+}
+
+.info-section-label{
+  font-size: $sans-size-base;
+}
+
+.info-section-value{
+  float: right;
+  font-variant-numeric: tabular-nums;
+  font-size: $sans-size-base;
 }
 
 .info-section td.info-section-number {

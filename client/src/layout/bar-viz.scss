@@ -1,0 +1,53 @@
+.bar-viz{
+  position: relative;
+}
+
+.bar-left, .bar-right{
+  display: inline-block;
+  vertical-align: top;
+}
+
+
+.full-bar{
+  height: 14px;
+  border-radius: 6px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.full-bar .bar-left{
+  background-color: $purp-dark;
+  height: 14px;
+}
+
+.full-bar .bar-right{
+  background-color: $blue-light;
+  height: 14px;
+}
+
+
+.bar-viz .right-label{
+  color: $blue;
+  display: inline-block;
+  float: right;
+  text-align: right;
+}
+
+.bar-viz .left-label{
+  display: inline-block;
+  position: relative;
+}
+
+.bar-viz .amount{
+  font-size: $sans-size-xl;
+  margin: 16px 0 8px;
+}
+
+.bar-viz.small .amount{
+  font-size: $sans-size-base;
+  margin: 12px 0 8px;
+}
+
+.bar-viz .description{
+  font-size: $sans-size-s;
+}

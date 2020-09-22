@@ -1,7 +1,8 @@
 import React, { useState, useContext, useEffect } from 'react';
 import CreditActionsContainer from './creditActionsContainer.js';
+import CreditBarViz from './creditBarViz.js';
+import CreditTerms from './creditTerms.js';
 import PaymentStatus from './paymentStatus.js';
-import CreditStatus from './creditStatus.js';
 import web3 from '../web3.js';
 import { buildCreditLine, fetchCreditLineData } from '../ethereum/creditLine.js';
 import { AppContext } from '../App.js';
@@ -40,11 +41,12 @@ function Borrow(props) {
   }
 
   return (
-    <div>
-      <div className="content-header">Your Credit Line</div>
+    <div className="content-section">
+      <div className="page-header">Credit Line / {creditLine.address}</div>
+      <CreditBarViz creditLine={creditLine} />
       <CreditActionsContainer borrower={borrower} creditLine={creditLine} actionComplete={actionComplete} />
       <PaymentStatus creditLine={creditLine} />
-      <CreditStatus creditLine={creditLine} />
+      <CreditTerms creditLine={creditLine} />
     </div>
   );
 }

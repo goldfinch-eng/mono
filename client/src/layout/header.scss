@@ -2,40 +2,10 @@ $header-height: 70px;
 $header-widget-height: 40px;
 
 .header{
-  border-bottom: 2px solid $sand-light;
-  font-size: $sans-size-s;
-  margin: 0 0 60px;
-  min-height: $header-height;
-}
-
-.header-logo{
-  left: 16px;
-  position: absolute;
-  top: 14px;
-  width: 36px;
-}
-
-.header nav{
-  margin: 0 auto;
-  max-width: $content-max-width;
-}
-
-.header nav a{
-  display: inline-block;
   height: $header-height;
-  line-height: $header-height - 4px;
-  margin: 0 28px -2px 0;
-  vertical-align: bottom;
-
-  &:hover{
-    border-bottom: 2px solid $sand-dark;
-  }
-
-  &.active{
-    border-bottom: 2px solid $purp-dark;
-    cursor: auto;
-    font-weight: 500;
-  }
+  position: absolute;
+  top: 0;
+  right: 0;
 }
 
 .header-widget{
@@ -47,8 +17,8 @@ $header-widget-height: 40px;
   height: $header-widget-height;
   line-height: $header-widget-height;
   margin: ($header-height - $header-widget-height) / 2 18px 0 0;
+  outline: none;
   padding: 0 18px;
-
 
   & .spinner{
     vertical-align: top;
@@ -59,9 +29,10 @@ $header-widget-height: 40px;
     margin-right: 8px;
   }
 }
-a.header-widget:hover{
+.header-widget:hover{
   background: $sand;
 }
+
 
 @keyframes fadeOut {
   0% {

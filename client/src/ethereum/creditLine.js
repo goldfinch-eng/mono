@@ -2,7 +2,7 @@ import web3 from '../web3';
 import moment from 'moment';
 import BigNumber from 'bignumber.js';
 import * as CreditLineContract from '../../../artifacts/CreditLine.json';
-import { fetchDataFromAttributes, decimalPlaces } from './utils';
+import { fetchDataFromAttributes, decimalPlaces, ETHDecimals } from './utils';
 
 function buildCreditLine(address) {
   return new web3.eth.Contract(CreditLineContract.abi, address);
@@ -23,12 +23,14 @@ async function fetchCreditLineData(creditLine) {
     { method: 'limit' },
     { method: 'interestOwed' },
     { method: 'termEndBlock' },
+    { method: 'minCollateralPercent' },
   ];
   const data = await fetchDataFromAttributes(creditLine, attributes);
   result = { address: creditLine._address, ...data };
   result.dueDate = await calculateDueDateFromFutureBlock(result.nextDueBlock);
   result.termEndDate = await calculateDueDateFromFutureBlock(result.termEndBlock, 'MMM Do, YYYY');
   result.nextDueAmount = calculateNextDueAmount(result);
+  result.interestAprDecimal = (result.interestApr / ETHDecimals) * 10 ** decimalPlaces;
   return result;
 }
 
@@ -59,7 +61,7 @@ function calculateNextDueAmount(result) {
     return (balance * paymentFraction) / 1e18;
   */
   const periodsPerTerm = new BigNumber(result.termInDays).dividedBy(result.paymentPeriodInDays);
-  const annualRate = new BigNumber(result.interestApr).dividedBy(new BigNumber(1e18));
+  const annualRate = new BigNumber(result.interestApr).dividedBy(new BigNumber(ETHDecimals));
   const dailyRate = new BigNumber(annualRate).dividedBy(365.0);
   const periodRate = new BigNumber(dailyRate).multipliedBy(result.paymentPeriodInDays);
   const termRate = new BigNumber(1).plus(periodRate).pow(periodsPerTerm);
