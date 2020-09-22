@@ -42,7 +42,7 @@ function Borrow(props) {
 
   return (
     <div className="content-section">
-      <div className="page-header">Credit Line / 0x25bf9...83065</div>
+      <div className="page-header">Credit Line / {creditLine.address}</div>
       <CreditBarViz creditLine={creditLine} />
       <CreditActionsContainer borrower={borrower} creditLine={creditLine} actionComplete={actionComplete} />
       <PaymentStatus creditLine={creditLine} />
