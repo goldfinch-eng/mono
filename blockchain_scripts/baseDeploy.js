@@ -7,7 +7,9 @@ async function baseDeploy(bre, {shouldUpgrade}) {
   const { deploy, log } = deployments;
   logger = log;
   logger("Starting deploy...")
+  console.log("Starting the deploy for realz...");
   const { protocol_owner, proxy_owner } = await getNamedAccounts();
+  console.log("Got the named accounts");
   logger("Will be deploying using the protocol_owner account:", protocol_owner);
 
   const chainID = await getChainId();
@@ -43,7 +45,7 @@ async function baseDeploy(bre, {shouldUpgrade}) {
         logger("Deployed the contract to:", fakeUSDC.address);
         usdcAddress = fakeUSDC.address;
       }
-      logger("Initializing the pool...", String(USDCDecimals));
+      logger("Initializing the pool...");
       var receipt = await pool.initialize(usdcAddress, "USDC", String(USDCDecimals));
       await receipt.wait();
       logger("Share price after initialization is:", String(await pool.sharePrice()));
