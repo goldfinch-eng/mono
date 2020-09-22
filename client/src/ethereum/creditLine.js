@@ -9,7 +9,6 @@ function buildCreditLine(address) {
 }
 
 async function fetchCreditLineData(creditLine) {
-  console.log('Trying to fetch credit line data with...', creditLine);
   let result = {};
   if (!creditLine) {
     return Promise.resolve({});
@@ -44,7 +43,6 @@ async function calculateDueDateFromFutureBlock(nextDueBlock, format = 'MMM Do') 
 }
 
 function calculateNextDueAmount(result) {
-  console.log('Result is...', result);
   // balance, interestApr, termInDays, paymentPeriodInDays
   // `balance * (periodRate / (1 - (1 / ((1 + periodRate) ^ periods_per_term))))`
   /*

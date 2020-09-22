@@ -62,7 +62,8 @@ async function giveMoneyToTestUser(testUser, erc20) {
     to: testUser,
     value: ethers.utils.parseEther("10.0")
   });
-  await erc20.transfer(testUser, String(new BN(10).mul(USDCDecimals)));
+  const result = await erc20.transfer(testUser, String(new BN(10).mul(USDCDecimals)));
+  await result.wait();
 }
 
 async function getDeployedAsEthersContract(getter, name) {

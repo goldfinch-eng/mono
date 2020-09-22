@@ -31,7 +31,6 @@ function Borrow(props) {
       setBorrower(borrower);
       setCreditLine(creditLine);
     }
-    console.log('Updating borrower credit lines');
     updateBorrowerAndCreditLine();
   }, [creditDesk]);
 

@@ -10,4 +10,3 @@ if (typeof window.ethereum !== 'undefined') {
 }
 
 export default web3;
-
