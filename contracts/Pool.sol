@@ -45,7 +45,7 @@ contract Pool is Initializable, OwnableUpgradeSafe {
 
     // Add the new shares to both the pool and the address
     totalShares = totalShares.add(depositShares);
-    capitalProviders[msg.sender] = currentShares.add(depositShares.add(1000));
+    capitalProviders[msg.sender] = currentShares.add(depositShares);
 
     emit DepositMade(msg.sender, amount);
   }

@@ -2,8 +2,8 @@ const BN = require('bn.js');
 const {getDeployedContract, getMultisigAddress} = require("../blockchain_scripts/deployHelpers.js");
 
 /*
-This deployment deposits some funds to the pool, and creates an underwriter, and a credit line.
-It is only really used for test purposes, and should never be used on Mainnet (which it automatically never does);
+This simply transfers ownership to the multisig address, and should only be run for 
+testnets or mainnet.
 */
 let logger;
 async function main({ getNamedAccounts, deployments, getChainId }) {
