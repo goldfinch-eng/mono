@@ -62,6 +62,9 @@ async function upgrade(bre, contractName, deployOptions = {}) {
 async function getDeployedContract(deployments, contractName, signerAddress) {
   const deployment = await deployments.getOrNull(contractName);
   const implementation = await deployments.getOrNull(contractName + "_Implementation");
+  if (!deployment && !implementation) {
+    throw new Error(`No deployed version of ${contractName} found! All available deployments are: ${Object.keys((await deployments.all()))}`);
+  }
   const abi = implementation ? implementation.abi : deployment.abi
   let signer = undefined;
   if (signerAddress && typeof(signerAddress) === "string") {

@@ -14,6 +14,7 @@ function getErc20(networkName) {
     address = USDC_ADDRESSES[networkName];
   }
   const erc20 = new web3.eth.Contract(ERC20Contract.abi, address);
+  console.log('Got the ERC20 contract', erc20);
   return erc20;
 }
 

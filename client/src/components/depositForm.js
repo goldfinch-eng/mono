@@ -20,15 +20,25 @@ function DepositForm(props) {
     const depositAmount = toAtomic(value);
     const userAddress = props.capitalProvider.address;
     if (props.capitalProvider.allowance.lte(new BN(depositAmount))) {
-      return sendFromUser(erc20.methods.approve(pool._address, toAtomic(100000)), userAddress).then(result => {
-        props.actionComplete();
-      });
+      return sendFromUser(erc20.methods.approve(pool._address, toAtomic(100000)), userAddress)
+        .then(result => {
+          props.actionComplete();
+        })
+        .catch(e => {
+          console.log(e);
+          console.error(e);
+        });
     } else {
-      return sendFromUser(pool.methods.deposit(depositAmount), userAddress).then(result => {
-        setValue('');
-        setShowSuccess(true);
-        props.actionComplete();
-      });
+      return sendFromUser(pool.methods.deposit(depositAmount), userAddress)
+        .then(result => {
+          setValue('');
+          setShowSuccess(true);
+          props.actionComplete();
+        })
+        .catch(e => {
+          console.log(e);
+          console.error(e);
+        });
     }
   }
 
