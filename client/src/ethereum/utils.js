@@ -7,6 +7,7 @@ const USDC_ADDRESSES = {
 };
 const decimalPlaces = 6;
 const decimals = new BN(String(10 ** decimalPlaces));
+const ETHDecimals = 1e18;
 
 function sendFromUser(unsentTransaction, userAddress) {
   return unsentTransaction.send({
@@ -58,5 +59,6 @@ export {
   fetchDataFromAttributes,
   decimalPlaces,
   decimals,
+  ETHDecimals,
   USDC_ADDRESSES,
 };
