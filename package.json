@@ -10,7 +10,7 @@
     "pre-commit": "cd client && npm run pre-commit",
     "verify": "npx buidler etherscan-verify --api-key DQUC8Y678J5RN5P7XE9RT91SWI7SSEDD53 --solc-input --network",
     "deploy": "npx buidler deploy --export-all client/config/deployments.json",
-    "upgrade-protocol": "npx buidler deploy --export-all client/config/deployments.json --tags upgrade_protocol"
+    "upgrade-protocol": "npx buidler deploy --export-all client/config/deployments.json --tags upgrade_protocol --network"
   },
   "husky": {
     "hooks": {

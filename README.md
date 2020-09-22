@@ -59,3 +59,11 @@ Generally speaking, you shouldn't need to do this, since the test command automa
 - Mainnet deployments:
     - TBD
 
+### Troubleshooting Frontend Issues
+Front-end blockchain development is still early, and has rough edges. These are the most common things I've run into so far. If you see others, please add them here!
+
+- `Cannot set headers of undefined` - If you see this on the front-end, and the whole app blew up, then try switching your metamask off of the current network, and then back again (eg. to Ropsten and then back to Localhost)
+- `Error: [ethjs-rpc] rpc error with payload` - This may look like a failed transaction, and Metamask is just throwing some random error with no help. If you're pretty sure everything should be fine, 
+  then try to shut down your local server, restart it, and then before you try any transactions, reset your Metamask account. To reset your Metamask account, click Metamask --> Settings --> Advanced --> Reset Account. This is fast and painless
+- `Incompatible EIP-155 v 134343 with Chain ID {some_id}` - If you see this, you probably created an incorrect Gitpod Local RPC network on Metamask. Check the settings of the network, and ensure you have the correct Chain ID, which should be 31337 for localhost.
+

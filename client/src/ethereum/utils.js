@@ -44,12 +44,16 @@ function fetchDataFromAttributes(web3Obj, attributes) {
   var promises = attributes.map(methodInfo => {
     return web3Obj.methods[methodInfo.method](...(methodInfo.args || [])).call();
   });
-  return Promise.all(promises).then(results => {
-    attributes.forEach((methodInfo, index) => {
-      result[methodInfo.name || methodInfo.method] = results[index];
+  return Promise.all(promises)
+    .then(results => {
+      attributes.forEach((methodInfo, index) => {
+        result[methodInfo.name || methodInfo.method] = results[index];
+      });
+      return result;
+    })
+    .catch(e => {
+      throw new Error(e);
     });
-    return result;
-  });
 }
 
 export {
