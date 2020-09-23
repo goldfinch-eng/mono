@@ -19,6 +19,7 @@ contract CreditDesk is Initializable, OwnableUpgradeSafe {
   uint public constant blocksPerDay = 5760;
   address public poolAddress;
   uint public maxUnderwriterLimit = 0;
+  uint public transactionLimit = 0;
 
   struct Underwriter {
     uint governanceLimit;
@@ -69,7 +70,8 @@ contract CreditDesk is Initializable, OwnableUpgradeSafe {
   function drawdown(uint amount, address creditLineAddress) external {
     CreditLine cl = CreditLine(creditLineAddress);
     require(cl.borrower() == msg.sender, "You do not belong to this credit line");
-    require(amountWithinLimit(amount, cl), "The borrower does not have enough credit limit for this drawdown");
+    require(withinTransactionLimit(amount), "Amount is over the per-transaction limit");
+    require(withinCreditLimit(amount, cl), "The borrower does not have enough credit limit for this drawdown");
 
     if (cl.balance() == 0) {
       cl.setTermEndBlock(calculateNewTermEndBlock(cl));
@@ -87,10 +89,9 @@ contract CreditDesk is Initializable, OwnableUpgradeSafe {
   function pay(address creditLineAddress, uint amount) external payable {
     CreditLine cl = CreditLine(creditLineAddress);
 
-    // Not strictly necessary, but provides a better error message to the user
-    if (!getPool().enoughBalance(msg.sender, amount)) {
-      revert("Insufficient balance for payment");
-    }
+    require(withinTransactionLimit(amount), "Amount is over the per-transaction limit");
+    // Not strictly necessary, but provides a faster/better error message to the user
+    require(getPool().enoughBalance(msg.sender, amount), "You have insufficent balance for this payment");
 
     (uint paymentRemaining, uint interestPayment, uint principalPayment) = handlePayment(cl, amount, block.number, true);
     if (paymentRemaining > 0) {
@@ -109,6 +110,8 @@ contract CreditDesk is Initializable, OwnableUpgradeSafe {
 
   function prepay(address payable creditLineAddress, uint amount) external payable {
     CreditLine cl = CreditLine(creditLineAddress);
+
+    require(withinTransactionLimit(amount), "Amount is over the per-transaction limit");
 
     getPool().transferFrom(msg.sender, creditLineAddress, amount);
     uint newPrepaymentBalance = cl.prepaymentBalance().add(amount);
@@ -157,6 +160,11 @@ contract CreditDesk is Initializable, OwnableUpgradeSafe {
     emit LimitChanged(msg.sender, "maxUnderwriterLimit", amount);
   }
 
+  function setTransactionLimit(uint amount) public onlyOwner {
+    transactionLimit = amount;
+    emit LimitChanged(msg.sender, "transactionLimit", amount);
+  }
+
   // Public View Functions (Getters)
 
   function getUnderwriterCreditLines(address underwriterAddress) public view returns (address[] memory) {
@@ -202,8 +210,12 @@ contract CreditDesk is Initializable, OwnableUpgradeSafe {
     return (cl.interestOwed().add(interestAccrued), cl.principalOwed().add(principalAccrued));
   }
 
-  function amountWithinLimit(uint amount, CreditLine cl) internal view returns(bool) {
+  function withinCreditLimit(uint amount, CreditLine cl) internal view returns(bool) {
     return cl.balance().add(amount) <= cl.limit();
+  }
+
+  function withinTransactionLimit(uint amount) internal view returns(bool) {
+    return amount <= transactionLimit;
   }
 
   function calculateNewTermEndBlock(CreditLine cl) internal view returns (uint) {

@@ -103,6 +103,7 @@ describe("CreditDesk", () => {
     await pool.deposit(String(bigVal(90)), {from: person2 })
     await creditDesk.initialize(pool.address, {from: owner});
     await creditDesk.setMaxUnderwriterLimit(new BN(100000).mul(decimals));
+    await creditDesk.setTransactionLimit(new BN(100000).mul(decimals));
   })
 
   it('deployer is owner', async () => {
@@ -144,6 +145,18 @@ describe("CreditDesk", () => {
       expect(event.event).to.equal("GovernanceUpdatedUnderwriterLimit");
       expect(event.args.underwriter).to.equal(underwriter);
       expect(event.args.newLimit).to.bignumber.equal(amount);
+    });
+
+    describe("limits", async() => {
+      beforeEach(async() => {
+        await creditDesk.setMaxUnderwriterLimit(bigVal(9));
+      })
+      it("should allow you to withdraw right up to the limit", async() => {
+        return expect(creditDesk.setUnderwriterGovernanceLimit(underwriter, bigVal(9))).to.be.fulfilled;
+      });
+      it("should fail with anything greater", async() => {
+        return expect(creditDesk.setUnderwriterGovernanceLimit(underwriter, bigVal(9).add(new BN(1)))).to.be.rejectedWith(/greater than the max allowed/);
+      });
     });
   });
 
@@ -230,13 +243,6 @@ describe("CreditDesk", () => {
         expect(e.message).to.include(expectedErr);
       }
     });
-
-    describe("Creating the credit line with invalid data", async () => {
-      // TOOD: Write more of these validations.
-      it.skip("should enforce the limit is above zero", async () => {
-
-      });
-    });
   });
 
   describe('drawdown', async () => {
@@ -289,8 +295,16 @@ describe("CreditDesk", () => {
       expect((await creditLine.nextDueBlock())).to.bignumber.equal(expectedNextDueBlock);
     });
 
-    it.skip('should fail and not change accounting values if the pool has insufficient funds', async () => {
-
+    describe("limits", async() => {
+      beforeEach(async() => {
+        await creditDesk.setTransactionLimit(bigVal(9));
+      })
+      it("should allow you to withdraw right up to the limit", async() => {
+        return expect(drawdown(bigVal(9), creditLine.address)).to.be.fulfilled;
+      });
+      it("should fail with anything greater", async() => {
+        return expect(drawdown(bigVal(9).add(new BN(1)), creditLine.address)).to.be.rejectedWith(/over the per-transaction limit/);
+      });
     });
   });
 
@@ -525,6 +539,31 @@ describe("CreditDesk", () => {
           expect(event.event).to.equal("LimitChanged");
           expect(event.args.owner).to.equal(owner);
           expect(event.args.limitType).to.equal("maxUnderwriterLimit");
+          expect(event.args.amount).to.bignumber.equal(new BN(limit));
+        });
+      });
+    });
+    describe("transactionLimit", async() => {
+      describe("setting the limit", async() => {
+        let limit = new BN(1000);
+        it("should fail if it isn't the owner", async() => {
+          return expect(creditDesk.setTransactionLimit(limit.mul(decimals), {from: person2})).to.be.rejectedWith(/not the owner/);
+        });
+
+        it("should set the limit", async() => {
+          await creditDesk.setTransactionLimit(limit.mul(decimals));
+          const newLimit = await creditDesk.transactionLimit();
+          expect(newLimit).to.bignumber.equal(limit.mul(decimals));
+        })
+
+        it("should fire an event", async() => {
+          const result = await creditDesk.setTransactionLimit(limit);
+
+          const event = result.logs[0];
+
+          expect(event.event).to.equal("LimitChanged");
+          expect(event.args.owner).to.equal(owner);
+          expect(event.args.limitType).to.equal("transactionLimit");
           expect(event.args.amount).to.bignumber.equal(new BN(limit));
         });
       });
