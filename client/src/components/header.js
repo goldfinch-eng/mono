@@ -32,7 +32,6 @@ function Header(props) {
   let transactions = null;
   if (_.some(props.currentTXs, { status: 'pending' })) {
     const pendingTXCount = _.countBy(props.currentTXs, { status: 'pending' }).true;
-    console.log('Pending TX Count is..', pendingTXCount);
     transactions = (
       <div className="header-widget">
         <div className="spinner">

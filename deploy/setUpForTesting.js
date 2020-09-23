@@ -1,5 +1,6 @@
 const BN = require('bn.js');
 const {MAINNET, LOCAL, CHAIN_MAPPING, getUSDCAddress, USDCDecimals, ETHDecimals} = require("../blockchain_scripts/deployHelpers.js");
+const PROTOCOL_CONFIG = require('../protocol_config.json');
 
 /*
 This deployment deposits some funds to the pool, and creates an underwriter, and a credit line.
@@ -47,6 +48,7 @@ async function depositFundsToThePool(pool, protocol_owner, erc20) {
   // We don't have mad bank for testnet USDC, so divide by 10.
   logger("Depositing funds...")
   const depositAmount = new BN(1).mul(USDCDecimals).div(new BN(10));
+
   var txn = await pool.deposit(String(depositAmount));
   await txn.wait();
   const newBalance = await erc20.balanceOf(pool.address)
@@ -83,7 +85,7 @@ async function createUnderwriter(creditDesk, newUnderwriter) {
     return;
   }
   logger("Creating an underwriter with governance limit", newUnderwriter);
-  const txn = await creditDesk.setUnderwriterGovernanceLimit(newUnderwriter, String(new BN(1000000).mul(USDCDecimals)));
+  const txn = await creditDesk.setUnderwriterGovernanceLimit(newUnderwriter, String(new BN(PROTOCOL_CONFIG.maxUnderwriterLimit).mul(USDCDecimals)));
   await txn.wait();
   const onChain = await creditDesk.underwriters(newUnderwriter);
   if (!onChain.gt(new BN(0))) {

@@ -18,6 +18,8 @@ contract FakeV2CreditDesk is Initializable, OwnableUpgradeSafe {
   // Approximate number of blocks
   uint public constant blocksPerDay = 5760;
   address public poolAddress;
+  uint public maxUnderwriterLimit = 0;
+  uint public transactionLimit = 0;
 
   struct Underwriter {
     uint governanceLimit;
@@ -34,12 +36,14 @@ contract FakeV2CreditDesk is Initializable, OwnableUpgradeSafe {
   event CreditLineCreated(address indexed borrower, address indexed creditLine);
   event PoolAddressUpdated(address indexed oldAddress, address indexed newAddress);
   event GovernanceUpdatedUnderwriterLimit(address indexed underwriter, uint newLimit);
+  event LimitChanged(address indexed owner, string limitType, uint amount);
 
   mapping(address => Underwriter) public underwriters;
   mapping(address => Borrower) private borrowers;
 
   function initialize(address _poolAddress) public initializer {
     __Ownable_init();
+    poolAddress = _poolAddress;
   }
 
   function someBrandNewFunction() public pure returns(uint) {

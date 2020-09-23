@@ -1,12 +1,12 @@
-const {expect, decimals, BN, bigVal, mochaEach } = require('./testHelpers.js');
-const Accountant = artifacts.require('Accountant');
+const {expect, decimals, BN, bigVal, mochaEach } = require("./testHelpers.js")
+const Accountant = artifacts.require("Accountant")
 
 describe("Accountant", async () => {
-  let accountant;
+  let accountant
   beforeEach(async () => {
-    const [ owner ] = await web3.eth.getAccounts();
-    accountant = await Accountant.new({from: owner});
-  });
+    const [ owner ] = await web3.eth.getAccounts()
+    accountant = await Accountant.new({from: owner})
+  })
 
   describe("calculateAnnuityPayment", async () => {
     var tests = [
@@ -23,32 +23,32 @@ describe("Accountant", async () => {
       [0, 12.000, 360, 30, "0"],
     ]
     mochaEach(tests).it("should calculate things correctly", async (balance, interestApr, termInDays, paymentPeriodInDays, expected) => {
-      var rateDecimals = 1000; // This is just for convenience so we can denominate rates in decimals
-      var rateMultiplier = decimals.div(new BN(rateDecimals)).div(new BN(100));
-      balance = bigVal(balance);
-      interestApr = new BN(interestApr * rateDecimals).mul(rateMultiplier);
-      termInDays = new BN(termInDays);
-      paymentPeriodIndays = new BN(paymentPeriodInDays);
-      expected = new BN(expected);
+      var rateDecimals = 1000 // This is just for convenience so we can denominate rates in decimals
+      var rateMultiplier = decimals.div(new BN(rateDecimals)).div(new BN(100))
+      balance = bigVal(balance)
+      interestApr = new BN(interestApr * rateDecimals).mul(rateMultiplier)
+      termInDays = new BN(termInDays)
+      paymentPeriodIndays = new BN(paymentPeriodInDays)
+      expected = new BN(expected)
 
-      const result = await accountant.calculateAnnuityPayment(balance, interestApr, termInDays, paymentPeriodInDays);
-      expect(result.eq(expected)).to.be.true;
-    });
+      const result = await accountant.calculateAnnuityPayment(balance, interestApr, termInDays, paymentPeriodInDays)
+      expect(result.eq(expected)).to.be.true
+    })
 
     it("should gracefully handle extremely small, but > 0 interest rates", async () => {
       const balance = bigVal(10000)
-      const interestApr = new BN(1);
-      const termInDays = new BN(360);
-      const paymentPeriodInDays = new BN(30);
-      expected = new BN("833333333333333333333");
-      const result = await accountant.calculateAnnuityPayment(balance, interestApr, termInDays, paymentPeriodInDays);
-      expect(result.eq(expected)).to.be.true;
-    });
+      const interestApr = new BN(1)
+      const termInDays = new BN(360)
+      const paymentPeriodInDays = new BN(30)
+      expected = new BN("833333333333333333333")
+      const result = await accountant.calculateAnnuityPayment(balance, interestApr, termInDays, paymentPeriodInDays)
+      expect(result.eq(expected)).to.be.true
+    })
 
     describe("with invalid data", async () => {
       // TODO: Consider if we need this.
-    });
-  });
+    })
+  })
 
   describe("allocatePayment", async() => {
     const tests = [
@@ -61,11 +61,11 @@ describe("Accountant", async () => {
       [0, 40, 10, 20, {interestPayment: 0, principalPayment: 0, additionalBalancePayment: 0}],
     ]
     mochaEach(tests).it("should calculate things correctly!", async(paymentAmount, balance, totalInterestOwed, totalPrincipalOwed, expected) => {
-      var result = await accountant.allocatePayment(bigVal(paymentAmount), bigVal(balance), bigVal(totalInterestOwed), bigVal(totalPrincipalOwed));
+      var result = await accountant.allocatePayment(bigVal(paymentAmount), bigVal(balance), bigVal(totalInterestOwed), bigVal(totalPrincipalOwed))
 
-      expect(result.interestPayment).to.be.bignumber.equals(bigVal(expected.interestPayment));
-      expect(result.principalPayment).to.be.bignumber.equals(bigVal(expected.principalPayment));
-      expect(result.additionalBalancePayment).to.be.bignumber.equals(bigVal(expected.additionalBalancePayment));
-    });
-  });
+      expect(result.interestPayment).to.be.bignumber.equals(bigVal(expected.interestPayment))
+      expect(result.principalPayment).to.be.bignumber.equals(bigVal(expected.principalPayment))
+      expect(result.additionalBalancePayment).to.be.bignumber.equals(bigVal(expected.additionalBalancePayment))
+    })
+  })
 })
