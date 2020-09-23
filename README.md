@@ -23,6 +23,7 @@ This is easy.
   1.) Open the Gitpod front-end in the browser, 
   2.) Copy that url, and you should see a `3000` at the beginning of it. Change that to `8545`
   3.) Open Metamask, and click `Custom RPC`. Paste in that url from step 2 into the `New RPC URL` area.
+  4.) Set the chainID to be 31337
   4.) Hit save. You're done.
 
 **Also Good to Know** The Fake USDC address that we create will also not be visible to Metamask by default. So you'll need to add this as well
@@ -51,8 +52,7 @@ Generally speaking, you shouldn't need to do this, since the test command automa
 
 ### Deployment
 - Local deployments are handled through the `npm start` command.
-  - If you want to test an upgrade locally though, then while your localnetwork is running, you can run `npm run upgrade-protocol localhost`. This will re-compile the contracts and upgrade them "in place",
-  letting you refresh your frontend, and then testing your newly upgraded contracts.
+  - If you want to test an upgrade locally though, then while your localnetwork is running, you can run `npm run upgrade-protocol localhost`. This will re-compile the contracts and upgrade them "in place", letting you refresh your frontend, and then testing your newly upgraded contracts.
 - Testnet deployments: 
     - Right now, we support Ropsten and Rinkeby testnets.
     - We are already deployed to these. Re-running is idempotent. But if we want to blow away the existing deployments for whatever reason, we can do the following:
@@ -64,7 +64,7 @@ Generally speaking, you shouldn't need to do this, since the test command automa
 Front-end blockchain development is still early, and has rough edges. These are the most common things I've run into so far. If you see others, please add them here!
 
 - `Cannot set headers of undefined` - If you see this on the front-end, and the whole app blew up, then try switching your metamask off of the current network, and then back again (eg. to Ropsten and then back to Localhost)
-- `Error: [ethjs-rpc] rpc error with payload` - This may look like a failed transaction, and Metamask is just throwing some random error with no help. If you're pretty sure everything should be fine, 
-  then try to shut down your local server, restart it, and then before you try any transactions, reset your Metamask account. To reset your Metamask account, click Metamask --> Settings --> Advanced --> Reset Account. This is fast and painless
+- `Error: [ethjs-rpc] rpc error with payload` - This may look like a failed transaction, and Metamask is just throwing some random error with no help. If you're pretty sure everything should be fine, then try to shut down your local server, restart it, and then before you try any transactions, reset your Metamask account, and switch away and back to the local network (eg. local -> rinkeby -> local). 
+  To reset your Metamask account, click Metamask --> Settings --> Advanced --> Reset Account. This is fast and painless
 - `Incompatible EIP-155 v 134343 with Chain ID {some_id}` - If you see this, you probably created an incorrect Gitpod Local RPC network on Metamask. Check the settings of the network, and ensure you have the correct Chain ID, which should be 31337 for localhost.
 

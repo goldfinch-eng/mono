@@ -70,6 +70,7 @@ async function baseDeploy(bre, {shouldUpgrade}) {
     logger("Credit Desk was deployed to:", creditDeskDeployResult.address);
     creditDesk = await ethers.getContractAt(creditDeskDeployResult.abi, creditDeskDeployResult.address);
     await creditDesk.setMaxUnderwriterLimit(String(new BN(PROTOCOL_CONFIG.maxUnderwriterLimit).mul(USDCDecimals)));
+    await creditDesk.setTransactionLimit(String(new BN(PROTOCOL_CONFIG.transactionLimit).mul(USDCDecimals)));
     return creditDesk;
   }
 

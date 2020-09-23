@@ -239,8 +239,8 @@ contract CreditDesk is Initializable, OwnableUpgradeSafe {
     return totalToBeExtended <= underwriter.governanceLimit;
   }
 
-  function withinMaxUnderwriterLimit(uint newAmount) internal view returns (bool) {
-    return newAmount <= maxUnderwriterLimit;
+  function withinMaxUnderwriterLimit(uint amount) internal view returns (bool) {
+    return amount <= maxUnderwriterLimit;
   }
 
   function getCreditCurrentlyExtended(Underwriter storage underwriter) internal view returns (uint) {
