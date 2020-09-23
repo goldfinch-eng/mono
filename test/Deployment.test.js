@@ -36,6 +36,13 @@ describe("Deployment", async () => {
     it("should not fail", async () => {
       return expect(deployments.run("setup_for_testing")).to.be.fulfilled;
     });
+    it("should create an underwriter credit line for the protocol_owner", async() => {
+      const { protocol_owner } = await getNamedAccounts();
+      await deployments.run("setup_for_testing");
+      const creditDesk = await getDeployedContract(deployments, "CreditDesk");
+      const result = await creditDesk.getUnderwriterCreditLines(protocol_owner);
+      expect(result.length).to.equal(1);
+    });
   });
 
   describe("Upgrading", () => {

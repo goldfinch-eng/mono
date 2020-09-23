@@ -36,8 +36,8 @@ describe("Pool", () => {
     // Deploy and initialize a Pool for this ERC20
     pool = await Pool.new({ from: owner });
     pool.initialize(erc20.address, "USDC", mantissa, {from: owner});
-    await pool.setTotalFundsLimit(100000);
-    await pool.setTransactionLimit(100000);
+    await pool.setTotalFundsLimit(new BN(100000).mul(mantissa));
+    await pool.setTransactionLimit(new BN(100000).mul(mantissa));
 
     // Allow person2 to deposit some funds.
     await erc20.approve(pool.address, new BN(100000).mul(mantissa), {from: person2});
@@ -232,34 +232,34 @@ describe("Pool", () => {
   describe("hard limits", async () => {
     describe("totalFundsLimit", async() => {
       describe("setting the limit", async() => {
-        let limit = 1000;
+        let limit = new BN(1000);
         it("should fail if it isn't the owner", async() => {
-          return expect(pool.setTotalFundsLimit(limit, {from: person2})).to.be.rejectedWith(/not the owner/);
+          return expect(pool.setTotalFundsLimit(limit.mul(mantissa), {from: person2})).to.be.rejectedWith(/not the owner/);
         });
 
         it("should set the limit, and multiply what you pass up by the mantissa", async() => {
-          await pool.setTotalFundsLimit(limit);
+          await pool.setTotalFundsLimit(limit.mul(mantissa));
           const newLimit = await pool.totalFundsLimit();
-          expect(newLimit).to.bignumber.equal(new BN(limit).mul(mantissa));
+          expect(newLimit).to.bignumber.equal(limit.mul(mantissa));
         })
 
         it("should fire an event", async() => {
-          const result = await pool.setTotalFundsLimit(limit);
+          const result = await pool.setTotalFundsLimit(limit.mul(mantissa));
 
           const event = result.logs[0];
 
           expect(event.event).to.equal("LimitChanged");
           expect(event.args.owner).to.equal(owner);
           expect(event.args.limitType).to.bignumber.equal("totalFundsLimit");
-          expect(event.args.amount).to.bignumber.equal(new BN(limit));
+          expect(event.args.amount).to.bignumber.equal(new BN(limit).mul(mantissa));
         });
       });
       
       describe("once it's set", async () => {
-        let limit = 5000
+        let limit = new BN(5000);
         beforeEach(async () => {
-          await pool.setTotalFundsLimit(limit);
-          await pool.setTransactionLimit(limit * 2);
+          await pool.setTotalFundsLimit(limit.mul(mantissa));
+          await pool.setTransactionLimit((limit.mul(new BN(2)).mul(mantissa)));
         });
   
         it("should accept deposits before the limit is reached", async () => {
@@ -277,35 +277,35 @@ describe("Pool", () => {
     });
     describe("transactionLimit", async() => {
       describe("setting the limit", async() => {
-        let limit = 1000;
+        let limit = new BN(1000);
         it("should fail if it isn't the owner", async() => {
-          return expect(pool.setTransactionLimit(limit, {from: person2})).to.be.rejectedWith(/not the owner/);
+          return expect(pool.setTransactionLimit(limit.mul(mantissa), {from: person2})).to.be.rejectedWith(/not the owner/);
         });
 
         it("should set the limit, and multiply what you pass up by the mantissa", async() => {
-          await pool.setTransactionLimit(limit);
+          await pool.setTransactionLimit(limit.mul(mantissa));
           const newLimit = await pool.transactionLimit();
           expect(newLimit).to.bignumber.equal(new BN(limit).mul(mantissa));
         })
 
         it("should fire an event", async() => {
-          const result = await pool.setTransactionLimit(limit);
+          const result = await pool.setTransactionLimit(limit.mul(mantissa));
 
           const event = result.logs[0];
 
           expect(event.event).to.equal("LimitChanged");
           expect(event.args.owner).to.equal(owner);
           expect(event.args.limitType).to.bignumber.equal("transactionLimit");
-          expect(event.args.amount).to.bignumber.equal(new BN(limit));
+          expect(event.args.amount).to.bignumber.equal(new BN(limit).mul(mantissa));
         });
       });
       
       describe("after setting it", async() => {
         let limit;
         beforeEach(async() => {
-          limit = 1000;
-          await pool.setTotalFundsLimit(limit * 10);
-          await pool.setTransactionLimit(limit);
+          limit = new BN(1000);
+          await pool.setTotalFundsLimit(limit.mul(new BN(10)).mul(mantissa));
+          await pool.setTransactionLimit(limit.mul(mantissa));
         });
 
         it("should still allow transactions up to the limit", async() => {

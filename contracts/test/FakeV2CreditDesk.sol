@@ -18,6 +18,7 @@ contract FakeV2CreditDesk is Initializable, OwnableUpgradeSafe {
   // Approximate number of blocks
   uint public constant blocksPerDay = 5760;
   address public poolAddress;
+  uint public maxUnderwriterLimit = 0;
 
   struct Underwriter {
     uint governanceLimit;

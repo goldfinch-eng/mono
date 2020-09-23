@@ -18,6 +18,7 @@ contract CreditDesk is Initializable, OwnableUpgradeSafe {
   // Approximate number of blocks
   uint public constant blocksPerDay = 5760;
   address public poolAddress;
+  uint public maxUnderwriterLimit = 0;
 
   struct Underwriter {
     uint governanceLimit;
@@ -34,6 +35,7 @@ contract CreditDesk is Initializable, OwnableUpgradeSafe {
   event CreditLineCreated(address indexed borrower, address indexed creditLine);
   event PoolAddressUpdated(address indexed oldAddress, address indexed newAddress);
   event GovernanceUpdatedUnderwriterLimit(address indexed underwriter, uint newLimit);
+  event LimitChanged(address indexed owner, string limitType, uint amount);
 
   mapping(address => Underwriter) public underwriters;
   mapping(address => Borrower) private borrowers;
@@ -45,6 +47,7 @@ contract CreditDesk is Initializable, OwnableUpgradeSafe {
 
   function setUnderwriterGovernanceLimit(address underwriterAddress, uint limit) external onlyOwner {
     Underwriter storage underwriter = underwriters[underwriterAddress];
+    require(withinMaxUnderwriterLimit(limit), "This limit is greater than the max allowed by the protocol");
     underwriter.governanceLimit = limit;
     emit GovernanceUpdatedUnderwriterLimit(underwriterAddress, limit);
   }
@@ -149,6 +152,11 @@ contract CreditDesk is Initializable, OwnableUpgradeSafe {
     return poolAddress = newPoolAddress;
   }
 
+  function setMaxUnderwriterLimit(uint amount) public onlyOwner {
+    maxUnderwriterLimit = amount;
+    emit LimitChanged(msg.sender, "maxUnderwriterLimit", amount);
+  }
+
   // Public View Functions (Getters)
 
   function getUnderwriterCreditLines(address underwriterAddress) public view returns (address[] memory) {
@@ -217,6 +225,10 @@ contract CreditDesk is Initializable, OwnableUpgradeSafe {
     uint creditCurrentlyExtended = getCreditCurrentlyExtended(underwriter);
     uint totalToBeExtended = creditCurrentlyExtended.add(newAmount);
     return totalToBeExtended <= underwriter.governanceLimit;
+  }
+
+  function withinMaxUnderwriterLimit(uint newAmount) internal view returns (bool) {
+    return newAmount <= maxUnderwriterLimit;
   }
 
   function getCreditCurrentlyExtended(Underwriter storage underwriter) internal view returns (uint) {

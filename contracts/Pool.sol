@@ -40,8 +40,8 @@ contract Pool is Initializable, OwnableUpgradeSafe {
   }
 
   function deposit(uint amount) external payable {
-    // Determine current shares the address has, and the amount of new shares to be added
     require(transactionWithinLimit(amount), "Amount is over the per-transaction limit.");
+    // Determine current shares the address has, and the amount of new shares to be added
     uint currentShares = capitalProviders[msg.sender];
     uint depositShares = getNumShares(amount, mantissa, sharePrice);
     uint potentialNewTotalShares = totalShares.add(depositShares);
@@ -88,12 +88,12 @@ contract Pool is Initializable, OwnableUpgradeSafe {
   }
 
   function setTotalFundsLimit(uint amount) public onlyOwner {
-    totalFundsLimit = amount.mul(mantissa);
+    totalFundsLimit = amount;
     emit LimitChanged(msg.sender, "totalFundsLimit", amount);
   }
 
   function setTransactionLimit(uint amount) public onlyOwner {
-    transactionLimit = amount.mul(mantissa);
+    transactionLimit = amount;
     emit LimitChanged(msg.sender, "transactionLimit", amount);
   }
 

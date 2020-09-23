@@ -90,8 +90,8 @@ describe("CreditDesk", () => {
     // Approve and initialize the pool
     pool = await Pool.new({from: owner});
     pool.initialize(erc20.address, "USDC", decimals, {from: owner});
-    await pool.setTotalFundsLimit(1000000);
-    await pool.setTransactionLimit(1000000);
+    await pool.setTotalFundsLimit(new BN(1000000).mul(decimals));
+    await pool.setTransactionLimit(new BN(1000000).mul(decimals));
 
     // Approve transfers for our test accounts
     await erc20.approve(pool.address, new BN(100000).mul(decimals), {from: person3});
@@ -102,6 +102,7 @@ describe("CreditDesk", () => {
     await pool.transferOwnership(creditDesk.address, {from: owner});
     await pool.deposit(String(bigVal(90)), {from: person2 })
     await creditDesk.initialize(pool.address, {from: owner});
+    await creditDesk.setMaxUnderwriterLimit(new BN(100000).mul(decimals));
   })
 
   it('deployer is owner', async () => {
@@ -500,5 +501,33 @@ describe("CreditDesk", () => {
         expect(await creditLine.principalOwed()).to.bignumber.equal(bigVal("0"));
       });
     });
+  });
+
+  describe("hard limits", async () => {
+    describe("maxUnderwriterLimit", async() => {
+      describe("setting the limit", async() => {
+        let limit = new BN(1000);
+        it("should fail if it isn't the owner", async() => {
+          return expect(creditDesk.setMaxUnderwriterLimit(limit.mul(decimals), {from: person2})).to.be.rejectedWith(/not the owner/);
+        });
+
+        it("should set the limit", async() => {
+          await creditDesk.setMaxUnderwriterLimit(limit.mul(decimals));
+          const newLimit = await creditDesk.maxUnderwriterLimit();
+          expect(newLimit).to.bignumber.equal(limit.mul(decimals));
+        })
+
+        it("should fire an event", async() => {
+          const result = await creditDesk.setMaxUnderwriterLimit(limit);
+
+          const event = result.logs[0];
+
+          expect(event.event).to.equal("LimitChanged");
+          expect(event.args.owner).to.equal(owner);
+          expect(event.args.limitType).to.equal("maxUnderwriterLimit");
+          expect(event.args.amount).to.bignumber.equal(new BN(limit));
+        });
+      });
+    })
   });
 })

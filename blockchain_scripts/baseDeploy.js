@@ -8,9 +8,7 @@ async function baseDeploy(bre, {shouldUpgrade}) {
   const { deploy, log } = deployments;
   logger = log;
   logger("Starting deploy...")
-  console.log("Starting the deploy for realz...");
   const { protocol_owner, proxy_owner } = await getNamedAccounts();
-  console.log("Got the named accounts");
   logger("Will be deploying using the protocol_owner account:", protocol_owner);
 
   const chainID = await getChainId();
@@ -47,9 +45,11 @@ async function baseDeploy(bre, {shouldUpgrade}) {
         usdcAddress = fakeUSDC.address;
       }
       logger("Initializing the pool...");
+      const transactionLimit = new BN(PROTOCOL_CONFIG.transactionLimit).mul(USDCDecimals);
+      const totalFundsLimit = new BN(PROTOCOL_CONFIG.totalFundsLimit).mul(USDCDecimals);
       await (await pool.initialize(usdcAddress, "USDC", String(USDCDecimals))).wait();
-      await (await pool.setTransactionLimit(PROTOCOL_CONFIG.transactionLimit)).wait();
-      await (await pool.setTotalFundsLimit(PROTOCOL_CONFIG.totalFundsLimit)).wait();
+      await (await pool.setTransactionLimit(String(transactionLimit))).wait();
+      await (await pool.setTotalFundsLimit(String(totalFundsLimit))).wait();
 
       logger("Share price after initialization is:", String(await pool.sharePrice()));
     }
@@ -69,6 +69,7 @@ async function baseDeploy(bre, {shouldUpgrade}) {
     }
     logger("Credit Desk was deployed to:", creditDeskDeployResult.address);
     creditDesk = await ethers.getContractAt(creditDeskDeployResult.abi, creditDeskDeployResult.address);
+    await creditDesk.setMaxUnderwriterLimit(String(new BN(PROTOCOL_CONFIG.maxUnderwriterLimit).mul(USDCDecimals)));
     return creditDesk;
   }
 
