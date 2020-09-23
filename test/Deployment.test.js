@@ -30,7 +30,7 @@ describe("Deployment", async () => {
       const pool = await getDeployedContract(deployments, "Pool")
       expect(await pool.owner()).to.equal(creditDesk.address)
     })
-    it.only("sets non-zero limits", async() => {
+    it("sets non-zero limits", async() => {
       const creditDesk = await getDeployedContract(deployments, "CreditDesk")
       const pool = await getDeployedContract(deployments, "Pool")
       expect(String(await creditDesk.maxUnderwriterLimit())).to.bignumber.gt(new BN(0))
