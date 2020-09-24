@@ -7,8 +7,6 @@ import web3 from '../web3.js';
 import { buildCreditLine, fetchCreditLineData } from '../ethereum/creditLine.js';
 import { AppContext } from '../App.js';
 import { croppedAddress } from '../utils';
-import iconDown from '../images/down-purp.svg';
-import iconUp from '../images/up-purp.svg';
 
 function Borrow(props) {
   const { creditDesk } = useContext(AppContext);

@@ -20,18 +20,18 @@ function CreditTerms(props) {
       { label: 'Required collateral', value: '- %' },
     ];
   } else {
+    const limit = fromAtomic(props.creditLine.limit);
+    const interestRateAPR = fromAtomic(props.creditLine.interestAprDecimal) * 100;
+    const paymentFrequency = fromAtomicDecimals(props.creditLine.paymentPeriodInDays);
+    const paybackTerm = fromAtomicDecimals(props.creditLine.termInDays);
+    const requiredCollateral = fromAtomicDecimals(props.creditLine.minCollateralPercent);
+
     rows = [
-      { label: 'Limit', value: '$' + displayNumber(fromAtomic(props.creditLine.limit), 2) },
-      {
-        label: 'Interest rate APR',
-        value: displayNumber(fromAtomic(props.creditLine.interestAprDecimal) * 100, 2) + '%',
-      },
-      { label: 'Payment frequency', value: fromAtomicDecimals(props.creditLine.paymentPeriodInDays) + ' days' },
-      { label: 'Payback term', value: fromAtomicDecimals(props.creditLine.termInDays) + ' days' },
-      {
-        label: 'Required collateral',
-        value: displayNumber(fromAtomicDecimals(props.creditLine.minCollateralPercent), 2) + '%',
-      },
+      { label: 'Limit', value: '$' + displayNumber(limit, 2) },
+      { label: 'Interest rate APR', value: displayNumber(interestRateAPR, 2) + '%' },
+      { label: 'Payment frequency', value: paymentFrequency + ' days' },
+      { label: 'Payback term', value: paybackTerm + ' days' },
+      { label: 'Required collateral', value: displayNumber(requiredCollateral, 2) + '%' },
     ];
   }
 
