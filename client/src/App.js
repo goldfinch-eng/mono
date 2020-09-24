@@ -18,6 +18,7 @@ function App() {
   const [erc20, setErc20] = useState(null);
   const [user, setUser] = useState();
   const [currentTXs, setCurrentTXs] = useState([]);
+  const [currentErrors, setCurrentErrors] = useState([]);
 
   useEffect(() => {
     setupWeb3();
@@ -61,6 +62,16 @@ function App() {
       const newPendingTxs = _.concat(currentPendingTXs, tx);
       return newPendingTxs;
     });
+    setCurrentErrors(currentErrors => {
+      return _.concat(currentErrors, { id: failedTX.id, message: error.message });
+    });
+  };
+
+  var removeError = error => {
+    setCurrentErrors(currentErrors => {
+      _.remove(currentErrors, { id: error.id });
+      return _.cloneDeep(currentErrors);
+    });
   };
 
   const store = {
@@ -71,13 +82,20 @@ function App() {
     addPendingTX: addPendingTX,
     markTXSuccessful: markTXSuccessful,
     markTXErrored: markTXErrored,
+    removeError: removeError,
   };
 
   return (
     <AppContext.Provider value={store}>
       <Router>
         <Sidebar />
-        <NetworkWidget user={user} setUser={setUser} currentTXs={currentTXs} connectionComplete={setupWeb3} />
+        <NetworkWidget
+          user={user}
+          setUser={setUser}
+          currentErrors={currentErrors}
+          currentTXs={currentTXs}
+          connectionComplete={setupWeb3}
+        />
         <div>
           <Switch>
             <Route exact path="/">

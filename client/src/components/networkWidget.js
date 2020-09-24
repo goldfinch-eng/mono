@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import _ from 'lodash';
-import iconRedX from '../images/x-red.svg';
 import { croppedAddress } from '../utils';
+import NetworkErrors from './networkErrors';
 
 function NetworkWidget(props) {
   const [showNetworkWidgetInfo, setShowNetworkWidgetInfo] = useState('');
 
   function enableMetamask() {
-    console.log('user is...', props.user);
     if (props.user) {
       return;
     }
@@ -22,6 +21,7 @@ function NetworkWidget(props) {
   }
 
   function disableMetamask() {
+    // TODO: Implement this!
     props.setUser(false);
     setShowNetworkWidgetInfo('');
   }
@@ -34,22 +34,9 @@ function NetworkWidget(props) {
     }
   }
 
-  let errors = '';
   let transactions = '';
   let enabledText = croppedAddress(props.user);
   let enabledClass = '';
-
-  function errorItem(tx) {
-    return (
-      <div key={tx.id} className="error-item">
-        <div className="error-label">Error</div>
-        <div className="dismiss-error-item">
-          <img src={iconRedX} alt="x" />
-        </div>
-        <p>{tx.errorMessage}</p>
-      </div>
-    );
-  }
 
   function transactionItem(tx) {
     return (
@@ -66,11 +53,9 @@ function NetworkWidget(props) {
     );
   }
 
-  const erroredTransactions = _.filter(props.currentTXs, { status: 'error' });
-  if (erroredTransactions.length > 0) {
+  if (props.currentErrors.length > 0) {
     enabledClass = 'error';
     enabledText = 'Error';
-    errors = <div className="error-items">{erroredTransactions.map(errorItem)}</div>;
   } else if (_.some(props.currentTXs, { status: 'pending' })) {
     const pendingTXCount = _.countBy(props.currentTXs, { status: 'pending' }).true;
     enabledClass = 'pending';
@@ -112,7 +97,7 @@ function NetworkWidget(props) {
       </button>
       <div className="network-widget-info">
         <div className="network-widget-section address">{croppedAddress(props.user)}</div>
-        {errors}
+        <NetworkErrors currentErrors={props.currentErrors} />
         <div className="network-widget-section">
           USDC balance <span className="value">0.00</span>
         </div>
