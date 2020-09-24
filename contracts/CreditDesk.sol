@@ -6,13 +6,12 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts-ethereum-package/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/utils/Address.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 import "./Pool.sol";
 import "./Accountant.sol";
 import "./CreditLine.sol";
+import "./OwnerPausable.sol";
 
-contract CreditDesk is Initializable, OwnableUpgradeSafe {
+contract CreditDesk is Initializable, OwnableUpgradeSafe, OwnerPausable {
   using SafeMath for uint256;
 
   // Approximate number of blocks
@@ -43,17 +42,18 @@ contract CreditDesk is Initializable, OwnableUpgradeSafe {
 
   function initialize(address _poolAddress) public initializer {
     __Ownable_init();
+    __OwnerPausable__init();
     setPoolAddress(_poolAddress);
   }
 
-  function setUnderwriterGovernanceLimit(address underwriterAddress, uint limit) external onlyOwner {
+  function setUnderwriterGovernanceLimit(address underwriterAddress, uint limit) external onlyOwner whenNotPaused {
     Underwriter storage underwriter = underwriters[underwriterAddress];
     require(withinMaxUnderwriterLimit(limit), "This limit is greater than the max allowed by the protocol");
     underwriter.governanceLimit = limit;
     emit GovernanceUpdatedUnderwriterLimit(underwriterAddress, limit);
   }
 
-  function createCreditLine(address _borrower, uint _limit, uint _interestApr, uint _minCollateralPercent, uint _paymentPeriodInDays, uint _termInDays) external {
+  function createCreditLine(address _borrower, uint _limit, uint _interestApr, uint _minCollateralPercent, uint _paymentPeriodInDays, uint _termInDays) external whenNotPaused {
     Underwriter storage underwriter = underwriters[msg.sender];
     Borrower storage borrower = borrowers[_borrower];
     require(underwriterCanCreateThisCreditLine(_limit, underwriter), "The underwriter cannot create this credit line");
@@ -67,7 +67,7 @@ contract CreditDesk is Initializable, OwnableUpgradeSafe {
     emit CreditLineCreated(_borrower, address(cl));
 	}
 
-  function drawdown(uint amount, address creditLineAddress) external {
+  function drawdown(uint amount, address creditLineAddress) external whenNotPaused {
     CreditLine cl = CreditLine(creditLineAddress);
     require(cl.borrower() == msg.sender, "You do not belong to this credit line");
     // Not strictly necessary, but provides a better error message to the user
@@ -88,7 +88,7 @@ contract CreditDesk is Initializable, OwnableUpgradeSafe {
     emit DrawdownMade(msg.sender, address(cl), amount);
   }
 
-  function pay(address creditLineAddress, uint amount) external payable {
+  function pay(address creditLineAddress, uint amount) external payable whenNotPaused {
     CreditLine cl = CreditLine(creditLineAddress);
 
     require(withinTransactionLimit(amount), "Amount is over the per-transaction limit");
@@ -110,7 +110,7 @@ contract CreditDesk is Initializable, OwnableUpgradeSafe {
     emit PaymentMade(cl.borrower(), address(cl), interestPayment, principalPayment, paymentRemaining);
   }
 
-  function prepay(address payable creditLineAddress, uint amount) external payable {
+  function prepay(address payable creditLineAddress, uint amount) external payable whenNotPaused {
     CreditLine cl = CreditLine(creditLineAddress);
 
     require(withinTransactionLimit(amount), "Amount is over the per-transaction limit");
@@ -122,7 +122,7 @@ contract CreditDesk is Initializable, OwnableUpgradeSafe {
     emit PrepaymentMade(msg.sender, address(cl), amount);
   }
 
-  function addCollateral(address payable creditLineAddress, uint amount) external payable {
+  function addCollateral(address payable creditLineAddress, uint amount) external payable whenNotPaused {
     CreditLine cl = CreditLine(creditLineAddress);
 
     getPool().transferFrom(msg.sender, creditLineAddress, amount);
@@ -130,7 +130,7 @@ contract CreditDesk is Initializable, OwnableUpgradeSafe {
     cl.setCollateralBalance(newCollateralBalance);
   }
 
-  function assessCreditLine(address creditLineAddress) external {
+  function assessCreditLine(address creditLineAddress) external whenNotPaused {
     CreditLine cl = CreditLine(creditLineAddress);
     // Do not assess until a full period has elapsed
     if (block.number < cl.nextDueBlock()) {
@@ -149,7 +149,7 @@ contract CreditDesk is Initializable, OwnableUpgradeSafe {
     emit PaymentMade(cl.borrower(), address(cl), interestPayment, principalPayment, paymentRemaining);
   }
 
-  function setPoolAddress(address newPoolAddress) public onlyOwner returns (address) {
+  function setPoolAddress(address newPoolAddress) public onlyOwner whenNotPaused returns (address) {
     // Sanity check the new address;
     Pool(newPoolAddress).totalShares();
 
@@ -157,23 +157,23 @@ contract CreditDesk is Initializable, OwnableUpgradeSafe {
     return poolAddress = newPoolAddress;
   }
 
-  function setMaxUnderwriterLimit(uint amount) public onlyOwner {
+  function setMaxUnderwriterLimit(uint amount) public onlyOwner whenNotPaused {
     maxUnderwriterLimit = amount;
     emit LimitChanged(msg.sender, "maxUnderwriterLimit", amount);
   }
 
-  function setTransactionLimit(uint amount) public onlyOwner {
+  function setTransactionLimit(uint amount) public onlyOwner whenNotPaused {
     transactionLimit = amount;
     emit LimitChanged(msg.sender, "transactionLimit", amount);
   }
 
   // Public View Functions (Getters)
 
-  function getUnderwriterCreditLines(address underwriterAddress) public view returns (address[] memory) {
+  function getUnderwriterCreditLines(address underwriterAddress) public view whenNotPaused returns (address[] memory) {
     return underwriters[underwriterAddress].creditLines;
   }
 
-  function getBorrowerCreditLines(address borrowerAddress) public view returns (address[] memory) {
+  function getBorrowerCreditLines(address borrowerAddress) public view whenNotPaused returns (address[] memory) {
     return borrowers[borrowerAddress].creditLines;
   }
 
@@ -194,7 +194,7 @@ contract CreditDesk is Initializable, OwnableUpgradeSafe {
 
     updateCreditLineAccounting(cl, newBalance, interestOwed.sub(pa.interestPayment), principalOwed.sub(pa.principalPayment));
 
-    require(paymentRemaining.add(pa.interestPayment).add(totalPrincipalPayment) == paymentAmount, "Calculations must be wrong. Sum of amounts returned do not equal paymentAmount");
+    assert(paymentRemaining.add(pa.interestPayment).add(totalPrincipalPayment) == paymentAmount);
 
     return (paymentRemaining, pa.interestPayment, totalPrincipalPayment);
   }

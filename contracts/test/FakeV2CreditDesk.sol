@@ -8,11 +8,12 @@ import "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/utils/Address.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
+import "../OwnerPausable.sol";
 import "../Pool.sol";
 import "../Accountant.sol";
 import "../CreditLine.sol";
 
-contract FakeV2CreditDesk is Initializable, OwnableUpgradeSafe {
+contract FakeV2CreditDesk is Initializable, OwnableUpgradeSafe, OwnerPausable {
   using SafeMath for uint256;
 
   // Approximate number of blocks

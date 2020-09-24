@@ -6,8 +6,9 @@ import "@openzeppelin/contracts-ethereum-package/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/ERC20.sol";
+import "./OwnerPausable.sol";
 
-contract Pool is Initializable, OwnableUpgradeSafe {
+contract Pool is Initializable, OwnableUpgradeSafe, OwnerPausable {
   using SafeMath for uint256;
   uint public sharePrice;
   uint mantissa;
@@ -26,7 +27,9 @@ contract Pool is Initializable, OwnableUpgradeSafe {
   event LimitChanged(address indexed owner, string limitType, uint amount);
 
   function initialize(address _erc20address, string memory _name, uint _mantissa) public initializer {
-    __Ownable_init();
+    __Context_init_unchained();
+    __Ownable_init_unchained();
+    __OwnerPausable__init();
     name = _name;
     erc20address = _erc20address;
     mantissa = _mantissa;
@@ -39,7 +42,7 @@ contract Pool is Initializable, OwnableUpgradeSafe {
     ERC20UpgradeSafe(erc20address).approve(address(this), uint(-1));
   }
 
-  function deposit(uint amount) external payable {
+  function deposit(uint amount) external payable whenNotPaused {
     require(transactionWithinLimit(amount), "Amount is over the per-transaction limit.");
     // Determine current shares the address has, and the amount of new shares to be added
     uint currentShares = capitalProviders[msg.sender];
@@ -56,7 +59,7 @@ contract Pool is Initializable, OwnableUpgradeSafe {
     emit DepositMade(msg.sender, amount);
   }
 
-  function withdraw(uint amount) external {
+  function withdraw(uint amount) external whenNotPaused {
     // Determine current shares the address has and the shares requested to withdraw
     require(transactionWithinLimit(amount), "Amount is over the per-transaction limit");
     uint currentShares = capitalProviders[msg.sender];
@@ -74,36 +77,36 @@ contract Pool is Initializable, OwnableUpgradeSafe {
     emit WithdrawalMade(msg.sender, amount);
   }
 
-  function collectInterestRepayment(address from, uint amount) external {
+  function collectInterestRepayment(address from, uint amount) external whenNotPaused {
     doERC20Transfer(from, address(this), amount);
     uint increment = amount.mul(mantissa).div(totalShares);
     sharePrice = sharePrice + increment;
     emit InterestCollected(from, amount);
   }
 
-  function collectPrincipalRepayment(address from, uint amount) external {
+  function collectPrincipalRepayment(address from, uint amount) external whenNotPaused {
     // Purposefully does nothing except receive money. No share price updates for principal.
     doERC20Transfer(from, address(this), amount);
     emit PrincipalCollected(from, amount);
   }
 
-  function setTotalFundsLimit(uint amount) public onlyOwner {
+  function setTotalFundsLimit(uint amount) public onlyOwner whenNotPaused {
     totalFundsLimit = amount;
     emit LimitChanged(msg.sender, "totalFundsLimit", amount);
   }
 
-  function setTransactionLimit(uint amount) public onlyOwner {
+  function setTransactionLimit(uint amount) public onlyOwner whenNotPaused {
     transactionLimit = amount;
     emit LimitChanged(msg.sender, "transactionLimit", amount);
   }
 
-  function transferFrom(address from, address to, uint amount) public onlyOwner returns (bool) {
+  function transferFrom(address from, address to, uint amount) public onlyOwner whenNotPaused returns (bool) {
     bool result = doERC20Transfer(from, to, amount);
     emit TransferMade(from, to, amount);
     return result;
   }
 
-  function enoughBalance(address user, uint amount) public view returns(bool) {
+  function enoughBalance(address user, uint amount) public view whenNotPaused returns(bool) {
     return ERC20UpgradeSafe(erc20address).balanceOf(user) >= amount;
   }
 

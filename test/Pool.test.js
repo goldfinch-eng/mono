@@ -2,6 +2,7 @@ const {chai, expect, decimals, BN, bigVal, getBalance }  = require("./testHelper
 let accounts
 let owner
 let person2
+let person3
 const Pool = artifacts.require("TestPool")
 const ERC20 = artifacts.require("TestERC20")
 
@@ -46,6 +47,34 @@ describe("Pool", () => {
   describe("Pool", () => {
     it("deployer is owner", async () => {
       expect(await pool.owner()).to.equal(owner)
+    })
+  })
+
+  describe("Pausability", () => {
+    describe("after pausing", async() => {
+      beforeEach(async() => {
+        await makeDeposit()
+        await pool.pause()
+      })
+      it("disallows deposits", async() => {
+        return expect(makeDeposit()).to.be.rejectedWith(/Pausable: paused/)
+      })
+      it("disallows withdrawing", async() => {
+        return expect(makeWithdraw()).to.be.rejectedWith(/Pausable: paused/)
+      })
+      it("allows unpausing", async() => {
+        await pool.unpause()
+        return expect(makeDeposit()).to.be.fulfilled
+      })
+    })
+
+    describe("actually pausing", async() => {
+      it("should allow the owner to pause", async() => {
+        return expect(pool.pause()).to.be.fulfilled
+      })
+      it("should disallow non-owner to pause", async() => {
+        return expect(pool.pause({from: person2})).to.be.rejectedWith(/caller is not the owner/)
+      })
     })
   })
 

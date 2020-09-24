@@ -9,7 +9,11 @@ const TEST_USER_PRIVATE_KEY = "1774a8ac43395488c6856114659042665ee7267293744d7dc
 module.exports = {
   defaultNetwork: "buidlerevm",
   solc: {
-    version: "0.6.8"
+    version: "0.6.8",
+    optimizer: {
+      enabled: true,
+      runs: 200
+    }
   },
   networks: {
     buidlerevm: {

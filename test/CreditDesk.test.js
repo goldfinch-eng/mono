@@ -18,6 +18,8 @@ describe("CreditDesk", () => {
   let minCollateralPercent = bigVal(10)
   let paymentPeriodInDays = new BN(30)
   let termInDays = new BN(365)
+  let erc20
+  let pool
 
   let createCreditLine = async ({_borrower, _limit, _interestApr, _minCollateralPercent, _paymentPeriodInDays,_termInDays} = {}) => {
     _borrower = _borrower || person3
@@ -44,7 +46,7 @@ describe("CreditDesk", () => {
     const termInBlocks = (await creditDesk.blocksPerDay()).mul(new BN(termInDays))
     const termEndBlock = (await time.latestBlock()).add(termInBlocks)
 
-    creditLine = await CreditLine.new({from: owner})
+    var creditLine = await CreditLine.new({from: owner})
     await creditLine.initialize(borrower, bigVal(500), bigVal(3), 5, 10, termInDays)
 
     await Promise.all([
@@ -122,6 +124,17 @@ describe("CreditDesk", () => {
       expect(event.event).to.equal("PoolAddressUpdated")
       expect(event.args.oldAddress).to.equal(pool.address)
       expect(event.args.newAddress).to.equal(newPool.address)
+    })
+  })
+
+  describe("Pausability", () => {
+    describe("actually pausing", async() => {
+      it("should allow the owner to pause", async() => {
+        return expect(creditDesk.pause()).to.be.fulfilled
+      })
+      it("should disallow non-owner to pause", async() => {
+        return expect(creditDesk.pause({from: person2})).to.be.rejectedWith(/caller is not the owner/)
+      })
     })
   })
 
@@ -306,6 +319,13 @@ describe("CreditDesk", () => {
         return expect(drawdown(bigVal(9).add(new BN(1)), creditLine.address)).to.be.rejectedWith(/over the per-transaction limit/)
       })
     })
+
+    describe("pausing", async() => {
+      it("should be disallowed when paused", async() => {
+        await creditDesk.pause()
+        return expect(drawdown(bigVal(10), creditLine.address)).to.be.rejectedWith(/Pausable: paused/)
+      })
+    })
   })
 
   describe("prepayment", async () => {
@@ -353,6 +373,15 @@ describe("CreditDesk", () => {
         erc20.transfer(borrower, bigVal(50), {from: owner})
       })
 
+      describe("pausing", async() => {
+        it("should be disallowed when paused", async() => {
+          const creditLine = await createAndSetCreditLineAttributes(10, 5, 3)
+          await creditDesk.pause()
+          const result = creditDesk.pay(creditLine.address, String(bigVal(4)), {from: borrower})
+          return expect(result).to.be.rejectedWith(/Pausable: paused/)
+        })
+      })
+
       it("should emit an event with the correct data", async () => {
         const creditLine = await createAndSetCreditLineAttributes(10, 5, 3)
         const paymentAmount = 6
@@ -398,7 +427,7 @@ describe("CreditDesk", () => {
 
         var interestAmount = 5
         const paymentAmount = 7
-        await createAndSetCreditLineAttributes(10, interestAmount, 3)
+        const creditLine = await createAndSetCreditLineAttributes(10, interestAmount, 3)
         await creditDesk.pay(creditLine.address, String(bigVal(paymentAmount)), {from: borrower})
 
         var newSharePrice = await pool.sharePrice()
@@ -414,7 +443,7 @@ describe("CreditDesk", () => {
           var interestAmount = 1
           const balance = 10
           const paymentAmount = 15
-          await createAndSetCreditLineAttributes(balance, interestAmount, 3)
+          const creditLine = await createAndSetCreditLineAttributes(balance, interestAmount, 3)
           await creditDesk.pay(creditLine.address, String(bigVal(paymentAmount)), {from: borrower})
 
           const expected = bigVal(paymentAmount).sub(bigVal(interestAmount)).sub(bigVal(balance))
@@ -430,6 +459,19 @@ describe("CreditDesk", () => {
       borrower = person3
       latestBlock = await time.latestBlock()
     })
+
+    describe("pausing", async() => {
+      it("should be disallowed when paused", async() => {
+        const prepaymentBalance = 8
+        const interestOwed = 5
+        var creditLine = await createAndSetCreditLineAttributes(10, interestOwed, 3, prepaymentBalance, latestBlock)
+
+        await creditDesk.pause()
+        const result = creditDesk.assessCreditLine(creditLine.address)
+        return expect(result).to.be.rejectedWith(/Pausable: paused/)
+      })
+    })
+
     describe("when there is exactly enough prepaymentBalance", async() => {
       it("should successfully process the payment and correctly update all attributes", async () => {
         const prepaymentBalance = 8
