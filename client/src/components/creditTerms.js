@@ -1,23 +1,39 @@
 import React from 'react';
 import { fromAtomic } from '../ethereum/erc20.js';
 import { decimals } from '../ethereum/utils';
+import { displayNumber } from '../utils';
 
 function CreditTerms(props) {
-  if (!props.creditLine.balance) {
-    return '';
-  }
-
   function fromAtomicDecimals(val) {
     return fromAtomic(val) * decimals;
   }
 
-  const rows = [
-    { label: `Limit`, value: '$' + fromAtomic(props.creditLine.limit) },
-    { label: 'Interest rate APR', value: fromAtomic(props.creditLine.interestAprDecimal) * 100 + '%' },
-    { label: 'Payment frequency', value: fromAtomicDecimals(props.creditLine.paymentPeriodInDays) + ' days' },
-    { label: `Payback term`, value: fromAtomicDecimals(props.creditLine.termInDays) + ' days' },
-    { label: 'Required collateral', value: fromAtomicDecimals(props.creditLine.minCollateralPercent) + '%' },
-  ];
+  let rows;
+  let cssClass = '';
+  if (!props.creditLine.balance) {
+    cssClass = 'empty';
+    rows = [
+      { label: 'Limit', value: '$ -' },
+      { label: 'Interest rate APR', value: '- %' },
+      { label: 'Payment frequency', value: '-' },
+      { label: 'Payback term', value: '-' },
+      { label: 'Required collateral', value: '- %' },
+    ];
+  } else {
+    rows = [
+      { label: 'Limit', value: '$' + displayNumber(fromAtomic(props.creditLine.limit), 2) },
+      {
+        label: 'Interest rate APR',
+        value: displayNumber(fromAtomic(props.creditLine.interestAprDecimal) * 100, 2) + '%',
+      },
+      { label: 'Payment frequency', value: fromAtomicDecimals(props.creditLine.paymentPeriodInDays) + ' days' },
+      { label: 'Payback term', value: fromAtomicDecimals(props.creditLine.termInDays) + ' days' },
+      {
+        label: 'Required collateral',
+        value: displayNumber(fromAtomicDecimals(props.creditLine.minCollateralPercent), 2) + '%',
+      },
+    ];
+  }
 
   function convertRowToItem(row, index) {
     return (
@@ -29,7 +45,7 @@ function CreditTerms(props) {
   }
 
   return (
-    <div className="info-section">
+    <div className={`info-section ${cssClass}`}>
       <h2>Credit Terms</h2>
       <div className="info-container small-items">{rows.map(convertRowToItem)}</div>
     </div>

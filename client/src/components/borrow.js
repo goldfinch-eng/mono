@@ -7,6 +7,8 @@ import web3 from '../web3.js';
 import { buildCreditLine, fetchCreditLineData } from '../ethereum/creditLine.js';
 import { AppContext } from '../App.js';
 import { croppedAddress } from '../utils';
+import iconDown from '../images/down-purp.svg';
+import iconUp from '../images/up-purp.svg';
 
 function Borrow(props) {
   const { creditDesk } = useContext(AppContext);
@@ -49,6 +51,8 @@ function Borrow(props) {
           You do not have any credit lines. In order to borrow, you first need a Goldfinch credit line. Then you can
           drawdown funds from the credit line.
         </div>
+        <CreditActionsContainer borrower={borrower} creditLine={creditLine} actionComplete={actionComplete} />
+        <CreditTerms creditLine={creditLine} />
       </div>
     );
   } else {

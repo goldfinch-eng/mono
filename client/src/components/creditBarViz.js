@@ -1,5 +1,6 @@
 import React from 'react';
 import { fromAtomic } from '../ethereum/erc20.js';
+import { displayNumber } from '../utils';
 
 function CreditBarViz(props) {
   const drawdownBalance = fromAtomic(props.creditLine.balance);
@@ -15,11 +16,11 @@ function CreditBarViz(props) {
         <div className="bar-right" style={rightBarStyle}></div>
       </div>
       <div className="left-label">
-        <div className="amount">${drawdownBalance}</div>
+        <div className="amount">${displayNumber(drawdownBalance, 2)}</div>
         <div className="description">Drawdown balanace</div>
       </div>
       <div className="right-label">
-        <div className="amount">${availableToDrawdown}</div>
+        <div className="amount">${displayNumber(availableToDrawdown, 2)}</div>
         <div className="description">Available to drawdown</div>
       </div>
     </div>

@@ -14,6 +14,13 @@
   }
 }
 
+.info-section.empty{
+  color: $sand-xxdark;
+}
+.info-section.empty .value{
+  color: $sand-dark;
+}
+
 .small-info-item{
   display: inline-block;
   margin: 0 0 35px;

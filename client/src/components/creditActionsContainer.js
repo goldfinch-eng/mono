@@ -27,7 +27,20 @@ class CreditActionsContainer extends Component {
 
   render() {
     let formBody;
-    if (this.state.showAction === null) {
+    if (!this.props.creditLine.balance) {
+      formBody = (
+        <div className="form-start">
+          <button className="button non-functioning">
+            <img className="button-icon" src={iconDown} alt="down-arrow" />
+            Drawdown
+          </button>
+          <button className="button non-functioning">
+            <img className="button-icon" src={iconUp} alt="up-arrow" />
+            Payment
+          </button>
+        </div>
+      );
+    } else if (this.state.showAction === null) {
       formBody = (
         <div className="form-start">
           <button
