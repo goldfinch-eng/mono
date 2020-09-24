@@ -1,23 +1,39 @@
 import React from 'react';
 import { fromAtomic } from '../ethereum/erc20.js';
 import { decimals } from '../ethereum/utils';
+import { displayNumber } from '../utils';
 
 function CreditTerms(props) {
-  if (!props.creditLine.balance) {
-    return '';
-  }
-
   function fromAtomicDecimals(val) {
     return fromAtomic(val) * decimals;
   }
 
-  const rows = [
-    { label: `Limit`, value: '$' + fromAtomic(props.creditLine.limit) },
-    { label: 'Interest rate APR', value: fromAtomic(props.creditLine.interestAprDecimal) * 100 + '%' },
-    { label: 'Payment frequency', value: fromAtomicDecimals(props.creditLine.paymentPeriodInDays) + ' days' },
-    { label: `Payback term`, value: fromAtomicDecimals(props.creditLine.termInDays) + ' days' },
-    { label: 'Required collateral', value: fromAtomicDecimals(props.creditLine.minCollateralPercent) + '%' },
-  ];
+  let rows;
+  let cssClass = '';
+  if (!props.creditLine.balance) {
+    cssClass = 'empty';
+    rows = [
+      { label: 'Limit', value: '$ -' },
+      { label: 'Interest rate APR', value: '- %' },
+      { label: 'Payment frequency', value: '-' },
+      { label: 'Payback term', value: '-' },
+      { label: 'Required collateral', value: '- %' },
+    ];
+  } else {
+    const limit = fromAtomic(props.creditLine.limit);
+    const interestRateAPR = fromAtomic(props.creditLine.interestAprDecimal) * 100;
+    const paymentFrequency = fromAtomicDecimals(props.creditLine.paymentPeriodInDays);
+    const paybackTerm = fromAtomicDecimals(props.creditLine.termInDays);
+    const requiredCollateral = fromAtomicDecimals(props.creditLine.minCollateralPercent);
+
+    rows = [
+      { label: 'Limit', value: '$' + displayNumber(limit, 2) },
+      { label: 'Interest rate APR', value: displayNumber(interestRateAPR, 2) + '%' },
+      { label: 'Payment frequency', value: paymentFrequency + ' days' },
+      { label: 'Payback term', value: paybackTerm + ' days' },
+      { label: 'Required collateral', value: displayNumber(requiredCollateral, 2) + '%' },
+    ];
+  }
 
   function convertRowToItem(row, index) {
     return (
@@ -29,7 +45,7 @@ function CreditTerms(props) {
   }
 
   return (
-    <div className="info-section">
+    <div className={`info-section ${cssClass}`}>
       <h2>Credit Terms</h2>
       <div className="info-container small-items">{rows.map(convertRowToItem)}</div>
     </div>

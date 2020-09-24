@@ -2141,6 +2141,31 @@
                 {
                   "indexed": true,
                   "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "string",
+                  "name": "limitType",
+                  "type": "string"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "amount",
+                  "type": "uint256"
+                }
+              ],
+              "name": "LimitChanged",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
                   "name": "previousOwner",
                   "type": "address"
                 },
@@ -2366,6 +2391,32 @@
               "type": "function"
             },
             {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "amount",
+                  "type": "uint256"
+                }
+              ],
+              "name": "setTotalFundsLimit",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "amount",
+                  "type": "uint256"
+                }
+              ],
+              "name": "setTransactionLimit",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
               "inputs": [],
               "name": "sharePrice",
               "outputs": [
@@ -2380,7 +2431,33 @@
             },
             {
               "inputs": [],
+              "name": "totalFundsLimit",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
               "name": "totalShares",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "transactionLimit",
               "outputs": [
                 {
                   "internalType": "uint256",
@@ -2599,6 +2676,31 @@
                 {
                   "indexed": true,
                   "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "string",
+                  "name": "limitType",
+                  "type": "string"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "amount",
+                  "type": "uint256"
+                }
+              ],
+              "name": "LimitChanged",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
                   "name": "previousOwner",
                   "type": "address"
                 },
@@ -2824,6 +2926,32 @@
               "type": "function"
             },
             {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "amount",
+                  "type": "uint256"
+                }
+              ],
+              "name": "setTotalFundsLimit",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "amount",
+                  "type": "uint256"
+                }
+              ],
+              "name": "setTransactionLimit",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
               "inputs": [],
               "name": "sharePrice",
               "outputs": [
@@ -2838,7 +2966,33 @@
             },
             {
               "inputs": [],
+              "name": "totalFundsLimit",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
               "name": "totalShares",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "transactionLimit",
               "outputs": [
                 {
                   "internalType": "uint256",
@@ -3198,7 +3352,7 @@
           ]
         },
         "Accountant": {
-          "address": "0xf784709d2317D872237C4bC22f867d1BAe2913AB",
+          "address": "0x038B86d9d8FAFdd0a02ebd1A476432877b0107C8",
           "abi": [
             {
               "inputs": [
@@ -3414,7 +3568,7 @@
           ]
         },
         "CreditDesk_Implementation": {
-          "address": "0x3619DbE27d7c1e7E91aA738697Ae7Bc5FC3eACA5",
+          "address": "0x1A1FEe7EeD918BD762173e4dc5EfDB8a78C924A8",
           "abi": [
             {
               "anonymous": false,
@@ -3477,6 +3631,31 @@
                 }
               ],
               "name": "GovernanceUpdatedUnderwriterLimit",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "string",
+                  "name": "limitType",
+                  "type": "string"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "amount",
+                  "type": "uint256"
+                }
+              ],
+              "name": "LimitChanged",
               "type": "event"
             },
             {
@@ -3732,6 +3911,19 @@
             },
             {
               "inputs": [],
+              "name": "maxUnderwriterLimit",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
               "name": "owner",
               "outputs": [
                 {
@@ -3802,6 +3994,19 @@
             {
               "inputs": [
                 {
+                  "internalType": "uint256",
+                  "name": "amount",
+                  "type": "uint256"
+                }
+              ],
+              "name": "setMaxUnderwriterLimit",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
                   "internalType": "address",
                   "name": "newPoolAddress",
                   "type": "address"
@@ -3821,6 +4026,19 @@
             {
               "inputs": [
                 {
+                  "internalType": "uint256",
+                  "name": "amount",
+                  "type": "uint256"
+                }
+              ],
+              "name": "setTransactionLimit",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
                   "internalType": "address",
                   "name": "underwriterAddress",
                   "type": "address"
@@ -3834,6 +4052,19 @@
               "name": "setUnderwriterGovernanceLimit",
               "outputs": [],
               "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "transactionLimit",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
               "type": "function"
             },
             {
@@ -3871,7 +4102,7 @@
           ]
         },
         "CreditDesk_Proxy": {
-          "address": "0x038B86d9d8FAFdd0a02ebd1A476432877b0107C8",
+          "address": "0x500D1d6A4c7D8Ae28240b47c8FCde034D827fD5e",
           "abi": [
             {
               "inputs": [
@@ -3975,7 +4206,7 @@
           ]
         },
         "CreditDesk": {
-          "address": "0x038B86d9d8FAFdd0a02ebd1A476432877b0107C8",
+          "address": "0x500D1d6A4c7D8Ae28240b47c8FCde034D827fD5e",
           "abi": [
             {
               "anonymous": false,
@@ -4038,6 +4269,31 @@
                 }
               ],
               "name": "GovernanceUpdatedUnderwriterLimit",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "string",
+                  "name": "limitType",
+                  "type": "string"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "uint256",
+                  "name": "amount",
+                  "type": "uint256"
+                }
+              ],
+              "name": "LimitChanged",
               "type": "event"
             },
             {
@@ -4293,6 +4549,19 @@
             },
             {
               "inputs": [],
+              "name": "maxUnderwriterLimit",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
               "name": "owner",
               "outputs": [
                 {
@@ -4363,6 +4632,19 @@
             {
               "inputs": [
                 {
+                  "internalType": "uint256",
+                  "name": "amount",
+                  "type": "uint256"
+                }
+              ],
+              "name": "setMaxUnderwriterLimit",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
                   "internalType": "address",
                   "name": "newPoolAddress",
                   "type": "address"
@@ -4382,6 +4664,19 @@
             {
               "inputs": [
                 {
+                  "internalType": "uint256",
+                  "name": "amount",
+                  "type": "uint256"
+                }
+              ],
+              "name": "setTransactionLimit",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
                   "internalType": "address",
                   "name": "underwriterAddress",
                   "type": "address"
@@ -4395,6 +4690,19 @@
               "name": "setUnderwriterGovernanceLimit",
               "outputs": [],
               "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "transactionLimit",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
               "type": "function"
             },
             {

@@ -52,10 +52,10 @@ input{
 .content-empty-message{
   background-color: $sand-light;
   border-radius: 10px;
-  color: $sand-xxdark;
+  color: $purp-dark;
   font-size: $sans-size-m;
   line-height: 1.4;
-  margin: 0 0 0 -30px;
+  margin: 0 0 60px -30px;
   padding: 30px;
   width: calc(100% + 60px);
 }
@@ -75,6 +75,11 @@ input{
   img{
     vertical-align: middle;
     margin: -4px 12px 0 0;
+  }
+
+  &.non-functioning{
+    cursor: not-allowed;
+    opacity: 0.5;
   }
 }
 

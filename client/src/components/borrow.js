@@ -49,6 +49,8 @@ function Borrow(props) {
           You do not have any credit lines. In order to borrow, you first need a Goldfinch credit line. Then you can
           drawdown funds from the credit line.
         </div>
+        <CreditActionsContainer borrower={borrower} creditLine={creditLine} actionComplete={actionComplete} />
+        <CreditTerms creditLine={creditLine} />
       </div>
     );
   } else {

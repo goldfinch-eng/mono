@@ -1,6 +1,5 @@
 .network-widget{
   border-radius: 0 0 0 12px;
-  // height: $header-widget-height;
   position: fixed;
   top: 15px;
   right: 18px;
@@ -70,6 +69,7 @@
   padding: 20px;
 
   &.address{
+    border-top: none;
     font-size: $sans-size-s;
     font-weight: 500;
     padding: 24px 20px;
