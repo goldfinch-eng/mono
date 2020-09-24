@@ -17,16 +17,13 @@ function DrawdownForm(props) {
 
   function makeDrawdown() {
     const drawdownAmount = toAtomic(value);
-    return sendFromUser(creditDesk.methods.drawdown(drawdownAmount, props.creditLine.address), props.borrower)
-      .then(result => {
+    return sendFromUser(creditDesk.methods.drawdown(drawdownAmount, props.creditLine.address), props.borrower).then(
+      result => {
         setValue('');
         setShowSuccess(true);
         props.actionComplete();
-      })
-      .catch(error => {
-        // TODO: We should turn this into human readable errors and show to the user if it's relevant.
-        console.log('Error is:', error);
-      });
+      },
+    );
   }
 
   return (
@@ -40,9 +37,9 @@ function DrawdownForm(props) {
       </nav>
       <div className="form-inputs">
         <div className="input-container">
-          <input value={value} onChange={handleChange} className="big-number-input"></input>
+          <input value={value} placeholder="0.0" onChange={handleChange} className="big-number-input"></input>
         </div>
-        <LoadingButton action={makeDrawdown} text="Submit" />
+        <LoadingButton action={makeDrawdown} txData={{ amount: value, type: 'Drawdown' }} text="Submit" />
       </div>
       {showSuccess ? <div className="success-message">Drawdown successfully completed!</div> : ''}
     </div>

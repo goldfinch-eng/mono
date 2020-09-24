@@ -6,9 +6,10 @@
 @import './bar-viz.scss';
 @import './footer.scss';
 @import './form-section.scss';
-@import './header.scss';
 @import './info-section.scss';
+@import './network-widget.scss';
 @import './sidebar.scss';
+@import './status-icon.scss';
 @import './spinner.scss';
 
 
@@ -17,6 +18,7 @@ html, * {
   font-family: aktiv-grotesk, sans-serif;
   font-size: $sans-size-base;
   font-weight: 400;
+  transition: 0.1s;
 }
 
 body {
@@ -30,6 +32,10 @@ a {
   cursor: pointer;
 }
 
+input{
+  color: $purp-dark;
+}
+
 .content-section{
   margin: 0 auto;
   max-width: $content-max-width;
@@ -41,6 +47,17 @@ a {
   margin: 105px auto 20px;
   max-width: $content-max-width;
   padding: 0 0 20px;
+}
+
+.content-empty-message{
+  background-color: $sand-light;
+  border-radius: 10px;
+  color: $sand-xxdark;
+  font-size: $sans-size-m;
+  line-height: 1.4;
+  margin: 0 0 0 -30px;
+  padding: 30px;
+  width: calc(100% + 60px);
 }
 
 .button{
@@ -60,6 +77,11 @@ a {
     margin: -4px 12px 0 0;
   }
 }
+
+ input::placeholder,
+ ::-webkit-input-placeholder {
+   color: $purp-xxlight;
+ }
 
 
 @media only screen and (max-width: 480px) {

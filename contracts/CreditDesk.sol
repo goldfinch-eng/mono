@@ -70,6 +70,8 @@ contract CreditDesk is Initializable, OwnableUpgradeSafe {
   function drawdown(uint amount, address creditLineAddress) external {
     CreditLine cl = CreditLine(creditLineAddress);
     require(cl.borrower() == msg.sender, "You do not belong to this credit line");
+    // Not strictly necessary, but provides a better error message to the user
+    require(getPool().enoughBalance(poolAddress, amount), "Pool does not have enough balance for this drawdown");
     require(withinTransactionLimit(amount), "Amount is over the per-transaction limit");
     require(withinCreditLimit(amount, cl), "The borrower does not have enough credit limit for this drawdown");
 

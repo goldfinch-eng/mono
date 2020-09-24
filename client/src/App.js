@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
 import _ from 'lodash';
 import Borrow from './components/borrow.js';
 import Earn from './components/earn.js';
-import Header from './components/header';
+import NetworkWidget from './components/networkWidget';
 import Sidebar from './components/sidebar';
 import web3 from './web3';
 import { getPool } from './ethereum/pool.js';
@@ -16,7 +16,7 @@ function App() {
   const [pool, setPool] = useState(null);
   const [creditDesk, setCreditDesk] = useState(null);
   const [erc20, setErc20] = useState(null);
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState();
   const [currentTXs, setCurrentTXs] = useState([]);
 
   useEffect(() => {
@@ -52,6 +52,17 @@ function App() {
     });
   };
 
+  var markTXErrored = (failedTX, error) => {
+    setCurrentTXs(currentPendingTXs => {
+      const matches = _.remove(currentPendingTXs, { id: failedTX.id });
+      const tx = matches && matches[0];
+      tx.status = 'error';
+      tx.errorMessage = error.message;
+      const newPendingTxs = _.concat(currentPendingTXs, tx);
+      return newPendingTxs;
+    });
+  };
+
   const store = {
     pool: pool,
     creditDesk: creditDesk,
@@ -59,13 +70,14 @@ function App() {
     erc20: erc20,
     addPendingTX: addPendingTX,
     markTXSuccessful: markTXSuccessful,
+    markTXErrored: markTXErrored,
   };
 
   return (
     <AppContext.Provider value={store}>
       <Router>
         <Sidebar />
-        <Header user={user} currentTXs={currentTXs} connectionComplete={setupWeb3} />
+        <NetworkWidget user={user} setUser={setUser} currentTXs={currentTXs} connectionComplete={setupWeb3} />
         <div>
           <Switch>
             <Route exact path="/">

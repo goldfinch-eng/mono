@@ -1,0 +1,182 @@
+.network-widget{
+  border-radius: 0 0 0 12px;
+  // height: $header-widget-height;
+  position: fixed;
+  top: 15px;
+  right: 18px;
+  z-index: 1;
+}
+
+.network-widget-button{
+  background: $sand-light;
+  border-radius: 10px;
+  color: $purp-dark;
+  height: 40px;
+  font-size: $sans-size-xs;
+  line-height: 40px;
+  outline: none;
+  padding: 0 18px;
+
+  &:hover{
+    background: $sand;
+  }
+
+  &.error{
+    background-color: $red-xlight;
+  }
+
+  .status-icon{
+    margin: 0 10px 0 0;
+  }
+
+  .indicator{
+    margin-top: 14px;
+  }
+
+  .spinner{
+    margin-top: 10px;
+  }
+}
+
+.network-widget-info{
+  background-color: $sand-xlight;
+  box-shadow: 0px 0px 25px rgba(180, 173, 167, 0.45);
+  border-radius: 10px;
+  display: none;
+  font-size: $sans-size-xs;
+  margin: 12px 0 0 0;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 300px;
+}
+
+.network-widget.open{
+  .network-widget-button{
+    background: $sand;
+  }
+
+  .network-widget-button.error{
+    background: $red-xlight;
+  }
+
+  .network-widget-info{
+    display: block;
+  }
+}
+
+.network-widget-section{
+  border-top: 1px solid $sand;
+  padding: 20px;
+
+  &.address{
+    font-size: $sans-size-s;
+    font-weight: 500;
+    padding: 24px 20px;
+  }
+
+  .value{
+    float: right;
+  }
+}
+
+.network-widget-header{
+  margin: 0 0 18px;
+
+  a {
+    color: $purp-dark;
+    float: right;
+    opacity: 0.4;
+  }
+
+  a:hover{
+    opacity: 1;
+  }
+}
+
+.network-widget .error-items{
+  padding: 0px 20px 20px;
+}
+
+.network-widget .error-item{
+  background-color: $red-xlight;
+  border-radius: 8px;
+  padding: 12px;
+  position: relative;
+}
+
+.network-widget .error-item ~ .error-item{
+  margin-top: 12px;
+}
+
+.network-widget .error-label{
+  color: $red-dark;
+  margin: 0 0 10px;
+}
+
+.network-widget .dismiss-error-item{
+  background: none;
+  cursor: pointer;
+  display: inline-block;
+  padding: 8px;
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  opacity: 0.4;
+
+  &:hover{
+    opacity: 1;
+  }
+
+  img {
+    width: 14px;
+  }
+}
+
+.network-widget .transaction-item{
+  color: $blue;
+  margin: 12px 0 0 0;
+
+  .status-icon{
+    vertical-align: middle;
+    margin: 0 10px 2px 3px;
+    width: 12px;
+  }
+
+  .spinner{
+    margin-left: -5px;
+  }
+}
+
+.network-widget .transaction-item.error{
+  color: $red-dark;
+}
+
+
+.network-widget-disable-button{
+  background-color: $sand-light;
+  border-radius: 8px;
+  color: $purp-dark;
+  font-size: $sans-size-xs;
+  padding: 10px 0;
+  width: 100%;
+
+  &:hover{
+    background-color: $sand;
+  }
+}
+
+
+@keyframes fadeOut {
+  0% {
+    opacity: 1;
+    visibility: visible;
+  }
+  90% {
+    opacity: 1;
+    visibility: visible;
+  }
+  100% {
+    opacity: 0;
+  }
+}

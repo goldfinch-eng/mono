@@ -53,6 +53,7 @@ function PaymentForm(props) {
               onChange={e => {
                 handleChange(e, setPrincipalValue);
               }}
+              placeholder="0.0"
               className="big-number-input"
             ></input>
           </div>
@@ -76,6 +77,7 @@ function PaymentForm(props) {
               onChange={e => {
                 handleChange(e, setPrepaymentValue);
               }}
+              placeholder="0.0"
               className="big-number-input"
             ></input>
           </div>

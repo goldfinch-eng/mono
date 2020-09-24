@@ -2,7 +2,7 @@ import React from 'react';
 import { fromAtomic } from '../ethereum/erc20.js';
 
 function PaymentStatus(props) {
-  if (!props.creditLine.balance || props.creditLine.nextDueAmount === 0) {
+  if (!props.creditLine.balance || parseFloat(props.creditLine.nextDueAmount) === 0) {
     return '';
   }
 

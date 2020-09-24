@@ -3,7 +3,7 @@ import useTXLoading from '../hooks/useTXLoading';
 
 function LoadingButton(props) {
   const [isPending, setIsPending] = useState(false);
-  const actionWithLoading = useTXLoading(props.action, setIsPending);
+  const actionWithLoading = useTXLoading(props.action, props.txData, setIsPending);
 
   let buttonText = props.text;
   if (isPending) {

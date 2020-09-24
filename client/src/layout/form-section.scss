@@ -73,11 +73,12 @@
   display: inline-block;
   font-size: $sans-size-xxl;
   line-height: 1.2;
-  padding: 0 0 12px 34px;
+  padding: 0 0 12px 40px;
   width: calc(67% - 50px);
 
   &:focus{
     border-bottom: 2px solid $purp-dark;
+    color: $purp-dark;
   }
 }
 

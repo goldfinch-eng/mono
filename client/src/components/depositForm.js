@@ -57,7 +57,7 @@ function DepositForm(props) {
       </p>
       <div className="form-inputs">
         <div className="input-container">
-          <input value={value} onChange={handleChange} className="big-number-input"></input>
+          <input value={value} onChange={handleChange} placeholder="0.0" className="big-number-input"></input>
         </div>
         <LoadingButton action={action} text="Submit" />
       </div>
