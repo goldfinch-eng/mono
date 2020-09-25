@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import _ from 'lodash';
 import { croppedAddress, displayNumber } from '../utils';
 import NetworkErrors from './networkErrors';
+import iconCheck from '../images/check-sand.svg';
 
 function NetworkWidget(props) {
   const [showNetworkWidgetInfo, setShowNetworkWidgetInfo] = useState('');
@@ -59,9 +60,9 @@ function NetworkWidget(props) {
   } else if (_.some(props.currentTXs, { status: 'pending' })) {
     const pendingTXCount = _.countBy(props.currentTXs, { status: 'pending' }).true;
     enabledClass = 'pending';
-    enabledText = pendingTXCount + ' Pending';
+    enabledText = pendingTXCount === 1 ? 'Processing' : pendingTXCount + ' Processing';
   } else if (props.currentTXs.length > 0 && _.every(props.currentTXs, { status: 'successful' })) {
-    enabledText = 'Success';
+    enabledClass = 'success';
   }
 
   if (props.currentTXs.length > 0) {
@@ -94,6 +95,10 @@ function NetworkWidget(props) {
           </div>
         </div>
         {enabledText}
+        <div className="success-indicator">
+          <img className="icon" src={iconCheck} alt="check" />
+          Success
+        </div>
       </button>
       <div className="network-widget-info">
         <div className="network-widget-section address">{croppedAddress(props.user.address)}</div>

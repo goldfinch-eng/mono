@@ -24,6 +24,14 @@
     background-color: $red-xlight;
   }
 
+  &.success .success-indicator,
+  &.success .success-indicator .icon{
+    -webkit-animation: fadeInAndOut 4s;
+    -moz-animation: fadeInAndOut 4s;
+    -o-animation: fadeInAndOut 4s;
+    animation: fadeInAndOut 4s;
+  }
+
   .status-icon{
     margin: 0 10px 0 0;
   }
@@ -34,6 +42,23 @@
 
   .spinner{
     margin-top: 10px;
+  }
+
+  .success-indicator{
+    background-color: $blue;
+    border-radius: 10px;
+    color: white;
+    left: 0;
+    position: absolute;
+    top: 0;
+    width: 100%;
+    visibility: hidden;
+
+    & .icon{
+      margin: 0 10px 4px 0;
+      vertical-align: middle;
+      visibility: hidden;
+    }
   }
 }
 
@@ -167,16 +192,25 @@
 }
 
 
-@keyframes fadeOut {
+@keyframes fadeInAndOut {
   0% {
+    opacity: 0;
+    visibility: visible;
+  }
+  20% {
     opacity: 1;
     visibility: visible;
   }
-  90% {
+  80% {
     opacity: 1;
+    visibility: visible;
+  }
+  99% {
+    opacity: 0;
     visibility: visible;
   }
   100% {
     opacity: 0;
+    visibility: hidden;
   }
 }
