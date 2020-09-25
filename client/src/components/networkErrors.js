@@ -1,10 +1,8 @@
-import React, { useState, useEffect, useContext } from 'react';
-import _ from 'lodash';
+import React, { useContext } from 'react';
 import iconRedX from '../images/x-red.svg';
 import { AppContext } from '../App.js';
 
 function NetworkErrors(props) {
-  const [errors, setErrors] = useState([]);
   const { removeError } = useContext(AppContext);
 
   function errorItem(error) {

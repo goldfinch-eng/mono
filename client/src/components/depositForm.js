@@ -20,11 +20,9 @@ function DepositForm(props) {
     const depositAmount = toAtomic(value);
     const userAddress = props.capitalProvider.address;
     if (props.capitalProvider.allowance.lte(new BN(depositAmount))) {
-      return sendFromUser(
-        erc20.methods.approve(pool._address, MAX_UINT, userAddress).then(result => {
-          props.actionComplete();
-        }),
-      );
+      return sendFromUser(erc20.methods.approve(pool._address, MAX_UINT), userAddress).then(result => {
+        props.actionComplete();
+      });
     } else {
       return sendFromUser(pool.methods.deposit(depositAmount), userAddress).then(result => {
         setValue('');

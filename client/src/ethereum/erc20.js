@@ -11,7 +11,7 @@ function getErc20(networkName) {
     address = deployedErc20.address;
   } else {
     // Assume we're on testnet or mainnet
-    address = USDC_ADDRESSES[networkName];
+    address = USDC_ADDRESSES[networkId];
   }
   const erc20 = new web3.eth.Contract(ERC20Contract.abi, address);
   return erc20;

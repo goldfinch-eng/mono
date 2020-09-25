@@ -69,8 +69,13 @@ async function baseDeploy(bre, {shouldUpgrade}) {
     }
     logger("Credit Desk was deployed to:", creditDeskDeployResult.address);
     creditDesk = await ethers.getContractAt(creditDeskDeployResult.abi, creditDeskDeployResult.address);
-    await creditDesk.setMaxUnderwriterLimit(String(new BN(PROTOCOL_CONFIG.maxUnderwriterLimit).mul(USDCDecimals)));
-    await creditDesk.setTransactionLimit(String(new BN(PROTOCOL_CONFIG.transactionLimit).mul(USDCDecimals)));
+    const currentLimit = await creditDesk.maxUnderwriterLimit()
+    if (currentLimit.gt(new BN(0))) {
+      logger("Looks like underwriter limit has already been set, so skipping this part...")
+    } else {
+      await creditDesk.setMaxUnderwriterLimit(String(new BN(PROTOCOL_CONFIG.maxUnderwriterLimit).mul(USDCDecimals)));
+      await creditDesk.setTransactionLimit(String(new BN(PROTOCOL_CONFIG.transactionLimit).mul(USDCDecimals)));
+    }
     return creditDesk;
   }
 

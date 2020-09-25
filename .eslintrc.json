@@ -12,6 +12,9 @@
     "plugins": [
         "mocha-no-only"
     ],
+    "globals": {
+      "process": "readonly",
+    },
     "rules": {
         "indent": [
             "error",

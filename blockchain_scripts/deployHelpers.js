@@ -5,6 +5,7 @@ const ETHDecimals = new BN(String(1e18));
 
 const ROPSTEN_USDC_ADDRESS = "0x07865c6e87b9f70255377e024ace6630c1eaa37f";
 const MAINNET_USDC_ADDRESS = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48";
+const MAINNET_CHAIN_ID = "1";
 const LOCAL = "local";
 const ROPSTEN = "ropsten";
 const RINKEBY = "rinkeby";
@@ -88,4 +89,5 @@ module.exports = {
   getUSDCAddress: getUSDCAddress,
   upgrade: upgrade,
   getDeployedContract: getDeployedContract,
+  MAINNET_CHAIN_ID: MAINNET_CHAIN_ID,
 }

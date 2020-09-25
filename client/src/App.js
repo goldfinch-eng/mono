@@ -52,7 +52,6 @@ function App() {
   var addPendingTX = pendingTX => {
     setCurrentTXs(currentPendingTXs => {
       const newPendingTxs = _.concat(currentPendingTXs, pendingTX);
-      console.log('After setting... the pending txs are', currentTXs);
       return newPendingTxs;
     });
   };

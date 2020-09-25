@@ -13,7 +13,7 @@ function Borrow(props) {
   const { creditDesk, erc20, pool } = useContext(AppContext);
   const [borrower, setBorrower] = useState({});
   const [creditLine, setCreditLine] = useState({});
-  const [creditLineFadtory, setCreditLineFactory] = useState({});
+  const [creditLineFactory, setCreditLineFactory] = useState({});
 
   async function updateBorrowerAndCreditLine() {
     let creditLine = {};

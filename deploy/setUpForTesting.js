@@ -1,5 +1,5 @@
 const BN = require('bn.js');
-const {MAINNET, LOCAL, CHAIN_MAPPING, getUSDCAddress, USDCDecimals, ETHDecimals} = require("../blockchain_scripts/deployHelpers.js");
+const {MAINNET_CHAIN_ID, LOCAL, CHAIN_MAPPING, getUSDCAddress, USDCDecimals, ETHDecimals} = require("../blockchain_scripts/deployHelpers.js");
 const PROTOCOL_CONFIG = require('../protocol_config.json');
 
 /*
@@ -121,5 +121,6 @@ module.exports = main;
 module.exports.dependencies = ["base_deploy"];
 module.exports.tags = ["setup_for_testing"];
 module.exports.skip = async ({getNamedAccounts, deployments, getChainId}) => {
-  return (await getChainId()) === MAINNET;
+  const chainId = await getChainId()
+  return String(chainId) === MAINNET_CHAIN_ID;
 };
