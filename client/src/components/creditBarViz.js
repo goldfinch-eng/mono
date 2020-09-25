@@ -8,7 +8,7 @@ function CreditBarViz(props) {
   const availableToDrawdown = totalCreditLimit - drawdownBalance;
   const leftBarStyle = { width: (100 * drawdownBalance) / totalCreditLimit + '%' };
   const rightBarStyle = { width: (100 * availableToDrawdown) / totalCreditLimit + '%' };
-
+  console.log('Avaiable:', availableToDrawdown);
   return (
     <div className="bar-viz">
       <div className="full-bar">

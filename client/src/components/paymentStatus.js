@@ -1,5 +1,6 @@
 import React from 'react';
 import { fromAtomic } from '../ethereum/erc20.js';
+import { displayNumber } from '../utils';
 
 function PaymentStatus(props) {
   if (!props.creditLine.balance || parseFloat(props.creditLine.nextDueAmount) === 0) {
@@ -10,8 +11,8 @@ function PaymentStatus(props) {
   const totalPaymentDue = fromAtomic(props.creditLine.nextDueAmount);
   const prepaidAmount = fromAtomic(props.creditLine.prepaymentBalance);
   const remainingAmount = totalPaymentDue - prepaidAmount;
-  const leftBarStyle = { width: (100 * remainingAmount) / totalPaymentDue + '%' };
-  const rightBarStyle = { width: (100 * prepaidAmount) / totalPaymentDue + '%' };
+  const rightBarStyle = { width: (100 * remainingAmount) / totalPaymentDue + '%' };
+  const leftBarStyle = { width: (100 * prepaidAmount) / totalPaymentDue + '%' };
 
   return (
     <div className="info-section">
@@ -23,12 +24,12 @@ function PaymentStatus(props) {
             <div className="bar-right" style={rightBarStyle}></div>
           </div>
           <div className="left-label">
-            <div className="amount">${remainingAmount}</div>
-            <div className="description">Remaining due</div>
+            <div className="amount">${displayNumber(prepaidAmount, 2)}</div>
+            <div className="description">Already paid</div>
           </div>
           <div className="right-label">
-            <div className="amount">${prepaidAmount}</div>
-            <div className="description">Already paid</div>
+            <div className="amount">${displayNumber(remainingAmount, 2)}</div>
+            <div className="description">Remaining due</div>
           </div>
         </div>
       </div>

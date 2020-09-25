@@ -1,12 +1,13 @@
+import BN from 'bn.js';
 import React, { useState, useContext } from 'react';
-import { sendFromUser } from '../ethereum/utils';
+import { sendFromUser, MAX_UINT } from '../ethereum/utils';
 import { toAtomic } from '../ethereum/erc20';
 import { AppContext } from '../App';
 import LoadingButton from './loadingButton';
 import iconX from '../images/x-small-purp.svg';
 
 function PaymentForm(props) {
-  const { creditDesk } = useContext(AppContext);
+  const { creditDesk, pool, erc20 } = useContext(AppContext);
   const [show, setShow] = useState('prepayment');
   const [showSuccess, setShowSuccess] = useState(false);
   const [prepaymentValue, setPrepaymentValue] = useState('');
@@ -25,20 +26,40 @@ function PaymentForm(props) {
 
   function submitPrepayment() {
     const amount = toAtomic(prepaymentValue);
-    return sendFromUser(creditDesk.methods.prepay(props.creditLine.address, amount), props.borrower).then(_result => {
-      setPrepaymentValue(0);
-      setShowSuccess(true);
-      props.actionComplete();
-    });
+    if (props.borrower.allowance.lte(new BN(prepaymentValue))) {
+      return sendFromUser(erc20.methods.approve(pool._address, String(MAX_UINT)), props.borrower.address).then(
+        result => {
+          props.actionComplete();
+        },
+      );
+    } else {
+      return sendFromUser(creditDesk.methods.prepay(props.creditLine.address, amount), props.borrower.address).then(
+        _result => {
+          setPrepaymentValue(0);
+          setShowSuccess(true);
+          props.actionComplete();
+        },
+      );
+    }
   }
 
   function submitPrincipalPayment() {
     const amount = toAtomic(principalValue);
-    return sendFromUser(creditDesk.methods.pay(props.creditLine.address, amount), props.borrower).then(_result => {
-      setPrincipalValue(0);
-      setShowSuccess(true);
-      props.actionComplete();
-    });
+    if (props.borrower.allowance.lte(new BN(prepaymentValue))) {
+      return sendFromUser(erc20.methods.approve(pool._address, String(MAX_UINT)), props.borrower.address).then(
+        result => {
+          props.actionComplete();
+        },
+      );
+    } else {
+      return sendFromUser(creditDesk.methods.pay(props.creditLine.address, amount), props.borrower.address).then(
+        _result => {
+          setPrincipalValue(0);
+          setShowSuccess(true);
+          props.actionComplete();
+        },
+      );
+    }
   }
 
   let specificPaymentForm;
@@ -50,10 +71,11 @@ function PaymentForm(props) {
           <div className="input-container">
             <input
               value={principalValue}
+              type="number"
               onChange={e => {
                 handleChange(e, setPrincipalValue);
               }}
-              placeholder="0.0"
+              placeholder="0"
               className="big-number-input"
             ></input>
           </div>
@@ -74,10 +96,11 @@ function PaymentForm(props) {
           <div className="input-container">
             <input
               value={prepaymentValue}
+              type="number"
               onChange={e => {
                 handleChange(e, setPrepaymentValue);
               }}
-              placeholder="0.0"
+              placeholder="0"
               className="big-number-input"
             ></input>
           </div>

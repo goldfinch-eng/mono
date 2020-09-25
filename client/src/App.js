@@ -1,3 +1,4 @@
+import BN from 'bn.js';
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
 import _ from 'lodash';
@@ -9,6 +10,7 @@ import web3 from './web3';
 import { getPool } from './ethereum/pool.js';
 import { getCreditDesk } from './ethereum/creditDesk.js';
 import { getErc20 } from './ethereum/erc20.js';
+import { decimals } from './ethereum/utils';
 
 const AppContext = React.createContext({});
 
@@ -16,7 +18,7 @@ function App() {
   const [pool, setPool] = useState(null);
   const [creditDesk, setCreditDesk] = useState(null);
   const [erc20, setErc20] = useState(null);
-  const [user, setUser] = useState();
+  const [user, setUser] = useState({});
   const [currentTXs, setCurrentTXs] = useState([]);
   const [currentErrors, setCurrentErrors] = useState([]);
 
@@ -28,11 +30,23 @@ function App() {
     const accounts = await web3.eth.getAccounts();
     if (accounts.length > 0) {
       const networkType = await web3.eth.net.getNetworkType();
-      setUser(accounts[0]);
+      let erc20Contract = getErc20(networkType);
+      setErc20(erc20Contract);
+      setUser(await getUserData(accounts[0], erc20Contract));
       setPool(getPool(networkType));
       setCreditDesk(getCreditDesk(networkType));
-      setErc20(getErc20(networkType));
     }
+  }
+
+  async function getUserData(address, erc20Contract) {
+    let usdcBalance = new BN(0);
+    if (erc20Contract) {
+      usdcBalance = await erc20Contract.methods.balanceOf(address).call();
+    }
+    return {
+      address: address,
+      usdcBalance: String(new BN(usdcBalance).div(decimals)),
+    };
   }
 
   var addPendingTX = pendingTX => {

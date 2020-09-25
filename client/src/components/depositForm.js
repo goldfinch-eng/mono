@@ -1,7 +1,7 @@
 import BN from 'bn.js';
 import React, { useState, useContext } from 'react';
 import { fromAtomic, toAtomic } from '../ethereum/erc20';
-import { sendFromUser } from '../ethereum/utils';
+import { sendFromUser, MAX_UINT } from '../ethereum/utils';
 import { AppContext } from '../App.js';
 import LoadingButton from './loadingButton';
 import iconX from '../images/x-small-purp.svg';
@@ -20,25 +20,17 @@ function DepositForm(props) {
     const depositAmount = toAtomic(value);
     const userAddress = props.capitalProvider.address;
     if (props.capitalProvider.allowance.lte(new BN(depositAmount))) {
-      return sendFromUser(erc20.methods.approve(pool._address, toAtomic(100000)), userAddress)
-        .then(result => {
+      return sendFromUser(
+        erc20.methods.approve(pool._address, MAX_UINT, userAddress).then(result => {
           props.actionComplete();
-        })
-        .catch(e => {
-          console.log(e);
-          console.error(e);
-        });
+        }),
+      );
     } else {
-      return sendFromUser(pool.methods.deposit(depositAmount), userAddress)
-        .then(result => {
-          setValue('');
-          setShowSuccess(true);
-          props.actionComplete();
-        })
-        .catch(e => {
-          console.log(e);
-          console.error(e);
-        });
+      return sendFromUser(pool.methods.deposit(depositAmount), userAddress).then(result => {
+        setValue('');
+        setShowSuccess(true);
+        props.actionComplete();
+      });
     }
   }
 
@@ -57,7 +49,13 @@ function DepositForm(props) {
       </p>
       <div className="form-inputs">
         <div className="input-container">
-          <input value={value} onChange={handleChange} placeholder="0.0" className="big-number-input"></input>
+          <input
+            value={value}
+            type="number"
+            onChange={handleChange}
+            placeholder="0"
+            className="big-number-input"
+          ></input>
         </div>
         <LoadingButton action={action} text="Submit" />
       </div>

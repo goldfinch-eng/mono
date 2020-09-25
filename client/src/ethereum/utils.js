@@ -8,6 +8,7 @@ const USDC_ADDRESSES = {
 const decimalPlaces = 6;
 const decimals = new BN(String(10 ** decimalPlaces));
 const ETHDecimals = 1e18;
+const MAX_UINT = new BN('115792089237316195423570985008687907853269984665640564039457584007913129639935');
 
 function sendFromUser(unsentTransaction, userAddress) {
   return unsentTransaction.send({
@@ -65,4 +66,5 @@ export {
   decimals,
   ETHDecimals,
   USDC_ADDRESSES,
+  MAX_UINT,
 };

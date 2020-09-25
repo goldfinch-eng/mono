@@ -16,7 +16,7 @@ function displayNumber(val, decimals) {
     decimals = valFloat.toString().split('.')[1].length || 0;
   }
 
-  return valFloat.toFixed(decimals).toLocaleString();
+  return valFloat.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
 export { croppedAddress, displayNumber };

@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import _ from 'lodash';
-import { croppedAddress } from '../utils';
+import { croppedAddress, displayNumber } from '../utils';
 import NetworkErrors from './networkErrors';
 
 function NetworkWidget(props) {
   const [showNetworkWidgetInfo, setShowNetworkWidgetInfo] = useState('');
 
   function enableMetamask() {
-    if (props.user) {
+    if (props.user.address) {
       return;
     }
     window.ethereum
@@ -35,7 +35,7 @@ function NetworkWidget(props) {
   }
 
   let transactions = '';
-  let enabledText = croppedAddress(props.user);
+  let enabledText = croppedAddress(props.user.address);
   let enabledClass = '';
 
   function transactionItem(tx) {
@@ -70,7 +70,7 @@ function NetworkWidget(props) {
         <div className="network-widget-header">
           Transactions<a href="/transactions">view all</a>
         </div>
-        {props.currentTXs.map(transactionItem)}
+        {_.reverse(props.currentTXs.map(transactionItem))}
       </div>
     );
   }
@@ -78,7 +78,7 @@ function NetworkWidget(props) {
   const disabledNetworkWidget = (
     <div className="network-widget">
       <button className="network-widget-button" onClick={enableMetamask}>
-        Enable Metamask
+        Connect Metamask
       </button>
     </div>
   );
@@ -96,22 +96,22 @@ function NetworkWidget(props) {
         {enabledText}
       </button>
       <div className="network-widget-info">
-        <div className="network-widget-section address">{croppedAddress(props.user)}</div>
+        <div className="network-widget-section address">{croppedAddress(props.user.address)}</div>
         <NetworkErrors currentErrors={props.currentErrors} />
         <div className="network-widget-section">
-          USDC balance <span className="value">0.00</span>
+          USDC balance <span className="value">{displayNumber(props.user.usdcBalance, 2)}</span>
         </div>
         {transactions}
         <div className="network-widget-section">
           <button className="network-widget-disable-button" onClick={disableMetamask}>
-            Disable Metamask
+            Disconnect Metamask
           </button>
         </div>
       </div>
     </div>
   );
 
-  if (!props.user) {
+  if (!props.user.address) {
     return disabledNetworkWidget;
   } else {
     return enabledNetworkWidget;

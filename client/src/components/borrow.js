@@ -1,3 +1,4 @@
+import BN from 'bn.js';
 import React, { useState, useContext, useEffect } from 'react';
 import CreditActionsContainer from './creditActionsContainer.js';
 import CreditBarViz from './creditBarViz.js';
@@ -9,36 +10,38 @@ import { AppContext } from '../App.js';
 import { croppedAddress } from '../utils';
 
 function Borrow(props) {
-  const { creditDesk } = useContext(AppContext);
-  const [borrower, setBorrower] = useState('');
+  const { creditDesk, erc20, pool } = useContext(AppContext);
+  const [borrower, setBorrower] = useState({});
   const [creditLine, setCreditLine] = useState({});
   const [creditLineFadtory, setCreditLineFactory] = useState({});
+
+  async function updateBorrowerAndCreditLine() {
+    let creditLine = {};
+    const [borrowerAddress] = await web3.eth.getAccounts();
+    borrower.address = borrowerAddress;
+    if (borrowerAddress) {
+      const borrowerCreditLines = await creditDesk.methods.getBorrowerCreditLines(borrowerAddress).call();
+      const allowance = new BN(await erc20.methods.allowance(borrowerAddress, pool._address).call());
+      borrower.allowance = allowance;
+      if (borrowerCreditLines.length) {
+        const factory = buildCreditLine(borrowerCreditLines[0]);
+        setCreditLineFactory(factory);
+        creditLine = await fetchCreditLineData(factory);
+      }
+    }
+    setBorrower(borrower);
+    setCreditLine(creditLine);
+  }
 
   useEffect(() => {
     if (!creditDesk) {
       return;
     }
-    async function updateBorrowerAndCreditLine() {
-      let creditLine = {};
-      const [borrower] = await web3.eth.getAccounts();
-      if (borrower) {
-        const borrowerCreditLines = await creditDesk.methods.getBorrowerCreditLines(borrower).call();
-        if (borrowerCreditLines.length) {
-          const factory = buildCreditLine(borrowerCreditLines[0]);
-          setCreditLineFactory(factory);
-          creditLine = await fetchCreditLineData(factory);
-        }
-      }
-      setBorrower(borrower);
-      setCreditLine(creditLine);
-    }
     updateBorrowerAndCreditLine();
   }, [creditDesk]);
 
   async function actionComplete() {
-    const newCreditLine = await fetchCreditLineData(creditLineFadtory);
-    setBorrower(borrower);
-    setCreditLine(newCreditLine);
+    updateBorrowerAndCreditLine();
   }
 
   if (!creditLine.address) {
