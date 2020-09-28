@@ -1,28 +1,22 @@
 import React from 'react';
-import InfoSection from './infoSection.js';
 import { fromAtomic } from '../ethereum/erc20.js';
+import { displayNumber } from '../utils';
+import iconBank from '../images/bank-blue.svg';
 
 function DepositStatus(props) {
-
-  function deriveRows() {
-    let numShares = "0";
-    let availableToWithdrawal = "0";
-    if (props.capitalProvider.numShares) {
-      numShares = fromAtomic(props.capitalProvider.numShares);
-      availableToWithdrawal = fromAtomic(props.capitalProvider.availableToWithdrawal);
-    }
-    return [
-      {text: 'Your Total Shares', value: numShares},
-      {text: 'Available To Withdrawal', value: availableToWithdrawal}
-    ]
+  let portfolioBalance = 0;
+  if (props.capitalProvider.numShares) {
+    portfolioBalance = fromAtomic(props.capitalProvider.availableToWithdrawal);
   }
+  const portfolioBalanceDisplay = '$' + displayNumber(portfolioBalance, 2);
 
   return (
-    <InfoSection
-      title="Deposit Status"
-      rows={deriveRows()}
-    />
-  )
+    <div className="metric-header">
+      <img className="icon" src={iconBank} alt="balance-icon" />
+      <div className="label">Your portfolio balance</div>
+      <div className="value">{portfolioBalanceDisplay}</div>
+    </div>
+  );
 }
 
 export default DepositStatus;

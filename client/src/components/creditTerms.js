@@ -1,4 +1,5 @@
 import React from 'react';
+import InfoSection from './infoSection.js';
 import { fromAtomic } from '../ethereum/erc20.js';
 import { decimals } from '../ethereum/utils';
 import { displayNumber } from '../utils';
@@ -35,21 +36,7 @@ function CreditTerms(props) {
     ];
   }
 
-  function convertRowToItem(row, index) {
-    return (
-      <div className="small-info-item" key={index}>
-        <div className="value">{row.value}</div>
-        <div className="label">{row.label}</div>
-      </div>
-    );
-  }
-
-  return (
-    <div className={`info-section ${cssClass}`}>
-      <h2>Credit Terms</h2>
-      <div className="info-container small-items">{rows.map(convertRowToItem)}</div>
-    </div>
-  );
+  return <InfoSection title="Pool Metrics" rows={rows} cssClass={cssClass} />;
 }
 
 export default CreditTerms;

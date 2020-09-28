@@ -37,10 +37,10 @@ function Earn(props) {
 
   return (
     <div className="content-section">
-      <div className="page-header">Your Account</div>
+      <div className="page-header">Earn Portfolio</div>
+      <DepositStatus capitalProvider={capitalProvider} />
       <EarnActionsContainer poolData={poolData} capitalProvider={capitalProvider} actionComplete={actionComplete} />
       {/* These need to be updated to be the correct fields for earning! */}
-      <DepositStatus capitalProvider={capitalProvider} />
       <PoolStatus poolData={poolData} />
     </div>
   );
