@@ -5,7 +5,7 @@
       "chainId": "1",
       "contracts": {
         "Accountant": {
-          "address": "0xECc90A5F757fE8351d5119175c8167387DADA97E",
+          "address": "0xaeBdBBEc6a0A44dae994cd82675eb26ACEC19Df9",
           "abi": [
             {
               "inputs": [
@@ -815,7 +815,7 @@
           ]
         },
         "CreditDesk_Implementation": {
-          "address": "0x01A6F6Ac4F5b2564e8C52BA687E7019D0E81E7e8",
+          "address": "0x43c494cB39Ef9DE842b71055edcD193030281F1b",
           "abi": [
             {
               "anonymous": false,

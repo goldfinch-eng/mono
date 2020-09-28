@@ -1,5 +1,5 @@
 {
   "totalFundsLimit": 25000,
   "transactionLimit": 10000,
-  "maxUnderwriterLimit": 10000
+  "maxUnderwriterLimit": 25000
 }
