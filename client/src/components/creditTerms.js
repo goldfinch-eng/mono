@@ -36,7 +36,7 @@ function CreditTerms(props) {
     ];
   }
 
-  return <InfoSection title="Pool Metrics" rows={rows} cssClass={cssClass} />;
+  return <InfoSection title="Credit Terms" rows={rows} cssClass={cssClass} />;
 }
 
 export default CreditTerms;
