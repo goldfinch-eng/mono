@@ -18,13 +18,16 @@ async function main({ getNamedAccounts, deployments, getChainId }) {
   const creditDesk = await getDeployedAsEthersContract(getOrNull, "CreditDesk");
   let erc20 = await getDeployedAsEthersContract(getOrNull, "TestERC20");
 
-  if (getUSDCAddress(chainID)) {logger("On a network with known USDC address, so firing up that contract...")
+  if (getUSDCAddress(chainID)) {
+    logger("On a network with known USDC address, so firing up that contract...")
     erc20 = await ethers.getContractAt("TestERC20", getUSDCAddress(chainID));
   }
-  if (process.env.TEST_USER) {
-    borrower = process.env.TEST_USER;
+
+  const testUser = process.env.TEST_USER
+  if (testUser) {
+    borrower = testUser;
     if (CHAIN_MAPPING[chainID] === LOCAL) {
-      await giveMoneyToTestUser(process.env.TEST_USER, erc20);
+      await giveMoneyToTestUser(testUser, erc20);
     }
   }
 
@@ -44,7 +47,7 @@ async function depositFundsToThePool(pool, protocol_owner, erc20, chainID) {
   // Approve first
   logger("Approving the owner to deposit funds...")
   var txn = await erc20.approve(pool.address, String(new BN(1000000).mul(USDCDecimals)));
-  await txn.wait(); 
+  await txn.wait();
   logger("Depositing funds...")
   let depositAmount
   if (CHAIN_MAPPING[chainID] === LOCAL) {

@@ -13,7 +13,7 @@
         "mocha-no-only"
     ],
     "globals": {
-      "process": "readonly",
+      "process": "readonly"
     },
     "rules": {
         "indent": [
