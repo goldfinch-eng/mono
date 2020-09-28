@@ -53,7 +53,14 @@ contract CreditDesk is Initializable, OwnableUpgradeSafe, OwnerPausable {
     emit GovernanceUpdatedUnderwriterLimit(underwriterAddress, limit);
   }
 
-  function createCreditLine(address _borrower, uint _limit, uint _interestApr, uint _minCollateralPercent, uint _paymentPeriodInDays, uint _termInDays) external whenNotPaused {
+  function createCreditLine(
+    address _borrower,
+    uint _limit,
+    uint _interestApr,
+    uint _minCollateralPercent,
+    uint _paymentPeriodInDays,
+    uint _termInDays
+  ) external whenNotPaused {
     Underwriter storage underwriter = underwriters[msg.sender];
     Borrower storage borrower = borrowers[_borrower];
     require(underwriterCanCreateThisCreditLine(_limit, underwriter), "The underwriter cannot create this credit line");

@@ -77,6 +77,10 @@ contract CreditLine is Initializable, OwnableUpgradeSafe {
     return lastUpdatedBlock = newLastUpdatedBlock;
   }
 
+  function setLimit(uint newAmount) external onlyOwner returns (uint) {
+    return limit = newAmount;
+  }
+
   function authorizePool(address poolAddress) external onlyOwner {
     address erc20address = Pool(poolAddress).erc20address();
 

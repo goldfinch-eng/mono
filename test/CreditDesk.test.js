@@ -28,7 +28,7 @@ describe("CreditDesk", () => {
     _minCollateralPercent = _minCollateralPercent || minCollateralPercent
     _paymentPeriodInDays = _paymentPeriodInDays || paymentPeriodInDays
     _termInDays = _termInDays || termInDays
-    await creditDesk.createCreditLine(_borrower, _limit, _interestApr, _minCollateralPercent, _paymentPeriodInDays,_termInDays, {from: underwriter})
+    return await creditDesk.createCreditLine(_borrower, _limit, _interestApr, _minCollateralPercent, _paymentPeriodInDays,_termInDays, {from: underwriter})
   }
 
   // This factory function is here because in order to call the `setX` functions
@@ -39,25 +39,36 @@ describe("CreditDesk", () => {
   // So instead we use this sort-of-hack, where we deploy a separate creditLine from the
   // 'owner', and transfer ownership to the creditDesk, where we can then call external methods
   // that manipulate this creditLine.
-  let createAndSetCreditLineAttributes = async (balance, interestOwed, principalOwed, prepaymentBalance = 0, nextDueBlock) => {
+  let createAndSetCreditLineAttributes = async ({ balance, interestOwed, principalOwed, prepaymentBalance = 0, nextDueBlock }, people = {}) => {
+    const thisOwner = people.owner || owner
+    const thisBorrower = people.borrower || borrower
+    
+    if (!thisBorrower) {
+      throw new Error("No borrower is set. Set one in a beforeEach, or pass it in explicitly")
+    }
+
+    if (!thisOwner) {
+      throw new Error("No owner is set. Please set one in a beforeEach or pass it in explicitly")
+    }
+
     // 1000 is pretty high for test environments, and generally shouldn't be hit.
     nextDueBlock = nextDueBlock || 1000
     const termInDays = 360
     const termInBlocks = (await creditDesk.blocksPerDay()).mul(new BN(termInDays))
     const termEndBlock = (await time.latestBlock()).add(termInBlocks)
 
-    var creditLine = await CreditLine.new({from: owner})
-    await creditLine.initialize(borrower, bigVal(500), bigVal(3), 5, 10, termInDays)
+    var creditLine = await CreditLine.new({from: thisOwner})
+    await creditLine.initialize(thisBorrower, bigVal(500), bigVal(3), 5, 10, termInDays)
 
     await Promise.all([
-      creditLine.setBalance(bigVal(balance), {from: owner}),
-      creditLine.setInterestOwed(bigVal(interestOwed), {from: owner}),
-      creditLine.setPrincipalOwed(bigVal(principalOwed), {from: owner}),
-      erc20.transfer(creditLine.address, String(bigVal(prepaymentBalance)), {from: owner}),
-      creditLine.setPrepaymentBalance(String(bigVal(prepaymentBalance)), {from: owner}),
-      creditLine.setNextDueBlock(nextDueBlock, {from: owner}),
-      creditLine.setTermEndBlock(termEndBlock, {from: owner}),
-      creditLine.transferOwnership(creditDesk.address, {from: owner}),
+      creditLine.setBalance(bigVal(balance), {from: thisOwner}),
+      creditLine.setInterestOwed(bigVal(interestOwed), {from: thisOwner}),
+      creditLine.setPrincipalOwed(bigVal(principalOwed), {from: thisOwner}),
+      erc20.transfer(creditLine.address, String(bigVal(prepaymentBalance)), {from: thisOwner}),
+      creditLine.setPrepaymentBalance(String(bigVal(prepaymentBalance)), {from: thisOwner}),
+      creditLine.setNextDueBlock(nextDueBlock, {from: thisOwner}),
+      creditLine.setTermEndBlock(termEndBlock, {from: thisOwner}),
+      creditLine.transferOwnership(creditDesk.address, {from: thisOwner}),
     ])
 
     return creditLine
@@ -174,28 +185,15 @@ describe("CreditDesk", () => {
   })
 
   describe("createCreditLine", () => {
-    let underwriterLimit
-    let underwriter
-    let borrower
-    let limit = new BN(500)
     let interestApr = new BN(5)
     let minCollateralPercent = new BN(10)
     let paymentPeriodInDays = new BN(30)
     let termInDays = new BN(365)
 
-    let createCreditLine = async ({_borrower, _limit, _interestApr, _minCollateralPercent, _paymentPeriodInDays,_termInDays} = {}) => {
-      _borrower = _borrower || person3
-      _limit = _limit || limit
-      _interestApr = _interestApr || interestApr
-      _minCollateralPercent = _minCollateralPercent || minCollateralPercent
-      _paymentPeriodInDays = _paymentPeriodInDays || paymentPeriodInDays
-      _termInDays = _termInDays || termInDays
-      return await creditDesk.createCreditLine(_borrower, _limit, _interestApr, _minCollateralPercent, _paymentPeriodInDays, _termInDays, {from: underwriter})
-    }
     beforeEach(async () => {
       underwriter = person2
       borrower = person3
-      underwriterLimit = bigVal(600)
+      const underwriterLimit = bigVal(600)
       await creditDesk.setUnderwriterGovernanceLimit(underwriter, underwriterLimit, {from: owner})
     })
 
@@ -219,7 +217,7 @@ describe("CreditDesk", () => {
     })
 
     it("should create and save a creditline", async () => {
-      await createCreditLine({})
+      await createCreditLine({_limit: limit, _interestApr: interestApr, _minCollateralPercent: minCollateralPercent, _paymentPeriodInDays: paymentPeriodInDays})
 
       var ulCreditLines = await creditDesk.getUnderwriterCreditLines(underwriter)
       const creditLine = await CreditLine.at(ulCreditLines[0])
@@ -255,6 +253,27 @@ describe("CreditDesk", () => {
       } catch(e) {
         expect(e.message).to.include(expectedErr)
       }
+    })
+  })
+
+  describe("changing the credit line limit", async() => {
+    let cl
+    beforeEach(async () => {
+      borrower = person3
+
+      cl = await CreditLine.new({from: owner})
+      await cl.initialize(borrower, bigVal(500), bigVal(3), 5, 10, 360)
+    })
+
+    it("Should let you change the limit after its created", async() => {
+      const newLimit = new BN(100)
+      expect(newLimit).not.to.bignumber.equal(await cl.limit())
+      await cl.setLimit(newLimit, {from: owner})
+      expect(newLimit).to.bignumber.equal(await cl.limit())
+    })
+
+    it("Should only let the owner set the limit", async() => {
+      return expect(cl.setLimit(1234, {from: borrower})).to.be.rejected
     })
   })
 
@@ -375,7 +394,7 @@ describe("CreditDesk", () => {
 
       describe("pausing", async() => {
         it("should be disallowed when paused", async() => {
-          const creditLine = await createAndSetCreditLineAttributes(10, 5, 3)
+          const creditLine = await createAndSetCreditLineAttributes({balance: 10, interestOwed: 5,  principalOwed: 3})
           await creditDesk.pause()
           const result = creditDesk.pay(creditLine.address, String(bigVal(4)), {from: borrower})
           return expect(result).to.be.rejectedWith(/Pausable: paused/)
@@ -383,7 +402,7 @@ describe("CreditDesk", () => {
       })
 
       it("should emit an event with the correct data", async () => {
-        const creditLine = await createAndSetCreditLineAttributes(10, 5, 3)
+        const creditLine = await createAndSetCreditLineAttributes({balance: 10, interestOwed: 5,  principalOwed: 3})
         const paymentAmount = 6
         const response = await creditDesk.pay(creditLine.address, String(bigVal(paymentAmount)), {from: borrower})
         const event = response.logs[0]
@@ -397,7 +416,7 @@ describe("CreditDesk", () => {
 
 
       it("should pay off interest first", async () => {
-        const creditLine = await createAndSetCreditLineAttributes(10, 5, 3)
+        const creditLine = await createAndSetCreditLineAttributes({balance: 10, interestOwed: 5,  principalOwed: 3})
         const paymentAmount = 6
         await creditDesk.pay(creditLine.address, String(bigVal(paymentAmount)), {from: borrower})
 
@@ -412,7 +431,7 @@ describe("CreditDesk", () => {
       it("should send the payment to the pool", async() => {
         var originalPoolBalance = await getBalance(pool.address, erc20)
 
-        const creditLine = await createAndSetCreditLineAttributes(10, 5, 3)
+        const creditLine = await createAndSetCreditLineAttributes({balance: 10, interestOwed: 5,  principalOwed: 3})
         const paymentAmount = 6
         await creditDesk.pay(creditLine.address, String(bigVal(paymentAmount)), {from: borrower})
 
@@ -427,7 +446,7 @@ describe("CreditDesk", () => {
 
         var interestAmount = 5
         const paymentAmount = 7
-        const creditLine = await createAndSetCreditLineAttributes(10, interestAmount, 3)
+        const creditLine = await createAndSetCreditLineAttributes({balance: 10, interestOwed: interestAmount,  principalOwed: 3})
         await creditDesk.pay(creditLine.address, String(bigVal(paymentAmount)), {from: borrower})
 
         var newSharePrice = await pool.sharePrice()
@@ -443,7 +462,7 @@ describe("CreditDesk", () => {
           var interestAmount = 1
           const balance = 10
           const paymentAmount = 15
-          const creditLine = await createAndSetCreditLineAttributes(balance, interestAmount, 3)
+          const creditLine = await createAndSetCreditLineAttributes({balance: 10, interestOwed: interestAmount,  principalOwed: 3})
           await creditDesk.pay(creditLine.address, String(bigVal(paymentAmount)), {from: borrower})
 
           const expected = bigVal(paymentAmount).sub(bigVal(interestAmount)).sub(bigVal(balance))
@@ -464,7 +483,7 @@ describe("CreditDesk", () => {
       it("should be disallowed when paused", async() => {
         const prepaymentBalance = 8
         const interestOwed = 5
-        var creditLine = await createAndSetCreditLineAttributes(10, interestOwed, 3, prepaymentBalance, latestBlock)
+        var creditLine = await createAndSetCreditLineAttributes({balance: 10, interestOwed: interestOwed,  principalOwed: 3, prepaymentBalance: prepaymentBalance, latestBlock: latestBlock})
 
         await creditDesk.pause()
         const result = creditDesk.assessCreditLine(creditLine.address)
@@ -476,7 +495,7 @@ describe("CreditDesk", () => {
       it("should successfully process the payment and correctly update all attributes", async () => {
         const prepaymentBalance = 8
         const interestOwed = 5
-        var creditLine = await createAndSetCreditLineAttributes(10, interestOwed, 3, prepaymentBalance, latestBlock)
+        var creditLine = await createAndSetCreditLineAttributes({balance: 10, interestOwed: interestOwed,  principalOwed: 3, prepaymentBalance: prepaymentBalance, nextDueBlock: latestBlock})
         const originalPoolBalance = await getBalance(pool.address, erc20)
 
         await creditDesk.assessCreditLine(creditLine.address)
@@ -495,7 +514,7 @@ describe("CreditDesk", () => {
       it("should emit an event with the correct data", async () => {
         const prepaymentBalance = 9
         const interestOwed = 5
-        var creditLine = await createAndSetCreditLineAttributes(10, interestOwed, 3, prepaymentBalance, latestBlock)
+        var creditLine = await createAndSetCreditLineAttributes({balance: 10, interestOwed: interestOwed,  principalOwed: 3, prepaymentBalance: prepaymentBalance, nextDueBlock: latestBlock})
         const response = await creditDesk.assessCreditLine(creditLine.address)
         const event = response.logs[0]
 
@@ -511,7 +530,7 @@ describe("CreditDesk", () => {
         const prepaymentBalance = 8
         const interestOwed = 5
         const originalSharePrice = await pool.sharePrice()
-        var creditLine = await createAndSetCreditLineAttributes(10, interestOwed, 3, prepaymentBalance, latestBlock)
+        var creditLine = await createAndSetCreditLineAttributes({balance: 10, interestOwed: interestOwed,  principalOwed: 3, prepaymentBalance: prepaymentBalance, nextDueBlock: latestBlock})
 
         await creditDesk.assessCreditLine(creditLine.address)
 
@@ -526,7 +545,7 @@ describe("CreditDesk", () => {
         const prepaymentBalance = 5
         const interestOwed = 5
         const principalOwed = 3
-        var creditLine = await createAndSetCreditLineAttributes(10, interestOwed, principalOwed, prepaymentBalance, await time.latestBlock())
+        var creditLine = await createAndSetCreditLineAttributes({balance: 10, interestOwed: interestOwed,  principalOwed: 3, prepaymentBalance: prepaymentBalance, nextDueBlock: await time.latestBlock()})
         const originalPoolBalance = await getBalance(pool.address, erc20)
         const originalSharePrice = await pool.sharePrice()
 
@@ -547,7 +566,7 @@ describe("CreditDesk", () => {
         const prepaymentBalance = 10
         const interestOwed = 5
         const principalOwed = 3
-        var creditLine = await createAndSetCreditLineAttributes(10, interestOwed, principalOwed, prepaymentBalance, await time.latestBlock())
+        var creditLine = await createAndSetCreditLineAttributes({balance: 10, interestOwed: interestOwed,  principalOwed: 3, prepaymentBalance: prepaymentBalance, nextDueBlock: await time.latestBlock()})
 
         await creditDesk.assessCreditLine(creditLine.address)
 
