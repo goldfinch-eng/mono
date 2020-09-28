@@ -21,8 +21,9 @@ describe("CreditDesk", () => {
   let erc20
   let pool
 
-  let createCreditLine = async ({_borrower, _limit, _interestApr, _minCollateralPercent, _paymentPeriodInDays,_termInDays} = {}) => {
+  let createCreditLine = async ({_borrower, _underwriter, _limit, _interestApr, _minCollateralPercent, _paymentPeriodInDays,_termInDays} = {}) => {
     _borrower = _borrower || person3
+    _underwriter = _underwriter || person2
     _limit = _limit || limit
     _interestApr = _interestApr || interestApr
     _minCollateralPercent = _minCollateralPercent || minCollateralPercent
@@ -42,6 +43,7 @@ describe("CreditDesk", () => {
   let createAndSetCreditLineAttributes = async ({ balance, interestOwed, principalOwed, prepaymentBalance = 0, nextDueBlock }, people = {}) => {
     const thisOwner = people.owner || owner
     const thisBorrower = people.borrower || borrower
+    const thisUnderwriter = people.underwriter || underwriter
     
     if (!thisBorrower) {
       throw new Error("No borrower is set. Set one in a beforeEach, or pass it in explicitly")
@@ -58,7 +60,7 @@ describe("CreditDesk", () => {
     const termEndBlock = (await time.latestBlock()).add(termInBlocks)
 
     var creditLine = await CreditLine.new({from: thisOwner})
-    await creditLine.initialize(thisBorrower, bigVal(500), bigVal(3), 5, 10, termInDays)
+    await creditLine.initialize(thisBorrower, thisUnderwriter, bigVal(500), bigVal(3), 5, 10, termInDays)
 
     await Promise.all([
       creditLine.setBalance(bigVal(balance), {from: thisOwner}),
@@ -260,9 +262,10 @@ describe("CreditDesk", () => {
     let cl
     beforeEach(async () => {
       borrower = person3
+      underwriter = person2
 
       cl = await CreditLine.new({from: owner})
-      await cl.initialize(borrower, bigVal(500), bigVal(3), 5, 10, 360)
+      await cl.initialize(borrower, underwriter, bigVal(500), bigVal(3), 5, 10, 360)
     })
 
     it("Should let you change the limit after its created", async() => {
@@ -272,7 +275,14 @@ describe("CreditDesk", () => {
       expect(newLimit).to.bignumber.equal(await cl.limit())
     })
 
-    it("Should only let the owner set the limit", async() => {
+    it("Should also let underwriter set the limit", async() => {
+      const newLimit = new BN(100)
+      expect(newLimit).not.to.bignumber.equal(await cl.limit())
+      await cl.setLimit(newLimit, {from: underwriter})
+      expect(newLimit).to.bignumber.equal(await cl.limit())
+    })
+
+    it("Should not let anyone else set the limit", async() => {
       return expect(cl.setLimit(1234, {from: borrower})).to.be.rejected
     })
   })

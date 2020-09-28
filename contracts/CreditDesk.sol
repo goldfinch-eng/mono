@@ -66,7 +66,7 @@ contract CreditDesk is Initializable, OwnableUpgradeSafe, OwnerPausable {
     require(underwriterCanCreateThisCreditLine(_limit, underwriter), "The underwriter cannot create this credit line");
 
     CreditLine cl = new CreditLine();
-    cl.initialize(_borrower, _limit, _interestApr, _minCollateralPercent, _paymentPeriodInDays, _termInDays);
+    cl.initialize(_borrower, msg.sender, _limit, _interestApr, _minCollateralPercent, _paymentPeriodInDays, _termInDays);
     cl.authorizePool(poolAddress);
 
     underwriter.creditLines.push(address(cl));

@@ -10,6 +10,7 @@ import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/ERC20.sol
 contract CreditLine is Initializable, OwnableUpgradeSafe {
   // Credit line terms
   address public borrower;
+  address public underwriter;
   uint public collateral;
   uint public limit;
   uint public interestApr;
@@ -29,6 +30,7 @@ contract CreditLine is Initializable, OwnableUpgradeSafe {
 
   function initialize(
     address _borrower,
+    address _underwriter,
     uint _limit,
     uint _interestApr,
     uint _minCollateralPercent,
@@ -37,6 +39,7 @@ contract CreditLine is Initializable, OwnableUpgradeSafe {
   ) public initializer {
     __Ownable_init();
     borrower = _borrower;
+    underwriter = _underwriter;
     limit = _limit;
     interestApr = _interestApr;
     minCollateralPercent = _minCollateralPercent;
@@ -77,7 +80,7 @@ contract CreditLine is Initializable, OwnableUpgradeSafe {
     return lastUpdatedBlock = newLastUpdatedBlock;
   }
 
-  function setLimit(uint newAmount) external onlyOwner returns (uint) {
+  function setLimit(uint newAmount) external onlyOwnerOrUnderwriter returns (uint) {
     return limit = newAmount;
   }
 
@@ -86,5 +89,10 @@ contract CreditLine is Initializable, OwnableUpgradeSafe {
 
     // Approve the pool for an infinite amount
     ERC20UpgradeSafe(erc20address).approve(poolAddress, uint(-1));
+  }
+
+  modifier onlyOwnerOrUnderwriter() {
+    require((msg.sender == owner() || msg.sender == underwriter), "Restricted to owner or underwriter");
+    _;
   }
 }
