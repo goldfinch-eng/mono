@@ -40,6 +40,7 @@ function NetworkWidget(props) {
   let enabledClass = '';
 
   function transactionItem(tx) {
+    const transactionlabel = tx.type === 'Approval' ? tx.type : `$${tx.amount} ${tx.type}`;
     return (
       <div key={tx.id} className={`transaction-item ${tx.status}`}>
         <div className="status-icon">
@@ -49,7 +50,8 @@ function NetworkWidget(props) {
             <div className="double-bounce2"></div>
           </div>
         </div>
-        ${tx.amount} {tx.type}
+
+        {transactionlabel}
       </div>
     );
   }
