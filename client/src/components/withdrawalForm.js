@@ -21,12 +21,8 @@ function WithdrawalForm(props) {
 
   return (
     <TransactionForm
-      navOptions={[{ label: 'Withdrawal', value: 'withdrawal' }]}
-      selectedState="withdrawal"
-      setSelectedState={() => {}}
+      navOptions={[{ label: 'Withdrawal', value: 'withdrawal', message: message, submitTransaction: action }]}
       closeForm={props.closeForm}
-      message={message}
-      submitTransaction={action}
     />
   );
 }

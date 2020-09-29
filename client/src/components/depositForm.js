@@ -23,12 +23,8 @@ function DepositForm(props) {
 
   return (
     <TransactionForm
-      navOptions={[{ label: 'Deposit', value: 'deposit' }]}
-      selectedState="deposit"
-      setSelectedState={() => {}}
+      navOptions={[{ label: 'Deposit', value: 'deposit', message: message, submitTransaction: action }]}
       closeForm={props.closeForm}
-      message={message}
-      submitTransaction={action}
       needsApproval={true}
     />
   );
