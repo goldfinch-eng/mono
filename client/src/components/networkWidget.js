@@ -40,7 +40,7 @@ function NetworkWidget(props) {
   let enabledClass = '';
 
   function transactionItem(tx) {
-    const transactionlabel = tx.amount ? `$${tx.amount} ${tx.type}` : tx.type;
+    const transactionlabel = tx.type === 'Approval' ? tx.type : `$${tx.amount} ${tx.type}`;
     return (
       <div key={tx.id} className={`transaction-item ${tx.status}`}>
         <div className="status-icon">
