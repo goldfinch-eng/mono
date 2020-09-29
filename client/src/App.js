@@ -31,22 +31,32 @@ function App() {
     if (accounts.length > 0) {
       const networkType = await web3.eth.net.getNetworkType();
       let erc20Contract = getErc20(networkType);
+      let poolContract = getPool(networkType);
       setErc20(erc20Contract);
-      setUser(await getUserData(accounts[0], erc20Contract));
-      setPool(getPool(networkType));
+      setPool(poolContract);
+      refreshUserData(accounts[0], erc20Contract, poolContract);
       setCreditDesk(getCreditDesk(networkType));
     }
   }
 
-  async function getUserData(address, erc20Contract) {
+  async function refreshUserData(address, erc20Contract, poolContract) {
+    erc20Contract = erc20Contract || erc20;
+    poolContract = poolContract || pool;
+    address = address || user.address;
     let usdcBalance = new BN(0);
+    let allowance = new BN(0);
     if (erc20Contract) {
       usdcBalance = await erc20Contract.methods.balanceOf(address).call();
     }
-    return {
+    if (poolContract && erc20Contract) {
+      allowance = new BN(await erc20Contract.methods.allowance(address, poolContract._address).call());
+    }
+    const data = {
       address: address,
       usdcBalance: String(new BN(usdcBalance).div(decimals)),
+      allowance: allowance,
     };
+    setUser(data);
   }
 
   var addPendingTX = pendingTX => {
@@ -91,6 +101,7 @@ function App() {
     pool: pool,
     creditDesk: creditDesk,
     user: user,
+    refreshUserData: refreshUserData,
     erc20: erc20,
     addPendingTX: addPendingTX,
     markTXSuccessful: markTXSuccessful,

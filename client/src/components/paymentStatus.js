@@ -1,6 +1,6 @@
 import React from 'react';
 import { fromAtomic } from '../ethereum/erc20.js';
-import { displayNumber } from '../utils';
+import { displayDollars } from '../utils';
 
 function PaymentStatus(props) {
   if (!props.creditLine.balance || parseFloat(props.creditLine.nextDueAmount) === 0) {
@@ -24,11 +24,11 @@ function PaymentStatus(props) {
             <div className="bar-right" style={rightBarStyle}></div>
           </div>
           <div className="left-label">
-            <div className="amount">${displayNumber(prepaidAmount, 2)}</div>
+            <div className="amount">{displayDollars(prepaidAmount)}</div>
             <div className="description">Already paid</div>
           </div>
           <div className="right-label">
-            <div className="amount">${displayNumber(remainingAmount, 2)}</div>
+            <div className="amount">{displayDollars(remainingAmount)}</div>
             <div className="description">Remaining due</div>
           </div>
         </div>

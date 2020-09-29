@@ -19,7 +19,7 @@ class CreditActionsContainer extends Component {
     });
   };
 
-  cancelAction = e => {
+  closeForm = e => {
     this.setState({
       showAction: null,
     });
@@ -66,7 +66,7 @@ class CreditActionsContainer extends Component {
     } else if (this.state.showAction === 'payment') {
       formBody = (
         <PaymentForm
-          cancelAction={this.cancelAction}
+          closeForm={this.closeForm}
           actionComplete={this.props.actionComplete}
           borrower={this.props.borrower}
           creditLine={this.props.creditLine}
@@ -75,7 +75,7 @@ class CreditActionsContainer extends Component {
     } else if (this.state.showAction === 'drawdown') {
       formBody = (
         <DrawdownForm
-          cancelAction={this.cancelAction}
+          closeForm={this.closeForm}
           actionComplete={this.props.actionComplete}
           borrower={this.props.borrower}
           creditLine={this.props.creditLine}

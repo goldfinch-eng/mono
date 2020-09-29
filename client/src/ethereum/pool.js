@@ -27,8 +27,7 @@ async function fetchCapitalProviderData(pool, capitalProviderAddress) {
   result = await fetchDataFromAttributes(pool, attributes);
   result.availableToWithdrawal = new BN(result.numShares).mul(new BN(result.sharePrice)).div(decimals);
   result.address = capitalProviderAddress;
-  const allowance = new BN(await pool.erc20.methods.allowance(capitalProviderAddress, pool._address).call());
-  result.allowance = allowance;
+  result.allowance = new BN(await pool.erc20.methods.allowance(capitalProviderAddress, pool._address).call());
   return result;
 }
 

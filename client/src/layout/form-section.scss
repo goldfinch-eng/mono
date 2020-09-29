@@ -1,4 +1,5 @@
 .form-section{
+  line-height: 1.3;
   margin: 40px auto 80px;
   max-width: $content-max-width;
 }
@@ -68,6 +69,21 @@
   margin: 0 0 40px;
 }
 
+.form-notice{
+  background-color: $blue-xxlight;
+  border-radius: 6px;
+  font-size: $sans-size-s;
+  padding: 20px 20px 20px 75px;
+  position: relative;
+  margin: 0 0 60px;
+
+  & .icon{
+    position: absolute;
+    left: 24px;
+    top: 22px;
+  }
+}
+
 .big-number-input{
   border-bottom: 2px solid $purp-xxlight;
   display: inline-block;
@@ -100,8 +116,18 @@
   width: 33%;
 }
 
+.form-section .button-info{
+  bottom: 100%;
+  font-size: $sans-size-s;
+  margin: 0 0 4px;
+  position: absolute;
+  right: 0;
+  text-align: center;
+  width: 33%;
+}
+
 .form-note{
-  color: $sand-xxdark;
+  color: $purp-light;
   font-size: $sans-size-xs;
   line-height: 1.2;
   margin: 16px 0 0;

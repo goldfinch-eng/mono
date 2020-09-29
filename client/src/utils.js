@@ -19,4 +19,8 @@ function displayNumber(val, decimals) {
   return valFloat.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
-export { croppedAddress, displayNumber };
+function displayDollars(val) {
+  return '$' + displayNumber(val, 2);
+}
+
+export { croppedAddress, displayNumber, displayDollars };

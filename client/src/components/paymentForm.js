@@ -1,141 +1,63 @@
-import BN from 'bn.js';
 import React, { useState, useContext } from 'react';
-import { sendFromUser, MAX_UINT } from '../ethereum/utils';
-import { toAtomic } from '../ethereum/erc20';
+import { sendFromUser } from '../ethereum/utils';
+import { toAtomic, fromAtomic } from '../ethereum/erc20';
 import { AppContext } from '../App';
-import LoadingButton from './loadingButton';
-import iconX from '../images/x-small-purp.svg';
+import { displayDollars } from '../utils';
+import TransactionForm from './transactionForm';
 
 function PaymentForm(props) {
-  const { creditDesk, pool, erc20 } = useContext(AppContext);
+  const { creditDesk } = useContext(AppContext);
   const [show, setShow] = useState('prepayment');
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [prepaymentValue, setPrepaymentValue] = useState('');
-  const [principalValue, setPrincipalValue] = useState('');
 
-  function isSelected(navItem) {
-    if (show === navItem) {
-      return 'selected';
-    }
+  function submitPrepayment(value) {
+    const amount = toAtomic(value);
+    return sendFromUser(creditDesk.methods.prepay(props.creditLine.address, amount), props.borrower.address).then(
+      _result => {
+        props.closeForm();
+        props.actionComplete();
+      },
+    );
   }
 
-  function handleChange(e, propSetter) {
-    propSetter(e.target.value);
-    setShowSuccess(false);
+  function submitPrincipalPayment(value) {
+    const amount = toAtomic(value);
+    return sendFromUser(creditDesk.methods.pay(props.creditLine.address, amount), props.borrower.address).then(
+      _result => {
+        props.closeForm();
+        props.actionComplete();
+      },
+    );
   }
 
-  function submitPrepayment() {
-    const amount = toAtomic(prepaymentValue);
-    if (props.borrower.allowance.lte(new BN(prepaymentValue))) {
-      return sendFromUser(erc20.methods.approve(pool._address, String(MAX_UINT)), props.borrower.address).then(
-        result => {
-          props.actionComplete();
-        },
-      );
-    } else {
-      return sendFromUser(creditDesk.methods.prepay(props.creditLine.address, amount), props.borrower.address).then(
-        _result => {
-          setPrepaymentValue(0);
-          setShowSuccess(true);
-          props.actionComplete();
-        },
-      );
-    }
-  }
+  const navOptions = [
+    { label: 'Payment', value: 'prepayment' },
+    { label: 'Principal Payment', value: 'principalPayment' },
+  ];
 
-  function submitPrincipalPayment() {
-    const amount = toAtomic(principalValue);
-    if (props.borrower.allowance.lte(new BN(prepaymentValue))) {
-      return sendFromUser(erc20.methods.approve(pool._address, String(MAX_UINT)), props.borrower.address).then(
-        result => {
-          props.actionComplete();
-        },
-      );
-    } else {
-      return sendFromUser(creditDesk.methods.pay(props.creditLine.address, amount), props.borrower.address).then(
-        _result => {
-          setPrincipalValue(0);
-          setShowSuccess(true);
-          props.actionComplete();
-        },
-      );
-    }
-  }
+  let message;
+  let submitTransaction;
 
-  let specificPaymentForm;
   if (show === 'principalPayment') {
-    specificPaymentForm = (
-      <div>
-        <p className="form-message">Directly pay down your current balance.</p>
-        <div className="form-inputs">
-          <div className="input-container">
-            <input
-              value={principalValue}
-              type="number"
-              onChange={e => {
-                handleChange(e, setPrincipalValue);
-              }}
-              placeholder="0"
-              className="big-number-input"
-            ></input>
-          </div>
-          <LoadingButton action={submitPrincipalPayment} text="Submit" />
-        </div>
-        {/* Will need to add a new route or something to be able to display this text */}
-        {/* <div className="form-note">Note: After a principal payment of $15,000.00, your next payment due will be $496.30 on Oct 6, 2020.</div> */}
-      </div>
-    );
+    const balance = displayDollars(fromAtomic(props.creditLine.balance));
+    message = `Directly pay down your current balance of ${balance}. Principal payments are not applied to your upcoming due payment.`;
+    submitTransaction = submitPrincipalPayment;
   } else {
-    specificPaymentForm = (
-      <div>
-        <p className="form-message">
-          Pre-pay your upcoming balance now. This will be debited on your due date, and will not affect your current
-          balance.
-        </p>
-        <div className="form-inputs">
-          <div className="input-container">
-            <input
-              value={prepaymentValue}
-              type="number"
-              onChange={e => {
-                handleChange(e, setPrepaymentValue);
-              }}
-              placeholder="0"
-              className="big-number-input"
-            ></input>
-          </div>
-          <LoadingButton action={submitPrepayment} text="Submit" />
-        </div>
-      </div>
-    );
+    const remainingDueRaw = props.creditLine.nextDueAmount - props.creditLine.prepaymentBalance;
+    const paymentDue = displayDollars(fromAtomic(remainingDueRaw));
+    message = `Make a payment toward upcoming due payments. For your next payment, you have ${paymentDue} remaining due.`;
+    submitTransaction = submitPrepayment;
   }
+
   return (
-    <div className="form-full">
-      <nav className="form-nav">
-        <div
-          onClick={() => {
-            setShow('prepayment');
-          }}
-          className={`form-nav-option ${isSelected('prepayment')}`}
-        >
-          Payment
-        </div>
-        <div
-          onClick={() => {
-            setShow('principalPayment');
-          }}
-          className={`form-nav-option ${isSelected('principalPayment')}`}
-        >
-          Principal Payment
-        </div>
-        <div onClick={props.cancelAction} className="form-nav-option cancel">
-          Cancel
-          <img className="cancel-icon" src={iconX} alt="x" />
-        </div>
-      </nav>
-      {specificPaymentForm}
-      {showSuccess ? <div className="form-message">Payment successfully completed!</div> : ''}
-    </div>
+    <TransactionForm
+      navOptions={navOptions}
+      selectedState={show}
+      setSelectedState={setShow}
+      closeForm={props.closeForm}
+      message={message}
+      submitTransaction={submitTransaction}
+      needsApproval={true}
+    />
   );
 }
 

@@ -69,7 +69,8 @@ function NetworkWidget(props) {
     transactions = (
       <div className="network-widget-section">
         <div className="network-widget-header">
-          Transactions<a href="/transactions">view all</a>
+          Transactions
+          {/* <a href="/transactions">view all</a> */}
         </div>
         {_.reverse(props.currentTXs.map(transactionItem))}
       </div>

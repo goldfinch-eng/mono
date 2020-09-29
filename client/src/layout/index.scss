@@ -4,6 +4,7 @@
 
 // Page sections
 @import './bar-viz.scss';
+@import './button.scss';
 @import './footer.scss';
 @import './form-section.scss';
 @import './info-section.scss';
@@ -59,29 +60,6 @@ input{
   margin: 0 0 60px -30px;
   padding: 30px;
   width: calc(100% + 60px);
-}
-
-.button{
-  background-color: $blue-xlight;
-  border-radius: 8px;
-  color: $purp-dark;
-  line-height: 30px;
-  outline: none;
-  padding: 20px 0;
-
-  &:hover{
-    background-color: $blue-light;
-  }
-
-  img{
-    vertical-align: middle;
-    margin: -4px 12px 0 0;
-  }
-
-  &.non-functioning{
-    cursor: not-allowed;
-    opacity: 0.5;
-  }
 }
 
  input::placeholder,

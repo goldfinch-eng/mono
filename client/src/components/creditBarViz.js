@@ -16,7 +16,7 @@ function CreditBarViz(props) {
       </div>
       <div className="left-label">
         <div className="amount">${displayNumber(drawdownBalance, 2)}</div>
-        <div className="description">Drawdown balanace</div>
+        <div className="description">Drawdown balance</div>
       </div>
       <div className="right-label">
         <div className="amount">${displayNumber(availableToDrawdown, 2)}</div>

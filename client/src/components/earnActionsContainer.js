@@ -7,7 +7,7 @@ import iconUp from '../images/up-purp.svg';
 function EarnActionsContainer(props) {
   const [showAction, setShowAction] = useState(null);
 
-  const cancelAction = e => {
+  const closeForm = e => {
     setShowAction(null);
   };
 
@@ -38,7 +38,7 @@ function EarnActionsContainer(props) {
   } else if (showAction === 'deposit') {
     formBody = (
       <DepositForm
-        cancelAction={cancelAction}
+        closeForm={closeForm}
         capitalProvider={props.capitalProvider}
         poolData={props.poolData}
         actionComplete={props.actionComplete}
@@ -47,7 +47,7 @@ function EarnActionsContainer(props) {
   } else if (showAction === 'withdrawal') {
     formBody = (
       <WithdrawalForm
-        cancelAction={cancelAction}
+        closeForm={closeForm}
         capitalProvider={props.capitalProvider}
         poolData={props.poolData}
         actionComplete={props.actionComplete}
