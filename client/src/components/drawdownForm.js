@@ -20,11 +20,8 @@ function DrawdownForm(props) {
 
   return (
     <TransactionForm
-      navOptions={[{ label: 'Drawdown', value: 'drawdown' }]}
-      selectedState="drawdown"
-      setSelectedState={() => {}}
+      navOptions={[{ label: 'Drawdown', value: 'drawdown', submitTransaction: makeDrawdown }]}
       closeForm={props.closeForm}
-      submitTransaction={makeDrawdown}
     />
   );
 }

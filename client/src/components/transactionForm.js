@@ -1,5 +1,5 @@
 import BN from 'bn.js';
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import LoadingButton from './loadingButton';
 import iconX from '../images/x-small-purp.svg';
 import iconInfo from '../images/info-purp.svg';
@@ -8,20 +8,47 @@ import { sendFromUser, MAX_UINT } from '../ethereum/utils';
 
 function TransactionForm(props) {
   const { erc20, pool, user, refreshUserData } = useContext(AppContext);
-  const [value, setValue] = useState('');
+  const [value, setValue] = useState('0');
+  const [selectedNavOption, setSelectedNavOption] = useState(props.navOptions[0]);
+  const [selectedAction, setSelectedAction] = useState(() => {
+    return getSelectedActionProps(props.navOptions[0]);
+  });
+
+  useEffect(() => {
+    setSelectedAction(getSelectedActionProps(selectedNavOption));
+  }, [user]);
 
   function handleChange(e, props) {
     setValue(e.target.value);
   }
 
+  function userNeedsToApprove() {
+    return props.needsApproval && user.allowance && user.allowance.lte(new BN(10000));
+  }
+
+  function getSelectedActionProps(navOption) {
+    if (userNeedsToApprove()) {
+      let approvalAction = async () => {
+        return sendFromUser(erc20.methods.approve(pool._address, MAX_UINT), user.address).then(result => {
+          refreshUserData();
+        });
+      };
+      return { action: approvalAction, label: 'Unlock', txType: 'Approval' };
+    } else {
+      // Default to the first nav option
+      return { action: navOption.submitTransaction, label: 'Submit', txType: navOption.label };
+    }
+  }
+
   function createNavItems(props) {
     return props.navOptions.map((navOption, index) => {
-      const cssClass = props.selectedState === navOption.value ? 'selected' : '';
+      const cssClass = selectedNavOption.value === navOption.value ? 'selected' : '';
 
       return (
         <div
           onClick={() => {
-            props.setSelectedState(navOption.value);
+            setSelectedNavOption(navOption);
+            setSelectedAction({ action: navOption.submitTransaction, label: 'Submit', txType: navOption.label });
           }}
           className={`form-nav-option ${cssClass}`}
           key={index}
@@ -33,16 +60,10 @@ function TransactionForm(props) {
   }
 
   let approvalNotice = '';
-  let submissionButtonText = 'Submit';
   let buttonInfo = '';
-  let buttonAction = props.submitTransaction;
-  let approvalAction = async () => {
-    return sendFromUser(erc20.methods.approve(pool._address, MAX_UINT), user.address).then(result => {
-      refreshUserData();
-    });
-  };
+  let formNote = '';
 
-  if (props.needsApproval && user.allowance && user.allowance.lte(new BN(10000))) {
+  if (userNeedsToApprove()) {
     approvalNotice = (
       <div className="form-notice">
         <img className="icon" src={iconInfo} alt="info" />
@@ -50,11 +71,8 @@ function TransactionForm(props) {
       </div>
     );
     buttonInfo = <div className="button-info">Step 1 of 2:</div>;
-    submissionButtonText = 'Unlock';
-    buttonAction = approvalAction;
   }
 
-  let formNote = '';
   if (props.formNote) {
     formNote = <div className="form-note">{props.formNote}</div>;
   }
@@ -69,7 +87,7 @@ function TransactionForm(props) {
         </div>
       </nav>
       <div>
-        {props.message ? <p className="form-message">{props.message}</p> : ''}
+        {selectedNavOption.message ? <p className="form-message">{selectedNavOption.message}</p> : ''}
         {approvalNotice}
         <div className="form-inputs">
           <div className="input-container">
@@ -86,9 +104,10 @@ function TransactionForm(props) {
           {buttonInfo}
           <LoadingButton
             action={() => {
-              return buttonAction(value);
+              return selectedAction.action(value);
             }}
-            text={submissionButtonText}
+            text={selectedAction.label}
+            txData={{ type: selectedAction.txType, amount: value }}
           />
         </div>
       </div>
