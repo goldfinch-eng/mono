@@ -1,16 +1,16 @@
 import web3 from '../web3';
 import BN from 'bn.js';
-import * as PoolContract from '../../../artifacts/Pool.json';
-import { mapNetworkToID, transformedConfig, fetchDataFromAttributes } from './utils.js';
+import { mapNetworkToID, fetchDataFromAttributes, getConfig } from './utils.js';
 import { decimals, getErc20 } from './erc20';
 
 let pool;
 
-function getPool(networkName) {
+async function getPool(networkName) {
   const networkId = mapNetworkToID[networkName];
-  const poolAddress = transformedConfig()[networkId].contracts.Pool.address;
-  pool = new web3.eth.Contract(PoolContract.abi, poolAddress);
-  pool.erc20 = getErc20(networkName);
+  const config = await getConfig(networkId);
+  const poolAddress = config.contracts.Pool.address;
+  pool = new web3.eth.Contract(config.contracts.Pool.abi, poolAddress);
+  pool.erc20 = await getErc20(networkName);
   return pool;
 }
 

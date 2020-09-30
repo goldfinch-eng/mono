@@ -4,7 +4,7 @@
   "description": "A lending protocol built on the blockchain",
   "main": "index.js",
   "scripts": {
-    "start": "npx concurrently -n \"blockchain,web\"  \"npx buidler node --reset --export-all client/config/deployments.json\" \"cd client && npm start\" -k -c \"cyan, magenta\"",
+    "start": "npx concurrently -n \"blockchain,web\"  \"npx buidler node --reset --export-all client/config/deployments_dev.json\" \"cd client && npm start\" -k -c \"cyan, magenta\"",
     "test": "npx buidler test --show-stack-traces",
     "pre-push": "cd client && npm run pre-push",
     "pre-commit": "cd client && npm run pre-commit",

@@ -30,12 +30,12 @@ function App() {
     const accounts = await web3.eth.getAccounts();
     if (accounts.length > 0) {
       const networkType = await web3.eth.net.getNetworkType();
-      let erc20Contract = getErc20(networkType);
-      let poolContract = getPool(networkType);
+      let erc20Contract = await getErc20(networkType);
+      let poolContract = await getPool(networkType);
       setErc20(erc20Contract);
       setPool(poolContract);
       refreshUserData(accounts[0], erc20Contract, poolContract);
-      setCreditDesk(getCreditDesk(networkType));
+      setCreditDesk(await getCreditDesk(networkType));
     }
   }
 

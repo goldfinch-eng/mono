@@ -1,6 +1,5 @@
 import { BN } from 'bn.js';
 import _ from 'lodash';
-import * as ProtocolConfig from '../../config/deployments.json';
 import web3 from '../web3';
 
 const decimalPlaces = 6;
@@ -31,9 +30,23 @@ const mapNetworkToID = {
   rinkeby: RINKEBY,
 };
 
-function transformedConfig() {
+let config;
+async function getConfig(networkId) {
+  if (config) {
+    return Promise.resolve(config[networkId]);
+  }
+  const deploymentFileNameSuffix = process.env.NODE_ENV === 'development' ? 'dev' : '';
+  return import(`../../config/deployments_${deploymentFileNameSuffix}.json`)
+    .then(result => {
+      config = transformedConfig(result);
+      return config[networkId];
+    })
+    .catch(console.error);
+}
+
+function transformedConfig(config) {
   return _.reduce(
-    ProtocolConfig,
+    config,
     (result, item) => {
       _.toArray(item).forEach(networkConfig => {
         return _.merge(result, networkConfig);
@@ -66,6 +79,7 @@ function fetchDataFromAttributes(web3Obj, attributes) {
 
 export {
   sendFromUser,
+  getConfig,
   mapNetworkToID,
   transformedConfig,
   fetchDataFromAttributes,

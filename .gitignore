@@ -82,3 +82,6 @@ deployments/localhost_31337
 
 # Misc
 .DS_Store
+
+# Local deployments
+client/config/deployments_dev.json

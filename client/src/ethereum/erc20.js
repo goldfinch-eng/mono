@@ -1,11 +1,11 @@
 import web3 from '../web3';
 import BigNumber from 'bignumber.js';
-import * as ERC20Contract from '../../../artifacts/TestERC20.json';
-import { mapNetworkToID, transformedConfig, decimals, USDC_ADDRESSES } from './utils';
+import { mapNetworkToID, decimals, USDC_ADDRESSES, getConfig } from './utils';
 
-function getErc20(networkName) {
+async function getErc20(networkName) {
   const networkId = mapNetworkToID[networkName];
-  const deployedErc20 = transformedConfig()[networkId].contracts.TestERC20;
+  const config = await getConfig(networkId);
+  const deployedErc20 = config.contracts.TestERC20;
   let address;
   if (deployedErc20) {
     address = deployedErc20.address;
@@ -13,7 +13,7 @@ function getErc20(networkName) {
     // Assume we're on testnet or mainnet
     address = USDC_ADDRESSES[networkId];
   }
-  const erc20 = new web3.eth.Contract(ERC20Contract.abi, address);
+  const erc20 = new web3.eth.Contract(config.contracts.TestERC20.abi, address);
   return erc20;
 }
 

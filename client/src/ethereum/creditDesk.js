@@ -1,11 +1,11 @@
 import web3 from '../web3';
-import * as CreditDeskContract from '../../../artifacts/CreditDesk.json';
-import { transformedConfig, mapNetworkToID } from './utils';
+import { getConfig, mapNetworkToID } from './utils';
 
-function getCreditDesk(networkName) {
+async function getCreditDesk(networkName) {
   const networkId = mapNetworkToID[networkName];
-  const creditDeskAddress = transformedConfig()[networkId].contracts.CreditDesk.address;
-  const creditDesk = new web3.eth.Contract(CreditDeskContract.abi, creditDeskAddress);
+  const config = await getConfig(networkId);
+  const creditDeskAddress = config.contracts.CreditDesk.address;
+  const creditDesk = new web3.eth.Contract(config.contracts.CreditDesk.abi, creditDeskAddress);
   return creditDesk;
 }
 
