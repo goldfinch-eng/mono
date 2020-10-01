@@ -35,8 +35,8 @@ async function getConfig(networkId) {
   if (config) {
     return Promise.resolve(config[networkId]);
   }
-  const deploymentFileNameSuffix = process.env.NODE_ENV === 'development' ? 'dev' : '';
-  return import(`../../config/deployments_${deploymentFileNameSuffix}.json`)
+  const deploymentFileNameSuffix = process.env.NODE_ENV === '_development' ? 'dev' : '';
+  return import(`../../config/deployments${deploymentFileNameSuffix}.json`)
     .then(result => {
       config = transformedConfig(result);
       return config[networkId];

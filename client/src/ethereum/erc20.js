@@ -1,5 +1,6 @@
 import web3 from '../web3';
 import BigNumber from 'bignumber.js';
+import * as ERC20Contract from './ERC20.json';
 import { mapNetworkToID, decimals, USDC_ADDRESSES, getConfig } from './utils';
 
 async function getErc20(networkName) {
@@ -13,7 +14,7 @@ async function getErc20(networkName) {
     // Assume we're on testnet or mainnet
     address = USDC_ADDRESSES[networkId];
   }
-  const erc20 = new web3.eth.Contract(config.contracts.TestERC20.abi, address);
+  const erc20 = new web3.eth.Contract(ERC20Contract.abi, address);
   return erc20;
 }
 
