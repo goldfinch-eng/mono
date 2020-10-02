@@ -1,12 +1,13 @@
 import React, { useState, useContext } from 'react';
 import { sendFromUser } from '../ethereum/utils';
-import { toAtomic, fromAtomic } from '../ethereum/erc20';
+import { toAtomic, fromAtomic, minimumNumber } from '../ethereum/erc20';
 import { AppContext } from '../App';
 import { displayDollars } from '../utils';
 import TransactionForm from './transactionForm';
+import BigNumber from 'bignumber.js';
 
 function PaymentForm(props) {
-  const { creditDesk } = useContext(AppContext);
+  const { creditDesk, user } = useContext(AppContext);
   const [show, setShow] = useState('prepayment');
 
   function submitPrepayment(value) {
@@ -46,7 +47,15 @@ function PaymentForm(props) {
     },
   ];
 
-  return <TransactionForm navOptions={navOptions} closeForm={props.closeForm} needsApproval={true} />;
+  return (
+    <TransactionForm
+      navOptions={navOptions}
+      closeForm={props.closeForm}
+      needsApproval={true}
+      // You cannot pay more than what you owe or have
+      maxAmount={minimumNumber(fromAtomic(props.creditLine.balance), user.usdcBalance)}
+    />
+  );
 }
 
 export default PaymentForm;

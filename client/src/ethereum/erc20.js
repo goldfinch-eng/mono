@@ -26,4 +26,8 @@ function toAtomic(amount) {
   return new BigNumber(String(amount)).multipliedBy(decimals).toString(10);
 }
 
-export { getErc20, decimals, fromAtomic, toAtomic };
+function minimumNumber(...args) {
+  return new BigNumber.minimum(...args).toString(10);
+}
+
+export { getErc20, decimals, fromAtomic, toAtomic, minimumNumber };

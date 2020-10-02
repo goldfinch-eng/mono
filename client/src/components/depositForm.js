@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { toAtomic } from '../ethereum/erc20';
+import { fromAtomic, minimumNumber, toAtomic } from '../ethereum/erc20';
 import { sendFromUser } from '../ethereum/utils';
 import { AppContext } from '../App.js';
 import { displayDollars } from '../utils';
@@ -26,6 +26,7 @@ function DepositForm(props) {
       navOptions={[{ label: 'Deposit', value: 'deposit', message: message, submitTransaction: action }]}
       closeForm={props.closeForm}
       needsApproval={true}
+      maxAmount={minimumNumber(user.usdcBalance, fromAtomic(props.poolData.transactionLimit))}
     />
   );
 }

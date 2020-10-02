@@ -5,9 +5,13 @@ import iconX from '../images/x-small-purp.svg';
 import iconInfo from '../images/info-purp.svg';
 import { AppContext } from '../App.js';
 import { sendFromUser, MAX_UINT } from '../ethereum/utils';
+import { useForm, FormProvider } from 'react-hook-form';
+import { ErrorMessage } from '@hookform/error-message';
+import { displayDollars } from '../utils';
 
 function TransactionForm(props) {
   const { erc20, pool, user, refreshUserData } = useContext(AppContext);
+  const formMethods = useForm();
   const [value, setValue] = useState('0');
   const [selectedNavOption, setSelectedNavOption] = useState(props.navOptions[0]);
   const [selectedAction, setSelectedAction] = useState(() => {
@@ -20,6 +24,7 @@ function TransactionForm(props) {
 
   function handleChange(e, props) {
     setValue(e.target.value);
+    formMethods.setValue('transactionAmount', e.target.value, { shouldValidate: true, shouldDirty: true });
   }
 
   function userNeedsToApprove() {
@@ -61,7 +66,6 @@ function TransactionForm(props) {
 
   let approvalNotice = '';
   let buttonInfo = '';
-  let formNote = '';
 
   if (userNeedsToApprove()) {
     approvalNotice = (
@@ -71,10 +75,6 @@ function TransactionForm(props) {
       </div>
     );
     buttonInfo = <div className="button-info">Step 1 of 2:</div>;
-  }
-
-  if (props.formNote) {
-    formNote = <div className="form-note">{props.formNote}</div>;
   }
 
   return (
@@ -89,29 +89,46 @@ function TransactionForm(props) {
       <div>
         {selectedNavOption.message ? <p className="form-message">{selectedNavOption.message}</p> : ''}
         {approvalNotice}
-        <div className="form-inputs">
-          <div className="input-container">
-            <input
-              value={value}
-              type="number"
-              onChange={e => {
-                handleChange(e, props);
-              }}
-              placeholder="0"
-              className="big-number-input"
-            ></input>
-          </div>
-          {buttonInfo}
-          <LoadingButton
-            action={() => {
-              return selectedAction.action(value);
-            }}
-            text={selectedAction.label}
-            txData={{ type: selectedAction.txType, amount: value }}
-          />
+        <FormProvider {...formMethods}>
+          <form>
+            <div className="form-inputs">
+              <div className="input-container">
+                <input
+                  value={value}
+                  name="transactionAmount"
+                  type="number"
+                  onChange={e => {
+                    handleChange(e, props);
+                  }}
+                  placeholder="0"
+                  className="big-number-input"
+                  ref={formMethods.register({
+                    required: 'Amount is required',
+                    min: { value: 0.01, message: 'Must be greater than 0' },
+                    max: {
+                      value: props.maxAmount,
+                      message: `Amount is above the max allowed (${displayDollars(props.maxAmount)}). `,
+                    },
+                  })}
+                ></input>
+              </div>
+              {buttonInfo}
+              <LoadingButton
+                action={() => {
+                  return selectedAction.action(value);
+                }}
+                text={selectedAction.label}
+                txData={{ type: selectedAction.txType, amount: value }}
+              />
+            </div>
+          </form>
+        </FormProvider>
+      </div>
+      <div className="form-note">
+        <div>
+          <ErrorMessage errors={formMethods.errors} name="transactionAmount" />
         </div>
       </div>
-      {formNote}
     </div>
   );
 }

@@ -9,8 +9,7 @@ import Sidebar from './components/sidebar';
 import web3 from './web3';
 import { getPool } from './ethereum/pool.js';
 import { getCreditDesk } from './ethereum/creditDesk.js';
-import { getErc20 } from './ethereum/erc20.js';
-import { decimals } from './ethereum/utils';
+import { getErc20, fromAtomic } from './ethereum/erc20.js';
 
 const AppContext = React.createContext({});
 
@@ -53,7 +52,7 @@ function App() {
     }
     const data = {
       address: address,
-      usdcBalance: String(new BN(usdcBalance).div(decimals)),
+      usdcBalance: fromAtomic(usdcBalance),
       allowance: allowance,
     };
     setUser(data);

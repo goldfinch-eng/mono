@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { fromAtomic, toAtomic } from '../ethereum/erc20';
+import { fromAtomic, minimumNumber, toAtomic } from '../ethereum/erc20';
 import { sendFromUser } from '../ethereum/utils.js';
 import { displayDollars } from '../utils';
 import { AppContext } from '../App.js';
@@ -16,13 +16,15 @@ function WithdrawalForm(props) {
     });
   }
 
-  const balance = displayDollars(fromAtomic(props.capitalProvider.availableToWithdrawal));
+  let availableAmount = fromAtomic(props.capitalProvider.availableToWithdrawal);
+  const balance = displayDollars(availableAmount);
   const message = `Withdrawal funds from the pool. You have have ${balance} available to withdraw.`;
 
   return (
     <TransactionForm
       navOptions={[{ label: 'Withdrawal', value: 'withdrawal', message: message, submitTransaction: action }]}
       closeForm={props.closeForm}
+      maxAmount={minimumNumber(availableAmount, fromAtomic(props.poolData.balance))}
     />
   );
 }

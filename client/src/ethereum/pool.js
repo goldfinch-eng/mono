@@ -1,7 +1,7 @@
 import web3 from '../web3';
 import BN from 'bn.js';
 import { mapNetworkToID, fetchDataFromAttributes, getConfig } from './utils.js';
-import { decimals, getErc20 } from './erc20';
+import { decimals, fromAtomic, getErc20, toAtomic } from './erc20';
 
 let pool;
 
@@ -36,9 +36,11 @@ async function fetchPoolData(pool, erc20) {
   if (!erc20 || !pool) {
     return Promise.resolve(result);
   }
-  const attributes = [{ method: 'totalShares' }, { method: 'sharePrice' }];
+  const attributes = [{ method: 'totalShares' }, { method: 'sharePrice' }, { method: 'transactionLimit' }];
   result = await fetchDataFromAttributes(pool, attributes);
   result.balance = await erc20.methods.balanceOf(pool._address).call();
+  result.totalPoolBalance = result.totalShares * fromAtomic(result.sharePrice);
+  result.totalDrawDowns = result.totalPoolBalance - result.balance;
   return result;
 }
 

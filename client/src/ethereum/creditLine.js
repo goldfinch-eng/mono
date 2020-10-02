@@ -31,6 +31,7 @@ async function fetchCreditLineData(creditLine) {
   result.termEndDate = await calculateDueDateFromFutureBlock(result.termEndBlock, 'MMM Do, YYYY');
   result.nextDueAmount = calculateNextDueAmount(result);
   result.interestAprDecimal = (result.interestApr / ETHDecimals) * 10 ** decimalPlaces;
+  result.availableBalance = result.limit - result.balance;
   return result;
 }
 

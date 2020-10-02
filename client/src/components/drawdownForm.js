@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { sendFromUser } from '../ethereum/utils';
-import { toAtomic } from '../ethereum/erc20';
+import { fromAtomic, toAtomic } from '../ethereum/erc20';
 import { AppContext } from '../App';
 import TransactionForm from './transactionForm';
 
@@ -22,6 +22,7 @@ function DrawdownForm(props) {
     <TransactionForm
       navOptions={[{ label: 'Drawdown', value: 'drawdown', submitTransaction: makeDrawdown }]}
       closeForm={props.closeForm}
+      maxAmount={fromAtomic(props.creditLine.availableBalance)}
     />
   );
 }
