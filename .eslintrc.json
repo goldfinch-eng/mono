@@ -1,6 +1,7 @@
 {
     "env": {
         "browser": true,
+        "node": true,
         "es6": true,
         "mocha": true
     },
@@ -30,7 +31,7 @@
         ],
         "semi": [
             "error",
-            "never"
+            "always"
         ],
          "mocha-no-only/mocha-no-only": ["error"]
     }
