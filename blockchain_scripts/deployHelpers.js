@@ -77,6 +77,15 @@ async function getDeployedContract(deployments, contractName, signerAddress) {
   return await ethers.getContractAt(abi, deployment.address, signer);
 }
 
+function fromAtomic(amount, decimals = USDCDecimals) {
+  return new BN(String(amount)).div(decimals).toString(10);
+}
+
+function toAtomic(amount, decimals = USDCDecimals) {
+  return new BN(String(amount)).mul(decimals).toString(10);
+}
+
+
 module.exports = {
   CHAIN_MAPPING: CHAIN_MAPPING,
   ROPSTEN_USDC_ADDRESS: ROPSTEN_USDC_ADDRESS,
@@ -89,5 +98,7 @@ module.exports = {
   getUSDCAddress: getUSDCAddress,
   upgrade: upgrade,
   getDeployedContract: getDeployedContract,
+  fromAtomic: fromAtomic,
+  toAtomic: toAtomic,
   MAINNET_CHAIN_ID: MAINNET_CHAIN_ID,
 }

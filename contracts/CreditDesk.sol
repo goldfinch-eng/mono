@@ -174,6 +174,10 @@ contract CreditDesk is Initializable, OwnableUpgradeSafe, OwnerPausable {
     emit LimitChanged(msg.sender, "transactionLimit", amount);
   }
 
+  function setPoolTotalFundsLimit(uint amount) public onlyOwner whenNotPaused {
+    getPool().setTotalFundsLimit(amount);
+  }
+
   // Public View Functions (Getters)
 
   function getUnderwriterCreditLines(address underwriterAddress) public view whenNotPaused returns (address[] memory) {
