@@ -31,7 +31,7 @@
         ],
         "semi": [
             "error",
-            "always"
+            "never"
         ],
          "mocha-no-only/mocha-no-only": ["error"]
     }

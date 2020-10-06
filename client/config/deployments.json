@@ -2607,7 +2607,7 @@
       "chainId": "3",
       "contracts": {
         "Accountant": {
-          "address": "0x25dd09a33548ef667e30710c153ea00d58Dc25D0",
+          "address": "0xfE1D0b29B39f65A4AdBEE209B5DDfb95201837eF",
           "abi": [
             {
               "inputs": [
@@ -3339,6 +3339,19 @@
                   "type": "uint256"
                 }
               ],
+              "name": "setPoolTotalFundsLimit",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "amount",
+                  "type": "uint256"
+                }
+              ],
               "name": "setTransactionLimit",
               "outputs": [],
               "stateMutability": "nonpayable",
@@ -3417,7 +3430,7 @@
           ]
         },
         "CreditDesk_Implementation": {
-          "address": "0xf56afba7952d3dbf1ba583319a1561088e91a81e",
+          "address": "0xB7376432A1E8c0d08fCe30AF6b0Ed9aC26669328",
           "abi": [
             {
               "anonymous": false,
@@ -3922,6 +3935,19 @@
                   "type": "address"
                 }
               ],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "amount",
+                  "type": "uint256"
+                }
+              ],
+              "name": "setPoolTotalFundsLimit",
+              "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
             },
