@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import InfoSection from './infoSection.js';
 import { fromAtomic } from '../ethereum/erc20';
-import { displayDollars, displayNumber } from '../utils';
+import { displayDollars } from '../utils';
 
 class DepositStatus extends Component {
   deriveRows = () => {

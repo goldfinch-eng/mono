@@ -8,6 +8,7 @@ import { sendFromUser, MAX_UINT } from '../ethereum/utils';
 import { useForm, FormProvider } from 'react-hook-form';
 import { ErrorMessage } from '@hookform/error-message';
 import { displayDollars } from '../utils';
+import useCloseOnClickOrEsc from '../hooks/useCloseOnClickOrEsc';
 
 function TransactionForm(props) {
   const { erc20, pool, user, refreshUserData } = useContext(AppContext);
@@ -17,6 +18,8 @@ function TransactionForm(props) {
   const [selectedAction, setSelectedAction] = useState(() => {
     return getSelectedActionProps(props.navOptions[0]);
   });
+
+  const [node, show, setShow] = useCloseOnClickOrEsc({ closeFormFn: props.closeForm, closeOnClick: false });
 
   useEffect(() => {
     setSelectedAction(getSelectedActionProps(selectedNavOption));
@@ -78,7 +81,7 @@ function TransactionForm(props) {
   }
 
   return (
-    <div className="form-full">
+    <div ref={node} className="form-full">
       <nav className="form-nav">
         {createNavItems(props)}
         <div onClick={props.closeForm} className="form-nav-option cancel">

@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import _ from 'lodash';
 import { croppedAddress, displayNumber } from '../utils';
+import useCloseOnClickOrEsc from '../hooks/useCloseOnClickOrEsc';
 import NetworkErrors from './networkErrors';
 import iconCheck from '../images/check-sand.svg';
 
 function NetworkWidget(props) {
-  const [showNetworkWidgetInfo, setShowNetworkWidgetInfo] = useState('');
+  const [node, showNetworkWidgetInfo, setShowNetworkWidgetInfo] = useCloseOnClickOrEsc();
 
   function enableMetamask() {
     if (props.user.address) {
@@ -80,7 +81,7 @@ function NetworkWidget(props) {
   }
 
   const disabledNetworkWidget = (
-    <div className="network-widget">
+    <div ref={node} className="network-widget">
       <button className="network-widget-button" onClick={enableMetamask}>
         Connect Metamask
       </button>
@@ -88,7 +89,7 @@ function NetworkWidget(props) {
   );
 
   const enabledNetworkWidget = (
-    <div className={`network-widget ${showNetworkWidgetInfo}`}>
+    <div ref={node} className={`network-widget ${showNetworkWidgetInfo}`}>
       <button className={`network-widget-button ${enabledClass}`} onClick={toggleOpenWidget}>
         <div className="status-icon">
           <div className="indicator"></div>

@@ -1,7 +1,7 @@
 import web3 from '../web3';
 import BN from 'bn.js';
 import { mapNetworkToID, fetchDataFromAttributes, getConfig } from './utils.js';
-import { decimals, fromAtomic, getErc20, toAtomic } from './erc20';
+import { decimals, fromAtomic, getErc20 } from './erc20';
 
 let pool;
 

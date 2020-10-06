@@ -4,11 +4,9 @@ import { toAtomic, fromAtomic, minimumNumber } from '../ethereum/erc20';
 import { AppContext } from '../App';
 import { displayDollars } from '../utils';
 import TransactionForm from './transactionForm';
-import BigNumber from 'bignumber.js';
 
 function PaymentForm(props) {
   const { creditDesk, user } = useContext(AppContext);
-  const [show, setShow] = useState('prepayment');
 
   function submitPrepayment(value) {
     const amount = toAtomic(value);
