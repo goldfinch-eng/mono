@@ -1,5 +1,5 @@
 const BN = require('bn.js');
-const {getUSDCAddress, USDCDecimals } = require("./deployHelpers.js");
+const {getUSDCAddress, USDCDecimals, upgrade } = require("./deployHelpers.js");
 const PROTOCOL_CONFIG = require('../protocol_config.json');
 let logger;
 
@@ -24,7 +24,7 @@ async function baseDeploy(bre, {shouldUpgrade}) {
   async function deployPool(deploy, shouldUpgrade, protocol_owner, proxy_owner, chainID) {
     let poolDeployResult
     if (shouldUpgrade) {
-      poolDeployResult = await deploy("Pool", {from: proxy_owner, proxy: {owner: proxy_owner}, gas: 4000000, args: []});
+      poolDeployResult = await upgrade(deploy, "Pool", proxy_owner, {gas: 4000000, args: []});
     } else {
       poolDeployResult = await deploy("Pool", {from: protocol_owner, proxy: {owner: proxy_owner}, gas: 4000000, args: []});
     }
@@ -63,7 +63,7 @@ async function baseDeploy(bre, {shouldUpgrade}) {
     let creditDeskDeployResult; 
     let creditDesk;
     if (shouldUpgrade) {
-      creditDeskDeployResult = await deploy("CreditDesk", {from: proxy_owner, proxy: {owner: proxy_owner}, gas: 4000000, args: [], libraries: {["Accountant"]: accountant.address}});
+      creditDeskDeployResult = await upgrade(deploy, "CreditDesk", proxy_owner, {gas: 4000000, args: [], libraries: {["Accountant"]: accountant.address}});
     } else {
       creditDeskDeployResult= await deploy("CreditDesk", {from: protocol_owner, proxy: {owner: proxy_owner, methodName: "initialize"}, gas: 4000000, args: [poolAddress], libraries: {["Accountant"]: accountant.address}});
     }

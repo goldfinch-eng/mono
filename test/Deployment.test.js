@@ -58,11 +58,11 @@ describe("Deployment", async () => {
       await deployments.fixture()
     })
     it("should allow for upgrading the logic", async () => {
-      const { protocol_owner } = await getNamedAccounts()
+      const { proxy_owner } = await getNamedAccounts()
       const creditDesk = await getDeployedContract(deployments, "CreditDesk")
       expect(typeof(creditDesk.someBrandNewFunction)).not.to.equal("function")
 
-      await upgrade(bre, "CreditDesk", {contract: "FakeV2CreditDesk"})
+      await upgrade(deployments.deploy, "CreditDesk", proxy_owner, {contract: "FakeV2CreditDesk"})
       const newCreditDesk = await getDeployedContract(deployments, "CreditDesk")
       
       expect(typeof(newCreditDesk.someBrandNewFunction)).to.equal("function")
@@ -71,11 +71,11 @@ describe("Deployment", async () => {
     })
 
     it("should not change data after an upgrade", async () => {
-      const { protocol_owner } = await getNamedAccounts()
+      const { protocol_owner, proxy_owner } = await getNamedAccounts()
       const creditDesk = await getDeployedContract(deployments, "CreditDesk")
       const originalResult = await creditDesk.getUnderwriterCreditLines(protocol_owner)
 
-      await upgrade(bre, "CreditDesk", {contract: "FakeV2CreditDesk"})
+      await upgrade(deployments.deploy, "CreditDesk", proxy_owner, {contract: "FakeV2CreditDesk"})
       const newCreditDesk = await getDeployedContract(deployments, "CreditDesk")
       
       const newResult = await newCreditDesk.getUnderwriterCreditLines(protocol_owner)

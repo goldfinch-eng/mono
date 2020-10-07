@@ -49,6 +49,11 @@ async function getDeployedContract(deployments, contractName, signerAddress) {
   return await ethers.getContractAt(abi, deployment.address, signer);
 }
 
+async function upgrade(deploy, contractName, proxyOwner, options) {
+  const deployOptions = Object.assign({from: proxyOwner, proxy: {owner: proxyOwner}}, options);
+  return deploy(contractName, deployOptions);
+}
+
 function fromAtomic(amount, decimals = USDCDecimals) {
   return new BN(String(amount)).div(decimals).toString(10);
 }
@@ -71,5 +76,6 @@ module.exports = {
   getDeployedContract: getDeployedContract,
   fromAtomic: fromAtomic,
   toAtomic: toAtomic,
+  upgrade: upgrade,
   MAINNET_CHAIN_ID: MAINNET_CHAIN_ID,
 }
