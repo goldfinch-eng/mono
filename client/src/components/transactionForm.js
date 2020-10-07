@@ -69,6 +69,7 @@ function TransactionForm(props) {
 
   let approvalNotice = '';
   let buttonInfo = '';
+  let register = formMethods.register;
 
   if (userNeedsToApprove()) {
     approvalNotice = (
@@ -78,6 +79,10 @@ function TransactionForm(props) {
       </div>
     );
     buttonInfo = <div className="button-info">Step 1 of 2:</div>;
+
+    // There's no easy way to disable validation, so just switch the registration to a
+    // no-op if we don't want to validate
+    register = () => {};
   }
 
   return (
@@ -105,7 +110,7 @@ function TransactionForm(props) {
                   }}
                   placeholder="0"
                   className="big-number-input"
-                  ref={formMethods.register({
+                  ref={register({
                     required: 'Amount is required',
                     min: { value: 0.01, message: 'Must be greater than 0' },
                     max: {
