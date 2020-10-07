@@ -1,8 +1,9 @@
 const {chai, BN, expect } = require("./testHelpers.js")
 const bre = require("@nomiclabs/buidler")
 const { deployments, getNamedAccounts } = bre
-const { upgrade, getDeployedContract } = require("../blockchain_scripts/deployHelpers")
+const { upgrade, getDeployedContract, fromAtomic } = require("../blockchain_scripts/deployHelpers")
 const baseDeploy = require("../blockchain_scripts/baseDeploy")
+const updateConfigs = require("../blockchain_scripts/updateConfigs")
 
 describe("Deployment", async () => {
   describe("Base Deployment", () => {
@@ -64,7 +65,7 @@ describe("Deployment", async () => {
 
       await upgrade(deployments.deploy, "CreditDesk", proxy_owner, {contract: "FakeV2CreditDesk"})
       const newCreditDesk = await getDeployedContract(deployments, "CreditDesk")
-      
+
       expect(typeof(newCreditDesk.someBrandNewFunction)).to.equal("function")
       const result = String(await newCreditDesk.someBrandNewFunction())
       expect(result).to.bignumber.equal(new BN(5))
@@ -77,7 +78,7 @@ describe("Deployment", async () => {
 
       await upgrade(deployments.deploy, "CreditDesk", proxy_owner, {contract: "FakeV2CreditDesk"})
       const newCreditDesk = await getDeployedContract(deployments, "CreditDesk")
-      
+
       const newResult = await newCreditDesk.getUnderwriterCreditLines(protocol_owner)
       expect(originalResult).to.deep.equal(newResult)
     })
@@ -123,6 +124,29 @@ describe("Deployment", async () => {
     })
     it("should not fail", async() => {
       return expect(baseDeploy(bre, {shouldUpgrade: true})).to.be.fulfilled
+    })
+  })
+
+  describe("Updating configs", async () => {
+    beforeEach(async () => {
+      await deployments.fixture()
+    })
+
+    it("Should update protocol configs", async () => {
+      const creditDesk = await getDeployedContract(deployments, "CreditDesk")
+      const pool = await getDeployedContract(deployments, "Pool")
+
+      const new_config = {
+        "totalFundsLimit": 2000,
+        "transactionLimit": 1000,
+        "maxUnderwriterLimit": 2000
+      }
+
+      await updateConfigs(bre, new_config)
+
+      expect(fromAtomic(await creditDesk.maxUnderwriterLimit())).to.bignumber.eq(new BN(new_config["maxUnderwriterLimit"]))
+      expect(fromAtomic(await creditDesk.transactionLimit())).to.bignumber.eq(new BN(new_config["transactionLimit"]))
+      expect(fromAtomic(await pool.totalFundsLimit())).to.bignumber.eq(new BN(new_config["totalFundsLimit"]))
     })
   })
 })
