@@ -32,34 +32,6 @@ function getMultisigAddress(chainID) {
   return MULTISIG_MAPPING[chainID] || MULTISIG_MAPPING[CHAIN_MAPPING[chainID]];
 }
 
-async function upgrade(bre, contractName, deployOptions = {}) {
-  const { deployments, getNamedAccounts } = bre;
-  const { deploy, log } = deployments;
-  const { protocol_owner, proxy_owner } = await getNamedAccounts();
-  log("Attemping to upgrade", contractName);
-  
-  deployOptions.from = protocol_owner
-  if (!deployOptions.contract) {
-    deployOptions.contract = contractName;
-  }
-  log("Deploying implementation...");
-  const implementationName = contractName + "_Implementation";
-  const implementationReceipt = await deploy(implementationName, deployOptions);
-  log("Implementation deployed to", implementationReceipt.address);
-
-  const proxy = await getDeployedContract(deployments, contractName + "_Proxy", proxy_owner)
-
-  // If we wanted to run any post upgrade functions or initializations or anything after the implementation deployment, 
-  // then we would need to actually populate the data here. See https://github.com/wighawag/buidler-deploy/blob/e534fcdc7ffffe2511a48c04def54ae1acf532bc/src/helpers.ts#L854 for more
-  log("Changing implementation...");
-  let data = "0x";
-  await proxy.changeImplementation(implementationReceipt.address, data);
-  log("Upgrade complete");
-  // This should return the new implementation, but with the address of the Proxy.
-  implementationReceipt.address = proxy.address;
-  return implementationReceipt;
-}
-
 async function getDeployedContract(deployments, contractName, signerAddress) {
   const deployment = await deployments.getOrNull(contractName);
   const implementation = await deployments.getOrNull(contractName + "_Implementation");
@@ -77,6 +49,20 @@ async function getDeployedContract(deployments, contractName, signerAddress) {
   return await ethers.getContractAt(abi, deployment.address, signer);
 }
 
+async function upgrade(deploy, contractName, proxyOwner, options) {
+  const deployOptions = Object.assign({from: proxyOwner, proxy: {owner: proxyOwner}}, options);
+  return deploy(contractName, deployOptions);
+}
+
+function fromAtomic(amount, decimals = USDCDecimals) {
+  return new BN(String(amount)).div(decimals).toString(10);
+}
+
+function toAtomic(amount, decimals = USDCDecimals) {
+  return new BN(String(amount)).mul(decimals).toString(10);
+}
+
+
 module.exports = {
   CHAIN_MAPPING: CHAIN_MAPPING,
   ROPSTEN_USDC_ADDRESS: ROPSTEN_USDC_ADDRESS,
@@ -87,7 +73,9 @@ module.exports = {
   ETHDecimals: ETHDecimals,
   getMultisigAddress: getMultisigAddress,
   getUSDCAddress: getUSDCAddress,
-  upgrade: upgrade,
   getDeployedContract: getDeployedContract,
+  fromAtomic: fromAtomic,
+  toAtomic: toAtomic,
+  upgrade: upgrade,
   MAINNET_CHAIN_ID: MAINNET_CHAIN_ID,
 }

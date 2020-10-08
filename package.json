@@ -9,8 +9,9 @@
     "pre-push": "cd client && npm run pre-push",
     "pre-commit": "cd client && npm run pre-commit",
     "verify": "npx buidler etherscan-verify --api-key DQUC8Y678J5RN5P7XE9RT91SWI7SSEDD53 --solc-input --network",
-    "deploy": "npx buidler deploy --export-all client/config/deployments.json --network",
-    "upgrade-protocol": "npx buidler deploy --export-all client/config/deployments.json --tags upgrade_protocol --network"
+    "deploy": "npx buidler deploy --show-stack-traces --export-all client/config/deployments.json --network",
+    "upgrade-protocol": "npx buidler deploy --export-all client/config/deployments.json --tags upgrade_protocol --network",
+    "update-configs": "npx buidler run ./blockchain_scripts/updateConfigs.js --network"
   },
   "husky": {
     "hooks": {
@@ -43,6 +44,7 @@
   "dependencies": {
     "@openzeppelin/contracts-ethereum-package": "^3.0.0",
     "@openzeppelin/upgrades": "^2.8.0",
+    "bn.js": "^5.1.3",
     "dotenv": "^8.2.0",
     "ethers": "^5.0.14",
     "react-router-dom": "^5.2.0",
@@ -55,7 +57,7 @@
     "@nomiclabs/buidler-web3": "^1.3.4",
     "@openzeppelin/cli": "^2.6.0",
     "@openzeppelin/test-helpers": "^0.5.6",
-    "buidler-deploy": "^0.5.18",
+    "buidler-deploy": "https://github.com/goldfinch-eng/buidler-deploy.git#512817b7e7d5f7c6523aa1c173a35870672d3e55",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "chai-bn": "github:OpenZeppelin/chai-bn#v0.2.1",

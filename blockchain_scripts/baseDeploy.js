@@ -1,5 +1,5 @@
 const BN = require('bn.js');
-const {getUSDCAddress, USDCDecimals, upgrade} = require("./deployHelpers.js");
+const {getUSDCAddress, USDCDecimals, upgrade } = require("./deployHelpers.js");
 const PROTOCOL_CONFIG = require('../protocol_config.json');
 let logger;
 
@@ -24,7 +24,7 @@ async function baseDeploy(bre, {shouldUpgrade}) {
   async function deployPool(deploy, shouldUpgrade, protocol_owner, proxy_owner, chainID) {
     let poolDeployResult
     if (shouldUpgrade) {
-      poolDeployResult = await upgrade(bre, "Pool")
+      poolDeployResult = await upgrade(deploy, "Pool", proxy_owner, {gas: 4000000, args: []});
     } else {
       poolDeployResult = await deploy("Pool", {from: protocol_owner, proxy: {owner: proxy_owner}, gas: 4000000, args: []});
     }
@@ -63,13 +63,14 @@ async function baseDeploy(bre, {shouldUpgrade}) {
     let creditDeskDeployResult; 
     let creditDesk;
     if (shouldUpgrade) {
-      creditDeskDeployResult = await upgrade(bre, "CreditDesk", {libraries: {["Accountant"]: accountant.address}});
+      creditDeskDeployResult = await upgrade(deploy, "CreditDesk", proxy_owner, {gas: 4000000, args: [], libraries: {["Accountant"]: accountant.address}});
     } else {
       creditDeskDeployResult= await deploy("CreditDesk", {from: protocol_owner, proxy: {owner: proxy_owner, methodName: "initialize"}, gas: 4000000, args: [poolAddress], libraries: {["Accountant"]: accountant.address}});
     }
     logger("Credit Desk was deployed to:", creditDeskDeployResult.address);
     creditDesk = await ethers.getContractAt(creditDeskDeployResult.abi, creditDeskDeployResult.address);
     const currentLimit = await creditDesk.maxUnderwriterLimit()
+
     if (currentLimit.gt(new BN(0))) {
       logger("Looks like underwriter limit has already been set, so skipping this part...")
     } else {
