@@ -1,3 +1,4 @@
+/* global ethers */
 const BN = require("bn.js")
 const {
   MAINNET_CHAIN_ID,
@@ -17,7 +18,7 @@ let logger
 async function main({getNamedAccounts, deployments, getChainId}) {
   const {getOrNull, log} = deployments
   logger = log
-  const {protocol_owner, proxy_owner} = await getNamedAccounts()
+  const {protocol_owner} = await getNamedAccounts()
   let chainID = await getChainId()
   let underwriter = protocol_owner
   let borrower = protocol_owner
@@ -64,6 +65,7 @@ async function depositFundsToThePool(pool, protocol_owner, erc20, chainID) {
     depositAmount = new BN(1).mul(USDCDecimals).div(new BN(10))
   }
 
+  // eslint-disable-next-line no-redeclare
   var txn = await pool.deposit(String(depositAmount))
   await txn.wait()
   const newBalance = await erc20.balanceOf(pool.address)
@@ -135,7 +137,7 @@ async function createCreditLineForBorrower(creditDesk, borrower) {
 module.exports = main
 module.exports.dependencies = ["base_deploy"]
 module.exports.tags = ["setup_for_testing"]
-module.exports.skip = async ({getNamedAccounts, deployments, getChainId}) => {
+module.exports.skip = async ({getChainId}) => {
   const chainId = await getChainId()
   return String(chainId) === MAINNET_CHAIN_ID
 }

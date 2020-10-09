@@ -1,3 +1,4 @@
+/* global usePlugin */
 usePlugin("@nomiclabs/buidler-truffle5")
 usePlugin("@nomiclabs/buidler-ethers")
 usePlugin("buidler-deploy")

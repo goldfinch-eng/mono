@@ -1,6 +1,6 @@
-const {chai, BN, expect} = require("./testHelpers.js")
+const {BN, expect} = require("./testHelpers.js")
 const bre = require("@nomiclabs/buidler")
-const {deployments, getNamedAccounts} = bre
+const {deployments, getNamedAccounts, ethers} = bre
 const {upgrade, getDeployedContract, fromAtomic} = require("../blockchain_scripts/deployHelpers")
 const baseDeploy = require("../blockchain_scripts/baseDeploy")
 const updateConfigs = require("../blockchain_scripts/updateConfigs")
@@ -109,6 +109,7 @@ describe("Deployment", async () => {
         await proxyWithNewOwner.proxyAdmin()
         // We expect the above to fail, thus this assertion should never run.
         expect(false).to.be.true
+        // eslint-disable-next-line no-empty
       } catch (e) {}
 
       const result = await creditDeskProxy.changeProxyAdmin(protocol_owner)

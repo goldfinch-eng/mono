@@ -1,3 +1,4 @@
+/* global ethers */
 const BN = require("bn.js")
 // Using 1e6, because that's what USDC is.
 const USDCDecimals = new BN(String(1e6))

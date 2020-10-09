@@ -1,4 +1,5 @@
-const {chai, expect, MAX_UINT, decimals, BN, bigVal, mochaEach, getBalance} = require("./testHelpers.js")
+/* global artifacts web3 */
+const {expect, MAX_UINT, decimals, BN, bigVal, getBalance} = require("./testHelpers.js")
 const {time} = require("@openzeppelin/test-helpers")
 const Accountant = artifacts.require("Accountant")
 const CreditDesk = artifacts.require("CreditDesk")
@@ -44,7 +45,7 @@ describe("CreditDesk", () => {
       _minCollateralPercent,
       _paymentPeriodInDays,
       _termInDays,
-      {from: underwriter}
+      {from: _underwriter}
     )
   }
 
@@ -95,13 +96,13 @@ describe("CreditDesk", () => {
     return creditLine
   }
 
-  let initializeCreditDeskWithCreditLine = async (underwriter, borrower) => {
+  let initializeCreditDeskWithCreditLine = async (underwriter) => {
     underwriterLimit = bigVal(600)
     await creditDesk.setUnderwriterGovernanceLimit(underwriter, underwriterLimit, {from: owner})
 
     await createCreditLine()
     var ulCreditLines = await creditDesk.getUnderwriterCreditLines(underwriter)
-    creditLine = await CreditLine.at(ulCreditLines[0])
+    var creditLine = await CreditLine.at(ulCreditLines[0])
     return creditLine
   }
 
@@ -345,7 +346,7 @@ describe("CreditDesk", () => {
       expect((await creditLine.termEndBlock()).eq(new BN(0))).to.be.true
 
       await drawdown(bigVal(10), creditLine.address)
-      currentBlock = await time.latestBlock()
+      const currentBlock = await time.latestBlock()
       const blockLength = new BN(termInDays).mul(new BN(blocksPerDay))
 
       const expectedTermEndBlock = currentBlock.add(blockLength)
@@ -356,7 +357,7 @@ describe("CreditDesk", () => {
       expect((await creditLine.nextDueBlock()).eq(new BN(0))).to.be.true
 
       await drawdown(bigVal(10), creditLine.address)
-      currentBlock = await time.latestBlock()
+      const currentBlock = await time.latestBlock()
       const blockLength = new BN(paymentPeriodInDays).mul(new BN(blocksPerDay))
 
       const expectedNextDueBlock = currentBlock.add(blockLength)
@@ -394,7 +395,7 @@ describe("CreditDesk", () => {
       beforeEach(async () => {
         underwriter = person2
         borrower = person2
-        creditLine = await initializeCreditDeskWithCreditLine(underwriter, borrower)
+        creditLine = await initializeCreditDeskWithCreditLine(underwriter)
       })
       it("should increment the prepaid balance", async () => {
         const prepaymentAmount = 10

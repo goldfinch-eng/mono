@@ -1,3 +1,4 @@
+/* global artifacts web3 */
 const {expect, decimals, BN, bigVal, mochaEach} = require("./testHelpers.js")
 const Accountant = artifacts.require("Accountant")
 
@@ -30,7 +31,7 @@ describe("Accountant", async () => {
         balance = bigVal(balance)
         interestApr = new BN(interestApr * rateDecimals).mul(rateMultiplier)
         termInDays = new BN(termInDays)
-        paymentPeriodIndays = new BN(paymentPeriodInDays)
+        paymentPeriodInDays = new BN(paymentPeriodInDays)
         expected = new BN(expected)
 
         const result = await accountant.calculateAnnuityPayment(balance, interestApr, termInDays, paymentPeriodInDays)
@@ -43,7 +44,7 @@ describe("Accountant", async () => {
       const interestApr = new BN(1)
       const termInDays = new BN(360)
       const paymentPeriodInDays = new BN(30)
-      expected = new BN("833333333333333333333")
+      const expected = new BN("833333333333333333333")
       const result = await accountant.calculateAnnuityPayment(balance, interestApr, termInDays, paymentPeriodInDays)
       expect(result.eq(expected)).to.be.true
     })

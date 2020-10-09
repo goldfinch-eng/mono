@@ -1,4 +1,5 @@
-const {chai, expect, decimals, BN, bigVal, getBalance} = require("./testHelpers.js")
+/* global artifacts web3 */
+const {expect, BN, getBalance} = require("./testHelpers.js")
 let accounts
 let owner
 let person2

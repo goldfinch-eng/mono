@@ -1,4 +1,3 @@
-const BN = require("bn.js")
 const {getDeployedContract, getMultisigAddress} = require("../blockchain_scripts/deployHelpers.js")
 
 /*
@@ -6,10 +5,9 @@ This simply transfers ownership to the multisig address, and should only be run 
 testnets or mainnet.
 */
 let logger
-async function main({getNamedAccounts, deployments, getChainId}) {
-  const {getOrNull, log} = deployments
+async function main({deployments, getChainId}) {
+  const {log} = deployments
   logger = log
-  const {protocol_owner, proxy_owner} = await getNamedAccounts()
   let chainID = await getChainId()
   const creditDesk = await getDeployedContract(deployments, "CreditDesk")
 
@@ -28,7 +26,7 @@ async function transferOwnershipOfCreditDeskToMultisig(creditDesk, chainID) {
   await txn.wait()
   const newOwner = await creditDesk.owner()
   if (newOwner != multiSigAddress) {
-    throw new Error(`Expected new owner ${newOwner} to equal ${creditDeskAddress}`)
+    throw new Error(`Expected new owner ${newOwner} to equal ${multiSigAddress}`)
   }
   logger("Ownership successfully transferred to", newOwner)
 }

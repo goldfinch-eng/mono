@@ -1,7 +1,6 @@
 const {fromAtomic, toAtomic, getDeployedContract} = require("./deployHelpers.js")
 const PROTOCOL_CONFIG = require("../protocol_config.json")
 const bre = require("@nomiclabs/buidler")
-const ethers = bre.ethers
 
 /*
 This deployment updates the configs from the PROTOCOL_CONFIG

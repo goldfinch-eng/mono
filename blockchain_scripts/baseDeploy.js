@@ -4,7 +4,7 @@ const PROTOCOL_CONFIG = require("../protocol_config.json")
 let logger
 
 async function baseDeploy(bre, {shouldUpgrade}) {
-  const {deployments, getNamedAccounts, getChainId} = bre
+  const {deployments, getNamedAccounts, getChainId, ethers} = bre
   const {deploy, log} = deployments
   logger = log
   logger("Starting deploy...")
@@ -103,7 +103,7 @@ async function baseDeploy(bre, {shouldUpgrade}) {
     logger("Checking that", poolAddress, "is correctly set on the credit desk")
     const creditDeskPoolAddress = await creditDesk.poolAddress()
     if (poolAddress != creditDeskPoolAddress) {
-      throw new Error(`Expected pool address was ${poolAddress}, but got ${newPoolAddress}`)
+      throw new Error(`Expected pool address was ${poolAddress}, but got ${creditDeskPoolAddress}`)
     }
   }
 
