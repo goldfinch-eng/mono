@@ -1,0 +1,16 @@
+contracts/external
+cache
+# This is handled by the pretier config inside the client
+client
+.venv
+deployments
+.vscode
+.github
+
+docs
+README.md
+
+.eslintrc.json
+.gitpod.yml
+.prettierrc
+.solhint.json
