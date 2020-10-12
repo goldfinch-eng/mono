@@ -1,7 +1,7 @@
-const {chai, BN, expect } = require("./testHelpers.js")
+const {BN, expect} = require("./testHelpers.js")
 const bre = require("@nomiclabs/buidler")
-const { deployments, getNamedAccounts } = bre
-const { upgrade, getDeployedContract, fromAtomic } = require("../blockchain_scripts/deployHelpers")
+const {deployments, getNamedAccounts, ethers} = bre
+const {upgrade, getDeployedContract, fromAtomic} = require("../blockchain_scripts/deployHelpers")
 const baseDeploy = require("../blockchain_scripts/baseDeploy")
 const updateConfigs = require("../blockchain_scripts/updateConfigs")
 
@@ -31,7 +31,7 @@ describe("Deployment", async () => {
       const pool = await getDeployedContract(deployments, "Pool")
       expect(await pool.owner()).to.equal(creditDesk.address)
     })
-    it("sets non-zero limits", async() => {
+    it("sets non-zero limits", async () => {
       const creditDesk = await getDeployedContract(deployments, "CreditDesk")
       const pool = await getDeployedContract(deployments, "Pool")
       expect(String(await creditDesk.maxUnderwriterLimit())).to.bignumber.gt(new BN(0))
@@ -45,8 +45,8 @@ describe("Deployment", async () => {
     it("should not fail", async () => {
       return expect(deployments.run("setup_for_testing")).to.be.fulfilled
     })
-    it("should create an underwriter credit line for the protocol_owner", async() => {
-      const { protocol_owner } = await getNamedAccounts()
+    it("should create an underwriter credit line for the protocol_owner", async () => {
+      const {protocol_owner} = await getNamedAccounts()
       await deployments.run("setup_for_testing")
       const creditDesk = await getDeployedContract(deployments, "CreditDesk")
       const result = await creditDesk.getUnderwriterCreditLines(protocol_owner)
@@ -59,20 +59,20 @@ describe("Deployment", async () => {
       await deployments.fixture()
     })
     it("should allow for upgrading the logic", async () => {
-      const { proxy_owner } = await getNamedAccounts()
+      const {proxy_owner} = await getNamedAccounts()
       const creditDesk = await getDeployedContract(deployments, "CreditDesk")
-      expect(typeof(creditDesk.someBrandNewFunction)).not.to.equal("function")
+      expect(typeof creditDesk.someBrandNewFunction).not.to.equal("function")
 
       await upgrade(deployments.deploy, "CreditDesk", proxy_owner, {contract: "FakeV2CreditDesk"})
       const newCreditDesk = await getDeployedContract(deployments, "CreditDesk")
 
-      expect(typeof(newCreditDesk.someBrandNewFunction)).to.equal("function")
+      expect(typeof newCreditDesk.someBrandNewFunction).to.equal("function")
       const result = String(await newCreditDesk.someBrandNewFunction())
       expect(result).to.bignumber.equal(new BN(5))
     })
 
     it("should not change data after an upgrade", async () => {
-      const { protocol_owner, proxy_owner } = await getNamedAccounts()
+      const {protocol_owner, proxy_owner} = await getNamedAccounts()
       const creditDesk = await getDeployedContract(deployments, "CreditDesk")
       const originalResult = await creditDesk.getUnderwriterCreditLines(protocol_owner)
 
@@ -97,7 +97,7 @@ describe("Deployment", async () => {
     })
 
     it("should allow for a way to transfer ownership of the proxy", async () => {
-      const { protocol_owner, proxy_owner } = await getNamedAccounts()
+      const {protocol_owner, proxy_owner} = await getNamedAccounts()
       const creditDeskProxy = await getDeployedContract(deployments, "CreditDesk_Proxy", proxy_owner)
       const proxyWithNewOwner = await getDeployedContract(deployments, "CreditDesk_Proxy", protocol_owner)
 
@@ -109,8 +109,8 @@ describe("Deployment", async () => {
         await proxyWithNewOwner.proxyAdmin()
         // We expect the above to fail, thus this assertion should never run.
         expect(false).to.be.true
-      } catch (e) {
-      }
+        // eslint-disable-next-line no-empty
+      } catch (e) {}
 
       const result = await creditDeskProxy.changeProxyAdmin(protocol_owner)
       await result.wait()
@@ -122,7 +122,7 @@ describe("Deployment", async () => {
     beforeEach(async () => {
       await deployments.fixture()
     })
-    it("should not fail", async() => {
+    it("should not fail", async () => {
       return expect(baseDeploy(bre, {shouldUpgrade: true})).to.be.fulfilled
     })
   })
@@ -137,14 +137,16 @@ describe("Deployment", async () => {
       const pool = await getDeployedContract(deployments, "Pool")
 
       const new_config = {
-        "totalFundsLimit": 2000,
-        "transactionLimit": 1000,
-        "maxUnderwriterLimit": 2000
+        totalFundsLimit: 2000,
+        transactionLimit: 1000,
+        maxUnderwriterLimit: 2000,
       }
 
       await updateConfigs(bre, new_config)
 
-      expect(fromAtomic(await creditDesk.maxUnderwriterLimit())).to.bignumber.eq(new BN(new_config["maxUnderwriterLimit"]))
+      expect(fromAtomic(await creditDesk.maxUnderwriterLimit())).to.bignumber.eq(
+        new BN(new_config["maxUnderwriterLimit"])
+      )
       expect(fromAtomic(await creditDesk.transactionLimit())).to.bignumber.eq(new BN(new_config["transactionLimit"]))
       expect(fromAtomic(await pool.totalFundsLimit())).to.bignumber.eq(new BN(new_config["totalFundsLimit"]))
     })

@@ -17,13 +17,13 @@ contract FakeV2CreditDesk is Initializable, OwnableUpgradeSafe, OwnerPausable {
   using SafeMath for uint256;
 
   // Approximate number of blocks
-  uint public constant blocksPerDay = 5760;
+  uint256 public constant blocksPerDay = 5760;
   address public poolAddress;
-  uint public maxUnderwriterLimit = 0;
-  uint public transactionLimit = 0;
+  uint256 public maxUnderwriterLimit = 0;
+  uint256 public transactionLimit = 0;
 
   struct Underwriter {
-    uint governanceLimit;
+    uint256 governanceLimit;
     address[] creditLines;
   }
 
@@ -31,13 +31,19 @@ contract FakeV2CreditDesk is Initializable, OwnableUpgradeSafe, OwnerPausable {
     address[] creditLines;
   }
 
-  event PaymentMade(address indexed payer, address indexed creditLine, uint interestAmount, uint principalAmount, uint remainingAmount);
-  event PrepaymentMade(address indexed payer, address indexed creditLine, uint prepaymentAmount);
-  event DrawdownMade(address indexed borrower, address indexed creditLine, uint drawdownAmount);
+  event PaymentMade(
+    address indexed payer,
+    address indexed creditLine,
+    uint256 interestAmount,
+    uint256 principalAmount,
+    uint256 remainingAmount
+  );
+  event PrepaymentMade(address indexed payer, address indexed creditLine, uint256 prepaymentAmount);
+  event DrawdownMade(address indexed borrower, address indexed creditLine, uint256 drawdownAmount);
   event CreditLineCreated(address indexed borrower, address indexed creditLine);
   event PoolAddressUpdated(address indexed oldAddress, address indexed newAddress);
-  event GovernanceUpdatedUnderwriterLimit(address indexed underwriter, uint newLimit);
-  event LimitChanged(address indexed owner, string limitType, uint amount);
+  event GovernanceUpdatedUnderwriterLimit(address indexed underwriter, uint256 newLimit);
+  event LimitChanged(address indexed owner, string limitType, uint256 amount);
 
   mapping(address => Underwriter) public underwriters;
   mapping(address => Borrower) private borrowers;
@@ -47,7 +53,7 @@ contract FakeV2CreditDesk is Initializable, OwnableUpgradeSafe, OwnerPausable {
     poolAddress = _poolAddress;
   }
 
-  function someBrandNewFunction() public pure returns(uint) {
+  function someBrandNewFunction() public pure returns (uint256) {
     return 5;
   }
 
@@ -57,6 +63,5 @@ contract FakeV2CreditDesk is Initializable, OwnableUpgradeSafe, OwnerPausable {
 
   /*
    * Internal Functions
-  */
-
+   */
 }

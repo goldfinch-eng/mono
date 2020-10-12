@@ -1,4 +1,5 @@
-const {chai, expect, decimals, BN, bigVal, getBalance }  = require("./testHelpers.js")
+/* global artifacts web3 */
+const {expect, BN, getBalance} = require("./testHelpers.js")
 let accounts
 let owner
 let person2
@@ -26,16 +27,16 @@ describe("Pool", () => {
 
   beforeEach(async () => {
     // Pull in our unlocked accounts
-    accounts = await web3.eth.getAccounts();
-    [ owner, person2, person3 ] = accounts
+    accounts = await web3.eth.getAccounts()
+    ;[owner, person2, person3] = accounts
 
     // Deploy the ERC20 and give people some balance to play with
-    erc20 = await ERC20.new(new BN(100000).mul(mantissa), mantissa, { from: owner })
+    erc20 = await ERC20.new(new BN(100000).mul(mantissa), mantissa, {from: owner})
     await erc20.transfer(person2, new BN(10000).mul(mantissa), {from: owner})
     await erc20.transfer(person3, new BN(1000).mul(mantissa), {from: owner})
-    
+
     // Deploy and initialize a Pool for this ERC20
-    pool = await Pool.new({ from: owner })
+    pool = await Pool.new({from: owner})
     pool.initialize(erc20.address, "USDC", mantissa, {from: owner})
     await pool.setTotalFundsLimit(new BN(100000).mul(mantissa))
     await pool.setTransactionLimit(new BN(100000).mul(mantissa))
@@ -51,42 +52,42 @@ describe("Pool", () => {
   })
 
   describe("Pausability", () => {
-    describe("after pausing", async() => {
-      beforeEach(async() => {
+    describe("after pausing", async () => {
+      beforeEach(async () => {
         await makeDeposit()
         await pool.pause()
       })
-      it("disallows deposits", async() => {
+      it("disallows deposits", async () => {
         return expect(makeDeposit()).to.be.rejectedWith(/Pausable: paused/)
       })
-      it("disallows withdrawing", async() => {
+      it("disallows withdrawing", async () => {
         return expect(makeWithdraw()).to.be.rejectedWith(/Pausable: paused/)
       })
-      it("allows unpausing", async() => {
+      it("allows unpausing", async () => {
         await pool.unpause()
         return expect(makeDeposit()).to.be.fulfilled
       })
     })
 
-    describe("actually pausing", async() => {
-      it("should allow the owner to pause", async() => {
+    describe("actually pausing", async () => {
+      it("should allow the owner to pause", async () => {
         return expect(pool.pause()).to.be.fulfilled
       })
-      it("should disallow non-owner to pause", async() => {
+      it("should disallow non-owner to pause", async () => {
         return expect(pool.pause({from: person2})).to.be.rejectedWith(/caller is not the owner/)
       })
     })
   })
 
   describe("deposit", () => {
-    describe("before you have approved the pool to transfer funds on your behalf", async() => {
+    describe("before you have approved the pool to transfer funds on your behalf", async () => {
       it("should fail", async () => {
         const expectedErr = "VM Exception while processing transaction: revert ERC20: transfer amount exceeds allowance"
         return expect(makeDeposit(person3)).to.be.rejectedWith(expectedErr)
       })
     })
 
-    describe("after you have approved the pool to transfer funds", async() => {
+    describe("after you have approved the pool to transfer funds", async () => {
       let capitalProvider
       beforeEach(async () => {
         await erc20.approve(pool.address, new BN(100000).mul(mantissa), {from: person2})
@@ -110,7 +111,7 @@ describe("Pool", () => {
         expect(delta).to.bignumber.equal(depositAmount)
       })
 
-      it("saves the sender in the depositor mapping", async() => {
+      it("saves the sender in the depositor mapping", async () => {
         await makeDeposit()
         const shares = await pool.capitalProviders(person2)
         expect(shares.eq(depositAmount)).to.be.true
@@ -134,11 +135,10 @@ describe("Pool", () => {
         expect(totalShares.eq(totalDeposited)).to.be.true
       })
     })
-
   })
 
   describe("getNumShares", () => {
-    it("calculates correctly", async() => {
+    it("calculates correctly", async () => {
       const amount = 3000
       const mantissa = 1000
       const sharePrice = 2000
@@ -259,20 +259,22 @@ describe("Pool", () => {
   })
 
   describe("hard limits", async () => {
-    describe("totalFundsLimit", async() => {
-      describe("setting the limit", async() => {
+    describe("totalFundsLimit", async () => {
+      describe("setting the limit", async () => {
         let limit = new BN(1000)
-        it("should fail if it isn't the owner", async() => {
-          return expect(pool.setTotalFundsLimit(limit.mul(mantissa), {from: person2})).to.be.rejectedWith(/not the owner/)
+        it("should fail if it isn't the owner", async () => {
+          return expect(pool.setTotalFundsLimit(limit.mul(mantissa), {from: person2})).to.be.rejectedWith(
+            /not the owner/
+          )
         })
 
-        it("should set the limit, and multiply what you pass up by the mantissa", async() => {
+        it("should set the limit, and multiply what you pass up by the mantissa", async () => {
           await pool.setTotalFundsLimit(limit.mul(mantissa))
           const newLimit = await pool.totalFundsLimit()
           expect(newLimit).to.bignumber.equal(limit.mul(mantissa))
         })
 
-        it("should fire an event", async() => {
+        it("should fire an event", async () => {
           const result = await pool.setTotalFundsLimit(limit.mul(mantissa))
 
           const event = result.logs[0]
@@ -283,41 +285,45 @@ describe("Pool", () => {
           expect(event.args.amount).to.bignumber.equal(new BN(limit).mul(mantissa))
         })
       })
-      
+
       describe("once it's set", async () => {
         let limit = new BN(5000)
         beforeEach(async () => {
           await pool.setTotalFundsLimit(limit.mul(mantissa))
-          await pool.setTransactionLimit((limit.mul(new BN(2)).mul(mantissa)))
+          await pool.setTransactionLimit(limit.mul(new BN(2)).mul(mantissa))
         })
-  
+
         it("should accept deposits before the limit is reached", async () => {
           return expect(makeDeposit(person2, new BN(1000).mul(mantissa))).to.be.fulfilled
         })
-  
+
         it("should accept everything right up to the limit", async () => {
           return expect(makeDeposit(person2, new BN(limit).mul(mantissa))).to.be.fulfilled
         })
-  
-        it("should fail if you're over the limit", async() => {
-          return expect(makeDeposit(person2, new BN(limit).add(new BN(1)).mul(mantissa))).to.be.rejectedWith(/put the Pool over the total limit/)
+
+        it("should fail if you're over the limit", async () => {
+          return expect(makeDeposit(person2, new BN(limit).add(new BN(1)).mul(mantissa))).to.be.rejectedWith(
+            /put the Pool over the total limit/
+          )
         })
       })
     })
-    describe("transactionLimit", async() => {
-      describe("setting the limit", async() => {
+    describe("transactionLimit", async () => {
+      describe("setting the limit", async () => {
         let limit = new BN(1000)
-        it("should fail if it isn't the owner", async() => {
-          return expect(pool.setTransactionLimit(limit.mul(mantissa), {from: person2})).to.be.rejectedWith(/not the owner/)
+        it("should fail if it isn't the owner", async () => {
+          return expect(pool.setTransactionLimit(limit.mul(mantissa), {from: person2})).to.be.rejectedWith(
+            /not the owner/
+          )
         })
 
-        it("should set the limit, and multiply what you pass up by the mantissa", async() => {
+        it("should set the limit, and multiply what you pass up by the mantissa", async () => {
           await pool.setTransactionLimit(limit.mul(mantissa))
           const newLimit = await pool.transactionLimit()
           expect(newLimit).to.bignumber.equal(new BN(limit).mul(mantissa))
         })
 
-        it("should fire an event", async() => {
+        it("should fire an event", async () => {
           const result = await pool.setTransactionLimit(limit.mul(mantissa))
 
           const event = result.logs[0]
@@ -328,28 +334,32 @@ describe("Pool", () => {
           expect(event.args.amount).to.bignumber.equal(new BN(limit).mul(mantissa))
         })
       })
-      
-      describe("after setting it", async() => {
+
+      describe("after setting it", async () => {
         let limit
-        beforeEach(async() => {
+        beforeEach(async () => {
           limit = new BN(1000)
           await pool.setTotalFundsLimit(limit.mul(new BN(10)).mul(mantissa))
           await pool.setTransactionLimit(limit.mul(mantissa))
         })
 
-        it("should still allow transactions up to the limit", async() => {
+        it("should still allow transactions up to the limit", async () => {
           return expect(makeDeposit(person2, new BN(limit).mul(mantissa))).to.be.fulfilled
         })
 
-        it("should block deposits over the limit", async() => {
-          return expect(makeDeposit(person2, new BN(limit).add(new BN(1)).mul(mantissa))).to.be.rejectedWith(/Amount is over the per-transaction limit/)
+        it("should block deposits over the limit", async () => {
+          return expect(makeDeposit(person2, new BN(limit).add(new BN(1)).mul(mantissa))).to.be.rejectedWith(
+            /Amount is over the per-transaction limit/
+          )
         })
 
-        it("should block withdrawals over the limit", async() => {
+        it("should block withdrawals over the limit", async () => {
           await makeDeposit(person2, new BN(limit).mul(mantissa))
           await makeDeposit(person2, new BN(limit).mul(mantissa))
 
-          return expect(makeWithdraw(person2, new BN(limit).add(new BN(1)).mul(mantissa))).to.be.rejectedWith(/Amount is over the per-transaction limit/)
+          return expect(makeWithdraw(person2, new BN(limit).add(new BN(1)).mul(mantissa))).to.be.rejectedWith(
+            /Amount is over the per-transaction limit/
+          )
         })
       })
     })

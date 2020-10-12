@@ -7039,7 +7039,7 @@
       "chainId": "31337",
       "contracts": {
         "Accountant": {
-          "address": "0x5bcb88A0d20426e451332eE6C4324b0e663c50E0",
+          "address": "0x038B86d9d8FAFdd0a02ebd1A476432877b0107C8",
           "abi": [
             {
               "inputs": [
@@ -7862,7 +7862,7 @@
           ]
         },
         "CreditDesk_Implementation": {
-          "address": "0x3307C25998C69ec9c37C71D2D2e2dF837D254133",
+          "address": "0xbe65A1F9a31D5E81d5e2B863AEf15bF9b3d92891",
           "abi": [
             {
               "anonymous": false,

@@ -7,11 +7,23 @@
     "start": "npx concurrently -n \"blockchain,web\"  \"npx buidler node --reset --export-all client/config/deployments_dev.json\" \"cd client && npm start\" -k -c \"cyan, magenta\"",
     "test": "npx buidler test --show-stack-traces",
     "pre-push": "cd client && npm run pre-push",
-    "pre-commit": "cd client && npm run pre-commit",
+    "pre-commit": "npx lint-staged && cd client && npm run pre-commit",
+    "lint": "npx eslint . --fix && npx prettier . --write && npx solhint **/*.sol --fix",
     "verify": "npx buidler etherscan-verify --api-key DQUC8Y678J5RN5P7XE9RT91SWI7SSEDD53 --solc-input --network",
     "deploy": "npx buidler deploy --show-stack-traces --export-all client/config/deployments.json --network",
     "upgrade-protocol": "npx buidler deploy --export-all client/config/deployments.json --tags upgrade_protocol --network",
     "update-configs": "npx buidler run ./blockchain_scripts/updateConfigs.js --network"
+  },
+  "lint-staged": {
+    "*.js": [
+      "eslint --fix",
+      "git add"
+    ],
+    "*.sol": [
+      "prettier --write",
+      "solhint --fix",
+      "git add"
+    ]
   },
   "husky": {
     "hooks": {
@@ -63,11 +75,18 @@
     "chai-bn": "github:OpenZeppelin/chai-bn#v0.2.1",
     "concurrently": "^5.3.0",
     "eslint": "^6.6.0",
+    "eslint-config-prettier": "^6.12.0",
     "eslint-plugin-mocha-no-only": "^1.1.1",
+    "eslint-plugin-prettier": "^3.1.4",
     "ganache-cli": "^6.10.2",
     "husky": "^3.1.0",
     "mocha": "^8.1.3",
     "mocha-each": "^2.0.1",
-    "truffle-contract-size": "^2.0.0"
+    "prettier": "^2.1.2",
+    "prettier-plugin-solidity": "^1.0.0-alpha.59",
+    "solhint": "^3.2.1",
+    "solhint-plugin-prettier": "0.0.5",
+    "truffle-contract-size": "^2.0.0",
+    "lint-staged": "^9.5.0"
   }
 }

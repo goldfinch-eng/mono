@@ -3,19 +3,25 @@
         "browser": true,
         "node": true,
         "es6": true,
-        "mocha": true
+        "mocha": true,
+        "node": true
     },
-    "extends": "eslint:recommended",
+    "extends": [
+        "eslint:recommended",
+        "plugin:prettier/recommended"
+    ],
     "parserOptions": {
         "ecmaVersion": 11,
         "sourceType": "module"
     },
     "plugins": [
-        "mocha-no-only"
+        "mocha-no-only",
+        "prettier"
     ],
     "globals": {
       "process": "readonly"
     },
+    "ignorePatterns": ["client"],
     "rules": {
         "indent": [
             "error",
@@ -33,6 +39,6 @@
             "error",
             "never"
         ],
-         "mocha-no-only/mocha-no-only": ["error"]
+        "mocha-no-only/mocha-no-only": ["error"]
     }
 }
