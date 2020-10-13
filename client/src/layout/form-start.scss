@@ -1,0 +1,31 @@
+.form-start button{
+  width: 100%;
+
+  & ~ button{
+    margin-top: 16px;
+  }  
+}
+
+@media only screen and (min-width: $screen-s) {
+  .form-start button{
+    width: calc(50% - 8px);
+
+    & ~ button{
+      margin: 0;
+    }  
+
+    &:nth-of-type(2n) {
+      margin-left: 16px;
+    }
+  }
+}
+
+@media only screen and (min-width: $screen-l) {
+  .form-start button{
+    width: calc(50% - 15px);
+
+    &:nth-of-type(2n) {
+      margin-left: 30px;
+    }
+  }
+}

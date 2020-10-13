@@ -1,18 +1,18 @@
 .network-widget{
-  border-radius: 0 0 0 12px;
   position: fixed;
-  top: 15px;
-  right: 18px;
+  right: 64px;
+  top: 10px;
   z-index: 1;
 }
 
 .network-widget-button{
   background: $sand-light;
+  border: 1px solid $sand-dark;
   border-radius: 10px;
   color: $purp-dark;
-  height: 40px;
+  height: $widget-button-height;
   font-size: $sans-size-xs;
-  line-height: 40px;
+  line-height: $widget-button-height;
   outline: none;
   padding: 0 18px;
 
@@ -64,15 +64,14 @@
 
 .network-widget-info{
   background-color: $sand-xlight;
-  box-shadow: 0px 0px 25px rgba(180, 173, 167, 0.45);
-  border-radius: 10px;
+  border-top: 1px solid $sand;
+  box-shadow: 0px 10px 15px rgba(180, 173, 167, 0.3);
   display: none;
   font-size: $sans-size-xs;
   margin: 12px 0 0 0;
-  position: absolute;
-  top: 100%;
+  position: fixed;
   right: 0;
-  width: 300px;
+  width: 100%;
 }
 
 .network-widget.open{
@@ -177,7 +176,6 @@
   color: $red-dark;
 }
 
-
 .network-widget-disable-button{
   background-color: $sand-light;
   border-radius: 8px;
@@ -191,6 +189,29 @@
   }
 }
 
+
+@media only screen and (min-width: 400px) {
+  .network-widget-info{
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0px 0px 25px rgba(180, 173, 167, 0.45);
+    position: absolute;
+    right: 0;
+    width: 300px;
+  }
+}
+
+
+@media only screen and (min-width: $screen-m) {
+  .network-widget{
+    right: 18px;
+    top: 15px;
+  }
+
+  .network-widget-button{
+    border: none;
+  }
+}
 
 @keyframes fadeInAndOut {
   0% {

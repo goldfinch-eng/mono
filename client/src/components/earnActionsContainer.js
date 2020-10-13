@@ -12,7 +12,20 @@ function EarnActionsContainer(props) {
   };
 
   let formBody;
-  if (showAction === null) {
+  if (!props.capitalProvider.address) {
+    formBody = (
+      <div className="form-start">
+        <button className="button non-functioning">
+          <img className="button-icon" src={iconUp} alt="up-arrow" />
+          Deposit
+        </button>
+        <button className="button non-functioning">
+          <img className="button-icon" src={iconDown} alt="down-arrow" />
+          Withdraw
+        </button>
+      </div>
+    );
+  } else if (showAction === null) {
     formBody = (
       <div className="form-start">
         <button
@@ -31,7 +44,7 @@ function EarnActionsContainer(props) {
           className="button"
         >
           <img className="button-icon" src={iconDown} alt="down-arrow" />
-          Withdrawal
+          Withdraw
         </button>
       </div>
     );

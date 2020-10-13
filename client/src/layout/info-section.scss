@@ -2,59 +2,53 @@
   margin: 80px auto 0;
 }
 
-.info-container{
-  background-color: $sand-light;
-  border-radius: 6px;
-  padding: 35px;
-  margin: 20px 0 0 -35px;
-  width: calc(100% + 70px);
+.info-section.empty{
+  color: $sand-xxdark;
 
-  &.small-items{
-    padding-bottom: 0;
+  & .value{
+    color: $sand-dark;
   }
 }
 
-.info-section.empty{
-  color: $sand-xxdark;
-}
-.info-section.empty .value{
-  color: $sand-dark;
+.info-container{
+  padding-bottom: 0;
 }
 
 .small-info-item{
   display: inline-block;
-  margin: 0 0 35px;
-  width: 33%;
+  margin: 0 0 30px;
+  width: 100%;
+
+  .value{
+    font-size: $sans-size-m;
+  }
+
+  .label{
+    font-size: $sans-size-xs;
+    margin: 6px 0 0;
+  }
 }
 
-.small-info-item .value{
-  font-size: $sans-size-base;
+
+@media only screen and (min-width: $screen-s) {
+  .small-info-item{
+    width: 50%;
+  }
 }
 
-.small-info-item .label{
-  font-size: $sans-size-s;
-  margin: 8px 0 0;
-}
 
-.info-section-row{
-  background-color: $sand-light;
-  border-radius: 8px;
-  margin: 20px 0;
-  padding: 20px;
-}
+@media only screen and (min-width: $screen-l) {
+  .small-info-item{
+    margin: 0 0 35px;
+    width: 33%;
 
-.info-section-label{
-  font-size: $sans-size-base;
-}
+    .value{
+      font-size: $sans-size-base;
+    }
 
-.info-section-value{
-  float: right;
-  font-variant-numeric: tabular-nums;
-  font-size: $sans-size-base;
-}
-
-.info-section td.info-section-number {
-  font-variant-numeric: tabular-nums;
-  font-size: $sans-size-xl;
-  text-align: right;
+    .label{
+      font-size: $sans-size-s;
+      margin: 8px 0 0;
+    }
+  }
 }

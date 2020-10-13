@@ -3,10 +3,13 @@
 @import './normalize.scss';
 
 // Page sections
+@import './background-container.scss';
 @import './bar-viz.scss';
 @import './button.scss';
 @import './footer.scss';
+@import './form-inputs.scss';
 @import './form-section.scss';
+@import './form-start.scss';
 @import './info-section.scss';
 @import './metric-header.scss';
 @import './network-widget.scss';
@@ -18,7 +21,7 @@
 
 html, * {
   font-family: aktiv-grotesk, sans-serif;
-  font-size: $sans-size-base;
+  font-size: $sans-size-m;
   font-weight: 400;
   transition: 0.1s;
 }
@@ -26,7 +29,7 @@ html, * {
 body {
   color: $purp-dark;
   background-color: $sand-xlight;
-  padding: 0 60px 100px $nav-width + 60;
+  padding: 0 25px 60px;
 }
 
 a {
@@ -44,7 +47,6 @@ input{
 }
 
 .page-header{
-  font-size: $sans-size-base;
   font-weight: 500;
   margin: 105px auto 20px;
   max-width: $content-max-width;
@@ -52,14 +54,9 @@ input{
 }
 
 .content-empty-message{
-  background-color: $sand-light;
-  border-radius: 10px;
   color: $purp-dark;
-  font-size: $sans-size-m;
-  line-height: 1.4;
-  margin: 0 0 60px -30px;
-  padding: 30px;
-  width: calc(100% + 60px);
+  font-size: $sans-size-s;
+  line-height: 1.3;
 }
 
  input::placeholder,
@@ -68,8 +65,19 @@ input{
  }
 
 
-@media only screen and (max-width: 480px) {
-  html {
-    font-size: 100%;
+@media only screen and (min-width: $screen-m) {
+  body {
+    padding: 0 60px 100px $nav-width + 60;
+  }
+}
+
+
+@media only screen and (min-width: $screen-l) {
+  html, * {
+    font-size: $sans-size-base;
+  }
+
+  .content-empty-message{
+    font-size: $sans-size-m;
   }
 }

@@ -1,22 +1,45 @@
 .button{
   background-color: $blue-xlight;
-  border-radius: 8px;
+  border-radius: 6px;
+  font-size: $sans-size-m;
   color: $purp-dark;
-  line-height: 30px;
+  line-height: 24px;
   outline: none;
-  padding: 20px 0;
+  padding: 16px 0;
 
   &:hover{
     background-color: $blue-light;
   }
 
-  img{
+  .button-icon{
     vertical-align: middle;
-    margin: -4px 12px 0 0;
+    margin: -4px 8px 0 0;
+    width: 22px;
+  }
+
+  &.pending{
+    cursor: auto;
+    pointer-events: none;
+    opacity: 0.5;
   }
 
   &.non-functioning{
     cursor: not-allowed;
     opacity: 0.5;
+  }
+}
+
+@media only screen and (min-width: $screen-l) {
+  .button{
+    border-radius: 8px;
+    font-size: $sans-size-base;
+    line-height: 30px;
+    padding: 20px 0;
+
+    .button-icon{
+      vertical-align: middle;
+      margin: -4px 12px 0 0;
+      width: 26px;
+    }
   }
 }

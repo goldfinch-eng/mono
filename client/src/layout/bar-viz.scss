@@ -7,7 +7,6 @@
   vertical-align: top;
 }
 
-
 .full-bar{
   height: 14px;
   border-radius: 6px;
@@ -25,21 +24,20 @@
   height: 14px;
 }
 
+.bar-viz .right-label,
+.bar-viz .left-label{
+  display: inline-block;
+  width: 50%;
+  vertical-align: top;
+}
 
 .bar-viz .right-label{
   color: $blue;
-  display: inline-block;
-  float: right;
   text-align: right;
 }
 
-.bar-viz .left-label{
-  display: inline-block;
-  position: relative;
-}
-
 .bar-viz .amount{
-  font-size: $sans-size-xl;
+  font-size: $sans-size-ml;
   margin: 16px 0 8px;
 }
 
@@ -49,5 +47,15 @@
 }
 
 .bar-viz .description{
-  font-size: $sans-size-s;
+  font-size: $sans-size-xs;
+}
+
+@media only screen and (min-width: $screen-l) {
+  .bar-viz .amount{
+    font-size: $sans-size-xl;
+  }
+
+  .bar-viz .description{
+    font-size: $sans-size-s;
+  }
 }

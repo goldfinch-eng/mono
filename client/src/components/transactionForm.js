@@ -86,7 +86,7 @@ function TransactionForm(props) {
   }
 
   return (
-    <div ref={node} className="form-full">
+    <div ref={node} className="form-full background-container">
       <nav className="form-nav">
         {createNavItems(props)}
         <div onClick={props.closeForm} className="form-nav-option cancel">
@@ -100,7 +100,7 @@ function TransactionForm(props) {
         <FormProvider {...formMethods}>
           <form>
             <div className="form-inputs">
-              <div className="input-container">
+              <div className="big-number-input-container">
                 <input
                   value={value}
                   name="transactionAmount"
@@ -119,6 +119,9 @@ function TransactionForm(props) {
                     },
                   })}
                 ></input>
+                <div className="form-input-note">
+                  <ErrorMessage errors={formMethods.errors} name="transactionAmount" />
+                </div>
               </div>
               {buttonInfo}
               <LoadingButton
@@ -131,11 +134,6 @@ function TransactionForm(props) {
             </div>
           </form>
         </FormProvider>
-      </div>
-      <div className="form-note">
-        <div>
-          <ErrorMessage errors={formMethods.errors} name="transactionAmount" />
-        </div>
       </div>
     </div>
   );

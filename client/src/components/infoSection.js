@@ -14,7 +14,9 @@ class InfoSection extends Component {
     return (
       <div className={`info-section ${this.props.cssClass}`}>
         <h2>{this.props.title}</h2>
-        <div className="info-container small-items">{this.props.rows.map(this.convertRowToItem)}</div>
+        <div className="info-container background-container small-items">
+          {this.props.rows.map(this.convertRowToItem)}
+        </div>
       </div>
     );
   }

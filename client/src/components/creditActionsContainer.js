@@ -26,7 +26,7 @@ function CreditActionsContainer(props) {
         </button>
         <button className="button non-functioning">
           <img className="button-icon" src={iconUp} alt="up-arrow" />
-          Payment
+          Pay
         </button>
       </div>
     );
@@ -49,7 +49,7 @@ function CreditActionsContainer(props) {
           className="button"
         >
           <img className="button-icon" src={iconUp} alt="up-arrow" />
-          Payment
+          Pay
         </button>
       </div>
     );

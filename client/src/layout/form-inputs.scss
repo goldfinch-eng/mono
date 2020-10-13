@@ -1,0 +1,84 @@
+.form-inputs{
+  position: relative;
+}
+
+.big-number-input-container{
+  margin: 0 0 30px;
+  width: 100%;
+
+  &::before{
+    content: "$";
+    font-size: $sans-size-xl;
+    line-height: 1.2;
+    position: absolute;
+  }
+}
+
+.big-number-input{
+  border-bottom: 2px solid $purp-xxlight;
+  display: inline-block;
+  font-size: $sans-size-xl;
+  line-height: 1.2;
+  padding: 0 0 8px 30px;
+  width: 100%;
+
+  &:focus{
+    border-bottom: 2px solid $purp-dark;
+    color: $purp-dark;
+  }
+}
+
+.form-input-note{
+  color: $purp-light;
+  font-size: $sans-size-xs;
+  line-height: 1.2;
+  margin: 10px 0 0;
+  width: 100%;
+}
+
+.form-inputs .button-info{
+  font-size: $sans-size-xs;
+  margin: 0 0 6px;
+  text-align: center;
+}
+
+.form-inputs .submit-payment{
+  width: 100%;
+}
+
+
+@media only screen and (min-width: $screen-l) {
+  .big-number-input-container{
+    margin: 0;
+    width: calc(67% - 50px);
+
+    &::before{
+      font-size: $sans-size-xxl;
+    }
+  }
+
+  .big-number-input{
+    font-size: $sans-size-xxl;
+    padding: 0 0 12px 40px;
+  }
+
+  .form-input-note{
+    margin: 16px 0 0;
+  }
+
+  .form-inputs .button-info{
+    bottom: 100%;
+    font-size: $sans-size-s;
+    margin: 0 0 4px;
+    position: absolute;
+    right: 0;
+    width: 33%
+  }
+
+  .form-inputs .submit-payment{
+    position: absolute;
+    right: 0;
+    top: 6px;
+    width: 33%
+  }
+}

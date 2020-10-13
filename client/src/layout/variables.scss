@@ -26,15 +26,18 @@ $sans-size-xs:   15px;
 $sans-size-s:    18px;
 $sans-size-m:    21px;
 $sans-size-base: 24px;
+$sans-size-ml:   28px;
+$sans-size-l:    32px;
 $sans-size-xl:   36px;
 $sans-size-xxl:  48px;
 
-// Width
+// Widths
+$screen-s: 350px;
+$screen-m: 600px;
+$screen-l: 900px;
+
 $content-max-width: 750px;
 $nav-width: 180px;
 
-
-$screen-xs: 576px;
-$screen-sm-min: 768px;
-$screen-sm-max: 992px;
-$screen-md-max: 1280px;
+// Heights
+$widget-button-height: 40px;

@@ -1,24 +1,64 @@
 .metric-header{
   border: 2px solid $blue-light;
   border-radius: 12px;
-  margin: 0 auto 60px;
-  padding: 30px 30px 30px 90px;
+  margin: 0 auto 20px;
+  padding: 20px 20px 20px 76px;
   position: relative;
   width: 100%;
 
   .icon{
-    display: inline-block;
-    left: 28px;
+    display: block;
+    left: 22px;
+    margin: 0 auto 8px;
     position: absolute;
-    top: 22px;
+    top: 20px;
+    width: 32px;
   }
 
-  .label{
+  .label, .value{
     display: inline-block;
+    vertical-align: top;
+    width: 100%;
   }
 
   .value{
-    display: inline-block;
-    float: right;
+    margin-top: 8px;
+  }
+}
+
+@media 
+  only screen 
+  and (min-width: 480px)
+  and (max-width: $screen-m),
+  only screen
+  and (min-width: 800px) {
+  .metric-header{
+    padding: 24px 24px 24px 76px;
+
+    .icon{
+      top: 18px;
+    }
+
+    .label{
+      width: 65%;
+    }
+
+    .value{
+      text-align: right;
+      margin: 0;
+      width: 35%;
+    }
+  }
+}
+
+@media only screen and (min-width: $screen-l) {
+  .metric-header{
+    padding: 30px 30px 30px 90px;
+
+    .icon{
+      left: 28px;
+      top: 23px;
+      width: 38px;
+    }
   }
 }

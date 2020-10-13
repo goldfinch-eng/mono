@@ -17,7 +17,7 @@ function PaymentStatus(props) {
   return (
     <div className="info-section">
       <h2>Next payment due {dueDate}</h2>
-      <div className="info-container payment-status">
+      <div className="background-container payment-status">
         <div className="bar-viz small">
           <div className="full-bar">
             <div className="bar-left" style={leftBarStyle}></div>
