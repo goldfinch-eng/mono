@@ -44,35 +44,16 @@ async function calculateDueDateFromFutureBlock(nextDueBlock, format = 'MMM Do') 
 }
 
 function calculateNextDueAmount(result) {
-  // balance, interestApr, termInDays, paymentPeriodInDays
-  // `balance * (periodRate / (1 - (1 / ((1 + periodRate) ^ periods_per_term))))`
-  /*
-    int128 annualRate = FPMath.divi(int256(interestApr), int256(interestDecimals));
-    int128 dailyRate = FPMath.div(annualRate, FPMath.fromInt(int256(365)));
-    int128 periodRate = FPMath.mul(dailyRate, FPMath.fromInt(int256(paymentPeriodInDays)));
-    int128 termRate = FPMath.pow(FPMath.add(one, periodRate), periodsPerTerm);
-
-    int128 denominator = FPMath.sub(one, FPMath.div(one, termRate));
-    if (denominator == 0) {
-      return balance / periodsPerTerm;
-    }
-    int128 paymentFractionFP = FPMath.div(periodRate, denominator);
-    uint paymentFraction = uint(FPMath.muli(paymentFractionFP, int256(1e18)));
-
-    return (balance * paymentFraction) / 1e18;
-  */
-  const periodsPerTerm = new BigNumber(result.termInDays).dividedBy(result.paymentPeriodInDays);
   const annualRate = new BigNumber(result.interestApr).dividedBy(new BigNumber(ETHDecimals));
   const dailyRate = new BigNumber(annualRate).dividedBy(365.0);
   const periodRate = new BigNumber(dailyRate).multipliedBy(result.paymentPeriodInDays);
-  const termRate = new BigNumber(1).plus(periodRate).pow(periodsPerTerm);
-  const denominator = new BigNumber(1).minus(new BigNumber(1).dividedBy(termRate));
   const balance = new BigNumber(result.balance);
-  if (denominator.eq(0)) {
-    return String(balance.dividedBy(periodsPerTerm));
+  const interestOwed = balance.multipliedBy(periodRate);
+  if (new BigNumber(result.nextDueBlock).gte(new BigNumber(result.termEndBlock))) {
+    return String(interestOwed.plus(balance).toFixed(decimalPlaces));
+  } else {
+    return String(interestOwed.toFixed(decimalPlaces));
   }
-  const paymentFraction = new BigNumber(periodRate).dividedBy(denominator);
-  return String(balance.multipliedBy(paymentFraction).toFixed(decimalPlaces));
 }
 
 export { buildCreditLine, fetchCreditLineData };

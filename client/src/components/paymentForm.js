@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useContext } from 'react';
 import { sendFromUser } from '../ethereum/utils';
 import { toAtomic, fromAtomic, minimumNumber } from '../ethereum/erc20';
 import { AppContext } from '../App';

@@ -1,56 +1,68 @@
 /* global artifacts web3 */
-const {expect, decimals, BN, bigVal, mochaEach} = require("./testHelpers.js")
+const {expect, decimals, BN, bigVal, mochaEach, tolerance} = require("./testHelpers.js")
+const {time} = require("@openzeppelin/test-helpers")
+const balance = require("@openzeppelin/test-helpers/src/balance")
 const Accountant = artifacts.require("Accountant")
+const TestAccountant = artifacts.require("TestAccountant")
+const CreditLine = artifacts.require("CreditLine")
 
 describe("Accountant", async () => {
-  let accountant
-  beforeEach(async () => {
-    const [owner] = await web3.eth.getAccounts()
+  let accountant, owner, borrower, underwriter, testAccountant
+  before(async () => {
+    // Linking can only happen once, so we do it in a before block, rather than beforeEach
     accountant = await Accountant.new({from: owner})
+    TestAccountant.link(accountant)
   })
 
-  describe("calculateAnnuityPayment", async () => {
-    var tests = [
-      [10000, 12.0, 360, 30, "887719069147705830000"],
-      [10000, 6.0, 360, 30, "860286563187360300000"],
-      [2000000, 15.0, 360, 30, "180322762358335458000000"],
-      [123456, 12.345, 1800, 30, "2757196297755729374016"],
-      [50000, 10.0, 500, 10, "1071423534507233600000"],
-      [50000, 1.0, 3600, 30, "437723402324420700000"],
-      [1, 0.002, 3600, 30, "8334162127476676"],
-      [71601, 13.672, 493, 17, "2711812617616937811069"],
-      [10000, 0.0, 360, 30, "833333333333333333333"],
-      [10000, 12.0, 1, 1, "10003287671232875100000"],
-      [0, 12.0, 360, 30, "0"],
-    ]
-    mochaEach(tests).it(
-      "should calculate things correctly",
-      async (balance, interestApr, termInDays, paymentPeriodInDays, expected) => {
-        var rateDecimals = 1000 // This is just for convenience so we can denominate rates in decimals
-        var rateMultiplier = decimals.div(new BN(rateDecimals)).div(new BN(100))
-        balance = bigVal(balance)
-        interestApr = new BN(interestApr * rateDecimals).mul(rateMultiplier)
-        termInDays = new BN(termInDays)
-        paymentPeriodInDays = new BN(paymentPeriodInDays)
-        expected = new BN(expected)
+  beforeEach(async () => {
+    ;[owner, borrower, underwriter] = await web3.eth.getAccounts()
+    testAccountant = await TestAccountant.new({from: owner})
+  })
 
-        const result = await accountant.calculateAnnuityPayment(balance, interestApr, termInDays, paymentPeriodInDays)
-        expect(result.eq(expected)).to.be.true
-      }
-    )
-
-    it("should gracefully handle extremely small, but > 0 interest rates", async () => {
-      const balance = bigVal(10000)
-      const interestApr = new BN(1)
+  describe("calculateInterestAndPrincipalAccrued", async () => {
+    let creditLine, balance, blockNumber
+    const calculateInterestAndPrincipalAccrued = async (blockNumber) => {
+      const result = await testAccountant.calculateInterestAndPrincipalAccrued(creditLine.address, blockNumber)
+      return [result[0], result[1]]
+    }
+    // You can get this by taking the interest rate * principal, and divide by the fraction of num blocks elapsed (100 in our case) to blocks in the term
+    const expectedInterest = new BN(String(136986301369863013))
+    beforeEach(async () => {
+      balance = bigVal(1000)
       const termInDays = new BN(360)
-      const paymentPeriodInDays = new BN(30)
-      const expected = new BN("833333333333333333333")
-      const result = await accountant.calculateAnnuityPayment(balance, interestApr, termInDays, paymentPeriodInDays)
-      expect(result.eq(expected)).to.be.true
+      const paymentPeriodInDays = new BN(10)
+      creditLine = await CreditLine.new({from: owner})
+      await creditLine.initialize(borrower, underwriter, bigVal(500), bigVal(3), 5, paymentPeriodInDays, termInDays)
+      await creditLine.setBalance(balance)
+      blockNumber = (await time.latestBlock()).add(new BN(100))
+      // Simulate some time passing, so we can see real interest and principal accruing
+      await time.advanceBlockTo(blockNumber)
+      await creditLine.setTermEndBlock(blockNumber)
     })
-
-    describe("with invalid data", async () => {
-      // TODO: Consider if we need this.
+    describe("when the block number is < the term end block", async () => {
+      it("should return zero principal, but full interest", async () => {
+        const [interestAccrued, principalAccrued] = await calculateInterestAndPrincipalAccrued(
+          blockNumber.sub(new BN(1))
+        )
+        expect(interestAccrued).to.bignumber.closeTo(expectedInterest, tolerance)
+        expect(principalAccrued).to.bignumber.equal(new BN(0))
+      })
+    })
+    describe("when the block number == the term end block", async () => {
+      it("should return the full principal and full interest", async () => {
+        const [interestAccrued, principalAccrued] = await calculateInterestAndPrincipalAccrued(blockNumber)
+        expect(interestAccrued).to.bignumber.closeTo(expectedInterest, tolerance)
+        expect(principalAccrued).to.bignumber.equal(balance)
+      })
+    })
+    describe("when the block number > the term end block", async () => {
+      it("should return the full principal and full interest", async () => {
+        const [interestAccrued, principalAccrued] = await calculateInterestAndPrincipalAccrued(
+          blockNumber.add(new BN(1))
+        )
+        expect(interestAccrued).to.bignumber.closeTo(expectedInterest, tolerance)
+        expect(principalAccrued).to.bignumber.equal(balance)
+      })
     })
   })
 

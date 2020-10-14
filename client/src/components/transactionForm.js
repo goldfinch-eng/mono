@@ -19,7 +19,7 @@ function TransactionForm(props) {
     return getSelectedActionProps(props.navOptions[0]);
   });
 
-  const [node, show, setShow] = useCloseOnClickOrEsc({ closeFormFn: props.closeForm, closeOnClick: false });
+  const [node] = useCloseOnClickOrEsc({ closeFormFn: props.closeForm, closeOnClick: false });
 
   useEffect(() => {
     setSelectedAction(getSelectedActionProps(selectedNavOption));

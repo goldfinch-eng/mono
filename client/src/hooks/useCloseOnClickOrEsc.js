@@ -13,7 +13,7 @@ function useCloseOnClickOrEsc(opts = {}) {
         setOpen('');
       }
     }
-  }, []);
+  }, [opts]);
 
   const [open, setOpen] = useState('');
 
@@ -28,7 +28,7 @@ function useCloseOnClickOrEsc(opts = {}) {
     } else {
       setOpen('');
     }
-  });
+  }, [opts]);
 
   useEffect(() => {
     document.addEventListener('mousedown', handleClickOutside);

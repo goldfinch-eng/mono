@@ -1,5 +1,5 @@
 /* global artifacts web3 */
-const {expect, MAX_UINT, decimals, BN, bigVal, getBalance} = require("./testHelpers.js")
+const {chai, expect, MAX_UINT, decimals, BN, bigVal, tolerance, getBalance} = require("./testHelpers.js")
 const {time} = require("@openzeppelin/test-helpers")
 const Accountant = artifacts.require("Accountant")
 const CreditDesk = artifacts.require("CreditDesk")
@@ -8,7 +8,6 @@ const Pool = artifacts.require("TestPool")
 const ERC20 = artifacts.require("TestERC20")
 
 let accounts, owner, person2, person3, creditDesk
-const tolerance = bigVal(1).div(new BN(10)) // 1e17 as a BN;
 
 describe("CreditDesk", () => {
   let underwriterLimit
