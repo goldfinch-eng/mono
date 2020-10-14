@@ -171,8 +171,8 @@ contract CreditDesk is Initializable, OwnableUpgradeSafe, OwnerPausable {
     );
 
     cl.setPrepaymentBalance(paymentRemaining);
-    getPool().collectInterestRepayment(msg.sender, interestPayment);
-    getPool().collectPrincipalRepayment(msg.sender, principalPayment);
+    getPool().collectInterestRepayment(creditLineAddress, interestPayment);
+    getPool().collectPrincipalRepayment(creditLineAddress, principalPayment);
     cl.setNextDueBlock(calculateNextDueBlock(cl));
     if (cl.principalOwed() > 0) {
       handleLatePayments(cl);
