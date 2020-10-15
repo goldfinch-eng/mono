@@ -1,5 +1,5 @@
 /* global artifacts web3 */
-const {chai, expect, MAX_UINT, decimals, BN, bigVal, tolerance, getBalance} = require("./testHelpers.js")
+const {expect, MAX_UINT, decimals, BN, bigVal, tolerance, getBalance} = require("./testHelpers.js")
 const {time} = require("@openzeppelin/test-helpers")
 const Accountant = artifacts.require("Accountant")
 const CreditDesk = artifacts.require("CreditDesk")
@@ -89,6 +89,7 @@ describe("CreditDesk", () => {
       creditLine.setPrepaymentBalance(String(bigVal(prepaymentBalance)), {from: thisOwner}),
       creditLine.setNextDueBlock(nextDueBlock, {from: thisOwner}),
       creditLine.setTermEndBlock(termEndBlock, {from: thisOwner}),
+      creditLine.authorizePool(pool.address),
       creditLine.transferOwnership(creditDesk.address, {from: thisOwner}),
     ])
 
@@ -520,6 +521,7 @@ describe("CreditDesk", () => {
   describe("assessCreditLine", async () => {
     let latestBlock
     beforeEach(async () => {
+      underwriter = person2
       borrower = person3
       latestBlock = await time.latestBlock()
     })
@@ -555,7 +557,7 @@ describe("CreditDesk", () => {
         })
         const originalPoolBalance = await getBalance(pool.address, erc20)
 
-        await creditDesk.assessCreditLine(creditLine.address)
+        await creditDesk.assessCreditLine(creditLine.address, {from: underwriter})
 
         const newPoolBalance = await getBalance(pool.address, erc20)
         const expectedNextDueBlock = (await creditLine.paymentPeriodInDays())
@@ -563,6 +565,8 @@ describe("CreditDesk", () => {
           .add(latestBlock)
 
         expect(await creditLine.prepaymentBalance()).to.bignumber.equal("0")
+        expect(await creditLine.balance()).to.bignumber.equal(bigVal(7))
+        expect(await getBalance(creditLine.address, erc20)).to.bignumber.equal("0")
         expect(await creditLine.interestOwed()).to.bignumber.equal("0")
         expect(await creditLine.principalOwed()).to.bignumber.equal("0")
         const actualNextDueBlock = await creditLine.nextDueBlock()
