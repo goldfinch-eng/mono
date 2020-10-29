@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import InfoSection from './infoSection.js';
-import { fromAtomic } from '../ethereum/erc20';
+import { usdcFromAtomic } from '../ethereum/erc20';
 import { displayDollars } from '../utils';
 
 class DepositStatus extends Component {
@@ -9,9 +9,9 @@ class DepositStatus extends Component {
     let poolBalance = '0';
     let totalDrawdowns = '0';
     if (this.props.poolData.totalShares) {
-      balance = fromAtomic(this.props.poolData.balance);
-      poolBalance = fromAtomic(this.props.poolData.totalPoolBalance);
-      totalDrawdowns = fromAtomic(this.props.poolData.totalDrawDowns);
+      balance = usdcFromAtomic(this.props.poolData.balance);
+      poolBalance = usdcFromAtomic(this.props.poolData.totalPoolBalance);
+      totalDrawdowns = usdcFromAtomic(this.props.poolData.totalDrawdowns);
     }
 
     return [

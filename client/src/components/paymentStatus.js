@@ -1,5 +1,5 @@
 import React from 'react';
-import { fromAtomic } from '../ethereum/erc20.js';
+import { usdcFromAtomic } from '../ethereum/erc20.js';
 import { displayDollars } from '../utils';
 
 function PaymentStatus(props) {
@@ -8,8 +8,8 @@ function PaymentStatus(props) {
   }
 
   const dueDate = props.creditLine.dueDate;
-  const totalPaymentDue = fromAtomic(props.creditLine.nextDueAmount);
-  const prepaidAmount = fromAtomic(props.creditLine.prepaymentBalance);
+  const totalPaymentDue = usdcFromAtomic(props.creditLine.nextDueAmount);
+  const prepaidAmount = usdcFromAtomic(props.creditLine.collectedPaymentBalance);
   const remainingAmount = totalPaymentDue - prepaidAmount;
   const rightBarStyle = { width: (100 * remainingAmount) / totalPaymentDue + '%' };
   const leftBarStyle = { width: (100 * prepaidAmount) / totalPaymentDue + '%' };

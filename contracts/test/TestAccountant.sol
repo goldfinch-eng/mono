@@ -6,8 +6,12 @@ import "../Accountant.sol";
 import "../CreditLine.sol";
 
 contract TestAccountant {
-    function calculateInterestAndPrincipalAccrued(address creditLineAddress, uint blockNumber) public view returns (uint, uint) {
-      CreditLine cl = CreditLine(creditLineAddress);
-      return Accountant.calculateInterestAndPrincipalAccrued(cl, blockNumber);
-    }
+  function calculateInterestAndPrincipalAccrued(address creditLineAddress, uint256 blockNumber)
+    public
+    view
+    returns (uint256, uint256)
+  {
+    CreditLine cl = CreditLine(creditLineAddress);
+    return Accountant.calculateInterestAndPrincipalAccrued(cl, blockNumber);
+  }
 }

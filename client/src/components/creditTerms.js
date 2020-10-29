@@ -1,12 +1,12 @@
 import React from 'react';
 import InfoSection from './infoSection.js';
-import { fromAtomic } from '../ethereum/erc20.js';
+import { usdcFromAtomic } from '../ethereum/erc20.js';
 import { decimals } from '../ethereum/utils';
 import { displayNumber } from '../utils';
 
 function CreditTerms(props) {
   function fromAtomicDecimals(val) {
-    return fromAtomic(val) * decimals;
+    return usdcFromAtomic(val) * decimals;
   }
 
   let rows;
@@ -21,8 +21,8 @@ function CreditTerms(props) {
       // { label: 'Required collateral', value: '- %' },
     ];
   } else {
-    const limit = fromAtomic(props.creditLine.limit);
-    const interestRateAPR = fromAtomic(props.creditLine.interestAprDecimal) * 100;
+    const limit = usdcFromAtomic(props.creditLine.limit);
+    const interestRateAPR = props.creditLine.interestAprDecimal.multipliedBy(100).toString(10);
     const paymentFrequency = fromAtomicDecimals(props.creditLine.paymentPeriodInDays);
     const paybackTerm = fromAtomicDecimals(props.creditLine.termInDays);
     // const requiredCollateral = fromAtomicDecimals(props.creditLine.minCollateralPercent);

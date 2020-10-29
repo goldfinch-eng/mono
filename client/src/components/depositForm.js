@@ -1,15 +1,15 @@
 import React, { useContext } from 'react';
-import { fromAtomic, minimumNumber, toAtomic } from '../ethereum/erc20';
+import { usdcFromAtomic, minimumNumber, usdcToAtomic } from '../ethereum/erc20';
 import { sendFromUser } from '../ethereum/utils';
 import { AppContext } from '../App.js';
 import { displayDollars } from '../utils';
 import TransactionForm from './transactionForm';
 
 function DepositForm(props) {
-  const { pool, user } = useContext(AppContext);
+  const { pool, user, goldfinchConfig } = useContext(AppContext);
 
   function action(value) {
-    const depositAmount = toAtomic(value);
+    const depositAmount = usdcToAtomic(value);
     const userAddress = props.capitalProvider.address;
     return sendFromUser(pool.methods.deposit(depositAmount), userAddress).then(result => {
       props.actionComplete();
@@ -26,7 +26,7 @@ function DepositForm(props) {
       navOptions={[{ label: 'Deposit', value: 'deposit', message: message, submitTransaction: action }]}
       closeForm={props.closeForm}
       needsApproval={true}
-      maxAmount={minimumNumber(user.usdcBalance, fromAtomic(props.poolData.transactionLimit))}
+      maxAmount={minimumNumber(user.usdcBalance, usdcFromAtomic(goldfinchConfig.transactionLimit))}
     />
   );
 }

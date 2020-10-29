@@ -1,5 +1,15 @@
+/* globals ethers */
 const BN = require("bn.js")
-const {getUSDCAddress, USDCDecimals, upgrade} = require("./deployHelpers.js")
+const {
+  USDCDecimals,
+  upgrade,
+  OWNER_ROLE,
+  CONFIG_KEYS,
+  MINTER_ROLE,
+  updateConfig,
+  getUSDCAddress,
+  isTestEnv,
+} = require("./deployHelpers.js")
 const PROTOCOL_CONFIG = require("../protocol_config.json")
 let logger
 
@@ -13,116 +23,208 @@ async function baseDeploy(bre, {shouldUpgrade}) {
 
   const chainID = await getChainId()
   logger("Chain ID is:", chainID)
-  const pool = await deployPool(deploy, shouldUpgrade, protocol_owner, proxy_owner, chainID)
-  const creditDesk = await deployCreditDesk(deploy, shouldUpgrade, pool.address, protocol_owner, proxy_owner)
+  const config = await deployConfig(deploy, {shouldUpgrade})
+  await getOrDeployUSDC()
+  const fidu = await deployFidu(config)
+  const pool = await deployPool(bre, {shouldUpgrade, config})
+  await grantMinterRoleToPool(fidu, pool)
+  await deployCreditLine(deploy, {config})
+  await deployCreditLineFactory(deploy, {shouldUpgrade, config})
+  const creditDesk = await deployCreditDesk(deploy, {shouldUpgrade, config})
 
-  await ensurePoolIsOnCreditDesk(creditDesk, pool.address)
-  await transferOwnershipOfPoolToCreditDesk(pool, creditDesk.address)
+  await grantOwnershipOfPoolToCreditDesk(pool, creditDesk.address)
 
   // Internal functions.
 
-  async function deployPool(deploy, shouldUpgrade, protocol_owner, proxy_owner, chainID) {
-    let poolDeployResult
+  async function deployConfig(deploy, {shouldUpgrade}) {
+    const configOptionsDeployResult = await deploy("ConfigOptions", {from: proxy_owner, gas: 4000000, args: []})
+    logger("ConfigOptions was deployed to:", configOptionsDeployResult.address)
+    let contractName = "GoldfinchConfig"
+
+    if (isTestEnv()) {
+      contractName = "TestGoldfinchConfig"
+    }
+
+    let deployResult
+    let config
     if (shouldUpgrade) {
-      poolDeployResult = await upgrade(deploy, "Pool", proxy_owner, {gas: 4000000, args: []})
-    } else {
-      poolDeployResult = await deploy("Pool", {
-        from: protocol_owner,
-        proxy: {owner: proxy_owner},
+      deployResult = await upgrade(deploy, contractName, proxy_owner, {
         gas: 4000000,
         args: [],
+        libraries: {["ConfigOptions"]: configOptionsDeployResult.address},
+      })
+    } else {
+      deployResult = await deploy(contractName, {
+        from: proxy_owner,
+        proxy: {methodName: "initialize"},
+        gas: 4000000,
+        args: [protocol_owner],
+        libraries: {["ConfigOptions"]: configOptionsDeployResult.address},
       })
     }
-    logger("Pool was deployed to:", poolDeployResult.address)
-    const pool = await ethers.getContractAt("Pool", poolDeployResult.address)
-    const erc20Address = await pool.erc20address()
+    logger("Config was deployed to:", deployResult.address)
+    config = await ethers.getContractAt(deployResult.abi, deployResult.address)
+    const transactionLimit = new BN(PROTOCOL_CONFIG.transactionLimit).mul(USDCDecimals)
+    const totalFundsLimit = new BN(PROTOCOL_CONFIG.totalFundsLimit).mul(USDCDecimals)
+    const maxUnderwriterLimit = new BN(PROTOCOL_CONFIG.maxUnderwriterLimit).mul(USDCDecimals)
 
-    // This is testing if the erc20 address of the pool is the zero address, ie. has not been set.
-    const isInitialized = !/^0x0+$/.test(erc20Address)
-    if (!isInitialized) {
-      let usdcAddress = getUSDCAddress(chainID)
-      if (!usdcAddress) {
-        logger("We don't have a USDC address for this network, so deploying a fake USDC")
-        const initialAmount = String(new BN("1000000").mul(USDCDecimals))
-        const decimalPlaces = String(new BN(6))
-        const fakeUSDC = await deploy("TestERC20", {
-          from: protocol_owner,
-          gas: 4000000,
-          args: [initialAmount, decimalPlaces],
-        })
-        logger("Deployed the contract to:", fakeUSDC.address)
-        usdcAddress = fakeUSDC.address
-      }
-      logger("Initializing the pool...")
-      const transactionLimit = new BN(PROTOCOL_CONFIG.transactionLimit).mul(USDCDecimals)
-      const totalFundsLimit = new BN(PROTOCOL_CONFIG.totalFundsLimit).mul(USDCDecimals)
-      await (await pool.initialize(usdcAddress, "USDC", String(USDCDecimals))).wait()
-      await (await pool.setTransactionLimit(String(transactionLimit))).wait()
-      await (await pool.setTotalFundsLimit(String(totalFundsLimit))).wait()
+    await updateConfig(config, "number", CONFIG_KEYS.TotalFundsLimit, String(totalFundsLimit))
+    await updateConfig(config, "number", CONFIG_KEYS.TransactionLimit, String(transactionLimit))
+    await updateConfig(config, "number", CONFIG_KEYS.MaxUnderwriterLimit, String(maxUnderwriterLimit))
 
-      logger("Share price after initialization is:", String(await pool.sharePrice()))
-    }
-    return pool
+    return config
   }
 
-  async function deployCreditDesk(deploy, shouldUpgrade, poolAddress, protocol_owner, proxy_owner) {
+  async function grantMinterRoleToPool(fidu, pool) {
+    if (!(await fidu.hasRole(MINTER_ROLE, pool.address))) {
+      await fidu.grantRole(MINTER_ROLE, pool.address)
+    }
+  }
+
+  async function getOrDeployUSDC() {
+    let usdcAddress = getUSDCAddress(chainID)
+    if (!usdcAddress) {
+      logger("We don't have a USDC address for this network, so deploying a fake USDC")
+      const initialAmount = String(new BN("1000000").mul(USDCDecimals))
+      const decimalPlaces = String(new BN(6))
+      const fakeUSDC = await deploy("TestERC20", {
+        from: protocol_owner,
+        gas: 4000000,
+        args: [initialAmount, decimalPlaces],
+      })
+      logger("Deployed the contract to:", fakeUSDC.address)
+      usdcAddress = fakeUSDC.address
+    }
+    await updateConfig(config, "address", CONFIG_KEYS.USDC, usdcAddress, logger)
+    return usdcAddress
+  }
+
+  async function deployCreditLine(deploy, {config}) {
+    let clDeployResult = await deploy("CreditLine", {
+      from: proxy_owner,
+      gas: 4000000,
+      args: [],
+    })
+    logger("CreditLine was deployed to:", clDeployResult.address)
+    const clImplementation = await ethers.getContractAt("CreditLine", clDeployResult.address)
+    await updateConfig(config, "address", CONFIG_KEYS.CreditLineImplementation, clImplementation.address)
+    return clImplementation
+  }
+
+  async function deployCreditLineFactory(deploy, {shouldUpgrade, config}) {
+    let clFactoryDeployResult
+    logger(`Deploying credit line factory; ${shouldUpgrade}`)
+    if (shouldUpgrade) {
+      clFactoryDeployResult = await upgrade(deploy, "CreditLineFactory", proxy_owner, {gas: 4000000, args: []})
+    } else {
+      clFactoryDeployResult = await deploy("CreditLineFactory", {
+        from: proxy_owner,
+        proxy: {owner: proxy_owner, methodName: "initialize"},
+        gas: 4000000,
+        args: [protocol_owner, config.address],
+      })
+    }
+    logger("CreditLineFactory was deployed to:", clFactoryDeployResult.address)
+
+    const creditLineFactory = await ethers.getContractAt("CreditLineFactory", clFactoryDeployResult.address)
+
+    await updateConfig(config, "address", CONFIG_KEYS.CreditLineFactory, creditLineFactory.address)
+    return creditLineFactory
+  }
+
+  async function deployCreditDesk(deploy, {shouldUpgrade, config}) {
     const accountant = await deploy("Accountant", {from: protocol_owner, gas: 4000000, args: []})
     logger("Accountant was deployed to:", accountant.address)
 
+    let contractName = "CreditDesk"
+
+    if (isTestEnv()) {
+      contractName = "TestCreditDesk"
+    }
+
     let creditDeskDeployResult
-    let creditDesk
     if (shouldUpgrade) {
-      creditDeskDeployResult = await upgrade(deploy, "CreditDesk", proxy_owner, {
+      creditDeskDeployResult = await upgrade(deploy, contractName, proxy_owner, {
         gas: 4000000,
         args: [],
         libraries: {["Accountant"]: accountant.address},
       })
     } else {
-      creditDeskDeployResult = await deploy("CreditDesk", {
-        from: protocol_owner,
+      creditDeskDeployResult = await deploy(contractName, {
+        from: proxy_owner,
         proxy: {owner: proxy_owner, methodName: "initialize"},
         gas: 4000000,
-        args: [poolAddress],
+        args: [protocol_owner, config.address],
         libraries: {["Accountant"]: accountant.address},
       })
     }
     logger("Credit Desk was deployed to:", creditDeskDeployResult.address)
-    creditDesk = await ethers.getContractAt(creditDeskDeployResult.abi, creditDeskDeployResult.address)
-    const currentLimit = await creditDesk.maxUnderwriterLimit()
-
-    if (currentLimit.gt(new BN(0))) {
-      logger("Looks like underwriter limit has already been set, so skipping this part...")
-    } else {
-      await creditDesk.setMaxUnderwriterLimit(String(new BN(PROTOCOL_CONFIG.maxUnderwriterLimit).mul(USDCDecimals)))
-      await creditDesk.setTransactionLimit(String(new BN(PROTOCOL_CONFIG.transactionLimit).mul(USDCDecimals)))
-    }
-    return creditDesk
+    await updateConfig(config, "address", CONFIG_KEYS.CreditDesk, creditDeskDeployResult.address)
+    return await ethers.getContractAt(creditDeskDeployResult.abi, creditDeskDeployResult.address)
   }
 
-  async function ensurePoolIsOnCreditDesk(creditDesk, poolAddress) {
-    logger("Checking that", poolAddress, "is correctly set on the credit desk")
-    const creditDeskPoolAddress = await creditDesk.poolAddress()
-    if (poolAddress != creditDeskPoolAddress) {
-      throw new Error(`Expected pool address was ${poolAddress}, but got ${creditDeskPoolAddress}`)
-    }
-  }
-
-  async function transferOwnershipOfPoolToCreditDesk(pool, creditDeskAddress) {
-    const originalOwner = await pool.owner()
-    logger("Pool owner is:", originalOwner)
-    if (originalOwner === creditDeskAddress) {
+  async function grantOwnershipOfPoolToCreditDesk(pool, creditDeskAddress) {
+    const alreadyOwnedByCreditDesk = await pool.hasRole(OWNER_ROLE, creditDeskAddress)
+    if (alreadyOwnedByCreditDesk) {
       // We already did this step, so early return
       logger("Looks like Credit Desk already is the owner")
       return
     }
-    logger("Transferring ownership of the pool to the Credit Desk")
-    const txn = await pool.transferOwnership(creditDeskAddress)
+    logger("Adding the Credit Desk as an owner")
+    const txn = await pool.grantRole(OWNER_ROLE, creditDeskAddress)
     await txn.wait()
-    const newOwner = await pool.owner()
-    if (newOwner != creditDeskAddress) {
-      throw new Error(`Expected new owner ${newOwner} to equal ${creditDeskAddress}`)
+    const nowOwnedByCreditDesk = await pool.hasRole(OWNER_ROLE, creditDeskAddress)
+    if (!nowOwnedByCreditDesk) {
+      throw new Error(`Expected ${creditDeskAddress} to be an owner, but that is not the case`)
     }
   }
+
+  async function deployFidu(config) {
+    logger("About to deploy Fidu...")
+    const fiduDeployResult = await deploy("Fidu", {
+      from: proxy_owner,
+      gas: 4000000,
+      proxy: {
+        methodName: "__initialize__",
+      },
+      args: [protocol_owner, "Fidu", "FIDU", config.address],
+    })
+    const fidu = await ethers.getContractAt("Fidu", fiduDeployResult.address)
+    await updateConfig(config, "address", CONFIG_KEYS.Fidu, fidu.address, logger)
+    logger("Deployed Fidu to address:", fidu.address)
+    return fidu
+  }
+}
+
+async function deployPool(bre, {shouldUpgrade, config}) {
+  let contractName = "Pool"
+  if (isTestEnv()) {
+    contractName = "TestPool"
+  }
+  const {deployments, getNamedAccounts, getChainId} = bre
+  const {deploy, log} = deployments
+  const logger = log
+  const chainID = await getChainId()
+  const {protocol_owner, proxy_owner} = await getNamedAccounts()
+
+  logger("Starting deploy...")
+  logger("Chain ID is:", chainID)
+
+  let poolDeployResult
+  if (shouldUpgrade) {
+    poolDeployResult = await upgrade(deploy, contractName, proxy_owner, {gas: 4000000, args: []})
+  } else {
+    poolDeployResult = await deploy(contractName, {
+      from: proxy_owner,
+      proxy: {methodName: "initialize"},
+      args: [protocol_owner, config.address],
+    })
+  }
+  logger("Pool was deployed to:", poolDeployResult.address)
+  const pool = await ethers.getContractAt(contractName, poolDeployResult.address)
+  await updateConfig(config, "address", CONFIG_KEYS.Pool, pool.address, logger)
+
+  return pool
 }
 
 module.exports = baseDeploy

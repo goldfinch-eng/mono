@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "npx concurrently -n \"blockchain,web\"  \"npx buidler node --reset --export-all client/config/deployments_dev.json\" \"cd client && npm start\" -k -c \"cyan, magenta\"",
-    "test": "npx buidler test --show-stack-traces",
+    "test": "NODE_ENV=test npx buidler test --show-stack-traces",
     "pre-push": "cd client && npm run pre-push",
     "pre-commit": "npx lint-staged && cd client && npm run pre-commit",
     "lint": "npx eslint . --fix && npx prettier . --write && npx solhint **/*.sol --fix",
@@ -15,7 +15,7 @@
     "update-configs": "npx buidler run ./blockchain_scripts/updateConfigs.js --network"
   },
   "lint-staged": {
-    "*.js": [
+    "**!(client)/*.js": [
       "eslint --fix",
       "git add"
     ],

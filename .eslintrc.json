@@ -21,7 +21,7 @@
     "globals": {
       "process": "readonly"
     },
-    "ignorePatterns": ["client"],
+    "ignorePatterns": ["client", "cache"],
     "rules": {
         "indent": [
             "error",

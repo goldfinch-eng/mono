@@ -10,7 +10,7 @@ import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 library Accountant {
   using SafeMath for uint256;
 
-  uint256 public constant INTEREST_DECIMALS = 1e18;
+  uint256 public constant INTEREST_DECIMALS = 1e8;
   uint256 public constant BLOCKS_PER_DAY = 5760;
   uint256 public constant BLOCKS_PER_YEAR = (BLOCKS_PER_DAY * 365);
 
@@ -30,10 +30,7 @@ library Accountant {
     return (interestAccrued, principalAccrued);
   }
 
-  function calculatePrincipalAccrued(
-    CreditLine cl,
-    uint256 blockNumber
-  ) public view returns (uint256) {
+  function calculatePrincipalAccrued(CreditLine cl, uint256 blockNumber) public view returns (uint256) {
     if (blockNumber >= cl.termEndBlock()) {
       return cl.balance();
     } else {
@@ -53,7 +50,7 @@ library Accountant {
     uint256 lastUpdatedBlock = Math.min(blockNumber, cl.lastUpdatedBlock());
 
     uint256 numBlocksElapsed = blockNumber.sub(lastUpdatedBlock);
-    uint256 totalInterestPerYear = (cl.balance().mul(cl.interestApr())).div(INTEREST_DECIMALS);
+    uint256 totalInterestPerYear = cl.balance().mul(cl.interestApr()).div(INTEREST_DECIMALS);
     return totalInterestPerYear.mul(numBlocksElapsed).div(BLOCKS_PER_YEAR);
   }
 

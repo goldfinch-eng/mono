@@ -1,11 +1,11 @@
 import web3 from '../web3';
 import BigNumber from 'bignumber.js';
 import * as ERC20Contract from './ERC20.json';
-import { mapNetworkToID, decimals, USDC_ADDRESSES, getConfig } from './utils';
+import { mapNetworkToID, decimals, USDC_ADDRESSES, getDeployments } from './utils';
 
 async function getErc20(networkName) {
   const networkId = mapNetworkToID[networkName];
-  const config = await getConfig(networkId);
+  const config = await getDeployments(networkId);
   const deployedErc20 = config.contracts.TestERC20;
   let address;
   if (deployedErc20) {
@@ -18,11 +18,11 @@ async function getErc20(networkName) {
   return erc20;
 }
 
-function fromAtomic(amount) {
+function usdcFromAtomic(amount) {
   return new BigNumber(String(amount)).div(decimals).toString(10);
 }
 
-function toAtomic(amount) {
+function usdcToAtomic(amount) {
   return new BigNumber(String(amount)).multipliedBy(decimals).toString(10);
 }
 
@@ -30,4 +30,4 @@ function minimumNumber(...args) {
   return new BigNumber.minimum(...args).toString(10);
 }
 
-export { getErc20, decimals, fromAtomic, toAtomic, minimumNumber };
+export { getErc20, decimals, usdcFromAtomic, usdcToAtomic, minimumNumber };

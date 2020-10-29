@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.6.8;
+pragma experimental ABIEncoderV2;
 
-import "./Pool.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/ERC20.sol";
+import "./GoldfinchConfig.sol";
+import "./BaseUpgradeablePausable.sol";
+import "./interfaces/IERC20withDec.sol";
 
-contract CreditLine is Initializable, OwnableUpgradeSafe {
+// solhint-disable-next-line max-states-count
+contract CreditLine is BaseUpgradeablePausable {
   // Credit line terms
   address public borrower;
   address public underwriter;
@@ -22,13 +23,14 @@ contract CreditLine is Initializable, OwnableUpgradeSafe {
   uint256 public balance;
   uint256 public interestOwed;
   uint256 public principalOwed;
-  uint256 public prepaymentBalance;
+  uint256 public collectedPaymentBalance;
   uint256 public collateralBalance;
   uint256 public termEndBlock;
   uint256 public nextDueBlock;
   uint256 public lastUpdatedBlock;
 
   function initialize(
+    address owner,
     address _borrower,
     address _underwriter,
     uint256 _limit,
@@ -37,7 +39,7 @@ contract CreditLine is Initializable, OwnableUpgradeSafe {
     uint256 _paymentPeriodInDays,
     uint256 _termInDays
   ) public initializer {
-    __Ownable_init();
+    __BaseUpgradeablePausable__init(owner);
     borrower = _borrower;
     underwriter = _underwriter;
     limit = _limit;
@@ -48,51 +50,52 @@ contract CreditLine is Initializable, OwnableUpgradeSafe {
     lastUpdatedBlock = block.number;
   }
 
-  function setTermEndBlock(uint256 newTermEndBlock) external onlyOwner returns (uint256) {
+  function setTermEndBlock(uint256 newTermEndBlock) external onlyAdmin returns (uint256) {
     return termEndBlock = newTermEndBlock;
   }
 
-  function setNextDueBlock(uint256 newNextDueBlock) external onlyOwner returns (uint256) {
+  function setNextDueBlock(uint256 newNextDueBlock) external onlyAdmin returns (uint256) {
     return nextDueBlock = newNextDueBlock;
   }
 
-  function setBalance(uint256 newBalance) external onlyOwner returns (uint256) {
+  function setBalance(uint256 newBalance) external onlyAdmin returns (uint256) {
     return balance = newBalance;
   }
 
-  function setInterestOwed(uint256 newInterestOwed) external onlyOwner returns (uint256) {
+  function setInterestOwed(uint256 newInterestOwed) external onlyAdmin returns (uint256) {
     return interestOwed = newInterestOwed;
   }
 
-  function setPrincipalOwed(uint256 newPrincipalOwed) external onlyOwner returns (uint256) {
+  function setPrincipalOwed(uint256 newPrincipalOwed) external onlyAdmin returns (uint256) {
     return principalOwed = newPrincipalOwed;
   }
 
-  function setPrepaymentBalance(uint256 newPrepaymentBalance) external onlyOwner returns (uint256) {
-    return prepaymentBalance = newPrepaymentBalance;
+  function setCollectedPaymentBalance(uint256 newCollectedPaymentBalance) external onlyAdmin returns (uint256) {
+    return collectedPaymentBalance = newCollectedPaymentBalance;
   }
 
-  function setCollateralBalance(uint256 newCollateralBalance) external onlyOwner returns (uint256) {
+  function setCollateralBalance(uint256 newCollateralBalance) external onlyAdmin returns (uint256) {
     return collateralBalance = newCollateralBalance;
   }
 
-  function setLastUpdatedBlock(uint256 newLastUpdatedBlock) external onlyOwner returns (uint256) {
+  function setLastUpdatedBlock(uint256 newLastUpdatedBlock) external onlyAdmin returns (uint256) {
     return lastUpdatedBlock = newLastUpdatedBlock;
   }
 
-  function setLimit(uint256 newAmount) external onlyOwnerOrUnderwriter returns (uint256) {
+  function setLimit(uint256 newAmount) external onlyAdminOrUnderwriter returns (uint256) {
     return limit = newAmount;
   }
 
-  function authorizePool(address poolAddress) external onlyOwner {
-    address erc20address = Pool(poolAddress).erc20address();
-
+  function authorizePool(address configAddress) external onlyAdmin {
+    GoldfinchConfig config = GoldfinchConfig(configAddress);
+    address poolAddress = config.getAddress(uint256(ConfigOptions.Addresses.Pool));
+    address usdcAddress = config.getAddress(uint256(ConfigOptions.Addresses.USDC));
     // Approve the pool for an infinite amount
-    ERC20UpgradeSafe(erc20address).approve(poolAddress, uint256(-1));
+    IERC20withDec(usdcAddress).approve(poolAddress, uint256(-1));
   }
 
-  modifier onlyOwnerOrUnderwriter() {
-    require((msg.sender == owner() || msg.sender == underwriter), "Restricted to owner or underwriter");
+  modifier onlyAdminOrUnderwriter() {
+    require(isAdmin() || _msgSender() == underwriter, "Restricted to owner or underwriter");
     _;
   }
 }

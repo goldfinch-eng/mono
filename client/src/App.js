@@ -9,7 +9,8 @@ import Sidebar from './components/sidebar';
 import web3 from './web3';
 import { getPool } from './ethereum/pool.js';
 import { getCreditDesk } from './ethereum/creditDesk.js';
-import { getErc20, fromAtomic } from './ethereum/erc20.js';
+import { getErc20, usdcFromAtomic } from './ethereum/erc20.js';
+import { getGoldfinchConfig, refreshGoldfinchConfigData } from './ethereum/goldfinchConfig.js';
 
 const AppContext = React.createContext({});
 
@@ -18,6 +19,7 @@ function App() {
   const [creditDesk, setCreditDesk] = useState(null);
   const [erc20, setErc20] = useState(null);
   const [user, setUser] = useState({});
+  const [goldfinchConfig, setGoldfinchConfig] = useState({});
   const [currentTXs, setCurrentTXs] = useState([]);
   const [currentErrors, setCurrentErrors] = useState([]);
 
@@ -31,10 +33,12 @@ function App() {
       const networkType = await web3.eth.net.getNetworkType();
       let erc20Contract = await getErc20(networkType);
       let poolContract = await getPool(networkType);
+      let goldfinchConfigContract = await getGoldfinchConfig(networkType);
       setErc20(erc20Contract);
       setPool(poolContract);
       refreshUserData(accounts[0], erc20Contract, poolContract);
       setCreditDesk(await getCreditDesk(networkType));
+      setGoldfinchConfig(await refreshGoldfinchConfigData(goldfinchConfigContract));
     }
   }
 
@@ -52,7 +56,7 @@ function App() {
     }
     const data = {
       address: address,
-      usdcBalance: fromAtomic(usdcBalance),
+      usdcBalance: usdcFromAtomic(usdcBalance),
       allowance: allowance,
     };
     setUser(data);
@@ -102,6 +106,7 @@ function App() {
     user: user,
     refreshUserData: refreshUserData,
     erc20: erc20,
+    goldfinchConfig: goldfinchConfig,
     addPendingTX: addPendingTX,
     markTXSuccessful: markTXSuccessful,
     markTXErrored: markTXErrored,

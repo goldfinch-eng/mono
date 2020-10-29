@@ -3,24 +3,19 @@
 pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts-ethereum-package/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/utils/Address.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
-import "../OwnerPausable.sol";
+import "../BaseUpgradeablePausable.sol";
 import "../Pool.sol";
 import "../Accountant.sol";
 import "../CreditLine.sol";
+import "../GoldfinchConfig.sol";
 
-contract FakeV2CreditDesk is Initializable, OwnableUpgradeSafe, OwnerPausable {
-  using SafeMath for uint256;
-
+contract FakeV2CreditDesk is BaseUpgradeablePausable {
+  uint256 public totalWritedowns;
+  uint256 public totalLoansOutstanding;
   // Approximate number of blocks
-  uint256 public constant blocksPerDay = 5760;
-  address public poolAddress;
-  uint256 public maxUnderwriterLimit = 0;
-  uint256 public transactionLimit = 0;
+  uint256 public constant BLOCKS_PER_DAY = 5760;
+  GoldfinchConfig public config;
 
   struct Underwriter {
     uint256 governanceLimit;
@@ -48,10 +43,7 @@ contract FakeV2CreditDesk is Initializable, OwnableUpgradeSafe, OwnerPausable {
   mapping(address => Underwriter) public underwriters;
   mapping(address => Borrower) private borrowers;
 
-  function initialize(address _poolAddress) public initializer {
-    __Ownable_init();
-    poolAddress = _poolAddress;
-  }
+  function initialize(address owner, GoldfinchConfig _config) public initializer {}
 
   function someBrandNewFunction() public pure returns (uint256) {
     return 5;
@@ -60,8 +52,4 @@ contract FakeV2CreditDesk is Initializable, OwnableUpgradeSafe, OwnerPausable {
   function getUnderwriterCreditLines(address underwriterAddress) public view returns (address[] memory) {
     return underwriters[underwriterAddress].creditLines;
   }
-
-  /*
-   * Internal Functions
-   */
 }

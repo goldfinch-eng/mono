@@ -3,22 +3,18 @@
 pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts-ethereum-package/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
-import "./Pool.sol";
+import "./BaseUpgradeablePausable.sol";
+import "./ConfigHelper.sol";
 import "./Accountant.sol";
 import "./CreditLine.sol";
-import "./OwnerPausable.sol";
+import "./CreditLineFactory.sol";
+import "@nomiclabs/buidler/console.sol";
 
-contract CreditDesk is Initializable, OwnableUpgradeSafe, OwnerPausable {
-  using SafeMath for uint256;
-
+contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
   // Approximate number of blocks
-  uint256 public constant blocksPerDay = 5760;
-  address public poolAddress;
-  uint256 public maxUnderwriterLimit = 0;
-  uint256 public transactionLimit = 0;
+  uint256 public constant BLOCKS_PER_DAY = 5760;
+  GoldfinchConfig public config;
+  using ConfigHelper for GoldfinchConfig;
 
   struct Underwriter {
     uint256 governanceLimit;
@@ -29,30 +25,27 @@ contract CreditDesk is Initializable, OwnableUpgradeSafe, OwnerPausable {
     address[] creditLines;
   }
 
-  event PaymentMade(
+  event PaymentApplied(
     address indexed payer,
     address indexed creditLine,
     uint256 interestAmount,
     uint256 principalAmount,
     uint256 remainingAmount
   );
-  event PrepaymentMade(address indexed payer, address indexed creditLine, uint256 prepaymentAmount);
+  event PaymentCollected(address indexed payer, address indexed creditLine, uint256 paymentAmount);
   event DrawdownMade(address indexed borrower, address indexed creditLine, uint256 drawdownAmount);
   event CreditLineCreated(address indexed borrower, address indexed creditLine);
-  event PoolAddressUpdated(address indexed oldAddress, address indexed newAddress);
   event GovernanceUpdatedUnderwriterLimit(address indexed underwriter, uint256 newLimit);
-  event LimitChanged(address indexed owner, string limitType, uint256 amount);
 
   mapping(address => Underwriter) public underwriters;
   mapping(address => Borrower) private borrowers;
 
-  function initialize(address _poolAddress) public initializer {
-    __Ownable_init();
-    __OwnerPausable__init();
-    setPoolAddress(_poolAddress);
+  function initialize(address owner, GoldfinchConfig _config) public initializer {
+    __BaseUpgradeablePausable__init(owner);
+    config = _config;
   }
 
-  function setUnderwriterGovernanceLimit(address underwriterAddress, uint256 limit) external onlyOwner whenNotPaused {
+  function setUnderwriterGovernanceLimit(address underwriterAddress, uint256 limit) external override onlyAdmin whenNotPaused {
     Underwriter storage underwriter = underwriters[underwriterAddress];
     require(withinMaxUnderwriterLimit(limit), "This limit is greater than the max allowed by the protocol");
     underwriter.governanceLimit = limit;
@@ -66,13 +59,14 @@ contract CreditDesk is Initializable, OwnableUpgradeSafe, OwnerPausable {
     uint256 _minCollateralPercent,
     uint256 _paymentPeriodInDays,
     uint256 _termInDays
-  ) external whenNotPaused {
+  ) external override whenNotPaused {
     Underwriter storage underwriter = underwriters[msg.sender];
     Borrower storage borrower = borrowers[_borrower];
     require(underwriterCanCreateThisCreditLine(_limit, underwriter), "The underwriter cannot create this credit line");
 
-    CreditLine cl = new CreditLine();
-    cl.initialize(
+    bytes memory arguments = abi.encodeWithSignature(
+      "initialize(address,address,address,uint256,uint256,uint256,uint256,uint256)",
+      address(this),
       _borrower,
       msg.sender,
       _limit,
@@ -81,22 +75,26 @@ contract CreditDesk is Initializable, OwnableUpgradeSafe, OwnerPausable {
       _paymentPeriodInDays,
       _termInDays
     );
-    cl.authorizePool(poolAddress);
+
+    address clAddress = getCreditLineFactory().createCreditLine(arguments);
+    CreditLine cl = CreditLine(clAddress);
 
     underwriter.creditLines.push(address(cl));
     borrower.creditLines.push(address(cl));
     emit CreditLineCreated(_borrower, address(cl));
+
+    cl.authorizePool(address(config));
   }
 
-  function drawdown(uint256 amount, address creditLineAddress) external whenNotPaused {
+  function drawdown(uint256 amount, address creditLineAddress) external override whenNotPaused {
     CreditLine cl = CreditLine(creditLineAddress);
     require(cl.borrower() == msg.sender, "You do not belong to this credit line");
     // Not strictly necessary, but provides a better error message to the user
-    require(getPool().enoughBalance(poolAddress, amount), "Pool does not have enough balance for this drawdown");
+    require(config.getPool().enoughBalance(config.poolAddress(), amount), "Pool does not have enough balance for this drawdown");
     require(withinTransactionLimit(amount), "Amount is over the per-transaction limit");
     require(withinCreditLimit(amount, cl), "The borrower does not have enough credit limit for this drawdown");
-
     if (cl.balance() == 0) {
+      cl.setLastUpdatedBlock(block.number);
       cl.setTermEndBlock(calculateNewTermEndBlock(cl));
       cl.setNextDueBlock(calculateNextDueBlock(cl));
     }
@@ -104,102 +102,29 @@ contract CreditDesk is Initializable, OwnableUpgradeSafe, OwnerPausable {
     uint256 balance = cl.balance().add(amount);
 
     updateCreditLineAccounting(cl, balance, interestOwed, principalOwed);
-    getPool().transferFrom(poolAddress, msg.sender, amount);
 
     emit DrawdownMade(msg.sender, address(cl), amount);
+
+    config.getPool().transferFrom(config.poolAddress(), msg.sender, amount);
   }
 
-  function pay(address creditLineAddress, uint256 amount) external payable whenNotPaused {
+  function pay(address creditLineAddress, uint256 amount) external override whenNotPaused {
     CreditLine cl = CreditLine(creditLineAddress);
 
-    require(withinTransactionLimit(amount), "Amount is over the per-transaction limit");
-    // Not strictly necessary, but provides a faster/better error message to the user
-    require(getPool().enoughBalance(msg.sender, amount), "You have insufficent balance for this payment");
+    collectPayment(cl, amount);
 
-    (uint256 paymentRemaining, uint256 interestPayment, uint256 principalPayment) = handlePayment(
-      cl,
-      amount,
-      block.number,
-      true
-    );
-    if (paymentRemaining > 0) {
-      getPool().transferFrom(msg.sender, creditLineAddress, paymentRemaining);
-      cl.setCollateralBalance(cl.collateralBalance().add(paymentRemaining));
+    if (block.number >= cl.nextDueBlock()) {
+      applyPayment(cl, cl.collectedPaymentBalance(), block.number);
     }
-    if (interestPayment > 0) {
-      getPool().collectInterestRepayment(msg.sender, interestPayment);
-    }
-    if (principalPayment > 0) {
-      getPool().collectPrincipalRepayment(msg.sender, principalPayment);
-    }
-
-    emit PaymentMade(cl.borrower(), address(cl), interestPayment, principalPayment, paymentRemaining);
   }
 
-  function prepay(address payable creditLineAddress, uint256 amount) external payable whenNotPaused {
-    CreditLine cl = CreditLine(creditLineAddress);
-
-    require(withinTransactionLimit(amount), "Amount is over the per-transaction limit");
-
-    getPool().transferFrom(msg.sender, creditLineAddress, amount);
-    uint256 newPrepaymentBalance = cl.prepaymentBalance().add(amount);
-    cl.setPrepaymentBalance(newPrepaymentBalance);
-
-    emit PrepaymentMade(msg.sender, address(cl), amount);
-  }
-
-  function addCollateral(address payable creditLineAddress, uint256 amount) external payable whenNotPaused {
-    CreditLine cl = CreditLine(creditLineAddress);
-
-    getPool().transferFrom(msg.sender, creditLineAddress, amount);
-    uint256 newCollateralBalance = cl.collateralBalance().add(amount);
-    cl.setCollateralBalance(newCollateralBalance);
-  }
-
-  function assessCreditLine(address creditLineAddress) external whenNotPaused {
+  function assessCreditLine(address creditLineAddress) external override whenNotPaused {
     CreditLine cl = CreditLine(creditLineAddress);
     // Do not assess until a full period has elapsed
     if (block.number < cl.nextDueBlock()) {
       return;
     }
-
-    (uint256 paymentRemaining, uint256 interestPayment, uint256 principalPayment) = handlePayment(
-      cl,
-      cl.prepaymentBalance(),
-      cl.nextDueBlock(),
-      false
-    );
-
-    cl.setPrepaymentBalance(paymentRemaining);
-    getPool().collectInterestRepayment(creditLineAddress, interestPayment);
-    getPool().collectPrincipalRepayment(creditLineAddress, principalPayment);
-    cl.setNextDueBlock(calculateNextDueBlock(cl));
-    if (cl.principalOwed() > 0) {
-      handleLatePayments(cl);
-    }
-    emit PaymentMade(cl.borrower(), address(cl), interestPayment, principalPayment, paymentRemaining);
-  }
-
-  function setPoolAddress(address newPoolAddress) public onlyOwner whenNotPaused returns (address) {
-    // Sanity check the new address;
-    Pool(newPoolAddress).totalShares();
-
-    emit PoolAddressUpdated(poolAddress, newPoolAddress);
-    return poolAddress = newPoolAddress;
-  }
-
-  function setMaxUnderwriterLimit(uint256 amount) public onlyOwner whenNotPaused {
-    maxUnderwriterLimit = amount;
-    emit LimitChanged(msg.sender, "maxUnderwriterLimit", amount);
-  }
-
-  function setTransactionLimit(uint256 amount) public onlyOwner whenNotPaused {
-    transactionLimit = amount;
-    emit LimitChanged(msg.sender, "transactionLimit", amount);
-  }
-
-  function setPoolTotalFundsLimit(uint256 amount) public onlyOwner whenNotPaused {
-    getPool().setTotalFundsLimit(amount);
+    applyPayment(cl, cl.collectedPaymentBalance(), cl.nextDueBlock());
   }
 
   // Public View Functions (Getters)
@@ -216,11 +141,58 @@ contract CreditDesk is Initializable, OwnableUpgradeSafe, OwnerPausable {
    * Internal Functions
    */
 
+  function collectPayment(CreditLine cl, uint256 amount) internal {
+    require(withinTransactionLimit(amount), "Amount is over the per-transaction limit");
+    require(config.getPool().enoughBalance(msg.sender, amount), "You have insufficent balance for this payment");
+
+    uint256 newCollectedPaymentBalance = cl.collectedPaymentBalance().add(amount);
+    cl.setCollectedPaymentBalance(newCollectedPaymentBalance);
+
+    emit PaymentCollected(msg.sender, address(cl), amount);
+
+    config.getPool().transferFrom(msg.sender, address(cl), amount);
+  }
+
+  function applyPayment(
+    CreditLine cl,
+    uint256 amount,
+    uint256 blockNumber
+  ) internal {
+    (uint256 paymentRemaining, uint256 interestPayment, uint256 principalPayment) = handlePayment(
+      cl,
+      amount,
+      blockNumber
+    );
+
+    // There can only be payment remaining if we're paid more than total owed.
+    // Just add it to the collected payment balance. We could also send this back to the borrower (
+    // but since assess can be called by anyone, it's better to keep the funds within the contract)
+    cl.setCollectedPaymentBalance(paymentRemaining);
+    cl.setNextDueBlock(calculateNextDueBlock(cl));
+
+    if (cl.principalOwed() > 0 || cl.interestOwed() > 0) {
+      handleLatePayments(cl);
+    }
+
+    bool paymentApplied = false;
+    if (interestPayment > 0) {
+      paymentApplied = true;
+      config.getPool().collectInterestRepayment(address(cl), interestPayment);
+    }
+    if (principalPayment > 0) {
+      paymentApplied = true;
+      config.getPool().collectPrincipalRepayment(address(cl), principalPayment);
+    }
+
+    if (paymentApplied) {
+      emit PaymentApplied(cl.borrower(), address(cl), interestPayment, principalPayment, paymentRemaining);
+    }
+  }
+
   function handlePayment(
     CreditLine cl,
     uint256 paymentAmount,
-    uint256 asOfBlock,
-    bool allowFullBalancePayOff
+    uint256 asOfBlock
   )
     internal
     returns (
@@ -238,9 +210,9 @@ contract CreditDesk is Initializable, OwnableUpgradeSafe, OwnerPausable {
     );
 
     uint256 newBalance = cl.balance().sub(pa.principalPayment);
-    if (allowFullBalancePayOff) {
-      newBalance = newBalance.sub(pa.additionalBalancePayment);
-    }
+    // Apply any additional payment towards the balance
+    newBalance = newBalance.sub(pa.additionalBalancePayment);
+
     uint256 totalPrincipalPayment = cl.balance().sub(newBalance);
     uint256 paymentRemaining = paymentAmount.sub(pa.interestPayment).sub(totalPrincipalPayment);
 
@@ -256,12 +228,21 @@ contract CreditDesk is Initializable, OwnableUpgradeSafe, OwnerPausable {
     return (paymentRemaining, pa.interestPayment, totalPrincipalPayment);
   }
 
-  function handleLatePayments(CreditLine cl) internal {
+  function handleLatePayments(CreditLine) internal pure {
     // No op for now;
+    return;
   }
 
-  function getPool() internal view returns (Pool) {
-    return Pool(poolAddress);
+  function getCreditLineFactory() internal view returns (CreditLineFactory) {
+    return CreditLineFactory(config.getAddress(uint256(ConfigOptions.Addresses.CreditLineFactory)));
+  }
+
+  function subtractClFromTotalLoansOutstanding(CreditLine cl) internal {
+    totalLoansOutstanding = totalLoansOutstanding.sub(cl.balance().add(cl.interestOwed()));
+  }
+
+  function addCLToTotalLoansOutstanding(CreditLine cl) internal {
+    totalLoansOutstanding = totalLoansOutstanding.add(cl.balance().add(cl.interestOwed()));
   }
 
   function getInterestAndPrincipalOwedAsOf(CreditLine cl, uint256 blockNumber)
@@ -281,15 +262,15 @@ contract CreditDesk is Initializable, OwnableUpgradeSafe, OwnerPausable {
   }
 
   function withinTransactionLimit(uint256 amount) internal view returns (bool) {
-    return amount <= transactionLimit;
+    return amount <= config.getNumber(uint256(ConfigOptions.Numbers.TransactionLimit));
   }
 
   function calculateNewTermEndBlock(CreditLine cl) internal view returns (uint256) {
-    return block.number.add(blocksPerDay.mul(cl.termInDays()));
+    return block.number.add(BLOCKS_PER_DAY.mul(cl.termInDays()));
   }
 
   function calculateNextDueBlock(CreditLine cl) internal view returns (uint256) {
-    uint256 blocksPerPeriod = cl.paymentPeriodInDays().mul(blocksPerDay);
+    uint256 blocksPerPeriod = cl.paymentPeriodInDays().mul(BLOCKS_PER_DAY);
     uint256 currentNextDueBlock;
     if (cl.nextDueBlock() != 0) {
       currentNextDueBlock = cl.nextDueBlock();
@@ -310,7 +291,7 @@ contract CreditDesk is Initializable, OwnableUpgradeSafe, OwnerPausable {
   }
 
   function withinMaxUnderwriterLimit(uint256 amount) internal view returns (bool) {
-    return amount <= maxUnderwriterLimit;
+    return amount <= config.getNumber(uint256(ConfigOptions.Numbers.MaxUnderwriterLimit));
   }
 
   function getCreditCurrentlyExtended(Underwriter storage underwriter) internal view returns (uint256) {
@@ -328,10 +309,14 @@ contract CreditDesk is Initializable, OwnableUpgradeSafe, OwnerPausable {
     uint256 interestOwed,
     uint256 principalOwed
   ) internal {
+    subtractClFromTotalLoansOutstanding(cl);
+
     cl.setBalance(balance);
     cl.setInterestOwed(interestOwed);
     cl.setPrincipalOwed(principalOwed);
     cl.setLastUpdatedBlock(block.number);
+
+    addCLToTotalLoansOutstanding(cl);
 
     if (balance == 0) {
       cl.setTermEndBlock(0);

@@ -1,18 +1,23 @@
-/* global artifacts web3 */
-const {expect, BN, getBalance} = require("./testHelpers.js")
-let accounts
-let owner
-let person2
-let person3
-const Pool = artifacts.require("TestPool")
-const ERC20 = artifacts.require("TestERC20")
+/* global web3 */
+const {OWNER_ROLE, PAUSER_ROLE, CONFIG_KEYS} = require("../blockchain_scripts/deployHelpers")
+const bre = require("@nomiclabs/buidler")
+const {deployments} = bre
+const {
+  expect,
+  BN,
+  getBalance,
+  getDeployedAsTruffleContract,
+  tolerance,
+  decimals,
+  USDC_DECIMALS,
+} = require("./testHelpers.js")
+let accounts, owner, person2, person3
 
 describe("Pool", () => {
-  let pool
-  let erc20
-  const mantissa = new BN(1e6)
-  let depositAmount = new BN(4).mul(mantissa)
-  let withdrawAmount = new BN(2).mul(mantissa)
+  let pool, erc20, fidu, goldfinchConfig
+  let depositAmount = new BN(4).mul(USDC_DECIMALS)
+  let withdrawAmount = new BN(2).mul(USDC_DECIMALS)
+  const decimalsDelta = decimals.div(USDC_DECIMALS)
 
   let makeDeposit = async (person, amount) => {
     amount = amount || depositAmount
@@ -25,29 +30,56 @@ describe("Pool", () => {
     return await pool.withdraw(amount, {from: person})
   }
 
+  const testSetup = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
+    // Just to be crystal clear
+    const {protocol_owner} = await getNamedAccounts()
+    owner = protocol_owner
+
+    await deployments.run("base_deploy")
+    const erc20 = await getDeployedAsTruffleContract(deployments, "ERC20")
+    const pool = await getDeployedAsTruffleContract(deployments, "Pool")
+    const fidu = await getDeployedAsTruffleContract(deployments, "Fidu")
+    const goldfinchConfig = await getDeployedAsTruffleContract(deployments, "GoldfinchConfig")
+
+    // A bit of setup for our test users
+    await erc20.transfer(person2, new BN(10000).mul(USDC_DECIMALS), {from: owner})
+    await erc20.transfer(person3, new BN(1000).mul(USDC_DECIMALS), {from: owner})
+    await erc20.approve(pool.address, new BN(100000).mul(USDC_DECIMALS), {from: person2})
+
+    return {erc20, pool, fidu, goldfinchConfig}
+  })
+
   beforeEach(async () => {
     // Pull in our unlocked accounts
     accounts = await web3.eth.getAccounts()
     ;[owner, person2, person3] = accounts
 
-    // Deploy the ERC20 and give people some balance to play with
-    erc20 = await ERC20.new(new BN(100000).mul(mantissa), mantissa, {from: owner})
-    await erc20.transfer(person2, new BN(10000).mul(mantissa), {from: owner})
-    await erc20.transfer(person3, new BN(1000).mul(mantissa), {from: owner})
-
-    // Deploy and initialize a Pool for this ERC20
-    pool = await Pool.new({from: owner})
-    pool.initialize(erc20.address, "USDC", mantissa, {from: owner})
-    await pool.setTotalFundsLimit(new BN(100000).mul(mantissa))
-    await pool.setTransactionLimit(new BN(100000).mul(mantissa))
-
-    // Allow person2 to deposit some funds.
-    await erc20.approve(pool.address, new BN(100000).mul(mantissa), {from: person2})
+    const deployResult = await testSetup()
+    erc20 = deployResult.erc20
+    pool = deployResult.pool
+    fidu = deployResult.fidu
+    goldfinchConfig = deployResult.goldfinchConfig
   })
 
-  describe("Pool", () => {
-    it("deployer is owner", async () => {
-      expect(await pool.owner()).to.equal(owner)
+  describe("Access Controls", () => {
+    it("sets the owner", async () => {
+      expect(await pool.hasRole(OWNER_ROLE, owner)).to.equal(true)
+      expect(await pool.getRoleAdmin(OWNER_ROLE)).to.equal(OWNER_ROLE)
+    })
+
+    it("sets the pauser", async () => {
+      expect(await pool.hasRole(PAUSER_ROLE, owner)).to.equal(true)
+      expect(await pool.getRoleAdmin(PAUSER_ROLE)).to.equal(OWNER_ROLE)
+    })
+
+    it("allows the owner to set new addresses as roles", async () => {
+      expect(await pool.hasRole(OWNER_ROLE, person2)).to.equal(false)
+      await pool.grantRole(OWNER_ROLE, person2, {from: owner})
+      expect(await pool.hasRole(OWNER_ROLE, person2)).to.equal(true)
+    })
+
+    it("should not allow anyone else to add an owner", async () => {
+      return expect(pool.grantRole(OWNER_ROLE, person2, {from: person3})).to.be.rejected
     })
   })
 
@@ -74,7 +106,7 @@ describe("Pool", () => {
         return expect(pool.pause()).to.be.fulfilled
       })
       it("should disallow non-owner to pause", async () => {
-        return expect(pool.pause({from: person2})).to.be.rejectedWith(/caller is not the owner/)
+        return expect(pool.pause({from: person2})).to.be.rejectedWith(/Must have pauser role to pause/)
       })
     })
   })
@@ -90,8 +122,8 @@ describe("Pool", () => {
     describe("after you have approved the pool to transfer funds", async () => {
       let capitalProvider
       beforeEach(async () => {
-        await erc20.approve(pool.address, new BN(100000).mul(mantissa), {from: person2})
-        await erc20.approve(pool.address, new BN(100000).mul(mantissa), {from: owner})
+        await erc20.approve(pool.address, new BN(100000).mul(USDC_DECIMALS), {from: person2})
+        await erc20.approve(pool.address, new BN(100000).mul(USDC_DECIMALS), {from: owner})
         capitalProvider = person2
       })
 
@@ -111,10 +143,17 @@ describe("Pool", () => {
         expect(delta).to.bignumber.equal(depositAmount)
       })
 
-      it("saves the sender in the depositor mapping", async () => {
+      it("gives the depositor the correct amount of Fidu", async () => {
         await makeDeposit()
-        const shares = await pool.capitalProviders(person2)
-        expect(shares.eq(depositAmount)).to.be.true
+        const fiduBalance = await getBalance(person2, fidu)
+        expect(fiduBalance).to.bignumber.equal(depositAmount.mul(decimalsDelta))
+      })
+
+      it("tracks other accounting correctly on Fidu", async () => {
+        const totalSupplyBefore = await fidu.totalSupply()
+        await makeDeposit()
+        const totalSupplyAfter = await fidu.totalSupply()
+        expect(totalSupplyAfter.sub(totalSupplyBefore)).to.bignumber.equal(depositAmount.mul(decimalsDelta))
       })
 
       it("emits an event with the correct data", async () => {
@@ -124,15 +163,16 @@ describe("Pool", () => {
         expect(event.event).to.equal("DepositMade")
         expect(event.args.capitalProvider).to.equal(capitalProvider)
         expect(event.args.amount).to.bignumber.equal(depositAmount)
+        expect(event.args.shares).to.bignumber.equal(depositAmount.mul(decimalsDelta))
       })
 
       it("increases the totalShares, even when two different people deposit", async () => {
-        const secondDepositAmount = new BN(1).mul(mantissa)
+        const secondDepositAmount = new BN(1).mul(USDC_DECIMALS)
         await makeDeposit()
         await makeDeposit(owner, secondDepositAmount)
-        const totalShares = await pool.totalShares()
-        const totalDeposited = depositAmount.add(secondDepositAmount)
-        expect(totalShares.eq(totalDeposited)).to.be.true
+        const totalShares = await fidu.totalSupply()
+        const totalDeposited = depositAmount.mul(decimalsDelta).add(secondDepositAmount.mul(decimalsDelta))
+        expect(totalShares).to.bignumber.equal(totalDeposited)
       })
     })
   })
@@ -140,18 +180,20 @@ describe("Pool", () => {
   describe("getNumShares", () => {
     it("calculates correctly", async () => {
       const amount = 3000
-      const mantissa = 1000
-      const sharePrice = 2000
-      const numShares = await pool._getNumShares(amount, mantissa, sharePrice)
-      expect(numShares.toNumber()).to.equal(1500)
+      const sharePrice = await pool.sharePrice()
+      const numShares = await pool._getNumShares(amount)
+      expect(numShares).to.bignumber.equal(
+        new BN(amount).mul(decimals.div(USDC_DECIMALS)).mul(decimals).div(sharePrice)
+      )
     })
   })
 
   describe("withdraw", () => {
     let capitalProvider
     beforeEach(async () => {
-      await erc20.approve(pool.address, new BN(100000).mul(mantissa), {from: person2})
-      await erc20.approve(pool.address, new BN(100000).mul(mantissa), {from: owner})
+      await erc20.approve(pool.address, new BN(100000).mul(USDC_DECIMALS), {from: person2})
+      await erc20.approve(pool.address, new BN(100000).mul(USDC_DECIMALS), {from: owner})
+
       capitalProvider = person2
     })
 
@@ -161,7 +203,7 @@ describe("Pool", () => {
       await makeWithdraw()
       const balanceAfter = await getBalance(pool.address, erc20)
       const delta = balanceBefore.sub(balanceAfter)
-      expect(delta.eq(withdrawAmount)).to.be.true
+      expect(delta).to.bignumber.equal(withdrawAmount)
     })
 
     it("emits an event with the correct data", async () => {
@@ -180,27 +222,25 @@ describe("Pool", () => {
       await makeWithdraw()
       const addressValueAfter = await getBalance(person2, erc20)
       const delta = addressValueAfter.sub(addressValueBefore)
-      const expMin = withdrawAmount * 0.999
-      const expMax = withdrawAmount * 1.001
-      expect(delta.gt(expMin) && delta.gt(expMax)).to.be.true
+      expect(delta).bignumber.closeTo(withdrawAmount, tolerance)
     })
 
-    it("reduces the shares by the withdraw amount", async () => {
+    it("reduces your shares of fidu", async () => {
       await makeDeposit()
-      const sharesBefore = await pool.capitalProviders(person2)
+      const balanceBefore = await getBalance(person2, fidu)
       await makeWithdraw()
-      const sharesAfter = await pool.capitalProviders(person2)
-      const expectedShares = sharesBefore.sub(withdrawAmount)
-      expect(sharesAfter.eq(expectedShares)).to.be.true
+      const balanceAfter = await getBalance(person2, fidu)
+      const expectedShares = balanceBefore.sub(withdrawAmount.mul(decimals).div(USDC_DECIMALS))
+      expect(balanceAfter).to.bignumber.equal(expectedShares)
     })
 
-    it("decreases the totalShares", async () => {
+    it("decreases the totalSupply of Fidu", async () => {
       await makeDeposit()
-      const sharesBefore = await pool.totalShares()
+      const sharesBefore = await fidu.totalSupply()
       await makeWithdraw()
-      const sharesAfter = await pool.totalShares()
-      const expectedShares = sharesBefore.sub(withdrawAmount)
-      expect(sharesAfter.eq(expectedShares)).to.be.true
+      const sharesAfter = await fidu.totalSupply()
+      const expectedShares = sharesBefore.sub(withdrawAmount.mul(decimals.div(USDC_DECIMALS)))
+      expect(sharesAfter).to.bignumber.equal(expectedShares)
     })
 
     it("prevents you from withdrawing more than you have", async () => {
@@ -211,45 +251,74 @@ describe("Pool", () => {
     it("it lets you withdraw your exact total holdings", async () => {
       await makeDeposit(person2, 123)
       await makeWithdraw(person2, 123)
-      const sharesAfter = await pool.capitalProviders(person2)
+      const sharesAfter = await getBalance(person2, fidu)
       expect(sharesAfter.toNumber()).to.equal(0)
     })
   })
 
   describe("collectInterestRepayment", async () => {
     beforeEach(async () => {
-      await erc20.approve(pool.address, new BN(100000).mul(mantissa), {from: person2})
+      await erc20.approve(pool.address, new BN(100000).mul(USDC_DECIMALS), {from: person2})
       await makeDeposit()
     })
     it("should emit an event with the right information", async () => {
-      const amount = new BN(1).mul(mantissa)
-      const response = await pool.collectInterestRepayment(person2, amount, {from: person2})
+      //Pretend the person3 is the credit desk for collecting payments
+      await goldfinchConfig.setAddressForTest(CONFIG_KEYS.CreditDesk, person3)
+
+      const amount = new BN(1).mul(USDC_DECIMALS)
+      const response = await pool.collectInterestRepayment(person2, amount, {from: person3})
       const event = response.logs[0]
       expect(event.event).to.equal("InterestCollected")
       expect(event.args.payer).to.equal(person2)
       expect(event.args.amount).to.bignumber.equal(amount)
     })
+
+    it("should not allow collection from anyone other than the admin", async () => {
+      const amount = new BN(1).mul(USDC_DECIMALS)
+      await expect(pool.collectInterestRepayment(person2, amount, {from: person2})).to.be.rejectedWith(
+        /Only the credit desk/
+      )
+      await expect(pool.collectInterestRepayment(person2, amount, {from: owner})).to.be.rejectedWith(
+        /Only the credit desk/
+      )
+    })
   })
 
   describe("collectPrincipalRepayment", async () => {
     beforeEach(async () => {
-      await erc20.approve(pool.address, new BN(100000).mul(mantissa), {from: person2})
+      await erc20.approve(pool.address, new BN(100000).mul(USDC_DECIMALS), {from: person2})
       await makeDeposit()
     })
     it("should emit an event with the right information", async () => {
-      const amount = new BN(1).mul(mantissa)
-      const response = await pool.collectPrincipalRepayment(person2, amount, {from: person2})
+      //Pretend the person3 is the credit desk for collecting payments
+      await goldfinchConfig.setAddressForTest(CONFIG_KEYS.CreditDesk, person3)
+
+      const amount = new BN(1).mul(USDC_DECIMALS)
+      const response = await pool.collectPrincipalRepayment(person2, amount, {from: person3})
       const event = response.logs[0]
       expect(event.event).to.equal("PrincipalCollected")
       expect(event.args.payer).to.equal(person2)
       expect(event.args.amount).to.bignumber.equal(amount)
     })
+
+    it("should not allow collection from anyone other than the admin", async () => {
+      const amount = new BN(1).mul(USDC_DECIMALS)
+      await expect(pool.collectPrincipalRepayment(person2, amount, {from: person2})).to.be.rejectedWith(
+        /Only the credit desk/
+      )
+      await expect(pool.collectPrincipalRepayment(person2, amount, {from: owner})).to.be.rejectedWith(
+        /Only the credit desk/
+      )
+    })
   })
 
   describe("transferFrom", async () => {
     it("should emit an event with the right information", async () => {
-      const amount = new BN(1).mul(mantissa)
-      const response = await pool.transferFrom(person2, pool.address, amount, {from: owner})
+      const amount = new BN(1).mul(USDC_DECIMALS)
+      // Assume person3 is the credit desk
+      await goldfinchConfig.setAddressForTest(CONFIG_KEYS.CreditDesk, person3)
+
+      const response = await pool.transferFrom(person2, pool.address, amount, {from: person3})
       const event = response.logs[0]
       expect(event.event).to.equal("TransferMade")
       expect(event.args.from).to.equal(person2)
@@ -260,108 +329,74 @@ describe("Pool", () => {
 
   describe("hard limits", async () => {
     describe("totalFundsLimit", async () => {
-      describe("setting the limit", async () => {
-        let limit = new BN(1000)
-        it("should fail if it isn't the owner", async () => {
-          return expect(pool.setTotalFundsLimit(limit.mul(mantissa), {from: person2})).to.be.rejectedWith(
-            /not the owner/
-          )
-        })
-
-        it("should set the limit, and multiply what you pass up by the mantissa", async () => {
-          await pool.setTotalFundsLimit(limit.mul(mantissa))
-          const newLimit = await pool.totalFundsLimit()
-          expect(newLimit).to.bignumber.equal(limit.mul(mantissa))
-        })
-
-        it("should fire an event", async () => {
-          const result = await pool.setTotalFundsLimit(limit.mul(mantissa))
-
-          const event = result.logs[0]
-
-          expect(event.event).to.equal("LimitChanged")
-          expect(event.args.owner).to.equal(owner)
-          expect(event.args.limitType).to.bignumber.equal("totalFundsLimit")
-          expect(event.args.amount).to.bignumber.equal(new BN(limit).mul(mantissa))
-        })
-      })
-
       describe("once it's set", async () => {
         let limit = new BN(5000)
         beforeEach(async () => {
-          await pool.setTotalFundsLimit(limit.mul(mantissa))
-          await pool.setTransactionLimit(limit.mul(new BN(2)).mul(mantissa))
+          await goldfinchConfig.setNumber(CONFIG_KEYS.TotalFundsLimit, limit.mul(USDC_DECIMALS))
+          await goldfinchConfig.setNumber(CONFIG_KEYS.TransactionLimit, limit.mul(new BN(2)).mul(USDC_DECIMALS))
         })
 
         it("should accept deposits before the limit is reached", async () => {
-          return expect(makeDeposit(person2, new BN(1000).mul(mantissa))).to.be.fulfilled
+          return expect(makeDeposit(person2, new BN(1000).mul(USDC_DECIMALS))).to.be.fulfilled
         })
 
         it("should accept everything right up to the limit", async () => {
-          return expect(makeDeposit(person2, new BN(limit).mul(mantissa))).to.be.fulfilled
+          return expect(makeDeposit(person2, new BN(limit).mul(USDC_DECIMALS))).to.be.fulfilled
         })
 
         it("should fail if you're over the limit", async () => {
-          return expect(makeDeposit(person2, new BN(limit).add(new BN(1)).mul(mantissa))).to.be.rejectedWith(
+          return expect(makeDeposit(person2, new BN(limit).add(new BN(1)).mul(USDC_DECIMALS))).to.be.rejectedWith(
             /put the Pool over the total limit/
           )
         })
       })
     })
     describe("transactionLimit", async () => {
-      describe("setting the limit", async () => {
-        let limit = new BN(1000)
-        it("should fail if it isn't the owner", async () => {
-          return expect(pool.setTransactionLimit(limit.mul(mantissa), {from: person2})).to.be.rejectedWith(
-            /not the owner/
-          )
-        })
-
-        it("should set the limit, and multiply what you pass up by the mantissa", async () => {
-          await pool.setTransactionLimit(limit.mul(mantissa))
-          const newLimit = await pool.transactionLimit()
-          expect(newLimit).to.bignumber.equal(new BN(limit).mul(mantissa))
-        })
-
-        it("should fire an event", async () => {
-          const result = await pool.setTransactionLimit(limit.mul(mantissa))
-
-          const event = result.logs[0]
-
-          expect(event.event).to.equal("LimitChanged")
-          expect(event.args.owner).to.equal(owner)
-          expect(event.args.limitType).to.bignumber.equal("transactionLimit")
-          expect(event.args.amount).to.bignumber.equal(new BN(limit).mul(mantissa))
-        })
-      })
-
       describe("after setting it", async () => {
         let limit
         beforeEach(async () => {
           limit = new BN(1000)
-          await pool.setTotalFundsLimit(limit.mul(new BN(10)).mul(mantissa))
-          await pool.setTransactionLimit(limit.mul(mantissa))
+          await goldfinchConfig.setNumber(CONFIG_KEYS.TotalFundsLimit, limit.mul(new BN(10)).mul(USDC_DECIMALS))
+          await goldfinchConfig.setNumber(CONFIG_KEYS.TransactionLimit, limit.mul(USDC_DECIMALS))
         })
 
         it("should still allow transactions up to the limit", async () => {
-          return expect(makeDeposit(person2, new BN(limit).mul(mantissa))).to.be.fulfilled
+          return expect(makeDeposit(person2, new BN(limit).mul(USDC_DECIMALS))).to.be.fulfilled
         })
 
         it("should block deposits over the limit", async () => {
-          return expect(makeDeposit(person2, new BN(limit).add(new BN(1)).mul(mantissa))).to.be.rejectedWith(
+          return expect(makeDeposit(person2, new BN(limit).add(new BN(1)).mul(USDC_DECIMALS))).to.be.rejectedWith(
             /Amount is over the per-transaction limit/
           )
         })
 
         it("should block withdrawals over the limit", async () => {
-          await makeDeposit(person2, new BN(limit).mul(mantissa))
-          await makeDeposit(person2, new BN(limit).mul(mantissa))
+          await makeDeposit(person2, new BN(limit).mul(USDC_DECIMALS))
+          await makeDeposit(person2, new BN(limit).mul(USDC_DECIMALS))
 
-          return expect(makeWithdraw(person2, new BN(limit).add(new BN(1)).mul(mantissa))).to.be.rejectedWith(
+          return expect(makeWithdraw(person2, new BN(limit).add(new BN(1)).mul(USDC_DECIMALS))).to.be.rejectedWith(
             /Amount is over the per-transaction limit/
           )
         })
       })
+    })
+  })
+
+  describe("USDC Mantissa", async () => {
+    it("should equal 1e6", async () => {
+      expect(await pool._usdcMantissa()).to.bignumber.equal(USDC_DECIMALS)
+    })
+  })
+
+  describe("Fidu Mantissa", async () => {
+    it("should equal 1e18", async () => {
+      expect(await pool._fiduMantissa()).to.bignumber.equal(decimals)
+    })
+  })
+
+  describe("usdcToFidu", async () => {
+    it("should equal 1e12", async () => {
+      expect(await pool._usdcToFidu(new BN(1))).to.bignumber.equal(new BN(1e12))
     })
   })
 })

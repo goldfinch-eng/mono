@@ -1,4 +1,4 @@
-const {fromAtomic, toAtomic, getDeployedContract} = require("./deployHelpers.js")
+const {toAtomic, getDeployedContract, updateConfig, CONFIG_KEYS} = require("./deployHelpers.js")
 const PROTOCOL_CONFIG = require("../protocol_config.json")
 const bre = require("@nomiclabs/buidler")
 
@@ -18,52 +18,17 @@ async function updateConfigs(bre, protocolConfig) {
   //the deployments.log is not enabled. So, just use console.log instead
   logger = console.log
 
-  const pool = await getDeployedContract(deployments, "Pool")
-  const creditDesk = await getDeployedContract(deployments, "CreditDesk")
+  const config = await getDeployedContract(deployments, "GoldfinchConfig")
 
   const underwriterLimit = String(protocolConfig.maxUnderwriterLimit)
   const transactionLimit = String(protocolConfig.transactionLimit)
   const totalFundsLimit = String(protocolConfig.totalFundsLimit)
 
-  await setMaxUnderwriterLimit(creditDesk, underwriterLimit)
-  await setTransactionLimit(creditDesk, transactionLimit)
-  await setTotalFundsLimit(pool, creditDesk, totalFundsLimit)
+  await updateConfig(config, "number", CONFIG_KEYS.MaxUnderwriterLimit, toAtomic(underwriterLimit))
+  await updateConfig(config, "number", CONFIG_KEYS.TransactionLimit, toAtomic(transactionLimit))
+  await updateConfig(config, "number", CONFIG_KEYS.TotalFundsLimit, toAtomic(totalFundsLimit))
 
   logger("Done")
-}
-
-async function setMaxUnderwriterLimit(creditDesk, newLimit) {
-  const currentLimit = fromAtomic(await creditDesk.maxUnderwriterLimit())
-
-  if (currentLimit !== newLimit) {
-    logger(`Changing maxUnderwriter limit from ${currentLimit} to ${newLimit}`)
-    await (await creditDesk.setMaxUnderwriterLimit(toAtomic(newLimit))).wait()
-    logger(`maxUnderwriterLimit set to ${toAtomic(newLimit)}`)
-  } else {
-    logger(`maxUnderwriterLimit unchanged at ${currentLimit}`)
-  }
-}
-
-async function setTransactionLimit(creditDesk, newLimit) {
-  const currentLimit = fromAtomic(await creditDesk.transactionLimit())
-  if (currentLimit !== newLimit) {
-    logger(`Changing transaction limit from ${currentLimit} to ${newLimit}`)
-    await (await creditDesk.setTransactionLimit(toAtomic(newLimit))).wait()
-    logger(`transactionLimit set to ${toAtomic(newLimit)}`)
-  } else {
-    logger(`transactionLimit unchanged at ${currentLimit}`)
-  }
-}
-
-async function setTotalFundsLimit(pool, creditDesk, newLimit) {
-  const currentLimit = fromAtomic(await pool.totalFundsLimit())
-  if (currentLimit !== newLimit) {
-    logger(`Changing total funds limit from ${currentLimit} to ${newLimit}`)
-    await (await creditDesk.setPoolTotalFundsLimit(toAtomic(newLimit))).wait()
-    logger(`totalFundsLimit set to ${toAtomic(newLimit)}`)
-  } else {
-    logger(`totalFundsLimit unchanged at ${currentLimit}`)
-  }
 }
 
 if (require.main === module) {

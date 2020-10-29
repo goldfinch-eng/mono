@@ -5,11 +5,19 @@ pragma solidity ^0.6.8;
 import "../Pool.sol";
 
 contract TestPool is Pool {
-  function _getNumShares(
-    uint256 amount,
-    uint256 multiplier,
-    uint256 price
-  ) public pure returns (uint256) {
-    return getNumShares(amount, multiplier, price);
+  function _getNumShares(uint256 amount) public view returns (uint256) {
+    return getNumShares(amount);
+  }
+
+  function _usdcMantissa() public view returns (uint256) {
+    return usdcMantissa();
+  }
+
+  function _fiduMantissa() public view returns (uint256) {
+    return fiduMantissa();
+  }
+
+  function _usdcToFidu(uint256 amount) public view returns (uint256) {
+    return usdcToFidu(amount);
   }
 }

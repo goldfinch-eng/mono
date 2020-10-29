@@ -1,21 +1,31 @@
 /* global artifacts web3 */
-const {expect, MAX_UINT, decimals, BN, bigVal, tolerance, getBalance} = require("./testHelpers.js")
+const bre = require("@nomiclabs/buidler")
+const {deployments} = bre
+const {
+  expect,
+  MAX_UINT,
+  decimals,
+  BN,
+  usdcVal,
+  bigVal,
+  tolerance,
+  getBalance,
+  getDeployedAsTruffleContract,
+  USDC_DECIMALS,
+} = require("./testHelpers.js")
+const {OWNER_ROLE, PAUSER_ROLE, CONFIG_KEYS, interestAprAsBN} = require("../blockchain_scripts/deployHelpers")
 const {time} = require("@openzeppelin/test-helpers")
-const Accountant = artifacts.require("Accountant")
-const CreditDesk = artifacts.require("CreditDesk")
 const CreditLine = artifacts.require("CreditLine")
-const Pool = artifacts.require("TestPool")
-const ERC20 = artifacts.require("TestERC20")
 
-let accounts, owner, person2, person3, creditDesk
+let accounts, owner, person2, person3, creditDesk, fidu, goldfinchConfig
 
 describe("CreditDesk", () => {
   let underwriterLimit
   let underwriter
   let borrower
-  let limit = bigVal(500)
-  let interestApr = bigVal(5).div(new BN(100))
-  let minCollateralPercent = bigVal(10)
+  let limit = usdcVal(500)
+  let interestApr = interestAprAsBN("5.00")
+  let minCollateralPercent = usdcVal(10)
   let paymentPeriodInDays = new BN(30)
   let termInDays = new BN(365)
   let erc20
@@ -57,7 +67,7 @@ describe("CreditDesk", () => {
   // 'owner', and transfer ownership to the creditDesk, where we can then call external methods
   // that manipulate this creditLine.
   let createAndSetCreditLineAttributes = async (
-    {balance, interestOwed, principalOwed, prepaymentBalance = 0, nextDueBlock},
+    {balance, interestOwed, principalOwed, collectedPaymentBalance = 0, nextDueBlock},
     people = {}
   ) => {
     const thisOwner = people.owner || owner
@@ -75,88 +85,78 @@ describe("CreditDesk", () => {
     // 1000 is pretty high for test environments, and generally shouldn't be hit.
     nextDueBlock = nextDueBlock || 1000
     const termInDays = 360
-    const termInBlocks = (await creditDesk.blocksPerDay()).mul(new BN(termInDays))
+    const termInBlocks = (await creditDesk.BLOCKS_PER_DAY()).mul(new BN(termInDays))
     const termEndBlock = (await time.latestBlock()).add(termInBlocks)
 
     var creditLine = await CreditLine.new({from: thisOwner})
-    await creditLine.initialize(thisBorrower, thisUnderwriter, bigVal(500), bigVal(3), 5, 10, termInDays)
+    await creditLine.initialize(thisOwner, thisBorrower, thisUnderwriter, usdcVal(500), bigVal(3), 5, 10, termInDays)
 
     await Promise.all([
-      creditLine.setBalance(bigVal(balance), {from: thisOwner}),
-      creditLine.setInterestOwed(bigVal(interestOwed), {from: thisOwner}),
-      creditLine.setPrincipalOwed(bigVal(principalOwed), {from: thisOwner}),
-      erc20.transfer(creditLine.address, String(bigVal(prepaymentBalance)), {from: thisOwner}),
-      creditLine.setPrepaymentBalance(String(bigVal(prepaymentBalance)), {from: thisOwner}),
+      creditDesk._setTotalLoansOutstanding(usdcVal(balance).add(usdcVal(interestOwed))),
+      creditLine.setBalance(usdcVal(balance), {from: thisOwner}),
+      creditLine.setInterestOwed(usdcVal(interestOwed), {from: thisOwner}),
+      creditLine.setPrincipalOwed(usdcVal(principalOwed), {from: thisOwner}),
+      erc20.transfer(creditLine.address, String(usdcVal(collectedPaymentBalance)), {from: thisOwner}),
+      creditLine.setCollectedPaymentBalance(String(usdcVal(collectedPaymentBalance)), {from: thisOwner}),
       creditLine.setNextDueBlock(nextDueBlock, {from: thisOwner}),
       creditLine.setTermEndBlock(termEndBlock, {from: thisOwner}),
-      creditLine.authorizePool(pool.address),
-      creditLine.transferOwnership(creditDesk.address, {from: thisOwner}),
+      creditLine.authorizePool(goldfinchConfig.address),
+      creditLine.grantRole(OWNER_ROLE, creditDesk.address),
     ])
 
     return creditLine
   }
 
-  let initializeCreditDeskWithCreditLine = async (underwriter) => {
-    underwriterLimit = bigVal(600)
-    await creditDesk.setUnderwriterGovernanceLimit(underwriter, underwriterLimit, {from: owner})
+  const setupTest = deployments.createFixture(async ({deployments}) => {
+    await deployments.fixture("base_deploy")
+    const pool = await getDeployedAsTruffleContract(deployments, "Pool")
+    const erc20 = await getDeployedAsTruffleContract(deployments, "ERC20")
+    const creditDesk = await getDeployedAsTruffleContract(deployments, "CreditDesk")
+    const fidu = await getDeployedAsTruffleContract(deployments, "Fidu")
+    const goldfinchConfig = await getDeployedAsTruffleContract(deployments, "GoldfinchConfig")
 
-    await createCreditLine()
-    var ulCreditLines = await creditDesk.getUnderwriterCreditLines(underwriter)
-    var creditLine = await CreditLine.at(ulCreditLines[0])
-    return creditLine
-  }
+    // Approve transfers for our test accounts
+    await erc20.approve(pool.address, new BN(100000).mul(decimals), {from: owner})
+    await erc20.approve(pool.address, new BN(100000).mul(decimals), {from: person2})
+    await erc20.approve(pool.address, new BN(100000).mul(decimals), {from: person3})
 
-  before(async () => {
-    // Buidler will throw an error if this happens more than once
-    // which is why put it in a before block, rather than beforeEach;
-    const accountant = await Accountant.new({from: owner})
-    CreditDesk.link(accountant)
+    // Some housekeeping so we have a usable creditDesk for tests, and a pool with funds
+    await erc20.transfer(person2, String(usdcVal(1000)), {from: owner})
+    await pool.deposit(String(usdcVal(90)), {from: person2})
+    return {pool, erc20, creditDesk, fidu, goldfinchConfig}
   })
 
   beforeEach(async () => {
     accounts = await web3.eth.getAccounts()
     ;[owner, person2, person3] = accounts
-    creditDesk = await CreditDesk.new({from: owner})
+    const deployResult = await setupTest()
 
-    // Deploy the ERC20 and give person2 some balance to play with
-    erc20 = await ERC20.new(new BN(10000).mul(decimals), decimals, {from: owner})
-    await erc20.transfer(person2, new BN(1000).mul(decimals), {from: owner})
-
-    // Approve and initialize the pool
-    pool = await Pool.new({from: owner})
-    pool.initialize(erc20.address, "USDC", decimals, {from: owner})
-    await pool.setTotalFundsLimit(new BN(1000000).mul(decimals))
-    await pool.setTransactionLimit(new BN(1000000).mul(decimals))
-
-    // Approve transfers for our test accounts
-    await erc20.approve(pool.address, new BN(100000).mul(decimals), {from: person3})
-    await erc20.approve(pool.address, new BN(100000).mul(decimals), {from: person2})
-    await erc20.approve(pool.address, new BN(100000).mul(decimals), {from: owner})
-
-    // Some housekeeping so we have a usable creditDesk for tests, and a pool with funds
-    await pool.transferOwnership(creditDesk.address, {from: owner})
-    await pool.deposit(String(bigVal(90)), {from: person2})
-    await creditDesk.initialize(pool.address, {from: owner})
-    await creditDesk.setMaxUnderwriterLimit(new BN(100000).mul(decimals))
-    await creditDesk.setTransactionLimit(new BN(100000).mul(decimals))
+    erc20 = deployResult.erc20
+    pool = deployResult.pool
+    creditDesk = deployResult.creditDesk
+    fidu = deployResult.fidu
+    goldfinchConfig = deployResult.goldfinchConfig
   })
 
-  it("deployer is owner", async () => {
-    expect(await creditDesk.owner()).to.equal(owner)
-  })
+  describe("Access Controls", () => {
+    it("sets the owner", async () => {
+      expect(await creditDesk.hasRole(OWNER_ROLE, owner)).to.equal(true)
+      expect(await creditDesk.getRoleAdmin(OWNER_ROLE)).to.equal(OWNER_ROLE)
+    })
 
-  describe("setPoolAddress", async () => {
-    it("should emit an event when the pool address changes", async () => {
-      // Approve and initialize the pool
-      const newPool = await Pool.new({from: owner})
-      newPool.initialize(erc20.address, "USDC", decimals, {from: owner})
+    it("sets the pauser", async () => {
+      expect(await creditDesk.hasRole(PAUSER_ROLE, owner)).to.equal(true)
+      expect(await creditDesk.getRoleAdmin(PAUSER_ROLE)).to.equal(OWNER_ROLE)
+    })
 
-      const response = await creditDesk.setPoolAddress(newPool.address, {from: owner})
-      const event = response.logs[0]
+    it("allows the owner to set new addresses as roles", async () => {
+      expect(await creditDesk.hasRole(OWNER_ROLE, person2)).to.equal(false)
+      await creditDesk.grantRole(OWNER_ROLE, person2, {from: owner})
+      expect(await creditDesk.hasRole(OWNER_ROLE, person2)).to.equal(true)
+    })
 
-      expect(event.event).to.equal("PoolAddressUpdated")
-      expect(event.args.oldAddress).to.equal(pool.address)
-      expect(event.args.newAddress).to.equal(newPool.address)
+    it("should not allow anyone else to add an owner", async () => {
+      return expect(creditDesk.grantRole(OWNER_ROLE, person2, {from: person3})).to.be.rejected
     })
   })
 
@@ -166,7 +166,7 @@ describe("CreditDesk", () => {
         return expect(creditDesk.pause()).to.be.fulfilled
       })
       it("should disallow non-owner to pause", async () => {
-        return expect(creditDesk.pause({from: person2})).to.be.rejectedWith(/caller is not the owner/)
+        return expect(creditDesk.pause({from: person2})).to.be.rejectedWith(/Must have pauser role/)
       })
     })
   })
@@ -177,14 +177,14 @@ describe("CreditDesk", () => {
       underwriter = person2
     })
     it("sets the correct limit", async () => {
-      const amount = bigVal(537)
+      const amount = usdcVal(537)
       await creditDesk.setUnderwriterGovernanceLimit(underwriter, amount, {from: owner})
       const underwriterLimit = await creditDesk.underwriters(underwriter)
       expect(underwriterLimit).to.bignumber.equal(amount)
     })
 
     it("emits an event with the correct data", async () => {
-      const amount = bigVal(537)
+      const amount = usdcVal(537)
       const response = await creditDesk.setUnderwriterGovernanceLimit(underwriter, amount, {from: owner})
       const event = response.logs[0]
 
@@ -195,14 +195,14 @@ describe("CreditDesk", () => {
 
     describe("limits", async () => {
       beforeEach(async () => {
-        await creditDesk.setMaxUnderwriterLimit(bigVal(9))
+        await goldfinchConfig.setNumber(CONFIG_KEYS.MaxUnderwriterLimit, usdcVal(9))
       })
       it("should allow you to withdraw right up to the limit", async () => {
-        return expect(creditDesk.setUnderwriterGovernanceLimit(underwriter, bigVal(9))).to.be.fulfilled
+        return expect(creditDesk.setUnderwriterGovernanceLimit(underwriter, usdcVal(9))).to.be.fulfilled
       })
       it("should fail with anything greater", async () => {
         return expect(
-          creditDesk.setUnderwriterGovernanceLimit(underwriter, bigVal(9).add(new BN(1)))
+          creditDesk.setUnderwriterGovernanceLimit(underwriter, usdcVal(9).add(new BN(1)))
         ).to.be.rejectedWith(/greater than the max allowed/)
       })
     })
@@ -217,7 +217,7 @@ describe("CreditDesk", () => {
     beforeEach(async () => {
       underwriter = person2
       borrower = person3
-      const underwriterLimit = bigVal(600)
+      const underwriterLimit = usdcVal(600)
       await creditDesk.setUnderwriterGovernanceLimit(underwriter, underwriterLimit, {from: owner})
     })
 
@@ -226,14 +226,14 @@ describe("CreditDesk", () => {
       var ulCreditLines = await creditDesk.getUnderwriterCreditLines(underwriter)
       const creditLine = await CreditLine.at(ulCreditLines[0])
 
-      expect(await creditLine.owner()).to.equal(creditDesk.address)
+      expect(await creditLine.hasRole(OWNER_ROLE, creditDesk.address)).to.be.true
     })
 
     it("emits an event with the correct data", async () => {
       const response = await createCreditLine()
-      // Note we pick the 1st index, because the 0th is OwnershipTransferred, which
-      // also happens automatically when creating CreditLines, but we don't care about that.
-      const event = response.logs[1]
+      // Note we pick the 2nd index, because the 0th and 1st are RoleGranted events, which
+      // happen automatically when creating CreditLines, but we don't care about that.
+      const event = response.logs[2]
 
       expect(event.event).to.equal("CreditLineCreated")
       expect(event.args.borrower).to.equal(borrower)
@@ -264,7 +264,7 @@ describe("CreditDesk", () => {
     it("should not let you create a credit line above your limit", async () => {
       const expectedErr = "The underwriter cannot create this credit line"
       try {
-        await createCreditLine({_limit: bigVal(601)})
+        await createCreditLine({_limit: usdcVal(601)})
         throw "This test should have failed earlier"
       } catch (e) {
         expect(e.message).to.include(expectedErr)
@@ -272,12 +272,12 @@ describe("CreditDesk", () => {
     })
 
     it("should not let you create a credit line above your limit, if the sum of your existing credit lines puts you over the limit", async () => {
-      await createCreditLine({_limit: bigVal(300)})
-      await createCreditLine({_limit: bigVal(300)})
+      await createCreditLine({_limit: usdcVal(300)})
+      await createCreditLine({_limit: usdcVal(300)})
 
       const expectedErr = "The underwriter cannot create this credit line"
       try {
-        await createCreditLine({_limit: bigVal(1)})
+        await createCreditLine({_limit: usdcVal(1)})
         throw "This test should have failed earlier"
       } catch (e) {
         expect(e.message).to.include(expectedErr)
@@ -292,7 +292,7 @@ describe("CreditDesk", () => {
       underwriter = person2
 
       cl = await CreditLine.new({from: owner})
-      await cl.initialize(borrower, underwriter, bigVal(500), bigVal(3), 5, 10, 360)
+      await cl.initialize(owner, borrower, underwriter, usdcVal(500), usdcVal(3), 5, 10, 360)
     })
 
     it("Should let you change the limit after its created", async () => {
@@ -324,28 +324,70 @@ describe("CreditDesk", () => {
     beforeEach(async () => {
       underwriter = person2
       borrower = person3
-      underwriterLimit = bigVal(600)
+      underwriterLimit = usdcVal(600)
       await creditDesk.setUnderwriterGovernanceLimit(underwriter, underwriterLimit, {from: owner})
 
-      await createCreditLine()
+      await createCreditLine({_interestApr: interestAprAsBN("123.12345678")})
       var ulCreditLines = await creditDesk.getUnderwriterCreditLines(underwriter)
       creditLine = await CreditLine.at(ulCreditLines[0])
     })
 
     it("should emit an event with the correct data", async () => {
-      const response = await drawdown(bigVal(10), creditLine.address)
+      const response = await drawdown(usdcVal(10), creditLine.address)
       const event = response.logs[0]
 
       expect(event.event).to.equal("DrawdownMade")
       expect(event.args.borrower).to.equal(borrower)
       expect(event.args.creditLine).to.equal(creditLine.address)
-      expect(event.args.drawdownAmount).to.bignumber.equal(bigVal(10))
+      expect(event.args.drawdownAmount).to.bignumber.equal(usdcVal(10))
+    })
+
+    it("should increase the total loans outstanding on the credit desk", async () => {
+      const drawdownAmount = usdcVal(10)
+      const amountBefore = await creditDesk.totalLoansOutstanding()
+      await drawdown(drawdownAmount, creditLine.address)
+      const amountAfter = await creditDesk.totalLoansOutstanding()
+      expect(amountAfter.sub(amountBefore)).to.bignumber.equal(drawdownAmount)
+    })
+
+    it("should increase the total loans outstanding correctly if you do two drawdowns close by", async () => {
+      const drawdownAmount = usdcVal(10)
+      await drawdown(drawdownAmount, creditLine.address)
+      const totalLoansOutstanding = await creditDesk.totalLoansOutstanding()
+      expect(totalLoansOutstanding).to.bignumber.equal(drawdownAmount)
+
+      const currentBlock = await time.latestBlock()
+      await time.advanceBlockTo(currentBlock.add(new BN(99)))
+
+      await drawdown(drawdownAmount, creditLine.address)
+      const totalLoansOutstanding2 = await creditDesk.totalLoansOutstanding()
+      const interestOwed = await creditLine.interestOwed()
+      expect(interestOwed).to.bignumber.be.greaterThan(new BN(0))
+      expect(totalLoansOutstanding2).to.bignumber.equal(drawdownAmount.add(drawdownAmount).add(interestOwed))
+    })
+
+    it("should track your accrued interest if you drawdown again", async () => {
+      const drawdownAmount = usdcVal(10)
+      await drawdown(drawdownAmount, creditLine.address)
+      expect(await creditLine.balance()).to.bignumber.equal(drawdownAmount)
+      expect(await creditLine.interestOwed()).to.bignumber.equal(new BN(0))
+
+      const currentBlock = await time.latestBlock()
+      const nextBlock = currentBlock.add(new BN(99))
+      await time.advanceBlockTo(nextBlock)
+      // Divide by 100 blocks because we advance 99, and then the drawdown happens on the 100th block.
+      // Roughly 10 * 123.12345678% apr * (100 / 2,102,400 blocks per year) * 1e6 (USDC Decimals)
+      const expectedInterestAfter100Blocks = new BN(585)
+
+      await drawdown(drawdownAmount, creditLine.address)
+      expect(await creditLine.balance()).to.bignumber.equal(drawdownAmount.add(drawdownAmount))
+      expect(await creditLine.interestOwed()).to.bignumber.equal(expectedInterestAfter100Blocks)
     })
 
     it("should set the termEndAt correctly", async () => {
       expect((await creditLine.termEndBlock()).eq(new BN(0))).to.be.true
 
-      await drawdown(bigVal(10), creditLine.address)
+      await drawdown(usdcVal(10), creditLine.address)
       const currentBlock = await time.latestBlock()
       const blockLength = new BN(termInDays).mul(new BN(blocksPerDay))
 
@@ -353,10 +395,16 @@ describe("CreditDesk", () => {
       expect((await creditLine.termEndBlock()).eq(expectedTermEndBlock)).to.be.true
     })
 
+    it("should set the last updated block on drawdown to be the most recent block number", async () => {
+      const drawdownAmount = usdcVal(10)
+      await drawdown(drawdownAmount, creditLine.address)
+      expect(await creditLine.lastUpdatedBlock()).to.bignumber.equal(await time.latestBlock())
+    })
+
     it("should set the nextDueAt correctly", async () => {
       expect((await creditLine.nextDueBlock()).eq(new BN(0))).to.be.true
 
-      await drawdown(bigVal(10), creditLine.address)
+      await drawdown(usdcVal(10), creditLine.address)
       const currentBlock = await time.latestBlock()
       const blockLength = new BN(paymentPeriodInDays).mul(new BN(blocksPerDay))
 
@@ -366,13 +414,13 @@ describe("CreditDesk", () => {
 
     describe("limits", async () => {
       beforeEach(async () => {
-        await creditDesk.setTransactionLimit(bigVal(9))
+        await goldfinchConfig.setNumber(CONFIG_KEYS.TransactionLimit, usdcVal(9))
       })
       it("should allow you to withdraw right up to the limit", async () => {
-        return expect(drawdown(bigVal(9), creditLine.address)).to.be.fulfilled
+        return expect(drawdown(usdcVal(9), creditLine.address)).to.be.fulfilled
       })
       it("should fail with anything greater", async () => {
-        return expect(drawdown(bigVal(9).add(new BN(1)), creditLine.address)).to.be.rejectedWith(
+        return expect(drawdown(usdcVal(9).add(new BN(1)), creditLine.address)).to.be.rejectedWith(
           /over the per-transaction limit/
         )
       })
@@ -381,45 +429,51 @@ describe("CreditDesk", () => {
     describe("pausing", async () => {
       it("should be disallowed when paused", async () => {
         await creditDesk.pause()
-        return expect(drawdown(bigVal(10), creditLine.address)).to.be.rejectedWith(/Pausable: paused/)
+        return expect(drawdown(usdcVal(10), creditLine.address)).to.be.rejectedWith(/Pausable: paused/)
       })
     })
   })
 
   describe("prepayment", async () => {
     let makePrepayment = async (creditLineAddress, amount, from) => {
-      return await creditDesk.prepay(creditLineAddress, String(bigVal(amount)), {from: from})
+      // There's no separate collectedPayment anymore, a collectedPayment is just a payment that happens before
+      // the due block
+      return await creditDesk.pay(creditLineAddress, String(usdcVal(amount)), {from: from})
     }
     describe("with a valid creditline id", async () => {
       let creditLine
       beforeEach(async () => {
         underwriter = person2
         borrower = person2
-        creditLine = await initializeCreditDeskWithCreditLine(underwriter)
+        creditLine = creditLine = await createAndSetCreditLineAttributes({
+          balance: 10,
+          interestOwed: 0,
+          principalOwed: 0,
+        })
       })
       it("should increment the prepaid balance", async () => {
         const prepaymentAmount = 10
-        expect(await (await getBalance(creditLine.address, erc20)).eq(bigVal(0))).to.be.true
+        expect(await (await getBalance(creditLine.address, erc20)).eq(usdcVal(0))).to.be.true
         await makePrepayment(creditLine.address, prepaymentAmount, borrower)
-        expect((await getBalance(creditLine.address, erc20)).eq(bigVal(prepaymentAmount))).to.be.true
-        expect((await creditLine.prepaymentBalance()).eq(bigVal(prepaymentAmount))).to.be.true
+        expect((await getBalance(creditLine.address, erc20)).eq(usdcVal(prepaymentAmount))).to.be.true
+        expect((await creditLine.collectedPaymentBalance()).eq(usdcVal(prepaymentAmount))).to.be.true
 
         let secondPrepayment = 15
-        let totalPrepayment = bigVal(prepaymentAmount).add(bigVal(secondPrepayment))
+        let totalPrepayment = usdcVal(prepaymentAmount).add(usdcVal(secondPrepayment))
         await makePrepayment(creditLine.address, secondPrepayment, borrower)
         expect(await getBalance(creditLine.address, erc20)).to.bignumber.equal(totalPrepayment)
-        expect(await creditLine.prepaymentBalance()).to.bignumber.equal(totalPrepayment)
+        expect(await creditLine.collectedPaymentBalance()).to.bignumber.equal(totalPrepayment)
       })
 
       it("should emit an event with the correct data", async () => {
-        const prepaymentAmount = 10
-        const response = await makePrepayment(creditLine.address, prepaymentAmount, borrower)
+        const collectedPaymentAmount = 10
+        const response = await makePrepayment(creditLine.address, collectedPaymentAmount, borrower)
         const event = response.logs[0]
 
-        expect(event.event).to.equal("PrepaymentMade")
+        expect(event.event).to.equal("PaymentCollected")
         expect(event.args.payer).to.equal(borrower)
         expect(event.args.creditLine).to.equal(creditLine.address)
-        expect(event.args.prepaymentAmount).to.bignumber.closeTo(bigVal(10), tolerance)
+        expect(event.args.paymentAmount).to.bignumber.closeTo(usdcVal(10), tolerance)
       })
     })
   })
@@ -428,59 +482,85 @@ describe("CreditDesk", () => {
     describe("with an outstanding credit line", async () => {
       beforeEach(async () => {
         borrower = person3
-        erc20.transfer(borrower, bigVal(50), {from: owner})
+        underwriter = person2
+        erc20.transfer(borrower, usdcVal(50), {from: owner})
       })
 
       describe("pausing", async () => {
         it("should be disallowed when paused", async () => {
-          const creditLine = await createAndSetCreditLineAttributes({balance: 10, interestOwed: 5, principalOwed: 3})
+          const creditLine = await createAndSetCreditLineAttributes({
+            balance: 10,
+            interestOwed: 5,
+            principalOwed: 3,
+            nextDueBlock: 1,
+          })
           await creditDesk.pause()
-          const result = creditDesk.pay(creditLine.address, String(bigVal(4)), {from: borrower})
+          const result = creditDesk.pay(creditLine.address, String(usdcVal(4)), {from: borrower})
           return expect(result).to.be.rejectedWith(/Pausable: paused/)
         })
       })
 
       it("should emit an event with the correct data", async () => {
-        const creditLine = await createAndSetCreditLineAttributes({balance: 10, interestOwed: 5, principalOwed: 3})
+        const creditLine = await createAndSetCreditLineAttributes({
+          balance: 10,
+          interestOwed: 5,
+          principalOwed: 3,
+          nextDueBlock: 1,
+        })
         const paymentAmount = 6
-        const response = await creditDesk.pay(creditLine.address, String(bigVal(paymentAmount)), {from: borrower})
-        const event = response.logs[0]
-        expect(event.event).to.equal("PaymentMade")
+        const response = await creditDesk.pay(creditLine.address, String(usdcVal(paymentAmount)), {from: borrower})
+        const paymentCollectedEvent = response.logs[0]
+        expect(paymentCollectedEvent.event).to.equal("PaymentCollected")
+        expect(paymentCollectedEvent.args.payer).to.equal(borrower)
+        expect(paymentCollectedEvent.args.paymentAmount).to.bignumber.closeTo(usdcVal(paymentAmount), tolerance)
+
+        const event = response.logs[1]
+        expect(event.event).to.equal("PaymentApplied")
         expect(event.args.payer).to.equal(borrower)
         expect(event.args.creditLine).to.equal(creditLine.address)
-        expect(event.args.interestAmount).to.bignumber.closeTo(bigVal(5), tolerance)
-        expect(event.args.principalAmount).to.bignumber.closeTo(bigVal(1), tolerance)
-        expect(event.args.remainingAmount).to.bignumber.equal(bigVal(0))
+        expect(event.args.interestAmount).to.bignumber.closeTo(usdcVal(5), tolerance)
+        expect(event.args.principalAmount).to.bignumber.closeTo(usdcVal(1), tolerance)
+        expect(event.args.remainingAmount).to.bignumber.equal(usdcVal(0))
       })
 
       it("should pay off interest first", async () => {
-        const creditLine = await createAndSetCreditLineAttributes({balance: 10, interestOwed: 5, principalOwed: 3})
+        const creditLine = await createAndSetCreditLineAttributes({
+          balance: 10,
+          interestOwed: 5,
+          principalOwed: 3,
+          nextDueBlock: 1,
+        })
         const paymentAmount = 6
-        await creditDesk.pay(creditLine.address, String(bigVal(paymentAmount)), {from: borrower})
+        await creditDesk.pay(creditLine.address, String(usdcVal(paymentAmount)), {from: borrower})
 
         // We use closeTo because several blocks may have passed between creating the creditLine and
         // making the payment, which accrues a very small amount of interest and principal. Also note
         // that 1e14 is actually a very small tolerance, since we use 1e18 as our decimals
-        expect(await creditLine.interestOwed()).to.be.bignumber.closeTo(bigVal(0), tolerance)
-        expect(await creditLine.principalOwed()).to.be.bignumber.closeTo(bigVal(2), tolerance)
-        expect(await creditLine.balance()).to.be.bignumber.closeTo(bigVal(9), tolerance)
+        expect(await creditLine.interestOwed()).to.be.bignumber.closeTo(usdcVal(0), tolerance)
+        expect(await creditLine.principalOwed()).to.be.bignumber.closeTo(usdcVal(2), tolerance)
+        expect(await creditLine.balance()).to.be.bignumber.closeTo(usdcVal(9), tolerance)
       })
 
       it("should send the payment to the pool", async () => {
         var originalPoolBalance = await getBalance(pool.address, erc20)
 
-        const creditLine = await createAndSetCreditLineAttributes({balance: 10, interestOwed: 5, principalOwed: 3})
+        const creditLine = await createAndSetCreditLineAttributes({
+          balance: 10,
+          interestOwed: 5,
+          principalOwed: 3,
+          nextDueBlock: 1,
+        })
         const paymentAmount = 6
-        await creditDesk.pay(creditLine.address, String(bigVal(paymentAmount)), {from: borrower})
+        await creditDesk.pay(creditLine.address, String(usdcVal(paymentAmount)), {from: borrower})
 
         var newPoolBalance = await getBalance(pool.address, erc20)
         var delta = newPoolBalance.sub(originalPoolBalance)
-        expect(delta).to.be.bignumber.equal(bigVal(6))
+        expect(delta).to.be.bignumber.equal(usdcVal(6))
       })
 
       it("should increase the share price of the pool only based on the paid interest (not principal)", async () => {
         var originalSharePrice = await pool.sharePrice()
-        var originalTotalShares = await pool.totalShares()
+        var originalTotalShares = await fidu.totalSupply()
 
         var interestAmount = 5
         const paymentAmount = 7
@@ -488,19 +568,20 @@ describe("CreditDesk", () => {
           balance: 10,
           interestOwed: interestAmount,
           principalOwed: 3,
+          nextDueBlock: 1,
         })
-        await creditDesk.pay(creditLine.address, String(bigVal(paymentAmount)), {from: borrower})
+        await creditDesk.pay(creditLine.address, String(usdcVal(paymentAmount)), {from: borrower})
 
         var newSharePrice = await pool.sharePrice()
         var delta = newSharePrice.sub(originalSharePrice)
-        var expectedDelta = bigVal(interestAmount).mul(decimals).div(originalTotalShares)
+        var expectedDelta = usdcVal(interestAmount).mul(decimals).div(originalTotalShares)
 
         expect(delta).to.bignumber.closeTo(expectedDelta, tolerance)
         expect(newSharePrice).to.bignumber.closeTo(originalSharePrice.add(expectedDelta), tolerance)
       })
 
       describe("with extra payment left over", async () => {
-        it("should send the extra to the collateral of the credit line", async () => {
+        it("should send the extra to the collectedPayment of the credit line", async () => {
           var interestAmount = 1
           const balance = 10
           const paymentAmount = 15
@@ -508,11 +589,12 @@ describe("CreditDesk", () => {
             balance: 10,
             interestOwed: interestAmount,
             principalOwed: 3,
+            nextDueBlock: 1,
           })
-          await creditDesk.pay(creditLine.address, String(bigVal(paymentAmount)), {from: borrower})
+          await creditDesk.pay(creditLine.address, String(usdcVal(paymentAmount)), {from: borrower})
 
-          const expected = bigVal(paymentAmount).sub(bigVal(interestAmount)).sub(bigVal(balance))
-          expect(await creditLine.collateralBalance()).to.bignumber.closeTo(expected, tolerance)
+          const expected = usdcVal(paymentAmount).sub(usdcVal(interestAmount)).sub(usdcVal(balance))
+          expect(await creditLine.collectedPaymentBalance()).to.bignumber.closeTo(expected, tolerance)
         })
       })
     })
@@ -528,13 +610,13 @@ describe("CreditDesk", () => {
 
     describe("pausing", async () => {
       it("should be disallowed when paused", async () => {
-        const prepaymentBalance = 8
+        const collectedPaymentBalance = 8
         const interestOwed = 5
         var creditLine = await createAndSetCreditLineAttributes({
           balance: 10,
           interestOwed: interestOwed,
           principalOwed: 3,
-          prepaymentBalance: prepaymentBalance,
+          collectedPaymentBalance: collectedPaymentBalance,
           latestBlock: latestBlock,
         })
 
@@ -544,15 +626,15 @@ describe("CreditDesk", () => {
       })
     })
 
-    describe("when there is exactly enough prepaymentBalance", async () => {
+    describe("when there is exactly enough collectedPaymentBalance", async () => {
       it("should successfully process the payment and correctly update all attributes", async () => {
-        const prepaymentBalance = 8
+        const collectedPaymentBalance = 8
         const interestOwed = 5
         var creditLine = await createAndSetCreditLineAttributes({
           balance: 10,
           interestOwed: interestOwed,
           principalOwed: 3,
-          prepaymentBalance: prepaymentBalance,
+          collectedPaymentBalance: collectedPaymentBalance,
           nextDueBlock: latestBlock,
         })
         const originalPoolBalance = await getBalance(pool.address, erc20)
@@ -561,58 +643,59 @@ describe("CreditDesk", () => {
 
         const newPoolBalance = await getBalance(pool.address, erc20)
         const expectedNextDueBlock = (await creditLine.paymentPeriodInDays())
-          .mul(await creditDesk.blocksPerDay())
+          .mul(await creditDesk.BLOCKS_PER_DAY())
           .add(latestBlock)
 
-        expect(await creditLine.prepaymentBalance()).to.bignumber.equal("0")
-        expect(await creditLine.balance()).to.bignumber.equal(bigVal(7))
+        expect(await creditLine.collectedPaymentBalance()).to.bignumber.equal("0")
+        expect(await creditLine.balance()).to.bignumber.equal(usdcVal(7))
         expect(await getBalance(creditLine.address, erc20)).to.bignumber.equal("0")
         expect(await creditLine.interestOwed()).to.bignumber.equal("0")
         expect(await creditLine.principalOwed()).to.bignumber.equal("0")
         const actualNextDueBlock = await creditLine.nextDueBlock()
         expect(actualNextDueBlock).to.bignumber.closeTo(expectedNextDueBlock, actualNextDueBlock.div(new BN(100))) // 1% tolerance;
-        expect(newPoolBalance.sub(originalPoolBalance)).to.bignumber.equal(bigVal(8))
+        expect(newPoolBalance.sub(originalPoolBalance)).to.bignumber.equal(usdcVal(8))
       })
 
       it("should emit an event with the correct data", async () => {
-        const prepaymentBalance = 9
+        const collectedPaymentBalance = 9
         const interestOwed = 5
         var creditLine = await createAndSetCreditLineAttributes({
           balance: 10,
           interestOwed: interestOwed,
           principalOwed: 3,
-          prepaymentBalance: prepaymentBalance,
+          collectedPaymentBalance: collectedPaymentBalance,
           nextDueBlock: latestBlock,
         })
         const response = await creditDesk.assessCreditLine(creditLine.address)
         const event = response.logs[0]
 
-        expect(event.event).to.equal("PaymentMade")
+        expect(event.event).to.equal("PaymentApplied")
         expect(event.args.payer).to.equal(borrower)
         expect(event.args.creditLine).to.equal(creditLine.address)
-        expect(event.args.interestAmount).to.bignumber.closeTo(bigVal(5), tolerance)
-        expect(event.args.principalAmount).to.bignumber.closeTo(bigVal(3), tolerance)
-        expect(event.args.remainingAmount).to.bignumber.equal(bigVal(1))
+        expect(event.args.interestAmount).to.bignumber.closeTo(usdcVal(5), tolerance)
+        expect(event.args.principalAmount).to.bignumber.closeTo(usdcVal(4), tolerance)
+        expect(event.args.remainingAmount).to.bignumber.equal(usdcVal(0))
       })
 
       it("should only increase the share price from interest paid", async () => {
-        const prepaymentBalance = 8
+        const collectedPaymentBalance = 8
         const interestOwed = 5
         const originalSharePrice = await pool.sharePrice()
         var creditLine = await createAndSetCreditLineAttributes({
           balance: 10,
           interestOwed: interestOwed,
           principalOwed: 3,
-          prepaymentBalance: prepaymentBalance,
+          collectedPaymentBalance: collectedPaymentBalance,
           nextDueBlock: latestBlock,
         })
 
         await creditDesk.assessCreditLine(creditLine.address)
 
         const newSharePrice = await pool.sharePrice()
-        const expectedSharePrice = bigVal(interestOwed)
+        const expectedSharePrice = usdcVal(interestOwed)
+          .mul(decimals.div(USDC_DECIMALS)) // This part is our "normalization" between USDC and Fidu
           .mul(decimals)
-          .div(await pool.totalShares())
+          .div(await fidu.totalSupply())
           .add(originalSharePrice)
         expect(newSharePrice).to.bignumber.equal(expectedSharePrice)
       })
@@ -620,14 +703,14 @@ describe("CreditDesk", () => {
 
     describe("when there is only enough to pay interest", async () => {
       it("should pay interest first", async () => {
-        const prepaymentBalance = 5
+        const collectedPaymentBalance = 5
         const interestOwed = 5
         const principalOwed = 3
         var creditLine = await createAndSetCreditLineAttributes({
           balance: 10,
           interestOwed: interestOwed,
           principalOwed: 3,
-          prepaymentBalance: prepaymentBalance,
+          collectedPaymentBalance: collectedPaymentBalance,
           nextDueBlock: await time.latestBlock(),
         })
         const originalPoolBalance = await getBalance(pool.address, erc20)
@@ -637,90 +720,60 @@ describe("CreditDesk", () => {
 
         const newPoolBalance = await getBalance(pool.address, erc20)
 
-        expect(await creditLine.prepaymentBalance()).to.bignumber.equal("0")
+        expect(await creditLine.collectedPaymentBalance()).to.bignumber.equal("0")
         expect(await creditLine.interestOwed()).to.bignumber.equal("0")
-        expect(await creditLine.principalOwed()).to.bignumber.equal(bigVal(principalOwed))
+        expect(await creditLine.principalOwed()).to.bignumber.equal(usdcVal(principalOwed))
         expect(await pool.sharePrice()).to.bignumber.gt(originalSharePrice)
-        expect(newPoolBalance.sub(originalPoolBalance)).to.bignumber.equal(bigVal(interestOwed))
+        expect(newPoolBalance.sub(originalPoolBalance)).to.bignumber.equal(usdcVal(interestOwed))
       })
     })
 
-    describe("when there is more prepayment than total amount owed", async () => {
-      it("should retain any extra as prepayment balance", async () => {
-        const prepaymentBalance = 10
+    describe("when there is more collectedPayment than total amount owed", async () => {
+      it("should retain apply the remaining towards the principal", async () => {
+        const balance = 10
+        const collectedPaymentBalance = 10
         const interestOwed = 5
         const principalOwed = 3
         var creditLine = await createAndSetCreditLineAttributes({
-          balance: 10,
+          balance: balance,
           interestOwed: interestOwed,
           principalOwed: 3,
-          prepaymentBalance: prepaymentBalance,
+          collectedPaymentBalance: collectedPaymentBalance,
           nextDueBlock: await time.latestBlock(),
         })
 
         await creditDesk.assessCreditLine(creditLine.address)
 
-        const expectedPrepaymentBalance = bigVal(prepaymentBalance).sub(bigVal(interestOwed)).sub(bigVal(principalOwed))
-        expect(await creditLine.prepaymentBalance()).to.bignumber.equal(expectedPrepaymentBalance)
+        const paymentRemaining = usdcVal(collectedPaymentBalance).sub(usdcVal(interestOwed)).sub(usdcVal(principalOwed))
+        const expectedBalance = usdcVal(balance).sub(usdcVal(principalOwed)).sub(paymentRemaining)
+        expect(await creditLine.balance()).to.bignumber.equal(expectedBalance)
+        expect(await creditLine.collectedPaymentBalance()).to.bignumber.equal("0")
         expect(await creditLine.interestOwed()).to.bignumber.equal("0")
-        expect(await creditLine.principalOwed()).to.bignumber.equal(bigVal("0"))
+        expect(await creditLine.principalOwed()).to.bignumber.equal(usdcVal("0"))
       })
     })
-  })
 
-  describe("hard limits", async () => {
-    describe("maxUnderwriterLimit", async () => {
-      describe("setting the limit", async () => {
-        let limit = new BN(1000)
-        it("should fail if it isn't the owner", async () => {
-          return expect(creditDesk.setMaxUnderwriterLimit(limit.mul(decimals), {from: person2})).to.be.rejectedWith(
-            /not the owner/
-          )
+    describe("when there is more collectedPayment than the total owed", async () => {
+      it("should retain the final remaining payment towards the next collectedPayment", async () => {
+        const balance = 3
+        const interestOwed = 1
+        const principalOwed = 2
+        const expectedLeftover = 1
+        const collectedPaymentBalance = balance + interestOwed + expectedLeftover
+        var creditLine = await createAndSetCreditLineAttributes({
+          balance: balance,
+          interestOwed: interestOwed,
+          principalOwed: principalOwed,
+          collectedPaymentBalance: collectedPaymentBalance,
+          nextDueBlock: await time.latestBlock(),
         })
 
-        it("should set the limit", async () => {
-          await creditDesk.setMaxUnderwriterLimit(limit.mul(decimals))
-          const newLimit = await creditDesk.maxUnderwriterLimit()
-          expect(newLimit).to.bignumber.equal(limit.mul(decimals))
-        })
+        await creditDesk.assessCreditLine(creditLine.address)
 
-        it("should fire an event", async () => {
-          const result = await creditDesk.setMaxUnderwriterLimit(limit)
-
-          const event = result.logs[0]
-
-          expect(event.event).to.equal("LimitChanged")
-          expect(event.args.owner).to.equal(owner)
-          expect(event.args.limitType).to.equal("maxUnderwriterLimit")
-          expect(event.args.amount).to.bignumber.equal(new BN(limit))
-        })
-      })
-    })
-    describe("transactionLimit", async () => {
-      describe("setting the limit", async () => {
-        let limit = new BN(1000)
-        it("should fail if it isn't the owner", async () => {
-          return expect(creditDesk.setTransactionLimit(limit.mul(decimals), {from: person2})).to.be.rejectedWith(
-            /not the owner/
-          )
-        })
-
-        it("should set the limit", async () => {
-          await creditDesk.setTransactionLimit(limit.mul(decimals))
-          const newLimit = await creditDesk.transactionLimit()
-          expect(newLimit).to.bignumber.equal(limit.mul(decimals))
-        })
-
-        it("should fire an event", async () => {
-          const result = await creditDesk.setTransactionLimit(limit)
-
-          const event = result.logs[0]
-
-          expect(event.event).to.equal("LimitChanged")
-          expect(event.args.owner).to.equal(owner)
-          expect(event.args.limitType).to.equal("transactionLimit")
-          expect(event.args.amount).to.bignumber.equal(new BN(limit))
-        })
+        expect(await creditLine.balance()).to.bignumber.equal("0")
+        expect(await creditLine.collectedPaymentBalance()).to.bignumber.equal(usdcVal(expectedLeftover))
+        expect(await creditLine.interestOwed()).to.bignumber.equal("0")
+        expect(await creditLine.principalOwed()).to.bignumber.equal(usdcVal("0"))
       })
     })
   })

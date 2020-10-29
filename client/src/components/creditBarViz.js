@@ -1,11 +1,11 @@
 import React from 'react';
-import { fromAtomic } from '../ethereum/erc20.js';
+import { usdcFromAtomic } from '../ethereum/erc20.js';
 import { displayNumber } from '../utils';
 
 function CreditBarViz(props) {
-  const drawdownBalance = fromAtomic(props.creditLine.balance);
-  const totalCreditLimit = fromAtomic(props.creditLine.limit);
-  const availableToDrawdown = fromAtomic(props.creditLine.availableBalance);
+  const drawdownBalance = usdcFromAtomic(props.creditLine.balance);
+  const totalCreditLimit = usdcFromAtomic(props.creditLine.limit);
+  const availableToDrawdown = usdcFromAtomic(props.creditLine.availableBalance);
   const leftBarStyle = { width: (100 * drawdownBalance) / totalCreditLimit + '%' };
   const rightBarStyle = { width: (100 * availableToDrawdown) / totalCreditLimit + '%' };
   return (

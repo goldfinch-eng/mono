@@ -1,4 +1,4 @@
-/* global ethers */
+/* global web3 ethers */
 const BN = require("bn.js")
 // Using 1e6, because that's what USDC is.
 const USDCDecimals = new BN(String(1e6))
@@ -25,6 +25,34 @@ const USDC_MAPPING = {
 const MULTISIG_MAPPING = {
   [RINKEBY]: "0xcF0B329c04Fd92a7370de10458050Fc8124Cacbc",
 }
+const OWNER_ROLE = web3.utils && web3.utils.keccak256("OWNER_ROLE")
+const PAUSER_ROLE = web3.utils && web3.utils.keccak256("PAUSER_ROLE")
+const MINTER_ROLE = web3.utils && web3.utils.keccak256("MINTER_ROLE")
+
+const CONFIG_KEYS = {
+  // Numbers
+  TransactionLimit: 0,
+  TotalFundsLimit: 1,
+  MaxUnderwriterLimit: 2,
+  // Addresses
+  Pool: 0,
+  CreditLineImplementation: 1,
+  CreditLineFactory: 2,
+  CreditDesk: 3,
+  Fidu: 4,
+  USDC: 5,
+}
+
+function isTestEnv() {
+  return process.env.NODE_ENV === "test"
+}
+
+function interestAprAsBN(interestPercentageString) {
+  const INTEREST_DECIMALS = 1e8
+  const interestPercentageFloat = parseFloat(interestPercentageString)
+  return new BN((interestPercentageFloat / 100) * INTEREST_DECIMALS)
+}
+
 function getUSDCAddress(chainID) {
   return USDC_MAPPING[chainID] || USDC_MAPPING[CHAIN_MAPPING[chainID]]
 }
@@ -34,7 +62,10 @@ function getMultisigAddress(chainID) {
 }
 
 async function getDeployedContract(deployments, contractName, signerAddress) {
-  const deployment = await deployments.getOrNull(contractName)
+  let deployment = await deployments.getOrNull(contractName)
+  if (!deployment && isTestEnv()) {
+    deployment = await deployments.getOrNull(`Test${contractName}`)
+  }
   const implementation = await deployments.getOrNull(contractName + "_Implementation")
   if (!deployment && !implementation) {
     throw new Error(
@@ -59,6 +90,30 @@ async function upgrade(deploy, contractName, proxyOwner, options) {
   return deploy(contractName, deployOptions)
 }
 
+async function updateConfig(config, type, key, newValue, opts) {
+  opts = opts || {}
+  let logger = opts.logger || function () {}
+  let currentValue
+  if (type === "address") {
+    currentValue = await config.getAddress(key)
+    if (currentValue !== newValue) {
+      if (key == CONFIG_KEYS.CreditLineImplementation) {
+        await (await config.setCreditLineImplementation(newValue)).wait()
+      } else {
+        await (await config.setAddress(key, newValue)).wait()
+      }
+    }
+  } else if (type === "number") {
+    currentValue = await config.getNumber(key)
+    if (String(currentValue) !== newValue) {
+      await (await config.setNumber(key, newValue)).wait()
+      logger(`Updated config ${type} ${key} from ${currentValue} to ${newValue}`)
+    }
+  } else {
+    throw new Error(`Unknown config type ${type}`)
+  }
+}
+
 function fromAtomic(amount, decimals = USDCDecimals) {
   return new BN(String(amount)).div(decimals).toString(10)
 }
@@ -81,5 +136,12 @@ module.exports = {
   fromAtomic: fromAtomic,
   toAtomic: toAtomic,
   upgrade: upgrade,
+  updateConfig: updateConfig,
   MAINNET_CHAIN_ID: MAINNET_CHAIN_ID,
+  OWNER_ROLE: OWNER_ROLE,
+  PAUSER_ROLE: PAUSER_ROLE,
+  MINTER_ROLE: MINTER_ROLE,
+  CONFIG_KEYS: CONFIG_KEYS,
+  isTestEnv: isTestEnv,
+  interestAprAsBN: interestAprAsBN,
 }

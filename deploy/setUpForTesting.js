@@ -6,7 +6,8 @@ const {
   CHAIN_MAPPING,
   getUSDCAddress,
   USDCDecimals,
-  ETHDecimals,
+  isTestEnv,
+  interestAprAsBN,
 } = require("../blockchain_scripts/deployHelpers.js")
 const PROTOCOL_CONFIG = require("../protocol_config.json")
 
@@ -87,7 +88,10 @@ async function giveMoneyToTestUser(testUser, erc20) {
 
 async function getDeployedAsEthersContract(getter, name) {
   logger("Trying to get the deployed version of...", name)
-  const deployed = await getter(name)
+  let deployed = await getter(name)
+  if (!deployed && isTestEnv()) {
+    deployed = await getter(`Test${name}`)
+  }
   if (!deployed) {
     return null
   }
@@ -125,8 +129,7 @@ async function createCreditLineForBorrower(creditDesk, borrower) {
 
   logger("Creating a credit line for the borrower", borrower)
   const limit = String(new BN(10000).mul(USDCDecimals))
-  // Divide by 100, because this should be given as a percentage. ie. 100 == 100%
-  const interestApr = String(new BN(5).mul(ETHDecimals).div(new BN(100)))
+  const interestApr = String(interestAprAsBN("5.00"))
   const minCollateralPercent = String(new BN(10))
   const paymentPeriodInDays = String(new BN(30))
   const termInDays = String(new BN(360))

@@ -7,13 +7,13 @@ async function main() {
   const {protocolOwner} = await getNamedAccounts()
   const pool = await getDeployedContract(deployments, "Pool", protocolOwner)
 
-  await depositFundsToThePool(pool)
+  await withdrawFundsFromThePool(pool)
 
-  async function depositFundsToThePool(pool) {
-    console.log("Depositing funds...")
-    const depositAmount = new BN(9900).mul(USDCDecimals)
+  async function withdrawFundsFromThePool(pool) {
+    console.log("Withdrawing funds...")
+    const withdrawAmount = new BN(10000).mul(USDCDecimals)
 
-    var txn = await pool.deposit(String(depositAmount))
+    var txn = await pool.withdraw(String(withdrawAmount))
     await txn.wait()
   }
 }

@@ -1,6 +1,6 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { sendFromUser } from '../ethereum/utils';
-import { fromAtomic, minimumNumber, toAtomic } from '../ethereum/erc20';
+import { usdcFromAtomic, minimumNumber, usdcToAtomic } from '../ethereum/erc20';
 import { AppContext } from '../App';
 import TransactionForm from './transactionForm';
 import { fetchPoolData } from '../ethereum/pool';
@@ -16,7 +16,7 @@ function DrawdownForm(props) {
   }, []);
 
   function makeDrawdown(value) {
-    const drawdownAmount = toAtomic(value);
+    const drawdownAmount = usdcToAtomic(value);
     return sendFromUser(
       creditDesk.methods.drawdown(drawdownAmount, props.creditLine.address),
       props.borrower.address,
@@ -30,7 +30,7 @@ function DrawdownForm(props) {
     <TransactionForm
       navOptions={[{ label: 'Drawdown', value: 'drawdown', submitTransaction: makeDrawdown }]}
       closeForm={props.closeForm}
-      maxAmount={minimumNumber(fromAtomic(props.creditLine.availableBalance), fromAtomic(poolData.balance))}
+      maxAmount={minimumNumber(usdcFromAtomic(props.creditLine.availableBalance), usdcFromAtomic(poolData.balance))}
     />
   );
 }

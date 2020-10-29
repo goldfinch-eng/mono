@@ -1,16 +1,18 @@
 import web3 from '../web3';
 import BN from 'bn.js';
-import { mapNetworkToID, fetchDataFromAttributes, getConfig } from './utils.js';
-import { decimals, fromAtomic, getErc20 } from './erc20';
+import { mapNetworkToID, fetchDataFromAttributes, getDeployments, USDC_DECIMALS } from './utils.js';
+import { decimals, fromAtomic, getErc20, usdcToAtomic } from './erc20';
+import { getFidu, FIDU_DECIMALS, fiduFromAtomic } from './fidu';
 
 let pool;
 
 async function getPool(networkName) {
   const networkId = mapNetworkToID[networkName];
-  const config = await getConfig(networkId);
+  const config = await getDeployments(networkId);
   const poolAddress = config.contracts.Pool.address;
   pool = new web3.eth.Contract(config.contracts.Pool.abi, poolAddress);
-  pool.erc20 = await getErc20(networkName);
+  pool.usdc = await getErc20(networkName);
+  pool.fidu = await getFidu(networkName);
   return pool;
 }
 
@@ -19,15 +21,12 @@ async function fetchCapitalProviderData(pool, capitalProviderAddress) {
   if (!capitalProviderAddress || !pool) {
     return Promise.resolve(result);
   }
-  const attributes = [
-    { method: 'totalShares' },
-    { method: 'sharePrice' },
-    { method: 'capitalProviders', args: [capitalProviderAddress], name: 'numShares' },
-  ];
+  const attributes = [{ method: 'sharePrice' }];
   result = await fetchDataFromAttributes(pool, attributes);
-  result.availableToWithdrawal = new BN(result.numShares).mul(new BN(result.sharePrice)).div(decimals);
+  result.numShares = await pool.fidu.methods.balanceOf(capitalProviderAddress).call();
+  result.availableToWithdrawal = new BN(result.numShares).mul(new BN(result.sharePrice)).div(FIDU_DECIMALS);
   result.address = capitalProviderAddress;
-  result.allowance = new BN(await pool.erc20.methods.allowance(capitalProviderAddress, pool._address).call());
+  result.allowance = new BN(await pool.usdc.methods.allowance(capitalProviderAddress, pool._address).call());
   return result;
 }
 
@@ -36,11 +35,20 @@ async function fetchPoolData(pool, erc20) {
   if (!erc20 || !pool) {
     return Promise.resolve(result);
   }
-  const attributes = [{ method: 'totalShares' }, { method: 'sharePrice' }, { method: 'transactionLimit' }];
+  const attributes = [{ method: 'sharePrice' }];
   result = await fetchDataFromAttributes(pool, attributes);
   result.balance = await erc20.methods.balanceOf(pool._address).call();
-  result.totalPoolBalance = result.totalShares * fromAtomic(result.sharePrice);
-  result.totalDrawDowns = result.totalPoolBalance - result.balance;
+  result.totalShares = await pool.fidu.methods.totalSupply().call();
+
+  // Do some slightly goofy multiplication and division here so that we have consistent units across
+  // 'balance', 'totalPoolBalance', and 'totalDrawdowns', allowing us to do arithmetic between them
+  // and display them using the same helpers.
+  const totalPoolBalanceInDollars = new BN(result.totalShares)
+    .div(FIDU_DECIMALS)
+    .mul(new BN(result.sharePrice))
+    .div(FIDU_DECIMALS);
+  result.totalPoolBalance = totalPoolBalanceInDollars.mul(USDC_DECIMALS);
+  result.totalDrawdowns = result.totalPoolBalance - result.balance;
   return result;
 }
 
