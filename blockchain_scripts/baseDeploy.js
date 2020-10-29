@@ -71,6 +71,7 @@ async function baseDeploy(bre, {shouldUpgrade}) {
     await updateConfig(config, "number", CONFIG_KEYS.TotalFundsLimit, String(totalFundsLimit))
     await updateConfig(config, "number", CONFIG_KEYS.TransactionLimit, String(transactionLimit))
     await updateConfig(config, "number", CONFIG_KEYS.MaxUnderwriterLimit, String(maxUnderwriterLimit))
+    await config.setTreasuryReserve(protocol_owner)
 
     return config
   }

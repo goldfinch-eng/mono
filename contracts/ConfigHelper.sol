@@ -37,4 +37,8 @@ library ConfigHelper {
   function fiduAddress(GoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.Fidu));
   }
+
+  function treasuryReserveAddress(GoldfinchConfig config) internal view returns (address) {
+    return config.getAddress(uint256(ConfigOptions.Addresses.TreasuryReserve));
+  }
 }

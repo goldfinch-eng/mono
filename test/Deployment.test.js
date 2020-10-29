@@ -27,6 +27,13 @@ describe("Deployment", async () => {
       const poolProxy = await deployments.getOrNull("TestPool_Proxy")
       expect(poolProxy).to.exist
     })
+
+    it("should set the protocol owner to the treasury reserve", async () => {
+      const {protocol_owner} = await getNamedAccounts()
+      const config = await getDeployedContract(deployments, "TestGoldfinchConfig")
+      expect(await config.getAddress(CONFIG_KEYS.TreasuryReserve)).to.equal(protocol_owner)
+    })
+
     it("deploys the credit line and credit line factory correctly", async () => {
       const creditLine = await deployments.get("CreditLine")
       const creditLineFactory = await deployments.get("CreditLineFactory")

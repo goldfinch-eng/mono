@@ -37,6 +37,13 @@ contract GoldfinchConfig is BaseUpgradeablePausable {
     addresses[addressKey] = newCreditLine;
   }
 
+  function setTreasuryReserve(address newTreasuryReserve) public onlyAdmin {
+    uint256 addressKey = uint256(ConfigOptions.Addresses.TreasuryReserve);
+    string memory name = ConfigOptions.getAddressName(addressKey);
+    emit AddressUpdated(msg.sender, name, addresses[addressKey], newTreasuryReserve);
+    addresses[addressKey] = newTreasuryReserve;
+  }
+
   /*
     Using custom getters incase we want to change underlying implementation later,
     or add checks or validations later on.

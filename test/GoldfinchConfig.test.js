@@ -42,6 +42,8 @@ describe("GoldfinchConfig", () => {
       expect(await goldfinchConfig.getNumber(CONFIG_KEYS.TransactionLimit)).to.bignumber.equal(new BN(1))
       expect(await goldfinchConfig.getNumber(CONFIG_KEYS.TotalFundsLimit)).to.bignumber.equal(new BN(2))
       expect(await goldfinchConfig.getNumber(CONFIG_KEYS.MaxUnderwriterLimit)).to.bignumber.equal(new BN(3))
+
+      // Addresses
       expect(await goldfinchConfig.getAddress(CONFIG_KEYS.Pool)).to.equal("0xBAc2781706D0aA32Fb5928c9a5191A13959Dc4AE")
       expect(await goldfinchConfig.getAddress(CONFIG_KEYS.CreditLineImplementation)).to.equal(
         "0xc783df8a850f42e7F7e57013759C285caa701eB6"
@@ -51,6 +53,9 @@ describe("GoldfinchConfig", () => {
       )
       expect(await goldfinchConfig.getAddress(CONFIG_KEYS.CreditDesk)).to.equal(
         "0xeAD9C93b79Ae7C1591b1FB5323BD777E86e150d4"
+      )
+      expect(await goldfinchConfig.getAddress(CONFIG_KEYS.TreasuryReserve)).to.equal(
+        "0xECd9C93B79AE7C1591b1fB5323BD777e86E150d5"
       )
     })
   })

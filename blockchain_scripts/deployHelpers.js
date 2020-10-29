@@ -41,6 +41,7 @@ const CONFIG_KEYS = {
   CreditDesk: 3,
   Fidu: 4,
   USDC: 5,
+  TreasuryReserve: 6,
 }
 
 function isTestEnv() {
