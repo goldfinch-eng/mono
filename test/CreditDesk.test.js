@@ -7,7 +7,6 @@ const {
   decimals,
   BN,
   usdcVal,
-  bigVal,
   tolerance,
   getBalance,
   getDeployedAsTruffleContract,
@@ -89,7 +88,16 @@ describe("CreditDesk", () => {
     const termEndBlock = (await time.latestBlock()).add(termInBlocks)
 
     var creditLine = await CreditLine.new({from: thisOwner})
-    await creditLine.initialize(thisOwner, thisBorrower, thisUnderwriter, usdcVal(500), bigVal(3), 5, 10, termInDays)
+    await creditLine.initialize(
+      thisOwner,
+      thisBorrower,
+      thisUnderwriter,
+      limit,
+      interestApr,
+      minCollateralPercent,
+      paymentPeriodInDays,
+      termInDays
+    )
 
     await Promise.all([
       creditDesk._setTotalLoansOutstanding(usdcVal(balance).add(usdcVal(interestOwed))),
@@ -538,6 +546,7 @@ describe("CreditDesk", () => {
         // that 1e14 is actually a very small tolerance, since we use 1e18 as our decimals
         expect(await creditLine.interestOwed()).to.be.bignumber.closeTo(usdcVal(0), tolerance)
         expect(await creditLine.principalOwed()).to.be.bignumber.closeTo(usdcVal(2), tolerance)
+        expect(await creditLine.collectedPaymentBalance()).to.be.bignumber.eq(usdcVal(0))
         expect(await creditLine.balance()).to.be.bignumber.closeTo(usdcVal(9), tolerance)
       })
 
@@ -574,10 +583,17 @@ describe("CreditDesk", () => {
 
         var newSharePrice = await pool.sharePrice()
         var delta = newSharePrice.sub(originalSharePrice)
-        var expectedDelta = usdcVal(interestAmount).mul(decimals).div(originalTotalShares)
 
-        expect(delta).to.bignumber.closeTo(expectedDelta, tolerance)
-        expect(newSharePrice).to.bignumber.closeTo(originalSharePrice.add(expectedDelta), tolerance)
+        let normalizedInterest = await pool._usdcToFidu(usdcVal(interestAmount))
+        var expectedDelta = normalizedInterest.mul(decimals).div(originalTotalShares)
+        let fidu_tolerance = decimals.div(USDC_DECIMALS)
+
+        // Ensure the tolerance is not too big
+        expect(delta).to.bignumber.gt(fidu_tolerance)
+        expect(newSharePrice).to.bignumber.gt(fidu_tolerance)
+
+        expect(delta).to.bignumber.closeTo(expectedDelta, fidu_tolerance)
+        expect(newSharePrice).to.bignumber.closeTo(originalSharePrice.add(expectedDelta), fidu_tolerance)
       })
 
       describe("with extra payment left over", async () => {
