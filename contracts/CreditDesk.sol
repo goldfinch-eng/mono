@@ -112,7 +112,8 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
 
     emit DrawdownMade(msg.sender, address(cl), amount);
 
-    config.getPool().transferFrom(config.poolAddress(), msg.sender, amount);
+    bool success = config.getPool().transferFrom(config.poolAddress(), msg.sender, amount);
+    require(success, "Failed to drawdown");
   }
 
   function pay(address creditLineAddress, uint256 amount) external override whenNotPaused {
@@ -157,7 +158,8 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
 
     emit PaymentCollected(msg.sender, address(cl), amount);
 
-    config.getPool().transferFrom(msg.sender, address(cl), amount);
+    bool success = config.getPool().transferFrom(msg.sender, address(cl), amount);
+    require(success, "Failed to collect payment");
   }
 
   function applyPayment(

@@ -91,7 +91,8 @@ contract CreditLine is BaseUpgradeablePausable {
     address poolAddress = config.getAddress(uint256(ConfigOptions.Addresses.Pool));
     address usdcAddress = config.getAddress(uint256(ConfigOptions.Addresses.USDC));
     // Approve the pool for an infinite amount
-    IERC20withDec(usdcAddress).approve(poolAddress, uint256(-1));
+    bool success = IERC20withDec(usdcAddress).approve(poolAddress, uint256(-1));
+    require(success, "Failed to approve USDC");
   }
 
   modifier onlyAdminOrUnderwriter() {
