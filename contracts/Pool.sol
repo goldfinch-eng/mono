@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import "./BaseUpgradeablePausable.sol";
 import "./ConfigHelper.sol";
+import "@nomiclabs/buidler/console.sol";
 
 contract Pool is BaseUpgradeablePausable, IPool {
   GoldfinchConfig public config;
@@ -60,10 +61,13 @@ contract Pool is BaseUpgradeablePausable, IPool {
   }
 
   function collectInterestRepayment(address from, uint256 amount) external override onlyCreditDesk whenNotPaused {
+    uint256 reserveAmount = amount.div(config.getReserveDenominator());
+    uint256 poolAmount = amount.sub(reserveAmount);
     emit InterestCollected(from, amount);
-    uint256 increment = usdcToFidu(amount).mul(fiduMantissa()).div(totalShares());
+    uint256 increment = usdcToFidu(poolAmount).mul(fiduMantissa()).div(totalShares());
     sharePrice = sharePrice + increment;
-    doUSDCTransfer(from, address(this), amount);
+    doUSDCTransfer(from, config.reserveAddress(), reserveAmount);
+    doUSDCTransfer(from, address(this), poolAmount);
   }
 
   function collectPrincipalRepayment(address from, uint256 amount) external override onlyCreditDesk whenNotPaused {

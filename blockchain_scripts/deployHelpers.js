@@ -34,6 +34,8 @@ const CONFIG_KEYS = {
   TransactionLimit: 0,
   TotalFundsLimit: 1,
   MaxUnderwriterLimit: 2,
+  ReserveDenominator: 3,
+  WithdrawFeeDenominator: 4,
   // Addresses
   Pool: 0,
   CreditLineImplementation: 1,
