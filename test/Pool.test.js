@@ -7,11 +7,11 @@ const {
   BN,
   getBalance,
   getDeployedAsTruffleContract,
-  tolerance,
   decimals,
   USDC_DECIMALS,
 } = require("./testHelpers.js")
-let accounts, owner, person2, person3
+let accounts, owner, person2, person3, reserve
+const WITHDRAWL_FEE_DENOMINATOR = new BN(200)
 
 describe("Pool", () => {
   let pool, erc20, fidu, goldfinchConfig
@@ -52,13 +52,14 @@ describe("Pool", () => {
   beforeEach(async () => {
     // Pull in our unlocked accounts
     accounts = await web3.eth.getAccounts()
-    ;[owner, person2, person3] = accounts
+    ;[owner, person2, person3, reserve] = accounts
 
     const deployResult = await testSetup()
     erc20 = deployResult.erc20
     pool = deployResult.pool
     fidu = deployResult.fidu
     goldfinchConfig = deployResult.goldfinchConfig
+    goldfinchConfig.setTreasuryReserve(reserve)
   })
 
   describe("Access Controls", () => {
@@ -197,7 +198,7 @@ describe("Pool", () => {
       capitalProvider = person2
     })
 
-    it("withdraws value from the contract when you call withdraw", async () => {
+    it("withdraws the correct amount of value from the contract when you call withdraw", async () => {
       await makeDeposit()
       const balanceBefore = await getBalance(pool.address, erc20)
       await makeWithdraw()
@@ -216,13 +217,24 @@ describe("Pool", () => {
       expect(event.args.amount).to.bignumber.equal(withdrawAmount)
     })
 
-    it("sends the amount back to the address", async () => {
+    it("sends the amount back to the address, accounting for fees", async () => {
       await makeDeposit()
       const addressValueBefore = await getBalance(person2, erc20)
       await makeWithdraw()
       const addressValueAfter = await getBalance(person2, erc20)
+      const expectedFee = withdrawAmount.div(WITHDRAWL_FEE_DENOMINATOR)
       const delta = addressValueAfter.sub(addressValueBefore)
-      expect(delta).bignumber.closeTo(withdrawAmount, tolerance)
+      expect(delta).bignumber.equal(withdrawAmount.sub(expectedFee))
+    })
+
+    it("should send the fees to the reserve address", async () => {
+      await makeDeposit()
+      const reserveBalanceBefore = await getBalance(reserve, erc20)
+      await makeWithdraw()
+      const reserveBalanceAfter = await getBalance(reserve, erc20)
+      const expectedFee = withdrawAmount.div(WITHDRAWL_FEE_DENOMINATOR)
+      const delta = reserveBalanceAfter.sub(reserveBalanceBefore)
+      expect(delta).bignumber.equal(expectedFee)
     })
 
     it("reduces your shares of fidu", async () => {

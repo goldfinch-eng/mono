@@ -16,6 +16,7 @@ contract Pool is BaseUpgradeablePausable, IPool {
   event TransferMade(address indexed from, address indexed to, uint256 amount);
   event InterestCollected(address indexed payer, uint256 amount);
   event PrincipalCollected(address indexed payer, uint256 amount);
+  event ReserveFundsCollected(address indexed payer, uint256 amount);
 
   function initialize(address owner, GoldfinchConfig _config) public initializer {
     __BaseUpgradeablePausable__init(owner);
@@ -32,6 +33,7 @@ contract Pool is BaseUpgradeablePausable, IPool {
   }
 
   function deposit(uint256 amount) external override whenNotPaused {
+    require(transactionWithinLimit(amount), "Amount is over the per-transaction limit");
     // Check if the amount of new shares to be added is within limits
     uint256 depositShares = getNumShares(amount);
     uint256 potentialNewTotalShares = totalShares().add(depositShares);
@@ -44,15 +46,20 @@ contract Pool is BaseUpgradeablePausable, IPool {
   }
 
   function withdraw(uint256 amount) external override whenNotPaused {
+    require(transactionWithinLimit(amount), "Amount is over the per-transaction limit");
     // Determine current shares the address has and the shares requested to withdraw
     uint256 currentShares = config.getFidu().balanceOf(msg.sender);
     uint256 withdrawShares = getNumShares(amount);
     // Ensure the address has enough value in the pool
     require(withdrawShares <= currentShares, "Amount requested is greater than what this address owns");
 
+    uint256 reserveAmount = amount.div(config.getWithdrawFeeDenominator());
+    uint256 userAmount = amount.sub(reserveAmount);
+
     emit WithdrawalMade(msg.sender, amount);
-    // Send the amount to the address
-    doUSDCTransfer(address(this), msg.sender, amount);
+    // Send the amounts
+    doUSDCTransfer(address(this), msg.sender, userAmount);
+    sendToReserve(address(this), reserveAmount);
 
     // Burn the shares
     config.getFidu().burnFrom(msg.sender, withdrawShares);
@@ -66,7 +73,7 @@ contract Pool is BaseUpgradeablePausable, IPool {
     emit InterestCollected(from, amount);
     uint256 increment = usdcToFidu(poolAmount).mul(fiduMantissa()).div(totalShares());
     sharePrice = sharePrice + increment;
-    doUSDCTransfer(from, config.reserveAddress(), reserveAmount);
+    sendToReserve(from, reserveAmount);
     doUSDCTransfer(from, address(this), poolAmount);
   }
 
@@ -136,6 +143,13 @@ contract Pool is BaseUpgradeablePausable, IPool {
 
   function fiduToUSDC(uint256 amount) internal view returns (uint256) {
     return amount.div(fiduMantissa().div(usdcMantissa()));
+  }
+
+  function sendToReserve(address from, uint256 amount) internal {
+    emit ReserveFundsCollected(from, amount);
+    totalReserves += amount;
+    bool success = doUSDCTransfer(from, config.reserveAddress(), amount);
+    require(success, "Reserve transfer was not successful");
   }
 
   function doUSDCTransfer(

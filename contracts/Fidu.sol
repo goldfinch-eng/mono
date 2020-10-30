@@ -76,24 +76,22 @@ contract Fidu is ERC20PresetMinterPauserUpgradeSafe {
   function canMint(uint256 newAmount) internal view returns (bool) {
     uint256 liabilities = totalSupply().add(newAmount).mul(config.getPool().sharePrice()).div(fiduMantissa());
     uint256 liabilitiesInDollars = fiduToUSDC(liabilities);
-    uint256 assets = config
-      .getUSDC()
-      .balanceOf(config.poolAddress())
-      .add(config.getCreditDesk().totalLoansOutstanding())
-      .sub(config.getCreditDesk().totalWritedowns());
-    return liabilitiesInDollars == assets;
+    return liabilitiesInDollars == assets();
   }
 
   // canBurn assumes that the USDC that backed these shares has already been moved out the Pool
   function canBurn(uint256 amountToBurn) internal view returns (bool) {
     uint256 liabilities = totalSupply().sub(amountToBurn).mul(config.getPool().sharePrice()).div(fiduMantissa());
     uint256 liabilitiesInDollars = fiduToUSDC(liabilities);
-    uint256 assets = config
+    return liabilitiesInDollars == assets();
+  }
+
+  function assets() internal view returns (uint256) {
+    return config
       .getUSDC()
       .balanceOf(config.poolAddress())
       .add(config.getCreditDesk().totalLoansOutstanding())
       .sub(config.getCreditDesk().totalWritedowns());
-    return liabilitiesInDollars == assets;
   }
 
   function fiduToUSDC(uint256 amount) internal view returns (uint256) {

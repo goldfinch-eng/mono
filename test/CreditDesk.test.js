@@ -375,7 +375,7 @@ describe("CreditDesk", () => {
       const totalLoansOutstanding2 = await creditDesk.totalLoansOutstanding()
       const interestOwed = await creditLine.interestOwed()
       expect(interestOwed).to.bignumber.be.greaterThan(new BN(0))
-      expect(totalLoansOutstanding2).to.bignumber.equal(drawdownAmount.add(drawdownAmount).add(interestOwed))
+      expect(totalLoansOutstanding2).to.bignumber.equal(drawdownAmount.add(drawdownAmount))
     })
 
     it("should track your accrued interest if you drawdown again", async () => {

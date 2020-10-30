@@ -247,11 +247,11 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
   }
 
   function subtractClFromTotalLoansOutstanding(CreditLine cl) internal {
-    totalLoansOutstanding = totalLoansOutstanding.sub(cl.balance().add(cl.interestOwed()));
+    totalLoansOutstanding = totalLoansOutstanding.sub(cl.balance());
   }
 
   function addCLToTotalLoansOutstanding(CreditLine cl) internal {
-    totalLoansOutstanding = totalLoansOutstanding.add(cl.balance().add(cl.interestOwed()));
+    totalLoansOutstanding = totalLoansOutstanding.add(cl.balance());
   }
 
   function getInterestAndPrincipalOwedAsOf(CreditLine cl, uint256 blockNumber)
