@@ -41,14 +41,14 @@ contract Fidu is ERC20PresetMinterPauserUpgradeSafe {
   }
 
   /**
-    * @dev Creates `amount` new tokens for `to`.
-    *
-    * See {ERC20-_mint}.
-    *
-    * Requirements:
-    *
-    * - the caller must have the `MINTER_ROLE`.
-    */
+   * @dev Creates `amount` new tokens for `to`.
+   *
+   * See {ERC20-_mint}.
+   *
+   * Requirements:
+   *
+   * - the caller must have the `MINTER_ROLE`.
+   */
   function mintTo(address to, uint256 amount) public {
     require(canMint(amount), "Cannot mint: it would create an asset/liability mismatch");
     super.mint(to, amount);
@@ -76,7 +76,9 @@ contract Fidu is ERC20PresetMinterPauserUpgradeSafe {
   function canMint(uint256 newAmount) internal view returns (bool) {
     uint256 liabilities = totalSupply().add(newAmount).mul(config.getPool().sharePrice()).div(fiduMantissa());
     uint256 liabilitiesInDollars = fiduToUSDC(liabilities);
-    uint256 assets = config.getUSDC().balanceOf(config.poolAddress())
+    uint256 assets = config
+      .getUSDC()
+      .balanceOf(config.poolAddress())
       .add(config.getCreditDesk().totalLoansOutstanding())
       .sub(config.getCreditDesk().totalWritedowns());
     return liabilitiesInDollars == assets;
@@ -86,7 +88,9 @@ contract Fidu is ERC20PresetMinterPauserUpgradeSafe {
   function canBurn(uint256 amountToBurn) internal view returns (bool) {
     uint256 liabilities = totalSupply().sub(amountToBurn).mul(config.getPool().sharePrice()).div(fiduMantissa());
     uint256 liabilitiesInDollars = fiduToUSDC(liabilities);
-    uint256 assets = config.getUSDC().balanceOf(config.poolAddress())
+    uint256 assets = config
+      .getUSDC()
+      .balanceOf(config.poolAddress())
       .add(config.getCreditDesk().totalLoansOutstanding())
       .sub(config.getCreditDesk().totalWritedowns());
     return liabilitiesInDollars == assets;

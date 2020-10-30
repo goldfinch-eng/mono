@@ -13,8 +13,8 @@ Only addition is the `decimals` function, which we need, and which both our Fidu
  * @dev Interface of the ERC20 standard as defined in the EIP.
  */
 interface IERC20withDec is IERC20 {
-    /**
-     * @dev Returns the number of decimals used for the token
-     */
-    function decimals() external view returns (uint8);
+  /**
+   * @dev Returns the number of decimals used for the token
+   */
+  function decimals() external view returns (uint8);
 }
