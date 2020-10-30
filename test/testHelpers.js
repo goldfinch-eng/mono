@@ -28,7 +28,7 @@ const getDeployedAsTruffleContract = async (deployments, contractName) => {
   return await artifacts.require(contractName).at(deployment.address)
 }
 
-const tolerance = bigVal(1).div(new BN(10)) // 1e17 as a BN;
+const tolerance = usdcVal(1).div(new BN(1000)) // 0.001$
 
 async function getBalance(address, erc20) {
   if (erc20) {
