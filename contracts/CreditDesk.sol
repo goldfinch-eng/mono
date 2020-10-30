@@ -45,7 +45,12 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     config = _config;
   }
 
-  function setUnderwriterGovernanceLimit(address underwriterAddress, uint256 limit) external override onlyAdmin whenNotPaused {
+  function setUnderwriterGovernanceLimit(address underwriterAddress, uint256 limit)
+    external
+    override
+    onlyAdmin
+    whenNotPaused
+  {
     Underwriter storage underwriter = underwriters[underwriterAddress];
     require(withinMaxUnderwriterLimit(limit), "This limit is greater than the max allowed by the protocol");
     underwriter.governanceLimit = limit;
@@ -90,7 +95,10 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     CreditLine cl = CreditLine(creditLineAddress);
     require(cl.borrower() == msg.sender, "You do not belong to this credit line");
     // Not strictly necessary, but provides a better error message to the user
-    require(config.getPool().enoughBalance(config.poolAddress(), amount), "Pool does not have enough balance for this drawdown");
+    require(
+      config.getPool().enoughBalance(config.poolAddress(), amount),
+      "Pool does not have enough balance for this drawdown"
+    );
     require(withinTransactionLimit(amount), "Amount is over the per-transaction limit");
     require(withinCreditLimit(amount, cl), "The borrower does not have enough credit limit for this drawdown");
     if (cl.balance() == 0) {
@@ -105,7 +113,8 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
 
     emit DrawdownMade(msg.sender, address(cl), amount);
 
-    config.getPool().transferFrom(config.poolAddress(), msg.sender, amount);
+    bool success = config.getPool().transferFrom(config.poolAddress(), msg.sender, amount);
+    require(success, "Failed to drawdown");
   }
 
   function pay(address creditLineAddress, uint256 amount) external override whenNotPaused {
@@ -150,7 +159,8 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
 
     emit PaymentCollected(msg.sender, address(cl), amount);
 
-    config.getPool().transferFrom(msg.sender, address(cl), amount);
+    bool success = config.getPool().transferFrom(msg.sender, address(cl), amount);
+    require(success, "Failed to collect payment");
   }
 
   function applyPayment(

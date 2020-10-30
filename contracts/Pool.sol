@@ -26,7 +26,8 @@ contract Pool is BaseUpgradeablePausable, IPool {
     usdc.totalSupply();
 
     // Unlock self for infinite amount
-    usdc.approve(address(this), uint256(-1));
+    bool success = usdc.approve(address(this), uint256(-1));
+    require(success, "Failed to approve USDC");
   }
 
   function deposit(uint256 amount) external override whenNotPaused {
@@ -81,7 +82,7 @@ contract Pool is BaseUpgradeablePausable, IPool {
     return result;
   }
 
-  function enoughBalance(address user, uint256 amount) public override view whenNotPaused returns (bool) {
+  function enoughBalance(address user, uint256 amount) public view override whenNotPaused returns (bool) {
     return config.getUSDC().balanceOf(user) >= amount;
   }
 
@@ -120,7 +121,9 @@ contract Pool is BaseUpgradeablePausable, IPool {
   function assetsMatchLiabilities() internal view returns (bool) {
     uint256 liabilities = config.getFidu().totalSupply().mul(config.getPool().sharePrice()).div(fiduMantissa());
     uint256 liabilitiesInDollars = fiduToUSDC(liabilities);
-    uint256 assets = config.getUSDC().balanceOf(config.poolAddress())
+    uint256 assets = config
+      .getUSDC()
+      .balanceOf(config.poolAddress())
       .add(config.getCreditDesk().totalLoansOutstanding())
       .sub(config.getCreditDesk().totalWritedowns());
 

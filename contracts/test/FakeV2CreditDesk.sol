@@ -43,7 +43,9 @@ contract FakeV2CreditDesk is BaseUpgradeablePausable {
   mapping(address => Underwriter) public underwriters;
   mapping(address => Borrower) private borrowers;
 
-  function initialize(address owner, GoldfinchConfig _config) public initializer {}
+  function initialize(address owner, GoldfinchConfig _config) public initializer {
+    return;
+  }
 
   function someBrandNewFunction() public pure returns (uint256) {
     return 5;
