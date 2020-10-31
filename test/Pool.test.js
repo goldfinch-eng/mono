@@ -217,6 +217,16 @@ describe("Pool", () => {
       expect(event.args.amount).to.bignumber.equal(withdrawAmount)
     })
 
+    it("should emit an event that the reserve received funds", async () => {
+      await makeDeposit()
+      const result = await makeWithdraw()
+      const event = result.logs[1]
+
+      expect(event.event).to.equal("ReserveFundsCollected")
+      expect(event.args.user).to.equal(capitalProvider)
+      expect(event.args.amount).to.bignumber.equal(withdrawAmount.div(WITHDRAWL_FEE_DENOMINATOR))
+    })
+
     it("sends the amount back to the address, accounting for fees", async () => {
       await makeDeposit()
       const addressValueBefore = await getBalance(person2, erc20)

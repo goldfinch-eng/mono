@@ -16,7 +16,7 @@ contract Pool is BaseUpgradeablePausable, IPool {
   event TransferMade(address indexed from, address indexed to, uint256 amount);
   event InterestCollected(address indexed payer, uint256 amount);
   event PrincipalCollected(address indexed payer, uint256 amount);
-  event ReserveFundsCollected(address indexed payer, uint256 amount);
+  event ReserveFundsCollected(address indexed user, uint256 amount);
 
   function initialize(address owner, GoldfinchConfig _config) public initializer {
     __BaseUpgradeablePausable__init(owner);
@@ -59,7 +59,7 @@ contract Pool is BaseUpgradeablePausable, IPool {
     emit WithdrawalMade(msg.sender, amount);
     // Send the amounts
     doUSDCTransfer(address(this), msg.sender, userAmount);
-    sendToReserve(address(this), reserveAmount);
+    sendToReserve(address(this), reserveAmount, msg.sender);
 
     // Burn the shares
     config.getFidu().burnFrom(msg.sender, withdrawShares);
@@ -73,7 +73,7 @@ contract Pool is BaseUpgradeablePausable, IPool {
     emit InterestCollected(from, amount);
     uint256 increment = usdcToFidu(poolAmount).mul(fiduMantissa()).div(totalShares());
     sharePrice = sharePrice + increment;
-    sendToReserve(from, reserveAmount);
+    sendToReserve(from, reserveAmount, from);
     doUSDCTransfer(from, address(this), poolAmount);
   }
 
@@ -145,9 +145,8 @@ contract Pool is BaseUpgradeablePausable, IPool {
     return amount.div(fiduMantissa().div(usdcMantissa()));
   }
 
-  function sendToReserve(address from, uint256 amount) internal {
-    emit ReserveFundsCollected(from, amount);
-    totalReserves += amount;
+  function sendToReserve(address from, uint256 amount, address userForEvent) internal {
+    emit ReserveFundsCollected(userForEvent, amount);
     bool success = doUSDCTransfer(from, config.reserveAddress(), amount);
     require(success, "Reserve transfer was not successful");
   }
