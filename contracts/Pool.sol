@@ -5,7 +5,6 @@ pragma experimental ABIEncoderV2;
 
 import "./BaseUpgradeablePausable.sol";
 import "./ConfigHelper.sol";
-import "@nomiclabs/buidler/console.sol";
 
 contract Pool is BaseUpgradeablePausable, IPool {
   GoldfinchConfig public config;
@@ -145,7 +144,11 @@ contract Pool is BaseUpgradeablePausable, IPool {
     return amount.div(fiduMantissa().div(usdcMantissa()));
   }
 
-  function sendToReserve(address from, uint256 amount, address userForEvent) internal {
+  function sendToReserve(
+    address from,
+    uint256 amount,
+    address userForEvent
+  ) internal {
     emit ReserveFundsCollected(userForEvent, amount);
     bool success = doUSDCTransfer(from, config.reserveAddress(), amount);
     require(success, "Reserve transfer was not successful");

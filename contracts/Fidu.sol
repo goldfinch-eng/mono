@@ -87,11 +87,10 @@ contract Fidu is ERC20PresetMinterPauserUpgradeSafe {
   }
 
   function assets() internal view returns (uint256) {
-    return config
-      .getUSDC()
-      .balanceOf(config.poolAddress())
-      .add(config.getCreditDesk().totalLoansOutstanding())
-      .sub(config.getCreditDesk().totalWritedowns());
+    return
+      config.getUSDC().balanceOf(config.poolAddress()).add(config.getCreditDesk().totalLoansOutstanding()).sub(
+        config.getCreditDesk().totalWritedowns()
+      );
   }
 
   function fiduToUSDC(uint256 amount) internal view returns (uint256) {

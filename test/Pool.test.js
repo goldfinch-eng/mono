@@ -2,14 +2,7 @@
 const {OWNER_ROLE, PAUSER_ROLE, CONFIG_KEYS} = require("../blockchain_scripts/deployHelpers")
 const bre = require("@nomiclabs/buidler")
 const {deployments} = bre
-const {
-  expect,
-  BN,
-  getBalance,
-  getDeployedAsTruffleContract,
-  decimals,
-  USDC_DECIMALS,
-} = require("./testHelpers.js")
+const {expect, BN, getBalance, getDeployedAsTruffleContract, decimals, USDC_DECIMALS} = require("./testHelpers.js")
 let accounts, owner, person2, person3, reserve
 const WITHDRAWL_FEE_DENOMINATOR = new BN(200)
 
