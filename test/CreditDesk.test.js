@@ -11,12 +11,13 @@ const {
   getBalance,
   getDeployedAsTruffleContract,
   USDC_DECIMALS,
+  ZERO_ADDRESS,
 } = require("./testHelpers.js")
 const {OWNER_ROLE, PAUSER_ROLE, CONFIG_KEYS, interestAprAsBN} = require("../blockchain_scripts/deployHelpers")
 const {time} = require("@openzeppelin/test-helpers")
 const CreditLine = artifacts.require("CreditLine")
 
-let accounts, owner, person2, person3, creditDesk, fidu, goldfinchConfig
+let accounts, owner, person2, person3, person4, creditDesk, fidu, goldfinchConfig
 
 describe("CreditDesk", () => {
   let underwriterLimit
@@ -27,7 +28,7 @@ describe("CreditDesk", () => {
   let minCollateralPercent = usdcVal(10)
   let paymentPeriodInDays = new BN(30)
   let termInDays = new BN(365)
-  let erc20
+  let usdc
   let pool
 
   let createCreditLine = async ({
@@ -104,7 +105,7 @@ describe("CreditDesk", () => {
       creditLine.setBalance(usdcVal(balance), {from: thisOwner}),
       creditLine.setInterestOwed(usdcVal(interestOwed), {from: thisOwner}),
       creditLine.setPrincipalOwed(usdcVal(principalOwed), {from: thisOwner}),
-      erc20.transfer(creditLine.address, String(usdcVal(collectedPaymentBalance)), {from: thisOwner}),
+      usdc.transfer(creditLine.address, String(usdcVal(collectedPaymentBalance)), {from: thisOwner}),
       creditLine.setCollectedPaymentBalance(String(usdcVal(collectedPaymentBalance)), {from: thisOwner}),
       creditLine.setNextDueBlock(nextDueBlock, {from: thisOwner}),
       creditLine.setTermEndBlock(termEndBlock, {from: thisOwner}),
@@ -118,28 +119,28 @@ describe("CreditDesk", () => {
   const setupTest = deployments.createFixture(async ({deployments}) => {
     await deployments.fixture("base_deploy")
     const pool = await getDeployedAsTruffleContract(deployments, "Pool")
-    const erc20 = await getDeployedAsTruffleContract(deployments, "ERC20")
+    const usdc = await getDeployedAsTruffleContract(deployments, "ERC20")
     const creditDesk = await getDeployedAsTruffleContract(deployments, "CreditDesk")
     const fidu = await getDeployedAsTruffleContract(deployments, "Fidu")
     const goldfinchConfig = await getDeployedAsTruffleContract(deployments, "GoldfinchConfig")
 
     // Approve transfers for our test accounts
-    await erc20.approve(pool.address, new BN(100000).mul(decimals), {from: owner})
-    await erc20.approve(pool.address, new BN(100000).mul(decimals), {from: person2})
-    await erc20.approve(pool.address, new BN(100000).mul(decimals), {from: person3})
+    await usdc.approve(pool.address, new BN(100000).mul(decimals), {from: owner})
+    await usdc.approve(pool.address, new BN(100000).mul(decimals), {from: person2})
+    await usdc.approve(pool.address, new BN(100000).mul(decimals), {from: person3})
 
     // Some housekeeping so we have a usable creditDesk for tests, and a pool with funds
-    await erc20.transfer(person2, String(usdcVal(1000)), {from: owner})
+    await usdc.transfer(person2, String(usdcVal(1000)), {from: owner})
     await pool.deposit(String(usdcVal(90)), {from: person2})
-    return {pool, erc20, creditDesk, fidu, goldfinchConfig}
+    return {pool, usdc, creditDesk, fidu, goldfinchConfig}
   })
 
   beforeEach(async () => {
     accounts = await web3.eth.getAccounts()
-    ;[owner, person2, person3] = accounts
+    ;[owner, person2, person3, person4] = accounts
     const deployResult = await setupTest()
 
-    erc20 = deployResult.erc20
+    usdc = deployResult.usdc
     pool = deployResult.pool
     creditDesk = deployResult.creditDesk
     fidu = deployResult.fidu
@@ -266,7 +267,7 @@ describe("CreditDesk", () => {
       expect((await creditLine.minCollateralPercent()).eq(minCollateralPercent)).to.be.true
       expect((await creditLine.paymentPeriodInDays()).eq(paymentPeriodInDays)).to.be.true
       expect((await creditLine.termInDays()).eq(termInDays)).to.be.true
-      expect(await erc20.allowance(creditLine.address, pool.address)).to.bignumber.equal(MAX_UINT)
+      expect(await usdc.allowance(creditLine.address, pool.address)).to.bignumber.equal(MAX_UINT)
     })
 
     it("should not let you create a credit line above your limit", async () => {
@@ -323,8 +324,9 @@ describe("CreditDesk", () => {
   })
 
   describe("drawdown", async () => {
-    let drawdown = async (amount, creditLineAddress) => {
-      return await creditDesk.drawdown(amount, creditLineAddress, {from: borrower})
+    let drawdown = async (amount, creditLineAddress, addressToSendTo) => {
+      addressToSendTo = addressToSendTo || creditLineAddress
+      return await creditDesk.drawdown(amount, creditLineAddress, addressToSendTo, {from: borrower})
     }
     let creditLine
     let blocksPerDay = (60 * 60 * 24) / 15
@@ -440,6 +442,32 @@ describe("CreditDesk", () => {
         return expect(drawdown(usdcVal(10), creditLine.address)).to.be.rejectedWith(/Pausable: paused/)
       })
     })
+
+    describe("when using a forwarding address", async () => {
+      it("should send to that address", async () => {
+        const drawdownAmount = usdcVal(3)
+        const originalBalance = await getBalance(person4, usdc)
+        await drawdown(drawdownAmount, creditLine.address, person4)
+        const newBalance = await getBalance(person4, usdc)
+        expect(newBalance.sub(originalBalance)).to.bignumber.equal(drawdownAmount)
+      })
+
+      it("should not send to the borrower address", async () => {
+        const drawdownAmount = usdcVal(3)
+        const originalBalance = await getBalance(borrower, usdc)
+        await drawdown(drawdownAmount, creditLine.address, person4)
+        const newBalance = await getBalance(borrower, usdc)
+        expect(newBalance.sub(originalBalance)).to.bignumber.equal(new BN(0))
+      })
+
+      it("if you pass up the zero address, it should send money to the borrower", async () => {
+        const drawdownAmount = usdcVal(3)
+        const originalBalance = await getBalance(borrower, usdc)
+        await drawdown(drawdownAmount, creditLine.address, ZERO_ADDRESS)
+        const newBalance = await getBalance(borrower, usdc)
+        expect(newBalance.sub(originalBalance)).to.bignumber.equal(drawdownAmount)
+      })
+    })
   })
 
   describe("prepayment", async () => {
@@ -461,15 +489,15 @@ describe("CreditDesk", () => {
       })
       it("should increment the prepaid balance", async () => {
         const prepaymentAmount = 10
-        expect(await (await getBalance(creditLine.address, erc20)).eq(usdcVal(0))).to.be.true
+        expect(await (await getBalance(creditLine.address, usdc)).eq(usdcVal(0))).to.be.true
         await makePrepayment(creditLine.address, prepaymentAmount, borrower)
-        expect((await getBalance(creditLine.address, erc20)).eq(usdcVal(prepaymentAmount))).to.be.true
+        expect((await getBalance(creditLine.address, usdc)).eq(usdcVal(prepaymentAmount))).to.be.true
         expect((await creditLine.collectedPaymentBalance()).eq(usdcVal(prepaymentAmount))).to.be.true
 
         let secondPrepayment = 15
         let totalPrepayment = usdcVal(prepaymentAmount).add(usdcVal(secondPrepayment))
         await makePrepayment(creditLine.address, secondPrepayment, borrower)
-        expect(await getBalance(creditLine.address, erc20)).to.bignumber.equal(totalPrepayment)
+        expect(await getBalance(creditLine.address, usdc)).to.bignumber.equal(totalPrepayment)
         expect(await creditLine.collectedPaymentBalance()).to.bignumber.equal(totalPrepayment)
       })
 
@@ -491,7 +519,7 @@ describe("CreditDesk", () => {
       beforeEach(async () => {
         borrower = person3
         underwriter = person2
-        erc20.transfer(borrower, usdcVal(50), {from: owner})
+        usdc.transfer(borrower, usdcVal(50), {from: owner})
       })
 
       describe("pausing", async () => {
@@ -551,7 +579,7 @@ describe("CreditDesk", () => {
       })
 
       it("should send the payment to the pool", async () => {
-        var originalPoolBalance = await getBalance(pool.address, erc20)
+        var originalPoolBalance = await getBalance(pool.address, usdc)
 
         const creditLine = await createAndSetCreditLineAttributes({
           balance: 10,
@@ -562,7 +590,7 @@ describe("CreditDesk", () => {
         const paymentAmount = 6
         await creditDesk.pay(creditLine.address, String(usdcVal(paymentAmount)), {from: borrower})
 
-        var newPoolBalance = await getBalance(pool.address, erc20)
+        var newPoolBalance = await getBalance(pool.address, usdc)
         var delta = newPoolBalance.sub(originalPoolBalance)
         expect(delta).to.be.bignumber.equal(usdcVal(6))
       })
@@ -653,18 +681,18 @@ describe("CreditDesk", () => {
           collectedPaymentBalance: collectedPaymentBalance,
           nextDueBlock: latestBlock,
         })
-        const originalPoolBalance = await getBalance(pool.address, erc20)
+        const originalPoolBalance = await getBalance(pool.address, usdc)
 
         await creditDesk.assessCreditLine(creditLine.address, {from: underwriter})
 
-        const newPoolBalance = await getBalance(pool.address, erc20)
+        const newPoolBalance = await getBalance(pool.address, usdc)
         const expectedNextDueBlock = (await creditLine.paymentPeriodInDays())
           .mul(await creditDesk.BLOCKS_PER_DAY())
           .add(latestBlock)
 
         expect(await creditLine.collectedPaymentBalance()).to.bignumber.equal("0")
         expect(await creditLine.balance()).to.bignumber.equal(usdcVal(7))
-        expect(await getBalance(creditLine.address, erc20)).to.bignumber.equal("0")
+        expect(await getBalance(creditLine.address, usdc)).to.bignumber.equal("0")
         expect(await creditLine.interestOwed()).to.bignumber.equal("0")
         expect(await creditLine.principalOwed()).to.bignumber.equal("0")
         const actualNextDueBlock = await creditLine.nextDueBlock()
@@ -729,12 +757,12 @@ describe("CreditDesk", () => {
           collectedPaymentBalance: collectedPaymentBalance,
           nextDueBlock: await time.latestBlock(),
         })
-        const originalPoolBalance = await getBalance(pool.address, erc20)
+        const originalPoolBalance = await getBalance(pool.address, usdc)
         const originalSharePrice = await pool.sharePrice()
 
         await creditDesk.assessCreditLine(creditLine.address)
 
-        const newPoolBalance = await getBalance(pool.address, erc20)
+        const newPoolBalance = await getBalance(pool.address, usdc)
 
         expect(await creditLine.collectedPaymentBalance()).to.bignumber.equal("0")
         expect(await creditLine.interestOwed()).to.bignumber.equal("0")
