@@ -324,7 +324,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     uint256 balance,
     uint256 interestOwed,
     uint256 principalOwed
-  ) internal {
+  ) internal nonReentrant {
     subtractClFromTotalLoansOutstanding(cl);
 
     cl.setBalance(balance);
@@ -334,7 +334,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
 
     addCLToTotalLoansOutstanding(cl);
 
-    if (balance == 0) {
+    if (balance <= 0) {
       cl.setTermEndBlock(0);
       cl.setNextDueBlock(0);
     }
