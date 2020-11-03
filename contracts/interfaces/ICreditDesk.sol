@@ -18,7 +18,7 @@ abstract contract ICreditDesk {
     uint256 _termInDays
   ) external virtual;
 
-  function drawdown(uint256 amount, address creditLineAddress) external virtual;
+  function drawdown(uint256 amount, address creditLineAddress, address addressToSendTo) external virtual;
 
   function pay(address creditLineAddress, uint256 amount) external virtual;
 

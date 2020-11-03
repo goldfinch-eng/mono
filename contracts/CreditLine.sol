@@ -39,6 +39,7 @@ contract CreditLine is BaseUpgradeablePausable {
     uint256 _paymentPeriodInDays,
     uint256 _termInDays
   ) public initializer {
+    require(owner != address(0) && _borrower != address(0) && _underwriter != address(0), "Zero address passed in");
     __BaseUpgradeablePausable__init(owner);
     borrower = _borrower;
     underwriter = _underwriter;
@@ -50,40 +51,40 @@ contract CreditLine is BaseUpgradeablePausable {
     lastUpdatedBlock = block.number;
   }
 
-  function setTermEndBlock(uint256 newTermEndBlock) external onlyAdmin returns (uint256) {
-    return termEndBlock = newTermEndBlock;
+  function setTermEndBlock(uint256 newTermEndBlock) external onlyAdmin {
+    termEndBlock = newTermEndBlock;
   }
 
-  function setNextDueBlock(uint256 newNextDueBlock) external onlyAdmin returns (uint256) {
-    return nextDueBlock = newNextDueBlock;
+  function setNextDueBlock(uint256 newNextDueBlock) external onlyAdmin {
+    nextDueBlock = newNextDueBlock;
   }
 
-  function setBalance(uint256 newBalance) external onlyAdmin returns (uint256) {
-    return balance = newBalance;
+  function setBalance(uint256 newBalance) external onlyAdmin {
+    balance = newBalance;
   }
 
-  function setInterestOwed(uint256 newInterestOwed) external onlyAdmin returns (uint256) {
-    return interestOwed = newInterestOwed;
+  function setInterestOwed(uint256 newInterestOwed) external onlyAdmin {
+    interestOwed = newInterestOwed;
   }
 
-  function setPrincipalOwed(uint256 newPrincipalOwed) external onlyAdmin returns (uint256) {
-    return principalOwed = newPrincipalOwed;
+  function setPrincipalOwed(uint256 newPrincipalOwed) external onlyAdmin {
+    principalOwed = newPrincipalOwed;
   }
 
-  function setCollectedPaymentBalance(uint256 newCollectedPaymentBalance) external onlyAdmin returns (uint256) {
-    return collectedPaymentBalance = newCollectedPaymentBalance;
+  function setCollectedPaymentBalance(uint256 newCollectedPaymentBalance) external onlyAdmin {
+    collectedPaymentBalance = newCollectedPaymentBalance;
   }
 
-  function setCollateralBalance(uint256 newCollateralBalance) external onlyAdmin returns (uint256) {
-    return collateralBalance = newCollateralBalance;
+  function setCollateralBalance(uint256 newCollateralBalance) external onlyAdmin {
+    collateralBalance = newCollateralBalance;
   }
 
-  function setLastUpdatedBlock(uint256 newLastUpdatedBlock) external onlyAdmin returns (uint256) {
-    return lastUpdatedBlock = newLastUpdatedBlock;
+  function setLastUpdatedBlock(uint256 newLastUpdatedBlock) external onlyAdmin {
+    lastUpdatedBlock = newLastUpdatedBlock;
   }
 
-  function setLimit(uint256 newAmount) external onlyAdminOrUnderwriter returns (uint256) {
-    return limit = newAmount;
+  function setLimit(uint256 newAmount) external onlyAdminOrUnderwriter {
+    limit = newAmount;
   }
 
   function authorizePool(address configAddress) external onlyAdmin {

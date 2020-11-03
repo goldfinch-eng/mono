@@ -90,7 +90,14 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     cl.authorizePool(address(config));
   }
 
-  function drawdown(uint256 amount, address creditLineAddress) external override whenNotPaused {
+  function drawdown(
+    uint256 amount,
+    address creditLineAddress,
+    address addressToSendTo
+  ) external override whenNotPaused {
+    if (addressToSendTo == address(0)) {
+      addressToSendTo = msg.sender;
+    }
     CreditLine cl = CreditLine(creditLineAddress);
     require(cl.borrower() == msg.sender, "You do not belong to this credit line");
     // Not strictly necessary, but provides a better error message to the user
@@ -112,7 +119,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
 
     emit DrawdownMade(msg.sender, address(cl), amount);
 
-    bool success = config.getPool().transferFrom(config.poolAddress(), msg.sender, amount);
+    bool success = config.getPool().transferFrom(config.poolAddress(), addressToSendTo, amount);
     require(success, "Failed to drawdown");
   }
 
@@ -317,7 +324,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     uint256 balance,
     uint256 interestOwed,
     uint256 principalOwed
-  ) internal {
+  ) internal nonReentrant {
     subtractClFromTotalLoansOutstanding(cl);
 
     cl.setBalance(balance);
@@ -327,7 +334,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
 
     addCLToTotalLoansOutstanding(cl);
 
-    if (balance == 0) {
+    if (balance <= 0) {
       cl.setTermEndBlock(0);
       cl.setNextDueBlock(0);
     }

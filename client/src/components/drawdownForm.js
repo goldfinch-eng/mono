@@ -18,7 +18,7 @@ function DrawdownForm(props) {
   function makeDrawdown(value) {
     const drawdownAmount = usdcToAtomic(value);
     return sendFromUser(
-      creditDesk.methods.drawdown(drawdownAmount, props.creditLine.address),
+      creditDesk.methods.drawdown(drawdownAmount, props.creditLine.address, props.borrower.address),
       props.borrower.address,
     ).then(result => {
       props.closeForm();
