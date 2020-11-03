@@ -5,7 +5,7 @@ pragma solidity ^0.6.8;
 library ConfigOptions {
   // NEVER EVER CHANGE THE ORDER OF THESE!
   // You can rename or append. But NEVER change the order.
-  enum Numbers {TransactionLimit, TotalFundsLimit, MaxUnderwriterLimit}
+  enum Numbers {TransactionLimit, TotalFundsLimit, MaxUnderwriterLimit, ReserveDenominator, WithdrawFeeDenominator}
   enum Addresses {Pool, CreditLineImplementation, CreditLineFactory, CreditDesk, Fidu, USDC, TreasuryReserve}
 
   function getNumberName(uint256 number) public pure returns (string memory) {
@@ -18,6 +18,12 @@ library ConfigOptions {
     }
     if (Numbers.MaxUnderwriterLimit == numberName) {
       return "MaxUnderwriterLimit";
+    }
+    if (Numbers.ReserveDenominator == numberName) {
+      return "ReserveDenominator";
+    }
+    if (Numbers.WithdrawFeeDenominator == numberName) {
+      return "WithdrawFeeDenominator";
     }
     revert("Unknown value passed to getNumberName");
   }

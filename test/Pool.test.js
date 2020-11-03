@@ -2,16 +2,9 @@
 const {OWNER_ROLE, PAUSER_ROLE, CONFIG_KEYS} = require("../blockchain_scripts/deployHelpers")
 const bre = require("@nomiclabs/buidler")
 const {deployments} = bre
-const {
-  expect,
-  BN,
-  getBalance,
-  getDeployedAsTruffleContract,
-  tolerance,
-  decimals,
-  USDC_DECIMALS,
-} = require("./testHelpers.js")
-let accounts, owner, person2, person3
+const {expect, BN, getBalance, getDeployedAsTruffleContract, decimals, USDC_DECIMALS} = require("./testHelpers.js")
+let accounts, owner, person2, person3, reserve
+const WITHDRAWL_FEE_DENOMINATOR = new BN(200)
 
 describe("Pool", () => {
   let pool, erc20, fidu, goldfinchConfig
@@ -52,13 +45,14 @@ describe("Pool", () => {
   beforeEach(async () => {
     // Pull in our unlocked accounts
     accounts = await web3.eth.getAccounts()
-    ;[owner, person2, person3] = accounts
+    ;[owner, person2, person3, reserve] = accounts
 
     const deployResult = await testSetup()
     erc20 = deployResult.erc20
     pool = deployResult.pool
     fidu = deployResult.fidu
     goldfinchConfig = deployResult.goldfinchConfig
+    goldfinchConfig.setTreasuryReserve(reserve)
   })
 
   describe("Access Controls", () => {
@@ -197,7 +191,7 @@ describe("Pool", () => {
       capitalProvider = person2
     })
 
-    it("withdraws value from the contract when you call withdraw", async () => {
+    it("withdraws the correct amount of value from the contract when you call withdraw", async () => {
       await makeDeposit()
       const balanceBefore = await getBalance(pool.address, erc20)
       await makeWithdraw()
@@ -210,19 +204,42 @@ describe("Pool", () => {
       await makeDeposit()
       const result = await makeWithdraw()
       const event = result.logs[0]
+      const reserveAmount = withdrawAmount.div(new BN(200))
 
       expect(event.event).to.equal("WithdrawalMade")
       expect(event.args.capitalProvider).to.equal(capitalProvider)
-      expect(event.args.amount).to.bignumber.equal(withdrawAmount)
+      expect(event.args.reserveAmount).to.bignumber.equal(reserveAmount)
+      expect(event.args.userAmount).to.bignumber.equal(withdrawAmount.sub(reserveAmount))
     })
 
-    it("sends the amount back to the address", async () => {
+    it("should emit an event that the reserve received funds", async () => {
+      await makeDeposit()
+      const result = await makeWithdraw()
+      const event = result.logs[1]
+
+      expect(event.event).to.equal("ReserveFundsCollected")
+      expect(event.args.user).to.equal(capitalProvider)
+      expect(event.args.amount).to.bignumber.equal(withdrawAmount.div(WITHDRAWL_FEE_DENOMINATOR))
+    })
+
+    it("sends the amount back to the address, accounting for fees", async () => {
       await makeDeposit()
       const addressValueBefore = await getBalance(person2, erc20)
       await makeWithdraw()
       const addressValueAfter = await getBalance(person2, erc20)
+      const expectedFee = withdrawAmount.div(WITHDRAWL_FEE_DENOMINATOR)
       const delta = addressValueAfter.sub(addressValueBefore)
-      expect(delta).bignumber.closeTo(withdrawAmount, tolerance)
+      expect(delta).bignumber.equal(withdrawAmount.sub(expectedFee))
+    })
+
+    it("should send the fees to the reserve address", async () => {
+      await makeDeposit()
+      const reserveBalanceBefore = await getBalance(reserve, erc20)
+      await makeWithdraw()
+      const reserveBalanceAfter = await getBalance(reserve, erc20)
+      const expectedFee = withdrawAmount.div(WITHDRAWL_FEE_DENOMINATOR)
+      const delta = reserveBalanceAfter.sub(reserveBalanceBefore)
+      expect(delta).bignumber.equal(expectedFee)
     })
 
     it("reduces your shares of fidu", async () => {
@@ -268,9 +285,12 @@ describe("Pool", () => {
       const amount = new BN(1).mul(USDC_DECIMALS)
       const response = await pool.collectInterestRepayment(person2, amount, {from: person3})
       const event = response.logs[0]
+      const reserveAmount = amount.div(new BN(10))
+
       expect(event.event).to.equal("InterestCollected")
       expect(event.args.payer).to.equal(person2)
-      expect(event.args.amount).to.bignumber.equal(amount)
+      expect(event.args.poolAmount).to.bignumber.equal(amount.sub(reserveAmount))
+      expect(event.args.reserveAmount).to.bignumber.equal(reserveAmount)
     })
 
     it("should not allow collection from anyone other than the admin", async () => {

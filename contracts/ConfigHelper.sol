@@ -38,7 +38,15 @@ library ConfigHelper {
     return config.getAddress(uint256(ConfigOptions.Addresses.Fidu));
   }
 
-  function treasuryReserveAddress(GoldfinchConfig config) internal view returns (address) {
+  function reserveAddress(GoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.TreasuryReserve));
+  }
+
+  function getReserveDenominator(GoldfinchConfig config) internal view returns (uint256) {
+    return config.getNumber(uint256(ConfigOptions.Numbers.ReserveDenominator));
+  }
+
+  function getWithdrawFeeDenominator(GoldfinchConfig config) internal view returns (uint256) {
+    return config.getNumber(uint256(ConfigOptions.Numbers.WithdrawFeeDenominator));
   }
 }

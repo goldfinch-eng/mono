@@ -16,8 +16,9 @@ const {
 const {OWNER_ROLE, PAUSER_ROLE, CONFIG_KEYS, interestAprAsBN} = require("../blockchain_scripts/deployHelpers")
 const {time} = require("@openzeppelin/test-helpers")
 const CreditLine = artifacts.require("CreditLine")
+const FEE_DENOMINATOR = new BN(10)
 
-let accounts, owner, person2, person3, person4, creditDesk, fidu, goldfinchConfig
+let accounts, owner, person2, person3, person4, creditDesk, fidu, goldfinchConfig, reserve
 
 describe("CreditDesk", () => {
   let underwriterLimit
@@ -137,7 +138,7 @@ describe("CreditDesk", () => {
 
   beforeEach(async () => {
     accounts = await web3.eth.getAccounts()
-    ;[owner, person2, person3, person4] = accounts
+    ;[owner, person2, person3, person4, reserve] = accounts
     const deployResult = await setupTest()
 
     usdc = deployResult.usdc
@@ -145,6 +146,9 @@ describe("CreditDesk", () => {
     creditDesk = deployResult.creditDesk
     fidu = deployResult.fidu
     goldfinchConfig = deployResult.goldfinchConfig
+
+    // Set the reserve to a separate address for easier separation. The current owner account gets used for many things in tests.
+    await goldfinchConfig.setTreasuryReserve(reserve)
   })
 
   describe("Access Controls", () => {
@@ -373,7 +377,7 @@ describe("CreditDesk", () => {
       const totalLoansOutstanding2 = await creditDesk.totalLoansOutstanding()
       const interestOwed = await creditLine.interestOwed()
       expect(interestOwed).to.bignumber.be.greaterThan(new BN(0))
-      expect(totalLoansOutstanding2).to.bignumber.equal(drawdownAmount.add(drawdownAmount).add(interestOwed))
+      expect(totalLoansOutstanding2).to.bignumber.equal(drawdownAmount.add(drawdownAmount))
     })
 
     it("should track your accrued interest if you drawdown again", async () => {
@@ -580,10 +584,10 @@ describe("CreditDesk", () => {
 
       it("should send the payment to the pool", async () => {
         var originalPoolBalance = await getBalance(pool.address, usdc)
-
+        var interestOwed = 5
         const creditLine = await createAndSetCreditLineAttributes({
           balance: 10,
-          interestOwed: 5,
+          interestOwed: interestOwed,
           principalOwed: 3,
           nextDueBlock: 1,
         })
@@ -591,8 +595,27 @@ describe("CreditDesk", () => {
         await creditDesk.pay(creditLine.address, String(usdcVal(paymentAmount)), {from: borrower})
 
         var newPoolBalance = await getBalance(pool.address, usdc)
+        var expectedFeeAmount = usdcVal(interestOwed).div(FEE_DENOMINATOR)
         var delta = newPoolBalance.sub(originalPoolBalance)
-        expect(delta).to.be.bignumber.equal(usdcVal(6))
+        expect(delta).to.be.bignumber.equal(usdcVal(6).sub(expectedFeeAmount))
+      })
+
+      it("should send the fee amount to the reserve address", async () => {
+        var originalReserveBalance = await getBalance(reserve, usdc)
+        var interestOwed = 5
+        const creditLine = await createAndSetCreditLineAttributes({
+          balance: 10,
+          interestOwed: interestOwed,
+          principalOwed: 3,
+          nextDueBlock: 1,
+        })
+        const paymentAmount = 6
+        await creditDesk.pay(creditLine.address, String(usdcVal(paymentAmount)), {from: borrower})
+
+        var newReserveBalance = await getBalance(reserve, usdc)
+        var expectedFeeAmount = usdcVal(interestOwed).div(FEE_DENOMINATOR)
+        var delta = newReserveBalance.sub(originalReserveBalance)
+        expect(delta).to.be.bignumber.equal(expectedFeeAmount)
       })
 
       it("should increase the share price of the pool only based on the paid interest (not principal)", async () => {
@@ -613,7 +636,8 @@ describe("CreditDesk", () => {
         var delta = newSharePrice.sub(originalSharePrice)
 
         let normalizedInterest = await pool._usdcToFidu(usdcVal(interestAmount))
-        var expectedDelta = normalizedInterest.mul(decimals).div(originalTotalShares)
+        let expectedReserveFee = await pool._usdcToFidu(usdcVal(interestAmount).div(FEE_DENOMINATOR))
+        var expectedDelta = normalizedInterest.sub(expectedReserveFee).mul(decimals).div(originalTotalShares)
         let fidu_tolerance = decimals.div(USDC_DECIMALS)
 
         // Ensure the tolerance is not too big
@@ -674,6 +698,7 @@ describe("CreditDesk", () => {
       it("should successfully process the payment and correctly update all attributes", async () => {
         const collectedPaymentBalance = 8
         const interestOwed = 5
+        const originalReserveBalance = await getBalance(reserve, usdc)
         var creditLine = await createAndSetCreditLineAttributes({
           balance: 10,
           interestOwed: interestOwed,
@@ -689,6 +714,7 @@ describe("CreditDesk", () => {
         const expectedNextDueBlock = (await creditLine.paymentPeriodInDays())
           .mul(await creditDesk.BLOCKS_PER_DAY())
           .add(latestBlock)
+        const newReserveBalance = await getBalance(reserve, usdc)
 
         expect(await creditLine.collectedPaymentBalance()).to.bignumber.equal("0")
         expect(await creditLine.balance()).to.bignumber.equal(usdcVal(7))
@@ -696,8 +722,10 @@ describe("CreditDesk", () => {
         expect(await creditLine.interestOwed()).to.bignumber.equal("0")
         expect(await creditLine.principalOwed()).to.bignumber.equal("0")
         const actualNextDueBlock = await creditLine.nextDueBlock()
+        const expectedFeeAmount = usdcVal(interestOwed).div(FEE_DENOMINATOR)
         expect(actualNextDueBlock).to.bignumber.closeTo(expectedNextDueBlock, actualNextDueBlock.div(new BN(100))) // 1% tolerance;
-        expect(newPoolBalance.sub(originalPoolBalance)).to.bignumber.equal(usdcVal(8))
+        expect(newPoolBalance.sub(originalPoolBalance)).to.bignumber.equal(usdcVal(8).sub(expectedFeeAmount))
+        expect(newReserveBalance.sub(originalReserveBalance)).to.bignumber.equal(expectedFeeAmount)
       })
 
       it("should emit an event with the correct data", async () => {
@@ -732,11 +760,13 @@ describe("CreditDesk", () => {
           collectedPaymentBalance: collectedPaymentBalance,
           nextDueBlock: latestBlock,
         })
+        const expectedfeeAmount = usdcVal(interestOwed).div(FEE_DENOMINATOR)
 
         await creditDesk.assessCreditLine(creditLine.address)
 
         const newSharePrice = await pool.sharePrice()
         const expectedSharePrice = usdcVal(interestOwed)
+          .sub(expectedfeeAmount)
           .mul(decimals.div(USDC_DECIMALS)) // This part is our "normalization" between USDC and Fidu
           .mul(decimals)
           .div(await fidu.totalSupply())
@@ -759,6 +789,7 @@ describe("CreditDesk", () => {
         })
         const originalPoolBalance = await getBalance(pool.address, usdc)
         const originalSharePrice = await pool.sharePrice()
+        const expectedFeeAmount = usdcVal(interestOwed).div(FEE_DENOMINATOR)
 
         await creditDesk.assessCreditLine(creditLine.address)
 
@@ -768,7 +799,7 @@ describe("CreditDesk", () => {
         expect(await creditLine.interestOwed()).to.bignumber.equal("0")
         expect(await creditLine.principalOwed()).to.bignumber.equal(usdcVal(principalOwed))
         expect(await pool.sharePrice()).to.bignumber.gt(originalSharePrice)
-        expect(newPoolBalance.sub(originalPoolBalance)).to.bignumber.equal(usdcVal(interestOwed))
+        expect(newPoolBalance.sub(originalPoolBalance)).to.bignumber.equal(usdcVal(interestOwed).sub(expectedFeeAmount))
       })
     })
 

@@ -11,10 +11,11 @@ contract Pool is BaseUpgradeablePausable, IPool {
   using ConfigHelper for GoldfinchConfig;
 
   event DepositMade(address indexed capitalProvider, uint256 amount, uint256 shares);
-  event WithdrawalMade(address indexed capitalProvider, uint256 amount);
+  event WithdrawalMade(address indexed capitalProvider, uint256 userAmount, uint256 reserveAmount);
   event TransferMade(address indexed from, address indexed to, uint256 amount);
-  event InterestCollected(address indexed payer, uint256 amount);
+  event InterestCollected(address indexed payer, uint256 poolAmount, uint256 reserveAmount);
   event PrincipalCollected(address indexed payer, uint256 amount);
+  event ReserveFundsCollected(address indexed user, uint256 amount);
 
   function initialize(address owner, GoldfinchConfig _config) public initializer {
     __BaseUpgradeablePausable__init(owner);
@@ -31,6 +32,7 @@ contract Pool is BaseUpgradeablePausable, IPool {
   }
 
   function deposit(uint256 amount) external override whenNotPaused {
+    require(transactionWithinLimit(amount), "Amount is over the per-transaction limit");
     // Check if the amount of new shares to be added is within limits
     uint256 depositShares = getNumShares(amount);
     uint256 potentialNewTotalShares = totalShares().add(depositShares);
@@ -43,15 +45,20 @@ contract Pool is BaseUpgradeablePausable, IPool {
   }
 
   function withdraw(uint256 amount) external override whenNotPaused {
+    require(transactionWithinLimit(amount), "Amount is over the per-transaction limit");
     // Determine current shares the address has and the shares requested to withdraw
     uint256 currentShares = config.getFidu().balanceOf(msg.sender);
     uint256 withdrawShares = getNumShares(amount);
     // Ensure the address has enough value in the pool
     require(withdrawShares <= currentShares, "Amount requested is greater than what this address owns");
 
-    emit WithdrawalMade(msg.sender, amount);
-    // Send the amount to the address
-    doUSDCTransfer(address(this), msg.sender, amount);
+    uint256 reserveAmount = amount.div(config.getWithdrawFeeDenominator());
+    uint256 userAmount = amount.sub(reserveAmount);
+
+    emit WithdrawalMade(msg.sender, userAmount, reserveAmount);
+    // Send the amounts
+    doUSDCTransfer(address(this), msg.sender, userAmount);
+    sendToReserve(address(this), reserveAmount, msg.sender);
 
     // Burn the shares
     config.getFidu().burnFrom(msg.sender, withdrawShares);
@@ -60,10 +67,13 @@ contract Pool is BaseUpgradeablePausable, IPool {
   }
 
   function collectInterestRepayment(address from, uint256 amount) external override onlyCreditDesk whenNotPaused {
-    emit InterestCollected(from, amount);
-    uint256 increment = usdcToFidu(amount).mul(fiduMantissa()).div(totalShares());
+    uint256 reserveAmount = amount.div(config.getReserveDenominator());
+    uint256 poolAmount = amount.sub(reserveAmount);
+    emit InterestCollected(from, poolAmount, reserveAmount);
+    uint256 increment = usdcToFidu(poolAmount).mul(fiduMantissa()).div(totalShares());
     sharePrice = sharePrice + increment;
-    doUSDCTransfer(from, address(this), amount);
+    sendToReserve(from, reserveAmount, from);
+    doUSDCTransfer(from, address(this), poolAmount);
   }
 
   function collectPrincipalRepayment(address from, uint256 amount) external override onlyCreditDesk whenNotPaused {
@@ -134,12 +144,23 @@ contract Pool is BaseUpgradeablePausable, IPool {
     return amount.div(fiduMantissa().div(usdcMantissa()));
   }
 
+  function sendToReserve(
+    address from,
+    uint256 amount,
+    address userForEvent
+  ) internal {
+    emit ReserveFundsCollected(userForEvent, amount);
+    bool success = doUSDCTransfer(from, config.reserveAddress(), amount);
+    require(success, "Reserve transfer was not successful");
+  }
+
   function doUSDCTransfer(
     address from,
     address to,
     uint256 amount
   ) internal returns (bool) {
     require(transactionWithinLimit(amount), "Amount is over the per-transaction limit");
+    require(to != address(0), "Can't send to zero address");
     IERC20withDec usdc = config.getUSDC();
     uint256 balanceBefore = usdc.balanceOf(to);
 
