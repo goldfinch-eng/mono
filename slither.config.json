@@ -1,5 +1,5 @@
 {
-    "exclude_informational": false,
+    "exclude_informational": true,
     "exclude_low": true,
     "exclude_medium": true,
     "exclude_high": false
