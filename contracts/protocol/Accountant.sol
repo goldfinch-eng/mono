@@ -19,6 +19,8 @@ library Accountant {
   uint256 public constant INTEREST_DECIMALS = 1e8;
   uint256 public constant BLOCKS_PER_DAY = 5760;
   uint256 public constant BLOCKS_PER_YEAR = (BLOCKS_PER_DAY * 365);
+  uint256 public constant LATENESS_GRACE_PERIOD = 1;
+  uint256 public constant LATENESS_MAX_GRACE_PERIODS = 4;
 
   struct PaymentAllocation {
     uint256 interestPayment;
@@ -42,6 +44,44 @@ library Accountant {
     } else {
       return 0;
     }
+  }
+
+  function calculateWritedownFor(
+    CreditLine cl,
+    uint256 blockNumber,
+    uint256 gracePeriod
+  ) public view returns (uint256, uint256) {
+    uint256 amountOwedLastPeriod = calculateAmountOwedForOnePeriod(cl, blockNumber);
+    if (amountOwedLastPeriod == 0) {
+      return (0, 0);
+    }
+    uint256 totalOwed = cl.interestOwed() + cl.principalOwed();
+    // Excel math: =min(1,max(0,periods_late_in_days-graceperiod_in_days)/MAX_ALLOWED_DAYS_LATE) grace_period = 30,
+    // TODO: Needs to use exponential.sol
+    uint256 periodsLate = totalOwed.div(amountOwedLastPeriod);
+
+    if (periodsLate <= gracePeriod) {
+      // Not late, so nothing to write down
+      return (0, 0);
+    }
+
+    // TODO: Pull these from config
+    uint256 writedownPercent = Math.min(1, (periodsLate - gracePeriod).div(LATENESS_MAX_GRACE_PERIODS));
+    uint256 writedownAmount = cl.balance().mul(writedownPercent);
+    return (writedownPercent, writedownAmount);
+  }
+
+  function calculateAmountOwedForOnePeriod(CreditLine cl, uint256 asOfBlock) public view returns (uint256) {
+    // Determine theoretical interestOwed for one full period
+    uint256 paymentPeriodInBlocks = cl.paymentPeriodInDays() * BLOCKS_PER_DAY;
+    uint256 totalInterestPerYear = cl.balance().mul(cl.interestApr()).div(INTEREST_DECIMALS);
+    uint256 interestOwed = totalInterestPerYear.mul(paymentPeriodInBlocks).div(BLOCKS_PER_YEAR);
+
+    // If the block is beyond the loan end date, then the borrower also owes the principal
+    if (asOfBlock > cl.termEndBlock()) {
+      interestOwed = interestOwed + cl.balance();
+    }
+    return interestOwed;
   }
 
   function calculateInterestAccrued(CreditLine cl, uint256 blockNumber) public view returns (uint256) {

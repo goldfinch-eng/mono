@@ -674,6 +674,38 @@ describe("CreditDesk", () => {
     })
   })
 
+  describe("late payments", async () => {
+    beforeEach(async () => {
+      borrower = person3
+      underwriter = person2
+      usdc.transfer(borrower, usdcVal(50), {from: owner})
+    })
+
+    describe("before loan term ends", async () => {
+      it("should write down the principal and distribute losses", async () => {
+        const creditLine = await createAndSetCreditLineAttributes({
+          balance: 10,
+          interestOwed: 5,
+          principalOwed: 0,
+          nextDueBlock: 1,
+        })
+
+        await creditDesk.assessCreditLine(creditLine.address)
+
+        expect(await creditLine.interestOwed()).to.be.bignumber.closeTo(usdcVal(5), tolerance)
+        expect(await creditLine.principalOwed()).to.be.bignumber.closeTo(usdcVal(0), tolerance)
+        expect(await creditLine.writedownAmount()).to.be.bignumber.gt(usdcVal(0))
+      })
+
+      it("should decrease the write down amount if partially paid back", async () => {})
+
+      it("should reset the writedowns to 0 if fully paid back", async () => {})
+    })
+
+    // Does this matter?
+    describe("after loan term ends", async () => {})
+  })
+
   describe("assessCreditLine", async () => {
     let latestBlock
     beforeEach(async () => {

@@ -151,6 +151,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     require(cl.borrower() == msg.sender, "You do not belong to this credit line");
     require(withinTransactionLimit(amount), "Amount is over the per-transaction limit");
     require(withinCreditLimit(amount, cl), "The borrower does not have enough credit limit for this drawdown");
+    require(!isLate(cl), "Drawdowns locked");
 
     if (addressToSendTo == address(0)) {
       addressToSendTo = msg.sender;
@@ -278,9 +279,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     // but since assess can be called by anyone, it's better to keep the funds within the contract)
     cl.setCollectedPaymentBalance(paymentRemaining);
 
-    if (cl.principalOwed() > 0 || cl.interestOwed() > 0) {
-      handleLatePayments(cl);
-    }
+    updateWritedownAmounts(cl);
 
     bool paymentApplied = false;
     if (interestPayment > 0) {
@@ -336,9 +335,26 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     return (paymentRemaining, pa.interestPayment, totalPrincipalPayment);
   }
 
-  function handleLatePayments(CreditLine) internal pure {
-    // No op for now;
-    return;
+  function updateWritedownAmounts(CreditLine cl) internal {
+    (uint256 writedownPercent, uint256 writedownAmount) = Accountant.calculateWritedownFor(
+      cl,
+      block.number,
+      Accountant.LATENESS_GRACE_PERIOD
+    );
+    if (writedownPercent == 0) {
+      assert(writedownAmount == 0);
+      return;
+    }
+    int256 writedownDelta = int256(cl.writedownAmount()) - int256(writedownAmount);
+    cl.setWritedownAmount(writedownAmount);
+    config.getPool().distributeLosses(writedownDelta);
+  }
+
+  function isLate(CreditLine cl) internal view returns (bool) {
+    // Calculate the writedown percent without any grace period to determine if we're late
+    // TODO: Can this be simplified?
+    (uint256 writedownPercent, uint256 writedownAmount) = Accountant.calculateWritedownFor(cl, block.number, 0);
+    return writedownPercent > 0;
   }
 
   function getCreditLineFactory() internal view returns (CreditLineFactory) {

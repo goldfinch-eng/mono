@@ -127,6 +127,17 @@ contract Pool is BaseUpgradeablePausable, IPool {
     doUSDCTransfer(from, address(this), amount);
   }
 
+  function distributeLosses(int256 writedownDelta) external override onlyCreditDesk whenNotPaused {
+    if (writedownDelta > 0) {
+      uint256 delta = usdcToFidu(uint256(writedownDelta)).mul(fiduMantissa()).div(totalShares());
+      sharePrice = sharePrice.add(delta);
+    } else {
+      // If delta is negative, convert to positive uint, and sub from sharePrice
+      uint256 delta = usdcToFidu(uint256(writedownDelta * -1)).mul(fiduMantissa()).div(totalShares());
+      sharePrice = sharePrice.sub(delta);
+    }
+  }
+
   /**
    * @notice Moves `amount` USDC from `from`, to `to`.
    * @param from The address to take the USDC from. Implicitly, the Pool
