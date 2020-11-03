@@ -9,6 +9,13 @@ import "./Accountant.sol";
 import "./CreditLine.sol";
 import "./CreditLineFactory.sol";
 
+/**
+ * @title Goldfinch's CreditDesk contract
+ * @notice Main entry point for borrowers and underwriters.
+ *  Handles key logic for creating CreditLine's, borrowing money, repayment, etc.
+ * @author Goldfinch
+ */
+
 contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
   // Approximate number of blocks
   uint256 public constant BLOCKS_PER_DAY = 5760;
@@ -44,6 +51,11 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     config = _config;
   }
 
+  /**
+   * @notice Sets a particular underwriter's limit of how much credit the DAO will allow them to "create"
+   * @param underwriterAddress The address of the underwriter for whom the limit shall change
+   * @param limit What the new limit will be set to
+   */
   function setUnderwriterGovernanceLimit(address underwriterAddress, uint256 limit)
     external
     override

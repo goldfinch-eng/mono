@@ -51,4 +51,3 @@ This is an in-house library for handling core calculations. It leverages the [AB
 
 - `calculateInterestAndPrincipalAccrued`
 - `allocatePayment`
-

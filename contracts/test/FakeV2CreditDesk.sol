@@ -4,11 +4,11 @@ pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
-import "../BaseUpgradeablePausable.sol";
-import "../Pool.sol";
-import "../Accountant.sol";
-import "../CreditLine.sol";
-import "../GoldfinchConfig.sol";
+import "../protocol/BaseUpgradeablePausable.sol";
+import "../protocol/Pool.sol";
+import "../protocol/Accountant.sol";
+import "../protocol/CreditLine.sol";
+import "../protocol/GoldfinchConfig.sol";
 
 contract FakeV2CreditDesk is BaseUpgradeablePausable {
   uint256 public totalWritedowns;

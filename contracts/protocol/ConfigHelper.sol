@@ -4,10 +4,10 @@ pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
 import "./GoldfinchConfig.sol";
-import "./interfaces/IPool.sol";
-import "./interfaces/IFidu.sol";
-import "./interfaces/ICreditDesk.sol";
-import "./interfaces/IERC20withDec.sol";
+import "../interfaces/IPool.sol";
+import "../interfaces/IFidu.sol";
+import "../interfaces/ICreditDesk.sol";
+import "../interfaces/IERC20withDec.sol";
 
 library ConfigHelper {
   function getPool(GoldfinchConfig config) internal view returns (IPool) {
