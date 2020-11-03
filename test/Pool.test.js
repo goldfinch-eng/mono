@@ -204,10 +204,12 @@ describe("Pool", () => {
       await makeDeposit()
       const result = await makeWithdraw()
       const event = result.logs[0]
+      const reserveAmount = withdrawAmount.div(new BN(200))
 
       expect(event.event).to.equal("WithdrawalMade")
       expect(event.args.capitalProvider).to.equal(capitalProvider)
-      expect(event.args.amount).to.bignumber.equal(withdrawAmount)
+      expect(event.args.reserveAmount).to.bignumber.equal(reserveAmount)
+      expect(event.args.userAmount).to.bignumber.equal(withdrawAmount.sub(reserveAmount))
     })
 
     it("should emit an event that the reserve received funds", async () => {
@@ -283,9 +285,12 @@ describe("Pool", () => {
       const amount = new BN(1).mul(USDC_DECIMALS)
       const response = await pool.collectInterestRepayment(person2, amount, {from: person3})
       const event = response.logs[0]
+      const reserveAmount = amount.div(new BN(10))
+
       expect(event.event).to.equal("InterestCollected")
       expect(event.args.payer).to.equal(person2)
-      expect(event.args.amount).to.bignumber.equal(amount)
+      expect(event.args.poolAmount).to.bignumber.equal(amount.sub(reserveAmount))
+      expect(event.args.reserveAmount).to.bignumber.equal(reserveAmount)
     })
 
     it("should not allow collection from anyone other than the admin", async () => {
