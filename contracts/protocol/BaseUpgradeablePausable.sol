@@ -8,7 +8,12 @@ import "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import "./PauserPausable.sol";
 
-contract BaseUpgradeablePausable is Initializable, AccessControlUpgradeSafe, PauserPausable, ReentrancyGuardUpgradeSafe {
+contract BaseUpgradeablePausable is
+  Initializable,
+  AccessControlUpgradeSafe,
+  PauserPausable,
+  ReentrancyGuardUpgradeSafe
+{
   bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
   using SafeMath for uint256;
   // Pre-reserving a few slots in the base contract in case we need to add things in the future.

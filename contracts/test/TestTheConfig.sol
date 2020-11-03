@@ -2,7 +2,7 @@
 
 pragma solidity ^0.6.8;
 
-import "../GoldfinchConfig.sol";
+import "../protocol/GoldfinchConfig.sol";
 
 contract TestTheConfig {
   address public poolAddress = 0xBAc2781706D0aA32Fb5928c9a5191A13959Dc4AE;
