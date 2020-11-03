@@ -1,0 +1,6 @@
+{
+    "exclude_informational": false,
+    "exclude_low": false,
+    "exclude_medium": true,
+    "exclude_high": false
+}
