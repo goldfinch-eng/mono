@@ -3,11 +3,12 @@
 pragma solidity ^0.6.8;
 
 import "@openzeppelin/contracts-ethereum-package/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import "./PauserPausable.sol";
 
-contract BaseUpgradeablePausable is Initializable, AccessControlUpgradeSafe, PauserPausable {
+contract BaseUpgradeablePausable is Initializable, AccessControlUpgradeSafe, PauserPausable, ReentrancyGuardUpgradeSafe {
   bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
   using SafeMath for uint256;
   // Pre-reserving a few slots in the base contract in case we need to add things in the future.
@@ -24,6 +25,7 @@ contract BaseUpgradeablePausable is Initializable, AccessControlUpgradeSafe, Pau
     require(owner != address(0), "Owner cannot be the zero address");
     __AccessControl_init_unchained();
     __Pausable_init_unchained();
+    __ReentrancyGuard_init_unchained();
 
     _setupRole(OWNER_ROLE, owner);
     _setupRole(PAUSER_ROLE, owner);
