@@ -12,7 +12,6 @@ contract CreditLine is BaseUpgradeablePausable {
   // Credit line terms
   address public borrower;
   address public underwriter;
-  uint256 public collateral;
   uint256 public limit;
   uint256 public interestApr;
   uint256 public minCollateralPercent;
@@ -24,7 +23,6 @@ contract CreditLine is BaseUpgradeablePausable {
   uint256 public interestOwed;
   uint256 public principalOwed;
   uint256 public collectedPaymentBalance;
-  uint256 public collateralBalance;
   uint256 public termEndBlock;
   uint256 public nextDueBlock;
   uint256 public lastUpdatedBlock;
@@ -73,10 +71,6 @@ contract CreditLine is BaseUpgradeablePausable {
 
   function setCollectedPaymentBalance(uint256 newCollectedPaymentBalance) external onlyAdmin {
     collectedPaymentBalance = newCollectedPaymentBalance;
-  }
-
-  function setCollateralBalance(uint256 newCollateralBalance) external onlyAdmin {
-    collateralBalance = newCollateralBalance;
   }
 
   function setLastUpdatedBlock(uint256 newLastUpdatedBlock) external onlyAdmin {

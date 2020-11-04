@@ -18,21 +18,18 @@ function CreditTerms(props) {
       { label: 'Interest rate APR', value: '- %' },
       { label: 'Payment frequency', value: '-' },
       { label: 'Payback term', value: '-' },
-      // { label: 'Required collateral', value: '- %' },
     ];
   } else {
     const limit = usdcFromAtomic(props.creditLine.limit);
     const interestRateAPR = props.creditLine.interestAprDecimal.multipliedBy(100).toString(10);
     const paymentFrequency = fromAtomicDecimals(props.creditLine.paymentPeriodInDays);
     const paybackTerm = fromAtomicDecimals(props.creditLine.termInDays);
-    // const requiredCollateral = fromAtomicDecimals(props.creditLine.minCollateralPercent);
 
     rows = [
       { label: 'Limit', value: '$' + displayNumber(limit, 2) },
       { label: 'Interest rate APR', value: displayNumber(interestRateAPR, 2) + '%' },
       { label: 'Payment frequency', value: paymentFrequency + ' days' },
       { label: 'Payback term', value: paybackTerm + ' days' },
-      // { label: 'Required collateral', value: displayNumber(requiredCollateral, 2) + '%' },
     ];
   }
 
