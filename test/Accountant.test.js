@@ -39,7 +39,6 @@ describe("Accountant", async () => {
         underwriter,
         bigVal(500),
         interestAprAsBN("3.00"),
-        5,
         paymentPeriodInDays,
         termInDays
       )

@@ -23,14 +23,13 @@ async function fetchCreditLineData(creditLine) {
     { method: 'limit' },
     { method: 'interestOwed' },
     { method: 'termEndBlock' },
-    { method: 'minCollateralPercent' },
   ];
   const data = await fetchDataFromAttributes(creditLine, attributes);
   result = { address: creditLine._address, ...data };
   result.dueDate = await calculateDueDateFromFutureBlock(result.nextDueBlock);
   result.termEndDate = await calculateDueDateFromFutureBlock(result.termEndBlock, 'MMM Do, YYYY');
   result.nextDueAmount = calculateNextDueAmount(result);
-  result.interestAprDecimal = new BigNumber(result.interestApr).div(INTEREST_DECIMALS)
+  result.interestAprDecimal = new BigNumber(result.interestApr).div(INTEREST_DECIMALS);
   result.availableBalance = result.limit - result.balance;
   return result;
 }
