@@ -22,11 +22,10 @@ These roles interact through two "main" smart contracts. Each of which have publ
 ### CreditDesk
 This is the most complex contract. It is the main entry contract for borrowers, and underwriters. It also contains several key admin functions. Let's discuss the responsibilities for each of those users.
 
-- Borrowers: Provide a central place to borrow, repay, add/remove collateral, and determine your status and upcoming payments. The main functions here are:
+- Borrowers: Provide a central place to borrow, repay, and determine your status and upcoming payments. The main functions here are:
   - `drawdown`
   - `pay`
   - `prepay`
-  - `addCollateral` (though collateral is currently not used)
 
 - Underwriters: Provide a way to create and manage credit lines for borrowers (currently you can only create. Editing and deleting CreditLines will be added soon)
   - `createCreditLine`

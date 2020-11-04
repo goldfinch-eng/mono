@@ -21,7 +21,6 @@ contract FakeV2CreditLine is BaseUpgradeablePausable {
   uint256 public interestOwed;
   uint256 public principalOwed;
   uint256 public collectedPaymentBalance;
-  uint256 public collateralBalance;
   uint256 public termEndBlock;
   uint256 public nextDueBlock;
   uint256 public lastUpdatedBlock;
