@@ -30,19 +30,20 @@ Allows an underwriter to create a new CreditLine for a single borrower
 
 ### `drawdown(uint256 amount, address creditLineAddress, address addressToSendTo)` (external)
 
-Allows a borrower to drawdown on their creditline. `amount` USDC is sent and accounting is updated.
+Allows a borrower to drawdown on their creditline.
+`amount` USDC is sent to the borrower, and the credit line accounting is updated.
 
 
 
 
 ### `pay(address creditLineAddress, uint256 amount)` (external)
 
-Allows a borrower to repay their loan. Payment is *collected* immediately by sending it to
-the individual CreditLine. But it is not *applied* unless it is after the nextDueBlock, or until we assess
+Allows a borrower to repay their loan. Payment is *collected* immediately (by sending it to
+the individual CreditLine), but it is not *applied* unless it is after the nextDueBlock, or until we assess
 the credit line (ie. payment period end).
-Any amounts over the minimum payment will be applied to outstanding principal, reducing the effective
-interest rate. If there is still any payment left over, it will remain in the "collectedPaymentBalance"
-of the CreditLine, which is held distinct from the Pool amounts, and may not be withdrawn by LP's.
+Any amounts over the minimum payment will be applied to outstanding principal (reducing the effective
+interest rate). If there is still any left over, it will remain in the "collectedPaymentBalance"
+of the CreditLine, which is held distinct from the Pool amounts, and can not be withdrawn by LP's.
 
 
 
@@ -82,10 +83,9 @@ Note that payment is not *applied* when calling this function. Only collected (i
 
 Applies `amount` of payment for a given credit line. This moves already collected money into the Pool.
 It also updates all the accounting variables. Note that interest is always paid back first, then principal.
-Any extra after paying the minimum will go towards existing principal, which reduces the
-effective interest rate over the life of the loan. Any extra after the full loan has been
-paid off will remain in the collectedPaymentBalance of the creditLine, where it will be automatically
-used for the next drawdown.
+Any extra after paying the minimum will go towards existing principal (reducing the
+effective interest rate). Any extra after the full loan has been paid off will remain in the
+collectedPaymentBalance of the creditLine, where it will be automatically used for the next drawdown.
 
 
 
