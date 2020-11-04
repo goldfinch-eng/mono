@@ -63,7 +63,6 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
    * Requirements:
    *
    * - the caller must have the `OWNER_ROLE`.
-   * - the contract cannot be paused
    */
   function setUnderwriterGovernanceLimit(address underwriterAddress, uint256 limit)
     external
@@ -91,7 +90,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
    *
    * Requirements:
    *
-   * - the contract cannot be paused
+   * - the caller must be an underwriter with enough limit (see `setUnderwriterGovernanceLimit`)
    */
   function createCreditLine(
     address _borrower,
@@ -136,7 +135,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
    *
    * Requirements:
    *
-   * - the contract cannot be paused
+   * - the caller must be the borrower on the creditLine
    */
   function drawdown(
     uint256 amount,
@@ -180,10 +179,6 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
    *  of the CreditLine, which is held distinct from the Pool amounts, and can not be withdrawn by LP's.
    * @param creditLineAddress The credit line to be paid back
    * @param amount The amount, in USDC atomic units, that a borrower wishes to pay
-   *
-   * Requirements:
-   *
-   * - the contract cannot be paused
    */
   function pay(address creditLineAddress, uint256 amount) external override whenNotPaused {
     CreditLine cl = CreditLine(creditLineAddress);
