@@ -26,7 +26,6 @@ describe("CreditDesk", () => {
   let borrower
   let limit = usdcVal(500)
   let interestApr = interestAprAsBN("5.00")
-  let minCollateralPercent = usdcVal(10)
   let paymentPeriodInDays = new BN(30)
   let termInDays = new BN(365)
   let usdc
@@ -37,7 +36,6 @@ describe("CreditDesk", () => {
     _underwriter,
     _limit,
     _interestApr,
-    _minCollateralPercent,
     _paymentPeriodInDays,
     _termInDays,
   } = {}) => {
@@ -45,18 +43,11 @@ describe("CreditDesk", () => {
     _underwriter = _underwriter || person2
     _limit = _limit || limit
     _interestApr = _interestApr || interestApr
-    _minCollateralPercent = _minCollateralPercent || minCollateralPercent
     _paymentPeriodInDays = _paymentPeriodInDays || paymentPeriodInDays
     _termInDays = _termInDays || termInDays
-    return await creditDesk.createCreditLine(
-      _borrower,
-      _limit,
-      _interestApr,
-      _minCollateralPercent,
-      _paymentPeriodInDays,
-      _termInDays,
-      {from: _underwriter}
-    )
+    return await creditDesk.createCreditLine(_borrower, _limit, _interestApr, _paymentPeriodInDays, _termInDays, {
+      from: _underwriter,
+    })
   }
 
   // This factory function is here because in order to call the `setX` functions
@@ -96,7 +87,6 @@ describe("CreditDesk", () => {
       thisUnderwriter,
       limit,
       interestApr,
-      minCollateralPercent,
       paymentPeriodInDays,
       termInDays
     )
@@ -223,7 +213,6 @@ describe("CreditDesk", () => {
 
   describe("createCreditLine", () => {
     let interestApr = new BN(5)
-    let minCollateralPercent = new BN(10)
     let paymentPeriodInDays = new BN(30)
     let termInDays = new BN(365)
 
@@ -257,7 +246,6 @@ describe("CreditDesk", () => {
       await createCreditLine({
         _limit: limit,
         _interestApr: interestApr,
-        _minCollateralPercent: minCollateralPercent,
         _paymentPeriodInDays: paymentPeriodInDays,
       })
 
@@ -268,7 +256,6 @@ describe("CreditDesk", () => {
       expect(await creditLine.borrower()).to.equal(borrower)
       expect((await creditLine.limit()).eq(limit)).to.be.true
       expect((await creditLine.interestApr()).eq(interestApr)).to.be.true
-      expect((await creditLine.minCollateralPercent()).eq(minCollateralPercent)).to.be.true
       expect((await creditLine.paymentPeriodInDays()).eq(paymentPeriodInDays)).to.be.true
       expect((await creditLine.termInDays()).eq(termInDays)).to.be.true
       expect(await usdc.allowance(creditLine.address, pool.address)).to.bignumber.equal(MAX_UINT)
@@ -305,7 +292,7 @@ describe("CreditDesk", () => {
       underwriter = person2
 
       cl = await CreditLine.new({from: owner})
-      await cl.initialize(owner, borrower, underwriter, usdcVal(500), usdcVal(3), 5, 10, 360)
+      await cl.initialize(owner, borrower, underwriter, usdcVal(500), usdcVal(3), 10, 360)
     })
 
     it("Should let you change the limit after its created", async () => {

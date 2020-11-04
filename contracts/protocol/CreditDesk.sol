@@ -72,7 +72,6 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     address _borrower,
     uint256 _limit,
     uint256 _interestApr,
-    uint256 _minCollateralPercent,
     uint256 _paymentPeriodInDays,
     uint256 _termInDays
   ) external override whenNotPaused {
@@ -81,13 +80,12 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     require(underwriterCanCreateThisCreditLine(_limit, underwriter), "The underwriter cannot create this credit line");
 
     bytes memory arguments = abi.encodeWithSignature(
-      "initialize(address,address,address,uint256,uint256,uint256,uint256,uint256)",
+      "initialize(address,address,address,uint256,uint256,uint256,uint256)",
       address(this),
       _borrower,
       msg.sender,
       _limit,
       _interestApr,
-      _minCollateralPercent,
       _paymentPeriodInDays,
       _termInDays
     );

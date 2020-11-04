@@ -13,7 +13,6 @@ abstract contract ICreditDesk {
     address _borrower,
     uint256 _limit,
     uint256 _interestApr,
-    uint256 _minCollateralPercent,
     uint256 _paymentPeriodInDays,
     uint256 _termInDays
   ) external virtual;

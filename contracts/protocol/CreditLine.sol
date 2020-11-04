@@ -14,7 +14,6 @@ contract CreditLine is BaseUpgradeablePausable {
   address public underwriter;
   uint256 public limit;
   uint256 public interestApr;
-  uint256 public minCollateralPercent;
   uint256 public paymentPeriodInDays;
   uint256 public termInDays;
 
@@ -33,7 +32,6 @@ contract CreditLine is BaseUpgradeablePausable {
     address _underwriter,
     uint256 _limit,
     uint256 _interestApr,
-    uint256 _minCollateralPercent,
     uint256 _paymentPeriodInDays,
     uint256 _termInDays
   ) public initializer {
@@ -43,7 +41,6 @@ contract CreditLine is BaseUpgradeablePausable {
     underwriter = _underwriter;
     limit = _limit;
     interestApr = _interestApr;
-    minCollateralPercent = _minCollateralPercent;
     paymentPeriodInDays = _paymentPeriodInDays;
     termInDays = _termInDays;
     lastUpdatedBlock = block.number;
