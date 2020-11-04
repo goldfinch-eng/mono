@@ -11,7 +11,7 @@
 
 
 
-### `initialize(address owner, address _borrower, address _underwriter, uint256 _limit, uint256 _interestApr, uint256 _minCollateralPercent, uint256 _paymentPeriodInDays, uint256 _termInDays)` (public)
+### `initialize(address owner, address _borrower, address _underwriter, uint256 _limit, uint256 _interestApr, uint256 _paymentPeriodInDays, uint256 _termInDays)` (public)
 
 
 
@@ -48,12 +48,6 @@
 
 
 ### `setCollectedPaymentBalance(uint256 newCollectedPaymentBalance)` (external)
-
-
-
-
-
-### `setCollateralBalance(uint256 newCollateralBalance)` (external)
 
 
 
