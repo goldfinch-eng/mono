@@ -45,6 +45,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
 
   mapping(address => Underwriter) public underwriters;
   mapping(address => Borrower) private borrowers;
+  mapping(address => address) private creditLines;
 
   function initialize(address owner, GoldfinchConfig _config) public initializer {
     __BaseUpgradeablePausable__init(owner);
@@ -95,6 +96,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
 
     underwriter.creditLines.push(address(cl));
     borrower.creditLines.push(address(cl));
+    creditLines[address(cl)] = address(cl);
     emit CreditLineCreated(_borrower, address(cl));
 
     cl.authorizePool(address(config));
@@ -105,10 +107,8 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     address creditLineAddress,
     address addressToSendTo
   ) external override whenNotPaused {
-    if (addressToSendTo == address(0)) {
-      addressToSendTo = msg.sender;
-    }
     CreditLine cl = CreditLine(creditLineAddress);
+    require(creditLines[creditLineAddress] != address(0), "Unknown credit line");
     require(cl.borrower() == msg.sender, "You do not belong to this credit line");
     // Not strictly necessary, but provides a better error message to the user
     require(
@@ -117,6 +117,9 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     );
     require(withinTransactionLimit(amount), "Amount is over the per-transaction limit");
     require(withinCreditLimit(amount, cl), "The borrower does not have enough credit limit for this drawdown");
+    if (addressToSendTo == address(0)) {
+      addressToSendTo = msg.sender;
+    }
     if (cl.balance() == 0) {
       cl.setLastUpdatedBlock(block.number);
       cl.setTermEndBlock(calculateNewTermEndBlock(cl));

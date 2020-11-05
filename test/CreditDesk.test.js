@@ -343,6 +343,12 @@ describe("CreditDesk", () => {
       expect(event.args.drawdownAmount).to.bignumber.equal(usdcVal(10))
     })
 
+    it("should not allow random addresses to be passed up as credit lines", async () => {
+      // Note this wasn't created through the credit desk, so it shouldn't have been registered
+      const fakeMaliciousCreditLine = await CreditLine.new({from: owner})
+      return expect(drawdown(usdcVal(10), fakeMaliciousCreditLine.address)).to.be.rejectedWith(/Unknown credit line/)
+    })
+
     it("should increase the total loans outstanding on the credit desk", async () => {
       const drawdownAmount = usdcVal(10)
       const amountBefore = await creditDesk.totalLoansOutstanding()
