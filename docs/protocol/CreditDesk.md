@@ -96,7 +96,13 @@ collectedPaymentBalance of the creditLine, where it will be automatically used f
 
 
 
-### `handleLatePayments(contract CreditLine)` (internal)
+### `updateWritedownAmounts(contract CreditLine cl)` (internal)
+
+
+
+
+
+### `isLate(contract CreditLine cl) → bool` (internal)
 
 
 

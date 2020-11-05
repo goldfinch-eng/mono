@@ -35,4 +35,10 @@
 
 
 
+### `distributeLosses(address creditlineAddress, int256 writedownDelta)` (external)
+
+
+
+
+
 

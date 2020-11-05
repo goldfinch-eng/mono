@@ -55,6 +55,12 @@ protocol, through the use of the GoldfinchConfig contract
 
 
 
+### `protocolAdminAddress(contract GoldfinchConfig config) → address` (internal)
+
+
+
+
+
 ### `getReserveDenominator(contract GoldfinchConfig config) → uint256` (internal)
 
 
@@ -62,6 +68,18 @@ protocol, through the use of the GoldfinchConfig contract
 
 
 ### `getWithdrawFeeDenominator(contract GoldfinchConfig config) → uint256` (internal)
+
+
+
+
+
+### `getLatenessGracePeriod(contract GoldfinchConfig config) → uint256` (internal)
+
+
+
+
+
+### `getLatenessMaxPeriod(contract GoldfinchConfig config) → uint256` (internal)
 
 
 

@@ -18,6 +18,18 @@ Library for handling key financial calculations, such as interest and principal 
 
 
 
+### `calculateWritedownFor(contract CreditLine cl, uint256 blockNumber, uint256 gracePeriod, uint256 maxLatePeriods) → uint256, uint256` (public)
+
+
+
+
+
+### `calculateAmountOwedForOnePeriod(contract CreditLine cl, uint256 asOfBlock) → uint256` (public)
+
+
+
+
+
 ### `calculateInterestAccrued(contract CreditLine cl, uint256 blockNumber) → uint256` (public)
 
 

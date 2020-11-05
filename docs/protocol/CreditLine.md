@@ -62,6 +62,12 @@ This contract purposefully has essentially no business logic. Really just setter
 
 
 
+### `setWritedownAmount(uint256 newWritedownAmount)` (external)
+
+
+
+
+
 ### `setLimit(uint256 newAmount)` (external)
 
 
