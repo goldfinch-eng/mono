@@ -32,6 +32,7 @@ contract Pool is BaseUpgradeablePausable, IPool {
   }
 
   function deposit(uint256 amount) external override whenNotPaused {
+    require(amount > 0, "Must deposit more than zero");
     require(transactionWithinLimit(amount), "Amount is over the per-transaction limit");
     // Check if the amount of new shares to be added is within limits
     uint256 depositShares = getNumShares(amount);
@@ -45,6 +46,7 @@ contract Pool is BaseUpgradeablePausable, IPool {
   }
 
   function withdraw(uint256 amount) external override whenNotPaused {
+    require(amount > 0, "Must withdraw more than zero");
     require(transactionWithinLimit(amount), "Amount is over the per-transaction limit");
     // Determine current shares the address has and the shares requested to withdraw
     uint256 currentShares = config.getFidu().balanceOf(msg.sender);

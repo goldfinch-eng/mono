@@ -123,6 +123,9 @@ describe("CreditDesk", () => {
     // Some housekeeping so we have a usable creditDesk for tests, and a pool with funds
     await usdc.transfer(person2, String(usdcVal(1000)), {from: owner})
     await pool.deposit(String(usdcVal(90)), {from: person2})
+    // Set the reserve to a separate address for easier separation. The current owner account gets used for many things in tests.
+    await goldfinchConfig.setTreasuryReserve(reserve)
+
     return {pool, usdc, creditDesk, fidu, goldfinchConfig}
   })
 
@@ -136,9 +139,6 @@ describe("CreditDesk", () => {
     creditDesk = deployResult.creditDesk
     fidu = deployResult.fidu
     goldfinchConfig = deployResult.goldfinchConfig
-
-    // Set the reserve to a separate address for easier separation. The current owner account gets used for many things in tests.
-    await goldfinchConfig.setTreasuryReserve(reserve)
   })
 
   describe("Access Controls", () => {
@@ -316,7 +316,7 @@ describe("CreditDesk", () => {
 
   describe("drawdown", async () => {
     let drawdown = async (amount, creditLineAddress, addressToSendTo) => {
-      addressToSendTo = addressToSendTo || creditLineAddress
+      addressToSendTo = addressToSendTo || borrower
       return await creditDesk.drawdown(amount, creditLineAddress, addressToSendTo, {from: borrower})
     }
     let creditLine
@@ -365,6 +365,14 @@ describe("CreditDesk", () => {
       const interestOwed = await creditLine.interestOwed()
       expect(interestOwed).to.bignumber.be.greaterThan(new BN(0))
       expect(totalLoansOutstanding2).to.bignumber.equal(drawdownAmount.add(drawdownAmount))
+    })
+
+    it("should increase the usdc balance of the borrower", async () => {
+      const drawdownAmount = usdcVal(10)
+      const originalBalance = await getBalance(borrower, usdc)
+      await drawdown(drawdownAmount, creditLine.address)
+      const newBalance = await getBalance(borrower, usdc)
+      expect(newBalance.sub(originalBalance)).to.bignumber.equal(drawdownAmount)
     })
 
     it("should track your accrued interest if you drawdown again", async () => {
@@ -635,6 +643,24 @@ describe("CreditDesk", () => {
         expect(newSharePrice).to.bignumber.closeTo(originalSharePrice.add(expectedDelta), fidu_tolerance)
       })
 
+      describe("When fully paying for a loan", async () => {
+        it("should set the nextDueBlock and termEndBlock to zero", async () => {
+          const creditLine = await createAndSetCreditLineAttributes({
+            balance: 3,
+            interestOwed: 1,
+            principalOwed: 3,
+            nextDueBlock: 1,
+          })
+          const originalNextDueBlock = await creditLine.nextDueBlock()
+          expect(originalNextDueBlock).to.not.bignumber.equal(new BN(0))
+          expect(await creditLine.termEndBlock()).to.not.bignumber.equal(new BN(0))
+          await creditDesk.pay(creditLine.address, String(usdcVal(5)), {from: borrower})
+          const nextDueBlock = await creditLine.nextDueBlock()
+          expect(nextDueBlock).to.bignumber.equal(new BN(0))
+          expect(await creditLine.termEndBlock()).to.bignumber.equal(new BN(0))
+        })
+      })
+
       describe("with extra payment left over", async () => {
         it("should send the extra to the collectedPayment of the credit line", async () => {
           var interestAmount = 1
@@ -713,6 +739,41 @@ describe("CreditDesk", () => {
         expect(actualNextDueBlock).to.bignumber.closeTo(expectedNextDueBlock, actualNextDueBlock.div(new BN(100))) // 1% tolerance;
         expect(newPoolBalance.sub(originalPoolBalance)).to.bignumber.equal(usdcVal(8).sub(expectedFeeAmount))
         expect(newReserveBalance.sub(originalReserveBalance)).to.bignumber.equal(expectedFeeAmount)
+      })
+
+      describe("idempotency", async () => {
+        it("should keep the nextDueBlock and termEndBlock what it is if you call it twice", async () => {
+          const collectedPaymentBalance = 8
+          const interestOwed = 5
+          var creditLine = await createAndSetCreditLineAttributes({
+            balance: 10,
+            interestOwed: interestOwed,
+            principalOwed: 3,
+            collectedPaymentBalance: collectedPaymentBalance,
+            nextDueBlock: latestBlock,
+          })
+          const originalTermEndBlock = await creditLine.termEndBlock()
+          await creditDesk.assessCreditLine(creditLine.address, {from: underwriter})
+
+          const expectedNextDueBlock = (await creditLine.paymentPeriodInDays())
+            .mul(await creditDesk.BLOCKS_PER_DAY())
+            .add(latestBlock)
+          const actualNextDueBlock = await creditLine.nextDueBlock()
+          const expectedInterestOwed = await creditLine.interestOwed()
+          const expectedPrincipalOwed = await creditLine.principalOwed()
+          expect(actualNextDueBlock).to.bignumber.closeTo(expectedNextDueBlock, actualNextDueBlock.div(new BN(100))) // 1% tolerance;
+
+          await creditDesk.assessCreditLine(creditLine.address, {from: underwriter})
+          const actualNextDueBlockAgain = await creditLine.nextDueBlock()
+          const actualTermEndBlock = await creditLine.termEndBlock()
+          const actualInterestOwed = await creditLine.interestOwed()
+          const actualPrincipalOwed = await creditLine.principalOwed()
+
+          expect(actualNextDueBlockAgain).to.bignumber.equal(actualNextDueBlock) // No tolerance. Should be exact.
+          expect(actualTermEndBlock).to.bignumber.equal(originalTermEndBlock)
+          expect(actualInterestOwed).to.bignumber.equal(expectedInterestOwed)
+          expect(actualPrincipalOwed).to.bignumber.equal(expectedPrincipalOwed)
+        })
       })
 
       it("should emit an event with the correct data", async () => {

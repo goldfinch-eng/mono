@@ -109,6 +109,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
       addressToSendTo = msg.sender;
     }
     CreditLine cl = CreditLine(creditLineAddress);
+    require(amount > 0, "Must drawdown more than zero");
     require(cl.borrower() == msg.sender, "You do not belong to this credit line");
     // Not strictly necessary, but provides a better error message to the user
     require(
@@ -117,11 +118,11 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     );
     require(withinTransactionLimit(amount), "Amount is over the per-transaction limit");
     require(withinCreditLimit(amount, cl), "The borrower does not have enough credit limit for this drawdown");
+
     if (cl.balance() == 0) {
       cl.setLastUpdatedBlock(block.number);
-      cl.setTermEndBlock(calculateNewTermEndBlock(cl));
-      cl.setNextDueBlock(calculateNextDueBlock(cl));
     }
+    // Must get the interest and principal accrued prior to adding to the balance.
     (uint256 interestOwed, uint256 principalOwed) = getInterestAndPrincipalOwedAsOf(cl, block.number);
     uint256 balance = cl.balance().add(amount);
 
@@ -134,13 +135,15 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
   }
 
   function pay(address creditLineAddress, uint256 amount) external override whenNotPaused {
+    require(amount > 0, "Must pay more than zero");
     CreditLine cl = CreditLine(creditLineAddress);
 
     collectPayment(cl, amount);
 
-    if (block.number >= cl.nextDueBlock()) {
-      applyPayment(cl, cl.collectedPaymentBalance(), block.number);
+    if (block.number < cl.nextDueBlock()) {
+      return;
     }
+    applyPayment(cl, cl.collectedPaymentBalance(), block.number);
   }
 
   function assessCreditLine(address creditLineAddress) external override whenNotPaused {
@@ -194,7 +197,6 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     // Just add it to the collected payment balance. We could also send this back to the borrower (
     // but since assess can be called by anyone, it's better to keep the funds within the contract)
     cl.setCollectedPaymentBalance(paymentRemaining);
-    cl.setNextDueBlock(calculateNextDueBlock(cl));
 
     if (cl.principalOwed() > 0 || cl.interestOwed() > 0) {
       handleLatePayments(cl);
@@ -292,18 +294,37 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
   }
 
   function calculateNewTermEndBlock(CreditLine cl) internal view returns (uint256) {
+    // If there's no balance, there's no loan, so there's no term end block
+    if (cl.balance() <= 0) {
+      return 0;
+    }
+    // Don't allow any weird bugs where we add to your current end block. This
+    // function should only be used on new credit lines, when we are setting them up
+    if (cl.termEndBlock() != 0) {
+      return cl.termEndBlock();
+    }
     return block.number.add(BLOCKS_PER_DAY.mul(cl.termInDays()));
   }
 
   function calculateNextDueBlock(CreditLine cl) internal view returns (uint256) {
     uint256 blocksPerPeriod = cl.paymentPeriodInDays().mul(BLOCKS_PER_DAY);
-    uint256 currentNextDueBlock;
-    if (cl.nextDueBlock() != 0) {
-      currentNextDueBlock = cl.nextDueBlock();
-    } else {
-      currentNextDueBlock = block.number;
+
+    // Your paid off, or have not taken out a loan yet, so no next due block.
+    if (cl.balance() <= 0 && cl.nextDueBlock() != 0) {
+      return 0;
     }
-    return currentNextDueBlock.add(blocksPerPeriod);
+    // You must have just done your first drawdown
+    if (cl.nextDueBlock() == 0 && cl.balance() > 0) {
+      return block.number.add(blocksPerPeriod);
+    }
+    // Active loan that has entered a new period, so return the *next* nextDueBlock
+    if (cl.balance() > 0 && block.number >= cl.nextDueBlock()) {
+      return cl.nextDueBlock().add(blocksPerPeriod);
+    }
+    // Active loan in current period, where we've already set the nextDueBlock correctly, so should not change.
+    if (cl.balance() > 0 && block.number < cl.nextDueBlock()) {
+      return cl.nextDueBlock();
+    }
   }
 
   function underwriterCanCreateThisCreditLine(uint256 newAmount, Underwriter storage underwriter)
@@ -343,6 +364,9 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     cl.setLastUpdatedBlock(block.number);
 
     addCLToTotalLoansOutstanding(cl);
+
+    cl.setTermEndBlock(calculateNewTermEndBlock(cl));
+    cl.setNextDueBlock(calculateNextDueBlock(cl));
 
     if (balance <= 0) {
       cl.setTermEndBlock(0);
