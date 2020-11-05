@@ -13,7 +13,6 @@ async function fetchCreditLineData(creditLine) {
   if (!creditLine) {
     return Promise.resolve({});
   }
-  console.log('Credit line is...', creditLine._address);
   const attributes = [
     { method: 'balance' },
     { method: 'collectedPaymentBalance' },
