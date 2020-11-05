@@ -9,6 +9,13 @@ import "../interfaces/IFidu.sol";
 import "../interfaces/ICreditDesk.sol";
 import "../interfaces/IERC20withDec.sol";
 
+/**
+ * @title ConfigHelper
+ * @notice A convenience library for getting easy access to other contracts and constants within the
+ *  protocol, through the use of the GoldfinchConfig contract
+ * @author Goldfinch
+ */
+
 library ConfigHelper {
   function getPool(GoldfinchConfig config) internal view returns (IPool) {
     return IPool(poolAddress(config));

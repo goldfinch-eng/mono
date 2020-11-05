@@ -6,6 +6,13 @@ pragma experimental ABIEncoderV2;
 import "./BaseUpgradeablePausable.sol";
 import "./ConfigHelper.sol";
 
+/**
+ * @title Goldfinch's Pool contract
+ * @notice Main entry point for LP's (a.k.a. capital providers)
+ *  Handles key logic for depositing and withdrawing funds from the Pool
+ * @author Goldfinch
+ */
+
 contract Pool is BaseUpgradeablePausable, IPool {
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
@@ -17,6 +24,11 @@ contract Pool is BaseUpgradeablePausable, IPool {
   event PrincipalCollected(address indexed payer, uint256 amount);
   event ReserveFundsCollected(address indexed user, uint256 amount);
 
+  /**
+   * @notice Run only once, on initialization
+   * @param owner The address of who should have the "OWNER_ROLE" of this contract
+   * @param _config The address of the GoldfinchConfig contract
+   */
   function initialize(address owner, GoldfinchConfig _config) public initializer {
     __BaseUpgradeablePausable__init(owner);
 
@@ -31,6 +43,10 @@ contract Pool is BaseUpgradeablePausable, IPool {
     require(success, "Failed to approve USDC");
   }
 
+  /**
+   * @notice Deposits `amount` USDC from msg.sender into the Pool, and returns you the equivalent value of FIDU tokens
+   * @param amount The amount of USDC to deposit
+   */
   function deposit(uint256 amount) external override whenNotPaused {
     require(amount > 0, "Must deposit more than zero");
     require(transactionWithinLimit(amount), "Amount is over the per-transaction limit");
@@ -45,6 +61,10 @@ contract Pool is BaseUpgradeablePausable, IPool {
     assert(assetsMatchLiabilities());
   }
 
+  /**
+   * @notice Withdraws `amount` USDC from the Pool to msg.sender, and burns the equivalent value of FIDU tokens
+   * @param amount The amount of USDC to withdraw
+   */
   function withdraw(uint256 amount) external override whenNotPaused {
     require(amount > 0, "Must withdraw more than zero");
     require(transactionWithinLimit(amount), "Amount is over the per-transaction limit");
@@ -68,6 +88,16 @@ contract Pool is BaseUpgradeablePausable, IPool {
     assert(assetsMatchLiabilities());
   }
 
+  /**
+   * @notice Collects `amount` USDC in interest from `from` and sends it to the Pool.
+   *  This also increases the share price accordingly. A portion is sent to the Goldfinch Reserve address
+   * @param from The address to take the USDC from. Implicitly, the Pool
+   *  must be authorized to move USDC on behalf of `from`.
+   * @param amount the amount of USDC to move to the Pool
+   *
+   * Requirements:
+   *  - The caller must be the Credit Desk. Not even the owner can call this function.
+   */
   function collectInterestRepayment(address from, uint256 amount) external override onlyCreditDesk whenNotPaused {
     uint256 reserveAmount = amount.div(config.getReserveDenominator());
     uint256 poolAmount = amount.sub(reserveAmount);
@@ -78,12 +108,35 @@ contract Pool is BaseUpgradeablePausable, IPool {
     doUSDCTransfer(from, address(this), poolAmount);
   }
 
+  /**
+   * @notice Collects `amount` USDC in principal from `from` and sends it to the Pool.
+   *  The key difference from `collectInterestPayment` is that this does not change the sharePrice.
+   *  The reason it does not is because the principal is already baked in. ie. we implicitly assume all principal
+   *  will be returned to the Pool. But if borrowers are late with payments, we have a writedown schedule that adjusts
+   *  the sharePrice downwards to reflect the lowered confidence in that borrower.
+   * @param from The address to take the USDC from. Implicitly, the Pool
+   *  must be authorized to move USDC on behalf of `from`.
+   * @param amount the amount of USDC to move to the Pool
+   *
+   * Requirements:
+   *  - The caller must be the Credit Desk. Not even the owner can call this function.
+   */
   function collectPrincipalRepayment(address from, uint256 amount) external override onlyCreditDesk whenNotPaused {
     // Purposefully does nothing except receive money. No share price updates for principal.
     emit PrincipalCollected(from, amount);
     doUSDCTransfer(from, address(this), amount);
   }
 
+  /**
+   * @notice Moves `amount` USDC from `from`, to `to`.
+   * @param from The address to take the USDC from. Implicitly, the Pool
+   *  must be authorized to move USDC on behalf of `from`.
+   * @param to The address that the USDC should be moved to
+   * @param amount the amount of USDC to move to the Pool
+   *
+   * Requirements:
+   *  - The caller must be the Credit Desk. Not even the owner can call this function.
+   */
   function transferFrom(
     address from,
     address to,
@@ -92,10 +145,6 @@ contract Pool is BaseUpgradeablePausable, IPool {
     bool result = doUSDCTransfer(from, to, amount);
     emit TransferMade(from, to, amount);
     return result;
-  }
-
-  function enoughBalance(address user, uint256 amount) public view override whenNotPaused returns (bool) {
-    return config.getUSDC().balanceOf(user) >= amount;
   }
 
   /* Internal Functions */

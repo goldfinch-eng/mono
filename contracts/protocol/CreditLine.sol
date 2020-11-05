@@ -7,6 +7,14 @@ import "./GoldfinchConfig.sol";
 import "./BaseUpgradeablePausable.sol";
 import "../interfaces/IERC20withDec.sol";
 
+/**
+ * @title CreditLine
+ * @notice A "dumb" state container that represents the agreement between an Underwriter and
+ *  the borrower. Includes the terms of the loan, as well as the current accounting state, such as interest owed.
+ *  This contract purposefully has essentially no business logic. Really just setters and getters.
+ * @author Goldfinch
+ */
+
 // solhint-disable-next-line max-states-count
 contract CreditLine is BaseUpgradeablePausable {
   // Credit line terms

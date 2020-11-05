@@ -4,6 +4,15 @@ pragma solidity ^0.6.8;
 import "@openzeppelin/contracts-ethereum-package/contracts/presets/ERC20PresetMinterPauser.sol";
 import "./ConfigHelper.sol";
 
+/**
+ * @title Fidu
+ * @notice Fidu (symbol: FIDU) is Goldfinch's liquidity token, representing shares
+ *  in the Pool. When you deposit, we mint a corresponding amount of Fidu, and when you withdraw, we
+ *  burn Fidu. The share price of the Pool implicitly represents the "exchange rate" between Fidu
+ *  and USDC (or whatever currencies the Pool may allow withdraws in during the future)
+ * @author Goldfinch
+ */
+
 contract Fidu is ERC20PresetMinterPauserUpgradeSafe {
   bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
   GoldfinchConfig public config;

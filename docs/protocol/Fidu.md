@@ -1,5 +1,9 @@
 ## `Fidu`
 
+Fidu (symbol: FIDU) is Goldfinch's liquidity token, representing shares
+in the Pool. When you deposit, we mint a corresponding amount of Fidu, and when you withdraw, we
+burn Fidu. The share price of the Pool implicitly represents the "exchange rate" between Fidu
+and USDC (or whatever currencies the Pool may allow withdraws in during the future)
 
 
 

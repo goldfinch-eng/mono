@@ -5,6 +5,14 @@ pragma solidity ^0.6.8;
 import "./BaseUpgradeablePausable.sol";
 import "./ConfigOptions.sol";
 
+/**
+ * @title GoldfinchConfig
+ * @notice This contract stores mappings of useful "protocol config state", giving a central place
+ *  for all other contracts to access it. For example, the TransactionLimit, or the PoolAddress. These config vars
+ *  are enumerated in the `ConfigOptions` library, and can only be changed by admins of the protocol.
+ * @author Goldfinch
+ */
+
 contract GoldfinchConfig is BaseUpgradeablePausable {
   mapping(uint256 => address) public addresses;
   mapping(uint256 => uint256) public numbers;

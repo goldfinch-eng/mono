@@ -4,6 +4,14 @@ pragma solidity ^0.6.8;
 import "@openzeppelin/contracts-ethereum-package/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/access/AccessControl.sol";
 
+/**
+ * @title PauserPausable
+ * @notice Inheriting from OpenZeppelin's Pausable contract, this does small
+ *  augmentations to make it work with a PAUSER_ROLE, leveraging the AccessControl contract.
+ *  It is meant to be inherited.
+ * @author Goldfinch
+ */
+
 contract PauserPausable is AccessControlUpgradeSafe, PausableUpgradeSafe {
   bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 

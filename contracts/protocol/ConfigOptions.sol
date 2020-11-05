@@ -2,6 +2,12 @@
 
 pragma solidity ^0.6.8;
 
+/**
+ * @title ConfigOptions
+ * @notice A central place for enumerating the configurable options of our GoldfinchConfig contract
+ * @author Goldfinch
+ */
+
 library ConfigOptions {
   // NEVER EVER CHANGE THE ORDER OF THESE!
   // You can rename or append. But NEVER change the order.

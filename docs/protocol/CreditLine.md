@@ -1,5 +1,8 @@
 ## `CreditLine`
 
+A "dumb" state container that represents the agreement between an Underwriter and
+the borrower. Includes the terms of the loan, as well as the current accounting state, such as interest owed.
+This contract purposefully has essentially no business logic. Really just setters and getters.
 
 
 
