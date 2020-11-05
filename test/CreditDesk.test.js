@@ -628,17 +628,23 @@ describe("CreditDesk", () => {
         })
         await creditDesk.pay(creditLine.address, String(usdcVal(paymentAmount)), {from: borrower})
 
+        // This is a bit of a hack, we sholdn't have to be including thw writedown in this test, but it's
+        // hard to isolate at the moment. We need to refactor these tests to be independent of writedowns
+        let writedownAmount = await creditLine.writedownAmount()
+        expect(writedownAmount).to.be.bignumber.gt("0")
+        let normalizedWritedown = await pool._usdcToFidu(writedownAmount)
+
         var newSharePrice = await pool.sharePrice()
         var delta = newSharePrice.sub(originalSharePrice)
 
         let normalizedInterest = await pool._usdcToFidu(usdcVal(interestAmount))
         let expectedReserveFee = await pool._usdcToFidu(usdcVal(interestAmount).div(FEE_DENOMINATOR))
-        var expectedDelta = normalizedInterest.sub(expectedReserveFee).mul(decimals).div(originalTotalShares)
+        var expectedDelta = normalizedInterest
+          .sub(normalizedWritedown)
+          .sub(expectedReserveFee)
+          .mul(decimals)
+          .div(originalTotalShares)
         let fidu_tolerance = decimals.div(USDC_DECIMALS)
-
-        // Ensure the tolerance is not too big
-        expect(delta).to.bignumber.gt(fidu_tolerance)
-        expect(newSharePrice).to.bignumber.gt(fidu_tolerance)
 
         expect(delta).to.bignumber.closeTo(expectedDelta, fidu_tolerance)
         expect(newSharePrice).to.bignumber.closeTo(originalSharePrice.add(expectedDelta), fidu_tolerance)
@@ -962,16 +968,31 @@ describe("CreditDesk", () => {
         })
         const originalPoolBalance = await getBalance(pool.address, usdc)
         const originalSharePrice = await pool.sharePrice()
+        const originalTotalShares = await fidu.totalSupply()
         const expectedFeeAmount = usdcVal(interestOwed).div(FEE_DENOMINATOR)
 
         await creditDesk.assessCreditLine(creditLine.address)
+
+        // This is a bit of a hack, we sholdn't have to be including thw writedown in this test, but it's
+        // hard to isolate at the moment. We need to refactor these tests to be independent of writedowns
+        let writedownAmount = await creditLine.writedownAmount()
+        expect(writedownAmount).to.be.bignumber.gt("0")
+        let normalizedWritedown = await pool._usdcToFidu(writedownAmount)
+        let normalizedInterest = await pool._usdcToFidu(usdcVal(interestOwed))
+        let expectedReserveFee = await pool._usdcToFidu(expectedFeeAmount)
+        var expectedDelta = normalizedInterest
+          .sub(normalizedWritedown)
+          .sub(expectedReserveFee)
+          .mul(decimals)
+          .div(originalTotalShares)
+        let fidu_tolerance = decimals.div(USDC_DECIMALS)
 
         const newPoolBalance = await getBalance(pool.address, usdc)
 
         expect(await creditLine.collectedPaymentBalance()).to.bignumber.equal("0")
         expect(await creditLine.interestOwed()).to.bignumber.equal("0")
         expect(await creditLine.principalOwed()).to.bignumber.equal(usdcVal(principalOwed))
-        expect(await pool.sharePrice()).to.bignumber.gt(originalSharePrice)
+        expect(await pool.sharePrice()).to.bignumber.closeTo(originalSharePrice.add(expectedDelta), fidu_tolerance)
         expect(newPoolBalance.sub(originalPoolBalance)).to.bignumber.equal(usdcVal(interestOwed).sub(expectedFeeAmount))
       })
     })
