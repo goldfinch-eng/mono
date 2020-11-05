@@ -69,12 +69,16 @@ async function baseDeploy(bre, {shouldUpgrade}) {
     const maxUnderwriterLimit = new BN(PROTOCOL_CONFIG.maxUnderwriterLimit).mul(USDCDecimals)
     const reserveDenominator = new BN(PROTOCOL_CONFIG.reserveDenominator)
     const withdrawFeeDenominator = new BN(PROTOCOL_CONFIG.withdrawFeeDenominator)
+    const latenessGracePeriod = new BN(PROTOCOL_CONFIG.latenessGracePeriod)
+    const latenessMaxPeriod = new BN(PROTOCOL_CONFIG.latenessMaxPeriod)
 
     await updateConfig(config, "number", CONFIG_KEYS.TotalFundsLimit, String(totalFundsLimit))
     await updateConfig(config, "number", CONFIG_KEYS.TransactionLimit, String(transactionLimit))
     await updateConfig(config, "number", CONFIG_KEYS.MaxUnderwriterLimit, String(maxUnderwriterLimit))
     await updateConfig(config, "number", CONFIG_KEYS.ReserveDenominator, String(reserveDenominator))
     await updateConfig(config, "number", CONFIG_KEYS.WithdrawFeeDenominator, String(withdrawFeeDenominator))
+    await updateConfig(config, "number", CONFIG_KEYS.LatenessGracePeriod, String(latenessGracePeriod))
+    await updateConfig(config, "number", CONFIG_KEYS.LatenessMaxPeriod, String(latenessMaxPeriod))
     await updateConfig(config, "address", CONFIG_KEYS.ProtocolAdmin, protocol_owner)
     await config.setTreasuryReserve(protocol_owner)
 

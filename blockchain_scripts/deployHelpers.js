@@ -3,6 +3,7 @@ const BN = require("bn.js")
 // Using 1e6, because that's what USDC is.
 const USDCDecimals = new BN(String(1e6))
 const ETHDecimals = new BN(String(1e18))
+const INTEREST_DECIMALS = new BN(String(1e8))
 
 const ROPSTEN_USDC_ADDRESS = "0x07865c6e87b9f70255377e024ace6630c1eaa37f"
 const MAINNET_USDC_ADDRESS = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
@@ -36,6 +37,8 @@ const CONFIG_KEYS = {
   MaxUnderwriterLimit: 2,
   ReserveDenominator: 3,
   WithdrawFeeDenominator: 4,
+  LatenessGracePeriod: 5,
+  LatenessMaxPeriod: 6,
   // Addresses
   Pool: 0,
   CreditLineImplementation: 1,
@@ -52,7 +55,6 @@ function isTestEnv() {
 }
 
 function interestAprAsBN(interestPercentageString) {
-  const INTEREST_DECIMALS = 1e8
   const interestPercentageFloat = parseFloat(interestPercentageString)
   return new BN((interestPercentageFloat / 100) * INTEREST_DECIMALS)
 }
@@ -134,6 +136,7 @@ module.exports = {
   USDCDecimals: USDCDecimals,
   MAX_UINT: MAX_UINT,
   ETHDecimals: ETHDecimals,
+  INTEREST_DECIMALS: INTEREST_DECIMALS,
   getMultisigAddress: getMultisigAddress,
   getUSDCAddress: getUSDCAddress,
   getDeployedContract: getDeployedContract,

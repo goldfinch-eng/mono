@@ -13,10 +13,18 @@ const {
   USDC_DECIMALS,
   ZERO_ADDRESS,
 } = require("./testHelpers.js")
-const {OWNER_ROLE, PAUSER_ROLE, CONFIG_KEYS, interestAprAsBN} = require("../blockchain_scripts/deployHelpers")
+const {
+  OWNER_ROLE,
+  PAUSER_ROLE,
+  CONFIG_KEYS,
+  interestAprAsBN,
+  INTEREST_DECIMALS,
+} = require("../blockchain_scripts/deployHelpers")
 const {time} = require("@openzeppelin/test-helpers")
 const CreditLine = artifacts.require("CreditLine")
 const FEE_DENOMINATOR = new BN(10)
+const BLOCKS_PER_DAY = new BN(5760)
+const BLOCKS_PER_YEAR = BLOCKS_PER_DAY.mul(new BN(365))
 
 let accounts, owner, person2, person3, person4, creditDesk, fidu, goldfinchConfig, reserve
 
@@ -620,17 +628,23 @@ describe("CreditDesk", () => {
         })
         await creditDesk.pay(creditLine.address, String(usdcVal(paymentAmount)), {from: borrower})
 
+        // This is a bit of a hack, we sholdn't have to be including thw writedown in this test, but it's
+        // hard to isolate at the moment. We need to refactor these tests to be independent of writedowns
+        let writedownAmount = await creditLine.writedownAmount()
+        expect(writedownAmount).to.be.bignumber.gt("0")
+        let normalizedWritedown = await pool._usdcToFidu(writedownAmount)
+
         var newSharePrice = await pool.sharePrice()
         var delta = newSharePrice.sub(originalSharePrice)
 
         let normalizedInterest = await pool._usdcToFidu(usdcVal(interestAmount))
         let expectedReserveFee = await pool._usdcToFidu(usdcVal(interestAmount).div(FEE_DENOMINATOR))
-        var expectedDelta = normalizedInterest.sub(expectedReserveFee).mul(decimals).div(originalTotalShares)
+        var expectedDelta = normalizedInterest
+          .sub(normalizedWritedown)
+          .sub(expectedReserveFee)
+          .mul(decimals)
+          .div(originalTotalShares)
         let fidu_tolerance = decimals.div(USDC_DECIMALS)
-
-        // Ensure the tolerance is not too big
-        expect(delta).to.bignumber.gt(fidu_tolerance)
-        expect(newSharePrice).to.bignumber.gt(fidu_tolerance)
 
         expect(delta).to.bignumber.closeTo(expectedDelta, fidu_tolerance)
         expect(newSharePrice).to.bignumber.closeTo(originalSharePrice.add(expectedDelta), fidu_tolerance)
@@ -671,6 +685,135 @@ describe("CreditDesk", () => {
           expect(await creditLine.collectedPaymentBalance()).to.bignumber.closeTo(expected, tolerance)
         })
       })
+    })
+  })
+
+  describe("writedowns", async () => {
+    var originalSharePrice, originalTotalShares, interestOwedForOnePeriod, creditLine
+    const lowTolerance = new BN(100)
+
+    beforeEach(async () => {
+      borrower = person3
+      underwriter = person2
+      usdc.transfer(borrower, usdcVal(50), {from: owner})
+
+      originalSharePrice = await pool.sharePrice()
+      originalTotalShares = await fidu.totalSupply()
+
+      const paymentPeriodInBlocks = paymentPeriodInDays.mul(BLOCKS_PER_DAY)
+      const totalInterestPerYear = usdcVal(10).mul(interestApr).div(INTEREST_DECIMALS)
+      interestOwedForOnePeriod = totalInterestPerYear.mul(paymentPeriodInBlocks).div(BLOCKS_PER_YEAR)
+
+      expect(interestOwedForOnePeriod).to.bignumber.eq(new BN("41095"))
+
+      creditLine = await createAndSetCreditLineAttributes({
+        balance: 10,
+        interestOwed: 5,
+        principalOwed: 0,
+        nextDueBlock: 1,
+      })
+    })
+
+    describe("before loan term ends", async () => {
+      it("should write down the principal and distribute losses", async () => {
+        // Assume 2 periods late
+        const periodsLate = new BN("2")
+        const interestOwed = interestOwedForOnePeriod.mul(periodsLate)
+        await creditLine.setInterestOwed(interestOwed)
+
+        await creditDesk.assessCreditLine(creditLine.address)
+
+        let expectedWritedown = usdcVal(25).div(new BN(10)) // 25% of 10 = 2.5
+
+        expect(await creditLine.interestOwed()).to.be.bignumber.closeTo(interestOwed, tolerance)
+        expect(await creditLine.principalOwed()).to.be.bignumber.closeTo(usdcVal(0), tolerance)
+        expect(await creditLine.writedownAmount()).to.be.bignumber.eq(expectedWritedown)
+
+        var newSharePrice = await pool.sharePrice()
+        var delta = originalSharePrice.sub(newSharePrice)
+        let normalizedWritedown = await pool._usdcToFidu(expectedWritedown)
+        var expectedDelta = normalizedWritedown.mul(decimals).div(originalTotalShares)
+        let fidu_tolerance = decimals.div(USDC_DECIMALS)
+
+        expect(delta).to.be.bignumber.closeTo(expectedDelta, fidu_tolerance)
+        expect(newSharePrice).to.be.bignumber.lt(originalSharePrice)
+        expect(newSharePrice).to.be.bignumber.closeTo(originalSharePrice.sub(delta), fidu_tolerance)
+      })
+
+      it("should decrease the write down amount if partially paid back", async () => {
+        // Assume 2 periods late
+        const periodsLate = new BN("2")
+        const interestOwed = interestOwedForOnePeriod.mul(periodsLate)
+        await creditLine.setInterestOwed(interestOwed)
+
+        await creditDesk.assessCreditLine(creditLine.address)
+        // Reset the next due block so we trigger the applyPayment when we pay
+        await creditLine.setNextDueBlock(new BN(1))
+        var sharePriceAfterAsses = await pool.sharePrice()
+
+        let expectedWritedown = usdcVal(25).div(new BN(10)) // 25% of 10 = 2.5
+
+        expect(await creditLine.writedownAmount()).to.be.bignumber.eq(expectedWritedown)
+
+        // Payback half of one period
+        let interestPaid = interestOwedForOnePeriod.div(new BN(2))
+        await creditDesk.pay(creditLine.address, String(interestPaid), {from: borrower})
+
+        let expectedNewWritedown = expectedWritedown.div(new BN(2))
+
+        let newWritedown = await creditLine.writedownAmount()
+        expect(newWritedown).to.be.bignumber.closeTo(expectedNewWritedown, lowTolerance)
+
+        var finalSharePrice = await pool.sharePrice()
+        var delta = originalSharePrice.sub(finalSharePrice)
+        let normalizedWritedown = await pool._usdcToFidu(newWritedown)
+        let normalizedInterest = await pool._usdcToFidu(interestPaid)
+        let expectedReserveFee = await pool._usdcToFidu(interestPaid.div(FEE_DENOMINATOR))
+        var expectedDelta = normalizedWritedown
+          .add(expectedReserveFee)
+          .sub(normalizedInterest)
+          .mul(decimals)
+          .div(originalTotalShares)
+        let fidu_tolerance = decimals.div(USDC_DECIMALS)
+
+        expect(delta).to.be.bignumber.closeTo(expectedDelta, fidu_tolerance)
+        // Share price must go down after the initial write down, and then up after partially paid back
+        expect(sharePriceAfterAsses).to.be.bignumber.lt(originalSharePrice)
+        expect(finalSharePrice).to.be.bignumber.gt(sharePriceAfterAsses)
+        expect(finalSharePrice).to.be.bignumber.closeTo(originalSharePrice.sub(delta), fidu_tolerance)
+      })
+
+      it("should reset the writedowns to 0 if fully paid back", async () => {
+        // Assume 2 periods late
+        const periodsLate = new BN("2")
+        const interestOwed = interestOwedForOnePeriod.mul(periodsLate)
+        await creditLine.setInterestOwed(interestOwed)
+
+        await creditDesk.assessCreditLine(creditLine.address)
+        // Reset the next due block so we trigger the applyPayment when we pay
+        await creditLine.setNextDueBlock(new BN(1))
+
+        let expectedWritedown = usdcVal(25).div(new BN(10)) // 25% of 10 = 2.5
+
+        expect(await creditLine.writedownAmount()).to.be.bignumber.eq(expectedWritedown)
+
+        // Payback all interest owed
+        await creditDesk.pay(creditLine.address, String(interestOwed), {from: borrower})
+
+        expect(await creditLine.writedownAmount()).to.be.bignumber.eq("0")
+        var newSharePrice = await pool.sharePrice()
+        let normalizedInterest = await pool._usdcToFidu(interestOwed)
+        let expectedReserveFee = await pool._usdcToFidu(interestOwed.div(FEE_DENOMINATOR))
+        var delta = newSharePrice.sub(originalSharePrice)
+        var expectedDelta = normalizedInterest.sub(expectedReserveFee).mul(decimals).div(originalTotalShares)
+
+        expect(delta).to.be.bignumber.eq(expectedDelta)
+        expect(newSharePrice).to.be.bignumber.eq(originalSharePrice.add(delta))
+      })
+    })
+
+    describe("after loan term ends", async () => {
+      it("takes the principal owed into account to determining write downs", async () => {})
     })
   })
 
@@ -830,16 +973,31 @@ describe("CreditDesk", () => {
         })
         const originalPoolBalance = await getBalance(pool.address, usdc)
         const originalSharePrice = await pool.sharePrice()
+        const originalTotalShares = await fidu.totalSupply()
         const expectedFeeAmount = usdcVal(interestOwed).div(FEE_DENOMINATOR)
 
         await creditDesk.assessCreditLine(creditLine.address)
+
+        // This is a bit of a hack, we sholdn't have to be including thw writedown in this test, but it's
+        // hard to isolate at the moment. We need to refactor these tests to be independent of writedowns
+        let writedownAmount = await creditLine.writedownAmount()
+        expect(writedownAmount).to.be.bignumber.gt("0")
+        let normalizedWritedown = await pool._usdcToFidu(writedownAmount)
+        let normalizedInterest = await pool._usdcToFidu(usdcVal(interestOwed))
+        let expectedReserveFee = await pool._usdcToFidu(expectedFeeAmount)
+        var expectedDelta = normalizedInterest
+          .sub(normalizedWritedown)
+          .sub(expectedReserveFee)
+          .mul(decimals)
+          .div(originalTotalShares)
+        let fidu_tolerance = decimals.div(USDC_DECIMALS)
 
         const newPoolBalance = await getBalance(pool.address, usdc)
 
         expect(await creditLine.collectedPaymentBalance()).to.bignumber.equal("0")
         expect(await creditLine.interestOwed()).to.bignumber.equal("0")
         expect(await creditLine.principalOwed()).to.bignumber.equal(usdcVal(principalOwed))
-        expect(await pool.sharePrice()).to.bignumber.gt(originalSharePrice)
+        expect(await pool.sharePrice()).to.bignumber.closeTo(originalSharePrice.add(expectedDelta), fidu_tolerance)
         expect(newPoolBalance.sub(originalPoolBalance)).to.bignumber.equal(usdcVal(interestOwed).sub(expectedFeeAmount))
       })
     })

@@ -18,4 +18,6 @@ abstract contract IPool {
     address to,
     uint256 amount
   ) public virtual returns (bool);
+
+  function distributeLosses(address creditlineAddress, int256 writedownDelta) external virtual;
 }

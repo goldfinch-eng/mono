@@ -4,6 +4,7 @@ pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
 import "./CreditLine.sol";
+import "../external/FixedPoint.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 
@@ -15,7 +16,13 @@ import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 
 library Accountant {
   using SafeMath for uint256;
+  using FixedPoint for FixedPoint.Signed;
+  using FixedPoint for FixedPoint.Unsigned;
+  using FixedPoint for int256;
+  using FixedPoint for uint256;
 
+  // Scaling factor used by FixedPoint.sol. We need this to convert the fixed point raw values back to unscaled
+  uint256 public constant FP_SCALING_FACTOR = 10**18;
   uint256 public constant INTEREST_DECIMALS = 1e8;
   uint256 public constant BLOCKS_PER_DAY = 5760;
   uint256 public constant BLOCKS_PER_YEAR = (BLOCKS_PER_DAY * 365);
@@ -42,6 +49,49 @@ library Accountant {
     } else {
       return 0;
     }
+  }
+
+  function calculateWritedownFor(
+    CreditLine cl,
+    uint256 blockNumber,
+    uint256 gracePeriod,
+    uint256 maxLatePeriods
+  ) public view returns (uint256, uint256) {
+    uint256 amountOwedLastPeriod = calculateAmountOwedForOnePeriod(cl, blockNumber);
+    if (amountOwedLastPeriod == 0) {
+      return (0, 0);
+    }
+    uint256 totalOwed = cl.interestOwed().add(cl.principalOwed());
+    // Excel math: =min(1,max(0,periods_late_in_days-graceperiod_in_days)/MAX_ALLOWED_DAYS_LATE) grace_period = 30,
+    FixedPoint.Unsigned memory fpGracePeriod = FixedPoint.fromUnscaledUint(gracePeriod);
+    FixedPoint.Unsigned memory periodsLate = FixedPoint.fromUnscaledUint(totalOwed).div(amountOwedLastPeriod);
+
+    FixedPoint.Unsigned memory maxLate = FixedPoint.fromUnscaledUint(maxLatePeriods);
+    FixedPoint.Unsigned memory writedownPercent;
+    if (periodsLate.isLessThanOrEqual(fpGracePeriod)) {
+      // Within the grace period, we don't have to write down, so assume 0%
+      writedownPercent = FixedPoint.fromUnscaledUint(0);
+    } else {
+      writedownPercent = FixedPoint.min(FixedPoint.fromUnscaledUint(1), (periodsLate.sub(fpGracePeriod)).div(maxLate));
+    }
+
+    FixedPoint.Unsigned memory writedownAmount = writedownPercent.mul(cl.balance()).div(FP_SCALING_FACTOR);
+    // This will return a number between 0-100 representing the write down percent with no decimals
+    uint256 unscaledWritedownPercent = writedownPercent.mul(100).div(FP_SCALING_FACTOR).rawValue;
+    return (unscaledWritedownPercent, writedownAmount.rawValue);
+  }
+
+  function calculateAmountOwedForOnePeriod(CreditLine cl, uint256 asOfBlock) public view returns (uint256) {
+    // Determine theoretical interestOwed for one full period
+    uint256 paymentPeriodInBlocks = cl.paymentPeriodInDays() * BLOCKS_PER_DAY;
+    uint256 totalInterestPerYear = cl.balance().mul(cl.interestApr()).div(INTEREST_DECIMALS);
+    uint256 interestOwed = totalInterestPerYear.mul(paymentPeriodInBlocks).div(BLOCKS_PER_YEAR);
+
+    // If the block is beyond the loan end date, then the borrower also owes the principal
+    if (asOfBlock > cl.termEndBlock()) {
+      interestOwed = interestOwed + cl.balance();
+    }
+    return interestOwed;
   }
 
   function calculateInterestAccrued(CreditLine cl, uint256 blockNumber) public view returns (uint256) {

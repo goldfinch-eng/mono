@@ -33,6 +33,7 @@ contract CreditLine is BaseUpgradeablePausable {
   uint256 public termEndBlock;
   uint256 public nextDueBlock;
   uint256 public lastUpdatedBlock;
+  uint256 public writedownAmount;
 
   function initialize(
     address owner,
@@ -80,6 +81,10 @@ contract CreditLine is BaseUpgradeablePausable {
 
   function setLastUpdatedBlock(uint256 newLastUpdatedBlock) external onlyAdmin {
     lastUpdatedBlock = newLastUpdatedBlock;
+  }
+
+  function setWritedownAmount(uint256 newWritedownAmount) external onlyAdmin {
+    writedownAmount = newWritedownAmount;
   }
 
   function setLimit(uint256 newAmount) external onlyAdminOrUnderwriter {

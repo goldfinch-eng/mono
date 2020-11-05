@@ -60,4 +60,12 @@ library ConfigHelper {
   function getWithdrawFeeDenominator(GoldfinchConfig config) internal view returns (uint256) {
     return config.getNumber(uint256(ConfigOptions.Numbers.WithdrawFeeDenominator));
   }
+
+  function getLatenessGracePeriod(GoldfinchConfig config) internal view returns (uint256) {
+    return config.getNumber(uint256(ConfigOptions.Numbers.LatenessGracePeriod));
+  }
+
+  function getLatenessMaxPeriod(GoldfinchConfig config) internal view returns (uint256) {
+    return config.getNumber(uint256(ConfigOptions.Numbers.LatenessMaxPeriod));
+  }
 }
