@@ -50,14 +50,6 @@ describe("CreditDesk", () => {
     })
   }
 
-  // This factory function is here because in order to call the `setX` functions
-  // which allow us to setup state to test specific scenarios, we have to call them from
-  // the "owner" of the creditLine, which would normally be the credit desk.
-  // The issue is we can't directly send transactions from the creditDesk because
-  // web3 doesn't know about that account, and the account isn't "unlocked".
-  // So instead we use this sort-of-hack, where we deploy a separate creditLine from the
-  // 'owner', and transfer ownership to the creditDesk, where we can then call external methods
-  // that manipulate this creditLine.
   let createAndSetCreditLineAttributes = async (
     {balance, interestOwed, principalOwed, collectedPaymentBalance = 0, nextDueBlock},
     people = {}
@@ -79,17 +71,13 @@ describe("CreditDesk", () => {
     const termInDays = 360
     const termInBlocks = (await creditDesk.BLOCKS_PER_DAY()).mul(new BN(termInDays))
     const termEndBlock = (await time.latestBlock()).add(termInBlocks)
+    await creditDesk.setUnderwriterGovernanceLimit(thisUnderwriter, limit.mul(new BN(5)))
 
-    var creditLine = await CreditLine.new({from: thisOwner})
-    await creditLine.initialize(
-      thisOwner,
-      thisBorrower,
-      thisUnderwriter,
-      limit,
-      interestApr,
-      paymentPeriodInDays,
-      termInDays
-    )
+    await creditDesk.createCreditLine(thisBorrower, limit, interestApr, paymentPeriodInDays, termInDays, {
+      from: thisUnderwriter,
+    })
+    var borrowerCreditLines = await creditDesk.getBorrowerCreditLines(thisBorrower)
+    const creditLine = await CreditLine.at(borrowerCreditLines[0])
 
     await Promise.all([
       creditDesk._setTotalLoansOutstanding(usdcVal(balance).add(usdcVal(interestOwed))),
@@ -101,7 +89,6 @@ describe("CreditDesk", () => {
       creditLine.setNextDueBlock(nextDueBlock, {from: thisOwner}),
       creditLine.setTermEndBlock(termEndBlock, {from: thisOwner}),
       creditLine.authorizePool(goldfinchConfig.address),
-      creditLine.grantRole(OWNER_ROLE, creditDesk.address),
     ])
 
     return creditLine

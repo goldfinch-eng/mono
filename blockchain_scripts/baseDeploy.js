@@ -75,6 +75,7 @@ async function baseDeploy(bre, {shouldUpgrade}) {
     await updateConfig(config, "number", CONFIG_KEYS.MaxUnderwriterLimit, String(maxUnderwriterLimit))
     await updateConfig(config, "number", CONFIG_KEYS.ReserveDenominator, String(reserveDenominator))
     await updateConfig(config, "number", CONFIG_KEYS.WithdrawFeeDenominator, String(withdrawFeeDenominator))
+    await updateConfig(config, "address", CONFIG_KEYS.ProtocolAdmin, protocol_owner)
     await config.setTreasuryReserve(protocol_owner)
 
     return config

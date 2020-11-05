@@ -44,6 +44,7 @@ const CONFIG_KEYS = {
   Fidu: 4,
   USDC: 5,
   TreasuryReserve: 6,
+  ProtocolAdmin: 7,
 }
 
 function isTestEnv() {

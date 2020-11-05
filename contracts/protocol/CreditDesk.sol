@@ -99,6 +99,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     creditLines[address(cl)] = address(cl);
     emit CreditLineCreated(_borrower, address(cl));
 
+    cl.grantRole(keccak256("OWNER_ROLE"), config.protocolAdminAddress());
     cl.authorizePool(address(config));
   }
 
@@ -137,6 +138,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
   }
 
   function pay(address creditLineAddress, uint256 amount) external override whenNotPaused {
+    require(creditLines[creditLineAddress] != address(0), "Unknown credit line");
     CreditLine cl = CreditLine(creditLineAddress);
 
     collectPayment(cl, amount);
@@ -147,6 +149,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
   }
 
   function assessCreditLine(address creditLineAddress) external override whenNotPaused {
+    require(creditLines[creditLineAddress] != address(0), "Unknown credit line");
     CreditLine cl = CreditLine(creditLineAddress);
     // Do not assess until a full period has elapsed
     if (block.number < cl.nextDueBlock()) {
