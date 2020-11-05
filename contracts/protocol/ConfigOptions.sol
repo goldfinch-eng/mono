@@ -6,7 +6,16 @@ library ConfigOptions {
   // NEVER EVER CHANGE THE ORDER OF THESE!
   // You can rename or append. But NEVER change the order.
   enum Numbers {TransactionLimit, TotalFundsLimit, MaxUnderwriterLimit, ReserveDenominator, WithdrawFeeDenominator}
-  enum Addresses {Pool, CreditLineImplementation, CreditLineFactory, CreditDesk, Fidu, USDC, TreasuryReserve}
+  enum Addresses {
+    Pool,
+    CreditLineImplementation,
+    CreditLineFactory,
+    CreditDesk,
+    Fidu,
+    USDC,
+    TreasuryReserve,
+    ProtocolAdmin
+  }
 
   function getNumberName(uint256 number) public pure returns (string memory) {
     Numbers numberName = Numbers(number);
@@ -50,6 +59,9 @@ library ConfigOptions {
     }
     if (Addresses.TreasuryReserve == addressName) {
       return "TreasuryReserve";
+    }
+    if (Addresses.ProtocolAdmin == addressName) {
+      return "ProtocolAdmin";
     }
     revert("Unknown value passed to getAddressName");
   }

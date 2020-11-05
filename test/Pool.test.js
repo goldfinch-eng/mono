@@ -345,6 +345,13 @@ describe("Pool", () => {
       expect(event.args.to).to.equal(pool.address)
       expect(event.args.amount).to.bignumber.equal(amount)
     })
+
+    it("should fail from anyone who isn't the credit desk, even the owner", async () => {
+      const amount = new BN(1).mul(USDC_DECIMALS)
+      return expect(pool.transferFrom(person2, pool.address, amount, {from: owner})).to.be.rejectedWith(
+        /Only the credit desk/
+      )
+    })
   })
 
   describe("hard limits", async () => {

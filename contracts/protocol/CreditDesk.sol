@@ -45,6 +45,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
 
   mapping(address => Underwriter) public underwriters;
   mapping(address => Borrower) private borrowers;
+  mapping(address => address) private creditLines;
 
   /**
    * @notice Run only once, on initialization
@@ -119,8 +120,10 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
 
     underwriter.creditLines.push(address(cl));
     borrower.creditLines.push(address(cl));
+    creditLines[address(cl)] = address(cl);
     emit CreditLineCreated(_borrower, address(cl));
 
+    cl.grantRole(keccak256("OWNER_ROLE"), config.protocolAdminAddress());
     cl.authorizePool(address(config));
   }
 
@@ -142,10 +145,8 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     address creditLineAddress,
     address addressToSendTo
   ) external override whenNotPaused {
-    if (addressToSendTo == address(0)) {
-      addressToSendTo = msg.sender;
-    }
     CreditLine cl = CreditLine(creditLineAddress);
+    require(creditLines[creditLineAddress] != address(0), "Unknown credit line");
     require(amount > 0, "Must drawdown more than zero");
     require(cl.borrower() == msg.sender, "You do not belong to this credit line");
     // Not strictly necessary, but provides a better error message to the user
@@ -155,6 +156,10 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     );
     require(withinTransactionLimit(amount), "Amount is over the per-transaction limit");
     require(withinCreditLimit(amount, cl), "The borrower does not have enough credit limit for this drawdown");
+
+    if (addressToSendTo == address(0)) {
+      addressToSendTo = msg.sender;
+    }
 
     if (cl.balance() == 0) {
       cl.setLastUpdatedBlock(block.number);
@@ -182,6 +187,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
    * @param amount The amount, in USDC atomic units, that a borrower wishes to pay
    */
   function pay(address creditLineAddress, uint256 amount) external override whenNotPaused {
+    require(creditLines[creditLineAddress] != address(0), "Unknown credit line");
     require(amount > 0, "Must pay more than zero");
     CreditLine cl = CreditLine(creditLineAddress);
 
@@ -200,6 +206,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
    * @param creditLineAddress The creditline that should be assessed.
    */
   function assessCreditLine(address creditLineAddress) external override whenNotPaused {
+    require(creditLines[creditLineAddress] != address(0), "Unknown credit line");
     CreditLine cl = CreditLine(creditLineAddress);
     // Do not assess until a full period has elapsed
     if (block.number < cl.nextDueBlock()) {
