@@ -16,6 +16,10 @@ contract TestTheConfig {
     GoldfinchConfig(configAddress).setNumber(uint256(ConfigOptions.Numbers.TransactionLimit), 1);
     GoldfinchConfig(configAddress).setNumber(uint256(ConfigOptions.Numbers.TotalFundsLimit), 2);
     GoldfinchConfig(configAddress).setNumber(uint256(ConfigOptions.Numbers.MaxUnderwriterLimit), 3);
+    GoldfinchConfig(configAddress).setNumber(uint256(ConfigOptions.Numbers.ReserveDenominator), 4);
+    GoldfinchConfig(configAddress).setNumber(uint256(ConfigOptions.Numbers.WithdrawFeeDenominator), 5);
+    GoldfinchConfig(configAddress).setNumber(uint256(ConfigOptions.Numbers.LatenessGracePeriod), 6);
+    GoldfinchConfig(configAddress).setNumber(uint256(ConfigOptions.Numbers.LatenessMaxPeriod), 7);
 
     GoldfinchConfig(configAddress).setAddress(uint256(ConfigOptions.Addresses.Fidu), fiduAddress);
     GoldfinchConfig(configAddress).setAddress(uint256(ConfigOptions.Addresses.Pool), poolAddress);

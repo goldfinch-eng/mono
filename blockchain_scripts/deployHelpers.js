@@ -37,6 +37,8 @@ const CONFIG_KEYS = {
   MaxUnderwriterLimit: 2,
   ReserveDenominator: 3,
   WithdrawFeeDenominator: 4,
+  LatenessGracePeriod: 5,
+  LatenessMaxPeriod: 6,
   // Addresses
   Pool: 0,
   CreditLineImplementation: 1,

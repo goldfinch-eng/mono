@@ -26,9 +26,6 @@ library Accountant {
   uint256 public constant INTEREST_DECIMALS = 1e8;
   uint256 public constant BLOCKS_PER_DAY = 5760;
   uint256 public constant BLOCKS_PER_YEAR = (BLOCKS_PER_DAY * 365);
-  // TODO: Pull these from config
-  uint256 public constant LATENESS_GRACE_PERIOD = 1;
-  uint256 public constant LATENESS_MAX_GRACE_PERIODS = 4;
 
   struct PaymentAllocation {
     uint256 interestPayment;
@@ -57,7 +54,8 @@ library Accountant {
   function calculateWritedownFor(
     CreditLine cl,
     uint256 blockNumber,
-    uint256 gracePeriod
+    uint256 gracePeriod,
+    uint256 maxLatePeriods
   ) public view returns (uint256, uint256) {
     uint256 amountOwedLastPeriod = calculateAmountOwedForOnePeriod(cl, blockNumber);
     if (amountOwedLastPeriod == 0) {
@@ -68,7 +66,7 @@ library Accountant {
     FixedPoint.Unsigned memory fpGracePeriod = FixedPoint.fromUnscaledUint(gracePeriod);
     FixedPoint.Unsigned memory periodsLate = FixedPoint.fromUnscaledUint(totalOwed).div(amountOwedLastPeriod);
 
-    FixedPoint.Unsigned memory maxLate = FixedPoint.fromUnscaledUint(LATENESS_MAX_GRACE_PERIODS);
+    FixedPoint.Unsigned memory maxLate = FixedPoint.fromUnscaledUint(maxLatePeriods);
     FixedPoint.Unsigned memory writedownPercent;
     if (periodsLate.isLessThanOrEqual(fpGracePeriod)) {
       // Within the grace period, we don't have to write down, so assume 0%

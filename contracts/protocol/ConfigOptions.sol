@@ -11,7 +11,15 @@ pragma solidity ^0.6.8;
 library ConfigOptions {
   // NEVER EVER CHANGE THE ORDER OF THESE!
   // You can rename or append. But NEVER change the order.
-  enum Numbers {TransactionLimit, TotalFundsLimit, MaxUnderwriterLimit, ReserveDenominator, WithdrawFeeDenominator}
+  enum Numbers {
+    TransactionLimit,
+    TotalFundsLimit,
+    MaxUnderwriterLimit,
+    ReserveDenominator,
+    WithdrawFeeDenominator,
+    LatenessGracePeriod,
+    LatenessMaxPeriod
+  }
   enum Addresses {
     Pool,
     CreditLineImplementation,
@@ -39,6 +47,12 @@ library ConfigOptions {
     }
     if (Numbers.WithdrawFeeDenominator == numberName) {
       return "WithdrawFeeDenominator";
+    }
+    if (Numbers.LatenessGracePeriod == numberName) {
+      return "LatenessGracePeriod";
+    }
+    if (Numbers.LatenessMaxPeriod == numberName) {
+      return "LatenessMaxPeriod";
     }
     revert("Unknown value passed to getNumberName");
   }

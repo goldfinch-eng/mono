@@ -339,7 +339,8 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     (uint256 writedownPercent, uint256 writedownAmount) = Accountant.calculateWritedownFor(
       cl,
       block.number,
-      Accountant.LATENESS_GRACE_PERIOD
+      config.getLatenessGracePeriod(),
+      config.getLatenessMaxPeriod()
     );
     if (writedownPercent == 0 && cl.writedownAmount() == 0) {
       return;
@@ -351,7 +352,12 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
 
   function isLate(CreditLine cl) internal view returns (bool) {
     // Calculate the writedown percent without any grace period to determine if we're late
-    (uint256 writedownPercent, uint256 writedownAmount) = Accountant.calculateWritedownFor(cl, block.number, 0);
+    (uint256 writedownPercent, uint256 writedownAmount) = Accountant.calculateWritedownFor(
+      cl,
+      block.number,
+      0,
+      config.getLatenessMaxPeriod()
+    );
     return writedownPercent > 0;
   }
 
