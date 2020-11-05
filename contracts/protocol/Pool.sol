@@ -90,7 +90,7 @@ contract Pool is BaseUpgradeablePausable, IPool {
 
   /**
    * @notice Collects `amount` USDC in interest from `from` and sends it to the Pool.
-   *  This also increases the share price accordingly. A portion of sent to the Goldfinch Reserve address
+   *  This also increases the share price accordingly. A portion is sent to the Goldfinch Reserve address
    * @param from The address to take the USDC from. Implicitly, the Pool
    *  must be authorized to move USDC on behalf of `from`.
    * @param amount the amount of USDC to move to the Pool

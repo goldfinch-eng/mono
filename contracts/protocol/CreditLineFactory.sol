@@ -5,6 +5,13 @@ pragma solidity ^0.6.8;
 import "./BaseUpgradeablePausable.sol";
 import "./GoldfinchConfig.sol";
 
+/**
+ * @title CreditLineFactory
+ * @notice Contract that allows us to follow the minimal proxy pattern for creating CreditLines.
+ *  This saves us gas, and lets us easily swap out the CreditLine implementaton.
+ * @author Goldfinch
+ */
+
 contract CreditLineFactory is BaseUpgradeablePausable {
   GoldfinchConfig public config;
 
