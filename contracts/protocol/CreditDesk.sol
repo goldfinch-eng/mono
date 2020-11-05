@@ -367,10 +367,5 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
 
     cl.setTermEndBlock(calculateNewTermEndBlock(cl));
     cl.setNextDueBlock(calculateNextDueBlock(cl));
-
-    if (balance <= 0) {
-      cl.setTermEndBlock(0);
-      cl.setNextDueBlock(0);
-    }
   }
 }
