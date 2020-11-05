@@ -148,11 +148,6 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     CreditLine cl = CreditLine(creditLineAddress);
     require(amount > 0, "Must drawdown more than zero");
     require(cl.borrower() == msg.sender, "You do not belong to this credit line");
-    // Not strictly necessary, but provides a better error message to the user
-    require(
-      config.getPool().enoughBalance(config.poolAddress(), amount),
-      "Pool does not have enough balance for this drawdown"
-    );
     require(withinTransactionLimit(amount), "Amount is over the per-transaction limit");
     require(withinCreditLimit(amount, cl), "The borrower does not have enough credit limit for this drawdown");
 
@@ -238,7 +233,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
    */
   function collectPayment(CreditLine cl, uint256 amount) internal {
     require(withinTransactionLimit(amount), "Amount is over the per-transaction limit");
-    require(config.getPool().enoughBalance(msg.sender, amount), "You have insufficent balance for this payment");
+    require(config.getUSDC().balanceOf(msg.sender) > amount, "You have insufficent balance for this payment");
 
     uint256 newCollectedPaymentBalance = cl.collectedPaymentBalance().add(amount);
     cl.setCollectedPaymentBalance(newCollectedPaymentBalance);

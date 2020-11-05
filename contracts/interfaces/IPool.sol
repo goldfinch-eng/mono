@@ -13,8 +13,6 @@ abstract contract IPool {
 
   function collectPrincipalRepayment(address from, uint256 amount) external virtual;
 
-  function enoughBalance(address user, uint256 amount) public view virtual returns (bool);
-
   function transferFrom(
     address from,
     address to,
