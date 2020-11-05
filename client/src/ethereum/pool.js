@@ -1,8 +1,8 @@
 import web3 from '../web3';
-import BN from 'bn.js';
+import BigNumber from 'bignumber.js';
 import { mapNetworkToID, fetchDataFromAttributes, getDeployments, USDC_DECIMALS } from './utils.js';
-import { decimals, fromAtomic, getErc20, usdcToAtomic } from './erc20';
-import { getFidu, FIDU_DECIMALS, fiduFromAtomic } from './fidu';
+import { getErc20 } from './erc20';
+import { getFidu, FIDU_DECIMALS } from './fidu';
 
 let pool;
 
@@ -24,9 +24,11 @@ async function fetchCapitalProviderData(pool, capitalProviderAddress) {
   const attributes = [{ method: 'sharePrice' }];
   result = await fetchDataFromAttributes(pool, attributes);
   result.numShares = await pool.fidu.methods.balanceOf(capitalProviderAddress).call();
-  result.availableToWithdrawal = new BN(result.numShares).mul(new BN(result.sharePrice)).div(FIDU_DECIMALS);
+  result.availableToWithdrawal = new BigNumber(result.numShares)
+    .multipliedBy(new BigNumber(result.sharePrice))
+    .div(FIDU_DECIMALS);
   result.address = capitalProviderAddress;
-  result.allowance = new BN(await pool.usdc.methods.allowance(capitalProviderAddress, pool._address).call());
+  result.allowance = new BigNumber(await pool.usdc.methods.allowance(capitalProviderAddress, pool._address).call());
   return result;
 }
 
@@ -38,16 +40,20 @@ async function fetchPoolData(pool, erc20) {
   const attributes = [{ method: 'sharePrice' }];
   result = await fetchDataFromAttributes(pool, attributes);
   result.balance = await erc20.methods.balanceOf(pool._address).call();
+  console.log('Pool balance is..', result.balance);
   result.totalShares = await pool.fidu.methods.totalSupply().call();
+
+  console.log('total shares is...', result.totalShares);
 
   // Do some slightly goofy multiplication and division here so that we have consistent units across
   // 'balance', 'totalPoolBalance', and 'totalDrawdowns', allowing us to do arithmetic between them
   // and display them using the same helpers.
-  const totalPoolBalanceInDollars = new BN(result.totalShares)
+  const totalPoolBalanceInDollars = new BigNumber(result.totalShares)
     .div(FIDU_DECIMALS)
-    .mul(new BN(result.sharePrice))
+    .multipliedBy(new BigNumber(result.sharePrice))
     .div(FIDU_DECIMALS);
-  result.totalPoolBalance = totalPoolBalanceInDollars.mul(USDC_DECIMALS);
+  console.log('total balance in dollars...', String(totalPoolBalanceInDollars));
+  result.totalPoolBalance = totalPoolBalanceInDollars.multipliedBy(USDC_DECIMALS);
   result.totalDrawdowns = result.totalPoolBalance - result.balance;
   return result;
 }

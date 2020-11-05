@@ -40,12 +40,12 @@ async function main({getNamedAccounts, deployments, getChainId}) {
     }
   }
 
-  await depositFundsToThePool(pool, protocol_owner, erc20, chainID)
+  await depositFundsToThePool(pool, erc20)
   await createUnderwriter(creditDesk, underwriter)
   await createCreditLineForBorrower(creditDesk, borrower)
 }
 
-async function depositFundsToThePool(pool, protocol_owner, erc20, chainID) {
+async function depositFundsToThePool(pool, erc20) {
   logger("Depositing funds into the pool...")
   const originalBalance = await erc20.balanceOf(pool.address)
   if (originalBalance.gt(new BN(0))) {
@@ -59,12 +59,7 @@ async function depositFundsToThePool(pool, protocol_owner, erc20, chainID) {
   await txn.wait()
   logger("Depositing funds...")
   let depositAmount
-  if (CHAIN_MAPPING[chainID] === LOCAL) {
-    depositAmount = new BN(10000).mul(USDCDecimals)
-  } else {
-    // We don't have mad bank for testnet USDC, so divide by 10.
-    depositAmount = new BN(1).mul(USDCDecimals).div(new BN(10))
-  }
+  depositAmount = new BN(10000).mul(USDCDecimals)
 
   // eslint-disable-next-line no-redeclare
   var txn = await pool.deposit(String(depositAmount))

@@ -53,6 +53,12 @@ the sharePrice downwards to reflect the lowered confidence in that borrower.
 
 
 
+### `distributeLosses(address creditlineAddress, int256 writedownDelta)` (external)
+
+
+
+
+
 ### `transferFrom(address from, address to, uint256 amount) → bool` (public)
 
 Moves `amount` USDC from `from`, to `to`.
@@ -79,6 +85,12 @@ Moves `amount` USDC from `from`, to `to`.
 
 
 ### `totalShares() → uint256` (internal)
+
+
+
+
+
+### `usdcToSharePrice(uint256 usdcAmount) → uint256` (internal)
 
 
 
@@ -158,6 +170,12 @@ Moves `amount` USDC from `from`, to `to`.
 
 
 ### `ReserveFundsCollected(address user, uint256 amount)`
+
+
+
+
+
+### `PrincipalWrittendown(address creditline, int256 amount)`
 
 
 

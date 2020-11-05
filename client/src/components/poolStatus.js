@@ -8,6 +8,7 @@ class DepositStatus extends Component {
     let balance = '0';
     let poolBalance = '0';
     let totalDrawdowns = '0';
+    console.log('drawdowns is...', this.props.poolData.totalDrawdowns);
     if (this.props.poolData.totalShares) {
       balance = usdcFromAtomic(this.props.poolData.balance);
       poolBalance = usdcFromAtomic(this.props.poolData.totalPoolBalance);
