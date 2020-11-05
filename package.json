@@ -9,9 +9,10 @@
     "pre-push": "cd client && npm run pre-push",
     "pre-commit": "npx lint-staged && cd client && npm run pre-commit",
     "lint": "npx eslint . --fix && npx prettier . --write && npx solhint contracts/**/*.sol --fix",
+    "docs": "npx solidity-docgen && rm -rf docs/test",
     "verify": "npx buidler etherscan-verify --api-key DQUC8Y678J5RN5P7XE9RT91SWI7SSEDD53 --solc-input --network",
-    "deploy": "npx solidity-docgen && rm -rf docs/test && npx buidler deploy --show-stack-traces --export-all client/config/deployments.json --network",
-    "upgrade-protocol": "npx solidity-docgen && rm -rf docs/test && npx buidler deploy --export-all client/config/deployments.json --tags upgrade_protocol --network",
+    "deploy": "npm run docs && npx buidler deploy --show-stack-traces --export-all client/config/deployments.json --network",
+    "upgrade-protocol": "npm run docs && npx buidler deploy --export-all client/config/deployments.json --tags upgrade_protocol --network",
     "update-configs": "npx buidler run ./blockchain_scripts/updateConfigs.js --network"
   },
   "lint-staged": {

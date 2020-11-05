@@ -17,7 +17,7 @@ import "./CreditLineFactory.sol";
  */
 
 contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
-  // Approximate number of blocks
+  // Approximate number of blocks per day
   uint256 public constant BLOCKS_PER_DAY = 5760;
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
@@ -47,6 +47,11 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
   mapping(address => Borrower) private borrowers;
   mapping(address => address) private creditLines;
 
+  /**
+   * @notice Run only once, on initialization
+   * @param owner The address of who should have the "OWNER_ROLE" of this contract
+   * @param _config The address of the GoldfinchConfig contract
+   */
   function initialize(address owner, GoldfinchConfig _config) public initializer {
     __BaseUpgradeablePausable__init(owner);
     config = _config;
@@ -56,6 +61,9 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
    * @notice Sets a particular underwriter's limit of how much credit the DAO will allow them to "create"
    * @param underwriterAddress The address of the underwriter for whom the limit shall change
    * @param limit What the new limit will be set to
+   * Requirements:
+   *
+   * - the caller must have the `OWNER_ROLE`.
    */
   function setUnderwriterGovernanceLimit(address underwriterAddress, uint256 limit)
     external
@@ -69,6 +77,22 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     emit GovernanceUpdatedUnderwriterLimit(underwriterAddress, limit);
   }
 
+  /**
+   * @notice Allows an underwriter to create a new CreditLine for a single borrower
+   * @param _borrower The borrower for whom the CreditLine will be created
+   * @param _limit The maximum amount a borrower can drawdown from this CreditLine
+   * @param _interestApr The interest amount, on an annualized basis (APR, so non-compounding), expressed as an integer.
+   *  We assume 8 digits of precision. For example, to submit 15.34%, you would pass up 15340000,
+   *  and 5.34% would be 5340000
+   * @param _paymentPeriodInDays How many days in each payment period.
+   *  ie. the frequency with which they need to make payments.
+   * @param _termInDays Number of days in the credit term. It is used to set the `termEndBlock` upon first drawdown.
+   *  ie. The credit line should be fully paid off {_termIndays} days after the first drawdown.
+   *
+   * Requirements:
+   *
+   * - the caller must be an underwriter with enough limit (see `setUnderwriterGovernanceLimit`)
+   */
   function createCreditLine(
     address _borrower,
     uint256 _limit,
@@ -103,6 +127,19 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     cl.authorizePool(address(config));
   }
 
+  /**
+   * @notice Allows a borrower to drawdown on their creditline.
+   *  `amount` USDC is sent to the borrower, and the credit line accounting is updated.
+   * @param amount The amount, in USDC atomic units, that a borrower wishes to drawdown
+   * @param creditLineAddress The creditline from which they would like to drawdown
+   * @param addressToSendTo The address where they would like the funds sent. If the zero address is passed,
+   *  it will be defaulted to the borrower's address (msg.sender). This is a convenience feature for when they would
+   *  like the funds sent to an exchange or alternate wallet, different from the authentication address
+   *
+   * Requirements:
+   *
+   * - the caller must be the borrower on the creditLine
+   */
   function drawdown(
     uint256 amount,
     address creditLineAddress,
@@ -110,6 +147,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
   ) external override whenNotPaused {
     CreditLine cl = CreditLine(creditLineAddress);
     require(creditLines[creditLineAddress] != address(0), "Unknown credit line");
+    require(amount > 0, "Must drawdown more than zero");
     require(cl.borrower() == msg.sender, "You do not belong to this credit line");
     // Not strictly necessary, but provides a better error message to the user
     require(
@@ -118,14 +156,15 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     );
     require(withinTransactionLimit(amount), "Amount is over the per-transaction limit");
     require(withinCreditLimit(amount, cl), "The borrower does not have enough credit limit for this drawdown");
+
     if (addressToSendTo == address(0)) {
       addressToSendTo = msg.sender;
     }
+
     if (cl.balance() == 0) {
       cl.setLastUpdatedBlock(block.number);
-      cl.setTermEndBlock(calculateNewTermEndBlock(cl));
-      cl.setNextDueBlock(calculateNextDueBlock(cl));
     }
+    // Must get the interest and principal accrued prior to adding to the balance.
     (uint256 interestOwed, uint256 principalOwed) = getInterestAndPrincipalOwedAsOf(cl, block.number);
     uint256 balance = cl.balance().add(amount);
 
@@ -137,17 +176,35 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     require(success, "Failed to drawdown");
   }
 
+  /**
+   * @notice Allows a borrower to repay their loan. Payment is *collected* immediately (by sending it to
+   *  the individual CreditLine), but it is not *applied* unless it is after the nextDueBlock, or until we assess
+   *  the credit line (ie. payment period end).
+   *  Any amounts over the minimum payment will be applied to outstanding principal (reducing the effective
+   *  interest rate). If there is still any left over, it will remain in the "collectedPaymentBalance"
+   *  of the CreditLine, which is held distinct from the Pool amounts, and can not be withdrawn by LP's.
+   * @param creditLineAddress The credit line to be paid back
+   * @param amount The amount, in USDC atomic units, that a borrower wishes to pay
+   */
   function pay(address creditLineAddress, uint256 amount) external override whenNotPaused {
     require(creditLines[creditLineAddress] != address(0), "Unknown credit line");
+    require(amount > 0, "Must pay more than zero");
     CreditLine cl = CreditLine(creditLineAddress);
 
     collectPayment(cl, amount);
 
-    if (block.number >= cl.nextDueBlock()) {
-      applyPayment(cl, cl.collectedPaymentBalance(), block.number);
+    if (block.number < cl.nextDueBlock()) {
+      return;
     }
+    applyPayment(cl, cl.collectedPaymentBalance(), block.number);
   }
 
+  /**
+   * @notice Assesses a particular creditLine. This will apply payments, which will update accounting and
+   *  distribute gains or losses back to the pool accordingly. This function is idempotent, and anyone
+   *  is allowed to call it.
+   * @param creditLineAddress The creditline that should be assessed.
+   */
   function assessCreditLine(address creditLineAddress) external override whenNotPaused {
     require(creditLines[creditLineAddress] != address(0), "Unknown credit line");
     CreditLine cl = CreditLine(creditLineAddress);
@@ -160,10 +217,18 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
 
   // Public View Functions (Getters)
 
+  /**
+   * @notice Simple getter for the creditlines of a given underwriter
+   * @param underwriterAddress The underwriter address you would like to see the credit lines of.
+   */
   function getUnderwriterCreditLines(address underwriterAddress) public view whenNotPaused returns (address[] memory) {
     return underwriters[underwriterAddress].creditLines;
   }
 
+  /**
+   * @notice Simple getter for the creditlines of a given borrower
+   * @param borrowerAddress The borrower address you would like to see the credit lines of.
+   */
   function getBorrowerCreditLines(address borrowerAddress) public view whenNotPaused returns (address[] memory) {
     return borrowers[borrowerAddress].creditLines;
   }
@@ -172,6 +237,12 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
    * Internal Functions
    */
 
+  /**
+   * @notice Collects `amount` of payment for a given credit line. This sends money from the payer to the credit line.
+   *  Note that payment is not *applied* when calling this function. Only collected (ie. held) for later application.
+   * @param cl The CreditLine the payment will be collected for.
+   * @param amount The amount, in USDC atomic units, to be collected
+   */
   function collectPayment(CreditLine cl, uint256 amount) internal {
     require(withinTransactionLimit(amount), "Amount is over the per-transaction limit");
     require(config.getPool().enoughBalance(msg.sender, amount), "You have insufficent balance for this payment");
@@ -185,6 +256,17 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     require(success, "Failed to collect payment");
   }
 
+  /**
+   * @notice Applies `amount` of payment for a given credit line. This moves already collected money into the Pool.
+   *  It also updates all the accounting variables. Note that interest is always paid back first, then principal.
+   *  Any extra after paying the minimum will go towards existing principal (reducing the
+   *  effective interest rate). Any extra after the full loan has been paid off will remain in the
+   *  collectedPaymentBalance of the creditLine, where it will be automatically used for the next drawdown.
+   * @param cl The CreditLine the payment will be collected for.
+   * @param amount The amount, in USDC atomic units, to be applied
+   * @param blockNumber The blockNumber on which accrual calculations should be based. This allows us
+   *  to be precise when we assess a Credit Line
+   */
   function applyPayment(
     CreditLine cl,
     uint256 amount,
@@ -200,7 +282,6 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     // Just add it to the collected payment balance. We could also send this back to the borrower (
     // but since assess can be called by anyone, it's better to keep the funds within the contract)
     cl.setCollectedPaymentBalance(paymentRemaining);
-    cl.setNextDueBlock(calculateNextDueBlock(cl));
 
     if (cl.principalOwed() > 0 || cl.interestOwed() > 0) {
       handleLatePayments(cl);
@@ -298,18 +379,37 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
   }
 
   function calculateNewTermEndBlock(CreditLine cl) internal view returns (uint256) {
+    // If there's no balance, there's no loan, so there's no term end block
+    if (cl.balance() <= 0) {
+      return 0;
+    }
+    // Don't allow any weird bugs where we add to your current end block. This
+    // function should only be used on new credit lines, when we are setting them up
+    if (cl.termEndBlock() != 0) {
+      return cl.termEndBlock();
+    }
     return block.number.add(BLOCKS_PER_DAY.mul(cl.termInDays()));
   }
 
   function calculateNextDueBlock(CreditLine cl) internal view returns (uint256) {
     uint256 blocksPerPeriod = cl.paymentPeriodInDays().mul(BLOCKS_PER_DAY);
-    uint256 currentNextDueBlock;
-    if (cl.nextDueBlock() != 0) {
-      currentNextDueBlock = cl.nextDueBlock();
-    } else {
-      currentNextDueBlock = block.number;
+
+    // Your paid off, or have not taken out a loan yet, so no next due block.
+    if (cl.balance() <= 0 && cl.nextDueBlock() != 0) {
+      return 0;
     }
-    return currentNextDueBlock.add(blocksPerPeriod);
+    // You must have just done your first drawdown
+    if (cl.nextDueBlock() == 0 && cl.balance() > 0) {
+      return block.number.add(blocksPerPeriod);
+    }
+    // Active loan that has entered a new period, so return the *next* nextDueBlock
+    if (cl.balance() > 0 && block.number >= cl.nextDueBlock()) {
+      return cl.nextDueBlock().add(blocksPerPeriod);
+    }
+    // Active loan in current period, where we've already set the nextDueBlock correctly, so should not change.
+    if (cl.balance() > 0 && block.number < cl.nextDueBlock()) {
+      return cl.nextDueBlock();
+    }
   }
 
   function underwriterCanCreateThisCreditLine(uint256 newAmount, Underwriter storage underwriter)
@@ -350,9 +450,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
 
     addCLToTotalLoansOutstanding(cl);
 
-    if (balance <= 0) {
-      cl.setTermEndBlock(0);
-      cl.setNextDueBlock(0);
-    }
+    cl.setTermEndBlock(calculateNewTermEndBlock(cl));
+    cl.setNextDueBlock(calculateNextDueBlock(cl));
   }
 }
