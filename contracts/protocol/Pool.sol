@@ -23,6 +23,7 @@ contract Pool is BaseUpgradeablePausable, IPool {
   event InterestCollected(address indexed payer, uint256 poolAmount, uint256 reserveAmount);
   event PrincipalCollected(address indexed payer, uint256 amount);
   event ReserveFundsCollected(address indexed user, uint256 amount);
+  event PrincipalWrittendown(address indexed creditline, int256 amount);
 
   /**
    * @notice Run only once, on initialization
@@ -102,7 +103,7 @@ contract Pool is BaseUpgradeablePausable, IPool {
     uint256 reserveAmount = amount.div(config.getReserveDenominator());
     uint256 poolAmount = amount.sub(reserveAmount);
     emit InterestCollected(from, poolAmount, reserveAmount);
-    uint256 increment = usdcToFidu(poolAmount).mul(fiduMantissa()).div(totalShares());
+    uint256 increment = usdcToSharePrice(poolAmount);
     sharePrice = sharePrice + increment;
     sendToReserve(from, reserveAmount, from);
     doUSDCTransfer(from, address(this), poolAmount);
@@ -127,16 +128,21 @@ contract Pool is BaseUpgradeablePausable, IPool {
     doUSDCTransfer(from, address(this), amount);
   }
 
-  function distributeLosses(int256 writedownDelta) external override onlyCreditDesk whenNotPaused {
+  function distributeLosses(address creditlineAddress, int256 writedownDelta)
+    external
+    override
+    onlyCreditDesk
+    whenNotPaused
+  {
     if (writedownDelta > 0) {
-      uint256 delta = usdcToFidu(uint256(writedownDelta)).mul(fiduMantissa()).div(totalShares());
+      uint256 delta = usdcToSharePrice(uint256(writedownDelta));
       sharePrice = sharePrice.add(delta);
     } else {
       // If delta is negative, convert to positive uint, and sub from sharePrice
-      uint256 delta = usdcToFidu(uint256(writedownDelta * -1)).mul(fiduMantissa()).div(totalShares());
-      // TODO: we may need a sanity check on the magnitude of the delta. Share price should not go negative
+      uint256 delta = usdcToSharePrice(uint256(writedownDelta * -1));
       sharePrice = sharePrice.sub(delta);
     }
+    emit PrincipalWrittendown(creditlineAddress, writedownDelta);
   }
 
   /**
@@ -175,6 +181,10 @@ contract Pool is BaseUpgradeablePausable, IPool {
 
   function totalShares() internal view returns (uint256) {
     return config.getFidu().totalSupply();
+  }
+
+  function usdcToSharePrice(uint256 usdcAmount) internal view returns (uint256) {
+    return usdcToFidu(usdcAmount).mul(fiduMantissa()).div(totalShares());
   }
 
   function poolWithinLimit(uint256 _totalShares) internal view returns (bool) {

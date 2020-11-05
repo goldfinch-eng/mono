@@ -63,7 +63,7 @@ library Accountant {
     if (amountOwedLastPeriod == 0) {
       return (0, 0);
     }
-    uint256 totalOwed = cl.interestOwed() + cl.principalOwed();
+    uint256 totalOwed = cl.interestOwed().add(cl.principalOwed());
     // Excel math: =min(1,max(0,periods_late_in_days-graceperiod_in_days)/MAX_ALLOWED_DAYS_LATE) grace_period = 30,
     FixedPoint.Unsigned memory fpGracePeriod = FixedPoint.fromUnscaledUint(gracePeriod);
     FixedPoint.Unsigned memory periodsLate = FixedPoint.fromUnscaledUint(totalOwed).div(amountOwedLastPeriod);
@@ -74,7 +74,7 @@ library Accountant {
       // Within the grace period, we don't have to write down, so assume 0%
       writedownPercent = FixedPoint.fromUnscaledUint(0);
     } else {
-      writedownPercent = FixedPoint.fromUnscaledUint(1).min((periodsLate.sub(fpGracePeriod)).div(maxLate));
+      writedownPercent = FixedPoint.min(FixedPoint.fromUnscaledUint(1), (periodsLate.sub(fpGracePeriod)).div(maxLate));
     }
 
     FixedPoint.Unsigned memory writedownAmount = writedownPercent.mul(cl.balance()).div(FP_SCALING_FACTOR);

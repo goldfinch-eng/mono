@@ -342,12 +342,11 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
       Accountant.LATENESS_GRACE_PERIOD
     );
     if (writedownPercent == 0 && cl.writedownAmount() == 0) {
-      assert(writedownAmount == 0);
       return;
     }
     int256 writedownDelta = int256(cl.writedownAmount()) - int256(writedownAmount);
     cl.setWritedownAmount(writedownAmount);
-    config.getPool().distributeLosses(writedownDelta);
+    config.getPool().distributeLosses(address(cl), writedownDelta);
   }
 
   function isLate(CreditLine cl) internal view returns (bool) {

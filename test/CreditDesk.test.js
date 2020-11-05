@@ -736,6 +736,7 @@ describe("CreditDesk", () => {
         let fidu_tolerance = decimals.div(USDC_DECIMALS)
 
         expect(delta).to.be.bignumber.closeTo(expectedDelta, fidu_tolerance)
+        expect(newSharePrice).to.be.bignumber.lt(originalSharePrice)
         expect(newSharePrice).to.be.bignumber.closeTo(originalSharePrice.sub(delta), fidu_tolerance)
       })
 
@@ -748,6 +749,7 @@ describe("CreditDesk", () => {
         await creditDesk.assessCreditLine(creditLine.address)
         // Reset the next due block so we trigger the applyPayment when we pay
         await creditLine.setNextDueBlock(new BN(1))
+        var sharePriceAfterAsses = await pool.sharePrice()
 
         let expectedWritedown = usdcVal(25).div(new BN(10)) // 25% of 10 = 2.5
 
@@ -762,8 +764,8 @@ describe("CreditDesk", () => {
         let newWritedown = await creditLine.writedownAmount()
         expect(newWritedown).to.be.bignumber.closeTo(expectedNewWritedown, lowTolerance)
 
-        var newSharePrice = await pool.sharePrice()
-        var delta = originalSharePrice.sub(newSharePrice)
+        var finalSharePrice = await pool.sharePrice()
+        var delta = originalSharePrice.sub(finalSharePrice)
         let normalizedWritedown = await pool._usdcToFidu(newWritedown)
         let normalizedInterest = await pool._usdcToFidu(interestPaid)
         let expectedReserveFee = await pool._usdcToFidu(interestPaid.div(FEE_DENOMINATOR))
@@ -775,7 +777,10 @@ describe("CreditDesk", () => {
         let fidu_tolerance = decimals.div(USDC_DECIMALS)
 
         expect(delta).to.be.bignumber.closeTo(expectedDelta, fidu_tolerance)
-        expect(newSharePrice).to.be.bignumber.closeTo(originalSharePrice.sub(delta), fidu_tolerance)
+        // Share price must go down after the initial write down, and then up after partially paid back
+        expect(sharePriceAfterAsses).to.be.bignumber.lt(originalSharePrice)
+        expect(finalSharePrice).to.be.bignumber.gt(sharePriceAfterAsses)
+        expect(finalSharePrice).to.be.bignumber.closeTo(originalSharePrice.sub(delta), fidu_tolerance)
       })
 
       it("should reset the writedowns to 0 if fully paid back", async () => {
