@@ -1,5 +1,6 @@
 ## `Accountant`
 
+Library for handling key financial calculations, such as interest and principal accrual.
 
 
 

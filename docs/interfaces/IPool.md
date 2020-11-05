@@ -29,12 +29,6 @@
 
 
 
-### `enoughBalance(address user, uint256 amount) → bool` (public)
-
-
-
-
-
 ### `transferFrom(address from, address to, uint256 amount) → bool` (public)
 
 

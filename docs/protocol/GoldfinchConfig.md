@@ -1,5 +1,8 @@
 ## `GoldfinchConfig`
 
+This contract stores mappings of useful "protocol config state", giving a central place
+for all other contracts to access it. For example, the TransactionLimit, or the PoolAddress. These config vars
+are enumerated in the `ConfigOptions` library, and can only be changed by admins of the protocol.
 
 
 
