@@ -17,6 +17,8 @@ const {OWNER_ROLE, PAUSER_ROLE, CONFIG_KEYS, interestAprAsBN} = require("../bloc
 const {time} = require("@openzeppelin/test-helpers")
 const CreditLine = artifacts.require("CreditLine")
 const FEE_DENOMINATOR = new BN(10)
+// const BLOCKS_PER_DAY = 5760
+// const BLOCKS_PER_YEAR = BLOCKS_PER_DAY * 365
 
 let accounts, owner, person2, person3, person4, creditDesk, fidu, goldfinchConfig, reserve
 
@@ -674,7 +676,7 @@ describe("CreditDesk", () => {
     })
   })
 
-  describe("late payments", async () => {
+  describe("writedowns", async () => {
     beforeEach(async () => {
       borrower = person3
       underwriter = person2
@@ -683,23 +685,129 @@ describe("CreditDesk", () => {
 
     describe("before loan term ends", async () => {
       it("should write down the principal and distribute losses", async () => {
+        var originalSharePrice = await pool.sharePrice()
+        var originalTotalShares = await fidu.totalSupply()
+
+        // TODO: derive this
+        const interestOwedForOnePeriod = new BN("41095")
+        const periodsLate = new BN("2")
+        // Assume 2 periods late
+        const interestOwed = interestOwedForOnePeriod.mul(periodsLate)
         const creditLine = await createAndSetCreditLineAttributes({
           balance: 10,
           interestOwed: 5,
           principalOwed: 0,
           nextDueBlock: 1,
         })
+        await creditLine.setInterestOwed(interestOwed)
 
         await creditDesk.assessCreditLine(creditLine.address)
 
-        expect(await creditLine.interestOwed()).to.be.bignumber.closeTo(usdcVal(5), tolerance)
+        let expectedWritedown = usdcVal(25).div(new BN(10)) // 25% of 10 = 2.5
+
+        expect(await creditLine.interestOwed()).to.be.bignumber.closeTo(interestOwed, tolerance)
         expect(await creditLine.principalOwed()).to.be.bignumber.closeTo(usdcVal(0), tolerance)
-        expect(await creditLine.writedownAmount()).to.be.bignumber.gt(usdcVal(0))
+        expect(await creditLine.writedownAmount()).to.be.bignumber.eq(expectedWritedown)
+
+        var newSharePrice = await pool.sharePrice()
+        var delta = originalSharePrice.sub(newSharePrice)
+        let normalizedWritedown = await pool._usdcToFidu(expectedWritedown)
+        var expectedDelta = normalizedWritedown.mul(decimals).div(originalTotalShares)
+        let fidu_tolerance = decimals.div(USDC_DECIMALS)
+
+        expect(delta).to.be.bignumber.closeTo(expectedDelta, fidu_tolerance)
+        expect(newSharePrice).to.be.bignumber.closeTo(originalSharePrice.sub(delta), fidu_tolerance)
       })
 
-      it("should decrease the write down amount if partially paid back", async () => {})
+      it("should decrease the write down amount if partially paid back", async () => {
+        var originalSharePrice = await pool.sharePrice()
+        var originalTotalShares = await fidu.totalSupply()
+        const lowTolerance = new BN(100)
 
-      it("should reset the writedowns to 0 if fully paid back", async () => {})
+        // TODO: derive this
+        const interestOwedForOnePeriod = new BN("41095")
+        const periodsLate = new BN("2")
+        // Assume 2 periods late
+        const interestOwed = interestOwedForOnePeriod.mul(periodsLate)
+        const creditLine = await createAndSetCreditLineAttributes({
+          balance: 10,
+          interestOwed: 5,
+          principalOwed: 0,
+          nextDueBlock: 1,
+        })
+        await creditLine.setInterestOwed(interestOwed)
+
+        await creditDesk.assessCreditLine(creditLine.address)
+        // Reset the next due block so we trigger the applyPayment when we pay
+        await creditLine.setNextDueBlock(new BN(1))
+
+        let expectedWritedown = usdcVal(25).div(new BN(10)) // 25% of 10 = 2.5
+
+        expect(await creditLine.writedownAmount()).to.be.bignumber.eq(expectedWritedown)
+
+        // Payback half of one period
+        let interestPaid = interestOwedForOnePeriod.div(new BN(2))
+        await creditDesk.pay(creditLine.address, String(interestPaid), {from: borrower})
+
+        let expectedNewWritedown = expectedWritedown.div(new BN(2))
+
+        let newWritedown = await creditLine.writedownAmount()
+        expect(newWritedown).to.be.bignumber.closeTo(expectedNewWritedown, lowTolerance)
+
+        var newSharePrice = await pool.sharePrice()
+        var delta = originalSharePrice.sub(newSharePrice)
+        let normalizedWritedown = await pool._usdcToFidu(newWritedown)
+        let normalizedInterest = await pool._usdcToFidu(interestPaid)
+        let expectedReserveFee = await pool._usdcToFidu(interestPaid.div(FEE_DENOMINATOR))
+        var expectedDelta = normalizedWritedown
+          .add(expectedReserveFee)
+          .sub(normalizedInterest)
+          .mul(decimals)
+          .div(originalTotalShares)
+        let fidu_tolerance = decimals.div(USDC_DECIMALS)
+
+        expect(delta).to.be.bignumber.closeTo(expectedDelta, fidu_tolerance)
+        expect(newSharePrice).to.be.bignumber.closeTo(originalSharePrice.sub(delta), fidu_tolerance)
+      })
+
+      it("should reset the writedowns to 0 if fully paid back", async () => {
+        var originalSharePrice = await pool.sharePrice()
+        var originalTotalShares = await fidu.totalSupply()
+
+        // TODO: derive this
+        const interestOwedForOnePeriod = new BN("41095")
+        const periodsLate = new BN("2")
+        // Assume 2 periods late
+        const interestOwed = interestOwedForOnePeriod.mul(periodsLate)
+        const creditLine = await createAndSetCreditLineAttributes({
+          balance: 10,
+          interestOwed: 5,
+          principalOwed: 0,
+          nextDueBlock: 1,
+        })
+        await creditLine.setInterestOwed(interestOwed)
+
+        await creditDesk.assessCreditLine(creditLine.address)
+        // Reset the next due block so we trigger the applyPayment when we pay
+        await creditLine.setNextDueBlock(new BN(1))
+
+        let expectedWritedown = usdcVal(25).div(new BN(10)) // 25% of 10 = 2.5
+
+        expect(await creditLine.writedownAmount()).to.be.bignumber.eq(expectedWritedown)
+
+        // Payback all interest owed
+        await creditDesk.pay(creditLine.address, String(interestOwed), {from: borrower})
+
+        expect(await creditLine.writedownAmount()).to.be.bignumber.eq("0")
+        var newSharePrice = await pool.sharePrice()
+        let normalizedInterest = await pool._usdcToFidu(interestOwed)
+        let expectedReserveFee = await pool._usdcToFidu(interestOwed.div(FEE_DENOMINATOR))
+        var delta = newSharePrice.sub(originalSharePrice)
+        var expectedDelta = normalizedInterest.sub(expectedReserveFee).mul(decimals).div(originalTotalShares)
+
+        expect(delta).to.be.bignumber.eq(expectedDelta)
+        expect(newSharePrice).to.be.bignumber.eq(originalSharePrice.add(delta))
+      })
     })
 
     // Does this matter?

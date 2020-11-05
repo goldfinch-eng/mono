@@ -3,6 +3,7 @@ const BN = require("bn.js")
 // Using 1e6, because that's what USDC is.
 const USDCDecimals = new BN(String(1e6))
 const ETHDecimals = new BN(String(1e18))
+const INTEREST_DECIMALS = new BN(String(1e18))
 
 const ROPSTEN_USDC_ADDRESS = "0x07865c6e87b9f70255377e024ace6630c1eaa37f"
 const MAINNET_USDC_ADDRESS = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
@@ -134,6 +135,7 @@ module.exports = {
   USDCDecimals: USDCDecimals,
   MAX_UINT: MAX_UINT,
   ETHDecimals: ETHDecimals,
+  INTEREST_DECIMALS: INTEREST_DECIMALS,
   getMultisigAddress: getMultisigAddress,
   getUSDCAddress: getUSDCAddress,
   getDeployedContract: getDeployedContract,

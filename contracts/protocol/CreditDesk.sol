@@ -192,6 +192,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     if (block.number < cl.nextDueBlock()) {
       return;
     }
+    console.log("Applying payment of %s", amount);
     applyPayment(cl, cl.collectedPaymentBalance(), block.number);
   }
 
@@ -341,7 +342,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
       block.number,
       Accountant.LATENESS_GRACE_PERIOD
     );
-    if (writedownPercent == 0) {
+    if (writedownPercent == 0 && cl.writedownAmount() == 0) {
       assert(writedownAmount == 0);
       return;
     }
