@@ -3,7 +3,7 @@ const BN = require("bn.js")
 // Using 1e6, because that's what USDC is.
 const USDCDecimals = new BN(String(1e6))
 const ETHDecimals = new BN(String(1e18))
-const INTEREST_DECIMALS = new BN(String(1e18))
+const INTEREST_DECIMALS = new BN(String(1e8))
 
 const ROPSTEN_USDC_ADDRESS = "0x07865c6e87b9f70255377e024ace6630c1eaa37f"
 const MAINNET_USDC_ADDRESS = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
@@ -53,7 +53,6 @@ function isTestEnv() {
 }
 
 function interestAprAsBN(interestPercentageString) {
-  const INTEREST_DECIMALS = 1e8
   const interestPercentageFloat = parseFloat(interestPercentageString)
   return new BN((interestPercentageFloat / 100) * INTEREST_DECIMALS)
 }

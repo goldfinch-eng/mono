@@ -192,7 +192,6 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     if (block.number < cl.nextDueBlock()) {
       return;
     }
-    console.log("Applying payment of %s", amount);
     applyPayment(cl, cl.collectedPaymentBalance(), block.number);
   }
 
@@ -353,7 +352,6 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
 
   function isLate(CreditLine cl) internal view returns (bool) {
     // Calculate the writedown percent without any grace period to determine if we're late
-    // TODO: Can this be simplified?
     (uint256 writedownPercent, uint256 writedownAmount) = Accountant.calculateWritedownFor(cl, block.number, 0);
     return writedownPercent > 0;
   }

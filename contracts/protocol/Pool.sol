@@ -5,7 +5,6 @@ pragma experimental ABIEncoderV2;
 
 import "./BaseUpgradeablePausable.sol";
 import "./ConfigHelper.sol";
-import "@nomiclabs/buidler/console.sol";
 
 /**
  * @title Goldfinch's Pool contract
@@ -104,8 +103,6 @@ contract Pool is BaseUpgradeablePausable, IPool {
     uint256 poolAmount = amount.sub(reserveAmount);
     emit InterestCollected(from, poolAmount, reserveAmount);
     uint256 increment = usdcToFidu(poolAmount).mul(fiduMantissa()).div(totalShares());
-    console.log("Interest repayment: %s, reserve: %s, pool amount: %s", amount, reserveAmount, poolAmount);
-    console.log("share delta: %s, final: %s", increment, sharePrice + increment);
     sharePrice = sharePrice + increment;
     sendToReserve(from, reserveAmount, from);
     doUSDCTransfer(from, address(this), poolAmount);
@@ -133,26 +130,12 @@ contract Pool is BaseUpgradeablePausable, IPool {
   function distributeLosses(int256 writedownDelta) external override onlyCreditDesk whenNotPaused {
     if (writedownDelta > 0) {
       uint256 delta = usdcToFidu(uint256(writedownDelta)).mul(fiduMantissa()).div(totalShares());
-      console.log(
-        "Writeup delta: %s, shareprice: %s, share price delta: %s",
-        uint256(writedownDelta),
-        sharePrice,
-        delta
-      );
       sharePrice = sharePrice.add(delta);
-      console.log("new share price %s", sharePrice);
     } else {
       // If delta is negative, convert to positive uint, and sub from sharePrice
       uint256 delta = usdcToFidu(uint256(writedownDelta * -1)).mul(fiduMantissa()).div(totalShares());
-      console.log(
-        "Writedown delta: %s, shareprice: %s, share price delta: %s",
-        uint256(writedownDelta * -1),
-        sharePrice,
-        delta
-      );
-      // TODO: we may need a sanity check on the maginitude of the delta.
+      // TODO: we may need a sanity check on the magnitude of the delta. Share price should not go negative
       sharePrice = sharePrice.sub(delta);
-      console.log("new share price %s", sharePrice);
     }
   }
 

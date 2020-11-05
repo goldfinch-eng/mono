@@ -13,12 +13,18 @@ const {
   USDC_DECIMALS,
   ZERO_ADDRESS,
 } = require("./testHelpers.js")
-const {OWNER_ROLE, PAUSER_ROLE, CONFIG_KEYS, interestAprAsBN} = require("../blockchain_scripts/deployHelpers")
+const {
+  OWNER_ROLE,
+  PAUSER_ROLE,
+  CONFIG_KEYS,
+  interestAprAsBN,
+  INTEREST_DECIMALS,
+} = require("../blockchain_scripts/deployHelpers")
 const {time} = require("@openzeppelin/test-helpers")
 const CreditLine = artifacts.require("CreditLine")
 const FEE_DENOMINATOR = new BN(10)
-// const BLOCKS_PER_DAY = 5760
-// const BLOCKS_PER_YEAR = BLOCKS_PER_DAY * 365
+const BLOCKS_PER_DAY = new BN(5760)
+const BLOCKS_PER_YEAR = BLOCKS_PER_DAY.mul(new BN(365))
 
 let accounts, owner, person2, person3, person4, creditDesk, fidu, goldfinchConfig, reserve
 
@@ -677,28 +683,36 @@ describe("CreditDesk", () => {
   })
 
   describe("writedowns", async () => {
+    var originalSharePrice, originalTotalShares, interestOwedForOnePeriod, creditLine
+    const lowTolerance = new BN(100)
+
     beforeEach(async () => {
       borrower = person3
       underwriter = person2
       usdc.transfer(borrower, usdcVal(50), {from: owner})
+
+      originalSharePrice = await pool.sharePrice()
+      originalTotalShares = await fidu.totalSupply()
+
+      const paymentPeriodInBlocks = paymentPeriodInDays.mul(BLOCKS_PER_DAY)
+      const totalInterestPerYear = usdcVal(10).mul(interestApr).div(INTEREST_DECIMALS)
+      interestOwedForOnePeriod = totalInterestPerYear.mul(paymentPeriodInBlocks).div(BLOCKS_PER_YEAR)
+
+      expect(interestOwedForOnePeriod).to.bignumber.eq(new BN("41095"))
+
+      creditLine = await createAndSetCreditLineAttributes({
+        balance: 10,
+        interestOwed: 5,
+        principalOwed: 0,
+        nextDueBlock: 1,
+      })
     })
 
     describe("before loan term ends", async () => {
       it("should write down the principal and distribute losses", async () => {
-        var originalSharePrice = await pool.sharePrice()
-        var originalTotalShares = await fidu.totalSupply()
-
-        // TODO: derive this
-        const interestOwedForOnePeriod = new BN("41095")
-        const periodsLate = new BN("2")
         // Assume 2 periods late
+        const periodsLate = new BN("2")
         const interestOwed = interestOwedForOnePeriod.mul(periodsLate)
-        const creditLine = await createAndSetCreditLineAttributes({
-          balance: 10,
-          interestOwed: 5,
-          principalOwed: 0,
-          nextDueBlock: 1,
-        })
         await creditLine.setInterestOwed(interestOwed)
 
         await creditDesk.assessCreditLine(creditLine.address)
@@ -720,21 +734,9 @@ describe("CreditDesk", () => {
       })
 
       it("should decrease the write down amount if partially paid back", async () => {
-        var originalSharePrice = await pool.sharePrice()
-        var originalTotalShares = await fidu.totalSupply()
-        const lowTolerance = new BN(100)
-
-        // TODO: derive this
-        const interestOwedForOnePeriod = new BN("41095")
-        const periodsLate = new BN("2")
         // Assume 2 periods late
+        const periodsLate = new BN("2")
         const interestOwed = interestOwedForOnePeriod.mul(periodsLate)
-        const creditLine = await createAndSetCreditLineAttributes({
-          balance: 10,
-          interestOwed: 5,
-          principalOwed: 0,
-          nextDueBlock: 1,
-        })
         await creditLine.setInterestOwed(interestOwed)
 
         await creditDesk.assessCreditLine(creditLine.address)
@@ -771,20 +773,9 @@ describe("CreditDesk", () => {
       })
 
       it("should reset the writedowns to 0 if fully paid back", async () => {
-        var originalSharePrice = await pool.sharePrice()
-        var originalTotalShares = await fidu.totalSupply()
-
-        // TODO: derive this
-        const interestOwedForOnePeriod = new BN("41095")
-        const periodsLate = new BN("2")
         // Assume 2 periods late
+        const periodsLate = new BN("2")
         const interestOwed = interestOwedForOnePeriod.mul(periodsLate)
-        const creditLine = await createAndSetCreditLineAttributes({
-          balance: 10,
-          interestOwed: 5,
-          principalOwed: 0,
-          nextDueBlock: 1,
-        })
         await creditLine.setInterestOwed(interestOwed)
 
         await creditDesk.assessCreditLine(creditLine.address)
@@ -810,8 +801,9 @@ describe("CreditDesk", () => {
       })
     })
 
-    // Does this matter?
-    describe("after loan term ends", async () => {})
+    describe("after loan term ends", async () => {
+      it("takes the principal owed into account to determining write downs", async () => {})
+    })
   })
 
   describe("assessCreditLine", async () => {
