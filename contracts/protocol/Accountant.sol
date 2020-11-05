@@ -4,7 +4,7 @@ pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
 
 import "./CreditLine.sol";
-import "./external/FixedPoint.sol";
+import "../external/FixedPoint.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 
