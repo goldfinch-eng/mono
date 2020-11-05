@@ -41,7 +41,6 @@ async function getDeployments(networkId) {
   return import(`../../config/deployments${deploymentFileNameSuffix}.json`)
     .then(result => {
       config = transformedConfig(result);
-      console.log('Network id is..', networkId);
       return config[networkId];
     })
     .catch(console.error);

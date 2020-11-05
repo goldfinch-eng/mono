@@ -40,10 +40,7 @@ async function fetchPoolData(pool, erc20) {
   const attributes = [{ method: 'sharePrice' }];
   result = await fetchDataFromAttributes(pool, attributes);
   result.balance = await erc20.methods.balanceOf(pool._address).call();
-  console.log('Pool balance is..', result.balance);
   result.totalShares = await pool.fidu.methods.totalSupply().call();
-
-  console.log('total shares is...', result.totalShares);
 
   // Do some slightly goofy multiplication and division here so that we have consistent units across
   // 'balance', 'totalPoolBalance', and 'totalDrawdowns', allowing us to do arithmetic between them
@@ -52,7 +49,6 @@ async function fetchPoolData(pool, erc20) {
     .div(FIDU_DECIMALS)
     .multipliedBy(new BigNumber(result.sharePrice))
     .div(FIDU_DECIMALS);
-  console.log('total balance in dollars...', String(totalPoolBalanceInDollars));
   result.totalPoolBalance = totalPoolBalanceInDollars.multipliedBy(USDC_DECIMALS);
   result.totalDrawdowns = result.totalPoolBalance - result.balance;
   return result;

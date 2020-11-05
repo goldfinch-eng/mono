@@ -18,7 +18,7 @@ function NetworkWidget(props) {
         props.connectionComplete();
       })
       .catch(error => {
-        console.log('Error connecting to metamask', error);
+        console.error('Error connecting to metamask', error);
       });
   }
 
