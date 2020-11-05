@@ -233,7 +233,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
    */
   function collectPayment(CreditLine cl, uint256 amount) internal {
     require(withinTransactionLimit(amount), "Amount is over the per-transaction limit");
-    require(config.getUSDC().balanceOf(msg.sender) > amount, "You have insufficent balance for this payment");
+    require(config.getUSDC().balanceOf(msg.sender) >= amount, "You have insufficent balance for this payment");
 
     uint256 newCollectedPaymentBalance = cl.collectedPaymentBalance().add(amount);
     cl.setCollectedPaymentBalance(newCollectedPaymentBalance);
