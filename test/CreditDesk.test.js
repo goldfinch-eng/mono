@@ -8,10 +8,13 @@ const {
   BN,
   usdcVal,
   tolerance,
+  fiduTolerance,
   getBalance,
   getDeployedAsTruffleContract,
   USDC_DECIMALS,
   ZERO_ADDRESS,
+  BLOCKS_PER_DAY,
+  BLOCKS_PER_YEAR,
 } = require("./testHelpers.js")
 const {
   OWNER_ROLE,
@@ -23,8 +26,6 @@ const {
 const {time} = require("@openzeppelin/test-helpers")
 const CreditLine = artifacts.require("CreditLine")
 const FEE_DENOMINATOR = new BN(10)
-const BLOCKS_PER_DAY = new BN(5760)
-const BLOCKS_PER_YEAR = BLOCKS_PER_DAY.mul(new BN(365))
 
 let accounts, owner, person2, person3, person4, creditDesk, fidu, goldfinchConfig, reserve
 
@@ -644,10 +645,9 @@ describe("CreditDesk", () => {
           .sub(expectedReserveFee)
           .mul(decimals)
           .div(originalTotalShares)
-        let fidu_tolerance = decimals.div(USDC_DECIMALS)
 
-        expect(delta).to.bignumber.closeTo(expectedDelta, fidu_tolerance)
-        expect(newSharePrice).to.bignumber.closeTo(originalSharePrice.add(expectedDelta), fidu_tolerance)
+        expect(delta).to.bignumber.closeTo(expectedDelta, fiduTolerance)
+        expect(newSharePrice).to.bignumber.closeTo(originalSharePrice.add(expectedDelta), fiduTolerance)
       })
 
       describe("When fully paying for a loan", async () => {
@@ -733,11 +733,14 @@ describe("CreditDesk", () => {
         var delta = originalSharePrice.sub(newSharePrice)
         let normalizedWritedown = await pool._usdcToFidu(expectedWritedown)
         var expectedDelta = normalizedWritedown.mul(decimals).div(originalTotalShares)
-        let fidu_tolerance = decimals.div(USDC_DECIMALS)
 
-        expect(delta).to.be.bignumber.closeTo(expectedDelta, fidu_tolerance)
+        expect(delta).to.be.bignumber.closeTo(expectedDelta, fiduTolerance)
         expect(newSharePrice).to.be.bignumber.lt(originalSharePrice)
-        expect(newSharePrice).to.be.bignumber.closeTo(originalSharePrice.sub(delta), fidu_tolerance)
+        expect(newSharePrice).to.be.bignumber.closeTo(originalSharePrice.sub(delta), fiduTolerance)
+
+        // It should not allow drawdowns
+        const result = creditDesk.drawdown(usdcVal(1), creditLine.address, borrower, {from: borrower})
+        await expect(result).to.be.rejectedWith(/payments are past due/)
       })
 
       it("should decrease the write down amount if partially paid back", async () => {
@@ -774,13 +777,12 @@ describe("CreditDesk", () => {
           .sub(normalizedInterest)
           .mul(decimals)
           .div(originalTotalShares)
-        let fidu_tolerance = decimals.div(USDC_DECIMALS)
 
-        expect(delta).to.be.bignumber.closeTo(expectedDelta, fidu_tolerance)
+        expect(delta).to.be.bignumber.closeTo(expectedDelta, fiduTolerance)
         // Share price must go down after the initial write down, and then up after partially paid back
         expect(sharePriceAfterAsses).to.be.bignumber.lt(originalSharePrice)
         expect(finalSharePrice).to.be.bignumber.gt(sharePriceAfterAsses)
-        expect(finalSharePrice).to.be.bignumber.closeTo(originalSharePrice.sub(delta), fidu_tolerance)
+        expect(finalSharePrice).to.be.bignumber.closeTo(originalSharePrice.sub(delta), fiduTolerance)
       })
 
       it("should reset the writedowns to 0 if fully paid back", async () => {
@@ -797,6 +799,10 @@ describe("CreditDesk", () => {
 
         expect(await creditLine.writedownAmount()).to.be.bignumber.eq(expectedWritedown)
 
+        // It should not allow drawdowns
+        let drawdown = creditDesk.drawdown(usdcVal(1), creditLine.address, borrower, {from: borrower})
+        await expect(drawdown).to.be.rejectedWith(/payments are past due/)
+
         // Payback all interest owed
         await creditDesk.pay(creditLine.address, String(interestOwed), {from: borrower})
 
@@ -809,12 +815,19 @@ describe("CreditDesk", () => {
 
         expect(delta).to.be.bignumber.eq(expectedDelta)
         expect(newSharePrice).to.be.bignumber.eq(originalSharePrice.add(delta))
+
+        // darwdowns should be re-enabled
+        drawdown = creditDesk.drawdown(usdcVal(1), creditLine.address, borrower, {from: borrower})
+        await expect(drawdown).to.be.fulfilled
       })
     })
 
-    describe("after loan term ends", async () => {
-      it("takes the principal owed into account to determining write downs", async () => {})
-    })
+    // This scenario is harder to test because we will need to advance time by at least 1 day (or mock out BLOCKS_PER_DAY)
+    // Currently, this is just tested with unit tests at the accountant level
+    // describe("after loan term ends", async () => {
+    //   xit("takes the principal owed into account to determining write downs", async () => {
+    //   })
+    // })
   })
 
   describe("assessCreditLine", async () => {
@@ -990,14 +1003,13 @@ describe("CreditDesk", () => {
           .sub(expectedReserveFee)
           .mul(decimals)
           .div(originalTotalShares)
-        let fidu_tolerance = decimals.div(USDC_DECIMALS)
 
         const newPoolBalance = await getBalance(pool.address, usdc)
 
         expect(await creditLine.collectedPaymentBalance()).to.bignumber.equal("0")
         expect(await creditLine.interestOwed()).to.bignumber.equal("0")
         expect(await creditLine.principalOwed()).to.bignumber.equal(usdcVal(principalOwed))
-        expect(await pool.sharePrice()).to.bignumber.closeTo(originalSharePrice.add(expectedDelta), fidu_tolerance)
+        expect(await pool.sharePrice()).to.bignumber.closeTo(originalSharePrice.add(expectedDelta), fiduTolerance)
         expect(newPoolBalance.sub(originalPoolBalance)).to.bignumber.equal(usdcVal(interestOwed).sub(expectedFeeAmount))
       })
     })

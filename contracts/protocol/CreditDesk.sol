@@ -151,7 +151,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     require(cl.borrower() == msg.sender, "You do not belong to this credit line");
     require(withinTransactionLimit(amount), "Amount is over the per-transaction limit");
     require(withinCreditLimit(amount, cl), "The borrower does not have enough credit limit for this drawdown");
-    require(!isLate(cl), "Drawdowns locked");
+    require(!isLate(cl), "Cannot drawdown when payments are past due");
 
     if (addressToSendTo == address(0)) {
       addressToSendTo = msg.sender;
@@ -342,6 +342,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
       config.getLatenessGracePeriod(),
       config.getLatenessMaxPeriod()
     );
+
     if (writedownPercent == 0 && cl.writedownAmount() == 0) {
       return;
     }
@@ -352,7 +353,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
 
   function isLate(CreditLine cl) internal view returns (bool) {
     // Calculate the writedown percent without any grace period to determine if we're late
-    (uint256 writedownPercent, uint256 writedownAmount) = Accountant.calculateWritedownFor(
+    (uint256 writedownPercent, uint256 _) = Accountant.calculateWritedownFor(
       cl,
       block.number,
       0,
