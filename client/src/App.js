@@ -9,7 +9,7 @@ import Sidebar from './components/sidebar';
 import web3 from './web3';
 import { getPool } from './ethereum/pool.js';
 import { getCreditDesk } from './ethereum/creditDesk.js';
-import { getErc20, usdcFromAtomic } from './ethereum/erc20.js';
+import { getUSDC, usdcFromAtomic } from './ethereum/erc20.js';
 import { getGoldfinchConfig, refreshGoldfinchConfigData } from './ethereum/goldfinchConfig.js';
 
 const AppContext = React.createContext({});
@@ -31,7 +31,7 @@ function App() {
     const accounts = await web3.eth.getAccounts();
     if (accounts.length > 0) {
       const networkType = await web3.eth.net.getNetworkType();
-      let erc20Contract = await getErc20(networkType);
+      let erc20Contract = await getUSDC(networkType);
       let poolContract = await getPool(networkType);
       let goldfinchConfigContract = await getGoldfinchConfig(networkType);
       setErc20(erc20Contract);

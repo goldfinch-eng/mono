@@ -6,22 +6,23 @@ const {getDeployedContract} = require("../blockchain_scripts/deployHelpers.js")
 async function main() {
   const {protocolOwner} = await getNamedAccounts()
   const creditDesk = await getDeployedContract(deployments, "CreditDesk", protocolOwner)
+  const usdc = await getDeployedContract(deployments, "TestERC20", protocolOwner)
   const creditLine = process.env.CREDIT_LINE
   if (!creditLine) {
     throw new Error("No creditLine provided. Please run again, passing creditLine as BORROWER={{creditLine_address}}")
   }
 
-  await assessCreditLine(creditDesk, creditLine)
+  await assessCreditLine(creditDesk, creditLine, usdc)
 }
 
-async function assessCreditLine(creditDesk, creditLineAddress, logger = console.log) {
+async function assessCreditLine(creditDesk, creditLineAddress, usdc, logger = console.log) {
   logger("Attempting to assess the credit line...")
   const creditLine = await ethers.getContractAt("CreditLine", creditLineAddress)
 
   let balance = await creditLine.balance()
   let interestOwed = await creditLine.interestOwed()
   let principalOwed = await creditLine.principalOwed()
-  let collectedPaymentBalance = await creditLine.collectedPaymentBalance()
+  let USDCBalance = await usdc.balanceOf(creditLineAddress)
   let termEndBlock = await creditLine.termEndBlock()
   let nextDueBlock = await creditLine.nextDueBlock()
   let lastUpdatedBlock = await creditLine.lastUpdatedBlock()
@@ -30,7 +31,7 @@ async function assessCreditLine(creditDesk, creditLineAddress, logger = console.
   logger("balance:", String(balance))
   logger("interestOwed:", String(interestOwed))
   logger("principalOwed:", String(principalOwed))
-  logger("collectedPaymentBalance:", String(collectedPaymentBalance))
+  logger("USDC Balance:", String(USDCBalance))
   logger("termEndBlock:", String(termEndBlock))
   logger("nextDueBlock:", String(nextDueBlock))
   logger("lastUpdatedBlock:", String(lastUpdatedBlock))
@@ -41,7 +42,7 @@ async function assessCreditLine(creditDesk, creditLineAddress, logger = console.
   balance = await creditLine.balance()
   interestOwed = await creditLine.interestOwed()
   principalOwed = await creditLine.principalOwed()
-  collectedPaymentBalance = await creditLine.collectedPaymentBalance()
+  USDCBalance = await usdc.balanceOf(creditLineAddress)
   termEndBlock = await creditLine.termEndBlock()
   nextDueBlock = await creditLine.nextDueBlock()
   lastUpdatedBlock = await creditLine.lastUpdatedBlock()
@@ -49,7 +50,7 @@ async function assessCreditLine(creditDesk, creditLineAddress, logger = console.
   logger("balance:", String(balance))
   logger("interestOwed:", String(interestOwed))
   logger("principalOwed:", String(principalOwed))
-  logger("collectedPaymentBalance:", String(collectedPaymentBalance))
+  logger("USDC Balance:", String(USDCBalance))
   logger("termEndBlock:", String(termEndBlock))
   logger("nextDueBlock:", String(nextDueBlock))
   logger("lastUpdatedBlock:", String(lastUpdatedBlock))

@@ -2,19 +2,24 @@ import web3 from '../web3';
 import BigNumber from 'bignumber.js';
 import * as ERC20Contract from './ERC20.json';
 import { mapNetworkToID, decimals, USDC_ADDRESSES, getDeployments } from './utils';
+let cachedContract;
 
-async function getErc20(networkName) {
+async function getUSDC(networkName) {
+  if (cachedContract) {
+    return cachedContract;
+  }
   const networkId = mapNetworkToID[networkName];
   const config = await getDeployments(networkId);
-  const deployedErc20 = config.contracts.TestERC20;
+  const deployedUSDC = config.contracts.TestERC20;
   let address;
-  if (deployedErc20) {
-    address = deployedErc20.address;
+  if (deployedUSDC) {
+    address = deployedUSDC.address;
   } else {
     // Assume we're on testnet or mainnet
     address = USDC_ADDRESSES[networkId];
   }
   const erc20 = new web3.eth.Contract(ERC20Contract.abi, address);
+  cachedContract = erc20;
   return erc20;
 }
 
@@ -30,4 +35,4 @@ function minimumNumber(...args) {
   return new BigNumber.minimum(...args).toString(10);
 }
 
-export { getErc20, decimals, usdcFromAtomic, usdcToAtomic, minimumNumber };
+export { getUSDC, decimals, usdcFromAtomic, usdcToAtomic, minimumNumber };

@@ -24,10 +24,12 @@ async function createCreditLineForBorrower(creditDesk, borrower, logger = consol
 
   logger("Creating a credit line for the borrower", borrower)
   const limit = String(new BN(10000).mul(USDCDecimals))
-  const interestApr = String(interestAprAsBN("5.00"))
-  const paymentPeriodInDays = String(new BN(30))
-  const termInDays = String(new BN(360))
-  await creditDesk.createCreditLine(borrower, limit, interestApr, paymentPeriodInDays, termInDays)
+  const interestApr = String(interestAprAsBN("15.00"))
+  const paymentPeriodInDays = String(new BN(1))
+  const termInDays = String(new BN(30))
+  const txn = await creditDesk.createCreditLine(borrower, limit, interestApr, paymentPeriodInDays, termInDays)
+  logger("Waiting for the txn to be mined...")
+  await txn.wait()
   logger("Created a credit line for the borrower", borrower)
 }
 

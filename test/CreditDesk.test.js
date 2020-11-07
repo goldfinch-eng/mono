@@ -94,7 +94,6 @@ describe("CreditDesk", () => {
       creditLine.setInterestOwed(usdcVal(interestOwed), {from: thisOwner}),
       creditLine.setPrincipalOwed(usdcVal(principalOwed), {from: thisOwner}),
       usdc.transfer(creditLine.address, String(usdcVal(collectedPaymentBalance)), {from: thisOwner}),
-      creditLine.setCollectedPaymentBalance(String(usdcVal(collectedPaymentBalance)), {from: thisOwner}),
       creditLine.setNextDueBlock(nextDueBlock, {from: thisOwner}),
       creditLine.setTermEndBlock(termEndBlock, {from: thisOwner}),
       creditLine.authorizePool(goldfinchConfig.address),
@@ -493,13 +492,11 @@ describe("CreditDesk", () => {
         expect(await (await getBalance(creditLine.address, usdc)).eq(usdcVal(0))).to.be.true
         await makePrepayment(creditLine.address, prepaymentAmount, borrower)
         expect((await getBalance(creditLine.address, usdc)).eq(usdcVal(prepaymentAmount))).to.be.true
-        expect((await creditLine.collectedPaymentBalance()).eq(usdcVal(prepaymentAmount))).to.be.true
 
         let secondPrepayment = 15
         let totalPrepayment = usdcVal(prepaymentAmount).add(usdcVal(secondPrepayment))
         await makePrepayment(creditLine.address, secondPrepayment, borrower)
         expect(await getBalance(creditLine.address, usdc)).to.bignumber.equal(totalPrepayment)
-        expect(await creditLine.collectedPaymentBalance()).to.bignumber.equal(totalPrepayment)
       })
 
       it("should emit an event with the correct data", async () => {
@@ -575,7 +572,7 @@ describe("CreditDesk", () => {
         // that 1e14 is actually a very small tolerance, since we use 1e18 as our decimals
         expect(await creditLine.interestOwed()).to.be.bignumber.closeTo(usdcVal(0), tolerance)
         expect(await creditLine.principalOwed()).to.be.bignumber.closeTo(usdcVal(2), tolerance)
-        expect(await creditLine.collectedPaymentBalance()).to.be.bignumber.eq(usdcVal(0))
+        expect(await getBalance(creditLine.address, usdc)).to.be.bignumber.eq(usdcVal(0))
         expect(await creditLine.balance()).to.be.bignumber.closeTo(usdcVal(9), tolerance)
       })
 
@@ -682,7 +679,7 @@ describe("CreditDesk", () => {
           await creditDesk.pay(creditLine.address, String(usdcVal(paymentAmount)), {from: borrower})
 
           const expected = usdcVal(paymentAmount).sub(usdcVal(interestAmount)).sub(usdcVal(balance))
-          expect(await creditLine.collectedPaymentBalance()).to.bignumber.closeTo(expected, tolerance)
+          expect(await getBalance(creditLine.address, usdc)).to.bignumber.closeTo(expected, tolerance)
         })
       })
     })
@@ -878,7 +875,7 @@ describe("CreditDesk", () => {
           .add(latestBlock)
         const newReserveBalance = await getBalance(reserve, usdc)
 
-        expect(await creditLine.collectedPaymentBalance()).to.bignumber.equal("0")
+        expect(await getBalance(creditLine.address, usdc)).to.bignumber.equal("0")
         expect(await creditLine.balance()).to.bignumber.equal(usdcVal(7))
         expect(await getBalance(creditLine.address, usdc)).to.bignumber.equal("0")
         expect(await creditLine.interestOwed()).to.bignumber.equal("0")
@@ -1006,7 +1003,7 @@ describe("CreditDesk", () => {
 
         const newPoolBalance = await getBalance(pool.address, usdc)
 
-        expect(await creditLine.collectedPaymentBalance()).to.bignumber.equal("0")
+        expect(await getBalance(creditLine.address, usdc)).to.bignumber.equal("0")
         expect(await creditLine.interestOwed()).to.bignumber.equal("0")
         expect(await creditLine.principalOwed()).to.bignumber.equal(usdcVal(principalOwed))
         expect(await pool.sharePrice()).to.bignumber.closeTo(originalSharePrice.add(expectedDelta), fiduTolerance)
@@ -1033,7 +1030,7 @@ describe("CreditDesk", () => {
         const paymentRemaining = usdcVal(collectedPaymentBalance).sub(usdcVal(interestOwed)).sub(usdcVal(principalOwed))
         const expectedBalance = usdcVal(balance).sub(usdcVal(principalOwed)).sub(paymentRemaining)
         expect(await creditLine.balance()).to.bignumber.equal(expectedBalance)
-        expect(await creditLine.collectedPaymentBalance()).to.bignumber.equal("0")
+        expect(await getBalance(creditLine.address, usdc)).to.bignumber.equal("0")
         expect(await creditLine.interestOwed()).to.bignumber.equal("0")
         expect(await creditLine.principalOwed()).to.bignumber.equal(usdcVal("0"))
       })
@@ -1057,7 +1054,7 @@ describe("CreditDesk", () => {
         await creditDesk.assessCreditLine(creditLine.address)
 
         expect(await creditLine.balance()).to.bignumber.equal("0")
-        expect(await creditLine.collectedPaymentBalance()).to.bignumber.equal(usdcVal(expectedLeftover))
+        expect(await getBalance(creditLine.address, usdc)).to.bignumber.equal(usdcVal(expectedLeftover))
         expect(await creditLine.interestOwed()).to.bignumber.equal("0")
         expect(await creditLine.principalOwed()).to.bignumber.equal(usdcVal("0"))
       })
