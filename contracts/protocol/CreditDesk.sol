@@ -149,7 +149,6 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     Borrower storage borrower = borrowers[msg.sender];
     require(borrower.creditLines.length > 0, "No credit lines exist for this borrower");
     require(creditLines[creditLineAddress] != address(0), "Unknown credit line");
-    // TODO: Add in a requirement that this is a known borrower.
     require(amount > 0, "Must drawdown more than zero");
     require(cl.borrower() == msg.sender, "You do not belong to this credit line");
     require(withinTransactionLimit(amount), "Amount is over the per-transaction limit");
