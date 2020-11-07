@@ -2,7 +2,16 @@
 const {OWNER_ROLE, PAUSER_ROLE, CONFIG_KEYS} = require("../blockchain_scripts/deployHelpers")
 const bre = require("@nomiclabs/buidler")
 const {deployments} = bre
-const {expect, BN, getBalance, getDeployedAsTruffleContract, decimals, USDC_DECIMALS} = require("./testHelpers.js")
+const {
+  expect,
+  BN,
+  getBalance,
+  getDeployedAsTruffleContract,
+  decimals,
+  USDC_DECIMALS,
+  usdcVal,
+  fiduTolerance,
+} = require("./testHelpers.js")
 let accounts, owner, person2, person3, reserve
 const WITHDRAWL_FEE_DENOMINATOR = new BN(200)
 
@@ -301,6 +310,75 @@ describe("Pool", () => {
       await expect(pool.collectInterestRepayment(person2, amount, {from: owner})).to.be.rejectedWith(
         /Only the credit desk/
       )
+    })
+  })
+
+  describe("distributeLosses", async () => {
+    let creditline
+    beforeEach(async () => {
+      // Set the credit line to a random address
+      creditline = person3
+      await erc20.approve(pool.address, new BN(100000).mul(USDC_DECIMALS), {from: person2})
+      await makeDeposit()
+    })
+
+    it("should lower the share price emit an event with the right information", async () => {
+      //Pretend the person3 is the credit desk for collecting payments
+      await goldfinchConfig.setAddressForTest(CONFIG_KEYS.CreditDesk, person3)
+      const originalSharePrice = await pool.sharePrice()
+      const originalTotalShares = await fidu.totalSupply()
+
+      const amount = usdcVal(1)
+      const amountAsNegative = usdcVal(1).mul(new BN(-1))
+      const response = await pool.distributeLosses(creditline, amountAsNegative, {from: person3})
+
+      const newSharePrice = await pool.sharePrice()
+      const delta = originalSharePrice.sub(newSharePrice)
+      let normalizedWritedown = await pool._usdcToFidu(amount)
+      var expectedDelta = normalizedWritedown.mul(decimals).div(originalTotalShares)
+
+      expect(delta).to.be.bignumber.closeTo(expectedDelta, fiduTolerance)
+      expect(newSharePrice).to.be.bignumber.lt(originalSharePrice)
+      expect(newSharePrice).to.be.bignumber.closeTo(originalSharePrice.sub(delta), fiduTolerance)
+
+      const event = response.logs[0]
+
+      expect(event.event).to.equal("PrincipalWrittendown")
+      expect(event.args.creditline).to.equal(creditline)
+      expect(event.args.amount).to.bignumber.equal(amountAsNegative)
+    })
+
+    it("should increase the share price and emit an event with the right information", async () => {
+      //Pretend the person3 is the credit desk for collecting payments
+      await goldfinchConfig.setAddressForTest(CONFIG_KEYS.CreditDesk, person3)
+      const originalSharePrice = await pool.sharePrice()
+      const originalTotalShares = await fidu.totalSupply()
+
+      const amount = usdcVal(1)
+      const response = await pool.distributeLosses(creditline, amount, {from: person3})
+
+      const newSharePrice = await pool.sharePrice()
+      const delta = newSharePrice.sub(originalSharePrice)
+      let normalizedWritedown = await pool._usdcToFidu(amount)
+      var expectedDelta = normalizedWritedown.mul(decimals).div(originalTotalShares)
+
+      expect(delta).to.be.bignumber.closeTo(expectedDelta, fiduTolerance)
+      expect(newSharePrice).to.be.bignumber.gt(originalSharePrice)
+      expect(newSharePrice).to.be.bignumber.closeTo(originalSharePrice.add(delta), fiduTolerance)
+
+      const event = response.logs[0]
+
+      expect(event.event).to.equal("PrincipalWrittendown")
+      expect(event.args.creditline).to.equal(creditline)
+      expect(event.args.amount).to.bignumber.equal(amount)
+    })
+
+    it("should not allow distribution from anyone other than the credit desk", async () => {
+      const amount = usdcVal(10)
+      await expect(pool.distributeLosses(creditline, amount, {from: person2})).to.be.rejectedWith(
+        /Only the credit desk/
+      )
+      await expect(pool.distributeLosses(creditline, amount, {from: owner})).to.be.rejectedWith(/Only the credit desk/)
     })
   })
 

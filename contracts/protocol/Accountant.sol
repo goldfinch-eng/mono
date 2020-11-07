@@ -57,17 +57,31 @@ library Accountant {
     uint256 gracePeriod,
     uint256 maxLatePeriods
   ) public view returns (uint256, uint256) {
-    uint256 amountOwedLastPeriod = calculateAmountOwedForOnePeriod(cl, blockNumber);
+    uint256 amountOwedLastPeriod = calculateAmountOwedForOnePeriod(cl);
+
     if (amountOwedLastPeriod == 0) {
       return (0, 0);
     }
-    uint256 totalOwed = cl.interestOwed().add(cl.principalOwed());
-    // Excel math: =min(1,max(0,periods_late_in_days-graceperiod_in_days)/MAX_ALLOWED_DAYS_LATE) grace_period = 30,
+
     FixedPoint.Unsigned memory fpGracePeriod = FixedPoint.fromUnscaledUint(gracePeriod);
-    FixedPoint.Unsigned memory periodsLate = FixedPoint.fromUnscaledUint(totalOwed).div(amountOwedLastPeriod);
+    FixedPoint.Unsigned memory periodsLate;
+
+    // Excel math: =min(1,max(0,periods_late_in_days-graceperiod_in_days)/MAX_ALLOWED_DAYS_LATE) grace_period = 30,
+    // Before the term end block, we use the interestOwed to calculate the periods late. However, after the loan term
+    // has ended, since the interest is a much smaller fraction of the principal, we cannot reliably use interest to
+    // calculate the periods later.
+    if (blockNumber < cl.termEndBlock()) {
+      uint256 totalOwed = cl.interestOwed().add(cl.principalOwed());
+      periodsLate = FixedPoint.fromUnscaledUint(totalOwed).div(amountOwedLastPeriod);
+    } else {
+      uint256 blocksLate = blockNumber.sub(cl.termEndBlock());
+      uint256 paymentPeriodInBlocks = cl.paymentPeriodInDays() * BLOCKS_PER_DAY;
+      periodsLate = FixedPoint.fromUnscaledUint(blocksLate).div(paymentPeriodInBlocks);
+    }
 
     FixedPoint.Unsigned memory maxLate = FixedPoint.fromUnscaledUint(maxLatePeriods);
     FixedPoint.Unsigned memory writedownPercent;
+
     if (periodsLate.isLessThanOrEqual(fpGracePeriod)) {
       // Within the grace period, we don't have to write down, so assume 0%
       writedownPercent = FixedPoint.fromUnscaledUint(0);
@@ -81,16 +95,12 @@ library Accountant {
     return (unscaledWritedownPercent, writedownAmount.rawValue);
   }
 
-  function calculateAmountOwedForOnePeriod(CreditLine cl, uint256 asOfBlock) public view returns (uint256) {
+  function calculateAmountOwedForOnePeriod(CreditLine cl) public view returns (uint256) {
     // Determine theoretical interestOwed for one full period
     uint256 paymentPeriodInBlocks = cl.paymentPeriodInDays() * BLOCKS_PER_DAY;
     uint256 totalInterestPerYear = cl.balance().mul(cl.interestApr()).div(INTEREST_DECIMALS);
     uint256 interestOwed = totalInterestPerYear.mul(paymentPeriodInBlocks).div(BLOCKS_PER_YEAR);
 
-    // If the block is beyond the loan end date, then the borrower also owes the principal
-    if (asOfBlock > cl.termEndBlock()) {
-      interestOwed = interestOwed + cl.balance();
-    }
     return interestOwed;
   }
 
