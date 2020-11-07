@@ -33,12 +33,12 @@ library Accountant {
     uint256 additionalBalancePayment;
   }
 
-  function calculateInterestAndPrincipalAccrued(CreditLine cl, uint256 blockNumber)
-    public
-    view
-    returns (uint256, uint256)
-  {
-    uint256 interestAccrued = calculateInterestAccrued(cl, blockNumber);
+  function calculateInterestAndPrincipalAccrued(
+    CreditLine cl,
+    uint256 blockNumber,
+    uint256 lateFeeGracePeriodInDays
+  ) public view returns (uint256, uint256) {
+    uint256 interestAccrued = calculateInterestAccrued(cl, blockNumber, lateFeeGracePeriodInDays);
     uint256 principalAccrued = calculatePrincipalAccrued(cl, blockNumber);
     return (interestAccrued, principalAccrued);
   }
@@ -104,7 +104,11 @@ library Accountant {
     return interestOwed;
   }
 
-  function calculateInterestAccrued(CreditLine cl, uint256 blockNumber) public view returns (uint256) {
+  function calculateInterestAccrued(
+    CreditLine cl,
+    uint256 blockNumber,
+    uint256 lateFeeGracePeriodInDays
+  ) public view returns (uint256) {
     // We use Math.min here to prevent integer overflow (ie. go negative) when calculating
     // numBlocksElapsed. Typically this shouldn't be possible, because
     // the lastUpdatedBlock couldn't be *after* the current blockNumber. However, when assessing
@@ -117,7 +121,24 @@ library Accountant {
 
     uint256 numBlocksElapsed = blockNumber.sub(lastUpdatedBlock);
     uint256 totalInterestPerYear = cl.balance().mul(cl.interestApr()).div(INTEREST_DECIMALS);
-    return totalInterestPerYear.mul(numBlocksElapsed).div(BLOCKS_PER_YEAR);
+    uint256 interestOwed = totalInterestPerYear.mul(numBlocksElapsed).div(BLOCKS_PER_YEAR);
+
+    if (lateFeeApplicable(cl, blockNumber, lateFeeGracePeriodInDays)) {
+      uint256 additionalLateFeeInterest = interestOwed.mul(cl.lateFeeApr()).div(INTEREST_DECIMALS);
+      interestOwed = interestOwed.add(additionalLateFeeInterest);
+    }
+
+    return interestOwed;
+  }
+
+  function lateFeeApplicable(
+    CreditLine cl,
+    uint256 blockNumber,
+    uint256 gracePeriodInDays
+  ) public view returns (bool) {
+    uint256 blocksLate = blockNumber.sub(cl.lastFullPaymentBlock());
+    uint256 gracePeriodInBlocks = gracePeriodInDays * BLOCKS_PER_DAY;
+    return blocksLate > gracePeriodInBlocks;
   }
 
   function allocatePayment(

@@ -68,4 +68,8 @@ library ConfigHelper {
   function getLatenessMaxPeriod(GoldfinchConfig config) internal view returns (uint256) {
     return config.getNumber(uint256(ConfigOptions.Numbers.LatenessMaxPeriod));
   }
+
+  function getLateFeeGracePeriod(GoldfinchConfig config) internal view returns (uint256) {
+    return config.getNumber(uint256(ConfigOptions.Numbers.LateFeeGracePeriodInDays));
+  }
 }

@@ -71,6 +71,7 @@ async function baseDeploy(bre, {shouldUpgrade}) {
     const withdrawFeeDenominator = new BN(PROTOCOL_CONFIG.withdrawFeeDenominator)
     const latenessGracePeriod = new BN(PROTOCOL_CONFIG.latenessGracePeriod)
     const latenessMaxPeriod = new BN(PROTOCOL_CONFIG.latenessMaxPeriod)
+    const lateFeeGracePeriodInDays = new BN(PROTOCOL_CONFIG.lateFeeGracePeriodInDays)
 
     await updateConfig(config, "number", CONFIG_KEYS.TotalFundsLimit, String(totalFundsLimit))
     await updateConfig(config, "number", CONFIG_KEYS.TransactionLimit, String(transactionLimit))
@@ -78,6 +79,7 @@ async function baseDeploy(bre, {shouldUpgrade}) {
     await updateConfig(config, "number", CONFIG_KEYS.ReserveDenominator, String(reserveDenominator))
     await updateConfig(config, "number", CONFIG_KEYS.WithdrawFeeDenominator, String(withdrawFeeDenominator))
     await updateConfig(config, "number", CONFIG_KEYS.LatenessGracePeriod, String(latenessGracePeriod))
+    await updateConfig(config, "number", CONFIG_KEYS.LateFeeGracePeriodInDays, String(lateFeeGracePeriodInDays))
     await updateConfig(config, "number", CONFIG_KEYS.LatenessMaxPeriod, String(latenessMaxPeriod))
     await updateConfig(config, "address", CONFIG_KEYS.ProtocolAdmin, protocol_owner)
     await config.setTreasuryReserve(protocol_owner)

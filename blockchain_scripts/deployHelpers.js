@@ -39,6 +39,7 @@ const CONFIG_KEYS = {
   WithdrawFeeDenominator: 4,
   LatenessGracePeriod: 5,
   LatenessMaxPeriod: 6,
+  LateFeeGracePeriodInDays: 7,
   // Addresses
   Pool: 0,
   CreditLineImplementation: 1,

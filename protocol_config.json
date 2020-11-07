@@ -5,5 +5,6 @@
   "reserveDenominator": 10,
   "withdrawFeeDenominator": 200,
   "latenessGracePeriod": 1,
-  "latenessMaxPeriod": 4
+  "latenessMaxPeriod": 4,
+  "lateFeeGracePeriodInDays": 30
 }

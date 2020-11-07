@@ -37,6 +37,7 @@ describe("CreditDesk", () => {
   let interestApr = interestAprAsBN("5.00")
   let paymentPeriodInDays = new BN(30)
   let termInDays = new BN(365)
+  let lateFeeApr = new BN(0)
   let usdc
   let pool
 
@@ -47,6 +48,7 @@ describe("CreditDesk", () => {
     _interestApr,
     _paymentPeriodInDays,
     _termInDays,
+    _lateFeeApr,
   } = {}) => {
     _borrower = _borrower || person3
     _underwriter = _underwriter || person2
@@ -54,9 +56,18 @@ describe("CreditDesk", () => {
     _interestApr = _interestApr || interestApr
     _paymentPeriodInDays = _paymentPeriodInDays || paymentPeriodInDays
     _termInDays = _termInDays || termInDays
-    return await creditDesk.createCreditLine(_borrower, _limit, _interestApr, _paymentPeriodInDays, _termInDays, {
-      from: _underwriter,
-    })
+    _lateFeeApr = _lateFeeApr || lateFeeApr
+    return await creditDesk.createCreditLine(
+      _borrower,
+      _limit,
+      _interestApr,
+      _paymentPeriodInDays,
+      _termInDays,
+      _lateFeeApr,
+      {
+        from: _underwriter,
+      }
+    )
   }
 
   let createAndSetCreditLineAttributes = async (
@@ -82,7 +93,7 @@ describe("CreditDesk", () => {
     const termEndBlock = (await time.latestBlock()).add(termInBlocks)
     await creditDesk.setUnderwriterGovernanceLimit(thisUnderwriter, limit.mul(new BN(5)))
 
-    await creditDesk.createCreditLine(thisBorrower, limit, interestApr, paymentPeriodInDays, termInDays, {
+    await creditDesk.createCreditLine(thisBorrower, limit, interestApr, paymentPeriodInDays, termInDays, lateFeeApr, {
       from: thisUnderwriter,
     })
     var borrowerCreditLines = await creditDesk.getBorrowerCreditLines(thisBorrower)
@@ -287,7 +298,7 @@ describe("CreditDesk", () => {
       underwriter = person2
 
       cl = await CreditLine.new({from: owner})
-      await cl.initialize(owner, borrower, underwriter, usdcVal(500), usdcVal(3), 10, 360)
+      await cl.initialize(owner, borrower, underwriter, usdcVal(500), usdcVal(3), 10, 360, 0)
     })
 
     it("Should let you change the limit after its created", async () => {
