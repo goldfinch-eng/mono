@@ -344,6 +344,11 @@ describe("CreditDesk", () => {
       return expect(drawdown(usdcVal(10), fakeMaliciousCreditLine.address)).to.be.rejectedWith(/Unknown credit line/)
     })
 
+    it("should not allow unregistered borrowers to call it", async () => {
+      const badDrawdown = creditDesk.drawdown(usdcVal(10), creditLine.address, creditLine.address, {from: reserve})
+      return expect(badDrawdown).to.be.rejectedWith(/No credit lines exist for this borrower/)
+    })
+
     it("should increase the total loans outstanding on the credit desk", async () => {
       const drawdownAmount = usdcVal(10)
       const amountBefore = await creditDesk.totalLoansOutstanding()
