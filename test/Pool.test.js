@@ -348,7 +348,7 @@ describe("Pool", () => {
       expect(event.args.amount).to.bignumber.equal(amountAsNegative)
     })
 
-    it("should increase the share price emit an event with the right information", async () => {
+    it("should increase the share price and emit an event with the right information", async () => {
       //Pretend the person3 is the credit desk for collecting payments
       await goldfinchConfig.setAddressForTest(CONFIG_KEYS.CreditDesk, person3)
       const originalSharePrice = await pool.sharePrice()
@@ -373,7 +373,7 @@ describe("Pool", () => {
       expect(event.args.amount).to.bignumber.equal(amount)
     })
 
-    it("should not allow distribution from anyone other than the admin", async () => {
+    it("should not allow distribution from anyone other than the credit desk", async () => {
       const amount = usdcVal(10)
       await expect(pool.distributeLosses(creditline, amount, {from: person2})).to.be.rejectedWith(
         /Only the credit desk/

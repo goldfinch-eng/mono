@@ -723,7 +723,7 @@ describe("CreditDesk", () => {
 
         await creditDesk.assessCreditLine(creditLine.address)
 
-        let expectedWritedown = usdcVal(25).div(new BN(10)) // 25% of 10 = 2.5
+        let expectedWritedown = usdcVal(10).div(new BN(4)) // 25% of 10 = 2.5
 
         expect(await creditLine.interestOwed()).to.be.bignumber.closeTo(interestOwed, tolerance)
         expect(await creditLine.principalOwed()).to.be.bignumber.closeTo(usdcVal(0), tolerance)
@@ -754,7 +754,7 @@ describe("CreditDesk", () => {
         await creditLine.setNextDueBlock(new BN(1))
         var sharePriceAfterAsses = await pool.sharePrice()
 
-        let expectedWritedown = usdcVal(25).div(new BN(10)) // 25% of 10 = 2.5
+        let expectedWritedown = usdcVal(10).div(new BN(4)) // 25% of 10 = 2.5
 
         expect(await creditLine.writedownAmount()).to.be.bignumber.eq(expectedWritedown)
 
@@ -795,7 +795,7 @@ describe("CreditDesk", () => {
         // Reset the next due block so we trigger the applyPayment when we pay
         await creditLine.setNextDueBlock(new BN(1))
 
-        let expectedWritedown = usdcVal(25).div(new BN(10)) // 25% of 10 = 2.5
+        let expectedWritedown = usdcVal(10).div(new BN(4)) // 25% of 10 = 2.5
 
         expect(await creditLine.writedownAmount()).to.be.bignumber.eq(expectedWritedown)
 
