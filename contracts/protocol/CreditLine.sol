@@ -29,7 +29,6 @@ contract CreditLine is BaseUpgradeablePausable {
   uint256 public balance;
   uint256 public interestOwed;
   uint256 public principalOwed;
-  uint256 public collectedPaymentBalance;
   uint256 public termEndBlock;
   uint256 public nextDueBlock;
   uint256 public lastUpdatedBlock;
@@ -73,10 +72,6 @@ contract CreditLine is BaseUpgradeablePausable {
 
   function setPrincipalOwed(uint256 newPrincipalOwed) external onlyAdmin {
     principalOwed = newPrincipalOwed;
-  }
-
-  function setCollectedPaymentBalance(uint256 newCollectedPaymentBalance) external onlyAdmin {
-    collectedPaymentBalance = newCollectedPaymentBalance;
   }
 
   function setLastUpdatedBlock(uint256 newLastUpdatedBlock) external onlyAdmin {

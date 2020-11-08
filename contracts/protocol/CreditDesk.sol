@@ -146,6 +146,8 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     address addressToSendTo
   ) external override whenNotPaused {
     CreditLine cl = CreditLine(creditLineAddress);
+    Borrower storage borrower = borrowers[msg.sender];
+    require(borrower.creditLines.length > 0, "No credit lines exist for this borrower");
     require(creditLines[creditLineAddress] != address(0), "Unknown credit line");
     require(amount > 0, "Must drawdown more than zero");
     require(cl.borrower() == msg.sender, "You do not belong to this credit line");
@@ -177,7 +179,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
    *  the individual CreditLine), but it is not *applied* unless it is after the nextDueBlock, or until we assess
    *  the credit line (ie. payment period end).
    *  Any amounts over the minimum payment will be applied to outstanding principal (reducing the effective
-   *  interest rate). If there is still any left over, it will remain in the "collectedPaymentBalance"
+   *  interest rate). If there is still any left over, it will remain in the USDC Balance
    *  of the CreditLine, which is held distinct from the Pool amounts, and can not be withdrawn by LP's.
    * @param creditLineAddress The credit line to be paid back
    * @param amount The amount, in USDC atomic units, that a borrower wishes to pay
@@ -192,7 +194,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     if (block.number < cl.nextDueBlock()) {
       return;
     }
-    applyPayment(cl, cl.collectedPaymentBalance(), block.number);
+    applyPayment(cl, getUSDCBalance(address(cl)), block.number);
   }
 
   /**
@@ -208,7 +210,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     if (block.number < cl.nextDueBlock()) {
       return;
     }
-    applyPayment(cl, cl.collectedPaymentBalance(), cl.nextDueBlock());
+    applyPayment(cl, getUSDCBalance(address(cl)), cl.nextDueBlock());
   }
 
   // Public View Functions (Getters)
@@ -243,9 +245,6 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     require(withinTransactionLimit(amount), "Amount is over the per-transaction limit");
     require(config.getUSDC().balanceOf(msg.sender) >= amount, "You have insufficent balance for this payment");
 
-    uint256 newCollectedPaymentBalance = cl.collectedPaymentBalance().add(amount);
-    cl.setCollectedPaymentBalance(newCollectedPaymentBalance);
-
     emit PaymentCollected(msg.sender, address(cl), amount);
 
     bool success = config.getPool().transferFrom(msg.sender, address(cl), amount);
@@ -257,7 +256,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
    *  It also updates all the accounting variables. Note that interest is always paid back first, then principal.
    *  Any extra after paying the minimum will go towards existing principal (reducing the
    *  effective interest rate). Any extra after the full loan has been paid off will remain in the
-   *  collectedPaymentBalance of the creditLine, where it will be automatically used for the next drawdown.
+   *  USDC Balance of the creditLine, where it will be automatically used for the next drawdown.
    * @param cl The CreditLine the payment will be collected for.
    * @param amount The amount, in USDC atomic units, to be applied
    * @param blockNumber The blockNumber on which accrual calculations should be based. This allows us
@@ -273,11 +272,6 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
       amount,
       blockNumber
     );
-
-    // There can only be payment remaining if we're paid more than total owed.
-    // Just add it to the collected payment balance. We could also send this back to the borrower (
-    // but since assess can be called by anyone, it's better to keep the funds within the contract)
-    cl.setCollectedPaymentBalance(paymentRemaining);
 
     updateWritedownAmounts(cl);
 
@@ -468,5 +462,9 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
 
     cl.setTermEndBlock(calculateNewTermEndBlock(cl));
     cl.setNextDueBlock(calculateNextDueBlock(cl));
+  }
+
+  function getUSDCBalance(address _address) internal returns (uint256) {
+    return config.getUSDC().balanceOf(_address);
   }
 }
