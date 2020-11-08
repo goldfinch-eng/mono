@@ -36,7 +36,8 @@ async function assessCreditLine(creditDesk, creditLineAddress, usdc, logger = co
   logger("nextDueBlock:", String(nextDueBlock))
   logger("lastUpdatedBlock:", String(lastUpdatedBlock))
 
-  await creditDesk.assessCreditLine(creditLineAddress)
+  logger("Assessing the credit line...")
+  await (await creditDesk.assessCreditLine(creditLineAddress)).wait()
   logger("Credit line has been assessed")
 
   balance = await creditLine.balance()
