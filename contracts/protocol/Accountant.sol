@@ -138,7 +138,7 @@ library Accountant {
   ) public view returns (bool) {
     uint256 blocksLate = blockNumber.sub(cl.lastFullPaymentBlock());
     uint256 gracePeriodInBlocks = gracePeriodInDays * BLOCKS_PER_DAY;
-    return blocksLate > gracePeriodInBlocks;
+    return cl.lateFeeApr() > 0 && blocksLate > gracePeriodInBlocks;
   }
 
   function allocatePayment(

@@ -20,6 +20,7 @@ contract TestTheConfig {
     GoldfinchConfig(configAddress).setNumber(uint256(ConfigOptions.Numbers.WithdrawFeeDenominator), 5);
     GoldfinchConfig(configAddress).setNumber(uint256(ConfigOptions.Numbers.LatenessGracePeriod), 6);
     GoldfinchConfig(configAddress).setNumber(uint256(ConfigOptions.Numbers.LatenessMaxPeriod), 7);
+    GoldfinchConfig(configAddress).setNumber(uint256(ConfigOptions.Numbers.LateFeeGracePeriodInDays), 8);
 
     GoldfinchConfig(configAddress).setAddress(uint256(ConfigOptions.Addresses.Fidu), fiduAddress);
     GoldfinchConfig(configAddress).setAddress(uint256(ConfigOptions.Addresses.Pool), poolAddress);
