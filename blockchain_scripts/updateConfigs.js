@@ -20,13 +20,22 @@ async function updateConfigs(hre, protocolConfig) {
 
   const config = await getDeployedContract(deployments, "GoldfinchConfig")
 
-  const underwriterLimit = String(protocolConfig.maxUnderwriterLimit)
+  const maxUnderwriterLimit = String(protocolConfig.maxUnderwriterLimit)
   const transactionLimit = String(protocolConfig.transactionLimit)
   const totalFundsLimit = String(protocolConfig.totalFundsLimit)
+  const latenessGracePeriod = String(protocolConfig.latenessGracePeriod)
 
-  await updateConfig(config, "number", CONFIG_KEYS.MaxUnderwriterLimit, toAtomic(underwriterLimit))
+  const withdrawFeeDenominator = String(protocolConfig.withdrawFeeDenominator)
+  const reserveDenominator = String(protocolConfig.reserveDenominator)
+  const latenessMaxPeriod = String(protocolConfig.latenessMaxPeriod)
+
+  await updateConfig(config, "number", CONFIG_KEYS.MaxUnderwriterLimit, toAtomic(maxUnderwriterLimit))
   await updateConfig(config, "number", CONFIG_KEYS.TransactionLimit, toAtomic(transactionLimit))
   await updateConfig(config, "number", CONFIG_KEYS.TotalFundsLimit, toAtomic(totalFundsLimit))
+  await updateConfig(config, "number", CONFIG_KEYS.ReserveDenominator, reserveDenominator)
+  await updateConfig(config, "number", CONFIG_KEYS.WithdrawFeeDenominator, withdrawFeeDenominator)
+  await updateConfig(config, "number", CONFIG_KEYS.LatenessGracePeriod, latenessGracePeriod)
+  await updateConfig(config, "number", CONFIG_KEYS.LatenessMaxPeriod, latenessMaxPeriod)
 
   logger("Done")
 }
