@@ -1,6 +1,6 @@
 const BN = require("bn.js")
-const bre = require("@nomiclabs/buidler")
-const {deployments, getNamedAccounts} = bre
+const hre = require("hardhat")
+const {deployments, getNamedAccounts} = hre
 const {USDCDecimals, getDeployedContract} = require("../blockchain_scripts/deployHelpers.js")
 
 async function main() {

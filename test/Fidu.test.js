@@ -1,8 +1,8 @@
 /* global artifacts web3 */
 const {expect, bigVal, getDeployedAsTruffleContract} = require("./testHelpers.js")
 const {OWNER_ROLE} = require("../blockchain_scripts/deployHelpers")
-const bre = require("@nomiclabs/buidler")
-const {deployments} = bre
+const hre = require("hardhat")
+const {deployments} = hre
 const ConfigOptions = artifacts.require("ConfigOptions")
 const GoldfinchConfig = artifacts.require("GoldfinchConfig")
 const Fidu = artifacts.require("Fidu")

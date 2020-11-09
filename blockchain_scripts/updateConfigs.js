@@ -1,6 +1,6 @@
 const {toAtomic, getDeployedContract, updateConfig, CONFIG_KEYS} = require("./deployHelpers.js")
 const PROTOCOL_CONFIG = require("../protocol_config.json")
-const bre = require("@nomiclabs/buidler")
+const hre = require("hardhat")
 
 /*
 This deployment updates the configs from the PROTOCOL_CONFIG
@@ -8,11 +8,11 @@ This deployment updates the configs from the PROTOCOL_CONFIG
 let logger
 
 async function main() {
-  await updateConfigs(bre, PROTOCOL_CONFIG)
+  await updateConfigs(hre, PROTOCOL_CONFIG)
 }
 
-async function updateConfigs(bre, protocolConfig) {
-  const {deployments} = bre
+async function updateConfigs(hre, protocolConfig) {
+  const {deployments} = hre
 
   // Since this is not a "real" deployment (just a script),
   //the deployments.log is not enabled. So, just use console.log instead

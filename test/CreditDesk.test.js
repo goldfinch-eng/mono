@@ -1,6 +1,6 @@
 /* global artifacts web3 */
-const bre = require("@nomiclabs/buidler")
-const {deployments} = bre
+const hre = require("hardhat")
+const {deployments} = hre
 const {
   expect,
   MAX_UINT,

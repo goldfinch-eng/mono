@@ -1,6 +1,6 @@
 const {BN, expect} = require("./testHelpers.js")
-const bre = require("@nomiclabs/buidler")
-const {deployments, getNamedAccounts, ethers} = bre
+const hre = require("hardhat")
+const {deployments, getNamedAccounts, ethers} = hre
 const {
   upgrade,
   getDeployedContract,
@@ -176,22 +176,15 @@ describe("Deployment", async () => {
     it("should allow for a way to transfer ownership of the proxy", async () => {
       const {protocol_owner, proxy_owner} = await getNamedAccounts()
       const creditDeskProxy = await getDeployedContract(deployments, "CreditDesk_Proxy", proxy_owner)
-      const proxyWithNewOwner = await getDeployedContract(deployments, "CreditDesk_Proxy", protocol_owner)
 
-      // The more obvious answer to this test is to just read the proxyAdmin off of the contract, but
-      // there's a bug in that contract right now that marks the proxyAdmin function as state mutability of non-payable
-      // rather than view, and so ethers doesn't return the actual value, it returns a receipt for the transaction.
-      // I have a PR up for the library to fix this: https://github.com/wighawag/buidler-deploy/pull/37
-      try {
-        await proxyWithNewOwner.proxyAdmin()
-        // We expect the above to fail, thus this assertion should never run.
-        expect(false).to.be.true
-        // eslint-disable-next-line no-empty
-      } catch (e) {}
+      const originalOwner = await creditDeskProxy.owner()
+      expect(originalOwner).to.equal(proxy_owner)
 
-      const result = await creditDeskProxy.changeProxyAdmin(protocol_owner)
+      const result = await creditDeskProxy.transferOwnership(protocol_owner)
       await result.wait()
-      return expect(proxyWithNewOwner.proxyAdmin()).to.be.fulfilled
+
+      const newOwner = await creditDeskProxy.owner()
+      expect(newOwner).to.equal(protocol_owner)
     })
   })
 
@@ -200,7 +193,7 @@ describe("Deployment", async () => {
       await deployments.fixture()
     })
     it("should not fail", async () => {
-      return expect(baseDeploy(bre, {shouldUpgrade: true})).to.be.fulfilled
+      return expect(baseDeploy(hre, {shouldUpgrade: true})).to.be.fulfilled
     })
   })
 
@@ -223,7 +216,7 @@ describe("Deployment", async () => {
 
       await expect(creditDesk.setUnderwriterGovernanceLimit(underwriter, toAtomic(24000))).to.be.fulfilled
 
-      await updateConfigs(bre, new_config)
+      await updateConfigs(hre, new_config)
 
       await expect(creditDesk.setUnderwriterGovernanceLimit(underwriter, toAtomic(24000))).to.be.rejectedWith(
         /greater than the max allowed/

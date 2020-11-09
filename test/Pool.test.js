@@ -1,7 +1,7 @@
 /* global web3 */
 const {OWNER_ROLE, PAUSER_ROLE, CONFIG_KEYS} = require("../blockchain_scripts/deployHelpers")
-const bre = require("@nomiclabs/buidler")
-const {deployments} = bre
+const hre = require("hardhat")
+const {deployments} = hre
 const {
   expect,
   BN,

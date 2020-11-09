@@ -1,7 +1,6 @@
-/* global usePlugin */
-usePlugin("@nomiclabs/buidler-truffle5")
-usePlugin("@nomiclabs/buidler-ethers")
-usePlugin("buidler-deploy")
+require("@nomiclabs/hardhat-truffle5")
+require("@nomiclabs/hardhat-ethers")
+require("hardhat-deploy")
 
 const INFURA_PROJECT_ID = "d8e13fc4893e4be5aae875d94fee67b7"
 // Note this came from a new instance of Metamask that Blake set up
@@ -11,16 +10,9 @@ const MAINNET_PROTOCOL_OWNER_KEY = process.env.MAINNET_PROTOCOL_OWNER_KEY
 const MAINNET_PROXY_OWNER_KEY = process.env.MAINNET_PROXY_OWNER_KEY
 
 module.exports = {
-  defaultNetwork: "buidlerevm",
-  solc: {
-    version: "0.6.8",
-    optimizer: {
-      enabled: true,
-      runs: 200,
-    },
-  },
+  defaultNetwork: "hardhat",
   networks: {
-    buidlerevm: {
+    hardhat: {
       gas: 12000000,
       blockGasLimit: 0x1fffffffffffff,
       allowUnlimitedContractSize: true,
@@ -36,7 +28,17 @@ module.exports = {
     },
     mainnet: {
       url: `https://mainnet.infura.io/v3/${INFURA_PROJECT_ID}`,
-      accounts: [`${MAINNET_PROTOCOL_OWNER_KEY}`, `${MAINNET_PROXY_OWNER_KEY}`],
+      // Uncomment when you actually want to run mainnet. Hardhat freaks out otherwise because the private keys are undefined in the default case
+      // accounts: [`${MAINNET_PROTOCOL_OWNER_KEY}`, `${MAINNET_PROXY_OWNER_KEY}`],
+    },
+  },
+  solidity: {
+    version: "0.6.8",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200,
+      },
     },
   },
   namedAccounts: {
