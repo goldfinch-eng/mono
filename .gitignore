@@ -79,6 +79,7 @@ notes.txt
 
 client/config/protocol-local.json
 deployments/localhost_31337
+deployments/localhost
 
 # Misc
 .DS_Store
