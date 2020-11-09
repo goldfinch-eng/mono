@@ -24,6 +24,7 @@ contract CreditLine is BaseUpgradeablePausable {
   uint256 public interestApr;
   uint256 public paymentPeriodInDays;
   uint256 public termInDays;
+  uint256 public lateFeeApr;
 
   // Accounting variables
   uint256 public balance;
@@ -33,6 +34,7 @@ contract CreditLine is BaseUpgradeablePausable {
   uint256 public nextDueBlock;
   uint256 public lastUpdatedBlock;
   uint256 public writedownAmount;
+  uint256 public lastFullPaymentBlock;
 
   function initialize(
     address owner,
@@ -41,7 +43,8 @@ contract CreditLine is BaseUpgradeablePausable {
     uint256 _limit,
     uint256 _interestApr,
     uint256 _paymentPeriodInDays,
-    uint256 _termInDays
+    uint256 _termInDays,
+    uint256 _lateFeeApr
   ) public initializer {
     require(owner != address(0) && _borrower != address(0) && _underwriter != address(0), "Zero address passed in");
     __BaseUpgradeablePausable__init(owner);
@@ -51,6 +54,7 @@ contract CreditLine is BaseUpgradeablePausable {
     interestApr = _interestApr;
     paymentPeriodInDays = _paymentPeriodInDays;
     termInDays = _termInDays;
+    lateFeeApr = _lateFeeApr;
     lastUpdatedBlock = block.number;
   }
 
@@ -80,6 +84,14 @@ contract CreditLine is BaseUpgradeablePausable {
 
   function setWritedownAmount(uint256 newWritedownAmount) external onlyAdmin {
     writedownAmount = newWritedownAmount;
+  }
+
+  function setLastFullPaymentBlock(uint256 newLastFullPaymentBlock) external onlyAdmin {
+    lastFullPaymentBlock = newLastFullPaymentBlock;
+  }
+
+  function setLateFeeApr(uint256 newLateFeeApr) external onlyAdmin {
+    lateFeeApr = newLateFeeApr;
   }
 
   function setLimit(uint256 newAmount) external onlyAdminOrUnderwriter {

@@ -9,11 +9,11 @@ contract FakeV2CreditLine is BaseUpgradeablePausable {
   // Credit line terms
   address public borrower;
   address public underwriter;
-  uint256 public collateral;
   uint256 public limit;
   uint256 public interestApr;
   uint256 public paymentPeriodInDays;
   uint256 public termInDays;
+  uint256 public lateFeeApr;
 
   // Accounting variables
   uint256 public balance;
@@ -22,6 +22,8 @@ contract FakeV2CreditLine is BaseUpgradeablePausable {
   uint256 public termEndBlock;
   uint256 public nextDueBlock;
   uint256 public lastUpdatedBlock;
+  uint256 public writedownAmount;
+  uint256 public lastFullPaymentBlock;
 
   function initialize(
     address owner,
@@ -30,7 +32,8 @@ contract FakeV2CreditLine is BaseUpgradeablePausable {
     uint256 _limit,
     uint256 _interestApr,
     uint256 _paymentPeriodInDays,
-    uint256 _termInDays
+    uint256 _termInDays,
+    uint256 _lateFeeApr
   ) public initializer {
     __BaseUpgradeablePausable__init(owner);
     borrower = _borrower;
@@ -39,6 +42,7 @@ contract FakeV2CreditLine is BaseUpgradeablePausable {
     interestApr = _interestApr;
     paymentPeriodInDays = _paymentPeriodInDays;
     termInDays = _termInDays;
+    lateFeeApr = _lateFeeApr;
     lastUpdatedBlock = block.number;
   }
 

@@ -37,6 +37,7 @@ describe("CreditDesk", () => {
   let interestApr = interestAprAsBN("5.00")
   let paymentPeriodInDays = new BN(30)
   let termInDays = new BN(365)
+  let lateFeeApr = new BN(0)
   let usdc
   let pool
 
@@ -47,6 +48,7 @@ describe("CreditDesk", () => {
     _interestApr,
     _paymentPeriodInDays,
     _termInDays,
+    _lateFeeApr,
   } = {}) => {
     _borrower = _borrower || person3
     _underwriter = _underwriter || person2
@@ -54,9 +56,18 @@ describe("CreditDesk", () => {
     _interestApr = _interestApr || interestApr
     _paymentPeriodInDays = _paymentPeriodInDays || paymentPeriodInDays
     _termInDays = _termInDays || termInDays
-    return await creditDesk.createCreditLine(_borrower, _limit, _interestApr, _paymentPeriodInDays, _termInDays, {
-      from: _underwriter,
-    })
+    _lateFeeApr = _lateFeeApr || lateFeeApr
+    return await creditDesk.createCreditLine(
+      _borrower,
+      _limit,
+      _interestApr,
+      _paymentPeriodInDays,
+      _termInDays,
+      _lateFeeApr,
+      {
+        from: _underwriter,
+      }
+    )
   }
 
   let createAndSetCreditLineAttributes = async (
@@ -82,7 +93,7 @@ describe("CreditDesk", () => {
     const termEndBlock = (await time.latestBlock()).add(termInBlocks)
     await creditDesk.setUnderwriterGovernanceLimit(thisUnderwriter, limit.mul(new BN(5)))
 
-    await creditDesk.createCreditLine(thisBorrower, limit, interestApr, paymentPeriodInDays, termInDays, {
+    await creditDesk.createCreditLine(thisBorrower, limit, interestApr, paymentPeriodInDays, termInDays, lateFeeApr, {
       from: thisUnderwriter,
     })
     var borrowerCreditLines = await creditDesk.getBorrowerCreditLines(thisBorrower)
@@ -287,7 +298,7 @@ describe("CreditDesk", () => {
       underwriter = person2
 
       cl = await CreditLine.new({from: owner})
-      await cl.initialize(owner, borrower, underwriter, usdcVal(500), usdcVal(3), 10, 360)
+      await cl.initialize(owner, borrower, underwriter, usdcVal(500), usdcVal(3), 10, 360, 0)
     })
 
     it("Should let you change the limit after its created", async () => {
@@ -563,11 +574,12 @@ describe("CreditDesk", () => {
       })
 
       it("should pay off interest first", async () => {
+        const mostRecentDueBlock = new BN(1)
         const creditLine = await createAndSetCreditLineAttributes({
           balance: 10,
           interestOwed: 5,
           principalOwed: 3,
-          nextDueBlock: 1,
+          nextDueBlock: mostRecentDueBlock,
         })
         const paymentAmount = 6
         await creditDesk.pay(creditLine.address, String(usdcVal(paymentAmount)), {from: borrower})
@@ -579,6 +591,7 @@ describe("CreditDesk", () => {
         expect(await creditLine.principalOwed()).to.be.bignumber.closeTo(usdcVal(2), tolerance)
         expect(await getBalance(creditLine.address, usdc)).to.be.bignumber.eq(usdcVal(0))
         expect(await creditLine.balance()).to.be.bignumber.closeTo(usdcVal(9), tolerance)
+        expect(await creditLine.lastFullPaymentBlock()).to.be.bignumber.eq(mostRecentDueBlock)
       })
 
       it("should send the payment to the pool", async () => {
@@ -654,11 +667,12 @@ describe("CreditDesk", () => {
 
       describe("When fully paying for a loan", async () => {
         it("should set the nextDueBlock and termEndBlock to zero", async () => {
+          const mostRecentDueBlock = new BN(1)
           const creditLine = await createAndSetCreditLineAttributes({
             balance: 3,
             interestOwed: 1,
             principalOwed: 3,
-            nextDueBlock: 1,
+            nextDueBlock: mostRecentDueBlock,
           })
           const originalNextDueBlock = await creditLine.nextDueBlock()
           expect(originalNextDueBlock).to.not.bignumber.equal(new BN(0))
@@ -667,6 +681,7 @@ describe("CreditDesk", () => {
           const nextDueBlock = await creditLine.nextDueBlock()
           expect(nextDueBlock).to.bignumber.equal(new BN(0))
           expect(await creditLine.termEndBlock()).to.bignumber.equal(new BN(0))
+          expect(await creditLine.lastFullPaymentBlock()).to.bignumber.equal(mostRecentDueBlock)
         })
       })
 
@@ -685,6 +700,69 @@ describe("CreditDesk", () => {
 
           const expected = usdcVal(paymentAmount).sub(usdcVal(interestAmount)).sub(usdcVal(balance))
           expect(await getBalance(creditLine.address, usdc)).to.bignumber.closeTo(expected, tolerance)
+        })
+      })
+
+      describe("when the payment is late", async () => {
+        it("should charge a late fee on the interest owed", async () => {
+          let balance = 1000
+          lateFeeApr = interestAprAsBN("3")
+          let lateFeeGracePeriodInDays = paymentPeriodInDays
+          let blockNumber = (await time.latestBlock()).add(new BN(100))
+
+          const creditLine = await createAndSetCreditLineAttributes({
+            balance: balance,
+            interestOwed: 0,
+            principalOwed: 0,
+            nextDueBlock: blockNumber,
+          })
+          await creditLine.setLastUpdatedBlock(blockNumber)
+          await creditLine.setLastFullPaymentBlock(new BN(0))
+          await creditLine.setTermEndBlock(lateFeeGracePeriodInDays.mul(BLOCKS_PER_DAY).mul(new BN(10))) // some time in the future
+
+          const totalInterestPerYear = usdcVal(balance).mul(interestApr).div(INTEREST_DECIMALS)
+          let blocksPassed = lateFeeGracePeriodInDays.mul(BLOCKS_PER_DAY).mul(new BN(2))
+          let expectedInterest = totalInterestPerYear.mul(blocksPassed).div(BLOCKS_PER_YEAR)
+
+          const lateFee = expectedInterest.mul(lateFeeApr).div(INTEREST_DECIMALS)
+
+          await creditDesk._setBlockNumberForTest(blockNumber.add(blocksPassed))
+
+          await creditDesk.pay(creditLine.address, expectedInterest, {from: borrower})
+
+          // Late fee should still be owed, and it should not count as a full payment
+          expect(lateFee).to.be.bignumber.gt("0")
+          expect(await creditLine.interestOwed()).to.be.bignumber.closeTo(lateFee, tolerance)
+          expect(await creditLine.lastFullPaymentBlock()).to.be.bignumber.eq("0")
+        })
+
+        it("should not charge a late fee within the grace period", async () => {
+          let balance = 1000
+          lateFeeApr = interestAprAsBN("3")
+          let lateFeeGracePeriodInDays = paymentPeriodInDays
+          let blockNumber = (await time.latestBlock()).add(new BN(100))
+
+          const creditLine = await createAndSetCreditLineAttributes({
+            balance: balance,
+            interestOwed: 0,
+            principalOwed: 0,
+            nextDueBlock: blockNumber,
+          })
+          await creditLine.setLastUpdatedBlock(blockNumber)
+          await creditLine.setLastFullPaymentBlock(new BN("0"))
+          await creditLine.setTermEndBlock(lateFeeGracePeriodInDays.mul(BLOCKS_PER_DAY).mul(new BN(10))) // some time in the future
+
+          const totalInterestPerYear = usdcVal(balance).mul(interestApr).div(INTEREST_DECIMALS)
+          let blocksPassed = lateFeeGracePeriodInDays.mul(BLOCKS_PER_DAY).div(new BN(2))
+          let expectedInterest = totalInterestPerYear.mul(blocksPassed).div(BLOCKS_PER_YEAR)
+
+          await creditDesk._setBlockNumberForTest(blockNumber.add(blocksPassed))
+
+          await creditDesk.pay(creditLine.address, expectedInterest, {from: borrower})
+
+          // No late fee owed and it should count as a full payment
+          expect(await creditLine.interestOwed()).to.be.bignumber.eq("0")
+          expect(await creditLine.lastFullPaymentBlock()).to.be.bignumber.eq(blockNumber)
         })
       })
     })
@@ -885,7 +963,9 @@ describe("CreditDesk", () => {
         expect(await getBalance(creditLine.address, usdc)).to.bignumber.equal("0")
         expect(await creditLine.interestOwed()).to.bignumber.equal("0")
         expect(await creditLine.principalOwed()).to.bignumber.equal("0")
+        expect(await creditLine.lastFullPaymentBlock()).to.bignumber.equal(latestBlock)
         const actualNextDueBlock = await creditLine.nextDueBlock()
+        expect(await creditLine.lastFullPaymentBlock()).to.bignumber.lt(actualNextDueBlock)
         const expectedFeeAmount = usdcVal(interestOwed).div(FEE_DENOMINATOR)
         expect(actualNextDueBlock).to.bignumber.closeTo(expectedNextDueBlock, actualNextDueBlock.div(new BN(100))) // 1% tolerance;
         expect(newPoolBalance.sub(originalPoolBalance)).to.bignumber.equal(usdcVal(8).sub(expectedFeeAmount))
@@ -912,6 +992,7 @@ describe("CreditDesk", () => {
           const actualNextDueBlock = await creditLine.nextDueBlock()
           const expectedInterestOwed = await creditLine.interestOwed()
           const expectedPrincipalOwed = await creditLine.principalOwed()
+          const expectedLastFullPaymentBlock = await creditLine.lastFullPaymentBlock()
           expect(actualNextDueBlock).to.bignumber.closeTo(expectedNextDueBlock, actualNextDueBlock.div(new BN(100))) // 1% tolerance;
 
           await creditDesk.assessCreditLine(creditLine.address, {from: underwriter})
@@ -919,11 +1000,13 @@ describe("CreditDesk", () => {
           const actualTermEndBlock = await creditLine.termEndBlock()
           const actualInterestOwed = await creditLine.interestOwed()
           const actualPrincipalOwed = await creditLine.principalOwed()
+          const actualLastFullPaymentBlock = await creditLine.lastFullPaymentBlock()
 
           expect(actualNextDueBlockAgain).to.bignumber.equal(actualNextDueBlock) // No tolerance. Should be exact.
           expect(actualTermEndBlock).to.bignumber.equal(originalTermEndBlock)
           expect(actualInterestOwed).to.bignumber.equal(expectedInterestOwed)
           expect(actualPrincipalOwed).to.bignumber.equal(expectedPrincipalOwed)
+          expect(actualLastFullPaymentBlock).to.bignumber.equal(expectedLastFullPaymentBlock)
         })
       })
 
@@ -979,12 +1062,13 @@ describe("CreditDesk", () => {
         const collectedPaymentBalance = 5
         const interestOwed = 5
         const principalOwed = 3
+        const mostRecentDueBlock = await time.latestBlock()
         var creditLine = await createAndSetCreditLineAttributes({
           balance: 10,
           interestOwed: interestOwed,
           principalOwed: 3,
           collectedPaymentBalance: collectedPaymentBalance,
-          nextDueBlock: await time.latestBlock(),
+          nextDueBlock: mostRecentDueBlock,
         })
         const originalPoolBalance = await getBalance(pool.address, usdc)
         const originalSharePrice = await pool.sharePrice()
@@ -1011,8 +1095,54 @@ describe("CreditDesk", () => {
         expect(await getBalance(creditLine.address, usdc)).to.bignumber.equal("0")
         expect(await creditLine.interestOwed()).to.bignumber.equal("0")
         expect(await creditLine.principalOwed()).to.bignumber.equal(usdcVal(principalOwed))
+        expect(await creditLine.lastFullPaymentBlock()).to.bignumber.equal(mostRecentDueBlock)
         expect(await pool.sharePrice()).to.bignumber.closeTo(originalSharePrice.add(expectedDelta), fiduTolerance)
         expect(newPoolBalance.sub(originalPoolBalance)).to.bignumber.equal(usdcVal(interestOwed).sub(expectedFeeAmount))
+      })
+    })
+
+    describe("when there is not enough to pay interest", async () => {
+      it("should pay interest first but not update lastFullPaymentBlock", async () => {
+        const collectedPaymentBalance = 3
+        const interestOwed = 5
+        const principalOwed = 3
+        const mostRecentDueBlock = await time.latestBlock()
+        var creditLine = await createAndSetCreditLineAttributes({
+          balance: 10,
+          interestOwed: interestOwed,
+          principalOwed: 3,
+          collectedPaymentBalance: collectedPaymentBalance,
+          nextDueBlock: mostRecentDueBlock,
+        })
+        const interestPaid = collectedPaymentBalance
+        const originalPoolBalance = await getBalance(pool.address, usdc)
+        const originalSharePrice = await pool.sharePrice()
+        const originalTotalShares = await fidu.totalSupply()
+        const expectedFeeAmount = usdcVal(interestPaid).div(FEE_DENOMINATOR)
+
+        await creditDesk.assessCreditLine(creditLine.address)
+
+        // This is a bit of a hack, we sholdn't have to be including thw writedown in this test, but it's
+        // hard to isolate at the moment. We need to refactor these tests to be independent of writedowns
+        let writedownAmount = await creditLine.writedownAmount()
+        expect(writedownAmount).to.be.bignumber.gt("0")
+        let normalizedWritedown = await pool._usdcToFidu(writedownAmount)
+        let normalizedInterest = await pool._usdcToFidu(usdcVal(interestPaid))
+        let expectedReserveFee = await pool._usdcToFidu(expectedFeeAmount)
+        var expectedDelta = normalizedInterest
+          .sub(normalizedWritedown)
+          .sub(expectedReserveFee)
+          .mul(decimals)
+          .div(originalTotalShares)
+
+        const newPoolBalance = await getBalance(pool.address, usdc)
+
+        expect(await getBalance(creditLine.address, usdc)).to.bignumber.equal("0")
+        expect(await creditLine.interestOwed()).to.bignumber.equal(usdcVal(interestOwed).sub(usdcVal(interestPaid)))
+        expect(await creditLine.principalOwed()).to.bignumber.equal(usdcVal(principalOwed))
+        expect(await creditLine.lastFullPaymentBlock()).to.bignumber.equal("0")
+        expect(await pool.sharePrice()).to.bignumber.closeTo(originalSharePrice.add(expectedDelta), fiduTolerance)
+        expect(newPoolBalance.sub(originalPoolBalance)).to.bignumber.equal(usdcVal(interestPaid).sub(expectedFeeAmount))
       })
     })
 

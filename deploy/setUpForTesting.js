@@ -127,7 +127,8 @@ async function createCreditLineForBorrower(creditDesk, borrower) {
   const interestApr = String(interestAprAsBN("5.00"))
   const paymentPeriodInDays = String(new BN(30))
   const termInDays = String(new BN(360))
-  await creditDesk.createCreditLine(borrower, limit, interestApr, paymentPeriodInDays, termInDays)
+  const lateFeeApr = String(new BN(0))
+  await creditDesk.createCreditLine(borrower, limit, interestApr, paymentPeriodInDays, termInDays, lateFeeApr)
   logger("Created a credit line for the borrower", borrower)
 }
 

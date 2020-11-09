@@ -20,27 +20,44 @@ describe("Accountant", async () => {
   })
 
   describe("calculateInterestAndPrincipalAccrued", async () => {
-    let creditLine, balance, blockNumber
+    let creditLine,
+      balance,
+      blockNumber,
+      lateFeeApr,
+      lateFeeGracePeriod,
+      lateFeeGracePeriodInDays,
+      paymentPeriodInDays,
+      termInDays,
+      interestApr
     const calculateInterestAndPrincipalAccrued = async (blockNumber) => {
-      const result = await testAccountant.calculateInterestAndPrincipalAccrued(creditLine.address, blockNumber)
+      const result = await testAccountant.calculateInterestAndPrincipalAccrued(
+        creditLine.address,
+        blockNumber,
+        lateFeeGracePeriod
+      )
       return [result[0], result[1]]
     }
     // You can get this by taking the interest rate * principal, and divide by the fraction of num blocks elapsed (100 in our case) to blocks in the term
     // (1000 * 0.03) * (100 / 2102400) = 1426
-    const expectedInterest = new BN(String(1426))
+    let expectedInterest = new BN(String(1426))
     beforeEach(async () => {
       balance = usdcVal(1000)
-      const termInDays = new BN(360)
-      const paymentPeriodInDays = new BN(10)
+      interestApr = interestAprAsBN("3.00")
+      lateFeeApr = interestAprAsBN("3")
+      lateFeeGracePeriod = new BN(1)
+      termInDays = new BN(360)
+      paymentPeriodInDays = new BN(10)
+      lateFeeGracePeriodInDays = lateFeeGracePeriod.mul(paymentPeriodInDays)
       creditLine = await CreditLine.new({from: owner})
       await creditLine.initialize(
         owner,
         borrower,
         underwriter,
         bigVal(500),
-        interestAprAsBN("3.00"),
+        interestApr,
         paymentPeriodInDays,
-        termInDays
+        termInDays,
+        lateFeeApr
       )
       await creditLine.setBalance(balance)
       blockNumber = (await time.latestBlock()).add(new BN(100))
@@ -73,6 +90,54 @@ describe("Accountant", async () => {
         expect(principalAccrued).to.bignumber.equal(balance)
       })
     })
+
+    describe("late fees", async () => {
+      beforeEach(async () => {
+        await creditLine.setLastUpdatedBlock(blockNumber)
+        await creditLine.setLastFullPaymentBlock(blockNumber)
+        await creditLine.setTermEndBlock(lateFeeGracePeriodInDays.mul(BLOCKS_PER_DAY).mul(new BN(10))) // some time in the future
+      })
+
+      it("should should not charge late fees within the grace period", async () => {
+        const totalInterestPerYear = balance.mul(interestApr).div(INTEREST_DECIMALS)
+        let blocksPassed = lateFeeGracePeriodInDays.mul(BLOCKS_PER_DAY).div(new BN(2))
+        expectedInterest = totalInterestPerYear.mul(blocksPassed).div(BLOCKS_PER_YEAR)
+
+        const [interestAccrued, principalAccrued] = await calculateInterestAndPrincipalAccrued(
+          blockNumber.add(blocksPassed)
+        )
+        expect(interestAccrued).to.bignumber.closeTo(expectedInterest, tolerance)
+        expect(principalAccrued).to.bignumber.equal(new BN(0))
+      })
+
+      it("should charge late fee apr on original interest and return total interest accrued", async () => {
+        const totalInterestPerYear = balance.mul(interestApr).div(INTEREST_DECIMALS)
+        let blocksPassed = lateFeeGracePeriodInDays.mul(BLOCKS_PER_DAY).mul(new BN(2))
+        expectedInterest = totalInterestPerYear.mul(blocksPassed).div(BLOCKS_PER_YEAR)
+
+        const lateFee = expectedInterest.mul(lateFeeApr).div(INTEREST_DECIMALS)
+
+        const [interestAccrued, principalAccrued] = await calculateInterestAndPrincipalAccrued(
+          blockNumber.add(blocksPassed)
+        )
+        expect(interestAccrued).to.bignumber.closeTo(expectedInterest.add(lateFee), tolerance)
+        expect(principalAccrued).to.bignumber.equal(new BN(0))
+      })
+
+      it("should not charge late fees on the principal if beyond the term end date", async () => {
+        await creditLine.setTermEndBlock(blockNumber) // Set term end date in the past
+        const totalInterestPerYear = balance.mul(interestApr).div(INTEREST_DECIMALS)
+        let blocksPassed = lateFeeGracePeriodInDays.mul(BLOCKS_PER_DAY).mul(new BN(2))
+        expectedInterest = totalInterestPerYear.mul(blocksPassed).div(BLOCKS_PER_YEAR)
+        const lateFee = expectedInterest.mul(lateFeeApr).div(INTEREST_DECIMALS)
+
+        const [interestAccrued, principalAccrued] = await calculateInterestAndPrincipalAccrued(
+          blockNumber.add(blocksPassed)
+        )
+        expect(interestAccrued).to.bignumber.closeTo(expectedInterest.add(lateFee), tolerance)
+        expect(principalAccrued).to.bignumber.equal(balance)
+      })
+    })
   })
 
   describe("writedowns", async () => {
@@ -86,6 +151,7 @@ describe("Accountant", async () => {
       gracePeriod = new BN(1)
       maxLatePeriods = new BN(4)
       termEndBlock = new BN(1000)
+      const lateFeeApr = interestAprAsBN("0")
 
       creditLine = await CreditLine.new({from: owner})
       await creditLine.initialize(
@@ -95,7 +161,8 @@ describe("Accountant", async () => {
         bigVal(500),
         interestApr,
         paymentPeriodInDays,
-        termInDays
+        termInDays,
+        lateFeeApr
       )
       await creditLine.setBalance(balance)
       await creditLine.setTermEndBlock(termEndBlock) // Some time in the future

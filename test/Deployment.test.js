@@ -126,7 +126,8 @@ describe("Deployment", async () => {
           String(new BN(10000).mul(USDCDecimals)), //Limit
           String(new BN(5).mul(ETHDecimals).div(new BN(100))), //Interest
           String(new BN(30)), // Payment period
-          String(new BN(123)) // Term
+          String(new BN(123)), // Term
+          String(new BN(1)) // Late Fee APR
         )
 
         creditLines = await creditDesk.getUnderwriterCreditLines(protocol_owner)
