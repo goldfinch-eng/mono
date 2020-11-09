@@ -717,7 +717,7 @@ describe("CreditDesk", () => {
             nextDueBlock: blockNumber,
           })
           await creditLine.setLastUpdatedBlock(blockNumber)
-          await creditLine.setLastFullPaymentBlock(blockNumber)
+          await creditLine.setLastFullPaymentBlock(new BN(0))
           await creditLine.setTermEndBlock(lateFeeGracePeriodInDays.mul(BLOCKS_PER_DAY).mul(new BN(10))) // some time in the future
 
           const totalInterestPerYear = usdcVal(balance).mul(interestApr).div(INTEREST_DECIMALS)
@@ -733,7 +733,7 @@ describe("CreditDesk", () => {
           // Late fee should still be owed, and it should not count as a full payment
           expect(lateFee).to.be.bignumber.gt("0")
           expect(await creditLine.interestOwed()).to.be.bignumber.closeTo(lateFee, tolerance)
-          expect(await creditLine.lastFullPaymentBlock()).to.be.bignumber.eq(blockNumber)
+          expect(await creditLine.lastFullPaymentBlock()).to.be.bignumber.eq("0")
         })
 
         it("should not charge a late fee within the grace period", async () => {
@@ -749,7 +749,7 @@ describe("CreditDesk", () => {
             nextDueBlock: blockNumber,
           })
           await creditLine.setLastUpdatedBlock(blockNumber)
-          await creditLine.setLastFullPaymentBlock(blockNumber)
+          await creditLine.setLastFullPaymentBlock(new BN("0"))
           await creditLine.setTermEndBlock(lateFeeGracePeriodInDays.mul(BLOCKS_PER_DAY).mul(new BN(10))) // some time in the future
 
           const totalInterestPerYear = usdcVal(balance).mul(interestApr).div(INTEREST_DECIMALS)

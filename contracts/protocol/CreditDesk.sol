@@ -474,7 +474,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
       } else {
         mostRecentLastDueBlock = cl.nextDueBlock();
       }
-      cl.setLastFullPaymentBlock(cl.nextDueBlock());
+      cl.setLastFullPaymentBlock(mostRecentLastDueBlock);
     }
 
     addCLToTotalLoansOutstanding(cl);
