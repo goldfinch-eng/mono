@@ -213,6 +213,10 @@ describe("Deployment", async () => {
         totalFundsLimit: 2000,
         transactionLimit: 1000,
         maxUnderwriterLimit: 2000,
+        reserveDenominator: 11,
+        withdrawFeeDenominator: 202,
+        latenessGracePeriod: 9,
+        latenessMaxPeriod: 6,
       }
 
       await expect(creditDesk.setUnderwriterGovernanceLimit(underwriter, toAtomic(24000))).to.be.fulfilled
@@ -231,6 +235,19 @@ describe("Deployment", async () => {
       )
       expect(fromAtomic(await config.getNumber(CONFIG_KEYS.MaxUnderwriterLimit))).to.bignumber.eq(
         new BN(new_config["maxUnderwriterLimit"])
+      )
+
+      expect(String(await config.getNumber(CONFIG_KEYS.ReserveDenominator))).to.eq(
+        String(new_config["reserveDenominator"])
+      )
+      expect(String(await config.getNumber(CONFIG_KEYS.WithdrawFeeDenominator))).to.eq(
+        String(new_config["withdrawFeeDenominator"])
+      )
+      expect(String(await config.getNumber(CONFIG_KEYS.LatenessGracePeriod))).to.eq(
+        String(new_config["latenessGracePeriod"])
+      )
+      expect(String(await config.getNumber(CONFIG_KEYS.LatenessMaxPeriod))).to.eq(
+        String(new_config["latenessMaxPeriod"])
       )
     })
   })
