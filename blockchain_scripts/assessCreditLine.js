@@ -26,6 +26,7 @@ async function assessCreditLine(creditDesk, creditLineAddress, usdc, logger = co
   let termEndBlock = await creditLine.termEndBlock()
   let nextDueBlock = await creditLine.nextDueBlock()
   let lastUpdatedBlock = await creditLine.lastUpdatedBlock()
+  let writedownAmount = await creditLine.writedownAmount()
 
   logger("Credit line vars before assessment:")
   logger("balance:", String(balance))
@@ -47,6 +48,8 @@ async function assessCreditLine(creditDesk, creditLineAddress, usdc, logger = co
   termEndBlock = await creditLine.termEndBlock()
   nextDueBlock = await creditLine.nextDueBlock()
   lastUpdatedBlock = await creditLine.lastUpdatedBlock()
+  writedownAmount = await creditLine.writedownAmount()
+
   logger("After assessment:")
   logger("balance:", String(balance))
   logger("interestOwed:", String(interestOwed))
@@ -55,6 +58,7 @@ async function assessCreditLine(creditDesk, creditLineAddress, usdc, logger = co
   logger("termEndBlock:", String(termEndBlock))
   logger("nextDueBlock:", String(nextDueBlock))
   logger("lastUpdatedBlock:", String(lastUpdatedBlock))
+  logger("writedownAmount:", String(writedownAmount))
 }
 
 if (require.main === module) {
