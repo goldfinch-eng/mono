@@ -24,6 +24,7 @@ describe("Accountant", async () => {
       balance,
       blockNumber,
       lateFeeApr,
+      lateFeeGracePeriod,
       lateFeeGracePeriodInDays,
       paymentPeriodInDays,
       termInDays,
@@ -32,7 +33,7 @@ describe("Accountant", async () => {
       const result = await testAccountant.calculateInterestAndPrincipalAccrued(
         creditLine.address,
         blockNumber,
-        lateFeeGracePeriodInDays
+        lateFeeGracePeriod
       )
       return [result[0], result[1]]
     }
@@ -43,9 +44,10 @@ describe("Accountant", async () => {
       balance = usdcVal(1000)
       interestApr = interestAprAsBN("3.00")
       lateFeeApr = interestAprAsBN("3")
-      lateFeeGracePeriodInDays = new BN(30)
+      lateFeeGracePeriod = new BN(1)
       termInDays = new BN(360)
       paymentPeriodInDays = new BN(10)
+      lateFeeGracePeriodInDays = lateFeeGracePeriod.mul(paymentPeriodInDays)
       creditLine = await CreditLine.new({from: owner})
       await creditLine.initialize(
         owner,

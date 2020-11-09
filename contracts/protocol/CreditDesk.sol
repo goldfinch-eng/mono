@@ -378,7 +378,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     (uint256 interestAccrued, uint256 principalAccrued) = Accountant.calculateInterestAndPrincipalAccrued(
       cl,
       blockNumber,
-      config.getLateFeeGracePeriod()
+      config.getLatenessGracePeriod()
     );
     return (cl.interestOwed().add(interestAccrued), cl.principalOwed().add(principalAccrued));
   }

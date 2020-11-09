@@ -36,9 +36,9 @@ library Accountant {
   function calculateInterestAndPrincipalAccrued(
     CreditLine cl,
     uint256 blockNumber,
-    uint256 lateFeeGracePeriodInDays
+    uint256 lateFeeGracePeriod
   ) public view returns (uint256, uint256) {
-    uint256 interestAccrued = calculateInterestAccrued(cl, blockNumber, lateFeeGracePeriodInDays);
+    uint256 interestAccrued = calculateInterestAccrued(cl, blockNumber, lateFeeGracePeriod);
     uint256 principalAccrued = calculatePrincipalAccrued(cl, blockNumber);
     return (interestAccrued, principalAccrued);
   }
@@ -107,7 +107,7 @@ library Accountant {
   function calculateInterestAccrued(
     CreditLine cl,
     uint256 blockNumber,
-    uint256 lateFeeGracePeriodInDays
+    uint256 lateFeeGracePeriod
   ) public view returns (uint256) {
     // We use Math.min here to prevent integer overflow (ie. go negative) when calculating
     // numBlocksElapsed. Typically this shouldn't be possible, because
@@ -123,7 +123,7 @@ library Accountant {
     uint256 totalInterestPerYear = cl.balance().mul(cl.interestApr()).div(INTEREST_DECIMALS);
     uint256 interestOwed = totalInterestPerYear.mul(numBlocksElapsed).div(BLOCKS_PER_YEAR);
 
-    if (lateFeeApplicable(cl, blockNumber, lateFeeGracePeriodInDays)) {
+    if (lateFeeApplicable(cl, blockNumber, lateFeeGracePeriod)) {
       uint256 additionalLateFeeInterest = interestOwed.mul(cl.lateFeeApr()).div(INTEREST_DECIMALS);
       interestOwed = interestOwed.add(additionalLateFeeInterest);
     }
@@ -134,10 +134,10 @@ library Accountant {
   function lateFeeApplicable(
     CreditLine cl,
     uint256 blockNumber,
-    uint256 gracePeriodInDays
+    uint256 gracePeriod
   ) public view returns (bool) {
     uint256 blocksLate = blockNumber.sub(cl.lastFullPaymentBlock());
-    uint256 gracePeriodInBlocks = gracePeriodInDays * BLOCKS_PER_DAY;
+    uint256 gracePeriodInBlocks = gracePeriod.mul(cl.paymentPeriodInDays()).mul(BLOCKS_PER_DAY);
     return cl.lateFeeApr() > 0 && blocksLate > gracePeriodInBlocks;
   }
 

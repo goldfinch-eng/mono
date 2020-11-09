@@ -9,10 +9,10 @@ contract TestAccountant {
   function calculateInterestAndPrincipalAccrued(
     address creditLineAddress,
     uint256 blockNumber,
-    uint256 lateFeeGracePeriodInDays
+    uint256 lateFeeGracePeriod
   ) public view returns (uint256, uint256) {
     CreditLine cl = CreditLine(creditLineAddress);
-    return Accountant.calculateInterestAndPrincipalAccrued(cl, blockNumber, lateFeeGracePeriodInDays);
+    return Accountant.calculateInterestAndPrincipalAccrued(cl, blockNumber, lateFeeGracePeriod);
   }
 
   function calculateWritedownFor(

@@ -707,7 +707,7 @@ describe("CreditDesk", () => {
         it("should charge a late fee on the interest owed", async () => {
           let balance = 1000
           lateFeeApr = interestAprAsBN("3")
-          let lateFeeGracePeriodInDays = new BN(30)
+          let lateFeeGracePeriodInDays = paymentPeriodInDays
           let blockNumber = (await time.latestBlock()).add(new BN(100))
 
           const creditLine = await createAndSetCreditLineAttributes({
@@ -739,7 +739,7 @@ describe("CreditDesk", () => {
         it("should not charge a late fee within the grace period", async () => {
           let balance = 1000
           lateFeeApr = interestAprAsBN("3")
-          let lateFeeGracePeriodInDays = new BN(30)
+          let lateFeeGracePeriodInDays = paymentPeriodInDays
           let blockNumber = (await time.latestBlock()).add(new BN(100))
 
           const creditLine = await createAndSetCreditLineAttributes({
