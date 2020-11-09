@@ -21,7 +21,7 @@ Sets a particular underwriter's limit of how much credit the DAO will allow them
 
 
 
-### `createCreditLine(address _borrower, uint256 _limit, uint256 _interestApr, uint256 _paymentPeriodInDays, uint256 _termInDays)` (external)
+### `createCreditLine(address _borrower, uint256 _limit, uint256 _interestApr, uint256 _paymentPeriodInDays, uint256 _termInDays, uint256 _lateFeeApr)` (external)
 
 Allows an underwriter to create a new CreditLine for a single borrower
 
@@ -42,7 +42,7 @@ Allows a borrower to repay their loan. Payment is *collected* immediately (by se
 the individual CreditLine), but it is not *applied* unless it is after the nextDueBlock, or until we assess
 the credit line (ie. payment period end).
 Any amounts over the minimum payment will be applied to outstanding principal (reducing the effective
-interest rate). If there is still any left over, it will remain in the "collectedPaymentBalance"
+interest rate). If there is still any left over, it will remain in the USDC Balance
 of the CreditLine, which is held distinct from the Pool amounts, and can not be withdrawn by LP's.
 
 
@@ -85,7 +85,7 @@ Applies `amount` of payment for a given credit line. This moves already collecte
 It also updates all the accounting variables. Note that interest is always paid back first, then principal.
 Any extra after paying the minimum will go towards existing principal (reducing the
 effective interest rate). Any extra after the full loan has been paid off will remain in the
-collectedPaymentBalance of the creditLine, where it will be automatically used for the next drawdown.
+USDC Balance of the creditLine, where it will be automatically used for the next drawdown.
 
 
 
@@ -156,6 +156,12 @@ collectedPaymentBalance of the creditLine, where it will be automatically used f
 
 
 
+### `blockNumber() → uint256` (internal)
+
+
+
+
+
 ### `underwriterCanCreateThisCreditLine(uint256 newAmount, struct CreditDesk.Underwriter underwriter) → bool` (internal)
 
 
@@ -175,6 +181,12 @@ collectedPaymentBalance of the creditLine, where it will be automatically used f
 
 
 ### `updateCreditLineAccounting(contract CreditLine cl, uint256 balance, uint256 interestOwed, uint256 principalOwed)` (internal)
+
+
+
+
+
+### `getUSDCBalance(address _address) → uint256` (internal)
 
 
 

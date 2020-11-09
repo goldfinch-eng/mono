@@ -1,9 +1,9 @@
 # Goldfinch Smart Contract Overview
-This is meant to be a high level summary of the Goldfinch Protocol, including the responsibilities and intent of each smart contract. This does not get into every function or parameter. That level of detail is reserved for the API documentation.
+This is meant to be a high level summary of the Goldfinch Protocol, including the responsibilities and intent of each smart contract. This does not get into every function or parameter, just the basics of what's going on.
 
 ## How It All Fits Together
 There are a few "roles" in the protocol. They are as follows.
-- `LiquidityProvider` (a.k.a. LP's) - These are the people or entities who fund the `Pool` (see below), and therefore the loans we make. Note: the code currently refers to them as `capitalProviders`.
+- `LiquidityProvider` (a.k.a. LP's) - These are the people or entities who fund the `Pool` (see below), and therefore the loans we make.
 - `Underwriter` - These are the entities who have been trusted to determine if a given borrower is creditworthy. If so, they create a `CreditLine` for that particular borrower (which includes their interest rate, credit limit, and so forth).
 - `Borrower` - These are the people or entities who actually drawdown from the pool of capital.
 - `Admin DAO` - This is generally the "owner" of the smart contracts. In the medium term, this will be a community owned multi-sig wallet which can take important actions such as giving (or taking) an arbitrary limit to underwriters, pausing contracts, etc.
@@ -25,9 +25,8 @@ This is the most complex contract. It is the main entry contract for borrowers, 
 - Borrowers: Provide a central place to borrow, repay, and determine your status and upcoming payments. The main functions here are:
   - `drawdown`
   - `pay`
-  - `prepay`
 
-- Underwriters: Provide a way to create and manage credit lines for borrowers (currently you can only create. Editing and deleting CreditLines will be added soon)
+- Underwriters: Provide a way to create and manage credit lines for borrowers
   - `createCreditLine`
 
 - Admins: Provide a way to manage underwriters, and assess all creditlines.
@@ -35,18 +34,22 @@ This is the most complex contract. It is the main entry contract for borrowers, 
   - `asessCreditLine`
 
 ### Pool
-The `Pool` is the entry point for LP's. It also "handles the money", in so far as it actually does the transferring of tokens when users deposit, withdraw, or when we receive repayments from borrowers. Note the funds are handled through an ERC20 contract. We assume we will use USDC, but from a technical standpoint, we could just as easily use any ERC20. It's key public functions are:
+The `Pool` is the entry point for LP's. It also "handles the money", in so far as it actually does the transferring of tokens when users deposit, withdraw, or when we receive repayments from borrowers. Note the funds are handled through an ERC20 contract. For the pilot we will only be using USDC. It's key public functions are:
 
 - `deposit`
 - `withdraw`
-- `collectInterestRepayment`
-- `collectPrincipalRepayment`
 
 ### CreditLine
-The `CreditLine` represents an agreement between the `Underwriter` and the `Borrower`. It contains things like the `limit`, `interestApr`, `paymentPeriodInDays`, and other key info. It is meant to be a "dumb" state container, fully managed by the `CreditDesk`, and indeed it currently contains no business logic. It's only functions are simple getters and setters for it's state. The setters can only be called by it's owner, which is the `CreditDesk`. It has no publicly call-able functions that change state.
+The `CreditLine` represents an agreement between the `Underwriter` and the `Borrower`. It contains things like the `limit`, `interestApr`, `paymentPeriodInDays`, and other key info. It is meant to be a "dumb" state container, fully managed by the `CreditDesk`, and indeed it currently contains no business logic. It's only functions are simple getters and setters for it's state. The setters can only be called by it's owner, which is the `CreditDesk`. It has no publicly functions that change state.
 
 ### Accountant
-This is an in-house library for handling core calculations. It leverages the [ABDK library](https://github.com/abdk-consulting/abdk-libraries-solidity/blob/master/ABDKMath64x64.md) for decimal math. The two methods actually used outside the library (essentially the public API) are:
+This is an in-house library for handling core financial calculations. The two methods actually used outside the library (essentially the public API) are:
 
 - `calculateInterestAndPrincipalAccrued`
 - `allocatePayment`
+
+### GoldfinchConfig
+A central contract for storing key numbers and addresses of the protocol. For example, we store the TransactionLimit, and the Pool's deployed address there.
+
+### Fidu
+An ERC20 "liquidity token", analogous to cToken's in Compound. Fidu is minted and burned on deposit and withdraw, respectively. It simply represents an LP's share of the pool.

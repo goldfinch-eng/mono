@@ -14,7 +14,7 @@ This contract purposefully has essentially no business logic. Really just setter
 
 
 
-### `initialize(address owner, address _borrower, address _underwriter, uint256 _limit, uint256 _interestApr, uint256 _paymentPeriodInDays, uint256 _termInDays)` (public)
+### `initialize(address owner, address _borrower, address _underwriter, uint256 _limit, uint256 _interestApr, uint256 _paymentPeriodInDays, uint256 _termInDays, uint256 _lateFeeApr)` (public)
 
 
 
@@ -50,12 +50,6 @@ This contract purposefully has essentially no business logic. Really just setter
 
 
 
-### `setCollectedPaymentBalance(uint256 newCollectedPaymentBalance)` (external)
-
-
-
-
-
 ### `setLastUpdatedBlock(uint256 newLastUpdatedBlock)` (external)
 
 
@@ -63,6 +57,18 @@ This contract purposefully has essentially no business logic. Really just setter
 
 
 ### `setWritedownAmount(uint256 newWritedownAmount)` (external)
+
+
+
+
+
+### `setLastFullPaymentBlock(uint256 newLastFullPaymentBlock)` (external)
+
+
+
+
+
+### `setLateFeeApr(uint256 newLateFeeApr)` (external)
 
 
 

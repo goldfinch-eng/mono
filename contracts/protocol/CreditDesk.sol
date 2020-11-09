@@ -88,6 +88,8 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
    *  ie. the frequency with which they need to make payments.
    * @param _termInDays Number of days in the credit term. It is used to set the `termEndBlock` upon first drawdown.
    *  ie. The credit line should be fully paid off {_termIndays} days after the first drawdown.
+   * @param _lateFeeApr The additional interest you will pay if you are late. For example, if this is 3%, and your
+   *  normal rate is 15%, then you will pay 18% while you are late.
    *
    * Requirements:
    *
