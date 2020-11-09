@@ -1,7 +1,7 @@
 import web3 from '../web3';
 import moment from 'moment';
 import BigNumber from 'bignumber.js';
-import * as CreditLineContract from '../../../artifacts/CreditLine.json';
+import * as CreditLineContract from '../../../artifacts/contracts/protocol/CreditLine.sol/CreditLine.json';
 import { getUSDC } from './erc20';
 import { fetchDataFromAttributes, decimalPlaces, INTEREST_DECIMALS } from './utils';
 
