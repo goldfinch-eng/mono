@@ -1,12 +1,19 @@
 import React from 'react';
 import InfoSection from './infoSection.js';
+import CreditBarViz from './creditBarViz.js';
+
 import { usdcFromAtomic } from '../ethereum/erc20.js';
 import { decimals } from '../ethereum/utils';
 import { displayNumber } from '../utils';
 
-function CreditTerms(props) {
+function CreditStatus(props) {
   function fromAtomicDecimals(val) {
     return usdcFromAtomic(val) * decimals;
+  }
+
+  let placeholderClass = '';
+  if (!props.user.address || !props.user.usdcIsUnlocked || !props.creditLine.balance) {
+    placeholderClass = 'placeholder';
   }
 
   let rows;
@@ -33,7 +40,14 @@ function CreditTerms(props) {
     ];
   }
 
-  return <InfoSection title="Credit Terms" rows={rows} cssClass={cssClass} />;
+  return (
+    <div class={`credit-status background-container ${placeholderClass}`}>
+      <h2>Credit Status</h2>
+      <CreditBarViz creditLine={props.creditLine} />
+      <div class="divider"></div>
+      <InfoSection rows={rows} />
+    </div>
+  );
 }
 
-export default CreditTerms;
+export default CreditStatus;

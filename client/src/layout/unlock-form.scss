@@ -1,0 +1,45 @@
+.unlock-form{
+  background-color: $blue-xxlight;
+  margin-bottom: 40px;
+  position: relative;
+
+  p{
+    font-size: $sans-size-xs;
+    padding-left: 38px;
+    position: relative;
+    line-height: 1.2;
+  }
+
+  .button{
+    margin: 20px 0 0;
+    width: 100%;
+  }
+
+  & .icon{
+    left: 0px;
+    position: absolute;
+    top: 0px;
+    width: 24px;
+  }
+}
+
+@media only screen and (min-width: $screen-l) {
+  .unlock-form{
+    p {
+      font-size: $sans-size-s;
+      display: inline-block;
+      padding: 0 30px 0 50px;
+      vertical-align: top;
+      width: 67%;
+    }
+
+    .icon{
+      width: 32px;
+    }
+ 
+    .button {
+      margin: -8px 0;
+      width: 33%;
+    }
+  }
+}

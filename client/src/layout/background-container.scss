@@ -1,8 +1,13 @@
 .background-container{
   background-color: $sand-light;
-  margin: 16px 0 0 -25px;
+  margin: 10px 0 50px -25px;
   padding: 25px;
   width: calc(100% + 50px);
+}
+
+.background-container-inner{
+  margin: 0 -25px;
+  padding: 0 25px;
 }
 
 @media only screen and (min-width: $screen-m) {
@@ -14,8 +19,13 @@
 @media only screen and (min-width: $screen-l) {
   .background-container{
     border-radius: 10px;
-    margin: 20px 0 0 -30px;
+    margin: 20px 0 60px -30px;
     padding: 30px;
     width: calc(100% + 60px);
+  }
+
+  .background-container-inner{
+    margin: 0 -30px;
+    padding: 0 30px;
   }
 }

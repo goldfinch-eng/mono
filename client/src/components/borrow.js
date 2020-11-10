@@ -1,9 +1,9 @@
 import BN from 'bn.js';
 import React, { useState, useContext, useEffect } from 'react';
 import CreditActionsContainer from './creditActionsContainer.js';
-import CreditBarViz from './creditBarViz.js';
-import CreditTerms from './creditTerms.js';
+import CreditStatus from './creditStatus.js';
 import PaymentStatus from './paymentStatus.js';
+import UnlockUSDCForm from './unlockUSDCForm.js';
 import web3 from '../web3.js';
 import { buildCreditLine, fetchCreditLineData } from '../ethereum/creditLine.js';
 import { AppContext } from '../App.js';
@@ -13,7 +13,7 @@ function Borrow(props) {
   const { creditDesk, erc20, pool, user } = useContext(AppContext);
   const [borrower, setBorrower] = useState({});
   const [creditLine, setCreditLine] = useState({});
-  const [_creditLineFactory, setCreditLineFactory] = useState({});
+  const [creditLineFactory, setCreditLineFactory] = useState({});
 
   async function updateBorrowerAndCreditLine() {
     let creditLine = {};
@@ -44,36 +44,38 @@ function Borrow(props) {
     return updateBorrowerAndCreditLine();
   }
 
-  let paymentStatus = '';
-  let creditLineInfo = '';
-  let creditLineTitle = 'Credit Line';
+  let placeholderClass = '';
+  if (!user.address || !user.usdcIsUnlocked) {
+    placeholderClass = 'placeholder';
+  }
 
+  let notice = '';
+  let creditLineTitle = 'Credit Line';
   if (!user.address) {
-    creditLineInfo = (
+    notice = (
       <div className="content-empty-message background-container">
         You are not currently connected to Metamask. In order to borrow, you first need to connect to Metamask.
       </div>
     );
   } else if (!creditLine.address) {
-    creditLineInfo = (
+    notice = (
       <div className="content-empty-message background-container">
         You do not have any credit lines. In order to borrow, you first need a Goldfinch credit line. Then you can
         drawdown funds from the credit line.
       </div>
     );
+  } else if (!user.usdcIsUnlocked) {
+    notice = <UnlockUSDCForm />;
   } else {
     creditLineTitle = `Credit Line / ${croppedAddress(creditLine.address)}`;
-    paymentStatus = <PaymentStatus creditLine={creditLine} />;
-    creditLineInfo = <CreditBarViz creditLine={creditLine} />;
   }
 
   return (
     <div className="content-section">
       <div className="page-header">{creditLineTitle}</div>
-      {creditLineInfo}
+      {notice}
       <CreditActionsContainer borrower={borrower} creditLine={creditLine} actionComplete={actionComplete} />
-      {paymentStatus}
-      <CreditTerms creditLine={creditLine} />
+      <CreditStatus creditLine={creditLine} user={user} />
     </div>
   );
 }

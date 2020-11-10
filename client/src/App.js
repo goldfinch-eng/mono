@@ -57,6 +57,7 @@ function App() {
     const data = {
       address: address,
       usdcBalance: usdcFromAtomic(usdcBalance),
+      usdcIsUnlocked: !allowance || !allowance.lte(new BN(10000)),
       allowance: allowance,
     };
     setUser(data);

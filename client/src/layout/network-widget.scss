@@ -60,6 +60,15 @@
       visibility: hidden;
     }
   }
+
+  &.bold{
+    background-color: $blue-xlight;
+  }
+
+  &.bold:hover{
+    background-color: $blue-light;
+  }
+
 }
 
 .network-widget-info{

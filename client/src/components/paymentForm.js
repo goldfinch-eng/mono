@@ -8,17 +8,7 @@ import TransactionForm from './transactionForm';
 function PaymentForm(props) {
   const { creditDesk, user } = useContext(AppContext);
 
-  function submitPrepayment(value) {
-    const amount = usdcToAtomic(value);
-    return sendFromUser(creditDesk.methods.pay(props.creditLine.address, amount), props.borrower.address).then(
-      _result => {
-        props.closeForm();
-        props.actionComplete();
-      },
-    );
-  }
-
-  function submitPrincipalPayment(value) {
+  function submitPayment(value) {
     const amount = usdcToAtomic(value);
     return sendFromUser(creditDesk.methods.pay(props.creditLine.address, amount), props.borrower.address).then(
       _result => {
@@ -29,26 +19,21 @@ function PaymentForm(props) {
   }
 
   const balance = displayDollars(usdcFromAtomic(props.creditLine.balance));
-  const principalPaymentMessage = `Directly pay down your current balance of ${balance}. Principal payments are not applied to your upcoming due payment.`;
-
   const remainingDueRaw = props.creditLine.nextDueAmount - props.creditLine.collectedPaymentBalance;
-  const paymentDue = displayDollars(usdcFromAtomic(remainingDueRaw));
-  const prepaymentMessage = `Make a payment toward upcoming due payments. For your next payment, you have ${paymentDue} remaining due.`;
-
-  const navOptions = [
-    { label: 'Payment', value: 'prepayment', message: prepaymentMessage, submitTransaction: submitPrepayment },
-    {
-      label: 'Principal Payment',
-      value: 'principalPayment',
-      message: principalPaymentMessage,
-      submitTransaction: submitPrincipalPayment,
-    },
+  const remainingDue = displayDollars(usdcFromAtomic(remainingDueRaw));
+  const valueOptions = [
+    { label: `Pay minimum due: ${remainingDue}`, value: remainingDueRaw },
+    { label: `Pay full balance plus interest: ${balance}`, value: remainingDueRaw },
+    { label: 'Pay other amount' },
   ];
 
   return (
     <TransactionForm
-      navOptions={navOptions}
+      title="Pay"
+      headerMessage={`Next payment: ${remainingDue} due ${props.creditLine.dueDate}`}
+      submitTransaction={submitPayment}
       closeForm={props.closeForm}
+      valueOptions={valueOptions}
       needsApproval={true}
       // You cannot pay more than what you owe or have
       maxAmount={minimumNumber(usdcFromAtomic(props.creditLine.balance), user.usdcBalance)}

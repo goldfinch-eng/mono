@@ -1,0 +1,78 @@
+.deposit-status.background-container-inner{
+  margin-bottom: 25px;
+  padding-left: 68px;
+  padding-bottom: 27px;
+}
+
+.deposit-status{
+  border-bottom: 2px solid $sand;
+  position: relative;
+
+  .icon{
+    left: 25px;
+    position: absolute;
+    top: -4px;
+    width: 28px;
+  }
+
+  .label{
+    display: inline-block;
+    font-size: $sans-size-s;
+  }
+
+  .value{
+    display: inline-block;
+    font-size: $sans-size-ml;
+    margin: 6px 0 0 0;
+    width: 100%;
+  }
+}
+
+.placeholder .deposit-status .label,
+.placeholder .deposit-status .value,
+.placeholder .deposit-status .icon path,
+.placeholder .deposit-status .icon line,
+.placeholder .deposit-status .icon rect{
+  color: $sand-xxdark;
+  stroke: $sand-xxdark;
+}
+
+
+@media 
+  only screen 
+  and (min-width: 480px)
+  and (max-width: $screen-m),
+  only screen
+  and (min-width: 750px) {
+  .deposit-status .value{
+    float: right;
+    margin: -2px 0 0;
+    width: auto;
+  }
+  .deposit-status .icon{
+    top: -8px;
+  }
+}
+
+@media only screen and (min-width: $screen-l) {
+  .deposit-status.background-container-inner{
+    margin-bottom: 30px;
+    padding-left: 84px;
+    padding-bottom: 34px;
+  }
+
+  .deposit-status{
+    .icon{
+      left: 30px;
+      width: 36px;
+    }
+
+    .label{
+      font-size: $sans-size-base;
+    }
+
+    .value{
+      font-size: $sans-size-l;
+    }
+  }
+}

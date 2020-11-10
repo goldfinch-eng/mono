@@ -19,11 +19,12 @@ function WithdrawalForm(props) {
 
   let availableAmount = fiduFromAtomic(props.capitalProvider.availableToWithdrawal);
   const balance = displayDollars(availableAmount);
-  const message = `Withdrawal funds from the pool. You have have ${balance} available to withdraw.`;
 
   return (
     <TransactionForm
-      navOptions={[{ label: 'Withdrawal', value: 'withdrawal', message: message, submitTransaction: action }]}
+      title="Withdraw"
+      headerMessage={`Available to withdraw: ${balance}`}
+      submitTransaction={action}
       closeForm={props.closeForm}
       maxAmount={minimumNumber(availableAmount, usdcFromAtomic(props.poolData.balance))}
     />
