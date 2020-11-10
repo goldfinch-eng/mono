@@ -2,7 +2,7 @@ import React, { useState, useContext } from 'react';
 import PaymentForm from './paymentForm.js';
 import DrawdownForm from './drawdownForm.js';
 import { usdcFromAtomic } from '../ethereum/erc20.js';
-import { iconUpArrow, iconDownArrow } from '../images/icons.js';
+import { iconUpArrow, iconDownArrow } from './icons.js';
 import { AppContext } from '../App.js';
 
 import { displayDollars } from '../utils';
@@ -86,7 +86,7 @@ function CreditActionsContainer(props) {
         <div className="form-start-section">
           <div class="form-start-label">Next payment</div>
           <div class="form-start-value">{nextDueDisplay}</div>
-          <button className={`button can ${payClass}`} onClick={payAction}>
+          <button className={`button dark ${payClass}`} onClick={payAction}>
             {iconUpArrow} Pay
           </button>
         </div>

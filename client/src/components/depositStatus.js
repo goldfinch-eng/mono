@@ -1,7 +1,7 @@
 import React from 'react';
 import { fiduFromAtomic } from '../ethereum/fidu.js';
 import { displayNumber } from '../utils';
-import { iconBank } from '../images/icons.js';
+import { iconBank } from './icons.js';
 
 function DepositStatus(props) {
   let portfolioBalance = 0;

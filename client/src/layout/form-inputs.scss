@@ -12,10 +12,6 @@
   position: relative;
   width: 100%;
 
-  // & ~ .form-input-container{
-  //   margin-top: -20px;
-  // }
-
   &.dollar::before{
     content: "$";
     font-size: $sans-size-l;
@@ -56,11 +52,9 @@
   font-size: $sans-size-xs;
   margin: 8px 0 0;
   width: 100%;
-  // position: absolute;
   left: 0;
   top: 100%;
 }
-
 
 .form-inputs .button-info{
   font-size: $sans-size-xs;
@@ -73,14 +67,12 @@
 }
 
 .form-field:last-of-type{
-  // background-color: yellow;
   margin: 0 0 45px;
 
   .form-input-note{
     position: absolute;
   }
 }
-
 
 
 @media only screen and (min-width: $screen-l) {

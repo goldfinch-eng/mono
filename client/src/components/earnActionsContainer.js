@@ -3,7 +3,7 @@ import DepositForm from './depositForm.js';
 import DepositStatus from './depositStatus.js';
 import { AppContext } from '../App.js';
 import WithdrawalForm from './withdrawalForm.js';
-import { iconUpArrow, iconDownArrow } from '../images/icons.js';
+import { iconUpArrow, iconDownArrow } from './icons.js';
 
 function EarnActionsContainer(props) {
   const { user } = useContext(AppContext);

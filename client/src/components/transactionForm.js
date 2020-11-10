@@ -1,13 +1,13 @@
 import BN from 'bn.js';
 import React, { useState, useContext, useEffect } from 'react';
 import LoadingButton from './loadingButton';
-import iconX from '../images/x-small-purp.svg';
 import iconInfo from '../images/info-purp.svg';
 import { AppContext } from '../App.js';
 import { sendFromUser, MAX_UINT } from '../ethereum/utils';
 import { useForm, FormProvider } from 'react-hook-form';
 import { ErrorMessage } from '@hookform/error-message';
 import { displayDollars } from '../utils';
+import { iconX } from './icons.js';
 import useCloseOnClickOrEsc from '../hooks/useCloseOnClickOrEsc';
 
 function TransactionForm(props) {
@@ -84,12 +84,11 @@ function TransactionForm(props) {
   }
 
   return (
-    <div ref={node} className="form-full background-container">
+    <div ref={node} className={`form-full background-container ${props.formClass}`}>
       <div className="form-header">
         <div class="form-header-message">{props.headerMessage}</div>
         <div onClick={props.closeForm} className="cancel">
-          Cancel
-          <img className="cancel-icon" src={iconX} alt="x" />
+          Cancel{iconX}
         </div>
       </div>
       <div>

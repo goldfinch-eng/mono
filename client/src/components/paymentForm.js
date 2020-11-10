@@ -31,6 +31,7 @@ function PaymentForm(props) {
     <TransactionForm
       title="Pay"
       headerMessage={`Next payment: ${remainingDue} due ${props.creditLine.dueDate}`}
+      formClass="dark"
       submitTransaction={submitPayment}
       closeForm={props.closeForm}
       valueOptions={valueOptions}

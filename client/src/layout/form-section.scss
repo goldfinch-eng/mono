@@ -14,7 +14,7 @@
     right: 25px;
     top: 15px;
 
-    .cancel-icon{
+    .icon{
       display: inline-block;
       width: 14px;
       vertical-align: top;
@@ -41,6 +41,27 @@
   margin: 0 0 30px;
 }
 
+.dark .form-header{
+  background-color: $purp;
+  color: $sand-xlight;
+
+  & .icon path{
+    stroke: $sand-xlight; 
+  }
+
+}
+.dark .submit-payment{
+  background-color: $purp;
+  color: $sand-xlight;
+
+  &:hover{
+    background-color: $purp-dark;
+  }
+}
+
+
+
+
 @media only screen and (min-width: $screen-m) {
   .form-header{
     border-radius: 8px 8px 0 0;
@@ -64,7 +85,7 @@
       right: 30px;
       top: 20px;
 
-      .cancel-icon{
+      .icon{
         width: 16px;
       }
     }
