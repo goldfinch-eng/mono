@@ -716,7 +716,7 @@ describe("CreditDesk", () => {
             principalOwed: 0,
             nextDueBlock: blockNumber,
           })
-          await creditLine.setinterestAccruedAsOfBlock(blockNumber)
+          await creditLine.setInterestAccruedAsOfBlock(blockNumber)
           await creditLine.setLastFullPaymentBlock(new BN(0))
           await creditLine.setTermEndBlock(lateFeeGracePeriodInDays.mul(BLOCKS_PER_DAY).mul(new BN(10))) // some time in the future
 
@@ -736,6 +736,43 @@ describe("CreditDesk", () => {
           expect(await creditLine.lastFullPaymentBlock()).to.be.bignumber.eq("0")
         })
 
+        it("should allow paying late fees even if nextdueblock is in the future", async () => {
+          let balance = 10
+          lateFeeApr = interestAprAsBN("3")
+          let lateFeeGracePeriodInDays = paymentPeriodInDays
+          let blockNumber = paymentPeriodInDays.mul(BLOCKS_PER_DAY)
+
+          const creditLine = await createAndSetCreditLineAttributes({
+            balance: balance,
+            interestOwed: 0,
+            principalOwed: 0,
+            nextDueBlock: blockNumber,
+          })
+          await creditLine.setInterestAccruedAsOfBlock(new BN(0))
+          await creditLine.setLastFullPaymentBlock(new BN(0))
+          await creditLine.setTermEndBlock(lateFeeGracePeriodInDays.mul(BLOCKS_PER_DAY).mul(new BN(10))) // some time in the future
+
+          let blocksPassed = lateFeeGracePeriodInDays.mul(BLOCKS_PER_DAY).mul(new BN(2))
+
+          await creditDesk._setBlockNumberForTest(blockNumber.add(new BN(10)))
+          await creditDesk.assessCreditLine(creditLine.address, {from: borrower})
+          let interestOwed = await creditLine.interestOwed()
+          expect(interestOwed).to.be.bignumber.gt("0")
+
+          // Set the next due block some time in the future
+          await creditLine.setNextDueBlock(blockNumber.add(blocksPassed).add(new BN(100)))
+          await creditDesk._setBlockNumberForTest(blockNumber.add(blocksPassed))
+
+          await creditDesk.assessCreditLine(creditLine.address, {from: borrower})
+          const newInterestOwed = await creditLine.interestOwed()
+          expect(newInterestOwed).to.be.bignumber.gt(interestOwed)
+
+          await creditDesk.pay(creditLine.address, newInterestOwed, {from: borrower})
+
+          // It should pay off the interest even before the next due block
+          expect(await creditLine.interestOwed()).to.be.bignumber.eq("0")
+        })
+
         it("should not charge a late fee within the grace period", async () => {
           let balance = 1000
           lateFeeApr = interestAprAsBN("3")
@@ -748,7 +785,7 @@ describe("CreditDesk", () => {
             principalOwed: 0,
             nextDueBlock: blockNumber,
           })
-          await creditLine.setinterestAccruedAsOfBlock(blockNumber)
+          await creditLine.setInterestAccruedAsOfBlock(blockNumber)
           await creditLine.setLastFullPaymentBlock(new BN("0"))
           await creditLine.setTermEndBlock(lateFeeGracePeriodInDays.mul(BLOCKS_PER_DAY).mul(new BN(10))) // some time in the future
 

@@ -78,8 +78,8 @@ contract CreditLine is BaseUpgradeablePausable {
     principalOwed = newPrincipalOwed;
   }
 
-  function setinterestAccruedAsOfBlock(uint256 newinterestAccruedAsOfBlock) external onlyAdmin {
-    interestAccruedAsOfBlock = newinterestAccruedAsOfBlock;
+  function setInterestAccruedAsOfBlock(uint256 newInterestAccruedAsOfBlock) external onlyAdmin {
+    interestAccruedAsOfBlock = newInterestAccruedAsOfBlock;
   }
 
   function setWritedownAmount(uint256 newWritedownAmount) external onlyAdmin {

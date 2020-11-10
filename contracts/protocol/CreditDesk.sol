@@ -164,7 +164,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     }
 
     if (cl.balance() == 0) {
-      cl.setinterestAccruedAsOfBlock(blockNumber());
+      cl.setInterestAccruedAsOfBlock(blockNumber());
     }
     // Must get the interest and principal accrued prior to adding to the balance.
     (uint256 interestOwed, uint256 principalOwed) = updateAndGetInterestAndPrincipalOwedAsOf(cl, blockNumber());
@@ -194,10 +194,6 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     CreditLine cl = CreditLine(creditLineAddress);
 
     collectPayment(cl, amount);
-
-    if (blockNumber() < cl.nextDueBlock()) {
-      return;
-    }
     assessCreditLine(creditLineAddress);
   }
 
@@ -210,8 +206,8 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
   function assessCreditLine(address creditLineAddress) public override whenNotPaused {
     require(creditLines[creditLineAddress] != address(0), "Unknown credit line");
     CreditLine cl = CreditLine(creditLineAddress);
-    // Do not assess until a full period has elapsed
-    if (blockNumber() < cl.nextDueBlock()) {
+    // Do not assess until a full period has elapsed or past due
+    if (blockNumber() < cl.nextDueBlock() && !isLate(cl)) {
       return;
     }
 
@@ -396,7 +392,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
       // If we've accrued any interest, update interestAccruedAsOfBLock to the block that we've
       // calculated interest for. If we've not accrued any interest, then we keep the old value so the next
       // time the entire period is taken into account.
-      cl.setinterestAccruedAsOfBlock(blockNumber);
+      cl.setInterestAccruedAsOfBlock(blockNumber);
     }
     return (cl.interestOwed().add(interestAccrued), cl.principalOwed().add(principalAccrued));
   }
