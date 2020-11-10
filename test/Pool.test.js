@@ -1,5 +1,5 @@
 /* global web3 */
-const {OWNER_ROLE, PAUSER_ROLE, CONFIG_KEYS} = require("../blockchain_scripts/deployHelpers")
+const {OWNER_ROLE, PAUSER_ROLE, CONFIG_KEYS, ETHDecimals} = require("../blockchain_scripts/deployHelpers")
 const hre = require("hardhat")
 const {deployments} = hre
 const {
@@ -483,6 +483,18 @@ describe("Pool", () => {
             /Amount is over the per-transaction limit/
           )
         })
+      })
+    })
+  })
+
+  describe("assets matching liabilities", async () => {
+    describe("when there is a super tiny rounding error", async () => {
+      it("should still work", async () => {
+        // This share price will cause a rounding error of 1 atomic unit.
+        var testSharePrice = new BN(String(1.23456789 * ETHDecimals))
+        await pool._setSharePrice(testSharePrice)
+
+        return expect(makeDeposit(person2, new BN(2500).mul(USDC_DECIMALS))).to.be.fulfilled
       })
     })
   })

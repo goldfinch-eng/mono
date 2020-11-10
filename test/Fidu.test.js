@@ -23,6 +23,7 @@ describe("Fidu", () => {
     const configOptions = await ConfigOptions.new({from: owner})
     GoldfinchConfig.link(configOptions)
   })
+
   let owner, person2, goldfinchConfig, fidu, accounts
   beforeEach(async () => {
     // Pull in our unlocked accounts
