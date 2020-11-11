@@ -48,7 +48,7 @@ of the CreditLine, which is held distinct from the Pool amounts, and can not be 
 
 
 
-### `assessCreditLine(address creditLineAddress)` (external)
+### `assessCreditLine(address creditLineAddress)` (public)
 
 Assesses a particular creditLine. This will apply payments, which will update accounting and
 distribute gains or losses back to the pool accordingly. This function is idempotent, and anyone
@@ -126,7 +126,7 @@ USDC Balance of the creditLine, where it will be automatically used for the next
 
 
 
-### `getInterestAndPrincipalOwedAsOf(contract CreditLine cl, uint256 blockNumber) → uint256, uint256` (internal)
+### `updateAndGetInterestAndPrincipalOwedAsOf(contract CreditLine cl, uint256 blockNumber) → uint256, uint256` (internal)
 
 
 

@@ -66,6 +66,12 @@ Moves `amount` USDC from `from`, to `to`.
 
 
 
+### `assets() → uint256` (public)
+
+
+
+
+
 ### `fiduMantissa() → uint256` (internal)
 
 

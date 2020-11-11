@@ -50,7 +50,7 @@ This contract purposefully has essentially no business logic. Really just setter
 
 
 
-### `setLastUpdatedBlock(uint256 newLastUpdatedBlock)` (external)
+### `setInterestAccruedAsOfBlock(uint256 newInterestAccruedAsOfBlock)` (external)
 
 
 
