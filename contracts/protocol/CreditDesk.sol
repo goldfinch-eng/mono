@@ -382,6 +382,9 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
       config.getLatenessGracePeriod()
     );
     if (interestAccrued > 0) {
+      // If we've accrued any interest, update interestAccruedAsOfBLock to the block that we've
+      // calculated interest for. If we've not accrued any interest, then we keep the old value so the next
+      // time the entire period is taken into account.
       cl.setinterestAccruedAsOfBlock(blockNumber);
     }
     return (cl.interestOwed().add(interestAccrued), cl.principalOwed().add(principalAccrued));
