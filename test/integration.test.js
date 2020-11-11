@@ -67,7 +67,6 @@ describe("Goldfinch", async () => {
       } else if (toBlock) {
         newBlock = new BN(toBlock)
       }
-      console.log(`newBLock: ${newBlock}. params: ${days}, ${blocks}, ${toBlock}`)
       // Cannot go backward
       expect(newBlock).to.bignumber.gt(currentBlock)
       await creditDesk._setBlockNumberForTest(newBlock)
@@ -92,7 +91,7 @@ describe("Goldfinch", async () => {
     }
 
     describe("interest rate works", async () => {
-      let limit, interestApr, paymentPeriodInDays, termInDays, lateFeeApr
+      let limit, interestApr, paymentPeriodInDays, termInDays, lateFeeApr, paymentPeriodInBlocks
 
       beforeEach(async () => {
         limit = usdcVal(10000)
@@ -100,6 +99,7 @@ describe("Goldfinch", async () => {
         lateFeeApr = interestAprAsBN(0)
         paymentPeriodInDays = new BN(1)
         termInDays = new BN(365)
+        paymentPeriodInBlocks = BLOCKS_PER_DAY.mul(paymentPeriodInDays)
       })
 
       async function createCreditLine() {
@@ -111,41 +111,53 @@ describe("Goldfinch", async () => {
       }
 
       it("calculates interest correctly", async () => {
-        let currentBlock = await advanceTime({toBlock: 7497268})
+        let currentBlock = await advanceTime({days: 1})
         creditLine = await createCreditLine()
 
         let lastUpdatedBlock = await time.latestBlock()
         await assertCreditLine("0", "0", "0", 0, lastUpdatedBlock, 0)
 
-        currentBlock = await advanceTime({toBlock: 7497780})
+        currentBlock = await advanceTime({days: 1})
         await creditDesk.drawdown(usdcVal(2000), creditLine.address, borrower, {from: borrower})
 
         var nextDueBlock = (await creditDesk.blockNumberForTest()).add(BLOCKS_PER_DAY.mul(paymentPeriodInDays))
         lastUpdatedBlock = currentBlock
         await assertCreditLine(usdcVal(2000), "0", "0", nextDueBlock, currentBlock, 0)
 
-        currentBlock = await advanceTime({toBlock: 7513985})
+        currentBlock = await advanceTime({days: 1})
 
         await creditDesk.assessCreditLine(creditLine.address, {from: borrower})
 
         const totalInterestPerYear = usdcVal(2000).mul(interestApr).div(INTEREST_DECIMALS)
-        let blocksPassed = currentBlock.sub(lastUpdatedBlock)
+        let blocksPassed = nextDueBlock.sub(lastUpdatedBlock)
         let expectedInterest = totalInterestPerYear.mul(blocksPassed).div(BLOCKS_PER_YEAR)
-        nextDueBlock = nextDueBlock.add(BLOCKS_PER_DAY.mul(paymentPeriodInDays))
-        lastUpdatedBlock = currentBlock
+        nextDueBlock = nextDueBlock.add(paymentPeriodInBlocks)
 
-        // expect(expectedInterest).to.bignumber.eq("1369863")
+        expect(expectedInterest).to.bignumber.eq("1369863")
 
-        await assertCreditLine(usdcVal(2000), expectedInterest, "0", nextDueBlock, lastUpdatedBlock, 0)
+        await assertCreditLine(
+          usdcVal(2000),
+          expectedInterest,
+          "0",
+          nextDueBlock,
+          nextDueBlock.sub(paymentPeriodInBlocks),
+          0
+        )
 
-        currentBlock = await advanceTime({toBlock: 7515461})
-        expectedInterest = expectedInterest.mul(new BN(2))
-        nextDueBlock = nextDueBlock.add(BLOCKS_PER_DAY.mul(paymentPeriodInDays))
-        lastUpdatedBlock = currentBlock
+        currentBlock = await advanceTime({days: 1})
+        expectedInterest = expectedInterest.mul(new BN(2)) // 2 days of interest
+        nextDueBlock = nextDueBlock.add(paymentPeriodInBlocks)
 
         await creditDesk.assessCreditLine(creditLine.address, {from: borrower})
 
-        await assertCreditLine(usdcVal(2000), expectedInterest, "0", nextDueBlock, lastUpdatedBlock, 0)
+        await assertCreditLine(
+          usdcVal(2000),
+          expectedInterest,
+          "0",
+          nextDueBlock,
+          nextDueBlock.sub(paymentPeriodInBlocks),
+          0
+        )
       })
     })
   })

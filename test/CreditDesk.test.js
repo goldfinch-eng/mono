@@ -770,7 +770,7 @@ describe("CreditDesk", () => {
 
   describe("writedowns", async () => {
     var originalSharePrice, originalTotalShares, interestOwedForOnePeriod, creditLine
-    const lowTolerance = new BN(100)
+    const lowTolerance = new BN(200)
 
     beforeEach(async () => {
       borrower = person3
