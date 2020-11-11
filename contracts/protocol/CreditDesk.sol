@@ -164,7 +164,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     }
 
     if (cl.balance() == 0) {
-      cl.setLastUpdatedBlock(blockNumber());
+      cl.setinterestAccruedAsOfBlock(blockNumber());
     }
     // Must get the interest and principal accrued prior to adding to the balance.
     (uint256 interestOwed, uint256 principalOwed) = updateAndGetInterestAndPrincipalOwedAsOf(cl, blockNumber());
@@ -382,7 +382,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
       config.getLatenessGracePeriod()
     );
     if (interestAccrued > 0) {
-      cl.setLastUpdatedBlock(blockNumber);
+      cl.setinterestAccruedAsOfBlock(blockNumber);
     }
     return (cl.interestOwed().add(interestAccrued), cl.principalOwed().add(principalAccrued));
   }

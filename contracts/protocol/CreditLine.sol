@@ -32,7 +32,7 @@ contract CreditLine is BaseUpgradeablePausable {
   uint256 public principalOwed;
   uint256 public termEndBlock;
   uint256 public nextDueBlock;
-  uint256 public lastUpdatedBlock;
+  uint256 public interestAccruedAsOfBlock;
   uint256 public writedownAmount;
   uint256 public lastFullPaymentBlock;
 
@@ -55,7 +55,7 @@ contract CreditLine is BaseUpgradeablePausable {
     paymentPeriodInDays = _paymentPeriodInDays;
     termInDays = _termInDays;
     lateFeeApr = _lateFeeApr;
-    lastUpdatedBlock = block.number;
+    interestAccruedAsOfBlock = block.number;
   }
 
   function setTermEndBlock(uint256 newTermEndBlock) external onlyAdmin {
@@ -78,8 +78,8 @@ contract CreditLine is BaseUpgradeablePausable {
     principalOwed = newPrincipalOwed;
   }
 
-  function setLastUpdatedBlock(uint256 newLastUpdatedBlock) external onlyAdmin {
-    lastUpdatedBlock = newLastUpdatedBlock;
+  function setinterestAccruedAsOfBlock(uint256 newinterestAccruedAsOfBlock) external onlyAdmin {
+    interestAccruedAsOfBlock = newinterestAccruedAsOfBlock;
   }
 
   function setWritedownAmount(uint256 newWritedownAmount) external onlyAdmin {

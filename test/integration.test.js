@@ -78,7 +78,7 @@ describe("Goldfinch", async () => {
       interestOwed,
       collectedPayment,
       nextDueBlock,
-      lastUpdatedBlock,
+      interestAccruedAsOfBlock,
       lastFullPaymentBlock
     ) {
       expect(await creditLine.balance()).to.bignumber.equal(balance)
@@ -86,7 +86,7 @@ describe("Goldfinch", async () => {
       expect(await creditLine.principalOwed()).to.bignumber.equal("0") // Principal owed is always 0
       expect(await getBalance(creditLine.address, usdc)).to.bignumber.equal(collectedPayment)
       expect(await creditLine.nextDueBlock()).to.bignumber.equal(new BN(nextDueBlock))
-      expect(await creditLine.lastUpdatedBlock()).to.bignumber.equal(new BN(lastUpdatedBlock))
+      expect(await creditLine.interestAccruedAsOfBlock()).to.bignumber.equal(new BN(interestAccruedAsOfBlock))
       expect(await creditLine.lastFullPaymentBlock()).to.bignumber.equal(new BN(lastFullPaymentBlock))
     }
 
@@ -114,14 +114,14 @@ describe("Goldfinch", async () => {
         let currentBlock = await advanceTime({days: 1})
         creditLine = await createCreditLine()
 
-        let lastUpdatedBlock = await time.latestBlock()
-        await assertCreditLine("0", "0", "0", 0, lastUpdatedBlock, 0)
+        let interestAccruedAsOfBlock = await time.latestBlock()
+        await assertCreditLine("0", "0", "0", 0, interestAccruedAsOfBlock, 0)
 
         currentBlock = await advanceTime({days: 1})
         await creditDesk.drawdown(usdcVal(2000), creditLine.address, borrower, {from: borrower})
 
         var nextDueBlock = (await creditDesk.blockNumberForTest()).add(BLOCKS_PER_DAY.mul(paymentPeriodInDays))
-        lastUpdatedBlock = currentBlock
+        interestAccruedAsOfBlock = currentBlock
         await assertCreditLine(usdcVal(2000), "0", "0", nextDueBlock, currentBlock, 0)
 
         currentBlock = await advanceTime({days: 1})
@@ -129,7 +129,7 @@ describe("Goldfinch", async () => {
         await creditDesk.assessCreditLine(creditLine.address, {from: borrower})
 
         const totalInterestPerYear = usdcVal(2000).mul(interestApr).div(INTEREST_DECIMALS)
-        let blocksPassed = nextDueBlock.sub(lastUpdatedBlock)
+        let blocksPassed = nextDueBlock.sub(interestAccruedAsOfBlock)
         let expectedInterest = totalInterestPerYear.mul(blocksPassed).div(BLOCKS_PER_YEAR)
         nextDueBlock = nextDueBlock.add(paymentPeriodInBlocks)
 
