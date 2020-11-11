@@ -6,21 +6,25 @@ pragma experimental ABIEncoderV2;
 import "../protocol/CreditDesk.sol";
 
 contract TestCreditDesk is CreditDesk {
-  uint256 blockNumberForTest;
+  uint256 _blockNumberForTest;
 
   function _setTotalLoansOutstanding(uint256 amount) public {
     totalLoansOutstanding = amount;
   }
 
   function _setBlockNumberForTest(uint256 blockNumber) public {
-    blockNumberForTest = blockNumber;
+    _blockNumberForTest = blockNumber;
   }
 
   function blockNumber() internal view override returns (uint256) {
-    if (blockNumberForTest == 0) {
+    if (_blockNumberForTest == 0) {
       return super.blockNumber();
     } else {
-      return blockNumberForTest;
+      return _blockNumberForTest;
     }
+  }
+
+  function blockNumberForTest() public view returns (uint256) {
+    return blockNumber();
   }
 }

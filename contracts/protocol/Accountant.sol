@@ -111,15 +111,15 @@ library Accountant {
   ) public view returns (uint256) {
     // We use Math.min here to prevent integer overflow (ie. go negative) when calculating
     // numBlocksElapsed. Typically this shouldn't be possible, because
-    // the lastUpdatedBlock couldn't be *after* the current blockNumber. However, when assessing
+    // the interestAccruedAsOfBlock couldn't be *after* the current blockNumber. However, when assessing
     // we allow this function to be called with a past block number, which raises the possibility
     // of overflow.
     // This use of min should not generate incorrect interest calculations, since
     // this functions purpose is just to normalize balances, and  will be called any time
     // a balance affecting action takes place (eg. drawdown, repayment, assessment)
-    uint256 lastUpdatedBlock = Math.min(blockNumber, cl.lastUpdatedBlock());
+    uint256 interestAccruedAsOfBlock = Math.min(blockNumber, cl.interestAccruedAsOfBlock());
 
-    uint256 numBlocksElapsed = blockNumber.sub(lastUpdatedBlock);
+    uint256 numBlocksElapsed = blockNumber.sub(interestAccruedAsOfBlock);
     uint256 totalInterestPerYear = cl.balance().mul(cl.interestApr()).div(INTEREST_DECIMALS);
     uint256 interestOwed = totalInterestPerYear.mul(numBlocksElapsed).div(BLOCKS_PER_YEAR);
 

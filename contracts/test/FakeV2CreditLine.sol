@@ -21,7 +21,7 @@ contract FakeV2CreditLine is BaseUpgradeablePausable {
   uint256 public principalOwed;
   uint256 public termEndBlock;
   uint256 public nextDueBlock;
-  uint256 public lastUpdatedBlock;
+  uint256 public interestAccruedAsOfBlock;
   uint256 public writedownAmount;
   uint256 public lastFullPaymentBlock;
 
@@ -43,7 +43,7 @@ contract FakeV2CreditLine is BaseUpgradeablePausable {
     paymentPeriodInDays = _paymentPeriodInDays;
     termInDays = _termInDays;
     lateFeeApr = _lateFeeApr;
-    lastUpdatedBlock = block.number;
+    interestAccruedAsOfBlock = block.number;
   }
 
   function anotherNewFunction() external pure returns (uint256) {
