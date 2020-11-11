@@ -419,7 +419,8 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     }
     // Active loan that has entered a new period, so return the *next* nextDueBlock
     if (cl.balance() > 0 && blockNumber() >= cl.nextDueBlock()) {
-      return cl.nextDueBlock().add(blocksPerPeriod);
+      uint256 blocksToAdvance = (blockNumber().sub(cl.nextDueBlock()).div(blocksPerPeriod)).add(1).mul(blocksPerPeriod);
+      return cl.nextDueBlock().add(blocksToAdvance);
     }
     // Active loan in current period, where we've already set the nextDueBlock correctly, so should not change.
     if (cl.balance() > 0 && blockNumber() < cl.nextDueBlock()) {

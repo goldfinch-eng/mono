@@ -972,6 +972,35 @@ describe("CreditDesk", () => {
         expect(newReserveBalance.sub(originalReserveBalance)).to.bignumber.equal(expectedFeeAmount)
       })
 
+      describe("when you are multiple periods behind", async () => {
+        it("should update the nextDueBlock to the closest period in time", async () => {
+          const collectedPaymentBalance = 8
+          const interestOwed = 5
+          var creditLine = await createAndSetCreditLineAttributes({
+            balance: 10,
+            interestOwed: interestOwed,
+            principalOwed: 3,
+            collectedPaymentBalance: collectedPaymentBalance,
+            nextDueBlock: latestBlock,
+          })
+          const paymentPeriodInDays = await creditLine.paymentPeriodInDays()
+          const blocksPerDay = await creditDesk.BLOCKS_PER_DAY()
+          const blocksPerPeriod = paymentPeriodInDays.mul(blocksPerDay)
+
+          // Set it as if you are multiple periods behind, ie. time is 2 periods in the future.
+          const blockForTest = latestBlock.add(blocksPerPeriod.mul(new BN(2)))
+          await creditDesk._setBlockNumberForTest(blockForTest)
+
+          // Assess!
+          await creditDesk.assessCreditLine(creditLine.address, {from: underwriter})
+
+          // Should shift it one additional block past the one where it's currently set.
+          const expectedNextDueBlock = latestBlock.add(blocksPerPeriod.mul(new BN(3)))
+
+          expect(await creditLine.nextDueBlock()).to.bignumber.equal(expectedNextDueBlock)
+        })
+      })
+
       describe("idempotency", async () => {
         it("should keep the nextDueBlock and termEndBlock what it is if you call it twice", async () => {
           const collectedPaymentBalance = 8
