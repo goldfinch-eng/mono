@@ -27,8 +27,6 @@ function Borrow(props) {
         setCreditLineFactory(factory);
         creditLine = await fetchCreditLineData(factory);
       }
-
-      console.log('pool.balance', pool.balance);
     }
     setBorrower(borrower);
     setCreditLine(creditLine);
