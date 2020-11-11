@@ -424,7 +424,7 @@ describe("CreditDesk", () => {
     it("should set the last updated block on drawdown to be the most recent block number", async () => {
       const drawdownAmount = usdcVal(10)
       await drawdown(drawdownAmount, creditLine.address)
-      expect(await creditLine.lastUpdatedBlock()).to.bignumber.equal(await time.latestBlock())
+      expect(await creditLine.interestAccruedAsOfBlock()).to.bignumber.equal(await time.latestBlock())
     })
 
     it("should set the nextDueAt correctly", async () => {
@@ -716,7 +716,7 @@ describe("CreditDesk", () => {
             principalOwed: 0,
             nextDueBlock: blockNumber,
           })
-          await creditLine.setLastUpdatedBlock(blockNumber)
+          await creditLine.setinterestAccruedAsOfBlock(blockNumber)
           await creditLine.setLastFullPaymentBlock(new BN(0))
           await creditLine.setTermEndBlock(lateFeeGracePeriodInDays.mul(BLOCKS_PER_DAY).mul(new BN(10))) // some time in the future
 
@@ -748,7 +748,7 @@ describe("CreditDesk", () => {
             principalOwed: 0,
             nextDueBlock: blockNumber,
           })
-          await creditLine.setLastUpdatedBlock(blockNumber)
+          await creditLine.setinterestAccruedAsOfBlock(blockNumber)
           await creditLine.setLastFullPaymentBlock(new BN("0"))
           await creditLine.setTermEndBlock(lateFeeGracePeriodInDays.mul(BLOCKS_PER_DAY).mul(new BN(10))) // some time in the future
 
@@ -770,7 +770,7 @@ describe("CreditDesk", () => {
 
   describe("writedowns", async () => {
     var originalSharePrice, originalTotalShares, interestOwedForOnePeriod, creditLine
-    const lowTolerance = new BN(100)
+    const lowTolerance = new BN(200)
 
     beforeEach(async () => {
       borrower = person3

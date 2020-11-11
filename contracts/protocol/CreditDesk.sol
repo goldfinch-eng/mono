@@ -164,10 +164,10 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     }
 
     if (cl.balance() == 0) {
-      cl.setLastUpdatedBlock(blockNumber());
+      cl.setinterestAccruedAsOfBlock(blockNumber());
     }
     // Must get the interest and principal accrued prior to adding to the balance.
-    (uint256 interestOwed, uint256 principalOwed) = getInterestAndPrincipalOwedAsOf(cl, blockNumber());
+    (uint256 interestOwed, uint256 principalOwed) = updateAndGetInterestAndPrincipalOwedAsOf(cl, blockNumber());
     uint256 balance = cl.balance().add(amount);
 
     updateCreditLineAccounting(cl, balance, interestOwed, principalOwed);
@@ -306,7 +306,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
       uint256
     )
   {
-    (uint256 interestOwed, uint256 principalOwed) = getInterestAndPrincipalOwedAsOf(cl, asOfBlock);
+    (uint256 interestOwed, uint256 principalOwed) = updateAndGetInterestAndPrincipalOwedAsOf(cl, asOfBlock);
     Accountant.PaymentAllocation memory pa = Accountant.allocatePayment(
       paymentAmount,
       cl.balance(),
@@ -372,9 +372,8 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     totalLoansOutstanding = totalLoansOutstanding.add(cl.balance());
   }
 
-  function getInterestAndPrincipalOwedAsOf(CreditLine cl, uint256 blockNumber)
+  function updateAndGetInterestAndPrincipalOwedAsOf(CreditLine cl, uint256 blockNumber)
     internal
-    view
     returns (uint256, uint256)
   {
     (uint256 interestAccrued, uint256 principalAccrued) = Accountant.calculateInterestAndPrincipalAccrued(
@@ -382,6 +381,12 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
       blockNumber,
       config.getLatenessGracePeriod()
     );
+    if (interestAccrued > 0) {
+      // If we've accrued any interest, update interestAccruedAsOfBLock to the block that we've
+      // calculated interest for. If we've not accrued any interest, then we keep the old value so the next
+      // time the entire period is taken into account.
+      cl.setinterestAccruedAsOfBlock(blockNumber);
+    }
     return (cl.interestOwed().add(interestAccrued), cl.principalOwed().add(principalAccrued));
   }
 
@@ -465,7 +470,6 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     cl.setBalance(balance);
     cl.setInterestOwed(interestOwed);
     cl.setPrincipalOwed(principalOwed);
-    cl.setLastUpdatedBlock(blockNumber());
 
     if (cl.interestOwed() == 0) {
       // If interest was fully paid off, then set the last last full payment as the previous due block

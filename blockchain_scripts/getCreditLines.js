@@ -22,7 +22,7 @@ async function main() {
   let USDCBalance = await usdc.balanceOf(creditLines[0])
   let termEndBlock = await creditLine.termEndBlock()
   let nextDueBlock = await creditLine.nextDueBlock()
-  let lastUpdatedBlock = await creditLine.lastUpdatedBlock()
+  let interestAccruedAsOfBlock = await creditLine.interestAccruedAsOfBlock()
   let writedownAmount = await creditLine.writedownAmount()
 
   logger("Credit line vars:")
@@ -32,7 +32,7 @@ async function main() {
   logger("USDCBalance:", String(USDCBalance))
   logger("termEndBlock:", String(termEndBlock))
   logger("nextDueBlock:", String(nextDueBlock))
-  logger("lastUpdatedBlock:", String(lastUpdatedBlock))
+  logger("interestAccruedAsOfBlock:", String(interestAccruedAsOfBlock))
   logger("writedownAmount:", String(writedownAmount))
 }
 

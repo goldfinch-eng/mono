@@ -25,7 +25,7 @@ async function assessCreditLine(creditDesk, creditLineAddress, usdc, logger = co
   let USDCBalance = await usdc.balanceOf(creditLineAddress)
   let termEndBlock = await creditLine.termEndBlock()
   let nextDueBlock = await creditLine.nextDueBlock()
-  let lastUpdatedBlock = await creditLine.lastUpdatedBlock()
+  let interestAccruedAsOfBlock = await creditLine.interestAccruedAsOfBlock()
   let writedownAmount = await creditLine.writedownAmount()
 
   logger("Credit line vars before assessment:")
@@ -35,7 +35,7 @@ async function assessCreditLine(creditDesk, creditLineAddress, usdc, logger = co
   logger("USDC Balance:", String(USDCBalance))
   logger("termEndBlock:", String(termEndBlock))
   logger("nextDueBlock:", String(nextDueBlock))
-  logger("lastUpdatedBlock:", String(lastUpdatedBlock))
+  logger("interestAccruedAsOfBlock:", String(interestAccruedAsOfBlock))
 
   logger("Assessing the credit line...")
   await (await creditDesk.assessCreditLine(creditLineAddress)).wait()
@@ -47,7 +47,7 @@ async function assessCreditLine(creditDesk, creditLineAddress, usdc, logger = co
   USDCBalance = await usdc.balanceOf(creditLineAddress)
   termEndBlock = await creditLine.termEndBlock()
   nextDueBlock = await creditLine.nextDueBlock()
-  lastUpdatedBlock = await creditLine.lastUpdatedBlock()
+  interestAccruedAsOfBlock = await creditLine.interestAccruedAsOfBlock()
   writedownAmount = await creditLine.writedownAmount()
 
   logger("After assessment:")
@@ -57,7 +57,7 @@ async function assessCreditLine(creditDesk, creditLineAddress, usdc, logger = co
   logger("USDC Balance:", String(USDCBalance))
   logger("termEndBlock:", String(termEndBlock))
   logger("nextDueBlock:", String(nextDueBlock))
-  logger("lastUpdatedBlock:", String(lastUpdatedBlock))
+  logger("interestAccruedAsOfBlock:", String(interestAccruedAsOfBlock))
   logger("writedownAmount:", String(writedownAmount))
 }
 

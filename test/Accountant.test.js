@@ -93,7 +93,7 @@ describe("Accountant", async () => {
 
     describe("late fees", async () => {
       beforeEach(async () => {
-        await creditLine.setLastUpdatedBlock(blockNumber)
+        await creditLine.setinterestAccruedAsOfBlock(blockNumber)
         await creditLine.setLastFullPaymentBlock(blockNumber)
         await creditLine.setTermEndBlock(lateFeeGracePeriodInDays.mul(BLOCKS_PER_DAY).mul(new BN(10))) // some time in the future
       })
