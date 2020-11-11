@@ -19,7 +19,7 @@ function EarnActionsContainer(props) {
   }
 
   let depositAction;
-  let depositClass = 'non-functioning';
+  let depositClass = 'disabled';
   if (user.usdcIsUnlocked && props.capitalProvider) {
     depositAction = e => {
       setShowAction('deposit');
@@ -28,7 +28,7 @@ function EarnActionsContainer(props) {
   }
 
   let withdrawAction;
-  let withdrawClass = 'non-functioning';
+  let withdrawClass = 'disabled';
   if (user.usdcIsUnlocked && props.capitalProvider.availableToWithdrawal > 0) {
     withdrawAction = e => {
       setShowAction('withdrawal');
@@ -36,9 +36,8 @@ function EarnActionsContainer(props) {
     withdrawClass = '';
   }
 
-  let formBody;
   if (showAction === 'deposit') {
-    formBody = (
+    return (
       <DepositForm
         closeForm={closeForm}
         capitalProvider={props.capitalProvider}
@@ -47,7 +46,7 @@ function EarnActionsContainer(props) {
       />
     );
   } else if (showAction === 'withdrawal') {
-    formBody = (
+    return (
       <WithdrawalForm
         closeForm={closeForm}
         capitalProvider={props.capitalProvider}
@@ -56,7 +55,7 @@ function EarnActionsContainer(props) {
       />
     );
   } else {
-    formBody = (
+    return (
       <div className={`background-container ${placeholderClass}`}>
         <DepositStatus capitalProvider={props.capitalProvider} />
         <div className="form-start">
@@ -70,7 +69,6 @@ function EarnActionsContainer(props) {
       </div>
     );
   }
-  return formBody;
 }
 
 export default EarnActionsContainer;

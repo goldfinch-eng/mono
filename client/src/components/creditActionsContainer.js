@@ -25,12 +25,12 @@ function CreditActionsContainer(props) {
   }
 
   let placeholderClass = '';
-  if (!user.address || !user.usdcIsUnlocked) {
+  if (!user.address || !user.usdcIsUnlocked || !props.creditLine.address) {
     placeholderClass = 'placeholder';
   }
 
   let drawdownAction;
-  let drawdownClass = 'non-functioning';
+  let drawdownClass = 'disabled';
   if (availableBalance > 0 && user.usdcIsUnlocked) {
     drawdownAction = e => {
       openAction(e, 'drawdown');
@@ -39,7 +39,7 @@ function CreditActionsContainer(props) {
   }
 
   let payAction;
-  let payClass = 'non-functioning';
+  let payClass = 'disabled';
   if (drawdownBalance > 0 && user.usdcIsUnlocked) {
     payAction = e => {
       openAction(e, 'payment');
@@ -54,9 +54,8 @@ function CreditActionsContainer(props) {
     nextDueDisplay = `Paid through ${props.creditLine.dueDate}`;
   }
 
-  let formBody;
   if (showAction === 'payment') {
-    formBody = (
+    return (
       <PaymentForm
         closeForm={closeForm}
         actionComplete={props.actionComplete}
@@ -65,7 +64,7 @@ function CreditActionsContainer(props) {
       />
     );
   } else if (showAction === 'drawdown') {
-    formBody = (
+    return (
       <DrawdownForm
         closeForm={closeForm}
         actionComplete={props.actionComplete}
@@ -74,18 +73,18 @@ function CreditActionsContainer(props) {
       />
     );
   } else {
-    formBody = (
+    return (
       <div className={`form-start split background-container ${placeholderClass}`}>
         <div className="form-start-section">
-          <div class="form-start-label">Available to drawdown</div>
-          <div class="form-start-value">{displayDollars(availableBalance)}</div>
+          <div className="form-start-label">Available to drawdown</div>
+          <div className="form-start-value">{displayDollars(availableBalance)}</div>
           <button className={`button ${drawdownClass}`} onClick={drawdownAction}>
             {iconDownArrow} Drawdown
           </button>
         </div>
         <div className="form-start-section">
-          <div class="form-start-label">Next payment</div>
-          <div class="form-start-value">{nextDueDisplay}</div>
+          <div className="form-start-label">Next payment</div>
+          <div className="form-start-value">{nextDueDisplay}</div>
           <button className={`button dark ${payClass}`} onClick={payAction}>
             {iconUpArrow} Pay
           </button>
@@ -93,7 +92,6 @@ function CreditActionsContainer(props) {
       </div>
     );
   }
-  return formBody;
 }
 
 export default CreditActionsContainer;

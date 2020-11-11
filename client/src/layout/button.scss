@@ -29,15 +29,14 @@
     stroke: $sand-xlight;
   }
 
-
   &.pending{
     cursor: auto;
     pointer-events: none;
     opacity: 0.5;
   }
 
-  &.non-functioning,
-  &.non-functioning.dark{
+  &.disabled,
+  &.disabled.dark{
     background-color: $sand;
     color: $sand-xxdark;
     cursor: not-allowed;
@@ -53,7 +52,6 @@
     border-radius: 8px;
     font-size: $sans-size-base;
     line-height: 70px;
-    // padding: 20px 0;
 
     .icon{
       vertical-align: middle;

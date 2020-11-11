@@ -1,7 +1,6 @@
 import React from 'react';
 import InfoSection from './infoSection.js';
 import CreditBarViz from './creditBarViz.js';
-
 import { usdcFromAtomic } from '../ethereum/erc20.js';
 import { decimals } from '../ethereum/utils';
 import { displayNumber } from '../utils';
@@ -17,9 +16,7 @@ function CreditStatus(props) {
   }
 
   let rows;
-  let cssClass = '';
   if (!props.creditLine.balance) {
-    cssClass = 'empty';
     rows = [
       { label: 'Limit', value: '$ -' },
       { label: 'Interest rate APR', value: '- %' },
@@ -41,10 +38,9 @@ function CreditStatus(props) {
   }
 
   return (
-    <div class={`credit-status background-container ${placeholderClass}`}>
+    <div className={`credit-status background-container ${placeholderClass}`}>
       <h2>Credit Status</h2>
       <CreditBarViz creditLine={props.creditLine} />
-      <div class="divider"></div>
       <InfoSection rows={rows} />
     </div>
   );

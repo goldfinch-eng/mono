@@ -17,16 +17,16 @@ function WithdrawalForm(props) {
     });
   }
 
-  let availableAmount = fiduFromAtomic(props.capitalProvider.availableToWithdrawal);
-  const balance = displayDollars(availableAmount);
+  const availableAmount = fiduFromAtomic(props.capitalProvider.availableToWithdrawal);
+  const availableToWithdraw = minimumNumber(availableAmount, usdcFromAtomic(props.poolData.balance));
 
   return (
     <TransactionForm
       title="Withdraw"
-      headerMessage={`Available to withdraw: ${balance}`}
+      headerMessage={`Available to withdraw: ${displayDollars(availableToWithdraw)}`}
       submitTransaction={action}
       closeForm={props.closeForm}
-      maxAmount={minimumNumber(availableAmount, usdcFromAtomic(props.poolData.balance))}
+      maxAmount={availableToWithdraw}
     />
   );
 }

@@ -2,7 +2,6 @@ import BN from 'bn.js';
 import React, { useState, useContext, useEffect } from 'react';
 import CreditActionsContainer from './creditActionsContainer.js';
 import CreditStatus from './creditStatus.js';
-import PaymentStatus from './paymentStatus.js';
 import UnlockUSDCForm from './unlockUSDCForm.js';
 import web3 from '../web3.js';
 import { buildCreditLine, fetchCreditLineData } from '../ethereum/creditLine.js';
@@ -28,6 +27,8 @@ function Borrow(props) {
         setCreditLineFactory(factory);
         creditLine = await fetchCreditLineData(factory);
       }
+
+      console.log('pool.balance', pool.balance);
     }
     setBorrower(borrower);
     setCreditLine(creditLine);
@@ -42,11 +43,6 @@ function Borrow(props) {
 
   async function actionComplete() {
     return updateBorrowerAndCreditLine();
-  }
-
-  let placeholderClass = '';
-  if (!user.address || !user.usdcIsUnlocked) {
-    placeholderClass = 'placeholder';
   }
 
   let notice = '';

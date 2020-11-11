@@ -48,8 +48,8 @@
   & .icon path{
     stroke: $sand-xlight; 
   }
-
 }
+
 .dark .submit-payment{
   background-color: $purp;
   color: $sand-xlight;
@@ -60,13 +60,12 @@
 }
 
 
-
-
 @media only screen and (min-width: $screen-m) {
   .form-header{
     border-radius: 8px 8px 0 0;
   }
 }
+
 
 @media only screen and (min-width: $screen-l) {
   .form-full.background-container{

@@ -1,7 +1,6 @@
 import BN from 'bn.js';
 import React, { useState, useContext, useEffect } from 'react';
 import LoadingButton from './loadingButton';
-import iconInfo from '../images/info-purp.svg';
 import { AppContext } from '../App.js';
 import { sendFromUser, MAX_UINT } from '../ethereum/utils';
 import { useForm, FormProvider } from 'react-hook-form';
@@ -91,51 +90,49 @@ function TransactionForm(props) {
           Cancel{iconX}
         </div>
       </div>
-      <div>
-        <h2>{props.title}</h2>
-        <FormProvider {...formMethods}>
-          <form>
-            {valueOptions}
-            <div className="form-inputs">
-              {props.sendToAddress ? sendToAddress : ''}
-              <div className="form-field">
-                {props.sendToAddress ? <div className="form-input-label">Amount</div> : ''}
-                <div className="form-input-container dollar">
-                  <input
-                    value={value}
-                    name="transactionAmount"
-                    type="number"
-                    onChange={e => {
-                      handleChange(e, props);
-                    }}
-                    placeholder="0"
-                    className="form-input"
-                    ref={register({
-                      required: 'Amount is required',
-                      min: { value: 0.01, message: 'Must be greater than 0' },
-                      max: {
-                        value: props.maxAmount,
-                        message: `Amount is above the max allowed (${displayDollars(props.maxAmount)}). `,
-                      },
-                    })}
-                  ></input>
-                  <div className="form-input-note">
-                    <ErrorMessage errors={formMethods.errors} name="transactionAmount" />
-                  </div>
+      <h2>{props.title}</h2>
+      <FormProvider {...formMethods}>
+        <form>
+          {valueOptions}
+          <div className="form-inputs">
+            {props.sendToAddress ? sendToAddress : ''}
+            <div className="form-field">
+              {props.sendToAddress ? <div className="form-input-label">Amount</div> : ''}
+              <div className="form-input-container dollar">
+                <input
+                  value={value}
+                  name="transactionAmount"
+                  type="number"
+                  onChange={e => {
+                    handleChange(e, props);
+                  }}
+                  placeholder="0"
+                  className="form-input"
+                  ref={register({
+                    required: 'Amount is required',
+                    min: { value: 0.01, message: 'Must be greater than 0' },
+                    max: {
+                      value: props.maxAmount,
+                      message: `Amount is above the max allowed (${displayDollars(props.maxAmount)}). `,
+                    },
+                  })}
+                ></input>
+                <div className="form-input-note">
+                  <ErrorMessage errors={formMethods.errors} name="transactionAmount" />
                 </div>
-                {buttonInfo}
               </div>
-              <LoadingButton
-                action={() => {
-                  return props.submitTransaction(value);
-                }}
-                text={submitText}
-                txData={{ type: selectedAction.txType, amount: value }}
-              />
+              {buttonInfo}
             </div>
-          </form>
-        </FormProvider>
-      </div>
+            <LoadingButton
+              action={() => {
+                return selectedAction.action(value);
+              }}
+              text={selectedAction.label}
+              txData={{ type: selectedAction.txType, amount: value }}
+            />
+          </div>
+        </form>
+      </FormProvider>
     </div>
   );
 }
