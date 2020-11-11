@@ -198,7 +198,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     if (blockNumber() < cl.nextDueBlock()) {
       return;
     }
-    applyPayment(cl, getUSDCBalance(address(cl)), blockNumber());
+    assessCreditLine(creditLineAddress);
   }
 
   /**
@@ -207,14 +207,25 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
    *  is allowed to call it.
    * @param creditLineAddress The creditline that should be assessed.
    */
-  function assessCreditLine(address creditLineAddress) external override whenNotPaused {
+  function assessCreditLine(address creditLineAddress) public override whenNotPaused {
     require(creditLines[creditLineAddress] != address(0), "Unknown credit line");
     CreditLine cl = CreditLine(creditLineAddress);
     // Do not assess until a full period has elapsed
     if (blockNumber() < cl.nextDueBlock()) {
       return;
     }
-    applyPayment(cl, getUSDCBalance(address(cl)), cl.nextDueBlock());
+
+    cl.setNextDueBlock(calculateNextDueBlock(cl));
+    uint256 blockToAssess = cl.nextDueBlock();
+
+    // We always want to assesss for the most recently *past* nextDueBlock.
+    // So if the recalculation above sets the nextDueBlock into the future,
+    // then ensure we pass in the one just before this.
+    if (cl.nextDueBlock() > blockNumber()) {
+      uint256 blocksPerPeriod = cl.paymentPeriodInDays().mul(BLOCKS_PER_DAY);
+      blockToAssess = cl.nextDueBlock().sub(blocksPerPeriod);
+    }
+    applyPayment(cl, getUSDCBalance(address(cl)), blockToAssess);
   }
 
   // Public View Functions (Getters)
@@ -424,7 +435,8 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     }
     // Active loan that has entered a new period, so return the *next* nextDueBlock
     if (cl.balance() > 0 && blockNumber() >= cl.nextDueBlock()) {
-      return cl.nextDueBlock().add(blocksPerPeriod);
+      uint256 blocksToAdvance = (blockNumber().sub(cl.nextDueBlock()).div(blocksPerPeriod)).add(1).mul(blocksPerPeriod);
+      return cl.nextDueBlock().add(blocksToAdvance);
     }
     // Active loan in current period, where we've already set the nextDueBlock correctly, so should not change.
     if (cl.balance() > 0 && blockNumber() < cl.nextDueBlock()) {
