@@ -13,57 +13,43 @@ function TransactionForm(props) {
   const { erc20, pool, user, refreshUserData } = useContext(AppContext);
   const formMethods = useForm();
   const [value, setValue] = useState('0');
-  const [selectedAction, setSelectedAction] = useState(() => {
-    return getSelectedActionProps();
-  });
-
   const [node] = useCloseOnClickOrEsc({ closeFormFn: props.closeForm, closeOnClick: false });
-
-  useEffect(() => {
-    setSelectedAction(getSelectedActionProps());
-  }, [user]);
 
   function handleChange(e, props) {
     setValue(e.target.value);
     formMethods.setValue('transactionAmount', e.target.value, { shouldValidate: true, shouldDirty: true });
   }
 
-  function userNeedsToApprove() {
-    return props.needsApproval && user.allowance && user.allowance.lte(new BN(10000));
-  }
-
-  function getSelectedActionProps() {
-    if (userNeedsToApprove()) {
-      let approvalAction = async () => {
-        return sendFromUser(erc20.methods.approve(pool._address, MAX_UINT), user.address).then(result => {
-          refreshUserData();
-        });
-      };
-      return { action: approvalAction, label: 'Unlock', txType: 'Approval' };
-    } else {
-      return { action: props.submitTransaction, label: 'Submit', txType: props.title };
-    }
-  }
-
-  let approvalNotice = '';
+  let action = props.submitTransaction;
+  let submitText = 'Submit';
+  let txType = props.title;
   let buttonInfo = '';
   let register = formMethods.register;
-  let submitText = 'Submit';
 
-  if (userNeedsToApprove()) {
-    buttonInfo = <div className="button-info">Step 1 of 2:</div>;
-    submitText = 'Unlock USDC';
+  // With the current implementation, this will never actually be necessary
+  // because the user will always already have USDC unlocked before getting
+  // to this stage. However, when we add "pay with BUSD", we'll need to use
+  // this, so we're accounting for it.
+  if (props.needsApproval && user.allowance && user.allowance.lte(new BN(10000))) {
     register = () => {};
+    action = async () => {
+      return sendFromUser(erc20.methods.approve(pool._address, MAX_UINT), user.address).then(result => {
+        refreshUserData();
+      });
+    };
+    submitText = 'Unlock [currency]';
+    txType = 'Approval';
+    buttonInfo = <div className="button-info">Step 1 of 2:</div>;
   }
 
   let valueOptions;
   if (props.valueOptions) {
     const valueOptionList = props.valueOptions.map((valueOption, index) => {
       return (
-        <div className="value-option">
-          <input name="value-type" type="radio" id={`value-type-${index}`} key={index} value={valueOption.value} />
+        <div className="value-option" key={index}>
+          <input name="value-type" type="radio" id={`value-type-${index}`} value={valueOption.value} />
           <div className="radio-check"></div>
-          <label for={`value-type-${index}`}>{valueOption.label}</label>
+          <label htmlFor={`value-type-${index}`}>{valueOption.label}</label>
         </div>
       );
     });
@@ -85,7 +71,7 @@ function TransactionForm(props) {
   return (
     <div ref={node} className={`form-full background-container ${props.formClass}`}>
       <div className="form-header">
-        <div class="form-header-message">{props.headerMessage}</div>
+        <div className="form-header-message">{props.headerMessage}</div>
         <div onClick={props.closeForm} className="cancel">
           Cancel{iconX}
         </div>
@@ -125,10 +111,10 @@ function TransactionForm(props) {
             </div>
             <LoadingButton
               action={() => {
-                return selectedAction.action(value);
+                return action(value);
               }}
-              text={selectedAction.label}
-              txData={{ type: selectedAction.txType, amount: value }}
+              text={submitText}
+              txData={{ type: txType, amount: value }}
             />
           </div>
         </form>
