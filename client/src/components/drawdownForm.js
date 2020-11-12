@@ -16,10 +16,11 @@ function DrawdownForm(props) {
     })();
   }, []);
 
-  function makeDrawdown(value) {
+  function makeDrawdown({ value, sendToAddress }) {
     const drawdownAmount = usdcToAtomic(value);
+    sendToAddress = sendToAddress === '' ? props.borrower.address : sendToAddress;
     return sendFromUser(
-      creditDesk.methods.drawdown(drawdownAmount, props.creditLine.address, props.borrower.address),
+      creditDesk.methods.drawdown(drawdownAmount, props.creditLine.address, sendToAddress),
       props.borrower.address,
     ).then(result => {
       props.closeForm();
@@ -33,7 +34,7 @@ function DrawdownForm(props) {
     <TransactionForm
       title="Drawdown"
       headerMessage={`Available to drawdown: ${displayDollars(maxAmount)}`}
-      sendToAddress={true}
+      sendToAddressForm={true}
       submitTransaction={makeDrawdown}
       closeForm={props.closeForm}
       maxAmount={maxAmount}

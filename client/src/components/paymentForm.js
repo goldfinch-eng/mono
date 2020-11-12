@@ -8,7 +8,7 @@ import TransactionForm from './transactionForm';
 function PaymentForm(props) {
   const { creditDesk, user } = useContext(AppContext);
 
-  function submitPayment(value) {
+  function submitPayment({ value }) {
     const amount = usdcToAtomic(value);
     return sendFromUser(creditDesk.methods.pay(props.creditLine.address, amount), props.borrower.address).then(
       _result => {

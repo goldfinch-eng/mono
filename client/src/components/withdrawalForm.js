@@ -9,7 +9,7 @@ import TransactionForm from './transactionForm';
 function WithdrawalForm(props) {
   const { pool } = useContext(AppContext);
 
-  async function action(value) {
+  async function action({ value }) {
     const withdrawalAmount = usdcToAtomic(value);
     return sendFromUser(pool.methods.withdraw(withdrawalAmount), props.capitalProvider.address).then(result => {
       props.closeForm();

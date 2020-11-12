@@ -23,7 +23,7 @@ class DepositStatus extends Component {
 
   render() {
     return (
-      <div class="pool-status background-container">
+      <div className="pool-status background-container">
         <h2>Pool Status</h2>
         <InfoSection rows={this.deriveRows()} />
       </div>

@@ -1,5 +1,5 @@
 import BN from 'bn.js';
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext } from 'react';
 import LoadingButton from './loadingButton';
 import { AppContext } from '../App.js';
 import { sendFromUser, MAX_UINT } from '../ethereum/utils';
@@ -13,19 +13,26 @@ function TransactionForm(props) {
   const { erc20, pool, user, refreshUserData } = useContext(AppContext);
   const formMethods = useForm();
   const [value, setValue] = useState('0');
+  const [sendToAddress, setSendToAddress] = useState('');
   const [selectedValueOption, setSelectedValueOption] = useState('other');
   const [inputClass, setInputClass] = useState('');
   const [node] = useCloseOnClickOrEsc({ closeFormFn: props.closeForm, closeOnClick: false });
 
-  function handleChange(e, props) {
+  function handleChange(e) {
     setValue(e.target.value);
     setSelectedValueOption('other');
     setInputClass('');
-    formMethods.setValue('transactionAmount', value, { shouldValidate: true, shouldDirty: true });
+    formMethods.setValue('transactionAmount', e.target.value, { shouldValidate: true, shouldDirty: true });
+  }
+
+  function handleSendToAddress(e) {
+    console.log('target value:', e.target.value);
+    setSendToAddress(e.target.value);
+    formMethods.setValue('sendToAddresss', e.target.value, { shouldValidate: true, shouldDirty: true });
   }
 
   function handleValueOptionClick(valueOption) {
-    if (valueOption.name == 'other') {
+    if (valueOption.name === 'other') {
       setSelectedValueOption('other');
       setInputClass('');
     } else if (!isNaN(valueOption.value)) {
@@ -66,7 +73,7 @@ function TransactionForm(props) {
           <input
             name={valueOption.name}
             type="radio"
-            checked={valueOption.name == selectedValueOption}
+            checked={valueOption.name === selectedValueOption}
             id={`value-type-${index}`}
             value={valueOption.value}
             onChange={() => {
@@ -81,13 +88,22 @@ function TransactionForm(props) {
     valueOptions = <div className="value-options">{valueOptionList}</div>;
   }
 
-  let sendToAddress = '';
-  if (props.sendToAddress) {
-    sendToAddress = (
+  let sendToAddressForm = '';
+  if (props.sendToAddressForm) {
+    sendToAddressForm = (
       <div className="form-field">
         <div className="form-input-label">(Optional) Send to a specific address</div>
         <div className="form-input-container">
-          <input name="sendToAddress" placeholder="0x0000" className="form-input"></input>
+          <input
+            value={sendToAddress}
+            type="string"
+            onChange={e => {
+              handleSendToAddress(e, props);
+            }}
+            name="sendToAddress"
+            placeholder="0x0000"
+            className="form-input"
+          ></input>
         </div>
       </div>
     );
@@ -106,9 +122,9 @@ function TransactionForm(props) {
         <form>
           {valueOptions}
           <div className="form-inputs">
-            {props.sendToAddress ? sendToAddress : ''}
+            {props.sendToAddressForm ? sendToAddressForm : ''}
             <div className="form-field">
-              {props.sendToAddress ? <div className="form-input-label">Amount</div> : ''}
+              {props.sendToAddressForm ? <div className="form-input-label">Amount</div> : ''}
               <div className={`form-input-container dollar ${inputClass}`}>
                 <input
                   value={value}
@@ -136,7 +152,7 @@ function TransactionForm(props) {
             </div>
             <LoadingButton
               action={() => {
-                return action(value);
+                return action({ value, sendToAddress });
               }}
               text={submitText}
               txData={{ type: txType, amount: value }}

@@ -8,7 +8,7 @@ import TransactionForm from './transactionForm';
 function DepositForm(props) {
   const { pool, user, goldfinchConfig } = useContext(AppContext);
 
-  function action(value) {
+  function action({ value }) {
     const depositAmount = usdcToAtomic(value);
     const userAddress = props.capitalProvider.address;
     return sendFromUser(pool.methods.deposit(depositAmount), userAddress).then(result => {
