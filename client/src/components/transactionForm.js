@@ -13,11 +13,27 @@ function TransactionForm(props) {
   const { erc20, pool, user, refreshUserData } = useContext(AppContext);
   const formMethods = useForm();
   const [value, setValue] = useState('0');
+  const [selectedValueOption, setSelectedValueOption] = useState('other');
+  const [inputClass, setInputClass] = useState('');
   const [node] = useCloseOnClickOrEsc({ closeFormFn: props.closeForm, closeOnClick: false });
 
   function handleChange(e, props) {
     setValue(e.target.value);
-    formMethods.setValue('transactionAmount', e.target.value, { shouldValidate: true, shouldDirty: true });
+    setSelectedValueOption('other');
+    setInputClass('');
+    formMethods.setValue('transactionAmount', value, { shouldValidate: true, shouldDirty: true });
+  }
+
+  function handleValueOptionClick(valueOption) {
+    if (valueOption.name == 'other') {
+      setSelectedValueOption('other');
+      setInputClass('');
+    } else if (!isNaN(valueOption.value)) {
+      setValue(valueOption.value);
+      setSelectedValueOption(valueOption.name);
+      setInputClass('pre-filled');
+      formMethods.setValue('transactionAmount', valueOption.value, { shouldValidate: true, shouldDirty: true });
+    }
   }
 
   let action = props.submitTransaction;
@@ -47,7 +63,16 @@ function TransactionForm(props) {
     const valueOptionList = props.valueOptions.map((valueOption, index) => {
       return (
         <div className="value-option" key={index}>
-          <input name="value-type" type="radio" id={`value-type-${index}`} value={valueOption.value} />
+          <input
+            name={valueOption.name}
+            type="radio"
+            checked={valueOption.name == selectedValueOption}
+            id={`value-type-${index}`}
+            value={valueOption.value}
+            onChange={() => {
+              return handleValueOptionClick(valueOption);
+            }}
+          />
           <div className="radio-check"></div>
           <label htmlFor={`value-type-${index}`}>{valueOption.label}</label>
         </div>
@@ -84,7 +109,7 @@ function TransactionForm(props) {
             {props.sendToAddress ? sendToAddress : ''}
             <div className="form-field">
               {props.sendToAddress ? <div className="form-input-label">Amount</div> : ''}
-              <div className="form-input-container dollar">
+              <div className={`form-input-container dollar ${inputClass}`}>
                 <input
                   value={value}
                   name="transactionAmount"

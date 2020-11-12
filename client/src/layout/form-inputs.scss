@@ -20,6 +20,11 @@
     position: absolute;
     top: 2px;
   }
+
+  &.pre-filled.dollar::before,
+  &.pre-filled .form-input{
+    color: $purp-xlight;
+  }
 }
 
 .form-input-label{
