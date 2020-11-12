@@ -1,7 +1,6 @@
 import BN from 'bn.js';
 import React, { useState, useContext, useEffect } from 'react';
 import LoadingButton from './loadingButton';
-import iconInfo from '../images/info-purp.svg';
 import { AppContext } from '../App.js';
 import { sendFromUser, MAX_UINT } from '../ethereum/utils';
 import { useForm, FormProvider } from 'react-hook-form';
@@ -14,57 +13,68 @@ function TransactionForm(props) {
   const { erc20, pool, user, refreshUserData } = useContext(AppContext);
   const formMethods = useForm();
   const [value, setValue] = useState('0');
-  const [selectedAction, setSelectedAction] = useState(() => {
-    return getSelectedActionProps();
-  });
-
+  const [selectedValueOption, setSelectedValueOption] = useState('other');
+  const [inputClass, setInputClass] = useState('');
   const [node] = useCloseOnClickOrEsc({ closeFormFn: props.closeForm, closeOnClick: false });
-
-  useEffect(() => {
-    setSelectedAction(getSelectedActionProps());
-  }, [user]);
 
   function handleChange(e, props) {
     setValue(e.target.value);
-    formMethods.setValue('transactionAmount', e.target.value, { shouldValidate: true, shouldDirty: true });
+    setSelectedValueOption('other');
+    setInputClass('');
+    formMethods.setValue('transactionAmount', value, { shouldValidate: true, shouldDirty: true });
   }
 
-  function userNeedsToApprove() {
-    return props.needsApproval && user.allowance && user.allowance.lte(new BN(10000));
-  }
-
-  function getSelectedActionProps() {
-    if (userNeedsToApprove()) {
-      let approvalAction = async () => {
-        return sendFromUser(erc20.methods.approve(pool._address, MAX_UINT), user.address).then(result => {
-          refreshUserData();
-        });
-      };
-      return { action: approvalAction, label: 'Unlock', txType: 'Approval' };
-    } else {
-      return { action: props.submitTransaction, label: 'Submit', txType: props.title };
+  function handleValueOptionClick(valueOption) {
+    if (valueOption.name == 'other') {
+      setSelectedValueOption('other');
+      setInputClass('');
+    } else if (!isNaN(valueOption.value)) {
+      setValue(valueOption.value);
+      setSelectedValueOption(valueOption.name);
+      setInputClass('pre-filled');
+      formMethods.setValue('transactionAmount', valueOption.value, { shouldValidate: true, shouldDirty: true });
     }
   }
 
-  let approvalNotice = '';
+  let action = props.submitTransaction;
+  let submitText = 'Submit';
+  let txType = props.title;
   let buttonInfo = '';
   let register = formMethods.register;
-  let submitText = 'Submit';
 
-  if (userNeedsToApprove()) {
-    buttonInfo = <div className="button-info">Step 1 of 2:</div>;
-    submitText = 'Unlock USDC';
+  // With the current implementation, this will never actually be necessary
+  // because the user will always already have USDC unlocked before getting
+  // to this stage. However, when we add "pay with BUSD", we'll need to use
+  // this, so we're accounting for it.
+  if (props.needsApproval && user.allowance && user.allowance.lte(new BN(10000))) {
     register = () => {};
+    action = async () => {
+      return sendFromUser(erc20.methods.approve(pool._address, MAX_UINT), user.address).then(result => {
+        refreshUserData();
+      });
+    };
+    submitText = 'Unlock [currency]';
+    txType = 'Approval';
+    buttonInfo = <div className="button-info">Step 1 of 2:</div>;
   }
 
   let valueOptions;
   if (props.valueOptions) {
     const valueOptionList = props.valueOptions.map((valueOption, index) => {
       return (
-        <div className="value-option">
-          <input name="value-type" type="radio" id={`value-type-${index}`} key={index} value={valueOption.value} />
+        <div className="value-option" key={index}>
+          <input
+            name={valueOption.name}
+            type="radio"
+            checked={valueOption.name == selectedValueOption}
+            id={`value-type-${index}`}
+            value={valueOption.value}
+            onChange={() => {
+              return handleValueOptionClick(valueOption);
+            }}
+          />
           <div className="radio-check"></div>
-          <label for={`value-type-${index}`}>{valueOption.label}</label>
+          <label htmlFor={`value-type-${index}`}>{valueOption.label}</label>
         </div>
       );
     });
@@ -86,56 +96,54 @@ function TransactionForm(props) {
   return (
     <div ref={node} className={`form-full background-container ${props.formClass}`}>
       <div className="form-header">
-        <div class="form-header-message">{props.headerMessage}</div>
+        <div className="form-header-message">{props.headerMessage}</div>
         <div onClick={props.closeForm} className="cancel">
           Cancel{iconX}
         </div>
       </div>
-      <div>
-        <h2>{props.title}</h2>
-        <FormProvider {...formMethods}>
-          <form>
-            {valueOptions}
-            <div className="form-inputs">
-              {props.sendToAddress ? sendToAddress : ''}
-              <div className="form-field">
-                {props.sendToAddress ? <div className="form-input-label">Amount</div> : ''}
-                <div className="form-input-container dollar">
-                  <input
-                    value={value}
-                    name="transactionAmount"
-                    type="number"
-                    onChange={e => {
-                      handleChange(e, props);
-                    }}
-                    placeholder="0"
-                    className="form-input"
-                    ref={register({
-                      required: 'Amount is required',
-                      min: { value: 0.01, message: 'Must be greater than 0' },
-                      max: {
-                        value: props.maxAmount,
-                        message: `Amount is above the max allowed (${displayDollars(props.maxAmount)}). `,
-                      },
-                    })}
-                  ></input>
-                  <div className="form-input-note">
-                    <ErrorMessage errors={formMethods.errors} name="transactionAmount" />
-                  </div>
+      <h2>{props.title}</h2>
+      <FormProvider {...formMethods}>
+        <form>
+          {valueOptions}
+          <div className="form-inputs">
+            {props.sendToAddress ? sendToAddress : ''}
+            <div className="form-field">
+              {props.sendToAddress ? <div className="form-input-label">Amount</div> : ''}
+              <div className={`form-input-container dollar ${inputClass}`}>
+                <input
+                  value={value}
+                  name="transactionAmount"
+                  type="number"
+                  onChange={e => {
+                    handleChange(e, props);
+                  }}
+                  placeholder="0"
+                  className="form-input"
+                  ref={register({
+                    required: 'Amount is required',
+                    min: { value: 0.01, message: 'Must be greater than 0' },
+                    max: {
+                      value: props.maxAmount,
+                      message: `Amount is above the max allowed (${displayDollars(props.maxAmount)}). `,
+                    },
+                  })}
+                ></input>
+                <div className="form-input-note">
+                  <ErrorMessage errors={formMethods.errors} name="transactionAmount" />
                 </div>
-                {buttonInfo}
               </div>
-              <LoadingButton
-                action={() => {
-                  return props.submitTransaction(value);
-                }}
-                text={submitText}
-                txData={{ type: selectedAction.txType, amount: value }}
-              />
+              {buttonInfo}
             </div>
-          </form>
-        </FormProvider>
-      </div>
+            <LoadingButton
+              action={() => {
+                return action(value);
+              }}
+              text={submitText}
+              txData={{ type: txType, amount: value }}
+            />
+          </div>
+        </form>
+      </FormProvider>
     </div>
   );
 }

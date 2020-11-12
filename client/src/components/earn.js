@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useContext } from 'react';
-import BN from 'bn.js';
 import EarnActionsContainer from './earnActionsContainer.js';
 import PoolStatus from './poolStatus.js';
 import UnlockUSDCForm from './unlockUSDCForm.js';

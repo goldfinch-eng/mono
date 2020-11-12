@@ -24,4 +24,8 @@ function displayDollars(val) {
   return '$' + valDisplay;
 }
 
-export { croppedAddress, displayNumber, displayDollars };
+function roundUpPenny(val) {
+  return Math.ceil(val * 100) / 100;
+}
+
+export { croppedAddress, displayNumber, displayDollars, roundUpPenny };

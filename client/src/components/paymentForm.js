@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { sendFromUser } from '../ethereum/utils';
 import { usdcToAtomic, usdcFromAtomic, minimumNumber } from '../ethereum/erc20';
 import { AppContext } from '../App';
-import { displayDollars } from '../utils';
+import { displayDollars, roundUpPenny } from '../utils';
 import TransactionForm from './transactionForm';
 
 function PaymentForm(props) {
@@ -18,13 +18,14 @@ function PaymentForm(props) {
     );
   }
 
-  const balance = displayDollars(usdcFromAtomic(props.creditLine.balance));
-  const remainingDueRaw = props.creditLine.nextDueAmount - props.creditLine.collectedPaymentBalance;
-  const remainingDue = displayDollars(usdcFromAtomic(remainingDueRaw));
+  const balance = usdcFromAtomic(props.creditLine.balance);
+  const remainingDueRaw =
+    usdcFromAtomic(props.creditLine.nextDueAmount) - usdcFromAtomic(props.creditLine.collectedPaymentBalance);
+  const remainingDue = roundUpPenny(remainingDueRaw);
   const valueOptions = [
-    { label: `Pay minimum due: ${remainingDue}`, value: remainingDueRaw },
-    { label: `Pay full balance plus interest: ${balance}`, value: remainingDueRaw },
-    { label: 'Pay other amount' },
+    { name: 'remainingDue', label: `Pay minimum due: ${displayDollars(remainingDue)}`, value: remainingDue },
+    { name: 'balance', label: `Pay full balance plus interest: ${displayDollars(balance)}`, value: balance },
+    { name: 'other', label: 'Pay other amount' },
   ];
 
   return (
