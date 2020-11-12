@@ -42,6 +42,12 @@ function NetworkWidget(props) {
 
   function transactionItem(tx) {
     const transactionlabel = tx.type === 'Approval' ? tx.type : `$${tx.amount} ${tx.type}`;
+    let etherscanSubdomain;
+    if (props.network === 'mainnet') {
+      etherscanSubdomain = '';
+    } else {
+      etherscanSubdomain = `${props.network}.`;
+    }
     return (
       <div key={tx.id} className={`transaction-item ${tx.status}`}>
         <div className="status-icon">
@@ -51,8 +57,10 @@ function NetworkWidget(props) {
             <div className="double-bounce2"></div>
           </div>
         </div>
-
-        {transactionlabel}
+        {transactionlabel}&nbsp;
+        <a href={`https://${etherscanSubdomain}etherscan.io/tx/${tx.transactionHash}`} target="_blank">
+          &#8599;
+        </a>
       </div>
     );
   }
@@ -68,14 +76,16 @@ function NetworkWidget(props) {
     enabledClass = 'success';
   }
 
-  if (props.currentTXs.length > 0) {
+  const allTx = _.compact(_.concat(props.user.pastTxs, props.currentTXs));
+
+  if (allTx.length > 0) {
     transactions = (
       <div className="network-widget-section">
         <div className="network-widget-header">
           Transactions
           {/* <a href="/transactions">view all</a> */}
         </div>
-        {_.reverse(props.currentTXs.map(transactionItem))}
+        {_.reverse(allTx.map(transactionItem))}
       </div>
     );
   }

@@ -1,4 +1,3 @@
-import BN from 'bn.js';
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
 import _ from 'lodash';
@@ -9,8 +8,10 @@ import Sidebar from './components/sidebar';
 import web3 from './web3';
 import { getPool } from './ethereum/pool.js';
 import { getCreditDesk } from './ethereum/creditDesk.js';
-import { getUSDC, usdcFromAtomic } from './ethereum/erc20.js';
+import { getUSDC } from './ethereum/erc20.js';
 import { getGoldfinchConfig, refreshGoldfinchConfigData } from './ethereum/goldfinchConfig.js';
+import { getUserData } from './ethereum/user.js';
+import { mapNetworkToID } from './ethereum/utils';
 
 const AppContext = React.createContext({});
 
@@ -22,6 +23,7 @@ function App() {
   const [goldfinchConfig, setGoldfinchConfig] = useState({});
   const [currentTXs, setCurrentTXs] = useState([]);
   const [currentErrors, setCurrentErrors] = useState([]);
+  const [network, setNetwork] = useState('');
 
   useEffect(() => {
     setupWeb3();
@@ -29,36 +31,28 @@ function App() {
 
   async function setupWeb3() {
     const accounts = await web3.eth.getAccounts();
+    const networkName = await web3.eth.net.getNetworkType();
+    const networkId = mapNetworkToID[networkName];
+    let erc20Contract = await getUSDC(networkName);
+    let poolContract = await getPool(networkName);
+    let goldfinchConfigContract = await getGoldfinchConfig(networkName);
+    setNetwork(networkId);
+    setErc20(erc20Contract);
+    setPool(poolContract);
+    setCreditDesk(await getCreditDesk(networkName));
+    setGoldfinchConfig(await refreshGoldfinchConfigData(goldfinchConfigContract));
     if (accounts.length > 0) {
-      const networkType = await web3.eth.net.getNetworkType();
-      let erc20Contract = await getUSDC(networkType);
-      let poolContract = await getPool(networkType);
-      let goldfinchConfigContract = await getGoldfinchConfig(networkType);
-      setErc20(erc20Contract);
-      setPool(poolContract);
-      refreshUserData(accounts[0], erc20Contract, poolContract);
-      setCreditDesk(await getCreditDesk(networkType));
-      setGoldfinchConfig(await refreshGoldfinchConfigData(goldfinchConfigContract));
+      const creditDeskContract = await getCreditDesk(networkName);
+      refreshUserData(accounts[0], erc20Contract, poolContract, creditDeskContract);
     }
   }
 
-  async function refreshUserData(address, erc20Contract, poolContract) {
+  async function refreshUserData(userAddress, erc20Contract, poolContract, creditDeskContract) {
+    userAddress = userAddress || user.address;
     erc20Contract = erc20Contract || erc20;
     poolContract = poolContract || pool;
-    address = address || user.address;
-    let usdcBalance = new BN(0);
-    let allowance = new BN(0);
-    if (erc20Contract) {
-      usdcBalance = await erc20Contract.methods.balanceOf(address).call();
-    }
-    if (poolContract && erc20Contract) {
-      allowance = new BN(await erc20Contract.methods.allowance(address, poolContract._address).call());
-    }
-    const data = {
-      address: address,
-      usdcBalance: usdcFromAtomic(usdcBalance),
-      allowance: allowance,
-    };
+    creditDeskContract = creditDeskContract || creditDesk;
+    const data = await getUserData(userAddress, erc20Contract, poolContract, creditDeskContract);
     setUser(data);
   }
 
@@ -119,6 +113,7 @@ function App() {
         <Sidebar />
         <NetworkWidget
           user={user}
+          network={network}
           setUser={setUser}
           currentErrors={currentErrors}
           currentTXs={currentTXs}

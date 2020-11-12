@@ -20,7 +20,7 @@ function DrawdownForm(props) {
     return sendFromUser(
       creditDesk.methods.drawdown(drawdownAmount, props.creditLine.address, props.borrower.address),
       props.borrower.address,
-    ).then(result => {
+    ).then(_ => {
       props.closeForm();
       props.actionComplete();
     });

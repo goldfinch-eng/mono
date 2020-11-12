@@ -6,6 +6,14 @@ function useTXLoading(action, txData, setIsPending) {
   return (...args) => {
     const randomID = Math.floor(Math.random() * Math.floor(1000000000));
     const tx = { status: 'pending', id: randomID, ...txData };
+    // {
+    //   type: EVENT_TYPE_MAP[event.event],
+    //   amount: usdcFromAtomic(event.returnValues[EVENT_AMOUNT_FIELD[event.event]]),
+    //   id: event.id,
+    //   transactionHash: event.transactionHash,
+    //   blockNumber: event.blockNumber
+    // }
+
     setIsPending(true);
     addPendingTX(tx);
     return action(...args)
