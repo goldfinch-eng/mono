@@ -8,10 +8,11 @@ import { ErrorMessage } from '@hookform/error-message';
 import { displayDollars } from '../utils';
 import { iconX } from './icons.js';
 import useCloseOnClickOrEsc from '../hooks/useCloseOnClickOrEsc';
+import web3 from '../web3';
 
 function TransactionForm(props) {
   const { erc20, pool, user, refreshUserData } = useContext(AppContext);
-  const formMethods = useForm();
+  const formMethods = useForm({ mode: 'onChange' });
   const [value, setValue] = useState('0');
   const [sendToAddress, setSendToAddress] = useState('');
   const [selectedValueOption, setSelectedValueOption] = useState('other');
@@ -26,7 +27,6 @@ function TransactionForm(props) {
   }
 
   function handleSendToAddress(e) {
-    console.log('target value:', e.target.value);
     setSendToAddress(e.target.value);
     formMethods.setValue('sendToAddresss', e.target.value, { shouldValidate: true, shouldDirty: true });
   }
@@ -103,7 +103,20 @@ function TransactionForm(props) {
             name="sendToAddress"
             placeholder="0x0000"
             className="form-input"
+            ref={register({
+              validate: value => {
+                return value === '' || web3.utils.isAddress(value);
+              },
+            })}
           ></input>
+          {sendToAddress && !formMethods.errors.sendToAddress && <div>&#10004;</div>}
+          <div className="form-input-note">
+            <ErrorMessage
+              errors={formMethods.errors}
+              name="sendToAddress"
+              message="That doesn't look like a valid Ethereum address"
+            />
+          </div>
         </div>
       </div>
     );
