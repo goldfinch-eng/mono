@@ -12,4 +12,4 @@
   publish = "client/build/"
 
   # Default build command.
-  command = "CI= && npx buidler compile && cd client && npm ci && npm run build"
+  command = "CI= && npx hardhat compile && cd client && npm ci && npm run build"

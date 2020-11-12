@@ -6,7 +6,7 @@ Library for handling key financial calculations, such as interest and principal 
 
 
 
-### `calculateInterestAndPrincipalAccrued(contract CreditLine cl, uint256 blockNumber) → uint256, uint256` (public)
+### `calculateInterestAndPrincipalAccrued(contract CreditLine cl, uint256 blockNumber, uint256 lateFeeGracePeriod) → uint256, uint256` (public)
 
 
 
@@ -24,13 +24,19 @@ Library for handling key financial calculations, such as interest and principal 
 
 
 
-### `calculateAmountOwedForOnePeriod(contract CreditLine cl, uint256 asOfBlock) → uint256` (public)
+### `calculateAmountOwedForOnePeriod(contract CreditLine cl) → uint256` (public)
 
 
 
 
 
-### `calculateInterestAccrued(contract CreditLine cl, uint256 blockNumber) → uint256` (public)
+### `calculateInterestAccrued(contract CreditLine cl, uint256 blockNumber, uint256 lateFeeGracePeriod) → uint256` (public)
+
+
+
+
+
+### `lateFeeApplicable(contract CreditLine cl, uint256 blockNumber, uint256 gracePeriod) → bool` (public)
 
 
 

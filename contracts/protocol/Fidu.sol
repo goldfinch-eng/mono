@@ -86,21 +86,28 @@ contract Fidu is ERC20PresetMinterPauserUpgradeSafe {
   function canMint(uint256 newAmount) internal view returns (bool) {
     uint256 liabilities = totalSupply().add(newAmount).mul(config.getPool().sharePrice()).div(fiduMantissa());
     uint256 liabilitiesInDollars = fiduToUSDC(liabilities);
-    return liabilitiesInDollars == assets();
+    uint256 _assets = config.getPool().assets();
+    // $1 threshold to handle potential rounding errors, from differing decimals on Fidu and USDC;
+    uint256 threshold = 1e6;
+    if (_assets >= liabilitiesInDollars) {
+      return _assets.sub(liabilitiesInDollars) <= threshold;
+    } else {
+      return liabilitiesInDollars.sub(_assets) <= threshold;
+    }
   }
 
   // canBurn assumes that the USDC that backed these shares has already been moved out the Pool
   function canBurn(uint256 amountToBurn) internal view returns (bool) {
     uint256 liabilities = totalSupply().sub(amountToBurn).mul(config.getPool().sharePrice()).div(fiduMantissa());
     uint256 liabilitiesInDollars = fiduToUSDC(liabilities);
-    return liabilitiesInDollars == assets();
-  }
-
-  function assets() internal view returns (uint256) {
-    return
-      config.getUSDC().balanceOf(config.poolAddress()).add(config.getCreditDesk().totalLoansOutstanding()).sub(
-        config.getCreditDesk().totalWritedowns()
-      );
+    uint256 _assets = config.getPool().assets();
+    // $1 threshold to handle potential rounding errors, from differing decimals on Fidu and USDC;
+    uint256 threshold = 1e6;
+    if (_assets >= liabilitiesInDollars) {
+      return _assets.sub(liabilitiesInDollars) <= threshold;
+    } else {
+      return liabilitiesInDollars.sub(_assets) <= threshold;
+    }
   }
 
   function fiduToUSDC(uint256 amount) internal view returns (uint256) {

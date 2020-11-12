@@ -52,12 +52,6 @@ Requirements:
 
 
 
-### `assets() → uint256` (internal)
-
-
-
-
-
 ### `fiduToUSDC(uint256 amount) → uint256` (internal)
 
 

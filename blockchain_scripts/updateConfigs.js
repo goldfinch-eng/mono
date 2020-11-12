@@ -1,6 +1,6 @@
 const {toAtomic, getDeployedContract, updateConfig, CONFIG_KEYS} = require("./deployHelpers.js")
 const PROTOCOL_CONFIG = require("../protocol_config.json")
-const bre = require("@nomiclabs/buidler")
+const hre = require("hardhat")
 
 /*
 This deployment updates the configs from the PROTOCOL_CONFIG
@@ -8,11 +8,11 @@ This deployment updates the configs from the PROTOCOL_CONFIG
 let logger
 
 async function main() {
-  await updateConfigs(bre, PROTOCOL_CONFIG)
+  await updateConfigs(hre, PROTOCOL_CONFIG)
 }
 
-async function updateConfigs(bre, protocolConfig) {
-  const {deployments} = bre
+async function updateConfigs(hre, protocolConfig) {
+  const {deployments} = hre
 
   // Since this is not a "real" deployment (just a script),
   //the deployments.log is not enabled. So, just use console.log instead
@@ -20,13 +20,22 @@ async function updateConfigs(bre, protocolConfig) {
 
   const config = await getDeployedContract(deployments, "GoldfinchConfig")
 
-  const underwriterLimit = String(protocolConfig.maxUnderwriterLimit)
+  const maxUnderwriterLimit = String(protocolConfig.maxUnderwriterLimit)
   const transactionLimit = String(protocolConfig.transactionLimit)
   const totalFundsLimit = String(protocolConfig.totalFundsLimit)
+  const latenessGracePeriod = String(protocolConfig.latenessGracePeriod)
 
-  await updateConfig(config, "number", CONFIG_KEYS.MaxUnderwriterLimit, toAtomic(underwriterLimit))
+  const withdrawFeeDenominator = String(protocolConfig.withdrawFeeDenominator)
+  const reserveDenominator = String(protocolConfig.reserveDenominator)
+  const latenessMaxPeriod = String(protocolConfig.latenessMaxPeriod)
+
+  await updateConfig(config, "number", CONFIG_KEYS.MaxUnderwriterLimit, toAtomic(maxUnderwriterLimit))
   await updateConfig(config, "number", CONFIG_KEYS.TransactionLimit, toAtomic(transactionLimit))
   await updateConfig(config, "number", CONFIG_KEYS.TotalFundsLimit, toAtomic(totalFundsLimit))
+  await updateConfig(config, "number", CONFIG_KEYS.ReserveDenominator, reserveDenominator)
+  await updateConfig(config, "number", CONFIG_KEYS.WithdrawFeeDenominator, withdrawFeeDenominator)
+  await updateConfig(config, "number", CONFIG_KEYS.LatenessGracePeriod, latenessGracePeriod)
+  await updateConfig(config, "number", CONFIG_KEYS.LatenessMaxPeriod, latenessMaxPeriod)
 
   logger("Done")
 }

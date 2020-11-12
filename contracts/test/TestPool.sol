@@ -20,4 +20,8 @@ contract TestPool is Pool {
   function _usdcToFidu(uint256 amount) public view returns (uint256) {
     return usdcToFidu(amount);
   }
+
+  function _setSharePrice(uint256 newSharePrice) public returns (uint256) {
+    sharePrice = newSharePrice;
+  }
 }

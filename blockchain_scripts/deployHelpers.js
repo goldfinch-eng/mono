@@ -84,7 +84,7 @@ async function getDeployedContract(deployments, contractName, signerAddress) {
   let signer = undefined
   if (signerAddress && typeof signerAddress === "string") {
     const signers = await ethers.getSigners()
-    signer = signers.find((signer) => signer._address === signerAddress)
+    signer = signers.find((signer) => signer.address === signerAddress)
   } else if (signerAddress && typeof signerAddres === "object") {
     signer = signerAddress
   }

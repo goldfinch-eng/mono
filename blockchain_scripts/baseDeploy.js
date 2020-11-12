@@ -13,8 +13,8 @@ const {
 const PROTOCOL_CONFIG = require("../protocol_config.json")
 let logger
 
-async function baseDeploy(bre, {shouldUpgrade}) {
-  const {deployments, getNamedAccounts, getChainId, ethers} = bre
+async function baseDeploy(hre, {shouldUpgrade}) {
+  const {deployments, getNamedAccounts, getChainId, ethers} = hre
   const {deploy, log} = deployments
   logger = log
   logger("Starting deploy...")
@@ -26,7 +26,7 @@ async function baseDeploy(bre, {shouldUpgrade}) {
   const config = await deployConfig(deploy, {shouldUpgrade})
   await getOrDeployUSDC()
   const fidu = await deployFidu(config)
-  const pool = await deployPool(bre, {shouldUpgrade, config})
+  const pool = await deployPool(hre, {shouldUpgrade, config})
   await grantMinterRoleToPool(fidu, pool)
   await deployCreditLine(deploy, {config})
   await deployCreditLineFactory(deploy, {shouldUpgrade, config})
@@ -206,12 +206,12 @@ async function baseDeploy(bre, {shouldUpgrade}) {
   }
 }
 
-async function deployPool(bre, {shouldUpgrade, config}) {
+async function deployPool(hre, {shouldUpgrade, config}) {
   let contractName = "Pool"
   if (isTestEnv()) {
     contractName = "TestPool"
   }
-  const {deployments, getNamedAccounts, getChainId} = bre
+  const {deployments, getNamedAccounts, getChainId} = hre
   const {deploy, log} = deployments
   const logger = log
   const chainID = await getChainId()

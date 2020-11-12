@@ -165,6 +165,13 @@ contract Pool is BaseUpgradeablePausable, IPool {
     return result;
   }
 
+  function assets() public view override returns (uint256) {
+    return
+      config.getUSDC().balanceOf(config.poolAddress()).add(config.getCreditDesk().totalLoansOutstanding()).sub(
+        config.getCreditDesk().totalWritedowns()
+      );
+  }
+
   /* Internal Functions */
 
   function fiduMantissa() internal view returns (uint256) {
@@ -204,13 +211,14 @@ contract Pool is BaseUpgradeablePausable, IPool {
   function assetsMatchLiabilities() internal view returns (bool) {
     uint256 liabilities = config.getFidu().totalSupply().mul(config.getPool().sharePrice()).div(fiduMantissa());
     uint256 liabilitiesInDollars = fiduToUSDC(liabilities);
-    uint256 assets = config
-      .getUSDC()
-      .balanceOf(config.poolAddress())
-      .add(config.getCreditDesk().totalLoansOutstanding())
-      .sub(config.getCreditDesk().totalWritedowns());
-
-    return liabilitiesInDollars == assets;
+    uint256 _assets = assets();
+    // $1 threshold to handle potential rounding errors, from differing decimals on Fidu and USDC;
+    uint256 threshold = 1e6;
+    if (_assets >= liabilitiesInDollars) {
+      return _assets.sub(liabilitiesInDollars) <= threshold;
+    } else {
+      return liabilitiesInDollars.sub(_assets) <= threshold;
+    }
   }
 
   function fiduToUSDC(uint256 amount) internal view returns (uint256) {

@@ -1,7 +1,7 @@
 import web3 from '../web3';
 import BigNumber from 'bignumber.js';
 import { mapNetworkToID, fetchDataFromAttributes, getDeployments, USDC_DECIMALS } from './utils.js';
-import { getErc20 } from './erc20';
+import { getUSDC } from './erc20';
 import { getFidu, FIDU_DECIMALS } from './fidu';
 
 let pool;
@@ -11,7 +11,7 @@ async function getPool(networkName) {
   const config = await getDeployments(networkId);
   const poolAddress = config.contracts.Pool.address;
   pool = new web3.eth.Contract(config.contracts.Pool.abi, poolAddress);
-  pool.usdc = await getErc20(networkName);
+  pool.usdc = await getUSDC(networkName);
   pool.fidu = await getFidu(networkName);
   return pool;
 }
