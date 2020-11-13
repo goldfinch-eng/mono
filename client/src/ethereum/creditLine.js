@@ -5,6 +5,19 @@ import * as CreditLineContract from '../../../artifacts/contracts/protocol/Credi
 import { getUSDC } from './erc20';
 import { fetchDataFromAttributes, INTEREST_DECIMALS } from './utils';
 
+const zero = new BigNumber(0);
+const defaultCreditLine = {
+  balance: zero,
+  limit: zero,
+  periodDueAmount: zero,
+  remainingPeriodDueAmount: zero,
+  interestAprDecimal: zero,
+  availableCredit: zero,
+  collectedPaymentBalance: zero,
+  totalDueAmount: zero,
+  remainingTotalDueAmount: zero,
+};
+
 function buildCreditLine(address) {
   return new web3.eth.Contract(CreditLineContract.abi, address);
 }
@@ -12,7 +25,7 @@ function buildCreditLine(address) {
 async function fetchCreditLineData(creditLine) {
   let result = {};
   if (!creditLine) {
-    return Promise.resolve({});
+    return Promise.resolve(defaultCreditLine);
   }
   const attributes = [
     { method: 'balance' },
@@ -24,7 +37,10 @@ async function fetchCreditLineData(creditLine) {
     { method: 'interestOwed' },
     { method: 'termEndBlock' },
   ];
-  const data = await fetchDataFromAttributes(creditLine, attributes);
+  let data = await fetchDataFromAttributes(creditLine, attributes);
+  attributes.map(info => {
+    data[info.method] = new BigNumber(data[info.method]);
+  });
   // Considering we already got some data on the CreditLine, this next line
   // assumes we've cached the USDC contract, and do not need to pass in a network
   const usdc = await getUSDC();
@@ -32,12 +48,15 @@ async function fetchCreditLineData(creditLine) {
   result.dueDate = await calculateDueDateFromFutureBlock(result.nextDueBlock);
   result.termEndDate = await calculateDueDateFromFutureBlock(result.termEndBlock, 'MMM Do, YYYY');
   result.periodDueAmount = calculateNextDueAmount(result);
+  result.collectedPaymentBalance = new BigNumber(await usdc.methods.balanceOf(creditLine._address).call());
+
   result.remainingPeriodDueAmount = result.periodDueAmount.minus(result.collectedPaymentBalance);
+  // This is BigNumber, which is inconsistent with BN, but we need it because BigNumber handles decimals easily,
+  // and the interestAPR needs to not just be an integer.
   result.interestAprDecimal = new BigNumber(result.interestApr).div(INTEREST_DECIMALS);
   result.availableCredit = result.limit.minus(result.balance);
-  result.collectedPaymentBalance = await usdc.methods.balanceOf(creditLine._address).call();
   const interestOwed = calculateInteresOwed(result);
-  result.totalDueAmount = interestOwed.add(result.balance);
+  result.totalDueAmount = interestOwed.plus(result.balance);
   result.remainingTotalDueAmount = result.totalDueAmount.minus(result.collectedPaymentBalance);
   return result;
 }
@@ -60,12 +79,12 @@ function calculateInteresOwed(creditLine) {
 
 function calculateNextDueAmount(creditLine) {
   const interestOwed = calculateInteresOwed(creditLine);
-  const balance = new BigNumber(creditLine.balance);
-  if (new BigNumber(creditLine.nextDueBlock).gte(new BigNumber(creditLine.termEndBlock))) {
+  const balance = creditLine.balance;
+  if (creditLine.nextDueBlock.gte(creditLine.termEndBlock)) {
     return interestOwed.plus(balance);
   } else {
     return interestOwed;
   }
 }
 
-export { buildCreditLine, fetchCreditLineData };
+export { buildCreditLine, fetchCreditLineData, defaultCreditLine };

@@ -4,18 +4,18 @@ import CreditActionsContainer from './creditActionsContainer.js';
 import CreditStatus from './creditStatus.js';
 import UnlockUSDCForm from './unlockUSDCForm.js';
 import web3 from '../web3.js';
-import { buildCreditLine, fetchCreditLineData } from '../ethereum/creditLine.js';
+import { buildCreditLine, fetchCreditLineData, defaultCreditLine } from '../ethereum/creditLine.js';
 import { AppContext } from '../App.js';
 import { croppedAddress } from '../utils';
 
 function Borrow(props) {
   const { creditDesk, erc20, pool, user } = useContext(AppContext);
   const [borrower, setBorrower] = useState({});
-  const [creditLine, setCreditLine] = useState({});
+  const [creditLine, setCreditLine] = useState(defaultCreditLine);
   const [creditLineFactory, setCreditLineFactory] = useState({});
 
   async function updateBorrowerAndCreditLine() {
-    let creditLine = {};
+    let creditLine = await fetchCreditLineData();
     const [borrowerAddress] = await web3.eth.getAccounts();
     borrower.address = borrowerAddress;
     if (borrowerAddress) {

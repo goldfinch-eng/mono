@@ -25,7 +25,7 @@ function CreditStatus(props) {
     ];
   } else {
     const limit = usdcFromAtomic(props.creditLine.limit);
-    const interestRateAPR = props.creditLine.interestAprDecimal.multipliedBy(100).toString(10);
+    const interestRateAPR = props.creditLine.interestAprDecimal.multipliedBy(100);
     const paymentFrequency = fromAtomicDecimals(props.creditLine.paymentPeriodInDays);
     const paybackTerm = fromAtomicDecimals(props.creditLine.termInDays);
 
