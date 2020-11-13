@@ -28,12 +28,13 @@ function DrawdownForm(props) {
     });
   }
 
-  const maxAmount = minimumNumber(usdcFromAtomic(props.creditLine.availableBalance), usdcFromAtomic(poolData.balance));
+  const creditLineBalance = usdcFromAtomic(props.creditLine.availableCredit);
+  const maxAmount = minimumNumber(creditLineBalance, usdcFromAtomic(poolData.balance));
 
   return (
     <TransactionForm
       title="Drawdown"
-      headerMessage={`Available to drawdown: ${displayDollars(maxAmount)}`}
+      headerMessage={`Available to drawdown: ${displayDollars(creditLineBalance)}`}
       sendToAddressForm={true}
       submitTransaction={makeDrawdown}
       closeForm={props.closeForm}

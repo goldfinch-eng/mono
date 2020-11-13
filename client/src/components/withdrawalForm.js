@@ -23,7 +23,7 @@ function WithdrawalForm(props) {
   return (
     <TransactionForm
       title="Withdraw"
-      headerMessage={`Available to withdraw: ${displayDollars(availableToWithdraw)}`}
+      headerMessage={`Available to withdraw: ${displayDollars(availableAmount)}`}
       submitTransaction={action}
       closeForm={props.closeForm}
       maxAmount={availableToWithdraw}

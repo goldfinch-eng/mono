@@ -3,7 +3,7 @@ import moment from 'moment';
 import BigNumber from 'bignumber.js';
 import * as CreditLineContract from '../../../artifacts/contracts/protocol/CreditLine.sol/CreditLine.json';
 import { getUSDC } from './erc20';
-import { fetchDataFromAttributes, decimalPlaces, INTEREST_DECIMALS } from './utils';
+import { fetchDataFromAttributes, INTEREST_DECIMALS } from './utils';
 
 function buildCreditLine(address) {
   return new web3.eth.Contract(CreditLineContract.abi, address);
@@ -31,10 +31,14 @@ async function fetchCreditLineData(creditLine) {
   result = { address: creditLine._address, ...data };
   result.dueDate = await calculateDueDateFromFutureBlock(result.nextDueBlock);
   result.termEndDate = await calculateDueDateFromFutureBlock(result.termEndBlock, 'MMM Do, YYYY');
-  result.nextDueAmount = calculateNextDueAmount(result);
+  result.periodDueAmount = calculateNextDueAmount(result);
+  result.remainingPeriodDueAmount = result.periodDueAmount.minus(result.collectedPaymentBalance);
   result.interestAprDecimal = new BigNumber(result.interestApr).div(INTEREST_DECIMALS);
-  result.availableBalance = result.limit - result.balance;
+  result.availableCredit = result.limit.minus(result.balance);
   result.collectedPaymentBalance = await usdc.methods.balanceOf(creditLine._address).call();
+  const interestOwed = calculateInteresOwed(result);
+  result.totalDueAmount = interestOwed.add(result.balance);
+  result.remainingTotalDueAmount = result.totalDueAmount.minus(result.collectedPaymentBalance);
   return result;
 }
 
@@ -46,16 +50,21 @@ async function calculateDueDateFromFutureBlock(nextDueBlock, format = 'MMM Do') 
     .format(format);
 }
 
-function calculateNextDueAmount(result) {
-  const annualRate = new BigNumber(result.interestApr).dividedBy(new BigNumber(INTEREST_DECIMALS));
+function calculateInteresOwed(creditLine) {
+  const annualRate = new BigNumber(creditLine.interestApr).dividedBy(new BigNumber(INTEREST_DECIMALS));
   const dailyRate = new BigNumber(annualRate).dividedBy(365.0);
-  const periodRate = new BigNumber(dailyRate).multipliedBy(result.paymentPeriodInDays);
-  const balance = new BigNumber(result.balance);
-  const interestOwed = balance.multipliedBy(periodRate);
-  if (new BigNumber(result.nextDueBlock).gte(new BigNumber(result.termEndBlock))) {
-    return String(interestOwed.plus(balance).toFixed(decimalPlaces));
+  const periodRate = new BigNumber(dailyRate).multipliedBy(creditLine.paymentPeriodInDays);
+  const balance = new BigNumber(creditLine.balance);
+  return balance.multipliedBy(periodRate);
+}
+
+function calculateNextDueAmount(creditLine) {
+  const interestOwed = calculateInteresOwed(creditLine);
+  const balance = new BigNumber(creditLine.balance);
+  if (new BigNumber(creditLine.nextDueBlock).gte(new BigNumber(creditLine.termEndBlock))) {
+    return interestOwed.plus(balance);
   } else {
-    return String(interestOwed.toFixed(decimalPlaces));
+    return interestOwed;
   }
 }
 

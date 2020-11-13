@@ -18,27 +18,33 @@ function PaymentForm(props) {
     );
   }
 
-  const balance = usdcFromAtomic(props.creditLine.balance);
-  const remainingDueRaw =
-    usdcFromAtomic(props.creditLine.nextDueAmount) - usdcFromAtomic(props.creditLine.collectedPaymentBalance);
-  const remainingDue = roundUpPenny(remainingDueRaw);
+  const remainingTotalDueAmount = roundUpPenny(usdcFromAtomic(props.creditLine.remainingTotalDueAmount));
+  const remainingDueAmount = roundUpPenny(usdcFromAtomic(props.creditLine.remainingPeriodDueAmount));
   const valueOptions = [
-    { name: 'remainingDue', label: `Pay minimum due: ${displayDollars(remainingDue)}`, value: remainingDue },
-    { name: 'balance', label: `Pay full balance plus interest: ${displayDollars(balance)}`, value: balance },
+    {
+      name: 'remainingDue',
+      label: `Pay minimum due: ${displayDollars(remainingDueAmount)}`,
+      value: remainingDueAmount,
+    },
+    {
+      name: 'totalDue',
+      label: `Pay full balance plus interest: ${displayDollars(remainingTotalDueAmount)}`,
+      value: remainingTotalDueAmount,
+    },
     { name: 'other', label: 'Pay other amount' },
   ];
 
   return (
     <TransactionForm
       title="Pay"
-      headerMessage={`Next payment: ${remainingDue} due ${props.creditLine.dueDate}`}
+      headerMessage={`Next payment: ${remainingDueAmount} due ${props.creditLine.dueDate}`}
       formClass="dark"
       submitTransaction={submitPayment}
       closeForm={props.closeForm}
       valueOptions={valueOptions}
       needsApproval={true}
       // You cannot pay more than what you owe or have
-      maxAmount={minimumNumber(usdcFromAtomic(props.creditLine.balance), user.usdcBalance)}
+      maxAmount={minimumNumber(remainingTotalDueAmount, user.usdcBalance)}
     />
   );
 }

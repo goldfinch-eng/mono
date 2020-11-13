@@ -5,7 +5,7 @@ import { displayDollars } from '../utils';
 function CreditBarViz(props) {
   const drawdownBalance = usdcFromAtomic(props.creditLine.balance);
   const totalCreditLimit = usdcFromAtomic(props.creditLine.limit);
-  const availableToDrawdown = usdcFromAtomic(props.creditLine.availableBalance);
+  const availableToDrawdown = usdcFromAtomic(props.creditLine.availableCredit);
   const leftBarStyle = { width: (100 * drawdownBalance) / totalCreditLimit + '%' };
   const rightBarStyle = { width: (100 * availableToDrawdown) / totalCreditLimit + '%' };
   return (

@@ -10,10 +10,7 @@ import { displayDollars } from '../utils';
 function CreditActionsContainer(props) {
   const { user } = useContext(AppContext);
   const [showAction, setShowAction] = useState(null);
-  const drawdownBalance = usdcFromAtomic(props.creditLine.balance);
-  const availableBalance = usdcFromAtomic(props.creditLine.availableBalance);
-  const nextDueAmount = usdcFromAtomic(props.creditLine.nextDueAmount);
-  const remainingDueAmount = nextDueAmount - usdcFromAtomic(props.creditLine.collectedPaymentBalance);
+  const availableCredit = props.creditLine.availableCredit;
 
   function openAction(e, action) {
     e.preventDefault();
@@ -31,7 +28,7 @@ function CreditActionsContainer(props) {
 
   let drawdownAction;
   let drawdownClass = 'disabled';
-  if (availableBalance > 0 && user.usdcIsUnlocked) {
+  if (availableCredit.gt(0) && user.usdcIsUnlocked) {
     drawdownAction = e => {
       openAction(e, 'drawdown');
     };
@@ -40,7 +37,7 @@ function CreditActionsContainer(props) {
 
   let payAction;
   let payClass = 'disabled';
-  if (drawdownBalance > 0 && user.usdcIsUnlocked) {
+  if (props.creditLine.balance.gt(0) && user.usdcIsUnlocked) {
     payAction = e => {
       openAction(e, 'payment');
     };
@@ -48,9 +45,10 @@ function CreditActionsContainer(props) {
   }
 
   let nextDueDisplay = 'No payment due';
-  if (remainingDueAmount > 0) {
-    nextDueDisplay = `${displayDollars(remainingDueAmount)} due ${props.creditLine.dueDate}`;
-  } else if (nextDueAmount > 0) {
+  if (props.creditLine.remainingPeriodDueAmount.gt(0)) {
+    const remainingPeriodDueAmount = usdcFromAtomic(props.creditLine.remainingPeriodDueAmount);
+    nextDueDisplay = `${displayDollars(remainingPeriodDueAmount)} due ${props.creditLine.dueDate}`;
+  } else if (props.creditLine.periodDueAmount.gt(0)) {
     nextDueDisplay = `Paid through ${props.creditLine.dueDate}`;
   }
 
@@ -77,7 +75,7 @@ function CreditActionsContainer(props) {
       <div className={`form-start split background-container ${placeholderClass}`}>
         <div className="form-start-section">
           <div className="form-start-label">Available to drawdown</div>
-          <div className="form-start-value">{displayDollars(availableBalance)}</div>
+          <div className="form-start-value">{displayDollars(usdcFromAtomic(availableCredit))}</div>
           <button className={`button ${drawdownClass}`} onClick={drawdownAction}>
             {iconDownArrow} Drawdown
           </button>
