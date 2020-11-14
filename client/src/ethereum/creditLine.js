@@ -38,7 +38,7 @@ async function fetchCreditLineData(creditLine) {
     { method: 'termEndBlock' },
   ];
   let data = await fetchDataFromAttributes(creditLine, attributes);
-  attributes.map(info => {
+  attributes.forEach(info => {
     data[info.method] = new BigNumber(data[info.method]);
   });
   // Considering we already got some data on the CreditLine, this next line
