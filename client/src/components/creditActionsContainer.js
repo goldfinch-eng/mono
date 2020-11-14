@@ -10,7 +10,6 @@ import { displayDollars } from '../utils';
 function CreditActionsContainer(props) {
   const { user } = useContext(AppContext);
   const [showAction, setShowAction] = useState(null);
-  const hasCreditLine = props.creditLine.balance !== undefined;
   const availableCredit = props.creditLine.availableCredit;
 
   function openAction(e, action) {
