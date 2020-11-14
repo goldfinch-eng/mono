@@ -47,17 +47,18 @@ async function fetchCreditLineData(creditLine) {
   result = { address: creditLine._address, ...data };
   result.dueDate = await calculateDueDateFromFutureBlock(result.nextDueBlock);
   result.termEndDate = await calculateDueDateFromFutureBlock(result.termEndBlock, 'MMM Do, YYYY');
-  result.periodDueAmount = calculateNextDueAmount(result);
   result.collectedPaymentBalance = new BigNumber(await usdc.methods.balanceOf(creditLine._address).call());
 
-  result.remainingPeriodDueAmount = result.periodDueAmount.minus(result.collectedPaymentBalance);
+  result.periodDueAmount = calculateNextDueAmount(result);
+  result.remainingPeriodDueAmount = BigNumber.max(result.periodDueAmount.minus(result.collectedPaymentBalance), zero);
+
   // This is BigNumber, which is inconsistent with BN, but we need it because BigNumber handles decimals easily,
   // and the interestAPR needs to not just be an integer.
   result.interestAprDecimal = new BigNumber(result.interestApr).div(INTEREST_DECIMALS);
   result.availableCredit = result.limit.minus(result.balance);
   const interestOwed = calculateInteresOwed(result);
   result.totalDueAmount = interestOwed.plus(result.balance);
-  result.remainingTotalDueAmount = result.totalDueAmount.minus(result.collectedPaymentBalance);
+  result.remainingTotalDueAmount = BigNumber.max(result.totalDueAmount.minus(result.collectedPaymentBalance), zero);
   return result;
 }
 
