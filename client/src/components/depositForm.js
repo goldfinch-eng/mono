@@ -8,7 +8,7 @@ import TransactionForm from './transactionForm';
 function DepositForm(props) {
   const { pool, user, goldfinchConfig } = useContext(AppContext);
 
-  function action(value) {
+  function action({ value }) {
     const depositAmount = usdcToAtomic(value);
     const userAddress = props.capitalProvider.address;
     return sendFromUser(pool.methods.deposit(depositAmount), userAddress).then(result => {
@@ -17,13 +17,11 @@ function DepositForm(props) {
     });
   }
 
-  const message = `Deposit funds into the pool. You have ${displayDollars(
-    user.usdcBalance,
-  )} of USDC available to deposit.`;
-
   return (
     <TransactionForm
-      navOptions={[{ label: 'Deposit', value: 'deposit', message: message, submitTransaction: action }]}
+      title="Deposit"
+      headerMessage={`Available to deposit: ${displayDollars(user.usdcBalance)}`}
+      submitTransaction={action}
       closeForm={props.closeForm}
       needsApproval={true}
       maxAmount={minimumNumber(user.usdcBalance, usdcFromAtomic(goldfinchConfig.transactionLimit))}

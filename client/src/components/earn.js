@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import EarnActionsContainer from './earnActionsContainer.js';
-import DepositStatus from './depositStatus.js';
 import PoolStatus from './poolStatus.js';
+import UnlockUSDCForm from './unlockUSDCForm.js';
 import web3 from '../web3.js';
 import { fetchCapitalProviderData, fetchPoolData } from '../ethereum/pool.js';
 import { AppContext } from '../App.js';
@@ -35,21 +35,21 @@ function Earn(props) {
     setPoolData(poolData);
   }
 
-  let depositInfo = '';
+  let notice = '';
   if (!user.address) {
-    depositInfo = (
+    notice = (
       <div className="content-empty-message background-container">
         You are not currently connected to Metamask. In order to earn, you first need to connect to Metamask.
       </div>
     );
-  } else {
-    depositInfo = <DepositStatus capitalProvider={capitalProvider} />;
+  } else if (user.address && !user.usdcIsUnlocked) {
+    notice = <UnlockUSDCForm />;
   }
 
   return (
     <div className="content-section">
       <div className="page-header">Earn Portfolio</div>
-      {depositInfo}
+      {notice}
       <EarnActionsContainer poolData={poolData} capitalProvider={capitalProvider} actionComplete={actionComplete} />
       {/* These need to be updated to be the correct fields for earning! */}
       <PoolStatus poolData={poolData} />

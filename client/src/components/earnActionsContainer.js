@@ -1,55 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import DepositForm from './depositForm.js';
+import DepositStatus from './depositStatus.js';
+import { AppContext } from '../App.js';
 import WithdrawalForm from './withdrawalForm.js';
-import iconDown from '../images/down-purp.svg';
-import iconUp from '../images/up-purp.svg';
+import { iconUpArrow, iconDownArrow } from './icons.js';
 
 function EarnActionsContainer(props) {
+  const { user } = useContext(AppContext);
   const [showAction, setShowAction] = useState(null);
 
   const closeForm = e => {
     setShowAction(null);
   };
 
-  let formBody;
-  if (!props.capitalProvider.address) {
-    formBody = (
-      <div className="form-start">
-        <button className="button non-functioning">
-          <img className="button-icon" src={iconUp} alt="up-arrow" />
-          Deposit
-        </button>
-        <button className="button non-functioning">
-          <img className="button-icon" src={iconDown} alt="down-arrow" />
-          Withdraw
-        </button>
-      </div>
-    );
-  } else if (showAction === null) {
-    formBody = (
-      <div className="form-start">
-        <button
-          onClick={e => {
-            setShowAction('deposit');
-          }}
-          className="button"
-        >
-          <img className="button-icon" src={iconUp} alt="up-arrow" />
-          Deposit
-        </button>
-        <button
-          onClick={e => {
-            setShowAction('withdrawal');
-          }}
-          className="button"
-        >
-          <img className="button-icon" src={iconDown} alt="down-arrow" />
-          Withdraw
-        </button>
-      </div>
-    );
-  } else if (showAction === 'deposit') {
-    formBody = (
+  let placeholderClass = '';
+  if (!user.address || !user.usdcIsUnlocked) {
+    placeholderClass = 'placeholder';
+  }
+
+  let depositAction;
+  let depositClass = 'disabled';
+  if (user.usdcIsUnlocked && props.capitalProvider) {
+    depositAction = e => {
+      setShowAction('deposit');
+    };
+    depositClass = '';
+  }
+
+  let withdrawAction;
+  let withdrawClass = 'disabled';
+  if (user.usdcIsUnlocked && props.capitalProvider.availableToWithdrawal > 0) {
+    withdrawAction = e => {
+      setShowAction('withdrawal');
+    };
+    withdrawClass = '';
+  }
+
+  if (showAction === 'deposit') {
+    return (
       <DepositForm
         closeForm={closeForm}
         capitalProvider={props.capitalProvider}
@@ -58,7 +46,7 @@ function EarnActionsContainer(props) {
       />
     );
   } else if (showAction === 'withdrawal') {
-    formBody = (
+    return (
       <WithdrawalForm
         closeForm={closeForm}
         capitalProvider={props.capitalProvider}
@@ -66,8 +54,21 @@ function EarnActionsContainer(props) {
         actionComplete={props.actionComplete}
       />
     );
+  } else {
+    return (
+      <div className={`background-container ${placeholderClass}`}>
+        <DepositStatus capitalProvider={props.capitalProvider} />
+        <div className="form-start">
+          <button className={`button ${depositClass}`} onClick={depositAction}>
+            {iconUpArrow} Deposit
+          </button>
+          <button className={`button ${withdrawClass}`} onClick={withdrawAction}>
+            {iconDownArrow} Withdraw
+          </button>
+        </div>
+      </div>
+    );
   }
-  return <div className="form-section">{formBody}</div>;
 }
 
 export default EarnActionsContainer;

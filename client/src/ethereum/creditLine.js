@@ -3,7 +3,20 @@ import moment from 'moment';
 import BigNumber from 'bignumber.js';
 import * as CreditLineContract from '../../../artifacts/contracts/protocol/CreditLine.sol/CreditLine.json';
 import { getUSDC } from './erc20';
-import { fetchDataFromAttributes, decimalPlaces, INTEREST_DECIMALS } from './utils';
+import { fetchDataFromAttributes, INTEREST_DECIMALS } from './utils';
+
+const zero = new BigNumber(0);
+const defaultCreditLine = {
+  balance: zero,
+  limit: zero,
+  periodDueAmount: zero,
+  remainingPeriodDueAmount: zero,
+  interestAprDecimal: zero,
+  availableCredit: zero,
+  collectedPaymentBalance: zero,
+  totalDueAmount: zero,
+  remainingTotalDueAmount: zero,
+};
 
 function buildCreditLine(address) {
   return new web3.eth.Contract(CreditLineContract.abi, address);
@@ -12,7 +25,7 @@ function buildCreditLine(address) {
 async function fetchCreditLineData(creditLine) {
   let result = {};
   if (!creditLine) {
-    return Promise.resolve({});
+    return Promise.resolve(defaultCreditLine);
   }
   const attributes = [
     { method: 'balance' },
@@ -24,17 +37,25 @@ async function fetchCreditLineData(creditLine) {
     { method: 'interestOwed' },
     { method: 'termEndBlock' },
   ];
-  const data = await fetchDataFromAttributes(creditLine, attributes);
+  let data = await fetchDataFromAttributes(creditLine, attributes);
+  attributes.forEach(info => {
+    data[info.method] = new BigNumber(data[info.method]);
+  });
   // Considering we already got some data on the CreditLine, this next line
   // assumes we've cached the USDC contract, and do not need to pass in a network
   const usdc = await getUSDC();
+  const interestOwed = calculateInteresOwed(result);
+
   result = { address: creditLine._address, ...data };
   result.dueDate = await calculateDueDateFromFutureBlock(result.nextDueBlock);
   result.termEndDate = await calculateDueDateFromFutureBlock(result.termEndBlock, 'MMM Do, YYYY');
-  result.nextDueAmount = calculateNextDueAmount(result);
+  result.collectedPaymentBalance = new BigNumber(await usdc.methods.balanceOf(creditLine._address).call());
+  result.periodDueAmount = calculateNextDueAmount(result);
+  result.remainingPeriodDueAmount = BigNumber.max(result.periodDueAmount.minus(result.collectedPaymentBalance), zero);
   result.interestAprDecimal = new BigNumber(result.interestApr).div(INTEREST_DECIMALS);
-  result.availableBalance = result.limit - result.balance;
-  result.collectedPaymentBalance = await usdc.methods.balanceOf(creditLine._address).call();
+  result.availableCredit = result.limit.minus(result.balance);
+  result.totalDueAmount = interestOwed.plus(result.balance);
+  result.remainingTotalDueAmount = BigNumber.max(result.totalDueAmount.minus(result.collectedPaymentBalance), zero);
   return result;
 }
 
@@ -46,17 +67,22 @@ async function calculateDueDateFromFutureBlock(nextDueBlock, format = 'MMM Do') 
     .format(format);
 }
 
-function calculateNextDueAmount(result) {
-  const annualRate = new BigNumber(result.interestApr).dividedBy(new BigNumber(INTEREST_DECIMALS));
+function calculateInteresOwed(creditLine) {
+  const annualRate = new BigNumber(creditLine.interestApr).dividedBy(new BigNumber(INTEREST_DECIMALS));
   const dailyRate = new BigNumber(annualRate).dividedBy(365.0);
-  const periodRate = new BigNumber(dailyRate).multipliedBy(result.paymentPeriodInDays);
-  const balance = new BigNumber(result.balance);
-  const interestOwed = balance.multipliedBy(periodRate);
-  if (new BigNumber(result.nextDueBlock).gte(new BigNumber(result.termEndBlock))) {
-    return String(interestOwed.plus(balance).toFixed(decimalPlaces));
+  const periodRate = new BigNumber(dailyRate).multipliedBy(creditLine.paymentPeriodInDays);
+  const balance = new BigNumber(creditLine.balance);
+  return balance.multipliedBy(periodRate);
+}
+
+function calculateNextDueAmount(creditLine) {
+  const interestOwed = calculateInteresOwed(creditLine);
+  const balance = creditLine.balance;
+  if (creditLine.nextDueBlock.gte(creditLine.termEndBlock)) {
+    return interestOwed.plus(balance);
   } else {
-    return String(interestOwed.toFixed(decimalPlaces));
+    return interestOwed;
   }
 }
 
-export { buildCreditLine, fetchCreditLineData };
+export { buildCreditLine, fetchCreditLineData, defaultCreditLine };

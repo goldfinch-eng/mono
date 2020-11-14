@@ -1,4 +1,3 @@
-import BN from 'bn.js';
 import web3 from '../web3';
 import BigNumber from 'bignumber.js';
 import { mapNetworkToID, getDeployments, ETHDecimals } from './utils';

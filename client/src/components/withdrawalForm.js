@@ -9,7 +9,7 @@ import TransactionForm from './transactionForm';
 function WithdrawalForm(props) {
   const { pool } = useContext(AppContext);
 
-  async function action(value) {
+  async function action({ value }) {
     const withdrawalAmount = usdcToAtomic(value);
     return sendFromUser(pool.methods.withdraw(withdrawalAmount), props.capitalProvider.address).then(result => {
       props.closeForm();
@@ -17,15 +17,16 @@ function WithdrawalForm(props) {
     });
   }
 
-  let availableAmount = fiduFromAtomic(props.capitalProvider.availableToWithdrawal);
-  const balance = displayDollars(availableAmount);
-  const message = `Withdrawal funds from the pool. You have have ${balance} available to withdraw.`;
+  const availableAmount = fiduFromAtomic(props.capitalProvider.availableToWithdrawal);
+  const availableToWithdraw = minimumNumber(availableAmount, usdcFromAtomic(props.poolData.balance));
 
   return (
     <TransactionForm
-      navOptions={[{ label: 'Withdrawal', value: 'withdrawal', message: message, submitTransaction: action }]}
+      title="Withdraw"
+      headerMessage={`Available to withdraw: ${displayDollars(availableAmount)}`}
+      submitTransaction={action}
       closeForm={props.closeForm}
-      maxAmount={minimumNumber(availableAmount, usdcFromAtomic(props.poolData.balance))}
+      maxAmount={availableToWithdraw}
     />
   );
 }
