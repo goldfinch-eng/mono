@@ -35,6 +35,7 @@ async function getUserData(address, erc20, pool, creditDesk) {
     address: address,
     usdcBalance: usdcFromAtomic(usdcBalance),
     allowance: allowance,
+    usdcIsUnlocked: !allowance || allowance.gte(new BigNumber(10000)),
     pastTxs: allTxs,
   };
   return data;
