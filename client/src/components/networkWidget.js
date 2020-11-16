@@ -92,7 +92,7 @@ function NetworkWidget(props) {
 
   const disabledNetworkWidget = (
     <div ref={node} className="network-widget">
-      <button className="network-widget-button" onClick={enableMetamask}>
+      <button className="network-widget-button bold" onClick={enableMetamask}>
         Connect Metamask
       </button>
     </div>

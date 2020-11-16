@@ -1,4 +1,10 @@
+.bar-viz.background-container-inner{
+  padding-bottom: 30px;
+  padding-top: 25px;
+}
+
 .bar-viz{
+  border-bottom: 2px solid $sand;
   position: relative;
 }
 
@@ -37,22 +43,28 @@
 }
 
 .bar-viz .amount{
-  font-size: $sans-size-ml;
-  margin: 16px 0 8px;
-}
-
-.bar-viz.small .amount{
   font-size: $sans-size-base;
-  margin: 12px 0 8px;
+  margin: 16px 0 8px;
 }
 
 .bar-viz .description{
   font-size: $sans-size-xs;
 }
 
+.placeholder .full-bar,
+.placeholder .full-bar .bar-left,
+.placeholder .full-bar .bar-right{
+  background-color: $sand;
+}
+
+
 @media only screen and (min-width: $screen-l) {
+  .bar-viz.background-container-inner{
+    padding-bottom: 35px;
+    padding-top: 30px;
+  }
   .bar-viz .amount{
-    font-size: $sans-size-xl;
+    font-size: $sans-size-ml;
   }
 
   .bar-viz .description{

@@ -3,18 +3,30 @@
   border-radius: 6px;
   font-size: $sans-size-m;
   color: $purp-dark;
-  line-height: 24px;
+  line-height: 56px;
   outline: none;
-  padding: 16px 0;
 
   &:hover{
     background-color: $blue-light;
   }
 
-  .button-icon{
+  .icon{
     vertical-align: middle;
     margin: -4px 8px 0 0;
     width: 22px;
+  }
+
+  &.dark{
+    background-color: $purp;
+    color: $sand-xlight;
+  }
+
+  &.dark:hover{
+    background-color: $purp-dark;
+  }
+
+  &.dark .icon path{
+    stroke: $sand-xlight;
   }
 
   &.pending{
@@ -23,9 +35,15 @@
     opacity: 0.5;
   }
 
-  &.non-functioning{
+  &.disabled,
+  &.disabled.dark{
+    background-color: $sand;
+    color: $sand-xxdark;
     cursor: not-allowed;
-    opacity: 0.5;
+
+    & .icon path{
+      stroke: $sand-xxdark;
+    }
   }
 }
 
@@ -33,10 +51,9 @@
   .button{
     border-radius: 8px;
     font-size: $sans-size-base;
-    line-height: 30px;
-    padding: 20px 0;
+    line-height: 70px;
 
-    .button-icon{
+    .icon{
       vertical-align: middle;
       margin: -4px 12px 0 0;
       width: 26px;

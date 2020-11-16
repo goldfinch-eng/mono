@@ -20,7 +20,12 @@ function displayNumber(val, decimals) {
 }
 
 function displayDollars(val) {
-  return '$' + displayNumber(val, 2);
+  const valDisplay = isNaN(val) ? ' -' : displayNumber(val, 2);
+  return '$' + valDisplay;
 }
 
-export { croppedAddress, displayNumber, displayDollars };
+function roundUpPenny(val) {
+  return Math.ceil(val * 100) / 100;
+}
+
+export { croppedAddress, displayNumber, displayDollars, roundUpPenny };
