@@ -1,5 +1,4 @@
 import React, { useContext } from 'react';
-import { sendFromUser } from '../ethereum/utils';
 import { usdcToAtomic, usdcFromAtomic, minimumNumber } from '../ethereum/erc20';
 import { AppContext } from '../App';
 import { displayDollars, roundUpPenny } from '../utils';
@@ -10,12 +9,12 @@ function PaymentForm(props) {
 
   function submitPayment({ value }) {
     const amount = usdcToAtomic(value);
-    return sendFromUser(creditDesk.methods.pay(props.creditLine.address, amount), props.borrower.address).then(
-      _result => {
-        props.closeForm();
-        props.actionComplete();
-      },
-    );
+    return creditDesk.methods.pay(props.creditLine.address, amount);
+  }
+
+  function actionComplete() {
+    props.closeForm();
+    props.actionComplete();
   }
 
   const remainingTotalDueAmount = roundUpPenny(usdcFromAtomic(props.creditLine.remainingTotalDueAmount));
@@ -43,6 +42,7 @@ function PaymentForm(props) {
       closeForm={props.closeForm}
       valueOptions={valueOptions}
       needsApproval={true}
+      actionComplete={actionComplete}
       // You cannot pay more than what you owe or have
       maxAmount={minimumNumber(remainingTotalDueAmount, user.usdcBalance)}
     />

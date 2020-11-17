@@ -29,7 +29,7 @@ async function getUserData(address, erc20, pool, creditDesk) {
     getAndTransformPoolEvents(pool, address),
     getAndTransformCreditDeskEvents(creditDesk, address),
   ]);
-  const allTxs = _.sortBy(_.compact(_.concat(poolTxs, creditDeskTxs)), 'blockNumber');
+  const allTxs = _.reverse(_.sortBy(_.compact(_.concat(poolTxs, creditDeskTxs)), 'blockNumber'));
 
   const data = {
     address: address,
@@ -77,8 +77,7 @@ function mapEventToTx(event) {
   return {
     type: EVENT_TYPE_MAP[event.event],
     amount: usdcFromAtomic(event.returnValues[EVENT_AMOUNT_FIELD[event.event]]),
-    id: event.id,
-    transactionHash: event.transactionHash,
+    id: event.transactionHash,
     blockNumber: event.blockNumber,
     status: 'successful',
   };

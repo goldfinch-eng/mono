@@ -1,5 +1,4 @@
 import React, { useContext, useState, useEffect } from 'react';
-import { sendFromUser } from '../ethereum/utils';
 import { usdcFromAtomic, minimumNumber, usdcToAtomic } from '../ethereum/erc20';
 import { AppContext } from '../App';
 import TransactionForm from './transactionForm';
@@ -19,13 +18,12 @@ function DrawdownForm(props) {
   function makeDrawdown({ value, sendToAddress }) {
     const drawdownAmount = usdcToAtomic(value);
     sendToAddress = sendToAddress === '' ? props.borrower.address : sendToAddress;
-    return sendFromUser(
-      creditDesk.methods.drawdown(drawdownAmount, props.creditLine.address, sendToAddress),
-      props.borrower.address,
-    ).then(_ => {
-      props.closeForm();
-      props.actionComplete();
-    });
+    return creditDesk.methods.drawdown(drawdownAmount, props.creditLine.address, sendToAddress);
+  }
+
+  function actionComplete() {
+    props.closeForm();
+    props.actionComplete();
   }
 
   const creditLineBalance = usdcFromAtomic(props.creditLine.availableCredit);
@@ -37,6 +35,7 @@ function DrawdownForm(props) {
       headerMessage={`Available to drawdown: ${displayDollars(creditLineBalance)}`}
       sendToAddressForm={true}
       submitTransaction={makeDrawdown}
+      actionComplete={actionComplete}
       closeForm={props.closeForm}
       maxAmount={maxAmount}
     />

@@ -1,6 +1,7 @@
 import React from 'react';
 import _ from 'lodash';
 import { croppedAddress, displayNumber } from '../utils';
+import { CONFIRMATION_THRESHOLD } from '../ethereum/utils';
 import useCloseOnClickOrEsc from '../hooks/useCloseOnClickOrEsc';
 import NetworkErrors from './networkErrors';
 import iconCheck from '../images/check-sand.svg';
@@ -58,9 +59,10 @@ function NetworkWidget(props) {
           </div>
         </div>
         {transactionlabel}&nbsp;
-        <a href={`https://${etherscanSubdomain}etherscan.io/tx/${tx.transactionHash}`} target="_blank">
+        <a href={`https://${etherscanSubdomain}etherscan.io/tx/${tx.id}`} target="_blank" rel="noopener noreferrer">
           &#8599;
         </a>
+        {tx.status === 'pending' && `${tx.confirmations} / ${CONFIRMATION_THRESHOLD} confirmations`}
       </div>
     );
   }
@@ -76,8 +78,8 @@ function NetworkWidget(props) {
     enabledClass = 'success';
   }
 
-  const allTx = _.compact(_.concat(props.user.pastTxs, props.currentTXs));
-
+  let allTx = _.compact(_.concat(props.currentTXs, _.slice(props.user.pastTxs, 0, 5)));
+  allTx = _.uniqBy(allTx, 'id');
   if (allTx.length > 0) {
     transactions = (
       <div className="network-widget-section">
@@ -85,7 +87,7 @@ function NetworkWidget(props) {
           Transactions
           {/* <a href="/transactions">view all</a> */}
         </div>
-        {_.reverse(allTx.map(transactionItem))}
+        {allTx.map(transactionItem)}
       </div>
     );
   }

@@ -1,36 +1,86 @@
+import BN from 'bn.js';
+import web3 from '../web3.js';
 import { useContext } from 'react';
 import { AppContext } from '../App.js';
+const CONF_THRESHOLD = 6;
 
-function useTXLoading(action, txData, setIsPending) {
-  const { addPendingTX, markTXSuccessful, markTXErrored, refreshUserData } = useContext(AppContext);
+function useTXLoading({
+  action,
+  txData,
+  setIsPending,
+  postAction = receipt => {
+    return receipt;
+  },
+  sendFromUser,
+}) {
+  const {
+    addPendingTX,
+    markTXSuccessful,
+    markTXErrored,
+    markTXConfirming,
+    updateTX,
+    refreshUserData,
+    user,
+    network,
+  } = useContext(AppContext);
+  let tx = { ...txData };
   return (...args) => {
-    const randomID = Math.floor(Math.random() * Math.floor(1000000000));
-    const tx = { status: 'pending', id: randomID, ...txData };
-    // {
-    //   type: EVENT_TYPE_MAP[event.event],
-    //   amount: usdcFromAtomic(event.returnValues[EVENT_AMOUNT_FIELD[event.event]]),
-    //   id: event.id,
-    //   transactionHash: event.transactionHash,
-    //   blockNumber: event.blockNumber
-    // }
-
-    setIsPending(true);
-    addPendingTX(tx);
-    return action(...args)
-      .then(result => {
-        markTXSuccessful(tx);
-        setIsPending(false);
-        refreshUserData();
-        return result;
+    let actionToUse = (...args) => {
+      return action(...args);
+    };
+    if (sendFromUser) {
+      actionToUse = sendFromUserWithTracking(action(...args), user.address);
+    }
+    return actionToUse(...args)
+      .then(receipt => {
+        return receipt;
       })
-      .catch(error => {
-        if (error.code === -32603) {
-          error.message = 'Something went wrong with your transaction.';
-        }
-        markTXErrored(tx, error);
-        setIsPending(false);
-      });
+      .then(postAction);
   };
+
+  function sendFromUserWithTracking(unsentAction, userAddress) {
+    return () => {
+      return web3.eth.getGasPrice().then(gasPrice => {
+        return unsentAction
+          .send({
+            from: userAddress,
+            gasPrice: new BN(String(gasPrice)),
+          })
+          .once('sent', _ => {
+            tx = addPendingTX(tx);
+            setIsPending(true);
+          })
+          .once('transactionHash', transactionHash => {
+            tx.id = transactionHash;
+            updateTX(tx, { id: transactionHash });
+          })
+          .once('receipt', receipt => {
+            updateTX(tx, { id: receipt.transactionHash, confirmations: 0, blockNumber: receipt.blockNumber });
+            if (network === 'localhost') {
+              // The confirmation callback never runs on localhost...
+              markTXSuccessful(tx);
+              setIsPending(false);
+              refreshUserData();
+            }
+          })
+          .on('confirmation', (confNumber, receipt, latestBlockHash) => {
+            updateTX(tx, { confirmations: confNumber });
+            if (confNumber >= CONF_THRESHOLD) {
+              markTXSuccessful(tx);
+              setIsPending(false);
+              refreshUserData();
+            }
+          })
+          .on('error', error => {
+            if (error.code === -32603) {
+              error.message = 'Something went wrong with your transaction.';
+            }
+            markTXErrored(tx, error);
+            setIsPending(false);
+          });
+      });
+    };
+  }
 }
 
 export default useTXLoading;

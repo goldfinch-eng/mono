@@ -56,21 +56,27 @@ function App() {
     setUser(data);
   }
 
-  var addPendingTX = pendingTX => {
-    setCurrentTXs(currentPendingTXs => {
-      const newPendingTxs = _.concat(currentPendingTXs, pendingTX);
-      return newPendingTxs;
+  function updateTX(txToUpdate, updates) {
+    setCurrentTXs(currentTXs => {
+      const matches = _.remove(currentTXs, { id: txToUpdate.id });
+      const tx = matches && matches[0];
+      const newTXs = _.concat(currentTXs, { ...tx, ...updates });
+      return newTXs;
     });
+  }
+
+  var addPendingTX = txData => {
+    const randomID = Math.floor(Math.random() * Math.floor(1000000000));
+    const tx = { status: 'pending', id: randomID, confirmations: 0, ...txData };
+    setCurrentTXs(currentTXs => {
+      const newTxs = _.concat(currentTXs, tx);
+      return newTxs;
+    });
+    return tx;
   };
 
-  var markTXSuccessful = completedTX => {
-    setCurrentTXs(currentPendingTXs => {
-      const matches = _.remove(currentPendingTXs, { id: completedTX.id });
-      const tx = matches && matches[0];
-      tx.status = 'successful';
-      const newPendingTxs = _.concat(currentPendingTXs, tx);
-      return newPendingTxs;
-    });
+  var markTXSuccessful = tx => {
+    updateTX(tx, { status: 'successful' });
   };
 
   var markTXErrored = (failedTX, error) => {
@@ -98,13 +104,15 @@ function App() {
     pool: pool,
     creditDesk: creditDesk,
     user: user,
-    refreshUserData: refreshUserData,
     erc20: erc20,
     goldfinchConfig: goldfinchConfig,
+    network: network,
+    refreshUserData: refreshUserData,
     addPendingTX: addPendingTX,
     markTXSuccessful: markTXSuccessful,
     markTXErrored: markTXErrored,
     removeError: removeError,
+    updateTX: updateTX,
   };
 
   return (
