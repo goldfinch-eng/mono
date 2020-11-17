@@ -1,10 +1,11 @@
+import BigNumber from 'bignumber.js';
 import React from 'react';
 import { usdcFromAtomic } from '../ethereum/erc20.js';
 import { displayDollars, roundUpPenny } from '../utils';
 
 function CreditBarViz(props) {
   const remainingTotalDueAmount = props.creditLine.remainingTotalDueAmount;
-  const availableToDrawdown = props.creditLine.availableCredit;
+  const availableToDrawdown = BigNumber.min(props.creditLine.availableCredit, props.creditLine.limit);
   const totalForBar = remainingTotalDueAmount.plus(availableToDrawdown);
   const leftBarStyle = { width: `${remainingTotalDueAmount.multipliedBy(100).dividedBy(totalForBar)}%` };
   const rightBarStyle = { width: `${availableToDrawdown.multipliedBy(100).dividedBy(totalForBar)}%` };

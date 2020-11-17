@@ -8,7 +8,7 @@ function useTXLoading({
   action,
   txData,
   setIsPending,
-  postAction = receipt => {
+  actionComplete = receipt => {
     return receipt;
   },
   sendFromUser,
@@ -24,7 +24,7 @@ function useTXLoading({
     if (sendFromUser) {
       wrappedAction = sendFromUserWithTracking(action(...args), user.address);
     }
-    return wrappedAction(...args).then(postAction);
+    return wrappedAction(...args).then(actionComplete);
   };
 
   function sendFromUserWithTracking(unsentAction, userAddress) {
