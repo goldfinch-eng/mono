@@ -44,7 +44,7 @@ function useTXLoading({
             updateTX(tx, { id: transactionHash });
           })
           .once('receipt', receipt => {
-            updateTX(tx, { id: receipt.transactionHash, confirmations: 0, blockNumber: receipt.blockNumber });
+            updateTX(tx, { id: receipt.transactionHash, blockNumber: receipt.blockNumber });
             if (network === 'localhost') {
               // The confirmation callback never runs on localhost...
               markTXSuccessful(tx);

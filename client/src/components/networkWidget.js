@@ -72,8 +72,15 @@ function NetworkWidget(props) {
     enabledText = 'Error';
   } else if (_.some(props.currentTXs, { status: 'pending' })) {
     const pendingTXCount = _.countBy(props.currentTXs, { status: 'pending' }).true;
+    const confirmingCount = _.countBy(props.currentTXs, item => {
+      return item.status === 'pending' && item.confirmations > 0;
+    }).true;
     enabledClass = 'pending';
-    enabledText = pendingTXCount === 1 ? 'Processing' : pendingTXCount + ' Processing';
+    if (confirmingCount > 0) {
+      enabledText = 'Confirming';
+    } else if (pendingTXCount > 0) {
+      enabledText = pendingTXCount === 1 ? 'Processing' : pendingTXCount + ' Processing';
+    }
   } else if (props.currentTXs.length > 0 && _.every(props.currentTXs, { status: 'successful' })) {
     enabledClass = 'success';
   }
