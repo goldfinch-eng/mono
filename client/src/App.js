@@ -60,7 +60,7 @@ function App() {
     setCurrentTXs(currentTXs => {
       const matches = _.remove(currentTXs, { id: txToUpdate.id });
       const tx = matches && matches[0];
-      const newTXs = _.reverse(_.sortBy(_.concat(currentTXs, { ...tx, ...updates }, 'blockNumber')));
+      const newTXs = _.reverse(_.sortBy(_.concat(currentTXs, { ...tx, ...updates }), 'blockNumber'));
       return newTXs;
     });
   }

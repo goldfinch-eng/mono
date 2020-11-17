@@ -6,7 +6,7 @@ function LoadingButton(props) {
   const [isPending, setIsPending] = useState(false);
   const actionWithLoading = useTXLoading({
     action: props.action,
-    postAction: props.postAction,
+    actionComplete: props.actionComplete,
     txData: props.txData,
     setIsPending,
     sendFromUser: props.sendFromUser,
