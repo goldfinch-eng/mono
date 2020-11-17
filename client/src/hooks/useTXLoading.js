@@ -2,7 +2,7 @@ import BN from 'bn.js';
 import web3 from '../web3.js';
 import { useContext } from 'react';
 import { AppContext } from '../App.js';
-const CONF_THRESHOLD = 6;
+import { CONFIRMATION_THRESHOLD } from '../ethereum/utils';
 
 function useTXLoading({
   action,
@@ -13,29 +13,18 @@ function useTXLoading({
   },
   sendFromUser,
 }) {
-  const {
-    addPendingTX,
-    markTXSuccessful,
-    markTXErrored,
-    markTXConfirming,
-    updateTX,
-    refreshUserData,
-    user,
-    network,
-  } = useContext(AppContext);
+  const { addPendingTX, markTXSuccessful, markTXErrored, updateTX, refreshUserData, user, network } = useContext(
+    AppContext,
+  );
   let tx = { ...txData };
   return (...args) => {
-    let actionToUse = (...args) => {
+    let wrappedAction = (...args) => {
       return action(...args);
     };
     if (sendFromUser) {
-      actionToUse = sendFromUserWithTracking(action(...args), user.address);
+      wrappedAction = sendFromUserWithTracking(action(...args), user.address);
     }
-    return actionToUse(...args)
-      .then(receipt => {
-        return receipt;
-      })
-      .then(postAction);
+    return wrappedAction(...args).then(postAction);
   };
 
   function sendFromUserWithTracking(unsentAction, userAddress) {
@@ -65,9 +54,8 @@ function useTXLoading({
           })
           .on('confirmation', (confNumber, receipt, latestBlockHash) => {
             updateTX(tx, { confirmations: confNumber });
-            if (confNumber >= CONF_THRESHOLD) {
+            if (confNumber >= CONFIRMATION_THRESHOLD) {
               markTXSuccessful(tx);
-              setIsPending(false);
               refreshUserData();
             }
           })
