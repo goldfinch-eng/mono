@@ -45,9 +45,8 @@ async function fetchCreditLineData(creditLine) {
   // Considering we already got some data on the CreditLine, this next line
   // assumes we've cached the USDC contract, and do not need to pass in a network
   const usdc = await getUSDC();
-  const interestOwed = calculateInteresOwed(data);
-
   result = { address: creditLine._address, ...data };
+  const interestOwed = calculateInteresOwed(result);
   result.dueDate = await calculateDueDateFromFutureBlock(result.nextDueBlock);
   result.termEndDate = await calculateDueDateFromFutureBlock(result.termEndBlock, 'MMM Do, YYYY');
   result.collectedPaymentBalance = new BigNumber(await usdc.methods.balanceOf(result.address).call());

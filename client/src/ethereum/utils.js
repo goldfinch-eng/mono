@@ -5,6 +5,7 @@ import web3 from '../web3';
 const decimalPlaces = 6;
 const decimals = new BN(String(10 ** decimalPlaces));
 const USDC_DECIMALS = decimals;
+const CONFIRMATION_THRESHOLD = 6;
 const ETHDecimals = new BN(String(1e18));
 const INTEREST_DECIMALS = new BN(String(1e8));
 const BLOCKS_PER_DAY = 5760;
@@ -95,4 +96,5 @@ export {
   USDC_DECIMALS,
   INTEREST_DECIMALS,
   BLOCKS_PER_YEAR,
+  CONFIRMATION_THRESHOLD,
 };

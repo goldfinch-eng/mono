@@ -1,14 +1,13 @@
-import BN from 'bn.js';
 import React, { useState, useContext } from 'react';
 import LoadingButton from './loadingButton';
 import { AppContext } from '../App.js';
-import { sendFromUser, MAX_UINT } from '../ethereum/utils';
 import { useForm, FormProvider } from 'react-hook-form';
 import { ErrorMessage } from '@hookform/error-message';
 import { displayDollars } from '../utils';
 import { iconX } from './icons.js';
 import useCloseOnClickOrEsc from '../hooks/useCloseOnClickOrEsc';
 import web3 from '../web3';
+import { usdcFromAtomic } from '../ethereum/erc20';
 
 function TransactionForm(props) {
   const { erc20, pool, user, refreshUserData } = useContext(AppContext);
@@ -51,17 +50,17 @@ function TransactionForm(props) {
   // because the user will always already have USDC unlocked before getting
   // to this stage. However, when we add "pay with BUSD", we'll need to use
   // this, so we're accounting for it.
-  if (props.needsApproval && user.allowance && user.allowance.lte(new BN(10000))) {
-    register = () => {};
-    action = async () => {
-      return sendFromUser(erc20.methods.approve(pool._address, MAX_UINT), user.address).then(result => {
-        refreshUserData();
-      });
-    };
-    submitText = 'Unlock [currency]';
-    txType = 'Approval';
-    buttonInfo = <div className="button-info">Step 1 of 2:</div>;
-  }
+  // if (props.needsApproval && user.allowance && user.allowance.lte(new BN(10000))) {
+  //   register = () => {};
+  //   action = async () => {
+  //     return sendFromUser(erc20.methods.approve(pool._address, MAX_UINT), user.address).then(result => {
+  //       refreshUserData();
+  //     });
+  //   };
+  //   submitText = 'Unlock [currency]';
+  //   txType = 'Approval';
+  //   buttonInfo = <div className="button-info">Step 1 of 2:</div>;
+  // }
 
   let valueOptions;
   if (props.valueOptions) {
@@ -162,8 +161,10 @@ function TransactionForm(props) {
               action={() => {
                 return action({ value, sendToAddress });
               }}
+              actionComplete={props.actionComplete}
               text={submitText}
               txData={{ type: txType, amount: value }}
+              sendFromUser={true}
             />
           </div>
         </form>
