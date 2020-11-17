@@ -1,6 +1,7 @@
 import React from 'react';
 import _ from 'lodash';
 import { croppedAddress, displayNumber } from '../utils';
+import { CONFIRMATION_THRESHOLD } from '../ethereum/utils';
 import useCloseOnClickOrEsc from '../hooks/useCloseOnClickOrEsc';
 import NetworkErrors from './networkErrors';
 import iconCheck from '../images/check-sand.svg';
@@ -42,6 +43,12 @@ function NetworkWidget(props) {
 
   function transactionItem(tx) {
     const transactionlabel = tx.type === 'Approval' ? tx.type : `$${tx.amount} ${tx.type}`;
+    let etherscanSubdomain;
+    if (props.network === 'mainnet') {
+      etherscanSubdomain = '';
+    } else {
+      etherscanSubdomain = `${props.network}.`;
+    }
     return (
       <div key={tx.id} className={`transaction-item ${tx.status}`}>
         <div className="status-icon">
@@ -51,8 +58,11 @@ function NetworkWidget(props) {
             <div className="double-bounce2"></div>
           </div>
         </div>
-
-        {transactionlabel}
+        {transactionlabel}&nbsp;
+        <a href={`https://${etherscanSubdomain}etherscan.io/tx/${tx.id}`} target="_blank" rel="noopener noreferrer">
+          &#8599;
+        </a>
+        {tx.status === 'pending' && `${tx.confirmations} / ${CONFIRMATION_THRESHOLD} confirmations`}
       </div>
     );
   }
@@ -62,20 +72,29 @@ function NetworkWidget(props) {
     enabledText = 'Error';
   } else if (_.some(props.currentTXs, { status: 'pending' })) {
     const pendingTXCount = _.countBy(props.currentTXs, { status: 'pending' }).true;
+    const confirmingCount = _.countBy(props.currentTXs, item => {
+      return item.status === 'pending' && item.confirmations > 0;
+    }).true;
     enabledClass = 'pending';
-    enabledText = pendingTXCount === 1 ? 'Processing' : pendingTXCount + ' Processing';
+    if (confirmingCount > 0) {
+      enabledText = 'Confirming';
+    } else if (pendingTXCount > 0) {
+      enabledText = pendingTXCount === 1 ? 'Processing' : pendingTXCount + ' Processing';
+    }
   } else if (props.currentTXs.length > 0 && _.every(props.currentTXs, { status: 'successful' })) {
     enabledClass = 'success';
   }
 
-  if (props.currentTXs.length > 0) {
+  let allTx = _.compact(_.concat(props.currentTXs, _.slice(props.user.pastTxs, 0, 5)));
+  allTx = _.uniqBy(allTx, 'id');
+  if (allTx.length > 0) {
     transactions = (
       <div className="network-widget-section">
         <div className="network-widget-header">
           Transactions
           {/* <a href="/transactions">view all</a> */}
         </div>
-        {_.reverse(props.currentTXs.map(transactionItem))}
+        {allTx.map(transactionItem)}
       </div>
     );
   }

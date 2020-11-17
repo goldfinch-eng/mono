@@ -5,6 +5,7 @@ import web3 from '../web3';
 const decimalPlaces = 6;
 const decimals = new BN(String(10 ** decimalPlaces));
 const USDC_DECIMALS = decimals;
+const CONFIRMATION_THRESHOLD = 6;
 const ETHDecimals = new BN(String(1e18));
 const INTEREST_DECIMALS = new BN(String(1e8));
 const MAX_UINT = new BN('115792089237316195423570985008687907853269984665640564039457584007913129639935');
@@ -92,4 +93,5 @@ export {
   MAX_UINT,
   USDC_DECIMALS,
   INTEREST_DECIMALS,
+  CONFIRMATION_THRESHOLD,
 };
