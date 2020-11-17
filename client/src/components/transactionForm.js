@@ -23,12 +23,10 @@ function TransactionForm(props) {
     setValue(e.target.value);
     setSelectedValueOption('other');
     setInputClass('');
-    formMethods.setValue('transactionAmount', e.target.value, { shouldValidate: true, shouldDirty: true });
   }
 
   function handleSendToAddress(e) {
     setSendToAddress(e.target.value);
-    formMethods.setValue('sendToAddresss', e.target.value, { shouldValidate: true, shouldDirty: true });
   }
 
   function handleValueOptionClick(valueOption) {
@@ -75,7 +73,6 @@ function TransactionForm(props) {
             type="radio"
             checked={valueOption.name === selectedValueOption}
             id={`value-type-${index}`}
-            value={valueOption.value}
             onChange={() => {
               return handleValueOptionClick(valueOption);
             }}
@@ -95,7 +92,6 @@ function TransactionForm(props) {
         <div className="form-input-label">(Optional) Send to a specific address</div>
         <div className="form-input-container">
           <input
-            value={sendToAddress}
             type="string"
             onChange={e => {
               handleSendToAddress(e, props);
@@ -140,7 +136,6 @@ function TransactionForm(props) {
               {props.sendToAddressForm ? <div className="form-input-label">Amount</div> : ''}
               <div className={`form-input-container dollar ${inputClass}`}>
                 <input
-                  value={value}
                   name="transactionAmount"
                   type="number"
                   onChange={e => {
