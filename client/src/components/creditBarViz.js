@@ -1,13 +1,13 @@
 import React from 'react';
 import { usdcFromAtomic } from '../ethereum/erc20.js';
-import { displayDollars } from '../utils';
+import { displayDollars, roundUpPenny } from '../utils';
 
 function CreditBarViz(props) {
-  const drawdownBalance = usdcFromAtomic(props.creditLine.balance);
-  const totalCreditLimit = usdcFromAtomic(props.creditLine.limit);
-  const availableToDrawdown = usdcFromAtomic(props.creditLine.availableCredit);
-  const leftBarStyle = { width: (100 * drawdownBalance) / totalCreditLimit + '%' };
-  const rightBarStyle = { width: (100 * availableToDrawdown) / totalCreditLimit + '%' };
+  const remainingTotalDueAmount = props.creditLine.remainingTotalDueAmount;
+  const availableToDrawdown = props.creditLine.availableCredit;
+  const totalForBar = remainingTotalDueAmount.plus(availableToDrawdown);
+  const leftBarStyle = { width: `${remainingTotalDueAmount.multipliedBy(100).dividedBy(totalForBar)}%` };
+  const rightBarStyle = { width: `${availableToDrawdown.multipliedBy(100).dividedBy(totalForBar)}%` };
   return (
     <div className="bar-viz background-container-inner">
       <div className="full-bar">
@@ -15,11 +15,11 @@ function CreditBarViz(props) {
         <div className="bar-right" style={rightBarStyle}></div>
       </div>
       <div className="left-label">
-        <div className="amount">{displayDollars(drawdownBalance)}</div>
-        <div className="description">Drawdown balance</div>
+        <div className="amount">{displayDollars(roundUpPenny(usdcFromAtomic(remainingTotalDueAmount)))}</div>
+        <div className="description">Drawdown + interest balance</div>
       </div>
       <div className="right-label">
-        <div className="amount">{displayDollars(availableToDrawdown)}</div>
+        <div className="amount">{displayDollars(roundUpPenny(usdcFromAtomic(availableToDrawdown)))}</div>
         <div className="description">Available to drawdown</div>
       </div>
     </div>
