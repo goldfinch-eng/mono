@@ -56,6 +56,7 @@ function useTXLoading({
             updateTX(tx, { confirmations: confNumber });
             if (confNumber >= CONFIRMATION_THRESHOLD) {
               markTXSuccessful(tx);
+              setIsPending(false);
               refreshUserData();
             }
           })
