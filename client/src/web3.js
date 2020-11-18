@@ -2,8 +2,18 @@ import Web3 from 'web3';
 // This setup style would connect to metamask in browser if necessary.
 // const web3 = new Web3(Web3.givenProvider || "ws://localhost:8545");
 let web3;
+Storage = window.localStorage;
+let currentChain = Storage.getItem('currentChain');
 if (typeof window.ethereum !== 'undefined') {
   web3 = new Web3(window.ethereum);
+
+  window.ethereum.autoRefreshOnNetworkChange = false;
+  window.ethereum.on('chainChanged', chainId => {
+    if (currentChain !== chainId) {
+      window.location.reload();
+      Storage.setItem('currentChain', chainId);
+    }
+  });
 } else {
   // For local network testing.
   web3 = new Web3('http://127.0.0.1:8545');

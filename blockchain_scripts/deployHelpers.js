@@ -1,6 +1,5 @@
 /* global web3 ethers */
 const BN = require("bn.js")
-// Using 1e6, because that's what USDC is.
 const USDCDecimals = new BN(String(1e6))
 const ETHDecimals = new BN(String(1e18))
 const INTEREST_DECIMALS = new BN(String(1e8))
@@ -26,9 +25,12 @@ const USDC_MAPPING = {
 const MULTISIG_MAPPING = {
   [RINKEBY]: "0xcF0B329c04Fd92a7370de10458050Fc8124Cacbc",
 }
-const OWNER_ROLE = web3.utils && web3.utils.keccak256("OWNER_ROLE")
-const PAUSER_ROLE = web3.utils && web3.utils.keccak256("PAUSER_ROLE")
-const MINTER_ROLE = web3.utils && web3.utils.keccak256("MINTER_ROLE")
+let OWNER_ROLE, PAUSER_ROLE, MINTER_ROLE
+if (web3 && web3.utils) {
+  OWNER_ROLE = web3.utils.keccak256("OWNER_ROLE")
+  PAUSER_ROLE = web3.utils.keccak256("PAUSER_ROLE")
+  MINTER_ROLE = web3.utils.keccak256("MINTER_ROLE")
+}
 
 const CONFIG_KEYS = {
   // Numbers
