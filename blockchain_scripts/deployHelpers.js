@@ -26,7 +26,7 @@ const MULTISIG_MAPPING = {
   [RINKEBY]: "0xcF0B329c04Fd92a7370de10458050Fc8124Cacbc",
 }
 let OWNER_ROLE, PAUSER_ROLE, MINTER_ROLE
-if (web3 && web3.utils) {
+if (typeof web3 !== "undefined" && web3.utils) {
   OWNER_ROLE = web3.utils.keccak256("OWNER_ROLE")
   PAUSER_ROLE = web3.utils.keccak256("PAUSER_ROLE")
   MINTER_ROLE = web3.utils.keccak256("MINTER_ROLE")

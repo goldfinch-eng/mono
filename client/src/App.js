@@ -120,19 +120,17 @@ function App() {
     updateTX: updateTX,
   };
   let unsupportedNetworkWarning = '';
-  if (web3 && !network) {
-    unsupportedNetworkWarning = (
-      <div className="unlock-form background-container">
-        <div>Hey, no network!</div>
-      </div>
-    );
-  }
-
   let noMetamaskWarning = '';
   if (!window.ethereum) {
     noMetamaskWarning = (
       <div className="unlock-form background-container">
         <div>Hey, no metamask!</div>
+      </div>
+    );
+  } else if (web3 && !network) {
+    unsupportedNetworkWarning = (
+      <div className="unlock-form background-container">
+        <div>Hey, no network!</div>
       </div>
     );
   }
