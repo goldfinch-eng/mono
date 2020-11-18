@@ -15,7 +15,7 @@ function Borrow(props) {
   const [creditLineFactory, setCreditLineFactory] = useState({});
 
   async function updateBorrowerAndCreditLine() {
-    let creditLine = await fetchCreditLineData();
+    let creditLine;
     const [borrowerAddress] = await web3.eth.getAccounts();
     borrower.address = borrowerAddress;
     if (borrowerAddress) {
