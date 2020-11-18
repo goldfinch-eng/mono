@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import iconRedX from '../images/x-red.svg';
+import { iconX } from './icons.js';
 import { AppContext } from '../App.js';
 
 function NetworkErrors(props) {
@@ -15,7 +15,7 @@ function NetworkErrors(props) {
           }}
           className="dismiss-error-item"
         >
-          <img src={iconRedX} alt="x" />
+          {iconX}
         </div>
         <p>{error.message}</p>
       </div>

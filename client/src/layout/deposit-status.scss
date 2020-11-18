@@ -10,9 +10,10 @@
 
   .icon{
     left: 25px;
+    height: 26px;
     position: absolute;
-    top: -4px;
-    width: 28px;
+    top: 2px;
+    width: 26px;
   }
 
   .label{
@@ -29,14 +30,12 @@
 }
 
 .placeholder .deposit-status .label,
-.placeholder .deposit-status .value,
-.placeholder .deposit-status .icon path,
-.placeholder .deposit-status .icon line,
-.placeholder .deposit-status .icon rect{
+.placeholder .deposit-status .value{
   color: $sand-xxdark;
-  stroke: $sand-xxdark;
 }
-
+.placeholder .deposit-status .icon path{
+  fill: $sand-xxdark;
+}
 
 @media 
   only screen 
@@ -50,7 +49,7 @@
     width: auto;
   }
   .deposit-status .icon{
-    top: -8px;
+    top: -2px;
   }
 }
 
@@ -64,8 +63,10 @@
 
   .deposit-status{
     .icon{
+      height: 32px;
       left: 30px;
-      width: 36px;
+      top: -4px;
+      width: 32px;
     }
 
     .label{

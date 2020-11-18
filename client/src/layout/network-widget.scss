@@ -55,9 +55,15 @@
     visibility: hidden;
 
     & .icon{
+      height: 18px;
       margin: 0 10px 4px 0;
       vertical-align: middle;
       visibility: hidden;
+      width: 18px;
+    }
+
+    & .icon path{
+      fill: $sand-xlight;
     }
   }
 
@@ -150,18 +156,23 @@
   background: none;
   cursor: pointer;
   display: inline-block;
+  opacity: 0.5;
   padding: 8px;
   position: absolute;
   right: 4px;
   top: 4px;
-  opacity: 0.4;
 
   &:hover{
     opacity: 1;
   }
 
-  img {
+  .icon {
+    height: 14px;
     width: 14px;
+  }
+
+  .icon path{
+    fill: $red-dark;
   }
 }
 

@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
-import { usdcToAtomic, usdcFromAtomic, minimumNumber } from '../ethereum/erc20';
+import { usdcToAtomic, minimumNumber } from '../ethereum/erc20';
 import { AppContext } from '../App';
-import { displayDollars, roundUpPenny } from '../utils';
+import { displayDollars } from '../utils';
 import TransactionForm from './transactionForm';
 
 function PaymentForm(props) {
@@ -17,26 +17,29 @@ function PaymentForm(props) {
     props.actionComplete();
   }
 
-  const remainingTotalDueAmount = roundUpPenny(usdcFromAtomic(props.creditLine.remainingTotalDueAmount));
-  const remainingDueAmount = roundUpPenny(usdcFromAtomic(props.creditLine.remainingPeriodDueAmount));
-  const valueOptions = [
-    {
-      name: 'remainingDue',
-      label: `Pay minimum due: ${displayDollars(remainingDueAmount)}`,
-      value: remainingDueAmount,
-    },
+  const remainingPeriodDueDisplay = displayDollars(props.creditLine.remainingPeriodDueAmountInDollars);
+
+  let valueOptions = [
     {
       name: 'totalDue',
-      label: `Pay full balance plus interest: ${displayDollars(remainingTotalDueAmount)}`,
-      value: remainingTotalDueAmount,
+      label: `Pay full balance plus interest: ${displayDollars(props.creditLine.remainingTotalDueAmountInDollars)}`,
+      value: props.creditLine.remainingTotalDueAmountInDollars,
     },
     { name: 'other', label: 'Pay other amount' },
   ];
 
+  if (props.creditLine.remainingPeriodDueAmount.gt(0)) {
+    valueOptions.unshift({
+      name: 'remainingDue',
+      label: `Pay minimum due: ${remainingPeriodDueDisplay}`,
+      value: props.creditLine.remainingPeriodDueAmountInDollars,
+    });
+  }
+
   return (
     <TransactionForm
       title="Pay"
-      headerMessage={`Next payment: ${remainingDueAmount} due ${props.creditLine.dueDate}`}
+      headerMessage={`Next payment: ${remainingPeriodDueDisplay} due ${props.creditLine.dueDate}`}
       formClass="dark"
       submitTransaction={submitPayment}
       closeForm={props.closeForm}
@@ -44,7 +47,7 @@ function PaymentForm(props) {
       needsApproval={true}
       actionComplete={actionComplete}
       // You cannot pay more than what you owe or have
-      maxAmount={minimumNumber(remainingTotalDueAmount, user.usdcBalance)}
+      maxAmount={minimumNumber(props.creditLine.remainingTotalDueAmountInDollars, user.usdcBalance)}
     />
   );
 }

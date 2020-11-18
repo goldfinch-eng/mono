@@ -7,7 +7,6 @@ import { displayDollars } from '../utils';
 import { iconX } from './icons.js';
 import useCloseOnClickOrEsc from '../hooks/useCloseOnClickOrEsc';
 import web3 from '../web3';
-import { usdcFromAtomic } from '../ethereum/erc20';
 
 function TransactionForm(props) {
   const { erc20, pool, user, refreshUserData } = useContext(AppContext);
@@ -85,6 +84,7 @@ function TransactionForm(props) {
   }
 
   let sendToAddressForm = '';
+  const validValue = <div className="form-input-note verified-value">&#10004; valid address</div>;
   if (props.sendToAddressForm) {
     sendToAddressForm = (
       <div className="form-field">
@@ -97,14 +97,14 @@ function TransactionForm(props) {
             }}
             name="sendToAddress"
             placeholder="0x0000"
-            className="form-input"
+            className="form-input small-text"
             ref={register({
               validate: value => {
                 return value === '' || web3.utils.isAddress(value);
               },
             })}
           ></input>
-          {sendToAddress && !formMethods.errors.sendToAddress && <div>&#10004;</div>}
+          {sendToAddress && !formMethods.errors.sendToAddress && validValue}
           <div className="form-input-note">
             <ErrorMessage
               errors={formMethods.errors}

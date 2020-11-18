@@ -3,7 +3,7 @@ import { AppContext } from '../App.js';
 import { MAX_UINT } from '../ethereum/utils';
 import LoadingButton from './loadingButton';
 import { useForm, FormProvider } from 'react-hook-form';
-import iconInfo from '../images/info-purp.svg';
+import { iconInfo } from './icons.js';
 
 function UnlockUSDCForm() {
   const { erc20, pool, refreshUserData } = useContext(AppContext);
@@ -17,7 +17,7 @@ function UnlockUSDCForm() {
     <FormProvider {...formMethods}>
       <div className="unlock-form background-container">
         <p>
-          <img className="icon" src={iconInfo} alt="info" />
+          {iconInfo}
           Just this one time, you’ll first need to unlock your account to send USDC to Goldfinch.
         </p>
         <LoadingButton

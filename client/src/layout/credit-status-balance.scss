@@ -1,0 +1,31 @@
+.credit-status-balance.background-container-inner{
+  padding-bottom: 30px;
+  padding-top: 25px;
+  border-bottom: 2px solid $sand;
+}
+
+.term-due-date{
+  font-size: $sans-size-xs;
+  margin: 32px 0 6px;
+
+  .icon{
+    display: inline-block;
+    height: 18px;
+    margin: 0 6px 3px 0;
+    vertical-align: middle;
+    width: 18px;
+  }
+}
+
+@media only screen and (min-width: $screen-l) {
+  .term-due-date{
+    font-size: $sans-size-s;
+    margin: 40px 0 10px;
+
+    .icon{
+      height: 21px;
+      margin: 0 10px 4px 0;
+      width: 21px;
+    }
+  }
+}

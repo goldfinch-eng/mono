@@ -12,6 +12,7 @@
 
   .icon{
     vertical-align: middle;
+    height: 22px;
     margin: -4px 8px 0 0;
     width: 22px;
   }
@@ -26,7 +27,7 @@
   }
 
   &.dark .icon path{
-    stroke: $sand-xlight;
+    fill: $sand-xlight;
   }
 
   &.pending{
@@ -39,10 +40,10 @@
   &.disabled.dark{
     background-color: $sand;
     color: $sand-xxdark;
-    cursor: not-allowed;
+    cursor: auto;
 
     & .icon path{
-      stroke: $sand-xxdark;
+      fill: $sand-xxdark;
     }
   }
 }
@@ -54,9 +55,10 @@
     line-height: 70px;
 
     .icon{
-      vertical-align: middle;
+      height: 24px;
       margin: -4px 12px 0 0;
-      width: 26px;
+      vertical-align: middle;
+      width: 24px;
     }
   }
 }

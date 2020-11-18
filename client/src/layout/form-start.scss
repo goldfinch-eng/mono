@@ -26,6 +26,13 @@
 .form-start-value{
   font-size: $sans-size-base;
   margin: 4px 0 12px;
+
+  & .icon{
+    margin: 0 6px 0 0;
+    vertical-align: top;
+    height: 24px;
+    width: 24px;
+  }
 }
 
 .placeholder .form-start-label,
@@ -82,7 +89,13 @@
 
   .form-start-value{
     font-size: $sans-size-ml;
-    margin: 6px 0 24px;
+    margin: 10px 0 24px;
+
+    & .icon{
+      margin: 0 9px 0 0;
+      height: 28px;
+      width: 28px;
+    }
   }
 
   .form-start.split .form-start-section{

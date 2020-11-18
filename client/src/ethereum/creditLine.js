@@ -2,8 +2,9 @@ import web3 from '../web3';
 import moment from 'moment';
 import BigNumber from 'bignumber.js';
 import * as CreditLineContract from '../../../artifacts/contracts/protocol/CreditLine.sol/CreditLine.json';
-import { getUSDC } from './erc20';
+import { getUSDC, usdcFromAtomic } from './erc20';
 import { fetchDataFromAttributes, INTEREST_DECIMALS, BLOCKS_PER_YEAR } from './utils';
+import { roundUpPenny, roundDownPenny } from '../utils';
 
 const zero = new BigNumber(0);
 const defaultCreditLine = {
@@ -11,11 +12,14 @@ const defaultCreditLine = {
   limit: zero,
   periodDueAmount: zero,
   remainingPeriodDueAmount: zero,
+  remainingPeriodDueAmountInDollars: zero,
   interestAprDecimal: zero,
   availableCredit: zero,
+  availableCreditInDollars: zero,
   collectedPaymentBalance: zero,
   totalDueAmount: zero,
   remainingTotalDueAmount: zero,
+  remainingTotalDueAmountInDollars: zero,
 };
 
 function buildCreditLine(address) {
@@ -48,19 +52,24 @@ async function fetchCreditLineData(creditLine) {
   result = { address: creditLine._address, ...data };
   const interestOwed = calculateInteresOwed(result);
   result.dueDate = await calculateDueDateFromFutureBlock(result.nextDueBlock);
-  result.termEndDate = await calculateDueDateFromFutureBlock(result.termEndBlock, 'MMM Do, YYYY');
+  result.termEndDate = await calculateDueDateFromFutureBlock(result.termEndBlock, 'MMM D, YYYY');
   result.collectedPaymentBalance = new BigNumber(await usdc.methods.balanceOf(result.address).call());
   result.periodDueAmount = calculateNextDueAmount(result);
   result.remainingPeriodDueAmount = BigNumber.max(result.periodDueAmount.minus(result.collectedPaymentBalance), zero);
+  result.remainingPeriodDueAmountInDollars = new BigNumber(
+    roundUpPenny(usdcFromAtomic(result.remainingPeriodDueAmount)),
+  );
   result.interestAprDecimal = new BigNumber(result.interestApr).div(INTEREST_DECIMALS);
   result.totalDueAmount = interestOwed.plus(result.balance);
   result.remainingTotalDueAmount = BigNumber.max(result.totalDueAmount.minus(result.collectedPaymentBalance), zero);
+  result.remainingTotalDueAmountInDollars = new BigNumber(roundUpPenny(usdcFromAtomic(result.remainingTotalDueAmount)));
   const collectedForPrincipal = BigNumber.max(result.collectedPaymentBalance.minus(result.periodDueAmount), zero);
-  result.availableCredit = result.limit.minus(result.balance).plus(collectedForPrincipal);
+  result.availableCredit = BigNumber.min(result.limit, result.limit.minus(result.balance).plus(collectedForPrincipal));
+  result.availableCreditInDollars = new BigNumber(roundDownPenny(usdcFromAtomic(result.availableCredit)));
   return result;
 }
 
-async function calculateDueDateFromFutureBlock(nextDueBlock, format = 'MMM Do') {
+async function calculateDueDateFromFutureBlock(nextDueBlock, format = 'MMM D') {
   const latestBlock = await web3.eth.getBlock('latest');
   const numBlocksTillDueDate = nextDueBlock - latestBlock.number;
   return moment()

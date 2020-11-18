@@ -46,6 +46,10 @@
     border: 2px solid $purp-dark;
     color: $purp-dark;
   }
+
+  &.small-text{
+    font-size: $sans-size-s;
+  }
 }
 
 .dollar .form-input{
@@ -59,6 +63,11 @@
   width: 100%;
   left: 0;
   top: 100%;
+
+  &.verified-value{
+    color: $blue;
+    text-align: right;
+  }
 }
 
 .form-inputs .button-info{
@@ -101,6 +110,10 @@
     font-size: $sans-size-xl;
     line-height: 68px;
     padding: 0 0 0 16px;
+
+    &.small-text{
+      font-size: $sans-size-base;
+    }
   }
 
   .dollar .form-input{

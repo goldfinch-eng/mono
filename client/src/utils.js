@@ -28,4 +28,8 @@ function roundUpPenny(val) {
   return Math.ceil(val * 100) / 100;
 }
 
-export { croppedAddress, displayNumber, displayDollars, roundUpPenny };
+function roundDownPenny(val) {
+  return Math.floor(val * 100) / 100;
+}
+
+export { croppedAddress, displayNumber, displayDollars, roundUpPenny, roundDownPenny };

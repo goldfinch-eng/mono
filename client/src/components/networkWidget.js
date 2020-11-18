@@ -4,7 +4,7 @@ import { croppedAddress, displayNumber } from '../utils';
 import { CONFIRMATION_THRESHOLD } from '../ethereum/utils';
 import useCloseOnClickOrEsc from '../hooks/useCloseOnClickOrEsc';
 import NetworkErrors from './networkErrors';
-import iconCheck from '../images/check-sand.svg';
+import { iconCheck } from './icons.js';
 
 function NetworkWidget(props) {
   const [node, showNetworkWidgetInfo, setShowNetworkWidgetInfo] = useCloseOnClickOrEsc();
@@ -118,10 +118,7 @@ function NetworkWidget(props) {
           </div>
         </div>
         {enabledText}
-        <div className="success-indicator">
-          <img className="icon" src={iconCheck} alt="check" />
-          Success
-        </div>
+        <div className="success-indicator">{iconCheck}Success</div>
       </button>
       <div className="network-widget-info">
         <div className="network-widget-section address">{croppedAddress(props.user.address)}</div>

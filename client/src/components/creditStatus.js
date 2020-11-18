@@ -4,6 +4,7 @@ import CreditBarViz from './creditBarViz.js';
 import { usdcFromAtomic } from '../ethereum/erc20.js';
 import { decimals } from '../ethereum/utils';
 import { displayNumber } from '../utils';
+import { iconClock } from './icons.js';
 
 function CreditStatus(props) {
   function fromAtomicDecimals(val) {
@@ -11,12 +12,12 @@ function CreditStatus(props) {
   }
 
   let placeholderClass = '';
-  if (!props.user.address || !props.user.usdcIsUnlocked || !props.creditLine.balance) {
+  if (!props.user.address || !props.user.usdcIsUnlocked || props.creditLine.limit.eq(0)) {
     placeholderClass = 'placeholder';
   }
 
   let rows;
-  if (!props.creditLine.balance) {
+  if (props.creditLine.limit.eq(0)) {
     rows = [
       { label: 'Limit', value: '$ -' },
       { label: 'Interest rate APR', value: '- %' },
@@ -37,10 +38,22 @@ function CreditStatus(props) {
     ];
   }
 
+  let termDueDate;
+  if (props.creditLine.remainingTotalDueAmount.gt(0)) {
+    termDueDate = (
+      <div className="term-due-date">
+        {iconClock}Full balance repayment due {props.creditLine.termEndDate}
+      </div>
+    );
+  }
+
   return (
     <div className={`credit-status background-container ${placeholderClass}`}>
       <h2>Credit Status</h2>
-      <CreditBarViz creditLine={props.creditLine} />
+      <div className="credit-status-balance background-container-inner">
+        <CreditBarViz creditLine={props.creditLine} />
+        {termDueDate}
+      </div>
       <InfoSection rows={rows} />
     </div>
   );
