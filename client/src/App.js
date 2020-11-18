@@ -30,20 +30,25 @@ function App() {
   }, []);
 
   async function setupWeb3() {
+    if (!window.ethereum) {
+      return;
+    }
     const accounts = await web3.eth.getAccounts();
     const networkName = await web3.eth.net.getNetworkType();
     const networkId = mapNetworkToID[networkName];
-    let erc20Contract = await getUSDC(networkName);
-    let poolContract = await getPool(networkName);
-    let goldfinchConfigContract = await getGoldfinchConfig(networkName);
     setNetwork(networkId);
-    setErc20(erc20Contract);
-    setPool(poolContract);
-    setCreditDesk(await getCreditDesk(networkName));
-    setGoldfinchConfig(await refreshGoldfinchConfigData(goldfinchConfigContract));
-    if (accounts.length > 0) {
-      const creditDeskContract = await getCreditDesk(networkName);
-      refreshUserData(accounts[0], erc20Contract, poolContract, creditDeskContract);
+    if (networkId) {
+      let erc20Contract = await getUSDC(networkId);
+      let poolContract = await getPool(networkId);
+      let goldfinchConfigContract = await getGoldfinchConfig(networkId);
+      let creditDeskContract = await getCreditDesk(networkId);
+      setErc20(erc20Contract);
+      setPool(poolContract);
+      setCreditDesk();
+      setGoldfinchConfig(await refreshGoldfinchConfigData(goldfinchConfigContract));
+      if (accounts.length > 0) {
+        refreshUserData(accounts[0], erc20Contract, poolContract, creditDeskContract);
+      }
     }
   }
 
@@ -114,9 +119,26 @@ function App() {
     removeError: removeError,
     updateTX: updateTX,
   };
+  let unsupportedNetworkWarning = '';
+  let noMetamaskWarning = '';
+  if (!window.ethereum) {
+    noMetamaskWarning = (
+      <div className="unlock-form background-container">
+        <div>Hey, no metamask!</div>
+      </div>
+    );
+  } else if (web3 && !network) {
+    unsupportedNetworkWarning = (
+      <div className="unlock-form background-container">
+        <div>Hey, no network!</div>
+      </div>
+    );
+  }
 
   return (
     <AppContext.Provider value={store}>
+      {unsupportedNetworkWarning}
+      {noMetamaskWarning}
       <Router>
         <Sidebar />
         <NetworkWidget
