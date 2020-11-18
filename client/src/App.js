@@ -44,7 +44,7 @@ function App() {
       let creditDeskContract = await getCreditDesk(networkId);
       setErc20(erc20Contract);
       setPool(poolContract);
-      setCreditDesk();
+      setCreditDesk(creditDeskContract);
       setGoldfinchConfig(await refreshGoldfinchConfigData(goldfinchConfigContract));
       if (accounts.length > 0) {
         refreshUserData(accounts[0], erc20Contract, poolContract, creditDeskContract);
