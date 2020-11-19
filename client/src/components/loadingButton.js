@@ -13,7 +13,7 @@ function LoadingButton(props) {
   });
   const formMethods = useFormContext();
 
-  let buttonText = props.text;
+  let buttonText = props.text || 'Submit';
   if (isPending) {
     buttonText = 'Submitting...';
   }

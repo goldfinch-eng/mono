@@ -4,6 +4,9 @@ import { AppContext } from '../App';
 import TransactionForm from './transactionForm';
 import { fetchPoolData } from '../ethereum/pool';
 import { displayDollars } from '../utils';
+import AddressInput from './addressInput';
+import TransactionInput from './transactionInput';
+import LoadingButton from './loadingButton';
 
 function DrawdownForm(props) {
   const { creditDesk, pool, erc20 } = useContext(AppContext);
@@ -15,9 +18,9 @@ function DrawdownForm(props) {
     })();
   }, []);
 
-  function makeDrawdown({ value, sendToAddress }) {
-    const drawdownAmount = usdcToAtomic(value);
-    sendToAddress = sendToAddress === '' ? props.borrower.address : sendToAddress;
+  function action({ transactionAmount, sendToAddress }) {
+    const drawdownAmount = usdcToAtomic(transactionAmount);
+    sendToAddress = sendToAddress || props.borrower.address;
     return creditDesk.methods.drawdown(drawdownAmount, props.creditLine.address, sendToAddress);
   }
 
@@ -29,15 +32,32 @@ function DrawdownForm(props) {
   const creditLineBalance = usdcFromAtomic(props.creditLine.availableCredit);
   const maxAmount = minimumNumber(creditLineBalance, usdcFromAtomic(poolData.balance));
 
+  function renderForm({ formMethods }) {
+    return (
+      <div className="form-inputs">
+        <div className="form-field">
+          <AddressInput formMethods={formMethods} />
+          <TransactionInput formMethods={formMethods} maxAmount={maxAmount} />
+        </div>
+        <LoadingButton
+          action={() => {
+            const data = formMethods.getValues();
+            return action(data);
+          }}
+          actionComplete={actionComplete}
+          txData={{ type: 'Drawdown', amount: formMethods.getValues('transactionAmount') }}
+          sendFromUser={true}
+        />
+      </div>
+    );
+  }
+
   return (
     <TransactionForm
       title="Drawdown"
       headerMessage={`Available to drawdown: ${displayDollars(creditLineBalance)}`}
-      sendToAddressForm={true}
-      submitTransaction={makeDrawdown}
-      actionComplete={actionComplete}
+      render={renderForm}
       closeForm={props.closeForm}
-      maxAmount={maxAmount}
     />
   );
 }
