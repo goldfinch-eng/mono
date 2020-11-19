@@ -69,22 +69,20 @@ function PaymentForm(props) {
 
     return (
       <div className="form-inputs">
-        <div className="form-field">
-          {valueOptionsHTML}
-          <TransactionInput
-            formMethods={formMethods}
-            onChange={e => {
-              formMethods.setValue('paymentOption', 'other', { shouldValidate: true, shouldDirty: true });
-              setInputClass('');
-            }}
-            maxAmount={minimumNumber(props.creditLine.remainingTotalDueAmountInDollars, user.usdcBalance)}
-            inputClass={inputClass}
-          />
-        </div>
+        {valueOptionsHTML}
+        <TransactionInput
+          formMethods={formMethods}
+          onChange={e => {
+            formMethods.setValue('paymentOption', 'other', { shouldValidate: true, shouldDirty: true });
+            setInputClass('');
+          }}
+          maxAmount={minimumNumber(props.creditLine.remainingTotalDueAmountInDollars, user.usdcBalance)}
+          inputClass={inputClass}
+        />
         <LoadingButton
           action={() => action(formMethods.getValues())}
           actionComplete={actionComplete}
-          txData={{ type: 'Deposit', amount: formMethods.getValues('transactionAmount') }}
+          txData={{ type: 'Payment', amount: formMethods.getValues('transactionAmount') }}
           sendFromUser={true}
         />
       </div>

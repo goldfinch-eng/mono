@@ -26,13 +26,11 @@ function WithdrawalForm(props) {
   function renderForm({ formMethods }) {
     return (
       <div className="form-inputs">
-        <div className="form-field">
-          <TransactionInput formMethods={formMethods} maxAmount={availableToWithdraw} />
-        </div>
+        <TransactionInput formMethods={formMethods} maxAmount={availableToWithdraw} />
         <LoadingButton
           action={() => action(formMethods.getValues())}
           actionComplete={actionComplete}
-          txData={{ type: 'Withdraw', amount: formMethods.getValues('transactionAmount') }}
+          txData={{ type: 'Withdrawal', amount: formMethods.getValues('transactionAmount') }}
           sendFromUser={true}
         />
       </div>

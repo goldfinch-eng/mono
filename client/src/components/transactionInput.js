@@ -7,24 +7,26 @@ function TransactionInput(props) {
   let inputClass = props.inputClass || '';
   let onChange = props.onChange || (() => {});
   return (
-    <div className={`form-input-container dollar ${inputClass}`}>
-      <input
-        name={name}
-        type="number"
-        onChange={onChange}
-        placeholder="0"
-        className="form-input"
-        ref={props.formMethods.register({
-          required: 'Amount is required',
-          min: { value: 0.01, message: 'Must be greater than 0' },
-          max: {
-            value: props.maxAmount,
-            message: `Amount is above the max allowed (${displayDollars(props.maxAmount)}). `,
-          },
-        })}
-      ></input>
-      <div className="form-input-note">
-        <ErrorMessage errors={props.formMethods.errors} name={name} />
+    <div className="form-field">
+      <div className={`form-input-container dollar ${inputClass}`}>
+        <input
+          name={name}
+          type="number"
+          onChange={onChange}
+          placeholder="0"
+          className="form-input"
+          ref={props.formMethods.register({
+            required: 'Amount is required',
+            min: { value: 0.0000001, message: 'Must be greater than 0' },
+            max: {
+              value: props.maxAmount,
+              message: `Amount is above the max allowed (${displayDollars(props.maxAmount)}). `,
+            },
+          })}
+        ></input>
+        <div className="form-input-note">
+          <ErrorMessage errors={props.formMethods.errors} name={name} />
+        </div>
       </div>
     </div>
   );

@@ -35,10 +35,9 @@ function DrawdownForm(props) {
   function renderForm({ formMethods }) {
     return (
       <div className="form-inputs">
-        <div className="form-field">
-          <AddressInput formMethods={formMethods} />
-          <TransactionInput formMethods={formMethods} maxAmount={maxAmount} />
-        </div>
+        <AddressInput formMethods={formMethods} />
+        <div className="form-input-label">Amount</div>
+        <TransactionInput formMethods={formMethods} maxAmount={maxAmount} />
         <LoadingButton
           action={() => action(formMethods.getValues())}
           actionComplete={actionComplete}

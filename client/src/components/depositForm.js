@@ -22,12 +22,10 @@ function DepositForm(props) {
   function renderForm({ formMethods }) {
     return (
       <div className="form-inputs">
-        <div className="form-field">
-          <TransactionInput
-            formMethods={formMethods}
-            maxAmount={minimumNumber(user.usdcBalance, usdcFromAtomic(goldfinchConfig.transactionLimit))}
-          />
-        </div>
+        <TransactionInput
+          formMethods={formMethods}
+          maxAmount={minimumNumber(user.usdcBalance, usdcFromAtomic(goldfinchConfig.transactionLimit))}
+        />
         <LoadingButton
           action={() => action(formMethods.getValues())}
           actionComplete={actionComplete}
