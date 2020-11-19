@@ -7,7 +7,6 @@ function AddressInput(props) {
   const name = props.name || 'sendToAddress';
   return (
     <div className="form-field">
-      <div className="form-input-label">(Optional) Send to a specific address</div>
       <div className="form-input-container">
         <input
           type="string"

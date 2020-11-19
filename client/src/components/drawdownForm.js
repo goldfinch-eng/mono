@@ -35,6 +35,7 @@ function DrawdownForm(props) {
   function renderForm({ formMethods }) {
     return (
       <div className="form-inputs">
+        <div className="form-input-label">(Optional) Send to a specific address</div>
         <AddressInput formMethods={formMethods} />
         <div className="form-input-label">Amount</div>
         <TransactionInput formMethods={formMethods} maxAmount={maxAmount} />
