@@ -1,14 +1,17 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { usdcToAtomic, minimumNumber } from '../ethereum/erc20';
 import { AppContext } from '../App';
 import { displayDollars } from '../utils';
 import TransactionForm from './transactionForm';
+import TransactionInput from './transactionInput';
+import LoadingButton from './loadingButton';
 
 function PaymentForm(props) {
   const { creditDesk, user } = useContext(AppContext);
+  const [inputClass, setInputClass] = useState('');
 
-  function submitPayment({ value }) {
-    const amount = usdcToAtomic(value);
+  function action({ transactionAmount }) {
+    const amount = usdcToAtomic(transactionAmount);
     return creditDesk.methods.pay(props.creditLine.address, amount);
   }
 
@@ -25,7 +28,7 @@ function PaymentForm(props) {
       label: `Pay full balance plus interest: ${displayDollars(props.creditLine.remainingTotalDueAmountInDollars)}`,
       value: props.creditLine.remainingTotalDueAmountInDollars,
     },
-    { name: 'other', label: 'Pay other amount' },
+    { name: 'other', label: 'Pay other amount', value: 'other' },
   ];
 
   if (props.creditLine.remainingPeriodDueAmount.gt(0)) {
@@ -36,18 +39,64 @@ function PaymentForm(props) {
     });
   }
 
+  function renderForm({ formMethods }) {
+    const valueOptionList = valueOptions.map((valueOption, index) => {
+      return (
+        <div className="value-option" key={index}>
+          <input
+            name="paymentOption"
+            type="radio"
+            defaultChecked={valueOption.value === formMethods.getValues('paymentOption')}
+            id={`value-type-${index}`}
+            ref={formMethods.register}
+            value={valueOption.value}
+            onChange={() => {
+              if (!isNaN(valueOption.value)) {
+                formMethods.setValue('transactionAmount', valueOption.value, {
+                  shouldValidate: true,
+                  shouldDirty: true,
+                });
+                setInputClass('pre-filled');
+              }
+            }}
+          />
+          <div className="radio-check"></div>
+          <label htmlFor={`value-type-${index}`}>{valueOption.label}</label>
+        </div>
+      );
+    });
+    let valueOptionsHTML = <div className="value-options">{valueOptionList}</div>;
+
+    return (
+      <div className="form-inputs">
+        {valueOptionsHTML}
+        <TransactionInput
+          formMethods={formMethods}
+          onChange={e => {
+            formMethods.setValue('paymentOption', 'other', { shouldValidate: true, shouldDirty: true });
+            setInputClass('');
+          }}
+          maxAmount={minimumNumber(props.creditLine.remainingTotalDueAmountInDollars, user.usdcBalance)}
+          inputClass={inputClass}
+        />
+        <LoadingButton
+          action={() => action(formMethods.getValues())}
+          actionComplete={actionComplete}
+          txData={{ type: 'Payment', amount: formMethods.getValues('transactionAmount') }}
+          sendFromUser={true}
+        />
+      </div>
+    );
+  }
+
   return (
     <TransactionForm
       title="Pay"
       headerMessage={`Next payment: ${remainingPeriodDueDisplay} due ${props.creditLine.dueDate}`}
       formClass="dark"
-      submitTransaction={submitPayment}
+      render={renderForm}
       closeForm={props.closeForm}
-      valueOptions={valueOptions}
       needsApproval={true}
-      actionComplete={actionComplete}
-      // You cannot pay more than what you owe or have
-      maxAmount={minimumNumber(props.creditLine.remainingTotalDueAmountInDollars, user.usdcBalance)}
     />
   );
 }
