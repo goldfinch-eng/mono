@@ -40,10 +40,7 @@ function DrawdownForm(props) {
           <TransactionInput formMethods={formMethods} maxAmount={maxAmount} />
         </div>
         <LoadingButton
-          action={() => {
-            const data = formMethods.getValues();
-            return action(data);
-          }}
+          action={() => action(formMethods.getValues())}
           actionComplete={actionComplete}
           txData={{ type: 'Drawdown', amount: formMethods.getValues('transactionAmount') }}
           sendFromUser={true}
