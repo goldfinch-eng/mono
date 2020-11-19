@@ -15,7 +15,6 @@ function Borrow(props) {
   const [creditLineFactory, setCreditLineFactory] = useState({});
 
   async function updateBorrowerAndCreditLine() {
-    let creditLine;
     const [borrowerAddress] = await web3.eth.getAccounts();
     borrower.address = borrowerAddress;
     if (borrowerAddress) {
@@ -25,11 +24,10 @@ function Borrow(props) {
       if (borrowerCreditLines.length) {
         const factory = buildCreditLine(borrowerCreditLines[0]);
         setCreditLineFactory(factory);
-        creditLine = await fetchCreditLineData(factory);
+        setCreditLine(await fetchCreditLineData(factory));
       }
     }
     setBorrower(borrower);
-    setCreditLine(creditLine);
   }
 
   useEffect(() => {
