@@ -119,26 +119,9 @@ function App() {
     removeError: removeError,
     updateTX: updateTX,
   };
-  let unsupportedNetworkWarning = '';
-  let noMetamaskWarning = '';
-  if (!window.ethereum) {
-    noMetamaskWarning = (
-      <div className="unlock-form background-container">
-        <div>Hey, no metamask!</div>
-      </div>
-    );
-  } else if (web3 && !network) {
-    unsupportedNetworkWarning = (
-      <div className="unlock-form background-container">
-        <div>Hey, no network!</div>
-      </div>
-    );
-  }
 
   return (
     <AppContext.Provider value={store}>
-      {unsupportedNetworkWarning}
-      {noMetamaskWarning}
       <Router>
         <Sidebar />
         <NetworkWidget

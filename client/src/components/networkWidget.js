@@ -1,5 +1,6 @@
 import React from 'react';
 import _ from 'lodash';
+import web3 from '../web3';
 import { croppedAddress, displayNumber } from '../utils';
 import { CONFIRMATION_THRESHOLD } from '../ethereum/utils';
 import useCloseOnClickOrEsc from '../hooks/useCloseOnClickOrEsc';
@@ -99,14 +100,6 @@ function NetworkWidget(props) {
     );
   }
 
-  const disabledNetworkWidget = (
-    <div ref={node} className="network-widget">
-      <button className="network-widget-button bold" onClick={enableMetamask}>
-        Connect Metamask
-      </button>
-    </div>
-  );
-
   const enabledNetworkWidget = (
     <div ref={node} className={`network-widget ${showNetworkWidgetInfo}`}>
       <button className={`network-widget-button ${enabledClass}`} onClick={toggleOpenWidget}>
@@ -136,8 +129,28 @@ function NetworkWidget(props) {
     </div>
   );
 
-  if (!props.user.address) {
-    return disabledNetworkWidget;
+  if (!window.ethereum) {
+    return (
+      <div ref={node} className="network-widget">
+        <a href="https://metamask.io" className="network-widget-button bold">
+          Go to metamask.io
+        </a>
+      </div>
+    );
+  } else if (web3 && !props.network) {
+    return (
+      <div ref={node} className="network-widget">
+        <div className="network-widget-button disabled">Wrong Network</div>
+      </div>
+    );
+  } else if (!props.user.address) {
+    return (
+      <div ref={node} className="network-widget">
+        <button className="network-widget-button bold" onClick={enableMetamask}>
+          Connect Metamask
+        </button>
+      </div>
+    );
   } else {
     return enabledNetworkWidget;
   }

@@ -10,6 +10,7 @@
   border: 1px solid $sand-dark;
   border-radius: 10px;
   color: $purp-dark;
+  display: inline-block;
   height: $widget-button-height;
   font-size: $sans-size-xs;
   line-height: $widget-button-height;
@@ -73,6 +74,11 @@
 
   &.bold:hover{
     background-color: $blue-light;
+  }
+
+  &.disabled,
+  &.disabled:hover{
+    background-color: $blue-xxlight;
   }
 }
 
