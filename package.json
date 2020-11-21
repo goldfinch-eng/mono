@@ -13,7 +13,8 @@
     "verify": "npx hardhat etherscan-verify --api-key DQUC8Y678J5RN5P7XE9RT91SWI7SSEDD53 --solc-input --network",
     "deploy": "npm run docs && npx hardhat deploy --show-stack-traces --export-all client/config/deployments.json --network",
     "upgrade-protocol": "npm run docs && npx hardhat deploy --export-all client/config/deployments.json --tags upgrade_protocol --network",
-    "update-configs": "npx hardhat run ./blockchain_scripts/updateConfigs.js --network"
+    "update-configs": "npx hardhat run ./blockchain_scripts/updateConfigs.js --network",
+    "upgrade-multisig": "npx hardhat run ./blockchain_scripts/upgrade.js --network"
   },
   "lint-staged": {
     "**!(client)/*.js": [
@@ -58,6 +59,7 @@
     "@openzeppelin/contracts-ethereum-package": "^3.0.0",
     "@openzeppelin/upgrades": "^2.8.0",
     "bn.js": "^5.1.3",
+    "contract-proxy-kit": "^2.2.0-alpha.1",
     "dotenv": "^8.2.0",
     "ethers": "^5.0.14",
     "react-router-dom": "^5.2.0",
