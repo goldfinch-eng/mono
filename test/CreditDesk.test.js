@@ -86,11 +86,16 @@ describe("CreditDesk", () => {
       throw new Error("No owner is set. Please set one in a beforeEach or pass it in explicitly")
     }
 
-    // 1000 is pretty high for test environments, and generally shouldn't be hit.
-    nextDueBlock = nextDueBlock || 1000
+    // Use this instead of time.latestBlock so that it's semantically consistent
+    // with setting creditDesk._setBlockNumberForTest before running this function
+    let latestBlock = await creditDesk.blockNumberForTest()
+
+    // These defaults are pretty arbitrary
     const termInDays = 360
-    const termInBlocks = (await creditDesk.BLOCKS_PER_DAY()).mul(new BN(termInDays))
-    const termEndBlock = (await time.latestBlock()).add(termInBlocks)
+    nextDueBlock = nextDueBlock || latestBlock.add(BLOCKS_PER_DAY.mul(paymentPeriodInDays))
+    const lastFullPaymentBlock = BN.min(new BN(nextDueBlock), latestBlock)
+    const termInBlocks = BLOCKS_PER_DAY.mul(new BN(termInDays))
+    const termEndBlock = latestBlock.add(termInBlocks)
     await creditDesk.setUnderwriterGovernanceLimit(thisUnderwriter, limit.mul(new BN(5)))
 
     await creditDesk.createCreditLine(thisBorrower, limit, interestApr, paymentPeriodInDays, termInDays, lateFeeApr, {
@@ -104,6 +109,7 @@ describe("CreditDesk", () => {
       creditLine.setBalance(usdcVal(balance), {from: thisOwner}),
       creditLine.setInterestOwed(usdcVal(interestOwed), {from: thisOwner}),
       creditLine.setPrincipalOwed(usdcVal(principalOwed), {from: thisOwner}),
+      creditLine.setLastFullPaymentBlock(lastFullPaymentBlock, {from: thisOwner}),
       usdc.transfer(creditLine.address, String(usdcVal(collectedPaymentBalance)), {from: thisOwner}),
       creditLine.setNextDueBlock(nextDueBlock, {from: thisOwner}),
       creditLine.setTermEndBlock(termEndBlock, {from: thisOwner}),
@@ -500,6 +506,65 @@ describe("CreditDesk", () => {
     })
   })
 
+  describe("migrateCreditLine", async () => {
+    let existingCl, prepaymentAmount
+    beforeEach(async () => {
+      borrower = person3
+      underwriter = owner
+      prepaymentAmount = usdcVal(50)
+      existingCl = await createAndSetCreditLineAttributes({
+        balance: usdcVal(10000),
+        interestOwed: usdcVal(1),
+        principalOwed: usdcVal(1),
+      })
+    })
+    it("should close out the old credit line", async () => {
+      await creditDesk.pay(existingCl.address, String(prepaymentAmount), {from: owner})
+      expect(await existingCl.balance()).to.not.bignumber.equal(new BN(0))
+      expect(await existingCl.limit()).to.not.bignumber.equal(new BN(0))
+      await creditDesk.migrateCreditLine(
+        existingCl.address,
+        borrower,
+        limit,
+        interestApr,
+        paymentPeriodInDays,
+        termInDays,
+        lateFeeApr
+      )
+      const newClAddress = (await creditDesk.getBorrowerCreditLines(borrower))[1]
+
+      expect(await existingCl.balance()).to.bignumber.equal(new BN(0))
+      expect(await existingCl.limit()).to.bignumber.equal(new BN(0))
+      expect(await getBalance(existingCl.address, usdc)).to.bignumber.equal(new BN(0))
+      expect(await getBalance(newClAddress, usdc)).to.bignumber.equal(prepaymentAmount)
+    })
+
+    it("should transfer the accounting variables", async () => {
+      await creditDesk.pay(existingCl.address, String(prepaymentAmount), {from: owner})
+      const oldBalance = await existingCl.balance()
+      await creditDesk.migrateCreditLine(
+        existingCl.address,
+        borrower,
+        limit,
+        interestApr,
+        paymentPeriodInDays,
+        termInDays,
+        lateFeeApr
+      )
+      const newClAddress = (await creditDesk.getBorrowerCreditLines(borrower))[1]
+      const newCl = await CreditLine.at(newClAddress)
+
+      expect(oldBalance).to.bignumber.equal(await newCl.balance())
+      expect(await existingCl.interestOwed()).to.bignumber.equal(await newCl.interestOwed())
+      expect(await existingCl.principalOwed()).to.bignumber.equal(await newCl.principalOwed())
+      expect(await existingCl.termEndBlock()).to.bignumber.equal(await newCl.termEndBlock())
+      expect(await existingCl.nextDueBlock()).to.bignumber.equal(await newCl.nextDueBlock())
+      expect(await existingCl.interestAccruedAsOfBlock()).to.bignumber.equal(await newCl.interestAccruedAsOfBlock())
+      expect(await existingCl.writedownAmount()).to.bignumber.equal(await newCl.writedownAmount())
+      expect(await existingCl.lastFullPaymentBlock()).to.bignumber.equal(await newCl.lastFullPaymentBlock())
+    })
+  })
+
   describe("prepayment", async () => {
     let makePrepayment = async (creditLineAddress, amount, from) => {
       // There's no separate collectedPayment anymore, a collectedPayment is just a payment that happens before
@@ -820,7 +885,7 @@ describe("CreditDesk", () => {
   })
 
   describe("writedowns", async () => {
-    var originalSharePrice, originalTotalShares, interestOwedForOnePeriod, creditLine
+    var originalSharePrice, originalTotalShares, interestOwedForOnePeriod, creditLine, nextDueBlock
     const lowTolerance = new BN(200)
 
     beforeEach(async () => {
@@ -830,33 +895,39 @@ describe("CreditDesk", () => {
 
       originalSharePrice = await pool.sharePrice()
       originalTotalShares = await fidu.totalSupply()
+      const latestBlock = await time.latestBlock()
 
       const paymentPeriodInBlocks = paymentPeriodInDays.mul(BLOCKS_PER_DAY)
       const totalInterestPerYear = usdcVal(10).mul(interestApr).div(INTEREST_DECIMALS)
       interestOwedForOnePeriod = totalInterestPerYear.mul(paymentPeriodInBlocks).div(BLOCKS_PER_YEAR)
+      nextDueBlock = latestBlock.add(paymentPeriodInBlocks)
 
       expect(interestOwedForOnePeriod).to.bignumber.eq(new BN("41095"))
 
+      // Set it just after the next due block, so that assessment actually runs
+      await creditDesk._setBlockNumberForTest(nextDueBlock.add(new BN(1)))
       creditLine = await createAndSetCreditLineAttributes({
         balance: 10,
         interestOwed: 5,
         principalOwed: 0,
-        nextDueBlock: 1,
+        nextDueBlock: nextDueBlock,
       })
     })
 
     describe("before loan term ends", async () => {
       it("should write down the principal and distribute losses", async () => {
-        // Assume 2 periods late
-        const periodsLate = new BN("2")
+        // Assume already 1 period late
+        const periodsLate = new BN("1")
         const interestOwed = interestOwedForOnePeriod.mul(periodsLate)
         await creditLine.setInterestOwed(interestOwed)
 
+        // This will assess one additional period, making for 2 total periods of lateness
         await creditDesk.assessCreditLine(creditLine.address)
 
+        // So writedown is 2 periods late - 1 grace period / 4 max = 25%
         let expectedWritedown = usdcVal(10).div(new BN(4)) // 25% of 10 = 2.5
 
-        expect(await creditLine.interestOwed()).to.be.bignumber.closeTo(interestOwed, tolerance)
+        expect(await creditLine.interestOwed()).to.be.bignumber.closeTo(interestOwed.mul(new BN(2)), tolerance)
         expect(await creditLine.principalOwed()).to.be.bignumber.closeTo(usdcVal(0), tolerance)
         expect(await creditLine.writedownAmount()).to.be.bignumber.eq(expectedWritedown)
 
@@ -868,23 +939,22 @@ describe("CreditDesk", () => {
         expect(delta).to.be.bignumber.closeTo(expectedDelta, fiduTolerance)
         expect(newSharePrice).to.be.bignumber.lt(originalSharePrice)
         expect(newSharePrice).to.be.bignumber.closeTo(originalSharePrice.sub(delta), fiduTolerance)
-
-        // It should not allow drawdowns
-        const result = creditDesk.drawdown(usdcVal(1), creditLine.address, borrower, {from: borrower})
-        await expect(result).to.be.rejectedWith(/payments are past due/)
       })
 
       it("should decrease the write down amount if partially paid back", async () => {
-        // Assume 2 periods late
-        const periodsLate = new BN("2")
+        // Assume 1 periods late already
+        const periodsLate = new BN("1")
         const interestOwed = interestOwedForOnePeriod.mul(periodsLate)
         await creditLine.setInterestOwed(interestOwed)
 
+        // This will assess one additional period, making for 2 total periods of lateness
         await creditDesk.assessCreditLine(creditLine.address)
+
         // Reset the next due block so we trigger the applyPayment when we pay
-        await creditLine.setNextDueBlock(new BN(1))
+        await creditLine.setNextDueBlock(nextDueBlock)
         var sharePriceAfterAsses = await pool.sharePrice()
 
+        // Writedown should be 2 periods late - 1 grace period / 4 max = 25%
         let expectedWritedown = usdcVal(10).div(new BN(4)) // 25% of 10 = 2.5
 
         expect(await creditLine.writedownAmount()).to.be.bignumber.eq(expectedWritedown)
@@ -917,22 +987,20 @@ describe("CreditDesk", () => {
       })
 
       it("should reset the writedowns to 0 if fully paid back", async () => {
-        // Assume 2 periods late
-        const periodsLate = new BN("2")
+        // Assume 1 periods late already
+        const periodsLate = new BN("1")
         const interestOwed = interestOwedForOnePeriod.mul(periodsLate)
         await creditLine.setInterestOwed(interestOwed)
 
+        // This will assess one additional period, making for 2 total periods of lateness
         await creditDesk.assessCreditLine(creditLine.address)
         // Reset the next due block so we trigger the applyPayment when we pay
-        await creditLine.setNextDueBlock(new BN(1))
+        await creditLine.setNextDueBlock(nextDueBlock)
 
+        // Writedown should be 2 periods late - 1 grace period / 4 max = 25%
         let expectedWritedown = usdcVal(10).div(new BN(4)) // 25% of 10 = 2.5
 
         expect(await creditLine.writedownAmount()).to.be.bignumber.eq(expectedWritedown)
-
-        // It should not allow drawdowns
-        let drawdown = creditDesk.drawdown(usdcVal(1), creditLine.address, borrower, {from: borrower})
-        await expect(drawdown).to.be.rejectedWith(/payments are past due/)
 
         // Payback all interest owed
         await creditDesk.pay(creditLine.address, String(interestOwed), {from: borrower})
@@ -946,10 +1014,6 @@ describe("CreditDesk", () => {
 
         expect(delta).to.be.bignumber.eq(expectedDelta)
         expect(newSharePrice).to.be.bignumber.eq(originalSharePrice.add(delta))
-
-        // darwdowns should be re-enabled
-        drawdown = creditDesk.drawdown(usdcVal(1), creditLine.address, borrower, {from: borrower})
-        await expect(drawdown).to.be.fulfilled
       })
     })
 
@@ -1198,6 +1262,7 @@ describe("CreditDesk", () => {
         const originalPoolBalance = await getBalance(pool.address, usdc)
         const originalSharePrice = await pool.sharePrice()
         const originalTotalShares = await fidu.totalSupply()
+        const originalLastPaidBlock = await creditLine.lastFullPaymentBlock()
         const expectedFeeAmount = usdcVal(interestPaid).div(FEE_DENOMINATOR)
 
         await creditDesk.assessCreditLine(creditLine.address)
@@ -1220,7 +1285,7 @@ describe("CreditDesk", () => {
         expect(await getBalance(creditLine.address, usdc)).to.bignumber.equal("0")
         expect(await creditLine.interestOwed()).to.bignumber.equal(usdcVal(interestOwed).sub(usdcVal(interestPaid)))
         expect(await creditLine.principalOwed()).to.bignumber.equal(usdcVal(principalOwed))
-        expect(await creditLine.lastFullPaymentBlock()).to.bignumber.equal("0")
+        expect(await creditLine.lastFullPaymentBlock()).to.bignumber.equal(originalLastPaidBlock)
         expect(await pool.sharePrice()).to.bignumber.closeTo(originalSharePrice.add(expectedDelta), fiduTolerance)
         expect(newPoolBalance.sub(originalPoolBalance)).to.bignumber.equal(usdcVal(interestPaid).sub(expectedFeeAmount))
       })

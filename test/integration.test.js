@@ -90,7 +90,7 @@ describe("Goldfinch", async () => {
       expect(await creditLine.lastFullPaymentBlock()).to.bignumber.equal(new BN(lastFullPaymentBlock))
     }
 
-    describe("interest rate works", async () => {
+    describe("credit lines and interest rates", async () => {
       let limit, interestApr, paymentPeriodInDays, termInDays, lateFeeApr, paymentPeriodInBlocks
 
       beforeEach(async () => {
@@ -102,13 +102,32 @@ describe("Goldfinch", async () => {
         paymentPeriodInBlocks = BLOCKS_PER_DAY.mul(paymentPeriodInDays)
       })
 
-      async function createCreditLine() {
-        await creditDesk.createCreditLine(borrower, limit, interestApr, paymentPeriodInDays, termInDays, lateFeeApr, {
-          from: underwriter,
-        })
+      async function createCreditLine({_paymentPeriodInDays} = {}) {
+        await creditDesk.createCreditLine(
+          borrower,
+          limit,
+          interestApr,
+          _paymentPeriodInDays || paymentPeriodInDays,
+          termInDays,
+          lateFeeApr,
+          {from: underwriter}
+        )
         var ulCreditLines = await creditDesk.getUnderwriterCreditLines(underwriter)
         return CreditLine.at(ulCreditLines[0])
       }
+
+      describe("drawdown and isLate", async () => {
+        it("should not think you're late if it's not past the nextDueBlock", async () => {
+          creditLine = await createCreditLine({_paymentPeriodInDays: new BN(30)})
+          await expect(creditDesk.drawdown(new BN(1000), creditLine.address, borrower, {from: borrower})).to.be
+            .fulfilled
+          await advanceTime({days: 10})
+          // This drawdown will accumulate and record some interest
+          await expect(creditDesk.drawdown(new BN(1), creditLine.address, borrower, {from: borrower})).to.be.fulfilled
+          // This one should still work, because you still aren't late...
+          await expect(creditDesk.drawdown(new BN(1), creditLine.address, borrower, {from: borrower})).to.be.fulfilled
+        })
+      })
 
       it("calculates interest correctly", async () => {
         let currentBlock = await advanceTime({days: 1})
@@ -122,7 +141,8 @@ describe("Goldfinch", async () => {
 
         var nextDueBlock = (await creditDesk.blockNumberForTest()).add(BLOCKS_PER_DAY.mul(paymentPeriodInDays))
         interestAccruedAsOfBlock = currentBlock
-        await assertCreditLine(usdcVal(2000), "0", "0", nextDueBlock, currentBlock, 0)
+        let lastFullPaymentBlock = currentBlock
+        await assertCreditLine(usdcVal(2000), "0", "0", nextDueBlock, currentBlock, lastFullPaymentBlock)
 
         currentBlock = await advanceTime({days: 1})
 
@@ -141,7 +161,7 @@ describe("Goldfinch", async () => {
           "0",
           nextDueBlock,
           nextDueBlock.sub(paymentPeriodInBlocks),
-          0
+          lastFullPaymentBlock
         )
 
         currentBlock = await advanceTime({days: 1})
@@ -156,7 +176,7 @@ describe("Goldfinch", async () => {
           "0",
           nextDueBlock,
           nextDueBlock.sub(paymentPeriodInBlocks),
-          0
+          lastFullPaymentBlock
         )
       })
     })

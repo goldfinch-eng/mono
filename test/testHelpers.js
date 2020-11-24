@@ -35,6 +35,9 @@ const getDeployedAsTruffleContract = async (deployments, contractName) => {
 const tolerance = usdcVal(1).div(new BN(1000)) // 0.001$
 
 async function getBalance(address, erc20) {
+  if (typeof address !== "string") {
+    throw new Error("Address must be a string")
+  }
   if (erc20) {
     return new BN(await erc20.balanceOf(address))
   }

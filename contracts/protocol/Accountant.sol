@@ -58,7 +58,6 @@ library Accountant {
     uint256 maxLatePeriods
   ) public view returns (uint256, uint256) {
     uint256 amountOwedLastPeriod = calculateAmountOwedForOnePeriod(cl);
-
     if (amountOwedLastPeriod == 0) {
       return (0, 0);
     }
@@ -81,7 +80,6 @@ library Accountant {
 
     FixedPoint.Unsigned memory maxLate = FixedPoint.fromUnscaledUint(maxLatePeriods);
     FixedPoint.Unsigned memory writedownPercent;
-
     if (periodsLate.isLessThanOrEqual(fpGracePeriod)) {
       // Within the grace period, we don't have to write down, so assume 0%
       writedownPercent = FixedPoint.fromUnscaledUint(0);
@@ -118,7 +116,6 @@ library Accountant {
     // this functions purpose is just to normalize balances, and  will be called any time
     // a balance affecting action takes place (eg. drawdown, repayment, assessment)
     uint256 interestAccruedAsOfBlock = Math.min(blockNumber, cl.interestAccruedAsOfBlock());
-
     uint256 numBlocksElapsed = blockNumber.sub(interestAccruedAsOfBlock);
     uint256 totalInterestPerYear = cl.balance().mul(cl.interestApr()).div(INTEREST_DECIMALS);
     uint256 interestOwed = totalInterestPerYear.mul(numBlocksElapsed).div(BLOCKS_PER_YEAR);

@@ -16,7 +16,7 @@ abstract contract ICreditDesk {
     uint256 _paymentPeriodInDays,
     uint256 _termInDays,
     uint256 _lateFeeApr
-  ) external virtual;
+  ) public virtual returns (address);
 
   function drawdown(
     uint256 amount,
