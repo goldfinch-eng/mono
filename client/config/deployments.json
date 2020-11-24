@@ -5235,7 +5235,7 @@
       "chainId": "4",
       "contracts": {
         "ConfigOptions": {
-          "address": "0x8E1902BB5fb80822f270D9BD1dD80796A179b2BB",
+          "address": "0xaebeA2A72EDcb7dccEB4358a1bB77E0fbEE08378",
           "abi": [
             {
               "inputs": [
@@ -5278,7 +5278,7 @@
           ]
         },
         "GoldfinchConfig_Implementation": {
-          "address": "0xf84461c378132aC89eBCdb8896340BC36d3b2E1e",
+          "address": "0x5c9ff542f8Fc7ee660edcC3F7828F495009Aff63",
           "abi": [
             {
               "anonymous": false,
@@ -5811,7 +5811,7 @@
           ]
         },
         "GoldfinchConfig_Proxy": {
-          "address": "0x4a51045aD74e88AeB89DFDb28ec11396B4cB2EeE",
+          "address": "0x43c73831728Bcc6f5077773d38eBdC8D8dC5F850",
           "abi": [
             {
               "inputs": [
@@ -5946,7 +5946,7 @@
           ]
         },
         "GoldfinchConfig": {
-          "address": "0x4a51045aD74e88AeB89DFDb28ec11396B4cB2EeE",
+          "address": "0x43c73831728Bcc6f5077773d38eBdC8D8dC5F850",
           "abi": [
             {
               "anonymous": false,
@@ -6479,7 +6479,7 @@
           ]
         },
         "TestERC20": {
-          "address": "0xEa4174b5674f442f0D77BEAD37E5C997AAD63133",
+          "address": "0x7D17be13761682BFaF60875414c419A431AeD5BD",
           "abi": [
             {
               "inputs": [
@@ -6770,7 +6770,7 @@
           ]
         },
         "Fidu_Implementation": {
-          "address": "0xa5E1dCAd402420cdA369caC07c6cc884A353692B",
+          "address": "0xa4bd6DfAC270fbFEb1A95fc971F19C0196f00d24",
           "abi": [
             {
               "anonymous": false,
@@ -6897,6 +6897,19 @@
               ],
               "name": "Unpaused",
               "type": "event"
+            },
+            {
+              "inputs": [],
+              "name": "ASSET_LIABILITY_MATCH_THRESHOLD",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
             },
             {
               "inputs": [],
@@ -7466,7 +7479,7 @@
           ]
         },
         "Fidu_Proxy": {
-          "address": "0x66248B929659985602da5EC04bee7a8869E0cAA5",
+          "address": "0x44f19F657A937b8e5b99c78C15505Ba453F83464",
           "abi": [
             {
               "inputs": [
@@ -7601,7 +7614,7 @@
           ]
         },
         "Fidu": {
-          "address": "0x66248B929659985602da5EC04bee7a8869E0cAA5",
+          "address": "0x44f19F657A937b8e5b99c78C15505Ba453F83464",
           "abi": [
             {
               "anonymous": false,
@@ -7728,6 +7741,19 @@
               ],
               "name": "Unpaused",
               "type": "event"
+            },
+            {
+              "inputs": [],
+              "name": "ASSET_LIABILITY_MATCH_THRESHOLD",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
             },
             {
               "inputs": [],
@@ -8297,7 +8323,7 @@
           ]
         },
         "Pool_Implementation": {
-          "address": "0xd5A8ffA4DecC54a9eAAf717AF264ca81303C5F4d",
+          "address": "0x63a84e58504315aE15398342f9Bbb6Fc010B2C62",
           "abi": [
             {
               "anonymous": false,
@@ -8940,7 +8966,7 @@
           ]
         },
         "Pool_Proxy": {
-          "address": "0x462D390CE593042c3dD5b88FeA7ecd1a015A665d",
+          "address": "0xe971889bAB4C83F229C9377F02a278Aa810F8955",
           "abi": [
             {
               "inputs": [
@@ -9075,7 +9101,7 @@
           ]
         },
         "Pool": {
-          "address": "0x462D390CE593042c3dD5b88FeA7ecd1a015A665d",
+          "address": "0xe971889bAB4C83F229C9377F02a278Aa810F8955",
           "abi": [
             {
               "anonymous": false,
@@ -9718,7 +9744,7 @@
           ]
         },
         "CreditLine": {
-          "address": "0x9f9eD689F272A07Dc0Ae9E981Ddf0c1CaBc97472",
+          "address": "0x337bE5CFBf52ECeB10D602A0310cCfB5b7115d5D",
           "abi": [
             {
               "anonymous": false,
@@ -10424,7 +10450,7 @@
           ]
         },
         "CreditLineFactory_Implementation": {
-          "address": "0xFACfec1dF2557CcaEe93184254D69DbA13e5004C",
+          "address": "0x97B7824A09aCC7A36A6788ed09863Ebf6a3ceB2e",
           "abi": [
             {
               "anonymous": false,
@@ -10794,7 +10820,7 @@
           ]
         },
         "CreditLineFactory_Proxy": {
-          "address": "0xadb1d14C214CfcB0f584bEaDFDdD6FA25a00d843",
+          "address": "0xA9b3b5Fb62Ce24b9d77F3E6Ac15A058946eCbCEd",
           "abi": [
             {
               "inputs": [
@@ -10929,7 +10955,7 @@
           ]
         },
         "CreditLineFactory": {
-          "address": "0xadb1d14C214CfcB0f584bEaDFDdD6FA25a00d843",
+          "address": "0xA9b3b5Fb62Ce24b9d77F3E6Ac15A058946eCbCEd",
           "abi": [
             {
               "anonymous": false,
@@ -11299,7 +11325,7 @@
           ]
         },
         "Accountant": {
-          "address": "0x19A6aCc52BF609a4eB94eE3c1C203AC223a07340",
+          "address": "0x6bc06Af8c0Ad43d026fC8BD4F98619f793637105",
           "abi": [
             {
               "inputs": [],
@@ -11581,7 +11607,7 @@
           ]
         },
         "CreditDesk_Implementation": {
-          "address": "0xac8cE137E2C247c84B980Ded793F449595dbb0E2",
+          "address": "0xC6F6e24A64e9aA81EAE3D7613cb784F427f06A47",
           "abi": [
             {
               "anonymous": false,
@@ -11916,7 +11942,13 @@
                 }
               ],
               "name": "createCreditLine",
-              "outputs": [],
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
               "stateMutability": "nonpayable",
               "type": "function"
             },
@@ -12114,6 +12146,49 @@
                 }
               ],
               "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "contract CreditLine",
+                  "name": "clToMigrate",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "_borrower",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "_limit",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "_interestApr",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "_paymentPeriodInDays",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "_termInDays",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "_lateFeeApr",
+                  "type": "uint256"
+                }
+              ],
+              "name": "migrateCreditLine",
+              "outputs": [],
+              "stateMutability": "nonpayable",
               "type": "function"
             },
             {
@@ -12263,7 +12338,7 @@
           ]
         },
         "CreditDesk_Proxy": {
-          "address": "0xF16aE2973Db2142E11deB9b36605cDc90a86097e",
+          "address": "0x800d57501Ac8e0715A59e55Eb6aC4C467BA85ca1",
           "abi": [
             {
               "inputs": [
@@ -12398,7 +12473,7 @@
           ]
         },
         "CreditDesk": {
-          "address": "0xF16aE2973Db2142E11deB9b36605cDc90a86097e",
+          "address": "0x800d57501Ac8e0715A59e55Eb6aC4C467BA85ca1",
           "abi": [
             {
               "anonymous": false,
@@ -12733,7 +12808,13 @@
                 }
               ],
               "name": "createCreditLine",
-              "outputs": [],
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
               "stateMutability": "nonpayable",
               "type": "function"
             },
@@ -12931,6 +13012,49 @@
                 }
               ],
               "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "contract CreditLine",
+                  "name": "clToMigrate",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "_borrower",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "_limit",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "_interestApr",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "_paymentPeriodInDays",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "_termInDays",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "_lateFeeApr",
+                  "type": "uint256"
+                }
+              ],
+              "name": "migrateCreditLine",
+              "outputs": [],
+              "stateMutability": "nonpayable",
               "type": "function"
             },
             {
@@ -13748,7 +13872,13 @@
                 }
               ],
               "name": "createCreditLine",
-              "outputs": [],
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
               "stateMutability": "nonpayable",
               "type": "function"
             },
@@ -13946,6 +14076,49 @@
                 }
               ],
               "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "contract CreditLine",
+                  "name": "clToMigrate",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "_borrower",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "_limit",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "_interestApr",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "_paymentPeriodInDays",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "_termInDays",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "_lateFeeApr",
+                  "type": "uint256"
+                }
+              ],
+              "name": "migrateCreditLine",
+              "outputs": [],
+              "stateMutability": "nonpayable",
               "type": "function"
             },
             {
@@ -14430,7 +14603,13 @@
                 }
               ],
               "name": "createCreditLine",
-              "outputs": [],
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
               "stateMutability": "nonpayable",
               "type": "function"
             },
@@ -14628,6 +14807,49 @@
                 }
               ],
               "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "contract CreditLine",
+                  "name": "clToMigrate",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "_borrower",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "_limit",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "_interestApr",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "_paymentPeriodInDays",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "_termInDays",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "_lateFeeApr",
+                  "type": "uint256"
+                }
+              ],
+              "name": "migrateCreditLine",
+              "outputs": [],
+              "stateMutability": "nonpayable",
               "type": "function"
             },
             {
@@ -15242,6 +15464,19 @@
             },
             {
               "inputs": [],
+              "name": "interestAccruedAsOfBlock",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
               "name": "interestApr",
               "outputs": [
                 {
@@ -15282,19 +15517,6 @@
             {
               "inputs": [],
               "name": "lastFullPaymentBlock",
-              "outputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "",
-                  "type": "uint256"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [],
-              "name": "lastUpdatedBlock",
               "outputs": [
                 {
                   "internalType": "uint256",
@@ -15443,6 +15665,19 @@
               "inputs": [
                 {
                   "internalType": "uint256",
+                  "name": "newInterestAccruedAsOfBlock",
+                  "type": "uint256"
+                }
+              ],
+              "name": "setInterestAccruedAsOfBlock",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
                   "name": "newInterestOwed",
                   "type": "uint256"
                 }
@@ -15461,19 +15696,6 @@
                 }
               ],
               "name": "setLastFullPaymentBlock",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "newLastUpdatedBlock",
-                  "type": "uint256"
-                }
-              ],
-              "name": "setLastUpdatedBlock",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -16623,6 +16845,19 @@
             },
             {
               "inputs": [],
+              "name": "ASSET_LIABILITY_MATCH_THRESHOLD",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
               "name": "DEFAULT_ADMIN_ROLE",
               "outputs": [
                 {
@@ -17316,6 +17551,19 @@
               ],
               "name": "Unpaused",
               "type": "event"
+            },
+            {
+              "inputs": [],
+              "name": "ASSET_LIABILITY_MATCH_THRESHOLD",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
             },
             {
               "inputs": [],
@@ -19516,6 +19764,19 @@
               "type": "function"
             },
             {
+              "inputs": [],
+              "name": "assets",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
               "inputs": [
                 {
                   "internalType": "address",
@@ -20143,6 +20404,19 @@
               "name": "__PauserPausable__init",
               "outputs": [],
               "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "assets",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
               "type": "function"
             },
             {
