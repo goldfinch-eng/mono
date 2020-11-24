@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.6.8;
+pragma solidity 0.6.12;
 
 import "./BaseUpgradeablePausable.sol";
 import "./GoldfinchConfig.sol";
@@ -20,7 +20,7 @@ contract CreditLineFactory is BaseUpgradeablePausable {
     config = _config;
   }
 
-  function createCreditLine(bytes memory _data) public returns (address) {
+  function createCreditLine(bytes calldata _data) external returns (address) {
     address creditLineImplAddress = config.getAddress(uint256(ConfigOptions.Addresses.CreditLineImplementation));
     address creditLineProxy = deployMinimal(creditLineImplAddress, _data);
     return creditLineProxy;

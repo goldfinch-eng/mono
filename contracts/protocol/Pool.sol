@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.6.8;
+pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "./BaseUpgradeablePausable.sol";
@@ -16,6 +16,9 @@ import "./ConfigHelper.sol";
 contract Pool is BaseUpgradeablePausable, IPool {
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
+
+  // $1 threshold to handle potential rounding errors, from differing decimals on Fidu and USDC;
+  uint256 constant ASSET_LIABILITY_MATCH_THRESHOLD = 1e6;
 
   event DepositMade(address indexed capitalProvider, uint256 amount, uint256 shares);
   event WithdrawalMade(address indexed capitalProvider, uint256 userAmount, uint256 reserveAmount);
@@ -48,15 +51,15 @@ contract Pool is BaseUpgradeablePausable, IPool {
    * @notice Deposits `amount` USDC from msg.sender into the Pool, and returns you the equivalent value of FIDU tokens
    * @param amount The amount of USDC to deposit
    */
-  function deposit(uint256 amount) external override whenNotPaused {
+  function deposit(uint256 amount) external override whenNotPaused withinTransactionLimit(amount) nonReentrant {
     require(amount > 0, "Must deposit more than zero");
-    require(transactionWithinLimit(amount), "Amount is over the per-transaction limit");
     // Check if the amount of new shares to be added is within limits
     uint256 depositShares = getNumShares(amount);
     uint256 potentialNewTotalShares = totalShares().add(depositShares);
     require(poolWithinLimit(potentialNewTotalShares), "Deposit would put the Pool over the total limit.");
     emit DepositMade(msg.sender, amount, depositShares);
-    doUSDCTransfer(msg.sender, address(this), amount);
+    bool success = doUSDCTransfer(msg.sender, address(this), amount);
+    require(success, "Failed to transfer for deposit");
     config.getFidu().mintTo(msg.sender, depositShares);
 
     assert(assetsMatchLiabilities());
@@ -66,9 +69,8 @@ contract Pool is BaseUpgradeablePausable, IPool {
    * @notice Withdraws `amount` USDC from the Pool to msg.sender, and burns the equivalent value of FIDU tokens
    * @param amount The amount of USDC to withdraw
    */
-  function withdraw(uint256 amount) external override whenNotPaused {
+  function withdraw(uint256 amount) external override whenNotPaused withinTransactionLimit(amount) nonReentrant {
     require(amount > 0, "Must withdraw more than zero");
-    require(transactionWithinLimit(amount), "Amount is over the per-transaction limit");
     // Determine current shares the address has and the shares requested to withdraw
     uint256 currentShares = config.getFidu().balanceOf(msg.sender);
     uint256 withdrawShares = getNumShares(amount);
@@ -80,7 +82,8 @@ contract Pool is BaseUpgradeablePausable, IPool {
 
     emit WithdrawalMade(msg.sender, userAmount, reserveAmount);
     // Send the amounts
-    doUSDCTransfer(address(this), msg.sender, userAmount);
+    bool success = doUSDCTransfer(address(this), msg.sender, userAmount);
+    require(success, "Failed to transfer for withdraw");
     sendToReserve(address(this), reserveAmount, msg.sender);
 
     // Burn the shares
@@ -104,9 +107,10 @@ contract Pool is BaseUpgradeablePausable, IPool {
     uint256 poolAmount = amount.sub(reserveAmount);
     emit InterestCollected(from, poolAmount, reserveAmount);
     uint256 increment = usdcToSharePrice(poolAmount);
-    sharePrice = sharePrice + increment;
+    sharePrice = sharePrice.add(increment);
     sendToReserve(from, reserveAmount, from);
-    doUSDCTransfer(from, address(this), poolAmount);
+    bool success = doUSDCTransfer(from, address(this), poolAmount);
+    require(success, "Failed to transfer interest payment");
   }
 
   /**
@@ -125,7 +129,8 @@ contract Pool is BaseUpgradeablePausable, IPool {
   function collectPrincipalRepayment(address from, uint256 amount) external override onlyCreditDesk whenNotPaused {
     // Purposefully does nothing except receive money. No share price updates for principal.
     emit PrincipalCollected(from, amount);
-    doUSDCTransfer(from, address(this), amount);
+    bool success = doUSDCTransfer(from, address(this), amount);
+    require(success, "Failed to principal repayment");
   }
 
   function distributeLosses(address creditlineAddress, int256 writedownDelta)
@@ -209,15 +214,13 @@ contract Pool is BaseUpgradeablePausable, IPool {
   }
 
   function assetsMatchLiabilities() internal view returns (bool) {
-    uint256 liabilities = config.getFidu().totalSupply().mul(config.getPool().sharePrice()).div(fiduMantissa());
+    uint256 liabilities = config.getFidu().totalSupply().mul(sharePrice).div(fiduMantissa());
     uint256 liabilitiesInDollars = fiduToUSDC(liabilities);
     uint256 _assets = assets();
-    // $1 threshold to handle potential rounding errors, from differing decimals on Fidu and USDC;
-    uint256 threshold = 1e6;
     if (_assets >= liabilitiesInDollars) {
-      return _assets.sub(liabilitiesInDollars) <= threshold;
+      return _assets.sub(liabilitiesInDollars) <= ASSET_LIABILITY_MATCH_THRESHOLD;
     } else {
-      return liabilitiesInDollars.sub(_assets) <= threshold;
+      return liabilitiesInDollars.sub(_assets) <= ASSET_LIABILITY_MATCH_THRESHOLD;
     }
   }
 
@@ -251,6 +254,11 @@ contract Pool is BaseUpgradeablePausable, IPool {
     uint256 balanceAfter = usdc.balanceOf(to);
     require(balanceAfter >= balanceBefore, "Token Transfer Overflow Error");
     return success;
+  }
+
+  modifier withinTransactionLimit(uint256 amount) {
+    require(transactionWithinLimit(amount), "Amount is over the per-transaction limit");
+    _;
   }
 
   modifier onlyCreditDesk() {

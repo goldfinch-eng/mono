@@ -109,7 +109,7 @@ describe("Pool", () => {
         return expect(pool.pause()).to.be.fulfilled
       })
       it("should disallow non-owner to pause", async () => {
-        return expect(pool.pause({from: person2})).to.be.rejectedWith(/Must have pauser role to pause/)
+        return expect(pool.pause({from: person2})).to.be.rejectedWith(/Must have pauser role/)
       })
     })
   })

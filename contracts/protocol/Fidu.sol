@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.8;
+pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts-ethereum-package/contracts/presets/ERC20PresetMinterPauser.sol";
 import "./ConfigHelper.sol";
@@ -15,6 +15,8 @@ import "./ConfigHelper.sol";
 
 contract Fidu is ERC20PresetMinterPauserUpgradeSafe {
   bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
+  // $1 threshold to handle potential rounding errors, from differing decimals on Fidu and USDC;
+  uint256 public constant ASSET_LIABILITY_MATCH_THRESHOLD = 1e6;
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
 
@@ -26,10 +28,10 @@ contract Fidu is ERC20PresetMinterPauserUpgradeSafe {
   // solhint-disable-next-line func-name-mixedcase
   function __initialize__(
     address owner,
-    string memory name,
-    string memory symbol,
+    string calldata name,
+    string calldata symbol,
     GoldfinchConfig _config
-  ) public initializer {
+  ) external initializer {
     __Context_init_unchained();
     __AccessControl_init_unchained();
     __ERC20_init_unchained(name, symbol);
@@ -87,12 +89,10 @@ contract Fidu is ERC20PresetMinterPauserUpgradeSafe {
     uint256 liabilities = totalSupply().add(newAmount).mul(config.getPool().sharePrice()).div(fiduMantissa());
     uint256 liabilitiesInDollars = fiduToUSDC(liabilities);
     uint256 _assets = config.getPool().assets();
-    // $1 threshold to handle potential rounding errors, from differing decimals on Fidu and USDC;
-    uint256 threshold = 1e6;
     if (_assets >= liabilitiesInDollars) {
-      return _assets.sub(liabilitiesInDollars) <= threshold;
+      return _assets.sub(liabilitiesInDollars) <= ASSET_LIABILITY_MATCH_THRESHOLD;
     } else {
-      return liabilitiesInDollars.sub(_assets) <= threshold;
+      return liabilitiesInDollars.sub(_assets) <= ASSET_LIABILITY_MATCH_THRESHOLD;
     }
   }
 
@@ -101,12 +101,10 @@ contract Fidu is ERC20PresetMinterPauserUpgradeSafe {
     uint256 liabilities = totalSupply().sub(amountToBurn).mul(config.getPool().sharePrice()).div(fiduMantissa());
     uint256 liabilitiesInDollars = fiduToUSDC(liabilities);
     uint256 _assets = config.getPool().assets();
-    // $1 threshold to handle potential rounding errors, from differing decimals on Fidu and USDC;
-    uint256 threshold = 1e6;
     if (_assets >= liabilitiesInDollars) {
-      return _assets.sub(liabilitiesInDollars) <= threshold;
+      return _assets.sub(liabilitiesInDollars) <= ASSET_LIABILITY_MATCH_THRESHOLD;
     } else {
-      return liabilitiesInDollars.sub(_assets) <= threshold;
+      return liabilitiesInDollars.sub(_assets) <= ASSET_LIABILITY_MATCH_THRESHOLD;
     }
   }
 

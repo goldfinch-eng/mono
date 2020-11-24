@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.6.8;
+pragma solidity 0.6.12;
 
 import "./BaseUpgradeablePausable.sol";
 import "./ConfigOptions.sol";
@@ -27,29 +27,25 @@ contract GoldfinchConfig is BaseUpgradeablePausable {
   function setAddress(uint256 addressKey, address newAddress) public onlyAdmin {
     require(addresses[addressKey] == address(0), "Address has already been initialized");
 
-    string memory name = ConfigOptions.getAddressName(addressKey);
-    emit AddressUpdated(msg.sender, name, addresses[addressKey], newAddress);
+    emit AddressUpdated(msg.sender, ConfigOptions.getAddressName(addressKey), addresses[addressKey], newAddress);
     addresses[addressKey] = newAddress;
   }
 
   function setNumber(uint256 number, uint256 newNumber) public onlyAdmin {
-    string memory name = ConfigOptions.getNumberName(number);
-    emit NumberUpdated(msg.sender, name, numbers[number], newNumber);
+    emit NumberUpdated(msg.sender, ConfigOptions.getNumberName(number), numbers[number], newNumber);
     numbers[number] = newNumber;
   }
 
   function setCreditLineImplementation(address newCreditLine) public onlyAdmin {
     uint256 addressKey = uint256(ConfigOptions.Addresses.CreditLineImplementation);
-    string memory name = ConfigOptions.getAddressName(addressKey);
-    emit AddressUpdated(msg.sender, name, addresses[addressKey], newCreditLine);
+    emit AddressUpdated(msg.sender, ConfigOptions.getAddressName(addressKey), addresses[addressKey], newCreditLine);
     addresses[addressKey] = newCreditLine;
   }
 
   function setTreasuryReserve(address newTreasuryReserve) public onlyAdmin {
-    uint256 addressKey = uint256(ConfigOptions.Addresses.TreasuryReserve);
-    string memory name = ConfigOptions.getAddressName(addressKey);
-    emit AddressUpdated(msg.sender, name, addresses[addressKey], newTreasuryReserve);
-    addresses[addressKey] = newTreasuryReserve;
+    uint256 key = uint256(ConfigOptions.Addresses.TreasuryReserve);
+    emit AddressUpdated(msg.sender, ConfigOptions.getAddressName(key), addresses[key], newTreasuryReserve);
+    addresses[key] = newTreasuryReserve;
   }
 
   /*
@@ -65,6 +61,6 @@ contract GoldfinchConfig is BaseUpgradeablePausable {
   function getNumber(uint256 number) public view returns (uint256) {
     // Cheap way to see if it's an invalid number
     ConfigOptions.Numbers(number);
-    return numbers[uint256(number)];
+    return numbers[number];
   }
 }

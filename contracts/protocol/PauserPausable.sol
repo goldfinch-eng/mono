@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.8;
+pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts-ethereum-package/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/access/AccessControl.sol";
@@ -30,8 +30,7 @@ contract PauserPausable is AccessControlUpgradeSafe, PausableUpgradeSafe {
    * - the caller must have the PAUSER_ROLE.
    */
 
-  function pause() public {
-    require(hasRole(PAUSER_ROLE, _msgSender()), "Must have pauser role to pause");
+  function pause() public onlyPauserRole {
     _pause();
   }
 
@@ -44,8 +43,12 @@ contract PauserPausable is AccessControlUpgradeSafe, PausableUpgradeSafe {
    *
    * - the caller must have the Pauser role
    */
-  function unpause() public {
-    require(hasRole(PAUSER_ROLE, _msgSender()), "Must have pauser role to unpause");
+  function unpause() public onlyPauserRole {
     _unpause();
+  }
+
+  modifier onlyPauserRole() {
+    require(hasRole(PAUSER_ROLE, _msgSender()), "Must have pauser role to perform this action");
+    _;
   }
 }

@@ -459,6 +459,20 @@ describe("CreditDesk", () => {
       })
     })
 
+    describe("if you're late", async () => {
+      it("should not let you drawdown if you're late", async () => {
+        // Do a drawdown
+        await drawdown(usdcVal(10), creditLine.address)
+
+        const BLOCKS_PER_DAY = await creditDesk.BLOCKS_PER_DAY()
+        const paymentPeriodInBlocks = (await creditLine.paymentPeriodInDays()).mul(BLOCKS_PER_DAY)
+
+        await creditDesk._setBlockNumberForTest((await time.latestBlock()).add(paymentPeriodInBlocks.mul(new BN(2))))
+
+        return expect(drawdown(usdcVal(10), creditLine.address)).to.be.rejectedWith(/payments are past due/)
+      })
+    })
+
     describe("when using a forwarding address", async () => {
       it("should send to that address", async () => {
         const drawdownAmount = usdcVal(3)
