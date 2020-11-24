@@ -36,6 +36,14 @@
     opacity: 0.5;
   }
 
+  &.subtle{
+    background-color: $sand-light;
+  }
+
+  &.subtle:hover{
+    background-color: $sand;
+  }
+
   &.disabled,
   &.disabled.dark{
     background-color: $sand;

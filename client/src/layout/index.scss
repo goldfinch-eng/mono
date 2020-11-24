@@ -17,6 +17,7 @@
 @import './sidebar.scss';
 @import './status-icon.scss';
 @import './spinner.scss';
+@import './terms-of-service.scss';
 @import './unlock-form.scss';
 @import './value-options.scss';
 
@@ -32,7 +33,7 @@ html, * {
 body {
   color: $purp-dark;
   background-color: $sand-xlight;
-  padding: 0 25px 60px;
+  padding: 0 25px;
 }
 
 a {
@@ -75,7 +76,7 @@ input{
 
 @media only screen and (min-width: $screen-m) {
   body {
-    padding: 0 60px 100px $nav-width + 60;
+    padding: 0 60px 140px $nav-width + 60;
   }
 }
 

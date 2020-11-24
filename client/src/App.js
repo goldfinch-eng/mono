@@ -5,6 +5,7 @@ import Borrow from './components/borrow.js';
 import Earn from './components/earn.js';
 import NetworkWidget from './components/networkWidget';
 import Sidebar from './components/sidebar';
+import TermsOfService from './components/termsOfService.js';
 import web3 from './web3';
 import { getPool } from './ethereum/pool.js';
 import { getCreditDesk } from './ethereum/creditDesk.js';
@@ -141,8 +142,14 @@ function App() {
             <Route path="/earn">
               <Earn />
             </Route>
+            <Route path="/terms">
+              <TermsOfService />
+            </Route>
           </Switch>
         </div>
+        <footer>
+          <a href="/terms">Terms</a>
+        </footer>
       </Router>
     </AppContext.Provider>
   );
