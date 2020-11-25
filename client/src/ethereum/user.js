@@ -20,7 +20,7 @@ async function getUserData(address, erc20, pool, creditDesk) {
   let usdcBalance = new BigNumber(0);
   let allowance = new BigNumber(0);
   if (erc20) {
-    usdcBalance = await erc20.methods.balanceOf(address).call();
+    usdcBalance = new BigNumber(await erc20.methods.balanceOf(address).call());
   }
   if (pool && erc20) {
     allowance = new BigNumber(await erc20.methods.allowance(address, pool._address).call());
@@ -33,7 +33,8 @@ async function getUserData(address, erc20, pool, creditDesk) {
 
   const data = {
     address: address,
-    usdcBalance: usdcFromAtomic(usdcBalance),
+    usdcBalance: usdcBalance,
+    usdcBalanceInDollars: new BigNumber(usdcFromAtomic(usdcBalance)),
     allowance: allowance,
     usdcIsUnlocked: !allowance || allowance.gte(new BigNumber(10000)),
     pastTxs: allTxs,

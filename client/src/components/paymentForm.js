@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { usdcToAtomic, minimumNumber } from '../ethereum/erc20';
+import { usdcToAtomic, minimumNumber, usdcFromAtomic } from '../ethereum/erc20';
 import { AppContext } from '../App';
 import { displayDollars } from '../utils';
 import TransactionForm from './transactionForm';
@@ -7,7 +7,7 @@ import TransactionInput from './transactionInput';
 import LoadingButton from './loadingButton';
 
 function PaymentForm(props) {
-  const { creditDesk, user } = useContext(AppContext);
+  const { creditDesk, user, goldfinchConfig } = useContext(AppContext);
   const [inputClass, setInputClass] = useState('');
 
   function action({ transactionAmount }) {
@@ -76,7 +76,11 @@ function PaymentForm(props) {
             formMethods.setValue('paymentOption', 'other', { shouldValidate: true, shouldDirty: true });
             setInputClass('');
           }}
-          maxAmount={minimumNumber(props.creditLine.remainingTotalDueAmountInDollars, user.usdcBalance)}
+          maxAmount={minimumNumber(
+            props.creditLine.remainingTotalDueAmountInDollars,
+            usdcFromAtomic(user.usdcBalance),
+            usdcFromAtomic(goldfinchConfig.transactionLimit),
+          )}
           inputClass={inputClass}
         />
         <LoadingButton

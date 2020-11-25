@@ -8,7 +8,7 @@ import TransactionInput from './transactionInput';
 import LoadingButton from './loadingButton';
 
 function WithdrawalForm(props) {
-  const { pool } = useContext(AppContext);
+  const { pool, goldfinchConfig } = useContext(AppContext);
 
   function action({ transactionAmount }) {
     const withdrawalAmount = usdcToAtomic(transactionAmount);
@@ -21,7 +21,11 @@ function WithdrawalForm(props) {
   }
 
   const availableAmount = fiduFromAtomic(props.capitalProvider.availableToWithdrawal);
-  const availableToWithdraw = minimumNumber(availableAmount, usdcFromAtomic(props.poolData.balance));
+  const availableToWithdraw = minimumNumber(
+    availableAmount,
+    usdcFromAtomic(props.poolData.balance),
+    usdcFromAtomic(goldfinchConfig.transactionLimit),
+  );
 
   function renderForm({ formMethods }) {
     return (

@@ -6,6 +6,7 @@ import { CONFIRMATION_THRESHOLD } from '../ethereum/utils';
 import useCloseOnClickOrEsc from '../hooks/useCloseOnClickOrEsc';
 import NetworkErrors from './networkErrors';
 import { iconCheck } from './icons.js';
+import { usdcFromAtomic } from '../ethereum/erc20';
 
 function NetworkWidget(props) {
   const [node, showNetworkWidgetInfo, setShowNetworkWidgetInfo] = useCloseOnClickOrEsc();
@@ -145,7 +146,7 @@ function NetworkWidget(props) {
         <div className="network-widget-section address">{croppedAddress(props.user.address)}</div>
         <NetworkErrors currentErrors={props.currentErrors} />
         <div className="network-widget-section">
-          USDC balance <span className="value">{displayNumber(props.user.usdcBalance, 2)}</span>
+          USDC balance <span className="value">{displayNumber(usdcFromAtomic(props.user.usdcBalance), 2)}</span>
         </div>
         {transactions}
         <div className="network-widget-section">

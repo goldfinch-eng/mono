@@ -21,6 +21,11 @@
     top: 2px;
   }
 
+  &.disabled.dollar::before,
+  &.disabled .form-input{
+    color: $purp-xlight;
+  }
+
   &.pre-filled.dollar::before,
   &.pre-filled .form-input{
     color: $purp-xlight;

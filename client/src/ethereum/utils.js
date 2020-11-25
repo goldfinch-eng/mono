@@ -1,3 +1,4 @@
+import BigNumber from 'bignumber.js';
 import { BN } from 'bn.js';
 import _ from 'lodash';
 import web3 from '../web3';
@@ -64,7 +65,7 @@ function transformedConfig(config) {
   );
 }
 
-function fetchDataFromAttributes(web3Obj, attributes) {
+function fetchDataFromAttributes(web3Obj, attributes, { bigNumber } = {}) {
   const result = {};
   if (!web3Obj) {
     return Promise.resolve(result);
@@ -75,7 +76,11 @@ function fetchDataFromAttributes(web3Obj, attributes) {
   return Promise.all(promises)
     .then(results => {
       attributes.forEach((methodInfo, index) => {
-        result[methodInfo.name || methodInfo.method] = results[index];
+        if (bigNumber) {
+          result[methodInfo.name || methodInfo.method] = new BigNumber(results[index]);
+        } else {
+          result[methodInfo.name || methodInfo.method] = results[index];
+        }
       });
       return result;
     })

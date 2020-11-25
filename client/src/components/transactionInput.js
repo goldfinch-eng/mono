@@ -5,6 +5,9 @@ import { displayDollars } from '../utils';
 function TransactionInput(props) {
   let name = props.name || 'transactionAmount';
   let inputClass = props.inputClass || '';
+  if (props.disabled) {
+    inputClass = 'disabled';
+  }
   let onChange = props.onChange || (() => {});
   return (
     <div className="form-field">
@@ -12,6 +15,7 @@ function TransactionInput(props) {
         <input
           name={name}
           type="number"
+          disabled={props.disabled}
           onChange={onChange}
           placeholder="0"
           className="form-input"

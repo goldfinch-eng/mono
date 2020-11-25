@@ -44,12 +44,12 @@ async function fetchPoolData(pool, erc20) {
   // Do some slightly goofy multiplication and division here so that we have consistent units across
   // 'balance', 'totalPoolBalance', and 'totalDrawdowns', allowing us to do arithmetic between them
   // and display them using the same helpers.
-  const totalPoolBalanceInDollars = new BigNumber(result.totalShares)
+  const totalPoolAssetsInDollars = new BigNumber(result.totalShares)
     .div(FIDU_DECIMALS)
     .multipliedBy(new BigNumber(result.sharePrice))
     .div(FIDU_DECIMALS);
-  result.totalPoolBalance = totalPoolBalanceInDollars.multipliedBy(USDC_DECIMALS);
-  result.totalDrawdowns = result.totalPoolBalance - result.balance;
+  result.totalPoolAssets = totalPoolAssetsInDollars.multipliedBy(USDC_DECIMALS);
+  result.totalDrawdowns = result.totalPoolAssets - result.balance;
   return result;
 }
 

@@ -7,7 +7,7 @@ import NetworkWidget from './components/networkWidget';
 import Sidebar from './components/sidebar';
 import TermsOfService from './components/termsOfService.js';
 import web3 from './web3';
-import { getPool } from './ethereum/pool.js';
+import { fetchPoolData, getPool } from './ethereum/pool.js';
 import { getCreditDesk } from './ethereum/creditDesk.js';
 import { getUSDC } from './ethereum/erc20.js';
 import { getGoldfinchConfig, refreshGoldfinchConfigData } from './ethereum/goldfinchConfig.js';
@@ -43,6 +43,7 @@ function App() {
       let poolContract = await getPool(networkId);
       let goldfinchConfigContract = await getGoldfinchConfig(networkId);
       let creditDeskContract = await getCreditDesk(networkId);
+      poolContract.data = await fetchPoolData(poolContract, erc20Contract);
       setErc20(erc20Contract);
       setPool(poolContract);
       setCreditDesk(creditDeskContract);

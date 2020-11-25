@@ -23,7 +23,8 @@ function LoadingButton(props) {
       onClick={formMethods.handleSubmit(() => {
         actionWithLoading();
       })}
-      className={`button submit-payment ${isPending ? 'pending' : ''}`}
+      disabled={props.disabled}
+      className={`button submit-payment ${isPending ? 'pending' : ''} ${props.disabled ? 'disabled' : ''}`}
     >
       {buttonText}
     </button>
