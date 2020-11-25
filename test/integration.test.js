@@ -10,15 +10,26 @@ const {
   getDeployedAsTruffleContract,
   BLOCKS_PER_DAY,
   BLOCKS_PER_YEAR,
+  usdcToFidu,
+  expectAction,
+  fiduToUSDC,
 } = require("./testHelpers.js")
-const {interestAprAsBN, INTEREST_DECIMALS} = require("../blockchain_scripts/deployHelpers")
+const {interestAprAsBN, INTEREST_DECIMALS, ETHDecimals, CONFIG_KEYS} = require("../blockchain_scripts/deployHelpers")
 const {time} = require("@openzeppelin/test-helpers")
 const CreditLine = artifacts.require("CreditLine")
 
 // eslint-disable-next-line no-unused-vars
-let accounts, owner, underwriter, borrower, person4, creditDesk, fidu, goldfinchConfig, reserve, usdc, pool, creditLine
+let accounts, owner, underwriter, borrower, investor1, investor2
+let creditDesk, fidu, goldfinchConfig, reserve, usdc, pool, creditLine
 
 describe("Goldfinch", async () => {
+  let limit = usdcVal(10000)
+  let interestApr = interestAprAsBN(25)
+  let lateFeeApr = interestAprAsBN(0)
+  let paymentPeriodInDays = new BN(1)
+  let termInDays = new BN(365)
+  let paymentPeriodInBlocks = BLOCKS_PER_DAY.mul(paymentPeriodInDays)
+
   const setupTest = deployments.createFixture(async ({deployments}) => {
     await deployments.fixture("base_deploy")
     pool = await getDeployedAsTruffleContract(deployments, "Pool")
@@ -31,9 +42,13 @@ describe("Goldfinch", async () => {
     await usdc.approve(pool.address, new BN(100000).mul(decimals), {from: owner})
     await usdc.approve(pool.address, new BN(100000).mul(decimals), {from: underwriter})
     await usdc.approve(pool.address, new BN(100000).mul(decimals), {from: borrower})
+    await usdc.approve(pool.address, new BN(100000).mul(decimals), {from: investor1})
+    await usdc.approve(pool.address, new BN(100000).mul(decimals), {from: investor2})
 
     // Some housekeeping so we have a usable creditDesk for tests, and a pool with funds
-    await usdc.transfer(underwriter, String(usdcVal(10000)), {from: owner})
+    await usdc.transfer(underwriter, String(usdcVal(100000)), {from: owner})
+    await usdc.transfer(investor1, String(usdcVal(100000)), {from: owner})
+    await usdc.transfer(investor2, String(usdcVal(100000)), {from: owner})
     await pool.deposit(String(usdcVal(10000)), {from: underwriter})
     // Set the reserve to a separate address for easier separation. The current owner account gets used for many things in tests.
     await goldfinchConfig.setTreasuryReserve(reserve)
@@ -43,7 +58,7 @@ describe("Goldfinch", async () => {
 
   beforeEach(async () => {
     accounts = await web3.eth.getAccounts()
-    ;[owner, underwriter, borrower, person4, reserve] = accounts
+    ;[owner, underwriter, borrower, investor1, investor2, reserve] = accounts
     const deployResult = await setupTest()
 
     usdc = deployResult.usdc
@@ -90,9 +105,126 @@ describe("Goldfinch", async () => {
       expect(await creditLine.lastFullPaymentBlock()).to.bignumber.equal(new BN(lastFullPaymentBlock))
     }
 
-    describe("credit lines and interest rates", async () => {
-      let limit, interestApr, paymentPeriodInDays, termInDays, lateFeeApr, paymentPeriodInBlocks
+    async function createCreditLine({
+      _paymentPeriodInDays,
+      _borrower,
+      _limit,
+      _interestApr,
+      _termInDays,
+      _lateFeesApr,
+    } = {}) {
+      await creditDesk.createCreditLine(
+        borrower || _borrower,
+        limit || _limit,
+        interestApr || _interestApr,
+        _paymentPeriodInDays || paymentPeriodInDays,
+        termInDays || _termInDays,
+        lateFeeApr || _lateFeesApr,
+        {from: underwriter}
+      )
+      var ulCreditLines = await creditDesk.getUnderwriterCreditLines(underwriter)
+      return CreditLine.at(ulCreditLines[0])
+    }
 
+    async function deposit(amount, investor) {
+      investor = investor || investor1
+      await pool.deposit(amount, {from: investor})
+    }
+
+    async function drawdown(clAddress, amount, _borrower) {
+      _borrower = _borrower || borrower
+      await creditDesk.drawdown(amount, clAddress, _borrower, {from: _borrower})
+    }
+
+    async function makePayment(clAddress, amount, _borrower) {
+      _borrower = _borrower || borrower
+      await creditDesk.pay(clAddress, amount, {from: _borrower})
+    }
+
+    async function calculateInvestorInterest(cl, timeInDays) {
+      const numBlocks = timeInDays.mul(BLOCKS_PER_DAY)
+      const totalInterestPerYear = (await cl.balance()).mul(await cl.interestApr()).div(INTEREST_DECIMALS)
+      const totalExpectedInterest = totalInterestPerYear.mul(numBlocks).div(BLOCKS_PER_YEAR)
+      const reserveDenominator = await goldfinchConfig.getNumber(CONFIG_KEYS.ReserveDenominator)
+      return totalExpectedInterest.sub(totalExpectedInterest.div(reserveDenominator))
+    }
+
+    function assessCreditLine(clAddress) {
+      return creditDesk.assessCreditLine(clAddress)
+    }
+
+    async function afterWithdrawalFees(grossAmount) {
+      const feeDenominator = await goldfinchConfig.getNumber(CONFIG_KEYS.WithdrawFeeDenominator)
+      return grossAmount.sub(grossAmount.div(feeDenominator))
+    }
+
+    async function withdraw(amount, investor) {
+      investor = investor || investor1
+      if (amount === "max") {
+        const numShares = await getBalance(investor, fidu)
+        const maxAmount = (await pool.sharePrice()).mul(numShares)
+        amount = fiduToUSDC(maxAmount.div(ETHDecimals))
+      }
+      return pool.withdraw(amount, {from: investor})
+    }
+
+    async function doAllMainActions(clAddress) {
+      await deposit(new BN(10))
+      await withdraw(new BN(10))
+      await drawdown(clAddress, new BN(10))
+      await makePayment(clAddress, new BN(10))
+    }
+
+    describe("scenarios", async () => {
+      it("should accrue interest with multiple investors", async () => {
+        let amount = usdcVal(10000)
+        let drawdownAmount = amount.div(new BN(10))
+        await expectAction(async () => {
+          await deposit(amount)
+          await deposit(amount, investor2)
+        }).toChange([
+          [async () => await getBalance(investor1, fidu), {by: usdcToFidu(amount)}],
+          [async () => await getBalance(investor2, fidu), {by: usdcToFidu(amount)}],
+        ])
+        const paymentPeriodInDays = new BN(15)
+        const creditLine = await createCreditLine({_paymentPeriodInDays: paymentPeriodInDays})
+
+        await drawdown(creditLine.address, drawdownAmount, borrower)
+        const expectedInterest = await calculateInvestorInterest(creditLine, paymentPeriodInDays)
+
+        await advanceTime({days: 10})
+        // Just a hack to get interestOwed and other accounting vars to update
+        await drawdown(creditLine.address, new BN(1), borrower)
+
+        // Pay more than you need, to definitely pay all the interest
+        // Early payments shouldn't affect share price
+        await expectAction(() => makePayment(creditLine.address, drawdownAmount)).toChange([
+          [pool.sharePrice, {by: new BN(0)}],
+        ])
+        await advanceTime({days: 5})
+
+        await expectAction(() => assessCreditLine(creditLine.address)).toChange([
+          [pool.sharePrice, {increase: true}],
+          [creditLine.interestOwed, {decrease: true}],
+        ])
+
+        // There was 10k already in the pool, so each investor has a third
+        const grossExpectedReturn = amount.add(expectedInterest.div(new BN(3)))
+        const expectedReturn = await afterWithdrawalFees(grossExpectedReturn)
+
+        await expectAction(async () => {
+          await withdraw("max")
+          await withdraw("max", investor2)
+        }).toChange([
+          [() => getBalance(investor1, usdc), {by: expectedReturn}],
+          [() => getBalance(investor2, usdc), {by: expectedReturn}],
+        ])
+
+        await doAllMainActions(creditLine.address)
+      })
+    })
+
+    describe("credit lines and interest rates", async () => {
       beforeEach(async () => {
         limit = usdcVal(10000)
         interestApr = interestAprAsBN(25)
@@ -101,20 +233,6 @@ describe("Goldfinch", async () => {
         termInDays = new BN(365)
         paymentPeriodInBlocks = BLOCKS_PER_DAY.mul(paymentPeriodInDays)
       })
-
-      async function createCreditLine({_paymentPeriodInDays} = {}) {
-        await creditDesk.createCreditLine(
-          borrower,
-          limit,
-          interestApr,
-          _paymentPeriodInDays || paymentPeriodInDays,
-          termInDays,
-          lateFeeApr,
-          {from: underwriter}
-        )
-        var ulCreditLines = await creditDesk.getUnderwriterCreditLines(underwriter)
-        return CreditLine.at(ulCreditLines[0])
-      }
 
       describe("drawdown and isLate", async () => {
         it("should not think you're late if it's not past the nextDueBlock", async () => {

@@ -1,6 +1,6 @@
 {
   "totalFundsLimit": 100000,
-  "transactionLimit": 10000,
+  "transactionLimit": 25000,
   "maxUnderwriterLimit": 50000,
   "reserveDenominator": 10,
   "withdrawFeeDenominator": 200,

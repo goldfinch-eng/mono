@@ -12,7 +12,7 @@ function Borrow(props) {
   const { creditDesk, erc20, pool, user } = useContext(AppContext);
   const [borrower, setBorrower] = useState({});
   const [creditLine, setCreditLine] = useState(defaultCreditLine);
-  const [creditLineFactory, setCreditLineFactory] = useState({});
+  const [creditLineInstance, setCreditLineInstance] = useState({});
 
   async function updateBorrowerAndCreditLine() {
     const [borrowerAddress] = await web3.eth.getAccounts();
@@ -22,9 +22,12 @@ function Borrow(props) {
       const allowance = new BN(await erc20.methods.allowance(borrowerAddress, pool._address).call());
       borrower.allowance = allowance;
       if (borrowerCreditLines.length) {
-        const factory = buildCreditLine(borrowerCreditLines[0]);
-        setCreditLineFactory(factory);
-        setCreditLine(await fetchCreditLineData(factory));
+        // Always use the last credit line, under the assumption for now that the last one is your
+        // active one. If we start legit having multiple active credit lines, then we'll need to change
+        // the front-end
+        const instance = buildCreditLine(borrowerCreditLines[borrowerCreditLines.length - 1]);
+        setCreditLineInstance(instance);
+        setCreditLine(await fetchCreditLineData(instance));
       }
     }
     setBorrower(borrower);
