@@ -6,13 +6,18 @@ import { AppContext } from '../App.js';
 import TransactionForm from './transactionForm';
 import TransactionInput from './transactionInput';
 import LoadingButton from './loadingButton';
+import useSendFromUser from '../hooks/useSendFromUser';
 
 function WithdrawalForm(props) {
+  const sendFromUser = useSendFromUser();
   const { pool, goldfinchConfig } = useContext(AppContext);
 
   function action({ transactionAmount }) {
     const withdrawalAmount = usdcToAtomic(transactionAmount);
-    return pool.methods.withdraw(withdrawalAmount);
+    return sendFromUser(pool.methods.withdraw(withdrawalAmount), {
+      type: 'Withdrawal',
+      amount: transactionAmount,
+    }).then(actionComplete);
   }
 
   function actionComplete() {
@@ -31,12 +36,7 @@ function WithdrawalForm(props) {
     return (
       <div className="form-inputs">
         <TransactionInput formMethods={formMethods} maxAmount={availableToWithdraw} />
-        <LoadingButton
-          action={() => action(formMethods.getValues())}
-          actionComplete={actionComplete}
-          txData={{ type: 'Withdrawal', amount: formMethods.getValues('transactionAmount') }}
-          sendFromUser={true}
-        />
+        <LoadingButton action={action} />
       </div>
     );
   }

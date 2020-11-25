@@ -1,16 +1,8 @@
 import React, { useState } from 'react';
-import useTXLoading from '../hooks/useTXLoading';
 import { useFormContext } from 'react-hook-form';
 
 function LoadingButton(props) {
   const [isPending, setIsPending] = useState(false);
-  const actionWithLoading = useTXLoading({
-    action: props.action,
-    actionComplete: props.actionComplete,
-    txData: props.txData,
-    setIsPending,
-    sendFromUser: props.sendFromUser,
-  });
   const formMethods = useFormContext();
 
   let buttonText = props.text || 'Submit';
@@ -20,8 +12,13 @@ function LoadingButton(props) {
 
   return (
     <button
-      onClick={formMethods.handleSubmit(() => {
-        actionWithLoading();
+      type="button"
+      onClick={formMethods.handleSubmit(data => {
+        setIsPending(true);
+        return props
+          .action(data)
+          .then(() => setIsPending(false))
+          .catch(error => setIsPending(false));
       })}
       disabled={props.disabled}
       className={`button submit-payment ${isPending ? 'pending' : ''} ${props.disabled ? 'disabled' : ''}`}

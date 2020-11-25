@@ -5,7 +5,7 @@ import { croppedAddress, displayNumber } from '../utils';
 import { CONFIRMATION_THRESHOLD } from '../ethereum/utils';
 import useCloseOnClickOrEsc from '../hooks/useCloseOnClickOrEsc';
 import NetworkErrors from './networkErrors';
-import { iconCheck } from './icons.js';
+import { iconCheck, iconOutArrow } from './icons.js';
 import { usdcFromAtomic } from '../ethereum/erc20';
 
 function NetworkWidget(props) {
@@ -51,6 +51,17 @@ function NetworkWidget(props) {
     } else {
       etherscanSubdomain = `${props.network}.`;
     }
+
+    let confirmationMessage = '';
+    if (tx.status === 'pending') {
+      confirmationMessage = (
+        <span>
+          {`${tx.confirmations} / ${CONFIRMATION_THRESHOLD}`}
+          <span className="small-network-message">&nbsp; conf.</span>
+        </span>
+      );
+    }
+
     return (
       <div key={tx.id} className={`transaction-item ${tx.status}`}>
         <div className="status-icon">
@@ -61,10 +72,15 @@ function NetworkWidget(props) {
           </div>
         </div>
         {transactionlabel}&nbsp;
-        <a href={`https://${etherscanSubdomain}etherscan.io/tx/${tx.id}`} target="_blank" rel="noopener noreferrer">
-          &#8599;
+        <a
+          className="transaction-link"
+          href={`https://${etherscanSubdomain}etherscan.io/tx/${tx.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {iconOutArrow}
         </a>
-        {tx.status === 'pending' && `${tx.confirmations} / ${CONFIRMATION_THRESHOLD} confirmations`}
+        {confirmationMessage}
       </div>
     );
   }
@@ -87,14 +103,14 @@ function NetworkWidget(props) {
     enabledClass = 'success';
   }
 
-  let allTx = _.compact(_.concat(props.currentTXs, _.slice(props.user.pastTxs, 0, 5)));
+  let allTx = _.compact(_.concat(props.currentTXs, _.slice(props.user.pastTXs, 0, 5)));
   allTx = _.uniqBy(allTx, 'id');
   if (allTx.length > 0) {
     transactions = (
       <div className="network-widget-section">
         <div className="network-widget-header">
-          Transactions
-          {/* <a href="/transactions">view all</a> */}
+          Recent Transactions
+          <a href="/transactions">view all</a>
         </div>
         {allTx.map(transactionItem)}
       </div>

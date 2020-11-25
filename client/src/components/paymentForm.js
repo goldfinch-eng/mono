@@ -5,14 +5,19 @@ import { displayDollars } from '../utils';
 import TransactionForm from './transactionForm';
 import TransactionInput from './transactionInput';
 import LoadingButton from './loadingButton';
+import useSendFromUser from '../hooks/useSendFromUser';
 
 function PaymentForm(props) {
   const { creditDesk, user, goldfinchConfig } = useContext(AppContext);
   const [inputClass, setInputClass] = useState('');
+  const sendFromUser = useSendFromUser();
 
   function action({ transactionAmount }) {
     const amount = usdcToAtomic(transactionAmount);
-    return creditDesk.methods.pay(props.creditLine.address, amount);
+    return sendFromUser(creditDesk.methods.pay(props.creditLine.address, amount), {
+      type: 'Payment',
+      amount: transactionAmount,
+    }).then(actionComplete);
   }
 
   function actionComplete() {
@@ -39,8 +44,8 @@ function PaymentForm(props) {
     });
   }
 
-  function renderForm({ formMethods }) {
-    const valueOptionList = valueOptions.map((valueOption, index) => {
+  function getValueOptionsList(formMethods) {
+    return valueOptions.map((valueOption, index) => {
       return (
         <div className="value-option" key={index}>
           <input
@@ -65,6 +70,10 @@ function PaymentForm(props) {
         </div>
       );
     });
+  }
+
+  function renderForm({ formMethods }) {
+    const valueOptionList = getValueOptionsList(formMethods);
     let valueOptionsHTML = <div className="value-options">{valueOptionList}</div>;
 
     return (
@@ -83,12 +92,7 @@ function PaymentForm(props) {
           )}
           inputClass={inputClass}
         />
-        <LoadingButton
-          action={() => action(formMethods.getValues())}
-          actionComplete={actionComplete}
-          txData={{ type: 'Payment', amount: formMethods.getValues('transactionAmount') }}
-          sendFromUser={true}
-        />
+        <LoadingButton action={action} />
       </div>
     );
   }
@@ -100,7 +104,6 @@ function PaymentForm(props) {
       formClass="dark"
       render={renderForm}
       closeForm={props.closeForm}
-      needsApproval={true}
     />
   );
 }

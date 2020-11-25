@@ -45,6 +45,57 @@ const iconCircleCheck = (
   </svg>
 );
 
+const iconCircleUpLg = (
+  <svg className="icon" width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M32 60C47.464 60 60 47.464 60 32C60 16.536 47.464 4 32 4C16.536 4 4 16.536 4 32C4 47.464 16.536 60 32 60ZM32 64C49.6731 64 64 49.6731 64 32C64 14.3269 49.6731 0 32 0C14.3269 0 0 14.3269 0 32C0 49.6731 14.3269 64 32 64Z"
+      fill="#483E5E"
+    />
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M34 22.892L34 47L30 47L30 22.892L22.4272 30.6057L19.5728 27.8034L30.5728 16.5989C30.9489 16.2158 31.4632 16 32 16C32.5368 16 33.0511 16.2158 33.4272 16.5989L44.4272 27.8034L41.5728 30.6057L34 22.892Z"
+      fill="#483E5E"
+    />
+  </svg>
+);
+
+const iconCircleDownLg = (
+  <svg className="icon" width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M32 60C47.464 60 60 47.464 60 32C60 16.536 47.464 4 32 4C16.536 4 4 16.536 4 32C4 47.464 16.536 60 32 60ZM32 64C49.6731 64 64 49.6731 64 32C64 14.3269 49.6731 0 32 0C14.3269 0 0 14.3269 0 32C0 49.6731 14.3269 64 32 64Z"
+      fill="#483E5E"
+    />
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M30 40.108L30 16H34V40.108L41.5728 32.3943L44.4272 35.1966L33.4272 46.4011C33.0511 46.7842 32.5368 47 32 47C31.4632 47 30.9489 46.7842 30.5728 46.4011L19.5728 35.1966L22.4272 32.3943L30 40.108Z"
+      fill="#483E5E"
+    />
+  </svg>
+);
+
+const iconCircleCheckLg = (
+  <svg className="icon" width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M32 60C47.464 60 60 47.464 60 32C60 16.536 47.464 4 32 4C16.536 4 4 16.536 4 32C4 47.464 16.536 60 32 60ZM32 64C49.6731 64 64 49.6731 64 32C64 14.3269 49.6731 0 32 0C14.3269 0 0 14.3269 0 32C0 49.6731 14.3269 64 32 64Z"
+      fill="#483E5E"
+    />
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M48.4142 24.4142L29.5 43.3285L17.5858 31.4142L20.4142 28.5858L29.5 37.6716L45.5858 21.5858L48.4142 24.4142Z"
+      fill="#483E5E"
+    />
+  </svg>
+);
+
 const iconClock = (
   <svg className="icon" width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path fillRule="evenodd" clipRule="evenodd" d="M13.75 5H16.25V15.75H24V18.25H13.75V5Z" fill="#483E5E" />
@@ -91,6 +142,17 @@ const iconMenu = (
   </svg>
 );
 
+const iconOutArrow = (
+  <svg className="icon" width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M3 2H28C29.1046 2 30 2.89543 30 4V29H26V8.82843L4.41421 30.4142L1.58578 27.5858L23.1716 6H3V2Z"
+      fill="#483E5E"
+    />
+  </svg>
+);
+
 const iconUpArrow = (
   <svg className="icon" width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path
@@ -113,4 +175,18 @@ const iconX = (
   </svg>
 );
 
-export { iconBank, iconCheck, iconCircleCheck, iconClock, iconDownArrow, iconInfo, iconMenu, iconUpArrow, iconX };
+export {
+  iconBank,
+  iconCheck,
+  iconCircleCheck,
+  iconCircleUpLg,
+  iconCircleDownLg,
+  iconCircleCheckLg,
+  iconClock,
+  iconDownArrow,
+  iconInfo,
+  iconMenu,
+  iconOutArrow,
+  iconUpArrow,
+  iconX,
+};

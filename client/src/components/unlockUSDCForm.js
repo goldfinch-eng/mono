@@ -4,13 +4,15 @@ import { MAX_UINT } from '../ethereum/utils';
 import LoadingButton from './loadingButton';
 import { useForm, FormProvider } from 'react-hook-form';
 import { iconInfo } from './icons.js';
+import useSendFromUser from '../hooks/useSendFromUser.js';
 
 function UnlockUSDCForm() {
   const { erc20, pool, refreshUserData } = useContext(AppContext);
+  const sendFromUser = useSendFromUser();
   const formMethods = useForm();
 
   const unlockUSDC = () => {
-    return erc20.methods.approve(pool._address, MAX_UINT);
+    return sendFromUser(erc20.methods.approve(pool._address, MAX_UINT), { type: 'Approval' }).then(refreshUserData);
   };
 
   return (
@@ -20,15 +22,7 @@ function UnlockUSDCForm() {
           {iconInfo}
           Just this one time, you’ll first need to unlock your account to send USDC to Goldfinch.
         </p>
-        <LoadingButton
-          action={unlockUSDC}
-          actionComplete={() => {
-            refreshUserData();
-          }}
-          text={'Unlock USDC'}
-          txData={{ type: 'Approval' }}
-          sendFromUser={true}
-        />
+        <LoadingButton action={unlockUSDC} text={'Unlock USDC'} />
       </div>
     </FormProvider>
   );

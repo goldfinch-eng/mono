@@ -1,0 +1,147 @@
+.transactions-table{
+  font-size: $sans-size-xs;
+  text-align: left;
+  width: 100%;
+
+  .empty-row{
+    color: $sand-xxdark;
+    width: 100%;
+  }
+
+  tr{
+    border-bottom: 2px solid $sand-light;
+  }
+
+  thead tr{
+    border-bottom: 2px solid $purp;
+  }
+
+  &.placeholder thead tr{
+    border-bottom: 2px solid $sand;
+  }
+
+  td{
+     padding: 20px 0;
+  }
+
+  th{
+    padding: 0 0 14px;
+  }
+
+  .transaction-type {
+    position: relative;
+
+    .icon{
+      height: 20px;
+      margin: -5px 12px -5px 0;
+      width: 20px;
+    }
+  }
+
+  .inflow .transaction-type{
+    color: $purp-light;
+
+    .icon path{
+      fill: $purp-light;
+    }
+
+    .spinner .double-bounce1,
+    .spinner .double-bounce2{
+      background-color: $purp-light;
+    }
+  }
+
+  .outflow .transaction-type{
+    color: $blue;
+
+    .icon path{
+      fill: $blue;
+    }
+  }
+
+  .error .transaction-type{
+    color: $red;
+
+    .icon path{
+      fill: $red;
+    }
+  }
+
+  .transaction-amount{
+    text-align: right;
+  }
+
+  td.transaction-date,
+  th.transaction-date{
+    display: none;
+    padding-left: 6%;
+  }
+
+  .transaction-link{
+    padding: 0 0 0 8px;
+    text-align: center;
+
+    a{
+      border-radius: 3px;
+      padding: 4px;
+
+      &:hover{
+        background-color: $sand;
+      }
+
+      .icon {
+        display: inline-block;
+        height: 12px;
+        width: 12px;
+      }
+    }
+  }
+
+  .status-icon{
+    margin: -5px 14px -5px 2px;
+  }
+}
+
+
+@media only screen and (min-width: $screen-s) {
+  .transactions-table{
+    td.transaction-date,
+    th.transaction-date{
+      display: table-cell;
+    }
+  }
+}
+
+
+@media only screen and (min-width: $screen-l) {
+  .transactions-table{
+    font-size: $sans-size-s;
+    margin-top: 30px;
+
+    td{
+      padding: 24px 0;
+    }
+
+    td.transaction-date,
+    th.transaction-date{
+      padding-left: 10%;
+      width: 40%;
+    }
+
+    .transaction-type .icon{
+      height: 24px;
+      margin: -5px 12px -5px 0;
+      width: 24px;
+    }
+
+    .transaction-link a{
+      border-radius: 6px;
+      padding: 8px;
+
+      .icon {
+        height: 16px;
+        width: 16px;
+      }
+    }
+  }
+}

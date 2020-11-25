@@ -5,13 +5,18 @@ import { displayDollars } from '../utils';
 import TransactionForm from './transactionForm';
 import TransactionInput from './transactionInput';
 import LoadingButton from './loadingButton';
+import useSendFromUser from '../hooks/useSendFromUser';
 
 function DepositForm(props) {
   const { pool, user, goldfinchConfig } = useContext(AppContext);
+  const sendFromUser = useSendFromUser();
 
   function action({ transactionAmount }) {
     const depositAmount = usdcToAtomic(transactionAmount);
-    return pool.methods.deposit(depositAmount);
+    return sendFromUser(pool.methods.deposit(depositAmount), {
+      type: 'Deposit',
+      amount: transactionAmount,
+    }).then(actionComplete);
   }
 
   function actionComplete() {
@@ -45,13 +50,7 @@ function DepositForm(props) {
           maxAmount={minimumNumber(user.usdcBalanceInDollars, usdcFromAtomic(goldfinchConfig.transactionLimit))}
           disabled={disabled}
         />
-        <LoadingButton
-          disabled={disabled}
-          action={() => action(formMethods.getValues())}
-          actionComplete={actionComplete}
-          txData={{ type: 'Deposit', amount: formMethods.getValues('transactionAmount') }}
-          sendFromUser={true}
-        />
+        <LoadingButton action={action} disabled={disabled} />
       </div>
     );
   }
@@ -62,7 +61,6 @@ function DepositForm(props) {
       headerMessage={`Available to deposit: ${displayDollars(user.usdcBalanceInDollars)}`}
       render={renderForm}
       closeForm={props.closeForm}
-      needsApproval={true}
     />
   );
 }

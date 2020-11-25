@@ -26,6 +26,7 @@ function Sidebar(props) {
           Borrow
         </NavLink>
         <NavLink to="/earn">Earn</NavLink>
+        <NavLink to="/transactions">Transactions</NavLink>
       </nav>
     </div>
   );

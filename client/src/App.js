@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
 import _ from 'lodash';
 import Borrow from './components/borrow.js';
 import Earn from './components/earn.js';
+import Transactions from './components/transactions.js';
 import NetworkWidget from './components/networkWidget';
 import Sidebar from './components/sidebar';
 import TermsOfService from './components/termsOfService.js';
@@ -142,6 +143,9 @@ function App() {
             <Route path="/about">{/* <About /> */}</Route>
             <Route path="/earn">
               <Earn />
+            </Route>
+            <Route path="/transactions">
+              <Transactions currentTXs={currentTXs} />
             </Route>
             <Route path="/terms">
               <TermsOfService />

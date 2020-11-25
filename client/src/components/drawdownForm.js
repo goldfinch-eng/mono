@@ -7,10 +7,12 @@ import { displayDollars } from '../utils';
 import AddressInput from './addressInput';
 import TransactionInput from './transactionInput';
 import LoadingButton from './loadingButton';
+import useSendFromUser from '../hooks/useSendFromUser';
 
 function DrawdownForm(props) {
   const { creditDesk, pool, erc20, goldfinchConfig } = useContext(AppContext);
   const [poolData, setPoolData] = useState({});
+  const sendFromUser = useSendFromUser();
 
   useEffect(() => {
     (async () => {
@@ -21,7 +23,10 @@ function DrawdownForm(props) {
   function action({ transactionAmount, sendToAddress }) {
     const drawdownAmount = usdcToAtomic(transactionAmount);
     sendToAddress = sendToAddress || props.borrower.address;
-    return creditDesk.methods.drawdown(drawdownAmount, props.creditLine.address, sendToAddress);
+    return sendFromUser(creditDesk.methods.drawdown(drawdownAmount, props.creditLine.address, sendToAddress), {
+      type: 'Drawdown',
+      amount: transactionAmount,
+    }).then(actionComplete);
   }
 
   function actionComplete() {
@@ -43,12 +48,7 @@ function DrawdownForm(props) {
         <AddressInput formMethods={formMethods} />
         <div className="form-input-label">Amount</div>
         <TransactionInput formMethods={formMethods} maxAmount={maxAmount} />
-        <LoadingButton
-          action={() => action(formMethods.getValues())}
-          actionComplete={actionComplete}
-          txData={{ type: 'Drawdown', amount: formMethods.getValues('transactionAmount') }}
-          sendFromUser={true}
-        />
+        <LoadingButton action={action} />
       </div>
     );
   }

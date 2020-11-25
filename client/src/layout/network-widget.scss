@@ -129,7 +129,7 @@
 }
 
 .network-widget-header{
-  margin: 0 0 18px;
+  margin: 0 0 20px;
 
   a {
     color: $purp-dark;
@@ -215,7 +215,7 @@
 
 .network-widget .transaction-item{
   color: $blue;
-  margin: 12px 0 0 0;
+  margin: 16px 0 0 0;
 
   .status-icon{
     vertical-align: middle;
@@ -223,8 +223,32 @@
     width: 12px;
   }
 
-  .spinner{
-    margin-left: -5px;
+  &.pending .status-icon{
+    margin: -10px 15px -6px -2px;
+  }
+
+  .small-network-message{
+    font-size: smaller;
+  }
+
+  .transaction-link{
+    border-radius: 3px;
+    float: right;
+    margin: -4px 0 0 0;
+    padding: 5px;
+
+    &:hover{
+      background-color: $blue-xxlight;
+    }
+
+    .icon{
+      height: 12px;
+      width: 12px;
+    }
+
+    .icon path{
+      fill: $blue;
+    }
   }
 }
 

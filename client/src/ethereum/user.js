@@ -1,6 +1,8 @@
 import BigNumber from 'bignumber.js';
 import { usdcFromAtomic } from './erc20.js';
 import _ from 'lodash';
+import web3 from '../web3.js';
+import moment from 'moment';
 
 const EVENT_TYPE_MAP = {
   DepositMade: 'Deposit',
@@ -37,7 +39,7 @@ async function getUserData(address, erc20, pool, creditDesk) {
     usdcBalanceInDollars: new BigNumber(usdcFromAtomic(usdcBalance)),
     allowance: allowance,
     usdcIsUnlocked: !allowance || allowance.gte(new BigNumber(10000)),
-    pastTxs: allTxs,
+    pastTXs: allTxs,
   };
   return data;
 }
@@ -53,7 +55,7 @@ async function getAndTransformPoolEvents(pool, address) {
     }),
   );
   const poolEvents = _.compact(_.concat(depositEvents, withdrawalEvents));
-  return mapEventsToTx(poolEvents);
+  return await Promise.all(mapEventsToTx(poolEvents));
 }
 
 async function getAndTransformCreditDeskEvents(creditDesk, address) {
@@ -67,7 +69,7 @@ async function getAndTransformCreditDeskEvents(creditDesk, address) {
     }),
   );
   const creditDeskEvents = _.compact(_.concat(paymentEvents, drawdownEvents));
-  return mapEventsToTx(creditDeskEvents);
+  return await Promise.all(mapEventsToTx(creditDeskEvents));
 }
 
 function mapEventsToTx(events) {
@@ -75,13 +77,16 @@ function mapEventsToTx(events) {
 }
 
 function mapEventToTx(event) {
-  return {
-    type: EVENT_TYPE_MAP[event.event],
-    amount: usdcFromAtomic(event.returnValues[EVENT_AMOUNT_FIELD[event.event]]),
-    id: event.transactionHash,
-    blockNumber: event.blockNumber,
-    status: 'successful',
-  };
+  return web3.eth.getBlock(event.blockNumber).then(block => {
+    return {
+      type: EVENT_TYPE_MAP[event.event],
+      amount: usdcFromAtomic(event.returnValues[EVENT_AMOUNT_FIELD[event.event]]),
+      id: event.transactionHash,
+      blockNumber: event.blockNumber,
+      date: moment.unix(block.timestamp).format('YYYY-MM-DD h:mm:ss a'),
+      status: 'successful',
+    };
+  });
 }
 
 export { getUserData };
