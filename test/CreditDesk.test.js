@@ -1144,6 +1144,37 @@ describe("CreditDesk", () => {
         })
       })
 
+      describe("When you assess multiple periods after the termEndBlock", async () => {
+        it("should not set the nextDueBlock past the termEndBlock", async () => {
+          const collectedPaymentBalance = 8
+          const interestOwed = 5
+          var creditLine = await createAndSetCreditLineAttributes({
+            balance: 10,
+            interestOwed: interestOwed,
+            principalOwed: 3,
+            collectedPaymentBalance: collectedPaymentBalance,
+            nextDueBlock: latestBlock,
+          })
+          const termInDays = await creditLine.termInDays()
+          const paymentPeriodInDays = await creditLine.paymentPeriodInDays()
+          const blocksPerDay = await creditDesk.BLOCKS_PER_DAY()
+          const blocksPerTerm = termInDays.mul(blocksPerDay)
+          const blocksPerPeriod = paymentPeriodInDays.mul(BLOCKS_PER_DAY)
+
+          // Set it as if you one period past the termEndBlock
+          const blockForTest = latestBlock.add(blocksPerTerm.add(blocksPerPeriod).add(new BN(1)))
+          await creditDesk._setBlockNumberForTest(blockForTest)
+
+          // Assess!
+          await creditDesk.assessCreditLine(creditLine.address, {from: underwriter})
+
+          // Should cap it at the termEndBlock
+          const expectedNextDueBlock = await creditLine.termEndBlock()
+
+          expect(await creditLine.nextDueBlock()).to.bignumber.equal(expectedNextDueBlock)
+        })
+      })
+
       describe("idempotency", async () => {
         it("should keep the nextDueBlock and termEndBlock what it is if you call it twice", async () => {
           const collectedPaymentBalance = 8
