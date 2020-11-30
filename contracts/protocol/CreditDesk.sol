@@ -244,6 +244,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     uint256 _termInDays,
     uint256 _lateFeeApr
   ) public onlyAdmin {
+    require(clToMigrate.limit() > 0, "Can't migrate empty credit line");
     address newClAddress = createCreditLine(
       _borrower,
       _limit,
@@ -391,8 +392,8 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     (uint256 writedownPercent, uint256 writedownAmount) = Accountant.calculateWritedownFor(
       cl,
       blockNumber(),
-      config.getLatenessGracePeriod(),
-      config.getLatenessMaxPeriod()
+      config.getLatenessGracePeriodInDays(),
+      config.getLatenessMaxDays()
     );
 
     if (writedownPercent == 0 && cl.writedownAmount() == 0) {
@@ -427,7 +428,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     (uint256 interestAccrued, uint256 principalAccrued) = Accountant.calculateInterestAndPrincipalAccrued(
       cl,
       blockNumber,
-      config.getLatenessGracePeriod()
+      config.getLatenessGracePeriodInDays()
     );
     if (interestAccrued > 0) {
       // If we've accrued any interest, update interestAccruedAsOfBLock to the block that we've

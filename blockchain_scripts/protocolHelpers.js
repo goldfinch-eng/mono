@@ -17,6 +17,7 @@ async function displayCreditLine(creditLineAddress) {
     nextDueBlock,
     interestAccruedAsOfBlock,
     writedownAmount,
+    interestApr,
   ] = await Promise.all([
     creditLine.balance(),
     creditLine.interestOwed(),
@@ -26,6 +27,7 @@ async function displayCreditLine(creditLineAddress) {
     creditLine.nextDueBlock(),
     creditLine.interestAccruedAsOfBlock(),
     creditLine.writedownAmount(),
+    creditLine.interestApr(),
   ])
 
   console.log("--------- Credit line vars: ----------")
@@ -37,6 +39,7 @@ async function displayCreditLine(creditLineAddress) {
   console.log("nextDueBlock:", String(nextDueBlock))
   console.log("interestAccruedAsOfBlock:", String(interestAccruedAsOfBlock))
   console.log("writedownAmount:", String(writedownAmount))
+  console.log("interestApr:", String(interestApr))
 }
 
 module.exports = {

@@ -17,8 +17,8 @@ library ConfigOptions {
     MaxUnderwriterLimit,
     ReserveDenominator,
     WithdrawFeeDenominator,
-    LatenessGracePeriod,
-    LatenessMaxPeriod
+    LatenessGracePeriodInDays,
+    LatenessMaxDays
   }
   enum Addresses {
     Pool,
@@ -48,11 +48,11 @@ library ConfigOptions {
     if (Numbers.WithdrawFeeDenominator == numberName) {
       return "WithdrawFeeDenominator";
     }
-    if (Numbers.LatenessGracePeriod == numberName) {
-      return "LatenessGracePeriod";
+    if (Numbers.LatenessGracePeriodInDays == numberName) {
+      return "LatenessGracePeriodInDays";
     }
-    if (Numbers.LatenessMaxPeriod == numberName) {
-      return "LatenessMaxPeriod";
+    if (Numbers.LatenessMaxDays == numberName) {
+      return "LatenessMaxDays";
     }
     revert("Unknown value passed to getNumberName");
   }

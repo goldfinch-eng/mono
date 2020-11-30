@@ -61,11 +61,11 @@ library ConfigHelper {
     return config.getNumber(uint256(ConfigOptions.Numbers.WithdrawFeeDenominator));
   }
 
-  function getLatenessGracePeriod(GoldfinchConfig config) internal view returns (uint256) {
-    return config.getNumber(uint256(ConfigOptions.Numbers.LatenessGracePeriod));
+  function getLatenessGracePeriodInDays(GoldfinchConfig config) internal view returns (uint256) {
+    return config.getNumber(uint256(ConfigOptions.Numbers.LatenessGracePeriodInDays));
   }
 
-  function getLatenessMaxPeriod(GoldfinchConfig config) internal view returns (uint256) {
-    return config.getNumber(uint256(ConfigOptions.Numbers.LatenessMaxPeriod));
+  function getLatenessMaxDays(GoldfinchConfig config) internal view returns (uint256) {
+    return config.getNumber(uint256(ConfigOptions.Numbers.LatenessMaxDays));
   }
 }

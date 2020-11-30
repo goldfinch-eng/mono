@@ -1,7 +1,7 @@
 /* global artifacts web3 */
 const {expect, BN, bigVal, mochaEach, tolerance, usdcVal, BLOCKS_PER_DAY, BLOCKS_PER_YEAR} = require("./testHelpers.js")
 const {time} = require("@openzeppelin/test-helpers")
-const {interestAprAsBN, INTEREST_DECIMALS} = require("../blockchain_scripts/deployHelpers.js")
+const {interestAprAsBN, INTEREST_DECIMALS, ETHDecimals} = require("../blockchain_scripts/deployHelpers.js")
 const Accountant = artifacts.require("Accountant")
 const TestAccountant = artifacts.require("TestAccountant")
 const CreditLine = artifacts.require("CreditLine")
@@ -33,7 +33,7 @@ describe("Accountant", async () => {
       const result = await testAccountant.calculateInterestAndPrincipalAccrued(
         creditLine.address,
         blockNumber,
-        lateFeeGracePeriod
+        lateFeeGracePeriodInDays
       )
       return [result[0], result[1]]
     }
@@ -46,7 +46,7 @@ describe("Accountant", async () => {
       lateFeeApr = interestAprAsBN("3")
       lateFeeGracePeriod = new BN(1)
       termInDays = new BN(360)
-      paymentPeriodInDays = new BN(10)
+      paymentPeriodInDays = new BN(30)
       lateFeeGracePeriodInDays = lateFeeGracePeriod.mul(paymentPeriodInDays)
       creditLine = await CreditLine.new({from: owner})
       await creditLine.initialize(
@@ -98,10 +98,10 @@ describe("Accountant", async () => {
         await creditLine.setTermEndBlock(lateFeeGracePeriodInDays.mul(BLOCKS_PER_DAY).mul(new BN(10))) // some time in the future
       })
 
-      it("should should not charge late fees within the grace period", async () => {
+      it("should not charge late fees within the grace period", async () => {
         const totalInterestPerYear = balance.mul(interestApr).div(INTEREST_DECIMALS)
         let blocksPassed = lateFeeGracePeriodInDays.mul(BLOCKS_PER_DAY).div(new BN(2))
-        expectedInterest = totalInterestPerYear.mul(blocksPassed).div(BLOCKS_PER_YEAR)
+        expectedInterest = totalInterestPerYear.mul(blocksPassed).divRound(BLOCKS_PER_YEAR)
 
         const [interestAccrued, principalAccrued] = await calculateInterestAndPrincipalAccrued(
           blockNumber.add(blocksPassed)
@@ -144,12 +144,16 @@ describe("Accountant", async () => {
     let creditLine, balance, interestApr, paymentPeriodInDays, termEndBlock, blockNumber, gracePeriod, maxLatePeriods
 
     beforeEach(async () => {
+      await setupCreditLine()
+    })
+
+    async function setupCreditLine({_paymentPeriodInDays} = {}) {
       balance = usdcVal(10)
       interestApr = interestAprAsBN("3.00")
       const termInDays = new BN(360)
-      paymentPeriodInDays = new BN(10)
-      gracePeriod = new BN(1)
-      maxLatePeriods = new BN(4)
+      paymentPeriodInDays = _paymentPeriodInDays || new BN(30)
+      gracePeriod = new BN(30)
+      maxLatePeriods = new BN(120)
       termEndBlock = new BN(1000)
       const lateFeeApr = interestAprAsBN("0")
 
@@ -167,32 +171,61 @@ describe("Accountant", async () => {
       await creditLine.setBalance(balance)
       await creditLine.setTermEndBlock(termEndBlock) // Some time in the future
       blockNumber = (await time.latestBlock()).add(new BN(100))
-    })
+      return creditLine
+    }
 
     const interestOwedForOnePeriod = () => {
       const paymentPeriodInBlocks = paymentPeriodInDays.mul(BLOCKS_PER_DAY)
       const totalInterestPerYear = balance.mul(interestApr).div(INTEREST_DECIMALS)
-      return totalInterestPerYear.mul(paymentPeriodInBlocks).div(BLOCKS_PER_YEAR)
+      return totalInterestPerYear.mul(paymentPeriodInBlocks).divRound(BLOCKS_PER_YEAR)
+    }
+
+    const calculateWritedownFor = async (creditline, blockNumber, gracePeriod, maxLatePeriods) => {
+      const result = await testAccountant.calculateWritedownFor(
+        creditline.address,
+        blockNumber,
+        gracePeriod,
+        maxLatePeriods
+      )
+      return [result[0], result[1]]
     }
 
     describe("calculateAmountOwedForOnePeriod", async () => {
+      beforeEach(async () => await setupCreditLine())
       it("calculates amount owed for one period for the credit line", async () => {
-        const result = await testAccountant.calculateAmountOwedForOnePeriod(creditLine.address)
+        const result = await testAccountant.calculateAmountOwedForOneDay(creditLine.address)
+        const calculatedInterestPerDay = new BN(result[0]).div(new BN(ETHDecimals))
+        const interestPerDay = interestOwedForOnePeriod().div(paymentPeriodInDays)
 
-        expect(result).to.bignumber.eq(interestOwedForOnePeriod())
+        expect(calculatedInterestPerDay).to.bignumber.eq(interestPerDay)
       })
     })
 
-    describe("calculateWritedownFor", async () => {
-      const calculateWritedownFor = async (creditline, blockNumber, gracePeriod, maxLatePeriods) => {
-        const result = await testAccountant.calculateWritedownFor(
-          creditline.address,
+    describe("when the payment period is greater than the max grace period in days", async () => {
+      let creditLine
+      beforeEach(async () => {
+        creditLine = await setupCreditLine({_paymentPeriodInDays: new BN(90)})
+      })
+
+      it("should respect the maximum number of grace period days", async () => {
+        // With a 30-day max, and 90 day period, then interest owed for one period
+        // is equivalent to 3 periods late, which is 3-1 / 4 = 50% writedown
+        await creditLine.setInterestOwed(interestOwedForOnePeriod())
+        let [writedownPercent, writedownAmount] = await calculateWritedownFor(
+          creditLine,
           blockNumber,
           gracePeriod,
           maxLatePeriods
         )
-        return [result[0], result[1]]
-      }
+
+        // Should be marked down by 100%
+        expect(writedownPercent).to.bignumber.eq("50")
+        expect(writedownAmount).to.bignumber.closeTo(balance.div(new BN(2)), tolerance)
+      })
+    })
+
+    describe("calculateWritedownFor", async () => {
+      beforeEach(async () => await setupCreditLine())
 
       it("does not write down within the grace period", async () => {
         // Only half the interest owed for one period has accumulated, so within grace period
@@ -219,14 +252,14 @@ describe("Accountant", async () => {
           maxLatePeriods
         )
 
-        // Should be marked down by 25% ((periodslate - grace period)/ maxLatePeriods * 100)
+        // Should be marked down by 25% ((daysLate - grace period) / maxLateDays * 100)
         expect(writedownPercent).to.bignumber.eq("25")
-        expect(writedownAmount).to.bignumber.eq(balance.div(new BN(4))) // 25% of 10
+        expect(writedownAmount).to.bignumber.closeTo(balance.div(new BN(4)), tolerance) // 25% of 10
       })
 
       it("caps the write down to 100% beyond the max late periods", async () => {
-        // 6 periods of interest have accumulated, so we're beyond the max late periods
-        await creditLine.setInterestOwed(interestOwedForOnePeriod().mul(new BN(6)))
+        // 13 periods (130 days) of interest have accumulated, so we're beyond the max late days (120)
+        await creditLine.setInterestOwed(interestOwedForOnePeriod().mul(new BN(13)))
 
         let [writedownPercent, writedownAmount] = await calculateWritedownFor(
           creditLine,
@@ -268,6 +301,29 @@ describe("Accountant", async () => {
           expect(writedownAmount).to.bignumber.eq("0")
         })
 
+        it("does not go down when you just go over the term end block", async () => {
+          await creditLine.setInterestOwed(interestOwedForOnePeriod().mul(new BN(2)))
+          blockNumber = termEndBlock.sub(new BN(2))
+          let [writedownPercent, writedownAmount] = await calculateWritedownFor(
+            creditLine,
+            blockNumber,
+            gracePeriod,
+            maxLatePeriods
+          )
+          expect(writedownPercent).to.bignumber.eq("25")
+          expect(writedownAmount).to.bignumber.eq("2500094")
+
+          blockNumber = termEndBlock.add(new BN(1))
+          let [newWritedownPercent, newWritedownAmount] = await calculateWritedownFor(
+            creditLine,
+            blockNumber,
+            gracePeriod,
+            maxLatePeriods
+          )
+          expect(newWritedownPercent).to.bignumber.eq("25")
+          expect(newWritedownAmount).to.bignumber.closeTo(writedownAmount, "100")
+        })
+
         it("uses the block number to write down proportionally", async () => {
           const paymentPeriodInBlocks = paymentPeriodInDays.mul(BLOCKS_PER_DAY)
           // 2 periods late
@@ -285,8 +341,8 @@ describe("Accountant", async () => {
 
         it("uses the block number to cap max periods late", async () => {
           const paymentPeriodInBlocks = paymentPeriodInDays.mul(BLOCKS_PER_DAY)
-          // 6 periods late
-          blockNumber = termEndBlock.add(paymentPeriodInBlocks.mul(new BN(6)))
+          // 130 days late
+          blockNumber = termEndBlock.add(paymentPeriodInBlocks.mul(new BN(13)))
           let [writedownPercent, writedownAmount] = await calculateWritedownFor(
             creditLine,
             blockNumber,

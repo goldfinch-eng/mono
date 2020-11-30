@@ -48,7 +48,7 @@ async function main({getNamedAccounts, deployments, getChainId}) {
 async function depositFundsToThePool(pool, erc20) {
   logger("Depositing funds into the pool...")
   const originalBalance = await erc20.balanceOf(pool.address)
-  if (originalBalance.gt(new BN(0))) {
+  if (originalBalance.gt("0")) {
     logger(`Looks like the pool already has ${originalBalance} of funds...`)
     return
   }
@@ -96,7 +96,7 @@ async function getDeployedAsEthersContract(getter, name) {
 async function createUnderwriter(creditDesk, newUnderwriter) {
   logger("Trying to create an Underwriter...", newUnderwriter)
   const alreadyUnderwriter = await creditDesk.underwriters(newUnderwriter)
-  if (alreadyUnderwriter.gt(new BN(0))) {
+  if (alreadyUnderwriter.gt("0")) {
     logger("We have already created this address as an underwriter")
     return
   }
@@ -107,7 +107,7 @@ async function createUnderwriter(creditDesk, newUnderwriter) {
   )
   await txn.wait()
   const onChain = await creditDesk.underwriters(newUnderwriter)
-  if (!onChain.gt(new BN(0))) {
+  if (!onChain.gt("0")) {
     throw new Error(
       `The transaction did not seem to work. Could not find underwriter ${newUnderwriter} on the CreditDesk`
     )

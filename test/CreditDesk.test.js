@@ -518,6 +518,7 @@ describe("CreditDesk", () => {
         principalOwed: usdcVal(1),
       })
     })
+
     it("should close out the old credit line", async () => {
       await creditDesk.pay(existingCl.address, String(prepaymentAmount), {from: owner})
       expect(await existingCl.balance()).to.not.bignumber.equal(new BN(0))
@@ -537,6 +538,31 @@ describe("CreditDesk", () => {
       expect(await existingCl.limit()).to.bignumber.equal(new BN(0))
       expect(await getBalance(existingCl.address, usdc)).to.bignumber.equal(new BN(0))
       expect(await getBalance(newClAddress, usdc)).to.bignumber.equal(prepaymentAmount)
+    })
+
+    it("shouldn't let you migrate twice", async () => {
+      await expect(
+        creditDesk.migrateCreditLine(
+          existingCl.address,
+          borrower,
+          limit,
+          interestApr,
+          paymentPeriodInDays,
+          termInDays,
+          lateFeeApr
+        )
+      ).to.be.fulfilled
+      return expect(
+        creditDesk.migrateCreditLine(
+          existingCl.address,
+          borrower,
+          limit,
+          interestApr,
+          paymentPeriodInDays,
+          termInDays,
+          lateFeeApr
+        )
+      ).to.be.rejectedWith(/Can't migrate/)
     })
 
     it("should transfer the accounting variables", async () => {
@@ -899,10 +925,12 @@ describe("CreditDesk", () => {
 
       const paymentPeriodInBlocks = paymentPeriodInDays.mul(BLOCKS_PER_DAY)
       const totalInterestPerYear = usdcVal(10).mul(interestApr).div(INTEREST_DECIMALS)
-      interestOwedForOnePeriod = totalInterestPerYear.mul(paymentPeriodInBlocks).div(BLOCKS_PER_YEAR)
+      interestOwedForOnePeriod = totalInterestPerYear.mul(paymentPeriodInBlocks).divRound(BLOCKS_PER_YEAR)
       nextDueBlock = latestBlock.add(paymentPeriodInBlocks)
 
-      expect(interestOwedForOnePeriod).to.bignumber.eq(new BN("41095"))
+      // Note in actuality, we calculate by the day, and use decimal math. BN can't handle decimals,
+      // So we just use a small tolerance in the expectations later on
+      expect(interestOwedForOnePeriod).to.bignumber.eq(new BN("41096"))
 
       // Set it just after the next due block, so that assessment actually runs
       await creditDesk._setBlockNumberForTest(nextDueBlock.add(new BN(1)))
@@ -929,7 +957,7 @@ describe("CreditDesk", () => {
 
         expect(await creditLine.interestOwed()).to.be.bignumber.closeTo(interestOwed.mul(new BN(2)), tolerance)
         expect(await creditLine.principalOwed()).to.be.bignumber.closeTo(usdcVal(0), tolerance)
-        expect(await creditLine.writedownAmount()).to.be.bignumber.eq(expectedWritedown)
+        expect(await creditLine.writedownAmount()).to.be.bignumber.closeTo(expectedWritedown, tolerance)
 
         var newSharePrice = await pool.sharePrice()
         var delta = originalSharePrice.sub(newSharePrice)
@@ -957,7 +985,7 @@ describe("CreditDesk", () => {
         // Writedown should be 2 periods late - 1 grace period / 4 max = 25%
         let expectedWritedown = usdcVal(10).div(new BN(4)) // 25% of 10 = 2.5
 
-        expect(await creditLine.writedownAmount()).to.be.bignumber.eq(expectedWritedown)
+        expect(await creditLine.writedownAmount()).to.be.bignumber.closeTo(expectedWritedown, tolerance)
 
         // Payback half of one period
         let interestPaid = interestOwedForOnePeriod.div(new BN(2))
@@ -1000,7 +1028,7 @@ describe("CreditDesk", () => {
         // Writedown should be 2 periods late - 1 grace period / 4 max = 25%
         let expectedWritedown = usdcVal(10).div(new BN(4)) // 25% of 10 = 2.5
 
-        expect(await creditLine.writedownAmount()).to.be.bignumber.eq(expectedWritedown)
+        expect(await creditLine.writedownAmount()).to.be.bignumber.closeTo(expectedWritedown, tolerance)
 
         // Payback all interest owed
         await creditDesk.pay(creditLine.address, String(interestOwed), {from: borrower})

@@ -10,8 +10,8 @@ async function main() {
   console.log("MaxUnderwriterLimit ==", String(await config.getNumber(2)))
   console.log("ReserveDenominator ==", String(await config.getNumber(3)))
   console.log("WithdrawFeeDenominator ==", String(await config.getNumber(4)))
-  console.log("LatenessGracePeriod ==", String(await config.getNumber(5)))
-  console.log("LatenessMaxPeriod ==", String(await config.getNumber(6)))
+  console.log("LatenessGracePeriodInDays ==", String(await config.getNumber(5)))
+  console.log("LatenessMaxDays ==", String(await config.getNumber(6)))
 }
 
 if (require.main === module) {

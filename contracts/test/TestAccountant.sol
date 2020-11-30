@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity 0.6.12;
+pragma experimental ABIEncoderV2;
 
 import "../protocol/Accountant.sol";
 import "../protocol/CreditLine.sol";
@@ -25,8 +26,8 @@ contract TestAccountant {
     return Accountant.calculateWritedownFor(cl, blockNumber, gracePeriod, maxLatePeriods);
   }
 
-  function calculateAmountOwedForOnePeriod(address creditLineAddress) public view returns (uint256) {
+  function calculateAmountOwedForOneDay(address creditLineAddress) public view returns (FixedPoint.Unsigned memory) {
     CreditLine cl = CreditLine(creditLineAddress);
-    return Accountant.calculateAmountOwedForOnePeriod(cl);
+    return Accountant.calculateAmountOwedForOneDay(cl);
   }
 }
