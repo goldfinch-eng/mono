@@ -234,8 +234,11 @@
   .transaction-link{
     border-radius: 3px;
     float: right;
+    height: 22px;
     margin: -4px 0 0 0;
     padding: 5px;
+    vertical-align: top;
+    width: 22px;
 
     &:hover{
       background-color: $blue-xxlight;
@@ -244,6 +247,7 @@
     .icon{
       height: 12px;
       width: 12px;
+      vertical-align: top;
     }
 
     .icon path{

@@ -15,7 +15,7 @@ function CreditBarViz(props) {
       </div>
       <div className="left-label">
         <div className="amount">{displayDollars(remainingTotalDueAmount)}</div>
-        <div className="description">Drawdown + interest balance</div>
+        <div className="description">Balance plus interest</div>
       </div>
       <div className="right-label">
         <div className="amount">{displayDollars(availableToDrawdown)}</div>

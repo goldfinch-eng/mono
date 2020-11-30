@@ -1,5 +1,9 @@
+.form-full{
+  overflow: hidden;
+}
+
 .form-header{
-  background-color: $blue-xxlight;
+  background-color: $blue-xlight;
   font-size: $sans-size-xs;
   margin: -25px 0 25px -25px;
   padding: 15px 25px;
@@ -9,7 +13,7 @@
   .cancel{
     cursor: pointer;
     font-size: $sans-size-xs;
-    opacity: 0.5;
+    opacity: 0.6;
     position: absolute;
     right: 25px;
     top: 15px;
@@ -61,20 +65,12 @@
 }
 
 
-@media only screen and (min-width: $screen-m) {
-  .form-header{
-    border-radius: 8px 8px 0 0;
-  }
-}
-
-
 @media only screen and (min-width: $screen-l) {
   .form-full.background-container{
     padding-bottom: 2px;
   }
 
   .form-header{
-    border-radius: 10px 10px 0 0;
     font-size: $sans-size-s;
     margin: -30px 0 30px -30px;
     padding: 20px 30px;

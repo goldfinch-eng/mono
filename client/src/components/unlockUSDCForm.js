@@ -20,7 +20,7 @@ function UnlockUSDCForm() {
       <div className="unlock-form background-container">
         <p>
           {iconInfo}
-          Just this one time, you’ll first need to unlock your account to send USDC to Goldfinch.
+          Just this one time, you’ll first need to unlock your account to use USDC with Goldfinch.
         </p>
         <LoadingButton action={unlockUSDC} text={'Unlock USDC'} />
       </div>

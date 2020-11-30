@@ -1,9 +1,10 @@
 import React from 'react';
 import web3 from '../web3';
 import { ErrorMessage } from '@hookform/error-message';
+import { iconCheck } from './icons.js';
 
 function AddressInput(props) {
-  const validValue = <div className="form-input-note verified-value">&#10004; valid address</div>;
+  const validValue = <div className="form-input-note verified-value">valid address {iconCheck}</div>;
   const name = props.name || 'sendToAddress';
   return (
     <div className="form-field">

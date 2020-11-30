@@ -1,18 +1,27 @@
 .background-container{
   background-color: $sand-light;
-  margin: 10px 0 50px -25px;
-  padding: 25px;
-  width: calc(100% + 50px);
+  border-radius: 6px;
+  margin: 10px 0 50px;
+  padding: 20px;
+  width: 100%;
 }
 
 .background-container-inner{
-  margin: 0 -25px;
-  padding: 0 25px;
+  margin: 0 -20px;
+  padding: 0 20px;
 }
 
 @media only screen and (min-width: $screen-m) {
   .background-container{
     border-radius: 8px;
+    margin: 10px 0 50px -25px;
+    padding: 25px;
+    width: calc(100% + 50px);
+  }
+
+  .background-container-inner{
+    margin: 0 -25px;
+    padding: 0 25px;
   }
 }
 

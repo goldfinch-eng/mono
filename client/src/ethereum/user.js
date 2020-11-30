@@ -83,7 +83,7 @@ function mapEventToTx(event) {
       amount: usdcFromAtomic(event.returnValues[EVENT_AMOUNT_FIELD[event.event]]),
       id: event.transactionHash,
       blockNumber: event.blockNumber,
-      date: moment.unix(block.timestamp).format('YYYY-MM-DD h:mm:ss a'),
+      date: moment.unix(block.timestamp).format('MMM DD, h:mma'),
       status: 'successful',
     };
   });

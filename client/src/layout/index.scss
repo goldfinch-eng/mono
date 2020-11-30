@@ -34,7 +34,7 @@ html, * {
 body {
   color: $purp-dark;
   background-color: $sand-xlight;
-  padding: 0 25px;
+  padding: 0 20px;
 }
 
 a {
@@ -85,6 +85,10 @@ input{
 @media only screen and (min-width: $screen-l) {
   html, * {
     font-size: $sans-size-base;
+  }
+
+  body {
+    padding: 0 80px 140px $nav-width + 80;
   }
 
   .content-empty-message{
