@@ -61,10 +61,11 @@ library Accountant {
     if (amountOwedPerDay.isEqual(0)) {
       return (0, 0);
     }
-    FixedPoint.Unsigned memory fpGracePeriod = FixedPoint.min(
-      FixedPoint.fromUnscaledUint(gracePeriodInDays),
-      FixedPoint.fromUnscaledUint(cl.paymentPeriodInDays())
-    );
+    FixedPoint.Unsigned memory fpGracePeriod =
+      FixedPoint.min(
+        FixedPoint.fromUnscaledUint(gracePeriodInDays),
+        FixedPoint.fromUnscaledUint(cl.paymentPeriodInDays())
+      );
     FixedPoint.Unsigned memory daysLate;
 
     // Excel math: =min(1,max(0,periods_late_in_days-graceperiod_in_days)/MAX_ALLOWED_DAYS_LATE) grace_period = 30,
@@ -120,7 +121,8 @@ library Accountant {
     uint256 interestOwed = totalInterestPerYear.mul(numBlocksElapsed).div(BLOCKS_PER_YEAR);
 
     if (lateFeeApplicable(cl, blockNumber, lateFeeGracePeriodInDays)) {
-      uint256 additionalLateFeeInterest = interestOwed.mul(cl.lateFeeApr()).div(INTEREST_DECIMALS);
+      uint256 lateFeeInterestPerYear = cl.balance().mul(cl.lateFeeApr()).div(INTEREST_DECIMALS);
+      uint256 additionalLateFeeInterest = lateFeeInterestPerYear.mul(numBlocksElapsed).div(BLOCKS_PER_YEAR);
       interestOwed = interestOwed.add(additionalLateFeeInterest);
     }
 

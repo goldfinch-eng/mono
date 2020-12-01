@@ -1,7 +1,16 @@
 /* global artifacts web3 */
-const {expect, BN, bigVal, mochaEach, tolerance, usdcVal, BLOCKS_PER_DAY, BLOCKS_PER_YEAR} = require("./testHelpers.js")
-const {time} = require("@openzeppelin/test-helpers")
-const {interestAprAsBN, INTEREST_DECIMALS, ETHDecimals} = require("../blockchain_scripts/deployHelpers.js")
+const {
+  expect,
+  BN,
+  bigVal,
+  mochaEach,
+  tolerance,
+  usdcVal,
+  BLOCKS_PER_DAY,
+  BLOCKS_PER_YEAR,
+} = require("./testHelpers.js")
+const { time } = require("@openzeppelin/test-helpers")
+const { interestAprAsBN, INTEREST_DECIMALS, ETHDecimals } = require("../blockchain_scripts/deployHelpers.js")
 const Accountant = artifacts.require("Accountant")
 const TestAccountant = artifacts.require("TestAccountant")
 const CreditLine = artifacts.require("CreditLine")
@@ -10,13 +19,13 @@ describe("Accountant", async () => {
   let accountant, owner, borrower, underwriter, testAccountant
   before(async () => {
     // Linking can only happen once, so we do it in a before block, rather than beforeEach
-    accountant = await Accountant.new({from: owner})
+    accountant = await Accountant.new({ from: owner })
     TestAccountant.link(accountant)
   })
 
   beforeEach(async () => {
     ;[owner, borrower, underwriter] = await web3.eth.getAccounts()
-    testAccountant = await TestAccountant.new({from: owner})
+    testAccountant = await TestAccountant.new({ from: owner })
   })
 
   describe("calculateInterestAndPrincipalAccrued", async () => {
@@ -48,7 +57,7 @@ describe("Accountant", async () => {
       termInDays = new BN(360)
       paymentPeriodInDays = new BN(30)
       lateFeeGracePeriodInDays = lateFeeGracePeriod.mul(paymentPeriodInDays)
-      creditLine = await CreditLine.new({from: owner})
+      creditLine = await CreditLine.new({ from: owner })
       await creditLine.initialize(
         owner,
         borrower,
@@ -110,12 +119,13 @@ describe("Accountant", async () => {
         expect(principalAccrued).to.bignumber.equal(new BN(0))
       })
 
-      it("should charge late fee apr on original interest and return total interest accrued", async () => {
+      it("should charge late fee apr on the balance and return total interest accrued", async () => {
         const totalInterestPerYear = balance.mul(interestApr).div(INTEREST_DECIMALS)
         let blocksPassed = lateFeeGracePeriodInDays.mul(BLOCKS_PER_DAY).mul(new BN(2))
         expectedInterest = totalInterestPerYear.mul(blocksPassed).div(BLOCKS_PER_YEAR)
 
-        const lateFee = expectedInterest.mul(lateFeeApr).div(INTEREST_DECIMALS)
+        const lateFeeInterestPerYear = balance.mul(lateFeeApr).div(INTEREST_DECIMALS)
+        const lateFee = lateFeeInterestPerYear.mul(blocksPassed).div(BLOCKS_PER_YEAR)
 
         const [interestAccrued, principalAccrued] = await calculateInterestAndPrincipalAccrued(
           blockNumber.add(blocksPassed)
@@ -129,7 +139,8 @@ describe("Accountant", async () => {
         const totalInterestPerYear = balance.mul(interestApr).div(INTEREST_DECIMALS)
         let blocksPassed = lateFeeGracePeriodInDays.mul(BLOCKS_PER_DAY).mul(new BN(2))
         expectedInterest = totalInterestPerYear.mul(blocksPassed).div(BLOCKS_PER_YEAR)
-        const lateFee = expectedInterest.mul(lateFeeApr).div(INTEREST_DECIMALS)
+        const lateFeeInterestPerYear = balance.mul(lateFeeApr).div(INTEREST_DECIMALS)
+        const lateFee = lateFeeInterestPerYear.mul(blocksPassed).div(BLOCKS_PER_YEAR)
 
         const [interestAccrued, principalAccrued] = await calculateInterestAndPrincipalAccrued(
           blockNumber.add(blocksPassed)
@@ -147,7 +158,7 @@ describe("Accountant", async () => {
       await setupCreditLine()
     })
 
-    async function setupCreditLine({_paymentPeriodInDays} = {}) {
+    async function setupCreditLine({ _paymentPeriodInDays } = {}) {
       balance = usdcVal(10)
       interestApr = interestAprAsBN("3.00")
       const termInDays = new BN(360)
@@ -157,7 +168,7 @@ describe("Accountant", async () => {
       termEndBlock = new BN(1000)
       const lateFeeApr = interestAprAsBN("0")
 
-      creditLine = await CreditLine.new({from: owner})
+      creditLine = await CreditLine.new({ from: owner })
       await creditLine.initialize(
         owner,
         borrower,
@@ -204,7 +215,7 @@ describe("Accountant", async () => {
     describe("when the payment period is greater than the max grace period in days", async () => {
       let creditLine
       beforeEach(async () => {
-        creditLine = await setupCreditLine({_paymentPeriodInDays: new BN(90)})
+        creditLine = await setupCreditLine({ _paymentPeriodInDays: new BN(90) })
       })
 
       it("should respect the maximum number of grace period days", async () => {
@@ -377,12 +388,12 @@ describe("Accountant", async () => {
   describe("allocatePayment", async () => {
     const tests = [
       // payment, balance, totalInterestOwed, totalPrincipalOwed, expectedResults
-      [10, 40, 10, 20, {interestPayment: 10, principalPayment: 0, additionalBalancePayment: 0}],
-      [5, 40, 10, 20, {interestPayment: 5, principalPayment: 0, additionalBalancePayment: 0}],
-      [15, 40, 10, 20, {interestPayment: 10, principalPayment: 5, additionalBalancePayment: 0}],
-      [35, 40, 10, 20, {interestPayment: 10, principalPayment: 20, additionalBalancePayment: 5}],
-      [55, 40, 10, 20, {interestPayment: 10, principalPayment: 20, additionalBalancePayment: 20}],
-      [0, 40, 10, 20, {interestPayment: 0, principalPayment: 0, additionalBalancePayment: 0}],
+      [10, 40, 10, 20, { interestPayment: 10, principalPayment: 0, additionalBalancePayment: 0 }],
+      [5, 40, 10, 20, { interestPayment: 5, principalPayment: 0, additionalBalancePayment: 0 }],
+      [15, 40, 10, 20, { interestPayment: 10, principalPayment: 5, additionalBalancePayment: 0 }],
+      [35, 40, 10, 20, { interestPayment: 10, principalPayment: 20, additionalBalancePayment: 5 }],
+      [55, 40, 10, 20, { interestPayment: 10, principalPayment: 20, additionalBalancePayment: 20 }],
+      [0, 40, 10, 20, { interestPayment: 0, principalPayment: 0, additionalBalancePayment: 0 }],
     ]
     mochaEach(tests).it(
       "should calculate things correctly!",
