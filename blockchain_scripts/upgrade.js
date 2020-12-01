@@ -1,4 +1,4 @@
-const {getDeployedContract} = require("./deployHelpers.js")
+const {getDeployedContract, SAFE_CONFIG} = require("./deployHelpers.js")
 const hre = require("hardhat")
 
 /*
@@ -6,11 +6,6 @@ This script deploys the latest implementations of upgradeable contracts and requ
 gnosis multisig
 */
 let logger
-
-const SAFE_CONFIG = {
-  1: {safeAddress: "0xBEb28978B2c755155f20fd3d09Cb37e300A6981f"}, // Mainnet
-  4: {safeAddress: "0xAA96CA940736e937A8571b132992418c7d220976"}, // Rinkeby
-}
 
 async function main() {
   await multisig(hre)
@@ -44,9 +39,8 @@ async function multisig(hre) {
 }
 
 async function deployUpgrades(contractNames, proxy_owner, hre) {
-  const {deployments, ethers, getChainId} = hre
+  const {deployments, ethers} = hre
   const {deploy} = deployments
-  const safeAddress = SAFE_CONFIG[await getChainId()].safeAddress
 
   const result = {}
   const dependencies = {
@@ -62,13 +56,6 @@ async function deployUpgrades(contractNames, proxy_owner, hre) {
     const implStorageLocation = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"
     let currentImpl = await ethers.provider.getStorageAt(contractProxy.address, implStorageLocation)
     currentImpl = ethers.utils.hexStripZeros(currentImpl)
-    const admin = await contractProxy.owner()
-    if (admin.toLowerCase() !== safeAddress.toLowerCase()) {
-      logger(`Converting safe ${safeAddress} as the proxy owner for ${contractName}`)
-      const contractAsAdmin = await getDeployedContract(deployments, `${contractName}_Proxy`, proxy_owner)
-      const txn = await contractAsAdmin.transferOwnership(safeAddress)
-      await txn.wait()
-    }
 
     let deployResult = await deploy(contractName, {
       from: proxy_owner,
