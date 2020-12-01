@@ -965,9 +965,12 @@ describe("CreditDesk", () => {
         let normalizedWritedown = await pool._usdcToFidu(expectedWritedown)
         var expectedDelta = normalizedWritedown.mul(decimals).div(originalTotalShares)
 
+        const totalWritedowns = await creditDesk.totalWritedowns()
+
         expect(delta).to.be.bignumber.closeTo(expectedDelta, fiduTolerance)
         expect(newSharePrice).to.be.bignumber.lt(originalSharePrice)
         expect(newSharePrice).to.be.bignumber.closeTo(originalSharePrice.sub(delta), fiduTolerance)
+        expect(totalWritedowns).to.be.bignumber.closeTo(expectedWritedown, tolerance)
       })
 
       it("should decrease the write down amount if partially paid back", async () => {
@@ -1031,6 +1034,9 @@ describe("CreditDesk", () => {
 
         expect(await creditLine.writedownAmount()).to.be.bignumber.closeTo(expectedWritedown, tolerance)
 
+        let totalWritedowns = await creditDesk.totalWritedowns()
+        expect(totalWritedowns).to.be.bignumber.closeTo(expectedWritedown, tolerance)
+
         // Payback all interest owed
         await creditDesk.pay(creditLine.address, String(interestOwed), { from: borrower })
 
@@ -1041,8 +1047,11 @@ describe("CreditDesk", () => {
         var delta = newSharePrice.sub(originalSharePrice)
         var expectedDelta = normalizedInterest.sub(expectedReserveFee).mul(decimals).div(originalTotalShares)
 
+        totalWritedowns = await creditDesk.totalWritedowns()
+
         expect(delta).to.be.bignumber.eq(expectedDelta)
         expect(newSharePrice).to.be.bignumber.eq(originalSharePrice.add(delta))
+        expect(totalWritedowns).to.be.bignumber.eq("0")
       })
     })
 
