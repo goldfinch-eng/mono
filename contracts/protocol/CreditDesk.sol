@@ -245,14 +245,8 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     uint256 _lateFeeApr
   ) public onlyAdmin {
     require(clToMigrate.limit() > 0, "Can't migrate empty credit line");
-    address newClAddress = createCreditLine(
-      _borrower,
-      _limit,
-      _interestApr,
-      _paymentPeriodInDays,
-      _termInDays,
-      _lateFeeApr
-    );
+    address newClAddress =
+      createCreditLine(_borrower, _limit, _interestApr, _paymentPeriodInDays, _termInDays, _lateFeeApr);
 
     CreditLine newCl = CreditLine(newClAddress);
 
@@ -269,11 +263,12 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     // Close out the original credit line
     clToMigrate.setLimit(0);
     clToMigrate.setBalance(0);
-    bool success = config.getPool().transferFrom(
-      address(clToMigrate),
-      address(newCl),
-      config.getUSDC().balanceOf(address(clToMigrate))
-    );
+    bool success =
+      config.getPool().transferFrom(
+        address(clToMigrate),
+        address(newCl),
+        config.getUSDC().balanceOf(address(clToMigrate))
+      );
     require(success, "Failed to transfer funds");
   }
 
@@ -331,11 +326,8 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     uint256 amount,
     uint256 blockNumber
   ) internal {
-    (uint256 paymentRemaining, uint256 interestPayment, uint256 principalPayment) = handlePayment(
-      cl,
-      amount,
-      blockNumber
-    );
+    (uint256 paymentRemaining, uint256 interestPayment, uint256 principalPayment) =
+      handlePayment(cl, amount, blockNumber);
 
     updateWritedownAmounts(cl);
 
@@ -362,12 +354,8 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     )
   {
     (uint256 interestOwed, uint256 principalOwed) = updateAndGetInterestAndPrincipalOwedAsOf(cl, asOfBlock);
-    Accountant.PaymentAllocation memory pa = Accountant.allocatePayment(
-      paymentAmount,
-      cl.balance(),
-      interestOwed,
-      principalOwed
-    );
+    Accountant.PaymentAllocation memory pa =
+      Accountant.allocatePayment(paymentAmount, cl.balance(), interestOwed, principalOwed);
 
     uint256 newBalance = cl.balance().sub(pa.principalPayment);
     // Apply any additional payment towards the balance
@@ -389,18 +377,25 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
   }
 
   function updateWritedownAmounts(CreditLine cl) internal {
-    (uint256 writedownPercent, uint256 writedownAmount) = Accountant.calculateWritedownFor(
-      cl,
-      blockNumber(),
-      config.getLatenessGracePeriodInDays(),
-      config.getLatenessMaxDays()
-    );
+    (uint256 writedownPercent, uint256 writedownAmount) =
+      Accountant.calculateWritedownFor(
+        cl,
+        blockNumber(),
+        config.getLatenessGracePeriodInDays(),
+        config.getLatenessMaxDays()
+      );
 
     if (writedownPercent == 0 && cl.writedownAmount() == 0) {
       return;
     }
     int256 writedownDelta = int256(cl.writedownAmount()) - int256(writedownAmount);
     cl.setWritedownAmount(writedownAmount);
+    if (writedownDelta > 0) {
+      // If writedownDelta is positive, that means we got money back. So subtract from totalWritedowns.
+      totalWritedowns = totalWritedowns.sub(uint256(writedownDelta));
+    } else {
+      totalWritedowns = totalWritedowns.add(uint256(writedownDelta * -1));
+    }
     config.getPool().distributeLosses(address(cl), writedownDelta);
   }
 
@@ -425,11 +420,8 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     internal
     returns (uint256, uint256)
   {
-    (uint256 interestAccrued, uint256 principalAccrued) = Accountant.calculateInterestAndPrincipalAccrued(
-      cl,
-      blockNumber,
-      config.getLatenessGracePeriodInDays()
-    );
+    (uint256 interestAccrued, uint256 principalAccrued) =
+      Accountant.calculateInterestAndPrincipalAccrued(cl, blockNumber, config.getLatenessGracePeriodInDays());
     if (interestAccrued > 0) {
       // If we've accrued any interest, update interestAccruedAsOfBLock to the block that we've
       // calculated interest for. If we've not accrued any interest, then we keep the old value so the next
