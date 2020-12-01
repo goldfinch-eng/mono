@@ -5235,7 +5235,7 @@
       "chainId": "4",
       "contracts": {
         "ConfigOptions": {
-          "address": "0xaebeA2A72EDcb7dccEB4358a1bB77E0fbEE08378",
+          "address": "0xC9a68b3daEbf358A52710D2C29F82c2C61fA4FCD",
           "abi": [
             {
               "inputs": [
@@ -5278,7 +5278,7 @@
           ]
         },
         "GoldfinchConfig_Implementation": {
-          "address": "0x5c9ff542f8Fc7ee660edcC3F7828F495009Aff63",
+          "address": "0x30101390208f7B798725D8BB9B726771854f1bab",
           "abi": [
             {
               "anonymous": false,
@@ -5811,7 +5811,7 @@
           ]
         },
         "GoldfinchConfig_Proxy": {
-          "address": "0x43c73831728Bcc6f5077773d38eBdC8D8dC5F850",
+          "address": "0xa3dB242a94382069d198fD145cB3657b9313EE76",
           "abi": [
             {
               "inputs": [
@@ -5946,7 +5946,7 @@
           ]
         },
         "GoldfinchConfig": {
-          "address": "0x43c73831728Bcc6f5077773d38eBdC8D8dC5F850",
+          "address": "0xa3dB242a94382069d198fD145cB3657b9313EE76",
           "abi": [
             {
               "anonymous": false,
@@ -6479,7 +6479,7 @@
           ]
         },
         "TestERC20": {
-          "address": "0x7D17be13761682BFaF60875414c419A431AeD5BD",
+          "address": "0x4Aa0b716F1CcCC711a64805E477cB927a901de09",
           "abi": [
             {
               "inputs": [
@@ -6770,7 +6770,7 @@
           ]
         },
         "Fidu_Implementation": {
-          "address": "0xa4bd6DfAC270fbFEb1A95fc971F19C0196f00d24",
+          "address": "0xAA7D06Fd977187E039BaF557eEBF3b807956a7B6",
           "abi": [
             {
               "anonymous": false,
@@ -7479,7 +7479,7 @@
           ]
         },
         "Fidu_Proxy": {
-          "address": "0x44f19F657A937b8e5b99c78C15505Ba453F83464",
+          "address": "0x15458eD4f37F8962f1616878aA7815EF117044D1",
           "abi": [
             {
               "inputs": [
@@ -7614,7 +7614,7 @@
           ]
         },
         "Fidu": {
-          "address": "0x44f19F657A937b8e5b99c78C15505Ba453F83464",
+          "address": "0x15458eD4f37F8962f1616878aA7815EF117044D1",
           "abi": [
             {
               "anonymous": false,
@@ -8323,7 +8323,7 @@
           ]
         },
         "Pool_Implementation": {
-          "address": "0x63a84e58504315aE15398342f9Bbb6Fc010B2C62",
+          "address": "0x2F2FDc7a89F349745ae3603b1c67484C58936A70",
           "abi": [
             {
               "anonymous": false,
@@ -8966,7 +8966,7 @@
           ]
         },
         "Pool_Proxy": {
-          "address": "0xe971889bAB4C83F229C9377F02a278Aa810F8955",
+          "address": "0x7567f61c35F502A0B36D589E587c2857652603F7",
           "abi": [
             {
               "inputs": [
@@ -9101,7 +9101,7 @@
           ]
         },
         "Pool": {
-          "address": "0xe971889bAB4C83F229C9377F02a278Aa810F8955",
+          "address": "0x7567f61c35F502A0B36D589E587c2857652603F7",
           "abi": [
             {
               "anonymous": false,
@@ -9744,7 +9744,7 @@
           ]
         },
         "CreditLine": {
-          "address": "0x337bE5CFBf52ECeB10D602A0310cCfB5b7115d5D",
+          "address": "0xFab214B3b51EA6F6609453c7b73c183b90ceB09A",
           "abi": [
             {
               "anonymous": false,
@@ -10450,7 +10450,7 @@
           ]
         },
         "CreditLineFactory_Implementation": {
-          "address": "0x97B7824A09aCC7A36A6788ed09863Ebf6a3ceB2e",
+          "address": "0x2A6EB739A09DDF482685960401c7A83A151Eb8A5",
           "abi": [
             {
               "anonymous": false,
@@ -10820,7 +10820,7 @@
           ]
         },
         "CreditLineFactory_Proxy": {
-          "address": "0xA9b3b5Fb62Ce24b9d77F3E6Ac15A058946eCbCEd",
+          "address": "0x6e1B184FA11050fc274220A275F39321cc8deD86",
           "abi": [
             {
               "inputs": [
@@ -10955,7 +10955,7 @@
           ]
         },
         "CreditLineFactory": {
-          "address": "0xA9b3b5Fb62Ce24b9d77F3E6Ac15A058946eCbCEd",
+          "address": "0x6e1B184FA11050fc274220A275F39321cc8deD86",
           "abi": [
             {
               "anonymous": false,
@@ -11325,7 +11325,7 @@
           ]
         },
         "Accountant": {
-          "address": "0x6bc06Af8c0Ad43d026fC8BD4F98619f793637105",
+          "address": "0xd8D9B5d40D82BAbE6df2ac89d52C0D0C94B4B2C2",
           "abi": [
             {
               "inputs": [],
@@ -11438,12 +11438,19 @@
                   "type": "CreditLine"
                 }
               ],
-              "name": "calculateAmountOwedForOnePeriod",
+              "name": "calculateAmountOwedForOneDay",
               "outputs": [
                 {
-                  "internalType": "uint256",
+                  "components": [
+                    {
+                      "internalType": "uint256",
+                      "name": "rawValue",
+                      "type": "uint256"
+                    }
+                  ],
+                  "internalType": "struct FixedPoint.Unsigned",
                   "name": "",
-                  "type": "uint256"
+                  "type": "tuple"
                 }
               ],
               "stateMutability": "view",
@@ -11463,7 +11470,7 @@
                 },
                 {
                   "internalType": "uint256",
-                  "name": "lateFeeGracePeriod",
+                  "name": "lateFeeGracePeriodInDays",
                   "type": "uint256"
                 }
               ],
@@ -11550,12 +11557,12 @@
                 },
                 {
                   "internalType": "uint256",
-                  "name": "gracePeriod",
+                  "name": "gracePeriodInDays",
                   "type": "uint256"
                 },
                 {
                   "internalType": "uint256",
-                  "name": "maxLatePeriods",
+                  "name": "maxDaysLate",
                   "type": "uint256"
                 }
               ],
@@ -11589,7 +11596,7 @@
                 },
                 {
                   "internalType": "uint256",
-                  "name": "gracePeriod",
+                  "name": "gracePeriodInDays",
                   "type": "uint256"
                 }
               ],
@@ -11607,7 +11614,7 @@
           ]
         },
         "CreditDesk_Implementation": {
-          "address": "0xC6F6e24A64e9aA81EAE3D7613cb784F427f06A47",
+          "address": "0xc33f9a50A6a011b93cED158ECeB3857eaB085E6A",
           "abi": [
             {
               "anonymous": false,
@@ -12338,7 +12345,7 @@
           ]
         },
         "CreditDesk_Proxy": {
-          "address": "0x800d57501Ac8e0715A59e55Eb6aC4C467BA85ca1",
+          "address": "0x63f8fe76E4D96E8F1A96cA48f6AAE69E56b3741a",
           "abi": [
             {
               "inputs": [
@@ -12473,7 +12480,7 @@
           ]
         },
         "CreditDesk": {
-          "address": "0x800d57501Ac8e0715A59e55Eb6aC4C467BA85ca1",
+          "address": "0x63f8fe76E4D96E8F1A96cA48f6AAE69E56b3741a",
           "abi": [
             {
               "anonymous": false,
@@ -13325,12 +13332,19 @@
                   "type": "CreditLine"
                 }
               ],
-              "name": "calculateAmountOwedForOnePeriod",
+              "name": "calculateAmountOwedForOneDay",
               "outputs": [
                 {
-                  "internalType": "uint256",
+                  "components": [
+                    {
+                      "internalType": "uint256",
+                      "name": "rawValue",
+                      "type": "uint256"
+                    }
+                  ],
+                  "internalType": "struct FixedPoint.Unsigned",
                   "name": "",
-                  "type": "uint256"
+                  "type": "tuple"
                 }
               ],
               "stateMutability": "view",
@@ -13350,7 +13364,7 @@
                 },
                 {
                   "internalType": "uint256",
-                  "name": "lateFeeGracePeriod",
+                  "name": "lateFeeGracePeriodInDays",
                   "type": "uint256"
                 }
               ],
@@ -13437,12 +13451,12 @@
                 },
                 {
                   "internalType": "uint256",
-                  "name": "gracePeriod",
+                  "name": "gracePeriodInDays",
                   "type": "uint256"
                 },
                 {
                   "internalType": "uint256",
-                  "name": "maxLatePeriods",
+                  "name": "maxDaysLate",
                   "type": "uint256"
                 }
               ],
@@ -13476,7 +13490,7 @@
                 },
                 {
                   "internalType": "uint256",
-                  "name": "gracePeriod",
+                  "name": "gracePeriodInDays",
                   "type": "uint256"
                 }
               ],

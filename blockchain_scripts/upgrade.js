@@ -1,4 +1,4 @@
-const { getDeployedContract } = require("./deployHelpers.js")
+const {getDeployedContract} = require("./deployHelpers.js")
 const hre = require("hardhat")
 
 /*
@@ -8,8 +8,8 @@ gnosis multisig
 let logger
 
 const SAFE_CONFIG = {
-  1: { safeAddress: "TODO" }, // Mainnet
-  4: { safeAddress: "0xAA96CA940736e937A8571b132992418c7d220976" }, // Rinkeby
+  1: {safeAddress: "0xBEb28978B2c755155f20fd3d09Cb37e300A6981f"}, // Mainnet
+  4: {safeAddress: "0xAA96CA940736e937A8571b132992418c7d220976"}, // Rinkeby
 }
 
 async function main() {
@@ -17,8 +17,8 @@ async function main() {
 }
 
 async function multisig(hre) {
-  const { getNamedAccounts, getChainId } = hre
-  const { proxy_owner } = await getNamedAccounts()
+  const {getNamedAccounts, getChainId} = hre
+  const {proxy_owner} = await getNamedAccounts()
 
   // Since this is not a "real" deployment (just a script),
   //the deployments.log is not enabled. So, just use console.log instead
@@ -30,7 +30,7 @@ async function multisig(hre) {
     throw new Error(`Unsupported chain id: ${chainId}`)
   }
 
-  let contractsToUpgrade = process.env.CONTRACTS || "GoldfinchConfig, CreditLineFactory, CreditDesk, Pool"
+  let contractsToUpgrade = process.env.CONTRACTS || "GoldfinchConfig, CreditLineFactory, CreditDesk, Pool, Fidu"
   contractsToUpgrade = contractsToUpgrade.split(/[ ,]+/)
   const contracts = await deployUpgrades(contractsToUpgrade, proxy_owner, hre)
 
@@ -44,14 +44,14 @@ async function multisig(hre) {
 }
 
 async function deployUpgrades(contractNames, proxy_owner, hre) {
-  const { deployments, ethers, getChainId } = hre
-  const { deploy } = deployments
+  const {deployments, ethers, getChainId} = hre
+  const {deploy} = deployments
   const safeAddress = SAFE_CONFIG[await getChainId()].safeAddress
 
   const result = {}
   const dependencies = {
-    GoldfinchConfig: { ["ConfigOptions"]: (await deployments.getOrNull("ConfigOptions")).address },
-    CreditDesk: { ["Accountant"]: (await deployments.getOrNull("Accountant")).address },
+    GoldfinchConfig: {["ConfigOptions"]: (await deployments.getOrNull("ConfigOptions")).address},
+    CreditDesk: {["Accountant"]: (await deployments.getOrNull("Accountant")).address},
   }
 
   for (let i = 0; i < contractNames.length; i++) {

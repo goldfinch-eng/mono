@@ -72,6 +72,7 @@ async function baseDeploy(hre, {shouldUpgrade}) {
     const latenessGracePeriodIndays = new BN(PROTOCOL_CONFIG.latenessGracePeriodInDays)
     const latenessMaxDays = new BN(PROTOCOL_CONFIG.latenessMaxDays)
 
+    logger("Updating the config vals...")
     await updateConfig(config, "number", CONFIG_KEYS.TotalFundsLimit, String(totalFundsLimit))
     await updateConfig(config, "number", CONFIG_KEYS.TransactionLimit, String(transactionLimit))
     await updateConfig(config, "number", CONFIG_KEYS.MaxUnderwriterLimit, String(maxUnderwriterLimit))
