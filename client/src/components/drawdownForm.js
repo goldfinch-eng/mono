@@ -3,7 +3,7 @@ import { usdcFromAtomic, minimumNumber, usdcToAtomic } from '../ethereum/erc20';
 import { AppContext } from '../App';
 import TransactionForm from './transactionForm';
 import { fetchPoolData } from '../ethereum/pool';
-import { displayDollars } from '../utils';
+import { displayDollars, roundDownPenny } from '../utils';
 import AddressInput from './addressInput';
 import TransactionInput from './transactionInput';
 import LoadingButton from './loadingButton';
@@ -47,6 +47,18 @@ function DrawdownForm(props) {
         <AddressInput formMethods={formMethods} />
         <div className="form-input-label">Amount</div>
         <TransactionInput formMethods={formMethods} maxAmount={maxAmount} />
+        <button
+          className="enter-max-amount"
+          type="button"
+          onClick={() => {
+            formMethods.setValue('transactionAmount', roundDownPenny(maxAmount), {
+              shouldValidate: true,
+              shouldDirty: true,
+            });
+          }}
+        >
+          Max
+        </button>
         <LoadingButton action={action} />
       </div>
     );

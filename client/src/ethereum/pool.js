@@ -2,7 +2,8 @@ import web3 from '../web3';
 import BigNumber from 'bignumber.js';
 import { mapNetworkToID, fetchDataFromAttributes, getDeployments, USDC_DECIMALS } from './utils.js';
 import { getUSDC } from './erc20';
-import { getFidu, FIDU_DECIMALS } from './fidu';
+import { getFidu, FIDU_DECIMALS, fiduFromAtomic } from './fidu';
+import { roundDownPenny } from '../utils';
 
 let pool;
 
@@ -26,6 +27,7 @@ async function fetchCapitalProviderData(pool, capitalProviderAddress) {
   result.availableToWithdrawal = new BigNumber(result.numShares)
     .multipliedBy(new BigNumber(result.sharePrice))
     .div(FIDU_DECIMALS);
+  result.availableToWithdrawalInDollars = new BigNumber(roundDownPenny(fiduFromAtomic(result.availableToWithdrawal)));
   result.address = capitalProviderAddress;
   result.allowance = new BigNumber(await pool.usdc.methods.allowance(capitalProviderAddress, pool._address).call());
   return result;

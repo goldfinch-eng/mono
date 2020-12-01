@@ -61,6 +61,26 @@
   padding: 0 0 0 38px;
 }
 
+.enter-max-amount{
+  border: 1px solid $sand-dark;
+  border-radius: 4px;
+  background-color: $sand;
+  color: $sand-xxdark;
+  font-size: $sans-size-xxs;
+  margin: -89px 0 0 0;
+  outline: none;
+  padding: 6px 8px;
+  position: absolute;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  right: 14px;
+
+  &:hover{
+    border: 1px solid $purp-dark;
+    color: $purp-dark;
+  }
+}
+
 .form-input-note{
   color: $purp-light;
   font-size: $sans-size-xs;
@@ -106,6 +126,7 @@
 }
 
 
+
 @media only screen and (min-width: $screen-l) {
   .form-inputs{
     padding-right: calc(30% + 50px;)
@@ -135,6 +156,14 @@
 
   .dollar .form-input{
     padding: 0 0 0 42px;
+  }
+
+  .enter-max-amount{
+    border-radius: 5px;
+    font-size: $sans-size-xs;
+    margin: -100px 0 0 0;
+    padding: 8px 10px;
+    right: calc(30% + 66px;);
   }
 
   .form-input-note{

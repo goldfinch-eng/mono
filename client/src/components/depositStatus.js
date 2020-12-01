@@ -1,13 +1,9 @@
 import React from 'react';
-import { fiduFromAtomic } from '../ethereum/fidu.js';
 import { displayNumber } from '../utils';
 import { iconBank } from './icons.js';
 
 function DepositStatus(props) {
-  let portfolioBalance = 0;
-  if (props.capitalProvider.numShares) {
-    portfolioBalance = fiduFromAtomic(props.capitalProvider.availableToWithdrawal);
-  }
+  const portfolioBalance = props.capitalProvider.availableToWithdrawalInDollars || 0;
   const portfolioBalanceDisplay = '$' + displayNumber(portfolioBalance, 2);
 
   return (

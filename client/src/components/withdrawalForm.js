@@ -1,7 +1,6 @@
 import React, { useContext } from 'react';
 import { usdcFromAtomic, minimumNumber, usdcToAtomic } from '../ethereum/erc20';
-import { fiduFromAtomic } from '../ethereum/fidu';
-import { displayDollars } from '../utils';
+import { displayDollars, roundDownPenny } from '../utils';
 import { AppContext } from '../App.js';
 import TransactionForm from './transactionForm';
 import TransactionInput from './transactionInput';
@@ -25,7 +24,7 @@ function WithdrawalForm(props) {
     props.actionComplete();
   }
 
-  const availableAmount = fiduFromAtomic(props.capitalProvider.availableToWithdrawal);
+  const availableAmount = props.capitalProvider.availableToWithdrawalInDollars;
   const availableToWithdraw = minimumNumber(
     availableAmount,
     usdcFromAtomic(props.poolData.balance),
@@ -35,7 +34,20 @@ function WithdrawalForm(props) {
   function renderForm({ formMethods }) {
     return (
       <div className="form-inputs">
+        <div className="form-message">Note: the protocol will deduct a 0.50% fee from your withdrawal amount.</div>
         <TransactionInput formMethods={formMethods} maxAmount={availableToWithdraw} />
+        <button
+          className="enter-max-amount"
+          type="button"
+          onClick={() => {
+            formMethods.setValue('transactionAmount', roundDownPenny(availableToWithdraw), {
+              shouldValidate: true,
+              shouldDirty: true,
+            });
+          }}
+        >
+          Max
+        </button>
         <LoadingButton action={action} />
       </div>
     );

@@ -5,9 +5,9 @@ import { displayDollars } from '../utils';
 
 class DepositStatus extends Component {
   deriveRows = () => {
-    let balance = '0';
-    let poolBalance = '0';
-    let totalDrawdowns = '0';
+    let balance;
+    let poolBalance;
+    let totalDrawdowns;
     if (this.props.poolData.totalShares) {
       balance = usdcFromAtomic(this.props.poolData.balance);
       poolBalance = usdcFromAtomic(this.props.poolData.totalPoolAssets);
@@ -23,7 +23,7 @@ class DepositStatus extends Component {
 
   render() {
     return (
-      <div className="pool-status background-container">
+      <div className={`pool-status background-container ${this.props.poolData.totalShares ? '' : 'placeholder'}`}>
         <h2>Pool Status</h2>
         <InfoSection rows={this.deriveRows()} />
       </div>
