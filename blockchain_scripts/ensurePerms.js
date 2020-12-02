@@ -1,4 +1,12 @@
-const {getDeployedContract, SAFE_CONFIG, OWNER_ROLE, PAUSER_ROLE, MINTER_ROLE} = require("./deployHelpers.js")
+const {
+  getDeployedContract,
+  updateConfig,
+  CONFIG_KEYS,
+  SAFE_CONFIG,
+  OWNER_ROLE,
+  PAUSER_ROLE,
+  MINTER_ROLE,
+} = require("./deployHelpers.js")
 const hre = require("hardhat")
 
 /*
@@ -48,6 +56,16 @@ async function ensurePermsOnContracts(contractNames, proxy_owner, protocol_owner
       const contractAsAdmin = await getDeployedContract(deployments, `${contractName}_Proxy`, proxy_owner)
       const txn = await contractAsAdmin.transferOwnership(safeAddress)
       await txn.wait()
+    }
+
+    if (contractName === "GoldfinchConfig") {
+      // Ensure the safeAddress is marked as the protocol admin on the config
+      await updateConfig(contract, "address", CONFIG_KEYS.ProtocolAdmin, safeAddress)
+      const treasureReserveAddress = await contract.getAddress(CONFIG_KEYS.TreasuryReserve)
+      if (treasureReserveAddress.toLowerCase() !== safeAddress.toLowerCase()) {
+        logger(`Updating treasury reserve address to ${safeAddress}`)
+        await contract.setTreasuryReserve(safeAddress)
+      }
     }
 
     // Ensure owner is at the end, so we revoke that last

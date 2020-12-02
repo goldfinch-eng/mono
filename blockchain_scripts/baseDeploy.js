@@ -6,6 +6,7 @@ const {
   OWNER_ROLE,
   CONFIG_KEYS,
   MINTER_ROLE,
+  SAFE_CONFIG,
   updateConfig,
   getUSDCAddress,
   isTestEnv,
@@ -80,8 +81,17 @@ async function baseDeploy(hre, {shouldUpgrade}) {
     await updateConfig(config, "number", CONFIG_KEYS.WithdrawFeeDenominator, String(withdrawFeeDenominator))
     await updateConfig(config, "number", CONFIG_KEYS.LatenessGracePeriodInDays, String(latenessGracePeriodIndays))
     await updateConfig(config, "number", CONFIG_KEYS.LatenessMaxDays, String(latenessMaxDays))
-    await updateConfig(config, "address", CONFIG_KEYS.ProtocolAdmin, protocol_owner)
-    await config.setTreasuryReserve(protocol_owner)
+
+    // If we have a multisig safe, set that as the protocol admin, otherwise use the named account (local and test envs)
+    let multisigAddress
+    if (SAFE_CONFIG[chainID]) {
+      multisigAddress = SAFE_CONFIG[chainID].safeAddress
+    } else {
+      multisigAddress = protocol_owner
+    }
+
+    await updateConfig(config, "address", CONFIG_KEYS.ProtocolAdmin, multisigAddress)
+    await config.setTreasuryReserve(multisigAddress)
 
     return config
   }
