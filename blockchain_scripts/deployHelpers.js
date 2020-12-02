@@ -22,8 +22,9 @@ const USDC_MAPPING = {
   [ROPSTEN]: ROPSTEN_USDC_ADDRESS,
   [MAINNET]: MAINNET_USDC_ADDRESS,
 }
-const MULTISIG_MAPPING = {
-  [RINKEBY]: "0xcF0B329c04Fd92a7370de10458050Fc8124Cacbc",
+const SAFE_CONFIG = {
+  1: {safeAddress: "0xBEb28978B2c755155f20fd3d09Cb37e300A6981f"}, // Mainnet
+  4: {safeAddress: "0xAA96CA940736e937A8571b132992418c7d220976"}, // Rinkeby
 }
 let OWNER_ROLE, PAUSER_ROLE, MINTER_ROLE
 if (typeof web3 !== "undefined" && web3.utils) {
@@ -63,10 +64,6 @@ function interestAprAsBN(interestPercentageString) {
 
 function getUSDCAddress(chainID) {
   return USDC_MAPPING[chainID] || USDC_MAPPING[CHAIN_MAPPING[chainID]]
-}
-
-function getMultisigAddress(chainID) {
-  return MULTISIG_MAPPING[chainID] || MULTISIG_MAPPING[CHAIN_MAPPING[chainID]]
 }
 
 async function getDeployedContract(deployments, contractName, signerAddress) {
@@ -139,7 +136,6 @@ module.exports = {
   MAX_UINT: MAX_UINT,
   ETHDecimals: ETHDecimals,
   INTEREST_DECIMALS: INTEREST_DECIMALS,
-  getMultisigAddress: getMultisigAddress,
   getUSDCAddress: getUSDCAddress,
   getDeployedContract: getDeployedContract,
   fromAtomic: fromAtomic,
@@ -151,6 +147,7 @@ module.exports = {
   PAUSER_ROLE: PAUSER_ROLE,
   MINTER_ROLE: MINTER_ROLE,
   CONFIG_KEYS: CONFIG_KEYS,
+  SAFE_CONFIG: SAFE_CONFIG,
   isTestEnv: isTestEnv,
   interestAprAsBN: interestAprAsBN,
 }
