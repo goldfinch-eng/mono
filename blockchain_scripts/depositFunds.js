@@ -1,3 +1,4 @@
+// /* globals ethers */
 const BN = require("bn.js")
 const hre = require("hardhat")
 const {deployments, getNamedAccounts} = hre
@@ -10,8 +11,14 @@ async function main() {
   await depositFundsToThePool(pool)
 
   async function depositFundsToThePool(pool) {
+    // let chainID = await getChainId()
+    // let erc20 = await ethers.getContractAt("TestERC20", getUSDCAddress(chainID))
+    // console.log("Approving the protocol owner")
+    // const approval = await erc20.approve(pool.address, String(new BN(100000000).mul(USDCDecimals)))
+    // await approval.wait()
+
     console.log("Depositing funds...")
-    const depositAmount = new BN(9900).mul(USDCDecimals)
+    const depositAmount = new BN(1000).mul(USDCDecimals)
 
     var txn = await pool.deposit(String(depositAmount))
     await txn.wait()

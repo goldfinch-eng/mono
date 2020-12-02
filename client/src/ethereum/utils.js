@@ -32,7 +32,7 @@ async function sendFromUser(unsentTransaction, userAddress) {
 // Only keep entries for supported networks
 // (ie. where we deployed the latest contracts)
 const mapNetworkToID = {
-  // main: MAINNET,
+  main: MAINNET,
   // ropsten: ROPSTEN,
   private: 'localhost',
   rinkeby: RINKEBY,
