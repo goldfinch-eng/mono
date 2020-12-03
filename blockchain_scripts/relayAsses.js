@@ -1,17 +1,22 @@
 const {ethers} = require("ethers")
 const {Relayer} = require("defender-relay-client")
 const {DefenderRelaySigner, DefenderRelayProvider} = require("defender-relay-client/lib/ethers")
+const fetch = require("node-fetch")
 
-const CREDIT_DESK_CONFIG = {
+const CONFIG = {
   mainnet: {
     address: "0xD52dc1615c843c30F2e4668E101c0938e6007220",
     underwriters: ["0xc840b3e21ff0eba77468ad450d868d4362cf67fe"],
+    etherscanApi: "https://api.etherscan.io/api",
   },
   rinkeby: {
     address: "0x63f8fe76E4D96E8F1A96cA48f6AAE69E56b3741a",
     underwriters: ["0x83CB0ec2f0013a9641654b344D34615f95b7D7FC"],
+    etherscanApi: "https://api-rinkeby.etherscan.io/api",
   },
 }
+
+const ETHERSCAN_API_KEY = "DQUC8Y678J5RN5P7XE9RT91SWI7SSEDD53"
 
 // Entrypoint for the Autotask
 exports.handler = async function (credentials) {
@@ -20,9 +25,9 @@ exports.handler = async function (credentials) {
   const signer = new DefenderRelaySigner(credentials, provider, {speed: "fast"})
 
   const relayerInfo = await relayer.getRelayer()
-  console.log("Relayer: ", relayerInfo)
+  console.log(`Assessing using ${relayerInfo.name} on ${relayerInfo.network} `)
 
-  let config = CREDIT_DESK_CONFIG[relayerInfo.network]
+  let config = CONFIG[relayerInfo.network]
   if (!config) {
     throw new Error(`Unsupported network: ${relayerInfo.network}`)
   }
@@ -31,18 +36,27 @@ exports.handler = async function (credentials) {
 
   let creditLines = []
 
-  const creditDesk = new ethers.Contract(creditDeskAddress, CREDIT_DESK_ABI, signer)
+  const creditDeskAbi = await getAbifor(config.etherscanApi, creditDeskAddress, provider)
+  const creditDesk = new ethers.Contract(creditDeskAddress, creditDeskAbi, signer)
 
-  for (let i = 0; i < config.underwriters.length; i++) {
-    creditLines = creditLines.concat(await creditDesk.getUnderwriterCreditLines(config.underwriters[i]))
+  for (const underwriter of config.underwriters) {
+    creditLines = creditLines.concat(await creditDesk.getUnderwriterCreditLines(underwriter))
   }
+
+  if (creditLines.length === 0) {
+    console.log("No credit lines to assess")
+    return
+  }
+
+  const creditLineAbi = await getAbifor(config.etherscanApi, creditLines[0], provider)
+  const creditLine = new ethers.Contract(creditLines[0], creditLineAbi, signer)
 
   console.log(`Found ${creditLines.length} creditlines for ${config.underwriters.length} underwriters`)
   let success = 0
-  for (let i = 0; i < creditLines.length; i++) {
-    console.log(`Assessing ${creditLines[i]}`)
+  for (const creditLineAddress of creditLines) {
     try {
-      await creditDesk.assessCreditLine(creditLines[i])
+      console.log(`Assessing ${creditLineAddress}`)
+      await assessIfRequired(creditDesk, creditLine.attach(creditLineAddress), provider)
       success += 1
     } catch (err) {
       console.log(`Error trying to assess creditline: ${err}`)
@@ -54,6 +68,51 @@ exports.handler = async function (credentials) {
   if (success !== creditLines.length && relayerInfo.network === "mainnet") {
     throw new Error(`${creditLines.length - success} creditlines failed to asses`)
   }
+}
+
+async function assessIfRequired(creditDesk, creditLine, provider) {
+  const currentBlock = ethers.BigNumber.from(await provider.getBlockNumber())
+  const nextDueBlock = await creditLine.nextDueBlock()
+  const termEndBlock = await creditLine.nextDueBlock()
+
+  if (nextDueBlock.isZero()) {
+    const balance = await creditLine.balance()
+    if (!balance.isZero()) {
+      throw new Error(`Non-zero balance (${balance}) for creditLine ${creditLine.address} without a nextDueBlock`)
+    }
+    console.log(`Assess ${creditLine.address}: Skipped (Zero balance)`)
+  } else {
+    if (currentBlock.gte(termEndBlock)) {
+      // Currently we don't have a good way to track the last time we assessed a creditLine past it's
+      // term end block. So we're going to keep assessing it everytime the script runs for now.
+      await creditDesk.assessCreditLine(creditLine.address)
+    } else if (currentBlock.gte(nextDueBlock)) {
+      await creditDesk.assessCreditLine(creditLine.address)
+    } else {
+      console.log(`Assess ${creditLine.address}: Skipped (Already assessed)`)
+    }
+  }
+}
+
+async function getAbifor(etherscanApiUrl, address, provider) {
+  // Deference the proxy to the implementation if it is a proxy
+  // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v3.2.0/contracts/proxy/TransparentUpgradeableProxy.sol#L81
+  const implStorageLocation = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"
+  let implementationAddress = await provider.getStorageAt(address, implStorageLocation)
+  implementationAddress = ethers.utils.hexStripZeros(implementationAddress)
+  if (implementationAddress !== "0x") {
+    address = implementationAddress
+  }
+
+  // https://etherscan.io/apis#contracts
+  const url = `${etherscanApiUrl}?module=contract&action=getabi&address=${address}&apikey=${ETHERSCAN_API_KEY}`
+  const body = await fetch(url)
+  const bodyAsJson = await body.json()
+
+  if (bodyAsJson.message !== "OK") {
+    throw new Error(`Error fetching ABI for ${address}: ${bodyAsJson.result}`)
+  }
+  return JSON.parse(bodyAsJson.result)
 }
 
 // To run locally (this code will not be executed in Autotasks)
@@ -68,732 +127,3 @@ if (require.main === module) {
       process.exit(1)
     })
 }
-
-const CREDIT_DESK_ABI = [
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: "address",
-        name: "borrower",
-        type: "address",
-      },
-      {
-        indexed: true,
-        internalType: "address",
-        name: "creditLine",
-        type: "address",
-      },
-    ],
-    name: "CreditLineCreated",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: "address",
-        name: "borrower",
-        type: "address",
-      },
-      {
-        indexed: true,
-        internalType: "address",
-        name: "creditLine",
-        type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "drawdownAmount",
-        type: "uint256",
-      },
-    ],
-    name: "DrawdownMade",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: "address",
-        name: "underwriter",
-        type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "newLimit",
-        type: "uint256",
-      },
-    ],
-    name: "GovernanceUpdatedUnderwriterLimit",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: false,
-        internalType: "address",
-        name: "account",
-        type: "address",
-      },
-    ],
-    name: "Paused",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: "address",
-        name: "payer",
-        type: "address",
-      },
-      {
-        indexed: true,
-        internalType: "address",
-        name: "creditLine",
-        type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "interestAmount",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "principalAmount",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "remainingAmount",
-        type: "uint256",
-      },
-    ],
-    name: "PaymentApplied",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: "address",
-        name: "payer",
-        type: "address",
-      },
-      {
-        indexed: true,
-        internalType: "address",
-        name: "creditLine",
-        type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "paymentAmount",
-        type: "uint256",
-      },
-    ],
-    name: "PaymentCollected",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: "bytes32",
-        name: "role",
-        type: "bytes32",
-      },
-      {
-        indexed: true,
-        internalType: "address",
-        name: "account",
-        type: "address",
-      },
-      {
-        indexed: true,
-        internalType: "address",
-        name: "sender",
-        type: "address",
-      },
-    ],
-    name: "RoleGranted",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: "bytes32",
-        name: "role",
-        type: "bytes32",
-      },
-      {
-        indexed: true,
-        internalType: "address",
-        name: "account",
-        type: "address",
-      },
-      {
-        indexed: true,
-        internalType: "address",
-        name: "sender",
-        type: "address",
-      },
-    ],
-    name: "RoleRevoked",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: false,
-        internalType: "address",
-        name: "account",
-        type: "address",
-      },
-    ],
-    name: "Unpaused",
-    type: "event",
-  },
-  {
-    inputs: [],
-    name: "BLOCKS_PER_DAY",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "DEFAULT_ADMIN_ROLE",
-    outputs: [
-      {
-        internalType: "bytes32",
-        name: "",
-        type: "bytes32",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "OWNER_ROLE",
-    outputs: [
-      {
-        internalType: "bytes32",
-        name: "",
-        type: "bytes32",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "PAUSER_ROLE",
-    outputs: [
-      {
-        internalType: "bytes32",
-        name: "",
-        type: "bytes32",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "owner",
-        type: "address",
-      },
-    ],
-    name: "__BaseUpgradeablePausable__init",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "__PauserPausable__init",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "creditLineAddress",
-        type: "address",
-      },
-    ],
-    name: "assessCreditLine",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "config",
-    outputs: [
-      {
-        internalType: "contract GoldfinchConfig",
-        name: "",
-        type: "address",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "_borrower",
-        type: "address",
-      },
-      {
-        internalType: "uint256",
-        name: "_limit",
-        type: "uint256",
-      },
-      {
-        internalType: "uint256",
-        name: "_interestApr",
-        type: "uint256",
-      },
-      {
-        internalType: "uint256",
-        name: "_paymentPeriodInDays",
-        type: "uint256",
-      },
-      {
-        internalType: "uint256",
-        name: "_termInDays",
-        type: "uint256",
-      },
-      {
-        internalType: "uint256",
-        name: "_lateFeeApr",
-        type: "uint256",
-      },
-    ],
-    name: "createCreditLine",
-    outputs: [
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
-    ],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "amount",
-        type: "uint256",
-      },
-      {
-        internalType: "address",
-        name: "creditLineAddress",
-        type: "address",
-      },
-      {
-        internalType: "address",
-        name: "addressToSendTo",
-        type: "address",
-      },
-    ],
-    name: "drawdown",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "borrowerAddress",
-        type: "address",
-      },
-    ],
-    name: "getBorrowerCreditLines",
-    outputs: [
-      {
-        internalType: "address[]",
-        name: "",
-        type: "address[]",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "role",
-        type: "bytes32",
-      },
-    ],
-    name: "getRoleAdmin",
-    outputs: [
-      {
-        internalType: "bytes32",
-        name: "",
-        type: "bytes32",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "role",
-        type: "bytes32",
-      },
-      {
-        internalType: "uint256",
-        name: "index",
-        type: "uint256",
-      },
-    ],
-    name: "getRoleMember",
-    outputs: [
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "role",
-        type: "bytes32",
-      },
-    ],
-    name: "getRoleMemberCount",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "underwriterAddress",
-        type: "address",
-      },
-    ],
-    name: "getUnderwriterCreditLines",
-    outputs: [
-      {
-        internalType: "address[]",
-        name: "",
-        type: "address[]",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "role",
-        type: "bytes32",
-      },
-      {
-        internalType: "address",
-        name: "account",
-        type: "address",
-      },
-    ],
-    name: "grantRole",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "role",
-        type: "bytes32",
-      },
-      {
-        internalType: "address",
-        name: "account",
-        type: "address",
-      },
-    ],
-    name: "hasRole",
-    outputs: [
-      {
-        internalType: "bool",
-        name: "",
-        type: "bool",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "owner",
-        type: "address",
-      },
-      {
-        internalType: "contract GoldfinchConfig",
-        name: "_config",
-        type: "address",
-      },
-    ],
-    name: "initialize",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "isAdmin",
-    outputs: [
-      {
-        internalType: "bool",
-        name: "",
-        type: "bool",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "contract CreditLine",
-        name: "clToMigrate",
-        type: "address",
-      },
-      {
-        internalType: "address",
-        name: "_borrower",
-        type: "address",
-      },
-      {
-        internalType: "uint256",
-        name: "_limit",
-        type: "uint256",
-      },
-      {
-        internalType: "uint256",
-        name: "_interestApr",
-        type: "uint256",
-      },
-      {
-        internalType: "uint256",
-        name: "_paymentPeriodInDays",
-        type: "uint256",
-      },
-      {
-        internalType: "uint256",
-        name: "_termInDays",
-        type: "uint256",
-      },
-      {
-        internalType: "uint256",
-        name: "_lateFeeApr",
-        type: "uint256",
-      },
-    ],
-    name: "migrateCreditLine",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "pause",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "paused",
-    outputs: [
-      {
-        internalType: "bool",
-        name: "",
-        type: "bool",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "creditLineAddress",
-        type: "address",
-      },
-      {
-        internalType: "uint256",
-        name: "amount",
-        type: "uint256",
-      },
-    ],
-    name: "pay",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "role",
-        type: "bytes32",
-      },
-      {
-        internalType: "address",
-        name: "account",
-        type: "address",
-      },
-    ],
-    name: "renounceRole",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "role",
-        type: "bytes32",
-      },
-      {
-        internalType: "address",
-        name: "account",
-        type: "address",
-      },
-    ],
-    name: "revokeRole",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "underwriterAddress",
-        type: "address",
-      },
-      {
-        internalType: "uint256",
-        name: "limit",
-        type: "uint256",
-      },
-    ],
-    name: "setUnderwriterGovernanceLimit",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "totalLoansOutstanding",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "totalWritedowns",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
-    ],
-    name: "underwriters",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "governanceLimit",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "unpause",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-]
