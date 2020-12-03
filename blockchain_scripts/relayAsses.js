@@ -19,12 +19,12 @@ exports.handler = async function (credentials) {
   const provider = new DefenderRelayProvider(credentials)
   const signer = new DefenderRelaySigner(credentials, provider, {speed: "fast"})
 
-  const info = await relayer.getRelayer()
-  console.log("Relayer: ", info)
+  const relayerInfo = await relayer.getRelayer()
+  console.log("Relayer: ", relayerInfo)
 
-  let config = CREDIT_DESK_CONFIG[info.network]
+  let config = CREDIT_DESK_CONFIG[relayerInfo.network]
   if (!config) {
-    throw new Error(`Unsupported network: ${info.network}`)
+    throw new Error(`Unsupported network: ${relayerInfo.network}`)
   }
 
   const creditDeskAddress = config.address
@@ -51,7 +51,7 @@ exports.handler = async function (credentials) {
 
   console.log(`Successfully assessed ${success} of ${creditLines.length} creditlines`)
 
-  if (success !== creditLines.length) {
+  if (success !== creditLines.length && relayerInfo.network === "mainnet") {
     throw new Error(`${creditLines.length - success} creditlines failed to asses`)
   }
 }
