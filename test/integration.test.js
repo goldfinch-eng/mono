@@ -3,16 +3,18 @@ const hre = require("hardhat")
 const {deployments} = hre
 const {
   expect,
-  decimals,
   BN,
   usdcVal,
   getBalance,
-  getDeployedAsTruffleContract,
+  deployAllContracts,
+  erc20Approve,
+  erc20Transfer,
   BLOCKS_PER_DAY,
   BLOCKS_PER_YEAR,
   usdcToFidu,
   expectAction,
   fiduToUSDC,
+  advanceTime,
 } = require("./testHelpers.js")
 const {interestAprAsBN, INTEREST_DECIMALS, ETHDecimals, CONFIG_KEYS} = require("../blockchain_scripts/deployHelpers")
 const {time} = require("@openzeppelin/test-helpers")
@@ -31,24 +33,12 @@ describe("Goldfinch", async () => {
   let paymentPeriodInBlocks = BLOCKS_PER_DAY.mul(paymentPeriodInDays)
 
   const setupTest = deployments.createFixture(async ({deployments}) => {
-    await deployments.fixture("base_deploy")
-    pool = await getDeployedAsTruffleContract(deployments, "Pool")
-    usdc = await getDeployedAsTruffleContract(deployments, "ERC20")
-    creditDesk = await getDeployedAsTruffleContract(deployments, "CreditDesk")
-    fidu = await getDeployedAsTruffleContract(deployments, "Fidu")
-    goldfinchConfig = await getDeployedAsTruffleContract(deployments, "GoldfinchConfig")
+    const {pool, usdc, creditDesk, fidu, goldfinchConfig} = await deployAllContracts(deployments)
 
     // Approve transfers for our test accounts
-    await usdc.approve(pool.address, new BN(100000).mul(decimals), {from: owner})
-    await usdc.approve(pool.address, new BN(100000).mul(decimals), {from: underwriter})
-    await usdc.approve(pool.address, new BN(100000).mul(decimals), {from: borrower})
-    await usdc.approve(pool.address, new BN(100000).mul(decimals), {from: investor1})
-    await usdc.approve(pool.address, new BN(100000).mul(decimals), {from: investor2})
-
+    await erc20Approve(usdc, pool.address, usdcVal(100000), [owner, underwriter, borrower, investor1, investor2])
     // Some housekeeping so we have a usable creditDesk for tests, and a pool with funds
-    await usdc.transfer(underwriter, String(usdcVal(100000)), {from: owner})
-    await usdc.transfer(investor1, String(usdcVal(100000)), {from: owner})
-    await usdc.transfer(investor2, String(usdcVal(100000)), {from: owner})
+    await erc20Transfer(usdc, [underwriter, investor1, investor2], usdcVal(100000), owner)
     await pool.deposit(String(usdcVal(10000)), {from: underwriter})
     // Set the reserve to a separate address for easier separation. The current owner account gets used for many things in tests.
     await goldfinchConfig.setTreasuryReserve(reserve)
@@ -59,35 +49,10 @@ describe("Goldfinch", async () => {
   beforeEach(async () => {
     accounts = await web3.eth.getAccounts()
     ;[owner, underwriter, borrower, investor1, investor2, reserve] = accounts
-    const deployResult = await setupTest()
-
-    usdc = deployResult.usdc
-    pool = deployResult.pool
-    creditDesk = deployResult.creditDesk
-    fidu = deployResult.fidu
-    goldfinchConfig = deployResult.goldfinchConfig
+    ;({usdc, pool, creditDesk, fidu, goldfinchConfig} = await setupTest())
   })
 
   describe("functional test", async () => {
-    async function advanceTime({days, blocks, toBlock}) {
-      let blocksPassed, newBlock
-      let currentBlock = await creditDesk.blockNumberForTest()
-
-      if (days) {
-        blocksPassed = BLOCKS_PER_DAY.mul(new BN(days))
-        newBlock = currentBlock.add(blocksPassed)
-      } else if (blocks) {
-        blocksPassed = new BN(blocks)
-        newBlock = currentBlock.add(blocksPassed)
-      } else if (toBlock) {
-        newBlock = new BN(toBlock)
-      }
-      // Cannot go backward
-      expect(newBlock).to.bignumber.gt(currentBlock)
-      await creditDesk._setBlockNumberForTest(newBlock)
-      return newBlock
-    }
-
     async function assertCreditLine(
       balance,
       interestOwed,
@@ -192,7 +157,7 @@ describe("Goldfinch", async () => {
         await drawdown(creditLine.address, drawdownAmount, borrower)
         const expectedInterest = await calculateInvestorInterest(creditLine, paymentPeriodInDays)
 
-        await advanceTime({days: 10})
+        await advanceTime(creditDesk, {days: 10})
         // Just a hack to get interestOwed and other accounting vars to update
         await drawdown(creditLine.address, new BN(1), borrower)
 
@@ -201,7 +166,7 @@ describe("Goldfinch", async () => {
         await expectAction(() => makePayment(creditLine.address, drawdownAmount)).toChange([
           [pool.sharePrice, {by: new BN(0)}],
         ])
-        await advanceTime({days: 5})
+        await advanceTime(creditDesk, {days: 5})
 
         await expectAction(() => assessCreditLine(creditLine.address)).toChange([
           [pool.sharePrice, {increase: true}],
@@ -234,7 +199,7 @@ describe("Goldfinch", async () => {
 
         // Advance to a point where we would definitely writethem down
         const fourPeriods = (await creditLine.paymentPeriodInDays()).mul(new BN(4))
-        await advanceTime({days: fourPeriods.toNumber()})
+        await advanceTime(creditDesk, {days: fourPeriods.toNumber()})
 
         await expectAction(() => assessCreditLine(creditLine.address)).toChange([
           [creditDesk.totalWritedowns, {increase: true}],
@@ -266,7 +231,7 @@ describe("Goldfinch", async () => {
 
         // Advance to a point where we would definitely writethem down
         const termLength = await creditLine.termInDays()
-        await advanceTime({days: termLength.toNumber()})
+        await advanceTime(creditDesk, {days: termLength.toNumber()})
 
         await assessCreditLine(creditLine.address)
 
@@ -275,7 +240,7 @@ describe("Goldfinch", async () => {
 
         // advance more time
         const clPaymentPeriodInDays = await creditLine.paymentPeriodInDays()
-        await advanceTime({days: clPaymentPeriodInDays.toNumber()})
+        await advanceTime(creditDesk, {days: clPaymentPeriodInDays.toNumber()})
 
         await assessCreditLine(creditLine.address)
         expect(await creditLine.interestOwed()).to.bignumber.gt(termInterestTotalWithLateFees)
@@ -297,7 +262,7 @@ describe("Goldfinch", async () => {
           creditLine = await createCreditLine({_paymentPeriodInDays: new BN(30)})
           await expect(creditDesk.drawdown(new BN(1000), creditLine.address, borrower, {from: borrower})).to.be
             .fulfilled
-          await advanceTime({days: 10})
+          await advanceTime(creditDesk, {days: 10})
           // This drawdown will accumulate and record some interest
           await expect(creditDesk.drawdown(new BN(1), creditLine.address, borrower, {from: borrower})).to.be.fulfilled
           // This one should still work, because you still aren't late...
@@ -306,13 +271,13 @@ describe("Goldfinch", async () => {
       })
 
       it("calculates interest correctly", async () => {
-        let currentBlock = await advanceTime({days: 1})
+        let currentBlock = await advanceTime(creditDesk, {days: 1})
         creditLine = await createCreditLine()
 
         let interestAccruedAsOfBlock = await time.latestBlock()
         await assertCreditLine("0", "0", "0", 0, interestAccruedAsOfBlock, 0)
 
-        currentBlock = await advanceTime({days: 1})
+        currentBlock = await advanceTime(creditDesk, {days: 1})
         await creditDesk.drawdown(usdcVal(2000), creditLine.address, borrower, {from: borrower})
 
         var nextDueBlock = (await creditDesk.blockNumberForTest()).add(BLOCKS_PER_DAY.mul(paymentPeriodInDays))
@@ -320,7 +285,7 @@ describe("Goldfinch", async () => {
         let lastFullPaymentBlock = currentBlock
         await assertCreditLine(usdcVal(2000), "0", "0", nextDueBlock, currentBlock, lastFullPaymentBlock)
 
-        currentBlock = await advanceTime({days: 1})
+        currentBlock = await advanceTime(creditDesk, {days: 1})
 
         await creditDesk.assessCreditLine(creditLine.address, {from: borrower})
 
@@ -340,7 +305,7 @@ describe("Goldfinch", async () => {
           lastFullPaymentBlock
         )
 
-        currentBlock = await advanceTime({days: 1})
+        currentBlock = await advanceTime(creditDesk, {days: 1})
         expectedInterest = expectedInterest.mul(new BN(2)) // 2 days of interest
         nextDueBlock = nextDueBlock.add(paymentPeriodInBlocks)
 

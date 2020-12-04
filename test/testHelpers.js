@@ -71,6 +71,47 @@ function expectAction(action, debug) {
   }
 }
 
+async function deployAllContracts(deployments) {
+  await deployments.fixture("base_deploy")
+  const pool = await getDeployedAsTruffleContract(deployments, "Pool")
+  const usdc = await getDeployedAsTruffleContract(deployments, "ERC20")
+  const creditDesk = await getDeployedAsTruffleContract(deployments, "CreditDesk")
+  const fidu = await getDeployedAsTruffleContract(deployments, "Fidu")
+  const goldfinchConfig = await getDeployedAsTruffleContract(deployments, "GoldfinchConfig")
+  return {pool, usdc, creditDesk, fidu, goldfinchConfig}
+}
+
+async function erc20Approve(erc20, accountToApprove, amount, fromAccounts) {
+  for (const fromAccount of fromAccounts) {
+    await erc20.approve(accountToApprove, amount, {from: fromAccount})
+  }
+}
+
+async function erc20Transfer(erc20, toAccounts, amount, fromAccount) {
+  for (const toAccount of toAccounts) {
+    await erc20.transfer(toAccount, amount, {from: fromAccount})
+  }
+}
+
+async function advanceTime(creditDesk, {days, blocks, toBlock}) {
+  let blocksPassed, newBlock
+  let currentBlock = await creditDesk.blockNumberForTest()
+
+  if (days) {
+    blocksPassed = BLOCKS_PER_DAY.mul(new BN(days))
+    newBlock = currentBlock.add(blocksPassed)
+  } else if (blocks) {
+    blocksPassed = new BN(blocks)
+    newBlock = currentBlock.add(blocksPassed)
+  } else if (toBlock) {
+    newBlock = new BN(toBlock)
+  }
+  // Cannot go backward
+  expect(newBlock).to.bignumber.gt(currentBlock)
+  await creditDesk._setBlockNumberForTest(newBlock)
+  return newBlock
+}
+
 async function getBalance(address, erc20) {
   if (typeof address !== "string") {
     throw new Error("Address must be a string")
@@ -101,4 +142,8 @@ module.exports = {
   fiduToUSDC: fiduToUSDC,
   usdcToFidu: usdcToFidu,
   expectAction: expectAction,
+  deployAllContracts: deployAllContracts,
+  erc20Approve: erc20Approve,
+  erc20Transfer: erc20Transfer,
+  advanceTime: advanceTime,
 }
