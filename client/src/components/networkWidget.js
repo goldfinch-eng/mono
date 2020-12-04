@@ -25,12 +25,6 @@ function NetworkWidget(props) {
       });
   }
 
-  function disableMetamask() {
-    // TODO: Implement this!
-    props.setUser(false);
-    setShowNetworkWidgetInfo('');
-  }
-
   function toggleOpenWidget() {
     if (showNetworkWidgetInfo === '') {
       setShowNetworkWidgetInfo('open');
@@ -165,11 +159,6 @@ function NetworkWidget(props) {
           USDC balance <span className="value">{displayNumber(usdcFromAtomic(props.user.usdcBalance), 2)}</span>
         </div>
         {transactions}
-        <div className="network-widget-section">
-          <button className="button subtle" onClick={disableMetamask}>
-            Disconnect Metamask
-          </button>
-        </div>
       </div>
     </div>
   );
