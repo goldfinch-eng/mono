@@ -70,10 +70,12 @@ exports.handler = async function (credentials) {
   }
 }
 
-async function assessIfRequired(creditDesk, creditLine, provider) {
-  const currentBlock = ethers.BigNumber.from(await provider.getBlockNumber())
-  const nextDueBlock = await creditLine.nextDueBlock()
-  const termEndBlock = await creditLine.nextDueBlock()
+const assessIfRequired = async function assessIfRequired(creditDesk, creditLine, provider) {
+  // Normalize everything to ethers.BigNumber because tests use Truffle and therefore bn.js
+  // which is incompatible with BigNumber
+  const currentBlock = ethers.BigNumber.from((await provider.getBlockNumber()).toString())
+  const nextDueBlock = ethers.BigNumber.from((await creditLine.nextDueBlock()).toString())
+  const termEndBlock = ethers.BigNumber.from((await creditLine.nextDueBlock()).toString())
 
   if (nextDueBlock.isZero()) {
     const balance = await creditLine.balance()
@@ -114,6 +116,9 @@ async function getAbifor(etherscanApiUrl, address, provider) {
   }
   return JSON.parse(bodyAsJson.result)
 }
+
+// For tests
+exports.assessIfRequired = assessIfRequired
 
 // To run locally (this code will not be executed in Autotasks)
 // Invoke with: API_KEY=<key> API_SECRET=<secret> node blockchain_scripts/relayAsses.js

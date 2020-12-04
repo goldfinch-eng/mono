@@ -6,7 +6,9 @@ const {
   expect,
   BN,
   getBalance,
-  getDeployedAsTruffleContract,
+  deployAllContracts,
+  erc20Transfer,
+  erc20Approve,
   decimals,
   USDC_DECIMALS,
   usdcVal,
@@ -16,7 +18,7 @@ let accounts, owner, person2, person3, reserve
 const WITHDRAWL_FEE_DENOMINATOR = new BN(200)
 
 describe("Pool", () => {
-  let pool, erc20, fidu, goldfinchConfig
+  let pool, usdc, fidu, goldfinchConfig
   let depositAmount = new BN(4).mul(USDC_DECIMALS)
   let withdrawAmount = new BN(2).mul(USDC_DECIMALS)
   const decimalsDelta = decimals.div(USDC_DECIMALS)
@@ -32,36 +34,25 @@ describe("Pool", () => {
     return await pool.withdraw(amount, {from: person})
   }
 
-  const testSetup = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
+  const setupTest = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
     // Just to be crystal clear
     const {protocol_owner} = await getNamedAccounts()
     owner = protocol_owner
 
-    await deployments.run("base_deploy")
-    const erc20 = await getDeployedAsTruffleContract(deployments, "ERC20")
-    const pool = await getDeployedAsTruffleContract(deployments, "Pool")
-    const fidu = await getDeployedAsTruffleContract(deployments, "Fidu")
-    const goldfinchConfig = await getDeployedAsTruffleContract(deployments, "GoldfinchConfig")
-
+    const {pool, usdc, fidu, goldfinchConfig} = await deployAllContracts(deployments)
     // A bit of setup for our test users
-    await erc20.transfer(person2, new BN(10000).mul(USDC_DECIMALS), {from: owner})
-    await erc20.transfer(person3, new BN(1000).mul(USDC_DECIMALS), {from: owner})
-    await erc20.approve(pool.address, new BN(100000).mul(USDC_DECIMALS), {from: person2})
+    await erc20Approve(usdc, pool.address, usdcVal(100000), [person2])
+    await erc20Transfer(usdc, [person2, person3], usdcVal(10000), owner)
+    await goldfinchConfig.setTreasuryReserve(reserve)
 
-    return {erc20, pool, fidu, goldfinchConfig}
+    return {usdc, pool, fidu, goldfinchConfig}
   })
 
   beforeEach(async () => {
     // Pull in our unlocked accounts
     accounts = await web3.eth.getAccounts()
     ;[owner, person2, person3, reserve] = accounts
-
-    const deployResult = await testSetup()
-    erc20 = deployResult.erc20
-    pool = deployResult.pool
-    fidu = deployResult.fidu
-    goldfinchConfig = deployResult.goldfinchConfig
-    goldfinchConfig.setTreasuryReserve(reserve)
+    ;({usdc, pool, fidu, goldfinchConfig} = await setupTest())
   })
 
   describe("Access Controls", () => {
@@ -125,23 +116,23 @@ describe("Pool", () => {
     describe("after you have approved the pool to transfer funds", async () => {
       let capitalProvider
       beforeEach(async () => {
-        await erc20.approve(pool.address, new BN(100000).mul(USDC_DECIMALS), {from: person2})
-        await erc20.approve(pool.address, new BN(100000).mul(USDC_DECIMALS), {from: owner})
+        await usdc.approve(pool.address, new BN(100000).mul(USDC_DECIMALS), {from: person2})
+        await usdc.approve(pool.address, new BN(100000).mul(USDC_DECIMALS), {from: owner})
         capitalProvider = person2
       })
 
       it("increases the pools balance of the ERC20 token when you call deposit", async () => {
-        const balanceBefore = await getBalance(pool.address, erc20)
+        const balanceBefore = await getBalance(pool.address, usdc)
         await makeDeposit()
-        const balanceAfter = await getBalance(pool.address, erc20)
+        const balanceAfter = await getBalance(pool.address, usdc)
         const delta = balanceAfter.sub(balanceBefore)
         expect(delta).to.bignumber.equal(depositAmount)
       })
 
       it("decreases the depositors balance of the ERC20 token when you call deposit", async () => {
-        const balanceBefore = await getBalance(capitalProvider, erc20)
+        const balanceBefore = await getBalance(capitalProvider, usdc)
         await makeDeposit()
-        const balanceAfter = await getBalance(capitalProvider, erc20)
+        const balanceAfter = await getBalance(capitalProvider, usdc)
         const delta = balanceBefore.sub(balanceAfter)
         expect(delta).to.bignumber.equal(depositAmount)
       })
@@ -194,17 +185,17 @@ describe("Pool", () => {
   describe("withdraw", () => {
     let capitalProvider
     beforeEach(async () => {
-      await erc20.approve(pool.address, new BN(100000).mul(USDC_DECIMALS), {from: person2})
-      await erc20.approve(pool.address, new BN(100000).mul(USDC_DECIMALS), {from: owner})
+      await usdc.approve(pool.address, new BN(100000).mul(USDC_DECIMALS), {from: person2})
+      await usdc.approve(pool.address, new BN(100000).mul(USDC_DECIMALS), {from: owner})
 
       capitalProvider = person2
     })
 
     it("withdraws the correct amount of value from the contract when you call withdraw", async () => {
       await makeDeposit()
-      const balanceBefore = await getBalance(pool.address, erc20)
+      const balanceBefore = await getBalance(pool.address, usdc)
       await makeWithdraw()
-      const balanceAfter = await getBalance(pool.address, erc20)
+      const balanceAfter = await getBalance(pool.address, usdc)
       const delta = balanceBefore.sub(balanceAfter)
       expect(delta).to.bignumber.equal(withdrawAmount)
     })
@@ -233,9 +224,9 @@ describe("Pool", () => {
 
     it("sends the amount back to the address, accounting for fees", async () => {
       await makeDeposit()
-      const addressValueBefore = await getBalance(person2, erc20)
+      const addressValueBefore = await getBalance(person2, usdc)
       await makeWithdraw()
-      const addressValueAfter = await getBalance(person2, erc20)
+      const addressValueAfter = await getBalance(person2, usdc)
       const expectedFee = withdrawAmount.div(WITHDRAWL_FEE_DENOMINATOR)
       const delta = addressValueAfter.sub(addressValueBefore)
       expect(delta).bignumber.equal(withdrawAmount.sub(expectedFee))
@@ -243,9 +234,9 @@ describe("Pool", () => {
 
     it("should send the fees to the reserve address", async () => {
       await makeDeposit()
-      const reserveBalanceBefore = await getBalance(reserve, erc20)
+      const reserveBalanceBefore = await getBalance(reserve, usdc)
       await makeWithdraw()
-      const reserveBalanceAfter = await getBalance(reserve, erc20)
+      const reserveBalanceAfter = await getBalance(reserve, usdc)
       const expectedFee = withdrawAmount.div(WITHDRAWL_FEE_DENOMINATOR)
       const delta = reserveBalanceAfter.sub(reserveBalanceBefore)
       expect(delta).bignumber.equal(expectedFee)
@@ -284,7 +275,7 @@ describe("Pool", () => {
 
   describe("collectInterestRepayment", async () => {
     beforeEach(async () => {
-      await erc20.approve(pool.address, new BN(100000).mul(USDC_DECIMALS), {from: person2})
+      await usdc.approve(pool.address, new BN(100000).mul(USDC_DECIMALS), {from: person2})
       await makeDeposit()
     })
     it("should emit an event with the right information", async () => {
@@ -318,7 +309,7 @@ describe("Pool", () => {
     beforeEach(async () => {
       // Set the credit line to a random address
       creditline = person3
-      await erc20.approve(pool.address, new BN(100000).mul(USDC_DECIMALS), {from: person2})
+      await usdc.approve(pool.address, new BN(100000).mul(USDC_DECIMALS), {from: person2})
       await makeDeposit()
     })
 
@@ -384,7 +375,7 @@ describe("Pool", () => {
 
   describe("collectPrincipalRepayment", async () => {
     beforeEach(async () => {
-      await erc20.approve(pool.address, new BN(100000).mul(USDC_DECIMALS), {from: person2})
+      await usdc.approve(pool.address, new BN(100000).mul(USDC_DECIMALS), {from: person2})
       await makeDeposit()
     })
     it("should emit an event with the right information", async () => {
