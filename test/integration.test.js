@@ -222,6 +222,64 @@ describe("Goldfinch", async () => {
 
         await doAllMainActions(creditLine.address)
       })
+
+      it("should handle writedowns correctly", async () => {
+        let amount = usdcVal(10000)
+        let drawdownAmount = amount.div(new BN(2))
+
+        await deposit(amount)
+        await deposit(amount, investor2)
+        const creditLine = await createCreditLine({_paymentPeriodInDays: paymentPeriodInDays})
+        await drawdown(creditLine.address, drawdownAmount, borrower)
+
+        // Advance to a point where we would definitely writethem down
+        const fourPeriods = (await creditLine.paymentPeriodInDays()).mul(new BN(4))
+        await advanceTime({days: fourPeriods.toNumber()})
+
+        await expectAction(() => assessCreditLine(creditLine.address)).toChange([
+          [creditDesk.totalWritedowns, {increase: true}],
+          [creditLine.interestOwed, {increase: true}],
+          [pool.sharePrice, {decrease: true}],
+        ])
+
+        // All the main actions should still work as expected!
+        await expect(drawdown(creditLine.address, new BN(10))).to.be.rejected
+        await deposit(new BN(10))
+        await withdraw(new BN(10))
+        await makePayment(creditLine.address, new BN(10))
+      })
+
+      // This test fails now, but should pass once we fix late fee logic.
+      // We *should* charge interest after term end block, when you're so late that
+      // you're past the grace period. But currently we don't charge any.
+      xit("should accrue interest correctly after the term end block", async () => {
+        let amount = usdcVal(10000)
+        let drawdownAmount = amount.div(new BN(2))
+
+        await deposit(amount)
+        await deposit(amount, investor2)
+        const creditLine = await createCreditLine({
+          _paymentPeriodInDays: paymentPeriodInDays,
+          lateFeeApr: interestAprAsBN("3.0"),
+        })
+        await drawdown(creditLine.address, drawdownAmount, borrower)
+
+        // Advance to a point where we would definitely writethem down
+        const termLength = await creditLine.termInDays()
+        await advanceTime({days: termLength.toNumber()})
+
+        await assessCreditLine(creditLine.address)
+
+        const termInterestTotalWithLateFees = drawdownAmount.mul(interestApr.add(lateFeeApr)).div(INTEREST_DECIMALS)
+        expect(await creditLine.interestOwed()).to.bignumber.equal(termInterestTotalWithLateFees)
+
+        // advance more time
+        const clPaymentPeriodInDays = await creditLine.paymentPeriodInDays()
+        await advanceTime({days: clPaymentPeriodInDays.toNumber()})
+
+        await assessCreditLine(creditLine.address)
+        expect(await creditLine.interestOwed()).to.bignumber.gt(termInterestTotalWithLateFees)
+      })
     })
 
     describe("credit lines and interest rates", async () => {
