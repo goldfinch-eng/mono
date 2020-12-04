@@ -104,7 +104,7 @@ describe("relayAsses", () => {
       await creditDesk.drawdown(usdcVal(10), creditLine.address, borrower, {from: borrower})
 
       // Advance to just after the term due block
-      await advanceToBlock((await creditLine.termEndBlock()).sub(new BN(10)))
+      await advanceToBlock((await creditLine.termEndBlock()).add(new BN(10)))
 
       await expectAction(() => assessIfRequired(creditDesk, creditLine, fakeProvider)).toChange([
         [creditLine.nextDueBlock, {increase: true}],
