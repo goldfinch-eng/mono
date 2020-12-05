@@ -1,6 +1,7 @@
 import React from 'react';
 import { ErrorMessage } from '@hookform/error-message';
 import { displayDollars } from '../utils';
+import BigNumber from 'bignumber.js';
 
 function TransactionInput(props) {
   let name = props.name || 'transactionAmount';
@@ -26,10 +27,20 @@ function TransactionInput(props) {
               value: props.maxAmount,
               message: `Amount is above the max allowed (${displayDollars(props.maxAmount)}). `,
             },
+            validate: {
+              decimals: value => new BigNumber(value).decimalPlaces() <= 6,
+            },
           })}
         ></input>
         <div className="form-input-note">
-          <ErrorMessage errors={props.formMethods.errors} name={name} />
+          <ErrorMessage
+            message={(function(errors, name) {
+              if (errors[name] && errors[name].type === 'decimals') {
+                return 'Maximum allowed decimal places is 6';
+              }
+            })(props.formMethods.errors, name)}
+            name={name}
+          />
         </div>
       </div>
     </div>

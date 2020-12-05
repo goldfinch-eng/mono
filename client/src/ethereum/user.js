@@ -9,6 +9,7 @@ const EVENT_TYPE_MAP = {
   WithdrawalMade: 'Withdrawal',
   DrawdownMade: 'Drawdown',
   PaymentCollected: 'Payment',
+  Approval: 'Approval',
 };
 
 const EVENT_AMOUNT_FIELD = {
@@ -27,11 +28,12 @@ async function getUserData(address, erc20, pool, creditDesk) {
   if (pool && erc20) {
     allowance = new BigNumber(await erc20.methods.allowance(address, pool._address).call());
   }
-  const [poolTxs, creditDeskTxs] = await Promise.all([
+  const [erc20Txs, poolTxs, creditDeskTxs] = await Promise.all([
+    getAndTransformERC20Events(erc20, pool.address, address),
     getAndTransformPoolEvents(pool, address),
     getAndTransformCreditDeskEvents(creditDesk, address),
   ]);
-  const allTxs = _.reverse(_.sortBy(_.compact(_.concat(poolTxs, creditDeskTxs)), 'blockNumber'));
+  const allTxs = _.reverse(_.sortBy(_.compact(_.concat(erc20Txs, poolTxs, creditDeskTxs)), 'blockNumber'));
 
   const data = {
     address: address,
@@ -42,6 +44,15 @@ async function getUserData(address, erc20, pool, creditDesk) {
     pastTXs: allTxs,
   };
   return data;
+}
+
+async function getAndTransformERC20Events(erc20, spender, owner) {
+  const approvalEvents = await erc20.getPastEvents('Approval', {
+    filter: { owner: owner, spender: spender },
+    fromBlock: 'earliest',
+    to: 'latest',
+  });
+  return await Promise.all(mapEventsToTx(_.compact(approvalEvents)));
 }
 
 async function getAndTransformPoolEvents(pool, address) {
