@@ -24,7 +24,7 @@ function DrawdownForm(props) {
     const drawdownAmount = usdcToAtomic(transactionAmount);
     sendToAddress = sendToAddress || props.borrower.address;
     return sendFromUser(creditDesk.methods.drawdown(drawdownAmount, props.creditLine.address, sendToAddress), {
-      type: 'Drawdown',
+      type: 'Borrow',
       amount: transactionAmount,
     }).then(actionComplete);
   }
@@ -66,8 +66,8 @@ function DrawdownForm(props) {
 
   return (
     <TransactionForm
-      title="Drawdown"
-      headerMessage={`Available to drawdown: ${displayDollars(props.creditLine.availableCreditInDollars)}`}
+      title="Borrow"
+      headerMessage={`Available to borrow: ${displayDollars(props.creditLine.availableCreditInDollars)}`}
       render={renderForm}
       closeForm={props.closeForm}
     />

@@ -28,6 +28,9 @@ function Borrow(props) {
         const instance = buildCreditLine(borrowerCreditLines[borrowerCreditLines.length - 1]);
         setCreditLineInstance(instance);
         setCreditLine(await fetchCreditLineData(instance));
+      } else {
+        creditLine.loaded = true;
+        setCreditLine(creditLine);
       }
     }
     setBorrower(borrower);
@@ -44,9 +47,11 @@ function Borrow(props) {
     return updateBorrowerAndCreditLine();
   }
 
-  let creditLineTitle = 'Credit Line';
-  if (creditLine.address) {
+  let creditLineTitle = 'Loading...';
+  if (user.loaded && creditLine.address) {
     creditLineTitle = `Credit Line / ${croppedAddress(creditLine.address)}`;
+  } else if (user.loaded) {
+    creditLineTitle = 'Credit Line';
   }
 
   return (

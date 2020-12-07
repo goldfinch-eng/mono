@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Switch, Route, Redirect } from 'react-router-dom';
 import _ from 'lodash';
 import Borrow from './components/borrow.js';
 import Earn from './components/earn.js';
@@ -13,7 +13,7 @@ import { getCreditDesk } from './ethereum/creditDesk.js';
 import { getUSDC } from './ethereum/erc20.js';
 import { getGoldfinchConfig, refreshGoldfinchConfigData } from './ethereum/goldfinchConfig.js';
 import { getUserData } from './ethereum/user.js';
-import { mapNetworkToID } from './ethereum/utils';
+import { mapNetworkToID, SUPPORTED_NETWORKS } from './ethereum/utils';
 
 const AppContext = React.createContext({});
 
@@ -25,7 +25,7 @@ function App() {
   const [goldfinchConfig, setGoldfinchConfig] = useState({});
   const [currentTXs, setCurrentTXs] = useState([]);
   const [currentErrors, setCurrentErrors] = useState([]);
-  const [network, setNetwork] = useState('');
+  const [network, setNetwork] = useState({});
 
   useEffect(() => {
     setupWeb3();
@@ -37,30 +37,35 @@ function App() {
     }
     const accounts = await web3.eth.getAccounts();
     const networkName = await web3.eth.net.getNetworkType();
-    const networkId = mapNetworkToID[networkName];
-    setNetwork(networkId);
-    if (networkId) {
-      let erc20Contract = await getUSDC(networkId);
-      let poolContract = await getPool(networkId);
-      let goldfinchConfigContract = await getGoldfinchConfig(networkId);
-      let creditDeskContract = await getCreditDesk(networkId);
+    const networkId = mapNetworkToID[networkName] || networkName;
+    const networkConfig = { name: networkId, supported: SUPPORTED_NETWORKS[networkId] };
+    setNetwork(networkConfig);
+    let erc20Contract, poolContract, goldfinchConfigContract, creditDeskContract;
+    if (networkConfig.supported) {
+      erc20Contract = await getUSDC(networkId);
+      poolContract = await getPool(networkId);
+      goldfinchConfigContract = await getGoldfinchConfig(networkId);
+      creditDeskContract = await getCreditDesk(networkId);
       poolContract.data = await fetchPoolData(poolContract, erc20Contract);
       setErc20(erc20Contract);
       setPool(poolContract);
       setCreditDesk(creditDeskContract);
       setGoldfinchConfig(await refreshGoldfinchConfigData(goldfinchConfigContract));
-      if (accounts.length > 0) {
-        refreshUserData(accounts[0], erc20Contract, poolContract, creditDeskContract);
-      }
+      refreshUserData(accounts, erc20Contract, poolContract, creditDeskContract);
+    } else {
+      refreshUserData();
     }
   }
 
-  async function refreshUserData(userAddress, erc20Contract, poolContract, creditDeskContract) {
-    userAddress = userAddress || user.address;
-    erc20Contract = erc20Contract || erc20;
-    poolContract = poolContract || pool;
-    creditDeskContract = creditDeskContract || creditDesk;
-    const data = await getUserData(userAddress, erc20Contract, poolContract, creditDeskContract);
+  async function refreshUserData(accounts, erc20Contract, poolContract, creditDeskContract) {
+    let data = { loaded: true };
+    let userAddress = (accounts && accounts[0]) || user.address;
+    if (userAddress) {
+      erc20Contract = erc20Contract || erc20;
+      poolContract = poolContract || pool;
+      creditDeskContract = creditDeskContract || creditDesk;
+      data = await getUserData(userAddress, erc20Contract, poolContract, creditDeskContract);
+    }
     setUser(data);
   }
 
@@ -138,9 +143,12 @@ function App() {
         <div>
           <Switch>
             <Route exact path="/">
-              <Borrow />
+              <Redirect to="/earn" />
             </Route>
             <Route path="/about">{/* <About /> */}</Route>
+            <Route path="/borrow">
+              <Borrow />
+            </Route>
             <Route path="/earn">
               <Earn />
             </Route>

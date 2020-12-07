@@ -14,6 +14,8 @@
   height: $widget-button-height;
   font-size: $sans-size-xs;
   line-height: $widget-button-height;
+  min-width: 160px;
+  text-align: left;
   outline: none;
   padding: 0 18px;
 
@@ -23,6 +25,7 @@
 
   &.error{
     background-color: $red-xlight;
+    min-width: auto;
   }
 
   &.success .success-indicator,
@@ -51,6 +54,7 @@
     color: white;
     left: 0;
     position: absolute;
+    text-align: center;
     top: 0;
     width: 100%;
     visibility: hidden;
@@ -70,6 +74,7 @@
 
   &.bold{
     background-color: $blue-xlight;
+    text-align: center;
   }
 
   &.bold:hover{
@@ -79,6 +84,7 @@
   &.disabled,
   &.disabled:hover{
     background-color: $blue-xxlight;
+    text-align: center;
   }
 }
 
@@ -288,28 +294,5 @@
 
   .network-widget-button{
     border: none;
-  }
-}
-
-@keyframes fadeInAndOut {
-  0% {
-    opacity: 0;
-    visibility: visible;
-  }
-  20% {
-    opacity: 1;
-    visibility: visible;
-  }
-  80% {
-    opacity: 1;
-    visibility: visible;
-  }
-  99% {
-    opacity: 0;
-    visibility: visible;
-  }
-  100% {
-    opacity: 0;
-    visibility: hidden;
   }
 }

@@ -40,7 +40,7 @@ function NetworkWidget(props) {
   function transactionItem(tx) {
     const transactionlabel = tx.type === 'Approval' ? tx.type : `$${tx.amount} ${tx.type}`;
     let etherscanSubdomain;
-    if (props.network === 'mainnet') {
+    if (props.network.name === 'mainnet') {
       etherscanSubdomain = '';
     } else {
       etherscanSubdomain = `${props.network}.`;
@@ -171,7 +171,18 @@ function NetworkWidget(props) {
         </a>
       </div>
     );
-  } else if (web3 && !props.network) {
+  } else if (!props.user.loaded) {
+    return (
+      <div ref={node} className="network-widget">
+        <div className="network-widget-button">
+          <div className="status-icon">
+            <div className="indicator"></div>
+          </div>
+          Loading...
+        </div>
+      </div>
+    );
+  } else if (web3 && props.network.name && !props.network.supported) {
     return (
       <div ref={node} className="network-widget">
         <div className="network-widget-button disabled">Wrong Network</div>

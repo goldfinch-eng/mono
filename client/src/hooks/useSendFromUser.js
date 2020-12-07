@@ -24,7 +24,7 @@ function useSendFromUser() {
         })
         .once('receipt', receipt => {
           updateTX(txData, { id: receipt.transactionHash, blockNumber: receipt.blockNumber });
-          if (network === 'localhost') {
+          if (network.name === 'localhost') {
             // The confirmation callback never runs on localhost...
             markTXSuccessful(txData);
             refreshUserData();

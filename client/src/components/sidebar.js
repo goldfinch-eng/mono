@@ -22,10 +22,8 @@ function Sidebar(props) {
       </button>
       <img className="sidebar-logo" src={logoPurp} alt="Goldfinch" />
       <nav>
-        <NavLink to="/" exact={true}>
-          Borrow
-        </NavLink>
         <NavLink to="/earn">Earn</NavLink>
+        <NavLink to="/borrow">Borrow</NavLink>
         <NavLink to="/transactions">Transactions</NavLink>
       </nav>
     </div>

@@ -17,11 +17,13 @@
 .full-bar .bar-left{
   background-color: $purp;
   height: 14px;
+  transition: width 0.2s ease;
 }
 
 .full-bar .bar-right{
   background-color: $blue-light;
   height: 14px;
+  transition: width 0.2s ease;
 }
 
 .bar-viz .right-label,

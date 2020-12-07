@@ -7,7 +7,7 @@ import moment from 'moment';
 const EVENT_TYPE_MAP = {
   DepositMade: 'Deposit',
   WithdrawalMade: 'Withdrawal',
-  DrawdownMade: 'Drawdown',
+  DrawdownMade: 'Borrow',
   PaymentCollected: 'Payment',
   Approval: 'Approval',
 };
@@ -42,6 +42,7 @@ async function getUserData(address, erc20, pool, creditDesk) {
     allowance: allowance,
     usdcIsUnlocked: !allowance || allowance.gte(new BigNumber(10000)),
     pastTXs: allTxs,
+    loaded: true,
   };
   return data;
 }

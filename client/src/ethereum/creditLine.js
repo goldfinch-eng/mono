@@ -20,6 +20,7 @@ const defaultCreditLine = {
   totalDueAmount: zero,
   remainingTotalDueAmount: zero,
   remainingTotalDueAmountInDollars: zero,
+  loaded: false,
 };
 
 function buildCreditLine(address) {
@@ -66,6 +67,8 @@ async function fetchCreditLineData(creditLine) {
   const collectedForPrincipal = BigNumber.max(result.collectedPaymentBalance.minus(result.periodDueAmount), zero);
   result.availableCredit = BigNumber.min(result.limit, result.limit.minus(result.balance).plus(collectedForPrincipal));
   result.availableCreditInDollars = new BigNumber(roundDownPenny(usdcFromAtomic(result.availableCredit)));
+  // Just for front-end usage.
+  result.loaded = true;
   return result;
 }
 

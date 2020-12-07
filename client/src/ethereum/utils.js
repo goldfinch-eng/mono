@@ -15,6 +15,7 @@ const MAX_UINT = new BN('1157920892373161954235709850086879078532699846656405640
 const MAINNET = 'mainnet';
 const ROPSTEN = 'ropsten';
 const RINKEBY = 'rinkeby';
+const LOCAL = 'localhost';
 const USDC_ADDRESSES = {
   [ROPSTEN]: '0x07865c6e87b9f70255377e024ace6630c1eaa37f',
   [MAINNET]: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
@@ -33,9 +34,15 @@ async function sendFromUser(unsentTransaction, userAddress) {
 // (ie. where we deployed the latest contracts)
 const mapNetworkToID = {
   main: MAINNET,
-  // ropsten: ROPSTEN,
+  ropsten: ROPSTEN,
   private: 'localhost',
   rinkeby: RINKEBY,
+};
+
+const SUPPORTED_NETWORKS = {
+  [MAINNET]: true,
+  [LOCAL]: true,
+  [RINKEBY]: true,
 };
 
 let config;
@@ -104,4 +111,5 @@ export {
   INTEREST_DECIMALS,
   BLOCKS_PER_YEAR,
   CONFIRMATION_THRESHOLD,
+  SUPPORTED_NETWORKS,
 };
