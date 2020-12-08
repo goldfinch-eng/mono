@@ -29,7 +29,7 @@ async function getUserData(address, erc20, pool, creditDesk) {
     allowance = new BigNumber(await erc20.methods.allowance(address, pool._address).call());
   }
   const [erc20Txs, poolTxs, creditDeskTxs] = await Promise.all([
-    getAndTransformERC20Events(erc20, pool.address, address),
+    getAndTransformERC20Events(erc20, pool._address, address),
     getAndTransformPoolEvents(pool, address),
     getAndTransformCreditDeskEvents(creditDesk, address),
   ]);
