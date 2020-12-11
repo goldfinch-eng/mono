@@ -3,7 +3,7 @@ import moment from 'moment';
 import BigNumber from 'bignumber.js';
 import * as CreditLineContract from '../../../artifacts/contracts/protocol/CreditLine.sol/CreditLine.json';
 import { getUSDC, usdcFromAtomic } from './erc20';
-import { fetchDataFromAttributes, INTEREST_DECIMALS, BLOCKS_PER_YEAR } from './utils';
+import { fetchDataFromAttributes, INTEREST_DECIMALS, BLOCKS_PER_YEAR, BLOCKS_PER_DAY } from './utils';
 import { roundUpPenny, roundDownPenny } from '../utils';
 
 const zero = new BigNumber(0);
@@ -20,6 +20,7 @@ const defaultCreditLine = {
   totalDueAmount: zero,
   remainingTotalDueAmount: zero,
   remainingTotalDueAmountInDollars: zero,
+  isLate: false,
   loaded: false,
 };
 
@@ -42,6 +43,7 @@ async function fetchCreditLineData(creditLine) {
     { method: 'limit' },
     { method: 'interestOwed' },
     { method: 'termEndBlock' },
+    { method: 'lastFullPaymentBlock' },
   ];
   let data = await fetchDataFromAttributes(creditLine, attributes);
   attributes.forEach(info => {
@@ -67,6 +69,7 @@ async function fetchCreditLineData(creditLine) {
   const collectedForPrincipal = BigNumber.max(result.collectedPaymentBalance.minus(result.periodDueAmount), zero);
   result.availableCredit = BigNumber.min(result.limit, result.limit.minus(result.balance).plus(collectedForPrincipal));
   result.availableCreditInDollars = new BigNumber(roundDownPenny(usdcFromAtomic(result.availableCredit)));
+  result.isLate = await calculateIsLate(result);
   // Just for front-end usage.
   result.loaded = true;
   return result;
@@ -98,6 +101,12 @@ function calculateNextDueAmount(creditLine) {
   } else {
     return interestOwed;
   }
+}
+
+async function calculateIsLate(creditLine) {
+  const latestBlock = await web3.eth.getBlock('latest');
+  const blocksElapsedSinceLastFullPayment = latestBlock.number - creditLine.lastFullPaymentBlock;
+  return blocksElapsedSinceLastFullPayment > creditLine.paymentPeriodInDays * BLOCKS_PER_DAY;
 }
 
 export { buildCreditLine, fetchCreditLineData, defaultCreditLine };

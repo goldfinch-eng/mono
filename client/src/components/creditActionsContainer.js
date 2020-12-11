@@ -26,11 +26,17 @@ function CreditActionsContainer(props) {
 
   let drawdownAction;
   let drawdownClass = 'disabled';
-  if (availableCredit.gt(0) && user.usdcIsUnlocked) {
+  let drawdownError;
+
+  if (availableCredit.gt(0) && user.usdcIsUnlocked && !props.creditLine.isLate) {
     drawdownAction = e => {
       openAction(e, 'drawdown');
     };
     drawdownClass = '';
+  }
+
+  if (props.creditLine.isLate) {
+    drawdownError = 'Cannot drawdown when payment is past due';
   }
 
   let payAction;
@@ -79,6 +85,7 @@ function CreditActionsContainer(props) {
           <button className={`button ${drawdownClass}`} onClick={drawdownAction}>
             {iconDownArrow} Borrow
           </button>
+          <div className="form-input-note">{drawdownError}</div>
         </div>
         <div className="form-start-section">
           <div className="form-start-label">Next payment</div>
