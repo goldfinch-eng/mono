@@ -6,7 +6,7 @@ const fetch = require("node-fetch")
 const CONFIG = {
   mainnet: {
     address: "0xD52dc1615c843c30F2e4668E101c0938e6007220",
-    underwriters: ["0xc840b3e21ff0eba77468ad450d868d4362cf67fe"],
+    underwriters: ["0xc840b3e21ff0eba77468ad450d868d4362cf67fe", "0x79ea65C834EC137170E1aA40A42b9C80df9c0Bb4"],
     etherscanApi: "https://api.etherscan.io/api",
   },
   rinkeby: {
