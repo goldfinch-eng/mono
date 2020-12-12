@@ -21,8 +21,9 @@ function AddressInput(props) {
               return value === '' || web3.utils.isAddress(value);
             },
           })}
+          disabled={props.disabled}
         ></input>
-        {watchName && !errors[name] && watchName !== '' && validValue}
+        {watchName && !errors[name] && validValue}
         <div className="form-input-note">
           <ErrorMessage
             errors={props.formMethods.errors}
