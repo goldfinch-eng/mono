@@ -6,6 +6,8 @@ import { iconCheck } from './icons.js';
 function AddressInput(props) {
   const validValue = <div className="form-input-note verified-value">valid address {iconCheck}</div>;
   const name = props.name || 'sendToAddress';
+  const watchName = props.formMethods.watch(name, false);
+  const errors = props.formMethods.errors;
   return (
     <div className="form-field">
       <div className="form-input-container">
@@ -19,8 +21,9 @@ function AddressInput(props) {
               return value === '' || web3.utils.isAddress(value);
             },
           })}
+          disabled={props.disabled}
         ></input>
-        {!props.formMethods.errors[name] && props.formMethods.getValues(name) && validValue}
+        {watchName && !errors[name] && validValue}
         <div className="form-input-note">
           <ErrorMessage
             errors={props.formMethods.errors}

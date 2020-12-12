@@ -7,6 +7,10 @@ import { iconMenu } from './icons.js';
 function Sidebar(props) {
   const [node, showSidebar, setShowSidebar] = useCloseOnClickOrEsc();
 
+  function closeSidebar() {
+    setShowSidebar('');
+  }
+
   function toggleSidebar() {
     if (showSidebar === '') {
       setShowSidebar('open');
@@ -22,9 +26,15 @@ function Sidebar(props) {
       </button>
       <img className="sidebar-logo" src={logoPurp} alt="Goldfinch" />
       <nav>
-        <NavLink to="/earn">Earn</NavLink>
-        <NavLink to="/borrow">Borrow</NavLink>
-        <NavLink to="/transactions">Transactions</NavLink>
+        <NavLink to="/earn" onClick={closeSidebar}>
+          Earn
+        </NavLink>
+        <NavLink to="/borrow" onClick={closeSidebar}>
+          Borrow
+        </NavLink>
+        <NavLink to="/transactions" onClick={closeSidebar}>
+          Transactions
+        </NavLink>
       </nav>
     </div>
   );

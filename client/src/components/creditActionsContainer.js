@@ -26,6 +26,7 @@ function CreditActionsContainer(props) {
 
   let drawdownAction;
   let drawdownClass = 'disabled';
+
   if (availableCredit.gt(0) && user.usdcIsUnlocked) {
     drawdownAction = e => {
       openAction(e, 'drawdown');

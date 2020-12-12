@@ -41,15 +41,23 @@ function DrawdownForm(props) {
   );
 
   function renderForm({ formMethods }) {
+    let warningMessage, disabled;
+    if (props.creditLine.isLate) {
+      warningMessage = <p className="form-message">Cannot drawdown when payment is past due</p>;
+      disabled = true;
+    }
+
     return (
       <div className="form-inputs">
+        {warningMessage}
         <div className="form-input-label">(Optional) Send to a specific address</div>
-        <AddressInput formMethods={formMethods} />
+        <AddressInput formMethods={formMethods} disabled={disabled} />
         <div className="form-input-label">Amount</div>
-        <TransactionInput formMethods={formMethods} maxAmount={maxAmount} />
+        <TransactionInput formMethods={formMethods} maxAmount={maxAmount} disabled={disabled} />
         <button
           className="enter-max-amount"
           type="button"
+          disabled={disabled}
           onClick={() => {
             formMethods.setValue('transactionAmount', roundDownPenny(maxAmount), {
               shouldValidate: true,
@@ -59,7 +67,7 @@ function DrawdownForm(props) {
         >
           Max
         </button>
-        <LoadingButton action={action} />
+        <LoadingButton action={action} disabled={disabled} />
       </div>
     );
   }
