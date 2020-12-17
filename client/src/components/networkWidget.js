@@ -35,6 +35,7 @@ function NetworkWidget(props) {
 
   let transactions = '';
   let enabledText = croppedAddress(props.user.address);
+  let userAddressForDisplay = croppedAddress(props.user.address);
   let enabledClass = '';
 
   function transactionItem(tx) {
@@ -111,6 +112,11 @@ function NetworkWidget(props) {
     );
   }
 
+  if (props.gnosisSafeInfo) {
+    enabledText = croppedAddress(props.gnosisSafeInfo.safeAddress);
+    userAddressForDisplay = `${enabledText} (Gnosis Safe)`;
+  }
+
   const connectMetamaskNetworkWidget = (
     <div ref={node} className={`network-widget ${showNetworkWidgetInfo}`}>
       <button className="network-widget-button bold" onClick={toggleOpenWidget}>
@@ -153,7 +159,7 @@ function NetworkWidget(props) {
         <div className="success-indicator">{iconCheck}Success</div>
       </button>
       <div className="network-widget-info">
-        <div className="network-widget-section address">{croppedAddress(props.user.address)}</div>
+        <div className="network-widget-section address">{userAddressForDisplay}</div>
         <NetworkErrors currentErrors={props.currentErrors} />
         <div className="network-widget-section">
           USDC balance <span className="value">{displayNumber(usdcFromAtomic(props.user.usdcBalance), 2)}</span>

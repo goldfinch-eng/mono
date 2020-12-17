@@ -4,12 +4,33 @@ import { CONFIRMATION_THRESHOLD } from '../ethereum/utils';
 import web3 from '../web3';
 
 function useSendFromUser() {
-  const { addPendingTX, markTXSuccessful, markTXErrored, updateTX, refreshUserData, user, network } = useContext(
-    AppContext,
-  );
+  const {
+    addPendingTX,
+    markTXSuccessful,
+    markTXErrored,
+    updateTX,
+    refreshUserData,
+    user,
+    network,
+    gnosisSafeInfo,
+    gnosisSafeSdk,
+  } = useContext(AppContext);
 
   return (unsentAction, txData) => {
-    return web3.eth.getGasPrice().then(gasPrice => {
+    return web3.eth.getGasPrice().then(async gasPrice => {
+      if (gnosisSafeInfo) {
+        const txs = [
+          {
+            to: unsentAction._parent._address, // _parent is the truffle contract
+            value: 0,
+            data: unsentAction.encodeABI(),
+          },
+        ];
+        addPendingTX(txData);
+        const res = await gnosisSafeSdk.sendTransactions(txs);
+        return Promise.resolve(res);
+      }
+
       return unsentAction
         .send({
           from: user.address,

@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@gnosis.pm/safe-apps-sdk": "^0.4.2",
     "@hookform/error-message": "0.0.4",
     "@openzeppelin/network": "^0.4.1",
     "@openzeppelin/solidity-loader": "^1.4.6",

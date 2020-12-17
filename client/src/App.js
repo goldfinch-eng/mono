@@ -14,6 +14,7 @@ import { getUSDC } from './ethereum/erc20.js';
 import { getGoldfinchConfig, refreshGoldfinchConfigData } from './ethereum/goldfinchConfig.js';
 import { getUserData, defaultUser } from './ethereum/user.js';
 import { mapNetworkToID, SUPPORTED_NETWORKS } from './ethereum/utils';
+import initSdk, { SafeInfo } from '@gnosis.pm/safe-apps-sdk';
 
 const AppContext = React.createContext({});
 
@@ -26,10 +27,23 @@ function App() {
   const [currentTXs, setCurrentTXs] = useState([]);
   const [currentErrors, setCurrentErrors] = useState([]);
   const [network, setNetwork] = useState({});
+  const [gnosisSafeInfo, setGnosisSafeInfo] = useState();
+  const [gnosisSafeSdk, setGnosisSafeSdk] = useState();
 
   useEffect(() => {
     setupWeb3();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const safeSdk = initSdk();
+    safeSdk.addListeners({
+      onSafeInfo: setGnosisSafeInfo,
+      onTransactionConfirmation: () => {},
+    });
+    setGnosisSafeSdk(safeSdk);
+
+    return () => gnosisSafeSdk.removeListeners();
   }, []);
 
   async function setupWeb3() {
@@ -122,6 +136,8 @@ function App() {
     erc20: erc20,
     goldfinchConfig: goldfinchConfig,
     network: network,
+    gnosisSafeInfo: gnosisSafeInfo,
+    gnosisSafeSdk: gnosisSafeSdk,
     refreshUserData: refreshUserData,
     addPendingTX: addPendingTX,
     markTXSuccessful: markTXSuccessful,
@@ -140,6 +156,7 @@ function App() {
           setUser={setUser}
           currentErrors={currentErrors}
           currentTXs={currentTXs}
+          gnosisSafeInfo={gnosisSafeInfo}
           connectionComplete={setupWeb3}
         />
         <div>
