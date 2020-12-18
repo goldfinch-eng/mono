@@ -113,7 +113,6 @@ function NetworkWidget(props) {
   }
 
   if (props.gnosisSafeInfo) {
-    enabledText = croppedAddress(props.gnosisSafeInfo.safeAddress);
     userAddressForDisplay = `${enabledText} (Gnosis Safe)`;
   }
 

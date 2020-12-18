@@ -36,6 +36,15 @@ function App() {
   }, []);
 
   useEffect(() => {
+    refreshUserData();
+  }, [gnosisSafeInfo, erc20, pool, creditDesk, network]);
+
+  async function setupWeb3() {
+    if (!window.ethereum) {
+      return;
+    }
+
+    // Initialize gnosis safe
     const safeSdk = initSdk();
     safeSdk.addListeners({
       onSafeInfo: setGnosisSafeInfo,
@@ -43,14 +52,6 @@ function App() {
     });
     setGnosisSafeSdk(safeSdk);
 
-    return () => gnosisSafeSdk.removeListeners();
-  }, []);
-
-  async function setupWeb3() {
-    if (!window.ethereum) {
-      return;
-    }
-    const accounts = await web3.eth.getAccounts();
     const networkName = await web3.eth.net.getNetworkType();
     const networkId = mapNetworkToID[networkName] || networkName;
     const networkConfig = { name: networkId, supported: SUPPORTED_NETWORKS[networkId] };
@@ -67,22 +68,19 @@ function App() {
       setCreditDesk(creditDeskContract);
       getAndSetCreditDeskData(creditDeskContract, setCreditDesk);
       setGoldfinchConfig(await refreshGoldfinchConfigData(goldfinchConfigContract));
-      refreshUserData(accounts, erc20Contract, poolContract, creditDeskContract);
-    } else {
-      refreshUserData();
     }
+
+    return () => safeSdk.removeListeners();
   }
 
-  async function refreshUserData(accounts, erc20Contract, poolContract, creditDeskContract) {
+  async function refreshUserData() {
     let data = defaultUser();
-    let userAddress = (accounts && accounts[0]) || user.address;
-    if (userAddress) {
-      erc20Contract = erc20Contract || erc20;
-      poolContract = poolContract || pool;
-      creditDeskContract = creditDeskContract || creditDesk;
-      data = await getUserData(userAddress, erc20Contract, poolContract, creditDeskContract);
+    const accounts = await web3.eth.getAccounts();
+    let userAddress = (gnosisSafeInfo && gnosisSafeInfo.safeAddress) || (accounts && accounts[0]) || user.address;
+    if (userAddress && erc20 && creditDesk && pool) {
+      data = await getUserData(userAddress, erc20, pool, creditDesk);
+      setUser(data);
     }
-    setUser(data);
   }
 
   function updateTX(txToUpdate, updates) {

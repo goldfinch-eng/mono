@@ -2,23 +2,22 @@ import React, { useState, useEffect, useContext } from 'react';
 import EarnActionsContainer from './earnActionsContainer.js';
 import PoolStatus from './poolStatus.js';
 import ConnectionNotice from './connectionNotice.js';
-import web3 from '../web3.js';
 import { fetchCapitalProviderData, fetchPoolData } from '../ethereum/pool.js';
 import { AppContext } from '../App.js';
 
 function Earn(props) {
-  const { pool, erc20, creditDesk } = useContext(AppContext);
+  const { pool, erc20, creditDesk, user } = useContext(AppContext);
   const [capitalProvider, setCapitalProvider] = useState({});
   const [poolData, setPoolData] = useState({});
 
   useEffect(() => {
     async function refreshAllData() {
-      const [capitalProviderAddress] = await web3.eth.getAccounts();
+      const capitalProviderAddress = user.address;
       refreshPoolData(pool, erc20);
       refreshCapitalProviderData(pool, capitalProviderAddress);
     }
     refreshAllData();
-  }, [pool, erc20]);
+  }, [pool, erc20, user]);
 
   function actionComplete() {
     refreshPoolData(pool, erc20);
