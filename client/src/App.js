@@ -79,8 +79,8 @@ function App() {
     let userAddress = (gnosisSafeInfo && gnosisSafeInfo.safeAddress) || (accounts && accounts[0]) || user.address;
     if (userAddress && erc20 && creditDesk && pool) {
       data = await getUserData(userAddress, erc20, pool, creditDesk);
-      setUser(data);
     }
+    setUser(data);
   }
 
   function updateTX(txToUpdate, updates) {

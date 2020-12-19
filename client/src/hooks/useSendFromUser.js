@@ -26,7 +26,7 @@ function useSendFromUser() {
             data: unsentAction.encodeABI(),
           },
         ];
-        addPendingTX({ status: 'awaiting_consensus', ...txData });
+        addPendingTX({ status: 'awaiting_signers', ...txData });
         const res = await gnosisSafeSdk.sendTransactions(txs);
         return Promise.resolve(res);
       }

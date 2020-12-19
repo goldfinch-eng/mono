@@ -57,10 +57,10 @@ function NetworkWidget(props) {
       );
     }
 
-    if (tx.status === 'awaiting_consensus') {
+    if (tx.status === 'awaiting_signers') {
       confirmationMessage = (
         <span>
-          <span className="small-network-message">Awaiting consensus</span>
+          <span className="small-network-message">Awaiting signers</span>
         </span>
       );
     }
@@ -91,9 +91,9 @@ function NetworkWidget(props) {
   if (props.currentErrors.length > 0) {
     enabledClass = 'error';
     enabledText = 'Error';
-  } else if (_.some(props.currentTXs, { status: 'awaiting_consensus' })) {
+  } else if (_.some(props.currentTXs, { status: 'awaiting_signers' })) {
     enabledClass = 'pending';
-    enabledText = 'Awaiting consensus';
+    enabledText = 'Awaiting signers';
   } else if (_.some(props.currentTXs, { status: 'pending' })) {
     const pendingTXCount = _.countBy(props.currentTXs, { status: 'pending' }).true;
     const confirmingCount = _.countBy(props.currentTXs, item => {
