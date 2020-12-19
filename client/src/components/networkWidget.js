@@ -57,6 +57,14 @@ function NetworkWidget(props) {
       );
     }
 
+    if (tx.status === 'awaiting_consensus') {
+      confirmationMessage = (
+        <span>
+          <span className="small-network-message">Awaiting consensus</span>
+        </span>
+      );
+    }
+
     return (
       <div key={tx.id} className={`transaction-item ${tx.status}`}>
         <div className="status-icon">
@@ -83,6 +91,9 @@ function NetworkWidget(props) {
   if (props.currentErrors.length > 0) {
     enabledClass = 'error';
     enabledText = 'Error';
+  } else if (_.some(props.currentTXs, { status: 'awaiting_consensus' })) {
+    enabledClass = 'pending';
+    enabledText = 'Awaiting consensus';
   } else if (_.some(props.currentTXs, { status: 'pending' })) {
     const pendingTXCount = _.countBy(props.currentTXs, { status: 'pending' }).true;
     const confirmingCount = _.countBy(props.currentTXs, item => {
