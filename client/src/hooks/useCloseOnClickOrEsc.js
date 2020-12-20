@@ -10,7 +10,7 @@ function useCloseOnClickOrEsc(opts = {}) {
       if (event.keyCode === 27) {
         if (opts.closeFormFn) {
           // If an input has focus, then don't close the form, unfocus it first
-          if (document.activeElement && document.activeElement.tagName == 'INPUT') {
+          if (document.activeElement && document.activeElement.tagName === 'INPUT') {
             document.activeElement.blur();
           } else {
             opts.closeFormFn();
@@ -49,7 +49,7 @@ function useCloseOnClickOrEsc(opts = {}) {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleEscFunction, false);
     };
-  }, []);
+  }, [handleClickOutside, handleEscFunction]);
   return [node, open, setOpen];
 }
 

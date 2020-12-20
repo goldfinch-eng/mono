@@ -7,7 +7,7 @@ import { fetchCapitalProviderData, fetchPoolData } from '../ethereum/pool.js';
 import { AppContext } from '../App.js';
 
 function Earn(props) {
-  const { pool, erc20 } = useContext(AppContext);
+  const { pool, erc20, creditDesk } = useContext(AppContext);
   const [capitalProvider, setCapitalProvider] = useState({});
   const [poolData, setPoolData] = useState({});
 
@@ -22,7 +22,7 @@ function Earn(props) {
 
   function actionComplete() {
     refreshPoolData(pool, erc20);
-    refreshCapitalProviderData(pool, capitalProvider.address);
+    return refreshCapitalProviderData(pool, capitalProvider.address);
   }
 
   async function refreshCapitalProviderData(pool, address) {
@@ -35,13 +35,18 @@ function Earn(props) {
     setPoolData(poolData);
   }
 
+  let earnMessage = 'Loading...';
+
+  if (capitalProvider.loaded) {
+    earnMessage = 'Earn Portfolio';
+  }
+
   return (
     <div className="content-section">
-      <div className="page-header">Earn Portfolio</div>
+      <div className="page-header">{earnMessage}</div>
       <ConnectionNotice />
       <EarnActionsContainer poolData={poolData} capitalProvider={capitalProvider} actionComplete={actionComplete} />
-      {/* These need to be updated to be the correct fields for earning! */}
-      <PoolStatus poolData={poolData} />
+      <PoolStatus poolData={poolData} creditDesk={creditDesk} />
     </div>
   );
 }

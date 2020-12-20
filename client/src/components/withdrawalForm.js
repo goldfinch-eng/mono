@@ -16,12 +16,7 @@ function WithdrawalForm(props) {
     return sendFromUser(pool.methods.withdraw(withdrawalAmount), {
       type: 'Withdrawal',
       amount: transactionAmount,
-    }).then(actionComplete);
-  }
-
-  function actionComplete() {
-    props.closeForm();
-    props.actionComplete();
+    }).then(props.actionComplete);
   }
 
   const availableAmount = props.capitalProvider.availableToWithdrawalInDollars;

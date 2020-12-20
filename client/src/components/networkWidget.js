@@ -38,7 +38,7 @@ function NetworkWidget(props) {
   let enabledClass = '';
 
   function transactionItem(tx) {
-    const transactionlabel = tx.type === 'Approval' ? tx.type : `$${tx.amount} ${tx.type}`;
+    const transactionlabel = tx.name === 'Approval' ? tx.name : `$${tx.amount} ${tx.name}`;
     let etherscanSubdomain;
     if (props.network.name === 'mainnet') {
       etherscanSubdomain = '';

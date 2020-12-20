@@ -1,3 +1,5 @@
+import _ from 'lodash';
+
 function croppedAddress(address) {
   if (!address) {
     return '';
@@ -16,12 +18,37 @@ function displayNumber(val, decimals) {
     decimals = valFloat.toString().split('.')[1].length || 0;
   }
 
-  return valFloat.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return commaFormat(valFloat.toFixed(decimals));
 }
 
-function displayDollars(val) {
-  const valDisplay = isNaN(val) ? ' -' : displayNumber(val, 2);
+function commaFormat(numberString) {
+  if (isNaN(numberString)) {
+    return numberString;
+  }
+  const [beforeDecimal, afterDecimal] = numberString.split('.');
+  let withCommas = [];
+  _.reverse(_.split(beforeDecimal, '')).forEach((letter, i) => {
+    if (i % 3 === 0 && i > 0) {
+      withCommas.push(',');
+    }
+    withCommas.push(letter);
+  });
+  return `${_.join(_.reverse(withCommas), '')}.${afterDecimal}`;
+}
+
+function displayDollars(val, decimals = 2) {
+  const valDisplay = isNaN(val) ? ' --.--' : displayNumber(val, decimals);
   return '$' + valDisplay;
+}
+
+function displayPercent(val) {
+  let valDisplay;
+  if (isNaN(val)) {
+    valDisplay = '--.--';
+  } else {
+    valDisplay = displayNumber(val.multipliedBy(100), 2);
+  }
+  return `${valDisplay}%`;
 }
 
 function roundUpPenny(val) {
@@ -32,4 +59,4 @@ function roundDownPenny(val) {
   return Math.floor(val * 100) / 100;
 }
 
-export { croppedAddress, displayNumber, displayDollars, roundUpPenny, roundDownPenny };
+export { croppedAddress, displayNumber, displayDollars, roundUpPenny, roundDownPenny, displayPercent };

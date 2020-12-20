@@ -6,11 +6,17 @@ import WithdrawalForm from './withdrawalForm.js';
 import { iconUpArrow, iconDownArrow } from './icons.js';
 
 function EarnActionsContainer(props) {
-  const { user } = useContext(AppContext);
+  const { user, creditDesk } = useContext(AppContext);
   const [showAction, setShowAction] = useState(null);
 
-  const closeForm = e => {
+  function closeForm(e) {
     setShowAction(null);
+  }
+
+  const actionComplete = function() {
+    props.actionComplete().then(() => {
+      closeForm();
+    });
   };
 
   let placeholderClass = '';
@@ -42,7 +48,7 @@ function EarnActionsContainer(props) {
         closeForm={closeForm}
         capitalProvider={props.capitalProvider}
         poolData={props.poolData}
-        actionComplete={props.actionComplete}
+        actionComplete={actionComplete}
       />
     );
   } else if (showAction === 'withdrawal') {
@@ -51,13 +57,13 @@ function EarnActionsContainer(props) {
         closeForm={closeForm}
         capitalProvider={props.capitalProvider}
         poolData={props.poolData}
-        actionComplete={props.actionComplete}
+        actionComplete={actionComplete}
       />
     );
   } else {
     return (
       <div className={`background-container ${placeholderClass}`}>
-        <DepositStatus capitalProvider={props.capitalProvider} />
+        <DepositStatus capitalProvider={props.capitalProvider} creditDesk={creditDesk} poolData={props.poolData} />
         <div className="form-start">
           <button className={`button ${depositClass}`} onClick={depositAction}>
             {iconUpArrow} Deposit

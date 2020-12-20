@@ -2,8 +2,9 @@ import Web3 from 'web3';
 // This setup style would connect to metamask in browser if necessary.
 // const web3 = new Web3(Web3.givenProvider || "ws://localhost:8545");
 let web3;
-Storage = window.localStorage;
-let currentChain = Storage.getItem('currentChain');
+let localStorage = window.localStorage;
+let currentChain = localStorage.getItem('currentChain');
+let currentAccount = localStorage.getItem('currentAccount');
 if (typeof window.ethereum !== 'undefined') {
   web3 = new Web3(window.ethereum);
 
@@ -11,7 +12,13 @@ if (typeof window.ethereum !== 'undefined') {
   window.ethereum.on('chainChanged', chainId => {
     if (currentChain !== chainId) {
       window.location.reload();
-      Storage.setItem('currentChain', chainId);
+      localStorage.setItem('currentChain', chainId);
+    }
+  });
+  window.ethereum.on('accountsChanged', accounts => {
+    if (currentAccount && accounts[0] && currentAccount !== accounts[0]) {
+      window.location.reload();
+      localStorage.setItem('currentAccount', accounts[0]);
     }
   });
 } else {

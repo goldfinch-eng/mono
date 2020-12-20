@@ -17,12 +17,7 @@ function PaymentForm(props) {
     return sendFromUser(creditDesk.methods.pay(props.creditLine.address, amount), {
       type: 'Payment',
       amount: transactionAmount,
-    }).then(actionComplete);
-  }
-
-  function actionComplete() {
-    props.closeForm();
-    props.actionComplete();
+    }).then(props.actionComplete);
   }
 
   const remainingPeriodDueDisplay = displayDollars(props.creditLine.remainingPeriodDueAmountInDollars);

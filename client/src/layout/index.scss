@@ -15,9 +15,12 @@
 @import './form-start.scss';
 @import './info-section.scss';
 @import './network-widget.scss';
+@import './pool-links.scss';
+@import './recent-repayments.scss';
 @import './sidebar.scss';
 @import './status-icon.scss';
 @import './spinner.scss';
+@import './table.scss';
 @import './transactions-table.scss';
 @import './terms-of-service.scss';
 @import './unlock-form.scss';
@@ -32,6 +35,7 @@ html, * {
   transition: color 0.1s ease,
               background-color 0.1s ease,
               opacity 0.1s ease,
+              fill 0.1s ease,
 }
 
 body {

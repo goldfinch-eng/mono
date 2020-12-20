@@ -16,12 +16,7 @@ function DepositForm(props) {
     return sendFromUser(pool.methods.deposit(depositAmount), {
       type: 'Deposit',
       amount: transactionAmount,
-    }).then(actionComplete);
-  }
-
-  function actionComplete() {
-    props.actionComplete();
-    props.closeForm();
+    }).then(props.actionComplete);
   }
 
   function renderForm({ formMethods }) {
@@ -33,7 +28,7 @@ function DepositForm(props) {
           You don't have any USDC to deposit. You'll need to first send USDC to your address to deposit.
         </p>
       );
-    } else if (pool.data.totalPoolAssets.gte(goldfinchConfig.totalFundsLimit)) {
+    } else if (pool.gf.totalPoolAssets.gte(goldfinchConfig.totalFundsLimit)) {
       disabled = true;
       warningMessage = (
         <p className="form-message">

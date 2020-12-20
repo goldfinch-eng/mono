@@ -12,12 +12,11 @@ function Borrow(props) {
   const { creditDesk, erc20, pool, user } = useContext(AppContext);
   const [borrower, setBorrower] = useState({});
   const [creditLine, setCreditLine] = useState(defaultCreditLine);
-  const [creditLineInstance, setCreditLineInstance] = useState({});
 
   async function updateBorrowerAndCreditLine() {
     const [borrowerAddress] = await web3.eth.getAccounts();
     borrower.address = borrowerAddress;
-    if (borrowerAddress) {
+    if (borrowerAddress && creditDesk.loaded) {
       const borrowerCreditLines = await creditDesk.methods.getBorrowerCreditLines(borrowerAddress).call();
       const allowance = new BN(await erc20.methods.allowance(borrowerAddress, pool._address).call());
       borrower.allowance = allowance;
@@ -26,11 +25,10 @@ function Borrow(props) {
         // active one. If we start legit having multiple active credit lines, then we'll need to change
         // the front-end
         const instance = buildCreditLine(borrowerCreditLines[borrowerCreditLines.length - 1]);
-        setCreditLineInstance(instance);
         setCreditLine(await fetchCreditLineData(instance));
       } else {
         creditLine.loaded = true;
-        setCreditLine(creditLine);
+        setCreditLine({ ...creditLine });
       }
     }
     setBorrower(borrower);
@@ -41,6 +39,7 @@ function Borrow(props) {
       return;
     }
     updateBorrowerAndCreditLine();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [creditDesk]);
 
   async function actionComplete() {

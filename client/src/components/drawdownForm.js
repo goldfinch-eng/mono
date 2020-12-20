@@ -18,7 +18,7 @@ function DrawdownForm(props) {
     (async () => {
       setPoolData(await fetchPoolData(pool, erc20));
     })();
-  }, []);
+  }, [pool, erc20]);
 
   function action({ transactionAmount, sendToAddress }) {
     const drawdownAmount = usdcToAtomic(transactionAmount);
@@ -26,12 +26,7 @@ function DrawdownForm(props) {
     return sendFromUser(creditDesk.methods.drawdown(drawdownAmount, props.creditLine.address, sendToAddress), {
       type: 'Borrow',
       amount: transactionAmount,
-    }).then(actionComplete);
-  }
-
-  function actionComplete() {
-    props.closeForm();
-    props.actionComplete();
+    }).then(props.actionComplete);
   }
 
   const maxAmount = minimumNumber(

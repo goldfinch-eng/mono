@@ -1,7 +1,7 @@
 import web3 from '../web3';
 import BigNumber from 'bignumber.js';
 import * as ERC20Contract from './ERC20.json';
-import { mapNetworkToID, decimals, USDC_ADDRESSES, getDeployments } from './utils';
+import { decimals, USDC_ADDRESSES, getDeployments } from './utils';
 let cachedContract;
 
 async function getUSDC(networkId) {

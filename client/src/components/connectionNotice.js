@@ -1,6 +1,5 @@
 import React, { useContext } from 'react';
 import { AppContext } from '../App.js';
-import web3 from '../web3';
 import UnlockUSDCForm from './unlockUSDCForm.js';
 
 function ConnectionNotice(props) {

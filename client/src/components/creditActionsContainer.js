@@ -19,6 +19,12 @@ function CreditActionsContainer(props) {
     setShowAction(null);
   }
 
+  function actionComplete() {
+    props.actionComplete().then(() => {
+      closeForm();
+    });
+  }
+
   let placeholderClass = '';
   if (!user.address || !user.usdcIsUnlocked || !props.creditLine.address) {
     placeholderClass = 'placeholder';
@@ -57,7 +63,7 @@ function CreditActionsContainer(props) {
     return (
       <PaymentForm
         closeForm={closeForm}
-        actionComplete={props.actionComplete}
+        actionComplete={actionComplete}
         borrower={props.borrower}
         creditLine={props.creditLine}
       />
@@ -66,7 +72,7 @@ function CreditActionsContainer(props) {
     return (
       <DrawdownForm
         closeForm={closeForm}
-        actionComplete={props.actionComplete}
+        actionComplete={actionComplete}
         borrower={props.borrower}
         creditLine={props.creditLine}
       />

@@ -9,17 +9,17 @@ import Sidebar from './components/sidebar';
 import TermsOfService from './components/termsOfService.js';
 import web3 from './web3';
 import { fetchPoolData, getPool } from './ethereum/pool.js';
-import { getCreditDesk } from './ethereum/creditDesk.js';
+import { getCreditDesk, getAndSetCreditDeskData } from './ethereum/creditDesk.js';
 import { getUSDC } from './ethereum/erc20.js';
 import { getGoldfinchConfig, refreshGoldfinchConfigData } from './ethereum/goldfinchConfig.js';
-import { getUserData } from './ethereum/user.js';
+import { getUserData, defaultUser } from './ethereum/user.js';
 import { mapNetworkToID, SUPPORTED_NETWORKS } from './ethereum/utils';
 
 const AppContext = React.createContext({});
 
 function App() {
-  const [pool, setPool] = useState(null);
-  const [creditDesk, setCreditDesk] = useState(null);
+  const [pool, setPool] = useState({});
+  const [creditDesk, setCreditDesk] = useState({});
   const [erc20, setErc20] = useState(null);
   const [user, setUser] = useState({});
   const [goldfinchConfig, setGoldfinchConfig] = useState({});
@@ -29,6 +29,7 @@ function App() {
 
   useEffect(() => {
     setupWeb3();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function setupWeb3() {
@@ -46,10 +47,11 @@ function App() {
       poolContract = await getPool(networkId);
       goldfinchConfigContract = await getGoldfinchConfig(networkId);
       creditDeskContract = await getCreditDesk(networkId);
-      poolContract.data = await fetchPoolData(poolContract, erc20Contract);
+      poolContract.gf = await fetchPoolData(poolContract, erc20Contract);
       setErc20(erc20Contract);
       setPool(poolContract);
       setCreditDesk(creditDeskContract);
+      getAndSetCreditDeskData(creditDeskContract, setCreditDesk);
       setGoldfinchConfig(await refreshGoldfinchConfigData(goldfinchConfigContract));
       refreshUserData(accounts, erc20Contract, poolContract, creditDeskContract);
     } else {
@@ -58,7 +60,7 @@ function App() {
   }
 
   async function refreshUserData(accounts, erc20Contract, poolContract, creditDeskContract) {
-    let data = { loaded: true };
+    let data = defaultUser();
     let userAddress = (accounts && accounts[0]) || user.address;
     if (userAddress) {
       erc20Contract = erc20Contract || erc20;

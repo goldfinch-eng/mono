@@ -14,18 +14,18 @@ function Transactions(props) {
     let typeCssClass = '';
     let icon = iconCircleCheckLg;
     let amountPrefix = '';
-    if (['Deposit', 'Payment'].includes(tx.type)) {
+    if (['Deposit', 'Payment'].includes(tx.name)) {
       typeCssClass = 'inflow';
       icon = iconCircleUpLg;
       amountPrefix = '+';
-    } else if (['Withdrawal', 'Drawdown'].includes(tx.type)) {
+    } else if (['Withdrawal', 'Drawdown'].includes(tx.name)) {
       typeCssClass = 'outflow';
       icon = iconCircleDownLg;
       amountPrefix = '-';
     }
 
     let statusCssClass = '';
-    let typeLabel = tx.type;
+    let typeLabel = tx.name;
     let txDate = tx.date;
     if (tx.status === 'error') {
       statusCssClass = 'error';
@@ -50,7 +50,7 @@ function Transactions(props) {
           {icon}
           {typeLabel}
         </td>
-        <td className="transaction-amount">
+        <td className="numeric">
           {amountPrefix}
           {displayDollars(tx.amount)}
         </td>
@@ -83,11 +83,11 @@ function Transactions(props) {
     <div className="content-section">
       <div className="page-header">Transactions</div>
       <ConnectionNotice />
-      <table className={`transactions-table ${user.address ? '' : 'placeholder'}`}>
+      <table className={`table transactions-table ${user.address ? '' : 'placeholder'}`}>
         <thead>
           <tr>
             <th>Type</th>
-            <th className="transaction-amount">Amount</th>
+            <th className="numeric">Amount</th>
             <th className="transaction-date">Date</th>
             <th className="transaction-link"></th>
           </tr>
