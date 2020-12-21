@@ -5,14 +5,8 @@ import { getFromBlock } from './utils.js';
 import { mapEventsToTx } from './events';
 
 async function getUserData(address, usdc, pool, creditDesk) {
-  let usdcBalance = new BigNumber(0);
-  let allowance = new BigNumber(0);
-  if (usdc) {
-    usdcBalance = new BigNumber(await usdc.methods.balanceOf(address).call());
-  }
-  if (pool.loaded && usdc) {
-    allowance = new BigNumber(await usdc.methods.allowance(address, pool._address).call());
-  }
+  const usdcBalance = new BigNumber(await usdc.methods.balanceOf(address).call());
+  const allowance = new BigNumber(await usdc.methods.allowance(address, pool._address).call());
   const [usdcTxs, poolTxs, creditDeskTxs] = await Promise.all([
     getAndTransformERC20Events(usdc, pool._address, address),
     getAndTransformPoolEvents(pool, address),

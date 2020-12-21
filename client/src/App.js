@@ -77,7 +77,7 @@ function App() {
     let data = defaultUser();
     const accounts = await web3.eth.getAccounts();
     let userAddress = (gnosisSafeInfo && gnosisSafeInfo.safeAddress) || (accounts && accounts[0]) || user.address;
-    if (userAddress && erc20 && creditDesk && pool) {
+    if (userAddress && erc20 && creditDesk.loaded && pool.loaded) {
       data = await getUserData(userAddress, erc20, pool, creditDesk);
     }
     setUser(data);
