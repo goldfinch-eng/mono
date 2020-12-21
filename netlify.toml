@@ -4,7 +4,7 @@
   from = "/*"
   to = "/index.html"
   status = 200
-[[headers]
+[[headers]]
   for = "/*"
     [headers.values]
     Access-Control-Allow-Origin = "https://gnosis-safe.io/"
