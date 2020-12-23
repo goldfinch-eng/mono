@@ -14,8 +14,8 @@ function Borrow(props) {
   const [creditLine, setCreditLine] = useState(defaultCreditLine);
 
   async function updateBorrowerAndCreditLine() {
-    const [borrowerAddress] = await web3.eth.getAccounts();
-    borrower.address = borrowerAddress;
+    const borrowerAddress = user.address;
+    borrower.address = user.address;
     if (borrowerAddress && creditDesk.loaded) {
       const borrowerCreditLines = await creditDesk.methods.getBorrowerCreditLines(borrowerAddress).call();
       const allowance = new BN(await erc20.methods.allowance(borrowerAddress, pool._address).call());
@@ -40,7 +40,7 @@ function Borrow(props) {
     }
     updateBorrowerAndCreditLine();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [creditDesk]);
+  }, [creditDesk, user]);
 
   async function actionComplete() {
     return updateBorrowerAndCreditLine();

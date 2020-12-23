@@ -35,6 +35,7 @@ function NetworkWidget(props) {
 
   let transactions = '';
   let enabledText = croppedAddress(props.user.address);
+  let userAddressForDisplay = croppedAddress(props.user.address);
   let enabledClass = '';
 
   function transactionItem(tx) {
@@ -52,6 +53,14 @@ function NetworkWidget(props) {
         <span>
           {`${tx.confirmations} / ${CONFIRMATION_THRESHOLD}`}
           <span className="small-network-message">&nbsp; conf.</span>
+        </span>
+      );
+    }
+
+    if (tx.status === 'awaiting_signers') {
+      confirmationMessage = (
+        <span>
+          <span className="small-network-message">Awaiting signers</span>
         </span>
       );
     }
@@ -82,6 +91,9 @@ function NetworkWidget(props) {
   if (props.currentErrors.length > 0) {
     enabledClass = 'error';
     enabledText = 'Error';
+  } else if (_.some(props.currentTXs, { status: 'awaiting_signers' })) {
+    enabledClass = 'pending';
+    enabledText = 'Awaiting signers';
   } else if (_.some(props.currentTXs, { status: 'pending' })) {
     const pendingTXCount = _.countBy(props.currentTXs, { status: 'pending' }).true;
     const confirmingCount = _.countBy(props.currentTXs, item => {
@@ -109,6 +121,10 @@ function NetworkWidget(props) {
         {allTx.map(transactionItem)}
       </div>
     );
+  }
+
+  if (props.gnosisSafeInfo) {
+    userAddressForDisplay = `${enabledText} (Gnosis Safe)`;
   }
 
   const connectMetamaskNetworkWidget = (
@@ -153,7 +169,7 @@ function NetworkWidget(props) {
         <div className="success-indicator">{iconCheck}Success</div>
       </button>
       <div className="network-widget-info">
-        <div className="network-widget-section address">{croppedAddress(props.user.address)}</div>
+        <div className="network-widget-section address">{userAddressForDisplay}</div>
         <NetworkErrors currentErrors={props.currentErrors} />
         <div className="network-widget-section">
           USDC balance <span className="value">{displayNumber(usdcFromAtomic(props.user.usdcBalance), 2)}</span>

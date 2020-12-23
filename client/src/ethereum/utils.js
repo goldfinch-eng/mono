@@ -22,15 +22,6 @@ const USDC_ADDRESSES = {
   [MAINNET]: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
 };
 
-async function sendFromUser(unsentTransaction, userAddress) {
-  return web3.eth.getGasPrice().then(gasPrice => {
-    return unsentTransaction.send({
-      from: userAddress,
-      gasPrice: new BN(String(gasPrice)),
-    });
-  });
-}
-
 // Only keep entries for supported networks
 // (ie. where we deployed the latest contracts)
 const mapNetworkToID = {
@@ -106,7 +97,6 @@ function fetchDataFromAttributes(web3Obj, attributes, { bigNumber } = {}) {
 }
 
 export {
-  sendFromUser,
   getDeployments,
   mapNetworkToID,
   transformedConfig,

@@ -9,7 +9,7 @@ function Transactions(props) {
   const { user, network } = useContext(AppContext);
 
   function transactionRow(tx) {
-    const etherscanSubdomain = network.name === 'mainnet' ? '' : `${network}.`;
+    const etherscanSubdomain = network.name === 'mainnet' ? '' : `${network.name}.`;
 
     let typeCssClass = '';
     let icon = iconCircleCheckLg;

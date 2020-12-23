@@ -14,6 +14,7 @@ import { getUSDC } from './ethereum/erc20.js';
 import { getGoldfinchConfig, refreshGoldfinchConfigData } from './ethereum/goldfinchConfig.js';
 import { getUserData, defaultUser } from './ethereum/user.js';
 import { mapNetworkToID, SUPPORTED_NETWORKS } from './ethereum/utils';
+import initSdk, { SafeInfo } from '@gnosis.pm/safe-apps-sdk';
 
 const AppContext = React.createContext({});
 
@@ -26,17 +27,31 @@ function App() {
   const [currentTXs, setCurrentTXs] = useState([]);
   const [currentErrors, setCurrentErrors] = useState([]);
   const [network, setNetwork] = useState({});
+  const [gnosisSafeInfo, setGnosisSafeInfo] = useState();
+  const [gnosisSafeSdk, setGnosisSafeSdk] = useState();
 
   useEffect(() => {
     setupWeb3();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    refreshUserData();
+  }, [gnosisSafeInfo, erc20, pool, creditDesk, network]);
+
   async function setupWeb3() {
     if (!window.ethereum) {
       return;
     }
-    const accounts = await web3.eth.getAccounts();
+
+    // Initialize gnosis safe
+    const safeSdk = initSdk();
+    safeSdk.addListeners({
+      onSafeInfo: setGnosisSafeInfo,
+      onTransactionConfirmation: () => {},
+    });
+    setGnosisSafeSdk(safeSdk);
+
     const networkName = await web3.eth.net.getNetworkType();
     const networkId = mapNetworkToID[networkName] || networkName;
     const networkConfig = { name: networkId, supported: SUPPORTED_NETWORKS[networkId] };
@@ -53,20 +68,17 @@ function App() {
       setCreditDesk(creditDeskContract);
       getAndSetCreditDeskData(creditDeskContract, setCreditDesk);
       setGoldfinchConfig(await refreshGoldfinchConfigData(goldfinchConfigContract));
-      refreshUserData(accounts, erc20Contract, poolContract, creditDeskContract);
-    } else {
-      refreshUserData();
     }
+
+    return () => safeSdk.removeListeners();
   }
 
-  async function refreshUserData(accounts, erc20Contract, poolContract, creditDeskContract) {
+  async function refreshUserData() {
     let data = defaultUser();
-    let userAddress = (accounts && accounts[0]) || user.address;
-    if (userAddress) {
-      erc20Contract = erc20Contract || erc20;
-      poolContract = poolContract || pool;
-      creditDeskContract = creditDeskContract || creditDesk;
-      data = await getUserData(userAddress, erc20Contract, poolContract, creditDeskContract);
+    const accounts = await web3.eth.getAccounts();
+    let userAddress = (gnosisSafeInfo && gnosisSafeInfo.safeAddress) || (accounts && accounts[0]) || user.address;
+    if (userAddress && erc20 && creditDesk.loaded && pool.loaded) {
+      data = await getUserData(userAddress, erc20, pool, creditDesk);
     }
     setUser(data);
   }
@@ -122,6 +134,8 @@ function App() {
     erc20: erc20,
     goldfinchConfig: goldfinchConfig,
     network: network,
+    gnosisSafeInfo: gnosisSafeInfo,
+    gnosisSafeSdk: gnosisSafeSdk,
     refreshUserData: refreshUserData,
     addPendingTX: addPendingTX,
     markTXSuccessful: markTXSuccessful,
@@ -140,6 +154,7 @@ function App() {
           setUser={setUser}
           currentErrors={currentErrors}
           currentTXs={currentTXs}
+          gnosisSafeInfo={gnosisSafeInfo}
           connectionComplete={setupWeb3}
         />
         <div>
