@@ -132,21 +132,19 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
   /**
    * @notice Allows a borrower to drawdown on their creditline.
    *  `amount` USDC is sent to the borrower, and the credit line accounting is updated.
-   * @param amount The amount, in USDC atomic units, that a borrower wishes to drawdown
    * @param creditLineAddress The creditline from which they would like to drawdown
-   * @param addressToSendTo The address where they would like the funds sent. If the zero address is passed,
-   *  it will be defaulted to the borrower's address (msg.sender). This is a convenience feature for when they would
-   *  like the funds sent to an exchange or alternate wallet, different from the authentication address
+   * @param amount The amount, in USDC atomic units, that a borrower wishes to drawdown
    *
    * Requirements:
    *
    * - the caller must be the borrower on the creditLine
    */
-  function drawdown(
-    uint256 amount,
-    address creditLineAddress,
-    address addressToSendTo
-  ) external override whenNotPaused onlyValidCreditLine(creditLineAddress) {
+  function drawdown(address creditLineAddress, uint256 amount)
+    external
+    override
+    whenNotPaused
+    onlyValidCreditLine(creditLineAddress)
+  {
     CreditLine cl = CreditLine(creditLineAddress);
     Borrower storage borrower = borrowers[msg.sender];
     require(borrower.creditLines.length > 0, "No credit lines exist for this borrower");
@@ -154,10 +152,6 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     require(cl.borrower() == msg.sender, "You do not belong to this credit line");
     require(withinTransactionLimit(amount), "Amount is over the per-transaction limit");
     require(withinCreditLimit(amount, cl), "The borrower does not have enough credit limit for this drawdown");
-
-    if (addressToSendTo == address(0)) {
-      addressToSendTo = msg.sender;
-    }
 
     if (cl.balance() == 0) {
       cl.setInterestAccruedAsOfBlock(blockNumber());
@@ -174,7 +168,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     require(!isLate(cl), "Cannot drawdown when payments are past due");
     emit DrawdownMade(msg.sender, address(cl), amount);
 
-    bool success = config.getPool().transferFrom(config.poolAddress(), addressToSendTo, amount);
+    bool success = config.getPool().transferFrom(config.poolAddress(), msg.sender, amount);
     require(success, "Failed to drawdown");
   }
 
@@ -237,16 +231,15 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
 
   function migrateCreditLine(
     CreditLine clToMigrate,
-    address _borrower,
-    uint256 _limit,
-    uint256 _interestApr,
-    uint256 _paymentPeriodInDays,
-    uint256 _termInDays,
-    uint256 _lateFeeApr
+    address borrower,
+    uint256 limit,
+    uint256 interestApr,
+    uint256 paymentPeriodInDays,
+    uint256 termInDays,
+    uint256 lateFeeApr
   ) public onlyAdmin {
     require(clToMigrate.limit() > 0, "Can't migrate empty credit line");
-    address newClAddress =
-      createCreditLine(_borrower, _limit, _interestApr, _paymentPeriodInDays, _termInDays, _lateFeeApr);
+    address newClAddress = createCreditLine(borrower, limit, interestApr, paymentPeriodInDays, termInDays, lateFeeApr);
 
     CreditLine newCl = CreditLine(newClAddress);
 
@@ -263,12 +256,11 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     // Close out the original credit line
     clToMigrate.setLimit(0);
     clToMigrate.setBalance(0);
-    bool success =
-      config.getPool().transferFrom(
-        address(clToMigrate),
-        address(newCl),
-        config.getUSDC().balanceOf(address(clToMigrate))
-      );
+    bool success = config.getPool().transferFrom(
+      address(clToMigrate),
+      address(newCl),
+      config.getUSDC().balanceOf(address(clToMigrate))
+    );
     require(success, "Failed to transfer funds");
   }
 
@@ -326,8 +318,11 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     uint256 amount,
     uint256 blockNumber
   ) internal {
-    (uint256 paymentRemaining, uint256 interestPayment, uint256 principalPayment) =
-      handlePayment(cl, amount, blockNumber);
+    (uint256 paymentRemaining, uint256 interestPayment, uint256 principalPayment) = handlePayment(
+      cl,
+      amount,
+      blockNumber
+    );
 
     updateWritedownAmounts(cl);
 
@@ -354,8 +349,12 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     )
   {
     (uint256 interestOwed, uint256 principalOwed) = updateAndGetInterestAndPrincipalOwedAsOf(cl, asOfBlock);
-    Accountant.PaymentAllocation memory pa =
-      Accountant.allocatePayment(paymentAmount, cl.balance(), interestOwed, principalOwed);
+    Accountant.PaymentAllocation memory pa = Accountant.allocatePayment(
+      paymentAmount,
+      cl.balance(),
+      interestOwed,
+      principalOwed
+    );
 
     uint256 newBalance = cl.balance().sub(pa.principalPayment);
     // Apply any additional payment towards the balance
@@ -377,13 +376,12 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
   }
 
   function updateWritedownAmounts(CreditLine cl) internal {
-    (uint256 writedownPercent, uint256 writedownAmount) =
-      Accountant.calculateWritedownFor(
-        cl,
-        blockNumber(),
-        config.getLatenessGracePeriodInDays(),
-        config.getLatenessMaxDays()
-      );
+    (uint256 writedownPercent, uint256 writedownAmount) = Accountant.calculateWritedownFor(
+      cl,
+      blockNumber(),
+      config.getLatenessGracePeriodInDays(),
+      config.getLatenessMaxDays()
+    );
 
     if (writedownPercent == 0 && cl.writedownAmount() == 0) {
       return;
@@ -420,8 +418,11 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     internal
     returns (uint256, uint256)
   {
-    (uint256 interestAccrued, uint256 principalAccrued) =
-      Accountant.calculateInterestAndPrincipalAccrued(cl, blockNumber, config.getLatenessGracePeriodInDays());
+    (uint256 interestAccrued, uint256 principalAccrued) = Accountant.calculateInterestAndPrincipalAccrued(
+      cl,
+      blockNumber,
+      config.getLatenessGracePeriodInDays()
+    );
     if (interestAccrued > 0) {
       // If we've accrued any interest, update interestAccruedAsOfBLock to the block that we've
       // calculated interest for. If we've not accrued any interest, then we keep the old value so the next

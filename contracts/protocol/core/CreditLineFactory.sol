@@ -2,8 +2,9 @@
 
 pragma solidity 0.6.12;
 
-import "./BaseUpgradeablePausable.sol";
 import "./GoldfinchConfig.sol";
+import "./BaseUpgradeablePausable.sol";
+import "../periphery/Borrower.sol";
 
 /**
  * @title CreditLineFactory
@@ -15,6 +16,9 @@ import "./GoldfinchConfig.sol";
 contract CreditLineFactory is BaseUpgradeablePausable {
   GoldfinchConfig public config;
 
+  // THIS IS TEMPORARY. REMOVE ONCE WE ARE USING CREATE2 CALCULATED ADDRESS
+  event BorrowerCreated(address indexed borrower, address indexed owner);
+
   function initialize(address owner, GoldfinchConfig _config) public initializer {
     __BaseUpgradeablePausable__init(owner);
     config = _config;
@@ -24,6 +28,18 @@ contract CreditLineFactory is BaseUpgradeablePausable {
     address creditLineImplAddress = config.getAddress(uint256(ConfigOptions.Addresses.CreditLineImplementation));
     address creditLineProxy = deployMinimal(creditLineImplAddress, _data);
     return creditLineProxy;
+  }
+
+  /**
+   * @notice Allows anyone to create a Borrower contract instance
+   * @param owner The address that will own the new Borrower instance
+   */
+  function createBorrower(address owner) external returns (address) {
+    Borrower borrower = new Borrower();
+    borrower.initialize(owner, config);
+    // THIS IS TEMPORARY. REMOVE ONCE WE ARE USING CREATE2 CALCULATED ADDRESS
+    emit BorrowerCreated(address(borrower), owner);
+    return address(borrower);
   }
 
   function deployMinimal(address _logic, bytes memory _data) internal returns (address proxy) {

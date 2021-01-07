@@ -1,10 +1,11 @@
-/* global artifacts web3 */
+/* global web3 */
 const chai = require("chai")
+const {artifacts} = require("hardhat")
 chai.use(require("chai-as-promised"))
 const expect = chai.expect
 const mochaEach = require("mocha-each")
 const BN = require("bn.js")
-const {isTestEnv, USDCDecimals} = require("../blockchain_scripts/deployHelpers")
+const {isTestEnv, USDCDecimals, interestAprAsBN} = require("../blockchain_scripts/deployHelpers")
 const decimals = new BN(String(1e18))
 const USDC_DECIMALS = new BN(String(1e6))
 const BLOCKS_PER_DAY = new BN(5760)
@@ -13,6 +14,7 @@ chai.use(require("chai-bn")(BN))
 const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 const fiduTolerance = decimals.div(USDC_DECIMALS)
+const CreditLine = artifacts.require("CreditLine")
 
 // Helper functions. These should be pretty generic.
 function bigVal(number) {
@@ -38,6 +40,29 @@ const getDeployedAsTruffleContract = async (deployments, contractName) => {
     deployment = await deployments.get(contractName)
   }
   return await artifacts.require(contractName).at(deployment.address)
+}
+
+async function createCreditLine({
+  borrower,
+  creditDesk,
+  underwriter,
+  paymentPeriodInDays = 30,
+  limit = usdcVal(10000),
+  interestApr = interestAprAsBN("15.0"),
+  termInDays = 360,
+  lateFeesApr = interestAprAsBN("3.0"),
+} = {}) {
+  if (typeof borrower !== "string") {
+    throw new Error("Borrower address must be a string")
+  }
+  if (typeof underwriter !== "string") {
+    throw new Error("Underwriter address must be a string")
+  }
+  await creditDesk.createCreditLine(borrower, limit, interestApr, paymentPeriodInDays, termInDays, lateFeesApr, {
+    from: underwriter,
+  })
+  var ulCreditLines = await creditDesk.getUnderwriterCreditLines(underwriter)
+  return CreditLine.at(ulCreditLines[0])
 }
 
 const tolerance = usdcVal(1).div(new BN(1000)) // 0.001$
@@ -78,7 +103,8 @@ async function deployAllContracts(deployments) {
   const creditDesk = await getDeployedAsTruffleContract(deployments, "CreditDesk")
   const fidu = await getDeployedAsTruffleContract(deployments, "Fidu")
   const goldfinchConfig = await getDeployedAsTruffleContract(deployments, "GoldfinchConfig")
-  return {pool, usdc, creditDesk, fidu, goldfinchConfig}
+  const goldfinchFactory = await getDeployedAsTruffleContract(deployments, "CreditLineFactory")
+  return {pool, usdc, creditDesk, fidu, goldfinchConfig, goldfinchFactory}
 }
 
 async function erc20Approve(erc20, accountToApprove, amount, fromAccounts) {
@@ -146,4 +172,5 @@ module.exports = {
   erc20Approve: erc20Approve,
   erc20Transfer: erc20Transfer,
   advanceTime: advanceTime,
+  createCreditLine: createCreditLine,
 }

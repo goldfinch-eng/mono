@@ -98,7 +98,7 @@ describe("Goldfinch", async () => {
 
     async function drawdown(clAddress, amount, _borrower) {
       _borrower = _borrower || borrower
-      await creditDesk.drawdown(amount, clAddress, _borrower, {from: _borrower})
+      await creditDesk.drawdown(clAddress, amount, {from: _borrower})
     }
 
     async function makePayment(clAddress, amount, _borrower) {
@@ -260,13 +260,12 @@ describe("Goldfinch", async () => {
       describe("drawdown and isLate", async () => {
         it("should not think you're late if it's not past the nextDueBlock", async () => {
           creditLine = await createCreditLine({_paymentPeriodInDays: new BN(30)})
-          await expect(creditDesk.drawdown(new BN(1000), creditLine.address, borrower, {from: borrower})).to.be
-            .fulfilled
+          await expect(drawdown(creditLine.address, new BN(1000))).to.be.fulfilled
           await advanceTime(creditDesk, {days: 10})
           // This drawdown will accumulate and record some interest
-          await expect(creditDesk.drawdown(new BN(1), creditLine.address, borrower, {from: borrower})).to.be.fulfilled
+          await expect(drawdown(creditLine.address, new BN(1))).to.be.fulfilled
           // This one should still work, because you still aren't late...
-          await expect(creditDesk.drawdown(new BN(1), creditLine.address, borrower, {from: borrower})).to.be.fulfilled
+          await expect(drawdown(creditLine.address, new BN(1))).to.be.fulfilled
         })
       })
 
@@ -278,7 +277,7 @@ describe("Goldfinch", async () => {
         await assertCreditLine("0", "0", "0", 0, interestAccruedAsOfBlock, 0)
 
         currentBlock = await advanceTime(creditDesk, {days: 1})
-        await creditDesk.drawdown(usdcVal(2000), creditLine.address, borrower, {from: borrower})
+        await drawdown(creditLine.address, usdcVal(2000))
 
         var nextDueBlock = (await creditDesk.blockNumberForTest()).add(BLOCKS_PER_DAY.mul(paymentPeriodInDays))
         interestAccruedAsOfBlock = currentBlock

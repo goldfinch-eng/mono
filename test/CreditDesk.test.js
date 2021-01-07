@@ -14,7 +14,6 @@ const {
   erc20Transfer,
   erc20Approve,
   USDC_DECIMALS,
-  ZERO_ADDRESS,
   BLOCKS_PER_DAY,
   BLOCKS_PER_YEAR,
 } = require("./testHelpers.js")
@@ -29,7 +28,7 @@ const {time} = require("@openzeppelin/test-helpers")
 const CreditLine = artifacts.require("CreditLine")
 const FEE_DENOMINATOR = new BN(10)
 
-let accounts, owner, person2, person3, person4, creditDesk, fidu, goldfinchConfig, reserve
+let accounts, owner, person2, person3, creditDesk, fidu, goldfinchConfig, reserve
 
 describe("CreditDesk", () => {
   let underwriterLimit
@@ -136,7 +135,7 @@ describe("CreditDesk", () => {
 
   beforeEach(async () => {
     accounts = await web3.eth.getAccounts()
-    ;[owner, person2, person3, person4, reserve] = accounts
+    ;[owner, person2, person3, reserve] = accounts
     ;({usdc, pool, creditDesk, fidu, goldfinchConfig} = await setupTest())
   })
 
@@ -314,9 +313,8 @@ describe("CreditDesk", () => {
   })
 
   describe("drawdown", async () => {
-    let drawdown = async (amount, creditLineAddress, addressToSendTo) => {
-      addressToSendTo = addressToSendTo || borrower
-      return await creditDesk.drawdown(amount, creditLineAddress, addressToSendTo, {from: borrower})
+    let drawdown = async (amount, creditLineAddress) => {
+      return await creditDesk.drawdown(creditLineAddress, amount, {from: borrower})
     }
     let creditLine
     let blocksPerDay = (60 * 60 * 24) / 15
@@ -349,7 +347,7 @@ describe("CreditDesk", () => {
     })
 
     it("should not allow unregistered borrowers to call it", async () => {
-      const badDrawdown = creditDesk.drawdown(usdcVal(10), creditLine.address, creditLine.address, {from: reserve})
+      const badDrawdown = creditDesk.drawdown(creditLine.address, usdcVal(10), {from: reserve})
       return expect(badDrawdown).to.be.rejectedWith(/No credit lines exist for this borrower/)
     })
 
@@ -463,32 +461,6 @@ describe("CreditDesk", () => {
         await creditDesk._setBlockNumberForTest((await time.latestBlock()).add(paymentPeriodInBlocks.mul(new BN(2))))
 
         return expect(drawdown(usdcVal(10), creditLine.address)).to.be.rejectedWith(/payments are past due/)
-      })
-    })
-
-    describe("when using a forwarding address", async () => {
-      it("should send to that address", async () => {
-        const drawdownAmount = usdcVal(3)
-        const originalBalance = await getBalance(person4, usdc)
-        await drawdown(drawdownAmount, creditLine.address, person4)
-        const newBalance = await getBalance(person4, usdc)
-        expect(newBalance.sub(originalBalance)).to.bignumber.equal(drawdownAmount)
-      })
-
-      it("should not send to the borrower address", async () => {
-        const drawdownAmount = usdcVal(3)
-        const originalBalance = await getBalance(borrower, usdc)
-        await drawdown(drawdownAmount, creditLine.address, person4)
-        const newBalance = await getBalance(borrower, usdc)
-        expect(newBalance.sub(originalBalance)).to.bignumber.equal(new BN(0))
-      })
-
-      it("if you pass up the zero address, it should send money to the borrower", async () => {
-        const drawdownAmount = usdcVal(3)
-        const originalBalance = await getBalance(borrower, usdc)
-        await drawdown(drawdownAmount, creditLine.address, ZERO_ADDRESS)
-        const newBalance = await getBalance(borrower, usdc)
-        expect(newBalance.sub(originalBalance)).to.bignumber.equal(drawdownAmount)
       })
     })
   })

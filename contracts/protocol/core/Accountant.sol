@@ -4,7 +4,7 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "./CreditLine.sol";
-import "../external/FixedPoint.sol";
+import "../../external/FixedPoint.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 
@@ -61,11 +61,10 @@ library Accountant {
     if (amountOwedPerDay.isEqual(0)) {
       return (0, 0);
     }
-    FixedPoint.Unsigned memory fpGracePeriod =
-      FixedPoint.min(
-        FixedPoint.fromUnscaledUint(gracePeriodInDays),
-        FixedPoint.fromUnscaledUint(cl.paymentPeriodInDays())
-      );
+    FixedPoint.Unsigned memory fpGracePeriod = FixedPoint.min(
+      FixedPoint.fromUnscaledUint(gracePeriodInDays),
+      FixedPoint.fromUnscaledUint(cl.paymentPeriodInDays())
+    );
     FixedPoint.Unsigned memory daysLate;
 
     // Excel math: =min(1,max(0,periods_late_in_days-graceperiod_in_days)/MAX_ALLOWED_DAYS_LATE) grace_period = 30,

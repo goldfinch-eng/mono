@@ -2,7 +2,7 @@
 
 pragma solidity 0.6.12;
 
-import "../protocol/Pool.sol";
+import "../protocol/core/Pool.sol";
 
 contract TestPool is Pool {
   function _getNumShares(uint256 amount) public view returns (uint256) {
