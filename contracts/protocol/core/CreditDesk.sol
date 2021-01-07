@@ -106,7 +106,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     Borrower storage borrower = borrowers[_borrower];
     require(underwriterCanCreateThisCreditLine(_limit, underwriter), "The underwriter cannot create this credit line");
 
-    address clAddress = getProxyFactory().createCreditLine("");
+    address clAddress = getProxyFactory().createCreditLine("", _borrower);
     CreditLine cl = CreditLine(clAddress);
     cl.initialize(
       address(this),

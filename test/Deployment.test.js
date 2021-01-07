@@ -133,7 +133,7 @@ describe("Deployment", async () => {
         creditLines = await creditDesk.getUnderwriterCreditLines(protocol_owner)
         expect(creditLines.length).to.equal(2)
 
-        //Original credit line unaffected
+        //Original credit line also upgraded
         const originalCreditLineAfterUpgrade = await ethers.getContractAt("FakeV2CreditLine", creditLines[0])
         expect(originalCreditLine.address).to.equal(originalCreditLineAfterUpgrade.address)
         expect(typeof originalCreditLineAfterUpgrade.anotherNewFunction).to.equal("function")

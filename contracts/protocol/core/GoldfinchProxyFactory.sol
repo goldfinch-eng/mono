@@ -25,12 +25,12 @@ contract GoldfinchProxyFactory is BaseUpgradeablePausable {
     config = _config;
   }
 
-  function createCreditLine(bytes calldata _data) external returns (address) {
-    GoldfinchProxy creditLineProxy = createProxyWithNonce(
+  function createCreditLine(bytes calldata _data, address borrower) external returns (address) {
+    GoldfinchProxy creditLineProxy = createProxyWithSalt(
       address(config),
       uint256(ConfigOptions.Addresses.CreditLineImplementation),
       _data,
-      block.number
+      keccak256(abi.encodePacked(borrower, block.number))
     );
     return address(creditLineProxy);
   }
@@ -53,36 +53,33 @@ contract GoldfinchProxyFactory is BaseUpgradeablePausable {
   // This allows us to upgrade all implementations just by changing the config contract. The tradeoff is increased gas
   // costs on every function call that uses this proxy
 
-  function deployProxyWithNonce(
+  function deployProxyWithSalt(
     address _configAddress,
     uint256 _configMasterCopyIndex,
     bytes memory initializer,
-    uint256 saltNonce
+    bytes32 salt
   ) internal returns (GoldfinchProxy proxy) {
-    // If the initializer changes the proxy address should change too. Hashing the initializer data is cheaper than just
-    // concatenating it
-    bytes32 salt = keccak256(abi.encodePacked(keccak256(initializer), saltNonce));
     bytes memory deploymentData = abi.encodePacked(
       type(GoldfinchProxy).creationCode,
       uint256(_configAddress),
       _configMasterCopyIndex
     );
-    // solium-disable-next-line security/no-inline-assembly
+    // solhint-disable-next-line no-inline-assembly
     assembly {
       proxy := create2(0x0, add(0x20, deploymentData), mload(deploymentData), salt)
     }
     require(address(proxy) != address(0), "Create2 call failed");
   }
 
-  function createProxyWithNonce(
+  function createProxyWithSalt(
     address _configAddress,
     uint256 _configMasterCopyIndex,
     bytes memory initializer,
-    uint256 saltNonce
+    bytes32 salt
   ) public returns (GoldfinchProxy proxy) {
-    proxy = deployProxyWithNonce(_configAddress, _configMasterCopyIndex, initializer, saltNonce);
+    proxy = deployProxyWithSalt(_configAddress, _configMasterCopyIndex, initializer, salt);
     if (initializer.length > 0)
-      // solium-disable-next-line security/no-inline-assembly
+      // solhint-disable-next-line no-inline-assembly
       assembly {
         if eq(call(gas(), proxy, 0, add(initializer, 0x20), mload(initializer), 0, 0), 0) {
           revert(0, 0)
