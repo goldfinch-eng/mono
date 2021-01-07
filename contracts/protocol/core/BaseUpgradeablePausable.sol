@@ -7,6 +7,7 @@ import "@openzeppelin/contracts-ethereum-package/contracts/utils/ReentrancyGuard
 import "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import "./PauserPausable.sol";
+import "./MasterCopy.sol";
 
 /**
  * @title BaseUpgradeablePausable contract
@@ -16,6 +17,7 @@ import "./PauserPausable.sol";
  */
 
 contract BaseUpgradeablePausable is
+  MasterCopy,
   Initializable,
   AccessControlUpgradeSafe,
   PauserPausable,

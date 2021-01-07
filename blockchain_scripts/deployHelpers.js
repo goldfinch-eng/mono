@@ -45,7 +45,7 @@ const CONFIG_KEYS = {
   // Addresses
   Pool: 0,
   CreditLineImplementation: 1,
-  CreditLineFactory: 2,
+  GoldfinchProxyFactory: 2,
   CreditDesk: 3,
   Fidu: 4,
   USDC: 5,
