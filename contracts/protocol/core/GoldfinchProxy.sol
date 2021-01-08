@@ -33,13 +33,11 @@ contract GoldfinchProxy {
   fallback() external payable {
     address configAddress;
     uint256 configMasterCopyIndex;
-    bytes32 configAddressSlot = _CONFIG_SLOT;
-    bytes32 configIndexSlot = _CONFIG_INDEX_SLOT;
 
     // solhint-disable-next-line no-inline-assembly
     assembly {
-      configAddress := sload(configAddressSlot)
-      configMasterCopyIndex := sload(configIndexSlot)
+      configAddress := sload(0xe4c377540a25249f8ddb19e904c94ec9809ed64d822b743ca1ad3811811a3ada)
+      configMasterCopyIndex := sload(0xf9217a232c457fc039d6dee19ba3c12c8d2b71d0846fe9b73a7b5f8949e58f6a)
     }
     address _masterCopy = GoldfinchConfig(configAddress).getAddress(configMasterCopyIndex);
     // solhint-disable-next-line no-inline-assembly
