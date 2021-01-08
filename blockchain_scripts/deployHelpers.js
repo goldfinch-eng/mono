@@ -51,6 +51,7 @@ const CONFIG_KEYS = {
   USDC: 5,
   TreasuryReserve: 6,
   ProtocolAdmin: 7,
+  BorrowerImplementation: 8,
 }
 
 function isTestEnv() {

@@ -61,6 +61,9 @@ describe("GoldfinchConfig", () => {
       expect(await goldfinchConfig.getAddress(CONFIG_KEYS.TreasuryReserve)).to.equal(
         "0xECd9C93B79AE7C1591b1fB5323BD777e86E150d5"
       )
+      expect(await goldfinchConfig.getAddress(CONFIG_KEYS.BorrowerImplementation)).to.equal(
+        "0x320712AB6303602Ed03E04c8550101D49A6fb738"
+      )
     })
   })
 

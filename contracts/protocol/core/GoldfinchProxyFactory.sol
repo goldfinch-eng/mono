@@ -36,15 +36,20 @@ contract GoldfinchProxyFactory is BaseUpgradeablePausable {
   }
 
   /**
- * @notice Allows anyone to create a Borrower contract instance
- * @param owner The address that will own the new Borrower instance
- */
+   * @notice Allows anyone to create a Borrower contract instance
+   * @param owner The address that will own the new Borrower instance
+   */
   function createBorrower(address owner) external returns (address) {
-    Borrower borrower = new Borrower();
-    borrower.initialize(owner, config);
+    GoldfinchProxy borrowerProxy = createProxyWithSalt(
+      address(config),
+      uint256(ConfigOptions.Addresses.BorrowerImplementation),
+      "",
+      keccak256(abi.encodePacked(owner))
+    );
+    Borrower(address(borrowerProxy)).initialize(owner, config);
     // THIS IS TEMPORARY. REMOVE ONCE WE ARE USING CREATE2 CALCULATED ADDRESS
-    emit BorrowerCreated(address(borrower), owner);
-    return address(borrower);
+    emit BorrowerCreated(address(borrowerProxy), owner);
+    return address(borrowerProxy);
   }
 
   // solhint-disable-next-line max-line-length
