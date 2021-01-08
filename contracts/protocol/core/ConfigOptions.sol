@@ -23,12 +23,13 @@ library ConfigOptions {
   enum Addresses {
     Pool,
     CreditLineImplementation,
-    CreditLineFactory,
+    GoldfinchProxyFactory,
     CreditDesk,
     Fidu,
     USDC,
     TreasuryReserve,
-    ProtocolAdmin
+    ProtocolAdmin,
+    BorrowerImplementation
   }
 
   function getNumberName(uint256 number) public pure returns (string memory) {
@@ -65,8 +66,8 @@ library ConfigOptions {
     if (Addresses.CreditLineImplementation == addressName) {
       return "CreditLineImplementation";
     }
-    if (Addresses.CreditLineFactory == addressName) {
-      return "CreditLineFactory";
+    if (Addresses.GoldfinchProxyFactory == addressName) {
+      return "GoldfinchProxyFactory";
     }
     if (Addresses.CreditDesk == addressName) {
       return "CreditDesk";
@@ -82,6 +83,9 @@ library ConfigOptions {
     }
     if (Addresses.ProtocolAdmin == addressName) {
       return "ProtocolAdmin";
+    }
+    if (Addresses.BorrowerImplementation == addressName) {
+      return "BorrowerImplementation";
     }
     revert("Unknown value passed to getAddressName");
   }

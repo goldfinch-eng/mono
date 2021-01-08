@@ -33,7 +33,7 @@ async function ensurePerms(hre) {
     throw new Error(`Unsupported chain id: ${chainId}`)
   }
 
-  let contractsToUpgrade = process.env.CONTRACTS || "GoldfinchConfig, CreditLineFactory, CreditDesk, Pool, Fidu"
+  let contractsToUpgrade = process.env.CONTRACTS || "GoldfinchConfig, GoldfinchProxyFactory, CreditDesk, Pool, Fidu"
   contractsToUpgrade = contractsToUpgrade.split(/[ ,]+/)
   await ensurePermsOnContracts(contractsToUpgrade, proxy_owner, protocol_owner, hre)
   logger("Done.")

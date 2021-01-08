@@ -36,13 +36,13 @@ describe("Deployment", async () => {
 
     it("deploys the credit line and credit line factory correctly", async () => {
       const creditLine = await deployments.get("CreditLine")
-      const creditLineFactory = await deployments.get("CreditLineFactory")
+      const goldfinchProxyFactory = await deployments.get("GoldfinchProxyFactory")
       expect(creditLine.address).to.exist
-      expect(creditLineFactory.address).to.exist
+      expect(goldfinchProxyFactory.address).to.exist
 
       const config = await getDeployedContract(deployments, "TestGoldfinchConfig")
       expect(await config.getAddress(CONFIG_KEYS.CreditLineImplementation)).to.equal(creditLine.address)
-      expect(await config.getAddress(CONFIG_KEYS.CreditLineFactory)).to.equal(creditLineFactory.address)
+      expect(await config.getAddress(CONFIG_KEYS.GoldfinchProxyFactory)).to.equal(goldfinchProxyFactory.address)
     })
     it("deploys the credit desk", async () => {
       const creditDesk = await deployments.get("TestCreditDesk")
@@ -59,14 +59,14 @@ describe("Deployment", async () => {
     })
     it("sets the right defaults", async () => {
       const creditLine = await getDeployedContract(deployments, "CreditLine")
-      const creditLineFactory = await getDeployedContract(deployments, "CreditLineFactory")
+      const gfProxyFactory = await getDeployedContract(deployments, "GoldfinchProxyFactory")
       const goldfinchConfig = await getDeployedContract(deployments, "TestGoldfinchConfig")
 
       expect(String(await goldfinchConfig.getNumber(CONFIG_KEYS.TransactionLimit))).to.bignumber.gt(new BN(0))
       expect(String(await goldfinchConfig.getNumber(CONFIG_KEYS.TotalFundsLimit))).to.bignumber.gt(new BN(0))
       expect(String(await goldfinchConfig.getNumber(CONFIG_KEYS.MaxUnderwriterLimit))).to.bignumber.gt(new BN(0))
       expect(await goldfinchConfig.getAddress(CONFIG_KEYS.CreditLineImplementation)).to.equal(creditLine.address)
-      expect(await goldfinchConfig.getAddress(CONFIG_KEYS.CreditLineFactory)).to.equal(creditLineFactory.address)
+      expect(await goldfinchConfig.getAddress(CONFIG_KEYS.GoldfinchProxyFactory)).to.equal(gfProxyFactory.address)
     })
   })
 
@@ -101,7 +101,7 @@ describe("Deployment", async () => {
     })
 
     describe("upgrading credit lines", async () => {
-      it("should upgrade the credit line", async () => {
+      it("should upgrade previous and future creditlines", async () => {
         const {proxy_owner, protocol_owner} = await getNamedAccounts()
 
         const creditDesk = await getDeployedContract(deployments, "TestCreditDesk")
@@ -133,10 +133,11 @@ describe("Deployment", async () => {
         creditLines = await creditDesk.getUnderwriterCreditLines(protocol_owner)
         expect(creditLines.length).to.equal(2)
 
-        //Original credit line unaffected
-        const originalCreditLineAfterUpgrade = await ethers.getContractAt("CreditLine", creditLines[0])
+        //Original credit line also upgraded
+        const originalCreditLineAfterUpgrade = await ethers.getContractAt("FakeV2CreditLine", creditLines[0])
         expect(originalCreditLine.address).to.equal(originalCreditLineAfterUpgrade.address)
-        expect(typeof originalCreditLineAfterUpgrade.anotherNewFunction).not.to.equal("function")
+        expect(typeof originalCreditLineAfterUpgrade.anotherNewFunction).to.equal("function")
+        expect(String(await originalCreditLineAfterUpgrade.anotherNewFunction())).to.equal("42")
         expect(String(await originalCreditLineAfterUpgrade.termInDays())).to.equal("360")
 
         const newCreditLine = await ethers.getContractAt("FakeV2CreditLine", creditLines[1])

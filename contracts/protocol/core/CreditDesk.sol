@@ -7,7 +7,7 @@ import "./BaseUpgradeablePausable.sol";
 import "./ConfigHelper.sol";
 import "./Accountant.sol";
 import "./CreditLine.sol";
-import "./CreditLineFactory.sol";
+import "./GoldfinchProxyFactory.sol";
 
 /**
  * @title Goldfinch's CreditDesk contract
@@ -106,7 +106,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     Borrower storage borrower = borrowers[_borrower];
     require(underwriterCanCreateThisCreditLine(_limit, underwriter), "The underwriter cannot create this credit line");
 
-    address clAddress = getCreditLineFactory().createCreditLine("");
+    address clAddress = getProxyFactory().createCreditLine("", _borrower);
     CreditLine cl = CreditLine(clAddress);
     cl.initialize(
       address(this),
@@ -402,8 +402,8 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     return blocksElapsedSinceFullPayment > cl.paymentPeriodInDays().mul(BLOCKS_PER_DAY);
   }
 
-  function getCreditLineFactory() internal view returns (CreditLineFactory) {
-    return CreditLineFactory(config.getAddress(uint256(ConfigOptions.Addresses.CreditLineFactory)));
+  function getProxyFactory() internal view returns (GoldfinchProxyFactory) {
+    return GoldfinchProxyFactory(config.getAddress(uint256(ConfigOptions.Addresses.GoldfinchProxyFactory)));
   }
 
   function subtractClFromTotalLoansOutstanding(CreditLine cl) internal {
