@@ -45,13 +45,12 @@ const CONFIG_KEYS = {
   // Addresses
   Pool: 0,
   CreditLineImplementation: 1,
-  GoldfinchProxyFactory: 2,
+  CreditLineFactory: 2,
   CreditDesk: 3,
   Fidu: 4,
   USDC: 5,
   TreasuryReserve: 6,
   ProtocolAdmin: 7,
-  BorrowerImplementation: 8,
 }
 
 function isTestEnv() {

@@ -103,7 +103,7 @@ async function deployAllContracts(deployments) {
   const creditDesk = await getDeployedAsTruffleContract(deployments, "CreditDesk")
   const fidu = await getDeployedAsTruffleContract(deployments, "Fidu")
   const goldfinchConfig = await getDeployedAsTruffleContract(deployments, "GoldfinchConfig")
-  const goldfinchFactory = await getDeployedAsTruffleContract(deployments, "GoldfinchProxyFactory")
+  const goldfinchFactory = await getDeployedAsTruffleContract(deployments, "CreditLineFactory")
   return {pool, usdc, creditDesk, fidu, goldfinchConfig, goldfinchFactory}
 }
 

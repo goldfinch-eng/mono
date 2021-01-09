@@ -25,7 +25,7 @@ async function multisig(hre) {
     throw new Error(`Unsupported chain id: ${chainId}`)
   }
 
-  let contractsToUpgrade = process.env.CONTRACTS || "GoldfinchConfig, GoldfinchProxyFactory, CreditDesk, Pool, Fidu"
+  let contractsToUpgrade = process.env.CONTRACTS || "GoldfinchConfig, CreditLineFactory, CreditDesk, Pool, Fidu"
   contractsToUpgrade = contractsToUpgrade.split(/[ ,]+/)
   const contracts = await deployUpgrades(contractsToUpgrade, proxy_owner, hre)
 
