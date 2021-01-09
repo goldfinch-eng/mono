@@ -29,9 +29,8 @@ async function baseDeploy(hre, {shouldUpgrade}) {
   const fidu = await deployFidu(config)
   const pool = await deployPool(hre, {shouldUpgrade, config})
   await grantMinterRoleToPool(fidu, pool)
-  await deployCreditLineReferenceImpl(deploy, {config})
-  await deployBorrowerReferenceImpl(deploy, {config})
-  await deployGoldfinchProxyFactory(deploy, {shouldUpgrade, config})
+  await deployCreditLine(deploy, {config})
+  await deployCreditLineFactory(deploy, {shouldUpgrade, config})
   const creditDesk = await deployCreditDesk(deploy, {shouldUpgrade, config})
 
   await grantOwnershipOfPoolToCreditDesk(pool, creditDesk.address)
@@ -121,7 +120,7 @@ async function baseDeploy(hre, {shouldUpgrade}) {
     return usdcAddress
   }
 
-  async function deployCreditLineReferenceImpl(deploy, {config}) {
+  async function deployCreditLine(deploy, {config}) {
     let clDeployResult = await deploy("CreditLine", {
       from: proxy_owner,
       gas: 4000000,
@@ -133,37 +132,25 @@ async function baseDeploy(hre, {shouldUpgrade}) {
     return clImplementation
   }
 
-  async function deployBorrowerReferenceImpl(deploy, {config}) {
-    let bwrDeployResult = await deploy("Borrower", {
-      from: proxy_owner,
-      gas: 4000000,
-      args: [],
-    })
-    logger("Borrower was deployed to:", bwrDeployResult.address)
-    const bwrImplementation = await ethers.getContractAt("Borrower", bwrDeployResult.address)
-    await updateConfig(config, "address", CONFIG_KEYS.BorrowerImplementation, bwrImplementation.address)
-    return bwrImplementation
-  }
-
-  async function deployGoldfinchProxyFactory(deploy, {shouldUpgrade, config}) {
-    let gfFactoryDeployResult
-    logger(`Deploying proxy factory factory; ${shouldUpgrade}`)
+  async function deployCreditLineFactory(deploy, {shouldUpgrade, config}) {
+    let clFactoryDeployResult
+    logger(`Deploying credit line factory; ${shouldUpgrade}`)
     if (shouldUpgrade) {
-      gfFactoryDeployResult = await upgrade(deploy, "GoldfinchProxyFactory", proxy_owner, {gas: 4000000, args: []})
+      clFactoryDeployResult = await upgrade(deploy, "CreditLineFactory", proxy_owner, {gas: 4000000, args: []})
     } else {
-      gfFactoryDeployResult = await deploy("GoldfinchProxyFactory", {
+      clFactoryDeployResult = await deploy("CreditLineFactory", {
         from: proxy_owner,
         proxy: {owner: proxy_owner, methodName: "initialize"},
         gas: 4000000,
         args: [protocol_owner, config.address],
       })
     }
-    logger("GoldfinchProxyFactory was deployed to:", gfFactoryDeployResult.address)
+    logger("CreditLineFactory was deployed to:", clFactoryDeployResult.address)
 
-    const gfProxyFactory = await ethers.getContractAt("GoldfinchProxyFactory", gfFactoryDeployResult.address)
+    const creditLineFactory = await ethers.getContractAt("CreditLineFactory", clFactoryDeployResult.address)
 
-    await updateConfig(config, "address", CONFIG_KEYS.GoldfinchProxyFactory, gfProxyFactory.address)
-    return gfProxyFactory
+    await updateConfig(config, "address", CONFIG_KEYS.CreditLineFactory, creditLineFactory.address)
+    return creditLineFactory
   }
 
   async function deployCreditDesk(deploy, {shouldUpgrade, config}) {
