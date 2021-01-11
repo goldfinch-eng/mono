@@ -37,6 +37,10 @@ function App() {
 
   useEffect(() => {
     refreshUserData();
+    // Admin function to be able to assume the role of any address
+    window.setUserAddress = function(overrideAddress) {
+      refreshUserData(overrideAddress);
+    };
   }, [gnosisSafeInfo, erc20, pool, creditDesk, network]);
 
   async function setupWeb3() {
@@ -73,10 +77,11 @@ function App() {
     return () => safeSdk.removeListeners();
   }
 
-  async function refreshUserData() {
+  async function refreshUserData(overrideAddress) {
     let data = defaultUser();
     const accounts = await web3.eth.getAccounts();
-    let userAddress = (gnosisSafeInfo && gnosisSafeInfo.safeAddress) || (accounts && accounts[0]) || user.address;
+    let userAddress =
+      overrideAddress || (gnosisSafeInfo && gnosisSafeInfo.safeAddress) || (accounts && accounts[0]) || user.address;
     if (userAddress && erc20 && creditDesk.loaded && pool.loaded) {
       data = await getUserData(userAddress, erc20, pool, creditDesk);
     }

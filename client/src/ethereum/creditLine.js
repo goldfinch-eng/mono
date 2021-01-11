@@ -105,8 +105,11 @@ function calculateNextDueAmount(creditLine) {
 
 async function calculateIsLate(creditLine) {
   const latestBlock = await web3.eth.getBlock('latest');
-  const blocksElapsedSinceLastFullPayment =
-    latestBlock.number - (creditLine.lastFullPaymentBlock || latestBlock.number);
+  if (creditLine.lastFullPaymentBlock.isZero()) {
+    // Brand new creditline
+    return false;
+  }
+  const blocksElapsedSinceLastFullPayment = latestBlock.number - creditLine.lastFullPaymentBlock;
   return blocksElapsedSinceLastFullPayment > creditLine.paymentPeriodInDays * BLOCKS_PER_DAY;
 }
 
