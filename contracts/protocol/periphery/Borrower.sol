@@ -3,7 +3,6 @@ pragma experimental ABIEncoderV2;
 
 import "../core/BaseUpgradeablePausable.sol";
 import "../core/ConfigHelper.sol";
-import "hardhat/console.sol";
 
 /**
  * @title Goldfinch's Borrower contract

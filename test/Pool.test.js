@@ -282,23 +282,25 @@ describe("Pool", () => {
       //Pretend the person3 is the credit desk for collecting payments
       await goldfinchConfig.setAddressForTest(CONFIG_KEYS.CreditDesk, person3)
 
-      const amount = new BN(1).mul(USDC_DECIMALS)
-      const response = await pool.collectInterestRepayment(person2, amount, {from: person3})
+      const interest = new BN(1).mul(USDC_DECIMALS)
+      const principal = new BN(0)
+      const response = await pool.collectInterestAndPrincipal(person2, interest, principal, {from: person3})
       const event = response.logs[0]
-      const reserveAmount = amount.div(new BN(10))
+      const reserveAmount = interest.div(new BN(10))
 
       expect(event.event).to.equal("InterestCollected")
       expect(event.args.payer).to.equal(person2)
-      expect(event.args.poolAmount).to.bignumber.equal(amount.sub(reserveAmount))
+      expect(event.args.poolAmount).to.bignumber.equal(interest.sub(reserveAmount))
       expect(event.args.reserveAmount).to.bignumber.equal(reserveAmount)
     })
 
     it("should not allow collection from anyone other than the admin", async () => {
-      const amount = new BN(1).mul(USDC_DECIMALS)
-      await expect(pool.collectInterestRepayment(person2, amount, {from: person2})).to.be.rejectedWith(
+      const interest = new BN(1).mul(USDC_DECIMALS)
+      const principal = new BN(0)
+      await expect(pool.collectInterestAndPrincipal(person2, interest, principal, {from: person2})).to.be.rejectedWith(
         /Only the credit desk/
       )
-      await expect(pool.collectInterestRepayment(person2, amount, {from: owner})).to.be.rejectedWith(
+      await expect(pool.collectInterestAndPrincipal(person2, interest, principal, {from: owner})).to.be.rejectedWith(
         /Only the credit desk/
       )
     })
@@ -382,20 +384,22 @@ describe("Pool", () => {
       //Pretend the person3 is the credit desk for collecting payments
       await goldfinchConfig.setAddressForTest(CONFIG_KEYS.CreditDesk, person3)
 
-      const amount = new BN(1).mul(USDC_DECIMALS)
-      const response = await pool.collectPrincipalRepayment(person2, amount, {from: person3})
+      const interest = new BN(0)
+      const principal = new BN(1).mul(USDC_DECIMALS)
+      const response = await pool.collectInterestAndPrincipal(person2, interest, principal, {from: person3})
       const event = response.logs[0]
       expect(event.event).to.equal("PrincipalCollected")
       expect(event.args.payer).to.equal(person2)
-      expect(event.args.amount).to.bignumber.equal(amount)
+      expect(event.args.amount).to.bignumber.equal(principal)
     })
 
     it("should not allow collection from anyone other than the admin", async () => {
-      const amount = new BN(1).mul(USDC_DECIMALS)
-      await expect(pool.collectPrincipalRepayment(person2, amount, {from: person2})).to.be.rejectedWith(
+      const interest = new BN(0)
+      const principal = new BN(1).mul(USDC_DECIMALS)
+      await expect(pool.collectInterestAndPrincipal(person2, interest, principal, {from: person2})).to.be.rejectedWith(
         /Only the credit desk/
       )
-      await expect(pool.collectPrincipalRepayment(person2, amount, {from: owner})).to.be.rejectedWith(
+      await expect(pool.collectInterestAndPrincipal(person2, interest, principal, {from: owner})).to.be.rejectedWith(
         /Only the credit desk/
       )
     })

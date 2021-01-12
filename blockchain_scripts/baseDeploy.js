@@ -57,14 +57,13 @@ async function baseDeploy(hre, {shouldUpgrade}) {
     } else {
       deployResult = await deploy(contractName, {
         from: proxy_owner,
-        proxy: {methodName: "initialize"},
         gas: 4000000,
-        args: [protocol_owner],
         libraries: {["ConfigOptions"]: configOptionsDeployResult.address},
       })
     }
     logger("Config was deployed to:", deployResult.address)
     config = await ethers.getContractAt(deployResult.abi, deployResult.address)
+    await (await config.initialize(protocol_owner)).wait()
     const transactionLimit = new BN(PROTOCOL_CONFIG.transactionLimit).mul(USDCDecimals)
     const totalFundsLimit = new BN(PROTOCOL_CONFIG.totalFundsLimit).mul(USDCDecimals)
     const maxUnderwriterLimit = new BN(PROTOCOL_CONFIG.maxUnderwriterLimit).mul(USDCDecimals)

@@ -5,6 +5,7 @@ pragma solidity 0.6.12;
 import "./GoldfinchConfig.sol";
 import "./BaseUpgradeablePausable.sol";
 import "../periphery/Borrower.sol";
+import "./CreditLine.sol";
 
 /**
  * @title CreditLineFactory
@@ -25,9 +26,8 @@ contract CreditLineFactory is BaseUpgradeablePausable {
   }
 
   function createCreditLine(bytes calldata _data) external returns (address) {
-    address creditLineImplAddress = config.getAddress(uint256(ConfigOptions.Addresses.CreditLineImplementation));
-    address creditLineProxy = deployMinimal(creditLineImplAddress, _data);
-    return creditLineProxy;
+    CreditLine newCreditLine = new CreditLine();
+    return address(newCreditLine);
   }
 
   /**

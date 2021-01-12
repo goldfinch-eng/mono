@@ -9,9 +9,11 @@ abstract contract IPool {
 
   function withdraw(uint256 amount) external virtual;
 
-  function collectInterestRepayment(address from, uint256 amount) external virtual;
-
-  function collectPrincipalRepayment(address from, uint256 amount) external virtual;
+  function collectInterestAndPrincipal(
+    address from,
+    uint256 interest,
+    uint256 principal
+  ) external virtual;
 
   function transferFrom(
     address from,

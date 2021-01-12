@@ -61,8 +61,6 @@ contract Pool is BaseUpgradeablePausable, IPool {
     bool success = doUSDCTransfer(msg.sender, address(this), amount);
     require(success, "Failed to transfer for deposit");
     config.getFidu().mintTo(msg.sender, depositShares);
-
-    assert(assetsMatchLiabilities());
   }
 
   /**
@@ -71,8 +69,9 @@ contract Pool is BaseUpgradeablePausable, IPool {
    */
   function withdraw(uint256 amount) external override whenNotPaused withinTransactionLimit(amount) nonReentrant {
     require(amount > 0, "Must withdraw more than zero");
+    IFidu fidu = config.getFidu();
     // Determine current shares the address has and the shares requested to withdraw
-    uint256 currentShares = config.getFidu().balanceOf(msg.sender);
+    uint256 currentShares = fidu.balanceOf(msg.sender);
     uint256 withdrawShares = getNumShares(amount);
     // Ensure the address has enough value in the pool
     require(withdrawShares <= currentShares, "Amount requested is greater than what this address owns");
@@ -87,49 +86,39 @@ contract Pool is BaseUpgradeablePausable, IPool {
     sendToReserve(address(this), reserveAmount, msg.sender);
 
     // Burn the shares
-    config.getFidu().burnFrom(msg.sender, withdrawShares);
-
-    assert(assetsMatchLiabilities());
+    fidu.burnFrom(msg.sender, withdrawShares);
   }
 
   /**
-   * @notice Collects `amount` USDC in interest from `from` and sends it to the Pool.
+   * @notice Collects `interest` USDC in interest and `principal` in principal from `from` and sends it to the Pool.
    *  This also increases the share price accordingly. A portion is sent to the Goldfinch Reserve address
    * @param from The address to take the USDC from. Implicitly, the Pool
    *  must be authorized to move USDC on behalf of `from`.
-   * @param amount the amount of USDC to move to the Pool
+   * @param interest the interest amount of USDC to move to the Pool
+   * @param principal the principal amount of USDC to move to the Pool
    *
    * Requirements:
    *  - The caller must be the Credit Desk. Not even the owner can call this function.
    */
-  function collectInterestRepayment(address from, uint256 amount) external override onlyCreditDesk whenNotPaused {
-    uint256 reserveAmount = amount.div(config.getReserveDenominator());
-    uint256 poolAmount = amount.sub(reserveAmount);
-    emit InterestCollected(from, poolAmount, reserveAmount);
+  function collectInterestAndPrincipal(
+    address from,
+    uint256 interest,
+    uint256 principal
+  ) external override onlyCreditDesk whenNotPaused {
+    uint256 reserveAmount = interest.div(config.getReserveDenominator());
+    uint256 poolAmount = interest.sub(reserveAmount);
     uint256 increment = usdcToSharePrice(poolAmount);
     sharePrice = sharePrice.add(increment);
-    sendToReserve(from, reserveAmount, from);
-    bool success = doUSDCTransfer(from, address(this), poolAmount);
-    require(success, "Failed to transfer interest payment");
-  }
 
-  /**
-   * @notice Collects `amount` USDC in principal from `from` and sends it to the Pool.
-   *  The key difference from `collectInterestPayment` is that this does not change the sharePrice.
-   *  The reason it does not is because the principal is already baked in. ie. we implicitly assume all principal
-   *  will be returned to the Pool. But if borrowers are late with payments, we have a writedown schedule that adjusts
-   *  the sharePrice downwards to reflect the lowered confidence in that borrower.
-   * @param from The address to take the USDC from. Implicitly, the Pool
-   *  must be authorized to move USDC on behalf of `from`.
-   * @param amount the amount of USDC to move to the Pool
-   *
-   * Requirements:
-   *  - The caller must be the Credit Desk. Not even the owner can call this function.
-   */
-  function collectPrincipalRepayment(address from, uint256 amount) external override onlyCreditDesk whenNotPaused {
-    // Purposefully does nothing except receive money. No share price updates for principal.
-    emit PrincipalCollected(from, amount);
-    bool success = doUSDCTransfer(from, address(this), amount);
+    if (poolAmount > 0) {
+      emit InterestCollected(from, poolAmount, reserveAmount);
+    }
+    if (principal > 0) {
+      emit PrincipalCollected(from, principal);
+    }
+
+    sendToReserve(from, reserveAmount, from);
+    bool success = doUSDCTransfer(from, address(this), principal.add(poolAmount));
     require(success, "Failed to principal repayment");
   }
 
@@ -179,12 +168,12 @@ contract Pool is BaseUpgradeablePausable, IPool {
 
   /* Internal Functions */
 
-  function fiduMantissa() internal view returns (uint256) {
-    return uint256(10)**uint256(config.getFidu().decimals());
+  function fiduMantissa() internal pure returns (uint256) {
+    return uint256(10)**uint256(18);
   }
 
-  function usdcMantissa() internal view returns (uint256) {
-    return uint256(10)**uint256(config.getUSDC().decimals());
+  function usdcMantissa() internal pure returns (uint256) {
+    return uint256(10)**uint256(6);
   }
 
   function usdcToFidu(uint256 amount) internal view returns (uint256) {
@@ -213,17 +202,6 @@ contract Pool is BaseUpgradeablePausable, IPool {
     return usdcToFidu(amount).mul(fiduMantissa()).div(sharePrice);
   }
 
-  function assetsMatchLiabilities() internal view returns (bool) {
-    uint256 liabilities = config.getFidu().totalSupply().mul(sharePrice).div(fiduMantissa());
-    uint256 liabilitiesInDollars = fiduToUSDC(liabilities);
-    uint256 _assets = assets();
-    if (_assets >= liabilitiesInDollars) {
-      return _assets.sub(liabilitiesInDollars) <= ASSET_LIABILITY_MATCH_THRESHOLD;
-    } else {
-      return liabilitiesInDollars.sub(_assets) <= ASSET_LIABILITY_MATCH_THRESHOLD;
-    }
-  }
-
   function fiduToUSDC(uint256 amount) internal view returns (uint256) {
     return amount.div(fiduMantissa().div(usdcMantissa()));
   }
@@ -243,17 +221,9 @@ contract Pool is BaseUpgradeablePausable, IPool {
     address to,
     uint256 amount
   ) internal returns (bool) {
-    require(transactionWithinLimit(amount), "Amount is over the per-transaction limit");
     require(to != address(0), "Can't send to zero address");
     IERC20withDec usdc = config.getUSDC();
-    uint256 balanceBefore = usdc.balanceOf(to);
-
-    bool success = usdc.transferFrom(from, to, amount);
-
-    // Calculate the amount that was *actually* transferred
-    uint256 balanceAfter = usdc.balanceOf(to);
-    require(balanceAfter >= balanceBefore, "Token Transfer Overflow Error");
-    return success;
+    return usdc.transferFrom(from, to, amount);
   }
 
   modifier withinTransactionLimit(uint256 amount) {

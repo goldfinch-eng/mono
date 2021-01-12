@@ -38,14 +38,19 @@ library Accountant {
     uint256 blockNumber,
     uint256 lateFeeGracePeriod
   ) public view returns (uint256, uint256) {
-    uint256 interestAccrued = calculateInterestAccrued(cl, blockNumber, lateFeeGracePeriod);
-    uint256 principalAccrued = calculatePrincipalAccrued(cl, blockNumber);
+    uint256 balance = cl.balance(); // gas optimization
+    uint256 interestAccrued = calculateInterestAccrued(cl, balance, blockNumber, lateFeeGracePeriod);
+    uint256 principalAccrued = calculatePrincipalAccrued(cl, balance, blockNumber);
     return (interestAccrued, principalAccrued);
   }
 
-  function calculatePrincipalAccrued(CreditLine cl, uint256 blockNumber) public view returns (uint256) {
+  function calculatePrincipalAccrued(
+    CreditLine cl,
+    uint256 balance,
+    uint256 blockNumber
+  ) public view returns (uint256) {
     if (blockNumber >= cl.termEndBlock()) {
-      return cl.balance();
+      return balance;
     } else {
       return 0;
     }
@@ -103,6 +108,7 @@ library Accountant {
 
   function calculateInterestAccrued(
     CreditLine cl,
+    uint256 balance,
     uint256 blockNumber,
     uint256 lateFeeGracePeriodInDays
   ) public view returns (uint256) {
@@ -116,11 +122,11 @@ library Accountant {
     // a balance affecting action takes place (eg. drawdown, repayment, assessment)
     uint256 interestAccruedAsOfBlock = Math.min(blockNumber, cl.interestAccruedAsOfBlock());
     uint256 numBlocksElapsed = blockNumber.sub(interestAccruedAsOfBlock);
-    uint256 totalInterestPerYear = cl.balance().mul(cl.interestApr()).div(INTEREST_DECIMALS);
+    uint256 totalInterestPerYear = balance.mul(cl.interestApr()).div(INTEREST_DECIMALS);
     uint256 interestOwed = totalInterestPerYear.mul(numBlocksElapsed).div(BLOCKS_PER_YEAR);
 
     if (lateFeeApplicable(cl, blockNumber, lateFeeGracePeriodInDays)) {
-      uint256 lateFeeInterestPerYear = cl.balance().mul(cl.lateFeeApr()).div(INTEREST_DECIMALS);
+      uint256 lateFeeInterestPerYear = balance.mul(cl.lateFeeApr()).div(INTEREST_DECIMALS);
       uint256 additionalLateFeeInterest = lateFeeInterestPerYear.mul(numBlocksElapsed).div(BLOCKS_PER_YEAR);
       interestOwed = interestOwed.add(additionalLateFeeInterest);
     }

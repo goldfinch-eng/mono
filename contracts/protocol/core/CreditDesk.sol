@@ -153,13 +153,15 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     require(withinTransactionLimit(amount), "Amount is over the per-transaction limit");
     require(withinCreditLimit(amount, cl), "The borrower does not have enough credit limit for this drawdown");
 
-    if (cl.balance() == 0) {
+    uint256 balance = cl.balance();
+
+    if (balance == 0) {
       cl.setInterestAccruedAsOfBlock(blockNumber());
       cl.setLastFullPaymentBlock(blockNumber());
     }
     // Must get the interest and principal accrued prior to adding to the balance.
     (uint256 interestOwed, uint256 principalOwed) = updateAndGetInterestAndPrincipalOwedAsOf(cl, blockNumber());
-    uint256 balance = cl.balance().add(amount);
+    balance = balance.add(amount);
 
     updateCreditLineAccounting(cl, balance, interestOwed, principalOwed);
 
@@ -168,7 +170,8 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     require(!isLate(cl), "Cannot drawdown when payments are past due");
     emit DrawdownMade(msg.sender, address(cl), amount);
 
-    bool success = config.getPool().transferFrom(config.poolAddress(), msg.sender, amount);
+    IPool pool = config.getPool();
+    bool success = pool.transferFrom(address(pool), msg.sender, amount);
     require(success, "Failed to drawdown");
   }
 
@@ -294,7 +297,6 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
    */
   function collectPayment(CreditLine cl, uint256 amount) internal {
     require(withinTransactionLimit(amount), "Amount is over the per-transaction limit");
-    require(config.getUSDC().balanceOf(msg.sender) >= amount, "You have insufficent balance for this payment");
 
     emit PaymentCollected(msg.sender, address(cl), amount);
 
@@ -324,15 +326,12 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
       blockNumber
     );
 
-    updateWritedownAmounts(cl);
+    IPool pool = config.getPool();
+    updateWritedownAmounts(cl, pool);
 
-    if (interestPayment > 0) {
+    if (interestPayment > 0 || principalPayment > 0) {
       emit PaymentApplied(cl.borrower(), address(cl), interestPayment, principalPayment, paymentRemaining);
-      config.getPool().collectInterestRepayment(address(cl), interestPayment);
-    }
-    if (principalPayment > 0) {
-      emit PaymentApplied(cl.borrower(), address(cl), interestPayment, principalPayment, paymentRemaining);
-      config.getPool().collectPrincipalRepayment(address(cl), principalPayment);
+      pool.collectInterestAndPrincipal(address(cl), interestPayment, principalPayment);
     }
   }
 
@@ -375,7 +374,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     return (paymentRemaining, pa.interestPayment, totalPrincipalPayment);
   }
 
-  function updateWritedownAmounts(CreditLine cl) internal {
+  function updateWritedownAmounts(CreditLine cl, IPool pool) internal {
     (uint256 writedownPercent, uint256 writedownAmount) = Accountant.calculateWritedownFor(
       cl,
       blockNumber(),
@@ -394,7 +393,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     } else {
       totalWritedowns = totalWritedowns.add(uint256(writedownDelta * -1));
     }
-    config.getPool().distributeLosses(address(cl), writedownDelta);
+    pool.distributeLosses(address(cl), writedownDelta);
   }
 
   function isLate(CreditLine cl) internal view returns (bool) {
@@ -404,14 +403,6 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
 
   function getCreditLineFactory() internal view returns (CreditLineFactory) {
     return CreditLineFactory(config.getAddress(uint256(ConfigOptions.Addresses.CreditLineFactory)));
-  }
-
-  function subtractClFromTotalLoansOutstanding(CreditLine cl) internal {
-    totalLoansOutstanding = totalLoansOutstanding.sub(cl.balance());
-  }
-
-  function addCLToTotalLoansOutstanding(CreditLine cl) internal {
-    totalLoansOutstanding = totalLoansOutstanding.add(cl.balance());
   }
 
   function updateAndGetInterestAndPrincipalOwedAsOf(CreditLine cl, uint256 blockNumber)
@@ -440,9 +431,9 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     return amount <= config.getNumber(uint256(ConfigOptions.Numbers.TransactionLimit));
   }
 
-  function calculateNewTermEndBlock(CreditLine cl) internal view returns (uint256) {
+  function calculateNewTermEndBlock(CreditLine cl, uint256 balance) internal view returns (uint256) {
     // If there's no balance, there's no loan, so there's no term end block
-    if (cl.balance() == 0) {
+    if (balance == 0) {
       return 0;
     }
     // Don't allow any weird bugs where we add to your current end block. This
@@ -455,25 +446,29 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
 
   function calculateNextDueBlock(CreditLine cl) internal view returns (uint256) {
     uint256 blocksPerPeriod = cl.paymentPeriodInDays().mul(BLOCKS_PER_DAY);
-
-    // Your paid off, or have not taken out a loan yet, so no next due block.
-    if (cl.balance() == 0 && cl.nextDueBlock() != 0) {
-      return 0;
-    }
+    uint256 balance = cl.balance();
+    uint256 nextDueBlock = cl.nextDueBlock();
+    uint256 curBlockNumber = blockNumber();
     // You must have just done your first drawdown
-    if (cl.nextDueBlock() == 0 && cl.balance() > 0) {
-      return blockNumber().add(blocksPerPeriod);
+    if (nextDueBlock == 0 && balance > 0) {
+      return curBlockNumber.add(blocksPerPeriod);
     }
+
     // Active loan that has entered a new period, so return the *next* nextDueBlock.
     // But never return something after the termEndBlock
-    if (cl.balance() > 0 && blockNumber() >= cl.nextDueBlock()) {
-      uint256 blocksToAdvance = (blockNumber().sub(cl.nextDueBlock()).div(blocksPerPeriod)).add(1).mul(blocksPerPeriod);
-      uint256 nextDueBlock = cl.nextDueBlock().add(blocksToAdvance);
+    if (balance > 0 && curBlockNumber >= nextDueBlock) {
+      uint256 blocksToAdvance = (curBlockNumber.sub(nextDueBlock).div(blocksPerPeriod)).add(1).mul(blocksPerPeriod);
+      uint256 nextDueBlock = nextDueBlock.add(blocksToAdvance);
       return Math.min(nextDueBlock, cl.termEndBlock());
     }
+
+    // Your paid off, or have not taken out a loan yet, so no next due block.
+    if (balance == 0 && nextDueBlock != 0) {
+      return 0;
+    }
     // Active loan in current period, where we've already set the nextDueBlock correctly, so should not change.
-    if (cl.balance() > 0 && blockNumber() < cl.nextDueBlock()) {
-      return cl.nextDueBlock();
+    if (balance > 0 && curBlockNumber < nextDueBlock) {
+      return nextDueBlock;
     }
     revert("Error: could not calculate next due block.");
   }
@@ -513,7 +508,8 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     uint256 interestOwed,
     uint256 principalOwed
   ) internal nonReentrant {
-    subtractClFromTotalLoansOutstanding(cl);
+    // subtract cl from total loans outstanding
+    totalLoansOutstanding = totalLoansOutstanding.sub(cl.balance());
 
     cl.setBalance(balance);
     cl.setInterestOwed(interestOwed);
@@ -521,21 +517,23 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
 
     // This resets lastFullPaymentBlock. These conditions assure that they have
     // indeed paid off all their interest and they have a real nextDueBlock. (ie. creditline isn't pre-drawdown)
-    if (cl.interestOwed() == 0 && cl.nextDueBlock() != 0) {
+    uint256 nextDueBlock = cl.nextDueBlock();
+    if (interestOwed == 0 && nextDueBlock != 0) {
       // If interest was fully paid off, then set the last full payment as the previous due block
       uint256 mostRecentLastDueBlock;
-      if (blockNumber() < cl.nextDueBlock()) {
+      if (blockNumber() < nextDueBlock) {
         uint256 blocksPerPeriod = cl.paymentPeriodInDays().mul(BLOCKS_PER_DAY);
-        mostRecentLastDueBlock = cl.nextDueBlock().sub(blocksPerPeriod);
+        mostRecentLastDueBlock = nextDueBlock.sub(blocksPerPeriod);
       } else {
-        mostRecentLastDueBlock = cl.nextDueBlock();
+        mostRecentLastDueBlock = nextDueBlock;
       }
       cl.setLastFullPaymentBlock(mostRecentLastDueBlock);
     }
 
-    addCLToTotalLoansOutstanding(cl);
+    // Add new amount back to total loans outstanding
+    totalLoansOutstanding = totalLoansOutstanding.add(balance);
 
-    cl.setTermEndBlock(calculateNewTermEndBlock(cl));
+    cl.setTermEndBlock(calculateNewTermEndBlock(cl, balance)); // pass in balance as a gas optimization
     cl.setNextDueBlock(calculateNextDueBlock(cl));
   }
 
