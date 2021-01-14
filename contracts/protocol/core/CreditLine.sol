@@ -62,8 +62,9 @@ contract CreditLine is BaseUpgradeablePausable {
     termEndBlock = newTermEndBlock;
   }
 
-  function setNextDueBlock(uint256 newNextDueBlock) external onlyAdmin {
+  function setNextDueBlock(uint256 newNextDueBlock) external onlyAdmin returns (uint256) {
     nextDueBlock = newNextDueBlock;
+    return newNextDueBlock;
   }
 
   function setBalance(uint256 newBalance) external onlyAdmin {

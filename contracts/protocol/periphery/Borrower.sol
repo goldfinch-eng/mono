@@ -57,8 +57,10 @@ contract Borrower is BaseUpgradeablePausable {
    * @param amount The amount, in USDC atomic units, that the borrower wishes to pay
    */
   function pay(address creditLineAddress, uint256 amount) external onlyAdmin {
-    bool success = config.getUSDC().transferFrom(msg.sender, address(this), amount);
+    // Transfer to creditline directly and call assess, which saves gas (one less transfer)
+    // compared to going through pay
+    bool success = config.getUSDC().transferFrom(msg.sender, creditLineAddress, amount);
     require(success, "Failed to transfer USDC");
-    config.getCreditDesk().pay(creditLineAddress, amount);
+    config.getCreditDesk().assessCreditLine(creditLineAddress);
   }
 }
