@@ -592,6 +592,55 @@ describe("CreditDesk", () => {
     })
   })
 
+  describe("appyPayment", async () => {
+    describe("with an outstanding credit line", async () => {
+      beforeEach(async () => {
+        borrower = person3
+        underwriter = person2
+        usdc.transfer(borrower, usdcVal(50), {from: owner})
+      })
+
+      it("validates borrower and creditline", async () => {
+        const creditLine = await createAndSetCreditLineAttributes({
+          balance: 10,
+          interestOwed: 5,
+          principalOwed: 3,
+          nextDueBlock: 1,
+        })
+        const paymentAmount = 6
+        await expect(
+          creditDesk.applyPayment(creditLine.address, String(usdcVal(paymentAmount)), {from: person2})
+        ).to.be.rejectedWith(/You do not belong to this credit line/)
+
+        await expect(
+          creditDesk.applyPayment(usdc.address, String(usdcVal(paymentAmount)), {from: person2})
+        ).to.be.rejectedWith(/Unknown credit line/)
+      })
+
+      it("apply the payment as of current block number and emit the event", async () => {
+        const creditLine = await createAndSetCreditLineAttributes({
+          balance: 10,
+          interestOwed: 5,
+          principalOwed: 3,
+          nextDueBlock: 1,
+        })
+        const paymentAmount = 6
+        await usdc.transfer(creditLine.address, String(usdcVal(paymentAmount)), {from: owner})
+        const response = await creditDesk.applyPayment(creditLine.address, String(usdcVal(paymentAmount)), {
+          from: borrower,
+        })
+
+        const event = response.logs[0]
+        expect(event.event).to.equal("PaymentApplied")
+        expect(event.args.payer).to.equal(borrower)
+        expect(event.args.creditLine).to.equal(creditLine.address)
+        expect(event.args.interestAmount).to.bignumber.closeTo(usdcVal(5), tolerance)
+        expect(event.args.principalAmount).to.bignumber.closeTo(usdcVal(1), tolerance)
+        expect(event.args.remainingAmount).to.bignumber.equal(usdcVal(0))
+      })
+    })
+  })
+
   describe("payment", async () => {
     describe("with an outstanding credit line", async () => {
       beforeEach(async () => {

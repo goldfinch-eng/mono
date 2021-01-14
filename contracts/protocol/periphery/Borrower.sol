@@ -3,6 +3,7 @@ pragma experimental ABIEncoderV2;
 
 import "../core/BaseUpgradeablePausable.sol";
 import "../core/ConfigHelper.sol";
+import "../core/CreditLine.sol";
 
 /**
  * @title Goldfinch's Borrower contract
@@ -60,5 +61,13 @@ contract Borrower is BaseUpgradeablePausable {
     bool success = config.getUSDC().transferFrom(msg.sender, address(this), amount);
     require(success, "Failed to transfer USDC");
     config.getCreditDesk().pay(creditLineAddress, amount);
+  }
+
+  function payInFull(address creditLineAddress, uint256 amount) external onlyAdmin {
+    bool success = config.getUSDC().transferFrom(msg.sender, address(creditLineAddress), amount);
+    require(success, "Failed to transfer USDC");
+
+    config.getCreditDesk().applyPayment(creditLineAddress, amount);
+    require(CreditLine(creditLineAddress).balance() == 0, "Failed to fully pay off creditline");
   }
 }

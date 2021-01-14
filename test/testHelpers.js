@@ -90,6 +90,10 @@ function expectAction(action, debug) {
           expect(newValues[i]).to.bignumber.gt(originalValues[i])
         } else if (expectation.decrease) {
           expect(newValues[i]).to.bignumber.lt(originalValues[i])
+        } else if (expectation.to) {
+          // It was not originally the number we expected, but then was changed to it
+          expect(originalValues[i]).to.not.bignumber.eq(expectation.to)
+          expect(newValues[i]).to.bignumber.eq(expectation.to)
         }
       })
     },

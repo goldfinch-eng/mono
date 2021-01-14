@@ -229,7 +229,18 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
       uint256 blocksPerPeriod = cl.paymentPeriodInDays().mul(BLOCKS_PER_DAY);
       blockToAssess = cl.nextDueBlock().sub(blocksPerPeriod);
     }
-    applyPayment(cl, getUSDCBalance(address(cl)), blockToAssess);
+    _applyPayment(cl, getUSDCBalance(address(cl)), blockToAssess);
+  }
+
+  function applyPayment(address creditLineAddress, uint256 amount)
+    external
+    override
+    whenNotPaused
+    onlyValidCreditLine(creditLineAddress)
+  {
+    CreditLine cl = CreditLine(creditLineAddress);
+    require(cl.borrower() == msg.sender, "You do not belong to this credit line");
+    _applyPayment(cl, amount, blockNumber());
   }
 
   function migrateCreditLine(
@@ -315,7 +326,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
    * @param blockNumber The blockNumber on which accrual calculations should be based. This allows us
    *  to be precise when we assess a Credit Line
    */
-  function applyPayment(
+  function _applyPayment(
     CreditLine cl,
     uint256 amount,
     uint256 blockNumber
