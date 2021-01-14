@@ -13,6 +13,7 @@ const {
   deployAllContracts,
   erc20Transfer,
   erc20Approve,
+  expectAction,
   USDC_DECIMALS,
   BLOCKS_PER_DAY,
   BLOCKS_PER_YEAR,
@@ -349,6 +350,36 @@ describe("CreditDesk", () => {
     it("should not allow unregistered borrowers to call it", async () => {
       const badDrawdown = creditDesk.drawdown(creditLine.address, usdcVal(10), {from: reserve})
       return expect(badDrawdown).to.be.rejectedWith(/No credit lines exist for this borrower/)
+    })
+
+    describe("with an unapplied balance on the credit line", async () => {
+      beforeEach(async () => {
+        // Do an initial drawdown
+        await drawdown(usdcVal(10), creditLine.address)
+        await creditDesk.pay(creditLine.address, String(usdcVal(5)), {from: borrower})
+
+        expect(await creditLine.balance()).to.bignumber.eq(usdcVal(10))
+        expect(await getBalance(creditLine.address, usdc)).to.bignumber.eq(usdcVal(5))
+        expect(await getBalance(borrower, usdc)).to.bignumber.eq(usdcVal(5))
+      })
+
+      it("should use the creditline balance first before pulling from the pool", async () => {
+        await expectAction(async () => creditDesk.drawdown(creditLine.address, usdcVal(10), {from: borrower})).toChange(
+          [
+            [async () => await creditLine.balance(), {to: usdcVal(15)}],
+            [async () => getBalance(creditLine.address, usdc), {to: usdcVal(0)}],
+            [async () => getBalance(borrower, usdc), {to: usdcVal(15)}],
+          ]
+        )
+      })
+
+      it("should not pull from the pool if the creditline balance is sufficient", async () => {
+        await expectAction(async () => creditDesk.drawdown(creditLine.address, usdcVal(3), {from: borrower})).toChange([
+          [async () => await creditLine.balance(), {by: usdcVal(0)}], // Balance is unchanged
+          [async () => getBalance(creditLine.address, usdc), {to: usdcVal(2)}],
+          [async () => getBalance(borrower, usdc), {to: usdcVal(8)}],
+        ])
+      })
     })
 
     it("should increase the total loans outstanding on the credit desk", async () => {
