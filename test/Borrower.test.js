@@ -16,7 +16,7 @@ const {
 } = require("./testHelpers.js")
 const Borrower = artifacts.require("Borrower")
 
-let accounts, owner, bwr, person3, underwriter, reserve, goldfinchFactory, creditDesk, usdc
+let accounts, owner, bwr, person3, underwriter, reserve, goldfinchFactory, creditDesk, usdc, pool
 
 describe("Borrower", async () => {
   const setupTest = deployments.createFixture(async ({deployments}) => {
@@ -36,7 +36,7 @@ describe("Borrower", async () => {
   beforeEach(async () => {
     accounts = await web3.eth.getAccounts()
     ;[owner, bwr, person3, underwriter, reserve] = accounts
-    ;({goldfinchFactory, usdc, creditDesk} = await setupTest())
+    ;({goldfinchFactory, usdc, creditDesk, pool} = await setupTest())
   })
 
   describe("drawdown", async () => {
@@ -145,8 +145,11 @@ describe("Borrower", async () => {
     })
 
     it("should fully pay back the loan", async () => {
-      await expectAction(async () => bwrCon.payInFull(cl.address, amount, {from: bwr})).toChange([
-        [async () => await cl.balance(), {to: new BN(0)}],
+      await advanceTime(creditDesk, {toBlock: (await cl.nextDueBlock()).add(new BN(1))})
+      await expectAction(async () => bwrCon.payInFull(cl.address, usdcVal(11), {from: bwr})).toChange([
+        [async () => cl.balance(), {to: new BN(0)}],
+        [async () => getBalance(pool.address, usdc), {increase: true}],
+        [async () => pool.sharePrice(), {increase: true}],
       ])
     })
 
