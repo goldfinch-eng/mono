@@ -159,6 +159,26 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
       cl.setInterestAccruedAsOfBlock(blockNumber());
       cl.setLastFullPaymentBlock(blockNumber());
     }
+
+    IPool pool = config.getPool();
+
+    // If there is any balance on the creditline that has not been applied yet, then use that first before
+    // drawing down from the pool. This is to support cases where the borrower partially pays back the
+    // principal before the due date, but then decides to drawdown again
+    uint256 unappliedBalance = getUSDCBalance(creditLineAddress);
+    uint256 amountToTransferFromCL;
+    if (unappliedBalance > 0) {
+      if (amount > unappliedBalance) {
+        amountToTransferFromCL = unappliedBalance;
+        amount = amount.sub(unappliedBalance);
+      } else {
+        amountToTransferFromCL = amount;
+        amount = 0;
+      }
+      bool success = pool.transferFrom(creditLineAddress, msg.sender, amountToTransferFromCL);
+      require(success, "Failed to drawdown");
+    }
+
     // Must get the interest and principal accrued prior to adding to the balance.
     (uint256 interestOwed, uint256 principalOwed) = updateAndGetInterestAndPrincipalOwedAsOf(cl, blockNumber());
     balance = balance.add(amount);
@@ -168,9 +188,8 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     // Must put this after we update the credit line accounting, so we're using the latest
     // interestOwed
     require(!isLate(cl), "Cannot drawdown when payments are past due");
-    emit DrawdownMade(msg.sender, address(cl), amount);
+    emit DrawdownMade(msg.sender, address(cl), amount.add(amountToTransferFromCL));
 
-    IPool pool = config.getPool();
     bool success = pool.transferFrom(address(pool), msg.sender, amount);
     require(success, "Failed to drawdown");
   }
@@ -228,7 +247,18 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
       uint256 blocksPerPeriod = cl.paymentPeriodInDays().mul(BLOCKS_PER_DAY);
       blockToAssess = blockToAssess.sub(blocksPerPeriod);
     }
-    applyPayment(cl, getUSDCBalance(address(cl)), blockToAssess);
+    _applyPayment(cl, getUSDCBalance(address(cl)), blockToAssess);
+  }
+
+  function applyPayment(address creditLineAddress, uint256 amount)
+    external
+    override
+    whenNotPaused
+    onlyValidCreditLine(creditLineAddress)
+  {
+    CreditLine cl = CreditLine(creditLineAddress);
+    require(cl.borrower() == msg.sender, "You do not belong to this credit line");
+    _applyPayment(cl, amount, blockNumber());
   }
 
   function migrateCreditLine(
@@ -314,7 +344,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
    * @param blockNumber The blockNumber on which accrual calculations should be based. This allows us
    *  to be precise when we assess a Credit Line
    */
-  function applyPayment(
+  function _applyPayment(
     CreditLine cl,
     uint256 amount,
     uint256 blockNumber

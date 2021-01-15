@@ -13,6 +13,7 @@ const {
   deployAllContracts,
   erc20Transfer,
   erc20Approve,
+  expectAction,
   USDC_DECIMALS,
   BLOCKS_PER_DAY,
   BLOCKS_PER_YEAR,
@@ -351,6 +352,36 @@ describe("CreditDesk", () => {
       return expect(badDrawdown).to.be.rejectedWith(/No credit lines exist for this borrower/)
     })
 
+    describe("with an unapplied balance on the credit line", async () => {
+      beforeEach(async () => {
+        // Do an initial drawdown
+        await drawdown(usdcVal(10), creditLine.address)
+        await creditDesk.pay(creditLine.address, String(usdcVal(5)), {from: borrower})
+
+        expect(await creditLine.balance()).to.bignumber.eq(usdcVal(10))
+        expect(await getBalance(creditLine.address, usdc)).to.bignumber.eq(usdcVal(5))
+        expect(await getBalance(borrower, usdc)).to.bignumber.eq(usdcVal(5))
+      })
+
+      it("should use the creditline balance first before pulling from the pool", async () => {
+        await expectAction(async () => creditDesk.drawdown(creditLine.address, usdcVal(10), {from: borrower})).toChange(
+          [
+            [async () => creditLine.balance(), {to: usdcVal(15)}],
+            [async () => getBalance(creditLine.address, usdc), {to: usdcVal(0)}],
+            [async () => getBalance(borrower, usdc), {to: usdcVal(15)}],
+          ]
+        )
+      })
+
+      it("should not pull from the pool if the creditline balance is sufficient", async () => {
+        await expectAction(async () => creditDesk.drawdown(creditLine.address, usdcVal(3), {from: borrower})).toChange([
+          [async () => creditLine.balance(), {by: usdcVal(0)}], // Balance is unchanged
+          [async () => getBalance(creditLine.address, usdc), {to: usdcVal(2)}],
+          [async () => getBalance(borrower, usdc), {to: usdcVal(8)}],
+        ])
+      })
+    })
+
     it("should increase the total loans outstanding on the credit desk", async () => {
       const drawdownAmount = usdcVal(10)
       const amountBefore = await creditDesk.totalLoansOutstanding()
@@ -588,6 +619,55 @@ describe("CreditDesk", () => {
         expect(event.args.payer).to.equal(borrower)
         expect(event.args.creditLine).to.equal(creditLine.address)
         expect(event.args.paymentAmount).to.bignumber.closeTo(usdcVal(10), tolerance)
+      })
+    })
+  })
+
+  describe("appyPayment", async () => {
+    describe("with an outstanding credit line", async () => {
+      beforeEach(async () => {
+        borrower = person3
+        underwriter = person2
+        usdc.transfer(borrower, usdcVal(50), {from: owner})
+      })
+
+      it("validates borrower and creditline", async () => {
+        const creditLine = await createAndSetCreditLineAttributes({
+          balance: 10,
+          interestOwed: 5,
+          principalOwed: 3,
+          nextDueBlock: 1,
+        })
+        const paymentAmount = 6
+        await expect(
+          creditDesk.applyPayment(creditLine.address, String(usdcVal(paymentAmount)), {from: person2})
+        ).to.be.rejectedWith(/You do not belong to this credit line/)
+
+        await expect(
+          creditDesk.applyPayment(usdc.address, String(usdcVal(paymentAmount)), {from: person2})
+        ).to.be.rejectedWith(/Unknown credit line/)
+      })
+
+      it("apply the payment as of current block number and emit the event", async () => {
+        const creditLine = await createAndSetCreditLineAttributes({
+          balance: 10,
+          interestOwed: 5,
+          principalOwed: 3,
+          nextDueBlock: 1,
+        })
+        const paymentAmount = 6
+        await usdc.transfer(creditLine.address, String(usdcVal(paymentAmount)), {from: owner})
+        const response = await creditDesk.applyPayment(creditLine.address, String(usdcVal(paymentAmount)), {
+          from: borrower,
+        })
+
+        const event = response.logs[0]
+        expect(event.event).to.equal("PaymentApplied")
+        expect(event.args.payer).to.equal(borrower)
+        expect(event.args.creditLine).to.equal(creditLine.address)
+        expect(event.args.interestAmount).to.bignumber.closeTo(usdcVal(5), tolerance)
+        expect(event.args.principalAmount).to.bignumber.closeTo(usdcVal(1), tolerance)
+        expect(event.args.remainingAmount).to.bignumber.equal(usdcVal(0))
       })
     })
   })

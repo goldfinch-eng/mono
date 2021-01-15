@@ -16,7 +16,7 @@ const {
 } = require("./testHelpers.js")
 const Borrower = artifacts.require("Borrower")
 
-let accounts, owner, bwr, person3, underwriter, reserve, goldfinchFactory, creditDesk, usdc
+let accounts, owner, bwr, person3, underwriter, reserve, goldfinchFactory, creditDesk, usdc, pool
 
 describe("Borrower", async () => {
   const setupTest = deployments.createFixture(async ({deployments}) => {
@@ -36,7 +36,7 @@ describe("Borrower", async () => {
   beforeEach(async () => {
     accounts = await web3.eth.getAccounts()
     ;[owner, bwr, person3, underwriter, reserve] = accounts
-    ;({goldfinchFactory, usdc, creditDesk} = await setupTest())
+    ;({goldfinchFactory, usdc, creditDesk, pool} = await setupTest())
   })
 
   describe("drawdown", async () => {
@@ -129,6 +129,35 @@ describe("Borrower", async () => {
         [async () => await cl.balance(), {decrease: true}],
         [async () => await getBalance(cl.address, usdc), {by: amount.neg()}],
       ])
+    })
+  })
+
+  describe("payInFull", async () => {
+    let bwrCon, cl
+    let amount = usdcVal(10)
+    beforeEach(async () => {
+      const result = await goldfinchFactory.createBorrower(bwr)
+      let bwrConAddr = result.logs[result.logs.length - 1].args.borrower
+      bwrCon = await Borrower.at(bwrConAddr)
+      await erc20Approve(usdc, bwrCon.address, usdcVal(100000), [bwr])
+      cl = await createCreditLine({creditDesk, borrower: bwrCon.address, underwriter})
+      await bwrCon.drawdown(cl.address, amount, bwr, {from: bwr})
+    })
+
+    it("should fully pay back the loan", async () => {
+      await advanceTime(creditDesk, {toBlock: (await cl.nextDueBlock()).add(new BN(1))})
+      await expectAction(async () => bwrCon.payInFull(cl.address, usdcVal(11), {from: bwr})).toChange([
+        [async () => cl.balance(), {to: new BN(0)}],
+        [async () => getBalance(pool.address, usdc), {increase: true}],
+        [async () => pool.sharePrice(), {increase: true}],
+      ])
+    })
+
+    it("fails if the loan is not fully paid off", async () => {
+      await expect(bwrCon.payInFull(cl.address, usdcVal(5), {from: bwr})).to.be.rejectedWith(
+        /Failed to fully pay off creditline/
+      )
+      expect(await cl.balance()).to.bignumber.gt(new BN(0))
     })
   })
 })
