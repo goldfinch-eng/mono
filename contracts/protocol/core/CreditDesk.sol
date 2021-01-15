@@ -219,15 +219,14 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
       return;
     }
 
-    cl.setNextDueBlock(calculateNextDueBlock(cl));
-    uint256 blockToAssess = cl.nextDueBlock();
+    uint256 blockToAssess = cl.setNextDueBlock(calculateNextDueBlock(cl));
 
     // We always want to assess for the most recently *past* nextDueBlock.
     // So if the recalculation above sets the nextDueBlock into the future,
     // then ensure we pass in the one just before this.
-    if (cl.nextDueBlock() > blockNumber()) {
+    if (blockToAssess > blockNumber()) {
       uint256 blocksPerPeriod = cl.paymentPeriodInDays().mul(BLOCKS_PER_DAY);
-      blockToAssess = cl.nextDueBlock().sub(blocksPerPeriod);
+      blockToAssess = blockToAssess.sub(blocksPerPeriod);
     }
     applyPayment(cl, getUSDCBalance(address(cl)), blockToAssess);
   }
