@@ -25,4 +25,6 @@ abstract contract ICreditDesk {
   function assessCreditLine(address creditLineAddress) external virtual;
 
   function applyPayment(address creditLineAddress, uint256 amount) external virtual;
+
+  function getNextPaymentAmount(address creditLineAddress, uint256 asOfBLock) external view virtual returns (uint256);
 }

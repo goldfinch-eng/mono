@@ -314,6 +314,36 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     return borrowers[borrowerAddress].creditLines;
   }
 
+  /**
+   * @notice Returns the total payment due for a given creditLine as of the provided blocknumber. Returns 0 if no
+   * payment is due (e.g. asOfBLock is before the nextDueBlock)
+   * @param creditLineAddress The creditLine to calculate the payment for
+   * @param asOfBLock The block to use for the payment calculation, if it is set to 0, uses the current block number
+   */
+  function getNextPaymentAmount(address creditLineAddress, uint256 asOfBLock)
+    external
+    view
+    override
+    onlyValidCreditLine(creditLineAddress)
+    returns (uint256)
+  {
+    if (asOfBLock == 0) {
+      asOfBLock = blockNumber();
+    }
+    CreditLine cl = CreditLine(creditLineAddress);
+
+    if (asOfBLock < cl.nextDueBlock() && !isLate(cl)) {
+      return 0;
+    }
+
+    (uint256 interestAccrued, uint256 principalAccrued) = Accountant.calculateInterestAndPrincipalAccrued(
+      cl,
+      asOfBLock,
+      config.getLatenessGracePeriodInDays()
+    );
+    return cl.interestOwed().add(interestAccrued).add(cl.principalOwed().add(principalAccrued));
+  }
+
   /*
    * Internal Functions
    */

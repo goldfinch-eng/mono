@@ -62,7 +62,7 @@ async function createCreditLine({
     from: underwriter,
   })
   var ulCreditLines = await creditDesk.getUnderwriterCreditLines(underwriter)
-  return CreditLine.at(ulCreditLines[0])
+  return CreditLine.at(ulCreditLines[ulCreditLines.length - 1]) // Return the latest
 }
 
 const tolerance = usdcVal(1).div(new BN(1000)) // 0.001$

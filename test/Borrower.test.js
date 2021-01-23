@@ -132,6 +132,42 @@ describe("Borrower", async () => {
     })
   })
 
+  describe("payMultiple", async () => {
+    let bwrCon, cl, cl2
+    let amount = usdcVal(10)
+    let amount2 = usdcVal(5)
+    beforeEach(async () => {
+      const result = await goldfinchFactory.createBorrower(bwr)
+      let bwrConAddr = result.logs[result.logs.length - 1].args.borrower
+      bwrCon = await Borrower.at(bwrConAddr)
+      await erc20Approve(usdc, bwrCon.address, usdcVal(100000), [bwr])
+      cl = await createCreditLine({creditDesk, borrower: bwrCon.address, underwriter})
+      cl2 = await createCreditLine({creditDesk, borrower: bwrCon.address, underwriter})
+
+      expect(cl.address).to.not.eq(cl2.addresss)
+
+      await bwrCon.drawdown(cl.address, amount, bwr, {from: bwr})
+      await bwrCon.drawdown(cl2.address, amount2, bwr, {from: bwr})
+    })
+
+    it("should payback the loan as expected", async () => {
+      await expectAction(() => bwrCon.payMultiple([cl.address, cl2.address], [amount, amount2], {from: bwr})).toChange([
+        [() => getBalance(cl.address, usdc), {by: amount}],
+        [() => getBalance(cl2.address, usdc), {by: amount2}],
+        [() => getBalance(bwr, usdc), {by: amount.add(amount2).neg()}],
+      ])
+      await advanceTime(creditDesk, {toBlock: (await cl.nextDueBlock()).add(new BN(1))})
+      await expectAction(() => creditDesk.assessCreditLine(cl.address)).toChange([
+        [() => cl.balance(), {decrease: true}],
+        [() => getBalance(cl.address, usdc), {by: amount.neg()}],
+      ])
+      await expectAction(() => creditDesk.assessCreditLine(cl2.address)).toChange([
+        [() => cl2.balance(), {decrease: true}],
+        [() => getBalance(cl2.address, usdc), {by: amount2.neg()}],
+      ])
+    })
+  })
+
   describe("payInFull", async () => {
     let bwrCon, cl
     let amount = usdcVal(10)

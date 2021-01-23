@@ -63,6 +63,24 @@ contract Borrower is BaseUpgradeablePausable {
     config.getCreditDesk().pay(creditLineAddress, amount);
   }
 
+  function payMultiple(address[] memory creditLines, uint256[] memory amounts) external onlyAdmin {
+    require(creditLines.length == amounts.length, "Creditlines and amounts must be the same length");
+
+    uint256 totalAmount;
+    for (uint256 i = 0; i < amounts.length; i++) {
+      totalAmount += amounts[i];
+    }
+
+    // Do a single transfer, which is cheaper
+    bool success = config.getUSDC().transferFrom(msg.sender, address(this), totalAmount);
+    require(success, "Failed to transfer USDC");
+
+    ICreditDesk creditDesk = config.getCreditDesk();
+    for (uint256 i = 0; i < amounts.length; i++) {
+      creditDesk.pay(creditLines[i], amounts[i]);
+    }
+  }
+
   function payInFull(address creditLineAddress, uint256 amount) external onlyAdmin {
     bool success = config.getUSDC().transferFrom(msg.sender, address(creditLineAddress), amount);
     require(success, "Failed to transfer USDC");

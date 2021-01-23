@@ -672,6 +672,65 @@ describe("CreditDesk", () => {
     })
   })
 
+  describe("getNextPaymentAmount", async () => {
+    beforeEach(async () => {
+      borrower = person3
+      underwriter = person2
+      usdc.transfer(borrower, usdcVal(50), {from: owner})
+    })
+
+    describe("with an outstanding payment", async () => {
+      it("returns the correct total amount owed", async () => {
+        let blockNumber = (await time.latestBlock()).add(new BN(100))
+        const balance = 10
+        const interestOwed = 1
+        const principalOwed = 2
+        let lateFeeGracePeriodInDays = paymentPeriodInDays
+        const creditLine = await createAndSetCreditLineAttributes({
+          balance: balance,
+          interestOwed: interestOwed,
+          principalOwed: principalOwed,
+          nextDueBlock: blockNumber,
+        })
+        await creditLine.setInterestAccruedAsOfBlock(blockNumber)
+        await creditLine.setLastFullPaymentBlock(new BN(0))
+        await creditLine.setTermEndBlock(lateFeeGracePeriodInDays.mul(BLOCKS_PER_DAY).mul(new BN(10))) // some time in the future
+
+        const totalInterestPerYear = usdcVal(balance).mul(interestApr).div(INTEREST_DECIMALS)
+        let blocksPassed = lateFeeGracePeriodInDays.mul(BLOCKS_PER_DAY).mul(new BN(2))
+        let expectedInterest = totalInterestPerYear.mul(blocksPassed).div(BLOCKS_PER_YEAR)
+
+        const lateFeeInterestPerYear = usdcVal(balance).mul(lateFeeApr).div(INTEREST_DECIMALS)
+        const lateFee = lateFeeInterestPerYear.mul(blocksPassed).div(BLOCKS_PER_YEAR)
+
+        const asOfBlock = blockNumber.add(blocksPassed)
+        await creditDesk._setBlockNumberForTest(asOfBlock)
+
+        // Should include interest/principal on the credit line, interest accrued due to time and any late fees
+        let expectedTotalPayment = usdcVal(interestOwed).add(usdcVal(principalOwed)).add(expectedInterest).add(lateFee)
+
+        expect(await creditDesk.getNextPaymentAmount(creditLine.address, asOfBlock)).to.bignumber.eq(
+          expectedTotalPayment
+        )
+        // If block number is 0, it uses the current block number
+        expect(await creditDesk.getNextPaymentAmount(creditLine.address, 0)).to.bignumber.eq(expectedTotalPayment)
+      })
+
+      it("returns 0 if before the next due block", async () => {
+        let blockNumber = (await time.latestBlock()).add(new BN(100))
+        const creditLine = await createAndSetCreditLineAttributes({
+          balance: 10,
+          interestOwed: 1,
+          principalOwed: 2,
+          nextDueBlock: blockNumber,
+        })
+        expect(await creditDesk.getNextPaymentAmount(creditLine.address, blockNumber.sub(new BN(10)))).to.bignumber.eq(
+          "0"
+        )
+      })
+    })
+  })
+
   describe("payment", async () => {
     describe("with an outstanding credit line", async () => {
       beforeEach(async () => {
