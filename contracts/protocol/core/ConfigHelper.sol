@@ -22,7 +22,7 @@ library ConfigHelper {
   }
 
   function getUSDC(GoldfinchConfig config) internal view returns (IERC20withDec) {
-    return IERC20withDec(config.getAddress(uint256(ConfigOptions.Addresses.USDC)));
+    return IERC20withDec(usdcAddress(config));
   }
 
   function getCreditDesk(GoldfinchConfig config) internal view returns (ICreditDesk) {
@@ -31,6 +31,10 @@ library ConfigHelper {
 
   function getFidu(GoldfinchConfig config) internal view returns (IFidu) {
     return IFidu(fiduAddress(config));
+  }
+
+  function oneInchAddress(GoldfinchConfig config) internal view returns (address) {
+    return config.getAddress(uint256(ConfigOptions.Addresses.OneInch));
   }
 
   function poolAddress(GoldfinchConfig config) internal view returns (address) {
@@ -43,6 +47,10 @@ library ConfigHelper {
 
   function fiduAddress(GoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.Fidu));
+  }
+
+  function usdcAddress(GoldfinchConfig config) internal view returns (address) {
+    return config.getAddress(uint256(ConfigOptions.Addresses.USDC));
   }
 
   function reserveAddress(GoldfinchConfig config) internal view returns (address) {

@@ -18,7 +18,7 @@ contract Pool is BaseUpgradeablePausable, IPool {
   using ConfigHelper for GoldfinchConfig;
 
   // $1 threshold to handle potential rounding errors, from differing decimals on Fidu and USDC;
-  uint256 constant ASSET_LIABILITY_MATCH_THRESHOLD = 1e6;
+  uint256 private constant ASSET_LIABILITY_MATCH_THRESHOLD = 1e6;
 
   event DepositMade(address indexed capitalProvider, uint256 amount, uint256 shares);
   event WithdrawalMade(address indexed capitalProvider, uint256 userAmount, uint256 reserveAmount);

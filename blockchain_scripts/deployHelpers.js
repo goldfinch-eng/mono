@@ -6,6 +6,7 @@ const INTEREST_DECIMALS = new BN(String(1e8))
 
 const ROPSTEN_USDC_ADDRESS = "0x07865c6e87b9f70255377e024ace6630c1eaa37f"
 const MAINNET_USDC_ADDRESS = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+const MAINNET_ONE_SPLIT_ADDRESS = "0xC586BeF4a0992C495Cf22e1aeEE4E446CECDee0E"
 const MAINNET_CHAIN_ID = "1"
 const LOCAL = "local"
 const ROPSTEN = "ropsten"
@@ -51,10 +52,15 @@ const CONFIG_KEYS = {
   USDC: 5,
   TreasuryReserve: 6,
   ProtocolAdmin: 7,
+  OneInch: 8,
 }
 
 function isTestEnv() {
   return process.env.NODE_ENV === "test"
+}
+
+function isMainnetForking() {
+  return process.env.HARDHAT_FORK === "mainnet"
 }
 
 function interestAprAsBN(interestPercentageString) {
@@ -63,6 +69,9 @@ function interestAprAsBN(interestPercentageString) {
 }
 
 function getUSDCAddress(chainID) {
+  if (isMainnetForking()) {
+    return USDC_MAPPING[MAINNET]
+  }
   return USDC_MAPPING[chainID] || USDC_MAPPING[CHAIN_MAPPING[chainID]]
 }
 
@@ -130,6 +139,7 @@ function toAtomic(amount, decimals = USDCDecimals) {
 module.exports = {
   CHAIN_MAPPING: CHAIN_MAPPING,
   ROPSTEN_USDC_ADDRESS: ROPSTEN_USDC_ADDRESS,
+  MAINNET_ONE_SPLIT_ADDRESS: MAINNET_ONE_SPLIT_ADDRESS,
   LOCAL: LOCAL,
   MAINNET: MAINNET,
   USDCDecimals: USDCDecimals,
@@ -149,5 +159,6 @@ module.exports = {
   CONFIG_KEYS: CONFIG_KEYS,
   SAFE_CONFIG: SAFE_CONFIG,
   isTestEnv: isTestEnv,
+  isMainnetForking: isMainnetForking,
   interestAprAsBN: interestAprAsBN,
 }

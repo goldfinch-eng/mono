@@ -1,9 +1,12 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "../core/BaseUpgradeablePausable.sol";
 import "../core/ConfigHelper.sol";
 import "../core/CreditLine.sol";
+import "../../interfaces/IERC20withDec.sol";
 
 /**
  * @title Goldfinch's Borrower contract
@@ -20,12 +23,23 @@ contract Borrower is BaseUpgradeablePausable {
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
 
+  address private constant USDT_ADDRESS = address(0xdAC17F958D2ee523a2206206994597C13D831ec7);
+  address private constant BUSD_ADDRESS = address(0x4Fabb145d64652a948d72533023f6E7A623C7C53);
+
   function initialize(address owner, GoldfinchConfig _config) public initializer {
     require(owner != address(0), "Owner cannot be empty");
     __BaseUpgradeablePausable__init(owner);
     config = _config;
-    // Approve pool for maximum USDC amount
-    config.getUSDC().approve(config.poolAddress(), uint256(-1));
+
+    // Handle default approvals. Pool, and OneInch for maximum amounts
+    address oneInch = config.oneInchAddress();
+    IERC20withDec usdc = config.getUSDC();
+    usdc.approve(config.poolAddress(), uint256(-1));
+    usdc.approve(oneInch, uint256(-1));
+    bytes memory data = abi.encodeWithSignature("approve(address,uint256)", oneInch, uint256(-1));
+    invoke(USDT_ADDRESS, data);
+    data = abi.encodeWithSignature("approve(address,uint256)", oneInch, uint256(-1));
+    invoke(BUSD_ADDRESS, data);
   }
 
   /**
@@ -87,5 +101,70 @@ contract Borrower is BaseUpgradeablePausable {
 
     config.getCreditDesk().applyPayment(creditLineAddress, amount);
     require(CreditLine(creditLineAddress).balance() == 0, "Failed to fully pay off creditline");
+  }
+
+  function payWithSwapThroughOneInch(
+    address creditLineAddress,
+    uint256 originAmount,
+    address fromToken,
+    uint256 minTargetAmount,
+    uint256[] memory exchangeDistribution
+  ) external onlyAdmin {
+    bytes memory _data;
+    // Do a low-level invoke on this transfer, since Tether fails if we use the normal IERC20 interface
+    _data = abi.encodeWithSignature("transferFrom(address,address,uint256)", msg.sender, address(this), originAmount);
+    invoke(address(fromToken), _data);
+    IERC20withDec usdc = config.getUSDC();
+    swapOnOneInch(fromToken, address(usdc), originAmount, minTargetAmount, exchangeDistribution);
+    uint256 usdcBalance = usdc.balanceOf(address(this));
+    config.getCreditDesk().pay(creditLineAddress, usdcBalance);
+  }
+
+  function swapOnOneInch(
+    address fromToken,
+    address toToken,
+    uint256 originAmount,
+    uint256 minTargetAmount,
+    uint256[] memory exchangeDistribution
+  ) internal {
+    bytes memory _data = abi.encodeWithSignature(
+      "swap(address,address,uint256,uint256,uint256[],uint256)",
+      fromToken,
+      toToken,
+      originAmount,
+      minTargetAmount,
+      exchangeDistribution,
+      0
+    );
+    invoke(config.oneInchAddress(), _data);
+  }
+
+  /**
+   * @notice Performs a generic transaction.
+   * @param _target The address for the transaction.
+   * @param _data The data of the transaction.
+   * Mostly copied from Argent:
+   * https://github.com/argentlabs/argent-contracts/blob/develop/contracts/wallet/BaseWallet.sol#L111
+   */
+  function invoke(address _target, bytes memory _data) internal returns (bytes memory) {
+    // External contracts can be compiled with different Solidity versions
+    // which can cause "revert without reason" when called through,
+    // for example, a standard IERC20 ABI compiled on the latest version.
+    // This low-level call avoids that issue.
+
+    bool success;
+    bytes memory _res;
+    // solhint-disable-next-line avoid-low-level-calls
+    (success, _res) = _target.call(_data);
+    if (!success && _res.length > 0) {
+      // solhint-disable-next-line no-inline-assembly
+      assembly {
+        returndatacopy(0, 0, returndatasize())
+        revert(0, returndatasize())
+      }
+    } else if (!success) {
+      revert("VM: wallet invoke reverted");
+    }
+    return _res;
   }
 }

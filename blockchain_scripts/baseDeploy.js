@@ -10,6 +10,7 @@ const {
   updateConfig,
   getUSDCAddress,
   isTestEnv,
+  MAINNET_ONE_SPLIT_ADDRESS,
 } = require("./deployHelpers.js")
 const PROTOCOL_CONFIG = require("../protocol_config.json")
 let logger
@@ -80,7 +81,6 @@ async function baseDeploy(hre, {shouldUpgrade}) {
     await updateConfig(config, "number", CONFIG_KEYS.WithdrawFeeDenominator, String(withdrawFeeDenominator))
     await updateConfig(config, "number", CONFIG_KEYS.LatenessGracePeriodInDays, String(latenessGracePeriodIndays))
     await updateConfig(config, "number", CONFIG_KEYS.LatenessMaxDays, String(latenessMaxDays))
-
     // If we have a multisig safe, set that as the protocol admin, otherwise use the named account (local and test envs)
     let multisigAddress
     if (SAFE_CONFIG[chainID]) {
@@ -90,6 +90,7 @@ async function baseDeploy(hre, {shouldUpgrade}) {
     }
 
     await updateConfig(config, "address", CONFIG_KEYS.ProtocolAdmin, multisigAddress)
+    await updateConfig(config, "address", CONFIG_KEYS.OneInch, MAINNET_ONE_SPLIT_ADDRESS)
     await config.setTreasuryReserve(multisigAddress)
 
     return config

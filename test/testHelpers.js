@@ -79,11 +79,14 @@ function expectAction(action, debug) {
       await action()
       const newValues = await Promise.all(items.map((i) => i()))
       if (debug) {
-        console.log("New:", String(newValues))
+        console.log("New:     ", String(newValues))
       }
       expectations.forEach((expectation, i) => {
         if (expectation.by) {
-          expect(newValues[i].sub(expectation.by)).to.bignumber.equal(originalValues[i])
+          expect(newValues[i]).to.bignumber.equal(originalValues[i].add(expectation.by))
+        } else if (expectation.byCloseTo) {
+          const onePercent = expectation.byCloseTo.div(new BN(100))
+          expect(newValues[i]).to.bignumber.closeTo(originalValues[i].add(expectation.byCloseTo), onePercent)
         } else if (expectation.fn) {
           expectation.fn(originalValues[i], newValues[i])
         } else if (expectation.increase) {
@@ -112,6 +115,9 @@ async function deployAllContracts(deployments) {
 }
 
 async function erc20Approve(erc20, accountToApprove, amount, fromAccounts) {
+  if (typeof accountToApprove != "string") {
+    throw new Error("Account to approve must be a string!")
+  }
   for (const fromAccount of fromAccounts) {
     await erc20.approve(accountToApprove, amount, {from: fromAccount})
   }

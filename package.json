@@ -6,6 +6,7 @@
   "scripts": {
     "start": "npx concurrently -n \"blockchain,web\"  \"npx hardhat node --reset --export-all client/config/deployments_dev.json\" \"cd client && npm start\" -k -c \"cyan, magenta\"",
     "test": "NODE_ENV=test npx hardhat test --show-stack-traces",
+    "mainnet-test": "HARDHAT_FORK=mainnet NODE_ENV=test npx hardhat test test/MainnetForking.test.js --show-stack-traces",
     "pre-push": "cd client && npm run pre-push",
     "pre-commit": "npx lint-staged && cd client && npm run pre-commit",
     "lint": "npx eslint . --fix && npx prettier . --write && npx solhint contracts/**/*.sol --fix",
@@ -81,7 +82,7 @@
     "eslint-plugin-mocha-no-only": "^1.1.1",
     "eslint-plugin-prettier": "^3.1.4",
     "ganache-cli": "^6.10.2",
-    "hardhat": "^2.0.2",
+    "hardhat": "^2.0.8",
     "hardhat-deploy": "^0.7.0-beta.28",
     "husky": "^3.1.0",
     "lint-staged": "^9.5.0",
