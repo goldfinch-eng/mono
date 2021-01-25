@@ -8,6 +8,7 @@
 @import './bar-viz.scss';
 @import './button.scss';
 @import './credit-status-balance.scss';
+@import './creditline-dropdown.scss';
 @import './deposit-status.scss';
 @import './footer.scss';
 @import './form-inputs.scss';
@@ -63,6 +64,7 @@ input{
   margin: 105px auto 20px;
   max-width: $content-max-width;
   padding: 0 0 20px;
+  position: relative;
 }
 
 .content-empty-message{

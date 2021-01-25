@@ -9,6 +9,7 @@ async function displayCreditLine(creditLineAddress) {
   const usdc = await getDeployedContract(deployments, "TestERC20", protocolOwner)
 
   const [
+    limit,
     balance,
     interestOwed,
     principalOwed,
@@ -19,6 +20,7 @@ async function displayCreditLine(creditLineAddress) {
     writedownAmount,
     interestApr,
   ] = await Promise.all([
+    creditLine.limit(),
     creditLine.balance(),
     creditLine.interestOwed(),
     creditLine.principalOwed(),
@@ -30,7 +32,8 @@ async function displayCreditLine(creditLineAddress) {
     creditLine.interestApr(),
   ])
 
-  console.log("--------- Credit line vars: ----------")
+  console.log(`--------- Credit line ${creditLineAddress} ----------`)
+  console.log("limit:", String(limit))
   console.log("balance:", String(balance))
   console.log("interestOwed:", String(interestOwed))
   console.log("principalOwed:", String(principalOwed))
