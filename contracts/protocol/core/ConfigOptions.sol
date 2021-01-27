@@ -29,7 +29,8 @@ library ConfigOptions {
     USDC,
     TreasuryReserve,
     ProtocolAdmin,
-    OneInch
+    OneInch,
+    TrustedForwarder
   }
 
   function getNumberName(uint256 number) public pure returns (string memory) {
@@ -86,6 +87,9 @@ library ConfigOptions {
     }
     if (Addresses.OneInch == addressName) {
       return "OneInch";
+    }
+    if (Addresses.TrustedForwarder == addressName) {
+      return "TrustedForwarder";
     }
     revert("Unknown value passed to getAddressName");
   }

@@ -7,6 +7,7 @@ import "../core/BaseUpgradeablePausable.sol";
 import "../core/ConfigHelper.sol";
 import "../core/CreditLine.sol";
 import "../../interfaces/IERC20withDec.sol";
+import "@opengsn/gsn/contracts/BaseRelayRecipient.sol";
 
 /**
  * @title Goldfinch's Borrower contract
@@ -19,7 +20,7 @@ import "../../interfaces/IERC20withDec.sol";
  * @author Goldfinch
  */
 
-contract Borrower is BaseUpgradeablePausable {
+contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient {
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
 
@@ -30,6 +31,8 @@ contract Borrower is BaseUpgradeablePausable {
     require(owner != address(0), "Owner cannot be empty");
     __BaseUpgradeablePausable__init(owner);
     config = _config;
+
+    trustedForwarder = config.trustedForwarderAddress();
 
     // Handle default approvals. Pool, and OneInch for maximum amounts
     address oneInch = config.oneInchAddress();
@@ -95,7 +98,7 @@ contract Borrower is BaseUpgradeablePausable {
    * @param amount The amount, in USDC atomic units, that the borrower wishes to pay
    */
   function pay(address creditLineAddress, uint256 amount) external onlyAdmin {
-    bool success = config.getUSDC().transferFrom(msg.sender, address(this), amount);
+    bool success = config.getUSDC().transferFrom(_msgSender(), address(this), amount);
     require(success, "Failed to transfer USDC");
     config.getCreditDesk().pay(creditLineAddress, amount);
   }
@@ -109,7 +112,7 @@ contract Borrower is BaseUpgradeablePausable {
     }
 
     // Do a single transfer, which is cheaper
-    bool success = config.getUSDC().transferFrom(msg.sender, address(this), totalAmount);
+    bool success = config.getUSDC().transferFrom(_msgSender(), address(this), totalAmount);
     require(success, "Failed to transfer USDC");
 
     ICreditDesk creditDesk = config.getCreditDesk();
@@ -119,7 +122,7 @@ contract Borrower is BaseUpgradeablePausable {
   }
 
   function payInFull(address creditLineAddress, uint256 amount) external onlyAdmin {
-    bool success = config.getUSDC().transferFrom(msg.sender, address(creditLineAddress), amount);
+    bool success = config.getUSDC().transferFrom(_msgSender(), address(creditLineAddress), amount);
     require(success, "Failed to transfer USDC");
 
     config.getCreditDesk().applyPayment(creditLineAddress, amount);
@@ -135,7 +138,7 @@ contract Borrower is BaseUpgradeablePausable {
   ) external onlyAdmin {
     bytes memory _data;
     // Do a low-level invoke on this transfer, since Tether fails if we use the normal IERC20 interface
-    _data = abi.encodeWithSignature("transferFrom(address,address,uint256)", msg.sender, address(this), originAmount);
+    _data = abi.encodeWithSignature("transferFrom(address,address,uint256)", _msgSender(), address(this), originAmount);
     invoke(address(fromToken), _data);
     IERC20withDec usdc = config.getUSDC();
     swapOnOneInch(fromToken, address(usdc), originAmount, minTargetAmount, exchangeDistribution);
@@ -195,5 +198,21 @@ contract Borrower is BaseUpgradeablePausable {
     assembly {
       value := mload(add(_bytes, 0x20))
     }
+  }
+
+  // OpenZeppelin contracts come with support for GSN _msgSender() (which just defaults to msg.sender)
+  // Since there are two different versions of the function in the hierarchy, we need to instruct solidity to
+  // use the relay recipient version which can actually pull the real sender from the parameters.
+  // https://www.notion.so/My-contract-is-using-OpenZeppelin-How-do-I-add-GSN-support-2bee7e9d5f774a0cbb60d3a8de03e9fb
+  function _msgSender() internal view override(ContextUpgradeSafe, BaseRelayRecipient) returns (address payable) {
+    return BaseRelayRecipient._msgSender();
+  }
+
+  function _msgData() internal view override(ContextUpgradeSafe, BaseRelayRecipient) returns (bytes memory ret) {
+    return BaseRelayRecipient._msgData();
+  }
+
+  function versionRecipient() external view override returns (string memory) {
+    return "2.0.0";
   }
 }

@@ -31,6 +31,10 @@ function useSendFromUser() {
         return Promise.resolve(res);
       }
 
+      // If use gasless transactions
+      if (true) {
+      }
+
       return unsentAction
         .send({
           from: user.address,
