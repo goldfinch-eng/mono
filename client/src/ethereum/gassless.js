@@ -1,13 +1,14 @@
 const ForwarderAbi = require('../../abi/Forwarder.json');
+const BorrowerAbi = require('../../abi/Borrower.json');
 const { TypedDataUtils } = require('eth-sig-util');
 const { bufferToHex } = require('ethereumjs-util');
-const { Relayer } = require('defender-relay-client');
+// const { Relayer } = require('defender-relay-client');
 const { ethers } = require('ethers');
 
 const ForwarderAddress = '0x956868751Cc565507B3B58E53a6f9f41B56bed74';
-const RelayerApiKey = process.env.APP_API_KEY;
-const RelayerSecretKey = process.env.APP_SECRET_KEY;
-const InfuraKEY = process.env.INFURA_KEY;
+const RelayerApiKey = 'CZmhcNr8DvNqN8FR5WThzJefBzmQPDDP';
+const RelayerSecretKey = '5mSN1bndsYxwA1T767ZW43obQ9ZzFku6ZgeV6qPcU8KLJE2TW7aXEwpUJqAbZCqk';
+const InfuraKEY = 'd8e13fc4893e4be5aae875d94fee67b7';
 
 const EIP712DomainType = [
   { name: 'name', type: 'string' },
@@ -47,22 +48,26 @@ const TypeHash = ethers.utils.id(TypeName);
 const DomainSeparator = bufferToHex(TypedDataUtils.hashStruct('EIP712Domain', TypedData.domain, TypedData.types));
 const SuffixData = '0x';
 
-async function submit(contractAddress, data) {
+async function submitGaslessTransaction(contractAddress) {
   // Initialize provider and signer from metamask
-  await window.ethereum.enable();
+  // await window.ethereum.enable();
   const provider = new ethers.providers.Web3Provider(window.ethereum);
   const signer = provider.getSigner();
   const from = await signer.getAddress();
   const network = await provider.getNetwork();
-  if (network.chainId !== 4) throw new Error('Must be connected to Rinkeby');
+  // if (network.chainId !== 4) throw new Error('Must be connected to Rinkeby');
 
   // Get nonce for current signer
   const forwarder = new ethers.Contract(ForwarderAddress, ForwarderAbi, provider);
   const nonce = await forwarder.getNonce(from).then(nonce => nonce.toString());
 
   // Encode meta-tx request
-  // const boxesInterface = new ethers.utils.Interface(BoxesAbi);
-  //const data = boxesInterface.encodeFunctionData('setValue', [number]);
+  const borrowerInterface = new ethers.utils.Interface(BorrowerAbi);
+  const data = borrowerInterface.functions.drawdown.encode([
+    '0xd3D57673BAE28880376cDF89aeFe4653A5C84A08',
+    1000000,
+    '0xE7f9ED35DA54b2e4A1857487dBf42A32C4DBD4a0',
+  ]);
   const request = {
     from,
     to: contractAddress,
@@ -92,14 +97,16 @@ async function relay(request) {
 
   // Send meta-tx through Defender
   const forwardData = forwarder.interface.encodeFunctionData('execute', args);
-  const relayer = new Relayer(RelayerApiKey, RelayerSecretKey);
-  const tx = await relayer.sendTransaction({
-    speed: 'fast',
-    to: ForwarderAddress,
-    gasLimit: gas,
-    data: forwardData,
-  });
+  // const relayer = new Relayer(RelayerApiKey, RelayerSecretKey);
+  // const tx = await relayer.sendTransaction({
+  //   speed: 'fast',
+  //   to: ForwarderAddress,
+  //   gasLimit: gas,
+  //   data: forwardData,
+  // });
 
-  console.log(`Sent meta-tx: ${tx.hash}`);
-  return tx;
+  // console.log(`Sent meta-tx: ${tx.hash}`);
+  // return tx;
 }
+
+export { submitGaslessTransaction };

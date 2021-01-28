@@ -1,10 +1,11 @@
 import web3 from '../web3';
 import moment from 'moment';
 import BigNumber from 'bignumber.js';
-import * as CreditLineContract from '../../../artifacts/contracts/protocol/CreditLine.sol/CreditLine.json';
 import { getUSDC, usdcFromAtomic } from './erc20';
 import { fetchDataFromAttributes, INTEREST_DECIMALS, BLOCKS_PER_YEAR, BLOCKS_PER_DAY } from './utils';
 import { roundUpPenny, roundDownPenny } from '../utils';
+
+const CreditLineAbi = require('../../abi/Creditline.json');
 
 const zero = new BigNumber(0);
 const defaultCreditLine = {
@@ -25,7 +26,7 @@ const defaultCreditLine = {
 };
 
 function buildCreditLine(address) {
-  return new web3.eth.Contract(CreditLineContract.abi, address);
+  return new web3.eth.Contract(CreditLineAbi, address);
 }
 
 async function fetchCreditLineData(creditLine) {

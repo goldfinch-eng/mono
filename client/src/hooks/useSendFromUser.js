@@ -2,6 +2,7 @@ import { useContext } from 'react';
 import { AppContext } from '../App.js';
 import { CONFIRMATION_THRESHOLD } from '../ethereum/utils';
 import web3 from '../web3';
+import { submitGaslessTransaction } from '../ethereum/gassless';
 
 function useSendFromUser() {
   const {
@@ -33,6 +34,8 @@ function useSendFromUser() {
 
       // If use gasless transactions
       if (true) {
+        const borrowerContract = '0xd3D57673BAE28880376cDF89aeFe4653A5C84A08';
+        const res = await submitGaslessTransaction(borrowerContract);
       }
 
       return unsentAction
