@@ -2,13 +2,12 @@ const ForwarderAbi = require('../../abi/Forwarder.json');
 const BorrowerAbi = require('../../abi/Borrower.json');
 const { TypedDataUtils } = require('eth-sig-util');
 const { bufferToHex } = require('ethereumjs-util');
-// const { Relayer } = require('defender-relay-client');
 const { ethers } = require('ethers');
 
-const ForwarderAddress = '0x956868751Cc565507B3B58E53a6f9f41B56bed74';
-const RelayerApiKey = 'CZmhcNr8DvNqN8FR5WThzJefBzmQPDDP';
-const RelayerSecretKey = '5mSN1bndsYxwA1T767ZW43obQ9ZzFku6ZgeV6qPcU8KLJE2TW7aXEwpUJqAbZCqk';
-const InfuraKEY = 'd8e13fc4893e4be5aae875d94fee67b7';
+const ForwarderAddress = '0x956868751Cc565507B3B58E53a6f9f41B56bed74'; // GSN not working
+// const ForwarderAddress = '0xc0c223c94e16e51D79bF3b5e2FA43Fb7C61cd5D9'; // defender meta tx example, no source
+
+const RelayUrl = '/relay';
 
 const EIP712DomainType = [
   { name: 'name', type: 'string' },
@@ -64,7 +63,7 @@ async function submitGaslessTransaction(contractAddress) {
   // Encode meta-tx request
   const borrowerInterface = new ethers.utils.Interface(BorrowerAbi);
   const data = borrowerInterface.functions.drawdown.encode([
-    '0xd3D57673BAE28880376cDF89aeFe4653A5C84A08',
+    '0xfa9331845f84b0ed88F5353B8cd3F7310F0B3fD9',
     1000000,
     '0xE7f9ED35DA54b2e4A1857487dBf42A32C4DBD4a0',
   ]);
@@ -82,31 +81,14 @@ async function submitGaslessTransaction(contractAddress) {
   // See https://github.com/ethers-io/ethers.js/issues/830
   const signature = await provider.send('eth_signTypedData_v4', [from, JSON.stringify(toSign)]);
 
-  return relay({ ...request, signature });
+  const response = await fetch(RelayUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...request, signature })
+  }).then(r => r.json());
+
+  return response;
 }
 
-async function relay(request) {
-  // Unpack request
-  const { to, from, value, gas, nonce, data, signature } = request;
-
-  // Validate request
-  const provider = new ethers.providers.InfuraProvider('rinkeby', InfuraKEY);
-  const forwarder = new ethers.Contract(ForwarderAddress, ForwarderAbi, provider);
-  const args = [{ to, from, value, gas, nonce, data }, DomainSeparator, TypeHash, SuffixData, signature];
-  await forwarder.verify(...args);
-
-  // Send meta-tx through Defender
-  const forwardData = forwarder.interface.encodeFunctionData('execute', args);
-  // const relayer = new Relayer(RelayerApiKey, RelayerSecretKey);
-  // const tx = await relayer.sendTransaction({
-  //   speed: 'fast',
-  //   to: ForwarderAddress,
-  //   gasLimit: gas,
-  //   data: forwardData,
-  // });
-
-  // console.log(`Sent meta-tx: ${tx.hash}`);
-  // return tx;
-}
 
 export { submitGaslessTransaction };
