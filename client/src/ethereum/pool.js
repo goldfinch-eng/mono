@@ -131,12 +131,18 @@ async function getRepaymentEvents() {
   const eventTxs = await mapEventsToTx(_.flatten(events));
   const combinedEvents = _.map(_.groupBy(eventTxs, 'id'), val => {
     const interestPayment = _.find(val, event => event.type === 'InterestCollected');
+    const principalPayment = _.find(val, event => event.type === 'PrincipalCollected') || {
+      amountBN: new BigNumber(0),
+    };
+    const reserveCollection = _.find(val, event => event.type === '"ReserveFundsCollected"') || {
+      amountBN: new BigNumber(0),
+    };
     if (!interestPayment) {
       // This usually  means it's just ReserveFundsCollected, from a withdraw, and not a repayment
       return null;
     }
-    const merged = { ...val[0], ...val[1], ...[val[2]] };
-    merged.amountBN = val[0].amountBN.plus(val[1].amountBN).plus(val[2].amountBN);
+    const merged = { ...interestPayment, ...principalPayment, ...reserveCollection };
+    merged.amountBN = interestPayment.amountBN.plus(principalPayment.amountBN).plus(reserveCollection.amountBN);
     merged.amount = usdcFromAtomic(merged.amountBN);
     merged.interestAmountBN = interestPayment.amountBN;
     merged.type = 'CombinedRepayment';
