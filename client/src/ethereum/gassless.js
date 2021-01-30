@@ -1,13 +1,12 @@
+import web3 from '../web3';
 const ForwarderAbi = require('../../abi/Forwarder.json');
 const BorrowerAbi = require('../../abi/Borrower.json');
-const { TypedDataUtils } = require('eth-sig-util');
-const { bufferToHex } = require('ethereumjs-util');
 const { ethers } = require('ethers');
 
-const ForwarderAddress = '0x956868751Cc565507B3B58E53a6f9f41B56bed74'; // GSN not working
-// const ForwarderAddress = '0xc0c223c94e16e51D79bF3b5e2FA43Fb7C61cd5D9'; // defender meta tx example, no source
+const ForwarderAddress = process.env.FORWARDER_ADDRESS || '0x956868751Cc565507B3B58E53a6f9f41B56bed74';
 
 const RelayUrl = '/relay';
+const MAX_GAS = 2e6;
 
 const EIP712DomainType = [
   { name: 'name', type: 'string' },
@@ -40,21 +39,10 @@ const TypedData = {
   message: {},
 };
 
-const GenericParams = 'address from,address to,uint256 value,uint256 gas,uint256 nonce,bytes data';
-const TypeName = `ForwardRequest(${GenericParams})`;
-const TypeHash = ethers.utils.id(TypeName);
-
-const DomainSeparator = bufferToHex(TypedDataUtils.hashStruct('EIP712Domain', TypedData.domain, TypedData.types));
-const SuffixData = '0x';
-
-async function submitGaslessTransaction(contractAddress) {
-  // Initialize provider and signer from metamask
-  // await window.ethereum.enable();
-  const provider = new ethers.providers.Web3Provider(window.ethereum);
+async function submitGaslessTransaction(contractAddress, data) {
+  const provider = new ethers.providers.Web3Provider(web3.currentProvider);
   const signer = provider.getSigner();
   const from = await signer.getAddress();
-  const network = await provider.getNetwork();
-  // if (network.chainId !== 4) throw new Error('Must be connected to Rinkeby');
 
   // Get nonce for current signer
   const forwarder = new ethers.Contract(ForwarderAddress, ForwarderAbi, provider);
@@ -62,7 +50,9 @@ async function submitGaslessTransaction(contractAddress) {
 
   // Encode meta-tx request
   const borrowerInterface = new ethers.utils.Interface(BorrowerAbi);
-  const data = borrowerInterface.functions.drawdown.encode([
+  // TODO: This currently hardcodes the credit line address. Remove when we build frontend support for the
+  // borrower contract
+  data = borrowerInterface.functions.drawdown.encode([
     '0xfa9331845f84b0ed88F5353B8cd3F7310F0B3fD9',
     1000000,
     '0xE7f9ED35DA54b2e4A1857487dBf42A32C4DBD4a0',
@@ -71,7 +61,7 @@ async function submitGaslessTransaction(contractAddress) {
     from,
     to: contractAddress,
     value: 0,
-    gas: 1e6,
+    gas: MAX_GAS,
     nonce,
     data,
   };
@@ -84,11 +74,13 @@ async function submitGaslessTransaction(contractAddress) {
   const response = await fetch(RelayUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...request, signature })
-  }).then(r => r.json());
+    body: JSON.stringify({ ...request, signature }),
+  }).then(
+    r => r.json(),
+    e => e.json(),
+  );
 
   return response;
 }
-
 
 export { submitGaslessTransaction };

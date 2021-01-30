@@ -24,7 +24,6 @@ async function createCreditLineForBorrower(creditDesk, creditLineFactory, borrow
   }
 
   const result = await (await creditLineFactory.createBorrower(borrower)).wait()
-  console.log(result)
   let bwrConAddr = result.events[result.events.length - 1].args[0]
   logger(`Created borrower contract: ${bwrConAddr} for ${borrower}`)
   borrower = bwrConAddr

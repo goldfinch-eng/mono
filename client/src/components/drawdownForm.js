@@ -23,9 +23,10 @@ function DrawdownForm(props) {
   function action({ transactionAmount, sendToAddress }) {
     const drawdownAmount = usdcToAtomic(transactionAmount);
     sendToAddress = sendToAddress || props.borrower.address;
-    return sendFromUser(creditDesk.methods.drawdown(drawdownAmount, props.creditLine.address), {
+    return sendFromUser(creditDesk.methods.drawdown(drawdownAmount, props.creditLine.address, sendToAddress), {
       type: 'Borrow',
       amount: transactionAmount,
+      gasless: true,
     }).then(props.actionComplete);
   }
 
@@ -39,7 +40,7 @@ function DrawdownForm(props) {
     let warningMessage, disabled;
     if (props.creditLine.isLate) {
       warningMessage = <p className="form-message">Cannot drawdown when payment is past due</p>;
-      // disabled = true;
+      disabled = true;
     }
 
     return (

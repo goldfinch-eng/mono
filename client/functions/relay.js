@@ -1,11 +1,13 @@
-const ForwarderAbi = require('../abi/Forwarder.json');
-const BorrowerAbi = require('../abi/Borrower.json');
-const ForwarderAddress = '0x956868751Cc565507B3B58E53a6f9f41B56bed74'; // GSN, not working
-// const ForwarderAddress = '0xc0c223c94e16e51D79bF3b5e2FA43Fb7C61cd5D9'; // defender meta tx example, no source
-const RelayerApiKey = 'CZmhcNr8DvNqN8FR5WThzJefBzmQPDDP';
-const RelayerSecretKey = '5mSN1bndsYxwA1T767ZW43obQ9ZzFku6ZgeV6qPcU8KLJE2TW7aXEwpUJqAbZCqk';
-const InfuraKEY = 'd8e13fc4893e4be5aae875d94fee67b7';
+// Based on https://github.com/OpenZeppelin/defender-example-metatx-relay
 
+const ForwarderAddress = process.env.FORWARDER_ADDRESS;
+const RelayerApiKey = process.env.RELAYER_API_KEY;
+const RelayerSecretKey = process.env.RELAYER_SECRET_KEY;
+const InfuraKey = process.env.INFURA_KEY;
+const Network = process.env.NETWORK;
+const WHITELISTED_SENDERS = (process.env.WHITELISTED_SENDERS || '').split(',');
+
+const ForwarderAbi = require('../abi/Forwarder.json');
 const { Relayer } = require('defender-relay-client');
 const { ethers } = require('ethers');
 
@@ -17,7 +19,7 @@ const EIP712DomainType = [
   { name: 'version', type: 'string' },
   { name: 'chainId', type: 'uint256' },
   { name: 'verifyingContract', type: 'address' },
-]
+];
 
 const ForwardRequestType = [
   { name: 'from', type: 'address' },
@@ -30,7 +32,6 @@ const ForwardRequestType = [
 
 const TypedData = {
   domain: {
-    // TODO: Need to register this domain separator on the forwarder contract
     name: 'Defender',
     version: '1',
     chainId: 4,
@@ -56,23 +57,20 @@ async function relay(request) {
   const { to, from, value, gas, nonce, data, signature } = request;
 
   // Validate request
-  const provider = new ethers.providers.InfuraProvider('rinkeby', InfuraKEY);
+  const provider = new ethers.providers.InfuraProvider(Network, InfuraKey);
   const forwarder = new ethers.Contract(ForwarderAddress, ForwarderAbi, provider);
-  const args = [
-    { to, from, value, gas, nonce, data },
-    DomainSeparator,
-    TypeHash,
-    SuffixData,
-    signature
-  ];
-  console.log(`Verifying: ${JSON.stringify(args)}`);
+  const args = [{ to, from, value, gas, nonce, data }, DomainSeparator, TypeHash, SuffixData, signature];
+
+  if (!WHITELISTED_SENDERS.includes(from)) {
+    throw new Error(`Unrecognized sender: ${from}`);
+  }
+
   await forwarder.verify(...args);
 
   // Send meta-tx through Defender
   const forwardData = forwarder.interface.functions.execute.encode(args);
-  const relayer = new Relayer({apiKey: RelayerApiKey, apiSecret: RelayerSecretKey});
-  console.log(`Relaying: ${forwardData}`);
-  // const tx = { hash: 'TEST' };
+  const relayer = new Relayer({ apiKey: RelayerApiKey, apiSecret: RelayerSecretKey });
+
   const tx = await relayer.sendTransaction({
     speed: 'fast',
     to: ForwarderAddress,
@@ -80,7 +78,7 @@ async function relay(request) {
     data: forwardData,
   });
 
-  console.log(`Sent meta-tx: ${tx.hash}, data: ${data}`);
+  console.log(`Sent meta-tx: ${tx.hash} on behalf of ${from}, data: ${forwardData}`);
   return tx;
 }
 
@@ -88,11 +86,10 @@ async function relay(request) {
 exports.handler = async function(event, context, callback) {
   try {
     const data = JSON.parse(event.body);
-    console.log(`Handling request: ${JSON.stringify(data)}`);
-    const response = await relay(data);
-    callback(null, { statusCode: 200, body: JSON.stringify(response) });
-  } catch (err) {
-    console.log(`Error: ${err}`);
-    callback(err);
+    // console.log(`Handling request: ${JSON.stringify(data)}`);
+    const tx = await relay(data);
+    callback(null, { statusCode: 200, body: JSON.stringify({ success: true, tx: tx }) });
+  } catch (error) {
+    callback(error, { statusCode: 500, body: JSON.stringify({ success: false, error: error.toString() }) });
   }
 };

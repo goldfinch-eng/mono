@@ -14,9 +14,10 @@ const {
   ZERO_ADDRESS,
   advanceTime,
 } = require("./testHelpers.js")
+const {CONFIG_KEYS} = require("../blockchain_scripts/deployHelpers")
 const Borrower = artifacts.require("Borrower")
 
-let accounts, owner, bwr, person3, underwriter, reserve, goldfinchFactory, creditDesk, usdc, pool
+let accounts, owner, bwr, person3, underwriter, reserve, goldfinchFactory, goldfinchConfig, creditDesk, usdc, pool
 
 describe("Borrower", async () => {
   const setupTest = deployments.createFixture(async ({deployments}) => {
@@ -36,7 +37,7 @@ describe("Borrower", async () => {
   beforeEach(async () => {
     accounts = await web3.eth.getAccounts()
     ;[owner, bwr, person3, underwriter, reserve] = accounts
-    ;({goldfinchFactory, usdc, creditDesk, pool} = await setupTest())
+    ;({goldfinchFactory, goldfinchConfig, usdc, creditDesk, pool} = await setupTest())
   })
 
   describe("drawdown", async () => {
@@ -107,6 +108,51 @@ describe("Borrower", async () => {
       })
     })
   })
+
+  // These tests are not yet passing. Not sure how to pack the arguments in JS so it will be deconstructed correctly
+  // by the BaseRelayRecipient and TrustedForwarder: https://github.com/opengsn/forwarder/blob/master/contracts/Forwarder.sol#L60
+  // https://github.com/opengsn/forwarder/blob/master/contracts/BaseRelayRecipient.sol#L41
+  xdescribe("gasless transactions", async () => {
+    let bwrCon, cl
+    let amount = usdcVal(10)
+
+    async function createBorrowerAndCreditLine() {
+      const result = await goldfinchFactory.createBorrower(bwr)
+      let bwrConAddr = result.logs[result.logs.length - 1].args.borrower
+      bwrCon = await Borrower.at(bwrConAddr)
+      await erc20Approve(usdc, bwrCon.address, usdcVal(100000), [bwr])
+      cl = await createCreditLine({creditDesk, borrower: bwrCon.address, underwriter})
+    }
+
+    describe("When the forwarder is not trusted", async () => {
+      it("does use the passed in msg sender", async () => {
+        await createBorrowerAndCreditLine()
+        const paramsWithSenderAppended = web3.eth.abi.encodeParameters(
+          ["address", "uint256", "address", "address"],
+          [cl.address, amount.toNumber(), bwrCon.address, person3]
+        )
+        return expect(
+          bwrCon.drawdown.sendTransaction({data: paramsWithSenderAppended, from: person3})
+        ).to.be.rejectedWith(/Must have admin role/)
+      })
+    })
+
+    describe("when the forwarder is trusted", async () => {
+      it("uses the passed in msg sender", async () => {
+        await goldfinchConfig.setAddressForTest(CONFIG_KEYS.TrustedForwarder, person3)
+        await createBorrowerAndCreditLine()
+
+        const paramsWithSenderAppended = web3.eth.abi.encodeParameters(
+          ["address", "uint256", "address", "address"],
+          [cl.address, amount.toNumber(), bwrCon.address, person3]
+        )
+        await expectAction(() =>
+          bwrCon.drawdown.sendTransaction({data: paramsWithSenderAppended, from: person3})
+        ).toChange([[async () => await getBalance(bwrCon.address, usdc), {by: amount}]])
+      })
+    })
+  })
+
   describe("pay", async () => {
     let bwrCon, cl
     let amount = usdcVal(10)
