@@ -1,5 +1,5 @@
 import web3 from '../web3';
-import { FORWARDER_ADDRESSES } from './utils';
+const { FORWARDER_ADDRESSES } = require('./utils');
 const ForwarderAbi = require('../../abi/Forwarder.json');
 const BorrowerAbi = require('../../abi/Borrower.json');
 const { ethers } = require('ethers');
@@ -43,9 +43,9 @@ async function submitGaslessTransaction(contractAddress, data) {
   const signer = provider.getSigner();
   const from = await signer.getAddress();
 
-  const chainId = provider.getNetwork().chainId;
-  const ForwarderAddress = FORWARDER_ADDRESSES[chainId];
-  TypedData.domain.chainId = chainId;
+  const network = await provider.getNetwork();
+  const ForwarderAddress = FORWARDER_ADDRESSES[network.chainId];
+  TypedData.domain.chainId = network.chainId;
   TypedData.domain.verifyingContract = ForwarderAddress;
 
   // Get nonce for current signer
