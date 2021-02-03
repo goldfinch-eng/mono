@@ -1,9 +1,8 @@
 import web3 from '../web3';
+import { FORWARDER_ADDRESSES } from './utils';
 const ForwarderAbi = require('../../abi/Forwarder.json');
 const BorrowerAbi = require('../../abi/Borrower.json');
 const { ethers } = require('ethers');
-
-const ForwarderAddress = process.env.FORWARDER_ADDRESS || '0x956868751Cc565507B3B58E53a6f9f41B56bed74';
 
 const RelayUrl = '/relay';
 const MAX_GAS = 2e6;
@@ -28,8 +27,8 @@ const TypedData = {
   domain: {
     name: 'Defender',
     version: '1',
-    chainId: 4,
-    verifyingContract: ForwarderAddress,
+    chainId: null,
+    verifyingContract: null,
   },
   primaryType: 'ForwardRequest',
   types: {
@@ -43,6 +42,11 @@ async function submitGaslessTransaction(contractAddress, data) {
   const provider = new ethers.providers.Web3Provider(web3.currentProvider);
   const signer = provider.getSigner();
   const from = await signer.getAddress();
+
+  const chainId = provider.getNetwork().chainId;
+  const ForwarderAddress = FORWARDER_ADDRESSES[chainId];
+  TypedData.domain.chainId = chainId;
+  TypedData.domain.verifyingContract = ForwarderAddress;
 
   // Get nonce for current signer
   const forwarder = new ethers.Contract(ForwarderAddress, ForwarderAbi, provider);

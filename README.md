@@ -32,6 +32,14 @@ then go to `Add Token` in Metamask, and paste it in there. Your fake USDC balanc
 
 - That's pretty much it! Make your changes. The local server will auto reload
 
+### Frontend Architecture
+To support gasless transactions, we need to collect the signature from the client, perform some server side checks to validate
+the sender and the to contract (i.e. it's a known borrower interacting with our borrower contracts, we don't want to subsidize any arbitrary transaction).
+To support this we are using Netlify Cloud Functions (their version of lambdas). Netlify automatically picks up any functions in the `client/functions` directory 
+and makes them available as an api endpoint. To support local development, we mimic this by having a `client/server.js` file that's started
+with `npm start` and will execute the function in `client/functions`. This server.js is only meant for local use, and we've configured webpack to proxy to this server.
+If you want to test gasless transactions, make sure to run `cp client/.env.example client/.env.local` and update the whitelist addresses 
+
 ### Getting Testnet ETH and USDC
 If you're going to test or develop on Testnet (eg. Ropsten, or Rinkeby), you'll want some testnet ETH and USDC to play around with the app locally. The following sites should work for the `ropsten` testnet.
 

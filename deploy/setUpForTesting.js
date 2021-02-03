@@ -4,6 +4,8 @@ const {
   MAINNET_CHAIN_ID,
   LOCAL,
   CHAIN_MAPPING,
+  CONFIG_KEYS,
+  updateConfig,
   getUSDCAddress,
   USDCDecimals,
   isTestEnv,
@@ -26,6 +28,8 @@ async function main({getNamedAccounts, deployments, getChainId}) {
   const pool = await getDeployedAsEthersContract(getOrNull, "Pool")
   const creditDesk = await getDeployedAsEthersContract(getOrNull, "CreditDesk")
   let erc20 = await getDeployedAsEthersContract(getOrNull, "TestERC20")
+  const config = await getDeployedAsEthersContract(getOrNull, "GoldfinchConfig")
+  await setupTestForwarder(deployments, config, getOrNull, protocol_owner)
 
   if (getUSDCAddress(chainID)) {
     logger("On a network with known USDC address, so firing up that contract...")
@@ -130,6 +134,23 @@ async function createCreditLineForBorrower(creditDesk, borrower) {
   const lateFeeApr = String(new BN(0))
   await creditDesk.createCreditLine(borrower, limit, interestApr, paymentPeriodInDays, termInDays, lateFeeApr)
   logger("Created a credit line for the borrower", borrower)
+}
+
+async function setupTestForwarder(deployments, config, getOrNull, protocol_owner) {
+  if (!isTestEnv()) {
+    return
+  }
+
+  let deployResult = await deployments.deploy("TestForwarder", {
+    from: protocol_owner,
+    gas: 4000000,
+  })
+  logger(`Created Forwarder at ${deployResult.address}`)
+
+  let forwarder = await getDeployedAsEthersContract(getOrNull, "TestForwarder")
+  await forwarder.registerDomainSeparator("Defender", "1")
+
+  await updateConfig(config, "address", CONFIG_KEYS.TrustedForwarder, deployResult.address)
 }
 
 module.exports = main

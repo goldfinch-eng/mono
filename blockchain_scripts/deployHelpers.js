@@ -34,7 +34,6 @@ const SAFE_CONFIG = {
 const TRUSTED_FORWARDER_CONFIG = {
   1: "0xa530F85085C6FE2f866E7FdB716849714a89f4CD", // Mainnet
   4: "0x956868751Cc565507B3B58E53a6f9f41B56bed74", // Rinkeby
-  31337: "0x956868751Cc565507B3B58E53a6f9f41B56bed74", // Rinkeby
 }
 
 let OWNER_ROLE, PAUSER_ROLE, MINTER_ROLE
@@ -86,6 +85,15 @@ function getUSDCAddress(chainID) {
   return USDC_MAPPING[chainID] || USDC_MAPPING[CHAIN_MAPPING[chainID]]
 }
 
+async function getSignerForAddress(signerAddress) {
+  if (signerAddress && typeof signerAddress === "string") {
+    const signers = await ethers.getSigners()
+    return signers.find((signer) => signer.address === signerAddress)
+  } else if (signerAddress && typeof signerAddres === "object") {
+    return signerAddress
+  }
+}
+
 async function getDeployedContract(deployments, contractName, signerAddress) {
   let deployment = await deployments.getOrNull(contractName)
   if (!deployment && isTestEnv()) {
@@ -100,13 +108,7 @@ async function getDeployedContract(deployments, contractName, signerAddress) {
     )
   }
   const abi = implementation ? implementation.abi : deployment.abi
-  let signer = undefined
-  if (signerAddress && typeof signerAddress === "string") {
-    const signers = await ethers.getSigners()
-    signer = signers.find((signer) => signer.address === signerAddress)
-  } else if (signerAddress && typeof signerAddres === "object") {
-    signer = signerAddress
-  }
+  let signer = await getSignerForAddress(signerAddress)
   return await ethers.getContractAt(abi, deployment.address, signer)
 }
 
@@ -163,6 +165,7 @@ module.exports = {
   toAtomic: toAtomic,
   upgrade: upgrade,
   updateConfig: updateConfig,
+  getSignerForAddress: getSignerForAddress,
   MAINNET_CHAIN_ID: MAINNET_CHAIN_ID,
   OWNER_ROLE: OWNER_ROLE,
   PAUSER_ROLE: PAUSER_ROLE,

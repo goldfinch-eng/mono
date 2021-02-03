@@ -64,6 +64,8 @@
     "contract-proxy-kit": "^2.2.0-alpha.1",
     "defender-relay-client": "^1.3.1",
     "dotenv": "^8.2.0",
+    "eth-sig-util": "^3.0.0",
+    "ethereumjs-util": "^7.0.8",
     "ethers": "^5.0.23",
     "react-router-dom": "^5.2.0",
     "truffle-hdwallet-provider": "^1.0.17"

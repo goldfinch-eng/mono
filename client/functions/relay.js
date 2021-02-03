@@ -6,6 +6,7 @@ const RelayerSecretKey = process.env.RELAYER_SECRET_KEY;
 const InfuraKey = process.env.INFURA_KEY;
 const Network = process.env.NETWORK;
 const WHITELISTED_SENDERS = (process.env.WHITELISTED_SENDERS || '').split(',');
+const WHITELISTED_CONTRACTS = (process.env.WHITELISTED_CONTRACTS || '').split(',');
 
 const ForwarderAbi = require('../abi/Forwarder.json');
 const { Relayer } = require('defender-relay-client');
@@ -13,6 +14,12 @@ const { ethers } = require('ethers');
 
 const { TypedDataUtils } = require('eth-sig-util');
 const { bufferToHex } = require('ethereumjs-util');
+
+const ChainId = {
+  mainnet: 1,
+  rinkeby: 4,
+  localhost: 31337,
+};
 
 const EIP712DomainType = [
   { name: 'name', type: 'string' },
@@ -34,7 +41,7 @@ const TypedData = {
   domain: {
     name: 'Defender',
     version: '1',
-    chainId: 4,
+    chainId: ChainId[Network],
     verifyingContract: ForwarderAddress,
   },
   primaryType: 'ForwardRequest',
@@ -65,6 +72,12 @@ async function relay(request) {
     throw new Error(`Unrecognized sender: ${from}`);
   }
 
+  if (!WHITELISTED_CONTRACTS.includes(to)) {
+    throw new Error(`Unrecognized borrower contract: ${to}`);
+  }
+
+  // This verifies the unpacked message matches the signature and therefore validates that the to/from/data passed in
+  // was actually signed by the whitelisted sender
   await forwarder.verify(...args);
 
   // Send meta-tx through Defender
