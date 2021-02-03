@@ -61,6 +61,29 @@ contract Borrower is BaseUpgradeablePausable {
     }
   }
 
+  function drawdownWithSwapOnOneInch(
+    address creditLineAddress,
+    uint256 amount,
+    address addressToSendTo,
+    address toToken,
+    uint256 minTargetAmount,
+    uint256[] memory exchangeDistribution
+  ) public {
+    // Drawdown to the Borrower contract
+    config.getCreditDesk().drawdown(creditLineAddress, amount);
+
+    // Do the swap
+    swapOnOneInch(config.usdcAddress(), toToken, amount, minTargetAmount, exchangeDistribution);
+
+    // Fulfill the send to
+    if (addressToSendTo != address(0) && addressToSendTo != address(this)) {
+      bytes memory _data = abi.encodeWithSignature("balanceOf(address)", address(this));
+      uint256 receivedAmount = toUint256(invoke(toToken, _data));
+      _data = abi.encodeWithSignature("transfer(address,uint256)", addressToSendTo, receivedAmount);
+      invoke(toToken, _data);
+    }
+  }
+
   function transferUSDC(address to, uint256 amount) public onlyAdmin {
     bool success = config.getUSDC().transfer(to, amount);
     require(success, "Failed to transfer USDC");
@@ -103,7 +126,7 @@ contract Borrower is BaseUpgradeablePausable {
     require(CreditLine(creditLineAddress).balance() == 0, "Failed to fully pay off creditline");
   }
 
-  function payWithSwapThroughOneInch(
+  function payWithSwapOnOneInch(
     address creditLineAddress,
     uint256 originAmount,
     address fromToken,
@@ -166,5 +189,11 @@ contract Borrower is BaseUpgradeablePausable {
       revert("VM: wallet invoke reverted");
     }
     return _res;
+  }
+
+  function toUint256(bytes memory _bytes) internal pure returns (uint256 value) {
+    assembly {
+      value := mload(add(_bytes, 0x20))
+    }
   }
 }

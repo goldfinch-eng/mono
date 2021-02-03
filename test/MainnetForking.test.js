@@ -17,6 +17,7 @@ const {
   bigVal,
   advanceTime,
   BN,
+  ZERO_ADDRESS,
 } = require("./testHelpers")
 /*
 These tests are special. They use existing mainnet state, so
@@ -28,7 +29,7 @@ describe("mainnet forking tests", async function () {
   if (!isMainnetForking()) {
     return
   }
-  let accounts, owner, bwr, person3, reserve, underwriter, usdc, creditDesk
+  let accounts, owner, bwr, person3, pool, reserve, underwriter, usdc, creditDesk
   let goldfinchFactory, busd, usdt
   const busdAddress = "0x4fabb145d64652a948d72533023f6e7a623c7c53"
   const usdtAddress = "0xdAC17F958D2ee523a2206206994597C13D831ec7"
@@ -66,7 +67,7 @@ describe("mainnet forking tests", async function () {
   beforeEach(async function () {
     accounts = await web3.eth.getAccounts()
     ;[owner, bwr, person3, underwriter, reserve] = accounts
-    ;({usdc, creditDesk, goldfinchFactory} = await setupTest())
+    ;({usdc, creditDesk, goldfinchFactory, pool} = await setupTest())
 
     // Give BUSD from the whale to our test accounts
     const busdWhale = "0x81670C129A9cf4FD535Cc68aE8b4a0df56d1BB82"
@@ -87,6 +88,86 @@ describe("mainnet forking tests", async function () {
     await erc20Transfer(usdt, [owner, bwr, person3], usdcVal(100000), usdtWhale)
   })
 
+  describe("drawing down into another currency", async function () {
+    let bwrCon, cl, oneSplit
+    beforeEach(async function () {
+      oneSplit = await IOneSplit.at(MAINNET_ONE_SPLIT_ADDRESS)
+      const result = await goldfinchFactory.createBorrower(bwr)
+      let bwrConAddr = result.logs[result.logs.length - 1].args.borrower
+      bwrCon = await Borrower.at(bwrConAddr)
+
+      cl = await createCreditLine({creditDesk, borrower: bwrCon.address, underwriter})
+    })
+
+    it("should let you drawdown to tether", async function () {
+      let usdcAmount = usdcVal(10)
+      const expectedReturn = await oneSplit.getExpectedReturn(usdc.address, usdt.address, usdcAmount, 10, 0, {
+        from: bwr,
+      })
+      await expectAction(() => {
+        return bwrCon.drawdownWithSwapOnOneInch(
+          cl.address,
+          usdcAmount,
+          person3,
+          usdtAddress,
+          expectedReturn.returnAmount.mul(new BN(99)).div(new BN(100)),
+          expectedReturn.distribution,
+          {from: bwr}
+        )
+      }).toChange([
+        [async () => await getBalance(pool.address, usdc), {by: usdcAmount.neg()}],
+        [async () => await getBalance(bwrCon.address, usdt), {by: new BN(0)}],
+        [async () => await getBalance(person3, usdt), {byCloseTo: expectedReturn.returnAmount}],
+        [async () => await getBalance(bwr, usdt), {by: new BN(0)}],
+      ])
+    }).timeout(180000)
+
+    it("should respect normal behavior of the addressToSendTo", async function () {
+      let usdcAmount = usdcVal(10)
+      const expectedReturn = await oneSplit.getExpectedReturn(usdc.address, usdt.address, usdcAmount, 10, 0, {
+        from: bwr,
+      })
+      await expectAction(() => {
+        return bwrCon.drawdownWithSwapOnOneInch(
+          cl.address,
+          usdcAmount,
+          ZERO_ADDRESS,
+          usdtAddress,
+          expectedReturn.returnAmount.mul(new BN(99)).div(new BN(100)),
+          expectedReturn.distribution,
+          {from: bwr}
+        )
+      }).toChange([
+        [async () => await getBalance(pool.address, usdc), {by: usdcAmount.neg()}],
+        [async () => await getBalance(bwrCon.address, usdt), {byCloseTo: expectedReturn.returnAmount}],
+        [async () => await getBalance(person3, usdt), {by: new BN(0)}],
+      ])
+    }).timeout(180000)
+
+    it("should let you drawdown to BUSD", async function () {
+      let usdcAmount = usdcVal(10)
+      const expectedReturn = await oneSplit.getExpectedReturn(usdc.address, busdAddress, usdcAmount, 10, 0, {
+        from: bwr,
+      })
+      await expectAction(() => {
+        return bwrCon.drawdownWithSwapOnOneInch(
+          cl.address,
+          usdcAmount,
+          person3,
+          busdAddress,
+          expectedReturn.returnAmount.mul(new BN(99)).div(new BN(100)),
+          expectedReturn.distribution,
+          {from: bwr}
+        )
+      }).toChange([
+        [async () => await getBalance(pool.address, usdc), {by: usdcAmount.neg()}],
+        [async () => await getBalance(person3, busd), {byCloseTo: expectedReturn.returnAmount}],
+        [async () => await getBalance(bwr, busd), {by: new BN(0)}],
+        [async () => await getBalance(bwrCon.address, busd), {by: new BN(0)}],
+      ])
+    }).timeout(180000)
+  })
+
   describe("paying back via another currency", async function () {
     let bwrCon, cl, oneSplit
     let amount = usdcVal(100)
@@ -103,21 +184,23 @@ describe("mainnet forking tests", async function () {
     })
 
     it("should allow you to pay with another currency", async () => {
+      // USDT has the same decimals as USDC, so USDC val is fine here.
       let rawAmount = 10
-      const expectedReturn = await oneSplit.getExpectedReturn(usdt.address, usdc.address, usdcVal(rawAmount), 10, 0, {
+      let usdtAmount = usdcVal(rawAmount)
+      const expectedReturn = await oneSplit.getExpectedReturn(usdt.address, usdc.address, usdtAmount, 10, 0, {
         from: bwr,
       })
       await expectAction(() => {
-        return bwrCon.payWithSwapThroughOneInch(
+        return bwrCon.payWithSwapOnOneInch(
           cl.address,
-          usdcVal(rawAmount),
+          usdtAmount,
           usdtAddress,
           expectedReturn.returnAmount.mul(new BN(99)).div(new BN(100)),
           expectedReturn.distribution,
           {from: bwr}
         )
       }).toChange([
-        [async () => await getBalance(bwr, usdt), {by: usdcVal(rawAmount).neg()}],
+        [async () => await getBalance(bwr, usdt), {by: usdtAmount.neg()}],
         [async () => await getBalance(cl.address, usdc), {byCloseTo: expectedReturn.returnAmount}],
       ])
       await advanceTime(creditDesk, {toBlock: (await cl.nextDueBlock()).add(new BN(1))})
@@ -133,7 +216,7 @@ describe("mainnet forking tests", async function () {
         from: bwr,
       })
       await expectAction(() => {
-        return bwrCon.payWithSwapThroughOneInch(
+        return bwrCon.payWithSwapOnOneInch(
           cl.address,
           busdAmount,
           busdAddress,
