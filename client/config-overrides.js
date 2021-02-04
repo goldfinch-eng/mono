@@ -33,6 +33,10 @@ module.exports = {
         'Access-Control-Allow-Headers': 'X-Requested-With, content-type, Authorization',
       };
 
+      config.proxy = {
+        '/relay': 'http://localhost:4000',
+      };
+
       // Return your customised Webpack Development Server config.
       return config;
     };

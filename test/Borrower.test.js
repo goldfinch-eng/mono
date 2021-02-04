@@ -1,4 +1,4 @@
-/* global artifacts web3 */
+/* global artifacts web3 ethers */
 const BN = require("bn.js")
 const hre = require("hardhat")
 const {deployments} = hre
@@ -14,13 +14,35 @@ const {
   ZERO_ADDRESS,
   advanceTime,
 } = require("./testHelpers.js")
+const {CONFIG_KEYS} = require("../blockchain_scripts/deployHelpers")
+const {TypedDataUtils, signTypedData_v4} = require("eth-sig-util")
+const {bufferToHex} = require("ethereumjs-util")
 const Borrower = artifacts.require("Borrower")
 
-let accounts, owner, bwr, person3, underwriter, reserve, goldfinchFactory, creditDesk, usdc, pool
+let accounts,
+  owner,
+  bwr,
+  person3,
+  underwriter,
+  reserve,
+  goldfinchFactory,
+  goldfinchConfig,
+  creditDesk,
+  usdc,
+  pool,
+  forwarder
 
 describe("Borrower", async () => {
   const setupTest = deployments.createFixture(async ({deployments}) => {
-    const {pool, usdc, creditDesk, fidu, goldfinchConfig, goldfinchFactory} = await deployAllContracts(deployments)
+    const {
+      pool,
+      usdc,
+      creditDesk,
+      fidu,
+      goldfinchConfig,
+      goldfinchFactory,
+      forwarder,
+    } = await deployAllContracts(deployments, {deployForwarder: true, fromAccount: owner})
     // Approve transfers for our test accounts
     await erc20Approve(usdc, pool.address, usdcVal(100000), [owner, bwr, person3])
     // Some housekeeping so we have a usable creditDesk for tests, and a pool with funds
@@ -30,13 +52,13 @@ describe("Borrower", async () => {
     await goldfinchConfig.setTreasuryReserve(reserve)
     await creditDesk.setUnderwriterGovernanceLimit(underwriter, usdcVal(100000), {from: owner})
 
-    return {pool, usdc, creditDesk, fidu, goldfinchConfig, goldfinchFactory}
+    return {pool, usdc, creditDesk, fidu, goldfinchConfig, goldfinchFactory, forwarder}
   })
 
   beforeEach(async () => {
     accounts = await web3.eth.getAccounts()
     ;[owner, bwr, person3, underwriter, reserve] = accounts
-    ;({goldfinchFactory, usdc, creditDesk, pool} = await setupTest())
+    ;({goldfinchFactory, goldfinchConfig, usdc, creditDesk, pool, forwarder} = await setupTest())
   })
 
   describe("drawdown", async () => {
@@ -107,6 +129,132 @@ describe("Borrower", async () => {
       })
     })
   })
+
+  describe("gasless transactions", async () => {
+    let bwrCon, cl
+    let amount = usdcVal(1)
+
+    const EIP712DomainType = [
+      {name: "name", type: "string"},
+      {name: "version", type: "string"},
+      {name: "chainId", type: "uint256"},
+      {name: "verifyingContract", type: "address"},
+    ]
+
+    const ForwardRequestType = [
+      {name: "from", type: "address"},
+      {name: "to", type: "address"},
+      {name: "value", type: "uint256"},
+      {name: "gas", type: "uint256"},
+      {name: "nonce", type: "uint256"},
+      {name: "data", type: "bytes"},
+    ]
+
+    const TypedData = {
+      domain: {
+        name: "Defender",
+        version: "1",
+        chainId: 31337,
+        verifyingContract: null,
+      },
+      primaryType: "ForwardRequest",
+      types: {
+        EIP712Domain: EIP712DomainType,
+        ForwardRequest: ForwardRequestType,
+      },
+      message: {},
+    }
+
+    beforeEach(async () => {
+      TypedData.domain.verifyingContract = forwarder.address
+      await goldfinchConfig.setAddressForTest(CONFIG_KEYS.TrustedForwarder, forwarder.address)
+    })
+
+    async function signAndGenerateForwardRequest(request) {
+      const toSign = {...TypedData, message: request}
+      // TODO: Because hardhat does not support eth_signTypedData_v4 yet, we need to use the underlying eth-sig-util library
+      // to sign it for us. Remove and migrate once https://github.com/nomiclabs/hardhat/pull/1189/files is merged
+      // To do that, we need to extract the private key for the borrower address and provide it in uint8[] form to the
+      // sig-util library. The private key may need to be updated if the mnemonic changes or the index of the bwr account changes
+      // let wallet = ethers.Wallet.fromMnemonic("test test test test test test test test test test test junk", 'm/44\'/60\'/0\'/0/1')
+      // signer._signer._signTypedData()
+      const bwrPrivateKey = "59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+      const keyAsuint8 = Uint8Array.from(Buffer.from(bwrPrivateKey, "hex"))
+      const signature = signTypedData_v4(keyAsuint8, {data: toSign})
+
+      const GenericParams = "address from,address to,uint256 value,uint256 gas,uint256 nonce,bytes data"
+      const TypeName = `ForwardRequest(${GenericParams})`
+      const TypeHash = ethers.utils.id(TypeName)
+      const DomainSeparator = bufferToHex(TypedDataUtils.hashStruct("EIP712Domain", TypedData.domain, TypedData.types))
+      const SuffixData = "0x"
+      return [request, DomainSeparator, TypeHash, SuffixData, signature]
+    }
+
+    async function createBorrowerAndCreditLine() {
+      const result = await goldfinchFactory.createBorrower(bwr)
+      let bwrConAddr = result.logs[result.logs.length - 1].args.borrower
+      bwrCon = await Borrower.at(bwrConAddr)
+      await erc20Approve(usdc, bwrCon.address, usdcVal(100000), [bwr])
+      cl = await createCreditLine({creditDesk, borrower: bwrCon.address, underwriter})
+    }
+
+    describe("When the forwarder is not trusted", async () => {
+      it("does not use the passed in msg sender", async () => {
+        await goldfinchConfig.setAddressForTest(CONFIG_KEYS.TrustedForwarder, reserve)
+        await createBorrowerAndCreditLine()
+        const request = {
+          from: bwr,
+          to: bwrCon.address,
+          value: 0,
+          gas: 1e6,
+          nonce: 0,
+          data: bwrCon.contract.methods.drawdown(cl.address, amount.toNumber(), bwrCon.address).encodeABI(),
+        }
+        let forwarderArgs = await signAndGenerateForwardRequest(request)
+        // Signature is still valid
+        await forwarder.verify(...forwarderArgs)
+        await expect(forwarder.execute(...forwarderArgs, {from: person3})).to.be.rejectedWith(/Must have admin role/)
+      })
+    })
+
+    describe("when the forwarder is trusted", async () => {
+      it("uses the passed in msg sender", async () => {
+        await createBorrowerAndCreditLine()
+        const request = {
+          from: bwr,
+          to: bwrCon.address,
+          value: 0,
+          gas: 1e6,
+          nonce: 0,
+          data: bwrCon.contract.methods.drawdown(cl.address, amount.toNumber(), bwrCon.address).encodeABI(),
+        }
+        let forwarderArgs = await signAndGenerateForwardRequest(request)
+        await forwarder.verify(...forwarderArgs)
+        await expectAction(() => forwarder.execute(...forwarderArgs, {from: person3})).toChange([
+          [() => getBalance(pool.address, usdc), {by: amount.neg()}],
+          [() => getBalance(bwrCon.address, usdc), {by: amount}],
+        ])
+      })
+
+      it("only allows using the same nonce once", async () => {
+        await createBorrowerAndCreditLine()
+        const request = {
+          from: bwr,
+          to: bwrCon.address,
+          value: 0,
+          gas: 1e6,
+          nonce: 0,
+          data: bwrCon.contract.methods.drawdown(cl.address, amount.toNumber(), bwrCon.address).encodeABI(),
+        }
+        let forwarderArgs = await signAndGenerateForwardRequest(request)
+        await forwarder.verify(...forwarderArgs)
+        await forwarder.execute(...forwarderArgs, {from: person3})
+        await expect(forwarder.verify(...forwarderArgs)).to.be.rejectedWith(/nonce mismatch/)
+        await expect(forwarder.execute(...forwarderArgs, {from: person3})).to.be.rejectedWith(/nonce mismatch/)
+      })
+    })
+  })
+
   describe("pay", async () => {
     let bwrCon, cl
     let amount = usdcVal(10)

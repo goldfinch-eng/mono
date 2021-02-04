@@ -103,7 +103,8 @@ function expectAction(action, debug) {
   }
 }
 
-async function deployAllContracts(deployments) {
+async function deployAllContracts(deployments, options = {}) {
+  let {deployForwarder, fromAccount} = options
   await deployments.fixture("base_deploy")
   const pool = await getDeployedAsTruffleContract(deployments, "Pool")
   const usdc = await getDeployedAsTruffleContract(deployments, "ERC20")
@@ -111,7 +112,13 @@ async function deployAllContracts(deployments) {
   const fidu = await getDeployedAsTruffleContract(deployments, "Fidu")
   const goldfinchConfig = await getDeployedAsTruffleContract(deployments, "GoldfinchConfig")
   const goldfinchFactory = await getDeployedAsTruffleContract(deployments, "CreditLineFactory")
-  return {pool, usdc, creditDesk, fidu, goldfinchConfig, goldfinchFactory}
+  let forwarder = null
+  if (deployForwarder) {
+    await deployments.deploy("TestForwarder", {from: fromAccount, gas: 4000000})
+    forwarder = await getDeployedAsTruffleContract(deployments, "TestForwarder")
+    await forwarder.registerDomainSeparator("Defender", "1")
+  }
+  return {pool, usdc, creditDesk, fidu, goldfinchConfig, goldfinchFactory, forwarder}
 }
 
 async function erc20Approve(erc20, accountToApprove, amount, fromAccounts) {

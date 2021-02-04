@@ -27,6 +27,15 @@ const SAFE_CONFIG = {
   1: {safeAddress: "0xBEb28978B2c755155f20fd3d09Cb37e300A6981f"}, // Mainnet
   4: {safeAddress: "0xAA96CA940736e937A8571b132992418c7d220976"}, // Rinkeby
 }
+
+// WARNING: BE EXTREMELY CAREFUL WITH THESE ADDRESSES
+// A malicious trusted forwarder means handling over full control of the contract (it can spoof msg.sender)
+// https://docs.opengsn.org/contracts/addresses.html
+const TRUSTED_FORWARDER_CONFIG = {
+  1: "0xa530F85085C6FE2f866E7FdB716849714a89f4CD", // Mainnet
+  4: "0x956868751Cc565507B3B58E53a6f9f41B56bed74", // Rinkeby
+}
+
 let OWNER_ROLE, PAUSER_ROLE, MINTER_ROLE
 if (typeof web3 !== "undefined" && web3.utils) {
   OWNER_ROLE = web3.utils.keccak256("OWNER_ROLE")
@@ -53,6 +62,7 @@ const CONFIG_KEYS = {
   TreasuryReserve: 6,
   ProtocolAdmin: 7,
   OneInch: 8,
+  TrustedForwarder: 9,
 }
 
 function isTestEnv() {
@@ -75,6 +85,15 @@ function getUSDCAddress(chainID) {
   return USDC_MAPPING[chainID] || USDC_MAPPING[CHAIN_MAPPING[chainID]]
 }
 
+async function getSignerForAddress(signerAddress) {
+  if (signerAddress && typeof signerAddress === "string") {
+    const signers = await ethers.getSigners()
+    return signers.find((signer) => signer.address === signerAddress)
+  } else if (signerAddress && typeof signerAddres === "object") {
+    return signerAddress
+  }
+}
+
 async function getDeployedContract(deployments, contractName, signerAddress) {
   let deployment = await deployments.getOrNull(contractName)
   if (!deployment && isTestEnv()) {
@@ -89,13 +108,7 @@ async function getDeployedContract(deployments, contractName, signerAddress) {
     )
   }
   const abi = implementation ? implementation.abi : deployment.abi
-  let signer = undefined
-  if (signerAddress && typeof signerAddress === "string") {
-    const signers = await ethers.getSigners()
-    signer = signers.find((signer) => signer.address === signerAddress)
-  } else if (signerAddress && typeof signerAddres === "object") {
-    signer = signerAddress
-  }
+  let signer = await getSignerForAddress(signerAddress)
   return await ethers.getContractAt(abi, deployment.address, signer)
 }
 
@@ -152,12 +165,14 @@ module.exports = {
   toAtomic: toAtomic,
   upgrade: upgrade,
   updateConfig: updateConfig,
+  getSignerForAddress: getSignerForAddress,
   MAINNET_CHAIN_ID: MAINNET_CHAIN_ID,
   OWNER_ROLE: OWNER_ROLE,
   PAUSER_ROLE: PAUSER_ROLE,
   MINTER_ROLE: MINTER_ROLE,
   CONFIG_KEYS: CONFIG_KEYS,
   SAFE_CONFIG: SAFE_CONFIG,
+  TRUSTED_FORWARDER_CONFIG: TRUSTED_FORWARDER_CONFIG,
   isTestEnv: isTestEnv,
   isMainnetForking: isMainnetForking,
   interestAprAsBN: interestAprAsBN,

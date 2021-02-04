@@ -26,6 +26,7 @@ function DrawdownForm(props) {
     return sendFromUser(creditDesk.methods.drawdown(drawdownAmount, props.creditLine.address, sendToAddress), {
       type: 'Borrow',
       amount: transactionAmount,
+      gasless: false, // Set to true to test gasless transactions
     }).then(props.actionComplete);
   }
 

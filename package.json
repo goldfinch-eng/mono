@@ -4,7 +4,7 @@
   "description": "A lending protocol built on the blockchain",
   "main": "index.js",
   "scripts": {
-    "start": "npx concurrently -n \"blockchain,web\"  \"npx hardhat node --reset --export-all client/config/deployments_dev.json\" \"cd client && npm start\" -k -c \"cyan, magenta\"",
+    "start": "npx concurrently -n \"blockchain,web,server\"  \"npx hardhat node --reset --export-all client/config/deployments_dev.json\" \"cd client && npm start\" \"cd client && node server.js\" -k -c \"cyan, magenta, green\"",
     "test": "NODE_ENV=test npx hardhat test --show-stack-traces",
     "mainnet-test": "HARDHAT_FORK=mainnet NODE_ENV=test npx hardhat test test/MainnetForking.test.js --show-stack-traces",
     "pre-push": "cd client && npm run pre-push",
@@ -57,12 +57,15 @@
   },
   "homepage": "https://github.com/OpenZeppelin/starter-kit/blob/stable/README.md",
   "dependencies": {
+    "@opengsn/gsn": "^2.1.0",
     "@openzeppelin/contracts-ethereum-package": "^3.0.0",
     "@openzeppelin/upgrades": "^2.8.0",
     "bn.js": "^5.1.3",
     "contract-proxy-kit": "^2.2.0-alpha.1",
-    "defender-relay-client": "^1.1.1",
+    "defender-relay-client": "^1.3.1",
     "dotenv": "^8.2.0",
+    "eth-sig-util": "^3.0.0",
+    "ethereumjs-util": "^7.0.8",
     "ethers": "^5.0.23",
     "react-router-dom": "^5.2.0",
     "truffle-hdwallet-provider": "^1.0.17"
