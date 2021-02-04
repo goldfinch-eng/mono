@@ -38,7 +38,7 @@ the sender and the to contract (i.e. it's a known borrower interacting with our 
 To support this we are using Netlify Cloud Functions (their version of lambdas). Netlify automatically picks up any functions in the `client/functions` directory 
 and makes them available as an api endpoint. To support local development, we mimic this by having a `client/server.js` file that's started
 with `npm start` and will execute the function in `client/functions`. This server.js is only meant for local use, and we've configured webpack to proxy to this server.
-If you want to test gasless transactions, make sure to run `cp client/.env.example client/.env.local` and update the whitelist addresses 
+If you want to test gasless transactions, make sure to run `cp client/.env.example client/.env.local` and update the `WHITELISTED_*` env vars 
 
 ### Getting Testnet ETH and USDC
 If you're going to test or develop on Testnet (eg. Ropsten, or Rinkeby), you'll want some testnet ETH and USDC to play around with the app locally. The following sites should work for the `ropsten` testnet.
