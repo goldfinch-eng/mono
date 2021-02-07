@@ -306,6 +306,18 @@ describe("Pool", () => {
     })
   })
 
+  describe("drawdown", async () => {
+    beforeEach(async () => {
+      await usdc.approve(pool.address, new BN(100000).mul(USDC_DECIMALS), {from: person2})
+      await makeDeposit()
+    })
+    it("should not allow drawdown from anyone other than the admin", async () => {
+      await expect(pool.drawdown(person2, person3, usdcVal(10), {from: person2})).to.be.rejectedWith(
+        /Only the credit desk/
+      )
+    })
+  })
+
   describe("distributeLosses", async () => {
     let creditline
     beforeEach(async () => {

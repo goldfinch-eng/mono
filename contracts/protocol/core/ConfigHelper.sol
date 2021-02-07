@@ -8,6 +8,7 @@ import "../../interfaces/IPool.sol";
 import "../../interfaces/IFidu.sol";
 import "../../interfaces/ICreditDesk.sol";
 import "../../interfaces/IERC20withDec.sol";
+import "../../interfaces/ICUSDCContract.sol";
 
 /**
  * @title ConfigHelper
@@ -33,6 +34,10 @@ library ConfigHelper {
     return IFidu(fiduAddress(config));
   }
 
+  function getCUSDCContract(GoldfinchConfig config) internal view returns (ICUSDCContract) {
+    return ICUSDCContract(cusdcContractAddress(config));
+  }
+
   function oneInchAddress(GoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.OneInch));
   }
@@ -51,6 +56,10 @@ library ConfigHelper {
 
   function fiduAddress(GoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.Fidu));
+  }
+
+  function cusdcContractAddress(GoldfinchConfig config) internal view returns (address) {
+    return config.getAddress(uint256(ConfigOptions.Addresses.CUSDCContract));
   }
 
   function usdcAddress(GoldfinchConfig config) internal view returns (address) {

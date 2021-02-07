@@ -190,7 +190,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     require(!isLate(cl), "Cannot drawdown when payments are past due");
     emit DrawdownMade(msg.sender, address(cl), amount.add(amountToTransferFromCL));
 
-    bool success = pool.transferFrom(address(pool), msg.sender, amount);
+    bool success = pool.drawdown(address(pool), msg.sender, amount);
     require(success, "Failed to drawdown");
   }
 

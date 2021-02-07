@@ -63,6 +63,7 @@ const CONFIG_KEYS = {
   ProtocolAdmin: 7,
   OneInch: 8,
   TrustedForwarder: 9,
+  CUSDCContract: 10,
 }
 
 function isTestEnv() {

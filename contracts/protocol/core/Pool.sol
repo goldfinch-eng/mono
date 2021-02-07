@@ -19,6 +19,7 @@ contract Pool is BaseUpgradeablePausable, IPool {
 
   // $1 threshold to handle potential rounding errors, from differing decimals on Fidu and USDC;
   uint256 private constant ASSET_LIABILITY_MATCH_THRESHOLD = 1e6;
+  uint256 public compoundBalance;
 
   event DepositMade(address indexed capitalProvider, uint256 amount, uint256 shares);
   event WithdrawalMade(address indexed capitalProvider, uint256 userAmount, uint256 reserveAmount);
@@ -60,6 +61,7 @@ contract Pool is BaseUpgradeablePausable, IPool {
     emit DepositMade(msg.sender, amount, depositShares);
     bool success = doUSDCTransfer(msg.sender, address(this), amount);
     require(success, "Failed to transfer for deposit");
+
     config.getFidu().mintTo(msg.sender, depositShares);
   }
 
@@ -104,8 +106,14 @@ contract Pool is BaseUpgradeablePausable, IPool {
     address from,
     uint256 interest,
     uint256 principal
-  ) external override onlyCreditDesk whenNotPaused {
-    uint256 reserveAmount = interest.div(config.getReserveDenominator());
+  ) public override onlyCreditDesk whenNotPaused {
+    uint256 reserveAmount = 0;
+
+    // Interest gained via compound will have a from address of the pool itself, we don't charge a reserve fee for that
+    if (from != address(this)) {
+      reserveAmount = interest.div(config.getReserveDenominator());
+    }
+
     uint256 poolAmount = interest.sub(reserveAmount);
     uint256 increment = usdcToSharePrice(poolAmount);
     sharePrice = sharePrice.add(increment);
@@ -116,10 +124,11 @@ contract Pool is BaseUpgradeablePausable, IPool {
     if (principal > 0) {
       emit PrincipalCollected(from, principal);
     }
-
-    sendToReserve(from, reserveAmount, from);
+    if (reserveAmount > 0) {
+      sendToReserve(from, reserveAmount, from);
+    }
     bool success = doUSDCTransfer(from, address(this), principal.add(poolAmount));
-    require(success, "Failed to principal repayment");
+    require(success, "Failed to collect principal repayment");
   }
 
   function distributeLosses(address creditlineAddress, int256 writedownDelta)
@@ -159,14 +168,84 @@ contract Pool is BaseUpgradeablePausable, IPool {
     return result;
   }
 
+  function drawdown(
+    address from,
+    address to,
+    uint256 amount
+  ) public override onlyCreditDesk whenNotPaused returns (bool) {
+    if (compoundBalance > 0) {
+      sweepFromCompound();
+    }
+    bool res = transferFrom(from, to, amount);
+
+    return res;
+  }
+
   function assets() public view override returns (uint256) {
     return
-      config.getUSDC().balanceOf(config.poolAddress()).add(config.getCreditDesk().totalLoansOutstanding()).sub(
-        config.getCreditDesk().totalWritedowns()
-      );
+      compoundBalance
+        .add(config.getUSDC().balanceOf(address(this)))
+        .add(config.getCreditDesk().totalLoansOutstanding())
+        .sub(config.getCreditDesk().totalWritedowns());
+  }
+
+  function sweepToCompound() public override onlyAdmin {
+    IERC20 usdc = config.getUSDC();
+    uint256 usdcBalance = usdc.balanceOf(address(this));
+
+    ICUSDCContract cUSDC = config.getCUSDCContract();
+    // Approve compound to the exact amount
+    bool success = usdc.approve(address(cUSDC), usdcBalance);
+    require(success, "Failed to approve USDC for compound");
+
+    sweepToCompound(cUSDC, usdcBalance);
+  }
+
+  function sweepFromCompound() public override onlyAdmin {
+    ICUSDCContract cUSDC = config.getCUSDCContract();
+    sweepFromCompound(cUSDC, cUSDC.balanceOf(address(this)));
+
+    // Remove compound approval to be extra safe
+    bool success = config.getUSDC().approve(address(cUSDC), 0);
+    require(success, "Failed to approve USDC for compound");
   }
 
   /* Internal Functions */
+
+  function sweepToCompound(ICUSDCContract cUSDC, uint256 usdcAmount) internal {
+    // Our current design requires we re-normalize, but withdrawing everything and recognizing interest gains
+    // before we can add additional capital to Compound
+    require(compoundBalance == 0, "Cannot sweep when we already have a compound balance");
+    require(usdcAmount != 0, "Amount to sweep cannot be zero");
+    uint256 error = cUSDC.mint(usdcAmount);
+    if (error != 0) {
+      revert("Sweep to compound failed");
+    }
+    compoundBalance = usdcAmount;
+  }
+
+  function sweepFromCompound(ICUSDCContract cUSDC, uint256 cUSDCAmount) internal {
+    require(compoundBalance != 0, "No funds on compound");
+    require(cUSDCAmount != 0, "Amount to sweep cannot be zero");
+
+    IERC20 usdc = config.getUSDC();
+    uint256 preRedeemUSDCBalance = usdc.balanceOf(address(this));
+    uint256 cUSDCExchangeRate = cUSDC.exchangeRateCurrent();
+    uint256 redeemedUSDC = cUSDCToUSDC(cUSDCExchangeRate, cUSDCAmount);
+
+    uint256 error = cUSDC.redeem(cUSDCAmount);
+    uint256 postRedeemUSDCBalance = usdc.balanceOf(address(this));
+    if (error != 0) {
+      revert("Sweep from compound failed");
+    }
+    if (postRedeemUSDCBalance.sub(preRedeemUSDCBalance) != redeemedUSDC) {
+      revert("Unexpected redeem amount");
+    }
+
+    uint256 interestAccrued = redeemedUSDC.sub(compoundBalance);
+    collectInterestAndPrincipal(address(this), interestAccrued, 0);
+    compoundBalance = 0;
+  }
 
   function fiduMantissa() internal pure returns (uint256) {
     return uint256(10)**uint256(18);
@@ -178,6 +257,14 @@ contract Pool is BaseUpgradeablePausable, IPool {
 
   function usdcToFidu(uint256 amount) internal view returns (uint256) {
     return amount.mul(fiduMantissa()).div(usdcMantissa());
+  }
+
+  function cUSDCToUSDC(uint256 exchangeRate, uint256 amount) internal view returns (uint256) {
+    // This should actually be 16 (18 + USDC decimals (6) - cTokenDecimals (8)), but it's off by 2. Why?
+    // See https://compound.finance/docs#protocol-math
+    uint256 cUSDCMantissa = uint256(10)**uint256(18);
+    uint256 res = amount.mul(exchangeRate).div(cUSDCMantissa);
+    return res;
   }
 
   function totalShares() internal view returns (uint256) {
