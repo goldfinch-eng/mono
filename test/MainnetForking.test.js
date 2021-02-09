@@ -274,20 +274,40 @@ describe("mainnet forking tests", async function () {
 
       const originalSharePrice = await pool.sharePrice()
 
+      const BLOCKS_TO_MINE = 10
+      for (let i = 0; i < BLOCKS_TO_MINE; i++) {
+        // Mine a few blocks so we get sufficient interest
+        await hre.network.provider.request({
+          method: "evm_mine",
+        })
+      }
+
+      let originalReserveBalance = await getBalance(reserveAddress, usdc)
+
       await expectAction(() => {
         return bwrCon.drawdown(cl.address, usdcAmount, bwr, {from: bwr})
       }).toChange([
         [() => getBalance(pool.address, usdc), {byCloseTo: usdcVal(90)}], // regained usdc
         [() => getBalance(pool.address, cUSDC), {to: new BN(0)}], // No more cTokens
         [() => getBalance(bwr, usdc), {by: usdcAmount}], // borrower drew down the balance
-        [() => getBalance(reserveAddress, usdc), {by: new BN(0)}], // No reserve fee collected
       ])
-      const interestGained = (await getBalance(pool.address, usdc)).sub(usdcVal(90))
+
+      // Pool originally had 100, 10 was drawndown, we expect 90 to remain, but it's going to be slightly more due
+      // to interest collected
+      let poolBalanceChange = (await getBalance(pool.address, usdc)).sub(usdcVal(90))
+      let reserveBalanceChange = (await getBalance(reserveAddress, usdc)).sub(originalReserveBalance)
+      const interestGained = poolBalanceChange.add(reserveBalanceChange)
       expect(interestGained).to.bignumber.gt(new BN(0))
 
       const newSharePrice = await pool.sharePrice()
 
-      const expectedfeeAmount = new BN(0) // We're not charging fees on the interest from compound
+      const FEE_DENOMINATOR = new BN(10)
+      const expectedfeeAmount = interestGained.div(FEE_DENOMINATOR)
+
+      // This could be zero, if the mainnet Compound interest rate is too low, if this test fails in the future,
+      // consider increasing BLOCKS_TO_MINE (but it could slow down the test)
+      expect(expectedfeeAmount).to.bignumber.gt(new BN(0))
+      expect(await getBalance(reserveAddress, usdc)).to.bignumber.eq(originalReserveBalance.add(expectedfeeAmount))
 
       const expectedSharePrice = new BN(interestGained)
         .sub(expectedfeeAmount)

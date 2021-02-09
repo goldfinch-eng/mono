@@ -21,11 +21,7 @@ abstract contract IPool {
     uint256 amount
   ) public virtual returns (bool);
 
-  function drawdown(
-    address from,
-    address to,
-    uint256 amount
-  ) public virtual returns (bool);
+  function drawdown(address to, uint256 amount) public virtual returns (bool);
 
   function sweepToCompound() public virtual;
 

@@ -107,13 +107,7 @@ contract Pool is BaseUpgradeablePausable, IPool {
     uint256 interest,
     uint256 principal
   ) public override onlyCreditDesk whenNotPaused {
-    uint256 reserveAmount = 0;
-
-    // Interest gained via compound will have a from address of the pool itself, we don't charge a reserve fee for that
-    if (from != address(this)) {
-      reserveAmount = interest.div(config.getReserveDenominator());
-    }
-
+    uint256 reserveAmount = interest.div(config.getReserveDenominator());
     uint256 poolAmount = interest.sub(reserveAmount);
     uint256 increment = usdcToSharePrice(poolAmount);
     sharePrice = sharePrice.add(increment);
@@ -168,25 +162,30 @@ contract Pool is BaseUpgradeablePausable, IPool {
     return result;
   }
 
-  function drawdown(
-    address from,
-    address to,
-    uint256 amount
-  ) public override onlyCreditDesk whenNotPaused returns (bool) {
+  /**
+   * @notice Moves `amount` USDC from the pool, to `to`. This is similar to transferFrom except we sweep any
+   * balance we have from compound first and recognize interest. Meant to be called only by the credit desk on drawdown
+   * @param to The address that the USDC should be moved to
+   * @param amount the amount of USDC to move to the Pool
+   *
+   * Requirements:
+   *  - The caller must be the Credit Desk. Not even the owner can call this function.
+   */
+  function drawdown(address to, uint256 amount) public override onlyCreditDesk whenNotPaused returns (bool) {
     if (compoundBalance > 0) {
       sweepFromCompound();
     }
-    bool res = transferFrom(from, to, amount);
+    bool res = transferFrom(address(this), to, amount);
 
     return res;
   }
 
   function assets() public view override returns (uint256) {
+    ICreditDesk creditDesk = config.getCreditDesk();
     return
-      compoundBalance
-        .add(config.getUSDC().balanceOf(address(this)))
-        .add(config.getCreditDesk().totalLoansOutstanding())
-        .sub(config.getCreditDesk().totalWritedowns());
+      compoundBalance.add(config.getUSDC().balanceOf(address(this))).add(creditDesk.totalLoansOutstanding()).sub(
+        creditDesk.totalWritedowns()
+      );
   }
 
   function sweepToCompound() public override onlyAdmin {
@@ -213,7 +212,7 @@ contract Pool is BaseUpgradeablePausable, IPool {
   /* Internal Functions */
 
   function sweepToCompound(ICUSDCContract cUSDC, uint256 usdcAmount) internal {
-    // Our current design requires we re-normalize, but withdrawing everything and recognizing interest gains
+    // Our current design requires we re-normalize by withdrawing everything and recognizing interest gains
     // before we can add additional capital to Compound
     require(compoundBalance == 0, "Cannot sweep when we already have a compound balance");
     require(usdcAmount != 0, "Amount to sweep cannot be zero");
