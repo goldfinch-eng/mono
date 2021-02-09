@@ -500,7 +500,7 @@ describe("CreditDesk", () => {
     let existingCl, prepaymentAmount
     beforeEach(async () => {
       borrower = person3
-      underwriter = owner
+      underwriter = person2
       prepaymentAmount = usdcVal(50)
       existingCl = await createAndSetCreditLineAttributes({
         balance: usdcVal(10000),
@@ -520,7 +520,8 @@ describe("CreditDesk", () => {
         interestApr,
         paymentPeriodInDays,
         termInDays,
-        lateFeeApr
+        lateFeeApr,
+        {from: underwriter}
       )
       const newClAddress = (await creditDesk.getBorrowerCreditLines(borrower))[1]
 
@@ -539,7 +540,8 @@ describe("CreditDesk", () => {
           interestApr,
           paymentPeriodInDays,
           termInDays,
-          lateFeeApr
+          lateFeeApr,
+          {from: underwriter}
         )
       ).to.be.fulfilled
       return expect(
@@ -550,7 +552,8 @@ describe("CreditDesk", () => {
           interestApr,
           paymentPeriodInDays,
           termInDays,
-          lateFeeApr
+          lateFeeApr,
+          {from: underwriter}
         )
       ).to.be.rejectedWith(/Can't migrate/)
     })
@@ -565,7 +568,8 @@ describe("CreditDesk", () => {
         interestApr,
         paymentPeriodInDays,
         termInDays,
-        lateFeeApr
+        lateFeeApr,
+        {from: underwriter}
       )
       const newClAddress = (await creditDesk.getBorrowerCreditLines(borrower))[1]
       const newCl = await CreditLine.at(newClAddress)
@@ -578,6 +582,21 @@ describe("CreditDesk", () => {
       expect(await existingCl.interestAccruedAsOfBlock()).to.bignumber.equal(await newCl.interestAccruedAsOfBlock())
       expect(await existingCl.writedownAmount()).to.bignumber.equal(await newCl.writedownAmount())
       expect(await existingCl.lastFullPaymentBlock()).to.bignumber.equal(await newCl.lastFullPaymentBlock())
+    })
+
+    it("should permit only the underwriter to migrate the creditline", async () => {
+      return expect(
+        creditDesk.migrateCreditLine(
+          existingCl.address,
+          borrower,
+          limit,
+          interestApr,
+          paymentPeriodInDays,
+          termInDays,
+          lateFeeApr,
+          {from: owner}
+        )
+      ).to.be.rejectedWith(/Caller must be the underwriter/)
     })
   })
 
