@@ -320,6 +320,28 @@ describe("mainnet forking tests", async function () {
       expect(newSharePrice).to.bignumber.equal(expectedSharePrice)
     }).timeout(TEST_TIMEOUT)
 
+    it("should redeem from compound and recognize interest on withdraw", async function () {
+      let usdcAmount = usdcVal(100)
+      await expectAction(() => {
+        return pool.sweepToCompound({from: owner})
+      }).toChange([
+        [() => getBalance(pool.address, usdc), {to: new BN(0)}],
+        [() => getBalance(pool.address, cUSDC), {increase: true}],
+        [() => pool.assets(), {by: new BN(0)}],
+      ])
+
+      const WITHDRAWL_FEE_DENOMINATOR = new BN(200)
+      const expectedWithdrawAmount = usdcAmount.sub(usdcAmount.div(WITHDRAWL_FEE_DENOMINATOR))
+      await expectAction(() => {
+        return pool.withdraw(usdcAmount, {from: bwr})
+      }).toChange([
+        [() => getBalance(pool.address, usdc), {increase: true}], // USDC withdrawn, but interest was collected
+        [() => getBalance(pool.address, cUSDC), {to: new BN(0)}], // No more cTokens
+        [() => getBalance(bwr, usdc), {by: expectedWithdrawAmount}], // borrower drew down the full balance minus withdraw fee
+        [() => pool.sharePrice(), {increase: true}], // Due to interest collected, the exact math is tested above
+      ])
+    }).timeout(TEST_TIMEOUT)
+
     it("does not allow sweeping to compound when there is already a balance", async () => {
       await pool.sweepToCompound({from: owner})
 

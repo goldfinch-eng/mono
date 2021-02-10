@@ -78,6 +78,10 @@ contract Pool is BaseUpgradeablePausable, IPool {
     // Ensure the address has enough value in the pool
     require(withdrawShares <= currentShares, "Amount requested is greater than what this address owns");
 
+    if (compoundBalance > 0) {
+      _sweepFromCompound();
+    }
+
     uint256 reserveAmount = amount.div(config.getWithdrawFeeDenominator());
     uint256 userAmount = amount.sub(reserveAmount);
 
@@ -107,22 +111,7 @@ contract Pool is BaseUpgradeablePausable, IPool {
     uint256 interest,
     uint256 principal
   ) public override onlyCreditDesk whenNotPaused {
-    uint256 reserveAmount = interest.div(config.getReserveDenominator());
-    uint256 poolAmount = interest.sub(reserveAmount);
-    uint256 increment = usdcToSharePrice(poolAmount);
-    sharePrice = sharePrice.add(increment);
-
-    if (poolAmount > 0) {
-      emit InterestCollected(from, poolAmount, reserveAmount);
-    }
-    if (principal > 0) {
-      emit PrincipalCollected(from, principal);
-    }
-    if (reserveAmount > 0) {
-      sendToReserve(from, reserveAmount, from);
-    }
-    bool success = doUSDCTransfer(from, address(this), principal.add(poolAmount));
-    require(success, "Failed to collect principal repayment");
+    _collectInterestAndPrincipal(from, interest, principal);
   }
 
   function distributeLosses(address creditlineAddress, int256 writedownDelta)
@@ -173,7 +162,7 @@ contract Pool is BaseUpgradeablePausable, IPool {
    */
   function drawdown(address to, uint256 amount) public override onlyCreditDesk whenNotPaused returns (bool) {
     if (compoundBalance > 0) {
-      sweepFromCompound();
+      _sweepFromCompound();
     }
     bool res = transferFrom(address(this), to, amount);
 
@@ -188,7 +177,7 @@ contract Pool is BaseUpgradeablePausable, IPool {
       );
   }
 
-  function sweepToCompound() public override onlyAdmin {
+  function sweepToCompound() public override onlyAdmin whenNotPaused {
     IERC20 usdc = config.getUSDC();
     uint256 usdcBalance = usdc.balanceOf(address(this));
 
@@ -198,15 +187,14 @@ contract Pool is BaseUpgradeablePausable, IPool {
     require(success, "Failed to approve USDC for compound");
 
     sweepToCompound(cUSDC, usdcBalance);
-  }
-
-  function sweepFromCompound() public override onlyAdmin {
-    ICUSDCContract cUSDC = config.getCUSDCContract();
-    sweepFromCompound(cUSDC, cUSDC.balanceOf(address(this)));
 
     // Remove compound approval to be extra safe
-    bool success = config.getUSDC().approve(address(cUSDC), 0);
+    success = config.getUSDC().approve(address(cUSDC), 0);
     require(success, "Failed to approve USDC for compound");
+  }
+
+  function sweepFromCompound() public override onlyAdmin whenNotPaused {
+    _sweepFromCompound();
   }
 
   /* Internal Functions */
@@ -242,8 +230,36 @@ contract Pool is BaseUpgradeablePausable, IPool {
     }
 
     uint256 interestAccrued = redeemedUSDC.sub(compoundBalance);
-    collectInterestAndPrincipal(address(this), interestAccrued, 0);
+    _collectInterestAndPrincipal(address(this), interestAccrued, 0);
     compoundBalance = 0;
+  }
+
+  function _collectInterestAndPrincipal(
+    address from,
+    uint256 interest,
+    uint256 principal
+  ) internal {
+    uint256 reserveAmount = interest.div(config.getReserveDenominator());
+    uint256 poolAmount = interest.sub(reserveAmount);
+    uint256 increment = usdcToSharePrice(poolAmount);
+    sharePrice = sharePrice.add(increment);
+
+    if (poolAmount > 0) {
+      emit InterestCollected(from, poolAmount, reserveAmount);
+    }
+    if (principal > 0) {
+      emit PrincipalCollected(from, principal);
+    }
+    if (reserveAmount > 0) {
+      sendToReserve(from, reserveAmount, from);
+    }
+    bool success = doUSDCTransfer(from, address(this), principal.add(poolAmount));
+    require(success, "Failed to collect principal repayment");
+  }
+
+  function _sweepFromCompound() internal {
+    ICUSDCContract cUSDC = config.getCUSDCContract();
+    sweepFromCompound(cUSDC, cUSDC.balanceOf(address(this)));
   }
 
   function fiduMantissa() internal pure returns (uint256) {
