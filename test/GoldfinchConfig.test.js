@@ -64,6 +64,9 @@ describe("GoldfinchConfig", () => {
       expect(await goldfinchConfig.getAddress(CONFIG_KEYS.TrustedForwarder)).to.equal(
         "0x956868751Cc565507B3B58E53a6f9f41B56bed74"
       )
+      expect(await goldfinchConfig.getAddress(CONFIG_KEYS.CUSDCContract)).to.equal(
+        "0x5B281A6DdA0B271e91ae35DE655Ad301C976edb1"
+      )
     })
   })
 

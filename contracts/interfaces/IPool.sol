@@ -13,13 +13,19 @@ abstract contract IPool {
     address from,
     uint256 interest,
     uint256 principal
-  ) external virtual;
+  ) public virtual;
 
   function transferFrom(
     address from,
     address to,
     uint256 amount
   ) public virtual returns (bool);
+
+  function drawdown(address to, uint256 amount) public virtual returns (bool);
+
+  function sweepToCompound() public virtual;
+
+  function sweepFromCompound() public virtual;
 
   function distributeLosses(address creditlineAddress, int256 writedownDelta) external virtual;
 

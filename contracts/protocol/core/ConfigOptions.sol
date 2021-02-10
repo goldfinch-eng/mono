@@ -30,7 +30,8 @@ library ConfigOptions {
     TreasuryReserve,
     ProtocolAdmin,
     OneInch,
-    TrustedForwarder
+    TrustedForwarder,
+    CUSDCContract
   }
 
   function getNumberName(uint256 number) public pure returns (string memory) {
@@ -90,6 +91,9 @@ library ConfigOptions {
     }
     if (Addresses.TrustedForwarder == addressName) {
       return "TrustedForwarder";
+    }
+    if (Addresses.CUSDCContract == addressName) {
+      return "CUSDCContract";
     }
     revert("Unknown value passed to getAddressName");
   }
