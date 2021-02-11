@@ -52,8 +52,9 @@ contract Pool is BaseUpgradeablePausable, IPool {
    * @notice Deposits `amount` USDC from msg.sender into the Pool, and returns you the equivalent value of FIDU tokens
    * @param amount The amount of USDC to deposit
    */
-  function deposit(uint256 amount) external override whenNotPaused withinTransactionLimit(amount) nonReentrant {
+  function deposit(uint256 amount) external override whenNotPaused nonReentrant {
     require(amount > 0, "Must deposit more than zero");
+    require(transactionWithinLimit(amount), "Amount is over the per-transaction limit");
     // Check if the amount of new shares to be added is within limits
     uint256 depositShares = getNumShares(amount);
     uint256 potentialNewTotalShares = totalShares().add(depositShares);
@@ -66,15 +67,28 @@ contract Pool is BaseUpgradeablePausable, IPool {
   }
 
   /**
-   * @notice Withdraws `amount` USDC from the Pool to msg.sender, and burns the equivalent value of FIDU tokens
-   * @param amount The amount of USDC to withdraw
+   * @notice Withdraws USDC from the Pool to msg.sender, and burns the equivalent value of FIDU tokens
+   * @param usdcAmount The amount of USDC to withdraw
+   * @param fiduAmount The amount of USDC to withdraw in terms of fidu shares
    */
-  function withdraw(uint256 amount) external override whenNotPaused withinTransactionLimit(amount) nonReentrant {
-    require(amount > 0, "Must withdraw more than zero");
+  function withdraw(uint256 usdcAmount, uint256 fiduAmount) external override whenNotPaused nonReentrant {
+    require(usdcAmount > 0 || fiduAmount > 0, "Must withdraw more than zero");
+
     IFidu fidu = config.getFidu();
+    uint256 withdrawShares;
+    if (usdcAmount > 0) {
+      require(fiduAmount == 0, "Only specify either usdcAmount or fiduAmount");
+      withdrawShares = getNumShares(usdcAmount);
+    }
+    if (fiduAmount > 0) {
+      require(usdcAmount == 0, "Only specify either usdcAmount or fiduAmount");
+      usdcAmount = getUSDCAmountFromShares(fiduAmount);
+      withdrawShares = fiduAmount;
+    }
+    require(transactionWithinLimit(usdcAmount), "Amount is over the per-transaction limit");
+
     // Determine current shares the address has and the shares requested to withdraw
     uint256 currentShares = fidu.balanceOf(msg.sender);
-    uint256 withdrawShares = getNumShares(amount);
     // Ensure the address has enough value in the pool
     require(withdrawShares <= currentShares, "Amount requested is greater than what this address owns");
 
@@ -82,8 +96,8 @@ contract Pool is BaseUpgradeablePausable, IPool {
       _sweepFromCompound();
     }
 
-    uint256 reserveAmount = amount.div(config.getWithdrawFeeDenominator());
-    uint256 userAmount = amount.sub(reserveAmount);
+    uint256 reserveAmount = usdcAmount.div(config.getWithdrawFeeDenominator());
+    uint256 userAmount = usdcAmount.sub(reserveAmount);
 
     emit WithdrawalMade(msg.sender, userAmount, reserveAmount);
     // Send the amounts
@@ -304,6 +318,10 @@ contract Pool is BaseUpgradeablePausable, IPool {
     return usdcToFidu(amount).mul(fiduMantissa()).div(sharePrice);
   }
 
+  function getUSDCAmountFromShares(uint256 fiduAmount) internal view returns (uint256) {
+    return fiduToUSDC(fiduAmount.mul(sharePrice).div(fiduMantissa()));
+  }
+
   function fiduToUSDC(uint256 amount) internal view returns (uint256) {
     return amount.div(fiduMantissa().div(usdcMantissa()));
   }
@@ -326,11 +344,6 @@ contract Pool is BaseUpgradeablePausable, IPool {
     require(to != address(0), "Can't send to zero address");
     IERC20withDec usdc = config.getUSDC();
     return usdc.transferFrom(from, to, amount);
-  }
-
-  modifier withinTransactionLimit(uint256 amount) {
-    require(transactionWithinLimit(amount), "Amount is over the per-transaction limit");
-    _;
   }
 
   modifier onlyCreditDesk() {

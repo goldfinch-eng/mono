@@ -9,6 +9,7 @@ const {
   deployAllContracts,
   erc20Transfer,
   erc20Approve,
+  expectAction,
   decimals,
   USDC_DECIMALS,
   usdcVal,
@@ -21,6 +22,7 @@ describe("Pool", () => {
   let pool, usdc, fidu, goldfinchConfig
   let depositAmount = new BN(4).mul(USDC_DECIMALS)
   let withdrawAmount = new BN(2).mul(USDC_DECIMALS)
+  let fiduWithdrawAmount = new BN(0)
   const decimalsDelta = decimals.div(USDC_DECIMALS)
 
   let makeDeposit = async (person, amount) => {
@@ -28,10 +30,11 @@ describe("Pool", () => {
     person = person || person2
     return await pool.deposit(String(amount), {from: person})
   }
-  let makeWithdraw = async (person, amount) => {
-    amount = amount || withdrawAmount
+  let makeWithdraw = async (person, usdcAmount, fiduAmount) => {
+    usdcAmount = usdcAmount || withdrawAmount
+    fiduAmount = fiduAmount || fiduWithdrawAmount
     person = person || person2
-    return await pool.withdraw(amount, {from: person})
+    return await pool.withdraw(usdcAmount, fiduAmount, {from: person})
   }
 
   const setupTest = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
@@ -258,6 +261,27 @@ describe("Pool", () => {
       const sharesAfter = await fidu.totalSupply()
       const expectedShares = sharesBefore.sub(withdrawAmount.mul(decimals.div(USDC_DECIMALS)))
       expect(sharesAfter).to.bignumber.equal(expectedShares)
+    })
+
+    it("lets you withdraw in fidu terms", async () => {
+      await makeDeposit()
+      const fiduBalance = await getBalance(person2, fidu)
+      expect(fiduBalance).to.bignumber.gt("0")
+
+      await expectAction(() => {
+        return makeWithdraw(person2, new BN(0), fiduBalance)
+      }).toChange([
+        [() => getBalance(person2, usdc), {byCloseTo: usdcVal(4)}], // Not exactly the same as input due to fees
+        [() => getBalance(person2, fidu), {to: new BN(0)}], // All fidu deducted
+        [() => getBalance(pool.address, usdc), {to: new BN(0)}], // Should have removed the full balance
+        [() => fidu.totalSupply(), {by: fiduBalance.neg()}], // Fidu has been burned
+      ])
+    })
+
+    it("does not let you specify both usdcAmount and fiduAmount", async () => {
+      return expect(makeWithdraw(person2, withdrawAmount, new BN(10))).to.be.rejectedWith(
+        /Only specify either usdcAmount or fiduAmount/
+      )
     })
 
     it("prevents you from withdrawing more than you have", async () => {
