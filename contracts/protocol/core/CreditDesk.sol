@@ -269,7 +269,8 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     uint256 paymentPeriodInDays,
     uint256 termInDays,
     uint256 lateFeeApr
-  ) public onlyAdmin {
+  ) public {
+    require(clToMigrate.underwriter() == msg.sender, "Caller must be the underwriter");
     require(clToMigrate.limit() > 0, "Can't migrate empty credit line");
     address newClAddress = createCreditLine(borrower, limit, interestApr, paymentPeriodInDays, termInDays, lateFeeApr);
 

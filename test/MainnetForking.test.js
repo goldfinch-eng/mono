@@ -7,6 +7,7 @@ const {
   isMainnetForking,
   CONFIG_KEYS,
 } = require("../blockchain_scripts/deployHelpers")
+const {time} = require("@openzeppelin/test-helpers")
 const {deployments} = hre
 const Borrower = artifacts.require("Borrower")
 const IOneSplit = artifacts.require("IOneSplit")
@@ -275,12 +276,7 @@ describe("mainnet forking tests", async function () {
       const originalSharePrice = await pool.sharePrice()
 
       const BLOCKS_TO_MINE = 10
-      for (let i = 0; i < BLOCKS_TO_MINE; i++) {
-        // Mine a few blocks so we get sufficient interest
-        await hre.network.provider.request({
-          method: "evm_mine",
-        })
-      }
+      await time.advanceBlockTo((await time.latestBlock()).add(new BN(BLOCKS_TO_MINE)))
 
       let originalReserveBalance = await getBalance(reserveAddress, usdc)
 

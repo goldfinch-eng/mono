@@ -66,33 +66,24 @@ contract Pool is BaseUpgradeablePausable, IPool {
   }
 
   /**
-   * @notice Withdraws `amount` USDC from the Pool to msg.sender, and burns the equivalent value of FIDU tokens
-   * @param amount The amount of USDC to withdraw
+   * @notice Withdraws USDC from the Pool to msg.sender, and burns the equivalent value of FIDU tokens
+   * @param usdcAmount The amount of USDC to withdraw
    */
-  function withdraw(uint256 amount) external override whenNotPaused withinTransactionLimit(amount) nonReentrant {
-    require(amount > 0, "Must withdraw more than zero");
-    IFidu fidu = config.getFidu();
-    // Determine current shares the address has and the shares requested to withdraw
-    uint256 currentShares = fidu.balanceOf(msg.sender);
-    uint256 withdrawShares = getNumShares(amount);
-    // Ensure the address has enough value in the pool
-    require(withdrawShares <= currentShares, "Amount requested is greater than what this address owns");
+  function withdraw(uint256 usdcAmount) external override whenNotPaused nonReentrant {
+    require(usdcAmount > 0, "Must withdraw more than zero");
+    uint256 withdrawShares = getNumShares(usdcAmount);
+    _withdraw(usdcAmount, withdrawShares);
+  }
 
-    if (compoundBalance > 0) {
-      _sweepFromCompound();
-    }
-
-    uint256 reserveAmount = amount.div(config.getWithdrawFeeDenominator());
-    uint256 userAmount = amount.sub(reserveAmount);
-
-    emit WithdrawalMade(msg.sender, userAmount, reserveAmount);
-    // Send the amounts
-    bool success = doUSDCTransfer(address(this), msg.sender, userAmount);
-    require(success, "Failed to transfer for withdraw");
-    sendToReserve(address(this), reserveAmount, msg.sender);
-
-    // Burn the shares
-    fidu.burnFrom(msg.sender, withdrawShares);
+  /**
+   * @notice Withdraws USDC (denominated in FIDU terms) from the Pool to msg.sender
+   * @param fiduAmount The amount of USDC to withdraw in terms of fidu shares
+   */
+  function withdrawInFidu(uint256 fiduAmount) external override whenNotPaused nonReentrant {
+    require(fiduAmount > 0, "Must withdraw more than zero");
+    uint256 usdcAmount = getUSDCAmountFromShares(fiduAmount);
+    uint256 withdrawShares = fiduAmount;
+    _withdraw(usdcAmount, withdrawShares);
   }
 
   /**
@@ -199,6 +190,30 @@ contract Pool is BaseUpgradeablePausable, IPool {
 
   /* Internal Functions */
 
+  function _withdraw(uint256 usdcAmount, uint256 withdrawShares) internal withinTransactionLimit(usdcAmount) {
+    IFidu fidu = config.getFidu();
+    // Determine current shares the address has and the shares requested to withdraw
+    uint256 currentShares = fidu.balanceOf(msg.sender);
+    // Ensure the address has enough value in the pool
+    require(withdrawShares <= currentShares, "Amount requested is greater than what this address owns");
+
+    if (compoundBalance > 0) {
+      _sweepFromCompound();
+    }
+
+    uint256 reserveAmount = usdcAmount.div(config.getWithdrawFeeDenominator());
+    uint256 userAmount = usdcAmount.sub(reserveAmount);
+
+    emit WithdrawalMade(msg.sender, userAmount, reserveAmount);
+    // Send the amounts
+    bool success = doUSDCTransfer(address(this), msg.sender, userAmount);
+    require(success, "Failed to transfer for withdraw");
+    sendToReserve(address(this), reserveAmount, msg.sender);
+
+    // Burn the shares
+    fidu.burnFrom(msg.sender, withdrawShares);
+  }
+
   function sweepToCompound(ICUSDCContract cUSDC, uint256 usdcAmount) internal {
     // Our current design requires we re-normalize by withdrawing everything and recognizing interest gains
     // before we can add additional capital to Compound
@@ -302,6 +317,10 @@ contract Pool is BaseUpgradeablePausable, IPool {
 
   function getNumShares(uint256 amount) internal view returns (uint256) {
     return usdcToFidu(amount).mul(fiduMantissa()).div(sharePrice);
+  }
+
+  function getUSDCAmountFromShares(uint256 fiduAmount) internal view returns (uint256) {
+    return fiduToUSDC(fiduAmount.mul(sharePrice).div(fiduMantissa()));
   }
 
   function fiduToUSDC(uint256 amount) internal view returns (uint256) {

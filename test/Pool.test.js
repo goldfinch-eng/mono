@@ -9,6 +9,7 @@ const {
   deployAllContracts,
   erc20Transfer,
   erc20Approve,
+  expectAction,
   decimals,
   USDC_DECIMALS,
   usdcVal,
@@ -28,10 +29,14 @@ describe("Pool", () => {
     person = person || person2
     return await pool.deposit(String(amount), {from: person})
   }
-  let makeWithdraw = async (person, amount) => {
-    amount = amount || withdrawAmount
+  let makeWithdraw = async (person, usdcAmount) => {
+    usdcAmount = usdcAmount || withdrawAmount
     person = person || person2
-    return await pool.withdraw(amount, {from: person})
+    return await pool.withdraw(usdcAmount, {from: person})
+  }
+
+  let makeWithdrawInFidu = async (person, fiduAmount) => {
+    return await pool.withdrawInFidu(fiduAmount, {from: person})
   }
 
   const setupTest = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
@@ -260,9 +265,25 @@ describe("Pool", () => {
       expect(sharesAfter).to.bignumber.equal(expectedShares)
     })
 
+    it("lets you withdraw in fidu terms", async () => {
+      await makeDeposit()
+      const fiduBalance = await getBalance(person2, fidu)
+      expect(fiduBalance).to.bignumber.gt("0")
+
+      await expectAction(() => {
+        return makeWithdrawInFidu(person2, fiduBalance)
+      }).toChange([
+        [() => getBalance(person2, usdc), {byCloseTo: usdcVal(4)}], // Not exactly the same as input due to fees
+        [() => getBalance(person2, fidu), {to: new BN(0)}], // All fidu deducted
+        [() => getBalance(pool.address, usdc), {to: new BN(0)}], // Should have removed the full balance
+        [() => fidu.totalSupply(), {by: fiduBalance.neg()}], // Fidu has been burned
+      ])
+    })
+
     it("prevents you from withdrawing more than you have", async () => {
       const expectedErr = /Amount requested is greater than what this address owns/
-      return expect(makeWithdraw()).to.be.rejectedWith(expectedErr)
+      await expect(makeWithdraw()).to.be.rejectedWith(expectedErr)
+      await expect(makeWithdrawInFidu(person2, withdrawAmount)).to.be.rejectedWith(expectedErr)
     })
 
     it("it lets you withdraw your exact total holdings", async () => {

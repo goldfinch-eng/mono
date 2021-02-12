@@ -76,7 +76,11 @@ function expectAction(action, debug) {
       if (debug) {
         console.log("Original:", String(originalValues))
       }
-      await action()
+      const actionPromise = action()
+      if (actionPromise === undefined) {
+        throw new Error("Expected a promise. Did you forget to return?")
+      }
+      await actionPromise
       const newValues = await Promise.all(items.map((i) => i()))
       if (debug) {
         console.log("New:     ", String(newValues))

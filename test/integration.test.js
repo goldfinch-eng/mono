@@ -123,14 +123,18 @@ describe("Goldfinch", async () => {
       return grossAmount.sub(grossAmount.div(feeDenominator))
     }
 
-    async function withdraw(amount, investor) {
+    async function withdraw(usdcAmount, investor) {
       investor = investor || investor1
-      if (amount === "max") {
+      if (usdcAmount === "max") {
         const numShares = await getBalance(investor, fidu)
         const maxAmount = (await pool.sharePrice()).mul(numShares)
-        amount = fiduToUSDC(maxAmount.div(ETHDecimals))
+        usdcAmount = fiduToUSDC(maxAmount.div(ETHDecimals))
       }
-      return pool.withdraw(amount, {from: investor})
+      return pool.withdraw(usdcAmount, {from: investor})
+    }
+
+    async function withdrawInFidu(fiduAmount, investor) {
+      return pool.withdrawInFidu(fiduAmount, {from: investor})
     }
 
     async function doAllMainActions(clAddress) {
@@ -176,13 +180,13 @@ describe("Goldfinch", async () => {
         // There was 10k already in the pool, so each investor has a third
         const grossExpectedReturn = amount.add(expectedInterest.div(new BN(3)))
         const expectedReturn = await afterWithdrawalFees(grossExpectedReturn)
-
+        const availableFidu = await getBalance(investor2, fidu)
         await expectAction(async () => {
           await withdraw("max")
-          await withdraw("max", investor2)
+          await withdrawInFidu(availableFidu, investor2) // Withdraw everything in fidu terms
         }).toChange([
           [() => getBalance(investor1, usdc), {by: expectedReturn}],
-          [() => getBalance(investor2, usdc), {by: expectedReturn}],
+          [() => getBalance(investor2, usdc), {by: expectedReturn}], // Also ensures share price is correctly incorporated
         ])
 
         await doAllMainActions(creditLine.address)
