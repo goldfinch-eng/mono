@@ -329,7 +329,7 @@ describe("mainnet forking tests", async function () {
       const WITHDRAWL_FEE_DENOMINATOR = new BN(200)
       const expectedWithdrawAmount = usdcAmount.sub(usdcAmount.div(WITHDRAWL_FEE_DENOMINATOR))
       await expectAction(() => {
-        return pool.withdraw(usdcAmount, new BN(0), {from: bwr})
+        return pool.withdraw(usdcAmount, {from: bwr})
       }).toChange([
         [() => getBalance(pool.address, usdc), {increase: true}], // USDC withdrawn, but interest was collected
         [() => getBalance(pool.address, cUSDC), {to: new BN(0)}], // No more cTokens

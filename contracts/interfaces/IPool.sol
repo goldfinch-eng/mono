@@ -7,7 +7,9 @@ abstract contract IPool {
 
   function deposit(uint256 amount) external virtual;
 
-  function withdraw(uint256 usdcAmount, uint256 fiduAmount) external virtual;
+  function withdraw(uint256 usdcAmount) external virtual;
+
+  function withdrawInFidu(uint256 fiduAmount) external virtual;
 
   function collectInterestAndPrincipal(
     address from,

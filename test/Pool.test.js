@@ -22,7 +22,6 @@ describe("Pool", () => {
   let pool, usdc, fidu, goldfinchConfig
   let depositAmount = new BN(4).mul(USDC_DECIMALS)
   let withdrawAmount = new BN(2).mul(USDC_DECIMALS)
-  let fiduWithdrawAmount = new BN(0)
   const decimalsDelta = decimals.div(USDC_DECIMALS)
 
   let makeDeposit = async (person, amount) => {
@@ -30,11 +29,14 @@ describe("Pool", () => {
     person = person || person2
     return await pool.deposit(String(amount), {from: person})
   }
-  let makeWithdraw = async (person, usdcAmount, fiduAmount) => {
+  let makeWithdraw = async (person, usdcAmount) => {
     usdcAmount = usdcAmount || withdrawAmount
-    fiduAmount = fiduAmount || fiduWithdrawAmount
     person = person || person2
-    return await pool.withdraw(usdcAmount, fiduAmount, {from: person})
+    return await pool.withdraw(usdcAmount, {from: person})
+  }
+
+  let makeWithdrawInFidu = async (person, fiduAmount) => {
+    return await pool.withdrawInFidu(fiduAmount, {from: person})
   }
 
   const setupTest = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
@@ -269,7 +271,7 @@ describe("Pool", () => {
       expect(fiduBalance).to.bignumber.gt("0")
 
       await expectAction(() => {
-        return makeWithdraw(person2, new BN(0), fiduBalance)
+        return makeWithdrawInFidu(person2, fiduBalance)
       }).toChange([
         [() => getBalance(person2, usdc), {byCloseTo: usdcVal(4)}], // Not exactly the same as input due to fees
         [() => getBalance(person2, fidu), {to: new BN(0)}], // All fidu deducted
@@ -278,15 +280,10 @@ describe("Pool", () => {
       ])
     })
 
-    it("does not let you specify both usdcAmount and fiduAmount", async () => {
-      return expect(makeWithdraw(person2, withdrawAmount, new BN(10))).to.be.rejectedWith(
-        /Only specify either usdcAmount or fiduAmount/
-      )
-    })
-
     it("prevents you from withdrawing more than you have", async () => {
       const expectedErr = /Amount requested is greater than what this address owns/
-      return expect(makeWithdraw()).to.be.rejectedWith(expectedErr)
+      await expect(makeWithdraw()).to.be.rejectedWith(expectedErr)
+      await expect(makeWithdrawInFidu(person2, withdrawAmount)).to.be.rejectedWith(expectedErr)
     })
 
     it("it lets you withdraw your exact total holdings", async () => {
