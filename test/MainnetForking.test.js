@@ -72,7 +72,7 @@ describe("mainnet forking tests", async function () {
 
     // Set the reserve to a separate address for easier separation. The current owner account gets used for many things in tests.
     await goldfinchConfig.setTreasuryReserve(reserve)
-    await goldfinchConfig.setAddress(CONFIG_KEYS.CUSDCContract, cUSDCContractAddress)
+    await goldfinchConfig.setAddressForTest(CONFIG_KEYS.CUSDCContract, cUSDCContractAddress)
     await creditDesk.setUnderwriterGovernanceLimit(underwriter, usdcVal(100000), {from: owner})
 
     return {pool, usdc, creditDesk, fidu, goldfinchConfig, goldfinchFactory, cUSDC}
