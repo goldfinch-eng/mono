@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "npx concurrently -n \"blockchain,web,server\"  \"npx hardhat node --reset --export-all client/config/deployments_dev.json\" \"cd client && npm start\" \"cd client && node server.js\" -k -c \"cyan, magenta, green\"",
+    "mainnet-start": "REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet npx concurrently -n \"blockchain,web,server\"  \"npx hardhat node --reset --export-all client/config/deployments_dev.json\" \"cd client && npm start\" \"cd client && node server.js\" -k -c \"cyan, magenta, green\"",
     "test": "NODE_ENV=test npx hardhat test --show-stack-traces",
     "mainnet-test": "HARDHAT_FORK=mainnet NODE_ENV=test npx hardhat test test/MainnetForking.test.js --show-stack-traces",
     "pre-push": "cd client && npm run pre-push",

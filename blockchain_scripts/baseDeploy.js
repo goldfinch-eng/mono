@@ -12,6 +12,7 @@ const {
   getUSDCAddress,
   isTestEnv,
   MAINNET_ONE_SPLIT_ADDRESS,
+  MAINNET_CUSDC_ADDRESS,
 } = require("./deployHelpers.js")
 const PROTOCOL_CONFIG = require("../protocol_config.json")
 let logger
@@ -92,6 +93,7 @@ async function baseDeploy(hre, {shouldUpgrade}) {
 
     await updateConfig(config, "address", CONFIG_KEYS.ProtocolAdmin, multisigAddress)
     await updateConfig(config, "address", CONFIG_KEYS.OneInch, MAINNET_ONE_SPLIT_ADDRESS)
+    await updateConfig(config, "address", CONFIG_KEYS.CUSDCContract, MAINNET_CUSDC_ADDRESS)
     if (TRUSTED_FORWARDER_CONFIG[chainID]) {
       await updateConfig(config, "address", CONFIG_KEYS.TrustedForwarder, TRUSTED_FORWARDER_CONFIG[chainID])
     }

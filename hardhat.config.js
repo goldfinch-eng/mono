@@ -52,11 +52,6 @@ module.exports = {
       },
     ]
   },
-  external: process.env.HARDHAT_FORK ? {
-    deployments: {
-      hardhat: ["deployments/" + process.env.HARDHAT_FORK]
-    },
-  } : undefined,
   namedAccounts: {
     protocol_owner: {
       default: 0,
