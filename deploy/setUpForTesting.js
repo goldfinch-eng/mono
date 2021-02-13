@@ -1,5 +1,6 @@
 /* global ethers */
 const BN = require("bn.js")
+const hre = require("hardhat")
 const {
   MAINNET_CHAIN_ID,
   LOCAL,
@@ -10,6 +11,7 @@ const {
   USDCDecimals,
   isTestEnv,
   interestAprAsBN,
+  isMainnetForking,
 } = require("../blockchain_scripts/deployHelpers.js")
 const PROTOCOL_CONFIG = require("../protocol_config.json")
 
@@ -34,6 +36,20 @@ async function main({getNamedAccounts, deployments, getChainId}) {
   if (getUSDCAddress(chainID)) {
     logger("On a network with known USDC address, so firing up that contract...")
     erc20 = await ethers.getContractAt("TestERC20", getUSDCAddress(chainID))
+
+    if (isMainnetForking()) {
+      const usdcWhale = "0x46aBbc9fc9d8E749746B00865BC2Cf7C4d85C837"
+      // Unlocks a random account that owns tons of USDC, which we can send to our test users
+      await hre.network.provider.request({
+        method: "hardhat_impersonateAccount",
+        params: [usdcWhale],
+      })
+      // Give USDC from the whale to our test accounts
+      console.log("Mainnet fork detected. Transferring USDC to protocol owner")
+      let signer = await ethers.provider.getSigner(usdcWhale)
+      const whaleUSDC = await ethers.getContractAt("TestERC20", getUSDCAddress(chainID), signer)
+      await whaleUSDC.transfer(protocol_owner, new BN(1000000).mul(USDCDecimals).toString())
+    }
   }
 
   const testUser = process.env.TEST_USER
