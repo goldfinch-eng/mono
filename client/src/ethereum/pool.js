@@ -136,7 +136,13 @@ async function getRepaymentEvents() {
       return null;
     }
     const merged = { ...val[0], ...val[1], ...[val[2]] };
-    merged.amountBN = val[0].amountBN.plus(val[1].amountBN).plus(val[2].amountBN);
+    merged.amountBN = _.reduce(
+      val,
+      (sum, e) => {
+        return sum.plus(e.amountBN);
+      },
+      new BigNumber(0),
+    );
     merged.amount = usdcFromAtomic(merged.amountBN);
     merged.interestAmountBN = interestPayment.amountBN;
     merged.type = 'CombinedRepayment';

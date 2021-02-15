@@ -80,7 +80,7 @@ function App() {
     // Set this to the borrower contract address to test gasless transactions
     // let userAddress = '0xd3D57673BAE28880376cDF89aeFe4653A5C84A08';
     if (userAddress && erc20 && creditDesk.loaded && pool.loaded) {
-      data = await getUserData(userAddress, erc20, pool, creditDesk);
+      data = await getUserData(userAddress, erc20, pool, creditDesk, network.name);
     }
     setUser(data);
   }

@@ -14,12 +14,9 @@ function Borrow(props) {
   const [creditLine, setCreditLine] = useState(defaultCreditLine);
 
   async function updateBorrowerAndCreditLine() {
-    const borrowerAddress = user.address;
-    borrower.address = user.address;
-    if (borrowerAddress && creditDesk.loaded) {
-      const borrowerCreditLines = await creditDesk.methods.getBorrowerCreditLines(borrowerAddress).call();
-      const allowance = new BN(await erc20.methods.allowance(borrowerAddress, pool._address).call());
-      borrower.allowance = allowance;
+    const borrower = user.borrower;
+    if (borrower && creditDesk.loaded) {
+      const borrowerCreditLines = borrower.creditLines;
       if (borrowerCreditLines.length) {
         // Always use the last credit line, under the assumption for now that the last one is your
         // active one. If we start legit having multiple active credit lines, then we'll need to change

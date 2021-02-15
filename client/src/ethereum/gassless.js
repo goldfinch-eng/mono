@@ -1,7 +1,6 @@
 import web3 from '../web3';
 const { FORWARDER_ADDRESSES } = require('./utils');
 const ForwarderAbi = require('../../abi/Forwarder.json');
-const BorrowerAbi = require('../../abi/Borrower.json');
 const { ethers } = require('ethers');
 
 const RelayUrl = '/relay';
@@ -53,14 +52,14 @@ async function submitGaslessTransaction(contractAddress, data) {
   const nonce = await forwarder.getNonce(from).then(nonce => nonce.toString());
 
   // Encode meta-tx request
-  const borrowerInterface = new ethers.utils.Interface(BorrowerAbi);
+  // const borrowerInterface = new ethers.utils.Interface(BorrowerAbi);
   // TODO: This currently hardcodes the credit line address. Remove when we build frontend support for the
   // borrower contract
-  data = borrowerInterface.functions.drawdown.encode([
-    '0xfa9331845f84b0ed88F5353B8cd3F7310F0B3fD9',
-    1000000,
-    '0xE7f9ED35DA54b2e4A1857487dBf42A32C4DBD4a0',
-  ]);
+  // data = borrowerInterface.functions.drawdown.encode([
+  //   '0xfa9331845f84b0ed88F5353B8cd3F7310F0B3fD9',
+  //   1000000,
+  //   '0xE7f9ED35DA54b2e4A1857487dBf42A32C4DBD4a0',
+  // ]);
   const request = {
     from,
     to: contractAddress,
