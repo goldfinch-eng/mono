@@ -27,7 +27,7 @@ function useCloseOnClickOrEsc(opts = {}) {
 
   const handleClickOutside = useCallback(
     e => {
-      if (node.current.contains(e.target) || opts.closeOnClick === false) {
+      if (!node.current || node.current.contains(e.target) || opts.closeOnClick === false) {
         // inside click
         return;
       }

@@ -37,6 +37,10 @@ function App() {
 
   useEffect(() => {
     refreshUserData();
+    // Admin function to be able to assume the role of any address
+    window.setUserAddress = function(overrideAddress) {
+      refreshUserData(overrideAddress);
+    };
   }, [gnosisSafeInfo, erc20, pool, creditDesk, network]);
 
   async function setupWeb3() {
@@ -73,7 +77,7 @@ function App() {
     return () => safeSdk.removeListeners();
   }
 
-  async function refreshUserData() {
+  async function refreshUserData(overrideAddress) {
     let data = defaultUser();
     const accounts = await web3.eth.getAccounts();
     let userAddress = (gnosisSafeInfo && gnosisSafeInfo.safeAddress) || (accounts && accounts[0]) || user.address;
@@ -96,7 +100,7 @@ function App() {
 
   var addPendingTX = txData => {
     const randomID = Math.floor(Math.random() * Math.floor(1000000000));
-    const tx = { status: 'pending', id: randomID, confirmations: 0, ...txData };
+    const tx = { status: 'pending', id: randomID, name: txData['type'], confirmations: 0, ...txData };
     setCurrentTXs(currentTXs => {
       const newTxs = _.concat(currentTXs, tx);
       return newTxs;

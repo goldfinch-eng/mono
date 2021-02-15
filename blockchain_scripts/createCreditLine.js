@@ -2,6 +2,7 @@ const BN = require("bn.js")
 const hre = require("hardhat")
 const {deployments, getNamedAccounts} = hre
 const {USDCDecimals, getDeployedContract, interestAprAsBN} = require("../blockchain_scripts/deployHelpers.js")
+const {displayCreditLine} = require("./protocolHelpers")
 
 async function main() {
   const {protocolOwner} = await getNamedAccounts()
@@ -29,8 +30,8 @@ async function createCreditLineForBorrower(creditDesk, creditLineFactory, borrow
   borrower = bwrConAddr
 
   logger("Creating a credit line for the borrower", borrower)
-  const limit = String(new BN(10000).mul(USDCDecimals))
-  const interestApr = String(interestAprAsBN("1.00"))
+  const limit = String(new BN(80000).mul(USDCDecimals))
+  const interestApr = String(interestAprAsBN("5.00"))
   const paymentPeriodInDays = String(new BN(7))
   const termInDays = String(new BN(360))
   const lateFeeApr = String(new BN(3))
@@ -44,6 +45,9 @@ async function createCreditLineForBorrower(creditDesk, creditLineFactory, borrow
   )
   logger("Waiting for the txn to be mined...")
   await txn.wait()
+  const creditLines = await creditDesk.getBorrowerCreditLines(borrower)
+  await displayCreditLine(creditLines[creditLines.length - 1])
+
   logger("Created a credit line for the borrower", borrower)
 }
 
