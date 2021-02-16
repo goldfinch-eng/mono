@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.6.12;
 
-import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
-contract TestERC20 is ERC20UpgradeSafe {
+contract TestERC20 is ERC20Upgradeable {
   constructor(uint256 initialSupply, uint8 decimals) public {
     __ERC20_init("USDC", "USDC");
     _setupDecimals(decimals);

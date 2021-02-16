@@ -204,11 +204,11 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient {
   // Since there are two different versions of the function in the hierarchy, we need to instruct solidity to
   // use the relay recipient version which can actually pull the real sender from the parameters.
   // https://www.notion.so/My-contract-is-using-OpenZeppelin-How-do-I-add-GSN-support-2bee7e9d5f774a0cbb60d3a8de03e9fb
-  function _msgSender() internal view override(ContextUpgradeSafe, BaseRelayRecipient) returns (address payable) {
+  function _msgSender() internal view override(ContextUpgradeable, BaseRelayRecipient) returns (address payable) {
     return BaseRelayRecipient._msgSender();
   }
 
-  function _msgData() internal view override(ContextUpgradeSafe, BaseRelayRecipient) returns (bytes memory ret) {
+  function _msgData() internal view override(ContextUpgradeable, BaseRelayRecipient) returns (bytes memory ret) {
     return BaseRelayRecipient._msgData();
   }
 

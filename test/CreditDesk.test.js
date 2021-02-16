@@ -173,6 +173,19 @@ describe("CreditDesk", () => {
     })
   })
 
+  describe("setGoldfinchConfig", () => {
+    describe("setting it", async () => {
+      it("should allow the owner to set it", async () => {
+        return expectAction(() => creditDesk.setGoldfinchConfig(person2, {from: owner})).toChange([
+          [() => creditDesk.config(), {to: person2}],
+        ])
+      })
+      it("should disallow non-owner to set", async () => {
+        return expect(creditDesk.setGoldfinchConfig(person2, {from: person2})).to.be.rejectedWith(/Must have admin/)
+      })
+    })
+  })
+
   describe("setUnderwriterGovernanceLimit", () => {
     let underwriter
     beforeEach(() => {
@@ -232,9 +245,10 @@ describe("CreditDesk", () => {
 
     it("emits an event with the correct data", async () => {
       const response = await createCreditLine()
-      // Note we pick the 2nd index, because the 0th and 1st are RoleGranted events, which
-      // happen automatically when creating CreditLines, but we don't care about that.
-      const event = response.logs[2]
+      // Note we pick the 4th index, because the 0th, 1st, 2nd, and 3rd are RoleGranted
+      // and RoleAdminChanged events, which happen automatically when creating CreditLines,
+      // but we don't care about that.
+      const event = response.logs[4]
 
       expect(event.event).to.equal("CreditLineCreated")
       expect(event.args.borrower).to.equal(borrower)

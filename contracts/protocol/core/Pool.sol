@@ -169,7 +169,7 @@ contract Pool is BaseUpgradeablePausable, IPool {
   }
 
   function sweepToCompound() public override onlyAdmin whenNotPaused {
-    IERC20 usdc = config.getUSDC();
+    IERC20Upgradeable usdc = config.getUSDC();
     uint256 usdcBalance = usdc.balanceOf(address(this));
 
     ICUSDCContract cUSDC = config.getCUSDCContract();
@@ -230,7 +230,7 @@ contract Pool is BaseUpgradeablePausable, IPool {
     require(compoundBalance != 0, "No funds on compound");
     require(cUSDCAmount != 0, "Amount to sweep cannot be zero");
 
-    IERC20 usdc = config.getUSDC();
+    IERC20Upgradeable usdc = config.getUSDC();
     uint256 preRedeemUSDCBalance = usdc.balanceOf(address(this));
     uint256 cUSDCExchangeRate = cUSDC.exchangeRateCurrent();
     uint256 redeemedUSDC = cUSDCToUSDC(cUSDCExchangeRate, cUSDCAmount);
@@ -275,6 +275,11 @@ contract Pool is BaseUpgradeablePausable, IPool {
   function _sweepFromCompound() internal {
     ICUSDCContract cUSDC = config.getCUSDCContract();
     sweepFromCompound(cUSDC, cUSDC.balanceOf(address(this)));
+  }
+
+  // TEMPORARY: WILL REMOVE AFTER WE DO THE UPGRADE
+  function setGoldfinchConfig(GoldfinchConfig newGoldfinchConfig) external onlyAdmin {
+    config = newGoldfinchConfig;
   }
 
   function fiduMantissa() internal pure returns (uint256) {
@@ -323,7 +328,7 @@ contract Pool is BaseUpgradeablePausable, IPool {
     return fiduToUSDC(fiduAmount.mul(sharePrice).div(fiduMantissa()));
   }
 
-  function fiduToUSDC(uint256 amount) internal view returns (uint256) {
+  function fiduToUSDC(uint256 amount) internal pure returns (uint256) {
     return amount.div(fiduMantissa().div(usdcMantissa()));
   }
 

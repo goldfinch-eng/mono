@@ -59,7 +59,7 @@
   "homepage": "https://github.com/OpenZeppelin/starter-kit/blob/stable/README.md",
   "dependencies": {
     "@opengsn/gsn": "^2.1.0",
-    "@openzeppelin/contracts-ethereum-package": "^3.0.0",
+    "@openzeppelin/contracts-upgradeable": "^3.4.0",
     "@openzeppelin/upgrades": "^2.8.0",
     "bn.js": "^5.1.3",
     "contract-proxy-kit": "^2.2.0-alpha.1",

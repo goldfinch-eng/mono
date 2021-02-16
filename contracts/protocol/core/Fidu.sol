@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.6.12;
 
-import "@openzeppelin/contracts-ethereum-package/contracts/presets/ERC20PresetMinterPauser.sol";
+import "@openzeppelin/contracts-upgradeable/presets/ERC20PresetMinterPauserUpgradeable.sol";
 import "./ConfigHelper.sol";
 
 /**
@@ -13,7 +13,7 @@ import "./ConfigHelper.sol";
  * @author Goldfinch
  */
 
-contract Fidu is ERC20PresetMinterPauserUpgradeSafe {
+contract Fidu is ERC20PresetMinterPauserUpgradeable {
   bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
   // $1 threshold to handle potential rounding errors, from differing decimals on Fidu and USDC;
   uint256 public constant ASSET_LIABILITY_MATCH_THRESHOLD = 1e6;
@@ -120,5 +120,11 @@ contract Fidu is ERC20PresetMinterPauserUpgradeSafe {
 
   function usdcMantissa() internal pure returns (uint256) {
     return uint256(10)**uint256(6);
+  }
+
+  // TEMPORARY: WILL REMOVE AFTER WE DO THE UPGRADE
+  function setGoldfinchConfig(GoldfinchConfig newGoldfinchConfig) external {
+    require(hasRole(MINTER_ROLE, _msgSender()), "ERC20PresetMinterPauser: Must have minter role to change config");
+    config = newGoldfinchConfig;
   }
 }

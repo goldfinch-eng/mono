@@ -1,5 +1,5 @@
 /* global artifacts web3 */
-const {expect, bigVal, getDeployedAsTruffleContract} = require("./testHelpers.js")
+const {expect, bigVal, getDeployedAsTruffleContract, expectAction} = require("./testHelpers.js")
 const {OWNER_ROLE} = require("../blockchain_scripts/deployHelpers")
 const hre = require("hardhat")
 const {deployments} = hre
@@ -40,7 +40,7 @@ describe("Fidu", () => {
   describe("initialization", async () => {
     it("should not allow it to be called twice", async () => {
       return expect(fidu.__initialize__(person2, "Fidu", "FIDU", goldfinchConfig.address)).to.be.rejectedWith(
-        /has already been initialized/
+        /contract is already initialized/
       )
     })
   })
@@ -48,6 +48,19 @@ describe("Fidu", () => {
   describe("ownership", async () => {
     it("should be owned by the owner", async () => {
       expect(await fidu.hasRole(OWNER_ROLE, owner)).to.be.true
+    })
+  })
+
+  describe("setGoldfinchConfig", () => {
+    describe("setting it", async () => {
+      it("should allow the owner to set it", async () => {
+        return expectAction(() => fidu.setGoldfinchConfig(person2, {from: owner})).toChange([
+          [() => fidu.config(), {to: person2}],
+        ])
+      })
+      it("should disallow non-owner to set", async () => {
+        return expect(fidu.setGoldfinchConfig(person2, {from: person2})).to.be.rejectedWith(/Must have minter role/)
+      })
     })
   })
 

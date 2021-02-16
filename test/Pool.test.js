@@ -110,6 +110,19 @@ describe("Pool", () => {
     })
   })
 
+  describe("setGoldfinchConfig", () => {
+    describe("setting it", async () => {
+      it("should allow the owner to set it", async () => {
+        return expectAction(() => pool.setGoldfinchConfig(person2, {from: owner})).toChange([
+          [() => pool.config(), {to: person2}],
+        ])
+      })
+      it("should disallow non-owner to set", async () => {
+        return expect(pool.setGoldfinchConfig(person2, {from: person2})).to.be.rejectedWith(/Must have admin/)
+      })
+    })
+  })
+
   describe("deposit", () => {
     describe("before you have approved the pool to transfer funds on your behalf", async () => {
       it("should fail", async () => {

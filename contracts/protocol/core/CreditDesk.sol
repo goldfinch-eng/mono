@@ -520,7 +520,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     if (balance > 0 && curBlockNumber >= nextDueBlock) {
       uint256 blocksToAdvance = (curBlockNumber.sub(nextDueBlock).div(blocksPerPeriod)).add(1).mul(blocksPerPeriod);
       nextDueBlock = nextDueBlock.add(blocksToAdvance);
-      return Math.min(nextDueBlock, cl.termEndBlock());
+      return MathUpgradeable.min(nextDueBlock, cl.termEndBlock());
     }
 
     // Your paid off, or have not taken out a loan yet, so no next due block.
@@ -596,6 +596,11 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
 
     cl.setTermEndBlock(calculateNewTermEndBlock(cl, balance)); // pass in balance as a gas optimization
     cl.setNextDueBlock(calculateNextDueBlock(cl));
+  }
+
+  // TEMPORARY: WILL REMOVE AFTER WE DO THE UPGRADE
+  function setGoldfinchConfig(GoldfinchConfig newGoldfinchConfig) external onlyAdmin {
+    config = newGoldfinchConfig;
   }
 
   function getUSDCBalance(address _address) internal view returns (uint256) {

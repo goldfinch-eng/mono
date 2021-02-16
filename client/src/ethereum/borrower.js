@@ -34,7 +34,7 @@ class BorrowerInterface {
       if (sendToAddress) {
         throw new Error('SendToAddress not supported for non-borrower contracts');
       }
-      return this.creditDesk.methods.drawdown(drawdownAmount, creditLineAddress);
+      return this.creditDesk.methods.drawdown(creditLineAddress, drawdownAmount);
     }
   }
 

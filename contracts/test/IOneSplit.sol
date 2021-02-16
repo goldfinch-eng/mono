@@ -4,7 +4,7 @@
 pragma solidity ^0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 
 // contract IOneSplitConsts {
 //     // flags = FLAG_DISABLE_UNISWAP + FLAG_DISABLE_BANCOR + ...
@@ -80,16 +80,16 @@ import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/IERC20.so
 
 interface IOneSplit {
   function getExpectedReturn(
-    IERC20 fromToken,
-    IERC20 destToken,
+    IERC20Upgradeable fromToken,
+    IERC20Upgradeable destToken,
     uint256 amount,
     uint256 parts,
     uint256 flags // See constants in IOneSplit.sol
   ) external view returns (uint256 returnAmount, uint256[] memory distribution);
 
   function getExpectedReturnWithGas(
-    IERC20 fromToken,
-    IERC20 destToken,
+    IERC20Upgradeable fromToken,
+    IERC20Upgradeable destToken,
     uint256 amount,
     uint256 parts,
     uint256 flags, // See constants in IOneSplit.sol
@@ -104,8 +104,8 @@ interface IOneSplit {
     );
 
   function swap(
-    IERC20 fromToken,
-    IERC20 destToken,
+    IERC20Upgradeable fromToken,
+    IERC20Upgradeable destToken,
     uint256 amount,
     uint256 minReturn,
     uint256[] memory distribution,

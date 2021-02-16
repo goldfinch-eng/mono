@@ -63,4 +63,9 @@ contract CreditLineFactory is BaseUpgradeablePausable {
     }
     /* solhint-enable */
   }
+
+  // TEMPORARY: WILL REMOVE AFTER WE DO THE UPGRADE
+  function setGoldfinchConfig(GoldfinchConfig newGoldfinchConfig) external onlyAdmin {
+    config = newGoldfinchConfig;
+  }
 }

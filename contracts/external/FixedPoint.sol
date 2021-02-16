@@ -1,17 +1,18 @@
+// SPDX-License-Identifier: MIT
 // solhint-disable
 // Imported from https://github.com/UMAprotocol/protocol/blob/4d1c8cc47a4df5e79f978cb05647a7432e111a3d/packages/core/contracts/common/implementation/FixedPoint.sol
 pragma solidity 0.6.12;
 
-import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/math/SignedSafeMath.sol";
+import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
 
 
 /**
  * @title Library for fixed point arithmetic on uints
  */
 library FixedPoint {
-    using SafeMath for uint256;
-    using SignedSafeMath for int256;
+    using SafeMathUpgradeable for uint256;
+    using SignedSafeMathUpgradeable for int256;
 
     // Supports 18 decimals. E.g., 1e18 represents "1", 5e17 represents "0.5".
     // For unsigned values:
