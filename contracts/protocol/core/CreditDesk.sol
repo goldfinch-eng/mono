@@ -238,7 +238,8 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
       return;
     }
 
-    uint256 blockToAssess = cl.setNextDueBlock(calculateNextDueBlock(cl));
+    uint256 blockToAssess = calculateNextDueBlock(cl);
+    cl.setNextDueBlock(blockToAssess);
 
     // We always want to assess for the most recently *past* nextDueBlock.
     // So if the recalculation above sets the nextDueBlock into the future,
