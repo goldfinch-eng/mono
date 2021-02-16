@@ -3,8 +3,10 @@ import { usdcFromAtomic } from './erc20.js';
 import _ from 'lodash';
 import { getFromBlock } from './utils.js';
 import { mapEventsToTx } from './events';
+import { getCreditLineFactory } from './creditLine';
+import { getBorrowerContract } from './borrower';
 
-async function getUserData(address, usdc, pool, creditDesk) {
+async function getUserData(address, usdc, pool, creditDesk, networkId) {
   const usdcBalance = new BigNumber(await usdc.methods.balanceOf(address).call());
   const allowance = new BigNumber(await usdc.methods.allowance(address, pool._address).call());
   const [usdcTxs, poolTxs, creditDeskTxs] = await Promise.all([
@@ -13,6 +15,8 @@ async function getUserData(address, usdc, pool, creditDesk) {
     getAndTransformCreditDeskEvents(creditDesk, address),
   ]);
   const allTxs = _.reverse(_.sortBy(_.compact(_.concat(usdcTxs, poolTxs, creditDeskTxs)), 'blockNumber'));
+  const creditLineFactory = await getCreditLineFactory(networkId);
+  const borrower = await getBorrowerContract(address, creditLineFactory, creditDesk, usdc, pool, networkId);
 
   const user = {
     address: address,
@@ -23,6 +27,7 @@ async function getUserData(address, usdc, pool, creditDesk) {
     pastTXs: allTxs,
     poolBalanceAsOf: poolBalanceAsOf,
     poolTxs: poolTxs,
+    borrower: borrower,
     loaded: true,
   };
   return user;
