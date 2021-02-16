@@ -285,11 +285,11 @@ contract Pool is BaseUpgradeablePausable, IPool {
     return uint256(10)**uint256(6);
   }
 
-  function usdcToFidu(uint256 amount) internal view returns (uint256) {
+  function usdcToFidu(uint256 amount) internal pure returns (uint256) {
     return amount.mul(fiduMantissa()).div(usdcMantissa());
   }
 
-  function cUSDCToUSDC(uint256 exchangeRate, uint256 amount) internal view returns (uint256) {
+  function cUSDCToUSDC(uint256 exchangeRate, uint256 amount) internal pure returns (uint256) {
     // This should actually be 16 (18 + USDC decimals (6) - cTokenDecimals (8)), but it's off by 2. Why?
     // See https://compound.finance/docs#protocol-math
     uint256 cUSDCMantissa = uint256(10)**uint256(18);

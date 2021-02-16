@@ -13,7 +13,7 @@
     "lint": "npx eslint . --fix && npx prettier . --write && npx solhint contracts/**/*.sol --fix",
     "docs": "npx solidity-docgen && rm -rf docs/test",
     "verify": "npx hardhat etherscan-verify --api-key DQUC8Y678J5RN5P7XE9RT91SWI7SSEDD53 --solc-input --network",
-    "deploy": "npm run docs && npx hardhat deploy --show-stack-traces --export-all client/config/deployments.json --network",
+    "deploy": "npx hardhat deploy --show-stack-traces --export-all client/config/deployments.json --network",
     "upgrade-protocol": "npm run docs && npx hardhat deploy --export-all client/config/deployments.json --tags upgrade_protocol --network",
     "update-configs": "npx hardhat run ./blockchain_scripts/updateConfigs.js --network",
     "upgrade-multisig": "npx hardhat run ./blockchain_scripts/upgrade.js --network"

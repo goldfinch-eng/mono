@@ -17,7 +17,6 @@ import "./CreditLine.sol";
 contract CreditLineFactory is BaseUpgradeablePausable {
   GoldfinchConfig public config;
 
-  // THIS IS TEMPORARY. REMOVE ONCE WE ARE USING CREATE2 CALCULATED ADDRESS
   event BorrowerCreated(address indexed borrower, address indexed owner);
 
   function initialize(address owner, GoldfinchConfig _config) public initializer {
@@ -25,7 +24,7 @@ contract CreditLineFactory is BaseUpgradeablePausable {
     config = _config;
   }
 
-  function createCreditLine(bytes calldata _data) external returns (address) {
+  function createCreditLine() external returns (address) {
     CreditLine newCreditLine = new CreditLine();
     return address(newCreditLine);
   }

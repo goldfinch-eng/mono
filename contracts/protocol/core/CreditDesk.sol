@@ -106,7 +106,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     Borrower storage borrower = borrowers[_borrower];
     require(underwriterCanCreateThisCreditLine(_limit, underwriter), "The underwriter cannot create this credit line");
 
-    address clAddress = getCreditLineFactory().createCreditLine("");
+    address clAddress = getCreditLineFactory().createCreditLine();
     CreditLine cl = CreditLine(clAddress);
     cl.initialize(
       address(this),
@@ -518,7 +518,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     // But never return something after the termEndBlock
     if (balance > 0 && curBlockNumber >= nextDueBlock) {
       uint256 blocksToAdvance = (curBlockNumber.sub(nextDueBlock).div(blocksPerPeriod)).add(1).mul(blocksPerPeriod);
-      uint256 nextDueBlock = nextDueBlock.add(blocksToAdvance);
+      nextDueBlock = nextDueBlock.add(blocksToAdvance);
       return Math.min(nextDueBlock, cl.termEndBlock());
     }
 
@@ -597,7 +597,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     cl.setNextDueBlock(calculateNextDueBlock(cl));
   }
 
-  function getUSDCBalance(address _address) internal returns (uint256) {
+  function getUSDCBalance(address _address) internal view returns (uint256) {
     return config.getUSDC().balanceOf(_address);
   }
 

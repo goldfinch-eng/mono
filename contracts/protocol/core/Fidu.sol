@@ -110,15 +110,15 @@ contract Fidu is ERC20PresetMinterPauserUpgradeSafe {
     }
   }
 
-  function fiduToUSDC(uint256 amount) internal view returns (uint256) {
+  function fiduToUSDC(uint256 amount) internal pure returns (uint256) {
     return amount.div(fiduMantissa().div(usdcMantissa()));
   }
 
-  function fiduMantissa() internal view returns (uint256) {
+  function fiduMantissa() internal pure returns (uint256) {
     return uint256(10)**uint256(18);
   }
 
-  function usdcMantissa() internal view returns (uint256) {
+  function usdcMantissa() internal pure returns (uint256) {
     return uint256(10)**uint256(6);
   }
 }

@@ -54,7 +54,7 @@ function Borrow(props) {
         />
       </div>
       <ConnectionNotice creditLine={creditLine} />
-      <CreditActionsContainer borrower={user} creditLine={creditLine} actionComplete={actionComplete} />
+      <CreditActionsContainer borrower={user.borrower} creditLine={creditLine} actionComplete={actionComplete} />
       <CreditStatus creditLine={creditLine} user={user} />
     </div>
   );

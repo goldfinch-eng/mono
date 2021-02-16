@@ -342,11 +342,11 @@ describe("mainnet forking tests", async function () {
       await pool.sweepToCompound({from: owner})
 
       await expect(pool.sweepToCompound({from: owner})).to.be.rejectedWith(/Cannot sweep/)
-    })
+    }).timeout(TEST_TIMEOUT)
 
     it("can only be swept by the owner", async () => {
       await expect(pool.sweepToCompound({from: bwr})).to.be.rejectedWith(/Must have admin role/)
       await expect(pool.sweepFromCompound({from: bwr})).to.be.rejectedWith(/Must have admin role/)
-    })
+    }).timeout(TEST_TIMEOUT)
   })
 })
