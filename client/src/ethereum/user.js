@@ -10,7 +10,7 @@ const UNLOCK_THRESHOLD = new BigNumber(10000);
 
 async function getUserData(address, usdc, pool, creditDesk, networkId) {
   const creditLineFactory = await getCreditLineFactory(networkId);
-  const borrower = await getBorrowerContract(address, creditLineFactory, creditDesk, usdc, pool);
+  const borrower = await getBorrowerContract(address, creditLineFactory, creditDesk, usdc, pool, networkId);
 
   const user = new User(address, borrower, pool, creditDesk, usdc);
   await user.initialize();
