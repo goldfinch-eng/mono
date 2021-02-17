@@ -27,6 +27,11 @@ const FORWARDER_ADDRESSES = {
   1: '0xa530F85085C6FE2f866E7FdB716849714a89f4CD',
 };
 
+const ONE_INCH_ADDRESSES = {
+  localhost: '0xc586bef4a0992c495cf22e1aeee4e446cecdee0e',
+  mainnet: '0xc586bef4a0992c495cf22e1aeee4e446cecdee0e',
+};
+
 // Only keep entries for supported networks
 // (ie. where we deployed the latest contracts)
 const mapNetworkToID = {
@@ -118,5 +123,6 @@ export {
   BLOCKS_PER_DAY,
   CONFIRMATION_THRESHOLD,
   SUPPORTED_NETWORKS,
+  ONE_INCH_ADDRESSES,
   getFromBlock,
 };

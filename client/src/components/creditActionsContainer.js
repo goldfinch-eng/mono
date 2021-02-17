@@ -26,14 +26,14 @@ function CreditActionsContainer(props) {
   }
 
   let placeholderClass = '';
-  if (!user.address || !user.usdcIsUnlocked || !props.creditLine.address) {
+  if (!user.address || !user.usdcIsUnlocked('borrow') || !props.creditLine.address) {
     placeholderClass = 'placeholder';
   }
 
   let drawdownAction;
   let drawdownClass = 'disabled';
 
-  if (availableCredit.gt(0) && user.usdcIsUnlocked) {
+  if (availableCredit.gt(0) && user.usdcIsUnlocked('borrow')) {
     drawdownAction = e => {
       openAction(e, 'drawdown');
     };
@@ -42,7 +42,7 @@ function CreditActionsContainer(props) {
 
   let payAction;
   let payClass = 'disabled';
-  if (props.creditLine.remainingTotalDueAmount.gt(0) && user.usdcIsUnlocked) {
+  if (props.creditLine.remainingTotalDueAmount.gt(0) && user.usdcIsUnlocked('borrow')) {
     payAction = e => {
       openAction(e, 'payment');
     };

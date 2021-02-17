@@ -31,6 +31,7 @@ async function main({getNamedAccounts, deployments, getChainId}) {
   const creditDesk = await getDeployedAsEthersContract(getOrNull, "CreditDesk")
   let erc20 = await getDeployedAsEthersContract(getOrNull, "TestERC20")
   const config = await getDeployedAsEthersContract(getOrNull, "GoldfinchConfig")
+  const creditLineFactory = await getDeployedAsEthersContract(getOrNull, "CreditLineFactory")
   await setupTestForwarder(deployments, config, getOrNull, protocol_owner)
 
   if (getUSDCAddress(chainID)) {
@@ -62,7 +63,7 @@ async function main({getNamedAccounts, deployments, getChainId}) {
 
   await depositFundsToThePool(pool, erc20)
   await createUnderwriter(creditDesk, underwriter)
-  await createCreditLineForBorrower(creditDesk, borrower)
+  await createCreditLineForBorrower(creditDesk, creditLineFactory, borrower)
 }
 
 async function depositFundsToThePool(pool, erc20) {
@@ -134,13 +135,18 @@ async function createUnderwriter(creditDesk, newUnderwriter) {
   }
 }
 
-async function createCreditLineForBorrower(creditDesk, borrower) {
+async function createCreditLineForBorrower(creditDesk, creditLineFactory, borrower) {
   logger("Trying to create an CreditLine for the Borrower...")
   const existingCreditLines = await creditDesk.getBorrowerCreditLines(borrower)
   if (existingCreditLines.length) {
     logger("We have already created a credit line for this borrower")
     return
   }
+
+  const result = await (await creditLineFactory.createBorrower(borrower)).wait()
+  let bwrConAddr = result.events[result.events.length - 1].args[0]
+  logger(`Created borrower contract: ${bwrConAddr} for ${borrower}`)
+  borrower = bwrConAddr
 
   logger("Creating a credit line for the borrower", borrower)
   const limit = String(new BN(10000).mul(USDCDecimals))
