@@ -2,7 +2,7 @@ import _ from 'lodash';
 import web3 from '../web3';
 import { submitGaslessTransaction } from '../ethereum/gassless';
 import { getDeployments, getFromBlock } from './utils.js';
-import BN from 'bn.js';
+import BigNumber from 'bignumber.js';
 
 const BorrowerAbi = require('../../abi/Borrower.json');
 
@@ -19,7 +19,7 @@ class BorrowerInterface {
 
   async initialize() {
     this.creditLines = await this.creditDesk.methods.getBorrowerCreditLines(this.borrowerAddress).call();
-    this.allowance = new BN(await this.usdc.methods.allowance(this.userAddress, this.pool._address).call());
+    this.allowance = new BigNumber(await this.usdc.methods.allowance(this.userAddress, this.borrowerAddress).call());
   }
 
   get isUsingBorrowerContract() {
@@ -29,7 +29,7 @@ class BorrowerInterface {
   drawdown(creditLineAddress, drawdownAmount, sendToAddress) {
     if (this.isUsingBorrowerContract) {
       sendToAddress = sendToAddress || this.userAddress;
-      return this.gaslessly(this.borrowerContract.methods.drawdown(creditLineAddress, drawdownAmount, sendToAddress));
+      return this.submit(this.borrowerContract.methods.drawdown(creditLineAddress, drawdownAmount, sendToAddress));
     } else {
       if (sendToAddress) {
         throw new Error('SendToAddress not supported for non-borrower contracts');
@@ -40,13 +40,13 @@ class BorrowerInterface {
 
   pay(creditLineAddress, amount) {
     if (this.isUsingBorrowerContract) {
-      return this.gaslessly(this.borrowerContract.methods.pay(creditLineAddress, amount));
+      return this.submit(this.borrowerContract.methods.pay(creditLineAddress, amount));
     } else {
       return this.creditDesk.methods.pay(creditLineAddress, amount);
     }
   }
 
-  gaslessly(unsentAction) {
+  submit(unsentAction) {
     if (this.gasless) {
       if (!this.isUsingBorrowerContract) {
         throw new Error('Gasless transactions are only supported for borrower contracts');
@@ -58,14 +58,13 @@ class BorrowerInterface {
   }
 }
 
-async function getBorrowerContract(ownerAddress, creditLineFactory, creditDesk, usdc, pool, networkId) {
+async function getBorrowerContract(ownerAddress, creditLineFactory, creditDesk, usdc, pool) {
   const borrowerCreatedEvents = await creditLineFactory.getPastEvents('BorrowerCreated', {
     filter: { owner: ownerAddress },
     fromBlock: getFromBlock(creditLineFactory.chain),
     to: 'latest',
   });
   let borrower;
-  const deployments = await getDeployments(networkId);
   if (borrowerCreatedEvents.length > 0) {
     borrower = new web3.eth.Contract(BorrowerAbi, borrowerCreatedEvents[0].returnValues.borrower);
   }

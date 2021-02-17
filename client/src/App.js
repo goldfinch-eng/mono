@@ -22,7 +22,7 @@ function App() {
   const [pool, setPool] = useState({});
   const [creditDesk, setCreditDesk] = useState({});
   const [erc20, setErc20] = useState(null);
-  const [user, setUser] = useState({});
+  const [user, setUser] = useState(defaultUser());
   const [goldfinchConfig, setGoldfinchConfig] = useState({});
   const [currentTXs, setCurrentTXs] = useState([]);
   const [currentErrors, setCurrentErrors] = useState([]);
