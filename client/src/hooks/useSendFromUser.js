@@ -2,7 +2,6 @@ import { useContext } from 'react';
 import { AppContext } from '../App.js';
 import { CONFIRMATION_THRESHOLD } from '../ethereum/utils';
 import web3 from '../web3';
-import { submitGaslessTransaction } from '../ethereum/gassless';
 
 function useSendFromUser() {
   const {
@@ -18,6 +17,8 @@ function useSendFromUser() {
   } = useContext(AppContext);
 
   async function sendTransaction(unsentAction, txData, gasPrice) {
+    // unsent action could be a promise tha returns the action, so resolve it
+    unsentAction = await Promise.resolve(unsentAction);
     if (gnosisSafeInfo) {
       const txs = [
         {
@@ -37,8 +38,7 @@ function useSendFromUser() {
       // (since we only get a txid if relay call succeed)
       txData.id = Date.now();
       addPendingTX({ status: 'pending', ...txData });
-      // This currently assumes the user.address is the address of the borrower contract
-      return submitGaslessTransaction(user.address, unsentAction.encodeABI()).then(res => {
+      return unsentAction.then(res => {
         if (res.success) {
           updateTX(txData, { id: res.hash });
         } else {

@@ -39,6 +39,11 @@ class BorrowerInterface {
     }
   }
 
+  drawdownViaOneInch(creditLineAddress, amount, sendToAddress, toToken) {
+    sendToAddress = sendToAddress || this.userAddress;
+    return this.submit(this.drawdownViaOneInchAsync(creditLineAddress, amount, sendToAddress, toToken));
+  }
+
   pay(creditLineAddress, amount) {
     if (this.isUsingBorrowerContract) {
       return this.submit(this.borrowerContract.methods.pay(creditLineAddress, amount));
@@ -51,22 +56,52 @@ class BorrowerInterface {
     return this.submit(this.borrowerContract.methods.payInFull(creditLineAddress, amount));
   }
 
-  drawdownViaOneInch(creditLineAddress, amount, sendToAddress, toToken) {
+  payMultiple(creditLines, amounts) {
+    return this.submit(this.borrowerContract.methods.payMultiple(creditLines, amounts));
+  }
+
+  payWithSwapOnOneInch(creditLineAddress, amount, fromToken) {
+    return this.submit(this.payWithSwapOnOneInchAsync(creditLineAddress, amount, fromToken));
+  }
+
+  async drawdownViaOneInchAsync(creditLineAddress, amount, sendToAddress, toToken) {
     toToken = toToken || '0xdac17f958d2ee523a2206206994597c13d831ec7'; // Mainnet USDT
     const splitParts = 10;
-    // const result = await this.oneInch.methods.getExpectedReturn(this.usdc._address, toToken, amount, splitParts, 0).call();
-    // console.log(`${result.returnAmount}. split: ${result.distribution}`);
-    // Sample drawdown for 500$
+
+    const result = await this.oneInch.methods
+      .getExpectedReturn(this.usdc._address, toToken, amount, splitParts, 0)
+      .call();
     return this.borrowerContract.methods.drawdownWithSwapOnOneInch(
       creditLineAddress,
       amount,
       sendToAddress,
       toToken,
-      '500482468',
-      ['0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '10', '0', '0', '0', '0', '0', '0'],
-      // result.returnAmount,
-      // result.distribution,
+      this.withinOnePercent(result.returnAmount),
+      result.distribution,
     );
+  }
+
+  async payWithSwapOnOneInchAsync(creditLineAddress, amount, fromToken) {
+    fromToken = fromToken || '0xdac17f958d2ee523a2206206994597c13d831ec7'; // Mainnet USDT
+    const splitParts = 10;
+    // TODO: Ensure amount has correct number of decimal places (USDT is 18)
+    const result = await this.oneInch.methods
+      .getExpectedReturn(fromToken, this.usdc._address, amount, splitParts, 0)
+      .call();
+    return this.borrowerContract.methods.payWithSwapOnOneInch(
+      creditLineAddress,
+      amount,
+      fromToken,
+      this.withinOnePercent(result.returnAmount),
+      result.distribution,
+    );
+  }
+
+  withinOnePercent(amount) {
+    return new BigNumber(amount)
+      .times(new BigNumber(99))
+      .idiv(new BigNumber(100))
+      .toString();
   }
 
   submit(unsentAction) {
@@ -74,7 +109,7 @@ class BorrowerInterface {
       if (!this.isUsingBorrowerContract) {
         throw new Error('Gasless transactions are only supported for borrower contracts');
       }
-      return submitGaslessTransaction(this.borrowerAddress, unsentAction.encodeABI());
+      return submitGaslessTransaction(this.borrowerAddress, unsentAction);
     } else {
       return unsentAction;
     }
