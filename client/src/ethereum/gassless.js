@@ -37,7 +37,7 @@ const TypedData = {
   message: {},
 };
 
-async function submitGaslessTransaction(contractAddress, data) {
+async function submitGaslessTransaction(contractAddress, unsentAction) {
   const provider = new ethers.providers.Web3Provider(web3.currentProvider);
   const signer = provider.getSigner();
   const from = await signer.getAddress();
@@ -50,6 +50,8 @@ async function submitGaslessTransaction(contractAddress, data) {
   // Get nonce for current signer
   const forwarder = new ethers.Contract(ForwarderAddress, ForwarderAbi, provider);
   const nonce = await forwarder.getNonce(from).then(nonce => nonce.toString());
+
+  const data = (await Promise.resolve(unsentAction)).encodeABI();
 
   // Encode meta-tx request
   const request = {
