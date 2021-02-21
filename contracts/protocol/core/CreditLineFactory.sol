@@ -36,7 +36,6 @@ contract CreditLineFactory is BaseUpgradeablePausable {
   function createBorrower(address owner) external returns (address) {
     Borrower borrower = new Borrower();
     borrower.initialize(owner, config);
-    // THIS IS TEMPORARY. REMOVE ONCE WE ARE USING CREATE2 CALCULATED ADDRESS
     emit BorrowerCreated(address(borrower), owner);
     return address(borrower);
   }

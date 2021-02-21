@@ -3,6 +3,9 @@ const BN = require("bn.js")
 const USDCDecimals = new BN(String(1e6))
 const ETHDecimals = new BN(String(1e18))
 const INTEREST_DECIMALS = new BN(String(1e8))
+const API_KEY = "A2UgCPgn8jQbkSVuSCxEMhFmivdV9C6d"
+const API_SECRET = process.env.DEFENDER_API_SECRET
+const {AdminClient} = require("defender-admin-client")
 
 const ROPSTEN_USDC_ADDRESS = "0x07865c6e87b9f70255377e024ace6630c1eaa37f"
 const MAINNET_USDC_ADDRESS = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
@@ -151,6 +154,10 @@ function toAtomic(amount, decimals = USDCDecimals) {
   return new BN(String(amount)).mul(decimals).toString(10)
 }
 
+function getDefenderClient() {
+  return new AdminClient({apiKey: API_KEY, apiSecret: API_SECRET})
+}
+
 module.exports = {
   CHAIN_MAPPING: CHAIN_MAPPING,
   ROPSTEN_USDC_ADDRESS: ROPSTEN_USDC_ADDRESS,
@@ -179,4 +186,5 @@ module.exports = {
   isTestEnv: isTestEnv,
   isMainnetForking: isMainnetForking,
   interestAprAsBN: interestAprAsBN,
+  getDefenderClient: getDefenderClient,
 }
