@@ -1,6 +1,6 @@
 import web3 from '../web3';
 import { fetchDataFromAttributes, getDeployments } from './utils.js';
-import { CONFIG_KEYS } from '../../../blockchain_scripts/deployHelpers';
+import { CONFIG_KEYS } from '../../../blockchain_scripts/configKeys';
 
 async function getGoldfinchConfig(networkId) {
   const deployments = await getDeployments(networkId);
@@ -17,7 +17,7 @@ async function refreshGoldfinchConfigData(goldfinchConfigContract) {
     { method: 'getNumber', args: [CONFIG_KEYS.TransactionLimit], name: 'transactionLimit' },
     { method: 'getNumber', args: [CONFIG_KEYS.TotalFundsLimit], name: 'totalFundsLimit' },
   ];
-  const data = await fetchDataFromAttributes(goldfinchConfigContract, attributes, { bigNumber: true });
+  const data = await fetchDataFromAttributes(goldfinchConfigContract, attributes, { bigNumber: false });
   return { ...goldfinchConfigContract, ...data };
 }
 

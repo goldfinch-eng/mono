@@ -40,7 +40,7 @@ describe("Fidu", () => {
   describe("initialization", async () => {
     it("should not allow it to be called twice", async () => {
       return expect(fidu.__initialize__(person2, "Fidu", "FIDU", goldfinchConfig.address)).to.be.rejectedWith(
-        /contract is already initialized/
+        /has already been initialized/
       )
     })
   })

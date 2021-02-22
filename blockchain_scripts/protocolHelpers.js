@@ -1,9 +1,8 @@
 /* globals ethers */
 const hre = require("hardhat")
 const {deployments, getNamedAccounts} = hre
+const _ = require("lodash")
 const {getDeployedContract} = require("../blockchain_scripts/deployHelpers.js")
-const CreditLine = require("../artifacts/contracts/protocol/CreditLine.sol/CreditLine.json")
-const BN = require("bn.js")
 
 async function displayCreditLine(creditLineAddress) {
   const {protocolOwner} = await getNamedAccounts()
@@ -48,7 +47,7 @@ async function displayCreditLine(creditLineAddress) {
 }
 
 async function getCreditLine(creditLineAddress) {
-  return await ethers.getContractAt(CreditLine.abi, creditLineAddress)
+  return await ethers.getContractAt("CreditLine", creditLineAddress)
 }
 
 async function migrateCreditLine(creditLineAddress, creditLineOpts) {
@@ -58,20 +57,23 @@ async function migrateCreditLine(creditLineAddress, creditLineOpts) {
   const {protocolOwner} = await getNamedAccounts()
   const creditDesk = await getDeployedContract(deployments, "CreditDesk", protocolOwner)
   const creditLine = await getCreditLine(creditLineAddress)
-  if (!(await creditLine.balance()).gt(new BN(0))) {
+  if ((await creditLine.balance()).eq("0")) {
     throw new Error("Credit line has a zero balance so is not migrateable!")
   }
+  console.log("Migrating the credit line...")
   const txn = await creditDesk.migrateCreditLine(
     creditLineAddress,
-    creditLineOpts.borrower || (await creditLine.borrower()),
-    creditLineOpts.limit || (await creditLine.limit()),
-    creditLineOpts.interestApr || (await creditLine.interestApr()),
-    creditLineOpts.paymentPeriodInDays || (await creditLine.paymentPeriodInDays()),
-    creditLineOpts.termInDays || (await creditLine.termInDays()),
-    creditLineOpts.lateFeeApr || (await creditLine.lateFeeApr())
+    creditLineOpts.borrower || String(await creditLine.borrower()),
+    creditLineOpts.limit || String(await creditLine.limit()),
+    creditLineOpts.interestApr || String(await creditLine.interestApr()),
+    creditLineOpts.paymentPeriodInDays || String(await creditLine.paymentPeriodInDays()),
+    creditLineOpts.termInDays || String(await creditLine.termInDays()),
+    creditLineOpts.lateFeeApr || String(await creditLine.lateFeeApr())
   )
-  await txn.wait()
-  await displayCreditLine(creditLineAddress)
+  const result = await txn.wait()
+  let createdEvent = _.find(result.events, (event) => event.event === "CreditLineCreated")
+  let newCreditLineAddress = createdEvent.args.creditLine
+  await displayCreditLine(newCreditLineAddress)
 }
 
 module.exports = {

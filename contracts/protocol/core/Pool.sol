@@ -18,7 +18,7 @@ contract Pool is BaseUpgradeablePausable, IPool {
   using ConfigHelper for GoldfinchConfig;
 
   // $1 threshold to handle potential rounding errors, from differing decimals on Fidu and USDC;
-  uint256 private constant ASSET_LIABILITY_MATCH_THRESHOLD = 1e6;
+  uint256 private ASSET_LIABILITY_MATCH_THRESHOLD = 1e6;
   uint256 public compoundBalance;
 
   event DepositMade(address indexed capitalProvider, uint256 amount, uint256 shares);
@@ -169,7 +169,7 @@ contract Pool is BaseUpgradeablePausable, IPool {
   }
 
   function sweepToCompound() public override onlyAdmin whenNotPaused {
-    IERC20Upgradeable usdc = config.getUSDC();
+    IERC20 usdc = config.getUSDC();
     uint256 usdcBalance = usdc.balanceOf(address(this));
 
     ICUSDCContract cUSDC = config.getCUSDCContract();
@@ -230,7 +230,7 @@ contract Pool is BaseUpgradeablePausable, IPool {
     require(compoundBalance != 0, "No funds on compound");
     require(cUSDCAmount != 0, "Amount to sweep cannot be zero");
 
-    IERC20Upgradeable usdc = config.getUSDC();
+    IERC20 usdc = config.getUSDC();
     uint256 preRedeemUSDCBalance = usdc.balanceOf(address(this));
     uint256 cUSDCExchangeRate = cUSDC.exchangeRateCurrent();
     uint256 redeemedUSDC = cUSDCToUSDC(cUSDCExchangeRate, cUSDCAmount);

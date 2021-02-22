@@ -1,11 +1,12 @@
 /* global ethers */
 const BN = require("bn.js")
 const hre = require("hardhat")
+const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
+
 const {
   MAINNET_CHAIN_ID,
   LOCAL,
   CHAIN_MAPPING,
-  CONFIG_KEYS,
   updateConfig,
   getUSDCAddress,
   USDCDecimals,

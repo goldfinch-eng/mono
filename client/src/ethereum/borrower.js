@@ -1,6 +1,6 @@
 import web3 from '../web3';
 import { submitGaslessTransaction } from '../ethereum/gassless';
-import { getDeployments, getFromBlock, ONE_INCH_ADDRESSES } from './utils.js';
+import { getFromBlock, ONE_INCH_ADDRESSES } from './utils.js';
 import BigNumber from 'bignumber.js';
 
 const BorrowerAbi = require('../../abi/Borrower.json');
@@ -124,7 +124,8 @@ async function getBorrowerContract(ownerAddress, creditLineFactory, creditDesk, 
   });
   let borrower;
   if (borrowerCreatedEvents.length > 0) {
-    borrower = new web3.eth.Contract(BorrowerAbi, borrowerCreatedEvents[0].returnValues.borrower);
+    const lastIndex = borrowerCreatedEvents.length - 1;
+    borrower = new web3.eth.Contract(BorrowerAbi, borrowerCreatedEvents[lastIndex].returnValues.borrower);
   }
   const oneInch = new web3.eth.Contract(OneInchAbi, ONE_INCH_ADDRESSES[networkId]);
   const borrowerInterface = new BorrowerInterface(ownerAddress, creditDesk, borrower, usdc, pool, oneInch);

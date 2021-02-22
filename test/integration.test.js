@@ -16,7 +16,8 @@ const {
   fiduToUSDC,
   advanceTime,
 } = require("./testHelpers.js")
-const {interestAprAsBN, INTEREST_DECIMALS, ETHDecimals, CONFIG_KEYS} = require("../blockchain_scripts/deployHelpers")
+const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
+const {interestAprAsBN, INTEREST_DECIMALS, ETHDecimals} = require("../blockchain_scripts/deployHelpers")
 const {time} = require("@openzeppelin/test-helpers")
 const CreditLine = artifacts.require("CreditLine")
 

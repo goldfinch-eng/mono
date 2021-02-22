@@ -520,7 +520,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     if (balance > 0 && curBlockNumber >= nextDueBlock) {
       uint256 blocksToAdvance = (curBlockNumber.sub(nextDueBlock).div(blocksPerPeriod)).add(1).mul(blocksPerPeriod);
       nextDueBlock = nextDueBlock.add(blocksToAdvance);
-      return MathUpgradeable.min(nextDueBlock, cl.termEndBlock());
+      return Math.min(nextDueBlock, cl.termEndBlock());
     }
 
     // Your paid off, or have not taken out a loan yet, so no next due block.

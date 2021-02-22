@@ -1,6 +1,7 @@
 /* global artifacts web3 */
 const {expect, BN} = require("./testHelpers.js")
-const {CONFIG_KEYS, OWNER_ROLE} = require("../blockchain_scripts/deployHelpers")
+const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
+const {OWNER_ROLE} = require("../blockchain_scripts/deployHelpers")
 const ConfigOptions = artifacts.require("ConfigOptions")
 const GoldfinchConfig = artifacts.require("GoldfinchConfig")
 const TestTheConfig = artifacts.require("TestTheConfig")

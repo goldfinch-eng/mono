@@ -5,8 +5,8 @@ pragma experimental ABIEncoderV2;
 
 import "./CreditLine.sol";
 import "../../external/FixedPoint.sol";
-import "@openzeppelin/contracts-upgradeable/math/MathUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 
 /**
  * @title The Accountant
@@ -15,7 +15,7 @@ import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
  */
 
 library Accountant {
-  using SafeMathUpgradeable for uint256;
+  using SafeMath for uint256;
   using FixedPoint for FixedPoint.Signed;
   using FixedPoint for FixedPoint.Unsigned;
   using FixedPoint for int256;
@@ -120,7 +120,7 @@ library Accountant {
     // This use of min should not generate incorrect interest calculations, since
     // this functions purpose is just to normalize balances, and  will be called any time
     // a balance affecting action takes place (eg. drawdown, repayment, assessment)
-    uint256 interestAccruedAsOfBlock = MathUpgradeable.min(blockNumber, cl.interestAccruedAsOfBlock());
+    uint256 interestAccruedAsOfBlock = Math.min(blockNumber, cl.interestAccruedAsOfBlock());
     uint256 numBlocksElapsed = blockNumber.sub(interestAccruedAsOfBlock);
     uint256 totalInterestPerYear = balance.mul(cl.interestApr()).div(INTEREST_DECIMALS);
     uint256 interestOwed = totalInterestPerYear.mul(numBlocksElapsed).div(BLOCKS_PER_YEAR);
@@ -140,7 +140,7 @@ library Accountant {
     uint256 gracePeriodInDays
   ) public view returns (bool) {
     uint256 blocksLate = blockNumber.sub(cl.lastFullPaymentBlock());
-    gracePeriodInDays = MathUpgradeable.min(gracePeriodInDays, cl.paymentPeriodInDays());
+    gracePeriodInDays = Math.min(gracePeriodInDays, cl.paymentPeriodInDays());
     return cl.lateFeeApr() > 0 && blocksLate > gracePeriodInDays.mul(BLOCKS_PER_DAY);
   }
 
@@ -151,14 +151,14 @@ library Accountant {
     uint256 principalOwed
   ) public pure returns (PaymentAllocation memory) {
     uint256 paymentRemaining = paymentAmount;
-    uint256 interestPayment = MathUpgradeable.min(interestOwed, paymentRemaining);
+    uint256 interestPayment = Math.min(interestOwed, paymentRemaining);
     paymentRemaining = paymentRemaining.sub(interestPayment);
 
-    uint256 principalPayment = MathUpgradeable.min(principalOwed, paymentRemaining);
+    uint256 principalPayment = Math.min(principalOwed, paymentRemaining);
     paymentRemaining = paymentRemaining.sub(principalPayment);
 
     uint256 balanceRemaining = balance.sub(principalPayment);
-    uint256 additionalBalancePayment = MathUpgradeable.min(paymentRemaining, balanceRemaining);
+    uint256 additionalBalancePayment = Math.min(paymentRemaining, balanceRemaining);
 
     return
       PaymentAllocation({

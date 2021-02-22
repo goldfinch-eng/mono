@@ -6,6 +6,7 @@ const INTEREST_DECIMALS = new BN(String(1e8))
 const API_KEY = "A2UgCPgn8jQbkSVuSCxEMhFmivdV9C6d"
 const API_SECRET = process.env.DEFENDER_API_SECRET
 const {AdminClient} = require("defender-admin-client")
+const {CONFIG_KEYS} = require("./configKeys")
 
 const ROPSTEN_USDC_ADDRESS = "0x07865c6e87b9f70255377e024ace6630c1eaa37f"
 const MAINNET_USDC_ADDRESS = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
@@ -45,29 +46,6 @@ if (typeof web3 !== "undefined" && web3.utils) {
   OWNER_ROLE = web3.utils.keccak256("OWNER_ROLE")
   PAUSER_ROLE = web3.utils.keccak256("PAUSER_ROLE")
   MINTER_ROLE = web3.utils.keccak256("MINTER_ROLE")
-}
-
-const CONFIG_KEYS = {
-  // Numbers
-  TransactionLimit: 0,
-  TotalFundsLimit: 1,
-  MaxUnderwriterLimit: 2,
-  ReserveDenominator: 3,
-  WithdrawFeeDenominator: 4,
-  LatenessGracePeriodInDays: 5,
-  LatenessMaxDays: 6,
-  // Addresses
-  Pool: 0,
-  CreditLineImplementation: 1,
-  CreditLineFactory: 2,
-  CreditDesk: 3,
-  Fidu: 4,
-  USDC: 5,
-  TreasuryReserve: 6,
-  ProtocolAdmin: 7,
-  OneInch: 8,
-  TrustedForwarder: 9,
-  CUSDCContract: 10,
 }
 
 function isTestEnv() {
@@ -180,7 +158,6 @@ module.exports = {
   OWNER_ROLE: OWNER_ROLE,
   PAUSER_ROLE: PAUSER_ROLE,
   MINTER_ROLE: MINTER_ROLE,
-  CONFIG_KEYS: CONFIG_KEYS,
   SAFE_CONFIG: SAFE_CONFIG,
   TRUSTED_FORWARDER_CONFIG: TRUSTED_FORWARDER_CONFIG,
   isTestEnv: isTestEnv,

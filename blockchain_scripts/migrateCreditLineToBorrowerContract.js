@@ -1,5 +1,4 @@
 /* globals */
-const BN = require("bn.js")
 const hre = require("hardhat")
 const {deployments, getNamedAccounts} = hre
 const {getDeployedContract} = require("../blockchain_scripts/deployHelpers.js")
@@ -23,18 +22,19 @@ async function main() {
     throw new Error("You must supply an existing borrower when migrating to a borrower contract")
   }
 
-  const creditLine = getCreditLine(creditLineAddress)
-  if (!(await creditLine.balance()).gt(new BN(0))) {
+  const creditLine = await getCreditLine(creditLineAddress)
+  if ((await creditLine.balance()).eq("0")) {
     throw new Error("Credit line has a zero balance so is not migrateable!")
   }
 
-  const creditLineFactory = getDeployedContract(deployments, "CreditLineFactory", protocolOwner)
+  console.log("Creating the borrower contract...")
+  const creditLineFactory = await getDeployedContract(deployments, "CreditLineFactory", protocolOwner)
   const result = await (await creditLineFactory.createBorrower(borrower)).wait()
   let bwrConAddr = result.events[result.events.length - 1].args[0]
-
+  console.log("Created borrower contract at:", bwrConAddr)
   await migrateCreditLine(creditLineAddress, {
     termInDays,
-    bwrConAddr,
+    borrower: bwrConAddr,
     limit,
     interestApr,
     paymentPeriodInDays,

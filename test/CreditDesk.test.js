@@ -18,13 +18,9 @@ const {
   BLOCKS_PER_DAY,
   BLOCKS_PER_YEAR,
 } = require("./testHelpers.js")
-const {
-  OWNER_ROLE,
-  PAUSER_ROLE,
-  CONFIG_KEYS,
-  interestAprAsBN,
-  INTEREST_DECIMALS,
-} = require("../blockchain_scripts/deployHelpers")
+const {OWNER_ROLE, PAUSER_ROLE, interestAprAsBN, INTEREST_DECIMALS} = require("../blockchain_scripts/deployHelpers")
+const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
+
 const {time} = require("@openzeppelin/test-helpers")
 const CreditLine = artifacts.require("CreditLine")
 const FEE_DENOMINATOR = new BN(10)
@@ -245,10 +241,9 @@ describe("CreditDesk", () => {
 
     it("emits an event with the correct data", async () => {
       const response = await createCreditLine()
-      // Note we pick the 4th index, because the 0th, 1st, 2nd, and 3rd are RoleGranted
-      // and RoleAdminChanged events, which happen automatically when creating CreditLines,
-      // but we don't care about that.
-      const event = response.logs[4]
+      // Note we pick the 2nd index, because the 0th and 1st are RoleGranted events, which
+      // happen automatically when creating CreditLines, but we don't care about that.
+      const event = response.logs[2]
 
       expect(event.event).to.equal("CreditLineCreated")
       expect(event.args.borrower).to.equal(borrower)

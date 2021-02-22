@@ -1,12 +1,8 @@
 /* global web3 */
 const hre = require("hardhat")
 const {artifacts} = hre
-const {
-  getUSDCAddress,
-  MAINNET_ONE_SPLIT_ADDRESS,
-  isMainnetForking,
-  CONFIG_KEYS,
-} = require("../blockchain_scripts/deployHelpers")
+const {getUSDCAddress, MAINNET_ONE_SPLIT_ADDRESS, isMainnetForking} = require("../blockchain_scripts/deployHelpers")
+const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
 const {time} = require("@openzeppelin/test-helpers")
 const {deployments} = hre
 const Borrower = artifacts.require("Borrower")

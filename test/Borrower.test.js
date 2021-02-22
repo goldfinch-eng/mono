@@ -14,7 +14,7 @@ const {
   ZERO_ADDRESS,
   advanceTime,
 } = require("./testHelpers.js")
-const {CONFIG_KEYS} = require("../blockchain_scripts/deployHelpers")
+const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
 const {TypedDataUtils, signTypedData_v4} = require("eth-sig-util")
 const {bufferToHex} = require("ethereumjs-util")
 const Borrower = artifacts.require("Borrower")

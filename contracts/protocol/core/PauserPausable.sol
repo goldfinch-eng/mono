@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.6.12;
 
-import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/utils/Pausable.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/access/AccessControl.sol";
 
 /**
  * @title PauserPausable
@@ -12,7 +12,7 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol"
  * @author Goldfinch
  */
 
-contract PauserPausable is AccessControlUpgradeable, PausableUpgradeable {
+contract PauserPausable is AccessControlUpgradeSafe, PausableUpgradeSafe {
   bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
   // solhint-disable-next-line func-name-mixedcase

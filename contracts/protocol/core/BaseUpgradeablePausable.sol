@@ -2,10 +2,10 @@
 
 pragma solidity 0.6.12;
 
-import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import "./PauserPausable.sol";
 
 /**
@@ -17,16 +17,16 @@ import "./PauserPausable.sol";
 
 contract BaseUpgradeablePausable is
   Initializable,
-  AccessControlUpgradeable,
+  AccessControlUpgradeSafe,
   PauserPausable,
-  ReentrancyGuardUpgradeable
+  ReentrancyGuardUpgradeSafe
 {
   bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
-  using SafeMathUpgradeable for uint256;
+  using SafeMath for uint256;
   // Pre-reserving a few slots in the base contract in case we need to add things in the future.
   // This does not actually take up gas cost or storage cost, but it does reserve the storage slots.
   // See OpenZeppelin's use of this pattern here:
-  // https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/master/GSN/ContextUpgradeable.sol#L37
+  // https://github.com/OpenZeppelin/openzeppelin-contracts-ethereum-package/blob/master/contracts/GSN/Context.sol#L37
   uint256[50] private __gap1;
   uint256[50] private __gap2;
   uint256[50] private __gap3;

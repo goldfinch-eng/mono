@@ -1,5 +1,6 @@
 /* global web3 */
-const {OWNER_ROLE, PAUSER_ROLE, CONFIG_KEYS, ETHDecimals} = require("../blockchain_scripts/deployHelpers")
+const {OWNER_ROLE, PAUSER_ROLE, ETHDecimals} = require("../blockchain_scripts/deployHelpers")
+const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
 const hre = require("hardhat")
 const {deployments} = hre
 const {

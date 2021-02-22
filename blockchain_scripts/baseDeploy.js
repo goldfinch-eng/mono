@@ -1,10 +1,10 @@
 /* globals ethers */
 const BN = require("bn.js")
+const {CONFIG_KEYS} = require("./configKeys")
 const {
   USDCDecimals,
   upgrade,
   OWNER_ROLE,
-  CONFIG_KEYS,
   MINTER_ROLE,
   SAFE_CONFIG,
   TRUSTED_FORWARDER_CONFIG,

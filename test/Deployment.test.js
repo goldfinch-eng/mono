@@ -1,14 +1,8 @@
 const {BN, expect} = require("./testHelpers.js")
 const hre = require("hardhat")
 const {deployments, getNamedAccounts, ethers} = hre
-const {
-  upgrade,
-  getDeployedContract,
-  fromAtomic,
-  toAtomic,
-  OWNER_ROLE,
-  CONFIG_KEYS,
-} = require("../blockchain_scripts/deployHelpers")
+const {upgrade, getDeployedContract, fromAtomic, toAtomic, OWNER_ROLE} = require("../blockchain_scripts/deployHelpers")
+const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
 const baseDeploy = require("../blockchain_scripts/baseDeploy")
 const updateConfigs = require("../blockchain_scripts/updateConfigs")
 
