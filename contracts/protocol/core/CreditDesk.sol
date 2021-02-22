@@ -181,7 +181,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
 
     // Must get the interest and principal accrued prior to adding to the balance.
     (uint256 interestOwed, uint256 principalOwed) = updateAndGetInterestAndPrincipalOwedAsOf(cl, blockNumber());
-    balance = balance.add(amount);
+    balance = balance.add(amount.add(amountToTransferFromCL));
 
     updateCreditLineAccounting(cl, balance, interestOwed, principalOwed);
 
@@ -270,7 +270,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     uint256 paymentPeriodInDays,
     uint256 termInDays,
     uint256 lateFeeApr
-  ) public {
+  ) public onlyValidCreditLine(address(clToMigrate)) {
     require(clToMigrate.underwriter() == msg.sender, "Caller must be the underwriter");
     require(clToMigrate.limit() > 0, "Can't migrate empty credit line");
     address newClAddress = createCreditLine(borrower, limit, interestApr, paymentPeriodInDays, termInDays, lateFeeApr);
@@ -317,7 +317,8 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
   }
 
   /**
-   * @notice Returns the total payment due for a given creditLine as of the provided blocknumber. Returns 0 if no
+   * @notice This function is only meant to be used by frontends. It returns the total
+   * payment due for a given creditLine as of the provided blocknumber. Returns 0 if no
    * payment is due (e.g. asOfBLock is before the nextDueBlock)
    * @param creditLineAddress The creditLine to calculate the payment for
    * @param asOfBLock The block to use for the payment calculation, if it is set to 0, uses the current block number

@@ -9,8 +9,7 @@ import "./CreditLine.sol";
 
 /**
  * @title CreditLineFactory
- * @notice Contract that allows us to follow the minimal proxy pattern for creating CreditLines.
- *  This saves us gas, and lets us easily swap out the CreditLine implementaton.
+ * @notice Contract that allows us to create other contracts, such as CreditLines and BorrowerContracts
  * @author Goldfinch
  */
 

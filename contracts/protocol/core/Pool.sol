@@ -168,6 +168,13 @@ contract Pool is BaseUpgradeablePausable, IPool {
       );
   }
 
+  /**
+   * @notice Moves any USDC still in the Pool to Compound, and tracks the amount internally.
+   * This is done to earn interest on latent funds until we have other borrowers who can use it.
+   *
+   * Requirements:
+   *  - The caller must be an admin.
+   */
   function sweepToCompound() public override onlyAdmin whenNotPaused {
     IERC20 usdc = config.getUSDC();
     uint256 usdcBalance = usdc.balanceOf(address(this));
@@ -184,6 +191,13 @@ contract Pool is BaseUpgradeablePausable, IPool {
     require(success, "Failed to approve USDC for compound");
   }
 
+  /**
+   * @notice Moves any USDC from Compound back to the Pool, and recognizes interest earned.
+   * This is done automatically on drawdown or withdraw, but can be called manually if necessary.
+   *
+   * Requirements:
+   *  - The caller must be an admin.
+   */
   function sweepFromCompound() public override onlyAdmin whenNotPaused {
     _sweepFromCompound();
   }
