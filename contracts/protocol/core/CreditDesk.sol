@@ -181,7 +181,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
 
     // Must get the interest and principal accrued prior to adding to the balance.
     (uint256 interestOwed, uint256 principalOwed) = updateAndGetInterestAndPrincipalOwedAsOf(cl, blockNumber());
-    balance = balance.add(amount.add(amountToTransferFromCL));
+    balance = balance.add(amount);
 
     updateCreditLineAccounting(cl, balance, interestOwed, principalOwed);
 
