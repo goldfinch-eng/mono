@@ -375,7 +375,7 @@ describe("CreditDesk", () => {
       it("should use the creditline balance first before pulling from the pool", async () => {
         await expectAction(async () => creditDesk.drawdown(creditLine.address, usdcVal(10), {from: borrower})).toChange(
           [
-            [async () => creditLine.balance(), {to: usdcVal(15)}],
+            [async () => creditLine.balance(), {to: usdcVal(20)}],
             [async () => getBalance(creditLine.address, usdc), {to: usdcVal(0)}],
             [async () => getBalance(borrower, usdc), {to: usdcVal(15)}],
           ]
@@ -384,7 +384,7 @@ describe("CreditDesk", () => {
 
       it("should not pull from the pool if the creditline balance is sufficient", async () => {
         await expectAction(async () => creditDesk.drawdown(creditLine.address, usdcVal(3), {from: borrower})).toChange([
-          [async () => creditLine.balance(), {by: usdcVal(0)}], // Balance is unchanged
+          [async () => creditLine.balance(), {by: usdcVal(3)}],
           [async () => getBalance(creditLine.address, usdc), {to: usdcVal(2)}],
           [async () => getBalance(borrower, usdc), {to: usdcVal(8)}],
         ])
