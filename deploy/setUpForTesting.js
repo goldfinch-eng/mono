@@ -1,13 +1,18 @@
 /* global ethers */
 const BN = require("bn.js")
+const hre = require("hardhat")
+const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
+
 const {
   MAINNET_CHAIN_ID,
   LOCAL,
   CHAIN_MAPPING,
+  updateConfig,
   getUSDCAddress,
   USDCDecimals,
   isTestEnv,
   interestAprAsBN,
+  isMainnetForking,
 } = require("../blockchain_scripts/deployHelpers.js")
 const PROTOCOL_CONFIG = require("../protocol_config.json")
 
@@ -26,10 +31,27 @@ async function main({getNamedAccounts, deployments, getChainId}) {
   const pool = await getDeployedAsEthersContract(getOrNull, "Pool")
   const creditDesk = await getDeployedAsEthersContract(getOrNull, "CreditDesk")
   let erc20 = await getDeployedAsEthersContract(getOrNull, "TestERC20")
+  const config = await getDeployedAsEthersContract(getOrNull, "GoldfinchConfig")
+  const creditLineFactory = await getDeployedAsEthersContract(getOrNull, "CreditLineFactory")
+  await setupTestForwarder(deployments, config, getOrNull, protocol_owner)
 
   if (getUSDCAddress(chainID)) {
     logger("On a network with known USDC address, so firing up that contract...")
     erc20 = await ethers.getContractAt("TestERC20", getUSDCAddress(chainID))
+
+    if (isMainnetForking()) {
+      const usdcWhale = "0x46aBbc9fc9d8E749746B00865BC2Cf7C4d85C837"
+      // Unlocks a random account that owns tons of USDC, which we can send to our test users
+      await hre.network.provider.request({
+        method: "hardhat_impersonateAccount",
+        params: [usdcWhale],
+      })
+      // Give USDC from the whale to our test accounts
+      console.log("Mainnet fork detected. Transferring USDC to protocol owner")
+      let signer = await ethers.provider.getSigner(usdcWhale)
+      const whaleUSDC = await ethers.getContractAt("TestERC20", getUSDCAddress(chainID), signer)
+      await whaleUSDC.transfer(protocol_owner, new BN(1000000).mul(USDCDecimals).toString())
+    }
   }
 
   const testUser = process.env.TEST_USER
@@ -42,7 +64,7 @@ async function main({getNamedAccounts, deployments, getChainId}) {
 
   await depositFundsToThePool(pool, erc20)
   await createUnderwriter(creditDesk, underwriter)
-  await createCreditLineForBorrower(creditDesk, borrower)
+  await createCreditLineForBorrower(creditDesk, creditLineFactory, borrower)
 }
 
 async function depositFundsToThePool(pool, erc20) {
@@ -114,13 +136,18 @@ async function createUnderwriter(creditDesk, newUnderwriter) {
   }
 }
 
-async function createCreditLineForBorrower(creditDesk, borrower) {
+async function createCreditLineForBorrower(creditDesk, creditLineFactory, borrower) {
   logger("Trying to create an CreditLine for the Borrower...")
   const existingCreditLines = await creditDesk.getBorrowerCreditLines(borrower)
   if (existingCreditLines.length) {
     logger("We have already created a credit line for this borrower")
     return
   }
+
+  const result = await (await creditLineFactory.createBorrower(borrower)).wait()
+  let bwrConAddr = result.events[result.events.length - 1].args[0]
+  logger(`Created borrower contract: ${bwrConAddr} for ${borrower}`)
+  borrower = bwrConAddr
 
   logger("Creating a credit line for the borrower", borrower)
   const limit = String(new BN(10000).mul(USDCDecimals))
@@ -130,6 +157,23 @@ async function createCreditLineForBorrower(creditDesk, borrower) {
   const lateFeeApr = String(new BN(0))
   await creditDesk.createCreditLine(borrower, limit, interestApr, paymentPeriodInDays, termInDays, lateFeeApr)
   logger("Created a credit line for the borrower", borrower)
+}
+
+async function setupTestForwarder(deployments, config, getOrNull, protocol_owner) {
+  if (!isTestEnv()) {
+    return
+  }
+
+  let deployResult = await deployments.deploy("TestForwarder", {
+    from: protocol_owner,
+    gas: 4000000,
+  })
+  logger(`Created Forwarder at ${deployResult.address}`)
+
+  let forwarder = await getDeployedAsEthersContract(getOrNull, "TestForwarder")
+  await forwarder.registerDomainSeparator("Defender", "1")
+
+  await updateConfig(config, "address", CONFIG_KEYS.TrustedForwarder, deployResult.address)
 }
 
 module.exports = main

@@ -8,15 +8,16 @@ import LoadingButton from './loadingButton';
 import useSendFromUser from '../hooks/useSendFromUser';
 
 function PaymentForm(props) {
-  const { creditDesk, user, goldfinchConfig } = useContext(AppContext);
+  const { user, goldfinchConfig } = useContext(AppContext);
   const [inputClass, setInputClass] = useState('');
   const sendFromUser = useSendFromUser();
 
   function action({ transactionAmount }) {
     const amount = usdcToAtomic(transactionAmount);
-    return sendFromUser(creditDesk.methods.pay(props.creditLine.address, amount), {
+    return sendFromUser(props.borrower.pay(props.creditLine.address, amount), {
       type: 'Payment',
       amount: transactionAmount,
+      gasless: props.borrower.gasless,
     }).then(props.actionComplete);
   }
 

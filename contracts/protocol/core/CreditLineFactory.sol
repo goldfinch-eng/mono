@@ -2,28 +2,41 @@
 
 pragma solidity 0.6.12;
 
-import "./BaseUpgradeablePausable.sol";
 import "./GoldfinchConfig.sol";
+import "./BaseUpgradeablePausable.sol";
+import "../periphery/Borrower.sol";
+import "./CreditLine.sol";
 
 /**
  * @title CreditLineFactory
- * @notice Contract that allows us to follow the minimal proxy pattern for creating CreditLines.
- *  This saves us gas, and lets us easily swap out the CreditLine implementaton.
+ * @notice Contract that allows us to create other contracts, such as CreditLines and BorrowerContracts
  * @author Goldfinch
  */
 
 contract CreditLineFactory is BaseUpgradeablePausable {
   GoldfinchConfig public config;
 
+  event BorrowerCreated(address indexed borrower, address indexed owner);
+
   function initialize(address owner, GoldfinchConfig _config) public initializer {
     __BaseUpgradeablePausable__init(owner);
     config = _config;
   }
 
-  function createCreditLine(bytes calldata _data) external returns (address) {
-    address creditLineImplAddress = config.getAddress(uint256(ConfigOptions.Addresses.CreditLineImplementation));
-    address creditLineProxy = deployMinimal(creditLineImplAddress, _data);
-    return creditLineProxy;
+  function createCreditLine() external returns (address) {
+    CreditLine newCreditLine = new CreditLine();
+    return address(newCreditLine);
+  }
+
+  /**
+   * @notice Allows anyone to create a Borrower contract instance
+   * @param owner The address that will own the new Borrower instance
+   */
+  function createBorrower(address owner) external returns (address) {
+    Borrower borrower = new Borrower();
+    borrower.initialize(owner, config);
+    emit BorrowerCreated(address(borrower), owner);
+    return address(borrower);
   }
 
   function deployMinimal(address _logic, bytes memory _data) internal returns (address proxy) {
@@ -47,5 +60,10 @@ contract CreditLineFactory is BaseUpgradeablePausable {
       require(success);
     }
     /* solhint-enable */
+  }
+
+  // TEMPORARY: WILL REMOVE AFTER WE DO THE UPGRADE
+  function setGoldfinchConfig(GoldfinchConfig newGoldfinchConfig) external onlyAdmin {
+    config = newGoldfinchConfig;
   }
 }

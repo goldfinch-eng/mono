@@ -86,9 +86,10 @@ contract Fidu is ERC20PresetMinterPauserUpgradeSafe {
 
   // canMint assumes that the USDC that backs the new shares has already been sent to the Pool
   function canMint(uint256 newAmount) internal view returns (bool) {
-    uint256 liabilities = totalSupply().add(newAmount).mul(config.getPool().sharePrice()).div(fiduMantissa());
+    IPool pool = config.getPool();
+    uint256 liabilities = totalSupply().add(newAmount).mul(pool.sharePrice()).div(fiduMantissa());
     uint256 liabilitiesInDollars = fiduToUSDC(liabilities);
-    uint256 _assets = config.getPool().assets();
+    uint256 _assets = pool.assets();
     if (_assets >= liabilitiesInDollars) {
       return _assets.sub(liabilitiesInDollars) <= ASSET_LIABILITY_MATCH_THRESHOLD;
     } else {
@@ -98,9 +99,10 @@ contract Fidu is ERC20PresetMinterPauserUpgradeSafe {
 
   // canBurn assumes that the USDC that backed these shares has already been moved out the Pool
   function canBurn(uint256 amountToBurn) internal view returns (bool) {
-    uint256 liabilities = totalSupply().sub(amountToBurn).mul(config.getPool().sharePrice()).div(fiduMantissa());
+    IPool pool = config.getPool();
+    uint256 liabilities = totalSupply().sub(amountToBurn).mul(pool.sharePrice()).div(fiduMantissa());
     uint256 liabilitiesInDollars = fiduToUSDC(liabilities);
-    uint256 _assets = config.getPool().assets();
+    uint256 _assets = pool.assets();
     if (_assets >= liabilitiesInDollars) {
       return _assets.sub(liabilitiesInDollars) <= ASSET_LIABILITY_MATCH_THRESHOLD;
     } else {
@@ -108,15 +110,21 @@ contract Fidu is ERC20PresetMinterPauserUpgradeSafe {
     }
   }
 
-  function fiduToUSDC(uint256 amount) internal view returns (uint256) {
+  function fiduToUSDC(uint256 amount) internal pure returns (uint256) {
     return amount.div(fiduMantissa().div(usdcMantissa()));
   }
 
-  function fiduMantissa() internal view returns (uint256) {
-    return uint256(10)**uint256(decimals());
+  function fiduMantissa() internal pure returns (uint256) {
+    return uint256(10)**uint256(18);
   }
 
-  function usdcMantissa() internal view returns (uint256) {
-    return uint256(10)**uint256(config.getUSDC().decimals());
+  function usdcMantissa() internal pure returns (uint256) {
+    return uint256(10)**uint256(6);
+  }
+
+  // TEMPORARY: WILL REMOVE AFTER WE DO THE UPGRADE
+  function setGoldfinchConfig(GoldfinchConfig newGoldfinchConfig) external {
+    require(hasRole(MINTER_ROLE, _msgSender()), "ERC20PresetMinterPauser: Must have minter role to change config");
+    config = newGoldfinchConfig;
   }
 }

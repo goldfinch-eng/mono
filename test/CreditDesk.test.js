@@ -13,23 +13,19 @@ const {
   deployAllContracts,
   erc20Transfer,
   erc20Approve,
+  expectAction,
   USDC_DECIMALS,
-  ZERO_ADDRESS,
   BLOCKS_PER_DAY,
   BLOCKS_PER_YEAR,
 } = require("./testHelpers.js")
-const {
-  OWNER_ROLE,
-  PAUSER_ROLE,
-  CONFIG_KEYS,
-  interestAprAsBN,
-  INTEREST_DECIMALS,
-} = require("../blockchain_scripts/deployHelpers")
+const {OWNER_ROLE, PAUSER_ROLE, interestAprAsBN, INTEREST_DECIMALS} = require("../blockchain_scripts/deployHelpers")
+const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
+
 const {time} = require("@openzeppelin/test-helpers")
 const CreditLine = artifacts.require("CreditLine")
 const FEE_DENOMINATOR = new BN(10)
 
-let accounts, owner, person2, person3, person4, creditDesk, fidu, goldfinchConfig, reserve
+let accounts, owner, person2, person3, creditDesk, fidu, goldfinchConfig, reserve
 
 describe("CreditDesk", () => {
   let underwriterLimit
@@ -136,7 +132,7 @@ describe("CreditDesk", () => {
 
   beforeEach(async () => {
     accounts = await web3.eth.getAccounts()
-    ;[owner, person2, person3, person4, reserve] = accounts
+    ;[owner, person2, person3, reserve] = accounts
     ;({usdc, pool, creditDesk, fidu, goldfinchConfig} = await setupTest())
   })
 
@@ -169,6 +165,19 @@ describe("CreditDesk", () => {
       })
       it("should disallow non-owner to pause", async () => {
         return expect(creditDesk.pause({from: person2})).to.be.rejectedWith(/Must have pauser role/)
+      })
+    })
+  })
+
+  describe("setGoldfinchConfig", () => {
+    describe("setting it", async () => {
+      it("should allow the owner to set it", async () => {
+        return expectAction(() => creditDesk.setGoldfinchConfig(person2, {from: owner})).toChange([
+          [() => creditDesk.config(), {to: person2}],
+        ])
+      })
+      it("should disallow non-owner to set", async () => {
+        return expect(creditDesk.setGoldfinchConfig(person2, {from: person2})).to.be.rejectedWith(/Must have admin/)
       })
     })
   })
@@ -314,9 +323,8 @@ describe("CreditDesk", () => {
   })
 
   describe("drawdown", async () => {
-    let drawdown = async (amount, creditLineAddress, addressToSendTo) => {
-      addressToSendTo = addressToSendTo || borrower
-      return await creditDesk.drawdown(amount, creditLineAddress, addressToSendTo, {from: borrower})
+    let drawdown = async (amount, creditLineAddress) => {
+      return await creditDesk.drawdown(creditLineAddress, amount, {from: borrower})
     }
     let creditLine
     let blocksPerDay = (60 * 60 * 24) / 15
@@ -349,8 +357,38 @@ describe("CreditDesk", () => {
     })
 
     it("should not allow unregistered borrowers to call it", async () => {
-      const badDrawdown = creditDesk.drawdown(usdcVal(10), creditLine.address, creditLine.address, {from: reserve})
+      const badDrawdown = creditDesk.drawdown(creditLine.address, usdcVal(10), {from: reserve})
       return expect(badDrawdown).to.be.rejectedWith(/No credit lines exist for this borrower/)
+    })
+
+    describe("with an unapplied balance on the credit line", async () => {
+      beforeEach(async () => {
+        // Do an initial drawdown
+        await drawdown(usdcVal(10), creditLine.address)
+        await creditDesk.pay(creditLine.address, String(usdcVal(5)), {from: borrower})
+
+        expect(await creditLine.balance()).to.bignumber.eq(usdcVal(10))
+        expect(await getBalance(creditLine.address, usdc)).to.bignumber.eq(usdcVal(5))
+        expect(await getBalance(borrower, usdc)).to.bignumber.eq(usdcVal(5))
+      })
+
+      it("should use the creditline balance first before pulling from the pool", async () => {
+        await expectAction(async () => creditDesk.drawdown(creditLine.address, usdcVal(10), {from: borrower})).toChange(
+          [
+            [async () => creditLine.balance(), {to: usdcVal(15)}],
+            [async () => getBalance(creditLine.address, usdc), {to: usdcVal(0)}],
+            [async () => getBalance(borrower, usdc), {to: usdcVal(15)}],
+          ]
+        )
+      })
+
+      it("should not pull from the pool if the creditline balance is sufficient", async () => {
+        await expectAction(async () => creditDesk.drawdown(creditLine.address, usdcVal(3), {from: borrower})).toChange([
+          [async () => creditLine.balance(), {by: usdcVal(0)}], // Balance is unchanged
+          [async () => getBalance(creditLine.address, usdc), {to: usdcVal(2)}],
+          [async () => getBalance(borrower, usdc), {to: usdcVal(8)}],
+        ])
+      })
     })
 
     it("should increase the total loans outstanding on the credit desk", async () => {
@@ -465,39 +503,13 @@ describe("CreditDesk", () => {
         return expect(drawdown(usdcVal(10), creditLine.address)).to.be.rejectedWith(/payments are past due/)
       })
     })
-
-    describe("when using a forwarding address", async () => {
-      it("should send to that address", async () => {
-        const drawdownAmount = usdcVal(3)
-        const originalBalance = await getBalance(person4, usdc)
-        await drawdown(drawdownAmount, creditLine.address, person4)
-        const newBalance = await getBalance(person4, usdc)
-        expect(newBalance.sub(originalBalance)).to.bignumber.equal(drawdownAmount)
-      })
-
-      it("should not send to the borrower address", async () => {
-        const drawdownAmount = usdcVal(3)
-        const originalBalance = await getBalance(borrower, usdc)
-        await drawdown(drawdownAmount, creditLine.address, person4)
-        const newBalance = await getBalance(borrower, usdc)
-        expect(newBalance.sub(originalBalance)).to.bignumber.equal(new BN(0))
-      })
-
-      it("if you pass up the zero address, it should send money to the borrower", async () => {
-        const drawdownAmount = usdcVal(3)
-        const originalBalance = await getBalance(borrower, usdc)
-        await drawdown(drawdownAmount, creditLine.address, ZERO_ADDRESS)
-        const newBalance = await getBalance(borrower, usdc)
-        expect(newBalance.sub(originalBalance)).to.bignumber.equal(drawdownAmount)
-      })
-    })
   })
 
   describe("migrateCreditLine", async () => {
     let existingCl, prepaymentAmount
     beforeEach(async () => {
       borrower = person3
-      underwriter = owner
+      underwriter = person2
       prepaymentAmount = usdcVal(50)
       existingCl = await createAndSetCreditLineAttributes({
         balance: usdcVal(10000),
@@ -517,7 +529,8 @@ describe("CreditDesk", () => {
         interestApr,
         paymentPeriodInDays,
         termInDays,
-        lateFeeApr
+        lateFeeApr,
+        {from: underwriter}
       )
       const newClAddress = (await creditDesk.getBorrowerCreditLines(borrower))[1]
 
@@ -536,7 +549,8 @@ describe("CreditDesk", () => {
           interestApr,
           paymentPeriodInDays,
           termInDays,
-          lateFeeApr
+          lateFeeApr,
+          {from: underwriter}
         )
       ).to.be.fulfilled
       return expect(
@@ -547,7 +561,8 @@ describe("CreditDesk", () => {
           interestApr,
           paymentPeriodInDays,
           termInDays,
-          lateFeeApr
+          lateFeeApr,
+          {from: underwriter}
         )
       ).to.be.rejectedWith(/Can't migrate/)
     })
@@ -562,7 +577,8 @@ describe("CreditDesk", () => {
         interestApr,
         paymentPeriodInDays,
         termInDays,
-        lateFeeApr
+        lateFeeApr,
+        {from: underwriter}
       )
       const newClAddress = (await creditDesk.getBorrowerCreditLines(borrower))[1]
       const newCl = await CreditLine.at(newClAddress)
@@ -575,6 +591,21 @@ describe("CreditDesk", () => {
       expect(await existingCl.interestAccruedAsOfBlock()).to.bignumber.equal(await newCl.interestAccruedAsOfBlock())
       expect(await existingCl.writedownAmount()).to.bignumber.equal(await newCl.writedownAmount())
       expect(await existingCl.lastFullPaymentBlock()).to.bignumber.equal(await newCl.lastFullPaymentBlock())
+    })
+
+    it("should permit only the underwriter to migrate the creditline", async () => {
+      return expect(
+        creditDesk.migrateCreditLine(
+          existingCl.address,
+          borrower,
+          limit,
+          interestApr,
+          paymentPeriodInDays,
+          termInDays,
+          lateFeeApr,
+          {from: owner}
+        )
+      ).to.be.rejectedWith(/Caller must be the underwriter/)
     })
   })
 
@@ -616,6 +647,114 @@ describe("CreditDesk", () => {
         expect(event.args.payer).to.equal(borrower)
         expect(event.args.creditLine).to.equal(creditLine.address)
         expect(event.args.paymentAmount).to.bignumber.closeTo(usdcVal(10), tolerance)
+      })
+    })
+  })
+
+  describe("appyPayment", async () => {
+    describe("with an outstanding credit line", async () => {
+      beforeEach(async () => {
+        borrower = person3
+        underwriter = person2
+        usdc.transfer(borrower, usdcVal(50), {from: owner})
+      })
+
+      it("validates borrower and creditline", async () => {
+        const creditLine = await createAndSetCreditLineAttributes({
+          balance: 10,
+          interestOwed: 5,
+          principalOwed: 3,
+          nextDueBlock: 1,
+        })
+        const paymentAmount = 6
+        await expect(
+          creditDesk.applyPayment(creditLine.address, String(usdcVal(paymentAmount)), {from: person2})
+        ).to.be.rejectedWith(/You do not belong to this credit line/)
+
+        await expect(
+          creditDesk.applyPayment(usdc.address, String(usdcVal(paymentAmount)), {from: person2})
+        ).to.be.rejectedWith(/Unknown credit line/)
+      })
+
+      it("apply the payment as of current block number and emit the event", async () => {
+        const creditLine = await createAndSetCreditLineAttributes({
+          balance: 10,
+          interestOwed: 5,
+          principalOwed: 3,
+          nextDueBlock: 1,
+        })
+        const paymentAmount = 6
+        await usdc.transfer(creditLine.address, String(usdcVal(paymentAmount)), {from: owner})
+        const response = await creditDesk.applyPayment(creditLine.address, String(usdcVal(paymentAmount)), {
+          from: borrower,
+        })
+
+        const event = response.logs[0]
+        expect(event.event).to.equal("PaymentApplied")
+        expect(event.args.payer).to.equal(borrower)
+        expect(event.args.creditLine).to.equal(creditLine.address)
+        expect(event.args.interestAmount).to.bignumber.closeTo(usdcVal(5), tolerance)
+        expect(event.args.principalAmount).to.bignumber.closeTo(usdcVal(1), tolerance)
+        expect(event.args.remainingAmount).to.bignumber.equal(usdcVal(0))
+      })
+    })
+  })
+
+  describe("getNextPaymentAmount", async () => {
+    beforeEach(async () => {
+      borrower = person3
+      underwriter = person2
+      usdc.transfer(borrower, usdcVal(50), {from: owner})
+    })
+
+    describe("with an outstanding payment", async () => {
+      it("returns the correct total amount owed", async () => {
+        let blockNumber = (await time.latestBlock()).add(new BN(100))
+        const balance = 10
+        const interestOwed = 1
+        const principalOwed = 2
+        let lateFeeGracePeriodInDays = paymentPeriodInDays
+        const creditLine = await createAndSetCreditLineAttributes({
+          balance: balance,
+          interestOwed: interestOwed,
+          principalOwed: principalOwed,
+          nextDueBlock: blockNumber,
+        })
+        await creditLine.setInterestAccruedAsOfBlock(blockNumber)
+        await creditLine.setLastFullPaymentBlock(new BN(0))
+        await creditLine.setTermEndBlock(lateFeeGracePeriodInDays.mul(BLOCKS_PER_DAY).mul(new BN(10))) // some time in the future
+
+        const totalInterestPerYear = usdcVal(balance).mul(interestApr).div(INTEREST_DECIMALS)
+        let blocksPassed = lateFeeGracePeriodInDays.mul(BLOCKS_PER_DAY).mul(new BN(2))
+        let expectedInterest = totalInterestPerYear.mul(blocksPassed).div(BLOCKS_PER_YEAR)
+
+        const lateFeeInterestPerYear = usdcVal(balance).mul(lateFeeApr).div(INTEREST_DECIMALS)
+        const lateFee = lateFeeInterestPerYear.mul(blocksPassed).div(BLOCKS_PER_YEAR)
+
+        const asOfBlock = blockNumber.add(blocksPassed)
+        await creditDesk._setBlockNumberForTest(asOfBlock)
+
+        // Should include interest/principal on the credit line, interest accrued due to time and any late fees
+        let expectedTotalPayment = usdcVal(interestOwed).add(usdcVal(principalOwed)).add(expectedInterest).add(lateFee)
+
+        expect(await creditDesk.getNextPaymentAmount(creditLine.address, asOfBlock)).to.bignumber.eq(
+          expectedTotalPayment
+        )
+        // If block number is 0, it uses the current block number
+        expect(await creditDesk.getNextPaymentAmount(creditLine.address, 0)).to.bignumber.eq(expectedTotalPayment)
+      })
+
+      it("returns 0 if before the next due block", async () => {
+        let blockNumber = (await time.latestBlock()).add(new BN(100))
+        const creditLine = await createAndSetCreditLineAttributes({
+          balance: 10,
+          interestOwed: 1,
+          principalOwed: 2,
+          nextDueBlock: blockNumber,
+        })
+        expect(await creditDesk.getNextPaymentAmount(creditLine.address, blockNumber.sub(new BN(10)))).to.bignumber.eq(
+          "0"
+        )
       })
     })
   })

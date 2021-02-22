@@ -1,4 +1,5 @@
-const {toAtomic, getDeployedContract, updateConfig, CONFIG_KEYS} = require("./deployHelpers.js")
+const {toAtomic, getDeployedContract, updateConfig} = require("./deployHelpers.js")
+const {CONFIG_KEYS} = require("./configKeys")
 const PROTOCOL_CONFIG = require("../protocol_config.json")
 const hre = require("hardhat")
 

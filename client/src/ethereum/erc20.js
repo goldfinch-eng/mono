@@ -14,8 +14,12 @@ async function getUSDC(networkId) {
   if (deployedUSDC) {
     address = deployedUSDC.address;
   } else {
-    // Assume we're on testnet or mainnet
-    address = USDC_ADDRESSES[networkId];
+    if (process.env.REACT_APP_HARDHAT_FORK) {
+      address = USDC_ADDRESSES[process.env.REACT_APP_HARDHAT_FORK];
+    } else {
+      // Assume we're on testnet or mainnet
+      address = USDC_ADDRESSES[networkId];
+    }
   }
   const erc20 = new web3.eth.Contract(ERC20Contract.abi, address);
   cachedContract = erc20;

@@ -1,5 +1,6 @@
 /* global web3 */
-const {OWNER_ROLE, PAUSER_ROLE, CONFIG_KEYS, ETHDecimals} = require("../blockchain_scripts/deployHelpers")
+const {OWNER_ROLE, PAUSER_ROLE, ETHDecimals} = require("../blockchain_scripts/deployHelpers")
+const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
 const hre = require("hardhat")
 const {deployments} = hre
 const {
@@ -9,6 +10,7 @@ const {
   deployAllContracts,
   erc20Transfer,
   erc20Approve,
+  expectAction,
   decimals,
   USDC_DECIMALS,
   usdcVal,
@@ -28,10 +30,14 @@ describe("Pool", () => {
     person = person || person2
     return await pool.deposit(String(amount), {from: person})
   }
-  let makeWithdraw = async (person, amount) => {
-    amount = amount || withdrawAmount
+  let makeWithdraw = async (person, usdcAmount) => {
+    usdcAmount = usdcAmount || withdrawAmount
     person = person || person2
-    return await pool.withdraw(amount, {from: person})
+    return await pool.withdraw(usdcAmount, {from: person})
+  }
+
+  let makeWithdrawInFidu = async (person, fiduAmount) => {
+    return await pool.withdrawInFidu(fiduAmount, {from: person})
   }
 
   const setupTest = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
@@ -101,6 +107,19 @@ describe("Pool", () => {
       })
       it("should disallow non-owner to pause", async () => {
         return expect(pool.pause({from: person2})).to.be.rejectedWith(/Must have pauser role/)
+      })
+    })
+  })
+
+  describe("setGoldfinchConfig", () => {
+    describe("setting it", async () => {
+      it("should allow the owner to set it", async () => {
+        return expectAction(() => pool.setGoldfinchConfig(person2, {from: owner})).toChange([
+          [() => pool.config(), {to: person2}],
+        ])
+      })
+      it("should disallow non-owner to set", async () => {
+        return expect(pool.setGoldfinchConfig(person2, {from: person2})).to.be.rejectedWith(/Must have admin/)
       })
     })
   })
@@ -260,9 +279,25 @@ describe("Pool", () => {
       expect(sharesAfter).to.bignumber.equal(expectedShares)
     })
 
+    it("lets you withdraw in fidu terms", async () => {
+      await makeDeposit()
+      const fiduBalance = await getBalance(person2, fidu)
+      expect(fiduBalance).to.bignumber.gt("0")
+
+      await expectAction(() => {
+        return makeWithdrawInFidu(person2, fiduBalance)
+      }).toChange([
+        [() => getBalance(person2, usdc), {byCloseTo: usdcVal(4)}], // Not exactly the same as input due to fees
+        [() => getBalance(person2, fidu), {to: new BN(0)}], // All fidu deducted
+        [() => getBalance(pool.address, usdc), {to: new BN(0)}], // Should have removed the full balance
+        [() => fidu.totalSupply(), {by: fiduBalance.neg()}], // Fidu has been burned
+      ])
+    })
+
     it("prevents you from withdrawing more than you have", async () => {
       const expectedErr = /Amount requested is greater than what this address owns/
-      return expect(makeWithdraw()).to.be.rejectedWith(expectedErr)
+      await expect(makeWithdraw()).to.be.rejectedWith(expectedErr)
+      await expect(makeWithdrawInFidu(person2, withdrawAmount)).to.be.rejectedWith(expectedErr)
     })
 
     it("it lets you withdraw your exact total holdings", async () => {
@@ -282,25 +317,37 @@ describe("Pool", () => {
       //Pretend the person3 is the credit desk for collecting payments
       await goldfinchConfig.setAddressForTest(CONFIG_KEYS.CreditDesk, person3)
 
-      const amount = new BN(1).mul(USDC_DECIMALS)
-      const response = await pool.collectInterestRepayment(person2, amount, {from: person3})
+      const interest = new BN(1).mul(USDC_DECIMALS)
+      const principal = new BN(0)
+      const response = await pool.collectInterestAndPrincipal(person2, interest, principal, {from: person3})
       const event = response.logs[0]
-      const reserveAmount = amount.div(new BN(10))
+      const reserveAmount = interest.div(new BN(10))
 
       expect(event.event).to.equal("InterestCollected")
       expect(event.args.payer).to.equal(person2)
-      expect(event.args.poolAmount).to.bignumber.equal(amount.sub(reserveAmount))
+      expect(event.args.poolAmount).to.bignumber.equal(interest.sub(reserveAmount))
       expect(event.args.reserveAmount).to.bignumber.equal(reserveAmount)
     })
 
     it("should not allow collection from anyone other than the admin", async () => {
-      const amount = new BN(1).mul(USDC_DECIMALS)
-      await expect(pool.collectInterestRepayment(person2, amount, {from: person2})).to.be.rejectedWith(
+      const interest = new BN(1).mul(USDC_DECIMALS)
+      const principal = new BN(0)
+      await expect(pool.collectInterestAndPrincipal(person2, interest, principal, {from: person2})).to.be.rejectedWith(
         /Only the credit desk/
       )
-      await expect(pool.collectInterestRepayment(person2, amount, {from: owner})).to.be.rejectedWith(
+      await expect(pool.collectInterestAndPrincipal(person2, interest, principal, {from: owner})).to.be.rejectedWith(
         /Only the credit desk/
       )
+    })
+  })
+
+  describe("drawdown", async () => {
+    beforeEach(async () => {
+      await usdc.approve(pool.address, new BN(100000).mul(USDC_DECIMALS), {from: person2})
+      await makeDeposit()
+    })
+    it("should not allow drawdown from anyone other than the admin", async () => {
+      await expect(pool.drawdown(person3, usdcVal(10), {from: person2})).to.be.rejectedWith(/Only the credit desk/)
     })
   })
 
@@ -382,20 +429,22 @@ describe("Pool", () => {
       //Pretend the person3 is the credit desk for collecting payments
       await goldfinchConfig.setAddressForTest(CONFIG_KEYS.CreditDesk, person3)
 
-      const amount = new BN(1).mul(USDC_DECIMALS)
-      const response = await pool.collectPrincipalRepayment(person2, amount, {from: person3})
+      const interest = new BN(0)
+      const principal = new BN(1).mul(USDC_DECIMALS)
+      const response = await pool.collectInterestAndPrincipal(person2, interest, principal, {from: person3})
       const event = response.logs[0]
       expect(event.event).to.equal("PrincipalCollected")
       expect(event.args.payer).to.equal(person2)
-      expect(event.args.amount).to.bignumber.equal(amount)
+      expect(event.args.amount).to.bignumber.equal(principal)
     })
 
     it("should not allow collection from anyone other than the admin", async () => {
-      const amount = new BN(1).mul(USDC_DECIMALS)
-      await expect(pool.collectPrincipalRepayment(person2, amount, {from: person2})).to.be.rejectedWith(
+      const interest = new BN(0)
+      const principal = new BN(1).mul(USDC_DECIMALS)
+      await expect(pool.collectInterestAndPrincipal(person2, interest, principal, {from: person2})).to.be.rejectedWith(
         /Only the credit desk/
       )
-      await expect(pool.collectPrincipalRepayment(person2, amount, {from: owner})).to.be.rejectedWith(
+      await expect(pool.collectInterestAndPrincipal(person2, interest, principal, {from: owner})).to.be.rejectedWith(
         /Only the credit desk/
       )
     })

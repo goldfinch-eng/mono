@@ -22,6 +22,20 @@ const USDC_ADDRESSES = {
   [MAINNET]: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
 };
 
+const USDT_ADDRESSES = {
+  mainnet: '0xdac17f958d2ee523a2206206994597c13d831ec7',
+};
+
+const FORWARDER_ADDRESSES = {
+  4: '0x956868751Cc565507B3B58E53a6f9f41B56bed74',
+  1: '0xa530F85085C6FE2f866E7FdB716849714a89f4CD',
+};
+
+const ONE_INCH_ADDRESSES = {
+  localhost: '0xc586bef4a0992c495cf22e1aeee4e446cecdee0e',
+  mainnet: '0xc586bef4a0992c495cf22e1aeee4e446cecdee0e',
+};
+
 // Only keep entries for supported networks
 // (ie. where we deployed the latest contracts)
 const mapNetworkToID = {
@@ -105,6 +119,7 @@ export {
   decimals,
   ETHDecimals,
   USDC_ADDRESSES,
+  FORWARDER_ADDRESSES,
   MAX_UINT,
   USDC_DECIMALS,
   INTEREST_DECIMALS,
@@ -112,5 +127,6 @@ export {
   BLOCKS_PER_DAY,
   CONFIRMATION_THRESHOLD,
   SUPPORTED_NETWORKS,
+  ONE_INCH_ADDRESSES,
   getFromBlock,
 };

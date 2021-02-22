@@ -1,6 +1,7 @@
 /* global artifacts web3 */
 const {expect, BN} = require("./testHelpers.js")
-const {CONFIG_KEYS, OWNER_ROLE} = require("../blockchain_scripts/deployHelpers")
+const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
+const {OWNER_ROLE} = require("../blockchain_scripts/deployHelpers")
 const ConfigOptions = artifacts.require("ConfigOptions")
 const GoldfinchConfig = artifacts.require("GoldfinchConfig")
 const TestTheConfig = artifacts.require("TestTheConfig")
@@ -60,6 +61,12 @@ describe("GoldfinchConfig", () => {
       )
       expect(await goldfinchConfig.getAddress(CONFIG_KEYS.TreasuryReserve)).to.equal(
         "0xECd9C93B79AE7C1591b1fB5323BD777e86E150d5"
+      )
+      expect(await goldfinchConfig.getAddress(CONFIG_KEYS.TrustedForwarder)).to.equal(
+        "0x956868751Cc565507B3B58E53a6f9f41B56bed74"
+      )
+      expect(await goldfinchConfig.getAddress(CONFIG_KEYS.CUSDCContract)).to.equal(
+        "0x5B281A6DdA0B271e91ae35DE655Ad301C976edb1"
       )
     })
   })
