@@ -3,15 +3,9 @@ const BN = require("bn.js")
 const USDCDecimals = new BN(String(1e6))
 const ETHDecimals = new BN(String(1e18))
 const INTEREST_DECIMALS = new BN(String(1e8))
-const API_KEY = "A2UgCPgn8jQbkSVuSCxEMhFmivdV9C6d"
-const API_SECRET = process.env.DEFENDER_API_SECRET
-const {AdminClient} = require("defender-admin-client")
-const {CONFIG_KEYS} = require("./configKeys")
 
 const ROPSTEN_USDC_ADDRESS = "0x07865c6e87b9f70255377e024ace6630c1eaa37f"
 const MAINNET_USDC_ADDRESS = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
-const MAINNET_ONE_SPLIT_ADDRESS = "0xC586BeF4a0992C495Cf22e1aeEE4E446CECDee0E"
-const MAINNET_CUSDC_ADDRESS = "0x39aa39c021dfbae8fac545936693ac917d5e7563"
 const MAINNET_CHAIN_ID = "1"
 const LOCAL = "local"
 const ROPSTEN = "ropsten"
@@ -32,15 +26,6 @@ const SAFE_CONFIG = {
   1: {safeAddress: "0xBEb28978B2c755155f20fd3d09Cb37e300A6981f"}, // Mainnet
   4: {safeAddress: "0xAA96CA940736e937A8571b132992418c7d220976"}, // Rinkeby
 }
-
-// WARNING: BE EXTREMELY CAREFUL WITH THESE ADDRESSES
-// A malicious trusted forwarder means handling over full control of the contract (it can spoof msg.sender)
-// https://docs.opengsn.org/contracts/addresses.html
-const TRUSTED_FORWARDER_CONFIG = {
-  1: "0xa530F85085C6FE2f866E7FdB716849714a89f4CD", // Mainnet
-  4: "0x956868751Cc565507B3B58E53a6f9f41B56bed74", // Rinkeby
-}
-
 let OWNER_ROLE, PAUSER_ROLE, MINTER_ROLE
 if (typeof web3 !== "undefined" && web3.utils) {
   OWNER_ROLE = web3.utils.keccak256("OWNER_ROLE")
@@ -48,12 +33,28 @@ if (typeof web3 !== "undefined" && web3.utils) {
   MINTER_ROLE = web3.utils.keccak256("MINTER_ROLE")
 }
 
-function isTestEnv() {
-  return process.env.NODE_ENV === "test"
+const CONFIG_KEYS = {
+  // Numbers
+  TransactionLimit: 0,
+  TotalFundsLimit: 1,
+  MaxUnderwriterLimit: 2,
+  ReserveDenominator: 3,
+  WithdrawFeeDenominator: 4,
+  LatenessGracePeriodInDays: 5,
+  LatenessMaxDays: 6,
+  // Addresses
+  Pool: 0,
+  CreditLineImplementation: 1,
+  CreditLineFactory: 2,
+  CreditDesk: 3,
+  Fidu: 4,
+  USDC: 5,
+  TreasuryReserve: 6,
+  ProtocolAdmin: 7,
 }
 
-function isMainnetForking() {
-  return process.env.HARDHAT_FORK === "mainnet"
+function isTestEnv() {
+  return process.env.NODE_ENV === "test"
 }
 
 function interestAprAsBN(interestPercentageString) {
@@ -62,19 +63,7 @@ function interestAprAsBN(interestPercentageString) {
 }
 
 function getUSDCAddress(chainID) {
-  if (isMainnetForking()) {
-    return USDC_MAPPING[MAINNET]
-  }
   return USDC_MAPPING[chainID] || USDC_MAPPING[CHAIN_MAPPING[chainID]]
-}
-
-async function getSignerForAddress(signerAddress) {
-  if (signerAddress && typeof signerAddress === "string") {
-    const signers = await ethers.getSigners()
-    return signers.find((signer) => signer.address === signerAddress)
-  } else if (signerAddress && typeof signerAddres === "object") {
-    return signerAddress
-  }
 }
 
 async function getDeployedContract(deployments, contractName, signerAddress) {
@@ -91,7 +80,13 @@ async function getDeployedContract(deployments, contractName, signerAddress) {
     )
   }
   const abi = implementation ? implementation.abi : deployment.abi
-  let signer = await getSignerForAddress(signerAddress)
+  let signer = undefined
+  if (signerAddress && typeof signerAddress === "string") {
+    const signers = await ethers.getSigners()
+    signer = signers.find((signer) => signer.address === signerAddress)
+  } else if (signerAddress && typeof signerAddres === "object") {
+    signer = signerAddress
+  }
   return await ethers.getContractAt(abi, deployment.address, signer)
 }
 
@@ -132,15 +127,9 @@ function toAtomic(amount, decimals = USDCDecimals) {
   return new BN(String(amount)).mul(decimals).toString(10)
 }
 
-function getDefenderClient() {
-  return new AdminClient({apiKey: API_KEY, apiSecret: API_SECRET})
-}
-
 module.exports = {
   CHAIN_MAPPING: CHAIN_MAPPING,
   ROPSTEN_USDC_ADDRESS: ROPSTEN_USDC_ADDRESS,
-  MAINNET_ONE_SPLIT_ADDRESS: MAINNET_ONE_SPLIT_ADDRESS,
-  MAINNET_CUSDC_ADDRESS: MAINNET_CUSDC_ADDRESS,
   LOCAL: LOCAL,
   MAINNET: MAINNET,
   USDCDecimals: USDCDecimals,
@@ -153,15 +142,12 @@ module.exports = {
   toAtomic: toAtomic,
   upgrade: upgrade,
   updateConfig: updateConfig,
-  getSignerForAddress: getSignerForAddress,
   MAINNET_CHAIN_ID: MAINNET_CHAIN_ID,
   OWNER_ROLE: OWNER_ROLE,
   PAUSER_ROLE: PAUSER_ROLE,
   MINTER_ROLE: MINTER_ROLE,
+  CONFIG_KEYS: CONFIG_KEYS,
   SAFE_CONFIG: SAFE_CONFIG,
-  TRUSTED_FORWARDER_CONFIG: TRUSTED_FORWARDER_CONFIG,
   isTestEnv: isTestEnv,
-  isMainnetForking: isMainnetForking,
   interestAprAsBN: interestAprAsBN,
-  getDefenderClient: getDefenderClient,
 }

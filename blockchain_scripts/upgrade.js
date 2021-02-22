@@ -1,4 +1,4 @@
-const {getDeployedContract, SAFE_CONFIG, CHAIN_MAPPING, getDefenderClient} = require("./deployHelpers.js")
+const {getDeployedContract, SAFE_CONFIG} = require("./deployHelpers.js")
 const hre = require("hardhat")
 
 /*
@@ -18,20 +18,20 @@ async function multisig(hre) {
   // Since this is not a "real" deployment (just a script),
   //the deployments.log is not enabled. So, just use console.log instead
   logger = console.log
+
   const chainId = await getChainId()
 
   if (!SAFE_CONFIG[chainId]) {
     throw new Error(`Unsupported chain id: ${chainId}`)
   }
 
-  let contractsToUpgrade = process.env.CONTRACTS || "CreditLineFactory, CreditDesk, Pool, Fidu"
+  let contractsToUpgrade = process.env.CONTRACTS || "GoldfinchConfig, CreditLineFactory, CreditDesk, Pool, Fidu"
   contractsToUpgrade = contractsToUpgrade.split(/[ ,]+/)
   const contracts = await deployUpgrades(contractsToUpgrade, proxy_owner, hre)
 
   logger(`Safe address: ${SAFE_CONFIG[chainId].safeAddress}`)
   for (let i = 0; i < contractsToUpgrade.length; i++) {
     let contract = contracts[contractsToUpgrade[i]]
-    logger("-------------RESULT ------------------")
     logger(`${contract.name}. Proxy: ${contract.proxy.address} New Implementation: ${contract.newImplementation}`)
   }
 
@@ -39,20 +39,8 @@ async function multisig(hre) {
 }
 
 async function deployUpgrades(contractNames, proxy_owner, hre) {
-  const {deployments, ethers, getChainId} = hre
+  const {deployments, ethers} = hre
   const {deploy} = deployments
-  const chainId = await getChainId()
-  const network = CHAIN_MAPPING[chainId]
-  let client, safeAddress
-  if (!process.env.NO_DEFENDER) {
-    client = getDefenderClient()
-  }
-  const safe = SAFE_CONFIG[chainId]
-  if (!safe) {
-    throw new Error(`No safe address found for chain id: ${chainId}`)
-  } else {
-    safeAddress = safe.safeAddress
-  }
 
   const result = {}
   const dependencies = {
@@ -89,27 +77,6 @@ async function deployUpgrades(contractNames, proxy_owner, hre) {
     result[contractName] = contractInfo
 
     logger(`Deployed ${contractName} to ${contractInfo.newImplementation} (current ${currentImpl})`)
-
-    if (client) {
-      logger("Now attempting to create the proposal on Defender...")
-      await client.createProposal({
-        contract: {address: contractProxy.address, network: network}, // Target contract
-        title: "Upgrade to latest version",
-        description: `Upgrading ${contractName} to a new implementation at ${contractInfo.newImplementation}`,
-        type: "custom", // Defender doesn't directly support upgrades via our Proxy type, so use a custom action until they do.
-        // Function ABI
-        functionInterface: {
-          name: "changeImplementation",
-          inputs: [
-            {internalType: "address", name: "newImplementation", type: "address"},
-            {internalType: "bytes", name: "data", type: "bytes"},
-          ],
-        },
-        functionInputs: [contractInfo.newImplementation, "0x"],
-        via: safeAddress,
-        viaType: "Gnosis Safe", // Either Gnosis Safe or Gnosis Multisig
-      })
-    }
   }
   return result
 }

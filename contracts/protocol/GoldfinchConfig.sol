@@ -53,10 +53,14 @@ contract GoldfinchConfig is BaseUpgradeablePausable {
     or add checks or validations later on.
   */
   function getAddress(uint256 addressKey) public view returns (address) {
+    // Cheap way to see if it's an invalid number
+    ConfigOptions.Addresses(addressKey);
     return addresses[addressKey];
   }
 
   function getNumber(uint256 number) public view returns (uint256) {
+    // Cheap way to see if it's an invalid number
+    ConfigOptions.Numbers(number);
     return numbers[number];
   }
 }

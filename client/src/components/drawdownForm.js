@@ -23,10 +23,9 @@ function DrawdownForm(props) {
   function action({ transactionAmount, sendToAddress }) {
     const drawdownAmount = usdcToAtomic(transactionAmount);
     sendToAddress = sendToAddress || props.borrower.address;
-    return sendFromUser(props.borrower.drawdown(props.creditLine.address, drawdownAmount, sendToAddress), {
+    return sendFromUser(creditDesk.methods.drawdown(drawdownAmount, props.creditLine.address, sendToAddress), {
       type: 'Borrow',
       amount: transactionAmount,
-      gasless: props.borrower.gasless,
     }).then(props.actionComplete);
   }
 

@@ -4,7 +4,7 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "./CreditLine.sol";
-import "../../external/FixedPoint.sol";
+import "../external/FixedPoint.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 
@@ -38,19 +38,14 @@ library Accountant {
     uint256 blockNumber,
     uint256 lateFeeGracePeriod
   ) public view returns (uint256, uint256) {
-    uint256 balance = cl.balance(); // gas optimization
-    uint256 interestAccrued = calculateInterestAccrued(cl, balance, blockNumber, lateFeeGracePeriod);
-    uint256 principalAccrued = calculatePrincipalAccrued(cl, balance, blockNumber);
+    uint256 interestAccrued = calculateInterestAccrued(cl, blockNumber, lateFeeGracePeriod);
+    uint256 principalAccrued = calculatePrincipalAccrued(cl, blockNumber);
     return (interestAccrued, principalAccrued);
   }
 
-  function calculatePrincipalAccrued(
-    CreditLine cl,
-    uint256 balance,
-    uint256 blockNumber
-  ) public view returns (uint256) {
+  function calculatePrincipalAccrued(CreditLine cl, uint256 blockNumber) public view returns (uint256) {
     if (blockNumber >= cl.termEndBlock()) {
-      return balance;
+      return cl.balance();
     } else {
       return 0;
     }
@@ -66,10 +61,11 @@ library Accountant {
     if (amountOwedPerDay.isEqual(0)) {
       return (0, 0);
     }
-    FixedPoint.Unsigned memory fpGracePeriod = FixedPoint.min(
-      FixedPoint.fromUnscaledUint(gracePeriodInDays),
-      FixedPoint.fromUnscaledUint(cl.paymentPeriodInDays())
-    );
+    FixedPoint.Unsigned memory fpGracePeriod =
+      FixedPoint.min(
+        FixedPoint.fromUnscaledUint(gracePeriodInDays),
+        FixedPoint.fromUnscaledUint(cl.paymentPeriodInDays())
+      );
     FixedPoint.Unsigned memory daysLate;
 
     // Excel math: =min(1,max(0,periods_late_in_days-graceperiod_in_days)/MAX_ALLOWED_DAYS_LATE) grace_period = 30,
@@ -108,7 +104,6 @@ library Accountant {
 
   function calculateInterestAccrued(
     CreditLine cl,
-    uint256 balance,
     uint256 blockNumber,
     uint256 lateFeeGracePeriodInDays
   ) public view returns (uint256) {
@@ -122,11 +117,11 @@ library Accountant {
     // a balance affecting action takes place (eg. drawdown, repayment, assessment)
     uint256 interestAccruedAsOfBlock = Math.min(blockNumber, cl.interestAccruedAsOfBlock());
     uint256 numBlocksElapsed = blockNumber.sub(interestAccruedAsOfBlock);
-    uint256 totalInterestPerYear = balance.mul(cl.interestApr()).div(INTEREST_DECIMALS);
+    uint256 totalInterestPerYear = cl.balance().mul(cl.interestApr()).div(INTEREST_DECIMALS);
     uint256 interestOwed = totalInterestPerYear.mul(numBlocksElapsed).div(BLOCKS_PER_YEAR);
 
     if (lateFeeApplicable(cl, blockNumber, lateFeeGracePeriodInDays)) {
-      uint256 lateFeeInterestPerYear = balance.mul(cl.lateFeeApr()).div(INTEREST_DECIMALS);
+      uint256 lateFeeInterestPerYear = cl.balance().mul(cl.lateFeeApr()).div(INTEREST_DECIMALS);
       uint256 additionalLateFeeInterest = lateFeeInterestPerYear.mul(numBlocksElapsed).div(BLOCKS_PER_YEAR);
       interestOwed = interestOwed.add(additionalLateFeeInterest);
     }

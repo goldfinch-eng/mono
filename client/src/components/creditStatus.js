@@ -12,7 +12,7 @@ function CreditStatus(props) {
   }
 
   let placeholderClass = '';
-  if (!props.user.address || !props.user.usdcIsUnlocked('borrow') || props.creditLine.limit.eq(0)) {
+  if (!props.user.address || !props.user.usdcIsUnlocked || props.creditLine.limit.eq(0)) {
     placeholderClass = 'placeholder';
   }
 

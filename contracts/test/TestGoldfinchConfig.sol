@@ -2,7 +2,7 @@
 
 pragma solidity 0.6.12;
 
-import "../protocol/core/GoldfinchConfig.sol";
+import "../protocol/GoldfinchConfig.sol";
 
 contract TestGoldfinchConfig is GoldfinchConfig {
   function setAddressForTest(uint256 addressKey, address newAddress) public {

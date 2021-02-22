@@ -1,5 +1,4 @@
 import React, { useContext } from 'react';
-import { withRouter } from 'react-router-dom';
 import { AppContext } from '../App.js';
 import UnlockUSDCForm from './unlockUSDCForm.js';
 
@@ -33,19 +32,11 @@ function ConnectionNotice(props) {
         You do not have any credit lines. To borrow funds from the pool, you need a Goldfinch credit line.
       </div>
     );
-  } else if (user.loaded) {
-    let unlockStatus;
-    if (props.location.pathname.startsWith('/earn')) {
-      unlockStatus = user.getUnlockStatus('earn');
-    } else if (props.location.pathname.startsWith('/borrow')) {
-      unlockStatus = user.getUnlockStatus('borrow');
-    }
-    if (unlockStatus && !unlockStatus.isUnlocked) {
-      notice = <UnlockUSDCForm unlockAddress={unlockStatus.unlockAddress} />;
-    }
+  } else if (user.loaded && !user.usdcIsUnlocked) {
+    notice = <UnlockUSDCForm />;
   }
 
   return notice;
 }
 
-export default withRouter(props => ConnectionNotice(props));
+export default ConnectionNotice;

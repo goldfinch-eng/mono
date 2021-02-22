@@ -75,7 +75,7 @@ describe("relayAsses", () => {
     it("assesses the credit line", async () => {
       creditLine = await createCreditLine()
 
-      await creditDesk.drawdown(creditLine.address, usdcVal(10), {from: borrower})
+      await creditDesk.drawdown(usdcVal(10), creditLine.address, borrower, {from: borrower})
 
       // Advance to just beyond the nextDueBlock
       await advanceToBlock((await creditLine.nextDueBlock()).add(new BN(10)))
@@ -88,7 +88,7 @@ describe("relayAsses", () => {
     it("does not assess if within the nextDueBlock", async () => {
       creditLine = await createCreditLine()
 
-      await creditDesk.drawdown(creditLine.address, usdcVal(10), {from: borrower})
+      await creditDesk.drawdown(usdcVal(10), creditLine.address, borrower, {from: borrower})
 
       // Advance to just before the next due block
       await advanceToBlock((await creditLine.nextDueBlock()).sub(new BN(10)))
@@ -101,7 +101,7 @@ describe("relayAsses", () => {
     it("assesses if beyond the term end block", async () => {
       creditLine = await createCreditLine()
 
-      await creditDesk.drawdown(creditLine.address, usdcVal(10), {from: borrower})
+      await creditDesk.drawdown(usdcVal(10), creditLine.address, borrower, {from: borrower})
 
       // Advance to just after the term due block
       await advanceToBlock((await creditLine.termEndBlock()).add(new BN(10)))

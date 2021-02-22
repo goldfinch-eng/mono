@@ -54,11 +54,9 @@ async function fetchPoolData(pool, erc20) {
   if (!erc20 || !pool.loaded) {
     return Promise.resolve(result);
   }
-  const attributes = [{ method: 'sharePrice' }, { method: 'compoundBalance' }];
+  const attributes = [{ method: 'sharePrice' }];
   result = await fetchDataFromAttributes(pool, attributes);
-  result.rawBalance = new BigNumber(await erc20.methods.balanceOf(pool.address).call());
-  result.compoundBalance = new BigNumber(result.compoundBalance);
-  result.balance = result.compoundBalance.plus(result.rawBalance);
+  result.balance = await erc20.methods.balanceOf(pool.address).call();
   result.totalShares = await pool.fidu.methods.totalSupply().call();
 
   // Do some slightly goofy multiplication and division here so that we have consistent units across

@@ -4,11 +4,11 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
-import "../protocol/core/BaseUpgradeablePausable.sol";
-import "../protocol/core/Pool.sol";
-import "../protocol/core/Accountant.sol";
-import "../protocol/core/CreditLine.sol";
-import "../protocol/core/GoldfinchConfig.sol";
+import "../protocol/BaseUpgradeablePausable.sol";
+import "../protocol/Pool.sol";
+import "../protocol/Accountant.sol";
+import "../protocol/CreditLine.sol";
+import "../protocol/GoldfinchConfig.sol";
 
 contract FakeV2CreditDesk is BaseUpgradeablePausable {
   uint256 public totalWritedowns;
@@ -44,8 +44,6 @@ contract FakeV2CreditDesk is BaseUpgradeablePausable {
   mapping(address => Borrower) private borrowers;
 
   function initialize(address owner, GoldfinchConfig _config) public initializer {
-    owner;
-    _config;
     return;
   }
 

@@ -1,18 +1,15 @@
 /* globals ethers */
 const BN = require("bn.js")
-const {CONFIG_KEYS} = require("./configKeys")
 const {
   USDCDecimals,
   upgrade,
   OWNER_ROLE,
+  CONFIG_KEYS,
   MINTER_ROLE,
   SAFE_CONFIG,
-  TRUSTED_FORWARDER_CONFIG,
   updateConfig,
   getUSDCAddress,
   isTestEnv,
-  MAINNET_ONE_SPLIT_ADDRESS,
-  MAINNET_CUSDC_ADDRESS,
 } = require("./deployHelpers.js")
 const PROTOCOL_CONFIG = require("../protocol_config.json")
 let logger
@@ -60,13 +57,14 @@ async function baseDeploy(hre, {shouldUpgrade}) {
     } else {
       deployResult = await deploy(contractName, {
         from: proxy_owner,
+        proxy: {methodName: "initialize"},
         gas: 4000000,
+        args: [protocol_owner],
         libraries: {["ConfigOptions"]: configOptionsDeployResult.address},
       })
     }
     logger("Config was deployed to:", deployResult.address)
     config = await ethers.getContractAt(deployResult.abi, deployResult.address)
-    await (await config.initialize(protocol_owner)).wait()
     const transactionLimit = new BN(PROTOCOL_CONFIG.transactionLimit).mul(USDCDecimals)
     const totalFundsLimit = new BN(PROTOCOL_CONFIG.totalFundsLimit).mul(USDCDecimals)
     const maxUnderwriterLimit = new BN(PROTOCOL_CONFIG.maxUnderwriterLimit).mul(USDCDecimals)
@@ -83,6 +81,7 @@ async function baseDeploy(hre, {shouldUpgrade}) {
     await updateConfig(config, "number", CONFIG_KEYS.WithdrawFeeDenominator, String(withdrawFeeDenominator))
     await updateConfig(config, "number", CONFIG_KEYS.LatenessGracePeriodInDays, String(latenessGracePeriodIndays))
     await updateConfig(config, "number", CONFIG_KEYS.LatenessMaxDays, String(latenessMaxDays))
+
     // If we have a multisig safe, set that as the protocol admin, otherwise use the named account (local and test envs)
     let multisigAddress
     if (SAFE_CONFIG[chainID]) {
@@ -92,11 +91,6 @@ async function baseDeploy(hre, {shouldUpgrade}) {
     }
 
     await updateConfig(config, "address", CONFIG_KEYS.ProtocolAdmin, multisigAddress)
-    await updateConfig(config, "address", CONFIG_KEYS.OneInch, MAINNET_ONE_SPLIT_ADDRESS)
-    await updateConfig(config, "address", CONFIG_KEYS.CUSDCContract, MAINNET_CUSDC_ADDRESS)
-    if (TRUSTED_FORWARDER_CONFIG[chainID]) {
-      await updateConfig(config, "address", CONFIG_KEYS.TrustedForwarder, TRUSTED_FORWARDER_CONFIG[chainID])
-    }
     await config.setTreasuryReserve(multisigAddress)
 
     return config

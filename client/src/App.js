@@ -22,7 +22,7 @@ function App() {
   const [pool, setPool] = useState({});
   const [creditDesk, setCreditDesk] = useState({});
   const [erc20, setErc20] = useState(null);
-  const [user, setUser] = useState(defaultUser());
+  const [user, setUser] = useState({});
   const [goldfinchConfig, setGoldfinchConfig] = useState({});
   const [currentTXs, setCurrentTXs] = useState([]);
   const [currentErrors, setCurrentErrors] = useState([]);
@@ -80,11 +80,10 @@ function App() {
   async function refreshUserData(overrideAddress) {
     let data = defaultUser();
     const accounts = await web3.eth.getAccounts();
-    let userAddress = (gnosisSafeInfo && gnosisSafeInfo.safeAddress) || (accounts && accounts[0]) || user.address;
-    // Set this to the borrower contract address to test gasless transactions
-    // let userAddress = '0xd3D57673BAE28880376cDF89aeFe4653A5C84A08';
+    let userAddress =
+      overrideAddress || (gnosisSafeInfo && gnosisSafeInfo.safeAddress) || (accounts && accounts[0]) || user.address;
     if (userAddress && erc20 && creditDesk.loaded && pool.loaded) {
-      data = await getUserData(userAddress, erc20, pool, creditDesk, network.name);
+      data = await getUserData(userAddress, erc20, pool, creditDesk);
     }
     setUser(data);
   }

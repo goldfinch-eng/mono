@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 require("@nomiclabs/hardhat-truffle5")
 require("@nomiclabs/hardhat-ethers")
 require("hardhat-deploy")
@@ -16,14 +15,10 @@ module.exports = {
   defaultNetwork: "hardhat",
   networks: {
     hardhat: {
-      gas: "auto",
+      gas: 12000000,
+      blockGasLimit: 0x1fffffffffffff,
       allowUnlimitedContractSize: true,
       timeout: 1800000,
-      accounts: {mnemonic: "test test test test test test test test test test test junk"},
-      forking: process.env.HARDHAT_FORK ? {
-        url: "https://eth-mainnet.alchemyapi.io/v2/EG9mAEw6e3sYDZ6h6oevoe1IaR42B72b",
-        blockNumber: 11695197, // Roughly Jan 20th, 2:57 PM PST
-      } : undefined,
     },
     ropsten: {
       url: `https://ropsten.infura.io/v3/${INFURA_PROJECT_ID}`,
@@ -40,17 +35,13 @@ module.exports = {
     },
   },
   solidity: {
-    compilers: [
-      {
-        version: "0.6.12",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 200,
-          },
-        },
+    version: "0.6.12",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200,
       },
-    ]
+    },
   },
   namedAccounts: {
     protocol_owner: {

@@ -1,6 +1,4 @@
 {
 "solidity.compileUsingRemoteVersion": "v0.6.12+commit.27d51765",
-"solidity.enableLocalNodeCompiler": false,
-"editor.tabSize": 2,
-"solidity.solhintRules": {}
+"editor.tabSize": 2
 }

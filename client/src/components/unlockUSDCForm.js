@@ -6,15 +6,13 @@ import { useForm, FormProvider } from 'react-hook-form';
 import { iconInfo } from './icons.js';
 import useSendFromUser from '../hooks/useSendFromUser.js';
 
-function UnlockUSDCForm(props) {
+function UnlockUSDCForm() {
   const { erc20, pool, refreshUserData } = useContext(AppContext);
   const sendFromUser = useSendFromUser();
   const formMethods = useForm();
 
   const unlockUSDC = () => {
-    return sendFromUser(erc20.methods.approve(props.unlockAddress, MAX_UINT), { type: 'Approval' }).then(
-      refreshUserData,
-    );
+    return sendFromUser(erc20.methods.approve(pool._address, MAX_UINT), { type: 'Approval' }).then(refreshUserData);
   };
 
   return (
