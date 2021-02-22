@@ -2,8 +2,8 @@
 
 pragma solidity 0.6.12;
 
-import "../protocol/core/Pool.sol";
-import "../protocol/core/BaseUpgradeablePausable.sol";
+import "../protocol/Pool.sol";
+import "../protocol/BaseUpgradeablePausable.sol";
 
 contract FakeV2CreditLine is BaseUpgradeablePausable {
   // Credit line terms

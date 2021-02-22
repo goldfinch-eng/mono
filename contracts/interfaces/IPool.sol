@@ -7,27 +7,17 @@ abstract contract IPool {
 
   function deposit(uint256 amount) external virtual;
 
-  function withdraw(uint256 usdcAmount) external virtual;
+  function withdraw(uint256 amount) external virtual;
 
-  function withdrawInFidu(uint256 fiduAmount) external virtual;
+  function collectInterestRepayment(address from, uint256 amount) external virtual;
 
-  function collectInterestAndPrincipal(
-    address from,
-    uint256 interest,
-    uint256 principal
-  ) public virtual;
+  function collectPrincipalRepayment(address from, uint256 amount) external virtual;
 
   function transferFrom(
     address from,
     address to,
     uint256 amount
   ) public virtual returns (bool);
-
-  function drawdown(address to, uint256 amount) public virtual returns (bool);
-
-  function sweepToCompound() public virtual;
-
-  function sweepFromCompound() public virtual;
 
   function distributeLosses(address creditlineAddress, int256 writedownDelta) external virtual;
 

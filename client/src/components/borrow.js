@@ -12,9 +12,9 @@ function Borrow(props) {
   const [creditLine, setCreditLine] = useState(defaultCreditLine);
 
   async function updateBorrowerAndCreditLine() {
-    const borrower = user.borrower;
-    if (borrower && creditDesk.loaded) {
-      const borrowerCreditLines = borrower.creditLines;
+    const borrowerAddress = user.address;
+    if (borrowerAddress && creditDesk.loaded) {
+      const borrowerCreditLines = await creditDesk.methods.getBorrowerCreditLines(borrowerAddress).call();
       setCreditLines(borrowerCreditLines);
       if (borrowerCreditLines.length && !creditLine.loaded) {
         // Default to the most recent credit line
@@ -54,7 +54,7 @@ function Borrow(props) {
         />
       </div>
       <ConnectionNotice creditLine={creditLine} />
-      <CreditActionsContainer borrower={user.borrower} creditLine={creditLine} actionComplete={actionComplete} />
+      <CreditActionsContainer borrower={user} creditLine={creditLine} actionComplete={actionComplete} />
       <CreditStatus creditLine={creditLine} user={user} />
     </div>
   );

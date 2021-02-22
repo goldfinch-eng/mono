@@ -28,10 +28,7 @@ library ConfigOptions {
     Fidu,
     USDC,
     TreasuryReserve,
-    ProtocolAdmin,
-    OneInch,
-    TrustedForwarder,
-    CUSDCContract
+    ProtocolAdmin
   }
 
   function getNumberName(uint256 number) public pure returns (string memory) {
@@ -85,15 +82,6 @@ library ConfigOptions {
     }
     if (Addresses.ProtocolAdmin == addressName) {
       return "ProtocolAdmin";
-    }
-    if (Addresses.OneInch == addressName) {
-      return "OneInch";
-    }
-    if (Addresses.TrustedForwarder == addressName) {
-      return "TrustedForwarder";
-    }
-    if (Addresses.CUSDCContract == addressName) {
-      return "CUSDCContract";
     }
     revert("Unknown value passed to getAddressName");
   }

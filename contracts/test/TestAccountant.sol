@@ -3,8 +3,8 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../protocol/core/Accountant.sol";
-import "../protocol/core/CreditLine.sol";
+import "../protocol/Accountant.sol";
+import "../protocol/CreditLine.sol";
 
 contract TestAccountant {
   function calculateInterestAndPrincipalAccrued(

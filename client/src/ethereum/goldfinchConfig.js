@@ -1,6 +1,6 @@
 import web3 from '../web3';
 import { fetchDataFromAttributes, getDeployments } from './utils.js';
-import { CONFIG_KEYS } from '../../../blockchain_scripts/configKeys';
+import { CONFIG_KEYS } from '../../../blockchain_scripts/deployHelpers';
 
 async function getGoldfinchConfig(networkId) {
   const deployments = await getDeployments(networkId);

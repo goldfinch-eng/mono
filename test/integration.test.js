@@ -16,8 +16,7 @@ const {
   fiduToUSDC,
   advanceTime,
 } = require("./testHelpers.js")
-const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
-const {interestAprAsBN, INTEREST_DECIMALS, ETHDecimals} = require("../blockchain_scripts/deployHelpers")
+const {interestAprAsBN, INTEREST_DECIMALS, ETHDecimals, CONFIG_KEYS} = require("../blockchain_scripts/deployHelpers")
 const {time} = require("@openzeppelin/test-helpers")
 const CreditLine = artifacts.require("CreditLine")
 
@@ -99,7 +98,7 @@ describe("Goldfinch", async () => {
 
     async function drawdown(clAddress, amount, _borrower) {
       _borrower = _borrower || borrower
-      await creditDesk.drawdown(clAddress, amount, {from: _borrower})
+      await creditDesk.drawdown(amount, clAddress, _borrower, {from: _borrower})
     }
 
     async function makePayment(clAddress, amount, _borrower) {
@@ -124,18 +123,14 @@ describe("Goldfinch", async () => {
       return grossAmount.sub(grossAmount.div(feeDenominator))
     }
 
-    async function withdraw(usdcAmount, investor) {
+    async function withdraw(amount, investor) {
       investor = investor || investor1
-      if (usdcAmount === "max") {
+      if (amount === "max") {
         const numShares = await getBalance(investor, fidu)
         const maxAmount = (await pool.sharePrice()).mul(numShares)
-        usdcAmount = fiduToUSDC(maxAmount.div(ETHDecimals))
+        amount = fiduToUSDC(maxAmount.div(ETHDecimals))
       }
-      return pool.withdraw(usdcAmount, {from: investor})
-    }
-
-    async function withdrawInFidu(fiduAmount, investor) {
-      return pool.withdrawInFidu(fiduAmount, {from: investor})
+      return pool.withdraw(amount, {from: investor})
     }
 
     async function doAllMainActions(clAddress) {
@@ -181,13 +176,13 @@ describe("Goldfinch", async () => {
         // There was 10k already in the pool, so each investor has a third
         const grossExpectedReturn = amount.add(expectedInterest.div(new BN(3)))
         const expectedReturn = await afterWithdrawalFees(grossExpectedReturn)
-        const availableFidu = await getBalance(investor2, fidu)
+
         await expectAction(async () => {
           await withdraw("max")
-          await withdrawInFidu(availableFidu, investor2) // Withdraw everything in fidu terms
+          await withdraw("max", investor2)
         }).toChange([
           [() => getBalance(investor1, usdc), {by: expectedReturn}],
-          [() => getBalance(investor2, usdc), {by: expectedReturn}], // Also ensures share price is correctly incorporated
+          [() => getBalance(investor2, usdc), {by: expectedReturn}],
         ])
 
         await doAllMainActions(creditLine.address)
@@ -265,12 +260,13 @@ describe("Goldfinch", async () => {
       describe("drawdown and isLate", async () => {
         it("should not think you're late if it's not past the nextDueBlock", async () => {
           creditLine = await createCreditLine({_paymentPeriodInDays: new BN(30)})
-          await expect(drawdown(creditLine.address, new BN(1000))).to.be.fulfilled
+          await expect(creditDesk.drawdown(new BN(1000), creditLine.address, borrower, {from: borrower})).to.be
+            .fulfilled
           await advanceTime(creditDesk, {days: 10})
           // This drawdown will accumulate and record some interest
-          await expect(drawdown(creditLine.address, new BN(1))).to.be.fulfilled
+          await expect(creditDesk.drawdown(new BN(1), creditLine.address, borrower, {from: borrower})).to.be.fulfilled
           // This one should still work, because you still aren't late...
-          await expect(drawdown(creditLine.address, new BN(1))).to.be.fulfilled
+          await expect(creditDesk.drawdown(new BN(1), creditLine.address, borrower, {from: borrower})).to.be.fulfilled
         })
       })
 
@@ -282,7 +278,7 @@ describe("Goldfinch", async () => {
         await assertCreditLine("0", "0", "0", 0, interestAccruedAsOfBlock, 0)
 
         currentBlock = await advanceTime(creditDesk, {days: 1})
-        await drawdown(creditLine.address, usdcVal(2000))
+        await creditDesk.drawdown(usdcVal(2000), creditLine.address, borrower, {from: borrower})
 
         var nextDueBlock = (await creditDesk.blockNumberForTest()).add(BLOCKS_PER_DAY.mul(paymentPeriodInDays))
         interestAccruedAsOfBlock = currentBlock

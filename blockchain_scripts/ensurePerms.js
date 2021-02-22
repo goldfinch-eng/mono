@@ -1,12 +1,12 @@
 const {
   getDeployedContract,
   updateConfig,
+  CONFIG_KEYS,
   SAFE_CONFIG,
   OWNER_ROLE,
   PAUSER_ROLE,
   MINTER_ROLE,
 } = require("./deployHelpers.js")
-const {CONFIG_KEYS} = require("./configKeys")
 const hre = require("hardhat")
 
 /*

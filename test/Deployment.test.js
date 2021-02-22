@@ -1,8 +1,16 @@
 const {BN, expect} = require("./testHelpers.js")
 const hre = require("hardhat")
 const {deployments, getNamedAccounts, ethers} = hre
-const {upgrade, getDeployedContract, fromAtomic, toAtomic, OWNER_ROLE} = require("../blockchain_scripts/deployHelpers")
-const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
+const {
+  upgrade,
+  getDeployedContract,
+  fromAtomic,
+  toAtomic,
+  OWNER_ROLE,
+  CONFIG_KEYS,
+  USDCDecimals,
+  ETHDecimals,
+} = require("../blockchain_scripts/deployHelpers")
 const baseDeploy = require("../blockchain_scripts/baseDeploy")
 const updateConfigs = require("../blockchain_scripts/updateConfigs")
 
@@ -90,6 +98,53 @@ describe("Deployment", async () => {
       expect(typeof newCreditDesk.someBrandNewFunction).to.equal("function")
       const result = String(await newCreditDesk.someBrandNewFunction())
       expect(result).to.bignumber.equal(new BN(5))
+    })
+
+    describe("upgrading credit lines", async () => {
+      it("should upgrade the credit line", async () => {
+        const {proxy_owner, protocol_owner} = await getNamedAccounts()
+
+        const creditDesk = await getDeployedContract(deployments, "TestCreditDesk")
+        const config = await getDeployedContract(deployments, "TestGoldfinchConfig")
+
+        // Ensure existing credit line is the old version
+        let creditLines = await creditDesk.getUnderwriterCreditLines(protocol_owner)
+        expect(creditLines.length).to.equal(1)
+        const originalCreditLine = await ethers.getContractAt("CreditLine", creditLines[0])
+        expect(typeof originalCreditLine.anotherNewFunction).not.to.equal("function")
+
+        // Deploy new credit line and update the factory to use it
+        const newCreditLineImpl = await deployments.deploy("CreditLine", {
+          from: proxy_owner,
+          contract: "FakeV2CreditLine",
+        })
+        await (await config.setCreditLineImplementation(newCreditLineImpl.address)).wait()
+
+        // Create a new credit line
+        await creditDesk.createCreditLine(
+          protocol_owner,
+          String(new BN(10000).mul(USDCDecimals)), //Limit
+          String(new BN(5).mul(ETHDecimals).div(new BN(100))), //Interest
+          String(new BN(30)), // Payment period
+          String(new BN(123)), // Term
+          String(new BN(1)) // Late Fee APR
+        )
+
+        creditLines = await creditDesk.getUnderwriterCreditLines(protocol_owner)
+        expect(creditLines.length).to.equal(2)
+
+        //Original credit line unaffected
+        const originalCreditLineAfterUpgrade = await ethers.getContractAt("CreditLine", creditLines[0])
+        expect(originalCreditLine.address).to.equal(originalCreditLineAfterUpgrade.address)
+        expect(typeof originalCreditLineAfterUpgrade.anotherNewFunction).not.to.equal("function")
+        expect(String(await originalCreditLineAfterUpgrade.termInDays())).to.equal("360")
+
+        const newCreditLine = await ethers.getContractAt("FakeV2CreditLine", creditLines[1])
+        expect(originalCreditLineAfterUpgrade.address).to.not.equal(newCreditLine.address)
+        expect(String(await newCreditLine.termInDays())).to.equal("123")
+        expect(typeof newCreditLine.anotherNewFunction).to.equal("function")
+        expect(String(await newCreditLine.anotherNewFunction())).to.equal("42")
+      })
     })
 
     it("should not change data after an upgrade", async () => {
