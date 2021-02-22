@@ -17,7 +17,7 @@ async function refreshGoldfinchConfigData(goldfinchConfigContract) {
     { method: 'getNumber', args: [CONFIG_KEYS.TransactionLimit], name: 'transactionLimit' },
     { method: 'getNumber', args: [CONFIG_KEYS.TotalFundsLimit], name: 'totalFundsLimit' },
   ];
-  const data = await fetchDataFromAttributes(goldfinchConfigContract, attributes, { bigNumber: false });
+  const data = await fetchDataFromAttributes(goldfinchConfigContract, attributes, { bigNumber: true });
   return { ...goldfinchConfigContract, ...data };
 }
 

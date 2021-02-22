@@ -81,12 +81,6 @@ async function deployUpgrades(contractNames, proxy_owner, hre) {
       proxy: contractProxy,
       newImplementation: deployResult.address,
     }
-    // let contractInfo = {
-    //   name: contractName,
-    //   contract: contract,
-    //   proxy: contractProxy,
-    //   newImplementation: "0x2F2FDc7a89F349745ae3603b1c67484C58936A70",
-    // }
 
     if (currentImpl.toLowerCase() === contractInfo.newImplementation.toLowerCase()) {
       logger(`${contractName} did not change, skipping`)
@@ -98,12 +92,6 @@ async function deployUpgrades(contractNames, proxy_owner, hre) {
 
     if (client) {
       logger("Now attempting to create the proposal on Defender...")
-      logger(
-        "Contract proxy address is:",
-        contractProxy.address,
-        "and deploying to new implementation of:",
-        contractInfo.newImplementation
-      )
       await client.createProposal({
         contract: {address: contractProxy.address, network: network}, // Target contract
         title: "Upgrade to latest version",
