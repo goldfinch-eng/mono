@@ -71,7 +71,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient {
     address toToken,
     uint256 minTargetAmount,
     uint256[] memory exchangeDistribution
-  ) public {
+  ) public onlyAdmin {
     // Drawdown to the Borrower contract
     config.getCreditDesk().drawdown(creditLineAddress, amount);
 
