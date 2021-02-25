@@ -71,16 +71,25 @@ describe("Borrower", async () => {
       await erc20Approve(usdc, bwrCon.address, usdcVal(100000), [bwr])
       cl = await createCreditLine({creditDesk, borrower: bwrCon.address, underwriter})
     })
+
     it("should let you drawdown the amount", async () => {
       await expectAction(() => bwrCon.drawdown(cl.address, amount, bwrCon.address, {from: bwr})).toChange([
         [async () => await getBalance(bwrCon.address, usdc), {by: amount}],
       ])
     })
+
     it("should not let anyone except the borrower drawdown", async () => {
       return expect(bwrCon.drawdown(cl.address, amount, bwrCon.address, {from: person3})).to.be.rejectedWith(
         /Must have admin role/
       )
     })
+
+    it("should not let anyone except the borrower drawdown via oneInch", async () => {
+      return expect(
+        bwrCon.drawdownWithSwapOnOneInch(cl.address, amount, bwrCon.address, usdc.address, amount, [], {from: person3})
+      ).to.be.rejectedWith(/Must have admin role/)
+    })
+
     it("should block you from drawing down on some random credit line", async () => {
       let someRandomAddress = person3
       return expect(bwrCon.drawdown(someRandomAddress, amount, bwrCon.address, {from: bwr})).to.be.rejectedWith(
