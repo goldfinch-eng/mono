@@ -100,6 +100,31 @@ async function upgrade(deploy, contractName, proxyOwner, options) {
   return deploy(contractName, deployOptions)
 }
 
+async function deployContractUpgrade(contractName, dependencies, from, deployments, ethers) {
+  const {deploy} = deployments
+
+  let contract = await getDeployedContract(deployments, contractName)
+  let contractProxy = await getDeployedContract(deployments, `${contractName}_Proxy`)
+  // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v3.2.0/contracts/proxy/TransparentUpgradeableProxy.sol#L81
+  const implStorageLocation = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"
+  let currentImpl = await ethers.provider.getStorageAt(contractProxy.address, implStorageLocation)
+  currentImpl = ethers.utils.hexStripZeros(currentImpl)
+
+  let deployResult = await deploy(contractName, {
+    from: from,
+    gas: 4000000,
+    args: [],
+    libraries: dependencies[contractName],
+  })
+  return {
+    name: contractName,
+    contract: contract,
+    proxy: contractProxy,
+    currentImplementation: currentImpl,
+    newImplementation: deployResult.address,
+  }
+}
+
 async function updateConfig(config, type, key, newValue, opts) {
   opts = opts || {}
   let logger = opts.logger || function () {}
@@ -164,4 +189,5 @@ module.exports = {
   isMainnetForking: isMainnetForking,
   interestAprAsBN: interestAprAsBN,
   getDefenderClient: getDefenderClient,
+  deployContractUpgrade: deployContractUpgrade,
 }

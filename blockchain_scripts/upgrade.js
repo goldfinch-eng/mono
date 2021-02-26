@@ -1,4 +1,4 @@
-const {getDeployedContract, SAFE_CONFIG, CHAIN_MAPPING, getDefenderClient} = require("./deployHelpers.js")
+const {deployContractUpgrade, SAFE_CONFIG, CHAIN_MAPPING, getDefenderClient} = require("./deployHelpers.js")
 const hre = require("hardhat")
 
 /*
@@ -40,9 +40,13 @@ async function multisig(hre) {
 
 async function deployUpgrades(contractNames, proxy_owner, hre) {
   const {deployments, ethers, getChainId} = hre
-  const {deploy} = deployments
   const chainId = await getChainId()
   const network = CHAIN_MAPPING[chainId]
+  const dependencies = {
+    GoldfinchConfig: {["ConfigOptions"]: (await deployments.getOrNull("ConfigOptions")).address},
+    CreditDesk: {["Accountant"]: (await deployments.getOrNull("Accountant")).address},
+  }
+
   let client, safeAddress
   if (!process.env.NO_DEFENDER) {
     client = getDefenderClient()
@@ -55,45 +59,26 @@ async function deployUpgrades(contractNames, proxy_owner, hre) {
   }
 
   const result = {}
-  const dependencies = {
-    GoldfinchConfig: {["ConfigOptions"]: (await deployments.getOrNull("ConfigOptions")).address},
-    CreditDesk: {["Accountant"]: (await deployments.getOrNull("Accountant")).address},
-  }
 
   for (let i = 0; i < contractNames.length; i++) {
     let contractName = contractNames[i]
-    let contract = await getDeployedContract(deployments, contractName)
-    let contractProxy = await getDeployedContract(deployments, `${contractName}_Proxy`)
-    // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v3.2.0/contracts/proxy/TransparentUpgradeableProxy.sol#L81
-    const implStorageLocation = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"
-    let currentImpl = await ethers.provider.getStorageAt(contractProxy.address, implStorageLocation)
-    currentImpl = ethers.utils.hexStripZeros(currentImpl)
+    let contractInfo = await deployContractUpgrade(contractName, dependencies, proxy_owner, deployments, ethers)
 
-    let deployResult = await deploy(contractName, {
-      from: proxy_owner,
-      gas: 4000000,
-      args: [],
-      libraries: dependencies[contractName],
-    })
-    let contractInfo = {
-      name: contractName,
-      contract: contract,
-      proxy: contractProxy,
-      newImplementation: deployResult.address,
-    }
-
-    if (currentImpl.toLowerCase() === contractInfo.newImplementation.toLowerCase()) {
+    if (contractInfo.currentImplementation.toLowerCase() === contractInfo.newImplementation.toLowerCase()) {
       logger(`${contractName} did not change, skipping`)
       continue
     }
+
     result[contractName] = contractInfo
 
-    logger(`Deployed ${contractName} to ${contractInfo.newImplementation} (current ${currentImpl})`)
+    logger(
+      `Deployed ${contractName} to ${contractInfo.newImplementation} (current ${contractInfo.currentImplementation})`
+    )
 
     if (client) {
       logger("Now attempting to create the proposal on Defender...")
       await client.createProposal({
-        contract: {address: contractProxy.address, network: network}, // Target contract
+        contract: {address: contractInfo.proxy.address, network: network}, // Target contract
         title: "Upgrade to latest version",
         description: `Upgrading ${contractName} to a new implementation at ${contractInfo.newImplementation}`,
         type: "custom", // Defender doesn't directly support upgrades via our Proxy type, so use a custom action until they do.

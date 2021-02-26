@@ -80,6 +80,7 @@ notes.txt
 client/config/protocol-local.json
 deployments/localhost_31337
 deployments/localhost
+deployments/hardhat
 
 # Misc
 .DS_Store
