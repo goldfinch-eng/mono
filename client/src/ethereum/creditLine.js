@@ -53,6 +53,7 @@ async function fetchCreditLineData(creditLine) {
   // assumes we've cached the USDC contract, and do not need to pass in a network
   const usdc = await getUSDC();
   result = { address: creditLine._address, ...data };
+  result.isLate = await calculateIsLate(result);
   const interestOwed = calculateInteresOwed(result);
   result.dueDate = await calculateDueDateFromFutureBlock(result.nextDueBlock);
   result.termEndDate = await calculateDueDateFromFutureBlock(result.termEndBlock, 'MMM D, YYYY');
@@ -69,7 +70,6 @@ async function fetchCreditLineData(creditLine) {
   const collectedForPrincipal = BigNumber.max(result.collectedPaymentBalance.minus(result.periodDueAmount), zero);
   result.availableCredit = BigNumber.min(result.limit, result.limit.minus(result.balance).plus(collectedForPrincipal));
   result.availableCreditInDollars = new BigNumber(roundDownPenny(usdcFromAtomic(result.availableCredit)));
-  result.isLate = await calculateIsLate(result);
   // Just for front-end usage.
   result.loaded = true;
   return result;
@@ -90,7 +90,11 @@ function calculateInteresOwed(creditLine) {
   const blockRate = annualRate.dividedBy(BLOCKS_PER_YEAR);
   const balance = creditLine.balance;
   const expectedAdditionalInterest = balance.multipliedBy(blockRate).multipliedBy(expectedElapsedBlocks);
-  return currentInterestOwed.plus(expectedAdditionalInterest);
+  if (creditLine.isLate) {
+    return currentInterestOwed;
+  } else {
+    return currentInterestOwed.plus(expectedAdditionalInterest);
+  }
 }
 
 function calculateNextDueAmount(creditLine) {

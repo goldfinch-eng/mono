@@ -53,7 +53,11 @@ function CreditActionsContainer(props) {
   let nextDueIcon;
   if (props.creditLine.remainingPeriodDueAmount.gt(0)) {
     const nextDueValueDisplay = displayDollars(props.creditLine.remainingPeriodDueAmountInDollars);
-    nextDueDisplay = `${nextDueValueDisplay} due ${props.creditLine.dueDate}`;
+    if (props.creditLine.isLate) {
+      nextDueDisplay = `${nextDueValueDisplay} due now`;
+    } else {
+      nextDueDisplay = `${nextDueValueDisplay} due ${props.creditLine.dueDate}`;
+    }
   } else if (props.creditLine.remainingTotalDueAmount.gt(0)) {
     nextDueIcon = iconCircleCheck;
     nextDueDisplay = `Paid through ${props.creditLine.dueDate}`;
