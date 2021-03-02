@@ -1,5 +1,5 @@
 {
-  "require": ["@nomiclabs/buidler/register"],
+  "require": "hardhat/register",
   "timeout": 20000,
   "recursive": "test"
 }

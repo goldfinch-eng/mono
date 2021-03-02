@@ -27,7 +27,7 @@ This is easy.
   4.) Hit save. You're done.
 
 **Also Good to Know** The Fake USDC address that we create will also not be visible to Metamask by default. So you'll need to add this as well
-by looking at the terminal output of the `npx buidler node` command. Search "USDC Address", and you should see something. Take that address, and
+by looking at the terminal output of the `npx hardhat node` command. Search "USDC Address", and you should see something. Take that address, and
 then go to `Add Token` in Metamask, and paste it in there. Your fake USDC balance should show up.
 
 - That's pretty much it! Make your changes. The local server will auto reload

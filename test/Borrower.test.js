@@ -275,6 +275,46 @@ describe("Borrower", async () => {
         await expect(forwarder.verify(...forwarderArgs)).to.be.rejectedWith(/nonce mismatch/)
         await expect(forwarder.execute(...forwarderArgs, {from: person3})).to.be.rejectedWith(/nonce mismatch/)
       })
+
+      describe("when addressToSendTo is the zero address", async () => {
+        it("uses the passed in msg sender", async () => {
+          await createBorrowerAndCreditLine()
+          const request = {
+            from: bwr,
+            to: bwrCon.address,
+            value: 0,
+            gas: 1e6,
+            nonce: 0,
+            data: bwrCon.contract.methods.drawdown(cl.address, amount.toNumber(), ZERO_ADDRESS).encodeABI(),
+          }
+          let forwarderArgs = await signAndGenerateForwardRequest(request)
+          await forwarder.verify(...forwarderArgs)
+          await expectAction(() => forwarder.execute(...forwarderArgs, {from: person3})).toChange([
+            [() => getBalance(pool.address, usdc), {by: amount.neg()}],
+            [() => getBalance(bwr, usdc), {by: amount}],
+          ])
+        })
+      })
+
+      describe("when addressToSendTo is the borrower contract address", async () => {
+        it("uses the passed in msg sender", async () => {
+          await createBorrowerAndCreditLine()
+          const request = {
+            from: bwr,
+            to: bwrCon.address,
+            value: 0,
+            gas: 1e6,
+            nonce: 0,
+            data: bwrCon.contract.methods.drawdown(cl.address, amount.toNumber(), bwrCon.address).encodeABI(),
+          }
+          let forwarderArgs = await signAndGenerateForwardRequest(request)
+          await forwarder.verify(...forwarderArgs)
+          await expectAction(() => forwarder.execute(...forwarderArgs, {from: person3})).toChange([
+            [() => getBalance(pool.address, usdc), {by: amount.neg()}],
+            [() => getBalance(bwr, usdc), {by: amount}],
+          ])
+        })
+      })
     })
   })
 

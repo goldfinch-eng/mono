@@ -61,7 +61,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient {
     config.getCreditDesk().drawdown(creditLineAddress, amount);
 
     if (addressToSendTo == address(0) || addressToSendTo == address(this)) {
-      addressToSendTo = msg.sender;
+      addressToSendTo = _msgSender();
     }
 
     transferUSDC(addressToSendTo, amount);
@@ -83,7 +83,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient {
 
     // Fulfill the send to
     if (addressToSendTo == address(0) || addressToSendTo == address(this)) {
-      addressToSendTo = msg.sender;
+      addressToSendTo = _msgSender();
     }
 
     bytes memory _data = abi.encodeWithSignature("balanceOf(address)", address(this));

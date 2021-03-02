@@ -87,3 +87,5 @@ deployments/hardhat
 
 # Local deployments
 client/config/deployments_dev.json
+
+.envrc
