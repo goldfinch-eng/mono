@@ -59,9 +59,12 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient {
     address addressToSendTo
   ) external onlyAdmin {
     config.getCreditDesk().drawdown(creditLineAddress, amount);
-    if (addressToSendTo != address(0) && addressToSendTo != address(this)) {
-      transferUSDC(addressToSendTo, amount);
+
+    if (addressToSendTo == address(0) || addressToSendTo == address(this)) {
+      addressToSendTo = msg.sender;
     }
+
+    transferUSDC(addressToSendTo, amount);
   }
 
   function drawdownWithSwapOnOneInch(
@@ -79,12 +82,14 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient {
     swapOnOneInch(config.usdcAddress(), toToken, amount, minTargetAmount, exchangeDistribution);
 
     // Fulfill the send to
-    if (addressToSendTo != address(0) && addressToSendTo != address(this)) {
-      bytes memory _data = abi.encodeWithSignature("balanceOf(address)", address(this));
-      uint256 receivedAmount = toUint256(invoke(toToken, _data));
-      _data = abi.encodeWithSignature("transfer(address,uint256)", addressToSendTo, receivedAmount);
-      invoke(toToken, _data);
+    if (addressToSendTo == address(0) || addressToSendTo == address(this)) {
+      addressToSendTo = msg.sender;
     }
+
+    bytes memory _data = abi.encodeWithSignature("balanceOf(address)", address(this));
+    uint256 receivedAmount = toUint256(invoke(toToken, _data));
+    _data = abi.encodeWithSignature("transfer(address,uint256)", addressToSendTo, receivedAmount);
+    invoke(toToken, _data);
   }
 
   function transferUSDC(address to, uint256 amount) public onlyAdmin {

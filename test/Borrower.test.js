@@ -73,47 +73,61 @@ describe("Borrower", async () => {
     })
 
     it("should let you drawdown the amount", async () => {
-      await expectAction(() => bwrCon.drawdown(cl.address, amount, bwrCon.address, {from: bwr})).toChange([
-        [async () => await getBalance(bwrCon.address, usdc), {by: amount}],
+      await expectAction(() => bwrCon.drawdown(cl.address, amount, bwr, {from: bwr})).toChange([
+        [async () => await getBalance(bwr, usdc), {by: amount}],
       ])
     })
 
     it("should not let anyone except the borrower drawdown", async () => {
-      return expect(bwrCon.drawdown(cl.address, amount, bwrCon.address, {from: person3})).to.be.rejectedWith(
+      return expect(bwrCon.drawdown(cl.address, amount, person3, {from: person3})).to.be.rejectedWith(
         /Must have admin role/
       )
     })
 
     it("should not let anyone except the borrower drawdown via oneInch", async () => {
       return expect(
-        bwrCon.drawdownWithSwapOnOneInch(cl.address, amount, bwrCon.address, usdc.address, amount, [], {from: person3})
+        bwrCon.drawdownWithSwapOnOneInch(cl.address, amount, person3, usdc.address, amount, [], {from: person3})
       ).to.be.rejectedWith(/Must have admin role/)
     })
 
     it("should block you from drawing down on some random credit line", async () => {
       let someRandomAddress = person3
-      return expect(bwrCon.drawdown(someRandomAddress, amount, bwrCon.address, {from: bwr})).to.be.rejectedWith(
+      return expect(bwrCon.drawdown(someRandomAddress, amount, bwr, {from: bwr})).to.be.rejectedWith(
         /Unknown credit line/
       )
     })
+
     describe("address forwarding", async () => {
       it("should support forwarding the money to another address", async () => {
-        await expectAction(() => bwrCon.drawdown(cl.address, amount, bwr, {from: bwr})).toChange([
+        await expectAction(() => bwrCon.drawdown(cl.address, amount, person3, {from: bwr})).toChange([
           [async () => await getBalance(bwrCon.address, usdc), {by: new BN(0)}],
-          [async () => await getBalance(bwr, usdc), {by: amount}],
+          [async () => await getBalance(person3, usdc), {by: amount}],
         ])
       })
-      it("if you pass up the zero address, it should send money to the borrower contract", async () => {
-        await expectAction(() => bwrCon.drawdown(cl.address, amount, ZERO_ADDRESS, {from: bwr})).toChange([
-          [async () => await getBalance(bwrCon.address, usdc), {by: amount}],
-          [async () => await getBalance(bwr, usdc), {by: new BN(0)}],
-        ])
+
+      context("addressToSendTo is the zero address", async () => {
+        it("should default to msg.sender", async () => {
+          await expectAction(() => bwrCon.drawdown(cl.address, amount, ZERO_ADDRESS, {from: bwr})).toChange([
+            [async () => await getBalance(bwr, usdc), {by: amount}],
+            [async () => await getBalance(bwrCon.address, usdc), {by: new BN(0)}],
+          ])
+        })
+      })
+
+      context("addressToSendTo is the contract address", async () => {
+        it("should default to msg.sender", async () => {
+          await expectAction(() => bwrCon.drawdown(cl.address, amount, bwrCon.address, {from: bwr})).toChange([
+            [async () => await getBalance(bwr, usdc), {by: amount}],
+            [async () => await getBalance(bwrCon.address, usdc), {by: new BN(0)}],
+          ])
+        })
       })
     })
+
     describe("transfering USDC", async () => {
       it("should allow the borrower to transfer it anywhere", async () => {
-        // Drawsdown money directly to the borrower contract (not the borrower themselves)
-        await bwrCon.drawdown(cl.address, amount, ZERO_ADDRESS, {from: bwr})
+        // Fund the borrower contract (in practice, this would be unexpected)
+        await erc20Transfer(usdc, [bwrCon.address], usdcVal(1000), owner)
 
         // Send that money to the borrower!
         await expectAction(() => bwrCon.transferUSDC(bwr, amount, {from: bwr})).toChange([
@@ -121,8 +135,8 @@ describe("Borrower", async () => {
         ])
       })
       it("should even allow transfers not to the borrower themselves", async () => {
-        // Drawsdown money directly to the borrower contract (not the borrower themselves)
-        await bwrCon.drawdown(cl.address, amount, ZERO_ADDRESS, {from: bwr})
+        // Fund the borrower contract (in practice, this would be unexpected)
+        await erc20Transfer(usdc, [bwrCon.address], usdcVal(1000), owner)
 
         // Send that money to the borrower!
         await expectAction(() => bwrCon.transferUSDC(person3, amount, {from: bwr})).toChange([
@@ -130,8 +144,8 @@ describe("Borrower", async () => {
         ])
       })
       it("should only allow admins to transfer the money", async () => {
-        // Drawsdown money directly to the borrower contract (not the borrower themselves)
-        await bwrCon.drawdown(cl.address, amount, ZERO_ADDRESS, {from: bwr})
+        // Fund the borrower contract (in practice, this would be unexpected)
+        await erc20Transfer(usdc, [bwrCon.address], usdcVal(1000), owner)
 
         // Send that money to the borrower!
         return expect(bwrCon.transferUSDC(person3, amount, {from: person3})).to.be.rejectedWith(/Must have admin role/)
@@ -217,7 +231,7 @@ describe("Borrower", async () => {
           value: 0,
           gas: 1e6,
           nonce: 0,
-          data: bwrCon.contract.methods.drawdown(cl.address, amount.toNumber(), bwrCon.address).encodeABI(),
+          data: bwrCon.contract.methods.drawdown(cl.address, amount.toNumber(), bwr).encodeABI(),
         }
         let forwarderArgs = await signAndGenerateForwardRequest(request)
         // Signature is still valid
@@ -235,13 +249,13 @@ describe("Borrower", async () => {
           value: 0,
           gas: 1e6,
           nonce: 0,
-          data: bwrCon.contract.methods.drawdown(cl.address, amount.toNumber(), bwrCon.address).encodeABI(),
+          data: bwrCon.contract.methods.drawdown(cl.address, amount.toNumber(), bwr).encodeABI(),
         }
         let forwarderArgs = await signAndGenerateForwardRequest(request)
         await forwarder.verify(...forwarderArgs)
         await expectAction(() => forwarder.execute(...forwarderArgs, {from: person3})).toChange([
           [() => getBalance(pool.address, usdc), {by: amount.neg()}],
-          [() => getBalance(bwrCon.address, usdc), {by: amount}],
+          [() => getBalance(bwr, usdc), {by: amount}],
         ])
       })
 
@@ -253,7 +267,7 @@ describe("Borrower", async () => {
           value: 0,
           gas: 1e6,
           nonce: 0,
-          data: bwrCon.contract.methods.drawdown(cl.address, amount.toNumber(), bwrCon.address).encodeABI(),
+          data: bwrCon.contract.methods.drawdown(cl.address, amount.toNumber(), bwr).encodeABI(),
         }
         let forwarderArgs = await signAndGenerateForwardRequest(request)
         await forwarder.verify(...forwarderArgs)

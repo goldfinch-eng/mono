@@ -138,27 +138,78 @@ describe("mainnet forking tests", async function () {
       ])
     }).timeout(TEST_TIMEOUT)
 
-    it("should respect normal behavior of the addressToSendTo", async function () {
-      let usdcAmount = usdcVal(10)
-      const expectedReturn = await oneSplit.getExpectedReturn(usdc.address, usdt.address, usdcAmount, 10, 0, {
-        from: bwr,
+    describe("address forwarding", async () => {
+      it("should support forwarding the money to another address", async () => {
+        let usdcAmount = usdcVal(10)
+        const expectedReturn = await oneSplit.getExpectedReturn(usdc.address, usdt.address, usdcAmount, 10, 0, {
+          from: bwr,
+        })
+        await expectAction(() => {
+          return bwrCon.drawdownWithSwapOnOneInch(
+            cl.address,
+            usdcAmount,
+            person3,
+            usdtAddress,
+            expectedReturn.returnAmount.mul(new BN(99)).div(new BN(100)),
+            expectedReturn.distribution,
+            {from: bwr}
+          )
+        }).toChange([
+          [async () => await getBalance(pool.address, usdc), {by: usdcAmount.neg()}],
+          [async () => await getBalance(person3, usdt), {byCloseTo: expectedReturn.returnAmount}],
+          [async () => await getBalance(bwr, usdt), {by: new BN(0)}],
+          [async () => await getBalance(bwrCon.address, usdt), {by: new BN(0)}],
+        ])
+      }).timeout(TEST_TIMEOUT)
+
+      context("addressToSendTo is the contract address", async () => {
+        it("should default to msg.sender", async function () {
+          let usdcAmount = usdcVal(10)
+          const expectedReturn = await oneSplit.getExpectedReturn(usdc.address, usdt.address, usdcAmount, 10, 0, {
+            from: bwr,
+          })
+          await expectAction(() => {
+            return bwrCon.drawdownWithSwapOnOneInch(
+              cl.address,
+              usdcAmount,
+              bwrCon.address,
+              usdtAddress,
+              expectedReturn.returnAmount.mul(new BN(99)).div(new BN(100)),
+              expectedReturn.distribution,
+              {from: bwr}
+            )
+          }).toChange([
+            [async () => await getBalance(pool.address, usdc), {by: usdcAmount.neg()}],
+            [async () => await getBalance(bwr, usdt), {byCloseTo: expectedReturn.returnAmount}],
+            [async () => await getBalance(bwrCon.address, usdt), {by: new BN(0)}],
+          ])
+        }).timeout(TEST_TIMEOUT)
       })
-      await expectAction(() => {
-        return bwrCon.drawdownWithSwapOnOneInch(
-          cl.address,
-          usdcAmount,
-          ZERO_ADDRESS,
-          usdtAddress,
-          expectedReturn.returnAmount.mul(new BN(99)).div(new BN(100)),
-          expectedReturn.distribution,
-          {from: bwr}
-        )
-      }).toChange([
-        [async () => await getBalance(pool.address, usdc), {by: usdcAmount.neg()}],
-        [async () => await getBalance(bwrCon.address, usdt), {byCloseTo: expectedReturn.returnAmount}],
-        [async () => await getBalance(person3, usdt), {by: new BN(0)}],
-      ])
-    }).timeout(TEST_TIMEOUT)
+
+      context("addressToSendTo is the zero address", async () => {
+        it("should default to msg.sender", async () => {
+          let usdcAmount = usdcVal(10)
+          const expectedReturn = await oneSplit.getExpectedReturn(usdc.address, usdt.address, usdcAmount, 10, 0, {
+            from: bwr,
+          })
+          await expectAction(() => {
+            return bwrCon.drawdownWithSwapOnOneInch(
+              cl.address,
+              usdcAmount,
+              ZERO_ADDRESS,
+              usdtAddress,
+              expectedReturn.returnAmount.mul(new BN(99)).div(new BN(100)),
+              expectedReturn.distribution,
+              {from: bwr}
+            )
+          }).toChange([
+            [async () => await getBalance(pool.address, usdc), {by: usdcAmount.neg()}],
+            [async () => await getBalance(bwr, usdt), {byCloseTo: expectedReturn.returnAmount}],
+            [async () => await getBalance(bwrCon.address, usdt), {by: new BN(0)}],
+          ])
+        }).timeout(TEST_TIMEOUT)
+      })
+    })
 
     it("should let you drawdown to BUSD", async function () {
       let usdcAmount = usdcVal(10)
