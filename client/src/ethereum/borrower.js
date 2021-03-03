@@ -109,7 +109,9 @@ class BorrowerInterface {
       if (!this.isUsingBorrowerContract) {
         throw new Error('Gasless transactions are only supported for borrower contracts');
       }
-      return async () => submitGaslessTransaction(this.borrowerAddress, unsentAction);
+      // This needs to be a function, otherwise the initial Promise.resolve in useSendFromUser will try to
+      // resolve (and therefore initial the signing request) before updating the network widget
+      return () => submitGaslessTransaction(this.borrowerAddress, unsentAction);
     } else {
       return unsentAction;
     }
