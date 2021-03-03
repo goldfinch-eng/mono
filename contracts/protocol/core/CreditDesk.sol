@@ -179,7 +179,6 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
       require(success, "Failed to drawdown");
     }
 
-    // Must get the interest and principal accrued prior to adding to the balance.
     (uint256 interestOwed, uint256 principalOwed) = updateAndGetInterestAndPrincipalOwedAsOf(cl, blockNumber());
     balance = balance.add(amount);
 
