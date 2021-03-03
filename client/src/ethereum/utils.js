@@ -26,7 +26,6 @@ const USDT_ADDRESSES = {
 };
 
 const FORWARDER_ADDRESSES = {
-  31337: '0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1',
   4: '0x956868751Cc565507B3B58E53a6f9f41B56bed74',
   1: '0xa530F85085C6FE2f866E7FdB716849714a89f4CD',
 };
@@ -43,6 +42,12 @@ const mapNetworkToID = {
   ropsten: ROPSTEN,
   private: 'localhost',
   rinkeby: RINKEBY,
+};
+
+const chainIdToNetworkID = {
+  1: MAINNET,
+  4: RINKEBY,
+  31337: 'localhost',
 };
 
 const SUPPORTED_NETWORKS = {
@@ -129,4 +134,5 @@ export {
   SUPPORTED_NETWORKS,
   ONE_INCH_ADDRESSES,
   getFromBlock,
+  chainIdToNetworkID,
 };

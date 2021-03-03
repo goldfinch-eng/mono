@@ -1,5 +1,5 @@
 import web3 from '../web3';
-const { FORWARDER_ADDRESSES } = require('./utils');
+import { getDeployments, chainIdToNetworkID, FORWARDER_ADDRESSES } from './utils';
 const ForwarderAbi = require('../../../autotasks/relayer/Forwarder.json');
 const { ethers } = require('ethers');
 
@@ -47,7 +47,13 @@ async function submitGaslessTransaction(contractAddress, unsentAction) {
   const from = await signer.getAddress();
 
   const network = await provider.getNetwork();
-  const ForwarderAddress = FORWARDER_ADDRESSES[network.chainId];
+  let ForwarderAddress = FORWARDER_ADDRESSES[network.chainId];
+  // If we don't have it, it must be a local network
+  if (!ForwarderAddress) {
+    const config = await getDeployments(chainIdToNetworkID[network.chainId]);
+    const deployedForwarder = config.contracts.TestForwarder;
+    ForwarderAddress = deployedForwarder.address;
+  }
   TypedData.domain.chainId = network.chainId;
   TypedData.domain.verifyingContract = ForwarderAddress;
 
