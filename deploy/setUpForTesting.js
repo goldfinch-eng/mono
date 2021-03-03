@@ -1,6 +1,7 @@
 /* global ethers */
 const BN = require("bn.js")
 const hre = require("hardhat")
+require("dotenv").config({path: ".env.local"})
 const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
 
 const {
@@ -55,6 +56,7 @@ async function main({getNamedAccounts, deployments, getChainId}) {
   }
 
   const testUser = process.env.TEST_USER
+  console.log("TEST USER IS:", testUser)
   if (testUser) {
     borrower = testUser
     if (CHAIN_MAPPING[chainID] === LOCAL) {

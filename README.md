@@ -13,7 +13,14 @@ You will need the correct version of node/npm on your local machine.
 - Then, if you want to install the front-end, `cd client && npm install`
 
 ### Front-end development
-- `TEST_USER={YOUR_METAMASK_ADDRESS} npm start` from the project root directory.
+
+**One time setup**
+- Create a Goldfinch specific Metamask, which you can use for testing. The easiest way to do this is by creating a separate Chrome profile for Goldfinch, and then simply installing the Metamask extension.
+- Copy `.env.example` to `.env.local` (the local will be ignored from git).
+- Lastly add your Goldfinch Metamask address into your new `.env.local` file where it says "TEST_USER=". Our local dev scripts will use that to automatically send you test ETH, and give you a credit line and USDC to play with.
+
+**Every time**
+- `npm start` from the project root directory.
   - This will run a local blockchain, deploy the contracts, and set up useful state for the frontend (give your user a Credit Line and fake ETH, and fake USDC, etc.)
   - It will also start the front-end server, which will pop up on localhost 3000
 
@@ -35,10 +42,10 @@ then go to `Add Token` in Metamask, and paste it in there. Your fake USDC balanc
 ### Frontend Architecture
 To support gasless transactions, we need to collect the signature from the client, perform some server side checks to validate
 the sender and the to contract (i.e. it's a known borrower interacting with our borrower contracts, we don't want to subsidize any arbitrary transaction).
-To support this we are using Netlify Cloud Functions (their version of lambdas). Netlify automatically picks up any functions in the `client/functions` directory 
+To support this we are using Netlify Cloud Functions (their version of lambdas). Netlify automatically picks up any functions in the `client/functions` directory
 and makes them available as an api endpoint. To support local development, we mimic this by having a `client/server.js` file that's started
 with `npm start` and will execute the function in `client/functions`. This server.js is only meant for local use, and we've configured webpack to proxy to this server.
-If you want to test gasless transactions, make sure to run `cp client/.env.example client/.env.local` and update the `WHITELISTED_*` env vars 
+If you want to test gasless transactions, make sure to run `cp client/.env.example client/.env.local` and update the `WHITELISTED_*` env vars
 
 ### Getting Testnet ETH and USDC
 If you're going to test or develop on Testnet (eg. Ropsten, or Rinkeby), you'll want some testnet ETH and USDC to play around with the app locally. The following sites should work for the `ropsten` testnet.

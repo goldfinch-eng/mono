@@ -44,6 +44,9 @@ function DepositForm(props) {
           formMethods={formMethods}
           maxAmount={minimumNumber(user.usdcBalanceInDollars, usdcFromAtomic(goldfinchConfig.transactionLimit))}
           disabled={disabled}
+          validations={{
+            wallet: value => user.usdcBalanceInDollars.gte(value) || 'You do not have enough USDC',
+          }}
         />
         <LoadingButton action={action} disabled={disabled} />
       </div>

@@ -10,6 +10,7 @@ function TransactionInput(props) {
     inputClass = 'disabled';
   }
   let onChange = props.onChange || (() => {});
+  let validations = props.validations || {};
   return (
     <div className="form-field">
       <div className={`form-input-container dollar ${inputClass}`}>
@@ -28,16 +29,15 @@ function TransactionInput(props) {
               message: `Amount is above the max allowed (${displayDollars(props.maxAmount)}). `,
             },
             validate: {
-              decimals: value => new BigNumber(value).decimalPlaces() <= 6,
+              decimals: value => new BigNumber(value).decimalPlaces() <= 6 || 'Maximum allowed decimal places is 6',
+              ...validations,
             },
           })}
         ></input>
         <div className="form-input-note">
           <ErrorMessage
             message={(function(errors, name) {
-              if (errors[name] && errors[name].type === 'decimals') {
-                return 'Maximum allowed decimal places is 6';
-              }
+              return errors[name] && errors[name].message;
             })(props.formMethods.errors, name)}
             name={name}
           />

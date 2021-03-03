@@ -1,7 +1,6 @@
 import BigNumber from 'bignumber.js';
 import { BN } from 'bn.js';
 import _ from 'lodash';
-import web3 from '../web3';
 
 const decimalPlaces = 6;
 const decimals = new BN(String(10 ** decimalPlaces));

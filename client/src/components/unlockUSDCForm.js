@@ -7,7 +7,7 @@ import { iconInfo } from './icons.js';
 import useSendFromUser from '../hooks/useSendFromUser.js';
 
 function UnlockUSDCForm(props) {
-  const { erc20, pool, refreshUserData } = useContext(AppContext);
+  const { erc20, refreshUserData } = useContext(AppContext);
   const sendFromUser = useSendFromUser();
   const formMethods = useForm();
 

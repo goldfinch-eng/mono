@@ -6,6 +6,8 @@ import TransactionForm from './transactionForm';
 import TransactionInput from './transactionInput';
 import LoadingButton from './loadingButton';
 import useSendFromUser from '../hooks/useSendFromUser';
+import BN from 'bn.js';
+import { BigNumber } from 'ethers/utils';
 
 function PaymentForm(props) {
   const { user, goldfinchConfig } = useContext(AppContext);
@@ -86,6 +88,9 @@ function PaymentForm(props) {
             usdcFromAtomic(user.usdcBalance),
             usdcFromAtomic(goldfinchConfig.transactionLimit),
           )}
+          validations={{
+            wallet: value => user.usdcBalanceInDollars.gte(value) || 'You do not have enough USDC',
+          }}
           inputClass={inputClass}
         />
         <LoadingButton action={action} />

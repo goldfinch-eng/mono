@@ -48,14 +48,6 @@ function NetworkWidget(props) {
     }
 
     let confirmationMessage = '';
-    if (tx.status === 'pending') {
-      confirmationMessage = (
-        <span>
-          {`${tx.confirmations} / ${CONFIRMATION_THRESHOLD}`}
-          <span className="small-network-message">&nbsp; conf.</span>
-        </span>
-      );
-    }
 
     if (tx.status === 'awaiting_signers') {
       confirmationMessage = (
@@ -88,7 +80,8 @@ function NetworkWidget(props) {
     );
   }
 
-  if (props.currentErrors.length > 0) {
+  // Only show the error state when the most recent transaction is errored
+  if (props.currentErrors.length > 0 && props.currentTXs[0].status === 'error') {
     enabledClass = 'error';
     enabledText = 'Error';
   } else if (_.some(props.currentTXs, { status: 'awaiting_signers' })) {
@@ -101,7 +94,8 @@ function NetworkWidget(props) {
     }).true;
     enabledClass = 'pending';
     if (confirmingCount > 0) {
-      enabledText = 'Confirming';
+      const pendingTX = props.currentTXs[0];
+      enabledText = `Confirming (${pendingTX.confirmations} of ${CONFIRMATION_THRESHOLD})`;
     } else if (pendingTXCount > 0) {
       enabledText = pendingTXCount === 1 ? 'Processing' : pendingTXCount + ' Processing';
     }

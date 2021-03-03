@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Switch, Route, Redirect } from 'react-router-dom';
 import _ from 'lodash';
+import moment from 'moment';
 import Borrow from './components/borrow.js';
 import Earn from './components/earn.js';
 import Transactions from './components/transactions.js';
@@ -93,14 +94,21 @@ function App() {
     setCurrentTXs(currentTXs => {
       const matches = _.remove(currentTXs, { id: txToUpdate.id });
       const tx = matches && matches[0];
-      const newTXs = _.reverse(_.sortBy(_.concat(currentTXs, { ...tx, ...updates }), 'blockNumber'));
+      const newTXs = _.reverse(_.sortBy(_.concat(currentTXs, { ...tx, ...updates }), 'blockTime'));
       return newTXs;
     });
   }
 
   var addPendingTX = txData => {
     const randomID = Math.floor(Math.random() * Math.floor(1000000000));
-    const tx = { status: 'pending', id: randomID, name: txData['type'], confirmations: 0, ...txData };
+    const tx = {
+      status: 'pending',
+      id: randomID,
+      blockTime: moment().unix(),
+      name: txData['type'],
+      confirmations: 0,
+      ...txData,
+    };
     setCurrentTXs(currentTXs => {
       const newTxs = _.concat(currentTXs, tx);
       return newTxs;
