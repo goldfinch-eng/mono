@@ -124,31 +124,35 @@ describe("Borrower", async () => {
       })
     })
 
-    describe("transfering USDC", async () => {
+    describe("transfering ERC20", async () => {
       it("should allow the borrower to transfer it anywhere", async () => {
         // Fund the borrower contract (in practice, this would be unexpected)
         await erc20Transfer(usdc, [bwrCon.address], usdcVal(1000), owner)
 
         // Send that money to the borrower!
-        await expectAction(() => bwrCon.transferUSDC(bwr, amount, {from: bwr})).toChange([
+        await expectAction(() => bwrCon.transferERC20(usdc.address, bwr, amount, {from: bwr})).toChange([
           [async () => await getBalance(bwr, usdc), {by: amount}],
         ])
       })
+
       it("should even allow transfers not to the borrower themselves", async () => {
         // Fund the borrower contract (in practice, this would be unexpected)
         await erc20Transfer(usdc, [bwrCon.address], usdcVal(1000), owner)
 
         // Send that money to the borrower!
-        await expectAction(() => bwrCon.transferUSDC(person3, amount, {from: bwr})).toChange([
+        await expectAction(() => bwrCon.transferERC20(usdc.address, person3, amount, {from: bwr})).toChange([
           [async () => await getBalance(person3, usdc), {by: amount}],
         ])
       })
+
       it("should only allow admins to transfer the money", async () => {
         // Fund the borrower contract (in practice, this would be unexpected)
         await erc20Transfer(usdc, [bwrCon.address], usdcVal(1000), owner)
 
         // Send that money to the borrower!
-        return expect(bwrCon.transferUSDC(person3, amount, {from: person3})).to.be.rejectedWith(/Must have admin role/)
+        return expect(bwrCon.transferERC20(usdc.address, person3, amount, {from: person3})).to.be.rejectedWith(
+          /Must have admin role/
+        )
       })
     })
   })

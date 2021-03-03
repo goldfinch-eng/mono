@@ -64,7 +64,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient {
       addressToSendTo = _msgSender();
     }
 
-    transferUSDC(addressToSendTo, amount);
+    transferERC20(config.usdcAddress(), addressToSendTo, amount);
   }
 
   function drawdownWithSwapOnOneInch(
@@ -88,13 +88,16 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient {
 
     bytes memory _data = abi.encodeWithSignature("balanceOf(address)", address(this));
     uint256 receivedAmount = toUint256(invoke(toToken, _data));
-    _data = abi.encodeWithSignature("transfer(address,uint256)", addressToSendTo, receivedAmount);
-    invoke(toToken, _data);
+    transferERC20(toToken, addressToSendTo, receivedAmount);
   }
 
-  function transferUSDC(address to, uint256 amount) public onlyAdmin {
-    bool success = config.getUSDC().transfer(to, amount);
-    require(success, "Failed to transfer USDC");
+  function transferERC20(
+    address token,
+    address to,
+    uint256 amount
+  ) public onlyAdmin {
+    bytes memory _data = abi.encodeWithSignature("transfer(address,uint256)", to, amount);
+    invoke(token, _data);
   }
 
   /**
