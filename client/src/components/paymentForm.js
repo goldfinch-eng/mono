@@ -83,13 +83,14 @@ function PaymentForm(props) {
             formMethods.setValue('paymentOption', 'other', { shouldValidate: true, shouldDirty: true });
             setInputClass('');
           }}
-          maxAmount={minimumNumber(
-            props.creditLine.remainingTotalDueAmountInDollars,
-            usdcFromAtomic(user.usdcBalance),
-            usdcFromAtomic(goldfinchConfig.transactionLimit),
-          )}
           validations={{
             wallet: value => user.usdcBalanceInDollars.gte(value) || 'You do not have enough USDC',
+            transactionLimit: value =>
+              goldfinchConfig.transactionLimit.gte(usdcToAtomic(value)) ||
+              `This is over the per-transaction limit of $${usdcFromAtomic(goldfinchConfig.transactionLimit)}`,
+            creditLine: value =>
+              props.creditLine.remainingTotalDueAmountInDollars.gte(value) ||
+              'This is over the total balance of the credit line.',
           }}
           inputClass={inputClass}
         />

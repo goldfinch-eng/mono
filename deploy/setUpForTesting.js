@@ -56,7 +56,6 @@ async function main({getNamedAccounts, deployments, getChainId}) {
   }
 
   const testUser = process.env.TEST_USER
-  console.log("TEST USER IS:", testUser)
   if (testUser) {
     borrower = testUser
     if (CHAIN_MAPPING[chainID] === LOCAL) {
