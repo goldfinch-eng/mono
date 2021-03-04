@@ -15,7 +15,7 @@ class BorrowerInterface {
     this.pool = pool;
     this.oneInch = oneInch;
     this.borrowerAddress = this.isUsingBorrowerContract ? this.borrowerContract._address : this.userAddress;
-    this.gasless = this.isUsingBorrowerContract;
+    this.gasless = this.isUsingBorrowerContract && process.env.REACT_APP_DISABLE_GASLESS !== 'true';
   }
 
   async initialize() {
@@ -110,7 +110,7 @@ class BorrowerInterface {
         throw new Error('Gasless transactions are only supported for borrower contracts');
       }
       // This needs to be a function, otherwise the initial Promise.resolve in useSendFromUser will try to
-      // resolve (and therefore initial the signing request) before updating the network widget
+      // resolve (and therefore initialize the signing request) before updating the network widget
       return () => submitGaslessTransaction(this.borrowerAddress, unsentAction);
     } else {
       return unsentAction;
