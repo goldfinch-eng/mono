@@ -162,10 +162,6 @@ async function createCreditLineForBorrower(creditDesk, creditLineFactory, borrow
 }
 
 async function setupTestForwarder(deployments, config, getOrNull, protocol_owner) {
-  if (!isTestEnv()) {
-    return
-  }
-
   let deployResult = await deployments.deploy("TestForwarder", {
     from: protocol_owner,
     gas: 4000000,

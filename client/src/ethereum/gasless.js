@@ -1,9 +1,13 @@
 import web3 from '../web3';
-const { FORWARDER_ADDRESSES } = require('./utils');
-const ForwarderAbi = require('../../abi/Forwarder.json');
+import { getDeployments, chainIdToNetworkID, FORWARDER_ADDRESSES } from './utils';
+const ForwarderAbi = require('../../../autotasks/relayer/Forwarder.json');
 const { ethers } = require('ethers');
 
-const RelayUrl = '/relay';
+const RELAY_URLS = {
+  1: 'https://api.defender.openzeppelin.com/autotasks/9d2053fd-507a-473f-8b5a-b079a694723a/runs/webhook/6a51e904-1439-4c68-981b-5f22f1c0b560/MiuRjp5Lnd6fjjYARR4j4r',
+  4: 'https://api.defender.openzeppelin.com/autotasks/348209ac-8cfd-41a4-be60-e97eab073f29/runs/webhook/6a51e904-1439-4c68-981b-5f22f1c0b560/Ug7a1WChPSLRPtcT4PCUnQ',
+  31337: '/relay', // Proxied by webpack to server.js
+};
 const MAX_GAS = 2e6;
 
 const EIP712DomainType = [
@@ -43,7 +47,13 @@ async function submitGaslessTransaction(contractAddress, unsentAction) {
   const from = await signer.getAddress();
 
   const network = await provider.getNetwork();
-  const ForwarderAddress = FORWARDER_ADDRESSES[network.chainId];
+  let ForwarderAddress = FORWARDER_ADDRESSES[network.chainId];
+  // If we don't have it, it must be a local network
+  if (!ForwarderAddress) {
+    const config = await getDeployments(chainIdToNetworkID[network.chainId]);
+    const deployedForwarder = config.contracts.TestForwarder;
+    ForwarderAddress = deployedForwarder.address;
+  }
   TypedData.domain.chainId = network.chainId;
   TypedData.domain.verifyingContract = ForwarderAddress;
 
@@ -68,7 +78,7 @@ async function submitGaslessTransaction(contractAddress, unsentAction) {
   // See https://github.com/ethers-io/ethers.js/issues/830
   const signature = await provider.send('eth_signTypedData_v4', [from, JSON.stringify(toSign)]);
 
-  const response = await fetch(RelayUrl, {
+  const response = await fetch(RELAY_URLS[network.chainId], {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ...request, signature }),

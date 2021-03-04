@@ -44,6 +44,12 @@ const mapNetworkToID = {
   rinkeby: RINKEBY,
 };
 
+const chainIdToNetworkID = {
+  1: MAINNET,
+  4: RINKEBY,
+  31337: 'localhost',
+};
+
 const SUPPORTED_NETWORKS = {
   [MAINNET]: true,
   [LOCAL]: true,
@@ -128,4 +134,5 @@ export {
   SUPPORTED_NETWORKS,
   ONE_INCH_ADDRESSES,
   getFromBlock,
+  chainIdToNetworkID,
 };

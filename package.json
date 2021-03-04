@@ -4,8 +4,8 @@
   "description": "A lending protocol built on the blockchain",
   "main": "index.js",
   "scripts": {
-    "start": "npx concurrently -n \"blockchain,web,server\"  \"npx hardhat node --reset --export-all client/config/deployments_dev.json\" \"cd client && npm start\" \"cd client && node server.js\" -k -c \"cyan, magenta, green\"",
-    "mainnet-start": "REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet npx concurrently -n \"blockchain,web,server\"  \"npx hardhat node --reset --export-all client/config/deployments_dev.json\" \"cd client && npm start\" \"cd client && node server.js\" -k -c \"cyan, magenta, green\"",
+    "start": "npx concurrently -n \"blockchain,web,server\"  \"npx hardhat node --reset --export-all client/config/deployments_dev.json\" \"cd client && npm start\" \"HARDHAT_NETWORK=localhost node autotasks/server.js\" -k -c \"cyan, magenta, green\"",
+    "mainnet-start": "REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet npx concurrently -n \"blockchain,web,server\"  \"npx hardhat node --reset --export-all client/config/deployments_dev.json\" \"cd client && npm start\" \"HARDHAT_FORK=mainnet node autotasks/server.js\" -k -c \"cyan, magenta, green\"",
     "test": "NODE_ENV=test npx hardhat test --show-stack-traces",
     "mainnet-test": "HARDHAT_FORK=mainnet NODE_ENV=test npx hardhat test test/MainnetForking.test.js --show-stack-traces",
     "pre-push": "cd client && npm run pre-push",
@@ -16,7 +16,8 @@
     "deploy": "npx hardhat deploy --show-stack-traces --export-all client/config/deployments.json --network",
     "upgrade-protocol": "npm run docs && npx hardhat deploy --export-all client/config/deployments.json --tags upgrade_protocol --network",
     "update-configs": "npx hardhat run ./blockchain_scripts/updateConfigs.js --network",
-    "upgrade-multisig": "npx hardhat run ./blockchain_scripts/upgrade.js --network"
+    "upgrade-multisig": "npx hardhat run ./blockchain_scripts/upgrade.js --network",
+    "autotask-update": "node autotasks/deployAutoTasks.js"
   },
   "lint-staged": {
     "**!(client)/*.js": [
@@ -63,6 +64,7 @@
     "@openzeppelin/upgrades": "^2.8.0",
     "bn.js": "^5.1.3",
     "contract-proxy-kit": "^2.2.0-alpha.1",
+    "defender-autotask-client": "^1.4.1",
     "defender-relay-client": "^1.3.1",
     "dotenv": "^8.2.0",
     "eth-sig-util": "^3.0.0",
@@ -103,6 +105,13 @@
     "solhint": "^3.2.1",
     "solhint-plugin-prettier": "0.0.5",
     "solidity-docgen": "^0.5.7",
-    "truffle-contract-size": "^2.0.0"
+    "truffle-contract-size": "^2.0.0",
+    "@rollup/plugin-commonjs": "^16.0.0",
+    "@rollup/plugin-json": "^4.1.0",
+    "@rollup/plugin-node-resolve": "^10.0.0",
+    "@rollup/plugin-typescript": "^6.1.0",
+    "@types/is-odd": "^3.0.0",
+    "builtin-modules": "^3.1.0",
+    "rollup": "^2.33.3"
   }
 }

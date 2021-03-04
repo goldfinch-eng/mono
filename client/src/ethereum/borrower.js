@@ -1,5 +1,5 @@
 import web3 from '../web3';
-import { submitGaslessTransaction } from '../ethereum/gassless';
+import { submitGaslessTransaction } from './gasless';
 import { getFromBlock, ONE_INCH_ADDRESSES } from './utils.js';
 import BigNumber from 'bignumber.js';
 
@@ -15,7 +15,7 @@ class BorrowerInterface {
     this.pool = pool;
     this.oneInch = oneInch;
     this.borrowerAddress = this.isUsingBorrowerContract ? this.borrowerContract._address : this.userAddress;
-    this.gasless = false;
+    this.gasless = this.isUsingBorrowerContract && process.env.REACT_APP_DISABLE_GASLESS !== 'true';
   }
 
   async initialize() {
@@ -109,7 +109,9 @@ class BorrowerInterface {
       if (!this.isUsingBorrowerContract) {
         throw new Error('Gasless transactions are only supported for borrower contracts');
       }
-      return submitGaslessTransaction(this.borrowerAddress, unsentAction);
+      // This needs to be a function, otherwise the initial Promise.resolve in useSendFromUser will try to
+      // resolve (and therefore initialize the signing request) before updating the network widget
+      return () => submitGaslessTransaction(this.borrowerAddress, unsentAction);
     } else {
       return unsentAction;
     }

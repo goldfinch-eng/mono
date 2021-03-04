@@ -38,11 +38,12 @@ function useSendFromUser() {
       // (since we only get a txid if relay call succeed)
       txData.id = Date.now();
       addPendingTX({ status: 'pending', ...txData });
-      return unsentAction.then(res => {
-        if (res.success) {
-          updateTX(txData, { id: res.hash });
+      return unsentAction().then(res => {
+        if (res.status === 'success') {
+          const txResult = JSON.parse(res.result);
+          updateTX(txData, { id: txResult.hash });
         } else {
-          markTXErrored(txData, { message: res.error });
+          markTXErrored(txData, { message: res.message });
         }
       });
     }
