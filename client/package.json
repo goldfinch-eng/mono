@@ -51,6 +51,8 @@
   "devDependencies": {
     "@hookform/devtools": "^2.2.1",
     "@nomiclabs/buidler": "^1.4.4",
+    "customize-cra": "^1.0.0",
+    "customize-cra-react-refresh": "^1.1.0",
     "eslint": "^6.6.0",
     "eslint-config-prettier": "^6.7.0",
     "eslint-plugin-import": "^2.18.2",
