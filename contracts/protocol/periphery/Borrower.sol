@@ -41,7 +41,6 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient {
     usdc.approve(oneInch, uint256(-1));
     bytes memory data = abi.encodeWithSignature("approve(address,uint256)", oneInch, uint256(-1));
     invoke(USDT_ADDRESS, data);
-    data = abi.encodeWithSignature("approve(address,uint256)", oneInch, uint256(-1));
     invoke(BUSD_ADDRESS, data);
   }
 

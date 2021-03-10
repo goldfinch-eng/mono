@@ -17,8 +17,6 @@ contract Pool is BaseUpgradeablePausable, IPool {
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
 
-  // $1 threshold to handle potential rounding errors, from differing decimals on Fidu and USDC;
-  uint256 private ASSET_LIABILITY_MATCH_THRESHOLD = 1e6;
   uint256 public compoundBalance;
 
   event DepositMade(address indexed capitalProvider, uint256 amount, uint256 shares);
@@ -138,6 +136,7 @@ contract Pool is BaseUpgradeablePausable, IPool {
     uint256 amount
   ) public override onlyCreditDesk whenNotPaused returns (bool) {
     bool result = doUSDCTransfer(from, to, amount);
+    require(result, "USDC Transfer failed");
     emit TransferMade(from, to, amount);
     return result;
   }
@@ -155,9 +154,7 @@ contract Pool is BaseUpgradeablePausable, IPool {
     if (compoundBalance > 0) {
       _sweepFromCompound();
     }
-    bool res = transferFrom(address(this), to, amount);
-
-    return res;
+    return transferFrom(address(this), to, amount);
   }
 
   function assets() public view override returns (uint256) {
@@ -234,14 +231,13 @@ contract Pool is BaseUpgradeablePausable, IPool {
     require(compoundBalance == 0, "Cannot sweep when we already have a compound balance");
     require(usdcAmount != 0, "Amount to sweep cannot be zero");
     uint256 error = cUSDC.mint(usdcAmount);
-    if (error != 0) {
-      revert("Sweep to compound failed");
-    }
+    require(error == 0, "Sweep to compound failed");
     compoundBalance = usdcAmount;
   }
 
   function sweepFromCompound(ICUSDCContract cUSDC, uint256 cUSDCAmount) internal {
-    require(compoundBalance != 0, "No funds on compound");
+    uint256 cBalance = compoundBalance;
+    require(cBalance != 0, "No funds on compound");
     require(cUSDCAmount != 0, "Amount to sweep cannot be zero");
 
     IERC20 usdc = config.getUSDC();
@@ -251,14 +247,10 @@ contract Pool is BaseUpgradeablePausable, IPool {
 
     uint256 error = cUSDC.redeem(cUSDCAmount);
     uint256 postRedeemUSDCBalance = usdc.balanceOf(address(this));
-    if (error != 0) {
-      revert("Sweep from compound failed");
-    }
-    if (postRedeemUSDCBalance.sub(preRedeemUSDCBalance) != redeemedUSDC) {
-      revert("Unexpected redeem amount");
-    }
+    require(error == 0, "Sweep from compound failed");
+    require(postRedeemUSDCBalance.sub(preRedeemUSDCBalance) == redeemedUSDC, "Unexpected redeem amount");
 
-    uint256 interestAccrued = redeemedUSDC.sub(compoundBalance);
+    uint256 interestAccrued = redeemedUSDC.sub(cBalance);
     _collectInterestAndPrincipal(address(this), interestAccrued, 0);
     compoundBalance = 0;
   }
@@ -282,8 +274,11 @@ contract Pool is BaseUpgradeablePausable, IPool {
     if (reserveAmount > 0) {
       sendToReserve(from, reserveAmount, from);
     }
-    bool success = doUSDCTransfer(from, address(this), principal.add(poolAmount));
-    require(success, "Failed to collect principal repayment");
+    // Gas savings: No need to transfer to yourself, which happens in sweepFromCompound
+    if (from != address(this)) {
+      bool success = doUSDCTransfer(from, address(this), principal.add(poolAmount));
+      require(success, "Failed to collect principal repayment");
+    }
   }
 
   function _sweepFromCompound() internal {
@@ -309,11 +304,17 @@ contract Pool is BaseUpgradeablePausable, IPool {
   }
 
   function cUSDCToUSDC(uint256 exchangeRate, uint256 amount) internal pure returns (uint256) {
-    // This should actually be 16 (18 + USDC decimals (6) - cTokenDecimals (8)), but it's off by 2. Why?
     // See https://compound.finance/docs#protocol-math
-    uint256 cUSDCMantissa = uint256(10)**uint256(18);
-    uint256 res = amount.mul(exchangeRate).div(cUSDCMantissa);
-    return res;
+    // But note, the docs and reality do not agree. Docs imply that that exchange rate is
+    // scaled by 1e18, but tests and mainnet forking make it appear to be scaled by 1e16
+    // 1e16 is also what Sheraz at Certik said.
+    uint256 usdcDecimals = 6;
+    uint256 cUSDCDecimals = 8;
+    return
+      amount // Amount in cToken (1e8)
+        .mul(exchangeRate) // Amount in USDC (but scaled by 1e16, cause that's what exchange rate decimals are)
+        .div(10**(18 + usdcDecimals - cUSDCDecimals)) // Downscale to cToken decimals (1e8)
+        .div(10**2); // Downscale from cToken to USDC decimals (8 to 6)
   }
 
   function totalShares() internal view returns (uint256) {

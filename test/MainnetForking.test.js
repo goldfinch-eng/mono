@@ -505,8 +505,10 @@ describe("mainnet upgrade tests", async function () {
     contracts = await upgradeContracts(CONTRACTS, contracts)
 
     const newSharePrice = await contracts.Pool.UpgradedContract.sharePrice()
+    const compoundBalance = await contracts.Pool.UpgradedContract.compoundBalance()
     expect(contracts.Pool.ExistingImplAddress).to.not.eq(contracts.Pool.UpgradedImplAddress)
     expect(existingSharePrice.toString()).to.eq(newSharePrice.toString())
+    expect(compoundBalance.toString()).to.bignumber.eq("0")
 
     let newLoansOutstanding = await contracts.CreditDesk.UpgradedContract.totalLoansOutstanding()
     expect(existingLoansOutstanding.toString()).to.eq(newLoansOutstanding.toString())
