@@ -45,6 +45,7 @@ describe("mainnet forking tests", async function () {
   }
   let accounts, owner, bwr, person3, pool, reserve, underwriter, usdc, creditDesk, fidu, goldfinchConfig
   let goldfinchFactory, busd, usdt, cUSDC
+  let poolValue = usdcVal(1000)
   const busdAddress = "0x4fabb145d64652a948d72533023f6e7a623c7c53"
   const usdtAddress = "0xdAC17F958D2ee523a2206206994597C13D831ec7"
   const cUSDCContractAddress = "0x39aa39c021dfbae8fac545936693ac917d5e7563"
@@ -70,7 +71,7 @@ describe("mainnet forking tests", async function () {
     // Approve transfers from the Pool for our test accounts
     await erc20Approve(usdc, pool.address, usdcVal(100000), [owner, bwr, person3])
 
-    await pool.deposit(usdcVal(100), {from: bwr})
+    await pool.deposit(poolValue, {from: bwr})
 
     // Set the reserve to a separate address for easier separation. The current owner account gets used for many things in tests.
     await goldfinchConfig.setTreasuryReserve(reserve)
@@ -302,6 +303,52 @@ describe("mainnet forking tests", async function () {
         [async () => await getBalance(cl.address, usdc), {to: new BN(0)}],
       ])
     }).timeout(TEST_TIMEOUT)
+
+    describe("payMultipleWithSwapOnOneInch", async () => {
+      let cl2
+      let amount2 = usdcVal(50)
+
+      beforeEach(async () => {
+        cl2 = await createCreditLine({creditDesk, borrower: bwrCon.address, underwriter})
+        expect(cl.address).to.not.eq(cl2.addresss)
+        await bwrCon.drawdown(cl2.address, amount2, bwr, {from: bwr})
+      })
+
+      it("should pay back multiple loans", async () => {
+        let padding = usdcVal(50)
+        let originAmount = amount.add(amount2).add(padding)
+        const expectedReturn = await oneSplit.getExpectedReturn(usdt.address, usdc.address, originAmount, 10, 0, {
+          from: bwr,
+        })
+        let totalMinAmount = amount.add(amount2)
+        let expectedExtra = expectedReturn.returnAmount.sub(totalMinAmount)
+
+        await advanceTime(creditDesk, {toBlock: (await cl.nextDueBlock()).add(new BN(1))})
+        await creditDesk.assessCreditLine(cl.address)
+        let interestOwed = await cl.interestOwed()
+
+        await expectAction(() =>
+          bwrCon.payMultipleWithSwapOnOneInch(
+            [cl.address, cl2.address],
+            [amount, amount2],
+            originAmount,
+            usdtAddress,
+            expectedReturn.distribution,
+            {from: bwr}
+          )
+        ).toChange([
+          // CreditLine principal should be paid
+          [() => cl.balance(), {to: interestOwed}],
+          // Excess USDC from swap should be added to the first CreditLine's contract balance
+          // rather than applied as payment
+          [() => getBalance(cl.address, usdc), {byCloseTo: expectedExtra}],
+          [() => getBalance(cl2.address, usdc), {by: amount2}],
+          [() => getBalance(bwr, usdt), {by: originAmount.neg()}],
+        ])
+        expect(await getBalance(bwrCon.address, usdc)).to.bignumber.eq(new BN(0))
+        expect(await getBalance(bwrCon.address, usdt)).to.bignumber.eq(new BN(0))
+      }).timeout(TEST_TIMEOUT)
+    })
   })
 
   describe("compound integration", async () => {
@@ -336,14 +383,14 @@ describe("mainnet forking tests", async function () {
       await expectAction(() => {
         return bwrCon.drawdown(cl.address, usdcAmount, bwr, {from: bwr})
       }).toChange([
-        [() => getBalance(pool.address, usdc), {byCloseTo: usdcVal(90)}], // regained usdc
+        [() => getBalance(pool.address, usdc), {byCloseTo: poolValue.sub(usdcAmount)}], // regained usdc
         [() => getBalance(pool.address, cUSDC), {to: new BN(0)}], // No more cTokens
         [() => getBalance(bwr, usdc), {by: usdcAmount}], // borrower drew down the balance
       ])
 
       // Pool originally had 100, 10 was drawndown, we expect 90 to remain, but it's going to be slightly more due
       // to interest collected
-      let poolBalanceChange = (await getBalance(pool.address, usdc)).sub(usdcVal(90))
+      let poolBalanceChange = (await getBalance(pool.address, usdc)).sub(poolValue.sub(usdcAmount))
       let reserveBalanceChange = (await getBalance(reserveAddress, usdc)).sub(originalReserveBalance)
       const interestGained = poolBalanceChange.add(reserveBalanceChange)
       expect(interestGained).to.bignumber.gt(new BN(0))

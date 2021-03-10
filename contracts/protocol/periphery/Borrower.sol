@@ -8,6 +8,7 @@ import "../core/ConfigHelper.sol";
 import "../core/CreditLine.sol";
 import "../../interfaces/IERC20withDec.sol";
 import "@opengsn/gsn/contracts/BaseRelayRecipient.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 
 /**
  * @title Goldfinch's Borrower contract
@@ -21,6 +22,8 @@ import "@opengsn/gsn/contracts/BaseRelayRecipient.sol";
  */
 
 contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient {
+  using SafeMath for uint256;
+
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
 
@@ -115,7 +118,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient {
 
     uint256 totalAmount;
     for (uint256 i = 0; i < amounts.length; i++) {
-      totalAmount += amounts[i];
+      totalAmount = totalAmount.add(amounts[i]);
     }
 
     // Do a single transfer, which is cheaper
@@ -143,14 +146,54 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient {
     uint256 minTargetAmount,
     uint256[] memory exchangeDistribution
   ) external onlyAdmin {
-    bytes memory _data;
-    // Do a low-level invoke on this transfer, since Tether fails if we use the normal IERC20 interface
-    _data = abi.encodeWithSignature("transferFrom(address,address,uint256)", _msgSender(), address(this), originAmount);
-    invoke(address(fromToken), _data);
+    transferFrom(fromToken, _msgSender(), address(this), originAmount);
     IERC20withDec usdc = config.getUSDC();
     swapOnOneInch(fromToken, address(usdc), originAmount, minTargetAmount, exchangeDistribution);
     uint256 usdcBalance = usdc.balanceOf(address(this));
     config.getCreditDesk().pay(creditLineAddress, usdcBalance);
+  }
+
+  function payMultipleWithSwapOnOneInch(
+    address[] memory creditLines,
+    uint256[] memory minAmounts,
+    uint256 originAmount,
+    address fromToken,
+    uint256[] memory exchangeDistribution
+  ) external onlyAdmin {
+    require(creditLines.length == minAmounts.length, "creditLines and minAmounts must be the same length");
+
+    uint256 totalMinAmount = 0;
+    for (uint256 i = 0; i < minAmounts.length; i++) {
+      totalMinAmount = totalMinAmount.add(minAmounts[i]);
+    }
+
+    transferFrom(fromToken, _msgSender(), address(this), originAmount);
+
+    IERC20withDec usdc = config.getUSDC();
+    swapOnOneInch(fromToken, address(usdc), originAmount, totalMinAmount, exchangeDistribution);
+
+    ICreditDesk creditDesk = config.getCreditDesk();
+    for (uint256 i = 0; i < minAmounts.length; i++) {
+      creditDesk.pay(creditLines[i], minAmounts[i]);
+    }
+
+    uint256 remainingUSDC = usdc.balanceOf(address(this));
+    if (remainingUSDC > 0) {
+      bool success = usdc.transfer(creditLines[0], remainingUSDC);
+      require(success, "Failed to transfer USDC");
+    }
+  }
+
+  function transferFrom(
+    address erc20,
+    address sender,
+    address recipient,
+    uint256 amount
+  ) internal {
+    bytes memory _data;
+    // Do a low-level invoke on this transfer, since Tether fails if we use the normal IERC20 interface
+    _data = abi.encodeWithSignature("transferFrom(address,address,uint256)", sender, recipient, amount);
+    invoke(address(erc20), _data);
   }
 
   function swapOnOneInch(
