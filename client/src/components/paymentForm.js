@@ -1,44 +1,96 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { usdcToAtomic, minimumNumber, usdcFromAtomic } from '../ethereum/erc20';
 import { AppContext } from '../App';
-import { displayDollars } from '../utils';
+import { displayDollars, displayNumber } from '../utils';
 import TransactionForm from './transactionForm';
 import TransactionInput from './transactionInput';
 import LoadingButton from './loadingButton';
+import CurrencySelector from './currencySelector';
 import useSendFromUser from '../hooks/useSendFromUser';
-import BN from 'bn.js';
-import { BigNumber } from 'ethers/utils';
+import BigNumber from 'bignumber.js';
+import UnlockERC20Form from './unlockERC20Form';
+import { getERC20 } from '../ethereum/erc20';
+import useCurrencyUnlocked from '../hooks/useCurrencyUnlocked';
+import { useOneInchQuote, formatQuote, useAmountTargetingMinAmount } from '../hooks/useOneInchQuote';
+import useDebounce from '../hooks/useDebounce';
 
 function PaymentForm(props) {
-  const { user, goldfinchConfig } = useContext(AppContext);
+  const { borrower, creditLine, actionComplete } = props;
+
+  const { usdc, user, goldfinchConfig, network } = useContext(AppContext);
+
   const [inputClass, setInputClass] = useState('');
   const sendFromUser = useSendFromUser();
+  const [erc20, setErc20] = useState(usdc);
+  const [unlocked, setUnlocked] = useCurrencyUnlocked(erc20, {
+    owner: borrower.userAddress,
+    spender: borrower.borrowerAddress,
+  });
+  const [transactionAmount, setTransactionAmount] = useState();
+  const debouncedSetTransactionAmount = useDebounce(setTransactionAmount, 200);
+  const [transactionAmountQuote, isQuoteLoading] = useOneInchQuote({
+    from: erc20,
+    to: usdc,
+    decimalAmount: transactionAmount,
+  });
+  const networkId = network.name;
+
+  function isSwapping() {
+    return erc20 !== usdc;
+  }
 
   function action({ transactionAmount }) {
-    const amount = usdcToAtomic(transactionAmount);
-    return sendFromUser(props.borrower.pay(props.creditLine.address, amount), {
+    const amount = erc20.atomicAmount(transactionAmount);
+
+    let unsentAction;
+    if (isSwapping()) {
+      unsentAction = borrower.payWithSwapOnOneInch(creditLine.address, amount, erc20.address);
+    } else {
+      unsentAction = borrower.pay(creditLine.address, amount);
+    }
+
+    return sendFromUser(unsentAction, {
       type: 'Payment',
       amount: transactionAmount,
-      gasless: props.borrower.gasless,
-    }).then(props.actionComplete);
+      gasless: borrower.gasless,
+    }).then(actionComplete);
   }
 
   const remainingPeriodDueDisplay = displayDollars(props.creditLine.remainingPeriodDueAmountInDollars);
 
+  const [minimumDueAmount] = useAmountTargetingMinAmount({
+    from: erc20,
+    to: usdc,
+    targetMinAmount: props.creditLine.remainingPeriodDueAmountInDollars,
+  });
+  const [fullDueAmount] = useAmountTargetingMinAmount({
+    from: erc20,
+    to: usdc,
+    targetMinAmount: props.creditLine.remainingTotalDueAmountInDollars,
+  });
+
+  function formatSwapAmount(amount) {
+    if (!amount) return '';
+    return `(${displayNumber(amount, 2)} ${erc20.ticker})`;
+  }
+
   let valueOptions = [
     {
       name: 'totalDue',
-      label: `Pay full balance plus interest: ${displayDollars(props.creditLine.remainingTotalDueAmountInDollars)}`,
+      label: ({ value, swapValue }) =>
+        `Pay full balance plus interest: ${displayDollars(value)} ${formatSwapAmount(swapValue)}`,
       value: props.creditLine.remainingTotalDueAmountInDollars,
+      swapValue: fullDueAmount,
     },
-    { name: 'other', label: 'Pay other amount', value: 'other' },
+    { name: 'other', label: () => 'Pay other amount', value: 'other' },
   ];
 
   if (props.creditLine.remainingPeriodDueAmount.gt(0)) {
     valueOptions.unshift({
       name: 'remainingDue',
-      label: `Pay minimum due: ${remainingPeriodDueDisplay}`,
+      label: ({ value, swapValue }) => `Pay minimum due: ${displayDollars(value)} ${formatSwapAmount(swapValue)}`,
       value: props.creditLine.remainingPeriodDueAmountInDollars,
+      swapValue: minimumDueAmount,
     });
   }
 
@@ -54,17 +106,19 @@ function PaymentForm(props) {
             ref={formMethods.register}
             value={valueOption.value}
             onChange={() => {
-              if (!isNaN(valueOption.value)) {
-                formMethods.setValue('transactionAmount', valueOption.value, {
+              let { value, swapValue } = valueOption;
+              if (!isNaN(value)) {
+                formMethods.setValue('transactionAmount', swapValue ? swapValue : value, {
                   shouldValidate: true,
                   shouldDirty: true,
                 });
+                setTransactionAmount(formMethods.getValues('transactionAmount'));
                 setInputClass('pre-filled');
               }
             }}
           />
           <div className="radio-check"></div>
-          <label htmlFor={`value-type-${index}`}>{valueOption.label}</label>
+          <label htmlFor={`value-type-${index}`}>{valueOption.label(valueOption)}</label>
         </div>
       );
     });
@@ -74,28 +128,49 @@ function PaymentForm(props) {
     const valueOptionList = getValueOptionsList(formMethods);
     let valueOptionsHTML = <div className="value-options">{valueOptionList}</div>;
 
+    async function changeTicker(ticker) {
+      let erc20 = await getERC20(ticker, networkId);
+      setErc20(erc20);
+    }
+
     return (
-      <div className="form-inputs">
-        {valueOptionsHTML}
-        <TransactionInput
-          formMethods={formMethods}
-          onChange={e => {
-            formMethods.setValue('paymentOption', 'other', { shouldValidate: true, shouldDirty: true });
-            setInputClass('');
-          }}
-          validations={{
-            wallet: value => user.usdcBalanceInDollars.gte(value) || 'You do not have enough USDC',
-            transactionLimit: value =>
-              goldfinchConfig.transactionLimit.gte(usdcToAtomic(value)) ||
-              `This is over the per-transaction limit of $${usdcFromAtomic(goldfinchConfig.transactionLimit)}`,
-            creditLine: value =>
-              props.creditLine.remainingTotalDueAmountInDollars.gte(value) ||
-              'This is over the total balance of the credit line.',
-          }}
-          inputClass={inputClass}
-        />
-        <LoadingButton action={action} />
-      </div>
+      <>
+        <CurrencySelector formMethods={formMethods} onChange={changeTicker} />
+        {unlocked || (
+          <UnlockERC20Form erc20={erc20} onUnlock={() => setUnlocked(true)} unlockAddress={borrower.borrowerAddress} />
+        )}
+        <div className="form-inputs">
+          {valueOptionsHTML}
+          <TransactionInput
+            formMethods={formMethods}
+            onChange={e => {
+              formMethods.setValue('paymentOption', 'other', { shouldValidate: true, shouldDirty: true });
+              setInputClass('');
+              debouncedSetTransactionAmount(formMethods.getValues('transactionAmount'));
+            }}
+            validations={{
+              wallet: value => user.usdcBalanceInDollars.gte(value) || 'You do not have enough USDC',
+              transactionLimit: value =>
+                goldfinchConfig.transactionLimit.gte(usdcToAtomic(value)) ||
+                `This is over the per-transaction limit of $${usdcFromAtomic(goldfinchConfig.transactionLimit)}`,
+              creditLine: value => {
+                if (!isSwapping() && props.creditLine.remainingTotalDueAmountInDollars.lt(value)) {
+                  return 'This is over the total balance of the credit line.';
+                }
+              },
+            }}
+            inputClass={inputClass}
+            notes={[
+              transactionAmountQuote &&
+                !isQuoteLoading && {
+                  key: 'quote',
+                  content: <p>~${formatQuote({ erc20: usdc, quote: transactionAmountQuote })}</p>,
+                },
+            ]}
+          />
+          <LoadingButton action={action} disabled={!unlocked} />
+        </div>
+      </>
     );
   }
 

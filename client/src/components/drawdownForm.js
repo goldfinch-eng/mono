@@ -10,15 +10,15 @@ import LoadingButton from './loadingButton';
 import useSendFromUser from '../hooks/useSendFromUser';
 
 function DrawdownForm(props) {
-  const { creditDesk, pool, erc20, goldfinchConfig } = useContext(AppContext);
+  const { creditDesk, pool, usdc, goldfinchConfig } = useContext(AppContext);
   const [poolData, setPoolData] = useState({});
   const sendFromUser = useSendFromUser();
 
   useEffect(() => {
     (async () => {
-      setPoolData(await fetchPoolData(pool, erc20));
+      setPoolData(await fetchPoolData(pool, usdc.contract));
     })();
-  }, [pool, erc20]);
+  }, [pool, usdc]);
 
   function action({ transactionAmount, sendToAddress }) {
     const drawdownAmount = usdcToAtomic(transactionAmount);

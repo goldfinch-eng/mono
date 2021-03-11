@@ -2,6 +2,32 @@
   overflow: hidden;
 }
 
+.form-full form{
+  position: relative;
+
+  .unlock-form{
+    width: 100%;
+    margin: 10px 10px 30px 0px;
+  }
+}
+
+.currency-selector{
+  position: absolute;
+  right: 0;
+  top: 0;
+  font-size: $sans-size-s;
+  opacity: 0.6;
+
+  select{
+    font-size: $sans-size-s;
+    display: inline-block;
+
+    option{
+      font-size: $sans-size-s;
+    }
+  }
+}
+
 .form-header{
   background-color: $blue-xlight;
   font-size: $sans-size-xs;

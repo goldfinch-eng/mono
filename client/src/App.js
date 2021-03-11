@@ -22,7 +22,7 @@ const AppContext = React.createContext({});
 function App() {
   const [pool, setPool] = useState({});
   const [creditDesk, setCreditDesk] = useState({});
-  const [erc20, setErc20] = useState(null);
+  const [usdc, setUSDC] = useState(null);
   const [user, setUser] = useState(defaultUser());
   const [goldfinchConfig, setGoldfinchConfig] = useState({});
   const [currentTXs, setCurrentTXs] = useState([]);
@@ -42,7 +42,7 @@ function App() {
     window.setUserAddress = function(overrideAddress) {
       refreshUserData(overrideAddress);
     };
-  }, [gnosisSafeInfo, erc20, pool, creditDesk, network]);
+  }, [gnosisSafeInfo, usdc, pool, creditDesk, network]);
 
   async function setupWeb3() {
     if (!window.ethereum) {
@@ -61,14 +61,14 @@ function App() {
     const networkId = mapNetworkToID[networkName] || networkName;
     const networkConfig = { name: networkId, supported: SUPPORTED_NETWORKS[networkId] };
     setNetwork(networkConfig);
-    let erc20Contract, poolContract, goldfinchConfigContract, creditDeskContract;
+    let usdc, poolContract, goldfinchConfigContract, creditDeskContract;
     if (networkConfig.supported) {
-      erc20Contract = await getUSDC(networkId);
+      usdc = await getUSDC(networkId);
       poolContract = await getPool(networkId);
       goldfinchConfigContract = await getGoldfinchConfig(networkId);
       creditDeskContract = await getCreditDesk(networkId);
-      poolContract.gf = await fetchPoolData(poolContract, erc20Contract);
-      setErc20(erc20Contract);
+      poolContract.gf = await fetchPoolData(poolContract, usdc.contract);
+      setUSDC(usdc);
       setPool(poolContract);
       setCreditDesk(creditDeskContract);
       getAndSetCreditDeskData(creditDeskContract, setCreditDesk);
@@ -84,8 +84,8 @@ function App() {
     let userAddress = (gnosisSafeInfo && gnosisSafeInfo.safeAddress) || (accounts && accounts[0]) || user.address;
     // Set this to the borrower contract address to test gasless transactions
     // let userAddress = '0xd3D57673BAE28880376cDF89aeFe4653A5C84A08';
-    if (userAddress && erc20 && creditDesk.loaded && pool.loaded) {
-      data = await getUserData(userAddress, erc20, pool, creditDesk, network.name);
+    if (userAddress && usdc && creditDesk.loaded && pool.loaded) {
+      data = await getUserData(userAddress, usdc.contract, pool, creditDesk, network.name);
     }
     setUser(data);
   }
@@ -145,7 +145,7 @@ function App() {
     pool: pool,
     creditDesk: creditDesk,
     user: user,
-    erc20: erc20,
+    usdc: usdc,
     goldfinchConfig: goldfinchConfig,
     network: network,
     gnosisSafeInfo: gnosisSafeInfo,

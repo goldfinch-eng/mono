@@ -22,7 +22,11 @@ const USDC_ADDRESSES = {
 };
 
 const USDT_ADDRESSES = {
-  mainnet: '0xdac17f958d2ee523a2206206994597c13d831ec7',
+  [MAINNET]: '0xdac17f958d2ee523a2206206994597c13d831ec7',
+};
+
+const BUSD_ADDRESSES = {
+  [MAINNET]: '0x4Fabb145d64652a948d72533023f6E7A623C7C53',
 };
 
 const FORWARDER_ADDRESSES = {
@@ -31,8 +35,8 @@ const FORWARDER_ADDRESSES = {
 };
 
 const ONE_INCH_ADDRESSES = {
-  localhost: '0xc586bef4a0992c495cf22e1aeee4e446cecdee0e',
-  mainnet: '0xc586bef4a0992c495cf22e1aeee4e446cecdee0e',
+  [LOCAL]: '0xc586bef4a0992c495cf22e1aeee4e446cecdee0e',
+  [MAINNET]: '0xc586bef4a0992c495cf22e1aeee4e446cecdee0e',
 };
 
 // Only keep entries for supported networks
@@ -124,6 +128,8 @@ export {
   decimals,
   ETHDecimals,
   USDC_ADDRESSES,
+  USDT_ADDRESSES,
+  BUSD_ADDRESSES,
   FORWARDER_ADDRESSES,
   MAX_UINT,
   USDC_DECIMALS,

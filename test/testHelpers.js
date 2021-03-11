@@ -5,14 +5,13 @@ chai.use(require("chai-as-promised"))
 const expect = chai.expect
 const mochaEach = require("mocha-each")
 const BN = require("bn.js")
-const {isTestEnv, USDCDecimals, interestAprAsBN} = require("../blockchain_scripts/deployHelpers")
+const {isTestEnv, USDCDecimals, interestAprAsBN, ZERO_ADDRESS} = require("../blockchain_scripts/deployHelpers")
 const decimals = new BN(String(1e18))
 const USDC_DECIMALS = new BN(String(1e6))
 const BLOCKS_PER_DAY = new BN(5760)
 const BLOCKS_PER_YEAR = BLOCKS_PER_DAY.mul(new BN(365))
 chai.use(require("chai-bn")(BN))
 const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
-const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 const fiduTolerance = decimals.div(USDC_DECIMALS)
 const CreditLine = artifacts.require("CreditLine")
 

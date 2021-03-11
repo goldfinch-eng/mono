@@ -2,9 +2,9 @@ import web3 from '../web3';
 import { submitGaslessTransaction } from './gasless';
 import { getFromBlock, ONE_INCH_ADDRESSES } from './utils.js';
 import BigNumber from 'bignumber.js';
+import { getOneInchContract } from './oneInch';
 
 const BorrowerAbi = require('../../abi/Borrower.json');
-const OneInchAbi = require('../../abi/OneSplit.json');
 
 class BorrowerInterface {
   constructor(userAddress, creditDesk, borrowerContract, usdc, pool, oneInch) {
@@ -129,7 +129,7 @@ async function getBorrowerContract(ownerAddress, creditLineFactory, creditDesk, 
     const lastIndex = borrowerCreatedEvents.length - 1;
     borrower = new web3.eth.Contract(BorrowerAbi, borrowerCreatedEvents[lastIndex].returnValues.borrower);
   }
-  const oneInch = new web3.eth.Contract(OneInchAbi, ONE_INCH_ADDRESSES[networkId]);
+  const oneInch = getOneInchContract(networkId);
   const borrowerInterface = new BorrowerInterface(ownerAddress, creditDesk, borrower, usdc, pool, oneInch);
   await borrowerInterface.initialize();
   return borrowerInterface;

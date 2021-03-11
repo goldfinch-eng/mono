@@ -29,7 +29,7 @@ function buildCreditLine(address) {
   return new web3.eth.Contract(CreditLineAbi, address);
 }
 
-async function fetchCreditLineData(creditLine) {
+async function fetchCreditLineData(creditLine, usdcContract) {
   let result = {};
   if (!creditLine) {
     return Promise.resolve(defaultCreditLine);
@@ -50,14 +50,11 @@ async function fetchCreditLineData(creditLine) {
   attributes.forEach(info => {
     data[info.method] = new BigNumber(data[info.method]);
   });
-  // Considering we already got some data on the CreditLine, this next line
-  // assumes we've cached the USDC contract, and do not need to pass in a network
-  const usdc = await getUSDC();
   result = { address: creditLine._address, ...data };
   const interestOwed = calculateInteresOwed(result);
   result.dueDate = await calculateDueDateFromFutureBlock(result.nextDueBlock);
   result.termEndDate = await calculateDueDateFromFutureBlock(result.termEndBlock, 'MMM D, YYYY');
-  result.collectedPaymentBalance = new BigNumber(await usdc.methods.balanceOf(result.address).call());
+  result.collectedPaymentBalance = new BigNumber(await usdcContract.methods.balanceOf(result.address).call());
   result.periodDueAmount = calculateNextDueAmount(result);
   result.remainingPeriodDueAmount = BigNumber.max(result.periodDueAmount.minus(result.collectedPaymentBalance), zero);
   result.remainingPeriodDueAmountInDollars = new BigNumber(

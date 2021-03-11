@@ -15,7 +15,7 @@ async function getPool(networkId) {
   const config = await getDeployments(networkId);
   const poolAddress = config.contracts.Pool.address;
   pool = new web3.eth.Contract(config.contracts.Pool.abi, poolAddress);
-  pool.usdc = await getUSDC(networkId);
+  pool.usdc = (await getUSDC(networkId)).contract;
   pool.fidu = await getFidu(networkId);
   pool.chain = networkId;
   pool.address = poolAddress;

@@ -8,6 +8,8 @@ const API_SECRET = process.env.DEFENDER_API_SECRET
 const {AdminClient} = require("defender-admin-client")
 const {CONFIG_KEYS} = require("./configKeys")
 
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
+
 const ROPSTEN_USDC_ADDRESS = "0x07865c6e87b9f70255377e024ace6630c1eaa37f"
 const MAINNET_USDC_ADDRESS = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
 const MAINNET_ONE_SPLIT_ADDRESS = "0xC586BeF4a0992C495Cf22e1aeEE4E446CECDee0E"
@@ -24,9 +26,20 @@ const CHAIN_MAPPING = {
   1: MAINNET,
   4: RINKEBY,
 }
-const USDC_MAPPING = {
+const USDC_ADDRESSES = {
   [ROPSTEN]: ROPSTEN_USDC_ADDRESS,
   [MAINNET]: MAINNET_USDC_ADDRESS,
+}
+const USDT_ADDRESSES = {
+  [MAINNET]: "0xdac17f958d2ee523a2206206994597c13d831ec7",
+}
+const BUSD_ADDRESSES = {
+  [MAINNET]: "0x4Fabb145d64652a948d72533023f6E7A623C7C53",
+}
+const ERC20_ADDRESSES = {
+  USDC: USDC_ADDRESSES,
+  USDT: USDT_ADDRESSES,
+  BUSD: BUSD_ADDRESSES,
 }
 const SAFE_CONFIG = {
   1: {safeAddress: "0xBEb28978B2c755155f20fd3d09Cb37e300A6981f"}, // Mainnet
@@ -62,10 +75,15 @@ function interestAprAsBN(interestPercentageString) {
 }
 
 function getUSDCAddress(chainID) {
+  return getERC20Address("USDC", chainID)
+}
+
+function getERC20Address(ticker, chainID) {
+  let mapping = ERC20_ADDRESSES[ticker]
   if (isMainnetForking()) {
-    return USDC_MAPPING[MAINNET]
+    return mapping[MAINNET]
   }
-  return USDC_MAPPING[chainID] || USDC_MAPPING[CHAIN_MAPPING[chainID]]
+  return mapping[chainID] || mapping[CHAIN_MAPPING[chainID]]
 }
 
 async function getSignerForAddress(signerAddress) {
@@ -163,6 +181,7 @@ function getDefenderClient() {
 
 module.exports = {
   CHAIN_MAPPING: CHAIN_MAPPING,
+  ZERO_ADDRESS: ZERO_ADDRESS,
   ROPSTEN_USDC_ADDRESS: ROPSTEN_USDC_ADDRESS,
   MAINNET_ONE_SPLIT_ADDRESS: MAINNET_ONE_SPLIT_ADDRESS,
   MAINNET_CUSDC_ADDRESS: MAINNET_CUSDC_ADDRESS,
@@ -173,6 +192,7 @@ module.exports = {
   ETHDecimals: ETHDecimals,
   INTEREST_DECIMALS: INTEREST_DECIMALS,
   getUSDCAddress: getUSDCAddress,
+  getERC20Address: getERC20Address,
   getDeployedContract: getDeployedContract,
   fromAtomic: fromAtomic,
   toAtomic: toAtomic,

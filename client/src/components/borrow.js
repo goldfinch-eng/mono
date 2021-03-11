@@ -7,7 +7,7 @@ import { buildCreditLine, fetchCreditLineData, defaultCreditLine } from '../ethe
 import { AppContext } from '../App.js';
 
 function Borrow(props) {
-  const { creditDesk, user } = useContext(AppContext);
+  const { creditDesk, user, usdc } = useContext(AppContext);
   const [creditLines, setCreditLines] = useState([]);
   const [creditLine, setCreditLine] = useState(defaultCreditLine);
 
@@ -40,7 +40,7 @@ function Borrow(props) {
 
   async function changeCreditLine(clAddress) {
     const instance = buildCreditLine(clAddress);
-    setCreditLine(await fetchCreditLineData(instance));
+    setCreditLine(await fetchCreditLineData(instance, usdc.contract));
   }
 
   return (

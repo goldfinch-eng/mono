@@ -2,6 +2,7 @@ import React from 'react';
 import { ErrorMessage } from '@hookform/error-message';
 import { displayDollars } from '../utils';
 import BigNumber from 'bignumber.js';
+import _ from 'lodash';
 
 function TransactionInput(props) {
   let name = props.name || 'transactionAmount';
@@ -11,12 +12,12 @@ function TransactionInput(props) {
   }
   let onChange = props.onChange || (() => {});
   let validations = props.validations || {};
+  let notes = _.compact(props.notes || []);
   return (
     <div className="form-field">
       <div className={`form-input-container dollar ${inputClass}`}>
         <input
           name={name}
-          type="number"
           disabled={props.disabled}
           onChange={onChange}
           placeholder="0"
@@ -34,13 +35,20 @@ function TransactionInput(props) {
             },
           })}
         ></input>
-        <div className="form-input-note">
-          <ErrorMessage
-            message={(function(errors, name) {
-              return errors[name] && errors[name].message;
-            })(props.formMethods.errors, name)}
-            name={name}
-          />
+        <div className="form-input-notes">
+          {notes.map(({ key, content }) => (
+            <div key={key} className="form-input-note">
+              {content}
+            </div>
+          ))}
+          <div className="form-input-note">
+            <ErrorMessage
+              message={(function(errors, name) {
+                return errors[name] && errors[name].message;
+              })(props.formMethods.errors, name)}
+              name={name}
+            />
+          </div>
         </div>
       </div>
     </div>

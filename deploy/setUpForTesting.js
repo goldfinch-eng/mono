@@ -10,6 +10,7 @@ const {
   CHAIN_MAPPING,
   updateConfig,
   getUSDCAddress,
+  getERC20Address,
   USDCDecimals,
   isTestEnv,
   interestAprAsBN,
@@ -39,33 +40,81 @@ async function main({getNamedAccounts, deployments, getChainId}) {
   if (getUSDCAddress(chainID)) {
     logger("On a network with known USDC address, so firing up that contract...")
     erc20 = await ethers.getContractAt("TestERC20", getUSDCAddress(chainID))
+  }
 
-    if (isMainnetForking()) {
-      const usdcWhale = "0x46aBbc9fc9d8E749746B00865BC2Cf7C4d85C837"
-      // Unlocks a random account that owns tons of USDC, which we can send to our test users
-      await hre.network.provider.request({
-        method: "hardhat_impersonateAccount",
-        params: [usdcWhale],
-      })
-      // Give USDC from the whale to our test accounts
-      console.log("Mainnet fork detected. Transferring USDC to protocol owner")
-      let signer = await ethers.provider.getSigner(usdcWhale)
-      const whaleUSDC = await ethers.getContractAt("TestERC20", getUSDCAddress(chainID), signer)
-      await whaleUSDC.transfer(protocol_owner, new BN(1000000).mul(USDCDecimals).toString())
-    }
+  let erc20s = [
+    {
+      ticker: "USDC",
+      contract: erc20,
+    },
+  ]
+
+  if (isMainnetForking()) {
+    console.log("Funding protocol_owner with whales")
+    erc20s = await fundWithWhales(erc20s, protocol_owner, chainID)
   }
 
   const testUser = process.env.TEST_USER
   if (testUser) {
     borrower = testUser
     if (CHAIN_MAPPING[chainID] === LOCAL) {
-      await giveMoneyToTestUser(testUser, erc20)
+      await giveMoneyToTestUser(testUser, erc20s)
     }
   }
 
   await depositFundsToThePool(pool, erc20)
   await createUnderwriter(creditDesk, underwriter)
   await createCreditLineForBorrower(creditDesk, creditLineFactory, borrower)
+}
+
+async function fundWithWhales(erc20s, recipient, chainID) {
+  erc20s = erc20s.concat([
+    {
+      ticker: "USDT",
+      contract: await ethers.getContractAt("IERC20withDec", getERC20Address("USDT", chainID)),
+    },
+    {
+      ticker: "BUSD",
+      contract: await ethers.getContractAt("IERC20withDec", getERC20Address("BUSD", chainID)),
+    },
+  ])
+
+  const whales = {
+    USDC: "0x46aBbc9fc9d8E749746B00865BC2Cf7C4d85C837",
+    USDT: "0x1062a747393198f70f71ec65a582423dba7e5ab3",
+    BUSD: "0xbe0eb53f46cd790cd13851d5eff43d12404d33e8",
+  }
+
+  for (let erc20 of erc20s) {
+    await fundWithWhale({
+      erc20: erc20,
+      whale: whales[erc20.ticker],
+      recipient: recipient,
+      amount: new BN("100000"),
+    })
+  }
+
+  return erc20s
+}
+
+async function fundWithWhale({whale, recipient, erc20, amount}) {
+  const {ticker} = erc20
+
+  await hre.network.provider.request({
+    method: "hardhat_impersonateAccount",
+    params: [whale],
+  })
+  let signer = await ethers.provider.getSigner(whale)
+  const contract = erc20.contract.connect(signer)
+
+  let ten = new BN(10)
+  let d = new BN((await contract.decimals()).toString())
+  let decimals = ten.pow(new BN(d))
+
+  await contract.transfer(recipient, new BN(amount).mul(decimals).toString())
+
+  let balance = new BN((await contract.balanceOf(recipient)).toString()).div(decimals)
+  console.log(`Funded ${recipient} with ${balance} ${ticker} using whale`)
 }
 
 async function depositFundsToThePool(pool, erc20) {
@@ -93,15 +142,20 @@ async function depositFundsToThePool(pool, erc20) {
   }
 }
 
-async function giveMoneyToTestUser(testUser, erc20) {
+async function giveMoneyToTestUser(testUser, erc20s) {
   logger("Sending money to the test user", testUser)
   const [protocol_owner] = await ethers.getSigners()
   await protocol_owner.sendTransaction({
     to: testUser,
     value: ethers.utils.parseEther("10.0"),
   })
-  const result = await erc20.transfer(testUser, String(new BN(10000).mul(USDCDecimals)))
-  await result.wait()
+
+  let ten = new BN(10)
+  for (let erc20 of erc20s) {
+    const {contract} = erc20
+    let decimals = ten.pow(new BN(await contract.decimals()))
+    await contract.transfer(testUser, String(new BN(10000).mul(decimals)))
+  }
 }
 
 async function getDeployedAsEthersContract(getter, name) {

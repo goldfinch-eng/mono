@@ -6,21 +6,21 @@ import { fetchCapitalProviderData, fetchPoolData } from '../ethereum/pool.js';
 import { AppContext } from '../App.js';
 
 function Earn(props) {
-  const { pool, erc20, creditDesk, user } = useContext(AppContext);
+  const { pool, usdc, creditDesk, user } = useContext(AppContext);
   const [capitalProvider, setCapitalProvider] = useState({});
   const [poolData, setPoolData] = useState({});
 
   useEffect(() => {
     async function refreshAllData() {
       const capitalProviderAddress = user.address;
-      refreshPoolData(pool, erc20);
+      refreshPoolData(pool, usdc);
       refreshCapitalProviderData(pool, capitalProviderAddress);
     }
     refreshAllData();
-  }, [pool, erc20, user]);
+  }, [pool, usdc, user]);
 
   function actionComplete() {
-    refreshPoolData(pool, erc20);
+    refreshPoolData(pool, usdc);
     return refreshCapitalProviderData(pool, capitalProvider.address);
   }
 
@@ -29,8 +29,8 @@ function Earn(props) {
     setCapitalProvider(capitalProvider);
   }
 
-  async function refreshPoolData(pool, erc20) {
-    const poolData = await fetchPoolData(pool, erc20);
+  async function refreshPoolData(pool, usdc) {
+    const poolData = await fetchPoolData(pool, usdc && usdc.contract);
     setPoolData(poolData);
   }
 
