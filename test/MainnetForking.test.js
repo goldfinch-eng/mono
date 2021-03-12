@@ -325,7 +325,6 @@ describe("mainnet forking tests", async function () {
 
         await advanceTime(creditDesk, {toBlock: (await cl.nextDueBlock()).add(new BN(1))})
         await creditDesk.assessCreditLine(cl.address)
-        let interestOwed = await cl.interestOwed()
 
         await expectAction(() =>
           bwrCon.payMultipleWithSwapOnOneInch(
@@ -337,8 +336,8 @@ describe("mainnet forking tests", async function () {
             {from: bwr}
           )
         ).toChange([
-          // CreditLine principal should be paid
-          [() => cl.balance(), {to: interestOwed}],
+          // CreditLine should be paid down by `amount`
+          [async () => (await cl.balance()).add(await cl.interestOwed()), {by: amount.neg()}],
           // Excess USDC from swap should be added to the first CreditLine's contract balance
           // rather than applied as payment
           [() => getBalance(cl.address, usdc), {byCloseTo: expectedExtra}],
