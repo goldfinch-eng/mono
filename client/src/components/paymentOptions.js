@@ -20,7 +20,7 @@ function PaymentOptions(props) {
       if (valueOption.name === props.selected) {
         props.formMethods.setValue('paymentOption', valueOption.name, { shouldValidate: true, shouldDirty: true });
         // So the default value is populated in the transaction input
-        props.onSelect(valueOption.name, valueOption.value);
+        props.onSelect(valueOption.name, valueOption.swapValue || valueOption.value);
       }
     });
   }, [minimumDueAmount, fullDueAmount]);
@@ -81,7 +81,7 @@ function PaymentOptions(props) {
             ref={props.formMethods.register}
             value={valueOption.value}
             onChange={() => {
-              props.onSelect(valueOption.name, valueOption.value);
+              props.onSelect(valueOption.name, valueOption.swapValue || valueOption.value);
             }}
           />
           <div className="radio-check"></div>
