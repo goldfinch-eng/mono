@@ -64,7 +64,13 @@ async function main({getNamedAccounts, deployments, getChainId}) {
 
   await depositFundsToThePool(pool, erc20)
   await createUnderwriter(creditDesk, underwriter)
-  await createCreditLineForBorrower(creditDesk, creditLineFactory, borrower)
+
+  const result = await (await creditLineFactory.createBorrower(borrower)).wait()
+  let bwrConAddr = result.events[result.events.length - 1].args[0]
+  logger(`Created borrower contract: ${bwrConAddr} for ${borrower}`)
+
+  await createCreditLineForBorrower(creditDesk, creditLineFactory, bwrConAddr)
+  await createCreditLineForBorrower(creditDesk, creditLineFactory, bwrConAddr)
 }
 
 async function fundWithWhales(erc20s, recipient, chainID) {
@@ -193,16 +199,6 @@ async function createUnderwriter(creditDesk, newUnderwriter) {
 
 async function createCreditLineForBorrower(creditDesk, creditLineFactory, borrower) {
   logger("Trying to create an CreditLine for the Borrower...")
-  const existingCreditLines = await creditDesk.getBorrowerCreditLines(borrower)
-  if (existingCreditLines.length) {
-    logger("We have already created a credit line for this borrower")
-    return
-  }
-
-  const result = await (await creditLineFactory.createBorrower(borrower)).wait()
-  let bwrConAddr = result.events[result.events.length - 1].args[0]
-  logger(`Created borrower contract: ${bwrConAddr} for ${borrower}`)
-  borrower = bwrConAddr
 
   logger("Creating a credit line for the borrower", borrower)
   const limit = String(new BN(10000).mul(USDCDecimals))

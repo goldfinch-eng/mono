@@ -71,7 +71,7 @@ describe("Deployment", async () => {
       await deployments.run("setup_for_testing")
       const creditDesk = await getDeployedContract(deployments, "TestCreditDesk")
       const result = await creditDesk.getUnderwriterCreditLines(protocol_owner)
-      expect(result.length).to.equal(1)
+      expect(result.length).to.equal(2)
     })
   })
 

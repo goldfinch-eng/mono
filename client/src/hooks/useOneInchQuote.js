@@ -29,7 +29,7 @@ function useOneInchQuote({ from, to, decimalAmount, parts = 10 }) {
     }
 
     getExpectedReturn();
-  }, [from, to, decimalAmount, parts, network]);
+  }, [from, to, decimalAmount && decimalAmount.toString(), parts, network]);
 
   return [expectedReturn, isLoading];
 }

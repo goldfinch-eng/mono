@@ -19,6 +19,10 @@
   }
 }
 
+.form-start.single-option button{
+  width: 100%;
+}
+
 .form-start-label{
   font-size: $sans-size-xs;
 }
@@ -70,6 +74,18 @@
 
     button {
       width: 100%;
+    }
+  }
+}
+
+@media only screen and (min-width: $screen-m) {
+  .form-start.single-option{
+    display: grid;
+    grid-template-columns: 0.6fr 0.4fr;
+    column-gap: 25px;
+
+    .form-start-value{
+      margin-bottom: 0;
     }
   }
 }

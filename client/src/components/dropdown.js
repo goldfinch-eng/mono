@@ -17,7 +17,7 @@ function Dropdown({ selected, options, onSelect }) {
   return (
     <div className={'dropdown'} ref={node}>
       <div className="dropdown-selected" onClick={toggleOpen}>
-        {selectedOption.selectedEl || selectedOption.el}
+        {selectedOption && (selectedOption.selectedEl || selectedOption.el)}
       </div>
       {open && (
         <div>

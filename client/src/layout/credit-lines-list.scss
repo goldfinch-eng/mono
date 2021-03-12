@@ -1,0 +1,90 @@
+.credit-lines-list{
+  .credit-line-id{
+    color: $sand-xxdark;
+    display: block;
+    margin: 5px 0 0;
+  }
+
+  .payment .icon{
+    height: 20px;
+    margin: 0 5px -4px 0;
+    width: 20px;
+  }
+
+  .view{
+    text-align: right;
+  }
+
+  .view-credit-line{
+    background-color: $sand;
+    border-radius: 6px;
+    color: $purp-dark;
+    font-size: $sans-size-xs;
+    outline: none;
+    padding: 8px 12px;
+
+    &:hover{
+      background-color: $sand-dark;
+    }
+  }
+}
+
+
+@media only screen and (max-width: 500px) {
+  .credit-lines-list{
+    .credit-line-id{
+      display: none;
+    }
+
+    td.credit-line{
+      display: block;
+      padding: 20px 0 8px;
+    }
+
+    td.payment{
+      display: block;
+      color: $sand-xxdark;
+      padding: 0 0 20px;
+    }
+
+    th.payment{
+      display: none;
+    }
+
+    .payment path{
+      fill: $sand-xxdark;
+    }
+
+    .view{
+      padding: 0;
+      vertical-align: middle;
+    }
+  }
+}
+
+
+@media only screen and (min-width: $screen-l) {
+  .credit-lines-list{
+    .credit-line-id{
+      display: inline;
+      font-size: $sans-size-xs;
+      margin: 0;
+
+      &:before{
+        content:"/";
+        margin: 0 8px;
+      }
+    }
+
+    .payment .icon{
+      height: 24px;
+      margin: 0 8px -5px 0;
+      width: 24px;
+    }
+
+    .view-credit-line{
+      font-size: $sans-size-s;
+      padding: 10px 16px;
+    }
+  }
+}

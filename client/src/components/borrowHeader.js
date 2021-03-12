@@ -1,47 +1,44 @@
-import React, { useState, useEffect } from 'react';
-import BigNumber from 'bignumber.js';
-import { buildCreditLine } from '../ethereum/creditLine';
+import React, { useState, useEffect, useContext } from 'react';
+import { fetchCreditLineData } from '../ethereum/creditLine';
 import { usdcFromAtomic } from '../ethereum/erc20';
-import { croppedAddress, displayDollars } from '../utils';
-import useCloseOnClickOrEsc from '../hooks/useCloseOnClickOrEsc';
+import { displayDollars } from '../utils';
 import Dropdown from './dropdown';
+import { AppContext } from '../App';
 
 function BorrowHeader(props) {
+  const { usdc } = useContext(AppContext);
   const [creditLinePreviews, setCreditLinePreviews] = useState([]);
 
   useEffect(() => {
     async function getCreditLinePreviews() {
-      if (props.creditLines.length > 1) {
-        const limits = await Promise.all(
-          props.creditLines.map(buildCreditLine).map(async cl => {
-            return new BigNumber(await cl.methods.limit().call());
-          }),
-        );
-        const previews = limits
-          .map((limit, i) => {
-            return {
-              limit: limit,
-              address: props.creditLines[i],
-            };
-          })
-          .filter(preview => preview.limit.gt(0));
-        setCreditLinePreviews(previews);
+      let creditLines = [];
+      if (props.creditLinesAddresses.length > 1) {
+        const multipleCreditLines = await fetchCreditLineData(props.creditLinesAddresses, usdc);
+        if (multipleCreditLines.creditLines.length > 1) {
+          // If there are multiple credit lines, we nee dto show the Multiple creditlines first (the "All" option), and
+          // then each of the individual credit lines
+          creditLines = [multipleCreditLines, ...multipleCreditLines.creditLines];
+        } else {
+          // In some cases multiple credit lines can only have a single active creditline (e.g. an old creditline
+          // that has a 0 limit). In this case, treat it as a single credit line.
+          creditLines = multipleCreditLines.creditLines;
+        }
       } else {
-        const previews = [{ address: props.creditLines[0] }];
-        setCreditLinePreviews(previews);
+        creditLines = [await fetchCreditLineData(props.creditLinesAddresses, usdc)];
       }
+      setCreditLinePreviews(creditLines);
     }
     getCreditLinePreviews();
-  }, [props.creditLines]);
+  }, [usdc, props.creditLinesAddresses]);
 
-  if (props.creditLines.length > 1) {
+  if (props.creditLinesAddresses.length > 1) {
     const options = creditLinePreviews.map(cl => {
       return {
         value: cl.address,
-        selectedEl: <>{croppedAddress(cl.address)}</>,
+        selectedEl: <>{cl.name}</>,
         el: (
           <>
-            {croppedAddress(cl.address)}
+            {cl.name}
             <span className="dropdown-amount">{displayDollars(usdcFromAtomic(cl.limit))}</span>
           </>
         ),
@@ -51,7 +48,6 @@ function BorrowHeader(props) {
     return (
       <div>
         <span>Credit Line /</span>
-
         <Dropdown
           selected={props.selectedCreditLine.address}
           options={options}
@@ -65,7 +61,7 @@ function BorrowHeader(props) {
 
   let header = 'Loading...';
   if (props.user.loaded && props.selectedCreditLine.address) {
-    header = `Credit Line / ${croppedAddress(props.selectedCreditLine.address)}`;
+    header = `Credit Line / ${props.selectedCreditLine.name}`;
   } else if (props.user.loaded) {
     header = 'Credit Line';
   }
