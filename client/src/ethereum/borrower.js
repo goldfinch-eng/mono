@@ -19,7 +19,7 @@ class BorrowerInterface {
   }
 
   async initialize() {
-    this.creditLines = await this.creditDesk.methods.getBorrowerCreditLines(this.borrowerAddress).call();
+    this.creditLinesAddresses = await this.creditDesk.methods.getBorrowerCreditLines(this.borrowerAddress).call();
     this.allowance = new BigNumber(await this.usdc.methods.allowance(this.userAddress, this.borrowerAddress).call());
   }
 

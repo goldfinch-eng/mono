@@ -64,7 +64,63 @@ async function main({getNamedAccounts, deployments, getChainId}) {
 
   await depositFundsToThePool(pool, erc20)
   await createUnderwriter(creditDesk, underwriter)
-  await createCreditLineForBorrower(creditDesk, creditLineFactory, borrower)
+
+  const result = await (await creditLineFactory.createBorrower(borrower)).wait()
+  let bwrConAddr = result.events[result.events.length - 1].args[0]
+  logger(`Created borrower contract: ${bwrConAddr} for ${borrower}`)
+
+  await createCreditLineForBorrower(creditDesk, creditLineFactory, bwrConAddr)
+  await createCreditLineForBorrower(creditDesk, creditLineFactory, bwrConAddr)
+}
+
+async function fundWithWhales(erc20s, recipient, chainID) {
+  erc20s = erc20s.concat([
+    {
+      ticker: "USDT",
+      contract: await ethers.getContractAt("IERC20withDec", getERC20Address("USDT", chainID)),
+    },
+    {
+      ticker: "BUSD",
+      contract: await ethers.getContractAt("IERC20withDec", getERC20Address("BUSD", chainID)),
+    },
+  ])
+
+  const whales = {
+    USDC: "0x46aBbc9fc9d8E749746B00865BC2Cf7C4d85C837",
+    USDT: "0x1062a747393198f70f71ec65a582423dba7e5ab3",
+    BUSD: "0xbe0eb53f46cd790cd13851d5eff43d12404d33e8",
+  }
+
+  for (let erc20 of erc20s) {
+    await fundWithWhale({
+      erc20: erc20,
+      whale: whales[erc20.ticker],
+      recipient: recipient,
+      amount: new BN("100000"),
+    })
+  }
+
+  return erc20s
+}
+
+async function fundWithWhale({whale, recipient, erc20, amount}) {
+  const {ticker} = erc20
+
+  await hre.network.provider.request({
+    method: "hardhat_impersonateAccount",
+    params: [whale],
+  })
+  let signer = await ethers.provider.getSigner(whale)
+  const contract = erc20.contract.connect(signer)
+
+  let ten = new BN(10)
+  let d = new BN((await contract.decimals()).toString())
+  let decimals = ten.pow(new BN(d))
+
+  await contract.transfer(recipient, new BN(amount).mul(decimals).toString())
+
+  let balance = new BN((await contract.balanceOf(recipient)).toString()).div(decimals)
+  console.log(`Funded ${recipient} with ${balance} ${ticker} using whale`)
 }
 
 async function fundWithWhales(erc20s, recipient, chainID) {
@@ -193,16 +249,6 @@ async function createUnderwriter(creditDesk, newUnderwriter) {
 
 async function createCreditLineForBorrower(creditDesk, creditLineFactory, borrower) {
   logger("Trying to create an CreditLine for the Borrower...")
-  const existingCreditLines = await creditDesk.getBorrowerCreditLines(borrower)
-  if (existingCreditLines.length) {
-    logger("We have already created a credit line for this borrower")
-    return
-  }
-
-  const result = await (await creditLineFactory.createBorrower(borrower)).wait()
-  let bwrConAddr = result.events[result.events.length - 1].args[0]
-  logger(`Created borrower contract: ${bwrConAddr} for ${borrower}`)
-  borrower = bwrConAddr
 
   logger("Creating a credit line for the borrower", borrower)
   const limit = String(new BN(10000).mul(USDCDecimals))
