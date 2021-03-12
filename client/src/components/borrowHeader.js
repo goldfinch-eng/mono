@@ -4,10 +4,10 @@ import { buildCreditLine } from '../ethereum/creditLine';
 import { usdcFromAtomic } from '../ethereum/erc20';
 import { croppedAddress, displayDollars } from '../utils';
 import useCloseOnClickOrEsc from '../hooks/useCloseOnClickOrEsc';
+import Dropdown from './dropdown';
 
 function BorrowHeader(props) {
   const [creditLinePreviews, setCreditLinePreviews] = useState([]);
-  const [node, open, setOpen] = useCloseOnClickOrEsc();
 
   useEffect(() => {
     async function getCreditLinePreviews() {
@@ -34,46 +34,31 @@ function BorrowHeader(props) {
     getCreditLinePreviews();
   }, [props.creditLines]);
 
-  function toggleCreditLineSelect() {
-    if (open === '') {
-      setOpen('open');
-    } else {
-      setOpen('');
-    }
-  }
-
   if (props.creditLines.length > 1) {
-    let selectCreditLineHTML;
-    if (open) {
-      selectCreditLineHTML = (
-        <div className={`credit-line-list ${open}`}>
-          {creditLinePreviews.map(cl => {
-            return (
-              <div
-                key={cl.address}
-                className="credit-line-list-item"
-                onClick={() => {
-                  props.changeCreditLine(cl.address);
-                  toggleCreditLineSelect();
-                }}
-              >
-                {croppedAddress(cl.address)}
-                <span className="credit-line-amount">{displayDollars(usdcFromAtomic(cl.limit))}</span>
-              </div>
-            );
-          })}
-        </div>
-      );
-    }
+    const options = creditLinePreviews.map(cl => {
+      return {
+        value: cl.address,
+        selectedEl: <>{croppedAddress(cl.address)}</>,
+        el: (
+          <>
+            {croppedAddress(cl.address)}
+            <span className="dropdown-amount">{displayDollars(usdcFromAtomic(cl.limit))}</span>
+          </>
+        ),
+      };
+    });
+
     return (
       <div>
-        <span>CreditLine /</span>
-        <div className="credit-line-dropdown">
-          <span className="credit-line-selected" onClick={toggleCreditLineSelect}>
-            {croppedAddress(props.selectedCreditLine.address)}
-          </span>
-          <div ref={node}>{selectCreditLineHTML}</div>
-        </div>
+        <span>Credit Line /</span>
+
+        <Dropdown
+          selected={props.selectedCreditLine.address}
+          options={options}
+          onSelect={address => {
+            props.changeCreditLine(address);
+          }}
+        />
       </div>
     );
   }

@@ -12,6 +12,10 @@
     visibility: hidden;
   }
 
+  .font-bold{
+    font-weight: bold;
+  }
+
   input ~ .radio-check{
     border: 2px solid $purp;
     border-radius: 100%;

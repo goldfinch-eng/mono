@@ -1,3 +1,15 @@
+@mixin focus-within {
+  &:focus-within{
+    @content;
+  }
+
+  // For focus-within-polyfill. Must be separate from pseudoselector block,
+  // otherwise unsupported browsers will ignore the whole block.
+  &.focus-within{
+    @content;
+  }
+}
+
 .form-field{
   margin: 0 0 30px;
   position: relative;
@@ -12,26 +24,56 @@
   position: relative;
   width: 100%;
 
-  &.dollar::before{
-    content: "$";
-    font-size: $sans-size-l;
-    line-height: 54px;
-    padding: 0 0 0 14px;
-    position: absolute;
-    top: 2px;
-  }
-
-  &.disabled.dollar::before,
   &.disabled .form-input{
     color: $purp-xlight;
   }
 
-  &.pre-filled.dollar::before,
   &.pre-filled .form-input{
     color: $purp-xlight;
   }
+
 }
 
+.transaction-input{
+  display: flex;
+  align-items: center;
+
+  border: 2px solid $sand;
+  border-radius: 6px;
+  background-color: $sand;
+  font-size: $sans-size-l;
+  padding: 0 12px 0 12px;
+  width: 100%;
+
+  .form-input {
+    padding: 0;
+    border: 0;
+
+    &:focus {
+      border: 0;
+    }
+  }
+
+  @include focus-within {
+    border: 2px solid $purp-dark;
+    color: $purp-dark;
+  }
+
+  .ticker{
+    flex-shrink: 0;
+
+    &.before{
+      margin: 0 5px 0 0px;
+      font-size: $sans-size-l;
+    }
+
+    &.after{
+      margin: 0 5px 0 5px;
+      font-size: $sans-size-ml;
+      color: $purp-light;
+    }
+  }
+}
 .form-input-label{
   font-size: $sans-size-xs;
   margin-bottom: 6px;
@@ -47,18 +89,14 @@
   padding: 0 0 0 14px;
   width: 100%;
 
+  &.small-text{
+    font-size: $sans-size-s;
+  }
+
   &:focus{
     border: 2px solid $purp-dark;
     color: $purp-dark;
   }
-
-  &.small-text{
-    font-size: $sans-size-s;
-  }
-}
-
-.dollar .form-input{
-  padding: 0 0 0 38px;
 }
 
 .enter-max-amount{
@@ -67,13 +105,12 @@
   background-color: $sand;
   color: $sand-xxdark;
   font-size: $sans-size-xxs;
-  margin: -89px 0 0 0;
   outline: none;
   padding: 6px 8px;
-  position: absolute;
+  margin: 0 2px 0 2px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  right: 14px;
+  flex-shrink: 0;
 
   &:hover{
     border: 1px solid $purp-dark;
@@ -115,6 +152,15 @@
 
 .form-inputs .submit-payment{
   width: 100%;
+
+  &:disabled{
+    background-color: $purp-xlight;
+
+    &:hover{
+      background-color: $purp-xlight;
+    }
+  }
+
 }
 
 .form-field:last-of-type{
@@ -136,34 +182,19 @@
     margin-bottom: 8px;
   }
 
-  .form-input-container{
-    &.dollar::before{
-      font-size: $sans-size-xl;
-      line-height: 68px;
-      padding: 0 0 0 16px;
-    }
-  }
-
   .form-input{
     font-size: $sans-size-xl;
     line-height: 68px;
-    padding: 0 0 0 16px;
 
     &.small-text{
       font-size: $sans-size-base;
     }
   }
 
-  .dollar .form-input{
-    padding: 0 0 0 42px;
-  }
-
   .enter-max-amount{
     border-radius: 5px;
     font-size: $sans-size-xs;
-    margin: -100px 0 0 0;
     padding: 8px 10px;
-    right: calc(30% + 66px;);
   }
 
   .form-input-note{
@@ -184,5 +215,14 @@
     right: 0;
     bottom: 0px;
     width: 30%
+  }
+
+  .transaction-input {
+    .ticker{
+      &.before{
+        margin: 0 8px 0 0px;
+        font-size: $sans-size-xl;
+      }
+    }
   }
 }

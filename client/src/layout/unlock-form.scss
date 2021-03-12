@@ -2,7 +2,6 @@
   background-color: $blue-xxlight;
   margin-bottom: 40px;
   position: relative;
-  width: 100%;
 
   p{
     font-size: $sans-size-xs;
@@ -12,8 +11,14 @@
   }
 
   .button{
+    background-color: $blue-xlight;
+    color: $purp-dark;
     margin: 20px 0 0;
     width: 100%;
+
+    &:hover{
+      background-color: $blue-light;
+    }
   }
 
   & .icon{

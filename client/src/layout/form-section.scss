@@ -11,23 +11,6 @@
   }
 }
 
-.currency-selector{
-  position: absolute;
-  right: 0;
-  top: 0;
-  font-size: $sans-size-s;
-  opacity: 0.6;
-
-  select{
-    font-size: $sans-size-s;
-    display: inline-block;
-
-    option{
-      font-size: $sans-size-s;
-    }
-  }
-}
-
 .form-header{
   background-color: $blue-xlight;
   font-size: $sans-size-xs;

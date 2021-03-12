@@ -49,20 +49,26 @@ function DrawdownForm(props) {
         <div className="form-input-label">(Optional) Send to a specific address</div>
         <AddressInput formMethods={formMethods} disabled={disabled} />
         <div className="form-input-label">Amount</div>
-        <TransactionInput formMethods={formMethods} maxAmount={maxAmount} disabled={disabled} />
-        <button
-          className="enter-max-amount"
-          type="button"
+        <TransactionInput
+          formMethods={formMethods}
+          maxAmount={maxAmount}
           disabled={disabled}
-          onClick={() => {
-            formMethods.setValue('transactionAmount', roundDownPenny(maxAmount), {
-              shouldValidate: true,
-              shouldDirty: true,
-            });
-          }}
-        >
-          Max
-        </button>
+          rightDecoration={
+            <button
+              className="enter-max-amount"
+              type="button"
+              disabled={disabled}
+              onClick={() => {
+                formMethods.setValue('transactionAmount', roundDownPenny(maxAmount), {
+                  shouldValidate: true,
+                  shouldDirty: true,
+                });
+              }}
+            >
+              Max
+            </button>
+          }
+        />
         <LoadingButton action={action} disabled={disabled} />
       </div>
     );

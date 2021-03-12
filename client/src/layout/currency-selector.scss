@@ -1,0 +1,17 @@
+.currency-selector{
+  position: absolute;
+  right: 0;
+  top: 0;
+  font-size: $sans-size-s;
+  color: $purp-light;
+  z-index: 1;
+
+  .dropdown{
+    color: $purp-dark;
+  }
+
+  .dropdown-list{
+    width: 100px;
+    left: -10px;
+  }
+}

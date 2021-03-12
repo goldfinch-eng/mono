@@ -71,14 +71,18 @@ function PaymentForm(props) {
 
   function formatSwapAmount(amount) {
     if (!amount) return '';
-    return `(${displayNumber(amount, 2)} ${erc20.ticker})`;
+    return `(~${displayNumber(amount, 2)} ${erc20.ticker})`;
   }
 
   let valueOptions = [
     {
       name: 'totalDue',
-      label: ({ value, swapValue }) =>
-        `Pay full balance plus interest: ${displayDollars(value)} ${formatSwapAmount(swapValue)}`,
+      label: ({ value, swapValue }) => (
+        <>
+          Pay full balance plus interest: <span class="font-bold">{displayDollars(value)}</span>{' '}
+          {formatSwapAmount(swapValue)}
+        </>
+      ),
       value: props.creditLine.remainingTotalDueAmountInDollars,
       swapValue: fullDueAmount,
     },
@@ -88,7 +92,11 @@ function PaymentForm(props) {
   if (props.creditLine.remainingPeriodDueAmount.gt(0)) {
     valueOptions.unshift({
       name: 'remainingDue',
-      label: ({ value, swapValue }) => `Pay minimum due: ${displayDollars(value)} ${formatSwapAmount(swapValue)}`,
+      label: ({ value, swapValue }) => (
+        <>
+          Pay minimum due: <span class="font-bold">{displayDollars(value)}</span> {formatSwapAmount(swapValue)}
+        </>
+      ),
       value: props.creditLine.remainingPeriodDueAmountInDollars,
       swapValue: minimumDueAmount,
     });
@@ -135,13 +143,14 @@ function PaymentForm(props) {
 
     return (
       <>
-        <CurrencySelector formMethods={formMethods} onChange={changeTicker} />
+        <CurrencySelector onChange={changeTicker} />
         {unlocked || (
           <UnlockERC20Form erc20={erc20} onUnlock={() => setUnlocked(true)} unlockAddress={borrower.borrowerAddress} />
         )}
         <div className="form-inputs">
           {valueOptionsHTML}
           <TransactionInput
+            ticker={erc20.ticker}
             formMethods={formMethods}
             onChange={e => {
               formMethods.setValue('paymentOption', 'other', { shouldValidate: true, shouldDirty: true });
