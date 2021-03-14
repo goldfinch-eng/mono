@@ -3,7 +3,6 @@ const BN = require("bn.js")
 const hre = require("hardhat")
 require("dotenv").config({path: ".env.local"})
 const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
-
 const {
   MAINNET_CHAIN_ID,
   LOCAL,
@@ -15,7 +14,17 @@ const {
   isTestEnv,
   interestAprAsBN,
   isMainnetForking,
+  getSignerForAddress,
 } = require("../blockchain_scripts/deployHelpers.js")
+const {
+  MAINNET_MULTISIG,
+  upgradeContracts,
+  getExistingContracts,
+  impersonateAccount,
+  fundWithWhales,
+  getMainnetContracts,
+  performPostUpgradeMigration,
+} = require("../blockchain_scripts/mainnetForkingHelpers")
 const PROTOCOL_CONFIG = require("../protocol_config.json")
 
 /*
@@ -26,15 +35,15 @@ let logger
 async function main({getNamedAccounts, deployments, getChainId}) {
   const {getOrNull, log} = deployments
   logger = log
-  const {protocol_owner} = await getNamedAccounts()
+  let {protocol_owner} = await getNamedAccounts()
   let chainID = await getChainId()
   let underwriter = protocol_owner
   let borrower = protocol_owner
-  const pool = await getDeployedAsEthersContract(getOrNull, "Pool")
-  const creditDesk = await getDeployedAsEthersContract(getOrNull, "CreditDesk")
+  let pool = await getDeployedAsEthersContract(getOrNull, "Pool")
+  let creditDesk = await getDeployedAsEthersContract(getOrNull, "CreditDesk")
   let erc20 = await getDeployedAsEthersContract(getOrNull, "TestERC20")
-  const config = await getDeployedAsEthersContract(getOrNull, "GoldfinchConfig")
-  const creditLineFactory = await getDeployedAsEthersContract(getOrNull, "CreditLineFactory")
+  let config = await getDeployedAsEthersContract(getOrNull, "GoldfinchConfig")
+  let creditLineFactory = await getDeployedAsEthersContract(getOrNull, "CreditLineFactory")
   await setupTestForwarder(deployments, config, getOrNull, protocol_owner)
 
   if (getUSDCAddress(chainID)) {
@@ -51,7 +60,38 @@ async function main({getNamedAccounts, deployments, getChainId}) {
 
   if (isMainnetForking()) {
     console.log("Funding protocol_owner with whales")
-    erc20s = await fundWithWhales(erc20s, protocol_owner, chainID)
+    underwriter = MAINNET_MULTISIG
+    await impersonateAccount(hre, MAINNET_MULTISIG)
+    let ownerAccount = await getSignerForAddress(protocol_owner)
+    erc20s = erc20s.concat([
+      {
+        ticker: "USDT",
+        contract: await ethers.getContractAt("IERC20withDec", getERC20Address("USDT", chainID)),
+      },
+      {
+        ticker: "BUSD",
+        contract: await ethers.getContractAt("IERC20withDec", getERC20Address("BUSD", chainID)),
+      },
+    ])
+
+    await ownerAccount.sendTransaction({to: MAINNET_MULTISIG, value: ethers.utils.parseEther("5.0")})
+    await fundWithWhales(erc20s, [protocol_owner])
+
+    const mainnetConfig = getMainnetContracts()
+    const contractsToUpgrade = ["CreditDesk", "Pool", "Fidu", "CreditLineFactory", "GoldfinchConfig"]
+    const upgradedContracts = await upgradeExistingContracts(
+      contractsToUpgrade,
+      mainnetConfig,
+      MAINNET_MULTISIG,
+      protocol_owner,
+      deployments
+    )
+
+    creditDesk = upgradedContracts.CreditDesk.UpgradedContract
+    pool = upgradedContracts.Pool.UpgradedContract
+    creditLineFactory = upgradedContracts.CreditLineFactory.UpgradedContract
+
+    await performPostUpgradeMigration(upgradedContracts, deployments)
   }
 
   const testUser = process.env.TEST_USER
@@ -73,54 +113,17 @@ async function main({getNamedAccounts, deployments, getChainId}) {
   await createCreditLineForBorrower(creditDesk, creditLineFactory, bwrConAddr)
 }
 
-async function fundWithWhales(erc20s, recipient, chainID) {
-  erc20s = erc20s.concat([
-    {
-      ticker: "USDT",
-      contract: await ethers.getContractAt("IERC20withDec", getERC20Address("USDT", chainID)),
-    },
-    {
-      ticker: "BUSD",
-      contract: await ethers.getContractAt("IERC20withDec", getERC20Address("BUSD", chainID)),
-    },
-  ])
+async function upgradeExistingContracts(contractsToUpgrade, mainnetConfig, mainnetMultisig, deployFrom, deployments) {
+  // Ensure the multisig has funds for upgrades and other transactions
+  console.log("On mainnet fork, upgrading existing contracts")
+  let ownerAccount = await getSignerForAddress(deployFrom)
+  await ownerAccount.sendTransaction({to: mainnetMultisig, value: ethers.utils.parseEther("5.0")})
+  await impersonateAccount(hre, mainnetMultisig)
+  let mainnetSigner = await ethers.provider.getSigner(mainnetMultisig)
 
-  const whales = {
-    USDC: "0x46aBbc9fc9d8E749746B00865BC2Cf7C4d85C837",
-    USDT: "0x1062a747393198f70f71ec65a582423dba7e5ab3",
-    BUSD: "0xbe0eb53f46cd790cd13851d5eff43d12404d33e8",
-  }
-
-  for (let erc20 of erc20s) {
-    await fundWithWhale({
-      erc20: erc20,
-      whale: whales[erc20.ticker],
-      recipient: recipient,
-      amount: new BN("100000"),
-    })
-  }
-
-  return erc20s
-}
-
-async function fundWithWhale({whale, recipient, erc20, amount}) {
-  const {ticker} = erc20
-
-  await hre.network.provider.request({
-    method: "hardhat_impersonateAccount",
-    params: [whale],
-  })
-  let signer = await ethers.provider.getSigner(whale)
-  const contract = erc20.contract.connect(signer)
-
-  let ten = new BN(10)
-  let d = new BN((await contract.decimals()).toString())
-  let decimals = ten.pow(new BN(d))
-
-  await contract.transfer(recipient, new BN(amount).mul(decimals).toString())
-
-  let balance = new BN((await contract.balanceOf(recipient)).toString()).div(decimals)
-  logger(`Funded ${recipient} with ${balance} ${ticker} using whale`)
+  let contracts = await getExistingContracts(contractsToUpgrade, mainnetConfig, mainnetSigner)
+  contracts = await upgradeContracts(contractsToUpgrade, contracts, mainnetSigner, deployFrom, deployments)
+  return contracts
 }
 
 async function depositFundsToThePool(pool, erc20) {
