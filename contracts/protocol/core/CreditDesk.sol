@@ -149,7 +149,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     Borrower storage borrower = borrowers[msg.sender];
     require(borrower.creditLines.length > 0, "No credit lines exist for this borrower");
     require(amount > 0, "Must drawdown more than zero");
-    require(cl.borrower() == msg.sender, "You do not belong to this credit line");
+    require(cl.borrower() == msg.sender, "You are not the borrower of this credit line");
     require(withinTransactionLimit(amount), "Amount is over the per-transaction limit");
     require(withinCreditLimit(amount, cl), "The borrower does not have enough credit limit for this drawdown");
 
@@ -189,8 +189,10 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     require(!isLate(cl), "Cannot drawdown when payments are past due");
     emit DrawdownMade(msg.sender, address(cl), amount.add(amountToTransferFromCL));
 
-    bool success = pool.drawdown(msg.sender, amount);
-    require(success, "Failed to drawdown");
+    if (amount > 0) {
+      bool success = pool.drawdown(msg.sender, amount);
+      require(success, "Failed to drawdown");
+    }
   }
 
   /**
@@ -303,7 +305,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
    * @notice Simple getter for the creditlines of a given underwriter
    * @param underwriterAddress The underwriter address you would like to see the credit lines of.
    */
-  function getUnderwriterCreditLines(address underwriterAddress) public view whenNotPaused returns (address[] memory) {
+  function getUnderwriterCreditLines(address underwriterAddress) public view returns (address[] memory) {
     return underwriters[underwriterAddress].creditLines;
   }
 
@@ -311,7 +313,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
    * @notice Simple getter for the creditlines of a given borrower
    * @param borrowerAddress The borrower address you would like to see the credit lines of.
    */
-  function getBorrowerCreditLines(address borrowerAddress) public view whenNotPaused returns (address[] memory) {
+  function getBorrowerCreditLines(address borrowerAddress) public view returns (address[] memory) {
     return borrowers[borrowerAddress].creditLines;
   }
 
@@ -543,10 +545,11 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     view
     returns (bool)
   {
-    require(underwriter.governanceLimit != 0, "underwriter does not have governance limit");
+    uint256 underwriterLimit = underwriter.governanceLimit;
+    require(underwriterLimit != 0, "underwriter does not have governance limit");
     uint256 creditCurrentlyExtended = getCreditCurrentlyExtended(underwriter);
     uint256 totalToBeExtended = creditCurrentlyExtended.add(newAmount);
-    return totalToBeExtended <= underwriter.governanceLimit;
+    return totalToBeExtended <= underwriterLimit;
   }
 
   function withinMaxUnderwriterLimit(uint256 amount) internal view returns (bool) {

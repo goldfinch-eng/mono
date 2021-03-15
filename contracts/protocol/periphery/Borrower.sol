@@ -75,7 +75,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient {
     address addressToSendTo,
     address toToken,
     uint256 minTargetAmount,
-    uint256[] memory exchangeDistribution
+    uint256[] calldata exchangeDistribution
   ) public onlyAdmin {
     // Drawdown to the Borrower contract
     config.getCreditDesk().drawdown(creditLineAddress, amount);
@@ -83,11 +83,12 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient {
     // Do the swap
     swapOnOneInch(config.usdcAddress(), toToken, amount, minTargetAmount, exchangeDistribution);
 
-    // Fulfill the send to
+    // Default to sending to the owner, and don't let funds stay in this contract
     if (addressToSendTo == address(0) || addressToSendTo == address(this)) {
       addressToSendTo = _msgSender();
     }
 
+    // Fulfill the send to
     bytes memory _data = abi.encodeWithSignature("balanceOf(address)", address(this));
     uint256 receivedAmount = toUint256(invoke(toToken, _data));
     transferERC20(toToken, addressToSendTo, receivedAmount);
@@ -113,7 +114,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient {
     config.getCreditDesk().pay(creditLineAddress, amount);
   }
 
-  function payMultiple(address[] memory creditLines, uint256[] memory amounts) external onlyAdmin {
+  function payMultiple(address[] calldata creditLines, uint256[] calldata amounts) external onlyAdmin {
     require(creditLines.length == amounts.length, "Creditlines and amounts must be the same length");
 
     uint256 totalAmount;
@@ -132,7 +133,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient {
   }
 
   function payInFull(address creditLineAddress, uint256 amount) external onlyAdmin {
-    bool success = config.getUSDC().transferFrom(_msgSender(), address(creditLineAddress), amount);
+    bool success = config.getUSDC().transferFrom(_msgSender(), creditLineAddress, amount);
     require(success, "Failed to transfer USDC");
 
     config.getCreditDesk().applyPayment(creditLineAddress, amount);
@@ -160,7 +161,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient {
     address fromToken,
     uint256[] memory exchangeDistribution
   ) external onlyAdmin {
-    require(creditLines.length == minAmounts.length, "creditLines and minAmounts must be the same length");
+    require(creditLines.length == minAmounts.length, "Creditlines and amounts must be the same length");
 
     uint256 totalMinAmount = 0;
     for (uint256 i = 0; i < minAmounts.length; i++) {

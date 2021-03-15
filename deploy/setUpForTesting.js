@@ -120,7 +120,7 @@ async function fundWithWhale({whale, recipient, erc20, amount}) {
   await contract.transfer(recipient, new BN(amount).mul(decimals).toString())
 
   let balance = new BN((await contract.balanceOf(recipient)).toString()).div(decimals)
-  console.log(`Funded ${recipient} with ${balance} ${ticker} using whale`)
+  logger(`Funded ${recipient} with ${balance} ${ticker} using whale`)
 }
 
 async function depositFundsToThePool(pool, erc20) {
