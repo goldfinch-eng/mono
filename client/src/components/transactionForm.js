@@ -16,7 +16,7 @@ function TransactionForm(props) {
         </div>
       </div>
       <FormProvider {...formMethods}>
-        <form>
+        <form className="form">
           <h2>{props.title}</h2>
           {props.render({ formMethods })}
         </form>

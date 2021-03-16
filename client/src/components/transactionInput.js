@@ -15,6 +15,25 @@ function TransactionInput(props) {
   let validations = props.validations || {};
   let notes = _.compact(props.notes || []);
   let ticker = props.ticker || Tickers.USDC;
+
+  let noteEls = notes.map(({ key, content }) => (
+    <div key={key} className="form-input-note">
+      {content}
+    </div>
+  ));
+  if (props.formMethods.errors.length > 0) {
+    noteEls.push(
+      <div key="error" className="form-input-note">
+        <ErrorMessage
+          message={(function(errors, name) {
+            return errors[name] && errors[name].message;
+          })(props.formMethods.errors, name)}
+          name={name}
+        />
+      </div>,
+    );
+  }
+
   return (
     <div className="form-field">
       <div className={`form-input-container ${inputClass}`}>
@@ -42,21 +61,7 @@ function TransactionInput(props) {
           {ticker !== Tickers.USDC && <div className="ticker after">{ticker}</div>}
           {props.rightDecoration}
         </div>
-        <div className="form-input-notes">
-          {notes.map(({ key, content }) => (
-            <div key={key} className="form-input-note">
-              {content}
-            </div>
-          ))}
-          <div className="form-input-note">
-            <ErrorMessage
-              message={(function(errors, name) {
-                return errors[name] && errors[name].message;
-              })(props.formMethods.errors, name)}
-              name={name}
-            />
-          </div>
-        </div>
+        {noteEls}
       </div>
     </div>
   );

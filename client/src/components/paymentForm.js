@@ -5,7 +5,7 @@ import PaymentOptions from './paymentOptions';
 import TransactionForm from './transactionForm';
 import TransactionInput from './transactionInput';
 import LoadingButton from './loadingButton';
-import CurrencySelector from './currencySelector';
+import CurrencyDropdown from './currencyDropdown';
 import useSendFromUser from '../hooks/useSendFromUser';
 import UnlockERC20Form from './unlockERC20Form';
 import { getERC20 } from '../ethereum/erc20';
@@ -85,7 +85,10 @@ function PaymentForm(props) {
 
     return (
       <>
-        <CurrencySelector onChange={changeTicker} />
+        <div className={'currency-selector'}>
+          <span>Pay with: </span>
+          <CurrencyDropdown onChange={changeTicker} />
+        </div>
         {unlocked || (
           <UnlockERC20Form erc20={erc20} onUnlock={() => setUnlocked(true)} unlockAddress={borrower.borrowerAddress} />
         )}
@@ -111,35 +114,37 @@ function PaymentForm(props) {
               setPaymentOption(name);
             }}
           />
-          <TransactionInput
-            ticker={erc20.ticker}
-            formMethods={formMethods}
-            onChange={e => {
-              setPaymentOption('other');
-              setInputClass('');
-              debouncedSetTransactionAmount(formMethods.getValues('transactionAmount'));
-            }}
-            validations={{
-              wallet: value => user.usdcBalanceInDollars.gte(value) || 'You do not have enough USDC',
-              transactionLimit: value =>
-                goldfinchConfig.transactionLimit.gte(usdcToAtomic(value)) ||
-                `This is over the per-transaction limit of $${usdcFromAtomic(goldfinchConfig.transactionLimit)}`,
-              creditLine: value => {
-                if (!isSwapping() && props.creditLine.remainingTotalDueAmountInDollars.lt(value)) {
-                  return 'This is over the total balance of the credit line.';
-                }
-              },
-            }}
-            inputClass={inputClass}
-            notes={[
-              transactionAmountQuote &&
-                !isQuoteLoading && {
-                  key: 'quote',
-                  content: <p>~${formatQuote({ erc20: usdc, quote: transactionAmountQuote })}</p>,
+          <div className="form-inputs-footer">
+            <TransactionInput
+              ticker={erc20.ticker}
+              formMethods={formMethods}
+              onChange={e => {
+                setPaymentOption('other');
+                setInputClass('');
+                debouncedSetTransactionAmount(formMethods.getValues('transactionAmount'));
+              }}
+              validations={{
+                wallet: value => user.usdcBalanceInDollars.gte(value) || 'You do not have enough USDC',
+                transactionLimit: value =>
+                  goldfinchConfig.transactionLimit.gte(usdcToAtomic(value)) ||
+                  `This is over the per-transaction limit of $${usdcFromAtomic(goldfinchConfig.transactionLimit)}`,
+                creditLine: value => {
+                  if (!isSwapping() && props.creditLine.remainingTotalDueAmountInDollars.lt(value)) {
+                    return 'This is over the total balance of the credit line.';
+                  }
                 },
-            ]}
-          />
-          <LoadingButton action={action} disabled={!unlocked} />
+              }}
+              inputClass={inputClass}
+              notes={[
+                transactionAmountQuote &&
+                  !isQuoteLoading && {
+                    key: 'quote',
+                    content: <p>~${formatQuote({ erc20: usdc, quote: transactionAmountQuote })}</p>,
+                  },
+              ]}
+            />
+            <LoadingButton action={action} disabled={!unlocked} />
+          </div>
         </div>
       </>
     );
@@ -149,7 +154,7 @@ function PaymentForm(props) {
     <TransactionForm
       title="Pay"
       headerMessage={props.title}
-      formClass="dark"
+      formClass="payment-form dark"
       render={renderForm}
       closeForm={props.closeForm}
     />

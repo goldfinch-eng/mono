@@ -40,24 +40,26 @@ function DepositForm(props) {
     return (
       <div className="form-inputs">
         {warningMessage}
-        <TransactionInput
-          formMethods={formMethods}
-          disabled={disabled}
-          validations={{
-            wallet: value => user.usdcBalanceInDollars.gte(value) || 'You do not have enough USDC',
-            transactionLimit: value =>
-              goldfinchConfig.transactionLimit.gte(usdcToAtomic(value)) ||
-              `This is over the per-transaction limit of $${usdcFromAtomic(goldfinchConfig.transactionLimit)}`,
-            totalFundsLimit: value => {
-              let limit = goldfinchConfig.totalFundsLimit.minus(pool.gf.totalPoolAssets);
-              return (
-                limit.gte(usdcToAtomic(value)) ||
-                `This deposit would put the pool over its limit. It can accept a max of $${usdcFromAtomic(limit)}.`
-              );
-            },
-          }}
-        />
-        <LoadingButton action={action} disabled={disabled} />
+        <div className="form-inputs-footer">
+          <TransactionInput
+            formMethods={formMethods}
+            disabled={disabled}
+            validations={{
+              wallet: value => user.usdcBalanceInDollars.gte(value) || 'You do not have enough USDC',
+              transactionLimit: value =>
+                goldfinchConfig.transactionLimit.gte(usdcToAtomic(value)) ||
+                `This is over the per-transaction limit of $${usdcFromAtomic(goldfinchConfig.transactionLimit)}`,
+              totalFundsLimit: value => {
+                let limit = goldfinchConfig.totalFundsLimit.minus(pool.gf.totalPoolAssets);
+                return (
+                  limit.gte(usdcToAtomic(value)) ||
+                  `This deposit would put the pool over its limit. It can accept a max of $${usdcFromAtomic(limit)}.`
+                );
+              },
+            }}
+          />
+          <LoadingButton action={action} disabled={disabled} />
+        </div>
       </div>
     );
   }

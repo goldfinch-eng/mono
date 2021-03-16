@@ -3,8 +3,8 @@ import { useFormContext } from 'react-hook-form';
 import { Tickers } from '../ethereum/erc20';
 import Dropdown from './dropdown';
 
-function CurrencySelector(props) {
-  const { onChange } = props;
+function CurrencyDropdown(props) {
+  const { onChange, className = '', selectedClassName = '' } = props;
 
   const options = [
     {
@@ -23,18 +23,17 @@ function CurrencySelector(props) {
   const [selected, setSelected] = useState(Tickers.USDC);
 
   return (
-    <div className={'currency-selector'}>
-      <span>Pay with: </span>
-      <Dropdown
-        selected={selected}
-        options={options}
-        onSelect={val => {
-          setSelected(val);
-          onChange(val);
-        }}
-      />
-    </div>
+    <Dropdown
+      className={`currency-dropdown ${className}`}
+      selectedClassName={selectedClassName}
+      selected={selected}
+      options={options}
+      onSelect={val => {
+        setSelected(val);
+        onChange(val);
+      }}
+    />
   );
 }
 
-export default CurrencySelector;
+export default CurrencyDropdown;

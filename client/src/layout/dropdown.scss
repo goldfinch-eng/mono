@@ -5,19 +5,22 @@
 
 .dropdown-selected {
   cursor: pointer;
-  display: inline-block;
+  display: inline-flex;
+  justify-content: space-between;
   margin: 0 0 0 5px;
 
-  &:after{
-    border-left: 0.25em solid transparent;
-    border-right: 0.25em solid transparent;
-    border-top: 0.4em solid $purp-dark;
-    content: "";
-    display: inline-block;
-    height: 0;
-    margin: 0 0 3px 5px;
-    transition: border 0.1s ease;
-    width: 0;
+  .dropdown-arrow {
+    &:after {
+      border-left: 0.25em solid transparent;
+      border-right: 0.25em solid transparent;
+      border-top: 0.4em solid $purp-dark;
+      content: "";
+      display: inline-block;
+      height: 0;
+      margin: 0 0 3px 5px;
+      transition: border 0.1s ease;
+      width: 0;
+    }
   }
 
   &:hover{

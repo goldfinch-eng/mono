@@ -2,10 +2,13 @@ import React, { useState } from 'react';
 import useCloseOnClickOrEsc from '../hooks/useCloseOnClickOrEsc';
 import _ from 'lodash';
 
-function Dropdown({ selected, options, onSelect }) {
+function Dropdown({ className, selectedClassName, selected, options, onSelect }) {
   const [node, open, setOpen] = useCloseOnClickOrEsc();
 
-  function toggleOpen() {
+  function toggleOpen(e = null) {
+    if (e) {
+      e.preventDefault();
+    }
     setOpen(open === '' ? 'open' : '');
   }
 
@@ -15,10 +18,13 @@ function Dropdown({ selected, options, onSelect }) {
   }
 
   return (
-    <div className={'dropdown'} ref={node}>
-      <div className="dropdown-selected" onClick={toggleOpen}>
-        {selectedOption && (selectedOption.selectedEl || selectedOption.el)}
-      </div>
+    <div className={`dropdown ${className}`} ref={node}>
+      <a className={`dropdown-selected ${selectedClassName}`} onClick={toggleOpen}>
+        <div className="dropdown-selected-content">
+          {selectedOption && (selectedOption.selectedEl || selectedOption.el)}
+        </div>
+        <span className="dropdown-arrow"></span>
+      </a>
       {open && (
         <div>
           <div className={`dropdown-list ${open}`}>

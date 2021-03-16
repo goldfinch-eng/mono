@@ -30,7 +30,7 @@ function PaymentOptions(props) {
     if (!swappedAmount) return amountDisplay;
     return (
       <>
-        {amountDisplay} ~{displayNumber(swappedAmount, 2)} {props.erc20.ticker}
+        {amountDisplay} (~{displayNumber(swappedAmount, 2)} {props.erc20.ticker})
       </>
     );
   }

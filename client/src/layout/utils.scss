@@ -1,0 +1,23 @@
+@mixin space-y($space) {
+  > * ~ * {
+    margin-top: $space;
+  }
+}
+
+@mixin space-x($space) {
+  > * ~ * {
+    margin-left: $space;
+  }
+}
+
+@mixin focus-within {
+  &:focus-within{
+    @content;
+  }
+
+  // For focus-within-polyfill. Must be separate from pseudoselector block,
+  // otherwise unsupported browsers will ignore the whole block.
+  &.focus-within{
+    @content;
+  }
+}

@@ -1,23 +1,58 @@
-@mixin focus-within {
-  &:focus-within{
-    @content;
+@import './utils.scss';
+
+.form .form-show-optional {
+  font-size: $sans-size-xs;
+  position: absolute;
+  top: 0;
+  right: 0;
+  margin: 0;
+
+  &.showing {
+    &:after {
+      border-left: 0.25em solid transparent;
+      border-right: 0.25em solid transparent;
+      border-bottom: 0.4em solid $purp-dark;
+      content: "";
+      display: inline-block;
+      height: 0;
+      margin: 0 0 3px 5px;
+      width: 0;
+    }
   }
 
-  // For focus-within-polyfill. Must be separate from pseudoselector block,
-  // otherwise unsupported browsers will ignore the whole block.
-  &.focus-within{
-    @content;
+  &.hidden {
+    &:after {
+      border-left: 0.25em solid transparent;
+      border-right: 0.25em solid transparent;
+      border-top: 0.4em solid $purp-dark;
+      content: "";
+      display: inline-block;
+      height: 0;
+      margin: 0 0 3px 5px;
+      width: 0;
+    }
   }
 }
 
-.form-field{
-  margin: 0 0 30px;
-  position: relative;
+.form-optional{
+  &.hidden{
+    display: none;
+  }
+  &.showing{
+    display: block;
+  }
+
+  @include space-y(30px);
+}
+
+.form-separator{
+  margin-left: -1%;
+  width: 102%;
+  border-bottom: 2px solid $sand;
 }
 
 .form-inputs{
-  position: relative;
-  padding-bottom: 0;
+  @include space-y(30px);
 }
 
 .form-input-container{
@@ -86,7 +121,7 @@
   display: inline-block;
   font-size: $sans-size-l;
   line-height: 54px;
-  padding: 0 0 0 14px;
+  padding: 0 14px 0 14px;
   width: 100%;
 
   &.small-text{
@@ -123,8 +158,6 @@
   font-size: $sans-size-xs;
   margin: 8px 0 0;
   width: 100%;
-  left: 0;
-  top: 100%;
 
   &.verified-value{
     color: $blue;
@@ -144,38 +177,28 @@
   }
 }
 
-.form-inputs .button-info{
-  font-size: $sans-size-xs;
-  margin: 0 0 6px;
-  text-align: center;
-}
-
-.form-inputs .submit-payment{
+.submit-payment{
+  // Matches line-height + border of .form-input
+  height: 58px;
   width: 100%;
-
-  &:disabled{
-    background-color: $purp-xlight;
-
-    &:hover{
-      background-color: $purp-xlight;
-    }
-  }
-
 }
 
-.form-field:last-of-type{
-  margin: 0 0 60px;
-
-  .form-input-notes{
-    position: absolute;
-  }
+.form-inputs-footer{
+  display: flex;
+  flex-direction: column;
+  @include space-x(0px);
+  @include space-y(20px);
 }
-
-
 
 @media only screen and (min-width: $screen-l) {
-  .form-inputs{
-    padding-right: calc(30% + 50px;)
+  .form-field{
+    max-width: calc(70% - 50px);
+  }
+
+  .form-inputs-footer{
+    flex-direction: row;
+    @include space-x(40px);
+    @include space-y(0px);
   }
 
   .form-input-label{
@@ -201,20 +224,12 @@
     margin: 10px 0 0;
   }
 
-  .form-inputs .button-info{
-    bottom: 100%;
-    font-size: $sans-size-s;
-    margin: 0 0 4px;
-    position: absolute;
-    right: 0;
-    width: 33%
-  }
-
-  .form-inputs .submit-payment{
-    position: absolute;
-    right: 0;
-    bottom: 0px;
-    width: 30%
+  .submit-payment{
+    // Matches line-height + border of .form-input
+    height: 72px;
+    min-width: 30%;
+    width: inherit;
+    flex-shrink: 0;
   }
 
   .transaction-input {
