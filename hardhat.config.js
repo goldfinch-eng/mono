@@ -2,6 +2,7 @@
 require("@nomiclabs/hardhat-truffle5")
 require("@nomiclabs/hardhat-ethers")
 require("hardhat-deploy")
+require("hardhat-gas-reporter")
 
 const INFURA_PROJECT_ID = "d8e13fc4893e4be5aae875d94fee67b7"
 // Note this came from a new instance of Metamask that Blake set up
@@ -66,4 +67,10 @@ module.exports = {
       4: "0xf3c9B38c155410456b5A98fD8bBf5E35B87F6d96",
     },
   },
+  gasReporter: {
+    enabled: (process.env.REPORT_GAS) ? true : false,
+    coinmarketcap: process.env.COINMARKETCAP_API_KEY,
+    currency: "USD",
+    src: "contracts/protocol"
+  }
 }
