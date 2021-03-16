@@ -202,6 +202,7 @@ describe("Goldfinch", async () => {
         const creditLine = await createCreditLine({_paymentPeriodInDays: paymentPeriodInDays})
         await drawdown(creditLine.address, drawdownAmount, borrower)
 
+        await goldfinchConfig.setNumber(CONFIG_KEYS.LatenessGracePeriodInDays, paymentPeriodInDays)
         // Advance to a point where we would definitely writethem down
         const fourPeriods = (await creditLine.paymentPeriodInDays()).mul(new BN(4))
         await advanceTime(creditDesk, {days: fourPeriods.toNumber()})

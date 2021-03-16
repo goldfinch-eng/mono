@@ -66,10 +66,7 @@ library Accountant {
     if (amountOwedPerDay.isEqual(0)) {
       return (0, 0);
     }
-    FixedPoint.Unsigned memory fpGracePeriod = FixedPoint.min(
-      FixedPoint.fromUnscaledUint(gracePeriodInDays),
-      FixedPoint.fromUnscaledUint(cl.paymentPeriodInDays())
-    );
+    FixedPoint.Unsigned memory fpGracePeriod = FixedPoint.fromUnscaledUint(gracePeriodInDays);
     FixedPoint.Unsigned memory daysLate;
 
     // Excel math: =min(1,max(0,periods_late_in_days-graceperiod_in_days)/MAX_ALLOWED_DAYS_LATE) grace_period = 30,
@@ -140,7 +137,6 @@ library Accountant {
     uint256 gracePeriodInDays
   ) public view returns (bool) {
     uint256 blocksLate = blockNumber.sub(cl.lastFullPaymentBlock());
-    gracePeriodInDays = Math.min(gracePeriodInDays, cl.paymentPeriodInDays());
     return cl.lateFeeApr() > 0 && blocksLate > gracePeriodInDays.mul(BLOCKS_PER_DAY);
   }
 
