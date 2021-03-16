@@ -17,7 +17,8 @@
     "upgrade-protocol": "npm run docs && npx hardhat deploy --export-all client/config/deployments.json --tags upgrade_protocol --network",
     "update-configs": "npx hardhat run ./blockchain_scripts/updateConfigs.js --network",
     "upgrade-multisig": "npx hardhat run ./blockchain_scripts/upgrade.js --network",
-    "autotask-update": "node autotasks/deployAutoTasks.js"
+    "autotask-update": "node autotasks/deployAutoTasks.js",
+    "advance-time": "npx hardhat run ./blockchain_scripts/advanceTime.js --network localhost"
   },
   "lint-staged": {
     "**!(client)/*.js": [
