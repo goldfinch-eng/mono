@@ -5,9 +5,17 @@ const {
   MAINNET_ONE_SPLIT_ADDRESS,
   isMainnetForking,
   getSignerForAddress,
-  getDeployedContract,
   interestAprAsBN,
 } = require("../blockchain_scripts/deployHelpers")
+const {
+  MAINNET_MULTISIG,
+  upgradeContracts,
+  getExistingContracts,
+  getMainnetContracts,
+  impersonateAccount,
+  fundWithWhales,
+  performPostUpgradeMigration,
+} = require("../blockchain_scripts/mainnetForkingHelpers")
 const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
 const {time} = require("@openzeppelin/test-helpers")
 const {deployments, ethers, artifacts} = hre
@@ -18,7 +26,6 @@ const {
   expect,
   expectAction,
   getDeployedAsTruffleContract,
-  erc20Transfer,
   erc20Approve,
   usdcVal,
   getBalance,
@@ -32,7 +39,7 @@ const {
 } = require("./testHelpers")
 
 const TEST_TIMEOUT = 180000 // 3 mins
-const USDC_WHALE = "0x46aBbc9fc9d8E749746B00865BC2Cf7C4d85C837"
+
 /*
 These tests are special. They use existing mainnet state, so
 that we can easily and realistically test interactions with outside protocols
@@ -43,16 +50,14 @@ describe("mainnet forking tests", async function () {
   if (!isMainnetForking()) {
     return
   }
-  let accounts, owner, bwr, person3, pool, reserve, underwriter, usdc, creditDesk, fidu, goldfinchConfig
+  let accounts, owner, bwr, person3, pool, reserve, underwriter, usdc, creditDesk, fidu, goldfinchConfig, usdcAddress
   let goldfinchFactory, busd, usdt, cUSDC
   let poolValue = usdcVal(1000)
-  const busdAddress = "0x4fabb145d64652a948d72533023f6e7a623c7c53"
-  const usdtAddress = "0xdAC17F958D2ee523a2206206994597C13D831ec7"
   const cUSDCContractAddress = "0x39aa39c021dfbae8fac545936693ac917d5e7563"
   const setupTest = deployments.createFixture(async ({deployments}) => {
     await deployments.fixture("base_deploy")
     const pool = await getDeployedAsTruffleContract(deployments, "Pool")
-    const usdcAddress = getUSDCAddress("mainnet")
+    usdcAddress = getUSDCAddress("mainnet")
     const usdc = await artifacts.require("IERC20withDec").at(usdcAddress)
     const creditDesk = await getDeployedAsTruffleContract(deployments, "CreditDesk")
     const fidu = await getDeployedAsTruffleContract(deployments, "Fidu")
@@ -61,13 +66,8 @@ describe("mainnet forking tests", async function () {
     const cUSDC = await artifacts.require("ICUSDCContract").at(cUSDCContractAddress)
 
     // Unlocks a random account that owns tons of USDC, which we can send to our test users
-    await hre.network.provider.request({
-      method: "hardhat_impersonateAccount",
-      params: [USDC_WHALE],
-    })
-    // Give USDC from the whale to our test accounts
-    await erc20Transfer(usdc, [owner, bwr, person3], usdcVal(100000), USDC_WHALE)
-
+    const erc20s = [{ticker: "USDC", contract: await ethers.getContractAt("IERC20withDec", usdcAddress)}]
+    await fundWithWhales(erc20s, [owner, bwr, person3])
     // Approve transfers from the Pool for our test accounts
     await erc20Approve(usdc, pool.address, usdcVal(100000), [owner, bwr, person3])
 
@@ -85,24 +85,17 @@ describe("mainnet forking tests", async function () {
     accounts = await web3.eth.getAccounts()
     ;[owner, bwr, person3, underwriter, reserve] = accounts
     ;({usdc, creditDesk, goldfinchFactory, pool, fidu, goldfinchConfig, cUSDC} = await setupTest())
-
-    // Give BUSD from the whale to our test accounts
-    const busdWhale = "0x81670C129A9cf4FD535Cc68aE8b4a0df56d1BB82"
-    const usdtWhale = "0x0d40c5e36100a60680b51a80ce9ba3653abc1498"
-    // Unlocks a random account that owns tons of BUSD, which we can send to our test users
-    await hre.network.provider.request({
-      method: "hardhat_impersonateAccount",
-      params: [busdWhale],
-    })
-    await hre.network.provider.request({
-      method: "hardhat_impersonateAccount",
-      params: [usdtWhale],
-    })
-
+    const busdAddress = "0x4fabb145d64652a948d72533023f6e7a623c7c53"
+    const usdtAddress = "0xdAC17F958D2ee523a2206206994597C13D831ec7"
     busd = await artifacts.require("IERC20withDec").at(busdAddress)
     usdt = await artifacts.require("IERC20withDec").at(usdtAddress)
-    await erc20Transfer(busd, [owner, bwr, person3], bigVal(100000), busdWhale)
-    await erc20Transfer(usdt, [owner, bwr, person3], usdcVal(100000), usdtWhale)
+
+    let erc20s = [
+      {ticker: "USDC", contract: await ethers.getContractAt("IERC20withDec", usdcAddress)},
+      {ticker: "BUSD", contract: await ethers.getContractAt("IERC20withDec", busdAddress)},
+      {ticker: "USDT", contract: await ethers.getContractAt("IERC20withDec", usdtAddress)},
+    ]
+    await fundWithWhales(erc20s, [owner, bwr, person3])
   })
 
   describe("drawing down into another currency", async function () {
@@ -126,7 +119,7 @@ describe("mainnet forking tests", async function () {
           cl.address,
           usdcAmount,
           person3,
-          usdtAddress,
+          usdt.address,
           expectedReturn.returnAmount.mul(new BN(99)).div(new BN(100)),
           expectedReturn.distribution,
           {from: bwr}
@@ -150,7 +143,7 @@ describe("mainnet forking tests", async function () {
             cl.address,
             usdcAmount,
             person3,
-            usdtAddress,
+            usdt.address,
             expectedReturn.returnAmount.mul(new BN(99)).div(new BN(100)),
             expectedReturn.distribution,
             {from: bwr}
@@ -174,7 +167,7 @@ describe("mainnet forking tests", async function () {
               cl.address,
               usdcAmount,
               bwrCon.address,
-              usdtAddress,
+              usdt.address,
               expectedReturn.returnAmount.mul(new BN(99)).div(new BN(100)),
               expectedReturn.distribution,
               {from: bwr}
@@ -198,7 +191,7 @@ describe("mainnet forking tests", async function () {
               cl.address,
               usdcAmount,
               ZERO_ADDRESS,
-              usdtAddress,
+              usdt.address,
               expectedReturn.returnAmount.mul(new BN(99)).div(new BN(100)),
               expectedReturn.distribution,
               {from: bwr}
@@ -214,7 +207,7 @@ describe("mainnet forking tests", async function () {
 
     it("should let you drawdown to BUSD", async function () {
       let usdcAmount = usdcVal(10)
-      const expectedReturn = await oneSplit.getExpectedReturn(usdc.address, busdAddress, usdcAmount, 10, 0, {
+      const expectedReturn = await oneSplit.getExpectedReturn(usdc.address, busd.address, usdcAmount, 10, 0, {
         from: bwr,
       })
       await expectAction(() => {
@@ -222,7 +215,7 @@ describe("mainnet forking tests", async function () {
           cl.address,
           usdcAmount,
           person3,
-          busdAddress,
+          busd.address,
           expectedReturn.returnAmount.mul(new BN(99)).div(new BN(100)),
           expectedReturn.distribution,
           {from: bwr}
@@ -262,7 +255,7 @@ describe("mainnet forking tests", async function () {
         return bwrCon.payWithSwapOnOneInch(
           cl.address,
           usdtAmount,
-          usdtAddress,
+          usdt.address,
           expectedReturn.returnAmount.mul(new BN(99)).div(new BN(100)),
           expectedReturn.distribution,
           {from: bwr}
@@ -288,7 +281,7 @@ describe("mainnet forking tests", async function () {
         return bwrCon.payWithSwapOnOneInch(
           cl.address,
           busdAmount,
-          busdAddress,
+          busd.address,
           expectedReturn.returnAmount.mul(new BN(99)).div(new BN(100)),
           expectedReturn.distribution,
           {from: bwr}
@@ -331,7 +324,7 @@ describe("mainnet forking tests", async function () {
             [cl.address, cl2.address],
             [amount, amount2],
             originAmount,
-            usdtAddress,
+            usdt.address,
             expectedReturn.distribution,
             {from: bwr}
           )
@@ -455,92 +448,35 @@ describe("mainnet upgrade tests", async function () {
   if (!isMainnetForking()) {
     return
   }
-  let owner, bwr, mainnetMultisig, mainnetConfig, usdcTruffleContract
-  const CONTRACTS = ["CreditDesk", "Pool", "Fidu", "CreditLineFactory"]
+  let owner, bwr, mainnetMultisigSigner, mainnetConfig, usdcTruffleContract
+  const contractsToUpgrade = ["CreditDesk", "Pool", "Fidu", "CreditLineFactory", "GoldfinchConfig"]
 
   beforeEach(async function () {
-    await deployments.fixture()
+    await deployments.fixture("base_deploy")
     ;[owner, bwr] = await web3.eth.getAccounts()
     const usdcAddress = getUSDCAddress("mainnet")
     usdcTruffleContract = await artifacts.require("IERC20withDec").at(usdcAddress)
 
-    let deploymentsFile = require("../client/config/deployments.json")
-    mainnetConfig = deploymentsFile["1"].mainnet.contracts
-    mainnetMultisig = "0xBEb28978B2c755155f20fd3d09Cb37e300A6981f"
+    mainnetConfig = getMainnetContracts()
+    mainnetMultisigSigner = await ethers.provider.getSigner(MAINNET_MULTISIG)
 
     // Ensure the multisig has funds for upgrades and other transactions
     let ownerAccount = await getSignerForAddress(owner)
-    await ownerAccount.sendTransaction({to: mainnetMultisig, value: ethers.utils.parseEther("5.0")})
+    await ownerAccount.sendTransaction({to: MAINNET_MULTISIG, value: ethers.utils.parseEther("5.0")})
 
-    // Unlocks a random account that owns tons of USDC, which we can send to our test users
-    await hre.network.provider.request({
-      method: "hardhat_impersonateAccount",
-      params: [USDC_WHALE],
-    })
-    await hre.network.provider.request({
-      method: "hardhat_impersonateAccount",
-      params: [mainnetMultisig],
-    })
-
-    // Give USDC from the whale to our test accounts
-    await erc20Transfer(usdcTruffleContract, [owner, bwr], usdcVal(100000), USDC_WHALE)
+    await impersonateAccount(hre, MAINNET_MULTISIG)
+    const erc20s = [{ticker: "USDC", contract: await ethers.getContractAt("IERC20withDec", usdcAddress)}]
+    await fundWithWhales(erc20s, [owner, bwr])
   })
 
-  async function getProxyImplAddress(proxyContract) {
-    const implStorageLocation = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"
-    let currentImpl = await ethers.provider.getStorageAt(proxyContract.address, implStorageLocation)
-    return ethers.utils.hexStripZeros(currentImpl)
-  }
-
-  async function upgradeContracts(contractNames, contracts) {
-    const configOptionsDeployResult = await deployments.deploy("ConfigOptions", {from: owner, gas: 4000000, args: []})
-    const accountantDeployResult = await deployments.deploy("Accountant", {from: owner, gas: 4000000, args: []})
-    const dependencies = {
-      GoldfinchConfig: {["ConfigOptions"]: configOptionsDeployResult.address},
-      CreditDesk: {["Accountant"]: accountantDeployResult.address},
-    }
-
-    let mainnetMultisigSigner = await ethers.provider.getSigner(mainnetMultisig)
-    for (let i = 0; i < contractNames.length; i++) {
-      const contractName = contractNames[i]
-      let contract = contracts[contractName]
-
-      let deployResult = await deployments.deploy(contractName, {
-        from: owner,
-        gas: 4000000,
-        args: [],
-        libraries: dependencies[contractName],
-      })
-      await contract.ProxyContract.changeImplementation(deployResult.address, "0x")
-      // Get the new implmentation contract with the latest ABI, but attach it to the mainnet proxy address
-      let upgradedContract = await getDeployedContract(deployments, contractName, mainnetMultisigSigner)
-      upgradedContract = upgradedContract.attach(contract.ProxyContract.address)
-      contract.UpgradedContract = upgradedContract
-      contract.UpgradedImplAddress = await getProxyImplAddress(contract.ProxyContract)
-    }
-    return contracts
-  }
-
-  async function getExistingContracts(contractNames) {
-    let mainnetMultisigSigner = await ethers.provider.getSigner(mainnetMultisig)
-    let contracts = {}
-    for (let i = 0; i < contractNames.length; i++) {
-      const contractName = contractNames[i]
-      const contractConfig = mainnetConfig[contractName]
-      const proxyConfig = mainnetConfig[`${contractName}_Proxy`]
-      let contractProxy = await ethers.getContractAt(proxyConfig.abi, proxyConfig.address, mainnetMultisigSigner)
-      let contract = await ethers.getContractAt(contractConfig.abi, contractConfig.address, mainnetMultisigSigner)
-      contracts[contractName] = {
-        ProxyContract: contractProxy,
-        ExistingContract: contract,
-        ExistingImplAddress: await getProxyImplAddress(contractProxy),
-      }
-    }
+  async function upgrade(contractsToUpgrade, contracts) {
+    contracts = await upgradeContracts(contractsToUpgrade, contracts, mainnetMultisigSigner, owner, deployments)
+    await performPostUpgradeMigration(contracts, deployments)
     return contracts
   }
 
   it("does not affect the storage layout", async () => {
-    let contracts = await getExistingContracts(CONTRACTS)
+    let contracts = await getExistingContracts(contractsToUpgrade, mainnetConfig, mainnetMultisigSigner)
 
     let existingSharePrice = await contracts.Pool.ExistingContract.sharePrice()
     let existingLoansOutstanding = await contracts.CreditDesk.ExistingContract.totalLoansOutstanding()
@@ -548,7 +484,7 @@ describe("mainnet upgrade tests", async function () {
     expect(existingSharePrice.isZero()).to.be.false
     expect(existingLoansOutstanding.isZero()).to.be.false
 
-    contracts = await upgradeContracts(CONTRACTS, contracts)
+    contracts = await upgrade(contractsToUpgrade, contracts)
 
     const newSharePrice = await contracts.Pool.UpgradedContract.sharePrice()
     const compoundBalance = await contracts.Pool.UpgradedContract.compoundBalance()
@@ -558,10 +494,10 @@ describe("mainnet upgrade tests", async function () {
 
     let newLoansOutstanding = await contracts.CreditDesk.UpgradedContract.totalLoansOutstanding()
     expect(existingLoansOutstanding.toString()).to.eq(newLoansOutstanding.toString())
-  })
+  }).timeout(TEST_TIMEOUT)
 
   it("supports basic credit desk functions", async () => {
-    let contracts = await getExistingContracts(CONTRACTS)
+    let contracts = await getExistingContracts(contractsToUpgrade, mainnetConfig, mainnetMultisigSigner)
     let bwrSigner = await ethers.provider.getSigner(bwr)
     let bwrCreditDesk = contracts.CreditDesk.ExistingContract.connect(bwrSigner)
     let bwrPool = contracts.Pool.ExistingContract.connect(bwrSigner)
@@ -569,7 +505,10 @@ describe("mainnet upgrade tests", async function () {
 
     const limit = usdcVal(1000).toString()
     const interest = interestAprAsBN("10.0").toString()
-    await contracts.CreditDesk.ExistingContract.setUnderwriterGovernanceLimit(mainnetMultisig, usdcVal(1000).toString())
+    await contracts.CreditDesk.ExistingContract.setUnderwriterGovernanceLimit(
+      MAINNET_MULTISIG,
+      usdcVal(1000).toString()
+    )
     let res = await (
       await contracts.CreditDesk.ExistingContract.createCreditLine(bwr, limit, interest, "360", "30", "0")
     ).wait()
@@ -591,7 +530,7 @@ describe("mainnet upgrade tests", async function () {
 
     expect((await clContract.balance()).isZero()).to.be.false
 
-    contracts = await upgradeContracts(CONTRACTS, contracts)
+    contracts = await upgrade(contractsToUpgrade, contracts)
 
     bwrCreditDesk = contracts.CreditDesk.UpgradedContract.connect(bwrSigner)
     bwrPool = contracts.Pool.UpgradedContract.connect(bwrSigner)
@@ -605,5 +544,5 @@ describe("mainnet upgrade tests", async function () {
     bwrPool.withdrawInFidu(fiduBalance.toString())
     fiduBalance = await bwrFidu.balanceOf(bwr)
     expect(fiduBalance.isZero()).to.be.true
-  })
+  }).timeout(TEST_TIMEOUT)
 })
