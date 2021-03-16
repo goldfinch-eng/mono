@@ -25,8 +25,8 @@ async function upgradeContracts(contractNames, contracts, mainnetSigner, deployF
     args: [],
   })
   const accountantDeployResult = await deployments.deploy("Accountant", {from: deployFrom, gas: 4000000, args: []})
-  // Always deploy a fresh creditline for use as the new reference implementation
-  await deployments.deploy("CreditLine", {from: deployFrom, gas: 4000000, args: []})
+  // Ensure a test forwarder is available. Using the test forwarder instead of the real forwarder on mainnet
+  // gives us the ability to debug the forwarded transactions.
   await deployments.deploy("TestForwarder", {from: deployFrom, gas: 4000000, args: []})
 
   const dependencies = {
@@ -119,7 +119,6 @@ async function impersonateAccount(hre, account) {
 
 async function performPostUpgradeMigration(upgradedContracts, deployments) {
   let config = upgradedContracts.GoldfinchConfig.UpgradedContract
-  let creditLine = await deployments.getOrNull("CreditLine")
   let forwarder = await deployments.getOrNull("TestForwarder")
 
   // Migrates the config from the
@@ -127,7 +126,6 @@ async function performPostUpgradeMigration(upgradedContracts, deployments) {
   await updateConfig(config, "address", CONFIG_KEYS.OneInch, MAINNET_ONE_SPLIT_ADDRESS)
   await updateConfig(config, "address", CONFIG_KEYS.CUSDCContract, MAINNET_CUSDC_ADDRESS)
   await updateConfig(config, "address", CONFIG_KEYS.TrustedForwarder, forwarder.address)
-  await updateConfig(config, "address", CONFIG_KEYS.CreditLineImplementation, creditLine.address)
 }
 
 function getMainnetContracts() {
