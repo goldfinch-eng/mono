@@ -120,7 +120,7 @@ async function getWeightedAverageSharePrice(pool, capitalProvider) {
 async function getCumulativeWritedowns(pool) {
   const from = getFromBlock(pool.chain);
   const events = await pool.getPastEvents('PrincipalWrittendown', { fromBlock: from });
-  return new BigNumber(_.sumBy(events, event => parseInt(event.returnValues.amount, 10)));
+  return new BigNumber(_.sumBy(events, event => parseInt(event.returnValues.amount, 10))).negated();
 }
 
 async function getRepaymentEvents() {
