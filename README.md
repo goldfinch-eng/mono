@@ -17,12 +17,22 @@ You will need the correct version of node/npm on your local machine.
 **One time setup**
 - Create a Goldfinch specific Metamask, which you can use for testing. The easiest way to do this is by creating a separate Chrome profile for Goldfinch, and then simply installing the Metamask extension.
 - Copy `.env.example` to `.env.local` (the local will be ignored from git).
-- Lastly add your Goldfinch Metamask address into your new `.env.local` file where it says "TEST_USER=". Our local dev scripts will use that to automatically send you test ETH, and give you a credit line and USDC to play with.
+- Lastly add the following into your new `.env.local` file.
+ * `TEST_USER={your Goldfinch Metamask address}`
+ * `ALLOWED_SENDERS=<your Goldfinch Metamask address>`
+ * `ALLOWED_CONTRACTS=<borrower contract address>`
+
+*Note: To find the borrower contract address, you'll need to run `npm start`, and then find the line in the console output that says `[blockchain] Created borrower contract: {borrower contract address} for {your wallet address}` Use the borrower contract address and paste it into your .env.local!*
+
+*Also note: If/when we upgrade the borrower contract, you would need to update that address*
+
+ Our local dev scripts will use these vars to automatically send you test ETH, and give you a credit line and USDC to play with.
 
 **Every time**
 - `npm start` from the project root directory.
   - This will run a local blockchain, deploy the contracts, and set up useful state for the frontend (give your user a Credit Line and fake ETH, and fake USDC, etc.)
   - It will also start the front-end server, which will pop up on localhost 3000
+- `npm no-gasless-start` is available if gasless transactions are giving you trouble, or if you're having trouble finding the borrower contract address.
 
 **IMPORTANT** Since we use Gitpod, the local blockchain that gets spun up will not be visible to Metamask by default. So if you try to join
 "localhost 8545", it will not connect. You can fix this by creating a custom network on Metamask that points to the open port on your Gitpod instance.
