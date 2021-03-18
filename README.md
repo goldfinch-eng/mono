@@ -32,7 +32,7 @@ You will need the correct version of node/npm on your local machine.
 - `npm start` from the project root directory.
   - This will run a local blockchain, deploy the contracts, and set up useful state for the frontend (give your user a Credit Line and fake ETH, and fake USDC, etc.)
   - It will also start the front-end server, which will pop up on localhost 3000
-- `npm no-gasless-start` is available if gasless transactions are giving you trouble, or if you're having trouble finding the borrower contract address.
+- `npm run no-gasless-start` is available if gasless transactions are giving you trouble, or if you're having trouble finding the borrower contract address.
 
 **IMPORTANT** Since we use Gitpod, the local blockchain that gets spun up will not be visible to Metamask by default. So if you try to join
 "localhost 8545", it will not connect. You can fix this by creating a custom network on Metamask that points to the open port on your Gitpod instance.
