@@ -173,9 +173,9 @@ class MultipleCreditLines extends BaseCreditLine {
     this.dueDate = await this._calculateDueDateFromFutureBlock(this.nextDueBlock);
   }
 
-  splitPayment(dollarAmount) {
+  splitPayment(dollarAmountAtomic) {
     // Pay the minimum amounts for each creditline until there's no money left
-    let amountRemaining = new BigNumber(usdcToAtomic(dollarAmount));
+    let amountRemaining = new BigNumber(usdcToAtomic(dollarAmountAtomic));
     let addresses = [];
     let amounts = [];
     const creditLinesByEarliestDue = this.creditLines
@@ -200,7 +200,7 @@ class MultipleCreditLines extends BaseCreditLine {
         amountRemaining = zero;
       }
     });
-    console.log(`Split ${usdcToAtomic(dollarAmount)} into ${amounts} for ${addresses}`);
+    console.log(`Split ${dollarAmountAtomic} into ${amounts} for ${addresses}`);
     return [addresses, amounts];
   }
 
