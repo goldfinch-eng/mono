@@ -200,7 +200,7 @@ class MultipleCreditLines extends BaseCreditLine {
         amountRemaining = zero;
       }
     });
-    console.log(`Split ${usdcToAtomic(dollarAmount)} into ${amounts} for ${addresses}`);
+    console.log(`Split ${dollarAmount} into ${amounts} for ${addresses}`);
     return [addresses, amounts];
   }
 

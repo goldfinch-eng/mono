@@ -21,17 +21,20 @@ function TransactionInput(props) {
       {content}
     </div>
   ));
-  if (props.formMethods.errors.length > 0) {
-    noteEls.push(
-      <div key="error" className="form-input-note">
-        <ErrorMessage
-          message={(function(errors, name) {
-            return errors[name] && errors[name].message;
-          })(props.formMethods.errors, name)}
-          name={name}
-        />
-      </div>,
-    );
+  let errors = Object.keys(props.formMethods.errors);
+  if (errors.length > 0) {
+    errors.map(name => {
+      noteEls.push(
+        <div key="error" className="form-input-note">
+          <ErrorMessage
+            message={(function(errors, name) {
+              return errors[name] && errors[name].message;
+            })(props.formMethods.errors, name)}
+            name={name}
+          />
+        </div>,
+      );
+    });
   }
 
   return (

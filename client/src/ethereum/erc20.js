@@ -52,6 +52,10 @@ class ERC20 {
     return new BigNumber(await this.contract.methods.allowance(owner, spender).call());
   }
 
+  async getBalance(address) {
+    return new BigNumber(await this.contract.methods.balanceOf(address).call());
+  }
+
   atomicAmount(decimalAmount) {
     let ten = new BigNumber(10);
     return new BigNumber(String(decimalAmount)).multipliedBy(ten.pow(this.decimals)).toString(10);

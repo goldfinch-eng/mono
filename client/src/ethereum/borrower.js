@@ -60,8 +60,28 @@ class BorrowerInterface {
     return this.submit(this.borrowerContract.methods.payMultiple(creditLines, amounts));
   }
 
-  payWithSwapOnOneInch(creditLineAddress, amount, fromToken) {
-    return this.submit(this.payWithSwapOnOneInchAsync(creditLineAddress, amount, fromToken));
+  payWithSwapOnOneInch(creditLineAddress, amount, minAmount, fromToken, quote) {
+    return this.submit(
+      this.borrowerContract.methods.payWithSwapOnOneInch(
+        creditLineAddress,
+        amount,
+        fromToken,
+        minAmount,
+        quote.distribution,
+      ),
+    );
+  }
+
+  payMultipleWithSwapOnOneInch(creditLines, amounts, originAmount, fromToken, quote) {
+    return this.submit(
+      this.borrowerContract.methods.payMultipleWithSwapOnOneInch(
+        creditLines,
+        amounts,
+        originAmount,
+        fromToken,
+        quote.distribution,
+      ),
+    );
   }
 
   async drawdownViaOneInchAsync(creditLineAddress, amount, sendToAddress, toToken) {
@@ -76,22 +96,6 @@ class BorrowerInterface {
       amount,
       sendToAddress,
       toToken,
-      this.withinOnePercent(result.returnAmount),
-      result.distribution,
-    );
-  }
-
-  async payWithSwapOnOneInchAsync(creditLineAddress, amount, fromToken) {
-    fromToken = fromToken || '0xdac17f958d2ee523a2206206994597c13d831ec7'; // Mainnet USDT
-    const splitParts = 10;
-    // TODO: Ensure amount has correct number of decimal places (USDT is 18)
-    const result = await this.oneInch.methods
-      .getExpectedReturn(fromToken, this.usdc._address, amount, splitParts, 0)
-      .call();
-    return this.borrowerContract.methods.payWithSwapOnOneInch(
-      creditLineAddress,
-      amount,
-      fromToken,
       this.withinOnePercent(result.returnAmount),
       result.distribution,
     );

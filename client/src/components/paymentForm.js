@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { usdcToAtomic, usdcFromAtomic } from '../ethereum/erc20';
 import { AppContext } from '../App';
 import PaymentOptions from './paymentOptions';
@@ -12,6 +12,7 @@ import { getERC20 } from '../ethereum/erc20';
 import useCurrencyUnlocked from '../hooks/useCurrencyUnlocked';
 import { useOneInchQuote, formatQuote } from '../hooks/useOneInchQuote';
 import useDebounce from '../hooks/useDebounce';
+import BigNumber from 'bignumber.js';
 
 function PaymentForm(props) {
   const { borrower, creditLine, actionComplete } = props;
@@ -21,6 +22,7 @@ function PaymentForm(props) {
   const [paymentOption, setPaymentOption] = useState('periodDue');
   const sendFromUser = useSendFromUser();
   const [erc20, setErc20] = useState(usdc);
+  const [erc20UserBalance, setErc20UserBalance] = useState(new BigNumber(0));
   const [unlocked, setUnlocked] = useCurrencyUnlocked(erc20, {
     owner: borrower.userAddress,
     spender: borrower.borrowerAddress,
@@ -34,41 +36,78 @@ function PaymentForm(props) {
   });
   const networkId = network.name;
 
+  useEffect(() => {
+    const fetchBalance = async () => {
+      const decimalAmount = new BigNumber(erc20.decimalAmount(await erc20.getBalance(user.address)));
+      setErc20UserBalance(decimalAmount);
+    };
+    fetchBalance();
+  }, [erc20, user]);
+
   function isSwapping() {
     return erc20 !== usdc;
   }
 
-  function action({ transactionAmount }) {
-    const amount = erc20.atomicAmount(transactionAmount);
+  function getSelectedUSDCAmount() {
+    if (paymentOption === 'totalDue') {
+      return usdcToAtomic(creditLine.remainingTotalDueAmountInDollars);
+    } else if (paymentOption === 'periodDue') {
+      return usdcToAtomic(creditLine.remainingPeriodDueAmountInDollars);
+    } else if (paymentOption === 'other') {
+      return isSwapping() ? transactionAmountQuote.returnAmount : transactionAmount;
+    }
+  }
 
+  function action({ transactionAmount }) {
+    const erc20Amount = erc20.atomicAmount(transactionAmount);
     let unsentAction;
-    if (isSwapping()) {
-      unsentAction = borrower.payWithSwapOnOneInch(creditLine.address, amount, erc20.address);
-    } else if (creditLine.isMultiple) {
+    if (creditLine.isMultiple) {
       let addresses = [];
-      let amounts = [];
+      let usdcAmounts = [];
       if (paymentOption === 'totalDue') {
         creditLine.creditLines.forEach(cl => {
           if (cl.remainingTotalDueAmount.gt(0)) {
             addresses.push(cl.address);
-            amounts.push(usdcToAtomic(cl.remainingTotalDueAmountInDollars));
+            usdcAmounts.push(usdcToAtomic(cl.remainingTotalDueAmountInDollars));
           }
         });
       } else if (paymentOption === 'periodDue') {
         creditLine.creditLines.forEach(cl => {
           if (cl.remainingPeriodDueAmount.gt(0)) {
             addresses.push(cl.address);
-            amounts.push(usdcToAtomic(cl.remainingPeriodDueAmountInDollars));
+            usdcAmounts.push(usdcToAtomic(cl.remainingPeriodDueAmountInDollars));
           }
         });
       } else {
-        // Other amount. Split across all credit lines depending on what's due
-        [addresses, amounts] = creditLine.splitPayment(transactionAmount);
+        // Other amount. Split across all credit lines depending on what's due. If we're swapping then
+        // we need to split the USDC value (the quote) rather than the user provided input. Since the USDC
+        // value will be what's used to pay
+        [addresses, usdcAmounts] = creditLine.splitPayment(getSelectedUSDCAmount());
       }
-      unsentAction = borrower.payMultiple(addresses, amounts);
+      if (isSwapping()) {
+        unsentAction = borrower.payMultipleWithSwapOnOneInch(
+          addresses,
+          usdcAmounts,
+          erc20Amount,
+          erc20.address,
+          transactionAmountQuote,
+        );
+      } else {
+        unsentAction = borrower.payMultiple(addresses, usdcAmounts);
+      }
     } else {
-      const amount = usdcToAtomic(transactionAmount);
-      unsentAction = borrower.pay(creditLine.address, amount);
+      if (isSwapping()) {
+        unsentAction = borrower.payWithSwapOnOneInch(
+          creditLine.address,
+          erc20Amount,
+          getSelectedUSDCAmount(),
+          erc20.address,
+          transactionAmountQuote,
+        );
+      } else {
+        // When not swapping, the erc20 is usdc
+        unsentAction = borrower.pay(creditLine.address, erc20Amount);
+      }
     }
     return sendFromUser(unsentAction, {
       type: 'Payment',
@@ -124,7 +163,7 @@ function PaymentForm(props) {
                 debouncedSetTransactionAmount(formMethods.getValues('transactionAmount'));
               }}
               validations={{
-                wallet: value => user.usdcBalanceInDollars.gte(value) || 'You do not have enough USDC',
+                wallet: value => erc20UserBalance.gte(value) || `You do not have enough ${erc20.ticker}`,
                 transactionLimit: value =>
                   goldfinchConfig.transactionLimit.gte(usdcToAtomic(value)) ||
                   `This is over the per-transaction limit of $${usdcFromAtomic(goldfinchConfig.transactionLimit)}`,
@@ -143,7 +182,7 @@ function PaymentForm(props) {
                   },
               ]}
             />
-            <LoadingButton action={action} disabled={!unlocked} />
+            <LoadingButton action={action} disabled={!unlocked || isQuoteLoading} />
           </div>
         </div>
       </>
