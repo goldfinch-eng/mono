@@ -59,53 +59,54 @@ function PaymentForm(props) {
   }
 
   function action({ transactionAmount }) {
-    const amount = erc20.atomicAmount(transactionAmount);
+    const erc20Amount = erc20.atomicAmount(transactionAmount);
     let unsentAction;
     if (creditLine.isMultiple) {
       let addresses = [];
-      let amounts = [];
+      let usdcAmounts = [];
       if (paymentOption === 'totalDue') {
         creditLine.creditLines.forEach(cl => {
           if (cl.remainingTotalDueAmount.gt(0)) {
             addresses.push(cl.address);
-            amounts.push(usdcToAtomic(cl.remainingTotalDueAmountInDollars));
+            usdcAmounts.push(usdcToAtomic(cl.remainingTotalDueAmountInDollars));
           }
         });
       } else if (paymentOption === 'periodDue') {
         creditLine.creditLines.forEach(cl => {
           if (cl.remainingPeriodDueAmount.gt(0)) {
             addresses.push(cl.address);
-            amounts.push(usdcToAtomic(cl.remainingPeriodDueAmountInDollars));
+            usdcAmounts.push(usdcToAtomic(cl.remainingPeriodDueAmountInDollars));
           }
         });
       } else {
         // Other amount. Split across all credit lines depending on what's due. If we're swapping then
         // we need to split the USDC value (the quote) rather than the user provided input. Since the USDC
         // value will be what's used to pay
-        [addresses, amounts] = creditLine.splitPayment(getSelectedUSDCAmount());
+        [addresses, usdcAmounts] = creditLine.splitPayment(getSelectedUSDCAmount());
       }
       if (isSwapping()) {
         unsentAction = borrower.payMultipleWithSwapOnOneInch(
           addresses,
-          amounts,
-          amount,
+          usdcAmounts,
+          erc20Amount,
           erc20.address,
           transactionAmountQuote,
         );
       } else {
-        unsentAction = borrower.payMultiple(addresses, amounts);
+        unsentAction = borrower.payMultiple(addresses, usdcAmounts);
       }
     } else {
       if (isSwapping()) {
         unsentAction = borrower.payWithSwapOnOneInch(
           creditLine.address,
-          amount,
+          erc20Amount,
           getSelectedUSDCAmount(),
           erc20.address,
           transactionAmountQuote,
         );
       } else {
-        unsentAction = borrower.pay(creditLine.address, amount);
+        // When not swapping, the erc20 is usdc
+        unsentAction = borrower.pay(creditLine.address, erc20Amount);
       }
     }
     return sendFromUser(unsentAction, {
