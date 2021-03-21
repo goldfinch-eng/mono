@@ -43,7 +43,6 @@ async function deployUpgrades(contractNames, proxy_owner, hre) {
   const chainId = await getChainId()
   const network = CHAIN_MAPPING[chainId]
   const dependencies = {
-    GoldfinchConfig: {["ConfigOptions"]: (await deployments.getOrNull("ConfigOptions")).address},
     CreditDesk: {["Accountant"]: (await deployments.getOrNull("Accountant")).address},
   }
 

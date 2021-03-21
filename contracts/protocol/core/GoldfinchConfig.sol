@@ -17,34 +17,28 @@ contract GoldfinchConfig is BaseUpgradeablePausable {
   mapping(uint256 => address) public addresses;
   mapping(uint256 => uint256) public numbers;
 
-  event AddressUpdated(address owner, string name, address oldValue, address newValue);
-  event NumberUpdated(address owner, string name, uint256 oldValue, uint256 newValue);
+  event AddressUpdated(address owner, uint256 index, address oldValue, address newValue);
+  event NumberUpdated(address owner, uint256 index, uint256 oldValue, uint256 newValue);
 
   function initialize(address owner) public initializer {
     __BaseUpgradeablePausable__init(owner);
   }
 
-  function setAddress(uint256 addressKey, address newAddress) public onlyAdmin {
-    require(addresses[addressKey] == address(0), "Address has already been initialized");
+  function setAddress(uint256 addressIndex, address newAddress) public onlyAdmin {
+    require(addresses[addressIndex] == address(0), "Address has already been initialized");
 
-    emit AddressUpdated(msg.sender, ConfigOptions.getAddressName(addressKey), addresses[addressKey], newAddress);
-    addresses[addressKey] = newAddress;
+    emit AddressUpdated(msg.sender, addressIndex, addresses[addressIndex], newAddress);
+    addresses[addressIndex] = newAddress;
   }
 
-  function setNumber(uint256 number, uint256 newNumber) public onlyAdmin {
-    emit NumberUpdated(msg.sender, ConfigOptions.getNumberName(number), numbers[number], newNumber);
-    numbers[number] = newNumber;
-  }
-
-  function setCreditLineImplementation(address newCreditLine) public onlyAdmin {
-    uint256 addressKey = uint256(ConfigOptions.Addresses.CreditLineImplementation);
-    emit AddressUpdated(msg.sender, ConfigOptions.getAddressName(addressKey), addresses[addressKey], newCreditLine);
-    addresses[addressKey] = newCreditLine;
+  function setNumber(uint256 index, uint256 newNumber) public onlyAdmin {
+    emit NumberUpdated(msg.sender, index, numbers[index], newNumber);
+    numbers[index] = newNumber;
   }
 
   function setTreasuryReserve(address newTreasuryReserve) public onlyAdmin {
     uint256 key = uint256(ConfigOptions.Addresses.TreasuryReserve);
-    emit AddressUpdated(msg.sender, ConfigOptions.getAddressName(key), addresses[key], newTreasuryReserve);
+    emit AddressUpdated(msg.sender, key, addresses[key], newTreasuryReserve);
     addresses[key] = newTreasuryReserve;
   }
 

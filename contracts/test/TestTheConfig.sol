@@ -33,7 +33,6 @@ contract TestTheConfig {
     );
     GoldfinchConfig(configAddress).setAddress(uint256(ConfigOptions.Addresses.CUSDCContract), cUSDCAddress);
 
-    GoldfinchConfig(configAddress).setCreditLineImplementation(clImplAddress);
     GoldfinchConfig(configAddress).setTreasuryReserve(treasuryReserveAddress);
   }
 }

@@ -55,13 +55,11 @@ async function baseDeploy(hre, {shouldUpgrade}) {
       deployResult = await upgrade(deploy, contractName, proxy_owner, {
         gas: 4000000,
         args: [],
-        libraries: {["ConfigOptions"]: configOptionsDeployResult.address},
       })
     } else {
       deployResult = await deploy(contractName, {
         from: proxy_owner,
         gas: 4000000,
-        libraries: {["ConfigOptions"]: configOptionsDeployResult.address},
       })
     }
     logger("Config was deployed to:", deployResult.address)

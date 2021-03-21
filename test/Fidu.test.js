@@ -3,7 +3,6 @@ const {expect, bigVal, getDeployedAsTruffleContract, expectAction} = require("./
 const {OWNER_ROLE} = require("../blockchain_scripts/deployHelpers")
 const hre = require("hardhat")
 const {deployments} = hre
-const ConfigOptions = artifacts.require("ConfigOptions")
 const GoldfinchConfig = artifacts.require("GoldfinchConfig")
 const Fidu = artifacts.require("Fidu")
 
@@ -17,11 +16,6 @@ describe("Fidu", () => {
     const fidu = await getDeployedAsTruffleContract(deployments, "Fidu")
 
     return {fidu, goldfinchConfig}
-  })
-
-  before(async () => {
-    const configOptions = await ConfigOptions.new({from: owner})
-    GoldfinchConfig.link(configOptions)
   })
 
   let owner, person2, goldfinchConfig, fidu, accounts

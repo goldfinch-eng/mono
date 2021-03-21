@@ -6,7 +6,6 @@ const INTEREST_DECIMALS = new BN(String(1e8))
 const API_KEY = "A2UgCPgn8jQbkSVuSCxEMhFmivdV9C6d"
 const API_SECRET = process.env.DEFENDER_API_SECRET
 const {AdminClient} = require("defender-admin-client")
-const {CONFIG_KEYS} = require("./configKeys")
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
@@ -150,11 +149,7 @@ async function updateConfig(config, type, key, newValue, opts) {
   if (type === "address") {
     currentValue = await config.getAddress(key)
     if (currentValue !== newValue) {
-      if (key == CONFIG_KEYS.CreditLineImplementation) {
-        await (await config.setCreditLineImplementation(newValue)).wait()
-      } else {
-        await (await config.setAddress(key, newValue)).wait()
-      }
+      await (await config.setAddress(key, newValue)).wait()
     }
   } else if (type === "number") {
     currentValue = await config.getNumber(key)
