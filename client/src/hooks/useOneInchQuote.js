@@ -29,6 +29,7 @@ function useOneInchQuote({ from, to, decimalAmount, parts = 10 }) {
     }
 
     getExpectedReturn();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [from, to, decimalAmount && decimalAmount.toString(), parts, network]);
 
   return [expectedReturn, isLoading];
@@ -53,6 +54,7 @@ function useAmountTargetingMinAmount({ from, to, targetMinAmount, padding = new 
     } else {
       setAmount(null);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quote]);
 
   return [amount, isLoading];

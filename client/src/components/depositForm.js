@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { usdcFromAtomic, minimumNumber, usdcToAtomic } from '../ethereum/erc20';
+import { usdcFromAtomic, usdcToAtomic } from '../ethereum/erc20';
 import { AppContext } from '../App.js';
 import { displayDollars } from '../utils';
 import TransactionForm from './transactionForm';

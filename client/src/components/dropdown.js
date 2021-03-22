@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import useCloseOnClickOrEsc from '../hooks/useCloseOnClickOrEsc';
 import _ from 'lodash';
 

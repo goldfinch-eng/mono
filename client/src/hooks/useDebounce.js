@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import _ from 'lodash';
 
 function useDebounce(fn, ms = 500) {

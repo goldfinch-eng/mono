@@ -15,7 +15,7 @@ import { getUSDC } from './ethereum/erc20.js';
 import { getGoldfinchConfig, refreshGoldfinchConfigData } from './ethereum/goldfinchConfig.js';
 import { getUserData, defaultUser } from './ethereum/user.js';
 import { mapNetworkToID, SUPPORTED_NETWORKS } from './ethereum/utils';
-import initSdk, { SafeInfo } from '@gnosis.pm/safe-apps-sdk';
+import initSdk from '@gnosis.pm/safe-apps-sdk';
 
 const AppContext = React.createContext({});
 
@@ -42,6 +42,7 @@ function App() {
     window.setUserAddress = function(overrideAddress) {
       refreshUserData(overrideAddress);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gnosisSafeInfo, usdc, pool, creditDesk, network]);
 
   async function setupWeb3() {

@@ -24,7 +24,7 @@ function TransactionInput(props) {
   let errors = Object.keys(props.formMethods.errors);
   if (errors.length > 0) {
     errors.map(name => {
-      noteEls.push(
+      return noteEls.push(
         <div key="error" className="form-input-note">
           <ErrorMessage
             message={(function(errors, name) {

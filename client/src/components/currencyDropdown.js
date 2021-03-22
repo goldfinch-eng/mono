@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useFormContext } from 'react-hook-form';
 import { Tickers } from '../ethereum/erc20';
 import Dropdown from './dropdown';
 

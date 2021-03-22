@@ -16,7 +16,7 @@ import useCurrencyUnlocked from '../hooks/useCurrencyUnlocked';
 import CurrencyDropdown from './currencyDropdown';
 
 function DrawdownForm(props) {
-  const { creditDesk, pool, usdc, goldfinchConfig, network } = useContext(AppContext);
+  const { pool, usdc, goldfinchConfig, network } = useContext(AppContext);
   const networkId = network.name;
   const [poolData, setPoolData] = useState({});
   const sendFromUser = useSendFromUser();

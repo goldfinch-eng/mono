@@ -3,7 +3,7 @@ import moment from 'moment';
 import BigNumber from 'bignumber.js';
 import { usdcFromAtomic, usdcToAtomic } from './erc20';
 import { fetchDataFromAttributes, INTEREST_DECIMALS, BLOCKS_PER_YEAR, BLOCKS_PER_DAY, getDeployments } from './utils';
-import { roundUpPenny, roundDownPenny, croppedAddress, displayDollars } from '../utils';
+import { roundUpPenny, croppedAddress } from '../utils';
 
 const CreditLineAbi = require('../../abi/Creditline.json');
 

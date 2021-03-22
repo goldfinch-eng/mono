@@ -362,7 +362,11 @@ describe("CreditDesk", () => {
     })
 
     describe("with an unapplied balance on the credit line", async () => {
+      let creditLine
       beforeEach(async () => {
+        creditLine = await createCreditLine({_interestApr: interestAprAsBN("123.12345678"), _limit: usdcVal(20)})
+        var ulCreditLines = await creditDesk.getUnderwriterCreditLines(underwriter)
+        creditLine = await CreditLine.at(ulCreditLines[1])
         // Do an initial drawdown
         await drawdown(usdcVal(10), creditLine.address)
         await creditDesk.pay(creditLine.address, String(usdcVal(5)), {from: borrower})
@@ -388,6 +392,13 @@ describe("CreditDesk", () => {
           [async () => getBalance(creditLine.address, usdc), {to: usdcVal(2)}],
           [async () => getBalance(borrower, usdc), {to: usdcVal(8)}],
         ])
+      })
+
+      it("should still work at the max of the credit line", async () => {
+        // Do an initial drawdown
+        await drawdown(usdcVal(10), creditLine.address)
+        await creditDesk.pay(creditLine.address, String(usdcVal(15)), {from: borrower})
+        return expect(drawdown(usdcVal(15), creditLine.address)).to.be.fulfilled
       })
     })
 

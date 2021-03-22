@@ -61,6 +61,9 @@ async function upgradeContracts(contractNames, contracts, mainnetSigner, deployF
 
 async function getExistingContracts(contractNames, mainnetConfig, mainnetSigner) {
   let contracts = {}
+  if (!mainnetConfig) {
+    mainnetConfig = getMainnetContracts()
+  }
   for (let i = 0; i < contractNames.length; i++) {
     const contractName = contractNames[i]
     const contractConfig = mainnetConfig[contractName]

@@ -1,5 +1,4 @@
-import React, { useContext } from 'react';
-import { AppContext } from '../App.js';
+import React from 'react';
 import { displayDollars, displayPercent } from '../utils';
 import { iconCircleCheck } from './icons.js';
 import { usdcFromAtomic } from '../ethereum/erc20';

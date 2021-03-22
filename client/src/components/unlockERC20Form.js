@@ -1,5 +1,4 @@
-import React, { useContext } from 'react';
-import { AppContext } from '../App.js';
+import React from 'react';
 import { MAX_UINT } from '../ethereum/utils';
 import LoadingButton from './loadingButton';
 import { useForm, FormProvider } from 'react-hook-form';

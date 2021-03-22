@@ -1,6 +1,6 @@
 import web3 from '../web3';
 import { submitGaslessTransaction } from './gasless';
-import { getFromBlock, ONE_INCH_ADDRESSES } from './utils.js';
+import { getFromBlock } from './utils.js';
 import BigNumber from 'bignumber.js';
 import { getOneInchContract } from './oneInch';
 

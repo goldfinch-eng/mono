@@ -6,7 +6,7 @@ async function main() {
   await advanceTime()
 }
 
-async function advanceTime(creditDesk, creditLineAddress, usdc, logger = console.log) {
+async function advanceTime(logger = console.log) {
   const daysToAdvance = new BN(process.env.DAYS || "10")
   const blocksToAdvance = BLOCKS_PER_DAY.mul(daysToAdvance)
   logger(`Advancing time by ${daysToAdvance.toString()} days (${blocksToAdvance.toString()} blocks)`)

@@ -151,7 +151,11 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     require(amount > 0, "Must drawdown more than zero");
     require(cl.borrower() == msg.sender, "You are not the borrower of this credit line");
     require(withinTransactionLimit(amount), "Amount is over the per-transaction limit");
-    require(withinCreditLimit(amount, cl), "The borrower does not have enough credit limit for this drawdown");
+    uint256 unappliedBalance = getUSDCBalance(creditLineAddress);
+    require(
+      withinCreditLimit(amount, unappliedBalance, cl),
+      "The borrower does not have enough credit limit for this drawdown"
+    );
 
     uint256 balance = cl.balance();
 
@@ -165,7 +169,6 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     // If there is any balance on the creditline that has not been applied yet, then use that first before
     // drawing down from the pool. This is to support cases where the borrower partially pays back the
     // principal before the due date, but then decides to drawdown again
-    uint256 unappliedBalance = getUSDCBalance(creditLineAddress);
     uint256 amountToTransferFromCL;
     if (unappliedBalance > 0) {
       if (amount > unappliedBalance) {
@@ -486,8 +489,12 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     return (cl.interestOwed().add(interestAccrued), cl.principalOwed().add(principalAccrued));
   }
 
-  function withinCreditLimit(uint256 amount, CreditLine cl) internal view returns (bool) {
-    return cl.balance().add(amount) <= cl.limit();
+  function withinCreditLimit(
+    uint256 amount,
+    uint256 unappliedBalance,
+    CreditLine cl
+  ) internal view returns (bool) {
+    return cl.balance().add(amount).sub(unappliedBalance) <= cl.limit();
   }
 
   function withinTransactionLimit(uint256 amount) internal view returns (bool) {
