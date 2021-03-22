@@ -169,15 +169,16 @@ describe("CreditDesk", () => {
     })
   })
 
-  describe("setGoldfinchConfig", () => {
+  describe("updateGoldfinchConfig", () => {
     describe("setting it", async () => {
       it("should allow the owner to set it", async () => {
-        return expectAction(() => creditDesk.setGoldfinchConfig(person2, {from: owner})).toChange([
+        await goldfinchConfig.setAddress(CONFIG_KEYS.GoldfinchConfig, person2)
+        return expectAction(() => creditDesk.updateGoldfinchConfig({from: owner})).toChange([
           [() => creditDesk.config(), {to: person2}],
         ])
       })
       it("should disallow non-owner to set", async () => {
-        return expect(creditDesk.setGoldfinchConfig(person2, {from: person2})).to.be.rejectedWith(/Must have admin/)
+        return expect(creditDesk.updateGoldfinchConfig({from: person2})).to.be.rejectedWith(/Must have admin/)
       })
     })
   })

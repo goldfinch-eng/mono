@@ -351,6 +351,10 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     return cl.interestOwed().add(interestAccrued).add(cl.principalOwed().add(principalAccrued));
   }
 
+  function updateGoldfinchConfig() external onlyAdmin {
+    config = GoldfinchConfig(config.configAddress());
+  }
+
   /*
    * Internal Functions
    */
@@ -606,11 +610,6 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
 
     cl.setTermEndBlock(calculateNewTermEndBlock(cl, balance)); // pass in balance as a gas optimization
     cl.setNextDueBlock(calculateNextDueBlock(cl));
-  }
-
-  // TEMPORARY: WILL REMOVE AFTER WE DO THE UPGRADE
-  function setGoldfinchConfig(GoldfinchConfig newGoldfinchConfig) external onlyAdmin {
-    config = newGoldfinchConfig;
   }
 
   function getUSDCBalance(address _address) internal view returns (uint256) {

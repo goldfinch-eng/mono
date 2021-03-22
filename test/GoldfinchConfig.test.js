@@ -1,5 +1,5 @@
 /* global artifacts web3 */
-const {expect, BN} = require("./testHelpers.js")
+const {expect, expectAction, BN} = require("./testHelpers.js")
 const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
 const {OWNER_ROLE} = require("../blockchain_scripts/deployHelpers")
 const GoldfinchConfig = artifacts.require("GoldfinchConfig")
@@ -60,6 +60,9 @@ describe("GoldfinchConfig", () => {
       expect(await goldfinchConfig.getAddress(CONFIG_KEYS.CUSDCContract)).to.equal(
         "0x5B281A6DdA0B271e91ae35DE655Ad301C976edb1"
       )
+      expect(await goldfinchConfig.getAddress(CONFIG_KEYS.GoldfinchConfig)).to.equal(
+        "0x0000000000000000000000000000000000000008"
+      )
     })
   })
 
@@ -102,6 +105,27 @@ describe("GoldfinchConfig", () => {
       expect(event.args.index).to.bignumber.equal(new BN(0))
       expect(event.args.oldValue).to.match(/0x0000000/)
       expect(event.args.newValue).to.equal(address)
+    })
+  })
+
+  describe("multiple Updates", async () => {
+    it("allows setting the treasury reserve and goldfinch config multiple times", async () => {
+      const firstAddress = "0x0000000000000000000000000000000000000001"
+      const secondAddress = "0x0000000000000000000000000000000000000002"
+
+      await expectAction(() => goldfinchConfig.setTreasuryReserve(firstAddress, {from: owner})).toChange([
+        [() => goldfinchConfig.getAddress(CONFIG_KEYS.TreasuryReserve), {to: firstAddress}],
+      ])
+      await expectAction(() => goldfinchConfig.setTreasuryReserve(secondAddress, {from: owner})).toChange([
+        [() => goldfinchConfig.getAddress(CONFIG_KEYS.TreasuryReserve), {to: secondAddress}],
+      ])
+
+      await expectAction(() => goldfinchConfig.setGoldfinchConfig(firstAddress, {from: owner})).toChange([
+        [() => goldfinchConfig.getAddress(CONFIG_KEYS.GoldfinchConfig), {to: firstAddress}],
+      ])
+      await expectAction(() => goldfinchConfig.setGoldfinchConfig(secondAddress, {from: owner})).toChange([
+        [() => goldfinchConfig.getAddress(CONFIG_KEYS.GoldfinchConfig), {to: secondAddress}],
+      ])
     })
   })
 

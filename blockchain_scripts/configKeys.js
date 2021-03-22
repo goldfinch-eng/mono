@@ -19,6 +19,7 @@ const CONFIG_KEYS = {
   OneInch: 8,
   TrustedForwarder: 9,
   CUSDCContract: 10,
+  GoldfinchConfig: 11,
 }
 
 module.exports = {

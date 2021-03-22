@@ -6,6 +6,7 @@ import "./GoldfinchConfig.sol";
 import "./BaseUpgradeablePausable.sol";
 import "../periphery/Borrower.sol";
 import "./CreditLine.sol";
+import "./ConfigHelper.sol";
 
 /**
  * @title CreditLineFactory
@@ -15,6 +16,7 @@ import "./CreditLine.sol";
 
 contract CreditLineFactory is BaseUpgradeablePausable {
   GoldfinchConfig public config;
+  using ConfigHelper for GoldfinchConfig;
 
   event BorrowerCreated(address indexed borrower, address indexed owner);
 
@@ -39,8 +41,7 @@ contract CreditLineFactory is BaseUpgradeablePausable {
     return address(borrower);
   }
 
-  // TEMPORARY: WILL REMOVE AFTER WE DO THE UPGRADE
-  function setGoldfinchConfig(GoldfinchConfig newGoldfinchConfig) external onlyAdmin {
-    config = newGoldfinchConfig;
+  function updateGoldfinchConfig() external onlyAdmin {
+    config = GoldfinchConfig(config.configAddress());
   }
 }
