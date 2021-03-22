@@ -53,6 +53,7 @@ class BaseCreditLine {
   }
 }
 
+
 class DefaultCreditLine extends BaseCreditLine {
   constructor() {
     super();
@@ -103,6 +104,7 @@ class CreditLine extends BaseCreditLine {
       this[info.method] = new BigNumber(data[info.method]);
     });
 
+    this.isLate = await this._calculateIsLate();
     const interestOwed = this._calculateInterestOwed();
     this.dueDate = await this._calculateDueDateFromFutureBlock(this.nextDueBlock);
     this.termEndDate = await this._calculateDueDateFromFutureBlock(this.termEndBlock, 'MMM D, YYYY');
@@ -114,7 +116,6 @@ class CreditLine extends BaseCreditLine {
     this.remainingTotalDueAmount = BigNumber.max(this.totalDueAmount.minus(this.collectedPaymentBalance), zero);
     const collectedForPrincipal = BigNumber.max(this.collectedPaymentBalance.minus(this.periodDueAmount), zero);
     this.availableCredit = BigNumber.min(this.limit, this.limit.minus(this.balance).plus(collectedForPrincipal));
-    this.isLate = await this._calculateIsLate();
     // Just for front-end usage.
     this.loaded = true;
   }
@@ -136,7 +137,11 @@ class CreditLine extends BaseCreditLine {
     const blockRate = annualRate.dividedBy(BLOCKS_PER_YEAR);
     const balance = this.balance;
     const expectedAdditionalInterest = balance.multipliedBy(blockRate).multipliedBy(expectedElapsedBlocks);
-    return currentInterestOwed.plus(expectedAdditionalInterest);
+    if (this.isLate) {
+      return currentInterestOwed;
+    } else {
+      return currentInterestOwed.plus(expectedAdditionalInterest);
+    }
   }
 
   _calculateNextDueAmount() {
@@ -227,6 +232,7 @@ class MultipleCreditLines extends BaseCreditLine {
     );
   }
 }
+
 
 function buildCreditLine(address) {
   return new web3.eth.Contract(CreditLineAbi, address);
