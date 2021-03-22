@@ -2,6 +2,7 @@
 const {expect, bigVal, getDeployedAsTruffleContract, expectAction} = require("./testHelpers.js")
 const {OWNER_ROLE} = require("../blockchain_scripts/deployHelpers")
 const hre = require("hardhat")
+const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
 const {deployments} = hre
 const GoldfinchConfig = artifacts.require("GoldfinchConfig")
 const Fidu = artifacts.require("Fidu")
@@ -45,15 +46,16 @@ describe("Fidu", () => {
     })
   })
 
-  describe("setGoldfinchConfig", () => {
+  describe("updateGoldfinchConfig", () => {
     describe("setting it", async () => {
       it("should allow the owner to set it", async () => {
-        return expectAction(() => fidu.setGoldfinchConfig(person2, {from: owner})).toChange([
+        await goldfinchConfig.setAddress(CONFIG_KEYS.GoldfinchConfig, person2)
+        return expectAction(() => fidu.updateGoldfinchConfig({from: owner})).toChange([
           [() => fidu.config(), {to: person2}],
         ])
       })
       it("should disallow non-owner to set", async () => {
-        return expect(fidu.setGoldfinchConfig(person2, {from: person2})).to.be.rejectedWith(/Must have minter role/)
+        return expect(fidu.updateGoldfinchConfig({from: person2})).to.be.rejectedWith(/Must have minter role/)
       })
     })
   })

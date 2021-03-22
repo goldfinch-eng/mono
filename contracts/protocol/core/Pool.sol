@@ -286,9 +286,8 @@ contract Pool is BaseUpgradeablePausable, IPool {
     sweepFromCompound(cUSDC, cUSDC.balanceOf(address(this)));
   }
 
-  // TEMPORARY: WILL REMOVE AFTER WE DO THE UPGRADE
-  function setGoldfinchConfig(GoldfinchConfig newGoldfinchConfig) external onlyAdmin {
-    config = newGoldfinchConfig;
+  function updateGoldfinchConfig() external onlyAdmin {
+    config = GoldfinchConfig(config.configAddress());
   }
 
   function fiduMantissa() internal pure returns (uint256) {

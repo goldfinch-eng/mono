@@ -31,7 +31,8 @@ library ConfigOptions {
     ProtocolAdmin,
     OneInch,
     TrustedForwarder,
-    CUSDCContract
+    CUSDCContract,
+    GoldfinchConfig
   }
 
   function getNumberName(uint256 number) public pure returns (string memory) {

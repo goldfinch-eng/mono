@@ -46,6 +46,10 @@ library ConfigHelper {
     return config.getAddress(uint256(ConfigOptions.Addresses.TrustedForwarder));
   }
 
+  function configAddress(GoldfinchConfig config) internal view returns (address) {
+    return config.getAddress(uint256(ConfigOptions.Addresses.GoldfinchConfig));
+  }
+
   function poolAddress(GoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.Pool));
   }

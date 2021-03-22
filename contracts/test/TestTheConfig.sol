@@ -13,6 +13,7 @@ contract TestTheConfig {
   address public treasuryReserveAddress = 0xECd9C93B79AE7C1591b1fB5323BD777e86E150d5;
   address public trustedForwarderAddress = 0x956868751Cc565507B3B58E53a6f9f41B56bed74;
   address public cUSDCAddress = 0x5B281A6DdA0B271e91ae35DE655Ad301C976edb1;
+  address public goldfinchConfigAddress = address(8);
 
   function testTheEnums(address configAddress) public {
     GoldfinchConfig(configAddress).setNumber(uint256(ConfigOptions.Numbers.TransactionLimit), 1);
@@ -32,6 +33,7 @@ contract TestTheConfig {
       trustedForwarderAddress
     );
     GoldfinchConfig(configAddress).setAddress(uint256(ConfigOptions.Addresses.CUSDCContract), cUSDCAddress);
+    GoldfinchConfig(configAddress).setAddress(uint256(ConfigOptions.Addresses.GoldfinchConfig), goldfinchConfigAddress);
 
     GoldfinchConfig(configAddress).setTreasuryReserve(treasuryReserveAddress);
   }
