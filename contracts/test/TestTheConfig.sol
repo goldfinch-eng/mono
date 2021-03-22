@@ -33,8 +33,8 @@ contract TestTheConfig {
       trustedForwarderAddress
     );
     GoldfinchConfig(configAddress).setAddress(uint256(ConfigOptions.Addresses.CUSDCContract), cUSDCAddress);
+    GoldfinchConfig(configAddress).setAddress(uint256(ConfigOptions.Addresses.GoldfinchConfig), goldfinchConfigAddress);
 
     GoldfinchConfig(configAddress).setTreasuryReserve(treasuryReserveAddress);
-    GoldfinchConfig(configAddress).setGoldfinchConfig(goldfinchConfigAddress);
   }
 }

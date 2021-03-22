@@ -109,7 +109,7 @@ describe("GoldfinchConfig", () => {
   })
 
   describe("multiple Updates", async () => {
-    it("allows setting the treasury reserve and goldfinch config multiple times", async () => {
+    it("allows setting the treasury reserve multiple times", async () => {
       const firstAddress = "0x0000000000000000000000000000000000000001"
       const secondAddress = "0x0000000000000000000000000000000000000002"
 
@@ -118,13 +118,6 @@ describe("GoldfinchConfig", () => {
       ])
       await expectAction(() => goldfinchConfig.setTreasuryReserve(secondAddress, {from: owner})).toChange([
         [() => goldfinchConfig.getAddress(CONFIG_KEYS.TreasuryReserve), {to: secondAddress}],
-      ])
-
-      await expectAction(() => goldfinchConfig.setGoldfinchConfig(firstAddress, {from: owner})).toChange([
-        [() => goldfinchConfig.getAddress(CONFIG_KEYS.GoldfinchConfig), {to: firstAddress}],
-      ])
-      await expectAction(() => goldfinchConfig.setGoldfinchConfig(secondAddress, {from: owner})).toChange([
-        [() => goldfinchConfig.getAddress(CONFIG_KEYS.GoldfinchConfig), {to: secondAddress}],
       ])
     })
   })

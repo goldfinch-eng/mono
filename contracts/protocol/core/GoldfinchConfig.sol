@@ -42,12 +42,6 @@ contract GoldfinchConfig is BaseUpgradeablePausable {
     addresses[key] = newTreasuryReserve;
   }
 
-  function setGoldfinchConfig(address newGoldfinchConfig) public onlyAdmin {
-    uint256 key = uint256(ConfigOptions.Addresses.GoldfinchConfig);
-    emit AddressUpdated(msg.sender, key, addresses[key], newGoldfinchConfig);
-    addresses[key] = newGoldfinchConfig;
-  }
-
   /*
     Using custom getters incase we want to change underlying implementation later,
     or add checks or validations later on.
