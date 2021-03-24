@@ -23,6 +23,7 @@ function PaymentForm(props) {
   const sendFromUser = useSendFromUser();
   const [erc20, setErc20] = useState(usdc);
   const [erc20UserBalance, setErc20UserBalance] = useState(new BigNumber(0));
+  const [validations, setValidations] = useState({});
   const [unlocked, setUnlocked] = useCurrencyUnlocked(erc20, {
     owner: borrower.userAddress,
     spender: borrower.borrowerAddress,
@@ -40,6 +41,17 @@ function PaymentForm(props) {
     const fetchBalance = async () => {
       const decimalAmount = new BigNumber(erc20.decimalAmount(await erc20.getBalance(user.address)));
       setErc20UserBalance(decimalAmount);
+      setValidations({
+        wallet: value => decimalAmount.gte(value) || `You do not have enough ${erc20.ticker}`,
+        transactionLimit: value =>
+          goldfinchConfig.transactionLimit.gte(usdcToAtomic(value)) ||
+          `This is over the per-transaction limit of $${usdcFromAtomic(goldfinchConfig.transactionLimit)}`,
+        creditLine: value => {
+          if (!isSwapping() && props.creditLine.remainingTotalDueAmountInDollars.lt(value)) {
+            return 'This is over the total balance of the credit line.';
+          }
+        },
+      });
     };
     fetchBalance();
   }, [erc20, user]);
@@ -162,17 +174,7 @@ function PaymentForm(props) {
                 setInputClass('');
                 debouncedSetTransactionAmount(formMethods.getValues('transactionAmount'));
               }}
-              validations={{
-                wallet: value => erc20UserBalance.gte(value) || `You do not have enough ${erc20.ticker}`,
-                transactionLimit: value =>
-                  goldfinchConfig.transactionLimit.gte(usdcToAtomic(value)) ||
-                  `This is over the per-transaction limit of $${usdcFromAtomic(goldfinchConfig.transactionLimit)}`,
-                creditLine: value => {
-                  if (!isSwapping() && props.creditLine.remainingTotalDueAmountInDollars.lt(value)) {
-                    return 'This is over the total balance of the credit line.';
-                  }
-                },
-              }}
+              validations={validations}
               inputClass={inputClass}
               notes={[
                 transactionAmountQuote &&
