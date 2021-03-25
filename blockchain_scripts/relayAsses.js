@@ -10,7 +10,7 @@ const CONFIG = {
     etherscanApi: "https://api.etherscan.io/api",
   },
   rinkeby: {
-    address: "0x63f8fe76E4D96E8F1A96cA48f6AAE69E56b3741a",
+    address: "0x8b84E427B9732f03a9EF4195F94737b3fE6f3FA7",
     underwriters: ["0x83CB0ec2f0013a9641654b344D34615f95b7D7FC"],
     etherscanApi: "https://api-rinkeby.etherscan.io/api",
   },

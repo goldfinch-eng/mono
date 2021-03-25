@@ -223,7 +223,7 @@ async function setupTestForwarder(deployments, config, getOrNull, protocol_owner
   let forwarder = await getDeployedAsEthersContract(getOrNull, "TestForwarder")
   await forwarder.registerDomainSeparator("Defender", "1")
 
-  await updateConfig(config, "address", CONFIG_KEYS.TrustedForwarder, deployResult.address)
+  await updateConfig(config, "address", CONFIG_KEYS.TrustedForwarder, deployResult.address, {logger})
 }
 
 module.exports = main

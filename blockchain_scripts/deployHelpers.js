@@ -3,7 +3,7 @@ const BN = require("bn.js")
 const USDCDecimals = new BN(String(1e6))
 const ETHDecimals = new BN(String(1e18))
 const INTEREST_DECIMALS = new BN(String(1e8))
-const API_KEY = "A2UgCPgn8jQbkSVuSCxEMhFmivdV9C6d"
+const API_KEY = process.env.DEFENDER_API_KEY || "A2UgCPgn8jQbkSVuSCxEMhFmivdV9C6d"
 const API_SECRET = process.env.DEFENDER_API_SECRET
 const {AdminClient} = require("defender-admin-client")
 
@@ -127,14 +127,18 @@ async function deployContractUpgrade(contractName, dependencies, from, deploymen
   let currentImpl = await ethers.provider.getStorageAt(contractProxy.address, implStorageLocation)
   currentImpl = ethers.utils.hexStripZeros(currentImpl)
 
-  let deployResult = await deploy(contractName, {
+  let implName = `${contractName}_Implementation`
+
+  let deployResult = await deploy(implName, {
     from: from,
     gas: 4000000,
     args: [],
+    contract: contractName,
     libraries: dependencies[contractName],
   })
   return {
     name: contractName,
+    implementationName: implName,
     contract: contract,
     proxy: contractProxy,
     currentImplementation: currentImpl,
@@ -148,13 +152,13 @@ async function updateConfig(config, type, key, newValue, opts) {
   let currentValue
   if (type === "address") {
     currentValue = await config.getAddress(key)
-    if (currentValue !== newValue) {
+    if (currentValue.toLowerCase() !== newValue.toLowerCase()) {
       await (await config.setAddress(key, newValue)).wait()
     }
   } else if (type === "number") {
     currentValue = await config.getNumber(key)
     if (String(currentValue) !== newValue) {
-      await (await config.setNumber(key, newValue)).wait()
+      await (await config.setNumber(key, newValue, {gasLimit: 4000000})).wait()
       logger(`Updated config ${type} ${key} from ${currentValue} to ${newValue}`)
     }
   } else {

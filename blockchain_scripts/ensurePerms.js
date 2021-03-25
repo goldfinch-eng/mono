@@ -48,15 +48,6 @@ async function ensurePermsOnContracts(contractNames, proxy_owner, protocol_owner
   for (let i = 0; i < contractNames.length; i++) {
     let contractName = contractNames[i]
     let contract = await getDeployedContract(deployments, contractName)
-    let contractProxy = await getDeployedContract(deployments, `${contractName}_Proxy`)
-    const admin = await contractProxy.owner()
-
-    if (admin.toLowerCase() !== safeAddress.toLowerCase()) {
-      logger(`Converting safe ${safeAddress} as the proxy owner for ${contractName}`)
-      const contractAsAdmin = await getDeployedContract(deployments, `${contractName}_Proxy`, proxy_owner)
-      const txn = await contractAsAdmin.transferOwnership(safeAddress)
-      await txn.wait()
-    }
 
     if (contractName === "GoldfinchConfig") {
       // Ensure the safeAddress is marked as the protocol admin on the config
@@ -65,6 +56,16 @@ async function ensurePermsOnContracts(contractNames, proxy_owner, protocol_owner
       if (treasureReserveAddress.toLowerCase() !== safeAddress.toLowerCase()) {
         logger(`Updating treasury reserve address to ${safeAddress}`)
         await contract.setTreasuryReserve(safeAddress)
+      }
+    } else {
+      let contractProxy = await getDeployedContract(deployments, `${contractName}_Proxy`)
+      const admin = await contractProxy.owner()
+
+      if (admin.toLowerCase() !== safeAddress.toLowerCase()) {
+        logger(`Converting safe ${safeAddress} as the proxy owner for ${contractName}`)
+        const contractAsAdmin = await getDeployedContract(deployments, `${contractName}_Proxy`, proxy_owner)
+        const txn = await contractAsAdmin.transferOwnership(safeAddress)
+        await txn.wait()
       }
     }
 

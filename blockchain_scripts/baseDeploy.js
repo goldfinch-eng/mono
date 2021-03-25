@@ -41,8 +41,6 @@ async function baseDeploy(hre, {shouldUpgrade}) {
   // Internal functions.
 
   async function deployConfig(deploy, {shouldUpgrade}) {
-    const configOptionsDeployResult = await deploy("ConfigOptions", {from: proxy_owner, gas: 4000000, args: []})
-    logger("ConfigOptions was deployed to:", configOptionsDeployResult.address)
     let contractName = "GoldfinchConfig"
 
     if (isTestEnv()) {
@@ -64,7 +62,10 @@ async function baseDeploy(hre, {shouldUpgrade}) {
     }
     logger("Config was deployed to:", deployResult.address)
     config = await ethers.getContractAt(deployResult.abi, deployResult.address)
-    await (await config.initialize(protocol_owner)).wait()
+    if (deployResult.newlyDeployed) {
+      logger("Config newly deployed, initializing...")
+      await (await config.initialize(protocol_owner, {gasLimit: 4000000})).wait()
+    }
     const transactionLimit = new BN(PROTOCOL_CONFIG.transactionLimit).mul(USDCDecimals)
     const totalFundsLimit = new BN(PROTOCOL_CONFIG.totalFundsLimit).mul(USDCDecimals)
     const maxUnderwriterLimit = new BN(PROTOCOL_CONFIG.maxUnderwriterLimit).mul(USDCDecimals)
@@ -74,13 +75,15 @@ async function baseDeploy(hre, {shouldUpgrade}) {
     const latenessMaxDays = new BN(PROTOCOL_CONFIG.latenessMaxDays)
 
     logger("Updating the config vals...")
-    await updateConfig(config, "number", CONFIG_KEYS.TotalFundsLimit, String(totalFundsLimit))
-    await updateConfig(config, "number", CONFIG_KEYS.TransactionLimit, String(transactionLimit))
-    await updateConfig(config, "number", CONFIG_KEYS.MaxUnderwriterLimit, String(maxUnderwriterLimit))
-    await updateConfig(config, "number", CONFIG_KEYS.ReserveDenominator, String(reserveDenominator))
-    await updateConfig(config, "number", CONFIG_KEYS.WithdrawFeeDenominator, String(withdrawFeeDenominator))
-    await updateConfig(config, "number", CONFIG_KEYS.LatenessGracePeriodInDays, String(latenessGracePeriodIndays))
-    await updateConfig(config, "number", CONFIG_KEYS.LatenessMaxDays, String(latenessMaxDays))
+    await updateConfig(config, "number", CONFIG_KEYS.TotalFundsLimit, String(totalFundsLimit), {logger})
+    await updateConfig(config, "number", CONFIG_KEYS.TransactionLimit, String(transactionLimit), {logger})
+    await updateConfig(config, "number", CONFIG_KEYS.MaxUnderwriterLimit, String(maxUnderwriterLimit), {logger})
+    await updateConfig(config, "number", CONFIG_KEYS.ReserveDenominator, String(reserveDenominator), {logger})
+    await updateConfig(config, "number", CONFIG_KEYS.WithdrawFeeDenominator, String(withdrawFeeDenominator), {logger})
+    await updateConfig(config, "number", CONFIG_KEYS.LatenessGracePeriodInDays, String(latenessGracePeriodIndays), {
+      logger,
+    })
+    await updateConfig(config, "number", CONFIG_KEYS.LatenessMaxDays, String(latenessMaxDays), {logger})
     // If we have a multisig safe, set that as the protocol admin, otherwise use the named account (local and test envs)
     let multisigAddress
     if (SAFE_CONFIG[chainID]) {
@@ -89,11 +92,11 @@ async function baseDeploy(hre, {shouldUpgrade}) {
       multisigAddress = protocol_owner
     }
 
-    await updateConfig(config, "address", CONFIG_KEYS.ProtocolAdmin, multisigAddress)
-    await updateConfig(config, "address", CONFIG_KEYS.OneInch, MAINNET_ONE_SPLIT_ADDRESS)
-    await updateConfig(config, "address", CONFIG_KEYS.CUSDCContract, MAINNET_CUSDC_ADDRESS)
+    await updateConfig(config, "address", CONFIG_KEYS.ProtocolAdmin, multisigAddress, {logger})
+    await updateConfig(config, "address", CONFIG_KEYS.OneInch, MAINNET_ONE_SPLIT_ADDRESS, {logger})
+    await updateConfig(config, "address", CONFIG_KEYS.CUSDCContract, MAINNET_CUSDC_ADDRESS, {logger})
     if (TRUSTED_FORWARDER_CONFIG[chainID]) {
-      await updateConfig(config, "address", CONFIG_KEYS.TrustedForwarder, TRUSTED_FORWARDER_CONFIG[chainID])
+      await updateConfig(config, "address", CONFIG_KEYS.TrustedForwarder, TRUSTED_FORWARDER_CONFIG[chainID], {logger})
     }
     await config.setTreasuryReserve(multisigAddress)
 
@@ -153,7 +156,7 @@ async function baseDeploy(hre, {shouldUpgrade}) {
 
     const creditLineFactory = await ethers.getContractAt("CreditLineFactory", clFactoryDeployResult.address)
 
-    await updateConfig(config, "address", CONFIG_KEYS.CreditLineFactory, creditLineFactory.address)
+    await updateConfig(config, "address", CONFIG_KEYS.CreditLineFactory, creditLineFactory.address, {logger})
     return creditLineFactory
   }
 
@@ -184,7 +187,7 @@ async function baseDeploy(hre, {shouldUpgrade}) {
       })
     }
     logger("Credit Desk was deployed to:", creditDeskDeployResult.address)
-    await updateConfig(config, "address", CONFIG_KEYS.CreditDesk, creditDeskDeployResult.address)
+    await updateConfig(config, "address", CONFIG_KEYS.CreditDesk, creditDeskDeployResult.address, {logger})
     return await ethers.getContractAt(creditDeskDeployResult.abi, creditDeskDeployResult.address)
   }
 
@@ -215,7 +218,7 @@ async function baseDeploy(hre, {shouldUpgrade}) {
       args: [protocol_owner, "Fidu", "FIDU", config.address],
     })
     const fidu = await ethers.getContractAt("Fidu", fiduDeployResult.address)
-    await updateConfig(config, "address", CONFIG_KEYS.Fidu, fidu.address, logger)
+    await updateConfig(config, "address", CONFIG_KEYS.Fidu, fidu.address, {logger})
     logger("Deployed Fidu to address:", fidu.address)
     return fidu
   }
@@ -247,7 +250,7 @@ async function deployPool(hre, {shouldUpgrade, config}) {
   }
   logger("Pool was deployed to:", poolDeployResult.address)
   const pool = await ethers.getContractAt(contractName, poolDeployResult.address)
-  await updateConfig(config, "address", CONFIG_KEYS.Pool, pool.address, logger)
+  await updateConfig(config, "address", CONFIG_KEYS.Pool, pool.address, {logger})
 
   return pool
 }
