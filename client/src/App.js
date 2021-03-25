@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Switch, Route, Redirect } from 'react-router-dom';
-import _ from 'lodash';
-import moment from 'moment';
 import Borrow from './components/borrow.js';
 import Earn from './components/earn.js';
 import Transactions from './components/transactions.js';
@@ -16,6 +14,7 @@ import { getGoldfinchConfig, refreshGoldfinchConfigData } from './ethereum/goldf
 import { getUserData, defaultUser } from './ethereum/user.js';
 import { mapNetworkToID, SUPPORTED_NETWORKS } from './ethereum/utils';
 import initSdk from '@gnosis.pm/safe-apps-sdk';
+import { NetworkMonitor } from './ethereum/networkMonitor';
 
 const AppContext = React.createContext({});
 
@@ -30,6 +29,7 @@ function App() {
   const [network, setNetwork] = useState({});
   const [gnosisSafeInfo, setGnosisSafeInfo] = useState();
   const [gnosisSafeSdk, setGnosisSafeSdk] = useState();
+  const [networkMonitor, setNetworkMonitor] = useState();
 
   useEffect(() => {
     setupWeb3();
@@ -74,6 +74,12 @@ function App() {
       setCreditDesk(creditDeskContract);
       getAndSetCreditDeskData(creditDeskContract, setCreditDesk);
       setGoldfinchConfig(await refreshGoldfinchConfigData(goldfinchConfigContract));
+      const monitor = new NetworkMonitor(web3, {
+        setCurrentTXs,
+        setCurrentErrors,
+      });
+      monitor.initialize(); // initialize async, no need to block on this
+      setNetworkMonitor(monitor);
     }
 
     return () => safeSdk.removeListeners();
@@ -91,57 +97,6 @@ function App() {
     setUser(data);
   }
 
-  function updateTX(txToUpdate, updates) {
-    setCurrentTXs(currentTXs => {
-      const matches = _.remove(currentTXs, { id: txToUpdate.id });
-      const tx = matches && matches[0];
-      const newTXs = _.reverse(_.sortBy(_.concat(currentTXs, { ...tx, ...updates }), 'blockTime'));
-      return newTXs;
-    });
-  }
-
-  var addPendingTX = txData => {
-    const randomID = Math.floor(Math.random() * Math.floor(1000000000));
-    const tx = {
-      status: 'pending',
-      id: randomID,
-      blockTime: moment().unix(),
-      name: txData['type'],
-      confirmations: 0,
-      ...txData,
-    };
-    setCurrentTXs(currentTXs => {
-      const newTxs = _.concat(currentTXs, tx);
-      return newTxs;
-    });
-    return tx;
-  };
-
-  var markTXSuccessful = tx => {
-    updateTX(tx, { status: 'successful' });
-  };
-
-  var markTXErrored = (failedTX, error) => {
-    setCurrentTXs(currentPendingTXs => {
-      const matches = _.remove(currentPendingTXs, { id: failedTX.id });
-      const tx = matches && matches[0];
-      tx.status = 'error';
-      tx.errorMessage = error.message;
-      const newPendingTxs = _.concat(currentPendingTXs, tx);
-      return newPendingTxs;
-    });
-    setCurrentErrors(currentErrors => {
-      return _.concat(currentErrors, { id: failedTX.id, message: error.message });
-    });
-  };
-
-  var removeError = error => {
-    setCurrentErrors(currentErrors => {
-      _.remove(currentErrors, { id: error.id });
-      return _.cloneDeep(currentErrors);
-    });
-  };
-
   const store = {
     pool: pool,
     creditDesk: creditDesk,
@@ -151,12 +106,8 @@ function App() {
     network: network,
     gnosisSafeInfo: gnosisSafeInfo,
     gnosisSafeSdk: gnosisSafeSdk,
+    networkMonitor: networkMonitor,
     refreshUserData: refreshUserData,
-    addPendingTX: addPendingTX,
-    markTXSuccessful: markTXSuccessful,
-    markTXErrored: markTXErrored,
-    removeError: removeError,
-    updateTX: updateTX,
   };
 
   return (
