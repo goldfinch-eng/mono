@@ -5,7 +5,7 @@ const {getDeployedContract} = require("../blockchain_scripts/deployHelpers.js")
 const {migrateCreditLine, getCreditLine} = require("./protocolHelpers")
 
 async function main() {
-  const creditLineAddress = process.env.CREDIT_LINE
+  const creditLineAddresses = process.env.CREDIT_LINES
   const termInDays = process.env.TERM_IN_DAYS
   const borrower = process.env.BORROWER
   const limit = process.env.LIMIT
@@ -14,7 +14,7 @@ async function main() {
   const lateFeeApr = process.env.LATE_FEE_APR
   const {protocolOwner} = getNamedAccounts()
 
-  if (!creditLineAddress) {
+  if (!creditLineAddresses) {
     throw new Error("You must supply a credit line address when migrating credit lines!")
   }
 
@@ -22,23 +22,26 @@ async function main() {
     throw new Error("You must supply an existing borrower when migrating to a borrower contract")
   }
 
-  const creditLine = await getCreditLine(creditLineAddress)
-  if ((await creditLine.balance()).eq("0")) {
-    throw new Error("Credit line has a zero balance so is not migrateable!")
-  }
-
   console.log("Creating the borrower contract...")
-  const creditLineFactory = await getDeployedContract(deployments, "CreditLineFactory", protocolOwner)
+  let creditLineFactory = await getDeployedContract(deployments, "CreditLineFactory", protocolOwner)
   const result = await (await creditLineFactory.createBorrower(borrower)).wait()
   let bwrConAddr = result.events[result.events.length - 1].args[0]
   console.log("Created borrower contract at:", bwrConAddr)
-  await migrateCreditLine(creditLineAddress, {
-    termInDays,
-    borrower: bwrConAddr,
-    limit,
-    interestApr,
-    paymentPeriodInDays,
-    lateFeeApr,
+
+  creditLineAddresses.split(",").forEach(async (clAddress) => {
+    const creditLine = await getCreditLine(clAddress)
+    if ((await creditLine.balance()).eq("0")) {
+      throw new Error("Credit line has a zero balance so is not migrateable!")
+    }
+
+    await migrateCreditLine(clAddress, {
+      termInDays,
+      borrower: bwrConAddr,
+      limit,
+      interestApr,
+      paymentPeriodInDays,
+      lateFeeApr,
+    })
   })
 }
 
