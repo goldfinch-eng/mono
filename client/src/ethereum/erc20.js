@@ -26,7 +26,7 @@ class ERC20 {
   }
 
   async initializeContract(networkId) {
-    const config = await getDeployments(this.networkId);
+    const config = await getDeployments(networkId);
     const localContract = config.contracts[this.localContractName];
     let address;
     if (localContract) {

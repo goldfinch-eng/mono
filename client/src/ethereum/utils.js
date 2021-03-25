@@ -73,12 +73,15 @@ async function getDeployments(networkId) {
       if (process.env.REACT_APP_HARDHAT_FORK) {
         // If we're on the fork, then need to use the mainnet proxy contract addresses instead of the
         // freshly deployed version
-        const mainnetContracts = ['CreditDesk', 'Pool', 'Fidu', 'CreditLineFactory'];
+        const mainnetContracts = ['GoldfinchConfig', 'CreditDesk', 'Pool', 'Fidu', 'CreditLineFactory'];
         const mainnetConfig = config['mainnet'].contracts;
         mainnetContracts.forEach(contract => {
           if (mainnetConfig[contract]) {
-            config[networkId].contracts[contract].address = mainnetConfig[contract].address;
-            config[networkId].contracts[`${contract}_Proxy`].address = mainnetConfig[`${contract}_Proxy`].address;
+            const networkContracts = config[networkId].contracts;
+            networkContracts[contract].address = mainnetConfig[contract].address;
+            networkContracts[`${contract}_Proxy`] = networkContracts[`${contract}_Proxy`] || {};
+            let mainnetProxy = mainnetConfig[`${contract}_Proxy`] || networkContracts[contract];
+            networkContracts[`${contract}_Proxy`].address = mainnetProxy.address;
           }
         });
       }
