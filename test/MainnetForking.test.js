@@ -496,7 +496,7 @@ describe("mainnet upgrade tests", async function () {
     expect(existingLoansOutstanding.toString()).to.eq(newLoansOutstanding.toString())
   }).timeout(TEST_TIMEOUT)
 
-  it("supports basic credit desk functions", async () => {
+  xit("supports basic credit desk functions", async () => {
     let contracts = await getExistingContracts(contractsToUpgrade, mainnetConfig, mainnetMultisigSigner)
     let bwrSigner = await ethers.provider.getSigner(bwr)
     let bwrCreditDesk = contracts.CreditDesk.ExistingContract.connect(bwrSigner)
