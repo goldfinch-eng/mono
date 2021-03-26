@@ -140,7 +140,6 @@ async function deployUpgrades({contractNames, proxy_owner, hre, upgrader}) {
   const dependencies = {
     CreditDesk: {["Accountant"]: accountant.address},
   }
-
   const result = {}
 
   for (let i = 0; i < contractNames.length; i++) {

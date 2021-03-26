@@ -158,7 +158,7 @@ async function updateConfig(config, type, key, newValue, opts) {
   } else if (type === "number") {
     currentValue = await config.getNumber(key)
     if (String(currentValue) !== newValue) {
-      await (await config.setNumber(key, newValue, {gasLimit: 4000000})).wait()
+      await (await config.setNumber(key, newValue)).wait()
       logger(`Updated config ${type} ${key} from ${currentValue} to ${newValue}`)
     }
   } else {

@@ -4,21 +4,18 @@ const {getNamedAccounts} = hre
 
 async function main() {
   const {protocol_owner} = await getNamedAccounts()
-  const nonce = parseInt(process.env.NONCE, 10)
-  const gasPrice = process.env.GAS_PRICE || "40"
+  const amountToSend = process.env.AMOUNT_TO_SEND
+  await sendETH(amountToSend)
 
-  await cancelTransaction(nonce, gasPrice)
-
-  async function cancelTransaction(nonce, gasPrice) {
+  async function sendETH(amountToSend) {
+    const value = ethers.utils.parseEther(amountToSend)
     const tx = {
       to: protocol_owner,
-      value: ethers.utils.parseEther("0.00"),
+      value: value,
       chainId: 1,
-      nonce: nonce,
-      gasPrice: ethers.utils.parseUnits(gasPrice, "gwei"),
     }
     const wallet = new ethers.Wallet(process.env.MAINNET_PROXY_OWNER_KEY, ethers.getDefaultProvider())
-    console.log("Sending transaction...", tx)
+    console.log("Sending transaction...", tx, "with value of", value)
     const txn = await wallet.sendTransaction(tx)
     console.log("Txn is:", txn, "now waiting...")
     await txn.wait()

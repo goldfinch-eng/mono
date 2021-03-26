@@ -64,7 +64,7 @@ async function baseDeploy(hre, {shouldUpgrade}) {
     config = await ethers.getContractAt(deployResult.abi, deployResult.address)
     if (deployResult.newlyDeployed) {
       logger("Config newly deployed, initializing...")
-      await (await config.initialize(protocol_owner, {gasLimit: 4000000})).wait()
+      await (await config.initialize(protocol_owner)).wait()
     }
     const transactionLimit = new BN(PROTOCOL_CONFIG.transactionLimit).mul(USDCDecimals)
     const totalFundsLimit = new BN(PROTOCOL_CONFIG.totalFundsLimit).mul(USDCDecimals)
