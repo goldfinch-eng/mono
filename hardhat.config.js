@@ -10,8 +10,8 @@ const TEST_PROTOCOL_OWNER_KEY = "1774a8ac43395488c6856114659042665ee7267293744d7
 const TEST_PROXY_OWNER_KEY = "f0dd5813eeba1588f31cb0f129cd3b42b3ad6646689f52b051bdd5d4b57e929e"
 
 // UNCOMMENT WHEN YOU ACTUALLY WANT TO RUN ON MAINNET
-const MAINNET_PROTOCOL_OWNER_KEY = process.env.MAINNET_PROTOCOL_OWNER_KEY
-const MAINNET_PROXY_OWNER_KEY = process.env.MAINNET_PROXY_OWNER_KEY
+// const MAINNET_PROTOCOL_OWNER_KEY = process.env.MAINNET_PROTOCOL_OWNER_KEY
+// const MAINNET_PROXY_OWNER_KEY = process.env.MAINNET_PROXY_OWNER_KEY
 
 module.exports = {
   defaultNetwork: "hardhat",
@@ -37,7 +37,7 @@ module.exports = {
     mainnet: {
       url: `https://mainnet.infura.io/v3/${INFURA_PROJECT_ID}`,
       // Uncomment when you actually want to run mainnet. Hardhat freaks out otherwise because the private keys are undefined in the default case
-      accounts: [`${MAINNET_PROTOCOL_OWNER_KEY}`, `${MAINNET_PROXY_OWNER_KEY}`],
+      // accounts: [`${MAINNET_PROTOCOL_OWNER_KEY}`, `${MAINNET_PROXY_OWNER_KEY}`],
     },
   },
   solidity: {
