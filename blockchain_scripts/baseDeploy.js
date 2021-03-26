@@ -31,11 +31,15 @@ async function baseDeploy(hre, {shouldUpgrade}) {
   await getOrDeployUSDC()
   const fidu = await deployFidu(config)
   const pool = await deployPool(hre, {shouldUpgrade, config})
+  logger("Granting minter role to Pool")
   await grantMinterRoleToPool(fidu, pool)
+  logger("Deploying CreditLine")
   await deployCreditLine(deploy, {config})
+  logger("Deploying CreditLineFactory")
   await deployCreditLineFactory(deploy, {shouldUpgrade, config})
   const creditDesk = await deployCreditDesk(deploy, {shouldUpgrade, config})
 
+  logger("Granting ownership of Pool to CreditDesk")
   await grantOwnershipOfPoolToCreditDesk(pool, creditDesk.address)
 
   // Internal functions.
@@ -170,6 +174,7 @@ async function baseDeploy(hre, {shouldUpgrade}) {
       contractName = "TestCreditDesk"
     }
 
+    logger("Deploying CreditDesk")
     let creditDeskDeployResult
     if (shouldUpgrade) {
       creditDeskDeployResult = await upgrade(deploy, contractName, proxy_owner, {
