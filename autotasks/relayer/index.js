@@ -5,11 +5,11 @@ const {Relayer} = require("defender-relay-client")
 const {DefenderRelaySigner, DefenderRelayProvider} = require("defender-relay-client/lib/ethers")
 
 const ALLOWED_SENDERS = {
-  4: "0xE7f9ED35DA54b2e4A1857487dBf42A32C4DBD4a0",
+  4: ["0xE7f9ED35DA54b2e4A1857487dBf42A32C4DBD4a0", "0x3FeB1094eE48DB0B9aC25b82A3A34ABe16208590"],
 }
 
 const ALLOWED_CONTRACTS = {
-  4: "0x84Cba6A96C7B1f2301f228C730672B2cA31f0Cb5",
+  4: ["0x84Cba6A96C7B1f2301f228C730672B2cA31f0Cb5", "0xC926fb67A27d3A8f1964fD9a14b3ACa8b295DC7D"],
 }
 
 const FORWARDER_ADDRESS = {
