@@ -24,6 +24,10 @@ class NetworkMonitor {
     });
   }
 
+  get isLocalNetwork() {
+    return this.networkId === 31337;
+  }
+
   newBlockHeaderReceived(blockHeader) {
     // We only care about confirmed blocks
     if (!blockHeader.number) {
@@ -44,6 +48,8 @@ class NetworkMonitor {
 
         if (confirmations >= CONFIRMATION_THRESHOLD) {
           this.markTXSuccessful(tx);
+        } else if (this.isLocalNetwork && confirmations >= 1) {
+          this.markTXSuccessful(tx);
         }
       }
     });
@@ -55,6 +61,11 @@ class NetworkMonitor {
     // First ensure, the tx hash is upto date (pending transactions could have a different id)
     this.updateTX(txData, { id: txHash, onSuccess: onSuccess });
     txData.id = txHash;
+
+    if (this.isLocalNetwork) {
+      // Blocknative does not work for the local network
+      return;
+    }
 
     const { emitter } = this.notifySdk.hash(txHash);
 
@@ -93,6 +104,11 @@ class NetworkMonitor {
       confirmations: 0,
       ...txData,
     };
+    if (this.isLocalNetwork) {
+      // On a local network, we expect the transaction to be included in the next block to be mined.
+      // We set this so that we can listen for the block to be mined and mark it successful in updatePendingTxs
+      tx.blockNumber = this.currentBlockNumber + 1;
+    }
     this.setCurrentTXs(currentTXs => {
       const newTxs = _.concat(currentTXs, tx);
       this.currentTXs = newTxs;

@@ -4,7 +4,7 @@
   "description": "A lending protocol built on the blockchain",
   "main": "index.js",
   "scripts": {
-    "start": "REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet npx concurrently -n \"blockchain,web,server\"  \"npx hardhat node --reset --export-all client/config/deployments_dev.json\" \"cd client && npm start\" \"HARDHAT_NETWORK=localhost node autotasks/server.js\" -k -c \"cyan, magenta, green\"",
+    "start": "REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet npx concurrently -n \"blockchain,web,server\"  \"npx hardhat node --export-all client/config/deployments_dev.json\" \"cd client && npm start\" \"HARDHAT_NETWORK=localhost node autotasks/server.js\" -k -c \"cyan, magenta, green\"",
     "no-gasless-start": "REACT_APP_DISABLE_GASLESS=true REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet npx concurrently -n \"blockchain,web,server\"  \"npx hardhat node --reset --export-all client/config/deployments_dev.json\" \"cd client && npm start\" \"HARDHAT_NETWORK=localhost node autotasks/server.js\" -k -c \"cyan, magenta, green\"",
     "local-start": "npx concurrently -n \"blockchain,web,server\"  \"npx hardhat node --reset --export-all client/config/deployments_dev.json\" \"cd client && npm start\" \"HARDHAT_NETWORK=localhost node autotasks/server.js\" -k -c \"cyan, magenta, green\"",
     "test": "NODE_ENV=test npx hardhat test --show-stack-traces",

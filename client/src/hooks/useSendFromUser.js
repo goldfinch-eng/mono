@@ -29,45 +29,50 @@ function useSendFromUser() {
       // We need to assign it a temporary id, so we can update it if we get an error back
       // (since we only get a txid if relay call succeed)
       txData = networkMonitor.addPendingTX({ status: 'pending', ...txData });
-      return unsentAction().then(res => {
-        if (res.status === 'success') {
-          const txResult = JSON.parse(res.result);
-          if (network.name === 'localhost') {
-            networkMonitor.markTXSuccessful(txData);
-          } else {
-            networkMonitor.watch(txResult.txHash, txData, () => {
-              refreshUserData();
-            });
-          }
-        } else {
-          networkMonitor.markTXErrored(txData, { message: res.message });
-        }
+      return new Promise(resolve => {
+        unsentAction()
+          .then(res => {
+            if (res.status === 'success') {
+              const txResult = JSON.parse(res.result);
+              networkMonitor.watch(txResult.txHash, txData, () => {
+                refreshUserData();
+                resolve();
+              });
+            } else {
+              networkMonitor.markTXErrored(txData, { message: res.message });
+              resolve();
+            }
+          })
+          .catch(error => {
+            networkMonitor.markTXErrored(txData, { message: error.message });
+            resolve();
+          });
       });
     }
 
-    return unsentAction
-      .send({
-        from: user.address,
-        gasPrice: gasPrice,
-      })
-      .once('sent', _ => {
-        txData = networkMonitor.addPendingTX(txData);
-      })
-      .once('transactionHash', transactionHash => {
-        txData = networkMonitor.watch(transactionHash, txData);
-      })
-      .once('receipt', receipt => {
-        if (network.name === 'localhost') {
-          // The confirmation callback never runs on localhost...
-          networkMonitor.markTXSuccessful(txData);
-        }
-      })
-      .on('error', error => {
-        if (error.code === -32603) {
-          error.message = 'Something went wrong with your transaction.';
-        }
-        networkMonitor.markTXErrored(txData, error);
-      });
+    return new Promise(resolve => {
+      unsentAction
+        .send({
+          from: user.address,
+          gasPrice: gasPrice,
+        })
+        .once('sent', _ => {
+          txData = networkMonitor.addPendingTX(txData);
+        })
+        .once('transactionHash', transactionHash => {
+          txData = networkMonitor.watch(transactionHash, txData, () => {
+            refreshUserData();
+            resolve();
+          });
+        })
+        .on('error', error => {
+          if (error.code === -32603) {
+            error.message = 'Something went wrong with your transaction.';
+          }
+          networkMonitor.markTXErrored(txData, error);
+          resolve();
+        });
+    });
   }
 
   return (unsentAction, txData) => {
