@@ -3,7 +3,7 @@ import { iconX } from './icons.js';
 import { AppContext } from '../App.js';
 
 function NetworkErrors(props) {
-  const { removeError } = useContext(AppContext);
+  const { networkMonitor } = useContext(AppContext);
 
   function errorItem(error) {
     return (
@@ -11,7 +11,7 @@ function NetworkErrors(props) {
         <div className="error-label">Error</div>
         <div
           onClick={() => {
-            removeError(error);
+            networkMonitor.removeError(error);
           }}
           className="dismiss-error-item"
         >

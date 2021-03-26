@@ -114,3 +114,8 @@ input{
     font-size: $sans-size-m;
   }
 }
+
+// Disable the Block native notifications
+.bn-notify-custom.bn-notify-notifications {
+  display: none;
+}

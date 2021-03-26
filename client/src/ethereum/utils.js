@@ -70,7 +70,7 @@ async function getDeployments(networkId) {
     .then(result => {
       config = transformedConfig(result);
 
-      if (process.env.REACT_APP_HARDHAT_FORK) {
+      if (networkId === 'localhost' && process.env.REACT_APP_HARDHAT_FORK) {
         // If we're on the fork, then need to use the mainnet proxy contract addresses instead of the
         // freshly deployed version
         const mainnetContracts = ['GoldfinchConfig', 'CreditDesk', 'Pool', 'Fidu', 'CreditLineFactory'];
