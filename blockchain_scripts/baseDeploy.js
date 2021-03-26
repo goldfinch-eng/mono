@@ -33,8 +33,6 @@ async function baseDeploy(hre, {shouldUpgrade}) {
   const pool = await deployPool(hre, {shouldUpgrade, config})
   logger("Granting minter role to Pool")
   await grantMinterRoleToPool(fidu, pool)
-  logger("Deploying CreditLine")
-  await deployCreditLine(deploy, {config})
   logger("Deploying CreditLineFactory")
   await deployCreditLineFactory(deploy, {shouldUpgrade, config})
   const creditDesk = await deployCreditDesk(deploy, {shouldUpgrade, config})
@@ -129,18 +127,6 @@ async function baseDeploy(hre, {shouldUpgrade}) {
     }
     await updateConfig(config, "address", CONFIG_KEYS.USDC, usdcAddress, logger)
     return usdcAddress
-  }
-
-  async function deployCreditLine(deploy, {config}) {
-    let clDeployResult = await deploy("CreditLine", {
-      from: proxy_owner,
-      gas: 4000000,
-      args: [],
-    })
-    logger("CreditLine was deployed to:", clDeployResult.address)
-    const clImplementation = await ethers.getContractAt("CreditLine", clDeployResult.address)
-    await updateConfig(config, "address", CONFIG_KEYS.CreditLineImplementation, clImplementation.address)
-    return clImplementation
   }
 
   async function deployCreditLineFactory(deploy, {shouldUpgrade, config}) {
