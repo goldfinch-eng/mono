@@ -280,6 +280,24 @@
           "internalType": "address",
           "name": "creditLineAddress",
           "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "applyPayment",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "creditLineAddress",
+          "type": "address"
         }
       ],
       "name": "assessCreditLine",
@@ -347,19 +365,14 @@
     {
       "inputs": [
         {
-          "internalType": "uint256",
-          "name": "amount",
-          "type": "uint256"
-        },
-        {
           "internalType": "address",
           "name": "creditLineAddress",
           "type": "address"
         },
         {
-          "internalType": "address",
-          "name": "addressToSendTo",
-          "type": "address"
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
         }
       ],
       "name": "drawdown",
@@ -381,6 +394,30 @@
           "internalType": "address[]",
           "name": "",
           "type": "address[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "creditLineAddress",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "asOfBLock",
+          "type": "uint256"
+        }
+      ],
+      "name": "getNextPaymentAmount",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
         }
       ],
       "stateMutability": "view",
@@ -549,32 +586,32 @@
         },
         {
           "internalType": "address",
-          "name": "_borrower",
+          "name": "borrower",
           "type": "address"
         },
         {
           "internalType": "uint256",
-          "name": "_limit",
+          "name": "limit",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "_interestApr",
+          "name": "interestApr",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "_paymentPeriodInDays",
+          "name": "paymentPeriodInDays",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "_termInDays",
+          "name": "termInDays",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "_lateFeeApr",
+          "name": "lateFeeApr",
           "type": "uint256"
         }
       ],
@@ -723,6 +760,13 @@
     {
       "inputs": [],
       "name": "unpause",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "updateGoldfinchConfig",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

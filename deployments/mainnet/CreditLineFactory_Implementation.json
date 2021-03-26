@@ -5,6 +5,25 @@
       "anonymous": false,
       "inputs": [
         {
+          "indexed": true,
+          "internalType": "address",
+          "name": "borrower",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        }
+      ],
+      "name": "BorrowerCreated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
           "indexed": false,
           "internalType": "address",
           "name": "account",
@@ -152,11 +171,24 @@
     {
       "inputs": [
         {
-          "internalType": "bytes",
-          "name": "_data",
-          "type": "bytes"
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
         }
       ],
+      "name": "createBorrower",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
       "name": "createCreditLine",
       "outputs": [
         {
@@ -362,6 +394,13 @@
     {
       "inputs": [],
       "name": "unpause",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "updateGoldfinchConfig",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

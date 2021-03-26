@@ -704,6 +704,13 @@
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "updateGoldfinchConfig",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
     }
   ],
   "transactionHash": "0x5ca1bbf7fb15db98d0b939877e925b26df28bcad189be6dca52e9c4335be3940",
