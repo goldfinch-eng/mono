@@ -25,17 +25,6 @@ describe("Deployment", async () => {
       const config = await getDeployedContract(deployments, "TestGoldfinchConfig")
       expect(await config.getAddress(CONFIG_KEYS.TreasuryReserve)).to.equal(protocol_owner)
     })
-
-    it("deploys the credit line and credit line factory correctly", async () => {
-      const creditLine = await deployments.get("CreditLine")
-      const creditLineFactory = await deployments.get("CreditLineFactory")
-      expect(creditLine.address).to.exist
-      expect(creditLineFactory.address).to.exist
-
-      const config = await getDeployedContract(deployments, "TestGoldfinchConfig")
-      expect(await config.getAddress(CONFIG_KEYS.CreditLineImplementation)).to.equal(creditLine.address)
-      expect(await config.getAddress(CONFIG_KEYS.CreditLineFactory)).to.equal(creditLineFactory.address)
-    })
     it("deploys the credit desk", async () => {
       const creditDesk = await deployments.get("TestCreditDesk")
       expect(creditDesk.address).to.exist
@@ -50,14 +39,12 @@ describe("Deployment", async () => {
       expect(await pool.hasRole(OWNER_ROLE, creditDesk.address)).to.be.true
     })
     it("sets the right defaults", async () => {
-      const creditLine = await getDeployedContract(deployments, "CreditLine")
       const creditLineFactory = await getDeployedContract(deployments, "CreditLineFactory")
       const goldfinchConfig = await getDeployedContract(deployments, "TestGoldfinchConfig")
 
       expect(String(await goldfinchConfig.getNumber(CONFIG_KEYS.TransactionLimit))).to.bignumber.gt(new BN(0))
       expect(String(await goldfinchConfig.getNumber(CONFIG_KEYS.TotalFundsLimit))).to.bignumber.gt(new BN(0))
       expect(String(await goldfinchConfig.getNumber(CONFIG_KEYS.MaxUnderwriterLimit))).to.bignumber.gt(new BN(0))
-      expect(await goldfinchConfig.getAddress(CONFIG_KEYS.CreditLineImplementation)).to.equal(creditLine.address)
       expect(await goldfinchConfig.getAddress(CONFIG_KEYS.CreditLineFactory)).to.equal(creditLineFactory.address)
     })
   })
