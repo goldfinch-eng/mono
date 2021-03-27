@@ -140,19 +140,21 @@ async function deployUpgrades({contractNames, proxy_owner, hre, upgrader}) {
   const dependencies = {
     CreditDesk: {["Accountant"]: accountant.address},
   }
-
   const result = {}
 
   for (let i = 0; i < contractNames.length; i++) {
     let contractName = contractNames[i]
     let contractInfo = await deployContractUpgrade(contractName, dependencies, proxy_owner, deployments, ethers)
 
+    result[contractName] = contractInfo
+
+    logger(`Writing out ABI for ${contractName}`)
+    await exportDeployment(deployments, contractName, dependencies, proxy_owner)
+
     if (contractInfo.currentImplementation.toLowerCase() === contractInfo.newImplementation.toLowerCase()) {
       logger(`${contractName} did not change, skipping`)
       continue
     }
-
-    result[contractName] = contractInfo
 
     logger(
       `Deployed ${contractName} to ${contractInfo.newImplementation} (current ${contractInfo.currentImplementation})`
@@ -161,9 +163,6 @@ async function deployUpgrades({contractNames, proxy_owner, hre, upgrader}) {
     if (upgrader) {
       await upgrader.changeImplementation(contractName, contractInfo)
     }
-
-    logger(`Writing out ABI for ${contractName}`)
-    exportDeployment(deployments, contractName, dependencies, proxy_owner)
   }
   return result
 }

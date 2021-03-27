@@ -1,7 +1,7 @@
 {
-  "totalFundsLimit": 500000,
-  "transactionLimit": 200000,
-  "maxUnderwriterLimit": 100000,
+  "totalFundsLimit": 2000000,
+  "transactionLimit": 500000,
+  "maxUnderwriterLimit": 2000000,
   "reserveDenominator": 10,
   "withdrawFeeDenominator": 200,
   "latenessGracePeriodInDays": 30,

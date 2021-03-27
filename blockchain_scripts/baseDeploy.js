@@ -31,11 +31,13 @@ async function baseDeploy(hre, {shouldUpgrade}) {
   await getOrDeployUSDC()
   const fidu = await deployFidu(config)
   const pool = await deployPool(hre, {shouldUpgrade, config})
+  logger("Granting minter role to Pool")
   await grantMinterRoleToPool(fidu, pool)
-  await deployCreditLine(deploy, {config})
+  logger("Deploying CreditLineFactory")
   await deployCreditLineFactory(deploy, {shouldUpgrade, config})
   const creditDesk = await deployCreditDesk(deploy, {shouldUpgrade, config})
 
+  logger("Granting ownership of Pool to CreditDesk")
   await grantOwnershipOfPoolToCreditDesk(pool, creditDesk.address)
 
   // Internal functions.
@@ -64,7 +66,7 @@ async function baseDeploy(hre, {shouldUpgrade}) {
     config = await ethers.getContractAt(deployResult.abi, deployResult.address)
     if (deployResult.newlyDeployed) {
       logger("Config newly deployed, initializing...")
-      await (await config.initialize(protocol_owner, {gasLimit: 4000000})).wait()
+      await (await config.initialize(protocol_owner)).wait()
     }
     const transactionLimit = new BN(PROTOCOL_CONFIG.transactionLimit).mul(USDCDecimals)
     const totalFundsLimit = new BN(PROTOCOL_CONFIG.totalFundsLimit).mul(USDCDecimals)
@@ -127,18 +129,6 @@ async function baseDeploy(hre, {shouldUpgrade}) {
     return usdcAddress
   }
 
-  async function deployCreditLine(deploy, {config}) {
-    let clDeployResult = await deploy("CreditLine", {
-      from: proxy_owner,
-      gas: 4000000,
-      args: [],
-    })
-    logger("CreditLine was deployed to:", clDeployResult.address)
-    const clImplementation = await ethers.getContractAt("CreditLine", clDeployResult.address)
-    await updateConfig(config, "address", CONFIG_KEYS.CreditLineImplementation, clImplementation.address)
-    return clImplementation
-  }
-
   async function deployCreditLineFactory(deploy, {shouldUpgrade, config}) {
     let clFactoryDeployResult
     logger(`Deploying credit line factory; ${shouldUpgrade}`)
@@ -170,6 +160,7 @@ async function baseDeploy(hre, {shouldUpgrade}) {
       contractName = "TestCreditDesk"
     }
 
+    logger("Deploying CreditDesk")
     let creditDeskDeployResult
     if (shouldUpgrade) {
       creditDeskDeployResult = await upgrade(deploy, contractName, proxy_owner, {
