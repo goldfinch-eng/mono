@@ -15,12 +15,16 @@ class BorrowerInterface {
     this.pool = pool;
     this.oneInch = oneInch;
     this.borrowerAddress = this.isUsingBorrowerContract ? this.borrowerContract._address : this.userAddress;
-    this.gasless = this.isUsingBorrowerContract && process.env.REACT_APP_DISABLE_GASLESS !== 'true';
   }
 
   async initialize() {
     this.creditLinesAddresses = await this.creditDesk.methods.getBorrowerCreditLines(this.borrowerAddress).call();
     this.allowance = new BigNumber(await this.usdc.methods.allowance(this.userAddress, this.borrowerAddress).call());
+  }
+
+  get shouldUseGasless() {
+    const gaslessEnabled = process.env.REACT_APP_DISABLE_GASLESS !== 'true' && window.disableGasless !== true;
+    return this.isUsingBorrowerContract && gaslessEnabled;
   }
 
   get isUsingBorrowerContract() {
@@ -109,7 +113,7 @@ class BorrowerInterface {
   }
 
   submit(unsentAction) {
-    if (this.gasless) {
+    if (this.shouldUseGasless) {
       if (!this.isUsingBorrowerContract) {
         throw new Error('Gasless transactions are only supported for borrower contracts');
       }

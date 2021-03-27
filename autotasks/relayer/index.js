@@ -6,10 +6,18 @@ const {DefenderRelaySigner, DefenderRelayProvider} = require("defender-relay-cli
 
 const ALLOWED_SENDERS = {
   4: ["0xE7f9ED35DA54b2e4A1857487dBf42A32C4DBD4a0", "0x3FeB1094eE48DB0B9aC25b82A3A34ABe16208590"],
+  1: [
+    "0xBAc2781706D0aA32Fb5928c9a5191A13959Dc4AE", // Blake
+    "0x8652854C25bd553d522d118AC2bee6FFA3Cce317", // Luis (Quickcheck)
+  ],
 }
 
 const ALLOWED_CONTRACTS = {
   4: ["0x84Cba6A96C7B1f2301f228C730672B2cA31f0Cb5", "0xC926fb67A27d3A8f1964fD9a14b3ACa8b295DC7D"],
+  1: [
+    "0xB7cEaCEB71267C21eF09076F68A3Fd3775fED4DF", // Blake
+    "0x927E1e532d25958c1C8CD4908ab8D1b27D3978e8", // Luis (Quickcheck)
+  ],
 }
 
 const FORWARDER_ADDRESS = {
