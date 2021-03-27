@@ -1,16 +1,8 @@
 const {BN, expect} = require("./testHelpers.js")
 const hre = require("hardhat")
 const {deployments, getNamedAccounts, ethers} = hre
-const {
-  upgrade,
-  getDeployedContract,
-  fromAtomic,
-  toAtomic,
-  OWNER_ROLE,
-  CONFIG_KEYS,
-  USDCDecimals,
-  ETHDecimals,
-} = require("../blockchain_scripts/deployHelpers")
+const {upgrade, getDeployedContract, fromAtomic, toAtomic, OWNER_ROLE} = require("../blockchain_scripts/deployHelpers")
+const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
 const baseDeploy = require("../blockchain_scripts/baseDeploy")
 const updateConfigs = require("../blockchain_scripts/updateConfigs")
 
@@ -33,17 +25,6 @@ describe("Deployment", async () => {
       const config = await getDeployedContract(deployments, "TestGoldfinchConfig")
       expect(await config.getAddress(CONFIG_KEYS.TreasuryReserve)).to.equal(protocol_owner)
     })
-
-    it("deploys the credit line and credit line factory correctly", async () => {
-      const creditLine = await deployments.get("CreditLine")
-      const creditLineFactory = await deployments.get("CreditLineFactory")
-      expect(creditLine.address).to.exist
-      expect(creditLineFactory.address).to.exist
-
-      const config = await getDeployedContract(deployments, "TestGoldfinchConfig")
-      expect(await config.getAddress(CONFIG_KEYS.CreditLineImplementation)).to.equal(creditLine.address)
-      expect(await config.getAddress(CONFIG_KEYS.CreditLineFactory)).to.equal(creditLineFactory.address)
-    })
     it("deploys the credit desk", async () => {
       const creditDesk = await deployments.get("TestCreditDesk")
       expect(creditDesk.address).to.exist
@@ -58,14 +39,12 @@ describe("Deployment", async () => {
       expect(await pool.hasRole(OWNER_ROLE, creditDesk.address)).to.be.true
     })
     it("sets the right defaults", async () => {
-      const creditLine = await getDeployedContract(deployments, "CreditLine")
       const creditLineFactory = await getDeployedContract(deployments, "CreditLineFactory")
       const goldfinchConfig = await getDeployedContract(deployments, "TestGoldfinchConfig")
 
       expect(String(await goldfinchConfig.getNumber(CONFIG_KEYS.TransactionLimit))).to.bignumber.gt(new BN(0))
       expect(String(await goldfinchConfig.getNumber(CONFIG_KEYS.TotalFundsLimit))).to.bignumber.gt(new BN(0))
       expect(String(await goldfinchConfig.getNumber(CONFIG_KEYS.MaxUnderwriterLimit))).to.bignumber.gt(new BN(0))
-      expect(await goldfinchConfig.getAddress(CONFIG_KEYS.CreditLineImplementation)).to.equal(creditLine.address)
       expect(await goldfinchConfig.getAddress(CONFIG_KEYS.CreditLineFactory)).to.equal(creditLineFactory.address)
     })
   })
@@ -79,7 +58,7 @@ describe("Deployment", async () => {
       await deployments.run("setup_for_testing")
       const creditDesk = await getDeployedContract(deployments, "TestCreditDesk")
       const result = await creditDesk.getUnderwriterCreditLines(protocol_owner)
-      expect(result.length).to.equal(1)
+      expect(result.length).to.equal(2)
     })
   })
 
@@ -98,53 +77,6 @@ describe("Deployment", async () => {
       expect(typeof newCreditDesk.someBrandNewFunction).to.equal("function")
       const result = String(await newCreditDesk.someBrandNewFunction())
       expect(result).to.bignumber.equal(new BN(5))
-    })
-
-    describe("upgrading credit lines", async () => {
-      it("should upgrade the credit line", async () => {
-        const {proxy_owner, protocol_owner} = await getNamedAccounts()
-
-        const creditDesk = await getDeployedContract(deployments, "TestCreditDesk")
-        const config = await getDeployedContract(deployments, "TestGoldfinchConfig")
-
-        // Ensure existing credit line is the old version
-        let creditLines = await creditDesk.getUnderwriterCreditLines(protocol_owner)
-        expect(creditLines.length).to.equal(1)
-        const originalCreditLine = await ethers.getContractAt("CreditLine", creditLines[0])
-        expect(typeof originalCreditLine.anotherNewFunction).not.to.equal("function")
-
-        // Deploy new credit line and update the factory to use it
-        const newCreditLineImpl = await deployments.deploy("CreditLine", {
-          from: proxy_owner,
-          contract: "FakeV2CreditLine",
-        })
-        await (await config.setCreditLineImplementation(newCreditLineImpl.address)).wait()
-
-        // Create a new credit line
-        await creditDesk.createCreditLine(
-          protocol_owner,
-          String(new BN(10000).mul(USDCDecimals)), //Limit
-          String(new BN(5).mul(ETHDecimals).div(new BN(100))), //Interest
-          String(new BN(30)), // Payment period
-          String(new BN(123)), // Term
-          String(new BN(1)) // Late Fee APR
-        )
-
-        creditLines = await creditDesk.getUnderwriterCreditLines(protocol_owner)
-        expect(creditLines.length).to.equal(2)
-
-        //Original credit line unaffected
-        const originalCreditLineAfterUpgrade = await ethers.getContractAt("CreditLine", creditLines[0])
-        expect(originalCreditLine.address).to.equal(originalCreditLineAfterUpgrade.address)
-        expect(typeof originalCreditLineAfterUpgrade.anotherNewFunction).not.to.equal("function")
-        expect(String(await originalCreditLineAfterUpgrade.termInDays())).to.equal("360")
-
-        const newCreditLine = await ethers.getContractAt("FakeV2CreditLine", creditLines[1])
-        expect(originalCreditLineAfterUpgrade.address).to.not.equal(newCreditLine.address)
-        expect(String(await newCreditLine.termInDays())).to.equal("123")
-        expect(typeof newCreditLine.anotherNewFunction).to.equal("function")
-        expect(String(await newCreditLine.anotherNewFunction())).to.equal("42")
-      })
     })
 
     it("should not change data after an upgrade", async () => {

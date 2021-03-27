@@ -56,6 +56,7 @@ typings/
 
 # dotenv environment variables file
 .env
+.env.local
 
 # next.js build output
 .next
@@ -77,12 +78,16 @@ artifacts/
 
 notes.txt
 
+autotasks/relayer/dist
 client/config/protocol-local.json
 deployments/localhost_31337
 deployments/localhost
+deployments/hardhat
 
 # Misc
 .DS_Store
 
 # Local deployments
 client/config/deployments_dev.json
+
+.envrc

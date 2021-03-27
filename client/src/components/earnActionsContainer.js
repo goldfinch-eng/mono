@@ -20,13 +20,13 @@ function EarnActionsContainer(props) {
   };
 
   let placeholderClass = '';
-  if (!user.address || !user.usdcIsUnlocked) {
+  if (!user.address || !user.usdcIsUnlocked('earn')) {
     placeholderClass = 'placeholder';
   }
 
   let depositAction;
   let depositClass = 'disabled';
-  if (user.usdcIsUnlocked && props.capitalProvider) {
+  if (user.usdcIsUnlocked('earn') && props.capitalProvider) {
     depositAction = e => {
       setShowAction('deposit');
     };
@@ -35,7 +35,7 @@ function EarnActionsContainer(props) {
 
   let withdrawAction;
   let withdrawClass = 'disabled';
-  if (user.usdcIsUnlocked && props.capitalProvider.availableToWithdrawal > 0) {
+  if (user.usdcIsUnlocked('earn') && props.capitalProvider.availableToWithdrawal > 0) {
     withdrawAction = e => {
       setShowAction('withdrawal');
     };

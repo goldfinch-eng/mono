@@ -11,8 +11,14 @@
   }
 
   .button{
+    background-color: $blue-xlight;
+    color: $purp-dark;
     margin: 20px 0 0;
     width: 100%;
+
+    &:hover{
+      background-color: $blue-light;
+    }
   }
 
   & .icon{

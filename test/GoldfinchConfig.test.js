@@ -1,18 +1,14 @@
 /* global artifacts web3 */
-const {expect, BN} = require("./testHelpers.js")
-const {CONFIG_KEYS, OWNER_ROLE} = require("../blockchain_scripts/deployHelpers")
-const ConfigOptions = artifacts.require("ConfigOptions")
+const {expect, expectAction, BN} = require("./testHelpers.js")
+const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
+const {OWNER_ROLE} = require("../blockchain_scripts/deployHelpers")
 const GoldfinchConfig = artifacts.require("GoldfinchConfig")
 const TestTheConfig = artifacts.require("TestTheConfig")
 const TOTAL_FUNDS_LIMIT_KEY = CONFIG_KEYS.TotalFundsLimit
 const TRANSACTION_LIMIT_KEY = CONFIG_KEYS.TransactionLimit
 
 describe("GoldfinchConfig", () => {
-  before(async () => {
-    configOptions = await ConfigOptions.new({from: owner})
-    GoldfinchConfig.link(configOptions)
-  })
-  let owner, person2, person3, goldfinchConfig, accounts, configOptions
+  let owner, person2, person3, goldfinchConfig, accounts
   beforeEach(async () => {
     // Pull in our unlocked accounts
     accounts = await web3.eth.getAccounts()
@@ -49,9 +45,6 @@ describe("GoldfinchConfig", () => {
 
       // Addresses
       expect(await goldfinchConfig.getAddress(CONFIG_KEYS.Pool)).to.equal("0xBAc2781706D0aA32Fb5928c9a5191A13959Dc4AE")
-      expect(await goldfinchConfig.getAddress(CONFIG_KEYS.CreditLineImplementation)).to.equal(
-        "0xc783df8a850f42e7F7e57013759C285caa701eB6"
-      )
       expect(await goldfinchConfig.getAddress(CONFIG_KEYS.CreditLineFactory)).to.equal(
         "0x0afFE1972479c386A2Ab21a27a7f835361B6C0e9"
       )
@@ -60,6 +53,15 @@ describe("GoldfinchConfig", () => {
       )
       expect(await goldfinchConfig.getAddress(CONFIG_KEYS.TreasuryReserve)).to.equal(
         "0xECd9C93B79AE7C1591b1fB5323BD777e86E150d5"
+      )
+      expect(await goldfinchConfig.getAddress(CONFIG_KEYS.TrustedForwarder)).to.equal(
+        "0x956868751Cc565507B3B58E53a6f9f41B56bed74"
+      )
+      expect(await goldfinchConfig.getAddress(CONFIG_KEYS.CUSDCContract)).to.equal(
+        "0x5B281A6DdA0B271e91ae35DE655Ad301C976edb1"
+      )
+      expect(await goldfinchConfig.getAddress(CONFIG_KEYS.GoldfinchConfig)).to.equal(
+        "0x0000000000000000000000000000000000000008"
       )
     })
   })
@@ -100,21 +102,23 @@ describe("GoldfinchConfig", () => {
 
       expect(event.event).to.equal("AddressUpdated")
       expect(event.args.owner).to.equal(owner)
-      expect(event.args.name).to.bignumber.equal("Pool")
+      expect(event.args.index).to.bignumber.equal(new BN(0))
       expect(event.args.oldValue).to.match(/0x0000000/)
       expect(event.args.newValue).to.equal(address)
     })
   })
 
-  describe("setCreditLineImplementation", async () => {
-    it("should update the credit line implementation", async () => {
-      // Just using a random address for testing purposes
-      let address = person3
-      expect(await goldfinchConfig.getAddress(CONFIG_KEYS.CreditLineImplementation)).to.not.equal(address)
+  describe("multiple Updates", async () => {
+    it("allows setting the treasury reserve multiple times", async () => {
+      const firstAddress = "0x0000000000000000000000000000000000000001"
+      const secondAddress = "0x0000000000000000000000000000000000000002"
 
-      await goldfinchConfig.setCreditLineImplementation(address, {from: owner})
-
-      expect(await goldfinchConfig.getAddress(CONFIG_KEYS.CreditLineImplementation)).to.equal(address)
+      await expectAction(() => goldfinchConfig.setTreasuryReserve(firstAddress, {from: owner})).toChange([
+        [() => goldfinchConfig.getAddress(CONFIG_KEYS.TreasuryReserve), {to: firstAddress}],
+      ])
+      await expectAction(() => goldfinchConfig.setTreasuryReserve(secondAddress, {from: owner})).toChange([
+        [() => goldfinchConfig.getAddress(CONFIG_KEYS.TreasuryReserve), {to: secondAddress}],
+      ])
     })
   })
 
@@ -139,7 +143,7 @@ describe("GoldfinchConfig", () => {
 
         expect(event.event).to.equal("NumberUpdated")
         expect(event.args.owner).to.equal(owner)
-        expect(event.args.name).to.bignumber.equal("TotalFundsLimit")
+        expect(event.args.index).to.bignumber.equal(new BN(1))
         expect(event.args.oldValue).to.bignumber.equal(new BN(0))
         expect(event.args.newValue).to.bignumber.equal(new BN(limit))
       })
@@ -164,7 +168,7 @@ describe("GoldfinchConfig", () => {
 
           expect(event.event).to.equal("NumberUpdated")
           expect(event.args.owner).to.equal(owner)
-          expect(event.args.name).to.bignumber.equal("TransactionLimit")
+          expect(event.args.index).to.bignumber.equal(new BN(0))
           expect(event.args.oldValue).to.bignumber.equal(new BN(0))
           expect(event.args.newValue).to.bignumber.equal(new BN(limit))
         })

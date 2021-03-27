@@ -1,9 +1,9 @@
 /* global artifacts web3 */
-const {expect, bigVal, getDeployedAsTruffleContract} = require("./testHelpers.js")
+const {expect, bigVal, getDeployedAsTruffleContract, expectAction} = require("./testHelpers.js")
 const {OWNER_ROLE} = require("../blockchain_scripts/deployHelpers")
 const hre = require("hardhat")
+const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
 const {deployments} = hre
-const ConfigOptions = artifacts.require("ConfigOptions")
 const GoldfinchConfig = artifacts.require("GoldfinchConfig")
 const Fidu = artifacts.require("Fidu")
 
@@ -17,11 +17,6 @@ describe("Fidu", () => {
     const fidu = await getDeployedAsTruffleContract(deployments, "Fidu")
 
     return {fidu, goldfinchConfig}
-  })
-
-  before(async () => {
-    const configOptions = await ConfigOptions.new({from: owner})
-    GoldfinchConfig.link(configOptions)
   })
 
   let owner, person2, goldfinchConfig, fidu, accounts
@@ -48,6 +43,20 @@ describe("Fidu", () => {
   describe("ownership", async () => {
     it("should be owned by the owner", async () => {
       expect(await fidu.hasRole(OWNER_ROLE, owner)).to.be.true
+    })
+  })
+
+  describe("updateGoldfinchConfig", () => {
+    describe("setting it", async () => {
+      it("should allow the owner to set it", async () => {
+        await goldfinchConfig.setAddress(CONFIG_KEYS.GoldfinchConfig, person2)
+        return expectAction(() => fidu.updateGoldfinchConfig({from: owner})).toChange([
+          [() => fidu.config(), {to: person2}],
+        ])
+      })
+      it("should disallow non-owner to set", async () => {
+        return expect(fidu.updateGoldfinchConfig({from: person2})).to.be.rejectedWith(/Must have minter role/)
+      })
     })
   })
 

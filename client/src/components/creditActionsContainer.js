@@ -26,14 +26,14 @@ function CreditActionsContainer(props) {
   }
 
   let placeholderClass = '';
-  if (!user.address || !user.usdcIsUnlocked || !props.creditLine.address) {
+  if (!user.address || !user.usdcIsUnlocked('borrow') || !props.creditLine.address) {
     placeholderClass = 'placeholder';
   }
 
   let drawdownAction;
   let drawdownClass = 'disabled';
 
-  if (availableCredit.gt(0) && user.usdcIsUnlocked) {
+  if (availableCredit.gt(0) && user.usdcIsUnlocked('borrow')) {
     drawdownAction = e => {
       openAction(e, 'drawdown');
     };
@@ -42,7 +42,7 @@ function CreditActionsContainer(props) {
 
   let payAction;
   let payClass = 'disabled';
-  if (props.creditLine.remainingTotalDueAmount.gt(0) && user.usdcIsUnlocked) {
+  if (props.creditLine.isActive && user.usdcIsUnlocked('borrow')) {
     payAction = e => {
       openAction(e, 'payment');
     };
@@ -51,14 +51,14 @@ function CreditActionsContainer(props) {
 
   let nextDueDisplay = 'No payment due';
   let nextDueIcon;
-  if (props.creditLine.remainingPeriodDueAmount.gt(0)) {
-    const nextDueValueDisplay = displayDollars(props.creditLine.remainingPeriodDueAmountInDollars);
+  const nextDueValueDisplay = displayDollars(props.creditLine.remainingPeriodDueAmountInDollars);
+  if (props.creditLine.isPaymentDue) {
     if (props.creditLine.isLate) {
       nextDueDisplay = `${nextDueValueDisplay} due now`;
     } else {
       nextDueDisplay = `${nextDueValueDisplay} due ${props.creditLine.dueDate}`;
     }
-  } else if (props.creditLine.remainingTotalDueAmount.gt(0)) {
+  } else if (props.creditLine.isActive) {
     nextDueIcon = iconCircleCheck;
     nextDueDisplay = `Paid through ${props.creditLine.dueDate}`;
   }
@@ -70,6 +70,7 @@ function CreditActionsContainer(props) {
         actionComplete={actionComplete}
         borrower={props.borrower}
         creditLine={props.creditLine}
+        title={`Next payment: ${nextDueValueDisplay} due ${props.creditLine.dueDate}`}
       />
     );
   } else if (showAction === 'drawdown') {

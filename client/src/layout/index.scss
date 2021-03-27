@@ -9,13 +9,18 @@
 @import './button.scss';
 @import './credit-status-balance.scss';
 @import './creditline-dropdown.scss';
+@import './currency-dropdown.scss';
+@import './credit-lines-list.scss';
+@import './drawdown-form.scss';
 @import './deposit-status.scss';
+@import './dropdown.scss';
 @import './footer.scss';
 @import './form-inputs.scss';
 @import './form-section.scss';
 @import './form-start.scss';
 @import './info-section.scss';
 @import './network-widget.scss';
+@import './payment-form.scss';
 @import './pool-links.scss';
 @import './recent-repayments.scss';
 @import './sidebar.scss';
@@ -108,4 +113,9 @@ input{
   .content-empty-message{
     font-size: $sans-size-m;
   }
+}
+
+// Disable the Block native notifications
+.bn-notify-custom.bn-notify-notifications {
+  display: none;
 }

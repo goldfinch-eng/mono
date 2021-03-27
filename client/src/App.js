@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Switch, Route, Redirect } from 'react-router-dom';
-import _ from 'lodash';
 import Borrow from './components/borrow.js';
 import Earn from './components/earn.js';
 import Transactions from './components/transactions.js';
@@ -14,21 +13,23 @@ import { getUSDC } from './ethereum/erc20.js';
 import { getGoldfinchConfig, refreshGoldfinchConfigData } from './ethereum/goldfinchConfig.js';
 import { getUserData, defaultUser } from './ethereum/user.js';
 import { mapNetworkToID, SUPPORTED_NETWORKS } from './ethereum/utils';
-import initSdk, { SafeInfo } from '@gnosis.pm/safe-apps-sdk';
+import initSdk from '@gnosis.pm/safe-apps-sdk';
+import { NetworkMonitor } from './ethereum/networkMonitor';
 
 const AppContext = React.createContext({});
 
 function App() {
   const [pool, setPool] = useState({});
   const [creditDesk, setCreditDesk] = useState({});
-  const [erc20, setErc20] = useState(null);
-  const [user, setUser] = useState({});
+  const [usdc, setUSDC] = useState(null);
+  const [user, setUser] = useState(defaultUser());
   const [goldfinchConfig, setGoldfinchConfig] = useState({});
   const [currentTXs, setCurrentTXs] = useState([]);
   const [currentErrors, setCurrentErrors] = useState([]);
   const [network, setNetwork] = useState({});
   const [gnosisSafeInfo, setGnosisSafeInfo] = useState();
   const [gnosisSafeSdk, setGnosisSafeSdk] = useState();
+  const [networkMonitor, setNetworkMonitor] = useState();
 
   useEffect(() => {
     setupWeb3();
@@ -41,7 +42,8 @@ function App() {
     window.setUserAddress = function(overrideAddress) {
       refreshUserData(overrideAddress);
     };
-  }, [gnosisSafeInfo, erc20, pool, creditDesk, network]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gnosisSafeInfo, usdc, pool, creditDesk, network]);
 
   async function setupWeb3() {
     if (!window.ethereum) {
@@ -60,18 +62,24 @@ function App() {
     const networkId = mapNetworkToID[networkName] || networkName;
     const networkConfig = { name: networkId, supported: SUPPORTED_NETWORKS[networkId] };
     setNetwork(networkConfig);
-    let erc20Contract, poolContract, goldfinchConfigContract, creditDeskContract;
+    let usdc, poolContract, goldfinchConfigContract, creditDeskContract;
     if (networkConfig.supported) {
-      erc20Contract = await getUSDC(networkId);
+      usdc = await getUSDC(networkId);
       poolContract = await getPool(networkId);
       goldfinchConfigContract = await getGoldfinchConfig(networkId);
       creditDeskContract = await getCreditDesk(networkId);
-      poolContract.gf = await fetchPoolData(poolContract, erc20Contract);
-      setErc20(erc20Contract);
+      poolContract.gf = await fetchPoolData(poolContract, usdc.contract);
+      setUSDC(usdc);
       setPool(poolContract);
       setCreditDesk(creditDeskContract);
       getAndSetCreditDeskData(creditDeskContract, setCreditDesk);
       setGoldfinchConfig(await refreshGoldfinchConfigData(goldfinchConfigContract));
+      const monitor = new NetworkMonitor(web3, {
+        setCurrentTXs,
+        setCurrentErrors,
+      });
+      monitor.initialize(); // initialize async, no need to block on this
+      setNetworkMonitor(monitor);
     }
 
     return () => safeSdk.removeListeners();
@@ -80,73 +88,26 @@ function App() {
   async function refreshUserData(overrideAddress) {
     let data = defaultUser();
     const accounts = await web3.eth.getAccounts();
-    let userAddress =
-      overrideAddress || (gnosisSafeInfo && gnosisSafeInfo.safeAddress) || (accounts && accounts[0]) || user.address;
-    if (userAddress && erc20 && creditDesk.loaded && pool.loaded) {
-      data = await getUserData(userAddress, erc20, pool, creditDesk);
+    let userAddress = (gnosisSafeInfo && gnosisSafeInfo.safeAddress) || (accounts && accounts[0]) || user.address;
+    // Set this to the borrower contract address to test gasless transactions
+    // let userAddress = '0xd3D57673BAE28880376cDF89aeFe4653A5C84A08';
+    if (userAddress && usdc && creditDesk.loaded && pool.loaded) {
+      data = await getUserData(userAddress, usdc.contract, pool, creditDesk, network.name);
     }
     setUser(data);
   }
-
-  function updateTX(txToUpdate, updates) {
-    setCurrentTXs(currentTXs => {
-      const matches = _.remove(currentTXs, { id: txToUpdate.id });
-      const tx = matches && matches[0];
-      const newTXs = _.reverse(_.sortBy(_.concat(currentTXs, { ...tx, ...updates }), 'blockNumber'));
-      return newTXs;
-    });
-  }
-
-  var addPendingTX = txData => {
-    const randomID = Math.floor(Math.random() * Math.floor(1000000000));
-    const tx = { status: 'pending', id: randomID, name: txData['type'], confirmations: 0, ...txData };
-    setCurrentTXs(currentTXs => {
-      const newTxs = _.concat(currentTXs, tx);
-      return newTxs;
-    });
-    return tx;
-  };
-
-  var markTXSuccessful = tx => {
-    updateTX(tx, { status: 'successful' });
-  };
-
-  var markTXErrored = (failedTX, error) => {
-    setCurrentTXs(currentPendingTXs => {
-      const matches = _.remove(currentPendingTXs, { id: failedTX.id });
-      const tx = matches && matches[0];
-      tx.status = 'error';
-      tx.errorMessage = error.message;
-      const newPendingTxs = _.concat(currentPendingTXs, tx);
-      return newPendingTxs;
-    });
-    setCurrentErrors(currentErrors => {
-      return _.concat(currentErrors, { id: failedTX.id, message: error.message });
-    });
-  };
-
-  var removeError = error => {
-    setCurrentErrors(currentErrors => {
-      _.remove(currentErrors, { id: error.id });
-      return _.cloneDeep(currentErrors);
-    });
-  };
 
   const store = {
     pool: pool,
     creditDesk: creditDesk,
     user: user,
-    erc20: erc20,
+    usdc: usdc,
     goldfinchConfig: goldfinchConfig,
     network: network,
     gnosisSafeInfo: gnosisSafeInfo,
     gnosisSafeSdk: gnosisSafeSdk,
+    networkMonitor: networkMonitor,
     refreshUserData: refreshUserData,
-    addPendingTX: addPendingTX,
-    markTXSuccessful: markTXSuccessful,
-    markTXErrored: markTXErrored,
-    removeError: removeError,
-    updateTX: updateTX,
   };
 
   return (

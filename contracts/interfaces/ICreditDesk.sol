@@ -18,13 +18,13 @@ abstract contract ICreditDesk {
     uint256 _lateFeeApr
   ) public virtual returns (address);
 
-  function drawdown(
-    uint256 amount,
-    address creditLineAddress,
-    address addressToSendTo
-  ) external virtual;
+  function drawdown(address creditLineAddress, uint256 amount) external virtual;
 
   function pay(address creditLineAddress, uint256 amount) external virtual;
 
   function assessCreditLine(address creditLineAddress) external virtual;
+
+  function applyPayment(address creditLineAddress, uint256 amount) external virtual;
+
+  function getNextPaymentAmount(address creditLineAddress, uint256 asOfBLock) external view virtual returns (uint256);
 }

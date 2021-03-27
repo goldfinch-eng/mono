@@ -13,9 +13,26 @@ You will need the correct version of node/npm on your local machine.
 - Then, if you want to install the front-end, `cd client && npm install`
 
 ### Front-end development
-- `TEST_USER={YOUR_METAMASK_ADDRESS} npm start` from the project root directory.
+
+**One time setup**
+- Create a Goldfinch specific Metamask, which you can use for testing. The easiest way to do this is by creating a separate Chrome profile for Goldfinch, and then simply installing the Metamask extension.
+- Copy `.env.example` to `.env.local` (the local will be ignored from git).
+- Lastly add the following into your new `.env.local` file.
+ * `TEST_USER={your Goldfinch Metamask address}`
+ * `ALLOWED_SENDERS=<your Goldfinch Metamask address>`
+ * `ALLOWED_CONTRACTS=<borrower contract address>`
+
+*Note: To find the borrower contract address, you'll need to run `npm start`, and then find the line in the console output that says `[blockchain] Created borrower contract: {borrower contract address} for {your wallet address}` Use the borrower contract address and paste it into your .env.local!*
+
+*Also note: If/when we upgrade the borrower contract, you would need to update that address*
+
+ Our local dev scripts will use these vars to automatically send you test ETH, and give you a credit line and USDC to play with.
+
+**Every time**
+- `npm start` from the project root directory.
   - This will run a local blockchain, deploy the contracts, and set up useful state for the frontend (give your user a Credit Line and fake ETH, and fake USDC, etc.)
   - It will also start the front-end server, which will pop up on localhost 3000
+- `npm run no-gasless-start` is available if gasless transactions are giving you trouble, or if you're having trouble finding the borrower contract address.
 
 **IMPORTANT** Since we use Gitpod, the local blockchain that gets spun up will not be visible to Metamask by default. So if you try to join
 "localhost 8545", it will not connect. You can fix this by creating a custom network on Metamask that points to the open port on your Gitpod instance.
@@ -27,10 +44,18 @@ This is easy.
   4.) Hit save. You're done.
 
 **Also Good to Know** The Fake USDC address that we create will also not be visible to Metamask by default. So you'll need to add this as well
-by looking at the terminal output of the `npx buidler node` command. Search "USDC Address", and you should see something. Take that address, and
+by looking at the terminal output of the `npx hardhat node` command. Search "USDC Address", and you should see something. Take that address, and
 then go to `Add Token` in Metamask, and paste it in there. Your fake USDC balance should show up.
 
 - That's pretty much it! Make your changes. The local server will auto reload
+
+### Frontend Architecture
+To support gasless transactions, we need to collect the signature from the client, perform some server side checks to validate
+the sender and the to contract (i.e. it's a known borrower interacting with our borrower contracts, we don't want to subsidize any arbitrary transaction).
+To support this we are using Netlify Cloud Functions (their version of lambdas). Netlify automatically picks up any functions in the `client/functions` directory
+and makes them available as an api endpoint. To support local development, we mimic this by having a `client/server.js` file that's started
+with `npm start` and will execute the function in `client/functions`. This server.js is only meant for local use, and we've configured webpack to proxy to this server.
+If you want to test gasless transactions, make sure to run `cp client/.env.example client/.env.local` and update the `WHITELISTED_*` env vars
 
 ### Getting Testnet ETH and USDC
 If you're going to test or develop on Testnet (eg. Ropsten, or Rinkeby), you'll want some testnet ETH and USDC to play around with the app locally. The following sites should work for the `ropsten` testnet.

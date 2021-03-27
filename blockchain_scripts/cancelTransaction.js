@@ -17,7 +17,7 @@ async function main() {
       nonce: nonce,
       gasPrice: ethers.utils.parseUnits(gasPrice, "gwei"),
     }
-    const wallet = new ethers.Wallet(process.env.MAINNET_PROTOCOL_OWNER_KEY, ethers.getDefaultProvider())
+    const wallet = new ethers.Wallet(process.env.MAINNET_PROXY_OWNER_KEY, ethers.getDefaultProvider())
     console.log("Sending transaction...", tx)
     const txn = await wallet.sendTransaction(tx)
     console.log("Txn is:", txn, "now waiting...")

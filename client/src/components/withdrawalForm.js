@@ -30,20 +30,27 @@ function WithdrawalForm(props) {
     return (
       <div className="form-inputs">
         <div className="form-message">Note: the protocol will deduct a 0.50% fee from your withdrawal amount.</div>
-        <TransactionInput formMethods={formMethods} maxAmount={availableToWithdraw} />
-        <button
-          className="enter-max-amount"
-          type="button"
-          onClick={() => {
-            formMethods.setValue('transactionAmount', roundDownPenny(availableToWithdraw), {
-              shouldValidate: true,
-              shouldDirty: true,
-            });
-          }}
-        >
-          Max
-        </button>
-        <LoadingButton action={action} />
+        <div className="form-inputs-footer">
+          <TransactionInput
+            formMethods={formMethods}
+            maxAmount={availableToWithdraw}
+            rightDecoration={
+              <button
+                className="enter-max-amount"
+                type="button"
+                onClick={() => {
+                  formMethods.setValue('transactionAmount', roundDownPenny(availableToWithdraw), {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                  });
+                }}
+              >
+                Max
+              </button>
+            }
+          />
+          <LoadingButton action={action} />
+        </div>
       </div>
     );
   }

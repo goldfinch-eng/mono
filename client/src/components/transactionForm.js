@@ -15,9 +15,11 @@ function TransactionForm(props) {
           Cancel{iconX}
         </div>
       </div>
-      <h2>{props.title}</h2>
       <FormProvider {...formMethods}>
-        <form>{props.render({ formMethods })}</form>
+        <form className="form">
+          <h2>{props.title}</h2>
+          {props.render({ formMethods })}
+        </form>
       </FormProvider>
     </div>
   );

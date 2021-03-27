@@ -1,27 +1,25 @@
 import React, { useState, useContext, useEffect } from 'react';
 import CreditActionsContainer from './creditActionsContainer.js';
+import CreditActionsMultipleContainer from './creditActionsMultipleContainer';
 import CreditStatus from './creditStatus.js';
 import ConnectionNotice from './connectionNotice.js';
 import BorrowHeader from './borrowHeader';
-import { buildCreditLine, fetchCreditLineData, defaultCreditLine } from '../ethereum/creditLine.js';
+import { fetchCreditLineData, defaultCreditLine } from '../ethereum/creditLine.js';
 import { AppContext } from '../App.js';
+import CreditLinesList from './creditLinesList';
 
 function Borrow(props) {
-  const { creditDesk, user } = useContext(AppContext);
-  const [creditLines, setCreditLines] = useState([]);
+  const { creditDesk, user, usdc } = useContext(AppContext);
+  const [creditLinesAddresses, setCreditLinesAddresses] = useState([]);
   const [creditLine, setCreditLine] = useState(defaultCreditLine);
 
   async function updateBorrowerAndCreditLine() {
-    const borrowerAddress = user.address;
-    if (borrowerAddress && creditDesk.loaded) {
-      const borrowerCreditLines = await creditDesk.methods.getBorrowerCreditLines(borrowerAddress).call();
-      setCreditLines(borrowerCreditLines);
+    const borrower = user.borrower;
+    if (borrower && creditDesk.loaded) {
+      const borrowerCreditLines = borrower.creditLinesAddresses;
+      setCreditLinesAddresses(borrowerCreditLines);
       if (borrowerCreditLines.length && !creditLine.loaded) {
-        // Default to the most recent credit line
-        changeCreditLine(borrowerCreditLines[borrowerCreditLines.length - 1]);
-      } else {
-        creditLine.loaded = true;
-        setCreditLine({ ...creditLine });
+        changeCreditLine(borrowerCreditLines);
       }
     }
   }
@@ -38,9 +36,26 @@ function Borrow(props) {
     return changeCreditLine(creditLine.address);
   }
 
-  async function changeCreditLine(clAddress) {
-    const instance = buildCreditLine(clAddress);
-    setCreditLine(await fetchCreditLineData(instance));
+  async function changeCreditLine(clAddresses) {
+    setCreditLine(await fetchCreditLineData(clAddresses, usdc));
+  }
+
+  let creditActionsContainer;
+  let creditLineStatus;
+  if (creditLine.isMultiple) {
+    creditActionsContainer = (
+      <CreditActionsMultipleContainer
+        borrower={user.borrower}
+        creditLine={creditLine}
+        actionComplete={actionComplete}
+      />
+    );
+    creditLineStatus = <CreditLinesList creditLine={creditLine} user={user} changeCreditLine={changeCreditLine} />;
+  } else {
+    creditActionsContainer = (
+      <CreditActionsContainer borrower={user.borrower} creditLine={creditLine} actionComplete={actionComplete} />
+    );
+    creditLineStatus = <CreditStatus creditLine={creditLine} user={user} />;
   }
 
   return (
@@ -49,13 +64,13 @@ function Borrow(props) {
         <BorrowHeader
           user={user}
           selectedCreditLine={creditLine}
-          creditLines={creditLines}
+          creditLinesAddresses={creditLinesAddresses}
           changeCreditLine={changeCreditLine}
         />
       </div>
       <ConnectionNotice creditLine={creditLine} />
-      <CreditActionsContainer borrower={user} creditLine={creditLine} actionComplete={actionComplete} />
-      <CreditStatus creditLine={creditLine} user={user} />
+      {creditActionsContainer}
+      {creditLineStatus}
     </div>
   );
 }

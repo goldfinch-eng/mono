@@ -7,21 +7,27 @@ const {displayCreditLine} = require("./protocolHelpers")
 async function main() {
   const {protocolOwner} = await getNamedAccounts()
   const creditDesk = await getDeployedContract(deployments, "CreditDesk", protocolOwner)
+  const creditLineFactory = await getDeployedContract(deployments, "CreditLineFactory", protocolOwner)
   const borrower = process.env.BORROWER
   if (!borrower) {
     throw new Error("No borrower provided. Please run again, passing borrower as BORROWER={{borrower_address}}")
   }
 
-  await createCreditLineForBorrower(creditDesk, borrower)
+  await createCreditLineForBorrower(creditDesk, creditLineFactory, borrower)
 }
 
-async function createCreditLineForBorrower(creditDesk, borrower, logger = console.log) {
+async function createCreditLineForBorrower(creditDesk, creditLineFactory, borrower, logger = console.log) {
   logger("Trying to create an CreditLine for the Borrower...")
   const existingCreditLines = await creditDesk.getBorrowerCreditLines(borrower)
-  if (existingCreditLines.length) {
+  if (existingCreditLines && existingCreditLines.length) {
     logger("We have already created a credit line for this borrower")
     return
   }
+
+  const result = await (await creditLineFactory.createBorrower(borrower)).wait()
+  let bwrConAddr = result.events[result.events.length - 1].args[0]
+  logger(`Created borrower contract: ${bwrConAddr} for ${borrower}`)
+  borrower = bwrConAddr
 
   logger("Creating a credit line for the borrower", borrower)
   const limit = String(new BN(80000).mul(USDCDecimals))

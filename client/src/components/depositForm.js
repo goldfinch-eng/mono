@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { usdcFromAtomic, minimumNumber, usdcToAtomic } from '../ethereum/erc20';
+import { usdcFromAtomic, usdcToAtomic } from '../ethereum/erc20';
 import { AppContext } from '../App.js';
 import { displayDollars } from '../utils';
 import TransactionForm from './transactionForm';
@@ -32,7 +32,7 @@ function DepositForm(props) {
       disabled = true;
       warningMessage = (
         <p className="form-message">
-          The pool is currently at it's limit. Please check back later to see if we're accepting new deposits.
+          The pool is currently at its limit. Please check back later to see if we're accepting new deposits.
         </p>
       );
     }
@@ -40,12 +40,26 @@ function DepositForm(props) {
     return (
       <div className="form-inputs">
         {warningMessage}
-        <TransactionInput
-          formMethods={formMethods}
-          maxAmount={minimumNumber(user.usdcBalanceInDollars, usdcFromAtomic(goldfinchConfig.transactionLimit))}
-          disabled={disabled}
-        />
-        <LoadingButton action={action} disabled={disabled} />
+        <div className="form-inputs-footer">
+          <TransactionInput
+            formMethods={formMethods}
+            disabled={disabled}
+            validations={{
+              wallet: value => user.usdcBalanceInDollars.gte(value) || 'You do not have enough USDC',
+              transactionLimit: value =>
+                goldfinchConfig.transactionLimit.gte(usdcToAtomic(value)) ||
+                `This is over the per-transaction limit of $${usdcFromAtomic(goldfinchConfig.transactionLimit)}`,
+              totalFundsLimit: value => {
+                let limit = goldfinchConfig.totalFundsLimit.minus(pool.gf.totalPoolAssets);
+                return (
+                  limit.gte(usdcToAtomic(value)) ||
+                  `This deposit would put the pool over its limit. It can accept a max of $${usdcFromAtomic(limit)}.`
+                );
+              },
+            }}
+          />
+          <LoadingButton action={action} disabled={disabled} />
+        </div>
       </div>
     );
   }

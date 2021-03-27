@@ -1,7 +1,6 @@
 import BigNumber from 'bignumber.js';
 import { BN } from 'bn.js';
 import _ from 'lodash';
-import web3 from '../web3';
 
 const decimalPlaces = 6;
 const decimals = new BN(String(10 ** decimalPlaces));
@@ -22,6 +21,24 @@ const USDC_ADDRESSES = {
   [MAINNET]: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
 };
 
+const USDT_ADDRESSES = {
+  [MAINNET]: '0xdac17f958d2ee523a2206206994597c13d831ec7',
+};
+
+const BUSD_ADDRESSES = {
+  [MAINNET]: '0x4Fabb145d64652a948d72533023f6E7A623C7C53',
+};
+
+const FORWARDER_ADDRESSES = {
+  4: '0x956868751Cc565507B3B58E53a6f9f41B56bed74',
+  1: '0xa530F85085C6FE2f866E7FdB716849714a89f4CD',
+};
+
+const ONE_INCH_ADDRESSES = {
+  [LOCAL]: '0xc586bef4a0992c495cf22e1aeee4e446cecdee0e',
+  [MAINNET]: '0xc586bef4a0992c495cf22e1aeee4e446cecdee0e',
+};
+
 // Only keep entries for supported networks
 // (ie. where we deployed the latest contracts)
 const mapNetworkToID = {
@@ -29,6 +46,12 @@ const mapNetworkToID = {
   ropsten: ROPSTEN,
   private: 'localhost',
   rinkeby: RINKEBY,
+};
+
+const chainIdToNetworkID = {
+  1: MAINNET,
+  4: RINKEBY,
+  31337: 'localhost',
 };
 
 const SUPPORTED_NETWORKS = {
@@ -46,6 +69,22 @@ async function getDeployments(networkId) {
   return import(`../../config/deployments${deploymentFileNameSuffix}.json`)
     .then(result => {
       config = transformedConfig(result);
+
+      if (networkId === 'localhost' && process.env.REACT_APP_HARDHAT_FORK) {
+        // If we're on the fork, then need to use the mainnet proxy contract addresses instead of the
+        // freshly deployed version
+        const mainnetContracts = ['GoldfinchConfig', 'CreditDesk', 'Pool', 'Fidu', 'CreditLineFactory'];
+        const mainnetConfig = config['mainnet'].contracts;
+        mainnetContracts.forEach(contract => {
+          if (mainnetConfig[contract]) {
+            const networkContracts = config[networkId].contracts;
+            networkContracts[contract].address = mainnetConfig[contract].address;
+            networkContracts[`${contract}_Proxy`] = networkContracts[`${contract}_Proxy`] || {};
+            let mainnetProxy = mainnetConfig[`${contract}_Proxy`] || networkContracts[contract];
+            networkContracts[`${contract}_Proxy`].address = mainnetProxy.address;
+          }
+        });
+      }
       return config[networkId];
     })
     .catch(console.error);
@@ -105,6 +144,9 @@ export {
   decimals,
   ETHDecimals,
   USDC_ADDRESSES,
+  USDT_ADDRESSES,
+  BUSD_ADDRESSES,
+  FORWARDER_ADDRESSES,
   MAX_UINT,
   USDC_DECIMALS,
   INTEREST_DECIMALS,
@@ -112,5 +154,7 @@ export {
   BLOCKS_PER_DAY,
   CONFIRMATION_THRESHOLD,
   SUPPORTED_NETWORKS,
+  ONE_INCH_ADDRESSES,
   getFromBlock,
+  chainIdToNetworkID,
 };

@@ -1,7 +1,3 @@
-.value-options{
-  margin-bottom: 30px;
-}
-
 .value-option{
   font-size: $sans-size-s;
   margin: 0 0 18px;
@@ -10,6 +6,10 @@
   input{
     position: absolute;
     visibility: hidden;
+  }
+
+  .font-bold{
+    font-weight: bold;
   }
 
   input ~ .radio-check{

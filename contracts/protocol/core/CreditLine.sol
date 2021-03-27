@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import "./GoldfinchConfig.sol";
 import "./BaseUpgradeablePausable.sol";
-import "../interfaces/IERC20withDec.sol";
+import "../../interfaces/IERC20withDec.sol";
 
 /**
  * @title CreditLine
