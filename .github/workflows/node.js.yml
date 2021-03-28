@@ -49,5 +49,8 @@ jobs:
     - run: npm test
     - run: npm run mainnet-test
     - name: deploy-autotasks
+      env:
+        AUTOTASK_API_KEY: ${{ secrets.AUTOTASK_API_KEY }}
+        AUTOTASK_API_SECRET: ${{ secrets.AUTOTASK_API_SECRET }}
       run: npm run autotask-update
       if: github.ref == 'refs/heads/master'
