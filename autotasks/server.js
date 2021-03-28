@@ -9,6 +9,7 @@ const {TypedDataUtils} = require("eth-sig-util")
 const {bufferToHex} = require("ethereumjs-util")
 
 const port = process.env.RELAY_SERVER_PORT
+const FORWARDER_ADDRESS = process.env.FORWARDER_ADDRESS
 const ALLOWED_SENDERS = (process.env.ALLOWED_SENDERS || "").split(",")
 const ALLOWED_CONTRACTS = (process.env.ALLOWED_CONTRACTS || "").split(",")
 
@@ -63,7 +64,7 @@ async function createContext() {
   const {getOrNull} = deployments
 
   const deployed = await getOrNull("TestForwarder")
-  const forwarder = await ethers.getContractAt(deployed.abi, deployed.address)
+  const forwarder = await ethers.getContractAt(deployed.abi, FORWARDER_ADDRESS)
   const chainId = await hre.getChainId()
   return {
     chainId: chainId,

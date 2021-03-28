@@ -124,7 +124,7 @@ function PaymentForm(props) {
     return sendFromUser(unsentAction, {
       type: 'Payment',
       amount: transactionAmount,
-      gasless: borrower.gasless,
+      gasless: borrower.shouldUseGasless,
     }).then(actionComplete);
   }
 

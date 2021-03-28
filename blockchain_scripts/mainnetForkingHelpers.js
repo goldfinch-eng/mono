@@ -1,13 +1,6 @@
 /* global ethers */
 const BN = require("bn.js")
-const {
-  updateConfig,
-  MAINNET_ONE_SPLIT_ADDRESS,
-  MAINNET_CUSDC_ADDRESS,
-  getDeployedContract,
-  isTestEnv,
-} = require("../blockchain_scripts/deployHelpers.js")
-const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
+const {getDeployedContract, isTestEnv} = require("../blockchain_scripts/deployHelpers.js")
 const hre = require("hardhat")
 
 const MAINNET_MULTISIG = "0xBEb28978B2c755155f20fd3d09Cb37e300A6981f"
@@ -121,14 +114,9 @@ async function impersonateAccount(hre, account) {
 }
 
 async function performPostUpgradeMigration(upgradedContracts, deployments) {
-  let config = upgradedContracts.GoldfinchConfig.UpgradedContract
-  let forwarder = await deployments.getOrNull("TestForwarder")
-
-  // Migrates the config from the
-  await updateConfig(config, "address", CONFIG_KEYS.ProtocolAdmin, MAINNET_MULTISIG)
-  await updateConfig(config, "address", CONFIG_KEYS.OneInch, MAINNET_ONE_SPLIT_ADDRESS)
-  await updateConfig(config, "address", CONFIG_KEYS.CUSDCContract, MAINNET_CUSDC_ADDRESS)
-  await updateConfig(config, "address", CONFIG_KEYS.TrustedForwarder, forwarder.address)
+  const deployed = await deployments.getOrNull("TestForwarder")
+  const forwarder = await ethers.getContractAt(deployed.abi, "0xa530F85085C6FE2f866E7FdB716849714a89f4CD")
+  await forwarder.registerDomainSeparator("Defender", "1")
 }
 
 function getMainnetContracts() {

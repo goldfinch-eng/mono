@@ -64,7 +64,7 @@ function DrawdownForm(props) {
     return sendFromUser(unsentAction, {
       type: 'Borrow',
       amount: transactionAmount,
-      gasless: props.borrower.gasless,
+      gasless: props.borrower.shouldUseGasless,
     }).then(props.actionComplete);
   }
 

@@ -23,7 +23,7 @@ module.exports = {
       accounts: {mnemonic: "test test test test test test test test test test test junk"},
       forking: process.env.HARDHAT_FORK ? {
         url: "https://eth-mainnet.alchemyapi.io/v2/EG9mAEw6e3sYDZ6h6oevoe1IaR42B72b",
-        blockNumber: 11695197, // Roughly Jan 20th, 2:57 PM PST
+        blockNumber: 12117738, // Roughly March 27, 2021, 00:00 UTC
       } : undefined,
     },
     ropsten: {
