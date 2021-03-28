@@ -46,6 +46,10 @@ class NetworkMonitor {
         const confirmations = this.currentBlockNumber - tx.blockNumber + 1;
         this.updateTX(tx, { confirmations: confirmations });
 
+        if (confirmations === 1 && tx.onConfirm) {
+          tx.onConfirm(tx);
+        }
+
         if (confirmations >= CONFIRMATION_THRESHOLD) {
           this.markTXSuccessful(tx);
         } else if (this.isLocalNetwork && confirmations >= 1) {
@@ -55,11 +59,11 @@ class NetworkMonitor {
     });
   }
 
-  watch(txHash, tx, onSuccess) {
+  watch(txHash, tx, onConfirm) {
     let txData = tx;
 
     // First ensure, the tx hash is upto date (pending transactions could have a different id)
-    this.updateTX(txData, { id: txHash, onSuccess: onSuccess });
+    this.updateTX(txData, { id: txHash, onConfirm: onConfirm });
     txData.id = txHash;
 
     if (this.isLocalNetwork) {
@@ -119,9 +123,6 @@ class NetworkMonitor {
 
   markTXSuccessful(tx) {
     this.updateTX(tx, { status: 'successful' });
-    if (tx.onSuccess) {
-      tx.onSuccess(tx);
-    }
   }
 
   markTXErrored(failedTX, error) {
