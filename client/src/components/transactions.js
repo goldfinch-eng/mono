@@ -1,38 +1,38 @@
-import React, { useContext } from 'react';
-import _ from 'lodash';
-import ConnectionNotice from './connectionNotice.js';
-import { AppContext } from '../App.js';
-import { displayDollars } from '../utils';
-import { iconCircleUpLg, iconCircleDownLg, iconCircleCheckLg, iconOutArrow } from './icons.js';
+import React, { useContext } from "react"
+import _ from "lodash"
+import ConnectionNotice from "./connectionNotice.js"
+import { AppContext } from "../App.js"
+import { displayDollars } from "../utils"
+import { iconCircleUpLg, iconCircleDownLg, iconCircleCheckLg, iconOutArrow } from "./icons.js"
 
 function Transactions(props) {
-  const { user, network } = useContext(AppContext);
+  const { user, network } = useContext(AppContext)
 
   function transactionRow(tx) {
-    const etherscanSubdomain = network.name === 'mainnet' ? '' : `${network.name}.`;
+    const etherscanSubdomain = network.name === "mainnet" ? "" : `${network.name}.`
 
-    let typeCssClass = '';
-    let icon = iconCircleCheckLg;
-    let amountPrefix = '';
-    if (['Deposit', 'Payment'].includes(tx.name)) {
-      typeCssClass = 'inflow';
-      icon = iconCircleUpLg;
-      amountPrefix = '+';
-    } else if (['Withdrawal', 'Drawdown'].includes(tx.name)) {
-      typeCssClass = 'outflow';
-      icon = iconCircleDownLg;
-      amountPrefix = '-';
+    let typeCssClass = ""
+    let icon = iconCircleCheckLg
+    let amountPrefix = ""
+    if (["Deposit", "Payment"].includes(tx.name)) {
+      typeCssClass = "inflow"
+      icon = iconCircleUpLg
+      amountPrefix = "+"
+    } else if (["Withdrawal", "Drawdown"].includes(tx.name)) {
+      typeCssClass = "outflow"
+      icon = iconCircleDownLg
+      amountPrefix = "-"
     }
 
-    let statusCssClass = '';
-    let typeLabel = tx.name;
-    let txDate = tx.date;
-    if (tx.status === 'error') {
-      statusCssClass = 'error';
-      typeLabel = typeLabel + ' (failed)';
-    } else if (tx.status === 'pending') {
-      statusCssClass = 'pending';
-      txDate = 'Processing...';
+    let statusCssClass = ""
+    let typeLabel = tx.name
+    let txDate = tx.date
+    if (tx.status === "error") {
+      statusCssClass = "error"
+      typeLabel = typeLabel + " (failed)"
+    } else if (tx.status === "pending") {
+      statusCssClass = "pending"
+      txDate = "Processing..."
       icon = (
         <div className="status-icon">
           <div className="indicator"></div>
@@ -41,7 +41,7 @@ function Transactions(props) {
             <div className="double-bounce2"></div>
           </div>
         </div>
-      );
+      )
     }
 
     return (
@@ -62,11 +62,11 @@ function Transactions(props) {
           </a>
         </td>
       </tr>
-    );
+    )
   }
 
-  let allTx = _.compact(_.concat(props.currentTXs, user.pastTXs));
-  allTx = _.uniqBy(allTx, 'id');
+  let allTx = _.compact(_.concat(props.currentTXs, user.pastTXs))
+  allTx = _.uniqBy(allTx, "id")
   let transactionRows = (
     <tr className="empty-row">
       <td>No transactions</td>
@@ -74,16 +74,16 @@ function Transactions(props) {
       <td></td>
       <td></td>
     </tr>
-  );
+  )
   if (allTx.length > 0) {
-    transactionRows = allTx.map(transactionRow);
+    transactionRows = allTx.map(transactionRow)
   }
 
   return (
     <div className="content-section">
       <div className="page-header">Transactions</div>
       <ConnectionNotice />
-      <table className={`table transactions-table ${user.address ? '' : 'placeholder'}`}>
+      <table className={`table transactions-table ${user.address ? "" : "placeholder"}`}>
         <thead>
           <tr>
             <th>Type</th>
@@ -95,7 +95,7 @@ function Transactions(props) {
         <tbody>{transactionRows}</tbody>
       </table>
     </div>
-  );
+  )
 }
 
-export default Transactions;
+export default Transactions

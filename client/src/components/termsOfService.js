@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react"
 
 function TermsOfService(props) {
   return (
@@ -335,7 +335,7 @@ function TermsOfService(props) {
         </p>
       </div>
     </div>
-  );
+  )
 }
 
-export default TermsOfService;
+export default TermsOfService

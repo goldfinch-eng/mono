@@ -1,21 +1,21 @@
-import React from 'react';
-import { NavLink } from 'react-router-dom';
-import useCloseOnClickOrEsc from '../hooks/useCloseOnClickOrEsc';
-import logoPurp from '../images/logomark-purp.svg';
-import { iconMenu } from './icons.js';
+import React from "react"
+import { NavLink } from "react-router-dom"
+import useCloseOnClickOrEsc from "../hooks/useCloseOnClickOrEsc"
+import logoPurp from "../images/logomark-purp.svg"
+import { iconMenu } from "./icons.js"
 
 function Sidebar(props) {
-  const [node, showSidebar, setShowSidebar] = useCloseOnClickOrEsc();
+  const [node, showSidebar, setShowSidebar] = useCloseOnClickOrEsc()
 
   function closeSidebar() {
-    setShowSidebar('');
+    setShowSidebar("")
   }
 
   function toggleSidebar() {
-    if (showSidebar === '') {
-      setShowSidebar('open');
+    if (showSidebar === "") {
+      setShowSidebar("open")
     } else {
-      setShowSidebar('');
+      setShowSidebar("")
     }
   }
 
@@ -37,7 +37,7 @@ function Sidebar(props) {
         </NavLink>
       </nav>
     </div>
-  );
+  )
 }
 
-export default Sidebar;
+export default Sidebar

@@ -1,92 +1,92 @@
-import BigNumber from 'bignumber.js';
-import { usdcFromAtomic } from './erc20.js';
-import _ from 'lodash';
-import { getFromBlock } from './utils.js';
-import { mapEventsToTx } from './events';
-import { getCreditLineFactory } from './creditLine';
-import { getBorrowerContract } from './borrower';
+import BigNumber from "bignumber.js"
+import { usdcFromAtomic } from "./erc20.js"
+import _ from "lodash"
+import { getFromBlock } from "./utils.js"
+import { mapEventsToTx } from "./events"
+import { getCreditLineFactory } from "./creditLine"
+import { getBorrowerContract } from "./borrower"
 
-const UNLOCK_THRESHOLD = new BigNumber(10000);
+const UNLOCK_THRESHOLD = new BigNumber(10000)
 
 async function getUserData(address, usdc, pool, creditDesk, networkId) {
-  const creditLineFactory = await getCreditLineFactory(networkId);
-  const borrower = await getBorrowerContract(address, creditLineFactory, creditDesk, usdc, pool, networkId);
+  const creditLineFactory = await getCreditLineFactory(networkId)
+  const borrower = await getBorrowerContract(address, creditLineFactory, creditDesk, usdc, pool, networkId)
 
-  const user = new User(address, borrower, pool, creditDesk, usdc);
-  await user.initialize();
-  return user;
+  const user = new User(address, borrower, pool, creditDesk, usdc)
+  await user.initialize()
+  return user
 }
 
 class User {
   constructor(address, borrower, pool, creditDesk, usdc) {
-    this.address = address;
-    this.borrower = borrower;
-    this.pool = pool;
-    this.usdc = usdc;
-    this.creditDesk = creditDesk;
-    this.loaded = false;
+    this.address = address
+    this.borrower = borrower
+    this.pool = pool
+    this.usdc = usdc
+    this.creditDesk = creditDesk
+    this.loaded = false
   }
 
   async initialize() {
-    this.usdcBalance = new BigNumber(await this.usdc.methods.balanceOf(this.address).call());
-    this.usdcBalanceInDollars = new BigNumber(usdcFromAtomic(this.usdcBalance));
-    this.poolAllowance = await this.getAllowance(this.pool._address);
+    this.usdcBalance = new BigNumber(await this.usdc.methods.balanceOf(this.address).call())
+    this.usdcBalanceInDollars = new BigNumber(usdcFromAtomic(this.usdcBalance))
+    this.poolAllowance = await this.getAllowance(this.pool._address)
 
     const [usdcTxs, poolTxs, creditDeskTxs] = await Promise.all([
       getAndTransformERC20Events(this.usdc, this.pool._address, this.address),
       getAndTransformPoolEvents(this.pool, this.address),
       // Credit desk events could've some from the user directly or the borrower contract, we need to filter by both
       getAndTransformCreditDeskEvents(this.creditDesk, [this.address, this.borrower.borrowerAddress]),
-    ]);
-    this.pastTXs = _.reverse(_.sortBy(_.compact(_.concat(usdcTxs, poolTxs, creditDeskTxs)), 'blockNumber'));
-    this.poolTxs = poolTxs;
-    this.loaded = true;
+    ])
+    this.pastTXs = _.reverse(_.sortBy(_.compact(_.concat(usdcTxs, poolTxs, creditDeskTxs)), "blockNumber"))
+    this.poolTxs = poolTxs
+    this.loaded = true
   }
 
   usdcIsUnlocked(type) {
-    return this.getUnlockStatus(type).isUnlocked;
+    return this.getUnlockStatus(type).isUnlocked
   }
 
   getUnlockStatus(type) {
-    if (type === 'earn') {
+    if (type === "earn") {
       return {
         unlockAddress: this.pool._address,
         isUnlocked: this.isUnlocked(this.poolAllowance),
-      };
-    } else if (type === 'borrow') {
+      }
+    } else if (type === "borrow") {
       return {
         unlockAddress: this.borrower.borrowerAddress,
         isUnlocked: this.isUnlocked(this.borrower.allowance),
-      };
+      }
     }
-    return false;
+    return false
   }
 
   isUnlocked(allowance) {
-    return !allowance || allowance.gte(UNLOCK_THRESHOLD);
+    return !allowance || allowance.gte(UNLOCK_THRESHOLD)
   }
 
   poolBalanceAsOf(dt) {
     const filtered = _.filter(this.poolTxs, tx => {
-      return tx.blockTime < dt;
-    });
+      return tx.blockTime < dt
+    })
     if (!filtered.length) {
-      return new BigNumber(0);
+      return new BigNumber(0)
     }
     return BigNumber.sum.apply(
       null,
       filtered.map(tx => {
-        if (tx.type === 'WithdrawalMade') {
-          return tx.amountBN.multipliedBy(new BigNumber(-1));
+        if (tx.type === "WithdrawalMade") {
+          return tx.amountBN.multipliedBy(new BigNumber(-1))
         } else {
-          return tx.amountBN;
+          return tx.amountBN
         }
       }),
-    );
+    )
   }
 
   async getAllowance(address) {
-    return new BigNumber(await this.usdc.methods.allowance(this.address, address).call());
+    return new BigNumber(await this.usdc.methods.allowance(this.address, address).call())
   }
 }
 
@@ -95,50 +95,50 @@ function defaultUser() {
     loaded: true,
     poolBalanceAsOf: () => new BigNumber(0),
     usdcIsUnlocked: () => false,
-  };
+  }
 }
 
 async function getAndTransformERC20Events(usdc, spender, owner) {
-  const approvalEvents = await usdc.getPastEvents('Approval', {
+  const approvalEvents = await usdc.getPastEvents("Approval", {
     filter: { owner: owner, spender: spender },
-    fromBlock: 'earliest',
-    to: 'latest',
-  });
-  return await mapEventsToTx(_.compact(approvalEvents));
+    fromBlock: "earliest",
+    to: "latest",
+  })
+  return await mapEventsToTx(_.compact(approvalEvents))
 }
 
 async function getAndTransformPoolEvents(pool, address) {
-  const poolEvents = await getPoolEvents(pool, address);
-  return await mapEventsToTx(poolEvents);
+  const poolEvents = await getPoolEvents(pool, address)
+  return await mapEventsToTx(poolEvents)
 }
 
 async function getAndTransformCreditDeskEvents(creditDesk, address) {
-  const fromBlock = getFromBlock(creditDesk.chain);
+  const fromBlock = getFromBlock(creditDesk.chain)
   const [paymentEvents, drawdownEvents] = await Promise.all(
-    ['PaymentCollected', 'DrawdownMade'].map(eventName => {
+    ["PaymentCollected", "DrawdownMade"].map(eventName => {
       return creditDesk.getPastEvents(eventName, {
         filter: { payer: address, borrower: address },
         fromBlock: fromBlock,
-        to: 'latest',
-      });
+        to: "latest",
+      })
     }),
-  );
-  const creditDeskEvents = _.compact(_.concat(paymentEvents, drawdownEvents));
-  return await mapEventsToTx(creditDeskEvents);
+  )
+  const creditDeskEvents = _.compact(_.concat(paymentEvents, drawdownEvents))
+  return await mapEventsToTx(creditDeskEvents)
 }
 
-async function getPoolEvents(pool, address, events = ['DepositMade', 'WithdrawalMade']) {
-  const fromBlock = getFromBlock(pool.chain);
+async function getPoolEvents(pool, address, events = ["DepositMade", "WithdrawalMade"]) {
+  const fromBlock = getFromBlock(pool.chain)
   const [depositEvents, withdrawalEvents] = await Promise.all(
     events.map(eventName => {
       return pool.getPastEvents(eventName, {
         filter: { capitalProvider: address },
         fromBlock: fromBlock,
-        to: 'latest',
-      });
+        to: "latest",
+      })
     }),
-  );
-  return _.compact(_.concat(depositEvents, withdrawalEvents));
+  )
+  return _.compact(_.concat(depositEvents, withdrawalEvents))
 }
 
-export { getUserData, getPoolEvents, defaultUser };
+export { getUserData, getPoolEvents, defaultUser }

@@ -1,60 +1,60 @@
-import React from 'react';
-import _ from 'lodash';
-import web3 from '../web3';
-import { croppedAddress, displayNumber } from '../utils';
-import { CONFIRMATION_THRESHOLD } from '../ethereum/utils';
-import useCloseOnClickOrEsc from '../hooks/useCloseOnClickOrEsc';
-import NetworkErrors from './networkErrors';
-import { iconCheck, iconOutArrow } from './icons.js';
-import { usdcFromAtomic } from '../ethereum/erc20';
+import React from "react"
+import _ from "lodash"
+import web3 from "../web3"
+import { croppedAddress, displayNumber } from "../utils"
+import { CONFIRMATION_THRESHOLD } from "../ethereum/utils"
+import useCloseOnClickOrEsc from "../hooks/useCloseOnClickOrEsc"
+import NetworkErrors from "./networkErrors"
+import { iconCheck, iconOutArrow } from "./icons.js"
+import { usdcFromAtomic } from "../ethereum/erc20"
 
 function NetworkWidget(props) {
-  const [node, showNetworkWidgetInfo, setShowNetworkWidgetInfo] = useCloseOnClickOrEsc();
+  const [node, showNetworkWidgetInfo, setShowNetworkWidgetInfo] = useCloseOnClickOrEsc()
 
   function enableMetamask() {
     if (props.user.address) {
-      return;
+      return
     }
     window.ethereum
-      .request({ method: 'eth_requestAccounts' })
+      .request({ method: "eth_requestAccounts" })
       .then(_result => {
-        props.connectionComplete();
+        props.connectionComplete()
       })
       .catch(error => {
-        console.error('Error connecting to metamask', error);
-      });
+        console.error("Error connecting to metamask", error)
+      })
   }
 
   function toggleOpenWidget() {
-    if (showNetworkWidgetInfo === '') {
-      setShowNetworkWidgetInfo('open');
+    if (showNetworkWidgetInfo === "") {
+      setShowNetworkWidgetInfo("open")
     } else {
-      setShowNetworkWidgetInfo('');
+      setShowNetworkWidgetInfo("")
     }
   }
 
-  let transactions = '';
-  let enabledText = croppedAddress(props.user.address);
-  let userAddressForDisplay = croppedAddress(props.user.address);
-  let enabledClass = '';
+  let transactions = ""
+  let enabledText = croppedAddress(props.user.address)
+  let userAddressForDisplay = croppedAddress(props.user.address)
+  let enabledClass = ""
 
   function transactionItem(tx) {
-    const transactionlabel = tx.name === 'Approval' ? tx.name : `$${tx.amount} ${tx.name}`;
-    let etherscanSubdomain;
-    if (props.network.name === 'mainnet') {
-      etherscanSubdomain = '';
+    const transactionlabel = tx.name === "Approval" ? tx.name : `$${tx.amount} ${tx.name}`
+    let etherscanSubdomain
+    if (props.network.name === "mainnet") {
+      etherscanSubdomain = ""
     } else {
-      etherscanSubdomain = `${props.network}.`;
+      etherscanSubdomain = `${props.network}.`
     }
 
-    let confirmationMessage = '';
+    let confirmationMessage = ""
 
-    if (tx.status === 'awaiting_signers') {
+    if (tx.status === "awaiting_signers") {
       confirmationMessage = (
         <span>
           <span className="small-network-message">Awaiting signers</span>
         </span>
-      );
+      )
     }
 
     return (
@@ -77,34 +77,34 @@ function NetworkWidget(props) {
         </a>
         {confirmationMessage}
       </div>
-    );
+    )
   }
 
   // Only show the error state when the most recent transaction is errored
-  if (props.currentErrors.length > 0 && props.currentTXs[0].status === 'error') {
-    enabledClass = 'error';
-    enabledText = 'Error';
-  } else if (_.some(props.currentTXs, { status: 'awaiting_signers' })) {
-    enabledClass = 'pending';
-    enabledText = 'Awaiting signers';
-  } else if (_.some(props.currentTXs, { status: 'pending' })) {
-    const pendingTXCount = _.countBy(props.currentTXs, { status: 'pending' }).true;
+  if (props.currentErrors.length > 0 && props.currentTXs[0].status === "error") {
+    enabledClass = "error"
+    enabledText = "Error"
+  } else if (_.some(props.currentTXs, { status: "awaiting_signers" })) {
+    enabledClass = "pending"
+    enabledText = "Awaiting signers"
+  } else if (_.some(props.currentTXs, { status: "pending" })) {
+    const pendingTXCount = _.countBy(props.currentTXs, { status: "pending" }).true
     const confirmingCount = _.countBy(props.currentTXs, item => {
-      return item.status === 'pending' && item.confirmations > 0;
-    }).true;
-    enabledClass = 'pending';
+      return item.status === "pending" && item.confirmations > 0
+    }).true
+    enabledClass = "pending"
     if (confirmingCount > 0) {
-      const pendingTX = props.currentTXs[0];
-      enabledText = `Confirming (${pendingTX.confirmations} of ${CONFIRMATION_THRESHOLD})`;
+      const pendingTX = props.currentTXs[0]
+      enabledText = `Confirming (${pendingTX.confirmations} of ${CONFIRMATION_THRESHOLD})`
     } else if (pendingTXCount > 0) {
-      enabledText = pendingTXCount === 1 ? 'Processing' : pendingTXCount + ' Processing';
+      enabledText = pendingTXCount === 1 ? "Processing" : pendingTXCount + " Processing"
     }
-  } else if (props.currentTXs.length > 0 && _.every(props.currentTXs, { status: 'successful' })) {
-    enabledClass = 'success';
+  } else if (props.currentTXs.length > 0 && _.every(props.currentTXs, { status: "successful" })) {
+    enabledClass = "success"
   }
 
-  let allTx = _.compact(_.concat(props.currentTXs, _.slice(props.user.pastTXs, 0, 5)));
-  allTx = _.uniqBy(allTx, 'id');
+  let allTx = _.compact(_.concat(props.currentTXs, _.slice(props.user.pastTXs, 0, 5)))
+  allTx = _.uniqBy(allTx, "id")
   if (allTx.length > 0) {
     transactions = (
       <div className="network-widget-section">
@@ -114,11 +114,11 @@ function NetworkWidget(props) {
         </div>
         {allTx.map(transactionItem)}
       </div>
-    );
+    )
   }
 
   if (props.gnosisSafeInfo) {
-    userAddressForDisplay = `${enabledText} (Gnosis Safe)`;
+    userAddressForDisplay = `${enabledText} (Gnosis Safe)`
   }
 
   const connectMetamaskNetworkWidget = (
@@ -134,7 +134,7 @@ function NetworkWidget(props) {
               I accept the Goldfinch <a href="/terms">Terms of Service</a>.
             </p>
             <p className="agree-item">
-              If I deposit into the pool, I confirm I am an Accredited Investor under{' '}
+              If I deposit into the pool, I confirm I am an Accredited Investor under{" "}
               <a href="https://www.ecfr.gov/cgi-bin/retrieveECFR?gp=&SID=8edfd12967d69c024485029d968ee737&r=SECTION&n=17y3.0.1.1.12.0.46.176">
                 SEC Rule 501
               </a>
@@ -147,7 +147,7 @@ function NetworkWidget(props) {
         </div>
       </div>
     </div>
-  );
+  )
 
   const enabledNetworkWidget = (
     <div ref={node} className={`network-widget ${showNetworkWidgetInfo}`}>
@@ -171,7 +171,7 @@ function NetworkWidget(props) {
         {transactions}
       </div>
     </div>
-  );
+  )
 
   if (!window.ethereum) {
     return (
@@ -180,7 +180,7 @@ function NetworkWidget(props) {
           Go to metamask.io
         </a>
       </div>
-    );
+    )
   } else if (!props.user.loaded) {
     return (
       <div ref={node} className="network-widget">
@@ -191,18 +191,18 @@ function NetworkWidget(props) {
           Loading...
         </div>
       </div>
-    );
+    )
   } else if (web3 && props.network.name && !props.network.supported) {
     return (
       <div ref={node} className="network-widget">
         <div className="network-widget-button disabled">Wrong Network</div>
       </div>
-    );
+    )
   } else if (!props.user.address) {
-    return connectMetamaskNetworkWidget;
+    return connectMetamaskNetworkWidget
   } else {
-    return enabledNetworkWidget;
+    return enabledNetworkWidget
   }
 }
 
-export default NetworkWidget;
+export default NetworkWidget

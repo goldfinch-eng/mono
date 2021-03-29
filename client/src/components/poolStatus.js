@@ -1,30 +1,30 @@
-import React from 'react';
-import InfoSection from './infoSection.js';
-import RecentRepayments from './recentRepayments';
-import { usdcFromAtomic } from '../ethereum/erc20';
-import { displayDollars, displayPercent } from '../utils';
-import { iconOutArrow } from './icons.js';
+import React from "react"
+import InfoSection from "./infoSection.js"
+import RecentRepayments from "./recentRepayments"
+import { usdcFromAtomic } from "../ethereum/erc20"
+import { displayDollars, displayPercent } from "../utils"
+import { iconOutArrow } from "./icons.js"
 
 function PoolStatus(props) {
   function deriveRows() {
-    let defaultRate;
-    let poolBalance;
-    let totalLoansOutstanding;
+    let defaultRate
+    let poolBalance
+    let totalLoansOutstanding
     if (props.poolData.loaded && props.creditDesk && props.creditDesk.gf) {
-      defaultRate = props.poolData.cumulativeWritedowns.dividedBy(props.creditDesk.gf.cumulativeDrawdowns);
-      poolBalance = usdcFromAtomic(props.poolData.totalPoolAssets);
-      totalLoansOutstanding = usdcFromAtomic(props.poolData.totalLoansOutstanding);
+      defaultRate = props.poolData.cumulativeWritedowns.dividedBy(props.creditDesk.gf.cumulativeDrawdowns)
+      poolBalance = usdcFromAtomic(props.poolData.totalPoolAssets)
+      totalLoansOutstanding = usdcFromAtomic(props.poolData.totalLoansOutstanding)
     }
 
     return [
-      { label: 'Total pool balance', value: displayDollars(poolBalance) },
-      { label: 'Loans outstanding', value: displayDollars(totalLoansOutstanding) },
-      { label: 'Default rate', value: displayPercent(defaultRate) },
-    ];
+      { label: "Total pool balance", value: displayDollars(poolBalance) },
+      { label: "Loans outstanding", value: displayDollars(totalLoansOutstanding) },
+      { label: "Default rate", value: displayPercent(defaultRate) },
+    ]
   }
 
   return (
-    <div className={`pool-status background-container ${props.poolData.totalShares ? '' : 'placeholder'}`}>
+    <div className={`pool-status background-container ${props.poolData.totalShares ? "" : "placeholder"}`}>
       <h2>Pool Status</h2>
       <InfoSection rows={deriveRows()} />
       <RecentRepayments />
@@ -41,7 +41,7 @@ function PoolStatus(props) {
         </a>
       </div>
     </div>
-  );
+  )
 }
 
-export default PoolStatus;
+export default PoolStatus

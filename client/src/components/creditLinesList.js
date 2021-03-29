@@ -1,19 +1,19 @@
-import React from 'react';
-import { displayDollars, displayPercent } from '../utils';
-import { iconCircleCheck } from './icons.js';
-import { usdcFromAtomic } from '../ethereum/erc20';
+import React from "react"
+import { displayDollars, displayPercent } from "../utils"
+import { iconCircleCheck } from "./icons.js"
+import { usdcFromAtomic } from "../ethereum/erc20"
 
 function CreditLinesList(props) {
   function creditLineRow(cl) {
-    let icon;
+    let icon
 
-    let description = `${displayDollars(usdcFromAtomic(cl.limit))} at ${displayPercent(cl.interestAprDecimal)}`;
-    let nextPaymentDue = 'No payment due';
+    let description = `${displayDollars(usdcFromAtomic(cl.limit))} at ${displayPercent(cl.interestAprDecimal)}`
+    let nextPaymentDue = "No payment due"
     if (cl.isPaymentDue) {
-      nextPaymentDue = `${displayDollars(cl.remainingPeriodDueAmountInDollars)} due ${cl.dueDate}`;
+      nextPaymentDue = `${displayDollars(cl.remainingPeriodDueAmountInDollars)} due ${cl.dueDate}`
     } else if (cl.isActive) {
-      icon = iconCircleCheck;
-      nextPaymentDue = `Paid through ${cl.dueDate}`;
+      icon = iconCircleCheck
+      nextPaymentDue = `Paid through ${cl.dueDate}`
     }
 
     return (
@@ -32,10 +32,10 @@ function CreditLinesList(props) {
           </button>
         </td>
       </tr>
-    );
+    )
   }
 
-  let creditLineRows = props.creditLine.creditLines.map(creditLineRow);
+  let creditLineRows = props.creditLine.creditLines.map(creditLineRow)
 
   return (
     <div className="background-container">
@@ -50,7 +50,7 @@ function CreditLinesList(props) {
         <tbody>{creditLineRows}</tbody>
       </table>
     </div>
-  );
+  )
 }
 
-export default CreditLinesList;
+export default CreditLinesList

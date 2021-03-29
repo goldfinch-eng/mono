@@ -1,94 +1,94 @@
-import BigNumber from 'bignumber.js';
-import { BN } from 'bn.js';
-import _ from 'lodash';
+import BigNumber from "bignumber.js"
+import { BN } from "bn.js"
+import _ from "lodash"
 
-const decimalPlaces = 6;
-const decimals = new BN(String(10 ** decimalPlaces));
-const USDC_DECIMALS = decimals;
-const CONFIRMATION_THRESHOLD = 6;
-const ETHDecimals = new BN(String(1e18));
-const INTEREST_DECIMALS = new BN(String(1e8));
-const BLOCKS_PER_DAY = 5760;
-const BLOCKS_PER_YEAR = BLOCKS_PER_DAY * 365;
-const MAX_UINT = new BN('115792089237316195423570985008687907853269984665640564039457584007913129639935');
-const MAINNET = 'mainnet';
-const ROPSTEN = 'ropsten';
-const RINKEBY = 'rinkeby';
-const LOCAL = 'localhost';
-const MAINNET_LAUNCH_BLOCK = '11370658';
+const decimalPlaces = 6
+const decimals = new BN(String(10 ** decimalPlaces))
+const USDC_DECIMALS = decimals
+const CONFIRMATION_THRESHOLD = 6
+const ETHDecimals = new BN(String(1e18))
+const INTEREST_DECIMALS = new BN(String(1e8))
+const BLOCKS_PER_DAY = 5760
+const BLOCKS_PER_YEAR = BLOCKS_PER_DAY * 365
+const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
+const MAINNET = "mainnet"
+const ROPSTEN = "ropsten"
+const RINKEBY = "rinkeby"
+const LOCAL = "localhost"
+const MAINNET_LAUNCH_BLOCK = "11370658"
 const USDC_ADDRESSES = {
-  [ROPSTEN]: '0x07865c6e87b9f70255377e024ace6630c1eaa37f',
-  [MAINNET]: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
-};
+  [ROPSTEN]: "0x07865c6e87b9f70255377e024ace6630c1eaa37f",
+  [MAINNET]: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+}
 
 const USDT_ADDRESSES = {
-  [MAINNET]: '0xdac17f958d2ee523a2206206994597c13d831ec7',
-};
+  [MAINNET]: "0xdac17f958d2ee523a2206206994597c13d831ec7",
+}
 
 const BUSD_ADDRESSES = {
-  [MAINNET]: '0x4Fabb145d64652a948d72533023f6E7A623C7C53',
-};
+  [MAINNET]: "0x4Fabb145d64652a948d72533023f6E7A623C7C53",
+}
 
 const FORWARDER_ADDRESSES = {
-  31337: '0xa530F85085C6FE2f866E7FdB716849714a89f4CD',
-  4: '0x956868751Cc565507B3B58E53a6f9f41B56bed74',
-  1: '0xa530F85085C6FE2f866E7FdB716849714a89f4CD',
-};
+  31337: "0xa530F85085C6FE2f866E7FdB716849714a89f4CD",
+  4: "0x956868751Cc565507B3B58E53a6f9f41B56bed74",
+  1: "0xa530F85085C6FE2f866E7FdB716849714a89f4CD",
+}
 
 const ONE_INCH_ADDRESSES = {
-  [LOCAL]: '0xc586bef4a0992c495cf22e1aeee4e446cecdee0e',
-  [MAINNET]: '0xc586bef4a0992c495cf22e1aeee4e446cecdee0e',
-};
+  [LOCAL]: "0xc586bef4a0992c495cf22e1aeee4e446cecdee0e",
+  [MAINNET]: "0xc586bef4a0992c495cf22e1aeee4e446cecdee0e",
+}
 
 // Only keep entries for supported networks
 // (ie. where we deployed the latest contracts)
 const mapNetworkToID = {
   main: MAINNET,
   ropsten: ROPSTEN,
-  private: 'localhost',
+  private: "localhost",
   rinkeby: RINKEBY,
-};
+}
 
 const chainIdToNetworkID = {
   1: MAINNET,
   4: RINKEBY,
-  31337: 'localhost',
-};
+  31337: "localhost",
+}
 
 const SUPPORTED_NETWORKS = {
   [MAINNET]: true,
   [LOCAL]: true,
   [RINKEBY]: true,
-};
+}
 
-let config;
+let config
 async function getDeployments(networkId) {
   if (config) {
-    return Promise.resolve(config[networkId]);
+    return Promise.resolve(config[networkId])
   }
-  const deploymentFileNameSuffix = process.env.NODE_ENV === 'development' ? '_dev' : '';
+  const deploymentFileNameSuffix = process.env.NODE_ENV === "development" ? "_dev" : ""
   return import(`../../config/deployments${deploymentFileNameSuffix}.json`)
     .then(result => {
-      config = transformedConfig(result);
+      config = transformedConfig(result)
 
-      if (networkId === 'localhost' && process.env.REACT_APP_HARDHAT_FORK) {
+      if (networkId === "localhost" && process.env.REACT_APP_HARDHAT_FORK) {
         // If we're on the fork, then need to use the mainnet proxy contract addresses instead of the
         // freshly deployed version
-        const mainnetContracts = ['GoldfinchConfig', 'CreditDesk', 'Pool', 'Fidu', 'CreditLineFactory'];
-        const mainnetConfig = config['mainnet'].contracts;
+        const mainnetContracts = ["GoldfinchConfig", "CreditDesk", "Pool", "Fidu", "CreditLineFactory"]
+        const mainnetConfig = config["mainnet"].contracts
         mainnetContracts.forEach(contract => {
           if (mainnetConfig[contract]) {
-            const networkContracts = config[networkId].contracts;
-            networkContracts[contract].address = mainnetConfig[contract].address;
-            networkContracts[`${contract}_Proxy`] = networkContracts[`${contract}_Proxy`] || {};
-            let mainnetProxy = mainnetConfig[`${contract}_Proxy`] || networkContracts[contract];
-            networkContracts[`${contract}_Proxy`].address = mainnetProxy.address;
+            const networkContracts = config[networkId].contracts
+            networkContracts[contract].address = mainnetConfig[contract].address
+            networkContracts[`${contract}_Proxy`] = networkContracts[`${contract}_Proxy`] || {}
+            let mainnetProxy = mainnetConfig[`${contract}_Proxy`] || networkContracts[contract]
+            networkContracts[`${contract}_Proxy`].address = mainnetProxy.address
           }
-        });
+        })
       }
-      return config[networkId];
+      return config[networkId]
     })
-    .catch(console.error);
+    .catch(console.error)
 }
 
 function transformedConfig(config) {
@@ -96,44 +96,44 @@ function transformedConfig(config) {
     config,
     (result, item) => {
       _.toArray(item).forEach(networkConfig => {
-        return _.merge(result, networkConfig);
-      });
-      return result;
+        return _.merge(result, networkConfig)
+      })
+      return result
     },
     {},
-  );
+  )
 }
 
 function getFromBlock(chain) {
-  if (chain === 'mainnet') {
-    return MAINNET_LAUNCH_BLOCK;
+  if (chain === "mainnet") {
+    return MAINNET_LAUNCH_BLOCK
   } else {
-    return 'earliest';
+    return "earliest"
   }
 }
 
 function fetchDataFromAttributes(web3Obj, attributes, { bigNumber } = {}) {
-  const result = {};
+  const result = {}
   if (!web3Obj) {
-    return Promise.resolve(result);
+    return Promise.resolve(result)
   }
   var promises = attributes.map(methodInfo => {
-    return web3Obj.methods[methodInfo.method](...(methodInfo.args || [])).call();
-  });
+    return web3Obj.methods[methodInfo.method](...(methodInfo.args || [])).call()
+  })
   return Promise.all(promises)
     .then(results => {
       attributes.forEach((methodInfo, index) => {
         if (bigNumber) {
-          result[methodInfo.name || methodInfo.method] = new BigNumber(results[index]);
+          result[methodInfo.name || methodInfo.method] = new BigNumber(results[index])
         } else {
-          result[methodInfo.name || methodInfo.method] = results[index];
+          result[methodInfo.name || methodInfo.method] = results[index]
         }
-      });
-      return result;
+      })
+      return result
     })
     .catch(e => {
-      throw new Error(e);
-    });
+      throw new Error(e)
+    })
 }
 
 export {
@@ -158,4 +158,4 @@ export {
   ONE_INCH_ADDRESSES,
   getFromBlock,
   chainIdToNetworkID,
-};
+}

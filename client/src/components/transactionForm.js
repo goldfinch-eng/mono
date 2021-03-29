@@ -1,11 +1,11 @@
-import React from 'react';
-import { useForm, FormProvider } from 'react-hook-form';
-import { iconX } from './icons.js';
-import useCloseOnClickOrEsc from '../hooks/useCloseOnClickOrEsc';
+import React from "react"
+import { useForm, FormProvider } from "react-hook-form"
+import { iconX } from "./icons.js"
+import useCloseOnClickOrEsc from "../hooks/useCloseOnClickOrEsc"
 
 function TransactionForm(props) {
-  const formMethods = useForm({ mode: 'onChange' });
-  const [node] = useCloseOnClickOrEsc({ closeFormFn: props.closeForm, closeOnClick: false });
+  const formMethods = useForm({ mode: "onChange" })
+  const [node] = useCloseOnClickOrEsc({ closeFormFn: props.closeForm, closeOnClick: false })
 
   return (
     <div ref={node} className={`form-full background-container ${props.formClass}`}>
@@ -22,7 +22,7 @@ function TransactionForm(props) {
         </form>
       </FormProvider>
     </div>
-  );
+  )
 }
 
-export default TransactionForm;
+export default TransactionForm

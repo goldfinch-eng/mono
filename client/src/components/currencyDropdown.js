@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { Tickers } from '../ethereum/erc20';
-import Dropdown from './dropdown';
+import React, { useState } from "react"
+import { Tickers } from "../ethereum/erc20"
+import Dropdown from "./dropdown"
 
 function CurrencyDropdown(props) {
-  const { onChange, className = '', selectedClassName = '' } = props;
+  const { onChange, className = "", selectedClassName = "" } = props
 
   const options = [
     {
@@ -18,8 +18,8 @@ function CurrencyDropdown(props) {
       value: Tickers.BUSD,
       el: <span>{Tickers.BUSD}</span>,
     },
-  ];
-  const [selected, setSelected] = useState(Tickers.USDC);
+  ]
+  const [selected, setSelected] = useState(Tickers.USDC)
 
   return (
     <Dropdown
@@ -28,11 +28,11 @@ function CurrencyDropdown(props) {
       selected={selected}
       options={options}
       onSelect={val => {
-        setSelected(val);
-        onChange(val);
+        setSelected(val)
+        onChange(val)
       }}
     />
-  );
+  )
 }
 
-export default CurrencyDropdown;
+export default CurrencyDropdown

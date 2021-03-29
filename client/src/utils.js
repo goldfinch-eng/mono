@@ -1,62 +1,62 @@
-import _ from 'lodash';
+import _ from "lodash"
 
 function croppedAddress(address) {
   if (!address) {
-    return '';
+    return ""
   }
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  return `${address.slice(0, 6)}...${address.slice(-4)}`
 }
 
 function displayNumber(val, decimals) {
-  if (val === '') {
-    return '';
+  if (val === "") {
+    return ""
   }
-  const valFloat = parseFloat(val);
+  const valFloat = parseFloat(val)
   if (!decimals && Math.floor(valFloat) === valFloat) {
-    decimals = 0;
+    decimals = 0
   } else if (!decimals) {
-    decimals = valFloat.toString().split('.')[1].length || 0;
+    decimals = valFloat.toString().split(".")[1].length || 0
   }
 
-  return commaFormat(valFloat.toFixed(decimals));
+  return commaFormat(valFloat.toFixed(decimals))
 }
 
 function commaFormat(numberString) {
   if (isNaN(numberString)) {
-    return numberString;
+    return numberString
   }
-  const [beforeDecimal, afterDecimal] = numberString.split('.');
-  let withCommas = [];
-  _.reverse(_.split(beforeDecimal, '')).forEach((letter, i) => {
+  const [beforeDecimal, afterDecimal] = numberString.split(".")
+  let withCommas = []
+  _.reverse(_.split(beforeDecimal, "")).forEach((letter, i) => {
     if (i % 3 === 0 && i > 0) {
-      withCommas.push(',');
+      withCommas.push(",")
     }
-    withCommas.push(letter);
-  });
-  return `${_.join(_.reverse(withCommas), '')}.${afterDecimal}`;
+    withCommas.push(letter)
+  })
+  return `${_.join(_.reverse(withCommas), "")}.${afterDecimal}`
 }
 
 function displayDollars(val, decimals = 2) {
-  const valDisplay = isNaN(val) ? ' --.--' : displayNumber(val, decimals);
-  return '$' + valDisplay;
+  const valDisplay = isNaN(val) ? " --.--" : displayNumber(val, decimals)
+  return "$" + valDisplay
 }
 
 function displayPercent(val) {
-  let valDisplay;
+  let valDisplay
   if (isNaN(val)) {
-    valDisplay = '--.--';
+    valDisplay = "--.--"
   } else {
-    valDisplay = displayNumber(val.multipliedBy(100), 2);
+    valDisplay = displayNumber(val.multipliedBy(100), 2)
   }
-  return `${valDisplay}%`;
+  return `${valDisplay}%`
 }
 
 function roundUpPenny(val) {
-  return Math.ceil(val * 100) / 100;
+  return Math.ceil(val * 100) / 100
 }
 
 function roundDownPenny(val) {
-  return Math.floor(val * 100) / 100;
+  return Math.floor(val * 100) / 100
 }
 
-export { croppedAddress, displayNumber, displayDollars, roundUpPenny, roundDownPenny, displayPercent };
+export { croppedAddress, displayNumber, displayDollars, roundUpPenny, roundDownPenny, displayPercent }

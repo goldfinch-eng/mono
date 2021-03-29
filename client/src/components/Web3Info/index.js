@@ -1,40 +1,40 @@
-import React, { useState, useEffect } from 'react';
-import { PublicAddress, Button } from 'rimble-ui';
-import styles from './Web3Info.module.scss';
+import React, { useState, useEffect } from "react"
+import { PublicAddress, Button } from "rimble-ui"
+import styles from "./Web3Info.module.scss"
 
 export default function Web3Info(props) {
-  const { web3Context } = props;
+  const { web3Context } = props
 
-  const [balance, setBalance] = useState(0);
+  const [balance, setBalance] = useState(0)
 
   const getBalance = async web3Context => {
-    const accounts = web3Context.accounts;
-    const lib = web3Context.lib;
+    const accounts = web3Context.accounts
+    const lib = web3Context.lib
     let balance =
-      accounts && accounts.length > 0 ? lib.utils.fromWei(await lib.eth.getBalance(accounts[0]), 'ether') : 'Unknown';
-    setBalance(balance);
-  };
+      accounts && accounts.length > 0 ? lib.utils.fromWei(await lib.eth.getBalance(accounts[0]), "ether") : "Unknown"
+    setBalance(balance)
+  }
 
   useEffect(() => {
-    getBalance(web3Context);
-  }, [web3Context, web3Context.accounts, web3Context.networkId]);
+    getBalance(web3Context)
+  }, [web3Context, web3Context.accounts, web3Context.networkId])
 
   const requestAuth = async web3Context => {
     try {
-      await web3Context.requestAuth();
+      await web3Context.requestAuth()
     } catch (e) {
-      console.error(e);
+      console.error(e)
     }
-  };
+  }
 
-  const { networkId, networkName, accounts, providerName } = web3Context;
+  const { networkId, networkName, accounts, providerName } = web3Context
 
   return (
     <div className={styles.web3}>
       <h3> {props.title} </h3>
       <div className={styles.dataPoint}>
         <div className={styles.label}>Network:</div>
-        <div className={styles.value}>{networkId ? `${networkId} – ${networkName}` : 'No connection'}</div>
+        <div className={styles.value}>{networkId ? `${networkId} – ${networkName}` : "No connection"}</div>
       </div>
       <div className={styles.dataPoint}>
         <div className={styles.label}>Your address:</div>
@@ -52,7 +52,7 @@ export default function Web3Info(props) {
           <div className={styles.label}>Accounts & Signing Status</div>
           <div className={styles.value}>Access Granted</div>
         </div>
-      ) : !!networkId && providerName !== 'infura' ? (
+      ) : !!networkId && providerName !== "infura" ? (
         <div>
           <br />
           <Button onClick={() => requestAuth(web3Context)}>Request Access</Button>
@@ -61,5 +61,5 @@ export default function Web3Info(props) {
         <div></div>
       )}
     </div>
-  );
+  )
 }

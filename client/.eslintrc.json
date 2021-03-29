@@ -6,8 +6,8 @@
     "react-hooks/rules-of-hooks": "error",
     "react-hooks/exhaustive-deps": "warn",
     "quotes": [
-      "warn",
-      "single"
+      "error",
+      "double"
     ],
     "indent": "off"
   }

@@ -1,9 +1,9 @@
-import React, { useContext } from 'react';
-import { iconX } from './icons.js';
-import { AppContext } from '../App.js';
+import React, { useContext } from "react"
+import { iconX } from "./icons.js"
+import { AppContext } from "../App.js"
 
 function NetworkErrors(props) {
-  const { networkMonitor } = useContext(AppContext);
+  const { networkMonitor } = useContext(AppContext)
 
   function errorItem(error) {
     return (
@@ -11,7 +11,7 @@ function NetworkErrors(props) {
         <div className="error-label">Error</div>
         <div
           onClick={() => {
-            networkMonitor.removeError(error);
+            networkMonitor.removeError(error)
           }}
           className="dismiss-error-item"
         >
@@ -19,14 +19,14 @@ function NetworkErrors(props) {
         </div>
         <p>{error.message}</p>
       </div>
-    );
+    )
   }
 
   if (!props.currentErrors.length) {
-    return '';
+    return ""
   } else {
-    return <div className="error-items">{props.currentErrors.map(errorItem)}</div>;
+    return <div className="error-items">{props.currentErrors.map(errorItem)}</div>
   }
 }
 
-export default NetworkErrors;
+export default NetworkErrors

@@ -1,27 +1,27 @@
-import _ from 'lodash';
-import React, { useEffect, useState, useContext } from 'react';
-import { AppContext } from '../App';
-import { usdcFromAtomic } from '../ethereum/erc20';
-import { displayDollars, croppedAddress } from '../utils';
-import { iconOutArrow } from './icons.js';
+import _ from "lodash"
+import React, { useEffect, useState, useContext } from "react"
+import { AppContext } from "../App"
+import { usdcFromAtomic } from "../ethereum/erc20"
+import { displayDollars, croppedAddress } from "../utils"
+import { iconOutArrow } from "./icons.js"
 
 function RecentRepayments() {
-  const { pool, user, network } = useContext(AppContext);
-  const [repayments, setRepayments] = useState([]);
-  let transactionRows;
+  const { pool, user, network } = useContext(AppContext)
+  const [repayments, setRepayments] = useState([])
+  let transactionRows
 
   useEffect(() => {
     if (pool.gf) {
       pool.gf.getRepaymentEvents().then(repayments => {
-        setRepayments(_.slice(repayments, 0, 3));
-      });
+        setRepayments(_.slice(repayments, 0, 3))
+      })
     }
-  }, [pool]);
+  }, [pool])
 
   function createTransactionRows(tx) {
-    const etherscanSubdomain = network.name === 'mainnet' ? '' : `${network}.`;
-    let yourPortion;
-    let yourPortionClass;
+    const etherscanSubdomain = network.name === "mainnet" ? "" : `${network}.`
+    let yourPortion
+    let yourPortionClass
 
     if (user.loaded && pool.gf.loaded) {
       let yourPortionValue = usdcFromAtomic(
@@ -29,15 +29,15 @@ function RecentRepayments() {
           .poolBalanceAsOf(tx.blockTime)
           .dividedBy(pool.gf.assetsAsOf(tx.blockTime))
           .multipliedBy(tx.interestAmountBN),
-      );
+      )
 
-      yourPortion = displayDollars(yourPortionValue, 4);
-      yourPortionClass = yourPortionValue > 0 ? '' : 'zero';
+      yourPortion = displayDollars(yourPortionValue, 4)
+      yourPortionClass = yourPortionValue > 0 ? "" : "zero"
     } else {
-      yourPortion = 'Loading...';
+      yourPortion = "Loading..."
     }
     return (
-      <tr key={tx.eventId} className={'transaction-row'}>
+      <tr key={tx.eventId} className={"transaction-row"}>
         <td className="transaction-date">{tx.date}</td>
         <td className="transaction-link">
           <span className="transaction-link-label">{croppedAddress(tx.id)}</span>
@@ -48,7 +48,7 @@ function RecentRepayments() {
         <td className="transaction-amount numeric">+{displayDollars(tx.amount)}</td>
         <td className={`transaction-portion numeric ${yourPortionClass}`}>+{yourPortion}</td>
       </tr>
-    );
+    )
   }
 
   if (repayments.length === 0) {
@@ -59,15 +59,15 @@ function RecentRepayments() {
         <td></td>
         <td></td>
       </tr>
-    );
+    )
   } else {
-    transactionRows = repayments.map(createTransactionRows);
+    transactionRows = repayments.map(createTransactionRows)
   }
 
   return (
     <div className="background-container-inner recent-repayments">
       <div className="section-header">Recent Borrower Repayments</div>
-      <table className={`table recent-repayments-table ${user.address ? '' : 'placeholder'}`}>
+      <table className={`table recent-repayments-table ${user.address ? "" : "placeholder"}`}>
         <thead>
           <tr>
             <th className="transaction-date">Date</th>
@@ -79,7 +79,7 @@ function RecentRepayments() {
         <tbody>{transactionRows}</tbody>
       </table>
     </div>
-  );
+  )
 }
 
-export default RecentRepayments;
+export default RecentRepayments

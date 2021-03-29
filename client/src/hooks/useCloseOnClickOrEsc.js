@@ -1,56 +1,56 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback } from "react"
 
 function useCloseOnClickOrEsc(opts = {}) {
-  const node = useRef();
+  const node = useRef()
   const handleEscFunction = useCallback(
     event => {
       if (opts.closeOnEsc === false) {
-        return;
+        return
       }
       if (event.keyCode === 27) {
         if (opts.closeFormFn) {
           // If an input has focus, then don't close the form, unfocus it first
-          if (document.activeElement && document.activeElement.tagName === 'INPUT') {
-            document.activeElement.blur();
+          if (document.activeElement && document.activeElement.tagName === "INPUT") {
+            document.activeElement.blur()
           } else {
-            opts.closeFormFn();
+            opts.closeFormFn()
           }
         } else {
-          setOpen('');
+          setOpen("")
         }
       }
     },
     [opts],
-  );
+  )
 
-  const [open, setOpen] = useState('');
+  const [open, setOpen] = useState("")
 
   const handleClickOutside = useCallback(
     e => {
       if (!node.current || node.current.contains(e.target) || opts.closeOnClick === false) {
         // inside click
-        return;
+        return
       }
       // outside click
       if (opts.closeFormFn) {
-        opts.closeFormFn();
+        opts.closeFormFn()
       } else {
-        setOpen('');
+        setOpen("")
       }
     },
     [opts],
-  );
+  )
 
   useEffect(() => {
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleEscFunction, false);
+    document.addEventListener("mousedown", handleClickOutside)
+    document.addEventListener("keydown", handleEscFunction, false)
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEscFunction, false);
-    };
-  }, [handleClickOutside, handleEscFunction]);
-  return [node, open, setOpen];
+      document.removeEventListener("mousedown", handleClickOutside)
+      document.removeEventListener("keydown", handleEscFunction, false)
+    }
+  }, [handleClickOutside, handleEscFunction])
+  return [node, open, setOpen]
 }
 
-export default useCloseOnClickOrEsc;
+export default useCloseOnClickOrEsc

@@ -1,43 +1,43 @@
-import React, { useState, useEffect, useContext } from 'react';
-import EarnActionsContainer from './earnActionsContainer.js';
-import PoolStatus from './poolStatus.js';
-import ConnectionNotice from './connectionNotice.js';
-import { fetchCapitalProviderData, fetchPoolData } from '../ethereum/pool.js';
-import { AppContext } from '../App.js';
+import React, { useState, useEffect, useContext } from "react"
+import EarnActionsContainer from "./earnActionsContainer.js"
+import PoolStatus from "./poolStatus.js"
+import ConnectionNotice from "./connectionNotice.js"
+import { fetchCapitalProviderData, fetchPoolData } from "../ethereum/pool.js"
+import { AppContext } from "../App.js"
 
 function Earn(props) {
-  const { pool, usdc, creditDesk, user } = useContext(AppContext);
-  const [capitalProvider, setCapitalProvider] = useState({});
-  const [poolData, setPoolData] = useState({});
+  const { pool, usdc, creditDesk, user } = useContext(AppContext)
+  const [capitalProvider, setCapitalProvider] = useState({})
+  const [poolData, setPoolData] = useState({})
 
   useEffect(() => {
     async function refreshAllData() {
-      const capitalProviderAddress = user.address;
-      refreshPoolData(pool, usdc);
-      refreshCapitalProviderData(pool, capitalProviderAddress);
+      const capitalProviderAddress = user.address
+      refreshPoolData(pool, usdc)
+      refreshCapitalProviderData(pool, capitalProviderAddress)
     }
-    refreshAllData();
-  }, [pool, usdc, user]);
+    refreshAllData()
+  }, [pool, usdc, user])
 
   function actionComplete() {
-    refreshPoolData(pool, usdc);
-    return refreshCapitalProviderData(pool, capitalProvider.address);
+    refreshPoolData(pool, usdc)
+    return refreshCapitalProviderData(pool, capitalProvider.address)
   }
 
   async function refreshCapitalProviderData(pool, address) {
-    const capitalProvider = await fetchCapitalProviderData(pool, address);
-    setCapitalProvider(capitalProvider);
+    const capitalProvider = await fetchCapitalProviderData(pool, address)
+    setCapitalProvider(capitalProvider)
   }
 
   async function refreshPoolData(pool, usdc) {
-    const poolData = await fetchPoolData(pool, usdc && usdc.contract);
-    setPoolData(poolData);
+    const poolData = await fetchPoolData(pool, usdc && usdc.contract)
+    setPoolData(poolData)
   }
 
-  let earnMessage = 'Loading...';
+  let earnMessage = "Loading..."
 
   if (capitalProvider.loaded) {
-    earnMessage = 'Earn Portfolio';
+    earnMessage = "Earn Portfolio"
   }
 
   return (
@@ -47,7 +47,7 @@ function Earn(props) {
       <EarnActionsContainer poolData={poolData} capitalProvider={capitalProvider} actionComplete={actionComplete} />
       <PoolStatus poolData={poolData} creditDesk={creditDesk} />
     </div>
-  );
+  )
 }
 
-export default Earn;
+export default Earn

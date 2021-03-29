@@ -1,67 +1,67 @@
-import web3 from '../web3';
-import { submitGaslessTransaction } from './gasless';
-import { getFromBlock } from './utils.js';
-import BigNumber from 'bignumber.js';
-import { getOneInchContract } from './oneInch';
+import web3 from "../web3"
+import { submitGaslessTransaction } from "./gasless"
+import { getFromBlock } from "./utils.js"
+import BigNumber from "bignumber.js"
+import { getOneInchContract } from "./oneInch"
 
-const BorrowerAbi = require('../../abi/Borrower.json');
+const BorrowerAbi = require("../../abi/Borrower.json")
 
 class BorrowerInterface {
   constructor(userAddress, creditDesk, borrowerContract, usdc, pool, oneInch) {
-    this.userAddress = userAddress;
-    this.creditDesk = creditDesk;
-    this.borrowerContract = borrowerContract;
-    this.usdc = usdc;
-    this.pool = pool;
-    this.oneInch = oneInch;
-    this.borrowerAddress = this.isUsingBorrowerContract ? this.borrowerContract._address : this.userAddress;
+    this.userAddress = userAddress
+    this.creditDesk = creditDesk
+    this.borrowerContract = borrowerContract
+    this.usdc = usdc
+    this.pool = pool
+    this.oneInch = oneInch
+    this.borrowerAddress = this.isUsingBorrowerContract ? this.borrowerContract._address : this.userAddress
   }
 
   async initialize() {
-    this.creditLinesAddresses = await this.creditDesk.methods.getBorrowerCreditLines(this.borrowerAddress).call();
-    this.allowance = new BigNumber(await this.usdc.methods.allowance(this.userAddress, this.borrowerAddress).call());
+    this.creditLinesAddresses = await this.creditDesk.methods.getBorrowerCreditLines(this.borrowerAddress).call()
+    this.allowance = new BigNumber(await this.usdc.methods.allowance(this.userAddress, this.borrowerAddress).call())
   }
 
   get shouldUseGasless() {
-    const gaslessEnabled = process.env.REACT_APP_DISABLE_GASLESS !== 'true' && window.disableGasless !== true;
-    return this.isUsingBorrowerContract && gaslessEnabled;
+    const gaslessEnabled = process.env.REACT_APP_DISABLE_GASLESS !== "true" && window.disableGasless !== true
+    return this.isUsingBorrowerContract && gaslessEnabled
   }
 
   get isUsingBorrowerContract() {
-    return !!this.borrowerContract;
+    return !!this.borrowerContract
   }
 
   drawdown(creditLineAddress, drawdownAmount, sendToAddress) {
     if (this.isUsingBorrowerContract) {
-      sendToAddress = sendToAddress || this.userAddress;
-      return this.submit(this.borrowerContract.methods.drawdown(creditLineAddress, drawdownAmount, sendToAddress));
+      sendToAddress = sendToAddress || this.userAddress
+      return this.submit(this.borrowerContract.methods.drawdown(creditLineAddress, drawdownAmount, sendToAddress))
     } else {
       if (sendToAddress) {
-        throw new Error('SendToAddress not supported for non-borrower contracts');
+        throw new Error("SendToAddress not supported for non-borrower contracts")
       }
-      return this.creditDesk.methods.drawdown(creditLineAddress, drawdownAmount);
+      return this.creditDesk.methods.drawdown(creditLineAddress, drawdownAmount)
     }
   }
 
   drawdownViaOneInch(creditLineAddress, amount, sendToAddress, toToken) {
-    sendToAddress = sendToAddress || this.userAddress;
-    return this.submit(this.drawdownViaOneInchAsync(creditLineAddress, amount, sendToAddress, toToken));
+    sendToAddress = sendToAddress || this.userAddress
+    return this.submit(this.drawdownViaOneInchAsync(creditLineAddress, amount, sendToAddress, toToken))
   }
 
   pay(creditLineAddress, amount) {
     if (this.isUsingBorrowerContract) {
-      return this.submit(this.borrowerContract.methods.pay(creditLineAddress, amount));
+      return this.submit(this.borrowerContract.methods.pay(creditLineAddress, amount))
     } else {
-      return this.creditDesk.methods.pay(creditLineAddress, amount);
+      return this.creditDesk.methods.pay(creditLineAddress, amount)
     }
   }
 
   payInFull(creditLineAddress, amount) {
-    return this.submit(this.borrowerContract.methods.payInFull(creditLineAddress, amount));
+    return this.submit(this.borrowerContract.methods.payInFull(creditLineAddress, amount))
   }
 
   payMultiple(creditLines, amounts) {
-    return this.submit(this.borrowerContract.methods.payMultiple(creditLines, amounts));
+    return this.submit(this.borrowerContract.methods.payMultiple(creditLines, amounts))
   }
 
   payWithSwapOnOneInch(creditLineAddress, amount, minAmount, fromToken, quote) {
@@ -73,7 +73,7 @@ class BorrowerInterface {
         minAmount,
         quote.distribution,
       ),
-    );
+    )
   }
 
   payMultipleWithSwapOnOneInch(creditLines, amounts, originAmount, fromToken, quote) {
@@ -85,16 +85,16 @@ class BorrowerInterface {
         fromToken,
         quote.distribution,
       ),
-    );
+    )
   }
 
   async drawdownViaOneInchAsync(creditLineAddress, amount, sendToAddress, toToken) {
-    toToken = toToken || '0xdac17f958d2ee523a2206206994597c13d831ec7'; // Mainnet USDT
-    const splitParts = 10;
+    toToken = toToken || "0xdac17f958d2ee523a2206206994597c13d831ec7" // Mainnet USDT
+    const splitParts = 10
 
     const result = await this.oneInch.methods
       .getExpectedReturn(this.usdc._address, toToken, amount, splitParts, 0)
-      .call();
+      .call()
     return this.borrowerContract.methods.drawdownWithSwapOnOneInch(
       creditLineAddress,
       amount,
@@ -102,45 +102,45 @@ class BorrowerInterface {
       toToken,
       this.withinOnePercent(result.returnAmount),
       result.distribution,
-    );
+    )
   }
 
   withinOnePercent(amount) {
     return new BigNumber(amount)
       .times(new BigNumber(99))
       .idiv(new BigNumber(100))
-      .toString();
+      .toString()
   }
 
   submit(unsentAction) {
     if (this.shouldUseGasless) {
       if (!this.isUsingBorrowerContract) {
-        throw new Error('Gasless transactions are only supported for borrower contracts');
+        throw new Error("Gasless transactions are only supported for borrower contracts")
       }
       // This needs to be a function, otherwise the initial Promise.resolve in useSendFromUser will try to
       // resolve (and therefore initialize the signing request) before updating the network widget
-      return () => submitGaslessTransaction(this.borrowerAddress, unsentAction);
+      return () => submitGaslessTransaction(this.borrowerAddress, unsentAction)
     } else {
-      return unsentAction;
+      return unsentAction
     }
   }
 }
 
 async function getBorrowerContract(ownerAddress, creditLineFactory, creditDesk, usdc, pool, networkId) {
-  const borrowerCreatedEvents = await creditLineFactory.getPastEvents('BorrowerCreated', {
+  const borrowerCreatedEvents = await creditLineFactory.getPastEvents("BorrowerCreated", {
     filter: { owner: ownerAddress },
     fromBlock: getFromBlock(creditLineFactory.chain),
-    to: 'latest',
-  });
-  let borrower;
+    to: "latest",
+  })
+  let borrower
   if (borrowerCreatedEvents.length > 0) {
-    const lastIndex = borrowerCreatedEvents.length - 1;
-    borrower = new web3.eth.Contract(BorrowerAbi, borrowerCreatedEvents[lastIndex].returnValues.borrower);
+    const lastIndex = borrowerCreatedEvents.length - 1
+    borrower = new web3.eth.Contract(BorrowerAbi, borrowerCreatedEvents[lastIndex].returnValues.borrower)
   }
-  const oneInch = getOneInchContract(networkId);
-  const borrowerInterface = new BorrowerInterface(ownerAddress, creditDesk, borrower, usdc, pool, oneInch);
-  await borrowerInterface.initialize();
-  return borrowerInterface;
+  const oneInch = getOneInchContract(networkId)
+  const borrowerInterface = new BorrowerInterface(ownerAddress, creditDesk, borrower, usdc, pool, oneInch)
+  await borrowerInterface.initialize()
+  return borrowerInterface
 }
 
-export { getBorrowerContract };
+export { getBorrowerContract }

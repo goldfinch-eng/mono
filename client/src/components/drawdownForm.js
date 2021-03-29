@@ -1,106 +1,106 @@
-import React, { useContext, useState, useEffect } from 'react';
-import { usdcFromAtomic, minimumNumber, usdcToAtomic } from '../ethereum/erc20';
-import { AppContext } from '../App';
-import TransactionForm from './transactionForm';
-import { fetchPoolData } from '../ethereum/pool';
-import { displayDollars, roundDownPenny } from '../utils';
-import AddressInput from './addressInput';
-import TransactionInput from './transactionInput';
-import LoadingButton from './loadingButton';
-import useSendFromUser from '../hooks/useSendFromUser';
-import { useOneInchQuote, formatQuote } from '../hooks/useOneInchQuote';
-import useDebounce from '../hooks/useDebounce';
-import UnlockERC20Form from './unlockERC20Form';
-import { getERC20 } from '../ethereum/erc20';
-import useCurrencyUnlocked from '../hooks/useCurrencyUnlocked';
-import CurrencyDropdown from './currencyDropdown';
+import React, { useContext, useState, useEffect } from "react"
+import { usdcFromAtomic, minimumNumber, usdcToAtomic } from "../ethereum/erc20"
+import { AppContext } from "../App"
+import TransactionForm from "./transactionForm"
+import { fetchPoolData } from "../ethereum/pool"
+import { displayDollars, roundDownPenny } from "../utils"
+import AddressInput from "./addressInput"
+import TransactionInput from "./transactionInput"
+import LoadingButton from "./loadingButton"
+import useSendFromUser from "../hooks/useSendFromUser"
+import { useOneInchQuote, formatQuote } from "../hooks/useOneInchQuote"
+import useDebounce from "../hooks/useDebounce"
+import UnlockERC20Form from "./unlockERC20Form"
+import { getERC20 } from "../ethereum/erc20"
+import useCurrencyUnlocked from "../hooks/useCurrencyUnlocked"
+import CurrencyDropdown from "./currencyDropdown"
 
 function DrawdownForm(props) {
-  const { pool, usdc, goldfinchConfig, network } = useContext(AppContext);
-  const networkId = network.name;
-  const [poolData, setPoolData] = useState({});
-  const sendFromUser = useSendFromUser();
-  const [erc20, setErc20] = useState(usdc);
+  const { pool, usdc, goldfinchConfig, network } = useContext(AppContext)
+  const networkId = network.name
+  const [poolData, setPoolData] = useState({})
+  const sendFromUser = useSendFromUser()
+  const [erc20, setErc20] = useState(usdc)
   const [unlocked, setUnlocked] = useCurrencyUnlocked(erc20, {
     owner: props.borrower.userAddress,
     spender: props.borrower.borrowerAddress,
-  });
-  const [transactionAmount, setTransactionAmount] = useState();
-  const debouncedSetTransactionAmount = useDebounce(setTransactionAmount, 200);
+  })
+  const [transactionAmount, setTransactionAmount] = useState()
+  const debouncedSetTransactionAmount = useDebounce(setTransactionAmount, 200)
   const [transactionAmountQuote, isQuoteLoading] = useOneInchQuote({
     from: usdc,
     to: erc20,
     decimalAmount: transactionAmount,
-  });
+  })
 
-  const [isOptionsOpen, setOptionsOpen] = useState(false);
+  const [isOptionsOpen, setOptionsOpen] = useState(false)
 
   useEffect(() => {
-    (async () => {
-      setPoolData(await fetchPoolData(pool, usdc.contract));
-    })();
-  }, [pool, usdc]);
+    ;(async () => {
+      setPoolData(await fetchPoolData(pool, usdc.contract))
+    })()
+  }, [pool, usdc])
 
   function isSwapping() {
-    return erc20 !== usdc;
+    return erc20 !== usdc
   }
 
   function action({ transactionAmount, sendToAddress }) {
-    const drawdownAmount = usdcToAtomic(transactionAmount);
-    sendToAddress = sendToAddress || props.borrower.address;
+    const drawdownAmount = usdcToAtomic(transactionAmount)
+    sendToAddress = sendToAddress || props.borrower.address
 
-    let unsentAction;
+    let unsentAction
     if (isSwapping()) {
       unsentAction = props.borrower.drawdownViaOneInch(
         props.creditLine.address,
         drawdownAmount,
         sendToAddress,
         erc20.address,
-      );
+      )
     } else {
-      unsentAction = props.borrower.drawdown(props.creditLine.address, drawdownAmount, sendToAddress);
+      unsentAction = props.borrower.drawdown(props.creditLine.address, drawdownAmount, sendToAddress)
     }
 
     return sendFromUser(unsentAction, {
-      type: 'Borrow',
+      type: "Borrow",
       amount: transactionAmount,
       gasless: props.borrower.shouldUseGasless,
-    }).then(props.actionComplete);
+    }).then(props.actionComplete)
   }
 
   const maxAmount = minimumNumber(
     props.creditLine.availableCreditInDollars,
     usdcFromAtomic(poolData.balance),
     usdcFromAtomic(goldfinchConfig.transactionLimit),
-  );
+  )
 
   async function changeTicker(ticker) {
-    let erc20 = await getERC20(ticker, networkId);
-    setErc20(erc20);
+    let erc20 = await getERC20(ticker, networkId)
+    setErc20(erc20)
   }
 
   function renderForm({ formMethods }) {
-    let warningMessage, disabled;
+    let warningMessage, disabled
     if (props.creditLine.isLate) {
-      warningMessage = <p className="form-message">Cannot drawdown when payment is past due</p>;
-      disabled = true;
+      warningMessage = <p className="form-message">Cannot drawdown when payment is past due</p>
+      disabled = true
     }
-    disabled = disabled || !unlocked;
+    disabled = disabled || !unlocked
 
     return (
       <>
         <a
-          className={`form-show-optional ${isOptionsOpen ? 'showing' : 'hidden'}`}
+          className={`form-show-optional ${isOptionsOpen ? "showing" : "hidden"}`}
           onClick={e => {
-            e.preventDefault();
-            setOptionsOpen(!isOptionsOpen);
+            e.preventDefault()
+            setOptionsOpen(!isOptionsOpen)
           }}
         >
           Options
         </a>
         <div className="form-inputs">
           {warningMessage}
-          <div className={`form-optional ${isOptionsOpen ? 'showing' : 'hidden'}`}>
+          <div className={`form-optional ${isOptionsOpen ? "showing" : "hidden"}`}>
             <div>
               <div className="form-input-label">Receive funds in specified stablecoin</div>
               <CurrencyDropdown selectedClassName="form-input small-text" onChange={changeTicker} />
@@ -126,7 +126,7 @@ function DrawdownForm(props) {
                 maxAmount={maxAmount}
                 disabled={disabled}
                 onChange={e => {
-                  debouncedSetTransactionAmount(formMethods.getValues('transactionAmount'));
+                  debouncedSetTransactionAmount(formMethods.getValues("transactionAmount"))
                 }}
                 rightDecoration={
                   <button
@@ -134,10 +134,10 @@ function DrawdownForm(props) {
                     type="button"
                     disabled={disabled}
                     onClick={() => {
-                      formMethods.setValue('transactionAmount', roundDownPenny(maxAmount), {
+                      formMethods.setValue("transactionAmount", roundDownPenny(maxAmount), {
                         shouldValidate: true,
                         shouldDirty: true,
-                      });
+                      })
                     }}
                   >
                     Max
@@ -146,7 +146,7 @@ function DrawdownForm(props) {
                 notes={[
                   transactionAmountQuote &&
                     !isQuoteLoading && {
-                      key: 'quote',
+                      key: "quote",
                       content: <p>You will receive ~${formatQuote({ erc20: erc20, quote: transactionAmountQuote })}</p>,
                     },
                 ]}
@@ -156,7 +156,7 @@ function DrawdownForm(props) {
           </div>
         </div>
       </>
-    );
+    )
   }
 
   return (
@@ -167,7 +167,7 @@ function DrawdownForm(props) {
       render={renderForm}
       closeForm={props.closeForm}
     />
-  );
+  )
 }
 
-export default DrawdownForm;
+export default DrawdownForm

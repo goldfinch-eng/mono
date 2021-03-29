@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component } from "react"
 
 class InfoSection extends Component {
   convertRowToItem(row, index) {
@@ -7,12 +7,12 @@ class InfoSection extends Component {
         <div className="value">{row.value}</div>
         <div className="label">{row.label}</div>
       </div>
-    );
+    )
   }
 
   render() {
-    return <div className="info-section">{this.props.rows.map(this.convertRowToItem)}</div>;
+    return <div className="info-section">{this.props.rows.map(this.convertRowToItem)}</div>
   }
 }
 
-export default InfoSection;
+export default InfoSection

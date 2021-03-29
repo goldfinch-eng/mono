@@ -14,11 +14,13 @@ async function proposeConfig(hre) {
     throw new Error("You must pass OLD_CONFIG_ADDRESS as an envvar")
   }
 
-  let newConfig = await hre.deployments.get('GoldfinchConfig')
+  let newConfig = await hre.deployments.get("GoldfinchConfig")
   let newConfigAddress = newConfig.address
 
   if (oldConfigAddress.toLowerCase() === newConfigAddress.toLowerCase()) {
-    throw new Error(`Old config address ${oldConfigAddress} and new config address ${newConfigAddress} are the same. Make sure a new GoldfinchConfig has been deployed and is reflected in the deployment files.`)
+    throw new Error(
+      `Old config address ${oldConfigAddress} and new config address ${newConfigAddress} are the same. Make sure a new GoldfinchConfig has been deployed and is reflected in the deployment files.`
+    )
   }
 
   const chainId = await hre.getChainId()

@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react"
 
 const iconBank = (
   <svg className="icon" width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -15,7 +15,7 @@ const iconBank = (
     <path fillRule="evenodd" clipRule="evenodd" d="M4 46H60V57H4V46ZM8 50V53H56V50H8Z" fill="#483E5E" />
     <path fillRule="evenodd" clipRule="evenodd" d="M0 53H64V64H0V53ZM4 57V60H60V57H4Z" fill="#483E5E" />
   </svg>
-);
+)
 
 const iconCheck = (
   <svg className="icon" width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -26,7 +26,7 @@ const iconCheck = (
       fill="#483E5E"
     />
   </svg>
-);
+)
 
 const iconCircleCheck = (
   <svg className="icon" width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -43,7 +43,7 @@ const iconCircleCheck = (
       fill="#483E5E"
     />
   </svg>
-);
+)
 
 const iconCircleUpLg = (
   <svg className="icon" width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -60,7 +60,7 @@ const iconCircleUpLg = (
       fill="#483E5E"
     />
   </svg>
-);
+)
 
 const iconCircleDownLg = (
   <svg className="icon" width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -77,7 +77,7 @@ const iconCircleDownLg = (
       fill="#483E5E"
     />
   </svg>
-);
+)
 
 const iconCircleCheckLg = (
   <svg className="icon" width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -94,7 +94,7 @@ const iconCircleCheckLg = (
       fill="#483E5E"
     />
   </svg>
-);
+)
 
 const iconClock = (
   <svg className="icon" width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -106,7 +106,7 @@ const iconClock = (
       fill="#483E5E"
     />
   </svg>
-);
+)
 
 const iconDownArrow = (
   <svg className="icon" width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -117,7 +117,7 @@ const iconDownArrow = (
       fill="#483E5E"
     />
   </svg>
-);
+)
 
 const iconInfo = (
   <svg className="icon" width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -132,7 +132,7 @@ const iconInfo = (
       fill="#483E5E"
     />
   </svg>
-);
+)
 
 const iconMenu = (
   <svg className="icon" width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -140,7 +140,7 @@ const iconMenu = (
     <path fillRule="evenodd" clipRule="evenodd" d="M30 17.5H2V14.5H30V17.5Z" fill="#483E5E" />
     <path fillRule="evenodd" clipRule="evenodd" d="M30 26H2V23H30V26Z" fill="#483E5E" />
   </svg>
-);
+)
 
 const iconOutArrow = (
   <svg className="icon" width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -151,7 +151,7 @@ const iconOutArrow = (
       fill="#483E5E"
     />
   </svg>
-);
+)
 
 const iconUpArrow = (
   <svg className="icon" width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -162,7 +162,7 @@ const iconUpArrow = (
       fill="#483E5E"
     />
   </svg>
-);
+)
 
 const iconX = (
   <svg className="icon" width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -173,7 +173,7 @@ const iconX = (
       fill="#483E5E"
     />
   </svg>
-);
+)
 
 export {
   iconBank,
@@ -189,4 +189,4 @@ export {
   iconOutArrow,
   iconUpArrow,
   iconX,
-};
+}

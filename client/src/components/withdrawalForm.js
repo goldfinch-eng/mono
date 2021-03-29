@@ -1,30 +1,30 @@
-import React, { useContext } from 'react';
-import { usdcFromAtomic, minimumNumber, usdcToAtomic } from '../ethereum/erc20';
-import { displayDollars, roundDownPenny } from '../utils';
-import { AppContext } from '../App.js';
-import TransactionForm from './transactionForm';
-import TransactionInput from './transactionInput';
-import LoadingButton from './loadingButton';
-import useSendFromUser from '../hooks/useSendFromUser';
+import React, { useContext } from "react"
+import { usdcFromAtomic, minimumNumber, usdcToAtomic } from "../ethereum/erc20"
+import { displayDollars, roundDownPenny } from "../utils"
+import { AppContext } from "../App.js"
+import TransactionForm from "./transactionForm"
+import TransactionInput from "./transactionInput"
+import LoadingButton from "./loadingButton"
+import useSendFromUser from "../hooks/useSendFromUser"
 
 function WithdrawalForm(props) {
-  const sendFromUser = useSendFromUser();
-  const { pool, goldfinchConfig } = useContext(AppContext);
+  const sendFromUser = useSendFromUser()
+  const { pool, goldfinchConfig } = useContext(AppContext)
 
   function action({ transactionAmount }) {
-    const withdrawalAmount = usdcToAtomic(transactionAmount);
+    const withdrawalAmount = usdcToAtomic(transactionAmount)
     return sendFromUser(pool.methods.withdraw(withdrawalAmount), {
-      type: 'Withdrawal',
+      type: "Withdrawal",
       amount: transactionAmount,
-    }).then(props.actionComplete);
+    }).then(props.actionComplete)
   }
 
-  const availableAmount = props.capitalProvider.availableToWithdrawalInDollars;
+  const availableAmount = props.capitalProvider.availableToWithdrawalInDollars
   const availableToWithdraw = minimumNumber(
     availableAmount,
     usdcFromAtomic(props.poolData.balance),
     usdcFromAtomic(goldfinchConfig.transactionLimit),
-  );
+  )
 
   function renderForm({ formMethods }) {
     return (
@@ -39,10 +39,10 @@ function WithdrawalForm(props) {
                 className="enter-max-amount"
                 type="button"
                 onClick={() => {
-                  formMethods.setValue('transactionAmount', roundDownPenny(availableToWithdraw), {
+                  formMethods.setValue("transactionAmount", roundDownPenny(availableToWithdraw), {
                     shouldValidate: true,
                     shouldDirty: true,
-                  });
+                  })
                 }}
               >
                 Max
@@ -52,7 +52,7 @@ function WithdrawalForm(props) {
           <LoadingButton action={action} />
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -63,7 +63,7 @@ function WithdrawalForm(props) {
       closeForm={props.closeForm}
       maxAmount={availableToWithdraw}
     />
-  );
+  )
 }
 
-export default WithdrawalForm;
+export default WithdrawalForm

@@ -1,69 +1,69 @@
-import React, { useState, useContext } from 'react';
-import PaymentForm from './paymentForm.js';
-import DrawdownForm from './drawdownForm.js';
-import { iconCircleCheck, iconUpArrow, iconDownArrow } from './icons.js';
-import { AppContext } from '../App.js';
-import { displayDollars } from '../utils';
+import React, { useState, useContext } from "react"
+import PaymentForm from "./paymentForm.js"
+import DrawdownForm from "./drawdownForm.js"
+import { iconCircleCheck, iconUpArrow, iconDownArrow } from "./icons.js"
+import { AppContext } from "../App.js"
+import { displayDollars } from "../utils"
 
 function CreditActionsContainer(props) {
-  const { user } = useContext(AppContext);
-  const [showAction, setShowAction] = useState(null);
-  const availableCredit = props.creditLine.availableCredit;
+  const { user } = useContext(AppContext)
+  const [showAction, setShowAction] = useState(null)
+  const availableCredit = props.creditLine.availableCredit
 
   function openAction(e, action) {
-    e.preventDefault();
-    setShowAction(action);
+    e.preventDefault()
+    setShowAction(action)
   }
 
   function closeForm() {
-    setShowAction(null);
+    setShowAction(null)
   }
 
   function actionComplete() {
     props.actionComplete().then(() => {
-      closeForm();
-    });
+      closeForm()
+    })
   }
 
-  let placeholderClass = '';
-  if (!user.address || !user.usdcIsUnlocked('borrow') || !props.creditLine.address) {
-    placeholderClass = 'placeholder';
+  let placeholderClass = ""
+  if (!user.address || !user.usdcIsUnlocked("borrow") || !props.creditLine.address) {
+    placeholderClass = "placeholder"
   }
 
-  let drawdownAction;
-  let drawdownClass = 'disabled';
+  let drawdownAction
+  let drawdownClass = "disabled"
 
-  if (availableCredit.gt(0) && user.usdcIsUnlocked('borrow')) {
+  if (availableCredit.gt(0) && user.usdcIsUnlocked("borrow")) {
     drawdownAction = e => {
-      openAction(e, 'drawdown');
-    };
-    drawdownClass = '';
+      openAction(e, "drawdown")
+    }
+    drawdownClass = ""
   }
 
-  let payAction;
-  let payClass = 'disabled';
-  if (props.creditLine.isActive && user.usdcIsUnlocked('borrow')) {
+  let payAction
+  let payClass = "disabled"
+  if (props.creditLine.isActive && user.usdcIsUnlocked("borrow")) {
     payAction = e => {
-      openAction(e, 'payment');
-    };
-    payClass = '';
+      openAction(e, "payment")
+    }
+    payClass = ""
   }
 
-  let nextDueDisplay = 'No payment due';
-  let nextDueIcon;
-  const nextDueValueDisplay = displayDollars(props.creditLine.remainingPeriodDueAmountInDollars);
+  let nextDueDisplay = "No payment due"
+  let nextDueIcon
+  const nextDueValueDisplay = displayDollars(props.creditLine.remainingPeriodDueAmountInDollars)
   if (props.creditLine.isPaymentDue) {
     if (props.creditLine.isLate) {
-      nextDueDisplay = `${nextDueValueDisplay} due now`;
+      nextDueDisplay = `${nextDueValueDisplay} due now`
     } else {
-      nextDueDisplay = `${nextDueValueDisplay} due ${props.creditLine.dueDate}`;
+      nextDueDisplay = `${nextDueValueDisplay} due ${props.creditLine.dueDate}`
     }
   } else if (props.creditLine.isActive) {
-    nextDueIcon = iconCircleCheck;
-    nextDueDisplay = `Paid through ${props.creditLine.dueDate}`;
+    nextDueIcon = iconCircleCheck
+    nextDueDisplay = `Paid through ${props.creditLine.dueDate}`
   }
 
-  if (showAction === 'payment') {
+  if (showAction === "payment") {
     return (
       <PaymentForm
         closeForm={closeForm}
@@ -72,8 +72,8 @@ function CreditActionsContainer(props) {
         creditLine={props.creditLine}
         title={`Next payment: ${nextDueValueDisplay} due ${props.creditLine.dueDate}`}
       />
-    );
-  } else if (showAction === 'drawdown') {
+    )
+  } else if (showAction === "drawdown") {
     return (
       <DrawdownForm
         closeForm={closeForm}
@@ -81,7 +81,7 @@ function CreditActionsContainer(props) {
         borrower={props.borrower}
         creditLine={props.creditLine}
       />
-    );
+    )
   } else {
     return (
       <div className={`form-start split background-container ${placeholderClass}`}>
@@ -103,8 +103,8 @@ function CreditActionsContainer(props) {
           </button>
         </div>
       </div>
-    );
+    )
   }
 }
 
-export default CreditActionsContainer;
+export default CreditActionsContainer

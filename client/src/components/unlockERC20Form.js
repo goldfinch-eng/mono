@@ -1,18 +1,18 @@
-import React from 'react';
-import { MAX_UINT } from '../ethereum/utils';
-import LoadingButton from './loadingButton';
-import { useForm, FormProvider } from 'react-hook-form';
-import { iconInfo } from './icons.js';
-import useSendFromUser from '../hooks/useSendFromUser.js';
+import React from "react"
+import { MAX_UINT } from "../ethereum/utils"
+import LoadingButton from "./loadingButton"
+import { useForm, FormProvider } from "react-hook-form"
+import { iconInfo } from "./icons.js"
+import useSendFromUser from "../hooks/useSendFromUser.js"
 
 function UnlockERC20Form(props) {
-  const { erc20, onUnlock, unlockAddress } = props;
-  const sendFromUser = useSendFromUser();
-  const formMethods = useForm();
+  const { erc20, onUnlock, unlockAddress } = props
+  const sendFromUser = useSendFromUser()
+  const formMethods = useForm()
 
   const unlock = () => {
-    return sendFromUser(erc20.contract.methods.approve(unlockAddress, MAX_UINT), { type: 'Approval' }).then(onUnlock);
-  };
+    return sendFromUser(erc20.contract.methods.approve(unlockAddress, MAX_UINT), { type: "Approval" }).then(onUnlock)
+  }
 
   return (
     <FormProvider {...formMethods}>
@@ -24,7 +24,7 @@ function UnlockERC20Form(props) {
         <LoadingButton action={unlock} text={`Unlock ${erc20.ticker}`} />
       </div>
     </FormProvider>
-  );
+  )
 }
 
-export default UnlockERC20Form;
+export default UnlockERC20Form

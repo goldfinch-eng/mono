@@ -21,10 +21,12 @@ module.exports = {
       allowUnlimitedContractSize: true,
       timeout: 1800000,
       accounts: {mnemonic: "test test test test test test test test test test test junk"},
-      forking: process.env.HARDHAT_FORK ? {
-        url: "https://eth-mainnet.alchemyapi.io/v2/EG9mAEw6e3sYDZ6h6oevoe1IaR42B72b",
-        blockNumber: 12117738, // Roughly March 27, 2021, 00:00 UTC
-      } : undefined,
+      forking: process.env.HARDHAT_FORK
+        ? {
+          url: "https://eth-mainnet.alchemyapi.io/v2/EG9mAEw6e3sYDZ6h6oevoe1IaR42B72b",
+          blockNumber: 12117738, // Roughly March 27, 2021, 00:00 UTC
+        }
+        : undefined,
     },
     ropsten: {
       url: `https://ropsten.infura.io/v3/${INFURA_PROJECT_ID}`,
@@ -51,7 +53,7 @@ module.exports = {
           },
         },
       },
-    ]
+    ],
   },
   namedAccounts: {
     protocol_owner: {
@@ -68,9 +70,9 @@ module.exports = {
     },
   },
   gasReporter: {
-    enabled: (process.env.REPORT_GAS) ? true : false,
+    enabled: process.env.REPORT_GAS ? true : false,
     coinmarketcap: process.env.COINMARKETCAP_API_KEY,
     currency: "USD",
-    src: "contracts/protocol"
-  }
+    src: "contracts/protocol",
+  },
 }

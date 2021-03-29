@@ -1,34 +1,34 @@
-import BigNumber from 'bignumber.js';
-import web3 from '../web3.js';
-import moment from 'moment';
-import _ from 'lodash';
-import { usdcFromAtomic } from './erc20.js';
+import BigNumber from "bignumber.js"
+import web3 from "../web3.js"
+import moment from "moment"
+import _ from "lodash"
+import { usdcFromAtomic } from "./erc20.js"
 
 const EVENT_TYPE_MAP = {
-  DepositMade: 'Deposit',
-  WithdrawalMade: 'Withdrawal',
-  DrawdownMade: 'Borrow',
-  PaymentCollected: 'Payment',
-  Approval: 'Approval',
-  InterestCollected: 'Interest Collected',
-  PrincipalCollected: 'Principal Collected',
-  ReserveFundsCollected: 'Reserve Funds Collected',
-};
+  DepositMade: "Deposit",
+  WithdrawalMade: "Withdrawal",
+  DrawdownMade: "Borrow",
+  PaymentCollected: "Payment",
+  Approval: "Approval",
+  InterestCollected: "Interest Collected",
+  PrincipalCollected: "Principal Collected",
+  ReserveFundsCollected: "Reserve Funds Collected",
+}
 
 const EVENT_AMOUNT_FIELD = {
-  WithdrawalMade: 'userAmount',
-  DepositMade: 'amount',
-  DrawdownMade: 'drawdownAmount',
-  PaymentCollected: 'paymentAmount',
-  InterestCollected: 'poolAmount',
-  PrincipalCollected: 'amount',
-  ReserveFundsCollected: 'amount',
-  Approval: 'value',
-};
+  WithdrawalMade: "userAmount",
+  DepositMade: "amount",
+  DrawdownMade: "drawdownAmount",
+  PaymentCollected: "paymentAmount",
+  InterestCollected: "poolAmount",
+  PrincipalCollected: "amount",
+  ReserveFundsCollected: "amount",
+  Approval: "value",
+}
 
 async function mapEventsToTx(events) {
-  const txs = await Promise.all(_.map(_.compact(events), mapEventToTx));
-  return _.reverse(_.sortBy(txs, 'blockNumber'));
+  const txs = await Promise.all(_.map(_.compact(events), mapEventToTx))
+  return _.reverse(_.sortBy(txs, "blockNumber"))
 }
 
 function mapEventToTx(event) {
@@ -41,11 +41,11 @@ function mapEventToTx(event) {
       id: event.transactionHash,
       blockNumber: event.blockNumber,
       blockTime: block.timestamp,
-      date: moment.unix(block.timestamp).format('MMM D, h:mma'),
-      status: 'successful',
+      date: moment.unix(block.timestamp).format("MMM D, h:mma"),
+      status: "successful",
       eventId: event.id,
-    };
-  });
+    }
+  })
 }
 
-export { mapEventsToTx };
+export { mapEventsToTx }

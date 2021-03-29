@@ -1,48 +1,48 @@
-import React, { useState, useContext } from 'react';
-import DepositForm from './depositForm.js';
-import DepositStatus from './depositStatus.js';
-import { AppContext } from '../App.js';
-import WithdrawalForm from './withdrawalForm.js';
-import { iconUpArrow, iconDownArrow } from './icons.js';
+import React, { useState, useContext } from "react"
+import DepositForm from "./depositForm.js"
+import DepositStatus from "./depositStatus.js"
+import { AppContext } from "../App.js"
+import WithdrawalForm from "./withdrawalForm.js"
+import { iconUpArrow, iconDownArrow } from "./icons.js"
 
 function EarnActionsContainer(props) {
-  const { user, creditDesk } = useContext(AppContext);
-  const [showAction, setShowAction] = useState(null);
+  const { user, creditDesk } = useContext(AppContext)
+  const [showAction, setShowAction] = useState(null)
 
   function closeForm(e) {
-    setShowAction(null);
+    setShowAction(null)
   }
 
   const actionComplete = function() {
     props.actionComplete().then(() => {
-      closeForm();
-    });
-  };
-
-  let placeholderClass = '';
-  if (!user.address || !user.usdcIsUnlocked('earn')) {
-    placeholderClass = 'placeholder';
+      closeForm()
+    })
   }
 
-  let depositAction;
-  let depositClass = 'disabled';
-  if (user.usdcIsUnlocked('earn') && props.capitalProvider) {
+  let placeholderClass = ""
+  if (!user.address || !user.usdcIsUnlocked("earn")) {
+    placeholderClass = "placeholder"
+  }
+
+  let depositAction
+  let depositClass = "disabled"
+  if (user.usdcIsUnlocked("earn") && props.capitalProvider) {
     depositAction = e => {
-      setShowAction('deposit');
-    };
-    depositClass = '';
+      setShowAction("deposit")
+    }
+    depositClass = ""
   }
 
-  let withdrawAction;
-  let withdrawClass = 'disabled';
-  if (user.usdcIsUnlocked('earn') && props.capitalProvider.availableToWithdrawal > 0) {
+  let withdrawAction
+  let withdrawClass = "disabled"
+  if (user.usdcIsUnlocked("earn") && props.capitalProvider.availableToWithdrawal > 0) {
     withdrawAction = e => {
-      setShowAction('withdrawal');
-    };
-    withdrawClass = '';
+      setShowAction("withdrawal")
+    }
+    withdrawClass = ""
   }
 
-  if (showAction === 'deposit') {
+  if (showAction === "deposit") {
     return (
       <DepositForm
         closeForm={closeForm}
@@ -50,8 +50,8 @@ function EarnActionsContainer(props) {
         poolData={props.poolData}
         actionComplete={actionComplete}
       />
-    );
-  } else if (showAction === 'withdrawal') {
+    )
+  } else if (showAction === "withdrawal") {
     return (
       <WithdrawalForm
         closeForm={closeForm}
@@ -59,7 +59,7 @@ function EarnActionsContainer(props) {
         poolData={props.poolData}
         actionComplete={actionComplete}
       />
-    );
+    )
   } else {
     return (
       <div className={`background-container ${placeholderClass}`}>
@@ -73,8 +73,8 @@ function EarnActionsContainer(props) {
           </button>
         </div>
       </div>
-    );
+    )
   }
 }
 
-export default EarnActionsContainer;
+export default EarnActionsContainer
