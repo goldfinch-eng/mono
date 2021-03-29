@@ -113,6 +113,7 @@
     "prettier-plugin-solidity": "^1.0.0-alpha.59",
     "rollup": "^2.33.3",
     "solhint": "^3.2.1",
+    "solhint-plugin-modifiers": "0.0.3",
     "solhint-plugin-prettier": "0.0.5",
     "solidity-docgen": "^0.5.7",
     "truffle-contract-size": "^2.0.0"

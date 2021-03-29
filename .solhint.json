@@ -4,7 +4,53 @@
     "compiler-version": ["error", "^0.6.12"],
     "prettier/prettier": "error",
     "reason-string": ["warn",{"maxLength":120}],
-    "max-line-length": ["error", 120]
+    "max-line-length": ["error", 120],
+    "modifiers/ensure-modifiers": ["error", {
+      "required": {
+        "*": ["onlyAdmin"]
+      },
+      "override": {
+        "*:*.initialize": [],
+        "**/CreditDesk.sol:CreditDesk": {
+          "createCreditLine": [],
+          "drawdown": [],
+          "pay": [],
+          "assessCreditLine": [],
+          "applyPayment": [],
+          "migrateCreditLine": []
+        },
+        "**/CreditLineFactory.sol:CreditLineFactory": {
+          "createCreditLine": [],
+          "createBorrower": []
+        },
+        "**/CreditLine.sol:CreditLine": {
+          "setLimit": []
+        },
+        "**/BaseUpgradeablePausable.sol:BaseUpgradeablePausable": {
+          "__BaseUpgradeablePausable__init": []
+        },
+        "**/Fidu.sol:Fidu": {
+          "__initialize__": [],
+          "mintTo": [],
+          "burnFrom": [],
+          "updateGoldfinchConfig": []
+        },
+        "**/Pool.sol:Pool": {
+          "deposit": [],
+          "withdraw": [],
+          "withdrawInFidu": [],
+          "collectInterestAndPrincipal": [],
+          "distributeLosses": [],
+          "transferFrom": [],
+          "drawdown": []
+        },
+        "**/PauserPausable.sol:PauserPausable": {
+          "__PauserPausable__init": [],
+          "pause": [],
+          "unpause": []
+        }
+      }
+    }]
   },
-  "plugins": ["prettier"]
+  "plugins": ["prettier", "modifiers"]
 }
