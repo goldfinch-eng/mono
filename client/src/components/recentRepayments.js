@@ -67,7 +67,7 @@ function RecentRepayments() {
   return (
     <div className="background-container-inner recent-repayments">
       <div className="section-header">Recent Borrower Repayments</div>
-      <table className={`table recent-repayments-table ${user.address ? "" : "placeholder"}`}>
+      <table className={"table recent-repayments-table"}>
         <thead>
           <tr>
             <th className="transaction-date">Date</th>
