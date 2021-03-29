@@ -95,6 +95,7 @@ function defaultUser() {
     loaded: true,
     poolBalanceAsOf: () => new BigNumber(0),
     usdcIsUnlocked: () => false,
+    noWeb3: !window.ethereum,
   }
 }
 

@@ -34,9 +34,9 @@ function Earn(props) {
     setPoolData(poolData)
   }
 
-  let earnMessage = "Loading..."
 
-  if (capitalProvider.loaded) {
+  let earnMessage = "Loading..."
+  if (capitalProvider.loaded || user.noWeb3) {
     earnMessage = "Earn Portfolio"
   }
 
