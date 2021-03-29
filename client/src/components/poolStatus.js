@@ -24,7 +24,7 @@ function PoolStatus(props) {
   }
 
   return (
-    <div className={`pool-status background-container ${props.poolData.totalShares ? "" : "placeholder"}`}>
+    <div className={`pool-status background-container ${props.poolData.loaded ? "" : "placeholder"}`}>
       <h2>Pool Status</h2>
       <InfoSection rows={deriveRows()} />
       <RecentRepayments />
