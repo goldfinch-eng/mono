@@ -3,6 +3,8 @@ import _ from "lodash"
 import ConnectionNotice from "./connectionNotice.js"
 import { AppContext } from "../App.js"
 import { displayDollars } from "../utils"
+import { MAX_UINT } from "../ethereum/utils"
+import BigNumber from "bignumber.js"
 import { iconCircleUpLg, iconCircleDownLg, iconCircleCheckLg, iconOutArrow } from "./icons.js"
 
 function Transactions(props) {
@@ -11,9 +13,12 @@ function Transactions(props) {
   function transactionRow(tx) {
     const etherscanSubdomain = network.name === "mainnet" ? "" : `${network.name}.`
 
+    let typeLabel = tx.name
     let typeCssClass = ""
     let icon = iconCircleCheckLg
     let amountPrefix = ""
+    let amount = displayDollars(tx.amount)
+
     if (["Deposit", "Payment"].includes(tx.name)) {
       typeCssClass = "inflow"
       icon = iconCircleUpLg
@@ -22,10 +27,16 @@ function Transactions(props) {
       typeCssClass = "outflow"
       icon = iconCircleDownLg
       amountPrefix = "-"
+    } else if (tx.name === "Approval") {
+      typeLabel = `${tx.erc20.ticker} Approval`
+      let txAmount = tx.amountBN.shiftedBy(tx.amountBN.decimalPlaces())
+      let max = new BigNumber(MAX_UINT.toString())
+      if (txAmount.isEqualTo(max)) {
+        amount = "Maximum"
+      }
     }
 
     let statusCssClass = ""
-    let typeLabel = tx.name
     let txDate = tx.date
     if (tx.status === "error") {
       statusCssClass = "error"
@@ -52,7 +63,7 @@ function Transactions(props) {
         </td>
         <td className="numeric">
           {amountPrefix}
-          {displayDollars(tx.amount)}
+          {amount}
         </td>
         <td className="transaction-date">{txDate}</td>
         <td className="transaction-link">

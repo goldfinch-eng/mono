@@ -28,7 +28,7 @@ class User {
   }
 
   async initialize() {
-    this.usdcBalance = new BigNumber(await this.usdc.methods.balanceOf(this.address).call())
+    this.usdcBalance = await this.usdc.getBalance(this.address)
     this.usdcBalanceInDollars = new BigNumber(usdcFromAtomic(this.usdcBalance))
     this.poolAllowance = await this.getAllowance(this.pool._address)
 
@@ -86,7 +86,7 @@ class User {
   }
 
   async getAllowance(address) {
-    return new BigNumber(await this.usdc.methods.allowance(this.address, address).call())
+    return this.usdc.getAllowance({ owner: this.address, spender: address })
   }
 }
 
@@ -99,13 +99,17 @@ function defaultUser() {
   }
 }
 
-async function getAndTransformERC20Events(usdc, spender, owner) {
-  const approvalEvents = await usdc.getPastEvents("Approval", {
+async function getAndTransformERC20Events(erc20, spender, owner) {
+  let approvalEvents = await erc20.contract.getPastEvents("Approval", {
     filter: { owner: owner, spender: spender },
     fromBlock: "earliest",
     to: "latest",
   })
-  return await mapEventsToTx(_.compact(approvalEvents))
+  approvalEvents = _.chain(approvalEvents)
+    .compact()
+    .map(e => _.set(e, "erc20", erc20))
+    .value()
+  return await mapEventsToTx(approvalEvents)
 }
 
 async function getAndTransformPoolEvents(pool, address) {

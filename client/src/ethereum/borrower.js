@@ -19,7 +19,7 @@ class BorrowerInterface {
 
   async initialize() {
     this.creditLinesAddresses = await this.creditDesk.methods.getBorrowerCreditLines(this.borrowerAddress).call()
-    this.allowance = new BigNumber(await this.usdc.methods.allowance(this.userAddress, this.borrowerAddress).call())
+    this.allowance = await this.usdc.getAllowance({ owner: this.userAddress, spender: this.borrowerAddress })
   }
 
   get shouldUseGasless() {
@@ -93,7 +93,7 @@ class BorrowerInterface {
     const splitParts = 10
 
     const result = await this.oneInch.methods
-      .getExpectedReturn(this.usdc._address, toToken, amount, splitParts, 0)
+      .getExpectedReturn(this.usdc.address, toToken, amount, splitParts, 0)
       .call()
     return this.borrowerContract.methods.drawdownWithSwapOnOneInch(
       creditLineAddress,

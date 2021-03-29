@@ -44,6 +44,7 @@ function mapEventToTx(event) {
       date: moment.unix(block.timestamp).format("MMM D, h:mma"),
       status: "successful",
       eventId: event.id,
+      erc20: event.erc20,
     }
   })
 }
