@@ -6,6 +6,7 @@ const INTEREST_DECIMALS = new BN(String(1e8))
 const API_KEY = process.env.DEFENDER_API_KEY || "A2UgCPgn8jQbkSVuSCxEMhFmivdV9C6d"
 const API_SECRET = process.env.DEFENDER_API_SECRET
 const {AdminClient} = require("defender-admin-client")
+const {getChainId} = require("hardhat")
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
@@ -66,6 +67,10 @@ function isTestEnv() {
 
 function isMainnetForking() {
   return process.env.HARDHAT_FORK === "mainnet"
+}
+
+async function isMainnet() {
+  return (await getChainId()) === MAINNET_CHAIN_ID
 }
 
 function interestAprAsBN(interestPercentageString) {
@@ -206,6 +211,7 @@ module.exports = {
   TRUSTED_FORWARDER_CONFIG: TRUSTED_FORWARDER_CONFIG,
   isTestEnv: isTestEnv,
   isMainnetForking: isMainnetForking,
+  isMainnet: isMainnet,
   interestAprAsBN: interestAprAsBN,
   getDefenderClient: getDefenderClient,
   deployContractUpgrade: deployContractUpgrade,

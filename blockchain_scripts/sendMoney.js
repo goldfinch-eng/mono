@@ -1,21 +1,25 @@
 /* globals ethers */
-const hre = require("hardhat")
-const {getNamedAccounts} = hre
-
+const {isMainnet} = require("./deployHelpers")
 async function main() {
-  const {protocol_owner} = await getNamedAccounts()
   const amountToSend = process.env.AMOUNT_TO_SEND
-  await sendETH(amountToSend)
+  const addressToSendTo = process.env.RECIPIENT
+  if (!(await isMainnet())) {
+    throw new Error("This only works for mainnet right now")
+  }
+  if (!addressToSendTo) {
+    throw new Error("You must pass an address to send to")
+  }
+  await sendETH(amountToSend, addressToSendTo)
 
-  async function sendETH(amountToSend) {
+  async function sendETH(amountToSend, addressToSendTo) {
     const value = ethers.utils.parseEther(amountToSend)
     const tx = {
-      to: protocol_owner,
+      to: addressToSendTo,
       value: value,
       chainId: 1,
     }
     const wallet = new ethers.Wallet(process.env.MAINNET_PROXY_OWNER_KEY, ethers.getDefaultProvider())
-    console.log("Sending transaction...", tx, "with value of", value)
+    console.log("Sending transaction...", tx, "with value of", String(value))
     const txn = await wallet.sendTransaction(tx)
     console.log("Txn is:", txn, "now waiting...")
     await txn.wait()
