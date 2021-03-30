@@ -8,7 +8,7 @@ import Sidebar from "./components/sidebar"
 import TermsOfService from "./components/termsOfService.js"
 import web3 from "./web3"
 import { fetchPoolData, getPool } from "./ethereum/pool.js"
-import { getCreditDesk, getAndSetCreditDeskData } from "./ethereum/creditDesk.js"
+import { getCreditDesk, fetchCreditDeskData } from "./ethereum/creditDesk.js"
 import { getUSDC } from "./ethereum/erc20.js"
 import { getGoldfinchConfig, refreshGoldfinchConfigData } from "./ethereum/goldfinchConfig.js"
 import { getUserData, defaultUser } from "./ethereum/user.js"
@@ -69,10 +69,10 @@ function App() {
       goldfinchConfigContract = await getGoldfinchConfig(networkId)
       creditDeskContract = await getCreditDesk(networkId)
       poolContract.gf = await fetchPoolData(poolContract, usdc.contract)
+      creditDeskContract.gf = await fetchCreditDeskData(creditDeskContract)
       setUSDC(usdc)
       setPool(poolContract)
       setCreditDesk(creditDeskContract)
-      getAndSetCreditDeskData(creditDeskContract, setCreditDesk)
       setGoldfinchConfig(await refreshGoldfinchConfigData(goldfinchConfigContract))
       const monitor = new NetworkMonitor(web3, {
         setCurrentTXs,

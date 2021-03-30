@@ -49,12 +49,4 @@ async function getCumulativeDrawdowns(creditDesk) {
   return new BigNumber(_.sumBy(drawdownEvents, event => parseInt(event.returnValues.drawdownAmount, 10)))
 }
 
-function getAndSetCreditDeskData(creditDesk, setter) {
-  fetchCreditDeskData(creditDesk).then(data => {
-    creditDesk.loaded = true
-    creditDesk.gf = data
-    setter(creditDesk)
-  })
-}
-
-export { getCreditDesk, fetchCreditDeskData, getAndSetCreditDeskData }
+export { getCreditDesk, fetchCreditDeskData }
