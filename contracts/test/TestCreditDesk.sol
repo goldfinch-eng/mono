@@ -16,15 +16,15 @@ contract TestCreditDesk is CreditDesk {
     _blockNumberForTest = blockNumber;
   }
 
-  function blockNumber() internal view override returns (uint256) {
+  function currentTime() internal view override returns (uint256) {
     if (_blockNumberForTest == 0) {
-      return super.blockNumber();
+      return super.currentTime();
     } else {
       return _blockNumberForTest;
     }
   }
 
   function blockNumberForTest() public view returns (uint256) {
-    return blockNumber();
+    return currentTime();
   }
 }

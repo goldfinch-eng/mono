@@ -24,8 +24,8 @@ library Accountant {
   // Scaling factor used by FixedPoint.sol. We need this to convert the fixed point raw values back to unscaled
   uint256 public constant FP_SCALING_FACTOR = 10**18;
   uint256 public constant INTEREST_DECIMALS = 1e8;
-  uint256 public constant BLOCKS_PER_DAY = 5760;
-  uint256 public constant BLOCKS_PER_YEAR = (BLOCKS_PER_DAY * 365);
+  uint256 public constant SECONDS_PER_DAY = 60 * 60 * 24;
+  uint256 public constant SECONDS_PER_YEAR = (SECONDS_PER_DAY * 365);
 
   struct PaymentAllocation {
     uint256 interestPayment;
@@ -35,21 +35,21 @@ library Accountant {
 
   function calculateInterestAndPrincipalAccrued(
     CreditLine cl,
-    uint256 blockNumber,
+    uint256 timestamp,
     uint256 lateFeeGracePeriod
   ) public view returns (uint256, uint256) {
     uint256 balance = cl.balance(); // gas optimization
-    uint256 interestAccrued = calculateInterestAccrued(cl, balance, blockNumber, lateFeeGracePeriod);
-    uint256 principalAccrued = calculatePrincipalAccrued(cl, balance, blockNumber);
+    uint256 interestAccrued = calculateInterestAccrued(cl, balance, timestamp, lateFeeGracePeriod);
+    uint256 principalAccrued = calculatePrincipalAccrued(cl, balance, timestamp);
     return (interestAccrued, principalAccrued);
   }
 
   function calculatePrincipalAccrued(
     CreditLine cl,
     uint256 balance,
-    uint256 blockNumber
+    uint256 timestamp
   ) public view returns (uint256) {
-    if (blockNumber >= cl.termEndBlock()) {
+    if (timestamp >= cl.termEndDate()) {
       return balance;
     } else {
       return 0;
@@ -58,7 +58,7 @@ library Accountant {
 
   function calculateWritedownFor(
     CreditLine cl,
-    uint256 blockNumber,
+    uint256 timestamp,
     uint256 gracePeriodInDays,
     uint256 maxDaysLate
   ) public view returns (uint256, uint256) {
@@ -75,9 +75,9 @@ library Accountant {
     // calculate the periods later.
     uint256 totalOwed = cl.interestOwed().add(cl.principalOwed());
     daysLate = FixedPoint.fromUnscaledUint(totalOwed).div(amountOwedPerDay);
-    if (blockNumber > cl.termEndBlock()) {
-      uint256 blocksLate = blockNumber.sub(cl.termEndBlock());
-      daysLate = daysLate.add(FixedPoint.fromUnscaledUint(blocksLate).div(BLOCKS_PER_DAY));
+    if (timestamp > cl.termEndDate()) {
+      uint256 secondsLate = timestamp.sub(cl.termEndDate());
+      daysLate = daysLate.add(FixedPoint.fromUnscaledUint(secondsLate).div(SECONDS_PER_DAY));
     }
 
     FixedPoint.Unsigned memory maxLate = FixedPoint.fromUnscaledUint(maxDaysLate);
@@ -106,7 +106,7 @@ library Accountant {
   function calculateInterestAccrued(
     CreditLine cl,
     uint256 balance,
-    uint256 blockNumber,
+    uint256 timestamp,
     uint256 lateFeeGracePeriodInDays
   ) public view returns (uint256) {
     // We use Math.min here to prevent integer overflow (ie. go negative) when calculating
@@ -117,14 +117,14 @@ library Accountant {
     // This use of min should not generate incorrect interest calculations, since
     // this functions purpose is just to normalize balances, and  will be called any time
     // a balance affecting action takes place (eg. drawdown, repayment, assessment)
-    uint256 interestAccruedAsOfBlock = Math.min(blockNumber, cl.interestAccruedAsOfBlock());
-    uint256 numBlocksElapsed = blockNumber.sub(interestAccruedAsOfBlock);
+    uint256 interestAccruedAsOf = Math.min(timestamp, cl.interestAccruedAsOfDate());
+    uint256 secondsElapsed = timestamp.sub(interestAccruedAsOf);
     uint256 totalInterestPerYear = balance.mul(cl.interestApr()).div(INTEREST_DECIMALS);
-    uint256 interestOwed = totalInterestPerYear.mul(numBlocksElapsed).div(BLOCKS_PER_YEAR);
+    uint256 interestOwed = totalInterestPerYear.mul(secondsElapsed).div(SECONDS_PER_YEAR);
 
-    if (lateFeeApplicable(cl, blockNumber, lateFeeGracePeriodInDays)) {
+    if (lateFeeApplicable(cl, timestamp, lateFeeGracePeriodInDays)) {
       uint256 lateFeeInterestPerYear = balance.mul(cl.lateFeeApr()).div(INTEREST_DECIMALS);
-      uint256 additionalLateFeeInterest = lateFeeInterestPerYear.mul(numBlocksElapsed).div(BLOCKS_PER_YEAR);
+      uint256 additionalLateFeeInterest = lateFeeInterestPerYear.mul(secondsElapsed).div(SECONDS_PER_YEAR);
       interestOwed = interestOwed.add(additionalLateFeeInterest);
     }
 
@@ -133,11 +133,11 @@ library Accountant {
 
   function lateFeeApplicable(
     CreditLine cl,
-    uint256 blockNumber,
+    uint256 timestamp,
     uint256 gracePeriodInDays
   ) public view returns (bool) {
-    uint256 blocksLate = blockNumber.sub(cl.lastFullPaymentBlock());
-    return cl.lateFeeApr() > 0 && blocksLate > gracePeriodInDays.mul(BLOCKS_PER_DAY);
+    uint256 secondsLate = timestamp.sub(cl.lastFullPaymentDate());
+    return cl.lateFeeApr() > 0 && secondsLate > gracePeriodInDays.mul(SECONDS_PER_DAY);
   }
 
   function allocatePayment(
