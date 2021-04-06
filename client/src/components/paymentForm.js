@@ -24,7 +24,7 @@ function PaymentForm(props) {
   const [erc20, setErc20] = useState(usdc)
   const [erc20UserBalance, setErc20UserBalance] = useState(new BigNumber(0))
   const [validations, setValidations] = useState({})
-  const [unlocked, setUnlocked] = useCurrencyUnlocked(erc20, {
+  const [unlocked, refreshUnlocked] = useCurrencyUnlocked(erc20, {
     owner: borrower.userAddress,
     spender: borrower.borrowerAddress,
   })
@@ -141,7 +141,7 @@ function PaymentForm(props) {
           <CurrencyDropdown onChange={changeTicker} />
         </div>
         {unlocked || (
-          <UnlockERC20Form erc20={erc20} onUnlock={() => setUnlocked(true)} unlockAddress={borrower.borrowerAddress} />
+          <UnlockERC20Form erc20={erc20} onUnlock={() => refreshUnlocked()} unlockAddress={borrower.borrowerAddress} />
         )}
         <div className="form-inputs">
           <PaymentOptions

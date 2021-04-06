@@ -21,7 +21,7 @@ function DrawdownForm(props) {
   const [poolData, setPoolData] = useState({})
   const sendFromUser = useSendFromUser()
   const [erc20, setErc20] = useState(usdc)
-  const [unlocked, setUnlocked] = useCurrencyUnlocked(erc20, {
+  const [unlocked, refreshUnlocked] = useCurrencyUnlocked(erc20, {
     owner: props.borrower.userAddress,
     spender: props.borrower.borrowerAddress,
   })
@@ -114,7 +114,7 @@ function DrawdownForm(props) {
           {unlocked || (
             <UnlockERC20Form
               erc20={erc20}
-              onUnlock={() => setUnlocked(true)}
+              onUnlock={() => refreshUnlocked()}
               unlockAddress={props.borrower.borrowerAddress}
             />
           )}

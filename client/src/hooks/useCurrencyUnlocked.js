@@ -6,20 +6,22 @@ function useCurrencyUnlocked(erc20, { owner, spender, minimum }) {
   const { goldfinchConfig } = useContext(AppContext)
   minimum = minimum || goldfinchConfig.transactionLimit
 
-  useEffect(() => {
-    async function updateUnlocked() {
-      let allowance = await erc20.getAllowance({
-        owner: owner,
-        spender: spender,
-      })
-      let unlocked = allowance.gt(minimum)
-      setUnlocked(unlocked)
+  async function refreshUnlocked() {
+    let allowance = await erc20.getAllowance({
+      owner: owner,
+      spender: spender,
+    })
+    let ul = allowance.gt(minimum)
+    if (ul !== unlocked) {
+      setUnlocked(ul)
     }
+  }
 
-    updateUnlocked()
+  useEffect(() => {
+    refreshUnlocked()
   }, [erc20, owner, spender, goldfinchConfig, minimum])
 
-  return [unlocked, setUnlocked]
+  return [unlocked, refreshUnlocked]
 }
 
 export default useCurrencyUnlocked
