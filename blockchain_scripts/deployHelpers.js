@@ -117,11 +117,6 @@ async function getDeployedContract(deployments, contractName, signerAddress) {
   return await ethers.getContractAt(abi, deployment.address, signer)
 }
 
-async function upgrade(deploy, contractName, proxyOwner, options) {
-  const deployOptions = Object.assign({from: proxyOwner, proxy: {owner: proxyOwner}}, options)
-  return deploy(contractName, deployOptions)
-}
-
 async function deployContractUpgrade(contractName, dependencies, from, deployments, ethers) {
   const {deploy} = deployments
 
@@ -200,7 +195,6 @@ module.exports = {
   getDeployedContract: getDeployedContract,
   fromAtomic: fromAtomic,
   toAtomic: toAtomic,
-  upgrade: upgrade,
   updateConfig: updateConfig,
   getSignerForAddress: getSignerForAddress,
   MAINNET_CHAIN_ID: MAINNET_CHAIN_ID,

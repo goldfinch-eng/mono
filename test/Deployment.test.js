@@ -1,9 +1,8 @@
 const {BN, expect} = require("./testHelpers.js")
 const hre = require("hardhat")
 const {deployments, getNamedAccounts, ethers} = hre
-const {upgrade, getDeployedContract, fromAtomic, toAtomic, OWNER_ROLE} = require("../blockchain_scripts/deployHelpers")
+const {getDeployedContract, fromAtomic, toAtomic, OWNER_ROLE} = require("../blockchain_scripts/deployHelpers")
 const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
-const baseDeploy = require("../blockchain_scripts/baseDeploy")
 const updateConfigs = require("../blockchain_scripts/updateConfigs")
 
 describe("Deployment", async () => {
@@ -66,32 +65,6 @@ describe("Deployment", async () => {
     beforeEach(async () => {
       await deployments.fixture()
     })
-    it("should allow for upgrading the logic", async () => {
-      const {proxy_owner} = await getNamedAccounts()
-      const creditDesk = await getDeployedContract(deployments, "TestCreditDesk")
-      expect(typeof creditDesk.someBrandNewFunction).not.to.equal("function")
-
-      await upgrade(deployments.deploy, "TestCreditDesk", proxy_owner, {contract: "FakeV2CreditDesk"})
-      const newCreditDesk = await getDeployedContract(deployments, "TestCreditDesk")
-
-      expect(typeof newCreditDesk.someBrandNewFunction).to.equal("function")
-      const result = String(await newCreditDesk.someBrandNewFunction())
-      expect(result).to.bignumber.equal(new BN(5))
-    })
-
-    it("should not change data after an upgrade", async () => {
-      //If this test fails, it usually means that the data layout changed between the credit desk
-      //and the FakeCreditDesk. Check the order of the variables.
-      const {protocol_owner, proxy_owner} = await getNamedAccounts()
-      const creditDesk = await getDeployedContract(deployments, "TestCreditDesk")
-      const originalResult = await creditDesk.getUnderwriterCreditLines(protocol_owner)
-
-      await upgrade(deployments.deploy, "TestCreditDesk", proxy_owner, {contract: "FakeV2CreditDesk"})
-      const newCreditDesk = await getDeployedContract(deployments, "TestCreditDesk")
-
-      const newResult = await newCreditDesk.getUnderwriterCreditLines(protocol_owner)
-      expect(originalResult).to.deep.equal(newResult)
-    })
 
     it("should allow you to change the owner of the implementation, without affecting the owner of the proxy", async () => {
       const creditDesk = await getDeployedContract(deployments, "CreditDesk")
@@ -118,15 +91,6 @@ describe("Deployment", async () => {
 
       const newOwner = await creditDeskProxy.owner()
       expect(newOwner).to.equal(protocol_owner)
-    })
-  })
-
-  describe("Upgrading the whole protocol", async () => {
-    beforeEach(async () => {
-      await deployments.fixture()
-    })
-    it("should not fail", async () => {
-      return expect(baseDeploy(hre, {shouldUpgrade: true})).to.be.fulfilled
     })
   })
 
