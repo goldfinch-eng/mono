@@ -9,6 +9,11 @@ footer{
   a:hover{
     color: $purp;
   }
+
+  .divider{
+    color: $sand-xxdark;
+    margin: 0 7px;
+  }
 }
 
 @media only screen and (min-width: $screen-m) {

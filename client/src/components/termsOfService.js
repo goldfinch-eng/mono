@@ -4,7 +4,7 @@ function TermsOfService(props) {
   return (
     <div className="content-section">
       <div className="page-header">Terms of Service</div>
-      <div className="terms-of-service">
+      <div className="legal">
         <h3>Effective Date: November 23, 2020</h3>
         <h3>
           Welcome to https://goldfinch.finance (the “<em>Website”</em>). This Terms of Use Agreement (the “

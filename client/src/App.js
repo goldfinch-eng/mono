@@ -6,6 +6,7 @@ import Transactions from "./components/transactions.js"
 import NetworkWidget from "./components/networkWidget"
 import Sidebar from "./components/sidebar"
 import TermsOfService from "./components/termsOfService.js"
+import PrivacyPolicy from "./components/privacyPolicy.js"
 import web3 from "./web3"
 import { fetchPoolData, getPool } from "./ethereum/pool.js"
 import { getCreditDesk, fetchCreditDeskData } from "./ethereum/creditDesk.js"
@@ -142,10 +143,15 @@ function App() {
             <Route path="/terms">
               <TermsOfService />
             </Route>
+            <Route path="/privacy">
+              <PrivacyPolicy />
+            </Route>
           </Switch>
         </div>
         <footer>
           <a href="/terms">Terms</a>
+          <span class="divider">•</span>
+          <a href="/privacy">Privacy</a>
         </footer>
       </Router>
     </AppContext.Provider>
