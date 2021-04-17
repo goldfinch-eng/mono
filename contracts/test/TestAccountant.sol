@@ -9,11 +9,11 @@ import "../protocol/core/CreditLine.sol";
 contract TestAccountant {
   function calculateInterestAndPrincipalAccrued(
     address creditLineAddress,
-    uint256 blockNumber,
+    uint256 timestamp,
     uint256 lateFeeGracePeriod
   ) public view returns (uint256, uint256) {
     CreditLine cl = CreditLine(creditLineAddress);
-    return Accountant.calculateInterestAndPrincipalAccrued(cl, blockNumber, lateFeeGracePeriod);
+    return Accountant.calculateInterestAndPrincipalAccrued(cl, timestamp, lateFeeGracePeriod);
   }
 
   function calculateWritedownFor(

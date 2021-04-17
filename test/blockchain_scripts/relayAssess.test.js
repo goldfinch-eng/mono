@@ -7,7 +7,7 @@ const {assessIfRequired} = require("../../autotasks/assessor/index.js")
 const CreditLine = artifacts.require("CreditLine")
 
 let accounts, owner, underwriter, borrower
-let creditDesk, creditLine, fakeProvider, fakeBlock
+let creditDesk, creditLine, fakeProvider, fakeTimestamp
 
 describe("relayAsses", () => {
   let limit = usdcVal(10000)
@@ -51,9 +51,9 @@ describe("relayAsses", () => {
     return CreditLine.at(ulCreditLines[0])
   }
 
-  async function advanceToBlock(block) {
-    fakeBlock = block
-    await advanceTime(creditDesk, {toBlock: fakeBlock})
+  async function advanceToTimestamp(timestamp) {
+    fakeTimestamp = timestamp
+    await advanceTime(creditDesk, {toSecond: fakeTimestamp})
   }
 
   beforeEach(async () => {
@@ -63,11 +63,11 @@ describe("relayAsses", () => {
     ;({creditDesk} = await setupTest())
 
     fakeProvider = {
-      getBlockNumber: async function () {
-        if (!fakeBlock) {
-          return hre.ethers.provider.provider.getBlockNumber()
+      getBlock: async function () {
+        if (!fakeTimestamp) {
+          return hre.ethers.provider.provider.getBlock("latest")
         }
-        return fakeBlock
+        return {timestamp: fakeTimestamp}
       },
     }
   })
@@ -77,25 +77,23 @@ describe("relayAsses", () => {
       creditLine = await createCreditLine()
 
       await creditDesk.drawdown(creditLine.address, usdcVal(10), {from: borrower})
-
-      // Advance to just beyond the nextDueBlock
-      await advanceToBlock((await creditLine.nextDueBlock()).add(new BN(10)))
-
+      // Advance to just beyond the nextDueDate
+      await advanceToTimestamp((await creditLine.nextDueDate()).add(new BN(10)))
       await expectAction(() => assessIfRequired(creditDesk, creditLine, fakeProvider)).toChange([
-        [creditLine.nextDueBlock, {increase: true}],
+        [creditLine.nextDueDate, {increase: true}],
       ])
     })
 
-    it("does not assess if within the nextDueBlock", async () => {
+    it("does not assess if within the nextDueDate", async () => {
       creditLine = await createCreditLine()
 
       await creditDesk.drawdown(creditLine.address, usdcVal(10), {from: borrower})
 
       // Advance to just before the next due block
-      await advanceToBlock((await creditLine.nextDueBlock()).sub(new BN(10)))
+      await advanceToTimestamp((await creditLine.nextDueDate()).sub(new BN(10)))
 
       await expectAction(() => assessIfRequired(creditDesk, creditLine, fakeProvider)).toChange([
-        [creditLine.nextDueBlock, {by: 0}],
+        [creditLine.nextDueDate, {by: 0}],
       ])
     })
 
@@ -105,10 +103,10 @@ describe("relayAsses", () => {
       await creditDesk.drawdown(creditLine.address, usdcVal(10), {from: borrower})
 
       // Advance to just after the term due block
-      await advanceToBlock((await creditLine.termEndBlock()).add(new BN(10)))
+      await advanceToTimestamp((await creditLine.termEndDate()).add(new BN(10)))
 
       await expectAction(() => assessIfRequired(creditDesk, creditLine, fakeProvider)).toChange([
-        [creditLine.nextDueBlock, {increase: true}],
+        [creditLine.nextDueDate, {increase: true}],
       ])
     })
 
@@ -116,7 +114,7 @@ describe("relayAsses", () => {
       creditLine = await createCreditLine()
 
       await expectAction(() => assessIfRequired(creditDesk, creditLine, fakeProvider)).toChange([
-        [creditLine.nextDueBlock, {by: 0}],
+        [creditLine.nextDueDate, {by: 0}],
       ])
     })
   })

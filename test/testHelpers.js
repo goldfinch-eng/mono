@@ -8,8 +8,8 @@ const BN = require("bn.js")
 const {isTestEnv, USDCDecimals, interestAprAsBN, ZERO_ADDRESS} = require("../blockchain_scripts/deployHelpers")
 const decimals = new BN(String(1e18))
 const USDC_DECIMALS = new BN(String(1e6))
-const BLOCKS_PER_DAY = new BN(5760)
-const BLOCKS_PER_YEAR = BLOCKS_PER_DAY.mul(new BN(365))
+const SECONDS_PER_DAY = new BN(86400)
+const SECONDS_PER_YEAR = SECONDS_PER_DAY.mul(new BN(365))
 chai.use(require("chai-bn")(BN))
 const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
 const fiduTolerance = decimals.div(USDC_DECIMALS)
@@ -140,23 +140,23 @@ async function erc20Transfer(erc20, toAccounts, amount, fromAccount) {
   }
 }
 
-async function advanceTime(creditDesk, {days, blocks, toBlock}) {
-  let blocksPassed, newBlock
-  let currentBlock = await creditDesk.blockNumberForTest()
+async function advanceTime(creditDesk, {days, seconds, toSecond}) {
+  let secondsPassed, newTimestamp
+  let currentTimestamp = await creditDesk.currentTimestamp()
 
   if (days) {
-    blocksPassed = BLOCKS_PER_DAY.mul(new BN(days))
-    newBlock = currentBlock.add(blocksPassed)
-  } else if (blocks) {
-    blocksPassed = new BN(blocks)
-    newBlock = currentBlock.add(blocksPassed)
-  } else if (toBlock) {
-    newBlock = new BN(toBlock)
+    secondsPassed = SECONDS_PER_DAY.mul(new BN(days))
+    newTimestamp = currentTimestamp.add(secondsPassed)
+  } else if (seconds) {
+    secondsPassed = new BN(seconds)
+    newTimestamp = currentTimestamp.add(secondsPassed)
+  } else if (toSecond) {
+    newTimestamp = new BN(toSecond)
   }
   // Cannot go backward
-  expect(newBlock).to.bignumber.gt(currentBlock)
-  await creditDesk._setBlockNumberForTest(newBlock)
-  return newBlock
+  expect(newTimestamp).to.bignumber.gt(currentTimestamp)
+  await creditDesk._setTimestampForTest(newTimestamp)
+  return newTimestamp
 }
 
 async function getBalance(address, erc20) {
@@ -179,8 +179,8 @@ module.exports = {
   tolerance: tolerance,
   fiduTolerance: fiduTolerance,
   ZERO_ADDRESS: ZERO_ADDRESS,
-  BLOCKS_PER_DAY: BLOCKS_PER_DAY,
-  BLOCKS_PER_YEAR: BLOCKS_PER_YEAR,
+  SECONDS_PER_DAY: SECONDS_PER_DAY,
+  SECONDS_PER_YEAR: SECONDS_PER_YEAR,
   EMPTY_DATA: EMPTY_DATA,
   bigVal: bigVal,
   usdcVal: usdcVal,

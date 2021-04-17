@@ -6,25 +6,28 @@ pragma experimental ABIEncoderV2;
 import "../protocol/core/CreditDesk.sol";
 
 contract TestCreditDesk is CreditDesk {
-  uint256 _blockNumberForTest;
+  uint256 _timestampForTest;
 
+  // solhint-disable-next-line modifiers/ensure-modifiers
   function _setTotalLoansOutstanding(uint256 amount) public {
     totalLoansOutstanding = amount;
   }
 
-  function _setBlockNumberForTest(uint256 blockNumber) public {
-    _blockNumberForTest = blockNumber;
+  // solhint-disable-next-line modifiers/ensure-modifiers
+  function _setTimestampForTest(uint256 timestamp) public {
+    _timestampForTest = timestamp;
   }
 
   function currentTime() internal view override returns (uint256) {
-    if (_blockNumberForTest == 0) {
+    if (_timestampForTest == 0) {
       return super.currentTime();
     } else {
-      return _blockNumberForTest;
+      return _timestampForTest;
     }
   }
 
-  function blockNumberForTest() public view returns (uint256) {
+  // currentTime in internal
+  function currentTimestamp() public view returns (uint256) {
     return currentTime();
   }
 }

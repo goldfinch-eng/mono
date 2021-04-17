@@ -9,8 +9,8 @@ const {
   deployAllContracts,
   erc20Approve,
   erc20Transfer,
-  BLOCKS_PER_DAY,
-  BLOCKS_PER_YEAR,
+  SECONDS_PER_DAY,
+  SECONDS_PER_YEAR,
   usdcToFidu,
   expectAction,
   fiduToUSDC,
@@ -31,7 +31,7 @@ describe("Goldfinch", async () => {
   let lateFeeApr = interestAprAsBN(0)
   let paymentPeriodInDays = new BN(1)
   let termInDays = new BN(365)
-  let paymentPeriodInBlocks = BLOCKS_PER_DAY.mul(paymentPeriodInDays)
+  let paymentPeriodInSeconds = SECONDS_PER_DAY.mul(paymentPeriodInDays)
 
   const setupTest = deployments.createFixture(async ({deployments}) => {
     const {pool, usdc, creditDesk, fidu, goldfinchConfig} = await deployAllContracts(deployments)
@@ -61,17 +61,17 @@ describe("Goldfinch", async () => {
       balance,
       interestOwed,
       collectedPayment,
-      nextDueBlock,
-      interestAccruedAsOfBlock,
-      lastFullPaymentBlock
+      nextDueDate,
+      interestAccruedAsOfDate,
+      lastFullPaymentDate
     ) {
       expect(await creditLine.balance()).to.bignumber.equal(balance)
       expect(await creditLine.interestOwed()).to.bignumber.equal(interestOwed)
       expect(await creditLine.principalOwed()).to.bignumber.equal("0") // Principal owed is always 0
       expect(await getBalance(creditLine.address, usdc)).to.bignumber.equal(collectedPayment)
-      expect(await creditLine.nextDueBlock()).to.bignumber.equal(new BN(nextDueBlock))
-      expect(await creditLine.interestAccruedAsOfBlock()).to.bignumber.equal(new BN(interestAccruedAsOfBlock))
-      expect(await creditLine.lastFullPaymentBlock()).to.bignumber.equal(new BN(lastFullPaymentBlock))
+      expect(await creditLine.nextDueDate()).to.bignumber.equal(new BN(nextDueDate))
+      expect(await creditLine.interestAccruedAsOfDate()).to.bignumber.equal(new BN(interestAccruedAsOfDate))
+      expect(await creditLine.lastFullPaymentDate()).to.bignumber.equal(new BN(lastFullPaymentDate))
     }
 
     async function createCreditLine({
@@ -111,9 +111,9 @@ describe("Goldfinch", async () => {
     }
 
     async function calculateInvestorInterest(cl, timeInDays) {
-      const numBlocks = timeInDays.mul(BLOCKS_PER_DAY)
+      const numSeconds = timeInDays.mul(SECONDS_PER_DAY)
       const totalInterestPerYear = (await cl.balance()).mul(await cl.interestApr()).div(INTEREST_DECIMALS)
-      const totalExpectedInterest = totalInterestPerYear.mul(numBlocks).div(BLOCKS_PER_YEAR)
+      const totalExpectedInterest = totalInterestPerYear.mul(numSeconds).div(SECONDS_PER_YEAR)
       const reserveDenominator = await goldfinchConfig.getNumber(CONFIG_KEYS.ReserveDenominator)
       return totalExpectedInterest.sub(totalExpectedInterest.div(reserveDenominator))
     }
@@ -224,9 +224,9 @@ describe("Goldfinch", async () => {
       })
 
       // This test fails now, but should pass once we fix late fee logic.
-      // We *should* charge interest after term end block, when you're so late that
+      // We *should* charge interest after term end date, when you're so late that
       // you're past the grace period. But currently we don't charge any.
-      xit("should accrue interest correctly after the term end block", async () => {
+      xit("should accrue interest correctly after the term end date", async () => {
         let amount = usdcVal(10000)
         let drawdownAmount = amount.div(new BN(2))
 
@@ -263,11 +263,11 @@ describe("Goldfinch", async () => {
         lateFeeApr = interestAprAsBN(0)
         paymentPeriodInDays = new BN(1)
         termInDays = new BN(365)
-        paymentPeriodInBlocks = BLOCKS_PER_DAY.mul(paymentPeriodInDays)
+        paymentPeriodInSeconds = SECONDS_PER_DAY.mul(paymentPeriodInDays)
       })
 
       describe("drawdown and isLate", async () => {
-        it("should not think you're late if it's not past the nextDueBlock", async () => {
+        it("should not think you're late if it's not past the nextDueDate", async () => {
           creditLine = await createCreditLine({_paymentPeriodInDays: new BN(30)})
           await expect(drawdown(creditLine.address, new BN(1000))).to.be.fulfilled
           await advanceTime(creditDesk, {days: 10})
@@ -279,28 +279,28 @@ describe("Goldfinch", async () => {
       })
 
       it("calculates interest correctly", async () => {
-        let currentBlock = await advanceTime(creditDesk, {days: 1})
+        let currentTime = await advanceTime(creditDesk, {days: 1})
         creditLine = await createCreditLine()
 
-        let interestAccruedAsOfBlock = await time.latestBlock()
-        await assertCreditLine("0", "0", "0", 0, interestAccruedAsOfBlock, 0)
+        let interestAccruedAsOfDate = await time.latest()
+        await assertCreditLine("0", "0", "0", 0, interestAccruedAsOfDate, 0)
 
-        currentBlock = await advanceTime(creditDesk, {days: 1})
+        currentTime = await advanceTime(creditDesk, {days: 1})
         await drawdown(creditLine.address, usdcVal(2000))
 
-        var nextDueBlock = (await creditDesk.blockNumberForTest()).add(BLOCKS_PER_DAY.mul(paymentPeriodInDays))
-        interestAccruedAsOfBlock = currentBlock
-        let lastFullPaymentBlock = currentBlock
-        await assertCreditLine(usdcVal(2000), "0", "0", nextDueBlock, currentBlock, lastFullPaymentBlock)
+        var nextDueDate = (await creditDesk.currentTimestamp()).add(SECONDS_PER_DAY.mul(paymentPeriodInDays))
+        interestAccruedAsOfDate = currentTime
+        let lastFullPaymentDate = currentTime
+        await assertCreditLine(usdcVal(2000), "0", "0", nextDueDate, currentTime, lastFullPaymentDate)
 
-        currentBlock = await advanceTime(creditDesk, {days: 1})
+        currentTime = await advanceTime(creditDesk, {days: 1})
 
         await creditDesk.assessCreditLine(creditLine.address, {from: borrower})
 
         const totalInterestPerYear = usdcVal(2000).mul(interestApr).div(INTEREST_DECIMALS)
-        let blocksPassed = nextDueBlock.sub(interestAccruedAsOfBlock)
-        let expectedInterest = totalInterestPerYear.mul(blocksPassed).div(BLOCKS_PER_YEAR)
-        nextDueBlock = nextDueBlock.add(paymentPeriodInBlocks)
+        let secondsPassed = nextDueDate.sub(interestAccruedAsOfDate)
+        let expectedInterest = totalInterestPerYear.mul(secondsPassed).div(SECONDS_PER_YEAR)
+        nextDueDate = nextDueDate.add(paymentPeriodInSeconds)
 
         expect(expectedInterest).to.bignumber.eq("1369863")
 
@@ -308,14 +308,14 @@ describe("Goldfinch", async () => {
           usdcVal(2000),
           expectedInterest,
           "0",
-          nextDueBlock,
-          nextDueBlock.sub(paymentPeriodInBlocks),
-          lastFullPaymentBlock
+          nextDueDate,
+          nextDueDate.sub(paymentPeriodInSeconds),
+          lastFullPaymentDate
         )
 
-        currentBlock = await advanceTime(creditDesk, {days: 1})
+        currentTime = await advanceTime(creditDesk, {days: 1})
         expectedInterest = expectedInterest.mul(new BN(2)) // 2 days of interest
-        nextDueBlock = nextDueBlock.add(paymentPeriodInBlocks)
+        nextDueDate = nextDueDate.add(paymentPeriodInSeconds)
 
         await creditDesk.assessCreditLine(creditLine.address, {from: borrower})
 
@@ -323,9 +323,9 @@ describe("Goldfinch", async () => {
           usdcVal(2000),
           expectedInterest,
           "0",
-          nextDueBlock,
-          nextDueBlock.sub(paymentPeriodInBlocks),
-          lastFullPaymentBlock
+          nextDueDate,
+          nextDueDate.sub(paymentPeriodInSeconds),
+          lastFullPaymentDate
         )
       })
     })

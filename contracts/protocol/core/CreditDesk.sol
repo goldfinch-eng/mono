@@ -17,8 +17,8 @@ import "./CreditLineFactory.sol";
  */
 
 contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
-  // Approximate number of blocks per day
-  uint256 public constant SECONDS_PER_DAY = 60 * 24;
+  // Approximate number of seconds per day
+  uint256 public constant SECONDS_PER_DAY = 60 * 60 * 24;
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
 
@@ -335,7 +335,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     returns (uint256)
   {
     if (asOfTimestamp == 0) {
-      asOfTimestamp = block.timestamp;
+      asOfTimestamp = currentTime();
     }
     CreditLine cl = CreditLine(creditLineAddress);
 
@@ -428,7 +428,6 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     uint256 newBalance = cl.balance().sub(pa.principalPayment);
     // Apply any additional payment towards the balance
     newBalance = newBalance.sub(pa.additionalBalancePayment);
-
     uint256 totalPrincipalPayment = cl.balance().sub(newBalance);
     uint256 paymentRemaining = paymentAmount.sub(pa.interestPayment).sub(totalPrincipalPayment);
 

@@ -293,7 +293,7 @@ describe("mainnet forking tests", async function () {
         [async () => await getBalance(bwr, usdt), {by: usdtAmount.neg()}],
         [async () => await getBalance(cl.address, usdc), {byCloseTo: expectedReturn.returnAmount}],
       ])
-      await advanceTime(creditDesk, {toBlock: (await cl.nextDueBlock()).add(new BN(1))})
+      await advanceTime(creditDesk, {toSecond: (await cl.nextDueDate()).add(new BN(1))})
       await expectAction(() => creditDesk.assessCreditLine(cl.address)).toChange([
         [async () => await cl.balance(), {decrease: true}],
         [async () => await getBalance(cl.address, usdc), {to: new BN(0)}],
@@ -319,7 +319,7 @@ describe("mainnet forking tests", async function () {
         [async () => await getBalance(bwr, busd), {by: busdAmount.neg()}],
         [async () => await getBalance(cl.address, usdc), {byCloseTo: expectedReturn.returnAmount}],
       ])
-      await advanceTime(creditDesk, {toBlock: (await cl.nextDueBlock()).add(new BN(1))})
+      await advanceTime(creditDesk, {toSecond: (await cl.nextDueDate()).add(new BN(1))})
       await expectAction(() => creditDesk.assessCreditLine(cl.address)).toChange([
         [async () => await cl.balance(), {decrease: true}],
         [async () => await getBalance(cl.address, usdc), {to: new BN(0)}],
@@ -346,7 +346,7 @@ describe("mainnet forking tests", async function () {
         let totalMinAmount = amount.add(amount2)
         let expectedExtra = expectedReturn.returnAmount.sub(totalMinAmount)
 
-        await advanceTime(creditDesk, {toBlock: (await cl.nextDueBlock()).add(new BN(1))})
+        await advanceTime(creditDesk, {toSecond: (await cl.nextDueDate()).add(new BN(1))})
         await creditDesk.assessCreditLine(cl.address)
 
         await expectAction(() =>
@@ -573,6 +573,8 @@ describe("mainnet upgrade tests", async function () {
 
     bwrCreditDesk = contracts.CreditDesk.UpgradedContract.connect(bwrSigner)
     bwrPool = contracts.Pool.UpgradedContract.connect(bwrSigner)
+
+    // TODO: We need to migrate the creditline (from block based to timestamp based) before we can pay it off
 
     // Pay off in full
     await bwrCreditDesk.pay(clAddress, usdcVal(501).toString())
