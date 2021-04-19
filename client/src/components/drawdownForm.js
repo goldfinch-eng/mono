@@ -110,7 +110,7 @@ function DrawdownForm(props) {
               <AddressInput formMethods={formMethods} disabled={disabled} />
             </div>
           </div>
-          {isOptionsOpen && <div className="form-separator"></div>}
+          {isOptionsOpen && <div className="form-separator background-container-inner"></div>}
           {unlocked || (
             <UnlockERC20Form
               erc20={erc20}

@@ -46,8 +46,6 @@
 }
 
 .form-separator{
-  margin-left: -1%;
-  width: 102%;
   border-bottom: 2px solid $sand;
 }
 
@@ -66,13 +64,11 @@
   &.pre-filled .form-input{
     color: $purp-xlight;
   }
-
 }
 
 .transaction-input{
   display: flex;
   align-items: center;
-
   border: 2px solid $sand;
   border-radius: 6px;
   background-color: $sand;
@@ -109,6 +105,7 @@
     }
   }
 }
+
 .form-input-label{
   font-size: $sans-size-xs;
   margin-bottom: 6px;
@@ -135,10 +132,10 @@
 }
 
 .enter-max-amount{
-  border: 1px solid $sand-dark;
-  border-radius: 4px;
   background-color: $sand;
-  color: $sand-xxdark;
+  border: 1px solid $sand-xdark;
+  border-radius: 4px;
+  color: $sand-xxxdark;
   font-size: $sans-size-xxs;
   outline: none;
   padding: 6px 8px;
@@ -190,14 +187,20 @@
   @include space-y(20px);
 }
 
+@media only screen and (min-width: $screen-m) {
+  .form-optional{
+    margin: 0 0 35px;
+  }
+}
+
 @media only screen and (min-width: $screen-l) {
   .form-field{
-    max-width: calc(70% - 50px);
+    width: calc(70% - 50px);
   }
 
   .form-inputs-footer{
     flex-direction: row;
-    @include space-x(40px);
+    @include space-x(50px);
     @include space-y(0px);
   }
 
