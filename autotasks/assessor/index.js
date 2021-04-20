@@ -76,6 +76,12 @@ const assessIfRequired = async function assessIfRequired(creditDesk, creditLine,
   const currentBlock = ethers.BigNumber.from((await provider.getBlockNumber()).toString())
   const nextDueBlock = ethers.BigNumber.from((await creditLine.nextDueBlock()).toString())
   const termEndBlock = ethers.BigNumber.from((await creditLine.nextDueBlock()).toString())
+  const limit = await creditLine.limit();
+
+  if (limit.isZero()) {
+    console.log(`Assess ${creditLine.address}: Skipped (Closed)`)
+    return
+  }
 
   if (nextDueBlock.isZero()) {
     const balance = await creditLine.balance()
@@ -121,7 +127,7 @@ async function getAbifor(etherscanApiUrl, address, provider) {
 exports.assessIfRequired = assessIfRequired
 
 // To run locally (this code will not be executed in Autotasks)
-// Invoke with: API_KEY=<key> API_SECRET=<secret> node blockchain_scripts/relayAsses.js
+// Invoke with: API_KEY=<key> API_SECRET=<secret> node autotasks/assessor/index.js
 if (require.main === module) {
   const {API_KEY: apiKey, API_SECRET: apiSecret} = process.env
   exports

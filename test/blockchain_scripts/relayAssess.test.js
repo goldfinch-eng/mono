@@ -3,7 +3,7 @@ const hre = require("hardhat")
 const {interestAprAsBN} = require("../../blockchain_scripts/deployHelpers")
 const {deployments} = hre
 const {BN, deployAllContracts, advanceTime, expectAction, erc20Approve, usdcVal} = require("../testHelpers.js")
-const {assessIfRequired} = require("../../blockchain_scripts/relayAsses.js")
+const {assessIfRequired} = require("../../autotasks/assessor/index.js")
 const CreditLine = artifacts.require("CreditLine")
 
 let accounts, owner, underwriter, borrower
