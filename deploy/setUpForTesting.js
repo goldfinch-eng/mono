@@ -1,13 +1,12 @@
 /* global ethers */
 const BN = require("bn.js")
 const hre = require("hardhat")
+const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys.js")
 require("dotenv").config({path: ".env.local"})
-const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
 const {
   MAINNET_CHAIN_ID,
   LOCAL,
   CHAIN_MAPPING,
-  updateConfig,
   getUSDCAddress,
   getERC20Address,
   USDCDecimals,
@@ -15,6 +14,7 @@ const {
   interestAprAsBN,
   isMainnetForking,
   getSignerForAddress,
+  updateConfig,
 } = require("../blockchain_scripts/deployHelpers.js")
 const {
   MAINNET_MULTISIG,
@@ -42,6 +42,9 @@ async function main({getNamedAccounts, deployments, getChainId}) {
   let pool = await getDeployedAsEthersContract(getOrNull, "Pool")
   let creditDesk = await getDeployedAsEthersContract(getOrNull, "CreditDesk")
   let erc20 = await getDeployedAsEthersContract(getOrNull, "TestERC20")
+  // If you uncomment this, make sure to also uncomment the line in the MainnetForking section,
+  // which sets this var to the upgraded version of fidu
+  // let fidu = await getDeployedAsEthersContract(getOrNull, "Fidu")
   let config = await getDeployedAsEthersContract(getOrNull, "GoldfinchConfig")
   let creditLineFactory = await getDeployedAsEthersContract(getOrNull, "CreditLineFactory")
   await setupTestForwarder(deployments, config, getOrNull, protocol_owner)
@@ -90,6 +93,8 @@ async function main({getNamedAccounts, deployments, getChainId}) {
     creditDesk = upgradedContracts.CreditDesk.UpgradedContract
     pool = upgradedContracts.Pool.UpgradedContract
     creditLineFactory = upgradedContracts.CreditLineFactory.UpgradedContract
+    // fidu = upgradedContracts.Fidu.UpgradedContract
+    config = upgradedContracts.GoldfinchConfig.UpgradedContract
 
     await performPostUpgradeMigration(upgradedContracts, deployments)
   }
@@ -102,6 +107,7 @@ async function main({getNamedAccounts, deployments, getChainId}) {
     }
   }
 
+  await addUsersToGoList(config, [borrower, underwriter])
   await depositFundsToThePool(pool, erc20)
   await createUnderwriter(creditDesk, underwriter)
 
@@ -126,6 +132,11 @@ async function upgradeExistingContracts(contractsToUpgrade, mainnetConfig, mainn
   return contracts
 }
 
+async function addUsersToGoList(goldfinchConfig, users) {
+  logger("Adding", users, "to the go-list... on config with address", goldfinchConfig.address)
+  await (await goldfinchConfig.bulkAddToGoList(users)).wait()
+}
+
 async function depositFundsToThePool(pool, erc20) {
   logger("Depositing funds into the pool...")
   const originalBalance = await erc20.balanceOf(pool.address)
@@ -142,8 +153,7 @@ async function depositFundsToThePool(pool, erc20) {
   let depositAmount
   depositAmount = new BN(10000).mul(USDCDecimals)
 
-  // eslint-disable-next-line no-redeclare
-  var txn = await pool.deposit(String(depositAmount))
+  txn = await pool.deposit(String(depositAmount))
   await txn.wait()
   const newBalance = await erc20.balanceOf(pool.address)
   if (String(newBalance) != String(depositAmount)) {

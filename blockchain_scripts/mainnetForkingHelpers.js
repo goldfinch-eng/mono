@@ -1,53 +1,69 @@
 /* global ethers */
 const BN = require("bn.js")
-const {getDeployedContract, isTestEnv} = require("../blockchain_scripts/deployHelpers.js")
+const {
+  getDeployedContract,
+  isTestEnv,
+  updateConfig,
+  OWNER_ROLE,
+  SAFE_CONFIG,
+  setInitialConfigVals,
+  MAINNET_CHAIN_ID,
+} = require("../blockchain_scripts/deployHelpers.js")
+const {CONFIG_KEYS} = require("./configKeys.js")
 const hre = require("hardhat")
 
 const MAINNET_MULTISIG = "0xBEb28978B2c755155f20fd3d09Cb37e300A6981f"
 
 async function getProxyImplAddress(proxyContract) {
+  if (!proxyContract) {
+    return null
+  }
   const implStorageLocation = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"
   let currentImpl = await ethers.provider.getStorageAt(proxyContract.address, implStorageLocation)
   return ethers.utils.hexStripZeros(currentImpl)
 }
 
 async function upgradeContracts(contractNames, contracts, mainnetSigner, deployFrom, deployments) {
-  const configOptionsDeployResult = await deployments.deploy("ConfigOptions", {
-    from: deployFrom,
-    gas: 4000000,
-    args: [],
-  })
   const accountantDeployResult = await deployments.deploy("Accountant", {from: deployFrom, gas: 4000000, args: []})
   // Ensure a test forwarder is available. Using the test forwarder instead of the real forwarder on mainnet
   // gives us the ability to debug the forwarded transactions.
   await deployments.deploy("TestForwarder", {from: deployFrom, gas: 4000000, args: []})
 
   const dependencies = {
-    GoldfinchConfig: {["ConfigOptions"]: configOptionsDeployResult.address},
     CreditDesk: {["Accountant"]: accountantDeployResult.address},
   }
 
   for (let i = 0; i < contractNames.length; i++) {
     const contractName = contractNames[i]
     let contract = contracts[contractName]
+    let contractToDeploy = contractName
+    if (isTestEnv() && ["Pool", "CreditDesk", "GoldfinchConfig"].includes(contractName)) {
+      contractToDeploy = `Test${contractName}`
+    }
 
-    let deployResult = await deployments.deploy(contractName, {
+    let deployResult = await deployments.deploy(contractToDeploy, {
       from: deployFrom,
       gas: 4000000,
       args: [],
       libraries: dependencies[contractName],
     })
-    if (!isTestEnv()) {
-      console.log(
-        `Changing implementation of ${contractName} from ${contract.ExistingImplAddress} to ${deployResult.address}`
-      )
-    }
-    await contract.ProxyContract.changeImplementation(deployResult.address, "0x")
-    // Get the new implmentation contract with the latest ABI, but attach it to the mainnet proxy address
     let upgradedContract = await getDeployedContract(deployments, contractName, mainnetSigner)
-    upgradedContract = upgradedContract.attach(contract.ProxyContract.address)
+    upgradedContract = upgradedContract.attach(deployResult.address)
+    let upgradedImplAddress = deployResult.address
+
+    if (contract.ProxyContract) {
+      if (!isTestEnv()) {
+        console.log(
+          `Changing implementation of ${contractName} from ${contract.ExistingImplAddress} to ${deployResult.address}`
+        )
+      }
+      await contract.ProxyContract.changeImplementation(deployResult.address, "0x")
+      upgradedContract = upgradedContract.attach(contract.ProxyContract.address)
+      upgradedImplAddress = await getProxyImplAddress(contract.ProxyContract)
+    }
+    // Get the new implmentation contract with the latest ABI, but attach it to the mainnet proxy address
     contract.UpgradedContract = upgradedContract.connect(mainnetSigner)
-    contract.UpgradedImplAddress = await getProxyImplAddress(contract.ProxyContract)
+    contract.UpgradedImplAddress = upgradedImplAddress
   }
   return contracts
 }
@@ -61,7 +77,7 @@ async function getExistingContracts(contractNames, mainnetConfig, mainnetSigner)
     const contractName = contractNames[i]
     const contractConfig = mainnetConfig[contractName]
     const proxyConfig = mainnetConfig[`${contractName}_Proxy`]
-    let contractProxy = await ethers.getContractAt(proxyConfig.abi, proxyConfig.address, mainnetSigner)
+    let contractProxy = proxyConfig && (await ethers.getContractAt(proxyConfig.abi, proxyConfig.address, mainnetSigner))
     let contract = await ethers.getContractAt(contractConfig.abi, contractConfig.address, mainnetSigner)
     contracts[contractName] = {
       ProxyContract: contractProxy,
@@ -117,11 +133,47 @@ async function performPostUpgradeMigration(upgradedContracts, deployments) {
   const deployed = await deployments.getOrNull("TestForwarder")
   const forwarder = await ethers.getContractAt(deployed.abi, "0xa530F85085C6FE2f866E7FdB716849714a89f4CD")
   await forwarder.registerDomainSeparator("Defender", "1")
+  await migrateToNewConfig(upgradedContracts)
+}
+
+async function migrateToNewConfig(upgradedContracts) {
+  const newConfig = upgradedContracts.GoldfinchConfig.UpgradedContract
+  const safeAddress = SAFE_CONFIG[MAINNET_CHAIN_ID].safeAddress
+  if (!(await newConfig.hasRole(OWNER_ROLE, safeAddress))) {
+    await (await newConfig.initialize(safeAddress)).wait()
+  }
+  await setInitialConfigVals(newConfig)
+  await setCurrentAddressesOnConfig(newConfig, upgradedContracts.GoldfinchConfig.ExistingContract)
+  await updateConfig(
+    upgradedContracts.GoldfinchConfig.ExistingContract,
+    "address",
+    CONFIG_KEYS.GoldfinchConfig,
+    newConfig.address
+  )
+
+  const contractsToUpgrade = ["Fidu", "Pool", "CreditDesk", "CreditLineFactory"]
+  await Promise.all(
+    contractsToUpgrade.map(async (contract) => {
+      await (await upgradedContracts[contract].UpgradedContract.updateGoldfinchConfig()).wait()
+    })
+  )
+}
+
+async function setCurrentAddressesOnConfig(newConfig, existingConfig) {
+  const addressesToSet = ["Pool", "CreditLineFactory", "CreditDesk", "Fidu", "USDC", "CUSDCContract"]
+  await Promise.all(
+    Object.entries(CONFIG_KEYS).map(async ([key, val]) => {
+      if (addressesToSet.includes(key)) {
+        const currentVal = await existingConfig.getAddress(val)
+        await updateConfig(newConfig, "address", val, currentVal)
+      }
+    })
+  )
 }
 
 function getMainnetContracts() {
   let deploymentsFile = require("../client/config/deployments.json")
-  return deploymentsFile["1"].mainnet.contracts
+  return deploymentsFile[MAINNET_CHAIN_ID].mainnet.contracts
 }
 
 module.exports = {

@@ -123,6 +123,7 @@ describe("CreditDesk", () => {
     await erc20Approve(usdc, pool.address, usdcVal(100000), [owner, person2, person3])
     // Some housekeeping so we have a usable creditDesk for tests, and a pool with funds
     await erc20Transfer(usdc, [person2], usdcVal(1000), owner)
+    await goldfinchConfig.bulkAddToGoList(accounts)
     await pool.deposit(String(usdcVal(90)), {from: person2})
     // Set the reserve to a separate address for easier separation. The current owner account gets used for many things in tests.
     await goldfinchConfig.setTreasuryReserve(reserve)

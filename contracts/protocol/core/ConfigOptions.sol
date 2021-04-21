@@ -32,7 +32,8 @@ library ConfigOptions {
     OneInch,
     TrustedForwarder,
     CUSDCContract,
-    GoldfinchConfig
+    GoldfinchConfig,
+    PoolTokens
   }
 
   function getNumberName(uint256 number) public pure returns (string memory) {
@@ -95,6 +96,9 @@ library ConfigOptions {
     }
     if (Addresses.CUSDCContract == addressName) {
       return "CUSDCContract";
+    }
+    if (Addresses.PoolTokens == addressName) {
+      return "PoolTokens";
     }
     revert("Unknown value passed to getAddressName");
   }

@@ -10,7 +10,14 @@
         "*": ["onlyAdmin"]
       },
       "override": {
+        "**/PoolTokens.sol:PoolTokens": {
+          "mint": ["onlyPool"],
+          "redeem": ["onlyPool"],
+          "burn": []
+        },
         "*:*.initialize": [],
+        "*:*.__initialize__": [],
+        "*:*.null": [],
         "**/CreditDesk.sol:CreditDesk": {
           "createCreditLine": [],
           "drawdown": [],

@@ -49,6 +49,7 @@ describe("Pool", () => {
     // A bit of setup for our test users
     await erc20Approve(usdc, pool.address, usdcVal(100000), [person2])
     await erc20Transfer(usdc, [person2, person3], usdcVal(10000), owner)
+    await goldfinchConfig.bulkAddToGoList([owner, person2, person3, reserve])
     await goldfinchConfig.setTreasuryReserve(reserve)
 
     return {usdc, pool, fidu, goldfinchConfig}

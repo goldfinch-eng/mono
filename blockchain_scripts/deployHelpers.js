@@ -6,7 +6,9 @@ const INTEREST_DECIMALS = new BN(String(1e8))
 const API_KEY = process.env.DEFENDER_API_KEY || "A2UgCPgn8jQbkSVuSCxEMhFmivdV9C6d"
 const API_SECRET = process.env.DEFENDER_API_SECRET
 const {AdminClient} = require("defender-admin-client")
-const {getChainId} = require("hardhat")
+const hre = require("hardhat")
+const PROTOCOL_CONFIG = require("../protocol_config.json")
+const {CONFIG_KEYS} = require("./configKeys.js")
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
@@ -70,7 +72,7 @@ function isMainnetForking() {
 }
 
 async function isMainnet() {
-  return (await getChainId()) === MAINNET_CHAIN_ID
+  return (await hre.getChainId()) === MAINNET_CHAIN_ID
 }
 
 function interestAprAsBN(interestPercentageString) {
@@ -146,6 +148,47 @@ async function deployContractUpgrade(contractName, dependencies, from, deploymen
   }
 }
 
+async function setInitialConfigVals(config, logger = function () {}) {
+  let chainID = await hre.getChainId()
+  if (isMainnetForking()) {
+    chainID = MAINNET_CHAIN_ID
+  }
+  const {protocol_owner} = await hre.getNamedAccounts()
+
+  const transactionLimit = new BN(PROTOCOL_CONFIG.transactionLimit).mul(USDCDecimals)
+  const totalFundsLimit = new BN(PROTOCOL_CONFIG.totalFundsLimit).mul(USDCDecimals)
+  const maxUnderwriterLimit = new BN(PROTOCOL_CONFIG.maxUnderwriterLimit).mul(USDCDecimals)
+  const reserveDenominator = new BN(PROTOCOL_CONFIG.reserveDenominator)
+  const withdrawFeeDenominator = new BN(PROTOCOL_CONFIG.withdrawFeeDenominator)
+  const latenessGracePeriodIndays = new BN(PROTOCOL_CONFIG.latenessGracePeriodInDays)
+  const latenessMaxDays = new BN(PROTOCOL_CONFIG.latenessMaxDays)
+
+  logger("Updating the config vals...")
+  await updateConfig(config, "number", CONFIG_KEYS.TotalFundsLimit, String(totalFundsLimit), {logger})
+  await updateConfig(config, "number", CONFIG_KEYS.TransactionLimit, String(transactionLimit), {logger})
+  await updateConfig(config, "number", CONFIG_KEYS.MaxUnderwriterLimit, String(maxUnderwriterLimit), {logger})
+  await updateConfig(config, "number", CONFIG_KEYS.ReserveDenominator, String(reserveDenominator), {logger})
+  await updateConfig(config, "number", CONFIG_KEYS.WithdrawFeeDenominator, String(withdrawFeeDenominator), {logger})
+  await updateConfig(config, "number", CONFIG_KEYS.LatenessGracePeriodInDays, String(latenessGracePeriodIndays), {
+    logger,
+  })
+  await updateConfig(config, "number", CONFIG_KEYS.LatenessMaxDays, String(latenessMaxDays), {logger})
+  // If we have a multisig safe, set that as the protocol admin, otherwise use the named account (local and test envs)
+  let multisigAddress
+  if (SAFE_CONFIG[chainID]) {
+    multisigAddress = SAFE_CONFIG[chainID].safeAddress
+  } else {
+    multisigAddress = protocol_owner
+  }
+  await updateConfig(config, "address", CONFIG_KEYS.ProtocolAdmin, multisigAddress, {logger})
+  await updateConfig(config, "address", CONFIG_KEYS.OneInch, MAINNET_ONE_SPLIT_ADDRESS, {logger})
+  await updateConfig(config, "address", CONFIG_KEYS.CUSDCContract, MAINNET_CUSDC_ADDRESS, {logger})
+  if (TRUSTED_FORWARDER_CONFIG[chainID]) {
+    await updateConfig(config, "address", CONFIG_KEYS.TrustedForwarder, TRUSTED_FORWARDER_CONFIG[chainID], {logger})
+  }
+  await config.setTreasuryReserve(multisigAddress)
+}
+
 async function updateConfig(config, type, key, newValue, opts) {
   opts = opts || {}
   let logger = opts.logger || function () {}
@@ -209,4 +252,5 @@ module.exports = {
   interestAprAsBN: interestAprAsBN,
   getDefenderClient: getDefenderClient,
   deployContractUpgrade: deployContractUpgrade,
+  setInitialConfigVals: setInitialConfigVals,
 }

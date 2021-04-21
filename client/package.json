@@ -2,6 +2,7 @@
   "name": "client",
   "version": "0.1.0",
   "private": true,
+  "author": "Blake West <blake@goldfinch.finance>",
   "dependencies": {
     "@gnosis.pm/safe-apps-sdk": "^0.4.2",
     "@hookform/error-message": "0.0.4",

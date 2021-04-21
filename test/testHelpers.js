@@ -14,6 +14,7 @@ chai.use(require("chai-bn")(BN))
 const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
 const fiduTolerance = decimals.div(USDC_DECIMALS)
 const CreditLine = artifacts.require("CreditLine")
+const EMPTY_DATA = "0x"
 
 // Helper functions. These should be pretty generic.
 function bigVal(number) {
@@ -180,6 +181,7 @@ module.exports = {
   ZERO_ADDRESS: ZERO_ADDRESS,
   BLOCKS_PER_DAY: BLOCKS_PER_DAY,
   BLOCKS_PER_YEAR: BLOCKS_PER_YEAR,
+  EMPTY_DATA: EMPTY_DATA,
   bigVal: bigVal,
   usdcVal: usdcVal,
   mochaEach: mochaEach,

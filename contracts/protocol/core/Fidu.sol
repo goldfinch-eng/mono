@@ -62,7 +62,7 @@ contract Fidu is ERC20PresetMinterPauserUpgradeSafe {
    */
   function mintTo(address to, uint256 amount) public {
     require(canMint(amount), "Cannot mint: it would create an asset/liability mismatch");
-    // This will lock the function down to only the minter
+    // This super call restricts to only the minter in its implementation, so we don't need to do it here.
     super.mint(to, amount);
   }
 

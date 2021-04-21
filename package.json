@@ -56,7 +56,7 @@
     "web3js",
     "ethereum"
   ],
-  "author": "Ramon Recuero <ramon@dapis.io>, Igor Yalovoy <to@ylv.io>",
+  "author": "Blake West <blake@goldfinch.finance>",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/OpenZeppelin/starter-kit/issues"

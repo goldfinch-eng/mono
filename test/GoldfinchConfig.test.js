@@ -175,4 +175,77 @@ describe("GoldfinchConfig", () => {
       })
     })
   })
+
+  describe("go listing", async () => {
+    describe("addToGoList", async () => {
+      it("should add someone to the go list", async () => {
+        expect(await goldfinchConfig.goList(person2)).to.be.false
+        await goldfinchConfig.addToGoList(person2)
+        expect(await goldfinchConfig.goList(person2)).to.be.true
+      })
+      it("should allow the owner to add someone", async () => {
+        return expect(goldfinchConfig.addToGoList(person2), {from: owner}).to.be.fulfilled
+      })
+      it("should dis-allow non-owners to add someone", async () => {
+        return expect(goldfinchConfig.addToGoList(person2, {from: person3})).to.be.rejectedWith(/Must have admin role/)
+      })
+    })
+
+    describe("bulkAddToGoList", async () => {
+      it("should add many people to the go list", async () => {
+        expect(await goldfinchConfig.goList(person2)).to.be.false
+        expect(await goldfinchConfig.goList(person3)).to.be.false
+
+        await goldfinchConfig.bulkAddToGoList([person2, person3])
+
+        expect(await goldfinchConfig.goList(person2)).to.be.true
+        expect(await goldfinchConfig.goList(person3)).to.be.true
+      })
+      it("should allow the owner to add someone", async () => {
+        return expect(goldfinchConfig.bulkAddToGoList([person2]), {from: owner}).to.be.fulfilled
+      })
+      it("should dis-allow non-owners to add someone", async () => {
+        return expect(goldfinchConfig.bulkAddToGoList([person2], {from: person3})).to.be.rejectedWith(
+          /Must have admin role/
+        )
+      })
+    })
+
+    describe("removeFromGoList", async () => {
+      it("should remove someone from the go list", async () => {
+        await goldfinchConfig.addToGoList(person2)
+        expect(await goldfinchConfig.goList(person2)).to.be.true
+        await goldfinchConfig.removeFromGoList(person2)
+        expect(await goldfinchConfig.goList(person2)).to.be.false
+      })
+      it("should allow the minter to add someone", async () => {
+        return expect(goldfinchConfig.removeFromGoList(person2), {from: owner}).to.be.fulfilled
+      })
+      it("should dis-allow non-minters to add someone", async () => {
+        return expect(goldfinchConfig.removeFromGoList(person2, {from: person3})).to.be.rejectedWith(
+          /Must have admin role/
+        )
+      })
+    })
+
+    describe("bulkRemoveFromGoList", async () => {
+      it("should remove someone from the go list", async () => {
+        await goldfinchConfig.bulkAddToGoList([person2, person3])
+        expect(await goldfinchConfig.goList(person2)).to.be.true
+        expect(await goldfinchConfig.goList(person3)).to.be.true
+
+        await goldfinchConfig.bulkRemoveFromGoList([person2, person3])
+        expect(await goldfinchConfig.goList(person2)).to.be.false
+        expect(await goldfinchConfig.goList(person3)).to.be.false
+      })
+      it("should allow the minter to add someone", async () => {
+        return expect(goldfinchConfig.bulkRemoveFromGoList([person2]), {from: owner}).to.be.fulfilled
+      })
+      it("should dis-allow non-minters to add someone", async () => {
+        return expect(goldfinchConfig.bulkRemoveFromGoList([person2], {from: person3})).to.be.rejectedWith(
+          /Must have admin role/
+        )
+      })
+    })
+  })
 })

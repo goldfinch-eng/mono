@@ -45,6 +45,7 @@ describe("Borrower", async () => {
     } = await deployAllContracts(deployments, {deployForwarder: true, fromAccount: owner})
     // Approve transfers for our test accounts
     await erc20Approve(usdc, pool.address, usdcVal(100000), [owner, bwr, person3])
+    await goldfinchConfig.bulkAddToGoList([owner, bwr, person3, underwriter, reserve])
     // Some housekeeping so we have a usable creditDesk for tests, and a pool with funds
     await erc20Transfer(usdc, [bwr], usdcVal(1000), owner)
     await pool.deposit(String(usdcVal(90)), {from: bwr})

@@ -20,6 +20,7 @@ const CONFIG_KEYS = {
   TrustedForwarder: 9,
   CUSDCContract: 10,
   GoldfinchConfig: 11,
+  PoolTokens: 12,
 }
 
 module.exports = {

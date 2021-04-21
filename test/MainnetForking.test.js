@@ -6,6 +6,7 @@ const {
   isMainnetForking,
   getSignerForAddress,
   interestAprAsBN,
+  MAINNET_CUSDC_ADDRESS,
 } = require("../blockchain_scripts/deployHelpers")
 const {
   MAINNET_MULTISIG,
@@ -25,7 +26,6 @@ const {
   createCreditLine,
   expect,
   expectAction,
-  getDeployedAsTruffleContract,
   erc20Approve,
   usdcVal,
   getBalance,
@@ -50,41 +50,67 @@ describe("mainnet forking tests", async function () {
   if (!isMainnetForking()) {
     return
   }
+  // eslint-disable-next-line no-unused-vars
   let accounts, owner, bwr, person3, pool, reserve, underwriter, usdc, creditDesk, fidu, goldfinchConfig, usdcAddress
   let goldfinchFactory, busd, usdt, cUSDC
-  let poolValue = usdcVal(1000)
-  const cUSDCContractAddress = "0x39aa39c021dfbae8fac545936693ac917d5e7563"
+  const contractsToUpgrade = ["CreditDesk", "Pool", "Fidu", "CreditLineFactory", "GoldfinchConfig"]
   const setupTest = deployments.createFixture(async ({deployments}) => {
+    // Note: base_deploy always returns when mainnet forking, however
+    // we need it here, because the "fixture" part is what let's hardhat
+    // snapshot and give us a clean blockchain before each test.
+    // Otherewise, we have state leaking across tests.
     await deployments.fixture("base_deploy")
-    const pool = await getDeployedAsTruffleContract(deployments, "Pool")
-    usdcAddress = getUSDCAddress("mainnet")
+
+    const contracts = await upgrade(contractsToUpgrade)
+    const usdcAddress = getUSDCAddress("mainnet")
+    const pool = await artifacts.require("TestPool").at(contracts.Pool.UpgradedContract.address)
     const usdc = await artifacts.require("IERC20withDec").at(usdcAddress)
-    const creditDesk = await getDeployedAsTruffleContract(deployments, "CreditDesk")
-    const fidu = await getDeployedAsTruffleContract(deployments, "Fidu")
-    const goldfinchConfig = await getDeployedAsTruffleContract(deployments, "GoldfinchConfig")
-    const goldfinchFactory = await getDeployedAsTruffleContract(deployments, "CreditLineFactory")
-    const cUSDC = await artifacts.require("ICUSDCContract").at(cUSDCContractAddress)
-
-    // Unlocks a random account that owns tons of USDC, which we can send to our test users
-    const erc20s = [{ticker: "USDC", contract: await ethers.getContractAt("IERC20withDec", usdcAddress)}]
-    await fundWithWhales(erc20s, [owner, bwr, person3])
-    // Approve transfers from the Pool for our test accounts
-    await erc20Approve(usdc, pool.address, usdcVal(100000), [owner, bwr, person3])
-
-    await pool.deposit(poolValue, {from: bwr})
-
-    // Set the reserve to a separate address for easier separation. The current owner account gets used for many things in tests.
-    await goldfinchConfig.setTreasuryReserve(reserve)
-    await goldfinchConfig.setAddressForTest(CONFIG_KEYS.CUSDCContract, cUSDCContractAddress)
-    await creditDesk.setUnderwriterGovernanceLimit(underwriter, usdcVal(100000), {from: owner})
+    const creditDesk = await artifacts.require("TestCreditDesk").at(contracts.CreditDesk.UpgradedContract.address)
+    const fidu = await artifacts.require("Fidu").at(contracts.Fidu.UpgradedContract.address)
+    const goldfinchConfig = await artifacts
+      .require("GoldfinchConfig")
+      .at(contracts.GoldfinchConfig.UpgradedContract.address)
+    const goldfinchFactory = await artifacts
+      .require("CreditLineFactory")
+      .at(contracts.CreditLineFactory.UpgradedContract.address)
+    const cUSDC = await artifacts.require("IERC20withDec").at(MAINNET_CUSDC_ADDRESS)
+    await creditDesk.setUnderwriterGovernanceLimit(underwriter, usdcVal(100000), {from: MAINNET_MULTISIG})
 
     return {pool, usdc, creditDesk, fidu, goldfinchConfig, goldfinchFactory, cUSDC}
   })
 
+  async function upgrade(contractsToUpgrade) {
+    ;[owner, bwr, person3, underwriter, reserve] = await web3.eth.getAccounts()
+    const mainnetConfig = getMainnetContracts()
+    const mainnetMultisigSigner = await ethers.provider.getSigner(MAINNET_MULTISIG)
+    const usdcAddress = getUSDCAddress("mainnet")
+
+    // Ensure the multisig has funds for upgrades and other transactions
+    let ownerAccount = await getSignerForAddress(owner)
+    await ownerAccount.sendTransaction({to: MAINNET_MULTISIG, value: ethers.utils.parseEther("5.0")})
+
+    await impersonateAccount(hre, MAINNET_MULTISIG)
+    const erc20s = [{ticker: "USDC", contract: await ethers.getContractAt("IERC20withDec", usdcAddress)}]
+    await fundWithWhales(erc20s, [owner, bwr])
+    const existingContracts = await getExistingContracts(contractsToUpgrade, mainnetConfig, mainnetMultisigSigner)
+
+    const contracts = await upgradeContracts(
+      contractsToUpgrade,
+      existingContracts,
+      mainnetMultisigSigner,
+      owner,
+      deployments
+    )
+    await performPostUpgradeMigration(contracts, deployments)
+    return contracts
+  }
+
   beforeEach(async function () {
+    this.timeout(TEST_TIMEOUT)
     accounts = await web3.eth.getAccounts()
     ;[owner, bwr, person3, underwriter, reserve] = accounts
     ;({usdc, creditDesk, goldfinchFactory, pool, fidu, goldfinchConfig, cUSDC} = await setupTest())
+    const usdcAddress = getUSDCAddress("mainnet")
     const busdAddress = "0x4fabb145d64652a948d72533023f6e7a623c7c53"
     const usdtAddress = "0xdAC17F958D2ee523a2206206994597C13D831ec7"
     busd = await artifacts.require("IERC20withDec").at(busdAddress)
@@ -96,6 +122,8 @@ describe("mainnet forking tests", async function () {
       {ticker: "USDT", contract: await ethers.getContractAt("IERC20withDec", usdtAddress)},
     ]
     await fundWithWhales(erc20s, [owner, bwr, person3])
+    await erc20Approve(usdc, pool.address, MAX_UINT, accounts)
+    await goldfinchConfig.bulkAddToGoList(accounts, {from: MAINNET_MULTISIG})
   })
 
   describe("drawing down into another currency", async function () {
@@ -233,6 +261,7 @@ describe("mainnet forking tests", async function () {
     let bwrCon, cl, oneSplit
     let amount = usdcVal(100)
     beforeEach(async function () {
+      this.timeout(TEST_TIMEOUT)
       oneSplit = await IOneSplit.at(MAINNET_ONE_SPLIT_ADDRESS)
       const result = await goldfinchFactory.createBorrower(bwr)
       let bwrConAddr = result.logs[result.logs.length - 1].args.borrower
@@ -301,7 +330,8 @@ describe("mainnet forking tests", async function () {
       let cl2
       let amount2 = usdcVal(50)
 
-      beforeEach(async () => {
+      beforeEach(async function () {
+        this.timeout(TEST_TIMEOUT)
         cl2 = await createCreditLine({creditDesk, borrower: bwrCon.address, underwriter})
         expect(cl.address).to.not.eq(cl2.addresss)
         await bwrCon.drawdown(cl2.address, amount2, bwr, {from: bwr})
@@ -346,6 +376,7 @@ describe("mainnet forking tests", async function () {
   describe("compound integration", async () => {
     let bwrCon, cl, reserveAddress
     beforeEach(async function () {
+      this.timeout(TEST_TIMEOUT)
       const result = await goldfinchFactory.createBorrower(bwr)
       let bwrConAddr = result.logs[result.logs.length - 1].args.borrower
       bwrCon = await Borrower.at(bwrConAddr)
@@ -356,9 +387,10 @@ describe("mainnet forking tests", async function () {
 
     it("should redeem from compound and recognize interest on drawdown", async function () {
       let usdcAmount = usdcVal(10)
+      const poolValue = await getBalance(pool.address, usdc)
 
       await expectAction(() => {
-        return pool.sweepToCompound({from: owner})
+        return pool.sweepToCompound({from: MAINNET_MULTISIG})
       }).toChange([
         [() => getBalance(pool.address, usdc), {to: new BN(0)}], // The pool balance is swept to compound
         [() => getBalance(pool.address, cUSDC), {increase: true}], // Pool should gain some cTokens
@@ -410,8 +442,9 @@ describe("mainnet forking tests", async function () {
 
     it("should redeem from compound and recognize interest on withdraw", async function () {
       let usdcAmount = usdcVal(100)
+      await pool.deposit(usdcAmount, {from: bwr})
       await expectAction(() => {
-        return pool.sweepToCompound({from: owner})
+        return pool.sweepToCompound({from: MAINNET_MULTISIG})
       }).toChange([
         [() => getBalance(pool.address, usdc), {to: new BN(0)}],
         [() => getBalance(pool.address, cUSDC), {increase: true}],
@@ -431,9 +464,9 @@ describe("mainnet forking tests", async function () {
     }).timeout(TEST_TIMEOUT)
 
     it("does not allow sweeping to compound when there is already a balance", async () => {
-      await pool.sweepToCompound({from: owner})
+      await pool.sweepToCompound({from: MAINNET_MULTISIG})
 
-      await expect(pool.sweepToCompound({from: owner})).to.be.rejectedWith(/Cannot sweep/)
+      await expect(pool.sweepToCompound({from: MAINNET_MULTISIG})).to.be.rejectedWith(/Cannot sweep/)
     }).timeout(TEST_TIMEOUT)
 
     it("can only be swept by the owner", async () => {
@@ -452,6 +485,11 @@ describe("mainnet upgrade tests", async function () {
   const contractsToUpgrade = ["CreditDesk", "Pool", "Fidu", "CreditLineFactory", "GoldfinchConfig"]
 
   beforeEach(async function () {
+    this.timeout(TEST_TIMEOUT)
+    // Note: base_deploy always returns when mainnet forking, however
+    // we need it here, because the "fixture" part is what let's hardhat
+    // snapshot and give us a clean blockchain before each test.
+    // Otherewise, we have state leaking across tests.
     await deployments.fixture("base_deploy")
     ;[owner, bwr] = await web3.eth.getAccounts()
     const usdcAddress = getUSDCAddress("mainnet")
@@ -472,6 +510,7 @@ describe("mainnet upgrade tests", async function () {
   async function upgrade(contractsToUpgrade, contracts) {
     contracts = await upgradeContracts(contractsToUpgrade, contracts, mainnetMultisigSigner, owner, deployments)
     await performPostUpgradeMigration(contracts, deployments)
+    await contracts.GoldfinchConfig.UpgradedContract.bulkAddToGoList(await web3.eth.getAccounts())
     return contracts
   }
 

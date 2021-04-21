@@ -16,9 +16,13 @@ import "./ConfigOptions.sol";
 contract GoldfinchConfig is BaseUpgradeablePausable {
   mapping(uint256 => address) public addresses;
   mapping(uint256 => uint256) public numbers;
+  mapping(address => bool) public goList;
 
   event AddressUpdated(address owner, uint256 index, address oldValue, address newValue);
   event NumberUpdated(address owner, uint256 index, uint256 oldValue, uint256 newValue);
+
+  event GoListed(address indexed member);
+  event NoListed(address indexed member);
 
   function initialize(address owner) public initializer {
     __BaseUpgradeablePausable__init(owner);
@@ -40,6 +44,44 @@ contract GoldfinchConfig is BaseUpgradeablePausable {
     uint256 key = uint256(ConfigOptions.Addresses.TreasuryReserve);
     emit AddressUpdated(msg.sender, key, addresses[key], newTreasuryReserve);
     addresses[key] = newTreasuryReserve;
+  }
+
+  /**
+   * @dev Adds a user to go-list
+   * @param _member address to add to go-list
+   */
+  function addToGoList(address _member) public onlyAdmin {
+    goList[_member] = true;
+    emit GoListed(_member);
+  }
+
+  /**
+   * @dev removes a user from go-list
+   * @param _member address to remove from go-list
+   */
+  function removeFromGoList(address _member) public onlyAdmin {
+    goList[_member] = false;
+    emit NoListed(_member);
+  }
+
+  /**
+   * @dev adds many users to go-list at once
+   * @param _members addresses to ad to go-list
+   */
+  function bulkAddToGoList(address[] memory _members) public onlyAdmin {
+    for (uint256 i = 0; i < _members.length; i++) {
+      addToGoList(_members[i]);
+    }
+  }
+
+  /**
+   * @dev removes many users from go-list at once
+   * @param _members addresses to remove from go-list
+   */
+  function bulkRemoveFromGoList(address[] memory _members) public onlyAdmin {
+    for (uint256 i = 0; i < _members.length; i++) {
+      removeFromGoList(_members[i]);
+    }
   }
 
   /*

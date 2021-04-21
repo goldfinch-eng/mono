@@ -37,6 +37,7 @@ module.exports = {
     },
     mainnet: {
       url: `https://mainnet.infura.io/v3/${INFURA_PROJECT_ID}`,
+      accounts: [`0x${TEST_PROTOCOL_OWNER_KEY}`, `0x${TEST_PROXY_OWNER_KEY}`],
       // Uncomment when you actually want to run mainnet. Hardhat freaks out otherwise because the private keys are undefined in the default case
       // accounts: [`${MAINNET_PROTOCOL_OWNER_KEY}`, `${MAINNET_PROXY_OWNER_KEY}`],
       accounts: [`0x${TEST_PROTOCOL_OWNER_KEY}`, `0x${TEST_PROXY_OWNER_KEY}`],

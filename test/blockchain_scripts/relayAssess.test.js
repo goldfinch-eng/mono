@@ -24,6 +24,7 @@ describe("relayAsses", () => {
     const {pool, usdc, fidu, creditDesk, goldfinchConfig} = await deployAllContracts(deployments)
     // A bit of setup for our test users
     await erc20Approve(usdc, pool.address, usdcVal(100000), [owner, borrower])
+    await goldfinchConfig.bulkAddToGoList([owner, underwriter, borrower])
     await pool.deposit(String(usdcVal(10000)), {from: owner})
     await creditDesk.setUnderwriterGovernanceLimit(underwriter, usdcVal(25000), {from: owner})
     return {usdc, pool, fidu, goldfinchConfig, creditDesk}

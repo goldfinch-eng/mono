@@ -5,18 +5,19 @@ const {
   USDCDecimals,
   OWNER_ROLE,
   MINTER_ROLE,
-  SAFE_CONFIG,
-  TRUSTED_FORWARDER_CONFIG,
   updateConfig,
   getUSDCAddress,
   isTestEnv,
-  MAINNET_ONE_SPLIT_ADDRESS,
-  MAINNET_CUSDC_ADDRESS,
+  setInitialConfigVals,
+  SAFE_CONFIG,
+  isMainnetForking,
 } = require("./deployHelpers.js")
-const PROTOCOL_CONFIG = require("../protocol_config.json")
 let logger
 
 async function baseDeploy(hre) {
+  if (isMainnetForking()) {
+    return
+  }
   const {deployments, getNamedAccounts, getChainId, ethers} = hre
   const {deploy, log} = deployments
   logger = log
@@ -29,6 +30,7 @@ async function baseDeploy(hre) {
   const config = await deployConfig(deploy)
   await getOrDeployUSDC()
   const fidu = await deployFidu(config)
+  await deployPoolTokens(config)
   const pool = await deployPool(hre, {config})
   logger("Granting minter role to Pool")
   await grantMinterRoleToPool(fidu, pool)
@@ -58,39 +60,8 @@ async function baseDeploy(hre) {
       logger("Config newly deployed, initializing...")
       await (await config.initialize(protocol_owner)).wait()
     }
-    const transactionLimit = new BN(PROTOCOL_CONFIG.transactionLimit).mul(USDCDecimals)
-    const totalFundsLimit = new BN(PROTOCOL_CONFIG.totalFundsLimit).mul(USDCDecimals)
-    const maxUnderwriterLimit = new BN(PROTOCOL_CONFIG.maxUnderwriterLimit).mul(USDCDecimals)
-    const reserveDenominator = new BN(PROTOCOL_CONFIG.reserveDenominator)
-    const withdrawFeeDenominator = new BN(PROTOCOL_CONFIG.withdrawFeeDenominator)
-    const latenessGracePeriodIndays = new BN(PROTOCOL_CONFIG.latenessGracePeriodInDays)
-    const latenessMaxDays = new BN(PROTOCOL_CONFIG.latenessMaxDays)
 
-    logger("Updating the config vals...")
-    await updateConfig(config, "number", CONFIG_KEYS.TotalFundsLimit, String(totalFundsLimit), {logger})
-    await updateConfig(config, "number", CONFIG_KEYS.TransactionLimit, String(transactionLimit), {logger})
-    await updateConfig(config, "number", CONFIG_KEYS.MaxUnderwriterLimit, String(maxUnderwriterLimit), {logger})
-    await updateConfig(config, "number", CONFIG_KEYS.ReserveDenominator, String(reserveDenominator), {logger})
-    await updateConfig(config, "number", CONFIG_KEYS.WithdrawFeeDenominator, String(withdrawFeeDenominator), {logger})
-    await updateConfig(config, "number", CONFIG_KEYS.LatenessGracePeriodInDays, String(latenessGracePeriodIndays), {
-      logger,
-    })
-    await updateConfig(config, "number", CONFIG_KEYS.LatenessMaxDays, String(latenessMaxDays), {logger})
-    // If we have a multisig safe, set that as the protocol admin, otherwise use the named account (local and test envs)
-    let multisigAddress
-    if (SAFE_CONFIG[chainID]) {
-      multisigAddress = SAFE_CONFIG[chainID].safeAddress
-    } else {
-      multisigAddress = protocol_owner
-    }
-
-    await updateConfig(config, "address", CONFIG_KEYS.ProtocolAdmin, multisigAddress, {logger})
-    await updateConfig(config, "address", CONFIG_KEYS.OneInch, MAINNET_ONE_SPLIT_ADDRESS, {logger})
-    await updateConfig(config, "address", CONFIG_KEYS.CUSDCContract, MAINNET_CUSDC_ADDRESS, {logger})
-    if (TRUSTED_FORWARDER_CONFIG[chainID]) {
-      await updateConfig(config, "address", CONFIG_KEYS.TrustedForwarder, TRUSTED_FORWARDER_CONFIG[chainID], {logger})
-    }
-    await config.setTreasuryReserve(multisigAddress)
+    await setInitialConfigVals(config, logger)
 
     return config
   }
@@ -130,8 +101,9 @@ async function baseDeploy(hre) {
     logger("CreditLineFactory was deployed to:", clFactoryDeployResult.address)
 
     const creditLineFactory = await ethers.getContractAt("CreditLineFactory", clFactoryDeployResult.address)
+    let creditLineFactoryAddress = creditLineFactory.address
 
-    await updateConfig(config, "address", CONFIG_KEYS.CreditLineFactory, creditLineFactory.address, {logger})
+    await updateConfig(config, "address", CONFIG_KEYS.CreditLineFactory, creditLineFactoryAddress, {logger})
     return creditLineFactory
   }
 
@@ -154,7 +126,8 @@ async function baseDeploy(hre) {
       libraries: {["Accountant"]: accountant.address},
     })
     logger("Credit Desk was deployed to:", creditDeskDeployResult.address)
-    await updateConfig(config, "address", CONFIG_KEYS.CreditDesk, creditDeskDeployResult.address, {logger})
+    let creditDeskAddress = creditDeskDeployResult.address
+    await updateConfig(config, "address", CONFIG_KEYS.CreditDesk, creditDeskAddress, {logger})
     return await ethers.getContractAt(creditDeskDeployResult.abi, creditDeskDeployResult.address)
   }
 
@@ -185,9 +158,26 @@ async function baseDeploy(hre) {
       args: [protocol_owner, "Fidu", "FIDU", config.address],
     })
     const fidu = await ethers.getContractAt("Fidu", fiduDeployResult.address)
-    await updateConfig(config, "address", CONFIG_KEYS.Fidu, fidu.address, {logger})
+    let fiduAddress = fidu.address
+
+    await updateConfig(config, "address", CONFIG_KEYS.Fidu, fiduAddress, {logger})
     logger("Deployed Fidu to address:", fidu.address)
     return fidu
+  }
+
+  async function deployPoolTokens(config) {
+    logger("About to deploy Junior Tokens...")
+    const poolTokens = await deploy("PoolTokens", {
+      from: proxy_owner,
+      proxy: {
+        methodName: "__initialize__",
+      },
+      args: [SAFE_CONFIG[chainID] || protocol_owner, config.address],
+    })
+    logger("Initialized Pool Tokens...")
+    await updateConfig(config, "address", CONFIG_KEYS.PoolTokens, poolTokens.address, {logger})
+    logger("Updated PoolTokens config address to:", poolTokens.address)
+    return poolTokens
   }
 }
 
@@ -196,14 +186,10 @@ async function deployPool(hre, {config}) {
   if (isTestEnv()) {
     contractName = "TestPool"
   }
-  const {deployments, getNamedAccounts, getChainId} = hre
+  const {deployments, getNamedAccounts} = hre
   const {deploy, log} = deployments
   const logger = log
-  const chainID = await getChainId()
   const {protocol_owner, proxy_owner} = await getNamedAccounts()
-
-  logger("Starting deploy...")
-  logger("Chain ID is:", chainID)
 
   let poolDeployResult = await deploy(contractName, {
     from: proxy_owner,
@@ -212,7 +198,8 @@ async function deployPool(hre, {config}) {
   })
   logger("Pool was deployed to:", poolDeployResult.address)
   const pool = await ethers.getContractAt(contractName, poolDeployResult.address)
-  await updateConfig(config, "address", CONFIG_KEYS.Pool, pool.address, {logger})
+  let poolAddress = pool.address
+  await updateConfig(config, "address", CONFIG_KEYS.Pool, poolAddress, {logger})
 
   return pool
 }
