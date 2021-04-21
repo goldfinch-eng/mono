@@ -74,21 +74,21 @@ const assessIfRequired = async function assessIfRequired(creditDesk, creditLine,
   // Normalize everything to ethers.BigNumber because tests use Truffle and therefore bn.js
   // which is incompatible with BigNumber
   const currentTime = ethers.BigNumber.from((await provider.getBlock("latest")).timestamp.toString())
-  const nextDueDate = ethers.BigNumber.from((await creditLine.nextDueDate()).toString())
-  const termEndDate = ethers.BigNumber.from((await creditLine.termEndDate()).toString())
+  const nextDueTime = ethers.BigNumber.from((await creditLine.nextDueTime()).toString())
+  const termEndTime = ethers.BigNumber.from((await creditLine.termEndTime()).toString())
 
-  if (nextDueDate.isZero()) {
+  if (nextDueTime.isZero()) {
     const balance = await creditLine.balance()
     if (!balance.isZero()) {
       throw new Error(`Non-zero balance (${balance}) for creditLine ${creditLine.address} without a nextDueBlock`)
     }
     console.log(`Assess ${creditLine.address}: Skipped (Zero balance)`)
   } else {
-    if (currentTime.gte(termEndDate)) {
+    if (currentTime.gte(termEndTime)) {
       // Currently we don't have a good way to track the last time we assessed a creditLine past it's
       // term end block. So we're going to keep assessing it everytime the script runs for now.
       await creditDesk.assessCreditLine(creditLine.address)
-    } else if (currentTime.gte(nextDueDate)) {
+    } else if (currentTime.gte(nextDueTime)) {
       await creditDesk.assessCreditLine(creditLine.address)
     } else {
       console.log(`Assess ${creditLine.address}: Skipped (Already assessed)`)

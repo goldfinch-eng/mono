@@ -340,7 +340,7 @@ describe("Borrower", async () => {
         [async () => await getBalance(cl.address, usdc), {by: amount}],
         [async () => await getBalance(bwr, usdc), {by: amount.neg()}],
       ])
-      await advanceTime(creditDesk, {toSecond: (await cl.nextDueDate()).add(new BN(1))})
+      await advanceTime(creditDesk, {toSecond: (await cl.nextDueTime()).add(new BN(1))})
       await expectAction(() => creditDesk.assessCreditLine(cl.address)).toChange([
         [async () => await cl.balance(), {decrease: true}],
         [async () => await getBalance(cl.address, usdc), {by: amount.neg()}],
@@ -372,7 +372,7 @@ describe("Borrower", async () => {
         [() => getBalance(cl2.address, usdc), {by: amount2}],
         [() => getBalance(bwr, usdc), {by: amount.add(amount2).neg()}],
       ])
-      await advanceTime(creditDesk, {toSecond: (await cl.nextDueDate()).add(new BN(100))})
+      await advanceTime(creditDesk, {toSecond: (await cl.nextDueTime()).add(new BN(100))})
       await expectAction(() => creditDesk.assessCreditLine(cl.address)).toChange([
         [() => cl.balance(), {decrease: true}],
         [() => getBalance(cl.address, usdc), {by: amount.neg()}],
@@ -397,7 +397,7 @@ describe("Borrower", async () => {
     })
 
     it("should fully pay back the loan", async () => {
-      await advanceTime(creditDesk, {toSecond: (await cl.nextDueDate()).add(new BN(1))})
+      await advanceTime(creditDesk, {toSecond: (await cl.nextDueTime()).add(new BN(1))})
       await expectAction(async () => bwrCon.payInFull(cl.address, usdcVal(11), {from: bwr})).toChange([
         [async () => cl.balance(), {to: new BN(0)}],
         [async () => getBalance(pool.address, usdc), {increase: true}],

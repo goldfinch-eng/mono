@@ -30,11 +30,11 @@ contract CreditLine is BaseUpgradeablePausable {
   uint256 public balance;
   uint256 public interestOwed;
   uint256 public principalOwed;
-  uint256 public termEndDate;
-  uint256 public nextDueDate;
-  uint256 public interestAccruedAsOfDate;
+  uint256 public termEndTime;
+  uint256 public nextDueTime;
+  uint256 public interestAccruedAsOf;
   uint256 public writedownAmount;
-  uint256 public lastFullPaymentDate;
+  uint256 public lastFullPaymentTime;
 
   function initialize(
     address owner,
@@ -55,15 +55,15 @@ contract CreditLine is BaseUpgradeablePausable {
     paymentPeriodInDays = _paymentPeriodInDays;
     termInDays = _termInDays;
     lateFeeApr = _lateFeeApr;
-    interestAccruedAsOfDate = block.timestamp;
+    interestAccruedAsOf = block.timestamp;
   }
 
-  function setTermEndDate(uint256 newTermEndDate) external onlyAdmin {
-    termEndDate = newTermEndDate;
+  function setTermEndTime(uint256 newTermEndTime) external onlyAdmin {
+    termEndTime = newTermEndTime;
   }
 
-  function setNextDueDate(uint256 newNextDueDate) external onlyAdmin {
-    nextDueDate = newNextDueDate;
+  function setNextDueTime(uint256 newNextDueTime) external onlyAdmin {
+    nextDueTime = newNextDueTime;
   }
 
   function setBalance(uint256 newBalance) external onlyAdmin {
@@ -78,16 +78,16 @@ contract CreditLine is BaseUpgradeablePausable {
     principalOwed = newPrincipalOwed;
   }
 
-  function setInterestAccruedAsOfDate(uint256 newInterestAccruedAsOfDate) external onlyAdmin {
-    interestAccruedAsOfDate = newInterestAccruedAsOfDate;
+  function setInterestAccruedAsOf(uint256 newInterestAccruedAsOf) external onlyAdmin {
+    interestAccruedAsOf = newInterestAccruedAsOf;
   }
 
   function setWritedownAmount(uint256 newWritedownAmount) external onlyAdmin {
     writedownAmount = newWritedownAmount;
   }
 
-  function setLastFullPaymentDate(uint256 newLastFullPaymentDate) external onlyAdmin {
-    lastFullPaymentDate = newLastFullPaymentDate;
+  function setLastFullPaymentTime(uint256 newLastFullPaymentTime) external onlyAdmin {
+    lastFullPaymentTime = newLastFullPaymentTime;
   }
 
   function setLateFeeApr(uint256 newLateFeeApr) external onlyAdmin {

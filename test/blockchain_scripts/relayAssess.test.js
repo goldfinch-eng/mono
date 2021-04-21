@@ -77,23 +77,23 @@ describe("relayAsses", () => {
       creditLine = await createCreditLine()
 
       await creditDesk.drawdown(creditLine.address, usdcVal(10), {from: borrower})
-      // Advance to just beyond the nextDueDate
-      await advanceToTimestamp((await creditLine.nextDueDate()).add(new BN(10)))
+      // Advance to just beyond the nextDueTime
+      await advanceToTimestamp((await creditLine.nextDueTime()).add(new BN(10)))
       await expectAction(() => assessIfRequired(creditDesk, creditLine, fakeProvider)).toChange([
-        [creditLine.nextDueDate, {increase: true}],
+        [creditLine.nextDueTime, {increase: true}],
       ])
     })
 
-    it("does not assess if within the nextDueDate", async () => {
+    it("does not assess if within the nextDueTime", async () => {
       creditLine = await createCreditLine()
 
       await creditDesk.drawdown(creditLine.address, usdcVal(10), {from: borrower})
 
       // Advance to just before the next due block
-      await advanceToTimestamp((await creditLine.nextDueDate()).sub(new BN(10)))
+      await advanceToTimestamp((await creditLine.nextDueTime()).sub(new BN(10)))
 
       await expectAction(() => assessIfRequired(creditDesk, creditLine, fakeProvider)).toChange([
-        [creditLine.nextDueDate, {by: 0}],
+        [creditLine.nextDueTime, {by: 0}],
       ])
     })
 
@@ -103,10 +103,10 @@ describe("relayAsses", () => {
       await creditDesk.drawdown(creditLine.address, usdcVal(10), {from: borrower})
 
       // Advance to just after the term due block
-      await advanceToTimestamp((await creditLine.termEndDate()).add(new BN(10)))
+      await advanceToTimestamp((await creditLine.termEndTime()).add(new BN(10)))
 
       await expectAction(() => assessIfRequired(creditDesk, creditLine, fakeProvider)).toChange([
-        [creditLine.nextDueDate, {increase: true}],
+        [creditLine.nextDueTime, {increase: true}],
       ])
     })
 
@@ -114,7 +114,7 @@ describe("relayAsses", () => {
       creditLine = await createCreditLine()
 
       await expectAction(() => assessIfRequired(creditDesk, creditLine, fakeProvider)).toChange([
-        [creditLine.nextDueDate, {by: 0}],
+        [creditLine.nextDueTime, {by: 0}],
       ])
     })
   })

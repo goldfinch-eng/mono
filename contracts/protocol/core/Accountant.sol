@@ -49,7 +49,7 @@ library Accountant {
     uint256 balance,
     uint256 timestamp
   ) public view returns (uint256) {
-    if (timestamp >= cl.termEndDate()) {
+    if (timestamp >= cl.termEndTime()) {
       return balance;
     } else {
       return 0;
@@ -75,8 +75,8 @@ library Accountant {
     // calculate the periods later.
     uint256 totalOwed = cl.interestOwed().add(cl.principalOwed());
     daysLate = FixedPoint.fromUnscaledUint(totalOwed).div(amountOwedPerDay);
-    if (timestamp > cl.termEndDate()) {
-      uint256 secondsLate = timestamp.sub(cl.termEndDate());
+    if (timestamp > cl.termEndTime()) {
+      uint256 secondsLate = timestamp.sub(cl.termEndTime());
       daysLate = daysLate.add(FixedPoint.fromUnscaledUint(secondsLate).div(SECONDS_PER_DAY));
     }
 
@@ -117,7 +117,7 @@ library Accountant {
     // This use of min should not generate incorrect interest calculations, since
     // this functions purpose is just to normalize balances, and  will be called any time
     // a balance affecting action takes place (eg. drawdown, repayment, assessment)
-    uint256 interestAccruedAsOf = Math.min(timestamp, cl.interestAccruedAsOfDate());
+    uint256 interestAccruedAsOf = Math.min(timestamp, cl.interestAccruedAsOf());
     uint256 secondsElapsed = timestamp.sub(interestAccruedAsOf);
     uint256 totalInterestPerYear = balance.mul(cl.interestApr()).div(INTEREST_DECIMALS);
     uint256 interestOwed = totalInterestPerYear.mul(secondsElapsed).div(SECONDS_PER_YEAR);
@@ -136,7 +136,7 @@ library Accountant {
     uint256 timestamp,
     uint256 gracePeriodInDays
   ) public view returns (bool) {
-    uint256 secondsLate = timestamp.sub(cl.lastFullPaymentDate());
+    uint256 secondsLate = timestamp.sub(cl.lastFullPaymentTime());
     return cl.lateFeeApr() > 0 && secondsLate > gracePeriodInDays.mul(SECONDS_PER_DAY);
   }
 

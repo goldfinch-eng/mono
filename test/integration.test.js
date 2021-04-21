@@ -61,17 +61,17 @@ describe("Goldfinch", async () => {
       balance,
       interestOwed,
       collectedPayment,
-      nextDueDate,
-      interestAccruedAsOfDate,
-      lastFullPaymentDate
+      nextDueTime,
+      interestAccruedAsOf,
+      lastFullPaymentTime
     ) {
       expect(await creditLine.balance()).to.bignumber.equal(balance)
       expect(await creditLine.interestOwed()).to.bignumber.equal(interestOwed)
       expect(await creditLine.principalOwed()).to.bignumber.equal("0") // Principal owed is always 0
       expect(await getBalance(creditLine.address, usdc)).to.bignumber.equal(collectedPayment)
-      expect(await creditLine.nextDueDate()).to.bignumber.equal(new BN(nextDueDate))
-      expect(await creditLine.interestAccruedAsOfDate()).to.bignumber.equal(new BN(interestAccruedAsOfDate))
-      expect(await creditLine.lastFullPaymentDate()).to.bignumber.equal(new BN(lastFullPaymentDate))
+      expect(await creditLine.nextDueTime()).to.bignumber.equal(new BN(nextDueTime))
+      expect(await creditLine.interestAccruedAsOf()).to.bignumber.equal(new BN(interestAccruedAsOf))
+      expect(await creditLine.lastFullPaymentTime()).to.bignumber.equal(new BN(lastFullPaymentTime))
     }
 
     async function createCreditLine({
@@ -267,7 +267,7 @@ describe("Goldfinch", async () => {
       })
 
       describe("drawdown and isLate", async () => {
-        it("should not think you're late if it's not past the nextDueDate", async () => {
+        it("should not think you're late if it's not past the nextDueTime", async () => {
           creditLine = await createCreditLine({_paymentPeriodInDays: new BN(30)})
           await expect(drawdown(creditLine.address, new BN(1000))).to.be.fulfilled
           await advanceTime(creditDesk, {days: 10})
@@ -282,25 +282,25 @@ describe("Goldfinch", async () => {
         let currentTime = await advanceTime(creditDesk, {days: 1})
         creditLine = await createCreditLine()
 
-        let interestAccruedAsOfDate = await time.latest()
-        await assertCreditLine("0", "0", "0", 0, interestAccruedAsOfDate, 0)
+        let interestAccruedAsOf = await time.latest()
+        await assertCreditLine("0", "0", "0", 0, interestAccruedAsOf, 0)
 
         currentTime = await advanceTime(creditDesk, {days: 1})
         await drawdown(creditLine.address, usdcVal(2000))
 
-        var nextDueDate = (await creditDesk.currentTimestamp()).add(SECONDS_PER_DAY.mul(paymentPeriodInDays))
-        interestAccruedAsOfDate = currentTime
-        let lastFullPaymentDate = currentTime
-        await assertCreditLine(usdcVal(2000), "0", "0", nextDueDate, currentTime, lastFullPaymentDate)
+        var nextDueTime = (await creditDesk.currentTimestamp()).add(SECONDS_PER_DAY.mul(paymentPeriodInDays))
+        interestAccruedAsOf = currentTime
+        let lastFullPaymentTime = currentTime
+        await assertCreditLine(usdcVal(2000), "0", "0", nextDueTime, currentTime, lastFullPaymentTime)
 
         currentTime = await advanceTime(creditDesk, {days: 1})
 
         await creditDesk.assessCreditLine(creditLine.address, {from: borrower})
 
         const totalInterestPerYear = usdcVal(2000).mul(interestApr).div(INTEREST_DECIMALS)
-        let secondsPassed = nextDueDate.sub(interestAccruedAsOfDate)
+        let secondsPassed = nextDueTime.sub(interestAccruedAsOf)
         let expectedInterest = totalInterestPerYear.mul(secondsPassed).div(SECONDS_PER_YEAR)
-        nextDueDate = nextDueDate.add(paymentPeriodInSeconds)
+        nextDueTime = nextDueTime.add(paymentPeriodInSeconds)
 
         expect(expectedInterest).to.bignumber.eq("1369863")
 
@@ -308,14 +308,14 @@ describe("Goldfinch", async () => {
           usdcVal(2000),
           expectedInterest,
           "0",
-          nextDueDate,
-          nextDueDate.sub(paymentPeriodInSeconds),
-          lastFullPaymentDate
+          nextDueTime,
+          nextDueTime.sub(paymentPeriodInSeconds),
+          lastFullPaymentTime
         )
 
         currentTime = await advanceTime(creditDesk, {days: 1})
         expectedInterest = expectedInterest.mul(new BN(2)) // 2 days of interest
-        nextDueDate = nextDueDate.add(paymentPeriodInSeconds)
+        nextDueTime = nextDueTime.add(paymentPeriodInSeconds)
 
         await creditDesk.assessCreditLine(creditLine.address, {from: borrower})
 
@@ -323,9 +323,9 @@ describe("Goldfinch", async () => {
           usdcVal(2000),
           expectedInterest,
           "0",
-          nextDueDate,
-          nextDueDate.sub(paymentPeriodInSeconds),
-          lastFullPaymentDate
+          nextDueTime,
+          nextDueTime.sub(paymentPeriodInSeconds),
+          lastFullPaymentTime
         )
       })
     })

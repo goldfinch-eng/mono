@@ -1,5 +1,14 @@
 /* global artifacts web3 */
-const {expect, BN, bigVal, mochaEach, tolerance, usdcVal, SECONDS_PER_DAY, SECONDS_PER_YEAR} = require("./testHelpers.js")
+const {
+  expect,
+  BN,
+  bigVal,
+  mochaEach,
+  tolerance,
+  usdcVal,
+  SECONDS_PER_DAY,
+  SECONDS_PER_YEAR,
+} = require("./testHelpers.js")
 const {interestAprAsBN, INTEREST_DECIMALS, ETHDecimals} = require("../blockchain_scripts/deployHelpers.js")
 const Accountant = artifacts.require("Accountant")
 const TestAccountant = artifacts.require("TestAccountant")
@@ -61,7 +70,7 @@ describe("Accountant", async () => {
       let currentTime = new BN(Date.now() / 1000)
       await creditLine.setBalance(balance)
       timestamp = currentTime.add(new BN(100))
-      await creditLine.setTermEndDate(timestamp)
+      await creditLine.setTermEndTime(timestamp)
     })
     describe("when the timestamp is < the term end date", async () => {
       it("should return zero principal, but full interest", async () => {
@@ -87,10 +96,10 @@ describe("Accountant", async () => {
 
     describe("late fees", async () => {
       beforeEach(async () => {
-        await creditLine.setInterestAccruedAsOfDate(timestamp)
-        await creditLine.setLastFullPaymentDate(timestamp)
+        await creditLine.setInterestAccruedAsOf(timestamp)
+        await creditLine.setLastFullPaymentTime(timestamp)
         const offset = lateFeeGracePeriodInDays.mul(SECONDS_PER_DAY).mul(new BN(10))
-        await creditLine.setTermEndDate(timestamp.add(offset)) // some time in the future
+        await creditLine.setTermEndTime(timestamp.add(offset)) // some time in the future
       })
 
       it("should not charge late fees within the grace period", async () => {
@@ -121,7 +130,7 @@ describe("Accountant", async () => {
       })
 
       it("should not charge late fees on the principal if beyond the term end date", async () => {
-        await creditLine.setTermEndDate(timestamp) // Set term end date in the past
+        await creditLine.setTermEndTime(timestamp) // Set term end date in the past
         const totalInterestPerYear = balance.mul(interestApr).div(INTEREST_DECIMALS)
         let secondsPassed = lateFeeGracePeriodInDays.mul(SECONDS_PER_DAY).mul(new BN(2))
         expectedInterest = totalInterestPerYear.mul(secondsPassed).div(SECONDS_PER_YEAR)
@@ -138,7 +147,7 @@ describe("Accountant", async () => {
   })
 
   describe("writedowns", async () => {
-    let creditLine, balance, interestApr, paymentPeriodInDays, termEndDate, timestamp, gracePeriod, maxLatePeriods
+    let creditLine, balance, interestApr, paymentPeriodInDays, termEndTime, timestamp, gracePeriod, maxLatePeriods
 
     beforeEach(async () => {
       await setupCreditLine()
@@ -151,7 +160,7 @@ describe("Accountant", async () => {
       paymentPeriodInDays = _paymentPeriodInDays || new BN(30)
       gracePeriod = new BN(30)
       maxLatePeriods = new BN(120)
-      termEndDate = new BN(Date.now() / 1000) // Current time in seconds
+      termEndTime = new BN(Date.now() / 1000) // Current time in seconds
       const lateFeeApr = interestAprAsBN("0")
 
       creditLine = await CreditLine.new({from: owner})
@@ -166,8 +175,8 @@ describe("Accountant", async () => {
         lateFeeApr
       )
       await creditLine.setBalance(balance)
-      await creditLine.setTermEndDate(termEndDate) // Some time in the future
-      timestamp = termEndDate.add(new BN(100)) // Calculate for 100 seconds into the future
+      await creditLine.setTermEndTime(termEndTime) // Some time in the future
+      timestamp = termEndTime.add(new BN(100)) // Calculate for 100 seconds into the future
       return creditLine
     }
 
@@ -287,7 +296,7 @@ describe("Accountant", async () => {
         it("uses the timestamp to determine if within grace period", async () => {
           const paymentPeriodInSeconds = paymentPeriodInDays.mul(SECONDS_PER_DAY)
           // 50% of one payment period, so within the grace period
-          timestamp = termEndDate.add(paymentPeriodInSeconds.div(new BN(2)))
+          timestamp = termEndTime.add(paymentPeriodInSeconds.div(new BN(2)))
           let [writedownPercent, writedownAmount] = await calculateWritedownFor(
             creditLine,
             timestamp,
@@ -300,7 +309,7 @@ describe("Accountant", async () => {
 
         it("does not go down when you just go over the term end date", async () => {
           await creditLine.setInterestOwed(interestOwedForOnePeriod().mul(new BN(2)))
-          timestamp = termEndDate.sub(new BN(2))
+          timestamp = termEndTime.sub(new BN(2))
           let [writedownPercent, writedownAmount] = await calculateWritedownFor(
             creditLine,
             timestamp,
@@ -310,7 +319,7 @@ describe("Accountant", async () => {
           expect(writedownPercent).to.bignumber.eq("25")
           expect(writedownAmount).to.bignumber.eq("2500094")
 
-          timestamp = termEndDate.add(new BN(1))
+          timestamp = termEndTime.add(new BN(1))
           let [newWritedownPercent, newWritedownAmount] = await calculateWritedownFor(
             creditLine,
             timestamp,
@@ -324,7 +333,7 @@ describe("Accountant", async () => {
         it("uses the timestamp to write down proportionally", async () => {
           const paymentPeriodInSeconds = paymentPeriodInDays.mul(SECONDS_PER_DAY)
           // 2 periods late
-          timestamp = termEndDate.add(paymentPeriodInSeconds.mul(new BN(2)))
+          timestamp = termEndTime.add(paymentPeriodInSeconds.mul(new BN(2)))
           let [writedownPercent, writedownAmount] = await calculateWritedownFor(
             creditLine,
             timestamp,
@@ -339,7 +348,7 @@ describe("Accountant", async () => {
         it("uses the timestamp to cap max periods late", async () => {
           const paymentPeriodInSeconds = paymentPeriodInDays.mul(SECONDS_PER_DAY)
           // 130 days late
-          timestamp = termEndDate.add(paymentPeriodInSeconds.mul(new BN(13)))
+          timestamp = termEndTime.add(paymentPeriodInSeconds.mul(new BN(13)))
           let [writedownPercent, writedownAmount] = await calculateWritedownFor(
             creditLine,
             timestamp,
@@ -356,7 +365,7 @@ describe("Accountant", async () => {
           await creditLine.setBalance(new BN("0"))
           const paymentPeriodInSeconds = paymentPeriodInDays.mul(SECONDS_PER_DAY)
           // 5 periods later
-          timestamp = termEndDate.add(paymentPeriodInSeconds.mul(new BN(5)))
+          timestamp = termEndTime.add(paymentPeriodInSeconds.mul(new BN(5)))
 
           let [writedownPercent, writedownAmount] = await calculateWritedownFor(
             creditLine,
