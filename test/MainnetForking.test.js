@@ -546,7 +546,7 @@ describe("mainnet upgrade tests", async function () {
     const interest = interestAprAsBN("10.0").toString()
     await contracts.CreditDesk.ExistingContract.setUnderwriterGovernanceLimit(
       MAINNET_MULTISIG,
-      usdcVal(1000).toString()
+      usdcVal(10000).toString()
     )
     let res = await (
       await contracts.CreditDesk.ExistingContract.createCreditLine(bwr, limit, interest, "360", "30", "0")
@@ -574,13 +574,33 @@ describe("mainnet upgrade tests", async function () {
     bwrCreditDesk = contracts.CreditDesk.UpgradedContract.connect(bwrSigner)
     bwrPool = contracts.Pool.UpgradedContract.connect(bwrSigner)
 
-    // TODO: We need to migrate the creditline (from block based to timestamp based) before we can pay it off
+    const currentTime = new BN((await ethers.provider.getBlock("latest")).timestamp.toString())
+    let migrationRes = await (
+      await contracts.CreditDesk.UpgradedContract.migrateV1CreditLine(
+        clAddress,
+        currentTime.add(new BN(100)).toString(),
+        currentTime.add(new BN(10)).toString(),
+        currentTime.sub(new BN(50)).toString(),
+        new BN(0).toString()
+      )
+    ).wait()
+    let migratedClAddress = migrationRes.events.find((e) => e.event === "CreditLineCreated").args.creditLine
+    const migratedCl = await artifacts.require("CreditLine").at(migratedClAddress)
+
+    // Test that the creditline was migrated correctly
+    expect((await clContract.balance()).isZero()).to.be.true
+    expect((await clContract.limit()).isZero()).to.be.true
+    expect(await migratedCl.balance()).to.bignumber.eq(usdcVal(500))
+    expect(await migratedCl.limit()).to.bignumber.eq(limit)
+    expect(await migratedCl.termEndTime()).to.bignumber.eq(currentTime.add(new BN(100)))
+    expect(await migratedCl.nextDueTime()).to.bignumber.eq(currentTime.add(new BN(10)))
+    expect(await migratedCl.interestAccruedAsOf()).to.bignumber.eq(currentTime.sub(new BN(50)))
+    expect(await migratedCl.lastFullPaymentTime()).to.bignumber.eq("0")
 
     // Pay off in full
-    await bwrCreditDesk.pay(clAddress, usdcVal(501).toString())
-    await bwrCreditDesk.applyPayment(clAddress, usdcVal(501).toString())
+    await bwrCreditDesk.pay(migratedClAddress, usdcVal(501).toString())
 
-    expect((await clContract.balance()).isZero()).to.be.true
+    expect((await migratedCl.balance()).isZero()).to.be.true
 
     bwrPool.withdrawInFidu(fiduBalance.toString())
     fiduBalance = await bwrFidu.balanceOf(bwr)

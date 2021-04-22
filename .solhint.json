@@ -24,7 +24,8 @@
           "pay": [],
           "assessCreditLine": [],
           "applyPayment": [],
-          "migrateCreditLine": []
+          "migrateCreditLine": [],
+          "migrateV1CreditLine": []
         },
         "**/CreditLineFactory.sol:CreditLineFactory": {
           "createCreditLine": [],

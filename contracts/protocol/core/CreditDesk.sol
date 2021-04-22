@@ -8,6 +8,7 @@ import "./ConfigHelper.sol";
 import "./Accountant.sol";
 import "./CreditLine.sol";
 import "./CreditLineFactory.sol";
+import "../../interfaces/IV1CreditLine.sol";
 
 /**
  * @title Goldfinch's CreditDesk contract
@@ -264,6 +265,49 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     CreditLine cl = CreditLine(creditLineAddress);
     require(cl.borrower() == msg.sender, "You do not belong to this credit line");
     _applyPayment(cl, amount, currentTime());
+  }
+
+  function migrateV1CreditLine(
+    IV1CreditLine clToMigrate,
+    uint256 termEndTime,
+    uint256 nextDueTime,
+    uint256 interestAccruedAsOf,
+    uint256 lastFullPaymentTime
+  ) public {
+    require(clToMigrate.underwriter() == msg.sender, "Caller must be the underwriter");
+    require(clToMigrate.limit() > 0, "Can't migrate empty credit line");
+    // Ensure it is a v1 creditline by calling a function that only exists on v1
+    require(clToMigrate.nextDueBlock() > 0, "Invalid creditline");
+    address newClAddress = createCreditLine(
+      clToMigrate.borrower(),
+      clToMigrate.limit(),
+      clToMigrate.interestApr(),
+      clToMigrate.paymentPeriodInDays(),
+      clToMigrate.termInDays(),
+      clToMigrate.lateFeeApr()
+    );
+
+    CreditLine newCl = CreditLine(newClAddress);
+
+    // Set accounting state vars.
+    newCl.setBalance(clToMigrate.balance());
+    newCl.setInterestOwed(clToMigrate.interestOwed());
+    newCl.setPrincipalOwed(clToMigrate.principalOwed());
+    newCl.setTermEndTime(termEndTime);
+    newCl.setNextDueTime(nextDueTime);
+    newCl.setInterestAccruedAsOf(interestAccruedAsOf);
+    newCl.setWritedownAmount(clToMigrate.writedownAmount());
+    newCl.setLastFullPaymentTime(lastFullPaymentTime);
+
+    // Close out the original credit line
+    clToMigrate.setLimit(0);
+    clToMigrate.setBalance(0);
+    bool success = config.getPool().transferFrom(
+      address(clToMigrate),
+      address(newCl),
+      config.getUSDC().balanceOf(address(clToMigrate))
+    );
+    require(success, "Failed to transfer funds");
   }
 
   function migrateCreditLine(
