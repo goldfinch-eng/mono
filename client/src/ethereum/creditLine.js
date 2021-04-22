@@ -2,7 +2,7 @@ import web3 from "../web3"
 import moment from "moment"
 import BigNumber from "bignumber.js"
 import { usdcFromAtomic, usdcToAtomic } from "./erc20"
-import { fetchDataFromAttributes, INTEREST_DECIMALS, BLOCKS_PER_YEAR, BLOCKS_PER_DAY, getDeployments } from "./utils"
+import { fetchDataFromAttributes, INTEREST_DECIMALS, SECONDS_PER_YEAR, SECONDS_PER_DAY, getDeployments } from "./utils"
 import { roundUpPenny, croppedAddress } from "../utils"
 
 const CreditLineAbi = require("../../abi/Creditline.json")
@@ -12,14 +12,6 @@ const zero = new BigNumber(0)
 class BaseCreditLine {
   async initialize() {
     // no-op
-  }
-
-  async _calculateDueDateFromFutureBlock(nextDueBlock, format = "MMM D") {
-    const latestBlock = await web3.eth.getBlock("latest")
-    const numBlocksTillDueDate = nextDueBlock - latestBlock.number
-    return moment()
-      .add(numBlocksTillDueDate * 15, "s")
-      .format(format)
   }
 
   get remainingPeriodDueAmountInDollars() {
@@ -89,14 +81,14 @@ class CreditLine extends BaseCreditLine {
     const attributes = [
       { method: "balance" },
       { method: "interestApr" },
-      { method: "interestAccruedAsOfBlock" },
+      { method: "interestAccruedAsOf" },
       { method: "paymentPeriodInDays" },
       { method: "termInDays" },
-      { method: "nextDueBlock" },
+      { method: "nextDueTime" },
       { method: "limit" },
       { method: "interestOwed" },
-      { method: "termEndBlock" },
-      { method: "lastFullPaymentBlock" },
+      { method: "termEndTime" },
+      { method: "lastFullPaymentTime" },
     ]
     let data = await fetchDataFromAttributes(this.creditLine, attributes)
     attributes.forEach(info => {
@@ -105,8 +97,8 @@ class CreditLine extends BaseCreditLine {
 
     this.isLate = await this._calculateIsLate()
     const interestOwed = this._calculateInterestOwed()
-    this.dueDate = await this._calculateDueDateFromFutureBlock(this.nextDueBlock)
-    this.termEndDate = await this._calculateDueDateFromFutureBlock(this.termEndBlock, "MMM D, YYYY")
+    this.dueDate = moment.unix(this.nextDueTime).format("MMM D")
+    this.termEndDate = moment.unix(this.termEndTime).format("MMM D, YYYY")
     this.collectedPaymentBalance = new BigNumber(await this.usdc.methods.balanceOf(this.address).call())
     this.periodDueAmount = this._calculateNextDueAmount()
     this.remainingPeriodDueAmount = BigNumber.max(this.periodDueAmount.minus(this.collectedPaymentBalance), zero)
@@ -120,22 +112,22 @@ class CreditLine extends BaseCreditLine {
   }
 
   async _calculateIsLate() {
-    const latestBlock = await web3.eth.getBlock("latest")
-    if (this.lastFullPaymentBlock.isZero()) {
+    const currentTime = (await web3.eth.getBlock("latest")).timestamp
+    if (this.lastFullPaymentTime.isZero()) {
       // Brand new creditline
       return false
     }
-    const blocksElapsedSinceLastFullPayment = latestBlock.number - this.lastFullPaymentBlock
-    return blocksElapsedSinceLastFullPayment > this.paymentPeriodInDays * BLOCKS_PER_DAY
+    const secondsSinceLastFullPayment = currentTime - this.lastFullPaymentTime
+    return secondsSinceLastFullPayment > this.paymentPeriodInDays * SECONDS_PER_DAY
   }
 
   _calculateInterestOwed() {
     const currentInterestOwed = this.interestOwed
     const annualRate = this.interestApr.dividedBy(new BigNumber(INTEREST_DECIMALS))
-    const expectedElapsedBlocks = this.nextDueBlock.minus(this.interestAccruedAsOfBlock)
-    const blockRate = annualRate.dividedBy(BLOCKS_PER_YEAR)
+    const expectedElapsedSeconds = this.nextDueTime.minus(this.interestAccruedAsOf)
+    const interestAccrualRate = annualRate.dividedBy(SECONDS_PER_YEAR)
     const balance = this.balance
-    const expectedAdditionalInterest = balance.multipliedBy(blockRate).multipliedBy(expectedElapsedBlocks)
+    const expectedAdditionalInterest = balance.multipliedBy(interestAccrualRate).multipliedBy(expectedElapsedSeconds)
     if (this.isLate) {
       return currentInterestOwed
     } else {
@@ -146,7 +138,7 @@ class CreditLine extends BaseCreditLine {
   _calculateNextDueAmount() {
     const interestOwed = this._calculateInterestOwed()
     const balance = this.balance
-    if (this.nextDueBlock.gte(this.termEndBlock)) {
+    if (this.nextDueTime.gte(this.termEndTime)) {
       return interestOwed.plus(balance)
     } else {
       return interestOwed
@@ -174,7 +166,7 @@ class MultipleCreditLines extends BaseCreditLine {
     this.address = this.creditLines.map(cl => cl.address)
 
     // Picks the minimum due date
-    this.dueDate = await this._calculateDueDateFromFutureBlock(this.nextDueBlock)
+    this.dueDate = moment.unix(this.nextDueTime).format("MMM D")
   }
 
   splitPayment(dollarAmount) {
@@ -223,11 +215,8 @@ class MultipleCreditLines extends BaseCreditLine {
     return this.creditLines.reduce((val, cl) => val.plus(cl.remainingTotalDueAmount), zero)
   }
 
-  get nextDueBlock() {
-    return this.creditLines.reduce(
-      (val, cl) => BigNumber.minimum(val, cl.nextDueBlock),
-      this.creditLines[0].nextDueBlock,
-    )
+  get nextDueTime() {
+    return this.creditLines.reduce((val, cl) => BigNumber.minimum(val, cl.nextDueTime), this.creditLines[0].nextDueTime)
   }
 }
 

@@ -327,7 +327,7 @@
   },
   {
     "inputs": [],
-    "name": "interestAccruedAsOfBlock",
+    "name": "interestAccruedAsOf",
     "outputs": [
       {
         "internalType": "uint256",
@@ -379,7 +379,7 @@
   },
   {
     "inputs": [],
-    "name": "lastFullPaymentBlock",
+    "name": "lastFullPaymentTime",
     "outputs": [
       {
         "internalType": "uint256",
@@ -418,7 +418,7 @@
   },
   {
     "inputs": [],
-    "name": "nextDueBlock",
+    "name": "nextDueTime",
     "outputs": [
       {
         "internalType": "uint256",
@@ -528,11 +528,11 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "newInterestAccruedAsOfBlock",
+        "name": "newInterestAccruedAsOf",
         "type": "uint256"
       }
     ],
-    "name": "setInterestAccruedAsOfBlock",
+    "name": "setInterestAccruedAsOf",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -554,11 +554,11 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "newLastFullPaymentBlock",
+        "name": "newLastFullPaymentTime",
         "type": "uint256"
       }
     ],
-    "name": "setLastFullPaymentBlock",
+    "name": "setLastFullPaymentTime",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -593,18 +593,12 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "newNextDueBlock",
+        "name": "newNextDueTime",
         "type": "uint256"
       }
     ],
-    "name": "setNextDueBlock",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
+    "name": "setNextDueTime",
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -625,11 +619,11 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "newTermEndBlock",
+        "name": "newTermEndTime",
         "type": "uint256"
       }
     ],
-    "name": "setTermEndBlock",
+    "name": "setTermEndTime",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -649,7 +643,7 @@
   },
   {
     "inputs": [],
-    "name": "termEndBlock",
+    "name": "termEndTime",
     "outputs": [
       {
         "internalType": "uint256",

@@ -100,6 +100,9 @@ async function baseDeploy(hre) {
     })
     logger("CreditLineFactory was deployed to:", clFactoryDeployResult.address)
 
+    // Deploy the credit line as well so we generate the ABI
+    await deploy("CreditLine", {from: proxy_owner, gas: 4000000})
+
     const creditLineFactory = await ethers.getContractAt("CreditLineFactory", clFactoryDeployResult.address)
     let creditLineFactoryAddress = creditLineFactory.address
 
