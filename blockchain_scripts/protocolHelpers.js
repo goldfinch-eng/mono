@@ -16,9 +16,9 @@ async function displayCreditLine(creditLineAddress) {
     interestOwed,
     principalOwed,
     USDCBalance,
-    termEndBlock,
-    nextDueBlock,
-    interestAccruedAsOfBlock,
+    termEndTime,
+    nextDueTime,
+    interestAccruedAsOf,
     writedownAmount,
     interestApr,
   ] = await Promise.all([
@@ -28,9 +28,9 @@ async function displayCreditLine(creditLineAddress) {
     creditLine.interestOwed(),
     creditLine.principalOwed(),
     usdc.balanceOf(creditLineAddress),
-    creditLine.termEndBlock(),
-    creditLine.nextDueBlock(),
-    creditLine.interestAccruedAsOfBlock(),
+    creditLine.termEndTime(),
+    creditLine.nextDueTime(),
+    creditLine.interestAccruedAsOf(),
     creditLine.writedownAmount(),
     creditLine.interestApr(),
   ])
@@ -42,9 +42,9 @@ async function displayCreditLine(creditLineAddress) {
   console.log("interestOwed:", String(interestOwed))
   console.log("principalOwed:", String(principalOwed))
   console.log("USDCBalance:", String(USDCBalance))
-  console.log("termEndBlock:", String(termEndBlock))
-  console.log("nextDueBlock:", String(nextDueBlock))
-  console.log("interestAccruedAsOfBlock:", String(interestAccruedAsOfBlock))
+  console.log("termEndTime:", String(termEndTime))
+  console.log("nextDueTime:", String(nextDueTime))
+  console.log("interestAccruedAsOf:", String(interestAccruedAsOf))
   console.log("writedownAmount:", String(writedownAmount))
   console.log("interestApr:", String(interestApr))
 }

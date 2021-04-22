@@ -80,7 +80,7 @@ const assessIfRequired = async function assessIfRequired(creditDesk, creditLine,
   if (nextDueTime.isZero()) {
     const balance = await creditLine.balance()
     if (!balance.isZero()) {
-      throw new Error(`Non-zero balance (${balance}) for creditLine ${creditLine.address} without a nextDueBlock`)
+      throw new Error(`Non-zero balance (${balance}) for creditLine ${creditLine.address} without a nextDueTime`)
     }
     console.log(`Assess ${creditLine.address}: Skipped (Zero balance)`)
   } else {

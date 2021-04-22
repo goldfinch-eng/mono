@@ -70,7 +70,7 @@ library Accountant {
     FixedPoint.Unsigned memory daysLate;
 
     // Excel math: =min(1,max(0,periods_late_in_days-graceperiod_in_days)/MAX_ALLOWED_DAYS_LATE) grace_period = 30,
-    // Before the term end block, we use the interestOwed to calculate the periods late. However, after the loan term
+    // Before the term end date, we use the interestOwed to calculate the periods late. However, after the loan term
     // has ended, since the interest is a much smaller fraction of the principal, we cannot reliably use interest to
     // calculate the periods later.
     uint256 totalOwed = cl.interestOwed().add(cl.principalOwed());
@@ -110,9 +110,9 @@ library Accountant {
     uint256 lateFeeGracePeriodInDays
   ) public view returns (uint256) {
     // We use Math.min here to prevent integer overflow (ie. go negative) when calculating
-    // numBlocksElapsed. Typically this shouldn't be possible, because
-    // the interestAccruedAsOfBlock couldn't be *after* the current blockNumber. However, when assessing
-    // we allow this function to be called with a past block number, which raises the possibility
+    // numSecondsElapsed. Typically this shouldn't be possible, because
+    // the interestAccruedAsOf couldn't be *after* the current timestamp. However, when assessing
+    // we allow this function to be called with a past timestamp, which raises the possibility
     // of overflow.
     // This use of min should not generate incorrect interest calculations, since
     // this functions purpose is just to normalize balances, and  will be called any time

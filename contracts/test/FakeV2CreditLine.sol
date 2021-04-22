@@ -19,11 +19,11 @@ contract FakeV2CreditLine is BaseUpgradeablePausable {
   uint256 public balance;
   uint256 public interestOwed;
   uint256 public principalOwed;
-  uint256 public termEndBlock;
-  uint256 public nextDueBlock;
-  uint256 public interestAccruedAsOfBlock;
+  uint256 public termEndTime;
+  uint256 public nextDueTime;
+  uint256 public interestAccruedAsOf;
   uint256 public writedownAmount;
-  uint256 public lastFullPaymentBlock;
+  uint256 public lastFullPaymentTime;
 
   function initialize(
     address owner,
@@ -43,7 +43,7 @@ contract FakeV2CreditLine is BaseUpgradeablePausable {
     paymentPeriodInDays = _paymentPeriodInDays;
     termInDays = _termInDays;
     lateFeeApr = _lateFeeApr;
-    interestAccruedAsOfBlock = block.number;
+    interestAccruedAsOf = block.timestamp;
   }
 
   function anotherNewFunction() external pure returns (uint256) {

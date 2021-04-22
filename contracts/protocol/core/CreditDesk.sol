@@ -18,7 +18,6 @@ import "../../interfaces/IV1CreditLine.sol";
  */
 
 contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
-  // Approximate number of seconds per day
   uint256 public constant SECONDS_PER_DAY = 60 * 60 * 24;
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
@@ -86,7 +85,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
    *  and 5.34% would be 5340000
    * @param _paymentPeriodInDays How many days in each payment period.
    *  ie. the frequency with which they need to make payments.
-   * @param _termInDays Number of days in the credit term. It is used to set the `termEndBlock` upon first drawdown.
+   * @param _termInDays Number of days in the credit term. It is used to set the `termEndTime` upon first drawdown.
    *  ie. The credit line should be fully paid off {_termIndays} days after the first drawdown.
    * @param _lateFeeApr The additional interest you will pay if you are late. For example, if this is 3%, and your
    *  normal rate is 15%, then you will pay 18% while you are late.
@@ -201,7 +200,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
 
   /**
    * @notice Allows a borrower to repay their loan. Payment is *collected* immediately (by sending it to
-   *  the individual CreditLine), but it is not *applied* unless it is after the nextDueBlock, or until we assess
+   *  the individual CreditLine), but it is not *applied* unless it is after the nextDueTime, or until we assess
    *  the credit line (ie. payment period end).
    *  Any amounts over the minimum payment will be applied to outstanding principal (reducing the effective
    *  interest rate). If there is still any left over, it will remain in the USDC Balance
@@ -366,10 +365,10 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
 
   /**
    * @notice This function is only meant to be used by frontends. It returns the total
-   * payment due for a given creditLine as of the provided blocknumber. Returns 0 if no
-   * payment is due (e.g. asOfBLock is before the nextDueBlock)
+   * payment due for a given creditLine as of the provided timestamp. Returns 0 if no
+   * payment is due (e.g. asOf is before the nextDueTime)
    * @param creditLineAddress The creditLine to calculate the payment for
-   * @param asOf The block to use for the payment calculation, if it is set to 0, uses the current block number
+   * @param asOf The timestamp to use for the payment calculation, if it is set to 0, uses the current time
    */
   function getNextPaymentAmount(address creditLineAddress, uint256 asOf)
     external
@@ -528,7 +527,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
       config.getLatenessGracePeriodInDays()
     );
     if (interestAccrued > 0) {
-      // If we've accrued any interest, update interestAccruedAsOfBLock to the block that we've
+      // If we've accrued any interest, update interestAccruedAsOf to the time that we've
       // calculated interest for. If we've not accrued any interest, then we keep the old value so the next
       // time the entire period is taken into account.
       cl.setInterestAccruedAsOf(timestamp);
@@ -549,11 +548,11 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
   }
 
   function calculateNewTermEndTime(CreditLine cl, uint256 balance) internal view returns (uint256) {
-    // If there's no balance, there's no loan, so there's no term end block
+    // If there's no balance, there's no loan, so there's no term end time
     if (balance == 0) {
       return 0;
     }
-    // Don't allow any weird bugs where we add to your current end block. This
+    // Don't allow any weird bugs where we add to your current end time. This
     // function should only be used on new credit lines, when we are setting them up
     if (cl.termEndTime() != 0) {
       return cl.termEndTime();
@@ -571,23 +570,23 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
       return curTimestamp.add(secondsPerPeriod);
     }
 
-    // Active loan that has entered a new period, so return the *next* nextDueBlock.
-    // But never return something after the termEndBlock
+    // Active loan that has entered a new period, so return the *next* nextDueTime.
+    // But never return something after the termEndTime
     if (balance > 0 && curTimestamp >= nextDueTime) {
       uint256 secondsToAdvance = (curTimestamp.sub(nextDueTime).div(secondsPerPeriod)).add(1).mul(secondsPerPeriod);
       nextDueTime = nextDueTime.add(secondsToAdvance);
       return Math.min(nextDueTime, cl.termEndTime());
     }
 
-    // Your paid off, or have not taken out a loan yet, so no next due block.
+    // Your paid off, or have not taken out a loan yet, so no next due time.
     if (balance == 0 && nextDueTime != 0) {
       return 0;
     }
-    // Active loan in current period, where we've already set the nextDueBlock correctly, so should not change.
+    // Active loan in current period, where we've already set the nextDueTime correctly, so should not change.
     if (balance > 0 && curTimestamp < nextDueTime) {
       return nextDueTime;
     }
-    revert("Error: could not calculate next due block.");
+    revert("Error: could not calculate next due time.");
   }
 
   function currentTime() internal view virtual returns (uint256) {
@@ -633,11 +632,11 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     cl.setInterestOwed(interestOwed);
     cl.setPrincipalOwed(principalOwed);
 
-    // This resets lastFullPaymentBlock. These conditions assure that they have
-    // indeed paid off all their interest and they have a real nextDueBlock. (ie. creditline isn't pre-drawdown)
+    // This resets lastFullPaymentTime. These conditions assure that they have
+    // indeed paid off all their interest and they have a real nextDueTime. (ie. creditline isn't pre-drawdown)
     uint256 nextDueTime = cl.nextDueTime();
     if (interestOwed == 0 && nextDueTime != 0) {
-      // If interest was fully paid off, then set the last full payment as the previous due block
+      // If interest was fully paid off, then set the last full payment as the previous due time
       uint256 mostRecentLastDueTime;
       if (currentTime() < nextDueTime) {
         uint256 secondsPerPeriod = cl.paymentPeriodInDays().mul(SECONDS_PER_DAY);

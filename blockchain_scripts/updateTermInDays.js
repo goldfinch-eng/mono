@@ -1,7 +1,7 @@
 /* globals ethers */
 const BN = require("bn.js")
 const CreditLine = require("../artifacts/contracts/protocol/CreditLine.sol/CreditLine.json")
-const {BLOCKS_PER_DAY} = require("../test/testHelpers.js")
+const {SECONDS_PER_DAY} = require("../test/testHelpers.js")
 const {displayCreditLine} = require("./protocolHelpers")
 
 async function main() {
@@ -17,11 +17,11 @@ async function main() {
     console.log("Updating term end block based on term in days...")
     const creditLine = await ethers.getContractAt(CreditLine.abi, creditLineAddress)
     const currentTermInDays = await creditLine.termInDays()
-    const currentTermEndBlock = await creditLine.termEndBlock()
-    const originalTermStartBlock = currentTermEndBlock.sub(String(currentTermInDays.mul(String(BLOCKS_PER_DAY))))
-    const newTermEndBlock = originalTermStartBlock.add(String(newTermInDays.mul(BLOCKS_PER_DAY)))
-    console.log("Setting termEndBlock to:", String(newTermEndBlock), "from:", String(currentTermEndBlock))
-    await Promise.all([creditLine.setTermEndBlock(String(newTermEndBlock))])
+    const currentTermEndTime = await creditLine.termEndTime()
+    const originalTermStartTime = currentTermEndTime.sub(String(currentTermInDays.mul(String(SECONDS_PER_DAY))))
+    const newTermEndTime = originalTermStartTime.add(String(newTermInDays.mul(SECONDS_PER_DAY)))
+    console.log("Setting termEndTime to:", String(newTermEndTime), "from:", String(currentTermEndTime))
+    await Promise.all([creditLine.setTermEndTime(String(newTermEndTime))])
     console.log("-------------------")
     console.log("Note that term in days was NOT set. You must migrate to a new credit line in order to set that...")
     await displayCreditLine(creditLineAddress)
