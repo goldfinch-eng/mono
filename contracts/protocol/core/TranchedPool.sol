@@ -41,11 +41,12 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
 
   function deposit(uint256 tranche, uint256 amount) public {
     require(!locked(), "Pool has been locked");
+    require(tranche == 1 || tranche == 2, "Unsupported tranche");
 
-    if (tranche == 0) {
+    if (tranche == 1) {
       // senior
       seniorTranche.principalDeposited += amount;
-    } else if (tranche == 1) {
+    } else if (tranche == 2) {
       // junior
       require(juniorLockedAt == 0, "Junior tranche has been locked");
       juniorTranche.principalDeposited += amount;
@@ -56,7 +57,8 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
 
   function withdraw(uint256 tokenId, uint256 amount) public {
     PoolTokens.TokenInfo memory tokenInfo = poolToken.getTokenInfo(tokenId);
-    TrancheInfo memory tranche = tokenInfo.tranche == 0 ? seniorTranche : juniorTranche;
+    require(tokenInfo.tranche == 1 || tokenInfo.tranche == 2, "Unsupported tranche");
+    TrancheInfo memory tranche = tokenInfo.tranche == 1 ? seniorTranche : juniorTranche;
 
     // This supports withdrawing before or after locking because principal share price starts at 1
     // and is set to 0 on lock. Interest share price is always 0 until interest payments come back, when it increases
@@ -73,12 +75,12 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     doUSDCTransfer(address(this), msg.sender, amount);
   }
 
-  function drawdown(address to, uint256 amount) public onlyCreditDesk {
+  function drawdown(uint256 amount) public onlyCreditDesk {
     // We assume fund has applied it's leverage formula
     if (!locked()) {
       lockPool();
     }
-    doUSDCTransfer(address(this), to, amount);
+    doUSDCTransfer(address(this), creditline.borrower(), amount);
   }
 
   // Mark the investment period as over
