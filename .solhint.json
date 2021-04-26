@@ -52,6 +52,12 @@
           "transferFrom": [],
           "drawdown": []
         },
+        "**/TranchedPool.sol:TranchedPool": {
+          "deposit": [],
+          "withdraw": [],
+          "collectInterestAndPrincipal": [],
+          "drawdown": []
+        },
         "**/PauserPausable.sol:PauserPausable": {
           "__PauserPausable__init": [],
           "pause": [],
