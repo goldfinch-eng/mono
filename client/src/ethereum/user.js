@@ -1,10 +1,11 @@
 import BigNumber from "bignumber.js"
 import { usdcFromAtomic } from "./erc20.js"
 import _ from "lodash"
-import { getFromBlock } from "./utils.js"
+import { getFromBlock, MAINNET } from "./utils.js"
 import { mapEventsToTx } from "./events"
 import { getCreditLineFactory } from "./creditLine"
 import { getBorrowerContract } from "./borrower"
+import { goList } from "../goList"
 
 const UNLOCK_THRESHOLD = new BigNumber(10000)
 
@@ -12,19 +13,21 @@ async function getUserData(address, usdc, pool, creditDesk, networkId) {
   const creditLineFactory = await getCreditLineFactory(networkId)
   const borrower = await getBorrowerContract(address, creditLineFactory, creditDesk, usdc, pool, networkId)
 
-  const user = new User(address, borrower, pool, creditDesk, usdc)
+  const user = new User(address, borrower, pool, creditDesk, usdc, networkId)
   await user.initialize()
   return user
 }
 
 class User {
-  constructor(address, borrower, pool, creditDesk, usdc) {
+  constructor(address, borrower, pool, creditDesk, usdc, networkId) {
     this.address = address
     this.borrower = borrower
     this.pool = pool
     this.usdc = usdc
     this.creditDesk = creditDesk
+    this.web3Connected = true
     this.loaded = false
+    this.networkId = networkId
   }
 
   async initialize() {
@@ -40,6 +43,7 @@ class User {
     ])
     this.pastTXs = _.reverse(_.sortBy(_.compact(_.concat(usdcTxs, poolTxs, creditDeskTxs)), "blockNumber"))
     this.poolTxs = poolTxs
+    this.goListed = await this.isGoListed(this.address)
     this.loaded = true
   }
 
@@ -64,6 +68,14 @@ class User {
 
   isUnlocked(allowance) {
     return !allowance || allowance.gte(UNLOCK_THRESHOLD)
+  }
+
+  async isGoListed(address) {
+    if (process.env.REACT_APP_ENFORCE_GO_LIST || this.networkId === MAINNET) {
+      return goList.includes(address)
+    } else {
+      return true
+    }
   }
 
   poolBalanceAsOf(dt) {
@@ -92,10 +104,11 @@ class User {
 
 function defaultUser() {
   return {
-    loaded: true,
+    loaded: false,
     poolBalanceAsOf: () => new BigNumber(0),
     usdcIsUnlocked: () => false,
     noWeb3: !window.ethereum,
+    web3Connected: false,
   }
 }
 

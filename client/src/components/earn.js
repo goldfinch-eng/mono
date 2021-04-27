@@ -12,7 +12,7 @@ function Earn(props) {
 
   useEffect(() => {
     async function refreshAllData() {
-      const capitalProviderAddress = user.address
+      const capitalProviderAddress = user.loaded && user.address
       refreshPoolData(pool, usdc)
       refreshCapitalProviderData(pool, capitalProviderAddress)
     }
@@ -33,7 +33,6 @@ function Earn(props) {
     const poolData = await fetchPoolData(pool, usdc && usdc.contract)
     setPoolData(poolData)
   }
-
 
   let earnMessage = "Loading..."
   if (capitalProvider.loaded || user.noWeb3) {

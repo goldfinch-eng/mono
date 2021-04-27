@@ -204,7 +204,6 @@ class MultipleCreditLines extends BaseCreditLine {
         amountRemaining = zero
       }
     })
-    console.log(`Split ${dollarAmount} into ${amounts} for ${addresses}`)
     return [addresses, amounts]
   }
 

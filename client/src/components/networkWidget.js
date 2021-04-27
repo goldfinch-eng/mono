@@ -181,7 +181,7 @@ function NetworkWidget(props) {
         </a>
       </div>
     )
-  } else if (!props.user.loaded) {
+  } else if (!props.user.loaded && !props.user.web3Connected) {
     return (
       <div ref={node} className="network-widget">
         <div className="network-widget-button">
@@ -198,7 +198,7 @@ function NetworkWidget(props) {
         <div className="network-widget-button disabled">Wrong Network</div>
       </div>
     )
-  } else if (!props.user.address) {
+  } else if (props.user.web3Connected && !props.user.address) {
     return connectMetamaskNetworkWidget
   } else {
     return enabledNetworkWidget

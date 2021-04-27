@@ -17,7 +17,6 @@ module.exports = {
   defaultNetwork: "hardhat",
   networks: {
     hardhat: {
-      gas: "auto",
       allowUnlimitedContractSize: true,
       timeout: 1800000,
       accounts: {mnemonic: "test test test test test test test test test test test junk"},

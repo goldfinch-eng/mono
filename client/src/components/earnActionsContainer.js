@@ -20,13 +20,13 @@ function EarnActionsContainer(props) {
   }
 
   let placeholderClass = ""
-  if (!user.address || !user.usdcIsUnlocked("earn")) {
+  if (!user.address || !user.usdcIsUnlocked("earn") || !user.goListed) {
     placeholderClass = "placeholder"
   }
 
   let depositAction
   let depositClass = "disabled"
-  if (user.usdcIsUnlocked("earn") && props.capitalProvider) {
+  if (user.usdcIsUnlocked("earn") && user.goListed && props.capitalProvider) {
     depositAction = e => {
       setShowAction("deposit")
     }

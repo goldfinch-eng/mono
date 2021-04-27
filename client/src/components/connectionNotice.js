@@ -21,7 +21,7 @@ function ConnectionNotice(props) {
         from Metamask.
       </div>
     )
-  } else if (user.loaded && !user.address) {
+  } else if (user.web3Connected && !user.address) {
     notice = (
       <div className="content-empty-message background-container">
         You are not currently connected to Metamask. To use Goldfinch, you first need to connect to Metamask.
@@ -42,6 +42,13 @@ function ConnectionNotice(props) {
     }
     if (unlockStatus && !unlockStatus.isUnlocked) {
       notice = <UnlockUSDCForm unlockAddress={unlockStatus.unlockAddress} />
+    }
+    if (!user.goListed) {
+      notice = (
+        <div className="content-empty-message background-container">
+          Your address not been authorized to use Goldfinch.
+        </div>
+      )
     }
   }
 

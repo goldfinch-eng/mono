@@ -158,4 +158,5 @@ export {
   ONE_INCH_ADDRESSES,
   getFromBlock,
   chainIdToNetworkID,
+  MAINNET,
 }
