@@ -72,7 +72,7 @@ class User {
 
   async isGoListed(address) {
     if (process.env.REACT_APP_ENFORCE_GO_LIST || this.networkId === MAINNET) {
-      return goList.includes(address)
+      return goList.map(_.toLower).includes(_.toLower(address))
     } else {
       return true
     }
