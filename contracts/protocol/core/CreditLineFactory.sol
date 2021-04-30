@@ -44,19 +44,23 @@ contract CreditLineFactory is BaseUpgradeablePausable {
     return address(borrower);
   }
 
-  function createPool(address owner, address creditLine) external returns (address) {
+  function createPool(
+    address underwriter,
+    address borrower,
+    address creditLine
+  ) external returns (address) {
     address tranchedPoolImplAddress = config.getAddress(uint256(ConfigOptions.Addresses.TranchedPoolImplementation));
     bytes memory bytecode = DeployHelpers.getMinimalProxyCreationCode(tranchedPoolImplAddress);
     uint256 createdAt = block.timestamp;
-    bytes32 salt = keccak256(abi.encodePacked(owner, createdAt));
+    bytes32 salt = keccak256(abi.encodePacked(borrower, createdAt));
 
     address pool = DeployHelpers.create2Deploy(bytecode, salt);
-    ITranchedPool(pool).initialize(owner, address(config), creditLine);
+    ITranchedPool(pool).initialize(underwriter, address(config), creditLine);
 
     return pool;
   }
 
-  function validPool(address addressToVerify) external returns (bool) {
+  function validPool(address addressToVerify) external view returns (bool) {
     ITranchedPool pool = ITranchedPool(addressToVerify);
     address borrower = pool.creditLine().borrower();
     bytes32 salt = keccak256(abi.encodePacked(borrower, pool.createdAt()));

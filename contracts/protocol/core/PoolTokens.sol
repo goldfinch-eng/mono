@@ -73,11 +73,12 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
     _setRoleAdmin(OWNER_ROLE, OWNER_ROLE);
   }
 
-  function mint(MintParams calldata params, address to) external virtual override onlyPool whenNotPaused {
+  function mint(MintParams calldata params, address to) external virtual override onlyPool whenNotPaused returns (uint256) {
     address poolAddress = _msgSender();
     uint256 tokenId = createToken(params, poolAddress);
     _mint(to, tokenId);
     emit TokenMinted(to, poolAddress, tokenId, params.principalAmount, params.tranche);
+    return tokenId;
   }
 
   function redeem(

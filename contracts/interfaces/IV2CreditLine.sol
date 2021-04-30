@@ -34,4 +34,20 @@ abstract contract IV2CreditLine {
       uint256,
       uint256
     );
+
+  function setTermEndTime(uint256 newTermEndTime) external virtual;
+
+  function setNextDueTime(uint256 newNextDueTime) external virtual;
+
+  function setInterestOwed(uint256 newInterestOwed) external virtual;
+
+  function setPrincipalOwed(uint256 newPrincipalOwed) external virtual;
+
+  function setInterestAccruedAsOf(uint256 newInterestAccruedAsOf) external virtual;
+
+  function setWritedownAmount(uint256 newWritedownAmount) external virtual;
+
+  function setLastFullPaymentTime(uint256 newLastFullPaymentTime) external virtual;
+
+  function setLateFeeApr(uint256 newLateFeeApr) external virtual;
 }

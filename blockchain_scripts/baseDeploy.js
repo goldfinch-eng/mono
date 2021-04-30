@@ -213,10 +213,18 @@ async function baseDeploy(hre) {
   }
 
   async function deployTranchedPool(config) {
-    logger("About to deploy Pool Tokens...")
-    const tranchedPoolImpl = await deploy("TranchedPool", {from: proxy_owner})
+    const accountant = await deploy("Accountant", {from: protocol_owner, gas: 4000000, args: []})
+
+    logger("About to deploy TranchedPool...")
+    let contractName = "TranchedPool"
+
+    if (isTestEnv()) {
+      contractName = "TestTranchedPool"
+    }
+
+    const tranchedPoolImpl = await deploy(contractName, {from: proxy_owner, libraries: {["Accountant"]: accountant.address},})
     await updateConfig(config, "address", CONFIG_KEYS.TranchedPoolImplementation, tranchedPoolImpl.address, {logger})
-    logger("Updated PoolTokens config address to:", tranchedPoolImpl.address)
+    logger("Updated TranchedPool config address to:", tranchedPoolImpl.address)
     return tranchedPoolImpl
   }
 }

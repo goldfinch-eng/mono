@@ -1,5 +1,14 @@
 /* global web3 artifacts */
-const {expect, decodeLogs, usdcVal, expectAction, ZERO_ADDRESS, deployAllContracts} = require("./testHelpers.js")
+const {
+  expect,
+  decodeLogs,
+  usdcVal,
+  expectAction,
+  ZERO_ADDRESS,
+  deployAllContracts,
+  erc20Transfer,
+  erc20Approve,
+} = require("./testHelpers.js")
 const {OWNER_ROLE, interestAprAsBN} = require("../blockchain_scripts/deployHelpers")
 const hre = require("hardhat")
 const BN = require("bn.js")
@@ -7,7 +16,7 @@ const {deployments} = hre
 const TranchedPool = artifacts.require("TranchedPool")
 
 describe("PoolTokens", () => {
-  let owner, person2, person3, goldfinchConfig, poolTokens, creditDesk, pool
+  let owner, person2, person3, goldfinchConfig, poolTokens, creditDesk, pool, usdc
 
   const withPoolSender = async (func) => {
     // We need to fake the address so we can bypass the pool
@@ -23,16 +32,17 @@ describe("PoolTokens", () => {
     // Just to be crystal clear
     owner = protocol_owner
 
-    const {poolTokens, goldfinchConfig, creditDesk} = await deployAllContracts(deployments)
+    const {poolTokens, goldfinchConfig, creditDesk, usdc} = await deployAllContracts(deployments)
     await creditDesk.setUnderwriterGovernanceLimit(person2, usdcVal(1000), {from: owner})
     await goldfinchConfig.bulkAddToGoList([owner, person2])
+    await erc20Transfer(usdc, [person2], usdcVal(1000), owner)
 
-    return {poolTokens, goldfinchConfig, creditDesk}
+    return {poolTokens, goldfinchConfig, creditDesk, usdc}
   })
   beforeEach(async () => {
     // Pull in our unlocked accounts
     ;[owner, person2, person3] = await web3.eth.getAccounts()
-    ;({poolTokens, goldfinchConfig, creditDesk} = await testSetup())
+    ;({poolTokens, goldfinchConfig, creditDesk, usdc} = await testSetup())
 
     await poolTokens._disablePoolValidation(true)
   })
@@ -64,6 +74,7 @@ describe("PoolTokens", () => {
       )
       const event = result.logs[result.logs.length - 1]
       pool = await TranchedPool.at(event.args.pool)
+      await erc20Approve(usdc, pool.address, usdcVal(100000), [person2])
     })
 
     it("should allow validly created pools to call the mint function", async () => {
@@ -83,7 +94,7 @@ describe("PoolTokens", () => {
 
     it("should set the limit on the PoolInfo", async () => {
       const amount = usdcVal(5)
-      await pool.deposit(new BN(1), amount)
+      await pool.deposit(new BN(1), amount, {from: person2})
       const poolInfo = await poolTokens.pools(pool.address)
       expect(poolInfo.limit).to.bignumber.equal(usdcVal(100))
     })
@@ -122,6 +133,8 @@ describe("PoolTokens", () => {
       )
       let event = result.logs[result.logs.length - 1]
       pool = await TranchedPool.at(event.args.pool)
+
+      await erc20Approve(usdc, pool.address, usdcVal(100000), [person2])
 
       mintAmount = usdcVal(5)
       result = await pool.deposit(new BN(1), mintAmount, {from: person2})
@@ -194,6 +207,8 @@ describe("PoolTokens", () => {
       )
       let event = result.logs[result.logs.length - 1]
       pool = await TranchedPool.at(event.args.pool)
+
+      await erc20Approve(usdc, pool.address, usdcVal(100000), [person2])
 
       mintAmount = usdcVal(5)
       result = await pool.deposit(new BN(1), mintAmount, {from: person2})

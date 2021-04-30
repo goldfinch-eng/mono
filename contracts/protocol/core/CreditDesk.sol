@@ -165,7 +165,9 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
       _termInDays,
       _lateFeeApr
     );
-    address poolAddress = getCreditLineFactory().createPool(_borrower, clAddress);
+    // Todo: The owner should probably be the underwriter?
+    address poolAddress = getCreditLineFactory().createPool(msg.sender, _borrower, clAddress);
+    CreditLine(clAddress).grantRole(keccak256("OWNER_ROLE"), poolAddress);
     emit PoolCreated(poolAddress, _borrower);
     return poolAddress;
   }

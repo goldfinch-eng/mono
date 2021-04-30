@@ -18,11 +18,11 @@ contract TestPoolTokens is PoolTokens {
     sender = _sender;
   }
 
-  function validPool(address sender) internal override returns (bool) {
+  function validPool(address _sender) internal override returns (bool) {
     if (disablePoolValidation) {
       return true;
     } else {
-      return super.validPool(sender);
+      return super.validPool(_sender);
     }
   }
 

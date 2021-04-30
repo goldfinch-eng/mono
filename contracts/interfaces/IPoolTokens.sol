@@ -35,7 +35,7 @@ interface IPoolTokens {
     uint256 tranche;
   }
 
-  function mint(MintParams calldata params, address to) external;
+  function mint(MintParams calldata params, address to) external returns (uint256);
 
   function redeem(
     uint256 tokenId,
