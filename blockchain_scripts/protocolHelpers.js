@@ -1,15 +1,16 @@
 /* globals ethers */
+const {getChainId} = require("hardhat")
 const hre = require("hardhat")
 const {deployments, getNamedAccounts} = hre
 const _ = require("lodash")
-const {getDeployedContract} = require("../blockchain_scripts/deployHelpers.js")
+const {getDeployedContract, getUSDCAddress} = require("../blockchain_scripts/deployHelpers.js")
 
 async function displayCreditLine(creditLineAddress) {
-  const {protocolOwner} = await getNamedAccounts()
   const creditLine = await ethers.getContractAt("CreditLine", creditLineAddress)
-  const usdc = await getDeployedContract(deployments, "TestERC20", protocolOwner)
+  const usdc = await ethers.getContractAt("Fidu", getUSDCAddress(await getChainId()))
 
   const [
+    borrower,
     limit,
     balance,
     interestOwed,
@@ -21,6 +22,7 @@ async function displayCreditLine(creditLineAddress) {
     writedownAmount,
     interestApr,
   ] = await Promise.all([
+    creditLine.borrower(),
     creditLine.limit(),
     creditLine.balance(),
     creditLine.interestOwed(),
@@ -34,6 +36,7 @@ async function displayCreditLine(creditLineAddress) {
   ])
 
   console.log(`--------- Credit line ${creditLineAddress} ----------`)
+  console.log("Borrower:", String(borrower))
   console.log("limit:", String(limit))
   console.log("balance:", String(balance))
   console.log("interestOwed:", String(interestOwed))

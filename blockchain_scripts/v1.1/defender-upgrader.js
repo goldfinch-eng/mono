@@ -1,5 +1,7 @@
+/* globals artifacts */
 const {SAFE_CONFIG, getDefenderClient, CHAIN_MAPPING} = require("../deployHelpers")
-const {CONFIG_KEYS} = require("./configKeys")
+const {CONFIG_KEYS} = require("../configKeys")
+const CreditDesk = artifacts.require("CreditDesk")
 
 class DefenderUpgrader {
   constructor({hre, logger, chainId}) {
@@ -9,6 +11,7 @@ class DefenderUpgrader {
     this.network = CHAIN_MAPPING[chainId]
     this.client = getDefenderClient()
     const safe = SAFE_CONFIG[chainId]
+    this.goldfinchUnderwriter = "0x79ea65C834EC137170E1aA40A42b9C80df9c0Bb4"
     if (!safe) {
       throw new Error(`No safe address found for chain id: ${chainId}`)
     } else {
@@ -60,6 +63,24 @@ class DefenderUpgrader {
       viaType: "Gnosis Safe", // Either Gnosis Safe or Gnosis Multisig
     })
     this.logger("Defender URL: ", this.defenderUrl(oldConfigAddress))
+  }
+
+  async createCreditLine(
+    creditDesk,
+    {borrower, limit, interestApr, paymentPeriodInDays, termInDays, lateFeeApr, description}
+  ) {
+    const functionInterface = CreditDesk.abi.filter((funcAbi) => funcAbi.name === "createCreditLine")[0]
+    await this.client.createProposal({
+      contract: {address: creditDesk.address, network: this.network}, // Target contract
+      title: "Create credit line",
+      description: `${description || "Creating a new credit line for " + borrower}`,
+      type: "custom",
+      functionInterface: functionInterface,
+      functionInputs: [borrower, limit, interestApr, paymentPeriodInDays, termInDays, lateFeeApr],
+      via: this.goldfinchUnderwriter,
+      viaType: "Gnosis Safe", // Either Gnosis Safe or Gnosis Multisig
+    })
+    this.logger("Defender URL: ", this.defenderUrl(creditDesk.address))
   }
 
   async updateGoldfinchConfig(contractName, contract) {

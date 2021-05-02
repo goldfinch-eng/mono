@@ -7,10 +7,18 @@ async function main() {
   const {protocolOwner} = await getNamedAccounts()
   const creditDesk = await getDeployedContract(deployments, "CreditDesk", protocolOwner)
   const borrower = process.env.BORROWER
-  if (!borrower) {
-    throw new Error("No borrower provided. Please run again, passing borrower as BORROWER={{borrower_address}}")
+  const creditLine = process.env.CREDIT_LINE
+  if (!borrower && !creditLine) {
+    throw new Error(
+      "No borrower and no credit line provided. Please run again, passing one of them in as BORROWER={{borrower_address}}"
+    )
   }
-  const creditLines = await creditDesk.getBorrowerCreditLines(borrower)
+  let creditLines
+  if (borrower) {
+    creditLines = await creditDesk.getBorrowerCreditLines(borrower)
+  } else {
+    creditLines = [creditLine]
+  }
   console.log("The credit lines are...", creditLines)
   await Promise.all(
     creditLines.map(async (element) => {

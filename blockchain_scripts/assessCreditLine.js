@@ -1,12 +1,13 @@
 /* globals ethers */
 const hre = require("hardhat")
 const {deployments, getNamedAccounts} = hre
-const {getDeployedContract} = require("../blockchain_scripts/deployHelpers.js")
+const {getDeployedContract, getUSDCAddress} = require("../blockchain_scripts/deployHelpers.js")
+const {getChainId} = hre
 
 async function main() {
   const {protocolOwner} = await getNamedAccounts()
   const creditDesk = await getDeployedContract(deployments, "CreditDesk", protocolOwner)
-  const usdc = await getDeployedContract(deployments, "TestERC20", protocolOwner)
+  const usdc = await ethers.getContractAt("Fidu", getUSDCAddress(await getChainId()))
   const creditLine = process.env.CREDIT_LINE
   if (!creditLine) {
     throw new Error("No creditLine provided. Please run again, passing creditLine as BORROWER={{creditLine_address}}")
