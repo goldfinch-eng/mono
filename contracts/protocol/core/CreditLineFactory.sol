@@ -6,6 +6,8 @@ import "./GoldfinchConfig.sol";
 import "./BaseUpgradeablePausable.sol";
 import "../periphery/Borrower.sol";
 import "./CreditLine.sol";
+import "./DeployHelpers.sol";
+import "../../interfaces/ITranchedPool.sol";
 import "./ConfigHelper.sol";
 
 /**
@@ -19,6 +21,7 @@ contract CreditLineFactory is BaseUpgradeablePausable {
   using ConfigHelper for GoldfinchConfig;
 
   event BorrowerCreated(address indexed borrower, address indexed owner);
+  event PoolCreated(address indexed pool, address indexed owner);
 
   function initialize(address owner, GoldfinchConfig _config) public initializer {
     __BaseUpgradeablePausable__init(owner);
@@ -39,6 +42,30 @@ contract CreditLineFactory is BaseUpgradeablePausable {
     borrower.initialize(owner, config);
     emit BorrowerCreated(address(borrower), owner);
     return address(borrower);
+  }
+
+  function createPool(address owner, address creditLine) external returns (address) {
+    address tranchedPoolImplAddress = config.getAddress(uint256(ConfigOptions.Addresses.TranchedPoolImplementation));
+    bytes memory bytecode = DeployHelpers.getMinimalProxyCreationCode(tranchedPoolImplAddress);
+    uint256 createdAt = block.timestamp;
+    bytes32 salt = keccak256(abi.encodePacked(owner, createdAt));
+
+    address pool = DeployHelpers.create2Deploy(bytecode, salt);
+    ITranchedPool(pool).initialize(owner, address(config), creditLine);
+
+    return pool;
+  }
+
+  function validPool(address addressToVerify) external returns (bool) {
+    ITranchedPool pool = ITranchedPool(addressToVerify);
+    address borrower = pool.creditLine().borrower();
+    bytes32 salt = keccak256(abi.encodePacked(borrower, pool.createdAt()));
+    // TODO: Pull this from the actual min proxy, not the config, so that we can upgrade
+    // without breaking the old pools
+    address poolImplAddress = config.tranchedPoolAddress();
+    bytes memory creationCode = DeployHelpers.getMinimalProxyCreationCode(poolImplAddress);
+    address expectedAddress = DeployHelpers.getCreate2Address(config.creditLineFactoryAddress(), creationCode, salt);
+    return expectedAddress == addressToVerify;
   }
 
   function updateGoldfinchConfig() external onlyAdmin {

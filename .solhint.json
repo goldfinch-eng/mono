@@ -3,6 +3,7 @@
   "rules": {
     "compiler-version": ["error", "^0.6.12"],
     "prettier/prettier": "error",
+    "not-rely-on-time": "off",
     "reason-string": ["warn",{"maxLength":120}],
     "max-line-length": ["error", 120],
     "modifiers/ensure-modifiers": ["error", {
@@ -13,13 +14,15 @@
         "**/PoolTokens.sol:PoolTokens": {
           "mint": ["onlyPool"],
           "redeem": ["onlyPool"],
-          "burn": []
+          "burn": [],
+          "getTokenInfo": []
         },
         "*:*.initialize": [],
         "*:*.__initialize__": [],
         "*:*.null": [],
         "**/CreditDesk.sol:CreditDesk": {
           "createCreditLine": [],
+          "createPool": [],
           "drawdown": [],
           "pay": [],
           "assessCreditLine": [],
@@ -29,7 +32,9 @@
         },
         "**/CreditLineFactory.sol:CreditLineFactory": {
           "createCreditLine": [],
-          "createBorrower": []
+          "createBorrower": [],
+          "createPool": [],
+          "validPool": []
         },
         "**/CreditLine.sol:CreditLine": {
           "setLimit": []

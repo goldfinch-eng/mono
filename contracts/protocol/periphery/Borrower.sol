@@ -7,6 +7,7 @@ import "../core/BaseUpgradeablePausable.sol";
 import "../core/ConfigHelper.sol";
 import "../core/CreditLine.sol";
 import "../../interfaces/IERC20withDec.sol";
+import "../../interfaces/ICreditDesk.sol";
 import "@opengsn/gsn/contracts/BaseRelayRecipient.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 

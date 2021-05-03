@@ -9,6 +9,8 @@ import "../../interfaces/IFidu.sol";
 import "../../interfaces/ICreditDesk.sol";
 import "../../interfaces/IERC20withDec.sol";
 import "../../interfaces/ICUSDCContract.sol";
+import "../../interfaces/IPoolTokens.sol";
+import "./CreditLineFactory.sol";
 
 /**
  * @title ConfigHelper
@@ -38,6 +40,14 @@ library ConfigHelper {
     return ICUSDCContract(cusdcContractAddress(config));
   }
 
+  function getPoolTokens(GoldfinchConfig config) internal view returns (IPoolTokens) {
+    return IPoolTokens(poolTokensAddress(config));
+  }
+
+  function getCreditLineFactory(GoldfinchConfig config) internal view returns (CreditLineFactory) {
+    return CreditLineFactory(creditLineFactoryAddress(config));
+  }
+
   function oneInchAddress(GoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.OneInch));
   }
@@ -54,8 +64,16 @@ library ConfigHelper {
     return config.getAddress(uint256(ConfigOptions.Addresses.Pool));
   }
 
+  function poolTokensAddress(GoldfinchConfig config) internal view returns (address) {
+    return config.getAddress(uint256(ConfigOptions.Addresses.PoolTokens));
+  }
+
   function creditDeskAddress(GoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.CreditDesk));
+  }
+
+  function creditLineFactoryAddress(GoldfinchConfig config) internal view returns (address) {
+    return config.getAddress(uint256(ConfigOptions.Addresses.CreditLineFactory));
   }
 
   function fiduAddress(GoldfinchConfig config) internal view returns (address) {
@@ -68,6 +86,10 @@ library ConfigHelper {
 
   function usdcAddress(GoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.USDC));
+  }
+
+  function tranchedPoolAddress(GoldfinchConfig config) internal view returns (address) {
+    return config.getAddress(uint256(ConfigOptions.Addresses.TranchedPoolImplementation));
   }
 
   function reserveAddress(GoldfinchConfig config) internal view returns (address) {

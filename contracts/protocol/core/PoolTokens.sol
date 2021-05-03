@@ -5,7 +5,9 @@ pragma experimental ABIEncoderV2;
 import "../../external/ERC721PresetMinterPauserAutoId.sol";
 import "./GoldfinchConfig.sol";
 import "./ConfigHelper.sol";
+import "./DeployHelpers.sol";
 import "../../interfaces/ITranchedPool.sol";
+import "../../interfaces/IPoolTokens.sol";
 
 /**
  * @title PoolTokens
@@ -14,28 +16,15 @@ import "../../interfaces/ITranchedPool.sol";
  * @author Goldfinch
  */
 
-contract PoolTokens is ERC721PresetMinterPauserAutoIdUpgradeSafe {
+contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
   bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
-
-  struct TokenInfo {
-    address pool;
-    uint256 tranche;
-    uint256 principalAmount;
-    uint256 principalRedeemed;
-    uint256 interestRedeemed;
-  }
 
   struct PoolInfo {
     uint256 limit;
     uint256 totalMinted;
     uint256 totalPrincipalRedeemed;
-  }
-
-  struct MintParams {
-    uint256 principalAmount;
-    uint256 tranche;
   }
 
   // tokenId => tokenInfo
@@ -84,11 +73,9 @@ contract PoolTokens is ERC721PresetMinterPauserAutoIdUpgradeSafe {
     _setRoleAdmin(OWNER_ROLE, OWNER_ROLE);
   }
 
-  function mint(MintParams calldata params, address to) public onlyPool whenNotPaused {
+  function mint(MintParams calldata params, address to) external virtual override onlyPool whenNotPaused {
     address poolAddress = _msgSender();
-
     uint256 tokenId = createToken(params, poolAddress);
-
     _mint(to, tokenId);
     emit TokenMinted(to, poolAddress, tokenId, params.principalAmount, params.tranche);
   }
@@ -97,7 +84,7 @@ contract PoolTokens is ERC721PresetMinterPauserAutoIdUpgradeSafe {
     uint256 tokenId,
     uint256 principalRedeemed,
     uint256 interestRedeemed
-  ) public onlyPool whenNotPaused {
+  ) external virtual override onlyPool whenNotPaused {
     TokenInfo storage token = tokens[tokenId];
     require(token.pool != address(0), "Invalid tokenId");
     require(_msgSender() == token.pool, "Only the token's pool can redeem");
@@ -115,8 +102,8 @@ contract PoolTokens is ERC721PresetMinterPauserAutoIdUpgradeSafe {
    * @dev Burns a specific ERC721 token, and removes the data from our mappings
    * @param tokenId uint256 id of the ERC721 token to be burned.
    */
-  function burn(uint256 tokenId) public virtual {
-    TokenInfo memory token = getTokenInfo(tokenId);
+  function burn(uint256 tokenId) external virtual override {
+    TokenInfo memory token = _getTokenInfo(tokenId);
     bool canBurn = _isApprovedOrOwner(_msgSender(), tokenId);
     bool fromTokenPool = validPool(_msgSender()) && token.pool == _msgSender();
     address owner = ownerOf(tokenId);
@@ -126,14 +113,16 @@ contract PoolTokens is ERC721PresetMinterPauserAutoIdUpgradeSafe {
     emit TokenBurned(owner, token.pool, tokenId);
   }
 
-  function getTokenInfo(uint256 tokenId) public view returns (TokenInfo memory) {
+  function getTokenInfo(uint256 tokenId) external view virtual override returns (TokenInfo memory) {
+    return _getTokenInfo(tokenId);
+  }
+
+  function _getTokenInfo(uint256 tokenId) internal view returns (TokenInfo memory) {
     return tokens[tokenId];
   }
 
-  function validPool(address sender) internal pure returns (bool) {
-    // TODO: This is where we should do our create2 check
-    sender;
-    return true;
+  function validPool(address sender) internal virtual returns (bool) {
+    return config.getCreditLineFactory().validPool(sender);
   }
 
   function createToken(MintParams memory params, address poolAddress) internal returns (uint256) {
@@ -141,9 +130,7 @@ contract PoolTokens is ERC721PresetMinterPauserAutoIdUpgradeSafe {
 
     // Set the limit if this is the first minting ever
     if (pool.limit == 0) {
-      // TODO: Uncomment after we actually have pools that we can deploy
-      // pool.limit = ITranchedPool(poolAddress).limit();
-      pool.limit = 1000000000;
+      pool.limit = ITranchedPool(poolAddress).creditLine().limit();
     }
 
     uint256 tokenId = _tokenIdTracker.current();
@@ -175,7 +162,7 @@ contract PoolTokens is ERC721PresetMinterPauserAutoIdUpgradeSafe {
   }
 
   modifier onlyPool() {
-    require(validPool(_msgSender()), "Only pool can call mint");
+    require(validPool(_msgSender()), "Invalid pool!");
     _;
   }
 }

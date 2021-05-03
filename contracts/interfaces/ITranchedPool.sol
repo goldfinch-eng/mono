@@ -3,7 +3,12 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
+import "./IV2CreditLine.sol";
+
 abstract contract ITranchedPool {
+  IV2CreditLine public creditLine;
+  uint256 public createdAt;
+
   struct TrancheInfo {
     uint256 principalDeposited;
     uint256 interestAPR;
@@ -13,4 +18,10 @@ abstract contract ITranchedPool {
 
   TrancheInfo public seniorTranche;
   TrancheInfo public juniorTranche;
+
+  function initialize(
+    address owner,
+    address _config,
+    address _creditLine
+  ) public virtual;
 }

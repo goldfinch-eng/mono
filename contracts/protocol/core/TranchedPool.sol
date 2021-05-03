@@ -5,19 +5,16 @@ pragma experimental ABIEncoderV2;
 
 import "../../interfaces/ITranchedPool.sol";
 import "../../interfaces/IERC20withDec.sol";
+import "../../interfaces/IV2CreditLine.sol";
+import "../../interfaces/IPoolTokens.sol";
 import "./Accountant.sol";
 import "./GoldfinchConfig.sol";
 import "./BaseUpgradeablePausable.sol";
 import "./ConfigHelper.sol";
-import "./CreditLine.sol";
-import "./PoolTokens.sol";
 
 contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
-
-  PoolTokens public poolToken;
-  CreditLine public creditline;
 
   // Pool is locked after first drawdown, at this point no more deposits are allowed.
   uint256 public poolLockedAt = 0;
@@ -27,16 +24,19 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
 
   function initialize(
     address owner,
-    GoldfinchConfig _config,
-    CreditLine _creditline
-  ) public initializer {
+    address _config,
+    address _creditLine
+  ) public override initializer {
     __BaseUpgradeablePausable__init(owner);
     seniorTranche = TrancheInfo({principalSharePrice: 1, interestSharePrice: 0, principalDeposited: 0, interestAPR: 0});
     juniorTranche = TrancheInfo({principalSharePrice: 1, interestSharePrice: 0, principalDeposited: 0, interestAPR: 0});
-    config = _config;
-    // We may need to call the factory here to create the creditline, or have the factory provide owner role on the
-    // creditline to this contract
-    _creditline = creditline;
+    config = GoldfinchConfig(_config);
+    // We may need to call the factory here to create the creditLine, or have the factory provide owner role on the
+    // creditLine to this contract
+    // TODO: Set both of these as immutable in the constructure, if we can. It will
+    // make it cheaper to call them
+    creditLine = IV2CreditLine(_creditLine);
+    createdAt = block.timestamp;
   }
 
   function deposit(uint256 tranche, uint256 amount) public {
@@ -51,12 +51,13 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
       require(juniorLockedAt == 0, "Junior tranche has been locked");
       juniorTranche.principalDeposited += amount;
     }
-    PoolTokens.MintParams memory params = PoolTokens.MintParams({tranche: tranche, principalAmount: amount});
-    poolToken.mint(params, msg.sender);
+    IPoolTokens.MintParams memory params = IPoolTokens.MintParams({tranche: tranche, principalAmount: amount});
+    config.getPoolTokens().mint(params, msg.sender);
   }
 
   function withdraw(uint256 tokenId, uint256 amount) public {
-    PoolTokens.TokenInfo memory tokenInfo = poolToken.getTokenInfo(tokenId);
+    IPoolTokens poolTokens = config.getPoolTokens();
+    IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
     require(tokenInfo.tranche == 1 || tokenInfo.tranche == 2, "Unsupported tranche");
     TrancheInfo memory tranche = tokenInfo.tranche == 1 ? seniorTranche : juniorTranche;
 
@@ -71,7 +72,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     );
 
     // TODO: Fix
-    poolToken.redeem(tokenId, amount, 0);
+    poolTokens.redeem(tokenId, amount, 0);
     doUSDCTransfer(address(this), msg.sender, amount);
   }
 
@@ -80,7 +81,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     if (!locked()) {
       lockPool();
     }
-    doUSDCTransfer(address(this), creditline.borrower(), amount);
+    doUSDCTransfer(address(this), creditLine.borrower(), amount);
   }
 
   // Mark the investment period as over
@@ -96,11 +97,11 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     require(juniorLockedAt > 0, "Junior tranche must be locked first");
 
     uint256 seniorSharesFraction = percentOwnership(seniorTranche);
-    seniorTranche.interestAPR = creditline.interestApr() * seniorSharesFraction;
-    juniorTranche.interestAPR = creditline.interestApr() * (1 - seniorSharesFraction);
+    seniorTranche.interestAPR = creditLine.interestApr() * seniorSharesFraction;
+    juniorTranche.interestAPR = creditLine.interestApr() * (1 - seniorSharesFraction);
     seniorTranche.principalSharePrice = 0;
 
-    creditline.setLimit(seniorTranche.principalDeposited + juniorTranche.principalDeposited);
+    creditLine.setLimit(seniorTranche.principalDeposited + juniorTranche.principalDeposited);
 
     poolLockedAt = block.timestamp;
   }
@@ -166,15 +167,16 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
   }
 
   function calculateExpectedSharePrice(TrancheInfo memory tranche) internal returns (uint256, uint256) {
-    // Same as right now
-    (uint256 principalAccrued, uint256 interestAccrued) = Accountant.calculateInterestAndPrincipalAccrued(
-      creditline,
-      block.timestamp,
-      config.getLatenessGracePeriodInDays()
-    );
-    uint256 ownershipFraction = percentOwnership(tranche);
-    // interest apr needs to be scaled down
-    return (principalAccrued * ownershipFraction, (interestAccrued * ownershipFraction) / 100);
+    // // Same as right now
+    // (uint256 principalAccrued, uint256 interestAccrued) = Accountant.calculateInterestAndPrincipalAccrued(
+    //   creditLine,
+    //   block.timestamp,
+    //   config.getLatenessGracePeriodInDays()
+    // );
+    // uint256 ownershipFraction = percentOwnership(tranche);
+    // // interest apr needs to be scaled down
+    // return (principalAccrued * ownershipFraction, (interestAccrued * ownershipFraction) / 100);
+    return (0, 0);
   }
 
   function locked() internal returns (bool) {

@@ -42,6 +42,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
   event DrawdownMade(address indexed borrower, address indexed creditLine, uint256 drawdownAmount);
   event CreditLineCreated(address indexed borrower, address indexed creditLine);
   event GovernanceUpdatedUnderwriterLimit(address indexed underwriter, uint256 newLimit);
+  event PoolCreated(address indexed pool, address indexed owner);
 
   mapping(address => Underwriter) public underwriters;
   mapping(address => Borrower) private borrowers;
@@ -127,6 +128,45 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     cl.grantRole(keccak256("OWNER_ROLE"), config.protocolAdminAddress());
     cl.authorizePool(address(config));
     return clAddress;
+  }
+
+  /**
+   * @notice Allows anyone to create a new TranchedPool for a single borrower
+   * @param _borrower The borrower for whom the CreditLine will be created
+   * @param _limit The maximum amount a borrower can drawdown from this CreditLine
+   * @param _interestApr The interest amount, on an annualized basis (APR, so non-compounding), expressed as an integer.
+   *  We assume 8 digits of precision. For example, to submit 15.34%, you would pass up 15340000,
+   *  and 5.34% would be 5340000
+   * @param _paymentPeriodInDays How many days in each payment period.
+   *  ie. the frequency with which they need to make payments.
+   * @param _termInDays Number of days in the credit term. It is used to set the `termEndTime` upon first drawdown.
+   *  ie. The credit line should be fully paid off {_termIndays} days after the first drawdown.
+   * @param _lateFeeApr The additional interest you will pay if you are late. For example, if this is 3%, and your
+   *  normal rate is 15%, then you will pay 18% while you are late.
+   *
+   * Requirements:
+   *   TODO: THIS ISN"T REALLY TRUE ANYMORE! WE SHOULD DO SOMETHING ABOUT THIS!
+   * - the caller must be an underwriter with enough limit (see `setUnderwriterGovernanceLimit`)
+   */
+  function createPool(
+    address _borrower,
+    uint256 _limit,
+    uint256 _interestApr,
+    uint256 _paymentPeriodInDays,
+    uint256 _termInDays,
+    uint256 _lateFeeApr
+  ) public whenNotPaused returns (address) {
+    address clAddress = createCreditLine(
+      _borrower,
+      _limit,
+      _interestApr,
+      _paymentPeriodInDays,
+      _termInDays,
+      _lateFeeApr
+    );
+    address poolAddress = getCreditLineFactory().createPool(_borrower, clAddress);
+    emit PoolCreated(poolAddress, _borrower);
+    return poolAddress;
   }
 
   /**

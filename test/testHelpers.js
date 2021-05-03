@@ -107,6 +107,30 @@ function expectAction(action, debug) {
   }
 }
 
+// This decodes longs for a single event type, and returns a decoded object in
+// the same form truffle-contract uses on its receipts
+// Mostly stolen from: https://github.com/OpenZeppelin/openzeppelin-test-helpers/blob/6e54db1e1f64a80c7632799776672297bbe543b3/src/expectEvent.js#L49
+function decodeLogs(logs, abi, eventName) {
+  let eventABI = abi.filter((x) => x.type === "event" && x.name === eventName)
+  if (eventABI.length === 0) {
+    throw new Error(`No ABI entry for event '${eventName}'`)
+  } else if (eventABI.length > 1) {
+    throw new Error(`Multiple ABI entries for event '${eventName}', only uniquely named events are supported`)
+  }
+
+  eventABI = eventABI[0]
+
+  // The first topic will equal the hash of the event signature
+  const eventSignature = `${eventName}(${eventABI.inputs.map((input) => input.type).join(",")})`
+  const eventTopic = web3.utils.sha3(eventSignature)
+
+  // Only decode events of type 'EventName'
+  return logs
+    .filter((log) => log.topics.length > 0 && log.topics[0] === eventTopic)
+    .map((log) => web3.eth.abi.decodeLog(eventABI.inputs, log.data, log.topics.slice(1)))
+    .map((decoded) => ({event: eventName, args: decoded}))
+}
+
 async function deployAllContracts(deployments, options = {}) {
   let {deployForwarder, fromAccount} = options
   await deployments.fixture("base_deploy")
@@ -116,13 +140,14 @@ async function deployAllContracts(deployments, options = {}) {
   const fidu = await getDeployedAsTruffleContract(deployments, "Fidu")
   const goldfinchConfig = await getDeployedAsTruffleContract(deployments, "GoldfinchConfig")
   const goldfinchFactory = await getDeployedAsTruffleContract(deployments, "CreditLineFactory")
+  const poolTokens = await getDeployedAsTruffleContract(deployments, "PoolTokens")
   let forwarder = null
   if (deployForwarder) {
     await deployments.deploy("TestForwarder", {from: fromAccount, gas: 4000000})
     forwarder = await getDeployedAsTruffleContract(deployments, "TestForwarder")
     await forwarder.registerDomainSeparator("Defender", "1")
   }
-  return {pool, usdc, creditDesk, fidu, goldfinchConfig, goldfinchFactory, forwarder}
+  return {pool, usdc, creditDesk, fidu, goldfinchConfig, goldfinchFactory, forwarder, poolTokens}
 }
 
 async function erc20Approve(erc20, accountToApprove, amount, fromAccounts) {
@@ -195,4 +220,5 @@ module.exports = {
   erc20Transfer: erc20Transfer,
   advanceTime: advanceTime,
   createCreditLine: createCreditLine,
+  decodeLogs: decodeLogs,
 }

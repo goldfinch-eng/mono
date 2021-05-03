@@ -28,14 +28,16 @@ async function baseDeploy(hre) {
   const chainID = await getChainId()
   logger("Chain ID is:", chainID)
   const config = await deployConfig(deploy)
+  const deployHelpers = await deployDeployHelpers()
   await getOrDeployUSDC()
   const fidu = await deployFidu(config)
-  await deployPoolTokens(config)
+  await deployPoolTokens({config, deployHelpers})
   const pool = await deployPool(hre, {config})
+  await deployTranchedPool(config)
   logger("Granting minter role to Pool")
   await grantMinterRoleToPool(fidu, pool)
   logger("Deploying CreditLineFactory")
-  await deployCreditLineFactory(deploy, {config})
+  await deployCreditLineFactory(deploy, {config, deployHelpers})
   const creditDesk = await deployCreditDesk(deploy, {config})
 
   logger("Granting ownership of Pool to CreditDesk")
@@ -72,6 +74,12 @@ async function baseDeploy(hre) {
     }
   }
 
+  async function deployDeployHelpers() {
+    const deployHelpers = await deploy("DeployHelpers", {from: protocol_owner, args: []})
+    logger("Deploy Helpers was deployed to:", deployHelpers.address)
+    return deployHelpers
+  }
+
   async function getOrDeployUSDC() {
     let usdcAddress = getUSDCAddress(chainID)
     if (!usdcAddress) {
@@ -90,13 +98,18 @@ async function baseDeploy(hre) {
     return usdcAddress
   }
 
-  async function deployCreditLineFactory(deploy, {config}) {
+  async function deployCreditLineFactory(deploy, {config, deployHelpers}) {
+    if (!deployHelpers) {
+      deployHelpers = await deploy("DeployHelpers", {from: protocol_owner, args: []})
+      logger("Deploy Helpers was deployed to:", deployHelpers.address)
+    }
     logger("Deploying credit line factory")
     let clFactoryDeployResult = await deploy("CreditLineFactory", {
       from: proxy_owner,
       proxy: {owner: proxy_owner, methodName: "initialize"},
       gas: 4000000,
       args: [protocol_owner, config.address],
+      libraries: {["DeployHelpers"]: deployHelpers.address},
     })
     logger("CreditLineFactory was deployed to:", clFactoryDeployResult.address)
 
@@ -168,19 +181,39 @@ async function baseDeploy(hre) {
     return fidu
   }
 
-  async function deployPoolTokens(config) {
+  async function deployPoolTokens({config, deployHelpers}) {
+    if (!deployHelpers) {
+      deployHelpers = await deploy("DeployHelpers", {from: protocol_owner, args: []})
+      logger("Deploy Helpers was deployed to:", deployHelpers.address)
+    }
+
+    let contractName = "PoolTokens"
+
+    if (isTestEnv()) {
+      contractName = "TestPoolTokens"
+    }
+
     logger("About to deploy Junior Tokens...")
-    const poolTokens = await deploy("PoolTokens", {
+    const poolTokens = await deploy(contractName, {
       from: proxy_owner,
       proxy: {
         methodName: "__initialize__",
       },
       args: [SAFE_CONFIG[chainID] || protocol_owner, config.address],
+      libraries: {["DeployHelpers"]: deployHelpers.address},
     })
     logger("Initialized Pool Tokens...")
     await updateConfig(config, "address", CONFIG_KEYS.PoolTokens, poolTokens.address, {logger})
     logger("Updated PoolTokens config address to:", poolTokens.address)
     return poolTokens
+  }
+
+  async function deployTranchedPool(config) {
+    logger("About to deploy Pool Tokens...")
+    const tranchedPoolImpl = await deploy("TranchedPool", {from: proxy_owner})
+    await updateConfig(config, "address", CONFIG_KEYS.TranchedPoolImplementation, tranchedPoolImpl.address, {logger})
+    logger("Updated PoolTokens config address to:", tranchedPoolImpl.address)
+    return tranchedPoolImpl
   }
 }
 

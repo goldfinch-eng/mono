@@ -21,6 +21,7 @@ const CONFIG_KEYS = {
   CUSDCContract: 10,
   GoldfinchConfig: 11,
   PoolTokens: 12,
+  TranchedPoolImplementation: 13,
 }
 
 module.exports = {
