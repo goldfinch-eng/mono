@@ -18,7 +18,7 @@ function Borrow(props) {
     if (borrower && creditDesk.loaded) {
       const borrowerCreditLines = borrower.creditLinesAddresses
       setCreditLinesAddresses(borrowerCreditLines)
-      if (borrowerCreditLines.length && !creditLine.loaded) {
+      if (!creditLine.loaded) {
         changeCreditLine(borrowerCreditLines)
       }
     }

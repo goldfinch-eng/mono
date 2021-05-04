@@ -241,7 +241,9 @@ async function fetchCreditLineData(creditLineAddresses, usdc) {
   creditLineAddresses = typeof creditLineAddresses === "string" ? [creditLineAddresses] : creditLineAddresses
 
   if (!creditLineAddresses || creditLineAddresses.length === 0) {
-    return Promise.resolve(new DefaultCreditLine())
+    const defaultCreditLine = new DefaultCreditLine()
+    defaultCreditLine.loaded = true
+    return Promise.resolve(defaultCreditLine)
   }
   if (creditLineAddresses.length === 1) {
     result = new CreditLine(creditLineAddresses[0], usdc.contract)
