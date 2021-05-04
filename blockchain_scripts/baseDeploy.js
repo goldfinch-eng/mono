@@ -104,17 +104,21 @@ async function baseDeploy(hre) {
       logger("Deploy Helpers was deployed to:", deployHelpers.address)
     }
     logger("Deploying credit line factory")
+    const accountant = await deploy("Accountant", {from: protocol_owner, gas: 4000000, args: []})
     let clFactoryDeployResult = await deploy("CreditLineFactory", {
       from: proxy_owner,
       proxy: {owner: proxy_owner, methodName: "initialize"},
       gas: 4000000,
       args: [protocol_owner, config.address],
-      libraries: {["DeployHelpers"]: deployHelpers.address},
+      libraries: {
+        ["DeployHelpers"]: deployHelpers.address,
+        ["Accountant"]: accountant.address,
+      },
     })
     logger("CreditLineFactory was deployed to:", clFactoryDeployResult.address)
 
     // Deploy the credit line as well so we generate the ABI
-    await deploy("CreditLine", {from: proxy_owner, gas: 4000000})
+    await deploy("CreditLine", {from: proxy_owner, gas: 4000000, libraries: {["Accountant"]: accountant.address}})
 
     const creditLineFactory = await ethers.getContractAt("CreditLineFactory", clFactoryDeployResult.address)
     let creditLineFactoryAddress = creditLineFactory.address

@@ -22,6 +22,7 @@ const {OWNER_ROLE, PAUSER_ROLE, interestAprAsBN, INTEREST_DECIMALS} = require(".
 const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
 
 const {time} = require("@openzeppelin/test-helpers")
+const Accountant = artifacts.require("Accountant")
 const CreditLine = artifacts.require("CreditLine")
 const FEE_DENOMINATOR = new BN(10)
 
@@ -127,6 +128,11 @@ describe("CreditDesk", () => {
     await goldfinchConfig.setTreasuryReserve(reserve)
 
     return {pool, usdc, creditDesk, fidu, goldfinchConfig}
+  })
+
+  before(async () => {
+    let accountant = await Accountant.new({from: owner})
+    CreditLine.link(accountant)
   })
 
   beforeEach(async () => {
@@ -300,7 +306,7 @@ describe("CreditDesk", () => {
       underwriter = person2
 
       cl = await CreditLine.new({from: owner})
-      await cl.initialize(owner, borrower, underwriter, usdcVal(500), usdcVal(3), 10, 360, 0)
+      await cl.initialize(goldfinchConfig.address, owner, borrower, underwriter, usdcVal(500), usdcVal(3), 10, 360, 0)
     })
 
     it("Should let you change the limit after its created", async () => {

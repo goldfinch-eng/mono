@@ -22,6 +22,14 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
   // once senior capital invests
   uint256 public juniorLockedAt = 0;
 
+  event PaymentApplied(
+    address indexed payer,
+    address indexed pool,
+    uint256 interestAmount,
+    uint256 principalAmount,
+    uint256 remainingAmount
+  );
+
   function initialize(
     address owner,
     address _config,
@@ -106,11 +114,8 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     poolLockedAt = block.timestamp;
   }
 
-  function collectInterestAndPrincipal(
-    address from,
-    uint256 interest,
-    uint256 principal
-  ) public onlyCreditDesk {
+  function collectInterestAndPrincipal(uint256 interest, uint256 principal) internal {
+    address from = address(creditLine);
     bool success = doUSDCTransfer(from, address(this), principal.add(interest));
     require(success, "Failed to collect repayment");
 
@@ -196,6 +201,15 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
   function percentOwnership(TrancheInfo memory tranche) internal view returns (uint256) {
     // TODO: Fix
     return tranche.principalDeposited.div(seniorTranche.principalDeposited.add(juniorTranche.principalDeposited));
+  }
+
+  function assess() public {
+    (uint256 paymentRemaining, uint256 interestPayment, uint256 principalPayment) = creditLine.assess();
+
+    if (interestPayment > 0 || principalPayment > 0) {
+      emit PaymentApplied(creditLine.borrower(), address(this), interestPayment, principalPayment, paymentRemaining);
+      collectInterestAndPrincipal(interestPayment, principalPayment);
+    }
   }
 
   modifier onlyCreditDesk() {

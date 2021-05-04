@@ -110,6 +110,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     address clAddress = getCreditLineFactory().createCreditLine();
     CreditLine cl = CreditLine(clAddress);
     cl.initialize(
+      address(config),
       address(this),
       _borrower,
       msg.sender,

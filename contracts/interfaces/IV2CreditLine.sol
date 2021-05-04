@@ -25,4 +25,13 @@ abstract contract IV2CreditLine {
   function setLimit(uint256 newAmount) external virtual;
 
   function setBalance(uint256 newBalance) external virtual;
+
+  function assess()
+    external
+    virtual
+    returns (
+      uint256,
+      uint256,
+      uint256
+    );
 }

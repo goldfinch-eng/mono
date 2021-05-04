@@ -165,9 +165,9 @@ async function erc20Transfer(erc20, toAccounts, amount, fromAccount) {
   }
 }
 
-async function advanceTime(creditDesk, {days, seconds, toSecond}) {
+async function advanceTime(creditDeskOrCreditLine, {days, seconds, toSecond}) {
   let secondsPassed, newTimestamp
-  let currentTimestamp = await creditDesk.currentTimestamp()
+  let currentTimestamp = await creditDeskOrCreditLine.currentTimestamp()
 
   if (days) {
     secondsPassed = SECONDS_PER_DAY.mul(new BN(days))
@@ -180,7 +180,7 @@ async function advanceTime(creditDesk, {days, seconds, toSecond}) {
   }
   // Cannot go backward
   expect(newTimestamp).to.bignumber.gt(currentTimestamp)
-  await creditDesk._setTimestampForTest(newTimestamp)
+  await creditDeskOrCreditLine._setTimestampForTest(newTimestamp)
   return newTimestamp
 }
 

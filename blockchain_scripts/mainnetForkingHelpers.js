@@ -29,8 +29,14 @@ async function upgradeContracts(contractNames, contracts, mainnetSigner, deployF
   // gives us the ability to debug the forwarded transactions.
   await deployments.deploy("TestForwarder", {from: deployFrom, gas: 4000000, args: []})
 
+  let deployHelpers = await deployments.deploy("DeployHelpers", {from: deployFrom, args: []})
+
   const dependencies = {
     CreditDesk: {["Accountant"]: accountantDeployResult.address},
+    CreditLineFactory: {
+      ["DeployHelpers"]: deployHelpers.address,
+      ["Accountant"]: accountantDeployResult.address,
+    },
   }
 
   for (let i = 0; i < contractNames.length; i++) {

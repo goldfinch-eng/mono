@@ -8,22 +8,32 @@ const {
   usdcVal,
   SECONDS_PER_DAY,
   SECONDS_PER_YEAR,
+  deployAllContracts,
 } = require("./testHelpers.js")
+const hre = require("hardhat")
+const {deployments} = hre
 const {interestAprAsBN, INTEREST_DECIMALS, ETHDecimals} = require("../blockchain_scripts/deployHelpers.js")
 const Accountant = artifacts.require("Accountant")
 const TestAccountant = artifacts.require("TestAccountant")
 const CreditLine = artifacts.require("CreditLine")
 
 describe("Accountant", async () => {
-  let accountant, owner, borrower, underwriter, testAccountant
+  let accountant, owner, borrower, underwriter, testAccountant, goldfinchConfig
   before(async () => {
     // Linking can only happen once, so we do it in a before block, rather than beforeEach
     accountant = await Accountant.new({from: owner})
+    CreditLine.link(accountant)
     TestAccountant.link(accountant)
+  })
+
+  const setupTest = deployments.createFixture(async ({deployments}) => {
+    return await deployAllContracts(deployments)
   })
 
   beforeEach(async () => {
     ;[owner, borrower, underwriter] = await web3.eth.getAccounts()
+    let contracts = await setupTest()
+    goldfinchConfig = contracts.goldfinchConfig
     testAccountant = await TestAccountant.new({from: owner})
   })
 
@@ -58,6 +68,7 @@ describe("Accountant", async () => {
       lateFeeGracePeriodInDays = lateFeeGracePeriod.mul(paymentPeriodInDays)
       creditLine = await CreditLine.new({from: owner})
       await creditLine.initialize(
+        goldfinchConfig.address,
         owner,
         borrower,
         underwriter,
@@ -68,6 +79,7 @@ describe("Accountant", async () => {
         lateFeeApr
       )
       let currentTime = new BN(Date.now() / 1000)
+      await creditLine.setInterestAccruedAsOf(currentTime)
       await creditLine.setBalance(balance)
       timestamp = currentTime.add(new BN(100))
       await creditLine.setTermEndTime(timestamp)
@@ -165,6 +177,7 @@ describe("Accountant", async () => {
 
       creditLine = await CreditLine.new({from: owner})
       await creditLine.initialize(
+        goldfinchConfig.address,
         owner,
         borrower,
         underwriter,
