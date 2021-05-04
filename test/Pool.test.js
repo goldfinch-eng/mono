@@ -529,7 +529,7 @@ describe("Pool", () => {
     })
   })
 
-  describe("assets matching liabilities", async () => {
+  describe("assets and liabilities validation", async () => {
     describe("when there is a super tiny rounding error", async () => {
       it("should still work", async () => {
         // This share price will cause a rounding error of 1 atomic unit.
@@ -537,6 +537,30 @@ describe("Pool", () => {
         await pool._setSharePrice(testSharePrice)
 
         return expect(makeDeposit(person2, new BN(2500).mul(USDC_DECIMALS))).to.be.fulfilled
+      })
+    })
+
+    describe("assets exceed liabilities", async () => {
+      it("should allow deposits and withdrawals", async () => {
+        await makeDeposit(person2, usdcVal(1001))
+
+        // Simulate someone transferring USDC directly into Pool rather than depositing
+        await erc20Transfer(usdc, [pool.address], usdcVal(1000), owner)
+
+        await expect(makeWithdraw(person2, usdcVal(1001))).to.be.fulfilled
+        await expect(makeDeposit(person2, usdcVal(2500))).to.be.fulfilled
+      })
+    })
+
+    describe("liabilities exceed assets", async () => {
+      it("should block deposits and withdrawals", async () => {
+        await makeDeposit(person2, usdcVal(1000))
+
+        // Simulate somehow minting FIDU that isn't backed by a deposit
+        await fidu.mint(person2, new BN(1000).mul(decimals), {from: owner})
+
+        await expect(makeDeposit(person2, usdcVal(2500))).to.be.rejectedWith(/asset\/liability mismatch/)
+        await expect(makeWithdraw(person2, usdcVal(1000))).to.be.rejectedWith(/asset\/liability mismatch/)
       })
     })
   })

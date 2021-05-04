@@ -91,7 +91,7 @@ contract Fidu is ERC20PresetMinterPauserUpgradeSafe {
     uint256 liabilitiesInDollars = fiduToUSDC(liabilities);
     uint256 _assets = pool.assets();
     if (_assets >= liabilitiesInDollars) {
-      return _assets.sub(liabilitiesInDollars) <= ASSET_LIABILITY_MATCH_THRESHOLD;
+      return true;
     } else {
       return liabilitiesInDollars.sub(_assets) <= ASSET_LIABILITY_MATCH_THRESHOLD;
     }
@@ -104,7 +104,7 @@ contract Fidu is ERC20PresetMinterPauserUpgradeSafe {
     uint256 liabilitiesInDollars = fiduToUSDC(liabilities);
     uint256 _assets = pool.assets();
     if (_assets >= liabilitiesInDollars) {
-      return _assets.sub(liabilitiesInDollars) <= ASSET_LIABILITY_MATCH_THRESHOLD;
+      return true;
     } else {
       return liabilitiesInDollars.sub(_assets) <= ASSET_LIABILITY_MATCH_THRESHOLD;
     }
