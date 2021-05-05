@@ -70,6 +70,7 @@ describe("PoolTokens", () => {
         new BN(30),
         new BN(365),
         new BN(0),
+        new BN(20),
         {from: person2}
       )
       const event = result.logs[result.logs.length - 1]
@@ -129,6 +130,7 @@ describe("PoolTokens", () => {
         new BN(30),
         new BN(365),
         new BN(0),
+        new BN(20),
         {from: person2}
       )
       let event = result.logs[result.logs.length - 1]
@@ -203,6 +205,7 @@ describe("PoolTokens", () => {
         new BN(30),
         new BN(365),
         new BN(0),
+        new BN(20),
         {from: person2}
       )
       let event = result.logs[result.logs.length - 1]
@@ -256,6 +259,7 @@ describe("PoolTokens", () => {
         new BN(30),
         new BN(365),
         new BN(0),
+        new BN(20),
         {from: person2}
       )
       let event = result.logs[result.logs.length - 1]

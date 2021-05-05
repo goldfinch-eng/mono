@@ -8,12 +8,13 @@ const CreditLine = artifacts.require("CreditLine")
 const TranchedPool = artifacts.require("TestTranchedPool")
 
 describe("TranchedPool", () => {
-  let owner, borrower, underwriter, goldfinchConfig, usdc, poolTokens, tranchedPool, creditDesk, creditLine
+  let owner, borrower, underwriter, goldfinchConfig, usdc, poolTokens, tranchedPool, creditDesk, creditLine, treasury
   let limit = usdcVal(500)
   let interestApr = interestAprAsBN("5.00")
   let paymentPeriodInDays = new BN(30)
   let termInDays = new BN(365)
   let lateFeeApr = new BN(0)
+  let juniorFeePercent = new BN(20)
 
   const createPoolWithCreditLine = async (people = {}) => {
     const thisOwner = people.owner || owner
@@ -37,6 +38,7 @@ describe("TranchedPool", () => {
       paymentPeriodInDays,
       termInDays,
       lateFeeApr,
+      juniorFeePercent,
       {from: underwriter}
     )
     let event = result.logs[result.logs.length - 1]
@@ -50,9 +52,10 @@ describe("TranchedPool", () => {
 
   beforeEach(async () => {
     // Pull in our unlocked accounts
-    ;[owner, borrower, underwriter] = await web3.eth.getAccounts()
+    ;[owner, borrower, underwriter, treasury] = await web3.eth.getAccounts()
     ;({usdc, creditDesk, goldfinchConfig, poolTokens} = await deployAllContracts(deployments))
     await goldfinchConfig.bulkAddToGoList([owner, borrower, underwriter])
+    await goldfinchConfig.setTreasuryReserve(treasury)
   })
 
   describe("initialization", async () => {
@@ -84,11 +87,11 @@ describe("TranchedPool", () => {
     describe("junior tranche", async () => {
       it("does not allow deposits when pool is locked", async () => {
         await tranchedPool.lockJuniorCapital({from: underwriter})
-        expect(tranchedPool.deposit(2, usdcVal(10))).to.be.rejectedWith(/Tranche has been locked/)
+        await expect(tranchedPool.deposit(2, usdcVal(10))).to.be.rejectedWith(/Tranche has been locked/)
       })
 
       it("fails for invalid tranches", async () => {
-        expect(tranchedPool.deposit(0, usdcVal(10))).to.be.rejectedWith(/Unsupported tranche/)
+        await expect(tranchedPool.deposit(0, usdcVal(10))).to.be.rejectedWith(/Unsupported tranche/)
       })
 
       it("updates the tranche info and mints the token", async () => {
@@ -133,11 +136,11 @@ describe("TranchedPool", () => {
         await tranchedPool.deposit(2, usdcVal(10))
         await tranchedPool.lockJuniorCapital({from: underwriter})
         await tranchedPool.lockPool({from: underwriter})
-        expect(tranchedPool.deposit(1, usdcVal(10))).to.be.rejectedWith(/Tranche has been locked/)
+        await expect(tranchedPool.deposit(1, usdcVal(10))).to.be.rejectedWith(/Pool has been locked/)
       })
 
       it("fails for invalid tranches", async () => {
-        expect(tranchedPool.deposit(3, usdcVal(10))).to.be.rejectedWith(/Unsupported tranche/)
+        await expect(tranchedPool.deposit(3, usdcVal(10))).to.be.rejectedWith(/Unsupported tranche/)
       })
 
       it("updates the tranche info and mints the token", async () => {
@@ -281,28 +284,53 @@ describe("TranchedPool", () => {
       // 100$ creditline with 10% interest. Senior tranche gets 8% of the total interest, and junior tranche gets 2%
       interestApr = interestAprAsBN("10.00")
       tranchedPool = await createPoolWithCreditLine()
-      await tranchedPool.deposit(2, usdcVal(80))
-      await tranchedPool.deposit(1, usdcVal(20))
+      await tranchedPool.deposit(2, usdcVal(20))
+      await tranchedPool.deposit(1, usdcVal(80))
       await tranchedPool.lockJuniorCapital({from: underwriter})
       await tranchedPool.lockPool({from: underwriter})
-      await tranchedPool.drawdown(usdcVal(100))
+      await tranchedPool.drawdown(usdcVal(100), {from: borrower})
     })
 
     describe("when full payment is received", async () => {
       it("distributes across senior and junior tranches correctly", async () => {
-        await advanceTime(tranchedPool, {days: 31})
-        await tranchedPool.collectInterestAndPrincipal(borrower, usdcVal(10), usdcVal(0))
+        // Ensure a full term has passed
+        await advanceTime(tranchedPool, {days: termInDays.toNumber()})
+
+        usdc.transfer(borrower, usdcVal(10), {from: owner}) // Transfer money for interest payment
+        expect(await usdc.balanceOf(treasury)).to.bignumber.eq("0")
+
+        await tranchedPool.collectInterestAndPrincipal(borrower, usdcVal(10), usdcVal(100))
         expect(await creditLine.interestApr()).to.bignumber.eq(interestAprAsBN(10))
         expect(await creditLine.balance()).to.bignumber.eq(usdcVal(100))
         let juniorTranche = await tranchedPool.juniorTranche()
         let seniorTranche = await tranchedPool.seniorTranche()
 
-        expect(juniorTranche.principalSharePrice).to.bignumber.eq("0")
-        expect(seniorTranche.principalSharePrice).to.bignumber.eq("0")
+        const juniorInterestAmount = await tranchedPool.sharePriceToUsdc(
+          juniorTranche.interestSharePrice,
+          juniorTranche.principalDeposited
+        )
+        const juniorPrincipalAmount = await tranchedPool.sharePriceToUsdc(
+          juniorTranche.principalSharePrice,
+          juniorTranche.principalDeposited
+        )
+        const seniorInterestAmount = await tranchedPool.sharePriceToUsdc(
+          seniorTranche.interestSharePrice,
+          seniorTranche.principalDeposited
+        )
+        const seniorPrincipalAmount = await tranchedPool.sharePriceToUsdc(
+          seniorTranche.principalSharePrice,
+          seniorTranche.principalDeposited
+        )
 
-        // TODO: Fix
-        expect(juniorTranche.interestSharePrice).to.bignumber.not.eq("0")
-        expect(seniorTranche.interestSharePrice).to.bignumber.not.eq("0")
+        // 100$ loan, with 10% interest. 80% senior and 20% junior. Junior fee of 20%. Reserve fee of 10%
+        // Senior share of interest 8$. Net interest = 8 * (junior fee percent + reserve fee percent) = 5.6
+        // Junior share of interest 2$. Net interest = 2 + (8 * junior fee percent) - (2 * reserve fee percent) = 3.4
+        // Protocol fee = 1$. Total = 5.6 + 3.4 + 1 = 10
+        expect(seniorInterestAmount).to.bignumber.eq(usdcVal(56).div(new BN(10)))
+        expect(seniorPrincipalAmount).to.bignumber.eq(usdcVal(80))
+        expect(juniorInterestAmount).to.bignumber.eq(usdcVal(34).div(new BN(10)))
+        expect(juniorPrincipalAmount).to.bignumber.eq(usdcVal(20))
+        expect(await usdc.balanceOf(treasury)).to.bignumber.eq(usdcVal(1))
       })
     })
   })

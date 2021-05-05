@@ -155,7 +155,8 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     uint256 _interestApr,
     uint256 _paymentPeriodInDays,
     uint256 _termInDays,
-    uint256 _lateFeeApr
+    uint256 _lateFeeApr,
+    uint256 juniorFeePercent
   ) public whenNotPaused returns (address) {
     address clAddress = createCreditLine(
       _borrower,
@@ -166,7 +167,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
       _lateFeeApr
     );
     // Todo: The owner should probably be the underwriter?
-    address poolAddress = getCreditLineFactory().createPool(msg.sender, _borrower, clAddress);
+    address poolAddress = getCreditLineFactory().createPool(msg.sender, _borrower, clAddress, juniorFeePercent);
     CreditLine(clAddress).grantRole(keccak256("OWNER_ROLE"), poolAddress);
     emit PoolCreated(poolAddress, _borrower);
     return poolAddress;

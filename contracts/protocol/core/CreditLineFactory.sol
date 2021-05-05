@@ -47,7 +47,8 @@ contract CreditLineFactory is BaseUpgradeablePausable {
   function createPool(
     address underwriter,
     address borrower,
-    address creditLine
+    address creditLine,
+    uint256 juniorFeePercent
   ) external returns (address) {
     address tranchedPoolImplAddress = config.getAddress(uint256(ConfigOptions.Addresses.TranchedPoolImplementation));
     bytes memory bytecode = DeployHelpers.getMinimalProxyCreationCode(tranchedPoolImplAddress);
@@ -55,7 +56,7 @@ contract CreditLineFactory is BaseUpgradeablePausable {
     bytes32 salt = keccak256(abi.encodePacked(borrower, createdAt));
 
     address pool = DeployHelpers.create2Deploy(bytecode, salt);
-    ITranchedPool(pool).initialize(underwriter, address(config), creditLine);
+    ITranchedPool(pool).initialize(underwriter, address(config), creditLine, juniorFeePercent);
 
     return pool;
   }

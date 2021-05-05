@@ -23,6 +23,8 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
   uint256 public constant FP_SCALING_FACTOR = 10**18;
   uint256 public constant INTEREST_DECIMALS = 1e8;
   uint256 public constant SECONDS_PER_DAY = 60 * 60 * 24;
+  uint256 public constant ONE_HUNDRED = 100; // Need this because we cannot call .div on a literal 100
+  uint256 public juniorFeePercent;
 
   event DepositMade(address indexed owner, uint256 indexed tranche, uint256 indexed tokenId, uint256 amonut);
   event WithdrawalMade(address indexed owner, uint256 indexed tranche, uint256 indexed tokenId, uint256 amount);
@@ -38,7 +40,8 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
   function initialize(
     address owner,
     address _config,
-    address _creditLine
+    address _creditLine,
+    uint256 _juniorFeePercent
   ) public override initializer {
     __BaseUpgradeablePausable__init(owner);
     seniorTranche = TrancheInfo({
@@ -60,6 +63,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     // creditline to this contract
     creditLine = IV2CreditLine(_creditLine);
     createdAt = block.timestamp;
+    juniorFeePercent = _juniorFeePercent;
 
     // Unlock self for infinite amount
     bool success = config.getUSDC().approve(address(this), uint256(-1));
@@ -143,32 +147,60 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     seniorTranche.lockedAt = currentTime();
   }
 
-  function collectInterestAndPrincipal(address from, uint256 interest, uint256 principal) public {
+  // TODO: Needs access control (only public for tests)
+  function collectInterestAndPrincipal(
+    address from,
+    uint256 interest,
+    uint256 principal
+  ) public {
     bool success = doUSDCTransfer(from, address(this), principal.add(interest));
     require(success, "Failed to collect repayment");
 
     (uint256 interestAccrued, uint256 principalAccrued) = getTotalInterestAndPrincipal(currentTime());
 
-    // This may also need to happen in calculateExpectedSharePrice
-    uint256 reserveAmount = interest.div(config.getReserveDenominator()); // protocol fee
+    uint256 reserveFeePercent = ONE_HUNDRED.div(config.getReserveDenominator()); // Convert the denonminator to percent
 
-    uint256 interestRemaining = interest.sub(reserveAmount);
+    uint256 totalReserveAmount; // protocol fee
+
+    uint256 interestRemaining = interest;
     uint256 principalRemaining = principal;
 
-    (interestRemaining, principalRemaining) = applyToTranche(
-      interestAccrued,
-      principalAccrued,
+    // First determine the expected share price for the senior tranche. This is the gross amount the senior
+    // tranche should receive.
+    uint256 expectedInterestSharePrice = calculateExpectedSharePrice(interestAccrued, seniorTranche);
+    uint256 expectedPrincipalSharePrice = calculateExpectedSharePrice(principalAccrued, seniorTranche);
+
+    // Deduct the junior fee and the protocol reserve
+    uint256 desiredNetInterestSharePrice = scaleByFraction(
+      expectedInterestSharePrice,
+      ONE_HUNDRED.sub(juniorFeePercent + reserveFeePercent),
+      ONE_HUNDRED
+    );
+    // Collect protocol fee from senior tranche
+    uint256 reserveDeduction = scaleByFraction(interestRemaining, reserveFeePercent, ONE_HUNDRED);
+    totalReserveAmount = totalReserveAmount.add(reserveDeduction);
+    interestRemaining = interestRemaining.sub(reserveDeduction);
+
+    // Apply the interest remaining so we get up to the netInterestSharePrice
+    (interestRemaining, principalRemaining) = applyToTrancheBySharePrice(
       interestRemaining,
       principalRemaining,
+      desiredNetInterestSharePrice,
+      expectedPrincipalSharePrice,
       seniorTranche
     );
-    (interestRemaining, principalRemaining) = applyToTranche(
-      interestAccrued,
-      principalAccrued,
+
+    // All remaining interest and principal is applied towards the junior tranche
+    (interestRemaining, principalRemaining) = applyToTrancheByAmount(
+      interestRemaining,
+      principalRemaining,
       interestRemaining,
       principalRemaining,
       juniorTranche
     );
+
+    success = doUSDCTransfer(address(this), config.reserveAddress(), totalReserveAmount);
+    require(success, "Failed to send to reserve");
   }
 
   function getTotalInterestAndPrincipal(uint256 asOf) internal view returns (uint256, uint256) {
@@ -207,41 +239,71 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
   }
 
   function scaleByPercentOwnership(uint256 amount, TrancheInfo memory tranche) internal view returns (uint256) {
-    FixedPoint.Unsigned memory totalDeposited = FixedPoint.fromUnscaledUint(
-      juniorTranche.principalDeposited.add(seniorTranche.principalDeposited)
-    );
-    FixedPoint.Unsigned memory trancheAmount = FixedPoint.fromUnscaledUint(tranche.principalDeposited);
-    return trancheAmount.div(totalDeposited).mul(amount).div(FP_SCALING_FACTOR).rawValue;
+    uint256 totalDeposited = juniorTranche.principalDeposited.add(seniorTranche.principalDeposited);
+    return scaleByFraction(amount, tranche.principalDeposited, totalDeposited);
+  }
+
+  function scaleByFraction(
+    uint256 amount,
+    uint256 fraction,
+    uint256 total
+  ) internal view returns (uint256) {
+    FixedPoint.Unsigned memory totalAsFixedPoint = FixedPoint.fromUnscaledUint(total);
+    FixedPoint.Unsigned memory fractionAsFixedPoint = FixedPoint.fromUnscaledUint(fraction);
+    return fractionAsFixedPoint.div(totalAsFixedPoint).mul(amount).div(FP_SCALING_FACTOR).rawValue;
   }
 
   function currentTime() internal view virtual returns (uint256) {
     return block.timestamp;
   }
 
-  function applyToTranche(
-    uint256 interestAccrued,
-    uint256 principalAccrued,
+  function applyToTrancheBySharePrice(
     uint256 interestRemaining,
     uint256 principalRemaining,
+    uint256 desiredInterestSharePrice,
+    uint256 desiredPrincipalSharePrice,
     TrancheInfo storage tranche
   ) internal returns (uint256, uint256) {
-    uint256 expectedInterestSharePrice = calculateExpectedSharePrice(interestAccrued, tranche);
-    uint256 expectedPrincipalSharePrice = calculateExpectedSharePrice(principalAccrued, tranche);
+    uint256 totalShares = tranche.principalDeposited;
+
+    uint256 interestSharePriceDifference = desiredInterestSharePrice.sub(tranche.interestSharePrice);
+    uint256 desiredInterestAmount = sharePriceToUsdc(interestSharePriceDifference, totalShares);
+    uint256 principalSharePriceDifference = desiredPrincipalSharePrice.sub(tranche.principalSharePrice);
+    uint256 desiredPrincipalAmount = sharePriceToUsdc(principalSharePriceDifference, totalShares);
+
+    (interestRemaining, principalRemaining) = applyToTrancheByAmount(
+      interestRemaining,
+      principalRemaining,
+      desiredInterestAmount,
+      desiredPrincipalAmount,
+      tranche
+    );
+    return (interestRemaining, principalRemaining);
+  }
+
+  function applyToTrancheByAmount(
+    uint256 interestRemaining,
+    uint256 principalRemaining,
+    uint256 desiredInterestAmount,
+    uint256 desiredPrincipalAmount,
+    TrancheInfo storage tranche
+  ) internal returns (uint256, uint256) {
+    uint256 totalShares = tranche.principalDeposited;
     uint256 newSharePrice;
 
     (interestRemaining, newSharePrice) = applyToSharePrice(
       interestRemaining,
       tranche.interestSharePrice,
-      expectedInterestSharePrice,
-      tranche.principalDeposited
+      desiredInterestAmount,
+      totalShares
     );
     tranche.interestSharePrice = newSharePrice;
 
     (principalRemaining, newSharePrice) = applyToSharePrice(
       principalRemaining,
       tranche.principalSharePrice,
-      expectedPrincipalSharePrice,
-      tranche.principalDeposited
+      desiredPrincipalAmount,
+      totalShares
     );
     tranche.principalSharePrice = newSharePrice;
 
@@ -250,33 +312,27 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
 
   function applyToSharePrice(
     uint256 amountRemaining,
-    uint256 sharePrice,
-    uint256 desiredSharePrice,
+    uint256 currentSharePrice,
+    uint256 desiredAmount,
     uint256 totalShares
   ) internal pure returns (uint256, uint256) {
     // If no money left to apply, return the original amounts
     if (amountRemaining == 0) {
-      return (amountRemaining, sharePrice);
+      return (amountRemaining, currentSharePrice);
     }
-
-    uint256 sharePriceDifference = desiredSharePrice.sub(sharePrice);
-    uint256 desiredAmount = sharePriceToUsdc(sharePriceDifference, totalShares);
-
-    if (amountRemaining > desiredAmount) {
-      // We have enough money to adjust share price to the desired level
-      return (amountRemaining.sub(desiredAmount), sharePrice.add(sharePriceDifference));
-    } else {
-      // We don't have enough money, ignore the requested share price, and just adjust by whatever is available
-      sharePriceDifference = usdcToSharePrice(amountRemaining, totalShares);
-      return (0, sharePrice.add(sharePriceDifference));
+    if (amountRemaining < desiredAmount) {
+      // We have enough money to adjust share price to the desired level. So just use whatever amount is left
+      desiredAmount = amountRemaining;
     }
+    uint256 sharePriceDifference = usdcToSharePrice(desiredAmount, totalShares);
+    return (amountRemaining.sub(desiredAmount), currentSharePrice.add(sharePriceDifference));
   }
 
-  function usdcToSharePrice(uint256 amount, uint256 totalShares) internal pure returns (uint256) {
+  function usdcToSharePrice(uint256 amount, uint256 totalShares) public pure returns (uint256) {
     return amount.mul(scalingFactor()).div(totalShares);
   }
 
-  function sharePriceToUsdc(uint256 sharePrice, uint256 totalShares) internal pure returns (uint256) {
+  function sharePriceToUsdc(uint256 sharePrice, uint256 totalShares) public pure returns (uint256) {
     return sharePrice.mul(totalShares).div(scalingFactor());
   }
 

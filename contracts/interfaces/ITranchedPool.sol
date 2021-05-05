@@ -23,6 +23,7 @@ abstract contract ITranchedPool {
   function initialize(
     address owner,
     address _config,
-    address _creditLine
+    address _creditLine,
+    uint256 _juniorFeePercent
   ) public virtual;
 }
