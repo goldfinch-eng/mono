@@ -9,6 +9,8 @@ abstract contract ITranchedPool {
   IV2CreditLine public creditLine;
   uint256 public createdAt;
 
+  enum Tranches {Reserved, Senior, Junior}
+
   struct TrancheInfo {
     uint256 principalDeposited;
     uint256 interestAPR;
@@ -17,13 +19,18 @@ abstract contract ITranchedPool {
     uint256 lockedAt;
   }
 
-  TrancheInfo public seniorTranche;
-  TrancheInfo public juniorTranche;
-
   function initialize(
     address owner,
     address _config,
     address _creditLine,
     uint256 _juniorFeePercent
   ) public virtual;
+
+  function getTranche(uint256 tranche) external view virtual returns (TrancheInfo memory);
+
+  function deposit(uint256 tranche, uint256 amount) external virtual;
+
+  function withdraw(uint256 tokenId, uint256 amount) external virtual;
+
+  function withdrawMax(uint256 tokenId) external virtual;
 }

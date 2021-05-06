@@ -135,9 +135,12 @@ async function deployAllContracts(deployments, options = {}) {
   let {deployForwarder, fromAccount} = options
   await deployments.fixture("base_deploy")
   const pool = await getDeployedAsTruffleContract(deployments, "Pool")
+  const seniorFund = await getDeployedAsTruffleContract(deployments, "SeniorFund")
+  const seniorFundStrategy = await getDeployedAsTruffleContract(deployments, "FixedLeverageRatioStrategy")
   const usdc = await getDeployedAsTruffleContract(deployments, "ERC20")
   const creditDesk = await getDeployedAsTruffleContract(deployments, "CreditDesk")
   const fidu = await getDeployedAsTruffleContract(deployments, "Fidu")
+  const seniorFundFidu = await getDeployedAsTruffleContract(deployments, "SeniorFundFidu")
   const goldfinchConfig = await getDeployedAsTruffleContract(deployments, "GoldfinchConfig")
   const goldfinchFactory = await getDeployedAsTruffleContract(deployments, "CreditLineFactory")
   const poolTokens = await getDeployedAsTruffleContract(deployments, "PoolTokens")
@@ -147,7 +150,21 @@ async function deployAllContracts(deployments, options = {}) {
     forwarder = await getDeployedAsTruffleContract(deployments, "TestForwarder")
     await forwarder.registerDomainSeparator("Defender", "1")
   }
-  return {pool, usdc, creditDesk, fidu, goldfinchConfig, goldfinchFactory, forwarder, poolTokens}
+  let tranchedPool = await getDeployedAsTruffleContract(deployments, "TranchedPool")
+  return {
+    pool,
+    seniorFund,
+    seniorFundStrategy,
+    seniorFundFidu,
+    usdc,
+    creditDesk,
+    fidu,
+    goldfinchConfig,
+    goldfinchFactory,
+    forwarder,
+    poolTokens,
+    tranchedPool,
+  }
 }
 
 async function erc20Approve(erc20, accountToApprove, amount, fromAccounts) {
@@ -194,6 +211,54 @@ async function getBalance(address, erc20) {
   return new BN(await web3.eth.getBalance(address))
 }
 
+const createPoolWithCreditLine = async ({
+  people,
+  creditDesk,
+  usdc,
+  interestApr,
+  paymentPeriodInDays,
+  termInDays,
+  limit,
+  lateFeeApr,
+  juniorFeePercent,
+}) => {
+  const CreditLine = artifacts.require("CreditLine")
+  const TranchedPool = artifacts.require("TestTranchedPool")
+
+  const thisOwner = people.owner
+  const thisBorrower = people.borrower
+  const thisUnderwriter = people.underwriter
+
+  if (!thisBorrower) {
+    throw new Error("No borrower is set. Set one in a beforeEach, or pass it in explicitly")
+  }
+
+  if (!thisOwner) {
+    throw new Error("No owner is set. Please set one in a beforeEach or pass it in explicitly")
+  }
+
+  await creditDesk.setUnderwriterGovernanceLimit(thisUnderwriter, limit.mul(new BN(5)))
+
+  let result = await creditDesk.createPool(
+    thisBorrower,
+    limit,
+    interestApr,
+    paymentPeriodInDays,
+    termInDays,
+    lateFeeApr,
+    juniorFeePercent,
+    {from: thisUnderwriter}
+  )
+  let event = result.logs[result.logs.length - 1]
+  let pool = await TranchedPool.at(event.args.pool)
+  let creditLine = await CreditLine.at(await pool.creditLine())
+
+  await erc20Approve(usdc, pool.address, usdcVal(100000), [thisOwner, thisBorrower])
+
+  let tranchedPool = await artifacts.require("TestTranchedPool").at(pool.address)
+  return {tranchedPool, creditLine}
+}
+
 module.exports = {
   chai: chai,
   expect: expect,
@@ -220,5 +285,6 @@ module.exports = {
   erc20Transfer: erc20Transfer,
   advanceTime: advanceTime,
   createCreditLine: createCreditLine,
+  createPoolWithCreditLine: createPoolWithCreditLine,
   decodeLogs: decodeLogs,
 }

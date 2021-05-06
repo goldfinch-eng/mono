@@ -60,6 +60,7 @@
         "**/TranchedPool.sol:TranchedPool": {
           "deposit": [],
           "withdraw": [],
+          "withdrawMax": [],
           "collectInterestAndPrincipal": [],
           "drawdown": [],
           "assess": []
@@ -68,6 +69,26 @@
           "__PauserPausable__init": [],
           "pause": [],
           "unpause": []
+        },
+        "**/SeniorFund.sol:SeniorFund": {
+          "deposit": [],
+          "withdraw": [],
+          "withdrawInFidu": [],
+          "invest": [],
+          "redeem": [],
+          "writedown": []
+        },
+        "**/SeniorFundFidu.sol:SeniorFundFidu": {
+          "__initialize__": [],
+          "mintTo": [],
+          "burnFrom": [],
+          "updateGoldfinchConfig": []
+        },
+        "**/FixedLeverageRatioStrategy.sol:FixedLeverageRatioStrategy": {
+          "invest": []
+        },
+        "**/contracts/test/**": {
+          "*.*": []
         }
       }
     }]

@@ -31,11 +31,17 @@ async function baseDeploy(hre) {
   const deployHelpers = await deployDeployHelpers()
   await getOrDeployUSDC()
   const fidu = await deployFidu(config)
+  const seniorFundFidu = await deploySeniorFundFidu(config)
   await deployPoolTokens({config, deployHelpers})
   const pool = await deployPool(hre, {config})
+  logger("Deploying TranchedPool")
   await deployTranchedPool(config)
   logger("Granting minter role to Pool")
   await grantMinterRoleToPool(fidu, pool)
+  const seniorFund = await deploySeniorFund(hre, {config})
+  logger("Granting minter role to SeniorFund")
+  await grantMinterRoleToPool(seniorFundFidu, seniorFund)
+  await deploySeniorFundStrategy(hre, {config})
   logger("Deploying CreditLineFactory")
   await deployCreditLineFactory(deploy, {config, deployHelpers})
   const creditDesk = await deployCreditDesk(deploy, {config})
@@ -222,10 +228,29 @@ async function baseDeploy(hre) {
       contractName = "TestTranchedPool"
     }
 
-    const tranchedPoolImpl = await deploy(contractName, {from: proxy_owner, libraries: {["Accountant"]: accountant.address},})
+    const tranchedPoolImpl = await deploy(contractName, {
+      from: proxy_owner,
+      libraries: {["Accountant"]: accountant.address},
+    })
     await updateConfig(config, "address", CONFIG_KEYS.TranchedPoolImplementation, tranchedPoolImpl.address, {logger})
     logger("Updated TranchedPool config address to:", tranchedPoolImpl.address)
     return tranchedPoolImpl
+  }
+
+  async function deploySeniorFundFidu(config) {
+    logger("About to deploy SeniorFundFidu...")
+    const fiduDeployResult = await deploy("SeniorFundFidu", {
+      from: proxy_owner,
+      gas: 4000000,
+      proxy: {
+        methodName: "__initialize__",
+      },
+      args: [protocol_owner, "SeniorFundFidu", "sFIDU", config.address],
+    })
+    const fidu = await ethers.getContractAt("SeniorFundFidu", fiduDeployResult.address)
+    await updateConfig(config, "address", CONFIG_KEYS.SeniorFundFidu, fidu.address, {logger})
+    logger("Deployed SeniorFundFidu to address:", fidu.address)
+    return fidu
   }
 }
 
@@ -250,6 +275,46 @@ async function deployPool(hre, {config}) {
   await updateConfig(config, "address", CONFIG_KEYS.Pool, poolAddress, {logger})
 
   return pool
+}
+
+async function deploySeniorFund(hre, {config}) {
+  let contractName = "SeniorFund"
+  if (isTestEnv()) {
+    contractName = "TestSeniorFund"
+  }
+  const {deployments, getNamedAccounts} = hre
+  const {deploy, log} = deployments
+  const logger = log
+  const {protocol_owner, proxy_owner} = await getNamedAccounts()
+
+  let deployResult = await deploy(contractName, {
+    from: proxy_owner,
+    proxy: {methodName: "initialize"},
+    args: [protocol_owner, config.address],
+  })
+  logger("SeniorFund was deployed to:", deployResult.address)
+  const fund = await ethers.getContractAt(contractName, deployResult.address)
+  await updateConfig(config, "address", CONFIG_KEYS.SeniorFund, fund.address, {logger})
+
+  return fund
+}
+
+async function deploySeniorFundStrategy(hre, {config}) {
+  let contractName = "FixedLeverageRatioStrategy"
+  const {deployments, getNamedAccounts} = hre
+  const {deploy, log} = deployments
+  const logger = log
+  const {proxy_owner} = await getNamedAccounts()
+
+  let deployResult = await deploy(contractName, {
+    from: proxy_owner,
+    args: [new BN(4).toString()],
+  })
+  logger("FixedLeverageRatioStrategy was deployed to:", deployResult.address)
+  const strategy = await ethers.getContractAt(contractName, deployResult.address)
+  await updateConfig(config, "address", CONFIG_KEYS.SeniorFundStrategy, strategy.address, {logger})
+
+  return strategy
 }
 
 module.exports = baseDeploy

@@ -63,6 +63,11 @@ if (typeof web3 !== "undefined" && web3.utils) {
   MINTER_ROLE = web3.utils.keccak256("MINTER_ROLE")
 }
 
+const TRANCHES = {
+  Senior: 1,
+  Junior: 2,
+}
+
 function isTestEnv() {
   return process.env.NODE_ENV === "test"
 }
@@ -253,4 +258,5 @@ module.exports = {
   getDefenderClient: getDefenderClient,
   deployContractUpgrade: deployContractUpgrade,
   setInitialConfigVals: setInitialConfigVals,
+  TRANCHES,
 }

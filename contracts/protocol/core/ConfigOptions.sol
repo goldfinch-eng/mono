@@ -34,7 +34,10 @@ library ConfigOptions {
     CUSDCContract,
     GoldfinchConfig,
     PoolTokens,
-    TranchedPoolImplementation
+    TranchedPoolImplementation,
+    SeniorFund,
+    SeniorFundFidu,
+    SeniorFundStrategy
   }
 
   function getNumberName(uint256 number) public pure returns (string memory) {
@@ -103,6 +106,15 @@ library ConfigOptions {
     }
     if (Addresses.TranchedPoolImplementation == addressName) {
       return "TranchedPoolImplementation";
+    }
+    if (Addresses.SeniorFund == addressName) {
+      return "SeniorFund";
+    }
+    if (Addresses.SeniorFundFidu == addressName) {
+      return "SeniorFundFidu";
+    }
+    if (Addresses.SeniorFundStrategy == addressName) {
+      return "SeniorFundStrategy";
     }
     revert("Unknown value passed to getAddressName");
   }

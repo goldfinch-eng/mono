@@ -22,6 +22,9 @@ const CONFIG_KEYS = {
   GoldfinchConfig: 11,
   PoolTokens: 12,
   TranchedPoolImplementation: 13,
+  SeniorFund: 14,
+  SeniorFundFidu: 15,
+  SeniorFundStrategy: 16,
 }
 
 module.exports = {

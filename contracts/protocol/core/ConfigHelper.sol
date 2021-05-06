@@ -6,6 +6,8 @@ pragma experimental ABIEncoderV2;
 import "./GoldfinchConfig.sol";
 import "../../interfaces/IPool.sol";
 import "../../interfaces/IFidu.sol";
+import "../../interfaces/IFund.sol";
+import "../../interfaces/IFundStrategy.sol";
 import "../../interfaces/ICreditDesk.sol";
 import "../../interfaces/IERC20withDec.sol";
 import "../../interfaces/ICUSDCContract.sol";
@@ -24,6 +26,14 @@ library ConfigHelper {
     return IPool(poolAddress(config));
   }
 
+  function getSeniorFund(GoldfinchConfig config) internal view returns (IFund) {
+    return IFund(seniorFundAddress(config));
+  }
+
+  function getSeniorFundStrategy(GoldfinchConfig config) internal view returns (IFundStrategy) {
+    return IFundStrategy(seniorFundStrategyAddress(config));
+  }
+
   function getUSDC(GoldfinchConfig config) internal view returns (IERC20withDec) {
     return IERC20withDec(usdcAddress(config));
   }
@@ -34,6 +44,10 @@ library ConfigHelper {
 
   function getFidu(GoldfinchConfig config) internal view returns (IFidu) {
     return IFidu(fiduAddress(config));
+  }
+
+  function getSeniorFundFidu(GoldfinchConfig config) internal view returns (IFidu) {
+    return IFidu(seniorFundFiduAddress(config));
   }
 
   function getCUSDCContract(GoldfinchConfig config) internal view returns (ICUSDCContract) {
@@ -68,6 +82,14 @@ library ConfigHelper {
     return config.getAddress(uint256(ConfigOptions.Addresses.PoolTokens));
   }
 
+  function seniorFundAddress(GoldfinchConfig config) internal view returns (address) {
+    return config.getAddress(uint256(ConfigOptions.Addresses.SeniorFund));
+  }
+
+  function seniorFundStrategyAddress(GoldfinchConfig config) internal view returns (address) {
+    return config.getAddress(uint256(ConfigOptions.Addresses.SeniorFundStrategy));
+  }
+
   function creditDeskAddress(GoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.CreditDesk));
   }
@@ -78,6 +100,10 @@ library ConfigHelper {
 
   function fiduAddress(GoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.Fidu));
+  }
+
+  function seniorFundFiduAddress(GoldfinchConfig config) internal view returns (address) {
+    return config.getAddress(uint256(ConfigOptions.Addresses.SeniorFundFidu));
   }
 
   function cusdcContractAddress(GoldfinchConfig config) internal view returns (address) {

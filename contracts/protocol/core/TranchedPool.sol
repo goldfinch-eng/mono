@@ -26,6 +26,9 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
   uint256 public constant ONE_HUNDRED = 100; // Need this because we cannot call .div on a literal 100
   uint256 public juniorFeePercent;
 
+  TrancheInfo internal seniorTranche;
+  TrancheInfo internal juniorTranche;
+
   event DepositMade(address indexed owner, uint256 indexed tranche, uint256 indexed tokenId, uint256 amonut);
   event WithdrawalMade(address indexed owner, uint256 indexed tranche, uint256 indexed tokenId, uint256 amount);
 
@@ -70,7 +73,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     require(success, "Failed to approve USDC");
   }
 
-  function deposit(uint256 tranche, uint256 amount) public {
+  function deposit(uint256 tranche, uint256 amount) public override {
     require(!locked(), "Pool has been locked");
     TrancheInfo storage trancheInfo = getTrancheInfo(tranche);
 
@@ -82,7 +85,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     emit DepositMade(msg.sender, tranche, tokenId, amount);
   }
 
-  function withdraw(uint256 tokenId, uint256 amount) public {
+  function withdraw(uint256 tokenId, uint256 amount) public override {
     IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
     TrancheInfo storage trancheInfo = getTrancheInfo(tokenInfo.tranche);
 
@@ -104,6 +107,10 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     // TODO: Fix
     config.getPoolTokens().redeem(tokenId, amount, 0);
     doUSDCTransfer(address(this), msg.sender, amount);
+  }
+
+  function withdrawMax(uint256 tokenId) external override {
+    // TODO
   }
 
   function drawdown(uint256 amount) public {
@@ -234,8 +241,15 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
   }
 
   function getTrancheInfo(uint256 tranche) internal view returns (TrancheInfo storage) {
-    require(tranche == 1 || tranche == 2, "Unsupported tranche");
-    return tranche == 1 ? seniorTranche : juniorTranche;
+    require(
+      tranche == uint256(ITranchedPool.Tranches.Senior) || tranche == uint256(ITranchedPool.Tranches.Junior),
+      "Unsupported tranche"
+    );
+    return tranche == uint256(ITranchedPool.Tranches.Senior) ? seniorTranche : juniorTranche;
+  }
+
+  function getTranche(uint256 tranche) public view override returns (TrancheInfo memory) {
+    return getTrancheInfo(tranche);
   }
 
   function scaleByPercentOwnership(uint256 amount, TrancheInfo memory tranche) internal view returns (uint256) {

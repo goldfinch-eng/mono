@@ -3,6 +3,9 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
+import "../interfaces/IERC20withDec.sol";
+import "../protocol/core/GoldfinchConfig.sol";
+import "../protocol/core/ConfigHelper.sol";
 import "../protocol/core/TranchedPool.sol";
 
 contract TestTranchedPool is TranchedPool {
