@@ -219,12 +219,11 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     seniorTranche.lockedAt = currentTime();
   }
 
-  // TODO: Needs access control (only public for tests)
   function collectInterestAndPrincipal(
     address from,
     uint256 interest,
     uint256 principal
-  ) public {
+  ) internal {
     safeUSDCTransfer(from, address(this), principal.add(interest), "Failed to collect payment");
 
     (uint256 interestAccrued, uint256 principalAccrued) = getTotalInterestAndPrincipal(currentTime());
@@ -247,7 +246,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
       ONE_HUNDRED.sub(juniorFeePercent + reserveFeePercent),
       ONE_HUNDRED
     );
-    // Collect protocol fee from senior tranche
+    // Collect protocol fee interest received (we've subtracted this from the senior portion above)
     uint256 reserveDeduction = scaleByFraction(interestRemaining, reserveFeePercent, ONE_HUNDRED);
     totalReserveAmount = totalReserveAmount.add(reserveDeduction);
     interestRemaining = interestRemaining.sub(reserveDeduction);
@@ -417,16 +416,11 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
   }
 
   function usdcToSharePrice(uint256 amount, uint256 totalShares) public pure returns (uint256) {
-    return totalShares == 0 ? 0 : amount.mul(scalingFactor()).div(totalShares);
+    return totalShares == 0 ? 0 : amount.mul(FP_SCALING_FACTOR).div(totalShares);
   }
 
   function sharePriceToUsdc(uint256 sharePrice, uint256 totalShares) public pure returns (uint256) {
-    return sharePrice.mul(totalShares).div(scalingFactor());
-  }
-
-  function scalingFactor() internal pure returns (uint256) {
-    // TODO: We could probably just used FixedPoint for this
-    return uint256(10)**uint256(18);
+    return sharePrice.mul(totalShares).div(FP_SCALING_FACTOR);
   }
 
   function assess() public {

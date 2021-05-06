@@ -24,7 +24,15 @@ contract TestTranchedPool is TranchedPool {
     }
   }
 
-  // currentTime in internal
+  function _collectInterestAndPrincipal(
+    address from,
+    uint256 interest,
+    uint256 principal
+  ) public {
+    collectInterestAndPrincipal(from, interest, principal);
+  }
+
+  // currentTime is internal
   function currentTimestamp() public view returns (uint256) {
     return currentTime();
   }
