@@ -306,20 +306,13 @@ describe("CreditDesk", () => {
       underwriter = person2
 
       cl = await CreditLine.new({from: owner})
-      await cl.initialize(goldfinchConfig.address, owner, borrower, underwriter, usdcVal(500), usdcVal(3), 10, 360, 0)
+      await cl.initialize(goldfinchConfig.address, owner, borrower, usdcVal(500), usdcVal(3), 10, 360, 0)
     })
 
     it("Should let you change the limit after its created", async () => {
       const newLimit = new BN(100)
       expect(newLimit).not.to.bignumber.equal(await cl.limit())
       await cl.setLimit(newLimit, {from: owner})
-      expect(newLimit).to.bignumber.equal(await cl.limit())
-    })
-
-    it("Should also let underwriter set the limit", async () => {
-      const newLimit = new BN(100)
-      expect(newLimit).not.to.bignumber.equal(await cl.limit())
-      await cl.setLimit(newLimit, {from: underwriter})
       expect(newLimit).to.bignumber.equal(await cl.limit())
     })
 
@@ -519,110 +512,6 @@ describe("CreditDesk", () => {
 
         return expect(drawdown(usdcVal(10), creditLine.address)).to.be.rejectedWith(/payments are past due/)
       })
-    })
-  })
-
-  describe("migrateCreditLine", async () => {
-    let existingCl, prepaymentAmount
-    beforeEach(async () => {
-      borrower = person3
-      underwriter = person2
-      prepaymentAmount = usdcVal(50)
-      existingCl = await createAndSetCreditLineAttributes({
-        balance: usdcVal(10000),
-        interestOwed: usdcVal(1),
-        principalOwed: usdcVal(1),
-      })
-    })
-
-    it("should close out the old credit line", async () => {
-      await creditDesk.pay(existingCl.address, String(prepaymentAmount), {from: owner})
-      expect(await existingCl.balance()).to.not.bignumber.equal(new BN(0))
-      expect(await existingCl.limit()).to.not.bignumber.equal(new BN(0))
-      await creditDesk.migrateCreditLine(
-        existingCl.address,
-        borrower,
-        limit,
-        interestApr,
-        paymentPeriodInDays,
-        termInDays,
-        lateFeeApr,
-        {from: underwriter}
-      )
-      const newClAddress = (await creditDesk.getBorrowerCreditLines(borrower))[1]
-
-      expect(await existingCl.balance()).to.bignumber.equal(new BN(0))
-      expect(await existingCl.limit()).to.bignumber.equal(new BN(0))
-      expect(await getBalance(existingCl.address, usdc)).to.bignumber.equal(new BN(0))
-      expect(await getBalance(newClAddress, usdc)).to.bignumber.equal(prepaymentAmount)
-    })
-
-    it("shouldn't let you migrate twice", async () => {
-      await expect(
-        creditDesk.migrateCreditLine(
-          existingCl.address,
-          borrower,
-          limit,
-          interestApr,
-          paymentPeriodInDays,
-          termInDays,
-          lateFeeApr,
-          {from: underwriter}
-        )
-      ).to.be.fulfilled
-      return expect(
-        creditDesk.migrateCreditLine(
-          existingCl.address,
-          borrower,
-          limit,
-          interestApr,
-          paymentPeriodInDays,
-          termInDays,
-          lateFeeApr,
-          {from: underwriter}
-        )
-      ).to.be.rejectedWith(/Can't migrate/)
-    })
-
-    it("should transfer the accounting variables", async () => {
-      await creditDesk.pay(existingCl.address, String(prepaymentAmount), {from: owner})
-      const oldBalance = await existingCl.balance()
-      await creditDesk.migrateCreditLine(
-        existingCl.address,
-        borrower,
-        limit,
-        interestApr,
-        paymentPeriodInDays,
-        termInDays,
-        lateFeeApr,
-        {from: underwriter}
-      )
-      const newClAddress = (await creditDesk.getBorrowerCreditLines(borrower))[1]
-      const newCl = await CreditLine.at(newClAddress)
-
-      expect(oldBalance).to.bignumber.equal(await newCl.balance())
-      expect(await existingCl.interestOwed()).to.bignumber.equal(await newCl.interestOwed())
-      expect(await existingCl.principalOwed()).to.bignumber.equal(await newCl.principalOwed())
-      expect(await existingCl.termEndTime()).to.bignumber.equal(await newCl.termEndTime())
-      expect(await existingCl.nextDueTime()).to.bignumber.equal(await newCl.nextDueTime())
-      expect(await existingCl.interestAccruedAsOf()).to.bignumber.equal(await newCl.interestAccruedAsOf())
-      expect(await existingCl.writedownAmount()).to.bignumber.equal(await newCl.writedownAmount())
-      expect(await existingCl.lastFullPaymentTime()).to.bignumber.equal(await newCl.lastFullPaymentTime())
-    })
-
-    it("should permit only the underwriter to migrate the creditline", async () => {
-      return expect(
-        creditDesk.migrateCreditLine(
-          existingCl.address,
-          borrower,
-          limit,
-          interestApr,
-          paymentPeriodInDays,
-          termInDays,
-          lateFeeApr,
-          {from: owner}
-        )
-      ).to.be.rejectedWith(/Caller must be the underwriter/)
     })
   })
 

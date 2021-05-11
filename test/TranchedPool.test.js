@@ -13,7 +13,7 @@ const BN = require("bn.js")
 const {deployments} = hre
 
 describe("TranchedPool", () => {
-  let owner, borrower, underwriter, goldfinchConfig, usdc, poolTokens, tranchedPool, creditDesk, creditLine, treasury
+  let owner, borrower, goldfinchConfig, usdc, poolTokens, tranchedPool, goldfinchFactory, creditLine, treasury
   let limit = usdcVal(500)
   let interestApr = interestAprAsBN("5.00")
   let paymentPeriodInDays = new BN(30)
@@ -23,8 +23,8 @@ describe("TranchedPool", () => {
 
   const createPoolWithCreditLine = async () => {
     ;({creditLine, tranchedPool} = await _createPoolWithCreditLine({
-      people: {owner, borrower, underwriter},
-      creditDesk,
+      people: {owner, borrower},
+      goldfinchFactory,
       limit,
       interestApr,
       paymentPeriodInDays,
@@ -38,9 +38,9 @@ describe("TranchedPool", () => {
 
   beforeEach(async () => {
     // Pull in our unlocked accounts
-    ;[owner, borrower, underwriter, treasury] = await web3.eth.getAccounts()
-    ;({usdc, creditDesk, goldfinchConfig, poolTokens} = await deployAllContracts(deployments))
-    await goldfinchConfig.bulkAddToGoList([owner, borrower, underwriter])
+    ;[owner, borrower, treasury] = await web3.eth.getAccounts()
+    ;({usdc, goldfinchConfig, goldfinchFactory, poolTokens} = await deployAllContracts(deployments))
+    await goldfinchConfig.bulkAddToGoList([owner, borrower])
     await goldfinchConfig.setTreasuryReserve(treasury)
   })
 
@@ -72,7 +72,7 @@ describe("TranchedPool", () => {
     })
     describe("junior tranche", async () => {
       it("does not allow deposits when pool is locked", async () => {
-        await tranchedPool.lockJuniorCapital({from: underwriter})
+        await tranchedPool.lockJuniorCapital({from: borrower})
         await expect(tranchedPool.deposit(2, usdcVal(10))).to.be.rejectedWith(/Tranche has been locked/)
       })
 
@@ -120,8 +120,8 @@ describe("TranchedPool", () => {
     describe("senior tranche", async () => {
       it("does not allow deposits when pool is locked", async () => {
         await tranchedPool.deposit(2, usdcVal(10))
-        await tranchedPool.lockJuniorCapital({from: underwriter})
-        await tranchedPool.lockPool({from: underwriter})
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        await tranchedPool.lockPool({from: borrower})
         await expect(tranchedPool.deposit(1, usdcVal(10))).to.be.rejectedWith(/Pool has been locked/)
       })
 
@@ -200,7 +200,7 @@ describe("TranchedPool", () => {
         let response = await tranchedPool.deposit(2, usdcVal(10))
         const tokenId = response.logs[0].args.tokenId
 
-        await tranchedPool.lockJuniorCapital({from: underwriter})
+        await tranchedPool.lockJuniorCapital({from: borrower})
 
         expect(tranchedPool.withdraw(tokenId, usdcVal(10))).to.be.rejectedWith(/Invalid redeem amount/)
       })
@@ -216,15 +216,15 @@ describe("TranchedPool", () => {
     describe("junior tranche", async () => {
       it("locks the junior tranche", async () => {
         await tranchedPool.deposit(1, usdcVal(10))
-        await expectAction(async () => tranchedPool.lockJuniorCapital({from: underwriter})).toChange([
+        await expectAction(async () => tranchedPool.lockJuniorCapital({from: borrower})).toChange([
           [async () => (await tranchedPool.getTranche(TRANCHES.Junior)).lockedAt, {increase: true}],
           [async () => (await tranchedPool.getTranche(TRANCHES.Junior)).principalSharePrice, {to: new BN(0)}],
         ])
       })
 
       it("does not allow locking twice", async () => {
-        await tranchedPool.lockJuniorCapital({from: underwriter})
-        expect(tranchedPool.lockJuniorCapital({from: underwriter})).to.be.rejectedWith(/already locked/)
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        expect(tranchedPool.lockJuniorCapital({from: borrower})).to.be.rejectedWith(/already locked/)
       })
     })
 
@@ -232,8 +232,8 @@ describe("TranchedPool", () => {
       it("locks the senior tranche", async () => {
         await tranchedPool.deposit(1, usdcVal(8))
         await tranchedPool.deposit(2, usdcVal(2))
-        await tranchedPool.lockJuniorCapital({from: underwriter})
-        await expectAction(async () => tranchedPool.lockPool({from: underwriter})).toChange([
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        await expectAction(async () => tranchedPool.lockPool({from: borrower})).toChange([
           [async () => (await tranchedPool.getTranche(TRANCHES.Senior)).lockedAt, {increase: true}],
           [async () => (await tranchedPool.getTranche(TRANCHES.Senior)).principalSharePrice, {to: new BN(0)}],
           // Senior tranche is 80% of 5% (8$ out of 10$ in the pool)
@@ -255,8 +255,8 @@ describe("TranchedPool", () => {
       it("draws down the capital to the borrower", async () => {
         await tranchedPool.deposit(2, usdcVal(5))
         await tranchedPool.deposit(1, usdcVal(10))
-        await tranchedPool.lockJuniorCapital({from: underwriter})
-        await tranchedPool.lockPool({from: underwriter})
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        await tranchedPool.lockPool({from: borrower})
 
         await expectAction(async () => tranchedPool.drawdown(usdcVal(10))).toChange([
           [async () => usdc.balanceOf(borrower), {to: usdcVal(10)}],
@@ -272,8 +272,8 @@ describe("TranchedPool", () => {
       tranchedPool = await createPoolWithCreditLine()
       await tranchedPool.deposit(2, usdcVal(20))
       await tranchedPool.deposit(1, usdcVal(80))
-      await tranchedPool.lockJuniorCapital({from: underwriter})
-      await tranchedPool.lockPool({from: underwriter})
+      await tranchedPool.lockJuniorCapital({from: borrower})
+      await tranchedPool.lockPool({from: borrower})
       await tranchedPool.drawdown(usdcVal(100), {from: borrower})
     })
 

@@ -25,6 +25,7 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
     uint256 limit;
     uint256 totalMinted;
     uint256 totalPrincipalRedeemed;
+    bool created;
   }
 
   // tokenId => tokenInfo
@@ -73,7 +74,14 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
     _setRoleAdmin(OWNER_ROLE, OWNER_ROLE);
   }
 
-  function mint(MintParams calldata params, address to) external virtual override onlyPool whenNotPaused returns (uint256) {
+  function mint(MintParams calldata params, address to)
+    external
+    virtual
+    override
+    onlyPool
+    whenNotPaused
+    returns (uint256)
+  {
     address poolAddress = _msgSender();
     uint256 tokenId = createToken(params, poolAddress);
     _mint(to, tokenId);
@@ -106,7 +114,7 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
   function burn(uint256 tokenId) external virtual override {
     TokenInfo memory token = _getTokenInfo(tokenId);
     bool canBurn = _isApprovedOrOwner(_msgSender(), tokenId);
-    bool fromTokenPool = validPool(_msgSender()) && token.pool == _msgSender();
+    bool fromTokenPool = _validPool(_msgSender()) && token.pool == _msgSender();
     address owner = ownerOf(tokenId);
     require(canBurn || fromTokenPool, "ERC721Burnable: caller cannot burn this token");
     require(token.principalRedeemed == token.principalAmount, "Can only burn fully redeemed tokens");
@@ -122,8 +130,16 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
     return tokens[tokenId];
   }
 
-  function validPool(address sender) internal virtual returns (bool) {
-    return config.getCreditLineFactory().validPool(sender);
+  function validPool(address sender) public view virtual override returns (bool) {
+    return _validPool(sender);
+  }
+
+  function _validPool(address sender) internal view virtual returns (bool) {
+    return pools[sender].created;
+  }
+
+  function onPoolCreated(address newPool) external override onlyGoldfinchFactory {
+    pools[newPool].created = true;
   }
 
   function createToken(MintParams memory params, address poolAddress) internal returns (uint256) {
@@ -162,8 +178,13 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
     super._beforeTokenTransfer(from, to, tokenId);
   }
 
+  modifier onlyGoldfinchFactory() {
+    require(_msgSender() == config.creditLineFactoryAddress(), "Only Goldfinch factory is allowed");
+    _;
+  }
+
   modifier onlyPool() {
-    require(validPool(_msgSender()), "Invalid pool!");
+    require(_validPool(_msgSender()), "Invalid pool!");
     _;
   }
 }

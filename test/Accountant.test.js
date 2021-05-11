@@ -18,7 +18,7 @@ const TestAccountant = artifacts.require("TestAccountant")
 const CreditLine = artifacts.require("CreditLine")
 
 describe("Accountant", async () => {
-  let accountant, owner, borrower, underwriter, testAccountant, goldfinchConfig
+  let accountant, owner, borrower, testAccountant, goldfinchConfig
   before(async () => {
     // Linking can only happen once, so we do it in a before block, rather than beforeEach
     accountant = await Accountant.new({from: owner})
@@ -31,7 +31,7 @@ describe("Accountant", async () => {
   })
 
   beforeEach(async () => {
-    ;[owner, borrower, underwriter] = await web3.eth.getAccounts()
+    ;[owner, borrower] = await web3.eth.getAccounts()
     let contracts = await setupTest()
     goldfinchConfig = contracts.goldfinchConfig
     testAccountant = await TestAccountant.new({from: owner})
@@ -71,7 +71,6 @@ describe("Accountant", async () => {
         goldfinchConfig.address,
         owner,
         borrower,
-        underwriter,
         bigVal(500),
         interestApr,
         paymentPeriodInDays,
@@ -180,7 +179,6 @@ describe("Accountant", async () => {
         goldfinchConfig.address,
         owner,
         borrower,
-        underwriter,
         bigVal(500),
         interestApr,
         paymentPeriodInDays,

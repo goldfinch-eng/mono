@@ -14,13 +14,14 @@ const hre = require("hardhat")
 const BN = require("bn.js")
 const {deployments} = hre
 const TranchedPool = artifacts.require("TranchedPool")
+const Accountant = artifacts.require("Accountant")
 
 describe("PoolTokens", () => {
-  let owner, person2, person3, goldfinchConfig, poolTokens, creditDesk, pool, usdc
+  let owner, person2, person3, goldfinchConfig, poolTokens, pool, goldfinchFactory, usdc
 
-  const withPoolSender = async (func) => {
+  const withPoolSender = async (func, otherPoolAddress) => {
     // We need to fake the address so we can bypass the pool
-    await poolTokens._setSender(pool.address)
+    await poolTokens._setSender(otherPoolAddress || pool.address)
     return func().then(async (res) => {
       await poolTokens._setSender("0x0000000000000000000000000000000000000000")
       return res
@@ -32,17 +33,16 @@ describe("PoolTokens", () => {
     // Just to be crystal clear
     owner = protocol_owner
 
-    const {poolTokens, goldfinchConfig, creditDesk, usdc} = await deployAllContracts(deployments)
-    await creditDesk.setUnderwriterGovernanceLimit(person2, usdcVal(1000), {from: owner})
+    const {poolTokens, goldfinchConfig, goldfinchFactory, usdc} = await deployAllContracts(deployments)
     await goldfinchConfig.bulkAddToGoList([owner, person2])
     await erc20Transfer(usdc, [person2], usdcVal(1000), owner)
 
-    return {poolTokens, goldfinchConfig, creditDesk, usdc}
+    return {poolTokens, goldfinchConfig, goldfinchFactory, usdc}
   })
   beforeEach(async () => {
     // Pull in our unlocked accounts
     ;[owner, person2, person3] = await web3.eth.getAccounts()
-    ;({poolTokens, goldfinchConfig, creditDesk, usdc} = await testSetup())
+    ;({poolTokens, goldfinchConfig, goldfinchFactory, usdc} = await testSetup())
 
     await poolTokens._disablePoolValidation(true)
   })
@@ -63,23 +63,47 @@ describe("PoolTokens", () => {
 
   describe("mint", async () => {
     beforeEach(async function () {
-      const result = await creditDesk.createPool(
+      const result = await goldfinchFactory.createPool(
         person2,
+        new BN(20),
         usdcVal(100),
         interestAprAsBN("15.0"),
         new BN(30),
         new BN(365),
         new BN(0),
-        new BN(20),
-        {from: person2}
+        {from: owner}
       )
       const event = result.logs[result.logs.length - 1]
       pool = await TranchedPool.at(event.args.pool)
       await erc20Approve(usdc, pool.address, usdcVal(100000), [person2])
     })
 
-    it("should allow validly created pools to call the mint function", async () => {
-      return expect(pool.deposit(new BN(1), usdcVal(5), {from: person2})).to.be.fulfilled
+    context("with real pool validation turned on", async () => {
+      beforeEach(async () => {
+        await poolTokens._disablePoolValidation(false)
+      })
+      it("should allow validly created pools to call the mint function", async () => {
+        return expect(pool.deposit(new BN(1), usdcVal(5), {from: person2})).to.be.fulfilled
+      })
+
+      it("should disallow invalidly created pools", async () => {
+        // Wasn't created through our factory
+        const accountant = await Accountant.new({from: owner})
+        TranchedPool.link(accountant)
+        const fakePool = await TranchedPool.new()
+        await fakePool.initialize(
+          goldfinchConfig.address,
+          person2,
+          new BN(20),
+          usdcVal(1000),
+          new BN(15000),
+          new BN(30),
+          new BN(360),
+          new BN(350)
+        )
+
+        return expect(fakePool.deposit(new BN(1), usdcVal(5), {from: person2})).to.be.rejectedWith(/Invalid pool/)
+      })
     })
 
     it("should mint a token with correct info", async () => {
@@ -123,15 +147,15 @@ describe("PoolTokens", () => {
   describe("redeem", async () => {
     let tokenId, mintAmount
     beforeEach(async function () {
-      let result = await creditDesk.createPool(
+      let result = await goldfinchFactory.createPool(
         person2,
+        new BN(20),
         usdcVal(100),
         interestAprAsBN("15.0"),
         new BN(30),
         new BN(365),
         new BN(0),
-        new BN(20),
-        {from: person2}
+        {from: owner}
       )
       let event = result.logs[result.logs.length - 1]
       pool = await TranchedPool.at(event.args.pool)
@@ -167,7 +191,7 @@ describe("PoolTokens", () => {
       )
     })
 
-    it("should disallow redeeming tokesn that don't exist", async () => {
+    it("should disallow redeeming tokens that don't exist", async () => {
       const interestRedeemed = usdcVal(2)
       const randomTokenId = "42"
       return expect(redeemToken(randomTokenId, mintAmount, interestRedeemed)).to.be.rejectedWith(/Invalid tokenId/)
@@ -175,9 +199,8 @@ describe("PoolTokens", () => {
 
     it("should only allow redemptions that come from the token's pool", async () => {
       const interestRedeemed = usdcVal(2)
-      return expect(poolTokens.redeem(tokenId, mintAmount, interestRedeemed)).to.be.rejectedWith(
-        /Only the token's pool can redeem/
-      )
+      const fakePoolRedemption = withPoolSender(() => poolTokens.redeem(tokenId, mintAmount, interestRedeemed), person2)
+      return expect(fakePoolRedemption).to.be.rejectedWith(/Only the token's pool can redeem/)
     })
 
     it("should emit an event", async () => {
@@ -198,15 +221,15 @@ describe("PoolTokens", () => {
   describe("burning", async () => {
     let tokenId, mintAmount
     beforeEach(async function () {
-      let result = await creditDesk.createPool(
+      let result = await goldfinchFactory.createPool(
         person2,
+        new BN(20),
         usdcVal(100),
         interestAprAsBN("15.0"),
         new BN(30),
         new BN(365),
         new BN(0),
-        new BN(20),
-        {from: person2}
+        {from: owner}
       )
       let event = result.logs[result.logs.length - 1]
       pool = await TranchedPool.at(event.args.pool)
@@ -252,15 +275,15 @@ describe("PoolTokens", () => {
   describe("go listing", async () => {
     let amount
     beforeEach(async function () {
-      let result = await creditDesk.createPool(
+      let result = await goldfinchFactory.createPool(
         person2,
+        new BN(20),
         usdcVal(100),
         interestAprAsBN("15.0"),
         new BN(30),
         new BN(365),
         new BN(0),
-        new BN(20),
-        {from: person2}
+        {from: owner}
       )
       let event = result.logs[result.logs.length - 1]
       pool = await TranchedPool.at(event.args.pool)

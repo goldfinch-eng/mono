@@ -5,8 +5,8 @@ pragma experimental ABIEncoderV2;
 import "../protocol/core/PoolTokens.sol";
 
 contract TestPoolTokens is PoolTokens {
-  bool disablePoolValidation;
-  address payable sender;
+  bool public disablePoolValidation;
+  address payable public sender;
 
   // solhint-disable-next-line modifiers/ensure-modifiers
   function _disablePoolValidation(bool shouldDisable) public {
@@ -18,11 +18,11 @@ contract TestPoolTokens is PoolTokens {
     sender = _sender;
   }
 
-  function validPool(address _sender) internal override returns (bool) {
+  function _validPool(address _sender) internal view override returns (bool) {
     if (disablePoolValidation) {
       return true;
     } else {
-      return super.validPool(_sender);
+      return super._validPool(_sender);
     }
   }
 

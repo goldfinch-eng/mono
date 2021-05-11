@@ -5,7 +5,6 @@ pragma experimental ABIEncoderV2;
 
 abstract contract IV2CreditLine {
   address public borrower;
-  address public underwriter;
   uint256 public limit;
   uint256 public interestApr;
   uint256 public paymentPeriodInDays;
@@ -34,6 +33,17 @@ abstract contract IV2CreditLine {
       uint256,
       uint256
     );
+
+  function initialize(
+    address _config,
+    address owner,
+    address _borrower,
+    uint256 _limit,
+    uint256 _interestApr,
+    uint256 _paymentPeriodInDays,
+    uint256 _termInDays,
+    uint256 _lateFeeApr
+  ) public virtual;
 
   function setTermEndTime(uint256 newTermEndTime) external virtual;
 

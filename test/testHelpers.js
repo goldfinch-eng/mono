@@ -213,21 +213,20 @@ async function getBalance(address, erc20) {
 
 const createPoolWithCreditLine = async ({
   people,
-  creditDesk,
+  goldfinchFactory,
   usdc,
+  juniorFeePercent,
   interestApr,
   paymentPeriodInDays,
   termInDays,
   limit,
   lateFeeApr,
-  juniorFeePercent,
 }) => {
   const CreditLine = artifacts.require("CreditLine")
   const TranchedPool = artifacts.require("TestTranchedPool")
 
   const thisOwner = people.owner
   const thisBorrower = people.borrower
-  const thisUnderwriter = people.underwriter
 
   if (!thisBorrower) {
     throw new Error("No borrower is set. Set one in a beforeEach, or pass it in explicitly")
@@ -237,17 +236,15 @@ const createPoolWithCreditLine = async ({
     throw new Error("No owner is set. Please set one in a beforeEach or pass it in explicitly")
   }
 
-  await creditDesk.setUnderwriterGovernanceLimit(thisUnderwriter, limit.mul(new BN(5)))
-
-  let result = await creditDesk.createPool(
+  let result = await goldfinchFactory.createPool(
     thisBorrower,
+    juniorFeePercent,
     limit,
     interestApr,
     paymentPeriodInDays,
     termInDays,
     lateFeeApr,
-    juniorFeePercent,
-    {from: thisUnderwriter}
+    {from: thisOwner}
   )
   let event = result.logs[result.logs.length - 1]
   let pool = await TranchedPool.at(event.args.pool)

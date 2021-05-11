@@ -113,7 +113,6 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
       address(config),
       address(this),
       _borrower,
-      msg.sender,
       _limit,
       _interestApr,
       _paymentPeriodInDays,
@@ -129,48 +128,6 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     cl.grantRole(keccak256("OWNER_ROLE"), config.protocolAdminAddress());
     cl.authorizePool(address(config));
     return clAddress;
-  }
-
-  /**
-   * @notice Allows anyone to create a new TranchedPool for a single borrower
-   * @param _borrower The borrower for whom the CreditLine will be created
-   * @param _limit The maximum amount a borrower can drawdown from this CreditLine
-   * @param _interestApr The interest amount, on an annualized basis (APR, so non-compounding), expressed as an integer.
-   *  We assume 8 digits of precision. For example, to submit 15.34%, you would pass up 15340000,
-   *  and 5.34% would be 5340000
-   * @param _paymentPeriodInDays How many days in each payment period.
-   *  ie. the frequency with which they need to make payments.
-   * @param _termInDays Number of days in the credit term. It is used to set the `termEndTime` upon first drawdown.
-   *  ie. The credit line should be fully paid off {_termIndays} days after the first drawdown.
-   * @param _lateFeeApr The additional interest you will pay if you are late. For example, if this is 3%, and your
-   *  normal rate is 15%, then you will pay 18% while you are late.
-   *
-   * Requirements:
-   *   TODO: THIS ISN"T REALLY TRUE ANYMORE! WE SHOULD DO SOMETHING ABOUT THIS!
-   * - the caller must be an underwriter with enough limit (see `setUnderwriterGovernanceLimit`)
-   */
-  function createPool(
-    address _borrower,
-    uint256 _limit,
-    uint256 _interestApr,
-    uint256 _paymentPeriodInDays,
-    uint256 _termInDays,
-    uint256 _lateFeeApr,
-    uint256 juniorFeePercent
-  ) public whenNotPaused returns (address) {
-    address clAddress = createCreditLine(
-      _borrower,
-      _limit,
-      _interestApr,
-      _paymentPeriodInDays,
-      _termInDays,
-      _lateFeeApr
-    );
-    // Todo: The owner should probably be the underwriter?
-    address poolAddress = getCreditLineFactory().createPool(msg.sender, _borrower, clAddress, juniorFeePercent);
-    CreditLine(clAddress).grantRole(keccak256("OWNER_ROLE"), poolAddress);
-    emit PoolCreated(poolAddress, _borrower);
-    return poolAddress;
   }
 
   /**
@@ -352,44 +309,6 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     );
     require(success, "Failed to transfer funds");
   }
-
-  function migrateCreditLine(
-    CreditLine clToMigrate,
-    address borrower,
-    uint256 limit,
-    uint256 interestApr,
-    uint256 paymentPeriodInDays,
-    uint256 termInDays,
-    uint256 lateFeeApr
-  ) public {
-    require(clToMigrate.underwriter() == msg.sender, "Caller must be the underwriter");
-    require(clToMigrate.limit() > 0, "Can't migrate empty credit line");
-    address newClAddress = createCreditLine(borrower, limit, interestApr, paymentPeriodInDays, termInDays, lateFeeApr);
-
-    CreditLine newCl = CreditLine(newClAddress);
-
-    // Set accounting state vars.
-    newCl.setBalance(clToMigrate.balance());
-    newCl.setInterestOwed(clToMigrate.interestOwed());
-    newCl.setPrincipalOwed(clToMigrate.principalOwed());
-    newCl.setTermEndTime(clToMigrate.termEndTime());
-    newCl.setNextDueTime(clToMigrate.nextDueTime());
-    newCl.setInterestAccruedAsOf(clToMigrate.interestAccruedAsOf());
-    newCl.setWritedownAmount(clToMigrate.writedownAmount());
-    newCl.setLastFullPaymentTime(clToMigrate.lastFullPaymentTime());
-
-    // Close out the original credit line
-    clToMigrate.setLimit(0);
-    clToMigrate.setBalance(0);
-    bool success = config.getPool().transferFrom(
-      address(clToMigrate),
-      address(newCl),
-      config.getUSDC().balanceOf(address(clToMigrate))
-    );
-    require(success, "Failed to transfer funds");
-  }
-
-  // Public View Functions (Getters)
 
   /**
    * @notice Simple getter for the creditlines of a given underwriter

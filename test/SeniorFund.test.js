@@ -16,7 +16,7 @@ const {
   usdcVal,
   createPoolWithCreditLine,
 } = require("./testHelpers.js")
-let accounts, owner, person2, person3, reserve, borrower, underwriter
+let accounts, owner, person2, person3, reserve, borrower
 const WITHDRAWL_FEE_DENOMINATOR = new BN(200)
 
 describe("SeniorFund", () => {
@@ -47,7 +47,7 @@ describe("SeniorFund", () => {
       seniorFundStrategy,
       usdc,
       seniorFundFidu: fidu,
-      creditDesk,
+      goldfinchFactory,
       goldfinchConfig,
     } = await deployAllContracts(deployments)
     // A bit of setup for our test users
@@ -65,8 +65,8 @@ describe("SeniorFund", () => {
     let lateFeeApr = new BN(0)
     let juniorFeePercent = new BN(20)
     ;({tranchedPool} = await createPoolWithCreditLine({
-      people: {owner, borrower, underwriter},
-      creditDesk,
+      people: {owner, borrower},
+      goldfinchFactory,
       limit,
       interestApr,
       paymentPeriodInDays,
@@ -86,7 +86,6 @@ describe("SeniorFund", () => {
     accounts = await web3.eth.getAccounts()
     ;[owner, person2, person3, reserve] = accounts
     borrower = person2
-    underwriter = person3
     ;({usdc, seniorFund, seniorFundStrategy, tranchedPool, fidu, goldfinchConfig} = await setupTest())
   })
 
@@ -449,14 +448,22 @@ describe("SeniorFund", () => {
           goldfinchConfig.address,
           person2,
           person2,
-          person2,
           usdcVal(1000),
           interestAprAsBN(0),
           new BN(1),
           new BN(10),
           interestAprAsBN(0)
         )
-        await unknownPool.initialize(person2, goldfinchConfig.address, creditLine.address, interestAprAsBN(10))
+        await unknownPool.initialize(
+          goldfinchConfig.address,
+          person2,
+          new BN(20),
+          usdcVal(1000),
+          interestAprAsBN(0),
+          new BN(1),
+          new BN(10),
+          interestAprAsBN(0)
+        )
         await unknownPool.lockJuniorCapital({from: person2})
 
         await expect(seniorFund.invest(unknownPool.address)).to.be.rejectedWith(/Pool must be valid/)
@@ -466,7 +473,7 @@ describe("SeniorFund", () => {
     context("strategy amount is > 0", () => {
       it("should deposit amount into the pool", async () => {
         // Make the strategy invest
-        await tranchedPool.lockJuniorCapital({from: underwriter})
+        await tranchedPool.lockJuniorCapital({from: borrower})
         let investmentAmount = await seniorFundStrategy.invest(seniorFund.address, tranchedPool.address)
 
         await expectAction(async () => await seniorFund.invest(tranchedPool.address)).toChange([
@@ -476,7 +483,7 @@ describe("SeniorFund", () => {
 
       it("should emit an event", async () => {
         // Make the strategy invest
-        await tranchedPool.lockJuniorCapital({from: underwriter})
+        await tranchedPool.lockJuniorCapital({from: borrower})
         let investmentAmount = await seniorFundStrategy.invest(seniorFund.address, tranchedPool.address)
 
         let receipt = await seniorFund.invest(tranchedPool.address)

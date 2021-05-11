@@ -41,12 +41,17 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
   );
 
   function initialize(
-    address owner,
     address _config,
-    address _creditLine,
-    uint256 _juniorFeePercent
+    address _borrower,
+    uint256 _juniorFeePercent,
+    uint256 _limit,
+    uint256 _interestApr,
+    uint256 _paymentPeriodInDays,
+    uint256 _termInDays,
+    uint256 _lateFeeApr
   ) public override initializer {
-    __BaseUpgradeablePausable__init(owner);
+    __BaseUpgradeablePausable__init(_borrower);
+    config = GoldfinchConfig(_config);
     seniorTranche = TrancheInfo({
       principalSharePrice: 1,
       interestSharePrice: 0,
@@ -61,10 +66,19 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
       interestAPR: 0,
       lockedAt: 0
     });
-    config = GoldfinchConfig(_config);
-    // We may need to call the factory here to create the creditline, or have the factory provide owner role on the
-    // creditline to this contract
+    address _creditLine = config.getCreditLineFactory().createCreditLine();
     creditLine = IV2CreditLine(_creditLine);
+    creditLine.initialize(
+      _config,
+      address(this), // Set self as the owner
+      _borrower,
+      _limit,
+      _interestApr,
+      _paymentPeriodInDays,
+      _termInDays,
+      _lateFeeApr
+    );
+
     createdAt = block.timestamp;
     juniorFeePercent = _juniorFeePercent;
 

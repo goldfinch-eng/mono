@@ -45,5 +45,9 @@ interface IPoolTokens {
 
   function burn(uint256 tokenId) external;
 
+  function onPoolCreated(address newPool) external;
+
   function getTokenInfo(uint256 tokenId) external view returns (TokenInfo memory);
+
+  function validPool(address sender) external view returns (bool);
 }

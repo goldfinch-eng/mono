@@ -203,7 +203,7 @@ async function baseDeploy(hre) {
       contractName = "TestPoolTokens"
     }
 
-    logger("About to deploy Junior Tokens...")
+    logger("About to deploy Pool Tokens...")
     const poolTokens = await deploy(contractName, {
       from: proxy_owner,
       proxy: {

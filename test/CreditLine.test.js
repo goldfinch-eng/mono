@@ -17,7 +17,6 @@ const {time} = require("@openzeppelin/test-helpers")
 let accounts, owner, person2, person3, goldfinchConfig
 
 describe("CreditLine", () => {
-  let underwriter
   let borrower
   let limit = usdcVal(500)
   let interestApr = interestAprAsBN("5.00")
@@ -36,7 +35,6 @@ describe("CreditLine", () => {
   let createAndSetCreditLineAttributes = async ({balance, interestOwed, principalOwed, nextDueTime}, people = {}) => {
     const thisOwner = people.owner || owner
     const thisBorrower = people.borrower || borrower
-    const thisUnderwriter = people.underwriter || underwriter
 
     if (!thisBorrower) {
       throw new Error("No borrower is set. Set one in a beforeEach, or pass it in explicitly")
@@ -66,7 +64,6 @@ describe("CreditLine", () => {
       goldfinchConfig.address,
       thisOwner,
       thisBorrower,
-      thisUnderwriter,
       limit,
       interestApr,
       paymentPeriodInDays,
@@ -101,7 +98,6 @@ describe("CreditLine", () => {
     ;[owner, person2, person3] = accounts
     ;({usdc, goldfinchConfig} = await setupTest())
 
-    underwriter = person2
     borrower = person3
 
     creditLine = await createAndSetCreditLineAttributes({

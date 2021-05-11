@@ -14,6 +14,7 @@
         "**/PoolTokens.sol:PoolTokens": {
           "mint": ["onlyPool"],
           "redeem": ["onlyPool"],
+          "onPoolCreated": ["onlyGoldfinchFactory"],
           "burn": [],
           "getTokenInfo": []
         },

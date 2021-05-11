@@ -3,20 +3,20 @@ const hre = require("hardhat")
 const {deployments, artifacts} = hre
 const {expect, BN, deployAllContracts, usdcVal, createPoolWithCreditLine} = require("./testHelpers.js")
 const {interestAprAsBN, TRANCHES} = require("../blockchain_scripts/deployHelpers")
-let accounts, owner, borrower, underwriter
+let accounts, owner, borrower
 
 describe("FixedLeverageRatioStrategy", () => {
   let tranchedPool, seniorFund, strategy, juniorInvestmentAmount
   let leverageRatio = new BN(4)
 
   const setupTest = deployments.createFixture(async ({deployments}) => {
-    ;[owner, borrower, underwriter] = await web3.eth.getAccounts()
+    ;[owner, borrower] = await web3.eth.getAccounts()
 
-    const {seniorFund, goldfinchConfig, creditDesk, usdc} = await deployAllContracts(deployments, {
+    const {seniorFund, goldfinchConfig, goldfinchFactory, usdc} = await deployAllContracts(deployments, {
       fromAccount: owner,
     })
 
-    await goldfinchConfig.bulkAddToGoList([owner, borrower, underwriter])
+    await goldfinchConfig.bulkAddToGoList([owner, borrower])
 
     juniorInvestmentAmount = usdcVal(10000)
     let limit = juniorInvestmentAmount.mul(new BN(10))
@@ -26,14 +26,14 @@ describe("FixedLeverageRatioStrategy", () => {
     let lateFeeApr = new BN(0)
     let juniorFeePercent = new BN(20)
     ;({tranchedPool} = await createPoolWithCreditLine({
-      people: {owner, borrower, underwriter},
-      creditDesk,
+      people: {owner, borrower},
+      goldfinchFactory,
+      juniorFeePercent,
       limit,
       interestApr,
       paymentPeriodInDays,
       termInDays,
       lateFeeApr,
-      juniorFeePercent,
       usdc,
     }))
 
@@ -57,7 +57,7 @@ describe("FixedLeverageRatioStrategy", () => {
 
   describe("invest", () => {
     it("levers junior investment using the leverageRatio", async () => {
-      await tranchedPool.lockJuniorCapital({from: underwriter})
+      await tranchedPool.lockJuniorCapital({from: borrower})
 
       let amount = await strategy.invest(seniorFund.address, tranchedPool.address)
 
@@ -74,8 +74,8 @@ describe("FixedLeverageRatioStrategy", () => {
 
     context("pool is locked", () => {
       it("does not invest", async () => {
-        await tranchedPool.lockJuniorCapital({from: underwriter})
-        await tranchedPool.lockPool({from: underwriter})
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        await tranchedPool.lockPool({from: borrower})
 
         let amount = await strategy.invest(seniorFund.address, tranchedPool.address)
 
@@ -87,7 +87,7 @@ describe("FixedLeverageRatioStrategy", () => {
       it("invests up to the levered amount", async () => {
         let existingSeniorPrincipal = juniorInvestmentAmount.add(new BN(10))
         await tranchedPool.deposit(TRANCHES.Senior, existingSeniorPrincipal)
-        await tranchedPool.lockJuniorCapital({from: underwriter})
+        await tranchedPool.lockJuniorCapital({from: borrower})
 
         let amount = await strategy.invest(seniorFund.address, tranchedPool.address)
 
@@ -101,7 +101,7 @@ describe("FixedLeverageRatioStrategy", () => {
           juniorInvestmentAmount.mul(leverageRatio).add(new BN(1))
         )
         await tranchedPool.deposit(TRANCHES.Senior, existingSeniorPrincipal)
-        await tranchedPool.lockJuniorCapital({from: underwriter})
+        await tranchedPool.lockJuniorCapital({from: borrower})
 
         let amount = await strategy.invest(seniorFund.address, tranchedPool.address)
 

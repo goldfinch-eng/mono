@@ -25,7 +25,6 @@ contract CreditLine is BaseUpgradeablePausable {
 
   // Credit line terms
   address public borrower;
-  address public underwriter;
   uint256 public limit;
   uint256 public interestApr;
   uint256 public paymentPeriodInDays;
@@ -49,18 +48,16 @@ contract CreditLine is BaseUpgradeablePausable {
     address _config,
     address owner,
     address _borrower,
-    address _underwriter,
     uint256 _limit,
     uint256 _interestApr,
     uint256 _paymentPeriodInDays,
     uint256 _termInDays,
     uint256 _lateFeeApr
   ) public initializer {
-    require(owner != address(0) && _borrower != address(0) && _underwriter != address(0), "Zero address passed in");
+    require(owner != address(0) && _borrower != address(0), "Zero address passed in");
     __BaseUpgradeablePausable__init(owner);
     config = GoldfinchConfig(_config);
     borrower = _borrower;
-    underwriter = _underwriter;
     limit = _limit;
     interestApr = _interestApr;
     paymentPeriodInDays = _paymentPeriodInDays;
@@ -109,7 +106,7 @@ contract CreditLine is BaseUpgradeablePausable {
     lateFeeApr = newLateFeeApr;
   }
 
-  function setLimit(uint256 newAmount) external onlyAdminOrUnderwriter {
+  function setLimit(uint256 newAmount) external onlyAdmin {
     limit = newAmount;
   }
 
@@ -291,10 +288,5 @@ contract CreditLine is BaseUpgradeablePausable {
 
   function getUSDCBalance(address _address) internal view returns (uint256) {
     return config.getUSDC().balanceOf(_address);
-  }
-
-  modifier onlyAdminOrUnderwriter() {
-    require(isAdmin() || _msgSender() == underwriter, "Restricted to owner or underwriter");
-    _;
   }
 }

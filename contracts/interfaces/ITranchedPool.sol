@@ -20,10 +20,14 @@ abstract contract ITranchedPool {
   }
 
   function initialize(
-    address owner,
     address _config,
-    address _creditLine,
-    uint256 _juniorFeePercent
+    address _borrower,
+    uint256 _juniorFeePercent,
+    uint256 _limit,
+    uint256 _interestApr,
+    uint256 _paymentPeriodInDays,
+    uint256 _termInDays,
+    uint256 _lateFeeApr
   ) public virtual;
 
   function getTranche(uint256 tranche) external view virtual returns (TrancheInfo memory);

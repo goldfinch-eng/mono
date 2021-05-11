@@ -329,7 +329,7 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
   }
 
   function validPool(ITranchedPool pool) internal view returns (bool) {
-    return config.getCreditLineFactory().validPool(address(pool));
+    return config.getPoolTokens().validPool(address(pool));
   }
 
   function approvePool(ITranchedPool pool, uint256 allowance) internal {
