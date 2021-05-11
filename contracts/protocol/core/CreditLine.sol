@@ -42,7 +42,7 @@ contract CreditLine is BaseUpgradeablePausable {
   uint256 public writedownAmount;
   uint256 public lastFullPaymentTime;
 
-  GoldfinchConfig private config;
+  GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
 
   function initialize(
@@ -67,6 +67,10 @@ contract CreditLine is BaseUpgradeablePausable {
     termInDays = _termInDays;
     lateFeeApr = _lateFeeApr;
     interestAccruedAsOf = block.timestamp;
+  }
+
+  function updateGoldfinchConfig() external onlyAdmin {
+    config = GoldfinchConfig(config.configAddress());
   }
 
   function setTermEndTime(uint256 newTermEndTime) public onlyAdmin {
@@ -122,6 +126,7 @@ contract CreditLine is BaseUpgradeablePausable {
   function assess()
     public
     onlyAdmin
+    whenNotPaused
     returns (
       uint256,
       uint256,
