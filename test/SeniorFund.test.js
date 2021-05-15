@@ -1,9 +1,10 @@
-/* global web3 artifacts */
+/* global web3 */
 const {interestAprAsBN, TRANCHES, OWNER_ROLE, PAUSER_ROLE, ETHDecimals} = require("../blockchain_scripts/deployHelpers")
 const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
 const hre = require("hardhat")
-const {deployments} = hre
+const {deployments, artifacts} = hre
 const {
+  advanceTime,
   expect,
   BN,
   getBalance,
@@ -13,15 +14,24 @@ const {
   expectAction,
   decimals,
   USDC_DECIMALS,
+  SECONDS_PER_DAY,
   usdcVal,
   createPoolWithCreditLine,
+  fiduTolerance,
 } = require("./testHelpers.js")
+const {expectEvent} = require("@openzeppelin/test-helpers")
 let accounts, owner, person2, person3, reserve, borrower
 const WITHDRAWL_FEE_DENOMINATOR = new BN(200)
 
 describe("SeniorFund", () => {
-  let seniorFund, seniorFundStrategy, usdc, fidu, goldfinchConfig, tranchedPool
+  let seniorFund, seniorFundStrategy, usdc, fidu, goldfinchConfig, tranchedPool, creditLine
+  let interestApr = interestAprAsBN("5.00")
+  let paymentPeriodInDays = new BN(30)
+  let lateFeeApr = new BN(0)
   let juniorInvestmentAmount = usdcVal(10000)
+  let limit = juniorInvestmentAmount.mul(new BN(10))
+  let termInDays = new BN(365)
+  let juniorFeePercent = new BN(20)
   let depositAmount = new BN(4).mul(USDC_DECIMALS)
   let withdrawAmount = new BN(2).mul(USDC_DECIMALS)
   const decimalsDelta = decimals.div(USDC_DECIMALS)
@@ -56,15 +66,7 @@ describe("SeniorFund", () => {
     await goldfinchConfig.setTreasuryReserve(reserve)
 
     await goldfinchConfig.bulkAddToGoList([owner, person2, person3, reserve, seniorFund.address])
-
-    juniorInvestmentAmount = usdcVal(10000)
-    let limit = juniorInvestmentAmount.mul(new BN(10))
-    let interestApr = interestAprAsBN("5.00")
-    let paymentPeriodInDays = new BN(30)
-    let termInDays = new BN(365)
-    let lateFeeApr = new BN(0)
-    let juniorFeePercent = new BN(20)
-    ;({tranchedPool} = await createPoolWithCreditLine({
+    ;({tranchedPool, creditLine} = await createPoolWithCreditLine({
       people: {owner, borrower},
       goldfinchFactory,
       limit,
@@ -78,7 +80,7 @@ describe("SeniorFund", () => {
 
     await tranchedPool.deposit(TRANCHES.Junior, juniorInvestmentAmount)
 
-    return {usdc, seniorFund, seniorFundStrategy, tranchedPool, fidu, goldfinchConfig}
+    return {usdc, seniorFund, seniorFundStrategy, tranchedPool, creditLine, fidu, goldfinchConfig}
   })
 
   beforeEach(async () => {
@@ -86,7 +88,7 @@ describe("SeniorFund", () => {
     accounts = await web3.eth.getAccounts()
     ;[owner, person2, person3, reserve] = accounts
     borrower = person2
-    ;({usdc, seniorFund, seniorFundStrategy, tranchedPool, fidu, goldfinchConfig} = await setupTest())
+    ;({usdc, seniorFund, seniorFundStrategy, tranchedPool, creditLine, fidu, goldfinchConfig} = await setupTest())
   })
 
   describe("Access Controls", () => {
@@ -426,6 +428,7 @@ describe("SeniorFund", () => {
     beforeEach(async () => {
       await erc20Approve(usdc, seniorFund.address, usdcVal(100000), [owner])
       await makeDeposit(owner, usdcVal(100000))
+      await goldfinchConfig.addToGoList(seniorFund.address)
     })
 
     context("Pool is not valid", () => {
@@ -493,6 +496,10 @@ describe("SeniorFund", () => {
         expect(event.args.tranchedPool).to.equal(tranchedPool.address)
         expect(event.args.amount).to.bignumber.equal(investmentAmount)
       })
+
+      it("has no remaining erc20 allowance", async () => {
+        // TODO
+      })
     })
 
     context("strategy amount is 0", async () => {
@@ -506,21 +513,183 @@ describe("SeniorFund", () => {
     })
   })
 
-  // TODO
   describe("redeem", async () => {
-    it("should redeem the maximum from the TranchedPool", async () => {})
+    let tokenAddress, reserveAddress, poolTokens
+    juniorInvestmentAmount = usdcVal(100)
 
-    it("should adjust the share price accounting for new interest redeemed", async () => {})
+    beforeEach(async () => {
+      reserveAddress = await goldfinchConfig.getAddress(CONFIG_KEYS.TreasuryReserve)
+      tokenAddress = await goldfinchConfig.getAddress(CONFIG_KEYS.PoolTokens)
+      poolTokens = await artifacts.require("PoolTokens").at(tokenAddress)
 
-    it("should emit an event", async () => {})
+      await erc20Approve(usdc, seniorFund.address, usdcVal(100000), [owner])
+      await makeDeposit(owner, usdcVal(100000))
+      await goldfinchConfig.addToGoList(seniorFund.address)
+    })
+
+    it("should redeem the maximum from the TranchedPool", async () => {
+      // Make the senior fund invest
+      await tranchedPool.lockJuniorCapital({from: borrower})
+      await seniorFund.invest(tranchedPool.address)
+
+      // Simulate repayment ensuring a full term has passed
+      await tranchedPool.lockPool({from: borrower})
+      await tranchedPool.drawdown(usdcVal(100), {from: borrower})
+      await advanceTime(tranchedPool, {days: termInDays.toNumber()})
+      let payAmount = usdcVal(105)
+      await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
+      await tranchedPool.pay(payAmount, {from: borrower})
+
+      let tokenId = await poolTokens.tokenOfOwnerByIndex(seniorFund.address, 0)
+
+      let balanceBefore = await usdc.balanceOf(seniorFund.address)
+      let tokenInfoBefore = await poolTokens.getTokenInfo(tokenId)
+      let originalReserveBalance = await getBalance(reserveAddress, usdc)
+
+      await seniorFund.redeem(tokenId)
+
+      let balanceAfter = await usdc.balanceOf(seniorFund.address)
+      let tokenInfoAfter = await poolTokens.getTokenInfo(tokenId)
+      let newReserveBalance = await getBalance(reserveAddress, usdc)
+
+      let interestRedeemed = new BN(tokenInfoAfter.interestRedeemed).sub(new BN(tokenInfoBefore.interestRedeemed))
+      let principalRedeemed = new BN(tokenInfoAfter.principalRedeemed).sub(new BN(tokenInfoBefore.principalRedeemed))
+
+      // $100 principal with 4x leverage means junior contributed 100 * (1/5) and
+      // senior contributed 100 * (4/5) = $80
+      expect(principalRedeemed).to.bignumber.equal(usdcVal(80))
+      // $5 * (4/5) * (1 - (0.2 + 0.1)) = $2.8 where 0.2 is juniorFeePercent and 0.1 is protocolFee
+      expect(interestRedeemed).to.bignumber.equal(new BN(2.8 * USDC_DECIMALS.toNumber()))
+
+      expect(balanceAfter).to.bignumber.gte(balanceBefore)
+      expect(balanceAfter.sub(balanceBefore)).to.bignumber.equal(interestRedeemed.add(principalRedeemed))
+      expect(newReserveBalance).to.bignumber.eq(originalReserveBalance)
+    })
+
+    it("should adjust the share price accounting for new interest redeemed", async () => {
+      // Make the senior fund invest
+      await tranchedPool.lockJuniorCapital({from: borrower})
+      await seniorFund.invest(tranchedPool.address)
+
+      // Simulate repayment ensuring a full term has passed
+      await tranchedPool.lockPool({from: borrower})
+      await tranchedPool.drawdown(usdcVal(100), {from: borrower})
+      await advanceTime(tranchedPool, {days: termInDays.toNumber()})
+      let payAmount = usdcVal(105)
+      await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
+      await tranchedPool.pay(payAmount, {from: borrower})
+
+      let tokenId = await poolTokens.tokenOfOwnerByIndex(seniorFund.address, 0)
+
+      let tokenInfoBefore = await poolTokens.getTokenInfo(tokenId)
+      let originalSharePrice = await seniorFund.sharePrice()
+
+      await seniorFund.redeem(tokenId)
+
+      let tokenInfoAfter = await poolTokens.getTokenInfo(tokenId)
+      let newSharePrice = await seniorFund.sharePrice()
+
+      let interestRedeemed = new BN(tokenInfoAfter.interestRedeemed).sub(new BN(tokenInfoBefore.interestRedeemed))
+
+      let expectedSharePrice = interestRedeemed
+        .mul(decimals.div(USDC_DECIMALS))
+        .mul(decimals)
+        .div(await fidu.totalSupply())
+        .add(originalSharePrice)
+
+      expect(newSharePrice).to.bignumber.gt(originalSharePrice)
+      expect(newSharePrice).to.bignumber.equal(expectedSharePrice)
+    })
+
+    it("should emit events for interest, principal, and reserve", async () => {
+      // Make the senior fund invest
+      await tranchedPool.lockJuniorCapital({from: borrower})
+      await seniorFund.invest(tranchedPool.address)
+
+      // Simulate repayment ensuring a full term has passed
+      await tranchedPool.lockPool({from: borrower})
+      await tranchedPool.drawdown(usdcVal(100), {from: borrower})
+      await advanceTime(tranchedPool, {days: termInDays.toNumber()})
+      let payAmount = usdcVal(105)
+      await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
+      await tranchedPool.pay(payAmount, {from: borrower})
+
+      let tokenId = await poolTokens.tokenOfOwnerByIndex(seniorFund.address, 0)
+
+      let tokenInfoBefore = await poolTokens.getTokenInfo(tokenId)
+
+      let receipt = await seniorFund.redeem(tokenId)
+
+      let tokenInfoAfter = await poolTokens.getTokenInfo(tokenId)
+      let interestRedeemed = new BN(tokenInfoAfter.interestRedeemed).sub(new BN(tokenInfoBefore.interestRedeemed))
+      let principalRedeemed = new BN(tokenInfoAfter.principalRedeemed).sub(new BN(tokenInfoBefore.principalRedeemed))
+
+      expectEvent(receipt, "InterestCollected", {
+        payer: tranchedPool.address,
+        amount: interestRedeemed,
+      })
+
+      expectEvent(receipt, "PrincipalCollected", {
+        payer: tranchedPool.address,
+        amount: principalRedeemed,
+      })
+
+      // No reserve funds should be collected for a regular redeem
+      expectEvent.notEmitted(receipt, "ReserveFundsCollected")
+    })
   })
 
-  // TODO
   describe("writedown", async () => {
-    it("should adjust the share price accounting for lost principal", async () => {})
+    let originalSharePrice, originalTotalShares
 
-    it("should emit an event", async () => {})
+    beforeEach(async () => {
+      await makeDeposit(person2, usdcVal(90))
 
+      originalSharePrice = await seniorFund.sharePrice()
+      originalTotalShares = await fidu.totalSupply()
+
+      // Note in actuality, we calculate by the day, and use decimal math. BN can't handle decimals,
+      // So we just use a small tolerance in the expectations later on
+      await tranchedPool.lockJuniorCapital({from: borrower})
+      await tranchedPool.lockPool({from: borrower})
+      await tranchedPool.drawdown(usdcVal(100), {from: borrower})
+    })
+
+    context("before loan term ends", async () => {
+      it("should write down the principal and distribute losses", async () => {
+        // Assess for two periods of lateness
+        const paymentPeriodInSeconds = paymentPeriodInDays.mul(SECONDS_PER_DAY)
+        const twoPaymentPeriodsInSeconds = paymentPeriodInSeconds.mul(new BN(2))
+        await advanceTime(tranchedPool, {seconds: twoPaymentPeriodsInSeconds})
+
+        await tranchedPool.assess()
+        await seniorFund.writedown(tranchedPool.address)
+
+        // So writedown is 2 periods late - 1 grace period / 4 max = 25%
+        let expectedWritedown = usdcVal(100).div(new BN(4)) // 25% of 100 = 25
+
+        var newSharePrice = await seniorFund.sharePrice()
+        var delta = originalSharePrice.sub(newSharePrice)
+        let normalizedWritedown = await seniorFund._usdcToFidu(expectedWritedown)
+        var expectedDelta = normalizedWritedown.mul(decimals).div(originalTotalShares)
+
+        expect(delta).to.be.bignumber.closeTo(expectedDelta, fiduTolerance)
+        expect(newSharePrice).to.be.bignumber.lt(originalSharePrice)
+        expect(newSharePrice).to.be.bignumber.closeTo(originalSharePrice.sub(delta), fiduTolerance)
+      })
+
+      it("should decrease the write down amount if partially paid back", async () => {
+        // TODO: requires TranchedPool.pay
+      })
+
+      it("should reset the writedowns to 0 if fully paid back", async () => {
+        // TODO: requires TranchedPool.pay
+      })
+
+      it("should emit an event", async () => {})
+    })
+
+    // TODO
     context("Pool is not valid", () => {
       it("reverts", async () => {})
     })

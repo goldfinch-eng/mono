@@ -1,4 +1,4 @@
-/* global web3 */
+/* global web3 ethers */
 const chai = require("chai")
 const {artifacts} = require("hardhat")
 chai.use(require("chai-as-promised"))
@@ -197,7 +197,11 @@ async function advanceTime(creditDeskOrCreditLine, {days, seconds, toSecond}) {
   }
   // Cannot go backward
   expect(newTimestamp).to.bignumber.gt(currentTimestamp)
-  await creditDeskOrCreditLine._setTimestampForTest(newTimestamp)
+  if (creditDeskOrCreditLine) {
+    await creditDeskOrCreditLine._setTimestampForTest(newTimestamp)
+  }
+
+  ethers.provider.send("evm_setNextBlockTimestamp", [newTimestamp.toNumber()])
   return newTimestamp
 }
 

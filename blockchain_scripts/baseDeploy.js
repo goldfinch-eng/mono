@@ -287,10 +287,14 @@ async function deploySeniorFund(hre, {config}) {
   const logger = log
   const {protocol_owner, proxy_owner} = await getNamedAccounts()
 
+  const accountant = await deploy("Accountant", {from: protocol_owner, gas: 4000000, args: []})
+  logger("Accountant was deployed to:", accountant.address)
+
   let deployResult = await deploy(contractName, {
     from: proxy_owner,
     proxy: {methodName: "initialize"},
     args: [protocol_owner, config.address],
+    libraries: {["Accountant"]: accountant.address},
   })
   logger("SeniorFund was deployed to:", deployResult.address)
   const fund = await ethers.getContractAt(contractName, deployResult.address)

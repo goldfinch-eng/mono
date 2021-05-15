@@ -4,6 +4,7 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "./CreditLine.sol";
+import "../../interfaces/ICreditLine.sol";
 import "../../external/FixedPoint.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
@@ -44,6 +45,18 @@ library Accountant {
     return (interestAccrued, principalAccrued);
   }
 
+  function calculateInterestAndPrincipalAccruedOverPeriod(
+    CreditLine cl,
+    uint256 balance,
+    uint256 startTime,
+    uint256 endTime,
+    uint256 lateFeeGracePeriod
+  ) public view returns (uint256, uint256) {
+    uint256 interestAccrued = calculateInterestAccruedOverPeriod(cl, balance, startTime, endTime, lateFeeGracePeriod);
+    uint256 principalAccrued = calculatePrincipalAccrued(cl, balance, endTime);
+    return (interestAccrued, principalAccrued);
+  }
+
   function calculatePrincipalAccrued(
     CreditLine cl,
     uint256 balance,
@@ -57,7 +70,7 @@ library Accountant {
   }
 
   function calculateWritedownFor(
-    CreditLine cl,
+    ICreditLine cl,
     uint256 timestamp,
     uint256 gracePeriodInDays,
     uint256 maxDaysLate
@@ -95,7 +108,7 @@ library Accountant {
     return (unscaledWritedownPercent, writedownAmount.rawValue);
   }
 
-  function calculateAmountOwedForOneDay(CreditLine cl) public view returns (FixedPoint.Unsigned memory) {
+  function calculateAmountOwedForOneDay(ICreditLine cl) public view returns (FixedPoint.Unsigned memory) {
     // Determine theoretical interestOwed for one full day
     uint256 totalInterestPerYear = cl.balance().mul(cl.interestApr()).div(INTEREST_DECIMALS);
     FixedPoint.Unsigned memory interestOwed = FixedPoint.fromUnscaledUint(totalInterestPerYear).div(365);
@@ -117,12 +130,22 @@ library Accountant {
     // This use of min should not generate incorrect interest calculations, since
     // this functions purpose is just to normalize balances, and  will be called any time
     // a balance affecting action takes place (eg. drawdown, repayment, assessment)
-    uint256 interestAccruedAsOf = Math.min(timestamp, cl.interestAccruedAsOf());
-    uint256 secondsElapsed = timestamp.sub(interestAccruedAsOf);
+    uint256 startTime = Math.min(timestamp, cl.interestAccruedAsOf());
+    return calculateInterestAccruedOverPeriod(cl, balance, startTime, timestamp, lateFeeGracePeriodInDays);
+  }
+
+  function calculateInterestAccruedOverPeriod(
+    CreditLine cl,
+    uint256 balance,
+    uint256 startTime,
+    uint256 endTime,
+    uint256 lateFeeGracePeriodInDays
+  ) public view returns (uint256) {
+    uint256 secondsElapsed = endTime.sub(startTime);
     uint256 totalInterestPerYear = balance.mul(cl.interestApr()).div(INTEREST_DECIMALS);
     uint256 interestOwed = totalInterestPerYear.mul(secondsElapsed).div(SECONDS_PER_YEAR);
 
-    if (lateFeeApplicable(cl, timestamp, lateFeeGracePeriodInDays)) {
+    if (lateFeeApplicable(cl, endTime, lateFeeGracePeriodInDays)) {
       uint256 lateFeeInterestPerYear = balance.mul(cl.lateFeeApr()).div(INTEREST_DECIMALS);
       uint256 additionalLateFeeInterest = lateFeeInterestPerYear.mul(secondsElapsed).div(SECONDS_PER_YEAR);
       interestOwed = interestOwed.add(additionalLateFeeInterest);

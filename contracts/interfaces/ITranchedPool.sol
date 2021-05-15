@@ -32,9 +32,17 @@ abstract contract ITranchedPool {
 
   function getTranche(uint256 tranche) external view virtual returns (TrancheInfo memory);
 
+  function pay(uint256 amount) external virtual;
+
   function deposit(uint256 tranche, uint256 amount) external virtual;
 
-  function withdraw(uint256 tokenId, uint256 amount) external virtual;
+  function withdraw(uint256 tokenId, uint256 amount)
+    external
+    virtual
+    returns (uint256 interestWithdrawn, uint256 principalWithdrawn);
 
-  function withdrawMax(uint256 tokenId) external virtual;
+  function withdrawMax(uint256 tokenId)
+    external
+    virtual
+    returns (uint256 interestWithdrawn, uint256 principalWithdrawn);
 }

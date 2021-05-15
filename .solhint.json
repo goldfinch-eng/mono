@@ -64,7 +64,8 @@
           "withdrawMax": [],
           "collectInterestAndPrincipal": [],
           "drawdown": [],
-          "assess": []
+          "assess": [],
+          "pay": []
         },
         "**/PauserPausable.sol:PauserPausable": {
           "__PauserPausable__init": [],

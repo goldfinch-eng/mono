@@ -3,27 +3,18 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-abstract contract IV2CreditLine {
-  address public borrower;
-  uint256 public limit;
-  uint256 public interestApr;
-  uint256 public paymentPeriodInDays;
-  uint256 public termInDays;
-  uint256 public lateFeeApr;
+import "./ICreditLine.sol";
 
-  // Accounting variables
-  uint256 public balance;
-  uint256 public interestOwed;
-  uint256 public principalOwed;
-  uint256 public termEndTime;
-  uint256 public nextDueTime;
-  uint256 public interestAccruedAsOf;
-  uint256 public writedownAmount;
-  uint256 public lastFullPaymentTime;
+abstract contract IV2CreditLine is ICreditLine {
+  function principal() external view virtual returns (uint256);
+
+  function termStartTime() external view virtual returns (uint256);
 
   function setLimit(uint256 newAmount) external virtual;
 
   function setBalance(uint256 newBalance) external virtual;
+
+  function setPrincipal(uint256 _principal) external virtual;
 
   function assess()
     external

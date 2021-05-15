@@ -1,9 +1,14 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity 0.6.12;
+pragma experimental ABIEncoderV2;
 
-import "./BaseUpgradeablePausable.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
+
 import "../../interfaces/IFund.sol";
+import "../../interfaces/IPoolTokens.sol";
+import "./Accountant.sol";
+import "./BaseUpgradeablePausable.sol";
 import "./ConfigHelper.sol";
 
 /**
@@ -15,12 +20,14 @@ import "./ConfigHelper.sol";
 contract SeniorFund is BaseUpgradeablePausable, IFund {
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
+  using SafeMath for uint256;
 
   uint256 public compoundBalance;
+  mapping(ITranchedPool => uint256) public writedowns;
 
   event DepositMade(address indexed capitalProvider, uint256 amount, uint256 shares);
   event WithdrawalMade(address indexed capitalProvider, uint256 userAmount, uint256 reserveAmount);
-  event InterestCollected(address indexed payer, uint256 poolAmount, uint256 reserveAmount);
+  event InterestCollected(address indexed payer, uint256 amount);
   event PrincipalCollected(address indexed payer, uint256 amount);
   event ReserveFundsCollected(address indexed user, uint256 amount);
 
@@ -137,10 +144,16 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
 
   /**
    * @notice Redeem interest and/or principal from an ITranchedPool investment
-   * @param tokenId the ID of an ITranchedPoolToken to be redeemed
+   * @param tokenId the ID of an IPoolToken to be redeemed
    */
   function redeem(uint256 tokenId) public override {
-    // TODO: Just withdraw max and adjust share price
+    IPoolTokens poolTokens = config.getPoolTokens();
+    IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
+
+    ITranchedPool pool = ITranchedPool(tokenInfo.pool);
+    (uint256 interestRedeemed, uint256 principalRedeemed) = pool.withdrawMax(tokenId);
+
+    _collectInterestAndPrincipal(address(pool), interestRedeemed, principalRedeemed);
   }
 
   /**
@@ -152,7 +165,38 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
   function writedown(ITranchedPool pool) public override {
     require(validPool(pool), "Pool must be valid");
 
-    // TODO
+    (uint256 writedownPercent, uint256 writedownAmount) = Accountant.calculateWritedownFor(
+      pool.creditLine(),
+      currentTime(),
+      config.getLatenessGracePeriodInDays(),
+      config.getLatenessMaxDays()
+    );
+
+    uint256 prevWritedownAmount = writedowns[pool];
+
+    if (writedownPercent == 0 && prevWritedownAmount == 0) {
+      return;
+    }
+
+    int256 writedownDelta = int256(prevWritedownAmount) - int256(writedownAmount);
+    writedowns[pool] = writedownAmount;
+    distributeLosses(writedownDelta);
+    emit PrincipalWrittenDown(address(pool), writedownDelta);
+  }
+
+  function currentTime() internal view virtual returns (uint256) {
+    return block.timestamp;
+  }
+
+  function distributeLosses(int256 writedownDelta) internal {
+    if (writedownDelta > 0) {
+      uint256 delta = usdcToSharePrice(uint256(writedownDelta));
+      sharePrice = sharePrice.add(delta);
+    } else {
+      // If delta is negative, convert to positive uint, and sub from sharePrice
+      uint256 delta = usdcToSharePrice(uint256(writedownDelta * -1));
+      sharePrice = sharePrice.sub(delta);
+    }
   }
 
   function assets() public view override returns (uint256) {
@@ -224,7 +268,7 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
     // Send the amounts
     bool success = doUSDCTransfer(address(this), msg.sender, userAmount);
     require(success, "Failed to transfer for withdraw");
-    sendToReserve(address(this), reserveAmount, msg.sender);
+    sendToReserve(reserveAmount, msg.sender);
 
     // Burn the shares
     fidu.burnFrom(msg.sender, withdrawShares);
@@ -261,7 +305,15 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
     require(postRedeemUSDCBalance.sub(preRedeemUSDCBalance) == redeemedUSDC, "Unexpected redeem amount");
 
     uint256 interestAccrued = redeemedUSDC.sub(cBalance);
-    _collectInterestAndPrincipal(address(this), interestAccrued, 0);
+    uint256 reserveAmount = interestAccrued.div(config.getReserveDenominator());
+    uint256 poolAmount = interestAccrued.sub(reserveAmount);
+
+    _collectInterestAndPrincipal(address(this), poolAmount, 0);
+
+    if (reserveAmount > 0) {
+      sendToReserve(reserveAmount, address(cUSDC));
+    }
+
     compoundBalance = 0;
   }
 
@@ -284,34 +336,20 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
     uint256 interest,
     uint256 principal
   ) internal {
-    uint256 reserveAmount = interest.div(config.getReserveDenominator());
-    uint256 poolAmount = interest.sub(reserveAmount);
-    uint256 increment = usdcToSharePrice(poolAmount);
+    uint256 increment = usdcToSharePrice(interest);
     sharePrice = sharePrice.add(increment);
 
-    if (poolAmount > 0) {
-      emit InterestCollected(from, poolAmount, reserveAmount);
+    if (interest > 0) {
+      emit InterestCollected(from, interest);
     }
     if (principal > 0) {
       emit PrincipalCollected(from, principal);
     }
-    if (reserveAmount > 0) {
-      sendToReserve(from, reserveAmount, from);
-    }
-    // Gas savings: No need to transfer to yourself, which happens in sweepFromCompound
-    if (from != address(this)) {
-      bool success = doUSDCTransfer(from, address(this), principal.add(poolAmount));
-      require(success, "Failed to collect principal repayment");
-    }
   }
 
-  function sendToReserve(
-    address from,
-    uint256 amount,
-    address userForEvent
-  ) internal {
+  function sendToReserve(uint256 amount, address userForEvent) internal {
     emit ReserveFundsCollected(userForEvent, amount);
-    bool success = doUSDCTransfer(from, config.reserveAddress(), amount);
+    bool success = doUSDCTransfer(address(this), config.reserveAddress(), amount);
     require(success, "Reserve transfer was not successful");
   }
 

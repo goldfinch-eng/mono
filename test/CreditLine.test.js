@@ -22,6 +22,7 @@ describe("CreditLine", () => {
   let interestApr = interestAprAsBN("5.00")
   let paymentPeriodInDays = new BN(30)
   let lateFeeApr = new BN(0)
+  let termEndTime, termInDays
   let usdc
   let creditLine
   let interestOwed = 5
@@ -47,11 +48,11 @@ describe("CreditLine", () => {
     let currentTime = await time.latest()
 
     // These defaults are pretty arbitrary
-    const termInDays = 360
+    termInDays = 360
     nextDueTime = nextDueTime || currentTime.add(SECONDS_PER_DAY.mul(paymentPeriodInDays))
     const lastFullPaymentTime = BN.min(new BN(nextDueTime), currentTime)
     const termInSeconds = SECONDS_PER_DAY.mul(new BN(termInDays))
-    const termEndTime = currentTime.add(termInSeconds)
+    termEndTime = currentTime.add(termInSeconds)
 
     const accountant = await deployments.deploy("Accountant", {from: thisOwner, gas: 4000000, args: []})
     let creditLineDeployment = await deployments.deploy("TestCreditLine", {
@@ -313,6 +314,14 @@ describe("CreditLine", () => {
         expect(await creditLine.interestOwed()).to.bignumber.equal("0")
         expect(await creditLine.principalOwed()).to.bignumber.equal(usdcVal("0"))
       })
+    })
+  })
+
+  describe("termStartTime", async () => {
+    it("is correct", async () => {
+      expect(await creditLine.termStartTime()).to.bignumber.equal(
+        termEndTime.sub(SECONDS_PER_DAY.mul(new BN(termInDays)))
+      )
     })
   })
 })

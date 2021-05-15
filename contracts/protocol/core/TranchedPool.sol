@@ -30,8 +30,15 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
   TrancheInfo internal juniorTranche;
 
   event DepositMade(address indexed owner, uint256 indexed tranche, uint256 indexed tokenId, uint256 amonut);
-  event WithdrawalMade(address indexed owner, uint256 indexed tranche, uint256 indexed tokenId, uint256 amount);
+  event WithdrawalMade(
+    address indexed owner,
+    uint256 indexed tranche,
+    uint256 indexed tokenId,
+    uint256 interestWithdrawn,
+    uint256 principalWithdrawn
+  );
 
+  event PaymentCollected(address indexed payer, address indexed pool, uint256 paymentAmount);
   event PaymentApplied(
     address indexed payer,
     address indexed pool,
@@ -53,14 +60,14 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     __BaseUpgradeablePausable__init(_borrower);
     config = GoldfinchConfig(_config);
     seniorTranche = TrancheInfo({
-      principalSharePrice: 1,
+      principalSharePrice: usdcToSharePrice(1, 1),
       interestSharePrice: 0,
       principalDeposited: 0,
       interestAPR: 0,
       lockedAt: 0
     });
     juniorTranche = TrancheInfo({
-      principalSharePrice: 1,
+      principalSharePrice: usdcToSharePrice(1, 1),
       interestSharePrice: 0,
       principalDeposited: 0,
       interestAPR: 0,
@@ -95,36 +102,79 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     trancheInfo.principalDeposited += amount;
     IPoolTokens.MintParams memory params = IPoolTokens.MintParams({tranche: tranche, principalAmount: amount});
     uint256 tokenId = config.getPoolTokens().mint(params, msg.sender);
-    doUSDCTransfer(msg.sender, address(this), amount);
+    safeUSDCTransfer(msg.sender, address(this), amount);
     emit DepositMade(msg.sender, tranche, tokenId, amount);
   }
 
-  function withdraw(uint256 tokenId, uint256 amount) public override {
+  function withdraw(uint256 tokenId, uint256 amount)
+    public
+    override
+    returns (uint256 interestWithdrawn, uint256 principalWithdrawn)
+  {
     IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
     TrancheInfo storage trancheInfo = getTrancheInfo(tokenInfo.tranche);
 
-    // This supports withdrawing before or after locking because principal share price starts at 1
-    // and is set to 0 on lock. Interest share price is always 0 until interest payments come back, when it increases
-    uint256 maxAmountRedeemable = (trancheInfo.principalSharePrice * tokenInfo.principalAmount) +
-      (trancheInfo.interestSharePrice * tokenInfo.principalAmount);
+    return _withdraw(trancheInfo, tokenInfo, tokenId, amount);
+  }
 
-    require(
-      amount.add(tokenInfo.principalRedeemed).add(tokenInfo.interestRedeemed) <= maxAmountRedeemable,
-      "Invalid redeem amount"
-    );
+  function withdrawMax(uint256 tokenId)
+    external
+    override
+    returns (uint256 interestWithdrawn, uint256 principalWithdrawn)
+  {
+    IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
+    TrancheInfo storage trancheInfo = getTrancheInfo(tokenInfo.tranche);
+
+    (uint256 interestRedeemable, uint256 principalRedeemable) = redeemableInterestAndPrincipal(trancheInfo, tokenInfo);
+
+    uint256 amount = interestRedeemable.add(principalRedeemable);
+
+    return _withdraw(trancheInfo, tokenInfo, tokenId, amount);
+  }
+
+  function _withdraw(
+    TrancheInfo storage trancheInfo,
+    IPoolTokens.TokenInfo memory tokenInfo,
+    uint256 tokenId,
+    uint256 amount
+  ) internal returns (uint256 interestWithdrawn, uint256 principalWithdrawn) {
+    (uint256 interestRedeemable, uint256 principalRedeemable) = redeemableInterestAndPrincipal(trancheInfo, tokenInfo);
+    uint256 netRedeemable = interestRedeemable.add(principalRedeemable);
+
+    require(amount <= netRedeemable, "Invalid redeem amount");
 
     // If the tranche has not been locked, ensure the deposited amount is correct
     if (trancheInfo.lockedAt == 0) {
       trancheInfo.principalDeposited = trancheInfo.principalDeposited.sub(amount);
     }
 
-    // TODO: Fix
-    config.getPoolTokens().redeem(tokenId, amount, 0);
-    doUSDCTransfer(address(this), msg.sender, amount);
+    uint256 interestToRedeem = Math.min(interestRedeemable, amount);
+    uint256 principalToRedeem = Math.min(principalRedeemable, amount.sub(interestToRedeem));
+
+    config.getPoolTokens().redeem(tokenId, principalToRedeem, interestToRedeem);
+    safeUSDCTransfer(address(this), msg.sender, principalToRedeem.add(interestToRedeem));
+
+    emit WithdrawalMade(msg.sender, tokenInfo.tranche, tokenId, interestToRedeem, principalToRedeem);
+
+    return (interestToRedeem, principalToRedeem);
   }
 
-  function withdrawMax(uint256 tokenId) external override {
-    // TODO
+  function redeemableInterestAndPrincipal(TrancheInfo storage trancheInfo, IPoolTokens.TokenInfo memory tokenInfo)
+    internal
+    view
+    returns (uint256 interestRedeemable, uint256 principalRedeemable)
+  {
+    // This supports withdrawing before or after locking because principal share price starts at 1
+    // and is set to 0 on lock. Interest share price is always 0 until interest payments come back, when it increases
+    uint256 maxPrincipalRedeemable = sharePriceToUsdc(trancheInfo.principalSharePrice, tokenInfo.principalAmount);
+    // The principalAmount is used as the totalShares because we want the interestSharePrice to be expressed as a
+    // percent of total loan value e.g. if the interest is 10% APR, the interestSharePrice should approach a max of 0.1.
+    uint256 maxInterestRedeemable = sharePriceToUsdc(trancheInfo.interestSharePrice, tokenInfo.principalAmount);
+
+    interestRedeemable = maxInterestRedeemable.sub(tokenInfo.interestRedeemed);
+    principalRedeemable = maxPrincipalRedeemable.sub(tokenInfo.principalRedeemed);
+
+    return (interestRedeemable, principalRedeemable);
   }
 
   function drawdown(uint256 amount) public {
@@ -139,12 +189,13 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     // TODO: Refactor once we merge creditdesk into the tranchedpool
     creditLine.setInterestAccruedAsOf(currentTime());
     creditLine.setLastFullPaymentTime(currentTime());
+    creditLine.setPrincipal(amount);
     creditLine.setBalance(amount);
     uint256 secondsPerPeriod = creditLine.paymentPeriodInDays().mul(SECONDS_PER_DAY);
     creditLine.setNextDueTime(currentTime().add(secondsPerPeriod));
     creditLine.setTermEndTime(currentTime().add(SECONDS_PER_DAY.mul(creditLine.termInDays())));
 
-    doUSDCTransfer(address(this), creditLine.borrower(), amount);
+    safeUSDCTransfer(address(this), creditLine.borrower(), amount);
   }
 
   // Mark the investment period as over
@@ -174,8 +225,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     uint256 interest,
     uint256 principal
   ) public {
-    bool success = doUSDCTransfer(from, address(this), principal.add(interest));
-    require(success, "Failed to collect repayment");
+    safeUSDCTransfer(from, address(this), principal.add(interest), "Failed to collect payment");
 
     (uint256 interestAccrued, uint256 principalAccrued) = getTotalInterestAndPrincipal(currentTime());
 
@@ -220,16 +270,15 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
       juniorTranche
     );
 
-    success = doUSDCTransfer(address(this), config.reserveAddress(), totalReserveAmount);
-    require(success, "Failed to send to reserve");
+    safeUSDCTransfer(address(this), config.reserveAddress(), totalReserveAmount, "Failed to send to reserve");
   }
 
   function getTotalInterestAndPrincipal(uint256 asOf) internal view returns (uint256, uint256) {
-    // TODO: Since this is used to determine the expected share price at a point in time, it shouldn't include any
-    // past payments. This is very different from the current calculations
     return
-      Accountant.calculateInterestAndPrincipalAccrued(
+      Accountant.calculateInterestAndPrincipalAccruedOverPeriod(
         CreditLine(address(creditLine)),
+        creditLine.principal(),
+        creditLine.termStartTime(),
         asOf,
         config.getLatenessGracePeriodInDays()
       );
@@ -244,14 +293,25 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     return seniorTranche.lockedAt > 0 && seniorTranche.lockedAt <= currentTime();
   }
 
-  function doUSDCTransfer(
+  function safeUSDCTransfer(
+    address from,
+    address to,
+    uint256 amount,
+    string memory message
+  ) internal {
+    require(to != address(0), "Can't send to zero address");
+    IERC20withDec usdc = config.getUSDC();
+    bool success = usdc.transferFrom(from, to, amount);
+    require(success, message);
+  }
+
+  function safeUSDCTransfer(
     address from,
     address to,
     uint256 amount
-  ) internal returns (bool) {
-    require(to != address(0), "Can't send to zero address");
-    IERC20withDec usdc = config.getUSDC();
-    return usdc.transferFrom(from, to, amount);
+  ) internal {
+    string memory message = "Failed to transfer USDC";
+    safeUSDCTransfer(from, to, amount, message);
   }
 
   function getTrancheInfo(uint256 tranche) internal view returns (TrancheInfo storage) {
@@ -357,7 +417,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
   }
 
   function usdcToSharePrice(uint256 amount, uint256 totalShares) public pure returns (uint256) {
-    return amount.mul(scalingFactor()).div(totalShares);
+    return totalShares == 0 ? 0 : amount.mul(scalingFactor()).div(totalShares);
   }
 
   function sharePriceToUsdc(uint256 sharePrice, uint256 totalShares) public pure returns (uint256) {
@@ -376,6 +436,18 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
       emit PaymentApplied(creditLine.borrower(), address(this), interestPayment, principalPayment, paymentRemaining);
       collectInterestAndPrincipal(address(creditLine), interestPayment, principalPayment);
     }
+  }
+
+  function pay(uint256 amount) external override whenNotPaused {
+    require(amount > 0, "Must pay more than zero");
+
+    collectPayment(amount);
+    assess();
+  }
+
+  function collectPayment(uint256 amount) internal {
+    emit PaymentCollected(msg.sender, address(this), amount);
+    safeUSDCTransfer(msg.sender, address(creditLine), amount, "Failed to collect payment");
   }
 
   modifier onlyCreditDesk() {

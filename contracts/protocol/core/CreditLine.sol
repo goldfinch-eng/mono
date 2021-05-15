@@ -8,6 +8,7 @@ import "./ConfigHelper.sol";
 import "./BaseUpgradeablePausable.sol";
 import "./Accountant.sol";
 import "../../interfaces/IERC20withDec.sol";
+import "../../interfaces/ICreditLine.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 
@@ -20,26 +21,27 @@ import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
  */
 
 // solhint-disable-next-line max-states-count
-contract CreditLine is BaseUpgradeablePausable {
+contract CreditLine is BaseUpgradeablePausable, ICreditLine {
   uint256 public constant SECONDS_PER_DAY = 60 * 60 * 24;
 
   // Credit line terms
-  address public borrower;
-  uint256 public limit;
-  uint256 public interestApr;
-  uint256 public paymentPeriodInDays;
-  uint256 public termInDays;
-  uint256 public lateFeeApr;
+  address public override borrower;
+  uint256 public override limit;
+  uint256 public override interestApr;
+  uint256 public override paymentPeriodInDays;
+  uint256 public override termInDays;
+  uint256 public override lateFeeApr;
 
   // Accounting variables
-  uint256 public balance;
-  uint256 public interestOwed;
-  uint256 public principalOwed;
-  uint256 public termEndTime;
-  uint256 public nextDueTime;
-  uint256 public interestAccruedAsOf;
-  uint256 public writedownAmount;
-  uint256 public lastFullPaymentTime;
+  uint256 public principal;
+  uint256 public override balance;
+  uint256 public override interestOwed;
+  uint256 public override principalOwed;
+  uint256 public override termEndTime;
+  uint256 public override nextDueTime;
+  uint256 public override interestAccruedAsOf;
+  uint256 public override writedownAmount;
+  uint256 public override lastFullPaymentTime;
 
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
@@ -64,6 +66,10 @@ contract CreditLine is BaseUpgradeablePausable {
     termInDays = _termInDays;
     lateFeeApr = _lateFeeApr;
     interestAccruedAsOf = block.timestamp;
+
+    // Unlock owner, which is a TranchedPool, for infinite amount
+    bool success = config.getUSDC().approve(owner, uint256(-1));
+    require(success, "Failed to approve USDC");
   }
 
   function updateGoldfinchConfig() external onlyAdmin {
@@ -80,6 +86,10 @@ contract CreditLine is BaseUpgradeablePausable {
 
   function setBalance(uint256 newBalance) public onlyAdmin {
     balance = newBalance;
+  }
+
+  function setPrincipal(uint256 _principal) public onlyAdmin {
+    principal = _principal;
   }
 
   function setInterestOwed(uint256 newInterestOwed) public onlyAdmin {
@@ -108,6 +118,10 @@ contract CreditLine is BaseUpgradeablePausable {
 
   function setLimit(uint256 newAmount) external onlyAdmin {
     limit = newAmount;
+  }
+
+  function termStartTime() external view returns (uint256) {
+    return termEndTime.sub(SECONDS_PER_DAY.mul(termInDays));
   }
 
   // TODO: remove this
@@ -168,7 +182,7 @@ contract CreditLine is BaseUpgradeablePausable {
       return Math.min(newNextDueTime, termEndTime);
     }
 
-    // Your paid off, or have not taken out a loan yet, so no next due time.
+    // You're paid off, or have not taken out a loan yet, so no next due time.
     if (balance == 0 && newNextDueTime != 0) {
       return 0;
     }
@@ -207,6 +221,7 @@ contract CreditLine is BaseUpgradeablePausable {
     )
   {
     (uint256 newInterestOwed, uint256 newPrincipalOwed) = updateAndGetInterestAndPrincipalOwedAsOf(timestamp);
+
     Accountant.PaymentAllocation memory pa = Accountant.allocatePayment(
       paymentAmount,
       balance,
@@ -269,7 +284,6 @@ contract CreditLine is BaseUpgradeablePausable {
       setLastFullPaymentTime(mostRecentLastDueTime);
     }
 
-    setTermEndTime(calculateNewTermEndTime(newBalance)); // pass in balance as a gas optimization
     setNextDueTime(calculateNextDueTime());
   }
 
