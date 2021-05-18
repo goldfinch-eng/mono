@@ -42,6 +42,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
   uint256 public override interestAccruedAsOf;
   uint256 public override writedownAmount;
   uint256 public override lastFullPaymentTime;
+  uint256 public totalInterestAccrued;
 
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
@@ -90,6 +91,10 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
 
   function setPrincipal(uint256 _principal) public onlyAdmin {
     principal = _principal;
+  }
+
+  function setTotalInterestAccrued(uint256 _totalInterestAccrued) public onlyAdmin {
+    totalInterestAccrued = _totalInterestAccrued;
   }
 
   function setInterestOwed(uint256 newInterestOwed) public onlyAdmin {
@@ -257,6 +262,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
       // calculated interest for. If we've not accrued any interest, then we keep the old value so the next
       // time the entire period is taken into account.
       setInterestAccruedAsOf(timestamp);
+      totalInterestAccrued = totalInterestAccrued.add(interestAccrued);
     }
     return (interestOwed.add(interestAccrued), principalOwed.add(principalAccrued));
   }

@@ -8,6 +8,7 @@ const {
   erc20Approve,
   erc20Transfer,
   getBalance,
+  tolerance,
   createPoolWithCreditLine: _createPoolWithCreditLine,
   SECONDS_PER_DAY,
 } = require("./testHelpers.js")
@@ -500,9 +501,8 @@ describe("TranchedPool", () => {
           // Ensure a full term has passed
           await advanceTime(tranchedPool, {days: termInDays.toNumber()})
 
-          await tranchedPool._collectInterestAndPrincipal(borrower, usdcVal(10), usdcVal(100))
+          await tranchedPool.pay(usdcVal(10).add(usdcVal(100)), {from: borrower})
           expect(await creditLine.interestApr()).to.bignumber.eq(interestAprAsBN(10))
-          expect(await creditLine.balance()).to.bignumber.eq(usdcVal(100))
 
           // 100$ loan, with 10% interest. 80% senior and 20% junior. Junior fee of 20%. Reserve fee of 10%
           // Senior share of interest 8$. Net interest = 8 * (100 - junior fee percent + reserve fee percent) = 5.6
@@ -524,33 +524,34 @@ describe("TranchedPool", () => {
           const halfway = SECONDS_PER_DAY.mul(termInDays).div(new BN(2))
           await advanceTime(tranchedPool, {seconds: halfway.toNumber()})
 
-          await tranchedPool._collectInterestAndPrincipal(borrower, usdcVal(5), usdcVal(0))
+          // Principal payment should be 0, while interest payment should be slightly less than half. This
+          // is because interest is accrued from the most recent nextDueTime rather than the current timestamp.
+          await tranchedPool.pay(new BN("4931506"), {from: borrower})
 
-          // Should be exactly half, except for the principal which is 0
           let interestAmount, principalAmount
           ;[interestAmount, principalAmount] = await getTrancheAmounts(await tranchedPool.getTranche(TRANCHES.Senior))
-          expect(interestAmount).to.bignumber.eq(usdcVal(28).div(new BN(10)))
+          expect(interestAmount).to.bignumber.eq(new BN("2761643"))
           expect(principalAmount).to.bignumber.eq(usdcVal(0))
           ;[interestAmount, principalAmount] = await getTrancheAmounts(await tranchedPool.getTranche(TRANCHES.Junior))
-          expect(interestAmount).to.bignumber.eq(usdcVal(17).div(new BN(10)))
+          expect(interestAmount).to.bignumber.eq(new BN("1676713"))
           expect(principalAmount).to.bignumber.eq(usdcVal(0))
 
-          expect(await usdc.balanceOf(treasury)).to.bignumber.eq(usdcVal(1).div(new BN(2)))
+          expect(await usdc.balanceOf(treasury)).to.bignumber.eq(new BN("493150"))
 
           // Now advance to the end of the loan period and collect interest again, now the numbers should match the full
           //amounts in the previous test
 
           await advanceTime(tranchedPool, {seconds: halfway.toNumber()})
           // Collect the remaining interest and the principal
-          await tranchedPool._collectInterestAndPrincipal(borrower, usdcVal(5), usdcVal(100))
+          await tranchedPool.pay(new BN("5068493").add(usdcVal(100)), {from: borrower})
           ;[interestAmount, principalAmount] = await getTrancheAmounts(await tranchedPool.getTranche(TRANCHES.Senior))
-          expect(interestAmount).to.bignumber.eq(usdcVal(56).div(new BN(10)))
+          expect(interestAmount).to.bignumber.closeTo(usdcVal(56).div(new BN(10)), tolerance)
           expect(principalAmount).to.bignumber.eq(usdcVal(80))
           ;[interestAmount, principalAmount] = await getTrancheAmounts(await tranchedPool.getTranche(TRANCHES.Junior))
-          expect(interestAmount).to.bignumber.eq(usdcVal(34).div(new BN(10)))
+          expect(interestAmount).to.bignumber.closeTo(usdcVal(34).div(new BN(10)), tolerance)
           expect(principalAmount).to.bignumber.eq(usdcVal(20))
 
-          expect(await usdc.balanceOf(treasury)).to.bignumber.eq(usdcVal(1))
+          expect(await usdc.balanceOf(treasury)).to.bignumber.closeTo(usdcVal(1), tolerance)
         })
       })
 
@@ -559,6 +560,7 @@ describe("TranchedPool", () => {
           // Ensure a full term has passed
           await advanceTime(tranchedPool, {days: termInDays.toNumber()})
 
+          await tranchedPool.assess()
           await tranchedPool._collectInterestAndPrincipal(borrower, usdcVal(6), usdcVal(50))
 
           let interestAmount, principalAmount
@@ -577,6 +579,7 @@ describe("TranchedPool", () => {
 
           // Second partial payment. Senior is made whole first and then junior is paid for subsequent interest
           // payments
+          await tranchedPool.assess()
           await tranchedPool._collectInterestAndPrincipal(borrower, usdcVal(3), usdcVal(40))
           ;[interestAmount, principalAmount] = await getTrancheAmounts(await tranchedPool.getTranche(TRANCHES.Senior))
           // Senior interest filled upto 5.6
@@ -593,6 +596,7 @@ describe("TranchedPool", () => {
           expect(await usdc.balanceOf(treasury)).to.bignumber.eq(usdcVal(9).div(new BN(10)))
 
           // Final payment. No payments to the senior, junior is made whole
+          await tranchedPool.assess()
           await tranchedPool._collectInterestAndPrincipal(borrower, usdcVal(1), usdcVal(10))
           ;[interestAmount, principalAmount] = await getTrancheAmounts(await tranchedPool.getTranche(TRANCHES.Senior))
           // Unchanged

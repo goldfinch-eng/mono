@@ -58,7 +58,7 @@ library Accountant {
   }
 
   function calculatePrincipalAccrued(
-    CreditLine cl,
+    ICreditLine cl,
     uint256 balance,
     uint256 timestamp
   ) public view returns (uint256) {

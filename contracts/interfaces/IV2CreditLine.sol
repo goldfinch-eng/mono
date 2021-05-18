@@ -8,6 +8,8 @@ import "./ICreditLine.sol";
 abstract contract IV2CreditLine is ICreditLine {
   function principal() external view virtual returns (uint256);
 
+  function totalInterestAccrued() external view virtual returns (uint256);
+
   function termStartTime() external view virtual returns (uint256);
 
   function setLimit(uint256 newAmount) external virtual;
@@ -15,6 +17,8 @@ abstract contract IV2CreditLine is ICreditLine {
   function setBalance(uint256 newBalance) external virtual;
 
   function setPrincipal(uint256 _principal) external virtual;
+
+  function setTotalInterestAccrued(uint256 _interestAccrued) external virtual;
 
   function assess()
     external

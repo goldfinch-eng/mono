@@ -187,8 +187,9 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     require(creditLine.balance() == 0, "Multiple drawdowns not supported yet");
 
     // TODO: Refactor once we merge creditdesk into the tranchedpool
-    creditLine.setInterestAccruedAsOf(currentTime());
     creditLine.setLastFullPaymentTime(currentTime());
+    creditLine.setInterestAccruedAsOf(currentTime());
+    creditLine.setTotalInterestAccrued(0);
     creditLine.setPrincipal(amount);
     creditLine.setBalance(amount);
     uint256 secondsPerPeriod = creditLine.paymentPeriodInDays().mul(SECONDS_PER_DAY);
@@ -272,15 +273,14 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     safeUSDCTransfer(address(this), config.reserveAddress(), totalReserveAmount, "Failed to send to reserve");
   }
 
-  function getTotalInterestAndPrincipal(uint256 asOf) internal view returns (uint256, uint256) {
-    return
-      Accountant.calculateInterestAndPrincipalAccruedOverPeriod(
-        CreditLine(address(creditLine)),
-        creditLine.principal(),
-        creditLine.termStartTime(),
-        asOf,
-        config.getLatenessGracePeriodInDays()
-      );
+  function getTotalInterestAndPrincipal(uint256 asOf)
+    internal
+    view
+    returns (uint256 interestAccrued, uint256 principalAccrued)
+  {
+    interestAccrued = creditLine.totalInterestAccrued();
+    principalAccrued = Accountant.calculatePrincipalAccrued(creditLine, creditLine.principal(), currentTime());
+    return (interestAccrued, principalAccrued);
   }
 
   function calculateExpectedSharePrice(uint256 amount, TrancheInfo memory tranche) internal view returns (uint256) {
