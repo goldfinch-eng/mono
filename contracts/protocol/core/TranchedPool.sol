@@ -94,7 +94,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     require(success, "Failed to approve USDC");
   }
 
-  function deposit(uint256 tranche, uint256 amount) public override {
+  function deposit(uint256 tranche, uint256 amount) public override nonReentrant {
     require(!locked(), "Pool has been locked");
     TrancheInfo storage trancheInfo = getTrancheInfo(tranche);
 
@@ -109,6 +109,8 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
   function withdraw(uint256 tokenId, uint256 amount)
     public
     override
+    onlyTokenHolder(tokenId)
+    nonReentrant
     returns (uint256 interestWithdrawn, uint256 principalWithdrawn)
   {
     IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
@@ -120,6 +122,8 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
   function withdrawMax(uint256 tokenId)
     external
     override
+    onlyTokenHolder(tokenId)
+    nonReentrant
     returns (uint256 interestWithdrawn, uint256 principalWithdrawn)
   {
     IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
@@ -446,6 +450,14 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
 
   modifier onlyCreditDesk() {
     require(msg.sender == config.creditDeskAddress(), "Only the credit desk is allowed to call this function");
+    _;
+  }
+
+  modifier onlyTokenHolder(uint256 tokenId) {
+    require(
+      msg.sender == config.getPoolTokens().ownerOf(tokenId),
+      "Only the token owner is allowed to call this function"
+    );
     _;
   }
 }

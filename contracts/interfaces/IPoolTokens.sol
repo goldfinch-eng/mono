@@ -3,7 +3,9 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-interface IPoolTokens {
+import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC721/IERC721.sol";
+
+interface IPoolTokens is IERC721 {
   event TokenMinted(
     address indexed owner,
     address indexed pool,

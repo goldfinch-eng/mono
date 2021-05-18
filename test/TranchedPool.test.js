@@ -183,13 +183,24 @@ describe("TranchedPool", () => {
       })
     })
   })
+
   describe("withdraw", async () => {
     beforeEach(async () => {
       tranchedPool = await createPoolWithCreditLine()
     })
 
     describe("validations", async () => {
-      it("does not allow you to withdraw if you don't own the pool token")
+      it("does not allow you to withdraw if you don't own the pool token", async () => {
+        let receipt = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(10), {from: owner})
+        const tokenId = receipt.logs[0].args.tokenId
+
+        await expect(tranchedPool.withdraw(tokenId, usdcVal(10), {from: otherPerson})).to.be.rejectedWith(
+          /Only the token owner is allowed/
+        )
+        await expect(tranchedPool.withdrawMax(tokenId, {from: otherPerson})).to.be.rejectedWith(
+          /Only the token owner is allowed/
+        )
+      })
       it("does not allow you to withdraw if pool token is from a different pool")
       it("does not allow you to withdraw if past the drawdown period")
       it("does not allow you to withdraw if no amount is available", async () => {})
