@@ -205,6 +205,10 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
 
   // Mark the investment period as over
   function lockJuniorCapital() public onlyAdmin {
+    _lockJuniorCapital();
+  }
+
+  function _lockJuniorCapital() internal {
     require(!locked(), "Pool already locked");
     require(juniorTranche.lockedAt == 0, "Junior tranche already locked");
 
@@ -213,6 +217,10 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
   }
 
   function lockPool() public onlyAdmin {
+    _lockPool();
+  }
+
+  function _lockPool() internal {
     require(juniorTranche.lockedAt > 0, "Junior tranche must be locked first");
 
     seniorTranche.interestAPR = scaleByPercentOwnership(creditLine.interestApr(), seniorTranche);
@@ -429,7 +437,6 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
 
   function assess() public {
     (uint256 paymentRemaining, uint256 interestPayment, uint256 principalPayment) = creditLine.assess();
-
     if (interestPayment > 0 || principalPayment > 0) {
       emit PaymentApplied(creditLine.borrower(), address(this), interestPayment, principalPayment, paymentRemaining);
       collectInterestAndPrincipal(address(creditLine), interestPayment, principalPayment);

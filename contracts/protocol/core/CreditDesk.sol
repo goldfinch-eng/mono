@@ -9,6 +9,7 @@ import "./Accountant.sol";
 import "./CreditLine.sol";
 import "./CreditLineFactory.sol";
 import "../../interfaces/IV1CreditLine.sol";
+import "../../interfaces/IMigratedTranchedPool.sol";
 
 /**
  * @title Goldfinch's CreditDesk contract
@@ -268,18 +269,23 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
   }
 
   function migrateV1CreditLine(
-    IV1CreditLine clToMigrate,
+    address _clToMigrate,
     uint256 termEndTime,
     uint256 nextDueTime,
     uint256 interestAccruedAsOf,
-    uint256 lastFullPaymentTime
+    uint256 lastFullPaymentTime,
+    uint256 totalInterestPaid,
+    uint256 totalPrincipalPaid
   ) public {
-    require(clToMigrate.underwriter() == msg.sender, "Caller must be the underwriter");
+    IV1CreditLine clToMigrate = IV1CreditLine(_clToMigrate);
+    require(msg.sender == config.protocolAdminAddress(), "Caller must be the admin");
     require(clToMigrate.limit() > 0, "Can't migrate empty credit line");
     // Ensure it is a v1 creditline by calling a function that only exists on v1
     require(clToMigrate.nextDueBlock() > 0, "Invalid creditline");
-    address newClAddress = createCreditLine(
+
+    address pool = config.getCreditLineFactory().createMigratedPool(
       clToMigrate.borrower(),
+      20, // junior fee percent
       clToMigrate.limit(),
       clToMigrate.interestApr(),
       clToMigrate.paymentPeriodInDays(),
@@ -287,21 +293,20 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
       clToMigrate.lateFeeApr()
     );
 
-    CreditLine newCl = CreditLine(newClAddress);
-
-    // Set accounting state vars.
-    newCl.setBalance(clToMigrate.balance());
-    newCl.setInterestOwed(clToMigrate.interestOwed());
-    newCl.setPrincipalOwed(clToMigrate.principalOwed());
-    newCl.setTermEndTime(termEndTime);
-    newCl.setNextDueTime(nextDueTime);
-    newCl.setInterestAccruedAsOf(interestAccruedAsOf);
-    newCl.setWritedownAmount(clToMigrate.writedownAmount());
-    newCl.setLastFullPaymentTime(lastFullPaymentTime);
+    IV2CreditLine newCl = IMigratedTranchedPool(pool).migrateCreditLine(
+      clToMigrate,
+      termEndTime,
+      nextDueTime,
+      interestAccruedAsOf,
+      lastFullPaymentTime,
+      totalInterestPaid,
+      totalPrincipalPaid
+    );
 
     // Close out the original credit line
     clToMigrate.setLimit(0);
     clToMigrate.setBalance(0);
+
     bool success = config.getPool().transferFrom(
       address(clToMigrate),
       address(newCl),

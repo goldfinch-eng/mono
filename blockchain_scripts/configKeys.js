@@ -25,6 +25,7 @@ const CONFIG_KEYS = {
   SeniorFund: 14,
   SeniorFundFidu: 15,
   SeniorFundStrategy: 16,
+  MigratedTranchedPoolImplementation: 17,
 }
 
 module.exports = {

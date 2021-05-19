@@ -13,6 +13,7 @@ const {CONFIG_KEYS} = require("./configKeys.js")
 const hre = require("hardhat")
 
 const MAINNET_MULTISIG = "0xBEb28978B2c755155f20fd3d09Cb37e300A6981f"
+const MAINNET_UNDERWRITER = "0x79ea65C834EC137170E1aA40A42b9C80df9c0Bb4"
 
 async function getProxyImplAddress(proxyContract) {
   if (!proxyContract) {
@@ -29,12 +30,9 @@ async function upgradeContracts(contractNames, contracts, mainnetSigner, deployF
   // gives us the ability to debug the forwarded transactions.
   await deployments.deploy("TestForwarder", {from: deployFrom, gas: 4000000, args: []})
 
-  let deployHelpers = await deployments.deploy("DeployHelpers", {from: deployFrom, args: []})
-
   const dependencies = {
     CreditDesk: {["Accountant"]: accountantDeployResult.address},
     CreditLineFactory: {
-      ["DeployHelpers"]: deployHelpers.address,
       ["Accountant"]: accountantDeployResult.address,
     },
   }
@@ -184,6 +182,7 @@ function getMainnetContracts() {
 
 module.exports = {
   MAINNET_MULTISIG: MAINNET_MULTISIG,
+  MAINNET_UNDERWRITER: MAINNET_UNDERWRITER,
   fundWithWhales: fundWithWhales,
   getExistingContracts: getExistingContracts,
   upgradeContracts: upgradeContracts,

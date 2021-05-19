@@ -38,7 +38,8 @@ library ConfigOptions {
     TranchedPoolImplementation,
     SeniorFund,
     SeniorFundFidu,
-    SeniorFundStrategy
+    SeniorFundStrategy,
+    MigratedTranchedPoolImplementation
   }
 
   function getNumberName(uint256 number) public pure returns (string memory) {
@@ -116,6 +117,9 @@ library ConfigOptions {
     }
     if (Addresses.SeniorFundStrategy == addressName) {
       return "SeniorFundStrategy";
+    }
+    if (Addresses.MigratedTranchedPoolImplementation == addressName) {
+      return "MigratedTranchedPoolImplementation";
     }
     revert("Unknown value passed to getAddressName");
   }

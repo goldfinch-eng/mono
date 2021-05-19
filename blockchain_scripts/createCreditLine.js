@@ -16,8 +16,11 @@ async function main() {
   const creditLineFactory = await getDeployedContract(deployments, "CreditLineFactory", proxy_owner)
   const borrower = process.env.BORROWER
   const bwrConAddr = process.env.BORROWER_CONTRACT
-  if (!borrower) {
-    throw new Error("No borrower provided. Please run again, passing borrower as BORROWER={{borrower_address}}")
+  if (!borrower && !bwrConAddr) {
+    throw new Error(
+      "No borrower or borrower contract provided. \
+      Please run again, passing borrower as BORROWER={{address}} or BORROWER_CONTRACT={address}"
+    )
   }
 
   await createCreditLineForBorrower(creditDesk, creditLineFactory, borrower, bwrConAddr)
@@ -41,7 +44,7 @@ async function createCreditLineForBorrower(creditDesk, creditLineFactory, borrow
   const chainId = await getChainId()
 
   logger("Creating a credit line for the borrower", borrower)
-  const limit = String(new BN(100).mul(USDCDecimals))
+  const limit = String(new BN(1000000).mul(USDCDecimals))
   const interestApr = String(interestAprAsBN("15.00"))
   const paymentPeriodInDays = String(new BN(30))
   const termInDays = String(new BN(360))

@@ -5,7 +5,6 @@ pragma experimental ABIEncoderV2;
 import "../../external/ERC721PresetMinterPauserAutoId.sol";
 import "./GoldfinchConfig.sol";
 import "./ConfigHelper.sol";
-import "./DeployHelpers.sol";
 import "../../interfaces/ITranchedPool.sol";
 import "../../interfaces/IPoolTokens.sol";
 

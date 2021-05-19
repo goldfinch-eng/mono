@@ -38,7 +38,9 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
     __BaseUpgradeablePausable__init(owner);
 
     config = _config;
-    sharePrice = fiduMantissa();
+    // Initialize sharePrice to be identical to the legacy pool. This is in the initializer
+    // because it must only ever happen once.
+    sharePrice = config.getPool().sharePrice();
 
     IERC20withDec usdc = config.getUSDC();
     // Sanity check the address

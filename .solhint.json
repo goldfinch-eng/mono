@@ -35,10 +35,14 @@
           "createCreditLine": [],
           "createBorrower": [],
           "createPool": [],
-          "validPool": []
+          "validPool": [],
+          "createMigratedPool": []
         },
         "**/CreditLine.sol:CreditLine": {
           "setLimit": []
+        },
+        "**/MigratedTranchedPool.sol:MigratedTranchedPool": {
+          "migrateCreditLine": []
         },
         "**/BaseUpgradeablePausable.sol:BaseUpgradeablePausable": {
           "__BaseUpgradeablePausable__init": []

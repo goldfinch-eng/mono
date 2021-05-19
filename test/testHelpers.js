@@ -15,6 +15,7 @@ const MAX_UINT = new BN("1157920892373161954235709850086879078532699846656405640
 const fiduTolerance = decimals.div(USDC_DECIMALS)
 const CreditLine = artifacts.require("CreditLine")
 const EMPTY_DATA = "0x"
+const BLOCKS_PER_DAY = 5760
 
 // Helper functions. These should be pretty generic.
 function bigVal(number) {
@@ -86,21 +87,37 @@ function expectAction(action, debug) {
         console.log("New:     ", String(newValues))
       }
       expectations.forEach((expectation, i) => {
-        if (expectation.by) {
-          expect(newValues[i]).to.bignumber.equal(originalValues[i].add(expectation.by))
-        } else if (expectation.byCloseTo) {
-          const onePercent = expectation.byCloseTo.div(new BN(100))
-          expect(newValues[i]).to.bignumber.closeTo(originalValues[i].add(expectation.byCloseTo), onePercent)
-        } else if (expectation.fn) {
-          expectation.fn(originalValues[i], newValues[i])
-        } else if (expectation.increase) {
-          expect(newValues[i]).to.bignumber.gt(originalValues[i])
-        } else if (expectation.decrease) {
-          expect(newValues[i]).to.bignumber.lt(originalValues[i])
-        } else if (expectation.to) {
-          // It was not originally the number we expected, but then was changed to it
-          expect(originalValues[i]).to.not.bignumber.eq(expectation.to)
-          expect(newValues[i]).to.bignumber.eq(expectation.to)
+        try {
+          if (expectation.by) {
+            expect(newValues[i]).to.bignumber.equal(originalValues[i].add(expectation.by))
+          } else if (expectation.byCloseTo) {
+            const onePercent = expectation.byCloseTo.div(new BN(100))
+            expect(newValues[i]).to.bignumber.closeTo(originalValues[i].add(expectation.byCloseTo), onePercent)
+          } else if (expectation.fn) {
+            expectation.fn(originalValues[i], newValues[i])
+          } else if (expectation.increase) {
+            expect(newValues[i]).to.bignumber.gt(originalValues[i])
+          } else if (expectation.decrease) {
+            expect(newValues[i]).to.bignumber.lt(originalValues[i])
+          } else if (expectation.to) {
+            if (expectation.bignumber === false) {
+              // It was not originally the number we expected, but then was changed to it
+              expect(originalValues[i]).to.not.eq(expectation.to)
+              expect(newValues[i]).to.eq(expectation.to)
+            } else {
+              // It was not originally the number we expected, but then was changed to it
+              expect(originalValues[i]).to.not.bignumber.eq(expectation.to)
+              expect(newValues[i]).to.bignumber.eq(expectation.to)
+            }
+          } else if (expectation.toCloseTo) {
+            // It was not originally the number we expected, but then was changed to it
+            const onePercent = expectation.toCloseTo.div(new BN(100))
+            expect(originalValues[i]).to.not.bignumber.eq(expectation.toCloseTo)
+            expect(newValues[i]).to.bignumber.closeTo(expectation.toCloseTo, onePercent)
+          }
+        } catch (error) {
+          console.log("Expectation", i, "failed")
+          throw error
         }
       })
     },
@@ -273,6 +290,7 @@ module.exports = {
   SECONDS_PER_DAY: SECONDS_PER_DAY,
   SECONDS_PER_YEAR: SECONDS_PER_YEAR,
   EMPTY_DATA: EMPTY_DATA,
+  BLOCKS_PER_DAY: BLOCKS_PER_DAY,
   bigVal: bigVal,
   usdcVal: usdcVal,
   mochaEach: mochaEach,

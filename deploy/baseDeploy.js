@@ -1,4 +1,4 @@
-const baseDeploy = require("../blockchain_scripts/baseDeploy")
+const {baseDeploy} = require("../blockchain_scripts/baseDeploy")
 
 async function main(hre) {
   await baseDeploy(hre)

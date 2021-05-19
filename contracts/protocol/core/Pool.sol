@@ -165,6 +165,51 @@ contract Pool is BaseUpgradeablePausable, IPool {
       );
   }
 
+  function migrateToSeniorPool() external onlyAdmin {
+    // Bring back all USDC
+    if (compoundBalance > 0) {
+      sweepFromCompound();
+    }
+
+    // Pause deposits/withdrawals
+    pause();
+
+    // Remove special priveldges from Fidu
+    bytes32 minterRole = keccak256("MINTER_ROLE");
+    bytes32 pauserRole = keccak256("PAUSER_ROLE");
+    config.getFidu().renounceRole(minterRole, address(this));
+    config.getFidu().renounceRole(pauserRole, address(this));
+
+    // Move all USDC to the SeniorPool
+    address seniorFundAddress = config.seniorFundAddress();
+    uint256 balance = config.getUSDC().balanceOf(address(this));
+    doUSDCTransfer(address(this), seniorFundAddress, balance);
+
+    // Claim our COMP!
+    address compoundController = address(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
+    bytes memory data = abi.encodeWithSignature("claimComp(address)", address(this));
+    bool success;
+    bytes memory _res;
+    // solhint-disable-next-line avoid-low-level-calls
+    (success, _res) = compoundController.call(data);
+
+    // Send our balance of COMP!
+    address compToken = address(0xc00e94Cb662C3520282E6f5717214004A7f26888);
+    data = abi.encodeWithSignature("balanceOf(address)", address(this));
+    // solhint-disable-next-line avoid-low-level-calls
+    (success, _res) = compToken.call(data);
+    uint256 compBalance = toUint256(_res);
+    data = abi.encodeWithSignature("transfer(address,uint256)", seniorFundAddress, compBalance);
+    // solhint-disable-next-line avoid-low-level-calls
+    (success, _res) = compToken.call(data);
+  }
+
+  function toUint256(bytes memory _bytes) internal pure returns (uint256 value) {
+    assembly {
+      value := mload(add(_bytes, 0x20))
+    }
+  }
+
   /**
    * @notice Moves any USDC still in the Pool to Compound, and tracks the amount internally.
    * This is done to earn interest on latent funds until we have other borrowers who can use it.
