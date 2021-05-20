@@ -188,13 +188,10 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
 
     creditLine.drawdown(amount);
 
-    // Decrease the principal share price in proportion to the amount drawndown
-    juniorTranche.principalSharePrice = juniorTranche.principalSharePrice.sub(
-      calculateExpectedSharePrice(amount, juniorTranche)
-    );
-    seniorTranche.principalSharePrice = seniorTranche.principalSharePrice.sub(
-      calculateExpectedSharePrice(amount, seniorTranche)
-    );
+    // Update the share price to reflect the amount remaining in the pool
+    uint256 amountRemaining = creditLine.limit().sub(creditLine.balance());
+    juniorTranche.principalSharePrice = calculateExpectedSharePrice(amountRemaining, juniorTranche);
+    seniorTranche.principalSharePrice = calculateExpectedSharePrice(amountRemaining, seniorTranche);
 
     safeUSDCTransfer(address(this), creditLine.borrower(), amount);
   }
@@ -208,7 +205,9 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     require(!locked(), "Pool already locked");
     require(juniorTranche.lockedAt == 0, "Junior tranche already locked");
 
+    // We set the share price to 0 to ensure capital cannot be withdrawn from the tranche until after drawdown
     juniorTranche.lockedAt = currentTime();
+    juniorTranche.principalSharePrice = 0;
   }
 
   function lockPool() public onlyAdmin {
@@ -223,7 +222,9 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
 
     creditLine.setLimit(seniorTranche.principalDeposited + juniorTranche.principalDeposited);
 
+    // We set the share price to 0 to ensure capital cannot be withdrawn from the tranche until after drawdown
     seniorTranche.lockedAt = currentTime();
+    seniorTranche.principalSharePrice = 0;
   }
 
   function collectInterestAndPrincipal(

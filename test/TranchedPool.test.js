@@ -374,7 +374,7 @@ describe("TranchedPool", () => {
         await tranchedPool.deposit(TRANCHES.Senior, usdcVal(10))
         await expectAction(async () => tranchedPool.lockJuniorCapital({from: borrower})).toChange([
           [async () => (await tranchedPool.getTranche(TRANCHES.Junior)).lockedAt, {increase: true}],
-          [async () => (await tranchedPool.getTranche(TRANCHES.Junior)).principalSharePrice, {unchanged: true}],
+          [async () => (await tranchedPool.getTranche(TRANCHES.Junior)).principalSharePrice, {to: new BN(0)}],
         ])
       })
 
@@ -391,7 +391,7 @@ describe("TranchedPool", () => {
         await tranchedPool.lockJuniorCapital({from: borrower})
         await expectAction(async () => tranchedPool.lockPool({from: borrower})).toChange([
           [async () => (await tranchedPool.getTranche(TRANCHES.Senior)).lockedAt, {increase: true}],
-          [async () => (await tranchedPool.getTranche(TRANCHES.Senior)).principalSharePrice, {unchanged: true}],
+          [async () => (await tranchedPool.getTranche(TRANCHES.Senior)).principalSharePrice, {to: new BN(0)}],
           // Senior tranche is 80% of 5% (8$ out of 10$ in the pool)
           [async () => (await tranchedPool.getTranche(TRANCHES.Senior)).interestAPR, {to: interestAprAsBN("4.00")}],
           // Junior tranche is 20% of 5% (2$ out of 10$ in the pool)
@@ -465,9 +465,9 @@ describe("TranchedPool", () => {
         ;[, juniorPrincipalAmount] = await getTrancheAmounts(await tranchedPool.getTranche(TRANCHES.Junior))
         ;[, seniorPrincipalAmount] = await getTrancheAmounts(await tranchedPool.getTranche(TRANCHES.Senior))
 
-        // Before any drawdown, the share price is equivalent to amounts deposited
-        expect(juniorPrincipalAmount).to.bignumber.eq(usdcVal(2)) // 100% of 2$
-        expect(seniorPrincipalAmount).to.bignumber.eq(usdcVal(8)) // 100% of 8$
+        // Before any drawdown, the share price 0 to reflect the fact that funds are locked
+        expect(juniorPrincipalAmount).to.bignumber.eq(usdcVal(0))
+        expect(seniorPrincipalAmount).to.bignumber.eq(usdcVal(0))
 
         await tranchedPool.drawdown(usdcVal(5))
         ;[, juniorPrincipalAmount] = await getTrancheAmounts(await tranchedPool.getTranche(TRANCHES.Junior))
