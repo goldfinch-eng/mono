@@ -364,6 +364,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
   ) internal returns (uint256, uint256) {
     uint256 totalShares = tranche.principalDeposited;
 
+    // If the desired share price is lower, then ignore it, and leave it unchanged
     if (desiredPrincipalSharePrice < tranche.principalSharePrice) {
       desiredPrincipalSharePrice = tranche.principalSharePrice;
     }
@@ -420,12 +421,12 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     uint256 desiredAmount,
     uint256 totalShares
   ) internal pure returns (uint256, uint256) {
-    // If no money left to apply, return the original amounts
-    if (amountRemaining == 0) {
+    // If no money left to apply, or don't need any changes, return the original amounts
+    if (amountRemaining == 0 || desiredAmount == 0) {
       return (amountRemaining, currentSharePrice);
     }
     if (amountRemaining < desiredAmount) {
-      // We have enough money to adjust share price to the desired level. So just use whatever amount is left
+      // We don't have enough money to adjust share price to the desired level. So just use whatever amount is left
       desiredAmount = amountRemaining;
     }
     uint256 sharePriceDifference = usdcToSharePrice(desiredAmount, totalShares);

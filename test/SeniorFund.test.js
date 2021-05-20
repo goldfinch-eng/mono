@@ -555,10 +555,10 @@ describe("SeniorFund", () => {
       let interestRedeemed = new BN(tokenInfoAfter.interestRedeemed).sub(new BN(tokenInfoBefore.interestRedeemed))
       let principalRedeemed = new BN(tokenInfoAfter.principalRedeemed).sub(new BN(tokenInfoBefore.principalRedeemed))
 
-      // $100 principal with 4x leverage means junior contributed 100 * (1/5) and
-      // senior contributed 100 * (4/5) = $80
-      expect(principalRedeemed).to.bignumber.equal(usdcVal(80))
-      // $5 * (4/5) * (1 - (0.2 + 0.1)) = $2.8 where 0.2 is juniorFeePercent and 0.1 is protocolFee
+      // Junior contributed 100$, senior levered by 4x (400$). Total limit 500$. Since
+      // everything was paid back, senior can redeem full amount.
+      expect(principalRedeemed).to.bignumber.equal(usdcVal(400))
+      // $5 of interest * (4/5) * (1 - (0.2 + 0.1)) = $2.8 where 0.2 is juniorFeePercent and 0.1 is protocolFee
       expect(interestRedeemed).to.bignumber.equal(new BN(2.8 * USDC_DECIMALS.toNumber()))
 
       expect(balanceAfter).to.bignumber.gte(balanceBefore)
