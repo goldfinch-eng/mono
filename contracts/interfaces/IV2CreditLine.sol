@@ -20,6 +20,8 @@ abstract contract IV2CreditLine is ICreditLine {
 
   function setTotalInterestAccrued(uint256 _interestAccrued) external virtual;
 
+  function drawdown(uint256 amount) external virtual;
+
   function assess()
     external
     virtual

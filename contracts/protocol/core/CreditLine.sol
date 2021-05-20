@@ -139,6 +139,24 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     require(success, "Failed to approve USDC");
   }
 
+  function drawdown(uint256 amount) external onlyAdmin {
+    require(amount.add(balance) <= limit, "Cannot drawdown more than the limit");
+    uint256 timestamp = currentTime();
+
+    if (balance == 0) {
+      setInterestAccruedAsOf(timestamp);
+      setLastFullPaymentTime(timestamp);
+      setTotalInterestAccrued(0);
+      setTermEndTime(timestamp.add(SECONDS_PER_DAY.mul(termInDays)));
+    }
+
+    (uint256 interestOwed, uint256 principalOwed) = updateAndGetInterestAndPrincipalOwedAsOf(timestamp);
+    balance = balance.add(amount);
+
+    updateCreditLineAccounting(balance, interestOwed, principalOwed);
+    require(!isLate(timestamp), "Cannot drawdown when payments are past due");
+  }
+
   function assess()
     public
     onlyAdmin
@@ -273,6 +291,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     uint256 newPrincipalOwed
   ) internal nonReentrant {
     setBalance(newBalance);
+    setPrincipal(newBalance);
     setInterestOwed(newInterestOwed);
     setPrincipalOwed(newPrincipalOwed);
 
@@ -291,19 +310,6 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     }
 
     setNextDueTime(calculateNextDueTime());
-  }
-
-  function calculateNewTermEndTime(uint256 newBalance) internal view returns (uint256) {
-    // If there's no balance, there's no loan, so there's no term end time
-    if (newBalance == 0) {
-      return 0;
-    }
-    // Don't allow any weird bugs where we add to your current end time. This
-    // function should only be used on new credit lines, when we are setting them up
-    if (termEndTime != 0) {
-      return termEndTime;
-    }
-    return currentTime().add(SECONDS_PER_DAY.mul(termInDays));
   }
 
   function getUSDCBalance(address _address) internal view returns (uint256) {

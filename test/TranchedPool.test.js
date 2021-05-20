@@ -51,6 +51,18 @@ describe("TranchedPool", () => {
     return tranchedPool
   }
 
+  const getTrancheAmounts = async (trancheInfo) => {
+    const interestAmount = await tranchedPool.sharePriceToUsdc(
+      trancheInfo.interestSharePrice,
+      trancheInfo.principalDeposited
+    )
+    const principalAmount = await tranchedPool.sharePriceToUsdc(
+      trancheInfo.principalSharePrice,
+      trancheInfo.principalDeposited
+    )
+    return [interestAmount, principalAmount]
+  }
+
   beforeEach(async () => {
     // Pull in our unlocked accounts
     ;[owner, borrower, treasury, otherPerson] = await web3.eth.getAccounts()
@@ -362,13 +374,13 @@ describe("TranchedPool", () => {
         await tranchedPool.deposit(TRANCHES.Senior, usdcVal(10))
         await expectAction(async () => tranchedPool.lockJuniorCapital({from: borrower})).toChange([
           [async () => (await tranchedPool.getTranche(TRANCHES.Junior)).lockedAt, {increase: true}],
-          [async () => (await tranchedPool.getTranche(TRANCHES.Junior)).principalSharePrice, {to: new BN(0)}],
+          [async () => (await tranchedPool.getTranche(TRANCHES.Junior)).principalSharePrice, {unchanged: true}],
         ])
       })
 
       it("does not allow locking twice", async () => {
         await tranchedPool.lockJuniorCapital({from: borrower})
-        expect(tranchedPool.lockJuniorCapital({from: borrower})).to.be.rejectedWith(/already locked/)
+        await expect(tranchedPool.lockJuniorCapital({from: borrower})).to.be.rejectedWith(/already locked/)
       })
     })
 
@@ -379,7 +391,7 @@ describe("TranchedPool", () => {
         await tranchedPool.lockJuniorCapital({from: borrower})
         await expectAction(async () => tranchedPool.lockPool({from: borrower})).toChange([
           [async () => (await tranchedPool.getTranche(TRANCHES.Senior)).lockedAt, {increase: true}],
-          [async () => (await tranchedPool.getTranche(TRANCHES.Senior)).principalSharePrice, {to: new BN(0)}],
+          [async () => (await tranchedPool.getTranche(TRANCHES.Senior)).principalSharePrice, {unchanged: true}],
           // Senior tranche is 80% of 5% (8$ out of 10$ in the pool)
           [async () => (await tranchedPool.getTranche(TRANCHES.Senior)).interestAPR, {to: interestAprAsBN("4.00")}],
           // Junior tranche is 20% of 5% (2$ out of 10$ in the pool)
@@ -396,32 +408,84 @@ describe("TranchedPool", () => {
     })
 
     describe("when pool is already locked", async () => {
-      it("draws down the capital to the borrower", async () => {
-        await tranchedPool.deposit(TRANCHES.Junior, usdcVal(5))
-        await tranchedPool.deposit(TRANCHES.Senior, usdcVal(10))
+      beforeEach(async () => {
+        await tranchedPool.deposit(TRANCHES.Junior, usdcVal(2))
+        await tranchedPool.deposit(TRANCHES.Senior, usdcVal(8))
         await tranchedPool.lockJuniorCapital({from: borrower})
         await tranchedPool.lockPool({from: borrower})
+      })
 
+      describe("validations", async () => {
+        it("does not allow drawing down more than the limit", async () => {
+          await expect(tranchedPool.drawdown(usdcVal(20))).to.be.rejectedWith(/Cannot drawdown more than the limit/)
+        })
+
+        it("does not allow drawing down when payments are late", async () => {
+          await tranchedPool.drawdown(usdcVal(5))
+          await advanceTime(tranchedPool, {days: paymentPeriodInDays.mul(new BN(3))})
+          await expect(tranchedPool.drawdown(usdcVal(5))).to.be.rejectedWith(
+            /Cannot drawdown when payments are past due/
+          )
+        })
+      })
+
+      it("draws down the capital to the borrower", async () => {
         await expectAction(async () => tranchedPool.drawdown(usdcVal(10))).toChange([
           [async () => usdc.balanceOf(borrower), {by: usdcVal(10)}],
         ])
+      })
+
+      it("it updates the creditline accounting variables", async () => {
+        await expectAction(async () => tranchedPool.drawdown(usdcVal(10))).toChange([
+          [async () => creditLine.balance(), {by: usdcVal(10)}],
+          [async () => creditLine.lastFullPaymentTime(), {increase: true}],
+          [async () => creditLine.nextDueTime(), {increase: true}],
+          [async () => creditLine.interestAccruedAsOf(), {increase: true}],
+        ])
+      })
+
+      it("supports multiple drawdowns", async () => {
+        await expectAction(async () => tranchedPool.drawdown(usdcVal(7))).toChange([
+          [async () => creditLine.balance(), {by: usdcVal(7)}],
+          [async () => creditLine.lastFullPaymentTime(), {increase: true}],
+          [async () => creditLine.nextDueTime(), {increase: true}],
+          [async () => creditLine.interestAccruedAsOf(), {increase: true}],
+        ])
+
+        await expectAction(async () => tranchedPool.drawdown(usdcVal(3))).toChange([
+          [async () => creditLine.balance(), {by: usdcVal(3)}],
+          [async () => creditLine.lastFullPaymentTime(), {unchanged: true}],
+          [async () => creditLine.nextDueTime(), {unchanged: true}],
+          [async () => creditLine.interestAccruedAsOf(), {unchanged: true}],
+        ])
+      })
+
+      it("sets the principal share price to be proportional to the amount drawn down", async () => {
+        let juniorPrincipalAmount, seniorPrincipalAmount
+        ;[, juniorPrincipalAmount] = await getTrancheAmounts(await tranchedPool.getTranche(TRANCHES.Junior))
+        ;[, seniorPrincipalAmount] = await getTrancheAmounts(await tranchedPool.getTranche(TRANCHES.Senior))
+
+        // Before any drawdown, the share price is equivalent to amounts deposited
+        expect(juniorPrincipalAmount).to.bignumber.eq(usdcVal(2)) // 100% of 2$
+        expect(seniorPrincipalAmount).to.bignumber.eq(usdcVal(8)) // 100% of 8$
+
+        await tranchedPool.drawdown(usdcVal(5))
+        ;[, juniorPrincipalAmount] = await getTrancheAmounts(await tranchedPool.getTranche(TRANCHES.Junior))
+        ;[, seniorPrincipalAmount] = await getTrancheAmounts(await tranchedPool.getTranche(TRANCHES.Senior))
+
+        expect(juniorPrincipalAmount).to.bignumber.eq(usdcVal(1)) // 50% of 2$
+        expect(seniorPrincipalAmount).to.bignumber.eq(usdcVal(4)) // 50% of 8$
+
+        await tranchedPool.drawdown(usdcVal(5))
+        ;[, juniorPrincipalAmount] = await getTrancheAmounts(await tranchedPool.getTranche(TRANCHES.Junior))
+        ;[, seniorPrincipalAmount] = await getTrancheAmounts(await tranchedPool.getTranche(TRANCHES.Senior))
+        expect(juniorPrincipalAmount).to.bignumber.eq(usdcVal(0)) // 0% of 2$
+        expect(seniorPrincipalAmount).to.bignumber.eq(usdcVal(0)) // 0% of 8$
       })
     })
   })
 
   describe("tranching", async () => {
-    const getTrancheAmounts = async (trancheInfo) => {
-      const interestAmount = await tranchedPool.sharePriceToUsdc(
-        trancheInfo.interestSharePrice,
-        trancheInfo.principalDeposited
-      )
-      const principalAmount = await tranchedPool.sharePriceToUsdc(
-        trancheInfo.principalSharePrice,
-        trancheInfo.principalDeposited
-      )
-      return [interestAmount, principalAmount]
-    }
-
     beforeEach(async () => {
       // 100$ creditline with 10% interest. Senior tranche gets 8% of the total interest, and junior tranche gets 2%
       interestApr = interestAprAsBN("10.00")
@@ -470,22 +534,9 @@ describe("TranchedPool", () => {
         let juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
         let seniorTranche = await tranchedPool.getTranche(TRANCHES.Senior)
 
-        const juniorInterestAmount = await tranchedPool.sharePriceToUsdc(
-          juniorTranche.interestSharePrice,
-          juniorTranche.principalDeposited
-        )
-        const juniorPrincipalAmount = await tranchedPool.sharePriceToUsdc(
-          juniorTranche.principalSharePrice,
-          juniorTranche.principalDeposited
-        )
-        const seniorInterestAmount = await tranchedPool.sharePriceToUsdc(
-          seniorTranche.interestSharePrice,
-          seniorTranche.principalDeposited
-        )
-        const seniorPrincipalAmount = await tranchedPool.sharePriceToUsdc(
-          seniorTranche.principalSharePrice,
-          seniorTranche.principalDeposited
-        )
+        let juniorInterestAmount, juniorPrincipalAmount, seniorInterestAmount, seniorPrincipalAmount
+        ;[juniorInterestAmount, juniorPrincipalAmount] = await getTrancheAmounts(juniorTranche)
+        ;[seniorInterestAmount, seniorPrincipalAmount] = await getTrancheAmounts(seniorTranche)
 
         expect(seniorInterestAmount).to.bignumber.eq(new BN(0))
         expect(seniorPrincipalAmount).to.bignumber.eq(new BN(0))

@@ -182,23 +182,19 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
   }
 
   function drawdown(uint256 amount) public {
-    // We assume fund has applied it's leverage formula
     if (!locked()) {
       lockPool();
     }
 
-    require(amount <= creditLine.limit(), "Cannot drawdown more than the limit");
-    require(creditLine.balance() == 0, "Multiple drawdowns not supported yet");
+    creditLine.drawdown(amount);
 
-    // TODO: Refactor once we merge creditdesk into the tranchedpool
-    creditLine.setLastFullPaymentTime(currentTime());
-    creditLine.setInterestAccruedAsOf(currentTime());
-    creditLine.setTotalInterestAccrued(0);
-    creditLine.setPrincipal(amount);
-    creditLine.setBalance(amount);
-    uint256 secondsPerPeriod = creditLine.paymentPeriodInDays().mul(SECONDS_PER_DAY);
-    creditLine.setNextDueTime(currentTime().add(secondsPerPeriod));
-    creditLine.setTermEndTime(currentTime().add(SECONDS_PER_DAY.mul(creditLine.termInDays())));
+    // Decrease the principal share price in proportion to the amount drawndown
+    juniorTranche.principalSharePrice = juniorTranche.principalSharePrice.sub(
+      calculateExpectedSharePrice(amount, juniorTranche)
+    );
+    seniorTranche.principalSharePrice = seniorTranche.principalSharePrice.sub(
+      calculateExpectedSharePrice(amount, seniorTranche)
+    );
 
     safeUSDCTransfer(address(this), creditLine.borrower(), amount);
   }
@@ -212,7 +208,6 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     require(!locked(), "Pool already locked");
     require(juniorTranche.lockedAt == 0, "Junior tranche already locked");
 
-    juniorTranche.principalSharePrice = 0;
     juniorTranche.lockedAt = currentTime();
   }
 
@@ -225,7 +220,6 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
 
     seniorTranche.interestAPR = scaleByPercentOwnership(creditLine.interestApr(), seniorTranche);
     juniorTranche.interestAPR = scaleByPercentOwnership(creditLine.interestApr(), juniorTranche);
-    seniorTranche.principalSharePrice = 0;
 
     creditLine.setLimit(seniorTranche.principalDeposited + juniorTranche.principalDeposited);
 
@@ -291,7 +285,11 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     returns (uint256 interestAccrued, uint256 principalAccrued)
   {
     interestAccrued = creditLine.totalInterestAccrued();
-    principalAccrued = Accountant.calculatePrincipalAccrued(creditLine, creditLine.principal(), currentTime());
+    principalAccrued = Accountant.calculatePrincipalAccrued(creditLine, creditLine.principal(), asOf);
+    // Add any remaining balance we have to the principal accrued so expected share price will reflect partial
+    // drawdowns appropriately. (e.g. if 300K was drawndown from a 1M loan, current and expected share price should
+    // be 0.7 and not 0)
+    principalAccrued = principalAccrued.add(creditLine.limit().sub(creditLine.balance()));
     return (interestAccrued, principalAccrued);
   }
 
@@ -365,6 +363,12 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
   ) internal returns (uint256, uint256) {
     uint256 totalShares = tranche.principalDeposited;
 
+    if (desiredPrincipalSharePrice < tranche.principalSharePrice) {
+      desiredPrincipalSharePrice = tranche.principalSharePrice;
+    }
+    if (desiredInterestSharePrice < tranche.interestSharePrice) {
+      desiredInterestSharePrice = tranche.interestSharePrice;
+    }
     uint256 interestSharePriceDifference = desiredInterestSharePrice.sub(tranche.interestSharePrice);
     uint256 desiredInterestAmount = sharePriceToUsdc(interestSharePriceDifference, totalShares);
     uint256 principalSharePriceDifference = desiredPrincipalSharePrice.sub(tranche.principalSharePrice);

@@ -114,6 +114,8 @@ function expectAction(action, debug) {
             const onePercent = expectation.toCloseTo.div(new BN(100))
             expect(originalValues[i]).to.not.bignumber.eq(expectation.toCloseTo)
             expect(newValues[i]).to.bignumber.closeTo(expectation.toCloseTo, onePercent)
+          } else if (expectation.unchanged) {
+            expect(newValues[i]).to.bignumber.eq(originalValues[i])
           }
         } catch (error) {
           console.log("Expectation", i, "failed")
