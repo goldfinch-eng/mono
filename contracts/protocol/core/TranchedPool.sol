@@ -256,7 +256,6 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     safeUSDCTransfer(from, address(this), principal.add(interest), "Failed to collect payment");
 
     (uint256 interestAccrued, uint256 principalAccrued) = getTotalInterestAndPrincipal(currentTime());
-
     uint256 reserveFeePercent = ONE_HUNDRED.div(config.getReserveDenominator()); // Convert the denonminator to percent
 
     uint256 totalReserveAmount; // protocol fee
@@ -289,12 +288,32 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
       seniorTranche
     );
 
-    // All remaining interest and principal is applied towards the junior tranche
+    // Then fill up the junior tranche with all the interest remaining, upto the principal share price
+    expectedInterestSharePrice = juniorTranche.interestSharePrice.add(
+      usdcToSharePrice(interestRemaining, juniorTranche.principalDeposited)
+    );
+    expectedPrincipalSharePrice = calculateExpectedSharePrice(principalAccrued, juniorTranche);
+    (interestRemaining, principalRemaining) = applyToTrancheBySharePrice(
+      interestRemaining,
+      principalRemaining,
+      expectedInterestSharePrice,
+      expectedPrincipalSharePrice,
+      juniorTranche
+    );
+
+    // All remaining interest and principal is applied towards the junior tranche as interest
+    interestRemaining = interestRemaining.add(principalRemaining);
+    principalRemaining = 0;
+    // We need to deduct the reserve amount again from the additional interest
+    reserveDeduction = scaleByFraction(interestRemaining, reserveFeePercent, ONE_HUNDRED);
+    totalReserveAmount = totalReserveAmount.add(reserveDeduction);
+    interestRemaining = interestRemaining.sub(reserveDeduction);
+
     (interestRemaining, principalRemaining) = applyToTrancheByAmount(
-      interestRemaining,
-      principalRemaining,
-      interestRemaining,
-      principalRemaining,
+      interestRemaining.add(principalRemaining),
+      0,
+      interestRemaining.add(principalRemaining),
+      0,
       juniorTranche
     );
 
@@ -466,7 +485,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     (uint256 paymentRemaining, uint256 interestPayment, uint256 principalPayment) = creditLine.assess();
     if (interestPayment > 0 || principalPayment > 0) {
       emit PaymentApplied(creditLine.borrower(), address(this), interestPayment, principalPayment, paymentRemaining);
-      collectInterestAndPrincipal(address(creditLine), interestPayment, principalPayment);
+      collectInterestAndPrincipal(address(creditLine), interestPayment, principalPayment.add(paymentRemaining));
     }
   }
 
