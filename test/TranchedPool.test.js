@@ -12,11 +12,13 @@ const {
   createPoolWithCreditLine: _createPoolWithCreditLine,
   SECONDS_PER_DAY,
 } = require("./testHelpers.js")
-const {interestAprAsBN, TRANCHES} = require("../blockchain_scripts/deployHelpers")
+const {interestAprAsBN, TRANCHES, MAX_UINT} = require("../blockchain_scripts/deployHelpers")
 const {expectEvent} = require("@openzeppelin/test-helpers")
 const hre = require("hardhat")
 const BN = require("bn.js")
 const {deployments} = hre
+const {ecsign} = require("ethereumjs-util")
+const {getApprovalDigest, getWallet} = require("./permitHelpers")
 
 describe("TranchedPool", () => {
   let owner,
@@ -193,6 +195,56 @@ describe("TranchedPool", () => {
           expect(await usdc.balanceOf(tranchedPool.address)).to.bignumber.eq(usdcVal(15))
         })
       })
+    })
+  })
+
+  describe("depositWithPermit", async () => {
+    beforeEach(async () => {
+      tranchedPool = await createPoolWithCreditLine()
+    })
+
+    it("deposits using permit", async () => {
+      let otherPersonAddress = otherPerson.toLowerCase()
+      let tranchedPoolAddress = tranchedPool.address.toLowerCase()
+      let nonce = await usdc.nonces(otherPersonAddress)
+      let deadline = MAX_UINT
+      let value = usdcVal(100)
+
+      // Create signature for permit
+      let digest = await getApprovalDigest({
+        token: usdc,
+        owner: otherPersonAddress,
+        spender: tranchedPoolAddress,
+        value,
+        nonce,
+        deadline,
+      })
+      let wallet = await getWallet(otherPersonAddress)
+      let {v, r, s} = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(wallet.privateKey.slice(2), "hex"))
+
+      let receipt = await tranchedPool.depositWithPermit(TRANCHES.Junior, value, deadline, v, r, s, {
+        from: otherPersonAddress,
+      })
+
+      // Verify deposit was correct
+      let tokenId = receipt.logs[0].args.tokenId
+      let juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
+      let seniorTranche = await tranchedPool.getTranche(TRANCHES.Senior)
+
+      expect(juniorTranche.principalDeposited).to.bignumber.eq(usdcVal(100))
+      expect(seniorTranche.principalDeposited).to.bignumber.eq("0")
+
+      expect(await poolTokens.balanceOf(otherPersonAddress)).to.bignumber.eq("1")
+      expect(await usdc.balanceOf(tranchedPool.address)).to.bignumber.eq(usdcVal(100))
+
+      const tokenInfo = await poolTokens.getTokenInfo(tokenId)
+      expect(tokenInfo.principalAmount).to.bignumber.eq(usdcVal(100))
+      expect(tokenInfo.tranche).to.bignumber.eq(TRANCHES.Junior.toString())
+      expect(tokenInfo.principalRedeemed).to.bignumber.eq("0")
+      expect(tokenInfo.interestRedeemed).to.bignumber.eq("0")
+
+      // Verify that permit creates allowance for amount only
+      expect(await usdc.allowance(otherPersonAddress, tranchedPoolAddress)).to.bignumber.eq("0")
     })
   })
 

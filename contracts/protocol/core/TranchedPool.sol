@@ -3,6 +3,8 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
+import "@openzeppelin/contracts/drafts/IERC20Permit.sol";
+
 import "../../interfaces/ITranchedPool.sol";
 import "../../interfaces/IERC20withDec.sol";
 import "../../interfaces/IV2CreditLine.sol";
@@ -104,6 +106,18 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     uint256 tokenId = config.getPoolTokens().mint(params, msg.sender);
     safeUSDCTransfer(msg.sender, address(this), amount);
     emit DepositMade(msg.sender, tranche, tokenId, amount);
+  }
+
+  function depositWithPermit(
+    uint256 tranche,
+    uint256 amount,
+    uint256 deadline,
+    uint8 v,
+    bytes32 r,
+    bytes32 s
+  ) public override {
+    IERC20Permit(config.usdcAddress()).permit(msg.sender, address(this), amount, deadline, v, r, s);
+    deposit(tranche, amount);
   }
 
   function withdraw(uint256 tokenId, uint256 amount)

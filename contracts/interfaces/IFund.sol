@@ -10,6 +10,14 @@ abstract contract IFund {
 
   function deposit(uint256 amount) external virtual;
 
+  function depositWithPermit(
+    uint256 amount,
+    uint256 deadline,
+    uint8 v,
+    bytes32 r,
+    bytes32 s
+  ) external virtual;
+
   function withdraw(uint256 usdcAmount) external virtual;
 
   function withdrawInFidu(uint256 fiduAmount) external virtual;

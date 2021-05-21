@@ -4,6 +4,7 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/drafts/IERC20Permit.sol";
 
 import "../../interfaces/IFund.sol";
 import "../../interfaces/IPoolTokens.sol";
@@ -55,7 +56,7 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
    *  equivalent value of FIDU tokens
    * @param amount The amount of USDC to deposit
    */
-  function deposit(uint256 amount) external override whenNotPaused withinTransactionLimit(amount) nonReentrant {
+  function deposit(uint256 amount) public override whenNotPaused withinTransactionLimit(amount) nonReentrant {
     require(amount > 0, "Must deposit more than zero");
     // Check if the amount of new shares to be added is within limits
     uint256 depositShares = getNumShares(amount);
@@ -66,6 +67,17 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
     require(success, "Failed to transfer for deposit");
 
     config.getSeniorFundFidu().mintTo(msg.sender, depositShares);
+  }
+
+  function depositWithPermit(
+    uint256 amount,
+    uint256 deadline,
+    uint8 v,
+    bytes32 r,
+    bytes32 s
+  ) public override {
+    IERC20Permit(config.usdcAddress()).permit(msg.sender, address(this), amount, deadline, v, r, s);
+    deposit(amount);
   }
 
   /**

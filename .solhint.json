@@ -64,6 +64,7 @@
         },
         "**/TranchedPool.sol:TranchedPool": {
           "deposit": [],
+          "depositWithPermit": [],
           "withdraw": [],
           "withdrawMax": [],
           "collectInterestAndPrincipal": [],
@@ -78,6 +79,7 @@
         },
         "**/SeniorFund.sol:SeniorFund": {
           "deposit": [],
+          "depositWithPermit": [],
           "withdraw": [],
           "withdrawInFidu": [],
           "invest": [],

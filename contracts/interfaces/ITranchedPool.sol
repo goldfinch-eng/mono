@@ -36,6 +36,15 @@ abstract contract ITranchedPool {
 
   function deposit(uint256 tranche, uint256 amount) external virtual;
 
+  function depositWithPermit(
+    uint256 tranche,
+    uint256 amount,
+    uint256 deadline,
+    uint8 v,
+    bytes32 r,
+    bytes32 s
+  ) external virtual;
+
   function withdraw(uint256 tokenId, uint256 amount)
     external
     virtual

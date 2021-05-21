@@ -1,5 +1,12 @@
 /* global web3 */
-const {interestAprAsBN, TRANCHES, OWNER_ROLE, PAUSER_ROLE, ETHDecimals} = require("../blockchain_scripts/deployHelpers")
+const {
+  interestAprAsBN,
+  TRANCHES,
+  MAX_UINT,
+  OWNER_ROLE,
+  PAUSER_ROLE,
+  ETHDecimals,
+} = require("../blockchain_scripts/deployHelpers")
 const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
 const hre = require("hardhat")
 const {deployments, artifacts} = hre
@@ -20,6 +27,8 @@ const {
   fiduTolerance,
 } = require("./testHelpers.js")
 const {expectEvent} = require("@openzeppelin/test-helpers")
+const {ecsign} = require("ethereumjs-util")
+const {getApprovalDigest, getWallet} = require("./permitHelpers")
 let accounts, owner, person2, person3, reserve, borrower
 const WITHDRAWL_FEE_DENOMINATOR = new BN(200)
 
@@ -218,6 +227,41 @@ describe("SeniorFund", () => {
         const totalDeposited = depositAmount.mul(decimalsDelta).add(secondDepositAmount.mul(decimalsDelta))
         expect(totalShares).to.bignumber.equal(totalDeposited)
       })
+    })
+  })
+
+  describe("depositWithPermit", async () => {
+    it("deposits with permit", async () => {
+      let capitalProviderAddress = person2.toLowerCase()
+      let nonce = await usdc.nonces(capitalProviderAddress)
+      let deadline = MAX_UINT
+      let value = usdcVal(100)
+
+      // Create signature for permit
+      let digest = await getApprovalDigest({
+        token: usdc,
+        owner: capitalProviderAddress,
+        spender: seniorFund.address.toLowerCase(),
+        value,
+        nonce,
+        deadline,
+      })
+      let wallet = await getWallet(capitalProviderAddress)
+      let {v, r, s} = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(wallet.privateKey.slice(2), "hex"))
+
+      // Sanity check that deposit is correct
+      await expectAction(() =>
+        seniorFund.depositWithPermit(value, deadline, v, r, s, {
+          from: capitalProviderAddress,
+        })
+      ).toChange([
+        [() => getBalance(person2, usdc), {by: value.neg()}],
+        [() => getBalance(seniorFund.address, usdc), {by: value}],
+        [() => getBalance(person2, fidu), {by: value.mul(decimalsDelta)}],
+      ])
+
+      // Verify that permit creates allowance for amount only
+      expect(await usdc.allowance(person2, seniorFund.address)).to.bignumber.eq("0")
     })
   })
 
