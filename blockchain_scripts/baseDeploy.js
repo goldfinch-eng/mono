@@ -30,7 +30,7 @@ async function baseDeploy(hre) {
   const config = await deployConfig(deploy)
   await getOrDeployUSDC()
   const fidu = await deployFidu(config)
-  const seniorFundFidu = await deploySeniorFundFidu(config)
+  const seniorFundFidu = await deploySeniorFundFidu(hre, {config})
   await deployPoolTokens(hre, {config})
   const pool = await deployPool(hre, {config})
   logger("Deploying TranchedPool")
@@ -178,22 +178,27 @@ async function baseDeploy(hre) {
     logger("Deployed Fidu to address:", fidu.address)
     return fidu
   }
+}
 
-  async function deploySeniorFundFidu(config) {
-    logger("About to deploy SeniorFundFidu...")
-    const fiduDeployResult = await deploy("SeniorFundFidu", {
-      from: proxy_owner,
-      gas: 4000000,
-      proxy: {
-        methodName: "__initialize__",
-      },
-      args: [protocol_owner, "SeniorFundFidu", "sFIDU", config.address],
-    })
-    const fidu = await ethers.getContractAt("SeniorFundFidu", fiduDeployResult.address)
-    await updateConfig(config, "address", CONFIG_KEYS.SeniorFundFidu, fidu.address, {logger})
-    logger("Deployed SeniorFundFidu to address:", fidu.address)
-    return fidu
-  }
+async function deploySeniorFundFidu(hre, {config}) {
+  const {deployments, getNamedAccounts} = hre
+  const {deploy, log} = deployments
+  const logger = log
+  const {protocol_owner, proxy_owner} = await getNamedAccounts()
+
+  logger("About to deploy SeniorFundFidu...")
+  const fiduDeployResult = await deploy("SeniorFundFidu", {
+    from: proxy_owner,
+    gas: 4000000,
+    proxy: {
+      methodName: "__initialize__",
+    },
+    args: [protocol_owner, "SeniorFundFidu", "sFIDU", config.address],
+  })
+  const fidu = await ethers.getContractAt("SeniorFundFidu", fiduDeployResult.address)
+  await updateConfig(config, "address", CONFIG_KEYS.SeniorFundFidu, fidu.address, {logger})
+  logger("Deployed SeniorFundFidu to address:", fidu.address)
+  return fidu
 }
 
 async function deployTranchedPool(hre, {config}) {
@@ -342,9 +347,11 @@ async function deploySeniorFundStrategy(hre, {config}) {
 }
 
 module.exports = {
-  baseDeploy: baseDeploy,
-  deployPoolTokens: deployPoolTokens,
-  deployTranchedPool: deployTranchedPool,
-  deploySeniorFund: deploySeniorFund,
-  deployMigratedTranchedPool: deployMigratedTranchedPool,
+  baseDeploy,
+  deployPoolTokens,
+  deployTranchedPool,
+  deploySeniorFund,
+  deployMigratedTranchedPool,
+  deploySeniorFundStrategy,
+  deploySeniorFundFidu,
 }

@@ -146,6 +146,10 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
   function invest(ITranchedPool pool) public override {
     require(validPool(pool), "Pool must be valid");
 
+    if (compoundBalance > 0) {
+      _sweepFromCompound();
+    }
+
     IFundStrategy strategy = config.getSeniorFundStrategy();
     uint256 amount = strategy.invest(this, pool);
     require(amount > 0, "Investment amount must be positive");

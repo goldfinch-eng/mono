@@ -28,6 +28,8 @@ const {
   deploySeniorFund,
   deployTranchedPool,
   deployMigratedTranchedPool,
+  deploySeniorFundStrategy,
+  deploySeniorFundFidu,
 } = require("../blockchain_scripts/baseDeploy")
 const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
 const {time} = require("@openzeppelin/test-helpers")
@@ -36,6 +38,7 @@ const Borrower = artifacts.require("Borrower")
 const IOneSplit = artifacts.require("IOneSplit")
 const ICUSDC = artifacts.require("ICUSDCContract")
 const IV1CreditLine = artifacts.require("IV1CreditLine")
+const SeniorFund = artifacts.require("SeniorFund")
 const {
   createCreditLine,
   expect,
@@ -53,9 +56,21 @@ const {
   SECONDS_PER_DAY,
   BLOCKS_PER_DAY,
   decodeLogs,
+  createPoolWithCreditLine,
 } = require("./testHelpers")
 
 const TEST_TIMEOUT = 180000 // 3 mins
+
+async function deployV2(contracts) {
+  const config = contracts.GoldfinchConfig.UpgradedContract
+  const seniorPool = await deploySeniorFund(hre, {config})
+  const seniorFundStrategy = await deploySeniorFundStrategy(hre, {config})
+  const tranchedPool = await deployTranchedPool(hre, {config})
+  const poolTokens = await deployPoolTokens(hre, {config})
+  const migratedTranchedPool = await deployMigratedTranchedPool(hre, {config})
+  await contracts.GoldfinchConfig.UpgradedContract.bulkAddToGoList([seniorPool.address])
+  return {seniorPool, seniorFundStrategy, tranchedPool, poolTokens, migratedTranchedPool}
+}
 
 /*
 These tests are special. They use existing mainnet state, so
@@ -70,6 +85,7 @@ describe("mainnet forking tests", async function () {
   // eslint-disable-next-line no-unused-vars
   let accounts, owner, bwr, person3, pool, reserve, underwriter, usdc, creditDesk, fidu, goldfinchConfig, usdcAddress
   let goldfinchFactory, busd, usdt, cUSDC, creditLineFactory
+  let upgradedContracts
   const contractsToUpgrade = ["CreditDesk", "Pool", "Fidu", "CreditLineFactory", "GoldfinchConfig"]
   const setupTest = deployments.createFixture(async ({deployments}) => {
     // Note: base_deploy always returns when mainnet forking, however
@@ -78,18 +94,20 @@ describe("mainnet forking tests", async function () {
     // Otherewise, we have state leaking across tests.
     await deployments.fixture("base_deploy")
 
-    const contracts = await upgrade(contractsToUpgrade)
+    upgradedContracts = await upgrade(contractsToUpgrade)
     const usdcAddress = getUSDCAddress("mainnet")
-    const pool = await artifacts.require("TestPool").at(contracts.Pool.UpgradedContract.address)
+    const pool = await artifacts.require("TestPool").at(upgradedContracts.Pool.UpgradedContract.address)
     const usdc = await artifacts.require("IERC20withDec").at(usdcAddress)
-    const creditDesk = await artifacts.require("TestCreditDesk").at(contracts.CreditDesk.UpgradedContract.address)
-    const fidu = await artifacts.require("Fidu").at(contracts.Fidu.UpgradedContract.address)
+    const creditDesk = await artifacts
+      .require("TestCreditDesk")
+      .at(upgradedContracts.CreditDesk.UpgradedContract.address)
+    const fidu = await artifacts.require("Fidu").at(upgradedContracts.Fidu.UpgradedContract.address)
     const goldfinchConfig = await artifacts
       .require("GoldfinchConfig")
-      .at(contracts.GoldfinchConfig.UpgradedContract.address)
+      .at(upgradedContracts.GoldfinchConfig.UpgradedContract.address)
     const goldfinchFactory = await artifacts
       .require("CreditLineFactory")
-      .at(contracts.CreditLineFactory.UpgradedContract.address)
+      .at(upgradedContracts.CreditLineFactory.UpgradedContract.address)
     const cUSDC = await artifacts.require("IERC20withDec").at(MAINNET_CUSDC_ADDRESS)
     await creditDesk.setUnderwriterGovernanceLimit(underwriter, usdcVal(100000), {from: MAINNET_MULTISIG})
 
@@ -492,6 +510,145 @@ describe("mainnet forking tests", async function () {
       await expect(pool.sweepFromCompound({from: bwr})).to.be.rejectedWith(/Must have admin role/)
     }).timeout(TEST_TIMEOUT)
   })
+
+  describe("SeniorFund", async () => {
+    describe("compound integration", async () => {
+      let reserveAddress, tranchedPool, borrower, seniorPool, seniorFundStrategy, seniorFundFidu
+      let limit = usdcVal(100000)
+      let interestApr = interestAprAsBN("5.00")
+      let paymentPeriodInDays = new BN(30)
+      let termInDays = new BN(365)
+      let lateFeeApr = new BN(0)
+      let juniorFeePercent = new BN(20)
+      let juniorInvestmentAmount = usdcVal(1000)
+
+      beforeEach(async function () {
+        this.timeout(TEST_TIMEOUT)
+        ;({seniorPool, seniorFundStrategy} = await deployV2(upgradedContracts))
+        seniorPool = await SeniorFund.at(seniorPool.address)
+
+        seniorFundStrategy = await artifacts.require("IFundStrategy").at(seniorFundStrategy.address)
+        // TODO: these should go away when we remove SeniorFundFidu in favor of Fidu
+        seniorFundFidu = await deploySeniorFundFidu(hre, {
+          config: upgradedContracts.GoldfinchConfig.UpgradedContract,
+        })
+        seniorFundFidu = await artifacts.require("SeniorFundFidu").at(seniorFundFidu.address)
+        if (!(await seniorFundFidu.hasRole(MINTER_ROLE, seniorPool.address))) {
+          await seniorFundFidu.grantRole(MINTER_ROLE, seniorPool.address)
+        }
+
+        await erc20Approve(usdc, seniorPool.address, usdcVal(10000), [owner])
+        await seniorPool.deposit(usdcVal(10000), {from: owner})
+
+        borrower = bwr
+        ;({tranchedPool} = await createPoolWithCreditLine({
+          people: {owner: MAINNET_MULTISIG, borrower},
+          goldfinchFactory,
+          limit,
+          interestApr,
+          paymentPeriodInDays,
+          termInDays,
+          lateFeeApr,
+          juniorFeePercent,
+          usdc,
+        }))
+
+        reserveAddress = await goldfinchConfig.getAddress(CONFIG_KEYS.TreasuryReserve)
+        await goldfinchConfig.setNumber(CONFIG_KEYS.TotalFundsLimit, usdcVal(20000000), {from: MAINNET_MULTISIG})
+
+        await erc20Approve(usdc, tranchedPool.address, usdcVal(100000), [owner])
+        await tranchedPool.deposit(TRANCHES.Junior, juniorInvestmentAmount)
+      })
+
+      it("should redeem from compound and recognize interest on invest", async function () {
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        let usdcAmount = await seniorFundStrategy.invest(seniorPool.address, tranchedPool.address)
+        const seniorPoolValue = await getBalance(seniorPool.address, usdc)
+
+        await expectAction(() => {
+          // TODO: owner should be MAINNET_MULTISIG
+          return seniorPool.sweepToCompound({from: owner})
+        }).toChange([
+          [() => getBalance(seniorPool.address, usdc), {to: new BN(0)}], // The pool balance is swept to compound
+          [() => getBalance(seniorPool.address, cUSDC), {increase: true}], // Pool should gain some cTokens
+          [() => seniorPool.assets(), {by: new BN(0)}], // Pool's assets should not change (it should include amount on compound)
+        ])
+
+        const originalSharePrice = await seniorPool.sharePrice()
+
+        const BLOCKS_TO_MINE = 10
+        await time.advanceBlockTo((await time.latestBlock()).add(new BN(BLOCKS_TO_MINE)))
+
+        let originalReserveBalance = await getBalance(reserveAddress, usdc)
+
+        await expectAction(() => seniorPool.invest(tranchedPool.address, {from: MAINNET_MULTISIG}), true).toChange([
+          [() => getBalance(seniorPool.address, usdc), {byCloseTo: seniorPoolValue.sub(usdcAmount)}], // regained usdc
+          [() => getBalance(seniorPool.address, cUSDC), {to: new BN(0)}], // No more cTokens
+          [() => getBalance(tranchedPool.address, usdc), {by: usdcAmount}], // Funds were transferred to TranchedPool
+        ])
+
+        let poolBalanceChange = (await getBalance(seniorPool.address, usdc)).sub(seniorPoolValue.sub(usdcAmount))
+        let reserveBalanceChange = (await getBalance(reserveAddress, usdc)).sub(originalReserveBalance)
+        const interestGained = poolBalanceChange.add(reserveBalanceChange)
+        expect(interestGained).to.bignumber.gt(new BN(0))
+
+        const newSharePrice = await seniorPool.sharePrice()
+
+        const FEE_DENOMINATOR = new BN(10)
+        const expectedfeeAmount = interestGained.div(FEE_DENOMINATOR)
+
+        // This could be zero, if the mainnet Compound interest rate is too low, if this test fails in the future,
+        // consider increasing BLOCKS_TO_MINE (but it could slow down the test)
+        expect(expectedfeeAmount).to.bignumber.gt(new BN(0))
+        expect(await getBalance(reserveAddress, usdc)).to.bignumber.eq(originalReserveBalance.add(expectedfeeAmount))
+
+        const expectedSharePrice = new BN(interestGained)
+          .sub(expectedfeeAmount)
+          .mul(decimals.div(USDC_DECIMALS)) // This part is our "normalization" between USDC and Fidu
+          .mul(decimals)
+          .div(await seniorFundFidu.totalSupply())
+          .add(originalSharePrice)
+
+        expect(newSharePrice).to.bignumber.gt(originalSharePrice)
+        expect(newSharePrice).to.bignumber.equal(expectedSharePrice)
+      }).timeout(TEST_TIMEOUT)
+
+      it("should redeem from compound and recognize interest on withdraw", async function () {
+        let usdcAmount = usdcVal(100)
+        await erc20Approve(usdc, seniorPool.address, usdcAmount, [bwr])
+        await seniorPool.deposit(usdcAmount, {from: bwr})
+        await expectAction(() => {
+          return seniorPool.sweepToCompound({from: owner})
+        }).toChange([
+          [() => getBalance(seniorPool.address, usdc), {to: new BN(0)}],
+          [() => getBalance(seniorPool.address, cUSDC), {increase: true}],
+          [() => seniorPool.assets(), {by: new BN(0)}],
+        ])
+
+        const WITHDRAWL_FEE_DENOMINATOR = new BN(200)
+        const expectedWithdrawAmount = usdcAmount.sub(usdcAmount.div(WITHDRAWL_FEE_DENOMINATOR))
+        await expectAction(() => {
+          return seniorPool.withdraw(usdcAmount, {from: bwr})
+        }).toChange([
+          [() => getBalance(seniorPool.address, usdc), {increase: true}], // USDC withdrawn, but interest was collected
+          [() => getBalance(seniorPool.address, cUSDC), {to: new BN(0)}], // No more cTokens
+          [() => getBalance(bwr, usdc), {by: expectedWithdrawAmount}], // Investor withdrew the full balance minus withdraw fee
+          [() => seniorPool.sharePrice(), {increase: true}], // Due to interest collected, the exact math is tested above
+        ])
+      }).timeout(TEST_TIMEOUT)
+
+      it("does not allow sweeping to compound when there is already a balance", async () => {
+        await seniorPool.sweepToCompound({from: owner})
+
+        await expect(seniorPool.sweepToCompound({from: owner})).to.be.rejectedWith(/Cannot sweep/)
+      }).timeout(TEST_TIMEOUT)
+
+      it("can only be swept by the owner", async () => {
+        await expect(seniorPool.sweepToCompound({from: bwr})).to.be.rejectedWith(/Must have admin role/)
+        await expect(seniorPool.sweepFromCompound({from: bwr})).to.be.rejectedWith(/Must have admin role/)
+      }).timeout(TEST_TIMEOUT)
+    })
+  })
 })
 
 // Note: These tests use ethers contracts instead of the truffle contracts.
@@ -534,16 +691,6 @@ describe("mainnet upgrade tests", async function () {
     await performPostUpgradeMigration(contracts, deployments)
     await contracts.GoldfinchConfig.UpgradedContract.bulkAddToGoList(await web3.eth.getAccounts())
     return contracts
-  }
-
-  async function deployV2(contracts) {
-    const config = contracts.GoldfinchConfig.UpgradedContract
-    const seniorPool = await deploySeniorFund(hre, {config})
-    const tranchedPool = await deployTranchedPool(hre, {config})
-    const poolTokens = await deployPoolTokens(hre, {config})
-    const migratedTranchedPool = await deployMigratedTranchedPool(hre, {config})
-    await contracts.GoldfinchConfig.UpgradedContract.bulkAddToGoList([seniorPool.address])
-    return {seniorPool, tranchedPool, poolTokens, migratedTranchedPool}
   }
 
   async function calculateTermTimes(clAddress) {
