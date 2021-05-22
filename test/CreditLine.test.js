@@ -268,6 +268,35 @@ describe("CreditLine", () => {
           expect(actualPrincipalOwed).to.bignumber.equal(expectedPrincipalOwed)
           expect(actualLastFullPaymentTime).to.bignumber.equal(expectedLastFullPaymentTime)
         })
+
+        it("does not accrue principal twice after term end time", async () => {
+          // Assume interest is paid
+          await creditLine.setInterestOwed(usdcVal(0), {from: owner})
+          await creditLine.setPrincipalOwed(usdcVal(0), {from: owner})
+
+          const termInDays = await creditLine.termInDays()
+          const paymentPeriodInDays = await creditLine.paymentPeriodInDays()
+          const secondsPerDay = await creditLine.SECONDS_PER_DAY()
+          const secondsPerTerm = termInDays.mul(secondsPerDay)
+          const secondsPerPeriod = paymentPeriodInDays.mul(SECONDS_PER_DAY)
+
+          // Set it as if you one period past the termEndTime
+          const timestampForTest = currentTime.add(secondsPerTerm.add(secondsPerPeriod).add(new BN(1)))
+          await creditLine._setTimestampForTest(timestampForTest)
+
+          expect(await creditLine.principalOwed()).to.bignumber.eq(usdcVal(0))
+          expect(await creditLine.interestOwed()).to.bignumber.eq(usdcVal(0))
+
+          await creditLine.assess()
+
+          const principalOwed = await creditLine.principalOwed()
+          expect(principalOwed).to.bignumber.eq(await creditLine.balance())
+
+          await creditLine.assess()
+
+          // Should not accrue principal twice
+          expect(await creditLine.principalOwed()).to.bignumber.eq(principalOwed)
+        })
       })
     })
 

@@ -9,7 +9,6 @@ import "../../interfaces/ITranchedPool.sol";
 import "../../interfaces/IERC20withDec.sol";
 import "../../interfaces/IV2CreditLine.sol";
 import "../../interfaces/IPoolTokens.sol";
-import "./Accountant.sol";
 import "./GoldfinchConfig.sol";
 import "./BaseUpgradeablePausable.sol";
 import "./ConfigHelper.sol";
@@ -326,7 +325,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     returns (uint256 interestAccrued, uint256 principalAccrued)
   {
     interestAccrued = creditLine.totalInterestAccrued();
-    principalAccrued = Accountant.calculatePrincipalAccrued(creditLine, creditLine.principal(), asOf);
+    principalAccrued = creditLine.principalOwed();
     // Add any remaining balance we have to the principal accrued so expected share price will reflect partial
     // drawdowns appropriately. (e.g. if 300K was drawndown from a 1M loan, current and expected share price should
     // be 0.7 and not 0)

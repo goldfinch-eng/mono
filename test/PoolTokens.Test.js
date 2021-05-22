@@ -14,7 +14,6 @@ const hre = require("hardhat")
 const BN = require("bn.js")
 const {deployments} = hre
 const TranchedPool = artifacts.require("TranchedPool")
-const Accountant = artifacts.require("Accountant")
 
 describe("PoolTokens", () => {
   let owner, person2, person3, goldfinchConfig, poolTokens, pool, goldfinchFactory, usdc
@@ -88,8 +87,6 @@ describe("PoolTokens", () => {
 
       it("should disallow invalidly created pools", async () => {
         // Wasn't created through our factory
-        const accountant = await Accountant.new({from: owner})
-        TranchedPool.link(accountant)
         const fakePool = await TranchedPool.new()
         await fakePool.initialize(
           goldfinchConfig.address,

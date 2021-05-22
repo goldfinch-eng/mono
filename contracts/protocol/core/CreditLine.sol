@@ -281,7 +281,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
       setInterestAccruedAsOf(timestamp);
       totalInterestAccrued = totalInterestAccrued.add(interestAccrued);
     }
-    return (interestOwed.add(interestAccrued), principalAccrued);
+    return (interestOwed.add(interestAccrued), principalOwed.add(principalAccrued));
   }
 
   function updateCreditLineAccounting(

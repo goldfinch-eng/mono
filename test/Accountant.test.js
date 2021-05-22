@@ -141,7 +141,8 @@ describe("Accountant", async () => {
       })
 
       it("should not charge late fees on the principal if beyond the term end date", async () => {
-        await creditLine.setTermEndTime(timestamp) // Set term end date in the past
+        // Set term end date in the past (but greater than interestAccruedAsOf)
+        await creditLine.setTermEndTime(timestamp.add(new BN(1)))
         const totalInterestPerYear = balance.mul(interestApr).div(INTEREST_DECIMALS)
         let secondsPassed = lateFeeGracePeriodInDays.mul(SECONDS_PER_DAY).mul(new BN(2))
         expectedInterest = totalInterestPerYear.mul(secondsPassed).div(SECONDS_PER_YEAR)

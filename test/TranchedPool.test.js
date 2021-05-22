@@ -705,7 +705,7 @@ describe("TranchedPool", () => {
     })
   })
 
-  describe.only("tranching", async () => {
+  describe("tranching", async () => {
     beforeEach(async () => {
       // 100$ creditline with 10% interest. Senior tranche gets 8% of the total interest, and junior tranche gets 2%
       interestApr = interestAprAsBN("10.00")

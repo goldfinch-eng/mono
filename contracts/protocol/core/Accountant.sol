@@ -62,6 +62,10 @@ library Accountant {
     uint256 balance,
     uint256 timestamp
   ) public view returns (uint256) {
+    // If we've already accrued principal as of the term end time, then don't accrue more principal
+    if (cl.interestAccruedAsOf() >= cl.termEndTime()) {
+      return 0;
+    }
     if (timestamp >= cl.termEndTime()) {
       return balance;
     } else {
