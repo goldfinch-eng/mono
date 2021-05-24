@@ -581,7 +581,7 @@ describe("mainnet forking tests", async function () {
 
         let originalReserveBalance = await getBalance(reserveAddress, usdc)
 
-        await expectAction(() => seniorPool.invest(tranchedPool.address, {from: MAINNET_MULTISIG}), true).toChange([
+        await expectAction(() => seniorPool.invest(tranchedPool.address, {from: owner}), true).toChange([
           [() => getBalance(seniorPool.address, usdc), {byCloseTo: seniorPoolValue.sub(usdcAmount)}], // regained usdc
           [() => getBalance(seniorPool.address, cUSDC), {to: new BN(0)}], // No more cTokens
           [() => getBalance(tranchedPool.address, usdc), {by: usdcAmount}], // Funds were transferred to TranchedPool

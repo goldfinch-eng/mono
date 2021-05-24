@@ -143,7 +143,7 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
    * @notice Invest in an ITranchedPool using the fund's strategy
    * @param pool An ITranchedPool that should be considered for investment
    */
-  function invest(ITranchedPool pool) public override {
+  function invest(ITranchedPool pool) public override whenNotPaused nonReentrant onlyAdmin {
     require(validPool(pool), "Pool must be valid");
 
     if (compoundBalance > 0) {
@@ -164,7 +164,7 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
    * @notice Redeem interest and/or principal from an ITranchedPool investment
    * @param tokenId the ID of an IPoolToken to be redeemed
    */
-  function redeem(uint256 tokenId) public override {
+  function redeem(uint256 tokenId) public override whenNotPaused nonReentrant onlyAdmin {
     IPoolTokens poolTokens = config.getPoolTokens();
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
 
@@ -180,7 +180,7 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
    *  made repayments that restore confidence that the full loan will be repaid.
    * @param pool An ITranchedPool that should be considered for writedown
    */
-  function writedown(ITranchedPool pool) public override {
+  function writedown(ITranchedPool pool) public override whenNotPaused nonReentrant onlyAdmin {
     require(validPool(pool), "Pool must be valid");
 
     (uint256 writedownPercent, uint256 writedownAmount) = Accountant.calculateWritedownFor(

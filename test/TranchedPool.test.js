@@ -12,7 +12,7 @@ const {
   createPoolWithCreditLine: _createPoolWithCreditLine,
   SECONDS_PER_DAY,
 } = require("./testHelpers.js")
-const {interestAprAsBN, TRANCHES, MAX_UINT} = require("../blockchain_scripts/deployHelpers")
+const {interestAprAsBN, TRANCHES, MAX_UINT, OWNER_ROLE, PAUSER_ROLE} = require("../blockchain_scripts/deployHelpers")
 const {expectEvent} = require("@openzeppelin/test-helpers")
 const hre = require("hardhat")
 const BN = require("bn.js")
@@ -416,18 +416,157 @@ describe("TranchedPool", () => {
     })
   })
 
+  describe("access controls", () => {
+    let LOCKER_ROLE = web3.utils.keccak256("LOCKER_ROLE")
+    beforeEach(async () => {
+      tranchedPool = await createPoolWithCreditLine()
+    })
+
+    it("sets the owner to governance", async () => {
+      expect(await tranchedPool.hasRole(OWNER_ROLE, owner)).to.equal(true)
+      expect(await tranchedPool.hasRole(OWNER_ROLE, borrower)).to.equal(false)
+      expect(await tranchedPool.getRoleAdmin(OWNER_ROLE)).to.equal(OWNER_ROLE)
+    })
+
+    it("sets the pauser to governance", async () => {
+      expect(await tranchedPool.hasRole(PAUSER_ROLE, owner)).to.equal(true)
+      expect(await tranchedPool.hasRole(PAUSER_ROLE, borrower)).to.equal(false)
+      expect(await tranchedPool.getRoleAdmin(PAUSER_ROLE)).to.equal(OWNER_ROLE)
+    })
+
+    it("sets the locker to borrower and governance", async () => {
+      expect(await tranchedPool.hasRole(LOCKER_ROLE, borrower)).to.equal(true)
+      expect(await tranchedPool.hasRole(LOCKER_ROLE, owner)).to.equal(true)
+      expect(await tranchedPool.hasRole(LOCKER_ROLE, otherPerson)).to.equal(false)
+      expect(await tranchedPool.getRoleAdmin(LOCKER_ROLE)).to.equal(OWNER_ROLE)
+    })
+
+    it("allows the owner to set new addresses as roles", async () => {
+      expect(await tranchedPool.hasRole(OWNER_ROLE, otherPerson)).to.equal(false)
+      await tranchedPool.grantRole(OWNER_ROLE, otherPerson, {from: owner})
+      expect(await tranchedPool.hasRole(OWNER_ROLE, otherPerson)).to.equal(true)
+    })
+
+    it("should not allow anyone else to add an owner", async () => {
+      return expect(tranchedPool.grantRole(OWNER_ROLE, otherPerson, {from: borrower})).to.be.rejected
+    })
+  })
+
+  describe("pausability", () => {
+    beforeEach(async () => {
+      tranchedPool = await createPoolWithCreditLine()
+    })
+
+    describe("after pausing", async () => {
+      let tokenId
+
+      beforeEach(async () => {
+        let receipt = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(10))
+        tokenId = receipt.logs[0].args.tokenId
+
+        await tranchedPool.pause()
+      })
+
+      it("disallows deposits", async () => {
+        await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(10))).to.be.rejectedWith(/Pausable: paused/)
+
+        let nonce = await usdc.nonces(owner)
+        let deadline = MAX_UINT
+        let digest = await getApprovalDigest({
+          token: usdc,
+          owner: owner,
+          spender: tranchedPool.address,
+          value: usdcVal(10),
+          nonce,
+          deadline,
+        })
+        let wallet = await getWallet(owner)
+        let {v, r, s} = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(wallet.privateKey.slice(2), "hex"))
+        await expect(
+          tranchedPool.depositWithPermit(TRANCHES.Junior, usdcVal(10), deadline, v, r, s)
+        ).to.be.rejectedWith(/Pausable: paused/)
+      })
+
+      it("disallows withdrawing", async () => {
+        await expect(tranchedPool.withdraw(tokenId, usdcVal(5))).to.be.rejectedWith(/Pausable: paused/)
+        await expect(tranchedPool.withdrawMax(tokenId)).to.be.rejectedWith(/Pausable: paused/)
+      })
+
+      it("disallows drawdown", async () => {
+        await expect(tranchedPool.drawdown(usdcVal(10), {from: borrower})).to.be.rejectedWith(/Pausable: paused/)
+      })
+
+      it("disallows pay", async () => {
+        await expect(tranchedPool.pay(usdcVal(10), {from: borrower})).to.be.rejectedWith(/Pausable: paused/)
+      })
+
+      it("disallows assess", async () => {
+        await expect(tranchedPool.assess({from: borrower})).to.be.rejectedWith(/Pausable: paused/)
+      })
+
+      it("disallows lockJuniorCapital", async () => {
+        await expect(tranchedPool.lockJuniorCapital(), {from: borrower}).to.be.rejectedWith(/Pausable: paused/)
+      })
+
+      it("disallows lockPool", async () => {
+        await expect(tranchedPool.lockPool(), {from: borrower}).to.be.rejectedWith(/Pausable: paused/)
+      })
+
+      it("allows unpausing", async () => {
+        await tranchedPool.unpause()
+        await expect(tranchedPool.withdraw(tokenId, usdcVal(10))).to.be.fulfilled
+        await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(10))).to.be.fulfilled
+        await expect(tranchedPool.lockJuniorCapital()).to.be.fulfilled
+        await expect(tranchedPool.lockPool()).to.be.fulfilled
+        await expect(tranchedPool.drawdown(usdcVal(10), {from: borrower})).to.be.fulfilled
+        await expect(tranchedPool.pay(usdcVal(10), {from: borrower})).to.be.fulfilled
+      })
+    })
+
+    describe("actually pausing", async () => {
+      it("should allow the owner to pause", async () => {
+        await expect(tranchedPool.pause({from: owner})).to.be.fulfilled
+      })
+      it("should disallow non-owner to pause", async () => {
+        await expect(tranchedPool.pause({from: borrower})).to.be.rejectedWith(/Must have pauser role/)
+      })
+    })
+  })
+
   describe("locking", async () => {
     beforeEach(async () => {
       tranchedPool = await createPoolWithCreditLine()
     })
 
     describe("junior tranche", async () => {
-      it("locks the junior tranche", async () => {
-        await tranchedPool.deposit(TRANCHES.Senior, usdcVal(10))
-        await expectAction(async () => tranchedPool.lockJuniorCapital({from: borrower})).toChange([
-          [async () => (await tranchedPool.getTranche(TRANCHES.Junior)).lockedAt, {increase: true}],
-          [async () => (await tranchedPool.getTranche(TRANCHES.Junior)).principalSharePrice, {to: new BN(0)}],
-        ])
+      describe("as the borrower", async () => {
+        it("locks the junior tranche", async () => {
+          let actor = borrower
+          await tranchedPool.deposit(TRANCHES.Senior, usdcVal(10))
+          await expectAction(async () => tranchedPool.lockJuniorCapital({from: actor})).toChange([
+            [async () => (await tranchedPool.getTranche(TRANCHES.Junior)).lockedAt, {increase: true}],
+            [async () => (await tranchedPool.getTranche(TRANCHES.Junior)).principalSharePrice, {to: new BN(0)}],
+          ])
+        })
+      })
+
+      describe("as the owner", async () => {
+        it("locks the junior tranche", async () => {
+          let actor = owner
+          await tranchedPool.deposit(TRANCHES.Senior, usdcVal(10))
+          await expectAction(async () => tranchedPool.lockJuniorCapital({from: actor})).toChange([
+            [async () => (await tranchedPool.getTranche(TRANCHES.Junior)).lockedAt, {increase: true}],
+            [async () => (await tranchedPool.getTranche(TRANCHES.Junior)).principalSharePrice, {to: new BN(0)}],
+          ])
+        })
+      })
+
+      describe("as someone else", async () => {
+        it("does not lock", async () => {
+          let actor = otherPerson
+          await tranchedPool.deposit(TRANCHES.Senior, usdcVal(10))
+          await expect(tranchedPool.lockJuniorCapital({from: actor})).to.be.rejectedWith(/Must have locker role/)
+        })
       })
 
       it("does not allow locking twice", async () => {
@@ -437,20 +576,49 @@ describe("TranchedPool", () => {
     })
 
     describe("senior tranche", async () => {
-      it("locks the senior tranche", async () => {
+      beforeEach(async () => {
         await tranchedPool.deposit(TRANCHES.Senior, usdcVal(8))
         await tranchedPool.deposit(TRANCHES.Junior, usdcVal(2))
         await tranchedPool.lockJuniorCapital({from: borrower})
-        await expectAction(async () => tranchedPool.lockPool({from: borrower})).toChange([
-          [async () => (await tranchedPool.getTranche(TRANCHES.Senior)).lockedAt, {increase: true}],
-          [async () => (await tranchedPool.getTranche(TRANCHES.Senior)).principalSharePrice, {to: new BN(0)}],
-          // Senior tranche is 80% of 5% (8$ out of 10$ in the pool)
-          [async () => (await tranchedPool.getTranche(TRANCHES.Senior)).interestAPR, {to: interestAprAsBN("4.00")}],
-          // Junior tranche is 20% of 5% (2$ out of 10$ in the pool)
-          [async () => (await tranchedPool.getTranche(TRANCHES.Junior)).interestAPR, {to: interestAprAsBN("1.00")}],
-          // Limit is total of senior and junior deposits
-          [async () => creditLine.limit(), {to: usdcVal(10)}],
-        ])
+      })
+
+      describe("as the borrower", async () => {
+        it("locks the senior tranche", async () => {
+          let actor = borrower
+          await expectAction(async () => tranchedPool.lockPool({from: actor})).toChange([
+            [async () => (await tranchedPool.getTranche(TRANCHES.Senior)).lockedAt, {increase: true}],
+            [async () => (await tranchedPool.getTranche(TRANCHES.Senior)).principalSharePrice, {to: new BN(0)}],
+            // Senior tranche is 80% of 5% (8$ out of 10$ in the pool)
+            [async () => (await tranchedPool.getTranche(TRANCHES.Senior)).interestAPR, {to: interestAprAsBN("4.00")}],
+            // Junior tranche is 20% of 5% (2$ out of 10$ in the pool)
+            [async () => (await tranchedPool.getTranche(TRANCHES.Junior)).interestAPR, {to: interestAprAsBN("1.00")}],
+            // Limit is total of senior and junior deposits
+            [async () => creditLine.limit(), {to: usdcVal(10)}],
+          ])
+        })
+      })
+
+      describe("as the owner", async () => {
+        it("locks the senior tranche", async () => {
+          let actor = owner
+          await expectAction(async () => tranchedPool.lockPool({from: actor})).toChange([
+            [async () => (await tranchedPool.getTranche(TRANCHES.Senior)).lockedAt, {increase: true}],
+            [async () => (await tranchedPool.getTranche(TRANCHES.Senior)).principalSharePrice, {to: new BN(0)}],
+            // Senior tranche is 80% of 5% (8$ out of 10$ in the pool)
+            [async () => (await tranchedPool.getTranche(TRANCHES.Senior)).interestAPR, {to: interestAprAsBN("4.00")}],
+            // Junior tranche is 20% of 5% (2$ out of 10$ in the pool)
+            [async () => (await tranchedPool.getTranche(TRANCHES.Junior)).interestAPR, {to: interestAprAsBN("1.00")}],
+            // Limit is total of senior and junior deposits
+            [async () => creditLine.limit(), {to: usdcVal(10)}],
+          ])
+        })
+      })
+
+      describe("as someone else", async () => {
+        it("does not lock", async () => {
+          let actor = otherPerson
+          await expect(tranchedPool.lockPool({from: actor})).to.be.rejectedWith(/Must have locker role/)
+        })
       })
     })
   })

@@ -50,7 +50,7 @@ async function getWallet(address) {
   // This mnemonic is hardcoded for all default unlocked hardhat accounts
   let mnemonic = "test test test test test test test test test test test junk"
   let allAccounts = (await web3.eth.getAccounts()).map((a) => a.toLowerCase())
-  let idx = allAccounts.indexOf(address)
+  let idx = allAccounts.indexOf(address.toLowerCase())
   if (idx == -1) return
   return ethers.Wallet.fromMnemonic(mnemonic, `m/44'/60'/0'/0/${idx}`)
 }

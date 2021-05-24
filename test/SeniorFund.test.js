@@ -127,13 +127,29 @@ describe("SeniorFund", () => {
       beforeEach(async () => {
         await makeDeposit()
         await seniorFund.pause()
+        await goldfinchConfig.addToGoList(seniorFund.address)
       })
+
       it("disallows deposits", async () => {
         return expect(makeDeposit()).to.be.rejectedWith(/Pausable: paused/)
       })
+
       it("disallows withdrawing", async () => {
         return expect(makeWithdraw()).to.be.rejectedWith(/Pausable: paused/)
       })
+
+      it("disallows invest", async () => {
+        await expect(seniorFund.invest(tranchedPool.address)).to.be.rejectedWith(/Pausable: paused/)
+      })
+
+      it("disallows redeem", async () => {
+        return expect(seniorFund.redeem(tranchedPool.address)).to.be.rejectedWith(/Pausable: paused/)
+      })
+
+      it("disallows writedown", async () => {
+        return expect(seniorFund.writedown(tranchedPool.address)).to.be.rejectedWith(/Pausable: paused/)
+      })
+
       it("allows unpausing", async () => {
         await seniorFund.unpause()
         return expect(makeDeposit()).to.be.fulfilled
@@ -475,6 +491,12 @@ describe("SeniorFund", () => {
       await goldfinchConfig.addToGoList(seniorFund.address)
     })
 
+    context("called by non-governance", async () => {
+      it("should revert", async () => {
+        return expect(seniorFund.invest(tranchedPool.address, {from: person2})).to.be.rejectedWith(/Must have admin/)
+      })
+    })
+
     context("Pool is not valid", () => {
       it("reverts", async () => {
         // Simulate someone deploying their own malicious TranchedPool using our contracts
@@ -569,6 +591,12 @@ describe("SeniorFund", () => {
       await erc20Approve(usdc, seniorFund.address, usdcVal(100000), [owner])
       await makeDeposit(owner, usdcVal(100000))
       await goldfinchConfig.addToGoList(seniorFund.address)
+    })
+
+    context("called by non-governance", async () => {
+      it("should revert", async () => {
+        return expect(seniorFund.redeem(42, {from: person2})).to.be.rejectedWith(/Must have admin/)
+      })
     })
 
     it("should redeem the maximum from the TranchedPool", async () => {
@@ -697,6 +725,12 @@ describe("SeniorFund", () => {
       await tranchedPool.lockJuniorCapital({from: borrower})
       await tranchedPool.lockPool({from: borrower})
       await tranchedPool.drawdown(usdcVal(100), {from: borrower})
+    })
+
+    context("called by non-governance", async () => {
+      it("should revert", async () => {
+        return expect(seniorFund.writedown(tranchedPool.address, {from: person2})).to.be.rejectedWith(/Must have admin/)
+      })
     })
 
     context("before loan term ends", async () => {

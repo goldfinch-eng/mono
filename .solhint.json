@@ -63,14 +63,15 @@
           "drawdown": []
         },
         "**/TranchedPool.sol:TranchedPool": {
-          "deposit": [],
+          "deposit": ["whenNotPaused"],
           "depositWithPermit": [],
-          "withdraw": [],
-          "withdrawMax": [],
-          "collectInterestAndPrincipal": [],
-          "drawdown": [],
-          "assess": [],
-          "pay": []
+          "lockJuniorCapital": ["whenNotPaused", "onlyLocker"],
+          "lockPool": ["whenNotPaused", "onlyLocker"],
+          "withdraw": ["whenNotPaused", "onlyTokenHolder"],
+          "withdrawMax": ["whenNotPaused", "onlyTokenHolder"],
+          "drawdown": ["whenNotPaused"],
+          "assess": ["whenNotPaused"],
+          "pay": ["whenNotPaused"]
         },
         "**/PauserPausable.sol:PauserPausable": {
           "__PauserPausable__init": [],
@@ -81,10 +82,7 @@
           "deposit": [],
           "depositWithPermit": [],
           "withdraw": [],
-          "withdrawInFidu": [],
-          "invest": [],
-          "redeem": [],
-          "writedown": []
+          "withdrawInFidu": []
         },
         "**/SeniorFundFidu.sol:SeniorFundFidu": {
           "__initialize__": [],

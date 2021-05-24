@@ -22,6 +22,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
   using FixedPoint for FixedPoint.Unsigned;
   using FixedPoint for uint256;
 
+  bytes32 public constant LOCKER_ROLE = keccak256("LOCKER_ROLE");
   uint256 public constant FP_SCALING_FACTOR = 10**18;
   uint256 public constant INTEREST_DECIMALS = 1e8;
   uint256 public constant SECONDS_PER_DAY = 60 * 60 * 24;
@@ -59,8 +60,9 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     uint256 _termInDays,
     uint256 _lateFeeApr
   ) public override initializer {
-    __BaseUpgradeablePausable__init(_borrower);
     config = GoldfinchConfig(_config);
+    address owner = config.protocolAdminAddress();
+    __BaseUpgradeablePausable__init(owner);
     seniorTranche = TrancheInfo({
       principalSharePrice: usdcToSharePrice(1, 1),
       interestSharePrice: 0,
@@ -91,12 +93,16 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     createdAt = block.timestamp;
     juniorFeePercent = _juniorFeePercent;
 
+    _setupRole(LOCKER_ROLE, _borrower);
+    _setupRole(LOCKER_ROLE, owner);
+    _setRoleAdmin(LOCKER_ROLE, OWNER_ROLE);
+
     // Unlock self for infinite amount
     bool success = config.getUSDC().approve(address(this), uint256(-1));
     require(success, "Failed to approve USDC");
   }
 
-  function deposit(uint256 tranche, uint256 amount) public override nonReentrant {
+  function deposit(uint256 tranche, uint256 amount) public override nonReentrant whenNotPaused {
     require(!locked(), "Pool has been locked");
     TrancheInfo storage trancheInfo = getTrancheInfo(tranche);
 
@@ -125,6 +131,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     override
     onlyTokenHolder(tokenId)
     nonReentrant
+    whenNotPaused
     returns (uint256 interestWithdrawn, uint256 principalWithdrawn)
   {
     IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
@@ -138,6 +145,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     override
     onlyTokenHolder(tokenId)
     nonReentrant
+    whenNotPaused
     returns (uint256 interestWithdrawn, uint256 principalWithdrawn)
   {
     IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
@@ -195,7 +203,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     return (interestRedeemable, principalRedeemable);
   }
 
-  function drawdown(uint256 amount) public {
+  function drawdown(uint256 amount) public onlyLocker whenNotPaused {
     if (!locked()) {
       lockPool();
     }
@@ -211,7 +219,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
   }
 
   // Mark the investment period as over
-  function lockJuniorCapital() public onlyAdmin {
+  function lockJuniorCapital() public onlyLocker whenNotPaused {
     _lockJuniorCapital();
   }
 
@@ -224,7 +232,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     juniorTranche.principalSharePrice = 0;
   }
 
-  function lockPool() public onlyAdmin {
+  function lockPool() public onlyLocker whenNotPaused {
     _lockPool();
   }
 
@@ -455,7 +463,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     return sharePrice.mul(totalShares).div(FP_SCALING_FACTOR);
   }
 
-  function assess() public {
+  function assess() public whenNotPaused {
     (uint256 paymentRemaining, uint256 interestPayment, uint256 principalPayment) = creditLine.assess();
     if (interestPayment > 0 || principalPayment > 0) {
       emit PaymentApplied(creditLine.borrower(), address(this), interestPayment, principalPayment, paymentRemaining);
@@ -477,6 +485,11 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
 
   modifier onlyCreditDesk() {
     require(msg.sender == config.creditDeskAddress(), "Only the credit desk is allowed to call this function");
+    _;
+  }
+
+  modifier onlyLocker() {
+    require(hasRole(LOCKER_ROLE, msg.sender), "Must have locker role to perform this action");
     _;
   }
 
