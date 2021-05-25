@@ -63,6 +63,11 @@ contract MigratedTranchedPool is TranchedPool, IMigratedTranchedPool {
     _lockJuniorCapital();
     _lockPool();
 
+    // Simulate the drawdown
+    uint256 amountRemaining = creditLine.limit().sub(creditLine.balance());
+    juniorTranche.principalSharePrice = calculateExpectedSharePrice(amountRemaining, juniorTranche);
+    seniorTranche.principalSharePrice = calculateExpectedSharePrice(amountRemaining, seniorTranche);
+
     // Set junior's sharePrice correctly
     applyToTrancheByAmount(totalInterestPaid, totalPrincipalPaid, totalInterestPaid, totalPrincipalPaid, juniorTranche);
   }

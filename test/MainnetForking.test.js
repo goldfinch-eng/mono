@@ -754,7 +754,7 @@ describe("mainnet upgrade tests", async function () {
       expect(seniorTranche.principalDeposited).to.eq("0")
       expect(seniorTranche.principalSharePrice).to.eq("0")
       expect(seniorTranche.interestSharePrice).to.eq("0")
-      expect(seniorTranche.lockedAt).not.to.eq("0")
+      expect(seniorTranche.lockedUntil).not.to.eq("0")
 
       // Group 5: Junior Tranch should be correct
       expect(juniorTranche.principalDeposited).to.eq(String(originalBalance))
@@ -764,7 +764,7 @@ describe("mainnet upgrade tests", async function () {
       expect(totalPrincipalPaid.mul(ETHDecimals).div(originalBalance)).to.bignumber.eq(
         new BN(juniorTranche.principalSharePrice)
       )
-      expect(juniorTranche.lockedAt).not.to.eq("0")
+      expect(juniorTranche.lockedUntil).not.to.eq("0")
 
       // Group 6: Minted the correct tokens to the SeniorPool
       const tokenInfo = await poolTokens.getTokenInfo(tokenId)

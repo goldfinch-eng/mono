@@ -10,6 +10,7 @@ const decimals = new BN(String(1e18))
 const USDC_DECIMALS = new BN(String(1e6))
 const SECONDS_PER_DAY = new BN(86400)
 const SECONDS_PER_YEAR = SECONDS_PER_DAY.mul(new BN(365))
+const UNIT_SHARE_PRICE = new BN("1000000000000000000") // Corresponds to share price of 100% (no interest or writedowns)
 chai.use(require("chai-bn")(BN))
 const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
 const fiduTolerance = decimals.div(USDC_DECIMALS)
@@ -295,6 +296,7 @@ module.exports = {
   SECONDS_PER_YEAR: SECONDS_PER_YEAR,
   EMPTY_DATA: EMPTY_DATA,
   BLOCKS_PER_DAY: BLOCKS_PER_DAY,
+  UNIT_SHARE_PRICE: UNIT_SHARE_PRICE,
   bigVal: bigVal,
   usdcVal: usdcVal,
   mochaEach: mochaEach,

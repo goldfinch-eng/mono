@@ -302,7 +302,9 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
 
     // All remaining interest and principal is applied towards the junior tranche as interest
     interestRemaining = interestRemaining.add(principalRemaining);
-    // We need to deduct the reserve amount again from the principal (which is now being treated as interest)
+    // Since any principal remaining is treated as interest (there is "extra" interest to be distributed)
+    // we need to make sure to collect the protocol fee on the additional interest (we only deducted the
+    // fee on the original interest portion)
     reserveDeduction = scaleByFraction(principalRemaining, reserveFeePercent, ONE_HUNDRED);
     totalReserveAmount = totalReserveAmount.add(reserveDeduction);
     interestRemaining = interestRemaining.sub(reserveDeduction);

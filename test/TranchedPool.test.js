@@ -11,6 +11,7 @@ const {
   tolerance,
   createPoolWithCreditLine: _createPoolWithCreditLine,
   SECONDS_PER_DAY,
+  UNIT_SHARE_PRICE,
 } = require("./testHelpers.js")
 const {interestAprAsBN, TRANCHES, MAX_UINT, OWNER_ROLE, PAUSER_ROLE} = require("../blockchain_scripts/deployHelpers")
 const {expectEvent} = require("@openzeppelin/test-helpers")
@@ -81,13 +82,13 @@ describe("TranchedPool", () => {
 
       const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
       const seniorTranche = await tranchedPool.getTranche(TRANCHES.Senior)
-      expect(juniorTranche.principalSharePrice).to.bignumber.eq("1000000000000000000")
+      expect(juniorTranche.principalSharePrice).to.bignumber.eq(UNIT_SHARE_PRICE)
       expect(juniorTranche.interestSharePrice).to.bignumber.eq("0")
       expect(juniorTranche.principalDeposited).to.bignumber.eq("0")
       expect(juniorTranche.interestAPR).to.bignumber.eq("0")
       expect(juniorTranche.lockedUntil).to.bignumber.eq("0")
 
-      expect(seniorTranche.principalSharePrice).to.bignumber.eq("1000000000000000000")
+      expect(seniorTranche.principalSharePrice).to.bignumber.eq(UNIT_SHARE_PRICE)
       expect(seniorTranche.interestSharePrice).to.bignumber.eq("0")
       expect(seniorTranche.principalDeposited).to.bignumber.eq("0")
       expect(seniorTranche.interestAPR).to.bignumber.eq("0")
@@ -859,6 +860,7 @@ describe("TranchedPool", () => {
 
           // Principal payment should be 0, while interest payment should be slightly less than half. This
           // is because interest is accrued from the most recent nextDueTime rather than the current timestamp.
+          // 180.0 / 365 * 10 = 4.93150684931506 (180 because we round to the most recent time in paymentPeriodInDays)
           await tranchedPool.pay(new BN("4931506"), {from: borrower})
 
           let interestAmount, principalAmount
@@ -1007,6 +1009,8 @@ describe("TranchedPool", () => {
           const expectedJuniorInterest = new BN("1676713")
           const expectedProtocolFee = new BN("493150")
           const totalPartialInterest = expectedSeniorInterest.add(expectedJuniorInterest).add(expectedProtocolFee)
+          // 180.0 / 365 * 10 = 4.93150684931506 (180 because we round to the most recent time in paymentPeriodInDays)
+          expect(totalPartialInterest).to.bignumber.eq(new BN("4931506"))
           await tranchedPool.pay(usdcVal(50).add(totalPartialInterest), {from: borrower})
           let interestAmount, principalAmount
           ;[interestAmount, principalAmount] = await getTrancheAmounts(await tranchedPool.getTranche(TRANCHES.Senior))
@@ -1025,19 +1029,31 @@ describe("TranchedPool", () => {
 
           await advanceTime(tranchedPool, {seconds: halfway.toNumber()})
 
+          await tranchedPool.assess()
+          // 185.0 / 365 * 5 = 2.5342465753424657 (185 because that's the number of days left in the term for interest to accrue)
+          const remainingInterest = new BN("2534246")
+          expect(await creditLine.interestOwed()).to.bignumber.eq(remainingInterest)
+          expect(await creditLine.principalOwed()).to.bignumber.eq(usdcVal(50))
+
           // Collect the remaining interest and the principal
-          await tranchedPool.pay(usdcVal(50).add(totalPartialInterest.div(new BN(2))), {from: borrower})
+          await tranchedPool.pay(usdcVal(50).add(remainingInterest), {from: borrower})
           ;[interestAmount, principalAmount] = await getTrancheAmounts(await tranchedPool.getTranche(TRANCHES.Senior))
-          // TODO: shouldn't this be 4.20$ exactly?
+          // We would normally expect 7.5$ of total interest (10% interest on 100$ for 182.5 days and 10% interest on
+          // 50$ for 182.5 days). But because we round to the nearest nextDueTime in the past, these amount are slightly
+          // less: we collected 10% interest on 100$ for 180 days and 10% interest on 50$ for 185 days. So total
+          // interest collected is 7.465753424657534 rather than 7.5
+
+          // Senior = 7.465753424657534 * (leverage ratio of 0.8) * (1- junior fee of 20% - protocol fee of 10%) = 4.18
           expect(interestAmount).to.bignumber.closeTo(usdcVal(418).div(new BN(100)), tolerance)
           expect(principalAmount).to.bignumber.eq(usdcVal(80))
           ;[interestAmount, principalAmount] = await getTrancheAmounts(await tranchedPool.getTranche(TRANCHES.Junior))
-          // And this at 2.5$ exact?
+          // Junior = 7.465753424657534 - senior interest - 10% protocol fee = 2.5383561643835613
           expect(interestAmount).to.bignumber.closeTo(usdcVal(2538).div(new BN(1000)), tolerance)
-          // This should be exactly 20
-          expect(principalAmount).to.bignumber.closeTo(usdcVal(19931).div(new BN(1000)), tolerance)
+          expect(principalAmount).to.bignumber.eq(usdcVal(20))
 
-          expect(await usdc.balanceOf(treasury)).to.bignumber.closeTo(usdcVal(746).div(new BN(1000)), tolerance)
+          // 10% of total interest
+          const expectedFee = totalPartialInterest.add(remainingInterest).div(new BN(10))
+          expect(await usdc.balanceOf(treasury)).to.bignumber.closeTo(expectedFee, tolerance)
         })
       })
     })
