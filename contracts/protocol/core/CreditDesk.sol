@@ -306,12 +306,8 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     // Close out the original credit line
     clToMigrate.setLimit(0);
     clToMigrate.setBalance(0);
-
-    bool success = config.getPool().transferFrom(
-      address(clToMigrate),
-      address(newCl),
-      config.getUSDC().balanceOf(address(clToMigrate))
-    );
+    IERC20withDec usdc = config.getUSDC();
+    bool success = usdc.transferFrom(address(clToMigrate), address(newCl), usdc.balanceOf(address(clToMigrate)));
     require(success, "Failed to transfer funds");
   }
 

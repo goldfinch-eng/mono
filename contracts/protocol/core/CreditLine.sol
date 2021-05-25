@@ -174,7 +174,6 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     if (currentTime() < nextDueTime && !isLate(currentTime())) {
       return (0, 0, 0);
     }
-
     uint256 timeToAssess = calculateNextDueTime();
     setNextDueTime(timeToAssess);
 

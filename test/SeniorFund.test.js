@@ -61,14 +61,9 @@ describe("SeniorFund", () => {
   }
 
   const setupTest = deployments.createFixture(async ({deployments}) => {
-    const {
-      seniorFund,
-      seniorFundStrategy,
-      usdc,
-      seniorFundFidu: fidu,
-      goldfinchFactory,
-      goldfinchConfig,
-    } = await deployAllContracts(deployments)
+    const {seniorFund, seniorFundStrategy, usdc, fidu, goldfinchFactory, goldfinchConfig} = await deployAllContracts(
+      deployments
+    )
     // A bit of setup for our test users
     await erc20Approve(usdc, seniorFund.address, usdcVal(100000), [person2])
     await erc20Transfer(usdc, [person2, person3], usdcVal(10000), owner)
@@ -563,8 +558,16 @@ describe("SeniorFund", () => {
         expect(event.args.amount).to.bignumber.equal(investmentAmount)
       })
 
-      it("has no remaining erc20 allowance", async () => {
-        // TODO
+      it("should track the investment in in the assets calculation", async () => {
+        // Make the strategy invest
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        let investmentAmount = await seniorFundStrategy.invest(seniorFund.address, tranchedPool.address)
+
+        await expectAction(() => seniorFund.invest(tranchedPool.address)).toChange([
+          [seniorFund.totalLoansOutstanding, {by: investmentAmount}],
+          [() => getBalance(seniorFund.address, usdc), {by: investmentAmount.neg()}],
+          [seniorFund.assets, {by: new BN(0)}], // loans outstanding + balance cancel out
+        ])
       })
     })
 
@@ -739,12 +742,14 @@ describe("SeniorFund", () => {
         const paymentPeriodInSeconds = paymentPeriodInDays.mul(SECONDS_PER_DAY)
         const twoPaymentPeriodsInSeconds = paymentPeriodInSeconds.mul(new BN(2))
         await advanceTime(tranchedPool, {seconds: twoPaymentPeriodsInSeconds})
-
-        await tranchedPool.assess()
-        await seniorFund.writedown(tranchedPool.address)
-
         // So writedown is 2 periods late - 1 grace period / 4 max = 25%
         let expectedWritedown = usdcVal(100).div(new BN(4)) // 25% of 100 = 25
+
+        await tranchedPool.assess()
+        await expectAction(() => seniorFund.writedown(tranchedPool.address)).toChange([
+          [seniorFund.totalWritedowns, {byCloseTo: expectedWritedown}],
+          [seniorFund.assets, {byCloseTo: expectedWritedown.neg()}],
+        ])
 
         var newSharePrice = await seniorFund.sharePrice()
         var delta = originalSharePrice.sub(newSharePrice)

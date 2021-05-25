@@ -46,10 +46,6 @@ library ConfigHelper {
     return IFidu(fiduAddress(config));
   }
 
-  function getSeniorFundFidu(GoldfinchConfig config) internal view returns (IFidu) {
-    return IFidu(seniorFundFiduAddress(config));
-  }
-
   function getCUSDCContract(GoldfinchConfig config) internal view returns (ICUSDCContract) {
     return ICUSDCContract(cusdcContractAddress(config));
   }
@@ -100,10 +96,6 @@ library ConfigHelper {
 
   function fiduAddress(GoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.Fidu));
-  }
-
-  function seniorFundFiduAddress(GoldfinchConfig config) internal view returns (address) {
-    return config.getAddress(uint256(ConfigOptions.Addresses.SeniorFundFidu));
   }
 
   function cusdcContractAddress(GoldfinchConfig config) internal view returns (address) {

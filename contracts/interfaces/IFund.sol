@@ -7,6 +7,8 @@ import "./ITranchedPool.sol";
 
 abstract contract IFund {
   uint256 public sharePrice;
+  uint256 public totalLoansOutstanding;
+  uint256 public totalWritedowns;
 
   function deposit(uint256 amount) external virtual;
 

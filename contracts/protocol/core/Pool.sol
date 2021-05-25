@@ -69,6 +69,11 @@ contract Pool is BaseUpgradeablePausable, IPool {
    */
   function withdraw(uint256 usdcAmount) external override whenNotPaused nonReentrant {
     require(usdcAmount > 0, "Must withdraw more than zero");
+    // This MUST happen before calculating withdrawShares, otherwise the share price
+    // changes between calculation and burning of Fidu, which creates a asset/liability mismatch
+    if (compoundBalance > 0) {
+      _sweepFromCompound();
+    }
     uint256 withdrawShares = getNumShares(usdcAmount);
     _withdraw(usdcAmount, withdrawShares);
   }
@@ -79,6 +84,9 @@ contract Pool is BaseUpgradeablePausable, IPool {
    */
   function withdrawInFidu(uint256 fiduAmount) external override whenNotPaused nonReentrant {
     require(fiduAmount > 0, "Must withdraw more than zero");
+    if (compoundBalance > 0) {
+      _sweepFromCompound();
+    }
     uint256 usdcAmount = getUSDCAmountFromShares(fiduAmount);
     uint256 withdrawShares = fiduAmount;
     _withdraw(usdcAmount, withdrawShares);
@@ -252,10 +260,6 @@ contract Pool is BaseUpgradeablePausable, IPool {
     uint256 currentShares = fidu.balanceOf(msg.sender);
     // Ensure the address has enough value in the pool
     require(withdrawShares <= currentShares, "Amount requested is greater than what this address owns");
-
-    if (compoundBalance > 0) {
-      _sweepFromCompound();
-    }
 
     uint256 reserveAmount = usdcAmount.div(config.getWithdrawFeeDenominator());
     uint256 userAmount = usdcAmount.sub(reserveAmount);

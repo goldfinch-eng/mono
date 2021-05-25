@@ -89,10 +89,10 @@ function expectAction(action, debug) {
       expectations.forEach((expectation, i) => {
         try {
           if (expectation.by) {
-            expect(newValues[i]).to.bignumber.equal(originalValues[i].add(expectation.by))
+            expect(newValues[i].sub(originalValues[i])).to.bignumber.equal(expectation.by)
           } else if (expectation.byCloseTo) {
-            const onePercent = expectation.byCloseTo.div(new BN(100))
-            expect(newValues[i]).to.bignumber.closeTo(originalValues[i].add(expectation.byCloseTo), onePercent)
+            const onePercent = expectation.byCloseTo.div(new BN(100)).abs()
+            expect(newValues[i].sub(originalValues[i])).to.bignumber.closeTo(expectation.byCloseTo, onePercent)
           } else if (expectation.fn) {
             expectation.fn(originalValues[i], newValues[i])
           } else if (expectation.increase) {
@@ -111,7 +111,7 @@ function expectAction(action, debug) {
             }
           } else if (expectation.toCloseTo) {
             // It was not originally the number we expected, but then was changed to it
-            const onePercent = expectation.toCloseTo.div(new BN(100))
+            const onePercent = expectation.toCloseTo.div(new BN(100)).abs()
             expect(originalValues[i]).to.not.bignumber.eq(expectation.toCloseTo)
             expect(newValues[i]).to.bignumber.closeTo(expectation.toCloseTo, onePercent)
           } else if (expectation.unchanged) {
@@ -159,7 +159,6 @@ async function deployAllContracts(deployments, options = {}) {
   const usdc = await getDeployedAsTruffleContract(deployments, "ERC20")
   const creditDesk = await getDeployedAsTruffleContract(deployments, "CreditDesk")
   const fidu = await getDeployedAsTruffleContract(deployments, "Fidu")
-  const seniorFundFidu = await getDeployedAsTruffleContract(deployments, "SeniorFundFidu")
   const goldfinchConfig = await getDeployedAsTruffleContract(deployments, "GoldfinchConfig")
   const goldfinchFactory = await getDeployedAsTruffleContract(deployments, "CreditLineFactory")
   const poolTokens = await getDeployedAsTruffleContract(deployments, "PoolTokens")
@@ -174,7 +173,6 @@ async function deployAllContracts(deployments, options = {}) {
     pool,
     seniorFund,
     seniorFundStrategy,
-    seniorFundFidu,
     usdc,
     creditDesk,
     fidu,
@@ -238,12 +236,12 @@ const createPoolWithCreditLine = async ({
   people,
   goldfinchFactory,
   usdc,
-  juniorFeePercent,
-  interestApr,
-  paymentPeriodInDays,
-  termInDays,
-  limit,
-  lateFeeApr,
+  juniorFeePercent = 20,
+  interestApr = interestAprAsBN("15.0"),
+  paymentPeriodInDays = new BN(30),
+  termInDays = new BN(365),
+  limit = usdcVal(10000),
+  lateFeeApr = interestAprAsBN("3.0"),
 }) => {
   const CreditLine = artifacts.require("CreditLine")
   const TranchedPool = artifacts.require("TestTranchedPool")
@@ -279,6 +277,10 @@ const createPoolWithCreditLine = async ({
   return {tranchedPool, creditLine}
 }
 
+async function toTruffle(contract, contractName) {
+  return await artifacts.require(contractName).at(contract.address)
+}
+
 module.exports = {
   chai: chai,
   expect: expect,
@@ -308,4 +310,5 @@ module.exports = {
   createCreditLine: createCreditLine,
   createPoolWithCreditLine: createPoolWithCreditLine,
   decodeLogs: decodeLogs,
+  toTruffle: toTruffle,
 }

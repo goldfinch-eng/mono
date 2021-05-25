@@ -30,20 +30,18 @@ async function baseDeploy(hre) {
   const config = await deployConfig(deploy)
   await getOrDeployUSDC()
   const fidu = await deployFidu(config)
-  const seniorFundFidu = await deploySeniorFundFidu(hre, {config})
   await deployPoolTokens(hre, {config})
   const pool = await deployPool(hre, {config})
   logger("Deploying TranchedPool")
   await deployTranchedPool(hre, {config})
   logger("Granting minter role to Pool")
   await grantMinterRoleToPool(fidu, pool)
-  const seniorFund = await deploySeniorFund(hre, {config})
+  const creditDesk = await deployCreditDesk(deploy, {config})
+  await deploySeniorFund(hre, {config, fidu})
   logger("Granting minter role to SeniorFund")
-  await grantMinterRoleToPool(seniorFundFidu, seniorFund)
   await deploySeniorFundStrategy(hre, {config})
   logger("Deploying CreditLineFactory")
   await deployCreditLineFactory(deploy, {config})
-  const creditDesk = await deployCreditDesk(deploy, {config})
 
   logger("Granting ownership of Pool to CreditDesk")
   await grantOwnershipOfPoolToCreditDesk(pool, creditDesk.address)
@@ -71,12 +69,6 @@ async function baseDeploy(hre) {
     await setInitialConfigVals(config, logger)
 
     return config
-  }
-
-  async function grantMinterRoleToPool(fidu, pool) {
-    if (!(await fidu.hasRole(MINTER_ROLE, pool.address))) {
-      await fidu.grantRole(MINTER_ROLE, pool.address)
-    }
   }
 
   async function getOrDeployUSDC() {
@@ -180,25 +172,10 @@ async function baseDeploy(hre) {
   }
 }
 
-async function deploySeniorFundFidu(hre, {config}) {
-  const {deployments, getNamedAccounts} = hre
-  const {deploy, log} = deployments
-  const logger = log
-  const {protocol_owner, proxy_owner} = await getNamedAccounts()
-
-  logger("About to deploy SeniorFundFidu...")
-  const fiduDeployResult = await deploy("SeniorFundFidu", {
-    from: proxy_owner,
-    gas: 4000000,
-    proxy: {
-      methodName: "__initialize__",
-    },
-    args: [protocol_owner, "SeniorFundFidu", "sFIDU", config.address],
-  })
-  const fidu = await ethers.getContractAt("SeniorFundFidu", fiduDeployResult.address)
-  await updateConfig(config, "address", CONFIG_KEYS.SeniorFundFidu, fidu.address, {logger})
-  logger("Deployed SeniorFundFidu to address:", fidu.address)
-  return fidu
+async function grantMinterRoleToPool(fidu, pool) {
+  if (!(await fidu.hasRole(MINTER_ROLE, pool.address))) {
+    await fidu.grantRole(MINTER_ROLE, pool.address)
+  }
 }
 
 async function deployTranchedPool(hre, {config}) {
@@ -302,7 +279,7 @@ async function deployPool(hre, {config}) {
   return pool
 }
 
-async function deploySeniorFund(hre, {config}) {
+async function deploySeniorFund(hre, {config, fidu}) {
   let contractName = "SeniorFund"
   if (isTestEnv()) {
     contractName = "TestSeniorFund"
@@ -321,10 +298,11 @@ async function deploySeniorFund(hre, {config}) {
     args: [protocol_owner, config.address],
     libraries: {["Accountant"]: accountant.address},
   })
-  logger("SeniorFund was deployed to:", deployResult.address)
   const fund = await ethers.getContractAt(contractName, deployResult.address)
   await updateConfig(config, "address", CONFIG_KEYS.SeniorFund, fund.address, {logger})
-
+  if (fidu) {
+    await grantMinterRoleToPool(fidu, fund)
+  }
   return fund
 }
 
@@ -353,5 +331,4 @@ module.exports = {
   deploySeniorFund,
   deployMigratedTranchedPool,
   deploySeniorFundStrategy,
-  deploySeniorFundFidu,
 }

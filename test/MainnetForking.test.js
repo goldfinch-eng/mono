@@ -29,7 +29,6 @@ const {
   deployTranchedPool,
   deployMigratedTranchedPool,
   deploySeniorFundStrategy,
-  deploySeniorFundFidu,
 } = require("../blockchain_scripts/baseDeploy")
 const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
 const {time} = require("@openzeppelin/test-helpers")
@@ -38,7 +37,6 @@ const Borrower = artifacts.require("Borrower")
 const IOneSplit = artifacts.require("IOneSplit")
 const ICUSDC = artifacts.require("ICUSDCContract")
 const IV1CreditLine = artifacts.require("IV1CreditLine")
-const SeniorFund = artifacts.require("SeniorFund")
 const {
   createCreditLine,
   expect,
@@ -53,21 +51,27 @@ const {
   ZERO_ADDRESS,
   decimals,
   USDC_DECIMALS,
-  SECONDS_PER_DAY,
-  BLOCKS_PER_DAY,
   decodeLogs,
   createPoolWithCreditLine,
+  toTruffle,
 } = require("./testHelpers")
+const {getMigrationData} = require("../blockchain_scripts/v2/migrationHelpers")
 
 const TEST_TIMEOUT = 180000 // 3 mins
 
 async function deployV2(contracts) {
   const config = contracts.GoldfinchConfig.UpgradedContract
-  const seniorPool = await deploySeniorFund(hre, {config})
-  const seniorFundStrategy = await deploySeniorFundStrategy(hre, {config})
-  const tranchedPool = await deployTranchedPool(hre, {config})
-  const poolTokens = await deployPoolTokens(hre, {config})
-  const migratedTranchedPool = await deployMigratedTranchedPool(hre, {config})
+  const fidu = contracts.Fidu.UpgradedContract
+  let seniorPool = await deploySeniorFund(hre, {config, fidu})
+  seniorPool = await toTruffle(seniorPool, "SeniorFund")
+  let seniorFundStrategy = await deploySeniorFundStrategy(hre, {config})
+  seniorFundStrategy = await toTruffle(seniorFundStrategy, "IFundStrategy")
+  let tranchedPool = await deployTranchedPool(hre, {config})
+  tranchedPool = await toTruffle(tranchedPool, "TranchedPool")
+  let poolTokens = await deployPoolTokens(hre, {config})
+  poolTokens = await toTruffle(poolTokens, "PoolTokens")
+  let migratedTranchedPool = await deployMigratedTranchedPool(hre, {config})
+  migratedTranchedPool = await toTruffle(migratedTranchedPool, "MigratedTranchedPool")
   await contracts.GoldfinchConfig.UpgradedContract.bulkAddToGoList([seniorPool.address])
   return {seniorPool, seniorFundStrategy, tranchedPool, poolTokens, migratedTranchedPool}
 }
@@ -409,111 +413,9 @@ describe("mainnet forking tests", async function () {
     })
   })
 
-  describe("compound integration", async () => {
-    let bwrCon, cl, reserveAddress
-    beforeEach(async function () {
-      this.timeout(TEST_TIMEOUT)
-      const result = await goldfinchFactory.createBorrower(bwr)
-      let bwrConAddr = result.logs[result.logs.length - 1].args.borrower
-      bwrCon = await Borrower.at(bwrConAddr)
-      reserveAddress = await goldfinchConfig.getAddress(CONFIG_KEYS.TreasuryReserve)
-      await goldfinchConfig.setNumber(CONFIG_KEYS.TotalFundsLimit, usdcVal(20000000), {from: MAINNET_MULTISIG})
-      cl = await createCreditLine({creditDesk, borrower: bwrCon.address, underwriter})
-    })
-
-    it("should redeem from compound and recognize interest on drawdown", async function () {
-      let usdcAmount = usdcVal(10)
-      const poolValue = await getBalance(pool.address, usdc)
-
-      await expectAction(() => {
-        return pool.sweepToCompound({from: MAINNET_MULTISIG})
-      }).toChange([
-        [() => getBalance(pool.address, usdc), {to: new BN(0)}], // The pool balance is swept to compound
-        [() => getBalance(pool.address, cUSDC), {increase: true}], // Pool should gain some cTokens
-        [() => pool.assets(), {by: new BN(0)}], // Pool's assets should not change (it should include amount on compound)
-      ])
-
-      const originalSharePrice = await pool.sharePrice()
-
-      const BLOCKS_TO_MINE = 10
-      await time.advanceBlockTo((await time.latestBlock()).add(new BN(BLOCKS_TO_MINE)))
-
-      let originalReserveBalance = await getBalance(reserveAddress, usdc)
-
-      await expectAction(() => {
-        return bwrCon.drawdown(cl.address, usdcAmount, bwr, {from: bwr})
-      }).toChange([
-        [() => getBalance(pool.address, usdc), {byCloseTo: poolValue.sub(usdcAmount)}], // regained usdc
-        [() => getBalance(pool.address, cUSDC), {to: new BN(0)}], // No more cTokens
-        [() => getBalance(bwr, usdc), {by: usdcAmount}], // borrower drew down the balance
-      ])
-
-      // Pool originally had 100, 10 was drawndown, we expect 90 to remain, but it's going to be slightly more due
-      // to interest collected
-      let poolBalanceChange = (await getBalance(pool.address, usdc)).sub(poolValue.sub(usdcAmount))
-      let reserveBalanceChange = (await getBalance(reserveAddress, usdc)).sub(originalReserveBalance)
-      const interestGained = poolBalanceChange.add(reserveBalanceChange)
-      expect(interestGained).to.bignumber.gt(new BN(0))
-
-      const newSharePrice = await pool.sharePrice()
-
-      const FEE_DENOMINATOR = new BN(10)
-      const expectedfeeAmount = interestGained.div(FEE_DENOMINATOR)
-
-      // This could be zero, if the mainnet Compound interest rate is too low, if this test fails in the future,
-      // consider increasing BLOCKS_TO_MINE (but it could slow down the test)
-      expect(expectedfeeAmount).to.bignumber.gt(new BN(0))
-      expect(await getBalance(reserveAddress, usdc)).to.bignumber.eq(originalReserveBalance.add(expectedfeeAmount))
-
-      const expectedSharePrice = new BN(interestGained)
-        .sub(expectedfeeAmount)
-        .mul(decimals.div(USDC_DECIMALS)) // This part is our "normalization" between USDC and Fidu
-        .mul(decimals)
-        .div(await fidu.totalSupply())
-        .add(originalSharePrice)
-
-      expect(newSharePrice).to.bignumber.gt(originalSharePrice)
-      expect(newSharePrice).to.bignumber.equal(expectedSharePrice)
-    }).timeout(TEST_TIMEOUT)
-
-    it("should redeem from compound and recognize interest on withdraw", async function () {
-      let usdcAmount = usdcVal(100)
-      await pool.deposit(usdcAmount, {from: bwr})
-      await expectAction(() => {
-        return pool.sweepToCompound({from: MAINNET_MULTISIG})
-      }).toChange([
-        [() => getBalance(pool.address, usdc), {to: new BN(0)}],
-        [() => getBalance(pool.address, cUSDC), {increase: true}],
-        [() => pool.assets(), {by: new BN(0)}],
-      ])
-
-      const WITHDRAWL_FEE_DENOMINATOR = new BN(200)
-      const expectedWithdrawAmount = usdcAmount.sub(usdcAmount.div(WITHDRAWL_FEE_DENOMINATOR))
-      await expectAction(() => {
-        return pool.withdraw(usdcAmount, {from: bwr})
-      }).toChange([
-        [() => getBalance(pool.address, usdc), {increase: true}], // USDC withdrawn, but interest was collected
-        [() => getBalance(pool.address, cUSDC), {to: new BN(0)}], // No more cTokens
-        [() => getBalance(bwr, usdc), {by: expectedWithdrawAmount}], // borrower drew down the full balance minus withdraw fee
-        [() => pool.sharePrice(), {increase: true}], // Due to interest collected, the exact math is tested above
-      ])
-    }).timeout(TEST_TIMEOUT)
-
-    it("does not allow sweeping to compound when there is already a balance", async () => {
-      await pool.sweepToCompound({from: MAINNET_MULTISIG})
-
-      await expect(pool.sweepToCompound({from: MAINNET_MULTISIG})).to.be.rejectedWith(/Cannot sweep/)
-    }).timeout(TEST_TIMEOUT)
-
-    it("can only be swept by the owner", async () => {
-      await expect(pool.sweepToCompound({from: bwr})).to.be.rejectedWith(/Must have admin role/)
-      await expect(pool.sweepFromCompound({from: bwr})).to.be.rejectedWith(/Must have admin role/)
-    }).timeout(TEST_TIMEOUT)
-  })
-
   describe("SeniorFund", async () => {
     describe("compound integration", async () => {
-      let reserveAddress, tranchedPool, borrower, seniorPool, seniorFundStrategy, seniorFundFidu
+      let reserveAddress, tranchedPool, borrower, seniorPool, seniorFundStrategy
       let limit = usdcVal(100000)
       let interestApr = interestAprAsBN("5.00")
       let paymentPeriodInDays = new BN(30)
@@ -525,18 +427,10 @@ describe("mainnet forking tests", async function () {
       beforeEach(async function () {
         this.timeout(TEST_TIMEOUT)
         ;({seniorPool, seniorFundStrategy} = await deployV2(upgradedContracts))
-        seniorPool = await SeniorFund.at(seniorPool.address)
-
         seniorFundStrategy = await artifacts.require("IFundStrategy").at(seniorFundStrategy.address)
-        // TODO: these should go away when we remove SeniorFundFidu in favor of Fidu
-        seniorFundFidu = await deploySeniorFundFidu(hre, {
-          config: upgradedContracts.GoldfinchConfig.UpgradedContract,
-        })
-        seniorFundFidu = await artifacts.require("SeniorFundFidu").at(seniorFundFidu.address)
-        if (!(await seniorFundFidu.hasRole(MINTER_ROLE, seniorPool.address))) {
-          await seniorFundFidu.grantRole(MINTER_ROLE, seniorPool.address)
-        }
 
+        await pool.migrateToSeniorPool({from: MAINNET_MULTISIG})
+        await goldfinchConfig.setNumber(CONFIG_KEYS.TotalFundsLimit, usdcVal(20000000), {from: MAINNET_MULTISIG})
         await erc20Approve(usdc, seniorPool.address, usdcVal(10000), [owner])
         await seniorPool.deposit(usdcVal(10000), {from: owner})
 
@@ -606,7 +500,7 @@ describe("mainnet forking tests", async function () {
           .sub(expectedfeeAmount)
           .mul(decimals.div(USDC_DECIMALS)) // This part is our "normalization" between USDC and Fidu
           .mul(decimals)
-          .div(await seniorFundFidu.totalSupply())
+          .div(await fidu.totalSupply())
           .add(originalSharePrice)
 
         expect(newSharePrice).to.bignumber.gt(originalSharePrice)
@@ -693,96 +587,18 @@ describe("mainnet upgrade tests", async function () {
     return contracts
   }
 
-  async function calculateTermTimes(clAddress) {
-    const creditLine = await IV1CreditLine.at(clAddress)
-    const termEndBlock = await creditLine.termEndBlock()
-    const termInDays = await creditLine.termInDays()
-    const termStartBlock = termEndBlock.sub(new BN(BLOCKS_PER_DAY).mul(termInDays))
-    const termStartTime = (await web3.eth.getBlock(String(termStartBlock))).timestamp
-    return {termEndTime: termStartTime + SECONDS_PER_DAY * termInDays.toNumber(), termStartTime}
-  }
-
-  async function calculateNextDueTime(clAddress, termStartTime) {
-    const creditLine = await IV1CreditLine.at(clAddress)
-    const nextDueBlock = await creditLine.nextDueBlock()
-    const termInDays = await creditLine.termInDays()
-    const termEndBlock = await creditLine.termEndBlock()
-    const termStartBlock = termEndBlock.sub(new BN(BLOCKS_PER_DAY).mul(termInDays))
-    const percentComplete =
-      nextDueBlock.sub(termStartBlock).toNumber() / termInDays.mul(new BN(BLOCKS_PER_DAY)).toNumber()
-    const percentCompleteInDays = percentComplete * termInDays
-    return termStartTime + percentCompleteInDays * SECONDS_PER_DAY
-  }
-
-  async function getBlockTimestamp(blockNumber) {
-    // Mainnet forking has a bug where it's claiming invalid signature when
-    // attempting to call getBlock on this blockNumber. Lower block numbers work just fine
-    // Not sure what's going on, but confirmed calling idential code on actual mainnet works
-    // as expected. Don't want to fight with Hardhat right now, so hardcoding the true result
-    if (blockNumber === 12430756) {
-      return 1620438286
-    }
-    return (await web3.eth.getBlock(String(blockNumber))).timestamp
-  }
-
-  const borrowerAddresses = {
-    "0xEEE76fFacd818Bd54CEDACD5E970736c91Deb795": {
-      addresses: ["0xEEE76fFacd818Bd54CEDACD5E970736c91Deb795", "0xa9f9ce97e5244ebe307dbcc4feb18422e63b38ee"],
-      label: "QuickCheck $150k Creditline",
-    },
-    "0x6dDC3a7233ecD5514607FB1a0E3475A7dA6E58ED": {
-      addresses: ["0x4e38c33db5332975bd4dc63cfd9ff42b21eb2ad6", "0x6dDC3a7233ecD5514607FB1a0E3475A7dA6E58ED"],
-      label: "QuickCheck $300k Creditline",
-    },
-    "0x2c3837122f9a5c88ad1d995eccda79c33d89fed4": {
-      addresses: ["0x2c3837122f9a5c88ad1d995eccda79c33d89fed4"],
-      label: "Aspire $150k Creditline",
-    },
-    "0xdc5c5e6b86835b608066d119b428d21b988ff663": {
-      addresses: ["0xdc5c5e6b86835b608066d119b428d21b988ff663"],
-      label: "Aspire $300k Creditline",
-    },
-    "0x0039aB09f6691F5A7716890864A289903b3AE548": {
-      addresses: ["0x443c2ea20cd50dbcefa1352af962d1b6fa486d81", "0x0039aB09f6691F5A7716890864A289903b3AE548"],
-      label: "PayJoy $100k Creditline",
-    },
-    "0xc7b11c0Ab6aB785B1E4Cc73f3f33d7Afa75aD427": {
-      addresses: ["0xc7b11c0Ab6aB785B1E4Cc73f3f33d7Afa75aD427"],
-      label: "Blake Test CreditLine",
-    },
-  }
-
-  async function calculateTotalPaid(pool, creditLine) {
-    // I verified this appears to return the right amounts, based on events
-    // received for the quick check creditline, cross checked with
-    // https://docs.google.com/spreadsheets/d/1trna25FAnzBtTDnWoBC9-JMZ-PRn-I87jNc7o9KLrto/edit#gid=0
-    const otherPool = await artifacts.require("TestPool").at(pool.address)
-    const web3Pool = new web3.eth.Contract(otherPool.abi, pool.address)
-    const info = borrowerAddresses[creditLine]
-    const events = await getPoolEvents(web3Pool, info.addresses)
-    const totalInterestPaid = events
-      .filter((val) => val.event === "InterestCollected")
-      .reduce(
-        (sum, curVal) => sum.add(new BN(curVal.returnValues.poolAmount)).add(new BN(curVal.returnValues.reserveAmount)),
-        new BN(0)
-      )
-    const totalPrincipalPaid = events
-      .filter((val) => val.event === "PrincipalCollected")
-      .reduce((sum, curVal) => sum.add(new BN(curVal.returnValues.amount)), new BN(0))
-    return {totalInterestPaid, totalPrincipalPaid}
-  }
-
-  async function getPoolEvents(web3Pool, addresses, events = ["InterestCollected", "PrincipalCollected"]) {
-    const [interestCollected, principalCollected] = await Promise.all(
-      events.map((eventName) => {
-        return web3Pool.getPastEvents(eventName, {
-          filter: {payer: addresses},
-          fromBlock: 10360444, // Roughly May, 2020, well before we launched the protocol
-          to: "latest",
-        })
-      })
+  async function migrateClToV2(clAddress, pool, creditDesk) {
+    const data = await getMigrationData(clAddress, pool)
+    await creditDesk.migrateV1CreditLine(
+      clAddress,
+      data.termEndTime,
+      data.nextDueTime,
+      data.interestAccruedAsOf,
+      data.lastFullPaymentTime,
+      data.totalInterestPaid,
+      data.totalPrincipalPaid,
+      {from: MAINNET_MULTISIG}
     )
-    return interestCollected.concat(principalCollected).filter((n) => n)
   }
 
   describe("migrating the Pool to the Senior Pool", async () => {
@@ -821,6 +637,36 @@ describe("mainnet upgrade tests", async function () {
       // Share price should be unchanged
       expect(String(await seniorPool.sharePrice())).to.eq(String(seniorPoolSharePrice))
     }).timeout(TEST_TIMEOUT)
+
+    it("should not affect the assets/liabilities when you withdraw", async () => {
+      let contracts = await getExistingContracts(contractsToUpgrade, mainnetConfig, mainnetMultisigSigner)
+      contracts = await upgrade(contractsToUpgrade, contracts)
+      const {seniorPool} = await deployV2(contracts)
+      const legacyPool = contracts.Pool.UpgradedContract
+      await legacyPool.migrateToSeniorPool()
+      const fidu = contracts.Fidu.UpgradedContract
+
+      const assetsBefore = await seniorPool.assets()
+      const liabilitiesBefore = new BN(String(await fidu.totalSupply()))
+        .mul(await seniorPool.sharePrice())
+        .div(ETHDecimals)
+        .div(ETHDecimals.div(USDC_DECIMALS))
+      const deltaBefore = assetsBefore.sub(liabilitiesBefore)
+
+      const fiduInvestor = "0x008c84421da5527f462886cec43d2717b686a7e4"
+      await impersonateAccount(hre, fiduInvestor)
+
+      await seniorPool.withdraw(usdcVal(100000), {from: fiduInvestor})
+
+      const assetsAfter = await seniorPool.assets()
+      const liabilitiesAfter = new BN(String(await fidu.totalSupply()))
+        .mul(await seniorPool.sharePrice())
+        .div(ETHDecimals)
+        .div(ETHDecimals.div(USDC_DECIMALS))
+      const deltaAfter = assetsAfter.sub(liabilitiesAfter)
+
+      expect(deltaAfter).to.bignumber.eq(deltaBefore)
+    })
   })
 
   describe("migrating credit lines to V2", async () => {
@@ -833,17 +679,19 @@ describe("mainnet upgrade tests", async function () {
       // Setup tons of variables and contracts we'll need,
       // including QuickCheck's $300k credit line that we'll test against
       const creditDesk = await artifacts.require("TestCreditDesk").at(contracts.CreditDesk.UpgradedContract.address)
-      const quickCheck = await IV1CreditLine.at("0x6dDC3a7233ecD5514607FB1a0E3475A7dA6E58ED")
       const creditLineFactory = await artifacts.require("CreditLineFactory").at(mainnetConfig.CreditLineFactory.address)
       const poolTokens = await artifacts.require("PoolTokens").at(poolTokensEthers.address)
-      const {termEndTime, termStartTime} = await calculateTermTimes(quickCheck.address)
-      const nextDueTime = await calculateNextDueTime(quickCheck.address, termStartTime)
-      const interestAccruedAsOf = await getBlockTimestamp((await quickCheck.interestAccruedAsOfBlock()).toNumber())
-      const lastFullPaymentTime = await getBlockTimestamp((await quickCheck.lastFullPaymentBlock()).toNumber())
-      const {totalInterestPaid, totalPrincipalPaid} = await calculateTotalPaid(
-        contracts.Pool.UpgradedContract,
-        "0x6dDC3a7233ecD5514607FB1a0E3475A7dA6E58ED"
-      )
+      // QuickCheck's $300k CreditLine
+      const quickCheck = await IV1CreditLine.at("0x6dDC3a7233ecD5514607FB1a0E3475A7dA6E58ED")
+      const {
+        termEndTime,
+        termStartTime,
+        nextDueTime,
+        interestAccruedAsOf,
+        lastFullPaymentTime,
+        totalInterestPaid,
+        totalPrincipalPaid,
+      } = await getMigrationData(quickCheck.address, contracts.Pool.UpgradedContract)
       const originalBalance = await quickCheck.balance()
       const originalUSDCBalance = await getBalance(quickCheck.address, usdcTruffleContract)
 
@@ -851,6 +699,7 @@ describe("mainnet upgrade tests", async function () {
       expect(termEndTime).to.eq(1643309098) // Thu Jan 27 2022 18:44:58 GMT
       expect(termStartTime).to.eq(1611773098) // Wed Jan 27 2021 18:44:58 GMT
       expect(nextDueTime).to.eq(1624733098) // Sat Jun 26 2021 18:44:58 GMT
+      expect(interestAccruedAsOf).to.eq(1622141098) // Thu May 27 2021 18:44:58 GMT
 
       // Actually migrate
       const tx = await creditDesk.migrateV1CreditLine(
@@ -895,7 +744,9 @@ describe("mainnet upgrade tests", async function () {
       expect(String(await newCl.nextDueTime())).to.eq(String(nextDueTime))
       expect(String(await newCl.interestAccruedAsOf())).to.eq(String(interestAccruedAsOf))
       expect(String(await newCl.lastFullPaymentTime())).to.eq(String(lastFullPaymentTime))
-      // TODO: Test that InterestAccrued is also set correctly!
+      expect(String(await newCl.totalInterestAccrued())).to.eq(
+        String(totalInterestPaid.add(await quickCheck.interestOwed()))
+      )
       expect(await getBalance(newCl.address, usdcTruffleContract)).to.bignumber.eq(originalUSDCBalance)
 
       // Group 3: TranchedPool has expected tranche values
@@ -926,28 +777,59 @@ describe("mainnet upgrade tests", async function () {
       expect(tokenInfo.interestRedeemed).to.equal(String(totalInterestPaid))
       expect(await poolTokens.ownerOf(tokenId)).to.eq(seniorPool.address)
 
-      /*
-      TODO: Requires Mark's where we start to track interest accrued:
-      Advance time. Assess. Borrower should owe the expected amount
-
       await tranchedPool.assess()
-      await advanceTime(creditDesk, {days: 31})
+      const afterNextDueTime = (await newCl.nextDueTime()).add(new BN(1))
+      await advanceTime(creditDesk, {toSecond: afterNextDueTime})
       await expectAction(() => tranchedPool.assess(), true).toChange([
-        [() => newCl.interestAccrued(), {by: new BN(3698627078)}],
-        [() => newCl.principalAccrued(), {by: new BN(0)}],
+        [() => newCl.totalInterestAccrued(), {by: new BN(3698625467)}], // A period's worth of interest
+        [() => newCl.principalOwed(), {by: new BN(0)}],
       ])
-      */
     })
 
     it("should maintain the withdraw balance of senior pool investors after full migration", async () => {
-      /*
-        The test is...
-        1.) Withdraw X amount of FIDU before the upgrade
-        2.) Upgrade the contracts (v1.1 to V2)
-        3.) Migrate all the credit lines, and the underlying USDC
-        4.) Witdraw X amount of FIDU again, and the amount of USDC should be identical.
-      */
-    })
+      let contracts = await getExistingContracts(contractsToUpgrade, mainnetConfig, mainnetMultisigSigner)
+      const fiduInvestor = "0x008c84421da5527f462886cec43d2717b686a7e4"
+      await impersonateAccount(hre, fiduInvestor)
+      let legacyPool = contracts.Pool.ExistingContract
+      const fidu = await artifacts.require("IERC20withDec").at(contracts.Fidu.ExistingContract.address)
+      legacyPool = await artifacts.require("Pool").at(contracts.Pool.ExistingContract.address)
+
+      // Sweeping beforehand to avoid the crazy asset/liability bug that exists in V1.1
+      await legacyPool.sweepFromCompound({from: MAINNET_MULTISIG})
+
+      const fiduBalance = await getBalance(fiduInvestor, fidu)
+      const usdcBalanceBefore = await getBalance(fiduInvestor, usdcTruffleContract)
+      await legacyPool.withdrawInFidu(fiduBalance.div(new BN(10)), {from: fiduInvestor})
+      const usdcBalanceAfter = await getBalance(fiduInvestor, usdcTruffleContract)
+      const legacyValueOfFidu = usdcBalanceAfter.sub(usdcBalanceBefore)
+
+      contracts = await upgrade(contractsToUpgrade, contracts)
+
+      expect(fiduBalance).to.bignumber.be.gt(new BN(0))
+      expect(legacyValueOfFidu).to.bignumber.eq(new BN(100112117645)) // About $100k
+
+      const {seniorPool} = await deployV2(contracts)
+      legacyPool = contracts.Pool.UpgradedContract
+      const creditDesk = await artifacts.require("CreditDesk").at(contracts.CreditDesk.UpgradedContract.address)
+      await legacyPool.migrateToSeniorPool()
+
+      // MIGRATE ALL THE CREDIT LINE
+      // QuickCheck's $150k
+      await migrateClToV2("0xEEE76fFacd818Bd54CEDACD5E970736c91Deb795", contracts.Pool.UpgradedContract, creditDesk)
+      // QuickCheck's $300k
+      await migrateClToV2("0x6dDC3a7233ecD5514607FB1a0E3475A7dA6E58ED", contracts.Pool.UpgradedContract, creditDesk)
+      // Aspire $150k
+      await migrateClToV2("0x2c3837122f9a5c88ad1d995eccda79c33d89fed4", contracts.Pool.UpgradedContract, creditDesk)
+      // Aspire $300k
+      await migrateClToV2("0xdc5c5e6b86835b608066d119b428d21b988ff663", contracts.Pool.UpgradedContract, creditDesk)
+      // PayJoy $100k
+      await migrateClToV2("0x0039aB09f6691F5A7716890864A289903b3AE548", contracts.Pool.UpgradedContract, creditDesk)
+
+      const seniorBalanceBefore = await getBalance(fiduInvestor, usdcTruffleContract)
+      await seniorPool.withdrawInFidu(fiduBalance.div(new BN(10)), {from: fiduInvestor})
+      const seniorValueOfFidu = (await getBalance(fiduInvestor, usdcTruffleContract)).sub(seniorBalanceBefore)
+      expect(seniorValueOfFidu).to.bignumber.eq(legacyValueOfFidu)
+    }).timeout(TEST_TIMEOUT)
   })
 
   it("does not affect the storage layout", async () => {

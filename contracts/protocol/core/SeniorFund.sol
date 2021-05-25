@@ -42,6 +42,8 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
     // Initialize sharePrice to be identical to the legacy pool. This is in the initializer
     // because it must only ever happen once.
     sharePrice = config.getPool().sharePrice();
+    totalLoansOutstanding = config.getCreditDesk().totalLoansOutstanding();
+    totalWritedowns = config.getCreditDesk().totalWritedowns();
 
     IERC20withDec usdc = config.getUSDC();
     // Sanity check the address
@@ -66,7 +68,7 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
     bool success = doUSDCTransfer(msg.sender, address(this), amount);
     require(success, "Failed to transfer for deposit");
 
-    config.getSeniorFundFidu().mintTo(msg.sender, depositShares);
+    config.getFidu().mintTo(msg.sender, depositShares);
   }
 
   function depositWithPermit(
@@ -86,6 +88,11 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
    */
   function withdraw(uint256 usdcAmount) external override whenNotPaused nonReentrant {
     require(usdcAmount > 0, "Must withdraw more than zero");
+    // This MUST happen before calculating withdrawShares, otherwise the share price
+    // changes between calculation and burning of Fidu, which creates a asset/liability mismatch
+    if (compoundBalance > 0) {
+      _sweepFromCompound();
+    }
     uint256 withdrawShares = getNumShares(usdcAmount);
     _withdraw(usdcAmount, withdrawShares);
   }
@@ -96,6 +103,11 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
    */
   function withdrawInFidu(uint256 fiduAmount) external override whenNotPaused nonReentrant {
     require(fiduAmount > 0, "Must withdraw more than zero");
+    // This MUST happen before calculating withdrawShares, otherwise the share price
+    // changes between calculation and burning of Fidu, which creates a asset/liability mismatch
+    if (compoundBalance > 0) {
+      _sweepFromCompound();
+    }
     uint256 usdcAmount = getUSDCAmountFromShares(fiduAmount);
     uint256 withdrawShares = fiduAmount;
     _withdraw(usdcAmount, withdrawShares);
@@ -155,9 +167,11 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
     require(amount > 0, "Investment amount must be positive");
 
     approvePool(pool, amount);
+    // TODO: Should switch to use depositWithPermit for increased security
     pool.deposit(uint256(ITranchedPool.Tranches.Senior), amount);
 
     emit InvestmentMade(address(pool), amount);
+    totalLoansOutstanding = totalLoansOutstanding.add(amount);
   }
 
   /**
@@ -199,6 +213,12 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
     int256 writedownDelta = int256(prevWritedownAmount) - int256(writedownAmount);
     writedowns[pool] = writedownAmount;
     distributeLosses(writedownDelta);
+    if (writedownDelta > 0) {
+      // If writedownDelta is positive, that means we got money back. So subtract from totalWritedowns.
+      totalWritedowns = totalWritedowns.sub(uint256(writedownDelta));
+    } else {
+      totalWritedowns = totalWritedowns.add(uint256(writedownDelta * -1));
+    }
     emit PrincipalWrittenDown(address(pool), writedownDelta);
   }
 
@@ -218,8 +238,8 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
   }
 
   function assets() public view override returns (uint256) {
-    // TODO: needs to include pool token principals
-    return compoundBalance.add(config.getUSDC().balanceOf(address(this)));
+    return
+      compoundBalance.add(config.getUSDC().balanceOf(address(this))).add(totalLoansOutstanding).sub(totalWritedowns);
   }
 
   /* Internal Functions */
@@ -269,15 +289,11 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
   }
 
   function _withdraw(uint256 usdcAmount, uint256 withdrawShares) internal withinTransactionLimit(usdcAmount) {
-    IFidu fidu = config.getSeniorFundFidu();
+    IFidu fidu = config.getFidu();
     // Determine current shares the address has and the shares requested to withdraw
     uint256 currentShares = fidu.balanceOf(msg.sender);
     // Ensure the address has enough value in the pool
     require(withdrawShares <= currentShares, "Amount requested is greater than what this address owns");
-
-    if (compoundBalance > 0) {
-      _sweepFromCompound();
-    }
 
     uint256 reserveAmount = usdcAmount.div(config.getWithdrawFeeDenominator());
     uint256 userAmount = usdcAmount.sub(reserveAmount);
@@ -362,6 +378,7 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
     }
     if (principal > 0) {
       emit PrincipalCollected(from, principal);
+      totalLoansOutstanding = totalLoansOutstanding.sub(principal);
     }
   }
 
@@ -376,7 +393,7 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
   }
 
   function totalShares() internal view returns (uint256) {
-    return config.getSeniorFundFidu().totalSupply();
+    return config.getFidu().totalSupply();
   }
 
   modifier withinTransactionLimit(uint256 amount) {

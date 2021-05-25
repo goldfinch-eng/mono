@@ -37,7 +37,6 @@ library ConfigOptions {
     PoolTokens,
     TranchedPoolImplementation,
     SeniorFund,
-    SeniorFundFidu,
     SeniorFundStrategy,
     MigratedTranchedPoolImplementation
   }
@@ -111,9 +110,6 @@ library ConfigOptions {
     }
     if (Addresses.SeniorFund == addressName) {
       return "SeniorFund";
-    }
-    if (Addresses.SeniorFundFidu == addressName) {
-      return "SeniorFundFidu";
     }
     if (Addresses.SeniorFundStrategy == addressName) {
       return "SeniorFundStrategy";

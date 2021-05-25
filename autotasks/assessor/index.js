@@ -70,7 +70,7 @@ exports.handler = async function (credentials) {
   }
 }
 
-const assessIfRequired = async function assessIfRequired(creditDesk, creditLine, provider) {
+const assessIfRequired = async function assessIfRequired(tranchedPool, creditLine, provider) {
   // Normalize everything to ethers.BigNumber because tests use Truffle and therefore bn.js
   // which is incompatible with BigNumber
   const currentTime = ethers.BigNumber.from((await provider.getBlock("latest")).timestamp.toString())
@@ -87,9 +87,9 @@ const assessIfRequired = async function assessIfRequired(creditDesk, creditLine,
     if (currentTime.gte(termEndTime)) {
       // Currently we don't have a good way to track the last time we assessed a creditLine past it's
       // term end block. So we're going to keep assessing it everytime the script runs for now.
-      await creditDesk.assessCreditLine(creditLine.address)
+      await tranchedPool.assess()
     } else if (currentTime.gte(nextDueTime)) {
-      await creditDesk.assessCreditLine(creditLine.address)
+      await tranchedPool.assess()
     } else {
       console.log(`Assess ${creditLine.address}: Skipped (Already assessed)`)
     }
