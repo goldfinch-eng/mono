@@ -85,13 +85,11 @@ describe("TranchedPool", () => {
       expect(juniorTranche.principalSharePrice).to.bignumber.eq(UNIT_SHARE_PRICE)
       expect(juniorTranche.interestSharePrice).to.bignumber.eq("0")
       expect(juniorTranche.principalDeposited).to.bignumber.eq("0")
-      expect(juniorTranche.interestAPR).to.bignumber.eq("0")
       expect(juniorTranche.lockedUntil).to.bignumber.eq("0")
 
       expect(seniorTranche.principalSharePrice).to.bignumber.eq(UNIT_SHARE_PRICE)
       expect(seniorTranche.interestSharePrice).to.bignumber.eq("0")
       expect(seniorTranche.principalDeposited).to.bignumber.eq("0")
-      expect(seniorTranche.interestAPR).to.bignumber.eq("0")
       expect(seniorTranche.lockedUntil).to.bignumber.eq("0")
 
       expect(await tranchedPool.creditLine()).to.eq(creditLine.address)
@@ -629,10 +627,6 @@ describe("TranchedPool", () => {
           await expectAction(async () => tranchedPool.lockPool({from: actor})).toChange([
             [async () => (await tranchedPool.getTranche(TRANCHES.Senior)).lockedUntil, {increase: true}],
             [async () => (await tranchedPool.getTranche(TRANCHES.Senior)).principalSharePrice, {unchanged: true}],
-            // Senior tranche is 80% of 5% (8$ out of 10$ in the pool)
-            [async () => (await tranchedPool.getTranche(TRANCHES.Senior)).interestAPR, {to: interestAprAsBN("4.00")}],
-            // Junior tranche is 20% of 5% (2$ out of 10$ in the pool)
-            [async () => (await tranchedPool.getTranche(TRANCHES.Junior)).interestAPR, {to: interestAprAsBN("1.00")}],
             // Limit is total of senior and junior deposits
             [async () => creditLine.limit(), {to: usdcVal(10)}],
           ])
@@ -652,10 +646,6 @@ describe("TranchedPool", () => {
           await expectAction(async () => tranchedPool.lockPool({from: actor})).toChange([
             [async () => (await tranchedPool.getTranche(TRANCHES.Senior)).lockedUntil, {increase: true}],
             [async () => (await tranchedPool.getTranche(TRANCHES.Senior)).principalSharePrice, {unchanged: true}],
-            // Senior tranche is 80% of 5% (8$ out of 10$ in the pool)
-            [async () => (await tranchedPool.getTranche(TRANCHES.Senior)).interestAPR, {to: interestAprAsBN("4.00")}],
-            // Junior tranche is 20% of 5% (2$ out of 10$ in the pool)
-            [async () => (await tranchedPool.getTranche(TRANCHES.Junior)).interestAPR, {to: interestAprAsBN("1.00")}],
             // Limit is total of senior and junior deposits
             [async () => creditLine.limit(), {to: usdcVal(10)}],
           ])

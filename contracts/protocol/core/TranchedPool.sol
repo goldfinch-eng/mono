@@ -4,6 +4,8 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/drafts/IERC20Permit.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 
 import "../../interfaces/ITranchedPool.sol";
 import "../../interfaces/IERC20withDec.sol";
@@ -65,14 +67,12 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
       principalSharePrice: usdcToSharePrice(1, 1),
       interestSharePrice: 0,
       principalDeposited: 0,
-      interestAPR: 0,
       lockedUntil: 0
     });
     juniorTranche = TrancheInfo({
       principalSharePrice: usdcToSharePrice(1, 1),
       interestSharePrice: 0,
       principalDeposited: 0,
-      interestAPR: 0,
       lockedUntil: 0
     });
     address _creditLine = config.getCreditLineFactory().createCreditLine();
@@ -235,9 +235,6 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
 
   function _lockPool() internal {
     require(juniorTranche.lockedUntil > 0, "Junior tranche must be locked first");
-
-    seniorTranche.interestAPR = scaleByPercentOwnership(creditLine.interestApr(), seniorTranche);
-    juniorTranche.interestAPR = scaleByPercentOwnership(creditLine.interestApr(), juniorTranche);
 
     creditLine.setLimit(seniorTranche.principalDeposited + juniorTranche.principalDeposited);
 
