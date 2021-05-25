@@ -168,6 +168,7 @@ async function setInitialConfigVals(config, logger = function () {}) {
   const withdrawFeeDenominator = new BN(PROTOCOL_CONFIG.withdrawFeeDenominator)
   const latenessGracePeriodIndays = new BN(PROTOCOL_CONFIG.latenessGracePeriodInDays)
   const latenessMaxDays = new BN(PROTOCOL_CONFIG.latenessMaxDays)
+  const drawdownPeriodInSeconds = new BN(PROTOCOL_CONFIG.drawdownPeriodInSeconds)
 
   logger("Updating the config vals...")
   await updateConfig(config, "number", CONFIG_KEYS.TotalFundsLimit, String(totalFundsLimit), {logger})
@@ -179,6 +180,7 @@ async function setInitialConfigVals(config, logger = function () {}) {
     logger,
   })
   await updateConfig(config, "number", CONFIG_KEYS.LatenessMaxDays, String(latenessMaxDays), {logger})
+  await updateConfig(config, "number", CONFIG_KEYS.DrawdownPeriodInSeconds, String(drawdownPeriodInSeconds), {logger})
   // If we have a multisig safe, set that as the protocol admin, otherwise use the named account (local and test envs)
   let multisigAddress
   if (SAFE_CONFIG[chainID]) {

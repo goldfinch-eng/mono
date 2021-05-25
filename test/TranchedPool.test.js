@@ -85,13 +85,13 @@ describe("TranchedPool", () => {
       expect(juniorTranche.interestSharePrice).to.bignumber.eq("0")
       expect(juniorTranche.principalDeposited).to.bignumber.eq("0")
       expect(juniorTranche.interestAPR).to.bignumber.eq("0")
-      expect(juniorTranche.lockedAt).to.bignumber.eq("0")
+      expect(juniorTranche.lockedUntil).to.bignumber.eq("0")
 
       expect(seniorTranche.principalSharePrice).to.bignumber.eq("1000000000000000000")
       expect(seniorTranche.interestSharePrice).to.bignumber.eq("0")
       expect(seniorTranche.principalDeposited).to.bignumber.eq("0")
       expect(seniorTranche.interestAPR).to.bignumber.eq("0")
-      expect(seniorTranche.lockedAt).to.bignumber.eq("0")
+      expect(seniorTranche.lockedUntil).to.bignumber.eq("0")
 
       expect(await tranchedPool.creditLine()).to.eq(creditLine.address)
     })
@@ -153,7 +153,7 @@ describe("TranchedPool", () => {
         await tranchedPool.deposit(TRANCHES.Junior, usdcVal(10))
         await tranchedPool.lockJuniorCapital({from: borrower})
         await tranchedPool.lockPool({from: borrower})
-        await expect(tranchedPool.deposit(TRANCHES.Senior, usdcVal(10))).to.be.rejectedWith(/Pool has been locked/)
+        await expect(tranchedPool.deposit(TRANCHES.Senior, usdcVal(10))).to.be.rejectedWith(/Tranche has been locked/)
       })
 
       it("fails for invalid tranches", async () => {
@@ -266,7 +266,6 @@ describe("TranchedPool", () => {
         )
       })
       it("does not allow you to withdraw if pool token is from a different pool")
-      it("does not allow you to withdraw if past the drawdown period")
       it("does not allow you to withdraw if no amount is available", async () => {})
     })
 
@@ -294,7 +293,7 @@ describe("TranchedPool", () => {
 
         await tranchedPool.lockJuniorCapital({from: borrower})
 
-        await expect(tranchedPool.withdraw(tokenId, usdcVal(10))).to.be.rejectedWith(/Invalid redeem amount/)
+        await expect(tranchedPool.withdraw(tokenId, usdcVal(10))).to.be.rejectedWith(/Tranche is locked/)
       })
 
       it("lets you withdraw pro-rata share of payments", async () => {
@@ -351,6 +350,33 @@ describe("TranchedPool", () => {
           principalWithdrawn: usdcVal(1000),
         })
       })
+    })
+
+    it("does not allow you to withdraw during the drawdown period", async () => {
+      let response = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(10))
+      const juniorTokenId = response.logs[0].args.tokenId
+
+      await tranchedPool.lockJuniorCapital({from: borrower})
+
+      await expect(tranchedPool.withdraw(juniorTokenId, usdcVal(10))).to.be.rejectedWith(/Tranche is locked/)
+
+      response = await tranchedPool.deposit(TRANCHES.Senior, usdcVal(40))
+      const seniorTokenId = response.logs[0].args.tokenId
+      await tranchedPool.lockPool({from: borrower})
+
+      await expect(tranchedPool.withdraw(seniorTokenId, usdcVal(10))).to.be.rejectedWith(/Tranche is locked/)
+
+      await tranchedPool.drawdown(usdcVal(25), {from: borrower})
+
+      advanceTime(tranchedPool, {days: 2})
+
+      // After the drawdown period, each tranche can withdraw unused capital
+      await expectAction(async () => tranchedPool.withdrawMax(juniorTokenId)).toChange([
+        [async () => await getBalance(owner, usdc), {by: usdcVal(5)}],
+      ])
+      await expectAction(async () => tranchedPool.withdrawMax(seniorTokenId)).toChange([
+        [async () => await getBalance(owner, usdc), {by: usdcVal(20)}],
+      ])
     })
   })
 
@@ -543,21 +569,32 @@ describe("TranchedPool", () => {
         it("locks the junior tranche", async () => {
           let actor = borrower
           await tranchedPool.deposit(TRANCHES.Senior, usdcVal(10))
+          const oneDayFromNow = (await tranchedPool.currentTimestamp()).add(SECONDS_PER_DAY)
           await expectAction(async () => tranchedPool.lockJuniorCapital({from: actor})).toChange([
-            [async () => (await tranchedPool.getTranche(TRANCHES.Junior)).lockedAt, {increase: true}],
-            [async () => (await tranchedPool.getTranche(TRANCHES.Junior)).principalSharePrice, {to: new BN(0)}],
+            [async () => (await tranchedPool.getTranche(TRANCHES.Junior)).lockedUntil, {increase: true}],
+            [async () => (await tranchedPool.getTranche(TRANCHES.Junior)).principalSharePrice, {unchanged: true}],
           ])
+          // Should be locked upto approximately 1 day from now (plus or minus a few seconds)
+          expect((await tranchedPool.getTranche(TRANCHES.Junior)).lockedUntil).to.be.bignumber.closeTo(
+            oneDayFromNow,
+            new BN(5)
+          )
         })
       })
 
       describe("as the owner", async () => {
         it("locks the junior tranche", async () => {
-          let actor = owner
           await tranchedPool.deposit(TRANCHES.Senior, usdcVal(10))
-          await expectAction(async () => tranchedPool.lockJuniorCapital({from: actor})).toChange([
-            [async () => (await tranchedPool.getTranche(TRANCHES.Junior)).lockedAt, {increase: true}],
-            [async () => (await tranchedPool.getTranche(TRANCHES.Junior)).principalSharePrice, {to: new BN(0)}],
+          const oneDayFromNow = (await tranchedPool.currentTimestamp()).add(SECONDS_PER_DAY)
+          await expectAction(async () => tranchedPool.lockJuniorCapital({from: borrower})).toChange([
+            [async () => (await tranchedPool.getTranche(TRANCHES.Junior)).lockedUntil, {increase: true}],
+            [async () => (await tranchedPool.getTranche(TRANCHES.Junior)).principalSharePrice, {unchanged: true}],
           ])
+          // Should be locked upto approximately 1 day from now (plus or minus a few seconds)
+          expect((await tranchedPool.getTranche(TRANCHES.Junior)).lockedUntil).to.be.bignumber.closeTo(
+            oneDayFromNow,
+            new BN(5)
+          )
         })
       })
 
@@ -585,9 +622,12 @@ describe("TranchedPool", () => {
       describe("as the borrower", async () => {
         it("locks the senior tranche", async () => {
           let actor = borrower
+
+          const oneDayFromNow = (await tranchedPool.currentTimestamp()).add(SECONDS_PER_DAY)
+
           await expectAction(async () => tranchedPool.lockPool({from: actor})).toChange([
-            [async () => (await tranchedPool.getTranche(TRANCHES.Senior)).lockedAt, {increase: true}],
-            [async () => (await tranchedPool.getTranche(TRANCHES.Senior)).principalSharePrice, {to: new BN(0)}],
+            [async () => (await tranchedPool.getTranche(TRANCHES.Senior)).lockedUntil, {increase: true}],
+            [async () => (await tranchedPool.getTranche(TRANCHES.Senior)).principalSharePrice, {unchanged: true}],
             // Senior tranche is 80% of 5% (8$ out of 10$ in the pool)
             [async () => (await tranchedPool.getTranche(TRANCHES.Senior)).interestAPR, {to: interestAprAsBN("4.00")}],
             // Junior tranche is 20% of 5% (2$ out of 10$ in the pool)
@@ -595,15 +635,22 @@ describe("TranchedPool", () => {
             // Limit is total of senior and junior deposits
             [async () => creditLine.limit(), {to: usdcVal(10)}],
           ])
+
+          const seniorLockedUntil = (await tranchedPool.getTranche(TRANCHES.Senior)).lockedUntil
+          expect(seniorLockedUntil).to.be.bignumber.closeTo(oneDayFromNow, new BN(5))
+          // Junior is also locked to the same time
+          expect((await tranchedPool.getTranche(TRANCHES.Junior)).lockedUntil).to.be.bignumber.eq(seniorLockedUntil)
         })
       })
 
       describe("as the owner", async () => {
         it("locks the senior tranche", async () => {
           let actor = owner
+          const oneDayFromNow = (await tranchedPool.currentTimestamp()).add(SECONDS_PER_DAY)
+
           await expectAction(async () => tranchedPool.lockPool({from: actor})).toChange([
-            [async () => (await tranchedPool.getTranche(TRANCHES.Senior)).lockedAt, {increase: true}],
-            [async () => (await tranchedPool.getTranche(TRANCHES.Senior)).principalSharePrice, {to: new BN(0)}],
+            [async () => (await tranchedPool.getTranche(TRANCHES.Senior)).lockedUntil, {increase: true}],
+            [async () => (await tranchedPool.getTranche(TRANCHES.Senior)).principalSharePrice, {unchanged: true}],
             // Senior tranche is 80% of 5% (8$ out of 10$ in the pool)
             [async () => (await tranchedPool.getTranche(TRANCHES.Senior)).interestAPR, {to: interestAprAsBN("4.00")}],
             // Junior tranche is 20% of 5% (2$ out of 10$ in the pool)
@@ -611,6 +658,10 @@ describe("TranchedPool", () => {
             // Limit is total of senior and junior deposits
             [async () => creditLine.limit(), {to: usdcVal(10)}],
           ])
+          const seniorLockedUntil = (await tranchedPool.getTranche(TRANCHES.Senior)).lockedUntil
+          expect(seniorLockedUntil).to.be.bignumber.closeTo(oneDayFromNow, new BN(5))
+          // Junior is also locked to the same time
+          expect((await tranchedPool.getTranche(TRANCHES.Junior)).lockedUntil).to.be.bignumber.eq(seniorLockedUntil)
         })
       })
 
@@ -685,9 +736,9 @@ describe("TranchedPool", () => {
         ;[, juniorPrincipalAmount] = await getTrancheAmounts(await tranchedPool.getTranche(TRANCHES.Junior))
         ;[, seniorPrincipalAmount] = await getTrancheAmounts(await tranchedPool.getTranche(TRANCHES.Senior))
 
-        // Before any drawdown, the share price 0 to reflect the fact that funds are locked
-        expect(juniorPrincipalAmount).to.bignumber.eq(usdcVal(0))
-        expect(seniorPrincipalAmount).to.bignumber.eq(usdcVal(0))
+        // Before any drawdown, the share price should be 1 to reflect the full amounts deposited
+        expect(juniorPrincipalAmount).to.bignumber.eq(usdcVal(2))
+        expect(seniorPrincipalAmount).to.bignumber.eq(usdcVal(8))
 
         await tranchedPool.drawdown(usdcVal(5))
         ;[, juniorPrincipalAmount] = await getTrancheAmounts(await tranchedPool.getTranche(TRANCHES.Junior))
@@ -952,17 +1003,41 @@ describe("TranchedPool", () => {
 
           // Principal payment should be split by leverage ratio, while interest payment should be slightly less than half. This
           // is because interest is accrued from the most recent nextDueTime rather than the current timestamp.
-          await tranchedPool.pay(new BN("14931506"), {from: borrower})
-
+          const expectedSeniorInterest = new BN("2761643")
+          const expectedJuniorInterest = new BN("1676713")
+          const expectedProtocolFee = new BN("493150")
+          const totalPartialInterest = expectedSeniorInterest.add(expectedJuniorInterest).add(expectedProtocolFee)
+          await tranchedPool.pay(usdcVal(50).add(totalPartialInterest), {from: borrower})
           let interestAmount, principalAmount
           ;[interestAmount, principalAmount] = await getTrancheAmounts(await tranchedPool.getTranche(TRANCHES.Senior))
-          expect(interestAmount).to.bignumber.eq(new BN("2761643"))
-          expect(principalAmount).to.bignumber.eq(usdcVal(8))
+          expect(interestAmount).to.bignumber.eq(expectedSeniorInterest)
+          expect(principalAmount).to.bignumber.eq(usdcVal(40))
           ;[interestAmount, principalAmount] = await getTrancheAmounts(await tranchedPool.getTranche(TRANCHES.Junior))
-          expect(interestAmount).to.bignumber.eq(new BN("1676713"))
-          expect(principalAmount).to.bignumber.eq(usdcVal(2))
+          expect(interestAmount).to.bignumber.eq(expectedJuniorInterest)
+          expect(principalAmount).to.bignumber.eq(usdcVal(10))
 
-          expect(await usdc.balanceOf(treasury)).to.bignumber.eq(new BN("493150"))
+          expect(await usdc.balanceOf(treasury)).to.bignumber.eq(expectedProtocolFee)
+
+          // Now advance to the end of the loan period and collect interest again. Now the total interest owed should
+          // be the interested accrued above * 1.5 (i.e. with a 100$ drawdown and 10% interest, we accrue 5$ for the
+          // first 6 months. And since we pay back 50% of principal in the middle, we accrued additional 50% of the 5$,
+          // for a total of 7.5$ of interest at the end)
+
+          await advanceTime(tranchedPool, {seconds: halfway.toNumber()})
+
+          // Collect the remaining interest and the principal
+          await tranchedPool.pay(usdcVal(50).add(totalPartialInterest.div(new BN(2))), {from: borrower})
+          ;[interestAmount, principalAmount] = await getTrancheAmounts(await tranchedPool.getTranche(TRANCHES.Senior))
+          // TODO: shouldn't this be 4.20$ exactly?
+          expect(interestAmount).to.bignumber.closeTo(usdcVal(418).div(new BN(100)), tolerance)
+          expect(principalAmount).to.bignumber.eq(usdcVal(80))
+          ;[interestAmount, principalAmount] = await getTrancheAmounts(await tranchedPool.getTranche(TRANCHES.Junior))
+          // And this at 2.5$ exact?
+          expect(interestAmount).to.bignumber.closeTo(usdcVal(2538).div(new BN(1000)), tolerance)
+          // This should be exactly 20
+          expect(principalAmount).to.bignumber.closeTo(usdcVal(19931).div(new BN(1000)), tolerance)
+
+          expect(await usdc.balanceOf(treasury)).to.bignumber.closeTo(usdcVal(746).div(new BN(1000)), tolerance)
         })
       })
     })

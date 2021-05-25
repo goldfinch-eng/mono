@@ -19,7 +19,8 @@ library ConfigOptions {
     ReserveDenominator,
     WithdrawFeeDenominator,
     LatenessGracePeriodInDays,
-    LatenessMaxDays
+    LatenessMaxDays,
+    DrawdownPeriodInSeconds
   }
   enum Addresses {
     Pool,

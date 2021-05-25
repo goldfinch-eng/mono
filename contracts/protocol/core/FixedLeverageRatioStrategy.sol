@@ -21,7 +21,8 @@ contract FixedLeverageRatioStrategy is IFundStrategy {
     ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
     ITranchedPool.TrancheInfo memory seniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Senior));
 
-    if (juniorTranche.lockedAt == 0 || seniorTranche.lockedAt > 0) {
+    // If junior capital is not yet invested, or pool already locked then don't invest anything
+    if (juniorTranche.lockedUntil == 0 || seniorTranche.lockedUntil > 0) {
       return 0;
     }
 

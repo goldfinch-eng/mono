@@ -51,7 +51,7 @@ contract MigratedTranchedPool is TranchedPool, IMigratedTranchedPool {
     uint256 tranche = uint256(ITranchedPool.Tranches.Junior);
     uint256 amount = clToMigrate.balance();
     TrancheInfo storage trancheInfo = getTrancheInfo(tranche);
-    require(trancheInfo.lockedAt == 0, "Tranche has been locked");
+    require(trancheInfo.lockedUntil == 0, "Tranche has been locked");
     trancheInfo.principalDeposited += amount;
     IPoolTokens.MintParams memory params = IPoolTokens.MintParams({tranche: tranche, principalAmount: amount});
     IPoolTokens poolTokens = config.getPoolTokens();

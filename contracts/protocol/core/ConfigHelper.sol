@@ -142,4 +142,8 @@ library ConfigHelper {
   function getLatenessMaxDays(GoldfinchConfig config) internal view returns (uint256) {
     return config.getNumber(uint256(ConfigOptions.Numbers.LatenessMaxDays));
   }
+
+  function getDrawdownPeriodInSeconds(GoldfinchConfig config) internal view returns (uint256) {
+    return config.getNumber(uint256(ConfigOptions.Numbers.DrawdownPeriodInSeconds));
+  }
 }

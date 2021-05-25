@@ -66,14 +66,14 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
       interestSharePrice: 0,
       principalDeposited: 0,
       interestAPR: 0,
-      lockedAt: 0
+      lockedUntil: 0
     });
     juniorTranche = TrancheInfo({
       principalSharePrice: usdcToSharePrice(1, 1),
       interestSharePrice: 0,
       principalDeposited: 0,
       interestAPR: 0,
-      lockedAt: 0
+      lockedUntil: 0
     });
     address _creditLine = config.getCreditLineFactory().createCreditLine();
     creditLine = IV2CreditLine(_creditLine);
@@ -101,10 +101,9 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
   }
 
   function deposit(uint256 tranche, uint256 amount) public override nonReentrant whenNotPaused {
-    require(!locked(), "Pool has been locked");
     TrancheInfo storage trancheInfo = getTrancheInfo(tranche);
+    require(trancheInfo.lockedUntil == 0, "Tranche has been locked");
 
-    require(trancheInfo.lockedAt == 0, "Tranche has been locked");
     trancheInfo.principalDeposited += amount;
     IPoolTokens.MintParams memory params = IPoolTokens.MintParams({tranche: tranche, principalAmount: amount});
     uint256 tokenId = config.getPoolTokens().mint(params, msg.sender);
@@ -166,9 +165,10 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     uint256 netRedeemable = interestRedeemable.add(principalRedeemable);
 
     require(amount <= netRedeemable, "Invalid redeem amount");
+    require(currentTime() > trancheInfo.lockedUntil, "Tranche is locked");
 
     // If the tranche has not been locked, ensure the deposited amount is correct
-    if (trancheInfo.lockedAt == 0) {
+    if (trancheInfo.lockedUntil == 0) {
       trancheInfo.principalDeposited = trancheInfo.principalDeposited.sub(amount);
     }
 
@@ -203,6 +203,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
 
   function drawdown(uint256 amount) public onlyLocker whenNotPaused {
     if (!locked()) {
+      // Assumes the senior fund has invested already (saves the borrower a separate transaction to lock the pool)
       lockPool();
     }
 
@@ -223,11 +224,9 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
 
   function _lockJuniorCapital() internal {
     require(!locked(), "Pool already locked");
-    require(juniorTranche.lockedAt == 0, "Junior tranche already locked");
+    require(juniorTranche.lockedUntil == 0, "Junior tranche already locked");
 
-    // We set the share price to 0 to ensure capital cannot be withdrawn from the tranche until after drawdown
-    juniorTranche.lockedAt = currentTime();
-    juniorTranche.principalSharePrice = 0;
+    juniorTranche.lockedUntil = currentTime().add(config.getDrawdownPeriodInSeconds());
   }
 
   function lockPool() public onlyLocker whenNotPaused {
@@ -235,16 +234,17 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
   }
 
   function _lockPool() internal {
-    require(juniorTranche.lockedAt > 0, "Junior tranche must be locked first");
+    require(juniorTranche.lockedUntil > 0, "Junior tranche must be locked first");
 
     seniorTranche.interestAPR = scaleByPercentOwnership(creditLine.interestApr(), seniorTranche);
     juniorTranche.interestAPR = scaleByPercentOwnership(creditLine.interestApr(), juniorTranche);
 
     creditLine.setLimit(seniorTranche.principalDeposited + juniorTranche.principalDeposited);
 
-    // We set the share price to 0 to ensure capital cannot be withdrawn from the tranche until after drawdown
-    seniorTranche.lockedAt = currentTime();
-    seniorTranche.principalSharePrice = 0;
+    // We start the drawdown period, so backers can withdraw unused capital after borrower draws down
+    uint256 lockPeriod = config.getDrawdownPeriodInSeconds();
+    seniorTranche.lockedUntil = currentTime().add(lockPeriod);
+    juniorTranche.lockedUntil = currentTime().add(lockPeriod);
   }
 
   function collectInterestAndPrincipal(
@@ -338,8 +338,9 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     return scaleByPercentOwnership(sharePrice, tranche);
   }
 
+  // If the senior tranche is locked, then the pool is not open to any more deposits (could throw off leverage ratio)
   function locked() internal view returns (bool) {
-    return seniorTranche.lockedAt > 0 && seniorTranche.lockedAt <= currentTime();
+    return seniorTranche.lockedUntil > 0;
   }
 
   function safeUSDCTransfer(
