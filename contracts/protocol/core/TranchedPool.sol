@@ -302,11 +302,11 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
 
     // All remaining interest and principal is applied towards the junior tranche as interest
     interestRemaining = interestRemaining.add(principalRemaining);
-    principalRemaining = 0;
-    // We need to deduct the reserve amount again from the additional interest
-    reserveDeduction = scaleByFraction(interestRemaining, reserveFeePercent, ONE_HUNDRED);
+    // We need to deduct the reserve amount again from the principal (which is now being treated as interest)
+    reserveDeduction = scaleByFraction(principalRemaining, reserveFeePercent, ONE_HUNDRED);
     totalReserveAmount = totalReserveAmount.add(reserveDeduction);
     interestRemaining = interestRemaining.sub(reserveDeduction);
+    principalRemaining = 0;
 
     (interestRemaining, principalRemaining) = applyToTrancheByAmount(
       interestRemaining.add(principalRemaining),
