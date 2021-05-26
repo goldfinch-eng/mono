@@ -39,7 +39,6 @@ const IOneSplit = artifacts.require("IOneSplit")
 const ICUSDC = artifacts.require("ICUSDCContract")
 const IV1CreditLine = artifacts.require("IV1CreditLine")
 const {
-  createCreditLine,
   expect,
   expectAction,
   erc20Approve,
@@ -87,6 +86,8 @@ describe("mainnet forking tests", async function () {
   let accounts, owner, bwr, person3, pool, reserve, underwriter, usdc, creditDesk, fidu, goldfinchConfig, usdcAddress
   let goldfinchFactory, busd, usdt, cUSDC, creditLineFactory
   let upgradedContracts
+  let reserveAddress, tranchedPool, borrower, seniorPool, seniorFundStrategy
+
   const contractsToUpgrade = ["CreditDesk", "Pool", "Fidu", "CreditLineFactory", "GoldfinchConfig"]
   const setupTest = deployments.createFixture(async ({deployments}) => {
     // Note: base_deploy always returns when mainnet forking, however
@@ -141,6 +142,33 @@ describe("mainnet forking tests", async function () {
     return contracts
   }
 
+  async function setupSeniorPool() {
+    ;({seniorPool, seniorFundStrategy} = await deployV2(upgradedContracts))
+    seniorFundStrategy = await artifacts.require("IFundStrategy").at(seniorFundStrategy.address)
+
+    await pool.migrateToSeniorPool({from: MAINNET_MULTISIG})
+    await goldfinchConfig.setNumber(CONFIG_KEYS.TotalFundsLimit, usdcVal(20000000), {from: MAINNET_MULTISIG})
+    await erc20Approve(usdc, seniorPool.address, usdcVal(10000), [owner])
+    await seniorPool.deposit(usdcVal(10000), {from: owner})
+    await goldfinchConfig.setNumber(CONFIG_KEYS.TotalFundsLimit, usdcVal(20000000), {from: MAINNET_MULTISIG})
+  }
+
+  async function createBorrowerContract() {
+    const result = await goldfinchFactory.createBorrower(bwr)
+    let bwrConAddr = result.logs[result.logs.length - 1].args.borrower
+    let bwrCon = await Borrower.at(bwrConAddr)
+    await erc20Approve(busd, bwrCon.address, MAX_UINT, [bwr])
+    await erc20Approve(usdt, bwrCon.address, MAX_UINT, [bwr])
+    return bwrCon
+  }
+
+  async function initializeTranchedPool(pool, bwrCon) {
+    await erc20Approve(usdc, pool.address, usdcVal(100000), [owner])
+    await pool.deposit(TRANCHES.Junior, usdcVal(2000))
+    await bwrCon.lockJuniorCapital(pool.address, {from: bwr})
+    await pool.deposit(TRANCHES.Senior, usdcVal(8000))
+  }
+
   beforeEach(async function () {
     this.timeout(TEST_TIMEOUT)
     accounts = await web3.eth.getAccounts()
@@ -161,17 +189,20 @@ describe("mainnet forking tests", async function () {
     await erc20Approve(usdc, pool.address, MAX_UINT, accounts)
     await pool.sweepFromCompound({from: MAINNET_MULTISIG})
     await goldfinchConfig.bulkAddToGoList(accounts, {from: MAINNET_MULTISIG})
+    await setupSeniorPool()
   })
 
-  xdescribe("drawing down into another currency", async function () {
-    let bwrCon, cl, oneSplit
+  describe("drawing down into another currency", async function () {
+    let bwrCon, oneSplit
     beforeEach(async function () {
       oneSplit = await IOneSplit.at(MAINNET_ONE_SPLIT_ADDRESS)
-      const result = await goldfinchFactory.createBorrower(bwr)
-      let bwrConAddr = result.logs[result.logs.length - 1].args.borrower
-      bwrCon = await Borrower.at(bwrConAddr)
-
-      cl = await createCreditLine({creditDesk, borrower: bwrCon.address, underwriter})
+      bwrCon = await createBorrowerContract()
+      ;({tranchedPool} = await createPoolWithCreditLine({
+        people: {owner: MAINNET_MULTISIG, borrower: bwrCon.address},
+        goldfinchFactory,
+        usdc,
+      }))
+      await initializeTranchedPool(tranchedPool, bwrCon)
     })
 
     it("should let you drawdown to tether", async function () {
@@ -181,7 +212,7 @@ describe("mainnet forking tests", async function () {
       })
       await expectAction(() => {
         return bwrCon.drawdownWithSwapOnOneInch(
-          cl.address,
+          tranchedPool.address,
           usdcAmount,
           person3,
           usdt.address,
@@ -190,7 +221,7 @@ describe("mainnet forking tests", async function () {
           {from: bwr}
         )
       }).toChange([
-        [async () => await getBalance(pool.address, usdc), {by: usdcAmount.neg()}],
+        [async () => await getBalance(tranchedPool.address, usdc), {by: usdcAmount.neg()}],
         [async () => await getBalance(bwrCon.address, usdt), {by: new BN(0)}],
         [async () => await getBalance(person3, usdt), {byCloseTo: expectedReturn.returnAmount}],
         [async () => await getBalance(bwr, usdt), {by: new BN(0)}],
@@ -205,7 +236,7 @@ describe("mainnet forking tests", async function () {
         })
         await expectAction(() => {
           return bwrCon.drawdownWithSwapOnOneInch(
-            cl.address,
+            tranchedPool.address,
             usdcAmount,
             person3,
             usdt.address,
@@ -214,7 +245,7 @@ describe("mainnet forking tests", async function () {
             {from: bwr}
           )
         }).toChange([
-          [async () => await getBalance(pool.address, usdc), {by: usdcAmount.neg()}],
+          [async () => await getBalance(tranchedPool.address, usdc), {by: usdcAmount.neg()}],
           [async () => await getBalance(person3, usdt), {byCloseTo: expectedReturn.returnAmount}],
           [async () => await getBalance(bwr, usdt), {by: new BN(0)}],
           [async () => await getBalance(bwrCon.address, usdt), {by: new BN(0)}],
@@ -229,7 +260,7 @@ describe("mainnet forking tests", async function () {
           })
           await expectAction(() => {
             return bwrCon.drawdownWithSwapOnOneInch(
-              cl.address,
+              tranchedPool.address,
               usdcAmount,
               bwrCon.address,
               usdt.address,
@@ -238,7 +269,7 @@ describe("mainnet forking tests", async function () {
               {from: bwr}
             )
           }).toChange([
-            [async () => await getBalance(pool.address, usdc), {by: usdcAmount.neg()}],
+            [async () => await getBalance(tranchedPool.address, usdc), {by: usdcAmount.neg()}],
             [async () => await getBalance(bwr, usdt), {byCloseTo: expectedReturn.returnAmount}],
             [async () => await getBalance(bwrCon.address, usdt), {by: new BN(0)}],
           ])
@@ -253,7 +284,7 @@ describe("mainnet forking tests", async function () {
           })
           await expectAction(() => {
             return bwrCon.drawdownWithSwapOnOneInch(
-              cl.address,
+              tranchedPool.address,
               usdcAmount,
               ZERO_ADDRESS,
               usdt.address,
@@ -262,7 +293,7 @@ describe("mainnet forking tests", async function () {
               {from: bwr}
             )
           }).toChange([
-            [async () => await getBalance(pool.address, usdc), {by: usdcAmount.neg()}],
+            [async () => await getBalance(tranchedPool.address, usdc), {by: usdcAmount.neg()}],
             [async () => await getBalance(bwr, usdt), {byCloseTo: expectedReturn.returnAmount}],
             [async () => await getBalance(bwrCon.address, usdt), {by: new BN(0)}],
           ])
@@ -277,7 +308,7 @@ describe("mainnet forking tests", async function () {
       })
       await expectAction(() => {
         return bwrCon.drawdownWithSwapOnOneInch(
-          cl.address,
+          tranchedPool.address,
           usdcAmount,
           person3,
           busd.address,
@@ -286,7 +317,7 @@ describe("mainnet forking tests", async function () {
           {from: bwr}
         )
       }).toChange([
-        [async () => await getBalance(pool.address, usdc), {by: usdcAmount.neg()}],
+        [async () => await getBalance(tranchedPool.address, usdc), {by: usdcAmount.neg()}],
         [async () => await getBalance(person3, busd), {byCloseTo: expectedReturn.returnAmount}],
         [async () => await getBalance(bwr, busd), {by: new BN(0)}],
         [async () => await getBalance(bwrCon.address, busd), {by: new BN(0)}],
@@ -294,20 +325,21 @@ describe("mainnet forking tests", async function () {
     }).timeout(TEST_TIMEOUT)
   })
 
-  xdescribe("paying back via another currency", async function () {
+  describe("paying back via another currency", async function () {
     let bwrCon, cl, oneSplit
     let amount = usdcVal(100)
     beforeEach(async function () {
       this.timeout(TEST_TIMEOUT)
       oneSplit = await IOneSplit.at(MAINNET_ONE_SPLIT_ADDRESS)
-      const result = await goldfinchFactory.createBorrower(bwr)
-      let bwrConAddr = result.logs[result.logs.length - 1].args.borrower
-      bwrCon = await Borrower.at(bwrConAddr)
-      await erc20Approve(busd, bwrCon.address, MAX_UINT, [bwr])
-      await erc20Approve(usdt, bwrCon.address, MAX_UINT, [bwr])
+      bwrCon = await createBorrowerContract()
+      ;({tranchedPool, creditLine: cl} = await createPoolWithCreditLine({
+        people: {owner: MAINNET_MULTISIG, borrower: bwrCon.address},
+        goldfinchFactory,
+        usdc,
+      }))
 
-      cl = await createCreditLine({creditDesk, borrower: bwrCon.address, underwriter})
-      await bwrCon.drawdown(cl.address, amount, bwr, {from: bwr})
+      await initializeTranchedPool(tranchedPool, bwrCon)
+      await bwrCon.drawdown(tranchedPool.address, amount, bwr, {from: bwr})
     })
 
     it("should allow you to pay with another currency", async () => {
@@ -319,7 +351,7 @@ describe("mainnet forking tests", async function () {
       })
       await expectAction(() => {
         return bwrCon.payWithSwapOnOneInch(
-          cl.address,
+          tranchedPool.address,
           usdtAmount,
           usdt.address,
           expectedReturn.returnAmount.mul(new BN(99)).div(new BN(100)),
@@ -330,8 +362,8 @@ describe("mainnet forking tests", async function () {
         [async () => await getBalance(bwr, usdt), {by: usdtAmount.neg()}],
         [async () => await getBalance(cl.address, usdc), {byCloseTo: expectedReturn.returnAmount}],
       ])
-      await advanceTime(creditDesk, {toSecond: (await cl.nextDueTime()).add(new BN(1))})
-      await expectAction(() => creditDesk.assessCreditLine(cl.address)).toChange([
+      await advanceTime(tranchedPool, {toSecond: (await cl.nextDueTime()).add(new BN(1))})
+      await expectAction(() => tranchedPool.assess()).toChange([
         [async () => await cl.balance(), {decrease: true}],
         [async () => await getBalance(cl.address, usdc), {to: new BN(0)}],
       ])
@@ -345,7 +377,7 @@ describe("mainnet forking tests", async function () {
       })
       await expectAction(() => {
         return bwrCon.payWithSwapOnOneInch(
-          cl.address,
+          tranchedPool.address,
           busdAmount,
           busd.address,
           expectedReturn.returnAmount.mul(new BN(99)).div(new BN(100)),
@@ -356,22 +388,30 @@ describe("mainnet forking tests", async function () {
         [async () => await getBalance(bwr, busd), {by: busdAmount.neg()}],
         [async () => await getBalance(cl.address, usdc), {byCloseTo: expectedReturn.returnAmount}],
       ])
-      await advanceTime(creditDesk, {toSecond: (await cl.nextDueTime()).add(new BN(1))})
-      await expectAction(() => creditDesk.assessCreditLine(cl.address)).toChange([
+      await advanceTime(tranchedPool, {toSecond: (await cl.nextDueTime()).add(new BN(1))})
+      await expectAction(() => tranchedPool.assess()).toChange([
         [async () => await cl.balance(), {decrease: true}],
         [async () => await getBalance(cl.address, usdc), {to: new BN(0)}],
       ])
     }).timeout(TEST_TIMEOUT)
 
     describe("payMultipleWithSwapOnOneInch", async () => {
-      let cl2
+      let tranchedPool2, cl2
       let amount2 = usdcVal(50)
 
       beforeEach(async function () {
         this.timeout(TEST_TIMEOUT)
-        cl2 = await createCreditLine({creditDesk, borrower: bwrCon.address, underwriter})
+        ;({tranchedPool: tranchedPool2, creditLine: cl2} = await createPoolWithCreditLine({
+          people: {owner: MAINNET_MULTISIG, borrower: bwrCon.address},
+          goldfinchFactory,
+          usdc,
+        }))
+
         expect(cl.address).to.not.eq(cl2.addresss)
-        await bwrCon.drawdown(cl2.address, amount2, bwr, {from: bwr})
+        expect(tranchedPool.address).to.not.eq(tranchedPool2.addresss)
+
+        await initializeTranchedPool(tranchedPool2, bwrCon)
+        await bwrCon.drawdown(tranchedPool2.address, amount2, bwr, {from: bwr})
       })
 
       it("should pay back multiple loans", async () => {
@@ -383,12 +423,12 @@ describe("mainnet forking tests", async function () {
         let totalMinAmount = amount.add(amount2)
         let expectedExtra = expectedReturn.returnAmount.sub(totalMinAmount)
 
-        await advanceTime(creditDesk, {toSecond: (await cl.nextDueTime()).add(new BN(1))})
-        await creditDesk.assessCreditLine(cl.address)
+        await advanceTime(tranchedPool, {toSecond: (await cl.nextDueTime()).add(new BN(1))})
+        await tranchedPool.assess()
 
         await expectAction(() =>
           bwrCon.payMultipleWithSwapOnOneInch(
-            [cl.address, cl2.address],
+            [tranchedPool.address, tranchedPool2.address],
             [amount, amount2],
             originAmount,
             usdt.address,
@@ -412,24 +452,15 @@ describe("mainnet forking tests", async function () {
 
   describe("SeniorFund", async () => {
     describe("compound integration", async () => {
-      let reserveAddress, tranchedPool, borrower, seniorPool, seniorFundStrategy
-      let limit = usdcVal(100000)
-      let interestApr = interestAprAsBN("5.00")
-      let paymentPeriodInDays = new BN(30)
-      let termInDays = new BN(365)
-      let lateFeeApr = new BN(0)
-      let juniorFeePercent = new BN(20)
-      let juniorInvestmentAmount = usdcVal(1000)
-
       beforeEach(async function () {
         this.timeout(TEST_TIMEOUT)
-        ;({seniorPool, seniorFundStrategy} = await deployV2(upgradedContracts))
-        seniorFundStrategy = await artifacts.require("IFundStrategy").at(seniorFundStrategy.address)
-
-        await pool.migrateToSeniorPool({from: MAINNET_MULTISIG})
-        await goldfinchConfig.setNumber(CONFIG_KEYS.TotalFundsLimit, usdcVal(20000000), {from: MAINNET_MULTISIG})
-        await erc20Approve(usdc, seniorPool.address, usdcVal(10000), [owner])
-        await seniorPool.deposit(usdcVal(10000), {from: owner})
+        let limit = usdcVal(100000)
+        let interestApr = interestAprAsBN("5.00")
+        let paymentPeriodInDays = new BN(30)
+        let termInDays = new BN(365)
+        let lateFeeApr = new BN(0)
+        let juniorFeePercent = new BN(20)
+        let juniorInvestmentAmount = usdcVal(1000)
 
         borrower = bwr
         ;({tranchedPool} = await createPoolWithCreditLine({
