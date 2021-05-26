@@ -38,6 +38,9 @@
           "validPool": [],
           "createMigratedPool": []
         },
+        "**/CreditLineFactoryV2.sol:CreditLineFactoryV2": {
+          "createCreditLine": []
+        },
         "**/CreditLine.sol:CreditLine": {
           "setLimit": []
         },

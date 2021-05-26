@@ -13,7 +13,6 @@ import "./Accountant.sol";
 import "./GoldfinchConfig.sol";
 import "./BaseUpgradeablePausable.sol";
 import "./ConfigHelper.sol";
-import "./CreditLine.sol";
 import "../../external/FixedPoint.sol";
 
 contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {

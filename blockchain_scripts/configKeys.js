@@ -25,6 +25,7 @@ const CONFIG_KEYS = {
   SeniorFund: 14,
   SeniorFundStrategy: 15,
   MigratedTranchedPoolImplementation: 16,
+  CreditLineFactoryV2: 17,
 }
 
 module.exports = {

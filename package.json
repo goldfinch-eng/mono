@@ -107,6 +107,7 @@
     "eslint-plugin-react-hooks": "^4.2.0",
     "ganache-cli": "^6.10.2",
     "hardhat": "^2.3.0",
+    "hardhat-contract-sizer": "^2.0.3",
     "hardhat-deploy": "^0.7.0-beta.46",
     "hardhat-gas-reporter": "^1.0.4",
     "husky": "^3.1.0",

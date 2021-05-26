@@ -6,8 +6,8 @@ pragma experimental ABIEncoderV2;
 import "./GoldfinchConfig.sol";
 import "./BaseUpgradeablePausable.sol";
 import "../periphery/Borrower.sol";
-import "./CreditLine.sol";
 import "../../interfaces/ITranchedPool.sol";
+import "../../interfaces/ICreditLineFactoryV2.sol";
 import "./ConfigHelper.sol";
 
 /**
@@ -30,8 +30,7 @@ contract CreditLineFactory is BaseUpgradeablePausable {
   }
 
   function createCreditLine() external returns (address) {
-    CreditLine newCreditLine = new CreditLine();
-    return address(newCreditLine);
+    return config.getCreditLineFactoryV2().createCreditLine();
   }
 
   /**

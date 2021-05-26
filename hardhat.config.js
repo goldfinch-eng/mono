@@ -3,6 +3,7 @@ require("@nomiclabs/hardhat-truffle5")
 require("@nomiclabs/hardhat-ethers")
 require("hardhat-deploy")
 require("hardhat-gas-reporter")
+require("hardhat-contract-sizer") // npx hardhat size-contracts
 
 const INFURA_PROJECT_ID = "d8e13fc4893e4be5aae875d94fee67b7"
 // Note this came from a new instance of Metamask that Blake set up

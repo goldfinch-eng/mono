@@ -42,6 +42,7 @@ async function baseDeploy(hre) {
   await deploySeniorFundStrategy(hre, {config})
   logger("Deploying CreditLineFactory")
   await deployCreditLineFactory(deploy, {config})
+  await deployCreditLineFactoryV2(hre, {config})
 
   logger("Granting ownership of Pool to CreditDesk")
   await grantOwnershipOfPoolToCreditDesk(pool, creditDesk.address)
@@ -102,9 +103,6 @@ async function baseDeploy(hre) {
       },
     })
     logger("CreditLineFactory was deployed to:", clFactoryDeployResult.address)
-
-    // Deploy the credit line as well so we generate the ABI
-    await deploy("CreditLine", {from: proxy_owner, gas: 4000000, libraries: {["Accountant"]: accountant.address}})
 
     const creditLineFactory = await ethers.getContractAt("CreditLineFactory", clFactoryDeployResult.address)
     let creditLineFactoryAddress = creditLineFactory.address
@@ -324,6 +322,35 @@ async function deploySeniorFundStrategy(hre, {config}) {
   return strategy
 }
 
+async function deployCreditLineFactoryV2(hre, {config}) {
+  const {deployments, getNamedAccounts} = hre
+  const {log, deploy} = deployments
+  const {proxy_owner, protocol_owner} = await getNamedAccounts()
+  const logger = log
+  logger("Deploying credit line factory")
+
+  const accountant = await deploy("Accountant", {from: protocol_owner, gas: 4000000, args: []})
+  let clFactoryDeployResult = await deploy("CreditLineFactoryV2", {
+    from: proxy_owner,
+    proxy: {owner: proxy_owner, methodName: "initialize"},
+    gas: 4000000,
+    args: [protocol_owner, config.address],
+    libraries: {
+      ["Accountant"]: accountant.address,
+    },
+  })
+  logger("CreditLineFactoryV2 was deployed to:", clFactoryDeployResult.address)
+
+  // Deploy the credit line as well so we generate the ABI
+  await deploy("CreditLine", {from: proxy_owner, gas: 4000000, libraries: {["Accountant"]: accountant.address}})
+
+  const creditLineFactory = await ethers.getContractAt("CreditLineFactoryV2", clFactoryDeployResult.address)
+  let creditLineFactoryAddress = creditLineFactory.address
+
+  await updateConfig(config, "address", CONFIG_KEYS.CreditLineFactoryV2, creditLineFactoryAddress, {logger})
+  return creditLineFactory
+}
+
 module.exports = {
   baseDeploy,
   deployPoolTokens,
@@ -331,4 +358,5 @@ module.exports = {
   deploySeniorFund,
   deployMigratedTranchedPool,
   deploySeniorFundStrategy,
+  deployCreditLineFactoryV2,
 }

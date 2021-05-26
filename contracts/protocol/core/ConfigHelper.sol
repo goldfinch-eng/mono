@@ -12,7 +12,8 @@ import "../../interfaces/ICreditDesk.sol";
 import "../../interfaces/IERC20withDec.sol";
 import "../../interfaces/ICUSDCContract.sol";
 import "../../interfaces/IPoolTokens.sol";
-import "./CreditLineFactory.sol";
+import "../../interfaces/ICreditLineFactory.sol";
+import "../../interfaces/ICreditLineFactoryV2.sol";
 
 /**
  * @title ConfigHelper
@@ -54,8 +55,12 @@ library ConfigHelper {
     return IPoolTokens(poolTokensAddress(config));
   }
 
-  function getCreditLineFactory(GoldfinchConfig config) internal view returns (CreditLineFactory) {
-    return CreditLineFactory(creditLineFactoryAddress(config));
+  function getCreditLineFactoryV2(GoldfinchConfig config) internal view returns (ICreditLineFactoryV2) {
+    return ICreditLineFactoryV2(creditLineFactoryV2Address(config));
+  }
+
+  function getCreditLineFactory(GoldfinchConfig config) internal view returns (ICreditLineFactory) {
+    return ICreditLineFactory(creditLineFactoryAddress(config));
   }
 
   function oneInchAddress(GoldfinchConfig config) internal view returns (address) {
@@ -92,6 +97,10 @@ library ConfigHelper {
 
   function creditLineFactoryAddress(GoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.CreditLineFactory));
+  }
+
+  function creditLineFactoryV2Address(GoldfinchConfig config) internal view returns (address) {
+    return config.getAddress(uint256(ConfigOptions.Addresses.CreditLineFactoryV2));
   }
 
   function fiduAddress(GoldfinchConfig config) internal view returns (address) {

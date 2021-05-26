@@ -29,6 +29,7 @@ const {
   deployTranchedPool,
   deployMigratedTranchedPool,
   deploySeniorFundStrategy,
+  deployCreditLineFactoryV2,
 } = require("../blockchain_scripts/baseDeploy")
 const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
 const {time} = require("@openzeppelin/test-helpers")
@@ -62,18 +63,14 @@ const TEST_TIMEOUT = 180000 // 3 mins
 async function deployV2(contracts) {
   const config = contracts.GoldfinchConfig.UpgradedContract
   const fidu = contracts.Fidu.UpgradedContract
-  let seniorPool = await deploySeniorFund(hre, {config, fidu})
-  seniorPool = await toTruffle(seniorPool, "SeniorFund")
-  let seniorFundStrategy = await deploySeniorFundStrategy(hre, {config})
-  seniorFundStrategy = await toTruffle(seniorFundStrategy, "IFundStrategy")
-  let tranchedPool = await deployTranchedPool(hre, {config})
-  tranchedPool = await toTruffle(tranchedPool, "TranchedPool")
-  let poolTokens = await deployPoolTokens(hre, {config})
-  poolTokens = await toTruffle(poolTokens, "PoolTokens")
-  let migratedTranchedPool = await deployMigratedTranchedPool(hre, {config})
-  migratedTranchedPool = await toTruffle(migratedTranchedPool, "MigratedTranchedPool")
+  const seniorPool = await toTruffle(await deploySeniorFund(hre, {config, fidu}), "SeniorFund")
+  const seniorFundStrategy = await toTruffle(await deploySeniorFundStrategy(hre, {config}), "IFundStrategy")
+  const tranchedPool = await toTruffle(await deployTranchedPool(hre, {config}), "TranchedPool")
+  const poolTokens = await toTruffle(await deployPoolTokens(hre, {config}), "PoolTokens")
+  const migratedTranchedPool = await toTruffle(await deployMigratedTranchedPool(hre, {config}), "MigratedTranchedPool")
+  const creditLineFactoryV2 = await toTruffle(await deployCreditLineFactoryV2(hre, {config}), "CreditLineFactoryV2")
   await contracts.GoldfinchConfig.UpgradedContract.bulkAddToGoList([seniorPool.address])
-  return {seniorPool, seniorFundStrategy, tranchedPool, poolTokens, migratedTranchedPool}
+  return {seniorPool, seniorFundStrategy, tranchedPool, poolTokens, migratedTranchedPool, creditLineFactoryV2}
 }
 
 /*
@@ -166,7 +163,7 @@ describe("mainnet forking tests", async function () {
     await goldfinchConfig.bulkAddToGoList(accounts, {from: MAINNET_MULTISIG})
   })
 
-  describe("drawing down into another currency", async function () {
+  xdescribe("drawing down into another currency", async function () {
     let bwrCon, cl, oneSplit
     beforeEach(async function () {
       oneSplit = await IOneSplit.at(MAINNET_ONE_SPLIT_ADDRESS)
@@ -297,7 +294,7 @@ describe("mainnet forking tests", async function () {
     }).timeout(TEST_TIMEOUT)
   })
 
-  describe("paying back via another currency", async function () {
+  xdescribe("paying back via another currency", async function () {
     let bwrCon, cl, oneSplit
     let amount = usdcVal(100)
     beforeEach(async function () {
