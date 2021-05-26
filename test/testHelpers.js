@@ -272,7 +272,12 @@ const createPoolWithCreditLine = async ({
   let pool = await TranchedPool.at(event.args.pool)
   let creditLine = await CreditLine.at(await pool.creditLine())
 
-  await erc20Approve(usdc, pool.address, usdcVal(100000), [thisOwner, thisBorrower])
+  await erc20Approve(usdc, pool.address, usdcVal(100000), [thisOwner])
+
+  // Only approve if borrower is an EOA (could be a borrower contract)
+  if ((await web3.eth.getCode(thisBorrower)) === "0x") {
+    await erc20Approve(usdc, pool.address, usdcVal(100000), [thisBorrower])
+  }
 
   let tranchedPool = await artifacts.require("TestTranchedPool").at(pool.address)
   return {tranchedPool, creditLine}

@@ -8,7 +8,7 @@ import "../core/ConfigHelper.sol";
 import "../core/CreditLine.sol";
 import "../core/GoldfinchConfig.sol";
 import "../../interfaces/IERC20withDec.sol";
-import "../../interfaces/ICreditDesk.sol";
+import "../../interfaces/ITranchedPool.sol";
 import "@opengsn/gsn/contracts/BaseRelayRecipient.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 
@@ -42,27 +42,34 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient {
     // Handle default approvals. Pool, and OneInch for maximum amounts
     address oneInch = config.oneInchAddress();
     IERC20withDec usdc = config.getUSDC();
-    usdc.approve(config.poolAddress(), uint256(-1));
     usdc.approve(oneInch, uint256(-1));
     bytes memory data = abi.encodeWithSignature("approve(address,uint256)", oneInch, uint256(-1));
     invoke(USDT_ADDRESS, data);
     invoke(BUSD_ADDRESS, data);
   }
 
+  function lockJuniorCapital(address poolAddress) external onlyAdmin {
+    ITranchedPool(poolAddress).lockJuniorCapital();
+  }
+
+  function lockPool(address poolAddress) external onlyAdmin {
+    ITranchedPool(poolAddress).lockPool();
+  }
+
   /**
    * @notice Allows a borrower to drawdown on their creditline through the CreditDesk.
-   * @param creditLineAddress The creditline from which they would like to drawdown
+   * @param poolAddress The creditline from which they would like to drawdown
    * @param amount The amount, in USDC atomic units, that a borrower wishes to drawdown
    * @param addressToSendTo The address where they would like the funds sent. If the zero address is passed,
    *  it will be defaulted to the contracts address (msg.sender). This is a convenience feature for when they would
    *  like the funds sent to an exchange or alternate wallet, different from the authentication address
    */
   function drawdown(
-    address creditLineAddress,
+    address poolAddress,
     uint256 amount,
     address addressToSendTo
   ) external onlyAdmin {
-    config.getCreditDesk().drawdown(creditLineAddress, amount);
+    ITranchedPool(poolAddress).drawdown(amount);
 
     if (addressToSendTo == address(0) || addressToSendTo == address(this)) {
       addressToSendTo = _msgSender();
@@ -72,7 +79,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient {
   }
 
   function drawdownWithSwapOnOneInch(
-    address creditLineAddress,
+    address poolAddress,
     uint256 amount,
     address addressToSendTo,
     address toToken,
@@ -80,7 +87,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient {
     uint256[] calldata exchangeDistribution
   ) public onlyAdmin {
     // Drawdown to the Borrower contract
-    config.getCreditDesk().drawdown(creditLineAddress, amount);
+    ITranchedPool(poolAddress).drawdown(amount);
 
     // Do the swap
     swapOnOneInch(config.usdcAddress(), toToken, amount, minTargetAmount, exchangeDistribution);
@@ -107,43 +114,45 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient {
 
   /**
    * @notice Allows a borrower to payback loans by calling the `pay` function directly on the CreditDesk
-   * @param creditLineAddress The credit line to be paid back
+   * @param poolAddress The credit line to be paid back
    * @param amount The amount, in USDC atomic units, that the borrower wishes to pay
    */
-  function pay(address creditLineAddress, uint256 amount) external onlyAdmin {
-    bool success = config.getUSDC().transferFrom(_msgSender(), address(this), amount);
+  function pay(address poolAddress, uint256 amount) external onlyAdmin {
+    IERC20withDec usdc = config.getUSDC();
+    bool success = usdc.transferFrom(_msgSender(), address(this), amount);
     require(success, "Failed to transfer USDC");
-    config.getCreditDesk().pay(creditLineAddress, amount);
+    _transferAndPay(usdc, poolAddress, amount);
   }
 
-  function payMultiple(address[] calldata creditLines, uint256[] calldata amounts) external onlyAdmin {
-    require(creditLines.length == amounts.length, "Creditlines and amounts must be the same length");
+  function payMultiple(address[] calldata pools, uint256[] calldata amounts) external onlyAdmin {
+    require(pools.length == amounts.length, "Pools and amounts must be the same length");
 
     uint256 totalAmount;
     for (uint256 i = 0; i < amounts.length; i++) {
       totalAmount = totalAmount.add(amounts[i]);
     }
 
+    IERC20withDec usdc = config.getUSDC();
     // Do a single transfer, which is cheaper
-    bool success = config.getUSDC().transferFrom(_msgSender(), address(this), totalAmount);
+    bool success = usdc.transferFrom(_msgSender(), address(this), totalAmount);
     require(success, "Failed to transfer USDC");
 
-    ICreditDesk creditDesk = config.getCreditDesk();
     for (uint256 i = 0; i < amounts.length; i++) {
-      creditDesk.pay(creditLines[i], amounts[i]);
+      _transferAndPay(usdc, pools[i], amounts[i]);
     }
   }
 
-  function payInFull(address creditLineAddress, uint256 amount) external onlyAdmin {
-    bool success = config.getUSDC().transferFrom(_msgSender(), creditLineAddress, amount);
+  function payInFull(address poolAddress, uint256 amount) external onlyAdmin {
+    IERC20withDec usdc = config.getUSDC();
+    bool success = usdc.transferFrom(_msgSender(), address(this), amount);
     require(success, "Failed to transfer USDC");
 
-    config.getCreditDesk().applyPayment(creditLineAddress, amount);
-    require(CreditLine(creditLineAddress).balance() == 0, "Failed to fully pay off creditline");
+    _transferAndPay(usdc, poolAddress, amount);
+    require(ITranchedPool(poolAddress).creditLine().balance() == 0, "Failed to fully pay off creditline");
   }
 
   function payWithSwapOnOneInch(
-    address creditLineAddress,
+    address poolAddress,
     uint256 originAmount,
     address fromToken,
     uint256 minTargetAmount,
@@ -153,17 +162,17 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient {
     IERC20withDec usdc = config.getUSDC();
     swapOnOneInch(fromToken, address(usdc), originAmount, minTargetAmount, exchangeDistribution);
     uint256 usdcBalance = usdc.balanceOf(address(this));
-    config.getCreditDesk().pay(creditLineAddress, usdcBalance);
+    _transferAndPay(usdc, poolAddress, usdcBalance);
   }
 
   function payMultipleWithSwapOnOneInch(
-    address[] memory creditLines,
+    address[] memory pools,
     uint256[] memory minAmounts,
     uint256 originAmount,
     address fromToken,
     uint256[] memory exchangeDistribution
   ) external onlyAdmin {
-    require(creditLines.length == minAmounts.length, "Creditlines and amounts must be the same length");
+    require(pools.length == minAmounts.length, "Pools and amounts must be the same length");
 
     uint256 totalMinAmount = 0;
     for (uint256 i = 0; i < minAmounts.length; i++) {
@@ -175,16 +184,26 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient {
     IERC20withDec usdc = config.getUSDC();
     swapOnOneInch(fromToken, address(usdc), originAmount, totalMinAmount, exchangeDistribution);
 
-    ICreditDesk creditDesk = config.getCreditDesk();
     for (uint256 i = 0; i < minAmounts.length; i++) {
-      creditDesk.pay(creditLines[i], minAmounts[i]);
+      _transferAndPay(usdc, pools[i], minAmounts[i]);
     }
 
     uint256 remainingUSDC = usdc.balanceOf(address(this));
     if (remainingUSDC > 0) {
-      bool success = usdc.transfer(creditLines[0], remainingUSDC);
-      require(success, "Failed to transfer USDC");
+      _transferAndPay(usdc, pools[0], remainingUSDC);
     }
+  }
+
+  function _transferAndPay(
+    IERC20withDec usdc,
+    address poolAddress,
+    uint256 amount
+  ) internal {
+    ITranchedPool pool = ITranchedPool(poolAddress);
+    // We don't use transferFrom since it would require a separate approval per creditline
+    bool success = usdc.transfer(address(pool.creditLine()), amount);
+    require(success, "USDC Transfer to creditline failed");
+    pool.assess();
   }
 
   function transferFrom(

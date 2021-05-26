@@ -3,7 +3,6 @@ const BN = require("bn.js")
 const hre = require("hardhat")
 const {deployments} = hre
 const {
-  createCreditLine,
   usdcVal,
   deployAllContracts,
   erc20Transfer,
@@ -13,28 +12,53 @@ const {
   expect,
   ZERO_ADDRESS,
   advanceTime,
+  createPoolWithCreditLine: _createPoolWithCreditLine,
 } = require("./testHelpers.js")
+const {TRANCHES} = require("../blockchain_scripts/deployHelpers")
 const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
 const {TypedDataUtils, signTypedData_v4} = require("eth-sig-util")
 const {bufferToHex} = require("ethereumjs-util")
 const Borrower = artifacts.require("Borrower")
 
-let accounts,
-  owner,
-  bwr,
-  person3,
-  underwriter,
-  reserve,
-  goldfinchFactory,
-  goldfinchConfig,
-  creditDesk,
-  usdc,
-  pool,
-  forwarder
+describe("Borrower", async () => {
+  let owner,
+    bwr,
+    bwrCon,
+    goldfinchConfig,
+    usdc,
+    tranchedPool,
+    goldfinchFactory,
+    cl,
+    accounts,
+    person3,
+    underwriter,
+    reserve,
+    forwarder
 
-// TODO: Fix these specs!
-// This requiers the Borrower contract to support TranchedPool
-xdescribe("Borrower", async () => {
+  const createPoolWithCreditLine = async () => {
+    let res = await _createPoolWithCreditLine({
+      people: {owner, borrower: bwrCon.address},
+      goldfinchFactory,
+      usdc,
+    })
+
+    // Ready the pool for drawdown
+    await res.tranchedPool.deposit(TRANCHES.Junior, usdcVal(2000))
+    await bwrCon.lockJuniorCapital(res.tranchedPool.address, {from: bwr})
+    await res.tranchedPool.deposit(TRANCHES.Senior, usdcVal(8000))
+    await bwrCon.lockPool(res.tranchedPool.address, {from: bwr})
+
+    return res
+  }
+
+  const createBorrowerContract = async (_borrower) => {
+    const result = await goldfinchFactory.createBorrower(_borrower)
+    let bwrConAddr = result.logs[result.logs.length - 1].args.borrower
+    let contract = await Borrower.at(bwrConAddr)
+    await erc20Approve(usdc, contract.address, usdcVal(100000), [_borrower])
+    return contract
+  }
+
   const setupTest = deployments.createFixture(async ({deployments}) => {
     const {
       seniorFund,
@@ -60,48 +84,52 @@ xdescribe("Borrower", async () => {
   beforeEach(async () => {
     accounts = await web3.eth.getAccounts()
     ;[owner, bwr, person3, underwriter, reserve] = accounts
-    ;({goldfinchFactory, goldfinchConfig, usdc, creditDesk, pool, forwarder} = await setupTest())
+    ;({goldfinchFactory, goldfinchConfig, usdc, forwarder} = await setupTest())
   })
 
   describe("drawdown", async () => {
-    let bwrCon, cl
     let amount = usdcVal(10)
     beforeEach(async () => {
-      const result = await goldfinchFactory.createBorrower(bwr)
-      let bwrConAddr = result.logs[result.logs.length - 1].args.borrower
-      bwrCon = await Borrower.at(bwrConAddr)
-      await erc20Approve(usdc, bwrCon.address, usdcVal(100000), [bwr])
-      cl = await createCreditLine({creditDesk, borrower: bwrCon.address, underwriter})
+      bwrCon = await createBorrowerContract(bwr)
+      ;({tranchedPool} = await createPoolWithCreditLine())
     })
 
     it("should let you drawdown the amount", async () => {
-      await expectAction(() => bwrCon.drawdown(cl.address, amount, bwr, {from: bwr})).toChange([
+      await expectAction(() => bwrCon.drawdown(tranchedPool.address, amount, bwr, {from: bwr})).toChange([
         [async () => await getBalance(bwr, usdc), {by: amount}],
       ])
     })
 
     it("should not let anyone except the borrower drawdown", async () => {
-      return expect(bwrCon.drawdown(cl.address, amount, person3, {from: person3})).to.be.rejectedWith(
+      return expect(bwrCon.drawdown(tranchedPool.address, amount, person3, {from: person3})).to.be.rejectedWith(
         /Must have admin role/
       )
     })
 
     it("should not let anyone except the borrower drawdown via oneInch", async () => {
       return expect(
-        bwrCon.drawdownWithSwapOnOneInch(cl.address, amount, person3, usdc.address, amount, [], {from: person3})
+        bwrCon.drawdownWithSwapOnOneInch(tranchedPool.address, amount, person3, usdc.address, amount, [], {
+          from: person3,
+        })
       ).to.be.rejectedWith(/Must have admin role/)
     })
 
     it("should block you from drawing down on some random credit line", async () => {
-      let someRandomAddress = person3
-      return expect(bwrCon.drawdown(someRandomAddress, amount, bwr, {from: bwr})).to.be.rejectedWith(
-        /Unknown credit line/
-      )
+      let originalBwrCon = bwrCon
+      let originalBwr = bwr
+      let tranchedPool2
+      bwr = person3
+      bwrCon = await createBorrowerContract(bwr)
+      ;({tranchedPool: tranchedPool2} = await createPoolWithCreditLine())
+
+      return expect(
+        originalBwrCon.drawdown(tranchedPool2.address, amount, bwr, {from: originalBwr})
+      ).to.be.rejectedWith(/Must have locker role/)
     })
 
     describe("address forwarding", async () => {
       it("should support forwarding the money to another address", async () => {
-        await expectAction(() => bwrCon.drawdown(cl.address, amount, person3, {from: bwr})).toChange([
+        await expectAction(() => bwrCon.drawdown(tranchedPool.address, amount, person3, {from: bwr})).toChange([
           [async () => await getBalance(bwrCon.address, usdc), {by: new BN(0)}],
           [async () => await getBalance(person3, usdc), {by: amount}],
         ])
@@ -109,7 +137,7 @@ xdescribe("Borrower", async () => {
 
       context("addressToSendTo is the zero address", async () => {
         it("should default to msg.sender", async () => {
-          await expectAction(() => bwrCon.drawdown(cl.address, amount, ZERO_ADDRESS, {from: bwr})).toChange([
+          await expectAction(() => bwrCon.drawdown(tranchedPool.address, amount, ZERO_ADDRESS, {from: bwr})).toChange([
             [async () => await getBalance(bwr, usdc), {by: amount}],
             [async () => await getBalance(bwrCon.address, usdc), {by: new BN(0)}],
           ])
@@ -118,10 +146,12 @@ xdescribe("Borrower", async () => {
 
       context("addressToSendTo is the contract address", async () => {
         it("should default to msg.sender", async () => {
-          await expectAction(() => bwrCon.drawdown(cl.address, amount, bwrCon.address, {from: bwr})).toChange([
-            [async () => await getBalance(bwr, usdc), {by: amount}],
-            [async () => await getBalance(bwrCon.address, usdc), {by: new BN(0)}],
-          ])
+          await expectAction(() => bwrCon.drawdown(tranchedPool.address, amount, bwrCon.address, {from: bwr})).toChange(
+            [
+              [async () => await getBalance(bwr, usdc), {by: amount}],
+              [async () => await getBalance(bwrCon.address, usdc), {by: new BN(0)}],
+            ]
+          )
         })
       })
     })
@@ -160,7 +190,6 @@ xdescribe("Borrower", async () => {
   })
 
   describe("gasless transactions", async () => {
-    let bwrCon, cl
     let amount = usdcVal(1)
 
     const EIP712DomainType = [
@@ -220,11 +249,8 @@ xdescribe("Borrower", async () => {
     }
 
     async function createBorrowerAndCreditLine() {
-      const result = await goldfinchFactory.createBorrower(bwr)
-      let bwrConAddr = result.logs[result.logs.length - 1].args.borrower
-      bwrCon = await Borrower.at(bwrConAddr)
-      await erc20Approve(usdc, bwrCon.address, usdcVal(100000), [bwr])
-      cl = await createCreditLine({creditDesk, borrower: bwrCon.address, underwriter})
+      bwrCon = await createBorrowerContract(bwr)
+      ;({tranchedPool} = await createPoolWithCreditLine())
     }
 
     describe("When the forwarder is not trusted", async () => {
@@ -237,7 +263,7 @@ xdescribe("Borrower", async () => {
           value: 0,
           gas: 1e6,
           nonce: 0,
-          data: bwrCon.contract.methods.drawdown(cl.address, amount.toNumber(), bwr).encodeABI(),
+          data: bwrCon.contract.methods.drawdown(tranchedPool.address, amount.toNumber(), bwr).encodeABI(),
         }
         let forwarderArgs = await signAndGenerateForwardRequest(request)
         // Signature is still valid
@@ -255,12 +281,12 @@ xdescribe("Borrower", async () => {
           value: 0,
           gas: 1e6,
           nonce: 0,
-          data: bwrCon.contract.methods.drawdown(cl.address, amount.toNumber(), bwr).encodeABI(),
+          data: bwrCon.contract.methods.drawdown(tranchedPool.address, amount.toNumber(), bwr).encodeABI(),
         }
         let forwarderArgs = await signAndGenerateForwardRequest(request)
         await forwarder.verify(...forwarderArgs)
         await expectAction(() => forwarder.execute(...forwarderArgs, {from: person3})).toChange([
-          [() => getBalance(pool.address, usdc), {by: amount.neg()}],
+          [() => getBalance(tranchedPool.address, usdc), {by: amount.neg()}],
           [() => getBalance(bwr, usdc), {by: amount}],
         ])
       })
@@ -273,7 +299,7 @@ xdescribe("Borrower", async () => {
           value: 0,
           gas: 1e6,
           nonce: 0,
-          data: bwrCon.contract.methods.drawdown(cl.address, amount.toNumber(), bwr).encodeABI(),
+          data: bwrCon.contract.methods.drawdown(tranchedPool.address, amount.toNumber(), bwr).encodeABI(),
         }
         let forwarderArgs = await signAndGenerateForwardRequest(request)
         await forwarder.verify(...forwarderArgs)
@@ -291,12 +317,12 @@ xdescribe("Borrower", async () => {
             value: 0,
             gas: 1e6,
             nonce: 0,
-            data: bwrCon.contract.methods.drawdown(cl.address, amount.toNumber(), ZERO_ADDRESS).encodeABI(),
+            data: bwrCon.contract.methods.drawdown(tranchedPool.address, amount.toNumber(), ZERO_ADDRESS).encodeABI(),
           }
           let forwarderArgs = await signAndGenerateForwardRequest(request)
           await forwarder.verify(...forwarderArgs)
           await expectAction(() => forwarder.execute(...forwarderArgs, {from: person3})).toChange([
-            [() => getBalance(pool.address, usdc), {by: amount.neg()}],
+            [() => getBalance(tranchedPool.address, usdc), {by: amount.neg()}],
             [() => getBalance(bwr, usdc), {by: amount}],
           ])
         })
@@ -311,12 +337,12 @@ xdescribe("Borrower", async () => {
             value: 0,
             gas: 1e6,
             nonce: 0,
-            data: bwrCon.contract.methods.drawdown(cl.address, amount.toNumber(), bwrCon.address).encodeABI(),
+            data: bwrCon.contract.methods.drawdown(tranchedPool.address, amount.toNumber(), bwrCon.address).encodeABI(),
           }
           let forwarderArgs = await signAndGenerateForwardRequest(request)
           await forwarder.verify(...forwarderArgs)
           await expectAction(() => forwarder.execute(...forwarderArgs, {from: person3})).toChange([
-            [() => getBalance(pool.address, usdc), {by: amount.neg()}],
+            [() => getBalance(tranchedPool.address, usdc), {by: amount.neg()}],
             [() => getBalance(bwr, usdc), {by: amount}],
           ])
         })
@@ -332,25 +358,28 @@ xdescribe("Borrower", async () => {
       let bwrConAddr = result.logs[result.logs.length - 1].args.borrower
       bwrCon = await Borrower.at(bwrConAddr)
       await erc20Approve(usdc, bwrCon.address, usdcVal(100000), [bwr])
-      cl = await createCreditLine({creditDesk, borrower: bwrCon.address, underwriter})
-      await bwrCon.drawdown(cl.address, amount, bwr, {from: bwr})
+      ;({tranchedPool, creditLine: cl} = await createPoolWithCreditLine())
+      await bwrCon.drawdown(tranchedPool.address, amount, bwr, {from: bwr})
     })
 
     it("should payback the loan as expected", async () => {
-      await expectAction(() => bwrCon.pay(cl.address, amount, {from: bwr})).toChange([
-        [async () => await getBalance(cl.address, usdc), {by: amount}],
+      await expectAction(() => bwrCon.pay(tranchedPool.address, amount, {from: bwr})).toChange([
+        [async () => await getBalance(cl.address, usdc), {increase: true}],
         [async () => await getBalance(bwr, usdc), {by: amount.neg()}],
       ])
-      await advanceTime(creditDesk, {toSecond: (await cl.nextDueTime()).add(new BN(1))})
-      await expectAction(() => creditDesk.assessCreditLine(cl.address)).toChange([
+
+      await advanceTime(tranchedPool, {toSecond: (await cl.nextDueTime()).add(new BN(1))})
+
+      await expectAction(() => tranchedPool.assess()).toChange([
         [async () => await cl.balance(), {decrease: true}],
         [async () => await getBalance(cl.address, usdc), {by: amount.neg()}],
+        [async () => await getBalance(tranchedPool.address, usdc), {increase: true}],
       ])
     })
   })
 
   describe("payMultiple", async () => {
-    let bwrCon, cl, cl2
+    let tranchedPool2, cl2
     let amount = usdcVal(10)
     let amount2 = usdcVal(5)
     beforeEach(async () => {
@@ -358,56 +387,59 @@ xdescribe("Borrower", async () => {
       let bwrConAddr = result.logs[result.logs.length - 1].args.borrower
       bwrCon = await Borrower.at(bwrConAddr)
       await erc20Approve(usdc, bwrCon.address, usdcVal(100000), [bwr])
-      cl = await createCreditLine({creditDesk, borrower: bwrCon.address, underwriter})
-      cl2 = await createCreditLine({creditDesk, borrower: bwrCon.address, underwriter})
+      ;({tranchedPool, creditLine: cl} = await createPoolWithCreditLine())
+      ;({tranchedPool: tranchedPool2, creditLine: cl2} = await createPoolWithCreditLine())
 
-      expect(cl.address).to.not.eq(cl2.addresss)
+      expect(tranchedPool.address).to.not.eq(tranchedPool2.addresss)
 
-      await bwrCon.drawdown(cl.address, amount, bwr, {from: bwr})
-      await bwrCon.drawdown(cl2.address, amount2, bwr, {from: bwr})
+      await bwrCon.drawdown(tranchedPool.address, amount, bwr, {from: bwr})
+      await bwrCon.drawdown(tranchedPool2.address, amount2, bwr, {from: bwr})
     })
 
     it("should payback the loan as expected", async () => {
-      await expectAction(() => bwrCon.payMultiple([cl.address, cl2.address], [amount, amount2], {from: bwr})).toChange([
+      await expectAction(() =>
+        bwrCon.payMultiple([tranchedPool.address, tranchedPool2.address], [amount, amount2], {from: bwr})
+      ).toChange([
         [() => getBalance(cl.address, usdc), {by: amount}],
         [() => getBalance(cl2.address, usdc), {by: amount2}],
         [() => getBalance(bwr, usdc), {by: amount.add(amount2).neg()}],
       ])
-      await advanceTime(creditDesk, {toSecond: (await cl.nextDueTime()).add(new BN(100))})
-      await expectAction(() => creditDesk.assessCreditLine(cl.address)).toChange([
+
+      await advanceTime(tranchedPool, {toSecond: (await cl.nextDueTime()).add(new BN(100))})
+      await advanceTime(tranchedPool2, {toSecond: (await cl2.nextDueTime()).add(new BN(100))})
+
+      await expectAction(() => tranchedPool.assess()).toChange([
         [() => cl.balance(), {decrease: true}],
-        [() => getBalance(cl.address, usdc), {by: amount.neg()}],
+        [() => getBalance(tranchedPool.address, usdc), {increase: true}],
       ])
-      await expectAction(() => creditDesk.assessCreditLine(cl2.address)).toChange([
+      await expectAction(() => tranchedPool2.assess()).toChange([
         [() => cl2.balance(), {decrease: true}],
-        [() => getBalance(cl2.address, usdc), {by: amount2.neg()}],
+        [() => getBalance(tranchedPool2.address, usdc), {increase: true}],
       ])
     })
   })
 
   describe("payInFull", async () => {
-    let bwrCon, cl
     let amount = usdcVal(10)
     beforeEach(async () => {
       const result = await goldfinchFactory.createBorrower(bwr)
       let bwrConAddr = result.logs[result.logs.length - 1].args.borrower
       bwrCon = await Borrower.at(bwrConAddr)
       await erc20Approve(usdc, bwrCon.address, usdcVal(100000), [bwr])
-      cl = await createCreditLine({creditDesk, borrower: bwrCon.address, underwriter})
-      await bwrCon.drawdown(cl.address, amount, bwr, {from: bwr})
+      ;({tranchedPool, creditLine: cl} = await createPoolWithCreditLine())
+      await bwrCon.drawdown(tranchedPool.address, amount, bwr, {from: bwr})
     })
 
     it("should fully pay back the loan", async () => {
-      await advanceTime(creditDesk, {toSecond: (await cl.nextDueTime()).add(new BN(1))})
-      await expectAction(async () => bwrCon.payInFull(cl.address, usdcVal(11), {from: bwr})).toChange([
+      await advanceTime(tranchedPool, {toSecond: (await cl.nextDueTime()).add(new BN(1))})
+      await expectAction(async () => bwrCon.payInFull(tranchedPool.address, usdcVal(11), {from: bwr})).toChange([
         [async () => cl.balance(), {to: new BN(0)}],
-        [async () => getBalance(pool.address, usdc), {increase: true}],
-        [async () => pool.sharePrice(), {increase: true}],
+        [async () => getBalance(tranchedPool.address, usdc), {increase: true}],
       ])
     })
 
     it("fails if the loan is not fully paid off", async () => {
-      await expect(bwrCon.payInFull(cl.address, usdcVal(5), {from: bwr})).to.be.rejectedWith(
+      await expect(bwrCon.payInFull(tranchedPool.address, usdcVal(5), {from: bwr})).to.be.rejectedWith(
         /Failed to fully pay off creditline/
       )
       expect(await cl.balance()).to.bignumber.gt(new BN(0))

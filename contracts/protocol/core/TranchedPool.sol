@@ -201,10 +201,10 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     return (interestRedeemable, principalRedeemable);
   }
 
-  function drawdown(uint256 amount) public onlyLocker whenNotPaused {
+  function drawdown(uint256 amount) external override onlyLocker whenNotPaused {
     if (!locked()) {
       // Assumes the senior fund has invested already (saves the borrower a separate transaction to lock the pool)
-      lockPool();
+      _lockPool();
     }
 
     creditLine.drawdown(amount);
@@ -218,7 +218,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
   }
 
   // Mark the investment period as over
-  function lockJuniorCapital() public onlyLocker whenNotPaused {
+  function lockJuniorCapital() external override onlyLocker whenNotPaused {
     _lockJuniorCapital();
   }
 
@@ -229,7 +229,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     juniorTranche.lockedUntil = currentTime().add(config.getDrawdownPeriodInSeconds());
   }
 
-  function lockPool() public onlyLocker whenNotPaused {
+  function lockPool() external override onlyLocker whenNotPaused {
     _lockPool();
   }
 
@@ -480,24 +480,28 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     return sharePrice.mul(totalShares).div(FP_SCALING_FACTOR);
   }
 
-  function assess() public whenNotPaused {
-    (uint256 paymentRemaining, uint256 interestPayment, uint256 principalPayment) = creditLine.assess();
-    if (interestPayment > 0 || principalPayment > 0) {
-      emit PaymentApplied(creditLine.borrower(), address(this), interestPayment, principalPayment, paymentRemaining);
-      collectInterestAndPrincipal(address(creditLine), interestPayment, principalPayment.add(paymentRemaining));
-    }
+  function assess() external override whenNotPaused {
+    _assess();
   }
 
   function pay(uint256 amount) external override whenNotPaused {
     require(amount > 0, "Must pay more than zero");
 
     collectPayment(amount);
-    assess();
+    _assess();
   }
 
   function collectPayment(uint256 amount) internal {
     emit PaymentCollected(msg.sender, address(this), amount);
     safeUSDCTransfer(msg.sender, address(creditLine), amount, "Failed to collect payment");
+  }
+
+  function _assess() internal {
+    (uint256 paymentRemaining, uint256 interestPayment, uint256 principalPayment) = creditLine.assess();
+    if (interestPayment > 0 || principalPayment > 0) {
+      emit PaymentApplied(creditLine.borrower(), address(this), interestPayment, principalPayment, paymentRemaining);
+      collectInterestAndPrincipal(address(creditLine), interestPayment, principalPayment.add(paymentRemaining));
+    }
   }
 
   modifier onlyCreditDesk() {

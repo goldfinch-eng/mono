@@ -150,10 +150,10 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
       setTermEndTime(timestamp.add(SECONDS_PER_DAY.mul(termInDays)));
     }
 
-    (uint256 interestOwed, uint256 principalOwed) = updateAndGetInterestAndPrincipalOwedAsOf(timestamp);
+    (uint256 _interestOwed, uint256 _principalOwed) = updateAndGetInterestAndPrincipalOwedAsOf(timestamp);
     balance = balance.add(amount);
 
-    updateCreditLineAccounting(balance, interestOwed, principalOwed);
+    updateCreditLineAccounting(balance, _interestOwed, _principalOwed);
     require(!isLate(timestamp), "Cannot drawdown when payments are past due");
   }
 
