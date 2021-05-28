@@ -210,7 +210,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     creditLine.drawdown(amount);
 
     // Update the share price to reflect the amount remaining in the pool
-    uint256 amountRemaining = creditLine.limit().sub(creditLine.balance());
+    uint256 amountRemaining = totalDeposited().sub(creditLine.balance());
     juniorTranche.principalSharePrice = calculateExpectedSharePrice(amountRemaining, juniorTranche);
     seniorTranche.principalSharePrice = calculateExpectedSharePrice(amountRemaining, seniorTranche);
 
@@ -236,7 +236,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
   function _lockPool() internal {
     require(juniorTranche.lockedUntil > 0, "Junior tranche must be locked first");
 
-    creditLine.setLimit(seniorTranche.principalDeposited + juniorTranche.principalDeposited);
+    creditLine.setLimit(Math.min(totalDeposited(), creditLine.limit()));
 
     // We start the drawdown period, so backers can withdraw unused capital after borrower draws down
     uint256 lockPeriod = config.getDrawdownPeriodInSeconds();
@@ -328,7 +328,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     // Add any remaining balance we have to the principal accrued so expected share price will reflect partial
     // drawdowns appropriately. (e.g. if 300K was drawndown from a 1M loan, current and expected share price should
     // be 0.7 and not 0)
-    principalAccrued = principalAccrued.add(creditLine.limit().sub(creditLine.balance()));
+    principalAccrued = principalAccrued.add(totalDeposited().sub(creditLine.balance()));
     return (interestAccrued, principalAccrued);
   }
 
@@ -388,6 +388,10 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     FixedPoint.Unsigned memory totalAsFixedPoint = FixedPoint.fromUnscaledUint(total);
     FixedPoint.Unsigned memory fractionAsFixedPoint = FixedPoint.fromUnscaledUint(fraction);
     return fractionAsFixedPoint.div(totalAsFixedPoint).mul(amount).div(FP_SCALING_FACTOR).rawValue;
+  }
+
+  function totalDeposited() internal view returns (uint256) {
+    return juniorTranche.principalDeposited.add(seniorTranche.principalDeposited);
   }
 
   function currentTime() internal view virtual returns (uint256) {

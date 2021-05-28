@@ -121,11 +121,12 @@ describe("PoolTokens", () => {
       expect(poolInfo.limit).to.bignumber.equal(usdcVal(100))
     })
 
-    it("should disallow minting after the limit on the PoolInfo", async () => {
+    it("allows minting even after the limit on the PoolInfo", async () => {
       const amount = usdcVal(50)
       await pool.deposit(new BN(1), amount, {from: person2})
       const amountThatPutsUsOver = usdcVal(51)
-      return expect(pool.deposit(new BN(1), amountThatPutsUsOver, {from: person2})).to.be.rejectedWith(/Cannot mint/)
+      // This is allowed because the pool will let the depositors redeem unused principal
+      await pool.deposit(new BN(1), amountThatPutsUsOver, {from: person2})
     })
 
     it("should emit an event", async () => {

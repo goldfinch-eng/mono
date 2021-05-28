@@ -158,7 +158,6 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
       interestRedeemed: 0
     });
     pool.totalMinted = pool.totalMinted.add(params.principalAmount);
-    require(pool.totalMinted <= pool.limit, "Cannot mint beyond the limit");
     _tokenIdTracker.increment();
     return tokenId;
   }

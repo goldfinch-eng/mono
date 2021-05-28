@@ -32,7 +32,7 @@ describe("TranchedPool", () => {
     goldfinchFactory,
     creditLine,
     treasury
-  let limit = usdcVal(10000)
+  let limit = usdcVal(1000)
   let interestApr = interestAprAsBN("5.00")
   let paymentPeriodInDays = new BN(30)
   let termInDays = new BN(365)
@@ -439,6 +439,55 @@ describe("TranchedPool", () => {
         principalWithdrawn: usdcVal(1000),
       })
     })
+
+    describe("when deposits are over the limit", async () => {
+      it("lets you withdraw the unused amounts", async () => {
+        const juniorDeposit = limit
+        const seniorDeposit = limit.mul(new BN(4))
+        let response = await tranchedPool.deposit(TRANCHES.Junior, juniorDeposit)
+        const juniorTokenId = response.logs[0].args.tokenId
+        response = await tranchedPool.deposit(TRANCHES.Senior, seniorDeposit)
+        const seniorTokenId = response.logs[0].args.tokenId
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        await tranchedPool.lockPool({from: borrower})
+
+        expect(await creditLine.limit()).to.bignumber.eq(limit)
+
+        await expectAction(async () => tranchedPool.drawdown(limit, {from: borrower})).toChange([
+          [async () => creditLine.balance(), {to: limit}],
+          [async () => usdc.balanceOf(borrower), {by: limit}],
+          [async () => usdc.balanceOf(tranchedPool.address), {to: limit.mul(new BN(4))}], // 5x limit was deposited. 4x still remaining
+        ])
+
+        advanceTime(tranchedPool, {days: termInDays.toNumber()})
+
+        // Only 20% of the capital was used, so remaining 80% should be available for drawdown
+        await expectAction(async () => tranchedPool.withdrawMax(juniorTokenId)).toChange([
+          [async () => await getBalance(owner, usdc), {by: juniorDeposit.mul(new BN(80)).div(new BN(100))}],
+        ])
+        await expectAction(async () => tranchedPool.withdrawMax(seniorTokenId)).toChange([
+          [async () => await getBalance(owner, usdc), {by: seniorDeposit.mul(new BN(80)).div(new BN(100))}],
+        ])
+
+        // Fully pay off the loan
+        await tranchedPool.pay(limit.add(limit.mul(new BN(5)).div(new BN(100))), {from: borrower})
+
+        // Remaining 20% of principal should be withdrawn
+        let receipt = await tranchedPool.withdrawMax(juniorTokenId)
+        expectEvent(receipt, "WithdrawalMade", {
+          tranche: new BN(TRANCHES.Junior),
+          tokenId: juniorTokenId,
+          principalWithdrawn: juniorDeposit.mul(new BN(20)).div(new BN(100)),
+        })
+
+        receipt = await tranchedPool.withdrawMax(seniorTokenId)
+        expectEvent(receipt, "WithdrawalMade", {
+          tranche: new BN(TRANCHES.Senior),
+          tokenId: seniorTokenId,
+          principalWithdrawn: seniorDeposit.mul(new BN(20)).div(new BN(100)),
+        })
+      })
+    })
   })
 
   describe("access controls", () => {
@@ -667,6 +716,29 @@ describe("TranchedPool", () => {
   describe("drawdown", async () => {
     beforeEach(async () => {
       tranchedPool = await createPoolWithCreditLine()
+    })
+
+    describe("when deposits are over the limit", async () => {
+      it("does not adjust the limit up", async () => {
+        await tranchedPool.deposit(TRANCHES.Junior, limit.mul(new BN(2)))
+        await tranchedPool.deposit(TRANCHES.Senior, limit.mul(new BN(4)))
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        await tranchedPool.lockPool({from: borrower})
+
+        expect(await creditLine.limit()).to.bignumber.eq(limit)
+      })
+    })
+
+    describe("when deposits are under the limit", async () => {
+      it("adjusts the limit down", async () => {
+        await tranchedPool.deposit(TRANCHES.Junior, usdcVal(2))
+        await tranchedPool.deposit(TRANCHES.Senior, usdcVal(8))
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        await tranchedPool.lockPool({from: borrower})
+
+        expect(await creditLine.limit()).to.bignumber.eq(usdcVal(10))
+        expect(await creditLine.limit()).to.bignumber.lt(limit)
+      })
     })
 
     describe("when pool is already locked", async () => {
