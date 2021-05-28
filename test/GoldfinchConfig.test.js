@@ -108,8 +108,17 @@ describe("GoldfinchConfig", () => {
     })
   })
 
-  describe("multiple Updates", async () => {
-    it("allows setting the treasury reserve multiple times", async () => {
+  describe("setTreasuryReserve", async () => {
+    context("not admin", async () => {
+      it("reverts", async () => {
+        const address = "0x0000000000000000000000000000000000000001"
+        await expect(goldfinchConfig.setTreasuryReserve(address, {from: person2})).to.be.rejectedWith(
+          /Must have admin role/
+        )
+      })
+    })
+
+    it("allows setting multiple times", async () => {
       const firstAddress = "0x0000000000000000000000000000000000000001"
       const secondAddress = "0x0000000000000000000000000000000000000002"
 
@@ -118,6 +127,29 @@ describe("GoldfinchConfig", () => {
       ])
       await expectAction(() => goldfinchConfig.setTreasuryReserve(secondAddress, {from: owner})).toChange([
         [() => goldfinchConfig.getAddress(CONFIG_KEYS.TreasuryReserve), {to: secondAddress}],
+      ])
+    })
+  })
+
+  describe("setSeniorFundStrategy", async () => {
+    context("not admin", async () => {
+      it("reverts", async () => {
+        const address = "0x0000000000000000000000000000000000000001"
+        await expect(goldfinchConfig.setSeniorFundStrategy(address, {from: person2})).to.be.rejectedWith(
+          /Must have admin role/
+        )
+      })
+    })
+
+    it("allows setting multiple times", async () => {
+      const firstAddress = "0x0000000000000000000000000000000000000001"
+      const secondAddress = "0x0000000000000000000000000000000000000002"
+
+      await expectAction(() => goldfinchConfig.setSeniorFundStrategy(firstAddress, {from: owner})).toChange([
+        [() => goldfinchConfig.getAddress(CONFIG_KEYS.SeniorFundStrategy), {to: firstAddress, bignumber: false}],
+      ])
+      await expectAction(() => goldfinchConfig.setSeniorFundStrategy(secondAddress, {from: owner})).toChange([
+        [() => goldfinchConfig.getAddress(CONFIG_KEYS.SeniorFundStrategy), {to: secondAddress, bignumber: false}],
       ])
     })
   })

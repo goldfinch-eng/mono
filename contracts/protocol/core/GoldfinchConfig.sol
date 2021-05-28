@@ -47,6 +47,12 @@ contract GoldfinchConfig is BaseUpgradeablePausable {
     addresses[key] = newTreasuryReserve;
   }
 
+  function setSeniorFundStrategy(address newStrategy) public onlyAdmin {
+    uint256 key = uint256(ConfigOptions.Addresses.SeniorFundStrategy);
+    emit AddressUpdated(msg.sender, key, addresses[key], newStrategy);
+    addresses[key] = newStrategy;
+  }
+
   /**
    * @dev Adds a user to go-list
    * @param _member address to add to go-list
@@ -86,7 +92,7 @@ contract GoldfinchConfig is BaseUpgradeablePausable {
   }
 
   /*
-    Using custom getters incase we want to change underlying implementation later,
+    Using custom getters in case we want to change underlying implementation later,
     or add checks or validations later on.
   */
   function getAddress(uint256 addressKey) public view returns (address) {
