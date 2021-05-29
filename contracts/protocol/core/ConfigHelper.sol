@@ -67,6 +67,10 @@ library ConfigHelper {
     return config.getAddress(uint256(ConfigOptions.Addresses.OneInch));
   }
 
+  function creditLineImplementationAddress(GoldfinchConfig config) internal view returns (address) {
+    return config.getAddress(uint256(ConfigOptions.Addresses.CreditLineImplementation));
+  }
+
   function trustedForwarderAddress(GoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.TrustedForwarder));
   }
@@ -119,12 +123,20 @@ library ConfigHelper {
     return config.getAddress(uint256(ConfigOptions.Addresses.TranchedPoolImplementation));
   }
 
+  function migratedTranchedPoolAddress(GoldfinchConfig config) internal view returns (address) {
+    return config.getAddress(uint256(ConfigOptions.Addresses.MigratedTranchedPoolImplementation));
+  }
+
   function reserveAddress(GoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.TreasuryReserve));
   }
 
   function protocolAdminAddress(GoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.ProtocolAdmin));
+  }
+
+  function borrowerImplementationAddress(GoldfinchConfig config) internal view returns (address) {
+    return config.getAddress(uint256(ConfigOptions.Addresses.BorrowerImplementation));
   }
 
   function getReserveDenominator(GoldfinchConfig config) internal view returns (uint256) {

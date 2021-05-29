@@ -38,6 +38,7 @@ async function baseDeploy(hre) {
   await grantMinterRoleToPool(fidu, pool)
   const creditDesk = await deployCreditDesk(deploy, {config})
   await deploySeniorFund(hre, {config, fidu})
+  await deployBorrower(hre, {config})
   logger("Granting minter role to SeniorFund")
   await deploySeniorFundStrategy(hre, {config})
   logger("Deploying CreditLineFactory")
@@ -322,6 +323,23 @@ async function deploySeniorFundStrategy(hre, {config}) {
   return strategy
 }
 
+async function deployBorrower(hre, {config}) {
+  let contractName = "Borrower"
+  const {deployments, getNamedAccounts} = hre
+  const {deploy, log} = deployments
+  const logger = log
+  const {proxy_owner} = await getNamedAccounts()
+
+  let deployResult = await deploy(contractName, {
+    from: proxy_owner,
+  })
+  logger("Borrower implementation was deployed to:", deployResult.address)
+  const borrower = await ethers.getContractAt(contractName, deployResult.address)
+  await updateConfig(config, "address", CONFIG_KEYS.BorrowerImplementation, borrower.address, {logger})
+
+  return borrower
+}
+
 async function deployCreditLineFactoryV2(hre, {config}) {
   const {deployments, getNamedAccounts} = hre
   const {log, deploy} = deployments
@@ -342,12 +360,17 @@ async function deployCreditLineFactoryV2(hre, {config}) {
   logger("CreditLineFactoryV2 was deployed to:", clFactoryDeployResult.address)
 
   // Deploy the credit line as well so we generate the ABI
-  await deploy("CreditLine", {from: proxy_owner, gas: 4000000, libraries: {["Accountant"]: accountant.address}})
+  const clDeployResult = await deploy("CreditLine", {
+    from: proxy_owner,
+    gas: 4000000,
+    libraries: {["Accountant"]: accountant.address},
+  })
 
   const creditLineFactory = await ethers.getContractAt("CreditLineFactoryV2", clFactoryDeployResult.address)
   let creditLineFactoryAddress = creditLineFactory.address
 
   await updateConfig(config, "address", CONFIG_KEYS.CreditLineFactoryV2, creditLineFactoryAddress, {logger})
+  await updateConfig(config, "address", CONFIG_KEYS.CreditLineImplementation, clDeployResult.address, {logger})
   return creditLineFactory
 }
 
@@ -359,4 +382,5 @@ module.exports = {
   deployMigratedTranchedPool,
   deploySeniorFundStrategy,
   deployCreditLineFactoryV2,
+  deployBorrower,
 }

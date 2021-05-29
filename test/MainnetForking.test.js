@@ -30,6 +30,7 @@ const {
   deployMigratedTranchedPool,
   deploySeniorFundStrategy,
   deployCreditLineFactoryV2,
+  deployBorrower,
 } = require("../blockchain_scripts/baseDeploy")
 const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
 const {time} = require("@openzeppelin/test-helpers")
@@ -68,6 +69,7 @@ async function deployV2(contracts) {
   const poolTokens = await toTruffle(await deployPoolTokens(hre, {config}), "PoolTokens")
   const migratedTranchedPool = await toTruffle(await deployMigratedTranchedPool(hre, {config}), "MigratedTranchedPool")
   const creditLineFactoryV2 = await toTruffle(await deployCreditLineFactoryV2(hre, {config}), "CreditLineFactoryV2")
+  await deployBorrower(hre, {config})
   await contracts.GoldfinchConfig.UpgradedContract.bulkAddToGoList([seniorPool.address])
   return {seniorPool, seniorFundStrategy, tranchedPool, poolTokens, migratedTranchedPool, creditLineFactoryV2}
 }
@@ -503,7 +505,7 @@ describe("mainnet forking tests", async function () {
 
         let originalReserveBalance = await getBalance(reserveAddress, usdc)
 
-        await expectAction(() => seniorPool.invest(tranchedPool.address, {from: owner}), true).toChange([
+        await expectAction(() => seniorPool.invest(tranchedPool.address, {from: owner})).toChange([
           [() => getBalance(seniorPool.address, usdc), {byCloseTo: seniorPoolValue.sub(usdcAmount)}], // regained usdc
           [() => getBalance(seniorPool.address, cUSDC), {to: new BN(0)}], // No more cTokens
           [() => getBalance(tranchedPool.address, usdc), {by: usdcAmount}], // Funds were transferred to TranchedPool
@@ -808,7 +810,7 @@ describe("mainnet upgrade tests", async function () {
       await tranchedPool.assess()
       const afterNextDueTime = (await newCl.nextDueTime()).add(new BN(1))
       await advanceTime(creditDesk, {toSecond: afterNextDueTime})
-      await expectAction(() => tranchedPool.assess(), true).toChange([
+      await expectAction(() => tranchedPool.assess()).toChange([
         [() => newCl.totalInterestAccrued(), {by: new BN(3698625467)}], // A period's worth of interest
         [() => newCl.principalOwed(), {by: new BN(0)}],
       ])

@@ -40,7 +40,8 @@ library ConfigOptions {
     SeniorFund,
     SeniorFundStrategy,
     MigratedTranchedPoolImplementation,
-    CreditLineFactoryV2
+    CreditLineFactoryV2,
+    BorrowerImplementation
   }
 
   function getNumberName(uint256 number) public pure returns (string memory) {
@@ -121,6 +122,9 @@ library ConfigOptions {
     }
     if (Addresses.CreditLineFactoryV2 == addressName) {
       return "CreditLineFactoryV2";
+    }
+    if (Addresses.BorrowerImplementation == addressName) {
+      return "BorrowerImplementation";
     }
     revert("Unknown value passed to getAddressName");
   }

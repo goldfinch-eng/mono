@@ -9,6 +9,7 @@ import "../core/CreditLine.sol";
 import "../core/GoldfinchConfig.sol";
 import "../../interfaces/IERC20withDec.sol";
 import "../../interfaces/ITranchedPool.sol";
+import "../../interfaces/IBorrower.sol";
 import "@opengsn/gsn/contracts/BaseRelayRecipient.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 
@@ -23,7 +24,7 @@ import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
  * @author Goldfinch
  */
 
-contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient {
+contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
   using SafeMath for uint256;
 
   GoldfinchConfig public config;
@@ -31,11 +32,13 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient {
 
   address private constant USDT_ADDRESS = address(0xdAC17F958D2ee523a2206206994597C13D831ec7);
   address private constant BUSD_ADDRESS = address(0x4Fabb145d64652a948d72533023f6E7A623C7C53);
+  address private constant GUSD_ADDRESS = address(0x056Fd409E1d7A124BD7017459dFEa2F387b6d5Cd);
+  address private constant DAI_ADDRESS = address(0x6B175474E89094C44Da98b954EedeAC495271d0F);
 
-  function initialize(address owner, GoldfinchConfig _config) public initializer {
+  function initialize(address owner, address _config) external override initializer {
     require(owner != address(0), "Owner cannot be empty");
     __BaseUpgradeablePausable__init(owner);
-    config = _config;
+    config = GoldfinchConfig(_config);
 
     trustedForwarder = config.trustedForwarderAddress();
 
@@ -46,6 +49,8 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient {
     bytes memory data = abi.encodeWithSignature("approve(address,uint256)", oneInch, uint256(-1));
     invoke(USDT_ADDRESS, data);
     invoke(BUSD_ADDRESS, data);
+    invoke(GUSD_ADDRESS, data);
+    invoke(DAI_ADDRESS, data);
   }
 
   function lockJuniorCapital(address poolAddress) external onlyAdmin {

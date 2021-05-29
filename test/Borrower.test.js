@@ -35,18 +35,19 @@ describe("Borrower", async () => {
     reserve,
     forwarder
 
-  const createPoolWithCreditLine = async () => {
+  const createPoolWithCreditLine = async (_bwrCon) => {
+    const bwrConToUse = bwrCon || _bwrCon
     let res = await _createPoolWithCreditLine({
-      people: {owner, borrower: bwrCon.address},
+      people: {owner, borrower: bwrConToUse.address},
       goldfinchFactory,
       usdc,
     })
 
     // Ready the pool for drawdown
     await res.tranchedPool.deposit(TRANCHES.Junior, usdcVal(2000))
-    await bwrCon.lockJuniorCapital(res.tranchedPool.address, {from: bwr})
+    await bwrConToUse.lockJuniorCapital(res.tranchedPool.address, {from: bwr})
     await res.tranchedPool.deposit(TRANCHES.Senior, usdcVal(8000))
-    await bwrCon.lockPool(res.tranchedPool.address, {from: bwr})
+    await bwrConToUse.lockPool(res.tranchedPool.address, {from: bwr})
 
     return res
   }
@@ -358,7 +359,7 @@ describe("Borrower", async () => {
       let bwrConAddr = result.logs[result.logs.length - 1].args.borrower
       bwrCon = await Borrower.at(bwrConAddr)
       await erc20Approve(usdc, bwrCon.address, usdcVal(100000), [bwr])
-      ;({tranchedPool, creditLine: cl} = await createPoolWithCreditLine())
+      ;({tranchedPool, creditLine: cl} = await createPoolWithCreditLine(bwrCon))
       await bwrCon.drawdown(tranchedPool.address, amount, bwr, {from: bwr})
     })
 

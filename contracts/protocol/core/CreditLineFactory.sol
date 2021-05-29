@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import "./GoldfinchConfig.sol";
 import "./BaseUpgradeablePausable.sol";
-import "../periphery/Borrower.sol";
+import "../../interfaces/IBorrower.sol";
 import "../../interfaces/ITranchedPool.sol";
 import "../../interfaces/ICreditLineFactoryV2.sol";
 import "./ConfigHelper.sol";
@@ -38,8 +38,9 @@ contract CreditLineFactory is BaseUpgradeablePausable {
    * @param owner The address that will own the new Borrower instance
    */
   function createBorrower(address owner) external returns (address) {
-    Borrower borrower = new Borrower();
-    borrower.initialize(owner, config);
+    address _borrower = deployMinimal(config.borrowerImplementationAddress());
+    IBorrower borrower = IBorrower(_borrower);
+    borrower.initialize(owner, address(config));
     emit BorrowerCreated(address(borrower), owner);
     return address(borrower);
   }
@@ -70,12 +71,8 @@ contract CreditLineFactory is BaseUpgradeablePausable {
     uint256 _termInDays,
     uint256 _lateFeeApr
   ) external onlyAdmin returns (address) {
-    address tranchedPoolImplAddress = config.getAddress(uint256(ConfigOptions.Addresses.TranchedPoolImplementation));
-    bytes memory bytecode = getMinimalProxyCreationCode(tranchedPoolImplAddress);
-    uint256 createdAt = block.timestamp;
-    bytes32 salt = keccak256(abi.encodePacked(_borrower, createdAt));
-
-    address pool = create2Deploy(bytecode, salt);
+    address tranchedPoolImplAddress = config.tranchedPoolAddress();
+    address pool = deployMinimal(tranchedPoolImplAddress);
     ITranchedPool(pool).initialize(
       address(config),
       _borrower,
@@ -100,14 +97,8 @@ contract CreditLineFactory is BaseUpgradeablePausable {
     uint256 _termInDays,
     uint256 _lateFeeApr
   ) external onlyCreditDesk returns (address) {
-    address tranchedPoolImplAddress = config.getAddress(
-      uint256(ConfigOptions.Addresses.MigratedTranchedPoolImplementation)
-    );
-    bytes memory bytecode = getMinimalProxyCreationCode(tranchedPoolImplAddress);
-    uint256 createdAt = block.timestamp;
-    bytes32 salt = keccak256(abi.encodePacked(_borrower, createdAt));
-
-    address pool = create2Deploy(bytecode, salt);
+    address tranchedPoolImplAddress = config.migratedTranchedPoolAddress();
+    address pool = deployMinimal(tranchedPoolImplAddress);
     ITranchedPool(pool).initialize(
       address(config),
       _borrower,
@@ -128,22 +119,18 @@ contract CreditLineFactory is BaseUpgradeablePausable {
   }
 
   // Stolen from:
-  // https://forum.openzeppelin.com/t/how-to-compute-the-create2-address-for-a-minimal-proxy/3595/3
-  function getMinimalProxyCreationCode(address logic) internal pure returns (bytes memory) {
-    bytes10 creation = 0x3d602d80600a3d3981f3;
-    bytes10 prefix = 0x363d3d373d3d3d363d73;
-    bytes20 targetBytes = bytes20(logic);
-    bytes15 suffix = 0x5af43d82803e903d91602b57fd5bf3;
-    return abi.encodePacked(creation, prefix, targetBytes, suffix);
-  }
-
-  function create2Deploy(bytes memory bytecode, bytes32 salt) internal returns (address) {
-    address deployment;
+  // https://github.com/OpenZeppelin/openzeppelin-sdk/blob/master/packages/lib/contracts/upgradeability/ProxyFactory.sol
+  function deployMinimal(address _logic) internal returns (address proxy) {
+    bytes20 targetBytes = bytes20(_logic);
     // solhint-disable-next-line no-inline-assembly
     assembly {
-      deployment := create2(0, add(bytecode, 32), mload(bytecode), salt)
+      let clone := mload(0x40)
+      mstore(clone, 0x3d602d80600a3d3981f3363d3d373d3d3d363d73000000000000000000000000)
+      mstore(add(clone, 0x14), targetBytes)
+      mstore(add(clone, 0x28), 0x5af43d82803e903d91602b57fd5bf30000000000000000000000000000000000)
+      proxy := create(0, clone, 0x37)
     }
-    return deployment;
+    return proxy;
   }
 
   modifier onlyCreditDesk {
