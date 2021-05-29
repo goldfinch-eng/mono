@@ -15,8 +15,9 @@ import "./GoldfinchConfig.sol";
 import "./BaseUpgradeablePausable.sol";
 import "./ConfigHelper.sol";
 import "../../external/FixedPoint.sol";
+import "../../library/SafeERC20Transfer.sol";
 
-contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
+contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transfer {
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
   using FixedPoint for FixedPoint.Unsigned;
@@ -94,15 +95,22 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     require(success, "Failed to approve USDC");
   }
 
-  function deposit(uint256 tranche, uint256 amount) public override nonReentrant whenNotPaused {
+  function deposit(uint256 tranche, uint256 amount)
+    public
+    override
+    nonReentrant
+    whenNotPaused
+    returns (uint256 tokenId)
+  {
     TrancheInfo storage trancheInfo = getTrancheInfo(tranche);
     require(trancheInfo.lockedUntil == 0, "Tranche has been locked");
 
     trancheInfo.principalDeposited = trancheInfo.principalDeposited.add(amount);
     IPoolTokens.MintParams memory params = IPoolTokens.MintParams({tranche: tranche, principalAmount: amount});
-    uint256 tokenId = config.getPoolTokens().mint(params, msg.sender);
-    safeUSDCTransfer(msg.sender, address(this), amount);
+    tokenId = config.getPoolTokens().mint(params, msg.sender);
+    safeTransfer(config.getUSDC(), msg.sender, address(this), amount);
     emit DepositMade(msg.sender, tranche, tokenId, amount);
+    return tokenId;
   }
 
   function depositWithPermit(
@@ -112,9 +120,9 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     uint8 v,
     bytes32 r,
     bytes32 s
-  ) public override {
+  ) public override returns (uint256 tokenId) {
     IERC20Permit(config.usdcAddress()).permit(msg.sender, address(this), amount, deadline, v, r, s);
-    deposit(tranche, amount);
+    return deposit(tranche, amount);
   }
 
   function withdraw(uint256 tokenId, uint256 amount)
@@ -170,7 +178,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     uint256 principalToRedeem = Math.min(principalRedeemable, amount.sub(interestToRedeem));
 
     config.getPoolTokens().redeem(tokenId, principalToRedeem, interestToRedeem);
-    safeUSDCTransfer(address(this), msg.sender, principalToRedeem.add(interestToRedeem));
+    safeTransfer(config.getUSDC(), address(this), msg.sender, principalToRedeem.add(interestToRedeem));
 
     emit WithdrawalMade(msg.sender, tokenInfo.tranche, tokenId, interestToRedeem, principalToRedeem);
 
@@ -225,7 +233,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     juniorTranche.principalSharePrice = calculateExpectedSharePrice(amountRemaining, juniorTranche);
     seniorTranche.principalSharePrice = calculateExpectedSharePrice(amountRemaining, seniorTranche);
 
-    safeUSDCTransfer(address(this), creditLine.borrower(), amount);
+    safeTransfer(config.getUSDC(), address(this), creditLine.borrower(), amount);
   }
 
   // Mark the investment period as over
@@ -264,7 +272,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     // Transfer any funds to new CL
     uint256 clBalance = config.getUSDC().balanceOf(originalClAddr);
     if (clBalance > 0) {
-      safeUSDCTransfer(originalClAddr, address(creditLine), clBalance);
+      safeTransfer(config.getUSDC(), originalClAddr, address(creditLine), clBalance);
     }
 
     // Close out old CL
@@ -278,7 +286,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     // Transfer any funds to new CL
     uint256 clBalance = config.getUSDC().balanceOf(originalClAddr);
     if (clBalance > 0) {
-      safeUSDCTransfer(originalClAddr, newCl, clBalance);
+      safeTransfer(config.getUSDC(), originalClAddr, newCl, clBalance);
     }
 
     // Close out old CL
@@ -301,7 +309,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     // Sweep any funds to community reserve
     uint256 poolBalance = config.getUSDC().balanceOf(address(this));
     if (poolBalance > 0) {
-      safeUSDCTransfer(address(this), config.reserveAddress(), poolBalance);
+      safeTransfer(config.getUSDC(), config.reserveAddress(), poolBalance);
     }
     emit EmergencyShutdown(address(this));
   }
@@ -368,7 +376,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     uint256 interest,
     uint256 principal
   ) internal {
-    safeUSDCTransfer(from, address(this), principal.add(interest), "Failed to collect payment");
+    safeTransfer(config.getUSDC(), from, address(this), principal.add(interest), "Failed to collect payment");
 
     (uint256 interestAccrued, uint256 principalAccrued) = getTotalInterestAndPrincipal();
     uint256 reserveFeePercent = ONE_HUNDRED.div(config.getReserveDenominator()); // Convert the denonminator to percent
@@ -434,7 +442,13 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
       juniorTranche
     );
 
-    safeUSDCTransfer(address(this), config.reserveAddress(), totalReserveAmount, "Failed to send to reserve");
+    safeTransfer(
+      config.getUSDC(),
+      address(this),
+      config.reserveAddress(),
+      totalReserveAmount,
+      "Failed to send to reserve"
+    );
   }
 
   function getTotalInterestAndPrincipal() internal view returns (uint256 interestAccrued, uint256 principalAccrued) {
@@ -477,27 +491,6 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
       _termInDays,
       _lateFeeApr
     );
-  }
-
-  function safeUSDCTransfer(
-    address from,
-    address to,
-    uint256 amount,
-    string memory message
-  ) internal {
-    require(to != address(0), "Can't send to zero address");
-    IERC20withDec usdc = config.getUSDC();
-    bool success = usdc.transferFrom(from, to, amount);
-    require(success, message);
-  }
-
-  function safeUSDCTransfer(
-    address from,
-    address to,
-    uint256 amount
-  ) internal {
-    string memory message = "Failed to transfer USDC";
-    safeUSDCTransfer(from, to, amount, message);
   }
 
   function getTrancheInfo(uint256 tranche) internal view returns (TrancheInfo storage) {
@@ -634,7 +627,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
 
   function collectPayment(uint256 amount) internal {
     emit PaymentCollected(msg.sender, address(this), amount);
-    safeUSDCTransfer(msg.sender, address(creditLine), amount, "Failed to collect payment");
+    safeTransfer(config.getUSDC(), msg.sender, address(creditLine), amount, "Failed to collect payment");
   }
 
   function _assess() internal {

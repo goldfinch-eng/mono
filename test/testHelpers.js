@@ -4,6 +4,7 @@ const {artifacts} = require("hardhat")
 chai.use(require("chai-as-promised"))
 const expect = chai.expect
 const mochaEach = require("mocha-each")
+const {time} = require("@openzeppelin/test-helpers")
 const BN = require("bn.js")
 const {isTestEnv, USDCDecimals, interestAprAsBN, ZERO_ADDRESS} = require("../blockchain_scripts/deployHelpers")
 const decimals = new BN(String(1e18))
@@ -130,10 +131,12 @@ function expectAction(action, debug) {
   }
 }
 
-// This decodes longs for a single event type, and returns a decoded object in
+// This decodes logs for a single event type, and returns a decoded object in
 // the same form truffle-contract uses on its receipts
 // Mostly stolen from: https://github.com/OpenZeppelin/openzeppelin-test-helpers/blob/6e54db1e1f64a80c7632799776672297bbe543b3/src/expectEvent.js#L49
-function decodeLogs(logs, abi, eventName) {
+function decodeLogs(logs, emitter, eventName) {
+  let abi = emitter.abi
+  let address = emitter.address
   let eventABI = abi.filter((x) => x.type === "event" && x.name === eventName)
   if (eventABI.length === 0) {
     throw new Error(`No ABI entry for event '${eventName}'`)
@@ -149,7 +152,7 @@ function decodeLogs(logs, abi, eventName) {
 
   // Only decode events of type 'EventName'
   return logs
-    .filter((log) => log.topics.length > 0 && log.topics[0] === eventTopic)
+    .filter((log) => log.topics.length > 0 && log.topics[0] === eventTopic && (!address || log.address === address))
     .map((log) => web3.eth.abi.decodeLog(eventABI.inputs, log.data, log.topics.slice(1)))
     .map((decoded) => ({event: eventName, args: decoded}))
 }
@@ -173,6 +176,7 @@ async function deployAllContracts(deployments, options = {}) {
     await forwarder.registerDomainSeparator("Defender", "1")
   }
   let tranchedPool = await getDeployedAsTruffleContract(deployments, "TranchedPool")
+  const transferRestrictedVault = await getDeployedAsTruffleContract(deployments, "TransferRestrictedVault")
   return {
     pool,
     seniorFund,
@@ -185,6 +189,7 @@ async function deployAllContracts(deployments, options = {}) {
     forwarder,
     poolTokens,
     tranchedPool,
+    transferRestrictedVault,
   }
 }
 
@@ -205,7 +210,7 @@ async function erc20Transfer(erc20, toAccounts, amount, fromAccount) {
 
 async function advanceTime(creditDeskOrCreditLine, {days, seconds, toSecond}) {
   let secondsPassed, newTimestamp
-  let currentTimestamp = await creditDeskOrCreditLine.currentTimestamp()
+  let currentTimestamp = await time.latest()
 
   if (days) {
     secondsPassed = SECONDS_PER_DAY.mul(new BN(days))

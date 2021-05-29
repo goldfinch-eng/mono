@@ -31,6 +31,7 @@ async function baseDeploy(hre) {
   await getOrDeployUSDC()
   const fidu = await deployFidu(config)
   await deployPoolTokens(hre, {config})
+  await deployTransferRestrictedVault(hre, {config})
   const pool = await deployPool(hre, {config})
   logger("Deploying TranchedPool")
   await deployTranchedPool(hre, {config})
@@ -224,6 +225,27 @@ async function deployMigratedTranchedPool(hre, {config}) {
   return migratedTranchedPoolImpl
 }
 
+async function deployTransferRestrictedVault(hre, {config}) {
+  const {deployments, getNamedAccounts, getChainId} = hre
+  const {deploy, log} = deployments
+  const logger = log
+  const {protocol_owner, proxy_owner} = await getNamedAccounts()
+  const chainID = await getChainId()
+
+  let contractName = "TransferRestrictedVault"
+
+  logger("About to deploy TransferRestrictedVault...")
+  const deployResult = await deploy(contractName, {
+    from: proxy_owner,
+    proxy: {
+      methodName: "__initialize__",
+    },
+    args: [SAFE_CONFIG[chainID] || protocol_owner, config.address],
+  })
+  const contract = await ethers.getContractAt(contractName, deployResult.address)
+  return contract
+}
+
 async function deployPoolTokens(hre, {config}) {
   const {deployments, getNamedAccounts, getChainId} = hre
   const {deploy, log} = deployments
@@ -374,6 +396,7 @@ async function deployCreditLineFactoryV2(hre, {config}) {
 module.exports = {
   baseDeploy,
   deployPoolTokens,
+  deployTransferRestrictedVault,
   deployTranchedPool,
   deploySeniorFund,
   deployMigratedTranchedPool,

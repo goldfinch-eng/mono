@@ -171,7 +171,7 @@ describe("SeniorFund", () => {
       it("should allow the owner to set it", async () => {
         await goldfinchConfig.setAddress(CONFIG_KEYS.GoldfinchConfig, person2)
         return expectAction(() => seniorFund.updateGoldfinchConfig({from: owner})).toChange([
-          [() => seniorFund.config(), {to: person2}],
+          [() => seniorFund.config(), {to: person2, bignumber: false}],
         ])
       })
       it("should disallow non-owner to set", async () => {
@@ -736,7 +736,7 @@ describe("SeniorFund", () => {
       juniorTokenId = juniorReceipt.logs[0].args.tokenId
       await tranchedPool.lockJuniorCapital({from: borrower})
       let receipt = await seniorFund.invest(tranchedPool.address)
-      let depositEvent = decodeLogs(receipt.receipt.rawLogs, tranchedPool.abi, "DepositMade")[0]
+      let depositEvent = decodeLogs(receipt.receipt.rawLogs, tranchedPool, "DepositMade")[0]
       tokenId = depositEvent.args.tokenId
       await tranchedPool.lockPool({from: borrower})
       await tranchedPool.drawdown(usdcVal(100), {from: borrower})
@@ -864,7 +864,7 @@ describe("SeniorFund", () => {
 
         await tranchedPool.assess()
         let receipt = await seniorFund.writedown(tokenId)
-        let event = decodeLogs(receipt.receipt.rawLogs, seniorFund.abi, "PrincipalWrittenDown")[0]
+        let event = decodeLogs(receipt.receipt.rawLogs, seniorFund, "PrincipalWrittenDown")[0]
         expect(event.args.tranchedPool).to.equal(tranchedPool.address)
         expect(event.args.amount).to.bignumber.closeTo(expectedWritedown, fiduTolerance)
       })
@@ -889,7 +889,7 @@ describe("SeniorFund", () => {
       await tranchedPool.deposit(TRANCHES.Junior, juniorInvestmentAmount)
       await tranchedPool.lockJuniorCapital({from: borrower})
       let receipt = await seniorFund.invest(tranchedPool.address)
-      let depositEvent = decodeLogs(receipt.receipt.rawLogs, tranchedPool.abi, "DepositMade")[0]
+      let depositEvent = decodeLogs(receipt.receipt.rawLogs, tranchedPool, "DepositMade")[0]
       tokenId = depositEvent.args.tokenId
       await tranchedPool.lockPool({from: borrower})
       await tranchedPool.drawdown(usdcVal(100), {from: borrower})

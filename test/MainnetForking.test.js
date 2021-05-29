@@ -757,8 +757,8 @@ describe("mainnet upgrade tests", async function () {
       ).to.be.rejectedWith(/Can't migrate empty credit line/)
 
       // Setup a bunch more vars we'll need for the expectations
-      const event = decodeLogs(tx.receipt.rawLogs, creditLineFactory.abi, "PoolCreated")[0]
-      const tokenEvent = decodeLogs(tx.receipt.rawLogs, poolTokens.abi, "TokenMinted")[0]
+      const event = decodeLogs(tx.receipt.rawLogs, creditLineFactory, "PoolCreated")[0]
+      const tokenEvent = decodeLogs(tx.receipt.rawLogs, poolTokens, "TokenMinted")[0]
       const tokenId = tokenEvent.args.tokenId
       const tranchedPool = await artifacts.require("TranchedPool").at(event.args.pool)
       const newClAddress = await tranchedPool.creditLine()

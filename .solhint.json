@@ -93,6 +93,16 @@
           "burnFrom": [],
           "updateGoldfinchConfig": []
         },
+        "**/TransferRestrictedVault.sol:TransferRestrictedVault": {
+          "depositJunior": [],
+          "depositJuniorWithPermit": [],
+          "depositSenior": [],
+          "depositSeniorWithPermit": [],
+          "withdrawJunior": [],
+          "withdrawSenior": [],
+          "withdrawSeniorInFidu": [],
+          "transferPosition": []
+        },
         "**/FixedLeverageRatioStrategy.sol:FixedLeverageRatioStrategy": {
           "invest": []
         },

@@ -154,7 +154,7 @@ describe("TranchedPool", () => {
         tranchedPool.migrateCreditLine(borrower, limit, interestApr, paymentPeriodInDays, termInDays, lateFeeApr)
       ).toChange([
         [tranchedPool.limit, {to: limit}],
-        [tranchedPool.borrower, {to: borrower}],
+        [tranchedPool.borrower, {to: borrower, bignumber: false}],
         [tranchedPool.interestApr, {to: interestApr}],
         [tranchedPool.paymentPeriodInDays, {to: paymentPeriodInDays}],
         [tranchedPool.termInDays, {to: termInDays}],
@@ -235,7 +235,7 @@ describe("TranchedPool", () => {
     })
     it("should set the new creditline", async () => {
       await expectAction(() => tranchedPool.migrateAndSetNewCreditLine(otherCreditLine)).toChange([
-        [tranchedPool.creditLine, {to: otherCreditLine}],
+        [tranchedPool.creditLine, {to: otherCreditLine, bignumber: false}],
       ])
     })
     it("can only be called by governance", async () => {
@@ -403,7 +403,7 @@ describe("TranchedPool", () => {
 
   describe("availableToWithdraw", async () => {
     beforeEach(async () => {
-      tranchedPool = await createPoolWithCreditLine()
+      ;({tranchedPool, creditLine} = await createPoolWithCreditLine())
     })
 
     it("returns redeemable interest and principal", async () => {

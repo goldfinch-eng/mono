@@ -106,7 +106,7 @@ describe("PoolTokens", () => {
     it("should mint a token with correct info", async () => {
       const amount = usdcVal(5)
       const result = await pool.deposit(new BN(1), amount, {from: person2})
-      const event = decodeLogs(result.receipt.rawLogs, poolTokens.abi, "TokenMinted")[0]
+      const event = decodeLogs(result.receipt.rawLogs, poolTokens, "TokenMinted")[0]
       const tokenInfo = await poolTokens.getTokenInfo(event.args.tokenId)
       expect(tokenInfo.pool).to.equal(pool.address)
       expect(tokenInfo.principalAmount).to.bignumber.equal(amount)
@@ -132,7 +132,7 @@ describe("PoolTokens", () => {
     it("should emit an event", async () => {
       const amount = usdcVal(2)
       const result = await pool.deposit(new BN(1), amount, {from: person2})
-      const tokenMinted = decodeLogs(result.receipt.rawLogs, poolTokens.abi, "TokenMinted")[0]
+      const tokenMinted = decodeLogs(result.receipt.rawLogs, poolTokens, "TokenMinted")[0]
       expect(tokenMinted.event).to.eq("TokenMinted")
       expect(tokenMinted.args.owner).to.equal(person2)
       expect(tokenMinted.args.pool).to.equal(pool.address)
@@ -162,7 +162,7 @@ describe("PoolTokens", () => {
 
       mintAmount = usdcVal(5)
       result = await pool.deposit(new BN(1), mintAmount, {from: person2})
-      event = decodeLogs(result.receipt.rawLogs, poolTokens.abi, "TokenMinted")[0]
+      event = decodeLogs(result.receipt.rawLogs, poolTokens, "TokenMinted")[0]
       tokenId = event.args.tokenId
     })
 
@@ -236,7 +236,7 @@ describe("PoolTokens", () => {
 
       mintAmount = usdcVal(5)
       result = await pool.deposit(new BN(1), mintAmount, {from: person2})
-      event = decodeLogs(result.receipt.rawLogs, poolTokens.abi, "TokenMinted")[0]
+      event = decodeLogs(result.receipt.rawLogs, poolTokens, "TokenMinted")[0]
       tokenId = event.args.tokenId
     })
 
@@ -254,7 +254,7 @@ describe("PoolTokens", () => {
       await expectAction(() => withPoolSender(() => poolTokens.burn(tokenId))).toChange([
         [async () => (await poolTokens.getTokenInfo(tokenId)).principalAmount, {to: new BN(0)}],
         [async () => (await poolTokens.getTokenInfo(tokenId)).principalRedeemed, {to: new BN(0)}],
-        [async () => (await poolTokens.getTokenInfo(tokenId)).pool, {to: ZERO_ADDRESS}],
+        [async () => (await poolTokens.getTokenInfo(tokenId)).pool, {to: ZERO_ADDRESS, bignumber: false}],
       ])
       return expect(poolTokens.ownerOf(tokenId)).to.be.rejectedWith(/owner query for nonexistent token/)
     })

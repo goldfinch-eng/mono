@@ -123,10 +123,10 @@ describe("GoldfinchConfig", () => {
       const secondAddress = "0x0000000000000000000000000000000000000002"
 
       await expectAction(() => goldfinchConfig.setTreasuryReserve(firstAddress, {from: owner})).toChange([
-        [() => goldfinchConfig.getAddress(CONFIG_KEYS.TreasuryReserve), {to: firstAddress}],
+        [() => goldfinchConfig.getAddress(CONFIG_KEYS.TreasuryReserve), {to: firstAddress, bignumber: false}],
       ])
       await expectAction(() => goldfinchConfig.setTreasuryReserve(secondAddress, {from: owner})).toChange([
-        [() => goldfinchConfig.getAddress(CONFIG_KEYS.TreasuryReserve), {to: secondAddress}],
+        [() => goldfinchConfig.getAddress(CONFIG_KEYS.TreasuryReserve), {to: secondAddress, bignumber: false}],
       ])
     })
   })

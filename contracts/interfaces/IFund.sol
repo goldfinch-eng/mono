@@ -10,7 +10,7 @@ abstract contract IFund {
   uint256 public totalLoansOutstanding;
   uint256 public totalWritedowns;
 
-  function deposit(uint256 amount) external virtual;
+  function deposit(uint256 amount) external virtual returns (uint256 depositShares);
 
   function depositWithPermit(
     uint256 amount,
@@ -18,11 +18,11 @@ abstract contract IFund {
     uint8 v,
     bytes32 r,
     bytes32 s
-  ) external virtual;
+  ) external virtual returns (uint256 depositShares);
 
-  function withdraw(uint256 usdcAmount) external virtual;
+  function withdraw(uint256 usdcAmount) external virtual returns (uint256 amount);
 
-  function withdrawInFidu(uint256 fiduAmount) external virtual;
+  function withdrawInFidu(uint256 fiduAmount) external virtual returns (uint256 amount);
 
   function sweepToCompound() public virtual;
 
@@ -37,4 +37,6 @@ abstract contract IFund {
   function calculateWritedown(uint256 tokenId) public view virtual returns (uint256 writedownAmount);
 
   function assets() public view virtual returns (uint256);
+
+  function getNumShares(uint256 amount) public view virtual returns (uint256);
 }

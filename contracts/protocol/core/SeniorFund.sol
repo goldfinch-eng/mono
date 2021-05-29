@@ -58,10 +58,17 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
    *  equivalent value of FIDU tokens
    * @param amount The amount of USDC to deposit
    */
-  function deposit(uint256 amount) public override whenNotPaused withinTransactionLimit(amount) nonReentrant {
+  function deposit(uint256 amount)
+    public
+    override
+    whenNotPaused
+    withinTransactionLimit(amount)
+    nonReentrant
+    returns (uint256 depositShares)
+  {
     require(amount > 0, "Must deposit more than zero");
     // Check if the amount of new shares to be added is within limits
-    uint256 depositShares = getNumShares(amount);
+    depositShares = getNumShares(amount);
     uint256 potentialNewTotalShares = totalShares().add(depositShares);
     require(sharesWithinLimit(potentialNewTotalShares), "Deposit would put the fund over the total limit.");
     emit DepositMade(msg.sender, amount, depositShares);
@@ -69,6 +76,7 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
     require(success, "Failed to transfer for deposit");
 
     config.getFidu().mintTo(msg.sender, depositShares);
+    return depositShares;
   }
 
   function depositWithPermit(
@@ -77,16 +85,16 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
     uint8 v,
     bytes32 r,
     bytes32 s
-  ) public override {
+  ) public override returns (uint256 depositShares) {
     IERC20Permit(config.usdcAddress()).permit(msg.sender, address(this), amount, deadline, v, r, s);
-    deposit(amount);
+    return deposit(amount);
   }
 
   /**
    * @notice Withdraws USDC from the SeniorFund to msg.sender, and burns the equivalent value of FIDU tokens
    * @param usdcAmount The amount of USDC to withdraw
    */
-  function withdraw(uint256 usdcAmount) external override whenNotPaused nonReentrant {
+  function withdraw(uint256 usdcAmount) external override whenNotPaused nonReentrant returns (uint256 amount) {
     require(usdcAmount > 0, "Must withdraw more than zero");
     // This MUST happen before calculating withdrawShares, otherwise the share price
     // changes between calculation and burning of Fidu, which creates a asset/liability mismatch
@@ -94,14 +102,14 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
       _sweepFromCompound();
     }
     uint256 withdrawShares = getNumShares(usdcAmount);
-    _withdraw(usdcAmount, withdrawShares);
+    return _withdraw(usdcAmount, withdrawShares);
   }
 
   /**
    * @notice Withdraws USDC (denominated in FIDU terms) from the SeniorFund to msg.sender
    * @param fiduAmount The amount of USDC to withdraw in terms of FIDU shares
    */
-  function withdrawInFidu(uint256 fiduAmount) external override whenNotPaused nonReentrant {
+  function withdrawInFidu(uint256 fiduAmount) external override whenNotPaused nonReentrant returns (uint256 amount) {
     require(fiduAmount > 0, "Must withdraw more than zero");
     // This MUST happen before calculating withdrawShares, otherwise the share price
     // changes between calculation and burning of Fidu, which creates a asset/liability mismatch
@@ -110,7 +118,7 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
     }
     uint256 usdcAmount = getUSDCAmountFromShares(fiduAmount);
     uint256 withdrawShares = fiduAmount;
-    _withdraw(usdcAmount, withdrawShares);
+    return _withdraw(usdcAmount, withdrawShares);
   }
 
   /**
@@ -289,7 +297,7 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
     return fiduToUSDC(fiduAmount.mul(sharePrice).div(fiduMantissa()));
   }
 
-  function getNumShares(uint256 amount) internal view returns (uint256) {
+  function getNumShares(uint256 amount) public view override returns (uint256) {
     return usdcToFidu(amount).mul(fiduMantissa()).div(sharePrice);
   }
 
@@ -313,7 +321,11 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
     return usdc.transferFrom(from, to, amount);
   }
 
-  function _withdraw(uint256 usdcAmount, uint256 withdrawShares) internal withinTransactionLimit(usdcAmount) {
+  function _withdraw(uint256 usdcAmount, uint256 withdrawShares)
+    internal
+    withinTransactionLimit(usdcAmount)
+    returns (uint256 userAmount)
+  {
     IFidu fidu = config.getFidu();
     // Determine current shares the address has and the shares requested to withdraw
     uint256 currentShares = fidu.balanceOf(msg.sender);
@@ -321,7 +333,7 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
     require(withdrawShares <= currentShares, "Amount requested is greater than what this address owns");
 
     uint256 reserveAmount = usdcAmount.div(config.getWithdrawFeeDenominator());
-    uint256 userAmount = usdcAmount.sub(reserveAmount);
+    userAmount = usdcAmount.sub(reserveAmount);
 
     emit WithdrawalMade(msg.sender, userAmount, reserveAmount);
     // Send the amounts
@@ -331,6 +343,7 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
 
     // Burn the shares
     fidu.burnFrom(msg.sender, withdrawShares);
+    return userAmount;
   }
 
   function sweepToCompound(ICUSDCContract cUSDC, uint256 usdcAmount) internal {

@@ -8,6 +8,7 @@ const CONFIG_KEYS = {
   LatenessGracePeriodInDays: 5,
   LatenessMaxDays: 6,
   DrawdownPeriodInSeconds: 7,
+  TransferPeriodRestrictionInDays: 8,
   // Addresses
   Pool: 0,
   CreditLineImplementation: 1,

@@ -6,5 +6,6 @@
   "withdrawFeeDenominator": 200,
   "latenessGracePeriodInDays": 30,
   "latenessMaxDays": 120,
-  "drawdownPeriodInSeconds": 86400
+  "drawdownPeriodInSeconds": 86400,
+  "transferRestrictionPeriodInDays": 365
 }

@@ -29,6 +29,7 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
 
   // tokenId => tokenInfo
   mapping(uint256 => TokenInfo) public tokens;
+  // poolAddress => poolInfo
   mapping(address => PoolInfo) public pools;
 
   event TokenMinted(

@@ -146,7 +146,7 @@ describe("CreditLine", () => {
       it("should allow the owner to set it", async () => {
         await goldfinchConfig.setAddress(CONFIG_KEYS.GoldfinchConfig, person2)
         return expectAction(() => creditLine.updateGoldfinchConfig({from: owner})).toChange([
-          [() => creditLine.config(), {to: person2}],
+          [() => creditLine.config(), {to: person2, bignumber: false}],
         ])
       })
       it("should disallow non-owner to set", async () => {
