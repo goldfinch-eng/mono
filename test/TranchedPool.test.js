@@ -12,13 +12,15 @@ const {
   createPoolWithCreditLine: _createPoolWithCreditLine,
   SECONDS_PER_DAY,
   UNIT_SHARE_PRICE,
+  ZERO,
 } = require("./testHelpers.js")
 const {interestAprAsBN, TRANCHES, MAX_UINT, OWNER_ROLE, PAUSER_ROLE} = require("../blockchain_scripts/deployHelpers")
 const {expectEvent} = require("@openzeppelin/test-helpers")
 const hre = require("hardhat")
 const BN = require("bn.js")
-const {deployments} = hre
+const {deployments, artifacts} = hre
 const {ecsign} = require("ethereumjs-util")
+const CreditLine = artifacts.require("CreditLine")
 const {getApprovalDigest, getWallet} = require("./permitHelpers")
 
 describe("TranchedPool", () => {
@@ -40,7 +42,7 @@ describe("TranchedPool", () => {
   let juniorFeePercent = new BN(20)
 
   const createPoolWithCreditLine = async () => {
-    ;({creditLine, tranchedPool} = await _createPoolWithCreditLine({
+    return await _createPoolWithCreditLine({
       people: {owner, borrower},
       goldfinchFactory,
       limit,
@@ -50,8 +52,7 @@ describe("TranchedPool", () => {
       lateFeeApr,
       juniorFeePercent,
       usdc,
-    }))
-    return tranchedPool
+    })
   }
 
   const getTrancheAmounts = async (trancheInfo) => {
@@ -78,7 +79,7 @@ describe("TranchedPool", () => {
 
   describe("initialization", async () => {
     it("sets the right defaults", async () => {
-      tranchedPool = await createPoolWithCreditLine()
+      ;({tranchedPool, creditLine} = await createPoolWithCreditLine())
 
       const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
       const seniorTranche = await tranchedPool.getTranche(TRANCHES.Senior)
@@ -96,9 +97,162 @@ describe("TranchedPool", () => {
     })
   })
 
+  describe("migrateCreditLine", async () => {
+    beforeEach(async () => {
+      ;({tranchedPool, creditLine} = await createPoolWithCreditLine())
+    })
+    it("should create a new creditline", async () => {
+      const creditLine = await CreditLine.at(await tranchedPool.creditLine())
+      await expectAction(async () =>
+        tranchedPool.migrateCreditLine(
+          await creditLine.borrower(),
+          await creditLine.limit(),
+          await creditLine.interestApr(),
+          await creditLine.paymentPeriodInDays(),
+          await creditLine.termInDays(),
+          await creditLine.lateFeeApr()
+        )
+      ).toChange([[tranchedPool.creditLine, {beDifferent: true}]])
+    })
+
+    it("should allow governance, but not the borrower to migrate", async () => {
+      const creditLine = await CreditLine.at(await tranchedPool.creditLine())
+      await expect(
+        tranchedPool.migrateCreditLine(
+          await creditLine.borrower(),
+          await creditLine.limit(),
+          await creditLine.interestApr(),
+          await creditLine.paymentPeriodInDays(),
+          await creditLine.termInDays(),
+          await creditLine.lateFeeApr(),
+          {from: owner}
+        )
+      ).to.be.fulfilled
+
+      await expect(
+        tranchedPool.migrateCreditLine(
+          await creditLine.borrower(),
+          await creditLine.limit(),
+          await creditLine.interestApr(),
+          await creditLine.paymentPeriodInDays(),
+          await creditLine.termInDays(),
+          await creditLine.lateFeeApr(),
+          {from: borrower}
+        )
+      ).to.be.rejectedWith(/Must have admin role/)
+    })
+
+    it("should set new values you send it", async () => {
+      const limit = usdcVal(1234)
+      const borrower = otherPerson
+      const interestApr = interestAprAsBN("12.3456")
+      const paymentPeriodInDays = new BN(123)
+      const termInDays = new BN(321)
+      const lateFeeApr = interestAprAsBN("0.9783")
+
+      await expectAction(async () =>
+        tranchedPool.migrateCreditLine(borrower, limit, interestApr, paymentPeriodInDays, termInDays, lateFeeApr)
+      ).toChange([
+        [tranchedPool.limit, {to: limit}],
+        [tranchedPool.borrower, {to: borrower}],
+        [tranchedPool.interestApr, {to: interestApr}],
+        [tranchedPool.paymentPeriodInDays, {to: paymentPeriodInDays}],
+        [tranchedPool.termInDays, {to: termInDays}],
+        [tranchedPool.lateFeeApr, {to: lateFeeApr}],
+      ])
+    })
+
+    it("should copy over the accounting vars", async () => {
+      const originalCl = await CreditLine.at(await tranchedPool.creditLine())
+      const amount = usdcVal(15)
+      await usdc.transfer(originalCl.address, amount, {from: otherPerson})
+      const originalBalance = await originalCl.balance()
+
+      // Drawdown so that the credit line has a balance
+      await tranchedPool.deposit(TRANCHES.Junior, usdcVal(1000))
+      await tranchedPool.lockJuniorCapital({from: borrower})
+      await tranchedPool.drawdown(usdcVal(1000), {from: borrower})
+
+      tranchedPool.migrateCreditLine(borrower, limit, interestApr, paymentPeriodInDays, termInDays, lateFeeApr)
+      const newCl = await CreditLine.at(await tranchedPool.creditLine())
+
+      expect(originalBalance).to.bignumber.eq(await newCl.balance())
+      expect(await originalCl.termEndTime()).to.bignumber.eq(await newCl.termEndTime())
+      expect(await originalCl.nextDueTime()).to.bignumber.eq(await newCl.nextDueTime())
+    })
+
+    it("should send any funds to the new creditline, and close out the old", async () => {
+      const creditLine = await CreditLine.at(await tranchedPool.creditLine())
+      const amount = usdcVal(15)
+      await usdc.transfer(creditLine.address, amount, {from: otherPerson})
+
+      // Drawdown so that the credit line has a balance
+      await tranchedPool.deposit(TRANCHES.Junior, usdcVal(1000))
+      await tranchedPool.lockJuniorCapital({from: borrower})
+      await tranchedPool.drawdown(usdcVal(1000), {from: borrower})
+
+      await expectAction(async () =>
+        tranchedPool.migrateCreditLine(borrower, limit, interestApr, paymentPeriodInDays, termInDays, lateFeeApr)
+      ).toChange([
+        [creditLine.balance, {to: new BN(0)}],
+        [creditLine.limit, {to: new BN(0)}],
+        [() => getBalance(creditLine.address, usdc), {to: new BN(0)}],
+      ])
+      // New creditline should have the usdc
+      expect(await getBalance(await tranchedPool.creditLine(), usdc)).to.bignumber.eq(amount)
+    })
+  })
+
+  describe("emergency shutdown", async () => {
+    it("should pause the pool and sweep funds", async () => {
+      const amount = usdcVal(10)
+      ;({tranchedPool, creditLine} = await createPoolWithCreditLine())
+      await usdc.transfer(tranchedPool.address, amount, {from: owner})
+      await expectAction(tranchedPool.emergencyShutdown).toChange([
+        [tranchedPool.paused, {to: true, bignumber: false}],
+        [() => getBalance(tranchedPool.address, usdc), {to: ZERO}],
+        [() => getBalance(treasury, usdc), {by: amount}],
+      ])
+    })
+    it("should emit an event", async () => {
+      ;({tranchedPool} = await createPoolWithCreditLine())
+      const txn = await tranchedPool.emergencyShutdown()
+      expectEvent(txn, "EmergencyShutdown", {pool: tranchedPool.address})
+    })
+
+    it("can only be called by governance", async () => {
+      ;({tranchedPool} = await createPoolWithCreditLine())
+      await expect(tranchedPool.emergencyShutdown({from: otherPerson})).to.be.rejectedWith(/Must have admin role/)
+    })
+  })
+
+  describe("migrateAndSetNewCreditLine", async () => {
+    let otherCreditLine
+    beforeEach(async () => {
+      ;({tranchedPool, creditLine} = await createPoolWithCreditLine())
+      ;({creditLine} = await createPoolWithCreditLine())
+      otherCreditLine = creditLine.address
+    })
+    it("should set the new creditline", async () => {
+      await expectAction(() => tranchedPool.migrateAndSetNewCreditLine(otherCreditLine)).toChange([
+        [tranchedPool.creditLine, {to: otherCreditLine}],
+      ])
+    })
+    it("can only be called by governance", async () => {
+      await expect(tranchedPool.migrateAndSetNewCreditLine(otherCreditLine, {from: borrower})).to.be.rejectedWith(
+        /Must have admin role/
+      )
+    })
+    it("should close out the old creditline", async () => {
+      const creditLine = await CreditLine.at(await tranchedPool.creditLine())
+      await tranchedPool.migrateAndSetNewCreditLine(otherCreditLine)
+      expect(await creditLine.balance()).to.bignumber.eq(new BN(0))
+    })
+  })
+
   describe("deposit", async () => {
     beforeEach(async () => {
-      tranchedPool = await createPoolWithCreditLine()
+      ;({tranchedPool, creditLine} = await createPoolWithCreditLine())
     })
     describe("junior tranche", async () => {
       it("does not allow deposits when pool is locked", async () => {
@@ -199,7 +353,7 @@ describe("TranchedPool", () => {
 
   describe("depositWithPermit", async () => {
     beforeEach(async () => {
-      tranchedPool = await createPoolWithCreditLine()
+      ;({tranchedPool, creditLine} = await createPoolWithCreditLine())
     })
 
     it("deposits using permit", async () => {
@@ -287,7 +441,7 @@ describe("TranchedPool", () => {
 
   describe("withdraw", async () => {
     beforeEach(async () => {
-      tranchedPool = await createPoolWithCreditLine()
+      ;({tranchedPool, creditLine} = await createPoolWithCreditLine())
     })
 
     describe("validations", async () => {
@@ -302,8 +456,26 @@ describe("TranchedPool", () => {
           /Only the token owner is allowed/
         )
       })
-      it("does not allow you to withdraw if pool token is from a different pool")
-      it("does not allow you to withdraw if no amount is available", async () => {})
+      it("does not allow you to withdraw if pool token is from a different pool", async () => {
+        await tranchedPool.deposit(TRANCHES.Junior, usdcVal(10), {from: owner})
+        const {tranchedPool: otherTranchedPool} = await createPoolWithCreditLine()
+
+        let otherReceipt = await otherTranchedPool.deposit(TRANCHES.Junior, usdcVal(10), {from: owner})
+        const otherTokenId = otherReceipt.logs[0].args.tokenId
+
+        await expect(tranchedPool.withdraw(otherTokenId, usdcVal(10), {from: owner})).to.be.rejectedWith(
+          /Only the token's pool can redeem/
+        )
+      })
+      it("does not allow you to withdraw if no amount is available", async () => {
+        let receipt = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(10), {from: owner})
+        const tokenId = receipt.logs[0].args.tokenId
+
+        await expect(tranchedPool.withdrawMax(tokenId, {from: owner})).to.be.fulfilled
+        await expect(tranchedPool.withdraw(tokenId, usdcVal(10), {from: owner})).to.be.rejectedWith(
+          /Invalid redeem amount/
+        )
+      })
     })
 
     describe("before the pool is locked", async () => {
@@ -378,8 +550,8 @@ describe("TranchedPool", () => {
         //   interest_accrued = 1000 * 0.05 = 50
         //   protocol_fee = interest_accrued * 0.1 = 5
         //   principal + interest_accrued - protocol_fee = 1045
-        let receipt = await tranchedPool.withdraw(tokenId, usdcVal(1045))
-        expectEvent(receipt, "WithdrawalMade", {
+        let txn = await tranchedPool.withdraw(tokenId, usdcVal(1045))
+        expectEvent(txn, "WithdrawalMade", {
           owner: owner,
           tranche: new BN(TRANCHES.Junior),
           tokenId: tokenId,
@@ -419,7 +591,7 @@ describe("TranchedPool", () => {
 
   describe("withdrawMax", async () => {
     beforeEach(async () => {
-      tranchedPool = await createPoolWithCreditLine()
+      ;({tranchedPool, creditLine} = await createPoolWithCreditLine())
     })
 
     it("should withdraw the max", async () => {
@@ -531,7 +703,7 @@ describe("TranchedPool", () => {
   describe("access controls", () => {
     let LOCKER_ROLE = web3.utils.keccak256("LOCKER_ROLE")
     beforeEach(async () => {
-      tranchedPool = await createPoolWithCreditLine()
+      ;({tranchedPool, creditLine} = await createPoolWithCreditLine())
     })
 
     it("sets the owner to governance", async () => {
@@ -566,7 +738,7 @@ describe("TranchedPool", () => {
 
   describe("pausability", () => {
     beforeEach(async () => {
-      tranchedPool = await createPoolWithCreditLine()
+      ;({tranchedPool, creditLine} = await createPoolWithCreditLine())
     })
 
     describe("after pausing", async () => {
@@ -647,7 +819,7 @@ describe("TranchedPool", () => {
 
   describe("locking", async () => {
     beforeEach(async () => {
-      tranchedPool = await createPoolWithCreditLine()
+      ;({tranchedPool, creditLine} = await createPoolWithCreditLine())
     })
 
     describe("junior tranche", async () => {
@@ -753,7 +925,7 @@ describe("TranchedPool", () => {
   })
   describe("drawdown", async () => {
     beforeEach(async () => {
-      tranchedPool = await createPoolWithCreditLine()
+      ;({tranchedPool, creditLine} = await createPoolWithCreditLine())
     })
 
     describe("when deposits are over the limit", async () => {
@@ -798,6 +970,23 @@ describe("TranchedPool", () => {
           await expect(tranchedPool.drawdown(usdcVal(5))).to.be.rejectedWith(
             /Cannot drawdown when payments are past due/
           )
+        })
+      })
+
+      context("locking drawdowns", async () => {
+        it("governance can lock and unlock drawdowns", async () => {
+          await expect(tranchedPool.drawdown(usdcVal(1))).to.be.fulfilled
+          const pauseTxn = await tranchedPool.pauseDrawdowns()
+          expectEvent(pauseTxn, "DrawdownsPaused", {pool: tranchedPool.address})
+          await expect(tranchedPool.drawdown(usdcVal(1))).to.be.rejectedWith(/Drawdowns are currently paused/)
+          const unpauseTxn = await tranchedPool.unpauseDrawdowns()
+          expectEvent(unpauseTxn, "DrawdownsUnpaused", {pool: tranchedPool.address})
+          await expect(tranchedPool.drawdown(usdcVal(1))).to.be.fulfilled
+        })
+
+        it("only governance can toggle it", async () => {
+          await expect(tranchedPool.pauseDrawdowns({from: borrower})).to.be.rejectedWith(/Must have admin role/)
+          await expect(tranchedPool.unpauseDrawdowns({from: borrower})).to.be.rejectedWith(/Must have admin role/)
         })
       })
 
@@ -862,7 +1051,7 @@ describe("TranchedPool", () => {
       // 100$ creditline with 10% interest. Senior tranche gets 8% of the total interest, and junior tranche gets 2%
       interestApr = interestAprAsBN("10.00")
       termInDays = new BN(365)
-      tranchedPool = await createPoolWithCreditLine()
+      ;({tranchedPool, creditLine} = await createPoolWithCreditLine())
     })
 
     it("calculates share price using term start time", async () => {

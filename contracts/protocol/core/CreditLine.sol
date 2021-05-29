@@ -14,9 +14,10 @@ import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 
 /**
  * @title CreditLine
- * @notice A "dumb" state container that represents the agreement between an Underwriter and
- *  the borrower. Includes the terms of the loan, as well as the current accounting state, such as interest owed.
- *  This contract purposefully has essentially no business logic. Really just setters and getters.
+ * @notice A contract that represents the agreement between Backers and
+ *  a Borrower. Includes the terms of the loan, as well as the current accounting state, such as interest owed.
+ *  A CreditLine belongs to a TranchedPool, and is fully controlled by that TranchedPool. It does not
+ *  operate in any standalone capacity. It should generally be considered internal to the TranchedPool.
  * @author Goldfinch
  */
 
@@ -33,7 +34,6 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
   uint256 public override lateFeeApr;
 
   // Accounting variables
-  uint256 public principal;
   uint256 public override balance;
   uint256 public override interestOwed;
   uint256 public override principalOwed;
@@ -89,10 +89,6 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     balance = newBalance;
   }
 
-  function setPrincipal(uint256 _principal) public onlyAdmin {
-    principal = _principal;
-  }
-
   function setTotalInterestAccrued(uint256 _totalInterestAccrued) public onlyAdmin {
     totalInterestAccrued = _totalInterestAccrued;
   }
@@ -127,16 +123,6 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
 
   function termStartTime() external view returns (uint256) {
     return termEndTime.sub(SECONDS_PER_DAY.mul(termInDays));
-  }
-
-  // TODO: remove this
-  function authorizePool(address configAddress) external onlyAdmin {
-    GoldfinchConfig _config = GoldfinchConfig(configAddress);
-    address poolAddress = _config.getAddress(uint256(ConfigOptions.Addresses.Pool));
-    address usdcAddress = _config.getAddress(uint256(ConfigOptions.Addresses.USDC));
-    // Approve the pool for an infinite amount
-    bool success = IERC20withDec(usdcAddress).approve(poolAddress, uint256(-1));
-    require(success, "Failed to approve USDC");
   }
 
   function drawdown(uint256 amount) external onlyAdmin {
@@ -290,7 +276,6 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     uint256 newPrincipalOwed
   ) internal nonReentrant {
     setBalance(newBalance);
-    setPrincipal(newBalance);
     setInterestOwed(newInterestOwed);
     setPrincipalOwed(newPrincipalOwed);
 

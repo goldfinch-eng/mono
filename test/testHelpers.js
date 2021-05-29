@@ -17,6 +17,7 @@ const fiduTolerance = decimals.div(USDC_DECIMALS)
 const CreditLine = artifacts.require("CreditLine")
 const EMPTY_DATA = "0x"
 const BLOCKS_PER_DAY = 5760
+const ZERO = new BN(0)
 
 // Helper functions. These should be pretty generic.
 function bigVal(number) {
@@ -117,6 +118,8 @@ function expectAction(action, debug) {
             expect(newValues[i]).to.bignumber.closeTo(expectation.toCloseTo, onePercent)
           } else if (expectation.unchanged) {
             expect(newValues[i]).to.bignumber.eq(originalValues[i])
+          } else if (expectation.beDifferent) {
+            expect(String(originalValues[i])).to.not.eq(String(newValues[i]))
           }
         } catch (error) {
           console.log("Expectation", i, "failed")
@@ -288,34 +291,35 @@ async function toTruffle(contract, contractName) {
 }
 
 module.exports = {
-  chai: chai,
-  expect: expect,
-  decimals: decimals,
-  USDC_DECIMALS: USDC_DECIMALS,
-  BN: BN,
-  MAX_UINT: MAX_UINT,
-  tolerance: tolerance,
-  fiduTolerance: fiduTolerance,
-  ZERO_ADDRESS: ZERO_ADDRESS,
-  SECONDS_PER_DAY: SECONDS_PER_DAY,
-  SECONDS_PER_YEAR: SECONDS_PER_YEAR,
-  EMPTY_DATA: EMPTY_DATA,
-  BLOCKS_PER_DAY: BLOCKS_PER_DAY,
-  UNIT_SHARE_PRICE: UNIT_SHARE_PRICE,
-  bigVal: bigVal,
-  usdcVal: usdcVal,
-  mochaEach: mochaEach,
-  getBalance: getBalance,
-  getDeployedAsTruffleContract: getDeployedAsTruffleContract,
-  fiduToUSDC: fiduToUSDC,
-  usdcToFidu: usdcToFidu,
-  expectAction: expectAction,
-  deployAllContracts: deployAllContracts,
-  erc20Approve: erc20Approve,
-  erc20Transfer: erc20Transfer,
-  advanceTime: advanceTime,
-  createCreditLine: createCreditLine,
-  createPoolWithCreditLine: createPoolWithCreditLine,
-  decodeLogs: decodeLogs,
-  toTruffle: toTruffle,
+  chai,
+  expect,
+  decimals,
+  USDC_DECIMALS,
+  BN,
+  MAX_UINT,
+  tolerance,
+  fiduTolerance,
+  ZERO_ADDRESS,
+  SECONDS_PER_DAY,
+  SECONDS_PER_YEAR,
+  EMPTY_DATA,
+  BLOCKS_PER_DAY,
+  UNIT_SHARE_PRICE,
+  ZERO,
+  bigVal,
+  usdcVal,
+  mochaEach,
+  getBalance,
+  getDeployedAsTruffleContract,
+  fiduToUSDC,
+  usdcToFidu,
+  expectAction,
+  deployAllContracts,
+  erc20Approve,
+  erc20Transfer,
+  advanceTime,
+  createCreditLine,
+  createPoolWithCreditLine,
+  decodeLogs,
+  toTruffle,
 }

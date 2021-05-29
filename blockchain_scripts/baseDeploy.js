@@ -181,9 +181,7 @@ async function deployTranchedPool(hre, {config}) {
   const {deployments, getNamedAccounts} = hre
   const {deploy, log} = deployments
   const logger = log
-  const {protocol_owner, proxy_owner} = await getNamedAccounts()
-
-  const accountant = await deploy("Accountant", {from: protocol_owner, gas: 4000000, args: []})
+  const {proxy_owner} = await getNamedAccounts()
 
   logger("About to deploy TranchedPool...")
   let contractName = "TranchedPool"
@@ -194,7 +192,6 @@ async function deployTranchedPool(hre, {config}) {
 
   const tranchedPoolImpl = await deploy(contractName, {
     from: proxy_owner,
-    libraries: {["Accountant"]: accountant.address},
   })
   await updateConfig(config, "address", CONFIG_KEYS.TranchedPoolImplementation, tranchedPoolImpl.address, {logger})
   logger("Updated TranchedPool config address to:", tranchedPoolImpl.address)

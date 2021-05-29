@@ -28,6 +28,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
   uint256 public constant SECONDS_PER_DAY = 60 * 60 * 24;
   uint256 public constant ONE_HUNDRED = 100; // Need this because we cannot call .div on a literal 100
   uint256 public juniorFeePercent;
+  bool public drawdownsPaused;
 
   TrancheInfo internal seniorTranche;
   TrancheInfo internal juniorTranche;
@@ -49,6 +50,10 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     uint256 principalAmount,
     uint256 remainingAmount
   );
+  event CreditLineMigrated(address indexed oldCreditLine, address indexed newCreditLine);
+  event DrawdownsPaused(address indexed pool);
+  event DrawdownsUnpaused(address indexed pool);
+  event EmergencyShutdown(address indexed pool);
 
   function initialize(
     address _config,
@@ -75,18 +80,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
       principalDeposited: 0,
       lockedUntil: 0
     });
-    address _creditLine = config.getCreditLineFactory().createCreditLine();
-    creditLine = IV2CreditLine(_creditLine);
-    creditLine.initialize(
-      _config,
-      address(this), // Set self as the owner
-      _borrower,
-      _limit,
-      _interestApr,
-      _paymentPeriodInDays,
-      _termInDays,
-      _lateFeeApr
-    );
+    createAndSetCreditLine(_borrower, _limit, _interestApr, _paymentPeriodInDays, _termInDays, _lateFeeApr);
 
     createdAt = block.timestamp;
     juniorFeePercent = _juniorFeePercent;
@@ -218,6 +212,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
   }
 
   function drawdown(uint256 amount) external override onlyLocker whenNotPaused {
+    require(!drawdownsPaused, "Drawdowns are currently paused");
     if (!locked()) {
       // Assumes the senior fund has invested already (saves the borrower a separate transaction to lock the pool)
       _lockPool();
@@ -236,6 +231,114 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
   // Mark the investment period as over
   function lockJuniorCapital() external override onlyLocker whenNotPaused {
     _lockJuniorCapital();
+  }
+
+  function migrateCreditLine(
+    address _borrower,
+    uint256 _limit,
+    uint256 _interestApr,
+    uint256 _paymentPeriodInDays,
+    uint256 _termInDays,
+    uint256 _lateFeeApr
+  ) public onlyAdmin {
+    require(_borrower != address(0), "Borrower must not be empty");
+    require(_paymentPeriodInDays != 0, "Payment period must not be empty");
+    require(_termInDays != 0, "Term must not be empty");
+    address originalClAddr = address(creditLine);
+    IV2CreditLine originalCl = IV2CreditLine(originalClAddr);
+
+    createAndSetCreditLine(_borrower, _limit, _interestApr, _paymentPeriodInDays, _termInDays, _lateFeeApr);
+    emit CreditLineMigrated(originalClAddr, address(creditLine));
+
+    // Copy over all accounting variables
+    creditLine.setBalance(originalCl.balance());
+    creditLine.setInterestOwed(originalCl.interestOwed());
+    creditLine.setPrincipalOwed(originalCl.principalOwed());
+    creditLine.setTermEndTime(originalCl.termEndTime());
+    creditLine.setNextDueTime(originalCl.nextDueTime());
+    creditLine.setInterestAccruedAsOf(originalCl.interestAccruedAsOf());
+    creditLine.setWritedownAmount(originalCl.writedownAmount());
+    creditLine.setLastFullPaymentTime(originalCl.lastFullPaymentTime());
+    creditLine.setTotalInterestAccrued(originalCl.totalInterestAccrued());
+
+    // Transfer any funds to new CL
+    uint256 clBalance = config.getUSDC().balanceOf(originalClAddr);
+    if (clBalance > 0) {
+      safeUSDCTransfer(originalClAddr, address(creditLine), clBalance);
+    }
+
+    // Close out old CL
+    originalCl.setBalance(0);
+    originalCl.setLimit(0);
+  }
+
+  function migrateAndSetNewCreditLine(address newCl) public onlyAdmin {
+    require(newCl != address(0), "Creditline cannot be empty");
+    address originalClAddr = address(creditLine);
+    // Transfer any funds to new CL
+    uint256 clBalance = config.getUSDC().balanceOf(originalClAddr);
+    if (clBalance > 0) {
+      safeUSDCTransfer(originalClAddr, newCl, clBalance);
+    }
+
+    // Close out old CL
+    creditLine.setBalance(0);
+    creditLine.setLimit(0);
+
+    // set new CL
+    creditLine = IV2CreditLine(newCl);
+    // sanity check that the new address is in fact a creditline
+    creditLine.limit();
+
+    emit CreditLineMigrated(originalClAddr, address(creditLine));
+  }
+
+  function emergencyShutdown() public onlyAdmin {
+    if (!paused()) {
+      pause();
+    }
+
+    // Sweep any funds to community reserve
+    uint256 poolBalance = config.getUSDC().balanceOf(address(this));
+    if (poolBalance > 0) {
+      safeUSDCTransfer(address(this), config.reserveAddress(), poolBalance);
+    }
+    emit EmergencyShutdown(address(this));
+  }
+
+  function pauseDrawdowns() public onlyAdmin {
+    drawdownsPaused = true;
+    emit DrawdownsPaused(address(this));
+  }
+
+  function unpauseDrawdowns() public onlyAdmin {
+    drawdownsPaused = false;
+    emit DrawdownsUnpaused(address(this));
+  }
+
+  // CreditLine proxy methods, for convenience
+  function limit() public view returns (uint256) {
+    return creditLine.limit();
+  }
+
+  function borrower() public view returns (address) {
+    return creditLine.borrower();
+  }
+
+  function interestApr() public view returns (uint256) {
+    return creditLine.interestApr();
+  }
+
+  function paymentPeriodInDays() public view returns (uint256) {
+    return creditLine.paymentPeriodInDays();
+  }
+
+  function termInDays() public view returns (uint256) {
+    return creditLine.termInDays();
+  }
+
+  function lateFeeApr() public view returns (uint256) {
+    return creditLine.lateFeeApr();
   }
 
   function _lockJuniorCapital() internal {
@@ -267,7 +370,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
   ) internal {
     safeUSDCTransfer(from, address(this), principal.add(interest), "Failed to collect payment");
 
-    (uint256 interestAccrued, uint256 principalAccrued) = getTotalInterestAndPrincipal(currentTime());
+    (uint256 interestAccrued, uint256 principalAccrued) = getTotalInterestAndPrincipal();
     uint256 reserveFeePercent = ONE_HUNDRED.div(config.getReserveDenominator()); // Convert the denonminator to percent
 
     uint256 totalReserveAmount; // protocol fee
@@ -334,11 +437,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     safeUSDCTransfer(address(this), config.reserveAddress(), totalReserveAmount, "Failed to send to reserve");
   }
 
-  function getTotalInterestAndPrincipal(uint256 asOf)
-    internal
-    view
-    returns (uint256 interestAccrued, uint256 principalAccrued)
-  {
+  function getTotalInterestAndPrincipal() internal view returns (uint256 interestAccrued, uint256 principalAccrued) {
     interestAccrued = creditLine.totalInterestAccrued();
     principalAccrued = creditLine.principalOwed();
     // Add any remaining balance we have to the principal accrued so expected share price will reflect partial
@@ -356,6 +455,28 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
   // If the senior tranche is locked, then the pool is not open to any more deposits (could throw off leverage ratio)
   function locked() internal view returns (bool) {
     return seniorTranche.lockedUntil > 0;
+  }
+
+  function createAndSetCreditLine(
+    address _borrower,
+    uint256 _limit,
+    uint256 _interestApr,
+    uint256 _paymentPeriodInDays,
+    uint256 _termInDays,
+    uint256 _lateFeeApr
+  ) internal {
+    address _creditLine = config.getCreditLineFactory().createCreditLine();
+    creditLine = IV2CreditLine(_creditLine);
+    creditLine.initialize(
+      address(config),
+      address(this), // Set self as the owner
+      _borrower,
+      _limit,
+      _interestApr,
+      _paymentPeriodInDays,
+      _termInDays,
+      _lateFeeApr
+    );
   }
 
   function safeUSDCTransfer(
