@@ -32,7 +32,9 @@ abstract contract IFund {
 
   function redeem(uint256 tokenId) public virtual;
 
-  function writedown(ITranchedPool pool) public virtual;
+  function writedown(uint256 tokenId) public virtual;
+
+  function calculateWritedown(uint256 tokenId) public view virtual returns (uint256 writedownAmount);
 
   function assets() public view virtual returns (uint256);
 }

@@ -25,6 +25,8 @@ const {
   usdcVal,
   createPoolWithCreditLine,
   fiduTolerance,
+  tolerance,
+  decodeLogs,
 } = require("./testHelpers.js")
 const {expectEvent} = require("@openzeppelin/test-helpers")
 const {ecsign} = require("ethereumjs-util")
@@ -37,8 +39,7 @@ describe("SeniorFund", () => {
   let interestApr = interestAprAsBN("5.00")
   let paymentPeriodInDays = new BN(30)
   let lateFeeApr = new BN(0)
-  let juniorInvestmentAmount = usdcVal(10000)
-  let limit = juniorInvestmentAmount.mul(new BN(10))
+  let limit = usdcVal(100000)
   let termInDays = new BN(365)
   let juniorFeePercent = new BN(20)
   let depositAmount = new BN(4).mul(USDC_DECIMALS)
@@ -61,9 +62,15 @@ describe("SeniorFund", () => {
   }
 
   const setupTest = deployments.createFixture(async ({deployments}) => {
-    const {seniorFund, seniorFundStrategy, usdc, fidu, goldfinchFactory, goldfinchConfig} = await deployAllContracts(
-      deployments
-    )
+    const {
+      seniorFund,
+      seniorFundStrategy,
+      usdc,
+      fidu,
+      goldfinchFactory,
+      goldfinchConfig,
+      poolTokens,
+    } = await deployAllContracts(deployments)
     // A bit of setup for our test users
     await erc20Approve(usdc, seniorFund.address, usdcVal(100000), [person2])
     await erc20Transfer(usdc, [person2, person3], usdcVal(10000), owner)
@@ -82,9 +89,7 @@ describe("SeniorFund", () => {
       usdc,
     }))
 
-    await tranchedPool.deposit(TRANCHES.Junior, juniorInvestmentAmount)
-
-    return {usdc, seniorFund, seniorFundStrategy, tranchedPool, creditLine, fidu, goldfinchConfig}
+    return {usdc, seniorFund, seniorFundStrategy, tranchedPool, creditLine, fidu, goldfinchConfig, poolTokens}
   })
 
   beforeEach(async () => {
@@ -480,10 +485,13 @@ describe("SeniorFund", () => {
   })
 
   describe("invest", () => {
+    let juniorInvestmentAmount = usdcVal(10000)
+
     beforeEach(async () => {
       await erc20Approve(usdc, seniorFund.address, usdcVal(100000), [owner])
       await makeDeposit(owner, usdcVal(100000))
       await goldfinchConfig.addToGoList(seniorFund.address)
+      await tranchedPool.deposit(TRANCHES.Junior, juniorInvestmentAmount)
     })
 
     context("called by non-governance", async () => {
@@ -584,7 +592,7 @@ describe("SeniorFund", () => {
 
   describe("redeem", async () => {
     let tokenAddress, reserveAddress, poolTokens
-    juniorInvestmentAmount = usdcVal(100)
+    let juniorInvestmentAmount = usdcVal(100)
 
     beforeEach(async () => {
       reserveAddress = await goldfinchConfig.getAddress(CONFIG_KEYS.TreasuryReserve)
@@ -594,6 +602,8 @@ describe("SeniorFund", () => {
       await erc20Approve(usdc, seniorFund.address, usdcVal(100000), [owner])
       await makeDeposit(owner, usdcVal(100000))
       await goldfinchConfig.addToGoList(seniorFund.address)
+
+      await tranchedPool.deposit(TRANCHES.Junior, juniorInvestmentAmount)
     })
 
     context("called by non-governance", async () => {
@@ -716,23 +726,28 @@ describe("SeniorFund", () => {
 
   describe("writedown", async () => {
     let originalSharePrice, originalTotalShares
+    let tokenId, juniorTokenId
+    let juniorInvestmentAmount = usdcVal(20)
 
     beforeEach(async () => {
-      await makeDeposit(person2, usdcVal(90))
+      await makeDeposit(person2, usdcVal(100))
+
+      let juniorReceipt = await tranchedPool.deposit(TRANCHES.Junior, juniorInvestmentAmount)
+      juniorTokenId = juniorReceipt.logs[0].args.tokenId
+      await tranchedPool.lockJuniorCapital({from: borrower})
+      let receipt = await seniorFund.invest(tranchedPool.address)
+      let depositEvent = decodeLogs(receipt.receipt.rawLogs, tranchedPool.abi, "DepositMade")[0]
+      tokenId = depositEvent.args.tokenId
+      await tranchedPool.lockPool({from: borrower})
+      await tranchedPool.drawdown(usdcVal(100), {from: borrower})
 
       originalSharePrice = await seniorFund.sharePrice()
       originalTotalShares = await fidu.totalSupply()
-
-      // Note in actuality, we calculate by the day, and use decimal math. BN can't handle decimals,
-      // So we just use a small tolerance in the expectations later on
-      await tranchedPool.lockJuniorCapital({from: borrower})
-      await tranchedPool.lockPool({from: borrower})
-      await tranchedPool.drawdown(usdcVal(100), {from: borrower})
     })
 
     context("called by non-governance", async () => {
       it("should revert", async () => {
-        return expect(seniorFund.writedown(tranchedPool.address, {from: person2})).to.be.rejectedWith(/Must have admin/)
+        return expect(seniorFund.writedown(tokenId, {from: person2})).to.be.rejectedWith(/Must have admin/)
       })
     })
 
@@ -743,10 +758,10 @@ describe("SeniorFund", () => {
         const twoPaymentPeriodsInSeconds = paymentPeriodInSeconds.mul(new BN(2))
         await advanceTime(tranchedPool, {seconds: twoPaymentPeriodsInSeconds})
         // So writedown is 2 periods late - 1 grace period / 4 max = 25%
-        let expectedWritedown = usdcVal(100).div(new BN(4)) // 25% of 100 = 25
+        let expectedWritedown = usdcVal(80).div(new BN(4)) // 25% of 80 = 20
 
         await tranchedPool.assess()
-        await expectAction(() => seniorFund.writedown(tranchedPool.address)).toChange([
+        await expectAction(() => seniorFund.writedown(tokenId)).toChange([
           [seniorFund.totalWritedowns, {byCloseTo: expectedWritedown}],
           [seniorFund.assets, {byCloseTo: expectedWritedown.neg()}],
         ])
@@ -762,19 +777,136 @@ describe("SeniorFund", () => {
       })
 
       it("should decrease the write down amount if partially paid back", async () => {
-        // TODO: requires TranchedPool.pay
+        // Assess for two periods of lateness
+        const paymentPeriodInSeconds = paymentPeriodInDays.mul(SECONDS_PER_DAY)
+        const twoPaymentPeriodsInSeconds = paymentPeriodInSeconds.mul(new BN(2))
+        await advanceTime(tranchedPool, {seconds: twoPaymentPeriodsInSeconds})
+        // Writedown is 2 periods late - 1 grace period / 4 max = 25%
+        let expectedWritedown = usdcVal(80).div(new BN(4)) // 25% of 80 = 20
+
+        await tranchedPool.assess()
+        await expectAction(() => seniorFund.writedown(tokenId)).toChange([
+          [seniorFund.totalWritedowns, {byCloseTo: expectedWritedown}],
+          [seniorFund.assets, {byCloseTo: expectedWritedown.neg()}],
+        ])
+
+        let sharePriceAfterAssess = await seniorFund.sharePrice()
+
+        // Pay back half of one period
+        let creditLine = await artifacts.require("CreditLine").at(await tranchedPool.creditLine())
+        let interestOwed = await creditLine.interestOwed()
+        let interestPaid = interestOwed.div(new BN(4)) // interestOwed is for 2 periods
+        let expectedNewWritedown = expectedWritedown.div(new BN(2))
+        await tranchedPool.pay(interestPaid, {from: borrower})
+
+        await expectAction(() => seniorFund.writedown(tokenId)).toChange([
+          [seniorFund.totalWritedowns, {byCloseTo: expectedWritedown.sub(expectedNewWritedown).neg()}],
+          [seniorFund.assets, {byCloseTo: expectedWritedown.sub(expectedNewWritedown)}],
+        ])
+
+        var finalSharePrice = await seniorFund.sharePrice()
+        var delta = originalSharePrice.sub(finalSharePrice)
+        let normalizedWritedown = await seniorFund._usdcToFidu(expectedNewWritedown)
+        var expectedDelta = normalizedWritedown.mul(decimals).div(originalTotalShares)
+
+        expect(delta).to.be.bignumber.closeTo(expectedDelta, fiduTolerance)
+        // Share price must go down after the initial write down, and then up after partially paid back
+        expect(sharePriceAfterAssess).to.be.bignumber.lt(originalSharePrice)
+        expect(finalSharePrice).to.be.bignumber.gt(sharePriceAfterAssess)
+        expect(finalSharePrice).to.be.bignumber.closeTo(originalSharePrice.sub(delta), fiduTolerance)
       })
 
       it("should reset the writedowns to 0 if fully paid back", async () => {
-        // TODO: requires TranchedPool.pay
+        // Assess for two periods of lateness
+        const paymentPeriodInSeconds = paymentPeriodInDays.mul(SECONDS_PER_DAY)
+        const twoPaymentPeriodsInSeconds = paymentPeriodInSeconds.mul(new BN(2))
+        await advanceTime(tranchedPool, {seconds: twoPaymentPeriodsInSeconds})
+        // Writedown is 2 periods late - 1 grace period / 4 max = 25%
+        let expectedWritedown = usdcVal(80).div(new BN(4)) // 25% of 80 = 20
+
+        await tranchedPool.assess()
+        await expectAction(() => seniorFund.writedown(tokenId)).toChange([
+          [seniorFund.totalWritedowns, {byCloseTo: expectedWritedown}],
+          [seniorFund.assets, {byCloseTo: expectedWritedown.neg()}],
+        ])
+
+        let sharePriceAfterAssess = await seniorFund.sharePrice()
+
+        // Pay back all interest owed
+        let creditLine = await artifacts.require("CreditLine").at(await tranchedPool.creditLine())
+        let interestOwed = await creditLine.interestOwed()
+        let interestPaid = interestOwed
+        let expectedNewWritedown = new BN(0)
+        await tranchedPool.pay(interestPaid, {from: borrower})
+
+        await expectAction(() => seniorFund.writedown(tokenId)).toChange([
+          [seniorFund.totalWritedowns, {to: new BN(0)}],
+          [seniorFund.assets, {byCloseTo: expectedWritedown.sub(expectedNewWritedown)}],
+        ])
+
+        var finalSharePrice = await seniorFund.sharePrice()
+        var delta = originalSharePrice.sub(finalSharePrice)
+
+        expect(delta).to.be.bignumber.equal(new BN(0))
+        // Share price must go down after the initial write down, and then back up to original after fully repaid
+        expect(sharePriceAfterAssess).to.be.bignumber.lt(originalSharePrice)
+        expect(finalSharePrice).to.be.bignumber.gt(sharePriceAfterAssess)
+        expect(finalSharePrice).to.be.bignumber.equal(originalSharePrice)
       })
 
-      it("should emit an event", async () => {})
+      it("should emit an event", async () => {
+        // Assess for two periods of lateness
+        const paymentPeriodInSeconds = paymentPeriodInDays.mul(SECONDS_PER_DAY)
+        const twoPaymentPeriodsInSeconds = paymentPeriodInSeconds.mul(new BN(2))
+        await advanceTime(tranchedPool, {seconds: twoPaymentPeriodsInSeconds})
+        // So writedown is 2 periods late - 1 grace period / 4 max = 25%
+        let expectedWritedown = usdcVal(80).div(new BN(4)) // 25% of 80 = 20
+
+        await tranchedPool.assess()
+        let receipt = await seniorFund.writedown(tokenId)
+        let event = decodeLogs(receipt.receipt.rawLogs, seniorFund.abi, "PrincipalWrittenDown")[0]
+        expect(event.args.tranchedPool).to.equal(tranchedPool.address)
+        expect(event.args.amount).to.bignumber.closeTo(expectedWritedown, fiduTolerance)
+      })
     })
 
-    // TODO
-    context("Pool is not valid", () => {
-      it("reverts", async () => {})
+    context("tokenId is not owned by senior fund", () => {
+      it("reverts", async () => {
+        await expect(seniorFund.writedown(juniorTokenId)).to.be.rejectedWith(
+          /Only tokens owned by the senior fund can be written down/
+        )
+      })
+    })
+  })
+
+  describe("calculateWritedown", async () => {
+    let tokenId
+    let juniorInvestmentAmount = usdcVal(20)
+
+    beforeEach(async () => {
+      await makeDeposit(person2, usdcVal(100))
+
+      await tranchedPool.deposit(TRANCHES.Junior, juniorInvestmentAmount)
+      await tranchedPool.lockJuniorCapital({from: borrower})
+      let receipt = await seniorFund.invest(tranchedPool.address)
+      let depositEvent = decodeLogs(receipt.receipt.rawLogs, tranchedPool.abi, "DepositMade")[0]
+      tokenId = depositEvent.args.tokenId
+      await tranchedPool.lockPool({from: borrower})
+      await tranchedPool.drawdown(usdcVal(100), {from: borrower})
+    })
+
+    it("returns writedown amount", async () => {
+      const paymentPeriodInSeconds = paymentPeriodInDays.mul(SECONDS_PER_DAY)
+      const twoPaymentPeriodsInSeconds = paymentPeriodInSeconds.mul(new BN(2))
+      await advanceTime(tranchedPool, {seconds: twoPaymentPeriodsInSeconds.add(new BN(10000))})
+
+      // So writedown is 2 periods late - 1 grace period / 4 max = 25%
+      let expectedWritedown = usdcVal(80).div(new BN(4)) // 25% of 80 = ~20
+
+      await tranchedPool.assess()
+      let writedownAmount = await seniorFund.calculateWritedown(tokenId)
+
+      expect(writedownAmount).to.bignumber.closeTo(expectedWritedown, tolerance)
     })
   })
 })

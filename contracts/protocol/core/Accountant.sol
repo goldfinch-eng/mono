@@ -79,6 +79,16 @@ library Accountant {
     uint256 gracePeriodInDays,
     uint256 maxDaysLate
   ) public view returns (uint256, uint256) {
+    return calculateWritedownForPrincipal(cl, cl.balance(), timestamp, gracePeriodInDays, maxDaysLate);
+  }
+
+  function calculateWritedownForPrincipal(
+    ICreditLine cl,
+    uint256 principal,
+    uint256 timestamp,
+    uint256 gracePeriodInDays,
+    uint256 maxDaysLate
+  ) public view returns (uint256, uint256) {
     FixedPoint.Unsigned memory amountOwedPerDay = calculateAmountOwedForOneDay(cl);
     if (amountOwedPerDay.isEqual(0)) {
       return (0, 0);
@@ -106,7 +116,7 @@ library Accountant {
       writedownPercent = FixedPoint.min(FixedPoint.fromUnscaledUint(1), (daysLate.sub(fpGracePeriod)).div(maxLate));
     }
 
-    FixedPoint.Unsigned memory writedownAmount = writedownPercent.mul(cl.balance()).div(FP_SCALING_FACTOR);
+    FixedPoint.Unsigned memory writedownAmount = writedownPercent.mul(principal).div(FP_SCALING_FACTOR);
     // This will return a number between 0-100 representing the write down percent with no decimals
     uint256 unscaledWritedownPercent = writedownPercent.mul(100).div(FP_SCALING_FACTOR).rawValue;
     return (unscaledWritedownPercent, writedownAmount.rawValue);

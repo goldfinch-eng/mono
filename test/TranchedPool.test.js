@@ -247,6 +247,44 @@ describe("TranchedPool", () => {
     })
   })
 
+  describe("availableToWithdraw", async () => {
+    beforeEach(async () => {
+      tranchedPool = await createPoolWithCreditLine()
+    })
+
+    it("returns redeemable interest and principal", async () => {
+      // Total junior tranche investment is split between 2 people
+      await erc20Approve(usdc, tranchedPool.address, usdcVal(100000), [otherPerson])
+      await tranchedPool.deposit(TRANCHES.Junior, usdcVal(500), {from: otherPerson})
+      let response = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(500))
+      const tokenId = response.logs[0].args.tokenId
+
+      await tranchedPool.lockJuniorCapital({from: borrower})
+
+      // Should be zero while tranche is locked
+      let {interestRedeemable, principalRedeemable} = await tranchedPool.availableToWithdraw(tokenId)
+      expect(interestRedeemable).to.bignumber.equal(new BN(0))
+      expect(principalRedeemable).to.bignumber.equal(new BN(0))
+
+      await tranchedPool.lockPool({from: borrower})
+      await tranchedPool.drawdown(usdcVal(1000), {from: borrower})
+      let payAmount = usdcVal(1050)
+      await advanceTime(tranchedPool, {days: termInDays.toNumber()})
+      await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
+      await tranchedPool.pay(payAmount, {from: borrower})
+
+      // Total amount owed to junior:
+      //   interest_accrued = 1000 * 0.05 = 50
+      //   protocol_fee = interest_accrued * 0.1 = 5
+      //   1000 + interest_accrued - protocol_fee = 1045
+      // Amount owed to one of the junior investors:
+      //   1045 / 2 = 522.5
+      ;({interestRedeemable, principalRedeemable} = await tranchedPool.availableToWithdraw(tokenId))
+      expect(interestRedeemable).to.bignumber.equal(usdcVal(2250).div(new BN(100)))
+      expect(principalRedeemable).to.bignumber.equal(usdcVal(500))
+    })
+  })
+
   describe("withdraw", async () => {
     beforeEach(async () => {
       tranchedPool = await createPoolWithCreditLine()

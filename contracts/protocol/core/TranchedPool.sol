@@ -183,6 +183,22 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     return (interestToRedeem, principalToRedeem);
   }
 
+  function availableToWithdraw(uint256 tokenId)
+    public
+    view
+    override
+    returns (uint256 interestRedeemable, uint256 principalRedeemable)
+  {
+    IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
+    TrancheInfo storage trancheInfo = getTrancheInfo(tokenInfo.tranche);
+
+    if (currentTime() > trancheInfo.lockedUntil) {
+      return redeemableInterestAndPrincipal(trancheInfo, tokenInfo);
+    } else {
+      return (0, 0);
+    }
+  }
+
   function redeemableInterestAndPrincipal(TrancheInfo storage trancheInfo, IPoolTokens.TokenInfo memory tokenInfo)
     internal
     view

@@ -52,6 +52,12 @@ abstract contract ITranchedPool {
     bytes32 s
   ) external virtual;
 
+  function availableToWithdraw(uint256 tokenId)
+    external
+    view
+    virtual
+    returns (uint256 interestRedeemable, uint256 principalRedeemable);
+
   function withdraw(uint256 tokenId, uint256 amount)
     external
     virtual

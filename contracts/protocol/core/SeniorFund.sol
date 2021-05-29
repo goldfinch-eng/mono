@@ -167,7 +167,6 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
     require(amount > 0, "Investment amount must be positive");
 
     approvePool(pool, amount);
-    // TODO: Should switch to use depositWithPermit for increased security
     pool.deposit(uint256(ITranchedPool.Tranches.Senior), amount);
 
     emit InvestmentMade(address(pool), amount);
@@ -176,7 +175,7 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
 
   /**
    * @notice Redeem interest and/or principal from an ITranchedPool investment
-   * @param tokenId the ID of an IPoolToken to be redeemed
+   * @param tokenId the ID of an IPoolTokens token to be redeemed
    */
   function redeem(uint256 tokenId) public override whenNotPaused nonReentrant onlyAdmin {
     IPoolTokens poolTokens = config.getPoolTokens();
@@ -192,17 +191,19 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
    * @notice Write down an ITranchedPool investment. This will adjust the fund's share price
    *  down if we're considering the investment a loss, or up if the borrower has subsequently
    *  made repayments that restore confidence that the full loan will be repaid.
-   * @param pool An ITranchedPool that should be considered for writedown
+   * @param tokenId the ID of an IPoolTokens token to be considered for writedown
    */
-  function writedown(ITranchedPool pool) public override whenNotPaused nonReentrant onlyAdmin {
+  function writedown(uint256 tokenId) public override whenNotPaused nonReentrant onlyAdmin {
+    IPoolTokens poolTokens = config.getPoolTokens();
+    require(address(this) == poolTokens.ownerOf(tokenId), "Only tokens owned by the senior fund can be written down");
+
+    IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
+    ITranchedPool pool = ITranchedPool(tokenInfo.pool);
     require(validPool(pool), "Pool must be valid");
 
-    (uint256 writedownPercent, uint256 writedownAmount) = Accountant.calculateWritedownFor(
-      pool.creditLine(),
-      currentTime(),
-      config.getLatenessGracePeriodInDays(),
-      config.getLatenessMaxDays()
-    );
+    uint256 principalRemaining = tokenInfo.principalAmount.sub(tokenInfo.principalRedeemed);
+
+    (uint256 writedownPercent, uint256 writedownAmount) = _calculateWritedown(pool, principalRemaining);
 
     uint256 prevWritedownAmount = writedowns[pool];
 
@@ -220,6 +221,30 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
       totalWritedowns = totalWritedowns.add(uint256(writedownDelta * -1));
     }
     emit PrincipalWrittenDown(address(pool), writedownDelta);
+  }
+
+  function calculateWritedown(uint256 tokenId) public view override returns (uint256) {
+    IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
+    ITranchedPool pool = ITranchedPool(tokenInfo.pool);
+
+    uint256 principalRemaining = tokenInfo.principalAmount.sub(tokenInfo.principalRedeemed);
+    (uint256 _, uint256 writedownAmount) = _calculateWritedown(pool, principalRemaining);
+    return writedownAmount;
+  }
+
+  function _calculateWritedown(ITranchedPool pool, uint256 principal)
+    internal
+    view
+    returns (uint256 writedownPercent, uint256 writedownAmount)
+  {
+    return
+      Accountant.calculateWritedownForPrincipal(
+        pool.creditLine(),
+        principal,
+        currentTime(),
+        config.getLatenessGracePeriodInDays(),
+        config.getLatenessMaxDays()
+      );
   }
 
   function currentTime() internal view virtual returns (uint256) {
