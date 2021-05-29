@@ -104,7 +104,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     TrancheInfo storage trancheInfo = getTrancheInfo(tranche);
     require(trancheInfo.lockedUntil == 0, "Tranche has been locked");
 
-    trancheInfo.principalDeposited += amount;
+    trancheInfo.principalDeposited = trancheInfo.principalDeposited.add(amount);
     IPoolTokens.MintParams memory params = IPoolTokens.MintParams({tranche: tranche, principalAmount: amount});
     uint256 tokenId = config.getPoolTokens().mint(params, msg.sender);
     safeUSDCTransfer(msg.sender, address(this), amount);
@@ -267,7 +267,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool {
     // Deduct the junior fee and the protocol reserve
     uint256 desiredNetInterestSharePrice = scaleByFraction(
       expectedInterestSharePrice,
-      ONE_HUNDRED.sub(juniorFeePercent + reserveFeePercent),
+      ONE_HUNDRED.sub(juniorFeePercent.add(reserveFeePercent)),
       ONE_HUNDRED
     );
     // Collect protocol fee interest received (we've subtracted this from the senior portion above)

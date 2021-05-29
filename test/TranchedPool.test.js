@@ -454,19 +454,19 @@ describe("TranchedPool", () => {
         expect(await creditLine.limit()).to.bignumber.eq(limit)
 
         await expectAction(async () => tranchedPool.drawdown(limit, {from: borrower})).toChange([
-          [async () => creditLine.balance(), {to: limit}],
-          [async () => usdc.balanceOf(borrower), {by: limit}],
-          [async () => usdc.balanceOf(tranchedPool.address), {to: limit.mul(new BN(4))}], // 5x limit was deposited. 4x still remaining
+          [() => creditLine.balance(), {to: limit}],
+          [() => usdc.balanceOf(borrower), {by: limit}],
+          [() => usdc.balanceOf(tranchedPool.address), {to: limit.mul(new BN(4))}], // 5x limit was deposited. 4x still remaining
         ])
 
         advanceTime(tranchedPool, {days: termInDays.toNumber()})
 
         // Only 20% of the capital was used, so remaining 80% should be available for drawdown
         await expectAction(async () => tranchedPool.withdrawMax(juniorTokenId)).toChange([
-          [async () => await getBalance(owner, usdc), {by: juniorDeposit.mul(new BN(80)).div(new BN(100))}],
+          [() => getBalance(owner, usdc), {by: juniorDeposit.mul(new BN(80)).div(new BN(100))}],
         ])
         await expectAction(async () => tranchedPool.withdrawMax(seniorTokenId)).toChange([
-          [async () => await getBalance(owner, usdc), {by: seniorDeposit.mul(new BN(80)).div(new BN(100))}],
+          [() => getBalance(owner, usdc), {by: seniorDeposit.mul(new BN(80)).div(new BN(100))}],
         ])
 
         // Fully pay off the loan

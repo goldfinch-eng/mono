@@ -126,7 +126,7 @@ describe("PoolTokens", () => {
       await pool.deposit(new BN(1), amount, {from: person2})
       const amountThatPutsUsOver = usdcVal(51)
       // This is allowed because the pool will let the depositors redeem unused principal
-      await pool.deposit(new BN(1), amountThatPutsUsOver, {from: person2})
+      await expect(pool.deposit(new BN(1), amountThatPutsUsOver, {from: person2})).to.be.fulfilled
     })
 
     it("should emit an event", async () => {
