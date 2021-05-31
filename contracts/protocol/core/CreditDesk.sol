@@ -43,7 +43,6 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
   event DrawdownMade(address indexed borrower, address indexed creditLine, uint256 drawdownAmount);
   event CreditLineCreated(address indexed borrower, address indexed creditLine);
   event GovernanceUpdatedUnderwriterLimit(address indexed underwriter, uint256 newLimit);
-  event PoolCreated(address indexed pool, address indexed owner);
 
   mapping(address => Underwriter) public underwriters;
   mapping(address => Borrower) private borrowers;
@@ -351,7 +350,6 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     );
 
     IPool pool = config.getPool();
-    updateWritedownAmounts(cl, pool);
 
     if (interestPayment > 0 || principalPayment > 0) {
       emit PaymentApplied(cl.borrower(), address(cl), interestPayment, principalPayment, paymentRemaining);
@@ -395,28 +393,6 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     assert(paymentRemaining.add(pa.interestPayment).add(totalPrincipalPayment) == paymentAmount);
 
     return (paymentRemaining, pa.interestPayment, totalPrincipalPayment);
-  }
-
-  function updateWritedownAmounts(CreditLine cl, IPool pool) internal {
-    (uint256 writedownPercent, uint256 writedownAmount) = Accountant.calculateWritedownFor(
-      cl,
-      currentTime(),
-      config.getLatenessGracePeriodInDays(),
-      config.getLatenessMaxDays()
-    );
-
-    if (writedownPercent == 0 && cl.writedownAmount() == 0) {
-      return;
-    }
-    int256 writedownDelta = int256(cl.writedownAmount()) - int256(writedownAmount);
-    cl.setWritedownAmount(writedownAmount);
-    if (writedownDelta > 0) {
-      // If writedownDelta is positive, that means we got money back. So subtract from totalWritedowns.
-      totalWritedowns = totalWritedowns.sub(uint256(writedownDelta));
-    } else {
-      totalWritedowns = totalWritedowns.add(uint256(writedownDelta * -1));
-    }
-    pool.distributeLosses(address(cl), writedownDelta);
   }
 
   function isLate(CreditLine cl, uint256 timestamp) internal view returns (bool) {

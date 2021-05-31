@@ -66,6 +66,41 @@ describe("GoldfinchConfig", () => {
     })
   })
 
+  describe("initializeFromOtherConfig", async () => {
+    it("should copy over the vals from the other config", async () => {
+      let newGoldfinchConfig = await GoldfinchConfig.new({from: owner})
+      await newGoldfinchConfig.initialize(owner)
+
+      let randomAddress1 = person2
+      let randomAddress2 = person3
+      let randomNumber1 = new BN(42)
+      let randomNumber2 = new BN(84)
+      // Just doing the first 4 to show the looping works
+      await goldfinchConfig.setAddress(0, randomAddress1, {from: owner})
+      await goldfinchConfig.setAddress(1, randomAddress2, {from: owner})
+      await goldfinchConfig.setAddress(2, randomAddress1, {from: owner})
+      await goldfinchConfig.setAddress(3, randomAddress2, {from: owner})
+
+      // Just doing the first 4 to show the looping works
+      await goldfinchConfig.setNumber(0, randomNumber1, {from: owner})
+      await goldfinchConfig.setNumber(1, randomNumber2, {from: owner})
+      await goldfinchConfig.setNumber(2, randomNumber1, {from: owner})
+      await goldfinchConfig.setNumber(3, randomNumber2, {from: owner})
+
+      await expectAction(() => newGoldfinchConfig.initializeFromOtherConfig(goldfinchConfig.address)).toChange([
+        [async () => await newGoldfinchConfig.getAddress(0), {to: randomAddress1, bignumber: false}],
+        [async () => await newGoldfinchConfig.getAddress(1), {to: randomAddress2, bignumber: false}],
+        [async () => await newGoldfinchConfig.getAddress(2), {to: randomAddress1, bignumber: false}],
+        [async () => await newGoldfinchConfig.getAddress(3), {to: randomAddress2, bignumber: false}],
+
+        [async () => await newGoldfinchConfig.getNumber(0), {to: randomNumber1}],
+        [async () => await newGoldfinchConfig.getNumber(1), {to: randomNumber2}],
+        [async () => await newGoldfinchConfig.getNumber(2), {to: randomNumber1}],
+        [async () => await newGoldfinchConfig.getNumber(3), {to: randomNumber2}],
+      ])
+    })
+  })
+
   describe("setAddress", async () => {
     let address
     beforeEach(() => {

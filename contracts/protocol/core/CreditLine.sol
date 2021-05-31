@@ -40,7 +40,6 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
   uint256 public override termEndTime;
   uint256 public override nextDueTime;
   uint256 public override interestAccruedAsOf;
-  uint256 public override writedownAmount;
   uint256 public override lastFullPaymentTime;
   uint256 public totalInterestAccrued;
 
@@ -105,10 +104,6 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     interestAccruedAsOf = newInterestAccruedAsOf;
   }
 
-  function setWritedownAmount(uint256 newWritedownAmount) external onlyAdmin {
-    writedownAmount = newWritedownAmount;
-  }
-
   function setLastFullPaymentTime(uint256 newLastFullPaymentTime) public onlyAdmin {
     lastFullPaymentTime = newLastFullPaymentTime;
   }
@@ -146,7 +141,6 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
   function assess()
     public
     onlyAdmin
-    whenNotPaused
     returns (
       uint256,
       uint256,

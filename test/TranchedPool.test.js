@@ -41,7 +41,7 @@ describe("TranchedPool", () => {
   let lateFeeApr = new BN(0)
   let juniorFeePercent = new BN(20)
 
-  const createPoolWithCreditLine = async () => {
+  const createPoolWithCreditLine = async ({interestApr = interestAprAsBN("5.00"), termInDays = new BN(365)}) => {
     return await _createPoolWithCreditLine({
       people: {owner, borrower},
       goldfinchFactory,
@@ -54,6 +54,16 @@ describe("TranchedPool", () => {
       usdc,
     })
   }
+
+  const testSetup = deployments.createFixture(async ({deployments}) => {
+    // Just to be crystal clear
+    ;({usdc, goldfinchConfig, goldfinchFactory, poolTokens} = await deployAllContracts(deployments))
+    await goldfinchConfig.bulkAddToGoList([owner, borrower, otherPerson])
+    await goldfinchConfig.setTreasuryReserve(treasury)
+    await erc20Transfer(usdc, [otherPerson], usdcVal(10000), owner)
+    await erc20Transfer(usdc, [borrower], usdcVal(10000), owner)
+    ;({tranchedPool, creditLine} = await createPoolWithCreditLine({}))
+  })
 
   const getTrancheAmounts = async (trancheInfo) => {
     const interestAmount = await tranchedPool.sharePriceToUsdc(
@@ -70,17 +80,11 @@ describe("TranchedPool", () => {
   beforeEach(async () => {
     // Pull in our unlocked accounts
     ;[owner, borrower, treasury, otherPerson] = await web3.eth.getAccounts()
-    ;({usdc, goldfinchConfig, goldfinchFactory, poolTokens} = await deployAllContracts(deployments))
-    await goldfinchConfig.bulkAddToGoList([owner, borrower, otherPerson])
-    await goldfinchConfig.setTreasuryReserve(treasury)
-    await erc20Transfer(usdc, [otherPerson], usdcVal(10000), owner)
-    await erc20Transfer(usdc, [borrower], usdcVal(10000), owner)
+    await testSetup()
   })
 
   describe("initialization", async () => {
     it("sets the right defaults", async () => {
-      ;({tranchedPool, creditLine} = await createPoolWithCreditLine())
-
       const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
       const seniorTranche = await tranchedPool.getTranche(TRANCHES.Senior)
       expect(juniorTranche.principalSharePrice).to.bignumber.eq(UNIT_SHARE_PRICE)
@@ -98,9 +102,6 @@ describe("TranchedPool", () => {
   })
 
   describe("migrateCreditLine", async () => {
-    beforeEach(async () => {
-      ;({tranchedPool, creditLine} = await createPoolWithCreditLine())
-    })
     it("should create a new creditline", async () => {
       const creditLine = await CreditLine.at(await tranchedPool.creditLine())
       await expectAction(async () =>
@@ -206,7 +207,6 @@ describe("TranchedPool", () => {
   describe("emergency shutdown", async () => {
     it("should pause the pool and sweep funds", async () => {
       const amount = usdcVal(10)
-      ;({tranchedPool, creditLine} = await createPoolWithCreditLine())
       await usdc.transfer(tranchedPool.address, amount, {from: owner})
       await expectAction(tranchedPool.emergencyShutdown).toChange([
         [tranchedPool.paused, {to: true, bignumber: false}],
@@ -215,13 +215,11 @@ describe("TranchedPool", () => {
       ])
     })
     it("should emit an event", async () => {
-      ;({tranchedPool} = await createPoolWithCreditLine())
       const txn = await tranchedPool.emergencyShutdown()
       expectEvent(txn, "EmergencyShutdown", {pool: tranchedPool.address})
     })
 
     it("can only be called by governance", async () => {
-      ;({tranchedPool} = await createPoolWithCreditLine())
       await expect(tranchedPool.emergencyShutdown({from: otherPerson})).to.be.rejectedWith(/Must have admin role/)
     })
   })
@@ -229,8 +227,7 @@ describe("TranchedPool", () => {
   describe("migrateAndSetNewCreditLine", async () => {
     let otherCreditLine
     beforeEach(async () => {
-      ;({tranchedPool, creditLine} = await createPoolWithCreditLine())
-      ;({creditLine} = await createPoolWithCreditLine())
+      const {creditLine} = await createPoolWithCreditLine({})
       otherCreditLine = creditLine.address
     })
     it("should set the new creditline", async () => {
@@ -251,9 +248,6 @@ describe("TranchedPool", () => {
   })
 
   describe("deposit", async () => {
-    beforeEach(async () => {
-      ;({tranchedPool, creditLine} = await createPoolWithCreditLine())
-    })
     describe("junior tranche", async () => {
       it("does not allow deposits when pool is locked", async () => {
         await tranchedPool.lockJuniorCapital({from: borrower})
@@ -352,10 +346,6 @@ describe("TranchedPool", () => {
   })
 
   describe("depositWithPermit", async () => {
-    beforeEach(async () => {
-      ;({tranchedPool, creditLine} = await createPoolWithCreditLine())
-    })
-
     it("deposits using permit", async () => {
       let otherPersonAddress = otherPerson.toLowerCase()
       let tranchedPoolAddress = tranchedPool.address.toLowerCase()
@@ -402,10 +392,6 @@ describe("TranchedPool", () => {
   })
 
   describe("availableToWithdraw", async () => {
-    beforeEach(async () => {
-      ;({tranchedPool, creditLine} = await createPoolWithCreditLine())
-    })
-
     it("returns redeemable interest and principal", async () => {
       // Total junior tranche investment is split between 2 people
       await erc20Approve(usdc, tranchedPool.address, usdcVal(100000), [otherPerson])
@@ -440,10 +426,6 @@ describe("TranchedPool", () => {
   })
 
   describe("withdraw", async () => {
-    beforeEach(async () => {
-      ;({tranchedPool, creditLine} = await createPoolWithCreditLine())
-    })
-
     describe("validations", async () => {
       it("does not allow you to withdraw if you don't own the pool token", async () => {
         let receipt = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(10), {from: owner})
@@ -458,7 +440,7 @@ describe("TranchedPool", () => {
       })
       it("does not allow you to withdraw if pool token is from a different pool", async () => {
         await tranchedPool.deposit(TRANCHES.Junior, usdcVal(10), {from: owner})
-        const {tranchedPool: otherTranchedPool} = await createPoolWithCreditLine()
+        const {tranchedPool: otherTranchedPool} = await createPoolWithCreditLine({})
 
         let otherReceipt = await otherTranchedPool.deposit(TRANCHES.Junior, usdcVal(10), {from: owner})
         const otherTokenId = otherReceipt.logs[0].args.tokenId
@@ -590,10 +572,6 @@ describe("TranchedPool", () => {
   })
 
   describe("withdrawMax", async () => {
-    beforeEach(async () => {
-      ;({tranchedPool, creditLine} = await createPoolWithCreditLine())
-    })
-
     it("should withdraw the max", async () => {
       // Total junior tranche investment is split between 2 people
       await erc20Approve(usdc, tranchedPool.address, usdcVal(100000), [otherPerson])
@@ -702,10 +680,6 @@ describe("TranchedPool", () => {
 
   describe("access controls", () => {
     let LOCKER_ROLE = web3.utils.keccak256("LOCKER_ROLE")
-    beforeEach(async () => {
-      ;({tranchedPool, creditLine} = await createPoolWithCreditLine())
-    })
-
     it("sets the owner to governance", async () => {
       expect(await tranchedPool.hasRole(OWNER_ROLE, owner)).to.equal(true)
       expect(await tranchedPool.hasRole(OWNER_ROLE, borrower)).to.equal(false)
@@ -737,10 +711,6 @@ describe("TranchedPool", () => {
   })
 
   describe("pausability", () => {
-    beforeEach(async () => {
-      ;({tranchedPool, creditLine} = await createPoolWithCreditLine())
-    })
-
     describe("after pausing", async () => {
       let tokenId
 
@@ -818,10 +788,6 @@ describe("TranchedPool", () => {
   })
 
   describe("locking", async () => {
-    beforeEach(async () => {
-      ;({tranchedPool, creditLine} = await createPoolWithCreditLine())
-    })
-
     describe("junior tranche", async () => {
       describe("as the borrower", async () => {
         it("locks the junior tranche", async () => {
@@ -924,10 +890,6 @@ describe("TranchedPool", () => {
     })
   })
   describe("drawdown", async () => {
-    beforeEach(async () => {
-      ;({tranchedPool, creditLine} = await createPoolWithCreditLine())
-    })
-
     describe("when deposits are over the limit", async () => {
       it("does not adjust the limit up", async () => {
         await tranchedPool.deposit(TRANCHES.Junior, limit.mul(new BN(2)))
@@ -1047,11 +1009,12 @@ describe("TranchedPool", () => {
   })
 
   describe("tranching", async () => {
+    let tranchedPool, creditLine
     beforeEach(async () => {
       // 100$ creditline with 10% interest. Senior tranche gets 8% of the total interest, and junior tranche gets 2%
       interestApr = interestAprAsBN("10.00")
       termInDays = new BN(365)
-      ;({tranchedPool, creditLine} = await createPoolWithCreditLine())
+      ;({tranchedPool, creditLine} = await createPoolWithCreditLine({interestApr, termInDays}))
     })
 
     it("calculates share price using term start time", async () => {

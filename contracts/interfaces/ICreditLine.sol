@@ -29,7 +29,5 @@ interface ICreditLine {
 
   function interestAccruedAsOf() external view returns (uint256);
 
-  function writedownAmount() external view returns (uint256);
-
   function lastFullPaymentTime() external view returns (uint256);
 }

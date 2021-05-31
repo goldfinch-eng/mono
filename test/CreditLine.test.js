@@ -161,14 +161,6 @@ describe("CreditLine", () => {
       currentTime = await creditLine.currentTimestamp()
     })
 
-    describe("pausing", async () => {
-      it("should be disallowed when paused", async () => {
-        await creditLine.pause()
-        const result = creditLine.assess()
-        return expect(result).to.be.rejectedWith(/Pausable: paused/)
-      })
-    })
-
     describe("when there is exactly enough collectedPaymentBalance", async () => {
       it("should successfully process the payment and correctly update all attributes", async () => {
         await collectPayment(creditLine, 8)

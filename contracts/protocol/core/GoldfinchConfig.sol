@@ -4,6 +4,7 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "./BaseUpgradeablePausable.sol";
+import "../../interfaces/IGoldfinchConfig.sol";
 import "./ConfigOptions.sol";
 
 /**
@@ -24,6 +25,8 @@ contract GoldfinchConfig is BaseUpgradeablePausable {
 
   event GoListed(address indexed member);
   event NoListed(address indexed member);
+
+  bool public valuesInitialized;
 
   function initialize(address owner) public initializer {
     __BaseUpgradeablePausable__init(owner);
@@ -51,6 +54,33 @@ contract GoldfinchConfig is BaseUpgradeablePausable {
     uint256 key = uint256(ConfigOptions.Addresses.SeniorFundStrategy);
     emit AddressUpdated(msg.sender, key, addresses[key], newStrategy);
     addresses[key] = newStrategy;
+  }
+
+  function setCreditLineImplementation(address newAddress) public onlyAdmin {
+    uint256 key = uint256(ConfigOptions.Addresses.CreditLineImplementation);
+    emit AddressUpdated(msg.sender, key, addresses[key], newAddress);
+    addresses[key] = newAddress;
+  }
+
+  function setBorrowerImplementation(address newAddress) public onlyAdmin {
+    uint256 key = uint256(ConfigOptions.Addresses.BorrowerImplementation);
+    emit AddressUpdated(msg.sender, key, addresses[key], newAddress);
+    addresses[key] = newAddress;
+  }
+
+  function initializeFromOtherConfig(address _initialConfig) public onlyAdmin {
+    require(!valuesInitialized, "Already initailized values");
+    IGoldfinchConfig initialConfig = IGoldfinchConfig(_initialConfig);
+    for (uint256 i = 0; i < 7; i++) {
+      setNumber(i, initialConfig.getNumber(i));
+    }
+
+    for (uint256 i = 0; i < 12; i++) {
+      if (getAddress(i) == address(0)) {
+        setAddress(i, initialConfig.getAddress(i));
+      }
+    }
+    valuesInitialized = true;
   }
 
   /**
@@ -95,11 +125,11 @@ contract GoldfinchConfig is BaseUpgradeablePausable {
     Using custom getters in case we want to change underlying implementation later,
     or add checks or validations later on.
   */
-  function getAddress(uint256 addressKey) public view returns (address) {
-    return addresses[addressKey];
+  function getAddress(uint256 index) public view returns (address) {
+    return addresses[index];
   }
 
-  function getNumber(uint256 number) public view returns (uint256) {
-    return numbers[number];
+  function getNumber(uint256 index) public view returns (uint256) {
+    return numbers[index];
   }
 }

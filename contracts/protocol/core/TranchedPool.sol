@@ -43,7 +43,6 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     uint256 principalWithdrawn
   );
 
-  event PaymentCollected(address indexed payer, address indexed pool, uint256 paymentAmount);
   event PaymentApplied(
     address indexed payer,
     address indexed pool,
@@ -265,7 +264,6 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     creditLine.setTermEndTime(originalCl.termEndTime());
     creditLine.setNextDueTime(originalCl.nextDueTime());
     creditLine.setInterestAccruedAsOf(originalCl.interestAccruedAsOf());
-    creditLine.setWritedownAmount(originalCl.writedownAmount());
     creditLine.setLastFullPaymentTime(originalCl.lastFullPaymentTime());
     creditLine.setTotalInterestAccrued(originalCl.totalInterestAccrued());
 
@@ -528,6 +526,11 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     return block.timestamp;
   }
 
+  function updateGoldfinchConfig() external onlyAdmin {
+    config = GoldfinchConfig(config.configAddress());
+    creditLine.updateGoldfinchConfig();
+  }
+
   function applyToTrancheBySharePrice(
     uint256 interestRemaining,
     uint256 principalRemaining,
@@ -626,7 +629,6 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   }
 
   function collectPayment(uint256 amount) internal {
-    emit PaymentCollected(msg.sender, address(this), amount);
     safeTransfer(config.getUSDC(), msg.sender, address(creditLine), amount, "Failed to collect payment");
   }
 
@@ -650,7 +652,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
 
   modifier onlyTokenHolder(uint256 tokenId) {
     require(
-      msg.sender == config.getPoolTokens().ownerOf(tokenId),
+      config.getPoolTokens().isApprovedOrOwner(msg.sender, tokenId),
       "Only the token owner is allowed to call this function"
     );
     _;

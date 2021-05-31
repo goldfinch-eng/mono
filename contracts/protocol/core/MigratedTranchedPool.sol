@@ -28,7 +28,6 @@ contract MigratedTranchedPool is TranchedPool, IMigratedTranchedPool {
     creditLine.setTermEndTime(termEndTime);
     creditLine.setNextDueTime(nextDueTime);
     creditLine.setInterestAccruedAsOf(interestAccruedAsOf);
-    creditLine.setWritedownAmount(clToMigrate.writedownAmount());
     creditLine.setLastFullPaymentTime(lastFullPaymentTime);
     creditLine.setTotalInterestAccrued(totalInterestPaid.add(clToMigrate.interestOwed()));
 

@@ -52,4 +52,6 @@ interface IPoolTokens is IERC721 {
   function getTokenInfo(uint256 tokenId) external view returns (TokenInfo memory);
 
   function validPool(address sender) external view returns (bool);
+
+  function isApprovedOrOwner(address spender, uint256 tokenId) external view returns (bool);
 }

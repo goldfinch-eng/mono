@@ -19,7 +19,6 @@ async function displayCreditLine(creditLineAddress) {
     termEndTime,
     nextDueTime,
     interestAccruedAsOf,
-    writedownAmount,
     interestApr,
   ] = await Promise.all([
     creditLine.borrower(),
@@ -31,7 +30,6 @@ async function displayCreditLine(creditLineAddress) {
     creditLine.termEndTime(),
     creditLine.nextDueTime(),
     creditLine.interestAccruedAsOf(),
-    creditLine.writedownAmount(),
     creditLine.interestApr(),
   ])
 
@@ -45,7 +43,6 @@ async function displayCreditLine(creditLineAddress) {
   console.log("termEndTime:", String(termEndTime))
   console.log("nextDueTime:", String(nextDueTime))
   console.log("interestAccruedAsOf:", String(interestAccruedAsOf))
-  console.log("writedownAmount:", String(writedownAmount))
   console.log("interestApr:", String(interestApr))
 }
 

@@ -111,7 +111,7 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
    * @dev Burns a specific ERC721 token, and removes the data from our mappings
    * @param tokenId uint256 id of the ERC721 token to be burned.
    */
-  function burn(uint256 tokenId) external virtual override {
+  function burn(uint256 tokenId) external virtual override whenNotPaused {
     TokenInfo memory token = _getTokenInfo(tokenId);
     bool canBurn = _isApprovedOrOwner(_msgSender(), tokenId);
     bool fromTokenPool = _validPool(_msgSender()) && token.pool == _msgSender();
@@ -150,6 +150,7 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
       pool.limit = ITranchedPool(poolAddress).creditLine().limit();
     }
 
+    _tokenIdTracker.increment();
     uint256 tokenId = _tokenIdTracker.current();
     tokens[tokenId] = TokenInfo({
       pool: poolAddress,
@@ -159,7 +160,6 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
       interestRedeemed: 0
     });
     pool.totalMinted = pool.totalMinted.add(params.principalAmount);
-    _tokenIdTracker.increment();
     return tokenId;
   }
 
@@ -172,9 +172,13 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
     address from,
     address to,
     uint256 tokenId
-  ) internal virtual override(ERC721PresetMinterPauserAutoIdUpgradeSafe) {
+  ) internal virtual override(ERC721PresetMinterPauserAutoIdUpgradeSafe) whenNotPaused {
     require(config.goList(to) || to == address(0), "This address has not been go-listed");
     super._beforeTokenTransfer(from, to, tokenId);
+  }
+
+  function isApprovedOrOwner(address spender, uint256 tokenId) external view override returns (bool) {
+    return _isApprovedOrOwner(spender, tokenId);
   }
 
   modifier onlyGoldfinchFactory() {
