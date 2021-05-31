@@ -3,8 +3,8 @@ import { ERC20, usdcFromAtomic } from "./erc20"
 import _ from "lodash"
 import { getFromBlock, MAINNET } from "./utils"
 import { mapEventsToTx } from "./events"
-import { getCreditLineFactory } from "./creditLine"
-import { BorrowerInterface, getBorrowerContract } from "./borrower"
+import { getGoldfinchFactory } from "./creditLine"
+import { getBorrowerContract } from "./borrower"
 import { goList } from "../goList"
 
 declare let window: any;
@@ -12,7 +12,7 @@ declare let window: any;
 const UNLOCK_THRESHOLD = new BigNumber(10000)
 
 async function getUserData(address, usdc, pool, creditDesk, networkId): Promise<User> {
-  const goldfinchFactory = await getCreditLineFactory(networkId)
+  const goldfinchFactory = await getGoldfinchFactory(networkId)
   const borrower = await getBorrowerContract(address, goldfinchFactory, creditDesk, usdc, pool, networkId)
 
   const user = new Web3User(address, borrower, pool, creditDesk, usdc, networkId)

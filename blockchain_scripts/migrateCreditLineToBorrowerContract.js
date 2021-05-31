@@ -23,8 +23,8 @@ async function main() {
   }
 
   console.log("Creating the borrower contract...")
-  let creditLineFactory = await getDeployedContract(deployments, "CreditLineFactory", protocolOwner)
-  const result = await (await creditLineFactory.createBorrower(borrower)).wait()
+  let goldfinchFactory = await getDeployedContract(deployments, "GoldfinchFactory", protocolOwner)
+  const result = await (await goldfinchFactory.createBorrower(borrower)).wait()
   let bwrConAddr = result.events[result.events.length - 1].args[0]
   console.log("Created borrower contract at:", bwrConAddr)
 

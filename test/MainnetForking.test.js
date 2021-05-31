@@ -29,8 +29,8 @@ const {
   deployTranchedPool,
   deployMigratedTranchedPool,
   deploySeniorFundStrategy,
-  deployCreditLineFactoryV2,
   deployBorrower,
+  deployClImplementation,
 } = require("../blockchain_scripts/baseDeploy")
 const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
 const {time} = require("@openzeppelin/test-helpers")
@@ -68,10 +68,10 @@ async function deployV2(contracts) {
   const tranchedPool = await toTruffle(await deployTranchedPool(hre, {config}), "TranchedPool")
   const poolTokens = await toTruffle(await deployPoolTokens(hre, {config}), "PoolTokens")
   const migratedTranchedPool = await toTruffle(await deployMigratedTranchedPool(hre, {config}), "MigratedTranchedPool")
-  const creditLineFactoryV2 = await toTruffle(await deployCreditLineFactoryV2(hre, {config}), "CreditLineFactoryV2")
+  await deployClImplementation(hre, {config})
   await deployBorrower(hre, {config})
   await contracts.GoldfinchConfig.UpgradedContract.bulkAddToGoList([seniorPool.address])
-  return {seniorPool, seniorFundStrategy, tranchedPool, poolTokens, migratedTranchedPool, creditLineFactoryV2}
+  return {seniorPool, seniorFundStrategy, tranchedPool, poolTokens, migratedTranchedPool}
 }
 
 /*
@@ -85,12 +85,12 @@ describe("mainnet forking tests", async function () {
     return
   }
   // eslint-disable-next-line no-unused-vars
-  let accounts, owner, bwr, person3, pool, reserve, underwriter, usdc, creditDesk, fidu, goldfinchConfig, usdcAddress
-  let goldfinchFactory, busd, usdt, cUSDC, creditLineFactory
+  let accounts, owner, bwr, person3, pool, reserve, underwriter, usdc, fidu, goldfinchConfig
+  let goldfinchFactory, busd, usdt, cUSDC
   let upgradedContracts
   let reserveAddress, tranchedPool, borrower, seniorPool, seniorFundStrategy
 
-  const contractsToUpgrade = ["CreditDesk", "Pool", "Fidu", "CreditLineFactory", "GoldfinchConfig"]
+  const contractsToUpgrade = ["CreditDesk", "Pool", "Fidu", "GoldfinchFactory", "GoldfinchConfig"]
   const setupTest = deployments.createFixture(async ({deployments}) => {
     // Note: base_deploy always returns when mainnet forking, however
     // we need it here, because the "fixture" part is what let's hardhat
@@ -110,12 +110,12 @@ describe("mainnet forking tests", async function () {
       .require("GoldfinchConfig")
       .at(upgradedContracts.GoldfinchConfig.UpgradedContract.address)
     const goldfinchFactory = await artifacts
-      .require("CreditLineFactory")
+      .require("GoldfinchFactory")
       .at(upgradedContracts.CreditLineFactory.UpgradedContract.address)
     const cUSDC = await artifacts.require("IERC20withDec").at(MAINNET_CUSDC_ADDRESS)
     await creditDesk.setUnderwriterGovernanceLimit(underwriter, usdcVal(100000), {from: MAINNET_MULTISIG})
 
-    return {pool, usdc, creditDesk, fidu, goldfinchConfig, goldfinchFactory, cUSDC, creditLineFactory}
+    return {pool, usdc, creditDesk, fidu, goldfinchConfig, goldfinchFactory, cUSDC}
   })
 
   async function upgrade(contractsToUpgrade) {
@@ -175,7 +175,7 @@ describe("mainnet forking tests", async function () {
     this.timeout(TEST_TIMEOUT)
     accounts = await web3.eth.getAccounts()
     ;[owner, bwr, person3, underwriter, reserve] = accounts
-    ;({usdc, creditDesk, goldfinchFactory, pool, fidu, goldfinchConfig, cUSDC} = await setupTest())
+    ;({usdc, goldfinchFactory, pool, fidu, goldfinchConfig, cUSDC} = await setupTest())
     const usdcAddress = getUSDCAddress("mainnet")
     const busdAddress = "0x4fabb145d64652a948d72533023f6e7a623c7c53"
     const usdtAddress = "0xdAC17F958D2ee523a2206206994597C13D831ec7"
@@ -581,7 +581,7 @@ describe("mainnet upgrade tests", async function () {
     return
   }
   let owner, bwr, mainnetMultisigSigner, mainnetConfig, usdcTruffleContract
-  const contractsToUpgrade = ["CreditDesk", "Pool", "Fidu", "CreditLineFactory", "GoldfinchConfig"]
+  const contractsToUpgrade = ["CreditDesk", "Pool", "Fidu", "GoldfinchFactory", "GoldfinchConfig"]
 
   beforeEach(async function () {
     this.timeout(TEST_TIMEOUT)
@@ -709,7 +709,7 @@ describe("mainnet upgrade tests", async function () {
       // Setup tons of variables and contracts we'll need,
       // including QuickCheck's $300k credit line that we'll test against
       const creditDesk = await artifacts.require("TestCreditDesk").at(contracts.CreditDesk.UpgradedContract.address)
-      const creditLineFactory = await artifacts.require("CreditLineFactory").at(mainnetConfig.CreditLineFactory.address)
+      const goldfinchFactory = await artifacts.require("GoldfinchFactory").at(mainnetConfig.CreditLineFactory.address)
       const poolTokens = await artifacts.require("PoolTokens").at(poolTokensEthers.address)
       // QuickCheck's $300k CreditLine
       const quickCheck = await IV1CreditLine.at("0x6dDC3a7233ecD5514607FB1a0E3475A7dA6E58ED")
@@ -757,7 +757,7 @@ describe("mainnet upgrade tests", async function () {
       ).to.be.rejectedWith(/Can't migrate empty credit line/)
 
       // Setup a bunch more vars we'll need for the expectations
-      const event = decodeLogs(tx.receipt.rawLogs, creditLineFactory, "PoolCreated")[0]
+      const event = decodeLogs(tx.receipt.rawLogs, goldfinchFactory, "PoolCreated")[0]
       const tokenEvent = decodeLogs(tx.receipt.rawLogs, poolTokens, "TokenMinted")[0]
       const tokenId = tokenEvent.args.tokenId
       const tranchedPool = await artifacts.require("TranchedPool").at(event.args.pool)

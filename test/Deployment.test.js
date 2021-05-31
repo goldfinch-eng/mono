@@ -38,13 +38,13 @@ describe("Deployment", async () => {
       expect(await pool.hasRole(OWNER_ROLE, creditDesk.address)).to.be.true
     })
     it("sets the right defaults", async () => {
-      const creditLineFactory = await getDeployedContract(deployments, "CreditLineFactory")
+      const goldfinchFactory = await getDeployedContract(deployments, "GoldfinchFactory")
       const goldfinchConfig = await getDeployedContract(deployments, "TestGoldfinchConfig")
 
       expect(String(await goldfinchConfig.getNumber(CONFIG_KEYS.TransactionLimit))).to.bignumber.gt(new BN(0))
       expect(String(await goldfinchConfig.getNumber(CONFIG_KEYS.TotalFundsLimit))).to.bignumber.gt(new BN(0))
       expect(String(await goldfinchConfig.getNumber(CONFIG_KEYS.MaxUnderwriterLimit))).to.bignumber.gt(new BN(0))
-      expect(await goldfinchConfig.getAddress(CONFIG_KEYS.CreditLineFactory)).to.equal(creditLineFactory.address)
+      expect(await goldfinchConfig.getAddress(CONFIG_KEYS.GoldfinchFactory)).to.equal(goldfinchFactory.address)
     })
   })
 

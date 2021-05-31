@@ -39,6 +39,9 @@ function fiduToUSDC(number) {
 
 const getDeployedAsTruffleContract = async (deployments, contractName) => {
   let deployment = await deployments.getOrNull(contractName)
+  if (!deployment && contractName === "GoldfinchFactory") {
+    deployment = await deployments.getOrNull("CreditLineFactory")
+  }
   if (!deployment && isTestEnv()) {
     contractName = `Test${contractName}`
     deployment = await deployments.get(contractName)
@@ -167,7 +170,7 @@ async function deployAllContracts(deployments, options = {}) {
   const creditDesk = await getDeployedAsTruffleContract(deployments, "CreditDesk")
   const fidu = await getDeployedAsTruffleContract(deployments, "Fidu")
   const goldfinchConfig = await getDeployedAsTruffleContract(deployments, "GoldfinchConfig")
-  const goldfinchFactory = await getDeployedAsTruffleContract(deployments, "CreditLineFactory")
+  const goldfinchFactory = await getDeployedAsTruffleContract(deployments, "GoldfinchFactory")
   const poolTokens = await getDeployedAsTruffleContract(deployments, "PoolTokens")
   let forwarder = null
   if (deployForwarder) {

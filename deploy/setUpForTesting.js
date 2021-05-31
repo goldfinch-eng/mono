@@ -46,7 +46,7 @@ async function main({getNamedAccounts, deployments, getChainId}) {
   // which sets this var to the upgraded version of fidu
   // let fidu = await getDeployedAsEthersContract(getOrNull, "Fidu")
   let config = await getDeployedAsEthersContract(getOrNull, "GoldfinchConfig")
-  let creditLineFactory = await getDeployedAsEthersContract(getOrNull, "CreditLineFactory")
+  let goldfinchFactory = await getDeployedAsEthersContract(getOrNull, "GoldfinchFactory")
   await setupTestForwarder(deployments, config, getOrNull, protocol_owner)
 
   if (getUSDCAddress(chainID)) {
@@ -81,7 +81,7 @@ async function main({getNamedAccounts, deployments, getChainId}) {
     await fundWithWhales(erc20s, [protocol_owner])
 
     const mainnetConfig = getMainnetContracts()
-    const contractsToUpgrade = ["CreditDesk", "Pool", "Fidu", "CreditLineFactory", "GoldfinchConfig"]
+    const contractsToUpgrade = ["CreditDesk", "Pool", "Fidu", "GoldfinchFactory", "GoldfinchConfig"]
     const upgradedContracts = await upgradeExistingContracts(
       contractsToUpgrade,
       mainnetConfig,
@@ -92,7 +92,7 @@ async function main({getNamedAccounts, deployments, getChainId}) {
 
     creditDesk = upgradedContracts.CreditDesk.UpgradedContract
     pool = upgradedContracts.Pool.UpgradedContract
-    creditLineFactory = upgradedContracts.CreditLineFactory.UpgradedContract
+    goldfinchFactory = upgradedContracts.GoldfinchFactory.UpgradedContract
     // fidu = upgradedContracts.Fidu.UpgradedContract
     config = upgradedContracts.GoldfinchConfig.UpgradedContract
 
@@ -111,12 +111,12 @@ async function main({getNamedAccounts, deployments, getChainId}) {
   await depositFundsToThePool(pool, erc20)
   await createUnderwriter(creditDesk, underwriter)
 
-  const result = await (await creditLineFactory.createBorrower(borrower)).wait()
+  const result = await (await goldfinchFactory.createBorrower(borrower)).wait()
   let bwrConAddr = result.events[result.events.length - 1].args[0]
   logger(`Created borrower contract: ${bwrConAddr} for ${borrower}`)
 
-  await createCreditLineForBorrower(creditDesk, creditLineFactory, bwrConAddr)
-  await createCreditLineForBorrower(creditDesk, creditLineFactory, bwrConAddr)
+  await createCreditLineForBorrower(creditDesk, goldfinchFactory, bwrConAddr)
+  await createCreditLineForBorrower(creditDesk, goldfinchFactory, bwrConAddr)
 }
 
 async function upgradeExistingContracts(contractsToUpgrade, mainnetConfig, mainnetMultisig, deployFrom, deployments) {
@@ -210,7 +210,7 @@ async function createUnderwriter(creditDesk, newUnderwriter) {
   }
 }
 
-async function createCreditLineForBorrower(creditDesk, creditLineFactory, borrower) {
+async function createCreditLineForBorrower(creditDesk, goldfinchFactory, borrower) {
   logger("Trying to create an CreditLine for the Borrower...")
 
   logger("Creating a credit line for the borrower", borrower)

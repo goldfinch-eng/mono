@@ -138,10 +138,10 @@ class BorrowerInterface {
   }
 }
 
-async function getBorrowerContract(ownerAddress, creditLineFactory, creditDesk, usdc, pool, networkId) {
-  const borrowerCreatedEvents = await creditLineFactory.getPastEvents("BorrowerCreated", {
+async function getBorrowerContract(ownerAddress, goldfinchFactory, creditDesk, usdc, pool, networkId) {
+  const borrowerCreatedEvents = await goldfinchFactory.getPastEvents("BorrowerCreated", {
     filter: { owner: ownerAddress },
-    fromBlock: getFromBlock(creditLineFactory.chain),
+    fromBlock: getFromBlock(goldfinchFactory.chain),
     to: "latest",
   })
   let borrower

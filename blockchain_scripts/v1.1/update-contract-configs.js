@@ -10,7 +10,7 @@ async function main() {
 }
 
 async function updateContractConfigs(hre) {
-  let contractsToUpgrade = process.env.CONTRACTS || "CreditLineFactory, CreditDesk, Pool, Fidu"
+  let contractsToUpgrade = process.env.CONTRACTS || "GoldfinchFactory, CreditDesk, Pool, Fidu"
   logger(`Updating GoldfinchConfig on: ${contractsToUpgrade}`)
   contractsToUpgrade = contractsToUpgrade.split(/[ ,]+/)
 

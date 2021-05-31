@@ -32,14 +32,18 @@ async function upgradeContracts(contractNames, contracts, mainnetSigner, deployF
 
   const dependencies = {
     CreditDesk: {["Accountant"]: accountantDeployResult.address},
-    CreditLineFactory: {
+    GoldfinchFactory: {
       ["Accountant"]: accountantDeployResult.address,
     },
   }
 
   for (let i = 0; i < contractNames.length; i++) {
-    const contractName = contractNames[i]
+    let contractName = contractNames[i]
     let contract = contracts[contractName]
+    if (!contract && contractName === "GoldfinchFactory") {
+      // For backwards compatability until we deploy V2
+      contract = contracts["CreditLineFactory"]
+    }
     let contractToDeploy = contractName
     if (isTestEnv() && ["Pool", "CreditDesk", "GoldfinchConfig"].includes(contractName)) {
       contractToDeploy = `Test${contractName}`
@@ -78,7 +82,11 @@ async function getExistingContracts(contractNames, mainnetConfig, mainnetSigner)
     mainnetConfig = getMainnetContracts()
   }
   for (let i = 0; i < contractNames.length; i++) {
-    const contractName = contractNames[i]
+    let contractName = contractNames[i]
+    // For backwards compatability until we deploy V2
+    if (contractName === "GoldfinchFactory") {
+      contractName = "CreditLineFactory"
+    }
     const contractConfig = mainnetConfig[contractName]
     const proxyConfig = mainnetConfig[`${contractName}_Proxy`]
     let contractProxy = proxyConfig && (await ethers.getContractAt(proxyConfig.abi, proxyConfig.address, mainnetSigner))
@@ -164,7 +172,7 @@ async function migrateToNewConfig(upgradedContracts) {
 }
 
 async function setCurrentAddressesOnConfig(newConfig, existingConfig) {
-  const addressesToSet = ["Pool", "CreditLineFactory", "CreditDesk", "Fidu", "USDC", "CUSDCContract"]
+  const addressesToSet = ["Pool", "GoldfinchFactory", "CreditDesk", "Fidu", "USDC", "CUSDCContract"]
   await Promise.all(
     Object.entries(CONFIG_KEYS).map(async ([key, val]) => {
       if (addressesToSet.includes(key)) {

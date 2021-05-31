@@ -12,7 +12,7 @@ const CONFIG_KEYS = {
   // Addresses
   Pool: 0,
   CreditLineImplementation: 1,
-  CreditLineFactory: 2,
+  GoldfinchFactory: 2,
   CreditDesk: 3,
   Fidu: 4,
   USDC: 5,
@@ -27,8 +27,7 @@ const CONFIG_KEYS = {
   SeniorFund: 14,
   SeniorFundStrategy: 15,
   MigratedTranchedPoolImplementation: 16,
-  CreditLineFactoryV2: 17,
-  BorrowerImplementation: 18,
+  BorrowerImplementation: 17,
 }
 
 module.exports = {CONFIG_KEYS}

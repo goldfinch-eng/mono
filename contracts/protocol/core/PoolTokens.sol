@@ -178,7 +178,7 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
   }
 
   modifier onlyGoldfinchFactory() {
-    require(_msgSender() == config.creditLineFactoryAddress(), "Only Goldfinch factory is allowed");
+    require(_msgSender() == config.goldfinchFactoryAddress(), "Only Goldfinch factory is allowed");
     _;
   }
 

@@ -13,7 +13,7 @@ const {displayCreditLine} = require("./protocolHelpers")
 async function main() {
   const {proxy_owner} = await getNamedAccounts()
   const creditDesk = await getDeployedContract(deployments, "CreditDesk", proxy_owner)
-  const creditLineFactory = await getDeployedContract(deployments, "CreditLineFactory", proxy_owner)
+  const goldfinchFactory = await getDeployedContract(deployments, "GoldfinchFactory", proxy_owner)
   const borrower = process.env.BORROWER
   const bwrConAddr = process.env.BORROWER_CONTRACT
   if (!borrower && !bwrConAddr) {
@@ -23,15 +23,15 @@ async function main() {
     )
   }
 
-  await createCreditLineForBorrower(creditDesk, creditLineFactory, borrower, bwrConAddr)
+  await createCreditLineForBorrower(creditDesk, goldfinchFactory, borrower, bwrConAddr)
 }
 
-async function createCreditLineForBorrower(creditDesk, creditLineFactory, borrower, bwrConAddr, logger = console.log) {
+async function createCreditLineForBorrower(creditDesk, goldfinchFactory, borrower, bwrConAddr, logger = console.log) {
   logger("Trying to create an CreditLine for the Borrower...")
 
   if (!bwrConAddr) {
     console.log("No borrower contract passed in, so creating one...")
-    let txn = await creditLineFactory.createBorrower(borrower)
+    let txn = await goldfinchFactory.createBorrower(borrower)
     console.log("Borrower con txn:", txn)
     const result = await txn.wait()
     bwrConAddr = result.events[result.events.length - 1].args[0]

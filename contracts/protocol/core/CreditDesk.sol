@@ -7,7 +7,7 @@ import "./BaseUpgradeablePausable.sol";
 import "./ConfigHelper.sol";
 import "./Accountant.sol";
 import "./CreditLine.sol";
-import "./CreditLineFactory.sol";
+import "./GoldfinchFactory.sol";
 import "../../interfaces/IV1CreditLine.sol";
 import "../../interfaces/IMigratedTranchedPool.sol";
 
@@ -230,7 +230,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     // Ensure it is a v1 creditline by calling a function that only exists on v1
     require(clToMigrate.nextDueBlock() > 0, "Invalid creditline");
 
-    address pool = getCreditLineFactory().createMigratedPool(
+    address pool = getGoldfinchFactory().createMigratedPool(
       clToMigrate.borrower(),
       20, // junior fee percent
       clToMigrate.limit(),
@@ -424,8 +424,8 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     return secondsElapsedSinceFullPayment > cl.paymentPeriodInDays().mul(SECONDS_PER_DAY);
   }
 
-  function getCreditLineFactory() internal view returns (CreditLineFactory) {
-    return CreditLineFactory(config.getAddress(uint256(ConfigOptions.Addresses.CreditLineFactory)));
+  function getGoldfinchFactory() internal view returns (GoldfinchFactory) {
+    return GoldfinchFactory(config.getAddress(uint256(ConfigOptions.Addresses.GoldfinchFactory)));
   }
 
   function updateAndGetInterestAndPrincipalOwedAsOf(CreditLine cl, uint256 timestamp)

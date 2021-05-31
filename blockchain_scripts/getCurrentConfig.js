@@ -23,7 +23,7 @@ async function main() {
 
   console.log("Pool ==", String(await config.getAddress(CONFIG_KEYS.Pool)))
   console.log("CreditLineImplementation ==", String(await config.getAddress(CONFIG_KEYS.CreditLineImplementation)))
-  console.log("CreditLineFactory ==", String(await config.getAddress(CONFIG_KEYS.CreditLineFactory)))
+  console.log("GoldfinchFactory ==", String(await config.getAddress(CONFIG_KEYS.GoldfinchFactory)))
   console.log("CreditDesk ==", String(await config.getAddress(CONFIG_KEYS.CreditDesk)))
   console.log("Fidu ==", String(await config.getAddress(CONFIG_KEYS.Fidu)))
   console.log("USDC ==", String(await config.getAddress(CONFIG_KEYS.USDC)))

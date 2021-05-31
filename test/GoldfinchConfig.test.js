@@ -45,7 +45,7 @@ describe("GoldfinchConfig", () => {
 
       // Addresses
       expect(await goldfinchConfig.getAddress(CONFIG_KEYS.Pool)).to.equal("0xBAc2781706D0aA32Fb5928c9a5191A13959Dc4AE")
-      expect(await goldfinchConfig.getAddress(CONFIG_KEYS.CreditLineFactory)).to.equal(
+      expect(await goldfinchConfig.getAddress(CONFIG_KEYS.GoldfinchFactory)).to.equal(
         "0x0afFE1972479c386A2Ab21a27a7f835361B6C0e9"
       )
       expect(await goldfinchConfig.getAddress(CONFIG_KEYS.CreditDesk)).to.equal(

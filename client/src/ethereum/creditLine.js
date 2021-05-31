@@ -243,13 +243,13 @@ async function fetchCreditLineData(creditLineAddresses, usdc) {
   return result
 }
 
-async function getCreditLineFactory(networkId) {
+async function getGoldfinchFactory(networkId) {
   const deployments = await getDeployments(networkId)
-  const creditLineFactoryAddress = deployments.contracts.CreditLineFactory.address
-  const creditLineFactory = new web3.eth.Contract(deployments.contracts.CreditLineFactory.abi, creditLineFactoryAddress)
-  return creditLineFactory
+  const goldfinchFactoryAddress = deployments.contracts.GoldfinchFactory.address
+  const goldfinchFactory = new web3.eth.Contract(deployments.contracts.GoldfinchFactory.abi, goldfinchFactoryAddress)
+  return goldfinchFactory
 }
 
 const defaultCreditLine = new DefaultCreditLine()
 
-export { buildCreditLine, fetchCreditLineData, getCreditLineFactory, defaultCreditLine }
+export { buildCreditLine, fetchCreditLineData, getGoldfinchFactory, defaultCreditLine }

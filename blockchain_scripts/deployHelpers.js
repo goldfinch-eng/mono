@@ -128,8 +128,12 @@ async function getDeployedContract(deployments, contractName, signerAddress) {
 async function deployContractUpgrade(contractName, dependencies, from, deployments, ethers) {
   const {deploy} = deployments
 
-  let contract = await getDeployedContract(deployments, contractName)
-  let contractProxy = await getDeployedContract(deployments, `${contractName}_Proxy`)
+  let contractNameToLookUp = contractName
+  if (contractName === "GoldfinchFactory") {
+    contractNameToLookUp = "CreditLineFactory"
+  }
+  let contract = await getDeployedContract(deployments, contractNameToLookUp)
+  let contractProxy = await getDeployedContract(deployments, `${contractNameToLookUp}_Proxy`)
   // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v3.2.0/contracts/proxy/TransparentUpgradeableProxy.sol#L81
   const implStorageLocation = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"
   let currentImpl = await ethers.provider.getStorageAt(contractProxy.address, implStorageLocation)

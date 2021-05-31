@@ -479,7 +479,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     uint256 _termInDays,
     uint256 _lateFeeApr
   ) internal {
-    address _creditLine = config.getCreditLineFactory().createCreditLine();
+    address _creditLine = config.getGoldfinchFactory().createCreditLine();
     creditLine = IV2CreditLine(_creditLine);
     creditLine.initialize(
       address(config),

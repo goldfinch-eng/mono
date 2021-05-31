@@ -42,9 +42,9 @@ async function baseDeploy(hre) {
   await deployBorrower(hre, {config})
   logger("Granting minter role to SeniorFund")
   await deploySeniorFundStrategy(hre, {config})
-  logger("Deploying CreditLineFactory")
-  await deployCreditLineFactory(deploy, {config})
-  await deployCreditLineFactoryV2(hre, {config})
+  logger("Deploying GoldfinchFactory")
+  await deployGoldfinchFactory(deploy, {config})
+  await deployClImplementation(hre, {config})
 
   logger("Granting ownership of Pool to CreditDesk")
   await grantOwnershipOfPoolToCreditDesk(pool, creditDesk.address)
@@ -92,10 +92,10 @@ async function baseDeploy(hre) {
     return usdcAddress
   }
 
-  async function deployCreditLineFactory(deploy, {config}) {
+  async function deployGoldfinchFactory(deploy, {config}) {
     logger("Deploying credit line factory")
     const accountant = await deploy("Accountant", {from: protocol_owner, gas: 4000000, args: []})
-    let clFactoryDeployResult = await deploy("CreditLineFactory", {
+    let goldfinchFactoryDeployResult = await deploy("GoldfinchFactory", {
       from: proxy_owner,
       proxy: {owner: proxy_owner, methodName: "initialize"},
       gas: 4000000,
@@ -104,13 +104,13 @@ async function baseDeploy(hre) {
         ["Accountant"]: accountant.address,
       },
     })
-    logger("CreditLineFactory was deployed to:", clFactoryDeployResult.address)
+    logger("GoldfinchFactory was deployed to:", goldfinchFactoryDeployResult.address)
 
-    const creditLineFactory = await ethers.getContractAt("CreditLineFactory", clFactoryDeployResult.address)
-    let creditLineFactoryAddress = creditLineFactory.address
+    const goldfinchFactory = await ethers.getContractAt("GoldfinchFactory", goldfinchFactoryDeployResult.address)
+    let goldfinchFactoryAddress = goldfinchFactory.address
 
-    await updateConfig(config, "address", CONFIG_KEYS.CreditLineFactory, creditLineFactoryAddress, {logger})
-    return creditLineFactory
+    await updateConfig(config, "address", CONFIG_KEYS.GoldfinchFactory, goldfinchFactoryAddress, {logger})
+    return goldfinchFactory
   }
 
   async function deployCreditDesk(deploy, {config}) {
@@ -199,21 +199,32 @@ async function deployTranchedPool(hre, {config}) {
   return tranchedPoolImpl
 }
 
+async function deployClImplementation(hre, {config}) {
+  const {deployments, getNamedAccounts} = hre
+  const {deploy} = deployments
+  const {protocol_owner, proxy_owner} = await getNamedAccounts()
+
+  const accountant = await deploy("Accountant", {from: protocol_owner, gas: 4000000, args: []})
+  // Deploy the credit line as well so we generate the ABI
+  const clDeployResult = await deploy("CreditLine", {
+    from: proxy_owner,
+    gas: 4000000,
+    libraries: {["Accountant"]: accountant.address},
+  })
+
+  updateConfig(config, "address", CONFIG_KEYS.CreditLineImplementation, clDeployResult.address)
+}
+
 async function deployMigratedTranchedPool(hre, {config}) {
   const {deployments, getNamedAccounts} = hre
   const {deploy, log} = deployments
   const logger = log
-  const {protocol_owner, proxy_owner} = await getNamedAccounts()
-
-  const accountant = await deploy("Accountant", {from: protocol_owner, gas: 4000000, args: []})
+  const {proxy_owner} = await getNamedAccounts()
 
   logger("About to deploy MigratedTranchedPool...")
   let contractName = "MigratedTranchedPool"
 
-  const migratedTranchedPoolImpl = await deploy(contractName, {
-    from: proxy_owner,
-    libraries: {["Accountant"]: accountant.address},
-  })
+  const migratedTranchedPoolImpl = await deploy(contractName, {from: proxy_owner})
   await updateConfig(
     config,
     "address",
@@ -359,40 +370,6 @@ async function deployBorrower(hre, {config}) {
   return borrower
 }
 
-async function deployCreditLineFactoryV2(hre, {config}) {
-  const {deployments, getNamedAccounts} = hre
-  const {log, deploy} = deployments
-  const {proxy_owner, protocol_owner} = await getNamedAccounts()
-  const logger = log
-  logger("Deploying credit line factory")
-
-  const accountant = await deploy("Accountant", {from: protocol_owner, gas: 4000000, args: []})
-  let clFactoryDeployResult = await deploy("CreditLineFactoryV2", {
-    from: proxy_owner,
-    proxy: {owner: proxy_owner, methodName: "initialize"},
-    gas: 4000000,
-    args: [protocol_owner, config.address],
-    libraries: {
-      ["Accountant"]: accountant.address,
-    },
-  })
-  logger("CreditLineFactoryV2 was deployed to:", clFactoryDeployResult.address)
-
-  // Deploy the credit line as well so we generate the ABI
-  const clDeployResult = await deploy("CreditLine", {
-    from: proxy_owner,
-    gas: 4000000,
-    libraries: {["Accountant"]: accountant.address},
-  })
-
-  const creditLineFactory = await ethers.getContractAt("CreditLineFactoryV2", clFactoryDeployResult.address)
-  let creditLineFactoryAddress = creditLineFactory.address
-
-  await updateConfig(config, "address", CONFIG_KEYS.CreditLineFactoryV2, creditLineFactoryAddress, {logger})
-  await updateConfig(config, "address", CONFIG_KEYS.CreditLineImplementation, clDeployResult.address, {logger})
-  return creditLineFactory
-}
-
 module.exports = {
   baseDeploy,
   deployPoolTokens,
@@ -401,6 +378,6 @@ module.exports = {
   deploySeniorFund,
   deployMigratedTranchedPool,
   deploySeniorFundStrategy,
-  deployCreditLineFactoryV2,
   deployBorrower,
+  deployClImplementation,
 }

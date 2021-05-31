@@ -7,17 +7,16 @@ import "./GoldfinchConfig.sol";
 import "./BaseUpgradeablePausable.sol";
 import "../../interfaces/IBorrower.sol";
 import "../../interfaces/ITranchedPool.sol";
-import "../../interfaces/ICreditLineFactoryV2.sol";
 import "./ConfigHelper.sol";
 
 /**
- * @title CreditLineFactory
+ * @title GoldfinchFactory
  * @notice Contract that allows us to create other contracts, such as CreditLines and BorrowerContracts
- *  Note CreditLineFactory is a legacy name. More properly this can be considered simply the GoldfinchFactory
+ *  Note GoldfinchFactory is a legacy name. More properly this can be considered simply the GoldfinchFactory
  * @author Goldfinch
  */
 
-contract CreditLineFactory is BaseUpgradeablePausable {
+contract GoldfinchFactory is BaseUpgradeablePausable {
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
 
@@ -30,7 +29,7 @@ contract CreditLineFactory is BaseUpgradeablePausable {
   }
 
   function createCreditLine() external returns (address) {
-    return config.getCreditLineFactoryV2().createCreditLine();
+    return deployMinimal(config.creditLineImplementationAddress());
   }
 
   /**
