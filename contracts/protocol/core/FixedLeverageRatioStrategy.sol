@@ -17,6 +17,13 @@ contract FixedLeverageRatioStrategy is IFundStrategy {
     leverageRatio = _leverageRatio;
   }
 
+  /**
+   * @notice Determines how much money ot invest in the senior tranche based on what's committed to the junior
+   * tranche and a fixed leverage ratio to the junior. Idempotent
+   * @param fund The fund to invest from
+   * @param pool The pool to invest into (as the senior)
+   * @return The amount of money to invest into the pool from the fund
+   */
   function invest(IFund fund, ITranchedPool pool) public view override returns (uint256) {
     ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
     ITranchedPool.TrancheInfo memory seniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Senior));

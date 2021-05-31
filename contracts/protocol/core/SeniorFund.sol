@@ -122,6 +122,13 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
   }
 
   /**
+   * @notice Migrates to a new goldfinch config address
+   */
+  function updateGoldfinchConfig() external onlyAdmin {
+    config = GoldfinchConfig(config.configAddress());
+  }
+
+  /**
    * @notice Moves any USDC still in the SeniorFund to Compound, and tracks the amount internally.
    * This is done to earn interest on latent funds until we have other borrowers who can use it.
    *
@@ -153,10 +160,6 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
    */
   function sweepFromCompound() public override onlyAdmin whenNotPaused {
     _sweepFromCompound();
-  }
-
-  function updateGoldfinchConfig() external onlyAdmin {
-    config = GoldfinchConfig(config.configAddress());
   }
 
   /**
@@ -231,6 +234,11 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
     emit PrincipalWrittenDown(address(pool), writedownDelta);
   }
 
+  /**
+   * @notice Calculates the writedown amount for a particular pool position
+   * @param tokenId The token reprsenting the position
+   * @return The amount in dollars the principal should be written down by
+   */
   function calculateWritedown(uint256 tokenId) public view override returns (uint256) {
     IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
     ITranchedPool pool = ITranchedPool(tokenInfo.pool);
@@ -239,6 +247,24 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
     (uint256 _, uint256 writedownAmount) = _calculateWritedown(pool, principalRemaining);
     return writedownAmount;
   }
+
+  /**
+   * @notice Returns the net assests controlled by and owed to the pool
+   */
+  function assets() public view override returns (uint256) {
+    return
+      compoundBalance.add(config.getUSDC().balanceOf(address(this))).add(totalLoansOutstanding).sub(totalWritedowns);
+  }
+
+  /**
+   * @notice Converts and USDC amount to FIDU amount
+   * @param amount USDC amount to convert to FIDU
+   */
+  function getNumShares(uint256 amount) public view override returns (uint256) {
+    return usdcToFidu(amount).mul(fiduMantissa()).div(sharePrice);
+  }
+
+  /* Internal Functions */
 
   function _calculateWritedown(ITranchedPool pool, uint256 principal)
     internal
@@ -270,13 +296,6 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
     }
   }
 
-  function assets() public view override returns (uint256) {
-    return
-      compoundBalance.add(config.getUSDC().balanceOf(address(this))).add(totalLoansOutstanding).sub(totalWritedowns);
-  }
-
-  /* Internal Functions */
-
   function fiduMantissa() internal pure returns (uint256) {
     return uint256(10)**uint256(18);
   }
@@ -295,10 +314,6 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
 
   function getUSDCAmountFromShares(uint256 fiduAmount) internal view returns (uint256) {
     return fiduToUSDC(fiduAmount.mul(sharePrice).div(fiduMantissa()));
-  }
-
-  function getNumShares(uint256 amount) public view override returns (uint256) {
-    return usdcToFidu(amount).mul(fiduMantissa()).div(sharePrice);
   }
 
   function sharesWithinLimit(uint256 _totalShares) internal view returns (bool) {
@@ -434,11 +449,6 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
     return config.getFidu().totalSupply();
   }
 
-  modifier withinTransactionLimit(uint256 amount) {
-    require(transactionWithinLimit(amount), "Amount is over the per-transaction limit");
-    _;
-  }
-
   function validPool(ITranchedPool pool) internal view returns (bool) {
     return config.getPoolTokens().validPool(address(pool));
   }
@@ -447,5 +457,10 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
     IERC20withDec usdc = config.getUSDC();
     bool success = usdc.approve(address(pool), allowance);
     require(success, "Failed to approve USDC");
+  }
+
+  modifier withinTransactionLimit(uint256 amount) {
+    require(transactionWithinLimit(amount), "Amount is over the per-transaction limit");
+    _;
   }
 }

@@ -74,6 +74,12 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
     _setRoleAdmin(OWNER_ROLE, OWNER_ROLE);
   }
 
+  /**
+   * @notice Called by pool to create a debt position in a particular tranche and amount
+   * @param params Struct containing the tranche and the amount
+   * @param to The address that should own the position
+   * @return The token ID (auto-incrementing integer across all pools)
+   */
   function mint(MintParams calldata params, address to)
     external
     virtual
@@ -89,6 +95,12 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
     return tokenId;
   }
 
+  /**
+   * @notice Updates a token to reflect the principal and interest amounts that have been redeemed.
+   * @param tokenId The token id to update (must be owned by the pool calling this function)
+   * @param principalRedeemed The incremental amount of principal redeemed (cannot be more than principal deposited)
+   * @param interestRedeemed The incremental amount of interest redeemed
+   */
   function redeem(
     uint256 tokenId,
     uint256 principalRedeemed,
@@ -126,20 +138,27 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
     return _getTokenInfo(tokenId);
   }
 
-  function _getTokenInfo(uint256 tokenId) internal view returns (TokenInfo memory) {
-    return tokens[tokenId];
+  /**
+   * @notice Called by the GoldfinchFactory to register the pool as a valid pool. Only valid pools can mint/redeem
+   * tokens
+   * @param newPool The address of the newly created pool
+   */
+  function onPoolCreated(address newPool) external override onlyGoldfinchFactory {
+    pools[newPool].created = true;
+  }
+
+  /**
+   * @notice Returns a boolean representing whether the spender is the owner or the approved spender of the token
+   * @param spender The address to check
+   * @param tokenId The token id to check for
+   * @return True if approved to redeem/transfer/burn the token, false if not
+   */
+  function isApprovedOrOwner(address spender, uint256 tokenId) external view override returns (bool) {
+    return _isApprovedOrOwner(spender, tokenId);
   }
 
   function validPool(address sender) public view virtual override returns (bool) {
     return _validPool(sender);
-  }
-
-  function _validPool(address sender) internal view virtual returns (bool) {
-    return pools[sender].created;
-  }
-
-  function onPoolCreated(address newPool) external override onlyGoldfinchFactory {
-    pools[newPool].created = true;
   }
 
   function createToken(MintParams memory params, address poolAddress) internal returns (uint256) {
@@ -177,8 +196,12 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
     super._beforeTokenTransfer(from, to, tokenId);
   }
 
-  function isApprovedOrOwner(address spender, uint256 tokenId) external view override returns (bool) {
-    return _isApprovedOrOwner(spender, tokenId);
+  function _validPool(address sender) internal view virtual returns (bool) {
+    return pools[sender].created;
+  }
+
+  function _getTokenInfo(uint256 tokenId) internal view returns (TokenInfo memory) {
+    return tokens[tokenId];
   }
 
   modifier onlyGoldfinchFactory() {

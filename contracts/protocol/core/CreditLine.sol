@@ -72,8 +72,46 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     require(success, "Failed to approve USDC");
   }
 
+  /**
+   * @notice Updates the internal accounting to track a drawdown as of current block timestamp.
+   * Does not move any money
+   * @param amount The amount in USDC that has been drawndown
+   */
+  function drawdown(uint256 amount) external onlyAdmin {
+    require(amount.add(balance) <= limit, "Cannot drawdown more than the limit");
+    uint256 timestamp = currentTime();
+
+    if (balance == 0) {
+      setInterestAccruedAsOf(timestamp);
+      setLastFullPaymentTime(timestamp);
+      setTotalInterestAccrued(0);
+      setTermEndTime(timestamp.add(SECONDS_PER_DAY.mul(termInDays)));
+    }
+
+    (uint256 _interestOwed, uint256 _principalOwed) = updateAndGetInterestAndPrincipalOwedAsOf(timestamp);
+    balance = balance.add(amount);
+
+    updateCreditLineAccounting(balance, _interestOwed, _principalOwed);
+    require(!isLate(timestamp), "Cannot drawdown when payments are past due");
+  }
+
+  /**
+   * @notice Migrates to a new goldfinch config address
+   */
   function updateGoldfinchConfig() external onlyAdmin {
     config = GoldfinchConfig(config.configAddress());
+  }
+
+  function setLateFeeApr(uint256 newLateFeeApr) external onlyAdmin {
+    lateFeeApr = newLateFeeApr;
+  }
+
+  function setLimit(uint256 newAmount) external onlyAdmin {
+    limit = newAmount;
+  }
+
+  function termStartTime() external view returns (uint256) {
+    return termEndTime.sub(SECONDS_PER_DAY.mul(termInDays));
   }
 
   function setTermEndTime(uint256 newTermEndTime) public onlyAdmin {
@@ -108,36 +146,13 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     lastFullPaymentTime = newLastFullPaymentTime;
   }
 
-  function setLateFeeApr(uint256 newLateFeeApr) external onlyAdmin {
-    lateFeeApr = newLateFeeApr;
-  }
-
-  function setLimit(uint256 newAmount) external onlyAdmin {
-    limit = newAmount;
-  }
-
-  function termStartTime() external view returns (uint256) {
-    return termEndTime.sub(SECONDS_PER_DAY.mul(termInDays));
-  }
-
-  function drawdown(uint256 amount) external onlyAdmin {
-    require(amount.add(balance) <= limit, "Cannot drawdown more than the limit");
-    uint256 timestamp = currentTime();
-
-    if (balance == 0) {
-      setInterestAccruedAsOf(timestamp);
-      setLastFullPaymentTime(timestamp);
-      setTotalInterestAccrued(0);
-      setTermEndTime(timestamp.add(SECONDS_PER_DAY.mul(termInDays)));
-    }
-
-    (uint256 _interestOwed, uint256 _principalOwed) = updateAndGetInterestAndPrincipalOwedAsOf(timestamp);
-    balance = balance.add(amount);
-
-    updateCreditLineAccounting(balance, _interestOwed, _principalOwed);
-    require(!isLate(timestamp), "Cannot drawdown when payments are past due");
-  }
-
+  /**
+   * @notice Triggers an assessment of the creditline. Any USDC balance available in the creditline is applied
+   * towards the interest and principal.
+   * @return Any amount remaining after applying payments towards the interest and principal
+   * @return Amount applied towards interest
+   * @return Amount applied towards principal
+   */
   function assess()
     public
     onlyAdmin
