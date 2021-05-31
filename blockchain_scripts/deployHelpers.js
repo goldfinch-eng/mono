@@ -2,7 +2,7 @@
 const BN = require("bn.js")
 const USDCDecimals = new BN(String(1e6))
 const ETHDecimals = new BN(String(1e18))
-const INTEREST_DECIMALS = new BN(String(1e8))
+const INTEREST_DECIMALS = new BN(String(1e18))
 const API_KEY = process.env.DEFENDER_API_KEY || "A2UgCPgn8jQbkSVuSCxEMhFmivdV9C6d"
 const API_SECRET = process.env.DEFENDER_API_SECRET
 const {AdminClient} = require("defender-admin-client")
@@ -83,7 +83,7 @@ async function isMainnet() {
 
 function interestAprAsBN(interestPercentageString) {
   const interestPercentageFloat = parseFloat(interestPercentageString)
-  return new BN((interestPercentageFloat / 100) * INTEREST_DECIMALS)
+  return new BN(String((interestPercentageFloat / 100) * INTEREST_DECIMALS))
 }
 
 function getUSDCAddress(chainID) {
@@ -242,37 +242,37 @@ function getDefenderClient() {
 }
 
 module.exports = {
-  CHAIN_MAPPING: CHAIN_MAPPING,
-  ZERO_ADDRESS: ZERO_ADDRESS,
-  ROPSTEN_USDC_ADDRESS: ROPSTEN_USDC_ADDRESS,
-  MAINNET_ONE_SPLIT_ADDRESS: MAINNET_ONE_SPLIT_ADDRESS,
-  MAINNET_CUSDC_ADDRESS: MAINNET_CUSDC_ADDRESS,
-  MAINNET_COMP_ADDRESS: MAINNET_COMP_ADDRESS,
-  LOCAL: LOCAL,
-  MAINNET: MAINNET,
-  USDCDecimals: USDCDecimals,
-  MAX_UINT: MAX_UINT,
-  ETHDecimals: ETHDecimals,
-  INTEREST_DECIMALS: INTEREST_DECIMALS,
-  getUSDCAddress: getUSDCAddress,
-  getERC20Address: getERC20Address,
-  getDeployedContract: getDeployedContract,
-  fromAtomic: fromAtomic,
-  toAtomic: toAtomic,
-  updateConfig: updateConfig,
-  getSignerForAddress: getSignerForAddress,
-  MAINNET_CHAIN_ID: MAINNET_CHAIN_ID,
-  OWNER_ROLE: OWNER_ROLE,
-  PAUSER_ROLE: PAUSER_ROLE,
-  MINTER_ROLE: MINTER_ROLE,
-  SAFE_CONFIG: SAFE_CONFIG,
-  TRUSTED_FORWARDER_CONFIG: TRUSTED_FORWARDER_CONFIG,
-  isTestEnv: isTestEnv,
-  isMainnetForking: isMainnetForking,
-  isMainnet: isMainnet,
-  interestAprAsBN: interestAprAsBN,
-  getDefenderClient: getDefenderClient,
-  deployContractUpgrade: deployContractUpgrade,
-  setInitialConfigVals: setInitialConfigVals,
+  CHAIN_MAPPING,
+  ZERO_ADDRESS,
+  ROPSTEN_USDC_ADDRESS,
+  MAINNET_ONE_SPLIT_ADDRESS,
+  MAINNET_CUSDC_ADDRESS,
+  MAINNET_COMP_ADDRESS,
+  LOCAL,
+  MAINNET,
+  USDCDecimals,
+  MAX_UINT,
+  ETHDecimals,
+  INTEREST_DECIMALS,
+  getUSDCAddress,
+  getERC20Address,
+  getDeployedContract,
+  fromAtomic,
+  toAtomic,
+  updateConfig,
+  getSignerForAddress,
+  MAINNET_CHAIN_ID,
+  OWNER_ROLE,
+  PAUSER_ROLE,
+  MINTER_ROLE,
+  SAFE_CONFIG,
+  TRUSTED_FORWARDER_CONFIG,
+  isTestEnv,
+  isMainnetForking,
+  isMainnet,
+  interestAprAsBN,
+  getDefenderClient,
+  deployContractUpgrade,
+  setInitialConfigVals,
   TRANCHES,
 }

@@ -24,7 +24,7 @@ library Accountant {
 
   // Scaling factor used by FixedPoint.sol. We need this to convert the fixed point raw values back to unscaled
   uint256 public constant FP_SCALING_FACTOR = 10**18;
-  uint256 public constant INTEREST_DECIMALS = 1e8;
+  uint256 public constant INTEREST_DECIMALS = 1e18;
   uint256 public constant SECONDS_PER_DAY = 60 * 60 * 24;
   uint256 public constant SECONDS_PER_YEAR = (SECONDS_PER_DAY * 365);
 
@@ -142,8 +142,8 @@ library Accountant {
     // we allow this function to be called with a past timestamp, which raises the possibility
     // of overflow.
     // This use of min should not generate incorrect interest calculations, since
-    // this functions purpose is just to normalize balances, and  will be called any time
-    // a balance affecting action takes place (eg. drawdown, repayment, assessment)
+    // this function's purpose is just to normalize balances, and handing in a past timestamp
+    // will necessarily return zero interest accrued (because zero elapsed time), which is correct.
     uint256 startTime = Math.min(timestamp, cl.interestAccruedAsOf());
     return calculateInterestAccruedOverPeriod(cl, balance, startTime, timestamp, lateFeeGracePeriodInDays);
   }

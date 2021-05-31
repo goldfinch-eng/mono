@@ -24,8 +24,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   using FixedPoint for uint256;
 
   bytes32 public constant LOCKER_ROLE = keccak256("LOCKER_ROLE");
-  uint256 public constant FP_SCALING_FACTOR = 10**18;
-  uint256 public constant INTEREST_DECIMALS = 1e8;
+  uint256 public constant FP_SCALING_FACTOR = 1e18;
   uint256 public constant SECONDS_PER_DAY = 60 * 60 * 24;
   uint256 public constant ONE_HUNDRED = 100; // Need this because we cannot call .div on a literal 100
   uint256 public juniorFeePercent;
@@ -512,7 +511,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     uint256 amount,
     uint256 fraction,
     uint256 total
-  ) internal view returns (uint256) {
+  ) internal pure returns (uint256) {
     FixedPoint.Unsigned memory totalAsFixedPoint = FixedPoint.fromUnscaledUint(total);
     FixedPoint.Unsigned memory fractionAsFixedPoint = FixedPoint.fromUnscaledUint(fraction);
     return fractionAsFixedPoint.div(totalAsFixedPoint).mul(amount).div(FP_SCALING_FACTOR).rawValue;

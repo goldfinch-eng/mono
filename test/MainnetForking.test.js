@@ -807,6 +807,7 @@ describe("mainnet upgrade tests", async function () {
       expect(tokenInfo.interestRedeemed).to.equal(String(totalInterestPaid))
       expect(await poolTokens.ownerOf(tokenId)).to.eq(seniorPool.address)
 
+      // Group 7: We calculate the correct amount of interest after one period
       await tranchedPool.assess()
       const afterNextDueTime = (await newCl.nextDueTime()).add(new BN(1))
       await advanceTime(creditDesk, {toSecond: afterNextDueTime})

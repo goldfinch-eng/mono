@@ -229,11 +229,15 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     // Ensure it is a v1 creditline by calling a function that only exists on v1
     require(clToMigrate.nextDueBlock() > 0, "Invalid creditline");
 
+    // We're migrating from 1e8 decimal precision of interest rates to 1e18
+    // So multiply the legacy rates by 1e10 to normalize them.
+    uint256 interestMigrationFactor = 1e10;
+
     address pool = getGoldfinchFactory().createMigratedPool(
       clToMigrate.borrower(),
       20, // junior fee percent
       clToMigrate.limit(),
-      clToMigrate.interestApr(),
+      clToMigrate.interestApr().mul(interestMigrationFactor),
       clToMigrate.paymentPeriodInDays(),
       clToMigrate.termInDays(),
       clToMigrate.lateFeeApr()
