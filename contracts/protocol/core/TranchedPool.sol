@@ -245,10 +245,17 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
       pause();
     }
 
+    IERC20withDec usdc = config.getUSDC();
+    address reserveAddress = config.reserveAddress();
     // Sweep any funds to community reserve
-    uint256 poolBalance = config.getUSDC().balanceOf(address(this));
+    uint256 poolBalance = usdc.balanceOf(address(this));
     if (poolBalance > 0) {
-      safeTransfer(config.getUSDC(), config.reserveAddress(), poolBalance);
+      safeTransfer(usdc, reserveAddress, poolBalance);
+    }
+
+    uint256 clBalance = usdc.balanceOf(address(creditLine));
+    if (clBalance > 0) {
+      safeTransfer(usdc, address(creditLine), reserveAddress, clBalance);
     }
     emit EmergencyShutdown(address(this));
   }

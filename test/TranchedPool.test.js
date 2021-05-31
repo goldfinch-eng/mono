@@ -208,10 +208,12 @@ describe("TranchedPool", () => {
     it("should pause the pool and sweep funds", async () => {
       const amount = usdcVal(10)
       await usdc.transfer(tranchedPool.address, amount, {from: owner})
+      await usdc.transfer(creditLine.address, amount, {from: owner})
       await expectAction(tranchedPool.emergencyShutdown).toChange([
         [tranchedPool.paused, {to: true, bignumber: false}],
         [() => getBalance(tranchedPool.address, usdc), {to: ZERO}],
-        [() => getBalance(treasury, usdc), {by: amount}],
+        [() => getBalance(creditLine.address, usdc), {to: ZERO}],
+        [() => getBalance(treasury, usdc), {by: amount.mul(new BN(2))}],
       ])
     })
     it("should emit an event", async () => {
