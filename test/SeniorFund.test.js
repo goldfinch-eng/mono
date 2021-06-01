@@ -423,35 +423,6 @@ describe("SeniorFund", () => {
         })
       })
     })
-    describe("transactionLimit", async () => {
-      describe("after setting it", async () => {
-        let limit
-        beforeEach(async () => {
-          limit = new BN(1000)
-          await goldfinchConfig.setNumber(CONFIG_KEYS.TotalFundsLimit, limit.mul(new BN(10)).mul(USDC_DECIMALS))
-          await goldfinchConfig.setNumber(CONFIG_KEYS.TransactionLimit, limit.mul(USDC_DECIMALS))
-        })
-
-        it("should still allow transactions up to the limit", async () => {
-          return expect(makeDeposit(person2, new BN(limit).mul(USDC_DECIMALS))).to.be.fulfilled
-        })
-
-        it("should block deposits over the limit", async () => {
-          return expect(makeDeposit(person2, new BN(limit).add(new BN(1)).mul(USDC_DECIMALS))).to.be.rejectedWith(
-            /Amount is over the per-transaction limit/
-          )
-        })
-
-        it("should block withdrawals over the limit", async () => {
-          await makeDeposit(person2, new BN(limit).mul(USDC_DECIMALS))
-          await makeDeposit(person2, new BN(limit).mul(USDC_DECIMALS))
-
-          return expect(makeWithdraw(person2, new BN(limit).add(new BN(1)).mul(USDC_DECIMALS))).to.be.rejectedWith(
-            /Amount is over the per-transaction limit/
-          )
-        })
-      })
-    })
   })
 
   describe("assets matching liabilities", async () => {

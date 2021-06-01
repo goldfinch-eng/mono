@@ -114,13 +114,6 @@ describe("PoolTokens", () => {
       expect(tokenInfo.interestRedeemed).to.bignumber.equal(new BN(0))
     })
 
-    it("should set the limit on the PoolInfo", async () => {
-      const amount = usdcVal(5)
-      await pool.deposit(new BN(1), amount, {from: person2})
-      const poolInfo = await poolTokens.pools(pool.address)
-      expect(poolInfo.limit).to.bignumber.equal(usdcVal(100))
-    })
-
     it("allows minting even after the limit on the PoolInfo", async () => {
       const amount = usdcVal(50)
       await pool.deposit(new BN(1), amount, {from: person2})

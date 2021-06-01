@@ -58,14 +58,7 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
    *  equivalent value of FIDU tokens
    * @param amount The amount of USDC to deposit
    */
-  function deposit(uint256 amount)
-    public
-    override
-    whenNotPaused
-    withinTransactionLimit(amount)
-    nonReentrant
-    returns (uint256 depositShares)
-  {
+  function deposit(uint256 amount) public override whenNotPaused nonReentrant returns (uint256 depositShares) {
     require(amount > 0, "Must deposit more than zero");
     // Check if the amount of new shares to be added is within limits
     depositShares = getNumShares(amount);
@@ -79,6 +72,14 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
     return depositShares;
   }
 
+  /**
+   * @notice Identical to deposit, except it allows for a passed up signature to permit
+   *  the Senior Pool to move funds on behalf of the user, all within one transaction.
+   * @param amount The amount of USDC to deposit
+   * @param v secp256k1 signature component
+   * @param r secp256k1 signature component
+   * @param s secp256k1 signature component
+   */
   function depositWithPermit(
     uint256 amount,
     uint256 deadline,
@@ -322,10 +323,6 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
       usdcToFidu(config.getNumber(uint256(ConfigOptions.Numbers.TotalFundsLimit)));
   }
 
-  function transactionWithinLimit(uint256 amount) internal view returns (bool) {
-    return amount <= config.getNumber(uint256(ConfigOptions.Numbers.TransactionLimit));
-  }
-
   function doUSDCTransfer(
     address from,
     address to,
@@ -336,11 +333,7 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
     return usdc.transferFrom(from, to, amount);
   }
 
-  function _withdraw(uint256 usdcAmount, uint256 withdrawShares)
-    internal
-    withinTransactionLimit(usdcAmount)
-    returns (uint256 userAmount)
-  {
+  function _withdraw(uint256 usdcAmount, uint256 withdrawShares) internal returns (uint256 userAmount) {
     IFidu fidu = config.getFidu();
     // Determine current shares the address has and the shares requested to withdraw
     uint256 currentShares = fidu.balanceOf(msg.sender);
@@ -457,10 +450,5 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
     IERC20withDec usdc = config.getUSDC();
     bool success = usdc.approve(address(pool), allowance);
     require(success, "Failed to approve USDC");
-  }
-
-  modifier withinTransactionLimit(uint256 amount) {
-    require(transactionWithinLimit(amount), "Amount is over the per-transaction limit");
-    _;
   }
 }

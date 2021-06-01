@@ -28,6 +28,11 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
     config = _config;
   }
 
+  /**
+   * @notice Allows anyone to create a CreditLine contract instance
+   * @dev There is no value to calling this function directly. It is only meant to be called
+   *  by a TranchedPool during it's creation process.
+   */
   function createCreditLine() external returns (address) {
     return deployMinimal(config.creditLineImplementationAddress());
   }
@@ -47,16 +52,18 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
   /**
    * @notice Allows anyone to create a new TranchedPool for a single borrower
    * @param _borrower The borrower for whom the CreditLine will be created
+   * @param _juniorFeePercent The percent of senior interest allocated to junior investors, expressed as
+   *  integer percents. eg. 20% is simply 20
    * @param _limit The maximum amount a borrower can drawdown from this CreditLine
    * @param _interestApr The interest amount, on an annualized basis (APR, so non-compounding), expressed as an integer.
-   *  We assume 8 digits of precision. For example, to submit 15.34%, you would pass up 15340000,
-   *  and 5.34% would be 5340000
+   *  We assume 18 digits of precision. For example, to submit 15.34%, you would pass up 153400000000000000,
+   *  and 5.34% would be 53400000000000000
    * @param _paymentPeriodInDays How many days in each payment period.
    *  ie. the frequency with which they need to make payments.
    * @param _termInDays Number of days in the credit term. It is used to set the `termEndTime` upon first drawdown.
    *  ie. The credit line should be fully paid off {_termIndays} days after the first drawdown.
    * @param _lateFeeApr The additional interest you will pay if you are late. For example, if this is 3%, and your
-   *  normal rate is 15%, then you will pay 18% while you are late.
+   *  normal rate is 15%, then you will pay 18% while you are late. Also expressed as an 18 decimal precision integer
    *
    * Requirements:
    *  You are the admin

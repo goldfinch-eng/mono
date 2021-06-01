@@ -21,7 +21,6 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
   using ConfigHelper for GoldfinchConfig;
 
   struct PoolInfo {
-    uint256 limit;
     uint256 totalMinted;
     uint256 totalPrincipalRedeemed;
     bool created;
@@ -164,11 +163,6 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
   function createToken(MintParams memory params, address poolAddress) internal returns (uint256) {
     PoolInfo storage pool = pools[poolAddress];
 
-    // Set the limit if this is the first minting ever
-    if (pool.limit == 0) {
-      pool.limit = ITranchedPool(poolAddress).creditLine().limit();
-    }
-
     _tokenIdTracker.increment();
     uint256 tokenId = _tokenIdTracker.current();
     tokens[tokenId] = TokenInfo({
@@ -196,8 +190,8 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
     super._beforeTokenTransfer(from, to, tokenId);
   }
 
-  function _validPool(address sender) internal view virtual returns (bool) {
-    return pools[sender].created;
+  function _validPool(address poolAddress) internal view virtual returns (bool) {
+    return pools[poolAddress].created;
   }
 
   function _getTokenInfo(uint256 tokenId) internal view returns (TokenInfo memory) {
