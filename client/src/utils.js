@@ -33,7 +33,10 @@ function commaFormat(numberString) {
     }
     withCommas.push(letter)
   })
-  return `${_.join(_.reverse(withCommas), "")}.${afterDecimal}`
+
+  const decimalString = afterDecimal ? "." + afterDecimal : ""
+
+  return `${_.join(_.reverse(withCommas), "")}${decimalString}`
 }
 
 function displayDollars(val, decimals = 2) {
@@ -41,12 +44,12 @@ function displayDollars(val, decimals = 2) {
   return "$" + valDisplay
 }
 
-function displayPercent(val) {
+function displayPercent(val, decimals = 2) {
   let valDisplay
   if (isNaN(val)) {
     valDisplay = "--.--"
   } else {
-    valDisplay = displayNumber(val.multipliedBy(100), 2)
+    valDisplay = displayNumber(val.multipliedBy(100), decimals)
   }
   return `${valDisplay}%`
 }

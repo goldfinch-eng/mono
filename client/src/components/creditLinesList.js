@@ -7,48 +7,44 @@ function CreditLinesList(props) {
   function creditLineRow(cl) {
     let icon
 
-    let description = `${displayDollars(usdcFromAtomic(cl.limit))} at ${displayPercent(cl.interestAprDecimal)}`
-    let nextPaymentDue = "No payment due"
+    let description = `${displayDollars(usdcFromAtomic(cl.limit), 0)} at ${displayPercent(cl.interestAprDecimal, 1)}`
+    let nextPaymentAmount = `${displayDollars(cl.remainingPeriodDueAmountInDollars)}`
+    let nextPaymentDate = "N/A"
     if (cl.isPaymentDue) {
-      nextPaymentDue = `${displayDollars(cl.remainingPeriodDueAmountInDollars)} due ${cl.dueDate}`
+      nextPaymentDate = `${cl.dueDate}`
     } else if (cl.isActive) {
       icon = iconCircleCheck
-      nextPaymentDue = `Paid through ${cl.dueDate}`
+      nextPaymentDate = "Paid"
     }
 
     return (
-      <tr key={cl.name}>
-        <td className="credit-line">
-          {description}
-          <span className="credit-line-id">{cl.name}</span>
-        </td>
-        <td className="payment">
+      <div className="table-row background-container-inner" key={cl.name}>
+        <div className="table-cell col40">{description}</div>
+        <div className="table-cell col22 numeric">{nextPaymentAmount}</div>
+        <div className="table-cell col22 date">
           {icon}
-          {nextPaymentDue}
-        </td>
-        <td className="view">
-          <button className="view-credit-line" onClick={() => props.changeCreditLine(cl.address)}>
+          {nextPaymentDate}
+        </div>
+        <div className="table-cell col16">
+          <button className="view" onClick={() => props.changeCreditLine(cl.address)}>
             View
           </button>
-        </td>
-      </tr>
+        </div>
+      </div>
     )
   }
 
   let creditLineRows = props.creditLine.creditLines.map(creditLineRow)
 
   return (
-    <div className="background-container">
-      <table className="table credit-lines-list">
-        <thead>
-          <tr>
-            <th className="credit-line">Credit Line</th>
-            <th className="payment">Next Payment</th>
-            <th className="view" />
-          </tr>
-        </thead>
-        <tbody>{creditLineRows}</tbody>
-      </table>
+    <div className="table-spaced background-container credit-lines-list">
+      <div className="table-header background-container-inner">
+        <div className="table-cell col40">Credit Lines</div>
+        <div className="table-cell col22 numeric">Next Payment</div>
+        <div className="table-cell col22 date">Due Date</div>
+        <div className="table-cell col16"></div>
+      </div>
+      {creditLineRows}
     </div>
   )
 }
