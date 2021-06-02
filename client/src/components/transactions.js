@@ -28,7 +28,7 @@ function Transactions(props) {
       icon = iconCircleDownLg
       amountPrefix = "-"
     } else if (tx.name === "Approval") {
-      typeLabel = `${tx.erc20.ticker} Approval`
+      typeLabel = `${tx.erc20 && tx.erc20.ticker} Approval`
       let txAmount = tx.amountBN.shiftedBy(tx.amountBN.decimalPlaces())
       let max = new BigNumber(MAX_UINT.toString())
       if (txAmount.isEqualTo(max)) {
