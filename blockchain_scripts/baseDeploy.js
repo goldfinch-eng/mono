@@ -329,6 +329,7 @@ async function deploySeniorFund(hre, {config, fidu}) {
   })
   const fund = await ethers.getContractAt(contractName, deployResult.address)
   await updateConfig(config, "address", CONFIG_KEYS.SeniorFund, fund.address, {logger})
+  await config.addToGoList(fund.address)
   if (fidu) {
     await grantMinterRoleToPool(fidu, fund)
   }

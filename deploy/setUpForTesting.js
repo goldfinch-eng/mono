@@ -25,7 +25,6 @@ const {
   getMainnetContracts,
   performPostUpgradeMigration,
 } = require("../blockchain_scripts/mainnetForkingHelpers")
-const PROTOCOL_CONFIG = require("../protocol_config.json")
 
 /*
 This deployment deposits some funds to the pool, and creates an underwriter, and a credit line.
@@ -39,9 +38,8 @@ async function main({getNamedAccounts, deployments, getChainId}) {
   let chainID = await getChainId()
   let underwriter = protocol_owner
   let borrower = protocol_owner
-  let pool = await getDeployedAsEthersContract(getOrNull, "Pool")
-  let creditDesk = await getDeployedAsEthersContract(getOrNull, "CreditDesk")
   let erc20 = await getDeployedAsEthersContract(getOrNull, "TestERC20")
+  let seniorFund = await getDeployedAsEthersContract(getOrNull, "SeniorFund")
   // If you uncomment this, make sure to also uncomment the line in the MainnetForking section,
   // which sets this var to the upgraded version of fidu
   // let fidu = await getDeployedAsEthersContract(getOrNull, "Fidu")
@@ -90,8 +88,6 @@ async function main({getNamedAccounts, deployments, getChainId}) {
       deployments
     )
 
-    creditDesk = upgradedContracts.CreditDesk.UpgradedContract
-    pool = upgradedContracts.Pool.UpgradedContract
     goldfinchFactory = upgradedContracts.GoldfinchFactory.UpgradedContract
     // fidu = upgradedContracts.Fidu.UpgradedContract
     config = upgradedContracts.GoldfinchConfig.UpgradedContract
@@ -108,15 +104,14 @@ async function main({getNamedAccounts, deployments, getChainId}) {
   }
 
   await addUsersToGoList(config, [borrower, underwriter])
-  await depositFundsToThePool(pool, erc20)
-  await createUnderwriter(creditDesk, underwriter)
+  await depositToTheSeniorFund(seniorFund, erc20)
 
   const result = await (await goldfinchFactory.createBorrower(borrower)).wait()
   let bwrConAddr = result.events[result.events.length - 1].args[0]
   logger(`Created borrower contract: ${bwrConAddr} for ${borrower}`)
 
-  await createCreditLineForBorrower(creditDesk, goldfinchFactory, bwrConAddr)
-  await createCreditLineForBorrower(creditDesk, goldfinchFactory, bwrConAddr)
+  await createPoolForBorrower(underwriter, goldfinchFactory, bwrConAddr)
+  await createPoolForBorrower(underwriter, goldfinchFactory, bwrConAddr)
 }
 
 async function upgradeExistingContracts(contractsToUpgrade, mainnetConfig, mainnetMultisig, deployFrom, deployments) {
@@ -137,9 +132,9 @@ async function addUsersToGoList(goldfinchConfig, users) {
   await (await goldfinchConfig.bulkAddToGoList(users)).wait()
 }
 
-async function depositFundsToThePool(pool, erc20) {
-  logger("Depositing funds into the pool...")
-  const originalBalance = await erc20.balanceOf(pool.address)
+async function depositToTheSeniorFund(fund, erc20) {
+  logger("Depositing funds into the fund...")
+  const originalBalance = await erc20.balanceOf(fund.address)
   if (originalBalance.gt("0")) {
     logger(`Looks like the pool already has ${originalBalance} of funds...`)
     return
@@ -147,15 +142,15 @@ async function depositFundsToThePool(pool, erc20) {
 
   // Approve first
   logger("Approving the owner to deposit funds...")
-  var txn = await erc20.approve(pool.address, String(new BN(1000000).mul(USDCDecimals)))
+  var txn = await erc20.approve(fund.address, String(new BN(1000000).mul(USDCDecimals)))
   await txn.wait()
   logger("Depositing funds...")
   let depositAmount
   depositAmount = new BN(10000).mul(USDCDecimals)
 
-  txn = await pool.deposit(String(depositAmount))
+  txn = await fund.deposit(String(depositAmount))
   await txn.wait()
-  const newBalance = await erc20.balanceOf(pool.address)
+  const newBalance = await erc20.balanceOf(fund.address)
   if (String(newBalance) != String(depositAmount)) {
     throw new Error(`Expected to deposit ${depositAmount} but got ${newBalance}`)
   }
@@ -189,38 +184,25 @@ async function getDeployedAsEthersContract(getter, name) {
   return await ethers.getContractAt(deployed.abi, deployed.address)
 }
 
-async function createUnderwriter(creditDesk, newUnderwriter) {
-  logger("Trying to create an Underwriter...", newUnderwriter)
-  const alreadyUnderwriter = await creditDesk.underwriters(newUnderwriter)
-  if (alreadyUnderwriter.gt("0")) {
-    logger("We have already created this address as an underwriter")
-    return
-  }
-  logger("Creating an underwriter with governance limit", newUnderwriter)
-  const txn = await creditDesk.setUnderwriterGovernanceLimit(
-    newUnderwriter,
-    String(new BN(PROTOCOL_CONFIG.maxUnderwriterLimit).mul(USDCDecimals))
-  )
-  await txn.wait()
-  const onChain = await creditDesk.underwriters(newUnderwriter)
-  if (!onChain.gt("0")) {
-    throw new Error(
-      `The transaction did not seem to work. Could not find underwriter ${newUnderwriter} on the CreditDesk`
-    )
-  }
-}
-
-async function createCreditLineForBorrower(creditDesk, goldfinchFactory, borrower) {
-  logger("Trying to create an CreditLine for the Borrower...")
-
-  logger("Creating a credit line for the borrower", borrower)
+async function createPoolForBorrower(underwriter, goldfinchFactory, borrower) {
+  logger("Creating a Pool for the borrower", borrower)
+  const juniorFeePercent = String(new BN(20))
   const limit = String(new BN(10000).mul(USDCDecimals))
   const interestApr = String(interestAprAsBN("5.00"))
   const paymentPeriodInDays = String(new BN(30))
   const termInDays = String(new BN(360))
   const lateFeeApr = String(new BN(0))
-  await creditDesk.createCreditLine(borrower, limit, interestApr, paymentPeriodInDays, termInDays, lateFeeApr)
-  logger("Created a credit line for the borrower", borrower)
+  await goldfinchFactory.createPool(
+    borrower,
+    juniorFeePercent,
+    limit,
+    interestApr,
+    paymentPeriodInDays,
+    termInDays,
+    lateFeeApr,
+    {from: underwriter}
+  )
+  logger("Created a Pool for the borrower", borrower)
 }
 
 async function setupTestForwarder(deployments, config, getOrNull, protocol_owner) {
