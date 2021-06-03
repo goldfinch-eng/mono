@@ -230,7 +230,6 @@ async function advanceTime(creditDeskOrCreditLine, {days, seconds, toSecond}) {
     await creditDeskOrCreditLine._setTimestampForTest(newTimestamp)
   }
 
-  console.log(`Advancing time to ${newTimestamp}`)
   await ethers.provider.send("evm_setNextBlockTimestamp", [newTimestamp.toNumber()])
   return newTimestamp
 }

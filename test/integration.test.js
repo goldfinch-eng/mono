@@ -148,7 +148,7 @@ describe("Goldfinch", async () => {
       if (tranche === null) {
         return totalExpectedInterest
       }
-      // To get the senior interest, first we need to scale by levarage ration
+      // To get the senior interest, first we need to scale by levarage ratio
       const juniorTotal = new BN((await pool.getTranche(TRANCHES.Junior)).principalDeposited)
       const seniorTotal = new BN((await pool.getTranche(TRANCHES.Senior)).principalDeposited)
       const seniorLeveragePercent = ONE_HUNDRED.mul(seniorTotal).div(seniorTotal.add(juniorTotal))
