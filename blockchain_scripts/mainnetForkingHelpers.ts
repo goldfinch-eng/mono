@@ -1,6 +1,5 @@
-/* global ethers */
-const BN = require("bn.js")
-const {
+import BN from "bn.js"
+import {
   getDeployedContract,
   isTestEnv,
   updateConfig,
@@ -8,14 +7,20 @@ const {
   SAFE_CONFIG,
   setInitialConfigVals,
   MAINNET_CHAIN_ID,
-} = require("../blockchain_scripts/deployHelpers.js")
-const {CONFIG_KEYS} = require("./configKeys.js")
-const hre = require("hardhat")
+  DepList,
+} from "../blockchain_scripts/deployHelpers"
+import {CONFIG_KEYS} from "./configKeys"
+import hre from "hardhat"
+import {Contract} from "@ethersproject/contracts"
+import {DeploymentsExtension} from "hardhat-deploy/types"
+import {HardhatRuntimeEnvironment} from "hardhat/types"
+import {GoldfinchConfig} from "../typechain/ethers"
+const {ethers} = hre
 
 const MAINNET_MULTISIG = "0xBEb28978B2c755155f20fd3d09Cb37e300A6981f"
 const MAINNET_UNDERWRITER = "0x79ea65C834EC137170E1aA40A42b9C80df9c0Bb4"
 
-async function getProxyImplAddress(proxyContract) {
+async function getProxyImplAddress(proxyContract: Contract) {
   if (!proxyContract) {
     return null
   }
@@ -24,13 +29,19 @@ async function getProxyImplAddress(proxyContract) {
   return ethers.utils.hexStripZeros(currentImpl)
 }
 
-async function upgradeContracts(contractNames, contracts, mainnetSigner, deployFrom, deployments) {
-  const accountantDeployResult = await deployments.deploy("Accountant", {from: deployFrom, gas: 4000000, args: []})
+async function upgradeContracts(
+  contractNames: string[],
+  contracts: any,
+  mainnetSigner: any,
+  deployFrom: any,
+  deployments: DeploymentsExtension
+) {
+  const accountantDeployResult = await deployments.deploy("Accountant", {from: deployFrom, gasLimit: 4000000, args: []})
   // Ensure a test forwarder is available. Using the test forwarder instead of the real forwarder on mainnet
   // gives us the ability to debug the forwarded transactions.
-  await deployments.deploy("TestForwarder", {from: deployFrom, gas: 4000000, args: []})
+  await deployments.deploy("TestForwarder", {from: deployFrom, gasLimit: 4000000, args: []})
 
-  const dependencies = {
+  const dependencies: DepList = {
     CreditDesk: {["Accountant"]: accountantDeployResult.address},
     GoldfinchFactory: {
       ["Accountant"]: accountantDeployResult.address,
@@ -51,7 +62,7 @@ async function upgradeContracts(contractNames, contracts, mainnetSigner, deployF
 
     let deployResult = await deployments.deploy(contractToDeploy, {
       from: deployFrom,
-      gas: 4000000,
+      gasLimit: 4000000,
       args: [],
       libraries: dependencies[contractName],
     })
@@ -67,7 +78,7 @@ async function upgradeContracts(contractNames, contracts, mainnetSigner, deployF
       }
       await contract.ProxyContract.changeImplementation(deployResult.address, "0x")
       upgradedContract = upgradedContract.attach(contract.ProxyContract.address)
-      upgradedImplAddress = await getProxyImplAddress(contract.ProxyContract)
+      upgradedImplAddress = (await getProxyImplAddress(contract.ProxyContract)) as string
     }
     // Get the new implmentation contract with the latest ABI, but attach it to the mainnet proxy address
     contract.UpgradedContract = upgradedContract.connect(mainnetSigner)
@@ -76,8 +87,16 @@ async function upgradeContracts(contractNames, contracts, mainnetSigner, deployF
   return contracts
 }
 
-async function getExistingContracts(contractNames, mainnetConfig, mainnetSigner) {
-  let contracts = {}
+type ExistingContracts = {
+  [contractName: string]: {ProxyContract: Contract; ExistingContract: Contract; ExistingImplAddress: string}
+}
+
+async function getExistingContracts(
+  contractNames: string[],
+  mainnetConfig: any,
+  mainnetSigner: any
+): Promise<ExistingContracts> {
+  let contracts: ExistingContracts = {}
   if (!mainnetConfig) {
     mainnetConfig = getMainnetContracts()
   }
@@ -94,14 +113,14 @@ async function getExistingContracts(contractNames, mainnetConfig, mainnetSigner)
     contracts[contractName] = {
       ProxyContract: contractProxy,
       ExistingContract: contract,
-      ExistingImplAddress: await getProxyImplAddress(contractProxy),
+      ExistingImplAddress: (await getProxyImplAddress(contractProxy)) as string,
     }
   }
   return contracts
 }
 
-async function fundWithWhales(erc20s, recipients, amount) {
-  const whales = {
+async function fundWithWhales(erc20s: any, recipients: any, amount?: any) {
+  const whales: {[ticker: string]: string} = {
     USDC: "0x46aBbc9fc9d8E749746B00865BC2Cf7C4d85C837",
     USDT: "0x1062a747393198f70f71ec65a582423dba7e5ab3",
     BUSD: "0xbe0eb53f46cd790cd13851d5eff43d12404d33e8",
@@ -122,7 +141,17 @@ async function fundWithWhales(erc20s, recipients, amount) {
   }
 }
 
-async function fundWithWhale({whale, recipient, erc20, amount}) {
+async function fundWithWhale({
+  whale,
+  recipient,
+  erc20,
+  amount,
+}: {
+  whale: string
+  recipient: string
+  erc20: any
+  amount: BN
+}) {
   await impersonateAccount(hre, whale)
   let signer = await ethers.provider.getSigner(whale)
   const contract = erc20.contract.connect(signer)
@@ -134,21 +163,21 @@ async function fundWithWhale({whale, recipient, erc20, amount}) {
   await contract.transfer(recipient, new BN(amount).mul(decimals).toString())
 }
 
-async function impersonateAccount(hre, account) {
+async function impersonateAccount(hre: HardhatRuntimeEnvironment, account: string) {
   return await hre.network.provider.request({
     method: "hardhat_impersonateAccount",
     params: [account],
   })
 }
 
-async function performPostUpgradeMigration(upgradedContracts, deployments) {
+async function performPostUpgradeMigration(upgradedContracts: any, deployments: DeploymentsExtension) {
   const deployed = await deployments.getOrNull("TestForwarder")
-  const forwarder = await ethers.getContractAt(deployed.abi, "0xa530F85085C6FE2f866E7FdB716849714a89f4CD")
+  const forwarder = await ethers.getContractAt(deployed!.abi, "0xa530F85085C6FE2f866E7FdB716849714a89f4CD")
   await forwarder.registerDomainSeparator("Defender", "1")
   await migrateToNewConfig(upgradedContracts)
 }
 
-async function migrateToNewConfig(upgradedContracts) {
+async function migrateToNewConfig(upgradedContracts: any) {
   const newConfig = upgradedContracts.GoldfinchConfig.UpgradedContract
   const safeAddress = SAFE_CONFIG[MAINNET_CHAIN_ID].safeAddress
   if (!(await newConfig.hasRole(OWNER_ROLE, safeAddress))) {
@@ -171,7 +200,7 @@ async function migrateToNewConfig(upgradedContracts) {
   )
 }
 
-async function setCurrentAddressesOnConfig(newConfig, existingConfig) {
+async function setCurrentAddressesOnConfig(newConfig: GoldfinchConfig, existingConfig: GoldfinchConfig) {
   const addressesToSet = ["Pool", "GoldfinchFactory", "CreditDesk", "Fidu", "USDC", "CUSDCContract"]
   await Promise.all(
     Object.entries(CONFIG_KEYS).map(async ([key, val]) => {
@@ -188,13 +217,13 @@ function getMainnetContracts() {
   return deploymentsFile[MAINNET_CHAIN_ID].mainnet.contracts
 }
 
-module.exports = {
-  MAINNET_MULTISIG: MAINNET_MULTISIG,
-  MAINNET_UNDERWRITER: MAINNET_UNDERWRITER,
-  fundWithWhales: fundWithWhales,
-  getExistingContracts: getExistingContracts,
-  upgradeContracts: upgradeContracts,
-  impersonateAccount: impersonateAccount,
-  getMainnetContracts: getMainnetContracts,
-  performPostUpgradeMigration: performPostUpgradeMigration,
+export {
+  MAINNET_MULTISIG,
+  MAINNET_UNDERWRITER,
+  fundWithWhales,
+  getExistingContracts,
+  upgradeContracts,
+  impersonateAccount,
+  getMainnetContracts,
+  performPostUpgradeMigration,
 }

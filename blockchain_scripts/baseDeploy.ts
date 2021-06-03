@@ -1,7 +1,7 @@
-/* globals ethers */
-const BN = require("bn.js")
-const {CONFIG_KEYS} = require("./configKeys")
-const {
+import {ethers} from "hardhat"
+import BN from "bn.js"
+import {CONFIG_KEYS} from "./configKeys"
+import {
   USDCDecimals,
   OWNER_ROLE,
   MINTER_ROLE,
@@ -11,14 +11,27 @@ const {
   setInitialConfigVals,
   SAFE_CONFIG,
   isMainnetForking,
-} = require("./deployHelpers.js")
-let logger
+} from "./deployHelpers"
+import {HardhatRuntimeEnvironment} from "hardhat/types"
+import {DeployFunction, DeployOptions, DeployResult} from "hardhat-deploy/types"
+import {
+  GoldfinchConfig,
+  GoldfinchFactory,
+  Fidu,
+  TransferRestrictedVault,
+  Borrower,
+  IFundStrategy,
+  SeniorFund,
+} from "../typechain/ethers"
+import {Logger, DeployFn, DeployOpts} from "./types"
 
-async function baseDeploy(hre) {
+let logger: Logger
+
+const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   if (isMainnetForking()) {
     return
   }
-  const {deployments, getNamedAccounts, getChainId, ethers} = hre
+  const {deployments, getNamedAccounts, getChainId} = hre
   const {deploy, log} = deployments
   logger = log
   logger("Starting deploy...")
@@ -51,7 +64,7 @@ async function baseDeploy(hre) {
 
   // Internal functions.
 
-  async function deployConfig(deploy) {
+  async function deployConfig(deploy: DeployFn): Promise<GoldfinchConfig> {
     let contractName = "GoldfinchConfig"
 
     if (isTestEnv()) {
@@ -60,10 +73,10 @@ async function baseDeploy(hre) {
 
     let deployResult = await deploy(contractName, {
       from: proxy_owner,
-      gas: 4000000,
+      gasLimit: 4000000,
     })
     logger("Config was deployed to:", deployResult.address)
-    let config = await ethers.getContractAt(deployResult.abi, deployResult.address)
+    let config = (await ethers.getContractAt(deployResult.abi, deployResult.address)) as GoldfinchConfig
     if (deployResult.newlyDeployed) {
       logger("Config newly deployed, initializing...")
       await (await config.initialize(protocol_owner)).wait()
@@ -82,7 +95,7 @@ async function baseDeploy(hre) {
       const decimalPlaces = String(new BN(6))
       const fakeUSDC = await deploy("TestERC20", {
         from: protocol_owner,
-        gas: 4000000,
+        gasLimit: 4000000,
         args: [initialAmount, decimalPlaces],
       })
       logger("Deployed the contract to:", fakeUSDC.address)
@@ -92,13 +105,13 @@ async function baseDeploy(hre) {
     return usdcAddress
   }
 
-  async function deployGoldfinchFactory(deploy, {config}) {
+  async function deployGoldfinchFactory(deploy: DeployFn, {config}: DeployOpts): Promise<GoldfinchFactory> {
     logger("Deploying credit line factory")
-    const accountant = await deploy("Accountant", {from: protocol_owner, gas: 4000000, args: []})
+    const accountant = await deploy("Accountant", {from: protocol_owner, gasLimit: 4000000, args: []})
     let goldfinchFactoryDeployResult = await deploy("GoldfinchFactory", {
       from: proxy_owner,
       proxy: {owner: proxy_owner, methodName: "initialize"},
-      gas: 4000000,
+      gasLimit: 4000000,
       args: [protocol_owner, config.address],
       libraries: {
         ["Accountant"]: accountant.address,
@@ -110,11 +123,11 @@ async function baseDeploy(hre) {
     let goldfinchFactoryAddress = goldfinchFactory.address
 
     await updateConfig(config, "address", CONFIG_KEYS.GoldfinchFactory, goldfinchFactoryAddress, {logger})
-    return goldfinchFactory
+    return goldfinchFactory as GoldfinchFactory
   }
 
-  async function deployCreditDesk(deploy, {config}) {
-    const accountant = await deploy("Accountant", {from: protocol_owner, gas: 4000000, args: []})
+  async function deployCreditDesk(deploy: DeployFn, {config}: DeployOpts) {
+    const accountant = await deploy("Accountant", {from: protocol_owner, gasLimit: 4000000, args: []})
     logger("Accountant was deployed to:", accountant.address)
 
     let contractName = "CreditDesk"
@@ -127,7 +140,7 @@ async function baseDeploy(hre) {
     let creditDeskDeployResult = await deploy(contractName, {
       from: proxy_owner,
       proxy: {owner: proxy_owner, methodName: "initialize"},
-      gas: 4000000,
+      gasLimit: 4000000,
       args: [protocol_owner, config.address],
       libraries: {["Accountant"]: accountant.address},
     })
@@ -137,7 +150,7 @@ async function baseDeploy(hre) {
     return await ethers.getContractAt(creditDeskDeployResult.abi, creditDeskDeployResult.address)
   }
 
-  async function grantOwnershipOfPoolToCreditDesk(pool, creditDeskAddress) {
+  async function grantOwnershipOfPoolToCreditDesk(pool: any, creditDeskAddress: any) {
     const alreadyOwnedByCreditDesk = await pool.hasRole(OWNER_ROLE, creditDeskAddress)
     if (alreadyOwnedByCreditDesk) {
       // We already did this step, so early return
@@ -153,17 +166,17 @@ async function baseDeploy(hre) {
     }
   }
 
-  async function deployFidu(config) {
+  async function deployFidu(config: GoldfinchConfig): Promise<Fidu> {
     logger("About to deploy Fidu...")
     const fiduDeployResult = await deploy("Fidu", {
       from: proxy_owner,
-      gas: 4000000,
+      gasLimit: 4000000,
       proxy: {
         methodName: "__initialize__",
       },
       args: [protocol_owner, "Fidu", "FIDU", config.address],
     })
-    const fidu = await ethers.getContractAt("Fidu", fiduDeployResult.address)
+    const fidu = (await ethers.getContractAt("Fidu", fiduDeployResult.address)) as Fidu
     let fiduAddress = fidu.address
 
     await updateConfig(config, "address", CONFIG_KEYS.Fidu, fiduAddress, {logger})
@@ -172,13 +185,13 @@ async function baseDeploy(hre) {
   }
 }
 
-async function grantMinterRoleToPool(fidu, pool) {
+async function grantMinterRoleToPool(fidu: Fidu, pool: any) {
   if (!(await fidu.hasRole(MINTER_ROLE, pool.address))) {
     await fidu.grantRole(MINTER_ROLE, pool.address)
   }
 }
 
-async function deployTranchedPool(hre, {config}) {
+async function deployTranchedPool(hre: HardhatRuntimeEnvironment, {config}: DeployOpts) {
   const {deployments, getNamedAccounts} = hre
   const {deploy, log} = deployments
   const logger = log
@@ -199,23 +212,23 @@ async function deployTranchedPool(hre, {config}) {
   return tranchedPoolImpl
 }
 
-async function deployClImplementation(hre, {config}) {
+async function deployClImplementation(hre: HardhatRuntimeEnvironment, {config}: DeployOpts) {
   const {deployments, getNamedAccounts} = hre
   const {deploy} = deployments
   const {protocol_owner, proxy_owner} = await getNamedAccounts()
 
-  const accountant = await deploy("Accountant", {from: protocol_owner, gas: 4000000, args: []})
+  const accountant = await deploy("Accountant", {from: protocol_owner, gasLimit: 4000000, args: []})
   // Deploy the credit line as well so we generate the ABI
   const clDeployResult = await deploy("CreditLine", {
     from: proxy_owner,
-    gas: 4000000,
+    gasLimit: 4000000,
     libraries: {["Accountant"]: accountant.address},
   })
 
-  updateConfig(config, "address", CONFIG_KEYS.CreditLineImplementation, clDeployResult.address)
+  await updateConfig(config, "address", CONFIG_KEYS.CreditLineImplementation, clDeployResult.address)
 }
 
-async function deployMigratedTranchedPool(hre, {config}) {
+async function deployMigratedTranchedPool(hre: HardhatRuntimeEnvironment, {config}: DeployOpts) {
   const {deployments, getNamedAccounts} = hre
   const {deploy, log} = deployments
   const logger = log
@@ -236,7 +249,10 @@ async function deployMigratedTranchedPool(hre, {config}) {
   return migratedTranchedPoolImpl
 }
 
-async function deployTransferRestrictedVault(hre, {config}) {
+async function deployTransferRestrictedVault(
+  hre: HardhatRuntimeEnvironment,
+  {config}: DeployOpts
+): Promise<TransferRestrictedVault> {
   const {deployments, getNamedAccounts, getChainId} = hre
   const {deploy, log} = deployments
   const logger = log
@@ -253,11 +269,11 @@ async function deployTransferRestrictedVault(hre, {config}) {
     },
     args: [SAFE_CONFIG[chainID] || protocol_owner, config.address],
   })
-  const contract = await ethers.getContractAt(contractName, deployResult.address)
+  const contract = (await ethers.getContractAt(contractName, deployResult.address)) as TransferRestrictedVault
   return contract
 }
 
-async function deployPoolTokens(hre, {config}) {
+async function deployPoolTokens(hre: HardhatRuntimeEnvironment, {config}: DeployOpts) {
   const {deployments, getNamedAccounts, getChainId} = hre
   const {deploy, log} = deployments
   const logger = log
@@ -285,7 +301,7 @@ async function deployPoolTokens(hre, {config}) {
   return poolTokens
 }
 
-async function deployPool(hre, {config}) {
+async function deployPool(hre: HardhatRuntimeEnvironment, {config}: DeployOpts) {
   let contractName = "Pool"
   if (isTestEnv()) {
     contractName = "TestPool"
@@ -308,7 +324,7 @@ async function deployPool(hre, {config}) {
   return pool
 }
 
-async function deploySeniorFund(hre, {config, fidu}) {
+async function deploySeniorFund(hre: HardhatRuntimeEnvironment, {config, fidu}: DeployOpts): Promise<SeniorFund> {
   let contractName = "SeniorFund"
   if (isTestEnv()) {
     contractName = "TestSeniorFund"
@@ -318,7 +334,7 @@ async function deploySeniorFund(hre, {config, fidu}) {
   const logger = log
   const {protocol_owner, proxy_owner} = await getNamedAccounts()
 
-  const accountant = await deploy("Accountant", {from: protocol_owner, gas: 4000000, args: []})
+  const accountant = await deploy("Accountant", {from: protocol_owner, gasLimit: 4000000, args: []})
   logger("Accountant was deployed to:", accountant.address)
 
   let deployResult = await deploy(contractName, {
@@ -327,7 +343,7 @@ async function deploySeniorFund(hre, {config, fidu}) {
     args: [protocol_owner, config.address],
     libraries: {["Accountant"]: accountant.address},
   })
-  const fund = await ethers.getContractAt(contractName, deployResult.address)
+  const fund = (await ethers.getContractAt(contractName, deployResult.address)) as SeniorFund
   await updateConfig(config, "address", CONFIG_KEYS.SeniorFund, fund.address, {logger})
   await config.addToGoList(fund.address)
   if (fidu) {
@@ -336,7 +352,7 @@ async function deploySeniorFund(hre, {config, fidu}) {
   return fund
 }
 
-async function deploySeniorFundStrategy(hre, {config}) {
+async function deploySeniorFundStrategy(hre: HardhatRuntimeEnvironment, {config}: DeployOpts): Promise<IFundStrategy> {
   let contractName = "FixedLeverageRatioStrategy"
   const {deployments, getNamedAccounts} = hre
   const {deploy, log} = deployments
@@ -348,13 +364,13 @@ async function deploySeniorFundStrategy(hre, {config}) {
     args: [new BN(4).toString()],
   })
   logger("FixedLeverageRatioStrategy was deployed to:", deployResult.address)
-  const strategy = await ethers.getContractAt(contractName, deployResult.address)
+  const strategy = (await ethers.getContractAt(contractName, deployResult.address)) as IFundStrategy
   await updateConfig(config, "address", CONFIG_KEYS.SeniorFundStrategy, strategy.address, {logger})
 
   return strategy
 }
 
-async function deployBorrower(hre, {config}) {
+async function deployBorrower(hre: HardhatRuntimeEnvironment, {config}: DeployOpts): Promise<Borrower> {
   let contractName = "Borrower"
   const {deployments, getNamedAccounts} = hre
   const {deploy, log} = deployments
@@ -365,7 +381,7 @@ async function deployBorrower(hre, {config}) {
     from: proxy_owner,
   })
   logger("Borrower implementation was deployed to:", deployResult.address)
-  const borrower = await ethers.getContractAt(contractName, deployResult.address)
+  const borrower = (await ethers.getContractAt(contractName, deployResult.address)) as Borrower
   await updateConfig(config, "address", CONFIG_KEYS.BorrowerImplementation, borrower.address, {logger})
 
   return borrower

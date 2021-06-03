@@ -1,5 +1,5 @@
 /* global artifacts web3 */
-const {expect, bigVal, getDeployedAsTruffleContract, expectAction} = require("./testHelpers.js")
+const {expect, bigVal, getDeployedAsTruffleContract, expectAction} = require("./testHelpers")
 const {OWNER_ROLE} = require("../blockchain_scripts/deployHelpers")
 const hre = require("hardhat")
 const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")

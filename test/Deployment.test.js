@@ -1,9 +1,9 @@
-const {BN, expect} = require("./testHelpers.js")
-const hre = require("hardhat")
+import {BN, expect} from "./testHelpers"
+import hre from "hardhat"
 const {deployments, getNamedAccounts, ethers} = hre
-const {getDeployedContract, fromAtomic, OWNER_ROLE} = require("../blockchain_scripts/deployHelpers")
-const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
-const updateConfigs = require("../blockchain_scripts/updateConfigs")
+import {getDeployedContract, fromAtomic, OWNER_ROLE} from "../blockchain_scripts/deployHelpers"
+import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
+import updateConfigs from "../blockchain_scripts/updateConfigs"
 
 describe("Deployment", async () => {
   describe("Base Deployment", () => {

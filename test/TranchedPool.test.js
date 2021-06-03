@@ -13,7 +13,7 @@ const {
   SECONDS_PER_DAY,
   UNIT_SHARE_PRICE,
   ZERO,
-} = require("./testHelpers.js")
+} = require("./testHelpers")
 const {interestAprAsBN, TRANCHES, MAX_UINT, OWNER_ROLE, PAUSER_ROLE} = require("../blockchain_scripts/deployHelpers")
 const {expectEvent} = require("@openzeppelin/test-helpers")
 const hre = require("hardhat")

@@ -1,7 +1,7 @@
 /* global web3 */
 const hre = require("hardhat")
 const {deployments, artifacts} = hre
-const {expect, BN, deployAllContracts, usdcVal, createPoolWithCreditLine} = require("./testHelpers.js")
+const {expect, BN, deployAllContracts, usdcVal, createPoolWithCreditLine} = require("./testHelpers")
 const {interestAprAsBN, TRANCHES} = require("../blockchain_scripts/deployHelpers")
 let accounts, owner, borrower
 

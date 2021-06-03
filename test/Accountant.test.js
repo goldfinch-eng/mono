@@ -9,10 +9,10 @@ const {
   SECONDS_PER_DAY,
   SECONDS_PER_YEAR,
   deployAllContracts,
-} = require("./testHelpers.js")
+} = require("./testHelpers")
 const hre = require("hardhat")
 const {deployments} = hre
-const {interestAprAsBN, INTEREST_DECIMALS, ETHDecimals} = require("../blockchain_scripts/deployHelpers.js")
+const {interestAprAsBN, INTEREST_DECIMALS, ETHDecimals} = require("../blockchain_scripts/deployHelpers")
 const Accountant = artifacts.require("Accountant")
 const TestAccountant = artifacts.require("TestAccountant")
 const CreditLine = artifacts.require("CreditLine")

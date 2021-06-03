@@ -1,18 +1,33 @@
-/* global web3 ethers */
-const chai = require("chai")
-const {artifacts} = require("hardhat")
+import chai from "chai"
+import {artifacts, web3, ethers} from "hardhat"
 chai.use(require("chai-as-promised"))
 const expect = chai.expect
-const mochaEach = require("mocha-each")
-const {time} = require("@openzeppelin/test-helpers")
-const BN = require("bn.js")
-const {isTestEnv, USDCDecimals, interestAprAsBN, ZERO_ADDRESS} = require("../blockchain_scripts/deployHelpers")
+import mochaEach from "mocha-each"
+import {time} from "@openzeppelin/test-helpers"
+import BN from "bn.js"
+import {isTestEnv, USDCDecimals, interestAprAsBN, ZERO_ADDRESS} from "../blockchain_scripts/deployHelpers"
+import {DeploymentsExtension} from "hardhat-deploy/dist/types"
+import {
+  CreditDeskInstance,
+  ERC20Instance,
+  FiduInstance,
+  FixedLeverageRatioStrategyInstance,
+  GoldfinchConfigInstance,
+  GoldfinchFactoryInstance,
+  PoolInstance,
+  PoolTokensInstance,
+  SeniorFundInstance,
+  TestForwarderInstance,
+  TranchedPoolInstance,
+  TransferRestrictedVaultInstance,
+} from "../typechain/truffle"
 const decimals = new BN(String(1e18))
 const USDC_DECIMALS = new BN(String(1e6))
 const SECONDS_PER_DAY = new BN(86400)
 const SECONDS_PER_YEAR = SECONDS_PER_DAY.mul(new BN(365))
 const UNIT_SHARE_PRICE = new BN("1000000000000000000") // Corresponds to share price of 100% (no interest or writedowns)
 chai.use(require("chai-bn")(BN))
+
 const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
 const fiduTolerance = decimals.div(USDC_DECIMALS)
 const CreditLine = artifacts.require("CreditLine")
@@ -37,7 +52,10 @@ function fiduToUSDC(number) {
   return number.div(decimals.div(USDCDecimals))
 }
 
-const getDeployedAsTruffleContract = async (deployments, contractName) => {
+const getDeployedAsTruffleContract = async <T extends Truffle.ContractInstance>(
+  deployments: DeploymentsExtension,
+  contractName: string
+): Promise<T> => {
   let deployment = await deployments.getOrNull(contractName)
   if (!deployment && contractName === "GoldfinchFactory") {
     deployment = await deployments.getOrNull("CreditLineFactory")
@@ -46,7 +64,7 @@ const getDeployedAsTruffleContract = async (deployments, contractName) => {
     contractName = `Test${contractName}`
     deployment = await deployments.get(contractName)
   }
-  return await artifacts.require(contractName).at(deployment.address)
+  return (await artifacts.require(contractName).at(deployment!.address)) as T
 }
 
 async function createCreditLine({
@@ -58,6 +76,15 @@ async function createCreditLine({
   interestApr = interestAprAsBN("15.0"),
   termInDays = 360,
   lateFeesApr = interestAprAsBN("3.0"),
+}: {
+  borrower?: string
+  creditDesk?: any
+  underwriter?: string
+  paymentPeriodInDays?: any
+  limit?: BN
+  interestApr?: BN
+  termInDays?: number | BN
+  lateFeesApr?: BN
 } = {}) {
   if (typeof borrower !== "string") {
     throw new Error("Borrower address must be a string")
@@ -74,12 +101,12 @@ async function createCreditLine({
 
 const tolerance = usdcVal(1).div(new BN(1000)) // 0.001$
 
-function expectAction(action, debug) {
+function expectAction(action: any, debug?: boolean) {
   return {
     toChange: async (itemsAndExpectations) => {
       const items = itemsAndExpectations.map((pair) => pair[0])
       const expectations = itemsAndExpectations.map((pair) => pair[1])
-      const originalValues = await Promise.all(items.map((i) => i()))
+      const originalValues = (await Promise.all(items.map((i) => i()))) as any
       if (debug) {
         console.log("Original:", String(originalValues))
       }
@@ -88,7 +115,7 @@ function expectAction(action, debug) {
         throw new Error("Expected a promise. Did you forget to return?")
       }
       await actionPromise
-      const newValues = await Promise.all(items.map((i) => i()))
+      const newValues = (await Promise.all(items.map((i) => i()))) as any
       if (debug) {
         console.log("New:     ", String(newValues))
       }
@@ -160,26 +187,48 @@ function decodeLogs(logs, emitter, eventName) {
     .map((decoded) => ({event: eventName, args: decoded}))
 }
 
-async function deployAllContracts(deployments, options = {}) {
+async function deployAllContracts(
+  deployments: DeploymentsExtension,
+  options: {deployForwarder?: boolean; fromAccount?: string} = {}
+): Promise<{
+  pool: PoolInstance
+  seniorFund: SeniorFundInstance
+  seniorFundStrategy: FixedLeverageRatioStrategyInstance
+  usdc: ERC20Instance
+  creditDesk: CreditDeskInstance
+  fidu: FiduInstance
+  goldfinchConfig: GoldfinchConfigInstance
+  goldfinchFactory: GoldfinchFactoryInstance
+  forwarder: TestForwarderInstance | null
+  poolTokens: PoolTokensInstance
+  tranchedPool: TranchedPoolInstance
+  transferRestrictedVault: TransferRestrictedVaultInstance
+}> {
   let {deployForwarder, fromAccount} = options
   await deployments.fixture("base_deploy")
-  const pool = await getDeployedAsTruffleContract(deployments, "Pool")
-  const seniorFund = await getDeployedAsTruffleContract(deployments, "SeniorFund")
-  const seniorFundStrategy = await getDeployedAsTruffleContract(deployments, "FixedLeverageRatioStrategy")
-  const usdc = await getDeployedAsTruffleContract(deployments, "ERC20")
-  const creditDesk = await getDeployedAsTruffleContract(deployments, "CreditDesk")
-  const fidu = await getDeployedAsTruffleContract(deployments, "Fidu")
-  const goldfinchConfig = await getDeployedAsTruffleContract(deployments, "GoldfinchConfig")
-  const goldfinchFactory = await getDeployedAsTruffleContract(deployments, "GoldfinchFactory")
-  const poolTokens = await getDeployedAsTruffleContract(deployments, "PoolTokens")
-  let forwarder = null
+  const pool = await getDeployedAsTruffleContract<PoolInstance>(deployments, "Pool")
+  const seniorFund = await getDeployedAsTruffleContract<SeniorFundInstance>(deployments, "SeniorFund")
+  const seniorFundStrategy = await getDeployedAsTruffleContract<FixedLeverageRatioStrategyInstance>(
+    deployments,
+    "FixedLeverageRatioStrategy"
+  )
+  const usdc = await getDeployedAsTruffleContract<ERC20Instance>(deployments, "ERC20")
+  const creditDesk = await getDeployedAsTruffleContract<CreditDeskInstance>(deployments, "CreditDesk")
+  const fidu = await getDeployedAsTruffleContract<FiduInstance>(deployments, "Fidu")
+  const goldfinchConfig = await getDeployedAsTruffleContract<GoldfinchConfigInstance>(deployments, "GoldfinchConfig")
+  const goldfinchFactory = await getDeployedAsTruffleContract<GoldfinchFactoryInstance>(deployments, "GoldfinchFactory")
+  const poolTokens = await getDeployedAsTruffleContract<PoolTokensInstance>(deployments, "PoolTokens")
+  let forwarder: TestForwarderInstance | null = null
   if (deployForwarder) {
-    await deployments.deploy("TestForwarder", {from: fromAccount, gas: 4000000})
-    forwarder = await getDeployedAsTruffleContract(deployments, "TestForwarder")
-    await forwarder.registerDomainSeparator("Defender", "1")
+    await deployments.deploy("TestForwarder", {from: fromAccount as string, gasLimit: 4000000})
+    forwarder = await getDeployedAsTruffleContract<TestForwarderInstance>(deployments, "TestForwarder")
+    await forwarder!.registerDomainSeparator("Defender", "1")
   }
-  let tranchedPool = await getDeployedAsTruffleContract(deployments, "TranchedPool")
-  const transferRestrictedVault = await getDeployedAsTruffleContract(deployments, "TransferRestrictedVault")
+  let tranchedPool = await getDeployedAsTruffleContract<TranchedPoolInstance>(deployments, "TranchedPool")
+  const transferRestrictedVault = await getDeployedAsTruffleContract<TransferRestrictedVaultInstance>(
+    deployments,
+    "TransferRestrictedVault"
+  )
   return {
     pool,
     seniorFund,
@@ -211,7 +260,11 @@ async function erc20Transfer(erc20, toAccounts, amount, fromAccount) {
   }
 }
 
-async function advanceTime(creditDeskOrCreditLine, {days, seconds, toSecond}) {
+type Numberish = BN | string | number
+async function advanceTime(
+  creditDeskOrCreditLine,
+  {days, seconds, toSecond}: {days?: Numberish; seconds?: Numberish; toSecond?: Numberish}
+) {
   let secondsPassed, newTimestamp
   let currentTimestamp = await time.latest()
 
@@ -298,7 +351,7 @@ async function toTruffle(contract, contractName) {
   return await artifacts.require(contractName).at(contract.address)
 }
 
-module.exports = {
+export {
   chai,
   expect,
   decimals,

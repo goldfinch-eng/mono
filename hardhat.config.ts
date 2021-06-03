@@ -1,9 +1,10 @@
 /* eslint-disable prettier/prettier */
-require("@nomiclabs/hardhat-truffle5")
-require("@nomiclabs/hardhat-ethers")
-require("hardhat-deploy")
-require("hardhat-gas-reporter")
-require("hardhat-contract-sizer") // npx hardhat size-contracts
+import "@typechain/hardhat"
+import "@nomiclabs/hardhat-truffle5"
+import "@nomiclabs/hardhat-ethers"
+import "hardhat-deploy"
+import "hardhat-gas-reporter"
+import "hardhat-contract-sizer" // npx hardhat size-contracts
 
 const INFURA_PROJECT_ID = "d8e13fc4893e4be5aae875d94fee67b7"
 // Note this came from a new instance of Metamask that Blake set up
@@ -23,9 +24,9 @@ module.exports = {
       accounts: {mnemonic: "test test test test test test test test test test test junk"},
       forking: process.env.HARDHAT_FORK
         ? {
-          url: "https://eth-mainnet.alchemyapi.io/v2/EG9mAEw6e3sYDZ6h6oevoe1IaR42B72b",
-          blockNumber: 12454297, // Roughly May 17, 2021, 21:18 UTC
-        }
+            url: "https://eth-mainnet.alchemyapi.io/v2/EG9mAEw6e3sYDZ6h6oevoe1IaR42B72b",
+            blockNumber: 12454297, // Roughly May 17, 2021, 21:18 UTC
+          }
         : undefined,
     },
     ropsten: {
@@ -76,5 +77,9 @@ module.exports = {
     coinmarketcap: process.env.COINMARKETCAP_API_KEY,
     currency: "USD",
     src: "contracts/protocol",
+  },
+  typechain: {
+    outDir: "typechain/truffle",
+    target: "truffle-v5",
   },
 }

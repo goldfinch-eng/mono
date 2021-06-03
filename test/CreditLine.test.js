@@ -1,15 +1,7 @@
 /* global artifacts web3 */
 const hre = require("hardhat")
 const {deployments} = hre
-const {
-  expect,
-  BN,
-  usdcVal,
-  deployAllContracts,
-  erc20Transfer,
-  expectAction,
-  SECONDS_PER_DAY,
-} = require("./testHelpers.js")
+const {expect, BN, usdcVal, deployAllContracts, erc20Transfer, expectAction, SECONDS_PER_DAY} = require("./testHelpers")
 const {OWNER_ROLE, PAUSER_ROLE, interestAprAsBN} = require("../blockchain_scripts/deployHelpers")
 const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
 const {time} = require("@openzeppelin/test-helpers")

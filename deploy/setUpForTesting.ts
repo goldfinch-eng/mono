@@ -1,9 +1,15 @@
-/* global ethers */
-const BN = require("bn.js")
-const hre = require("hardhat")
-const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys.js")
+import {HardhatRuntimeEnvironment} from "hardhat/types"
+import {Logger} from "../blockchain_scripts/types"
+
+import BN from "bn.js"
+import hre from "hardhat"
+import {GoldfinchConfig, GoldfinchFactory, SeniorFund} from "../typechain/ethers"
+import {DeploymentsExtension} from "hardhat-deploy/dist/types"
+import {Contract} from "ethers"
+const {ethers} = hre
+import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
 require("dotenv").config({path: ".env.local"})
-const {
+import {
   MAINNET_CHAIN_ID,
   LOCAL,
   CHAIN_MAPPING,
@@ -15,8 +21,8 @@ const {
   isMainnetForking,
   getSignerForAddress,
   updateConfig,
-} = require("../blockchain_scripts/deployHelpers.js")
-const {
+} from "../blockchain_scripts/deployHelpers"
+import {
   MAINNET_MULTISIG,
   upgradeContracts,
   getExistingContracts,
@@ -24,14 +30,14 @@ const {
   fundWithWhales,
   getMainnetContracts,
   performPostUpgradeMigration,
-} = require("../blockchain_scripts/mainnetForkingHelpers")
+} from "../blockchain_scripts/mainnetForkingHelpers"
 
 /*
 This deployment deposits some funds to the pool, and creates an underwriter, and a credit line.
 It is only really used for test purposes, and should never be used on Mainnet (which it automatically never does);
 */
-let logger
-async function main({getNamedAccounts, deployments, getChainId}) {
+let logger: Logger
+async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeEnvironment) {
   const {getOrNull, log} = deployments
   logger = log
   let {protocol_owner} = await getNamedAccounts()
@@ -39,12 +45,12 @@ async function main({getNamedAccounts, deployments, getChainId}) {
   let underwriter = protocol_owner
   let borrower = protocol_owner
   let erc20 = await getDeployedAsEthersContract(getOrNull, "TestERC20")
-  let seniorFund = await getDeployedAsEthersContract(getOrNull, "SeniorFund")
+  let seniorFund = (await getDeployedAsEthersContract(getOrNull, "SeniorFund")) as SeniorFund
   // If you uncomment this, make sure to also uncomment the line in the MainnetForking section,
   // which sets this var to the upgraded version of fidu
   // let fidu = await getDeployedAsEthersContract(getOrNull, "Fidu")
-  let config = await getDeployedAsEthersContract(getOrNull, "GoldfinchConfig")
-  let goldfinchFactory = await getDeployedAsEthersContract(getOrNull, "GoldfinchFactory")
+  let config = (await getDeployedAsEthersContract(getOrNull, "GoldfinchConfig")) as GoldfinchConfig
+  let goldfinchFactory = (await getDeployedAsEthersContract(getOrNull, "GoldfinchFactory")) as GoldfinchFactory
   await setupTestForwarder(deployments, config, getOrNull, protocol_owner)
 
   if (getUSDCAddress(chainID)) {
@@ -75,7 +81,7 @@ async function main({getNamedAccounts, deployments, getChainId}) {
       },
     ])
 
-    await ownerAccount.sendTransaction({to: MAINNET_MULTISIG, value: ethers.utils.parseEther("5.0")})
+    await ownerAccount!.sendTransaction({to: MAINNET_MULTISIG, value: ethers.utils.parseEther("5.0")})
     await fundWithWhales(erc20s, [protocol_owner])
 
     const mainnetConfig = getMainnetContracts()
@@ -104,21 +110,27 @@ async function main({getNamedAccounts, deployments, getChainId}) {
   }
 
   await addUsersToGoList(config, [borrower, underwriter])
-  await depositToTheSeniorFund(seniorFund, erc20)
+  await depositToTheSeniorFund(seniorFund, erc20!)
 
   const result = await (await goldfinchFactory.createBorrower(borrower)).wait()
-  let bwrConAddr = result.events[result.events.length - 1].args[0]
+  let bwrConAddr = result.events![result.events!.length - 1].args![0]
   logger(`Created borrower contract: ${bwrConAddr} for ${borrower}`)
 
   await createPoolForBorrower(underwriter, goldfinchFactory, bwrConAddr)
   await createPoolForBorrower(underwriter, goldfinchFactory, bwrConAddr)
 }
 
-async function upgradeExistingContracts(contractsToUpgrade, mainnetConfig, mainnetMultisig, deployFrom, deployments) {
+async function upgradeExistingContracts(
+  contractsToUpgrade: any,
+  mainnetConfig: any,
+  mainnetMultisig: any,
+  deployFrom: any,
+  deployments: DeploymentsExtension
+): Promise<any> {
   // Ensure the multisig has funds for upgrades and other transactions
   console.log("On mainnet fork, upgrading existing contracts")
   let ownerAccount = await getSignerForAddress(deployFrom)
-  await ownerAccount.sendTransaction({to: mainnetMultisig, value: ethers.utils.parseEther("5.0")})
+  await ownerAccount!.sendTransaction({to: mainnetMultisig, value: ethers.utils.parseEther("5.0")})
   await impersonateAccount(hre, mainnetMultisig)
   let mainnetSigner = await ethers.provider.getSigner(mainnetMultisig)
 
@@ -127,12 +139,12 @@ async function upgradeExistingContracts(contractsToUpgrade, mainnetConfig, mainn
   return contracts
 }
 
-async function addUsersToGoList(goldfinchConfig, users) {
+async function addUsersToGoList(goldfinchConfig: GoldfinchConfig, users: string[]) {
   logger("Adding", users, "to the go-list... on config with address", goldfinchConfig.address)
   await (await goldfinchConfig.bulkAddToGoList(users)).wait()
 }
 
-async function depositToTheSeniorFund(fund, erc20) {
+async function depositToTheSeniorFund(fund: SeniorFund, erc20: Contract) {
   logger("Depositing funds into the fund...")
   const originalBalance = await erc20.balanceOf(fund.address)
   if (originalBalance.gt("0")) {
@@ -156,7 +168,7 @@ async function depositToTheSeniorFund(fund, erc20) {
   }
 }
 
-async function giveMoneyToTestUser(testUser, erc20s) {
+async function giveMoneyToTestUser(testUser: string, erc20s: any) {
   logger("Sending money to the test user", testUser)
   const [protocol_owner] = await ethers.getSigners()
   await protocol_owner.sendTransaction({
@@ -172,7 +184,7 @@ async function giveMoneyToTestUser(testUser, erc20s) {
   }
 }
 
-async function getDeployedAsEthersContract(getter, name) {
+async function getDeployedAsEthersContract(getter: any, name: string) {
   logger("Trying to get the deployed version of...", name)
   let deployed = await getter(name)
   if (!deployed && isTestEnv()) {
@@ -184,7 +196,7 @@ async function getDeployedAsEthersContract(getter, name) {
   return await ethers.getContractAt(deployed.abi, deployed.address)
 }
 
-async function createPoolForBorrower(underwriter, goldfinchFactory, borrower) {
+async function createPoolForBorrower(underwriter: string, goldfinchFactory: GoldfinchFactory, borrower: string) {
   logger("Creating a Pool for the borrower", borrower)
   const juniorFeePercent = String(new BN(20))
   const limit = String(new BN(10000).mul(USDCDecimals))
@@ -205,15 +217,20 @@ async function createPoolForBorrower(underwriter, goldfinchFactory, borrower) {
   logger("Created a Pool for the borrower", borrower)
 }
 
-async function setupTestForwarder(deployments, config, getOrNull, protocol_owner) {
+async function setupTestForwarder(
+  deployments: DeploymentsExtension,
+  config: GoldfinchConfig,
+  getOrNull: any,
+  protocol_owner: string
+) {
   let deployResult = await deployments.deploy("TestForwarder", {
     from: protocol_owner,
-    gas: 4000000,
+    gasLimit: 4000000,
   })
   logger(`Created Forwarder at ${deployResult.address}`)
 
   let forwarder = await getDeployedAsEthersContract(getOrNull, "TestForwarder")
-  await forwarder.registerDomainSeparator("Defender", "1")
+  await forwarder!.registerDomainSeparator("Defender", "1")
 
   await updateConfig(config, "address", CONFIG_KEYS.TrustedForwarder, deployResult.address, {logger})
 }
@@ -221,7 +238,7 @@ async function setupTestForwarder(deployments, config, getOrNull, protocol_owner
 module.exports = main
 module.exports.dependencies = ["base_deploy"]
 module.exports.tags = ["setup_for_testing"]
-module.exports.skip = async ({getChainId}) => {
+module.exports.skip = async ({getChainId}: HardhatRuntimeEnvironment) => {
   const chainId = await getChainId()
   return String(chainId) === MAINNET_CHAIN_ID
 }

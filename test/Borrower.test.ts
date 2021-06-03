@@ -1,8 +1,8 @@
 /* global artifacts web3 ethers */
-const BN = require("bn.js")
-const hre = require("hardhat")
-const {deployments} = hre
-const {
+import BN from "bn.js"
+import hre from "hardhat"
+const {deployments, ethers} = hre
+import {
   usdcVal,
   deployAllContracts,
   erc20Transfer,
@@ -12,12 +12,13 @@ const {
   expect,
   ZERO_ADDRESS,
   advanceTime,
-  createPoolWithCreditLine: _createPoolWithCreditLine,
-} = require("./testHelpers.js")
-const {TRANCHES} = require("../blockchain_scripts/deployHelpers")
-const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
-const {TypedDataUtils, signTypedData_v4} = require("eth-sig-util")
-const {bufferToHex} = require("ethereumjs-util")
+  createPoolWithCreditLine as _createPoolWithCreditLine,
+} from "./testHelpers"
+import {TRANCHES} from "../blockchain_scripts/deployHelpers"
+import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
+import {TypedDataUtils, signTypedData_v4, TypedMessage} from "eth-sig-util"
+import {bufferToHex} from "ethereumjs-util"
+import {BorrowerInstance} from "../typechain/truffle/Borrower.js"
 const Borrower = artifacts.require("Borrower")
 
 describe("Borrower", async () => {
@@ -35,7 +36,7 @@ describe("Borrower", async () => {
     reserve,
     forwarder
 
-  const createPoolWithCreditLine = async (_bwrCon) => {
+  const createPoolWithCreditLine = async (_bwrCon?: BorrowerInstance) => {
     const bwrConToUse = bwrCon || _bwrCon
     let res = await _createPoolWithCreditLine({
       people: {owner, borrower: bwrConToUse.address},
@@ -239,7 +240,7 @@ describe("Borrower", async () => {
       // signer._signer._signTypedData()
       const bwrPrivateKey = "59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
       const keyAsuint8 = Uint8Array.from(Buffer.from(bwrPrivateKey, "hex"))
-      const signature = signTypedData_v4(keyAsuint8, {data: toSign})
+      const signature = signTypedData_v4(Buffer.from(keyAsuint8), {data: (toSign as unknown) as TypedMessage<any>})
 
       const GenericParams = "address from,address to,uint256 value,uint256 gas,uint256 nonce,bytes data"
       const TypeName = `ForwardRequest(${GenericParams})`

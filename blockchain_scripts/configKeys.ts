@@ -30,4 +30,4 @@ const CONFIG_KEYS = {
   BorrowerImplementation: 17,
 }
 
-module.exports = {CONFIG_KEYS}
+export {CONFIG_KEYS}

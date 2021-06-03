@@ -10,7 +10,7 @@ const {
   erc20Approve,
   usdcVal,
   createPoolWithCreditLine,
-} = require("../testHelpers.js")
+} = require("../testHelpers")
 const {assessIfRequired} = require("../../autotasks/assessor/index.js")
 let accounts, owner, underwriter, borrower
 let creditDesk, creditLine, fakeProvider, fakeTimestamp
@@ -21,7 +21,9 @@ describe("relayAsses", () => {
     const {protocol_owner} = await getNamedAccounts()
     owner = protocol_owner
 
-    const {seniorFund, usdc, fidu, creditDesk, goldfinchConfig, goldfinchFactory} = await deployAllContracts(deployments)
+    const {seniorFund, usdc, fidu, creditDesk, goldfinchConfig, goldfinchFactory} = await deployAllContracts(
+      deployments
+    )
     // A bit of setup for our test users
     await erc20Approve(usdc, seniorFund.address, usdcVal(100000), [owner, borrower])
     await goldfinchConfig.bulkAddToGoList([owner, underwriter, borrower])

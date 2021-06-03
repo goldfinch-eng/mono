@@ -1,5 +1,5 @@
 /* global web3 */
-const {SECONDS_PER_DAY, BLOCKS_PER_DAY, BN} = require("../../test/testHelpers.js")
+const {SECONDS_PER_DAY, BLOCKS_PER_DAY, BN} = require("../../test/testHelpers")
 const hre = require("hardhat")
 const {artifacts} = hre
 const IV1CreditLine = artifacts.require("IV1CreditLine")

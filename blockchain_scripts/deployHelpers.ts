@@ -1,14 +1,20 @@
-/* global web3 ethers */
-const BN = require("bn.js")
+import {ethers} from "hardhat"
+type Ethers = typeof ethers
+import {web3} from "hardhat"
+import BN from "bn.js"
 const USDCDecimals = new BN(String(1e6))
 const ETHDecimals = new BN(String(1e18))
 const INTEREST_DECIMALS = new BN(String(1e18))
-const API_KEY = process.env.DEFENDER_API_KEY || "A2UgCPgn8jQbkSVuSCxEMhFmivdV9C6d"
-const API_SECRET = process.env.DEFENDER_API_SECRET
-const {AdminClient} = require("defender-admin-client")
-const hre = require("hardhat")
-const PROTOCOL_CONFIG = require("../protocol_config.json")
-const {CONFIG_KEYS} = require("./configKeys.js")
+const DEFENDER_API_KEY = process.env.DEFENDER_API_KEY || "A2UgCPgn8jQbkSVuSCxEMhFmivdV9C6d"
+const DEFENDER_API_SECRET = process.env.DEFENDER_API_SECRET
+import {AdminClient} from "defender-admin-client"
+import hre from "hardhat"
+import PROTOCOL_CONFIG from "../protocol_config.json"
+import {CONFIG_KEYS} from "./configKeys"
+import {GoldfinchConfig} from "../typechain/ethers"
+import {HardhatRuntimeEnvironment} from "hardhat/types"
+import {DeploymentsExtension} from "hardhat-deploy/types"
+import {Signer} from "ethers"
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
@@ -23,28 +29,33 @@ const ROPSTEN = "ropsten"
 const RINKEBY = "rinkeby"
 const MAINNET = "mainnet"
 const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
-const CHAIN_MAPPING = {
+
+const CHAIN_MAPPING: {[index: string]: string} = {
   31337: LOCAL,
   3: ROPSTEN,
   1: MAINNET,
   4: RINKEBY,
 }
-const USDC_ADDRESSES = {
+
+type ChainAddresses = {[index: string]: string}
+const USDC_ADDRESSES: ChainAddresses = {
   [ROPSTEN]: ROPSTEN_USDC_ADDRESS,
   [MAINNET]: MAINNET_USDC_ADDRESS,
 }
-const USDT_ADDRESSES = {
+const USDT_ADDRESSES: ChainAddresses = {
   [MAINNET]: "0xdac17f958d2ee523a2206206994597c13d831ec7",
 }
-const BUSD_ADDRESSES = {
+const BUSD_ADDRESSES: ChainAddresses = {
   [MAINNET]: "0x4Fabb145d64652a948d72533023f6E7A623C7C53",
 }
-const ERC20_ADDRESSES = {
+type ERC20Addresses = {[ticker: string]: ChainAddresses}
+const ERC20_ADDRESSES: ERC20Addresses = {
   USDC: USDC_ADDRESSES,
   USDT: USDT_ADDRESSES,
   BUSD: BUSD_ADDRESSES,
 }
-const SAFE_CONFIG = {
+type SafeConfig = {[chainId: string]: {safeAddress: string}}
+const SAFE_CONFIG: SafeConfig = {
   1: {safeAddress: "0xBEb28978B2c755155f20fd3d09Cb37e300A6981f"}, // Mainnet
   4: {safeAddress: "0xAA96CA940736e937A8571b132992418c7d220976"}, // Rinkeby
 }
@@ -52,17 +63,14 @@ const SAFE_CONFIG = {
 // WARNING: BE EXTREMELY CAREFUL WITH THESE ADDRESSES
 // A malicious trusted forwarder means handling over full control of the contract (it can spoof msg.sender)
 // https://docs.opengsn.org/contracts/addresses.html
-const TRUSTED_FORWARDER_CONFIG = {
+const TRUSTED_FORWARDER_CONFIG: {[chainId: string]: string} = {
   1: "0xa530F85085C6FE2f866E7FdB716849714a89f4CD", // Mainnet
   4: "0x956868751Cc565507B3B58E53a6f9f41B56bed74", // Rinkeby
 }
 
-let OWNER_ROLE, PAUSER_ROLE, MINTER_ROLE
-if (typeof web3 !== "undefined" && web3.utils) {
-  OWNER_ROLE = web3.utils.keccak256("OWNER_ROLE")
-  PAUSER_ROLE = web3.utils.keccak256("PAUSER_ROLE")
-  MINTER_ROLE = web3.utils.keccak256("MINTER_ROLE")
-}
+let OWNER_ROLE = web3.utils.keccak256("OWNER_ROLE")
+let PAUSER_ROLE = web3.utils.keccak256("PAUSER_ROLE")
+let MINTER_ROLE = web3.utils.keccak256("MINTER_ROLE")
 
 const TRANCHES = {
   Senior: 1,
@@ -81,16 +89,16 @@ async function isMainnet() {
   return (await hre.getChainId()) === MAINNET_CHAIN_ID
 }
 
-function interestAprAsBN(interestPercentageString) {
+function interestAprAsBN(interestPercentageString: string) {
   const interestPercentageFloat = parseFloat(interestPercentageString)
-  return new BN(String((interestPercentageFloat / 100) * INTEREST_DECIMALS))
+  return new BN(String(interestPercentageFloat * 100000)).mul(INTEREST_DECIMALS).div(new BN(10000000))
 }
 
-function getUSDCAddress(chainID) {
+function getUSDCAddress(chainID: string) {
   return getERC20Address("USDC", chainID)
 }
 
-function getERC20Address(ticker, chainID) {
+function getERC20Address(ticker: string, chainID: string) {
   let mapping = ERC20_ADDRESSES[ticker]
   if (isMainnetForking()) {
     return mapping[MAINNET]
@@ -98,34 +106,41 @@ function getERC20Address(ticker, chainID) {
   return mapping[chainID] || mapping[CHAIN_MAPPING[chainID]]
 }
 
-async function getSignerForAddress(signerAddress) {
+async function getSignerForAddress(signerAddress?: string | Signer): Promise<Signer | undefined> {
   if (signerAddress && typeof signerAddress === "string") {
     const signers = await ethers.getSigners()
     return signers.find((signer) => signer.address === signerAddress)
-  } else if (signerAddress && typeof signerAddres === "object") {
+  } else if (signerAddress && typeof signerAddress === "object") {
     return signerAddress
   }
 }
 
-async function getDeployedContract(deployments, contractName, signerAddress) {
+async function getDeployedContract(deployments: DeploymentsExtension, contractName: string, signerAddress?: string) {
   let deployment = await deployments.getOrNull(contractName)
   if (!deployment && isTestEnv()) {
     deployment = await deployments.getOrNull(`Test${contractName}`)
   }
   const implementation = await deployments.getOrNull(contractName + "_Implementation")
-  if (!deployment && !implementation) {
+  const abi = implementation ? implementation.abi : deployment?.abi
+  if (abi == null) {
     throw new Error(
       `No deployed version of ${contractName} found! All available deployments are: ${Object.keys(
         await deployments.all()
       )}`
     )
   }
-  const abi = implementation ? implementation.abi : deployment.abi
   let signer = await getSignerForAddress(signerAddress)
-  return await ethers.getContractAt(abi, deployment.address, signer)
+  return await ethers.getContractAt(abi, deployment!.address, signer)
 }
 
-async function deployContractUpgrade(contractName, dependencies, from, deployments, ethers) {
+export type DepList = {[contractName: string]: {[contractName: string]: string}}
+async function deployContractUpgrade(
+  contractName: string,
+  dependencies: DepList,
+  from: string,
+  deployments: DeploymentsExtension,
+  ethers: Ethers
+) {
   const {deploy} = deployments
 
   let contractNameToLookUp = contractName
@@ -143,7 +158,7 @@ async function deployContractUpgrade(contractName, dependencies, from, deploymen
 
   let deployResult = await deploy(implName, {
     from: from,
-    gas: 4000000,
+    gasLimit: 4000000,
     args: [],
     contract: contractName,
     libraries: dependencies[contractName],
@@ -158,7 +173,7 @@ async function deployContractUpgrade(contractName, dependencies, from, deploymen
   }
 }
 
-async function setInitialConfigVals(config, logger = function () {}) {
+async function setInitialConfigVals(config: GoldfinchConfig, logger = function (_: any) {}) {
   let chainID = await hre.getChainId()
   if (isMainnetForking()) {
     chainID = MAINNET_CHAIN_ID
@@ -209,7 +224,7 @@ async function setInitialConfigVals(config, logger = function () {}) {
   await config.setTreasuryReserve(multisigAddress)
 }
 
-async function updateConfig(config, type, key, newValue, opts) {
+async function updateConfig(config: GoldfinchConfig, type: any, key: any, newValue: any, opts?: any) {
   opts = opts || {}
   let logger = opts.logger || function () {}
   let currentValue
@@ -229,19 +244,22 @@ async function updateConfig(config, type, key, newValue, opts) {
   }
 }
 
-function fromAtomic(amount, decimals = USDCDecimals) {
+function fromAtomic(amount: BN, decimals = USDCDecimals) {
   return new BN(String(amount)).div(decimals).toString(10)
 }
 
-function toAtomic(amount, decimals = USDCDecimals) {
+function toAtomic(amount: BN, decimals = USDCDecimals) {
   return new BN(String(amount)).mul(decimals).toString(10)
 }
 
 function getDefenderClient() {
-  return new AdminClient({apiKey: API_KEY, apiSecret: API_SECRET})
+  if (DEFENDER_API_SECRET == null) {
+    throw new Error("DEFENDER_API_SECRET is null. It must be set as an envvar")
+  }
+  return new AdminClient({apiKey: DEFENDER_API_KEY, apiSecret: DEFENDER_API_SECRET})
 }
 
-module.exports = {
+export {
   CHAIN_MAPPING,
   ZERO_ADDRESS,
   ROPSTEN_USDC_ADDRESS,

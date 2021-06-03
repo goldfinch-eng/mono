@@ -14,7 +14,7 @@ const {
   decodeLogs,
   expectAction,
   advanceTime,
-} = require("./testHelpers.js")
+} = require("./testHelpers")
 const {time} = require("@openzeppelin/test-helpers")
 const {interestAprAsBN, MAX_UINT} = require("../blockchain_scripts/deployHelpers")
 const {ecsign} = require("ethereumjs-util")

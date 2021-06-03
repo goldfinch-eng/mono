@@ -27,7 +27,7 @@ const {
   fiduTolerance,
   tolerance,
   decodeLogs,
-} = require("./testHelpers.js")
+} = require("./testHelpers")
 const {expectEvent} = require("@openzeppelin/test-helpers")
 const {ecsign} = require("ethereumjs-util")
 const {getApprovalDigest, getWallet} = require("./permitHelpers")

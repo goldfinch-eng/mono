@@ -1,7 +1,7 @@
 /* globals ethers */
 const BN = require("bn.js")
 const CreditLine = require("../artifacts/contracts/protocol/CreditLine.sol/CreditLine.json")
-const {SECONDS_PER_DAY} = require("../test/testHelpers.js")
+const {SECONDS_PER_DAY} = require("../test/testHelpers")
 const {displayCreditLine} = require("./protocolHelpers")
 
 async function main() {

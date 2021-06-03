@@ -1,6 +1,6 @@
 const hre = require("hardhat")
 const BN = require("bn.js")
-const {SECONDS_PER_DAY} = require("../test/testHelpers.js")
+const {SECONDS_PER_DAY} = require("../test/testHelpers")
 
 async function main() {
   await advanceTime()

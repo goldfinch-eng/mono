@@ -8,7 +8,7 @@ const {
   deployAllContracts,
   erc20Transfer,
   erc20Approve,
-} = require("./testHelpers.js")
+} = require("./testHelpers")
 const {OWNER_ROLE, interestAprAsBN} = require("../blockchain_scripts/deployHelpers")
 const hre = require("hardhat")
 const BN = require("bn.js")

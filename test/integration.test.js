@@ -15,7 +15,7 @@ const {
   expectAction,
   fiduToUSDC,
   advanceTime,
-} = require("./testHelpers.js")
+} = require("./testHelpers")
 const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
 const {TRANCHES, interestAprAsBN, INTEREST_DECIMALS, ETHDecimals} = require("../blockchain_scripts/deployHelpers")
 const {time} = require("@openzeppelin/test-helpers")
