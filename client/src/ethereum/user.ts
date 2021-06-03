@@ -4,7 +4,7 @@ import _ from "lodash"
 import { getFromBlock, MAINNET } from "./utils"
 import { mapEventsToTx } from "./events"
 import { getGoldfinchFactory } from "./creditLine"
-import { getBorrowerContract } from "./borrower"
+import { BorrowerInterface, getBorrowerContract } from "./borrower"
 import { goList } from "../goList"
 
 declare let window: any;
