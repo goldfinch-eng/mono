@@ -8,15 +8,15 @@ import Sidebar from "./components/sidebar"
 import TermsOfService from "./components/termsOfService.js"
 import PrivacyPolicy from "./components/privacyPolicy.js"
 import web3 from "./web3"
-import { fetchPoolData, getPool } from "./ethereum/pool.js"
+import { fetchPoolData, getPool } from "./ethereum/pool"
 import { getCreditDesk, fetchCreditDeskData } from "./ethereum/creditDesk.js"
 import { ERC20, getUSDC } from "./ethereum/erc20"
 import { getGoldfinchConfig, refreshGoldfinchConfigData } from "./ethereum/goldfinchConfig"
-import { getUserData, defaultUser, User, DefaultUser } from "./ethereum/user"
+import { getUserData, defaultUser, User } from "./ethereum/user"
 import { mapNetworkToID, SUPPORTED_NETWORKS } from "./ethereum/utils"
 import initSdk, { SafeInfo, SdkInstance } from "@gnosis.pm/safe-apps-sdk"
 import { NetworkMonitor } from "./ethereum/networkMonitor"
-import {Contract} from 'web3-eth-contract'
+import {SeniorFund} from "./ethereum/pool"
 
 interface NetworkConfig {
   name?: string
@@ -24,7 +24,7 @@ interface NetworkConfig {
 }
 
 interface GlobalState {
-  pool?: any
+  pool?: SeniorFund
   creditDesk?: any
   user: User
   usdc?: ERC20
@@ -41,7 +41,7 @@ declare let window: any;
 const AppContext = React.createContext<GlobalState>({user: defaultUser()})
 
 function App() {
-  const [pool, setPool] = useState<any>({})
+  const [pool, setPool] = useState<SeniorFund>()
   const [creditDesk, setCreditDesk] = useState<any>({})
   const [usdc, setUSDC] = useState<ERC20>()
   const [user, setUser] = useState<User>(defaultUser())
@@ -84,16 +84,16 @@ function App() {
     const networkId = mapNetworkToID[networkName] || networkName
     const networkConfig: NetworkConfig = { name: networkId, supported: SUPPORTED_NETWORKS[networkId] }
     setNetwork(networkConfig)
-    let usdc: ERC20, poolContract: any, goldfinchConfigContract: any, creditDeskContract: any
+    let usdc: ERC20, pool: SeniorFund, goldfinchConfigContract: any, creditDeskContract: any
     if (networkConfig.supported) {
       usdc = await getUSDC(networkId)
-      poolContract = await getPool(networkId)
+      pool = await getPool(networkId)
       goldfinchConfigContract = await getGoldfinchConfig(networkId)
       creditDeskContract = await getCreditDesk(networkId)
-      poolContract.gf = await fetchPoolData(poolContract, usdc.contract)
+      pool.gf = await fetchPoolData(pool, usdc.contract)
       creditDeskContract.gf = await fetchCreditDeskData(creditDeskContract)
       setUSDC(usdc)
-      setPool(poolContract)
+      setPool(pool)
       setCreditDesk(creditDeskContract)
       setGoldfinchConfig(await refreshGoldfinchConfigData(goldfinchConfigContract))
       const monitor = new NetworkMonitor(web3, {
@@ -116,7 +116,7 @@ function App() {
     if (userAddress) {
       data.address = userAddress
     }
-    if (userAddress && usdc && creditDesk.loaded && pool.loaded) {
+    if (userAddress && usdc && creditDesk.loaded && pool?.loaded) {
       data = await getUserData(userAddress, usdc, pool, creditDesk, network.name)
     }
     setUser(data)

@@ -6,12 +6,13 @@ import { mapEventsToTx } from "./events"
 import { getGoldfinchFactory } from "./creditLine"
 import { BorrowerInterface, getBorrowerContract } from "./borrower"
 import { goList } from "../goList"
+import { SeniorFund} from "./pool"
 
 declare let window: any;
 
 const UNLOCK_THRESHOLD = new BigNumber(10000)
 
-async function getUserData(address, usdc, pool, creditDesk, networkId): Promise<User> {
+async function getUserData(address, usdc, pool: SeniorFund, creditDesk, networkId): Promise<User> {
   const goldfinchFactory = await getGoldfinchFactory(networkId)
   const borrower = await getBorrowerContract(address, goldfinchFactory, creditDesk, usdc, pool, networkId)
 
@@ -61,11 +62,11 @@ class Web3User implements User {
   noWeb3: boolean
 
   private borrower: BorrowerInterface
-  private pool: any
+  private pool: SeniorFund
   private usdc: ERC20
   private creditDesk: any
 
-  constructor(address: string, borrower: BorrowerInterface, pool: any, creditDesk: any, usdc: ERC20, networkId: string) {
+  constructor(address: string, borrower: BorrowerInterface, pool: SeniorFund, creditDesk: any, usdc: ERC20, networkId: string) {
     this.address = address
     this.borrower = borrower
     this.pool = pool
@@ -80,10 +81,10 @@ class Web3User implements User {
   async initialize() {
     this.usdcBalance = await this.usdc.getBalance(this.address)
     this.usdcBalanceInDollars = new BigNumber(usdcFromAtomic(this.usdcBalance))
-    this.poolAllowance = await this.getAllowance(this.pool._address)
+    this.poolAllowance = await this.getAllowance(this.pool.address)
 
     const [usdcTxs, poolTxs, creditDeskTxs] = await Promise.all([
-      getAndTransformERC20Events(this.usdc, this.pool._address, this.address),
+      getAndTransformERC20Events(this.usdc, this.pool.address, this.address),
       getAndTransformPoolEvents(this.pool, this.address),
       // Credit desk events could've some from the user directly or the borrower contract, we need to filter by both
       getAndTransformCreditDeskEvents(this.creditDesk, [this.address, this.borrower.borrowerAddress]),
@@ -101,7 +102,7 @@ class Web3User implements User {
   getUnlockStatus(type): UnlockedStatus {
     if (type === "earn") {
       return {
-        unlockAddress: this.pool._address,
+        unlockAddress: this.pool.address,
         isUnlocked: this.isUnlocked(this.poolAllowance),
       }
     } else if (type === "borrow") {
@@ -234,7 +235,7 @@ async function getPoolEvents(pool, address, events = ["DepositMade", "Withdrawal
   const fromBlock = getFromBlock(pool.chain)
   const [depositEvents, withdrawalEvents] = await Promise.all(
     events.map(eventName => {
-      return pool.getPastEvents(eventName, {
+      return pool.contract.getPastEvents(eventName, {
         filter: { capitalProvider: address },
         fromBlock: fromBlock,
         to: "latest",

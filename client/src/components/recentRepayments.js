@@ -11,7 +11,7 @@ function RecentRepayments() {
   let transactionRows
 
   useEffect(() => {
-    if (pool.gf) {
+    if (pool && pool.gf) {
       pool.gf.getRepaymentEvents().then(repayments => {
         setRepayments(_.slice(repayments, 0, 3))
       })
@@ -23,7 +23,7 @@ function RecentRepayments() {
     let yourPortion
     let yourPortionClass
 
-    if (user.loaded && pool.gf.loaded) {
+    if (user.loaded && pool && pool.gf.loaded) {
       let yourPortionValue = usdcFromAtomic(
         user
           .poolBalanceAsOf(tx.blockTime)

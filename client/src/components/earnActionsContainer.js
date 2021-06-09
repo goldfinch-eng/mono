@@ -1,9 +1,9 @@
 import React, { useState, useContext } from "react"
-import DepositForm from "./depositForm.js"
-import DepositStatus from "./depositStatus.js"
+import DepositForm from "./depositForm"
+import DepositStatus from "./depositStatus"
 import { AppContext } from "../App"
-import WithdrawalForm from "./withdrawalForm.js"
-import { iconUpArrow, iconDownArrow } from "./icons.js"
+import WithdrawalForm from "./withdrawalForm"
+import { iconUpArrow, iconDownArrow } from "./icons"
 
 function EarnActionsContainer(props) {
   const { user, creditDesk } = useContext(AppContext)

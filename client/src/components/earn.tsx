@@ -17,7 +17,10 @@ function Earn(props) {
       refreshPoolData(pool, usdc!)
       refreshCapitalProviderData(pool, capitalProviderAddress)
     }
-    refreshAllData()
+
+    if (pool) {
+      refreshAllData()
+    }
   }, [pool, usdc, user])
 
   function actionComplete() {

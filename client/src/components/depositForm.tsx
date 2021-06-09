@@ -6,14 +6,15 @@ import TransactionForm from "./transactionForm"
 import TransactionInput from "./transactionInput"
 import LoadingButton from "./loadingButton"
 import useSendFromUser from "../hooks/useSendFromUser"
+import useNonNullContext from "../hooks/useNonNullContext"
 
 function DepositForm(props) {
-  const { pool, user, goldfinchConfig } = useContext(AppContext)
+  const { pool, user, goldfinchConfig } = useNonNullContext(AppContext)
   const sendFromUser = useSendFromUser()
 
   function action({ transactionAmount }) {
     const depositAmount = usdcToAtomic(transactionAmount)
-    return sendFromUser(pool.methods.deposit(depositAmount), {
+    return sendFromUser(pool.contract.methods.deposit(depositAmount), {
       type: "Deposit",
       amount: transactionAmount,
     }).then(props.actionComplete)
@@ -28,7 +29,7 @@ function DepositForm(props) {
           You don't have any USDC to deposit. You'll need to first send USDC to your address to deposit.
         </p>
       )
-    } else if (pool.gf.totalPoolAssets.gte(goldfinchConfig.totalFundsLimit)) {
+    } else if (pool.gf?.totalPoolAssets.gte(goldfinchConfig.totalFundsLimit)) {
       disabled = true
       warningMessage = (
         <p className="form-message">
@@ -50,7 +51,7 @@ function DepositForm(props) {
                 goldfinchConfig.transactionLimit.gte(usdcToAtomic(value)) ||
                 `This is over the per-transaction limit of $${usdcFromAtomic(goldfinchConfig.transactionLimit)}`,
               totalFundsLimit: value => {
-                let limit = goldfinchConfig.totalFundsLimit.minus(pool.gf.totalPoolAssets)
+                let limit = goldfinchConfig.totalFundsLimit.minus(pool.gf?.totalPoolAssets)
                 return (
                   limit.gte(usdcToAtomic(value)) ||
                   `This deposit would put the pool over its limit. It can accept a max of $${usdcFromAtomic(limit)}.`
