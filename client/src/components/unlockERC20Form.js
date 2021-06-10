@@ -1,9 +1,11 @@
 import React from "react"
+import BigNumber from "bignumber.js"
 import { MAX_UINT } from "../ethereum/utils"
 import LoadingButton from "./loadingButton"
 import { useForm, FormProvider } from "react-hook-form"
 import { iconInfo } from "./icons.js"
-import useSendFromUser from "../hooks/useSendFromUser.js"
+import useSendFromUser from "../hooks/useSendFromUser"
+import { usdcFromAtomic } from "../ethereum/erc20"
 
 function UnlockERC20Form(props) {
   const { erc20, onUnlock, unlockAddress } = props
@@ -11,7 +13,13 @@ function UnlockERC20Form(props) {
   const formMethods = useForm()
 
   const unlock = () => {
-    return sendFromUser(erc20.contract.methods.approve(unlockAddress, MAX_UINT), { type: "Approval" }).then(onUnlock)
+    // The txData parameters must use the schema defined in src/ethereum/events:mapEventToTx
+    return sendFromUser(erc20.contract.methods.approve(unlockAddress, MAX_UINT), {
+      type: "Approval",
+      amount: usdcFromAtomic(MAX_UINT),
+      amountBN: new BigNumber(MAX_UINT),
+      erc20: erc20,
+    }).then(onUnlock)
   }
 
   return (
