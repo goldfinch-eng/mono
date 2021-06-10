@@ -56,7 +56,7 @@ function Transactions(props) {
     }
 
     return (
-      <tr key={tx.id} className={`transaction-row ${typeCssClass} ${statusCssClass}`}>
+      <tr key={tx.eventId} className={`transaction-row ${typeCssClass} ${statusCssClass}`}>
         <td className="transaction-type">
           {icon}
           {typeLabel}
@@ -69,7 +69,6 @@ function Transactions(props) {
         <td className="transaction-link">
           <a href={`https://${etherscanSubdomain}etherscan.io/tx/${tx.id}`} target="_blank" rel="noopener noreferrer">
             {iconOutArrow}
-            {/* {croppedAddress(tx.id)} */}
           </a>
         </td>
       </tr>
@@ -77,7 +76,7 @@ function Transactions(props) {
   }
 
   let allTx = _.compact(_.concat(props.currentTXs, user.pastTXs))
-  allTx = _.uniqBy(allTx, "id")
+  allTx = _.uniqBy(allTx, "eventId")
   let transactionRows = (
     <tr className="empty-row">
       <td>No transactions</td>

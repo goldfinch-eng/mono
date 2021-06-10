@@ -38,7 +38,7 @@ function mapEventToTx(event) {
       name: EVENT_TYPE_MAP[event.event],
       amount: usdcFromAtomic(event.returnValues[EVENT_AMOUNT_FIELD[event.event]]),
       amountBN: new BigNumber(event.returnValues[EVENT_AMOUNT_FIELD[event.event]]),
-      id: `${event.transactionHash}-${event.logIndex}`,
+      id: event.transactionHash,
       blockNumber: event.blockNumber,
       blockTime: block.timestamp,
       date: moment.unix(block.timestamp).format("MMM D, h:mma"),
