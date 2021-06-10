@@ -8,7 +8,6 @@ import LoadingButton from "./loadingButton"
 import CurrencyDropdown from "./currencyDropdown"
 import useSendFromUser from "../hooks/useSendFromUser"
 import UnlockERC20Form from "./unlockERC20Form"
-import { getERC20 } from "../ethereum/erc20"
 import useCurrencyUnlocked from "../hooks/useCurrencyUnlocked"
 import { useOneInchQuote, formatQuote } from "../hooks/useOneInchQuote"
 import useDebounce from "../hooks/useDebounce"
@@ -129,8 +128,7 @@ function PaymentForm(props) {
 
   function renderForm({ formMethods }) {
     async function changeTicker(ticker) {
-      let erc20 = await getERC20(ticker, goldfinchProtocol)
-      setErc20(erc20)
+      setErc20(goldfinchProtocol.getERC20(ticker))
     }
 
     return (

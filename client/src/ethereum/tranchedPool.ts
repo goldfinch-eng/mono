@@ -3,8 +3,8 @@ import { submitGaslessTransaction } from "./gasless"
 import { getFromBlock } from "./utils"
 import BigNumber from "bignumber.js"
 import { getOneInchContract } from "./oneInch"
-import {Contract} from 'web3-eth-contract'
-import {ERC20} from './erc20'
+import { Contract } from "web3-eth-contract"
+import { ERC20 } from "./erc20"
 import { GoldfinchProtocol } from "./GoldfinchProtocol"
 import { TranchedPool as TranchedPoolContract } from "../typechain/web3/TranchedPool"
 

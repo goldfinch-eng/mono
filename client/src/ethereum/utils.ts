@@ -1,7 +1,7 @@
 import BigNumber from "bignumber.js"
 import BN from "bn.js"
 import _ from "lodash"
-import {Contract} from 'web3-eth-contract'
+import { Contract } from "web3-eth-contract"
 import { AbiItem } from "web3-utils"
 import { ContractOptions } from "web3-eth-contract"
 import { BaseContract } from "../typechain/web3/types"
@@ -117,8 +117,12 @@ function getFromBlock(chain) {
   }
 }
 
-type MethodInfo = {method: string, name?: string, args?: any}
-function fetchDataFromAttributes(web3Obj: Contract | BaseContract, attributes: MethodInfo[], { bigNumber }: { bigNumber?: boolean } = {}): any {
+type MethodInfo = { method: string; name?: string; args?: any }
+function fetchDataFromAttributes(
+  web3Obj: Contract | BaseContract,
+  attributes: MethodInfo[],
+  { bigNumber }: { bigNumber?: boolean } = {},
+): any {
   const result = {}
   if (!web3Obj) {
     return Promise.resolve(result)
@@ -143,7 +147,7 @@ function fetchDataFromAttributes(web3Obj: Contract | BaseContract, attributes: M
 }
 
 function getContract<T extends BaseContract>(abi: AbiItem | AbiItem[], address?: string, options?: ContractOptions): T {
-  return new web3.eth.Contract(abi, address, options) as any as T
+  return (new web3.eth.Contract(abi, address, options) as any) as T
 }
 
 export {

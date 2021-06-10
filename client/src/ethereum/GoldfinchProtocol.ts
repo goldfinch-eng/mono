@@ -1,13 +1,8 @@
 import web3 from "../web3"
 import { getDeployments, getFromBlock } from "./utils"
 import { ERC20, getERC20 } from "./erc20"
-import { GoldfinchConfig } from "../typechain/web3/GoldfinchConfig"
-import { GoldfinchFactory } from "../typechain/web3/GoldfinchFactory"
-import { Fidu } from "../typechain/web3/Fidu"
-import { SeniorFund } from "../typechain/web3/SeniorFund"
 import _ from "lodash"
 import { Contract } from "web3-eth-contract"
-import add from "@openzeppelin/cli/lib/scripts/add"
 
 class GoldfinchProtocol {
   networkId: string
@@ -42,7 +37,7 @@ class GoldfinchProtocol {
     const eventArrays = await Promise.all(
       events.map(eventName => {
         return contractObj.getPastEvents(eventName, {
-          // filter: filter,
+          filter: filter,
           fromBlock: getFromBlock(this.networkId),
           toBlock: "latest",
         })

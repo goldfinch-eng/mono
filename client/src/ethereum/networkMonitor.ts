@@ -3,8 +3,8 @@ import _ from "lodash"
 import moment from "moment"
 import Web3 from "web3"
 import { CONFIRMATION_THRESHOLD } from "../ethereum/utils"
-import {Subscription} from "web3-core-subscriptions"
-import {BlockHeader} from "web3-eth"
+import { Subscription } from "web3-core-subscriptions"
+import { BlockHeader } from "web3-eth"
 
 const NOTIFY_API_KEY = "8447e1ef-75ab-4f77-b98f-f1ade3bb1982"
 

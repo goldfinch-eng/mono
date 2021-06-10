@@ -4,7 +4,7 @@ import * as ERC20Contract from "./ERC20.json"
 import { decimals, USDC_ADDRESSES, USDT_ADDRESSES, BUSD_ADDRESSES, getDeployments } from "./utils"
 import { memoize } from "lodash"
 import { Contract } from "web3-eth-contract"
-import {AbiItem} from "web3-utils/types"
+import { AbiItem } from "web3-utils/types"
 import { GoldfinchProtocol } from "./GoldfinchProtocol"
 
 const Tickers = {
@@ -139,4 +139,4 @@ function minimumNumber(...args) {
   return BigNumber.minimum(...args).toString(10)
 }
 
-export { getERC20, decimals, usdcFromAtomic, usdcToAtomic, minimumNumber, Tickers, ERC20}
+export { getERC20, decimals, usdcFromAtomic, usdcToAtomic, minimumNumber, Tickers, ERC20 }

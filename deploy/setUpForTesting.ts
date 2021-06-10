@@ -196,23 +196,31 @@ async function getDeployedAsEthersContract(getter: any, name: string) {
   return await ethers.getContractAt(deployed.abi, deployed.address)
 }
 
-async function createPoolForBorrower(getOrNull, underwriter: string, goldfinchFactory: GoldfinchFactory, borrower: string, erc20: Contract) {
+async function createPoolForBorrower(
+  getOrNull,
+  underwriter: string,
+  goldfinchFactory: GoldfinchFactory,
+  borrower: string,
+  erc20: Contract
+) {
   const juniorFeePercent = String(new BN(20))
   const limit = String(new BN(10000).mul(USDCDecimals))
   const interestApr = String(interestAprAsBN("5.00"))
   const paymentPeriodInDays = String(new BN(30))
   const termInDays = String(new BN(360))
   const lateFeeApr = String(new BN(0))
-  const result = await (await goldfinchFactory.createPool(
-    borrower,
-    juniorFeePercent,
-    limit,
-    interestApr,
-    paymentPeriodInDays,
-    termInDays,
-    lateFeeApr,
-    {from: underwriter}
-  )).wait()
+  const result = await (
+    await goldfinchFactory.createPool(
+      borrower,
+      juniorFeePercent,
+      limit,
+      interestApr,
+      paymentPeriodInDays,
+      termInDays,
+      lateFeeApr,
+      {from: underwriter}
+    )
+  ).wait()
   let event = result.events![result.events!.length - 1]
   let poolAddress = event.args![0]
   let owner = await getSignerForAddress(underwriter)

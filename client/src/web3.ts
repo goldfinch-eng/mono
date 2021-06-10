@@ -5,7 +5,7 @@ let web3: Web3
 let localStorage = window.localStorage
 let currentChain = localStorage.getItem("currentChain")
 let currentAccount = localStorage.getItem("currentAccount")
-declare let window: any;
+declare let window: any
 if (typeof window.ethereum !== "undefined") {
   web3 = new Web3(window.ethereum)
 

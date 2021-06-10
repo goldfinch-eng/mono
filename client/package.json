@@ -42,6 +42,7 @@
     "build": "react-app-rewired build",
     "test": "react-app-rewired test --env=jsdom-fourteen",
     "eject": "react-scripts eject",
+    "lint": "npx eslint . --fix && npx prettier . --write",
     "pre-push": "",
     "pre-commit": "lint-staged"
   },

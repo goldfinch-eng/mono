@@ -11,7 +11,6 @@ import useSendFromUser from "../hooks/useSendFromUser"
 import { useOneInchQuote, formatQuote } from "../hooks/useOneInchQuote"
 import useDebounce from "../hooks/useDebounce"
 import UnlockERC20Form from "./unlockERC20Form"
-import { getERC20 } from "../ethereum/erc20"
 import useCurrencyUnlocked from "../hooks/useCurrencyUnlocked"
 import CurrencyDropdown from "./currencyDropdown"
 
@@ -74,8 +73,7 @@ function DrawdownForm(props) {
   )
 
   async function changeTicker(ticker) {
-    let erc20 = await getERC20(ticker, goldfinchProtocol)
-    setErc20(erc20)
+    setErc20(goldfinchProtocol.getERC20(ticker))
   }
 
   function renderForm({ formMethods }) {

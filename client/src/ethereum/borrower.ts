@@ -3,7 +3,7 @@ import { submitGaslessTransaction } from "./gasless"
 import { getFromBlock } from "./utils"
 import BigNumber from "bignumber.js"
 import { getOneInchContract } from "./oneInch"
-import { Contract } from 'web3-eth-contract'
+import { Contract } from "web3-eth-contract"
 import { ERC20, Tickers } from "./erc20"
 import { GoldfinchProtocol } from "./GoldfinchProtocol"
 import { GoldfinchFactory } from "../typechain/web3/GoldfinchFactory"
@@ -25,7 +25,7 @@ class BorrowerInterface {
   tranchedPools!: { [address: string]: TranchedPool }
   tranchedPoolByCreditLine!: { [address: string]: TranchedPool }
   allowance!: BigNumber
-  
+
   constructor(userAddress, creditDesk, borrowerContract, goldfinchProtocol: GoldfinchProtocol, pool, oneInch) {
     this.userAddress = userAddress
     this.creditDesk = creditDesk
@@ -41,7 +41,9 @@ class BorrowerInterface {
   }
 
   async initialize() {
-    let poolEvents = await this.goldfinchProtocol.queryEvents("GoldfinchFactory", ["PoolCreated"], { borrower: this.borrowerAddress })
+    let poolEvents = await this.goldfinchProtocol.queryEvents("GoldfinchFactory", ["PoolCreated"], {
+      borrower: this.borrowerAddress,
+    })
     this.borrowerPoolAddresses = poolEvents.map((e: any) => e.returnValues.pool)
     for (let address of this.borrowerPoolAddresses) {
       const tranchedPool = new TranchedPool(address, this.goldfinchProtocol)
@@ -63,12 +65,20 @@ class BorrowerInterface {
 
   drawdown(creditLineAddress, drawdownAmount, sendToAddress) {
     sendToAddress = sendToAddress || this.userAddress
-    return this.submit(this.borrowerContract.methods.drawdown(this.getPoolAddressFromCL(creditLineAddress), drawdownAmount, sendToAddress))
+    return this.submit(
+      this.borrowerContract.methods.drawdown(
+        this.getPoolAddressFromCL(creditLineAddress),
+        drawdownAmount,
+        sendToAddress,
+      ),
+    )
   }
 
   drawdownViaOneInch(creditLineAddress, amount, sendToAddress, toToken) {
     sendToAddress = sendToAddress || this.userAddress
-    return this.submit(this.drawdownViaOneInchAsync(this.getPoolAddressFromCL(creditLineAddress), amount, sendToAddress, toToken))
+    return this.submit(
+      this.drawdownViaOneInchAsync(this.getPoolAddressFromCL(creditLineAddress), amount, sendToAddress, toToken),
+    )
   }
 
   pay(creditLineAddress, amount) {
