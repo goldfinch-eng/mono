@@ -1,5 +1,5 @@
 import BigNumber from "bignumber.js"
-import { ERC20, usdcFromAtomic } from "./erc20"
+import { ERC20, Tickers, usdcFromAtomic } from "./erc20"
 import _ from "lodash"
 import { getFromBlock, MAINNET } from "./utils"
 import { mapEventsToTx } from "./events"
@@ -7,16 +7,17 @@ import { getGoldfinchFactory } from "./creditLine"
 import { BorrowerInterface, getBorrowerContract } from "./borrower"
 import { goList } from "../goList"
 import { SeniorFund} from "./pool"
+import { GoldfinchProtocol } from "./GoldfinchProtocol"
 
 declare let window: any;
 
 const UNLOCK_THRESHOLD = new BigNumber(10000)
 
-async function getUserData(address, usdc, pool: SeniorFund, creditDesk, networkId): Promise<User> {
+async function getUserData(address, goldfinchProtocol, pool: SeniorFund, creditDesk, networkId): Promise<User> {
   const goldfinchFactory = await getGoldfinchFactory(networkId)
-  const borrower = await getBorrowerContract(address, goldfinchFactory, creditDesk, usdc, pool, networkId)
+  const borrower = await getBorrowerContract(address, goldfinchFactory, creditDesk, goldfinchProtocol, pool, networkId)
 
-  const user = new Web3User(address, borrower, pool, creditDesk, usdc, networkId)
+  const user = new Web3User(address, borrower, pool, creditDesk, goldfinchProtocol, networkId)
   await user.initialize()
   return user
 }
@@ -60,17 +61,19 @@ class Web3User implements User {
   poolTxs!: any[]
   goListed!: boolean
   noWeb3: boolean
+  goldfinchProtocol: GoldfinchProtocol
 
   private borrower: BorrowerInterface
   private pool: SeniorFund
   private usdc: ERC20
   private creditDesk: any
 
-  constructor(address: string, borrower: BorrowerInterface, pool: SeniorFund, creditDesk: any, usdc: ERC20, networkId: string) {
+  constructor(address: string, borrower: BorrowerInterface, pool: SeniorFund, creditDesk: any, goldfinchProtocol: GoldfinchProtocol, networkId: string) {
     this.address = address
     this.borrower = borrower
+    this.goldfinchProtocol = goldfinchProtocol
     this.pool = pool
-    this.usdc = usdc
+    this.usdc = goldfinchProtocol.getERC20(Tickers.USDC)
     this.creditDesk = creditDesk
     this.web3Connected = true
     this.loaded = false

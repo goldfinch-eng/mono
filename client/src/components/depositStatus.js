@@ -2,7 +2,7 @@ import React from "react"
 import { displayDollars, displayPercent } from "../utils"
 
 function DepositStatus(props) {
-  const portfolioBalance = props.capitalProvider.availableToWithdrawalInDollars
+  const portfolioBalance = props.capitalProvider.availableToWithdrawInDollars
   const portfolioBalanceDisplay = displayDollars(portfolioBalance)
   const estimatedTotalInterest = props.creditDesk.gf && props.creditDesk.gf.estimatedTotalInterest
 

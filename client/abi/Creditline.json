@@ -115,6 +115,19 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "SECONDS_PER_DAY",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -135,15 +148,25 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs": [],
+    "name": "assess",
+    "outputs": [
       {
-        "internalType": "address",
-        "name": "configAddress",
-        "type": "address"
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
-    "name": "authorizePool",
-    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -171,6 +194,32 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "config",
+    "outputs": [
+      {
+        "internalType": "contract GoldfinchConfig",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "drawdown",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -281,17 +330,17 @@
     "inputs": [
       {
         "internalType": "address",
+        "name": "_config",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
         "name": "owner",
         "type": "address"
       },
       {
         "internalType": "address",
         "name": "_borrower",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_underwriter",
         "type": "address"
       },
       {
@@ -632,11 +681,11 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "newWritedownAmount",
+        "name": "_totalInterestAccrued",
         "type": "uint256"
       }
     ],
-    "name": "setWritedownAmount",
+    "name": "setTotalInterestAccrued",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -669,12 +718,25 @@
   },
   {
     "inputs": [],
-    "name": "underwriter",
+    "name": "termStartTime",
     "outputs": [
       {
-        "internalType": "address",
+        "internalType": "uint256",
         "name": "",
-        "type": "address"
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "totalInterestAccrued",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -689,15 +751,9 @@
   },
   {
     "inputs": [],
-    "name": "writedownAmount",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
+    "name": "updateGoldfinchConfig",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   }
 ]

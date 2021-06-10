@@ -116,8 +116,8 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   let bwrConAddr = result.events![result.events!.length - 1].args![0]
   logger(`Created borrower contract: ${bwrConAddr} for ${borrower}`)
 
-  await createPoolForBorrower(underwriter, goldfinchFactory, bwrConAddr)
-  await createPoolForBorrower(underwriter, goldfinchFactory, bwrConAddr)
+  await createPoolForBorrower(getOrNull, underwriter, goldfinchFactory, bwrConAddr, erc20!)
+  await createPoolForBorrower(getOrNull, underwriter, goldfinchFactory, bwrConAddr, erc20!)
 }
 
 async function upgradeExistingContracts(
@@ -196,15 +196,14 @@ async function getDeployedAsEthersContract(getter: any, name: string) {
   return await ethers.getContractAt(deployed.abi, deployed.address)
 }
 
-async function createPoolForBorrower(underwriter: string, goldfinchFactory: GoldfinchFactory, borrower: string) {
-  logger("Creating a Pool for the borrower", borrower)
+async function createPoolForBorrower(getOrNull, underwriter: string, goldfinchFactory: GoldfinchFactory, borrower: string, erc20: Contract) {
   const juniorFeePercent = String(new BN(20))
   const limit = String(new BN(10000).mul(USDCDecimals))
   const interestApr = String(interestAprAsBN("5.00"))
   const paymentPeriodInDays = String(new BN(30))
   const termInDays = String(new BN(360))
   const lateFeeApr = String(new BN(0))
-  await goldfinchFactory.createPool(
+  const result = await (await goldfinchFactory.createPool(
     borrower,
     juniorFeePercent,
     limit,
@@ -213,8 +212,24 @@ async function createPoolForBorrower(underwriter: string, goldfinchFactory: Gold
     termInDays,
     lateFeeApr,
     {from: underwriter}
-  )
-  logger("Created a Pool for the borrower", borrower)
+  )).wait()
+  let event = result.events![result.events!.length - 1]
+  let poolAddress = event.args![0]
+  let owner = await getSignerForAddress(underwriter)
+  let pool = (await getDeployedAsEthersContract(getOrNull, "TranchedPool"))!.attach(poolAddress).connect(owner!)
+
+  logger(`Created a Pool ${poolAddress} for the borrower ${borrower}`)
+  var txn = await erc20.approve(pool.address, String(limit))
+  await txn.wait()
+
+  let depositAmount = String(new BN(limit).div(new BN(2)))
+  txn = await pool.deposit(2, depositAmount)
+  await txn.wait()
+
+  logger(`Deposited ${depositAmount} into the pool`)
+  txn = await pool.lockJuniorCapital()
+  await txn.wait()
+  logger(`Locked junior capital`)
 }
 
 async function setupTestForwarder(

@@ -16,8 +16,7 @@ import useCurrencyUnlocked from "../hooks/useCurrencyUnlocked"
 import CurrencyDropdown from "./currencyDropdown"
 
 function DrawdownForm(props) {
-  const { pool, usdc, goldfinchConfig, network } = useContext(AppContext)
-  const networkId = network.name
+  const { pool, usdc, goldfinchConfig, goldfinchProtocol } = useContext(AppContext)
   const [poolData, setPoolData] = useState({})
   const sendFromUser = useSendFromUser()
   const [erc20, setErc20] = useState(usdc)
@@ -75,7 +74,7 @@ function DrawdownForm(props) {
   )
 
   async function changeTicker(ticker) {
-    let erc20 = await getERC20(ticker, networkId)
+    let erc20 = await getERC20(ticker, goldfinchProtocol)
     setErc20(erc20)
   }
 

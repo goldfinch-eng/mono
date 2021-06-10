@@ -1,45 +1,35 @@
 import web3 from "../web3"
 import BigNumber from "bignumber.js"
-import { getContract, fetchDataFromAttributes, getDeployments, USDC_DECIMALS } from "./utils"
-import { getUSDC, usdcFromAtomic } from "./erc20"
-import { getFidu, FIDU_DECIMALS, fiduFromAtomic } from "./fidu"
+import { fetchDataFromAttributes, USDC_DECIMALS } from "./utils"
+import { ERC20, Tickers, usdcFromAtomic } from "./erc20"
+import { FIDU_DECIMALS, fiduFromAtomic } from "./fidu"
 import { roundDownPenny } from "../utils"
 import { getFromBlock } from "./utils"
 import { getPoolEvents } from "./user"
 import _ from "lodash"
 import { mapEventsToTx } from "./events"
-import {Contract} from 'web3-eth-contract'
-import {SeniorFund as SeniorFundContract} from "../typechain/web3/SeniorFund"
+import { Contract } from "web3-eth-contract"
+import { SeniorFund as SeniorFundContract } from "../typechain/web3/SeniorFund"
+import { Fidu as FiduContract } from "../typechain/web3/Fidu"
+import { GoldfinchProtocol } from "./GoldfinchProtocol"
 
 class SeniorFund {
   contract: SeniorFundContract
   usdc: Contract
-  fidu: Contract
+  fidu: FiduContract
   chain: string
   address: string
   loaded: boolean
   gf?: PoolData
 
-  constructor(contract: SeniorFundContract, usdc: Contract, fidu: Contract, chain: string, address: string, loaded: boolean) {
-    this.contract = contract
-    this.usdc = usdc
-    this.fidu = fidu
-    this.chain = chain
-    this.address = address
-    this.loaded = loaded
+  constructor(goldfinchProtocol: GoldfinchProtocol) {
+    this.contract = goldfinchProtocol.getContract<SeniorFundContract>("SeniorFund")
+    this.address = goldfinchProtocol.getAddress("SeniorFund")
+    this.usdc = goldfinchProtocol.getERC20(Tickers.USDC).contract
+    this.fidu = goldfinchProtocol.getContract<FiduContract>("Fidu")
+    this.chain = goldfinchProtocol.networkId
+    this.loaded = true
   }
-}
-
-async function getPool(networkId): Promise<SeniorFund> {
-  const config = await getDeployments(networkId)
-  const address = config.contracts.SeniorFund.address
-  let contract = getContract<SeniorFundContract>(config.contracts.SeniorFund.abi, address)
-  let usdc = (await getUSDC(networkId)).contract
-  let fidu = await getFidu(networkId)
-  let chain = networkId
-  let loaded = true
-  let pool = new SeniorFund(contract, usdc, fidu, chain, address, loaded)
-  return pool
 }
 
 interface CapitalProvider {
@@ -55,23 +45,26 @@ interface CapitalProvider {
   loaded: boolean
 }
 
-async function fetchCapitalProviderData(pool: SeniorFund, capitalProviderAddress: string | boolean): Promise<CapitalProvider | {loaded:boolean}> {
+async function fetchCapitalProviderData(
+  pool: SeniorFund,
+  capitalProviderAddress: string | boolean,
+): Promise<CapitalProvider | { loaded: boolean }> {
   if (!capitalProviderAddress && !pool.loaded) {
-    return Promise.resolve({loaded: false})
+    return Promise.resolve({ loaded: false })
   }
   if (!capitalProviderAddress && pool.loaded) {
     return Promise.resolve({ loaded: true })
   }
   const attributes = [{ method: "sharePrice" }]
-  let {sharePrice} = await fetchDataFromAttributes(pool.contract, attributes, { bigNumber: true })
-  let numShares = new BigNumber(await pool.fidu.methods.balanceOf(capitalProviderAddress).call())
-  let availableToWithdraw= new BigNumber(numShares)
+  let { sharePrice } = await fetchDataFromAttributes(pool.contract, attributes, { bigNumber: true })
+  let numShares = new BigNumber(await pool.fidu.methods.balanceOf(capitalProviderAddress as string).call())
+  let availableToWithdraw = new BigNumber(numShares)
     .multipliedBy(new BigNumber(sharePrice))
     .div(FIDU_DECIMALS.toString())
   let availableToWithdrawInDollars = new BigNumber(roundDownPenny(fiduFromAtomic(availableToWithdraw)))
   let address = capitalProviderAddress as string
   let allowance = new BigNumber(await pool.usdc.methods.allowance(capitalProviderAddress, pool.address).call())
-  let weightedAverageSharePrice = await getWeightedAverageSharePrice(pool, {numShares, address})
+  let weightedAverageSharePrice = await getWeightedAverageSharePrice(pool, { numShares, address })
   const sharePriceDelta = sharePrice.dividedBy(FIDU_DECIMALS).minus(weightedAverageSharePrice)
   let unrealizedGains = sharePriceDelta.multipliedBy(numShares)
   let unrealizedGainsInDollars = new BigNumber(roundDownPenny(unrealizedGains.div(FIDU_DECIMALS)))
@@ -108,16 +101,16 @@ interface PoolData {
 
 async function fetchPoolData(pool: SeniorFund, erc20: Contract) {
   const attributes = [{ method: "sharePrice" }, { method: "compoundBalance" }]
-  let {sharePrice, compoundBalance: _compoundBalance} = await fetchDataFromAttributes(pool.contract, attributes)
+  let { sharePrice, compoundBalance: _compoundBalance } = await fetchDataFromAttributes(pool.contract, attributes)
   let rawBalance = new BigNumber(await erc20.methods.balanceOf(pool.address).call())
   let compoundBalance = new BigNumber(_compoundBalance)
   let balance = compoundBalance.plus(rawBalance)
-  let totalShares = await pool.fidu.methods.totalSupply().call()
+  let totalShares = new BigNumber(await pool.fidu.methods.totalSupply().call())
 
   // Do some slightly goofy multiplication and division here so that we have consistent units across
   // 'balance', 'totalPoolBalance', and 'totalLoansOutstanding', allowing us to do arithmetic between them
   // and display them using the same helpers.
-  const totalPoolAssetsInDollars = new BigNumber(totalShares)
+  const totalPoolAssetsInDollars = totalShares
     .div(FIDU_DECIMALS.toString())
     .multipliedBy(new BigNumber(sharePrice))
     .div(FIDU_DECIMALS.toString())
@@ -247,4 +240,4 @@ function assetsAsOf(this: PoolData, dt) {
   )
 }
 
-export { getPool, fetchCapitalProviderData, fetchPoolData, SeniorFund }
+export { fetchCapitalProviderData, fetchPoolData, SeniorFund }

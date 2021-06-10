@@ -16,7 +16,7 @@ import BigNumber from "bignumber.js"
 
 function PaymentForm(props) {
   const { borrower, creditLine, actionComplete } = props
-  const { usdc, user, goldfinchConfig, network } = useContext(AppContext)
+  const { usdc, user, goldfinchConfig, goldfinchProtocol } = useContext(AppContext)
 
   const [inputClass, setInputClass] = useState("")
   const [paymentOption, setPaymentOption] = useState("periodDue")
@@ -35,7 +35,6 @@ function PaymentForm(props) {
     to: usdc,
     decimalAmount: transactionAmount,
   })
-  const networkId = network.name
 
   useEffect(() => {
     const fetchBalance = async () => {
@@ -130,7 +129,7 @@ function PaymentForm(props) {
 
   function renderForm({ formMethods }) {
     async function changeTicker(ticker) {
-      let erc20 = await getERC20(ticker, networkId)
+      let erc20 = await getERC20(ticker, goldfinchProtocol)
       setErc20(erc20)
     }
 
