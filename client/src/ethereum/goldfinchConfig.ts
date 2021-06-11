@@ -1,4 +1,3 @@
-import web3 from "../web3"
 import { fetchDataFromAttributes, getDeployments } from "./utils"
 import { CONFIG_KEYS } from "../../../blockchain_scripts/configKeys"
 

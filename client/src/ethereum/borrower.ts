@@ -1,6 +1,4 @@
-import web3 from "../web3"
 import { submitGaslessTransaction } from "./gasless"
-import { getFromBlock } from "./utils"
 import BigNumber from "bignumber.js"
 import { getOneInchContract } from "./oneInch"
 import { Contract } from "web3-eth-contract"
@@ -9,14 +7,10 @@ import { GoldfinchProtocol } from "./GoldfinchProtocol"
 import { GoldfinchFactory } from "../typechain/web3/GoldfinchFactory"
 import { TranchedPool } from "./tranchedPool"
 
-const BorrowerAbi = require("../../abi/Borrower.json")
-
 class BorrowerInterface {
   userAddress: string
-  creditDesk: Contract
   borrowerContract: Contract
   usdc: ERC20
-  pool: Contract
   goldfinchProtocol: GoldfinchProtocol
   oneInch: Contract
   borrowerAddress: string
@@ -26,13 +20,11 @@ class BorrowerInterface {
   tranchedPoolByCreditLine!: { [address: string]: TranchedPool }
   allowance!: BigNumber
 
-  constructor(userAddress, creditDesk, borrowerContract, goldfinchProtocol: GoldfinchProtocol, pool, oneInch) {
+  constructor(userAddress, borrowerContract, goldfinchProtocol: GoldfinchProtocol, oneInch) {
     this.userAddress = userAddress
-    this.creditDesk = creditDesk
     this.borrowerContract = borrowerContract
     this.goldfinchProtocol = goldfinchProtocol
     this.usdc = goldfinchProtocol.getERC20(Tickers.USDC)
-    this.pool = pool
     this.oneInch = oneInch
     this.borrowerAddress = this.borrowerContract.options.address
     this.tranchedPools = {}
@@ -153,19 +145,17 @@ class BorrowerInterface {
   }
 }
 
-async function getBorrowerContract(ownerAddress, goldfinchFactory, creditDesk, goldfinchProtocol, pool, networkId) {
-  const borrowerCreatedEvents = await goldfinchFactory.getPastEvents("BorrowerCreated", {
-    filter: { owner: ownerAddress },
-    fromBlock: getFromBlock(goldfinchFactory.chain),
-    to: "latest",
+async function getBorrowerContract(ownerAddress, goldfinchProtocol) {
+  const borrowerCreatedEvents = await goldfinchProtocol.queryEvents("GoldfinchFactory", "BorrowerCreated", {
+    owner: ownerAddress,
   })
   let borrower
   if (borrowerCreatedEvents.length > 0) {
     const lastIndex = borrowerCreatedEvents.length - 1
-    borrower = new web3.eth.Contract(BorrowerAbi, borrowerCreatedEvents[lastIndex].returnValues.borrower)
+    borrower = goldfinchProtocol.getContract("Borrower", borrowerCreatedEvents[lastIndex].returnValues.borrower)
   }
-  const oneInch = getOneInchContract(networkId)
-  const borrowerInterface = new BorrowerInterface(ownerAddress, creditDesk, borrower, goldfinchProtocol, pool, oneInch)
+  const oneInch = getOneInchContract(goldfinchProtocol.networkId)
+  const borrowerInterface = new BorrowerInterface(ownerAddress, borrower, goldfinchProtocol, oneInch)
   await borrowerInterface.initialize()
   return borrowerInterface
 }

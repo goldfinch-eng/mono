@@ -35,7 +35,7 @@ class GoldfinchProtocol {
   async queryEvents(contract: string, events, filter) {
     const contractObj = this.getContract<Contract>(contract)
     const eventArrays = await Promise.all(
-      events.map(eventName => {
+      [].concat(events).map(eventName => {
         return contractObj.getPastEvents(eventName, {
           filter: filter,
           fromBlock: getFromBlock(this.networkId),

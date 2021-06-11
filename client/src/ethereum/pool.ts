@@ -1,7 +1,6 @@
-import web3 from "../web3"
 import BigNumber from "bignumber.js"
 import { fetchDataFromAttributes, USDC_DECIMALS } from "./utils"
-import { ERC20, Tickers, usdcFromAtomic } from "./erc20"
+import { Tickers, usdcFromAtomic } from "./erc20"
 import { FIDU_DECIMALS, fiduFromAtomic } from "./fidu"
 import { roundDownPenny } from "../utils"
 import { getFromBlock } from "./utils"

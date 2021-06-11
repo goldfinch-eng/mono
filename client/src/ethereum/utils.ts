@@ -2,10 +2,7 @@ import BigNumber from "bignumber.js"
 import BN from "bn.js"
 import _ from "lodash"
 import { Contract } from "web3-eth-contract"
-import { AbiItem } from "web3-utils"
-import { ContractOptions } from "web3-eth-contract"
 import { BaseContract } from "../typechain/web3/types"
-import web3 from "../web3"
 
 const decimalPlaces = 6
 const decimals = new BN(String(10 ** decimalPlaces))
@@ -146,10 +143,6 @@ function fetchDataFromAttributes(
     })
 }
 
-function getContract<T extends BaseContract>(abi: AbiItem | AbiItem[], address?: string, options?: ContractOptions): T {
-  return (new web3.eth.Contract(abi, address, options) as any) as T
-}
-
 export {
   getDeployments,
   mapNetworkToID,
@@ -173,5 +166,4 @@ export {
   getFromBlock,
   chainIdToNetworkID,
   MAINNET,
-  getContract,
 }
