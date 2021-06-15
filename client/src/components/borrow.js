@@ -4,7 +4,7 @@ import CreditActionsMultipleContainer from "./creditActionsMultipleContainer"
 import CreditStatus from "./creditStatus.js"
 import ConnectionNotice from "./connectionNotice.js"
 import BorrowHeader from "./borrowHeader"
-import { fetchCreditLineData, defaultCreditLine } from "../ethereum/creditLine.ts"
+import { fetchCreditLineData, defaultCreditLine } from "../ethereum/creditLine"
 import { AppContext } from "../App"
 import CreditLinesList from "./creditLinesList"
 

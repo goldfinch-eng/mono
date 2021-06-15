@@ -5,6 +5,7 @@ import { Tickers, usdcFromAtomic, usdcToAtomic } from "./erc20"
 import { fetchDataFromAttributes, INTEREST_DECIMALS, SECONDS_PER_YEAR, SECONDS_PER_DAY } from "./utils"
 import { roundUpPenny, croppedAddress } from "../utils"
 import { GoldfinchProtocol } from "./GoldfinchProtocol"
+import { CreditLine as CreditlineContract } from "../typechain/web3/CreditLine"
 import { Contract } from "web3-eth-contract"
 
 const CreditLineAbi = require("../../abi/Creditline.json")
@@ -96,7 +97,7 @@ class CreditLine extends BaseCreditLine {
   remainingPeriodDueAmount!: BigNumber
   remainingTotalDueAmount!: BigNumber
   availableCredit!: BigNumber
-  creditLine: Contract
+  creditLine: CreditlineContract
   balance!: BigNumber
   interestApr!: BigNumber
   interestAccruedAsOf!: BigNumber
@@ -114,7 +115,7 @@ class CreditLine extends BaseCreditLine {
     super()
     this.address = address
     this.goldfinchProtocol = goldfinchProtocol
-    this.creditLine = goldfinchProtocol.getContract<Contract>("CreditLine", address)
+    this.creditLine = goldfinchProtocol.getContract<CreditlineContract>("CreditLine", address)
     this.usdc = goldfinchProtocol.getERC20(Tickers.USDC).contract
     this.isLate = false
     this.loaded = false
