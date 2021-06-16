@@ -155,7 +155,7 @@ function PaymentForm(props) {
                 setInputClass("")
               } else {
                 // pre-filled
-                formMethods.setValue("transactionAmount", value, {
+                formMethods.setValue("transactionAmount", value.toString(), {
                   shouldValidate: true,
                   shouldDirty: true,
                 })

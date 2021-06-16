@@ -1,9 +1,11 @@
 import React from "react"
 import { ErrorMessage } from "@hookform/error-message"
+import { Controller } from "react-hook-form"
 import { displayDollars } from "../utils"
 import BigNumber from "bignumber.js"
 import _ from "lodash"
 import { Tickers } from "../ethereum/erc20"
+import NumberFormat from "react-number-format"
 
 function TransactionInput(props) {
   let name = props.name || "transactionAmount"
@@ -11,7 +13,7 @@ function TransactionInput(props) {
   if (props.disabled) {
     inputClass = "disabled"
   }
-  let onChange = props.onChange || (() => {})
+  let propsOnChange = props.onChange || (() => {})
   let validations = props.validations || {}
   let notes = _.compact(props.notes || [])
   let ticker = props.ticker || Tickers.USDC
@@ -42,13 +44,11 @@ function TransactionInput(props) {
       <div className={`form-input-container ${inputClass}`}>
         <div className="transaction-input">
           {ticker === Tickers.USDC && <div className="ticker before">$</div>}
-          <input
+          <Controller
+            control={props.formMethods.control}
             name={name}
-            disabled={props.disabled}
-            onChange={onChange}
-            placeholder="0"
-            className="form-input"
-            ref={props.formMethods.register({
+            defaultValue="0"
+            rules={{
               required: "Amount is required",
               min: { value: 0.0000001, message: "Must be greater than 0" },
               max: {
@@ -59,8 +59,26 @@ function TransactionInput(props) {
                 decimals: value => new BigNumber(value).decimalPlaces() <= 6 || "Maximum allowed decimal places is 6",
                 ...validations,
               },
-            })}
-          ></input>
+            }}
+            render={({ onChange, onBlur, value }) => {
+              return (
+                <NumberFormat
+                  allowNegative={false}
+                  thousandSeparator={true}
+                  onBlur={onBlur}
+                  onValueChange={v => {
+                    if (v.value !== value) {
+                      onChange(v.value)
+                      propsOnChange(v.value)
+                    }
+                  }}
+                  value={value}
+                  placeholder="0"
+                  className="form-input"
+                />
+              )
+            }}
+          />
           {ticker !== Tickers.USDC && <div className="ticker after">{ticker}</div>}
           {props.rightDecoration}
         </div>

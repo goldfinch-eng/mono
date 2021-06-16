@@ -4,7 +4,9 @@ import { iconX } from "./icons.js"
 import useCloseOnClickOrEsc from "../hooks/useCloseOnClickOrEsc"
 
 function TransactionForm(props) {
-  const formMethods = useForm({ mode: "onChange" })
+  // See https://github.com/react-hook-form/react-hook-form/issues/2578 for usage
+  // of shouldUnregister. Note that `false` is the default in the latest version.
+  const formMethods = useForm({ mode: "onChange", shouldUnregister: false })
   const [node] = useCloseOnClickOrEsc({ closeFormFn: props.closeForm, closeOnClick: false })
 
   return (
