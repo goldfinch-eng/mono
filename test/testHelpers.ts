@@ -17,10 +17,12 @@ import {
   PoolInstance,
   PoolTokensInstance,
   SeniorFundInstance,
+  CreditLineInstance,
   TestForwarderInstance,
   TranchedPoolInstance,
   TransferRestrictedVaultInstance,
 } from "../typechain/truffle"
+import {TranchedPool} from "../typechain/ethers"
 const decimals = new BN(String(1e18))
 const USDC_DECIMALS = new BN(String(1e6))
 const SECONDS_PER_DAY = new BN(86400)
@@ -64,7 +66,11 @@ const getDeployedAsTruffleContract = async <T extends Truffle.ContractInstance>(
     contractName = `Test${contractName}`
     deployment = await deployments.get(contractName)
   }
-  return (await artifacts.require(contractName).at(deployment!.address)) as T
+  return getTruffleContract(contractName, deployment!.address)
+}
+
+async function getTruffleContract<T extends Truffle.ContractInstance>(name: string, address: string): Promise<T> {
+  return (await artifacts.require(name).at(address)) as T
 }
 
 async function createCreditLine({
@@ -164,7 +170,7 @@ function expectAction(action: any, debug?: boolean) {
 // This decodes logs for a single event type, and returns a decoded object in
 // the same form truffle-contract uses on its receipts
 // Mostly stolen from: https://github.com/OpenZeppelin/openzeppelin-test-helpers/blob/6e54db1e1f64a80c7632799776672297bbe543b3/src/expectEvent.js#L49
-function decodeLogs(logs, emitter, eventName) {
+function decodeLogs<T extends Truffle.AnyEvent>(logs, emitter, eventName): T[] {
   let abi = emitter.abi
   let address = emitter.address
   let eventABI = abi.filter((x) => x.type === "event" && x.name === eventName)
@@ -307,7 +313,7 @@ const createPoolWithCreditLine = async ({
   termInDays = new BN(365),
   limit = usdcVal(10000),
   lateFeeApr = interestAprAsBN("3.0"),
-}) => {
+}): Promise<{tranchedPool: TranchedPoolInstance; creditLine: CreditLineInstance}> => {
   const CreditLine = artifacts.require("CreditLine")
   const TranchedPool = artifacts.require("TestTranchedPool")
 
@@ -333,8 +339,8 @@ const createPoolWithCreditLine = async ({
     {from: thisOwner}
   )
   let event = result.logs[result.logs.length - 1]
-  let pool = await TranchedPool.at(event.args.pool)
-  let creditLine = await CreditLine.at(await pool.creditLine())
+  let pool = await getTruffleContract<TranchedPoolInstance>("TranchedPool", event.args.pool)
+  let creditLine = await getTruffleContract<CreditLineInstance>("CreditLine", await pool.creditLine())
 
   await erc20Approve(usdc, pool.address, usdcVal(100000), [thisOwner])
 
@@ -343,7 +349,7 @@ const createPoolWithCreditLine = async ({
     await erc20Approve(usdc, pool.address, usdcVal(100000), [thisBorrower])
   }
 
-  let tranchedPool = await artifacts.require("TestTranchedPool").at(pool.address)
+  let tranchedPool = await getTruffleContract<TranchedPoolInstance>("TestTranchedPool", pool.address)
   return {tranchedPool, creditLine}
 }
 
@@ -372,6 +378,7 @@ export {
   mochaEach,
   getBalance,
   getDeployedAsTruffleContract,
+  getTruffleContract,
   fiduToUSDC,
   usdcToFidu,
   expectAction,

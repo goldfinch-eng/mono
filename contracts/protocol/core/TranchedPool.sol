@@ -50,6 +50,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     uint256 remainingAmount
   );
   event CreditLineMigrated(address indexed oldCreditLine, address indexed newCreditLine);
+  event DrawdownMade(address indexed borrower, uint256 amount);
   event DrawdownsPaused(address indexed pool);
   event DrawdownsUnpaused(address indexed pool);
   event EmergencyShutdown(address indexed pool);
@@ -192,7 +193,9 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     juniorTranche.principalSharePrice = calculateExpectedSharePrice(amountRemaining, juniorTranche);
     seniorTranche.principalSharePrice = calculateExpectedSharePrice(amountRemaining, seniorTranche);
 
-    safeTransfer(config.getUSDC(), address(this), creditLine.borrower(), amount);
+    address borrower = creditLine.borrower();
+    safeTransfer(config.getUSDC(), address(this), borrower, amount);
+    emit DrawdownMade(borrower, amount);
   }
 
   /**
