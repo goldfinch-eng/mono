@@ -47,8 +47,6 @@ function Earn(props) {
     <div className="content-section">
       <div className="page-header">{earnMessage}</div>
       <ConnectionNotice />
-      <EarnActionsContainer poolData={poolData} capitalProvider={capitalProvider} actionComplete={actionComplete} />
-      <PoolStatus poolData={poolData} creditDesk={creditDesk} />
     </div>
   )
 }

@@ -46,7 +46,7 @@ function displayDollars(val, decimals = 2) {
 
 function displayPercent(val, decimals = 2) {
   let valDisplay
-  if (isNaN(val)) {
+  if (!val || isNaN(val)) {
     valDisplay = "--.--"
   } else {
     valDisplay = displayNumber(val.multipliedBy(100), decimals)

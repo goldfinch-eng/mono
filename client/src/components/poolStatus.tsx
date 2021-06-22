@@ -4,16 +4,22 @@ import RecentRepayments from "./recentRepayments"
 import { usdcFromAtomic } from "../ethereum/erc20"
 import { displayDollars, displayPercent } from "../utils"
 import { iconOutArrow } from "./icons.js"
+import { PoolData, SeniorFund } from "../ethereum/pool"
+import { BigNumber } from "bignumber.js"
 
-function PoolStatus(props) {
+interface PoolStatusProps {
+  poolData?: PoolData
+}
+
+function PoolStatus({poolData}: PoolStatusProps) {
   function deriveRows() {
-    let defaultRate
-    let poolBalance
-    let totalLoansOutstanding
-    if (props.poolData.loaded && props.creditDesk && props.creditDesk.gf) {
-      defaultRate = props.poolData.cumulativeWritedowns.dividedBy(props.creditDesk.gf.cumulativeDrawdowns)
-      poolBalance = usdcFromAtomic(props.poolData.totalPoolAssets)
-      totalLoansOutstanding = usdcFromAtomic(props.poolData.totalLoansOutstanding)
+    let defaultRate: BigNumber | undefined
+    let poolBalance: string | undefined
+    let totalLoansOutstanding: string | undefined
+    if (poolData?.loaded) {
+      defaultRate = poolData.defaultRate
+      poolBalance = usdcFromAtomic(poolData.totalPoolAssets)
+      totalLoansOutstanding = usdcFromAtomic(poolData.totalLoansOutstanding)
     }
 
     return [
@@ -26,7 +32,7 @@ function PoolStatus(props) {
   return (
     <div
       className={`pool-status background-container ${
-        props.poolData.loaded && props.creditDesk.loaded ? "" : "placeholder"
+        poolData?.loaded ? "" : "placeholder"
       }`}
     >
       <h2>Pool Status</h2>
@@ -37,7 +43,7 @@ function PoolStatus(props) {
           Dashboard <span className="outbound-link">{iconOutArrow}</span>
         </a>
         <a
-          href="https://etherscan.io/address/0xB01b315e32D1D9B5CE93e296D483e1f0aAD39E75"
+          href={`https://etherscan.io/address/${poolData?.pool.address}`}
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -49,3 +55,4 @@ function PoolStatus(props) {
 }
 
 export default PoolStatus
+export type { PoolStatusProps }

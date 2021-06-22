@@ -185,6 +185,12 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
     totalLoansOutstanding = totalLoansOutstanding.add(amount);
   }
 
+  function estimateInvestment(ITranchedPool pool) public view override returns (uint256) {
+    require(validPool(pool), "Pool must be valid");
+    IFundStrategy strategy = config.getSeniorFundStrategy();
+    return strategy.invest(this, pool);
+  }
+
   /**
    * @notice Redeem interest and/or principal from an ITranchedPool investment
    * @param tokenId the ID of an IPoolTokens token to be redeemed

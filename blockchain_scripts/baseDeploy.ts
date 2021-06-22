@@ -343,6 +343,7 @@ async function deploySeniorFund(hre: HardhatRuntimeEnvironment, {config, fidu}: 
     args: [protocol_owner, config.address],
     libraries: {["Accountant"]: accountant.address},
   })
+  logger("SeniorFund was deployed to:", deployResult.address)
   const fund = (await ethers.getContractAt(contractName, deployResult.address)) as SeniorFund
   await updateConfig(config, "address", CONFIG_KEYS.SeniorFund, fund.address, {logger})
   await config.addToGoList(fund.address)

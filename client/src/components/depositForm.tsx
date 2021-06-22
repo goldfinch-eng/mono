@@ -8,7 +8,12 @@ import LoadingButton from "./loadingButton"
 import useSendFromUser from "../hooks/useSendFromUser"
 import useNonNullContext from "../hooks/useNonNullContext"
 
-function DepositForm(props) {
+interface DepositFormProps {
+  actionComplete: () => void
+  closeForm: () => void
+}
+
+function DepositForm(props: DepositFormProps) {
   const { pool, user, goldfinchConfig } = useNonNullContext(AppContext)
   const sendFromUser = useSendFromUser()
 

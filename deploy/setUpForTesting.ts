@@ -3,12 +3,21 @@ import {Logger} from "../blockchain_scripts/types"
 
 import BN from "bn.js"
 import hre from "hardhat"
-import {GoldfinchConfig, GoldfinchFactory, SeniorFund} from "../typechain/ethers"
+import {
+  Borrower,
+  GoldfinchConfig,
+  GoldfinchFactory,
+  SeniorFund,
+  TestERC20,
+  TestForwarder,
+  TranchedPool,
+} from "../typechain/ethers"
 import {DeploymentsExtension} from "hardhat-deploy/dist/types"
-import {Contract} from "ethers"
+import {BaseContract, Contract} from "ethers"
 const {ethers} = hre
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
 require("dotenv").config({path: ".env.local"})
+import {usdcVal, advanceTime} from "../test/testHelpers"
 import {
   MAINNET_CHAIN_ID,
   LOCAL,
@@ -20,6 +29,7 @@ import {
   interestAprAsBN,
   isMainnetForking,
   getSignerForAddress,
+  TRANCHES,
   updateConfig,
 } from "../blockchain_scripts/deployHelpers"
 import {
@@ -44,13 +54,13 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   let chainID = await getChainId()
   let underwriter = protocol_owner
   let borrower = protocol_owner
-  let erc20 = await getDeployedAsEthersContract(getOrNull, "TestERC20")
-  let seniorFund = (await getDeployedAsEthersContract(getOrNull, "SeniorFund")) as SeniorFund
+  let erc20 = await getDeployedAsEthersContract<Contract>(getOrNull, "TestERC20")
+  let seniorFund = await getDeployedAsEthersContract<SeniorFund>(getOrNull, "SeniorFund")
   // If you uncomment this, make sure to also uncomment the line in the MainnetForking section,
   // which sets this var to the upgraded version of fidu
   // let fidu = await getDeployedAsEthersContract(getOrNull, "Fidu")
-  let config = (await getDeployedAsEthersContract(getOrNull, "GoldfinchConfig")) as GoldfinchConfig
-  let goldfinchFactory = (await getDeployedAsEthersContract(getOrNull, "GoldfinchFactory")) as GoldfinchFactory
+  let config = await getDeployedAsEthersContract<GoldfinchConfig>(getOrNull, "GoldfinchConfig")!
+  let goldfinchFactory = await getDeployedAsEthersContract<GoldfinchFactory>(getOrNull, "GoldfinchFactory")
   await setupTestForwarder(deployments, config, getOrNull, protocol_owner)
 
   if (getUSDCAddress(chainID)) {
@@ -107,6 +117,13 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
     if (CHAIN_MAPPING[chainID] === LOCAL) {
       await giveMoneyToTestUser(testUser, erc20s)
     }
+
+    // Have the test user deposit into the senior fund
+    await impersonateAccount(hre, testUser)
+    let signer = ethers.provider.getSigner(testUser)
+    let depositAmount = new BN(100).mul(USDCDecimals)
+    await (erc20 as TestERC20).connect(signer).approve(seniorFund.address, depositAmount.toString())
+    await seniorFund.connect(signer).deposit(depositAmount.toString())
   }
 
   await addUsersToGoList(config, [borrower, underwriter])
@@ -117,7 +134,28 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   logger(`Created borrower contract: ${bwrConAddr} for ${borrower}`)
 
   await createPoolForBorrower(getOrNull, underwriter, goldfinchFactory, bwrConAddr, erc20!)
-  await createPoolForBorrower(getOrNull, underwriter, goldfinchFactory, bwrConAddr, erc20!)
+  let pool2 = await createPoolForBorrower(getOrNull, underwriter, goldfinchFactory, bwrConAddr, erc20!)
+
+  // Have the senior fund invest
+  await seniorFund.invest(pool2.address)
+  let filter = pool2.filters.DepositMade(seniorFund.address)
+  let depositLog = (await ethers.provider.getLogs(filter))[0]
+  let depositEvent = pool2.interface.parseLog(depositLog)
+  let tokenId = depositEvent.args.tokenId
+
+  await pool2.lockPool()
+  await pool2.drawdown(await pool2.limit())
+
+  await advanceTime(null, {days: 30})
+
+  // Have the borrower repay a portion of their loan
+  await impersonateAccount(hre, borrower)
+  let borrowerSigner = ethers.provider.getSigner(borrower)
+  let bwrCon = (await ethers.getContractAt("Borrower", bwrConAddr)).connect(borrowerSigner!) as Borrower
+  let payAmount = new BN(10).mul(USDCDecimals)
+  await (erc20 as TestERC20).connect(borrowerSigner).approve(bwrCon.address, payAmount.toString())
+  await bwrCon.pay(pool2.address, payAmount.toString())
+  await seniorFund.redeem(tokenId)
 }
 
 async function upgradeExistingContracts(
@@ -147,23 +185,18 @@ async function addUsersToGoList(goldfinchConfig: GoldfinchConfig, users: string[
 async function depositToTheSeniorFund(fund: SeniorFund, erc20: Contract) {
   logger("Depositing funds into the fund...")
   const originalBalance = await erc20.balanceOf(fund.address)
-  if (originalBalance.gt("0")) {
-    logger(`Looks like the pool already has ${originalBalance} of funds...`)
-    return
-  }
 
   // Approve first
   logger("Approving the owner to deposit funds...")
-  var txn = await erc20.approve(fund.address, String(new BN(1000000).mul(USDCDecimals)))
+  var txn = await erc20.approve(fund.address, String(new BN(100000000).mul(USDCDecimals)))
   await txn.wait()
-  logger("Depositing funds...")
-  let depositAmount
-  depositAmount = new BN(10000).mul(USDCDecimals)
+  let depositAmount = new BN(100000).mul(USDCDecimals)
+  logger(`Depositing ${depositAmount} into the senior fund...`)
 
   txn = await fund.deposit(String(depositAmount))
   await txn.wait()
   const newBalance = await erc20.balanceOf(fund.address)
-  if (String(newBalance) != String(depositAmount)) {
+  if (String(newBalance) != String(depositAmount.add(new BN(originalBalance.toString())))) {
     throw new Error(`Expected to deposit ${depositAmount} but got ${newBalance}`)
   }
 }
@@ -184,16 +217,18 @@ async function giveMoneyToTestUser(testUser: string, erc20s: any) {
   }
 }
 
-async function getDeployedAsEthersContract(getter: any, name: string) {
+// Ideally the type would be T extends BaseContract, but there appears to be some issue
+// in the generated types that prevents that. See https://github.com/ethers-io/ethers.js/issues/1384 for relevant info
+async function getDeployedAsEthersContract<T>(getter: any, name: string): Promise<T> {
   logger("Trying to get the deployed version of...", name)
   let deployed = await getter(name)
   if (!deployed && isTestEnv()) {
     deployed = await getter(`Test${name}`)
   }
   if (!deployed) {
-    return null
+    throw new Error("Contract is not deployed")
   }
-  return await ethers.getContractAt(deployed.abi, deployed.address)
+  return ((await ethers.getContractAt(deployed.abi, deployed.address)) as unknown) as T
 }
 
 async function createPoolForBorrower(
@@ -202,7 +237,7 @@ async function createPoolForBorrower(
   goldfinchFactory: GoldfinchFactory,
   borrower: string,
   erc20: Contract
-) {
+): Promise<TranchedPool> {
   const juniorFeePercent = String(new BN(20))
   const limit = String(new BN(10000).mul(USDCDecimals))
   const interestApr = String(interestAprAsBN("5.00"))
@@ -224,7 +259,9 @@ async function createPoolForBorrower(
   let event = result.events![result.events!.length - 1]
   let poolAddress = event.args![0]
   let owner = await getSignerForAddress(underwriter)
-  let pool = (await getDeployedAsEthersContract(getOrNull, "TranchedPool"))!.attach(poolAddress).connect(owner!)
+  let pool = (await getDeployedAsEthersContract<TranchedPool>(getOrNull, "TranchedPool"))!
+    .attach(poolAddress)
+    .connect(owner!)
 
   logger(`Created a Pool ${poolAddress} for the borrower ${borrower}`)
   var txn = await erc20.approve(pool.address, String(limit))
@@ -238,6 +275,7 @@ async function createPoolForBorrower(
   txn = await pool.lockJuniorCapital()
   await txn.wait()
   logger(`Locked junior capital`)
+  return pool
 }
 
 async function setupTestForwarder(
@@ -252,7 +290,7 @@ async function setupTestForwarder(
   })
   logger(`Created Forwarder at ${deployResult.address}`)
 
-  let forwarder = await getDeployedAsEthersContract(getOrNull, "TestForwarder")
+  let forwarder = await getDeployedAsEthersContract<TestForwarder>(getOrNull, "TestForwarder")
   await forwarder!.registerDomainSeparator("Defender", "1")
 
   await updateConfig(config, "address", CONFIG_KEYS.TrustedForwarder, deployResult.address, {logger})

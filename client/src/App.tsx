@@ -19,6 +19,7 @@ import { NetworkMonitor } from "./ethereum/networkMonitor"
 import { SeniorFund } from "./ethereum/pool"
 import { GoldfinchProtocol } from "./ethereum/GoldfinchProtocol"
 import { GoldfinchConfig } from "./typechain/web3/GoldfinchConfig"
+import SeniorPool from "./components/pools/seniorPool"
 
 interface NetworkConfig {
   name?: string
@@ -98,9 +99,9 @@ function App() {
       await protocol.initialize()
       usdc = await protocol.getERC20(Tickers.USDC)
       pool = new SeniorFund(protocol)
+      await pool.initialize()
       goldfinchConfigContract = protocol.getContract<GoldfinchConfig>("GoldfinchConfig")
       creditDeskContract = protocol.getContract("CreditDesk")
-      pool.gf = await fetchPoolData(pool, usdc.contract)
       creditDeskContract.gf = await fetchCreditDeskData(creditDeskContract)
       setUSDC(usdc)
       setPool(pool)
@@ -168,6 +169,9 @@ function App() {
             <Route path="/about">{/* <About /> */}</Route>
             <Route path="/borrow">
               <Borrow />
+            </Route>
+            <Route path="/earn/pools/senior">
+              <SeniorPool />
             </Route>
             <Route path="/earn">
               <Earn />

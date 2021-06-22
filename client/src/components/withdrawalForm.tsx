@@ -6,20 +6,29 @@ import TransactionForm from "./transactionForm"
 import TransactionInput from "./transactionInput"
 import LoadingButton from "./loadingButton"
 import useSendFromUser from "../hooks/useSendFromUser"
+import useNonNullContext from "../hooks/useNonNullContext"
+import { CapitalProvider, PoolData } from "../ethereum/pool"
 
-function WithdrawalForm(props) {
+interface WithdrawalFormProps {
+  poolData: PoolData
+  capitalProvider: CapitalProvider
+  actionComplete: () => void
+  closeForm: () => void
+}
+
+function WithdrawalForm(props: WithdrawalFormProps) {
   const sendFromUser = useSendFromUser()
-  const { pool, goldfinchConfig } = useContext(AppContext)
+  const { pool, goldfinchConfig } = useNonNullContext(AppContext)
 
   function action({ transactionAmount }) {
     const withdrawalAmount = usdcToAtomic(transactionAmount)
-    return sendFromUser(pool.methods.withdraw(withdrawalAmount), {
+    return sendFromUser(pool.contract.methods.withdraw(withdrawalAmount), {
       type: "Withdrawal",
       amount: transactionAmount,
     }).then(props.actionComplete)
   }
 
-  const availableAmount = props.capitalProvider.availableToWithdrawalInDollars
+  const availableAmount = props.capitalProvider.availableToWithdrawInDollars
   const availableToWithdraw = minimumNumber(
     availableAmount,
     usdcFromAtomic(props.poolData.balance),

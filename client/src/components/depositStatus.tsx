@@ -1,25 +1,32 @@
+import { BigNumber } from "bignumber.js"
 import React from "react"
+import { CapitalProvider, PoolData } from "../ethereum/pool"
 import { displayDollars, displayPercent } from "../utils"
 
-function DepositStatus(props) {
+interface DepositStatusProps {
+  poolData?: PoolData
+  capitalProvider: CapitalProvider
+}
+
+function DepositStatus(props: DepositStatusProps) {
   const portfolioBalance = props.capitalProvider.availableToWithdrawInDollars
   const portfolioBalanceDisplay = displayDollars(portfolioBalance)
-  const estimatedTotalInterest = props.creditDesk.gf && props.creditDesk.gf.estimatedTotalInterest
+  const estimatedTotalInterest = props.poolData?.estimatedTotalInterest
 
-  let apyDisplay, estimatedAPY
-  if (estimatedTotalInterest && props.poolData.loaded) {
-    estimatedAPY = props.creditDesk.gf.estimatedTotalInterest.dividedBy(props.poolData.totalPoolAssets)
+  let apyDisplay: string, estimatedAPY: BigNumber | null
+  if (estimatedTotalInterest && props.poolData?.loaded) {
+    estimatedAPY = estimatedTotalInterest.dividedBy(props.poolData.totalPoolAssets)
     apyDisplay = `${displayPercent(estimatedAPY)}`
   } else {
-    estimatedAPY = NaN
+    estimatedAPY = null
     apyDisplay = `${displayPercent(estimatedAPY)}`
   }
 
-  if (portfolioBalance > 0 && estimatedAPY) {
+  if (portfolioBalance.gt(0) && estimatedAPY) {
     const estimatedGrowth = estimatedAPY.multipliedBy(portfolioBalance)
     const estimatedGrowthDisplay = displayDollars(estimatedGrowth)
 
-    let unrealizedGainsPrefix = props.capitalProvider.unrealizedGainsInDollars >= 0 ? "+" : ""
+    let unrealizedGainsPrefix = props.capitalProvider.unrealizedGainsInDollars.gte(0) ? "+" : ""
     let unrealizedGainsDisplay = displayDollars(props.capitalProvider.unrealizedGainsInDollars)
     let unrealizedGainsPercentDisplay = displayPercent(props.capitalProvider.unrealizedGainsPercentage)
 

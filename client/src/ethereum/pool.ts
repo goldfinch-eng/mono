@@ -1,5 +1,5 @@
 import BigNumber from "bignumber.js"
-import { fetchDataFromAttributes, USDC_DECIMALS } from "./utils"
+import { fetchDataFromAttributes, INTEREST_DECIMALS, USDC_DECIMALS } from "./utils"
 import { Tickers, usdcFromAtomic } from "./erc20"
 import { FIDU_DECIMALS, fiduFromAtomic } from "./fidu"
 import { roundDownPenny } from "../utils"
@@ -11,23 +11,32 @@ import { Contract } from "web3-eth-contract"
 import { SeniorFund as SeniorFundContract } from "../typechain/web3/SeniorFund"
 import { Fidu as FiduContract } from "../typechain/web3/Fidu"
 import { GoldfinchProtocol } from "./GoldfinchProtocol"
+import { TranchedPool } from "../typechain/web3/TranchedPool"
+import { buildCreditLine } from "./creditLine"
 
 class SeniorFund {
+  goldfinchProtocol: GoldfinchProtocol
   contract: SeniorFundContract
   usdc: Contract
   fidu: FiduContract
   chain: string
   address: string
   loaded: boolean
-  gf?: PoolData
+  gf!: PoolData
 
   constructor(goldfinchProtocol: GoldfinchProtocol) {
+    this.goldfinchProtocol = goldfinchProtocol
     this.contract = goldfinchProtocol.getContract<SeniorFundContract>("SeniorFund")
     this.address = goldfinchProtocol.getAddress("SeniorFund")
     this.usdc = goldfinchProtocol.getERC20(Tickers.USDC).contract
     this.fidu = goldfinchProtocol.getContract<FiduContract>("Fidu")
     this.chain = goldfinchProtocol.networkId
     this.loaded = true
+  }
+
+  async initialize() {
+    let poolData = await fetchPoolData(this, this.usdc)
+    this.gf = poolData
   }
 }
 
@@ -44,15 +53,30 @@ interface CapitalProvider {
   loaded: boolean
 }
 
+function emptyCapitalProvider({ loaded = false } = {}): CapitalProvider {
+  return {
+    numShares: new BigNumber(0),
+    availableToWithdraw: new BigNumber(0),
+    availableToWithdrawInDollars: new BigNumber(0),
+    address: "",
+    allowance: new BigNumber(0),
+    weightedAverageSharePrice: new BigNumber(0),
+    unrealizedGains: new BigNumber(0),
+    unrealizedGainsInDollars: new BigNumber(0),
+    unrealizedGainsPercentage: new BigNumber(0),
+    loaded: loaded
+  }
+}
+
 async function fetchCapitalProviderData(
   pool: SeniorFund,
   capitalProviderAddress: string | boolean,
-): Promise<CapitalProvider | { loaded: boolean }> {
+): Promise<CapitalProvider> {
   if (!capitalProviderAddress && !pool.loaded) {
-    return Promise.resolve({ loaded: false })
+    return emptyCapitalProvider()
   }
   if (!capitalProviderAddress && pool.loaded) {
-    return Promise.resolve({ loaded: true })
+    return emptyCapitalProvider({loaded: true})
   }
   const attributes = [{ method: "sharePrice" }]
   let { sharePrice } = await fetchDataFromAttributes(pool.contract, attributes, { bigNumber: true })
@@ -91,6 +115,9 @@ interface PoolData {
   totalPoolAssets: BigNumber
   totalLoansOutstanding: BigNumber
   cumulativeWritedowns: BigNumber
+  cumulativeDrawdowns: BigNumber
+  estimatedTotalInterest: BigNumber
+  defaultRate: BigNumber
   poolTXs: any[] //TODO
   assetsAsOf: any //TODO
   getRepaymentEvents: any //TODO
@@ -98,7 +125,7 @@ interface PoolData {
   pool: SeniorFund
 }
 
-async function fetchPoolData(pool: SeniorFund, erc20: Contract) {
+async function fetchPoolData(pool: SeniorFund, erc20: Contract): Promise<PoolData> {
   const attributes = [{ method: "sharePrice" }, { method: "compoundBalance" }]
   let { sharePrice, compoundBalance: _compoundBalance } = await fetchDataFromAttributes(pool.contract, attributes)
   let rawBalance = new BigNumber(await erc20.methods.balanceOf(pool.address).call())
@@ -114,9 +141,13 @@ async function fetchPoolData(pool: SeniorFund, erc20: Contract) {
     .multipliedBy(new BigNumber(sharePrice))
     .div(FIDU_DECIMALS.toString())
   let totalPoolAssets = totalPoolAssetsInDollars.multipliedBy(USDC_DECIMALS.toString())
-  let totalLoansOutstanding = totalPoolAssets.minus(balance)
+  let totalLoansOutstanding = new BigNumber(await pool.contract.methods.totalLoansOutstanding().call())
   let cumulativeWritedowns = await getCumulativeWritedowns(pool)
+  let cumulativeDrawdowns = await getCumulativeDrawdowns(pool)
   let poolTXs = await getAllDepositAndWithdrawalTXs(pool)
+  let estimatedTotalInterest = await getEstimatedTotalInterest(pool)
+  let defaultRate = cumulativeWritedowns.dividedBy(cumulativeDrawdowns)
+
   let loaded = true
 
   return {
@@ -127,9 +158,12 @@ async function fetchPoolData(pool: SeniorFund, erc20: Contract) {
     totalPoolAssets,
     totalLoansOutstanding,
     cumulativeWritedowns,
+    cumulativeDrawdowns,
     poolTXs,
     assetsAsOf,
     getRepaymentEvents,
+    estimatedTotalInterest,
+    defaultRate,
     loaded,
     pool,
   }
@@ -174,9 +208,19 @@ async function getWeightedAverageSharePrice(pool, capitalProvider) {
 }
 
 async function getCumulativeWritedowns(pool: SeniorFund) {
-  const from = getFromBlock(pool.chain)
-  const events = await pool.contract.getPastEvents("PrincipalWrittenDown", { fromBlock: from })
+  const events = await pool.goldfinchProtocol.queryEvents(pool.contract, "PrincipalWrittenDown")
   return new BigNumber(_.sumBy(events, event => parseInt(event.returnValues.amount, 10))).negated()
+}
+
+async function getCumulativeDrawdowns(pool: SeniorFund) {
+  const protocol = pool.goldfinchProtocol
+  const investmentEvents = await protocol.queryEvents(pool.contract, "InvestmentMade")
+  const tranchedPools = _.map(investmentEvents, (e) => pool.goldfinchProtocol.getContract<TranchedPool>("TranchedPool", e.returnValues.tranchedPool))
+  let allDrawdownEvents =
+    _.flatten(
+      await Promise.all(tranchedPools.map((pool) => protocol.queryEvents(pool, "DrawdownMade")))
+    )
+  return new BigNumber(_.sumBy(allDrawdownEvents, event => parseInt(event.returnValues.amount, 10)))
 }
 
 async function getRepaymentEvents(this: PoolData) {
@@ -239,4 +283,22 @@ function assetsAsOf(this: PoolData, dt) {
   )
 }
 
-export { fetchCapitalProviderData, fetchPoolData, SeniorFund }
+async function getEstimatedTotalInterest(pool: SeniorFund): Promise<BigNumber> {
+  const protocol = pool.goldfinchProtocol
+  const investmentEvents = await protocol.queryEvents(pool.contract, "InvestmentMade")
+  const tranchedPools = _.map(investmentEvents, (e) => pool.goldfinchProtocol.getContract<TranchedPool>("TranchedPool", e.returnValues.tranchedPool))
+  const creditLineAddresses = await Promise.all(tranchedPools.map(p => p.methods.creditLine().call()))
+  const creditLines = creditLineAddresses.map(a => buildCreditLine(a))
+  const creditLineData = await Promise.all(creditLines.map(async (cl) => {
+    let balance = new BigNumber(await cl.methods.balance().call())
+    let interestApr = new BigNumber(await cl.methods.interestApr().call())
+    return {balance, interestApr}
+  }))
+  return BigNumber.sum.apply(
+    null,
+    creditLineData.map(cl => cl.balance.multipliedBy(cl.interestApr.dividedBy(INTEREST_DECIMALS.toString()))),
+  )
+}
+
+export { fetchCapitalProviderData, fetchPoolData, SeniorFund, emptyCapitalProvider }
+export type { PoolData, CapitalProvider }

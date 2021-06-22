@@ -19,7 +19,7 @@ function RecentRepayments() {
   }, [pool])
 
   function createTransactionRows(tx) {
-    const etherscanSubdomain = network.name === "mainnet" ? "" : `${network}.`
+    const etherscanSubdomain = network.name === "mainnet" ? "" : `${network.name}.`
     let yourPortion
     let yourPortionClass
 

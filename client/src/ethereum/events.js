@@ -20,7 +20,7 @@ const EVENT_AMOUNT_FIELD = {
   DepositMade: "amount",
   DrawdownMade: "drawdownAmount",
   PaymentCollected: "paymentAmount",
-  InterestCollected: "poolAmount",
+  InterestCollected: "amount",
   PrincipalCollected: "amount",
   ReserveFundsCollected: "amount",
   Approval: "value",

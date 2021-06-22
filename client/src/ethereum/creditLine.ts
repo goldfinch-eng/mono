@@ -276,8 +276,8 @@ class MultipleCreditLines extends BaseCreditLine {
   set remainingPeriodDueAmount(_) {}
 }
 
-function buildCreditLine(address) {
-  return new web3.eth.Contract(CreditLineAbi, address)
+function buildCreditLine(address): CreditlineContract {
+  return (new web3.eth.Contract(CreditLineAbi, address) as unknown) as CreditlineContract
 }
 
 async function fetchCreditLineData(creditLineAddresses: string | string[], goldfinchProtocol: GoldfinchProtocol) {

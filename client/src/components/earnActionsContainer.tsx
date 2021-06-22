@@ -4,13 +4,20 @@ import DepositStatus from "./depositStatus"
 import { AppContext } from "../App"
 import WithdrawalForm from "./withdrawalForm"
 import { iconUpArrow, iconDownArrow } from "./icons"
+import { CapitalProvider, PoolData } from "../ethereum/pool"
 
-function EarnActionsContainer(props) {
-  const { user, creditDesk } = useContext(AppContext)
-  const [showAction, setShowAction] = useState(null)
+interface EarnActionsContainerProps {
+  actionComplete: () => Promise<any>
+  capitalProvider: CapitalProvider
+  poolData?: PoolData
+}
 
-  function closeForm(e) {
-    setShowAction(null)
+function EarnActionsContainer(props: EarnActionsContainerProps) {
+  const { user } = useContext(AppContext)
+  const [showAction, setShowAction] = useState<string>()
+
+  function closeForm() {
+    setShowAction("")
   }
 
   const actionComplete = function() {
@@ -35,7 +42,7 @@ function EarnActionsContainer(props) {
 
   let withdrawAction
   let withdrawClass = "disabled"
-  if (user.usdcIsUnlocked("earn") && props.capitalProvider.availableToWithdrawal > 0) {
+  if (user.usdcIsUnlocked("earn") && props.capitalProvider.availableToWithdraw.gt(0)) {
     withdrawAction = e => {
       setShowAction("withdrawal")
     }
@@ -43,27 +50,20 @@ function EarnActionsContainer(props) {
   }
 
   if (showAction === "deposit") {
-    return (
-      <DepositForm
-        closeForm={closeForm}
-        capitalProvider={props.capitalProvider}
-        poolData={props.poolData}
-        actionComplete={actionComplete}
-      />
-    )
+    return <DepositForm closeForm={closeForm} actionComplete={actionComplete} />
   } else if (showAction === "withdrawal") {
     return (
       <WithdrawalForm
         closeForm={closeForm}
         capitalProvider={props.capitalProvider}
-        poolData={props.poolData}
+        poolData={props.poolData!}
         actionComplete={actionComplete}
       />
     )
   } else {
     return (
       <div className={`background-container ${placeholderClass}`}>
-        <DepositStatus capitalProvider={props.capitalProvider} creditDesk={creditDesk} poolData={props.poolData} />
+        <DepositStatus capitalProvider={props.capitalProvider} poolData={props.poolData} />
         <div className="form-start">
           <button className={`button ${depositClass}`} onClick={depositAction}>
             {iconUpArrow} Deposit
