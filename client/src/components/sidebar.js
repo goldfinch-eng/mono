@@ -35,6 +35,9 @@ function Sidebar(props) {
         <NavLink to="/transactions" onClick={closeSidebar}>
           Transactions
         </NavLink>
+        <NavLink to="/kyc" onClick={closeSidebar}>
+          KYC (test)
+        </NavLink>
       </nav>
     </div>
   )
