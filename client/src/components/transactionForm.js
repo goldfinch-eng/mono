@@ -7,7 +7,7 @@ function TransactionForm(props) {
   // See https://github.com/react-hook-form/react-hook-form/issues/2578 for usage
   // of shouldUnregister. Note that `false` is the default in the latest version.
   const formMethods = useForm({ mode: "onChange", shouldUnregister: false })
-  const [node] = useCloseOnClickOrEsc({ closeFormFn: props.closeForm, closeOnClick: false })
+  const { node } = useCloseOnClickOrEsc({ closeFormFn: props.closeForm, closeOnClick: false })
 
   return (
     <div ref={node} className={`form-full background-container ${props.formClass}`}>

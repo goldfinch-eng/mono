@@ -5,7 +5,7 @@ import logoPurp from "../images/logomark-purp.svg"
 import { iconMenu } from "./icons.js"
 
 function Sidebar(props) {
-  const [node, showSidebar, setShowSidebar] = useCloseOnClickOrEsc()
+  const { node, open: showSidebar, setOpen: setShowSidebar } = useCloseOnClickOrEsc()
 
   function closeSidebar() {
     setShowSidebar("")

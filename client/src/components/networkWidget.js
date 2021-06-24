@@ -9,7 +9,7 @@ import { iconCheck, iconOutArrow } from "./icons.js"
 import { usdcFromAtomic } from "../ethereum/erc20"
 
 function NetworkWidget(props) {
-  const [node, showNetworkWidgetInfo, setShowNetworkWidgetInfo] = useCloseOnClickOrEsc()
+  const { node, open: showNetworkWidgetInfo, setOpen: setShowNetworkWidgetInfo } = useCloseOnClickOrEsc()
 
   function enableMetamask() {
     if (props.user.address) {

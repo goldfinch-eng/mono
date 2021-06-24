@@ -1,0 +1,40 @@
+@import "./utils.scss";
+
+.investor-notice {
+  .dropdown-list {
+    max-width: 450px;
+    margin-top: 1em;
+    left: auto;
+    right: 0px;
+    line-height: normal;
+  }
+
+  .dropdown-selected {
+    margin: 0;
+  }
+
+  button {
+    background: $sand-light;
+    border-radius: 10px;
+    color: $purp-dark;
+    font-size: $sans-size-xs;
+    outline: none;
+    padding: 0.6em 0.75em;
+    line-height: normal;
+
+    &:hover {
+      background: $sand;
+    }
+
+    .icon {
+      width: 16px;
+      height: 16px;
+      margin-right: 4px;
+    }
+  }
+
+  .investor-notice-content {
+    font-size: $sans-size-xs;
+    @include space-y(10px);
+  }
+}

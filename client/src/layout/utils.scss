@@ -11,13 +11,17 @@
 }
 
 @mixin focus-within {
-  &:focus-within{
+  &:focus-within {
     @content;
   }
 
   // For focus-within-polyfill. Must be separate from pseudoselector block,
   // otherwise unsupported browsers will ignore the whole block.
-  &.focus-within{
+  &.focus-within {
     @content;
   }
+}
+
+.font-bold {
+  font-weight: bold;
 }

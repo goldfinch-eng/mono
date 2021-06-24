@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from "react"
 
-function useCloseOnClickOrEsc(opts = {}) {
-  const node = useRef()
+function useCloseOnClickOrEsc<T extends HTMLElement>(
+  opts: { closeOnEsc?: boolean; closeFormFn?: () => void; closeOnClick?: boolean } = {},
+): { node: React.RefObject<T>; open: string; setOpen: (s: string) => void } {
+  const node = useRef<T>(null)
   const handleEscFunction = useCallback(
     event => {
       if (opts.closeOnEsc === false) {
@@ -11,7 +13,7 @@ function useCloseOnClickOrEsc(opts = {}) {
         if (opts.closeFormFn) {
           // If an input has focus, then don't close the form, unfocus it first
           if (document.activeElement && document.activeElement.tagName === "INPUT") {
-            document.activeElement.blur()
+            ;(document.activeElement as HTMLElement).blur()
           } else {
             opts.closeFormFn()
           }
@@ -23,7 +25,7 @@ function useCloseOnClickOrEsc(opts = {}) {
     [opts],
   )
 
-  const [open, setOpen] = useState("")
+  const [open, setOpen] = useState<string>("")
 
   const handleClickOutside = useCallback(
     e => {
@@ -50,7 +52,7 @@ function useCloseOnClickOrEsc(opts = {}) {
       document.removeEventListener("keydown", handleEscFunction, false)
     }
   }, [handleClickOutside, handleEscFunction])
-  return [node, open, setOpen]
+  return { node, open, setOpen }
 }
 
 export default useCloseOnClickOrEsc

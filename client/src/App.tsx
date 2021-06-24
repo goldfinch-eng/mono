@@ -26,6 +26,17 @@ interface NetworkConfig {
   supported?: any
 }
 
+interface GeolocationData {
+  ip: string
+  city: string
+  region: string
+  country: string
+  loc: string
+  org: string
+  postal: string
+  timezone: string
+}
+
 interface GlobalState {
   pool?: SeniorFund
   creditDesk?: any
@@ -38,6 +49,8 @@ interface GlobalState {
   gnosisSafeSdk?: SdkInstance
   networkMonitor?: NetworkMonitor
   refreshUserData?: (overrideAddress?: string) => void
+  geolocationData?: GeolocationData
+  setGeolocationData?: (geolocationData: GeolocationData) => void
 }
 
 declare let window: any
@@ -57,6 +70,7 @@ function App() {
   const [gnosisSafeSdk, setGnosisSafeSdk] = useState<SdkInstance>()
   const [networkMonitor, setNetworkMonitor] = useState<NetworkMonitor>()
   const [goldfinchProtocol, setGoldfinchProtocol] = useState<GoldfinchProtocol>()
+  const [geolocationData, setGeolocationData] = useState<GeolocationData>()
 
   useEffect(() => {
     setupWeb3()
@@ -146,6 +160,8 @@ function App() {
     networkMonitor,
     refreshUserData,
     goldfinchProtocol,
+    geolocationData,
+    setGeolocationData
   }
 
   return (
@@ -198,3 +214,4 @@ function App() {
 }
 
 export { App, AppContext }
+export type { GeolocationData }

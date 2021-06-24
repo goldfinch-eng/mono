@@ -1,11 +1,35 @@
-import React from "react"
+import React, { ReactHTMLElement } from "react"
 import useCloseOnClickOrEsc from "../hooks/useCloseOnClickOrEsc"
 import _ from "lodash"
 
-function Dropdown({ className, selectedClassName, selected, options, onSelect }) {
-  const [node, open, setOpen] = useCloseOnClickOrEsc()
+interface DropdownOption {
+  value: any
+  selectedEl?: JSX.Element
+  el: JSX.Element
+}
 
-  function toggleOpen(e = null) {
+interface DropdownProps {
+  className?: string
+  selectedClassName?: string
+  selected?: any
+  options: DropdownOption[]
+  onSelect?(value: any): void
+  highlightSelected: boolean
+  arrow: boolean
+}
+
+function Dropdown({
+  className,
+  selectedClassName,
+  selected,
+  options,
+  onSelect = () => {},
+  highlightSelected = true,
+  arrow = true,
+}: DropdownProps) {
+  const { node, open, setOpen } = useCloseOnClickOrEsc<HTMLDivElement>()
+
+  function toggleOpen(e?: React.UIEvent) {
     if (e) {
       e.preventDefault()
     }
@@ -23,7 +47,7 @@ function Dropdown({ className, selectedClassName, selected, options, onSelect })
         <div className="dropdown-selected-content">
           {selectedOption && (selectedOption.selectedEl || selectedOption.el)}
         </div>
-        <span className="dropdown-arrow"></span>
+        {arrow && <span className="dropdown-arrow"></span>}
       </a>
       {open && (
         <div>
@@ -32,7 +56,7 @@ function Dropdown({ className, selectedClassName, selected, options, onSelect })
               return (
                 <div
                   key={opt.value}
-                  className={`dropdown-list-item ${opt === selectedOption && "selected"}`}
+                  className={`dropdown-list-item ${opt === selectedOption && highlightSelected && "selected"}`}
                   onClick={() => {
                     toggleOpen()
                     onSelect(opt.value)
@@ -49,4 +73,5 @@ function Dropdown({ className, selectedClassName, selected, options, onSelect })
   )
 }
 
+export type { DropdownOption }
 export default Dropdown

@@ -11,6 +11,7 @@ import {
   SeniorFund,
 } from "../../ethereum/pool"
 import { AppContext } from "../../App"
+import InvestorNotice from "../investorNotice"
 
 function SeniorPool() {
   const { pool, user } = useContext(AppContext)
@@ -51,7 +52,12 @@ function SeniorPool() {
 
   return (
     <div className="content-section">
-      <div className="page-header">{earnMessage}</div>
+      <div className="page-header">
+        <div>{earnMessage}</div>
+        <div className="page-header-notice">
+          <InvestorNotice />
+        </div>
+      </div>
       <ConnectionNotice />
       <EarnActionsContainer poolData={poolData} capitalProvider={capitalProvider} actionComplete={actionComplete} />
       <PoolStatus poolData={poolData} />
