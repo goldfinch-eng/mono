@@ -29,7 +29,6 @@ const gnosisSafeIntegration = () => config => {
 
   config.proxy = {
     "/relay": "http://localhost:4000",
-    "/kyc_status": "http://localhost:5001/goldfinch-frontends-dev/us-central1",
   }
 
   return config

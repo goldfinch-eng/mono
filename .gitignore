@@ -91,3 +91,4 @@ deployments/hardhat
 client/config/deployments_dev.json
 
 .envrc
+typechain
