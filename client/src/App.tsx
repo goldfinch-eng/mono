@@ -163,7 +163,7 @@ function App() {
             <Route path="/transactions">
               <Transactions currentTXs={currentTXs} />
             </Route>
-            <Route path="/kyc">
+            <Route path="/verify">
               <VerifyIdentity />
             </Route>
             <Route path="/terms">
