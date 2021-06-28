@@ -1,6 +1,6 @@
 import React, { useContext } from "react"
 import _ from "lodash"
-import ConnectionNotice from "./connectionNotice.js"
+import ConnectionNotice from "./connectionNotice"
 import { AppContext } from "../App"
 import { displayDollars } from "../utils"
 import { MAX_UINT } from "../ethereum/utils"

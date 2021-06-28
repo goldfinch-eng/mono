@@ -20,7 +20,12 @@ class BorrowerInterface {
   tranchedPoolByCreditLine!: { [address: string]: TranchedPool }
   allowance!: BigNumber
 
-  constructor(userAddress, borrowerContract, goldfinchProtocol: GoldfinchProtocol, oneInch) {
+  constructor(
+    userAddress: string,
+    borrowerContract: Contract,
+    goldfinchProtocol: GoldfinchProtocol,
+    oneInch: Contract,
+  ) {
     this.userAddress = userAddress
     this.borrowerContract = borrowerContract
     this.goldfinchProtocol = goldfinchProtocol
@@ -145,19 +150,25 @@ class BorrowerInterface {
   }
 }
 
-async function getBorrowerContract(ownerAddress, goldfinchProtocol) {
+async function getBorrowerContract(
+  ownerAddress: string,
+  goldfinchProtocol: GoldfinchProtocol,
+): Promise<BorrowerInterface | undefined> {
   const borrowerCreatedEvents = await goldfinchProtocol.queryEvents("GoldfinchFactory", "BorrowerCreated", {
     owner: ownerAddress,
   })
-  let borrower
+  let borrower: Contract | null = null
   if (borrowerCreatedEvents.length > 0) {
     const lastIndex = borrowerCreatedEvents.length - 1
-    borrower = goldfinchProtocol.getContract("Borrower", borrowerCreatedEvents[lastIndex].returnValues.borrower)
+    borrower = goldfinchProtocol.getContract<Contract>(
+      "Borrower",
+      borrowerCreatedEvents[lastIndex].returnValues.borrower,
+    )
+    const oneInch = getOneInchContract(goldfinchProtocol.networkId)
+    const borrowerInterface = new BorrowerInterface(ownerAddress, borrower, goldfinchProtocol, oneInch)
+    await borrowerInterface.initialize()
+    return borrowerInterface
   }
-  const oneInch = getOneInchContract(goldfinchProtocol.networkId)
-  const borrowerInterface = new BorrowerInterface(ownerAddress, borrower, goldfinchProtocol, oneInch)
-  await borrowerInterface.initialize()
-  return borrowerInterface
 }
 
 export { getBorrowerContract, BorrowerInterface }

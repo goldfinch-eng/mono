@@ -1,13 +1,16 @@
 import React, { useContext } from "react"
 import { withRouter } from "react-router-dom"
 import { AppContext } from "../App"
-import UnlockUSDCForm from "./unlockUSDCForm.js"
+import { UnlockedStatus } from "../ethereum/user"
+import useNonNullContext from "../hooks/useNonNullContext"
+import UnlockUSDCForm from "./unlockUSDCForm"
+import VerifyAddressBanner from "./verifyAddressBanner"
 
 function ConnectionNotice(props) {
-  const { network, user } = useContext(AppContext)
-  let notice = ""
+  const { network, user } = useNonNullContext(AppContext)
+  let notice: JSX.Element | null = null
 
-  if (!window.ethereum) {
+  if (!(window as any).ethereum) {
     notice = (
       <div className="content-empty-message background-container">
         In order to use Goldfinch, you'll first need to download and install the Metamask plug-in from{" "}
@@ -34,7 +37,7 @@ function ConnectionNotice(props) {
       </div>
     )
   } else if (user.loaded) {
-    let unlockStatus
+    let unlockStatus: UnlockedStatus | null = null
     if (props.location.pathname.startsWith("/earn")) {
       unlockStatus = user.getUnlockStatus("earn")
     } else if (props.location.pathname.startsWith("/borrow")) {
@@ -44,11 +47,7 @@ function ConnectionNotice(props) {
       notice = <UnlockUSDCForm unlockAddress={unlockStatus.unlockAddress} />
     }
     if (!user.goListed) {
-      notice = (
-        <div className="content-empty-message background-container">
-          Your address not been authorized to use Goldfinch.
-        </div>
-      )
+      notice = <VerifyAddressBanner />
     }
   }
 

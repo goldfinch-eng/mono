@@ -7,6 +7,7 @@ import { BorrowerInterface, getBorrowerContract } from "./borrower"
 import { goList } from "../goList"
 import { SeniorFund} from "./pool"
 import { GoldfinchProtocol } from "./GoldfinchProtocol"
+import { GoldfinchConfig } from "../typechain/web3/GoldfinchConfig"
 
 declare let window: any;
 
@@ -15,12 +16,12 @@ const UNLOCK_THRESHOLD = new BigNumber(10000)
 async function getUserData(address, goldfinchProtocol, pool: SeniorFund, creditDesk, networkId): Promise<User> {
   const borrower = await getBorrowerContract(address, goldfinchProtocol)
 
-  const user = new Web3User(address, borrower, pool, creditDesk, goldfinchProtocol, networkId)
+  const user = new Web3User(address, pool, creditDesk, goldfinchProtocol, networkId, borrower)
   await user.initialize()
   return user
 }
 
-interface UnlockedStatus {
+export interface UnlockedStatus {
   unlockAddress: string,
   isUnlocked: boolean
 }
@@ -42,7 +43,6 @@ interface User {
   usdcIsUnlocked(type: string): boolean
   getUnlockStatus(type: string): UnlockedStatus
   isUnlocked(allowance): boolean
-  isGoListed(address): Promise<boolean>
   poolBalanceAsOf(dt): BigNumber
   getAllowance(address): Promise<BigNumber>
 }
@@ -61,12 +61,12 @@ class Web3User implements User {
   noWeb3: boolean
   goldfinchProtocol: GoldfinchProtocol
 
-  private borrower: BorrowerInterface
+  private borrower?: BorrowerInterface
   private pool: SeniorFund
   private usdc: ERC20
   private creditDesk: any
 
-  constructor(address: string, borrower: BorrowerInterface, pool: SeniorFund, creditDesk: any, goldfinchProtocol: GoldfinchProtocol, networkId: string) {
+  constructor(address: string, pool: SeniorFund, creditDesk: any, goldfinchProtocol: GoldfinchProtocol, networkId: string, borrower?: BorrowerInterface, ) {
     this.address = address
     this.borrower = borrower
     this.goldfinchProtocol = goldfinchProtocol
@@ -88,7 +88,7 @@ class Web3User implements User {
       getAndTransformERC20Events(this.usdc, this.pool.address, this.address),
       getAndTransformPoolEvents(this.pool, this.address),
       // Credit desk events could've some from the user directly or the borrower contract, we need to filter by both
-      getAndTransformCreditDeskEvents(this.creditDesk, [this.address, this.borrower.borrowerAddress]),
+      getAndTransformCreditDeskEvents(this.creditDesk, _.compact([this.address, this.borrower?.borrowerAddress])),
     ])
     this.pastTXs = _.reverse(_.sortBy(_.compact(_.concat(usdcTxs, poolTxs, creditDeskTxs)), "blockNumber"))
     this.poolTxs = poolTxs
@@ -108,8 +108,8 @@ class Web3User implements User {
       }
     } else if (type === "borrow") {
       return {
-        unlockAddress: this.borrower.borrowerAddress,
-        isUnlocked: this.isUnlocked(this.borrower.allowance),
+        unlockAddress: this.borrower?.borrowerAddress ?? this.address,
+        isUnlocked: this.borrower?.allowance ? this.isUnlocked(this.borrower.allowance) : false,
       }
     }
     throw new Error("Invalid type")
@@ -119,9 +119,10 @@ class Web3User implements User {
     return !allowance || allowance.gte(UNLOCK_THRESHOLD)
   }
 
-  async isGoListed(address) {
+  private async isGoListed(address) {
     if (process.env.REACT_APP_ENFORCE_GO_LIST || this.networkId === MAINNET) {
-      return goList.map(_.toLower).includes(_.toLower(address))
+      let config = this.goldfinchProtocol.getContract<GoldfinchConfig>("GoldfinchConfig")
+      return await config.methods.goList(address).call()
     } else {
       return true
     }
@@ -186,13 +187,14 @@ class DefaultUser implements User {
     return {unlockAddress: "", isUnlocked: false}
   }
   isUnlocked(allowance): boolean { return false }
-  async isGoListed(address) {return false}
   poolBalanceAsOf(dt): BigNumber {
     return new BigNumber(0)
   }
   async getAllowance(address) {
     return new BigNumber(0)
   }
+
+  private async isGoListed(address) {return false}
 }
 
 function defaultUser(): User {
