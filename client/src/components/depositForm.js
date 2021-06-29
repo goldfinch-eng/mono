@@ -1,6 +1,6 @@
 import React, { useContext } from "react"
 import { usdcFromAtomic, usdcToAtomic } from "../ethereum/erc20"
-import { AppContext } from "../App.js"
+import { AppContext } from "../App"
 import { displayDollars } from "../utils"
 import TransactionForm from "./transactionForm"
 import TransactionInput from "./transactionInput"

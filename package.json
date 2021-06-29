@@ -4,9 +4,9 @@
   "description": "A lending protocol built on the blockchain",
   "main": "index.js",
   "scripts": {
-    "start": "REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet npx concurrently -n \"blockchain,web,server\"  \"npx hardhat node --export-all client/config/deployments_dev.json\" \"cd client && npm start\" \"HARDHAT_NETWORK=localhost node autotasks/server.js\" -k -c \"cyan, magenta, green\"",
-    "no-gasless-start": "REACT_APP_DISABLE_GASLESS=true REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet npx concurrently -n \"blockchain,web,server\"  \"npx hardhat node --export-all client/config/deployments_dev.json\" \"cd client && npm start\" \"HARDHAT_NETWORK=localhost node autotasks/server.js\" -k -c \"cyan, magenta, green\"",
-    "local-start": "npx concurrently -n \"blockchain,web,server\"  \"npx hardhat node --reset --export-all client/config/deployments_dev.json\" \"cd client && npm start\" \"HARDHAT_NETWORK=localhost node autotasks/server.js\" -k -c \"cyan, magenta, green\"",
+    "start": "REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet npx concurrently -n \"blockchain,web,server\"  \"npx hardhat node --export-all client/config/deployments_dev.json\" \"cd client && npm start\" \"HARDHAT_NETWORK=localhost npx hardhat run autotasks/server.js\" -k -c \"cyan, magenta, green\"",
+    "no-gasless-start": "REACT_APP_DISABLE_GASLESS=true REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet npx concurrently -n \"blockchain,web,server\"  \"npx hardhat node --export-all client/config/deployments_dev.json\" \"cd client && npm start\" \"HARDHAT_NETWORK=localhost npx hardhat run autotasks/server.js\" -k -c \"cyan, magenta, green\"",
+    "local-start": "npx concurrently -n \"blockchain,web,server\"  \"npx hardhat node --export-all client/config/deployments_dev.json\" \"cd client && npm start\" \"HARDHAT_NETWORK=localhost npx hardhat run autotasks/server.js\" -k -c \"cyan, magenta, green\"",
     "test": "NODE_ENV=test npx hardhat test --show-stack-traces",
     "mainnet-test": "HARDHAT_FORK=mainnet NODE_ENV=test npx hardhat test test/MainnetForking.test.js --show-stack-traces",
     "pre-push": "cd client && npm run pre-push",
@@ -19,7 +19,9 @@
     "update-configs": "npx hardhat run ./blockchain_scripts/updateConfigs.js --network",
     "upgrade-multisig": "npx hardhat run ./blockchain_scripts/upgrade.js --network",
     "autotask-update": "node autotasks/deployAutoTasks.js",
-    "advance-time": "npx hardhat run ./blockchain_scripts/advanceTime.js --network localhost"
+    "advance-time": "npx hardhat run ./blockchain_scripts/advanceTime.js --network localhost",
+    "typechain": "npx hardhat run ./blockchain_scripts/typechain-web3.ts",
+    "postinstall": "npm run typechain"
   },
   "lint-staged": {
     "**!(client)/*.js": [
@@ -64,6 +66,7 @@
     "@opengsn/gsn": "^2.1.0",
     "@openzeppelin/contracts-ethereum-package": "^3.0.0",
     "@openzeppelin/upgrades": "^2.8.0",
+    "@typechain/web3-v1": "^3.0.0",
     "bn.js": "^5.1.3",
     "contract-proxy-kit": "^2.2.0-alpha.1",
     "defender-autotask-client": "^1.4.1",
@@ -116,6 +119,9 @@
     "solhint-plugin-modifiers": "0.0.3",
     "solhint-plugin-prettier": "0.0.5",
     "solidity-docgen": "^0.5.7",
-    "truffle-contract-size": "^2.0.0"
+    "truffle-contract-size": "^2.0.0",
+    "ts-node": "^10.0.0",
+    "typechain": "^5.1.1",
+    "typescript": "^4.3.4"
   }
 }

@@ -1,5 +1,5 @@
 import { useContext } from "react"
-import { AppContext } from "../App.js"
+import { AppContext } from "../App"
 import web3 from "../web3"
 
 function useSendFromUser() {

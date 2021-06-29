@@ -1,6 +1,11 @@
 import BigNumber from "bignumber.js"
-import { BN } from "bn.js"
+import BN from "bn.js"
 import _ from "lodash"
+import {Contract} from 'web3-eth-contract'
+import { AbiItem } from "web3-utils"
+import { ContractOptions } from "web3-eth-contract"
+import { BaseContract } from "../typechain/web3/types"
+import web3 from "../web3"
 
 const decimalPlaces = 6
 const decimals = new BN(String(10 ** decimalPlaces))
@@ -112,21 +117,22 @@ function getFromBlock(chain) {
   }
 }
 
-function fetchDataFromAttributes(web3Obj, attributes, { bigNumber } = {}) {
+type MethodInfo = {method: string, name?: string, args?: any}
+function fetchDataFromAttributes(web3Obj: Contract | BaseContract, attributes: MethodInfo[], { bigNumber }: { bigNumber?: boolean } = {}): any {
   const result = {}
   if (!web3Obj) {
     return Promise.resolve(result)
   }
   var promises = attributes.map(methodInfo => {
-    return web3Obj.methods[methodInfo.method](...(methodInfo.args || [])).call()
+    return web3Obj.methods[methodInfo.method](...(methodInfo?.args || [])).call()
   })
   return Promise.all(promises)
     .then(results => {
       attributes.forEach((methodInfo, index) => {
         if (bigNumber) {
-          result[methodInfo.name || methodInfo.method] = new BigNumber(results[index])
+          result[methodInfo?.name || methodInfo.method] = new BigNumber(results[index])
         } else {
-          result[methodInfo.name || methodInfo.method] = results[index]
+          result[methodInfo?.name || methodInfo.method] = results[index]
         }
       })
       return result
@@ -134,6 +140,10 @@ function fetchDataFromAttributes(web3Obj, attributes, { bigNumber } = {}) {
     .catch(e => {
       throw new Error(e)
     })
+}
+
+function getContract<T extends BaseContract>(abi: AbiItem | AbiItem[], address?: string, options?: ContractOptions): T {
+  return new web3.eth.Contract(abi, address, options) as any as T
 }
 
 export {
@@ -159,4 +169,5 @@ export {
   getFromBlock,
   chainIdToNetworkID,
   MAINNET,
+  getContract,
 }

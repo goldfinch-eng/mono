@@ -3,6 +3,8 @@ import BigNumber from "bignumber.js"
 import * as ERC20Contract from "./ERC20.json"
 import { decimals, USDC_ADDRESSES, USDT_ADDRESSES, BUSD_ADDRESSES, getDeployments } from "./utils"
 import { memoize } from "lodash"
+import { Contract } from "web3-eth-contract"
+import {AbiItem} from "web3-utils/types"
 
 const Tickers = {
   USDC: "USDC",
@@ -11,11 +13,17 @@ const Tickers = {
 }
 
 class ERC20 {
+  ticker: string
+  networkId: string
+  networksToAddress: any
+  localContractName?: string
+  decimals: number
+  contract!: Contract
+
   constructor(networkId) {
     this.ticker = "ERC20"
     this.networkId = networkId
     this.networksToAddress = {}
-    this.localContractName = null
     this.decimals = 18
   }
 
@@ -27,7 +35,7 @@ class ERC20 {
 
   async initializeContract(networkId) {
     const config = await getDeployments(networkId)
-    const localContract = config.contracts[this.localContractName]
+    const localContract = this.localContractName && config.contracts[this.localContractName]
     let address
     if (localContract) {
       address = localContract.address
@@ -39,20 +47,20 @@ class ERC20 {
         address = this.networksToAddress[this.networkId]
       }
     }
-    const erc20 = new web3.eth.Contract(ERC20Contract.abi, address)
+    const erc20 = new web3.eth.Contract(ERC20Contract.abi as AbiItem[], address)
     return erc20
   }
 
   get address() {
-    return this.contract._address
+    return this.contract.options.address
   }
 
-  async getAllowance(opts) {
+  async getAllowance(opts): Promise<BigNumber> {
     const { owner, spender } = opts
     return new BigNumber(await this.contract.methods.allowance(owner, spender).call())
   }
 
-  async getBalance(address) {
+  async getBalance(address): Promise<BigNumber> {
     return new BigNumber(await this.contract.methods.balanceOf(address).call())
   }
 
@@ -123,15 +131,15 @@ async function getUSDC(networkId) {
 }
 
 function usdcFromAtomic(amount) {
-  return new BigNumber(String(amount)).div(decimals).toString(10)
+  return new BigNumber(String(amount)).div(decimals.toString()).toString(10)
 }
 
 function usdcToAtomic(amount) {
-  return new BigNumber(String(amount)).multipliedBy(decimals).toString(10)
+  return new BigNumber(String(amount)).multipliedBy(decimals.toString()).toString(10)
 }
 
 function minimumNumber(...args) {
-  return new BigNumber.minimum(...args).toString(10)
+  return BigNumber.minimum(...args).toString(10)
 }
 
-export { getUSDC, getERC20, decimals, usdcFromAtomic, usdcToAtomic, minimumNumber, Tickers }
+export { getUSDC, getERC20, decimals, usdcFromAtomic, usdcToAtomic, minimumNumber, Tickers, ERC20}

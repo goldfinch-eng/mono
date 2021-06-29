@@ -1,6 +1,6 @@
 import React, { useContext } from "react"
 import { withRouter } from "react-router-dom"
-import { AppContext } from "../App.js"
+import { AppContext } from "../App"
 import UnlockUSDCForm from "./unlockUSDCForm.js"
 
 function ConnectionNotice(props) {

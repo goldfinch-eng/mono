@@ -1,25 +1,71 @@
 import BigNumber from "bignumber.js"
-import { usdcFromAtomic } from "./erc20.js"
+import { ERC20, usdcFromAtomic } from "./erc20"
 import _ from "lodash"
-import { getFromBlock, MAINNET } from "./utils.js"
+import { getFromBlock, MAINNET } from "./utils"
 import { mapEventsToTx } from "./events"
 import { getCreditLineFactory } from "./creditLine"
-import { getBorrowerContract } from "./borrower"
+import { BorrowerInterface, getBorrowerContract } from "./borrower"
 import { goList } from "../goList"
+
+declare let window: any;
 
 const UNLOCK_THRESHOLD = new BigNumber(10000)
 
-async function getUserData(address, usdc, pool, creditDesk, networkId) {
-  const creditLineFactory = await getCreditLineFactory(networkId)
-  const borrower = await getBorrowerContract(address, creditLineFactory, creditDesk, usdc, pool, networkId)
+async function getUserData(address, usdc, pool, creditDesk, networkId): Promise<User> {
+  const goldfinchFactory = await getCreditLineFactory(networkId)
+  const borrower = await getBorrowerContract(address, goldfinchFactory, creditDesk, usdc, pool, networkId)
 
-  const user = new User(address, borrower, pool, creditDesk, usdc, networkId)
+  const user = new Web3User(address, borrower, pool, creditDesk, usdc, networkId)
   await user.initialize()
   return user
 }
 
-class User {
-  constructor(address, borrower, pool, creditDesk, usdc, networkId) {
+interface UnlockedStatus {
+  unlockAddress: string,
+  isUnlocked: boolean
+}
+
+interface User {
+  address: string
+  web3Connected: boolean
+  loaded: boolean
+  networkId: string
+  usdcBalance: BigNumber
+  usdcBalanceInDollars: BigNumber
+  poolAllowance: BigNumber
+  pastTXs: any[]
+  poolTxs: any[]
+  goListed: boolean
+  noWeb3: boolean
+
+  initialize(): Promise<void>
+  usdcIsUnlocked(type: string): boolean
+  getUnlockStatus(type: string): UnlockedStatus
+  isUnlocked(allowance): boolean
+  isGoListed(address): Promise<boolean>
+  poolBalanceAsOf(dt): BigNumber
+  getAllowance(address): Promise<BigNumber>
+}
+
+class Web3User implements User {
+  address: string
+  web3Connected: boolean
+  loaded: boolean
+  networkId: string
+  usdcBalance!: BigNumber
+  usdcBalanceInDollars!: BigNumber
+  poolAllowance!: BigNumber
+  pastTXs!: any[]
+  poolTxs!: any[]
+  goListed!: boolean
+  noWeb3: boolean
+
+  private borrower: BorrowerInterface
+  private pool: any
+  private usdc: ERC20
+  private creditDesk: any
+
+  constructor(address: string, borrower: BorrowerInterface, pool: any, creditDesk: any, usdc: ERC20, networkId: string) {
     this.address = address
     this.borrower = borrower
     this.pool = pool
@@ -28,6 +74,7 @@ class User {
     this.web3Connected = true
     this.loaded = false
     this.networkId = networkId
+    this.noWeb3 = !window.ethereum
   }
 
   async initialize() {
@@ -51,7 +98,7 @@ class User {
     return this.getUnlockStatus(type).isUnlocked
   }
 
-  getUnlockStatus(type) {
+  getUnlockStatus(type): UnlockedStatus {
     if (type === "earn") {
       return {
         unlockAddress: this.pool._address,
@@ -63,7 +110,7 @@ class User {
         isUnlocked: this.isUnlocked(this.borrower.allowance),
       }
     }
-    return false
+    throw new Error("Invalid type")
   }
 
   isUnlocked(allowance) {
@@ -102,14 +149,52 @@ class User {
   }
 }
 
-function defaultUser() {
-  return {
-    loaded: false,
-    poolBalanceAsOf: () => new BigNumber(0),
-    usdcIsUnlocked: () => false,
-    noWeb3: !window.ethereum,
-    web3Connected: false,
+class DefaultUser implements User {
+  address: string
+  web3Connected: boolean
+  loaded: boolean
+  networkId: string
+  usdcBalance: BigNumber
+  usdcBalanceInDollars: BigNumber
+  poolAllowance: BigNumber
+  pastTXs: any[]
+  poolTxs: any[]
+  goListed: boolean
+  noWeb3: boolean
+
+  constructor() {
+    this.address = ""
+    this.networkId = ""
+    this.usdcBalance = new BigNumber(0)
+    this.usdcBalanceInDollars = new BigNumber(0)
+    this.loaded = false
+    this.poolBalanceAsOf = () => new BigNumber(0)
+    this.usdcIsUnlocked = () => false
+    this.noWeb3 = !window.ethereum
+    this.web3Connected = false
+    this.poolAllowance = new BigNumber(0)
+    this.pastTXs = []
+    this.poolTxs = []
+    this.goListed = false
   }
+
+  async initialize() {}
+  usdcIsUnlocked(type: string) { return false }
+  getUnlockStatus(type: string): UnlockedStatus {
+    return {unlockAddress: "", isUnlocked: false}
+  }
+  isUnlocked(allowance): boolean { return false }
+  async isGoListed(address) {return false}
+  poolBalanceAsOf(dt): BigNumber {
+    return new BigNumber(0)
+  }
+  async getAllowance(address) {
+    return new BigNumber(0)
+  }
+}
+
+function defaultUser(): User {
+  return new DefaultUser()
 }
 
 async function getAndTransformERC20Events(erc20, spender, owner) {
@@ -160,3 +245,5 @@ async function getPoolEvents(pool, address, events = ["DepositMade", "Withdrawal
 }
 
 export { getUserData, getPoolEvents, defaultUser }
+export type { DefaultUser, User }
+

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react"
 import { BrowserRouter as Router, Switch, Route, Redirect } from "react-router-dom"
 import Borrow from "./components/borrow.js"
-import Earn from "./components/earn.js"
+import Earn from "./components/earn"
 import Transactions from "./components/transactions.js"
 import NetworkWidget from "./components/networkWidget"
 import Sidebar from "./components/sidebar"
@@ -10,27 +10,48 @@ import PrivacyPolicy from "./components/privacyPolicy.js"
 import web3 from "./web3"
 import { fetchPoolData, getPool } from "./ethereum/pool.js"
 import { getCreditDesk, fetchCreditDeskData } from "./ethereum/creditDesk.js"
-import { getUSDC } from "./ethereum/erc20.js"
-import { getGoldfinchConfig, refreshGoldfinchConfigData } from "./ethereum/goldfinchConfig.js"
-import { getUserData, defaultUser } from "./ethereum/user.js"
+import { ERC20, getUSDC } from "./ethereum/erc20"
+import { getGoldfinchConfig, refreshGoldfinchConfigData } from "./ethereum/goldfinchConfig"
+import { getUserData, defaultUser, User, DefaultUser } from "./ethereum/user"
 import { mapNetworkToID, SUPPORTED_NETWORKS } from "./ethereum/utils"
-import initSdk from "@gnosis.pm/safe-apps-sdk"
+import initSdk, { SafeInfo, SdkInstance } from "@gnosis.pm/safe-apps-sdk"
 import { NetworkMonitor } from "./ethereum/networkMonitor"
+import {Contract} from 'web3-eth-contract'
 
-const AppContext = React.createContext({})
+interface NetworkConfig {
+  name?: string
+  supported?: any
+}
+
+interface GlobalState {
+  pool?: any
+  creditDesk?: any
+  user: User
+  usdc?: ERC20
+  goldfinchConfig?: any
+  network?: NetworkConfig
+  gnosisSafeInfo?: SafeInfo
+  gnosisSafeSdk?: SdkInstance
+  networkMonitor?: NetworkMonitor
+  refreshUserData?: (overrideAddress?: string) => void
+}
+
+declare let window: any;
+
+const AppContext = React.createContext<GlobalState>({user: defaultUser()})
 
 function App() {
-  const [pool, setPool] = useState({})
-  const [creditDesk, setCreditDesk] = useState({})
-  const [usdc, setUSDC] = useState(null)
-  const [user, setUser] = useState(defaultUser())
+  const [pool, setPool] = useState<any>({})
+  const [creditDesk, setCreditDesk] = useState<any>({})
+  const [usdc, setUSDC] = useState<ERC20>()
+  const [user, setUser] = useState<User>(defaultUser())
   const [goldfinchConfig, setGoldfinchConfig] = useState({})
   const [currentTXs, setCurrentTXs] = useState([])
   const [currentErrors, setCurrentErrors] = useState([])
-  const [network, setNetwork] = useState({})
-  const [gnosisSafeInfo, setGnosisSafeInfo] = useState()
-  const [gnosisSafeSdk, setGnosisSafeSdk] = useState()
-  const [networkMonitor, setNetworkMonitor] = useState()
+  const [network, setNetwork] = useState<NetworkConfig>({})
+  const [gnosisSafeInfo, setGnosisSafeInfo] = useState<SafeInfo>()
+  const [gnosisSafeSdk, setGnosisSafeSdk] = useState<SdkInstance>()
+  const [networkMonitor, setNetworkMonitor] = useState<NetworkMonitor>()
 
   useEffect(() => {
     setupWeb3()
@@ -40,7 +61,7 @@ function App() {
   useEffect(() => {
     refreshUserData()
     // Admin function to be able to assume the role of any address
-    window.setUserAddress = function(overrideAddress) {
+    window.setUserAddress = function(overrideAddress: string) {
       refreshUserData(overrideAddress)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -61,9 +82,9 @@ function App() {
 
     const networkName = await web3.eth.net.getNetworkType()
     const networkId = mapNetworkToID[networkName] || networkName
-    const networkConfig = { name: networkId, supported: SUPPORTED_NETWORKS[networkId] }
+    const networkConfig: NetworkConfig = { name: networkId, supported: SUPPORTED_NETWORKS[networkId] }
     setNetwork(networkConfig)
-    let usdc, poolContract, goldfinchConfigContract, creditDeskContract
+    let usdc: ERC20, poolContract: any, goldfinchConfigContract: any, creditDeskContract: any
     if (networkConfig.supported) {
       usdc = await getUSDC(networkId)
       poolContract = await getPool(networkId)
@@ -86,8 +107,8 @@ function App() {
     return () => safeSdk.removeListeners()
   }
 
-  async function refreshUserData(overrideAddress) {
-    let data = defaultUser()
+  async function refreshUserData(overrideAddress?: string) {
+    let data: any = defaultUser()
     const accounts = await web3.eth.getAccounts()
     data.web3Connected = true
     let userAddress =
@@ -101,17 +122,17 @@ function App() {
     setUser(data)
   }
 
-  const store = {
-    pool: pool,
-    creditDesk: creditDesk,
-    user: user,
-    usdc: usdc,
-    goldfinchConfig: goldfinchConfig,
-    network: network,
-    gnosisSafeInfo: gnosisSafeInfo,
-    gnosisSafeSdk: gnosisSafeSdk,
-    networkMonitor: networkMonitor,
-    refreshUserData: refreshUserData,
+  const store: GlobalState = {
+    pool,
+    creditDesk,
+    user,
+    usdc,
+    goldfinchConfig,
+    network,
+    gnosisSafeInfo,
+    gnosisSafeSdk,
+    networkMonitor,
+    refreshUserData,
   }
 
   return (

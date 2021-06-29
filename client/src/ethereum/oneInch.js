@@ -1,5 +1,5 @@
 import web3 from "../web3"
-import { ONE_INCH_ADDRESSES } from "./utils.js"
+import { ONE_INCH_ADDRESSES } from "./utils"
 
 const OneInchAbi = require("../../abi/OneSplit.json")
 

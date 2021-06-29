@@ -1,11 +1,23 @@
-import Notify from "bnc-notify"
+import Notify, { API as NotifyAPI } from "bnc-notify"
 import _ from "lodash"
 import moment from "moment"
+import Web3 from "web3"
 import { CONFIRMATION_THRESHOLD } from "../ethereum/utils"
+import {Subscription} from "web3-core-subscriptions"
+import {BlockHeader} from "web3-eth"
 
 const NOTIFY_API_KEY = "8447e1ef-75ab-4f77-b98f-f1ade3bb1982"
 
 class NetworkMonitor {
+  web3: Web3
+  currentBlockNumber: number
+  currentTXs: any[]
+  setCurrentTXs: (fn: (currentTx: any[]) => any[]) => void
+  setCurrentErrors: (fn: (currentErrors: any[]) => any[]) => void
+  networkId!: number
+  notifySdk!: NotifyAPI
+  blockHeaderSubscription!: Subscription<BlockHeader>
+
   constructor(web3, state) {
     this.web3 = web3
     this.currentBlockNumber = 0
@@ -78,7 +90,7 @@ class NetworkMonitor {
         blockNumber: transaction.blockNumber,
       })
     })
-    emitter.on("txFailed", error => {
+    emitter.on("txFailed", (error: any) => {
       if (error.code === -32603) {
         error.message = "Something went wrong with your transaction."
       }

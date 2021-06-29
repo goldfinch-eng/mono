@@ -5,7 +5,7 @@ import CreditStatus from "./creditStatus.js"
 import ConnectionNotice from "./connectionNotice.js"
 import BorrowHeader from "./borrowHeader"
 import { fetchCreditLineData, defaultCreditLine } from "../ethereum/creditLine.js"
-import { AppContext } from "../App.js"
+import { AppContext } from "../App"
 import CreditLinesList from "./creditLinesList"
 
 function Borrow(props) {

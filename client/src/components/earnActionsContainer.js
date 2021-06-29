@@ -1,7 +1,7 @@
 import React, { useState, useContext } from "react"
 import DepositForm from "./depositForm.js"
 import DepositStatus from "./depositStatus.js"
-import { AppContext } from "../App.js"
+import { AppContext } from "../App"
 import WithdrawalForm from "./withdrawalForm.js"
 import { iconUpArrow, iconDownArrow } from "./icons.js"
 

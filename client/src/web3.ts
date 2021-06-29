@@ -1,10 +1,11 @@
 import Web3 from "web3"
 // This setup style would connect to metamask in browser if necessary.
 // const web3 = new Web3(Web3.givenProvider || "ws://localhost:8545");
-let web3
+let web3: Web3
 let localStorage = window.localStorage
 let currentChain = localStorage.getItem("currentChain")
 let currentAccount = localStorage.getItem("currentAccount")
+declare let window: any;
 if (typeof window.ethereum !== "undefined") {
   web3 = new Web3(window.ethereum)
 

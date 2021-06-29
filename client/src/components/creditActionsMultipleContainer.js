@@ -1,7 +1,7 @@
 import React, { useState, useContext } from "react"
 import PaymentForm from "./paymentForm.js"
 import { iconUpArrow } from "./icons.js"
-import { AppContext } from "../App.js"
+import { AppContext } from "../App"
 import { displayDollars } from "../utils"
 
 function CreditActionsMultipleContainer(props) {

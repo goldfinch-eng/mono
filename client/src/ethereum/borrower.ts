@@ -1,12 +1,24 @@
 import web3 from "../web3"
 import { submitGaslessTransaction } from "./gasless"
-import { getFromBlock } from "./utils.js"
+import { getFromBlock } from "./utils"
 import BigNumber from "bignumber.js"
 import { getOneInchContract } from "./oneInch"
+import {Contract} from 'web3-eth-contract'
+import {ERC20} from './erc20'
 
 const BorrowerAbi = require("../../abi/Borrower.json")
 
 class BorrowerInterface {
+  userAddress: string
+  creditDesk: Contract
+  borrowerContract: Contract
+  usdc: ERC20
+  pool: Contract
+  oneInch: Contract
+  borrowerAddress: string
+  creditLinesAddresses!: string[]
+  allowance!: BigNumber
+  
   constructor(userAddress, creditDesk, borrowerContract, usdc, pool, oneInch) {
     this.userAddress = userAddress
     this.creditDesk = creditDesk
@@ -14,7 +26,7 @@ class BorrowerInterface {
     this.usdc = usdc
     this.pool = pool
     this.oneInch = oneInch
-    this.borrowerAddress = this.isUsingBorrowerContract ? this.borrowerContract._address : this.userAddress
+    this.borrowerAddress = this.isUsingBorrowerContract ? this.borrowerContract.options.address : this.userAddress
   }
 
   async initialize() {
@@ -23,7 +35,7 @@ class BorrowerInterface {
   }
 
   get shouldUseGasless() {
-    const gaslessEnabled = process.env.REACT_APP_DISABLE_GASLESS !== "true" && window.disableGasless !== true
+    const gaslessEnabled = process.env.REACT_APP_DISABLE_GASLESS !== "true" && (window as any).disableGasless !== true
     return this.isUsingBorrowerContract && gaslessEnabled
   }
 
@@ -105,7 +117,7 @@ class BorrowerInterface {
     )
   }
 
-  withinOnePercent(amount) {
+  withinOnePercent(amount): string {
     return new BigNumber(amount)
       .times(new BigNumber(99))
       .idiv(new BigNumber(100))
@@ -143,4 +155,4 @@ async function getBorrowerContract(ownerAddress, creditLineFactory, creditDesk, 
   return borrowerInterface
 }
 
-export { getBorrowerContract }
+export { getBorrowerContract, BorrowerInterface }

@@ -1,5 +1,5 @@
 import React, { useContext } from "react"
-import { AppContext } from "../App.js"
+import { AppContext } from "../App"
 import UnlockERC20Form from "./unlockERC20Form"
 
 function UnlockUSDCForm(props) {

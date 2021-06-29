@@ -1,7 +1,7 @@
 import React from "react"
 import InfoSection from "./infoSection.js"
 import CreditBarViz from "./creditBarViz.js"
-import { usdcFromAtomic } from "../ethereum/erc20.js"
+import { usdcFromAtomic } from "../ethereum/erc20"
 import { decimals } from "../ethereum/utils"
 import { displayNumber } from "../utils"
 import { iconClock } from "./icons.js"

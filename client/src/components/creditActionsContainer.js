@@ -2,7 +2,7 @@ import React, { useState, useContext } from "react"
 import PaymentForm from "./paymentForm.js"
 import DrawdownForm from "./drawdownForm.js"
 import { iconCircleCheck, iconUpArrow, iconDownArrow } from "./icons.js"
-import { AppContext } from "../App.js"
+import { AppContext } from "../App"
 import { displayDollars } from "../utils"
 
 function CreditActionsContainer(props) {
