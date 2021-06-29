@@ -44,7 +44,8 @@
     "eject": "react-scripts eject",
     "lint": "npx eslint . --fix && npx prettier . --write",
     "pre-push": "",
-    "pre-commit": "lint-staged"
+    "pre-commit": "lint-staged",
+    "tsc": "tsc"
   },
   "lint-staged": {
     "*.js": [
