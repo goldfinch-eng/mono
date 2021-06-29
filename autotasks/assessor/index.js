@@ -76,6 +76,12 @@ const assessIfRequired = async function assessIfRequired(tranchedPool, creditLin
   const currentTime = ethers.BigNumber.from((await provider.getBlock("latest")).timestamp.toString())
   const nextDueTime = ethers.BigNumber.from((await creditLine.nextDueTime()).toString())
   const termEndTime = ethers.BigNumber.from((await creditLine.termEndTime()).toString())
+  const limit = await creditLine.limit()
+
+  if (limit.isZero()) {
+    console.log(`Assess ${creditLine.address}: Skipped (Closed)`)
+    return
+  }
 
   if (nextDueTime.isZero()) {
     const balance = await creditLine.balance()
