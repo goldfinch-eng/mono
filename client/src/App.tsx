@@ -8,7 +8,6 @@ import Sidebar from "./components/sidebar"
 import TermsOfService from "./components/termsOfService.js"
 import PrivacyPolicy from "./components/privacyPolicy.js"
 import web3 from "./web3"
-import { fetchPoolData } from "./ethereum/pool"
 import { fetchCreditDeskData } from "./ethereum/creditDesk.js"
 import { ERC20, Tickers } from "./ethereum/erc20"
 import { refreshGoldfinchConfigData } from "./ethereum/goldfinchConfig"
@@ -20,6 +19,7 @@ import { SeniorFund } from "./ethereum/pool"
 import { GoldfinchProtocol } from "./ethereum/GoldfinchProtocol"
 import { GoldfinchConfig } from "./typechain/web3/GoldfinchConfig"
 import SeniorPool from "./components/pools/seniorPool"
+import VerifyIdentity from "./components/verifyIdentity"
 
 interface NetworkConfig {
   name?: string
@@ -194,6 +194,9 @@ function App() {
             </Route>
             <Route path="/transactions">
               <Transactions currentTXs={currentTXs} />
+            </Route>
+            <Route path="/verify">
+              <VerifyIdentity />
             </Route>
             <Route path="/terms">
               <TermsOfService />

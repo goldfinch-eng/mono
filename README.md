@@ -16,6 +16,7 @@ You will need the correct version of node/npm on your local machine.
 
 **One time setup**
 - Create a Goldfinch specific Metamask, which you can use for testing. The easiest way to do this is by creating a separate Chrome profile for Goldfinch, and then simply installing the Metamask extension.
+- Ensure you have Java installed (Firebase emulator requires the JVM)
 - Copy `.env.example` to `.env.local` (the local will be ignored from git).
 - Lastly add the following into your new `.env.local` file.
  * `TEST_USER={your Goldfinch Metamask address}`

@@ -23,6 +23,7 @@
     "lodash": "^4.17.20",
     "moment": "^2.27.0",
     "node-sass": "^4.13.0",
+    "persona": "^3.10.0",
     "prop-types": "^15.7.2",
     "react": "^16.14.0",
     "react-app-rewired": "^2.1.8",
