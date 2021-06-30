@@ -6,7 +6,6 @@ import {
   CapitalProvider,
   emptyCapitalProvider,
   fetchCapitalProviderData,
-  fetchPoolData,
   PoolData,
   SeniorFund,
 } from "../../ethereum/pool"

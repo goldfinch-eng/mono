@@ -4,7 +4,6 @@ import { getOneInchContract } from "./oneInch"
 import { Contract } from "web3-eth-contract"
 import { ERC20, Tickers } from "./erc20"
 import { GoldfinchProtocol } from "./GoldfinchProtocol"
-import { GoldfinchFactory } from "../typechain/web3/GoldfinchFactory"
 import { TranchedPool } from "./tranchedPool"
 
 class BorrowerInterface {

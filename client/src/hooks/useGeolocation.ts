@@ -1,4 +1,4 @@
-import React, { useContext, useEffect } from "react"
+import { useContext, useEffect } from "react"
 import { AppContext, GeolocationData } from "../App"
 
 interface GeolocationClient {

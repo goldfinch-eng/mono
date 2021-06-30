@@ -4,7 +4,7 @@ import RecentRepayments from "./recentRepayments"
 import { usdcFromAtomic } from "../ethereum/erc20"
 import { displayDollars, displayPercent } from "../utils"
 import { iconOutArrow } from "./icons.js"
-import { PoolData, SeniorFund } from "../ethereum/pool"
+import { PoolData } from "../ethereum/pool"
 import { BigNumber } from "bignumber.js"
 
 interface PoolStatusProps {
