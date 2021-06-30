@@ -6,7 +6,7 @@
   "scripts": {
     "start": "REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet npx concurrently -n \"blockchain,web,server\"  \"npx hardhat node --export-all client/config/deployments_dev.json\" \"cd client && npm start\" \"HARDHAT_NETWORK=localhost npx hardhat run autotasks/server.js\" -k -c \"cyan, magenta, green\"",
     "no-gasless-start": "REACT_APP_DISABLE_GASLESS=true REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet npx concurrently -n \"blockchain,web,server\"  \"npx hardhat node --export-all client/config/deployments_dev.json\" \"cd client && npm start\" \"HARDHAT_NETWORK=localhost npx hardhat run autotasks/server.js\" -k -c \"cyan, magenta, green\"",
-    "local-start": "npx concurrently -n \"blockchain,web,server\"  \"npx hardhat node --export-all client/config/deployments_dev.json\" \"cd client && npm start\" \"HARDHAT_NETWORK=localhost npx hardhat run autotasks/server.js\" -k -c \"cyan, magenta, green\"",
+    "local-start": "npx concurrently -n \"blockchain,web,server,firebase\"  \"npx hardhat node --export-all client/config/deployments_dev.json\" \"cd client && npm start\" \"HARDHAT_NETWORK=localhost npx hardhat run autotasks/server.js\" \"cd server/functions && npm run serve\" -k -c \"cyan, magenta, green, yellow\"",
     "test": "NODE_ENV=test npx hardhat test --show-stack-traces",
     "mainnet-test": "HARDHAT_FORK=mainnet NODE_ENV=test npx hardhat test test/MainnetForking.test.js --show-stack-traces",
     "pre-push": "cd client && npm run pre-push",
@@ -112,6 +112,7 @@
     "eslint-plugin-react": "^7.22.0",
     "eslint-plugin-react-hooks": "^4.2.0",
     "ethers": "^5.3.1",
+    "firebase-tools": "^9.14.0",
     "ganache-cli": "^6.10.2",
     "hardhat": "^2.3.0",
     "hardhat-contract-sizer": "^2.0.3",
