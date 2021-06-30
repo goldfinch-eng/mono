@@ -168,6 +168,7 @@ async function getBorrowerContract(
     await borrowerInterface.initialize()
     return borrowerInterface
   }
+  return
 }
 
 export { getBorrowerContract, BorrowerInterface }
