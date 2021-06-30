@@ -17,7 +17,7 @@
     "moduleResolution": "node",
     "noEmit": true,
     "noImplicitAny": false,
-    "noImplicitOverride": false,
+    "noImplicitOverride": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "noPropertyAccessFromIndexSignature": false,

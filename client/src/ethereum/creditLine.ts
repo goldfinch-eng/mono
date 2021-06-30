@@ -92,13 +92,13 @@ class DefaultCreditLine extends BaseCreditLine {
 }
 
 class CreditLine extends BaseCreditLine {
-  address: string
+  override address: string
   limit!: BigNumber
   remainingPeriodDueAmount!: BigNumber
   remainingTotalDueAmount!: BigNumber
   availableCredit!: BigNumber
   creditLine: CreditlineContract
-  balance!: BigNumber
+  override balance!: BigNumber
   interestApr!: BigNumber
   interestAccruedAsOf!: BigNumber
   paymentPeriodInDays!: BigNumber
@@ -107,7 +107,7 @@ class CreditLine extends BaseCreditLine {
   interestOwed!: BigNumber
   termEndTime!: BigNumber
   lastFullPaymentTime!: BigNumber
-  dueDate!: string
+  override dueDate!: string
   termEndDate!: string
   usdc: Contract
 
@@ -123,7 +123,7 @@ class CreditLine extends BaseCreditLine {
     this.name = croppedAddress(this.address)
   }
 
-  async initialize() {
+  override async initialize() {
     const attributes = [
       { method: "balance" },
       { method: "interestApr" },
@@ -193,7 +193,7 @@ class CreditLine extends BaseCreditLine {
 }
 
 class MultipleCreditLines extends BaseCreditLine {
-  address: string[]
+  override address: string[]
   usdc: Contract
 
   constructor(addresses: string[], goldfinchProtocol: GoldfinchProtocol) {
@@ -207,7 +207,7 @@ class MultipleCreditLines extends BaseCreditLine {
     this.usdc = goldfinchProtocol.getERC20(Tickers.USDC).contract
   }
 
-  async initialize() {
+  override async initialize() {
     this.creditLines = this.address.map(address => new CreditLine(address, this.goldfinchProtocol))
     await Promise.all(this.creditLines.map(cl => cl.initialize()))
     // Filter by active and sort by most recent
