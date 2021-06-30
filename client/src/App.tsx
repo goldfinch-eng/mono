@@ -16,7 +16,7 @@ import { getUserData, defaultUser, User, DefaultUser } from "./ethereum/user"
 import { mapNetworkToID, SUPPORTED_NETWORKS } from "./ethereum/utils"
 import initSdk, { SafeInfo, SdkInstance } from "@gnosis.pm/safe-apps-sdk"
 import { NetworkMonitor } from "./ethereum/networkMonitor"
-import {Contract} from 'web3-eth-contract'
+import VerifyIdentity from "./components/verifyIdentity"
 
 interface NetworkConfig {
   name?: string
@@ -162,6 +162,9 @@ function App() {
             </Route>
             <Route path="/transactions">
               <Transactions currentTXs={currentTXs} />
+            </Route>
+            <Route path="/verify">
+              <VerifyIdentity />
             </Route>
             <Route path="/terms">
               <TermsOfService />
