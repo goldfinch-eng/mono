@@ -266,7 +266,12 @@ class MultipleCreditLines extends BaseCreditLine {
   }
 
   get nextDueTime() {
-    return this.creditLines.reduce((val, cl) => BigNumber.minimum(val, cl.nextDueTime), this.creditLines[0].nextDueTime)
+    const firstCreditLine = this.creditLines[0]
+    if (firstCreditLine) {
+      return this.creditLines.reduce((val, cl) => BigNumber.minimum(val, cl.nextDueTime), firstCreditLine.nextDueTime)
+    } else {
+      throw new Error("Failed to index into `this.creditLines`.")
+    }
   }
 
   // These setters are just to make typescript happy

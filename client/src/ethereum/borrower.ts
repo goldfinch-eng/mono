@@ -52,7 +52,12 @@ class BorrowerInterface {
   }
 
   getPoolAddressFromCL(address: string): string {
-    return this.tranchedPoolByCreditLine[address].address
+    const pool = this.tranchedPoolByCreditLine[address]
+    if (pool) {
+      return pool.address
+    } else {
+      throw new Error(`Tranched pool is undefined for address: ${address}`)
+    }
   }
 
   get shouldUseGasless() {
@@ -159,14 +164,19 @@ async function getBorrowerContract(
   let borrower: Contract | null = null
   if (borrowerCreatedEvents.length > 0) {
     const lastIndex = borrowerCreatedEvents.length - 1
-    borrower = goldfinchProtocol.getContract<Contract>(
-      "Borrower",
-      borrowerCreatedEvents[lastIndex].returnValues.borrower,
-    )
-    const oneInch = getOneInchContract(goldfinchProtocol.networkId)
-    const borrowerInterface = new BorrowerInterface(ownerAddress, borrower, goldfinchProtocol, oneInch)
-    await borrowerInterface.initialize()
-    return borrowerInterface
+    const lastEvent = borrowerCreatedEvents[lastIndex]
+    if (lastEvent) {
+      borrower = goldfinchProtocol.getContract<Contract>(
+        "Borrower",
+        lastEvent.returnValues.borrower,
+      )
+      const oneInch = getOneInchContract(goldfinchProtocol.networkId)
+      const borrowerInterface = new BorrowerInterface(ownerAddress, borrower, goldfinchProtocol, oneInch)
+      await borrowerInterface.initialize()
+      return borrowerInterface
+    } else {
+      throw new Error("Failed to index into `borrowerCreatedEvents`.")
+    }
   }
   return
 }
