@@ -3,7 +3,7 @@
   "scripts": {
     "lint": "eslint --ext .js,.ts .",
     "build": "tsc",
-    "serve": "tsc -w && cd ../ && npx firebase emulators:start",
+    "serve": "cd ../ && npx firebase emulators:exec --ui \"cd functions && tsc -w\"",
     "shell": "npm run build && npx firebase functions:shell",
     "start": "npm run shell",
     "deploy": "npm run build && firebase deploy --only functions",

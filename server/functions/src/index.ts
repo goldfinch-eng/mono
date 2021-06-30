@@ -1,7 +1,8 @@
+import * as crypto from "crypto"
 import * as functions from "firebase-functions"
 import * as admin from "firebase-admin"
 import {ethers} from "ethers"
-import {getDb, getUsers} from "./db"
+import {getDb, getUsers, getConfig} from "./db"
 import firestore = admin.firestore
 
 admin.initializeApp()
@@ -9,10 +10,9 @@ admin.initializeApp()
 // Make sure this is in sync with the frontend. This should have a none for added security, but it should be ok for now
 const VERIFICATION_MESSAGE = "Sign in to Goldfinch"
 
-const ALLOWED_ORIGINS = ["http://localhost:3000", "https://app.goldfinch.finance"]
-
 const setCORSHeaders = (req: any, res: any) => {
-  if (ALLOWED_ORIGINS.includes(req.headers.origin)) {
+  const allowedOrigins = (getConfig(functions).kyc.allowed_origins || "").split(",")
+  if (allowedOrigins.includes(req.headers.origin)) {
     res.set("Access-Control-Allow-Origin", req.headers.origin)
   }
 }
@@ -22,7 +22,7 @@ const kycStatus = functions.https.onRequest(
     const address = req.query.address?.toString()
     const signature = req.query.signature?.toString()
 
-    const response = {address: address, status: "unknown"}
+    const response = {address: address, status: "unknown", countryCode: null}
     setCORSHeaders(req, res)
 
     if (!address || !signature) {
@@ -41,7 +41,8 @@ const kycStatus = functions.https.onRequest(
     const user = await users.doc(`${address.toLowerCase()}`).get()
 
     if (user.exists) {
-      response.status = user.data()?.status
+      response.status = userStatusFromPersonaStatus(user.data()?.persona?.status)
+      response.countryCode = user.data()?.countryCode
     }
     return res.status(200).send(response)
   },
@@ -52,11 +53,10 @@ const kycStatus = functions.https.onRequest(
 //  pending: persona verification attempted. Could be in a lot of stages here, persona is the source of truth
 //  approved: Approved on persona, but not yet golisted on chain
 //  failed: Failed on persona
-//  golisted: golisted on chain
-const userStatusFromPersonaStatus = (currentStatus: string, personaStatus: string) => {
+const userStatusFromPersonaStatus = (personaStatus: string) => {
   // If we're past the persona approvals, then don't change the user status
-  if (currentStatus === "approved" || currentStatus === "golisted") {
-    return currentStatus
+  if (personaStatus === "" || personaStatus === undefined) {
+    return "unknown"
   }
   if (personaStatus === "completed" || personaStatus === "approved") {
     return "approved"
@@ -67,11 +67,65 @@ const userStatusFromPersonaStatus = (currentStatus: string, personaStatus: strin
   return "pending"
 }
 
+const verifyRequest = (req: functions.https.Request) => {
+  const personaConfig = getConfig(functions).persona
+  const webhookSecret = personaConfig?.secret
+  const allowedIps = personaConfig["allowed_ips"]
+
+  if (allowedIps && !allowedIps.split(",").includes(req.ip)) {
+    console.error(`Disallowed ip ${req.ip}`)
+    return false
+  }
+
+  if (!webhookSecret) {
+    return true
+  }
+
+  // Ensure the request is really from persona by validating the signature.
+  // See https://docs.withpersona.com/docs/webhooks#checking-signatures
+  const sigParams: Record<string, string> = {}
+  const signature = req.headers["persona-signature"] as string
+
+  if (!signature) {
+    return false
+  }
+  signature.split(",").forEach((pair: string) => {
+    const [key, value] = pair.split("=")
+    sigParams[key] = value
+  })
+
+  if (sigParams.t && sigParams.v1) {
+    const hmac = crypto.createHmac("sha256", webhookSecret).update(`${sigParams.t}.${req.body}`).digest("hex")
+    const isSignatureCorrect = crypto.timingSafeEqual(Buffer.from(hmac), Buffer.from(sigParams.v1))
+    if (!isSignatureCorrect) {
+      console.error(`Invalid signature. Expected: ${sigParams.v1}, actual: ${hmac}`)
+    }
+    return isSignatureCorrect
+  } else {
+    return false
+  }
+}
+
+const getCountryCode = (eventPayload: Record<string, any>): string | null => {
+  let includedObj: Record<string, any>
+  for (includedObj of eventPayload.included) {
+    if (includedObj.type === "account" && includedObj.attributes.countryCode) {
+      return includedObj.attributes.countryCode
+    }
+  }
+  return null
+}
+
 const personaCallback = functions.https.onRequest(
   async (req, res): Promise<any> => {
+    if (!verifyRequest(req)) {
+      return res.status(400).send({status: "error", message: "Request could not be verified"})
+    }
+
     const eventPayload = req.body.data.attributes.payload.data
 
     const address = eventPayload.attributes.referenceId
+    const countryCode = getCountryCode(req.body.data.attributes.payload)
     const db = getDb(admin.firestore())
     const userRef = getUsers(admin.firestore()).doc(`${address.toLowerCase()}`)
 
@@ -80,13 +134,12 @@ const personaCallback = functions.https.onRequest(
         const doc = await t.get(userRef)
 
         if (doc.exists) {
-          const userData = doc.data()
           t.update(userRef, {
-            status: userStatusFromPersonaStatus(userData?.status, eventPayload.attributes.status),
             persona: {
               id: eventPayload.id,
               status: eventPayload.attributes.status,
             },
+            countryCode: countryCode,
             updatedAt: Date.now(),
           })
         } else {
@@ -96,7 +149,6 @@ const personaCallback = functions.https.onRequest(
               id: eventPayload.id,
               status: eventPayload.attributes.status,
             },
-            status: userStatusFromPersonaStatus("", eventPayload.attributes.status),
             updatedAt: Date.now(),
           })
         }
