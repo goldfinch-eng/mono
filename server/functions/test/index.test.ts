@@ -91,7 +91,7 @@ describe("functions", () => {
           await users.doc(address.toLowerCase()).set({
             persona: {status: "created"},
           })
-          await kycStatus(req, expectResponse(200, {address, status: "pending"}))
+          await kycStatus(req, expectResponse(200, {address, status: "unknown"}))
 
           await users.doc(address.toLowerCase()).set({
             persona: {status: "completed"},
@@ -102,7 +102,7 @@ describe("functions", () => {
           await users.doc(address.toLowerCase()).set({
             persona: {status: "expired"},
           })
-          await kycStatus(req, expectResponse(200, {address, status: "failed"}))
+          await kycStatus(req, expectResponse(200, {address, status: "unknown"}))
         })
       })
     })
