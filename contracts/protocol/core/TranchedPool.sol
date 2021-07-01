@@ -558,7 +558,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
       juniorTranche
     );
 
-    sendToReserve(totalReserveAmount, from);
+    sendToReserve(totalReserveAmount);
 
     return totalReserveAmount;
   }
@@ -714,8 +714,8 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     return (amountRemaining.sub(desiredAmount), currentSharePrice.add(sharePriceDifference));
   }
 
-  function sendToReserve(uint256 amount, address fromForEvent) internal {
-    emit ReserveFundsCollected(fromForEvent, amount);
+  function sendToReserve(uint256 amount) internal {
+    emit ReserveFundsCollected(address(this), amount);
     safeTransfer(config.getUSDC(), address(this), config.reserveAddress(), amount, "Failed to send to reserve");
   }
 
