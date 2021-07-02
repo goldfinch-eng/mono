@@ -1,15 +1,13 @@
 import React, { useState, useEffect, useContext } from "react"
-import EarnActionsContainer from "./earnActionsContainer"
-import PoolStatus from "./poolStatus"
 import ConnectionNotice from "./connectionNotice"
 import { fetchCapitalProviderData, fetchPoolData } from "../ethereum/pool"
 import { AppContext } from "../App"
 import { ERC20 } from "../ethereum/erc20"
 
 function Earn(props) {
-  const { pool, usdc, creditDesk, user } = useContext(AppContext)
+  const { pool, usdc, user } = useContext(AppContext)
   const [capitalProvider, setCapitalProvider] = useState<any>({})
-  const [poolData, setPoolData] = useState({})
+  const [, setPoolData] = useState({})
 
   useEffect(() => {
     async function refreshAllData() {
@@ -22,11 +20,6 @@ function Earn(props) {
       refreshAllData()
     }
   }, [pool, usdc, user])
-
-  function actionComplete() {
-    refreshPoolData(pool, usdc!)
-    return refreshCapitalProviderData(pool, capitalProvider.address)
-  }
 
   async function refreshCapitalProviderData(pool: any, address: string | boolean) {
     const capitalProvider = await fetchCapitalProviderData(pool, address)

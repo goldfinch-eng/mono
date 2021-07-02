@@ -1,4 +1,4 @@
-import { fetchDataFromAttributes, getDeployments } from "./utils"
+import { fetchDataFromAttributes } from "./utils"
 import { CONFIG_KEYS } from "../../../blockchain_scripts/configKeys"
 
 async function refreshGoldfinchConfigData(goldfinchConfigContract) {

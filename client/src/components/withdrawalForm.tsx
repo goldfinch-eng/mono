@@ -1,4 +1,4 @@
-import React, { useContext } from "react"
+import React from "react"
 import { usdcFromAtomic, minimumNumber, usdcToAtomic } from "../ethereum/erc20"
 import { displayDollars, roundDownPenny } from "../utils"
 import { AppContext } from "../App"

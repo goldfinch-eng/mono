@@ -4,7 +4,6 @@ import _ from "lodash"
 import { getFromBlock, MAINNET } from "./utils"
 import { mapEventsToTx } from "./events"
 import { BorrowerInterface, getBorrowerContract } from "./borrower"
-import { goList } from "../goList"
 import { SeniorFund} from "./pool"
 import { GoldfinchProtocol } from "./GoldfinchProtocol"
 import { GoldfinchConfig } from "../typechain/web3/GoldfinchConfig"
@@ -193,8 +192,6 @@ class DefaultUser implements User {
   async getAllowance(address) {
     return new BigNumber(0)
   }
-
-  private async isGoListed(address) {return false}
 }
 
 function defaultUser(): User {

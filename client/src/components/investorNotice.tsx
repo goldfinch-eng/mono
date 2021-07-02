@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react"
+import React from "react"
 import Dropdown, { DropdownOption } from "./dropdown"
 import { iconInfo } from "./icons"
 import useGeolocation from "../hooks/useGeolocation"

@@ -1,7 +1,7 @@
 import React, { useState } from "react"
 import { AppContext } from "../App"
 import useGeolocation from "./useGeolocation"
-import { renderHook, act } from "@testing-library/react-hooks"
+import { renderHook } from "@testing-library/react-hooks"
 
 describe("useGeolocation", () => {
   let store: any, wrapper: any
