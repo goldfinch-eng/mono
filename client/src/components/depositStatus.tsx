@@ -11,11 +11,10 @@ interface DepositStatusProps {
 function DepositStatus(props: DepositStatusProps) {
   const portfolioBalance = props.capitalProvider.availableToWithdrawInDollars
   const portfolioBalanceDisplay = displayDollars(portfolioBalance)
-  const estimatedTotalInterest = props.poolData?.estimatedTotalInterest
 
   let apyDisplay: string, estimatedAPY: BigNumber | null
-  if (estimatedTotalInterest && props.poolData?.loaded) {
-    estimatedAPY = estimatedTotalInterest.dividedBy(props.poolData.totalPoolAssets)
+  if (props.poolData?.loaded) {
+    estimatedAPY = props.poolData.estimatedApy
     apyDisplay = `${displayPercent(estimatedAPY)}`
   } else {
     estimatedAPY = null
