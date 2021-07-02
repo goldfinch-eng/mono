@@ -21,7 +21,8 @@
     "autotask-update": "node autotasks/deployAutoTasks.js",
     "advance-time": "npx hardhat run ./blockchain_scripts/advanceTime.js --network localhost",
     "typechain": "npx hardhat typechain && npx hardhat run ./blockchain_scripts/typechain-ethers.ts && npx hardhat run ./blockchain_scripts/typechain-web3.ts",
-    "postinstall": "npm run typechain"
+    "postinstall": "npm run typechain",
+    "tsc": "tsc"
   },
   "lint-staged": {
     "**!(client)/*.js": [
