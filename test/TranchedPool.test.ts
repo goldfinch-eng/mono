@@ -437,7 +437,14 @@ describe("TranchedPool", () => {
       let payAmount = usdcVal(1050)
       await advanceTime(tranchedPool, {days: termInDays.toNumber()})
       await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
-      await tranchedPool.pay(payAmount, {from: borrower})
+
+      const receipt = await tranchedPool.pay(payAmount, {from: borrower})
+      expectPaymentRelatedEventsEmitted(receipt, borrower, tranchedPool, {
+        interest: usdcVal(50),
+        principal: usdcVal(1000),
+        remaining: new BN(0),
+        reserve: usdcVal(5),
+      })
 
       // Total amount owed to junior:
       //   interest_accrued = 1000 * 0.05 = 50
@@ -527,7 +534,14 @@ describe("TranchedPool", () => {
         await advanceTime(tranchedPool, {days: termInDays.toNumber()})
         let payAmount = usdcVal(1050)
         await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
-        await tranchedPool.pay(payAmount, {from: borrower})
+
+        const receipt = await tranchedPool.pay(payAmount, {from: borrower})
+        expectPaymentRelatedEventsEmitted(receipt, borrower, tranchedPool, {
+          interest: usdcVal(50),
+          principal: usdcVal(1000),
+          remaining: new BN(0),
+          reserve: usdcVal(5),
+        })
 
         // Total amount owed to junior:
         //   interest_accrued = 1000 * 0.05 = 50
@@ -542,7 +556,7 @@ describe("TranchedPool", () => {
         await expect(tranchedPool.withdraw(tokenId, usdcVal(10))).to.be.rejectedWith(/Invalid redeem amount/)
       })
 
-      it("emits an event", async () => {
+      it("emits a WithdrawalMade event", async () => {
         let response = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(1000))
         let tokenId = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")[0].args.tokenId
 
@@ -552,7 +566,14 @@ describe("TranchedPool", () => {
         await advanceTime(tranchedPool, {days: termInDays.toNumber()})
         let payAmount = usdcVal(1050)
         await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
-        await tranchedPool.pay(payAmount, {from: borrower})
+
+        const receipt = await tranchedPool.pay(payAmount, {from: borrower})
+        expectPaymentRelatedEventsEmitted(receipt, borrower, tranchedPool, {
+          interest: usdcVal(50),
+          principal: usdcVal(1000),
+          remaining: new BN(0),
+          reserve: usdcVal(5),
+        })
 
         // Total amount owed to junior:
         //   principal = 1000
@@ -612,7 +633,14 @@ describe("TranchedPool", () => {
       let payAmount = usdcVal(1050)
       await advanceTime(tranchedPool, {days: termInDays.toNumber()})
       await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
-      await tranchedPool.pay(payAmount, {from: borrower})
+
+      const receipt = await tranchedPool.pay(payAmount, {from: borrower})
+      expectPaymentRelatedEventsEmitted(receipt, borrower, tranchedPool, {
+        interest: usdcVal(50),
+        principal: usdcVal(1000),
+        remaining: new BN(0),
+        reserve: usdcVal(5),
+      })
 
       // Total amount owed to junior:
       //   interest_accrued = 1000 * 0.05 = 50
@@ -628,7 +656,7 @@ describe("TranchedPool", () => {
       ])
     })
 
-    it("emits an event", async () => {
+    it("emits a WithdrawalMade event", async () => {
       let response = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(1000))
       let tokenId = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")[0].args.tokenId
 
@@ -638,15 +666,22 @@ describe("TranchedPool", () => {
       await advanceTime(tranchedPool, {days: termInDays.toNumber()})
       let payAmount = usdcVal(1050)
       await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
-      await tranchedPool.pay(payAmount, {from: borrower})
+
+      const receipt = await tranchedPool.pay(payAmount, {from: borrower})
+      expectPaymentRelatedEventsEmitted(receipt, borrower, tranchedPool, {
+        interest: usdcVal(50),
+        principal: usdcVal(1000),
+        remaining: new BN(0),
+        reserve: usdcVal(5),
+      })
 
       // Total amount owed to junior:
       //   principal = 1000
       //   interest_accrued = 1000 * 0.05 = 50
       //   protocol_fee = interest_accrued * 0.1 = 5
       //   principal + interest_accrued - protocol_fee = 1045
-      let receipt = await tranchedPool.withdrawMax(tokenId)
-      expectEvent(receipt, "WithdrawalMade", {
+      const receipt2 = await tranchedPool.withdrawMax(tokenId)
+      expectEvent(receipt2, "WithdrawalMade", {
         owner: owner,
         tranche: new BN(TRANCHES.Junior),
         tokenId: tokenId,
@@ -687,18 +722,24 @@ describe("TranchedPool", () => {
         ])
 
         // Fully pay off the loan
-        await tranchedPool.pay(limit.add(limit.mul(new BN(5)).div(new BN(100))), {from: borrower})
+        const receipt = await tranchedPool.pay(limit.add(limit.mul(new BN(5)).div(new BN(100))), {from: borrower})
+        expectPaymentRelatedEventsEmitted(receipt, borrower, tranchedPool, {
+          interest: usdcVal(50),
+          principal: usdcVal(1000),
+          remaining: new BN(0),
+          reserve: usdcVal(5),
+        })
 
         // Remaining 20% of principal should be withdrawn
-        let receipt = await tranchedPool.withdrawMax(juniorTokenId)
-        expectEvent(receipt, "WithdrawalMade", {
+        const receipt2 = await tranchedPool.withdrawMax(juniorTokenId)
+        expectEvent(receipt2, "WithdrawalMade", {
           tranche: new BN(TRANCHES.Junior),
           tokenId: juniorTokenId,
           principalWithdrawn: juniorDeposit.mul(new BN(20)).div(new BN(100)),
         })
 
-        receipt = await tranchedPool.withdrawMax(seniorTokenId)
-        expectEvent(receipt, "WithdrawalMade", {
+        const receipt3 = await tranchedPool.withdrawMax(seniorTokenId)
+        expectEvent(receipt3, "WithdrawalMade", {
           tranche: new BN(TRANCHES.Senior),
           tokenId: seniorTokenId,
           principalWithdrawn: seniorDeposit.mul(new BN(20)).div(new BN(100)),
@@ -1056,14 +1097,25 @@ describe("TranchedPool", () => {
       await tranchedPool.lockJuniorCapital({from: borrower})
       await tranchedPool.lockPool({from: borrower})
 
-      // Start loan tern halfOfTerm days from now
+      // Start loan term halfOfTerm days from now
       let halfOfTerm = termInDays.div(new BN(2))
       await advanceTime(tranchedPool, {days: halfOfTerm.toNumber()})
       await tranchedPool.drawdown(usdcVal(100), {from: borrower})
 
       // Advance termInDays total days from now
       await advanceTime(tranchedPool, {days: halfOfTerm.add(new BN(1)).toNumber()})
-      await tranchedPool.pay(usdcVal(5), {from: borrower})
+
+      const expectedJuniorInterest = new BN("4438356")
+      const expectedProtocolFee = new BN("493150")
+      const expectedTotalInterest = expectedJuniorInterest.add(expectedProtocolFee)
+
+      const receipt = await tranchedPool.pay(usdcVal(5), {from: borrower})
+      expectPaymentRelatedEventsEmitted(receipt, borrower, tranchedPool, {
+        interest: expectedTotalInterest,
+        principal: usdcVal(5).sub(expectedTotalInterest),
+        remaining: new BN(0),
+        reserve: expectedProtocolFee,
+      })
 
       let juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
       const juniorInterestAmount = await tranchedPool.sharePriceToUsdc(
@@ -1074,8 +1126,8 @@ describe("TranchedPool", () => {
       // Should be around half of full term's interest, since the drawdown happened 6 months
       // from this payment:
       // ~$4.43 (rather than ~$5, since interest is accrued at last second of prior period)
-      expect(juniorInterestAmount).to.bignumber.eq(new BN("4438356"))
-      expect(await usdc.balanceOf(treasury)).to.bignumber.eq(new BN("493150"))
+      expect(juniorInterestAmount).to.bignumber.eq(expectedJuniorInterest)
+      expect(await usdc.balanceOf(treasury)).to.bignumber.eq(expectedProtocolFee)
     })
 
     context("only junior investment", async () => {
@@ -1087,7 +1139,13 @@ describe("TranchedPool", () => {
 
         // Ensure a full term has passed
         await advanceTime(tranchedPool, {days: termInDays.toNumber()})
-        await tranchedPool.pay(usdcVal(110), {from: borrower})
+        const receipt = await tranchedPool.pay(usdcVal(110), {from: borrower})
+        expectPaymentRelatedEventsEmitted(receipt, borrower, tranchedPool, {
+          interest: usdcVal(10),
+          principal: usdcVal(100),
+          remaining: new BN(0),
+          reserve: usdcVal(1),
+        })
 
         let juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
         let seniorTranche = await tranchedPool.getTranche(TRANCHES.Senior)
@@ -1121,7 +1179,14 @@ describe("TranchedPool", () => {
           // Ensure a full term has passed
           await advanceTime(tranchedPool, {days: termInDays.toNumber()})
 
-          await tranchedPool.pay(usdcVal(10).add(usdcVal(100)), {from: borrower})
+          const receipt = await tranchedPool.pay(usdcVal(10).add(usdcVal(100)), {from: borrower})
+          expectPaymentRelatedEventsEmitted(receipt, borrower, tranchedPool, {
+            interest: usdcVal(10),
+            principal: usdcVal(100),
+            remaining: new BN(0),
+            reserve: usdcVal(1),
+          })
+
           expect(await creditLine.interestApr()).to.bignumber.eq(interestAprAsBN("10"))
 
           // 100$ loan, with 10% interest. 80% senior and 20% junior. Junior fee of 20%. Reserve fee of 10%
@@ -1147,32 +1212,59 @@ describe("TranchedPool", () => {
           // Principal payment should be 0, while interest payment should be slightly less than half. This
           // is because interest is accrued from the most recent nextDueTime rather than the current timestamp.
           // 180.0 / 365 * 10 = 4.93150684931506 (180 because we round to the most recent time in paymentPeriodInDays)
-          await tranchedPool.pay(new BN("4931506"), {from: borrower})
+          const interestPayment = new BN("4931506")
+          const expectedProtocolFee = interestPayment.div(new BN(10))
+          const receipt = await tranchedPool.pay(interestPayment, {from: borrower})
+          expectPaymentRelatedEventsEmitted(receipt, borrower, tranchedPool, {
+            interest: interestPayment,
+            principal: new BN(0),
+            remaining: new BN(0),
+            reserve: expectedProtocolFee,
+          })
 
-          let interestAmount, principalAmount
-          ;[interestAmount, principalAmount] = await getTrancheAmounts(await tranchedPool.getTranche(TRANCHES.Senior))
-          expect(interestAmount).to.bignumber.eq(new BN("2761643"))
-          expect(principalAmount).to.bignumber.eq(usdcVal(0))
-          ;[interestAmount, principalAmount] = await getTrancheAmounts(await tranchedPool.getTranche(TRANCHES.Junior))
-          expect(interestAmount).to.bignumber.eq(new BN("1676713"))
-          expect(principalAmount).to.bignumber.eq(usdcVal(0))
+          let seniorInterestAmount, seniorPrincipalAmount, juniorInterestAmount, juniorPrincipalAmount
+          ;[seniorInterestAmount, seniorPrincipalAmount] = await getTrancheAmounts(
+            await tranchedPool.getTranche(TRANCHES.Senior)
+          )
+          expect(seniorInterestAmount).to.bignumber.eq(new BN("2761643"))
+          expect(seniorPrincipalAmount).to.bignumber.eq(usdcVal(0))
+          ;[juniorInterestAmount, juniorPrincipalAmount] = await getTrancheAmounts(
+            await tranchedPool.getTranche(TRANCHES.Junior)
+          )
+          expect(juniorInterestAmount).to.bignumber.eq(new BN("1676713"))
+          expect(juniorPrincipalAmount).to.bignumber.eq(usdcVal(0))
 
-          expect(await usdc.balanceOf(treasury)).to.bignumber.eq(new BN("493150"))
+          expect(await usdc.balanceOf(treasury)).to.bignumber.eq(expectedProtocolFee)
 
           // Now advance to the end of the loan period and collect interest again, now the numbers should match the full
           //amounts in the previous test
 
           await advanceTime(tranchedPool, {seconds: halfway.toNumber()})
           // Collect the remaining interest and the principal
-          await tranchedPool.pay(new BN("5068493").add(usdcVal(100)), {from: borrower})
-          ;[interestAmount, principalAmount] = await getTrancheAmounts(await tranchedPool.getTranche(TRANCHES.Senior))
-          expect(interestAmount).to.bignumber.closeTo(usdcVal(56).div(new BN(10)), tolerance)
-          expect(principalAmount).to.bignumber.eq(usdcVal(80))
-          ;[interestAmount, principalAmount] = await getTrancheAmounts(await tranchedPool.getTranche(TRANCHES.Junior))
-          expect(interestAmount).to.bignumber.closeTo(usdcVal(34).div(new BN(10)), tolerance)
-          expect(principalAmount).to.bignumber.eq(usdcVal(20))
+          const interestPayment2 = new BN("5068493")
+          const expectedProtocolFee2 = interestPayment2.div(new BN(10))
+          const receipt2 = await tranchedPool.pay(interestPayment2.add(usdcVal(100)), {from: borrower})
+          expectPaymentRelatedEventsEmitted(receipt2, borrower, tranchedPool, {
+            interest: interestPayment2,
+            principal: usdcVal(100),
+            remaining: new BN(0),
+            reserve: expectedProtocolFee2,
+          })
 
-          expect(await usdc.balanceOf(treasury)).to.bignumber.closeTo(usdcVal(1), tolerance)
+          ;[seniorInterestAmount, seniorPrincipalAmount] = await getTrancheAmounts(
+            await tranchedPool.getTranche(TRANCHES.Senior)
+          )
+          expect(seniorInterestAmount).to.bignumber.closeTo(usdcVal(56).div(new BN(10)), tolerance)
+          expect(seniorPrincipalAmount).to.bignumber.eq(usdcVal(80))
+          ;[juniorInterestAmount, juniorPrincipalAmount] = await getTrancheAmounts(
+            await tranchedPool.getTranche(TRANCHES.Junior)
+          )
+          expect(juniorInterestAmount).to.bignumber.closeTo(usdcVal(34).div(new BN(10)), tolerance)
+          expect(juniorPrincipalAmount).to.bignumber.eq(usdcVal(20))
+
+          const expectedTotalProtocolFee = expectedProtocolFee.add(expectedProtocolFee2)
+          expect(usdcVal(1)).to.bignumber.closeTo(expectedTotalProtocolFee, tolerance)
+          expect(await usdc.balanceOf(treasury)).to.bignumber.eq(expectedTotalProtocolFee)
         })
       })
 
@@ -1181,7 +1273,15 @@ describe("TranchedPool", () => {
           // Ensure a full term has passed
           await advanceTime(tranchedPool, {days: termInDays.toNumber()})
 
-          await tranchedPool.pay(usdcVal(6))
+          const interestPayment = usdcVal(6)
+          const expectedProtocolFee = interestPayment.div(new BN(10))
+          const receipt = await tranchedPool.pay(interestPayment)
+          expectPaymentRelatedEventsEmitted(receipt, borrower, tranchedPool, {
+            interest: interestPayment,
+            principal: new BN(0),
+            remaining: new BN(0),
+            reserve: expectedProtocolFee,
+          })
 
           let interestAmount, principalAmount
           ;[interestAmount, principalAmount] = await getTrancheAmounts(await tranchedPool.getTranche(TRANCHES.Senior))
@@ -1199,7 +1299,16 @@ describe("TranchedPool", () => {
 
           // Second partial payment. Senior is made whole first and then junior is paid for subsequent interest
           // payments
-          await tranchedPool.pay(usdcVal(3))
+          const interestPayment2 = usdcVal(3)
+          const expectedProtocolFee2 = interestPayment2.div(new BN(10))
+          const receipt2 = await tranchedPool.pay(interestPayment2)
+          expectPaymentRelatedEventsEmitted(receipt2, borrower, tranchedPool, {
+            interest: interestPayment2,
+            principal: new BN(0),
+            remaining: new BN(0),
+            reserve: expectedProtocolFee2,
+          })
+
           ;[interestAmount, principalAmount] = await getTrancheAmounts(await tranchedPool.getTranche(TRANCHES.Senior))
           // Senior interest filled upto 5.6
           expect(interestAmount).to.bignumber.eq(usdcVal(56).div(new BN(10)))
@@ -1212,11 +1321,22 @@ describe("TranchedPool", () => {
           expect(principalAmount).to.bignumber.eq(usdcVal(0))
 
           // 0.6$ (from previous interest collection) + 0.3$ => 0.9$
-          expect(await usdc.balanceOf(treasury)).to.bignumber.eq(usdcVal(9).div(new BN(10)))
+          let expectedTotalProtocolFee = expectedProtocolFee.add(expectedProtocolFee2)
+          expect(usdcVal(9).div(new BN(10))).to.bignumber.eq(expectedTotalProtocolFee)
+          expect(await usdc.balanceOf(treasury)).to.bignumber.eq(expectedTotalProtocolFee)
 
           // Final interest payment and first principal payment. Interest is fully paid, and senior gets all of
           // the principal
-          await tranchedPool.pay(usdcVal(11))
+          const interestPayment3 = usdcVal(1)
+          const expectedProtocolFee3 = interestPayment3.div(new BN(10))
+          const receipt3 = await tranchedPool.pay(interestPayment3.add(usdcVal(10)))
+          expectPaymentRelatedEventsEmitted(receipt3, borrower, tranchedPool, {
+            interest: interestPayment3,
+            principal: usdcVal(10),
+            remaining: new BN(0),
+            reserve: expectedProtocolFee3
+          })
+
           ;[interestAmount, principalAmount] = await getTrancheAmounts(await tranchedPool.getTranche(TRANCHES.Senior))
           // Interest unchanged, gets the entire principal portion
           expect(interestAmount).to.bignumber.eq(usdcVal(56).div(new BN(10)))
@@ -1227,9 +1347,18 @@ describe("TranchedPool", () => {
           expect(principalAmount).to.bignumber.eq(usdcVal(0))
 
           // 1$ of total interest collected
-          expect(await usdc.balanceOf(treasury)).to.bignumber.eq(usdcVal(1))
+          expectedTotalProtocolFee = expectedTotalProtocolFee.add(expectedProtocolFee3)
+          expect(usdcVal(1)).to.bignumber.eq(expectedTotalProtocolFee)
+          expect(await usdc.balanceOf(treasury)).to.bignumber.eq(expectedTotalProtocolFee)
 
-          await tranchedPool.pay(usdcVal(90))
+          const receipt4 = await tranchedPool.pay(usdcVal(90))
+          expectPaymentRelatedEventsEmitted(receipt4, borrower, tranchedPool, {
+            interest: new BN(0),
+            principal: usdcVal(90),
+            remaining: new BN(0),
+            reserve: new BN(0)
+          })
+
           ;[interestAmount, principalAmount] = await getTrancheAmounts(await tranchedPool.getTranche(TRANCHES.Senior))
           // Interest still unchanged, principal is fully paid off
           expect(interestAmount).to.bignumber.eq(usdcVal(56).div(new BN(10)))
@@ -1240,7 +1369,7 @@ describe("TranchedPool", () => {
           expect(principalAmount).to.bignumber.eq(usdcVal(20))
 
           // No additional fees collected (payments were all principal)
-          expect(await usdc.balanceOf(treasury)).to.bignumber.eq(usdcVal(1))
+          expect(await usdc.balanceOf(treasury)).to.bignumber.eq(expectedTotalProtocolFee)
         })
       })
 
@@ -1251,7 +1380,15 @@ describe("TranchedPool", () => {
           // Ensure a full term has passed
           await advanceTime(tranchedPool, {days: termInDays.toNumber()})
 
-          await tranchedPool.pay(usdcVal(109))
+          const interestPayment = usdcVal(10)
+          const expectedProtocolFee = interestPayment.div(new BN(10))
+          const receipt = await tranchedPool.pay(interestPayment.add(usdcVal(99)))
+          expectPaymentRelatedEventsEmitted(receipt, borrower, tranchedPool, {
+            interest: interestPayment,
+            principal: usdcVal(99),
+            remaining: new BN(0),
+            reserve: expectedProtocolFee,
+          })
 
           let interestAmount, principalAmount
           ;[interestAmount, principalAmount] = await getTrancheAmounts(await tranchedPool.getTranche(TRANCHES.Senior))
@@ -1264,10 +1401,20 @@ describe("TranchedPool", () => {
           expect(principalAmount).to.bignumber.eq(usdcVal(19))
 
           // Full 1$ protocol fee (10% of 10$ of total interest) collected
-          expect(await usdc.balanceOf(treasury)).to.bignumber.eq(usdcVal(1))
+          expect(usdcVal(1)).to.bignumber.eq(expectedProtocolFee)
+          expect(await usdc.balanceOf(treasury)).to.bignumber.eq(expectedProtocolFee)
 
           // 1$ of junior principal remaining, but any additional payment on top of that goes to junior interest
-          await tranchedPool.pay(usdcVal(2))
+          const interestPayment2 = usdcVal(1)
+          const expectedProtocolFee2 = interestPayment2.div(new BN(10))
+          const receipt2 = await tranchedPool.pay(interestPayment2.add(usdcVal(1)))
+          expectPaymentRelatedEventsEmitted(receipt2, borrower, tranchedPool, {
+            interest: new BN(0),
+            principal: usdcVal(1),
+            remaining: interestPayment2,
+            reserve: expectedProtocolFee2,
+          })
+
           ;[interestAmount, principalAmount] = await getTrancheAmounts(await tranchedPool.getTranche(TRANCHES.Senior))
           // Unchanged
           expect(interestAmount).to.bignumber.eq(usdcVal(56).div(new BN(10)))
@@ -1279,7 +1426,9 @@ describe("TranchedPool", () => {
           expect(principalAmount).to.bignumber.eq(usdcVal(20))
 
           // Additional 0.1$ of interest collected
-          expect(await usdc.balanceOf(treasury)).to.bignumber.eq(usdcVal(11).div(new BN(10)))
+          const expectedTotalProtocolFee = expectedProtocolFee.add(expectedProtocolFee2)
+          expect(usdcVal(11).div(new BN(10))).to.bignumber.eq(expectedTotalProtocolFee)
+          expect(await usdc.balanceOf(treasury)).to.bignumber.eq(expectedTotalProtocolFee)
         })
       })
 
