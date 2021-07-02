@@ -26,6 +26,9 @@ import {getApprovalDigest, getWallet} from "./permitHelpers"
 import {TranchedPoolInstance} from "../typechain/truffle"
 import {DepositMade} from "../typechain/truffle/MigratedTranchedPool"
 
+const RESERVE_FUNDS_COLLECTED_EVENT = "ReserveFundsCollected"
+const PAYMENT_APPLIED_EVENT = "PaymentApplied"
+
 const expectPaymentRelatedEventsEmitted = (
   receipt: unknown,
   borrowerAddress: unknown,
@@ -37,11 +40,11 @@ const expectPaymentRelatedEventsEmitted = (
     reserve: BN
   }
 ) => {
-  expectEvent(receipt, "ReserveFundsCollected", {
+  expectEvent(receipt, RESERVE_FUNDS_COLLECTED_EVENT, {
     from: tranchedPool.address,
     amount: amounts.reserve,
   })
-  expectEvent(receipt, "PaymentApplied", {
+  expectEvent(receipt, PAYMENT_APPLIED_EVENT, {
     payer: borrowerAddress,
     pool: tranchedPool.address,
     interestAmount: amounts.interest,
@@ -51,8 +54,8 @@ const expectPaymentRelatedEventsEmitted = (
   })
 }
 const expectPaymentRelatedEventsNotEmitted = (receipt: unknown) => {
-  expectEvent.notEmitted(receipt, "ReserveFundsCollected")
-  expectEvent.notEmitted(receipt, "PaymentApplied")
+  expectEvent.notEmitted(receipt, RESERVE_FUNDS_COLLECTED_EVENT)
+  expectEvent.notEmitted(receipt, PAYMENT_APPLIED_EVENT)
 }
 
 describe("TranchedPool", () => {
