@@ -10,25 +10,37 @@ function VerifyIdentity() {
   const { user, network } = useContext(AppContext)
   const [kycStatus, setKycStatus] = useState<string>("unknown")
   // Determines the form to show. Can be empty, "US" or "entity"
+  const [countryCode, setCountryCode] = useState<string>("")
   const [entityType, setEntityType] = useState<string>("")
   const [userSignature, setUserSignature] = useState<string>("")
+
+  const API_URLS = {
+    mainnet: "https://us-central1-goldfinch-frontends-prod.cloudfunctions.net",
+    localhost: "https://us-central1-goldfinch-frontends-dev.cloudfunctions.net",
+  }
+
+  const PERSONA_CONFIG = {
+    mainnet: { templateId: "tmpl_vD1HECndpPFNeYHaaPQWjd6H", environment: "production" },
+    localhost: { templateId: "tmpl_vD1HECndpPFNeYHaaPQWjd6H", environment: "sandbox" },
+  }
 
   const accreditationNotice = (
     <>
       <div>
-        Get your free accredited investor verification from
-        <a href="https://parallelmarkets.com">parallelmarkets.com</a>. When you receive your electronic
-        certificate, email it to <a href="mailto:verify@goldfinch.finance">verify@goldfinch.finance</a>, along
-        with your Metamask address.
+        Get your free accredited investor verification from{" "}
+        <a className="link" target="_blank" href="https://parallelmarkets.com">
+          parallelmarkets.com
+        </a>
+        . When you receive your electronic certificate, email it to{" "}
+        <a className="link" href="mailto:verify@goldfinch.finance">
+          verify@goldfinch.finance
+        </a>
+        , along with your Metamask address.
       </div>
     </>
   )
 
   function getKYCURL(address, signature) {
-    const API_URLS = {
-      mainnet: "",
-      localhost: "https://us-central1-goldfinch-frontends-dev.cloudfunctions.net",
-    }
     const baseURL = process.env.REACT_APP_GCLOUD_FUNCTIONS_URL || API_URLS[network?.name!]
     return baseURL + "/kycStatus?" + new URLSearchParams({ address, signature })
   }
@@ -42,6 +54,7 @@ function VerifyIdentity() {
     setKycStatus(responseJson.status)
     if (responseJson.countryCode === "US") {
       setEntityType("US")
+      setCountryCode("US")
     }
   }
 
@@ -53,9 +66,10 @@ function VerifyIdentity() {
 
   function verifyOnPersona(e) {
     e.preventDefault()
+    const config = PERSONA_CONFIG[network?.name!]
     const client = new Persona.Client({
-      templateId: "tmpl_vD1HECndpPFNeYHaaPQWjd6H",
-      environment: "sandbox",
+      templateId: config.templateId,
+      environment: config.environment,
       referenceId: user.address,
       onLoad: _error => client.open(),
       onComplete: () => {
@@ -73,8 +87,9 @@ function VerifyIdentity() {
 
   useEffect(() => {
     if (userSignature === "") {
+      setUserSignature("pending")
       getUserSignature()
-    } else {
+    } else if (userSignature !== "pending") {
       fetchKYCStatus()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -87,7 +102,7 @@ function VerifyIdentity() {
         render={() => {
           let verifyIdSection
           if (kycStatus === "approved") {
-            verifyIdSection = <div className="placeholder">Step 1: Verify ID {iconCircleCheck}</div>
+            verifyIdSection = <div className="placeholder"><span>Step 1: Verify ID {iconCircleCheck}</span></div>
           } else {
             verifyIdSection = (
               <>
@@ -131,9 +146,12 @@ function VerifyIdentity() {
 
   function renderNotice(icon, notice) {
     return (
-      <div className={"form-start single-option background-container"}>
-        <div className="form-start-label">
-          {icon} {notice}
+      <div className="background-container verify-options">
+        <div>
+          {icon}
+        </div>
+        <div>
+          {notice}
         </div>
       </div>
     )
@@ -146,7 +164,7 @@ function VerifyIdentity() {
       return renderUSForm()
     } else if (entityType === "entity") {
       return renderEntityForm()
-    } else if (kycStatus === "approved") {
+    } else if (kycStatus === "approved" && countryCode !== "US") {
       return renderNotice(
         iconClock,
         "Your verification has been successfully submitted and is in progress. You can expect it to be complete within a few days, and usually much faster.",
@@ -156,25 +174,28 @@ function VerifyIdentity() {
         iconAlert,
         "There was an issue verifying your address. For help, please contact verify@goldfinch.finance and include your address.",
       )
-    } else if (kycStatus === "unknown") {
+    } else {
+      const nonUSDisabled = countryCode === "US" ? "disabled" : ""
       return (
         <>
-          <div className={"form-start single-option background-container"}>
-            <div className="form-start-label">Who is verifying this address?</div>
-            <div className="form-start-section">
-              <button className={"button"} onClick={verifyOnPersona}>
-                Non-U.S. Individual
-              </button>
-            </div>
-            <div className="form-start-section">
-              <button className={"button"} onClick={() => setEntityType("US")}>
-                U.S. Individual
-              </button>
-            </div>
-            <div className="form-start-section">
-              <button className={"button"} onClick={() => setEntityType("entity")}>
-                Entity
-              </button>
+          <div className={"background-container"}>
+            <div className="">Who is verifying this address?</div>
+            <div className="verify-options">
+              <div className="item">
+                <button className={`button ${nonUSDisabled}`} onClick={verifyOnPersona}>
+                  Non-U.S. Individual
+                </button>
+              </div>
+              <div className="item">
+                <button className={"button"} onClick={() => setEntityType("US")}>
+                  U.S. Individual
+                </button>
+              </div>
+              <div className="item">
+                <button className={"button"} onClick={() => setEntityType("entity")}>
+                  Entity
+                </button>
+              </div>
             </div>
           </div>
         </>
