@@ -12,7 +12,6 @@ import hre from "hardhat"
 import PROTOCOL_CONFIG from "../protocol_config.json"
 import {CONFIG_KEYS} from "./configKeys"
 import {GoldfinchConfig} from "../typechain/ethers"
-import {HardhatRuntimeEnvironment} from "hardhat/types"
 import {DeploymentsExtension} from "hardhat-deploy/types"
 import {Signer} from "ethers"
 
@@ -30,7 +29,7 @@ const RINKEBY = "rinkeby"
 const MAINNET = "mainnet"
 const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
 
-const CHAIN_MAPPING: {[index: string]: string} = {
+const CHAIN_MAPPING = {
   31337: LOCAL,
   3: ROPSTEN,
   1: MAINNET,
@@ -48,14 +47,12 @@ const USDT_ADDRESSES: ChainAddresses = {
 const BUSD_ADDRESSES: ChainAddresses = {
   [MAINNET]: "0x4Fabb145d64652a948d72533023f6E7A623C7C53",
 }
-type ERC20Addresses = {[ticker: string]: ChainAddresses}
-const ERC20_ADDRESSES: ERC20Addresses = {
+const ERC20_ADDRESSES = {
   USDC: USDC_ADDRESSES,
   USDT: USDT_ADDRESSES,
   BUSD: BUSD_ADDRESSES,
 }
-type SafeConfig = {[chainId: string]: {safeAddress: string}}
-const SAFE_CONFIG: SafeConfig = {
+const SAFE_CONFIG = {
   1: {safeAddress: "0xBEb28978B2c755155f20fd3d09Cb37e300A6981f"}, // Mainnet
   4: {safeAddress: "0xAA96CA940736e937A8571b132992418c7d220976"}, // Rinkeby
 }
@@ -98,8 +95,9 @@ function getUSDCAddress(chainID: string) {
   return getERC20Address("USDC", chainID)
 }
 
-function getERC20Address(ticker: string, chainID: string) {
-  let mapping = ERC20_ADDRESSES[ticker]
+type Ticker = "USDC"
+function getERC20Address(ticker: Ticker, chainID: string) {
+  const mapping = ERC20_ADDRESSES[ticker]
   if (isMainnetForking()) {
     return mapping[MAINNET]
   }
@@ -112,6 +110,8 @@ async function getSignerForAddress(signerAddress?: string | Signer): Promise<Sig
     return signers.find((signer) => signer.address === signerAddress)
   } else if (signerAddress && typeof signerAddress === "object") {
     return signerAddress
+  } else {
+    return
   }
 }
 
