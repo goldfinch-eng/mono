@@ -48,8 +48,7 @@ async function upgradeContracts(
     },
   }
 
-  for (let i = 0; i < contractNames.length; i++) {
-    let contractName = contractNames[i]
+  for (const contractName of contractNames) {
     let contract = contracts[contractName]
     if (!contract && contractName === "GoldfinchFactory") {
       // For backwards compatability until we deploy V2
@@ -100,8 +99,7 @@ async function getExistingContracts(
   if (!mainnetConfig) {
     mainnetConfig = getMainnetContracts()
   }
-  for (let i = 0; i < contractNames.length; i++) {
-    let contractName = contractNames[i]
+  for (let contractName of contractNames) {
     // For backwards compatability until we deploy V2
     if (contractName === "GoldfinchFactory") {
       contractName = "CreditLineFactory"
@@ -120,7 +118,7 @@ async function getExistingContracts(
 }
 
 async function fundWithWhales(erc20s: any, recipients: any, amount?: any) {
-  const whales: {[ticker: string]: string} = {
+  const whales = {
     USDC: "0x46aBbc9fc9d8E749746B00865BC2Cf7C4d85C837",
     USDT: "0x1062a747393198f70f71ec65a582423dba7e5ab3",
     BUSD: "0xbe0eb53f46cd790cd13851d5eff43d12404d33e8",
