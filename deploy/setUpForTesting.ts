@@ -14,11 +14,11 @@ import {
   TranchedPool,
 } from "../typechain/ethers"
 import {DeploymentsExtension} from "hardhat-deploy/dist/types"
-import {BaseContract, Contract} from "ethers"
+import {Contract} from "ethers"
 const {ethers} = hre
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
 require("dotenv").config({path: ".env.local"})
-import {usdcVal, advanceTime} from "../test/testHelpers"
+import {advanceTime} from "../test/testHelpers"
 import {
   MAINNET_CHAIN_ID,
   LOCAL,
@@ -30,7 +30,6 @@ import {
   interestAprAsBN,
   isMainnetForking,
   getSignerForAddress,
-  TRANCHES,
   updateConfig,
 } from "../blockchain_scripts/deployHelpers"
 import {
@@ -43,6 +42,7 @@ import {
   performPostUpgradeMigration,
 } from "../blockchain_scripts/mainnetForkingHelpers"
 import _ from "lodash"
+import { assertIsString } from "../utils/type"
 
 /*
 This deployment deposits some funds to the pool, and creates an underwriter, and a credit line.
@@ -53,7 +53,9 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   const {getOrNull, log} = deployments
   logger = log
   let {protocol_owner} = await getNamedAccounts()
-  let chainID = await getChainId()
+  assertIsString(protocol_owner)
+
+  let chainId = await getChainId()
   let underwriter = protocol_owner
   let borrower = protocol_owner
   let erc20 = await getDeployedAsEthersContract<Contract>(getOrNull, "TestERC20")
@@ -65,9 +67,10 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   let goldfinchFactory = await getDeployedAsEthersContract<GoldfinchFactory>(getOrNull, "GoldfinchFactory")
   await setupTestForwarder(deployments, config, getOrNull, protocol_owner)
 
-  if (getUSDCAddress(chainID)) {
+  const chainUsdcAddress = getUSDCAddress(chainId)
+  if (chainUsdcAddress) {
     logger("On a network with known USDC address, so firing up that contract...")
-    erc20 = await ethers.getContractAt("TestERC20", getUSDCAddress(chainID))
+    erc20 = await ethers.getContractAt("TestERC20", chainUsdcAddress)
   }
 
   let erc20s = [
@@ -85,11 +88,11 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
     erc20s = erc20s.concat([
       {
         ticker: "USDT",
-        contract: await ethers.getContractAt("IERC20withDec", getERC20Address("USDT", chainID)),
+        contract: await ethers.getContractAt("IERC20withDec", getERC20Address("USDT", chainId)),
       },
       {
         ticker: "BUSD",
-        contract: await ethers.getContractAt("IERC20withDec", getERC20Address("BUSD", chainID)),
+        contract: await ethers.getContractAt("IERC20withDec", getERC20Address("BUSD", chainId)),
       },
     ])
 
@@ -116,7 +119,7 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   const testUser = process.env.TEST_USER
   if (testUser) {
     borrower = testUser
-    if (CHAIN_MAPPING[chainID] === LOCAL) {
+    if (CHAIN_MAPPING[chainId] === LOCAL) {
       await giveMoneyToTestUser(testUser, erc20s)
     }
 
@@ -236,10 +239,14 @@ async function depositToTheSeniorFund(fund: SeniorFund, erc20: Contract) {
 async function giveMoneyToTestUser(testUser: string, erc20s: any) {
   logger("Sending money to the test user", testUser)
   const [protocol_owner] = await ethers.getSigners()
-  await protocol_owner.sendTransaction({
-    to: testUser,
-    value: ethers.utils.parseEther("10.0"),
-  })
+  if (protocol_owner) {
+    await protocol_owner.sendTransaction({
+      to: testUser,
+      value: ethers.utils.parseEther("10.0"),
+    })
+  } else {
+    throw new Error("Failed to obtain `protocol_owner`.")
+  }
 
   let ten = new BN(10)
   for (let erc20 of erc20s) {
