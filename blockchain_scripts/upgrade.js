@@ -1,4 +1,4 @@
-const {deployContractUpgrade, SAFE_CONFIG, CHAIN_MAPPING} = require("./deployHelpers.js")
+const {deployContractUpgrade, SAFE_CONFIG, CHAIN_NAME_BY_ID} = require("./deployHelpers.js")
 const DefenderUpgrader = require("./defender-upgrader.js")
 const hre = require("hardhat")
 
@@ -20,7 +20,7 @@ async function multisig(hre) {
   //the deployments.log is not enabled. So, just use console.log instead
   logger = console.log
   const chainId = await getChainId()
-  const network = CHAIN_MAPPING[chainId]
+  const network = CHAIN_NAME_BY_ID[chainId]
 
   if (!SAFE_CONFIG[chainId]) {
     throw new Error(`Unsupported chain id: ${chainId}`)

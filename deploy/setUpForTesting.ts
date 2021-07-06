@@ -22,15 +22,16 @@ import {advanceTime} from "../test/testHelpers"
 import {
   MAINNET_CHAIN_ID,
   LOCAL,
-  CHAIN_MAPPING,
+  CHAIN_NAME_BY_ID,
   getUSDCAddress,
-  getERC20Address,
   USDCDecimals,
   isTestEnv,
   interestAprAsBN,
   isMainnetForking,
   getSignerForAddress,
   updateConfig,
+  getERC20Address,
+  assertIsChainId,
 } from "../blockchain_scripts/deployHelpers"
 import {
   MAINNET_MULTISIG,
@@ -42,7 +43,7 @@ import {
   performPostUpgradeMigration,
 } from "../blockchain_scripts/mainnetForkingHelpers"
 import _ from "lodash"
-import { assertIsString } from "../utils/type"
+import { assertIsString, assertNonNullable } from "../utils/type"
 
 /*
 This deployment deposits some funds to the pool, and creates an underwriter, and a credit line.
@@ -56,6 +57,8 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   assertIsString(protocol_owner)
 
   let chainId = await getChainId()
+  assertIsChainId(chainId)
+
   let underwriter = protocol_owner
   let borrower = protocol_owner
   let erc20 = await getDeployedAsEthersContract<Contract>(getOrNull, "TestERC20")
@@ -119,7 +122,7 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   const testUser = process.env.TEST_USER
   if (testUser) {
     borrower = testUser
-    if (CHAIN_MAPPING[chainId] === LOCAL) {
+    if (CHAIN_NAME_BY_ID[chainId] === LOCAL) {
       await giveMoneyToTestUser(testUser, erc20s)
     }
 
@@ -135,7 +138,12 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   await depositToTheSeniorFund(seniorFund, erc20!)
 
   const result = await (await goldfinchFactory.createBorrower(borrower)).wait()
-  let bwrConAddr = result.events![result.events!.length - 1].args![0]
+  const events = result.events
+  assertNonNullable(events)
+  const lastEvent = events[events.length - 1]
+  assertNonNullable(lastEvent)
+  assertNonNullable(lastEvent.args)
+  let bwrConAddr = lastEvent.args[0]
   logger(`Created borrower contract: ${bwrConAddr} for ${borrower}`)
 
   let pool1 = await createPoolForBorrower(getOrNull, underwriter, goldfinchFactory, bwrConAddr, erc20!)
@@ -147,6 +155,7 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   await seniorFund.invest(pool2.address)
   let filter = pool2.filters.DepositMade(seniorFund.address)
   let depositLog = (await ethers.provider.getLogs(filter))[0]
+  assertNonNullable(depositLog)
   let depositEvent = pool2.interface.parseLog(depositLog)
   let tokenId = depositEvent.args.tokenId
 
@@ -295,8 +304,12 @@ async function createPoolForBorrower(
       {from: underwriter}
     )
   ).wait()
-  let event = result.events![result.events!.length - 1]
-  let poolAddress = event.args![0]
+  const events = result.events
+  assertNonNullable(events)
+  const lastEvent = events[events.length - 1]
+  assertNonNullable(lastEvent)
+  assertNonNullable(lastEvent.args)
+  let poolAddress = lastEvent.args[0]
   let owner = await getSignerForAddress(underwriter)
   let pool = (await getDeployedAsEthersContract<TranchedPool>(getOrNull, "TranchedPool"))!
     .attach(poolAddress)

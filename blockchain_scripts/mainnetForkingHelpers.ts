@@ -8,6 +8,8 @@ import {
   setInitialConfigVals,
   MAINNET_CHAIN_ID,
   DepList,
+  Ticker,
+  AddressString,
 } from "../blockchain_scripts/deployHelpers"
 import {CONFIG_KEYS} from "./configKeys"
 import hre from "hardhat"
@@ -118,7 +120,7 @@ async function getExistingContracts(
 }
 
 async function fundWithWhales(erc20s: any, recipients: any, amount?: any) {
-  const whales = {
+  const whales: Record<Ticker, AddressString> = {
     USDC: "0x46aBbc9fc9d8E749746B00865BC2Cf7C4d85C837",
     USDT: "0x1062a747393198f70f71ec65a582423dba7e5ab3",
     BUSD: "0xbe0eb53f46cd790cd13851d5eff43d12404d33e8",

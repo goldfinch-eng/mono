@@ -11,6 +11,8 @@ import {
   setInitialConfigVals,
   SAFE_CONFIG,
   isMainnetForking,
+  assertIsChainId,
+  isSafeConfigChainId,
 } from "./deployHelpers"
 import {HardhatRuntimeEnvironment} from "hardhat/types"
 import {DeployFunction} from "hardhat-deploy/types"
@@ -24,7 +26,7 @@ import {
   SeniorFund,
 } from "../typechain/ethers"
 import {Logger, DeployFn, DeployOpts} from "./types"
-import { assertIsString } from '../utils/type'
+import {assertIsString} from "../utils/type"
 
 let logger: Logger
 
@@ -39,8 +41,9 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   const {protocol_owner, proxy_owner} = await getNamedAccounts()
   logger("Will be deploying using the protocol_owner account:", protocol_owner)
 
-  const chainID = await getChainId()
-  logger("Chain ID is:", chainID)
+  const chainId = await getChainId()
+  assertIsChainId(chainId)
+  logger("Chain id is:", chainId)
   const config = await deployConfig(deploy)
   await getOrDeployUSDC()
   const fidu = await deployFidu(config)
@@ -91,7 +94,8 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   }
 
   async function getOrDeployUSDC() {
-    let usdcAddress = getUSDCAddress(chainID)
+    assertIsChainId(chainId)
+    let usdcAddress = getUSDCAddress(chainId)
     if (!usdcAddress) {
       logger("We don't have a USDC address for this network, so deploying a fake USDC")
       const initialAmount = String(new BN("1000000").mul(USDCDecimals))
@@ -249,6 +253,7 @@ async function deployMigratedTranchedPool(hre: HardhatRuntimeEnvironment, {confi
   logger("About to deploy MigratedTranchedPool...")
   let contractName = "MigratedTranchedPool"
 
+  assertIsString(proxy_owner)
   const migratedTranchedPoolImpl = await deploy(contractName, {from: proxy_owner})
   await updateConfig(
     config,
@@ -269,18 +274,20 @@ async function deployTransferRestrictedVault(
   const {deploy, log} = deployments
   const logger = log
   const {protocol_owner, proxy_owner} = await getNamedAccounts()
-  const chainID = await getChainId()
+  assertIsString(protocol_owner)
+  assertIsString(proxy_owner)
+  const chainId = await getChainId()
+  assertIsChainId(chainId)
 
   let contractName = "TransferRestrictedVault"
 
-  logger("About to deploy TransferRestrictedVault...")
-  assertIsString(proxy_owner)
+  logger(`About to deploy ${contractName}...`)
   const deployResult = await deploy(contractName, {
     from: proxy_owner,
     proxy: {
       methodName: "__initialize__",
     },
-    args: [SAFE_CONFIG[chainID] || protocol_owner, config.address],
+    args: [isSafeConfigChainId(chainId) ? SAFE_CONFIG[chainId] : protocol_owner, config.address],
   })
   const contract = (await ethers.getContractAt(contractName, deployResult.address)) as TransferRestrictedVault
   return contract
@@ -291,7 +298,10 @@ async function deployPoolTokens(hre: HardhatRuntimeEnvironment, {config}: Deploy
   const {deploy, log} = deployments
   const logger = log
   const {protocol_owner, proxy_owner} = await getNamedAccounts()
-  const chainID = await getChainId()
+  assertIsString(protocol_owner)
+  assertIsString(proxy_owner)
+  const chainId = await getChainId()
+  assertIsChainId(chainId)
 
   let contractName = "PoolTokens"
 
@@ -300,13 +310,12 @@ async function deployPoolTokens(hre: HardhatRuntimeEnvironment, {config}: Deploy
   }
 
   logger("About to deploy Pool Tokens...")
-  assertIsString(proxy_owner)
   const poolTokensDeployResult = await deploy(contractName, {
     from: proxy_owner,
     proxy: {
       methodName: "__initialize__",
     },
-    args: [SAFE_CONFIG[chainID] || protocol_owner, config.address],
+    args: [isSafeConfigChainId(chainId) ? SAFE_CONFIG[chainId] : protocol_owner, config.address],
   })
   logger("Initialized Pool Tokens...")
   await updateConfig(config, "address", CONFIG_KEYS.PoolTokens, poolTokensDeployResult.address, {logger})

@@ -1,4 +1,4 @@
-const {CHAIN_MAPPING} = require("../deployHelpers.js")
+const {CHAIN_NAME_BY_ID} = require("../deployHelpers.js")
 const hre = require("hardhat")
 const {DefenderUpgrader} = require("../upgrade.js")
 
@@ -24,7 +24,7 @@ async function proposeConfig(hre) {
   }
 
   const chainId = await hre.getChainId()
-  const network = CHAIN_MAPPING[chainId]
+  const network = CHAIN_NAME_BY_ID[chainId]
   let defender = new DefenderUpgrader({hre, logger, chainId, network})
   await defender.setNewConfigAddress(oldConfigAddress, newConfigAddress)
 }

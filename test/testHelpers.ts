@@ -22,7 +22,7 @@ import {
   TranchedPoolInstance,
   TransferRestrictedVaultInstance,
 } from "../typechain/truffle"
-import {TranchedPool} from "../typechain/ethers"
+import { assertNonNullable } from "../utils/type"
 const decimals = new BN(String(1e18))
 const USDC_DECIMALS = new BN(String(1e6))
 const SECONDS_PER_DAY = new BN(86400)
@@ -193,6 +193,12 @@ function decodeLogs<T extends Truffle.AnyEvent>(logs, emitter, eventName): T[] {
     .map((decoded) => ({event: eventName, args: decoded}))
 }
 
+function getFirstLog<T extends Truffle.AnyEvent>(logs: T[]): T {
+  const firstLog = logs[0]
+  assertNonNullable(firstLog)
+  return firstLog
+}
+
 async function deployAllContracts(
   deployments: DeploymentsExtension,
   options: {deployForwarder?: boolean; fromAccount?: string} = {}
@@ -314,9 +320,6 @@ const createPoolWithCreditLine = async ({
   limit = usdcVal(10000),
   lateFeeApr = interestAprAsBN("3.0"),
 }): Promise<{tranchedPool: TranchedPoolInstance; creditLine: CreditLineInstance}> => {
-  const CreditLine = artifacts.require("CreditLine")
-  const TranchedPool = artifacts.require("TestTranchedPool")
-
   const thisOwner = people.owner
   const thisBorrower = people.borrower
 
@@ -389,5 +392,6 @@ export {
   createCreditLine,
   createPoolWithCreditLine,
   decodeLogs,
+  getFirstLog,
   toTruffle,
 }

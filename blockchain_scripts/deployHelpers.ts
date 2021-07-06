@@ -14,6 +14,7 @@ import {CONFIG_KEYS} from "./configKeys"
 import {GoldfinchConfig} from "../typechain/ethers"
 import {DeploymentsExtension} from "hardhat-deploy/types"
 import {Signer} from "ethers"
+import {AssertionError, assertIsString, genExhaustiveTuple} from "../utils/type"
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
@@ -22,39 +23,78 @@ const MAINNET_USDC_ADDRESS = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
 const MAINNET_ONE_SPLIT_ADDRESS = "0xC586BeF4a0992C495Cf22e1aeEE4E446CECDee0E"
 const MAINNET_CUSDC_ADDRESS = "0x39aa39c021dfbae8fac545936693ac917d5e7563"
 const MAINNET_COMP_ADDRESS = "0xc00e94cb662c3520282e6f5717214004a7f26888"
-const MAINNET_CHAIN_ID = "1"
+
 const LOCAL = "local"
+type LOCAL = typeof LOCAL
 const ROPSTEN = "ropsten"
+type ROPSTEN = typeof ROPSTEN
 const RINKEBY = "rinkeby"
+type RINKEBY = typeof RINKEBY
 const MAINNET = "mainnet"
+type MAINNET = typeof MAINNET
+
+type ChainName = LOCAL | ROPSTEN | RINKEBY | MAINNET
+
 const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
 
-const CHAIN_MAPPING = {
-  31337: LOCAL,
-  3: ROPSTEN,
-  1: MAINNET,
-  4: RINKEBY,
+const LOCAL_CHAIN_ID = "31337"
+type LOCAL_CHAIN_ID = typeof LOCAL_CHAIN_ID
+const ROPSTEN_CHAIN_ID = "3"
+type ROPSTEN_CHAIN_ID = typeof ROPSTEN_CHAIN_ID
+const MAINNET_CHAIN_ID = "1"
+type MAINNET_CHAIN_ID = typeof MAINNET_CHAIN_ID
+const RINKEBY_CHAIN_ID = "4"
+type RINKEBY_CHAIN_ID = typeof RINKEBY_CHAIN_ID
+
+type ChainId = LOCAL_CHAIN_ID | ROPSTEN_CHAIN_ID | MAINNET_CHAIN_ID | RINKEBY_CHAIN_ID
+
+const CHAIN_IDS = genExhaustiveTuple<ChainId>()(LOCAL_CHAIN_ID, ROPSTEN_CHAIN_ID, MAINNET_CHAIN_ID, RINKEBY_CHAIN_ID)
+export const assertIsChainId: (val: unknown) => asserts val is ChainId = (val: unknown): asserts val is ChainId => {
+  if (!(CHAIN_IDS as unknown[]).includes(val)) {
+    throw new AssertionError(`${val} is not in \`CHAIN_IDS\`.`)
+  }
 }
 
-type ChainAddresses = {[index: string]: string}
-const USDC_ADDRESSES: ChainAddresses = {
+const CHAIN_NAME_BY_ID: Record<ChainId, ChainName> = {
+  [LOCAL_CHAIN_ID]: LOCAL,
+  [ROPSTEN_CHAIN_ID]: ROPSTEN,
+  [MAINNET_CHAIN_ID]: MAINNET,
+  [RINKEBY_CHAIN_ID]: RINKEBY,
+}
+
+export type AddressString = string
+
+const USDC = "USDC"
+type USDC = typeof USDC
+const USDT = "USDT"
+type USDT = typeof USDT
+const BUSD = "BUSD"
+type BUSD = typeof BUSD
+
+const USDC_ADDRESSES: Record<ROPSTEN | MAINNET, AddressString> = {
   [ROPSTEN]: ROPSTEN_USDC_ADDRESS,
   [MAINNET]: MAINNET_USDC_ADDRESS,
 }
-const USDT_ADDRESSES: ChainAddresses = {
+const USDT_ADDRESSES: Record<MAINNET, AddressString> = {
   [MAINNET]: "0xdac17f958d2ee523a2206206994597c13d831ec7",
 }
-const BUSD_ADDRESSES: ChainAddresses = {
+const BUSD_ADDRESSES: Record<MAINNET, AddressString> = {
   [MAINNET]: "0x4Fabb145d64652a948d72533023f6E7A623C7C53",
 }
 const ERC20_ADDRESSES = {
-  USDC: USDC_ADDRESSES,
-  USDT: USDT_ADDRESSES,
-  BUSD: BUSD_ADDRESSES,
+  [USDC]: USDC_ADDRESSES,
+  [USDT]: USDT_ADDRESSES,
+  [BUSD]: BUSD_ADDRESSES,
 }
-const SAFE_CONFIG = {
-  1: {safeAddress: "0xBEb28978B2c755155f20fd3d09Cb37e300A6981f"}, // Mainnet
-  4: {safeAddress: "0xAA96CA940736e937A8571b132992418c7d220976"}, // Rinkeby
+
+type SafeConfigChainId = MAINNET_CHAIN_ID | RINKEBY_CHAIN_ID
+const SAFE_CONFIG_CHAIN_IDS = genExhaustiveTuple<SafeConfigChainId>()(MAINNET_CHAIN_ID, RINKEBY_CHAIN_ID)
+export const isSafeConfigChainId = (val: unknown): val is SafeConfigChainId =>
+  (SAFE_CONFIG_CHAIN_IDS as unknown[]).includes(val)
+
+const SAFE_CONFIG: Record<SafeConfigChainId, {safeAddress: AddressString}> = {
+  [MAINNET_CHAIN_ID]: {safeAddress: "0xBEb28978B2c755155f20fd3d09Cb37e300A6981f"},
+  [RINKEBY_CHAIN_ID]: {safeAddress: "0xAA96CA940736e937A8571b132992418c7d220976"},
 }
 
 // WARNING: BE EXTREMELY CAREFUL WITH THESE ADDRESSES
@@ -91,17 +131,27 @@ function interestAprAsBN(interestPercentageString: string) {
   return new BN(String(interestPercentageFloat * 100000)).mul(INTEREST_DECIMALS).div(new BN(10000000))
 }
 
-function getUSDCAddress(chainID: string) {
-  return getERC20Address("USDC", chainID)
+function getUSDCAddress(chainId: ChainId): AddressString {
+  return getERC20Address("USDC", chainId)
 }
 
-type Ticker = "USDC"
-function getERC20Address(ticker: Ticker, chainID: string) {
+export type Ticker = "USDC" | "USDT" | "BUSD"
+function getERC20Address(ticker: Ticker, chainId: ChainId): AddressString {
   const mapping = ERC20_ADDRESSES[ticker]
+  const chainName = CHAIN_NAME_BY_ID[chainId]
   if (isMainnetForking()) {
-    return mapping[MAINNET]
+    if (chainName === MAINNET) {
+      return mapping[chainName]
+    } else {
+      throw new Error(`\`isMainnetForking()\` is true, but \`chainName\` is not ${MAINNET}.`)
+    }
+  } else {
+    if (chainName in mapping) {
+      return mapping[chainName as keyof typeof mapping]
+    } else {
+      throw new Error(`Address for ticker ${ticker} not defined for chain ${chainName}.`)
+    }
   }
-  return mapping[chainID] || mapping[CHAIN_MAPPING[chainID]]
 }
 
 async function getSignerForAddress(signerAddress?: string | Signer): Promise<Signer | undefined> {
@@ -174,11 +224,15 @@ async function deployContractUpgrade(
 }
 
 async function setInitialConfigVals(config: GoldfinchConfig, logger = function (_: any) {}) {
-  let chainID = await hre.getChainId()
+  let chainId = await hre.getChainId()
+  assertIsChainId(chainId)
   if (isMainnetForking()) {
-    chainID = MAINNET_CHAIN_ID
+    if (chainId !== MAINNET_CHAIN_ID) {
+      throw new Error(`\`isMainnetForking()\` is true, but \`chainId\` is not ${MAINNET_CHAIN_ID}.`)
+    }
   }
   const {protocol_owner} = await hre.getNamedAccounts()
+  assertIsString(protocol_owner)
 
   const transactionLimit = new BN(PROTOCOL_CONFIG.transactionLimit).mul(USDCDecimals)
   const totalFundsLimit = new BN(PROTOCOL_CONFIG.totalFundsLimit).mul(USDCDecimals)
@@ -209,17 +263,14 @@ async function setInitialConfigVals(config: GoldfinchConfig, logger = function (
     {logger}
   )
   // If we have a multisig safe, set that as the protocol admin, otherwise use the named account (local and test envs)
-  let multisigAddress
-  if (SAFE_CONFIG[chainID]) {
-    multisigAddress = SAFE_CONFIG[chainID].safeAddress
-  } else {
-    multisigAddress = protocol_owner
-  }
+  const multisigAddress: AddressString = isSafeConfigChainId(chainId)
+    ? SAFE_CONFIG[chainId].safeAddress
+    : protocol_owner
   await updateConfig(config, "address", CONFIG_KEYS.ProtocolAdmin, multisigAddress, {logger})
   await updateConfig(config, "address", CONFIG_KEYS.OneInch, MAINNET_ONE_SPLIT_ADDRESS, {logger})
   await updateConfig(config, "address", CONFIG_KEYS.CUSDCContract, MAINNET_CUSDC_ADDRESS, {logger})
-  if (TRUSTED_FORWARDER_CONFIG[chainID]) {
-    await updateConfig(config, "address", CONFIG_KEYS.TrustedForwarder, TRUSTED_FORWARDER_CONFIG[chainID], {logger})
+  if (TRUSTED_FORWARDER_CONFIG[chainId]) {
+    await updateConfig(config, "address", CONFIG_KEYS.TrustedForwarder, TRUSTED_FORWARDER_CONFIG[chainId], {logger})
   }
   await config.setTreasuryReserve(multisigAddress)
 }
@@ -260,7 +311,7 @@ function getDefenderClient() {
 }
 
 export {
-  CHAIN_MAPPING,
+  CHAIN_NAME_BY_ID,
   ZERO_ADDRESS,
   ROPSTEN_USDC_ADDRESS,
   MAINNET_ONE_SPLIT_ADDRESS,
