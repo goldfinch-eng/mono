@@ -14,7 +14,7 @@ import {
   TranchedPool,
 } from "../typechain/ethers"
 import {DeploymentsExtension} from "hardhat-deploy/dist/types"
-import {Contract} from "ethers"
+import {Contract, ContractReceipt} from "ethers"
 const {ethers} = hre
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
 require("dotenv").config({path: ".env.local"})
@@ -44,6 +44,7 @@ import {
 } from "../blockchain_scripts/mainnetForkingHelpers"
 import _ from "lodash"
 import {assertIsString, assertNonNullable} from "../utils/type"
+import { Result } from "ethers/lib/utils"
 
 /*
 This deployment deposits some funds to the pool, and creates an underwriter, and a credit line.
@@ -136,12 +137,8 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   await depositToTheSeniorFund(seniorFund, erc20!)
 
   const result = await (await goldfinchFactory.createBorrower(borrower)).wait()
-  const events = result.events
-  assertNonNullable(events)
-  const lastEvent = events[events.length - 1]
-  assertNonNullable(lastEvent)
-  assertNonNullable(lastEvent.args)
-  let bwrConAddr = lastEvent.args[0]
+  const lastEventArgs = getLastEventArgs(result)
+  let bwrConAddr = lastEventArgs[0]
   logger(`Created borrower contract: ${bwrConAddr} for ${borrower}`)
 
   let pool1 = await createPoolForBorrower(getOrNull, underwriter, goldfinchFactory, bwrConAddr, erc20!)
@@ -198,6 +195,15 @@ async function writePoolMetadata(pool: TranchedPool) {
   }
 
   await fs.promises.writeFile(metadataPath, JSON.stringify(metadata, null, 2))
+}
+
+function getLastEventArgs(result: ContractReceipt): Result {
+  const events = result.events
+  assertNonNullable(events)
+  const lastEvent = events[events.length - 1]
+  assertNonNullable(lastEvent)
+  assertNonNullable(lastEvent.args)
+  return lastEvent.args
 }
 
 async function upgradeExistingContracts(
@@ -302,12 +308,8 @@ async function createPoolForBorrower(
       {from: underwriter}
     )
   ).wait()
-  const events = result.events
-  assertNonNullable(events)
-  const lastEvent = events[events.length - 1]
-  assertNonNullable(lastEvent)
-  assertNonNullable(lastEvent.args)
-  let poolAddress = lastEvent.args[0]
+  const lastEventArgs = getLastEventArgs(result)
+  let poolAddress = lastEventArgs[0]
   let owner = await getSignerForAddress(underwriter)
   let pool = (await getDeployedAsEthersContract<TranchedPool>(getOrNull, "TranchedPool"))!
     .attach(poolAddress)
