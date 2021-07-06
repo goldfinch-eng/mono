@@ -1,12 +1,9 @@
 {
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "module": "commonjs",
-    "noImplicitReturns": true,
-    "noUnusedLocals": true,
+    "noEmit": false,
     "outDir": "lib",
     "sourceMap": true,
-    "strict": true,
-    "target": "es2017"
   },
   "compileOnSave": true,
   "include": ["src"]
