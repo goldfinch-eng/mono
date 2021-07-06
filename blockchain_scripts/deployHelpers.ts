@@ -227,9 +227,7 @@ async function setInitialConfigVals(config: GoldfinchConfig, logger = function (
   let chainId = await hre.getChainId()
   assertIsChainId(chainId)
   if (isMainnetForking()) {
-    if (chainId !== MAINNET_CHAIN_ID) {
-      throw new Error(`\`isMainnetForking()\` is true, but \`chainId\` is not ${MAINNET_CHAIN_ID}.`)
-    }
+    chainId = MAINNET_CHAIN_ID
   }
   const {protocol_owner} = await hre.getNamedAccounts()
   assertIsString(protocol_owner)
