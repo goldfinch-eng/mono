@@ -1,26 +1,10 @@
 {
+  "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "lib": ["es2019", "es2020.promise", "es2020.bigint", "es2020.string"],
     "module": "commonjs",
     "target": "es2019",
-
-    "allowJs": true,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "isolatedModules": true,
-    "moduleResolution": "node",
-    "noEmit": true,
-    "noImplicitAny": false,
-    "noImplicitOverride": false,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-    "noPropertyAccessFromIndexSignature": false,
-    "noUncheckedIndexedAccess": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": false,
-    "resolveJsonModule": true,
-    "skipLibCheck": false,
-    "strict": true
+    "typeRoots": ["./node_modules/@types", "test/types.d.ts"]
   },
   "include": ["hardhat.config.ts", "./blockchain_scripts", "./deploy", "./test", "typechain/**/*"]
 }
