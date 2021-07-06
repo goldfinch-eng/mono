@@ -42,14 +42,3 @@ export function genExhaustiveTuple<T extends string>() {
     return x
   }
 }
-
-export class UnreachableError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = "UnreachableError"
-  }
-}
-
-export function assertUnreachable(x: never): never {
-  throw new UnreachableError("Did not expect to get here.")
-}
