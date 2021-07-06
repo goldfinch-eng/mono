@@ -4,7 +4,7 @@
     "lib": ["es2019", "es2020.promise", "es2020.bigint", "es2020.string"],
     "module": "commonjs",
     "target": "es2019",
-    "typeRoots": ["./node_modules/@types", "test/types.d.ts"]
+    "isolatedModules": false
   },
   "include": ["hardhat.config.ts", "./blockchain_scripts", "./deploy", "./test", "typechain/**/*"]
 }
