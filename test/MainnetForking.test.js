@@ -12,6 +12,7 @@ const {
   MINTER_ROLE,
   TRANCHES,
   ETHDecimals,
+  MAINNET_CHAIN_ID,
 } = require("../blockchain_scripts/deployHelpers")
 const {
   MAINNET_MULTISIG,
@@ -99,7 +100,7 @@ describe("mainnet forking tests", async function () {
     await deployments.fixture("base_deploy")
 
     upgradedContracts = await upgrade(contractsToUpgrade)
-    const usdcAddress = getUSDCAddress("mainnet")
+    const usdcAddress = getUSDCAddress(MAINNET_CHAIN_ID)
     const pool = await artifacts.require("TestPool").at(upgradedContracts.Pool.UpgradedContract.address)
     const usdc = await artifacts.require("IERC20withDec").at(usdcAddress)
     const creditDesk = await artifacts
@@ -122,7 +123,7 @@ describe("mainnet forking tests", async function () {
     ;[owner, bwr, person3, underwriter, reserve] = await web3.eth.getAccounts()
     const mainnetConfig = getMainnetContracts()
     const mainnetMultisigSigner = await ethers.provider.getSigner(MAINNET_MULTISIG)
-    const usdcAddress = getUSDCAddress("mainnet")
+    const usdcAddress = getUSDCAddress(MAINNET_CHAIN_ID)
 
     // Ensure the multisig has funds for upgrades and other transactions
     let ownerAccount = await getSignerForAddress(owner)
@@ -176,7 +177,7 @@ describe("mainnet forking tests", async function () {
     accounts = await web3.eth.getAccounts()
     ;[owner, bwr, person3, underwriter, reserve] = accounts
     ;({usdc, goldfinchFactory, pool, fidu, goldfinchConfig, cUSDC} = await setupTest())
-    const usdcAddress = getUSDCAddress("mainnet")
+    const usdcAddress = getUSDCAddress(MAINNET_CHAIN_ID)
     const busdAddress = "0x4fabb145d64652a948d72533023f6e7a623c7c53"
     const usdtAddress = "0xdAC17F958D2ee523a2206206994597C13D831ec7"
     busd = await artifacts.require("IERC20withDec").at(busdAddress)
@@ -591,7 +592,7 @@ describe("mainnet upgrade tests", async function () {
     // Otherewise, we have state leaking across tests.
     await deployments.fixture("base_deploy")
     ;[owner, bwr] = await web3.eth.getAccounts()
-    const usdcAddress = getUSDCAddress("mainnet")
+    const usdcAddress = getUSDCAddress(MAINNET_CHAIN_ID)
     usdcTruffleContract = await artifacts.require("IERC20withDec").at(usdcAddress)
 
     mainnetConfig = getMainnetContracts()

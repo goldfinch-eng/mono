@@ -1,7 +1,7 @@
 /* global ethers */
 const hre = require("hardhat")
 const {MAINNET_MULTISIG, impersonateAccount, getExistingContracts} = require("./mainnetForkingHelpers.js")
-const {MAINNET_CUSDC_ADDRESS, getUSDCAddress} = require("./deployHelpers.js")
+const {MAINNET_CUSDC_ADDRESS, getUSDCAddress, MAINNET_CHAIN_ID} = require("./deployHelpers.js")
 
 async function main() {
   if (hre.network.name !== "localhost") {
@@ -19,7 +19,7 @@ async function main() {
 
 async function sweepToCompound(pool, signer, logger = console.log) {
   const cUSDC = await ethers.getContractAt("TestERC20", MAINNET_CUSDC_ADDRESS)
-  const USDC = await ethers.getContractAt("TestERC20", getUSDCAddress("mainnet"))
+  const USDC = await ethers.getContractAt("TestERC20", getUSDCAddress(MAINNET_CHAIN_ID))
 
   let USDCBalance = await USDC.balanceOf(pool.address)
   let cUSDCBalance = await cUSDC.balanceOf(pool.address)
