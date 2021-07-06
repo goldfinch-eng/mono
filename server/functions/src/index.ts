@@ -4,6 +4,7 @@ import * as admin from "firebase-admin"
 import {ethers} from "ethers"
 import {getDb, getUsers, getConfig} from "./db"
 import firestore = admin.firestore
+import {assertIsString} from '../../../utils/type'
 
 admin.initializeApp()
 
@@ -91,6 +92,8 @@ const verifyRequest = (req: functions.https.Request) => {
   }
   signature.split(",").forEach((pair: string) => {
     const [key, value] = pair.split("=")
+    assertIsString(key)
+    assertIsString(value)
     sigParams[key] = value
   })
 
