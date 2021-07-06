@@ -43,7 +43,7 @@ import {
   performPostUpgradeMigration,
 } from "../blockchain_scripts/mainnetForkingHelpers"
 import _ from "lodash"
-import { assertIsString, assertNonNullable } from "../utils/type"
+import {assertIsString, assertNonNullable} from "../utils/type"
 
 /*
 This deployment deposits some funds to the pool, and creates an underwriter, and a credit line.
@@ -71,10 +71,8 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   await setupTestForwarder(deployments, config, getOrNull, protocol_owner)
 
   const chainUsdcAddress = getUSDCAddress(chainId)
-  if (chainUsdcAddress) {
-    logger("On a network with known USDC address, so firing up that contract...")
-    erc20 = await ethers.getContractAt("TestERC20", chainUsdcAddress)
-  }
+  logger("On a network with known USDC address, so firing up that contract...")
+  erc20 = await ethers.getContractAt("TestERC20", chainUsdcAddress)
 
   let erc20s = [
     {
