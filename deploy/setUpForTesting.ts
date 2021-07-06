@@ -72,6 +72,7 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   await setupTestForwarder(deployments, config, getOrNull, protocol_owner)
 
   const chainUsdcAddress = getUSDCAddress(chainId)
+  assertIsString(chainUsdcAddress)
   logger("On a network with known USDC address, so firing up that contract...")
   erc20 = await ethers.getContractAt("TestERC20", chainUsdcAddress)
 
@@ -87,14 +88,18 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
     underwriter = MAINNET_MULTISIG
     await impersonateAccount(hre, MAINNET_MULTISIG)
     let ownerAccount = await getSignerForAddress(protocol_owner)
+    const usdtAddress = getERC20Address("USDT", chainId)
+    assertIsString(usdtAddress)
+    const busdAddress = getERC20Address("BUSD", chainId)
+    assertIsString(busdAddress)
     erc20s = erc20s.concat([
       {
         ticker: "USDT",
-        contract: await ethers.getContractAt("IERC20withDec", getERC20Address("USDT", chainId)),
+        contract: await ethers.getContractAt("IERC20withDec", usdtAddress),
       },
       {
         ticker: "BUSD",
-        contract: await ethers.getContractAt("IERC20withDec", getERC20Address("BUSD", chainId)),
+        contract: await ethers.getContractAt("IERC20withDec", busdAddress),
       },
     ])
 

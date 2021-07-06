@@ -131,26 +131,18 @@ function interestAprAsBN(interestPercentageString: string) {
   return new BN(String(interestPercentageFloat * 100000)).mul(INTEREST_DECIMALS).div(new BN(10000000))
 }
 
-function getUSDCAddress(chainId: ChainId): AddressString {
+function getUSDCAddress(chainId: ChainId): AddressString | undefined {
   return getERC20Address("USDC", chainId)
 }
 
 export type Ticker = "USDC" | "USDT" | "BUSD"
-function getERC20Address(ticker: Ticker, chainId: ChainId): AddressString {
+function getERC20Address(ticker: Ticker, chainId: ChainId): AddressString | undefined {
   const mapping = ERC20_ADDRESSES[ticker]
-  const chainName = CHAIN_NAME_BY_ID[chainId]
   if (isMainnetForking()) {
-    if (chainName === MAINNET) {
-      return mapping[chainName]
-    } else {
-      throw new Error(`\`isMainnetForking()\` is true, but \`chainName\` is not ${MAINNET}.`)
-    }
+    return mapping[MAINNET]
   } else {
-    if (chainName in mapping) {
-      return mapping[chainName as keyof typeof mapping]
-    } else {
-      throw new Error(`Address for ticker ${ticker} not defined for chain ${chainName}.`)
-    }
+  const chainName = CHAIN_NAME_BY_ID[chainId]
+    return mapping[chainName]
   }
 }
 
