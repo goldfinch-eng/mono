@@ -16,4 +16,4 @@
   publish = "client/build/"
 
   # Default build command.
-  command = "CI= && npx hardhat compile && cd client && npm ci && npm run build"
+  command = "CI= && npm ci && npx hardhat compile && cd client && npm ci && npm run build"

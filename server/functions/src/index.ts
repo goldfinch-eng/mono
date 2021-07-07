@@ -54,17 +54,19 @@ const kycStatus = functions.https.onRequest(
 //  approved: Approved on persona, but not yet golisted on chain
 //  failed: Failed on persona
 const userStatusFromPersonaStatus = (personaStatus: string) => {
-  // If we're past the persona approvals, then don't change the user status
-  if (personaStatus === "" || personaStatus === undefined) {
+  // If we don't have a status, or previous attempt expired, treat as a brand new address
+  if (personaStatus === "" || personaStatus === undefined || personaStatus === "expired") {
     return "unknown"
   }
   if (personaStatus === "completed" || personaStatus === "approved") {
     return "approved"
   }
-  if (personaStatus === "failed" || personaStatus === "expired" || personaStatus === "declined") {
+  if (personaStatus === "failed" || personaStatus === "declined") {
     return "failed"
   }
-  return "pending"
+  // Treat incomplete applications as unknown for now. In order to resume correctly, we need to
+  // generate a resume token via the persona API
+  return "unknown"
 }
 
 const verifyRequest = (req: functions.https.Request) => {

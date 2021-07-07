@@ -32,6 +32,7 @@
 @import './transactions-table.scss';
 @import './unlock-form.scss';
 @import './value-options.scss';
+@import './verify-identity.scss';
 
 
 
@@ -92,6 +93,10 @@ input{
 
 .placeholder * {
   color: $sand-xxdark;
+
+  .icon path{
+    fill: $sand-xxdark;
+  }
 }
 
 
