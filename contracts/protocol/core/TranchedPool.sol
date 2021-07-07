@@ -47,8 +47,10 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     address indexed pool,
     uint256 interestAmount,
     uint256 principalAmount,
-    uint256 remainingAmount
+    uint256 remainingAmount,
+    uint256 reserveAmount
   );
+  event ReserveFundsCollected(address indexed from, uint256 amount);
   event CreditLineMigrated(address indexed oldCreditLine, address indexed newCreditLine);
   event DrawdownMade(address indexed borrower, uint256 amount);
   event DrawdownsPaused(address indexed pool);
@@ -491,13 +493,11 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     address from,
     uint256 interest,
     uint256 principal
-  ) internal {
+  ) internal returns (uint256 totalReserveAmount) {
     safeTransfer(config.getUSDC(), from, address(this), principal.add(interest), "Failed to collect payment");
 
     (uint256 interestAccrued, uint256 principalAccrued) = getTotalInterestAndPrincipal();
     uint256 reserveFeePercent = ONE_HUNDRED.div(config.getReserveDenominator()); // Convert the denonminator to percent
-
-    uint256 totalReserveAmount; // protocol fee
 
     uint256 interestRemaining = interest;
     uint256 principalRemaining = principal;
@@ -515,7 +515,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     );
     // Collect protocol fee interest received (we've subtracted this from the senior portion above)
     uint256 reserveDeduction = scaleByFraction(interestRemaining, reserveFeePercent, ONE_HUNDRED);
-    totalReserveAmount = totalReserveAmount.add(reserveDeduction);
+    totalReserveAmount = totalReserveAmount.add(reserveDeduction); // protocol fee
     interestRemaining = interestRemaining.sub(reserveDeduction);
 
     // Apply the interest remaining so we get up to the netInterestSharePrice
@@ -558,13 +558,9 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
       juniorTranche
     );
 
-    safeTransfer(
-      config.getUSDC(),
-      address(this),
-      config.reserveAddress(),
-      totalReserveAmount,
-      "Failed to send to reserve"
-    );
+    sendToReserve(totalReserveAmount);
+
+    return totalReserveAmount;
   }
 
   function getTotalInterestAndPrincipal() internal view returns (uint256 interestAccrued, uint256 principalAccrued) {
@@ -718,6 +714,11 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     return (amountRemaining.sub(desiredAmount), currentSharePrice.add(sharePriceDifference));
   }
 
+  function sendToReserve(uint256 amount) internal {
+    emit ReserveFundsCollected(address(this), amount);
+    safeTransfer(config.getUSDC(), address(this), config.reserveAddress(), amount, "Failed to send to reserve");
+  }
+
   function collectPayment(uint256 amount) internal {
     safeTransfer(config.getUSDC(), msg.sender, address(creditLine), amount, "Failed to collect payment");
   }
@@ -725,8 +726,19 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   function _assess() internal {
     (uint256 paymentRemaining, uint256 interestPayment, uint256 principalPayment) = creditLine.assess();
     if (interestPayment > 0 || principalPayment > 0) {
-      emit PaymentApplied(creditLine.borrower(), address(this), interestPayment, principalPayment, paymentRemaining);
-      collectInterestAndPrincipal(address(creditLine), interestPayment, principalPayment.add(paymentRemaining));
+      uint256 reserveAmount = collectInterestAndPrincipal(
+        address(creditLine),
+        interestPayment,
+        principalPayment.add(paymentRemaining)
+      );
+      emit PaymentApplied(
+        creditLine.borrower(),
+        address(this),
+        interestPayment,
+        principalPayment,
+        paymentRemaining,
+        reserveAmount
+      );
     }
   }
 
