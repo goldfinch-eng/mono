@@ -62,7 +62,7 @@ const CHAIN_NAME_BY_ID: Record<ChainId, ChainName> = {
   [RINKEBY_CHAIN_ID]: RINKEBY,
 }
 
-export type AddressString = string
+type AddressString = string
 
 const USDC = "USDC"
 type USDC = typeof USDC
@@ -135,13 +135,13 @@ function getUSDCAddress(chainId: ChainId): AddressString | undefined {
   return getERC20Address("USDC", chainId)
 }
 
-export type Ticker = "USDC" | "USDT" | "BUSD"
+type Ticker = USDC | USDT | BUSD
 function getERC20Address(ticker: Ticker, chainId: ChainId): AddressString | undefined {
   const mapping = ERC20_ADDRESSES[ticker]
   if (isMainnetForking()) {
     return mapping[MAINNET]
   } else {
-  const chainName = CHAIN_NAME_BY_ID[chainId]
+    const chainName = CHAIN_NAME_BY_ID[chainId]
     return mapping[chainName]
   }
 }
@@ -175,7 +175,7 @@ async function getDeployedContract(deployments: DeploymentsExtension, contractNa
   return await ethers.getContractAt(abi, deployment!.address, signer)
 }
 
-export type DepList = {[contractName: string]: {[contractName: string]: string}}
+type DepList = {[contractName: string]: {[contractName: string]: string}}
 async function deployContractUpgrade(
   contractName: string,
   dependencies: DepList,
@@ -334,4 +334,7 @@ export {
   deployContractUpgrade,
   setInitialConfigVals,
   TRANCHES,
+  DepList,
+  Ticker,
+  AddressString
 }
