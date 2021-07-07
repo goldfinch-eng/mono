@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from "react"
+import React, { useContext, useState, useEffect, useCallback } from "react"
 import { usdcToAtomic, usdcFromAtomic } from "../ethereum/erc20"
 import { AppContext } from "../App"
 import PaymentOptions from "./paymentOptions"
@@ -21,7 +21,7 @@ function PaymentForm(props) {
   const [paymentOption, setPaymentOption] = useState("periodDue")
   const sendFromUser = useSendFromUser()
   const [erc20, setErc20] = useState(usdc)
-  const [erc20UserBalance, setErc20UserBalance] = useState(new BigNumber(0))
+  const [, setErc20UserBalance] = useState(new BigNumber(0))
   const [validations, setValidations] = useState({})
   const [unlocked, refreshUnlocked] = useCurrencyUnlocked(erc20, {
     owner: borrower.userAddress,
@@ -34,6 +34,10 @@ function PaymentForm(props) {
     to: usdc,
     decimalAmount: transactionAmount,
   })
+
+  const isSwapping = useCallback(() => {
+    return erc20 !== usdc
+  }, [erc20, usdc])
 
   useEffect(() => {
     const fetchBalance = async () => {
@@ -52,11 +56,7 @@ function PaymentForm(props) {
       })
     }
     fetchBalance()
-  }, [erc20, user])
-
-  function isSwapping() {
-    return erc20 !== usdc
-  }
+  }, [erc20, user, goldfinchConfig.transactionLimit, isSwapping, props.creditLine.remainingTotalDueAmountInDollars])
 
   function getSelectedUSDCAmount() {
     if (paymentOption === "totalDue") {
