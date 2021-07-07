@@ -61,7 +61,13 @@ function VerifyIdentity() {
   async function getUserSignature() {
     const provider = new ethers.providers.Web3Provider(web3.currentProvider as any)
     const signer = provider.getSigner(user.address)
-    setUserSignature(await signer.signMessage("Sign in to Goldfinch"))
+    setUserSignature("pending")
+    try {
+      const signature = await signer.signMessage("Sign in to Goldfinch")
+      setUserSignature(signature)
+    } catch (err) {
+      setUserSignature("error")
+    }
   }
 
   function verifyOnPersona(e) {
@@ -87,7 +93,6 @@ function VerifyIdentity() {
 
   useEffect(() => {
     if (userSignature === "") {
-      setUserSignature("pending")
       getUserSignature()
     } else if (userSignature !== "pending") {
       fetchKYCStatus()
@@ -102,7 +107,11 @@ function VerifyIdentity() {
         render={() => {
           let verifyIdSection
           if (kycStatus === "approved") {
-            verifyIdSection = <div className="placeholder"><span>Step 1: Verify ID {iconCircleCheck}</span></div>
+            verifyIdSection = (
+              <div className="placeholder">
+                <span>Step 1: Verify ID {iconCircleCheck}</span>
+              </div>
+            )
           } else {
             verifyIdSection = (
               <>
@@ -147,12 +156,8 @@ function VerifyIdentity() {
   function renderNotice(icon, notice) {
     return (
       <div className="background-container verify-options">
-        <div>
-          {icon}
-        </div>
-        <div>
-          {notice}
-        </div>
+        <div>{icon}</div>
+        <div>{notice}</div>
       </div>
     )
   }
@@ -160,6 +165,11 @@ function VerifyIdentity() {
   function renderForm() {
     if (kycStatus === "golisted") {
       return renderNotice(iconCircleCheck, "Your address verification is complete.")
+    } else if (kycStatus === "failed") {
+      return renderNotice(
+        iconAlert,
+        "There was an issue verifying your address. For help, please contact verify@goldfinch.finance and include your address.",
+      )
     } else if (entityType === "US") {
       return renderUSForm()
     } else if (entityType === "entity") {
@@ -168,11 +178,6 @@ function VerifyIdentity() {
       return renderNotice(
         iconClock,
         "Your verification has been successfully submitted and is in progress. You can expect it to be complete within a few days, and usually much faster.",
-      )
-    } else if (kycStatus === "failed") {
-      return renderNotice(
-        iconAlert,
-        "There was an issue verifying your address. For help, please contact verify@goldfinch.finance and include your address.",
       )
     } else {
       const nonUSDisabled = countryCode === "US" ? "disabled" : ""
