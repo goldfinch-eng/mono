@@ -9,8 +9,8 @@ class GoldfinchProtocol {
   networkId: string
   deployments: any
 
-  constructor(netowrkConfig) {
-    this.networkId = netowrkConfig.name
+  constructor(networkConfig) {
+    this.networkId = networkConfig.name
   }
 
   async initialize() {
