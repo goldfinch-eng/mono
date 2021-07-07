@@ -87,7 +87,7 @@ function DrawdownForm(props) {
     return (
       <>
         <button
-          className={`button discreet form-show-optional ${isOptionsOpen ? "showing" : "hidden"}`}
+          className={`form-show-optional ${isOptionsOpen ? "showing" : "hidden"}`}
           onClick={e => {
             e.preventDefault()
             setOptionsOpen(!isOptionsOpen)

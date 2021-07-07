@@ -1,15 +1,21 @@
+button {
+  // The intention here is to override the user agent stylesheet
+  // styling to make the button as discreet as possible while still
+  // being consistent with our `.button` styling.
+  background-color: inherit;
+  padding: 0;
+  color: $purp-dark;
+}
+
 .button{
   border-radius: 6px;
   font-size: $sans-size-m;
   color: $purp-dark;
   outline: none;
+  background-color: $blue-xlight;
+  line-height: 56px;
 
-  &:not(.discreet) {
-    background-color: $blue-xlight;
-    line-height: 56px;
-  }
-
-  &:not(.discreet):hover{
+  &:hover{
     background-color: $blue-light;
   }
 
@@ -63,10 +69,7 @@
   .button{
     border-radius: 8px;
     font-size: $sans-size-base;
-
-    &:not(.discreet) {
-      line-height: 70px;
-    }
+    line-height: 70px;
 
     .icon{
       height: 24px;
