@@ -4,7 +4,10 @@ import ConnectionNotice from "./connectionNotice"
 import { CapitalProvider, fetchCapitalProviderData, fetchPoolData, PoolData } from "../ethereum/pool"
 import { AppContext } from "../App"
 import { ERC20, usdcFromAtomic } from "../ethereum/erc20"
-import { displayDollars, displayPercent } from "../utils"
+import { croppedAddress, displayDollars, displayPercent } from "../utils"
+import { GoldfinchProtocol } from "../ethereum/GoldfinchProtocol"
+import { TranchedPool } from "../ethereum/tranchedPool"
+import { PoolCreated } from "../typechain/web3/GoldfinchFactory"
 
 function PoolList({ title, children }) {
   return (
@@ -40,10 +43,65 @@ function SeniorPoolCard({ balance, userBalance, apy }) {
   )
 }
 
+function TranchedPoolCard({ tranchedPool }: { tranchedPool: TranchedPool }) {
+  const history = useHistory()
+
+  return (
+    <div key={`junior-pool-${tranchedPool.address}`} className="table-row background-container-inner">
+      <div className="table-cell col40 pool-info">
+        <img
+          className={`icon ${process.env.NODE_ENV === "development" && "pixelated"}`}
+          src={tranchedPool.metadata?.icon}
+        />
+        <div className="name">
+          <span>{tranchedPool.metadata?.name ?? croppedAddress(tranchedPool.address)}</span>
+          <span className="subheader">{tranchedPool.metadata?.category}</span>
+        </div>
+      </div>
+      <div className="table-cell col22 numeric">{"$100"}</div>
+      <div className="table-cell col22 numeric">{"1,000%"}</div>
+      <div className="table-cell col16 ">
+        <button className="view-button" onClick={() => history.push(`/earn/pools/junior/${tranchedPool.address}`)}>
+          View
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function useTranchedPools({
+  goldfinchProtocol,
+}: {
+  goldfinchProtocol?: GoldfinchProtocol
+}): { tranchedPools: TranchedPool[]; status: string } {
+  let [tranchedPools, setTranchedPools] = useState<TranchedPool[]>([])
+  let [status, setStatus] = useState<string>("loading")
+
+  useEffect(() => {
+    async function loadTranchedPools(goldfinchProtocol: GoldfinchProtocol) {
+      let poolEvents = ((await goldfinchProtocol.queryEvents("GoldfinchFactory", [
+        "PoolCreated",
+      ])) as unknown) as PoolCreated[]
+      let poolAddresses = poolEvents.map(e => e.returnValues.pool)
+      let tranchedPools = poolAddresses.map(a => new TranchedPool(a, goldfinchProtocol))
+      await Promise.all(tranchedPools.map(p => p.initialize()))
+      setTranchedPools(tranchedPools)
+      setStatus("loaded")
+    }
+
+    if (goldfinchProtocol) {
+      loadTranchedPools(goldfinchProtocol)
+    }
+  }, [goldfinchProtocol])
+
+  return { tranchedPools, status }
+}
+
 function Earn(props) {
-  const { pool, usdc, user } = useContext(AppContext)
+  const { pool, usdc, user, goldfinchProtocol } = useContext(AppContext)
   const [capitalProvider, setCapitalProvider] = useState<CapitalProvider>()
   const [poolData, setPoolData] = useState<PoolData>()
+  const { tranchedPools, status: tranchedPoolsStatus } = useTranchedPools({ goldfinchProtocol })
 
   useEffect(() => {
     async function refreshAllData() {
@@ -76,13 +134,20 @@ function Earn(props) {
     <div className="content-section">
       <div className="page-header">{earnMessage}</div>
       <ConnectionNotice />
-      <PoolList title="Senior Pool">
-        <SeniorPoolCard
-          balance={displayDollars(usdcFromAtomic(poolData?.totalPoolAssets))}
-          userBalance={displayDollars(capitalProvider?.availableToWithdrawInDollars)}
-          apy={displayPercent(poolData?.estimatedApy)}
-        />
-      </PoolList>
+      <div className="pools">
+        <PoolList title="Senior Pool">
+          <SeniorPoolCard
+            balance={displayDollars(usdcFromAtomic(poolData?.totalPoolAssets))}
+            userBalance={displayDollars(capitalProvider?.availableToWithdrawInDollars)}
+            apy={displayPercent(poolData?.estimatedApy)}
+          />
+        </PoolList>
+        <PoolList title="Junior Pools">
+          {tranchedPoolsStatus === "loading"
+            ? "Loading..."
+            : tranchedPools.map(p => <TranchedPoolCard tranchedPool={p} />)}
+        </PoolList>
+      </div>
     </div>
   )
 }

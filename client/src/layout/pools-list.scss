@@ -1,6 +1,29 @@
 .pools-list {
+  margin-top: 0px;
+  margin-bottom: 0px;
+
   .title {
     color: $purp-dark;
+  }
+
+  .pool-info {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    @include space-x(0.75em);
+
+    .pixelated {
+      image-rendering: pixelated;
+    }
+
+    .icon {
+      margin-left: -0.25em;
+      object-fit: contain;
+      background-color: $sand-xlight;
+      border-radius: 50%;
+      width: 45px;
+      height: 45px;
+    }
   }
 
   .subheader {
@@ -41,19 +64,9 @@
 }
 
 @media only screen and (min-width: $screen-m) {
-  .pools-list .icon {
-    height: 20px;
-    width: 20px;
-  }
 }
 
 @media only screen and (min-width: $screen-l) {
-  .pools-list .icon {
-    height: 24px;
-    margin: 0 9px -3px 0;
-    width: 24px;
-  }
-
   .pools-list .subheader {
     font-size: $sans-size-s;
   }

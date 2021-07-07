@@ -20,6 +20,7 @@ import { GoldfinchProtocol } from "./ethereum/GoldfinchProtocol"
 import { GoldfinchConfig } from "./typechain/web3/GoldfinchConfig"
 import SeniorPool from "./components/pools/seniorPool"
 import VerifyIdentity from "./components/verifyIdentity"
+import TranchedPoolView from "./components/pools/tranchedPoolView"
 
 interface NetworkConfig {
   name?: string
@@ -188,6 +189,9 @@ function App() {
             </Route>
             <Route path="/earn/pools/senior">
               <SeniorPool />
+            </Route>
+            <Route path="/earn/pools/junior/:poolAddress">
+              <TranchedPoolView />
             </Route>
             <Route path="/earn">
               <Earn />

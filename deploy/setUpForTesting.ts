@@ -1,5 +1,6 @@
 import {HardhatRuntimeEnvironment} from "hardhat/types"
 import {Logger} from "../blockchain_scripts/types"
+import fs from "fs"
 
 import BN from "bn.js"
 import hre from "hardhat"
@@ -41,6 +42,7 @@ import {
   getMainnetContracts,
   performPostUpgradeMigration,
 } from "../blockchain_scripts/mainnetForkingHelpers"
+import _ from "lodash"
 
 /*
 This deployment deposits some funds to the pool, and creates an underwriter, and a credit line.
@@ -133,8 +135,10 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   let bwrConAddr = result.events![result.events!.length - 1].args![0]
   logger(`Created borrower contract: ${bwrConAddr} for ${borrower}`)
 
-  await createPoolForBorrower(getOrNull, underwriter, goldfinchFactory, bwrConAddr, erc20!)
+  let pool1 = await createPoolForBorrower(getOrNull, underwriter, goldfinchFactory, bwrConAddr, erc20!)
+  await writePoolMetadata(pool1)
   let pool2 = await createPoolForBorrower(getOrNull, underwriter, goldfinchFactory, bwrConAddr, erc20!)
+  await writePoolMetadata(pool2)
 
   // Have the senior fund invest
   await seniorFund.invest(pool2.address)
@@ -156,6 +160,34 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   await (erc20 as TestERC20).connect(borrowerSigner).approve(bwrCon.address, payAmount.toString())
   await bwrCon.pay(pool2.address, payAmount.toString())
   await seniorFund.redeem(tokenId)
+}
+
+/**
+ * Write fake TranchedPool metadata for local development
+ */
+async function writePoolMetadata(pool: TranchedPool) {
+  const names = ["Degen Pool", "CryptoPunks Fund"]
+  const categories = ["NFT Loans", "Loans to degens"]
+  const icons = [
+    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAdUlEQVR42mNgGAWjAAj+48GUG37i92+cmFJL/hMDKLHkv1TeVYKYIgvwBQ81gommFvxHtqB0797/6BbCxMixAGzA7AcPUFyJzEcWI9sHxAQP1YIIGWPzCVUjeehbQLN8gK2wG1o+oElpSiiIqFoXUKuCoboFAP+MJG7jSOWlAAAAAElFTkSuQmCC",
+    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAqElEQVR42mNgGAVDAfzHgyk33NTU9H9gYCBWTKkleA2nhiXYDKJqcKEYDvINPkyOJf/JwKRZcOL3b4KY7OAh1+U7d+5sIMrlyD6AGYTF5SgWgAyHYZKChyYW4IqD2Q8eUCUOGMi1gBjXU2QBzZMp2T7Aljxp5gOQXGugCHoqIjlnEwwaJEsYYHwYJtkCXLkY2ScZNhxgPogm1wKs6pBdTqzhpFjAgC/sASQcCwwmy7ugAAAAAElFTkSuQmCC",
+  ]
+
+  let metadataPath = "client/config/pool-metadata/localhost.json"
+  let metadata: any
+  try {
+    let data = await fs.promises.readFile(metadataPath)
+    metadata = JSON.parse(data.toString())
+  } catch (error) {
+    metadata = {}
+  }
+  metadata[pool.address.toLowerCase()] = {
+    name: _.sample(names),
+    category: _.sample(categories),
+    icon: _.sample(icons),
+  }
+
+  await fs.promises.writeFile(metadataPath, JSON.stringify(metadata, null, 2))
 }
 
 async function upgradeExistingContracts(
