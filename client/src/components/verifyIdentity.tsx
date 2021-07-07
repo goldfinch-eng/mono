@@ -204,6 +204,7 @@ function VerifyIdentity() {
 
   function getKYCURL(address, signature) {
     const baseURL = process.env.REACT_APP_GCLOUD_FUNCTIONS_URL || API_URLS[network?.name!]
+    signature = signature === "pending" ? "" : signature
     return baseURL + "/kycStatus?" + new URLSearchParams({ address, signature })
   }
 
@@ -224,11 +225,17 @@ function VerifyIdentity() {
     const provider = new ethers.providers.Web3Provider(web3.currentProvider as any)
     const signer = provider.getSigner(user.address)
     setUserSignature("pending")
-    try {
-      const signature = await signer.signMessage("Sign in to Goldfinch")
-      setUserSignature(signature)
-    } catch (err) {
-      setUserSignature("error")
+    const signature = await signer.signMessage("Sign in to Goldfinch")
+    setUserSignature(signature)
+  }
+
+  function chooseEntity(chosenType) {
+    if (userSignature === "" || userSignature === "pending") {
+      getUserSignature().then(_ => {
+        setEntityType(chosenType)
+      })
+    } else {
+      setEntityType(chosenType)
     }
   }
 
@@ -293,17 +300,17 @@ function VerifyIdentity() {
             <div className="">Who is verifying this address?</div>
             <div className="verify-options">
               <div className="item">
-                <button className={`button ${nonUSDisabled}`} onClick={() => setEntityType("non-US")}>
+                <button className={`button ${nonUSDisabled}`} onClick={() => chooseEntity("non-US")}>
                   Non-U.S. Individual
                 </button>
               </div>
               <div className="item">
-                <button className={"button"} onClick={() => setEntityType("US")}>
+                <button className={"button"} onClick={() => chooseEntity("US")}>
                   U.S. Individual
                 </button>
               </div>
               <div className="item">
-                <button className={"button"} onClick={() => setEntityType("entity")}>
+                <button className={"button"} onClick={() => chooseEntity("entity")}>
                   Entity
                 </button>
               </div>
