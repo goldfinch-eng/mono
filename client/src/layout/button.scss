@@ -1,12 +1,15 @@
 .button{
-  background-color: $blue-xlight;
   border-radius: 6px;
   font-size: $sans-size-m;
   color: $purp-dark;
-  line-height: 56px;
   outline: none;
 
-  &:hover{
+  &:not(.discreet) {
+    background-color: $blue-xlight;
+    line-height: 56px;
+  }
+
+  &:not(.discreet):hover{
     background-color: $blue-light;
   }
 
@@ -60,7 +63,10 @@
   .button{
     border-radius: 8px;
     font-size: $sans-size-base;
-    line-height: 70px;
+
+    &:not(.discreet) {
+      line-height: 70px;
+    }
 
     .icon{
       height: 24px;
