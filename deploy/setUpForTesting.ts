@@ -72,9 +72,10 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   await setupTestForwarder(deployments, config, getOrNull, protocol_owner)
 
   const chainUsdcAddress = getUSDCAddress(chainId)
-  assertIsString(chainUsdcAddress)
-  logger("On a network with known USDC address, so firing up that contract...")
-  erc20 = await ethers.getContractAt("TestERC20", chainUsdcAddress)
+  if (chainUsdcAddress) {
+    logger("On a network with known USDC address, so firing up that contract...")
+    erc20 = await ethers.getContractAt("TestERC20", chainUsdcAddress)
+  }
 
   let erc20s = [
     {
