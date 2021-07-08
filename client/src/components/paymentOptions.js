@@ -2,6 +2,16 @@ import React, { useCallback, useEffect } from "react"
 import { displayDollars, displayNumber } from "../utils"
 import { useAmountTargetingMinAmount } from "../hooks/useOneInchQuote"
 
+function displayAmounts(amount, swappedAmount, ticker) {
+  let amountDisplay = <span className="font-bold">{displayDollars(amount)}</span>
+  if (!swappedAmount) return amountDisplay
+  return (
+    <>
+      {amountDisplay} (~{displayNumber(swappedAmount, 2)} {ticker})
+    </>
+  )
+}
+
 function PaymentOptions(props) {
   const { selected, creditLine, onSelect, formMethods } = props
   const [minimumDueAmount] = useAmountTargetingMinAmount({
@@ -17,23 +27,19 @@ function PaymentOptions(props) {
 
   const getValueOptions = useCallback(
     cl => {
-      function displayAmounts(amount, swappedAmount) {
-        let amountDisplay = <span className="font-bold">{displayDollars(amount)}</span>
-        if (!swappedAmount) return amountDisplay
-        return (
-          <>
-            {amountDisplay} (~{displayNumber(swappedAmount, 2)} {props.erc20.ticker})
-          </>
-        )
-      }
-
       let valueOptions = [
         {
           name: "totalDue",
           label: cl.isMultiple ? (
-            <>Pay all balances plus interest: {displayAmounts(cl.remainingTotalDueAmountInDollars, fullDueAmount)}</>
+            <>
+              Pay all balances plus interest:{" "}
+              {displayAmounts(cl.remainingTotalDueAmountInDollars, fullDueAmount, props.erc20.ticker)}
+            </>
           ) : (
-            <>Pay full balance plus interest: {displayAmounts(cl.remainingTotalDueAmountInDollars, fullDueAmount)}</>
+            <>
+              Pay full balance plus interest:{" "}
+              {displayAmounts(cl.remainingTotalDueAmountInDollars, fullDueAmount, props.erc20.ticker)}
+            </>
           ),
           value: cl.remainingTotalDueAmountInDollars,
           swapValue: fullDueAmount,
@@ -44,9 +50,15 @@ function PaymentOptions(props) {
         valueOptions.unshift({
           name: "periodDue",
           label: cl.isMultiple ? (
-            <>Pay all minimums due: {displayAmounts(cl.remainingPeriodDueAmountInDollars, minimumDueAmount)}</>
+            <>
+              Pay all minimums due:{" "}
+              {displayAmounts(cl.remainingPeriodDueAmountInDollars, minimumDueAmount, props.erc20.ticker)}
+            </>
           ) : (
-            <>Pay minimum due: {displayAmounts(cl.remainingPeriodDueAmountInDollars, minimumDueAmount)}</>
+            <>
+              Pay minimum due:{" "}
+              {displayAmounts(cl.remainingPeriodDueAmountInDollars, minimumDueAmount, props.erc20.ticker)}
+            </>
           ),
           value: cl.remainingPeriodDueAmountInDollars,
           swapValue: minimumDueAmount,
