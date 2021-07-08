@@ -58,6 +58,7 @@ const {
   toTruffle,
 } = require("./testHelpers")
 const {getMigrationData} = require("../blockchain_scripts/v2/migrationHelpers")
+const {assertIsString} = require("../utils/type")
 
 const TEST_TIMEOUT = 180000 // 3 mins
 
@@ -101,6 +102,7 @@ describe("mainnet forking tests", async function () {
 
     upgradedContracts = await upgrade(contractsToUpgrade)
     const usdcAddress = getUSDCAddress(MAINNET_CHAIN_ID)
+    assertIsString(usdcAddress)
     const pool = await artifacts.require("TestPool").at(upgradedContracts.Pool.UpgradedContract.address)
     const usdc = await artifacts.require("IERC20withDec").at(usdcAddress)
     const creditDesk = await artifacts
@@ -124,6 +126,7 @@ describe("mainnet forking tests", async function () {
     const mainnetConfig = getMainnetContracts()
     const mainnetMultisigSigner = await ethers.provider.getSigner(MAINNET_MULTISIG)
     const usdcAddress = getUSDCAddress(MAINNET_CHAIN_ID)
+    assertIsString(usdcAddress)
 
     // Ensure the multisig has funds for upgrades and other transactions
     let ownerAccount = await getSignerForAddress(owner)
@@ -178,6 +181,7 @@ describe("mainnet forking tests", async function () {
     ;[owner, bwr, person3, underwriter, reserve] = accounts
     ;({usdc, goldfinchFactory, pool, fidu, goldfinchConfig, cUSDC} = await setupTest())
     const usdcAddress = getUSDCAddress(MAINNET_CHAIN_ID)
+    assertIsString(usdcAddress)
     const busdAddress = "0x4fabb145d64652a948d72533023f6e7a623c7c53"
     const usdtAddress = "0xdAC17F958D2ee523a2206206994597C13D831ec7"
     busd = await artifacts.require("IERC20withDec").at(busdAddress)
@@ -593,6 +597,7 @@ describe("mainnet upgrade tests", async function () {
     await deployments.fixture("base_deploy")
     ;[owner, bwr] = await web3.eth.getAccounts()
     const usdcAddress = getUSDCAddress(MAINNET_CHAIN_ID)
+    assertIsString(usdcAddress)
     usdcTruffleContract = await artifacts.require("IERC20withDec").at(usdcAddress)
 
     mainnetConfig = getMainnetContracts()
