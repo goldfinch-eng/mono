@@ -20,7 +20,10 @@ async function main() {
     "using proxy owner account of:",
     proxy_owner
   )
-  const result = await (await creditLineFactory.createBorrower(borrower)).wait()
+  const txn = await creditLineFactory.createBorrower(borrower)
+  console.log("Borrower con txn:", txn)
+  const result = await txn.wait()
+
   let bwrConAddr = result.events[result.events.length - 1].args[0]
   console.log("Created borrower contract at:", bwrConAddr)
 }
