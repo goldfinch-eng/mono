@@ -52,6 +52,7 @@ function TranchedPoolCard({ tranchedPool }: { tranchedPool: TranchedPool }) {
         <img
           className={`icon ${process.env.NODE_ENV === "development" && "pixelated"}`}
           src={tranchedPool.metadata?.icon}
+          alt="pool-icon"
         />
         <div className="name">
           <span>{tranchedPool.metadata?.name ?? croppedAddress(tranchedPool.address)}</span>
