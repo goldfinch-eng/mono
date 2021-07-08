@@ -294,23 +294,36 @@ function VerifyIdentity() {
       )
     } else {
       const nonUSDisabled = countryCode === "US" ? "disabled" : ""
+      const disabled = user.address ? "" : "disabled"
       return (
         <>
           <div className={"background-container"}>
             <div className="">Who is verifying this address?</div>
             <div className="verify-options">
               <div className="item">
-                <button className={`button ${nonUSDisabled}`} onClick={() => chooseEntity("non-US")}>
+                <button
+                  className={`button ${nonUSDisabled} ${disabled}`}
+                  disabled={nonUSDisabled === "disabled" || disabled === "disabled"}
+                  onClick={() => chooseEntity("non-US")}
+                >
                   Non-U.S. Individual
                 </button>
               </div>
               <div className="item">
-                <button className={"button"} onClick={() => chooseEntity("US")}>
+                <button
+                  className={`button ${disabled}`}
+                  disabled={disabled === "disabled"}
+                  onClick={() => chooseEntity("US")}
+                >
                   U.S. Individual
                 </button>
               </div>
               <div className="item">
-                <button className={"button"} onClick={() => chooseEntity("entity")}>
+                <button
+                  className={`button ${disabled}`}
+                  disabled={disabled === "disabled"}
+                  onClick={() => chooseEntity("entity")}
+                >
                   Entity
                 </button>
               </div>
