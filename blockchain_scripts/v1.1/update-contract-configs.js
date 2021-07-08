@@ -1,4 +1,4 @@
-const {getDeployedContract} = require("../deployHelpers.js")
+const {getDeployedContract, assertIsChainId} = require("../deployHelpers.js")
 const {CHAIN_NAME_BY_ID} = require("../deployHelpers.js")
 const hre = require("hardhat")
 const {DefenderUpgrader} = require("../upgrade.js")
@@ -15,6 +15,7 @@ async function updateContractConfigs(hre) {
   contractsToUpgrade = contractsToUpgrade.split(/[ ,]+/)
 
   const chainId = await hre.getChainId()
+  assertIsChainId(chainId)
   const network = CHAIN_NAME_BY_ID[chainId]
   let defender = new DefenderUpgrader({hre, logger, chainId, network})
 
