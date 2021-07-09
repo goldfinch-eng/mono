@@ -1,11 +1,11 @@
 import * as crypto from "crypto"
 import * as functions from "firebase-functions"
 import * as admin from "firebase-admin"
-import { ethers } from "ethers"
-import { getDb, getUsers, getConfig } from "./db"
+import {ethers} from "ethers"
+import {getDb, getUsers, getConfig} from "./db"
 import firestore = admin.firestore
 import * as Sentry from "@sentry/serverless"
-import { CaptureConsole } from "@sentry/integrations"
+import {CaptureConsole} from "@sentry/integrations"
 
 const config = getConfig(functions)
 
@@ -37,11 +37,11 @@ const kycStatus = Sentry.GCPFunction.wrapHttpFunction(
     const address = req.query.address?.toString()
     const signature = req.query.signature?.toString()
 
-    const response = { address: address, status: "unknown", countryCode: null }
+    const response = {address: address, status: "unknown", countryCode: null}
     setCORSHeaders(req, res)
 
     if (!address || !signature) {
-      res.status(400).send({ error: "Address or signature not provided" })
+      res.status(400).send({error: "Address or signature not provided"})
       return
     }
 
@@ -50,9 +50,12 @@ const kycStatus = Sentry.GCPFunction.wrapHttpFunction(
     console.log(`Received address: ${address}, Verified address: ${verifiedAddress}`)
 
     if (address.toLowerCase() !== verifiedAddress.toLowerCase()) {
-      res.status(403).send({ error: "Invalid address or signature" })
+      res.status(403).send({error: "Invalid address or signature"})
       return
     }
+
+    // Having verified the address, we can set the Sentry user context accordingly.
+    Sentry.setUser({id: address.toLowerCase(), address: address.toLowerCase()})
 
     const users = getUsers(admin.firestore())
     const user = await users.doc(`${address.toLowerCase()}`).get()
@@ -138,13 +141,17 @@ const getCountryCode = (eventPayload: Record<string, any>): string | null => {
 const personaCallback = Sentry.GCPFunction.wrapHttpFunction(
   functions.https.onRequest(async (req, res): Promise<void> => {
     if (!verifyRequest(req)) {
-      res.status(400).send({ status: "error", message: "Request could not be verified" })
+      res.status(400).send({status: "error", message: "Request could not be verified"})
       return
     }
 
     const eventPayload = req.body.data.attributes.payload.data
 
     const address = eventPayload.attributes.referenceId
+
+    // Having verified the request, we can set the Sentry user context accordingly.
+    Sentry.setUser({id: address, address })
+
     const countryCode = getCountryCode(req.body.data.attributes.payload)
     const db = getDb(admin.firestore())
     const userRef = getUsers(admin.firestore()).doc(`${address.toLowerCase()}`)
@@ -180,12 +187,12 @@ const personaCallback = Sentry.GCPFunction.wrapHttpFunction(
       })
     } catch (e) {
       console.error(e)
-      res.status(500).send({ status: "error", message: e.message })
+      res.status(500).send({status: "error", message: e.message})
       return
     }
 
-    res.status(200).send({ status: "success" })
+    res.status(200).send({status: "success"})
   }),
 )
 
-export { kycStatus, personaCallback }
+export {kycStatus, personaCallback}
