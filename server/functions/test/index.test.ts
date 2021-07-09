@@ -4,7 +4,7 @@ import * as firebaseTesting from "@firebase/rules-unit-testing"
 import * as admin from "firebase-admin"
 import * as crypto from "crypto"
 
-import {getUsers, setEnvForTest} from "../src/db"
+import {FirebaseConfig, getUsers, setEnvForTest} from "../src/db"
 import {kycStatus, personaCallback} from "../src"
 
 chai.use(chaiSubset as any)
@@ -15,7 +15,7 @@ import Firestore = firestore.Firestore
 describe("functions", () => {
   let testFirestore: Firestore
   let testApp: admin.app.App
-  let config: Record<string, any>
+  let config: FirebaseConfig
   const projectId = "goldfinch-frontend-test"
   const address = "0xE7f9ED35DA54b2e4A1857487dBf42A32C4DBD4a0"
   const validSignature =
@@ -25,7 +25,14 @@ describe("functions", () => {
   beforeEach(() => {
     testApp = firebaseTesting.initializeAdminApp({projectId: projectId})
     testFirestore = testApp.firestore()
-    config = {kyc: {allowed_origins: "http://localhost:3000"}, persona: {}}
+    config = {
+      kyc: {allowed_origins: "http://localhost:3000"},
+      persona: {allowed_ips: ""},
+      sentry: {
+        dsn: "https://8c1adf3a336a4487b14ae1af080c26d1@o915675.ingest.sentry.io/5857894",
+        env: "testing",
+      },
+    }
     setEnvForTest(testFirestore, config)
     users = getUsers(testFirestore)
   })

@@ -5,7 +5,7 @@ import { ethers } from "ethers"
 import { getDb, getUsers, getConfig } from "./db"
 import firestore = admin.firestore
 import * as Sentry from "@sentry/serverless"
-import { CaptureConsole } from '@sentry/integrations'
+import { CaptureConsole } from "@sentry/integrations"
 
 const config = getConfig(functions)
 
@@ -13,8 +13,8 @@ Sentry.GCPFunction.init({
   dsn: config.sentry.dsn,
   integrations: [
     new CaptureConsole({
-      levels: ['log', 'info', 'warn', 'error']
-    })
+      levels: ["log", "info", "warn", "error"],
+    }),
   ],
   environment: config.sentry.env,
   tracesSampleRate: config.sentry.env === "production" ? 0.25 : 1.0,
@@ -70,7 +70,7 @@ const kycStatus = Sentry.GCPFunction.wrapHttpFunction(
 //  pending: persona verification attempted. Could be in a lot of stages here, persona is the source of truth
 //  approved: Approved on persona, but not yet golisted on chain
 //  failed: Failed on persona
-const userStatusFromPersonaStatus = (personaStatus: string) => {
+const userStatusFromPersonaStatus = (personaStatus: string): "unknown" | "approved" | "failed" => {
   // If we don't have a status, or previous attempt expired, treat as a brand new address
   if (personaStatus === "" || personaStatus === undefined || personaStatus === "expired") {
     return "unknown"
