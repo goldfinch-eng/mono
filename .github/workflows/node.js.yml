@@ -111,6 +111,9 @@ jobs:
           ${{ runner.os }}-build-
           ${{ runner.os }}-
     - run: npm ci
+      working-directory: .
+    - run: npm ci
+    - run: npm run build
     - run: npm test
 
   server:
@@ -143,6 +146,13 @@ jobs:
             ${{ runner.os }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
             ${{ runner.os }}-
+      - name: Cache Firestore emulator
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-firestore-emulator
+        with:
+          path: ~/.cache/firebase/emulators
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
       # Install root npm libs (for firebase, typescript etc)
       - run: cd ../../ && npm ci
       - run: npm ci

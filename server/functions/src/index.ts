@@ -4,6 +4,7 @@ import * as admin from "firebase-admin"
 import {ethers} from "ethers"
 import {getDb, getUsers, getConfig} from "./db"
 import firestore = admin.firestore
+import {assertIsString} from '../../../utils/type'
 
 admin.initializeApp()
 
@@ -83,7 +84,7 @@ const verifyRequest = (req: functions.https.Request) => {
 
   // Ensure the request is really from persona by validating the signature.
   // See https://docs.withpersona.com/docs/webhooks#checking-signatures
-  const sigParams: Record<string, string> = {}
+  const sigParams: Record<string, string | undefined> = {}
   const signature = req.headers["persona-signature"] as string
 
   if (!signature) {
@@ -91,6 +92,7 @@ const verifyRequest = (req: functions.https.Request) => {
   }
   signature.split(",").forEach((pair: string) => {
     const [key, value] = pair.split("=")
+    assertIsString(key)
     sigParams[key] = value
   })
 

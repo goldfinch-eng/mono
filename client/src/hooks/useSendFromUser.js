@@ -3,7 +3,7 @@ import { AppContext } from "../App"
 import web3 from "../web3"
 
 function useSendFromUser() {
-  const { refreshUserData, user, network, gnosisSafeInfo, gnosisSafeSdk, networkMonitor } = useContext(AppContext)
+  const { refreshUserData, user, gnosisSafeInfo, gnosisSafeSdk, networkMonitor } = useContext(AppContext)
 
   async function sendTransaction(unsentAction, txData, gasPrice) {
     // unsent action could be a promise tha returns the action, so resolve it

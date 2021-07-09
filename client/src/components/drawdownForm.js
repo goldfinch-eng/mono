@@ -86,7 +86,7 @@ function DrawdownForm(props) {
 
     return (
       <>
-        <a
+        <button
           className={`form-show-optional ${isOptionsOpen ? "showing" : "hidden"}`}
           onClick={e => {
             e.preventDefault()
@@ -94,7 +94,7 @@ function DrawdownForm(props) {
           }}
         >
           Options
-        </a>
+        </button>
         <div className="form-inputs">
           {warningMessage}
           <div className={`form-optional ${isOptionsOpen ? "showing" : "hidden"}`}>

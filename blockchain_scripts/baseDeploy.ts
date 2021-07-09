@@ -11,9 +11,11 @@ import {
   setInitialConfigVals,
   SAFE_CONFIG,
   isMainnetForking,
+  assertIsChainId,
+  isSafeConfigChainId,
 } from "./deployHelpers"
 import {HardhatRuntimeEnvironment} from "hardhat/types"
-import {DeployFunction, DeployOptions, DeployResult} from "hardhat-deploy/types"
+import {DeployFunction} from "hardhat-deploy/types"
 import {
   GoldfinchConfig,
   GoldfinchFactory,
@@ -24,6 +26,7 @@ import {
   SeniorFund,
 } from "../typechain/ethers"
 import {Logger, DeployFn, DeployOpts} from "./types"
+import {assertIsString} from "../utils/type"
 
 let logger: Logger
 
@@ -38,8 +41,9 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   const {protocol_owner, proxy_owner} = await getNamedAccounts()
   logger("Will be deploying using the protocol_owner account:", protocol_owner)
 
-  const chainID = await getChainId()
-  logger("Chain ID is:", chainID)
+  const chainId = await getChainId()
+  assertIsChainId(chainId)
+  logger("Chain id is:", chainId)
   const config = await deployConfig(deploy)
   await getOrDeployUSDC()
   const fidu = await deployFidu(config)
@@ -71,6 +75,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
       contractName = "TestGoldfinchConfig"
     }
 
+    assertIsString(proxy_owner)
     let deployResult = await deploy(contractName, {
       from: proxy_owner,
       gasLimit: 4000000,
@@ -79,6 +84,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
     let config = (await ethers.getContractAt(deployResult.abi, deployResult.address)) as GoldfinchConfig
     if (deployResult.newlyDeployed) {
       logger("Config newly deployed, initializing...")
+      assertIsString(protocol_owner)
       await (await config.initialize(protocol_owner)).wait()
     }
 
@@ -88,11 +94,13 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   }
 
   async function getOrDeployUSDC() {
-    let usdcAddress = getUSDCAddress(chainID)
+    assertIsChainId(chainId)
+    let usdcAddress = getUSDCAddress(chainId)
     if (!usdcAddress) {
       logger("We don't have a USDC address for this network, so deploying a fake USDC")
       const initialAmount = String(new BN("1000000").mul(USDCDecimals))
       const decimalPlaces = String(new BN(6))
+      assertIsString(protocol_owner)
       const fakeUSDC = await deploy("TestERC20", {
         from: protocol_owner,
         gasLimit: 4000000,
@@ -107,7 +115,9 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
 
   async function deployGoldfinchFactory(deploy: DeployFn, {config}: DeployOpts): Promise<GoldfinchFactory> {
     logger("Deploying credit line factory")
+    assertIsString(protocol_owner)
     const accountant = await deploy("Accountant", {from: protocol_owner, gasLimit: 4000000, args: []})
+    assertIsString(proxy_owner)
     let goldfinchFactoryDeployResult = await deploy("GoldfinchFactory", {
       from: proxy_owner,
       proxy: {owner: proxy_owner, methodName: "initialize"},
@@ -127,6 +137,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   }
 
   async function deployCreditDesk(deploy: DeployFn, {config}: DeployOpts) {
+    assertIsString(protocol_owner)
     const accountant = await deploy("Accountant", {from: protocol_owner, gasLimit: 4000000, args: []})
     logger("Accountant was deployed to:", accountant.address)
 
@@ -137,6 +148,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
     }
 
     logger("Deploying CreditDesk")
+    assertIsString(proxy_owner)
     let creditDeskDeployResult = await deploy(contractName, {
       from: proxy_owner,
       proxy: {owner: proxy_owner, methodName: "initialize"},
@@ -168,6 +180,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
 
   async function deployFidu(config: GoldfinchConfig): Promise<Fidu> {
     logger("About to deploy Fidu...")
+    assertIsString(proxy_owner)
     const fiduDeployResult = await deploy("Fidu", {
       from: proxy_owner,
       gasLimit: 4000000,
@@ -204,6 +217,7 @@ async function deployTranchedPool(hre: HardhatRuntimeEnvironment, {config}: Depl
     contractName = "TestTranchedPool"
   }
 
+  assertIsString(proxy_owner)
   const tranchedPoolImpl = await deploy(contractName, {
     from: proxy_owner,
   })
@@ -217,8 +231,10 @@ async function deployClImplementation(hre: HardhatRuntimeEnvironment, {config}: 
   const {deploy} = deployments
   const {protocol_owner, proxy_owner} = await getNamedAccounts()
 
+  assertIsString(protocol_owner)
   const accountant = await deploy("Accountant", {from: protocol_owner, gasLimit: 4000000, args: []})
   // Deploy the credit line as well so we generate the ABI
+  assertIsString(proxy_owner)
   const clDeployResult = await deploy("CreditLine", {
     from: proxy_owner,
     gasLimit: 4000000,
@@ -237,6 +253,7 @@ async function deployMigratedTranchedPool(hre: HardhatRuntimeEnvironment, {confi
   logger("About to deploy MigratedTranchedPool...")
   let contractName = "MigratedTranchedPool"
 
+  assertIsString(proxy_owner)
   const migratedTranchedPoolImpl = await deploy(contractName, {from: proxy_owner})
   await updateConfig(
     config,
@@ -257,17 +274,20 @@ async function deployTransferRestrictedVault(
   const {deploy, log} = deployments
   const logger = log
   const {protocol_owner, proxy_owner} = await getNamedAccounts()
-  const chainID = await getChainId()
+  assertIsString(protocol_owner)
+  assertIsString(proxy_owner)
+  const chainId = await getChainId()
+  assertIsChainId(chainId)
 
   let contractName = "TransferRestrictedVault"
 
-  logger("About to deploy TransferRestrictedVault...")
+  logger(`About to deploy ${contractName}...`)
   const deployResult = await deploy(contractName, {
     from: proxy_owner,
     proxy: {
       methodName: "__initialize__",
     },
-    args: [SAFE_CONFIG[chainID] || protocol_owner, config.address],
+    args: [isSafeConfigChainId(chainId) ? SAFE_CONFIG[chainId] : protocol_owner, config.address],
   })
   const contract = (await ethers.getContractAt(contractName, deployResult.address)) as TransferRestrictedVault
   return contract
@@ -278,7 +298,10 @@ async function deployPoolTokens(hre: HardhatRuntimeEnvironment, {config}: Deploy
   const {deploy, log} = deployments
   const logger = log
   const {protocol_owner, proxy_owner} = await getNamedAccounts()
-  const chainID = await getChainId()
+  assertIsString(protocol_owner)
+  assertIsString(proxy_owner)
+  const chainId = await getChainId()
+  assertIsChainId(chainId)
 
   let contractName = "PoolTokens"
 
@@ -292,7 +315,7 @@ async function deployPoolTokens(hre: HardhatRuntimeEnvironment, {config}: Deploy
     proxy: {
       methodName: "__initialize__",
     },
-    args: [SAFE_CONFIG[chainID] || protocol_owner, config.address],
+    args: [isSafeConfigChainId(chainId) ? SAFE_CONFIG[chainId] : protocol_owner, config.address],
   })
   logger("Initialized Pool Tokens...")
   await updateConfig(config, "address", CONFIG_KEYS.PoolTokens, poolTokensDeployResult.address, {logger})
@@ -311,6 +334,7 @@ async function deployPool(hre: HardhatRuntimeEnvironment, {config}: DeployOpts) 
   const logger = log
   const {protocol_owner, proxy_owner} = await getNamedAccounts()
 
+  assertIsString(proxy_owner)
   let poolDeployResult = await deploy(contractName, {
     from: proxy_owner,
     proxy: {methodName: "initialize"},
@@ -334,9 +358,11 @@ async function deploySeniorFund(hre: HardhatRuntimeEnvironment, {config, fidu}: 
   const logger = log
   const {protocol_owner, proxy_owner} = await getNamedAccounts()
 
+  assertIsString(protocol_owner)
   const accountant = await deploy("Accountant", {from: protocol_owner, gasLimit: 4000000, args: []})
   logger("Accountant was deployed to:", accountant.address)
 
+  assertIsString(proxy_owner)
   let deployResult = await deploy(contractName, {
     from: proxy_owner,
     proxy: {methodName: "initialize"},
@@ -360,6 +386,7 @@ async function deploySeniorFundStrategy(hre: HardhatRuntimeEnvironment, {config}
   const logger = log
   const {proxy_owner} = await getNamedAccounts()
 
+  assertIsString(proxy_owner)
   let deployResult = await deploy(contractName, {
     from: proxy_owner,
     args: [new BN(4).toString()],
@@ -378,6 +405,7 @@ async function deployBorrower(hre: HardhatRuntimeEnvironment, {config}: DeployOp
   const logger = log
   const {proxy_owner} = await getNamedAccounts()
 
+  assertIsString(proxy_owner)
   let deployResult = await deploy(contractName, {
     from: proxy_owner,
   })

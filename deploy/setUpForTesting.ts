@@ -14,24 +14,24 @@ import {
   TranchedPool,
 } from "../typechain/ethers"
 import {DeploymentsExtension} from "hardhat-deploy/dist/types"
-import {BaseContract, Contract} from "ethers"
+import {Contract, ContractReceipt} from "ethers"
 const {ethers} = hre
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
 require("dotenv").config({path: ".env.local"})
-import {usdcVal, advanceTime} from "../test/testHelpers"
+import {advanceTime} from "../test/testHelpers"
 import {
   MAINNET_CHAIN_ID,
   LOCAL,
-  CHAIN_MAPPING,
+  CHAIN_NAME_BY_ID,
   getUSDCAddress,
-  getERC20Address,
   USDCDecimals,
   isTestEnv,
   interestAprAsBN,
   isMainnetForking,
   getSignerForAddress,
-  TRANCHES,
   updateConfig,
+  getERC20Address,
+  assertIsChainId,
 } from "../blockchain_scripts/deployHelpers"
 import {
   MAINNET_MULTISIG,
@@ -43,6 +43,8 @@ import {
   performPostUpgradeMigration,
 } from "../blockchain_scripts/mainnetForkingHelpers"
 import _ from "lodash"
+import {assertIsString, assertNonNullable} from "../utils/type"
+import { Result } from "ethers/lib/utils"
 
 /*
 This deployment deposits some funds to the pool, and creates an underwriter, and a credit line.
@@ -53,7 +55,11 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   const {getOrNull, log} = deployments
   logger = log
   let {protocol_owner} = await getNamedAccounts()
-  let chainID = await getChainId()
+  assertIsString(protocol_owner)
+
+  let chainId = await getChainId()
+  assertIsChainId(chainId)
+
   let underwriter = protocol_owner
   let borrower = protocol_owner
   let erc20 = await getDeployedAsEthersContract<Contract>(getOrNull, "TestERC20")
@@ -65,9 +71,10 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   let goldfinchFactory = await getDeployedAsEthersContract<GoldfinchFactory>(getOrNull, "GoldfinchFactory")
   await setupTestForwarder(deployments, config, getOrNull, protocol_owner)
 
-  if (getUSDCAddress(chainID)) {
+  const chainUsdcAddress = getUSDCAddress(chainId)
+  if (chainUsdcAddress) {
     logger("On a network with known USDC address, so firing up that contract...")
-    erc20 = await ethers.getContractAt("TestERC20", getUSDCAddress(chainID))
+    erc20 = await ethers.getContractAt("TestERC20", chainUsdcAddress)
   }
 
   let erc20s = [
@@ -82,14 +89,18 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
     underwriter = MAINNET_MULTISIG
     await impersonateAccount(hre, MAINNET_MULTISIG)
     let ownerAccount = await getSignerForAddress(protocol_owner)
+    const usdtAddress = getERC20Address("USDT", chainId)
+    assertIsString(usdtAddress)
+    const busdAddress = getERC20Address("BUSD", chainId)
+    assertIsString(busdAddress)
     erc20s = erc20s.concat([
       {
         ticker: "USDT",
-        contract: await ethers.getContractAt("IERC20withDec", getERC20Address("USDT", chainID)),
+        contract: await ethers.getContractAt("IERC20withDec", usdtAddress),
       },
       {
         ticker: "BUSD",
-        contract: await ethers.getContractAt("IERC20withDec", getERC20Address("BUSD", chainID)),
+        contract: await ethers.getContractAt("IERC20withDec", busdAddress),
       },
     ])
 
@@ -116,7 +127,7 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   const testUser = process.env.TEST_USER
   if (testUser) {
     borrower = testUser
-    if (CHAIN_MAPPING[chainID] === LOCAL) {
+    if (CHAIN_NAME_BY_ID[chainId] === LOCAL) {
       await giveMoneyToTestUser(testUser, erc20s)
     }
 
@@ -132,7 +143,8 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   await depositToTheSeniorFund(seniorFund, erc20!)
 
   const result = await (await goldfinchFactory.createBorrower(borrower)).wait()
-  let bwrConAddr = result.events![result.events!.length - 1].args![0]
+  const lastEventArgs = getLastEventArgs(result)
+  let bwrConAddr = lastEventArgs[0]
   logger(`Created borrower contract: ${bwrConAddr} for ${borrower}`)
 
   let pool1 = await createPoolForBorrower(getOrNull, underwriter, goldfinchFactory, bwrConAddr, erc20!)
@@ -144,6 +156,7 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   await seniorFund.invest(pool2.address)
   let filter = pool2.filters.DepositMade(seniorFund.address)
   let depositLog = (await ethers.provider.getLogs(filter))[0]
+  assertNonNullable(depositLog)
   let depositEvent = pool2.interface.parseLog(depositLog)
   let tokenId = depositEvent.args.tokenId
 
@@ -188,6 +201,15 @@ async function writePoolMetadata(pool: TranchedPool) {
   }
 
   await fs.promises.writeFile(metadataPath, JSON.stringify(metadata, null, 2))
+}
+
+function getLastEventArgs(result: ContractReceipt): Result {
+  const events = result.events
+  assertNonNullable(events)
+  const lastEvent = events[events.length - 1]
+  assertNonNullable(lastEvent)
+  assertNonNullable(lastEvent.args)
+  return lastEvent.args
 }
 
 async function upgradeExistingContracts(
@@ -236,10 +258,14 @@ async function depositToTheSeniorFund(fund: SeniorFund, erc20: Contract) {
 async function giveMoneyToTestUser(testUser: string, erc20s: any) {
   logger("Sending money to the test user", testUser)
   const [protocol_owner] = await ethers.getSigners()
-  await protocol_owner.sendTransaction({
-    to: testUser,
-    value: ethers.utils.parseEther("10.0"),
-  })
+  if (protocol_owner) {
+    await protocol_owner.sendTransaction({
+      to: testUser,
+      value: ethers.utils.parseEther("10.0"),
+    })
+  } else {
+    throw new Error("Failed to obtain `protocol_owner`.")
+  }
 
   let ten = new BN(10)
   for (let erc20 of erc20s) {
@@ -288,8 +314,8 @@ async function createPoolForBorrower(
       {from: underwriter}
     )
   ).wait()
-  let event = result.events![result.events!.length - 1]
-  let poolAddress = event.args![0]
+  const lastEventArgs = getLastEventArgs(result)
+  let poolAddress = lastEventArgs[0]
   let owner = await getSignerForAddress(underwriter)
   let pool = (await getDeployedAsEthersContract<TranchedPool>(getOrNull, "TranchedPool"))!
     .attach(poolAddress)

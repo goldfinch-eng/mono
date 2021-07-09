@@ -1,12 +1,13 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "lib": ["es2019", "es2020.promise", "es2020.bigint", "es2020.string"],
     "module": "commonjs",
-    "noImplicitReturns": true,
-    "noUnusedLocals": true,
+    "target": "es2019",
+    "noEmit": false,
     "outDir": "lib",
     "sourceMap": true,
-    "strict": true,
-    "target": "es2017"
+    "noImplicitAny": true,
   },
   "compileOnSave": true,
   "include": ["src"]

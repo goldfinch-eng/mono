@@ -6,7 +6,7 @@ async function main() {
   // find all files matching the glob
   const allFiles = glob(cwd, [`${hre.config.paths.artifacts}/!(build-info)/**/+([a-zA-Z0-9_]).json`])
 
-  const result = await runTypeChain({
+  await runTypeChain({
     cwd,
     filesToProcess: allFiles,
     allFiles,

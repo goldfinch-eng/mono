@@ -43,12 +43,12 @@ function Dropdown({
 
   return (
     <div className={`dropdown ${className}`} ref={node}>
-      <a className={`dropdown-selected ${selectedClassName}`} onClick={toggleOpen}>
+      <button className={`dropdown-selected ${selectedClassName}`} onClick={toggleOpen}>
         <div className="dropdown-selected-content">
           {selectedOption && (selectedOption.selectedEl || selectedOption.el)}
         </div>
         {arrow && <span className="dropdown-arrow"></span>}
-      </a>
+      </button>
       {open && (
         <div>
           <div className={`dropdown-list ${open}`}>

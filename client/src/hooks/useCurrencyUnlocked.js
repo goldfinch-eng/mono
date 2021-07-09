@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from "react"
+import { useState, useEffect, useContext, useCallback } from "react"
 import { AppContext } from "../App"
 
 function useCurrencyUnlocked(erc20, { owner, spender, minimum }) {
@@ -6,7 +6,7 @@ function useCurrencyUnlocked(erc20, { owner, spender, minimum }) {
   const { goldfinchConfig } = useContext(AppContext)
   minimum = minimum || goldfinchConfig.transactionLimit
 
-  async function refreshUnlocked() {
+  const refreshUnlocked = useCallback(async () => {
     let allowance = await erc20.getAllowance({
       owner: owner,
       spender: spender,
@@ -15,11 +15,11 @@ function useCurrencyUnlocked(erc20, { owner, spender, minimum }) {
     if (ul !== unlocked) {
       setUnlocked(ul)
     }
-  }
+  }, [erc20, owner, spender, minimum, unlocked])
 
   useEffect(() => {
     refreshUnlocked()
-  }, [erc20, owner, spender, goldfinchConfig, minimum])
+  }, [refreshUnlocked])
 
   return [unlocked, refreshUnlocked]
 }

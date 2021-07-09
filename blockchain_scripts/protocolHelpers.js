@@ -3,11 +3,16 @@ const {getChainId} = require("hardhat")
 const hre = require("hardhat")
 const {deployments, getNamedAccounts} = hre
 const _ = require("lodash")
-const {getDeployedContract, getUSDCAddress} = require("../blockchain_scripts/deployHelpers.js")
+const {getDeployedContract, getUSDCAddress, assertIsChainId} = require("../blockchain_scripts/deployHelpers.js")
+const {assertIsString} = require("../utils/type.js")
 
 async function displayCreditLine(creditLineAddress) {
   const creditLine = await ethers.getContractAt("CreditLine", creditLineAddress)
-  const usdc = await ethers.getContractAt("Fidu", getUSDCAddress(await getChainId()))
+  const chainId = await getChainId()
+  assertIsChainId(chainId)
+  const usdcAddress = getUSDCAddress(chainId)
+  assertIsString(usdcAddress)
+  const usdc = await ethers.getContractAt("Fidu", usdcAddress)
 
   const [
     borrower,

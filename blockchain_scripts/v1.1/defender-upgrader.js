@@ -1,5 +1,5 @@
 /* globals artifacts */
-const {SAFE_CONFIG, getDefenderClient, CHAIN_MAPPING} = require("../deployHelpers")
+const {SAFE_CONFIG, getDefenderClient, CHAIN_NAME_BY_ID} = require("../deployHelpers")
 const {CONFIG_KEYS} = require("../configKeys")
 const CreditDesk = artifacts.require("CreditDesk")
 
@@ -8,7 +8,7 @@ class DefenderUpgrader {
     this.hre = hre
     this.logger = logger
     this.chainId = chainId
-    this.network = CHAIN_MAPPING[chainId]
+    this.network = CHAIN_NAME_BY_ID[chainId]
     this.client = getDefenderClient()
     const safe = SAFE_CONFIG[chainId]
     this.goldfinchUnderwriter = "0x79ea65C834EC137170E1aA40A42b9C80df9c0Bb4"

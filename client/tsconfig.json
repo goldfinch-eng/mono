@@ -1,4 +1,5 @@
 {
+  "extends": "../tsconfig.base.json",
   "compilerOptions": {
     "lib": [
       "dom",
@@ -7,26 +8,8 @@
     ],
     "module": "esnext",
     "target": "es5",
-
-    "allowJs": true,
-    "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "isolatedModules": true,
     "jsx": "react",
-    "moduleResolution": "node",
-    "noEmit": true,
-    "noImplicitAny": false,
-    "noImplicitOverride": false,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-    "noPropertyAccessFromIndexSignature": false,
-    "noUncheckedIndexedAccess": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": false,
-    "resolveJsonModule": true,
     "skipLibCheck": true,
-    "strict": true,
   },
   "include": [
     "src"

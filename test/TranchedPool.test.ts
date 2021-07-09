@@ -14,6 +14,7 @@ import {
   UNIT_SHARE_PRICE,
   ZERO,
   decodeLogs,
+  getFirstLog,
 } from "./testHelpers"
 import {interestAprAsBN, TRANCHES, MAX_UINT, OWNER_ROLE, PAUSER_ROLE} from "../blockchain_scripts/deployHelpers"
 import {expectEvent, time} from "@openzeppelin/test-helpers"
@@ -291,7 +292,9 @@ describe("TranchedPool", () => {
         expect(await poolTokens.balanceOf(owner)).to.bignumber.eq("0")
 
         const response = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(10))
-        const tokenId = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")[0].args.tokenId
+        const logs = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")
+        const firstLog = getFirstLog(logs)
+        const tokenId = firstLog.args.tokenId
         let juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
         let seniorTranche = await tranchedPool.getTranche(TRANCHES.Senior)
 
@@ -340,7 +343,9 @@ describe("TranchedPool", () => {
         expect(await poolTokens.balanceOf(owner)).to.bignumber.eq("0")
 
         const response = await tranchedPool.deposit(TRANCHES.Senior, usdcVal(10))
-        const tokenId = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")[0].args.tokenId
+        const logs = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")
+        const firstLog = getFirstLog(logs)
+        const tokenId = firstLog.args.tokenId
         let juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
         let seniorTranche = await tranchedPool.getTranche(TRANCHES.Senior)
 
@@ -399,7 +404,9 @@ describe("TranchedPool", () => {
       })
 
       // Verify deposit was correct
-      let tokenId = decodeLogs<DepositMade>(receipt.receipt.rawLogs, tranchedPool, "DepositMade")[0].args.tokenId
+      const logs = decodeLogs<DepositMade>(receipt.receipt.rawLogs, tranchedPool, "DepositMade")
+      const firstLog = getFirstLog(logs)
+      let tokenId = firstLog.args.tokenId
       let juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
       let seniorTranche = await tranchedPool.getTranche(TRANCHES.Senior)
 
@@ -426,7 +433,9 @@ describe("TranchedPool", () => {
       await erc20Approve(usdc, tranchedPool.address, usdcVal(100000), [otherPerson])
       await tranchedPool.deposit(TRANCHES.Junior, usdcVal(500), {from: otherPerson})
       let response = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(500))
-      let tokenId = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")[0].args.tokenId
+      const logs = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")
+      const firstLog = getFirstLog(logs)
+      let tokenId = firstLog.args.tokenId
 
       await tranchedPool.lockJuniorCapital({from: borrower})
 
@@ -465,7 +474,9 @@ describe("TranchedPool", () => {
     describe("validations", async () => {
       it("does not allow you to withdraw if you don't own the pool token", async () => {
         let receipt = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(10), {from: owner})
-        let tokenId = decodeLogs<DepositMade>(receipt.receipt.rawLogs, tranchedPool, "DepositMade")[0].args.tokenId
+        const logs = decodeLogs<DepositMade>(receipt.receipt.rawLogs, tranchedPool, "DepositMade")
+        const firstLog = getFirstLog(logs)
+        let tokenId = firstLog.args.tokenId
 
         await expect(tranchedPool.withdraw(tokenId, usdcVal(10), {from: otherPerson})).to.be.rejectedWith(
           /Only the token owner is allowed/
@@ -479,7 +490,9 @@ describe("TranchedPool", () => {
         const {tranchedPool: otherTranchedPool} = await createPoolWithCreditLine({})
 
         let otherReceipt = await otherTranchedPool.deposit(TRANCHES.Junior, usdcVal(10), {from: owner})
-        let otherTokenId = decodeLogs<DepositMade>(otherReceipt.receipt.rawLogs, otherTranchedPool, "DepositMade")[0]
+        const logs = decodeLogs<DepositMade>(otherReceipt.receipt.rawLogs, otherTranchedPool, "DepositMade")
+        const firstLog = getFirstLog(logs)
+        let otherTokenId = firstLog
           .args.tokenId
 
         await expect(tranchedPool.withdraw(otherTokenId, usdcVal(10), {from: owner})).to.be.rejectedWith(
@@ -488,7 +501,9 @@ describe("TranchedPool", () => {
       })
       it("does not allow you to withdraw if no amount is available", async () => {
         let receipt = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(10), {from: owner})
-        let tokenId = decodeLogs<DepositMade>(receipt.receipt.rawLogs, tranchedPool, "DepositMade")[0].args.tokenId
+        const logs = decodeLogs<DepositMade>(receipt.receipt.rawLogs, tranchedPool, "DepositMade")
+        const firstLog = getFirstLog(logs)
+        let tokenId = firstLog.args.tokenId
 
         await expect(tranchedPool.withdrawMax(tokenId, {from: owner})).to.be.fulfilled
         await expect(tranchedPool.withdraw(tokenId, usdcVal(10), {from: owner})).to.be.rejectedWith(
@@ -500,7 +515,9 @@ describe("TranchedPool", () => {
     describe("before the pool is locked", async () => {
       it("lets you withdraw everything you put in", async () => {
         let response = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(10))
-        let tokenId = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")[0].args.tokenId
+        const logs = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")
+        const firstLog = getFirstLog(logs)
+        let tokenId = firstLog.args.tokenId
 
         await tranchedPool.withdraw(tokenId, usdcVal(10))
         let juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
@@ -517,7 +534,9 @@ describe("TranchedPool", () => {
     describe("after the pool is locked", async () => {
       it("does not let you withdraw if no payments have come back", async () => {
         let response = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(10))
-        let tokenId = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")[0].args.tokenId
+        const logs = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")
+        const firstLog = getFirstLog(logs)
+        let tokenId = firstLog.args.tokenId
 
         await tranchedPool.lockJuniorCapital({from: borrower})
 
@@ -529,7 +548,9 @@ describe("TranchedPool", () => {
         await erc20Approve(usdc, tranchedPool.address, usdcVal(100000), [otherPerson])
         await tranchedPool.deposit(TRANCHES.Junior, usdcVal(500), {from: otherPerson})
         let response = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(500))
-        let tokenId = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")[0].args.tokenId
+        const logs = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")
+        const firstLog = getFirstLog(logs)
+        let tokenId = firstLog.args.tokenId
 
         await tranchedPool.lockJuniorCapital({from: borrower})
         await tranchedPool.lockPool({from: borrower})
@@ -561,7 +582,9 @@ describe("TranchedPool", () => {
 
       it("emits a WithdrawalMade event", async () => {
         let response = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(1000))
-        let tokenId = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")[0].args.tokenId
+        const logs = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")
+        const firstLog = getFirstLog(logs)
+        let tokenId = firstLog.args.tokenId
 
         await tranchedPool.lockJuniorCapital({from: borrower})
         await tranchedPool.lockPool({from: borrower})
@@ -596,14 +619,18 @@ describe("TranchedPool", () => {
 
     it("does not allow you to withdraw during the drawdown period", async () => {
       let response = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(10))
-      let juniorTokenId = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")[0].args.tokenId
+      const logs = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")
+      const firstLog = getFirstLog(logs)
+      let juniorTokenId = firstLog.args.tokenId
 
       await tranchedPool.lockJuniorCapital({from: borrower})
 
       await expect(tranchedPool.withdraw(juniorTokenId, usdcVal(10))).to.be.rejectedWith(/Tranche is locked/)
 
       response = await tranchedPool.deposit(TRANCHES.Senior, usdcVal(40))
-      let seniorTokenId = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")[0].args.tokenId
+      const logs2 = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")
+      const firstLog2 = getFirstLog(logs2)
+      let seniorTokenId = firstLog2.args.tokenId
       await tranchedPool.lockPool({from: borrower})
 
       await expect(tranchedPool.withdraw(seniorTokenId, usdcVal(10))).to.be.rejectedWith(/Tranche is locked/)
@@ -628,7 +655,9 @@ describe("TranchedPool", () => {
       await erc20Approve(usdc, tranchedPool.address, usdcVal(100000), [otherPerson])
       await tranchedPool.deposit(TRANCHES.Junior, usdcVal(500), {from: otherPerson})
       let response = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(500))
-      let tokenId = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")[0].args.tokenId
+      const logs = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")
+      const firstLog = getFirstLog(logs)
+      let tokenId = firstLog.args.tokenId
 
       await tranchedPool.lockJuniorCapital({from: borrower})
       await tranchedPool.lockPool({from: borrower})
@@ -661,7 +690,9 @@ describe("TranchedPool", () => {
 
     it("emits a WithdrawalMade event", async () => {
       let response = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(1000))
-      let tokenId = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")[0].args.tokenId
+      const logs = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")
+      const firstLog = getFirstLog(logs)
+      let tokenId = firstLog.args.tokenId
 
       await tranchedPool.lockJuniorCapital({from: borrower})
       await tranchedPool.lockPool({from: borrower})
@@ -698,10 +729,14 @@ describe("TranchedPool", () => {
         const juniorDeposit = limit
         const seniorDeposit = limit.mul(new BN(4))
         let response = await tranchedPool.deposit(TRANCHES.Junior, juniorDeposit)
-        let juniorTokenId = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")[0].args
+        const logs = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")
+        const firstLog = getFirstLog(logs)
+        let juniorTokenId = firstLog.args
           .tokenId
         response = await tranchedPool.deposit(TRANCHES.Senior, seniorDeposit)
-        let seniorTokenId = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")[0].args
+        const logs2 = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")
+        const firstLog2 = getFirstLog(logs2)
+        let seniorTokenId = firstLog2.args
           .tokenId
         await tranchedPool.lockJuniorCapital({from: borrower})
         await tranchedPool.lockPool({from: borrower})
@@ -789,7 +824,9 @@ describe("TranchedPool", () => {
 
       beforeEach(async () => {
         let receipt = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(10))
-        tokenId = decodeLogs<DepositMade>(receipt.receipt.rawLogs, tranchedPool, "DepositMade")[0].args.tokenId
+        const logs = decodeLogs<DepositMade>(receipt.receipt.rawLogs, tranchedPool, "DepositMade")
+        const firstLog = getFirstLog(logs)
+        tokenId = firstLog.args.tokenId
 
         await tranchedPool.pause()
       })

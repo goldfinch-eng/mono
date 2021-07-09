@@ -55,7 +55,7 @@ function useGeolocation(client: GeolocationClient = defaultClient): GeolocationD
     if (!geolocationData) {
       fetchGeolocationData()
     }
-  }, [geolocationData])
+  }, [client, geolocationData, setGeolocationData])
 
   return geolocationData
 }
