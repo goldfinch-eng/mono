@@ -14,7 +14,7 @@
   "engines": {
     "node": "12"
   },
-  "main": "lib/index.js",
+  "main": "lib/server/functions/src/index.js",
   "dependencies": {
     "@sentry/integrations": "^6.8.0",
     "@sentry/serverless": "^6.8.0",
