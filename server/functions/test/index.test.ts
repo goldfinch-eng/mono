@@ -15,7 +15,7 @@ import Firestore = firestore.Firestore
 describe("functions", () => {
   let testFirestore: Firestore
   let testApp: admin.app.App
-  let config: FirebaseConfig
+  let config: Omit<FirebaseConfig, "sentry">
   const projectId = "goldfinch-frontend-test"
   const address = "0xE7f9ED35DA54b2e4A1857487dBf42A32C4DBD4a0"
   const validSignature =
@@ -28,10 +28,6 @@ describe("functions", () => {
     config = {
       kyc: {allowed_origins: "http://localhost:3000"},
       persona: {allowed_ips: ""},
-      sentry: {
-        dsn: "https://8c1adf3a336a4487b14ae1af080c26d1@o915675.ingest.sentry.io/5857894",
-        env: "test",
-      },
     }
     setEnvForTest(testFirestore, config)
     users = getUsers(testFirestore)
