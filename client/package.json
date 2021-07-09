@@ -7,6 +7,8 @@
     "@hookform/error-message": "0.0.4",
     "@openzeppelin/network": "^0.4.1",
     "@openzeppelin/solidity-loader": "^1.4.6",
+    "@sentry/react": "^6.8.0",
+    "@sentry/tracing": "^6.8.0",
     "@types/jest": "^26.0.23",
     "@types/node": "^15.9.0",
     "@types/react": "^17.0.9",
