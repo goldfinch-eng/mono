@@ -10,7 +10,7 @@ import { Integrations } from "@sentry/tracing"
 Sentry.init({
   dsn: process.env.REACT_APP_SENTRY_DSN,
   integrations: [new Integrations.BrowserTracing()],
-
+  environment: process.env.NODE_ENV,
   tracesSampleRate: process.env.NODE_ENV === "production" ? 0.25 : 1.0,
 })
 
