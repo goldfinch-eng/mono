@@ -12,7 +12,7 @@ import { useForm, FormProvider } from "react-hook-form"
 
 const accreditationNotice = (
   <>
-    <div>
+    <div className="form-message paragraph">
       Get your free accredited investor verification from{" "}
       <a className="link" target="_blank" href="https://parallelmarkets.com/get-accredited/">
         parallelmarkets.com
@@ -42,7 +42,7 @@ function EntityForm({ onClose }) {
       render={() => {
         return (
           <>
-            <div>Goldfinch is open to entities that qualify as accredited Investors.</div>
+            <div className="form-message paragraph">Goldfinch is open to entities that qualify as accredited investors.</div>
             {accreditationNotice}
           </>
         )
@@ -59,6 +59,7 @@ function NonUSForm({ entityType, onClose, onEvent, network, address }) {
       render={({ formMethods }) => {
         return (
           <>
+            <div className="form-message paragraph">Please note: we use <a className="link" href="https://withpersona.com/">Persona</a> to verify your identity, and they handle all personal information. The only information we store is your ETH address, country, and approval status. We take privacy seriously.</div>
             <PersonaForm
               entityType={entityType}
               network={network}
@@ -83,7 +84,7 @@ function USForm({ kycStatus, entityType, onClose, onEvent, network, address }) {
         if (kycStatus === "approved") {
           verifyIdSection = (
             <div className="placeholder">
-              <span>Step 1: Verify ID {iconCircleCheck}</span>
+              <span className="verify-step-label">Step 1: Verify ID {iconCircleCheck}</span>
             </div>
           )
         } else {
@@ -97,14 +98,16 @@ function USForm({ kycStatus, entityType, onClose, onEvent, network, address }) {
                 onEvent={onEvent}
                 formMethods={formMethods}
               />
+              <div className="form-separator background-container-inner"></div>
             </>
           )
         }
         return (
           <>
-            <div>Goldfinch is open to U.S. individuals who qualify as accredited Investors.</div>
+            <div className="form-message paragraph">Goldfinch is open to U.S. individuals who qualify as accredited investors.</div>
+            <div className="form-message paragraph">Please note: we use <a className="link" href="https://withpersona.com/">Persona</a> to verify your identity, and they handle all personal information. The only information we store is your ETH address, country, and approval status. We take privacy seriously.</div>
             {verifyIdSection}
-            <div>Step 2: Verify Accredited Status</div>
+            <h2>Step 2: Verify Accredited Status</h2>
             {accreditationNotice}
           </>
         )
@@ -147,44 +150,48 @@ function PersonaForm({ entityType, onEvent, network, address, formMethods }) {
 
   return (
     <>
-      <div className="form-input-label">Email</div>
-      <div className="form-field">
-        <div className="form-input-container">
-          <input
-            type="email"
-            name="email"
-            placeholder="email@example.com"
-            className="form-input small-text"
-            ref={formMethods.register({ required: true, pattern: /^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]{2,}$/ })}
-          ></input>
-          <div className="form-input-note">
-            <ErrorMessage errors={formMethods.errors} name="email" message="That doesn't look like a valid email" />
-          </div>
-        </div>
-      </div>
-      <div className="form-input-label">(Optional) Discord username</div>
-      <div className="form-inputs-footer">
+      <div>
+        <div className="form-input-label">Email</div>
         <div className="form-field">
           <div className="form-input-container">
             <input
-              type="text"
-              name="discord"
-              placeholder="user#1234"
+              type="email"
+              name="email"
+              placeholder="email@example.com"
               className="form-input small-text"
-              ref={formMethods.register({ pattern: /[a-zA-Z0-9]+#[0-9]{4}/ })}
-            />
+              ref={formMethods.register({ required: true, pattern: /^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]{2,}$/ })}
+            ></input>
             <div className="form-input-note">
-              <ErrorMessage
-                errors={formMethods.errors}
-                name="discord"
-                message="That doesn't look like a valid discord username"
-              />
+              <ErrorMessage errors={formMethods.errors} name="email" message="That doesn't look like a valid email" />
             </div>
           </div>
         </div>
-        <button className={"button verify"} onClick={formMethods.handleSubmit(verifyOnPersona)}>
-          Verify ID
-        </button>
+      </div>
+      <div>
+        <div className="form-input-label">(Optional) Discord username</div>
+        <div className="form-inputs-footer">
+          <div className="form-field">
+            <div className="form-input-container">
+              <input
+                type="text"
+                name="discord"
+                placeholder="user#1234"
+                className="form-input small-text"
+                ref={formMethods.register({ pattern: /[a-zA-Z0-9]+#[0-9]{4}/ })}
+              />
+              <div className="form-input-note">
+                <ErrorMessage
+                  errors={formMethods.errors}
+                  name="discord"
+                  message="That doesn't look like a valid discord username"
+                />
+              </div>
+            </div>
+          </div>
+          <button className={"button submit-form verify"} onClick={formMethods.handleSubmit(verifyOnPersona)}>
+            Verify ID
+          </button>
+        </div>
       </div>
     </>
   )
@@ -306,7 +313,7 @@ function VerifyIdentity() {
       return (
         <>
           <div className={"background-container"}>
-            <div className="">Who is verifying this address?</div>
+            <div className="form-message">Who is verifying this address?</div>
             <div className="verify-options">
               <div className="item">
                 <button

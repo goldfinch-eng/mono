@@ -3,7 +3,6 @@
 .verify-options {
   display: flex;
   flex-direction: row;
-  margin-top: 1em;
   @include space-x(1em);
 
   .item {
@@ -16,12 +15,21 @@
   }
 }
 
-.verify {
-  padding-left: 2em;
-  padding-right: 2em;
+.verify-step-label .icon{
+  height: 24px;
+  margin: 0 0 -3px 3px;
+  width: 24px;
 }
 
 .link {
   text-decoration: underline;
-  color: $sand-xxdark;
+  color: $blue-dark;
+}
+
+@media only screen and (min-width: $screen-l) {
+  .verify-step-label .icon{
+    height: 26px;
+    width: 26px;
+  }
+
 }

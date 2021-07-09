@@ -3,7 +3,7 @@
   border-radius: 6px;
   font-size: $sans-size-m;
   color: $purp-dark;
-  line-height: 56px;
+  height: 56px;
   outline: none;
 
   &:hover{
@@ -60,7 +60,7 @@
   .button{
     border-radius: 8px;
     font-size: $sans-size-base;
-    line-height: 70px;
+    height: 70px;
 
     .icon{
       height: 24px;
