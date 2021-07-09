@@ -6,6 +6,9 @@ import { ethers } from "ethers"
 import { iconCircleCheck, iconClock, iconAlert } from "./icons.js"
 import TransactionForm from "./transactionForm"
 import { ErrorMessage } from "@hookform/error-message"
+import ConnectionNotice from "./connectionNotice"
+import LoadingButton from "./loadingButton"
+import { useForm, FormProvider } from "react-hook-form"
 
 const accreditationNotice = (
   <>
@@ -134,11 +137,9 @@ function PersonaForm({ entityType, onEvent, network, address, formMethods }) {
         onEvent("complete")
       },
       onFail: id => {
-        console.log(`KYC Failed (${id})`)
         onEvent("fail")
       },
       onExit: error => {
-        console.log(`KYC aborted with error: ${error?.message}`)
         onEvent("exit")
       },
     })
@@ -189,9 +190,29 @@ function PersonaForm({ entityType, onEvent, network, address, formMethods }) {
   )
 }
 
+function SignInForm({ action, disabled }) {
+  const formMethods = useForm({ mode: "onChange", shouldUnregister: false })
+  return (
+    <>
+      <div className={"background-container"}>
+        <div className="verify-options">
+          <div className="item">First, please sign in to confirm your address</div>
+          <div className="item">
+            <FormProvider {...formMethods}>
+              <form className="form">
+                <LoadingButton text="Sign in" action={action} disabled={disabled} />
+              </form>
+            </FormProvider>
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
+
 function VerifyIdentity() {
   const { user, network } = useContext(AppContext)
-  const [kycStatus, setKycStatus] = useState<string>("unknown")
+  const [kycStatus, setKycStatus] = useState<string>("")
   // Determines the form to show. Can be empty, "US" or "entity"
   const [countryCode, setCountryCode] = useState<string>("")
   const [entityType, setEntityType] = useState<string>("")
@@ -208,11 +229,8 @@ function VerifyIdentity() {
     return baseURL + "/kycStatus?" + new URLSearchParams({ address, signature })
   }
 
-  async function fetchKYCStatus() {
-    if (userSignature === "") {
-      return
-    }
-    const response = await fetch(getKYCURL(user.address, userSignature))
+  async function fetchKYCStatus(signature) {
+    const response = await fetch(getKYCURL(user.address, signature))
     const responseJson = await response.json()
     setKycStatus(responseJson.status)
     if (responseJson.countryCode === "US") {
@@ -224,32 +242,23 @@ function VerifyIdentity() {
   async function getUserSignature() {
     const provider = new ethers.providers.Web3Provider(web3.currentProvider as any)
     const signer = provider.getSigner(user.address)
-    setUserSignature("pending")
-    const signature = await signer.signMessage("Sign in to Goldfinch")
+    return await signer.signMessage("Sign in to Goldfinch")
+  }
+
+  async function getSignatureAndKycStatus() {
+    const signature = await getUserSignature()
+    await fetchKYCStatus(signature)
     setUserSignature(signature)
   }
 
   function chooseEntity(chosenType) {
-    if (userSignature === "" || userSignature === "pending") {
-      getUserSignature().then(_ => {
-        setEntityType(chosenType)
-      })
-    } else {
-      setEntityType(chosenType)
-    }
+    setEntityType(chosenType)
   }
 
-  useEffect(() => {
-    if (userSignature === "") {
-      getUserSignature()
-    } else if (userSignature !== "pending") {
-      fetchKYCStatus()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userSignature, network, user])
-
   function renderForm() {
-    if (kycStatus === "golisted") {
+    if (kycStatus === "") {
+      return <SignInForm disabled={!user.address} action={() => getSignatureAndKycStatus()} />
+    } else if (kycStatus === "golisted") {
       return <VerificationNotice icon={iconCircleCheck} notice="Your address verification is complete." />
     } else if (kycStatus === "failed") {
       return (
@@ -267,7 +276,7 @@ function VerifyIdentity() {
           network={network?.name!}
           address={user.address}
           onEvent={() => {
-            fetchKYCStatus()
+            fetchKYCStatus(userSignature)
           }}
         />
       )
@@ -288,7 +297,7 @@ function VerifyIdentity() {
           network={network?.name!}
           address={user.address}
           onEvent={() => {
-            fetchKYCStatus()
+            fetchKYCStatus(userSignature)
           }}
         />
       )
@@ -337,6 +346,7 @@ function VerifyIdentity() {
   return (
     <div className="content-section">
       <div className="page-header">Verify Address</div>
+      <ConnectionNotice />
       {renderForm()}
     </div>
   )

@@ -43,7 +43,7 @@ function ConnectionNotice(props) {
     if (unlockStatus && !unlockStatus.isUnlocked) {
       notice = <UnlockUSDCForm unlockAddress={unlockStatus.unlockAddress} />
     }
-    if (!user.goListed) {
+    if (!user.goListed && !props.location.pathname.startsWith("/verify")) {
       notice = (
         <div className="content-empty-message background-container">
           Your address not been authorized to use Goldfinch.
