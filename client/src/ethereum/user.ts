@@ -5,7 +5,8 @@ import { getFromBlock, MAINNET } from "./utils"
 import { mapEventsToTx } from "./events"
 import { getCreditLineFactory } from "./creditLine"
 import { BorrowerInterface, getBorrowerContract } from "./borrower"
-import { goList } from "../goList"
+
+const goList = require("../goList.json")
 
 declare let window: any;
 
