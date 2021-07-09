@@ -42,7 +42,10 @@ function EntityForm({ onClose }) {
       render={() => {
         return (
           <>
-            <div className="form-message paragraph">Goldfinch is open to entities that qualify as accredited investors.</div>
+            <div className="form-message paragraph">
+              Goldfinch is open to non-U.S. entities, and will soon be open to U.S. entities that qualify as accredited
+              investors.
+            </div>
             {accreditationNotice}
           </>
         )
@@ -59,7 +62,14 @@ function NonUSForm({ entityType, onClose, onEvent, network, address }) {
       render={({ formMethods }) => {
         return (
           <>
-            <div className="form-message paragraph">Please note: we use <a className="link" href="https://withpersona.com/">Persona</a> to verify your identity, and they handle all personal information. The only information we store is your ETH address, country, and approval status. We take privacy seriously.</div>
+            <div className="form-message paragraph">
+              Please note: we use{" "}
+              <a className="link" target="_blank" href="https://withpersona.com/security/">
+                Persona
+              </a>{" "}
+              to verify your identity, and they handle all personal information. The only information we store is your
+              ETH address, country, and approval status. We take privacy seriously.
+            </div>
             <PersonaForm
               entityType={entityType}
               network={network}
@@ -104,8 +114,17 @@ function USForm({ kycStatus, entityType, onClose, onEvent, network, address }) {
         }
         return (
           <>
-            <div className="form-message paragraph">Goldfinch is open to U.S. individuals who qualify as accredited investors.</div>
-            <div className="form-message paragraph">Please note: we use <a className="link" href="https://withpersona.com/">Persona</a> to verify your identity, and they handle all personal information. The only information we store is your ETH address, country, and approval status. We take privacy seriously.</div>
+            <div className="form-message paragraph">
+              Goldfinch will soon be open to U.S. individuals who qualify as accredited investors. You can pre-verify your address.
+            </div>
+            <div className="form-message paragraph">
+              Please note: we use{" "}
+              <a className="link" target="_blank" href="https://withpersona.com/security/">
+                Persona
+              </a>{" "}
+              to verify your identity, and they handle all personal information. The only information we store is your
+              ETH address, country, and approval status. We take privacy seriously.
+            </div>
             {verifyIdSection}
             <h2>Step 2: Verify Accredited Status</h2>
             {accreditationNotice}
@@ -183,7 +202,7 @@ function PersonaForm({ entityType, onEvent, network, address, formMethods }) {
                 <ErrorMessage
                   errors={formMethods.errors}
                   name="discord"
-                  message="That doesn't look like a valid discord username"
+                  message="That doesn't look like a valid discord username (make sure to include the # and the 4 digit number)"
                 />
               </div>
             </div>
