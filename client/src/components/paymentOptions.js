@@ -81,23 +81,19 @@ function PaymentOptions(props) {
   }, [getValueOptions, selected, creditLine, onSelect, formMethods])
 
   function getValueOptionsList() {
-    const valueOptions = getValueOptions(props.creditLine, props.selected)
+    const valueOptions = getValueOptions(creditLine, selected)
     return valueOptions.map((valueOption, index) => {
-      let checked = false
-      if (valueOption.name === props.selected) {
-        checked = true
-      }
       return (
         <div className="value-option" key={index}>
           <input
             name="paymentOption"
             type="radio"
             id={`value-type-${index}`}
-            checked={checked}
-            ref={props.formMethods.register}
+            checked={valueOption.name === selected}
+            ref={formMethods.register}
             value={valueOption.value}
             onChange={() => {
-              props.onSelect(valueOption.name, valueOption.swapValue || valueOption.value)
+              onSelect(valueOption.name, valueOption.swapValue || valueOption.value)
             }}
           />
           <div className="radio-check"></div>
