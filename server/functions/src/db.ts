@@ -75,6 +75,7 @@ function isFirebaseConfig(obj: unknown): obj is FirebaseConfig {
 function getConfig(functions: any): FirebaseConfig {
   const result = process.env.NODE_ENV === "test" ? _configForTest : functions.config()
   console.log('process.env.NODE_ENV === test', process.env.NODE_ENV === "test")
+  console.log('process.env.NODE_ENV', process.env.NODE_ENV)
   console.log('config result:', result)
   if (isFirebaseConfig(result)) {
     return result
