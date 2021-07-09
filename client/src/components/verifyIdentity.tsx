@@ -5,10 +5,214 @@ import web3 from "../web3"
 import { ethers } from "ethers"
 import { iconCircleCheck, iconClock, iconAlert } from "./icons.js"
 import TransactionForm from "./transactionForm"
+import { ErrorMessage } from "@hookform/error-message"
+import ConnectionNotice from "./connectionNotice"
+import LoadingButton from "./loadingButton"
+import { useForm, FormProvider } from "react-hook-form"
+
+const accreditationNotice = (
+  <>
+    <div>
+      Get your free accredited investor verification from{" "}
+      <a className="link" target="_blank" href="https://parallelmarkets.com/get-accredited/">
+        parallelmarkets.com
+      </a>
+      . When you receive your electronic certificate, email it to{" "}
+      <a className="link" href="mailto:verify@goldfinch.finance">
+        verify@goldfinch.finance
+      </a>
+      , along with your Metamask address.
+    </div>
+  </>
+)
+
+function VerificationNotice({ icon, notice }) {
+  return (
+    <div className="background-container verify-options">
+      <div>{icon}</div>
+      <div>{notice}</div>
+    </div>
+  )
+}
+
+function EntityForm({ onClose }) {
+  return (
+    <TransactionForm
+      headerMessage="Entity"
+      render={() => {
+        return (
+          <>
+            <div>Goldfinch is open to entities that qualify as accredited Investors.</div>
+            {accreditationNotice}
+          </>
+        )
+      }}
+      closeForm={onClose}
+    />
+  )
+}
+
+function NonUSForm({ entityType, onClose, onEvent, network, address }) {
+  return (
+    <TransactionForm
+      headerMessage="Non-U.S. Individual"
+      render={({ formMethods }) => {
+        return (
+          <>
+            <PersonaForm
+              entityType={entityType}
+              network={network}
+              address={address}
+              onEvent={onEvent}
+              formMethods={formMethods}
+            />
+          </>
+        )
+      }}
+      closeForm={onClose}
+    />
+  )
+}
+
+function USForm({ kycStatus, entityType, onClose, onEvent, network, address }) {
+  return (
+    <TransactionForm
+      headerMessage="U.S. Individual"
+      render={({ formMethods }) => {
+        let verifyIdSection
+        if (kycStatus === "approved") {
+          verifyIdSection = (
+            <div className="placeholder">
+              <span>Step 1: Verify ID {iconCircleCheck}</span>
+            </div>
+          )
+        } else {
+          verifyIdSection = (
+            <>
+              <div> Step 1: Verify ID</div>
+              <PersonaForm
+                entityType={entityType}
+                network={network}
+                address={address}
+                onEvent={onEvent}
+                formMethods={formMethods}
+              />
+            </>
+          )
+        }
+        return (
+          <>
+            <div>Goldfinch is open to U.S. individuals who qualify as accredited Investors.</div>
+            {verifyIdSection}
+            <div>Step 2: Verify Accredited Status</div>
+            {accreditationNotice}
+          </>
+        )
+      }}
+      closeForm={onClose}
+    />
+  )
+}
+
+function PersonaForm({ entityType, onEvent, network, address, formMethods }) {
+  const PERSONA_CONFIG = {
+    mainnet: { templateId: "tmpl_vD1HECndpPFNeYHaaPQWjd6H", environment: "production" },
+    localhost: { templateId: "tmpl_vD1HECndpPFNeYHaaPQWjd6H", environment: "sandbox" },
+  }
+
+  function verifyOnPersona(data, e) {
+    e.preventDefault()
+    const config = PERSONA_CONFIG[network]
+    const client = new Persona.Client({
+      templateId: config.templateId,
+      environment: config.environment,
+      referenceId: address,
+      prefill: {
+        emailAddress: data.email,
+        discord_name: data.discord,
+        country_us: entityType === "US",
+      } as any,
+      onLoad: _error => client.open(),
+      onComplete: () => {
+        onEvent("complete")
+      },
+      onFail: id => {
+        onEvent("fail")
+      },
+      onExit: error => {
+        onEvent("exit")
+      },
+    })
+  }
+
+  return (
+    <>
+      <div className="form-input-label">Email</div>
+      <div className="form-field">
+        <div className="form-input-container">
+          <input
+            type="email"
+            name="email"
+            placeholder="email@example.com"
+            className="form-input small-text"
+            ref={formMethods.register({ required: true, pattern: /^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]{2,}$/ })}
+          ></input>
+          <div className="form-input-note">
+            <ErrorMessage errors={formMethods.errors} name="email" message="That doesn't look like a valid email" />
+          </div>
+        </div>
+      </div>
+      <div className="form-input-label">(Optional) Discord username</div>
+      <div className="form-inputs-footer">
+        <div className="form-field">
+          <div className="form-input-container">
+            <input
+              type="text"
+              name="discord"
+              placeholder="user#1234"
+              className="form-input small-text"
+              ref={formMethods.register({ pattern: /[a-zA-Z0-9]+#[0-9]{4}/ })}
+            />
+            <div className="form-input-note">
+              <ErrorMessage
+                errors={formMethods.errors}
+                name="discord"
+                message="That doesn't look like a valid discord username"
+              />
+            </div>
+          </div>
+        </div>
+        <button className={"button verify"} onClick={formMethods.handleSubmit(verifyOnPersona)}>
+          Verify ID
+        </button>
+      </div>
+    </>
+  )
+}
+
+function SignInForm({ action, disabled }) {
+  const formMethods = useForm({ mode: "onChange", shouldUnregister: false })
+  return (
+    <>
+      <div className={"background-container"}>
+        <div className="verify-options">
+          <div className="item">First, please sign in to confirm your address</div>
+          <div className="item">
+            <FormProvider {...formMethods}>
+              <form className="form">
+                <LoadingButton text="Sign in" action={action} disabled={disabled} />
+              </form>
+            </FormProvider>
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
 
 function VerifyIdentity() {
   const { user, network } = useContext(AppContext)
-  const [kycStatus, setKycStatus] = useState<string>("unknown")
+  const [kycStatus, setKycStatus] = useState<string>("")
   // Determines the form to show. Can be empty, "US" or "entity"
   const [countryCode, setCountryCode] = useState<string>("")
   const [entityType, setEntityType] = useState<string>("")
@@ -19,37 +223,14 @@ function VerifyIdentity() {
     localhost: "https://us-central1-goldfinch-frontends-dev.cloudfunctions.net",
   }
 
-  const PERSONA_CONFIG = {
-    mainnet: { templateId: "tmpl_vD1HECndpPFNeYHaaPQWjd6H", environment: "production" },
-    localhost: { templateId: "tmpl_vD1HECndpPFNeYHaaPQWjd6H", environment: "sandbox" },
-  }
-
-  const accreditationNotice = (
-    <>
-      <div>
-        Get your free accredited investor verification from{" "}
-        <a className="link" target="_blank" href="https://parallelmarkets.com">
-          parallelmarkets.com
-        </a>
-        . When you receive your electronic certificate, email it to{" "}
-        <a className="link" href="mailto:verify@goldfinch.finance">
-          verify@goldfinch.finance
-        </a>
-        , along with your Metamask address.
-      </div>
-    </>
-  )
-
   function getKYCURL(address, signature) {
     const baseURL = process.env.REACT_APP_GCLOUD_FUNCTIONS_URL || API_URLS[network?.name!]
+    signature = signature === "pending" ? "" : signature
     return baseURL + "/kycStatus?" + new URLSearchParams({ address, signature })
   }
 
-  async function fetchKYCStatus() {
-    if (userSignature === "") {
-      return
-    }
-    const response = await fetch(getKYCURL(user.address, userSignature))
+  async function fetchKYCStatus(signature) {
+    const response = await fetch(getKYCURL(user.address, signature))
     const responseJson = await response.json()
     setKycStatus(responseJson.status)
     if (responseJson.countryCode === "US") {
@@ -61,123 +242,64 @@ function VerifyIdentity() {
   async function getUserSignature() {
     const provider = new ethers.providers.Web3Provider(web3.currentProvider as any)
     const signer = provider.getSigner(user.address)
-    setUserSignature("pending")
-    try {
-      const signature = await signer.signMessage("Sign in to Goldfinch")
-      setUserSignature(signature)
-    } catch (err) {
-      setUserSignature("error")
-    }
+    return await signer.signMessage("Sign in to Goldfinch")
   }
 
-  function verifyOnPersona(e) {
-    e.preventDefault()
-    const config = PERSONA_CONFIG[network?.name!]
-    const client = new Persona.Client({
-      templateId: config.templateId,
-      environment: config.environment,
-      referenceId: user.address,
-      onLoad: _error => client.open(),
-      onComplete: () => {
-        fetchKYCStatus()
-      },
-      onFail: _ => {
-        fetchKYCStatus()
-      },
-      onExit: error => {
-        console.log(`KYC Failed with error: ${error?.message}`)
-        fetchKYCStatus()
-      },
-    })
+  async function getSignatureAndKycStatus() {
+    const signature = await getUserSignature()
+    await fetchKYCStatus(signature)
+    setUserSignature(signature)
   }
 
-  useEffect(() => {
-    if (userSignature === "") {
-      getUserSignature()
-    } else if (userSignature !== "pending") {
-      fetchKYCStatus()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userSignature, network, user])
-
-  function renderUSForm() {
-    return (
-      <TransactionForm
-        headerMessage="U.S. Individual"
-        render={() => {
-          let verifyIdSection
-          if (kycStatus === "approved") {
-            verifyIdSection = (
-              <div className="placeholder">
-                <span>Step 1: Verify ID {iconCircleCheck}</span>
-              </div>
-            )
-          } else {
-            verifyIdSection = (
-              <>
-                <div> Step 1: Verify ID</div>
-                <button className={"button"} onClick={verifyOnPersona}>
-                  Verify ID
-                </button>
-              </>
-            )
-          }
-          return (
-            <>
-              <div>Goldfinch is open to U.S. individuals who qualify as accredited Investors.</div>
-              {verifyIdSection}
-              <div>Step 2: Verify Accredited Status</div>
-              {accreditationNotice}
-            </>
-          )
-        }}
-        closeForm={() => setEntityType("")}
-      />
-    )
-  }
-
-  function renderEntityForm() {
-    return (
-      <TransactionForm
-        headerMessage="Entity"
-        render={() => {
-          return (
-            <>
-              <div>Goldfinch is open to entities that qualify as accredited Investors.</div>
-              {accreditationNotice}
-            </>
-          )
-        }}
-        closeForm={() => setEntityType("")}
-      />
-    )
-  }
-
-  function renderNotice(icon, notice) {
-    return (
-      <div className="background-container verify-options">
-        <div>{icon}</div>
-        <div>{notice}</div>
-      </div>
-    )
+  function chooseEntity(chosenType) {
+    setEntityType(chosenType)
   }
 
   function renderForm() {
-    if (kycStatus === "golisted") {
-      return renderNotice(iconCircleCheck, "Your address verification is complete.")
+    if (kycStatus === "") {
+      return <SignInForm disabled={!user.address} action={() => getSignatureAndKycStatus()} />
+    } else if (kycStatus === "golisted") {
+      return <VerificationNotice icon={iconCircleCheck} notice="Your address verification is complete." />
     } else if (kycStatus === "failed") {
-      return renderNotice(
-        iconAlert,
-        "There was an issue verifying your address. For help, please contact verify@goldfinch.finance and include your address.",
+      return (
+        <VerificationNotice
+          icon={iconAlert}
+          notice="There was an issue verifying your address. For help, please contact verify@goldfinch.finance and include your address."
+        />
       )
     } else if (entityType === "US") {
-      return renderUSForm()
+      return (
+        <USForm
+          kycStatus={kycStatus}
+          entityType={entityType}
+          onClose={() => setEntityType("")}
+          network={network?.name!}
+          address={user.address}
+          onEvent={() => {
+            fetchKYCStatus(userSignature)
+          }}
+        />
+      )
     } else if (entityType === "entity") {
-      return renderEntityForm()
+      return <EntityForm onClose={() => setEntityType("")} />
     } else if (kycStatus === "approved" && countryCode !== "US") {
-      return renderNotice(
-        iconClock,
-        "Your verification has been successfully submitted and is in progress. You can expect it to be complete within a few days, and usually much faster.",
+      return (
+        <VerificationNotice
+          icon={iconClock}
+          notice="Your verification has been successfully submitted and is in progress. You can expect it to be complete within a few days, and usually much faster."
+        />
+      )
+    } else if (entityType === "non-US") {
+      return (
+        <NonUSForm
+          onClose={() => setEntityType("")}
+          entityType={entityType}
+          network={network?.name!}
+          address={user.address}
+          onEvent={() => {
+            fetchKYCStatus(userSignature)
+          }}
+        />
       )
     } else {
       const nonUSDisabled = countryCode === "US" ? "disabled" : ""
@@ -187,17 +309,21 @@ function VerifyIdentity() {
             <div className="">Who is verifying this address?</div>
             <div className="verify-options">
               <div className="item">
-                <button className={`button ${nonUSDisabled}`} onClick={verifyOnPersona}>
+                <button
+                  className={`button ${nonUSDisabled}`}
+                  disabled={nonUSDisabled === "disabled"}
+                  onClick={() => chooseEntity("non-US")}
+                >
                   Non-U.S. Individual
                 </button>
               </div>
               <div className="item">
-                <button className={"button"} onClick={() => setEntityType("US")}>
+                <button className={"button"} onClick={() => chooseEntity("US")}>
                   U.S. Individual
                 </button>
               </div>
               <div className="item">
-                <button className={"button"} onClick={() => setEntityType("entity")}>
+                <button className={"button"} onClick={() => chooseEntity("entity")}>
                   Entity
                 </button>
               </div>
@@ -211,6 +337,7 @@ function VerifyIdentity() {
   return (
     <div className="content-section">
       <div className="page-header">Verify Address</div>
+      <ConnectionNotice />
       {renderForm()}
     </div>
   )

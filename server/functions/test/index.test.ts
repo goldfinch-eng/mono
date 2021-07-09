@@ -167,10 +167,10 @@ describe("functions", () => {
       })
 
       describe("when the user exists", async () => {
-        it("updates the status", async () => {
+        it("updates the status and country code", async () => {
           await users.doc(address.toLowerCase()).set({
             address: address,
-            status: "pending",
+            persona: {status: "created"},
           })
           const req = generatePersonaCallbackRequest(address, "completed", {}, {countryCode: "US"})
           await personaCallback(req, expectResponse(200, {status: "success"}))
@@ -179,6 +179,20 @@ describe("functions", () => {
           expect(userDoc.exists).to.be.true
           expect(userDoc.data()).to.containSubset({address: address, countryCode: "US"})
           expect(userDoc.data()?.persona?.status).to.eq("completed")
+        })
+
+        it("does not update the status if already approved", async () => {
+          await users.doc(address.toLowerCase()).set({
+            address: address,
+            persona: {status: "approved"},
+          })
+          const req = generatePersonaCallbackRequest(address, "declined", {})
+          await personaCallback(req, expectResponse(200, {status: "success"}))
+
+          const userDoc = await users.doc(address.toLowerCase()).get()
+          expect(userDoc.exists).to.be.true
+          expect(userDoc.data()).to.containSubset({address: address})
+          expect(userDoc.data()?.persona?.status).to.eq("approved")
         })
       })
     })

@@ -136,6 +136,11 @@ const personaCallback = functions.https.onRequest(
         const doc = await t.get(userRef)
 
         if (doc.exists) {
+          // If the user was already approved, then ignore further updates
+          if (doc.data()?.persona?.status === "approved") {
+            return
+          }
+
           t.update(userRef, {
             persona: {
               id: eventPayload.id,
