@@ -155,7 +155,7 @@ function PersonaForm({ entityType, onEvent, network, address, formMethods }) {
             name="email"
             placeholder="email@example.com"
             className="form-input small-text"
-            ref={formMethods.register({ required: true, pattern: /.{1,}@[^.]{1,}/ })}
+            ref={formMethods.register({ required: true, pattern: /^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]{2,}$/ })}
           ></input>
           <div className="form-input-note">
             <ErrorMessage errors={formMethods.errors} name="email" message="That doesn't look like a valid email" />
@@ -303,7 +303,6 @@ function VerifyIdentity() {
       )
     } else {
       const nonUSDisabled = countryCode === "US" ? "disabled" : ""
-      const disabled = user.address ? "" : "disabled"
       return (
         <>
           <div className={"background-container"}>
@@ -311,28 +310,20 @@ function VerifyIdentity() {
             <div className="verify-options">
               <div className="item">
                 <button
-                  className={`button ${nonUSDisabled} ${disabled}`}
-                  disabled={nonUSDisabled === "disabled" || disabled === "disabled"}
+                  className={`button ${nonUSDisabled}`}
+                  disabled={nonUSDisabled === "disabled"}
                   onClick={() => chooseEntity("non-US")}
                 >
                   Non-U.S. Individual
                 </button>
               </div>
               <div className="item">
-                <button
-                  className={`button ${disabled}`}
-                  disabled={disabled === "disabled"}
-                  onClick={() => chooseEntity("US")}
-                >
+                <button className={"button"} onClick={() => chooseEntity("US")}>
                   U.S. Individual
                 </button>
               </div>
               <div className="item">
-                <button
-                  className={`button ${disabled}`}
-                  disabled={disabled === "disabled"}
-                  onClick={() => chooseEntity("entity")}
-                >
+                <button className={"button"} onClick={() => chooseEntity("entity")}>
                   Entity
                 </button>
               </div>
