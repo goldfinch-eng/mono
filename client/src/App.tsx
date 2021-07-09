@@ -112,8 +112,8 @@ function App() {
     let data: User = defaultUser()
     const accounts = await web3.eth.getAccounts()
     data.web3Connected = true
-    let userAddress =
-      overrideAddress || (gnosisSafeInfo && gnosisSafeInfo.safeAddress) || (accounts && accounts[0]) || user.address
+    const _userAddress = (gnosisSafeInfo && gnosisSafeInfo.safeAddress) || (accounts && accounts[0]) || user.address
+    const userAddress = overrideAddress || _userAddress
     if (userAddress) {
       data.address = userAddress
     }
@@ -126,7 +126,7 @@ function App() {
       // error tracking with Sentry MUST be kept consistent with (i.e. not exceed
       // the bounds set by) what our Terms of Service, Privacy Policy, and marketing
       // copy states about the identifying information that Goldfinch stores.
-      id: data.address, address: data.address, isOverride: !!overrideAddress
+      id: data.address, address: data.address, isOverrideOf: overrideAddress ? _userAddress : undefined
     })
 
     setUser(data)
