@@ -91,7 +91,7 @@ function PaymentOptions(props) {
             id={`value-type-${index}`}
             checked={valueOption.name === selected}
             ref={formMethods.register}
-            value={valueOption.value}
+            value={valueOption.name}
             onChange={() => {
               onSelect(valueOption.name, valueOption.swapValue || valueOption.value)
             }}
