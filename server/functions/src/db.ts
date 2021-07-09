@@ -1,8 +1,9 @@
 import * as admin from "firebase-admin"
+import { isPlainObject, isString, isStringOrUndefined } from "../../../utils/type"
 import firestore = admin.firestore
 
 let firestoreForTest: firestore.Firestore
-let configForTest: Record<string, any>
+let configForTest: FirebaseConfig
 
 /**
  * Get the users collction give a reference to the firestore
@@ -32,16 +33,44 @@ function getDb(firestore: firestore.Firestore): firestore.Firestore {
   }
 }
 
+export type FirebaseConfig = {
+  sentry: {
+    dsn: string
+    env: "development" | "testing" | "production"
+  }
+  kyc: {
+    allowed_origins: string
+  }
+  persona: {
+    allowed_ips: string
+    secret?: string
+  }
+}
+function isFirebaseConfig(obj: unknown): obj is FirebaseConfig {
+  return (
+    isPlainObject(obj) &&
+    isPlainObject(obj.sentry) &&
+    isString(obj.sentry.dsn) &&
+    (obj.sentry.env === "development" || obj.sentry.env === "testing" || obj.sentry.env === "production") &&
+    isPlainObject(obj.kyc) &&
+    isString(obj.kyc.allowed_origins) &&
+    isPlainObject(obj.persona) &&
+    isString(obj.persona.allowed_ips) &&
+    isStringOrUndefined(obj.persona.secret)
+  )
+}
+
 /**
- * Get the firebase confiog (test aware)
+ * Get the firebase config (test aware)
  * @param {any} functions The firebase functions library (ignored in test)
  * @return {Record<string, any>} The config object
  */
-function getConfig(functions: any): Record<string, any> {
-  if (process.env.NODE_ENV === "test") {
-    return configForTest
+function getConfig(functions: any): FirebaseConfig {
+  const result = process.env.NODE_ENV === "test" ? configForTest : functions.config()
+  if (isFirebaseConfig(result)) {
+    return result
   } else {
-    return functions.config()
+    throw new Error("Firebase config failed type guard.")
   }
 }
 
@@ -50,9 +79,9 @@ function getConfig(functions: any): Record<string, any> {
  * @param {firestore.Firestore} firestore The firestore to override with
  * @param {Record<string, any>} config The mock config to use for tests
  */
-function setEnvForTest(firestore: firestore.Firestore, config: Record<string, any>): void {
+function setEnvForTest(firestore: firestore.Firestore, config: FirebaseConfig): void {
   firestoreForTest = firestore
   configForTest = config
 }
 
-export {getUsers, getDb, getConfig, setEnvForTest}
+export { getUsers, getDb, getConfig, setEnvForTest }

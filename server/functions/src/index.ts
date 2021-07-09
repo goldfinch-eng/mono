@@ -1,9 +1,24 @@
 import * as crypto from "crypto"
 import * as functions from "firebase-functions"
 import * as admin from "firebase-admin"
-import {ethers} from "ethers"
-import {getDb, getUsers, getConfig} from "./db"
+import { ethers } from "ethers"
+import { getDb, getUsers, getConfig } from "./db"
 import firestore = admin.firestore
+import * as Sentry from "@sentry/serverless"
+import { CaptureConsole } from '@sentry/integrations'
+
+const config = getConfig(functions)
+
+Sentry.GCPFunction.init({
+  dsn: config.sentry.dsn,
+  integrations: [
+    new CaptureConsole({
+      levels: ['log', 'info', 'warn', 'error']
+    })
+  ],
+  environment: config.sentry.env,
+  tracesSampleRate: config.sentry.env === "production" ? 0.25 : 1.0,
+})
 
 admin.initializeApp()
 
@@ -11,22 +26,23 @@ admin.initializeApp()
 const VERIFICATION_MESSAGE = "Sign in to Goldfinch"
 
 const setCORSHeaders = (req: any, res: any) => {
-  const allowedOrigins = (getConfig(functions).kyc.allowed_origins || "").split(",")
+  const allowedOrigins = (config.kyc.allowed_origins || "").split(",")
   if (allowedOrigins.includes(req.headers.origin)) {
     res.set("Access-Control-Allow-Origin", req.headers.origin)
   }
 }
 
-const kycStatus = functions.https.onRequest(
-  async (req, res): Promise<any> => {
+const kycStatus = Sentry.GCPFunction.wrapHttpFunction(
+  functions.https.onRequest(async (req, res): Promise<void> => {
     const address = req.query.address?.toString()
     const signature = req.query.signature?.toString()
 
-    const response = {address: address, status: "unknown", countryCode: null}
+    const response = { address: address, status: "unknown", countryCode: null }
     setCORSHeaders(req, res)
 
     if (!address || !signature) {
-      return res.status(400).send({error: "Address or signature not provided"})
+      res.status(400).send({ error: "Address or signature not provided" })
+      return
     }
 
     const verifiedAddress = ethers.utils.verifyMessage(VERIFICATION_MESSAGE, signature)
@@ -34,7 +50,8 @@ const kycStatus = functions.https.onRequest(
     console.log(`Received address: ${address}, Verified address: ${verifiedAddress}`)
 
     if (address.toLowerCase() !== verifiedAddress.toLowerCase()) {
-      return res.status(403).send({error: "Invalid address or signature"})
+      res.status(403).send({ error: "Invalid address or signature" })
+      return
     }
 
     const users = getUsers(admin.firestore())
@@ -44,8 +61,8 @@ const kycStatus = functions.https.onRequest(
       response.status = userStatusFromPersonaStatus(user.data()?.persona?.status)
       response.countryCode = user.data()?.countryCode
     }
-    return res.status(200).send(response)
-  },
+    res.status(200).send(response)
+  }),
 )
 
 // Top level status transitions should be => pending -> approved | failed -> golisted
@@ -70,7 +87,7 @@ const userStatusFromPersonaStatus = (personaStatus: string) => {
 }
 
 const verifyRequest = (req: functions.https.Request) => {
-  const personaConfig = getConfig(functions).persona
+  const personaConfig = config.persona
   const webhookSecret = personaConfig?.secret
   const allowedIps = personaConfig["allowed_ips"]
 
@@ -118,10 +135,11 @@ const getCountryCode = (eventPayload: Record<string, any>): string | null => {
   return null
 }
 
-const personaCallback = functions.https.onRequest(
-  async (req, res): Promise<any> => {
+const personaCallback = Sentry.GCPFunction.wrapHttpFunction(
+  functions.https.onRequest(async (req, res): Promise<void> => {
     if (!verifyRequest(req)) {
-      return res.status(400).send({status: "error", message: "Request could not be verified"})
+      res.status(400).send({ status: "error", message: "Request could not be verified" })
+      return
     }
 
     const eventPayload = req.body.data.attributes.payload.data
@@ -162,11 +180,12 @@ const personaCallback = functions.https.onRequest(
       })
     } catch (e) {
       console.error(e)
-      return res.status(500).send({status: "error", message: e.message})
+      res.status(500).send({ status: "error", message: e.message })
+      return
     }
 
-    return res.status(200).send({status: "success"})
-  },
+    res.status(200).send({ status: "success" })
+  }),
 )
 
-export {kycStatus, personaCallback}
+export { kycStatus, personaCallback }
