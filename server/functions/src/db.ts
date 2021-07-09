@@ -1,9 +1,16 @@
 import * as admin from "firebase-admin"
-import { isPlainObject, isString, isStringOrUndefined } from "../../../utils/type"
+import {isPlainObject, isString, isStringOrUndefined} from "../../../utils/type"
 import firestore = admin.firestore
 
-let firestoreForTest: firestore.Firestore
-let configForTest: FirebaseConfig
+let _firestoreForTest: firestore.Firestore
+let _configForTest: FirebaseConfig = {
+  kyc: {allowed_origins: ""},
+  persona: {allowed_ips: ""},
+  sentry: {
+    dsn: "https://8c1adf3a336a4487b14ae1af080c26d1@o915675.ingest.sentry.io/5857894",
+    env: "test",
+  },
+}
 
 /**
  * Get the users collction give a reference to the firestore
@@ -27,7 +34,7 @@ function getUsers(firestore: firestore.Firestore): firestore.CollectionReference
  */
 function getDb(firestore: firestore.Firestore): firestore.Firestore {
   if (process.env.NODE_ENV === "test") {
-    return firestoreForTest
+    return _firestoreForTest
   } else {
     return firestore
   }
@@ -36,7 +43,7 @@ function getDb(firestore: firestore.Firestore): firestore.Firestore {
 export type FirebaseConfig = {
   sentry: {
     dsn: string
-    env: "development" | "testing" | "production"
+    env: "development" | "test" | "production"
   }
   kyc: {
     allowed_origins: string
@@ -63,10 +70,10 @@ function isFirebaseConfig(obj: unknown): obj is FirebaseConfig {
 /**
  * Get the firebase config (test aware)
  * @param {any} functions The firebase functions library (ignored in test)
- * @return {Record<string, any>} The config object
+ * @return {FirebaseConfig} The config object
  */
 function getConfig(functions: any): FirebaseConfig {
-  const result = process.env.NODE_ENV === "test" ? configForTest : functions.config()
+  const result = process.env.NODE_ENV === "test" ? _configForTest : functions.config()
   if (isFirebaseConfig(result)) {
     return result
   } else {
@@ -75,13 +82,19 @@ function getConfig(functions: any): FirebaseConfig {
 }
 
 /**
- * Override the firestore to use for tests. Need this so we can connect to the emulator
+ * Override the firestore to use for tests. Need this so we can connect to the emulator.
  * @param {firestore.Firestore} firestore The firestore to override with
- * @param {Record<string, any>} config The mock config to use for tests
+ * @param {Omit<FirebaseConfig, "sentry">} config The mock config to use for tests. (We exclude
+ * Sentry-related configuration from this, as Sentry is configured upon importing the module
+ * in which the functions are defined, so it is not readily amenable to being subsequently
+ * modified as part of test setup, and we have no need to make it thusly modifiable.)
  */
-function setEnvForTest(firestore: firestore.Firestore, config: FirebaseConfig): void {
-  firestoreForTest = firestore
-  configForTest = config
+function setEnvForTest(firestore: firestore.Firestore, config: Omit<FirebaseConfig, "sentry">): void {
+  _firestoreForTest = firestore
+  _configForTest = {
+    ..._configForTest,
+    ...config
+  }
 }
 
-export { getUsers, getDb, getConfig, setEnvForTest }
+export {getUsers, getDb, getConfig, setEnvForTest}

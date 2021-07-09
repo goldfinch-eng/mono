@@ -1,5 +1,5 @@
-import * as chai from "chai"
-import * as chaiSubset from "chai-subset"
+import chai from "chai"
+import chaiSubset from "chai-subset"
 import * as firebaseTesting from "@firebase/rules-unit-testing"
 import * as admin from "firebase-admin"
 import * as crypto from "crypto"

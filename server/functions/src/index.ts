@@ -7,17 +7,16 @@ import firestore = admin.firestore
 import * as Sentry from "@sentry/serverless"
 import {CaptureConsole} from "@sentry/integrations"
 
-const config = getConfig(functions)
-
+const _config = getConfig(functions)
 Sentry.GCPFunction.init({
-  dsn: config.sentry.dsn,
+  dsn: _config.sentry.dsn,
   integrations: [
     new CaptureConsole({
       levels: ["log", "info", "warn", "error"],
     }),
   ],
-  environment: config.sentry.env,
-  tracesSampleRate: config.sentry.env === "production" ? 0.25 : 1.0,
+  environment: _config.sentry.env,
+  tracesSampleRate: _config.sentry.env === "production" ? 0.25 : 1.0,
 })
 
 admin.initializeApp()
@@ -26,7 +25,7 @@ admin.initializeApp()
 const VERIFICATION_MESSAGE = "Sign in to Goldfinch"
 
 const setCORSHeaders = (req: any, res: any) => {
-  const allowedOrigins = (config.kyc.allowed_origins || "").split(",")
+  const allowedOrigins = (getConfig(functions).kyc.allowed_origins || "").split(",")
   if (allowedOrigins.includes(req.headers.origin)) {
     res.set("Access-Control-Allow-Origin", req.headers.origin)
   }
@@ -90,7 +89,7 @@ const userStatusFromPersonaStatus = (personaStatus: string): "unknown" | "approv
 }
 
 const verifyRequest = (req: functions.https.Request) => {
-  const personaConfig = config.persona
+  const personaConfig = getConfig(functions).persona
   const webhookSecret = personaConfig?.secret
   const allowedIps = personaConfig["allowed_ips"]
 
