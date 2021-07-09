@@ -75,7 +75,9 @@ function Transactions(props) {
     )
   }
 
-  let allTx = _.compact(_.concat(props.currentTXs, user.pastTXs))
+  // Only show TXs from currentTXs that are not already in user.pastTXs
+  let pendingTXs = _.differenceBy(props.currentTXs, user.pastTXs, "id")
+  let allTx = _.compact(_.concat(pendingTXs, user.pastTXs))
   allTx = _.uniqBy(allTx, "eventId")
   let transactionRows = (
     <tr className="empty-row">
