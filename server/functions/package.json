@@ -8,7 +8,7 @@
     "start": "npm run shell",
     "deploy": "npm run build && firebase deploy --only functions",
     "logs": "firebase functions:log",
-    "test": "NODE_ENV=test mocha --require ts-node/register test/**",
+    "test": "TESTING=yes mocha --require ts-node/register test/**",
     "ci_test": "cd ../ && npx firebase emulators:exec --project=dev \"cd functions && npm test\""
   },
   "engines": {
