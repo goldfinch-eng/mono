@@ -58,7 +58,7 @@ function isFirebaseConfig(obj: unknown): obj is FirebaseConfig {
     isPlainObject(obj) &&
     isPlainObject(obj.sentry) &&
     isString(obj.sentry.dsn) &&
-    (obj.sentry.env === "development" || obj.sentry.env === "testing" || obj.sentry.env === "production") &&
+    (obj.sentry.env === "development" || obj.sentry.env === "test" || obj.sentry.env === "production") &&
     isPlainObject(obj.kyc) &&
     isString(obj.kyc.allowed_origins) &&
     isPlainObject(obj.persona) &&
