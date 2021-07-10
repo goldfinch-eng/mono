@@ -57,6 +57,8 @@ export type FirebaseConfig = {
 }
 /**
  * Type guard for the FirebaseConfig type.
+ * @param {unknown} obj The thing whose type to inspect.
+ * @return {obj is FirebaseConfig} Whether the thing is of type FirebaseConfig.
  */
 function isFirebaseConfig(obj: unknown): obj is FirebaseConfig {
   return (
