@@ -46,13 +46,18 @@ export type FirebaseConfig = {
     env: "development" | "test" | "production"
   }
   kyc: {
+    // eslint-disable-next-line camelcase
     allowed_origins: string
   }
   persona: {
+    // eslint-disable-next-line camelcase
     allowed_ips: string
     secret?: string
   }
 }
+/**
+ * Type guard for the FirebaseConfig type.
+ */
 function isFirebaseConfig(obj: unknown): obj is FirebaseConfig {
   return (
     isPlainObject(obj) &&
@@ -77,11 +82,7 @@ function getConfig(functions: any): FirebaseConfig {
   // In CI, we were observed not to be able to set env variables (e.g. NODE_ENV); they
   // were observed to be undefined.
   const isTestingInCI = process.env.FUNCTIONS_EMULATOR === "true" && process.env.NODE_ENV === undefined
-  console.log('isTestingLocally', isTestingLocally)
-  console.log('isTestingInCI', isTestingInCI)
-  console.log('process.env.FUNCTIONS_EMULATOR', process.env.FUNCTIONS_EMULATOR)
   const result = isTestingLocally || isTestingInCI ? _configForTest : functions.config()
-  console.log('result', result)
   if (isFirebaseConfig(result)) {
     return result
   } else {
@@ -101,7 +102,7 @@ function setEnvForTest(firestore: firestore.Firestore, config: Omit<FirebaseConf
   _firestoreForTest = firestore
   _configForTest = {
     ..._configForTest,
-    ...config
+    ...config,
   }
 }
 
