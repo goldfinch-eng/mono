@@ -129,17 +129,7 @@ function NetworkWidget(props) {
       <div className="network-widget-info">
         <div className="network-widget-section">
           <div className="agree-to-terms">
-            <p>By connecting:</p>
-            <p className="agree-item">
-              I accept the Goldfinch <a href="/terms">Terms of Service</a>.
-            </p>
-            <p className="agree-item">
-              If I deposit into the pool, I confirm I am an Accredited Investor under{" "}
-              <a href="https://www.ecfr.gov/cgi-bin/retrieveECFR?gp=&SID=8edfd12967d69c024485029d968ee737&r=SECTION&n=17y3.0.1.1.12.0.46.176">
-                SEC Rule 501
-              </a>
-              .
-            </p>
+            <p>By connecting, I accept Goldfinch's <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a>.</p>
           </div>
           <button className="button bold" onClick={enableMetamask}>
             Connect Metamask
