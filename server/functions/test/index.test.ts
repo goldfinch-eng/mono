@@ -114,6 +114,7 @@ describe("functions", () => {
       status: string,
       otherAttributes: Record<string, any> = {},
       accountAttributes: Record<string, any> = {},
+      verificationAttributes: Record<string, any> = {},
     ) => {
       const personaCallbackId = crypto.randomBytes(20).toString("hex")
       const attributes = {status, referenceId: address, ...otherAttributes}
@@ -127,6 +128,11 @@ describe("functions", () => {
                 data: {id: personaCallbackId, type: "inquiry", attributes: attributes},
                 included: [
                   {type: "account", id: crypto.randomBytes(20).toString("hex"), attributes: accountAttributes},
+                  {
+                    type: "verification/government-id",
+                    id: crypto.randomBytes(20).toString("hex"),
+                    attributes: verificationAttributes,
+                  },
                 ],
               },
             },
@@ -173,6 +179,20 @@ describe("functions", () => {
             persona: {status: "created"},
           })
           const req = generatePersonaCallbackRequest(address, "completed", {}, {countryCode: "US"})
+          await personaCallback(req, expectResponse(200, {status: "success"}))
+
+          const userDoc = await users.doc(address.toLowerCase()).get()
+          expect(userDoc.exists).to.be.true
+          expect(userDoc.data()).to.containSubset({address: address, countryCode: "US"})
+          expect(userDoc.data()?.persona?.status).to.eq("completed")
+        })
+
+        it("uses the country code from the verification if account does not have it", async () => {
+          await users.doc(address.toLowerCase()).set({
+            address: address,
+            persona: {status: "created"},
+          })
+          const req = generatePersonaCallbackRequest(address, "completed", {}, {countryCode: ""}, {countryCode: "US"})
           await personaCallback(req, expectResponse(200, {status: "success"}))
 
           const userDoc = await users.doc(address.toLowerCase()).get()
