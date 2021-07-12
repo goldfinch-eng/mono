@@ -43,8 +43,8 @@ const kycStatus = Sentry.GCPFunction.wrapHttpFunction(
 
       const conf = getConfig(functions)
       if (conf.sentry.environment === "development") {
-        console.log('Sentry dsn', conf.sentry.dsn)
-        console.log('Sentry release', conf.sentry.release)
+        console.log("Sentry dsn", conf.sentry.dsn)
+        console.log("Sentry release", conf.sentry.release)
         throw new Error("testing that Sentry logs this, including with release info")
       }
 
