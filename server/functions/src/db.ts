@@ -38,10 +38,10 @@ function getUsers(firestore: firestore.Firestore): firestore.CollectionReference
  */
 function getDb(firestore: firestore.Firestore): firestore.Firestore {
   if (process.env.NODE_ENV === "test") {
-    console.log('returning test firestore')
+    console.log('Returning test firestore.')
     return _firestoreForTest
   } else {
-    console.log('returning real firestore')
+    console.log('Returning real firestore.')
     return firestore
   }
 }
