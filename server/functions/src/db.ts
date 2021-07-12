@@ -38,10 +38,8 @@ function getUsers(firestore: firestore.Firestore): firestore.CollectionReference
  */
 function getDb(firestore: firestore.Firestore): firestore.Firestore {
   if (process.env.NODE_ENV === "test") {
-    console.log('Returning test firestore.')
     return _firestoreForTest
   } else {
-    console.log('Returning real firestore.')
     return firestore
   }
 }
@@ -90,12 +88,26 @@ function isFirebaseConfig(obj: unknown): obj is FirebaseConfig {
  * @return {FirebaseConfig} The config object
  */
 function getConfig(functions: any): FirebaseConfig {
-  console.log('process.env.NODE_ENV in getConfig():', process.env.NODE_ENV)
-  const isTestingLocally = process.env.NODE_ENV === "test"
-  // In CI, we were observed not to be able to set env variables (neither NODE_ENV nor something
-  // arbitrary like FOO); they were observed to be undefined.
-  const isTestingInCI = process.env.FUNCTIONS_EMULATOR === "true" && process.env.NODE_ENV === undefined
-  const result = isTestingLocally || isTestingInCI ? _configForTest : functions.config()
+  // When running using the Firebase emulator (e.g. as `npm run ci_test` does via `npx firebase emulators:exec`),
+  // we observed a transient / bootstrapping phase in which this function is called (because it is invoked at
+  // the root level of `index.ts`, which is a consequence of following the Sentry docs about how to configure
+  // Sentry for use with Google Cloud functions and of using the Firebase config to provide the necessary values)
+  // in which env variables such as `process.env.NODE_ENV` are undefined. That poses a problem for running our
+  // tests using the emulator, because we want to condition on `process.env.NODE_ENV === "test"` to be able to
+  // test the behavior that the Firebase config controls. As a workaround for this issue, we can detect
+  // whether we're in this bootstrapping phase, and use the test config for it as well as for when
+  // `process.env.NODE_ENV === "test"`. `process.env.NODE_ENV` becomes `"test"` immediately after this
+  // bootstrapping phase, via the `npm test` command passed as an argument to `npx firebase emulators:exec`.
+  const isBootstrappingEmulator = (
+    process.env.FUNCTIONS_EMULATOR === "true" && // Cf. https://stackoverflow.com/a/60963496
+    process.env.NODE_ENV === undefined &&
+    // We expect the emulator never to be used with the prod project's functions, so we can
+    // include the following extra condition to prevent `isBootstrappingEmulator` ever enabling use of the
+    // test config with the prod project.
+    process.env.GCLOUD_PROJECT === "goldfinch-frontends-dev"
+  )
+  const isTesting = process.env.NODE_ENV === "test"
+  const result = isBootstrappingEmulator || isTesting ? _configForTest : functions.config()
   if (isFirebaseConfig(result)) {
     return result
   } else {
