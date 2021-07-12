@@ -38,8 +38,10 @@ function getUsers(firestore: firestore.Firestore): firestore.CollectionReference
  */
 function getDb(firestore: firestore.Firestore): firestore.Firestore {
   if (process.env.NODE_ENV === "test") {
+    console.log('Returning test firestore.')
     return _firestoreForTest
   } else {
+    console.log('Returning real firestore.')
     return firestore
   }
 }
@@ -88,7 +90,12 @@ function isFirebaseConfig(obj: unknown): obj is FirebaseConfig {
  * @return {FirebaseConfig} The config object
  */
 function getConfig(functions: any): FirebaseConfig {
-  const result = process.env.NODE_ENV === "test" ? _configForTest : functions.config()
+  console.log('process.env.NODE_ENV in getConfig():', process.env.NODE_ENV)
+  const isTestingLocally = process.env.NODE_ENV === "test"
+  // In CI, we were observed not to be able to set env variables (neither NODE_ENV nor something
+  // arbitrary like FOO); they were observed to be undefined.
+  const isTestingInCI = process.env.FUNCTIONS_EMULATOR === "true" && process.env.NODE_ENV === undefined
+  const result = isTestingLocally || isTestingInCI ? _configForTest : functions.config()
   if (isFirebaseConfig(result)) {
     return result
   } else {
