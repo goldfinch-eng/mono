@@ -90,6 +90,7 @@ function isFirebaseConfig(obj: unknown): obj is FirebaseConfig {
  * @return {FirebaseConfig} The config object
  */
 function getConfig(functions: any): FirebaseConfig {
+  console.log('process.env.NODE_ENV in getConfig():', process.env.NODE_ENV)
   const isTestingLocally = process.env.NODE_ENV === "test"
   // In CI, we were observed not to be able to set env variables (neither NODE_ENV nor something
   // arbitrary like FOO); they were observed to be undefined.
