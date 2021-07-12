@@ -1,49 +1,46 @@
 @import url("https://use.typekit.net/oib7cgq.css");
-@import './variables.scss';
-@import './animations.scss';
-@import './normalize.scss';
+@import "./variables.scss";
+@import "./animations.scss";
+@import "./normalize.scss";
 
 // Page sections
-@import './background-container.scss';
-@import './bar-viz.scss';
-@import './button.scss';
-@import './credit-status-balance.scss';
-@import './creditline-dropdown.scss';
-@import './currency-dropdown.scss';
-@import './credit-lines-list.scss';
-@import './drawdown-form.scss';
-@import './deposit-status.scss';
-@import './dropdown.scss';
-@import './footer.scss';
-@import './form-inputs.scss';
-@import './form-section.scss';
-@import './form-start.scss';
-@import './info-section.scss';
-@import './legal.scss';
-@import './network-widget.scss';
-@import './payment-form.scss';
-@import './pool-links.scss';
-@import './recent-repayments.scss';
-@import './sidebar.scss';
-@import './status-icon.scss';
-@import './spinner.scss';
-@import './table-spaced.scss';
-@import './table.scss';
-@import './transactions-table.scss';
-@import './unlock-form.scss';
-@import './value-options.scss';
-@import './verify-identity.scss';
+@import "./background-container.scss";
+@import "./bar-viz.scss";
+@import "./button.scss";
+@import "./credit-status-balance.scss";
+@import "./creditline-dropdown.scss";
+@import "./currency-dropdown.scss";
+@import "./credit-lines-list.scss";
+@import "./drawdown-form.scss";
+@import "./deposit-status.scss";
+@import "./dropdown.scss";
+@import "./footer.scss";
+@import "./form-inputs.scss";
+@import "./form-section.scss";
+@import "./form-start.scss";
+@import "./info-banner.scss";
+@import "./info-section.scss";
+@import "./investor-notice.scss";
+@import "./legal.scss";
+@import "./network-widget.scss";
+@import "./payment-form.scss";
+@import "./pool-links.scss";
+@import "./recent-repayments.scss";
+@import "./sidebar.scss";
+@import "./status-icon.scss";
+@import "./spinner.scss";
+@import "./table-spaced.scss";
+@import "./table.scss";
+@import "./transactions-table.scss";
+@import "./value-options.scss";
+@import "./verify-identity.scss";
 
-
-
-html, * {
+html,
+* {
   font-family: aktiv-grotesk, sans-serif;
   font-size: $sans-size-m;
   font-weight: 400;
-  transition: color 0.1s ease,
-              background-color 0.1s ease,
-              opacity 0.1s ease,
-              fill 0.1s ease,
+  transition: color 0.1s ease, background-color 0.1s ease, opacity 0.1s ease, fill 0.1s ease;
 }
 
 body {
@@ -57,16 +54,16 @@ a {
   cursor: pointer;
 }
 
-input{
+input {
   color: $purp-dark;
 }
 
-.content-section{
+.content-section {
   margin: 0 auto;
   max-width: $content-max-width;
 }
 
-.page-header{
+.page-header {
   font-weight: 500;
   margin: 105px auto 20px;
   max-width: $content-max-width;
@@ -74,31 +71,18 @@ input{
   position: relative;
 }
 
-.content-empty-message{
-  background-color: $blue-xxlight;
-  color: $purp-dark;
-  font-size: $sans-size-s;
-  line-height: 1.3;
-
-  -webkit-animation: dropIn 0.5s;
-  -moz-animation: dropIn 0.5s;
-  -o-animation: dropIn 0.5s;
-  animation: dropIn 0.5s;
+input::placeholder,
+::-webkit-input-placeholder {
+  color: $purp-xxlight;
 }
-
- input::placeholder,
- ::-webkit-input-placeholder {
-   color: $purp-xxlight;
- }
 
 .placeholder * {
   color: $sand-xxdark;
 
-  .icon path{
+  .icon path {
     fill: $sand-xxdark;
   }
 }
-
 
 @media only screen and (min-width: $screen-m) {
   body {
@@ -106,18 +90,14 @@ input{
   }
 }
 
-
 @media only screen and (min-width: $screen-l) {
-  html, * {
+  html,
+  * {
     font-size: $sans-size-base;
   }
 
   body {
     padding: 0 80px 140px $nav-width + 80;
-  }
-
-  .content-empty-message{
-    font-size: $sans-size-m;
   }
 }
 

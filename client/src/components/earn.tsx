@@ -5,6 +5,7 @@ import ConnectionNotice from "./connectionNotice"
 import { fetchCapitalProviderData, fetchPoolData } from "../ethereum/pool"
 import { AppContext } from "../App"
 import { ERC20 } from "../ethereum/erc20"
+import StaticInvestorNotice from "./staticInvestorNotice"
 
 function Earn(props) {
   const { pool, usdc, creditDesk, user } = useContext(AppContext)
@@ -42,7 +43,10 @@ function Earn(props) {
 
   return (
     <div className="content-section">
-      <div className="page-header">{earnMessage}</div>
+      <div className="page-header">
+        <StaticInvestorNotice />
+        <div>{earnMessage}</div>
+      </div>
       <ConnectionNotice />
       <EarnActionsContainer poolData={poolData} capitalProvider={capitalProvider} actionComplete={actionComplete} />
       <PoolStatus poolData={poolData} creditDesk={creditDesk} />
