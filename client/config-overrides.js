@@ -1,7 +1,9 @@
 /* config-overrides.js */
-const { solidityLoader } = require("./config/webpack")
-const { override, overrideDevServer } = require("customize-cra")
-const { addReactRefresh } = require("customize-cra-react-refresh")
+const webpack = require("webpack")
+const {solidityLoader} = require("./config/webpack")
+const {override, overrideDevServer} = require("customize-cra")
+const {addReactRefresh} = require("customize-cra-react-refresh")
+const childProcess = require("child_process")
 
 const allowOutsideImports = () => config => {
   // allow importing from outside of app/src folder, ModuleScopePlugin prevents this.
@@ -34,12 +36,24 @@ const gnosisSafeIntegration = () => config => {
   return config
 }
 
+const injectCommitId = () => config => {
+  const commitId = childProcess.execSync("git rev-parse HEAD").toString("utf8")
+
+  config.plugins = (config.plugins || []).concat(
+    new webpack.DefinePlugin({
+      "process.env.REACT_APP_COMMIT_ID": JSON.stringify(commitId),
+    }),
+  )
+  return config
+}
+
 // prettier-ignore
 module.exports = {
   webpack: override(
     allowOutsideImports(),
     solidityHotReloading(solidityLoader),
-    addReactRefresh()
+    addReactRefresh(),
+    injectCommitId()
   ),
   devServer: overrideDevServer(
     gnosisSafeIntegration()
