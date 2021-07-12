@@ -9,7 +9,7 @@
     "logs": "firebase functions:log",
     "test": "NODE_ENV=test mocha --require ts-node/register test/**",
     "ci_test": "cd ../ && npx firebase emulators:exec --project=dev \"cd functions && npm test\"",
-    "config-set": "COMMIT_ID=$(git rev-parse HEAD) && npx firebase functions:config:set sentry.release=$COMMIT_ID --project %npm_config_goldfinch-frontends-env%",
+    "config-set": "COMMIT_ID=$(git rev-parse HEAD) && cd ../ && npx firebase functions:config:set sentry.release=$COMMIT_ID --project %npm_config_goldfinch-frontends-env%",
     "config-set-dev": "npm run config-set --goldfinch-frontends-env=dev",
     "config-set-prod": "npm run config-set --goldfinch-frontends-env=prod"
   },
