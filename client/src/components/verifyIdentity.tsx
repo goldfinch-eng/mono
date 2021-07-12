@@ -282,10 +282,10 @@ function VerifyIdentity() {
   }
 
   function renderForm() {
-    if (kycStatus === "") {
-      return <SignInForm disabled={!user.address} action={() => getSignatureAndKycStatus()} />
-    } else if (kycStatus === "golisted") {
+    if (user.goListed) {
       return <VerificationNotice icon={iconCircleCheck} notice="Your address verification is complete." />
+    } else if (kycStatus === "") {
+      return <SignInForm disabled={!user.address} action={() => getSignatureAndKycStatus()} />
     } else if (kycStatus === "failed") {
       return (
         <VerificationNotice
