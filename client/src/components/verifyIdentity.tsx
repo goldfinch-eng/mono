@@ -222,7 +222,7 @@ function SignInForm({ action, disabled }) {
     <>
       <div className={"background-container"}>
         <div className="verify-options">
-          <div className="item">First, please sign in to confirm your address</div>
+          <div className="item">First, please sign in to confirm your address.</div>
           <div className="item">
             <FormProvider {...formMethods}>
               <form className="form">
