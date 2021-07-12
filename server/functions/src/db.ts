@@ -1,9 +1,6 @@
 import * as admin from "firebase-admin"
 import {isPlainObject, isString, isStringOrUndefined} from "../../../utils/type"
 import firestore = admin.firestore
-import childProcess from "child_process"
-
-const _commitIdForTest = childProcess.execSync("git rev-parse HEAD").toString("utf8")
 
 let _firestoreForTest: firestore.Firestore
 let _configForTest: FirebaseConfig = {
@@ -11,7 +8,7 @@ let _configForTest: FirebaseConfig = {
   persona: {allowed_ips: ""},
   sentry: {
     dsn: "https://8c1adf3a336a4487b14ae1af080c26d1@o915675.ingest.sentry.io/5857894",
-    release: _commitIdForTest,
+    release: process.env.COMMIT_ID_FOR_TEST || "",
     environment: "test",
   },
 }
