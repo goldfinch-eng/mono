@@ -109,13 +109,9 @@ const verifyRequest = (req: functions.https.Request) => {
 }
 
 const getCountryCode = (eventPayload: Record<string, any>): string | null => {
-  let includedObj: Record<string, any>
-  for (includedObj of eventPayload.included) {
-    if (includedObj.type === "account" && includedObj.attributes.countryCode) {
-      return includedObj.attributes.countryCode
-    }
-  }
-  return null
+  const account = eventPayload.included.find((i: any) => i.type === "account")
+  const verification = eventPayload.included.find((i: any) => i.type === "verification/government-id")
+  return account?.attributes?.countryCode || verification?.attributes?.countryCode
 }
 
 const personaCallback = functions.https.onRequest(
