@@ -65,20 +65,18 @@ async function main() {
     console.log("Persona API key is missing. Please prepend the command with PERSONA_API_KEY=#KEY#")
     return
   }
-  const approvedAccounts = await fetchAllAccounts()
-  const accountsToAdd = []
-  for (let account of Object.values(approvedAccounts)) {
+  const approvedAccounts = Object.values(await fetchAllAccounts())
+  for (let account of approvedAccounts) {
     const inquiry = await fetchInquiry(account.id)
     if (inquiry) {
       const verification = inquiry.included.find((included) => included.type === "verification/government-id")
       account.countryCode = verification.attributes.countryCode
       account.discord = inquiry.attributes.fields.discordName.value
     }
-    accountsToAdd.push(account)
   }
 
-  console.log("Paste the following into the golist:\n")
-  for (let account of accountsToAdd) {
+  const accountsToAdd = []
+  for (let account of approvedAccounts) {
     // If the account is US based or if we don't know the country code for sure, skip
     if (!account.countryCode || account.countryCode === "" || account.countryCode === "US") {
       continue
@@ -88,12 +86,21 @@ async function main() {
     if (goList.includes(account.id) || goList.includes(account.id.toLowerCase())) {
       continue
     }
-    console.log(`"${account.id}",`)
+    accountsToAdd.push(account.id)
+  }
+
+  console.log("Paste the following into the golist:\n")
+  for (let i = 0; i < accountsToAdd.length; i++) {
+    if (i === accountsToAdd.length - 1) {
+      console.log(`"${accountsToAdd[i]}"`)
+    } else {
+      console.log(`"${accountsToAdd[i]}",`)
+    }
   }
 
   let writeStream = fs.createWriteStream("accounts.csv")
   writeStream.write("address, country_code, email, discord\n")
-  for (let account of accountsToAdd) {
+  for (let account of approvedAccounts) {
     writeStream.write(`"${account.id}", ${account.countryCode}, ${account.email}, ${account.discord}\n`)
   }
   writeStream.end()
