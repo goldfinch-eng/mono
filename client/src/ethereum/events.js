@@ -5,7 +5,7 @@ import _ from "lodash"
 import { usdcFromAtomic } from "./erc20"
 
 const EVENT_TYPE_MAP = {
-  DepositMade: "Deposit",
+  DepositMade: "Supply",
   WithdrawalMade: "Withdrawal",
   DrawdownMade: "Borrow",
   PaymentCollected: "Payment",

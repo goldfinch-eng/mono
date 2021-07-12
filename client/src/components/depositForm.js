@@ -14,7 +14,7 @@ function DepositForm(props) {
   function action({ transactionAmount }) {
     const depositAmount = usdcToAtomic(transactionAmount)
     return sendFromUser(pool.methods.deposit(depositAmount), {
-      type: "Deposit",
+      type: "Supply",
       amount: transactionAmount,
     }).then(props.actionComplete)
   }
@@ -25,14 +25,14 @@ function DepositForm(props) {
       disabled = true
       warningMessage = (
         <p className="form-message">
-          You don't have any USDC to deposit. You'll need to first send USDC to your address to deposit.
+          You don't have any USDC to supply. You'll need to first send USDC to your address to supply capital.
         </p>
       )
     } else if (pool.gf.totalPoolAssets.gte(goldfinchConfig.totalFundsLimit)) {
       disabled = true
       warningMessage = (
         <p className="form-message">
-          The pool is currently at its limit. Please check back later to see if we're accepting new deposits.
+          The pool is currently at its limit. Please check back later to see if the pool has new capacity.
         </p>
       )
     }
@@ -53,7 +53,7 @@ function DepositForm(props) {
                 let limit = goldfinchConfig.totalFundsLimit.minus(pool.gf.totalPoolAssets)
                 return (
                   limit.gte(usdcToAtomic(value)) ||
-                  `This deposit would put the pool over its limit. It can accept a max of $${usdcFromAtomic(limit)}.`
+                  `This amount would put the pool over its limit. It can accept a max of $${usdcFromAtomic(limit)}.`
                 )
               },
             }}
@@ -66,8 +66,8 @@ function DepositForm(props) {
 
   return (
     <TransactionForm
-      title="Deposit"
-      headerMessage={`Available to deposit: ${displayDollars(user.usdcBalanceInDollars)}`}
+      title="Supply"
+      headerMessage={`Available to supply: ${displayDollars(user.usdcBalanceInDollars)}`}
       render={renderForm}
       closeForm={props.closeForm}
     />

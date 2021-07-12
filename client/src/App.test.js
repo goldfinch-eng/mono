@@ -6,7 +6,7 @@ describe("App", () => {
   it("renders without crashing", async () => {
     render(<App />)
     await waitFor(() => {
-      expect(screen.getByText("Earn Portfolio")).toBeTruthy()
+      expect(screen.getByText("Senior Pool")).toBeTruthy()
     })
   })
 })

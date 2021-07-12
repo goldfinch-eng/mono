@@ -129,7 +129,7 @@ function NetworkWidget(props) {
       <div className="network-widget-info">
         <div className="network-widget-section">
           <div className="agree-to-terms">
-            <p>By connecting, I accept Goldfinch's <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a>.</p>
+            <p>By connecting, I accept Goldfinch's <a href="/terms" target="_blank">Terms of Service</a> and <a href="/privacy" target="_blank">Privacy Policy</a>.</p>
           </div>
           <button className="button bold" onClick={enableMetamask}>
             Connect Metamask

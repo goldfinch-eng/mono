@@ -38,7 +38,7 @@ function Earn(props) {
 
   let earnMessage = "Loading..."
   if (capitalProvider.loaded || user.noWeb3) {
-    earnMessage = "Earn Portfolio"
+    earnMessage = "Senior Pool"
   }
 
   return (

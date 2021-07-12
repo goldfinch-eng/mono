@@ -24,7 +24,9 @@ function Sidebar(props) {
       <button className="open-sidebar" onClick={toggleSidebar}>
         {iconMenu}
       </button>
-      <img className="sidebar-logo" src={logoPurp} alt="Goldfinch" />
+      <a href="/">
+        <img className="sidebar-logo" src={logoPurp} alt="Goldfinch" />
+      </a>
       <nav>
         <NavLink to="/earn" onClick={closeSidebar}>
           Earn

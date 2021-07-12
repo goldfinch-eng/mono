@@ -19,7 +19,7 @@ function Transactions(props) {
     let amountPrefix = ""
     let amount = displayDollars(tx.amount)
 
-    if (["Deposit", "Payment"].includes(tx.name)) {
+    if (["Supply", "Payment"].includes(tx.name)) {
       typeCssClass = "inflow"
       icon = iconCircleUpLg
       amountPrefix = "+"
