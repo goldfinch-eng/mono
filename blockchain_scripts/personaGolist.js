@@ -1,10 +1,11 @@
 const fetch = require("node-fetch")
 const goList = require("../client/src/goList.json")
+const fs = require("fs")
 
 const personaAPIKey = process.env.PERSONA_API_KEY
 
-async function fetchEntities(entity, paginationToken) {
-  let url = `https://withpersona.com/api/v1/${entity}?`
+async function fetchEntities(entity, paginationToken, filter) {
+  let url = `https://withpersona.com/api/v1/${entity}?${filter}`
   if (paginationToken) {
     url = `${url}&page[after]=${paginationToken}`
   }
@@ -44,6 +45,21 @@ async function fetchAllAccounts() {
   return allAccounts
 }
 
+async function fetchInquiry(referenceId) {
+  let inquiries = await fetchEntities("inquiries", null, `filter[reference-id]=${referenceId}`)
+  const approvedInquiry = inquiries.data.find((i) => i.attributes.status === "approved")
+  if (!approvedInquiry) {
+    return null
+  }
+  let event = await fetchEntities(
+    "events",
+    null,
+    `filter[name]=inquiry.approved&filter[object-id]=${approvedInquiry.id}`
+  )
+  approvedInquiry.included = event.data[0].attributes.payload.included
+  return approvedInquiry
+}
+
 async function main() {
   if (!personaAPIKey) {
     console.log("Persona API key is missing. Please prepend the command with PERSONA_API_KEY=#KEY#")
@@ -52,31 +68,41 @@ async function main() {
   const approvedAccounts = await fetchAllAccounts()
   const accountsToAdd = []
   for (let account of Object.values(approvedAccounts)) {
-    // Ignore US for now
-    if (!account.countryCode || account.countryCode === "US") {
-      continue
-    }
-    // If already golisted, ignore
-    if (goList.includes(account.id) || goList.includes(account.id.toLowerCase())) {
-      continue
+    const inquiry = await fetchInquiry(account.id)
+    if (inquiry) {
+      const verification = inquiry.included.find((included) => included.type === "verification/government-id")
+      account.countryCode = verification.attributes.countryCode
+      account.discord = inquiry.attributes.fields.discordName.value
     }
     accountsToAdd.push(account)
   }
 
   console.log("Paste the following into the golist:\n")
   for (let account of accountsToAdd) {
+    // If the account is US based or if we don't know the country code for sure, skip
+    if (!account.countryCode || account.countryCode === "" || account.countryCode === "US") {
+      continue
+    }
+
+    // If already golisted, ignore
+    if (goList.includes(account.id) || goList.includes(account.id.toLowerCase())) {
+      continue
+    }
     console.log(`"${account.id}",`)
   }
 
-  console.log("\n\nEmail the following addresses:\n")
+  let writeStream = fs.createWriteStream("accounts.csv")
+  writeStream.write("address, country_code, email, discord\n")
   for (let account of accountsToAdd) {
-    console.log(`"${account.email}",`)
+    writeStream.write(`"${account.id}", ${account.countryCode}, ${account.email}, ${account.discord}\n`)
   }
-
-  console.log("\n\nCSV export")
-  for (let account of accountsToAdd) {
-    console.log(`"${account.id}", ${account.email}`)
-  }
+  writeStream.end()
+  await new Promise((resolve) => {
+    writeStream.on("finish", () => {
+      console.log("\nAll accounts exported to accounts.csv")
+      resolve()
+    })
+  })
 }
 
 if (require.main === module) {
