@@ -37,7 +37,11 @@ const gnosisSafeIntegration = () => config => {
 }
 
 const injectCommitId = () => config => {
-  const commitId = childProcess.execSync("git rev-parse HEAD").toString("utf8")
+  // Cf. https://docs.netlify.com/configure-builds/environment-variables/#git-metadata
+  const commitId =
+    process.env.NETLIFY === "true"
+      ? process.env.COMMIT_REF
+      : childProcess.execSync("git rev-parse HEAD").toString("utf8")
 
   config.plugins = (config.plugins || []).concat(
     new webpack.DefinePlugin({
