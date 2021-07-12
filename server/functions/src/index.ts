@@ -111,7 +111,8 @@ const verifyRequest = (req: functions.https.Request) => {
 const getCountryCode = (eventPayload: Record<string, any>): string | null => {
   const account = eventPayload.included.find((i: any) => i.type === "account")
   const verification = eventPayload.included.find((i: any) => i.type === "verification/government-id")
-  return account?.attributes?.countryCode || verification?.attributes?.countryCode
+  // If not countryCode is found, use an explicit null, firestore does not like "undefined"
+  return account?.attributes?.countryCode || verification?.attributes?.countryCode || null
 }
 
 const personaCallback = functions.https.onRequest(

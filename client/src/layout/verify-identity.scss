@@ -3,11 +3,13 @@
 .verify-options {
   display: flex;
   flex-direction: row;
+  align-items: center;
   @include space-x(1em);
 
   .item {
     flex-grow: 1;
     flex-basis: 0;
+    font-size: $sans-size-m;
 
     button {
       width: 100%;

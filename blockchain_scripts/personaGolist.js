@@ -73,6 +73,7 @@ async function main() {
       account.countryCode = verification.attributes.countryCode
       account.discord = inquiry.attributes.fields.discordName.value
     }
+    account.golisted = goList.includes(account.id) || goList.includes(account.id.toLowerCase())
   }
 
   const accountsToAdd = []
@@ -83,7 +84,7 @@ async function main() {
     }
 
     // If already golisted, ignore
-    if (goList.includes(account.id) || goList.includes(account.id.toLowerCase())) {
+    if (account.golisted) {
       continue
     }
     accountsToAdd.push(account.id)
@@ -99,9 +100,11 @@ async function main() {
   }
 
   let writeStream = fs.createWriteStream("accounts.csv")
-  writeStream.write("address, country_code, email, discord\n")
+  writeStream.write("address, country_code, golisted, email, discord\n")
   for (let account of approvedAccounts) {
-    writeStream.write(`"${account.id}", ${account.countryCode}, ${account.email}, ${account.discord}\n`)
+    writeStream.write(
+      `"${account.id}", ${account.countryCode}, ${account.golisted}, ${account.email}, ${account.discord}\n`
+    )
   }
   writeStream.end()
   await new Promise((resolve) => {
