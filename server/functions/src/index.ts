@@ -41,7 +41,7 @@ const kycStatus = Sentry.GCPFunction.wrapHttpFunction(
       const response = {address: address, status: "unknown", countryCode: null}
       setCORSHeaders(req, res)
 
-      if (getConfig(functions).sentry.environment === 'development') {
+      if (getConfig(functions).sentry.environment === "development") {
         throw new Error("testing that Sentry logs this, including with release info")
       }
 
@@ -147,7 +147,7 @@ const getCountryCode = (eventPayload: Record<string, any>): string | null => {
 const personaCallback = Sentry.GCPFunction.wrapHttpFunction(
   functions.https.onRequest(
     async (req, res): Promise<void> => {
-      if (getConfig(functions).sentry.environment === 'development') {
+      if (getConfig(functions).sentry.environment === "development") {
         throw new Error("testing that Sentry logs this, including with release info")
       }
 

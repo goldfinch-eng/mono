@@ -145,7 +145,9 @@ function App() {
     refreshUserData,
   }
 
-  throw new Error("testing that Sentry logs this, including with release info")
+  if (process.env.REACT_APP_DEPLOY_CONTEXT === "deploy-preview") {
+    throw new Error("testing that Sentry logs this, including with release info")
+  }
 
   return (
     <AppContext.Provider value={store}>
