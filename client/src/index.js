@@ -8,10 +8,14 @@ import * as Sentry from "@sentry/react"
 import {Integrations} from "@sentry/tracing"
 
 function configureSentry() {
-  const dsn = process.env.REACT_APP_SENTRY_DSN
+  const dsn =
+    process.env.REACT_APP_DEPLOY_CONTEXT === "deploy-preview"
+      ? process.env.REACT_APP_SENTRY_DSN_DEPLOY_PREVIEW
+      : process.env.REACT_APP_SENTRY_DSN
   if (!dsn) {
     console.error("Failed to obtain Sentry `dsn`.")
   }
+
   const release = process.env.REACT_APP_COMMIT_ID
 
   Sentry.init({
