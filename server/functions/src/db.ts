@@ -98,14 +98,14 @@ function getConfig(functions: any): FirebaseConfig {
   // whether we're in this bootstrapping phase, and use the test config for it as well as for when
   // `process.env.NODE_ENV === "test"`. `process.env.NODE_ENV` becomes `"test"` immediately after this
   // bootstrapping phase, via the `npm test` command passed as an argument to `npx firebase emulators:exec`.
-  const isBootstrappingEmulator = (
+  const isBootstrappingEmulator =
     process.env.FUNCTIONS_EMULATOR === "true" && // Cf. https://stackoverflow.com/a/60963496
     process.env.NODE_ENV === undefined &&
     // We expect the emulator never to be used with the prod project's functions, so we can
     // include the following extra condition to prevent `isBootstrappingEmulator` ever enabling use of the
     // test config with the prod project.
     process.env.GCLOUD_PROJECT === "goldfinch-frontends-dev"
-  )
+
   const isTesting = process.env.NODE_ENV === "test"
   const result = isBootstrappingEmulator || isTesting ? _configForTest : functions.config()
   if (isFirebaseConfig(result)) {
