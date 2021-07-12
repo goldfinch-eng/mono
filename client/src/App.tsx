@@ -145,6 +145,8 @@ function App() {
     refreshUserData,
   }
 
+  throw new Error("testing that Sentry logs this, including with release info")
+
   return (
     <AppContext.Provider value={store}>
       <Router>
