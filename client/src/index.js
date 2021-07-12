@@ -10,12 +10,9 @@ import {Integrations} from "@sentry/tracing"
 function configureSentry() {
   const dsn = process.env.REACT_APP_SENTRY_DSN
   if (!dsn) {
-    throw new Error("Failed to obtain Sentry `dsn`.")
+    console.error("Failed to obtain Sentry `dsn`.")
   }
   const release = process.env.REACT_APP_COMMIT_ID
-  if (!release) {
-    throw new Error("Failed to obtain Sentry `release`.")
-  }
 
   Sentry.init({
     dsn,
@@ -24,6 +21,12 @@ function configureSentry() {
     environment: process.env.NODE_ENV,
     tracesSampleRate: process.env.NODE_ENV === "production" ? 0.25 : 1.0,
   })
+
+  if (!release) {
+    if (process.env.NODE_ENV !== "development") {
+      console.error("Failed to obtain Sentry `release`.")
+    }
+  }
 }
 
 configureSentry()
