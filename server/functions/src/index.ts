@@ -15,8 +15,9 @@ Sentry.GCPFunction.init({
       levels: ["log", "info", "warn", "error"],
     }),
   ],
-  environment: _config.sentry.env,
-  tracesSampleRate: _config.sentry.env === "production" ? 0.25 : 1.0,
+  release: _config.sentry.release,
+  environment: _config.sentry.environment,
+  tracesSampleRate: _config.sentry.environment === "production" ? 0.25 : 1.0,
 })
 
 admin.initializeApp()

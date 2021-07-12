@@ -1,6 +1,9 @@
 import * as admin from "firebase-admin"
 import {isPlainObject, isString, isStringOrUndefined} from "../../../utils/type"
 import firestore = admin.firestore
+import childProcess from "child_process"
+
+const _commitIdForTest = childProcess.execSync("git rev-parse HEAD").toString("utf8")
 
 let _firestoreForTest: firestore.Firestore
 let _configForTest: FirebaseConfig = {
@@ -8,7 +11,8 @@ let _configForTest: FirebaseConfig = {
   persona: {allowed_ips: ""},
   sentry: {
     dsn: "https://8c1adf3a336a4487b14ae1af080c26d1@o915675.ingest.sentry.io/5857894",
-    env: "test",
+    release: _commitIdForTest,
+    environment: "test",
   },
 }
 
@@ -43,7 +47,8 @@ function getDb(firestore: firestore.Firestore): firestore.Firestore {
 export type FirebaseConfig = {
   sentry: {
     dsn: string
-    env: "development" | "test" | "production"
+    release: string
+    environment: "development" | "test" | "production"
   }
   kyc: {
     // eslint-disable-next-line camelcase
@@ -65,7 +70,10 @@ function isFirebaseConfig(obj: unknown): obj is FirebaseConfig {
     isPlainObject(obj) &&
     isPlainObject(obj.sentry) &&
     isString(obj.sentry.dsn) &&
-    (obj.sentry.env === "development" || obj.sentry.env === "test" || obj.sentry.env === "production") &&
+    isString(obj.sentry.release) &&
+    (obj.sentry.environment === "development" ||
+      obj.sentry.environment === "test" ||
+      obj.sentry.environment === "production") &&
     isPlainObject(obj.kyc) &&
     isString(obj.kyc.allowed_origins) &&
     isPlainObject(obj.persona) &&
@@ -81,8 +89,8 @@ function isFirebaseConfig(obj: unknown): obj is FirebaseConfig {
  */
 function getConfig(functions: any): FirebaseConfig {
   const isTestingLocally = process.env.NODE_ENV === "test"
-  // In CI, we were observed not to be able to set env variables (e.g. NODE_ENV); they
-  // were observed to be undefined.
+  // In CI, we were observed not to be able to set env variables (neither NODE_ENV nor something
+  // arbitrary like FOO); they were observed to be undefined.
   const isTestingInCI = process.env.FUNCTIONS_EMULATOR === "true" && process.env.NODE_ENV === undefined
   const result = isTestingLocally || isTestingInCI ? _configForTest : functions.config()
   if (isFirebaseConfig(result)) {
