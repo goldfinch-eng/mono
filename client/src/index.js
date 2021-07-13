@@ -9,24 +9,27 @@ import {Integrations} from "@sentry/tracing"
 import {CaptureConsole as CaptureConsoleIntegration} from "@sentry/integrations"
 
 function configureSentry() {
-  const dsn =
-    process.env.REACT_APP_DEPLOY_CONTEXT === "deploy-preview"
-      ? process.env.REACT_APP_SENTRY_DSN_DEPLOY_PREVIEW
-      : process.env.REACT_APP_SENTRY_DSN
+  const dsn = process.env.REACT_APP_SENTRY_DSN
   if (dsn) {
-    const release = process.env.REACT_APP_COMMIT_ID
+    const release = process.env.REACT_APP_SENTRY_RELEASE
+    const environment = process.env.REACT_APP_SENTRY_ENVIRONMENT
 
     Sentry.init({
       dsn,
       integrations: [new Integrations.BrowserTracing(), new CaptureConsoleIntegration()],
       release,
-      environment: process.env.NODE_ENV,
+      environment,
       tracesSampleRate: process.env.NODE_ENV === "production" ? 0.25 : 1.0,
     })
 
     if (!release) {
       if (process.env.NODE_ENV !== "development") {
         console.error("Failed to obtain Sentry `release`.")
+      }
+    }
+    if (!environment) {
+      if (process.env.NODE_ENV !== "development") {
+        console.error("Failed to obtain Sentry `environment`.")
       }
     }
   } else {
