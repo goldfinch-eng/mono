@@ -6,7 +6,7 @@ import {getDb, getUsers, getConfig} from "./db"
 import firestore = admin.firestore
 import * as Sentry from "@sentry/serverless"
 import {CaptureConsole} from "@sentry/integrations"
-import {HttpFunction, Request, Response} from "@sentry/serverless/dist/gcpfunction/general"
+import {HttpFunction, Request} from "@sentry/serverless/dist/gcpfunction/general"
 import {HttpFunctionWrapperOptions} from "@sentry/serverless/dist/gcpfunction"
 import {HttpsFunction} from "firebase-functions"
 
