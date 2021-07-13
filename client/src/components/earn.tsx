@@ -47,7 +47,7 @@ function Earn(props) {
         <StaticInvestorNotice />
         <div>{earnMessage}</div>
       </div>
-      <ConnectionNotice />
+      <ConnectionNotice requireVerify={true} />
       <EarnActionsContainer poolData={poolData} capitalProvider={capitalProvider} actionComplete={actionComplete} />
       <PoolStatus poolData={poolData} creditDesk={creditDesk} />
     </div>

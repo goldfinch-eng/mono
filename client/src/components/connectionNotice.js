@@ -1,13 +1,18 @@
-import React, { useContext } from "react"
-import { withRouter, useHistory } from "react-router-dom"
-import { AppContext } from "../App"
+import React, {useContext} from "react"
+import {withRouter, useHistory} from "react-router-dom"
+import {AppContext} from "../App"
 import UnlockUSDCForm from "./unlockUSDCForm.js"
-import { iconInfo } from "./icons"
+import {iconInfo} from "./icons"
 
 function ConnectionNotice(props) {
-  const { network, user } = useContext(AppContext)
+  const {network, user} = useContext(AppContext)
   const history = useHistory()
   let notice = ""
+
+  let {requireVerify} = props
+  if (requireVerify == undefined) {
+    requireVerify = false
+  }
 
   if (!window.ethereum) {
     notice = (
@@ -49,7 +54,7 @@ function ConnectionNotice(props) {
     if (unlockStatus && !unlockStatus.isUnlocked) {
       notice = <UnlockUSDCForm unlockAddress={unlockStatus.unlockAddress} />
     }
-    if (!user.goListed && !props.location.pathname.startsWith("/verify")) {
+    if (!user.goListed && requireVerify) {
       notice = (
         <div className="info-banner background-container">
           <div className="message">
