@@ -6,8 +6,9 @@ import {getDb, getUsers, getConfig} from "./db"
 import firestore = admin.firestore
 import * as Sentry from "@sentry/serverless"
 import {CaptureConsole} from "@sentry/integrations"
-import {Request, Response} from "@sentry/serverless/dist/gcpfunction/general"
+import {HttpFunction, Request, Response} from "@sentry/serverless/dist/gcpfunction/general"
 import {HttpFunctionWrapperOptions} from "@sentry/serverless/dist/gcpfunction"
+import {HttpsFunction} from "firebase-functions"
 
 const _config = getConfig(functions)
 Sentry.GCPFunction.init({
@@ -36,11 +37,12 @@ const setCORSHeaders = (req: any, res: any) => {
 
 /**
  * Helper for augmenting Sentry's default behavior for GCPFunction handlers.
+ * @param {HttpsFunction} fn The handler we want to wrap. This should itself have been wrapped by
+ * `functions.https.onRequest()`.
+ * @param {Partial<HttpFunctionWrapperOptions>} wrapOptions Options to pass to Sentry's wrap function.
+ * @return {HttpFunction} A function suitable for assignment/export as a route handler.
  */
-const sentryWrapper = (
-  fn: (req: Request, res: Response) => void | Promise<void>,
-  wrapOptions?: Partial<HttpFunctionWrapperOptions>,
-) => {
+const sentryWrapper = (fn: HttpsFunction, wrapOptions?: Partial<HttpFunctionWrapperOptions>): HttpFunction => {
   return Sentry.GCPFunction.wrapHttpFunction(async (req, res): Promise<void> => {
     // Sentry does not fully do its job as you'd expect; currently it is not instrumented for
     // unhandled promise rejections! So to capture such events in Sentry, we must catch and
