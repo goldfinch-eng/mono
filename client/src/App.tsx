@@ -125,7 +125,7 @@ function App() {
       // NOTE: The info we use here to identify / define the user for the purpose of
       // error tracking with Sentry MUST be kept consistent with (i.e. not exceed
       // the bounds set by) what our Terms of Service, Privacy Policy, and marketing
-      // copy states about the identifying information that Goldfinch stores.
+      // copy state about the identifying information that Goldfinch stores.
       id: data.address, address: data.address, isOverrideOf: overrideAddress ? _userAddress : undefined
     })
 

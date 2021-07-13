@@ -35,28 +35,28 @@ const setCORSHeaders = (req: any, res: any) => {
 }
 
 /**
- * Helper for augmenting Sentry's default behavior for GCPFunction handlers.
- * @param {HttpFunction} fn The handler we want to wrap.
+ * Helper for augmenting Sentry's default behavior for route handlers.
+ * @param {HttpFunction} fn The route handler we want to wrap.
  * @param {Partial<HttpFunctionWrapperOptions>} wrapOptions Options to pass to Sentry's wrap function.
- * @return {HttpFunction} A function suitable for assignment/export as a route handler.
+ * @return {HttpFunction} The wrapped handler suitable for passing to `functions.https.onRequest()`.
  */
-const sentryWrapper = (fn: HttpFunction, wrapOptions?: Partial<HttpFunctionWrapperOptions>): HttpFunction => {
+const wrapWithSentry = (fn: HttpFunction, wrapOptions?: Partial<HttpFunctionWrapperOptions>): HttpFunction => {
   return Sentry.GCPFunction.wrapHttpFunction(async (req, res): Promise<void> => {
     // Sentry does not fully do its job as you'd expect; currently it is not instrumented for
     // unhandled promise rejections! So to capture such events in Sentry, we must catch and
     // send them manually. Cf. https://github.com/getsentry/sentry-javascript/issues/3695#issuecomment-872350258,
     // https://github.com/getsentry/sentry-javascript/issues/3096#issuecomment-775582236.
     try {
-      return await fn(req, res)
-    } catch (error) {
-      Sentry.captureException(error)
+      await fn(req, res)
+    } catch (err: unknown) {
+      Sentry.captureException(err)
       res.status(500).send("Internal error.")
     }
   }, wrapOptions)
 }
 
 const kycStatus = functions.https.onRequest(
-  sentryWrapper(
+  wrapWithSentry(
     async (req, res): Promise<void> => {
       const address = req.query.address?.toString()
       const signature = req.query.signature?.toString()
@@ -164,7 +164,7 @@ const getCountryCode = (eventPayload: Record<string, any>): string | null => {
 }
 
 const personaCallback = functions.https.onRequest(
-  sentryWrapper(
+  wrapWithSentry(
     async (req, res): Promise<void> => {
       if (!verifyRequest(req)) {
         res.status(400).send({status: "error", message: "Request could not be verified"})
