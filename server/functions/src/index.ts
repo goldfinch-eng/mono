@@ -6,7 +6,8 @@ import {getDb, getUsers, getConfig} from "./db"
 import firestore = admin.firestore
 import * as Sentry from "@sentry/serverless"
 import {CaptureConsole} from "@sentry/integrations"
-import {Request} from "@sentry/serverless/dist/gcpfunction/general"
+import {Request, Response} from "@sentry/serverless/dist/gcpfunction/general"
+import {HttpFunctionWrapperOptions} from "@sentry/serverless/dist/gcpfunction"
 
 const _config = getConfig(functions)
 Sentry.GCPFunction.init({
@@ -33,8 +34,28 @@ const setCORSHeaders = (req: any, res: any) => {
   }
 }
 
-const kycStatus = functions.https.onRequest(
-  Sentry.GCPFunction.wrapHttpFunction(
+/**
+ * Helper for augmenting Sentry's default behavior for GCPFunction handlers.
+ */
+const sentryWrapper = (
+  fn: (req: Request, res: Response) => void | Promise<void>,
+  wrapOptions?: Partial<HttpFunctionWrapperOptions>,
+) => {
+  return Sentry.GCPFunction.wrapHttpFunction(async (req, res): Promise<void> => {
+    // Sentry does not fully do its job as you'd expect; currently it is not instrumented for
+    // unhandled promise rejections! So to capture such events in Sentry, we must catch and
+    // send them manually. Cf. https://github.com/getsentry/sentry-javascript/issues/3695#issuecomment-872350258
+    try {
+      return fn(req, res)
+    } catch (error) {
+      Sentry.captureException(error)
+      Sentry.flush(1000)
+    }
+  }, wrapOptions)
+}
+
+const kycStatus = sentryWrapper(
+  functions.https.onRequest(
     async (req, res): Promise<void> => {
       const address = req.query.address?.toString()
       const signature = req.query.signature?.toString()
@@ -148,8 +169,8 @@ const getCountryCode = (eventPayload: Record<string, any>): string | null => {
   return null
 }
 
-const personaCallback = functions.https.onRequest(
-  Sentry.GCPFunction.wrapHttpFunction(
+const personaCallback = sentryWrapper(
+  functions.https.onRequest(
     async (req, res): Promise<void> => {
       if (!verifyRequest(req)) {
         res.status(400).send({status: "error", message: "Request could not be verified"})
