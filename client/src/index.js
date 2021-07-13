@@ -5,7 +5,7 @@ import {App} from "./App"
 import * as serviceWorker from "./serviceWorker"
 import "focus-within-polyfill"
 import * as Sentry from "@sentry/react"
-import {BrowserTracing as BrowserTracingIntegration} from "@sentry/tracing"
+import {Integrations} from "@sentry/tracing"
 import {CaptureConsole as CaptureConsoleIntegration} from "@sentry/integrations"
 
 function configureSentry() {
@@ -18,7 +18,7 @@ function configureSentry() {
 
     Sentry.init({
       dsn,
-      integrations: [new BrowserTracingIntegration(), new CaptureConsoleIntegration()],
+      integrations: [new Integrations.BrowserTracing(), new CaptureConsoleIntegration()],
       release,
       environment: process.env.NODE_ENV,
       tracesSampleRate: process.env.NODE_ENV === "production" ? 0.25 : 1.0,
