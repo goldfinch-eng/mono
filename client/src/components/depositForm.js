@@ -1,17 +1,17 @@
-import React, { useContext } from "react"
-import { usdcFromAtomic, usdcToAtomic } from "../ethereum/erc20"
-import { AppContext } from "../App"
-import { displayDollars } from "../utils"
+import React, {useContext} from "react"
+import {usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
+import {AppContext} from "../App"
+import {displayDollars} from "../utils"
 import TransactionForm from "./transactionForm"
 import TransactionInput from "./transactionInput"
 import LoadingButton from "./loadingButton"
 import useSendFromUser from "../hooks/useSendFromUser"
 
 function DepositForm(props) {
-  const { pool, user, goldfinchConfig } = useContext(AppContext)
+  const {pool, user, goldfinchConfig} = useContext(AppContext)
   const sendFromUser = useSendFromUser()
 
-  function action({ transactionAmount }) {
+  function action({transactionAmount}) {
     const depositAmount = usdcToAtomic(transactionAmount)
     return sendFromUser(pool.methods.deposit(depositAmount), {
       type: "Supply",
@@ -19,7 +19,7 @@ function DepositForm(props) {
     }).then(props.actionComplete)
   }
 
-  function renderForm({ formMethods }) {
+  function renderForm({formMethods}) {
     let warningMessage, disabled, submitDisabled
     if (user.usdcBalance.eq(0)) {
       disabled = true
@@ -38,7 +38,7 @@ function DepositForm(props) {
     }
 
     // Must destructure or react-hook-forms does not detect state changes
-    const { isDirty, isValid } = formMethods.formState
+    const {isDirty, isValid} = formMethods.formState
     if (!isDirty || !isValid) {
       submitDisabled = true
     }
@@ -53,9 +53,9 @@ function DepositForm(props) {
             type="checkbox"
             name="agreement"
             id="agreement"
-            ref={ref => formMethods.register(ref, { required: "You must agree to the Senior Pool Agreement." })}
+            ref={ref => formMethods.register(ref, {required: "You must agree to the Senior Pool Agreement."})}
           />
-          <label className="checkbox-label" for="agreement">
+          <label className="checkbox-label" htmlFor="agreement">
             I agree to the&nbsp;
             <a
               className="checkbox-label-link"

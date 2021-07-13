@@ -1,13 +1,13 @@
 import web3 from "../web3"
 import BigNumber from "bignumber.js"
-import { fetchDataFromAttributes, getDeployments, USDC_DECIMALS } from "./utils"
-import { getUSDC, usdcFromAtomic } from "./erc20"
-import { getFidu, FIDU_DECIMALS, fiduFromAtomic } from "./fidu"
-import { roundDownPenny } from "../utils"
-import { getFromBlock } from "./utils"
-import { getPoolEvents } from "./user"
+import {fetchDataFromAttributes, getDeployments, USDC_DECIMALS} from "./utils"
+import {getUSDC, usdcFromAtomic} from "./erc20"
+import {getFidu, FIDU_DECIMALS, FIDU_DECIMAL_PLACES, fiduFromAtomic} from "./fidu"
+import {roundDownPenny} from "../utils"
+import {getFromBlock} from "./utils"
+import {getPoolEvents} from "./user"
 import _ from "lodash"
-import { mapEventsToTx } from "./events"
+import {mapEventsToTx} from "./events"
 
 let pool
 
@@ -29,10 +29,10 @@ async function fetchCapitalProviderData(pool, capitalProviderAddress) {
     return Promise.resolve(result)
   }
   if (!capitalProviderAddress && pool.loaded) {
-    return Promise.resolve({ loaded: true })
+    return Promise.resolve({loaded: true})
   }
-  const attributes = [{ method: "sharePrice" }]
-  result = await fetchDataFromAttributes(pool, attributes, { bigNumber: true })
+  const attributes = [{method: "sharePrice"}]
+  result = await fetchDataFromAttributes(pool, attributes, {bigNumber: true})
   result.numShares = new BigNumber(await pool.fidu.methods.balanceOf(capitalProviderAddress).call())
   result.availableToWithdrawal = new BigNumber(result.numShares)
     .multipliedBy(new BigNumber(result.sharePrice))
@@ -54,7 +54,7 @@ async function fetchPoolData(pool, erc20) {
   if (!erc20 || !pool.loaded) {
     return Promise.resolve(result)
   }
-  const attributes = [{ method: "sharePrice" }, { method: "compoundBalance" }]
+  const attributes = [{method: "sharePrice"}, {method: "compoundBalance"}]
   result = await fetchDataFromAttributes(pool, attributes)
   result.rawBalance = new BigNumber(await erc20.methods.balanceOf(pool.address).call())
   result.compoundBalance = new BigNumber(result.compoundBalance)
@@ -101,6 +101,7 @@ async function getWeightedAverageSharePrice(pool, capitalProvider) {
     const sharePrice = new BigNumber(event.returnValues.amount)
       .dividedBy(USDC_DECIMALS)
       .dividedBy(new BigNumber(event.returnValues.shares).dividedBy(FIDU_DECIMALS))
+      .decimalPlaces(FIDU_DECIMAL_PLACES)
     const sharesToAccountFor = BigNumber.min(sharesLeftToAccountFor, new BigNumber(event.returnValues.shares))
     totalAmountPaid = totalAmountPaid.plus(sharesToAccountFor.multipliedBy(sharePrice))
     sharesLeftToAccountFor = sharesLeftToAccountFor.minus(sharesToAccountFor)
@@ -119,7 +120,7 @@ async function getWeightedAverageSharePrice(pool, capitalProvider) {
 
 async function getCumulativeWritedowns(pool) {
   const from = getFromBlock(pool.chain)
-  const events = await pool.getPastEvents("PrincipalWrittendown", { fromBlock: from })
+  const events = await pool.getPastEvents("PrincipalWrittendown", {fromBlock: from})
   return new BigNumber(_.sumBy(events, event => parseInt(event.returnValues.amount, 10))).negated()
 }
 
@@ -127,7 +128,7 @@ async function getRepaymentEvents() {
   const fromBlock = getFromBlock(this.pool.chain)
   const events = await Promise.all(
     ["InterestCollected", "PrincipalCollected", "ReserveFundsCollected"].map(async eventName => {
-      return this.pool.getPastEvents(eventName, { fromBlock: fromBlock })
+      return this.pool.getPastEvents(eventName, {fromBlock: fromBlock})
     }),
   )
   const eventTxs = await mapEventsToTx(_.flatten(events))
@@ -143,7 +144,7 @@ async function getRepaymentEvents() {
       // This usually  means it's just ReserveFundsCollected, from a withdraw, and not a repayment
       return null
     }
-    const merged = { ...interestPayment, ...principalPayment, ...reserveCollection }
+    const merged = {...interestPayment, ...principalPayment, ...reserveCollection}
     merged.amountBN = interestPayment.amountBN.plus(principalPayment.amountBN).plus(reserveCollection.amountBN)
     merged.amount = usdcFromAtomic(merged.amountBN)
     merged.interestAmountBN = interestPayment.amountBN
@@ -158,7 +159,7 @@ async function getAllDepositAndWithdrawalTXs(pool) {
   const fromBlock = getFromBlock(pool.chain)
   const events = await Promise.all(
     ["DepositMade", "WithdrawalMade"].map(async eventName => {
-      return pool.getPastEvents(eventName, { fromBlock: fromBlock })
+      return pool.getPastEvents(eventName, {fromBlock: fromBlock})
     }),
   )
   return await mapEventsToTx(_.flatten(events))
@@ -183,4 +184,4 @@ function assetsAsOf(dt) {
   )
 }
 
-export { getPool, fetchCapitalProviderData, fetchPoolData }
+export {getPool, fetchCapitalProviderData, fetchPoolData}
