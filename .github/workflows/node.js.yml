@@ -151,9 +151,9 @@ jobs:
       - name: deploy-dev
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-        run: npm run ci_functions_config_set_dev && cd ../ && npx firebase deploy --only functions --project dev
+        run: npm run ci_functions_config_set -- --project=dev && npm run ci_deploy -- --project=dev
       - name: deploy-prod
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-        run: npm run ci_functions_config_set_prod && cd ../ && npx firebase deploy --only functions --project prod
+        run: npm run ci_functions_config_set -- --project=prod && npm run ci_deploy -- --project=prod
         if: github.ref == 'refs/heads/master'
