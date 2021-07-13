@@ -27,7 +27,7 @@ function TransactionInput(props) {
   if (errors.length > 0) {
     errors.map(name => {
       return noteEls.push(
-        <div key="error" className="form-input-note">
+        <div key={`error-${name}`} className="form-input-note">
           <ErrorMessage
             message={(function(errors, name) {
               return errors[name] && errors[name].message

@@ -1,4 +1,6 @@
-import React from "react"
+import React, { useContext } from "react"
+import BigNumber from "bignumber.js"
+import { AppContext } from "../App"
 import InfoSection from "./infoSection.js"
 import RecentRepayments from "./recentRepayments"
 import { usdcFromAtomic } from "../ethereum/erc20"
@@ -6,18 +8,25 @@ import { displayDollars, displayPercent } from "../utils"
 import { iconOutArrow } from "./icons.js"
 
 function PoolStatus(props) {
+  const { goldfinchConfig } = useContext(AppContext)
+
   function deriveRows() {
     let defaultRate
     let poolBalance
     let totalLoansOutstanding
+    let capacityRemaining
+    let maxPoolCapacity = usdcFromAtomic(goldfinchConfig.totalFundsLimit)
     if (props.poolData.loaded && props.creditDesk && props.creditDesk.gf) {
       defaultRate = props.poolData.cumulativeWritedowns.dividedBy(props.creditDesk.gf.cumulativeDrawdowns)
       poolBalance = usdcFromAtomic(props.poolData.totalPoolAssets)
       totalLoansOutstanding = usdcFromAtomic(props.poolData.totalLoansOutstanding)
+      capacityRemaining = new BigNumber(maxPoolCapacity).minus(poolBalance)
     }
 
     return [
       { label: "Total pool balance", value: displayDollars(poolBalance) },
+      { label: "Max pool capacity", value: displayDollars(maxPoolCapacity) },
+      { label: "Remaning capacity", value: displayDollars(capacityRemaining) },
       { label: "Loans outstanding", value: displayDollars(totalLoansOutstanding) },
       { label: "Default rate", value: displayPercent(defaultRate) },
     ]
