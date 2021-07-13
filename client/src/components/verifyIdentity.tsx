@@ -10,21 +10,6 @@ import ConnectionNotice from "./connectionNotice"
 import LoadingButton from "./loadingButton"
 import { useForm, FormProvider } from "react-hook-form"
 
-const accreditationNotice = (
-  <>
-    <div className="form-message paragraph">
-      Get your free accredited investor verification from{" "}
-      <a className="link" target="_blank" href="https://parallelmarkets.com/get-accredited/">
-        parallelmarkets.com
-      </a>
-      . When you receive your electronic certificate, email it to{" "}
-      <a className="link" href="mailto:verify@goldfinch.finance">
-        verify@goldfinch.finance
-      </a>
-      , along with your Metamask address.
-    </div>
-  </>
-)
 
 function VerificationNotice({ icon, notice }) {
   return (
@@ -43,10 +28,23 @@ function EntityForm({ onClose }) {
         return (
           <>
             <div className="form-message paragraph">
-              Goldfinch is open to non-U.S. entities, and will soon be open to U.S. entities that qualify as accredited
+              Goldfinch is open to non-U.S. entities, and there may be opportunities soon for U.S. entities that qualify as accredited
               investors.
             </div>
-            {accreditationNotice}
+            <div className="form-message paragraph">
+              To verify or pre-verify, please fill out{" "}
+              <a className="link" target="_blank" href="https://docs.google.com/forms/d/1qr5-dw3E3OplNjgUk5JidiT6zLS3ZVbVZ6bWl3QwTq4/viewform">
+                this form
+              </a>. Then, get your free accredited investor verification from{" "}
+              <a className="link" target="_blank" href="https://parallelmarkets.com/get-accredited/">
+                parallelmarkets.com
+              </a>{" "}
+              and email your electronic certificate to{" "}
+              <a className="link" href="mailto:verify@goldfinch.finance">
+                verify@goldfinch.finance
+              </a>
+              .
+            </div>
           </>
         )
       }}
@@ -61,23 +59,13 @@ function NonUSForm({ entityType, onClose, onEvent, network, address }) {
       headerMessage="Non-U.S. Individual"
       render={({ formMethods }) => {
         return (
-          <>
-            <div className="form-message paragraph">
-              Please note: we use{" "}
-              <a className="link" target="_blank" href="https://withpersona.com/security/">
-                Persona
-              </a>{" "}
-              to verify your identity, and they handle all personal information. The only information we store is your
-              ETH address, country, and approval status. We take privacy seriously.
-            </div>
-            <PersonaForm
-              entityType={entityType}
-              network={network}
-              address={address}
-              onEvent={onEvent}
-              formMethods={formMethods}
-            />
-          </>
+          <PersonaForm
+            entityType={entityType}
+            network={network}
+            address={address}
+            onEvent={onEvent}
+            formMethods={formMethods}
+          />
         )
       }}
       closeForm={onClose}
@@ -115,19 +103,21 @@ function USForm({ kycStatus, entityType, onClose, onEvent, network, address }) {
         return (
           <>
             <div className="form-message paragraph">
-              Goldfinch will soon be open to U.S. individuals who qualify as accredited investors. You can pre-verify your address.
-            </div>
-            <div className="form-message paragraph">
-              Please note: we use{" "}
-              <a className="link" target="_blank" href="https://withpersona.com/security/">
-                Persona
-              </a>{" "}
-              to verify your identity, and they handle all personal information. The only information we store is your
-              ETH address, country, and approval status. We take privacy seriously.
+              Goldfinch may soon have opportunities for U.S. individuals who qualify as accredited investors. You can pre-verify your address.
             </div>
             {verifyIdSection}
             <h2>Step 2: Verify Accredited Status</h2>
-            {accreditationNotice}
+            <div className="form-message paragraph">
+              Get your free accredited investor verification from{" "}
+              <a className="link" target="_blank" href="https://parallelmarkets.com/get-accredited/">
+                parallelmarkets.com
+              </a>
+              . When you receive your electronic certificate, email it to{" "}
+              <a className="link" href="mailto:verify@goldfinch.finance">
+                verify@goldfinch.finance
+              </a>
+              , along with your Metamask address.
+            </div>
           </>
         )
       }}
@@ -212,6 +202,15 @@ function PersonaForm({ entityType, onEvent, network, address, formMethods }) {
           </button>
         </div>
       </div>
+      <div className="form-footer-message">
+        Please note: we use{" "}
+        <a className="link" target="_blank" href="https://withpersona.com/security/">
+          Persona
+        </a>{" "}
+        to verify your identity, and they handle all personal information. The only information we store is your
+        ETH address, country, and approval status. We take privacy seriously.
+      </div>
+
     </>
   )
 }
