@@ -47,7 +47,7 @@ const sentryWrapper = (fn: HttpFunction, wrapOptions?: Partial<HttpFunctionWrapp
     // send them manually. Cf. https://github.com/getsentry/sentry-javascript/issues/3695#issuecomment-872350258,
     // https://github.com/getsentry/sentry-javascript/issues/3096#issuecomment-775582236.
     try {
-      return fn(req, res)
+      return await fn(req, res)
     } catch (error) {
       Sentry.captureException(error)
       res.status(500).send("Internal error.")
