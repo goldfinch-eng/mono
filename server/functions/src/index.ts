@@ -64,13 +64,6 @@ const kycStatus = functions.https.onRequest(
       const response = {address: address, status: "unknown", countryCode: null}
       setCORSHeaders(req, res)
 
-      const conf = getConfig(functions)
-      console.log("Sentry dsn:", conf.sentry.dsn)
-      console.log("Sentry release:", conf.sentry.release)
-      if (conf.sentry.environment === "development") {
-        throw new Error("testing that Sentry logs this, including with release info")
-      }
-
       if (!address || !signature) {
         res.status(400).send({error: "Address or signature not provided"})
         return
