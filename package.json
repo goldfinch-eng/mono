@@ -74,6 +74,7 @@
     "dotenv": "^8.2.0",
     "eth-sig-util": "^3.0.0",
     "ethereumjs-util": "^7.0.8",
+    "lodash": "^4.17.21",
     "react-router-dom": "^5.2.0",
     "truffle-hdwallet-provider": "^1.0.17"
   },
@@ -88,6 +89,7 @@
     "@rollup/plugin-node-resolve": "^10.0.0",
     "@rollup/plugin-typescript": "^6.1.0",
     "@types/is-odd": "^3.0.0",
+    "@types/lodash": "^4.14.171",
     "builtin-modules": "^3.1.0",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
