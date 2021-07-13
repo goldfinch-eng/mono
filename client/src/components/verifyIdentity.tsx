@@ -222,13 +222,11 @@ function SignInForm({ action, disabled }) {
       <div className={"background-container"}>
         <div className="verify-options">
           <div className="item">First, please sign in to confirm your address.</div>
-          <div className="item">
-            <FormProvider {...formMethods}>
-              <form className="form">
-                <LoadingButton text="Sign in" action={action} disabled={disabled} />
-              </form>
-            </FormProvider>
-          </div>
+          <FormProvider {...formMethods}>
+            <form className="form sign-button">
+              <LoadingButton text="Sign in" action={action} disabled={disabled} />
+            </form>
+          </FormProvider>
         </div>
       </div>
     </>

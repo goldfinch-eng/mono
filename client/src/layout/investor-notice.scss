@@ -27,29 +27,26 @@
   }
 
   .learn-more {
+    border-radius: 4px;
     color: $purp-dark;
     font-size: $sans-size-xs;
-    text-decoration: underline;
-    min-width: 75px;
+    padding: 8px 12px;
+    margin: -8px -12px -8px 0;
 
     &:hover {
-      color: $purp;
+      background-color: $sand;
     }
 
     &.close {
+      align-items: center;
       display: flex;
       flex-direction: row;
-      align-items: center;
-
-      color: $purp-light;
+      opacity: 0.6;
       text-decoration: none;
 
       &:hover {
-        color: $purp;
-
-        .icon path {
-          fill: $purp;
-        }
+        background-color: transparent;
+        opacity: 1;
       }
 
       .icon {
@@ -66,6 +63,7 @@
 
   .hidden-message {
     font-size: $sans-size-xs;
+    margin: 24px 0 10px;
 
     &.show {
       display: block;

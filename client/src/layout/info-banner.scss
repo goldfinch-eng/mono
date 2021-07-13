@@ -55,8 +55,9 @@
 @media only screen and (min-width: $screen-l) {
   .info-banner {
     flex-direction: row;
+    font-size: $sans-size-m;
     align-items: center;
-    @include space-x(1em);
+    @include space-x(30px);
     @include space-y(0em);
 
     .message {

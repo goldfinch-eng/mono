@@ -7,11 +7,19 @@
   @include space-x(1em);
 
   .item {
-    flex-grow: 1;
-    flex-basis: 0;
     font-size: $sans-size-m;
+    line-height: 1.2;
+    width: 100%;
 
     button {
+      width: 100%;
+    }
+  }
+
+  .sign-button{
+    width: 100%;
+
+    button{
       width: 100%;
     }
   }
@@ -34,4 +42,14 @@
     width: 26px;
   }
 
+  .verify-options{
+    .item {
+      flex-grow: 1;
+      flex-basis: 0;
+    }
+
+    .sign-button{
+      width: 33%;
+    }
+  }
 }
