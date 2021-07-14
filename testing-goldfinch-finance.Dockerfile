@@ -2,7 +2,7 @@
 # deployed to Google Cloud Run.
 
 # TODO It would be ideal to share the majority of these steps with `gitpod.Dockerfile`,
-# but currently that is impractical, because Docker does not have a notion of
+# but currently that is impractical, because Docker does not have a notion
 # like `INCLUDE`, to reuse logic across Dockerfiles: https://github.com/moby/moby/issues/735.
 # Duplicating code is the 80/20 solution for now.
 
@@ -35,4 +35,4 @@ RUN cat ./bashrc.txt >> $HOME/.bashrc
 
 RUN apk del build-dependencies
 
-CMD npm start
+CMD npm start-without-client
