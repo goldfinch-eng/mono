@@ -74,9 +74,15 @@ async function main() {
     console.log("Persona API key is missing. Please prepend the command with PERSONA_API_KEY=#KEY#")
     return
   }
+  console.log("Fetching accounts")
   const approvedAccounts = Object.values(await fetchAllAccounts())
+  let accountCount = 0
   for (let account of approvedAccounts) {
     const inquiry = await fetchInquiry(account.id)
+    accountCount += 1
+    if (accountCount % 10 === 0) {
+      console.log(`Fetched ${accountCount} of ${approvedAccounts.length}`)
+    }
     if (inquiry) {
       const verification = inquiry.included.find((included) => included.type === "verification/government-id")
       account.countryCode = verification.attributes.countryCode
