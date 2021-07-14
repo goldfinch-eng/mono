@@ -4,6 +4,8 @@ const fs = require("fs")
 
 const personaAPIKey = process.env.PERSONA_API_KEY
 
+let requests = 0
+
 async function fetchEntities(entity, paginationToken, filter) {
   let url = `https://withpersona.com/api/v1/${entity}?${filter}`
   if (paginationToken) {
@@ -17,6 +19,13 @@ async function fetchEntities(entity, paginationToken, filter) {
       "Persona-Version": "2020-01-13",
       Authorization: `Bearer ${personaAPIKey}`,
     },
+  }
+
+  requests = requests + 1
+
+  if (requests % 250 === 0) {
+    console.log("Sleeping for rate limit")
+    await new Promise((resolve) => setTimeout(resolve, 60000))
   }
 
   return fetch(url, options)
