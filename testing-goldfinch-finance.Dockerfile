@@ -35,4 +35,4 @@ RUN cat ./bashrc.txt >> $HOME/.bashrc
 
 RUN apk del build-dependencies
 
-CMD npm run start-without-client
+CMD npm run start-testing-goldfinch-finance
