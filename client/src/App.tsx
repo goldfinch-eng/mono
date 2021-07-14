@@ -88,8 +88,22 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gnosisSafeInfo, usdc, pool, creditDesk, network, goldfinchProtocol])
 
-  async function setupWeb3() {
+  async function ensureWeb3() {
     if (!window.ethereum) {
+      return false
+    }
+    try {
+      // Sometimes it's possible that we can't communicate with the provider, in which case
+      // treat as if we don't have web3
+      await web3.eth.net.getNetworkType()
+    } catch (e) {
+      return false
+    }
+    return true
+  }
+
+  async function setupWeb3() {
+    if (!await ensureWeb3()) {
       return
     }
 
@@ -136,6 +150,10 @@ function App() {
   }
 
   async function refreshUserData(overrideAddress?: string) {
+    if (!await ensureWeb3()) {
+      return
+    }
+
     let data: User = defaultUser()
     const accounts = await web3.eth.getAccounts()
     data.web3Connected = true
