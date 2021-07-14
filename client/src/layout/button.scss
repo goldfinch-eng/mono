@@ -11,6 +11,7 @@ button {
   border-radius: 6px;
   font-size: $sans-size-m;
   color: $purp-dark;
+  height: 56px;
   outline: none;
   background-color: $blue-xlight;
   line-height: 56px;
@@ -69,7 +70,7 @@ button {
   .button{
     border-radius: 8px;
     font-size: $sans-size-base;
-    line-height: 70px;
+    height: 70px;
 
     .icon{
       height: 24px;

@@ -1,8 +1,17 @@
 import * as admin from "firebase-admin"
+import {isPlainObject, isString, isStringOrUndefined} from "../../../utils/type"
 import firestore = admin.firestore
 
-let firestoreForTest: firestore.Firestore
-let configForTest: Record<string, any>
+let _firestoreForTest: firestore.Firestore
+let _configForTest: FirebaseConfig = {
+  kyc: {allowed_origins: ""},
+  persona: {allowed_ips: ""},
+  sentry: {
+    dsn: "https://8c1adf3a336a4487b14ae1af080c26d1@o915675.ingest.sentry.io/5857894",
+    release: process.env.COMMIT_ID_FOR_TEST || "",
+    environment: "test",
+  },
+}
 
 /**
  * Get the users collction give a reference to the firestore
@@ -26,33 +35,97 @@ function getUsers(firestore: firestore.Firestore): firestore.CollectionReference
  */
 function getDb(firestore: firestore.Firestore): firestore.Firestore {
   if (process.env.NODE_ENV === "test") {
-    return firestoreForTest
+    return _firestoreForTest
   } else {
     return firestore
   }
 }
 
+export type FirebaseConfig = {
+  sentry: {
+    dsn: string
+    release: string
+    environment: "development" | "test" | "production"
+  }
+  kyc: {
+    // eslint-disable-next-line camelcase
+    allowed_origins: string
+  }
+  persona: {
+    // eslint-disable-next-line camelcase
+    allowed_ips: string
+    secret?: string
+  }
+}
 /**
- * Get the firebase confiog (test aware)
- * @param {any} functions The firebase functions library (ignored in test)
- * @return {Record<string, any>} The config object
+ * Type guard for the FirebaseConfig type.
+ * @param {unknown} obj The thing whose type to inspect.
+ * @return {boolean} Whether the thing is of type FirebaseConfig.
  */
-function getConfig(functions: any): Record<string, any> {
-  if (process.env.NODE_ENV === "test") {
-    return configForTest
+function isFirebaseConfig(obj: unknown): obj is FirebaseConfig {
+  return (
+    isPlainObject(obj) &&
+    isPlainObject(obj.sentry) &&
+    isString(obj.sentry.dsn) &&
+    isString(obj.sentry.release) &&
+    (obj.sentry.environment === "development" ||
+      obj.sentry.environment === "test" ||
+      obj.sentry.environment === "production") &&
+    isPlainObject(obj.kyc) &&
+    isString(obj.kyc.allowed_origins) &&
+    isPlainObject(obj.persona) &&
+    isString(obj.persona.allowed_ips) &&
+    isStringOrUndefined(obj.persona.secret)
+  )
+}
+
+/**
+ * Get the firebase config (test aware)
+ * @param {any} functions The firebase functions library (ignored in test)
+ * @return {FirebaseConfig} The config object
+ */
+function getConfig(functions: any): FirebaseConfig {
+  // When running using the Firebase emulator (e.g. as `npm run ci_test` does via `npx firebase emulators:exec`),
+  // we observed a transient / bootstrapping phase in which this function is called (because it is invoked at
+  // the root level of `index.ts`, which is a consequence of following the Sentry docs about how to configure
+  // Sentry for use with Google Cloud functions and of using the Firebase config to provide the necessary values)
+  // in which env variables such as `process.env.NODE_ENV` are undefined. That poses a problem for running our
+  // tests using the emulator, because we want to condition on `process.env.NODE_ENV === "test"` to be able to
+  // test the behavior that the Firebase config controls. As a workaround for this issue, we can detect
+  // whether we're in this bootstrapping phase, and use the test config for it as well as for when
+  // `process.env.NODE_ENV === "test"`. `process.env.NODE_ENV` becomes `"test"` immediately after this
+  // bootstrapping phase, via the `npm test` command passed as an argument to `npx firebase emulators:exec`.
+  const isBootstrappingEmulator =
+    process.env.FUNCTIONS_EMULATOR === "true" && // Cf. https://stackoverflow.com/a/60963496
+    process.env.NODE_ENV === undefined &&
+    // We expect the emulator never to be used with the prod project's functions, so we can
+    // include the following extra condition to prevent `isBootstrappingEmulator` ever enabling use of the
+    // test config with the prod project.
+    process.env.GCLOUD_PROJECT === "goldfinch-frontends-dev"
+
+  const isTesting = process.env.NODE_ENV === "test"
+  const result = isBootstrappingEmulator || isTesting ? _configForTest : functions.config()
+  if (isFirebaseConfig(result)) {
+    return result
   } else {
-    return functions.config()
+    throw new Error("Firebase config failed type guard.")
   }
 }
 
 /**
- * Override the firestore to use for tests. Need this so we can connect to the emulator
+ * Override the firestore to use for tests. Need this so we can connect to the emulator.
  * @param {firestore.Firestore} firestore The firestore to override with
- * @param {Record<string, any>} config The mock config to use for tests
+ * @param {Omit<FirebaseConfig, "sentry">} config The mock config to use for tests. (We exclude
+ * Sentry-related configuration from this, as Sentry is configured upon importing the module
+ * in which the functions are defined, so it is not readily amenable to being subsequently
+ * modified as part of test setup, and we have no need to make it thusly modifiable.)
  */
-function setEnvForTest(firestore: firestore.Firestore, config: Record<string, any>): void {
-  firestoreForTest = firestore
-  configForTest = config
+function setEnvForTest(firestore: firestore.Firestore, config: Omit<FirebaseConfig, "sentry">): void {
+  _firestoreForTest = firestore
+  _configForTest = {
+    ..._configForTest,
+    ...config,
+  }
 }
 
 export {getUsers, getDb, getConfig, setEnvForTest}

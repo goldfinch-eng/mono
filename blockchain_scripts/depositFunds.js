@@ -17,7 +17,7 @@ async function main() {
     // const approval = await erc20.approve(pool.address, String(new BN(100000000).mul(USDCDecimals)))
     // await approval.wait()
 
-    console.log("Depositing funds...")
+    console.log("Supplying funds...")
     const depositAmount = new BN(1000).mul(USDCDecimals)
 
     var txn = await pool.deposit(String(depositAmount))

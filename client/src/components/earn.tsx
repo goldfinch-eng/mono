@@ -8,6 +8,8 @@ import { croppedAddress, displayDollars, displayPercent } from "../utils"
 import { GoldfinchProtocol } from "../ethereum/GoldfinchProtocol"
 import { TranchedPool } from "../ethereum/tranchedPool"
 import { PoolCreated } from "../typechain/web3/GoldfinchFactory"
+import StaticInvestorNotice from "./staticInvestorNotice"
+
 
 function PoolList({ title, children }) {
   return (
@@ -128,13 +130,16 @@ function Earn(props) {
 
   let earnMessage = "Loading..."
   if (capitalProvider?.loaded || user.noWeb3) {
-    earnMessage = "Earn Portfolio"
+    earnMessage = "Senior Pool"
   }
 
   return (
     <div className="content-section">
-      <div className="page-header">{earnMessage}</div>
-      <ConnectionNotice />
+      <div className="page-header">
+        <StaticInvestorNotice />
+        <div>{earnMessage}</div>
+      </div>
+      <ConnectionNotice requireVerify={true} />
       <div className="pools">
         <PoolList title="Senior Pool">
           <SeniorPoolCard

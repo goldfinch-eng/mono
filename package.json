@@ -76,6 +76,7 @@
     "dotenv": "^8.2.0",
     "eth-sig-util": "^3.0.1",
     "ethereumjs-util": "^7.0.10",
+    "lodash": "^4.17.21",
     "react-router-dom": "^5.2.0",
     "truffle-hdwallet-provider": "^1.0.17"
   },
@@ -133,6 +134,6 @@
     "truffle-contract-size": "^2.0.0",
     "ts-node": "^10.0.0",
     "typechain": "^5.1.1",
-    "typescript": "^4.3.4"
+    "typescript": "^4.3.5"
   }
 }

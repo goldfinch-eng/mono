@@ -1,11 +1,11 @@
 import React from "react"
-import { NavLink } from "react-router-dom"
+import {NavLink} from "react-router-dom"
 import useCloseOnClickOrEsc from "../hooks/useCloseOnClickOrEsc"
 import logoPurp from "../images/logomark-purp.svg"
-import { iconMenu } from "./icons.js"
+import {iconMenu} from "./icons.js"
 
 function Sidebar(props) {
-  const { node, open: showSidebar, setOpen: setShowSidebar } = useCloseOnClickOrEsc()
+  const {node, open: showSidebar, setOpen: setShowSidebar} = useCloseOnClickOrEsc()
 
   function closeSidebar() {
     setShowSidebar("")
@@ -24,7 +24,9 @@ function Sidebar(props) {
       <button className="open-sidebar" onClick={toggleSidebar}>
         {iconMenu}
       </button>
-      <img className="sidebar-logo" src={logoPurp} alt="Goldfinch" />
+      <a href="/">
+        <img className="sidebar-logo" src={logoPurp} alt="Goldfinch" />
+      </a>
       <nav>
         <NavLink to="/earn" onClick={closeSidebar}>
           Earn

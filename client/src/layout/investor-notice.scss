@@ -1,40 +1,76 @@
-@import "./utils.scss";
-
 .investor-notice {
-  .dropdown-list {
-    max-width: 450px;
-    margin-top: 1em;
-    left: auto;
-    right: 0px;
-    line-height: normal;
+  flex-direction: column;
+  font-weight: normal;
+  background-color: $sand-light;
+  color: $purp-dark;
+  align-items: space-between;
+  @include space-x(0em);
+  @include space-y(1.5em);
+
+  .inner-banner {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+
+    .message {
+      p {
+        font-size: $sans-size-xs;
+      }
+
+      .icon {
+        margin-top: -1px;
+        width: 20px;
+        height: 20px;
+      }
+    }
   }
 
-  .dropdown-selected {
-    margin: 0;
-  }
-
-  button {
-    background: $sand-light;
-    border-radius: 10px;
+  .learn-more {
+    border-radius: 4px;
     color: $purp-dark;
     font-size: $sans-size-xs;
-    outline: none;
-    padding: 0.6em 0.75em;
-    line-height: normal;
+    padding: 8px 12px;
+    margin: -8px -12px -8px 0;
 
     &:hover {
-      background: $sand;
+      background-color: $sand;
     }
 
-    .icon {
-      width: 16px;
-      height: 16px;
-      margin-right: 4px;
+    &.close {
+      align-items: center;
+      display: flex;
+      flex-direction: row;
+      opacity: 0.6;
+      text-decoration: none;
+
+      &:hover {
+        background-color: transparent;
+        opacity: 1;
+      }
+
+      .icon {
+        margin-left: 0.25em;
+        height: 0.5em;
+        width: 0.5em;
+
+        path {
+          fill: $purp-light;
+        }
+      }
     }
   }
 
-  .investor-notice-content {
+  .hidden-message {
     font-size: $sans-size-xs;
-    @include space-y(10px);
+    margin: 24px 0 10px;
+
+    &.show {
+      display: block;
+    }
+
+    &.hide {
+      display: none;
+    }
   }
 }

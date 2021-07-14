@@ -1,5 +1,5 @@
-import React, { useState } from "react"
-import { useFormContext } from "react-hook-form"
+import React, {useState} from "react"
+import {useFormContext} from "react-hook-form"
 
 function LoadingButton(props) {
   const [isPending, setIsPending] = useState(false)
@@ -21,7 +21,7 @@ function LoadingButton(props) {
           .catch(error => setIsPending(false))
       })}
       disabled={props.disabled}
-      className={`button submit-payment ${isPending ? "pending" : ""} ${props.disabled ? "disabled" : ""}`}
+      className={`button submit-form ${isPending ? "pending" : ""} ${props.disabled ? "disabled" : ""}`}
     >
       {buttonText}
     </button>

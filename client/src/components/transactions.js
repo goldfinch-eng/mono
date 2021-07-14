@@ -1,14 +1,14 @@
-import React, { useContext } from "react"
+import React, {useContext} from "react"
 import _ from "lodash"
 import ConnectionNotice from "./connectionNotice"
-import { AppContext } from "../App"
-import { displayDollars } from "../utils"
-import { MAX_UINT } from "../ethereum/utils"
+import {AppContext} from "../App"
+import {displayDollars} from "../utils"
+import {MAX_UINT} from "../ethereum/utils"
 import BigNumber from "bignumber.js"
-import { iconCircleUpLg, iconCircleDownLg, iconCircleCheckLg, iconOutArrow } from "./icons.js"
+import {iconCircleUpLg, iconCircleDownLg, iconCircleCheckLg, iconOutArrow} from "./icons.js"
 
 function Transactions(props) {
-  const { user, network } = useContext(AppContext)
+  const {user, network} = useContext(AppContext)
 
   function transactionRow(tx) {
     const etherscanSubdomain = network.name === "mainnet" ? "" : `${network.name}.`
@@ -19,7 +19,7 @@ function Transactions(props) {
     let amountPrefix = ""
     let amount = displayDollars(tx.amount)
 
-    if (["Deposit", "Payment"].includes(tx.name)) {
+    if (["Supply", "Payment"].includes(tx.name)) {
       typeCssClass = "inflow"
       icon = iconCircleUpLg
       amountPrefix = "+"
@@ -75,7 +75,9 @@ function Transactions(props) {
     )
   }
 
-  let allTx = _.compact(_.concat(props.currentTXs, user.pastTXs))
+  // Only show TXs from currentTXs that are not already in user.pastTXs
+  let pendingTXs = _.differenceBy(props.currentTXs, user.pastTXs, "id")
+  let allTx = _.compact(_.concat(pendingTXs, user.pastTXs))
   allTx = _.uniqBy(allTx, "eventId")
   let transactionRows = (
     <tr className="empty-row">

@@ -149,22 +149,8 @@
 }
 
 .agree-to-terms{
-  margin: 0 0 22px;
-
-  p{
-    margin: 0 0 10px;
-    position: relative;
-  }
-
-  p.agree-item{
-    padding: 0 0 0 17px;
-  }
-
-  p.agree-item::before{
-    content: '\2022';
-    position: absolute;
-    left: 2px;
-  }
+  margin: 2px 0 20px;
+  line-height: 1.4;
 
   a{
     color: $blue-dark;
@@ -269,7 +255,7 @@
 .network-widget-info .button{
   border-radius: 8px;
   font-size: $sans-size-xs;
-  line-height: $widget-button-height;
+  height: $widget-button-height;
   width: 100%;
 }
 
