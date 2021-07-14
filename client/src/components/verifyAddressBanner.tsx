@@ -10,7 +10,6 @@ export default function VerifyAddressBanner() {
   let history = useHistory()
   const formMethods = useForm()
   function verifyAddress(): Promise<void> {
-    // TODO: change this to correct endpoint
     history.push("/verify")
     return Promise.resolve()
   }

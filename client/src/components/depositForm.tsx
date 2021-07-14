@@ -1,7 +1,7 @@
 import React from "react"
-import { usdcFromAtomic, usdcToAtomic } from "../ethereum/erc20"
-import { AppContext } from "../App"
-import { displayDollars } from "../utils"
+import {usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
+import {AppContext} from "../App"
+import {displayDollars} from "../utils"
 import TransactionForm from "./transactionForm"
 import TransactionInput from "./transactionInput"
 import LoadingButton from "./loadingButton"
@@ -14,10 +14,10 @@ interface DepositFormProps {
 }
 
 function DepositForm(props: DepositFormProps) {
-  const { pool, user, goldfinchConfig } = useNonNullContext(AppContext)
+  const {pool, user, goldfinchConfig} = useNonNullContext(AppContext)
   const sendFromUser = useSendFromUser()
 
-  function action({ transactionAmount }) {
+  function action({transactionAmount}) {
     const depositAmount = usdcToAtomic(transactionAmount)
     return sendFromUser(pool.contract.methods.deposit(depositAmount), {
       type: "Supply",
@@ -25,7 +25,7 @@ function DepositForm(props: DepositFormProps) {
     }).then(props.actionComplete)
   }
 
-  function renderForm({ formMethods }) {
+  function renderForm({formMethods}) {
     let warningMessage, disabled, submitDisabled
     if (user.usdcBalance.eq(0)) {
       disabled = true
@@ -63,11 +63,7 @@ function DepositForm(props: DepositFormProps) {
           />
           <label className="checkbox-label" htmlFor="agreement">
             I agree to the&nbsp;
-            <a
-              className="checkbox-label-link"
-              href="https://goldfinch.finance/goldfinch_senior_pool_agreement.pdf"
-              target="_blank"
-            >
+            <a className="checkbox-label-link" href="/goldfinch_senior_pool_agreement_non_us.pdf" target="_blank">
               Senior Pool Agreement.
             </a>
           </label>

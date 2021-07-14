@@ -10,6 +10,11 @@ function ConnectionNotice(props) {
   const {network, user} = useNonNullContext(AppContext)
   let notice: JSX.Element | null = null
 
+  let {requireVerify} = props
+  if (requireVerify == undefined) {
+    requireVerify = false
+  }
+
   if (!(window as any).ethereum) {
     notice = (
       <div className="info-banner background-container">
@@ -50,7 +55,7 @@ function ConnectionNotice(props) {
     if (unlockStatus && !unlockStatus.isUnlocked) {
       notice = <UnlockUSDCForm unlockAddress={unlockStatus.unlockAddress} />
     }
-    if (!user.goListed) {
+    if (!user.goListed && requireVerify) {
       notice = <VerifyAddressBanner />
     }
   }

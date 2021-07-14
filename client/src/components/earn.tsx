@@ -139,7 +139,7 @@ function Earn(props) {
         <StaticInvestorNotice />
         <div>{earnMessage}</div>
       </div>
-      <ConnectionNotice />
+      <ConnectionNotice requireVerify={true} />
       <div className="pools">
         <PoolList title="Senior Pool">
           <SeniorPoolCard
