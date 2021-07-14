@@ -38,35 +38,34 @@ async function fetchAllAccounts() {
   let allAccounts = {}
   let response
   do {
-    response = await fetchEntities("accounts", paginationToken)
-    for (let account of response.data) {
-      if (account.attributes.referenceId && account.attributes.tags.includes("APPROVED")) {
-        allAccounts[account.attributes.referenceId] = {
-          id: account.attributes.referenceId,
+    response = await fetchEntities("events", paginationToken, "filter[name]=inquiry.approved")
+    for (let event of response.data) {
+      const payload = event.attributes.payload
+      const account = payload.included.find((i) => i.type === "account")
+      const referenceId = account.attributes.referenceId
+      if (referenceId && payload.data.attributes.status === "approved") {
+        const verification = payload.included.find((included) => included.type === "verification/government-id")
+        const customFields = payload.data.attributes.fields
+        if (allAccounts[referenceId]) {
+          console.log(
+            `${referenceId} already has an approved inquiry ${allAccounts[referenceId].inquiryId}, skipping ${payload.data.id}`
+          )
+          continue
+        }
+        allAccounts[referenceId] = {
+          id: referenceId,
+          inquiryId: payload.data.id,
           status: account.attributes.tags,
           countryCode: account.attributes.countryCode,
-          email: account.attributes.emailAddress,
+          email: account.attributes.emailAddress || null,
+          verificationCountryCode: verification.attributes.countryCode || null,
+          discord: (customFields.discordName && customFields.discordName.value) || null,
         }
       }
-      paginationToken = account.id
+      paginationToken = event.id
     }
   } while (response.data.length > 0)
   return allAccounts
-}
-
-async function fetchInquiry(referenceId) {
-  let inquiries = await fetchEntities("inquiries", null, `filter[reference-id]=${referenceId}`)
-  const approvedInquiry = inquiries.data.find((i) => i.attributes.status === "approved")
-  if (!approvedInquiry) {
-    return null
-  }
-  let event = await fetchEntities(
-    "events",
-    null,
-    `filter[name]=inquiry.approved&filter[object-id]=${approvedInquiry.id}`
-  )
-  approvedInquiry.included = event.data[0].attributes.payload.included
-  return approvedInquiry
 }
 
 async function main() {
@@ -76,18 +75,8 @@ async function main() {
   }
   console.log("Fetching accounts")
   const approvedAccounts = Object.values(await fetchAllAccounts())
-  let accountCount = 0
   for (let account of approvedAccounts) {
-    const inquiry = await fetchInquiry(account.id)
-    accountCount += 1
-    if (accountCount % 10 === 0) {
-      console.log(`Fetched ${accountCount} of ${approvedAccounts.length}`)
-    }
-    if (inquiry) {
-      const verification = inquiry.included.find((included) => included.type === "verification/government-id")
-      account.countryCode = verification.attributes.countryCode
-      account.discord = inquiry.attributes.fields.discordName.value
-    }
+    account.countryCode = account.countryCode || account.verificationCountryCode
     account.golisted = goList.includes(account.id) || goList.includes(account.id.toLowerCase())
   }
 
