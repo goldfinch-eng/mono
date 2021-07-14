@@ -25,11 +25,13 @@ export default function VerifyAddressBanner() {
 
   return (
     <FormProvider {...formMethods}>
-      <div className="unlock-form background-container">
-        <p>
+      <div className="info-banner background-container">
+        <div className="message">
           {iconInfo}
-          {qualifyText}
-        </p>
+          <p>
+            {qualifyText}
+          </p>
+        </div>
         <LoadingButton action={verifyAddress} text="Verify Address" />
       </div>
     </FormProvider>

@@ -72,9 +72,6 @@ input {
   max-width: $content-max-width;
   padding: 0 0 20px;
   position: relative;
-  display: flex;
-  flex-direction: column;
-  @include space-y(10px);
 }
 
 .content-empty-message {
@@ -105,19 +102,6 @@ input::placeholder,
 @media only screen and (min-width: $screen-m) {
   body {
     padding: 0 60px 140px $nav-width + 60;
-  }
-
-  .page-header {
-    font-weight: 500;
-    margin: 105px auto 20px;
-    max-width: $content-max-width;
-    padding: 0 0 20px;
-    position: relative;
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    @include space-y(auto);
   }
 }
 

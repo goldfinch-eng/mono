@@ -52,12 +52,10 @@ function SeniorPool() {
   return (
     <div className="content-section">
       <div className="page-header">
+        <InvestorNotice />
         <div>{earnMessage}</div>
-        <div className="page-header-notice">
-          <InvestorNotice />
-        </div>
       </div>
-      <ConnectionNotice />
+      <ConnectionNotice requireVerify={true} />
       <EarnActionsContainer poolData={poolData} capitalProvider={capitalProvider} actionComplete={actionComplete} />
       <PoolStatus poolData={poolData} />
     </div>

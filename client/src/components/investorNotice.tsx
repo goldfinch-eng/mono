@@ -1,69 +1,45 @@
-import React from "react"
-import Dropdown, { DropdownOption } from "./dropdown"
-import { iconInfo } from "./icons"
+import React, {useState} from "react"
 import useGeolocation from "../hooks/useGeolocation"
+import {iconInfo, iconX} from "./icons"
 
-function InvestorNotice() {
-  let geolocation = useGeolocation()
+export default function InvestorNotice() {
+  const geolocation = useGeolocation()
+  const [open, setOpen] = useState<boolean>(false)
 
   if (!geolocation) {
-    return (
-      <div className="investor-notice">
-        <button>Loading...</button>
-      </div>
-    )
+    return <div className="investor-notice info-banner background-container">Loading...</div>
   }
 
-  let options: DropdownOption[]
+  let message: string, hiddenMessage: string
   if (geolocation.country === "US") {
-    options = [
-      {
-        value: "notice",
-        selectedEl: (
-          <button className="button">
-            {iconInfo} <span>U.S.</span>
-          </button>
-        ),
-        el: (
-          <div className="investor-notice-content">
-            <div className="font-bold">Notice</div>
-            <div>
-              This offering is only available to U.S. persons who qualify as an Accredited Investor. This offering has
-              not been registered under the U.S. Securities Act of 1933 (the “Securities Act”), as amended, or under the
-              securities laws of certain states, and may not be offered, sold or otherwise transferred, pledged or
-              hypothecated except as permitted under the Securities Act and applicable state securities laws pursuant to
-              an effective registration statement or an exemption therefrom.
-            </div>
-          </div>
-        ),
-      },
-    ]
+    message = "This offering is only available to U.S. Accredited Investors."
+    hiddenMessage =
+      "This offering is only available to U.S. persons who qualify as an Accredited Investor. This offering has not been registered under the U.S.Securities Act of 1933(the “Securities Act”), as amended, or under the securities laws of certain states, and may not be offered, sold or otherwise transferred, pledged or hypothecated except as permitted under the Securities Act and applicable state securities laws pursuant to an effective registration statement or an exemption therefrom."
   } else {
-    options = [
-      {
-        value: "notice",
-        selectedEl: (
-          <button className="button">
-            {iconInfo} <span>Non-U.S.</span>
-          </button>
-        ),
-        el: (
-          <div className="investor-notice-content">
-            <div className="font-bold">Notice</div>
-            <div>
-              This offering is only available to non-U.S. persons. This offering has not been registered under the U.S.
-              Securities Act of 1933 (“Securities Act”), as amended, and may not be offered or sold in the United States
-              or to a U.S. person (as defined in Regulation S promulgated under the Securities Act) absent registration
-              or an applicable exemption from the registration requirements If you are a U.S. person and qualify as an
-              Accredited Investor, you can verify your address.{" "}
-            </div>
-          </div>
-        ),
-      },
-    ]
+    message = "This offering is only available to non-U.S. persons."
+    hiddenMessage =
+      "This offering is only available to non-U.S. persons. This offering has not been registered under the U.S. Securities Act of 1933 (“Securities Act”), as amended, and may not be offered or sold in the United States or to a U.S. person (as defined in Regulation S promulgated under the Securities Act) absent registration or an applicable exemption from the registration requirements If you are a U.S. person and qualify as an Accredited Investor, you can verify your address."
   }
 
-  return <Dropdown className="investor-notice" options={options} highlightSelected={false} arrow={false} />
+  return (
+    <div className="investor-notice info-banner background-container">
+      <div className="inner-banner">
+        <div className="message">
+          {iconInfo}
+          <p>{message}</p>
+        </div>
+        {open ? (
+          <button className="learn-more close" onClick={() => setOpen(false)}>
+            <span>Close</span>
+            {iconX}
+          </button>
+        ) : (
+          <button className="learn-more" onClick={() => setOpen(true)}>
+            Learn more
+          </button>
+        )}
+      </div>
+      <div className={`hidden-message ${open ? "show" : "hide"}`}>{hiddenMessage}</div>
+    </div>
+  )
 }
-
-export default InvestorNotice

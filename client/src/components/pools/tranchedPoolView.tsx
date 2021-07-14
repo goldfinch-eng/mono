@@ -46,12 +46,10 @@ function TranchedPoolView() {
   return (
     <div className="content-section">
       <div className="page-header">
+        <InvestorNotice />
         <div>{earnMessage}</div>
-        <div className="page-header-notice">
-          <InvestorNotice />
-        </div>
       </div>
-      <ConnectionNotice />
+      <ConnectionNotice requireVerify={true} />
     </div>
   )
 }

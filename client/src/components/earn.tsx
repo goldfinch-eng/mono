@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useContext } from "react"
 import { useHistory } from "react-router-dom"
-import ConnectionNotice from "./connectionNotice"
 import { CapitalProvider, fetchCapitalProviderData, fetchPoolData, PoolData } from "../ethereum/pool"
 import { AppContext } from "../App"
 import { ERC20, usdcFromAtomic } from "../ethereum/erc20"
@@ -8,8 +7,6 @@ import { croppedAddress, displayDollars, displayPercent } from "../utils"
 import { GoldfinchProtocol } from "../ethereum/GoldfinchProtocol"
 import { TranchedPool } from "../ethereum/tranchedPool"
 import { PoolCreated } from "../typechain/web3/GoldfinchFactory"
-import StaticInvestorNotice from "./staticInvestorNotice"
-
 
 function PoolList({ title, children }) {
   return (
@@ -130,16 +127,14 @@ function Earn(props) {
 
   let earnMessage = "Loading..."
   if (capitalProvider?.loaded || user.noWeb3) {
-    earnMessage = "Senior Pool"
+    earnMessage = "Earn"
   }
 
   return (
     <div className="content-section">
       <div className="page-header">
-        <StaticInvestorNotice />
         <div>{earnMessage}</div>
       </div>
-      <ConnectionNotice requireVerify={true} />
       <div className="pools">
         <PoolList title="Senior Pool">
           <SeniorPoolCard
