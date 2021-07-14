@@ -11,7 +11,7 @@ function ConnectionNotice(props) {
   let notice: JSX.Element | null = null
 
   let {requireVerify} = props
-  if (requireVerify == undefined) {
+  if (requireVerify === undefined) {
     requireVerify = false
   }
 

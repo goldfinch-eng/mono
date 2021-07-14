@@ -35,12 +35,18 @@ function EntityForm({onClose}) {
               <a
                 className="link"
                 target="_blank"
+                rel="noopener noreferrer"
                 href="https://docs.google.com/forms/d/1qr5-dw3E3OplNjgUk5JidiT6zLS3ZVbVZ6bWl3QwTq4/viewform"
               >
                 this form
               </a>
               . Then, get your free accredited investor verification from{" "}
-              <a className="link" target="_blank" href="https://parallelmarkets.com/get-accredited/">
+              <a
+                className="link"
+                target="_blank"
+                rel="noopener noreferrer"
+                href="https://parallelmarkets.com/get-accredited/"
+              >
                 parallelmarkets.com
               </a>{" "}
               and email your electronic certificate to{" "}
@@ -114,7 +120,12 @@ function USForm({kycStatus, entityType, onClose, onEvent, network, address}) {
             <h2>Step 2: Verify Accredited Status</h2>
             <div className="form-message paragraph">
               Get your free accredited investor verification from{" "}
-              <a className="link" target="_blank" href="https://parallelmarkets.com/get-accredited/">
+              <a
+                className="link"
+                target="_blank"
+                rel="noopener noreferrer"
+                href="https://parallelmarkets.com/get-accredited/"
+              >
                 parallelmarkets.com
               </a>
               . When you receive your electronic certificate, email it to{" "}
@@ -209,7 +220,7 @@ function PersonaForm({entityType, onEvent, network, address, formMethods}) {
       </div>
       <div className="form-footer-message">
         Please note: we use{" "}
-        <a className="link" target="_blank" href="https://withpersona.com/security/">
+        <a className="link" target="_blank" rel="noopener noreferrer" href="https://withpersona.com/security/">
           Persona
         </a>{" "}
         to verify your identity, and they handle all personal information. The only information we store is your ETH
