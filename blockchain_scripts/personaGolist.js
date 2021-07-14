@@ -4,6 +4,8 @@ const fs = require("fs")
 
 const personaAPIKey = process.env.PERSONA_API_KEY
 
+let requests = 0
+
 async function fetchEntities(entity, paginationToken, filter) {
   let url = `https://withpersona.com/api/v1/${entity}?${filter}`
   if (paginationToken) {
@@ -17,6 +19,13 @@ async function fetchEntities(entity, paginationToken, filter) {
       "Persona-Version": "2020-01-13",
       Authorization: `Bearer ${personaAPIKey}`,
     },
+  }
+
+  requests = requests + 1
+
+  if (requests % 250 === 0) {
+    console.log("Sleeping for rate limit")
+    await new Promise((resolve) => setTimeout(resolve, 60000))
   }
 
   return fetch(url, options)
@@ -65,9 +74,15 @@ async function main() {
     console.log("Persona API key is missing. Please prepend the command with PERSONA_API_KEY=#KEY#")
     return
   }
+  console.log("Fetching accounts")
   const approvedAccounts = Object.values(await fetchAllAccounts())
+  let accountCount = 0
   for (let account of approvedAccounts) {
     const inquiry = await fetchInquiry(account.id)
+    accountCount += 1
+    if (accountCount % 10 === 0) {
+      console.log(`Fetched ${accountCount} of ${approvedAccounts.length}`)
+    }
     if (inquiry) {
       const verification = inquiry.included.find((included) => included.type === "verification/government-id")
       account.countryCode = verification.attributes.countryCode
