@@ -59,7 +59,7 @@ function DepositForm(props) {
             I agree to the&nbsp;
             <a
               className="checkbox-label-link"
-              href="https://goldfinch.finance/goldfinch_senior_pool_agreement.pdf"
+              href="/goldfinch_senior_pool_agreement_non_us.pdf"
               target="_blank"
             >
               Senior Pool Agreement.
