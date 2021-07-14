@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "goldfinch-frontends-dev"
+    "default": "goldfinch-frontends-dev",
+    "dev": "goldfinch-frontends-dev",
+    "prod": "goldfinch-frontends-prod"
   }
 }

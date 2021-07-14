@@ -7,6 +7,7 @@
 @import "./background-container.scss";
 @import "./bar-viz.scss";
 @import "./button.scss";
+@import "./checkbox.scss";
 @import "./credit-status-balance.scss";
 @import "./creditline-dropdown.scss";
 @import "./currency-dropdown.scss";
@@ -18,7 +19,9 @@
 @import "./form-inputs.scss";
 @import "./form-section.scss";
 @import "./form-start.scss";
+@import "./info-banner.scss";
 @import "./info-section.scss";
+@import "./investor-notice.scss";
 @import "./legal.scss";
 @import "./network-widget.scss";
 @import "./payment-form.scss";
@@ -31,9 +34,9 @@
 @import "./table.scss";
 @import "./table-spaced.scss";
 @import "./transactions-table.scss";
-@import "./unlock-form.scss";
 @import "./value-options.scss";
 @import "./investor-notice.scss";
+@import "./verify-identity.scss";
 
 html,
 * {
@@ -93,6 +96,10 @@ input::placeholder,
 
 .placeholder * {
   color: $sand-xxdark;
+
+  .icon path {
+    fill: $sand-xxdark;
+  }
 }
 
 @media only screen and (min-width: $screen-m) {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react"
 import { BrowserRouter as Router, Switch, Route, Redirect } from "react-router-dom"
+import * as Sentry from '@sentry/react'
 import Borrow from "./components/borrow.js"
 import Earn from "./components/earn"
 import Transactions from "./components/transactions.js"
@@ -135,17 +136,26 @@ function App() {
   }
 
   async function refreshUserData(overrideAddress?: string) {
-    let data: any = defaultUser()
+    let data: User = defaultUser()
     const accounts = await web3.eth.getAccounts()
     data.web3Connected = true
-    let userAddress =
-      overrideAddress || (gnosisSafeInfo && gnosisSafeInfo.safeAddress) || (accounts && accounts[0]) || user.address
+    const _userAddress = (gnosisSafeInfo && gnosisSafeInfo.safeAddress) || (accounts && accounts[0]) || user.address
+    const userAddress = overrideAddress || _userAddress
     if (userAddress) {
       data.address = userAddress
     }
     if (userAddress && goldfinchProtocol && creditDesk.loaded && pool?.loaded) {
       data = await getUserData(userAddress, goldfinchProtocol, pool, creditDesk, network.name)
     }
+
+    Sentry.setUser({
+      // NOTE: The info we use here to identify / define the user for the purpose of
+      // error tracking with Sentry MUST be kept consistent with (i.e. not exceed
+      // the bounds set by) what our Terms of Service, Privacy Policy, and marketing
+      // copy state about the identifying information that Goldfinch stores.
+      id: data.address, address: data.address, isOverrideOf: overrideAddress ? _userAddress : undefined
+    })
+
     setUser(data)
   }
 
@@ -172,7 +182,6 @@ function App() {
         <NetworkWidget
           user={user}
           network={network}
-          setUser={setUser}
           currentErrors={currentErrors}
           currentTXs={currentTXs}
           gnosisSafeInfo={gnosisSafeInfo}

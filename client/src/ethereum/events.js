@@ -2,10 +2,10 @@ import BigNumber from "bignumber.js"
 import web3 from "../web3"
 import moment from "moment"
 import _ from "lodash"
-import { usdcFromAtomic } from "./erc20"
+import {usdcFromAtomic} from "./erc20"
 
 const EVENT_TYPE_MAP = {
-  DepositMade: "Deposit",
+  DepositMade: "Supply",
   WithdrawalMade: "Withdrawal",
   DrawdownMade: "Borrow",
   PaymentCollected: "Payment",
@@ -49,4 +49,4 @@ function mapEventToTx(event) {
   })
 }
 
-export { mapEventsToTx }
+export {mapEventsToTx}

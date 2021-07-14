@@ -1,0 +1,55 @@
+@import './utils.scss';
+
+.verify-options {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  @include space-x(1em);
+
+  .item {
+    font-size: $sans-size-m;
+    line-height: 1.2;
+    width: 100%;
+
+    button {
+      width: 100%;
+    }
+  }
+
+  .sign-button{
+    width: 100%;
+
+    button{
+      width: 100%;
+    }
+  }
+}
+
+.verify-step-label .icon{
+  height: 24px;
+  margin: 0 0 -3px 3px;
+  width: 24px;
+}
+
+.link {
+  text-decoration: underline;
+  color: $blue-dark;
+}
+
+@media only screen and (min-width: $screen-l) {
+  .verify-step-label .icon{
+    height: 26px;
+    width: 26px;
+  }
+
+  .verify-options{
+    .item {
+      flex-grow: 1;
+      flex-basis: 0;
+    }
+
+    .sign-button{
+      width: 33%;
+    }
+  }
+}

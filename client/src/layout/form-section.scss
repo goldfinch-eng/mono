@@ -57,6 +57,16 @@
   font-size: $sans-size-s;
   line-height: 1.3;
   margin: 0 0 30px;
+
+  &.paragraph{
+    margin: 20px 0 0;
+  }
+}
+
+.form-footer-message{
+  font-size: $sans-size-xs;
+  line-height: 1.3;
+  margin: 15px 0 0;
 }
 
 .dark .form-header{
@@ -64,11 +74,11 @@
   color: $sand-xlight;
 
   & .icon path{
-    fill: $sand-xlight; 
+    fill: $sand-xlight;
   }
 }
 
-.dark .submit-payment{
+.dark .submit-form{
   background-color: $purp;
   color: $sand-xlight;
 

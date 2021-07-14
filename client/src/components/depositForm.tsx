@@ -20,51 +20,80 @@ function DepositForm(props: DepositFormProps) {
   function action({ transactionAmount }) {
     const depositAmount = usdcToAtomic(transactionAmount)
     return sendFromUser(pool.contract.methods.deposit(depositAmount), {
-      type: "Deposit",
+      type: "Supply",
       amount: transactionAmount,
     }).then(props.actionComplete)
   }
 
   function renderForm({ formMethods }) {
-    let warningMessage, disabled
+    let warningMessage, disabled, submitDisabled
     if (user.usdcBalance.eq(0)) {
       disabled = true
       warningMessage = (
         <p className="form-message">
-          You don't have any USDC to deposit. You'll need to first send USDC to your address to deposit.
+          You don't have any USDC to supply. You'll need to first send USDC to your address to supply capital.
         </p>
       )
     } else if (pool.gf?.totalPoolAssets.gte(goldfinchConfig.totalFundsLimit)) {
       disabled = true
       warningMessage = (
         <p className="form-message">
-          The pool is currently at its limit. Please check back later to see if we're accepting new deposits.
+          The pool is currently at its limit. Please check back later to see if the pool has new capacity.
         </p>
       )
     }
 
+    // Must destructure or react-hook-forms does not detect state changes
+    const {isDirty, isValid} = formMethods.formState
+    if (!isDirty || !isValid) {
+      submitDisabled = true
+    }
+    submitDisabled = submitDisabled || disabled
+
     return (
       <div className="form-inputs">
         {warningMessage}
-        <div className="form-inputs-footer">
-          <TransactionInput
-            formMethods={formMethods}
-            disabled={disabled}
-            validations={{
-              wallet: value => user.usdcBalanceInDollars.gte(value) || "You do not have enough USDC",
-              transactionLimit: value =>
-                goldfinchConfig.transactionLimit.gte(usdcToAtomic(value)) ||
-                `This is over the per-transaction limit of $${usdcFromAtomic(goldfinchConfig.transactionLimit)}`,
-              totalFundsLimit: value => {
-                let limit = goldfinchConfig.totalFundsLimit.minus(pool.gf?.totalPoolAssets)
-                return (
-                  limit.gte(usdcToAtomic(value)) ||
-                  `This deposit would put the pool over its limit. It can accept a max of $${usdcFromAtomic(limit)}.`
-                )
-              },
-            }}
+        <div className="checkbox-container">
+          <input
+            className="checkbox"
+            type="checkbox"
+            name="agreement"
+            id="agreement"
+            ref={ref => formMethods.register(ref, {required: "You must agree to the Senior Pool Agreement."})}
           />
-          <LoadingButton action={action} disabled={disabled} />
+          <label className="checkbox-label" htmlFor="agreement">
+            I agree to the&nbsp;
+            <a
+              className="checkbox-label-link"
+              href="https://goldfinch.finance/goldfinch_senior_pool_agreement.pdf"
+              target="_blank"
+            >
+              Senior Pool Agreement.
+            </a>
+          </label>
+        </div>
+        <div>
+          <div className="form-input-label">Amount</div>
+          <div className="form-inputs-footer">
+            <TransactionInput
+              formMethods={formMethods}
+              disabled={disabled}
+              validations={{
+                wallet: value => user.usdcBalanceInDollars.gte(value) || "You do not have enough USDC",
+                transactionLimit: value =>
+                  goldfinchConfig.transactionLimit.gte(usdcToAtomic(value)) ||
+                  `This is over the per-transaction limit of $${usdcFromAtomic(goldfinchConfig.transactionLimit)}`,
+                totalFundsLimit: value => {
+                  let limit = goldfinchConfig.totalFundsLimit.minus(pool.gf.totalPoolAssets)
+                  return (
+                    limit.gte(usdcToAtomic(value)) ||
+                    `This amount would put the pool over its limit. It can accept a max of $${usdcFromAtomic(limit)}.`
+                  )
+                },
+              }}
+            />
+            <LoadingButton action={action} disabled={submitDisabled} />
+          </div>
         </div>
       </div>
     )
@@ -72,8 +101,8 @@ function DepositForm(props: DepositFormProps) {
 
   return (
     <TransactionForm
-      title="Deposit"
-      headerMessage={`Available to deposit: ${displayDollars(user.usdcBalanceInDollars)}`}
+      title="Supply"
+      headerMessage={`Available to supply: ${displayDollars(user.usdcBalanceInDollars)}`}
       render={renderForm}
       closeForm={props.closeForm}
     />

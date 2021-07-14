@@ -4,7 +4,7 @@ import * as firebaseTesting from "@firebase/rules-unit-testing"
 import * as admin from "firebase-admin"
 import crypto from "crypto"
 
-import {getUsers, setEnvForTest} from "../src/db"
+import {FirebaseConfig, getUsers, setEnvForTest} from "../src/db"
 import {kycStatus, personaCallback} from "../src"
 
 chai.use(chaiSubset as any)
@@ -15,7 +15,7 @@ import Firestore = firestore.Firestore
 describe("functions", () => {
   let testFirestore: Firestore
   let testApp: admin.app.App
-  let config: Record<string, any>
+  let config: Omit<FirebaseConfig, "sentry">
   const projectId = "goldfinch-frontend-test"
   const address = "0xE7f9ED35DA54b2e4A1857487dBf42A32C4DBD4a0"
   const validSignature =
@@ -25,7 +25,10 @@ describe("functions", () => {
   beforeEach(() => {
     testApp = firebaseTesting.initializeAdminApp({projectId: projectId})
     testFirestore = testApp.firestore()
-    config = {kyc: {allowed_origins: "http://localhost:3000"}, persona: {}}
+    config = {
+      kyc: {allowed_origins: "http://localhost:3000"},
+      persona: {allowed_ips: ""},
+    }
     setEnvForTest(testFirestore, config)
     users = getUsers(testFirestore)
   })
@@ -91,7 +94,7 @@ describe("functions", () => {
           await users.doc(address.toLowerCase()).set({
             persona: {status: "created"},
           })
-          await kycStatus(req, expectResponse(200, {address, status: "pending"}))
+          await kycStatus(req, expectResponse(200, {address, status: "unknown"}))
 
           await users.doc(address.toLowerCase()).set({
             persona: {status: "completed"},
@@ -102,7 +105,7 @@ describe("functions", () => {
           await users.doc(address.toLowerCase()).set({
             persona: {status: "expired"},
           })
-          await kycStatus(req, expectResponse(200, {address, status: "failed"}))
+          await kycStatus(req, expectResponse(200, {address, status: "unknown"}))
         })
       })
     })
@@ -114,6 +117,7 @@ describe("functions", () => {
       status: string,
       otherAttributes: Record<string, any> = {},
       accountAttributes: Record<string, any> = {},
+      verificationAttributes: Record<string, any> = {},
     ) => {
       const personaCallbackId = crypto.randomBytes(20).toString("hex")
       const attributes = {status, referenceId: address, ...otherAttributes}
@@ -127,6 +131,11 @@ describe("functions", () => {
                 data: {id: personaCallbackId, type: "inquiry", attributes: attributes},
                 included: [
                   {type: "account", id: crypto.randomBytes(20).toString("hex"), attributes: accountAttributes},
+                  {
+                    type: "verification/government-id",
+                    id: crypto.randomBytes(20).toString("hex"),
+                    attributes: verificationAttributes,
+                  },
                 ],
               },
             },
@@ -167,10 +176,10 @@ describe("functions", () => {
       })
 
       describe("when the user exists", async () => {
-        it("updates the status", async () => {
+        it("updates the status and country code", async () => {
           await users.doc(address.toLowerCase()).set({
             address: address,
-            status: "pending",
+            persona: {status: "created"},
           })
           const req = generatePersonaCallbackRequest(address, "completed", {}, {countryCode: "US"})
           await personaCallback(req, expectResponse(200, {status: "success"}))
@@ -179,6 +188,34 @@ describe("functions", () => {
           expect(userDoc.exists).to.be.true
           expect(userDoc.data()).to.containSubset({address: address, countryCode: "US"})
           expect(userDoc.data()?.persona?.status).to.eq("completed")
+        })
+
+        it("uses the country code from the verification if account does not have it", async () => {
+          await users.doc(address.toLowerCase()).set({
+            address: address,
+            persona: {status: "created"},
+          })
+          const req = generatePersonaCallbackRequest(address, "completed", {}, {countryCode: ""}, {countryCode: "US"})
+          await personaCallback(req, expectResponse(200, {status: "success"}))
+
+          const userDoc = await users.doc(address.toLowerCase()).get()
+          expect(userDoc.exists).to.be.true
+          expect(userDoc.data()).to.containSubset({address: address, countryCode: "US"})
+          expect(userDoc.data()?.persona?.status).to.eq("completed")
+        })
+
+        it("does not update the status if already approved", async () => {
+          await users.doc(address.toLowerCase()).set({
+            address: address,
+            persona: {status: "approved"},
+          })
+          const req = generatePersonaCallbackRequest(address, "declined", {})
+          await personaCallback(req, expectResponse(200, {status: "success"}))
+
+          const userDoc = await users.doc(address.toLowerCase()).get()
+          expect(userDoc.exists).to.be.true
+          expect(userDoc.data()).to.containSubset({address: address})
+          expect(userDoc.data()?.persona?.status).to.eq("approved")
         })
       })
     })

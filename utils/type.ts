@@ -1,3 +1,5 @@
+import _isPlainObject from "lodash/isPlainObject"
+
 function getTypeof(obj: unknown) {
   return typeof obj
 }
@@ -18,6 +20,11 @@ function genAssertIsTypeof<T extends TypeofReturnType>(assertedType: T): (obj: u
     }
   }
 }
+
+export function isString(obj: unknown): obj is string {
+  return typeof obj === "string"
+}
+export const isStringOrUndefined = orUndefined(isString)
 
 export const assertIsString: (obj: unknown) => asserts obj is string = genAssertIsTypeof("string")
 
@@ -41,4 +48,18 @@ export function genExhaustiveTuple<T extends string>() {
   ) {
     return x
   }
+}
+
+export type PlainObject = Record<string, unknown>
+
+export function isPlainObject(obj: unknown): obj is PlainObject {
+  return _isPlainObject(obj)
+}
+
+export function isUndefined(obj: unknown): obj is undefined {
+  return obj === undefined
+}
+
+export function orUndefined<T>(typeGuard: (obj: unknown) => obj is T): (obj: unknown) => obj is T | undefined {
+  return (obj: unknown): obj is T | undefined => typeGuard(obj) || isUndefined(obj)
 }

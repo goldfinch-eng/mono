@@ -66,7 +66,7 @@ function EarnActionsContainer(props: EarnActionsContainerProps) {
         <DepositStatus capitalProvider={props.capitalProvider} poolData={props.poolData} />
         <div className="form-start">
           <button className={`button ${depositClass}`} onClick={depositAction}>
-            {iconUpArrow} Deposit
+            {iconUpArrow} Supply
           </button>
           <button className={`button ${withdrawClass}`} onClick={withdrawAction}>
             {iconDownArrow} Withdraw

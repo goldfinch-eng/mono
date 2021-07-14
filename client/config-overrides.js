@@ -1,7 +1,7 @@
 /* config-overrides.js */
-const { solidityLoader } = require("./config/webpack")
-const { override, overrideDevServer } = require("customize-cra")
-const { addReactRefresh } = require("customize-cra-react-refresh")
+const {solidityLoader} = require("./config/webpack")
+const {override, overrideDevServer} = require("customize-cra")
+const {addReactRefresh} = require("customize-cra-react-refresh")
 
 const allowOutsideImports = () => config => {
   // allow importing from outside of app/src folder, ModuleScopePlugin prevents this.

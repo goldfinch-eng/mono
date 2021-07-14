@@ -93,3 +93,5 @@ client/config/deployments_dev.json
 
 .envrc
 typechain
+
+accounts.csv
