@@ -8,9 +8,7 @@
 
 FROM node:12.18.3
 
-RUN apk update && apk add --no-cache --virtual build-dependencies git
-RUN apk --update add git less openssh
-RUN apk add python3
+RUN apt-get --update install git less openssh python3
 RUN wget https://github.com/ethereum/solidity/releases/download/v0.6.8/solc-static-linux -O /bin/solc && chmod +x /bin/solc
 
 RUN mkdir -p /goldfinch-protocol
@@ -30,8 +28,6 @@ WORKDIR /goldfinch-protocol
 
 COPY . /goldfinch-protocol
 RUN cat ./bashrc.txt >> $HOME/.bashrc
-
-RUN apk del build-dependencies
 
 # Used by the Webpack dev server. See `murmuration()` in `client/config-overrides.js`.
 EXPOSE 8080
