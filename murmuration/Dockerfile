@@ -9,7 +9,7 @@
 FROM node:12.18.3
 
 RUN apt-get update
-RUN apt-get install git less openssl python3
+RUN apt-get --assume-yes install git less openssl python3
 RUN wget https://github.com/ethereum/solidity/releases/download/v0.6.8/solc-static-linux -O /bin/solc && chmod +x /bin/solc
 
 RUN mkdir -p /goldfinch-protocol
