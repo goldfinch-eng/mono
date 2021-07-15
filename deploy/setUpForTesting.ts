@@ -44,7 +44,7 @@ import {
 } from "../blockchain_scripts/mainnetForkingHelpers"
 import _ from "lodash"
 import {assertIsString, assertNonNullable} from "../utils/type"
-import { Result } from "ethers/lib/utils"
+import {Result} from "ethers/lib/utils"
 
 /*
 This deployment deposits some funds to the pool, and creates an underwriter, and a credit line.
@@ -185,6 +185,9 @@ async function writePoolMetadata(pool: TranchedPool) {
     "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAdUlEQVR42mNgGAWjAAj+48GUG37i92+cmFJL/hMDKLHkv1TeVYKYIgvwBQ81gommFvxHtqB0797/6BbCxMixAGzA7AcPUFyJzEcWI9sHxAQP1YIIGWPzCVUjeehbQLN8gK2wG1o+oElpSiiIqFoXUKuCoboFAP+MJG7jSOWlAAAAAElFTkSuQmCC",
     "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAqElEQVR42mNgGAVDAfzHgyk33NTU9H9gYCBWTKkleA2nhiXYDKJqcKEYDvINPkyOJf/JwKRZcOL3b4KY7OAh1+U7d+5sIMrlyD6AGYTF5SgWgAyHYZKChyYW4IqD2Q8eUCUOGMi1gBjXU2QBzZMp2T7Aljxp5gOQXGugCHoqIjlnEwwaJEsYYHwYJtkCXLkY2ScZNhxgPogm1wKs6pBdTqzhpFjAgC/sASQcCwwmy7ugAAAAAElFTkSuQmCC",
   ]
+  const description =
+    "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc eget mi fringilla, maximus quam sodales, condimentum arcu. Vivamus arcu lorem, ultrices at ligula ut, tempor consectetur nibh. Vivamus commodo felis eu urna facilisis, feugiat gravida lectus egestas. Suspendisse consectetur urna at ornare lacinia. Etiam erat nunc, interdum sed gravida at, condimentum in metus. Mauris at sagittis libero."
+  const detailsUrl = "https://example.com"
 
   let metadataPath = "client/config/pool-metadata/localhost.json"
   let metadata: any
@@ -198,6 +201,8 @@ async function writePoolMetadata(pool: TranchedPool) {
     name: _.sample(names),
     category: _.sample(categories),
     icon: _.sample(icons),
+    description: description,
+    detailsUrl: detailsUrl,
   }
 
   await fs.promises.writeFile(metadataPath, JSON.stringify(metadata, null, 2))

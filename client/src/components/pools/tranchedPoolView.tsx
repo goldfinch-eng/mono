@@ -5,7 +5,10 @@ import {AppContext} from "../../App"
 import InvestorNotice from "../investorNotice"
 import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
 import {TranchedPool} from "../../ethereum/tranchedPool"
-import {croppedAddress} from "../../utils"
+import {croppedAddress, displayDollars, displayPercent, roundUpPenny} from "../../utils"
+import InfoSection from "../infoSection"
+import {usdcFromAtomic} from "../../ethereum/erc20"
+import {iconOutArrow} from "../icons.js"
 
 function useTranchedPool({goldfinchProtocol, address}: {goldfinchProtocol?: GoldfinchProtocol; address: string}): {
   tranchedPool?: TranchedPool
@@ -30,6 +33,35 @@ function useTranchedPool({goldfinchProtocol, address}: {goldfinchProtocol?: Gold
   return {tranchedPool, status}
 }
 
+function Overview({tranchedPool}: {tranchedPool?: TranchedPool}) {
+  let rows: Array<{label: string; value: string}> = []
+  if (tranchedPool) {
+    rows = [
+      {label: "Credit limit", value: displayDollars(roundUpPenny(usdcFromAtomic(tranchedPool.creditLine.limit)))},
+      {label: "Interest rate APR", value: displayPercent(tranchedPool.creditLine.interestAprDecimal)},
+      {label: "Payment frequency", value: `${tranchedPool.creditLine.paymentPeriodInDays} days`},
+      {label: "Payback term", value: `${tranchedPool.creditLine.termInDays} days`},
+    ]
+  }
+
+  return (
+    <div className={`pool-overview background-container ${!tranchedPool && "placeholder"}`}>
+      <div className="pool-header">
+        <h2>Overview</h2>
+        {tranchedPool?.metadata?.detailsUrl && (
+          <div className="pool-links">
+            <a href={tranchedPool.metadata.detailsUrl} target="_blank" rel="noopener noreferrer">
+              Details & Discussion <span className="outbound-link">{iconOutArrow}</span>
+            </a>
+          </div>
+        )}
+      </div>
+      <p className="pool-description">{tranchedPool?.metadata?.description}</p>
+      <InfoSection rows={rows} />
+    </div>
+  )
+}
+
 function TranchedPoolView() {
   const {poolAddress} = useParams()
   const {goldfinchProtocol} = useContext(AppContext)
@@ -47,6 +79,7 @@ function TranchedPoolView() {
         <div>{earnMessage}</div>
       </div>
       <ConnectionNotice requireVerify={true} />
+      <Overview tranchedPool={tranchedPool} />
     </div>
   )
 }

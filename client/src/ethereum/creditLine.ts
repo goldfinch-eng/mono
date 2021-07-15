@@ -306,4 +306,4 @@ async function fetchCreditLineData(creditLineAddresses: string | string[], goldf
 
 const defaultCreditLine = new DefaultCreditLine()
 
-export {buildCreditLine, fetchCreditLineData, defaultCreditLine}
+export {buildCreditLine, fetchCreditLineData, defaultCreditLine, CreditLine}

@@ -1,5 +1,6 @@
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {TranchedPool as TranchedPoolContract} from "../typechain/web3/TranchedPool"
+import {CreditLine} from "./creditLine"
 
 interface MetadataStore {
   [address: string]: PoolMetadata
@@ -23,12 +24,15 @@ interface PoolMetadata {
   name: string
   category: string
   icon: string
+  description: string
+  detailsUrl?: string
 }
 
 class TranchedPool {
   address: string
   goldfinchProtocol: GoldfinchProtocol
   contract: TranchedPoolContract
+  creditLine!: CreditLine
   creditLineAddress!: string
   metadata?: PoolMetadata
 
@@ -40,6 +44,8 @@ class TranchedPool {
 
   async initialize() {
     this.creditLineAddress = await this.contract.methods.creditLine().call()
+    this.creditLine = new CreditLine(this.creditLineAddress, this.goldfinchProtocol)
+    await this.creditLine.initialize()
     this.metadata = await this.loadPoolMetadata()
   }
 
