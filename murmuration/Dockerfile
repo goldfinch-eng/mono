@@ -12,23 +12,19 @@ RUN apt-get update
 RUN apt-get --assume-yes install git less openssl python3
 RUN wget https://github.com/ethereum/solidity/releases/download/v0.6.8/solc-static-linux -O /bin/solc && chmod +x /bin/solc
 
-RUN mkdir -p /goldfinch-protocol
-WORKDIR /goldfinch-protocol
+RUN mkdir -p /goldfinch-protocol/client
 
-COPY ./package.json ./package.json
-COPY ./package-lock.json ./package-lock.json
-RUN npm install
-
-RUN mkdir -p /client
-COPY ./client/package.json ./client/package.json
-COPY ./client/package-lock.json ./client/package-lock.json
-WORKDIR /client
+WORKDIR /goldfinch-protocol/client
+COPY ./client/package.json .
+COPY ./client/package-lock.json .
 RUN npm install
 
 WORKDIR /goldfinch-protocol
+COPY ./package.json .
+COPY ./package-lock.json .
+RUN npm install
 
 COPY . /goldfinch-protocol
-RUN cat ./bashrc.txt >> $HOME/.bashrc
 
 # Used by the Webpack dev server. See `murmuration()` in `client/config-overrides.js`.
 EXPOSE 8080
