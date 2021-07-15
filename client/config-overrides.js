@@ -36,15 +36,19 @@ const gnosisSafeIntegration = () => config => {
 
 /**
  * For the murmuration deployment on Google App Engine, we want the Webpack dev server
- * to listen on port 8080, because that is the port App Engine requires (cf.
- * https://cloud.google.com/appengine/docs/flexible/custom-runtimes/build#listening_to_port_8080).
- * Also, we want the dev server to serve at hostname 0.0.0.0, so that it is accessible outside the Docker
+ * to serve at hostname 0.0.0.0, so that it is accessible outside the Docker
  * container in which it runs (cf. https://stackoverflow.com/a/39638515).
  */
 const murmuration = () => config => {
   if (process.env.MURMURATION === "yes") {
     config.host = "0.0.0.0"
-    config.port = 8080
+
+    // Note that we also need the dev server to listen on port 8080,
+    // because that is the port App Engine requires (cf.
+    // https://cloud.google.com/appengine/docs/flexible/custom-runtimes/build#listening_to_port_8080),
+    // but react-app-rewired only supports specifying the port via an environment variable (cf.
+    // https://github.com/timarney/react-app-rewired/issues/436),
+    // so that's what we do in the npm `start-murmuration` command.
   }
   return config
 }
