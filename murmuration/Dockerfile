@@ -16,13 +16,13 @@ RUN wget https://github.com/ethereum/solidity/releases/download/v0.6.8/solc-stat
 RUN mkdir -p /goldfinch-protocol
 WORKDIR /goldfinch-protocol
 
-COPY ./package.json .
-COPY ./package-lock.json .
+COPY ./package.json ./package.json
+COPY ./package-lock.json ./package-lock.json
 RUN npm install
 
 RUN mkdir -p /client
-COPY ./client/package.json ./client
-COPY ./client/package-lock.json ./client
+COPY ./client/package.json ./client/package.json
+COPY ./client/package-lock.json ./client/package-lock.json
 WORKDIR /client
 RUN npm install
 

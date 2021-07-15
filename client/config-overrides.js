@@ -48,7 +48,7 @@ const murmuration = () => config => {
     // https://cloud.google.com/appengine/docs/flexible/custom-runtimes/build#listening_to_port_8080),
     // but react-app-rewired only supports specifying the port via an environment variable (cf.
     // https://github.com/timarney/react-app-rewired/issues/436),
-    // so that's what we do in the npm `start-murmuration` command.
+    // so we do that in the npm `start-murmuration` command.
   }
   return config
 }
