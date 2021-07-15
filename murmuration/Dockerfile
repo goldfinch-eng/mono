@@ -6,7 +6,7 @@
 # like `INCLUDE`, to reuse logic across Dockerfiles: https://github.com/moby/moby/issues/735.
 # Duplicating code is the 80/20 solution for now.
 
-FROM mhart/alpine-node:12.18.3
+FROM node:12.18.3
 
 RUN apk update && apk add --no-cache --virtual build-dependencies git
 RUN apk --update add git less openssh
