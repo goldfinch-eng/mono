@@ -8,12 +8,12 @@ steps:
       - .
       - '-f'
       - murmuration/Dockerfile
-    id: Build
+    id: Build Docker image
   - name: gcr.io/cloud-builders/docker
     args:
       - push
       - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA'
-    id: Push
+    id: Push to Container Registry
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     args:
       - app
@@ -21,6 +21,7 @@ steps:
       - '--appyaml=murmuration/app.yaml'
       - '--image-url=$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA'
     entrypoint: gcloud
+    id: Deploy to App Engine
 timeout: '1600s'
 images:
   - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA'
