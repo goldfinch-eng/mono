@@ -17,11 +17,10 @@ RUN mkdir -p /goldfinch-protocol/client
 WORKDIR /goldfinch-protocol
 COPY ./package.json .
 COPY ./package-lock.json .
-RUN npm install
 # We observed `postinstall` not running automatically (which seems to be
 # understood behavior in a Docker container: https://stackoverflow.com/q/47748075),
 # so we run it manually.
-RUN npm run postinstall
+RUN npm install && npm run postinstall
 
 WORKDIR /goldfinch-protocol/client
 COPY ./client/package.json .
