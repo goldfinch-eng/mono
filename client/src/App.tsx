@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react"
-import { BrowserRouter as Router, Switch, Route, Redirect } from "react-router-dom"
-import * as Sentry from '@sentry/react'
+import React, {useState, useEffect} from "react"
+import {BrowserRouter as Router, Switch, Route, Redirect} from "react-router-dom"
+import * as Sentry from "@sentry/react"
 import Borrow from "./components/borrow.js"
 import Earn from "./components/earn"
 import Transactions from "./components/transactions.js"
@@ -9,16 +9,16 @@ import Sidebar from "./components/sidebar"
 import TermsOfService from "./components/termsOfService.js"
 import PrivacyPolicy from "./components/privacyPolicy.js"
 import web3 from "./web3"
-import { fetchCreditDeskData } from "./ethereum/creditDesk.js"
-import { ERC20, Tickers } from "./ethereum/erc20"
-import { refreshGoldfinchConfigData } from "./ethereum/goldfinchConfig"
-import { getUserData, defaultUser, User } from "./ethereum/user"
-import { mapNetworkToID, SUPPORTED_NETWORKS } from "./ethereum/utils"
-import initSdk, { SafeInfo, SdkInstance } from "@gnosis.pm/safe-apps-sdk"
-import { NetworkMonitor } from "./ethereum/networkMonitor"
-import { SeniorFund } from "./ethereum/pool"
-import { GoldfinchProtocol } from "./ethereum/GoldfinchProtocol"
-import { GoldfinchConfig } from "./typechain/web3/GoldfinchConfig"
+import {fetchCreditDeskData} from "./ethereum/creditDesk.js"
+import {ERC20, Tickers} from "./ethereum/erc20"
+import {refreshGoldfinchConfigData} from "./ethereum/goldfinchConfig"
+import {getUserData, defaultUser, User} from "./ethereum/user"
+import {mapNetworkToID, SUPPORTED_NETWORKS} from "./ethereum/utils"
+import initSdk, {SafeInfo, SdkInstance} from "@gnosis.pm/safe-apps-sdk"
+import {NetworkMonitor} from "./ethereum/networkMonitor"
+import {SeniorFund} from "./ethereum/pool"
+import {GoldfinchProtocol} from "./ethereum/GoldfinchProtocol"
+import {GoldfinchConfig} from "./typechain/web3/GoldfinchConfig"
 import SeniorPool from "./components/pools/seniorPool"
 import VerifyIdentity from "./components/verifyIdentity"
 import TranchedPoolView from "./components/pools/tranchedPoolView"
@@ -57,7 +57,7 @@ interface GlobalState {
 
 declare let window: any
 
-const AppContext = React.createContext<GlobalState>({ user: defaultUser() })
+const AppContext = React.createContext<GlobalState>({user: defaultUser()})
 
 function App() {
   const [pool, setPool] = useState<SeniorFund>()
@@ -82,7 +82,7 @@ function App() {
   useEffect(() => {
     refreshUserData()
     // Admin function to be able to assume the role of any address
-    window.setUserAddress = function(overrideAddress: string) {
+    window.setUserAddress = function (overrideAddress: string) {
       refreshUserData(overrideAddress)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -103,7 +103,7 @@ function App() {
   }
 
   async function setupWeb3() {
-    if (!await ensureWeb3()) {
+    if (!(await ensureWeb3())) {
       return
     }
 
@@ -117,7 +117,7 @@ function App() {
 
     const networkName = await web3.eth.net.getNetworkType()
     const networkId = mapNetworkToID[networkName] || networkName
-    const networkConfig: NetworkConfig = { name: networkId, supported: SUPPORTED_NETWORKS[networkId] }
+    const networkConfig: NetworkConfig = {name: networkId, supported: SUPPORTED_NETWORKS[networkId]}
     setNetwork(networkConfig)
     let usdc: ERC20,
       pool: SeniorFund,
@@ -150,7 +150,7 @@ function App() {
   }
 
   async function refreshUserData(overrideAddress?: string) {
-    if (!await ensureWeb3()) {
+    if (!(await ensureWeb3())) {
       return
     }
 
@@ -171,7 +171,9 @@ function App() {
       // error tracking with Sentry MUST be kept consistent with (i.e. not exceed
       // the bounds set by) what our Terms of Service, Privacy Policy, and marketing
       // copy state about the identifying information that Goldfinch stores.
-      id: data.address, address: data.address, isOverrideOf: overrideAddress ? _userAddress : undefined
+      id: data.address,
+      address: data.address,
+      isOverrideOf: overrideAddress ? _userAddress : undefined,
     })
 
     setUser(data)
@@ -190,7 +192,7 @@ function App() {
     refreshUserData,
     goldfinchProtocol,
     geolocationData,
-    setGeolocationData
+    setGeolocationData,
   }
 
   return (
@@ -247,5 +249,5 @@ function App() {
   )
 }
 
-export { App, AppContext }
-export type { GeolocationData }
+export {App, AppContext}
+export type {GeolocationData}

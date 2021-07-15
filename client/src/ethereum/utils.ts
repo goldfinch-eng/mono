@@ -1,8 +1,8 @@
 import BigNumber from "bignumber.js"
 import BN from "bn.js"
 import _ from "lodash"
-import { Contract } from "web3-eth-contract"
-import { BaseContract } from "../typechain/web3/types"
+import {Contract} from "web3-eth-contract"
+import {BaseContract} from "../typechain/web3/types"
 
 const decimalPlaces = 6
 const decimals = new BN(String(10 ** decimalPlaces))
@@ -69,7 +69,7 @@ async function getDeployments(networkId) {
   }
   const deploymentFileNameSuffix = process.env.NODE_ENV === "development" ? "_dev" : ""
   return import(`../../config/deployments${deploymentFileNameSuffix}.json`)
-    .then(result => {
+    .then((result) => {
       config = transformedConfig(result)
 
       if (networkId === "localhost" && process.env.REACT_APP_HARDHAT_FORK) {
@@ -77,7 +77,7 @@ async function getDeployments(networkId) {
         // freshly deployed version
         const mainnetContracts = ["GoldfinchConfig", "CreditDesk", "Pool", "Fidu", "GoldfinchFactory"]
         const mainnetConfig = config["mainnet"].contracts
-        mainnetContracts.forEach(contract => {
+        mainnetContracts.forEach((contract) => {
           if (mainnetConfig[contract]) {
             const networkContracts = config[networkId].contracts
             networkContracts[contract].address = mainnetConfig[contract].address
@@ -96,7 +96,7 @@ function transformedConfig(config) {
   return _.reduce(
     config,
     (result, item) => {
-      _.toArray(item).forEach(networkConfig => {
+      _.toArray(item).forEach((networkConfig) => {
         return _.merge(result, networkConfig)
       })
       return result
@@ -113,21 +113,21 @@ function getFromBlock(chain) {
   }
 }
 
-type MethodInfo = { method: string; name?: string; args?: any }
+type MethodInfo = {method: string; name?: string; args?: any}
 function fetchDataFromAttributes(
   web3Obj: Contract | BaseContract,
   attributes: MethodInfo[],
-  { bigNumber }: { bigNumber?: boolean } = {},
+  {bigNumber}: {bigNumber?: boolean} = {},
 ): any {
   const result = {}
   if (!web3Obj) {
     return Promise.resolve(result)
   }
-  var promises = attributes.map(methodInfo => {
+  var promises = attributes.map((methodInfo) => {
     return web3Obj.methods[methodInfo.method](...(methodInfo?.args || [])).call()
   })
   return Promise.all(promises)
-    .then(results => {
+    .then((results) => {
       attributes.forEach((methodInfo, index) => {
         if (bigNumber) {
           result[methodInfo?.name || methodInfo.method] = new BigNumber(results[index])
@@ -137,7 +137,7 @@ function fetchDataFromAttributes(
       })
       return result
     })
-    .catch(e => {
+    .catch((e) => {
       throw new Error(e)
     })
 }

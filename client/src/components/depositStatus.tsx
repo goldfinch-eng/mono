@@ -1,7 +1,6 @@
-import { BigNumber } from "bignumber.js"
-import React from "react"
-import { CapitalProvider, PoolData } from "../ethereum/pool"
-import { displayDollars, displayPercent } from "../utils"
+import {BigNumber} from "bignumber.js"
+import {CapitalProvider, PoolData} from "../ethereum/pool"
+import {displayDollars, displayPercent} from "../utils"
 
 interface DepositStatusProps {
   poolData?: PoolData

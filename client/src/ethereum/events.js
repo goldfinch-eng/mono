@@ -32,7 +32,7 @@ async function mapEventsToTx(events) {
 }
 
 function mapEventToTx(event) {
-  return web3.eth.getBlock(event.blockNumber).then(block => {
+  return web3.eth.getBlock(event.blockNumber).then((block) => {
     return {
       type: event.event,
       name: EVENT_TYPE_MAP[event.event],

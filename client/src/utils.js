@@ -62,4 +62,4 @@ function roundDownPenny(val) {
   return Math.floor(val * 100) / 100
 }
 
-export { croppedAddress, displayNumber, displayDollars, roundUpPenny, roundDownPenny, displayPercent }
+export {croppedAddress, displayNumber, displayDollars, roundUpPenny, roundDownPenny, displayPercent}

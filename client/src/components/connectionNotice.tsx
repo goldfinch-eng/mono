@@ -1,4 +1,3 @@
-import React from "react"
 import {withRouter} from "react-router-dom"
 import {AppContext} from "../App"
 import {UnlockedStatus} from "../ethereum/user"
@@ -63,4 +62,4 @@ function ConnectionNotice(props) {
   return notice
 }
 
-export default withRouter(props => ConnectionNotice(props))
+export default withRouter((props) => ConnectionNotice(props))

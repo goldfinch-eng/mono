@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useContext } from "react"
-import { fetchCreditLineData } from "../ethereum/creditLine"
-import { usdcFromAtomic } from "../ethereum/erc20"
-import { displayDollars } from "../utils"
+import React, {useState, useEffect, useContext} from "react"
+import {fetchCreditLineData} from "../ethereum/creditLine"
+import {usdcFromAtomic} from "../ethereum/erc20"
+import {displayDollars} from "../utils"
 import Dropdown from "./dropdown"
-import { AppContext } from "../App"
+import {AppContext} from "../App"
 
 function BorrowHeader(props) {
-  const { goldfinchProtocol } = useContext(AppContext)
+  const {goldfinchProtocol} = useContext(AppContext)
   const [creditLinePreviews, setCreditLinePreviews] = useState([])
 
   useEffect(() => {
@@ -32,7 +32,7 @@ function BorrowHeader(props) {
   }, [goldfinchProtocol, props.creditLinesAddresses])
 
   if (props.creditLinesAddresses.length > 1) {
-    const options = creditLinePreviews.map(cl => {
+    const options = creditLinePreviews.map((cl) => {
       return {
         value: cl.address,
         selectedEl: <>{cl.name}</>,
@@ -51,7 +51,7 @@ function BorrowHeader(props) {
         <Dropdown
           selected={props.selectedCreditLine.address}
           options={options}
-          onSelect={address => {
+          onSelect={(address) => {
             props.changeCreditLine(address)
           }}
         />

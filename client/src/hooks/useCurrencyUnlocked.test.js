@@ -1,8 +1,8 @@
 import React from "react"
-import { AppContext } from "../App"
+import {AppContext} from "../App"
 import BigNumber from "bignumber.js"
 import useCurrencyUnlocked from "./useCurrencyUnlocked"
-import { renderHook, act } from "@testing-library/react-hooks"
+import {renderHook, act} from "@testing-library/react-hooks"
 
 class FakeERC20 {
   constructor(allowance) {
@@ -25,20 +25,20 @@ describe("useCurrencyUnlocked", () => {
         transactionLimit: transactionLimit,
       },
     }
-    wrapper = ({ children }) => <AppContext.Provider value={store}>{children}</AppContext.Provider>
+    wrapper = ({children}) => <AppContext.Provider value={store}>{children}</AppContext.Provider>
     erc20 = new FakeERC20(allowance)
   })
 
   describe("minimum is lower than allowance", () => {
     it("is unlocked", async () => {
-      const { result, waitFor } = renderHook(
+      const {result, waitFor} = renderHook(
         () =>
           useCurrencyUnlocked(erc20, {
             owner: "owner",
             spender: "spender",
             minimum: allowance.minus(1),
           }),
-        { wrapper },
+        {wrapper},
       )
 
       await waitFor(() => {
@@ -50,14 +50,14 @@ describe("useCurrencyUnlocked", () => {
 
   describe("minimum >= allowance", () => {
     it("is not unlocked", async () => {
-      const { result, waitForNextUpdate } = renderHook(
+      const {result, waitForNextUpdate} = renderHook(
         () =>
           useCurrencyUnlocked(erc20, {
             owner: "owner",
             spender: "spender",
             minimum: allowance.plus(1),
           }),
-        { wrapper },
+        {wrapper},
       )
 
       await waitForNextUpdate()
@@ -70,13 +70,13 @@ describe("useCurrencyUnlocked", () => {
     it("uses GoldfinchConfig.transactionLimit", async () => {
       erc20.allowance = transactionLimit.minus(1)
 
-      const { result, waitForNextUpdate } = renderHook(
+      const {result, waitForNextUpdate} = renderHook(
         () =>
           useCurrencyUnlocked(erc20, {
             owner: "owner",
             spender: "spender",
           }),
-        { wrapper },
+        {wrapper},
       )
 
       await waitForNextUpdate()
@@ -87,14 +87,14 @@ describe("useCurrencyUnlocked", () => {
 
   describe("refreshUnlocked", () => {
     it("updates unlocked", async () => {
-      const { result, waitForNextUpdate } = renderHook(
+      const {result, waitForNextUpdate} = renderHook(
         () =>
           useCurrencyUnlocked(erc20, {
             owner: "owner",
             spender: "spender",
             minimum: allowance.plus(1),
           }),
-        { wrapper },
+        {wrapper},
       )
 
       await waitForNextUpdate()

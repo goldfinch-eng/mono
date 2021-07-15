@@ -1,5 +1,5 @@
-import { GoldfinchProtocol } from "./GoldfinchProtocol"
-import { TranchedPool as TranchedPoolContract } from "../typechain/web3/TranchedPool"
+import {GoldfinchProtocol} from "./GoldfinchProtocol"
+import {TranchedPool as TranchedPoolContract} from "../typechain/web3/TranchedPool"
 
 interface MetadataStore {
   [address: string]: PoolMetadata
@@ -49,4 +49,4 @@ class TranchedPool {
   }
 }
 
-export { TranchedPool }
+export {TranchedPool}

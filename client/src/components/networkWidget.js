@@ -17,10 +17,10 @@ function NetworkWidget(props) {
     }
     window.ethereum
       .request({method: "eth_requestAccounts"})
-      .then(_result => {
+      .then((_result) => {
         props.connectionComplete()
       })
-      .catch(error => {
+      .catch((error) => {
         console.error("Error connecting to metamask", error)
       })
   }
@@ -89,7 +89,7 @@ function NetworkWidget(props) {
     enabledText = "Awaiting signers"
   } else if (_.some(props.currentTXs, {status: "pending"})) {
     const pendingTXCount = _.countBy(props.currentTXs, {status: "pending"}).true
-    const confirmingCount = _.countBy(props.currentTXs, item => {
+    const confirmingCount = _.countBy(props.currentTXs, (item) => {
       return item.status === "pending" && item.confirmations > 0
     }).true
     enabledClass = "pending"

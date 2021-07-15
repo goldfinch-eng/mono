@@ -25,11 +25,11 @@ function TransactionInput(props) {
   ))
   let errors = Object.keys(props.formMethods.errors)
   if (errors.length > 0) {
-    errors.map(name => {
+    errors.map((name) => {
       return noteEls.push(
         <div key={`error-${name}`} className="form-input-note">
           <ErrorMessage
-            message={(function(errors, name) {
+            message={(function (errors, name) {
               return errors[name] && errors[name].message
             })(props.formMethods.errors, name)}
             name={name}
@@ -56,7 +56,7 @@ function TransactionInput(props) {
                 message: `Amount is above the max allowed (${displayDollars(props.maxAmount)}). `,
               },
               validate: {
-                decimals: value => new BigNumber(value).decimalPlaces() <= 6 || "Maximum allowed decimal places is 6",
+                decimals: (value) => new BigNumber(value).decimalPlaces() <= 6 || "Maximum allowed decimal places is 6",
                 ...validations,
               },
             }}
@@ -66,7 +66,7 @@ function TransactionInput(props) {
                   allowNegative={false}
                   thousandSeparator={true}
                   onBlur={onBlur}
-                  onValueChange={v => {
+                  onValueChange={(v) => {
                     if (v.value !== value) {
                       onChange(v.value)
                       propsOnChange(v.value)

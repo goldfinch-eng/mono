@@ -1,14 +1,14 @@
-import React, { useState, useEffect, useContext } from "react"
-import { useHistory } from "react-router-dom"
-import { CapitalProvider, fetchCapitalProviderData, fetchPoolData, PoolData } from "../ethereum/pool"
-import { AppContext } from "../App"
-import { ERC20, usdcFromAtomic } from "../ethereum/erc20"
-import { croppedAddress, displayDollars, displayPercent } from "../utils"
-import { GoldfinchProtocol } from "../ethereum/GoldfinchProtocol"
-import { TranchedPool } from "../ethereum/tranchedPool"
-import { PoolCreated } from "../typechain/web3/GoldfinchFactory"
+import {useState, useEffect, useContext} from "react"
+import {useHistory} from "react-router-dom"
+import {CapitalProvider, fetchCapitalProviderData, fetchPoolData, PoolData} from "../ethereum/pool"
+import {AppContext} from "../App"
+import {ERC20, usdcFromAtomic} from "../ethereum/erc20"
+import {croppedAddress, displayDollars, displayPercent} from "../utils"
+import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
+import {TranchedPool} from "../ethereum/tranchedPool"
+import {PoolCreated} from "../typechain/web3/GoldfinchFactory"
 
-function PoolList({ title, children }) {
+function PoolList({title, children}) {
   return (
     <div className="pools-list table-spaced background-container">
       <div className="table-header background-container-inner">
@@ -22,7 +22,7 @@ function PoolList({ title, children }) {
   )
 }
 
-function SeniorPoolCard({ balance, userBalance, apy }) {
+function SeniorPoolCard({balance, userBalance, apy}) {
   const history = useHistory()
 
   return (
@@ -42,7 +42,7 @@ function SeniorPoolCard({ balance, userBalance, apy }) {
   )
 }
 
-function TranchedPoolCard({ tranchedPool }: { tranchedPool: TranchedPool }) {
+function TranchedPoolCard({tranchedPool}: {tranchedPool: TranchedPool}) {
   const history = useHistory()
 
   return (
@@ -69,22 +69,21 @@ function TranchedPoolCard({ tranchedPool }: { tranchedPool: TranchedPool }) {
   )
 }
 
-function useTranchedPools({
-  goldfinchProtocol,
-}: {
-  goldfinchProtocol?: GoldfinchProtocol
-}): { tranchedPools: TranchedPool[]; status: string } {
+function useTranchedPools({goldfinchProtocol}: {goldfinchProtocol?: GoldfinchProtocol}): {
+  tranchedPools: TranchedPool[]
+  status: string
+} {
   let [tranchedPools, setTranchedPools] = useState<TranchedPool[]>([])
   let [status, setStatus] = useState<string>("loading")
 
   useEffect(() => {
     async function loadTranchedPools(goldfinchProtocol: GoldfinchProtocol) {
-      let poolEvents = ((await goldfinchProtocol.queryEvents("GoldfinchFactory", [
+      let poolEvents = (await goldfinchProtocol.queryEvents("GoldfinchFactory", [
         "PoolCreated",
-      ])) as unknown) as PoolCreated[]
-      let poolAddresses = poolEvents.map(e => e.returnValues.pool)
-      let tranchedPools = poolAddresses.map(a => new TranchedPool(a, goldfinchProtocol))
-      await Promise.all(tranchedPools.map(p => p.initialize()))
+      ])) as unknown as PoolCreated[]
+      let poolAddresses = poolEvents.map((e) => e.returnValues.pool)
+      let tranchedPools = poolAddresses.map((a) => new TranchedPool(a, goldfinchProtocol))
+      await Promise.all(tranchedPools.map((p) => p.initialize()))
       setTranchedPools(tranchedPools)
       setStatus("loaded")
     }
@@ -94,14 +93,14 @@ function useTranchedPools({
     }
   }, [goldfinchProtocol])
 
-  return { tranchedPools, status }
+  return {tranchedPools, status}
 }
 
 function Earn(props) {
-  const { pool, usdc, user, goldfinchProtocol } = useContext(AppContext)
+  const {pool, usdc, user, goldfinchProtocol} = useContext(AppContext)
   const [capitalProvider, setCapitalProvider] = useState<CapitalProvider>()
   const [poolData, setPoolData] = useState<PoolData>()
-  const { tranchedPools, status: tranchedPoolsStatus } = useTranchedPools({ goldfinchProtocol })
+  const {tranchedPools, status: tranchedPoolsStatus} = useTranchedPools({goldfinchProtocol})
 
   useEffect(() => {
     async function refreshAllData() {
@@ -146,7 +145,7 @@ function Earn(props) {
         <PoolList title="Junior Pools">
           {tranchedPoolsStatus === "loading"
             ? "Loading..."
-            : tranchedPools.map(p => <TranchedPoolCard tranchedPool={p} />)}
+            : tranchedPools.map((p) => <TranchedPoolCard tranchedPool={p} />)}
         </PoolList>
       </div>
     </div>

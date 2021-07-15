@@ -1,7 +1,7 @@
 import React from "react"
-import { displayDollars, displayPercent } from "../utils"
-import { iconCircleCheck } from "./icons.js"
-import { usdcFromAtomic } from "../ethereum/erc20"
+import {displayDollars, displayPercent} from "../utils"
+import {iconCircleCheck} from "./icons.js"
+import {usdcFromAtomic} from "../ethereum/erc20"
 
 function CreditLinesList(props) {
   function creditLineRow(cl) {

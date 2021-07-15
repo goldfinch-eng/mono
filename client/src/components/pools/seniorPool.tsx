@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react"
+import {useState, useEffect, useContext} from "react"
 import EarnActionsContainer from "../earnActionsContainer"
 import PoolStatus from "../poolStatus"
 import ConnectionNotice from "../connectionNotice"
@@ -9,11 +9,11 @@ import {
   PoolData,
   SeniorFund,
 } from "../../ethereum/pool"
-import { AppContext } from "../../App"
+import {AppContext} from "../../App"
 import InvestorNotice from "../investorNotice"
 
 function SeniorPool() {
-  const { pool, user } = useContext(AppContext)
+  const {pool, user} = useContext(AppContext)
   const [capitalProvider, setCapitalProvider] = useState<CapitalProvider>(emptyCapitalProvider())
   const [poolData, setPoolData] = useState<PoolData>()
 

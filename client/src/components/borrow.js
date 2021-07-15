@@ -1,15 +1,15 @@
-import React, { useState, useContext, useEffect } from "react"
+import React, {useState, useContext, useEffect} from "react"
 import CreditActionsContainer from "./creditActionsContainer.js"
 import CreditActionsMultipleContainer from "./creditActionsMultipleContainer"
 import CreditStatus from "./creditStatus.js"
 import ConnectionNotice from "./connectionNotice"
 import BorrowHeader from "./borrowHeader"
-import { fetchCreditLineData, defaultCreditLine } from "../ethereum/creditLine"
-import { AppContext } from "../App"
+import {fetchCreditLineData, defaultCreditLine} from "../ethereum/creditLine"
+import {AppContext} from "../App"
 import CreditLinesList from "./creditLinesList"
 
 function Borrow(props) {
-  const { creditDesk, user, goldfinchProtocol } = useContext(AppContext)
+  const {creditDesk, user, goldfinchProtocol} = useContext(AppContext)
   const [creditLinesAddresses, setCreditLinesAddresses] = useState([])
   const [creditLine, setCreditLine] = useState(defaultCreditLine)
 

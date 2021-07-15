@@ -1,9 +1,9 @@
 import web3 from "../web3"
-import { getDeployments, getFromBlock } from "./utils"
-import { ERC20, getERC20 } from "./erc20"
+import {getDeployments, getFromBlock} from "./utils"
+import {ERC20, getERC20} from "./erc20"
 import _ from "lodash"
-import { Contract, Filter } from "web3-eth-contract"
-import { BaseContract } from "../typechain/web3/types"
+import {Contract, Filter} from "web3-eth-contract"
+import {BaseContract} from "../typechain/web3/types"
 
 class GoldfinchProtocol {
   networkId: string
@@ -41,7 +41,7 @@ class GoldfinchProtocol {
       contractObj = contract as Contract
     }
     const eventArrays = await Promise.all(
-      ([] as string[]).concat(events).map(eventName => {
+      ([] as string[]).concat(events).map((eventName) => {
         return contractObj.getPastEvents(eventName, {
           filter: filter,
           fromBlock: getFromBlock(this.networkId),
@@ -53,4 +53,4 @@ class GoldfinchProtocol {
   }
 }
 
-export { GoldfinchProtocol }
+export {GoldfinchProtocol}

@@ -1,4 +1,3 @@
-import React from "react"
 import {usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
 import {AppContext} from "../App"
 import {displayDollars} from "../utils"
@@ -59,7 +58,7 @@ function DepositForm(props: DepositFormProps) {
             type="checkbox"
             name="agreement"
             id="agreement"
-            ref={ref => formMethods.register(ref, {required: "You must agree to the Senior Pool Agreement."})}
+            ref={(ref) => formMethods.register(ref, {required: "You must agree to the Senior Pool Agreement."})}
           />
           <label className="checkbox-label" htmlFor="agreement">
             I agree to the&nbsp;
@@ -75,11 +74,11 @@ function DepositForm(props: DepositFormProps) {
               formMethods={formMethods}
               disabled={disabled}
               validations={{
-                wallet: value => user.usdcBalanceInDollars.gte(value) || "You do not have enough USDC",
-                transactionLimit: value =>
+                wallet: (value) => user.usdcBalanceInDollars.gte(value) || "You do not have enough USDC",
+                transactionLimit: (value) =>
                   goldfinchConfig.transactionLimit.gte(usdcToAtomic(value)) ||
                   `This is over the per-transaction limit of $${usdcFromAtomic(goldfinchConfig.transactionLimit)}`,
-                totalFundsLimit: value => {
+                totalFundsLimit: (value) => {
                   let limit = goldfinchConfig.totalFundsLimit.minus(pool.gf.totalPoolAssets)
                   return (
                     limit.gte(usdcToAtomic(value)) ||

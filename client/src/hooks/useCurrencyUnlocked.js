@@ -1,9 +1,9 @@
-import { useState, useEffect, useContext, useCallback } from "react"
-import { AppContext } from "../App"
+import {useState, useEffect, useContext, useCallback} from "react"
+import {AppContext} from "../App"
 
-function useCurrencyUnlocked(erc20, { owner, spender, minimum }) {
+function useCurrencyUnlocked(erc20, {owner, spender, minimum}) {
   const [unlocked, setUnlocked] = useState(true)
-  const { goldfinchConfig } = useContext(AppContext)
+  const {goldfinchConfig} = useContext(AppContext)
   minimum = minimum || goldfinchConfig.transactionLimit
 
   const refreshUnlocked = useCallback(async () => {

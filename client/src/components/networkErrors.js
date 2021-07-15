@@ -1,9 +1,9 @@
-import React, { useContext } from "react"
-import { iconX } from "./icons.js"
-import { AppContext } from "../App"
+import React, {useContext} from "react"
+import {iconX} from "./icons.js"
+import {AppContext} from "../App"
 
 function NetworkErrors(props) {
-  const { networkMonitor } = useContext(AppContext)
+  const {networkMonitor} = useContext(AppContext)
 
   function errorItem(error) {
     return (

@@ -1,12 +1,12 @@
 import web3 from "../web3"
 import moment from "moment"
 import BigNumber from "bignumber.js"
-import { Tickers, usdcFromAtomic, usdcToAtomic } from "./erc20"
-import { fetchDataFromAttributes, INTEREST_DECIMALS, SECONDS_PER_YEAR, SECONDS_PER_DAY } from "./utils"
-import { roundUpPenny, croppedAddress } from "../utils"
-import { GoldfinchProtocol } from "./GoldfinchProtocol"
-import { CreditLine as CreditlineContract } from "../typechain/web3/CreditLine"
-import { Contract } from "web3-eth-contract"
+import {Tickers, usdcFromAtomic, usdcToAtomic} from "./erc20"
+import {fetchDataFromAttributes, INTEREST_DECIMALS, SECONDS_PER_YEAR, SECONDS_PER_DAY} from "./utils"
+import {roundUpPenny, croppedAddress} from "../utils"
+import {GoldfinchProtocol} from "./GoldfinchProtocol"
+import {CreditLine as CreditlineContract} from "../typechain/web3/CreditLine"
+import {Contract} from "web3-eth-contract"
 
 const CreditLineAbi = require("../../abi/Creditline.json")
 
@@ -125,19 +125,19 @@ class CreditLine extends BaseCreditLine {
 
   async initialize() {
     const attributes = [
-      { method: "balance" },
-      { method: "interestApr" },
-      { method: "interestAccruedAsOf" },
-      { method: "paymentPeriodInDays" },
-      { method: "termInDays" },
-      { method: "nextDueTime" },
-      { method: "limit" },
-      { method: "interestOwed" },
-      { method: "termEndTime" },
-      { method: "lastFullPaymentTime" },
+      {method: "balance"},
+      {method: "interestApr"},
+      {method: "interestAccruedAsOf"},
+      {method: "paymentPeriodInDays"},
+      {method: "termInDays"},
+      {method: "nextDueTime"},
+      {method: "limit"},
+      {method: "interestOwed"},
+      {method: "termEndTime"},
+      {method: "lastFullPaymentTime"},
     ]
     let data = await fetchDataFromAttributes(this.creditLine, attributes)
-    attributes.forEach(info => {
+    attributes.forEach((info) => {
       this[info.method] = new BigNumber(data[info.method])
     })
 
@@ -208,12 +208,12 @@ class MultipleCreditLines extends BaseCreditLine {
   }
 
   async initialize() {
-    this.creditLines = this.address.map(address => new CreditLine(address, this.goldfinchProtocol))
-    await Promise.all(this.creditLines.map(cl => cl.initialize()))
+    this.creditLines = this.address.map((address) => new CreditLine(address, this.goldfinchProtocol))
+    await Promise.all(this.creditLines.map((cl) => cl.initialize()))
     // Filter by active and sort by most recent
-    this.creditLines = this.creditLines.filter(cl => cl.limit.gt(0)).reverse()
+    this.creditLines = this.creditLines.filter((cl) => cl.limit.gt(0)).reverse()
     // Reset address to match creditlines
-    this.address = this.creditLines.map(cl => cl.address)
+    this.address = this.creditLines.map((cl) => cl.address)
 
     // Picks the minimum due date
     this.dueDate = moment.unix(this.nextDueTime.toNumber()).format("MMM D")
@@ -227,7 +227,7 @@ class MultipleCreditLines extends BaseCreditLine {
     const creditLinesByEarliestDue = this.creditLines
       .slice(0)
       .sort((cl1, cl2) => cl1.nextDueTime.minus(cl2.nextDueTime).toNumber())
-    creditLinesByEarliestDue.forEach(cl => {
+    creditLinesByEarliestDue.forEach((cl) => {
       const dueAmount = new BigNumber(usdcToAtomic(cl.remainingPeriodDueAmountInDollars))
       if (amountRemaining.lte(0) || dueAmount.lte(0)) {
         // If we've run out of money, or this credit line has no payment due, skip
@@ -282,7 +282,7 @@ class MultipleCreditLines extends BaseCreditLine {
 }
 
 function buildCreditLine(address): CreditlineContract {
-  return (new web3.eth.Contract(CreditLineAbi, address) as unknown) as CreditlineContract
+  return new web3.eth.Contract(CreditLineAbi, address) as unknown as CreditlineContract
 }
 
 async function fetchCreditLineData(creditLineAddresses: string | string[], goldfinchProtocol: GoldfinchProtocol) {
@@ -306,4 +306,4 @@ async function fetchCreditLineData(creditLineAddresses: string | string[], goldf
 
 const defaultCreditLine = new DefaultCreditLine()
 
-export { buildCreditLine, fetchCreditLineData, defaultCreditLine }
+export {buildCreditLine, fetchCreditLineData, defaultCreditLine}

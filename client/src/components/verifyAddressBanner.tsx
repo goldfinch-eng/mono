@@ -1,8 +1,7 @@
-import React from "react"
-import { useHistory } from "react-router-dom"
-import { iconInfo } from "./icons.js"
+import {useHistory} from "react-router-dom"
+import {iconInfo} from "./icons.js"
 import useGeolocation from "../hooks/useGeolocation"
-import { useForm, FormProvider } from "react-hook-form"
+import {useForm, FormProvider} from "react-hook-form"
 import LoadingButton from "./loadingButton"
 
 export default function VerifyAddressBanner() {
@@ -28,9 +27,7 @@ export default function VerifyAddressBanner() {
       <div className="info-banner background-container">
         <div className="message">
           {iconInfo}
-          <p>
-            {qualifyText}
-          </p>
+          <p>{qualifyText}</p>
         </div>
         <LoadingButton action={verifyAddress} text="Verify Address" />
       </div>

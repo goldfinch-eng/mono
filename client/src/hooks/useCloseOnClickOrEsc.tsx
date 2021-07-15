@@ -1,11 +1,11 @@
-import { useState, useRef, useEffect, useCallback } from "react"
+import {useState, useRef, useEffect, useCallback} from "react"
 
 function useCloseOnClickOrEsc<T extends HTMLElement>(
-  opts: { closeOnEsc?: boolean; closeFormFn?: () => void; closeOnClick?: boolean } = {},
-): { node: React.RefObject<T>; open: string; setOpen: (s: string) => void } {
+  opts: {closeOnEsc?: boolean; closeFormFn?: () => void; closeOnClick?: boolean} = {},
+): {node: React.RefObject<T>; open: string; setOpen: (s: string) => void} {
   const node = useRef<T>(null)
   const handleEscFunction = useCallback(
-    event => {
+    (event) => {
       if (opts.closeOnEsc === false) {
         return
       }
@@ -28,7 +28,7 @@ function useCloseOnClickOrEsc<T extends HTMLElement>(
   const [open, setOpen] = useState<string>("")
 
   const handleClickOutside = useCallback(
-    e => {
+    (e) => {
       if (!node.current || node.current.contains(e.target) || opts.closeOnClick === false) {
         // inside click
         return
@@ -52,7 +52,7 @@ function useCloseOnClickOrEsc<T extends HTMLElement>(
       document.removeEventListener("keydown", handleEscFunction, false)
     }
   }, [handleClickOutside, handleEscFunction])
-  return { node, open, setOpen }
+  return {node, open, setOpen}
 }
 
 export default useCloseOnClickOrEsc

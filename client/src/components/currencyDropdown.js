@@ -1,9 +1,9 @@
-import React, { useState } from "react"
-import { Tickers } from "../ethereum/erc20"
+import React, {useState} from "react"
+import {Tickers} from "../ethereum/erc20"
 import Dropdown from "./dropdown"
 
 function CurrencyDropdown(props) {
-  const { onChange, className = "", selectedClassName = "" } = props
+  const {onChange, className = "", selectedClassName = ""} = props
 
   const options = [
     {
@@ -27,7 +27,7 @@ function CurrencyDropdown(props) {
       selectedClassName={selectedClassName}
       selected={selected}
       options={options}
-      onSelect={val => {
+      onSelect={(val) => {
         setSelected(val)
         onChange(val)
       }}

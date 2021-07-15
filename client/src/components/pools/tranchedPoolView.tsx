@@ -1,19 +1,16 @@
-import React, { useState, useEffect, useContext } from "react"
-import { useParams } from "react-router-dom"
+import {useState, useEffect, useContext} from "react"
+import {useParams} from "react-router-dom"
 import ConnectionNotice from "../connectionNotice"
-import { AppContext } from "../../App"
+import {AppContext} from "../../App"
 import InvestorNotice from "../investorNotice"
-import { GoldfinchProtocol } from "../../ethereum/GoldfinchProtocol"
-import { TranchedPool } from "../../ethereum/tranchedPool"
-import { croppedAddress } from "../../utils"
+import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
+import {TranchedPool} from "../../ethereum/tranchedPool"
+import {croppedAddress} from "../../utils"
 
-function useTranchedPool({
-  goldfinchProtocol,
-  address,
-}: {
-  goldfinchProtocol?: GoldfinchProtocol
-  address: string
-}): { tranchedPool?: TranchedPool; status: string } {
+function useTranchedPool({goldfinchProtocol, address}: {goldfinchProtocol?: GoldfinchProtocol; address: string}): {
+  tranchedPool?: TranchedPool
+  status: string
+} {
   let [tranchedPool, setTranchedPool] = useState<TranchedPool>()
   let [status, setStatus] = useState<string>("loading")
 
@@ -30,13 +27,13 @@ function useTranchedPool({
     }
   }, [address, goldfinchProtocol])
 
-  return { tranchedPool, status }
+  return {tranchedPool, status}
 }
 
 function TranchedPoolView() {
-  const { poolAddress } = useParams()
-  const { goldfinchProtocol } = useContext(AppContext)
-  const { tranchedPool } = useTranchedPool({ address: poolAddress, goldfinchProtocol })
+  const {poolAddress} = useParams()
+  const {goldfinchProtocol} = useContext(AppContext)
+  const {tranchedPool} = useTranchedPool({address: poolAddress, goldfinchProtocol})
 
   let earnMessage = "Loading..."
   if (tranchedPool) {

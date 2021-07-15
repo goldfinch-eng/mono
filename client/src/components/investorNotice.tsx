@@ -1,4 +1,4 @@
-import React, {useState} from "react"
+import {useState} from "react"
 import useGeolocation from "../hooks/useGeolocation"
 import {iconInfo, iconX} from "./icons"
 

@@ -1,13 +1,12 @@
-import React from "react"
-import { usdcFromAtomic, minimumNumber, usdcToAtomic } from "../ethereum/erc20"
-import { displayDollars, roundDownPenny } from "../utils"
-import { AppContext } from "../App"
+import {usdcFromAtomic, minimumNumber, usdcToAtomic} from "../ethereum/erc20"
+import {displayDollars, roundDownPenny} from "../utils"
+import {AppContext} from "../App"
 import TransactionForm from "./transactionForm"
 import TransactionInput from "./transactionInput"
 import LoadingButton from "./loadingButton"
 import useSendFromUser from "../hooks/useSendFromUser"
 import useNonNullContext from "../hooks/useNonNullContext"
-import { CapitalProvider, PoolData } from "../ethereum/pool"
+import {CapitalProvider, PoolData} from "../ethereum/pool"
 
 interface WithdrawalFormProps {
   poolData: PoolData
@@ -18,9 +17,9 @@ interface WithdrawalFormProps {
 
 function WithdrawalForm(props: WithdrawalFormProps) {
   const sendFromUser = useSendFromUser()
-  const { pool, goldfinchConfig } = useNonNullContext(AppContext)
+  const {pool, goldfinchConfig} = useNonNullContext(AppContext)
 
-  function action({ transactionAmount }) {
+  function action({transactionAmount}) {
     const withdrawalAmount = usdcToAtomic(transactionAmount)
     return sendFromUser(pool.contract.methods.withdraw(withdrawalAmount), {
       type: "Withdrawal",
@@ -35,7 +34,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
     usdcFromAtomic(goldfinchConfig.transactionLimit),
   )
 
-  function renderForm({ formMethods }) {
+  function renderForm({formMethods}) {
     return (
       <div className="form-inputs">
         <div className="form-message">Note: the protocol will deduct a 0.50% fee from your withdrawal amount.</div>

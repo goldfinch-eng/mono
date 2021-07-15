@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from "react"
-import { PublicAddress, Button } from "rimble-ui"
+import React, {useState, useEffect} from "react"
+import {PublicAddress, Button} from "rimble-ui"
 import styles from "./Web3Info.module.scss"
 
 export default function Web3Info(props) {
-  const { web3Context } = props
+  const {web3Context} = props
 
   const [balance, setBalance] = useState(0)
 
-  const getBalance = async web3Context => {
+  const getBalance = async (web3Context) => {
     const accounts = web3Context.accounts
     const lib = web3Context.lib
     let balance =
@@ -19,7 +19,7 @@ export default function Web3Info(props) {
     getBalance(web3Context)
   }, [web3Context, web3Context.accounts, web3Context.networkId])
 
-  const requestAuth = async web3Context => {
+  const requestAuth = async (web3Context) => {
     try {
       await web3Context.requestAuth()
     } catch (e) {
@@ -27,7 +27,7 @@ export default function Web3Info(props) {
     }
   }
 
-  const { networkId, networkName, accounts, providerName } = web3Context
+  const {networkId, networkName, accounts, providerName} = web3Context
 
   return (
     <div className={styles.web3}>

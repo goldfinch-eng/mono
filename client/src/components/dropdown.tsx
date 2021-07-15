@@ -27,7 +27,7 @@ function Dropdown({
   highlightSelected = true,
   arrow = true,
 }: DropdownProps) {
-  const { node, open, setOpen } = useCloseOnClickOrEsc<HTMLDivElement>()
+  const {node, open, setOpen} = useCloseOnClickOrEsc<HTMLDivElement>()
 
   function toggleOpen(e?: React.UIEvent) {
     if (e) {
@@ -36,7 +36,7 @@ function Dropdown({
     setOpen(open === "" ? "open" : "")
   }
 
-  let selectedOption = _.find(options, opt => opt.value === selected)
+  let selectedOption = _.find(options, (opt) => opt.value === selected)
   if (!selectedOption) {
     selectedOption = options[0]
   }
@@ -52,7 +52,7 @@ function Dropdown({
       {open && (
         <div>
           <div className={`dropdown-list ${open}`}>
-            {options.map(opt => {
+            {options.map((opt) => {
               return (
                 <div
                   key={opt.value}
@@ -73,5 +73,5 @@ function Dropdown({
   )
 }
 
-export type { DropdownOption }
+export type {DropdownOption}
 export default Dropdown

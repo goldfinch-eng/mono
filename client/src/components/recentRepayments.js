@@ -1,18 +1,18 @@
 import _ from "lodash"
-import React, { useEffect, useState, useContext } from "react"
-import { AppContext } from "../App"
-import { usdcFromAtomic } from "../ethereum/erc20"
-import { displayDollars, croppedAddress } from "../utils"
-import { iconOutArrow } from "./icons.js"
+import React, {useEffect, useState, useContext} from "react"
+import {AppContext} from "../App"
+import {usdcFromAtomic} from "../ethereum/erc20"
+import {displayDollars, croppedAddress} from "../utils"
+import {iconOutArrow} from "./icons.js"
 
 function RecentRepayments() {
-  const { pool, user, network } = useContext(AppContext)
+  const {pool, user, network} = useContext(AppContext)
   const [repayments, setRepayments] = useState([])
   let transactionRows
 
   useEffect(() => {
     if (pool && pool.gf) {
-      pool.gf.getRepaymentEvents().then(repayments => {
+      pool.gf.getRepaymentEvents().then((repayments) => {
         setRepayments(_.slice(repayments, 0, 3))
       })
     }

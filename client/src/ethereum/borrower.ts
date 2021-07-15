@@ -1,10 +1,10 @@
-import { submitGaslessTransaction } from "./gasless"
+import {submitGaslessTransaction} from "./gasless"
 import BigNumber from "bignumber.js"
-import { getOneInchContract } from "./oneInch"
-import { Contract } from "web3-eth-contract"
-import { ERC20, Tickers } from "./erc20"
-import { GoldfinchProtocol } from "./GoldfinchProtocol"
-import { TranchedPool } from "./tranchedPool"
+import {getOneInchContract} from "./oneInch"
+import {Contract} from "web3-eth-contract"
+import {ERC20, Tickers} from "./erc20"
+import {GoldfinchProtocol} from "./GoldfinchProtocol"
+import {TranchedPool} from "./tranchedPool"
 
 class BorrowerInterface {
   userAddress: string
@@ -15,8 +15,8 @@ class BorrowerInterface {
   borrowerAddress: string
   creditLinesAddresses!: string[]
   borrowerPoolAddresses!: string[]
-  tranchedPools!: { [address: string]: TranchedPool }
-  tranchedPoolByCreditLine!: { [address: string]: TranchedPool }
+  tranchedPools!: {[address: string]: TranchedPool}
+  tranchedPoolByCreditLine!: {[address: string]: TranchedPool}
   allowance!: BigNumber
 
   constructor(
@@ -48,7 +48,7 @@ class BorrowerInterface {
       this.tranchedPoolByCreditLine[tranchedPool.creditLineAddress] = tranchedPool
       this.tranchedPools[address] = tranchedPool
     }
-    this.allowance = await this.usdc.getAllowance({ owner: this.userAddress, spender: this.borrowerAddress })
+    this.allowance = await this.usdc.getAllowance({owner: this.userAddress, spender: this.borrowerAddress})
   }
 
   getPoolAddressFromCL(address: string): string {
@@ -91,7 +91,7 @@ class BorrowerInterface {
   }
 
   payMultiple(creditLines, amounts) {
-    let poolAddresses = creditLines.map(a => this.getPoolAddressFromCL(a))
+    let poolAddresses = creditLines.map((a) => this.getPoolAddressFromCL(a))
     return this.submit(this.borrowerContract.methods.payMultiple(poolAddresses, amounts))
   }
 
@@ -110,7 +110,7 @@ class BorrowerInterface {
   payMultipleWithSwapOnOneInch(creditLines, amounts, originAmount, fromToken, quote) {
     return this.submit(
       this.borrowerContract.methods.payMultipleWithSwapOnOneInch(
-        creditLines.map(a => this.getPoolAddressFromCL(a)),
+        creditLines.map((a) => this.getPoolAddressFromCL(a)),
         amounts,
         originAmount,
         fromToken,
@@ -137,10 +137,7 @@ class BorrowerInterface {
   }
 
   withinOnePercent(amount): string {
-    return new BigNumber(amount)
-      .times(new BigNumber(99))
-      .idiv(new BigNumber(100))
-      .toString()
+    return new BigNumber(amount).times(new BigNumber(99)).idiv(new BigNumber(100)).toString()
   }
 
   submit(unsentAction) {
@@ -166,10 +163,7 @@ async function getBorrowerContract(
     const lastIndex = borrowerCreatedEvents.length - 1
     const lastEvent = borrowerCreatedEvents[lastIndex]
     if (lastEvent) {
-      borrower = goldfinchProtocol.getContract<Contract>(
-        "Borrower",
-        lastEvent.returnValues.borrower,
-      )
+      borrower = goldfinchProtocol.getContract<Contract>("Borrower", lastEvent.returnValues.borrower)
       const oneInch = getOneInchContract(goldfinchProtocol.networkId)
       const borrowerInterface = new BorrowerInterface(ownerAddress, borrower, goldfinchProtocol, oneInch)
       await borrowerInterface.initialize()
@@ -181,4 +175,4 @@ async function getBorrowerContract(
   return
 }
 
-export { getBorrowerContract, BorrowerInterface }
+export {getBorrowerContract, BorrowerInterface}

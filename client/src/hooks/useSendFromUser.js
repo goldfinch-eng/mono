@@ -1,9 +1,9 @@
-import { useContext } from "react"
-import { AppContext } from "../App"
+import {useContext} from "react"
+import {AppContext} from "../App"
 import web3 from "../web3"
 
 function useSendFromUser() {
-  const { refreshUserData, user, gnosisSafeInfo, gnosisSafeSdk, networkMonitor } = useContext(AppContext)
+  const {refreshUserData, user, gnosisSafeInfo, gnosisSafeSdk, networkMonitor} = useContext(AppContext)
 
   async function sendTransaction(unsentAction, txData, gasPrice) {
     // unsent action could be a promise tha returns the action, so resolve it
@@ -16,7 +16,7 @@ function useSendFromUser() {
           data: unsentAction.encodeABI(),
         },
       ]
-      txData = networkMonitor.addPendingTX({ status: "awaiting_signers", ...txData })
+      txData = networkMonitor.addPendingTX({status: "awaiting_signers", ...txData})
       const res = await gnosisSafeSdk.sendTransactions(txs)
       networkMonitor.watch(res.safeTxHash, txData, () => {
         refreshUserData()
@@ -28,10 +28,10 @@ function useSendFromUser() {
     if (txData.gasless) {
       // We need to assign it a temporary id, so we can update it if we get an error back
       // (since we only get a txid if relay call succeed)
-      txData = networkMonitor.addPendingTX({ status: "pending", ...txData })
-      return new Promise(resolve => {
+      txData = networkMonitor.addPendingTX({status: "pending", ...txData})
+      return new Promise((resolve) => {
         unsentAction()
-          .then(res => {
+          .then((res) => {
             if (res.status === "success") {
               const txResult = JSON.parse(res.result)
               networkMonitor.watch(txResult.txHash, txData, () => {
@@ -39,33 +39,33 @@ function useSendFromUser() {
                 resolve()
               })
             } else {
-              networkMonitor.markTXErrored(txData, { message: res.message })
+              networkMonitor.markTXErrored(txData, {message: res.message})
               resolve()
             }
           })
-          .catch(error => {
-            networkMonitor.markTXErrored(txData, { message: error.message })
+          .catch((error) => {
+            networkMonitor.markTXErrored(txData, {message: error.message})
             resolve()
           })
       })
     }
 
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       unsentAction
         .send({
           from: user.address,
           gasPrice: gasPrice,
         })
-        .once("sent", _ => {
+        .once("sent", (_) => {
           txData = networkMonitor.addPendingTX(txData)
         })
-        .once("transactionHash", transactionHash => {
+        .once("transactionHash", (transactionHash) => {
           txData = networkMonitor.watch(transactionHash, txData, () => {
             refreshUserData()
             resolve()
           })
         })
-        .on("error", error => {
+        .on("error", (error) => {
           if (error.code === -32603) {
             error.message = "Something went wrong with your transaction."
           }
@@ -77,14 +77,14 @@ function useSendFromUser() {
 
   return (unsentAction, txData) => {
     return web3.eth.getGasPrice().then(
-      async gasPrice => {
+      async (gasPrice) => {
         try {
           await sendTransaction(unsentAction, txData, gasPrice)
         } catch (err) {
           console.log(`Error sending transaction: ${err}`)
         }
       },
-      error => {
+      (error) => {
         console.log(`Unable to get gas price: ${error}`)
       },
     )

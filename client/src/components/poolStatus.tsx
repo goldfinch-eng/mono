@@ -1,19 +1,19 @@
-import React, { useContext } from "react"
-import { AppContext } from "../App"
+import {useContext} from "react"
+import {AppContext} from "../App"
 import InfoSection from "./infoSection.js"
 import RecentRepayments from "./recentRepayments"
-import { usdcFromAtomic } from "../ethereum/erc20"
-import { displayDollars, displayPercent } from "../utils"
-import { iconOutArrow } from "./icons.js"
-import { PoolData } from "../ethereum/pool"
-import { BigNumber } from "bignumber.js"
+import {usdcFromAtomic} from "../ethereum/erc20"
+import {displayDollars, displayPercent} from "../utils"
+import {iconOutArrow} from "./icons.js"
+import {PoolData} from "../ethereum/pool"
+import {BigNumber} from "bignumber.js"
 
 interface PoolStatusProps {
   poolData?: PoolData
 }
 
 function PoolStatus({poolData}: PoolStatusProps) {
-  const { goldfinchConfig } = useContext(AppContext)
+  const {goldfinchConfig} = useContext(AppContext)
 
   function deriveRows() {
     let defaultRate: BigNumber | undefined
@@ -29,20 +29,16 @@ function PoolStatus({poolData}: PoolStatusProps) {
     }
 
     return [
-      { label: "Total pool balance", value: displayDollars(poolBalance) },
-      { label: "Max pool capacity", value: displayDollars(maxPoolCapacity) },
-      { label: "Remaning capacity", value: displayDollars(capacityRemaining) },
-      { label: "Loans outstanding", value: displayDollars(totalLoansOutstanding) },
-      { label: "Default rate", value: displayPercent(defaultRate) },
+      {label: "Total pool balance", value: displayDollars(poolBalance)},
+      {label: "Max pool capacity", value: displayDollars(maxPoolCapacity)},
+      {label: "Remaning capacity", value: displayDollars(capacityRemaining)},
+      {label: "Loans outstanding", value: displayDollars(totalLoansOutstanding)},
+      {label: "Default rate", value: displayPercent(defaultRate)},
     ]
   }
 
   return (
-    <div
-      className={`pool-status background-container ${
-        poolData?.loaded ? "" : "placeholder"
-      }`}
-    >
+    <div className={`pool-status background-container ${poolData?.loaded ? "" : "placeholder"}`}>
       <h2>Pool Status</h2>
       <InfoSection rows={deriveRows()} />
       <RecentRepayments />
@@ -50,11 +46,7 @@ function PoolStatus({poolData}: PoolStatusProps) {
         <a href="https://duneanalytics.com/goldfinch/goldfinch" target="_blank" rel="noopener noreferrer">
           Dashboard <span className="outbound-link">{iconOutArrow}</span>
         </a>
-        <a
-          href={`https://etherscan.io/address/${poolData?.pool.address}`}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <a href={`https://etherscan.io/address/${poolData?.pool.address}`} target="_blank" rel="noopener noreferrer">
           Pool<span className="outbound-link">{iconOutArrow}</span>
         </a>
       </div>
@@ -63,4 +55,4 @@ function PoolStatus({poolData}: PoolStatusProps) {
 }
 
 export default PoolStatus
-export type { PoolStatusProps }
+export type {PoolStatusProps}

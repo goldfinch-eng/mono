@@ -1,12 +1,12 @@
 import React from "react"
-import { displayDollars } from "../utils"
+import {displayDollars} from "../utils"
 
 function CreditBarViz(props) {
   const remainingTotalDueAmount = props.creditLine.remainingTotalDueAmountInDollars
   const availableToDrawdown = props.creditLine.availableCreditInDollars
   const totalForBar = remainingTotalDueAmount.plus(availableToDrawdown)
-  const leftBarStyle = { width: `${remainingTotalDueAmount.multipliedBy(100).dividedBy(totalForBar)}%` }
-  const rightBarStyle = { width: `${availableToDrawdown.multipliedBy(100).dividedBy(totalForBar)}%` }
+  const leftBarStyle = {width: `${remainingTotalDueAmount.multipliedBy(100).dividedBy(totalForBar)}%`}
+  const rightBarStyle = {width: `${availableToDrawdown.multipliedBy(100).dividedBy(totalForBar)}%`}
   return (
     <div className="bar-viz">
       <div className="full-bar">

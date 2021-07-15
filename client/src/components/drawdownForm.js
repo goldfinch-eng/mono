@@ -1,21 +1,21 @@
-import React, { useContext, useState, useEffect } from "react"
-import { usdcFromAtomic, minimumNumber, usdcToAtomic } from "../ethereum/erc20"
-import { AppContext } from "../App"
+import React, {useContext, useState, useEffect} from "react"
+import {usdcFromAtomic, minimumNumber, usdcToAtomic} from "../ethereum/erc20"
+import {AppContext} from "../App"
 import TransactionForm from "./transactionForm"
-import { fetchPoolData } from "../ethereum/pool"
-import { displayDollars, roundDownPenny } from "../utils"
+import {fetchPoolData} from "../ethereum/pool"
+import {displayDollars, roundDownPenny} from "../utils"
 import AddressInput from "./addressInput"
 import TransactionInput from "./transactionInput"
 import LoadingButton from "./loadingButton"
 import useSendFromUser from "../hooks/useSendFromUser"
-import { useOneInchQuote, formatQuote } from "../hooks/useOneInchQuote"
+import {useOneInchQuote, formatQuote} from "../hooks/useOneInchQuote"
 import useDebounce from "../hooks/useDebounce"
 import UnlockERC20Form from "./unlockERC20Form"
 import useCurrencyUnlocked from "../hooks/useCurrencyUnlocked"
 import CurrencyDropdown from "./currencyDropdown"
 
 function DrawdownForm(props) {
-  const { pool, usdc, goldfinchConfig, goldfinchProtocol } = useContext(AppContext)
+  const {pool, usdc, goldfinchConfig, goldfinchProtocol} = useContext(AppContext)
   const [poolData, setPoolData] = useState({})
   const sendFromUser = useSendFromUser()
   const [erc20, setErc20] = useState(usdc)
@@ -43,7 +43,7 @@ function DrawdownForm(props) {
     return erc20 !== usdc
   }
 
-  function action({ transactionAmount, sendToAddress }) {
+  function action({transactionAmount, sendToAddress}) {
     const drawdownAmount = usdcToAtomic(transactionAmount)
     sendToAddress = sendToAddress || props.borrower.address
 
@@ -76,7 +76,7 @@ function DrawdownForm(props) {
     setErc20(goldfinchProtocol.getERC20(ticker))
   }
 
-  function renderForm({ formMethods }) {
+  function renderForm({formMethods}) {
     let warningMessage, disabled
     if (props.creditLine.isLate) {
       warningMessage = <p className="form-message">Cannot drawdown when payment is past due</p>
@@ -88,7 +88,7 @@ function DrawdownForm(props) {
       <>
         <button
           className={`form-show-optional ${isOptionsOpen ? "showing" : "hidden"}`}
-          onClick={e => {
+          onClick={(e) => {
             e.preventDefault()
             setOptionsOpen(!isOptionsOpen)
           }}
@@ -122,7 +122,7 @@ function DrawdownForm(props) {
                 formMethods={formMethods}
                 maxAmount={maxAmount}
                 disabled={disabled}
-                onChange={e => {
+                onChange={(e) => {
                   debouncedSetTransactionAmount(formMethods.getValues("transactionAmount"))
                 }}
                 rightDecoration={
@@ -144,7 +144,7 @@ function DrawdownForm(props) {
                   transactionAmountQuote &&
                     !isQuoteLoading && {
                       key: "quote",
-                      content: <p>You will receive ~${formatQuote({ erc20: erc20, quote: transactionAmountQuote })}</p>,
+                      content: <p>You will receive ~${formatQuote({erc20: erc20, quote: transactionAmountQuote})}</p>,
                     },
                 ]}
               />

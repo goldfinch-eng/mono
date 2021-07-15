@@ -1,6 +1,6 @@
-import React, { useContext, useState, useEffect, useCallback } from "react"
-import { usdcToAtomic, usdcFromAtomic } from "../ethereum/erc20"
-import { AppContext } from "../App"
+import React, {useContext, useState, useEffect, useCallback} from "react"
+import {usdcToAtomic, usdcFromAtomic} from "../ethereum/erc20"
+import {AppContext} from "../App"
 import PaymentOptions from "./paymentOptions"
 import TransactionForm from "./transactionForm"
 import TransactionInput from "./transactionInput"
@@ -9,13 +9,13 @@ import CurrencyDropdown from "./currencyDropdown"
 import useSendFromUser from "../hooks/useSendFromUser"
 import UnlockERC20Form from "./unlockERC20Form"
 import useCurrencyUnlocked from "../hooks/useCurrencyUnlocked"
-import { useOneInchQuote, formatQuote } from "../hooks/useOneInchQuote"
+import {useOneInchQuote, formatQuote} from "../hooks/useOneInchQuote"
 import useDebounce from "../hooks/useDebounce"
 import BigNumber from "bignumber.js"
 
 function PaymentForm(props) {
-  const { borrower, creditLine, actionComplete } = props
-  const { usdc, user, goldfinchConfig, goldfinchProtocol } = useContext(AppContext)
+  const {borrower, creditLine, actionComplete} = props
+  const {usdc, user, goldfinchConfig, goldfinchProtocol} = useContext(AppContext)
 
   const [inputClass, setInputClass] = useState("")
   const [paymentOption, setPaymentOption] = useState("periodDue")
@@ -54,11 +54,11 @@ function PaymentForm(props) {
         const decimalAmount = new BigNumber(erc20.decimalAmount(await erc20.getBalance(user.address)))
         setErc20UserBalance(decimalAmount)
         setValidations({
-          wallet: value => decimalAmount.gte(value) || `You do not have enough ${erc20.ticker}`,
-          transactionLimit: value =>
+          wallet: (value) => decimalAmount.gte(value) || `You do not have enough ${erc20.ticker}`,
+          transactionLimit: (value) =>
             goldfinchConfig.transactionLimit.gte(usdcToAtomic(value)) ||
             `This is over the per-transaction limit of $${usdcFromAtomic(goldfinchConfig.transactionLimit)}`,
-          creditLine: value => {
+          creditLine: (value) => {
             if (!isSwapping() && props.creditLine.remainingTotalDueAmountInDollars.lt(value)) {
               return "This is over the total balance of the credit line."
             }
@@ -83,21 +83,21 @@ function PaymentForm(props) {
     }
   }
 
-  function action({ transactionAmount }) {
+  function action({transactionAmount}) {
     const erc20Amount = erc20.atomicAmount(transactionAmount)
     let unsentAction
     if (creditLine.isMultiple) {
       let addresses = []
       let usdcAmounts = []
       if (paymentOption === "totalDue") {
-        creditLine.creditLines.forEach(cl => {
+        creditLine.creditLines.forEach((cl) => {
           if (cl.remainingTotalDueAmount.gt(0)) {
             addresses.push(cl.address)
             usdcAmounts.push(usdcToAtomic(cl.remainingTotalDueAmountInDollars))
           }
         })
       } else if (paymentOption === "periodDue") {
-        creditLine.creditLines.forEach(cl => {
+        creditLine.creditLines.forEach((cl) => {
           if (cl.remainingPeriodDueAmount.gt(0)) {
             addresses.push(cl.address)
             usdcAmounts.push(usdcToAtomic(cl.remainingPeriodDueAmountInDollars))
@@ -141,7 +141,7 @@ function PaymentForm(props) {
     }).then(actionComplete)
   }
 
-  function renderForm({ formMethods }) {
+  function renderForm({formMethods}) {
     async function changeTicker(ticker) {
       setErc20(goldfinchProtocol.getERC20(ticker))
     }
@@ -181,7 +181,7 @@ function PaymentForm(props) {
             <TransactionInput
               ticker={erc20.ticker}
               formMethods={formMethods}
-              onChange={e => {
+              onChange={(e) => {
                 setPaymentOption("other")
                 setInputClass("")
                 debouncedSetTransactionAmount(formMethods.getValues("transactionAmount"))
@@ -192,7 +192,7 @@ function PaymentForm(props) {
                 transactionAmountQuote &&
                   !isQuoteLoading && {
                     key: "quote",
-                    content: <p>~${formatQuote({ erc20: usdc, quote: transactionAmountQuote })}</p>,
+                    content: <p>~${formatQuote({erc20: usdc, quote: transactionAmountQuote})}</p>,
                   },
               ]}
             />

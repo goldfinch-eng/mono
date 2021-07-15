@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect } from "react"
-import { displayDollars, displayNumber } from "../utils"
-import { useAmountTargetingMinAmount } from "../hooks/useOneInchQuote"
+import React, {useCallback, useEffect} from "react"
+import {displayDollars, displayNumber} from "../utils"
+import {useAmountTargetingMinAmount} from "../hooks/useOneInchQuote"
 
 function displayAmounts(amount, swappedAmount, ticker) {
   let amountDisplay = <span className="font-bold">{displayDollars(amount)}</span>
@@ -13,7 +13,7 @@ function displayAmounts(amount, swappedAmount, ticker) {
 }
 
 function PaymentOptions(props) {
-  const { selected, creditLine, onSelect, formMethods } = props
+  const {selected, creditLine, onSelect, formMethods} = props
   const [minimumDueAmount] = useAmountTargetingMinAmount({
     from: props.erc20,
     to: props.usdc,
@@ -26,7 +26,7 @@ function PaymentOptions(props) {
   })
 
   const getValueOptions = useCallback(
-    cl => {
+    (cl) => {
       let valueOptions = [
         {
           name: "totalDue",
@@ -44,7 +44,7 @@ function PaymentOptions(props) {
           value: cl.remainingTotalDueAmountInDollars,
           swapValue: fullDueAmount,
         },
-        { name: "other", label: "Pay other amount", value: "other" },
+        {name: "other", label: "Pay other amount", value: "other"},
       ]
       if (cl.remainingPeriodDueAmount.gt(0)) {
         valueOptions.unshift({
@@ -71,9 +71,9 @@ function PaymentOptions(props) {
 
   useEffect(() => {
     const options = getValueOptions(creditLine)
-    options.forEach(valueOption => {
+    options.forEach((valueOption) => {
       if (valueOption.name === selected) {
-        formMethods.setValue("paymentOption", valueOption.name, { shouldValidate: true, shouldDirty: true })
+        formMethods.setValue("paymentOption", valueOption.name, {shouldValidate: true, shouldDirty: true})
         // So the default value is populated in the transaction input
         onSelect(valueOption.name, valueOption.swapValue || valueOption.value)
       }

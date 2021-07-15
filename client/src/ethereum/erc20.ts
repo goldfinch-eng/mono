@@ -1,11 +1,11 @@
 import web3 from "../web3"
 import BigNumber from "bignumber.js"
 import * as ERC20Contract from "./ERC20.json"
-import { decimals, USDC_ADDRESSES, USDT_ADDRESSES, BUSD_ADDRESSES } from "./utils"
-import { memoize } from "lodash"
-import { Contract } from "web3-eth-contract"
-import { AbiItem } from "web3-utils/types"
-import { GoldfinchProtocol } from "./GoldfinchProtocol"
+import {decimals, USDC_ADDRESSES, USDT_ADDRESSES, BUSD_ADDRESSES} from "./utils"
+import {memoize} from "lodash"
+import {Contract} from "web3-eth-contract"
+import {AbiItem} from "web3-utils/types"
+import {GoldfinchProtocol} from "./GoldfinchProtocol"
 
 const Tickers = {
   USDC: "USDC",
@@ -57,7 +57,7 @@ class ERC20 {
   }
 
   async getAllowance(opts): Promise<BigNumber> {
-    const { owner, spender } = opts
+    const {owner, spender} = opts
     return new BigNumber(await this.contract.methods.allowance(owner, spender).call())
   }
 
@@ -139,4 +139,4 @@ function minimumNumber(...args) {
   return BigNumber.minimum(...args).toString(10)
 }
 
-export { getERC20, decimals, usdcFromAtomic, usdcToAtomic, minimumNumber, Tickers, ERC20 }
+export {getERC20, decimals, usdcFromAtomic, usdcToAtomic, minimumNumber, Tickers, ERC20}

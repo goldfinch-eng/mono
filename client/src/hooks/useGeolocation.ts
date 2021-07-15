@@ -1,5 +1,5 @@
-import { useContext, useEffect } from "react"
-import { AppContext, GeolocationData } from "../App"
+import {useContext, useEffect} from "react"
+import {AppContext, GeolocationData} from "../App"
 
 interface GeolocationClient {
   fetch(): Promise<GeolocationData>
@@ -9,7 +9,7 @@ class IpInfoClient implements GeolocationClient {
   async fetch(): Promise<GeolocationData> {
     let response = await fetch("https://ipinfo.io?token=679544298a8c59", {
       method: "GET",
-      headers: { "Content-Type": "application/json" },
+      headers: {"Content-Type": "application/json"},
     })
     if (response.ok) {
       return (await response.json()) as GeolocationData
@@ -44,7 +44,7 @@ class FakeClient implements GeolocationClient {
 const defaultClient = process.env.NODE_ENV === "development" ? new FakeClient() : new IpInfoClient()
 
 function useGeolocation(client: GeolocationClient = defaultClient): GeolocationData | undefined {
-  let { geolocationData, setGeolocationData } = useContext(AppContext)
+  let {geolocationData, setGeolocationData} = useContext(AppContext)
 
   useEffect(() => {
     async function fetchGeolocationData() {

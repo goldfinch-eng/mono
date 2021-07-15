@@ -1,10 +1,10 @@
-import React, { useState, useContext } from "react"
+import {useState, useContext} from "react"
 import DepositForm from "./depositForm"
 import DepositStatus from "./depositStatus"
-import { AppContext } from "../App"
+import {AppContext} from "../App"
 import WithdrawalForm from "./withdrawalForm"
-import { iconUpArrow, iconDownArrow } from "./icons"
-import { CapitalProvider, PoolData } from "../ethereum/pool"
+import {iconUpArrow, iconDownArrow} from "./icons"
+import {CapitalProvider, PoolData} from "../ethereum/pool"
 
 interface EarnActionsContainerProps {
   actionComplete: () => Promise<any>
@@ -13,14 +13,14 @@ interface EarnActionsContainerProps {
 }
 
 function EarnActionsContainer(props: EarnActionsContainerProps) {
-  const { user } = useContext(AppContext)
+  const {user} = useContext(AppContext)
   const [showAction, setShowAction] = useState<string>()
 
   function closeForm() {
     setShowAction("")
   }
 
-  const actionComplete = function() {
+  const actionComplete = function () {
     props.actionComplete().then(() => {
       closeForm()
     })
@@ -34,7 +34,7 @@ function EarnActionsContainer(props: EarnActionsContainerProps) {
   let depositAction
   let depositClass = "disabled"
   if (user.usdcIsUnlocked("earn") && user.goListed && props.capitalProvider) {
-    depositAction = e => {
+    depositAction = (e) => {
       setShowAction("deposit")
     }
     depositClass = ""
@@ -43,7 +43,7 @@ function EarnActionsContainer(props: EarnActionsContainerProps) {
   let withdrawAction
   let withdrawClass = "disabled"
   if (user.usdcIsUnlocked("earn") && props.capitalProvider.availableToWithdraw.gt(0)) {
-    withdrawAction = e => {
+    withdrawAction = (e) => {
       setShowAction("withdrawal")
     }
     withdrawClass = ""

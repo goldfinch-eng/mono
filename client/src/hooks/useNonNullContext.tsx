@@ -1,4 +1,4 @@
-import React, { useContext } from "react"
+import React, {useContext} from "react"
 
 /**
  * Use the context, but assume that all properties of the context object are non-null.

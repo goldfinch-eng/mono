@@ -1,4 +1,4 @@
-import React, {useState, useContext} from "react"
+import {useState, useContext} from "react"
 import {AppContext} from "../App"
 import Persona from "persona"
 import web3 from "../web3"
@@ -160,14 +160,14 @@ function PersonaForm({entityType, onEvent, network, address, formMethods}) {
         discord_name: data.discord,
         country_us: entityType === "US",
       } as any,
-      onLoad: _error => client.open(),
+      onLoad: (_error) => client.open(),
       onComplete: () => {
         onEvent("complete")
       },
-      onFail: id => {
+      onFail: (id) => {
         onEvent("fail")
       },
-      onExit: error => {
+      onExit: (error) => {
         onEvent("exit")
       },
     })

@@ -57,41 +57,39 @@ const wrapWithSentry = (fn: HttpFunction, wrapOptions?: Partial<HttpFunctionWrap
 }
 
 const kycStatus = functions.https.onRequest(
-  wrapWithSentry(
-    async (req, res): Promise<void> => {
-      const address = req.query.address?.toString()
-      const signature = req.query.signature?.toString()
+  wrapWithSentry(async (req, res): Promise<void> => {
+    const address = req.query.address?.toString()
+    const signature = req.query.signature?.toString()
 
-      const response = {address: address, status: "unknown", countryCode: null}
-      setCORSHeaders(req, res)
+    const response = {address: address, status: "unknown", countryCode: null}
+    setCORSHeaders(req, res)
 
-      if (!address || !signature) {
-        res.status(400).send({error: "Address or signature not provided"})
-        return
-      }
+    if (!address || !signature) {
+      res.status(400).send({error: "Address or signature not provided"})
+      return
+    }
 
-      const verifiedAddress = ethers.utils.verifyMessage(VERIFICATION_MESSAGE, signature)
+    const verifiedAddress = ethers.utils.verifyMessage(VERIFICATION_MESSAGE, signature)
 
-      console.log(`Received address: ${address}, Verified address: ${verifiedAddress}`)
+    console.log(`Received address: ${address}, Verified address: ${verifiedAddress}`)
 
-      if (address.toLowerCase() !== verifiedAddress.toLowerCase()) {
-        res.status(403).send({error: "Invalid address or signature"})
-        return
-      }
+    if (address.toLowerCase() !== verifiedAddress.toLowerCase()) {
+      res.status(403).send({error: "Invalid address or signature"})
+      return
+    }
 
-      // Having verified the address, we can set the Sentry user context accordingly.
-      Sentry.setUser({id: address.toLowerCase(), address: address.toLowerCase()})
+    // Having verified the address, we can set the Sentry user context accordingly.
+    Sentry.setUser({id: address.toLowerCase(), address: address.toLowerCase()})
 
-      const users = getUsers(admin.firestore())
-      const user = await users.doc(`${address.toLowerCase()}`).get()
+    const users = getUsers(admin.firestore())
+    const user = await users.doc(`${address.toLowerCase()}`).get()
 
-      if (user.exists) {
-        response.status = userStatusFromPersonaStatus(user.data()?.persona?.status)
-        response.countryCode = user.data()?.countryCode
-      }
-      res.status(200).send(response)
-    },
-  ),
+    if (user.exists) {
+      response.status = userStatusFromPersonaStatus(user.data()?.persona?.status)
+      response.countryCode = user.data()?.countryCode
+    }
+    res.status(200).send(response)
+  }),
 )
 
 // Top level status transitions should be => pending -> approved | failed -> golisted
@@ -163,62 +161,60 @@ const getCountryCode = (eventPayload: Record<string, any>): string | null => {
 }
 
 const personaCallback = functions.https.onRequest(
-  wrapWithSentry(
-    async (req, res): Promise<void> => {
-      if (!verifyRequest(req)) {
-        res.status(400).send({status: "error", message: "Request could not be verified"})
-        return
-      }
+  wrapWithSentry(async (req, res): Promise<void> => {
+    if (!verifyRequest(req)) {
+      res.status(400).send({status: "error", message: "Request could not be verified"})
+      return
+    }
 
-      const eventPayload = req.body.data.attributes.payload.data
+    const eventPayload = req.body.data.attributes.payload.data
 
-      const address = eventPayload.attributes.referenceId
+    const address = eventPayload.attributes.referenceId
 
-      // Having verified the request, we can set the Sentry user context accordingly.
-      Sentry.setUser({id: address, address})
+    // Having verified the request, we can set the Sentry user context accordingly.
+    Sentry.setUser({id: address, address})
 
-      const countryCode = getCountryCode(req.body.data.attributes.payload)
-      const db = getDb(admin.firestore())
-      const userRef = getUsers(admin.firestore()).doc(`${address.toLowerCase()}`)
+    const countryCode = getCountryCode(req.body.data.attributes.payload)
+    const db = getDb(admin.firestore())
+    const userRef = getUsers(admin.firestore()).doc(`${address.toLowerCase()}`)
 
-      try {
-        await db.runTransaction(async (t: firestore.Transaction) => {
-          const doc = await t.get(userRef)
+    try {
+      await db.runTransaction(async (t: firestore.Transaction) => {
+        const doc = await t.get(userRef)
 
-          if (doc.exists) {
-            // If the user was already approved, then ignore further updates
-            if (doc.data()?.persona?.status === "approved") {
-              return
-            }
-
-            t.update(userRef, {
-              persona: {
-                id: eventPayload.id,
-                status: eventPayload.attributes.status,
-              },
-              countryCode: countryCode,
-              updatedAt: Date.now(),
-            })
-          } else {
-            t.set(userRef, {
-              address: address,
-              persona: {
-                id: eventPayload.id,
-                status: eventPayload.attributes.status,
-              },
-              updatedAt: Date.now(),
-            })
+        if (doc.exists) {
+          // If the user was already approved, then ignore further updates
+          if (doc.data()?.persona?.status === "approved") {
+            return
           }
-        })
-      } catch (e) {
-        console.error(e)
-        res.status(500).send({status: "error", message: e.message})
-        return
-      }
 
-      res.status(200).send({status: "success"})
-    },
-  ),
+          t.update(userRef, {
+            persona: {
+              id: eventPayload.id,
+              status: eventPayload.attributes.status,
+            },
+            countryCode: countryCode,
+            updatedAt: Date.now(),
+          })
+        } else {
+          t.set(userRef, {
+            address: address,
+            persona: {
+              id: eventPayload.id,
+              status: eventPayload.attributes.status,
+            },
+            updatedAt: Date.now(),
+          })
+        }
+      })
+    } catch (e) {
+      console.error(e)
+      res.status(500).send({status: "error", message: e.message})
+      return
+    }
+
+    res.status(200).send({status: "success"})
+  }),
 )
 
 export {kycStatus, personaCallback}

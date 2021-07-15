@@ -1,7 +1,7 @@
 import web3 from "../web3"
-import { getDeployments, chainIdToNetworkID, FORWARDER_ADDRESSES } from "./utils"
+import {getDeployments, chainIdToNetworkID, FORWARDER_ADDRESSES} from "./utils"
 const ForwarderAbi = require("../../../autotasks/relayer/Forwarder.json")
-const { ethers } = require("ethers")
+const {ethers} = require("ethers")
 
 const RELAY_URLS = {
   1: "https://api.defender.openzeppelin.com/autotasks/9d2053fd-507a-473f-8b5a-b079a694723a/runs/webhook/6a51e904-1439-4c68-981b-5f22f1c0b560/MiuRjp5Lnd6fjjYARR4j4r",
@@ -11,19 +11,19 @@ const RELAY_URLS = {
 const MAX_GAS = 2e6
 
 const EIP712DomainType = [
-  { name: "name", type: "string" },
-  { name: "version", type: "string" },
-  { name: "chainId", type: "uint256" },
-  { name: "verifyingContract", type: "address" },
+  {name: "name", type: "string"},
+  {name: "version", type: "string"},
+  {name: "chainId", type: "uint256"},
+  {name: "verifyingContract", type: "address"},
 ]
 
 const ForwardRequestType = [
-  { name: "from", type: "address" },
-  { name: "to", type: "address" },
-  { name: "value", type: "uint256" },
-  { name: "gas", type: "uint256" },
-  { name: "nonce", type: "uint256" },
-  { name: "data", type: "bytes" },
+  {name: "from", type: "address"},
+  {name: "to", type: "address"},
+  {name: "value", type: "uint256"},
+  {name: "gas", type: "uint256"},
+  {name: "nonce", type: "uint256"},
+  {name: "data", type: "bytes"},
 ]
 
 const TypedData = {
@@ -59,7 +59,7 @@ async function submitGaslessTransaction(contractAddress, unsentAction) {
 
   // Get nonce for current signer
   const forwarder = new ethers.Contract(ForwarderAddress, ForwarderAbi, provider)
-  const nonce = await forwarder.getNonce(from).then(nonce => nonce.toString())
+  const nonce = await forwarder.getNonce(from).then((nonce) => nonce.toString())
 
   const data = (await Promise.resolve(unsentAction)).encodeABI()
 
@@ -72,7 +72,7 @@ async function submitGaslessTransaction(contractAddress, unsentAction) {
     nonce,
     data,
   }
-  const toSign = { ...TypedData, message: request }
+  const toSign = {...TypedData, message: request}
 
   // Directly call the JSON RPC interface, since ethers does not support signTypedDataV4 yet
   // See https://github.com/ethers-io/ethers.js/issues/830
@@ -80,14 +80,14 @@ async function submitGaslessTransaction(contractAddress, unsentAction) {
 
   const response = await fetch(RELAY_URLS[network.chainId], {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...request, signature }),
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({...request, signature}),
   }).then(
-    r => r.json(),
-    e => e.json(),
+    (r) => r.json(),
+    (e) => e.json(),
   )
 
   return response
 }
 
-export { submitGaslessTransaction }
+export {submitGaslessTransaction}
