@@ -34,6 +34,21 @@ const gnosisSafeIntegration = () => config => {
   return config
 }
 
+/**
+ * For the murmuration deployment on Google App Engine, we want the Webpack dev server
+ * to listen on port 8080, because that is the port App Engine requires (cf.
+ * https://cloud.google.com/appengine/docs/flexible/custom-runtimes/build#listening_to_port_8080).
+ * Also, we want the dev server to serve at hostname 0.0.0.0, so that it is accessible outside the Docker
+ * container in which it runs (cf. https://stackoverflow.com/a/39638515).
+ */
+const murmuration = () => config => {
+  if (process.env.MURMURATION === "yes") {
+    config.host = "0.0.0.0"
+    config.port = 8080
+  }
+  return config
+}
+
 // prettier-ignore
 module.exports = {
   webpack: override(
@@ -42,6 +57,7 @@ module.exports = {
     addReactRefresh()
   ),
   devServer: overrideDevServer(
-    gnosisSafeIntegration()
+    gnosisSafeIntegration(),
+    murmuration(),
   ),
 };

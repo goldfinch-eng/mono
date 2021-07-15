@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet npx concurrently -n \"blockchain,web,server\"  \"npx hardhat node --export-all client/config/deployments_dev.json\" \"cd client && npm start\" \"HARDHAT_NETWORK=localhost npx hardhat run autotasks/server.js\" -k -c \"cyan, magenta, green\"",
-    "start-testing-goldfinch-finance": "REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet npx concurrently -n \"blockchain,server\"  \"npx hardhat node --hostname 0.0.0.0 --export-all client/config/deployments_dev.json\" \"HARDHAT_NETWORK=localhost npx hardhat run autotasks/server.js\" -k -c \"cyan, green\"",
+    "start-murmuration": "REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet npx concurrently -n \"blockchain,web,server\"  \"npx hardhat node --hostname 0.0.0.0 --export-all client/config/deployments_dev.json\" \"cd client && MURMURATION=yes npm start\" \"HARDHAT_NETWORK=localhost npx hardhat run autotasks/server.js\" -k -c \"cyan, magenta, green\"",
     "no-gasless-start": "REACT_APP_DISABLE_GASLESS=true REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet npx concurrently -n \"blockchain,web,server\"  \"npx hardhat node --export-all client/config/deployments_dev.json\" \"cd client && npm start\" \"HARDHAT_NETWORK=localhost npx hardhat run autotasks/server.js\" -k -c \"cyan, magenta, green\"",
     "local-start": "npx concurrently -n \"blockchain,web,server,firebase\"  \"npx hardhat node --export-all client/config/deployments_dev.json\" \"cd client && npm start\" \"HARDHAT_NETWORK=localhost npx hardhat run autotasks/server.js\" \"cd server/functions && npm run serve\" -k -c \"cyan, magenta, green, yellow\"",
     "test": "NODE_ENV=test npx hardhat test --show-stack-traces",
