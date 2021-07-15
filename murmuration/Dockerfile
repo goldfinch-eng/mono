@@ -15,8 +15,7 @@ RUN wget https://github.com/ethereum/solidity/releases/download/v0.6.8/solc-stat
 RUN mkdir -p /goldfinch-protocol/client
 
 WORKDIR /goldfinch-protocol
-COPY ./package.json .
-COPY ./package-lock.json .
+COPY . .
 # We observed `postinstall` not running automatically (which seems to be
 # understood behavior in a Docker container: https://stackoverflow.com/q/47748075),
 # so we run it manually.
@@ -26,8 +25,6 @@ WORKDIR /goldfinch-protocol/client
 COPY ./client/package.json .
 COPY ./client/package-lock.json .
 RUN npm install
-
-COPY . /goldfinch-protocol
 
 # Used by the Webpack dev server. See `murmuration()` in `client/config-overrides.js`.
 EXPOSE 8080
