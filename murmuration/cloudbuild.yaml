@@ -22,6 +22,17 @@ steps:
       - '--image-url=$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA'
     entrypoint: gcloud
     id: Deploy to App Engine
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    args:
+      - compute
+      - 'firewall-rules'
+      - create
+      - BLOCKCHAIN
+      - '--allow=tcp:8545'
+      - '--description="Allow inbound connections to the blockchain node"'
+      - '--source-ranges=$_ALLOWED_IPS'
+    entrypoint: gcloud
+    id: Open port 8545
 timeout: '1600s'
 images:
   - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA'
@@ -33,3 +44,4 @@ substitutions:
   _LABELS: gcb-trigger-id=f09deef4-0e77-45ec-a8a3-ab544afb40bb
   _TRIGGER_ID: f09deef4-0e77-45ec-a8a3-ab544afb40bb
   _SERVICE_NAME: murmuration-goldfinch-finance
+  _ALLOWED_IPS: 0.0.0.0/0
