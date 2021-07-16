@@ -5,7 +5,6 @@
   "main": "index.js",
   "scripts": {
     "start": "REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet npx concurrently -n \"blockchain,web,server\"  \"npx hardhat node --export-all client/config/deployments_dev.json\" \"cd client && npm start\" \"HARDHAT_NETWORK=localhost npx hardhat run autotasks/server.js\" -k -c \"cyan, magenta, green\"",
-    "start-murmuration": "REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet npx concurrently -n \"blockchain,web,server\"  \"npx hardhat node --hostname 0.0.0.0 --export-all client/config/deployments_dev.json\" \"cd client && MURMURATION=yes PORT=8080 npm start\" \"HARDHAT_NETWORK=localhost npx hardhat run autotasks/server.js\" -k -c \"cyan, magenta, green\"",
     "no-gasless-start": "REACT_APP_DISABLE_GASLESS=true REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet npx concurrently -n \"blockchain,web,server\"  \"npx hardhat node --export-all client/config/deployments_dev.json\" \"cd client && npm start\" \"HARDHAT_NETWORK=localhost npx hardhat run autotasks/server.js\" -k -c \"cyan, magenta, green\"",
     "local-start": "npx concurrently -n \"blockchain,web,server,firebase\"  \"npx hardhat node --export-all client/config/deployments_dev.json\" \"cd client && npm start\" \"HARDHAT_NETWORK=localhost npx hardhat run autotasks/server.js\" \"cd server/functions && npm run serve\" -k -c \"cyan, magenta, green, yellow\"",
     "test": "NODE_ENV=test npx hardhat test --show-stack-traces",
@@ -22,7 +21,10 @@
     "autotask-update": "node autotasks/deployAutoTasks.js",
     "advance-time": "npx hardhat run ./blockchain_scripts/advanceTime.js --network localhost",
     "typechain": "npx hardhat run ./blockchain_scripts/typechain-web3.ts",
-    "postinstall": "npm run typechain"
+    "postinstall": "npm run typechain",
+    "murmuration-deploy": "REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet npx hardhat deploy --reset --export-all client/config/deployments_dev.json",
+    "murmuration-start-chain": "REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet npx concurrently -n \"blockchain,server\"  \"npx hardhat node --hostname 0.0.0.0 --port 8080 --no-deploy --no-reset\" \"HARDHAT_NETWORK=localhost npx hardhat run autotasks/server.js\" -k -c \"cyan, green\"",
+    "murmuration-start-client": "REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet npx concurrently -n \"web\" \"cd client && MURMURATION=yes PORT=8080 npm start\" -k -c \"magenta\""
   },
   "lint-staged": {
     "**!(client)/*.js": [

@@ -1,10 +1,9 @@
-# Dockerfile for building `https://murmuration.goldfinch.finance` environment
-# deployed to Google App Engine.
+# Dockerfile for building the base Docker image used by the murmuration `chain` and
+# `client` images.
 
 FROM node:12.18.3
 
 RUN apt-get update
-RUN apt-get --assume-yes install git less openssl python3
 RUN wget https://github.com/ethereum/solidity/releases/download/v0.6.8/solc-static-linux -O /bin/solc && chmod +x /bin/solc
 
 RUN mkdir -p /goldfinch-protocol/client
@@ -16,13 +15,7 @@ COPY . .
 # so we run it manually.
 RUN npm install && npm run postinstall
 
-WORKDIR /goldfinch-protocol/client
-RUN npm install
-
-# Used by the Webpack dev server. See `murmuration()` in `client/config-overrides.js`.
-EXPOSE 8080
-# Used by the Hardhat node.
-EXPOSE 8545
-
-WORKDIR /goldfinch-protocol
-CMD npm run start-murmuration
+# Run hardhat's deploy process. We want to do this in the base Docker image shared by both
+# the `chain` and `client` App Engine services, so that they can both leverage the
+# same `deployments_dev.json` file that is the output of `npm run murmuration-deploy`.
+RUN npm run murmuration-deploy
