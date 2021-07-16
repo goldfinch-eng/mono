@@ -1,11 +1,6 @@
 # Dockerfile for building `https://murmuration.goldfinch.finance` environment
 # deployed to Google App Engine.
 
-# TODO It would be ideal to share the majority of these steps with `../gitpod.Dockerfile`,
-# but currently that is impractical, because Docker does not have a notion
-# like `INCLUDE`, to reuse logic across Dockerfiles: https://github.com/moby/moby/issues/735.
-# Duplicating code is the 80/20 solution for now.
-
 FROM node:12.18.3
 
 RUN apt-get update
@@ -22,8 +17,6 @@ COPY . .
 RUN npm install && npm run postinstall
 
 WORKDIR /goldfinch-protocol/client
-COPY ./client/package.json .
-COPY ./client/package-lock.json .
 RUN npm install
 
 # Used by the Webpack dev server. See `murmuration()` in `client/config-overrides.js`.
@@ -31,4 +24,5 @@ EXPOSE 8080
 # Used by the Hardhat node.
 EXPOSE 8545
 
+WORKDIR /goldfinch-protocol
 CMD npm run start-murmuration
