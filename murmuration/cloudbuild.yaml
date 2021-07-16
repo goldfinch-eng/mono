@@ -27,7 +27,7 @@ steps:
       - compute
       - 'firewall-rules'
       - create
-      - BLOCKCHAIN
+      - blockchain-node
       - '--allow=tcp:8545'
       - '--description="Allow inbound connections to the blockchain node"'
       - '--source-ranges=$_ALLOWED_IPS'
