@@ -22,17 +22,6 @@ steps:
       - '--image-url=$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA'
     entrypoint: gcloud
     id: Deploy to App Engine
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    args:
-      - compute
-      - 'firewall-rules'
-      - create
-      - blockchain-node
-      - '--allow=tcp:8545'
-      - '--description="Allow inbound connections to the blockchain node"'
-      - '--source-ranges=$_ALLOWED_IPS'
-    entrypoint: gcloud
-    id: Open port 8545
 timeout: '1600s'
 images:
   - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA'
