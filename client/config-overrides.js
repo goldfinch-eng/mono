@@ -41,6 +41,7 @@ const gnosisSafeIntegration = () => config => {
  */
 const murmuration = () => config => {
   if (process.env.MURMURATION === "yes") {
+    console.log("process.env in murmuration", process.env)
     config.host = "0.0.0.0"
 
     // Note that we also need the dev server to listen on port 8080,
