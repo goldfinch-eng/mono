@@ -20,9 +20,9 @@ steps:
       - '--no-cache'
       - '-t'
       - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:chain-$COMMIT_SHA'
-      - '--build-arg'
-      - 'BASE_IMAGE=${_GCR_HOSTNAME}/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:base-$COMMIT_SHA'
       - .
+      - '--build-arg'
+      - "BASE_IMAGE=${_GCR_HOSTNAME}/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:base-$COMMIT_SHA"
       - '-f'
       - murmuration/chain/Dockerfile
     waitFor:
@@ -42,9 +42,9 @@ steps:
       - '--no-cache'
       - '-t'
       - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:client-$COMMIT_SHA'
-      - '--build-arg'
-      - 'BASE_IMAGE=${_GCR_HOSTNAME}/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:base-$COMMIT_SHA'
       - .
+      - '--build-arg'
+      - "BASE_IMAGE=${_GCR_HOSTNAME}/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:base-$COMMIT_SHA"
       - '-f'
       - murmuration/client/Dockerfile
     waitFor:
