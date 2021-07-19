@@ -23,3 +23,9 @@ RUN npm install && npm run postinstall
 # the `chain` and `client` App Engine services, so that they can both leverage the
 # same `deployments_dev.json` file that is the output of `npm run murmuration-deploy`.
 RUN npm run murmuration-deploy
+
+# For logging / debugging purposes.
+RUN echo "Inspecting whether hardhat deploy command created deployment for network called `localhost`."
+RUN cat ./client/config/deployments_dev.json | grep -B 10 -A 10 localhost
+RUN echo "Inspecting whether hardhat deploy command created deployment for network called `hardhat`."
+RUN cat ./client/config/deployments_dev.json | grep -B 10 -A 10 hardhat
