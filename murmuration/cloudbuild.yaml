@@ -19,7 +19,7 @@ steps:
       - build
       - '--no-cache'
       - '-t'
-      - '$CHAIN_IMAGE'
+      - '$_CHAIN_IMAGE'
       - .
       - '-f'
       - murmuration/chain/Dockerfile
@@ -41,7 +41,7 @@ steps:
       - build
       - '--no-cache'
       - '-t'
-      - '$CLIENT_IMAGE'
+      - '$_CLIENT_IMAGE'
       - .
       - '-f'
       - murmuration/client/Dockerfile
