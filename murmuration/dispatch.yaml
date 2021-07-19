@@ -1,0 +1,5 @@
+dispatch:
+  - url: "murmuration.goldfinch.finance/*"
+    service: default
+  - url: "murmuration-chain.goldfinch.finance/*"
+    service: chain

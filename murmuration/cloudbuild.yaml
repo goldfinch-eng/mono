@@ -78,6 +78,16 @@ steps:
     waitFor:
       - 'Push Client'
     id: Deploy Client
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    args:
+      - app
+      - deploy
+      - murmuration/dispatch.yaml
+    entrypoint: gcloud
+    waitFor:
+      - 'Deploy Chain'
+      - 'Deploy Client'
+    id: Deploy Dispatch
 timeout: '1600s'
 images:
   - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:base-$COMMIT_SHA'
