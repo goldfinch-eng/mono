@@ -67,6 +67,9 @@ const SUPPORTED_NETWORKS = {
 
 let config
 async function getDeployments(networkId) {
+  console.log('[DELETE ME] networkId:', networkId)
+  console.log('[DELETE ME] config:', config)
+  console.log('[DELETE ME] process.env:', process.env)
   if (config) {
     return Promise.resolve(config[networkId])
   }
@@ -75,7 +78,10 @@ async function getDeployments(networkId) {
     .then(result => {
       config = transformedConfig(result)
 
+      console.log('[DELETE ME] config after import and transform:', config)
+
       if (networkId === "localhost" && process.env.REACT_APP_HARDHAT_FORK) {
+        console.log('[DELETE ME] inside hardhat fork code branch')
         // If we're on the fork, then need to use the mainnet proxy contract addresses instead of the
         // freshly deployed version
         const mainnetContracts = ["GoldfinchConfig", "CreditDesk", "Pool", "Fidu", "CreditLineFactory"]

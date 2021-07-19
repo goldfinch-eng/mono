@@ -1,6 +1,6 @@
 runtime: custom
 env: flex
-service: client
+service: default
 
 manual_scaling:
   instances: 1
