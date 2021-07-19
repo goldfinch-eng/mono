@@ -20,6 +20,7 @@ RUN cp ./murmuration/base/.env.murmuration ./.env.local
 RUN npm install && npm run postinstall
 
 # Run hardhat's deploy process. We want to do this in the base Docker image shared by both
-# the `chain` and `client` App Engine services, so that they can both leverage the
-# same `deployments_dev.json` file that is the output of `npm run murmuration-deploy`.
-RUN npm run murmuration-deploy
+# the `chain` and `client` App Engine services, so that they can both have the same
+# understanding, as defined by the `deployments_dev.json` file that is the output of
+# `npm run murmuration-deploy`, of the contracts deployed on the blockchain node.
+RUN npm run murmuration-deploy && npm run murmuration-patch-deployments-dev-json
