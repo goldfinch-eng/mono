@@ -1,8 +1,7 @@
 # Dockerfile for building `https://murmuration.goldfinch.finance` environment
 # deployed to Google App Engine.
 
-RUN echo "Base image: $BASE_IMAGE"
-
+ARG BASE_IMAGE
 FROM $BASE_IMAGE
 
 WORKDIR /goldfinch-protocol/client
