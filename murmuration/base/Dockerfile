@@ -25,7 +25,7 @@ RUN npm install && npm run postinstall
 RUN npm run murmuration-deploy
 
 # For logging / debugging purposes.
-RUN echo "Inspecting whether hardhat deploy command created deployment for network called `localhost`."
-RUN cat ./client/config/deployments_dev.json | grep -B 10 -A 10 localhost
-RUN echo "Inspecting whether hardhat deploy command created deployment for network called `hardhat`."
-RUN cat ./client/config/deployments_dev.json | grep -B 10 -A 10 hardhat
+RUN echo "Inspecting whether hardhat deploy command created deployment for network called localhost."
+RUN cat ./client/config/deployments_dev.json | grep -B 10 -A 10 "localhost"
+RUN echo "Inspecting whether hardhat deploy command created deployment for network called hardhat."
+RUN cat ./client/config/deployments_dev.json | grep -B 10 -A 10 "hardhat"
