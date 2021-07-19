@@ -20,8 +20,7 @@ steps:
       - '--no-cache'
       - '-t'
       - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:chain-$COMMIT_SHA'
-      - '--build-arg'
-      - 'BASE_IMAGE=$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:base-$COMMIT_SHA'
+      - '--build-arg="BASE_IMAGE=${_GCR_HOSTNAME}/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:base-$COMMIT_SHA"'
       - .
       - '-f'
       - murmuration/chain/Dockerfile
@@ -42,8 +41,7 @@ steps:
       - '--no-cache'
       - '-t'
       - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:client-$COMMIT_SHA'
-      - '--build-arg'
-      - 'BASE_IMAGE=$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:base-$COMMIT_SHA'
+      - '--build-arg="BASE_IMAGE=${_GCR_HOSTNAME}/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:base-$COMMIT_SHA"'
       - .
       - '-f'
       - murmuration/client/Dockerfile
@@ -63,7 +61,7 @@ steps:
       - app
       - deploy
       - '--appyaml=murmuration/chain/app.yaml'
-      - '--image-url=$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:chain-$COMMIT_SHA'
+      - '--image-url=${_GCR_HOSTNAME}/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:chain-$COMMIT_SHA'
     entrypoint: gcloud
     waitFor:
       - 'Push Chain'
@@ -73,7 +71,7 @@ steps:
       - app
       - deploy
       - '--appyaml=murmuration/client/app.yaml'
-      - '--image-url=$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:client-$COMMIT_SHA'
+      - '--image-url=${_GCR_HOSTNAME}/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:client-$COMMIT_SHA'
     entrypoint: gcloud
     waitFor:
       - 'Push Client'
