@@ -34,6 +34,7 @@ class ERC20 {
   }
 
   async initializeContract(networkId) {
+    console.log('[DELETE ME] inside initializeContract(). networkId:', networkId)
     const config = await getDeployments(networkId)
     const localContract = this.localContractName && config.contracts[this.localContractName]
     let address

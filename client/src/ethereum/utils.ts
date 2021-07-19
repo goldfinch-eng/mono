@@ -67,6 +67,7 @@ const SUPPORTED_NETWORKS = {
 
 let config
 async function getDeployments(networkId) {
+  console.log(['[DELETE ME] inside getDeployments()'])
   console.log('[DELETE ME] networkId:', networkId)
   console.log('[DELETE ME] config:', config)
   console.log('[DELETE ME] process.env:', process.env)
@@ -96,6 +97,7 @@ async function getDeployments(networkId) {
           }
         })
       }
+      console.log(['[DELETE ME] returning config', config[networkId]])
       return config[networkId]
     })
     .catch(console.error)
