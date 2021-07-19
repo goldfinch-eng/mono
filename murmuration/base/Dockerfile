@@ -10,6 +10,10 @@ RUN mkdir -p /goldfinch-protocol/client
 
 WORKDIR /goldfinch-protocol
 COPY . .
+
+# Use the murmuration env config as `.env.local`.
+RUN cp ./murmuration/base/.env.murmuration ./.env.local
+
 # We observed `postinstall` not running automatically (which seems to be
 # understood behavior in a Docker container: https://stackoverflow.com/q/47748075),
 # so we run it manually.
