@@ -4,7 +4,7 @@ steps:
       - build
       - '--no-cache'
       - '-t'
-      - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:base-$COMMIT_SHA'
+      - '${_BASE_IMAGE}'
       - .
       - '-f'
       - murmuration/base/Dockerfile
@@ -12,7 +12,7 @@ steps:
   - name: gcr.io/cloud-builders/docker
     args:
       - push
-      - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:base-$COMMIT_SHA'
+      - '${_BASE_IMAGE}'
     id: Push Base
   - name: gcr.io/cloud-builders/docker
     args:
@@ -85,6 +85,7 @@ images:
   - '${_CLIENT_IMAGE}'
 options:
   substitutionOption: ALLOW_LOOSE
+  dynamicSubstitutions: true
 substitutions:
   _GCR_HOSTNAME: us.gcr.io
   _SERVICE_NAME: murmuration-goldfinch-finance
