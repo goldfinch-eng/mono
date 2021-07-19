@@ -1,18 +1,21 @@
-import {withRouter} from "react-router-dom"
+import {useLocation} from "react-router-dom"
 import {AppContext} from "../App"
+import {CreditLine} from "../ethereum/creditLine"
 import {UnlockedStatus} from "../ethereum/user"
 import useNonNullContext from "../hooks/useNonNullContext"
 import UnlockUSDCForm from "./unlockUSDCForm"
 import VerifyAddressBanner from "./verifyAddressBanner"
 
-function ConnectionNotice(props) {
-  const {network, user} = useNonNullContext(AppContext)
-  let notice: JSX.Element | null = null
+interface ConnectionNoticeProps {
+  creditLine?: CreditLine
+  requireVerify?: boolean
+  requireUnlock?: boolean
+}
 
-  let {requireVerify} = props
-  if (requireVerify === undefined) {
-    requireVerify = false
-  }
+function ConnectionNotice({requireUnlock = true, requireVerify = false, creditLine}: ConnectionNoticeProps) {
+  const {network, user} = useNonNullContext(AppContext)
+  let location = useLocation()
+  let notice: JSX.Element | null = null
 
   if (!(window as any).ethereum) {
     notice = (
@@ -38,21 +41,23 @@ function ConnectionNotice(props) {
         You are not currently connected to Metamask. To use Goldfinch, you first need to connect to Metamask.
       </div>
     )
-  } else if (props.creditLine && props.creditLine.loaded && !props.creditLine.address) {
+  } else if (creditLine && creditLine.loaded && !creditLine.address) {
     notice = (
       <div className="info-banner background-container">
         You do not have any credit lines. To borrow funds from the pool, you need a Goldfinch credit line.
       </div>
     )
   } else if (user.loaded) {
-    let unlockStatus: UnlockedStatus | null = null
-    if (props.location.pathname.startsWith("/earn")) {
-      unlockStatus = user.getUnlockStatus("earn")
-    } else if (props.location.pathname.startsWith("/borrow")) {
-      unlockStatus = user.getUnlockStatus("borrow")
-    }
-    if (unlockStatus && !unlockStatus.isUnlocked) {
-      notice = <UnlockUSDCForm unlockAddress={unlockStatus.unlockAddress} />
+    if (requireUnlock) {
+      let unlockStatus: UnlockedStatus | null = null
+      if (location.pathname.startsWith("/earn")) {
+        unlockStatus = user.getUnlockStatus("earn")
+      } else if (location.pathname.startsWith("/borrow")) {
+        unlockStatus = user.getUnlockStatus("borrow")
+      }
+      if (unlockStatus && !unlockStatus.isUnlocked) {
+        notice = <UnlockUSDCForm unlockAddress={unlockStatus.unlockAddress} />
+      }
     }
     if (!user.goListed && requireVerify) {
       notice = <VerifyAddressBanner />
@@ -62,4 +67,4 @@ function ConnectionNotice(props) {
   return notice
 }
 
-export default withRouter((props) => ConnectionNotice(props))
+export default ConnectionNotice

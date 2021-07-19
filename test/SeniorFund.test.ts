@@ -1,16 +1,16 @@
 /* global web3 */
-const {
+import {
   interestAprAsBN,
   TRANCHES,
   MAX_UINT,
   OWNER_ROLE,
   PAUSER_ROLE,
   ETHDecimals,
-} = require("../blockchain_scripts/deployHelpers")
-const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
-const hre = require("hardhat")
+} from "../blockchain_scripts/deployHelpers"
+import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
+import hre from "hardhat"
 const {deployments, artifacts} = hre
-const {
+import {
   advanceTime,
   expect,
   BN,
@@ -27,10 +27,11 @@ const {
   fiduTolerance,
   tolerance,
   decodeLogs,
-} = require("./testHelpers")
-const {expectEvent} = require("@openzeppelin/test-helpers")
-const {ecsign} = require("ethereumjs-util")
-const {getApprovalDigest, getWallet} = require("./permitHelpers")
+} from "./testHelpers"
+import {expectEvent} from "@openzeppelin/test-helpers"
+import {ecsign} from "ethereumjs-util"
+import {getApprovalDigest, getWallet} from "./permitHelpers"
+import {assertNonNullable} from "../utils/type"
 let accounts, owner, person2, person3, reserve, borrower
 const WITHDRAWL_FEE_DENOMINATOR = new BN(200)
 
@@ -46,12 +47,12 @@ describe("SeniorFund", () => {
   let withdrawAmount = new BN(2).mul(USDC_DECIMALS)
   const decimalsDelta = decimals.div(USDC_DECIMALS)
 
-  let makeDeposit = async (person, amount) => {
+  let makeDeposit = async (person?: string, amount?: BN) => {
     amount = amount || depositAmount
     person = person || person2
     return await seniorFund.deposit(String(amount), {from: person})
   }
-  let makeWithdraw = async (person, usdcAmount) => {
+  let makeWithdraw = async (person?: string, usdcAmount?: BN) => {
     usdcAmount = usdcAmount || withdrawAmount
     person = person || person2
     return await seniorFund.withdraw(usdcAmount, {from: person})
@@ -62,15 +63,8 @@ describe("SeniorFund", () => {
   }
 
   const setupTest = deployments.createFixture(async ({deployments}) => {
-    const {
-      seniorFund,
-      seniorFundStrategy,
-      usdc,
-      fidu,
-      goldfinchFactory,
-      goldfinchConfig,
-      poolTokens,
-    } = await deployAllContracts(deployments)
+    const {seniorFund, seniorFundStrategy, usdc, fidu, goldfinchFactory, goldfinchConfig, poolTokens} =
+      await deployAllContracts(deployments)
     // A bit of setup for our test users
     await erc20Approve(usdc, seniorFund.address, usdcVal(100000), [person2])
     await erc20Transfer(usdc, [person2, person3], usdcVal(10000), owner)
@@ -85,7 +79,7 @@ describe("SeniorFund", () => {
       paymentPeriodInDays,
       termInDays,
       lateFeeApr,
-      juniorFeePercent,
+      juniorFeePercent: juniorFeePercent.toNumber(),
       usdc,
     }))
 
@@ -373,7 +367,7 @@ describe("SeniorFund", () => {
     it("lets you withdraw in fidu terms", async () => {
       await makeDeposit()
       const fiduBalance = await getBalance(person2, fidu)
-      expect(fiduBalance).to.bignumber.gt("0")
+      expect(fiduBalance).to.bignumber.gt(new BN("0"))
 
       await expectAction(() => {
         return makeWithdrawInFidu(person2, fiduBalance)
@@ -392,8 +386,8 @@ describe("SeniorFund", () => {
     })
 
     it("it lets you withdraw your exact total holdings", async () => {
-      await makeDeposit(person2, 123)
-      await makeWithdraw(person2, 123)
+      await makeDeposit(person2, new BN("123"))
+      await makeWithdraw(person2, new BN("123"))
       const sharesAfter = await getBalance(person2, fidu)
       expect(sharesAfter.toNumber()).to.equal(0)
     })
@@ -429,7 +423,7 @@ describe("SeniorFund", () => {
     describe("when there is a super tiny rounding error", async () => {
       it("should still work", async () => {
         // This share price will cause a rounding error of 1 atomic unit.
-        var testSharePrice = new BN(String(1.23456789 * ETHDecimals))
+        var testSharePrice = new BN(String(1.23456789 * (ETHDecimals as any)))
         await seniorFund._setSharePrice(testSharePrice)
 
         return expect(makeDeposit(person2, new BN(2500).mul(USDC_DECIMALS))).to.be.fulfilled
@@ -455,6 +449,63 @@ describe("SeniorFund", () => {
     })
   })
 
+  describe("estimateInvestment", () => {
+    let juniorInvestmentAmount = usdcVal(10000)
+
+    beforeEach(async () => {
+      await erc20Approve(usdc, seniorFund.address, usdcVal(100000), [owner])
+      await makeDeposit(owner, usdcVal(100000))
+      await goldfinchConfig.addToGoList(seniorFund.address)
+      await tranchedPool.deposit(TRANCHES.Junior, juniorInvestmentAmount)
+    })
+
+    context("Pool is not valid", () => {
+      it("reverts", async () => {
+        // Simulate someone deploying their own malicious TranchedPool using our contracts
+        let accountant = await deployments.deploy("Accountant", {from: person2, args: []})
+        let poolDeployResult = await deployments.deploy("TranchedPool", {
+          from: person2,
+          libraries: {["Accountant"]: accountant.address},
+        })
+        let unknownPool = await artifacts.require("TranchedPool").at(poolDeployResult.address)
+        let creditLineResult = await deployments.deploy("CreditLine", {
+          from: person2,
+          libraries: {["Accountant"]: accountant.address},
+        })
+        let creditLine = await artifacts.require("CreditLine").at(creditLineResult.address)
+        await creditLine.initialize(
+          goldfinchConfig.address,
+          person2,
+          person2,
+          usdcVal(1000),
+          interestAprAsBN("0"),
+          new BN(1),
+          new BN(10),
+          interestAprAsBN("0")
+        )
+        await unknownPool.initialize(
+          goldfinchConfig.address,
+          person2,
+          new BN(20),
+          usdcVal(1000),
+          interestAprAsBN("0"),
+          new BN(1),
+          new BN(10),
+          interestAprAsBN("0")
+        )
+        await unknownPool.lockJuniorCapital({from: person2})
+
+        await expect(seniorFund.invest(unknownPool.address)).to.be.rejectedWith(/Pool must be valid/)
+      })
+    })
+
+    it("should return the strategy's estimated investment", async () => {
+      let investmentAmount = await seniorFundStrategy.estimateInvestment.call(seniorFund.address, tranchedPool.address)
+      let estimate = await seniorFund.estimateInvestment(tranchedPool.address)
+      await expect(estimate).to.bignumber.equal(investmentAmount)
+    })
+  })
+
   describe("invest", () => {
     let juniorInvestmentAmount = usdcVal(10000)
 
@@ -474,16 +525,14 @@ describe("SeniorFund", () => {
     context("Pool is not valid", () => {
       it("reverts", async () => {
         // Simulate someone deploying their own malicious TranchedPool using our contracts
-        let accountant = await deployments.deploy("Accountant", {from: person2, gas: 4000000, args: []})
+        let accountant = await deployments.deploy("Accountant", {from: person2, args: []})
         let poolDeployResult = await deployments.deploy("TranchedPool", {
           from: person2,
-          gas: 4000000,
           libraries: {["Accountant"]: accountant.address},
         })
         let unknownPool = await artifacts.require("TranchedPool").at(poolDeployResult.address)
         let creditLineResult = await deployments.deploy("CreditLine", {
           from: person2,
-          gas: 4000000,
           libraries: {["Accountant"]: accountant.address},
         })
         let creditLine = await artifacts.require("CreditLine").at(creditLineResult.address)
@@ -492,20 +541,20 @@ describe("SeniorFund", () => {
           person2,
           person2,
           usdcVal(1000),
-          interestAprAsBN(0),
+          interestAprAsBN("0"),
           new BN(1),
           new BN(10),
-          interestAprAsBN(0)
+          interestAprAsBN("0")
         )
         await unknownPool.initialize(
           goldfinchConfig.address,
           person2,
           new BN(20),
           usdcVal(1000),
-          interestAprAsBN(0),
+          interestAprAsBN("0"),
           new BN(1),
           new BN(10),
-          interestAprAsBN(0)
+          interestAprAsBN("0")
         )
         await unknownPool.lockJuniorCapital({from: person2})
 
@@ -708,6 +757,7 @@ describe("SeniorFund", () => {
       await tranchedPool.lockJuniorCapital({from: borrower})
       let receipt = await seniorFund.invest(tranchedPool.address)
       let depositEvent = decodeLogs(receipt.receipt.rawLogs, tranchedPool, "DepositMade")[0]
+      assertNonNullable(depositEvent)
       tokenId = depositEvent.args.tokenId
       await tranchedPool.lockPool({from: borrower})
       await tranchedPool.drawdown(usdcVal(100), {from: borrower})
@@ -836,6 +886,7 @@ describe("SeniorFund", () => {
         await tranchedPool.assess()
         let receipt = await seniorFund.writedown(tokenId)
         let event = decodeLogs(receipt.receipt.rawLogs, seniorFund, "PrincipalWrittenDown")[0]
+        assertNonNullable(event)
         expect(event.args.tranchedPool).to.equal(tranchedPool.address)
         expect(event.args.amount).to.bignumber.closeTo(expectedWritedown, fiduTolerance)
       })
@@ -861,6 +912,7 @@ describe("SeniorFund", () => {
       await tranchedPool.lockJuniorCapital({from: borrower})
       let receipt = await seniorFund.invest(tranchedPool.address)
       let depositEvent = decodeLogs(receipt.receipt.rawLogs, tranchedPool, "DepositMade")[0]
+      assertNonNullable(depositEvent)
       tokenId = depositEvent.args.tokenId
       await tranchedPool.lockPool({from: borrower})
       await tranchedPool.drawdown(usdcVal(100), {from: borrower})

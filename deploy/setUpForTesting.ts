@@ -18,7 +18,6 @@ import {Contract, ContractReceipt} from "ethers"
 const {ethers} = hre
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
 require("dotenv").config({path: ".env.local"})
-import {advanceTime} from "../test/testHelpers"
 import {
   MAINNET_CHAIN_ID,
   LOCAL,
@@ -32,6 +31,7 @@ import {
   updateConfig,
   getERC20Address,
   assertIsChainId,
+  TRANCHES,
 } from "../blockchain_scripts/deployHelpers"
 import {
   MAINNET_MULTISIG,
@@ -147,9 +147,16 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   let bwrConAddr = lastEventArgs[0]
   logger(`Created borrower contract: ${bwrConAddr} for ${borrower}`)
 
-  let pool1 = await createPoolForBorrower(getOrNull, underwriter, goldfinchFactory, bwrConAddr, erc20!)
+  let pool1 = await createPoolForBorrower({
+    getOrNull,
+    underwriter,
+    goldfinchFactory,
+    borrower: bwrConAddr,
+    erc20,
+    lockJuniorCapital: false,
+  })
   await writePoolMetadata(pool1)
-  let pool2 = await createPoolForBorrower(getOrNull, underwriter, goldfinchFactory, bwrConAddr, erc20!)
+  let pool2 = await createPoolForBorrower({getOrNull, underwriter, goldfinchFactory, borrower: bwrConAddr, erc20})
   await writePoolMetadata(pool2)
 
   // Have the senior fund invest
@@ -157,13 +164,9 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   let filter = pool2.filters.DepositMade(seniorFund.address)
   let depositLog = (await ethers.provider.getLogs(filter))[0]
   assertNonNullable(depositLog)
-  let depositEvent = pool2.interface.parseLog(depositLog)
-  let tokenId = depositEvent.args.tokenId
 
   await pool2.lockPool()
   await pool2.drawdown(await pool2.limit())
-
-  await advanceTime(null, {days: 30})
 
   // Have the borrower repay a portion of their loan
   await impersonateAccount(hre, borrower)
@@ -172,7 +175,6 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   let payAmount = new BN(10).mul(USDCDecimals)
   await (erc20 as TestERC20).connect(borrowerSigner).approve(bwrCon.address, payAmount.toString())
   await bwrCon.pay(pool2.address, payAmount.toString())
-  await seniorFund.redeem(tokenId)
 }
 
 /**
@@ -291,16 +293,24 @@ async function getDeployedAsEthersContract<T>(getter: any, name: string): Promis
   if (!deployed) {
     throw new Error("Contract is not deployed")
   }
-  return ((await ethers.getContractAt(deployed.abi, deployed.address)) as unknown) as T
+  return (await ethers.getContractAt(deployed.abi, deployed.address)) as unknown as T
 }
 
-async function createPoolForBorrower(
+async function createPoolForBorrower({
   getOrNull,
-  underwriter: string,
-  goldfinchFactory: GoldfinchFactory,
-  borrower: string,
+  underwriter,
+  goldfinchFactory,
+  borrower,
+  erc20,
+  lockJuniorCapital = true,
+}: {
+  getOrNull: any
+  underwriter: string
+  goldfinchFactory: GoldfinchFactory
+  borrower: string
   erc20: Contract
-): Promise<TranchedPool> {
+  lockJuniorCapital?: boolean
+}): Promise<TranchedPool> {
   const juniorFeePercent = String(new BN(20))
   const limit = String(new BN(10000).mul(USDCDecimals))
   const interestApr = String(interestAprAsBN("5.00"))
@@ -330,14 +340,16 @@ async function createPoolForBorrower(
   var txn = await erc20.approve(pool.address, String(limit))
   await txn.wait()
 
-  let depositAmount = String(new BN(limit).div(new BN(2)))
-  txn = await pool.deposit(2, depositAmount)
+  let depositAmount = String(new BN(limit).div(new BN(10)))
+  txn = await pool.deposit(TRANCHES.Junior, depositAmount)
   await txn.wait()
 
   logger(`Deposited ${depositAmount} into the pool`)
-  txn = await pool.lockJuniorCapital()
-  await txn.wait()
-  logger(`Locked junior capital`)
+  if (lockJuniorCapital) {
+    txn = await pool.lockJuniorCapital()
+    await txn.wait()
+    logger(`Locked junior capital`)
+  }
   return pool
 }
 

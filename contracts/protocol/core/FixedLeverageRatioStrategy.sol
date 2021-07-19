@@ -18,8 +18,8 @@ contract FixedLeverageRatioStrategy is IFundStrategy {
   }
 
   /**
-   * @notice Determines how much money ot invest in the senior tranche based on what's committed to the junior
-   * tranche and a fixed leverage ratio to the junior. Idempotent
+   * @notice Determines how much money to invest in the senior tranche based on what is committed to the junior
+   * tranche and a fixed leverage ratio to the junior. Idempotent.
    * @param fund The fund to invest from
    * @param pool The pool to invest into (as the senior)
    * @return The amount of money to invest into the pool from the fund
@@ -33,6 +33,29 @@ contract FixedLeverageRatioStrategy is IFundStrategy {
       return 0;
     }
 
+    return _invest(juniorTranche, seniorTranche);
+  }
+
+  /**
+   * @notice Determines how much money to invest in the senior tranche based on what is committed to the junior,
+   * tranche and a fixed leverage ratio to the junior, as if all conditions for investment were
+   * met. Idempotent.
+   * @param fund The fund to invest from
+   * @param pool The pool to invest into (as the senior)
+   * @return The amount of money to invest into the pool from the fund
+   */
+  function estimateInvestment(IFund fund, ITranchedPool pool) public view override returns (uint256) {
+    ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
+    ITranchedPool.TrancheInfo memory seniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Senior));
+
+    return _invest(juniorTranche, seniorTranche);
+  }
+
+  function _invest(ITranchedPool.TrancheInfo memory juniorTranche, ITranchedPool.TrancheInfo memory seniorTranche)
+    internal
+    view
+    returns (uint256)
+  {
     uint256 juniorCapital = juniorTranche.principalDeposited;
     uint256 existingSeniorCapital = seniorTranche.principalDeposited;
     uint256 seniorTarget = juniorCapital.mul(leverageRatio);

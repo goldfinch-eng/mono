@@ -46,7 +46,7 @@ function TranchedPoolCard({tranchedPool}: {tranchedPool: TranchedPool}) {
   const history = useHistory()
 
   return (
-    <div key={`junior-pool-${tranchedPool.address}`} className="table-row background-container-inner">
+    <div className="table-row background-container-inner">
       <div className="table-cell col40 pool-info">
         <img
           className={`icon ${process.env.NODE_ENV === "development" && "pixelated"}`}
@@ -145,7 +145,7 @@ function Earn(props) {
         <PoolList title="Junior Pools">
           {tranchedPoolsStatus === "loading"
             ? "Loading..."
-            : tranchedPools.map((p) => <TranchedPoolCard tranchedPool={p} />)}
+            : tranchedPools.map((p) => <TranchedPoolCard key={`${p.address}`} tranchedPool={p} />)}
         </PoolList>
       </div>
     </div>

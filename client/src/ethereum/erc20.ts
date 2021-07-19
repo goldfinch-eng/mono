@@ -17,6 +17,7 @@ class ERC20 {
   ticker: string
   networksToAddress: any
   localContractName?: string
+  permitVersion?: string
   decimals: number
   contract!: Contract
   goldfinchProtocol: GoldfinchProtocol
@@ -83,6 +84,7 @@ class USDC extends ERC20 {
     this.networksToAddress = USDC_ADDRESSES
     this.localContractName = "TestERC20"
     this.decimals = 6
+    this.permitVersion = this.goldfinchProtocol.networkId === "localhost" ? "1" : "2"
   }
 }
 

@@ -33,7 +33,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   TrancheInfo internal seniorTranche;
   TrancheInfo internal juniorTranche;
 
-  event DepositMade(address indexed owner, uint256 indexed tranche, uint256 indexed tokenId, uint256 amonut);
+  event DepositMade(address indexed owner, uint256 indexed tranche, uint256 indexed tokenId, uint256 amount);
   event WithdrawalMade(
     address indexed owner,
     uint256 indexed tranche,

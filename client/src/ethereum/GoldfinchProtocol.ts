@@ -3,7 +3,7 @@ import {getDeployments, getFromBlock} from "./utils"
 import {ERC20, getERC20} from "./erc20"
 import _ from "lodash"
 import {Contract, Filter} from "web3-eth-contract"
-import {BaseContract} from "../typechain/web3/types"
+import {BaseContract, ContractEventLog} from "../typechain/web3/types"
 
 class GoldfinchProtocol {
   networkId: string
@@ -21,9 +21,13 @@ class GoldfinchProtocol {
     return getERC20(ticker, this)
   }
 
-  getContract<T>(contract: string, address?: string) {
-    const abi = this.deployments.contracts[contract].abi
-    address = address || this.getAddress(contract)
+  getContract<T = Contract>(contractOrAbi: string | any, address?: string) {
+    let abi = this.deployments.contracts[contractOrAbi]?.abi
+    if (abi) {
+      address = address || this.getAddress(contractOrAbi)
+    } else {
+      abi = contractOrAbi
+    }
     const contractObj = new web3.eth.Contract(abi, address) as any
     contractObj.loaded = true
     return contractObj as T
@@ -50,6 +54,14 @@ class GoldfinchProtocol {
       }),
     )
     return _.compact(_.concat(_.flatten(eventArrays)))
+  }
+
+  async queryEvent<T extends ContractEventLog<any>>(
+    contract: string | Contract | BaseContract,
+    event: string,
+    filter?: Filter,
+  ) {
+    return (await this.queryEvents(contract, event, filter)) as any as T[]
   }
 }
 

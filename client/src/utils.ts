@@ -15,7 +15,7 @@ function displayNumber(val, decimals) {
   if (!decimals && Math.floor(valFloat) === valFloat) {
     decimals = 0
   } else if (!decimals) {
-    decimals = valFloat.toString().split(".")[1].length || 0
+    decimals = valFloat.toString().split(".")[1]?.length || 0
   }
 
   return commaFormat(valFloat.toFixed(decimals))
@@ -26,7 +26,7 @@ function commaFormat(numberString) {
     return numberString
   }
   const [beforeDecimal, afterDecimal] = numberString.split(".")
-  let withCommas = []
+  let withCommas: string[] = []
   _.reverse(_.split(beforeDecimal, "")).forEach((letter, i) => {
     if (i % 3 === 0 && i > 0) {
       withCommas.push(",")
@@ -62,4 +62,8 @@ function roundDownPenny(val) {
   return Math.floor(val * 100) / 100
 }
 
-export {croppedAddress, displayNumber, displayDollars, roundUpPenny, roundDownPenny, displayPercent}
+function secondsSinceEpoch(): number {
+  return Math.floor(Date.now() / 1000)
+}
+
+export {croppedAddress, displayNumber, displayDollars, roundUpPenny, roundDownPenny, displayPercent, secondsSinceEpoch}
