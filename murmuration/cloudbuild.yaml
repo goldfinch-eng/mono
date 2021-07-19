@@ -4,7 +4,7 @@ steps:
       - build
       - '--no-cache'
       - '-t'
-      - '${_BASE_IMAGE}'
+      - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:base-$COMMIT_SHA'
       - .
       - '-f'
       - murmuration/base/Dockerfile
@@ -12,19 +12,19 @@ steps:
   - name: gcr.io/cloud-builders/docker
     args:
       - push
-      - '${_BASE_IMAGE}'
+      - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:base-$COMMIT_SHA'
     id: Push Base
   - name: gcr.io/cloud-builders/docker
     args:
       - build
       - '--no-cache'
       - '-t'
-      - '${_CHAIN_IMAGE}'
+      - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:chain-$COMMIT_SHA'
       - .
       - '-f'
       - murmuration/chain/Dockerfile
       - '--build-arg'
-      - 'BASE_IMAGE=${_BASE_IMAGE}'
+      - 'BASE_IMAGE=$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:base-$COMMIT_SHA'
     waitFor:
       - 'Build Base'
       - 'Push Base'
@@ -32,7 +32,7 @@ steps:
   - name: gcr.io/cloud-builders/docker
     args:
       - push
-      - '${_CHAIN_IMAGE}'
+      - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:chain-$COMMIT_SHA'
     waitFor:
       - 'Build Chain'
     id: Push Chain
@@ -41,12 +41,12 @@ steps:
       - build
       - '--no-cache'
       - '-t'
-      - '${_CLIENT_IMAGE}'
+      - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:client-$COMMIT_SHA'
       - .
       - '-f'
       - murmuration/client/Dockerfile
       - '--build-arg'
-      - 'BASE_IMAGE=${_BASE_IMAGE}'
+      - 'BASE_IMAGE=$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:base-$COMMIT_SHA'
     waitFor:
       - 'Build Base'
       - 'Push Base'
@@ -54,7 +54,7 @@ steps:
   - name: gcr.io/cloud-builders/docker
     args:
       - push
-      - '${_CLIENT_IMAGE}'
+      - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:client-$COMMIT_SHA'
     waitFor:
       - 'Build Client'
     id: Push Client
@@ -63,7 +63,7 @@ steps:
       - app
       - deploy
       - '--appyaml=murmuration/chain/app.yaml'
-      - '--image-url=${_CHAIN_IMAGE}'
+      - '--image-url=$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:chain-$COMMIT_SHA'
     entrypoint: gcloud
     waitFor:
       - 'Push Chain'
@@ -73,22 +73,18 @@ steps:
       - app
       - deploy
       - '--appyaml=murmuration/client/app.yaml'
-      - '--image-url=${_CLIENT_IMAGE}'
+      - '--image-url=$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:client-$COMMIT_SHA'
     entrypoint: gcloud
     waitFor:
       - 'Push Client'
     id: Deploy Client
 timeout: '1600s'
 images:
-  - '${_BASE_IMAGE}'
-  - '${_CHAIN_IMAGE}'
-  - '${_CLIENT_IMAGE}'
+  - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:base-$COMMIT_SHA'
+  - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:chain-$COMMIT_SHA'
+  - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:client-$COMMIT_SHA'
 options:
   substitutionOption: ALLOW_LOOSE
-  dynamicSubstitutions: true
 substitutions:
   _GCR_HOSTNAME: us.gcr.io
   _SERVICE_NAME: murmuration-goldfinch-finance
-  _BASE_IMAGE: $_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:base-$COMMIT_SHA
-  _CHAIN_IMAGE: $_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:chain-$COMMIT_SHA
-  _CLIENT_IMAGE: $_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:client-$COMMIT_SHA
