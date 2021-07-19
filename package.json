@@ -22,9 +22,9 @@
     "advance-time": "npx hardhat run ./blockchain_scripts/advanceTime.js --network localhost",
     "typechain": "npx hardhat run ./blockchain_scripts/typechain-web3.ts",
     "postinstall": "npm run typechain",
-    "murmuration-deploy": "REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet npx hardhat deploy --network localhost --reset --export-all client/config/deployments_dev.json",
-    "murmuration-start-chain": "REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet npx concurrently -n \"blockchain\"  \"npx hardhat node --as-network localhost --hostname 0.0.0.0 --port 8080 --no-deploy --no-reset\" -k -c \"cyan\"",
-    "murmuration-start-client": "REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet npx concurrently -n \"web,server\" \"cd client && MURMURATION=yes PORT=8080 npm start\" \"npx hardhat run autotasks/server.js --network localhost\" -k -c \"magenta, green\""
+    "murmuration-deploy": "REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet npx hardhat deploy --reset --export-all client/config/deployments_dev.json",
+    "murmuration-start-chain": "REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet npx concurrently -n \"blockchain\"  \"npx hardhat node --hostname 0.0.0.0 --port 8080 --no-deploy --no-reset\" -k -c \"cyan\"",
+    "murmuration-start-client": "REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet npx concurrently -n \"web,server\" \"cd client && MURMURATION=yes PORT=8080 npm start\" \"HARDHAT_NETWORK=localhost npx hardhat run autotasks/server.js\" -k -c \"magenta, green\""
   },
   "lint-staged": {
     "**!(client)/*.js": [
