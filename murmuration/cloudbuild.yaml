@@ -4,95 +4,29 @@ steps:
       - build
       - '--no-cache'
       - '-t'
-      - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:base-$COMMIT_SHA'
-      - .
-      - '-f'
-      - murmuration/base/Dockerfile
-    id: Build Base
-  - name: gcr.io/cloud-builders/docker
-    args:
-      - push
-      - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:base-$COMMIT_SHA'
-    id: Push Base
-  - name: gcr.io/cloud-builders/docker
-    args:
-      - build
-      - '--no-cache'
-      - '-t'
-      - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:chain-$COMMIT_SHA'
+      - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA'
       - '--build-arg'
-      - 'BASE_IMAGE=${_GCR_HOSTNAME}/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:base-$COMMIT_SHA'
+      - 'SENTRY_RELEASE=${COMMIT_SHA}'
       - .
       - '-f'
-      - murmuration/chain/Dockerfile
-    waitFor:
-      - 'Build Base'
-      - 'Push Base'
-    id: Build Chain
+      - murmuration/Dockerfile
+    id: Build Image
   - name: gcr.io/cloud-builders/docker
     args:
       - push
-      - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:chain-$COMMIT_SHA'
-    waitFor:
-      - 'Build Chain'
-    id: Push Chain
-  - name: gcr.io/cloud-builders/docker
-    args:
-      - build
-      - '--no-cache'
-      - '-t'
-      - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:client-$COMMIT_SHA'
-      - '--build-arg'
-      - 'BASE_IMAGE=${_GCR_HOSTNAME}/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:base-$COMMIT_SHA'
-      - .
-      - '-f'
-      - murmuration/client/Dockerfile
-    waitFor:
-      - 'Build Base'
-      - 'Push Base'
-    id: Build Client
-  - name: gcr.io/cloud-builders/docker
-    args:
-      - push
-      - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:client-$COMMIT_SHA'
-    waitFor:
-      - 'Build Client'
-    id: Push Client
+      - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA'
+    id: Push Image
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     args:
       - app
       - deploy
-      - '--appyaml=murmuration/chain/app.yaml'
-      - '--image-url=${_GCR_HOSTNAME}/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:chain-$COMMIT_SHA'
+      - '--appyaml=murmuration/app.yaml'
+      - '--image-url=$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA'
     entrypoint: gcloud
-    waitFor:
-      - 'Push Chain'
-    id: Deploy Chain
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    args:
-      - app
-      - deploy
-      - '--appyaml=murmuration/client/app.yaml'
-      - '--image-url=${_GCR_HOSTNAME}/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:client-$COMMIT_SHA'
-    entrypoint: gcloud
-    waitFor:
-      - 'Push Client'
-    id: Deploy Client
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    args:
-      - app
-      - deploy
-      - murmuration/dispatch.yaml
-    entrypoint: gcloud
-    waitFor:
-      - 'Deploy Chain'
-      - 'Deploy Client'
-    id: Deploy Dispatch
+    id: Deploy
 timeout: '1600s'
 images:
-  - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:base-$COMMIT_SHA'
-  - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:chain-$COMMIT_SHA'
-  - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:client-$COMMIT_SHA'
+  - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA'
 options:
   substitutionOption: ALLOW_LOOSE
 substitutions:
