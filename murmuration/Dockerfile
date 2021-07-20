@@ -30,4 +30,4 @@ RUN npm install
 EXPOSE 8080
 
 WORKDIR /goldfinch-protocol
-CMD npm run start-murmuration
+CMD npm run murmuration-start
