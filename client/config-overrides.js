@@ -28,6 +28,7 @@ const gnosisSafeIntegration = () => config => {
   }
 
   config.proxy = {
+    ...(config.proxy || {}),
     "/relay": "http://localhost:4000",
   }
 
@@ -49,6 +50,7 @@ const murmuration = () => config => {
     // so we do that in the npm `murmuration-start` command.
 
     config.proxy = {
+      ...(config.proxy || {}),
       // In the murmuration environment, we have the Webpack dev server proxy for the hardhat node
       // (which is run via `npx hardhat node` in the `murmuration-start` npm command). This approach
       // was arrived at after an approach of not colocating the hardhat node and the Webpack dev server
