@@ -21,7 +21,7 @@ async function main() {
 
 async function ensurePerms(hre) {
   const {getNamedAccounts, getChainId} = hre
-  const {proxy_owner, protocol_owner} = await getNamedAccounts()
+  const {gf_deployer, protocol_owner} = await getNamedAccounts()
 
   // Since this is not a "real" deployment (just a script),
   //the deployments.log is not enabled. So, just use console.log instead
@@ -35,11 +35,11 @@ async function ensurePerms(hre) {
 
   let contractsToUpgrade = process.env.CONTRACTS || "GoldfinchConfig, GoldfinchFactory, CreditDesk, Pool, Fidu"
   contractsToUpgrade = contractsToUpgrade.split(/[ ,]+/)
-  await ensurePermsOnContracts(contractsToUpgrade, proxy_owner, protocol_owner, hre)
+  await ensurePermsOnContracts(contractsToUpgrade, gf_deployer, protocol_owner, hre)
   logger("Done.")
 }
 
-async function ensurePermsOnContracts(contractNames, proxy_owner, protocol_owner, hre) {
+async function ensurePermsOnContracts(contractNames, gf_deployer, protocol_owner, hre) {
   const {deployments, getChainId} = hre
   const safeAddress = SAFE_CONFIG[await getChainId()].safeAddress
 
@@ -63,7 +63,7 @@ async function ensurePermsOnContracts(contractNames, proxy_owner, protocol_owner
 
       if (admin.toLowerCase() !== safeAddress.toLowerCase()) {
         logger(`Converting safe ${safeAddress} as the proxy owner for ${contractName}`)
-        const contractAsAdmin = await getDeployedContract(deployments, `${contractName}_Proxy`, proxy_owner)
+        const contractAsAdmin = await getDeployedContract(deployments, `${contractName}_Proxy`, gf_deployer)
         const txn = await contractAsAdmin.transferOwnership(safeAddress)
         await txn.wait()
       }

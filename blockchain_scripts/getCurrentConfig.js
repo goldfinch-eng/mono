@@ -6,8 +6,8 @@ const {CONFIG_KEYS} = require("./configKeys")
 
 async function main() {
   let configAddress = process.env.CONFIG_ADDRESS || (await deployments.get("GoldfinchConfig")).address
-  let {proxy_owner} = await hre.getNamedAccounts()
-  let signer = await getSignerForAddress(proxy_owner)
+  let {gf_deployer} = await hre.getNamedAccounts()
+  let signer = await getSignerForAddress(gf_deployer)
   const config = await ethers.getContractAt("GoldfinchConfig", configAddress, signer)
 
   console.log(`GoldfinchConfig (${config.address})`)

@@ -14,6 +14,9 @@ const TEST_PROXY_OWNER_KEY = "f0dd5813eeba1588f31cb0f129cd3b42b3ad6646689f52b051
 // UNCOMMENT WHEN YOU ACTUALLY WANT TO RUN ON MAINNET
 // const MAINNET_PROTOCOL_OWNER_KEY = process.env.MAINNET_PROTOCOL_OWNER_KEY
 // const MAINNET_PROXY_OWNER_KEY = process.env.MAINNET_PROXY_OWNER_KEY
+if (process.env.HARDHAT_FORK) {
+  process.env['HARDHAT_DEPLOY_FORK'] = process.env.HARDHAT_FORK;
+}
 
 module.exports = {
   defaultNetwork: "hardhat",
@@ -63,7 +66,7 @@ module.exports = {
       3: "0x83CB0ec2f0013a9641654b344D34615f95b7D7FC",
       4: "0x83CB0ec2f0013a9641654b344D34615f95b7D7FC",
     },
-    proxy_owner: {
+    gf_deployer: {
       default: 1,
       1: "0xa083880F7a5df37Bf00a25380C3eB9AF9cD92D8f",
       3: "0xf3c9B38c155410456b5A98fD8bBf5E35B87F6d96",

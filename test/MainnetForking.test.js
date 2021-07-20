@@ -24,15 +24,7 @@ const {
   fundWithWhales,
   performPostUpgradeMigration,
 } = require("../blockchain_scripts/mainnetForkingHelpers")
-const {
-  deployPoolTokens,
-  deploySeniorFund,
-  deployTranchedPool,
-  deployMigratedTranchedPool,
-  deploySeniorFundStrategy,
-  deployBorrower,
-  deployClImplementation,
-} = require("../blockchain_scripts/baseDeploy")
+const deployV2 = require("../blockchain_scripts/v2/deployV2")
 const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
 const {time} = require("@openzeppelin/test-helpers")
 const {deployments, ethers, artifacts} = hre
@@ -55,26 +47,11 @@ const {
   USDC_DECIMALS,
   decodeLogs,
   createPoolWithCreditLine,
-  toTruffle,
 } = require("./testHelpers")
 const {getMigrationData} = require("../blockchain_scripts/v2/migrationHelpers")
 const {assertIsString} = require("../utils/type")
 
 const TEST_TIMEOUT = 180000 // 3 mins
-
-async function deployV2(contracts) {
-  const config = contracts.GoldfinchConfig.UpgradedContract
-  const fidu = contracts.Fidu.UpgradedContract
-  const seniorPool = await toTruffle(await deploySeniorFund(hre, {config, fidu}), "SeniorFund")
-  const seniorFundStrategy = await toTruffle(await deploySeniorFundStrategy(hre, {config}), "IFundStrategy")
-  const tranchedPool = await toTruffle(await deployTranchedPool(hre, {config}), "TranchedPool")
-  const poolTokens = await toTruffle(await deployPoolTokens(hre, {config}), "PoolTokens")
-  const migratedTranchedPool = await toTruffle(await deployMigratedTranchedPool(hre, {config}), "MigratedTranchedPool")
-  await deployClImplementation(hre, {config})
-  await deployBorrower(hre, {config})
-  await contracts.GoldfinchConfig.UpgradedContract.bulkAddToGoList([seniorPool.address])
-  return {seniorPool, seniorFundStrategy, tranchedPool, poolTokens, migratedTranchedPool}
-}
 
 /*
 These tests are special. They use existing mainnet state, so

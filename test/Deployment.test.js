@@ -82,11 +82,11 @@ describe("Deployment", async () => {
     })
 
     it("should allow for a way to transfer ownership of the proxy", async () => {
-      const {protocol_owner, proxy_owner} = await getNamedAccounts()
-      const seniorFundProxy = await getDeployedContract(deployments, "SeniorFund_Proxy", proxy_owner)
+      const {protocol_owner, gf_deployer} = await getNamedAccounts()
+      const seniorFundProxy = await getDeployedContract(deployments, "SeniorFund_Proxy", gf_deployer)
 
       const originalOwner = await seniorFundProxy.owner()
-      expect(originalOwner).to.equal(proxy_owner)
+      expect(originalOwner).to.equal(gf_deployer)
 
       const result = await seniorFundProxy.transferOwnership(protocol_owner)
       await result.wait()

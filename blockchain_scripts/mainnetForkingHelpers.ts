@@ -1,22 +1,20 @@
 import BN from "bn.js"
 import {
-  getDeployedContract,
   isTestEnv,
   updateConfig,
   OWNER_ROLE,
   SAFE_CONFIG,
-  setInitialConfigVals,
   MAINNET_CHAIN_ID,
   DepList,
   Ticker,
   AddressString,
 } from "../blockchain_scripts/deployHelpers"
+import _ from 'lodash'
 import {CONFIG_KEYS} from "./configKeys"
 import hre from "hardhat"
 import {Contract} from "@ethersproject/contracts"
 import {DeploymentsExtension} from "hardhat-deploy/types"
 import {HardhatRuntimeEnvironment} from "hardhat/types"
-import {GoldfinchConfig} from "../typechain/ethers"
 const {ethers} = hre
 
 const MAINNET_MULTISIG = "0xBEb28978B2c755155f20fd3d09Cb37e300A6981f"
@@ -55,6 +53,7 @@ async function upgradeContracts(
     if (!contract && contractName === "GoldfinchFactory") {
       // For backwards compatability until we deploy V2
       contract = contracts["CreditLineFactory"]
+      contracts["GoldfinchFactory"] = contract
     }
     let contractToDeploy = contractName
     if (isTestEnv() && ["Pool", "CreditDesk", "GoldfinchConfig"].includes(contractName)) {
@@ -67,8 +66,8 @@ async function upgradeContracts(
       args: [],
       libraries: dependencies[contractName],
     })
-    let upgradedContract = await getDeployedContract(deployments, contractName, mainnetSigner)
-    upgradedContract = upgradedContract.attach(deployResult.address)
+    // Get a contract object with the latest ABI, attached to the mainnetSigner
+    let upgradedContract = await ethers.getContractAt(deployResult.abi, deployResult.address, mainnetSigner)
     let upgradedImplAddress = deployResult.address
 
     if (contract.ProxyContract) {
@@ -79,10 +78,8 @@ async function upgradeContracts(
       }
       await contract.ProxyContract.changeImplementation(deployResult.address, "0x")
       upgradedContract = upgradedContract.attach(contract.ProxyContract.address)
-      upgradedImplAddress = (await getProxyImplAddress(contract.ProxyContract)) as string
     }
-    // Get the new implmentation contract with the latest ABI, but attach it to the mainnet proxy address
-    contract.UpgradedContract = upgradedContract.connect(mainnetSigner)
+    contract.UpgradedContract = upgradedContract
     contract.UpgradedImplAddress = upgradedImplAddress
   }
   return contracts
@@ -119,7 +116,7 @@ async function getExistingContracts(
   return contracts
 }
 
-async function fundWithWhales(erc20s: any, recipients: any, amount?: any) {
+async function fundWithWhales(erc20s: any, recipients: string[], amount?: any) {
   const whales: Record<Ticker, AddressString> = {
     USDC: "0x46aBbc9fc9d8E749746B00865BC2Cf7C4d85C837",
     USDT: "0x1062a747393198f70f71ec65a582423dba7e5ab3",
@@ -130,7 +127,7 @@ async function fundWithWhales(erc20s: any, recipients: any, amount?: any) {
     if (!whales[erc20.ticker]) {
       throw new Error(`We don't have a whale mapping for ${erc20.ticker}`)
     }
-    for (let recipient of recipients) {
+    for (let recipient of _.compact(recipients)) {
       await fundWithWhale({
         erc20: erc20,
         whale: whales[erc20.ticker],
@@ -178,15 +175,16 @@ async function performPostUpgradeMigration(upgradedContracts: any, deployments: 
 }
 
 async function migrateToNewConfig(upgradedContracts: any) {
+  console.log("Beginning config migration...")
   const newConfig = upgradedContracts.GoldfinchConfig.UpgradedContract
+  const existingConfig = upgradedContracts.GoldfinchConfig.ExistingContract
   const safeAddress = SAFE_CONFIG[MAINNET_CHAIN_ID].safeAddress
   if (!(await newConfig.hasRole(OWNER_ROLE, safeAddress))) {
     await (await newConfig.initialize(safeAddress)).wait()
   }
-  await setInitialConfigVals(newConfig)
-  await setCurrentAddressesOnConfig(newConfig, upgradedContracts.GoldfinchConfig.ExistingContract)
+  await newConfig.initializeFromOtherConfig(existingConfig.address)
   await updateConfig(
-    upgradedContracts.GoldfinchConfig.ExistingContract,
+    existingConfig,
     "address",
     CONFIG_KEYS.GoldfinchConfig,
     newConfig.address
@@ -196,18 +194,6 @@ async function migrateToNewConfig(upgradedContracts: any) {
   await Promise.all(
     contractsToUpgrade.map(async (contract) => {
       await (await upgradedContracts[contract].UpgradedContract.updateGoldfinchConfig()).wait()
-    })
-  )
-}
-
-async function setCurrentAddressesOnConfig(newConfig: GoldfinchConfig, existingConfig: GoldfinchConfig) {
-  const addressesToSet = ["Pool", "GoldfinchFactory", "CreditDesk", "Fidu", "USDC", "CUSDCContract"]
-  await Promise.all(
-    Object.entries(CONFIG_KEYS).map(async ([key, val]) => {
-      if (addressesToSet.includes(key)) {
-        const currentVal = await existingConfig.getAddress(val)
-        await updateConfig(newConfig, "address", val, currentVal)
-      }
     })
   )
 }

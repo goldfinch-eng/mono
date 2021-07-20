@@ -4,6 +4,7 @@ const hre = require("hardhat")
 const {artifacts} = hre
 const IV1CreditLine = artifacts.require("IV1CreditLine")
 
+// TODO: Add new deals, from QuickCheck, Alma, and other test loans from employees
 const borrowerAddresses = {
   "0xEEE76fFacd818Bd54CEDACD5E970736c91Deb795": {
     addresses: ["0xEEE76fFacd818Bd54CEDACD5E970736c91Deb795", "0xa9f9ce97e5244ebe307dbcc4feb18422e63b38ee"],

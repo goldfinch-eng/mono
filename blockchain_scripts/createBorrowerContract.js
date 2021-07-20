@@ -5,20 +5,20 @@ const {getDeployedContract} = require("../blockchain_scripts/deployHelpers.js")
 
 async function main() {
   const borrower = process.env.BORROWER
-  const {proxy_owner} = await getNamedAccounts()
+  const {gf_deployer} = await getNamedAccounts()
 
   if (!borrower) {
     throw new Error("You must supply an existing borrower when creating a borrower contract")
   }
 
-  let goldfinchFactory = await getDeployedContract(deployments, "GoldfinchFactory", proxy_owner)
+  let goldfinchFactory = await getDeployedContract(deployments, "GoldfinchFactory", gf_deployer)
   console.log(
     "Creating the borrower contract from CreditLine Factory:",
     goldfinchFactory.address,
     "for",
     borrower,
     "using proxy owner account of:",
-    proxy_owner
+    gf_deployer
   )
   const result = await (await goldfinchFactory.createBorrower(borrower)).wait()
   let bwrConAddr = result.events[result.events.length - 1].args[0]

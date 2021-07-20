@@ -11,9 +11,9 @@ const {
 const {displayCreditLine} = require("./protocolHelpers")
 
 async function main() {
-  const {proxy_owner} = await getNamedAccounts()
-  const creditDesk = await getDeployedContract(deployments, "CreditDesk", proxy_owner)
-  const goldfinchFactory = await getDeployedContract(deployments, "GoldfinchFactory", proxy_owner)
+  const {gf_deployer} = await getNamedAccounts()
+  const creditDesk = await getDeployedContract(deployments, "CreditDesk", gf_deployer)
+  const goldfinchFactory = await getDeployedContract(deployments, "GoldfinchFactory", gf_deployer)
   const borrower = process.env.BORROWER
   const bwrConAddr = process.env.BORROWER_CONTRACT
   if (!borrower && !bwrConAddr) {
