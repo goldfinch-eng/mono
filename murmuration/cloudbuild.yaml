@@ -29,6 +29,7 @@ images:
   - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:latest'
 options:
   substitutionOption: ALLOW_LOOSE
+  machineType: E2_HIGHCPU_8
 substitutions:
   _GCR_HOSTNAME: us.gcr.io
   _SERVICE_NAME: murmuration-goldfinch-finance
