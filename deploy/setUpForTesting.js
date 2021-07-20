@@ -38,7 +38,6 @@ async function main({getNamedAccounts, deployments, getChainId}) {
   let {protocol_owner} = await getNamedAccounts()
   let chainID = await getChainId()
   let underwriter = protocol_owner
-  let borrower = protocol_owner
   let pool = await getDeployedAsEthersContract(getOrNull, "Pool")
   let creditDesk = await getDeployedAsEthersContract(getOrNull, "CreditDesk")
   let erc20 = await getDeployedAsEthersContract(getOrNull, "TestERC20")
@@ -94,23 +93,27 @@ async function main({getNamedAccounts, deployments, getChainId}) {
     await performPostUpgradeMigration(upgradedContracts, deployments)
   }
 
-  const testUser = process.env.TEST_USER
-  if (testUser) {
-    borrower = testUser
-    if (CHAIN_MAPPING[chainID] === LOCAL) {
-      await giveMoneyToTestUser(testUser, erc20s)
-    }
-  }
-
   await depositFundsToThePool(pool, erc20)
   await createUnderwriter(creditDesk, underwriter)
 
-  const result = await (await creditLineFactory.createBorrower(borrower)).wait()
-  let bwrConAddr = result.events[result.events.length - 1].args[0]
-  logger(`Created borrower contract: ${bwrConAddr} for ${borrower}`)
+  if (process.env.TEST_USER) {
+    throw new Error("`TEST_USER` is deprecated. Use `TEST_USERS` instead.")
+  }
+  const borrowers = (process.env.TEST_USERS || protocol_owner).split(",").filter((val) => !!val)
+  for (const [i, borrower] of borrowers.entries()) {
+    logger(`Setting up for borrower ${i}: ${borrower}`)
 
-  await createCreditLineForBorrower(creditDesk, creditLineFactory, bwrConAddr)
-  await createCreditLineForBorrower(creditDesk, creditLineFactory, bwrConAddr)
+    if (CHAIN_MAPPING[chainID] === LOCAL) {
+      await giveMoneyToTestUser(borrower, erc20s)
+    }
+
+    const result = await (await creditLineFactory.createBorrower(borrower)).wait()
+    let bwrConAddr = result.events[result.events.length - 1].args[0]
+    logger(`Created borrower contract: ${bwrConAddr} for ${borrower}`)
+
+    await createCreditLineForBorrower(creditDesk, creditLineFactory, bwrConAddr)
+    await createCreditLineForBorrower(creditDesk, creditLineFactory, bwrConAddr)
+  }
 }
 
 async function upgradeExistingContracts(contractsToUpgrade, mainnetConfig, mainnetMultisig, deployFrom, deployments) {
@@ -201,7 +204,7 @@ async function createUnderwriter(creditDesk, newUnderwriter) {
 }
 
 async function createCreditLineForBorrower(creditDesk, creditLineFactory, borrower) {
-  logger("Trying to create an CreditLine for the Borrower...")
+  logger("Trying to create a CreditLine for the Borrower...")
 
   logger("Creating a credit line for the borrower", borrower)
   const limit = String(new BN(10000).mul(USDCDecimals))

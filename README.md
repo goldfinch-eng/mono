@@ -19,7 +19,7 @@ You will need the correct version of node/npm on your local machine.
 - Ensure you have Java installed (Firebase emulator requires the JVM)
 - Copy `.env.example` to `.env.local` (the local will be ignored from git).
 - Lastly add the following into your new `.env.local` file.
- * `TEST_USER={your Goldfinch Metamask address}`
+ * `TEST_USERS={your Goldfinch Metamask address}`
  * `ALLOWED_SENDERS=<your Goldfinch Metamask address>`
  * `ALLOWED_CONTRACTS=<borrower contract address>`
 
@@ -82,7 +82,7 @@ Generally speaking, you shouldn't need to do this, since the test command automa
 - Testnet deployments:
     - Right now, we support Ropsten and Rinkeby testnets.
     - We are already deployed to these. Re-running is idempotent. But if we want to blow away the existing deployments for whatever reason, we can do the following:
-    - Redeploy with: `TEST_USER={YOUR_METAMASK_ADDRESS} npx buidler deploy --network {ropsten|rinkeby} --export-all ./config/deployments.json --reset`
+    - Redeploy with: `TEST_USERS={YOUR_METAMASK_ADDRESS} npx buidler deploy --network {ropsten|rinkeby} --export-all ./config/deployments.json --reset`
 - Mainnet deployments:
     - TBD
 
