@@ -18,10 +18,11 @@ You will need the correct version of node/npm on your local machine.
 - Create a Goldfinch specific Metamask, which you can use for testing. The easiest way to do this is by creating a separate Chrome profile for Goldfinch, and then simply installing the Metamask extension.
 - Ensure you have Java installed (Firebase emulator requires the JVM)
 - Copy `.env.example` to `.env.local` (the local will be ignored from git).
-- Lastly add the following into your new `.env.local` file.
+- Lastly, add at least the following into your new `.env.local` file.
  * `TEST_USER={your Goldfinch Metamask address}`
  * `ALLOWED_SENDERS=<your Goldfinch Metamask address>`
  * `ALLOWED_CONTRACTS=<borrower contract address>`
+- Note that if you want the `client` to use variables in your `.env.local`, you'll need to create a symlink to this file from inside the `client` dir, or else create a separate `client/.env.local` file.
 
 *Note: To find the borrower contract address, you'll need to run `npm start`, and then find the line in the console output that says `[blockchain] Created borrower contract: {borrower contract address} for {your wallet address}` Use the borrower contract address and paste it into your .env.local!*
 
