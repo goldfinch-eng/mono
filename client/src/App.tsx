@@ -8,6 +8,7 @@ import NetworkWidget from "./components/networkWidget"
 import Sidebar from "./components/sidebar"
 import TermsOfService from "./components/termsOfService.js"
 import PrivacyPolicy from "./components/privacyPolicy.js"
+import SeniorPoolAgreementNonUS from "./components/seniorPoolAgreementNonUS"
 import web3 from "./web3"
 import { fetchPoolData, getPool } from "./ethereum/pool.js"
 import { getCreditDesk, fetchCreditDeskData } from "./ethereum/creditDesk.js"
@@ -180,6 +181,9 @@ function App() {
             </Route>
             <Route path="/privacy">
               <PrivacyPolicy />
+            </Route>
+            <Route path="/senior-pool-agreement-non-us">
+              <SeniorPoolAgreementNonUS />
             </Route>
           </Switch>
         </div>
