@@ -13,13 +13,14 @@ COPY . .
 
 # Use the murmuration env config as `.env.local`.
 ARG SENTRY_RELEASE
-RUN cp ./murmuration/.env.murmuration ./.env.local
-# Populate the config as necessary, for values known only at build time.
-RUN sed -i -e "s/REACT_APP_SENTRY_RELEASE=REPLACE_ME_IN_BUILD/REACT_APP_SENTRY_RELEASE=${SENTRY_RELEASE}/g" ./.env.local
-# Replace the symlink at `client/.env.local` with its source file, as another
-# way of accomplishing what the symlink does, since Docker seems not to respect
-# the symlink.
-RUN unlink ./client/.env.local && cp ./.env.local ./client/.env.local
+RUN cp ./murmuration/.env.murmuration ./.env.local \
+  # Populate the config as necessary, for values known only at build time.
+  && sed -i -e "s/REACT_APP_SENTRY_RELEASE=REPLACE_ME_IN_BUILD/REACT_APP_SENTRY_RELEASE=${SENTRY_RELEASE}/g" ./.env.local \
+  # Replace the symlink at `client/.env.local` with its source file, as another
+  # way of accomplishing what the symlink does, since Docker seems not to respect
+  # the symlink.
+  && unlink ./client/.env.local \
+  && cp ./.env.local ./client/.env.local
 
 # We observed `postinstall` not running automatically (which seems to be
 # understood behavior in a Docker container: https://stackoverflow.com/q/47748075),
