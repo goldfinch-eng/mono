@@ -7,6 +7,9 @@ function useCurrencyUnlocked(erc20, {owner, spender, minimum}) {
   minimum = minimum || goldfinchConfig.transactionLimit
 
   const refreshUnlocked = useCallback(async () => {
+    if (!erc20 || !owner || !spender) {
+      return
+    }
     let allowance = await erc20.getAllowance({
       owner: owner,
       spender: spender,
