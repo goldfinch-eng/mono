@@ -132,7 +132,7 @@ async function fundWithWhales(erc20s: any, recipients: string[], amount?: any) {
         erc20: erc20,
         whale: whales[erc20.ticker],
         recipient: recipient,
-        amount: amount || new BN("100000"),
+        amount: amount || new BN("200000"),
       })
     }
   }
