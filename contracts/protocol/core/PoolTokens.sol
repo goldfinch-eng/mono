@@ -110,6 +110,10 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
     require(_msgSender() == token.pool, "Only the token's pool can redeem");
 
     token.principalRedeemed = token.principalRedeemed.add(principalRedeemed);
+    require(
+      token.principalRedeemed <= token.principalAmount,
+      "Cannot redeem more than principal-deposited amount for token"
+    );
     token.interestRedeemed = token.interestRedeemed.add(interestRedeemed);
 
     PoolInfo storage pool = pools[token.pool];
