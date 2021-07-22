@@ -36,8 +36,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
   address private constant DAI_ADDRESS = address(0x6B175474E89094C44Da98b954EedeAC495271d0F);
 
   function initialize(address owner, address _config) external override initializer {
-    require(owner != address(0), "Owner address cannot be empty");
-    require(_config != address(0), "Config address cannot be empty");
+    require(owner != address(0) && _config != address(0), "Owner and config addresses cannot be empty");
     __BaseUpgradeablePausable__init(owner);
     config = GoldfinchConfig(_config);
 

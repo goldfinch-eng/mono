@@ -56,7 +56,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     uint256 _termInDays,
     uint256 _lateFeeApr
   ) public initializer {
-    require(owner != address(0) && _borrower != address(0), "Zero address passed in");
+    require(_config != address(0) && owner != address(0) && _borrower != address(0), "Zero address passed in");
     __BaseUpgradeablePausable__init(owner);
     config = GoldfinchConfig(_config);
     borrower = _borrower;
