@@ -162,7 +162,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
     uint256 originAmount,
     address fromToken,
     uint256 minTargetAmount,
-    uint256[] memory exchangeDistribution
+    uint256[] calldata exchangeDistribution
   ) external onlyAdmin {
     transferFrom(fromToken, _msgSender(), address(this), originAmount);
     IERC20withDec usdc = config.getUSDC();
@@ -172,11 +172,11 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
   }
 
   function payMultipleWithSwapOnOneInch(
-    address[] memory pools,
-    uint256[] memory minAmounts,
+    address[] calldata pools,
+    uint256[] calldata minAmounts,
     uint256 originAmount,
     address fromToken,
-    uint256[] memory exchangeDistribution
+    uint256[] calldata exchangeDistribution
   ) external onlyAdmin {
     require(pools.length == minAmounts.length, "Pools and amounts must be the same length");
 
@@ -229,7 +229,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
     address toToken,
     uint256 originAmount,
     uint256 minTargetAmount,
-    uint256[] memory exchangeDistribution
+    uint256[] calldata exchangeDistribution
   ) internal {
     bytes memory _data = abi.encodeWithSignature(
       "swap(address,address,uint256,uint256,uint256[],uint256)",
