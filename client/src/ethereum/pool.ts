@@ -227,14 +227,12 @@ async function getCumulativeDrawdowns(pool: SeniorFund) {
   return new BigNumber(_.sumBy(allDrawdownEvents, (event) => parseInt(event.returnValues.amount, 10)))
 }
 
-async function getRepaymentEvents(this: PoolData) {
-  const fromBlock = getFromBlock(this.pool.chain)
-  const events = await Promise.all(
-    ["InterestCollected", "PrincipalCollected", "ReserveFundsCollected"].map(async (eventName) => {
-      return this.pool.contract.getPastEvents(eventName, {fromBlock: fromBlock})
-    }),
-  )
-  const eventTxs = await mapEventsToTx(_.flatten(events))
+async function getRepaymentEvents(this: PoolData, goldfinchProtocol: GoldfinchProtocol) {
+  const eventNames = ["InterestCollected", "PrincipalCollected", "ReserveFundsCollected"]
+  let events = await goldfinchProtocol.queryEvents(this.pool.contract, eventNames)
+  const oldEvents = await goldfinchProtocol.queryEvents("Pool", eventNames)
+  events = oldEvents.concat(events)
+  const eventTxs = await mapEventsToTx(events)
   const combinedEvents = _.map(_.groupBy(eventTxs, "id"), (val) => {
     const interestPayment = _.find(val, (event) => event.type === "InterestCollected")
     const principalPayment = _.find(val, (event) => event.type === "PrincipalCollected") || {
