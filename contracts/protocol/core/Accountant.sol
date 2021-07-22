@@ -123,11 +123,10 @@ library Accountant {
     return (unscaledWritedownPercent, writedownAmount.rawValue);
   }
 
-  function calculateAmountOwedForOneDay(ICreditLine cl) public view returns (FixedPoint.Unsigned memory) {
+  function calculateAmountOwedForOneDay(ICreditLine cl) public view returns (FixedPoint.Unsigned memory interestOwed) {
     // Determine theoretical interestOwed for one full day
     uint256 totalInterestPerYear = cl.balance().mul(cl.interestApr()).div(INTEREST_DECIMALS);
-    FixedPoint.Unsigned memory interestOwed = FixedPoint.fromUnscaledUint(totalInterestPerYear).div(365);
-
+    interestOwed = FixedPoint.fromUnscaledUint(totalInterestPerYear).div(365);
     return interestOwed;
   }
 
@@ -155,10 +154,10 @@ library Accountant {
     uint256 startTime,
     uint256 endTime,
     uint256 lateFeeGracePeriodInDays
-  ) public view returns (uint256) {
+  ) public view returns (uint256 interestOwed) {
     uint256 secondsElapsed = endTime.sub(startTime);
     uint256 totalInterestPerYear = balance.mul(cl.interestApr()).div(INTEREST_DECIMALS);
-    uint256 interestOwed = totalInterestPerYear.mul(secondsElapsed).div(SECONDS_PER_YEAR);
+    interestOwed = totalInterestPerYear.mul(secondsElapsed).div(SECONDS_PER_YEAR);
 
     if (lateFeeApplicable(cl, endTime, lateFeeGracePeriodInDays)) {
       uint256 lateFeeInterestPerYear = balance.mul(cl.lateFeeApr()).div(INTEREST_DECIMALS);
