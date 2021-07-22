@@ -290,14 +290,15 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
 
     // This resets lastFullPaymentTime. These conditions assure that they have
     // indeed paid off all their interest and they have a real nextDueTime. (ie. creditline isn't pre-drawdown)
-    if (newInterestOwed == 0 && nextDueTime != 0) {
+    uint256 _nextDueTime = nextDueTime;
+    if (newInterestOwed == 0 && _nextDueTime != 0) {
       // If interest was fully paid off, then set the last full payment as the previous due time
       uint256 mostRecentLastDueTime;
-      if (currentTime() < nextDueTime) {
+      if (currentTime() < _nextDueTime) {
         uint256 secondsPerPeriod = paymentPeriodInDays.mul(SECONDS_PER_DAY);
-        mostRecentLastDueTime = nextDueTime.sub(secondsPerPeriod);
+        mostRecentLastDueTime = _nextDueTime.sub(secondsPerPeriod);
       } else {
-        mostRecentLastDueTime = nextDueTime;
+        mostRecentLastDueTime = _nextDueTime;
       }
       setLastFullPaymentTime(mostRecentLastDueTime);
     }
