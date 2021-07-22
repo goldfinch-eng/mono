@@ -200,6 +200,7 @@ contract Pool is BaseUpgradeablePausable, IPool {
     bytes memory _res;
     // solhint-disable-next-line avoid-low-level-calls
     (success, _res) = compoundController.call(data);
+    require(success, "Failed to claim COMP");
 
     // Send our balance of COMP!
     address compToken = address(0xc00e94Cb662C3520282E6f5717214004A7f26888);
@@ -210,6 +211,7 @@ contract Pool is BaseUpgradeablePausable, IPool {
     data = abi.encodeWithSignature("transfer(address,uint256)", seniorFundAddress, compBalance);
     // solhint-disable-next-line avoid-low-level-calls
     (success, _res) = compToken.call(data);
+    require(success, "Failed to transfer COMP");
   }
 
   function toUint256(bytes memory _bytes) internal pure returns (uint256 value) {
