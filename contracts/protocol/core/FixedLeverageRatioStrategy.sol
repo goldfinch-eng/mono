@@ -11,7 +11,7 @@ import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 contract FixedLeverageRatioStrategy is IFundStrategy {
   using SafeMath for uint256;
 
-  uint256 private leverageRatio;
+  uint256 private immutable leverageRatio;
 
   constructor(uint256 _leverageRatio) public {
     leverageRatio = _leverageRatio;
