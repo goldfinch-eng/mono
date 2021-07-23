@@ -307,26 +307,31 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     require(_borrower != address(0), "Borrower must not be empty");
     require(_paymentPeriodInDays != 0, "Payment period must not be empty");
     require(_termInDays != 0, "Term must not be empty");
+
     address originalClAddr = address(creditLine);
     IV2CreditLine originalCl = IV2CreditLine(originalClAddr);
 
     createAndSetCreditLine(_borrower, _limit, _interestApr, _paymentPeriodInDays, _termInDays, _lateFeeApr);
-    emit CreditLineMigrated(originalClAddr, address(creditLine));
+
+    IV2CreditLine newCl = creditLine;
+    address newClAddr = address(newCl);
+
+    emit CreditLineMigrated(originalClAddr, newClAddr);
 
     // Copy over all accounting variables
-    creditLine.setBalance(originalCl.balance());
-    creditLine.setInterestOwed(originalCl.interestOwed());
-    creditLine.setPrincipalOwed(originalCl.principalOwed());
-    creditLine.setTermEndTime(originalCl.termEndTime());
-    creditLine.setNextDueTime(originalCl.nextDueTime());
-    creditLine.setInterestAccruedAsOf(originalCl.interestAccruedAsOf());
-    creditLine.setLastFullPaymentTime(originalCl.lastFullPaymentTime());
-    creditLine.setTotalInterestAccrued(originalCl.totalInterestAccrued());
+    newCl.setBalance(originalCl.balance());
+    newCl.setInterestOwed(originalCl.interestOwed());
+    newCl.setPrincipalOwed(originalCl.principalOwed());
+    newCl.setTermEndTime(originalCl.termEndTime());
+    newCl.setNextDueTime(originalCl.nextDueTime());
+    newCl.setInterestAccruedAsOf(originalCl.interestAccruedAsOf());
+    newCl.setLastFullPaymentTime(originalCl.lastFullPaymentTime());
+    newCl.setTotalInterestAccrued(originalCl.totalInterestAccrued());
 
     // Transfer any funds to new CL
     uint256 clBalance = config.getUSDC().balanceOf(originalClAddr);
     if (clBalance > 0) {
-      safeTransfer(config.getUSDC(), originalClAddr, address(creditLine), clBalance);
+      safeTransfer(config.getUSDC(), originalClAddr, newClAddr, clBalance);
     }
 
     // Close out old CL
