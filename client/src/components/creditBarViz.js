@@ -1,25 +1,22 @@
 import React from "react"
-import {displayDollars} from "../utils"
 
 function CreditBarViz(props) {
-  const remainingTotalDueAmount = props.creditLine.remainingTotalDueAmountInDollars
-  const availableToDrawdown = props.creditLine.availableCreditInDollars
-  const totalForBar = remainingTotalDueAmount.plus(availableToDrawdown)
-  const leftBarStyle = {width: `${remainingTotalDueAmount.multipliedBy(100).dividedBy(totalForBar)}%`}
-  const rightBarStyle = {width: `${availableToDrawdown.multipliedBy(100).dividedBy(totalForBar)}%`}
+  const totalForBar = props.leftAmount.plus(props.rightAmount)
+  const leftBarStyle = {width: `${props.leftAmount.multipliedBy(100).dividedBy(totalForBar)}%`}
+  const rightBarStyle = {width: `${props.rightAmount.multipliedBy(100).dividedBy(totalForBar)}%`}
   return (
     <div className="bar-viz">
       <div className="full-bar">
-        <div className="bar-left" style={leftBarStyle}></div>
-        <div className="bar-right" style={rightBarStyle}></div>
+        <div className="bar-left" style={leftBarStyle} />
+        <div className="bar-right" style={rightBarStyle} />
       </div>
       <div className="left-label">
-        <div className="amount">{displayDollars(remainingTotalDueAmount)}</div>
-        <div className="description">Balance plus interest</div>
+        <div className="amount">{props.leftAmountDisplay}</div>
+        <div className="description">{props.leftAmountDescription}</div>
       </div>
       <div className="right-label">
-        <div className="amount">{displayDollars(availableToDrawdown)}</div>
-        <div className="description">Available to drawdown</div>
+        <div className="amount">{props.rightAmountDisplay}</div>
+        <div className="description">{props.rightAmountDescription}</div>
       </div>
     </div>
   )
