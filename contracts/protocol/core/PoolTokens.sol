@@ -56,6 +56,8 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
   */
   // solhint-disable-next-line func-name-mixedcase
   function __initialize__(address owner, GoldfinchConfig _config) external initializer {
+    require(owner != address(0) && address(_config) != address(0), "Owner and config addresses cannot be empty");
+
     __Context_init_unchained();
     __AccessControl_init_unchained();
     __ERC165_init_unchained();
