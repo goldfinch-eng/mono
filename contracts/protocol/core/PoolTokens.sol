@@ -167,7 +167,7 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
     return _validPool(sender);
   }
 
-  function createToken(MintParams memory params, address poolAddress) internal returns (uint256) {
+  function createToken(MintParams calldata params, address poolAddress) internal returns (uint256) {
     PoolInfo storage pool = pools[poolAddress];
 
     _tokenIdTracker.increment();
