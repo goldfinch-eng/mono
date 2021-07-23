@@ -55,19 +55,19 @@ abstract contract SafeERC20Transfer {
   function safeApprove(
     IERC20 erc20,
     address spender,
-    uint256 allowance
-  ) internal {
-    bool success = erc20.approve(spender, allowance);
-    require(success, "Failed to approve ERC20");
-  }
-
-  function safeApprove(
-    IERC20 erc20,
-    address spender,
     uint256 allowance,
     string memory message
   ) internal {
     bool success = erc20.approve(spender, allowance);
     require(success, message);
+  }
+
+  function safeApprove(
+    IERC20 erc20,
+    address spender,
+    uint256 allowance
+  ) internal {
+    string memory message = "Failed to approve ERC20";
+    safeApprove(erc20, spender, allowance, message);
   }
 }
