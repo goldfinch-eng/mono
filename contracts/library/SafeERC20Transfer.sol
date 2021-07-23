@@ -30,7 +30,7 @@ abstract contract SafeERC20Transfer {
     safeTransfer(erc20, to, amount, "Failed to transfer ERC20");
   }
 
-  function safeTransfer(
+  function safeTransferFrom(
     IERC20 erc20,
     address from,
     address to,
@@ -42,14 +42,14 @@ abstract contract SafeERC20Transfer {
     require(success, message);
   }
 
-  function safeTransfer(
+  function safeTransferFrom(
     IERC20 erc20,
     address from,
     address to,
     uint256 amount
   ) internal {
     string memory message = "Failed to transfer ERC20";
-    safeTransfer(erc20, from, to, amount, message);
+    safeTransferFrom(erc20, from, to, amount, message);
   }
 
   function safeApprove(

@@ -392,6 +392,9 @@ describe("TransferRestrictedVault", async () => {
     })
   })
 
+  // TODO[PR] Should we also test `transferRestrictedVault.safeTransfer()`, since that method exists
+  // on TransferRestrictedVault (inherited from SafeERC20Transfer)?
+
   describe("transferFrom", async () => {
     it("reverts", async () => {
       await erc20Approve(usdc, transferRestrictedVault.address, usdcVal(100000), [owner])

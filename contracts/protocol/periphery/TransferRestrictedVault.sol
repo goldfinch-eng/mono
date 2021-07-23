@@ -71,7 +71,12 @@ contract TransferRestrictedVault is
 
   function depositJunior(ITranchedPool tranchedPool, uint256 amount) public nonReentrant {
     require(config.goList(msg.sender), "This address has not been go-listed");
-    safeTransfer(config.getUSDC(), msg.sender, address(this), amount);
+    // TODO[PR] Isn't this change incorrect -- because due to MRO, we won't be calling
+    // `SafeERC20Transfer.safeTransferFrom()`, but instead `ERC721.safeTransferFrom()`? If
+    // it's incorrect, then the audit's recommendation to rename the method would cause a
+    // bug...Seems like a good solution would be to include the ERC-20 vs. -721 distinction
+    // in the respective names of these transfer functions.
+    safeTransferFrom(config.getUSDC(), msg.sender, address(this), amount);
 
     approveSpender(address(tranchedPool), amount);
     uint256 poolTokenId = tranchedPool.deposit(uint256(ITranchedPool.Tranches.Junior), amount);
@@ -100,7 +105,8 @@ contract TransferRestrictedVault is
   }
 
   function depositSenior(uint256 amount) public nonReentrant {
-    safeTransfer(config.getUSDC(), msg.sender, address(this), amount);
+    // TODO[PR] Same issue as above.
+    safeTransferFrom(config.getUSDC(), msg.sender, address(this), amount);
 
     IFund seniorFund = config.getSeniorFund();
     approveSpender(address(seniorFund), amount);
