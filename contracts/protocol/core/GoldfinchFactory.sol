@@ -77,9 +77,9 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
     uint256 _paymentPeriodInDays,
     uint256 _termInDays,
     uint256 _lateFeeApr
-  ) external onlyAdmin returns (address) {
+  ) external onlyAdmin returns (address pool) {
     address tranchedPoolImplAddress = config.tranchedPoolAddress();
-    address pool = deployMinimal(tranchedPoolImplAddress);
+    pool = deployMinimal(tranchedPoolImplAddress);
     ITranchedPool(pool).initialize(
       address(config),
       _borrower,
@@ -103,9 +103,9 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
     uint256 _paymentPeriodInDays,
     uint256 _termInDays,
     uint256 _lateFeeApr
-  ) external onlyCreditDesk returns (address) {
+  ) external onlyCreditDesk returns (address pool) {
     address tranchedPoolImplAddress = config.migratedTranchedPoolAddress();
-    address pool = deployMinimal(tranchedPoolImplAddress);
+    pool = deployMinimal(tranchedPoolImplAddress);
     ITranchedPool(pool).initialize(
       address(config),
       _borrower,
