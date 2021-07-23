@@ -108,8 +108,9 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
     uint256 interestRedeemed
   ) external virtual override onlyPool whenNotPaused {
     TokenInfo storage token = tokens[tokenId];
+    address poolAddr = token.pool;
     require(token.pool != address(0), "Invalid tokenId");
-    require(_msgSender() == token.pool, "Only the token's pool can redeem");
+    require(_msgSender() == poolAddr, "Only the token's pool can redeem");
 
     token.principalRedeemed = token.principalRedeemed.add(principalRedeemed);
     require(
@@ -118,10 +119,10 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
     );
     token.interestRedeemed = token.interestRedeemed.add(interestRedeemed);
 
-    PoolInfo storage pool = pools[token.pool];
+    PoolInfo storage pool = pools[poolAddr];
     pool.totalPrincipalRedeemed = pool.totalPrincipalRedeemed.add(principalRedeemed);
     require(pool.totalPrincipalRedeemed <= pool.totalMinted, "Cannot redeem more than we minted");
-    emit TokenRedeemed(ownerOf(tokenId), token.pool, tokenId, principalRedeemed, interestRedeemed, token.tranche);
+    emit TokenRedeemed(ownerOf(tokenId), poolAddr, tokenId, principalRedeemed, interestRedeemed, token.tranche);
   }
 
   /**
