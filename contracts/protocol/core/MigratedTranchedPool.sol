@@ -20,7 +20,7 @@ contract MigratedTranchedPool is TranchedPool, IMigratedTranchedPool {
     uint256 totalPrincipalPaid
   ) external override returns (IV2CreditLine) {
     require(msg.sender == config.creditDeskAddress(), "Only credit desk can call this");
-    require(migrated == false, "Already migrated");
+    require(!migrated, "Already migrated");
     // Set accounting state vars.
     creditLine.setBalance(clToMigrate.balance());
     creditLine.setInterestOwed(clToMigrate.interestOwed());
