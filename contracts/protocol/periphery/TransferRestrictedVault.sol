@@ -214,7 +214,6 @@ contract TransferRestrictedVault is
 
   function transferPoolTokenPosition(PoolTokenPosition storage position, address to) internal {
     IPoolTokens poolTokens = config.getPoolTokens();
-    poolTokens.approve(to, position.tokenId);
     poolTokens.safeTransferFrom(address(this), to, position.tokenId);
   }
 
