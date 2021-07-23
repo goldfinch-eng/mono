@@ -67,6 +67,11 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     uint256 _termInDays,
     uint256 _lateFeeApr
   ) public override initializer {
+    require(
+      address(_config) != address(0) && address(_borrower) != address(0),
+      "Config and borrower addresses cannot be empty"
+    );
+
     config = GoldfinchConfig(_config);
     address owner = config.protocolAdminAddress();
     __BaseUpgradeablePausable__init(owner);
