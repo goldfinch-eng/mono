@@ -657,15 +657,17 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     uint256 totalShares = tranche.principalDeposited;
 
     // If the desired share price is lower, then ignore it, and leave it unchanged
-    if (desiredPrincipalSharePrice < tranche.principalSharePrice) {
-      desiredPrincipalSharePrice = tranche.principalSharePrice;
+    uint256 principalSharePrice = tranche.principalSharePrice;
+    if (desiredPrincipalSharePrice < principalSharePrice) {
+      desiredPrincipalSharePrice = principalSharePrice;
     }
-    if (desiredInterestSharePrice < tranche.interestSharePrice) {
-      desiredInterestSharePrice = tranche.interestSharePrice;
+    uint256 interestSharePrice = tranche.interestSharePrice;
+    if (desiredInterestSharePrice < interestSharePrice) {
+      desiredInterestSharePrice = interestSharePrice;
     }
-    uint256 interestSharePriceDifference = desiredInterestSharePrice.sub(tranche.interestSharePrice);
+    uint256 interestSharePriceDifference = desiredInterestSharePrice.sub(interestSharePrice);
     uint256 desiredInterestAmount = sharePriceToUsdc(interestSharePriceDifference, totalShares);
-    uint256 principalSharePriceDifference = desiredPrincipalSharePrice.sub(tranche.principalSharePrice);
+    uint256 principalSharePriceDifference = desiredPrincipalSharePrice.sub(principalSharePrice);
     uint256 desiredPrincipalAmount = sharePriceToUsdc(principalSharePriceDifference, totalShares);
 
     (interestRemaining, principalRemaining) = applyToTrancheByAmount(
