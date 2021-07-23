@@ -105,7 +105,7 @@ contract GoldfinchConfig is BaseUpgradeablePausable {
    * @dev adds many users to go-list at once
    * @param _members addresses to ad to go-list
    */
-  function bulkAddToGoList(address[] memory _members) public onlyAdmin {
+  function bulkAddToGoList(address[] calldata _members) public onlyAdmin {
     for (uint256 i = 0; i < _members.length; i++) {
       addToGoList(_members[i]);
     }
@@ -115,7 +115,7 @@ contract GoldfinchConfig is BaseUpgradeablePausable {
    * @dev removes many users from go-list at once
    * @param _members addresses to remove from go-list
    */
-  function bulkRemoveFromGoList(address[] memory _members) public onlyAdmin {
+  function bulkRemoveFromGoList(address[] calldata _members) public onlyAdmin {
     for (uint256 i = 0; i < _members.length; i++) {
       removeFromGoList(_members[i]);
     }
