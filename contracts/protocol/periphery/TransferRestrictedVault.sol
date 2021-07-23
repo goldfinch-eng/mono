@@ -50,6 +50,8 @@ contract TransferRestrictedVault is
   */
   // solhint-disable-next-line func-name-mixedcase
   function __initialize__(address owner, GoldfinchConfig _config) external initializer {
+    require(owner != address(0) && address(_config) != address(0), "Owner and config addresses cannot be empty");
+
     __Context_init_unchained();
     __AccessControl_init_unchained();
     __ReentrancyGuard_init_unchained();
