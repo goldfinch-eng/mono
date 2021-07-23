@@ -132,18 +132,20 @@ contract TransferRestrictedVault is
     IFund seniorFund = config.getSeniorFund();
     uint256 shares = seniorFund.getNumShares(usdcAmount);
     FiduPosition storage fiduPosition = fiduPositions[tokenId];
-    require(fiduPosition.amount >= shares, "Not enough Fidu for withdrawal");
+    uint256 fiduPositionAmount = fiduPosition.amount;
+    require(fiduPositionAmount >= shares, "Not enough Fidu for withdrawal");
 
-    fiduPosition.amount = fiduPosition.amount.sub(shares);
+    fiduPosition.amount = fiduPositionAmount.sub(shares);
     uint256 receivedAmount = seniorFund.withdraw(usdcAmount);
     safeTransfer(config.getUSDC(), msg.sender, receivedAmount);
   }
 
   function withdrawSeniorInFidu(uint256 tokenId, uint256 shares) public nonReentrant onlyTokenOwner(tokenId) {
     FiduPosition storage fiduPosition = fiduPositions[tokenId];
-    require(fiduPosition.amount >= shares, "Not enough Fidu for withdrawal");
+    uint256 fiduPositionAmount = fiduPosition.amount;
+    require(fiduPositionAmount >= shares, "Not enough Fidu for withdrawal");
 
-    fiduPosition.amount = fiduPosition.amount.sub(shares);
+    fiduPosition.amount = fiduPositionAmount.sub(shares);
     uint256 usdcAmount = config.getSeniorFund().withdrawInFidu(shares);
     safeTransfer(config.getUSDC(), msg.sender, usdcAmount);
   }
