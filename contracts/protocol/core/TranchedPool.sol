@@ -74,6 +74,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
 
     config = GoldfinchConfig(_config);
     address owner = config.protocolAdminAddress();
+    require(owner != address(0), "Owner address cannot be empty");
     __BaseUpgradeablePausable__init(owner);
     seniorTranche = TrancheInfo({
       principalSharePrice: usdcToSharePrice(1, 1),
