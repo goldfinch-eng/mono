@@ -87,10 +87,10 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
     override
     onlyPool
     whenNotPaused
-    returns (uint256)
+    returns (uint256 tokenId)
   {
     address poolAddress = _msgSender();
-    uint256 tokenId = createToken(params, poolAddress);
+    tokenId = createToken(params, poolAddress);
     _mint(to, tokenId);
     emit TokenMinted(to, poolAddress, tokenId, params.principalAmount, params.tranche);
     return tokenId;
@@ -167,11 +167,11 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
     return _validPool(sender);
   }
 
-  function createToken(MintParams calldata params, address poolAddress) internal returns (uint256) {
+  function createToken(MintParams calldata params, address poolAddress) internal returns (uint256 tokenId) {
     PoolInfo storage pool = pools[poolAddress];
 
     _tokenIdTracker.increment();
-    uint256 tokenId = _tokenIdTracker.current();
+    tokenId = _tokenIdTracker.current();
     tokens[tokenId] = TokenInfo({
       pool: poolAddress,
       tranche: params.tranche,
