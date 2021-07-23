@@ -193,12 +193,12 @@ contract Pool is BaseUpgradeablePausable, IPool {
     // Move all USDC to the SeniorPool
     address seniorFundAddress = config.seniorFundAddress();
     uint256 balance = config.getUSDC().balanceOf(address(this));
-    doUSDCTransfer(address(this), seniorFundAddress, balance);
+    bool success = doUSDCTransfer(address(this), seniorFundAddress, balance);
+    require(success, "Failed to transfer USDC balance to the senior pool");
 
     // Claim our COMP!
     address compoundController = address(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
     bytes memory data = abi.encodeWithSignature("claimComp(address)", address(this));
-    bool success;
     bytes memory _res;
     // solhint-disable-next-line avoid-low-level-calls
     (success, _res) = compoundController.call(data);
