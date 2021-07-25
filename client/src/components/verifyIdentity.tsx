@@ -13,9 +13,11 @@ import { useForm, FormProvider } from "react-hook-form"
 
 function VerificationNotice({ icon, notice }) {
   return (
-    <div className="background-container verify-options">
-      <div>{icon}</div>
-      <div>{notice}</div>
+    <div className="info-banner background-container subtle">
+      <div className="message">
+        {icon}
+        <p>{notice}</p>
+      </div>
     </div>
   )
 }
@@ -218,18 +220,14 @@ function PersonaForm({ entityType, onEvent, network, address, formMethods }) {
 function SignInForm({ action, disabled }) {
   const formMethods = useForm({ mode: "onChange", shouldUnregister: false })
   return (
-    <>
-      <div className={"background-container"}>
-        <div className="verify-options">
-          <div className="item">First, please sign in to confirm your address.</div>
-          <FormProvider {...formMethods}>
-            <form className="form sign-button">
-              <LoadingButton text="Sign in" action={action} disabled={disabled} />
-            </form>
-          </FormProvider>
+    <FormProvider {...formMethods}>
+      <div className="info-banner background-container subtle">
+        <div className="message">
+        <p>First, please sign in to confirm your address.</p>
         </div>
+        <LoadingButton text="Sign in" action={action} disabled={disabled} />
       </div>
-    </>
+    </FormProvider>
   )
 }
 
@@ -330,26 +328,20 @@ function VerifyIdentity() {
         <>
           <div className={"background-container"}>
             <div className="form-message">Who is verifying this address?</div>
-            <div className="verify-options">
-              <div className="item">
-                <button
-                  className={`button ${nonUSDisabled}`}
-                  disabled={nonUSDisabled === "disabled"}
-                  onClick={() => chooseEntity("non-US")}
-                >
-                  Non-U.S. Individual
-                </button>
-              </div>
-              <div className="item">
-                <button className={"button"} onClick={() => chooseEntity("US")}>
-                  U.S. Individual
-                </button>
-              </div>
-              <div className="item">
-                <button className={"button"} onClick={() => chooseEntity("entity")}>
-                  Entity
-                </button>
-              </div>
+            <div className="verify-types">
+              <button
+                className={`button ${nonUSDisabled}`}
+                disabled={nonUSDisabled === "disabled"}
+                onClick={() => chooseEntity("non-US")}
+              >
+                Non-U.S. Individual
+              </button>
+              <button className={"button"} onClick={() => chooseEntity("US")}>
+                U.S. Individual
+              </button>
+              <button className={"button"} onClick={() => chooseEntity("entity")}>
+                Entity
+              </button>
             </div>
           </div>
         </>

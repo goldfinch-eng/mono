@@ -1,24 +1,23 @@
 import React, { useState } from "react"
-import { iconInfo, iconX } from "./icons"
+import { iconInfo, iconCarrotDown, iconCarrotUp } from "./icons"
 
 export default function StaticInvestorNotice() {
   const [open, setOpen] = useState<boolean>(false)
 
   return (
-    <div className="investor-notice info-banner background-container">
+    <div className="investor-notice info-banner subtle background-container">
       <div className="inner-banner">
         <div className="message">
           {iconInfo}
           <p>This offering is only available to non-U.S. persons.</p>
         </div>
         {open ? (
-          <button className="learn-more close" onClick={() => setOpen(false)}>
-            <span>Close</span>
-            {iconX}
+          <button className="expand close" onClick={() => setOpen(false)}>
+            {iconCarrotUp}
           </button>
         ) : (
-          <button className="learn-more" onClick={() => setOpen(true)}>
-            Learn more
+          <button className="expand" onClick={() => setOpen(true)}>
+            {iconCarrotDown}
           </button>
         )}
       </div>
