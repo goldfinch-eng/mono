@@ -247,7 +247,7 @@ describe("TransferRestrictedVault", async () => {
       it("reverts", async () => {
         await expect(
           transferRestrictedVault.withdrawSenior(tokenId, usdcVal(500), {from: otherPerson})
-        ).to.be.rejectedWith(/don't own/)
+        ).to.be.rejectedWith(/Only the token owner is allowed to call this function/)
       })
     })
 
