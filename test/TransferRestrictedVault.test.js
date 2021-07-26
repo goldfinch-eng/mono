@@ -37,15 +37,8 @@ let owner,
 describe("TransferRestrictedVault", async () => {
   beforeEach(async () => {
     ;[owner, borrower, treasury, otherPerson] = await web3.eth.getAccounts()
-    ;({
-      usdc,
-      goldfinchConfig,
-      goldfinchFactory,
-      poolTokens,
-      transferRestrictedVault,
-      seniorFund,
-      fidu,
-    } = await deployAllContracts(deployments))
+    ;({usdc, goldfinchConfig, goldfinchFactory, poolTokens, transferRestrictedVault, seniorFund, fidu} =
+      await deployAllContracts(deployments))
     await goldfinchConfig.bulkAddToGoList([owner, borrower, otherPerson, transferRestrictedVault.address])
     await goldfinchConfig.setTreasuryReserve(treasury)
     await erc20Transfer(usdc, [otherPerson], usdcVal(10000), owner)
@@ -306,7 +299,7 @@ describe("TransferRestrictedVault", async () => {
       it("reverts", async () => {
         await expect(
           transferRestrictedVault.withdrawSeniorInFidu(tokenId, shares, {from: otherPerson})
-        ).to.be.rejectedWith(/don't own/)
+        ).to.be.rejectedWith(/Only the token owner is allowed to call this function/)
       })
     })
 
@@ -357,7 +350,7 @@ describe("TransferRestrictedVault", async () => {
       it("reverts", async () => {
         await expect(
           transferRestrictedVault.withdrawJunior(tokenId, usdcVal(500), {from: otherPerson})
-        ).to.be.rejectedWith(/don't own/)
+        ).to.be.rejectedWith(/Only the token owner is allowed to call this function/)
       })
     })
 
