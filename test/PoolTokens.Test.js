@@ -173,12 +173,50 @@ describe("PoolTokens", () => {
       expect(tokenInfo.interestRedeemed).to.bignumber.eq(interestRedeemed)
     })
 
-    it("should only allow redemption up to the total minted of a token", async () => {
+    it("should allow a single principal-redemption equal to a token's principal-deposited amount", async () => {
       const principalRedeemed = mintAmount
-      const interestRedeemed = usdcVal(2)
-      await redeemToken(tokenId, principalRedeemed, interestRedeemed)
-      return expect(redeemToken(tokenId, usdcVal(1), interestRedeemed)).to.be.rejectedWith(
-        /Cannot redeem more than we minted/
+      const interestRedeemed = usdcVal(0)
+      const maxRedemption = redeemToken(tokenId, principalRedeemed, interestRedeemed)
+      return expect(maxRedemption).to.be.fulfilled
+    })
+
+    it("should allow principal-redemption less than a token's principal-deposited amount", async () => {
+      const principalRedeemed = mintAmount.sub(usdcVal(1))
+      const interestRedeemed = usdcVal(0)
+      const okRedemption = redeemToken(tokenId, principalRedeemed, interestRedeemed)
+      return expect(okRedemption).to.be.fulfilled
+    })
+
+    it("should allow a principal-redemption that would cause a token's total principal to equal its principal-deposited amount", async () => {
+      const principalRedeemed1 = mintAmount.sub(usdcVal(1))
+      const interestRedeemed1 = usdcVal(0)
+      const okRedemption1 = redeemToken(tokenId, principalRedeemed1, interestRedeemed1)
+      expect(okRedemption1).to.be.fulfilled
+      const principalRedeemed2 = usdcVal(1)
+      const interestRedeemed2 = usdcVal(0)
+      const okRedemption2 = redeemToken(tokenId, principalRedeemed2, interestRedeemed2)
+      return expect(okRedemption2).to.be.fulfilled
+    })
+
+    it("should prohibit a single principal-redemption of more than a token's principal-deposited amount", async () => {
+      const principalRedeemed = mintAmount.add(usdcVal(1))
+      const interestRedeemed = usdcVal(0)
+      const excessiveRedemption = redeemToken(tokenId, principalRedeemed, interestRedeemed)
+      return expect(excessiveRedemption).to.be.rejectedWith(
+        /Cannot redeem more than principal-deposited amount for token/
+      )
+    })
+
+    it("should prohibit a principal-redemption that would cause a token's total principal redeemed to exceed its principal-deposited amount", async () => {
+      const principalRedeemed1 = mintAmount.sub(usdcVal(1))
+      const interestRedeemed1 = usdcVal(0)
+      const okRedemption = redeemToken(tokenId, principalRedeemed1, interestRedeemed1)
+      expect(okRedemption).to.be.fulfilled
+      const principalRedeemed2 = usdcVal(2)
+      const interestRedeemed2 = usdcVal(0)
+      const excessiveRedemption = redeemToken(tokenId, principalRedeemed2, interestRedeemed2)
+      return expect(excessiveRedemption).to.be.rejectedWith(
+        /Cannot redeem more than principal-deposited amount for token/
       )
     })
 
