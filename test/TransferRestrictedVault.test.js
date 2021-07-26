@@ -385,9 +385,6 @@ describe("TransferRestrictedVault", async () => {
     })
   })
 
-  // TODO[PR] Should we also test `transferRestrictedVault.safeTransfer()`, since that method exists
-  // on TransferRestrictedVault (inherited from SafeERC20Transfer)?
-
   describe("transferFrom", async () => {
     it("reverts", async () => {
       await erc20Approve(usdc, transferRestrictedVault.address, usdcVal(100000), [owner])
@@ -398,6 +395,15 @@ describe("TransferRestrictedVault", async () => {
       await expect(transferRestrictedVault.transferFrom(owner, otherPerson, tokenId)).to.be.rejectedWith(
         /tokens cannot be transferred/
       )
+    })
+  })
+  describe("safeTransferFrom", async () => {
+    it("reverts", async () => {
+      await erc20Approve(usdc, transferRestrictedVault.address, usdcVal(100000), [owner])
+      let receipt = await transferRestrictedVault.depositJunior(tranchedPool.address, usdcVal(1000))
+      let tokenId = decodeLogs(receipt.receipt.rawLogs, transferRestrictedVault, "Transfer")[0].args.tokenId
+
+      await transferRestrictedVault.approve(otherPerson, tokenId)
       await expect(
         transferRestrictedVault.safeTransferFrom(owner, otherPerson, tokenId, web3.utils.asciiToHex("test"))
       ).to.be.rejectedWith(/tokens cannot be transferred/)
