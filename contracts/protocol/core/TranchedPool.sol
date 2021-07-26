@@ -121,7 +121,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     trancheInfo.principalDeposited = trancheInfo.principalDeposited.add(amount);
     IPoolTokens.MintParams memory params = IPoolTokens.MintParams({tranche: tranche, principalAmount: amount});
     tokenId = config.getPoolTokens().mint(params, msg.sender);
-    safeTransferFrom(config.getUSDC(), msg.sender, address(this), amount);
+    safeERC20TransferFrom(config.getUSDC(), msg.sender, address(this), amount);
     emit DepositMade(msg.sender, tranche, tokenId, amount);
     return tokenId;
   }
@@ -202,7 +202,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     seniorTranche.principalSharePrice = calculateExpectedSharePrice(amountRemaining, seniorTranche);
 
     address borrower = creditLine.borrower();
-    safeTransferFrom(config.getUSDC(), address(this), borrower, amount);
+    safeERC20TransferFrom(config.getUSDC(), address(this), borrower, amount);
     emit DrawdownMade(borrower, amount);
   }
 
@@ -261,12 +261,12 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     // Sweep any funds to community reserve
     uint256 poolBalance = usdc.balanceOf(address(this));
     if (poolBalance > 0) {
-      safeTransfer(usdc, reserveAddress, poolBalance);
+      safeERC20Transfer(usdc, reserveAddress, poolBalance);
     }
 
     uint256 clBalance = usdc.balanceOf(address(creditLine));
     if (clBalance > 0) {
-      safeTransferFrom(usdc, address(creditLine), reserveAddress, clBalance);
+      safeERC20TransferFrom(usdc, address(creditLine), reserveAddress, clBalance);
     }
     emit EmergencyShutdown(address(this));
   }
@@ -331,7 +331,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     // Transfer any funds to new CL
     uint256 clBalance = config.getUSDC().balanceOf(originalClAddr);
     if (clBalance > 0) {
-      safeTransferFrom(config.getUSDC(), originalClAddr, newClAddr, clBalance);
+      safeERC20TransferFrom(config.getUSDC(), originalClAddr, newClAddr, clBalance);
     }
 
     // Close out old CL
@@ -348,7 +348,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     // Transfer any funds to new CL
     uint256 clBalance = config.getUSDC().balanceOf(originalClAddr);
     if (clBalance > 0) {
-      safeTransferFrom(config.getUSDC(), originalClAddr, newCl, clBalance);
+      safeERC20TransferFrom(config.getUSDC(), originalClAddr, newCl, clBalance);
     }
 
     // Close out old CL
@@ -457,7 +457,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     uint256 principalToRedeem = Math.min(principalRedeemable, amount.sub(interestToRedeem));
 
     config.getPoolTokens().redeem(tokenId, principalToRedeem, interestToRedeem);
-    safeTransferFrom(config.getUSDC(), address(this), msg.sender, principalToRedeem.add(interestToRedeem));
+    safeERC20TransferFrom(config.getUSDC(), address(this), msg.sender, principalToRedeem.add(interestToRedeem));
 
     emit WithdrawalMade(msg.sender, tokenInfo.tranche, tokenId, interestToRedeem, principalToRedeem);
 
@@ -505,7 +505,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     uint256 interest,
     uint256 principal
   ) internal returns (uint256 totalReserveAmount) {
-    safeTransferFrom(config.getUSDC(), from, address(this), principal.add(interest), "Failed to collect payment");
+    safeERC20TransferFrom(config.getUSDC(), from, address(this), principal.add(interest), "Failed to collect payment");
 
     (uint256 interestAccrued, uint256 principalAccrued) = getTotalInterestAndPrincipal();
     uint256 reserveFeePercent = ONE_HUNDRED.div(config.getReserveDenominator()); // Convert the denonminator to percent
@@ -729,11 +729,17 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
 
   function sendToReserve(uint256 amount) internal {
     emit ReserveFundsCollected(address(this), amount);
-    safeTransferFrom(config.getUSDC(), address(this), config.reserveAddress(), amount, "Failed to send to reserve");
+    safeERC20TransferFrom(
+      config.getUSDC(),
+      address(this),
+      config.reserveAddress(),
+      amount,
+      "Failed to send to reserve"
+    );
   }
 
   function collectPayment(uint256 amount) internal {
-    safeTransferFrom(config.getUSDC(), msg.sender, address(creditLine), amount, "Failed to collect payment");
+    safeERC20TransferFrom(config.getUSDC(), msg.sender, address(creditLine), amount, "Failed to collect payment");
   }
 
   function _assess() internal {

@@ -71,12 +71,7 @@ contract TransferRestrictedVault is
 
   function depositJunior(ITranchedPool tranchedPool, uint256 amount) public nonReentrant {
     require(config.goList(msg.sender), "This address has not been go-listed");
-    // TODO[PR] Isn't this change incorrect -- because due to MRO, we won't be calling
-    // `SafeERC20Transfer.safeTransferFrom()`, but instead `ERC721.safeTransferFrom()`? If
-    // it's incorrect, then the audit's recommendation to rename the method would cause a
-    // bug...Seems like a good solution would be to include the ERC-20 vs. -721 distinction
-    // in the respective names of these transfer functions.
-    safeTransferFrom(config.getUSDC(), msg.sender, address(this), amount);
+    safeERC20TransferFrom(config.getUSDC(), msg.sender, address(this), amount);
 
     approveSpender(address(tranchedPool), amount);
     uint256 poolTokenId = tranchedPool.deposit(uint256(ITranchedPool.Tranches.Junior), amount);
@@ -105,8 +100,7 @@ contract TransferRestrictedVault is
   }
 
   function depositSenior(uint256 amount) public nonReentrant {
-    // TODO[PR] Same issue as above.
-    safeTransferFrom(config.getUSDC(), msg.sender, address(this), amount);
+    safeERC20TransferFrom(config.getUSDC(), msg.sender, address(this), amount);
 
     IFund seniorFund = config.getSeniorFund();
     approveSpender(address(seniorFund), amount);
@@ -143,7 +137,7 @@ contract TransferRestrictedVault is
 
     fiduPosition.amount = fiduPositionAmount.sub(shares);
     uint256 receivedAmount = seniorFund.withdraw(usdcAmount);
-    safeTransfer(config.getUSDC(), msg.sender, receivedAmount);
+    safeERC20Transfer(config.getUSDC(), msg.sender, receivedAmount);
   }
 
   function withdrawSeniorInFidu(uint256 tokenId, uint256 shares) public nonReentrant onlyTokenOwner(tokenId) {
@@ -153,7 +147,7 @@ contract TransferRestrictedVault is
 
     fiduPosition.amount = fiduPositionAmount.sub(shares);
     uint256 usdcAmount = config.getSeniorFund().withdrawInFidu(shares);
-    safeTransfer(config.getUSDC(), msg.sender, usdcAmount);
+    safeERC20Transfer(config.getUSDC(), msg.sender, usdcAmount);
   }
 
   function withdrawJunior(uint256 tokenId, uint256 amount)
@@ -172,7 +166,7 @@ contract TransferRestrictedVault is
 
     (interestWithdrawn, principalWithdrawn) = pool.withdraw(poolTokenId, amount);
     uint256 totalWithdrawn = interestWithdrawn.add(principalWithdrawn);
-    safeTransfer(config.getUSDC(), msg.sender, totalWithdrawn);
+    safeERC20Transfer(config.getUSDC(), msg.sender, totalWithdrawn);
     return (interestWithdrawn, principalWithdrawn);
   }
 
@@ -225,12 +219,12 @@ contract TransferRestrictedVault is
 
   function transferFiduPosition(FiduPosition storage position, address to) internal {
     IFidu fidu = config.getFidu();
-    safeTransfer(fidu, to, position.amount);
+    safeERC20Transfer(fidu, to, position.amount);
   }
 
   function approveSpender(address spender, uint256 allowance) internal {
     IERC20withDec usdc = config.getUSDC();
-    safeApprove(usdc, spender, allowance);
+    safeERC20Approve(usdc, spender, allowance);
   }
 
   modifier onlyTokenOwner(uint256 tokenId) {
