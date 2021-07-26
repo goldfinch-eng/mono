@@ -13,6 +13,8 @@ contract FixedLeverageRatioStrategy is IFundStrategy {
 
   uint256 private immutable leverageRatio;
 
+  uint256 public constant LEVERAGE_RATIO_DECIMALS = 1e18;
+
   constructor(uint256 _leverageRatio) public {
     leverageRatio = _leverageRatio;
   }
@@ -58,7 +60,7 @@ contract FixedLeverageRatioStrategy is IFundStrategy {
   {
     uint256 juniorCapital = juniorTranche.principalDeposited;
     uint256 existingSeniorCapital = seniorTranche.principalDeposited;
-    uint256 seniorTarget = juniorCapital.mul(leverageRatio);
+    uint256 seniorTarget = juniorCapital.mul(leverageRatio).div(LEVERAGE_RATIO_DECIMALS);
 
     if (existingSeniorCapital >= seniorTarget) {
       return 0;

@@ -13,6 +13,7 @@ import {
   isMainnetForking,
   assertIsChainId,
   isSafeConfigChainId,
+  leverageRatioAsBN,
 } from "./deployHelpers"
 import {HardhatRuntimeEnvironment} from "hardhat/types"
 import {DeployFunction} from "hardhat-deploy/types"
@@ -426,7 +427,7 @@ async function deploySeniorFundStrategy(hre: HardhatRuntimeEnvironment, {config}
   assertIsString(gf_deployer)
   let deployResult = await deploy(contractName, {
     from: gf_deployer,
-    args: [new BN(4).toString()],
+    args: [leverageRatioAsBN("4").toString()],
   })
   logger("FixedLeverageRatioStrategy was deployed to:", deployResult.address)
   const strategy = (await ethers.getContractAt(contractName, deployResult.address)) as IFundStrategy
