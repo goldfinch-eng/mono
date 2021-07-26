@@ -180,14 +180,14 @@ describe("PoolTokens", () => {
       return expect(maxRedemption).to.be.fulfilled
     })
 
-    it("should allow principal-redemption less than a token's principal-deposited amount", async () => {
+    it("should allow a single principal-redemption less than a token's principal-deposited amount", async () => {
       const principalRedeemed = mintAmount.sub(usdcVal(1))
       const interestRedeemed = usdcVal(0)
       const okRedemption = redeemToken(tokenId, principalRedeemed, interestRedeemed)
       return expect(okRedemption).to.be.fulfilled
     })
 
-    it("should allow a principal-redemption that would cause a token's total principal to equal its principal-deposited amount", async () => {
+    it("should allow a second principal-redemption that would cause a token's total principal redeemed to equal its principal-deposited amount", async () => {
       const principalRedeemed1 = mintAmount.sub(usdcVal(1))
       const interestRedeemed1 = usdcVal(0)
       const okRedemption1 = redeemToken(tokenId, principalRedeemed1, interestRedeemed1)
@@ -207,7 +207,7 @@ describe("PoolTokens", () => {
       )
     })
 
-    it("should prohibit a principal-redemption that would cause a token's total principal redeemed to exceed its principal-deposited amount", async () => {
+    it("should prohibit a second principal-redemption that would cause a token's total principal redeemed to exceed its principal-deposited amount", async () => {
       const principalRedeemed1 = mintAmount.sub(usdcVal(1))
       const interestRedeemed1 = usdcVal(0)
       const okRedemption = redeemToken(tokenId, principalRedeemed1, interestRedeemed1)
