@@ -79,7 +79,7 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
    * @notice Called by pool to create a debt position in a particular tranche and amount
    * @param params Struct containing the tranche and the amount
    * @param to The address that should own the position
-   * @return The token ID (auto-incrementing integer across all pools)
+   * @return tokenId The token ID (auto-incrementing integer across all pools)
    */
   function mint(MintParams calldata params, address to)
     external
