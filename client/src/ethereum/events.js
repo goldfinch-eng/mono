@@ -33,11 +33,18 @@ async function mapEventsToTx(events) {
 
 function mapEventToTx(event) {
   return web3.eth.getBlock(event.blockNumber).then((block) => {
+    let amount = event.returnValues[EVENT_AMOUNT_FIELD[event.event]]
+
+    // For the interest collected event, we need to support the v1 pool as well, which had a
+    // different name for the amount field
+    if (event.event === "InterestCollected" && !amount) {
+      amount = event.returnValues["poolAmount"]
+    }
     return {
       type: event.event,
       name: EVENT_TYPE_MAP[event.event],
-      amount: usdcFromAtomic(event.returnValues[EVENT_AMOUNT_FIELD[event.event]]),
-      amountBN: new BigNumber(event.returnValues[EVENT_AMOUNT_FIELD[event.event]]),
+      amount: usdcFromAtomic(amount),
+      amountBN: new BigNumber(amount),
       id: event.transactionHash,
       blockNumber: event.blockNumber,
       blockTime: block.timestamp,

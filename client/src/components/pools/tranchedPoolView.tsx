@@ -18,6 +18,8 @@ import LoadingButton from "../loadingButton"
 import TransactionForm from "../transactionForm"
 import {AsyncResult, RefreshFn, useAsync, useAsyncFn} from "../../hooks/useAsync"
 import useERC20Permit from "../../hooks/useERC20Permit"
+import useCurrencyUnlocked from "../../hooks/useCurrencyUnlocked"
+import UnlockERC20Form from "../unlockERC20Form"
 
 function useTranchedPool({
   goldfinchProtocol,
@@ -134,25 +136,33 @@ function TranchedPoolDepositForm({
 
   async function action({transactionAmount}) {
     const depositAmount = usdcToAtomic(transactionAmount)
-    let signatureData = await gatherPermitSignature({
-      token: usdc,
-      value: new BigNumber(depositAmount),
-      spender: tranchedPool.address,
-    })
-    return sendFromUser(
-      tranchedPool.contract.methods.depositWithPermit(
-        TRANCHES.Junior,
-        signatureData.value,
-        signatureData.deadline,
-        signatureData.v,
-        signatureData.r,
-        signatureData.s,
-      ),
-      {
+    // USDC permit doesn't work on mainnet forking due to mismatch between hardcoded chain id in the contract
+    if (process.env.REACT_APP_HARDHAT_FORK) {
+      return sendFromUser(tranchedPool.contract.methods.deposit(TRANCHES.Junior, depositAmount), {
         type: "Deposit",
-        amount: signatureData.value,
-      },
-    ).then(actionComplete)
+        amount: depositAmount,
+      }).then(actionComplete)
+    } else {
+      let signatureData = await gatherPermitSignature({
+        token: usdc,
+        value: new BigNumber(depositAmount),
+        spender: tranchedPool.address,
+      })
+      return sendFromUser(
+        tranchedPool.contract.methods.depositWithPermit(
+          TRANCHES.Junior,
+          signatureData.value,
+          signatureData.deadline,
+          signatureData.v,
+          signatureData.r,
+          signatureData.s,
+        ),
+        {
+          type: "Deposit",
+          amount: signatureData.value,
+        },
+      ).then(actionComplete)
+    }
   }
 
   function renderForm({formMethods}) {
@@ -291,17 +301,32 @@ function Overview({tranchedPool}: {tranchedPool?: TranchedPool}) {
 }
 
 function TranchedPoolView() {
-  const {poolAddress} = useParams()
-  const {goldfinchProtocol} = useContext(AppContext)
-  const [tranchedPoolResult, refreshTranchedPool] = useTranchedPool({address: poolAddress, goldfinchProtocol})
   let tranchedPool: TranchedPool | undefined
+  const {poolAddress} = useParams()
+  const {goldfinchProtocol, usdc, user} = useContext(AppContext)
+  const [tranchedPoolResult, refreshTranchedPool] = useTranchedPool({address: poolAddress, goldfinchProtocol})
+
   if (tranchedPoolResult.status === "succeeded") {
     tranchedPool = tranchedPoolResult.value
   }
 
+  const [unlocked, refreshUnlocked] = useCurrencyUnlocked(usdc, {
+    owner: user.address,
+    spender: tranchedPool?.address,
+    minimum: null,
+  })
+
+  let unlockForm = <></>
+
   let earnMessage = "Loading..."
   if (tranchedPool) {
     earnMessage = `Earn Portfolio / ${tranchedPool.metadata?.name ?? croppedAddress(tranchedPool.address)}`
+  }
+
+  if (process.env.REACT_APP_HARDHAT_FORK && !unlocked) {
+    unlockForm = (
+      <UnlockERC20Form erc20={usdc} onUnlock={() => (refreshUnlocked as any)()} unlockAddress={tranchedPool?.address} />
+    )
   }
 
   return (
@@ -311,6 +336,7 @@ function TranchedPoolView() {
         <div>{earnMessage}</div>
       </div>
       <ConnectionNotice requireUnlock={false} requireVerify={true} />
+      {unlockForm}
       <ActionsContainer tranchedPool={tranchedPool} onComplete={async () => refreshTranchedPool()} />
       <Overview tranchedPool={tranchedPool} />
     </div>
