@@ -112,7 +112,9 @@ describe("Deployment", async () => {
         withdrawFeeDenominator: 202,
         latenessGracePeriod: 9,
         latenessMaxDays: 6,
+        drawdownPeriodInSeconds: 11000,
         transferRestrictionPeriodInDays: 180,
+        leverageRatio: 17e18,
       }
 
       await updateConfigs(hre, new_config)
@@ -137,9 +139,13 @@ describe("Deployment", async () => {
         String(new_config["latenessGracePeriod"])
       )
       expect(String(await config.getNumber(CONFIG_KEYS.LatenessMaxDays))).to.eq(String(new_config["latenessMaxDays"]))
+      expect(String(await config.getNumber(CONFIG_KEYS.DrawdownPeriodInSeconds))).to.eq(
+        String(new_config["drawdownPeriodInSeconds"])
+      )
       expect(String(await config.getNumber(CONFIG_KEYS.TransferPeriodRestrictionInDays))).to.eq(
         String(new_config["transferRestrictionPeriodInDays"])
       )
+      expect(String(await config.getNumber(CONFIG_KEYS.LeverageRatio))).to.eq(String(new_config["leverageRatio"]))
     })
   })
 })

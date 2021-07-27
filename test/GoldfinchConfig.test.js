@@ -42,6 +42,9 @@ describe("GoldfinchConfig", () => {
       expect(await goldfinchConfig.getNumber(CONFIG_KEYS.WithdrawFeeDenominator)).to.bignumber.equal(new BN(5))
       expect(await goldfinchConfig.getNumber(CONFIG_KEYS.LatenessGracePeriodInDays)).to.bignumber.equal(new BN(6))
       expect(await goldfinchConfig.getNumber(CONFIG_KEYS.LatenessMaxDays)).to.bignumber.equal(new BN(7))
+      expect(await goldfinchConfig.getNumber(CONFIG_KEYS.DrawdownPeriodInSeconds)).to.bignumber.equal(new BN(8))
+      expect(await goldfinchConfig.getNumber(CONFIG_KEYS.TransferPeriodRestrictionInDays)).to.bignumber.equal(new BN(9))
+      expect(await goldfinchConfig.getNumber(CONFIG_KEYS.LeverageRatio)).to.bignumber.equal(new BN(10))
 
       // Addresses
       expect(await goldfinchConfig.getAddress(CONFIG_KEYS.Pool)).to.equal("0xBAc2781706D0aA32Fb5928c9a5191A13959Dc4AE")

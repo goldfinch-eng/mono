@@ -4,7 +4,6 @@ import {web3} from "hardhat"
 import BN from "bn.js"
 const USDCDecimals = new BN(String(1e6))
 const ETHDecimals = new BN(String(1e18))
-const LEVERAGE_RATIO_DECIMALS = new BN(String(1e18))
 const INTEREST_DECIMALS = new BN(String(1e18))
 const DEFENDER_API_KEY = process.env.DEFENDER_API_KEY || "A2UgCPgn8jQbkSVuSCxEMhFmivdV9C6d"
 const DEFENDER_API_SECRET = process.env.DEFENDER_API_SECRET
@@ -127,10 +126,6 @@ async function isMainnet() {
   return (await hre.getChainId()) === MAINNET_CHAIN_ID
 }
 
-function leverageRatioAsBN(leverageRatioString: string): BN {
-  return new BN(leverageRatioString).mul(LEVERAGE_RATIO_DECIMALS)
-}
-
 function interestAprAsBN(interestPercentageString: string): BN {
   const interestPercentageFloat = parseFloat(interestPercentageString)
   return new BN(String(interestPercentageFloat * 100000)).mul(INTEREST_DECIMALS).div(new BN(10000000))
@@ -238,6 +233,7 @@ async function setInitialConfigVals(config: GoldfinchConfig, logger = function (
   const latenessMaxDays = new BN(PROTOCOL_CONFIG.latenessMaxDays)
   const drawdownPeriodInSeconds = new BN(PROTOCOL_CONFIG.drawdownPeriodInSeconds)
   const transferPeriodRestrictionInDays = new BN(PROTOCOL_CONFIG.transferRestrictionPeriodInDays)
+  const leverageRatio = new BN(PROTOCOL_CONFIG.leverageRatio)
 
   logger("Updating the config vals...")
   await updateConfig(config, "number", CONFIG_KEYS.TotalFundsLimit, String(totalFundsLimit), {logger})
@@ -255,6 +251,13 @@ async function setInitialConfigVals(config: GoldfinchConfig, logger = function (
     "number",
     CONFIG_KEYS.TransferPeriodRestrictionInDays,
     String(transferPeriodRestrictionInDays),
+    {logger}
+  )
+  await updateConfig(
+    config,
+    "number",
+    CONFIG_KEYS.LeverageRatio,
+    String(leverageRatio),
     {logger}
   )
   // If we have a multisig safe, set that as the protocol admin, otherwise use the named account (local and test envs)
@@ -317,7 +320,6 @@ export {
   USDCDecimals,
   MAX_UINT,
   ETHDecimals,
-  LEVERAGE_RATIO_DECIMALS,
   INTEREST_DECIMALS,
   getUSDCAddress,
   getERC20Address,
@@ -335,7 +337,6 @@ export {
   isTestEnv,
   isMainnetForking,
   isMainnet,
-  leverageRatioAsBN,
   interestAprAsBN,
   getDefenderClient,
   deployContractUpgrade,
@@ -343,5 +344,5 @@ export {
   TRANCHES,
   DepList,
   Ticker,
-  AddressString
+  AddressString,
 }

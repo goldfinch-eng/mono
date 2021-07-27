@@ -9,6 +9,7 @@ const CONFIG_KEYS = {
   LatenessMaxDays: 6,
   DrawdownPeriodInSeconds: 7,
   TransferPeriodRestrictionInDays: 8,
+  LeverageRatio: 9,
   // Addresses
   Pool: 0,
   CreditLineImplementation: 1,

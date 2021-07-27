@@ -21,7 +21,8 @@ library ConfigOptions {
     LatenessGracePeriodInDays,
     LatenessMaxDays,
     DrawdownPeriodInSeconds,
-    TransferRestrictionPeriodInDays
+    TransferRestrictionPeriodInDays,
+    LeverageRatio
   }
   enum Addresses {
     Pool,
@@ -67,8 +68,14 @@ library ConfigOptions {
     if (Numbers.LatenessMaxDays == numberName) {
       return "LatenessMaxDays";
     }
+    if (Numbers.DrawdownPeriodInSeconds == numberName) {
+      return "DrawdownPeriodInSeconds";
+    }
     if (Numbers.TransferRestrictionPeriodInDays == numberName) {
       return "TransferRestrictionPeriodInDays";
+    }
+    if (Numbers.LeverageRatio == numberName) {
+      return "LeverageRatio";
     }
     revert("Unknown value passed to getNumberName");
   }

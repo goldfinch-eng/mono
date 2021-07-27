@@ -3,20 +3,32 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
+import "./BaseUpgradeablePausable.sol";
+import "./ConfigHelper.sol";
 import "../../interfaces/IFundStrategy.sol";
 import "../../interfaces/IFund.sol";
 import "../../interfaces/ITranchedPool.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 
-contract FixedLeverageRatioStrategy is IFundStrategy {
+contract FixedLeverageRatioStrategy is BaseUpgradeablePausable, IFundStrategy {
+  GoldfinchConfig public config;
+  using ConfigHelper for GoldfinchConfig;
   using SafeMath for uint256;
 
-  uint256 private immutable leverageRatio;
+  uint256 private constant LEVERAGE_RATIO_DECIMALS = 1e18;
 
-  uint256 public constant LEVERAGE_RATIO_DECIMALS = 1e18;
+  function initialize(address owner, GoldfinchConfig _config) public initializer {
+    require(owner != address(0) && address(_config) != address(0), "Owner and config addresses cannot be empty");
+    __BaseUpgradeablePausable__init(owner);
+    config = _config;
+  }
 
-  constructor(uint256 _leverageRatio) public {
-    leverageRatio = _leverageRatio;
+  function updateGoldfinchConfig() external onlyAdmin {
+    config = GoldfinchConfig(config.configAddress());
+  }
+
+  function getLeverageRatio() public view returns (uint256) {
+    return config.getLeverageRatio().div(LEVERAGE_RATIO_DECIMALS);
   }
 
   /**
@@ -60,7 +72,7 @@ contract FixedLeverageRatioStrategy is IFundStrategy {
   {
     uint256 juniorCapital = juniorTranche.principalDeposited;
     uint256 existingSeniorCapital = seniorTranche.principalDeposited;
-    uint256 seniorTarget = juniorCapital.mul(leverageRatio).div(LEVERAGE_RATIO_DECIMALS);
+    uint256 seniorTarget = juniorCapital.mul(getLeverageRatio());
 
     if (existingSeniorCapital >= seniorTarget) {
       return 0;

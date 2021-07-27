@@ -153,4 +153,8 @@ library ConfigHelper {
   function getTransferRestrictionPeriodInDays(GoldfinchConfig config) internal view returns (uint256) {
     return config.getNumber(uint256(ConfigOptions.Numbers.TransferRestrictionPeriodInDays));
   }
+
+  function getLeverageRatio(GoldfinchConfig config) internal view returns (uint256) {
+    return config.getNumber(uint256(ConfigOptions.Numbers.LeverageRatio));
+  }
 }
