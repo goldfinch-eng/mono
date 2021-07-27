@@ -8,7 +8,7 @@ const FixedLeverageRatioStrategy = artifacts.require("FixedLeverageRatioStrategy
 let accounts, owner, borrower
 
 describe("FixedLeverageRatioStrategy", () => {
-  let tranchedPool, seniorFund, goldfinchConfig, strategy, juniorInvestmentAmount
+  let goldfinchConfig, tranchedPool, seniorFund, strategy, juniorInvestmentAmount
 
   const setupTest = deployments.createFixture(async ({deployments}) => {
     ;[owner, borrower] = await web3.eth.getAccounts()
@@ -46,19 +46,19 @@ describe("FixedLeverageRatioStrategy", () => {
 
     await tranchedPool.deposit(TRANCHES.Junior, juniorInvestmentAmount)
 
-    return {tranchedPool, seniorFund, strategy}
+    return {goldfinchConfig, tranchedPool, seniorFund, strategy}
   })
 
   beforeEach(async () => {
     accounts = await web3.eth.getAccounts()
     ;[owner] = accounts
-    ;({tranchedPool, seniorFund, strategy} = await setupTest())
+    ;({goldfinchConfig, tranchedPool, seniorFund, strategy} = await setupTest())
   })
 
   describe("getLeverageRatio", () => {
     it("returns the leverage ratio maintained by Goldfinch config, adjusted for the relevant number of decimal places", async () => {
       const configLeverageRatio = await goldfinchConfig.getNumber(CONFIG_KEYS.LeverageRatio)
-      expect(configLeverageRatio).to.bignumber.equal(new BN(4e18))
+      expect(configLeverageRatio).to.bignumber.equal(new BN("4000000000000000000"))
 
       const strategyLeverageRatio = await strategy.getLeverageRatio()
       expect(strategyLeverageRatio).to.bignumber.equal(new BN(4))

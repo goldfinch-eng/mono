@@ -114,7 +114,7 @@ describe("Deployment", async () => {
         latenessMaxDays: 6,
         drawdownPeriodInSeconds: 11000,
         transferRestrictionPeriodInDays: 180,
-        leverageRatio: 17e18,
+        leverageRatio: "17000000000000000000",
       }
 
       await updateConfigs(hre, new_config)
