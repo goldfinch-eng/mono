@@ -761,13 +761,6 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     }
   }
 
-  // TODO[PR] TPE-09 in the audit flagged this for deletion because it is unused. I'm flagging
-  // this here to check that it's not unused because we intended to use it but forgot to.
-  modifier onlyCreditDesk() {
-    require(msg.sender == config.creditDeskAddress(), "Only the credit desk is allowed to call this function");
-    _;
-  }
-
   modifier onlyLocker() {
     require(hasRole(LOCKER_ROLE, msg.sender), "Must have locker role to perform this action");
     _;
