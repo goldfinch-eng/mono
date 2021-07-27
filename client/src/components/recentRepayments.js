@@ -6,17 +6,17 @@ import {displayDollars, croppedAddress} from "../utils"
 import {iconOutArrow} from "./icons.js"
 
 function RecentRepayments() {
-  const {pool, user, network} = useContext(AppContext)
+  const {pool, user, network, goldfinchProtocol} = useContext(AppContext)
   const [repayments, setRepayments] = useState([])
   let transactionRows
 
   useEffect(() => {
-    if (pool && pool.gf) {
-      pool.gf.getRepaymentEvents().then((repayments) => {
+    if (pool && pool.gf && goldfinchProtocol) {
+      pool.gf.getRepaymentEvents(goldfinchProtocol).then((repayments) => {
         setRepayments(_.slice(repayments, 0, 3))
       })
     }
-  }, [pool])
+  }, [pool, goldfinchProtocol])
 
   function createTransactionRows(tx) {
     const etherscanSubdomain = network.name === "mainnet" ? "" : `${network.name}.`
