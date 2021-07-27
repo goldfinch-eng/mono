@@ -78,6 +78,11 @@ function useEstimatedLeverageRatio({tranchedPool}: {tranchedPool?: TranchedPool}
   let juniorContribution = tranchedPool?.juniorTranche.principalDeposited
 
   if (totalAssets && juniorContribution) {
+    // When the pool is empty, assume max leverage
+    if (new BigNumber(juniorContribution).isZero()) {
+      // TODO: This is currently hardcoded, we'll pull it from config when it's available.
+      return new BigNumber(4)
+    }
     return totalAssets.minus(juniorContribution).dividedBy(juniorContribution)
   }
 
