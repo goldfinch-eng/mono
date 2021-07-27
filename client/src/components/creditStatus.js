@@ -3,7 +3,7 @@ import InfoSection from "./infoSection.js"
 import CreditBarViz from "./creditBarViz.js"
 import {usdcFromAtomic} from "../ethereum/erc20"
 import {decimals} from "../ethereum/utils"
-import {displayNumber} from "../utils"
+import {displayDollars, displayNumber} from "../utils"
 import {iconClock} from "./icons.js"
 
 function CreditStatus(props) {
@@ -46,12 +46,21 @@ function CreditStatus(props) {
       </div>
     )
   }
+  let remainingTotalDue = props.creditLine.remainingTotalDueAmountInDollars
+  let availableToDrawdown = props.creditLine.availableCreditInDollars
 
   return (
     <div className={`credit-status background-container ${placeholderClass}`}>
       <h2>Credit Status</h2>
       <div className="credit-status-balance background-container-inner">
-        <CreditBarViz creditLine={props.creditLine} />
+        <CreditBarViz
+          leftAmount={remainingTotalDue}
+          leftAmountDisplay={displayDollars(remainingTotalDue)}
+          leftAmountDescription={"Balance plus interest"}
+          rightAmount={availableToDrawdown}
+          rightAmountDisplay={displayDollars(availableToDrawdown)}
+          rightAmountDescription={"Available to drawdown"}
+        />
         {termDueDate}
       </div>
       <InfoSection rows={rows} />
