@@ -4,6 +4,7 @@ import {web3} from "hardhat"
 import BN from "bn.js"
 const USDCDecimals = new BN(String(1e6))
 const ETHDecimals = new BN(String(1e18))
+const LEVERAGE_RATIO_DECIMALS = new BN(String(1e18))
 const INTEREST_DECIMALS = new BN(String(1e18))
 const DEFENDER_API_KEY = process.env.DEFENDER_API_KEY || "A2UgCPgn8jQbkSVuSCxEMhFmivdV9C6d"
 const DEFENDER_API_SECRET = process.env.DEFENDER_API_SECRET
@@ -124,6 +125,10 @@ function isMainnetForking() {
 
 async function isMainnet() {
   return (await hre.getChainId()) === MAINNET_CHAIN_ID
+}
+
+function leverageRatioAsBN(leverageRatioString: string): BN {
+  return new BN(leverageRatioString).mul(LEVERAGE_RATIO_DECIMALS)
 }
 
 function interestAprAsBN(interestPercentageString: string): BN {
@@ -320,6 +325,7 @@ export {
   USDCDecimals,
   MAX_UINT,
   ETHDecimals,
+  LEVERAGE_RATIO_DECIMALS,
   INTEREST_DECIMALS,
   getUSDCAddress,
   getERC20Address,
@@ -337,6 +343,7 @@ export {
   isTestEnv,
   isMainnetForking,
   isMainnet,
+  leverageRatioAsBN,
   interestAprAsBN,
   getDefenderClient,
   deployContractUpgrade,

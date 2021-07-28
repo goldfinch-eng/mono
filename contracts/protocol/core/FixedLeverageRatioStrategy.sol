@@ -28,7 +28,7 @@ contract FixedLeverageRatioStrategy is BaseUpgradeablePausable, IFundStrategy {
   }
 
   function getLeverageRatio() public view returns (uint256) {
-    return config.getLeverageRatio().div(LEVERAGE_RATIO_DECIMALS);
+    return config.getLeverageRatio();
   }
 
   /**
@@ -72,7 +72,7 @@ contract FixedLeverageRatioStrategy is BaseUpgradeablePausable, IFundStrategy {
   {
     uint256 juniorCapital = juniorTranche.principalDeposited;
     uint256 existingSeniorCapital = seniorTranche.principalDeposited;
-    uint256 seniorTarget = juniorCapital.mul(getLeverageRatio());
+    uint256 seniorTarget = juniorCapital.mul(getLeverageRatio()).div(LEVERAGE_RATIO_DECIMALS);
 
     if (existingSeniorCapital >= seniorTarget) {
       return 0;
