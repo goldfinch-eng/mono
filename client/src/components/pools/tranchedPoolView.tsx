@@ -20,6 +20,8 @@ import {AsyncResult, RefreshFn, useAsync, useAsyncFn} from "../../hooks/useAsync
 import useERC20Permit from "../../hooks/useERC20Permit"
 import useCurrencyUnlocked from "../../hooks/useCurrencyUnlocked"
 import UnlockERC20Form from "../unlockERC20Form"
+import CreditBarViz from "../creditBarViz"
+import {DepositMade} from "../../typechain/web3/TranchedPool"
 
 function useTranchedPool({
   goldfinchProtocol,
@@ -37,9 +39,7 @@ function useTranchedPool({
     return tranchedPool.initialize().then(() => tranchedPool)
   }, [address, goldfinchProtocol])
 
-  useEffect(() => {
-    refresh()
-  }, [refresh])
+  useEffect(refresh, [refresh])
 
   return [result, refresh]
 }
@@ -76,6 +76,11 @@ function useEstimatedLeverageRatio({tranchedPool}: {tranchedPool?: TranchedPool}
   let juniorContribution = tranchedPool?.juniorTranche.principalDeposited
 
   if (totalAssets && juniorContribution) {
+    // When the pool is empty, assume max leverage
+    if (new BigNumber(juniorContribution).isZero()) {
+      // TODO: This is currently hardcoded, we'll pull it from config when it's available.
+      return new BigNumber(4)
+    }
     return totalAssets.minus(juniorContribution).dividedBy(juniorContribution)
   }
 
@@ -114,6 +119,26 @@ function useRemainingJuniorCapacity({tranchedPool}: {tranchedPool?: TranchedPool
   }
 
   return
+}
+
+function useUniqueJuniorSuppliers({tranchedPool}: {tranchedPool?: TranchedPool}) {
+  let uniqueSuppliers = 0
+  const {goldfinchProtocol} = useContext(AppContext)
+
+  let depositsQuery = useAsync(async () => {
+    if (!tranchedPool || !goldfinchProtocol) {
+      return []
+    }
+    return await goldfinchProtocol.queryEvent<DepositMade>(tranchedPool.contract, "DepositMade", {
+      tranche: TRANCHES.Junior.toString(),
+    })
+  }, [tranchedPool, goldfinchProtocol])
+
+  if (depositsQuery.status === "succeeded") {
+    uniqueSuppliers = new Set(depositsQuery.value.map((e) => e.returnValues.owner)).size
+  }
+
+  return uniqueSuppliers
 }
 
 interface TranchedPoolDepositFormProps {
@@ -271,6 +296,50 @@ function ActionsContainer({tranchedPool, onComplete}: {tranchedPool?: TranchedPo
   }
 }
 
+function SupplyStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
+  const remainingJuniorCapacity = useRemainingJuniorCapacity({tranchedPool})
+  const leverageRatio = useEstimatedLeverageRatio({tranchedPool})
+  const estimatedSeniorSupply = useEstimatedSeniorPoolContribution({tranchedPool})
+  const uniqueJuniorSuppliers = useUniqueJuniorSuppliers({tranchedPool})
+  const totalPoolAssets = useEstimatedTotalPoolAssets({tranchedPool})
+
+  if (!tranchedPool) {
+    return <></>
+  }
+
+  let juniorContribution = new BigNumber(tranchedPool?.juniorTranche.principalDeposited)
+  let seniorContribution = new BigNumber(tranchedPool?.seniorTranche.principalDeposited).plus(estimatedSeniorSupply!)
+
+  let rows: Array<{label: string; value: string}> = [
+    {
+      label: "Senior Capital Supply",
+      value: displayDollars(roundUpPenny(usdcFromAtomic(seniorContribution))),
+    },
+    {label: "Leverage Ratio", value: `${leverageRatio?.toString()}x`},
+    {
+      label: "Total Capital Supply",
+      value: displayDollars(roundUpPenny(usdcFromAtomic(totalPoolAssets))),
+    },
+  ]
+
+  return (
+    <div className="background-container">
+      <h2>Capital Supply</h2>
+      <div className="credit-status-balance background-container-inner">
+        <CreditBarViz
+          leftAmount={new BigNumber(usdcFromAtomic(juniorContribution))}
+          leftAmountDisplay={displayDollars(usdcFromAtomic(juniorContribution))}
+          leftAmountDescription={`From ${uniqueJuniorSuppliers} junior suppliers`}
+          rightAmount={new BigNumber(usdcFromAtomic(remainingJuniorCapacity))}
+          rightAmountDisplay={`~${displayDollars(usdcFromAtomic(remainingJuniorCapacity))}`}
+          rightAmountDescription={"Est. Remaining"}
+        />
+      </div>
+      <InfoSection rows={rows} />
+    </div>
+  )
+}
+
 function Overview({tranchedPool}: {tranchedPool?: TranchedPool}) {
   let rows: Array<{label: string; value: string}> = []
   if (tranchedPool) {
@@ -338,6 +407,7 @@ function TranchedPoolView() {
       <ConnectionNotice requireUnlock={false} requireVerify={true} />
       {unlockForm}
       <ActionsContainer tranchedPool={tranchedPool} onComplete={async () => refreshTranchedPool()} />
+      <SupplyStatus tranchedPool={tranchedPool} />
       <Overview tranchedPool={tranchedPool} />
     </div>
   )

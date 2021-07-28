@@ -46,6 +46,7 @@ const deployV2 = require("../blockchain_scripts/v2/deployV2.js")
 import _ from "lodash"
 import {assertIsString, assertNonNullable} from "../utils/type"
 import {Result} from "ethers/lib/utils"
+import {advanceTime} from "../test/testHelpers"
 
 /*
 This deployment deposits some funds to the pool, and creates an underwriter, and a credit line.
@@ -174,9 +175,13 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   let filter = pool2.filters.DepositMade(seniorFund.address)
   let depositLog = (await ethers.provider.getLogs(filter))[0]
   assertNonNullable(depositLog)
+  let depositEvent = pool2.interface.parseLog(depositLog)
+  let tokenId = depositEvent.args.tokenId
 
   await pool2.lockPool()
   await pool2.drawdown(await pool2.limit())
+
+  await advanceTime(null, {days: 30})
 
   // Have the borrower repay a portion of their loan
   await impersonateAccount(hre, borrower)
@@ -185,6 +190,7 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   let payAmount = new BN(10).mul(USDCDecimals)
   await (erc20 as TestERC20).connect(borrowerSigner).approve(bwrCon.address, payAmount.toString())
   await bwrCon.pay(pool2.address, payAmount.toString())
+  await seniorFund.redeem(tokenId)
 }
 
 /**
