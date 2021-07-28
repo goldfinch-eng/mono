@@ -33,6 +33,8 @@ contract Pool is BaseUpgradeablePausable, IPool {
    * @param _config The address of the GoldfinchConfig contract
    */
   function initialize(address owner, GoldfinchConfig _config) public initializer {
+    require(owner != address(0) && address(_config) != address(0), "Owner and config addresses cannot be empty");
+
     __BaseUpgradeablePausable__init(owner);
 
     config = _config;
@@ -191,15 +193,16 @@ contract Pool is BaseUpgradeablePausable, IPool {
     // Move all USDC to the SeniorPool
     address seniorFundAddress = config.seniorFundAddress();
     uint256 balance = config.getUSDC().balanceOf(address(this));
-    doUSDCTransfer(address(this), seniorFundAddress, balance);
+    bool success = doUSDCTransfer(address(this), seniorFundAddress, balance);
+    require(success, "Failed to transfer USDC balance to the senior pool");
 
     // Claim our COMP!
     address compoundController = address(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
     bytes memory data = abi.encodeWithSignature("claimComp(address)", address(this));
-    bool success;
     bytes memory _res;
     // solhint-disable-next-line avoid-low-level-calls
     (success, _res) = compoundController.call(data);
+    require(success, "Failed to claim COMP");
 
     // Send our balance of COMP!
     address compToken = address(0xc00e94Cb662C3520282E6f5717214004A7f26888);
@@ -210,6 +213,7 @@ contract Pool is BaseUpgradeablePausable, IPool {
     data = abi.encodeWithSignature("transfer(address,uint256)", seniorFundAddress, compBalance);
     // solhint-disable-next-line avoid-low-level-calls
     (success, _res) = compToken.call(data);
+    require(success, "Failed to transfer COMP");
   }
 
   function toUint256(bytes memory _bytes) internal pure returns (uint256 value) {

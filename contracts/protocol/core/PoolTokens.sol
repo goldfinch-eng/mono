@@ -56,6 +56,8 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
   */
   // solhint-disable-next-line func-name-mixedcase
   function __initialize__(address owner, GoldfinchConfig _config) external initializer {
+    require(owner != address(0) && address(_config) != address(0), "Owner and config addresses cannot be empty");
+
     __Context_init_unchained();
     __AccessControl_init_unchained();
     __ERC165_init_unchained();
@@ -77,7 +79,7 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
    * @notice Called by pool to create a debt position in a particular tranche and amount
    * @param params Struct containing the tranche and the amount
    * @param to The address that should own the position
-   * @return The token ID (auto-incrementing integer across all pools)
+   * @return tokenId The token ID (auto-incrementing integer across all pools)
    */
   function mint(MintParams calldata params, address to)
     external
@@ -85,10 +87,10 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
     override
     onlyPool
     whenNotPaused
-    returns (uint256)
+    returns (uint256 tokenId)
   {
     address poolAddress = _msgSender();
-    uint256 tokenId = createToken(params, poolAddress);
+    tokenId = createToken(params, poolAddress);
     _mint(to, tokenId);
     emit TokenMinted(to, poolAddress, tokenId, params.principalAmount, params.tranche);
     return tokenId;
@@ -106,16 +108,22 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
     uint256 interestRedeemed
   ) external virtual override onlyPool whenNotPaused {
     TokenInfo storage token = tokens[tokenId];
+    address poolAddr = token.pool;
     require(token.pool != address(0), "Invalid tokenId");
-    require(_msgSender() == token.pool, "Only the token's pool can redeem");
+    require(_msgSender() == poolAddr, "Only the token's pool can redeem");
 
-    token.principalRedeemed = token.principalRedeemed.add(principalRedeemed);
-    token.interestRedeemed = token.interestRedeemed.add(interestRedeemed);
-
-    PoolInfo storage pool = pools[token.pool];
+    PoolInfo storage pool = pools[poolAddr];
     pool.totalPrincipalRedeemed = pool.totalPrincipalRedeemed.add(principalRedeemed);
     require(pool.totalPrincipalRedeemed <= pool.totalMinted, "Cannot redeem more than we minted");
-    emit TokenRedeemed(ownerOf(tokenId), token.pool, tokenId, principalRedeemed, interestRedeemed, token.tranche);
+
+    token.principalRedeemed = token.principalRedeemed.add(principalRedeemed);
+    require(
+      token.principalRedeemed <= token.principalAmount,
+      "Cannot redeem more than principal-deposited amount for token"
+    );
+    token.interestRedeemed = token.interestRedeemed.add(interestRedeemed);
+
+    emit TokenRedeemed(ownerOf(tokenId), poolAddr, tokenId, principalRedeemed, interestRedeemed, token.tranche);
   }
 
   /**
@@ -160,11 +168,11 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
     return _validPool(sender);
   }
 
-  function createToken(MintParams memory params, address poolAddress) internal returns (uint256) {
+  function createToken(MintParams calldata params, address poolAddress) internal returns (uint256 tokenId) {
     PoolInfo storage pool = pools[poolAddress];
 
     _tokenIdTracker.increment();
-    uint256 tokenId = _tokenIdTracker.current();
+    tokenId = _tokenIdTracker.current();
     tokens[tokenId] = TokenInfo({
       pool: poolAddress,
       tranche: params.tranche,

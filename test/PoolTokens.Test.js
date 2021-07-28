@@ -136,7 +136,7 @@ describe("PoolTokens", () => {
   })
 
   describe("redeem", async () => {
-    let tokenId, mintAmount
+    let tokenIdA, mintAmountA, tokenIdB, mintAmountB
     beforeEach(async function () {
       let result = await goldfinchFactory.createPool(
         person2,
@@ -153,10 +153,15 @@ describe("PoolTokens", () => {
 
       await erc20Approve(usdc, pool.address, usdcVal(100000), [person2])
 
-      mintAmount = usdcVal(5)
-      result = await pool.deposit(new BN(1), mintAmount, {from: person2})
+      mintAmountA = usdcVal(5)
+      result = await pool.deposit(new BN(1), mintAmountA, {from: person2})
       event = decodeLogs(result.receipt.rawLogs, poolTokens, "TokenMinted")[0]
-      tokenId = event.args.tokenId
+      tokenIdA = event.args.tokenId
+
+      mintAmountB = usdcVal(50)
+      result = await pool.deposit(new BN(1), mintAmountB, {from: person2})
+      event = decodeLogs(result.receipt.rawLogs, poolTokens, "TokenMinted")[0]
+      tokenIdB = event.args.tokenId
     })
 
     const redeemToken = async (tokenId, principal, interest) => {
@@ -167,44 +172,93 @@ describe("PoolTokens", () => {
     it("should update the token with the new info", async () => {
       const principalRedeemed = usdcVal(1)
       const interestRedeemed = usdcVal(2)
-      await redeemToken(tokenId, principalRedeemed, interestRedeemed)
-      const tokenInfo = await poolTokens.getTokenInfo(tokenId)
+      await redeemToken(tokenIdA, principalRedeemed, interestRedeemed)
+      const tokenInfo = await poolTokens.getTokenInfo(tokenIdA)
       expect(tokenInfo.principalRedeemed).to.bignumber.eq(principalRedeemed)
       expect(tokenInfo.interestRedeemed).to.bignumber.eq(interestRedeemed)
     })
 
-    it("should only allow redemption up to the total minted of a token", async () => {
-      const principalRedeemed = mintAmount
-      const interestRedeemed = usdcVal(2)
-      await redeemToken(tokenId, principalRedeemed, interestRedeemed)
-      return expect(redeemToken(tokenId, usdcVal(1), interestRedeemed)).to.be.rejectedWith(
-        /Cannot redeem more than we minted/
+    it("should only allow redemption up to the total minted of the pool", async () => {
+      const totalMinted = mintAmountA.add(mintAmountB)
+      const principalRedeemed = totalMinted.add(usdcVal(1))
+      const interestRedeemed = usdcVal(0)
+      const excessiveRedemption = redeemToken(tokenIdB, principalRedeemed, interestRedeemed)
+      return expect(excessiveRedemption).to.be.rejectedWith(/Cannot redeem more than we minted/)
+    })
+
+    it("should allow a single principal-redemption equal to a token's principal-deposited amount", async () => {
+      const principalRedeemed = mintAmountA
+      const interestRedeemed = usdcVal(0)
+      const maxRedemption = redeemToken(tokenIdA, principalRedeemed, interestRedeemed)
+      return expect(maxRedemption).to.be.fulfilled
+    })
+
+    it("should allow a single principal-redemption less than a token's principal-deposited amount", async () => {
+      const principalRedeemed = mintAmountA.sub(usdcVal(1))
+      const interestRedeemed = usdcVal(0)
+      const okRedemption = redeemToken(tokenIdA, principalRedeemed, interestRedeemed)
+      return expect(okRedemption).to.be.fulfilled
+    })
+
+    it("should allow a second principal-redemption that would cause a token's total principal redeemed to equal its principal-deposited amount", async () => {
+      const principalRedeemed1 = mintAmountA.sub(usdcVal(1))
+      const interestRedeemed1 = usdcVal(0)
+      const okRedemption1 = redeemToken(tokenIdA, principalRedeemed1, interestRedeemed1)
+      expect(okRedemption1).to.be.fulfilled
+      const principalRedeemed2 = usdcVal(1)
+      const interestRedeemed2 = usdcVal(0)
+      const okRedemption2 = redeemToken(tokenIdA, principalRedeemed2, interestRedeemed2)
+      return expect(okRedemption2).to.be.fulfilled
+    })
+
+    it("should prohibit a single principal-redemption of more than a token's principal-deposited amount", async () => {
+      const principalRedeemed = mintAmountA.add(usdcVal(1))
+      const interestRedeemed = usdcVal(0)
+      const excessiveRedemption = redeemToken(tokenIdA, principalRedeemed, interestRedeemed)
+      return expect(excessiveRedemption).to.be.rejectedWith(
+        /Cannot redeem more than principal-deposited amount for token/
+      )
+    })
+
+    it("should prohibit a second principal-redemption that would cause a token's total principal redeemed to exceed its principal-deposited amount", async () => {
+      const principalRedeemed1 = mintAmountA.sub(usdcVal(1))
+      const interestRedeemed1 = usdcVal(0)
+      const okRedemption = redeemToken(tokenIdA, principalRedeemed1, interestRedeemed1)
+      expect(okRedemption).to.be.fulfilled
+      const principalRedeemed2 = usdcVal(2)
+      const interestRedeemed2 = usdcVal(0)
+      const excessiveRedemption = redeemToken(tokenIdA, principalRedeemed2, interestRedeemed2)
+      return expect(excessiveRedemption).to.be.rejectedWith(
+        /Cannot redeem more than principal-deposited amount for token/
       )
     })
 
     it("should disallow redeeming tokens that don't exist", async () => {
       const interestRedeemed = usdcVal(2)
       const randomTokenId = "42"
-      return expect(redeemToken(randomTokenId, mintAmount, interestRedeemed)).to.be.rejectedWith(/Invalid tokenId/)
+      return expect(redeemToken(randomTokenId, mintAmountA, interestRedeemed)).to.be.rejectedWith(/Invalid tokenId/)
     })
 
     it("should only allow redemptions that come from the token's pool", async () => {
       const interestRedeemed = usdcVal(2)
-      const fakePoolRedemption = withPoolSender(() => poolTokens.redeem(tokenId, mintAmount, interestRedeemed), person2)
+      const fakePoolRedemption = withPoolSender(
+        () => poolTokens.redeem(tokenIdA, mintAmountA, interestRedeemed),
+        person2
+      )
       return expect(fakePoolRedemption).to.be.rejectedWith(/Only the token's pool can redeem/)
     })
 
     it("should emit an event", async () => {
       const interestRedeemed = usdcVal(2)
-      const result = await redeemToken(tokenId, mintAmount, interestRedeemed)
+      const result = await redeemToken(tokenIdA, mintAmountA, interestRedeemed)
       const tokenRedeemedEvent = result.logs[0]
       expect(tokenRedeemedEvent.event).to.eq("TokenRedeemed")
       expect(tokenRedeemedEvent.args.owner).to.equal(person2)
       expect(tokenRedeemedEvent.args.pool).to.equal(pool.address)
-      expect(tokenRedeemedEvent.args.tokenId).to.bignumber.equal(tokenId)
-      expect(tokenRedeemedEvent.args.principalRedeemed).to.bignumber.equal(mintAmount)
+      expect(tokenRedeemedEvent.args.tokenId).to.bignumber.equal(tokenIdA)
+      expect(tokenRedeemedEvent.args.principalRedeemed).to.bignumber.equal(mintAmountA)
       expect(tokenRedeemedEvent.args.interestRedeemed).to.bignumber.equal(interestRedeemed)
-      const tokenInfo = await poolTokens.getTokenInfo(tokenId)
+      const tokenInfo = await poolTokens.getTokenInfo(tokenIdA)
       expect(tokenRedeemedEvent.args.tranche).to.bignumber.equal(tokenInfo.tranche)
     })
   })

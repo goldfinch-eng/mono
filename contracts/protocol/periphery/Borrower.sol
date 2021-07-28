@@ -36,7 +36,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
   address private constant DAI_ADDRESS = address(0x6B175474E89094C44Da98b954EedeAC495271d0F);
 
   function initialize(address owner, address _config) external override initializer {
-    require(owner != address(0), "Owner cannot be empty");
+    require(owner != address(0) && _config != address(0), "Owner and config addresses cannot be empty");
     __BaseUpgradeablePausable__init(owner);
     config = GoldfinchConfig(_config);
 
@@ -161,7 +161,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
     uint256 originAmount,
     address fromToken,
     uint256 minTargetAmount,
-    uint256[] memory exchangeDistribution
+    uint256[] calldata exchangeDistribution
   ) external onlyAdmin {
     transferFrom(fromToken, _msgSender(), address(this), originAmount);
     IERC20withDec usdc = config.getUSDC();
@@ -171,11 +171,11 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
   }
 
   function payMultipleWithSwapOnOneInch(
-    address[] memory pools,
-    uint256[] memory minAmounts,
+    address[] calldata pools,
+    uint256[] calldata minAmounts,
     uint256 originAmount,
     address fromToken,
-    uint256[] memory exchangeDistribution
+    uint256[] calldata exchangeDistribution
   ) external onlyAdmin {
     require(pools.length == minAmounts.length, "Pools and amounts must be the same length");
 
@@ -228,7 +228,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
     address toToken,
     uint256 originAmount,
     uint256 minTargetAmount,
-    uint256[] memory exchangeDistribution
+    uint256[] calldata exchangeDistribution
   ) internal {
     bytes memory _data = abi.encodeWithSignature(
       "swap(address,address,uint256,uint256,uint256[],uint256)",

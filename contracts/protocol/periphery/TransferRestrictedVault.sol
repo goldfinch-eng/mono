@@ -50,6 +50,8 @@ contract TransferRestrictedVault is
   */
   // solhint-disable-next-line func-name-mixedcase
   function __initialize__(address owner, GoldfinchConfig _config) external initializer {
+    require(owner != address(0) && address(_config) != address(0), "Owner and config addresses cannot be empty");
+
     __Context_init_unchained();
     __AccessControl_init_unchained();
     __ReentrancyGuard_init_unchained();
@@ -69,7 +71,7 @@ contract TransferRestrictedVault is
 
   function depositJunior(ITranchedPool tranchedPool, uint256 amount) public nonReentrant {
     require(config.goList(msg.sender), "This address has not been go-listed");
-    safeTransfer(config.getUSDC(), msg.sender, address(this), amount);
+    safeERC20TransferFrom(config.getUSDC(), msg.sender, address(this), amount);
 
     approveSpender(address(tranchedPool), amount);
     uint256 poolTokenId = tranchedPool.deposit(uint256(ITranchedPool.Tranches.Junior), amount);
@@ -98,7 +100,7 @@ contract TransferRestrictedVault is
   }
 
   function depositSenior(uint256 amount) public nonReentrant {
-    safeTransfer(config.getUSDC(), msg.sender, address(this), amount);
+    safeERC20TransferFrom(config.getUSDC(), msg.sender, address(this), amount);
 
     IFund seniorFund = config.getSeniorFund();
     approveSpender(address(seniorFund), amount);
@@ -126,37 +128,34 @@ contract TransferRestrictedVault is
     depositSenior(amount);
   }
 
-  function withdrawSenior(uint256 tokenId, uint256 usdcAmount) public nonReentrant {
-    require(ownerOf(tokenId) == msg.sender, "Cannot withdraw using token you don't own");
-
+  function withdrawSenior(uint256 tokenId, uint256 usdcAmount) public nonReentrant onlyTokenOwner(tokenId) {
     IFund seniorFund = config.getSeniorFund();
     uint256 shares = seniorFund.getNumShares(usdcAmount);
     FiduPosition storage fiduPosition = fiduPositions[tokenId];
-    require(fiduPosition.amount >= shares, "Not enough Fidu for withdrawal");
+    uint256 fiduPositionAmount = fiduPosition.amount;
+    require(fiduPositionAmount >= shares, "Not enough Fidu for withdrawal");
 
-    fiduPosition.amount = fiduPosition.amount.sub(shares);
+    fiduPosition.amount = fiduPositionAmount.sub(shares);
     uint256 receivedAmount = seniorFund.withdraw(usdcAmount);
-    safeTransfer(config.getUSDC(), msg.sender, receivedAmount);
+    safeERC20Transfer(config.getUSDC(), msg.sender, receivedAmount);
   }
 
-  function withdrawSeniorInFidu(uint256 tokenId, uint256 shares) public nonReentrant {
-    require(ownerOf(tokenId) == msg.sender, "Cannot withdraw using token you don't own");
-
+  function withdrawSeniorInFidu(uint256 tokenId, uint256 shares) public nonReentrant onlyTokenOwner(tokenId) {
     FiduPosition storage fiduPosition = fiduPositions[tokenId];
-    require(fiduPosition.amount >= shares, "Not enough Fidu for withdrawal");
+    uint256 fiduPositionAmount = fiduPosition.amount;
+    require(fiduPositionAmount >= shares, "Not enough Fidu for withdrawal");
 
-    fiduPosition.amount = fiduPosition.amount.sub(shares);
+    fiduPosition.amount = fiduPositionAmount.sub(shares);
     uint256 usdcAmount = config.getSeniorFund().withdrawInFidu(shares);
-    safeTransfer(config.getUSDC(), msg.sender, usdcAmount);
+    safeERC20Transfer(config.getUSDC(), msg.sender, usdcAmount);
   }
 
   function withdrawJunior(uint256 tokenId, uint256 amount)
     public
     nonReentrant
+    onlyTokenOwner(tokenId)
     returns (uint256 interestWithdrawn, uint256 principalWithdrawn)
   {
-    require(ownerOf(tokenId) == msg.sender, "Cannot withdraw using token you don't own");
-
     PoolTokenPosition storage position = poolTokenPositions[tokenId];
     require(position.lockedUntil > 0, "Position is empty");
 
@@ -167,7 +166,7 @@ contract TransferRestrictedVault is
 
     (interestWithdrawn, principalWithdrawn) = pool.withdraw(poolTokenId, amount);
     uint256 totalWithdrawn = interestWithdrawn.add(principalWithdrawn);
-    safeTransfer(config.getUSDC(), msg.sender, totalWithdrawn);
+    safeERC20Transfer(config.getUSDC(), msg.sender, totalWithdrawn);
     return (interestWithdrawn, principalWithdrawn);
   }
 
@@ -215,17 +214,21 @@ contract TransferRestrictedVault is
 
   function transferPoolTokenPosition(PoolTokenPosition storage position, address to) internal {
     IPoolTokens poolTokens = config.getPoolTokens();
-    poolTokens.approve(to, position.tokenId);
     poolTokens.safeTransferFrom(address(this), to, position.tokenId);
   }
 
   function transferFiduPosition(FiduPosition storage position, address to) internal {
     IFidu fidu = config.getFidu();
-    safeTransfer(fidu, to, position.amount);
+    safeERC20Transfer(fidu, to, position.amount);
   }
 
   function approveSpender(address spender, uint256 allowance) internal {
     IERC20withDec usdc = config.getUSDC();
-    safeApprove(usdc, spender, allowance);
+    safeERC20Approve(usdc, spender, allowance);
+  }
+
+  modifier onlyTokenOwner(uint256 tokenId) {
+    require(ownerOf(tokenId) == msg.sender, "Only the token owner is allowed to call this function");
+    _;
   }
 }

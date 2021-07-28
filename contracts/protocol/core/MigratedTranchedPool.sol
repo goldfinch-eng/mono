@@ -20,22 +20,24 @@ contract MigratedTranchedPool is TranchedPool, IMigratedTranchedPool {
     uint256 totalPrincipalPaid
   ) external override returns (IV2CreditLine) {
     require(msg.sender == config.creditDeskAddress(), "Only credit desk can call this");
-    require(migrated == false, "Already migrated");
+    require(!migrated, "Already migrated");
+
     // Set accounting state vars.
-    creditLine.setBalance(clToMigrate.balance());
-    creditLine.setInterestOwed(clToMigrate.interestOwed());
-    creditLine.setPrincipalOwed(clToMigrate.principalOwed());
-    creditLine.setTermEndTime(termEndTime);
-    creditLine.setNextDueTime(nextDueTime);
-    creditLine.setInterestAccruedAsOf(interestAccruedAsOf);
-    creditLine.setLastFullPaymentTime(lastFullPaymentTime);
-    creditLine.setTotalInterestAccrued(totalInterestPaid.add(clToMigrate.interestOwed()));
+    IV2CreditLine newCl = creditLine;
+    newCl.setBalance(clToMigrate.balance());
+    newCl.setInterestOwed(clToMigrate.interestOwed());
+    newCl.setPrincipalOwed(clToMigrate.principalOwed());
+    newCl.setTermEndTime(termEndTime);
+    newCl.setNextDueTime(nextDueTime);
+    newCl.setInterestAccruedAsOf(interestAccruedAsOf);
+    newCl.setLastFullPaymentTime(lastFullPaymentTime);
+    newCl.setTotalInterestAccrued(totalInterestPaid.add(clToMigrate.interestOwed()));
 
     migrateDeposits(clToMigrate, totalInterestPaid, totalPrincipalPaid);
 
     migrated = true;
 
-    return creditLine;
+    return newCl;
   }
 
   function migrateDeposits(

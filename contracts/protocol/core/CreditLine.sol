@@ -56,7 +56,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     uint256 _termInDays,
     uint256 _lateFeeApr
   ) public initializer {
-    require(owner != address(0) && _borrower != address(0), "Zero address passed in");
+    require(_config != address(0) && owner != address(0) && _borrower != address(0), "Zero address passed in");
     __BaseUpgradeablePausable__init(owner);
     config = GoldfinchConfig(_config);
     borrower = _borrower;
@@ -290,14 +290,15 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
 
     // This resets lastFullPaymentTime. These conditions assure that they have
     // indeed paid off all their interest and they have a real nextDueTime. (ie. creditline isn't pre-drawdown)
-    if (newInterestOwed == 0 && nextDueTime != 0) {
+    uint256 _nextDueTime = nextDueTime;
+    if (newInterestOwed == 0 && _nextDueTime != 0) {
       // If interest was fully paid off, then set the last full payment as the previous due time
       uint256 mostRecentLastDueTime;
-      if (currentTime() < nextDueTime) {
+      if (currentTime() < _nextDueTime) {
         uint256 secondsPerPeriod = paymentPeriodInDays.mul(SECONDS_PER_DAY);
-        mostRecentLastDueTime = nextDueTime.sub(secondsPerPeriod);
+        mostRecentLastDueTime = _nextDueTime.sub(secondsPerPeriod);
       } else {
-        mostRecentLastDueTime = nextDueTime;
+        mostRecentLastDueTime = _nextDueTime;
       }
       setLastFullPaymentTime(mostRecentLastDueTime);
     }

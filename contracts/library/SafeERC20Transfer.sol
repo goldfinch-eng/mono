@@ -11,7 +11,7 @@ import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/IERC20.so
  * @author Goldfinch
  */
 abstract contract SafeERC20Transfer {
-  function safeTransfer(
+  function safeERC20Transfer(
     IERC20 erc20,
     address to,
     uint256 amount,
@@ -22,15 +22,15 @@ abstract contract SafeERC20Transfer {
     require(success, message);
   }
 
-  function safeTransfer(
+  function safeERC20Transfer(
     IERC20 erc20,
     address to,
     uint256 amount
   ) internal {
-    safeTransfer(erc20, to, amount, "Failed to transfer ERC20");
+    safeERC20Transfer(erc20, to, amount, "Failed to transfer ERC20");
   }
 
-  function safeTransfer(
+  function safeERC20TransferFrom(
     IERC20 erc20,
     address from,
     address to,
@@ -42,26 +42,17 @@ abstract contract SafeERC20Transfer {
     require(success, message);
   }
 
-  function safeTransfer(
+  function safeERC20TransferFrom(
     IERC20 erc20,
     address from,
     address to,
     uint256 amount
   ) internal {
     string memory message = "Failed to transfer ERC20";
-    safeTransfer(erc20, from, to, amount, message);
+    safeERC20TransferFrom(erc20, from, to, amount, message);
   }
 
-  function safeApprove(
-    IERC20 erc20,
-    address spender,
-    uint256 allowance
-  ) internal {
-    bool success = erc20.approve(spender, allowance);
-    require(success, "Failed to approve ERC20");
-  }
-
-  function safeApprove(
+  function safeERC20Approve(
     IERC20 erc20,
     address spender,
     uint256 allowance,
@@ -69,5 +60,14 @@ abstract contract SafeERC20Transfer {
   ) internal {
     bool success = erc20.approve(spender, allowance);
     require(success, message);
+  }
+
+  function safeERC20Approve(
+    IERC20 erc20,
+    address spender,
+    uint256 allowance
+  ) internal {
+    string memory message = "Failed to approve ERC20";
+    safeERC20Approve(erc20, spender, allowance, message);
   }
 }
