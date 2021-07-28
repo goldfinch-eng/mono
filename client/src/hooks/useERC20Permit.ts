@@ -54,7 +54,11 @@ export default function useERC20Permit(): {
   async function gatherPermitSignature({token, value, spender}: {token: ERC20; value: BigNumber; spender: string}) {
     const tokenAddress = token.address
     const contract = goldfinchProtocol.getContract<IERC20Permit>(ERC20PermitABI, tokenAddress)
-    const deadline = new BigNumber(secondsSinceEpoch()).plus(new BigNumber(60 * 60)) // 1 hour
+
+    // Default to one hour
+    const deadlineFromNow = new BigNumber(process.env.REACT_APP_PERMIT_DEADLINE || 60 * 60)
+    const deadline = new BigNumber(secondsSinceEpoch()).plus(deadlineFromNow)
+
     const nonce = await contract.methods.nonces(owner).call()
     const chainId = await web3.eth.getChainId()
     const message = {

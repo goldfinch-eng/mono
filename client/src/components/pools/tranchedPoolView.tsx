@@ -39,9 +39,7 @@ function useTranchedPool({
     return tranchedPool.initialize().then(() => tranchedPool)
   }, [address, goldfinchProtocol])
 
-  useEffect(() => {
-    refresh()
-  }, [refresh])
+  useEffect(refresh, [refresh])
 
   return [result, refresh]
 }
