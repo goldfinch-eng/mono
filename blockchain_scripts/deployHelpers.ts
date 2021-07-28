@@ -127,10 +127,6 @@ async function isMainnet() {
   return (await hre.getChainId()) === MAINNET_CHAIN_ID
 }
 
-function leverageRatioAsBN(leverageRatioString: string): BN {
-  return new BN(leverageRatioString).mul(LEVERAGE_RATIO_DECIMALS)
-}
-
 function interestAprAsBN(interestPercentageString: string): BN {
   const interestPercentageFloat = parseFloat(interestPercentageString)
   return new BN(String(interestPercentageFloat * 100000)).mul(INTEREST_DECIMALS).div(new BN(10000000))
@@ -343,7 +339,6 @@ export {
   isTestEnv,
   isMainnetForking,
   isMainnet,
-  leverageRatioAsBN,
   interestAprAsBN,
   getDefenderClient,
   deployContractUpgrade,

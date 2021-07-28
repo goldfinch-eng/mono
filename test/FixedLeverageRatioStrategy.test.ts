@@ -4,7 +4,6 @@ const {deployments, artifacts} = hre
 import {expect, BN, deployAllContracts, usdcVal, createPoolWithCreditLine} from "./testHelpers"
 import {
   interestAprAsBN,
-  leverageRatioAsBN,
   LEVERAGE_RATIO_DECIMALS,
   TRANCHES,
 } from "../blockchain_scripts/deployHelpers"
@@ -12,7 +11,7 @@ import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
 const FixedLeverageRatioStrategy = artifacts.require("FixedLeverageRatioStrategy")
 let accounts, borrower
 
-const EXPECTED_LEVERAGE_RATIO: BN = leverageRatioAsBN("4")
+const EXPECTED_LEVERAGE_RATIO: BN = new BN(String(4e18))
 
 describe("FixedLeverageRatioStrategy", () => {
   let goldfinchConfig, tranchedPool, seniorFund, strategy, juniorInvestmentAmount, owner
