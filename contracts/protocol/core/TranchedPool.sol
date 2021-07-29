@@ -117,6 +117,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   {
     TrancheInfo storage trancheInfo = getTrancheInfo(tranche);
     require(trancheInfo.lockedUntil == 0, "Tranche has been locked");
+    require(amount > 0, "Must deposit more than zero");
 
     trancheInfo.principalDeposited = trancheInfo.principalDeposited.add(amount);
     IPoolTokens.MintParams memory params = IPoolTokens.MintParams({tranche: tranche, principalAmount: amount});
@@ -442,6 +443,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     uint256 tokenId,
     uint256 amount
   ) internal returns (uint256 interestWithdrawn, uint256 principalWithdrawn) {
+    require(amount > 0, "Must withdraw more than zero");
     (uint256 interestRedeemable, uint256 principalRedeemable) = redeemableInterestAndPrincipal(trancheInfo, tokenInfo);
     uint256 netRedeemable = interestRedeemable.add(principalRedeemable);
 

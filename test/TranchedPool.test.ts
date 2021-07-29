@@ -284,6 +284,10 @@ describe("TranchedPool", () => {
         await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(10))).to.be.rejectedWith(/Tranche has been locked/)
       })
 
+      it("does not allow 0 value deposits", async () => {
+        await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(0))).to.be.rejectedWith(/Must deposit more than zero/)
+      })
+
       it("fails for invalid tranches", async () => {
         await expect(tranchedPool.deposit(0, usdcVal(10))).to.be.rejectedWith(/Unsupported tranche/)
       })
@@ -337,6 +341,10 @@ describe("TranchedPool", () => {
 
       it("fails for invalid tranches", async () => {
         await expect(tranchedPool.deposit(3, usdcVal(10))).to.be.rejectedWith(/Unsupported tranche/)
+      })
+
+      it("does not allow 0 value deposits", async () => {
+        await expect(tranchedPool.deposit(TRANCHES.Senior, usdcVal(0))).to.be.rejectedWith(/Must deposit more than zero/)
       })
 
       it("updates the tranche info and mints the token", async () => {
@@ -508,6 +516,17 @@ describe("TranchedPool", () => {
         await expect(tranchedPool.withdrawMax(tokenId, {from: owner})).to.be.fulfilled
         await expect(tranchedPool.withdraw(tokenId, usdcVal(10), {from: owner})).to.be.rejectedWith(
           /Invalid redeem amount/
+        )
+      })
+
+      it("does not allow you to withdraw zero amounts", async () => {
+        let receipt = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(10), {from: owner})
+        const logs = decodeLogs<DepositMade>(receipt.receipt.rawLogs, tranchedPool, "DepositMade")
+        const firstLog = getFirstLog(logs)
+        let tokenId = firstLog.args.tokenId
+
+        await expect(tranchedPool.withdraw(tokenId, usdcVal(0), {from: owner})).to.be.rejectedWith(
+          /Must withdraw more than zero/
         )
       })
     })
@@ -683,9 +702,10 @@ describe("TranchedPool", () => {
       await expectAction(async () => tranchedPool.withdrawMax(tokenId)).toChange([
         [async () => await getBalance(owner, usdc), {by: usdcVal(52250).div(new BN(100))}],
       ])
-      await expectAction(async () => tranchedPool.withdrawMax(tokenId)).toChange([
-        [async () => await getBalance(owner, usdc), {by: usdcVal(0)}],
-      ])
+      // Nothing left to withdraw
+      await expect(tranchedPool.withdrawMax(tokenId)).to.be.rejectedWith(
+        /Must withdraw more than zero/
+      )
     })
 
     it("emits a WithdrawalMade event", async () => {
