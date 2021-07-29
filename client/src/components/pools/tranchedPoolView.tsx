@@ -329,7 +329,7 @@ function SupplyStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
         <CreditBarViz
           leftAmount={new BigNumber(usdcFromAtomic(juniorContribution))}
           leftAmountDisplay={displayDollars(usdcFromAtomic(juniorContribution))}
-          leftAmountDescription={`From ${uniqueJuniorSuppliers} junior suppliers`}
+          leftAmountDescription={uniqueJuniorSuppliers === 1 ? `From ${uniqueJuniorSuppliers} junior supplier` : `From ${uniqueJuniorSuppliers} junior suppliers`}
           rightAmount={new BigNumber(usdcFromAtomic(remainingJuniorCapacity))}
           rightAmountDisplay={`~${displayDollars(usdcFromAtomic(remainingJuniorCapacity))}`}
           rightAmountDescription={"Est. Remaining"}
