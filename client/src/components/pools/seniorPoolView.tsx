@@ -12,7 +12,7 @@ import {
 import {AppContext} from "../../App"
 import InvestorNotice from "../investorNotice"
 
-function SeniorPool() {
+function SeniorPoolView() {
   const {pool, user} = useContext(AppContext)
   const [capitalProvider, setCapitalProvider] = useState<CapitalProvider>(emptyCapitalProvider())
   const [poolData, setPoolData] = useState<PoolData>()
@@ -62,4 +62,4 @@ function SeniorPool() {
   )
 }
 
-export default SeniorPool
+export default SeniorPoolView

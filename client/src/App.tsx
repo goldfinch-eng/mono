@@ -19,7 +19,7 @@ import {NetworkMonitor} from "./ethereum/networkMonitor"
 import {SeniorPool} from "./ethereum/pool"
 import {GoldfinchProtocol} from "./ethereum/GoldfinchProtocol"
 import {GoldfinchConfig} from "./typechain/web3/GoldfinchConfig"
-import SeniorPool from "./components/pools/seniorPool"
+import SeniorPoolView from "./components/pools/seniorPoolView"
 import VerifyIdentity from "./components/verifyIdentity"
 import TranchedPoolView from "./components/pools/tranchedPoolView"
 
@@ -217,7 +217,7 @@ function App() {
               <Borrow />
             </Route>
             <Route path="/earn/pools/senior">
-              <SeniorPool />
+              <SeniorPoolView />
             </Route>
             <Route path="/earn/pools/junior/:poolAddress">
               <TranchedPoolView />
