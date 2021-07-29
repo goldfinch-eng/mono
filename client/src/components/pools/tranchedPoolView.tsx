@@ -1,4 +1,4 @@
-import {useState, useContext, useEffect} from "react"
+import {useContext, useEffect, useState} from "react"
 import {useParams} from "react-router-dom"
 import ConnectionNotice from "../connectionNotice"
 import {AppContext} from "../../App"
@@ -22,6 +22,7 @@ import useCurrencyUnlocked from "../../hooks/useCurrencyUnlocked"
 import UnlockERC20Form from "../unlockERC20Form"
 import CreditBarViz from "../creditBarViz"
 import {DepositMade} from "../../typechain/web3/TranchedPool"
+import moment from "moment"
 
 function useTranchedPool({
   goldfinchProtocol,
@@ -44,10 +45,9 @@ function useTranchedPool({
   return [result, refresh]
 }
 
-function useBacker({user, tranchedPool}: {user: User; tranchedPool?: TranchedPool}): AsyncResult<Backer> {
+function useBacker({user, tranchedPool}: {user: User; tranchedPool?: TranchedPool}): Backer | undefined {
   const {goldfinchProtocol} = useContext(AppContext)
-
-  return useAsync<Backer>(() => {
+  let backerResult = useAsync<Backer>(() => {
     if (!user.loaded || !tranchedPool || !goldfinchProtocol) {
       return
     }
@@ -55,6 +55,19 @@ function useBacker({user, tranchedPool}: {user: User; tranchedPool?: TranchedPoo
     let backer = new Backer(user.address, tranchedPool, goldfinchProtocol)
     return backer.initialize().then(() => backer)
   }, [user, tranchedPool, goldfinchProtocol])
+
+  if (backerResult.status === "succeeded") {
+    return backerResult.value
+  }
+  return
+}
+
+function useRecentPoolTransactions({tranchedPool}: {tranchedPool?: TranchedPool}): Record<string, any>[] {
+  let recentTransactions = useAsync(() => tranchedPool && tranchedPool.recentTransactions(), [tranchedPool])
+  if (recentTransactions.status === "succeeded") {
+    return recentTransactions.value
+  }
+  return []
 }
 
 function useEstimatedSeniorPoolContribution({tranchedPool}: {tranchedPool?: TranchedPool}): BigNumber | undefined {
@@ -241,8 +254,6 @@ function TranchedPoolDepositForm({
 
 function ActionsContainer({tranchedPool, onComplete}: {tranchedPool?: TranchedPool; onComplete: () => Promise<any>}) {
   const {user} = useContext(AppContext)
-  const backer = useBacker({user, tranchedPool})
-  console.log(backer)
   const [action, setAction] = useState<"" | "deposit" | "withdraw">("")
   const remainingCapacity = useRemainingCapacity({tranchedPool: tranchedPool})
 
@@ -322,6 +333,12 @@ function SupplyStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
     },
   ]
 
+  let rightAmountPrefix = ""
+  if (tranchedPool.state === PoolState.Open) {
+    // Show an "approx." sign if the junior tranche is not yet locked
+    rightAmountPrefix = "~"
+  }
+
   return (
     <div className="background-container">
       <h2>Capital Supply</h2>
@@ -335,11 +352,102 @@ function SupplyStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
               : `From ${uniqueJuniorSuppliers} junior suppliers`
           }
           rightAmount={new BigNumber(usdcFromAtomic(remainingJuniorCapacity))}
-          rightAmountDisplay={`~${displayDollars(usdcFromAtomic(remainingJuniorCapacity))}`}
+          rightAmountDisplay={`${rightAmountPrefix}${displayDollars(usdcFromAtomic(remainingJuniorCapacity))}`}
           rightAmountDescription={"Est. Remaining"}
         />
       </div>
       <InfoSection rows={rows} />
+    </div>
+  )
+}
+
+function CreditStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
+  const {user} = useContext(AppContext)
+  const transactions = useRecentPoolTransactions({tranchedPool})
+  const backer = useBacker({user, tranchedPool})
+
+  // Don't show the credit status component until the pool has a drawdown
+  if (!backer || !tranchedPool || transactions.length === 0) {
+    return <></>
+  }
+  let creditLine = tranchedPool.creditLine
+
+  let rows: Array<{label: string; value: string}> = [
+    {
+      label: "Principal Outstanding",
+      value: displayDollars(usdcFromAtomic(creditLine.balance)),
+    },
+    {
+      label: "Your principal portion",
+      value: displayDollars(usdcFromAtomic(backer.principalAmount)),
+    },
+    {
+      label: "Full repayment due",
+      value: creditLine.termEndDate,
+    },
+  ]
+
+  let transactionRows
+  if (transactions.length === 0) {
+    transactionRows = (
+      <tr className="empty-row">
+        <td>No transactions</td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+    )
+  } else {
+    transactionRows = transactions.map((tx) => {
+      let yourPortion, amount
+      if (tx.event === "PaymentApplied") {
+        amount = tx.amount
+        const interestPortion = tranchedPool.sharePriceToUSDC(tx.juniorInterestDelta, backer.principalAmount)
+        const principalPortion = tranchedPool.sharePriceToUSDC(tx.juniorPrincipalDelta, backer.principalAmount)
+        yourPortion = interestPortion.plus(principalPortion)
+      } else if (tx.event === "DrawdownMade") {
+        amount = tx.amount.multipliedBy(-1)
+        yourPortion = tranchedPool.sharePriceToUSDC(tx.juniorPrincipalDelta, backer.principalAmount)
+      }
+      return (
+        <tr>
+          <td>{tx.name}</td>
+          <td>{moment.unix(tx.timestamp).format("MMM D")}</td>
+          <td className="numeric">{displayDollars(usdcFromAtomic(amount))}</td>
+          <td className="numeric">{displayDollars(usdcFromAtomic(yourPortion))}</td>
+          <td className="transaction-link">
+            <a href={`https://etherscan.io/tx/${tx.txHash}`} target="_blank" rel="noopener noreferrer">
+              {iconOutArrow}
+            </a>
+          </td>
+        </tr>
+      )
+    })
+  }
+
+  return (
+    <div>
+      <div className="background-container">
+        <h2>Credit Status</h2>
+        <div className="background-container-inner">
+          <InfoSection rows={rows} />
+        </div>
+        <div className="background-container-inner recent-repayments">
+          <div className="section-header">Recent transactions</div>
+          <table className={"table"}>
+            <thead>
+              <tr>
+                <th className="transaction-type">Transaction</th>
+                <th className="transaction-date">Date</th>
+                <th className="transaction-amount numeric">Amount</th>
+                <th className="transaction-portion numeric">Your Portion</th>
+                <th className="transaction-link"> </th>
+              </tr>
+            </thead>
+            <tbody>{transactionRows}</tbody>
+          </table>
+        </div>
+      </div>
     </div>
   )
 }
@@ -423,6 +531,7 @@ function TranchedPoolView() {
       <ConnectionNotice requireUnlock={false} requireVerify={true} />
       {unlockForm}
       <ActionsContainer tranchedPool={tranchedPool} onComplete={async () => refreshTranchedPool()} />
+      <CreditStatus tranchedPool={tranchedPool} />
       <SupplyStatus tranchedPool={tranchedPool} />
       <Overview tranchedPool={tranchedPool} />
     </div>

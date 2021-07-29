@@ -5,6 +5,9 @@ import {IPoolTokens} from "../typechain/web3/IPoolTokens"
 import BigNumber from "bignumber.js"
 import {fiduFromAtomic} from "./fidu"
 import {roundDownPenny, secondsSinceEpoch} from "../utils"
+import _ from "lodash"
+import {ContractEventLog} from "../typechain/web3/types"
+import web3 from "../web3"
 
 interface MetadataStore {
   [address: string]: PoolMetadata
@@ -46,6 +49,7 @@ const TRANCHES = {
 }
 
 interface TrancheInfo {
+  id: number
   principalDeposited: BigNumber
   principalSharePrice: BigNumber
   interestSharePrice: BigNumber
@@ -54,10 +58,11 @@ interface TrancheInfo {
 
 function trancheInfo(tuple: any): TrancheInfo {
   return {
-    principalDeposited: new BigNumber(tuple[0]),
-    principalSharePrice: new BigNumber(tuple[1]),
-    interestSharePrice: new BigNumber(tuple[2]),
-    lockedUntil: parseInt(tuple[3]),
+    id: parseInt(tuple[0]),
+    principalDeposited: new BigNumber(tuple[1]),
+    principalSharePrice: new BigNumber(tuple[2]),
+    interestSharePrice: new BigNumber(tuple[3]),
+    lockedUntil: parseInt(tuple[4]),
   }
 }
 
@@ -107,6 +112,66 @@ class TranchedPool {
   private async loadPoolMetadata(): Promise<PoolMetadata | undefined> {
     let store = await metadataStore(this.goldfinchProtocol.networkId)
     return store[this.address.toLowerCase()]
+  }
+
+  async recentTransactions() {
+    let transactions = await this.goldfinchProtocol.queryEvents(this.contract, ["DrawdownMade", "PaymentApplied"])
+    transactions = _.reverse(_.sortBy(transactions, "blockNumber")).slice(0, 3)
+    let sharePriceUpdates = await this.sharePriceUpdatesByTx(TRANCHES.Junior)
+    let blockTimestamps = await this.timestampsByBlockNumber(transactions)
+    return transactions.map((e) => {
+      const sharePriceUpdate = sharePriceUpdates[e.transactionHash]![0]!
+
+      let event = {
+        txHash: e.transactionHash,
+        event: e.event,
+        juniorInterestDelta: new BigNumber(sharePriceUpdate.returnValues.interestDelta),
+        juniorPrincipalDelta: new BigNumber(sharePriceUpdate.returnValues.principalDelta),
+        timestamp: blockTimestamps[e.blockNumber],
+      }
+      if (e.event === "DrawdownMade") {
+        Object.assign(event, {
+          name: "Drawdown",
+          amount: new BigNumber(e.returnValues.amount),
+        })
+      } else if (e.event === "PaymentApplied") {
+        const interestAmount = new BigNumber(e.returnValues.interestAmount)
+        const totalPrincipalAmount = new BigNumber(e.returnValues.principalAmount).plus(
+          new BigNumber(e.returnValues.remainingAmount),
+        )
+        Object.assign(event, {
+          name: "Interest payment",
+          amount: interestAmount.plus(totalPrincipalAmount),
+          interestAmount: new BigNumber(interestAmount),
+          principalAmount: new BigNumber(totalPrincipalAmount),
+        })
+      }
+      return event
+    })
+  }
+
+  sharePriceToUSDC(sharePrice: BigNumber, amount: BigNumber): BigNumber {
+    return new BigNumber(fiduFromAtomic(sharePrice.multipliedBy(amount)))
+  }
+
+  async sharePriceUpdatesByTx(tranche: number) {
+    let transactions = await this.goldfinchProtocol.queryEvents(this.contract, ["SharePriceUpdated"], {
+      tranche: tranche,
+    })
+    return _.groupBy(transactions, (e) => e.transactionHash)
+  }
+
+  async timestampsByBlockNumber(transactions: ContractEventLog<any>[]) {
+    const blockTimestamps = await Promise.all(
+      transactions.map((tx) => {
+        return web3.eth.getBlock(tx.blockNumber).then((block) => {
+          return {blockNumber: tx.blockNumber, timestamp: block.timestamp}
+        })
+      }),
+    )
+    const result = {}
+    blockTimestamps.map((t) => (result[t.blockNumber] = t.timestamp))
+    return result
   }
 }
 
