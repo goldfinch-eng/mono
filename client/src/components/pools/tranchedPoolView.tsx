@@ -346,8 +346,8 @@ function Overview({tranchedPool}: {tranchedPool?: TranchedPool}) {
     rows = [
       {label: "Credit limit", value: displayDollars(roundUpPenny(usdcFromAtomic(tranchedPool.creditLine.limit)))},
       {label: "Interest rate APR", value: displayPercent(tranchedPool.creditLine.interestAprDecimal)},
-      {label: "Payment frequency", value: `${tranchedPool.creditLine.paymentPeriodInDays} days`},
-      {label: "Payback term", value: `${tranchedPool.creditLine.termInDays} days`},
+      {label: "Payment frequency", value: tranchedPool.creditLine.paymentPeriodInDays.toString() === "1" ? `${tranchedPool.creditLine.paymentPeriodInDays} day` : `${tranchedPool.creditLine.paymentPeriodInDays} days`},
+      {label: "Payback term", value: tranchedPool.creditLine.termInDays.toString() === "1" ? `${tranchedPool.creditLine.termInDays} day` : `${tranchedPool.creditLine.termInDays} days`},
     ]
   }
 
