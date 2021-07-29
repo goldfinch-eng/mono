@@ -22,7 +22,7 @@ import {
   Fidu,
   TransferRestrictedVault,
   Borrower,
-  IFundStrategy,
+  ISeniorPoolStrategy,
   SeniorPool,
 } from "../typechain/ethers"
 import {Logger, DeployFn, DeployOpts} from "./types"
@@ -416,7 +416,7 @@ async function deploySeniorPool(hre: HardhatRuntimeEnvironment, {config, fidu}: 
   return fund
 }
 
-async function deploySeniorPoolStrategy(hre: HardhatRuntimeEnvironment, {config}: DeployOpts): Promise<IFundStrategy> {
+async function deploySeniorPoolStrategy(hre: HardhatRuntimeEnvironment, {config}: DeployOpts): Promise<ISeniorPoolStrategy> {
   let contractName = "FixedLeverageRatioStrategy"
   const {deployments, getNamedAccounts} = hre
   const {deploy, log} = deployments
@@ -429,7 +429,7 @@ async function deploySeniorPoolStrategy(hre: HardhatRuntimeEnvironment, {config}
     args: [new BN(4).toString()],
   })
   logger("FixedLeverageRatioStrategy was deployed to:", deployResult.address)
-  const strategy = (await ethers.getContractAt(contractName, deployResult.address)) as IFundStrategy
+  const strategy = (await ethers.getContractAt(contractName, deployResult.address)) as ISeniorPoolStrategy
   await updateConfig(config, "address", CONFIG_KEYS.SeniorPoolStrategy, strategy.address, {logger})
 
   return strategy

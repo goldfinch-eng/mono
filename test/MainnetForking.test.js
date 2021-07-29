@@ -127,7 +127,7 @@ describe("mainnet forking tests", async function () {
 
   async function setupSeniorPool() {
     ;({seniorPool, seniorPoolStrategy} = await deployV2(upgradedContracts))
-    seniorPoolStrategy = await artifacts.require("IFundStrategy").at(seniorPoolStrategy.address)
+    seniorPoolStrategy = await artifacts.require("ISeniorPoolStrategy").at(seniorPoolStrategy.address)
 
     await pool.migrateToSeniorPool({from: MAINNET_MULTISIG})
     await goldfinchConfig.setNumber(CONFIG_KEYS.TotalFundsLimit, usdcVal(20000000), {from: MAINNET_MULTISIG})

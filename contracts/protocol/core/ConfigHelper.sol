@@ -7,7 +7,7 @@ import "./GoldfinchConfig.sol";
 import "../../interfaces/IPool.sol";
 import "../../interfaces/IFidu.sol";
 import "../../interfaces/IFund.sol";
-import "../../interfaces/IFundStrategy.sol";
+import "../../interfaces/ISeniorPoolStrategy.sol";
 import "../../interfaces/ICreditDesk.sol";
 import "../../interfaces/IERC20withDec.sol";
 import "../../interfaces/ICUSDCContract.sol";
@@ -30,8 +30,8 @@ library ConfigHelper {
     return IFund(seniorPoolAddress(config));
   }
 
-  function getSeniorPoolStrategy(GoldfinchConfig config) internal view returns (IFundStrategy) {
-    return IFundStrategy(seniorPoolStrategyAddress(config));
+  function getSeniorPoolStrategy(GoldfinchConfig config) internal view returns (ISeniorPoolStrategy) {
+    return ISeniorPoolStrategy(seniorPoolStrategyAddress(config));
   }
 
   function getUSDC(GoldfinchConfig config) internal view returns (IERC20withDec) {

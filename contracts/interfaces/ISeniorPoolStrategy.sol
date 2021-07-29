@@ -6,7 +6,7 @@ pragma experimental ABIEncoderV2;
 import "./IFund.sol";
 import "./ITranchedPool.sol";
 
-abstract contract IFundStrategy {
+abstract contract ISeniorPoolStrategy {
   function invest(IFund fund, ITranchedPool pool) public view virtual returns (uint256 amount);
 
   function estimateInvestment(IFund fund, ITranchedPool pool) public view virtual returns (uint256);

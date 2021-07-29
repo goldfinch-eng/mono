@@ -176,7 +176,7 @@ contract SeniorPool is BaseUpgradeablePausable, IFund {
       _sweepFromCompound();
     }
 
-    IFundStrategy strategy = config.getSeniorPoolStrategy();
+    ISeniorPoolStrategy strategy = config.getSeniorPoolStrategy();
     uint256 amount = strategy.invest(this, pool);
     require(amount > 0, "Investment amount must be positive");
 
@@ -189,7 +189,7 @@ contract SeniorPool is BaseUpgradeablePausable, IFund {
 
   function estimateInvestment(ITranchedPool pool) public view override returns (uint256) {
     require(validPool(pool), "Pool must be valid");
-    IFundStrategy strategy = config.getSeniorPoolStrategy();
+    ISeniorPoolStrategy strategy = config.getSeniorPoolStrategy();
     return strategy.estimateInvestment(this, pool);
   }
 

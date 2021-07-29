@@ -3,12 +3,12 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../../interfaces/IFundStrategy.sol";
+import "../../interfaces/ISeniorPoolStrategy.sol";
 import "../../interfaces/IFund.sol";
 import "../../interfaces/ITranchedPool.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 
-contract FixedLeverageRatioStrategy is IFundStrategy {
+contract FixedLeverageRatioStrategy is ISeniorPoolStrategy {
   using SafeMath for uint256;
 
   uint256 private immutable leverageRatio;
