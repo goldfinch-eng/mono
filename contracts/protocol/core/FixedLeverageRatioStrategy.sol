@@ -20,7 +20,7 @@ contract FixedLeverageRatioStrategy is ISeniorPoolStrategy {
   /**
    * @notice Determines how much money to invest in the senior tranche based on what is committed to the junior
    * tranche and a fixed leverage ratio to the junior. Idempotent.
-   * @param fund The fund to invest from
+   * @param seniorPool The fund to invest from
    * @param pool The pool to invest into (as the senior)
    * @return The amount of money to invest into the pool from the fund
    */
@@ -40,7 +40,7 @@ contract FixedLeverageRatioStrategy is ISeniorPoolStrategy {
    * @notice Determines how much money to invest in the senior tranche based on what is committed to the junior,
    * tranche and a fixed leverage ratio to the junior, as if all conditions for investment were
    * met. Idempotent.
-   * @param fund The fund to invest from
+   * @param seniorPool The fund to invest from
    * @param pool The pool to invest into (as the senior)
    * @return The amount of money to invest into the pool from the fund
    */
