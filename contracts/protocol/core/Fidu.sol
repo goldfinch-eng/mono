@@ -87,7 +87,7 @@ contract Fidu is ERC20PresetMinterPauserUpgradeSafe {
 
   // canMint assumes that the USDC that backs the new shares has already been sent to the Pool
   function canMint(uint256 newAmount) internal view returns (bool) {
-    IFund fund = config.getSeniorFund();
+    IFund fund = config.getSeniorPool();
     uint256 liabilities = totalSupply().add(newAmount).mul(fund.sharePrice()).div(fiduMantissa());
     uint256 liabilitiesInDollars = fiduToUSDC(liabilities);
     uint256 _assets = fund.assets();
@@ -100,7 +100,7 @@ contract Fidu is ERC20PresetMinterPauserUpgradeSafe {
 
   // canBurn assumes that the USDC that backed these shares has already been moved out the Pool
   function canBurn(uint256 amountToBurn) internal view returns (bool) {
-    IFund fund = config.getSeniorFund();
+    IFund fund = config.getSeniorPool();
     uint256 liabilities = totalSupply().sub(amountToBurn).mul(fund.sharePrice()).div(fiduMantissa());
     uint256 liabilitiesInDollars = fiduToUSDC(liabilities);
     uint256 _assets = fund.assets();

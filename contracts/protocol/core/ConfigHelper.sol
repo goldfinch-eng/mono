@@ -26,12 +26,12 @@ library ConfigHelper {
     return IPool(poolAddress(config));
   }
 
-  function getSeniorFund(GoldfinchConfig config) internal view returns (IFund) {
-    return IFund(seniorFundAddress(config));
+  function getSeniorPool(GoldfinchConfig config) internal view returns (IFund) {
+    return IFund(seniorPoolAddress(config));
   }
 
-  function getSeniorFundStrategy(GoldfinchConfig config) internal view returns (IFundStrategy) {
-    return IFundStrategy(seniorFundStrategyAddress(config));
+  function getSeniorPoolStrategy(GoldfinchConfig config) internal view returns (IFundStrategy) {
+    return IFundStrategy(seniorPoolStrategyAddress(config));
   }
 
   function getUSDC(GoldfinchConfig config) internal view returns (IERC20withDec) {
@@ -82,12 +82,12 @@ library ConfigHelper {
     return config.getAddress(uint256(ConfigOptions.Addresses.PoolTokens));
   }
 
-  function seniorFundAddress(GoldfinchConfig config) internal view returns (address) {
-    return config.getAddress(uint256(ConfigOptions.Addresses.SeniorFund));
+  function seniorPoolAddress(GoldfinchConfig config) internal view returns (address) {
+    return config.getAddress(uint256(ConfigOptions.Addresses.SeniorPool));
   }
 
-  function seniorFundStrategyAddress(GoldfinchConfig config) internal view returns (address) {
-    return config.getAddress(uint256(ConfigOptions.Addresses.SeniorFundStrategy));
+  function seniorPoolStrategyAddress(GoldfinchConfig config) internal view returns (address) {
+    return config.getAddress(uint256(ConfigOptions.Addresses.SeniorPoolStrategy));
   }
 
   function creditDeskAddress(GoldfinchConfig config) internal view returns (address) {

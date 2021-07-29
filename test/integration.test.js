@@ -24,7 +24,7 @@ const CreditLine = artifacts.require("CreditLine")
 
 // eslint-disable-next-line no-unused-vars
 let accounts, owner, underwriter, borrower, investor1, investor2
-let creditDesk, fidu, goldfinchConfig, reserve, usdc, seniorFund, creditLine, tranchedPool, goldfinchFactory, poolTokens
+let creditDesk, fidu, goldfinchConfig, reserve, usdc, seniorPool, creditLine, tranchedPool, goldfinchFactory, poolTokens
 
 const ONE_HUNDRED = new BN(100)
 
@@ -38,33 +38,26 @@ describe("Goldfinch", async () => {
   let paymentPeriodInSeconds = SECONDS_PER_DAY.mul(paymentPeriodInDays)
 
   const setupTest = deployments.createFixture(async ({deployments}) => {
-    const {
-      seniorFund,
-      usdc,
-      creditDesk,
-      fidu,
-      goldfinchConfig,
-      goldfinchFactory,
-      poolTokens,
-    } = await deployAllContracts(deployments)
+    const {seniorPool, usdc, creditDesk, fidu, goldfinchConfig, goldfinchFactory, poolTokens} =
+      await deployAllContracts(deployments)
 
     // Approve transfers for our test accounts
-    await erc20Approve(usdc, seniorFund.address, usdcVal(100000), [owner, underwriter, borrower, investor1, investor2])
-    // Some housekeeping so we have a usable creditDesk for tests, and a seniorFund with funds
+    await erc20Approve(usdc, seniorPool.address, usdcVal(100000), [owner, underwriter, borrower, investor1, investor2])
+    // Some housekeeping so we have a usable creditDesk for tests, and a seniorPool with funds
     await erc20Transfer(usdc, [underwriter, investor1, investor2], usdcVal(100000), owner)
     // Add all web3 accounts to the GoList
     await goldfinchConfig.bulkAddToGoList(accounts)
 
-    await seniorFund.deposit(String(usdcVal(10000)), {from: underwriter})
+    await seniorPool.deposit(String(usdcVal(10000)), {from: underwriter})
     // Set the reserve to a separate address for easier separation. The current owner account gets used for many things in tests.
     await goldfinchConfig.setTreasuryReserve(reserve)
-    return {seniorFund, usdc, creditDesk, fidu, goldfinchConfig, goldfinchFactory, poolTokens}
+    return {seniorPool, usdc, creditDesk, fidu, goldfinchConfig, goldfinchFactory, poolTokens}
   })
 
   beforeEach(async () => {
     accounts = await web3.eth.getAccounts()
     ;[owner, underwriter, borrower, investor1, investor2, reserve] = accounts
-    ;({usdc, seniorFund, creditDesk, fidu, goldfinchConfig, goldfinchFactory, poolTokens} = await setupTest())
+    ;({usdc, seniorPool, creditDesk, fidu, goldfinchConfig, goldfinchFactory, poolTokens} = await setupTest())
   })
 
   describe("functional test", async () => {
@@ -113,7 +106,7 @@ describe("Goldfinch", async () => {
 
     async function depositToFund(amount, investor) {
       investor = investor || investor1
-      await seniorFund.deposit(amount, {from: investor})
+      await seniorPool.deposit(amount, {from: investor})
     }
 
     async function depositToPool(pool, amount, investor, tranche) {
@@ -124,7 +117,7 @@ describe("Goldfinch", async () => {
 
     async function lockAndLeveragePool(pool) {
       await pool.lockJuniorCapital({from: borrower})
-      await seniorFund.invest(pool.address)
+      await seniorPool.invest(pool.address)
     }
 
     async function drawdown(pool, amount, _borrower) {
@@ -175,9 +168,9 @@ describe("Goldfinch", async () => {
 
     async function assessPool(pool) {
       await pool.assess()
-      const tokenId = await getPoolTokenFor(seniorFund.address)
-      await seniorFund.redeem(tokenId)
-      await seniorFund.writedown(tokenId)
+      const tokenId = await getPoolTokenFor(seniorPool.address)
+      await seniorPool.redeem(tokenId)
+      await seniorPool.writedown(tokenId)
     }
 
     async function afterWithdrawalFees(grossAmount) {
@@ -189,14 +182,14 @@ describe("Goldfinch", async () => {
       investor = investor || investor1
       if (usdcAmount === "max") {
         const numShares = await getBalance(investor, fidu)
-        const maxAmount = (await seniorFund.sharePrice()).mul(numShares)
+        const maxAmount = (await seniorPool.sharePrice()).mul(numShares)
         usdcAmount = fiduToUSDC(maxAmount.div(ETHDecimals))
       }
-      return seniorFund.withdraw(usdcAmount, {from: investor})
+      return seniorPool.withdraw(usdcAmount, {from: investor})
     }
 
     async function withdrawFromFundInFidu(fiduAmount, investor) {
-      return seniorFund.withdrawInFidu(fiduAmount, {from: investor})
+      return seniorPool.withdrawInFidu(fiduAmount, {from: investor})
     }
 
     async function withdrawFromPool(pool, usdcAmount, investor) {
@@ -250,12 +243,12 @@ describe("Goldfinch", async () => {
         await drawdown(tranchedPool, new BN(1), borrower)
 
         await expectAction(() => makePayment(tranchedPool, totalInterest)).toChange([
-          [seniorFund.sharePrice, {by: new BN(0)}],
+          [seniorPool.sharePrice, {by: new BN(0)}],
         ])
         await advanceTime(null, {days: 5})
 
         await expectAction(() => assessPool(tranchedPool)).toChange([
-          [seniorFund.sharePrice, {increase: true}],
+          [seniorPool.sharePrice, {increase: true}],
           [creditLine.interestOwed, {to: new BN(0)}],
         ])
 
@@ -303,9 +296,9 @@ describe("Goldfinch", async () => {
         await advanceTime(null, {days: fourPeriods.toNumber()})
 
         await expectAction(() => assessPool(tranchedPool)).toChange([
-          [seniorFund.totalWritedowns, {increase: true}],
+          [seniorPool.totalWritedowns, {increase: true}],
           [creditLine.interestOwed, {increase: true}],
-          [seniorFund.sharePrice, {decrease: true}],
+          [seniorPool.sharePrice, {decrease: true}],
         ])
 
         // All the main actions should still work as expected!

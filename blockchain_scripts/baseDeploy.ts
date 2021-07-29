@@ -23,7 +23,7 @@ import {
   TransferRestrictedVault,
   Borrower,
   IFundStrategy,
-  SeniorFund,
+  SeniorPool,
 } from "../typechain/ethers"
 import {Logger, DeployFn, DeployOpts} from "./types"
 import {assertIsString} from "../utils/type"
@@ -55,10 +55,10 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   logger("Granting minter role to Pool")
   await grantMinterRoleToPool(fidu, pool)
   const creditDesk = await deployCreditDesk(deploy, {config})
-  await deploySeniorFund(hre, {config, fidu})
+  await deploySeniorPool(hre, {config, fidu})
   await deployBorrower(hre, {config})
-  logger("Granting minter role to SeniorFund")
-  await deploySeniorFundStrategy(hre, {config})
+  logger("Granting minter role to SeniorPool")
+  await deploySeniorPoolStrategy(hre, {config})
   logger("Deploying GoldfinchFactory")
   await deployGoldfinchFactory(deploy, {config})
   await deployClImplementation(hre, {config})
@@ -379,10 +379,10 @@ async function deployPool(hre: HardhatRuntimeEnvironment, {config}: DeployOpts) 
   return pool
 }
 
-async function deploySeniorFund(hre: HardhatRuntimeEnvironment, {config, fidu}: DeployOpts): Promise<SeniorFund> {
-  let contractName = "SeniorFund"
+async function deploySeniorPool(hre: HardhatRuntimeEnvironment, {config, fidu}: DeployOpts): Promise<SeniorPool> {
+  let contractName = "SeniorPool"
   if (isTestEnv()) {
-    contractName = "TestSeniorFund"
+    contractName = "TestSeniorPool"
   }
   const {deployments, getNamedAccounts} = hre
   const {deploy, log} = deployments
@@ -406,9 +406,9 @@ async function deploySeniorFund(hre: HardhatRuntimeEnvironment, {config, fidu}: 
     },
     libraries: {["Accountant"]: accountant.address},
   })
-  logger("SeniorFund was deployed to:", deployResult.address)
-  const fund = (await ethers.getContractAt(contractName, deployResult.address)) as SeniorFund
-  await updateConfig(config, "address", CONFIG_KEYS.SeniorFund, fund.address, {logger})
+  logger("SeniorPool was deployed to:", deployResult.address)
+  const fund = (await ethers.getContractAt(contractName, deployResult.address)) as SeniorPool
+  await updateConfig(config, "address", CONFIG_KEYS.SeniorPool, fund.address, {logger})
   await config.addToGoList(fund.address)
   if (fidu) {
     await grantMinterRoleToPool(fidu, fund)
@@ -416,7 +416,7 @@ async function deploySeniorFund(hre: HardhatRuntimeEnvironment, {config, fidu}: 
   return fund
 }
 
-async function deploySeniorFundStrategy(hre: HardhatRuntimeEnvironment, {config}: DeployOpts): Promise<IFundStrategy> {
+async function deploySeniorPoolStrategy(hre: HardhatRuntimeEnvironment, {config}: DeployOpts): Promise<IFundStrategy> {
   let contractName = "FixedLeverageRatioStrategy"
   const {deployments, getNamedAccounts} = hre
   const {deploy, log} = deployments
@@ -430,7 +430,7 @@ async function deploySeniorFundStrategy(hre: HardhatRuntimeEnvironment, {config}
   })
   logger("FixedLeverageRatioStrategy was deployed to:", deployResult.address)
   const strategy = (await ethers.getContractAt(contractName, deployResult.address)) as IFundStrategy
-  await updateConfig(config, "address", CONFIG_KEYS.SeniorFundStrategy, strategy.address, {logger})
+  await updateConfig(config, "address", CONFIG_KEYS.SeniorPoolStrategy, strategy.address, {logger})
 
   return strategy
 }
@@ -458,9 +458,9 @@ module.exports = {
   deployPoolTokens,
   deployTransferRestrictedVault,
   deployTranchedPool,
-  deploySeniorFund,
+  deploySeniorPool,
   deployMigratedTranchedPool,
-  deploySeniorFundStrategy,
+  deploySeniorPoolStrategy,
   deployBorrower,
   deployClImplementation,
 }

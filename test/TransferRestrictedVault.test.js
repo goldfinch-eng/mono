@@ -31,13 +31,13 @@ let owner,
   transferRestrictedVault,
   treasury,
   goldfinchFactory,
-  seniorFund,
+  seniorPool,
   fidu
 
 describe("TransferRestrictedVault", async () => {
   beforeEach(async () => {
     ;[owner, borrower, treasury, otherPerson] = await web3.eth.getAccounts()
-    ;({usdc, goldfinchConfig, goldfinchFactory, poolTokens, transferRestrictedVault, seniorFund, fidu} =
+    ;({usdc, goldfinchConfig, goldfinchFactory, poolTokens, transferRestrictedVault, seniorPool, fidu} =
       await deployAllContracts(deployments))
     await goldfinchConfig.bulkAddToGoList([owner, borrower, otherPerson, transferRestrictedVault.address])
     await goldfinchConfig.setTreasuryReserve(treasury)
@@ -166,16 +166,16 @@ describe("TransferRestrictedVault", async () => {
     it("mints an NFT representing a senior pool position", async () => {
       let receipt = await transferRestrictedVault.depositSenior(usdcVal(1000))
       let vaultMintEvent = decodeLogs(receipt.receipt.rawLogs, transferRestrictedVault, "Transfer")[0]
-      let seniorFundDepositEvent = decodeLogs(receipt.receipt.rawLogs, seniorFund, "DepositMade")[0]
+      let seniorPoolDepositEvent = decodeLogs(receipt.receipt.rawLogs, seniorPool, "DepositMade")[0]
 
       expect(vaultMintEvent.args.from).to.equal(ZERO_ADDRESS)
       expect(vaultMintEvent.args.to).to.equal(owner)
 
-      expect(seniorFundDepositEvent.args.capitalProvider).to.equal(transferRestrictedVault.address)
-      expect(seniorFundDepositEvent.args.amount).to.bignumber.equal(usdcVal(1000))
+      expect(seniorPoolDepositEvent.args.capitalProvider).to.equal(transferRestrictedVault.address)
+      expect(seniorPoolDepositEvent.args.amount).to.bignumber.equal(usdcVal(1000))
 
       let tokenId = vaultMintEvent.args.tokenId
-      let shares = seniorFundDepositEvent.args.shares
+      let shares = seniorPoolDepositEvent.args.shares
       let position = await transferRestrictedVault.fiduPositions(tokenId)
 
       let currentTime = await time.latest()
@@ -211,16 +211,16 @@ describe("TransferRestrictedVault", async () => {
       })
 
       let vaultMintEvent = decodeLogs(receipt.receipt.rawLogs, transferRestrictedVault, "Transfer")[0]
-      let seniorFundDepositEvent = decodeLogs(receipt.receipt.rawLogs, seniorFund, "DepositMade")[0]
+      let seniorPoolDepositEvent = decodeLogs(receipt.receipt.rawLogs, seniorPool, "DepositMade")[0]
 
       expect(vaultMintEvent.args.from).to.equal(ZERO_ADDRESS)
       expect(vaultMintEvent.args.to).to.equal(owner)
 
-      expect(seniorFundDepositEvent.args.capitalProvider).to.equal(transferRestrictedVault.address)
-      expect(seniorFundDepositEvent.args.amount).to.bignumber.equal(usdcVal(1000))
+      expect(seniorPoolDepositEvent.args.capitalProvider).to.equal(transferRestrictedVault.address)
+      expect(seniorPoolDepositEvent.args.amount).to.bignumber.equal(usdcVal(1000))
 
       let tokenId = vaultMintEvent.args.tokenId
-      let shares = seniorFundDepositEvent.args.shares
+      let shares = seniorPoolDepositEvent.args.shares
       let position = await transferRestrictedVault.fiduPositions(tokenId)
 
       let currentTime = await time.latest()

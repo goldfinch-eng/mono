@@ -8,7 +8,7 @@ import {
   Borrower,
   GoldfinchConfig,
   GoldfinchFactory,
-  SeniorFund,
+  SeniorPool,
   TestERC20,
   TestForwarder,
   TranchedPool,
@@ -135,7 +135,7 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
 
   await setupTestForwarder(deployments, config, getOrNull, protocol_owner)
 
-  let seniorFund = await getDeployedAsEthersContract<SeniorFund>(getOrNull, "SeniorFund")
+  let seniorPool = await getDeployedAsEthersContract<SeniorPool>(getOrNull, "SeniorPool")
   if (testUser) {
     borrower = testUser
     if (CHAIN_NAME_BY_ID[chainId] === LOCAL) {
@@ -146,12 +146,12 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
     await impersonateAccount(hre, testUser)
     let signer = ethers.provider.getSigner(testUser)
     let depositAmount = new BN(100).mul(USDCDecimals)
-    await (erc20 as TestERC20).connect(signer).approve(seniorFund.address, depositAmount.toString())
-    await seniorFund.connect(signer).deposit(depositAmount.toString())
+    await (erc20 as TestERC20).connect(signer).approve(seniorPool.address, depositAmount.toString())
+    await seniorPool.connect(signer).deposit(depositAmount.toString())
   }
 
   await addUsersToGoList(config, [borrower, underwriter])
-  await depositToTheSeniorFund(seniorFund, erc20!)
+  await depositToTheSeniorPool(seniorPool, erc20!)
 
   const result = await (await goldfinchFactory.createBorrower(borrower)).wait()
   const lastEventArgs = getLastEventArgs(result)
@@ -171,8 +171,8 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   await writePoolMetadata(pool2)
 
   // Have the senior fund invest
-  await seniorFund.invest(pool2.address)
-  let filter = pool2.filters.DepositMade(seniorFund.address)
+  await seniorPool.invest(pool2.address)
+  let filter = pool2.filters.DepositMade(seniorPool.address)
   let depositLog = (await ethers.provider.getLogs(filter))[0]
   assertNonNullable(depositLog)
   let depositEvent = pool2.interface.parseLog(depositLog)
@@ -190,7 +190,7 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   let payAmount = new BN(10).mul(USDCDecimals)
   await (erc20 as TestERC20).connect(borrowerSigner).approve(bwrCon.address, payAmount.toString())
   await bwrCon.pay(pool2.address, payAmount.toString())
-  await seniorFund.redeem(tokenId)
+  await seniorPool.redeem(tokenId)
 }
 
 /**
@@ -258,7 +258,7 @@ async function addUsersToGoList(goldfinchConfig: GoldfinchConfig, users: string[
   await (await goldfinchConfig.bulkAddToGoList(users)).wait()
 }
 
-async function depositToTheSeniorFund(fund: SeniorFund, erc20: Contract) {
+async function depositToTheSeniorPool(fund: SeniorPool, erc20: Contract) {
   logger("Depositing funds into the fund...")
   const originalBalance = await erc20.balanceOf(fund.address)
 

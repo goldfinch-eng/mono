@@ -16,7 +16,7 @@ import {getUserData, defaultUser, User} from "./ethereum/user"
 import {mapNetworkToID, SUPPORTED_NETWORKS} from "./ethereum/utils"
 import initSdk, {SafeInfo, SdkInstance} from "@gnosis.pm/safe-apps-sdk"
 import {NetworkMonitor} from "./ethereum/networkMonitor"
-import {SeniorFund} from "./ethereum/pool"
+import {SeniorPool} from "./ethereum/pool"
 import {GoldfinchProtocol} from "./ethereum/GoldfinchProtocol"
 import {GoldfinchConfig} from "./typechain/web3/GoldfinchConfig"
 import SeniorPool from "./components/pools/seniorPool"
@@ -40,7 +40,7 @@ interface GeolocationData {
 }
 
 interface GlobalState {
-  pool?: SeniorFund
+  pool?: SeniorPool
   creditDesk?: any
   user: User
   usdc?: ERC20
@@ -60,7 +60,7 @@ declare let window: any
 const AppContext = React.createContext<GlobalState>({user: defaultUser()})
 
 function App() {
-  const [pool, setPool] = useState<SeniorFund>()
+  const [pool, setPool] = useState<SeniorPool>()
   const [creditDesk, setCreditDesk] = useState<any>({})
   const [usdc, setUSDC] = useState<ERC20>()
   const [user, setUser] = useState<User>(defaultUser())
@@ -120,7 +120,7 @@ function App() {
     const networkConfig: NetworkConfig = {name: networkId, supported: SUPPORTED_NETWORKS[networkId]}
     setNetwork(networkConfig)
     let usdc: ERC20,
-      pool: SeniorFund,
+      pool: SeniorPool,
       goldfinchConfigContract: any,
       creditDeskContract: any,
       protocol: GoldfinchProtocol
@@ -128,7 +128,7 @@ function App() {
       protocol = new GoldfinchProtocol(networkConfig)
       await protocol.initialize()
       usdc = await protocol.getERC20(Tickers.USDC)
-      pool = new SeniorFund(protocol)
+      pool = new SeniorPool(protocol)
       await pool.initialize()
       goldfinchConfigContract = protocol.getContract<GoldfinchConfig>("GoldfinchConfig")
       creditDeskContract = protocol.getContract("CreditDesk")

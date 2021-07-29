@@ -3,9 +3,9 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../protocol/core/SeniorFund.sol";
+import "../protocol/core/SeniorPool.sol";
 
-contract TestSeniorFund is SeniorFund {
+contract TestSeniorPool is SeniorPool {
   function _getNumShares(uint256 amount) public view returns (uint256) {
     return getNumShares(amount);
   }

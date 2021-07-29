@@ -69,29 +69,29 @@ describe("Deployment", async () => {
     })
 
     it("should allow you to change the owner of the implementation, without affecting the owner of the proxy", async () => {
-      const seniorFund = await getDeployedContract(deployments, "SeniorFund")
+      const seniorPool = await getDeployedContract(deployments, "SeniorPool")
       const someWallet = ethers.Wallet.createRandom()
 
-      const originally = await seniorFund.hasRole(OWNER_ROLE, someWallet.address)
+      const originally = await seniorPool.hasRole(OWNER_ROLE, someWallet.address)
       expect(originally).to.be.false
 
-      await seniorFund.grantRole(OWNER_ROLE, someWallet.address)
+      await seniorPool.grantRole(OWNER_ROLE, someWallet.address)
 
-      const afterGrant = await seniorFund.hasRole(OWNER_ROLE, someWallet.address)
+      const afterGrant = await seniorPool.hasRole(OWNER_ROLE, someWallet.address)
       expect(afterGrant).to.be.true
     })
 
     it("should allow for a way to transfer ownership of the proxy", async () => {
       const {protocol_owner, gf_deployer} = await getNamedAccounts()
-      const seniorFundProxy = await getDeployedContract(deployments, "SeniorFund_Proxy", gf_deployer)
+      const seniorPoolProxy = await getDeployedContract(deployments, "SeniorPool_Proxy", gf_deployer)
 
-      const originalOwner = await seniorFundProxy.owner()
+      const originalOwner = await seniorPoolProxy.owner()
       expect(originalOwner).to.equal(gf_deployer)
 
-      const result = await seniorFundProxy.transferOwnership(protocol_owner)
+      const result = await seniorPoolProxy.transferOwnership(protocol_owner)
       await result.wait()
 
-      const newOwner = await seniorFundProxy.owner()
+      const newOwner = await seniorPoolProxy.owner()
       expect(newOwner).to.equal(protocol_owner)
     })
   })

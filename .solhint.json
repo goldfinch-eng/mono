@@ -78,13 +78,13 @@
           "pause": [],
           "unpause": []
         },
-        "**/SeniorFund.sol:SeniorFund": {
+        "**/SeniorPool.sol:SeniorPool": {
           "deposit": [],
           "depositWithPermit": [],
           "withdraw": [],
           "withdrawInFidu": []
         },
-        "**/SeniorFundFidu.sol:SeniorFundFidu": {
+        "**/SeniorPoolFidu.sol:SeniorPoolFidu": {
           "__initialize__": [],
           "mintTo": [],
           "burnFrom": [],
