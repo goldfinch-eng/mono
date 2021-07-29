@@ -11,7 +11,7 @@ import "../../external/ERC721PresetMinterPauserAutoId.sol";
 import "../../interfaces/IPoolTokens.sol";
 import "../../interfaces/ITranchedPool.sol";
 import "../../interfaces/IPoolTokens.sol";
-import "../../interfaces/IFund.sol";
+import "../../interfaces/ISeniorPool.sol";
 import "../../interfaces/IFidu.sol";
 import "../core/BaseUpgradeablePausable.sol";
 import "../core/GoldfinchConfig.sol";
@@ -102,7 +102,7 @@ contract TransferRestrictedVault is
   function depositSenior(uint256 amount) public nonReentrant {
     safeERC20TransferFrom(config.getUSDC(), msg.sender, address(this), amount);
 
-    IFund seniorPool = config.getSeniorPool();
+    ISeniorPool seniorPool = config.getSeniorPool();
     approveSpender(address(seniorPool), amount);
     uint256 depositShares = seniorPool.deposit(amount);
 
@@ -129,7 +129,7 @@ contract TransferRestrictedVault is
   }
 
   function withdrawSenior(uint256 tokenId, uint256 usdcAmount) public nonReentrant onlyTokenOwner(tokenId) {
-    IFund seniorPool = config.getSeniorPool();
+    ISeniorPool seniorPool = config.getSeniorPool();
     uint256 shares = seniorPool.getNumShares(usdcAmount);
     FiduPosition storage fiduPosition = fiduPositions[tokenId];
     uint256 fiduPositionAmount = fiduPosition.amount;

@@ -6,7 +6,7 @@ pragma experimental ABIEncoderV2;
 import "./GoldfinchConfig.sol";
 import "../../interfaces/IPool.sol";
 import "../../interfaces/IFidu.sol";
-import "../../interfaces/IFund.sol";
+import "../../interfaces/ISeniorPool.sol";
 import "../../interfaces/ISeniorPoolStrategy.sol";
 import "../../interfaces/ICreditDesk.sol";
 import "../../interfaces/IERC20withDec.sol";
@@ -26,8 +26,8 @@ library ConfigHelper {
     return IPool(poolAddress(config));
   }
 
-  function getSeniorPool(GoldfinchConfig config) internal view returns (IFund) {
-    return IFund(seniorPoolAddress(config));
+  function getSeniorPool(GoldfinchConfig config) internal view returns (ISeniorPool) {
+    return ISeniorPool(seniorPoolAddress(config));
   }
 
   function getSeniorPoolStrategy(GoldfinchConfig config) internal view returns (ISeniorPoolStrategy) {

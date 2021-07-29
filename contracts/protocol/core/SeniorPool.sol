@@ -6,7 +6,7 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/drafts/IERC20Permit.sol";
 
-import "../../interfaces/IFund.sol";
+import "../../interfaces/ISeniorPool.sol";
 import "../../interfaces/IPoolTokens.sol";
 import "./Accountant.sol";
 import "./BaseUpgradeablePausable.sol";
@@ -18,7 +18,7 @@ import "./ConfigHelper.sol";
  *  Automatically invests across borrower pools using an adjustable strategy.
  * @author Goldfinch
  */
-contract SeniorPool is BaseUpgradeablePausable, IFund {
+contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
   using SafeMath for uint256;

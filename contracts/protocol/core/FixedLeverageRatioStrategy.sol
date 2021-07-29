@@ -4,7 +4,7 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "../../interfaces/ISeniorPoolStrategy.sol";
-import "../../interfaces/IFund.sol";
+import "../../interfaces/ISeniorPool.sol";
 import "../../interfaces/ITranchedPool.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 
@@ -24,7 +24,7 @@ contract FixedLeverageRatioStrategy is ISeniorPoolStrategy {
    * @param pool The pool to invest into (as the senior)
    * @return The amount of money to invest into the pool from the fund
    */
-  function invest(IFund fund, ITranchedPool pool) public view override returns (uint256) {
+  function invest(ISeniorPool seniorPool, ITranchedPool pool) public view override returns (uint256) {
     ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
     ITranchedPool.TrancheInfo memory seniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Senior));
 
@@ -44,7 +44,7 @@ contract FixedLeverageRatioStrategy is ISeniorPoolStrategy {
    * @param pool The pool to invest into (as the senior)
    * @return The amount of money to invest into the pool from the fund
    */
-  function estimateInvestment(IFund fund, ITranchedPool pool) public view override returns (uint256) {
+  function estimateInvestment(ISeniorPool seniorPool, ITranchedPool pool) public view override returns (uint256) {
     ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
     ITranchedPool.TrancheInfo memory seniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Senior));
 
