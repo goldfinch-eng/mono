@@ -22,8 +22,8 @@ import {
   Fidu,
   TransferRestrictedVault,
   Borrower,
-  ISeniorPoolStrategy,
   SeniorPool,
+  FixedLeverageRatioStrategy,
 } from "../typechain/ethers"
 import {Logger, DeployFn, DeployOpts} from "./types"
 import {assertIsString} from "../utils/type"
@@ -120,7 +120,8 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
     assertIsString(gf_deployer)
     let goldfinchFactoryDeployResult = await deploy("GoldfinchFactory", {
       from: gf_deployer,
-      proxy: {owner: gf_deployer,
+      proxy: {
+        owner: gf_deployer,
         execute: {
           init: {
             methodName: "initialize",
@@ -163,7 +164,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
           init: {
             methodName: "initialize",
             args: [protocol_owner, config.address],
-          }
+          },
         },
       },
       gasLimit: 4000000,
@@ -202,8 +203,8 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
           init: {
             methodName: "__initialize__",
             args: [protocol_owner, "Fidu", "FIDU", config.address],
-          }
-        }
+          },
+        },
       },
     })
     const fidu = (await ethers.getContractAt("Fidu", fiduDeployResult.address)) as Fidu
@@ -306,8 +307,8 @@ async function deployTransferRestrictedVault(
         init: {
           methodName: "__initialize__",
           args: [isSafeConfigChainId(chainId) ? SAFE_CONFIG[chainId] : protocol_owner, config.address],
-        }
-      }
+        },
+      },
     },
   })
   const contract = (await ethers.getContractAt(contractName, deployResult.address)) as TransferRestrictedVault
@@ -367,8 +368,8 @@ async function deployPool(hre: HardhatRuntimeEnvironment, {config}: DeployOpts) 
         init: {
           methodName: "initialize",
           args: [protocol_owner, config.address],
-        }
-      }
+        },
+      },
     },
   })
   logger("Pool was deployed to:", poolDeployResult.address)
@@ -402,7 +403,7 @@ async function deploySeniorPool(hre: HardhatRuntimeEnvironment, {config, fidu}: 
           methodName: "initialize",
           args: [protocol_owner, config.address],
         },
-      }
+      },
     },
     libraries: {["Accountant"]: accountant.address},
   })
@@ -416,7 +417,10 @@ async function deploySeniorPool(hre: HardhatRuntimeEnvironment, {config, fidu}: 
   return fund
 }
 
-async function deploySeniorPoolStrategy(hre: HardhatRuntimeEnvironment, {config}: DeployOpts): Promise<ISeniorPoolStrategy> {
+async function deploySeniorPoolStrategy(
+  hre: HardhatRuntimeEnvironment,
+  {config}: DeployOpts
+): Promise<FixedLeverageRatioStrategy> {
   let contractName = "FixedLeverageRatioStrategy"
   const {deployments, getNamedAccounts} = hre
   const {deploy, log} = deployments
@@ -426,18 +430,15 @@ async function deploySeniorPoolStrategy(hre: HardhatRuntimeEnvironment, {config}
   assertIsString(gf_deployer)
   let deployResult = await deploy(contractName, {
     from: gf_deployer,
-    proxy: {
-      owner: gf_deployer,
-      execute: {
-        init: {
-          methodName: "initialize",
-          args: [protocol_owner, config.address],
-        }
-      },
-    },
   })
-  logger("FixedLeverageRatioStrategy was deployed to:", deployResult.address)
-  const strategy = (await ethers.getContractAt(contractName, deployResult.address)) as ISeniorPoolStrategy
+  logger(`${contractName} was deployed to:`, deployResult.address)
+  const strategy = (await ethers.getContractAt(contractName, deployResult.address)) as FixedLeverageRatioStrategy
+  if (deployResult.newlyDeployed) {
+    logger(`${contractName} newly deployed, initializing...`)
+    assertIsString(protocol_owner)
+    await (await strategy.initialize(protocol_owner, config.address)).wait()
+  }
+
   await updateConfig(config, "address", CONFIG_KEYS.SeniorPoolStrategy, strategy.address, {logger})
 
   return strategy
