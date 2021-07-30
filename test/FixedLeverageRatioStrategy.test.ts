@@ -6,13 +6,13 @@ import {interestAprAsBN, TRANCHES} from "../blockchain_scripts/deployHelpers"
 let accounts, owner, borrower
 
 describe("FixedLeverageRatioStrategy", () => {
-  let tranchedPool, seniorFund, strategy, juniorInvestmentAmount
+  let tranchedPool, seniorPool, strategy, juniorInvestmentAmount
   let leverageRatio = new BN(4)
 
   const setupTest = deployments.createFixture(async ({deployments}) => {
     ;[owner, borrower] = await web3.eth.getAccounts()
 
-    const {seniorFund, goldfinchConfig, goldfinchFactory, usdc} = await deployAllContracts(deployments, {
+    const {seniorPool, goldfinchConfig, goldfinchFactory, usdc} = await deployAllContracts(deployments, {
       fromAccount: owner,
     })
 
@@ -46,25 +46,25 @@ describe("FixedLeverageRatioStrategy", () => {
 
     await tranchedPool.deposit(TRANCHES.Junior, juniorInvestmentAmount)
 
-    return {tranchedPool, seniorFund, strategy}
+    return {tranchedPool, seniorPool, strategy}
   })
 
   beforeEach(async () => {
     accounts = await web3.eth.getAccounts()
     ;[owner] = accounts
-    ;({tranchedPool, seniorFund, strategy} = await setupTest())
+    ;({tranchedPool, seniorPool, strategy} = await setupTest())
   })
 
   describe("estimateInvestment", () => {
     it("levers junior investment using the leverageRatio", async () => {
-      let amount = await strategy.estimateInvestment(seniorFund.address, tranchedPool.address)
+      let amount = await strategy.estimateInvestment(seniorPool.address, tranchedPool.address)
 
       await expect(amount).to.bignumber.equal(juniorInvestmentAmount.mul(leverageRatio))
     })
 
     context("junior pool is not locked", () => {
       it("still returns investment amount", async () => {
-        let amount = await strategy.estimateInvestment(seniorFund.address, tranchedPool.address)
+        let amount = await strategy.estimateInvestment(seniorPool.address, tranchedPool.address)
 
         await expect(amount).to.bignumber.equal(juniorInvestmentAmount.mul(leverageRatio))
       })
@@ -75,7 +75,7 @@ describe("FixedLeverageRatioStrategy", () => {
         await tranchedPool.lockJuniorCapital({from: borrower})
         await tranchedPool.lockPool({from: borrower})
 
-        let amount = await strategy.estimateInvestment(seniorFund.address, tranchedPool.address)
+        let amount = await strategy.estimateInvestment(seniorPool.address, tranchedPool.address)
 
         await expect(amount).to.bignumber.equal(juniorInvestmentAmount.mul(leverageRatio))
       })
@@ -86,7 +86,7 @@ describe("FixedLeverageRatioStrategy", () => {
         let existingSeniorPrincipal = juniorInvestmentAmount.add(new BN(10))
         await tranchedPool.deposit(TRANCHES.Senior, existingSeniorPrincipal)
 
-        let amount = await strategy.estimateInvestment(seniorFund.address, tranchedPool.address)
+        let amount = await strategy.estimateInvestment(seniorPool.address, tranchedPool.address)
 
         await expect(amount).to.bignumber.equal(juniorInvestmentAmount.mul(leverageRatio).sub(existingSeniorPrincipal))
       })
@@ -99,7 +99,7 @@ describe("FixedLeverageRatioStrategy", () => {
         )
         await tranchedPool.deposit(TRANCHES.Senior, existingSeniorPrincipal)
 
-        let amount = await strategy.estimateInvestment(seniorFund.address, tranchedPool.address)
+        let amount = await strategy.estimateInvestment(seniorPool.address, tranchedPool.address)
 
         await expect(amount).to.bignumber.equal(new BN(0))
       })
@@ -110,14 +110,14 @@ describe("FixedLeverageRatioStrategy", () => {
     it("levers junior investment using the leverageRatio", async () => {
       await tranchedPool.lockJuniorCapital({from: borrower})
 
-      let amount = await strategy.invest(seniorFund.address, tranchedPool.address)
+      let amount = await strategy.invest(seniorPool.address, tranchedPool.address)
 
       await expect(amount).to.bignumber.equal(juniorInvestmentAmount.mul(leverageRatio))
     })
 
     context("junior pool is not locked", () => {
       it("does not invest", async () => {
-        let amount = await strategy.invest(seniorFund.address, tranchedPool.address)
+        let amount = await strategy.invest(seniorPool.address, tranchedPool.address)
 
         await expect(amount).to.bignumber.equal(new BN(0))
       })
@@ -128,7 +128,7 @@ describe("FixedLeverageRatioStrategy", () => {
         await tranchedPool.lockJuniorCapital({from: borrower})
         await tranchedPool.lockPool({from: borrower})
 
-        let amount = await strategy.invest(seniorFund.address, tranchedPool.address)
+        let amount = await strategy.invest(seniorPool.address, tranchedPool.address)
 
         await expect(amount).to.bignumber.equal(new BN(0))
       })
@@ -140,7 +140,7 @@ describe("FixedLeverageRatioStrategy", () => {
         await tranchedPool.deposit(TRANCHES.Senior, existingSeniorPrincipal)
         await tranchedPool.lockJuniorCapital({from: borrower})
 
-        let amount = await strategy.invest(seniorFund.address, tranchedPool.address)
+        let amount = await strategy.invest(seniorPool.address, tranchedPool.address)
 
         await expect(amount).to.bignumber.equal(juniorInvestmentAmount.mul(leverageRatio).sub(existingSeniorPrincipal))
       })
@@ -154,7 +154,7 @@ describe("FixedLeverageRatioStrategy", () => {
         await tranchedPool.deposit(TRANCHES.Senior, existingSeniorPrincipal)
         await tranchedPool.lockJuniorCapital({from: borrower})
 
-        let amount = await strategy.invest(seniorFund.address, tranchedPool.address)
+        let amount = await strategy.invest(seniorPool.address, tranchedPool.address)
 
         await expect(amount).to.bignumber.equal(new BN(0))
       })

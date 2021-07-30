@@ -50,8 +50,8 @@ contract GoldfinchConfig is BaseUpgradeablePausable {
     addresses[key] = newTreasuryReserve;
   }
 
-  function setSeniorFundStrategy(address newStrategy) public onlyAdmin {
-    uint256 key = uint256(ConfigOptions.Addresses.SeniorFundStrategy);
+  function setSeniorPoolStrategy(address newStrategy) public onlyAdmin {
+    uint256 key = uint256(ConfigOptions.Addresses.SeniorPoolStrategy);
     emit AddressUpdated(msg.sender, key, addresses[key], newStrategy);
     addresses[key] = newStrategy;
   }

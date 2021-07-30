@@ -166,11 +166,11 @@ describe("GoldfinchConfig", () => {
     })
   })
 
-  describe("setSeniorFundStrategy", async () => {
+  describe("setSeniorPoolStrategy", async () => {
     context("not admin", async () => {
       it("reverts", async () => {
         const address = "0x0000000000000000000000000000000000000001"
-        await expect(goldfinchConfig.setSeniorFundStrategy(address, {from: person2})).to.be.rejectedWith(
+        await expect(goldfinchConfig.setSeniorPoolStrategy(address, {from: person2})).to.be.rejectedWith(
           /Must have admin role/
         )
       })
@@ -180,11 +180,11 @@ describe("GoldfinchConfig", () => {
       const firstAddress = "0x0000000000000000000000000000000000000001"
       const secondAddress = "0x0000000000000000000000000000000000000002"
 
-      await expectAction(() => goldfinchConfig.setSeniorFundStrategy(firstAddress, {from: owner})).toChange([
-        [() => goldfinchConfig.getAddress(CONFIG_KEYS.SeniorFundStrategy), {to: firstAddress, bignumber: false}],
+      await expectAction(() => goldfinchConfig.setSeniorPoolStrategy(firstAddress, {from: owner})).toChange([
+        [() => goldfinchConfig.getAddress(CONFIG_KEYS.SeniorPoolStrategy), {to: firstAddress, bignumber: false}],
       ])
-      await expectAction(() => goldfinchConfig.setSeniorFundStrategy(secondAddress, {from: owner})).toChange([
-        [() => goldfinchConfig.getAddress(CONFIG_KEYS.SeniorFundStrategy), {to: secondAddress, bignumber: false}],
+      await expectAction(() => goldfinchConfig.setSeniorPoolStrategy(secondAddress, {from: owner})).toChange([
+        [() => goldfinchConfig.getAddress(CONFIG_KEYS.SeniorPoolStrategy), {to: secondAddress, bignumber: false}],
       ])
     })
   })

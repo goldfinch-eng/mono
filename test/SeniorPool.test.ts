@@ -35,8 +35,8 @@ import {assertNonNullable} from "../utils/type"
 let accounts, owner, person2, person3, reserve, borrower
 const WITHDRAWL_FEE_DENOMINATOR = new BN(200)
 
-describe("SeniorFund", () => {
-  let seniorFund, seniorFundStrategy, usdc, fidu, goldfinchConfig, tranchedPool, creditLine
+describe("SeniorPool", () => {
+  let seniorPool, seniorPoolStrategy, usdc, fidu, goldfinchConfig, tranchedPool, creditLine
   let interestApr = interestAprAsBN("5.00")
   let paymentPeriodInDays = new BN(30)
   let lateFeeApr = new BN(0)
@@ -50,27 +50,27 @@ describe("SeniorFund", () => {
   let makeDeposit = async (person?: string, amount?: BN) => {
     amount = amount || depositAmount
     person = person || person2
-    return await seniorFund.deposit(String(amount), {from: person})
+    return await seniorPool.deposit(String(amount), {from: person})
   }
   let makeWithdraw = async (person?: string, usdcAmount?: BN) => {
     usdcAmount = usdcAmount || withdrawAmount
     person = person || person2
-    return await seniorFund.withdraw(usdcAmount, {from: person})
+    return await seniorPool.withdraw(usdcAmount, {from: person})
   }
 
   let makeWithdrawInFidu = async (person, fiduAmount) => {
-    return await seniorFund.withdrawInFidu(fiduAmount, {from: person})
+    return await seniorPool.withdrawInFidu(fiduAmount, {from: person})
   }
 
   const setupTest = deployments.createFixture(async ({deployments}) => {
-    const {seniorFund, seniorFundStrategy, usdc, fidu, goldfinchFactory, goldfinchConfig, poolTokens} =
+    const {seniorPool, seniorPoolStrategy, usdc, fidu, goldfinchFactory, goldfinchConfig, poolTokens} =
       await deployAllContracts(deployments)
     // A bit of setup for our test users
-    await erc20Approve(usdc, seniorFund.address, usdcVal(100000), [person2])
+    await erc20Approve(usdc, seniorPool.address, usdcVal(100000), [person2])
     await erc20Transfer(usdc, [person2, person3], usdcVal(10000), owner)
     await goldfinchConfig.setTreasuryReserve(reserve)
 
-    await goldfinchConfig.bulkAddToGoList([owner, person2, person3, reserve, seniorFund.address])
+    await goldfinchConfig.bulkAddToGoList([owner, person2, person3, reserve, seniorPool.address])
     ;({tranchedPool, creditLine} = await createPoolWithCreditLine({
       people: {owner, borrower},
       goldfinchFactory,
@@ -83,7 +83,7 @@ describe("SeniorFund", () => {
       usdc,
     }))
 
-    return {usdc, seniorFund, seniorFundStrategy, tranchedPool, creditLine, fidu, goldfinchConfig, poolTokens}
+    return {usdc, seniorPool, seniorPoolStrategy, tranchedPool, creditLine, fidu, goldfinchConfig, poolTokens}
   })
 
   beforeEach(async () => {
@@ -91,28 +91,28 @@ describe("SeniorFund", () => {
     accounts = await web3.eth.getAccounts()
     ;[owner, person2, person3, reserve] = accounts
     borrower = person2
-    ;({usdc, seniorFund, seniorFundStrategy, tranchedPool, creditLine, fidu, goldfinchConfig} = await setupTest())
+    ;({usdc, seniorPool, seniorPoolStrategy, tranchedPool, creditLine, fidu, goldfinchConfig} = await setupTest())
   })
 
   describe("Access Controls", () => {
     it("sets the owner", async () => {
-      expect(await seniorFund.hasRole(OWNER_ROLE, owner)).to.equal(true)
-      expect(await seniorFund.getRoleAdmin(OWNER_ROLE)).to.equal(OWNER_ROLE)
+      expect(await seniorPool.hasRole(OWNER_ROLE, owner)).to.equal(true)
+      expect(await seniorPool.getRoleAdmin(OWNER_ROLE)).to.equal(OWNER_ROLE)
     })
 
     it("sets the pauser", async () => {
-      expect(await seniorFund.hasRole(PAUSER_ROLE, owner)).to.equal(true)
-      expect(await seniorFund.getRoleAdmin(PAUSER_ROLE)).to.equal(OWNER_ROLE)
+      expect(await seniorPool.hasRole(PAUSER_ROLE, owner)).to.equal(true)
+      expect(await seniorPool.getRoleAdmin(PAUSER_ROLE)).to.equal(OWNER_ROLE)
     })
 
     it("allows the owner to set new addresses as roles", async () => {
-      expect(await seniorFund.hasRole(OWNER_ROLE, person2)).to.equal(false)
-      await seniorFund.grantRole(OWNER_ROLE, person2, {from: owner})
-      expect(await seniorFund.hasRole(OWNER_ROLE, person2)).to.equal(true)
+      expect(await seniorPool.hasRole(OWNER_ROLE, person2)).to.equal(false)
+      await seniorPool.grantRole(OWNER_ROLE, person2, {from: owner})
+      expect(await seniorPool.hasRole(OWNER_ROLE, person2)).to.equal(true)
     })
 
     it("should not allow anyone else to add an owner", async () => {
-      return expect(seniorFund.grantRole(OWNER_ROLE, person2, {from: person3})).to.be.rejected
+      return expect(seniorPool.grantRole(OWNER_ROLE, person2, {from: person3})).to.be.rejected
     })
   })
 
@@ -120,8 +120,8 @@ describe("SeniorFund", () => {
     describe("after pausing", async () => {
       beforeEach(async () => {
         await makeDeposit()
-        await seniorFund.pause()
-        await goldfinchConfig.addToGoList(seniorFund.address)
+        await seniorPool.pause()
+        await goldfinchConfig.addToGoList(seniorPool.address)
       })
 
       it("disallows deposits", async () => {
@@ -133,29 +133,29 @@ describe("SeniorFund", () => {
       })
 
       it("disallows invest", async () => {
-        await expect(seniorFund.invest(tranchedPool.address)).to.be.rejectedWith(/Pausable: paused/)
+        await expect(seniorPool.invest(tranchedPool.address)).to.be.rejectedWith(/Pausable: paused/)
       })
 
       it("disallows redeem", async () => {
-        return expect(seniorFund.redeem(tranchedPool.address)).to.be.rejectedWith(/Pausable: paused/)
+        return expect(seniorPool.redeem(tranchedPool.address)).to.be.rejectedWith(/Pausable: paused/)
       })
 
       it("disallows writedown", async () => {
-        return expect(seniorFund.writedown(tranchedPool.address)).to.be.rejectedWith(/Pausable: paused/)
+        return expect(seniorPool.writedown(tranchedPool.address)).to.be.rejectedWith(/Pausable: paused/)
       })
 
       it("allows unpausing", async () => {
-        await seniorFund.unpause()
+        await seniorPool.unpause()
         return expect(makeDeposit()).to.be.fulfilled
       })
     })
 
     describe("actually pausing", async () => {
       it("should allow the owner to pause", async () => {
-        return expect(seniorFund.pause()).to.be.fulfilled
+        return expect(seniorPool.pause()).to.be.fulfilled
       })
       it("should disallow non-owner to pause", async () => {
-        return expect(seniorFund.pause({from: person2})).to.be.rejectedWith(/Must have pauser role/)
+        return expect(seniorPool.pause({from: person2})).to.be.rejectedWith(/Must have pauser role/)
       })
     })
   })
@@ -164,12 +164,12 @@ describe("SeniorFund", () => {
     describe("setting it", async () => {
       it("should allow the owner to set it", async () => {
         await goldfinchConfig.setAddress(CONFIG_KEYS.GoldfinchConfig, person2)
-        return expectAction(() => seniorFund.updateGoldfinchConfig({from: owner})).toChange([
-          [() => seniorFund.config(), {to: person2, bignumber: false}],
+        return expectAction(() => seniorPool.updateGoldfinchConfig({from: owner})).toChange([
+          [() => seniorPool.config(), {to: person2, bignumber: false}],
         ])
       })
       it("should disallow non-owner to set", async () => {
-        return expect(seniorFund.updateGoldfinchConfig({from: person2})).to.be.rejectedWith(/Must have admin/)
+        return expect(seniorPool.updateGoldfinchConfig({from: person2})).to.be.rejectedWith(/Must have admin/)
       })
     })
   })
@@ -185,15 +185,15 @@ describe("SeniorFund", () => {
     describe("after you have approved the fund to transfer funds", async () => {
       let capitalProvider
       beforeEach(async () => {
-        await usdc.approve(seniorFund.address, new BN(100000).mul(USDC_DECIMALS), {from: person2})
-        await usdc.approve(seniorFund.address, new BN(100000).mul(USDC_DECIMALS), {from: owner})
+        await usdc.approve(seniorPool.address, new BN(100000).mul(USDC_DECIMALS), {from: person2})
+        await usdc.approve(seniorPool.address, new BN(100000).mul(USDC_DECIMALS), {from: owner})
         capitalProvider = person2
       })
 
       it("increases the fund's balance of the ERC20 token when you call deposit", async () => {
-        const balanceBefore = await getBalance(seniorFund.address, usdc)
+        const balanceBefore = await getBalance(seniorPool.address, usdc)
         await makeDeposit()
-        const balanceAfter = await getBalance(seniorFund.address, usdc)
+        const balanceAfter = await getBalance(seniorPool.address, usdc)
         const delta = balanceAfter.sub(balanceBefore)
         expect(delta).to.bignumber.equal(depositAmount)
       })
@@ -251,7 +251,7 @@ describe("SeniorFund", () => {
       let digest = await getApprovalDigest({
         token: usdc,
         owner: capitalProviderAddress,
-        spender: seniorFund.address.toLowerCase(),
+        spender: seniorPool.address.toLowerCase(),
         value,
         nonce,
         deadline,
@@ -261,25 +261,25 @@ describe("SeniorFund", () => {
 
       // Sanity check that deposit is correct
       await expectAction(() =>
-        seniorFund.depositWithPermit(value, deadline, v, r, s, {
+        seniorPool.depositWithPermit(value, deadline, v, r, s, {
           from: capitalProviderAddress,
         })
       ).toChange([
         [() => getBalance(person2, usdc), {by: value.neg()}],
-        [() => getBalance(seniorFund.address, usdc), {by: value}],
+        [() => getBalance(seniorPool.address, usdc), {by: value}],
         [() => getBalance(person2, fidu), {by: value.mul(decimalsDelta)}],
       ])
 
       // Verify that permit creates allowance for amount only
-      expect(await usdc.allowance(person2, seniorFund.address)).to.bignumber.eq("0")
+      expect(await usdc.allowance(person2, seniorPool.address)).to.bignumber.eq("0")
     })
   })
 
   describe("getNumShares", () => {
     it("calculates correctly", async () => {
       const amount = 3000
-      const sharePrice = await seniorFund.sharePrice()
-      const numShares = await seniorFund._getNumShares(amount)
+      const sharePrice = await seniorPool.sharePrice()
+      const numShares = await seniorPool._getNumShares(amount)
       expect(numShares).to.bignumber.equal(
         new BN(amount).mul(decimals.div(USDC_DECIMALS)).mul(decimals).div(sharePrice)
       )
@@ -289,17 +289,17 @@ describe("SeniorFund", () => {
   describe("withdraw", () => {
     let capitalProvider
     beforeEach(async () => {
-      await usdc.approve(seniorFund.address, new BN(100000).mul(USDC_DECIMALS), {from: person2})
-      await usdc.approve(seniorFund.address, new BN(100000).mul(USDC_DECIMALS), {from: owner})
+      await usdc.approve(seniorPool.address, new BN(100000).mul(USDC_DECIMALS), {from: person2})
+      await usdc.approve(seniorPool.address, new BN(100000).mul(USDC_DECIMALS), {from: owner})
 
       capitalProvider = person2
     })
 
     it("withdraws the correct amount of value from the contract when you call withdraw", async () => {
       await makeDeposit()
-      const balanceBefore = await getBalance(seniorFund.address, usdc)
+      const balanceBefore = await getBalance(seniorPool.address, usdc)
       await makeWithdraw()
-      const balanceAfter = await getBalance(seniorFund.address, usdc)
+      const balanceAfter = await getBalance(seniorPool.address, usdc)
       const delta = balanceBefore.sub(balanceAfter)
       expect(delta).to.bignumber.equal(withdrawAmount)
     })
@@ -374,7 +374,7 @@ describe("SeniorFund", () => {
       }).toChange([
         [() => getBalance(person2, usdc), {byCloseTo: usdcVal(4)}], // Not exactly the same as input due to fees
         [() => getBalance(person2, fidu), {to: new BN(0)}], // All fidu deducted
-        [() => getBalance(seniorFund.address, usdc), {to: new BN(0)}], // Should have removed the full balance
+        [() => getBalance(seniorPool.address, usdc), {to: new BN(0)}], // Should have removed the full balance
         [() => fidu.totalSupply(), {by: fiduBalance.neg()}], // Fidu has been burned
       ])
     })
@@ -424,7 +424,7 @@ describe("SeniorFund", () => {
       it("should still work", async () => {
         // This share price will cause a rounding error of 1 atomic unit.
         var testSharePrice = new BN(String(1.23456789 * (ETHDecimals as any)))
-        await seniorFund._setSharePrice(testSharePrice)
+        await seniorPool._setSharePrice(testSharePrice)
 
         return expect(makeDeposit(person2, new BN(2500).mul(USDC_DECIMALS))).to.be.fulfilled
       })
@@ -433,19 +433,19 @@ describe("SeniorFund", () => {
 
   describe("USDC Mantissa", async () => {
     it("should equal 1e6", async () => {
-      expect(await seniorFund._usdcMantissa()).to.bignumber.equal(USDC_DECIMALS)
+      expect(await seniorPool._usdcMantissa()).to.bignumber.equal(USDC_DECIMALS)
     })
   })
 
   describe("Fidu Mantissa", async () => {
     it("should equal 1e18", async () => {
-      expect(await seniorFund._fiduMantissa()).to.bignumber.equal(decimals)
+      expect(await seniorPool._fiduMantissa()).to.bignumber.equal(decimals)
     })
   })
 
   describe("usdcToFidu", async () => {
     it("should equal 1e12", async () => {
-      expect(await seniorFund._usdcToFidu(new BN(1))).to.bignumber.equal(new BN(1e12))
+      expect(await seniorPool._usdcToFidu(new BN(1))).to.bignumber.equal(new BN(1e12))
     })
   })
 
@@ -453,9 +453,9 @@ describe("SeniorFund", () => {
     let juniorInvestmentAmount = usdcVal(10000)
 
     beforeEach(async () => {
-      await erc20Approve(usdc, seniorFund.address, usdcVal(100000), [owner])
+      await erc20Approve(usdc, seniorPool.address, usdcVal(100000), [owner])
       await makeDeposit(owner, usdcVal(100000))
-      await goldfinchConfig.addToGoList(seniorFund.address)
+      await goldfinchConfig.addToGoList(seniorPool.address)
       await tranchedPool.deposit(TRANCHES.Junior, juniorInvestmentAmount)
     })
 
@@ -495,13 +495,13 @@ describe("SeniorFund", () => {
         )
         await unknownPool.lockJuniorCapital({from: person2})
 
-        await expect(seniorFund.invest(unknownPool.address)).to.be.rejectedWith(/Pool must be valid/)
+        await expect(seniorPool.invest(unknownPool.address)).to.be.rejectedWith(/Pool must be valid/)
       })
     })
 
     it("should return the strategy's estimated investment", async () => {
-      let investmentAmount = await seniorFundStrategy.estimateInvestment.call(seniorFund.address, tranchedPool.address)
-      let estimate = await seniorFund.estimateInvestment(tranchedPool.address)
+      let investmentAmount = await seniorPoolStrategy.estimateInvestment.call(seniorPool.address, tranchedPool.address)
+      let estimate = await seniorPool.estimateInvestment(tranchedPool.address)
       await expect(estimate).to.bignumber.equal(investmentAmount)
     })
   })
@@ -510,15 +510,15 @@ describe("SeniorFund", () => {
     let juniorInvestmentAmount = usdcVal(10000)
 
     beforeEach(async () => {
-      await erc20Approve(usdc, seniorFund.address, usdcVal(100000), [owner])
+      await erc20Approve(usdc, seniorPool.address, usdcVal(100000), [owner])
       await makeDeposit(owner, usdcVal(100000))
-      await goldfinchConfig.addToGoList(seniorFund.address)
+      await goldfinchConfig.addToGoList(seniorPool.address)
       await tranchedPool.deposit(TRANCHES.Junior, juniorInvestmentAmount)
     })
 
     context("called by non-governance", async () => {
       it("should revert", async () => {
-        return expect(seniorFund.invest(tranchedPool.address, {from: person2})).to.be.rejectedWith(/Must have admin/)
+        return expect(seniorPool.invest(tranchedPool.address, {from: person2})).to.be.rejectedWith(/Must have admin/)
       })
     })
 
@@ -558,7 +558,7 @@ describe("SeniorFund", () => {
         )
         await unknownPool.lockJuniorCapital({from: person2})
 
-        await expect(seniorFund.invest(unknownPool.address)).to.be.rejectedWith(/Pool must be valid/)
+        await expect(seniorPool.invest(unknownPool.address)).to.be.rejectedWith(/Pool must be valid/)
       })
     })
 
@@ -566,19 +566,19 @@ describe("SeniorFund", () => {
       it("should deposit amount into the pool", async () => {
         // Make the strategy invest
         await tranchedPool.lockJuniorCapital({from: borrower})
-        let investmentAmount = await seniorFundStrategy.invest(seniorFund.address, tranchedPool.address)
+        let investmentAmount = await seniorPoolStrategy.invest(seniorPool.address, tranchedPool.address)
 
-        await expectAction(async () => await seniorFund.invest(tranchedPool.address)).toChange([
-          [async () => await getBalance(seniorFund.address, usdc), {by: investmentAmount.neg()}],
+        await expectAction(async () => await seniorPool.invest(tranchedPool.address)).toChange([
+          [async () => await getBalance(seniorPool.address, usdc), {by: investmentAmount.neg()}],
         ])
       })
 
       it("should emit an event", async () => {
         // Make the strategy invest
         await tranchedPool.lockJuniorCapital({from: borrower})
-        let investmentAmount = await seniorFundStrategy.invest(seniorFund.address, tranchedPool.address)
+        let investmentAmount = await seniorPoolStrategy.invest(seniorPool.address, tranchedPool.address)
 
-        let receipt = await seniorFund.invest(tranchedPool.address)
+        let receipt = await seniorPool.invest(tranchedPool.address)
         let event = receipt.logs[0]
 
         expect(event.event).to.equal("InvestmentMade")
@@ -589,12 +589,12 @@ describe("SeniorFund", () => {
       it("should track the investment in in the assets calculation", async () => {
         // Make the strategy invest
         await tranchedPool.lockJuniorCapital({from: borrower})
-        let investmentAmount = await seniorFundStrategy.invest(seniorFund.address, tranchedPool.address)
+        let investmentAmount = await seniorPoolStrategy.invest(seniorPool.address, tranchedPool.address)
 
-        await expectAction(() => seniorFund.invest(tranchedPool.address)).toChange([
-          [seniorFund.totalLoansOutstanding, {by: investmentAmount}],
-          [() => getBalance(seniorFund.address, usdc), {by: investmentAmount.neg()}],
-          [seniorFund.assets, {by: new BN(0)}], // loans outstanding + balance cancel out
+        await expectAction(() => seniorPool.invest(tranchedPool.address)).toChange([
+          [seniorPool.totalLoansOutstanding, {by: investmentAmount}],
+          [() => getBalance(seniorPool.address, usdc), {by: investmentAmount.neg()}],
+          [seniorPool.assets, {by: new BN(0)}], // loans outstanding + balance cancel out
         ])
       })
     })
@@ -602,10 +602,10 @@ describe("SeniorFund", () => {
     context("strategy amount is 0", async () => {
       it("reverts", async () => {
         // Junior tranche is still open, so investment amount should be 0
-        let investmentAmount = await seniorFundStrategy.invest(seniorFund.address, tranchedPool.address)
+        let investmentAmount = await seniorPoolStrategy.invest(seniorPool.address, tranchedPool.address)
         expect(investmentAmount).to.bignumber.equal(new BN(0))
 
-        await expect(seniorFund.invest(tranchedPool.address)).to.be.rejectedWith(/amount must be positive/)
+        await expect(seniorPool.invest(tranchedPool.address)).to.be.rejectedWith(/amount must be positive/)
       })
     })
   })
@@ -619,23 +619,23 @@ describe("SeniorFund", () => {
       tokenAddress = await goldfinchConfig.getAddress(CONFIG_KEYS.PoolTokens)
       poolTokens = await artifacts.require("PoolTokens").at(tokenAddress)
 
-      await erc20Approve(usdc, seniorFund.address, usdcVal(100000), [owner])
+      await erc20Approve(usdc, seniorPool.address, usdcVal(100000), [owner])
       await makeDeposit(owner, usdcVal(100000))
-      await goldfinchConfig.addToGoList(seniorFund.address)
+      await goldfinchConfig.addToGoList(seniorPool.address)
 
       await tranchedPool.deposit(TRANCHES.Junior, juniorInvestmentAmount)
     })
 
     context("called by non-governance", async () => {
       it("should revert", async () => {
-        return expect(seniorFund.redeem(42, {from: person2})).to.be.rejectedWith(/Must have admin/)
+        return expect(seniorPool.redeem(42, {from: person2})).to.be.rejectedWith(/Must have admin/)
       })
     })
 
     it("should redeem the maximum from the TranchedPool", async () => {
       // Make the senior fund invest
       await tranchedPool.lockJuniorCapital({from: borrower})
-      await seniorFund.invest(tranchedPool.address)
+      await seniorPool.invest(tranchedPool.address)
 
       // Simulate repayment ensuring a full term has passed
       await tranchedPool.lockPool({from: borrower})
@@ -645,15 +645,15 @@ describe("SeniorFund", () => {
       await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
       await tranchedPool.pay(payAmount, {from: borrower})
 
-      let tokenId = await poolTokens.tokenOfOwnerByIndex(seniorFund.address, 0)
+      let tokenId = await poolTokens.tokenOfOwnerByIndex(seniorPool.address, 0)
 
-      let balanceBefore = await usdc.balanceOf(seniorFund.address)
+      let balanceBefore = await usdc.balanceOf(seniorPool.address)
       let tokenInfoBefore = await poolTokens.getTokenInfo(tokenId)
       let originalReserveBalance = await getBalance(reserveAddress, usdc)
 
-      await seniorFund.redeem(tokenId)
+      await seniorPool.redeem(tokenId)
 
-      let balanceAfter = await usdc.balanceOf(seniorFund.address)
+      let balanceAfter = await usdc.balanceOf(seniorPool.address)
       let tokenInfoAfter = await poolTokens.getTokenInfo(tokenId)
       let newReserveBalance = await getBalance(reserveAddress, usdc)
 
@@ -674,7 +674,7 @@ describe("SeniorFund", () => {
     it("should adjust the share price accounting for new interest redeemed", async () => {
       // Make the senior fund invest
       await tranchedPool.lockJuniorCapital({from: borrower})
-      await seniorFund.invest(tranchedPool.address)
+      await seniorPool.invest(tranchedPool.address)
 
       // Simulate repayment ensuring a full term has passed
       await tranchedPool.lockPool({from: borrower})
@@ -684,15 +684,15 @@ describe("SeniorFund", () => {
       await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
       await tranchedPool.pay(payAmount, {from: borrower})
 
-      let tokenId = await poolTokens.tokenOfOwnerByIndex(seniorFund.address, 0)
+      let tokenId = await poolTokens.tokenOfOwnerByIndex(seniorPool.address, 0)
 
       let tokenInfoBefore = await poolTokens.getTokenInfo(tokenId)
-      let originalSharePrice = await seniorFund.sharePrice()
+      let originalSharePrice = await seniorPool.sharePrice()
 
-      await seniorFund.redeem(tokenId)
+      await seniorPool.redeem(tokenId)
 
       let tokenInfoAfter = await poolTokens.getTokenInfo(tokenId)
-      let newSharePrice = await seniorFund.sharePrice()
+      let newSharePrice = await seniorPool.sharePrice()
 
       let interestRedeemed = new BN(tokenInfoAfter.interestRedeemed).sub(new BN(tokenInfoBefore.interestRedeemed))
 
@@ -709,7 +709,7 @@ describe("SeniorFund", () => {
     it("should emit events for interest, principal, and reserve", async () => {
       // Make the senior fund invest
       await tranchedPool.lockJuniorCapital({from: borrower})
-      await seniorFund.invest(tranchedPool.address)
+      await seniorPool.invest(tranchedPool.address)
 
       // Simulate repayment ensuring a full term has passed
       await tranchedPool.lockPool({from: borrower})
@@ -719,11 +719,11 @@ describe("SeniorFund", () => {
       await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
       await tranchedPool.pay(payAmount, {from: borrower})
 
-      let tokenId = await poolTokens.tokenOfOwnerByIndex(seniorFund.address, 0)
+      let tokenId = await poolTokens.tokenOfOwnerByIndex(seniorPool.address, 0)
 
       let tokenInfoBefore = await poolTokens.getTokenInfo(tokenId)
 
-      let receipt = await seniorFund.redeem(tokenId)
+      let receipt = await seniorPool.redeem(tokenId)
 
       let tokenInfoAfter = await poolTokens.getTokenInfo(tokenId)
       let interestRedeemed = new BN(tokenInfoAfter.interestRedeemed).sub(new BN(tokenInfoBefore.interestRedeemed))
@@ -755,20 +755,20 @@ describe("SeniorFund", () => {
       let juniorReceipt = await tranchedPool.deposit(TRANCHES.Junior, juniorInvestmentAmount)
       juniorTokenId = juniorReceipt.logs[0].args.tokenId
       await tranchedPool.lockJuniorCapital({from: borrower})
-      let receipt = await seniorFund.invest(tranchedPool.address)
+      let receipt = await seniorPool.invest(tranchedPool.address)
       let depositEvent = decodeLogs(receipt.receipt.rawLogs, tranchedPool, "DepositMade")[0]
       assertNonNullable(depositEvent)
       tokenId = depositEvent.args.tokenId
       await tranchedPool.lockPool({from: borrower})
       await tranchedPool.drawdown(usdcVal(100), {from: borrower})
 
-      originalSharePrice = await seniorFund.sharePrice()
+      originalSharePrice = await seniorPool.sharePrice()
       originalTotalShares = await fidu.totalSupply()
     })
 
     context("called by non-governance", async () => {
       it("should revert", async () => {
-        return expect(seniorFund.writedown(tokenId, {from: person2})).to.be.rejectedWith(/Must have admin/)
+        return expect(seniorPool.writedown(tokenId, {from: person2})).to.be.rejectedWith(/Must have admin/)
       })
     })
 
@@ -782,14 +782,14 @@ describe("SeniorFund", () => {
         let expectedWritedown = usdcVal(80).div(new BN(4)) // 25% of 80 = 20
 
         await tranchedPool.assess()
-        await expectAction(() => seniorFund.writedown(tokenId)).toChange([
-          [seniorFund.totalWritedowns, {byCloseTo: expectedWritedown}],
-          [seniorFund.assets, {byCloseTo: expectedWritedown.neg()}],
+        await expectAction(() => seniorPool.writedown(tokenId)).toChange([
+          [seniorPool.totalWritedowns, {byCloseTo: expectedWritedown}],
+          [seniorPool.assets, {byCloseTo: expectedWritedown.neg()}],
         ])
 
-        var newSharePrice = await seniorFund.sharePrice()
+        var newSharePrice = await seniorPool.sharePrice()
         var delta = originalSharePrice.sub(newSharePrice)
-        let normalizedWritedown = await seniorFund._usdcToFidu(expectedWritedown)
+        let normalizedWritedown = await seniorPool._usdcToFidu(expectedWritedown)
         var expectedDelta = normalizedWritedown.mul(decimals).div(originalTotalShares)
 
         expect(delta).to.be.bignumber.closeTo(expectedDelta, fiduTolerance)
@@ -806,12 +806,12 @@ describe("SeniorFund", () => {
         let expectedWritedown = usdcVal(80).div(new BN(4)) // 25% of 80 = 20
 
         await tranchedPool.assess()
-        await expectAction(() => seniorFund.writedown(tokenId)).toChange([
-          [seniorFund.totalWritedowns, {byCloseTo: expectedWritedown}],
-          [seniorFund.assets, {byCloseTo: expectedWritedown.neg()}],
+        await expectAction(() => seniorPool.writedown(tokenId)).toChange([
+          [seniorPool.totalWritedowns, {byCloseTo: expectedWritedown}],
+          [seniorPool.assets, {byCloseTo: expectedWritedown.neg()}],
         ])
 
-        let sharePriceAfterAssess = await seniorFund.sharePrice()
+        let sharePriceAfterAssess = await seniorPool.sharePrice()
 
         // Pay back half of one period
         let creditLine = await artifacts.require("CreditLine").at(await tranchedPool.creditLine())
@@ -820,14 +820,14 @@ describe("SeniorFund", () => {
         let expectedNewWritedown = expectedWritedown.div(new BN(2))
         await tranchedPool.pay(interestPaid, {from: borrower})
 
-        await expectAction(() => seniorFund.writedown(tokenId)).toChange([
-          [seniorFund.totalWritedowns, {byCloseTo: expectedWritedown.sub(expectedNewWritedown).neg()}],
-          [seniorFund.assets, {byCloseTo: expectedWritedown.sub(expectedNewWritedown)}],
+        await expectAction(() => seniorPool.writedown(tokenId)).toChange([
+          [seniorPool.totalWritedowns, {byCloseTo: expectedWritedown.sub(expectedNewWritedown).neg()}],
+          [seniorPool.assets, {byCloseTo: expectedWritedown.sub(expectedNewWritedown)}],
         ])
 
-        var finalSharePrice = await seniorFund.sharePrice()
+        var finalSharePrice = await seniorPool.sharePrice()
         var delta = originalSharePrice.sub(finalSharePrice)
-        let normalizedWritedown = await seniorFund._usdcToFidu(expectedNewWritedown)
+        let normalizedWritedown = await seniorPool._usdcToFidu(expectedNewWritedown)
         var expectedDelta = normalizedWritedown.mul(decimals).div(originalTotalShares)
 
         expect(delta).to.be.bignumber.closeTo(expectedDelta, fiduTolerance)
@@ -846,12 +846,12 @@ describe("SeniorFund", () => {
         let expectedWritedown = usdcVal(80).div(new BN(4)) // 25% of 80 = 20
 
         await tranchedPool.assess()
-        await expectAction(() => seniorFund.writedown(tokenId)).toChange([
-          [seniorFund.totalWritedowns, {byCloseTo: expectedWritedown}],
-          [seniorFund.assets, {byCloseTo: expectedWritedown.neg()}],
+        await expectAction(() => seniorPool.writedown(tokenId)).toChange([
+          [seniorPool.totalWritedowns, {byCloseTo: expectedWritedown}],
+          [seniorPool.assets, {byCloseTo: expectedWritedown.neg()}],
         ])
 
-        let sharePriceAfterAssess = await seniorFund.sharePrice()
+        let sharePriceAfterAssess = await seniorPool.sharePrice()
 
         // Pay back all interest owed
         let creditLine = await artifacts.require("CreditLine").at(await tranchedPool.creditLine())
@@ -860,12 +860,12 @@ describe("SeniorFund", () => {
         let expectedNewWritedown = new BN(0)
         await tranchedPool.pay(interestPaid, {from: borrower})
 
-        await expectAction(() => seniorFund.writedown(tokenId)).toChange([
-          [seniorFund.totalWritedowns, {to: new BN(0)}],
-          [seniorFund.assets, {byCloseTo: expectedWritedown.sub(expectedNewWritedown)}],
+        await expectAction(() => seniorPool.writedown(tokenId)).toChange([
+          [seniorPool.totalWritedowns, {to: new BN(0)}],
+          [seniorPool.assets, {byCloseTo: expectedWritedown.sub(expectedNewWritedown)}],
         ])
 
-        var finalSharePrice = await seniorFund.sharePrice()
+        var finalSharePrice = await seniorPool.sharePrice()
         var delta = originalSharePrice.sub(finalSharePrice)
 
         expect(delta).to.be.bignumber.equal(new BN(0))
@@ -884,8 +884,8 @@ describe("SeniorFund", () => {
         let expectedWritedown = usdcVal(80).div(new BN(4)) // 25% of 80 = 20
 
         await tranchedPool.assess()
-        let receipt = await seniorFund.writedown(tokenId)
-        let event = decodeLogs(receipt.receipt.rawLogs, seniorFund, "PrincipalWrittenDown")[0]
+        let receipt = await seniorPool.writedown(tokenId)
+        let event = decodeLogs(receipt.receipt.rawLogs, seniorPool, "PrincipalWrittenDown")[0]
         assertNonNullable(event)
         expect(event.args.tranchedPool).to.equal(tranchedPool.address)
         expect(event.args.amount).to.bignumber.closeTo(expectedWritedown, fiduTolerance)
@@ -894,7 +894,7 @@ describe("SeniorFund", () => {
 
     context("tokenId is not owned by senior fund", () => {
       it("reverts", async () => {
-        await expect(seniorFund.writedown(juniorTokenId)).to.be.rejectedWith(
+        await expect(seniorPool.writedown(juniorTokenId)).to.be.rejectedWith(
           /Only tokens owned by the senior fund can be written down/
         )
       })
@@ -910,7 +910,7 @@ describe("SeniorFund", () => {
 
       await tranchedPool.deposit(TRANCHES.Junior, juniorInvestmentAmount)
       await tranchedPool.lockJuniorCapital({from: borrower})
-      let receipt = await seniorFund.invest(tranchedPool.address)
+      let receipt = await seniorPool.invest(tranchedPool.address)
       let depositEvent = decodeLogs(receipt.receipt.rawLogs, tranchedPool, "DepositMade")[0]
       assertNonNullable(depositEvent)
       tokenId = depositEvent.args.tokenId
@@ -927,7 +927,7 @@ describe("SeniorFund", () => {
       let expectedWritedown = usdcVal(80).div(new BN(4)) // 25% of 80 = ~20
 
       await tranchedPool.assess()
-      let writedownAmount = await seniorFund.calculateWritedown(tokenId)
+      let writedownAmount = await seniorPool.calculateWritedown(tokenId)
 
       expect(writedownAmount).to.bignumber.closeTo(expectedWritedown, tolerance)
     })

@@ -6,19 +6,19 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/drafts/IERC20Permit.sol";
 
-import "../../interfaces/IFund.sol";
+import "../../interfaces/ISeniorPool.sol";
 import "../../interfaces/IPoolTokens.sol";
 import "./Accountant.sol";
 import "./BaseUpgradeablePausable.sol";
 import "./ConfigHelper.sol";
 
 /**
- * @title Goldfinch's SeniorFund contract
+ * @title Goldfinch's SeniorPool contract
  * @notice Main entry point for senior LPs (a.k.a. capital providers)
  *  Automatically invests across borrower pools using an adjustable strategy.
  * @author Goldfinch
  */
-contract SeniorFund is BaseUpgradeablePausable, IFund {
+contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
   using SafeMath for uint256;
@@ -56,7 +56,7 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
   }
 
   /**
-   * @notice Deposits `amount` USDC from msg.sender into the SeniorFund, and grants you the
+   * @notice Deposits `amount` USDC from msg.sender into the SeniorPool, and grants you the
    *  equivalent value of FIDU tokens
    * @param amount The amount of USDC to deposit
    */
@@ -94,7 +94,7 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
   }
 
   /**
-   * @notice Withdraws USDC from the SeniorFund to msg.sender, and burns the equivalent value of FIDU tokens
+   * @notice Withdraws USDC from the SeniorPool to msg.sender, and burns the equivalent value of FIDU tokens
    * @param usdcAmount The amount of USDC to withdraw
    */
   function withdraw(uint256 usdcAmount) external override whenNotPaused nonReentrant returns (uint256 amount) {
@@ -109,7 +109,7 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
   }
 
   /**
-   * @notice Withdraws USDC (denominated in FIDU terms) from the SeniorFund to msg.sender
+   * @notice Withdraws USDC (denominated in FIDU terms) from the SeniorPool to msg.sender
    * @param fiduAmount The amount of USDC to withdraw in terms of FIDU shares
    */
   function withdrawInFidu(uint256 fiduAmount) external override whenNotPaused nonReentrant returns (uint256 amount) {
@@ -132,7 +132,7 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
   }
 
   /**
-   * @notice Moves any USDC still in the SeniorFund to Compound, and tracks the amount internally.
+   * @notice Moves any USDC still in the SeniorPool to Compound, and tracks the amount internally.
    * This is done to earn interest on latent funds until we have other borrowers who can use it.
    *
    * Requirements:
@@ -155,7 +155,7 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
   }
 
   /**
-   * @notice Moves any USDC from Compound back to the SeniorFund, and recognizes interest earned.
+   * @notice Moves any USDC from Compound back to the SeniorPool, and recognizes interest earned.
    * This is done automatically on drawdown or withdraw, but can be called manually if necessary.
    *
    * Requirements:
@@ -176,7 +176,7 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
       _sweepFromCompound();
     }
 
-    IFundStrategy strategy = config.getSeniorFundStrategy();
+    ISeniorPoolStrategy strategy = config.getSeniorPoolStrategy();
     uint256 amount = strategy.invest(this, pool);
     require(amount > 0, "Investment amount must be positive");
 
@@ -189,7 +189,7 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
 
   function estimateInvestment(ITranchedPool pool) public view override returns (uint256) {
     require(validPool(pool), "Pool must be valid");
-    IFundStrategy strategy = config.getSeniorFundStrategy();
+    ISeniorPoolStrategy strategy = config.getSeniorPoolStrategy();
     return strategy.estimateInvestment(this, pool);
   }
 

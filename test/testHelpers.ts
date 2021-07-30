@@ -16,7 +16,7 @@ import {
   GoldfinchFactoryInstance,
   PoolInstance,
   PoolTokensInstance,
-  SeniorFundInstance,
+  SeniorPoolInstance,
   CreditLineInstance,
   TestForwarderInstance,
   TranchedPoolInstance,
@@ -204,8 +204,8 @@ async function deployAllContracts(
   options: {deployForwarder?: boolean; fromAccount?: string} = {}
 ): Promise<{
   pool: PoolInstance
-  seniorFund: SeniorFundInstance
-  seniorFundStrategy: FixedLeverageRatioStrategyInstance
+  seniorPool: SeniorPoolInstance
+  seniorPoolStrategy: FixedLeverageRatioStrategyInstance
   usdc: ERC20Instance
   creditDesk: CreditDeskInstance
   fidu: FiduInstance
@@ -219,8 +219,8 @@ async function deployAllContracts(
   let {deployForwarder, fromAccount} = options
   await deployments.fixture("base_deploy")
   const pool = await getDeployedAsTruffleContract<PoolInstance>(deployments, "Pool")
-  const seniorFund = await getDeployedAsTruffleContract<SeniorFundInstance>(deployments, "SeniorFund")
-  const seniorFundStrategy = await getDeployedAsTruffleContract<FixedLeverageRatioStrategyInstance>(
+  const seniorPool = await getDeployedAsTruffleContract<SeniorPoolInstance>(deployments, "SeniorPool")
+  const seniorPoolStrategy = await getDeployedAsTruffleContract<FixedLeverageRatioStrategyInstance>(
     deployments,
     "FixedLeverageRatioStrategy"
   )
@@ -243,8 +243,8 @@ async function deployAllContracts(
   )
   return {
     pool,
-    seniorFund,
-    seniorFundStrategy,
+    seniorPool,
+    seniorPoolStrategy,
     usdc,
     creditDesk,
     fidu,

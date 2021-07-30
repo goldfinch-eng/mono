@@ -3,12 +3,12 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../../interfaces/IFundStrategy.sol";
-import "../../interfaces/IFund.sol";
+import "../../interfaces/ISeniorPoolStrategy.sol";
+import "../../interfaces/ISeniorPool.sol";
 import "../../interfaces/ITranchedPool.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 
-contract FixedLeverageRatioStrategy is IFundStrategy {
+contract FixedLeverageRatioStrategy is ISeniorPoolStrategy {
   using SafeMath for uint256;
 
   uint256 private immutable leverageRatio;
@@ -20,11 +20,11 @@ contract FixedLeverageRatioStrategy is IFundStrategy {
   /**
    * @notice Determines how much money to invest in the senior tranche based on what is committed to the junior
    * tranche and a fixed leverage ratio to the junior. Idempotent.
-   * @param fund The fund to invest from
+   * @param seniorPool The fund to invest from
    * @param pool The pool to invest into (as the senior)
    * @return The amount of money to invest into the pool from the fund
    */
-  function invest(IFund fund, ITranchedPool pool) public view override returns (uint256) {
+  function invest(ISeniorPool seniorPool, ITranchedPool pool) public view override returns (uint256) {
     ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
     ITranchedPool.TrancheInfo memory seniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Senior));
 
@@ -40,11 +40,11 @@ contract FixedLeverageRatioStrategy is IFundStrategy {
    * @notice Determines how much money to invest in the senior tranche based on what is committed to the junior,
    * tranche and a fixed leverage ratio to the junior, as if all conditions for investment were
    * met. Idempotent.
-   * @param fund The fund to invest from
+   * @param seniorPool The fund to invest from
    * @param pool The pool to invest into (as the senior)
    * @return The amount of money to invest into the pool from the fund
    */
-  function estimateInvestment(IFund fund, ITranchedPool pool) public view override returns (uint256) {
+  function estimateInvestment(ISeniorPool seniorPool, ITranchedPool pool) public view override returns (uint256) {
     ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
     ITranchedPool.TrancheInfo memory seniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Senior));
 

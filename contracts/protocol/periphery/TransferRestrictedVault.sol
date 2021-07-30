@@ -11,7 +11,7 @@ import "../../external/ERC721PresetMinterPauserAutoId.sol";
 import "../../interfaces/IPoolTokens.sol";
 import "../../interfaces/ITranchedPool.sol";
 import "../../interfaces/IPoolTokens.sol";
-import "../../interfaces/IFund.sol";
+import "../../interfaces/ISeniorPool.sol";
 import "../../interfaces/IFidu.sol";
 import "../core/BaseUpgradeablePausable.sol";
 import "../core/GoldfinchConfig.sol";
@@ -102,9 +102,9 @@ contract TransferRestrictedVault is
   function depositSenior(uint256 amount) public nonReentrant {
     safeERC20TransferFrom(config.getUSDC(), msg.sender, address(this), amount);
 
-    IFund seniorFund = config.getSeniorFund();
-    approveSpender(address(seniorFund), amount);
-    uint256 depositShares = seniorFund.deposit(amount);
+    ISeniorPool seniorPool = config.getSeniorPool();
+    approveSpender(address(seniorPool), amount);
+    uint256 depositShares = seniorPool.deposit(amount);
 
     uint256 transferRestrictionPeriodInSeconds = SECONDS_PER_DAY.mul(config.getTransferRestrictionPeriodInDays());
 
@@ -129,14 +129,14 @@ contract TransferRestrictedVault is
   }
 
   function withdrawSenior(uint256 tokenId, uint256 usdcAmount) public nonReentrant onlyTokenOwner(tokenId) {
-    IFund seniorFund = config.getSeniorFund();
-    uint256 shares = seniorFund.getNumShares(usdcAmount);
+    ISeniorPool seniorPool = config.getSeniorPool();
+    uint256 shares = seniorPool.getNumShares(usdcAmount);
     FiduPosition storage fiduPosition = fiduPositions[tokenId];
     uint256 fiduPositionAmount = fiduPosition.amount;
     require(fiduPositionAmount >= shares, "Not enough Fidu for withdrawal");
 
     fiduPosition.amount = fiduPositionAmount.sub(shares);
-    uint256 receivedAmount = seniorFund.withdraw(usdcAmount);
+    uint256 receivedAmount = seniorPool.withdraw(usdcAmount);
     safeERC20Transfer(config.getUSDC(), msg.sender, receivedAmount);
   }
 
@@ -146,7 +146,7 @@ contract TransferRestrictedVault is
     require(fiduPositionAmount >= shares, "Not enough Fidu for withdrawal");
 
     fiduPosition.amount = fiduPositionAmount.sub(shares);
-    uint256 usdcAmount = config.getSeniorFund().withdrawInFidu(shares);
+    uint256 usdcAmount = config.getSeniorPool().withdrawInFidu(shares);
     safeERC20Transfer(config.getUSDC(), msg.sender, usdcAmount);
   }
 
