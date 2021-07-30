@@ -7,12 +7,12 @@ import {
   emptyCapitalProvider,
   fetchCapitalProviderData,
   PoolData,
-  SeniorFund,
+  SeniorPool,
 } from "../../ethereum/pool"
 import {AppContext} from "../../App"
 import InvestorNotice from "../investorNotice"
 
-function SeniorPool() {
+function SeniorPoolView() {
   const {pool, user} = useContext(AppContext)
   const [capitalProvider, setCapitalProvider] = useState<CapitalProvider>(emptyCapitalProvider())
   const [poolData, setPoolData] = useState<PoolData>()
@@ -39,7 +39,7 @@ function SeniorPool() {
     setCapitalProvider(capitalProvider)
   }
 
-  async function refreshPoolData(pool: SeniorFund) {
+  async function refreshPoolData(pool: SeniorPool) {
     await pool.initialize()
     setPoolData(pool.gf)
   }
@@ -62,4 +62,4 @@ function SeniorPool() {
   )
 }
 
-export default SeniorPool
+export default SeniorPoolView

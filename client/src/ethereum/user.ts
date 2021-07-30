@@ -4,7 +4,7 @@ import _ from "lodash"
 import {getFromBlock, MAINNET} from "./utils"
 import {mapEventsToTx} from "./events"
 import {BorrowerInterface, getBorrowerContract} from "./borrower"
-import {SeniorFund} from "./pool"
+import {SeniorPool} from "./pool"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {GoldfinchConfig} from "../typechain/web3/GoldfinchConfig"
 
@@ -12,7 +12,7 @@ declare let window: any
 
 const UNLOCK_THRESHOLD = new BigNumber(10000)
 
-async function getUserData(address, goldfinchProtocol, pool: SeniorFund, creditDesk, networkId): Promise<User> {
+async function getUserData(address, goldfinchProtocol, pool: SeniorPool, creditDesk, networkId): Promise<User> {
   const borrower = await getBorrowerContract(address, goldfinchProtocol)
 
   const user = new Web3User(address, pool, creditDesk, goldfinchProtocol, networkId, borrower)
@@ -61,13 +61,13 @@ class Web3User implements User {
   goldfinchProtocol: GoldfinchProtocol
 
   private borrower?: BorrowerInterface
-  private pool: SeniorFund
+  private pool: SeniorPool
   private usdc: ERC20
   private creditDesk: any
 
   constructor(
     address: string,
-    pool: SeniorFund,
+    pool: SeniorPool,
     creditDesk: any,
     goldfinchProtocol: GoldfinchProtocol,
     networkId: string,

@@ -39,8 +39,8 @@ library ConfigOptions {
     GoldfinchConfig,
     PoolTokens,
     TranchedPoolImplementation,
-    SeniorFund,
-    SeniorFundStrategy,
+    SeniorPool,
+    SeniorPoolStrategy,
     MigratedTranchedPoolImplementation,
     BorrowerImplementation
   }
@@ -121,11 +121,11 @@ library ConfigOptions {
     if (Addresses.TranchedPoolImplementation == addressName) {
       return "TranchedPoolImplementation";
     }
-    if (Addresses.SeniorFund == addressName) {
-      return "SeniorFund";
+    if (Addresses.SeniorPool == addressName) {
+      return "SeniorPool";
     }
-    if (Addresses.SeniorFundStrategy == addressName) {
-      return "SeniorFundStrategy";
+    if (Addresses.SeniorPoolStrategy == addressName) {
+      return "SeniorPoolStrategy";
     }
     if (Addresses.MigratedTranchedPoolImplementation == addressName) {
       return "MigratedTranchedPoolImplementation";

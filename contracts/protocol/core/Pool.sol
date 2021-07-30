@@ -191,9 +191,9 @@ contract Pool is BaseUpgradeablePausable, IPool {
     config.getFidu().renounceRole(pauserRole, address(this));
 
     // Move all USDC to the SeniorPool
-    address seniorFundAddress = config.seniorFundAddress();
+    address seniorPoolAddress = config.seniorPoolAddress();
     uint256 balance = config.getUSDC().balanceOf(address(this));
-    bool success = doUSDCTransfer(address(this), seniorFundAddress, balance);
+    bool success = doUSDCTransfer(address(this), seniorPoolAddress, balance);
     require(success, "Failed to transfer USDC balance to the senior pool");
 
     // Claim our COMP!
@@ -210,7 +210,7 @@ contract Pool is BaseUpgradeablePausable, IPool {
     // solhint-disable-next-line avoid-low-level-calls
     (success, _res) = compToken.call(data);
     uint256 compBalance = toUint256(_res);
-    data = abi.encodeWithSignature("transfer(address,uint256)", seniorFundAddress, compBalance);
+    data = abi.encodeWithSignature("transfer(address,uint256)", seniorPoolAddress, compBalance);
     // solhint-disable-next-line avoid-low-level-calls
     (success, _res) = compToken.call(data);
     require(success, "Failed to transfer COMP");

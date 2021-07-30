@@ -329,7 +329,11 @@ function SupplyStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
         <CreditBarViz
           leftAmount={new BigNumber(usdcFromAtomic(juniorContribution))}
           leftAmountDisplay={displayDollars(usdcFromAtomic(juniorContribution))}
-          leftAmountDescription={`From ${uniqueJuniorSuppliers} junior suppliers`}
+          leftAmountDescription={
+            uniqueJuniorSuppliers === 1
+              ? `From ${uniqueJuniorSuppliers} junior supplier`
+              : `From ${uniqueJuniorSuppliers} junior suppliers`
+          }
           rightAmount={new BigNumber(usdcFromAtomic(remainingJuniorCapacity))}
           rightAmountDisplay={`~${displayDollars(usdcFromAtomic(remainingJuniorCapacity))}`}
           rightAmountDescription={"Est. Remaining"}
@@ -346,8 +350,20 @@ function Overview({tranchedPool}: {tranchedPool?: TranchedPool}) {
     rows = [
       {label: "Credit limit", value: displayDollars(roundUpPenny(usdcFromAtomic(tranchedPool.creditLine.limit)))},
       {label: "Interest rate APR", value: displayPercent(tranchedPool.creditLine.interestAprDecimal)},
-      {label: "Payment frequency", value: `${tranchedPool.creditLine.paymentPeriodInDays} days`},
-      {label: "Payback term", value: `${tranchedPool.creditLine.termInDays} days`},
+      {
+        label: "Payment frequency",
+        value:
+          tranchedPool.creditLine.paymentPeriodInDays.toString() === "1"
+            ? `${tranchedPool.creditLine.paymentPeriodInDays} day`
+            : `${tranchedPool.creditLine.paymentPeriodInDays} days`,
+      },
+      {
+        label: "Payback term",
+        value:
+          tranchedPool.creditLine.termInDays.toString() === "1"
+            ? `${tranchedPool.creditLine.termInDays} day`
+            : `${tranchedPool.creditLine.termInDays} days`,
+      },
     ]
   }
 
