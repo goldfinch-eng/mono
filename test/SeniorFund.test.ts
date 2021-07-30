@@ -640,7 +640,7 @@ describe("SeniorFund", () => {
       // Simulate repayment ensuring a full term has passed
       await tranchedPool.lockPool({from: borrower})
       await tranchedPool.drawdown(usdcVal(100), {from: borrower})
-      await advanceTime(tranchedPool, {days: termInDays.toNumber()})
+      await advanceTime({days: termInDays.toNumber()})
       let payAmount = usdcVal(105)
       await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
       await tranchedPool.pay(payAmount, {from: borrower})
@@ -679,7 +679,7 @@ describe("SeniorFund", () => {
       // Simulate repayment ensuring a full term has passed
       await tranchedPool.lockPool({from: borrower})
       await tranchedPool.drawdown(usdcVal(100), {from: borrower})
-      await advanceTime(tranchedPool, {days: termInDays.toNumber()})
+      await advanceTime({days: termInDays.toNumber()})
       let payAmount = usdcVal(105)
       await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
       await tranchedPool.pay(payAmount, {from: borrower})
@@ -714,7 +714,7 @@ describe("SeniorFund", () => {
       // Simulate repayment ensuring a full term has passed
       await tranchedPool.lockPool({from: borrower})
       await tranchedPool.drawdown(usdcVal(100), {from: borrower})
-      await advanceTime(tranchedPool, {days: termInDays.toNumber()})
+      await advanceTime({days: termInDays.toNumber()})
       let payAmount = usdcVal(105)
       await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
       await tranchedPool.pay(payAmount, {from: borrower})
@@ -777,7 +777,7 @@ describe("SeniorFund", () => {
         // Assess for two periods of lateness
         const paymentPeriodInSeconds = paymentPeriodInDays.mul(SECONDS_PER_DAY)
         const twoPaymentPeriodsInSeconds = paymentPeriodInSeconds.mul(new BN(2))
-        await advanceTime(tranchedPool, {seconds: twoPaymentPeriodsInSeconds})
+        await advanceTime({seconds: twoPaymentPeriodsInSeconds})
         // So writedown is 2 periods late - 1 grace period / 4 max = 25%
         let expectedWritedown = usdcVal(80).div(new BN(4)) // 25% of 80 = 20
 
@@ -801,7 +801,7 @@ describe("SeniorFund", () => {
         // Assess for two periods of lateness
         const paymentPeriodInSeconds = paymentPeriodInDays.mul(SECONDS_PER_DAY)
         const twoPaymentPeriodsInSeconds = paymentPeriodInSeconds.mul(new BN(2))
-        await advanceTime(tranchedPool, {seconds: twoPaymentPeriodsInSeconds})
+        await advanceTime({seconds: twoPaymentPeriodsInSeconds})
         // Writedown is 2 periods late - 1 grace period / 4 max = 25%
         let expectedWritedown = usdcVal(80).div(new BN(4)) // 25% of 80 = 20
 
@@ -841,7 +841,7 @@ describe("SeniorFund", () => {
         // Assess for two periods of lateness
         const paymentPeriodInSeconds = paymentPeriodInDays.mul(SECONDS_PER_DAY)
         const twoPaymentPeriodsInSeconds = paymentPeriodInSeconds.mul(new BN(2))
-        await advanceTime(tranchedPool, {seconds: twoPaymentPeriodsInSeconds})
+        await advanceTime({seconds: twoPaymentPeriodsInSeconds})
         // Writedown is 2 periods late - 1 grace period / 4 max = 25%
         let expectedWritedown = usdcVal(80).div(new BN(4)) // 25% of 80 = 20
 
@@ -879,7 +879,7 @@ describe("SeniorFund", () => {
         // Assess for two periods of lateness
         const paymentPeriodInSeconds = paymentPeriodInDays.mul(SECONDS_PER_DAY)
         const twoPaymentPeriodsInSeconds = paymentPeriodInSeconds.mul(new BN(2))
-        await advanceTime(tranchedPool, {seconds: twoPaymentPeriodsInSeconds})
+        await advanceTime({seconds: twoPaymentPeriodsInSeconds})
         // So writedown is 2 periods late - 1 grace period / 4 max = 25%
         let expectedWritedown = usdcVal(80).div(new BN(4)) // 25% of 80 = 20
 
@@ -921,7 +921,7 @@ describe("SeniorFund", () => {
     it("returns writedown amount", async () => {
       const paymentPeriodInSeconds = paymentPeriodInDays.mul(SECONDS_PER_DAY)
       const twoPaymentPeriodsInSeconds = paymentPeriodInSeconds.mul(new BN(2))
-      await advanceTime(tranchedPool, {seconds: twoPaymentPeriodsInSeconds.add(new BN(10000))})
+      await advanceTime({seconds: twoPaymentPeriodsInSeconds.add(new BN(10000))})
 
       // So writedown is 2 periods late - 1 grace period / 4 max = 25%
       let expectedWritedown = usdcVal(80).div(new BN(4)) // 25% of 80 = ~20

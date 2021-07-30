@@ -433,7 +433,7 @@ describe("TransferRestrictedVault", async () => {
 
     context("after timelock", async () => {
       beforeEach(async () => {
-        await advanceTime(null, {days: 365})
+        await advanceTime({days: 365})
       })
 
       context("not the owner of tokenId", async () => {

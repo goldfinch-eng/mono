@@ -24,7 +24,7 @@ const CreditLine = artifacts.require("CreditLine")
 
 // eslint-disable-next-line no-unused-vars
 let accounts, owner, underwriter, borrower, investor1, investor2
-let creditDesk, fidu, goldfinchConfig, reserve, usdc, seniorFund, creditLine, tranchedPool, goldfinchFactory, poolTokens
+let fidu, goldfinchConfig, reserve, usdc, seniorFund, creditLine, tranchedPool, goldfinchFactory, poolTokens
 
 const ONE_HUNDRED = new BN(100)
 
@@ -38,15 +38,8 @@ describe("Goldfinch", async () => {
   let paymentPeriodInSeconds = SECONDS_PER_DAY.mul(paymentPeriodInDays)
 
   const setupTest = deployments.createFixture(async ({deployments}) => {
-    const {
-      seniorFund,
-      usdc,
-      creditDesk,
-      fidu,
-      goldfinchConfig,
-      goldfinchFactory,
-      poolTokens,
-    } = await deployAllContracts(deployments)
+    const {seniorFund, usdc, creditDesk, fidu, goldfinchConfig, goldfinchFactory, poolTokens} =
+      await deployAllContracts(deployments)
 
     // Approve transfers for our test accounts
     await erc20Approve(usdc, seniorFund.address, usdcVal(100000), [owner, underwriter, borrower, investor1, investor2])
@@ -64,7 +57,7 @@ describe("Goldfinch", async () => {
   beforeEach(async () => {
     accounts = await web3.eth.getAccounts()
     ;[owner, underwriter, borrower, investor1, investor2, reserve] = accounts
-    ;({usdc, seniorFund, creditDesk, fidu, goldfinchConfig, goldfinchFactory, poolTokens} = await setupTest())
+    ;({usdc, seniorFund, fidu, goldfinchConfig, goldfinchFactory, poolTokens} = await setupTest())
   })
 
   describe("functional test", async () => {
@@ -245,14 +238,14 @@ describe("Goldfinch", async () => {
           TRANCHES.Junior
         )
 
-        await advanceTime(null, {days: 10})
+        await advanceTime({days: 10})
         // Just a hack to get interestOwed and other accounting vars to update
         await drawdown(tranchedPool, new BN(1), borrower)
 
         await expectAction(() => makePayment(tranchedPool, totalInterest)).toChange([
           [seniorFund.sharePrice, {by: new BN(0)}],
         ])
-        await advanceTime(null, {days: 5})
+        await advanceTime({days: 5})
 
         await expectAction(() => assessPool(tranchedPool)).toChange([
           [seniorFund.sharePrice, {increase: true}],
@@ -300,7 +293,7 @@ describe("Goldfinch", async () => {
         await goldfinchConfig.setNumber(CONFIG_KEYS.LatenessGracePeriodInDays, paymentPeriodInDays)
         // Advance to a point where we would definitely write them down
         const fourPeriods = (await creditLine.paymentPeriodInDays()).mul(new BN(4))
-        await advanceTime(null, {days: fourPeriods.toNumber()})
+        await advanceTime({days: fourPeriods.toNumber()})
 
         await expectAction(() => assessPool(tranchedPool)).toChange([
           [seniorFund.totalWritedowns, {increase: true}],
@@ -332,7 +325,7 @@ describe("Goldfinch", async () => {
 
         // Advance to a point where we would definitely writethem down
         const termLength = await creditLine.termInDays()
-        await advanceTime(creditDesk, {days: termLength.toNumber()})
+        await advanceTime({days: termLength.toNumber()})
 
         await assessPool(creditLine.address)
 
@@ -341,7 +334,7 @@ describe("Goldfinch", async () => {
 
         // advance more time
         const clPaymentPeriodInDays = await creditLine.paymentPeriodInDays()
-        await advanceTime(creditDesk, {days: clPaymentPeriodInDays.toNumber()})
+        await advanceTime({days: clPaymentPeriodInDays.toNumber()})
 
         await assessPool(tranchedPool)
         expect(await creditLine.interestOwed()).to.bignumber.gt(termInterestTotalWithLateFees)
@@ -364,7 +357,7 @@ describe("Goldfinch", async () => {
           await depositToPool(tranchedPool, usdcVal(200))
           await lockAndLeveragePool(tranchedPool)
           await expect(drawdown(tranchedPool, new BN(1000))).to.be.fulfilled
-          await advanceTime(null, {days: 10})
+          await advanceTime({days: 10})
           // This drawdown will accumulate and record some interest
           await expect(drawdown(tranchedPool, new BN(1))).to.be.fulfilled
           // This one should still work, because you still aren't late...
@@ -373,7 +366,7 @@ describe("Goldfinch", async () => {
       })
 
       it("calculates interest correctly", async () => {
-        let currentTime = await advanceTime(null, {days: 1})
+        let currentTime = await advanceTime({days: 1})
         await createTranchedPool()
         await depositToPool(tranchedPool, usdcVal(2000))
         await lockAndLeveragePool(tranchedPool)
@@ -381,7 +374,7 @@ describe("Goldfinch", async () => {
         let interestAccruedAsOf = currentTime
         await assertCreditLine("0", "0", "0", 0, currentTime, 0)
 
-        currentTime = await advanceTime(null, {days: 1})
+        currentTime = await advanceTime({days: 1})
         await drawdown(tranchedPool, usdcVal(2000))
 
         var nextDueTime = (await time.latest()).add(SECONDS_PER_DAY.mul(paymentPeriodInDays))
@@ -389,7 +382,7 @@ describe("Goldfinch", async () => {
         let lastFullPaymentTime = currentTime
         await assertCreditLine(usdcVal(2000), "0", "0", nextDueTime, currentTime, lastFullPaymentTime)
 
-        currentTime = await advanceTime(null, {days: 1})
+        currentTime = await advanceTime({days: 1})
 
         await tranchedPool.assess({from: borrower})
 
@@ -409,7 +402,7 @@ describe("Goldfinch", async () => {
           lastFullPaymentTime
         )
 
-        currentTime = await advanceTime(null, {days: 1})
+        currentTime = await advanceTime({days: 1})
         expectedInterest = expectedInterest.mul(new BN(2)) // 2 days of interest
         nextDueTime = nextDueTime.add(paymentPeriodInSeconds)
 

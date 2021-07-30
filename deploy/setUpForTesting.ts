@@ -181,7 +181,7 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   await pool2.lockPool()
   await pool2.drawdown(await pool2.limit())
 
-  await advanceTime(null, {days: 30})
+  await advanceTime({days: 30})
 
   // Have the borrower repay a portion of their loan
   await impersonateAccount(hre, borrower)

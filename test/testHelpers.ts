@@ -22,7 +22,7 @@ import {
   TranchedPoolInstance,
   TransferRestrictedVaultInstance,
 } from "../typechain/truffle"
-import { assertNonNullable } from "../utils/type"
+import {assertNonNullable} from "../utils/type"
 const decimals = new BN(String(1e18))
 const USDC_DECIMALS = new BN(String(1e6))
 const SECONDS_PER_DAY = new BN(86400)
@@ -273,10 +273,7 @@ async function erc20Transfer(erc20, toAccounts, amount, fromAccount) {
 }
 
 type Numberish = BN | string | number
-async function advanceTime(
-  creditDeskOrCreditLine,
-  {days, seconds, toSecond}: {days?: Numberish; seconds?: Numberish; toSecond?: Numberish}
-) {
+async function advanceTime({days, seconds, toSecond}: {days?: Numberish; seconds?: Numberish; toSecond?: Numberish}) {
   let secondsPassed, newTimestamp
   let currentTimestamp = await time.latest()
 
@@ -291,9 +288,6 @@ async function advanceTime(
   }
   // Cannot go backward
   expect(newTimestamp).to.bignumber.gt(currentTimestamp)
-  if (creditDeskOrCreditLine) {
-    await creditDeskOrCreditLine._setTimestampForTest(newTimestamp)
-  }
 
   await ethers.provider.send("evm_setNextBlockTimestamp", [newTimestamp.toNumber()])
   return newTimestamp
