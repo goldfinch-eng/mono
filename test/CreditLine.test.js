@@ -1,7 +1,16 @@
 /* global artifacts web3 */
 const hre = require("hardhat")
 const {deployments} = hre
-const {expect, BN, usdcVal, deployAllContracts, erc20Transfer, expectAction, SECONDS_PER_DAY} = require("./testHelpers")
+const {
+  expect,
+  BN,
+  advanceTime,
+  usdcVal,
+  deployAllContracts,
+  erc20Transfer,
+  expectAction,
+  SECONDS_PER_DAY,
+} = require("./testHelpers")
 const {OWNER_ROLE, PAUSER_ROLE, interestAprAsBN} = require("../blockchain_scripts/deployHelpers")
 const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
 const {time} = require("@openzeppelin/test-helpers")
@@ -150,7 +159,7 @@ describe("CreditLine", () => {
   describe("assess", async () => {
     let currentTime
     beforeEach(async () => {
-      currentTime = await creditLine.currentTimestamp()
+      currentTime = await time.latest()
     })
 
     describe("when there is exactly enough collectedPaymentBalance", async () => {
@@ -184,7 +193,7 @@ describe("CreditLine", () => {
 
           // Set it as if you are multiple periods behind, ie. time is 2 periods in the future.
           const timestampForTest = currentTime.add(secondsPerPeriod.mul(new BN(2)))
-          await creditLine._setTimestampForTest(timestampForTest)
+          await advanceTime({toSecond: timestampForTest})
 
           // Assess!
           await creditLine.assess()
@@ -209,7 +218,7 @@ describe("CreditLine", () => {
 
           // Set it as if you one period past the termEndTime
           const timestampForTest = currentTime.add(secondsPerTerm.add(secondsPerPeriod).add(new BN(1)))
-          await creditLine._setTimestampForTest(timestampForTest)
+          await advanceTime({toSecond: timestampForTest})
 
           // Assess!
           await creditLine.assess()
@@ -266,7 +275,7 @@ describe("CreditLine", () => {
 
           // Set it as if you one period past the termEndTime
           const timestampForTest = currentTime.add(secondsPerTerm.add(secondsPerPeriod).add(new BN(1)))
-          await creditLine._setTimestampForTest(timestampForTest)
+          await advanceTime({toSecond: timestampForTest})
 
           expect(await creditLine.principalOwed()).to.bignumber.eq(usdcVal(0))
           expect(await creditLine.interestOwed()).to.bignumber.eq(usdcVal(0))

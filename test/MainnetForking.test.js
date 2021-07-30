@@ -346,7 +346,7 @@ describe("mainnet forking tests", async function () {
         [async () => await getBalance(bwr, usdt), {by: usdtAmount.neg()}],
         [async () => await getBalance(cl.address, usdc), {byCloseTo: expectedReturn.returnAmount}],
       ])
-      await advanceTime(tranchedPool, {toSecond: (await cl.nextDueTime()).add(new BN(1))})
+      await advanceTime({toSecond: (await cl.nextDueTime()).add(new BN(1))})
       await expectAction(() => tranchedPool.assess()).toChange([
         [async () => await cl.balance(), {decrease: true}],
         [async () => await getBalance(cl.address, usdc), {to: new BN(0)}],
@@ -372,7 +372,7 @@ describe("mainnet forking tests", async function () {
         [async () => await getBalance(bwr, busd), {by: busdAmount.neg()}],
         [async () => await getBalance(cl.address, usdc), {byCloseTo: expectedReturn.returnAmount}],
       ])
-      await advanceTime(tranchedPool, {toSecond: (await cl.nextDueTime()).add(new BN(1))})
+      await advanceTime({toSecond: (await cl.nextDueTime()).add(new BN(1))})
       await expectAction(() => tranchedPool.assess()).toChange([
         [async () => await cl.balance(), {decrease: true}],
         [async () => await getBalance(cl.address, usdc), {to: new BN(0)}],
@@ -407,7 +407,7 @@ describe("mainnet forking tests", async function () {
         let totalMinAmount = amount.add(amount2)
         let expectedExtra = expectedReturn.returnAmount.sub(totalMinAmount)
 
-        await advanceTime(tranchedPool, {toSecond: (await cl.nextDueTime()).add(new BN(1))})
+        await advanceTime({toSecond: (await cl.nextDueTime()).add(new BN(1))})
         await tranchedPool.assess()
 
         await expectAction(() =>
@@ -793,7 +793,7 @@ describe("mainnet upgrade tests", async function () {
       // Group 7: We calculate the correct amount of interest after one period
       await tranchedPool.assess()
       const afterNextDueTime = (await newCl.nextDueTime()).add(new BN(1))
-      await advanceTime(creditDesk, {toSecond: afterNextDueTime})
+      await advanceTime({toSecond: afterNextDueTime})
       await expectAction(() => tranchedPool.assess()).toChange([
         [() => newCl.totalInterestAccrued(), {by: new BN(3698625467)}], // A period's worth of interest
         [() => newCl.principalOwed(), {by: new BN(0)}],

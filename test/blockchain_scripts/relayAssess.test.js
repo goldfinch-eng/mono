@@ -13,7 +13,7 @@ const {
 } = require("../testHelpers")
 const {assessIfRequired} = require("../../autotasks/assessor/index.js")
 let accounts, owner, underwriter, borrower
-let creditDesk, creditLine, fakeProvider, fakeTimestamp
+let creditLine, fakeProvider, fakeTimestamp
 let tranchedPool
 describe("relayAsses", () => {
   const setupTest = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
@@ -42,14 +42,14 @@ describe("relayAsses", () => {
 
   async function advanceToTimestamp(timestamp) {
     fakeTimestamp = timestamp
-    await advanceTime(creditDesk, {toSecond: fakeTimestamp})
+    await advanceTime({toSecond: fakeTimestamp})
   }
 
   beforeEach(async () => {
     // Pull in our unlocked accounts
     accounts = await web3.eth.getAccounts()
     ;[owner, underwriter, borrower] = accounts
-    ;({creditDesk, tranchedPool, creditLine} = await setupTest())
+    ;({tranchedPool, creditLine} = await setupTest())
 
     fakeProvider = {
       getBlock: async function () {

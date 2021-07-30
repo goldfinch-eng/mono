@@ -62,15 +62,10 @@ describe("Borrower", async () => {
   }
 
   const setupTest = deployments.createFixture(async ({deployments}) => {
-    const {
-      seniorPool,
-      usdc,
-      creditDesk,
-      fidu,
-      goldfinchConfig,
-      goldfinchFactory,
-      forwarder,
-    } = await deployAllContracts(deployments, {deployForwarder: true, fromAccount: owner})
+    const {seniorPool, usdc, creditDesk, fidu, goldfinchConfig, goldfinchFactory, forwarder} = await deployAllContracts(
+      deployments,
+      {deployForwarder: true, fromAccount: owner}
+    )
     // Approve transfers for our test accounts
     await erc20Approve(usdc, seniorPool.address, usdcVal(100000), [owner, bwr, person3])
     await goldfinchConfig.bulkAddToGoList([owner, bwr, person3, underwriter, reserve])
@@ -240,7 +235,7 @@ describe("Borrower", async () => {
       // signer._signer._signTypedData()
       const bwrPrivateKey = "59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
       const keyAsuint8 = Uint8Array.from(Buffer.from(bwrPrivateKey, "hex"))
-      const signature = signTypedData_v4(Buffer.from(keyAsuint8), {data: (toSign as unknown) as TypedMessage<any>})
+      const signature = signTypedData_v4(Buffer.from(keyAsuint8), {data: toSign as unknown as TypedMessage<any>})
 
       const GenericParams = "address from,address to,uint256 value,uint256 gas,uint256 nonce,bytes data"
       const TypeName = `ForwardRequest(${GenericParams})`
@@ -370,7 +365,7 @@ describe("Borrower", async () => {
         [async () => await getBalance(bwr, usdc), {by: amount.neg()}],
       ])
 
-      await advanceTime(tranchedPool, {toSecond: (await cl.nextDueTime()).add(new BN(1))})
+      await advanceTime({toSecond: (await cl.nextDueTime()).add(new BN(1))})
 
       await expectAction(() => tranchedPool.assess()).toChange([
         [async () => await cl.balance(), {decrease: true}],
@@ -407,8 +402,8 @@ describe("Borrower", async () => {
         [() => getBalance(bwr, usdc), {by: amount.add(amount2).neg()}],
       ])
 
-      await advanceTime(tranchedPool, {toSecond: (await cl.nextDueTime()).add(new BN(100))})
-      await advanceTime(tranchedPool2, {toSecond: (await cl2.nextDueTime()).add(new BN(100))})
+      await advanceTime({toSecond: (await cl.nextDueTime()).add(new BN(100))})
+      await advanceTime({toSecond: (await cl2.nextDueTime()).add(new BN(100))})
 
       await expectAction(() => tranchedPool.assess()).toChange([
         [() => cl.balance(), {decrease: true}],
@@ -433,7 +428,7 @@ describe("Borrower", async () => {
     })
 
     it("should fully pay back the loan", async () => {
-      await advanceTime(tranchedPool, {toSecond: (await cl.nextDueTime()).add(new BN(1))})
+      await advanceTime({toSecond: (await cl.nextDueTime()).add(new BN(1))})
       await expectAction(async () => bwrCon.payInFull(tranchedPool.address, usdcVal(11), {from: bwr})).toChange([
         [async () => cl.balance(), {to: new BN(0)}],
         [async () => getBalance(tranchedPool.address, usdc), {increase: true}],
