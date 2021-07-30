@@ -18,6 +18,8 @@ import "./ConfigOptions.sol";
  */
 
 contract GoldfinchConfig is BaseUpgradeablePausable {
+  bytes32 public constant GO_LISTER_ROLE = keccak256("GO_LISTER_ROLE");
+
   mapping(uint256 => address) public addresses;
   mapping(uint256 => uint256) public numbers;
   mapping(address => bool) public goList;
@@ -31,7 +33,13 @@ contract GoldfinchConfig is BaseUpgradeablePausable {
   bool public valuesInitialized;
 
   function initialize(address owner) public initializer {
+    require(owner != address(0), "Owner address cannot be empty");
+
     __BaseUpgradeablePausable__init(owner);
+
+    _setupRole(GO_LISTER_ROLE, owner);
+
+    _setRoleAdmin(GO_LISTER_ROLE, OWNER_ROLE);
   }
 
   function setAddress(uint256 addressIndex, address newAddress) public onlyAdmin {
@@ -95,7 +103,7 @@ contract GoldfinchConfig is BaseUpgradeablePausable {
    * @dev Adds a user to go-list
    * @param _member address to add to go-list
    */
-  function addToGoList(address _member) public onlyAdmin {
+  function addToGoList(address _member) public onlyGoListerRole {
     goList[_member] = true;
     emit GoListed(_member);
   }
@@ -104,7 +112,7 @@ contract GoldfinchConfig is BaseUpgradeablePausable {
    * @dev removes a user from go-list
    * @param _member address to remove from go-list
    */
-  function removeFromGoList(address _member) public onlyAdmin {
+  function removeFromGoList(address _member) public onlyGoListerRole {
     goList[_member] = false;
     emit NoListed(_member);
   }
@@ -113,7 +121,7 @@ contract GoldfinchConfig is BaseUpgradeablePausable {
    * @dev adds many users to go-list at once
    * @param _members addresses to ad to go-list
    */
-  function bulkAddToGoList(address[] calldata _members) external onlyAdmin {
+  function bulkAddToGoList(address[] calldata _members) external onlyGoListerRole {
     for (uint256 i = 0; i < _members.length; i++) {
       addToGoList(_members[i]);
     }
@@ -123,7 +131,7 @@ contract GoldfinchConfig is BaseUpgradeablePausable {
    * @dev removes many users from go-list at once
    * @param _members addresses to remove from go-list
    */
-  function bulkRemoveFromGoList(address[] calldata _members) external onlyAdmin {
+  function bulkRemoveFromGoList(address[] calldata _members) external onlyGoListerRole {
     for (uint256 i = 0; i < _members.length; i++) {
       removeFromGoList(_members[i]);
     }
@@ -139,5 +147,10 @@ contract GoldfinchConfig is BaseUpgradeablePausable {
 
   function getNumber(uint256 index) public view returns (uint256) {
     return numbers[index];
+  }
+
+  modifier onlyGoListerRole() {
+    require(hasRole(GO_LISTER_ROLE, _msgSender()), "Must have go-lister role to perform this action");
+    _;
   }
 }

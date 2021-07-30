@@ -1,7 +1,7 @@
 /* global artifacts web3 */
 const {expect, expectAction, BN} = require("./testHelpers")
 const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
-const {OWNER_ROLE} = require("../blockchain_scripts/deployHelpers")
+const {OWNER_ROLE, PAUSER_ROLE, GO_LISTER_ROLE} = require("../blockchain_scripts/deployHelpers")
 const GoldfinchConfig = artifacts.require("GoldfinchConfig")
 const TestTheConfig = artifacts.require("TestTheConfig")
 const TOTAL_FUNDS_LIMIT_KEY = CONFIG_KEYS.TotalFundsLimit
@@ -9,18 +9,29 @@ const TRANSACTION_LIMIT_KEY = CONFIG_KEYS.TransactionLimit
 
 describe("GoldfinchConfig", () => {
   let owner, person2, person3, goldfinchConfig, accounts
-  beforeEach(async () => {
+
+  const baseSetupTest = async () => {
     // Pull in our unlocked accounts
     accounts = await web3.eth.getAccounts()
     ;[owner, person2, person3] = accounts
 
     goldfinchConfig = await GoldfinchConfig.new({from: owner})
     await goldfinchConfig.initialize(owner)
+  }
+
+  beforeEach(async () => {
+    await baseSetupTest()
   })
 
   describe("ownership", async () => {
     it("should be owned by the owner", async () => {
       expect(await goldfinchConfig.hasRole(OWNER_ROLE, owner)).to.be.true
+    })
+    it("should give owner the PAUSER_ROLE", async () => {
+      expect(await goldfinchConfig.hasRole(PAUSER_ROLE, owner)).to.be.true
+    })
+    it("should give owner the GO_LISTER_ROLE", async () => {
+      expect(await goldfinchConfig.hasRole(GO_LISTER_ROLE, owner)).to.be.true
     })
   })
 
@@ -245,20 +256,46 @@ describe("GoldfinchConfig", () => {
 
   describe("go listing", async () => {
     describe("addToGoList", async () => {
+      beforeEach(async () => {
+        await baseSetupTest()
+      })
+
       it("should add someone to the go list", async () => {
         expect(await goldfinchConfig.goList(person2)).to.be.false
         await goldfinchConfig.addToGoList(person2)
         expect(await goldfinchConfig.goList(person2)).to.be.true
       })
-      it("should allow the owner to add someone", async () => {
+      it("should allow the owner, as a go-lister, to add someone", async () => {
+        const ownerGoLister = await goldfinchConfig.hasRole(GO_LISTER_ROLE, owner)
+        expect(ownerGoLister).to.be.true
+        const goListed = await goldfinchConfig.goList(person2)
+        expect(goListed).to.be.false
         return expect(goldfinchConfig.addToGoList(person2), {from: owner}).to.be.fulfilled
       })
-      it("should dis-allow non-owners to add someone", async () => {
-        return expect(goldfinchConfig.addToGoList(person2, {from: person3})).to.be.rejectedWith(/Must have admin role/)
+      it("should allow a non-owner, as a go-lister, to add someone", async () => {
+        await goldfinchConfig.grantRole(GO_LISTER_ROLE, person3, {from: owner})
+        const nonOwnerGoLister = await goldfinchConfig.hasRole(GO_LISTER_ROLE, person3)
+        expect(nonOwnerGoLister).to.be.true
+        const goListed = await goldfinchConfig.goList(person2)
+        expect(goListed).to.be.false
+        return expect(goldfinchConfig.addToGoList(person2), {from: person3}).to.be.fulfilled
+      })
+      it("should dis-allow a non-owner who is not a go-lister from adding someone", async () => {
+        const nonOwnerGoLister = await goldfinchConfig.hasRole(GO_LISTER_ROLE, person2)
+        expect(nonOwnerGoLister).to.be.false
+        const goListed = await goldfinchConfig.goList(person3)
+        expect(goListed).to.be.false
+        return expect(goldfinchConfig.addToGoList(person3, {from: person2})).to.be.rejectedWith(
+          /Must have go-lister role to perform this action/
+        )
       })
     })
 
     describe("bulkAddToGoList", async () => {
+      beforeEach(async () => {
+        await baseSetupTest()
+      })
+
       it("should add many people to the go list", async () => {
         expect(await goldfinchConfig.goList(person2)).to.be.false
         expect(await goldfinchConfig.goList(person3)).to.be.false
@@ -268,34 +305,77 @@ describe("GoldfinchConfig", () => {
         expect(await goldfinchConfig.goList(person2)).to.be.true
         expect(await goldfinchConfig.goList(person3)).to.be.true
       })
-      it("should allow the owner to add someone", async () => {
+      it("should allow the owner, as a go-lister, to add someone", async () => {
+        const ownerGoLister = await goldfinchConfig.hasRole(GO_LISTER_ROLE, owner)
+        expect(ownerGoLister).to.be.true
+        const goListed = await goldfinchConfig.goList(person2)
+        expect(goListed).to.be.false
         return expect(goldfinchConfig.bulkAddToGoList([person2]), {from: owner}).to.be.fulfilled
       })
-      it("should dis-allow non-owners to add someone", async () => {
-        return expect(goldfinchConfig.bulkAddToGoList([person2], {from: person3})).to.be.rejectedWith(
-          /Must have admin role/
+      it("should allow a non-owner, as a go-lister, to add someone", async () => {
+        await goldfinchConfig.grantRole(GO_LISTER_ROLE, person3, {from: owner})
+        const nonOwnerGoLister = await goldfinchConfig.hasRole(GO_LISTER_ROLE, person3)
+        expect(nonOwnerGoLister).to.be.true
+        const goListed = await goldfinchConfig.goList(person2)
+        expect(goListed).to.be.false
+        return expect(goldfinchConfig.bulkAddToGoList([person2]), {from: person3}).to.be.fulfilled
+      })
+      it("should dis-allow a non-owner who is not a go-lister from adding someone", async () => {
+        const nonOwnerGoLister = await goldfinchConfig.hasRole(GO_LISTER_ROLE, person2)
+        expect(nonOwnerGoLister).to.be.false
+        const goListed = await goldfinchConfig.goList(person3)
+        expect(goListed).to.be.false
+        return expect(goldfinchConfig.bulkAddToGoList([person3], {from: person2})).to.be.rejectedWith(
+          /Must have go-lister role to perform this action/
         )
       })
     })
 
     describe("removeFromGoList", async () => {
+      beforeEach(async () => {
+        await baseSetupTest()
+      })
+
       it("should remove someone from the go list", async () => {
         await goldfinchConfig.addToGoList(person2)
         expect(await goldfinchConfig.goList(person2)).to.be.true
         await goldfinchConfig.removeFromGoList(person2)
         expect(await goldfinchConfig.goList(person2)).to.be.false
       })
-      it("should allow the minter to add someone", async () => {
+      it("should allow the owner, as a go-lister, to remove someone", async () => {
+        const ownerGoLister = await goldfinchConfig.hasRole(GO_LISTER_ROLE, owner)
+        expect(ownerGoLister).to.be.true
+        await goldfinchConfig.addToGoList(person2)
+        const goListed = await goldfinchConfig.goList(person2)
+        expect(goListed).to.be.true
         return expect(goldfinchConfig.removeFromGoList(person2), {from: owner}).to.be.fulfilled
       })
-      it("should dis-allow non-minters to add someone", async () => {
-        return expect(goldfinchConfig.removeFromGoList(person2, {from: person3})).to.be.rejectedWith(
-          /Must have admin role/
+      it("should allow a non-owner, as a go-lister, to remove someone", async () => {
+        await goldfinchConfig.grantRole(GO_LISTER_ROLE, person3, {from: owner})
+        const nonOwnerGoLister = await goldfinchConfig.hasRole(GO_LISTER_ROLE, person3)
+        expect(nonOwnerGoLister).to.be.true
+        await goldfinchConfig.addToGoList(person2)
+        const goListed = await goldfinchConfig.goList(person2)
+        expect(goListed).to.be.true
+        return expect(goldfinchConfig.removeFromGoList(person2), {from: person3}).to.be.fulfilled
+      })
+      it("should dis-allow a non-owner who is not a go-lister from removing someone", async () => {
+        const nonOwnerGoLister = await goldfinchConfig.hasRole(GO_LISTER_ROLE, person2)
+        expect(nonOwnerGoLister).to.be.false
+        await goldfinchConfig.addToGoList(person3)
+        const goListed = await goldfinchConfig.goList(person3)
+        expect(goListed).to.be.true
+        return expect(goldfinchConfig.removeFromGoList(person3, {from: person2})).to.be.rejectedWith(
+          /Must have go-lister role to perform this action/
         )
       })
     })
 
     describe("bulkRemoveFromGoList", async () => {
+      beforeEach(async () => {
+        await baseSetupTest()
+      })
+
       it("should remove someone from the go list", async () => {
         await goldfinchConfig.bulkAddToGoList([person2, person3])
         expect(await goldfinchConfig.goList(person2)).to.be.true
@@ -305,12 +385,31 @@ describe("GoldfinchConfig", () => {
         expect(await goldfinchConfig.goList(person2)).to.be.false
         expect(await goldfinchConfig.goList(person3)).to.be.false
       })
-      it("should allow the minter to add someone", async () => {
+      it("should allow the owner, as a go-lister, to remove someone", async () => {
+        const ownerGoLister = await goldfinchConfig.hasRole(GO_LISTER_ROLE, owner)
+        expect(ownerGoLister).to.be.true
+        await goldfinchConfig.bulkAddToGoList([person2])
+        const goListed = await goldfinchConfig.goList(person2)
+        expect(goListed).to.be.true
         return expect(goldfinchConfig.bulkRemoveFromGoList([person2]), {from: owner}).to.be.fulfilled
       })
-      it("should dis-allow non-minters to add someone", async () => {
-        return expect(goldfinchConfig.bulkRemoveFromGoList([person2], {from: person3})).to.be.rejectedWith(
-          /Must have admin role/
+      it("should allow a non-owner, as a go-lister, to remove someone", async () => {
+        await goldfinchConfig.grantRole(GO_LISTER_ROLE, person3, {from: owner})
+        const nonOwnerGoLister = await goldfinchConfig.hasRole(GO_LISTER_ROLE, person3)
+        expect(nonOwnerGoLister).to.be.true
+        await goldfinchConfig.bulkAddToGoList([person2])
+        const goListed = await goldfinchConfig.goList(person2)
+        expect(goListed).to.be.true
+        return expect(goldfinchConfig.bulkRemoveFromGoList([person2]), {from: person3}).to.be.fulfilled
+      })
+      it("should dis-allow a non-owner who is not a go-lister from removing someone", async () => {
+        const nonOwnerGoLister = await goldfinchConfig.hasRole(GO_LISTER_ROLE, person2)
+        expect(nonOwnerGoLister).to.be.false
+        await goldfinchConfig.bulkAddToGoList([person3])
+        const goListed = await goldfinchConfig.goList(person3)
+        expect(goListed).to.be.true
+        return expect(goldfinchConfig.bulkRemoveFromGoList([person3], {from: person2})).to.be.rejectedWith(
+          /Must have go-lister role to perform this action/
         )
       })
     })
