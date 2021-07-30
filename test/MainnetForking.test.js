@@ -129,6 +129,9 @@ describe("mainnet forking tests", async function () {
     ;({seniorPool, seniorPoolStrategy} = await deployV2(upgradedContracts))
     seniorPoolStrategy = await artifacts.require("ISeniorPoolStrategy").at(seniorPoolStrategy.address)
 
+    // TODO Can remove this once V2 upgrade logic incorporates leverage-ratio config value.
+    await goldfinchConfig.setNumber(CONFIG_KEYS.LeverageRatio, new BN(String(6e18)), {from: MAINNET_MULTISIG})
+
     await pool.migrateToSeniorPool({from: MAINNET_MULTISIG})
     await goldfinchConfig.setNumber(CONFIG_KEYS.TotalFundsLimit, usdcVal(20000000), {from: MAINNET_MULTISIG})
     await erc20Approve(usdc, seniorPool.address, usdcVal(10000), [owner])
