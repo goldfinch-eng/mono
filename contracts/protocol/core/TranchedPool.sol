@@ -76,24 +76,17 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     address owner = config.protocolAdminAddress();
     require(owner != address(0), "Owner address cannot be empty");
     __BaseUpgradeablePausable__init(owner);
-    // TODO[PR] I don't see a *need* to maintain `tick` on the senior tranche's info.
-    // But I have done so for consistency of the TrancheInfo struct across the junior
-    // and senior tranches. An alternative approach would be to define SeniorTrancheInfo
-    // and JuniorTrancheInfo as different things, and refactor our logic to be aware of
-    // this distinction.
     seniorTranche = TrancheInfo({
       principalSharePrice: usdcToSharePrice(1, 1),
       interestSharePrice: 0,
       principalDeposited: 0,
-      lockedUntil: 0,
-      tick: 0
+      lockedUntil: 0
     });
     juniorTranche = TrancheInfo({
       principalSharePrice: usdcToSharePrice(1, 1),
       interestSharePrice: 0,
       principalDeposited: 0,
-      lockedUntil: 0,
-      tick: 0
+      lockedUntil: 0
     });
     createAndSetCreditLine(_borrower, _limit, _interestApr, _paymentPeriodInDays, _termInDays, _lateFeeApr);
 
@@ -122,7 +115,15 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     whenNotPaused
     returns (uint256 tokenId)
   {
-    return _deposit(tranche, amount);
+    TrancheInfo storage trancheInfo = getTrancheInfo(tranche);
+    require(trancheInfo.lockedUntil == 0, "Tranche has been locked");
+
+    trancheInfo.principalDeposited = trancheInfo.principalDeposited.add(amount);
+    IPoolTokens.MintParams memory params = IPoolTokens.MintParams({tranche: tranche, principalAmount: amount});
+    tokenId = config.getPoolTokens().mint(params, msg.sender);
+    safeERC20TransferFrom(config.getUSDC(), msg.sender, address(this), amount);
+    emit DepositMade(msg.sender, tranche, tokenId, amount);
+    return tokenId;
   }
 
   function depositWithPermit(
@@ -134,7 +135,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     bytes32 s
   ) public override returns (uint256 tokenId) {
     IERC20Permit(config.usdcAddress()).permit(msg.sender, address(this), amount, deadline, v, r, s);
-    return _deposit(tranche, amount);
+    return deposit(tranche, amount);
   }
 
   /**
@@ -435,20 +436,6 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
 
   /* Internal functions  */
 
-  function _deposit(uint256 tranche, uint256 amount) internal returns (uint256 tokenId) {
-    TrancheInfo storage trancheInfo = getTrancheInfo(tranche);
-    require(trancheInfo.lockedUntil == 0, "Tranche has been locked");
-
-    trancheInfo.principalDeposited = trancheInfo.principalDeposited.add(amount);
-    trancheInfo.tick = trancheInfo.tick.add(1);
-    IPoolTokens.MintParams memory params = IPoolTokens.MintParams({tranche: tranche, principalAmount: amount});
-    tokenId = config.getPoolTokens().mint(params, msg.sender);
-    safeERC20TransferFrom(config.getUSDC(), msg.sender, address(this), amount);
-    // TODO[PR] We could include the tranche tick in the DepositMade event params.
-    emit DepositMade(msg.sender, tranche, tokenId, amount);
-    return tokenId;
-  }
-
   function _withdraw(
     TrancheInfo storage trancheInfo,
     IPoolTokens.TokenInfo memory tokenInfo,
@@ -462,16 +449,9 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     require(currentTime() > trancheInfo.lockedUntil, "Tranche is locked");
 
     // If the tranche has not been locked, ensure the deposited amount is correct
-    // TODO[PR] I don't understand this. Why would we only decrement principalDeposited
-    // if the tranche is not locked, but do the remaining logic regardless of whether
-    // the tranche is locked?
-    // TODO[PR] Also, how is this "[ensuring] the deposited amount is correct"? It's
-    // updating / maintaining the value, but there's no enforcement here.
     if (trancheInfo.lockedUntil == 0) {
       trancheInfo.principalDeposited = trancheInfo.principalDeposited.sub(amount);
     }
-
-    trancheInfo.tick = trancheInfo.tick.add(1);
 
     uint256 interestToRedeem = Math.min(interestRedeemable, amount);
     uint256 principalToRedeem = Math.min(principalRedeemable, amount.sub(interestToRedeem));
@@ -479,7 +459,6 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     config.getPoolTokens().redeem(tokenId, principalToRedeem, interestToRedeem);
     safeERC20TransferFrom(config.getUSDC(), address(this), msg.sender, principalToRedeem.add(interestToRedeem));
 
-    // TODO[PR] We could include the tranche tick in the WithdrawalMade event params.
     emit WithdrawalMade(msg.sender, tokenInfo.tranche, tokenId, interestToRedeem, principalToRedeem);
 
     return (interestToRedeem, principalToRedeem);
