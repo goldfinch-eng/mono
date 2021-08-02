@@ -16,6 +16,7 @@ abstract contract ITranchedPool {
     uint256 principalSharePrice;
     uint256 interestSharePrice;
     uint256 lockedUntil;
+    uint256 tick;
   }
 
   function initialize(

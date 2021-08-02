@@ -35,6 +35,7 @@ interface IPoolTokens is IERC721 {
   struct MintParams {
     uint256 principalAmount;
     uint256 tranche;
+    // TODO[PR] We could include the tranche's tick value here and include it in the TokenMinted event.
   }
 
   function mint(MintParams calldata params, address to) external returns (uint256);
