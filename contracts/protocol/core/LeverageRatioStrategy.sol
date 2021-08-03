@@ -10,15 +10,10 @@ import "../../interfaces/ISeniorPool.sol";
 import "../../interfaces/ITranchedPool.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 
-contract LeverageRatioStrategy is BaseUpgradeablePausable, ISeniorPoolStrategy {
+abstract contract LeverageRatioStrategy is BaseUpgradeablePausable, ISeniorPoolStrategy {
   using SafeMath for uint256;
 
   uint256 private constant LEVERAGE_RATIO_DECIMALS = 1e18;
-
-  function getLeverageRatio(ITranchedPool pool) public view virtual override returns (uint256) {
-    // We expect this method to have been overridden by the contract inheriting from this contract.
-    assert(false);
-  }
 
   /**
    * @notice Determines how much money to invest in the senior tranche based on what is committed to the junior
