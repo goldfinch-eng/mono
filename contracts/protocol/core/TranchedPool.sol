@@ -486,6 +486,10 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     require(!locked(), "Pool already locked");
     require(juniorTranche.lockedUntil == 0, "Junior tranche already locked");
 
+    // TODO[PR] Don't we need to emit an event here, that our off-chain process can observe, to trigger
+    // calculating the leverage ratio? Don't we need to include block number or block timestamp in it,
+    // so that the off-chain process calculates based on the correct snapshot?
+
     juniorTranche.lockedUntil = currentTime().add(config.getDrawdownPeriodInSeconds());
   }
 
