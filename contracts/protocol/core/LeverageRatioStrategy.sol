@@ -15,7 +15,8 @@ contract LeverageRatioStrategy is BaseUpgradeablePausable, ISeniorPoolStrategy {
 
   uint256 private constant LEVERAGE_RATIO_DECIMALS = 1e18;
 
-  function getLeverageRatio(ITranchedPool pool) public view override returns (uint256) {
+  function getLeverageRatio(ITranchedPool pool) public view virtual override returns (uint256) {
+    // We expect this method to have been overridden by the contract inheriting from this contract.
     assert(false);
   }
 
@@ -38,7 +39,7 @@ contract LeverageRatioStrategy is BaseUpgradeablePausable, ISeniorPoolStrategy {
       return 0;
     }
 
-    return _invest(juniorTranche, seniorTranche);
+    return _invest(pool, juniorTranche, seniorTranche);
   }
 
   /**
@@ -53,17 +54,17 @@ contract LeverageRatioStrategy is BaseUpgradeablePausable, ISeniorPoolStrategy {
     ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
     ITranchedPool.TrancheInfo memory seniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Senior));
 
-    return _invest(juniorTranche, seniorTranche);
+    return _invest(pool, juniorTranche, seniorTranche);
   }
 
-  function _invest(ITranchedPool.TrancheInfo memory juniorTranche, ITranchedPool.TrancheInfo memory seniorTranche)
-    internal
-    view
-    returns (uint256)
-  {
+  function _invest(
+    ITranchedPool pool,
+    ITranchedPool.TrancheInfo memory juniorTranche,
+    ITranchedPool.TrancheInfo memory seniorTranche
+  ) internal view returns (uint256) {
     uint256 juniorCapital = juniorTranche.principalDeposited;
     uint256 existingSeniorCapital = seniorTranche.principalDeposited;
-    uint256 seniorTarget = juniorCapital.mul(getLeverageRatio()).div(LEVERAGE_RATIO_DECIMALS);
+    uint256 seniorTarget = juniorCapital.mul(getLeverageRatio(pool)).div(LEVERAGE_RATIO_DECIMALS);
 
     if (existingSeniorCapital >= seniorTarget) {
       return 0;

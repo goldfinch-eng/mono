@@ -110,7 +110,7 @@
           "invest": []
         },
         "**/DynamicLeverageRatioStrategy.sol:DynamicLeverageRatioStrategy": {
-          "setLeverageRatio": ["onlySetter"]
+          "setLeverageRatio": ["onlySetterRole"]
         },
         "**/contracts/test/**": {
           "*.*": []

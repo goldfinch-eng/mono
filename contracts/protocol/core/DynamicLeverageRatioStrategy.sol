@@ -14,6 +14,8 @@ import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 contract DynamicLeverageRatioStrategy is LeverageRatioStrategy {
   // TODO[PR] Should we give our future selves access to the config? We don't need it for now.
 
+  bytes32 public constant SETTER_ROLE = keccak256("SETTER_ROLE");
+
   struct LeverageRatioInfo {
     uint256 leverageRatio;
     uint256 juniorTrancheLockedUntil;
@@ -21,6 +23,16 @@ contract DynamicLeverageRatioStrategy is LeverageRatioStrategy {
 
   // tranchedPoolAddress => leverageRatioInfo
   mapping(address => LeverageRatioInfo) public ratios;
+
+  function initialize(address owner) public initializer {
+    require(owner != address(0), "Owner address cannot be empty");
+
+    __BaseUpgradeablePausable__init(owner);
+
+    _setupRole(SETTER_ROLE, owner);
+
+    _setRoleAdmin(SETTER_ROLE, OWNER_ROLE);
+  }
 
   function getLeverageRatio(ITranchedPool pool) public view override returns (uint256) {
     LeverageRatioInfo memory ratioInfo = ratios[address(pool)];
@@ -39,10 +51,10 @@ contract DynamicLeverageRatioStrategy is LeverageRatioStrategy {
     ITranchedPool pool,
     uint256 leverageRatio,
     uint256 juniorTrancheLockedUntil
-  ) public onlySetter {
+  ) public onlySetterRole {
     ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
 
-    // TODO How to validate the `leverageRatio` value?
+    // TODO[PR] Anything stronger we can require about the `leverageRatio` value?
     require(leverageRatio > 0, "Leverage ratio must be greater than 0.");
 
     require(juniorTrancheLockedUntil > 0, "Cannot set leverage ratio for unlocked junior tranche.");
@@ -52,5 +64,10 @@ contract DynamicLeverageRatioStrategy is LeverageRatioStrategy {
       leverageRatio: leverageRatio,
       juniorTrancheLockedUntil: juniorTrancheLockedUntil
     });
+  }
+
+  modifier onlySetterRole() {
+    require(hasRole(SETTER_ROLE, _msgSender()), "Must have leverage-ratio setter role to perform this action");
+    _;
   }
 }
