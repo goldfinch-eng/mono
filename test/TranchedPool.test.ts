@@ -901,7 +901,15 @@ describe("TranchedPool", () => {
           let actor = borrower
           await tranchedPool.deposit(TRANCHES.Senior, usdcVal(10))
           const oneDayFromNow = (await time.latest()).add(SECONDS_PER_DAY)
-          await expectAction(async () => tranchedPool.lockJuniorCapital({from: actor})).toChange([
+          await expectAction(async () => {
+            const receipt = await tranchedPool.lockJuniorCapital({from: actor})
+            expectEvent(receipt, "JuniorCapitalLocked", {
+              pool: tranchedPool.address,
+              // TODO[PR] It would be ideal to include an assertion about the value of `juniorTrancheLockedUntil`
+              // here. How to assert like `bignumber.closeTo()`, since we can't predict the exact value?
+            })
+            return receipt
+          }).toChange([
             [async () => (await tranchedPool.getTranche(TRANCHES.Junior)).lockedUntil, {increase: true}],
             [async () => (await tranchedPool.getTranche(TRANCHES.Junior)).principalSharePrice, {unchanged: true}],
           ])
@@ -917,7 +925,15 @@ describe("TranchedPool", () => {
         it("locks the junior tranche", async () => {
           await tranchedPool.deposit(TRANCHES.Senior, usdcVal(10))
           const oneDayFromNow = (await time.latest()).add(SECONDS_PER_DAY)
-          await expectAction(async () => tranchedPool.lockJuniorCapital({from: borrower})).toChange([
+          await expectAction(async () => {
+            const receipt = tranchedPool.lockJuniorCapital({from: borrower})
+            expectEvent(receipt, "JuniorCapitalLocked", {
+              pool: tranchedPool.address,
+              // TODO[PR] It would be ideal to include an assertion about the value of `juniorTrancheLockedUntil`
+              // here. How to assert like `bignumber.closeTo()`, since we can't predict the exact value?
+            })
+            return receipt
+          }).toChange([
             [async () => (await tranchedPool.getTranche(TRANCHES.Junior)).lockedUntil, {increase: true}],
             [async () => (await tranchedPool.getTranche(TRANCHES.Junior)).principalSharePrice, {unchanged: true}],
           ])
