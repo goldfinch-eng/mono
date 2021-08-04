@@ -23,6 +23,7 @@ import {
   TransferRestrictedVaultInstance,
 } from "../typechain/truffle"
 import {assertNonNullable} from "../utils/type"
+import { DynamicLeverageRatioStrategyInstance } from "../typechain/truffle/DynamicLeverageRatioStrategy"
 const decimals = new BN(String(1e18))
 const USDC_DECIMALS = new BN(String(1e6))
 const SECONDS_PER_DAY = new BN(86400)
@@ -204,7 +205,8 @@ async function deployAllContracts(
 ): Promise<{
   pool: PoolInstance
   seniorPool: SeniorPoolInstance
-  seniorPoolStrategy: FixedLeverageRatioStrategyInstance
+  seniorPoolFixedStrategy: FixedLeverageRatioStrategyInstance
+  seniorPoolDynamicStrategy: DynamicLeverageRatioStrategyInstance
   usdc: ERC20Instance
   creditDesk: CreditDeskInstance
   fidu: FiduInstance
@@ -219,9 +221,13 @@ async function deployAllContracts(
   await deployments.fixture("base_deploy")
   const pool = await getDeployedAsTruffleContract<PoolInstance>(deployments, "Pool")
   const seniorPool = await getDeployedAsTruffleContract<SeniorPoolInstance>(deployments, "SeniorPool")
-  const seniorPoolStrategy = await getDeployedAsTruffleContract<FixedLeverageRatioStrategyInstance>(
+  const seniorPoolFixedStrategy = await getDeployedAsTruffleContract<FixedLeverageRatioStrategyInstance>(
     deployments,
     "FixedLeverageRatioStrategy"
+  )
+  const seniorPoolDynamicStrategy = await getDeployedAsTruffleContract<DynamicLeverageRatioStrategyInstance>(
+    deployments,
+    "DynamicLeverageRatioStrategy"
   )
   const usdc = await getDeployedAsTruffleContract<ERC20Instance>(deployments, "ERC20")
   const creditDesk = await getDeployedAsTruffleContract<CreditDeskInstance>(deployments, "CreditDesk")
@@ -243,7 +249,8 @@ async function deployAllContracts(
   return {
     pool,
     seniorPool,
-    seniorPoolStrategy,
+    seniorPoolFixedStrategy,
+    seniorPoolDynamicStrategy,
     usdc,
     creditDesk,
     fidu,
