@@ -101,6 +101,41 @@ class DefenderUpgrader {
     })
     this.logger("Defender URL: ", this.defenderUrl(contract.address))
   }
+
+  async send({method, contract, args, contractName, title, description, via, viaType}) {
+    via = via || this.safeAddress
+    viaType = viaType || "Gnosis Safe"
+    if (method === "pause") {
+      title = title || `Pausing ${contractName}`
+      await this.client.proposePause(
+        {via: via, viaType: viaType, title: title},
+        {network: this.network, address: contract.address}
+      )
+    } else if (method === "unpause") {
+      title = title || `Unpausing ${contractName}`
+      await this.client.proposeUnpause(
+        {via: via, viaType: viaType, title: title},
+        {network: this.network, address: contract.address}
+      )
+    } else {
+      const functionInterface = contract.abi.filter((funcAbi) => {
+        return funcAbi.name === method && funcAbi.inputs.length == args.length
+      })[0]
+      title = title || `Calling ${method} with args of ${args}`
+      description = description || "No description provided"
+      this.client.createProposal({
+        contract: {address: contract.address, network: this.network}, // Target contract
+        title: title,
+        description: description,
+        type: "custom",
+        // Function ABI
+        functionInterface: functionInterface,
+        functionInputs: args,
+        via: via,
+        viaType: viaType, // Either Gnosis Safe or Gnosis Multisig
+      })
+    }
+  }
 }
 
-exports.default = DefenderUpgrader
+module.exports = {DefenderUpgrader}

@@ -183,8 +183,7 @@ function decodeLogs<T extends Truffle.AnyEvent>(logs, emitter, eventName): T[] {
   eventABI = eventABI[0]
 
   // The first topic will equal the hash of the event signature
-  const eventSignature = `${eventName}(${eventABI.inputs.map((input) => input.type).join(",")})`
-  const eventTopic = web3.utils.sha3(eventSignature)
+  const eventTopic = eventABI.signature
 
   // Only decode events of type 'EventName'
   return logs
@@ -350,8 +349,13 @@ const createPoolWithCreditLine = async ({
   return {tranchedPool, creditLine}
 }
 
-async function toTruffle(contract, contractName) {
-  return await artifacts.require(contractName).at(contract.address)
+async function toTruffle(address: Truffle.ContractInstance | string, contractName, opts?: {}) : Promise<Truffle.ContractInstance> {
+  let truffleContract = await artifacts.require(contractName)
+  address = typeof(address) === "string" ? address : address.address
+  if (opts) {
+    truffleContract.defaults(opts)
+  }
+  return truffleContract.at(address)
 }
 
 export {

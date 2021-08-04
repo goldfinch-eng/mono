@@ -217,25 +217,28 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
 
   function migrateV1CreditLine(
     address _clToMigrate,
+    address borrower,
     uint256 termEndTime,
     uint256 nextDueTime,
     uint256 interestAccruedAsOf,
     uint256 lastFullPaymentTime,
     uint256 totalInterestPaid,
     uint256 totalPrincipalPaid
-  ) public {
+  ) public onlyAdmin returns (address, address) {
     IV1CreditLine clToMigrate = IV1CreditLine(_clToMigrate);
-    require(msg.sender == config.protocolAdminAddress(), "Caller must be the admin");
+    uint256 originalBalance = clToMigrate.balance();
     require(clToMigrate.limit() > 0, "Can't migrate empty credit line");
+    require(originalBalance > 0, "Can't migrate credit line that's currently paid off");
     // Ensure it is a v1 creditline by calling a function that only exists on v1
     require(clToMigrate.nextDueBlock() > 0, "Invalid creditline");
-
+    if (borrower == address(0)) {
+      borrower = clToMigrate.borrower();
+    }
     // We're migrating from 1e8 decimal precision of interest rates to 1e18
     // So multiply the legacy rates by 1e10 to normalize them.
     uint256 interestMigrationFactor = 1e10;
-
     address pool = getGoldfinchFactory().createMigratedPool(
-      clToMigrate.borrower(),
+      borrower,
       20, // junior fee percent
       clToMigrate.limit(),
       clToMigrate.interestApr().mul(interestMigrationFactor),
@@ -260,6 +263,11 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     IERC20withDec usdc = config.getUSDC();
     bool success = usdc.transferFrom(address(clToMigrate), address(newCl), usdc.balanceOf(address(clToMigrate)));
     require(success, "Failed to transfer funds");
+
+    // Some sanity checks on the migration
+    require(newCl.balance() == originalBalance, "Balance did not migrate properly");
+    require(newCl.interestAccruedAsOf() == interestAccruedAsOf, "Interest accrued as of did not migrate properly");
+    return (address(newCl), pool);
   }
 
   /**

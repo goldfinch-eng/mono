@@ -1,6 +1,5 @@
-const {getDeployedContract, assertIsChainId} = require("../deployHelpers.js")
-const {CHAIN_NAME_BY_ID} = require("../deployHelpers.js")
 const hre = require("hardhat")
+const {getDeployedContract, CHAIN_NAME_BY_ID, assertIsChainId} = require("../deployHelpers")
 const {DefenderUpgrader} = require("../upgrade.js")
 
 let logger = console.log

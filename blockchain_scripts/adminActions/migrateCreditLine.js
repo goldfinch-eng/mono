@@ -1,5 +1,5 @@
 /* globals */
-const {migrateCreditLine} = require("./protocolHelpers.js")
+const {migrateCreditLine} = require("../protocolHelpers.js")
 
 async function main() {
   const creditLineAddress = process.env.CREDIT_LINE

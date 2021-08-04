@@ -12,6 +12,8 @@ import "./ConfigOptions.sol";
  * @notice This contract stores mappings of useful "protocol config state", giving a central place
  *  for all other contracts to access it. For example, the TransactionLimit, or the PoolAddress. These config vars
  *  are enumerated in the `ConfigOptions` library, and can only be changed by admins of the protocol.
+ *  Note: While this inherits from BaseUpgradeablePausable, it is not deployed as an upgradeable contract (this
+ *    is mostly to save gas costs of having each call go through a proxy)
  * @author Goldfinch
  */
 
@@ -68,6 +70,12 @@ contract GoldfinchConfig is BaseUpgradeablePausable {
     addresses[key] = newAddress;
   }
 
+  function setGoldfinchConfig(address newAddress) public onlyAdmin {
+    uint256 key = uint256(ConfigOptions.Addresses.GoldfinchConfig);
+    emit AddressUpdated(msg.sender, key, addresses[key], newAddress);
+    addresses[key] = newAddress;
+  }
+
   function initializeFromOtherConfig(address _initialConfig) public onlyAdmin {
     require(!valuesInitialized, "Already initialized values");
     IGoldfinchConfig initialConfig = IGoldfinchConfig(_initialConfig);
@@ -75,7 +83,7 @@ contract GoldfinchConfig is BaseUpgradeablePausable {
       setNumber(i, initialConfig.getNumber(i));
     }
 
-    for (uint256 i = 0; i < 12; i++) {
+    for (uint256 i = 0; i < 11; i++) {
       if (getAddress(i) == address(0)) {
         setAddress(i, initialConfig.getAddress(i));
       }
@@ -105,7 +113,7 @@ contract GoldfinchConfig is BaseUpgradeablePausable {
    * @dev adds many users to go-list at once
    * @param _members addresses to ad to go-list
    */
-  function bulkAddToGoList(address[] calldata _members) public onlyAdmin {
+  function bulkAddToGoList(address[] calldata _members) external onlyAdmin {
     for (uint256 i = 0; i < _members.length; i++) {
       addToGoList(_members[i]);
     }
@@ -115,7 +123,7 @@ contract GoldfinchConfig is BaseUpgradeablePausable {
    * @dev removes many users from go-list at once
    * @param _members addresses to remove from go-list
    */
-  function bulkRemoveFromGoList(address[] calldata _members) public onlyAdmin {
+  function bulkRemoveFromGoList(address[] calldata _members) external onlyAdmin {
     for (uint256 i = 0; i < _members.length; i++) {
       removeFromGoList(_members[i]);
     }

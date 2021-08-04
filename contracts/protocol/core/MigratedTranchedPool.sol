@@ -53,8 +53,11 @@ contract MigratedTranchedPool is TranchedPool, IMigratedTranchedPool {
     uint256 amount = clToMigrate.balance();
     TrancheInfo storage trancheInfo = getTrancheInfo(tranche);
     require(trancheInfo.lockedUntil == 0, "Tranche has been locked");
-    trancheInfo.principalDeposited += amount;
-    IPoolTokens.MintParams memory params = IPoolTokens.MintParams({tranche: tranche, principalAmount: amount});
+    trancheInfo.principalDeposited = trancheInfo.principalDeposited.add(amount.add(totalPrincipalPaid));
+    IPoolTokens.MintParams memory params = IPoolTokens.MintParams({
+      tranche: tranche,
+      principalAmount: trancheInfo.principalDeposited
+    });
     IPoolTokens poolTokens = config.getPoolTokens();
 
     uint256 tokenId = poolTokens.mint(params, config.seniorPoolAddress());
@@ -65,7 +68,7 @@ contract MigratedTranchedPool is TranchedPool, IMigratedTranchedPool {
     _lockPool();
 
     // Simulate the drawdown
-    uint256 amountRemaining = creditLine.limit().sub(creditLine.balance());
+    uint256 amountRemaining = creditLine.limit().sub(creditLine.balance().add(totalPrincipalPaid));
     juniorTranche.principalSharePrice = calculateExpectedSharePrice(amountRemaining, juniorTranche);
     seniorTranche.principalSharePrice = 0;
 

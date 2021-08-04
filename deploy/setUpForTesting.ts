@@ -32,6 +32,7 @@ import {
   getERC20Address,
   assertIsChainId,
   TRANCHES,
+  getContract,
 } from "../blockchain_scripts/deployHelpers"
 import {
   MAINNET_MULTISIG,
@@ -47,6 +48,7 @@ import _ from "lodash"
 import {assertIsString, assertNonNullable} from "../utils/type"
 import {Result} from "ethers/lib/utils"
 import {advanceTime} from "../test/testHelpers"
+import { prepareMigration, deployAndMigrateToV2 } from "../blockchain_scripts/v2/migrate"
 
 /*
 This deployment deposits some funds to the pool, and creates an underwriter, and a credit line.
@@ -56,8 +58,9 @@ let logger: Logger
 async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeEnvironment) {
   const {getOrNull, log} = deployments
   logger = log
-  let {protocol_owner} = await getNamedAccounts()
+  let {protocol_owner, gf_deployer} = await getNamedAccounts()
   assertIsString(protocol_owner)
+  assertIsString(gf_deployer)
 
   let chainId = await getChainId()
   assertIsChainId(chainId)
@@ -93,6 +96,7 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
     await impersonateAccount(hre, MAINNET_MULTISIG)
     let ownerAccount = await getSignerForAddress(protocol_owner)
     await ownerAccount!.sendTransaction({to: MAINNET_MULTISIG, value: ethers.utils.parseEther("5.0")})
+    await ownerAccount!.sendTransaction({to: gf_deployer, value: ethers.utils.parseEther("5.0")})
     config = config.connect(MAINNET_MULTISIG)
 
     const usdtAddress = getERC20Address("USDT", chainId)
@@ -112,27 +116,15 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
 
     await fundWithWhales(erc20s, [protocol_owner, testUser, MAINNET_MULTISIG])
 
-    const mainnetConfig = getMainnetContracts()
-    const contractsToUpgrade = ["CreditDesk", "Pool", "Fidu", "GoldfinchFactory", "GoldfinchConfig"]
-    const upgradedContracts = await upgradeExistingContracts(
-      contractsToUpgrade,
-      mainnetConfig,
-      MAINNET_MULTISIG,
-      protocol_owner,
-      deployments
-    )
-
-    goldfinchFactory = upgradedContracts.GoldfinchFactory.UpgradedContract
-    // fidu = upgradedContracts.Fidu.UpgradedContract
-    config = upgradedContracts.GoldfinchConfig.UpgradedContract
-    const pool = upgradedContracts.Pool.UpgradedContract
-
-    await performPostUpgradeMigration(upgradedContracts, deployments)
-    await deployV2(upgradedContracts)
-    await pool.sweepFromCompound({from: MAINNET_MULTISIG})
-    await pool.migrateToSeniorPool()
+    await prepareMigration()
+    await deployAndMigrateToV2()
+    // Use old address because GoldfinchFactory will return new abi, but at the implementation address
+    // this happens because we renamed from CreditLineFactory -> GoldfinchFactory. Can be removed after
+    // real mainnet migration is complete, and our deployments json is updated.
+    const oldAddress = goldfinchFactory.address
+    goldfinchFactory = await getContract("GoldfinchFactory", {from: MAINNET_MULTISIG, as: "ethers", at: oldAddress})
+    config = await getContract("GoldfinchConfig", {from: MAINNET_MULTISIG, as: "ethers"})
   }
-
   await setupTestForwarder(deployments, config, getOrNull, protocol_owner)
 
   let seniorPool = await getDeployedAsEthersContract<SeniorPool>(getOrNull, "SeniorPool")
@@ -233,24 +225,6 @@ function getLastEventArgs(result: ContractReceipt): Result {
   assertNonNullable(lastEvent)
   assertNonNullable(lastEvent.args)
   return lastEvent.args
-}
-
-async function upgradeExistingContracts(
-  contractsToUpgrade: any,
-  mainnetConfig: any,
-  mainnetMultisig: any,
-  deployFrom: any,
-  deployments: DeploymentsExtension
-): Promise<any> {
-  // Ensure the multisig has funds for upgrades and other transactions
-  let ownerAccount = await getSignerForAddress(deployFrom)
-  await ownerAccount!.sendTransaction({to: mainnetMultisig, value: ethers.utils.parseEther("5.0")})
-  await impersonateAccount(hre, mainnetMultisig)
-  let mainnetSigner = await ethers.provider.getSigner(mainnetMultisig)
-
-  let contracts = await getExistingContracts(contractsToUpgrade, mainnetConfig, mainnetSigner)
-  contracts = await upgradeContracts(contractsToUpgrade, contracts, mainnetSigner, deployFrom, deployments)
-  return contracts
 }
 
 async function addUsersToGoList(goldfinchConfig: GoldfinchConfig, users: string[]) {

@@ -6,8 +6,8 @@ import ERC20PermitABI from "../../abi/ERC20Permit.json"
 import useNonNullContext from "./useNonNullContext"
 import web3 from "../web3"
 import {ethers} from "ethers"
-import {splitSignature} from "ethers/utils"
 import {secondsSinceEpoch} from "../utils"
+const splitSignature = ethers.utils.splitSignature
 
 interface SignatureData {
   v: number

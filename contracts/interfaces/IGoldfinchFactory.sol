@@ -27,4 +27,6 @@ interface IGoldfinchFactory {
     uint256 _termInDays,
     uint256 _lateFeeApr
   ) external returns (address);
+
+  function updateGoldfinchConfig() external;
 }

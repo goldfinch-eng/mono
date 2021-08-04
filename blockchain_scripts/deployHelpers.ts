@@ -10,12 +10,13 @@ const DEFENDER_API_KEY = process.env.DEFENDER_API_KEY || "A2UgCPgn8jQbkSVuSCxEMh
 const DEFENDER_API_SECRET = process.env.DEFENDER_API_SECRET
 import {AdminClient} from "defender-admin-client"
 import hre from "hardhat"
+const {artifacts} = hre
 import PROTOCOL_CONFIG from "../protocol_config.json"
 import {CONFIG_KEYS} from "./configKeys"
 import {GoldfinchConfig} from "../typechain/ethers"
 import {DeploymentsExtension} from "hardhat-deploy/types"
-import {Signer} from "ethers"
-import {AssertionError, assertIsString, genExhaustiveTuple} from "../utils/type"
+import {Contract, Signer} from "ethers"
+import {AssertionError, assertIsString, assertNonNullable, genExhaustiveTuple} from "../utils/type"
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
@@ -24,7 +25,6 @@ const MAINNET_USDC_ADDRESS = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
 const MAINNET_ONE_SPLIT_ADDRESS = "0xC586BeF4a0992C495Cf22e1aeEE4E446CECDee0E"
 const MAINNET_CUSDC_ADDRESS = "0x39aa39c021dfbae8fac545936693ac917d5e7563"
 const MAINNET_COMP_ADDRESS = "0xc00e94cb662c3520282e6f5717214004a7f26888"
-
 const LOCAL = "local"
 type LOCAL = typeof LOCAL
 const ROPSTEN = "ropsten"
@@ -309,6 +309,36 @@ function getDefenderClient() {
   return new AdminClient({apiKey: DEFENDER_API_KEY, apiSecret: DEFENDER_API_SECRET})
 }
 
+type ContractProviders = "ethers" | "truffle"
+type GetContractOptions = {
+  as?: ContractProviders,
+  at?: string,
+  from?: string,
+}
+async function getContract(contractName: AddressString, opts: GetContractOptions={as: "truffle"}) {
+  let deployment = await hre.deployments.getOrNull(contractName)
+  if (!deployment && isTestEnv()) {
+    deployment = await hre.deployments.get(`Test${contractName}`)
+  }
+  assertNonNullable(deployment)
+  const at = opts.at || deployment.address
+  if (opts.as === "ethers") {
+    let contract = await ethers.getContractAt(deployment.abi, at)
+    if (opts.from) {
+      let signer = await ethers.getSigner(opts.from)
+      return contract.connect(signer)
+    } else {
+      return contract
+    }
+  } else {
+    let contract = await artifacts.require(contractName)
+    if (opts.from) {
+      contract.defaults({from: opts.from})
+    }
+    return contract.at(at)
+  }
+}
+
 export {
   CHAIN_NAME_BY_ID,
   ZERO_ADDRESS,
@@ -331,6 +361,8 @@ export {
   updateConfig,
   getSignerForAddress,
   MAINNET_CHAIN_ID,
+  RINKEBY_CHAIN_ID,
+  LOCAL_CHAIN_ID,
   OWNER_ROLE,
   PAUSER_ROLE,
   MINTER_ROLE,
@@ -347,4 +379,5 @@ export {
   DepList,
   Ticker,
   AddressString,
+  getContract,
 }
