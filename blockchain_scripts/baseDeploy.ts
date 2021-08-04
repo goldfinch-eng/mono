@@ -57,7 +57,6 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   const creditDesk = await deployCreditDesk(deploy, {config})
   await deploySeniorPool(hre, {config, fidu})
   await deployBorrower(hre, {config})
-  logger("Granting minter role to SeniorPool")
   await deploySeniorPoolStrategy(hre, {config})
   logger("Deploying GoldfinchFactory")
   await deployGoldfinchFactory(deploy, {config})
@@ -407,11 +406,12 @@ async function deploySeniorPool(hre: HardhatRuntimeEnvironment, {config, fidu}: 
     },
     libraries: {["Accountant"]: accountant.address},
   })
-  logger("SeniorPool was deployed to:", deployResult.address)
+  logger(`${contractName} was deployed to:`, deployResult.address)
   const fund = (await ethers.getContractAt(contractName, deployResult.address)) as SeniorPool
   await updateConfig(config, "address", CONFIG_KEYS.SeniorPool, fund.address, {logger})
   await config.addToGoList(fund.address)
   if (fidu) {
+    logger(`Granting minter role to ${contractName}`)
     await grantMinterRoleToPool(fidu, fund)
   }
   return fund
