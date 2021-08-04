@@ -470,6 +470,9 @@ describe("mainnet forking tests", async function () {
 
       it("should redeem from compound and recognize interest on invest", async function () {
         await tranchedPool.lockJuniorCapital({from: borrower})
+        expect(await goldfinchConfig.getAddress(CONFIG_KEYS.SeniorPoolStrategy)).to.equal(
+          seniorPoolFixedStrategy.address
+        )
         let usdcAmount = await seniorPoolFixedStrategy.invest(seniorPool.address, tranchedPool.address)
         const seniorPoolValue = await getBalance(seniorPool.address, usdc)
 
