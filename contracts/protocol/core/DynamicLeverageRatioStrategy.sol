@@ -24,6 +24,13 @@ contract DynamicLeverageRatioStrategy is LeverageRatioStrategy {
   // tranchedPoolAddress => leverageRatioInfo
   mapping(address => LeverageRatioInfo) public ratios;
 
+  event LeverageRatioUpdated(
+    address indexed pool,
+    uint256 leverageRatio,
+    uint256 juniorTrancheLockedUntil,
+    bytes32 version
+  );
+
   function initialize(address owner) public initializer {
     require(owner != address(0), "Owner address cannot be empty");
 
@@ -58,15 +65,20 @@ contract DynamicLeverageRatioStrategy is LeverageRatioStrategy {
    * (plus an assumption that we can trust the caller to report this value accurately),
    * the caller enables this function to enforce that a leverage ratio that is obsolete in
    * the sense of having been calculated for an obsolete `lockedUntil` timestamp cannot be set.
+   * @param version An arbitrary identifier included in the LeverageRatioUpdated event emitted
+   * by this function, enabling the caller to describe how it calculated `leverageRatio`. Using
+   * the bytes32 type accommodates using git commit hashes (both the current SHA1 hashes, which
+   * require 20 bytes; and the future SHA256 hashes, which require 32 bytes) for this value.
    */
   function setLeverageRatio(
     ITranchedPool pool,
     uint256 leverageRatio,
-    uint256 juniorTrancheLockedUntil
+    uint256 juniorTrancheLockedUntil,
+    bytes32 version
   ) public onlySetterRole {
     ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
 
-    // TODO[PR] Anything stronger we can require about the `leverageRatio` value?
+    // TODO[PR] Anything stronger we can require about the `leverageRatio` value? Or should we allow 0?
     require(leverageRatio > 0, "Leverage ratio must be greater than 0.");
 
     require(juniorTrancheLockedUntil > 0, "Cannot set leverage ratio for unlocked junior tranche.");
@@ -76,6 +88,8 @@ contract DynamicLeverageRatioStrategy is LeverageRatioStrategy {
       leverageRatio: leverageRatio,
       juniorTrancheLockedUntil: juniorTrancheLockedUntil
     });
+
+    emit LeverageRatioUpdated(address(pool), leverageRatio, juniorTrancheLockedUntil, version);
   }
 
   modifier onlySetterRole() {
