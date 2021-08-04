@@ -24,6 +24,7 @@ import {
   Borrower,
   SeniorPool,
   FixedLeverageRatioStrategy,
+  DynamicLeverageRatioStrategy,
 } from "../typechain/ethers"
 import {Logger, DeployFn, DeployOpts} from "./types"
 import {assertIsString} from "../utils/type"
@@ -57,7 +58,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   const creditDesk = await deployCreditDesk(deploy, {config})
   await deploySeniorPool(hre, {config, fidu})
   await deployBorrower(hre, {config})
-  await deploySeniorPoolStrategy(hre, {config})
+  await deploySeniorPoolStrategies(hre, {config})
   logger("Deploying GoldfinchFactory")
   await deployGoldfinchFactory(deploy, {config})
   await deployClImplementation(hre, {config})
@@ -417,15 +418,16 @@ async function deploySeniorPool(hre: HardhatRuntimeEnvironment, {config, fidu}: 
   return fund
 }
 
-async function deploySeniorPoolStrategy(
+async function deployFixedLeverageRatioStrategy(
   hre: HardhatRuntimeEnvironment,
   {config}: DeployOpts
 ): Promise<FixedLeverageRatioStrategy> {
-  let contractName = "FixedLeverageRatioStrategy"
   const {deployments, getNamedAccounts} = hre
   const {deploy, log} = deployments
   const logger = log
   const {protocol_owner, gf_deployer} = await getNamedAccounts()
+
+  const contractName = "FixedLeverageRatioStrategy"
 
   assertIsString(gf_deployer)
   let deployResult = await deploy(contractName, {
@@ -439,9 +441,49 @@ async function deploySeniorPoolStrategy(
     await (await strategy.initialize(protocol_owner, config.address)).wait()
   }
 
-  await updateConfig(config, "address", CONFIG_KEYS.SeniorPoolStrategy, strategy.address, {logger})
+  return strategy
+}
+
+async function deployDynamicLeverageRatioStrategy(
+  hre: HardhatRuntimeEnvironment,
+): Promise<DynamicLeverageRatioStrategy> {
+  const {deployments, getNamedAccounts} = hre
+  const {deploy, log} = deployments
+  const logger = log
+  const {protocol_owner, gf_deployer} = await getNamedAccounts()
+
+  const contractName = "DynamicLeverageRatioStrategy"
+
+  assertIsString(gf_deployer)
+  let deployResult = await deploy(contractName, {
+    from: gf_deployer,
+  })
+  logger(`${contractName} was deployed to:`, deployResult.address)
+  const strategy = (await ethers.getContractAt(contractName, deployResult.address)) as DynamicLeverageRatioStrategy
+  if (deployResult.newlyDeployed) {
+    logger(`${contractName} newly deployed, initializing...`)
+    assertIsString(protocol_owner)
+    await (await strategy.initialize(protocol_owner)).wait()
+  }
 
   return strategy
+}
+
+async function deploySeniorPoolStrategies(
+  hre: HardhatRuntimeEnvironment,
+  {config}: DeployOpts
+): Promise<[FixedLeverageRatioStrategy, DynamicLeverageRatioStrategy]> {
+  const {deployments} = hre
+  const {log} = deployments
+  const logger = log
+
+  const fixedLeverageRatioStrategy = await deployFixedLeverageRatioStrategy(hre, {config})
+  const dynamicLeverageRatioStrategy = await deployDynamicLeverageRatioStrategy(hre)
+
+  // We initialize the config's SeniorPoolStrategy to use the fixed strategy, not the dynamic strategy.
+  await updateConfig(config, "address", CONFIG_KEYS.SeniorPoolStrategy, fixedLeverageRatioStrategy.address, {logger})
+
+  return [fixedLeverageRatioStrategy, dynamicLeverageRatioStrategy]
 }
 
 async function deployBorrower(hre: HardhatRuntimeEnvironment, {config}: DeployOpts): Promise<Borrower> {
@@ -469,7 +511,7 @@ module.exports = {
   deployTranchedPool,
   deploySeniorPool,
   deployMigratedTranchedPool,
-  deploySeniorPoolStrategy,
+  deploySeniorPoolStrategies,
   deployBorrower,
   deployClImplementation,
 }

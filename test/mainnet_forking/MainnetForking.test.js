@@ -68,7 +68,7 @@ describe("mainnet forking tests", async function () {
   let accounts, owner, bwr, person3, pool, reserve, underwriter, usdc, fidu, goldfinchConfig
   let goldfinchFactory, busd, usdt, cUSDC
   let upgradedContracts
-  let reserveAddress, tranchedPool, borrower, seniorPool, seniorPoolStrategy
+  let reserveAddress, tranchedPool, borrower, seniorPool, seniorPoolFixedStrategy
 
   const contractsToUpgrade = ["CreditDesk", "Pool", "Fidu", "GoldfinchFactory", "GoldfinchConfig"]
   const setupTest = deployments.createFixture(async ({deployments}) => {
@@ -126,8 +126,8 @@ describe("mainnet forking tests", async function () {
   }
 
   async function setupSeniorPool() {
-    ;({seniorPool, seniorPoolStrategy} = await deployV2(upgradedContracts))
-    seniorPoolStrategy = await artifacts.require("ISeniorPoolStrategy").at(seniorPoolStrategy.address)
+    ;({seniorPool, seniorPoolFixedStrategy} = await deployV2(upgradedContracts))
+    seniorPoolFixedStrategy = await artifacts.require("ISeniorPoolStrategy").at(seniorPoolFixedStrategy.address)
 
     // TODO Can remove this once V2 upgrade logic incorporates leverage-ratio config value.
     await goldfinchConfig.setNumber(CONFIG_KEYS.LeverageRatio, new BN(String(6e18)), {from: MAINNET_MULTISIG})
@@ -470,7 +470,7 @@ describe("mainnet forking tests", async function () {
 
       it("should redeem from compound and recognize interest on invest", async function () {
         await tranchedPool.lockJuniorCapital({from: borrower})
-        let usdcAmount = await seniorPoolStrategy.invest(seniorPool.address, tranchedPool.address)
+        let usdcAmount = await seniorPoolFixedStrategy.invest(seniorPool.address, tranchedPool.address)
         const seniorPoolValue = await getBalance(seniorPool.address, usdc)
 
         await expectAction(() => {
