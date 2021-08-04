@@ -140,7 +140,7 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
     return proxy;
   }
 
-  modifier onlyCreditDesk {
+  modifier onlyCreditDesk() {
     require(msg.sender == config.creditDeskAddress(), "Only the CreditDesk can call this");
     _;
   }

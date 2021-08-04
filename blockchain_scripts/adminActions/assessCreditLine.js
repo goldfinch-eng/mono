@@ -1,7 +1,7 @@
 /* globals ethers */
 const hre = require("hardhat")
 const {deployments, getNamedAccounts} = hre
-const {getDeployedContract, getUSDCAddress, assertIsChainId} = require("../blockchain_scripts/deployHelpers.js")
+const {getDeployedContract, getUSDCAddress, assertIsChainId} = require("../deployHelpers")
 const {assertIsString} = require("../utils/type.js")
 const {getChainId} = hre
 

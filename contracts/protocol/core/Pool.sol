@@ -182,7 +182,9 @@ contract Pool is BaseUpgradeablePausable, IPool {
     }
 
     // Pause deposits/withdrawals
-    pause();
+    if (!paused()) {
+      pause();
+    }
 
     // Remove special priveldges from Fidu
     bytes32 minterRole = keccak256("MINTER_ROLE");
@@ -362,11 +364,13 @@ contract Pool is BaseUpgradeablePausable, IPool {
     // 1e16 is also what Sheraz at Certik said.
     uint256 usdcDecimals = 6;
     uint256 cUSDCDecimals = 8;
-    return
-      amount // Amount in cToken (1e8)
-        .mul(exchangeRate) // Amount in USDC (but scaled by 1e16, cause that's what exchange rate decimals are)
-        .div(10**(18 + usdcDecimals - cUSDCDecimals)) // Downscale to cToken decimals (1e8)
-        .div(10**2); // Downscale from cToken to USDC decimals (8 to 6)
+
+    // We multiply in the following order, for the following reasons...
+    // Amount in cToken (1e8)
+    // Amount in USDC (but scaled by 1e16, cause that's what exchange rate decimals are)
+    // Downscale to cToken decimals (1e8)
+    // Downscale from cToken to USDC decimals (8 to 6)
+    return amount.mul(exchangeRate).div(10**(18 + usdcDecimals - cUSDCDecimals)).div(10**2);
   }
 
   function totalShares() internal view returns (uint256) {

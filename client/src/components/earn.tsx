@@ -3,10 +3,11 @@ import {useHistory} from "react-router-dom"
 import {CapitalProvider, fetchCapitalProviderData, fetchPoolData, PoolData} from "../ethereum/pool"
 import {AppContext} from "../App"
 import {ERC20, usdcFromAtomic} from "../ethereum/erc20"
-import {croppedAddress, displayDollars, displayPercent} from "../utils"
+import {croppedAddress, displayDollars, displayNumber, displayPercent} from "../utils"
 import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
 import {TranchedPool} from "../ethereum/tranchedPool"
 import {PoolCreated} from "../typechain/web3/GoldfinchFactory"
+import {ETHDecimals, USDC_DECIMALS} from "../ethereum/utils"
 
 function PoolList({title, children}) {
   return (
@@ -58,8 +59,12 @@ function TranchedPoolCard({tranchedPool}: {tranchedPool: TranchedPool}) {
           <span className="subheader">{tranchedPool.metadata?.category}</span>
         </div>
       </div>
-      <div className="table-cell col22 numeric">{"$100"}</div>
-      <div className="table-cell col22 numeric">{"1,000%"}</div>
+      <div className="table-cell col22 numeric">
+        {displayNumber(tranchedPool.totalDeposited.div(USDC_DECIMALS.toString()), 2)}
+      </div>
+      <div className="table-cell col22 numeric">
+        {displayPercent(tranchedPool.creditLine.interestApr.div(ETHDecimals.toString()))}
+      </div>
       <div className="table-cell col16 ">
         <button className="view-button" onClick={() => history.push(`/earn/pools/junior/${tranchedPool.address}`)}>
           View

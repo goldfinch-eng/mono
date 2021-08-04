@@ -1,6 +1,6 @@
-const {CHAIN_NAME_BY_ID, assertIsChainId} = require("../deployHelpers.js")
+const {CHAIN_NAME_BY_ID, assertIsChainId} = require("../deployHelpers")
 const hre = require("hardhat")
-const {DefenderUpgrader} = require("../upgrade.js")
+const {DefenderUpgrader} = require("../upgrade")
 
 let logger = console.log
 
@@ -8,8 +8,8 @@ async function main() {
   await proposeConfig(hre)
 }
 
-async function proposeConfig(hre) {
-  let oldConfigAddress = process.env.OLD_CONFIG_ADDRESS
+async function proposeConfig(hre, oldConfigAddress) {
+  oldConfigAddress = oldConfigAddress || process.env.OLD_CONFIG_ADDRESS
   if (!oldConfigAddress) {
     throw new Error("You must pass OLD_CONFIG_ADDRESS as an envvar")
   }

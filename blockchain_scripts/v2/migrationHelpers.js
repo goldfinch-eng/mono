@@ -3,33 +3,121 @@ const {SECONDS_PER_DAY, BLOCKS_PER_DAY, BN} = require("../../test/testHelpers")
 const hre = require("hardhat")
 const {artifacts} = hre
 const IV1CreditLine = artifacts.require("IV1CreditLine")
+const {MAINNET_MULTISIG} = require("../mainnetForkingHelpers")
 
-// TODO: Add new deals, from QuickCheck, Alma, and other test loans from employees
-const borrowerAddresses = {
+const borrowerCreditlines = {
   "0xEEE76fFacd818Bd54CEDACD5E970736c91Deb795": {
     addresses: ["0xEEE76fFacd818Bd54CEDACD5E970736c91Deb795", "0xa9f9ce97e5244ebe307dbcc4feb18422e63b38ee"],
     label: "QuickCheck $150k Creditline",
+    owner: "0x8652854C25bd553d522d118AC2bee6FFA3Cce317",
   },
   "0x6dDC3a7233ecD5514607FB1a0E3475A7dA6E58ED": {
     addresses: ["0x4e38c33db5332975bd4dc63cfd9ff42b21eb2ad6", "0x6dDC3a7233ecD5514607FB1a0E3475A7dA6E58ED"],
     label: "QuickCheck $300k Creditline",
+    owner: "0x8652854C25bd553d522d118AC2bee6FFA3Cce317",
   },
-  "0x2c3837122f9a5c88ad1d995eccda79c33d89fed4": {
-    addresses: ["0x2c3837122f9a5c88ad1d995eccda79c33d89fed4"],
+  "0x96b10e62695a915a8beea6c3d6842137c83d22b8": {
+    addresses: ["0x96b10e62695a915a8beea6c3d6842137c83d22b8"],
+    label: "QuickCheck $1M Creditline",
+    owner: "0x8652854C25bd553d522d118AC2bee6FFA3Cce317",
+  },
+  "0x8b57ecdac654d32a6befc33204f4b041b459dff4": {
+    addresses: ["0x2c3837122f9a5c88ad1d995eccda79c33d89fed4", "0x8b57ecdac654d32a6befc33204f4b041b459dff4"],
     label: "Aspire $150k Creditline",
+    owner: "0xbD04f16cdd0e7E1ed8E4382AAb3f0F7B17672DdC",
   },
-  "0xdc5c5e6b86835b608066d119b428d21b988ff663": {
-    addresses: ["0xdc5c5e6b86835b608066d119b428d21b988ff663"],
+  "0xb2ad56df3bce9bad4d8f04be1fc0eda982a84f44": {
+    addresses: ["0xdc5c5e6b86835b608066d119b428d21b988ff663", "0xb2ad56df3bce9bad4d8f04be1fc0eda982a84f44"],
     label: "Aspire $300k Creditline",
+    owner: "0xbD04f16cdd0e7E1ed8E4382AAb3f0F7B17672DdC",
+  },
+  "0x7ec34e4075b6bfacce771144285a8e74bb8c309b": {
+    addresses: ["0x7ec34e4075b6bfacce771144285a8e74bb8c309b"],
+    label: "Aspire $2M Creditline",
+    owner: "0xbD04f16cdd0e7E1ed8E4382AAb3f0F7B17672DdC",
   },
   "0x0039aB09f6691F5A7716890864A289903b3AE548": {
     addresses: ["0x443c2ea20cd50dbcefa1352af962d1b6fa486d81", "0x0039aB09f6691F5A7716890864A289903b3AE548"],
     label: "PayJoy $100k Creditline",
+    owner: "0xC4aA3F35d54E6aAe7b32fBD239D309A3C805A156",
   },
-  "0xc7b11c0Ab6aB785B1E4Cc73f3f33d7Afa75aD427": {
-    addresses: ["0xc7b11c0Ab6aB785B1E4Cc73f3f33d7Afa75aD427"],
-    label: "Blake Test CreditLine",
+  "0x93fdcd12ee3169721720ee71c87636b7b48632ea": {
+    addresses: ["0x93fdcd12ee3169721720ee71c87636b7b48632ea"],
+    label: "Alamvest $500k Creditline",
+    owner: "0x4bBD638eb377ea00b84fAc2aA24A769a1516eCb6",
   },
+  // Eliminating this from the list, because I have fully repaid it and drawn down again,
+  // Which is a case that messes up the migration and doesn't exist in "real" credit lines.
+  // "0xc7b11c0Ab6aB785B1E4Cc73f3f33d7Afa75aD427": {
+  //   addresses: ["0xc7b11c0Ab6aB785B1E4Cc73f3f33d7Afa75aD427"],
+  //   label: "Blake Test CreditLine",
+  //   owner: "0xBAc2781706D0aA32Fb5928c9a5191A13959Dc4AE",
+  // },
+  "0x43a18ccb14078dc4fd1134da39e52ac34ec08880": {
+    addresses: ["0x43a18ccb14078dc4fd1134da39e52ac34ec08880"],
+    label: "Mike's Test Creditline",
+    owner: "0x0333119c9688Eb0c7805454cf5e101b883FD1BFa",
+  },
+  "0x46d2fcc53a6fe8fe5116b881c4f79cb1b3dce823": {
+    addresses: ["0x46d2fcc53a6fe8fe5116b881c4f79cb1b3dce823"],
+    label: "Sanjay's Test Creditline",
+    owner: "0x3FeB1094eE48DB0B9aC25b82A3A34ABe16208590",
+  },
+  "0x71c9b1114829507bbe917a5a1239467f32444529": {
+    addresses: ["0x71c9b1114829507bbe917a5a1239467f32444529"],
+    label: "Mark's Test Creditline",
+    owner: "0xeF3fAA47e1b0515f640c588a0bc3D268d5aa29B9",
+  },
+  "0xc2bdfc1b28025d7a699cfbc401c7f98a4ecd7107": {
+    addresses: ["0xc2bdfc1b28025d7a699cfbc401c7f98a4ecd7107"],
+    label: "Andrew's Test Creditline",
+    owner: "0x139C9c156D049dd002b04A6471D3DE0AD1eAb256",
+  },
+  "0x2d47d54c2b8f59679af0d7351e01624a80fb8cb2": {
+    addresses: ["0x2d47d54c2b8f59679af0d7351e01624a80fb8cb2"],
+    label: "Obinna's Test Creditline",
+    owner: "0x1F666ca6CeE68F6AfdD3eC0670A40a54F88c8E64",
+  },
+  "0x1357462a591edab37ddba9d903bf7f72eab6e215": {
+    addresses: ["0x1357462a591edab37ddba9d903bf7f72eab6e215"],
+    label: "Sam's Test Creditline",
+    owner: "0x69f7A8242ecBDac84b05FD80DA9631E5d659F690",
+  },
+  "0xbdfffb9be1f45213582718b878e02f5cf38924b8": {
+    addresses: ["0xbdfffb9be1f45213582718b878e02f5cf38924b8"],
+    label: "Ian's Test Creditline",
+    owner: "0xd4ad17f7F7f62915A1F225BB1CB88d2492F89769",
+  },
+}
+
+const borrowerAddresses = [
+  "0xBAc2781706D0aA32Fb5928c9a5191A13959Dc4AE", // Blake
+  "0x0333119c9688Eb0c7805454cf5e101b883FD1BFa", // Mike
+  "0x3FeB1094eE48DB0B9aC25b82A3A34ABe16208590", // Sanjay
+  "0xeF3fAA47e1b0515f640c588a0bc3D268d5aa29B9", // Mark
+  "0x139C9c156D049dd002b04A6471D3DE0AD1eAb256", // Andrew
+  "0x1F666ca6CeE68F6AfdD3eC0670A40a54F88c8E64", // Obinna
+  "0x69f7A8242ecBDac84b05FD80DA9631E5d659F690", // Sam
+  "0xd4ad17f7F7f62915A1F225BB1CB88d2492F89769", // Ian
+  "0xC4aA3F35d54E6aAe7b32fBD239D309A3C805A156", // Payjoy
+  "0xbD04f16cdd0e7E1ed8E4382AAb3f0F7B17672DdC", // Aspire
+  "0x8652854C25bd553d522d118AC2bee6FFA3Cce317", // QuickCheck
+  "0x4bBD638eb377ea00b84fAc2aA24A769a1516eCb6", // Almavest
+]
+
+async function migrateClToV2(clAddress, borrowerContract, pool, creditDesk) {
+  const data = await getMigrationData(clAddress, pool)
+  await creditDesk.migrateV1CreditLine(
+    clAddress,
+    borrowerContract,
+    data.termEndTime,
+    data.nextDueTime,
+    data.interestAccruedAsOf,
+    data.lastFullPaymentTime,
+    data.totalInterestPaid,
+    data.totalPrincipalPaid,
+    {from: MAINNET_MULTISIG}
+  )
 }
 
 async function calculateTermTimes(clAddress) {
@@ -73,10 +161,7 @@ async function getMigrationData(clAddress, pool) {
   const nextDueTime = await calculateNextDueTime(clAddress, termStartTime)
   const interestAccruedAsOf = await getInterestAccruedAsOf(clAddress, termStartTime)
   const lastFullPaymentTime = await getBlockTimestamp((await cl.lastFullPaymentBlock()).toNumber())
-  const {totalInterestPaid, totalPrincipalPaid} = await calculateTotalPaid(
-    pool,
-    "0x6dDC3a7233ecD5514607FB1a0E3475A7dA6E58ED"
-  )
+  const {totalInterestPaid, totalPrincipalPaid} = await calculateTotalPaid(pool, clAddress)
   return {
     termEndTime,
     termStartTime,
@@ -105,7 +190,7 @@ async function calculateTotalPaid(pool, creditLine) {
   // https://docs.google.com/spreadsheets/d/1trna25FAnzBtTDnWoBC9-JMZ-PRn-I87jNc7o9KLrto/edit#gid=0
   const otherPool = await artifacts.require("TestPool").at(pool.address)
   const web3Pool = new web3.eth.Contract(otherPool.abi, pool.address)
-  const info = borrowerAddresses[creditLine]
+  const info = borrowerCreditlines[creditLine]
   const events = await getPoolEvents(web3Pool, info.addresses)
   const totalInterestPaid = events
     .filter((val) => val.event === "InterestCollected")
@@ -139,4 +224,7 @@ module.exports = {
   getBlockTimestamp: getBlockTimestamp,
   getInterestAccruedAsOf: getInterestAccruedAsOf,
   getMigrationData: getMigrationData,
+  migrateClToV2: migrateClToV2,
+  borrowerCreditlines: borrowerCreditlines,
+  borrowerAddresses: borrowerAddresses,
 }

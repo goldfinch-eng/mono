@@ -1,18 +1,18 @@
-const {deployContractUpgrade, SAFE_CONFIG, CHAIN_NAME_BY_ID, assertIsChainId} = require("./deployHelpers.js")
-const DefenderUpgrader = require("./defender-upgrader.js")
+const {deployContractUpgrade, SAFE_CONFIG, CHAIN_NAME_BY_ID, assertIsChainId} = require("./deployHelpers")
+const DefenderUpgrader = require("./adminActions/defenderUpgrader")
 const hre = require("hardhat")
 
 /*
 This script deploys the latest implementations of upgradeable contracts and requests an upgrade via the
-gnosis multisig
+gnosis upgradeViaMultisig
 */
 let logger
 
 async function main() {
-  await multisig(hre)
+  await upgradeViaMultisig(hre)
 }
 
-async function multisig(hre) {
+async function upgradeViaMultisig(hre) {
   const {getNamedAccounts, getChainId} = hre
   const {gf_deployer} = await getNamedAccounts()
 
@@ -46,6 +46,7 @@ async function multisig(hre) {
   }
 
   logger("Done.")
+  return contracts
 }
 
 async function deployUpgrades({contractNames, gf_deployer, hre, upgrader}) {
@@ -110,4 +111,4 @@ if (require.main === module) {
     })
 }
 
-module.exports = {multisig, deployUpgrades, DefenderUpgrader}
+module.exports = {upgradeViaMultisig, deployUpgrades, DefenderUpgrader}

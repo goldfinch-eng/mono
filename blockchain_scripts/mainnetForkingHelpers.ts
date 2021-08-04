@@ -8,6 +8,7 @@ import {
   DepList,
   Ticker,
   AddressString,
+  getSignerForAddress,
 } from "../blockchain_scripts/deployHelpers"
 import _ from 'lodash'
 import {CONFIG_KEYS} from "./configKeys"
@@ -15,8 +16,8 @@ import hre from "hardhat"
 import {Contract} from "@ethersproject/contracts"
 import {DeploymentsExtension} from "hardhat-deploy/types"
 import {HardhatRuntimeEnvironment} from "hardhat/types"
-const {ethers} = hre
-
+import {Signer} from "ethers"
+const {ethers, artifacts} = hre
 const MAINNET_MULTISIG = "0xBEb28978B2c755155f20fd3d09Cb37e300A6981f"
 const MAINNET_UNDERWRITER = "0x79ea65C834EC137170E1aA40A42b9C80df9c0Bb4"
 
@@ -30,11 +31,12 @@ async function getProxyImplAddress(proxyContract: Contract) {
 }
 
 async function upgradeContracts(
-  contractNames: string[],
+  contractsToUpgrade: string[],
   contracts: any,
-  mainnetSigner: any,
+  signer: string | Signer,
   deployFrom: any,
-  deployments: DeploymentsExtension
+  deployments: DeploymentsExtension,
+  changeImplementation: boolean=true
 ) {
   const accountantDeployResult = await deployments.deploy("Accountant", {from: deployFrom, gasLimit: 4000000, args: []})
   // Ensure a test forwarder is available. Using the test forwarder instead of the real forwarder on mainnet
@@ -43,12 +45,9 @@ async function upgradeContracts(
 
   const dependencies: DepList = {
     CreditDesk: {["Accountant"]: accountantDeployResult.address},
-    GoldfinchFactory: {
-      ["Accountant"]: accountantDeployResult.address,
-    },
   }
 
-  for (const contractName of contractNames) {
+  for (const contractName of contractsToUpgrade) {
     let contract = contracts[contractName]
     if (!contract && contractName === "GoldfinchFactory") {
       // For backwards compatability until we deploy V2
@@ -66,11 +65,12 @@ async function upgradeContracts(
       args: [],
       libraries: dependencies[contractName],
     })
-    // Get a contract object with the latest ABI, attached to the mainnetSigner
-    let upgradedContract = await ethers.getContractAt(deployResult.abi, deployResult.address, mainnetSigner)
+    // Get a contract object with the latest ABI, attached to the signer
+    const ethersSigner = await getSignerForAddress(signer)
+    let upgradedContract = await ethers.getContractAt(deployResult.abi, deployResult.address, ethersSigner)
     let upgradedImplAddress = deployResult.address
 
-    if (contract.ProxyContract) {
+    if (contract.ProxyContract && changeImplementation) {
       if (!isTestEnv()) {
         console.log(
           `Changing implementation of ${contractName} from ${contract.ExistingImplAddress} to ${deployResult.address}`
@@ -92,7 +92,7 @@ type ExistingContracts = {
 async function getExistingContracts(
   contractNames: string[],
   mainnetConfig: any,
-  mainnetSigner: any
+  signer: string | Signer
 ): Promise<ExistingContracts> {
   let contracts: ExistingContracts = {}
   if (!mainnetConfig) {
@@ -105,8 +105,10 @@ async function getExistingContracts(
     }
     const contractConfig = mainnetConfig[contractName]
     const proxyConfig = mainnetConfig[`${contractName}_Proxy`]
-    let contractProxy = proxyConfig && (await ethers.getContractAt(proxyConfig.abi, proxyConfig.address, mainnetSigner))
-    let contract = await ethers.getContractAt(contractConfig.abi, contractConfig.address, mainnetSigner)
+
+    const ethersSigner = await getSignerForAddress(signer)
+    let contractProxy = proxyConfig && (await ethers.getContractAt(proxyConfig.abi, proxyConfig.address, ethersSigner))
+    let contract = await ethers.getContractAt(contractConfig.abi, contractConfig.address, ethersSigner)
     contracts[contractName] = {
       ProxyContract: contractProxy,
       ExistingContract: contract,
@@ -175,7 +177,6 @@ async function performPostUpgradeMigration(upgradedContracts: any, deployments: 
 }
 
 async function migrateToNewConfig(upgradedContracts: any) {
-  console.log("Beginning config migration...")
   const newConfig = upgradedContracts.GoldfinchConfig.UpgradedContract
   const existingConfig = upgradedContracts.GoldfinchConfig.ExistingContract
   const safeAddress = SAFE_CONFIG[MAINNET_CHAIN_ID].safeAddress
@@ -198,9 +199,28 @@ async function migrateToNewConfig(upgradedContracts: any) {
   )
 }
 
-function getMainnetContracts() {
+type ContractInfo = {
+  address: string,
+  abi: {}[]
+}
+function getMainnetContracts() : {[key: string]: ContractInfo} {
   let deploymentsFile = require("../client/config/deployments.json")
   return deploymentsFile[MAINNET_CHAIN_ID].mainnet.contracts
+}
+
+async function getMainnetTruffleContracts() : Promise<{[key: string]: any }> {
+  const contracts = getMainnetContracts()
+  const result = {}
+  await Promise.all(Object.entries(contracts).map(async ([contractName, contractInfo]) => {
+    if (contractName.includes("Proxy") || contractName.includes("Implementation")) {
+      return null
+    }
+    if (contractName === "CreditLineFactory") {
+      contractName = "GoldfinchFactory"
+    }
+    return result[contractName] = await artifacts.require(contractName).at(contractInfo.address)
+  }))
+  return result
 }
 
 export {
@@ -212,4 +232,5 @@ export {
   impersonateAccount,
   getMainnetContracts,
   performPostUpgradeMigration,
+  getMainnetTruffleContracts,
 }

@@ -54,7 +54,7 @@ interface TrancheInfo {
 
 function trancheInfo(tuple: any): TrancheInfo {
   return {
-    principalDeposited: tuple[0],
+    principalDeposited: new BigNumber(tuple[0]),
     principalSharePrice: new BigNumber(tuple[1]),
     interestSharePrice: new BigNumber(tuple[2]),
     lockedUntil: parseInt(tuple[3]),
@@ -72,6 +72,7 @@ class TranchedPool {
 
   juniorTranche!: TrancheInfo
   seniorTranche!: TrancheInfo
+  totalDeposited!: BigNumber
 
   constructor(address: string, goldfinchProtocol: GoldfinchProtocol) {
     this.address = address
@@ -86,9 +87,10 @@ class TranchedPool {
     this.metadata = await this.loadPoolMetadata()
 
     let juniorTranche = await this.contract.methods.getTranche(TRANCHES.Junior).call().then(trancheInfo)
-    this.juniorTranche = juniorTranche
     let seniorTranche = await this.contract.methods.getTranche(TRANCHES.Senior).call().then(trancheInfo)
+    this.juniorTranche = juniorTranche
     this.seniorTranche = seniorTranche
+    this.totalDeposited = juniorTranche.principalDeposited.plus(seniorTranche.principalDeposited)
 
     let now = secondsSinceEpoch()
     if (now < seniorTranche.lockedUntil) {

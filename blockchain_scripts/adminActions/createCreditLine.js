@@ -1,14 +1,9 @@
 const BN = require("bn.js")
 const hre = require("hardhat")
-const DefenderUpgrader = require("./v1.1/defender-upgrader.js").default
+const DefenderUpgrader = require("../v1.1/defenderUpgrader").default
 const {deployments, getNamedAccounts, getChainId} = hre
-const {
-  USDCDecimals,
-  getDeployedContract,
-  interestAprAsBN,
-  MAINNET_CHAIN_ID,
-} = require("../blockchain_scripts/deployHelpers.js")
-const {displayCreditLine} = require("./protocolHelpers")
+const {USDCDecimals, getDeployedContract, interestAprAsBN, MAINNET_CHAIN_ID} = require("../deployHelpers.js")
+const {displayCreditLine} = require("../protocolHelpers")
 
 async function main() {
   const {gf_deployer} = await getNamedAccounts()

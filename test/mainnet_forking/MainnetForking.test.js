@@ -13,7 +13,8 @@ const {
   TRANCHES,
   ETHDecimals,
   MAINNET_CHAIN_ID,
-} = require("../blockchain_scripts/deployHelpers")
+} = require("../../blockchain_scripts/deployHelpers")
+const {migrateClToV2} = require("../../blockchain_scripts/v2/migrationHelpers")
 const {
   MAINNET_MULTISIG,
   MAINNET_UNDERWRITER,
@@ -23,9 +24,9 @@ const {
   impersonateAccount,
   fundWithWhales,
   performPostUpgradeMigration,
-} = require("../blockchain_scripts/mainnetForkingHelpers")
-const deployV2 = require("../blockchain_scripts/v2/deployV2")
-const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
+} = require("../../blockchain_scripts/mainnetForkingHelpers")
+const deployV2 = require("../../blockchain_scripts/v2/deployV2")
+const {CONFIG_KEYS} = require("../../blockchain_scripts/configKeys")
 const {time} = require("@openzeppelin/test-helpers")
 const {deployments, ethers, artifacts} = hre
 const Borrower = artifacts.require("Borrower")
@@ -47,9 +48,9 @@ const {
   USDC_DECIMALS,
   decodeLogs,
   createPoolWithCreditLine,
-} = require("./testHelpers")
-const {getMigrationData} = require("../blockchain_scripts/v2/migrationHelpers")
-const {assertIsString} = require("../utils/type")
+} = require("../testHelpers")
+const {getMigrationData} = require("../../blockchain_scripts/v2/migrationHelpers")
+const {assertIsString} = require("../../utils/type")
 
 const TEST_TIMEOUT = 180000 // 3 mins
 
@@ -76,7 +77,6 @@ describe("mainnet forking tests", async function () {
     // snapshot and give us a clean blockchain before each test.
     // Otherewise, we have state leaking across tests.
     await deployments.fixture("base_deploy")
-
     upgradedContracts = await upgrade(contractsToUpgrade)
     const usdcAddress = getUSDCAddress(MAINNET_CHAIN_ID)
     assertIsString(usdcAddress)
@@ -171,7 +171,6 @@ describe("mainnet forking tests", async function () {
     ]
     await fundWithWhales(erc20s, [owner, bwr, person3])
     await erc20Approve(usdc, pool.address, MAX_UINT, accounts)
-    await pool.sweepFromCompound({from: MAINNET_MULTISIG})
     await goldfinchConfig.bulkAddToGoList(accounts, {from: MAINNET_MULTISIG})
     await setupSeniorPool()
   })
@@ -600,20 +599,6 @@ describe("mainnet upgrade tests", async function () {
     return contracts
   }
 
-  async function migrateClToV2(clAddress, pool, creditDesk) {
-    const data = await getMigrationData(clAddress, pool)
-    await creditDesk.migrateV1CreditLine(
-      clAddress,
-      data.termEndTime,
-      data.nextDueTime,
-      data.interestAccruedAsOf,
-      data.lastFullPaymentTime,
-      data.totalInterestPaid,
-      data.totalPrincipalPaid,
-      {from: MAINNET_MULTISIG}
-    )
-  }
-
   describe("migrating the Pool to the Senior Pool", async () => {
     it("should work", async () => {
       let contracts = await getExistingContracts(contractsToUpgrade, mainnetConfig, mainnetMultisigSigner)
@@ -637,9 +622,7 @@ describe("mainnet upgrade tests", async function () {
 
       expect(String(seniorPoolSharePrice)).to.eq(String(existingSharePrice))
       await expectAction(() => legacyPool.migrateToSeniorPool()).toChange([
-        [() => getBalance(legacyPool.address, cUSDC), {to: new BN(0)}],
-        // All the USDC was already in Compound
-        [() => getBalance(legacyPool.address, usdcTruffleContract), {by: new BN(0)}],
+        [() => getBalance(legacyPool.address, usdcTruffleContract), {to: new BN(0)}],
         // Won't be exact because cUSDC exchange rate will change when calling the migration function
         [() => getBalance(seniorPool.address, usdcTruffleContract), {toCloseTo: expectedTotalUSDC}],
         [() => getBalance(seniorPool.address, comp), {increase: true}],
@@ -711,12 +694,13 @@ describe("mainnet upgrade tests", async function () {
       // Sanity check the calculated numbers for QuickCheck's $300k credit line
       expect(termEndTime).to.eq(1643309098) // Thu Jan 27 2022 18:44:58 GMT
       expect(termStartTime).to.eq(1611773098) // Wed Jan 27 2021 18:44:58 GMT
-      expect(nextDueTime).to.eq(1624733098) // Sat Jun 26 2021 18:44:58 GMT
-      expect(interestAccruedAsOf).to.eq(1622141098) // Thu May 27 2021 18:44:58 GMT
+      expect(nextDueTime).to.eq(1629917098) // Wed Aug 25 2021 18:44:58 GMT
+      expect(interestAccruedAsOf).to.eq(1627325098) // Mon Jul 26 2021 14:44:58 GMT
 
       // Actually migrate
       const tx = await creditDesk.migrateV1CreditLine(
         quickCheck.address,
+        ZERO_ADDRESS,
         termEndTime,
         nextDueTime,
         interestAccruedAsOf,
@@ -729,6 +713,7 @@ describe("mainnet upgrade tests", async function () {
       await expect(
         creditDesk.migrateV1CreditLine(
           quickCheck.address,
+          ZERO_ADDRESS,
           termEndTime,
           nextDueTime,
           interestAccruedAsOf,
@@ -752,7 +737,7 @@ describe("mainnet upgrade tests", async function () {
       expect(await quickCheck.limit()).to.bignumber.eq(new BN(0))
 
       // Group 2: New Creditline has all expected values set
-      expect(String(await newCl.balance())).to.eq(String(originalBalance))
+      expect(String(await newCl.balance())).to.eq(String(new BN(originalBalance)))
       expect(String(await newCl.termEndTime())).to.eq(String(termEndTime))
       expect(String(await newCl.nextDueTime())).to.eq(String(nextDueTime))
       expect(String(await newCl.interestAccruedAsOf())).to.eq(String(interestAccruedAsOf))
@@ -773,11 +758,12 @@ describe("mainnet upgrade tests", async function () {
       expect(seniorTranche.lockedUntil).not.to.eq("0")
 
       // Group 5: Junior Tranch should be correct
-      expect(juniorTranche.principalDeposited).to.eq(String(originalBalance))
-      expect(totalInterestPaid.mul(ETHDecimals).div(originalBalance)).to.bignumber.eq(
+      const totalBalance = new BN(originalBalance).add(new BN(totalPrincipalPaid))
+      expect(juniorTranche.principalDeposited).to.eq(String(totalBalance))
+      expect(totalInterestPaid.mul(ETHDecimals).div(totalBalance)).to.bignumber.eq(
         new BN(juniorTranche.interestSharePrice)
       )
-      expect(totalPrincipalPaid.mul(ETHDecimals).div(originalBalance)).to.bignumber.eq(
+      expect(totalPrincipalPaid.mul(ETHDecimals).div(totalBalance)).to.bignumber.eq(
         new BN(juniorTranche.principalSharePrice)
       )
       expect(juniorTranche.lockedUntil).not.to.eq("0")
@@ -785,7 +771,7 @@ describe("mainnet upgrade tests", async function () {
       // Group 6: Minted the correct tokens to the SeniorPool
       const tokenInfo = await poolTokens.getTokenInfo(tokenId)
       expect(tokenInfo.tranche).to.equal(String(TRANCHES.Junior))
-      expect(tokenInfo.principalAmount).to.equal(String(originalBalance))
+      expect(tokenInfo.principalAmount).to.equal(String(new BN(originalBalance).add(new BN(totalPrincipalPaid))))
       expect(tokenInfo.principalRedeemed).to.equal(String(totalPrincipalPaid))
       expect(tokenInfo.interestRedeemed).to.equal(String(totalInterestPaid))
       expect(await poolTokens.ownerOf(tokenId)).to.eq(seniorPool.address)
@@ -795,7 +781,7 @@ describe("mainnet upgrade tests", async function () {
       const afterNextDueTime = (await newCl.nextDueTime()).add(new BN(1))
       await advanceTime({toSecond: afterNextDueTime})
       await expectAction(() => tranchedPool.assess()).toChange([
-        [() => newCl.totalInterestAccrued(), {by: new BN(3698625467)}], // A period's worth of interest
+        [() => newCl.totalInterestAccrued(), {by: new BN(3698625354)}], // A period's worth of interest
         [() => newCl.principalOwed(), {by: new BN(0)}],
       ])
     })
@@ -808,9 +794,6 @@ describe("mainnet upgrade tests", async function () {
       const fidu = await artifacts.require("IERC20withDec").at(contracts.Fidu.ExistingContract.address)
       legacyPool = await artifacts.require("Pool").at(contracts.Pool.ExistingContract.address)
 
-      // Sweeping beforehand to avoid the crazy asset/liability bug that exists in V1.1
-      await legacyPool.sweepFromCompound({from: MAINNET_MULTISIG})
-
       const fiduBalance = await getBalance(fiduInvestor, fidu)
       const usdcBalanceBefore = await getBalance(fiduInvestor, usdcTruffleContract)
       await legacyPool.withdrawInFidu(fiduBalance.div(new BN(10)), {from: fiduInvestor})
@@ -820,7 +803,7 @@ describe("mainnet upgrade tests", async function () {
       contracts = await upgrade(contractsToUpgrade, contracts)
 
       expect(fiduBalance).to.bignumber.be.gt(new BN(0))
-      expect(legacyValueOfFidu).to.bignumber.eq(new BN(100112117645)) // About $100k
+      expect(legacyValueOfFidu).to.bignumber.eq(new BN(100514012890)) // About $100k
 
       const {seniorPool} = await deployV2(contracts)
       legacyPool = contracts.Pool.UpgradedContract
@@ -829,15 +812,40 @@ describe("mainnet upgrade tests", async function () {
 
       // MIGRATE ALL THE CREDIT LINE
       // QuickCheck's $150k
-      await migrateClToV2("0xEEE76fFacd818Bd54CEDACD5E970736c91Deb795", contracts.Pool.UpgradedContract, creditDesk)
+      await migrateClToV2(
+        "0xEEE76fFacd818Bd54CEDACD5E970736c91Deb795",
+        ZERO_ADDRESS,
+        contracts.Pool.UpgradedContract,
+        creditDesk
+      )
       // QuickCheck's $300k
-      await migrateClToV2("0x6dDC3a7233ecD5514607FB1a0E3475A7dA6E58ED", contracts.Pool.UpgradedContract, creditDesk)
+      await migrateClToV2(
+        "0x6dDC3a7233ecD5514607FB1a0E3475A7dA6E58ED",
+        ZERO_ADDRESS,
+        contracts.Pool.UpgradedContract,
+        creditDesk
+      )
       // Aspire $150k
-      await migrateClToV2("0x2c3837122f9a5c88ad1d995eccda79c33d89fed4", contracts.Pool.UpgradedContract, creditDesk)
+      await migrateClToV2(
+        "0x8b57ecdac654d32a6befc33204f4b041b459dff4",
+        ZERO_ADDRESS,
+        contracts.Pool.UpgradedContract,
+        creditDesk
+      )
       // Aspire $300k
-      await migrateClToV2("0xdc5c5e6b86835b608066d119b428d21b988ff663", contracts.Pool.UpgradedContract, creditDesk)
+      await migrateClToV2(
+        "0xb2ad56df3bce9bad4d8f04be1fc0eda982a84f44",
+        ZERO_ADDRESS,
+        contracts.Pool.UpgradedContract,
+        creditDesk
+      )
       // PayJoy $100k
-      await migrateClToV2("0x0039aB09f6691F5A7716890864A289903b3AE548", contracts.Pool.UpgradedContract, creditDesk)
+      await migrateClToV2(
+        "0x0039aB09f6691F5A7716890864A289903b3AE548",
+        ZERO_ADDRESS,
+        contracts.Pool.UpgradedContract,
+        creditDesk
+      )
 
       const seniorBalanceBefore = await getBalance(fiduInvestor, usdcTruffleContract)
       await seniorPool.withdrawInFidu(fiduBalance.div(new BN(10)), {from: fiduInvestor})
@@ -911,6 +919,7 @@ describe("mainnet upgrade tests", async function () {
     let migrationRes = await (
       await contracts.CreditDesk.UpgradedContract.migrateV1CreditLine(
         clAddress,
+        ZERO_ADDRESS,
         currentTime.add(new BN(100)).toString(),
         currentTime.add(new BN(10)).toString(),
         currentTime.sub(new BN(50)).toString(),
