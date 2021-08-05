@@ -19,6 +19,7 @@ import "../../interfaces/IBase.sol";
 
 contract V2Migrator is BaseUpgradeablePausable {
   bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+  bytes32 public constant GO_LISTER_ROLE = keccak256("GO_LISTER_ROLE");
   using SafeMath for uint256;
 
   GoldfinchConfig public config;
@@ -96,6 +97,9 @@ contract V2Migrator is BaseUpgradeablePausable {
     goldfinchFactory.renounceRole(PAUSER_ROLE, address(this));
 
     config.renounceRole(PAUSER_ROLE, address(this));
+
+    newConfig.renounceRole(OWNER_ROLE, address(this));
+    newConfig.renounceRole(GO_LISTER_ROLE, address(this));
 
     address goldfinchGovernance = config.protocolAdminAddress();
     uint256 chainId = getChainID();
