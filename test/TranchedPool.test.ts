@@ -926,7 +926,7 @@ describe("TranchedPool", () => {
           await tranchedPool.deposit(TRANCHES.Senior, usdcVal(10))
           const oneDayFromNow = (await time.latest()).add(SECONDS_PER_DAY)
           await expectAction(async () => {
-            const receipt = tranchedPool.lockJuniorCapital({from: borrower})
+            const receipt = await tranchedPool.lockJuniorCapital({from: borrower})
             expectEvent(receipt, "JuniorCapitalLocked", {
               pool: tranchedPool.address,
               // TODO[PR] It would be ideal to include an assertion about the value of `juniorTrancheLockedUntil`
