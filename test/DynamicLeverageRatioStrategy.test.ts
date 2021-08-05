@@ -11,13 +11,14 @@ import {
   TRANCHES,
 } from "../blockchain_scripts/deployHelpers"
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
+import { genLeverageRatioStrategyTests, LeverageRatioStrategyTestSetup } from "./leverageRatioStrategyHelpers"
 const DynamicLeverageRatioStrategy = artifacts.require("DynamicLeverageRatioStrategy")
 let accounts, borrower
 
 describe("DynamicLeverageRatioStrategy", () => {
   let goldfinchConfig, tranchedPool, seniorPool, strategy, juniorInvestmentAmount, owner
 
-  const setupTest = deployments.createFixture(async ({deployments}) => {
+  const setupTest: LeverageRatioStrategyTestSetup = deployments.createFixture(async ({deployments}) => {
     ;[owner, borrower] = await web3.eth.getAccounts()
 
     const {seniorPool, goldfinchConfig, goldfinchFactory, usdc} = await deployAllContracts(deployments, {
@@ -119,13 +120,5 @@ describe("DynamicLeverageRatioStrategy", () => {
     })
   })
 
-  describe("estimateInvestment", () => {
-    // TODO Reuse from FixedLeverageRatioStrategy
-    throw new Error()
-  })
-
-  describe("invest", () => {
-    // TODO Reuse from FixedLeverageRatioStrategy
-    throw new Error()
-  })
+  genLeverageRatioStrategyTests(setupTest)
 })
