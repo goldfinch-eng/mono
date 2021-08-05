@@ -2,7 +2,7 @@ const hre = require("hardhat")
 const {getNamedAccounts, deployments, artifacts} = hre
 const deployV2 = require("./deployV2")
 // const DefenderWrapper = require("../adminActions/defenderWrapper")
-const {MINTER_ROLE, OWNER_ROLE, PAUSER_ROLE, getContract} = require("../deployHelpers")
+const {MINTER_ROLE, OWNER_ROLE, PAUSER_ROLE, GO_LISTER_ROLE, getContract} = require("../deployHelpers")
 const {borrowerCreditlines, getMigrationData} = require("./migrationHelpers")
 const {
   MAINNET_MULTISIG,
@@ -148,6 +148,7 @@ async function handleNewDeployments(migrator) {
   await newConfig.initializeFromOtherConfig(existingContracts.GoldfinchConfig.ExistingContract.address)
   await newConfig.grantRole(OWNER_ROLE, MAINNET_MULTISIG)
   await newConfig.grantRole(OWNER_ROLE, migrator.address)
+  await newConfig.grantRole(GO_LISTER_ROLE, migrator.address)
   await deployV2(upgradedContracts, {noFidu: true, config: newConfig})
 
   return {
