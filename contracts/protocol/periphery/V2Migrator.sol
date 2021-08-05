@@ -144,7 +144,7 @@ contract V2Migrator is BaseUpgradeablePausable {
   }
 
   function migrateToSeniorPool(GoldfinchConfig newConfig) internal {
-    IBase(config.fiduAddress()).grantRole(MINTER_ROLE, newConfig.seniorPoolAddress());
+    IBase(config.fiduAddress()).grantRole(MINTER_ROLE, newConfig.seniorFundAddress());
     IBase(config.poolAddress()).unpause();
     IBase(newConfig.poolAddress()).migrateToSeniorPool();
   }
