@@ -14,7 +14,7 @@ import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 contract DynamicLeverageRatioStrategy is LeverageRatioStrategy {
   // TODO[PR] Should we give our future selves access to the config? We don't need it for now.
 
-  bytes32 public constant SETTER_ROLE = keccak256("SETTER_ROLE");
+  bytes32 public constant LEVERAGE_RATIO_SETTER_ROLE = keccak256("LEVERAGE_RATIO_SETTER_ROLE");
 
   struct LeverageRatioInfo {
     uint256 leverageRatio;
@@ -36,9 +36,9 @@ contract DynamicLeverageRatioStrategy is LeverageRatioStrategy {
 
     __BaseUpgradeablePausable__init(owner);
 
-    _setupRole(SETTER_ROLE, owner);
+    _setupRole(LEVERAGE_RATIO_SETTER_ROLE, owner);
 
-    _setRoleAdmin(SETTER_ROLE, OWNER_ROLE);
+    _setRoleAdmin(LEVERAGE_RATIO_SETTER_ROLE, OWNER_ROLE);
   }
 
   function getLeverageRatio(ITranchedPool pool) public view override returns (uint256) {
@@ -93,7 +93,10 @@ contract DynamicLeverageRatioStrategy is LeverageRatioStrategy {
   }
 
   modifier onlySetterRole() {
-    require(hasRole(SETTER_ROLE, _msgSender()), "Must have leverage-ratio setter role to perform this action");
+    require(
+      hasRole(LEVERAGE_RATIO_SETTER_ROLE, _msgSender()),
+      "Must have leverage-ratio setter role to perform this action"
+    );
     _;
   }
 }

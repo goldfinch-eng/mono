@@ -110,6 +110,7 @@ let OWNER_ROLE = web3.utils.keccak256("OWNER_ROLE")
 let PAUSER_ROLE = web3.utils.keccak256("PAUSER_ROLE")
 let GO_LISTER_ROLE = web3.utils.keccak256("GO_LISTER_ROLE")
 let MINTER_ROLE = web3.utils.keccak256("MINTER_ROLE")
+let LEVERAGE_RATIO_SETTER_ROLE = web3.utils.keccak256("LEVERAGE_RATIO_SETTER_ROLE")
 
 const TRANCHES = {
   Senior: 1,
@@ -368,6 +369,7 @@ export {
   PAUSER_ROLE,
   GO_LISTER_ROLE,
   MINTER_ROLE,
+  LEVERAGE_RATIO_SETTER_ROLE,
   SAFE_CONFIG,
   TRUSTED_FORWARDER_CONFIG,
   isTestEnv,

@@ -1,13 +1,73 @@
 /* global web3 */
 import hre from "hardhat"
 const {deployments, artifacts} = hre
+import {expect, BN, deployAllContracts, usdcVal, createPoolWithCreditLine} from "./testHelpers"
+import {
+  interestAprAsBN,
+  LEVERAGE_RATIO_DECIMALS,
+  OWNER_ROLE,
+  PAUSER_ROLE,
+  LEVERAGE_RATIO_SETTER_ROLE,
+  TRANCHES,
+} from "../blockchain_scripts/deployHelpers"
+import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
 const DynamicLeverageRatioStrategy = artifacts.require("DynamicLeverageRatioStrategy")
+let accounts, borrower
 
 describe("DynamicLeverageRatioStrategy", () => {
-  describe("initialize", () => {
-    it("should give the owner the SETTER_ROLE role", () => {
-      // TODO
-      throw new Error()
+  let goldfinchConfig, tranchedPool, seniorPool, strategy, juniorInvestmentAmount, owner
+
+  const setupTest = deployments.createFixture(async ({deployments}) => {
+    ;[owner, borrower] = await web3.eth.getAccounts()
+
+    const {seniorPool, goldfinchConfig, goldfinchFactory, usdc} = await deployAllContracts(deployments, {
+      fromAccount: owner,
+    })
+
+    await goldfinchConfig.bulkAddToGoList([owner, borrower])
+
+    juniorInvestmentAmount = usdcVal(10000)
+    let limit = juniorInvestmentAmount.mul(new BN(10))
+    let interestApr = interestAprAsBN("5.00")
+    let paymentPeriodInDays = new BN(30)
+    let termInDays = new BN(365)
+    let lateFeeApr = new BN(0)
+    let juniorFeePercent = new BN(20)
+    ;({tranchedPool} = await createPoolWithCreditLine({
+      people: {owner, borrower},
+      goldfinchFactory,
+      juniorFeePercent: juniorFeePercent.toNumber(),
+      limit,
+      interestApr,
+      paymentPeriodInDays,
+      termInDays,
+      lateFeeApr,
+      usdc,
+    }))
+
+    const strategy = await DynamicLeverageRatioStrategy.new({from: owner})
+    await strategy.initialize(owner, goldfinchConfig.address)
+
+    await tranchedPool.deposit(TRANCHES.Junior, juniorInvestmentAmount)
+
+    return {goldfinchConfig, tranchedPool, seniorPool, strategy, owner}
+  })
+
+  beforeEach(async () => {
+    accounts = await web3.eth.getAccounts()
+    ;[owner] = accounts
+    ;({goldfinchConfig, tranchedPool, seniorPool, strategy, owner} = await setupTest())
+  })
+
+  describe("ownership", async () => {
+    it("should be owned by the owner", async () => {
+      expect(await goldfinchConfig.hasRole(OWNER_ROLE, owner)).to.be.true
+    })
+    it("should give owner the PAUSER_ROLE", async () => {
+      expect(await goldfinchConfig.hasRole(PAUSER_ROLE, owner)).to.be.true
+    })
+    it("should give owner the LEVERAGE_RATIO_SETTER_ROLE", async () => {
+      expect(await goldfinchConfig.hasRole(LEVERAGE_RATIO_SETTER_ROLE, owner)).to.be.true
     })
   })
 
