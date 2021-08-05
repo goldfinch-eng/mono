@@ -1,7 +1,7 @@
 import React from "react"
-import { displayDollars, displayPercent } from "../utils"
-import { iconCircleCheck } from "./icons.js"
-import { usdcFromAtomic } from "../ethereum/erc20"
+import {displayDollars, displayPercent} from "../utils"
+import {iconCircleCheck} from "./icons.js"
+import {usdcFromAtomic} from "../ethereum/erc20"
 
 function CreditLinesList(props) {
   function creditLineRow(cl) {
@@ -10,7 +10,9 @@ function CreditLinesList(props) {
     let description = `${displayDollars(usdcFromAtomic(cl.limit), 0)} at ${displayPercent(cl.interestAprDecimal, 1)}`
     let nextPaymentAmount = `${displayDollars(cl.remainingPeriodDueAmountInDollars)}`
     let nextPaymentDate = "N/A"
-    if (cl.isPaymentDue) {
+    if (cl.isLate) {
+      nextPaymentDate = "Due now"
+    } else if (cl.isPaymentDue) {
       nextPaymentDate = `${cl.dueDate}`
     } else if (cl.isActive) {
       icon = iconCircleCheck
