@@ -65,16 +65,7 @@ const leverJuniorInvestment = async (
 
   await tranchedPool.lockJuniorCapital({from: borrower})
 
-  const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
-  const juniorTrancheLockedUntil = new BN(juniorTranche.lockedUntil)
-  expect(juniorTrancheLockedUntil).to.be.bignumber.gt(new BN(0))
-  await strategy.setLeverageRatio(
-    tranchedPool.address,
-    EXPECTED_LEVERAGE_RATIO,
-    juniorTrancheLockedUntil,
-    web3.utils.keccak256("DynamicLeverageRatioStrategy test version"),
-    {from: owner}
-  )
+  await setLeverageRatio(tranchedPool, strategy, owner, EXPECTED_LEVERAGE_RATIO)
 
   const leverageRatio = await strategy.getLeverageRatio(tranchedPool.address)
   expect(leverageRatio).to.bignumber.equal(EXPECTED_LEVERAGE_RATIO)
@@ -97,27 +88,12 @@ const leverFractionally = async (
 
   await tranchedPool.lockJuniorCapital({from: borrower})
 
-  const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
-  const juniorTrancheLockedUntil = new BN(juniorTranche.lockedUntil)
-  expect(juniorTrancheLockedUntil).to.be.bignumber.gt(new BN(0))
-  await strategy.setLeverageRatio(
-    tranchedPool.address,
-    EXPECTED_LEVERAGE_RATIO,
-    juniorTrancheLockedUntil,
-    web3.utils.keccak256("DynamicLeverageRatioStrategy test version"),
-    {from: owner}
-  )
+  await setLeverageRatio(tranchedPool, strategy, owner, EXPECTED_LEVERAGE_RATIO)
 
   const leverageRatio = await strategy.getLeverageRatio(tranchedPool.address)
   expect(leverageRatio).to.bignumber.equal(EXPECTED_LEVERAGE_RATIO)
 
-  await strategy.setLeverageRatio(
-    tranchedPool.address,
-    new BN(String(4.5e18)),
-    juniorTrancheLockedUntil,
-    web3.utils.keccak256("DynamicLeverageRatioStrategy test version"),
-    {from: owner}
-  )
+  await setLeverageRatio(tranchedPool, strategy, owner, new BN(String(4.5e18)))
 
   const leverageRatio2 = await strategy.getLeverageRatio(tranchedPool.address)
   expect(leverageRatio2).to.bignumber.equal(new BN(String(4.5e18)))
@@ -128,67 +104,181 @@ const leverFractionally = async (
   expect(amount).to.bignumber.equal(juniorInvestmentAmount.mul(leverageRatio2).div(LEVERAGE_RATIO_DECIMALS))
 }
 
+const setLeverageRatio = async (tranchedPool: any, strategy: any, owner: any, leverageRatio: BN) => {
+  const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
+  const juniorTrancheLockedUntil = new BN(juniorTranche.lockedUntil)
+  expect(juniorTrancheLockedUntil).to.be.bignumber.gt(new BN(0))
+  await strategy.setLeverageRatio(
+    tranchedPool.address,
+    leverageRatio,
+    juniorTrancheLockedUntil,
+    web3.utils.keccak256("DynamicLeverageRatioStrategy test version"),
+    {from: owner}
+  )
+
+  const leverageRatio2 = await strategy.getLeverageRatio(tranchedPool.address)
+  expect(leverageRatio2).to.bignumber.equal(leverageRatio)
+}
+
 describe("DynamicLeverageRatioStrategy", () => {
   describe("ownership", async () => {
-    let goldfinchConfig, owner
+    let strategy, owner
 
     beforeEach(async () => {
-      ;({goldfinchConfig, owner} = await setupTest())
+      ;({strategy, owner} = await setupTest())
     })
 
     it("should be owned by the owner", async () => {
-      expect(await goldfinchConfig.hasRole(OWNER_ROLE, owner)).to.be.true
+      expect(await strategy.hasRole(OWNER_ROLE, owner)).to.be.true
     })
     it("should give owner the PAUSER_ROLE", async () => {
-      expect(await goldfinchConfig.hasRole(PAUSER_ROLE, owner)).to.be.true
+      expect(await strategy.hasRole(PAUSER_ROLE, owner)).to.be.true
     })
     it("should give owner the LEVERAGE_RATIO_SETTER_ROLE", async () => {
-      expect(await goldfinchConfig.hasRole(LEVERAGE_RATIO_SETTER_ROLE, owner)).to.be.true
+      expect(await strategy.hasRole(LEVERAGE_RATIO_SETTER_ROLE, owner)).to.be.true
     })
   })
 
   describe("getLeverageRatio", () => {
-    it("should reject if the locked-until timestamp of the info in storage does not equal that of the junior tranche", () => {
-      // TODO should be able to accomplish this by calling lockPool() after calling lockJuniorCapital()
-      throw new Error()
-    })
-    it("should return the leverage ratio if the locked-until timestamp of the info in storage equals that of the junior tranche", () => {
-      // TODO
-      throw new Error()
+    describe("lifecycle / chronology", () => {
+      context("junior tranche is not locked and senior tranche is not locked", () => {
+        let tranchedPool, strategy
+
+        beforeEach(async () => {
+          ;({tranchedPool, strategy} = await setupTest())
+        })
+
+        it("does not return the leverage ratio", async () => {
+          const leverageRatioNotSet = strategy.getLeverageRatio(tranchedPool.address)
+          expect(leverageRatioNotSet).to.be.rejectedWith(LEVERAGE_RATIO_NOT_SET_REGEXP)
+
+          const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
+          const juniorTrancheLockedUntil = new BN(juniorTranche.lockedUntil)
+          expect(juniorTrancheLockedUntil).to.be.bignumber.equal(new BN(0))
+
+          const leverageRatioNotSet2 = strategy.getLeverageRatio(tranchedPool.address)
+          expect(leverageRatioNotSet2).to.be.rejectedWith(LEVERAGE_RATIO_NOT_SET_REGEXP)
+        })
+      })
+
+      context("junior tranche is locked and senior tranche is not locked", () => {
+        context("leverage ratio has not been set", () => {
+          let tranchedPool, strategy, borrower
+
+          beforeEach(async () => {
+            ;({tranchedPool, strategy, borrower} = await setupTest())
+          })
+
+          it("does not return the leverage ratio", async () => {
+            await tranchedPool.lockJuniorCapital({from: borrower})
+
+            const leverageRatioNotSet = strategy.getLeverageRatio(tranchedPool.address)
+            expect(leverageRatioNotSet).to.be.rejectedWith(LEVERAGE_RATIO_NOT_SET_REGEXP)
+          })
+        })
+        context("leverage ratio has been set", () => {
+          let tranchedPool, strategy, owner, borrower
+
+          beforeEach(async () => {
+            ;({tranchedPool, strategy, owner, borrower} = await setupTest())
+          })
+
+          it("returns the leverage ratio", async () => {
+            await tranchedPool.lockJuniorCapital({from: borrower})
+            await setLeverageRatio(tranchedPool, strategy, owner, EXPECTED_LEVERAGE_RATIO)
+
+            const leverageRatio = await strategy.getLeverageRatio(tranchedPool.address)
+            expect(leverageRatio).to.bignumber.equal(EXPECTED_LEVERAGE_RATIO)
+          })
+
+          // TODO[PR] How, for the purposes of testing, can we update the junior tranche's lockedUntil
+          // timestamp again, so that we can test the scenario of getting the leverage ratio
+          // after it has been set but its locked-until timestamp no longer equals that of the
+          // junior tranche?
+        })
+      })
+
+      context("junior tranche is locked and senior tranche is locked", () => {
+        context("leverage ratio has not been set", () => {
+          let tranchedPool, strategy, borrower
+
+          beforeEach(async () => {
+            ;({tranchedPool, strategy, borrower} = await setupTest())
+          })
+
+          it("does not return the leverage ratio", async () => {
+            await tranchedPool.lockJuniorCapital({from: borrower})
+            await tranchedPool.lockPool({from: borrower})
+
+            const leverageRatioNotSet = strategy.getLeverageRatio(tranchedPool.address)
+            expect(leverageRatioNotSet).to.be.rejectedWith(LEVERAGE_RATIO_NOT_SET_REGEXP)
+          })
+        })
+        context("leverage ratio has been set", () => {
+          let tranchedPool, strategy, owner, borrower
+
+          beforeEach(async () => {
+            ;({tranchedPool, strategy, owner, borrower} = await setupTest())
+          })
+
+          it("returns the leverage ratio", async () => {
+            await tranchedPool.lockJuniorCapital({from: borrower})
+            await setLeverageRatio(tranchedPool, strategy, owner, EXPECTED_LEVERAGE_RATIO)
+            await tranchedPool.lockPool({from: borrower})
+
+            const leverageRatio = await strategy.getLeverageRatio(tranchedPool.address)
+            expect(leverageRatio).to.bignumber.equal(EXPECTED_LEVERAGE_RATIO)
+          })
+        })
+      })
     })
   })
 
   describe("setLeverageRatio", () => {
-    it("should reject setting the leverage ratio to 0", () => {
+    let goldfinchConfig, tranchedPool, seniorPool, strategy, juniorInvestmentAmount, owner
+
+    beforeEach(async () => {
+      ;({goldfinchConfig, tranchedPool, seniorPool, strategy, owner} = await setupTest())
+    })
+
+    it("rejects setting the leverage ratio to 0", () => {
       // TODO
       throw new Error()
     })
-    it("should reject setting the leverage ratio with a locked-until timestamp of 0", () => {
+    it("rejects setting the leverage ratio with a locked-until timestamp of 0", () => {
       // TODO
       throw new Error()
     })
-    it("should reject setting the leverage ratio with a locked-until timestamp that does not equal that of the junior tranche", () => {
+    it("rejects setting the leverage ratio with a locked-until timestamp that does not equal that of the junior tranche", () => {
       // TODO
       throw new Error()
     })
-    it("should set the leverage ratio, for a locked-until timestamp that equals that of the junior tranche", () => {
+    it("sets the leverage ratio, for a locked-until timestamp that equals that of the junior tranche, while the senior tranche is unlocked", () => {
       // TODO
       throw new Error()
     })
-    it("should emit a LeverageRatioUpdated event", () => {
+    it("rejects setting the leverage ratio, for a locked-until timestamp that equals that of the junior tranche, while the senior tranche is locked", () => {
+      // TODO
+      throw new Error()
+    })
+    it("allows setting the leverage ratio even if it's already been set", () => {
+      // TODO
+      throw new Error()
+    })
+    it("emits a LeverageRatioUpdated event", () => {
       // TODO
       throw new Error()
     })
     describe("onlySetterRole modifier", () => {
-      it("should allow the owner, as the setter role, to set the leverage ratio", () => {
+      it("allows the owner, as the setter role, to set the leverage ratio", () => {
         // TODO
         throw new Error()
       })
-      it("should allow a non-owner, as the setter role, to set the leverage ratio", () => {
+      it("allows a non-owner, as the setter role, to set the leverage ratio", () => {
         // TODO
         throw new Error()
       })
-      it("should prohibit a non-owner who does not have the setter role from setting the leverage ratio", () => {
+      it("prohibits a non-owner who does not have the setter role from setting the leverage ratio", () => {
         // TODO
         throw new Error()
       })
@@ -265,16 +355,7 @@ describe("DynamicLeverageRatioStrategy", () => {
           it("returns investment amount", async () => {
             await tranchedPool.lockJuniorCapital({from: borrower})
 
-            const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
-            const juniorTrancheLockedUntil = new BN(juniorTranche.lockedUntil)
-            expect(juniorTrancheLockedUntil).to.be.bignumber.gt(new BN(0))
-            await strategy.setLeverageRatio(
-              tranchedPool.address,
-              EXPECTED_LEVERAGE_RATIO,
-              juniorTrancheLockedUntil,
-              web3.utils.keccak256("DynamicLeverageRatioStrategy test version"),
-              {from: owner}
-            )
+            await setLeverageRatio(tranchedPool, strategy, owner, EXPECTED_LEVERAGE_RATIO)
 
             const leverageRatio = await strategy.getLeverageRatio(tranchedPool.address)
             expect(leverageRatio).to.bignumber.equal(EXPECTED_LEVERAGE_RATIO)
@@ -314,16 +395,7 @@ describe("DynamicLeverageRatioStrategy", () => {
           it("returns investment amount", async () => {
             await tranchedPool.lockJuniorCapital({from: borrower})
 
-            const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
-            const juniorTrancheLockedUntil = new BN(juniorTranche.lockedUntil)
-            expect(juniorTrancheLockedUntil).to.be.bignumber.gt(new BN(0))
-            await strategy.setLeverageRatio(
-              tranchedPool.address,
-              EXPECTED_LEVERAGE_RATIO,
-              juniorTrancheLockedUntil,
-              web3.utils.keccak256("DynamicLeverageRatioStrategy test version"),
-              {from: owner}
-            )
+            await setLeverageRatio(tranchedPool, strategy, owner, EXPECTED_LEVERAGE_RATIO)
 
             const leverageRatio = await strategy.getLeverageRatio(tranchedPool.address)
             expect(leverageRatio).to.bignumber.equal(EXPECTED_LEVERAGE_RATIO)
@@ -346,16 +418,7 @@ describe("DynamicLeverageRatioStrategy", () => {
         it("would invest up to the levered amount", async () => {
           await tranchedPool.lockJuniorCapital({from: borrower})
 
-          const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
-          const juniorTrancheLockedUntil = new BN(juniorTranche.lockedUntil)
-          expect(juniorTrancheLockedUntil).to.be.bignumber.gt(new BN(0))
-          await strategy.setLeverageRatio(
-            tranchedPool.address,
-            EXPECTED_LEVERAGE_RATIO,
-            juniorTrancheLockedUntil,
-            web3.utils.keccak256("DynamicLeverageRatioStrategy test version"),
-            {from: owner}
-          )
+          await setLeverageRatio(tranchedPool, strategy, owner, EXPECTED_LEVERAGE_RATIO)
 
           const leverageRatio = await strategy.getLeverageRatio(tranchedPool.address)
           expect(leverageRatio).to.bignumber.equal(EXPECTED_LEVERAGE_RATIO)
@@ -380,16 +443,7 @@ describe("DynamicLeverageRatioStrategy", () => {
         it("does not invest", async () => {
           await tranchedPool.lockJuniorCapital({from: borrower})
 
-          const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
-          const juniorTrancheLockedUntil = new BN(juniorTranche.lockedUntil)
-          expect(juniorTrancheLockedUntil).to.be.bignumber.gt(new BN(0))
-          await strategy.setLeverageRatio(
-            tranchedPool.address,
-            EXPECTED_LEVERAGE_RATIO,
-            juniorTrancheLockedUntil,
-            web3.utils.keccak256("DynamicLeverageRatioStrategy test version"),
-            {from: owner}
-          )
+          await setLeverageRatio(tranchedPool, strategy, owner, EXPECTED_LEVERAGE_RATIO)
 
           const leverageRatio = await strategy.getLeverageRatio(tranchedPool.address)
           expect(leverageRatio).to.bignumber.equal(EXPECTED_LEVERAGE_RATIO)
@@ -469,16 +523,7 @@ describe("DynamicLeverageRatioStrategy", () => {
           it("invests", async () => {
             await tranchedPool.lockJuniorCapital({from: borrower})
 
-            const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
-            const juniorTrancheLockedUntil = new BN(juniorTranche.lockedUntil)
-            expect(juniorTrancheLockedUntil).to.be.bignumber.gt(new BN(0))
-            await strategy.setLeverageRatio(
-              tranchedPool.address,
-              EXPECTED_LEVERAGE_RATIO,
-              juniorTrancheLockedUntil,
-              web3.utils.keccak256("DynamicLeverageRatioStrategy test version"),
-              {from: owner}
-            )
+            await setLeverageRatio(tranchedPool, strategy, owner, EXPECTED_LEVERAGE_RATIO)
 
             const leverageRatio = await strategy.getLeverageRatio(tranchedPool.address)
             expect(leverageRatio).to.bignumber.equal(EXPECTED_LEVERAGE_RATIO)
@@ -517,21 +562,7 @@ describe("DynamicLeverageRatioStrategy", () => {
 
           it("does not invest", async () => {
             await tranchedPool.lockJuniorCapital({from: borrower})
-
-            const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
-            const juniorTrancheLockedUntil = new BN(juniorTranche.lockedUntil)
-            expect(juniorTrancheLockedUntil).to.be.bignumber.gt(new BN(0))
-            await strategy.setLeverageRatio(
-              tranchedPool.address,
-              EXPECTED_LEVERAGE_RATIO,
-              juniorTrancheLockedUntil,
-              web3.utils.keccak256("DynamicLeverageRatioStrategy test version"),
-              {from: owner}
-            )
-
-            const leverageRatio = await strategy.getLeverageRatio(tranchedPool.address)
-            expect(leverageRatio).to.bignumber.equal(EXPECTED_LEVERAGE_RATIO)
-
+            await setLeverageRatio(tranchedPool, strategy, owner, EXPECTED_LEVERAGE_RATIO)
             await tranchedPool.lockPool({from: borrower})
 
             const amount = await strategy.invest(seniorPool.address, tranchedPool.address)
@@ -552,16 +583,7 @@ describe("DynamicLeverageRatioStrategy", () => {
           await tranchedPool.deposit(TRANCHES.Senior, existingSeniorPrincipal)
           await tranchedPool.lockJuniorCapital({from: borrower})
 
-          const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
-          const juniorTrancheLockedUntil = new BN(juniorTranche.lockedUntil)
-          expect(juniorTrancheLockedUntil).to.be.bignumber.gt(new BN(0))
-          await strategy.setLeverageRatio(
-            tranchedPool.address,
-            EXPECTED_LEVERAGE_RATIO,
-            juniorTrancheLockedUntil,
-            web3.utils.keccak256("DynamicLeverageRatioStrategy test version"),
-            {from: owner}
-          )
+          await setLeverageRatio(tranchedPool, strategy, owner, EXPECTED_LEVERAGE_RATIO)
 
           const leverageRatio = await strategy.getLeverageRatio(tranchedPool.address)
           expect(leverageRatio).to.bignumber.equal(EXPECTED_LEVERAGE_RATIO)
@@ -587,19 +609,7 @@ describe("DynamicLeverageRatioStrategy", () => {
           await tranchedPool.deposit(TRANCHES.Senior, existingSeniorPrincipal)
           await tranchedPool.lockJuniorCapital({from: borrower})
 
-          const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
-          const juniorTrancheLockedUntil = new BN(juniorTranche.lockedUntil)
-          expect(juniorTrancheLockedUntil).to.be.bignumber.gt(new BN(0))
-          await strategy.setLeverageRatio(
-            tranchedPool.address,
-            EXPECTED_LEVERAGE_RATIO,
-            juniorTrancheLockedUntil,
-            web3.utils.keccak256("DynamicLeverageRatioStrategy test version"),
-            {from: owner}
-          )
-
-          const leverageRatio = await strategy.getLeverageRatio(tranchedPool.address)
-          expect(leverageRatio).to.bignumber.equal(EXPECTED_LEVERAGE_RATIO)
+          await setLeverageRatio(tranchedPool, strategy, owner, EXPECTED_LEVERAGE_RATIO)
 
           const amount = await strategy.invest(seniorPool.address, tranchedPool.address)
           expect(amount).to.bignumber.equal(new BN(0))
