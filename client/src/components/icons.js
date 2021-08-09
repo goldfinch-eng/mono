@@ -1,10 +1,15 @@
 import React from "react"
 
 const iconAlert = (
-  <svg  className="icon" width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path fill-rule="evenodd" clip-rule="evenodd" d="M14.6 19V7H17.4V19H14.6Z" fill="#483E5E"/>
-    <path fill-rule="evenodd" clip-rule="evenodd" d="M16 29.3C23.3454 29.3 29.3 23.3454 29.3 16C29.3 8.65461 23.3454 2.7 16 2.7C8.65461 2.7 2.7 8.65461 2.7 16C2.7 23.3454 8.65461 29.3 16 29.3ZM16 32C24.8366 32 32 24.8366 32 16C32 7.16344 24.8366 0 16 0C7.16344 0 0 7.16344 0 16C0 24.8366 7.16344 32 16 32Z" fill="#483E5E"/>
-    <circle cx="16" cy="23" r="2" fill="#483E5E"/>
+  <svg className="icon" width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path fillRule="evenodd" clipRule="evenodd" d="M14.6 19V7H17.4V19H14.6Z" fill="#483E5E" />
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M16 29.3C23.3454 29.3 29.3 23.3454 29.3 16C29.3 8.65461 23.3454 2.7 16 2.7C8.65461 2.7 2.7 8.65461 2.7 16C2.7 23.3454 8.65461 29.3 16 29.3ZM16 32C24.8366 32 32 24.8366 32 16C32 7.16344 24.8366 0 16 0C7.16344 0 0 7.16344 0 16C0 24.8366 7.16344 32 16 32Z"
+      fill="#483E5E"
+    />
+    <circle cx="16" cy="23" r="2" fill="#483E5E" />
   </svg>
 )
 
@@ -27,13 +32,23 @@ const iconBank = (
 
 const iconCarrotDown = (
   <svg className="icon" width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path fill-rule="evenodd" clip-rule="evenodd" d="M0.939346 11.0607L3.06067 8.93933L16 21.8787L28.9393 8.93933L31.0607 11.0607L16 26.1213L0.939346 11.0607Z" fill="#483E5E"/>
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M0.939346 11.0607L3.06067 8.93933L16 21.8787L28.9393 8.93933L31.0607 11.0607L16 26.1213L0.939346 11.0607Z"
+      fill="#483E5E"
+    />
   </svg>
 )
 
 const iconCarrotUp = (
   <svg className="icon" width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path fill-rule="evenodd" clip-rule="evenodd" d="M31.0607 20.9393L28.9393 23.0607L16 10.1213L3.06065 23.0607L0.939333 20.9393L16 5.87869L31.0607 20.9393Z" fill="#483E5E"/>
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M31.0607 20.9393L28.9393 23.0607L16 10.1213L3.06065 23.0607L0.939333 20.9393L16 5.87869L31.0607 20.9393Z"
+      fill="#483E5E"
+    />
   </svg>
 )
 

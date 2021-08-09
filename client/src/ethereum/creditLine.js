@@ -1,9 +1,9 @@
 import web3 from "../web3"
 import moment from "moment"
 import BigNumber from "bignumber.js"
-import { usdcFromAtomic, usdcToAtomic } from "./erc20"
-import { fetchDataFromAttributes, INTEREST_DECIMALS, BLOCKS_PER_YEAR, BLOCKS_PER_DAY, getDeployments } from "./utils"
-import { roundUpPenny, croppedAddress } from "../utils"
+import {usdcFromAtomic, usdcToAtomic} from "./erc20"
+import {fetchDataFromAttributes, INTEREST_DECIMALS, BLOCKS_PER_YEAR, BLOCKS_PER_DAY, getDeployments} from "./utils"
+import {roundUpPenny, croppedAddress} from "../utils"
 
 const CreditLineAbi = require("../../abi/Creditline.json")
 
@@ -87,21 +87,18 @@ class CreditLine extends BaseCreditLine {
 
   async initialize() {
     const attributes = [
-      { method: "balance" },
-      { method: "interestApr" },
-      { method: "interestAccruedAsOfBlock" },
-      { method: "paymentPeriodInDays" },
-      { method: "termInDays" },
-      { method: "nextDueBlock" },
-      { method: "limit" },
-      { method: "interestOwed" },
-      { method: "termEndBlock" },
-      { method: "lastFullPaymentBlock" },
+      {method: "balance"},
+      {method: "interestApr"},
+      {method: "interestAccruedAsOfBlock"},
+      {method: "paymentPeriodInDays"},
+      {method: "termInDays"},
+      {method: "nextDueBlock"},
+      {method: "limit"},
+      {method: "interestOwed"},
+      {method: "termEndBlock"},
+      {method: "lastFullPaymentBlock"},
     ]
-    let data = await fetchDataFromAttributes(this.creditLine, attributes)
-    attributes.forEach(info => {
-      this[info.method] = new BigNumber(data[info.method])
-    })
+    await this.fetchAndSetAttributes(attributes)
 
     this.isLate = await this._calculateIsLate()
     const interestOwed = this._calculateInterestOwed()
@@ -117,6 +114,13 @@ class CreditLine extends BaseCreditLine {
     this.availableCredit = BigNumber.min(this.limit, this.limit.minus(this.balance).plus(collectedForPrincipal))
     // Just for front-end usage.
     this.loaded = true
+  }
+
+  async fetchAndSetAttributes(attributes) {
+    let data = await fetchDataFromAttributes(this.creditLine, attributes)
+    attributes.forEach(info => {
+      this[info.method] = new BigNumber(data[info.method])
+    })
   }
 
   async _calculateIsLate() {
@@ -245,6 +249,7 @@ async function fetchCreditLineData(creditLineAddresses, usdc) {
     defaultCreditLine.loaded = true
     return Promise.resolve(defaultCreditLine)
   }
+  creditLineAddresses = await getActiveClAddresses(creditLineAddresses)
   if (creditLineAddresses.length === 1) {
     result = new CreditLine(creditLineAddresses[0], usdc.contract)
   } else {
@@ -252,6 +257,17 @@ async function fetchCreditLineData(creditLineAddresses, usdc) {
   }
   await result.initialize()
   return result
+}
+
+async function getActiveClAddresses(clAddresses) {
+  const withLimits = await Promise.all(
+    clAddresses.map(async addr => {
+      const cl = new CreditLine(addr)
+      await cl.fetchAndSetAttributes([{method: "limit"}])
+      return cl
+    }),
+  )
+  return withLimits.filter(cl => cl.limit.gt(zero)).map(cl => cl.address)
 }
 
 async function getCreditLineFactory(networkId) {
@@ -263,4 +279,4 @@ async function getCreditLineFactory(networkId) {
 
 const defaultCreditLine = new DefaultCreditLine()
 
-export { buildCreditLine, fetchCreditLineData, getCreditLineFactory, defaultCreditLine }
+export {buildCreditLine, fetchCreditLineData, getCreditLineFactory, defaultCreditLine}

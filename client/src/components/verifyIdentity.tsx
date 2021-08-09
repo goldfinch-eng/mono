@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from "react"
+import React, { useState, useContext } from "react"
 import { AppContext } from "../App"
 import Persona from "persona"
 import web3 from "../web3"

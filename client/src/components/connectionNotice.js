@@ -10,7 +10,7 @@ function ConnectionNotice(props) {
   let notice = ""
 
   let {requireVerify} = props
-  if (requireVerify == undefined) {
+  if (requireVerify === undefined) {
     requireVerify = false
   }
 
