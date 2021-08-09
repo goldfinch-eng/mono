@@ -46,12 +46,22 @@ contract DynamicLeverageRatioStrategy is LeverageRatioStrategy {
 
     LeverageRatioInfo memory ratioInfo = ratios[address(pool)];
     ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
+    ITranchedPool.TrancheInfo memory seniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Senior));
 
-    assert(ratioInfo.juniorTrancheLockedUntil > 0);
-    require(
-      ratioInfo.juniorTrancheLockedUntil == juniorTranche.lockedUntil,
-      "Leverage ratio is obsolete. Wait for its recalculation."
-    );
+    require(ratioInfo.juniorTrancheLockedUntil > 0, "Leverage ratio locked-until timestamp has not been set.");
+    if (seniorTranche.lockedUntil > 0) {
+      // Senior tranche is locked. We expect `juniorTranche.lockedUntil` to have been updated relative
+      // to what it was when `setLeverageRatio()` was called.
+      require(
+        ratioInfo.juniorTrancheLockedUntil < juniorTranche.lockedUntil,
+        "Expected junior tranche `lockedUntil` to have been updated."
+      );
+    } else {
+      require(
+        ratioInfo.juniorTrancheLockedUntil == juniorTranche.lockedUntil,
+        "Leverage ratio is obsolete. Wait for its recalculation."
+      );
+    }
 
     return ratioInfo.leverageRatio;
   }
@@ -81,12 +91,14 @@ contract DynamicLeverageRatioStrategy is LeverageRatioStrategy {
     // TODO[PR] Should we validate that `pool` is not zero address?
 
     ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
+    ITranchedPool.TrancheInfo memory seniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Senior));
 
     // TODO[PR] Anything stronger we can require about the `leverageRatio` value? Or should we allow 0?
     require(leverageRatio > 0, "Leverage ratio must be greater than 0.");
 
-    require(juniorTrancheLockedUntil > 0, "Cannot set leverage ratio for unlocked junior tranche.");
-    require(juniorTrancheLockedUntil == juniorTranche.lockedUntil, "`juniorTrancheLockedUntil` timestamp is obsolete.");
+    require(juniorTranche.lockedUntil > 0, "Cannot set leverage ratio if junior tranche is not locked.");
+    require(seniorTranche.lockedUntil == 0, "Cannot set leverage ratio if senior tranche is locked.");
+    require(juniorTrancheLockedUntil == juniorTranche.lockedUntil, "Invalid `juniorTrancheLockedUntil` timestamp.");
 
     ratios[address(pool)] = LeverageRatioInfo({
       leverageRatio: leverageRatio,
