@@ -1,66 +1,35 @@
-import {useContext, useEffect, useState} from "react"
+import {useContext, useState} from "react"
 import {useParams} from "react-router-dom"
 import ConnectionNotice from "../connectionNotice"
 import {AppContext} from "../../App"
 import InvestorNotice from "../investorNotice"
-import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
-import {Backer, PoolState, TranchedPool, TRANCHES} from "../../ethereum/tranchedPool"
+import {PoolState, TranchedPool, TRANCHES} from "../../ethereum/tranchedPool"
 import {croppedAddress, displayDollars, displayPercent, roundDownPenny, roundUpPenny} from "../../utils"
 import InfoSection from "../infoSection"
 import {usdcFromAtomic, usdcToAtomic} from "../../ethereum/erc20"
 import {iconDownArrow, iconOutArrow, iconUpArrow} from "../icons"
-import {User} from "../../ethereum/user"
 import useSendFromUser from "../../hooks/useSendFromUser"
 import useNonNullContext from "../../hooks/useNonNullContext"
 import TransactionInput from "../transactionInput"
 import {BigNumber} from "bignumber.js"
 import LoadingButton from "../loadingButton"
 import TransactionForm from "../transactionForm"
-import {AsyncResult, RefreshFn, useAsync, useAsyncFn} from "../../hooks/useAsync"
+import {useAsync} from "../../hooks/useAsync"
 import useERC20Permit from "../../hooks/useERC20Permit"
 import useCurrencyUnlocked from "../../hooks/useCurrencyUnlocked"
 import UnlockERC20Form from "../unlockERC20Form"
 import CreditBarViz from "../creditBarViz"
 import {DepositMade} from "../../typechain/web3/TranchedPool"
 import moment from "moment"
-
-function useTranchedPool({
-  goldfinchProtocol,
-  address,
-}: {
-  goldfinchProtocol?: GoldfinchProtocol
-  address: string
-}): [AsyncResult<TranchedPool>, RefreshFn] {
-  let [result, refresh] = useAsyncFn<TranchedPool>(() => {
-    if (!goldfinchProtocol) {
-      return
-    }
-
-    let tranchedPool = new TranchedPool(address, goldfinchProtocol)
-    return tranchedPool.initialize().then(() => tranchedPool)
-  }, [address, goldfinchProtocol])
-
-  useEffect(refresh, [refresh])
-
-  return [result, refresh]
-}
-
-function useBacker({user, tranchedPool}: {user: User; tranchedPool?: TranchedPool}): Backer | undefined {
-  const {goldfinchProtocol} = useContext(AppContext)
-  let backerResult = useAsync<Backer>(() => {
-    if (!user.loaded || !tranchedPool || !goldfinchProtocol) {
-      return
-    }
-
-    let backer = new Backer(user.address, tranchedPool, goldfinchProtocol)
-    return backer.initialize().then(() => backer)
-  }, [user, tranchedPool, goldfinchProtocol])
-
-  if (backerResult.status === "succeeded") {
-    return backerResult.value
-  }
-  return
-}
+import {
+  useBacker,
+  useEstimatedLeverageRatio,
+  useEstimatedSeniorPoolContribution,
+  useEstimatedTotalPoolAssets,
+  useRemainingCapacity,
+  useRemainingJuniorCapacity,
+  useTranchedPool,
+} from "../../hooks/useTranchedPool"
 
 function useRecentPoolTransactions({tranchedPool}: {tranchedPool?: TranchedPool}): Record<string, any>[] {
   let recentTransactions = useAsync(() => tranchedPool && tranchedPool.recentTransactions(), [tranchedPool])
@@ -68,70 +37,6 @@ function useRecentPoolTransactions({tranchedPool}: {tranchedPool?: TranchedPool}
     return recentTransactions.value
   }
   return []
-}
-
-function useEstimatedSeniorPoolContribution({tranchedPool}: {tranchedPool?: TranchedPool}): BigNumber | undefined {
-  let {pool} = useContext(AppContext)
-  let estimatedContribution = useAsync(
-    () => pool && tranchedPool && pool.contract.methods.estimateInvestment(tranchedPool.address).call(),
-    [pool, tranchedPool],
-  )
-
-  if (estimatedContribution.status === "succeeded") {
-    return new BigNumber(estimatedContribution.value)
-  }
-
-  return
-}
-
-function useEstimatedLeverageRatio({tranchedPool}: {tranchedPool?: TranchedPool}): BigNumber | undefined {
-  let totalAssets = useEstimatedTotalPoolAssets({tranchedPool})
-  let juniorContribution = tranchedPool?.juniorTranche.principalDeposited
-
-  if (totalAssets && juniorContribution) {
-    // When the pool is empty, assume max leverage
-    if (new BigNumber(juniorContribution).isZero()) {
-      // TODO: This is currently hardcoded, we'll pull it from config when it's available.
-      return new BigNumber(4)
-    }
-    return totalAssets.minus(juniorContribution).dividedBy(juniorContribution)
-  }
-
-  return
-}
-
-function useEstimatedTotalPoolAssets({tranchedPool}: {tranchedPool?: TranchedPool}): BigNumber | undefined {
-  let estimatedSeniorPoolContribution = useEstimatedSeniorPoolContribution({tranchedPool})
-  let juniorContribution = tranchedPool?.juniorTranche.principalDeposited
-  let seniorContribution = tranchedPool?.seniorTranche.principalDeposited
-
-  if (estimatedSeniorPoolContribution && juniorContribution && seniorContribution) {
-    return estimatedSeniorPoolContribution.plus(juniorContribution).plus(seniorContribution)
-  }
-
-  return
-}
-
-function useRemainingCapacity({tranchedPool}: {tranchedPool?: TranchedPool}): BigNumber | undefined {
-  let estimatedTotalPoolAssets = useEstimatedTotalPoolAssets({tranchedPool})
-  let capacity
-
-  if (estimatedTotalPoolAssets && tranchedPool) {
-    capacity = tranchedPool.creditLine.limit.minus(estimatedTotalPoolAssets)
-  }
-
-  return capacity
-}
-
-function useRemainingJuniorCapacity({tranchedPool}: {tranchedPool?: TranchedPool}): BigNumber | undefined {
-  const remainingCapacity = useRemainingCapacity({tranchedPool})
-  const estimatedLeverageRatio = useEstimatedLeverageRatio({tranchedPool})
-
-  if (remainingCapacity && estimatedLeverageRatio) {
-    return remainingCapacity.dividedBy(estimatedLeverageRatio.plus(1))
-  }
-
-  return
 }
 
 function useUniqueJuniorSuppliers({tranchedPool}: {tranchedPool?: TranchedPool}) {
