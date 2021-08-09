@@ -67,7 +67,10 @@ contract DynamicLeverageRatioStrategy is LeverageRatioStrategy {
   }
 
   /**
-   * @notice Updates the leverage ratio for the specified tranched pool.
+   * @notice Updates the leverage ratio for the specified tranched pool. The combination of the
+   * `juniorTranchedLockedUntil` param and the `version` param in the event emitted by this
+   * function are intended to enable an outside observer to verify the computation of the leverage
+   * ratio set by calls of this function.
    * @param pool The tranched pool whose leverage ratio to update.
    * @param leverageRatio The leverage ratio value to set for the tranched pool.
    * @param juniorTrancheLockedUntil The `lockedUntil` timestamp, of the tranched pool's
