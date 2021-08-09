@@ -22,9 +22,7 @@ function useTranchedPool({
     return tranchedPool.initialize().then(() => tranchedPool)
   }, [address, goldfinchProtocol])
 
-  useEffect(() => {
-    refresh()
-  }, [refresh])
+  useEffect(refresh, [refresh])
 
   return [result, refresh]
 }
@@ -61,16 +59,16 @@ function useEstimatedSeniorPoolContribution({tranchedPool}: {tranchedPool?: Tran
 }
 
 function useEstimatedLeverageRatio({tranchedPool}: {tranchedPool?: TranchedPool}): BigNumber | undefined {
-  let totalAssets = useEstimatedTotalPoolAssets({tranchedPool})
+  let estimatedTotalAssets = useEstimatedTotalPoolAssets({tranchedPool})
   let juniorContribution = tranchedPool?.juniorTranche.principalDeposited
 
-  if (totalAssets && juniorContribution) {
+  if (estimatedTotalAssets && juniorContribution) {
     // When the pool is empty, assume max leverage
     if (new BigNumber(juniorContribution).isZero()) {
       // TODO: This is currently hardcoded, we'll pull it from config when it's available.
       return new BigNumber(4)
     }
-    return totalAssets.minus(juniorContribution).dividedBy(juniorContribution)
+    return estimatedTotalAssets.minus(juniorContribution).dividedBy(juniorContribution)
   }
 
   return

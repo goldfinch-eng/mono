@@ -266,7 +266,8 @@ class Backer {
       availableToWithdrawAmounts.map((a) => new BigNumber(a.principalRedeemable)).concat(zero),
     )
 
-    this.principalAtRisk = this.principalAmount.minus(this.principalRedeemed.plus(this.principalRedeemable))
+    const unusedPrincipal = this.principalRedeemed.plus(this.principalRedeemable)
+    this.principalAtRisk = this.principalAmount.minus(unusedPrincipal)
     this.balance = this.principalAmount.minus(this.principalRedeemed).plus(this.interestRedeemable)
     this.balanceInDollars = new BigNumber(roundDownPenny(usdcFromAtomic(this.balance)))
     this.availableToWithdraw = this.interestRedeemable.plus(this.principalRedeemable)
