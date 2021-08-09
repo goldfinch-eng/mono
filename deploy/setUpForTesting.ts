@@ -183,7 +183,7 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   logger(`Drawing down ${amount.toString()}`)
   await pool2.drawdown(amount)
 
-  await advanceTime({days: 30})
+  await advanceTime({days: 32})
 
   // Have the borrower repay a portion of their loan
   let borrowerSigner = ethers.provider.getSigner(borrower)
@@ -191,21 +191,10 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   let payAmount = new BN(100).mul(USDCDecimals)
   await (erc20 as TestERC20).connect(borrowerSigner).approve(bwrCon.address, payAmount.mul(new BN(2)).toString())
 
-  const daysToAdvance = "32"
-  const secondsToAdvance = SECONDS_PER_DAY.mul(new BN(daysToAdvance))
-  let newTimestamp = new BN(Math.round(Date.now() / 1000)).add(new BN(secondsToAdvance))
-  logger(`Advancing time by ${daysToAdvance.toString()} days (timestamp: ${newTimestamp.toNumber()})`)
-  await hre.network.provider.request({
-    method: "evm_setNextBlockTimestamp",
-    params: [newTimestamp.toNumber()],
-  })
   await bwrCon.pay(pool2.address, payAmount.toString())
 
-  newTimestamp = newTimestamp.add(new BN(secondsToAdvance))
-  await hre.network.provider.request({
-    method: "evm_setNextBlockTimestamp",
-    params: [newTimestamp.toNumber()],
-  })
+  await advanceTime({days: 32})
+
   await bwrCon.pay(pool2.address, payAmount.toString())
   await seniorPool.redeem(tokenId)
 }
