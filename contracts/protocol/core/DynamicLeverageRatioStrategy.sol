@@ -42,6 +42,8 @@ contract DynamicLeverageRatioStrategy is LeverageRatioStrategy {
   }
 
   function getLeverageRatio(ITranchedPool pool) public view override returns (uint256) {
+    // TODO[PR] Should we validate that `pool` is not zero address?
+
     LeverageRatioInfo memory ratioInfo = ratios[address(pool)];
     ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
 
@@ -76,6 +78,8 @@ contract DynamicLeverageRatioStrategy is LeverageRatioStrategy {
     uint256 juniorTrancheLockedUntil,
     bytes32 version
   ) public onlySetterRole {
+    // TODO[PR] Should we validate that `pool` is not zero address?
+
     ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
 
     // TODO[PR] Anything stronger we can require about the `leverageRatio` value? Or should we allow 0?

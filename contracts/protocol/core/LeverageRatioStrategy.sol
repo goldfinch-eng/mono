@@ -26,6 +26,8 @@ abstract contract LeverageRatioStrategy is BaseUpgradeablePausable, ISeniorPoolS
    * @return The amount of money to invest into the pool from the fund
    */
   function invest(ISeniorPool seniorPool, ITranchedPool pool) public view override returns (uint256) {
+    // TODO[PR] Should we validate that `seniorPool` and `pool` are not zero addresses?
+
     ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
     ITranchedPool.TrancheInfo memory seniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Senior));
 
@@ -46,6 +48,8 @@ abstract contract LeverageRatioStrategy is BaseUpgradeablePausable, ISeniorPoolS
    * @return The amount of money to invest into the pool from the fund
    */
   function estimateInvestment(ISeniorPool seniorPool, ITranchedPool pool) public view override returns (uint256) {
+    // TODO[PR] Should we validate that `seniorPool` and `pool` are not zero addresses?
+
     ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
     ITranchedPool.TrancheInfo memory seniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Senior));
 
