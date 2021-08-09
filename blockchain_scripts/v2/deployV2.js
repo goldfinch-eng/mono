@@ -20,7 +20,7 @@ async function deployV2(contracts, opts = {}) {
   let poolTokens = await deployPoolTokens(hre, {config})
   let migratedTranchedPool = await deployMigratedTranchedPool(hre, {config})
   if (opts.asTruffle) {
-    seniorPool = await toTruffle(seniorPool, "SeniorPool")
+    seniorPool = await toTruffle(seniorPool, "SeniorFund")
     seniorFundStrategy = await toTruffle(seniorFundStrategy, "IFundStrategy")
     tranchedPool = await toTruffle(tranchedPool, "TranchedPool")
     poolTokens = await toTruffle(poolTokens, "PoolTokens")

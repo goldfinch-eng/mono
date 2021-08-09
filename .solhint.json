@@ -18,8 +18,8 @@
           "burn": [],
           "getTokenInfo": []
         },
-        "*:*.initialize": [],
-        "*:*.__initialize__": [],
+        "*:*.initialize": ["initializer"],
+        "*:*.__initialize__": ["initializer"],
         "*:*.null": [],
         "**/CreditDesk.sol:CreditDesk": {
           "createCreditLine": [],
@@ -30,6 +30,12 @@
           "applyPayment": [],
           "migrateCreditLine": [],
           "migrateV1CreditLine": []
+        },
+        "**/GoldfinchConfig.sol:GoldfinchConfig": {
+          "addToGoList": ["onlyGoListerRole"],
+          "bulkAddToGoList": ["onlyGoListerRole"],
+          "removeFromGoList": ["onlyGoListerRole"],
+          "bulkRemoveFromGoList": ["onlyGoListerRole"]
         },
         "**/GoldfinchFactory.sol:GoldfinchFactory": {
           "createCreditLine": [],
