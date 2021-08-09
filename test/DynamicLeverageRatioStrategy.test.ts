@@ -346,22 +346,74 @@ describe("DynamicLeverageRatioStrategy", () => {
           })
         })
         context("leverage ratio has been set", () => {
-          let tranchedPool, seniorPool, strategy, juniorInvestmentAmount, owner, borrower
+          context("base", () => {
+            let tranchedPool, seniorPool, strategy, juniorInvestmentAmount, owner, borrower
 
-          beforeEach(async () => {
-            ;({tranchedPool, seniorPool, strategy, juniorInvestmentAmount, owner, borrower} = await setupTest())
+            beforeEach(async () => {
+              ;({tranchedPool, seniorPool, strategy, juniorInvestmentAmount, owner, borrower} = await setupTest())
+            })
+
+            it("returns investment amount", async () => {
+              await tranchedPool.lockJuniorCapital({from: borrower})
+
+              await setLeverageRatio(tranchedPool, strategy, owner, EXPECTED_LEVERAGE_RATIO)
+
+              const leverageRatio = await strategy.getLeverageRatio(tranchedPool.address)
+              expect(leverageRatio).to.bignumber.equal(EXPECTED_LEVERAGE_RATIO)
+
+              const amount = await strategy.estimateInvestment(seniorPool.address, tranchedPool.address)
+              expect(amount).to.bignumber.equal(juniorInvestmentAmount.mul(leverageRatio).div(LEVERAGE_RATIO_DECIMALS))
+            })
           })
 
-          it("returns investment amount", async () => {
-            await tranchedPool.lockJuniorCapital({from: borrower})
+          context("senior principal is already partially invested", () => {
+            let tranchedPool, seniorPool, strategy, juniorInvestmentAmount, owner, borrower
 
-            await setLeverageRatio(tranchedPool, strategy, owner, EXPECTED_LEVERAGE_RATIO)
+            beforeEach(async () => {
+              ;({tranchedPool, seniorPool, strategy, juniorInvestmentAmount, owner, borrower} = await setupTest())
+            })
 
-            const leverageRatio = await strategy.getLeverageRatio(tranchedPool.address)
-            expect(leverageRatio).to.bignumber.equal(EXPECTED_LEVERAGE_RATIO)
+            it("would invest up to the levered amount", async () => {
+              await tranchedPool.lockJuniorCapital({from: borrower})
 
-            const amount = await strategy.estimateInvestment(seniorPool.address, tranchedPool.address)
-            expect(amount).to.bignumber.equal(juniorInvestmentAmount.mul(leverageRatio).div(LEVERAGE_RATIO_DECIMALS))
+              await setLeverageRatio(tranchedPool, strategy, owner, EXPECTED_LEVERAGE_RATIO)
+
+              const leverageRatio = await strategy.getLeverageRatio(tranchedPool.address)
+              expect(leverageRatio).to.bignumber.equal(EXPECTED_LEVERAGE_RATIO)
+
+              let existingSeniorPrincipal = juniorInvestmentAmount.add(new BN(10))
+              await tranchedPool.deposit(TRANCHES.Senior, existingSeniorPrincipal)
+
+              const amount = await strategy.estimateInvestment(seniorPool.address, tranchedPool.address)
+              expect(amount).to.bignumber.equal(
+                juniorInvestmentAmount.mul(leverageRatio).div(LEVERAGE_RATIO_DECIMALS).sub(existingSeniorPrincipal)
+              )
+            })
+          })
+
+          context("senior principal already exceeds investment amount", () => {
+            let tranchedPool, seniorPool, strategy, juniorInvestmentAmount, owner, borrower
+
+            beforeEach(async () => {
+              ;({tranchedPool, seniorPool, strategy, juniorInvestmentAmount, owner, borrower} = await setupTest())
+            })
+
+            it("does not invest", async () => {
+              await tranchedPool.lockJuniorCapital({from: borrower})
+
+              await setLeverageRatio(tranchedPool, strategy, owner, EXPECTED_LEVERAGE_RATIO)
+
+              const leverageRatio = await strategy.getLeverageRatio(tranchedPool.address)
+              expect(leverageRatio).to.bignumber.equal(EXPECTED_LEVERAGE_RATIO)
+
+              const existingSeniorPrincipal = juniorInvestmentAmount.add(
+                juniorInvestmentAmount.mul(leverageRatio).div(LEVERAGE_RATIO_DECIMALS).add(new BN(1))
+              )
+              await tranchedPool.deposit(TRANCHES.Senior, existingSeniorPrincipal)
+
+              const amount = await strategy.estimateInvestment(seniorPool.address, tranchedPool.address)
+              expect(amount).to.bignumber.equal(new BN(0))
+            })
           })
         })
       })
@@ -405,56 +457,6 @@ describe("DynamicLeverageRatioStrategy", () => {
             const amount = await strategy.estimateInvestment(seniorPool.address, tranchedPool.address)
             expect(amount).to.bignumber.equal(juniorInvestmentAmount.mul(leverageRatio).div(LEVERAGE_RATIO_DECIMALS))
           })
-        })
-      })
-
-      context("senior principal is already partially invested", () => {
-        let tranchedPool, seniorPool, strategy, juniorInvestmentAmount, owner, borrower
-
-        beforeEach(async () => {
-          ;({tranchedPool, seniorPool, strategy, juniorInvestmentAmount, owner, borrower} = await setupTest())
-        })
-
-        it("would invest up to the levered amount", async () => {
-          await tranchedPool.lockJuniorCapital({from: borrower})
-
-          await setLeverageRatio(tranchedPool, strategy, owner, EXPECTED_LEVERAGE_RATIO)
-
-          const leverageRatio = await strategy.getLeverageRatio(tranchedPool.address)
-          expect(leverageRatio).to.bignumber.equal(EXPECTED_LEVERAGE_RATIO)
-
-          let existingSeniorPrincipal = juniorInvestmentAmount.add(new BN(10))
-          await tranchedPool.deposit(TRANCHES.Senior, existingSeniorPrincipal)
-
-          const amount = await strategy.estimateInvestment(seniorPool.address, tranchedPool.address)
-          expect(amount).to.bignumber.equal(
-            juniorInvestmentAmount.mul(leverageRatio).div(LEVERAGE_RATIO_DECIMALS).sub(existingSeniorPrincipal)
-          )
-        })
-      })
-
-      context("senior principal already exceeds investment amount", () => {
-        let tranchedPool, seniorPool, strategy, juniorInvestmentAmount, owner, borrower
-
-        beforeEach(async () => {
-          ;({tranchedPool, seniorPool, strategy, juniorInvestmentAmount, owner, borrower} = await setupTest())
-        })
-
-        it("does not invest", async () => {
-          await tranchedPool.lockJuniorCapital({from: borrower})
-
-          await setLeverageRatio(tranchedPool, strategy, owner, EXPECTED_LEVERAGE_RATIO)
-
-          const leverageRatio = await strategy.getLeverageRatio(tranchedPool.address)
-          expect(leverageRatio).to.bignumber.equal(EXPECTED_LEVERAGE_RATIO)
-
-          const existingSeniorPrincipal = juniorInvestmentAmount.add(
-            juniorInvestmentAmount.mul(leverageRatio).div(LEVERAGE_RATIO_DECIMALS).add(new BN(1))
-          )
-          await tranchedPool.deposit(TRANCHES.Senior, existingSeniorPrincipal)
-
-          const amount = await strategy.estimateInvestment(seniorPool.address, tranchedPool.address)
-          expect(amount).to.bignumber.equal(new BN(0))
         })
       })
     })
@@ -514,22 +516,69 @@ describe("DynamicLeverageRatioStrategy", () => {
           })
         })
         context("leverage ratio has been set", () => {
-          let tranchedPool, seniorPool, strategy, juniorInvestmentAmount, owner, borrower
+          context("base", () => {
+            let tranchedPool, seniorPool, strategy, juniorInvestmentAmount, owner, borrower
 
-          beforeEach(async () => {
-            ;({tranchedPool, seniorPool, strategy, juniorInvestmentAmount, owner, borrower} = await setupTest())
+            beforeEach(async () => {
+              ;({tranchedPool, seniorPool, strategy, juniorInvestmentAmount, owner, borrower} = await setupTest())
+            })
+
+            it("invests", async () => {
+              await tranchedPool.lockJuniorCapital({from: borrower})
+
+              await setLeverageRatio(tranchedPool, strategy, owner, EXPECTED_LEVERAGE_RATIO)
+
+              const leverageRatio = await strategy.getLeverageRatio(tranchedPool.address)
+              expect(leverageRatio).to.bignumber.equal(EXPECTED_LEVERAGE_RATIO)
+
+              const amount = await strategy.invest(seniorPool.address, tranchedPool.address)
+              expect(amount).to.bignumber.equal(juniorInvestmentAmount.mul(leverageRatio).div(LEVERAGE_RATIO_DECIMALS))
+            })
           })
 
-          it("invests", async () => {
-            await tranchedPool.lockJuniorCapital({from: borrower})
+          context("senior principal is already partially invested", () => {
+            let tranchedPool, seniorPool, strategy, juniorInvestmentAmount, owner, borrower
 
-            await setLeverageRatio(tranchedPool, strategy, owner, EXPECTED_LEVERAGE_RATIO)
+            beforeEach(async () => {
+              ;({tranchedPool, seniorPool, strategy, juniorInvestmentAmount, owner, borrower} = await setupTest())
+            })
 
-            const leverageRatio = await strategy.getLeverageRatio(tranchedPool.address)
-            expect(leverageRatio).to.bignumber.equal(EXPECTED_LEVERAGE_RATIO)
+            it("invests up to the levered amount", async () => {
+              let existingSeniorPrincipal = juniorInvestmentAmount.add(new BN(10))
+              await tranchedPool.deposit(TRANCHES.Senior, existingSeniorPrincipal)
+              await tranchedPool.lockJuniorCapital({from: borrower})
 
-            const amount = await strategy.invest(seniorPool.address, tranchedPool.address)
-            expect(amount).to.bignumber.equal(juniorInvestmentAmount.mul(leverageRatio).div(LEVERAGE_RATIO_DECIMALS))
+              await setLeverageRatio(tranchedPool, strategy, owner, EXPECTED_LEVERAGE_RATIO)
+
+              const leverageRatio = await strategy.getLeverageRatio(tranchedPool.address)
+              expect(leverageRatio).to.bignumber.equal(EXPECTED_LEVERAGE_RATIO)
+
+              const amount = await strategy.invest(seniorPool.address, tranchedPool.address)
+              expect(amount).to.bignumber.equal(
+                juniorInvestmentAmount.mul(leverageRatio).div(LEVERAGE_RATIO_DECIMALS).sub(existingSeniorPrincipal)
+              )
+            })
+          })
+
+          context("senior principal already exceeds investment amount", () => {
+            let tranchedPool, seniorPool, strategy, juniorInvestmentAmount, owner, borrower
+
+            beforeEach(async () => {
+              ;({tranchedPool, seniorPool, strategy, juniorInvestmentAmount, owner, borrower} = await setupTest())
+            })
+
+            it("does not invest", async () => {
+              let existingSeniorPrincipal = juniorInvestmentAmount.add(
+                juniorInvestmentAmount.mul(EXPECTED_LEVERAGE_RATIO).div(LEVERAGE_RATIO_DECIMALS).add(new BN(1))
+              )
+              await tranchedPool.deposit(TRANCHES.Senior, existingSeniorPrincipal)
+              await tranchedPool.lockJuniorCapital({from: borrower})
+
+              await setLeverageRatio(tranchedPool, strategy, owner, EXPECTED_LEVERAGE_RATIO)
+
+              const amount = await strategy.invest(seniorPool.address, tranchedPool.address)
+              expect(amount).to.bignumber.equal(new BN(0))
+            })
           })
         })
       })
@@ -568,51 +617,6 @@ describe("DynamicLeverageRatioStrategy", () => {
             const amount = await strategy.invest(seniorPool.address, tranchedPool.address)
             expect(amount).to.bignumber.equal(new BN(0))
           })
-        })
-      })
-
-      context("senior principal is already partially invested", () => {
-        let tranchedPool, seniorPool, strategy, juniorInvestmentAmount, owner, borrower
-
-        beforeEach(async () => {
-          ;({tranchedPool, seniorPool, strategy, juniorInvestmentAmount, owner, borrower} = await setupTest())
-        })
-
-        it("invests up to the levered amount", async () => {
-          let existingSeniorPrincipal = juniorInvestmentAmount.add(new BN(10))
-          await tranchedPool.deposit(TRANCHES.Senior, existingSeniorPrincipal)
-          await tranchedPool.lockJuniorCapital({from: borrower})
-
-          await setLeverageRatio(tranchedPool, strategy, owner, EXPECTED_LEVERAGE_RATIO)
-
-          const leverageRatio = await strategy.getLeverageRatio(tranchedPool.address)
-          expect(leverageRatio).to.bignumber.equal(EXPECTED_LEVERAGE_RATIO)
-
-          const amount = await strategy.invest(seniorPool.address, tranchedPool.address)
-          expect(amount).to.bignumber.equal(
-            juniorInvestmentAmount.mul(leverageRatio).div(LEVERAGE_RATIO_DECIMALS).sub(existingSeniorPrincipal)
-          )
-        })
-      })
-
-      context("senior principal already exceeds investment amount", () => {
-        let tranchedPool, seniorPool, strategy, juniorInvestmentAmount, owner, borrower
-
-        beforeEach(async () => {
-          ;({tranchedPool, seniorPool, strategy, juniorInvestmentAmount, owner, borrower} = await setupTest())
-        })
-
-        it("does not invest", async () => {
-          let existingSeniorPrincipal = juniorInvestmentAmount.add(
-            juniorInvestmentAmount.mul(EXPECTED_LEVERAGE_RATIO).div(LEVERAGE_RATIO_DECIMALS).add(new BN(1))
-          )
-          await tranchedPool.deposit(TRANCHES.Senior, existingSeniorPrincipal)
-          await tranchedPool.lockJuniorCapital({from: borrower})
-
-          await setLeverageRatio(tranchedPool, strategy, owner, EXPECTED_LEVERAGE_RATIO)
-
-          const amount = await strategy.invest(seniorPool.address, tranchedPool.address)
-          expect(amount).to.bignumber.equal(new BN(0))
         })
       })
     })
