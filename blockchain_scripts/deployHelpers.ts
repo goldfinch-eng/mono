@@ -108,6 +108,7 @@ const TRUSTED_FORWARDER_CONFIG: {[chainId: string]: string} = {
 
 let OWNER_ROLE = web3.utils.keccak256("OWNER_ROLE")
 let PAUSER_ROLE = web3.utils.keccak256("PAUSER_ROLE")
+let GO_LISTER_ROLE = web3.utils.keccak256("GO_LISTER_ROLE")
 let MINTER_ROLE = web3.utils.keccak256("MINTER_ROLE")
 
 const TRANCHES = {
@@ -365,6 +366,7 @@ export {
   LOCAL_CHAIN_ID,
   OWNER_ROLE,
   PAUSER_ROLE,
+  GO_LISTER_ROLE,
   MINTER_ROLE,
   SAFE_CONFIG,
   TRUSTED_FORWARDER_CONFIG,
