@@ -12,8 +12,6 @@ import "../../interfaces/ITranchedPool.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 
 contract DynamicLeverageRatioStrategy is LeverageRatioStrategy {
-  // TODO[PR] Should we give our future selves access to the config? We don't need it for now.
-
   bytes32 public constant LEVERAGE_RATIO_SETTER_ROLE = keccak256("LEVERAGE_RATIO_SETTER_ROLE");
 
   struct LeverageRatioInfo {
