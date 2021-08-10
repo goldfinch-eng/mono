@@ -12,6 +12,7 @@ abstract contract ITranchedPool {
   enum Tranches {Reserved, Senior, Junior}
 
   struct TrancheInfo {
+    uint256 id;
     uint256 principalDeposited;
     uint256 principalSharePrice;
     uint256 interestSharePrice;

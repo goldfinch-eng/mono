@@ -40,8 +40,15 @@ function commaFormat(numberString) {
 }
 
 function displayDollars(val, decimals = 2) {
-  const valDisplay = isNaN(val) ? " --.--" : displayNumber(val, decimals)
-  return "$" + valDisplay
+  let prefix = ""
+  if (isNaN(val)) {
+    return " --.--"
+  }
+  if (parseFloat(val) < 0) {
+    val = parseFloat(val) * -1
+    prefix = "-"
+  }
+  return `${prefix}$${displayNumber(val, decimals)}`
 }
 
 function displayPercent(val, decimals = 2) {

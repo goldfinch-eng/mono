@@ -5,6 +5,14 @@ import {IPoolTokens} from "../typechain/web3/IPoolTokens"
 import BigNumber from "bignumber.js"
 import {fiduFromAtomic} from "./fidu"
 import {roundDownPenny, secondsSinceEpoch} from "../utils"
+import _ from "lodash"
+import {ContractEventLog} from "../typechain/web3/types"
+import web3 from "../web3"
+import {usdcFromAtomic} from "./erc20"
+import {CONFIG_KEYS} from "../../../blockchain_scripts/configKeys"
+
+const ONE = new BigNumber(1)
+const ONE_HUNDRED = new BigNumber(100)
 
 interface MetadataStore {
   [address: string]: PoolMetadata
@@ -46,6 +54,7 @@ const TRANCHES = {
 }
 
 interface TrancheInfo {
+  id: number
   principalDeposited: BigNumber
   principalSharePrice: BigNumber
   interestSharePrice: BigNumber
@@ -54,10 +63,11 @@ interface TrancheInfo {
 
 function trancheInfo(tuple: any): TrancheInfo {
   return {
-    principalDeposited: new BigNumber(tuple[0]),
-    principalSharePrice: new BigNumber(tuple[1]),
-    interestSharePrice: new BigNumber(tuple[2]),
-    lockedUntil: parseInt(tuple[3]),
+    id: parseInt(tuple[0]),
+    principalDeposited: new BigNumber(tuple[1]),
+    principalSharePrice: new BigNumber(tuple[2]),
+    interestSharePrice: new BigNumber(tuple[3]),
+    lockedUntil: parseInt(tuple[4]),
   }
 }
 
@@ -69,6 +79,8 @@ class TranchedPool {
   creditLineAddress!: string
   state!: PoolState
   metadata?: PoolMetadata
+  juniorFeePercent!: BigNumber
+  reserveFeePercent!: BigNumber
 
   juniorTranche!: TrancheInfo
   seniorTranche!: TrancheInfo
@@ -91,6 +103,10 @@ class TranchedPool {
     this.juniorTranche = juniorTranche
     this.seniorTranche = seniorTranche
     this.totalDeposited = juniorTranche.principalDeposited.plus(seniorTranche.principalDeposited)
+    this.juniorFeePercent = new BigNumber(await this.contract.methods.juniorFeePercent().call())
+    this.reserveFeePercent = new BigNumber(100).div(
+      await this.goldfinchProtocol.getConfigNumber(CONFIG_KEYS.ReserveDenominator),
+    )
 
     let now = secondsSinceEpoch()
     if (now < seniorTranche.lockedUntil) {
@@ -108,6 +124,91 @@ class TranchedPool {
     let store = await metadataStore(this.goldfinchProtocol.networkId)
     return store[this.address.toLowerCase()]
   }
+
+  estimateJuniorAPY(leverageRatio: BigNumber): BigNumber {
+    // If the balance is zero (not yet drawn down, then use the limit as an estimate)
+    let balance = this.creditLine.balance.isZero() ? this.creditLine.limit : this.creditLine.balance
+
+    let seniorFraction = leverageRatio.dividedBy(ONE.plus(leverageRatio))
+    let juniorFraction = ONE.dividedBy(ONE.plus(leverageRatio))
+    let interestRateFraction = this.creditLine.interestAprDecimal.dividedBy(ONE_HUNDRED)
+    let juniorFeeFraction = this.juniorFeePercent.dividedBy(ONE_HUNDRED)
+    let reserveFeeFraction = this.reserveFeePercent.dividedBy(ONE_HUNDRED)
+
+    let grossSeniorInterest = balance.multipliedBy(interestRateFraction).multipliedBy(seniorFraction)
+    let grossJuniorInterest = balance.multipliedBy(interestRateFraction).multipliedBy(juniorFraction)
+    const juniorFee = grossSeniorInterest.multipliedBy(juniorFeeFraction)
+    const juniorReserveFeeOwed = grossJuniorInterest.multipliedBy(reserveFeeFraction)
+
+    let netJuniorInterest = grossJuniorInterest.plus(juniorFee).minus(juniorReserveFeeOwed)
+    let juniorTranche = balance.multipliedBy(juniorFraction)
+    return netJuniorInterest.dividedBy(juniorTranche).multipliedBy(ONE_HUNDRED)
+  }
+
+  estimateMonthlyInterest(interestRate: BigNumber, principalAmount: BigNumber): BigNumber {
+    let monthsPerYear = new BigNumber(12)
+    return principalAmount.multipliedBy(interestRate).dividedBy(monthsPerYear)
+  }
+
+  async recentTransactions() {
+    let transactions = await this.goldfinchProtocol.queryEvents(this.contract, ["DrawdownMade", "PaymentApplied"])
+    transactions = _.reverse(_.sortBy(transactions, "blockNumber")).slice(0, 3)
+    let sharePriceUpdates = await this.sharePriceUpdatesByTx(TRANCHES.Junior)
+    let blockTimestamps = await this.timestampsByBlockNumber(transactions)
+    return transactions.map((e) => {
+      const sharePriceUpdate = sharePriceUpdates[e.transactionHash]![0]!
+
+      let event = {
+        txHash: e.transactionHash,
+        event: e.event,
+        juniorInterestDelta: new BigNumber(sharePriceUpdate.returnValues.interestDelta),
+        juniorPrincipalDelta: new BigNumber(sharePriceUpdate.returnValues.principalDelta),
+        timestamp: blockTimestamps[e.blockNumber],
+      }
+      if (e.event === "DrawdownMade") {
+        Object.assign(event, {
+          name: "Drawdown",
+          amount: new BigNumber(e.returnValues.amount),
+        })
+      } else if (e.event === "PaymentApplied") {
+        const interestAmount = new BigNumber(e.returnValues.interestAmount)
+        const totalPrincipalAmount = new BigNumber(e.returnValues.principalAmount).plus(
+          new BigNumber(e.returnValues.remainingAmount),
+        )
+        Object.assign(event, {
+          name: "Interest payment",
+          amount: interestAmount.plus(totalPrincipalAmount),
+          interestAmount: new BigNumber(interestAmount),
+          principalAmount: new BigNumber(totalPrincipalAmount),
+        })
+      }
+      return event
+    })
+  }
+
+  sharePriceToUSDC(sharePrice: BigNumber, amount: BigNumber): BigNumber {
+    return new BigNumber(fiduFromAtomic(sharePrice.multipliedBy(amount)))
+  }
+
+  async sharePriceUpdatesByTx(tranche: number) {
+    let transactions = await this.goldfinchProtocol.queryEvents(this.contract, ["SharePriceUpdated"], {
+      tranche: tranche,
+    })
+    return _.groupBy(transactions, (e) => e.transactionHash)
+  }
+
+  async timestampsByBlockNumber(transactions: ContractEventLog<any>[]) {
+    const blockTimestamps = await Promise.all(
+      transactions.map((tx) => {
+        return web3.eth.getBlock(tx.blockNumber).then((block) => {
+          return {blockNumber: tx.blockNumber, timestamp: block.timestamp}
+        })
+      }),
+    )
+    const result = {}
+    blockTimestamps.map((t) => (result[t.blockNumber] = t.timestamp))
+    return result
+  }
 }
 
 class Backer {
@@ -118,8 +219,14 @@ class Backer {
   principalAmount!: BigNumber
   principalRedeemed!: BigNumber
   interestRedeemed!: BigNumber
+  principalRedeemable!: BigNumber
+  interestRedeemable!: BigNumber
+  balance!: BigNumber
+  principalAtRisk!: BigNumber
+  balanceInDollars!: BigNumber
   availableToWithdraw!: BigNumber
   availableToWithdrawInDollars!: BigNumber
+  tokenInfos!: TokenInfo[]
 
   constructor(address: string, tranchedPool: TranchedPool, goldfinchProtocol: GoldfinchProtocol) {
     this.address = address
@@ -133,30 +240,43 @@ class Backer {
     })
     let tokenIds = events.map((e) => e.returnValues.tokenId)
     let poolTokens = this.goldfinchProtocol.getContract<IPoolTokens>("PoolTokens")
-    let tokenInfos = await Promise.all(
-      tokenIds.map((tokenId) => poolTokens.methods.getTokenInfo(tokenId).call().then(tokenInfo)),
+    this.tokenInfos = await Promise.all(
+      tokenIds.map((tokenId) => {
+        return poolTokens.methods
+          .getTokenInfo(tokenId)
+          .call()
+          .then((res) => tokenInfo(tokenId, res))
+      }),
     )
 
     let zero = new BigNumber(0)
-    this.principalAmount = BigNumber.sum.apply(null, tokenInfos.map((t) => t.principalAmount).concat(zero))
-    this.principalRedeemed = BigNumber.sum.apply(null, tokenInfos.map((t) => t.principalRedeemed).concat(zero))
-    this.interestRedeemed = BigNumber.sum.apply(null, tokenInfos.map((t) => t.interestRedeemed).concat(zero))
+    this.principalAmount = BigNumber.sum.apply(null, this.tokenInfos.map((t) => t.principalAmount).concat(zero))
+    this.principalRedeemed = BigNumber.sum.apply(null, this.tokenInfos.map((t) => t.principalRedeemed).concat(zero))
+    this.interestRedeemed = BigNumber.sum.apply(null, this.tokenInfos.map((t) => t.interestRedeemed).concat(zero))
 
     let availableToWithdrawAmounts = await Promise.all(
       tokenIds.map((tokenId) => this.tranchedPool.contract.methods.availableToWithdraw(tokenId).call()),
     )
-    this.availableToWithdraw = BigNumber.sum.apply(
+    this.interestRedeemable = BigNumber.sum.apply(
       null,
-      availableToWithdrawAmounts
-        .map((a) => [new BigNumber(a.interestRedeemable), new BigNumber(a.principalRedeemable)])
-        .flat()
-        .concat(zero),
+      availableToWithdrawAmounts.map((a) => new BigNumber(a.interestRedeemable)).concat(zero),
     )
-    this.availableToWithdrawInDollars = new BigNumber(roundDownPenny(fiduFromAtomic(this.availableToWithdraw)))
+    this.principalRedeemable = BigNumber.sum.apply(
+      null,
+      availableToWithdrawAmounts.map((a) => new BigNumber(a.principalRedeemable)).concat(zero),
+    )
+
+    const unusedPrincipal = this.principalRedeemed.plus(this.principalRedeemable)
+    this.principalAtRisk = this.principalAmount.minus(unusedPrincipal)
+    this.balance = this.principalAmount.minus(this.principalRedeemed).plus(this.interestRedeemable)
+    this.balanceInDollars = new BigNumber(roundDownPenny(usdcFromAtomic(this.balance)))
+    this.availableToWithdraw = this.interestRedeemable.plus(this.principalRedeemable)
+    this.availableToWithdrawInDollars = new BigNumber(roundDownPenny(usdcFromAtomic(this.availableToWithdraw)))
   }
 }
 
 interface TokenInfo {
+  id: string
   pool: string
   tranche: BigNumber
   principalAmount: BigNumber
@@ -164,8 +284,9 @@ interface TokenInfo {
   interestRedeemed: BigNumber
 }
 
-function tokenInfo(tuple: any): TokenInfo {
+function tokenInfo(tokenId: string, tuple: any): TokenInfo {
   return {
+    id: tokenId,
     pool: tuple[0],
     tranche: new BigNumber(tuple[1]),
     principalAmount: new BigNumber(tuple[2]),
