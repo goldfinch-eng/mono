@@ -412,7 +412,7 @@ describe("SeniorPool", () => {
 
         it("should fail if you're over the limit", async () => {
           return expect(makeDeposit(person2, new BN(limit).add(new BN(1)).mul(USDC_DECIMALS))).to.be.rejectedWith(
-            /put the fund over the total limit/
+            /put the pool over the total limit/
           )
         })
       })
