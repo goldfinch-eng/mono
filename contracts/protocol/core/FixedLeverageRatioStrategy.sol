@@ -26,8 +26,6 @@ contract FixedLeverageRatioStrategy is LeverageRatioStrategy {
   }
 
   function getLeverageRatio(ITranchedPool pool) public view override returns (uint256) {
-    // TODO[PR] Should we validate that `pool` is not zero address?
-
     return config.getLeverageRatio();
   }
 }
