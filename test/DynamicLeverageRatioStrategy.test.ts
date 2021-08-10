@@ -16,6 +16,8 @@ const DynamicLeverageRatioStrategy = artifacts.require("DynamicLeverageRatioStra
 
 const EXPECTED_LEVERAGE_RATIO: BN = new BN(String(4e18))
 const LEVERAGE_RATIO_NOT_SET_REGEXP: RegExp = /Leverage ratio has not been set yet\./
+const LEVERAGE_RATIO_OBSOLETE_REGEXP: RegExp = /Leverage ratio is obsolete\. Wait for its recalculation\./
+const LEVERAGE_RATIO_EXPECTED_OBSOLETE_TIMESTAMP_REGEXP: RegExp = /Expected junior tranche `lockedUntil` to have been updated\./
 const DYNAMIC_LEVERAGE_RATIO_TEST_VERSION = web3.utils.keccak256("DynamicLeverageRatioStrategy test version")
 
 const setupTest = deployments.createFixture(async ({deployments}) => {
@@ -193,13 +195,17 @@ describe("DynamicLeverageRatioStrategy", () => {
             expect(leverageRatio).to.bignumber.equal(EXPECTED_LEVERAGE_RATIO)
           })
 
-          // TODO[PR] How, for the purposes of testing, can we update the junior tranche's lockedUntil
-          // timestamp again, so that we can test the scenario of getting the leverage ratio
-          // after it has been set but its locked-until timestamp no longer equals that of the
-          // junior tranche? We don't expect such test conditions to arise in practice, because
-          // the junior tranche's locked-until timestamp is only updated by locking that tranche
-          // specifically (which can be done only once), and by locking the senior tranche (which
-          // is not appropriate for this test context).
+          it("does not return the leverage ratio if its locked-until timestamp is obsolete", async () => {
+            await tranchedPool.lockJuniorCapital({from: borrower})
+            await setLeverageRatio(tranchedPool, strategy, owner, EXPECTED_LEVERAGE_RATIO)
+
+            const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
+            const juniorTrancheLockedUntil = new BN(juniorTranche.lockedUntil)
+            await tranchedPool._modifyJuniorTrancheLockedUntil(juniorTrancheLockedUntil.add(new BN(1)))
+
+            const obsoleteLeverageRatio = strategy.getLeverageRatio(tranchedPool.address)
+            expect(obsoleteLeverageRatio).to.be.rejectedWith(LEVERAGE_RATIO_OBSOLETE_REGEXP)
+          })
         })
       })
 
@@ -233,6 +239,21 @@ describe("DynamicLeverageRatioStrategy", () => {
 
             const leverageRatio = await strategy.getLeverageRatio(tranchedPool.address)
             expect(leverageRatio).to.bignumber.equal(EXPECTED_LEVERAGE_RATIO)
+          })
+
+          it("does not return the leverage ratio if its locked-until timestamp is not obsolete", async () => {
+            await tranchedPool.lockJuniorCapital({from: borrower})
+            await setLeverageRatio(tranchedPool, strategy, owner, EXPECTED_LEVERAGE_RATIO)
+
+            const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
+            const juniorTrancheLockedUntil = new BN(juniorTranche.lockedUntil)
+
+            await tranchedPool.lockPool({from: borrower})
+
+            await tranchedPool._modifyJuniorTrancheLockedUntil(juniorTrancheLockedUntil)
+
+            const leverageRatio2 = strategy.getLeverageRatio(tranchedPool.address)
+            expect(leverageRatio2).to.be.rejectedWith(LEVERAGE_RATIO_EXPECTED_OBSOLETE_TIMESTAMP_REGEXP)
           })
         })
       })
