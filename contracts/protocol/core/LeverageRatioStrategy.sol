@@ -13,7 +13,7 @@ import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 abstract contract LeverageRatioStrategy is BaseUpgradeablePausable, ISeniorPoolStrategy {
   using SafeMath for uint256;
 
-  uint256 private constant LEVERAGE_RATIO_DECIMALS = 1e18;
+  uint256 internal constant LEVERAGE_RATIO_DECIMALS = 1e18;
 
   /**
    * @notice Determines how much money to invest in the senior tranche based on what is committed to the junior

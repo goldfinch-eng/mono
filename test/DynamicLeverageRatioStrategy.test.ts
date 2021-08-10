@@ -247,7 +247,7 @@ describe("DynamicLeverageRatioStrategy", () => {
         ;({tranchedPool, strategy, owner, borrower} = await setupTest())
       })
 
-      it("rejects setting the leverage ratio to 0", async () => {
+      it("allows setting the leverage ratio to the minimum value of 0", async () => {
         await tranchedPool.lockJuniorCapital({from: borrower})
 
         const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
@@ -260,7 +260,37 @@ describe("DynamicLeverageRatioStrategy", () => {
           DYNAMIC_LEVERAGE_RATIO_TEST_VERSION,
           {from: owner}
         )
-        expect(result).to.be.rejectedWith(/Leverage ratio must be greater than 0\./)
+        expect(result).to.be.fulfilled
+      })
+      it("allows setting the leverage ratio to the maximum value of 10 (adjusted for decimals)", async () => {
+        await tranchedPool.lockJuniorCapital({from: borrower})
+
+        const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
+        const juniorTrancheLockedUntil = new BN(juniorTranche.lockedUntil)
+        expect(juniorTrancheLockedUntil).to.be.bignumber.gt(new BN(0))
+        const result = strategy.setLeverageRatio(
+          tranchedPool.address,
+          new BN(String(10e18)),
+          juniorTrancheLockedUntil,
+          DYNAMIC_LEVERAGE_RATIO_TEST_VERSION,
+          {from: owner}
+        )
+        expect(result).to.be.fulfilled
+      })
+      it("rejects setting the leverage ratio to greater than 10 (adjusted for decimals)", async () => {
+        await tranchedPool.lockJuniorCapital({from: borrower})
+
+        const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
+        const juniorTrancheLockedUntil = new BN(juniorTranche.lockedUntil)
+        expect(juniorTrancheLockedUntil).to.be.bignumber.gt(new BN(0))
+        const result = strategy.setLeverageRatio(
+          tranchedPool.address,
+          (new BN(String(10e18))).add(new BN(1)),
+          juniorTrancheLockedUntil,
+          DYNAMIC_LEVERAGE_RATIO_TEST_VERSION,
+          {from: owner}
+        )
+        expect(result).to.be.rejectedWith(/Leverage ratio must not exceed 10 \(adjusted for decimals\)\./)
       })
       it("rejects setting the leverage ratio with a locked-until timestamp of 0", async () => {
         const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)

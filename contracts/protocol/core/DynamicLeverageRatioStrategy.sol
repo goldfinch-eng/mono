@@ -94,8 +94,11 @@ contract DynamicLeverageRatioStrategy is LeverageRatioStrategy {
     ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
     ITranchedPool.TrancheInfo memory seniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Senior));
 
-    // TODO[PR] Anything stronger we can require about the `leverageRatio` value? Or should we allow 0?
-    require(leverageRatio > 0, "Leverage ratio must be greater than 0.");
+    // NOTE: We allow a `leverageRatio` of 0.
+    require(
+      leverageRatio <= 10 * LEVERAGE_RATIO_DECIMALS,
+      "Leverage ratio must not exceed 10 (adjusted for decimals)."
+    );
 
     require(juniorTranche.lockedUntil > 0, "Cannot set leverage ratio if junior tranche is not locked.");
     require(seniorTranche.lockedUntil == 0, "Cannot set leverage ratio if senior tranche is locked.");
