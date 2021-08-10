@@ -17,10 +17,9 @@ abstract contract LeverageRatioStrategy is BaseUpgradeablePausable, ISeniorPoolS
 
   /**
    * @notice Determines how much money to invest in the senior tranche based on what is committed to the junior
-   * tranche and a fixed leverage ratio to the junior.
-   * TODO[PR] I've removed the comment that this function is idempotent. It's a view function so
-   * it's not state-changing, and it's not a pure function because it depends on the leverage ratio
-   * which is not an argument to the function.
+   * tranche, what is committed to the senior tranche, and a leverage ratio to the junior tranche. Because
+   * it takes into account what is already committed to the senior tranche, the value returned by this
+   * function can be used "idempotently" to achieve the investment target amount without exceeding that target.
    * @param seniorPool The fund to invest from
    * @param pool The pool to invest into (as the senior)
    * @return The amount of money to invest into the pool from the fund
@@ -31,7 +30,7 @@ abstract contract LeverageRatioStrategy is BaseUpgradeablePausable, ISeniorPoolS
     ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
     ITranchedPool.TrancheInfo memory seniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Senior));
 
-    // If junior capital is not yet invested, or pool already locked then don't invest anything
+    // If junior capital is not yet invested, or pool already locked, then don't invest anything.
     if (juniorTranche.lockedUntil == 0 || seniorTranche.lockedUntil > 0) {
       return 0;
     }
@@ -40,9 +39,9 @@ abstract contract LeverageRatioStrategy is BaseUpgradeablePausable, ISeniorPoolS
   }
 
   /**
-   * @notice Determines how much money to invest in the senior tranche based on what is committed to the junior
-   * tranche and a leverage ratio to the junior tranche, as if all conditions for investment were met.
-   * TODO[PR] Likewise here I removed the comment that the function is idempotent.
+   * @notice A companion of `invest()`: determines how much would be returned by `invest()`, as the
+   * value to invest into the senior tranche, if the junior tranche were locked and the senior tranche
+   * were not locked.
    * @param seniorPool The fund to invest from
    * @param pool The pool to invest into (as the senior)
    * @return The amount of money to invest into the pool from the fund
