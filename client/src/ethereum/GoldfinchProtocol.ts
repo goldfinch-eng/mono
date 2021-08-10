@@ -4,6 +4,8 @@ import {ERC20, getERC20} from "./erc20"
 import _ from "lodash"
 import {Contract, Filter} from "web3-eth-contract"
 import {BaseContract, ContractEventLog} from "../typechain/web3/types"
+import BigNumber from "bignumber.js"
+import {GoldfinchConfig} from "../typechain/web3/GoldfinchConfig"
 
 class GoldfinchProtocol {
   networkId: string
@@ -35,6 +37,12 @@ class GoldfinchProtocol {
 
   getAddress(contract: string): string {
     return this.deployments.contracts[contract].address
+  }
+
+  async getConfigNumber(key: number): Promise<BigNumber> {
+    let configContract = this.getContract<GoldfinchConfig>("GoldfinchConfig")
+    const result = (await configContract.methods.getNumber(key).call()).toString()
+    return new BigNumber(result)
   }
 
   async queryEvents(contract: string | Contract | BaseContract, events: string | string[], filter?: Filter) {
