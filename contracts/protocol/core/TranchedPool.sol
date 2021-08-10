@@ -191,7 +191,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   function drawdown(uint256 amount) external override onlyLocker whenNotPaused {
     require(!drawdownsPaused, "Drawdowns are currently paused");
     if (!locked()) {
-      // Assumes the senior fund has invested already (saves the borrower a separate transaction to lock the pool)
+      // Assumes the senior pool has invested already (saves the borrower a separate transaction to lock the pool)
       _lockPool();
     }
 

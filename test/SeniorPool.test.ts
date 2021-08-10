@@ -641,7 +641,7 @@ describe("SeniorPool", () => {
     })
 
     it("should redeem the maximum from the TranchedPool", async () => {
-      // Make the senior fund invest
+      // Make the senior pool invest
       await tranchedPool.lockJuniorCapital({from: borrower})
       await seniorPool.invest(tranchedPool.address)
 
@@ -680,7 +680,7 @@ describe("SeniorPool", () => {
     })
 
     it("should adjust the share price accounting for new interest redeemed", async () => {
-      // Make the senior fund invest
+      // Make the senior pool invest
       await tranchedPool.lockJuniorCapital({from: borrower})
       await seniorPool.invest(tranchedPool.address)
 
@@ -715,7 +715,7 @@ describe("SeniorPool", () => {
     })
 
     it("should emit events for interest, principal, and reserve", async () => {
-      // Make the senior fund invest
+      // Make the senior pool invest
       await tranchedPool.lockJuniorCapital({from: borrower})
       await seniorPool.invest(tranchedPool.address)
 
@@ -900,10 +900,10 @@ describe("SeniorPool", () => {
       })
     })
 
-    context("tokenId is not owned by senior fund", () => {
+    context("tokenId is not owned by senior pool", () => {
       it("reverts", async () => {
         await expect(seniorPool.writedown(juniorTokenId)).to.be.rejectedWith(
-          /Only tokens owned by the senior fund can be written down/
+          /Only tokens owned by the senior pool can be written down/
         )
       })
     })

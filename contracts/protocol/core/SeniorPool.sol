@@ -65,7 +65,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     // Check if the amount of new shares to be added is within limits
     depositShares = getNumShares(amount);
     uint256 potentialNewTotalShares = totalShares().add(depositShares);
-    require(sharesWithinLimit(potentialNewTotalShares), "Deposit would put the fund over the total limit.");
+    require(sharesWithinLimit(potentialNewTotalShares), "Deposit would put the pool over the total limit.");
     emit DepositMade(msg.sender, amount, depositShares);
     bool success = doUSDCTransfer(msg.sender, address(this), amount);
     require(success, "Failed to transfer for deposit");
@@ -166,7 +166,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   }
 
   /**
-   * @notice Invest in an ITranchedPool using the fund's strategy
+   * @notice Invest in an ITranchedPool using the senior pool's strategy
    * @param pool An ITranchedPool that should be considered for investment
    */
   function invest(ITranchedPool pool) public override whenNotPaused nonReentrant onlyAdmin {
@@ -208,14 +208,14 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   }
 
   /**
-   * @notice Write down an ITranchedPool investment. This will adjust the fund's share price
+   * @notice Write down an ITranchedPool investment. This will adjust the senior pool's share price
    *  down if we're considering the investment a loss, or up if the borrower has subsequently
    *  made repayments that restore confidence that the full loan will be repaid.
    * @param tokenId the ID of an IPoolTokens token to be considered for writedown
    */
   function writedown(uint256 tokenId) public override whenNotPaused nonReentrant onlyAdmin {
     IPoolTokens poolTokens = config.getPoolTokens();
-    require(address(this) == poolTokens.ownerOf(tokenId), "Only tokens owned by the senior fund can be written down");
+    require(address(this) == poolTokens.ownerOf(tokenId), "Only tokens owned by the senior pool can be written down");
 
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
     ITranchedPool pool = ITranchedPool(tokenInfo.pool);
