@@ -15,7 +15,7 @@ import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
 const DynamicLeverageRatioStrategy = artifacts.require("DynamicLeverageRatioStrategy")
 
 const EXPECTED_LEVERAGE_RATIO: BN = new BN(String(4e18))
-const LEVERAGE_RATIO_NOT_SET_REGEXP: RegExp = /Leverage ratio locked-until timestamp has not been set\./
+const LEVERAGE_RATIO_NOT_SET_REGEXP: RegExp = /Leverage ratio has not been set yet\./
 const DYNAMIC_LEVERAGE_RATIO_TEST_VERSION = web3.utils.keccak256("DynamicLeverageRatioStrategy test version")
 
 const setupTest = deployments.createFixture(async ({deployments}) => {

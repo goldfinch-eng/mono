@@ -44,7 +44,7 @@ contract DynamicLeverageRatioStrategy is LeverageRatioStrategy {
     ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
     ITranchedPool.TrancheInfo memory seniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Senior));
 
-    require(ratioInfo.juniorTrancheLockedUntil > 0, "Leverage ratio locked-until timestamp has not been set.");
+    require(ratioInfo.juniorTrancheLockedUntil > 0, "Leverage ratio has not been set yet.");
     if (seniorTranche.lockedUntil > 0) {
       // Senior tranche is locked. We expect `juniorTranche.lockedUntil` to have been updated relative
       // to what it was when `setLeverageRatio()` was called.
