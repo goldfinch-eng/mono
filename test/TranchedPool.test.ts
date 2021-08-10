@@ -25,10 +25,11 @@ import {ecsign} from "ethereumjs-util"
 const CreditLine = artifacts.require("CreditLine")
 import {getApprovalDigest, getWallet} from "./permitHelpers"
 import {TranchedPoolInstance} from "../typechain/truffle"
-import {DepositMade} from "../typechain/truffle/MigratedTranchedPool"
+import {JuniorCapitalLocked, DepositMade} from "../typechain/truffle/TranchedPool"
 
 const RESERVE_FUNDS_COLLECTED_EVENT = "ReserveFundsCollected"
 const PAYMENT_APPLIED_EVENT = "PaymentApplied"
+const EXPECTED_JUNIOR_CAPITAL_LOCKED_EVENT_ARGS = ["0", "1", "__length__", "juniorTrancheLockedUntil", "pool"]
 
 const expectPaymentRelatedEventsEmitted = (
   receipt: unknown,
@@ -903,11 +904,13 @@ describe("TranchedPool", () => {
           const oneDayFromNow = (await time.latest()).add(SECONDS_PER_DAY)
           await expectAction(async () => {
             const receipt = await tranchedPool.lockJuniorCapital({from: actor})
-            expectEvent(receipt, "JuniorCapitalLocked", {
-              pool: tranchedPool.address,
-              // TODO[PR] It would be ideal to include an assertion about the value of `juniorTrancheLockedUntil`
-              // here. How to assert like `bignumber.closeTo()`, since we can't predict the exact value?
-            })
+
+            const logs = decodeLogs<JuniorCapitalLocked>(receipt.receipt.rawLogs, tranchedPool, "JuniorCapitalLocked")
+            const firstLog = getFirstLog(logs)
+            expect(Object.keys(firstLog.args).sort()).to.eql(EXPECTED_JUNIOR_CAPITAL_LOCKED_EVENT_ARGS)
+            expect(firstLog.args.pool).to.equal(tranchedPool.address)
+            expect(firstLog.args.juniorTrancheLockedUntil).to.be.bignumber.closeTo(oneDayFromNow, new BN(5))
+
             return receipt
           }).toChange([
             [async () => (await tranchedPool.getTranche(TRANCHES.Junior)).lockedUntil, {increase: true}],
@@ -927,11 +930,13 @@ describe("TranchedPool", () => {
           const oneDayFromNow = (await time.latest()).add(SECONDS_PER_DAY)
           await expectAction(async () => {
             const receipt = await tranchedPool.lockJuniorCapital({from: borrower})
-            expectEvent(receipt, "JuniorCapitalLocked", {
-              pool: tranchedPool.address,
-              // TODO[PR] It would be ideal to include an assertion about the value of `juniorTrancheLockedUntil`
-              // here. How to assert like `bignumber.closeTo()`, since we can't predict the exact value?
-            })
+
+            const logs = decodeLogs<JuniorCapitalLocked>(receipt.receipt.rawLogs, tranchedPool, "JuniorCapitalLocked")
+            const firstLog = getFirstLog(logs)
+            expect(Object.keys(firstLog.args).sort()).to.eql(EXPECTED_JUNIOR_CAPITAL_LOCKED_EVENT_ARGS)
+            expect(firstLog.args.pool).to.equal(tranchedPool.address)
+            expect(firstLog.args.juniorTrancheLockedUntil).to.be.bignumber.closeTo(oneDayFromNow, new BN(5))
+
             return receipt
           }).toChange([
             [async () => (await tranchedPool.getTranche(TRANCHES.Junior)).lockedUntil, {increase: true}],

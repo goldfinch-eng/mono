@@ -168,10 +168,15 @@ function expectAction(action: any, debug?: boolean) {
   }
 }
 
+type DecodedLog<T extends Truffle.AnyEvent> = {
+  event: T['name']
+  args: T['args']
+}
+
 // This decodes logs for a single event type, and returns a decoded object in
 // the same form truffle-contract uses on its receipts
 // Mostly stolen from: https://github.com/OpenZeppelin/openzeppelin-test-helpers/blob/6e54db1e1f64a80c7632799776672297bbe543b3/src/expectEvent.js#L49
-function decodeLogs<T extends Truffle.AnyEvent>(logs, emitter, eventName): T[] {
+function decodeLogs<T extends Truffle.AnyEvent>(logs, emitter, eventName): DecodedLog<T>[] {
   let abi = emitter.abi
   let address = emitter.address
   let eventABI = abi.filter((x) => x.type === "event" && x.name === eventName)
@@ -193,7 +198,7 @@ function decodeLogs<T extends Truffle.AnyEvent>(logs, emitter, eventName): T[] {
     .map((decoded) => ({event: eventName, args: decoded}))
 }
 
-function getFirstLog<T extends Truffle.AnyEvent>(logs: T[]): T {
+function getFirstLog<T extends Truffle.AnyEvent>(logs: DecodedLog<T>[]): DecodedLog<T> {
   const firstLog = logs[0]
   assertNonNullable(firstLog)
   return firstLog
