@@ -46,8 +46,9 @@ contract DynamicLeverageRatioStrategy is LeverageRatioStrategy {
 
     require(ratioInfo.juniorTrancheLockedUntil > 0, "Leverage ratio has not been set yet.");
     if (seniorTranche.lockedUntil > 0) {
-      // The senior tranche is locked. Coherence check: we expect `juniorTranche.lockedUntil` to have
-      // been updated relative to what it was when `setLeverageRatio()` was last called successfully.
+      // The senior tranche is locked. Coherence check: we expect locking the senior tranche to have
+      // updated `juniorTranche.lockedUntil` (compared to its value when `setLeverageRatio()` was last
+      // called successfully).
       require(
         ratioInfo.juniorTrancheLockedUntil < juniorTranche.lockedUntil,
         "Expected junior tranche `lockedUntil` to have been updated."
