@@ -107,6 +107,14 @@ describe("FixedLeverageRatioStrategy", () => {
         })
 
         it("returns investment amount", async () => {
+          const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
+          const juniorTrancheLockedUntil = new BN(juniorTranche.lockedUntil)
+          expect(juniorTrancheLockedUntil).to.be.bignumber.equal(new BN(0))
+
+          const seniorTranche = await tranchedPool.getTranche(TRANCHES.Senior)
+          const seniorTrancheLockedUntil = new BN(seniorTranche.lockedUntil)
+          expect(seniorTrancheLockedUntil).to.be.bignumber.equal(new BN(0))
+
           const leverageRatio = await strategy.getLeverageRatio(tranchedPool.address)
           expect(leverageRatio).to.bignumber.equal(EXPECTED_LEVERAGE_RATIO)
 
@@ -244,6 +252,14 @@ describe("FixedLeverageRatioStrategy", () => {
         })
 
         it("does not invest", async () => {
+          const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
+          const juniorTrancheLockedUntil = new BN(juniorTranche.lockedUntil)
+          expect(juniorTrancheLockedUntil).to.be.bignumber.equal(new BN(0))
+
+          const seniorTranche = await tranchedPool.getTranche(TRANCHES.Senior)
+          const seniorTrancheLockedUntil = new BN(seniorTranche.lockedUntil)
+          expect(seniorTrancheLockedUntil).to.be.bignumber.equal(new BN(0))
+
           const amount = await strategy.invest(seniorPool.address, tranchedPool.address)
           expect(amount).to.bignumber.equal(new BN(0))
         })
