@@ -1,5 +1,6 @@
 .sidebar{
   background-color: $sand-light;
+  border-bottom: 1px solid $sand;
   font-size: $sans-size-s;
   left: 0;
   position: fixed;
@@ -70,6 +71,7 @@
 
 @media only screen and (min-width: $screen-m) {
   .sidebar{
+    border: none;
     bottom: 0;
     width: $nav-width;
   }
