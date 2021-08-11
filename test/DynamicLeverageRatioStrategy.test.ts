@@ -196,6 +196,9 @@ describe("DynamicLeverageRatioStrategy", () => {
             await tranchedPool.lockJuniorCapital({from: borrower})
             await setLeverageRatio(tranchedPool, strategy, owner, EXPECTED_LEVERAGE_RATIO)
 
+            const leverageRatio = await strategy.getLeverageRatio(tranchedPool.address)
+            expect(leverageRatio).to.bignumber.equal(EXPECTED_LEVERAGE_RATIO)
+
             const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
             const juniorTrancheLockedUntil = new BN(juniorTranche.lockedUntil)
             await tranchedPool._modifyJuniorTrancheLockedUntil(juniorTrancheLockedUntil.add(new BN(1)))
