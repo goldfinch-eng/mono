@@ -217,7 +217,7 @@ async function getCumulativeWritedowns(pool: SeniorFund) {
 
 async function getCumulativeDrawdowns(pool: SeniorFund) {
   const protocol = pool.goldfinchProtocol
-  const investmentEvents = await protocol.queryEvents(pool.contract, "InvestmentMade")
+  const investmentEvents = await protocol.queryEvents(pool.contract, "InvestmentMadeInSenior")
   const tranchedPools = _.map(investmentEvents, (e) =>
     pool.goldfinchProtocol.getContract<TranchedPool>("TranchedPool", e.returnValues.tranchedPool),
   )
@@ -287,7 +287,7 @@ function assetsAsOf(this: PoolData, dt) {
 
 async function getEstimatedTotalInterest(pool: SeniorFund): Promise<BigNumber> {
   const protocol = pool.goldfinchProtocol
-  const investmentEvents = await protocol.queryEvents(pool.contract, "InvestmentMade")
+  const investmentEvents = await protocol.queryEvents(pool.contract, "InvestmentMadeInSenior")
   const tranchedPools = _.map(investmentEvents, (e) =>
     pool.goldfinchProtocol.getContract<TranchedPool>("TranchedPool", e.returnValues.tranchedPool),
   )

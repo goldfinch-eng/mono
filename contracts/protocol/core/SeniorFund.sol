@@ -33,7 +33,7 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
   event ReserveFundsCollected(address indexed user, uint256 amount);
 
   event PrincipalWrittenDown(address indexed tranchedPool, int256 amount);
-  event InvestmentMade(address indexed tranchedPool, uint256 amount);
+  event InvestmentMadeInSenior(address indexed tranchedPool, uint256 amount);
 
   function initialize(address owner, GoldfinchConfig _config) public initializer {
     require(owner != address(0) && address(_config) != address(0), "Owner and config addresses cannot be empty");
@@ -183,7 +183,7 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
     approvePool(pool, amount);
     pool.deposit(uint256(ITranchedPool.Tranches.Senior), amount);
 
-    emit InvestmentMade(address(pool), amount);
+    emit InvestmentMadeInSenior(address(pool), amount);
     totalLoansOutstanding = totalLoansOutstanding.add(amount);
   }
 

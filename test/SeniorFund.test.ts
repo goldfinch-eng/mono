@@ -573,7 +573,7 @@ describe("SeniorFund", () => {
         ])
       })
 
-      it("should emit an event", async () => {
+      it("should emit a InvestmentMadeInSenior event", async () => {
         // Make the strategy invest
         await tranchedPool.lockJuniorCapital({from: borrower})
         let investmentAmount = await seniorFundStrategy.invest(seniorFund.address, tranchedPool.address)
@@ -581,7 +581,7 @@ describe("SeniorFund", () => {
         let receipt = await seniorFund.invest(tranchedPool.address)
         let event = receipt.logs[0]
 
-        expect(event.event).to.equal("InvestmentMade")
+        expect(event.event).to.equal("InvestmentMadeInSenior")
         expect(event.args.tranchedPool).to.equal(tranchedPool.address)
         expect(event.args.amount).to.bignumber.equal(investmentAmount)
       })
