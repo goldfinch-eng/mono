@@ -88,8 +88,6 @@ contract DynamicLeverageRatioStrategy is LeverageRatioStrategy {
     uint256 juniorTrancheLockedUntil,
     bytes32 version
   ) public onlySetterRole {
-    // TODO[PR] Should we validate that `pool` is not zero address?
-
     ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
     ITranchedPool.TrancheInfo memory seniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Senior));
 
