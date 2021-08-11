@@ -106,9 +106,6 @@
           "withdrawSeniorInFidu": [],
           "transferPosition": []
         },
-        "**/LeverageRatioStrategy.sol:LeverageRatioStrategy": {
-          "invest": []
-        },
         "**/DynamicLeverageRatioStrategy.sol:DynamicLeverageRatioStrategy": {
           "setLeverageRatio": ["onlySetterRole"]
         },
