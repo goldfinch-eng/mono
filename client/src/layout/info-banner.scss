@@ -17,6 +17,10 @@
   @include space-x(0em);
   @include space-y(1em);
 
+  &.subtle{
+    background-color: $sand-light;
+  }
+
   .hidden-message {
     font-size: $sans-size-xs;
   }

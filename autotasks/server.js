@@ -10,8 +10,8 @@ const {bufferToHex} = require("ethereumjs-util")
 
 const port = process.env.RELAY_SERVER_PORT
 const FORWARDER_ADDRESS = process.env.FORWARDER_ADDRESS
-const ALLOWED_SENDERS = (process.env.ALLOWED_SENDERS || "").split(",")
-const ALLOWED_CONTRACTS = (process.env.ALLOWED_CONTRACTS || "").split(",")
+const ALLOWED_SENDERS = (process.env.ALLOWED_SENDERS || "").split(",").filter((val) => !!val)
+const ALLOWED_CONTRACTS = (process.env.ALLOWED_CONTRACTS || "").split(",").filter((val) => !!val)
 
 app.use(express.json())
 app.use(cors())
