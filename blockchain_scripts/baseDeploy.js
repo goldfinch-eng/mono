@@ -100,7 +100,7 @@ async function baseDeploy(hre, {shouldUpgrade}) {
     if (TRUSTED_FORWARDER_CONFIG[chainID]) {
       await updateConfig(config, "address", CONFIG_KEYS.TrustedForwarder, TRUSTED_FORWARDER_CONFIG[chainID], {logger})
     }
-    await config.setTreasuryReserve(multisigAddress)
+    await (await config.setTreasuryReserve(multisigAddress)).wait()
 
     return config
   }

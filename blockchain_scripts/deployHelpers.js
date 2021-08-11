@@ -159,6 +159,7 @@ async function updateConfig(config, type, key, newValue, opts) {
     currentValue = await config.getAddress(key)
     if (currentValue.toLowerCase() !== newValue.toLowerCase()) {
       await (await config.setAddress(key, newValue)).wait()
+      logger(`Updated config ${type} ${key} from ${currentValue} to ${newValue}`)
     }
   } else if (type === "number") {
     currentValue = await config.getNumber(key)
