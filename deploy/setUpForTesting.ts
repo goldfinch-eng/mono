@@ -134,6 +134,7 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   await addUsersToGoList(config, [underwriter])
   await depositToTheSeniorPool(seniorPool, erc20!)
   await updateConfig(config, "number", CONFIG_KEYS.DrawdownPeriodInSeconds, 300, {logger})
+  await updateConfig(config, "number", CONFIG_KEYS.LeverageRatio, "4000000000000000000", {logger})
 
 
   for (const [i, borrower] of borrowers.entries()) {
@@ -293,7 +294,7 @@ async function giveMoneyToTestUser(testUser: string, erc20s: any) {
   for (let erc20 of erc20s) {
     const {contract} = erc20
     let decimals = ten.pow(new BN(await contract.decimals()))
-    await contract.transfer(testUser, String(new BN(100000).mul(decimals)))
+    await contract.transfer(testUser, String(new BN(10000).mul(decimals)))
   }
 }
 
