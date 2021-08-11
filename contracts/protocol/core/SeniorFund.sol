@@ -34,6 +34,7 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
 
   event PrincipalWrittenDown(address indexed tranchedPool, int256 amount);
   event InvestmentMadeInSenior(address indexed tranchedPool, uint256 amount);
+  event InvestmentMadeInJunior(address indexed tranchedPool, uint256 amount);
 
   function initialize(address owner, GoldfinchConfig _config) public initializer {
     require(owner != address(0) && address(_config) != address(0), "Owner and config addresses cannot be empty");
@@ -166,8 +167,8 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
   }
 
   /**
-   * @notice Invest in an ITranchedPool using the fund's strategy
-   * @param pool An ITranchedPool that should be considered for investment
+   * @notice Invest in an ITranchedPool's senior tranche using the fund's strategy
+   * @param pool An ITranchedPool whose senior tranche should be considered for investment
    */
   function invest(ITranchedPool pool) public override whenNotPaused nonReentrant onlyAdmin {
     require(validPool(pool), "Pool must be valid");
@@ -191,6 +192,35 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
     require(validPool(pool), "Pool must be valid");
     IFundStrategy strategy = config.getSeniorFundStrategy();
     return strategy.estimateInvestment(this, pool);
+  }
+
+  /**
+   * @notice Invest in an ITranchedPool's junior tranche, and thereafter lock the tranched pool.
+   * Also, to prevent the senior fund from investing in both the senior and junior tranches, this
+   * function requires that the senior tranche be empty.
+   * @param pool An ITranchedPool whose junior tranche to invest in
+   */
+  function investJuniorFinally(ITranchedPool pool, uint256 amount)
+    public
+    override
+    whenNotPaused
+    nonReentrant
+    onlyAdmin
+  {
+    require(validPool(pool), "Pool must be valid");
+
+    if (compoundBalance > 0) {
+      _sweepFromCompound();
+    }
+
+    require(amount > 0, "Investment amount must be positive");
+    // TODO[PR] How to constrain max `amount`?
+
+    approvePool(pool, amount);
+    pool.deposit(uint256(ITranchedPool.Tranches.Junior), amount);
+
+    emit InvestmentMadeInJunior(address(pool), amount);
+    totalLoansOutstanding = totalLoansOutstanding.add(amount);
   }
 
   /**
