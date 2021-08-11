@@ -195,19 +195,20 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
   }
 
   /**
-   * @notice Invest in an ITranchedPool's junior tranche, and thereafter lock the tranched pool.
-   * Also, to prevent the senior fund from investing in both the senior and junior tranches, this
-   * function requires that the senior tranche be empty.
+   * @notice Invest in an ITranchedPool's junior tranche. In the interest of simplicity, we do not
+   * allow the senior fund to invest in both the senior tranche and the junior tranche. Therefore,
+   * this function requires that the senior tranche be empty prior to investing in the junior
+   * tranche, and it locks the tranched pool after investing in the junior tranche.
    * @param pool An ITranchedPool whose junior tranche to invest in
    */
-  function investJuniorFinally(ITranchedPool pool, uint256 amount)
-    public
-    override
-    whenNotPaused
-    nonReentrant
-    onlyAdmin
-  {
+  function investJunior(ITranchedPool pool, uint256 amount) public override whenNotPaused nonReentrant onlyAdmin {
     require(validPool(pool), "Pool must be valid");
+
+    ITranchedPool.TrancheInfo memory seniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Senior));
+    require(
+      seniorTranche.principalDeposited == 0,
+      "SeniorFund cannot invest in tranched pool with non-empty senior tranche."
+    );
 
     if (compoundBalance > 0) {
       _sweepFromCompound();
@@ -218,6 +219,11 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
 
     approvePool(pool, amount);
     pool.deposit(uint256(ITranchedPool.Tranches.Junior), amount);
+
+    // Lock the tranched pool after depositing into the junior tranche, to ensure that
+    // the senior fund cannot become invested in both the junior and senior tranches.
+    pool.lockJuniorCapital();
+    pool.lockPool();
 
     emit InvestmentMadeInJunior(address(pool), amount);
     totalLoansOutstanding = totalLoansOutstanding.add(amount);
