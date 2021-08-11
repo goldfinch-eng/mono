@@ -153,15 +153,12 @@ describe("DynamicLeverageRatioStrategy", () => {
         })
 
         it("does not return the leverage ratio", async () => {
-          const leverageRatioNotSet = strategy.getLeverageRatio(tranchedPool.address)
-          expect(leverageRatioNotSet).to.be.rejectedWith(LEVERAGE_RATIO_NOT_SET_REGEXP)
-
           const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
           const juniorTrancheLockedUntil = new BN(juniorTranche.lockedUntil)
           expect(juniorTrancheLockedUntil).to.be.bignumber.equal(new BN(0))
 
-          const leverageRatioNotSet2 = strategy.getLeverageRatio(tranchedPool.address)
-          expect(leverageRatioNotSet2).to.be.rejectedWith(LEVERAGE_RATIO_NOT_SET_REGEXP)
+          const leverageRatioNotSet = strategy.getLeverageRatio(tranchedPool.address)
+          expect(leverageRatioNotSet).to.be.rejectedWith(LEVERAGE_RATIO_NOT_SET_REGEXP)
         })
       })
 
