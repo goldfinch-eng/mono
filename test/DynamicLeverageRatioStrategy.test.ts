@@ -781,14 +781,15 @@ describe("DynamicLeverageRatioStrategy", () => {
             })
 
             it("invests up to the levered amount", async () => {
-              let existingSeniorPrincipal = juniorInvestmentAmount.add(new BN(10))
-              await tranchedPool.deposit(TRANCHES.Senior, existingSeniorPrincipal)
               await tranchedPool.lockJuniorCapital({from: borrower})
 
               await setLeverageRatio(tranchedPool, strategy, owner, EXPECTED_LEVERAGE_RATIO)
 
               const leverageRatio = await strategy.getLeverageRatio(tranchedPool.address)
               expect(leverageRatio).to.bignumber.equal(EXPECTED_LEVERAGE_RATIO)
+
+              let existingSeniorPrincipal = juniorInvestmentAmount.add(new BN(10))
+              await tranchedPool.deposit(TRANCHES.Senior, existingSeniorPrincipal)
 
               const amount = await strategy.invest(seniorPool.address, tranchedPool.address)
               expect(amount).to.bignumber.equal(
@@ -805,13 +806,14 @@ describe("DynamicLeverageRatioStrategy", () => {
             })
 
             it("does not invest", async () => {
+              await tranchedPool.lockJuniorCapital({from: borrower})
+
+              await setLeverageRatio(tranchedPool, strategy, owner, EXPECTED_LEVERAGE_RATIO)
+
               let existingSeniorPrincipal = juniorInvestmentAmount.add(
                 juniorInvestmentAmount.mul(EXPECTED_LEVERAGE_RATIO).div(LEVERAGE_RATIO_DECIMALS).add(new BN(1))
               )
               await tranchedPool.deposit(TRANCHES.Senior, existingSeniorPrincipal)
-              await tranchedPool.lockJuniorCapital({from: borrower})
-
-              await setLeverageRatio(tranchedPool, strategy, owner, EXPECTED_LEVERAGE_RATIO)
 
               const amount = await strategy.invest(seniorPool.address, tranchedPool.address)
               expect(amount).to.bignumber.equal(new BN(0))
