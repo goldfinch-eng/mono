@@ -284,7 +284,7 @@ function ActionsContainer({tranchedPool, onComplete}: {tranchedPool?: TranchedPo
   let withdrawAction
   let withdrawClass = "disabled"
 
-  if (backer && !backer.availableToWithdraw.isZero()) {
+  if (backer && !backer.availableToWithdrawInDollars.isZero()) {
     withdrawAction = (e) => {
       setAction("withdraw")
     }

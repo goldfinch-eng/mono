@@ -43,7 +43,19 @@
   em{
     font-style: italic;
   }
+
+  b{
+    font-weight: 500;
+  }
 }
+
+.legal-legend{
+  font-size: $sans-size-xs;
+  font-weight: 500;
+  line-height: 1.4;
+  margin: 105px auto -40px;
+}
+
 
 @media only screen and (min-width: $screen-l) {
   .legal{
@@ -74,5 +86,10 @@
       margin: 0 0 0 -30px;
       width: 30px;
     }
+  }
+
+  .legal-legend{
+    font-size: $sans-size-s;
+    line-height: 1.4;
   }
 }

@@ -10,7 +10,7 @@ module.exports = {
   solidityLoader: {
     test: /\.sol$/,
     use: [
-      { loader: "json-loader" },
+      {loader: "json-loader"},
       {
         loader: "@openzeppelin/solidity-loader",
         options: solidityLoaderOptions,

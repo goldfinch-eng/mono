@@ -62,7 +62,7 @@ function DepositForm(props: DepositFormProps) {
           />
           <label className="checkbox-label" htmlFor="agreement">
             I agree to the&nbsp;
-            <a className="checkbox-label-link" href="/goldfinch_senior_pool_agreement_non_us.pdf" target="_blank">
+            <a className="checkbox-label-link" href="/senior-pool-agreement-non-us" target="_blank">
               Senior Pool Agreement.
             </a>
           </label>
