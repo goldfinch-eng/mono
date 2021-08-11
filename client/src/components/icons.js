@@ -30,6 +30,28 @@ const iconBank = (
   </svg>
 )
 
+const iconCarrotDown = (
+  <svg className="icon" width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+      fill-rule="evenodd"
+      clip-rule="evenodd"
+      d="M0.939346 11.0607L3.06067 8.93933L16 21.8787L28.9393 8.93933L31.0607 11.0607L16 26.1213L0.939346 11.0607Z"
+      fill="#483E5E"
+    />
+  </svg>
+)
+
+const iconCarrotUp = (
+  <svg className="icon" width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+      fill-rule="evenodd"
+      clip-rule="evenodd"
+      d="M31.0607 20.9393L28.9393 23.0607L16 10.1213L3.06065 23.0607L0.939333 20.9393L16 5.87869L31.0607 20.9393Z"
+      fill="#483E5E"
+    />
+  </svg>
+)
+
 const iconCheck = (
   <svg className="icon" width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path
@@ -192,6 +214,8 @@ export {
   iconAlert,
   iconBank,
   iconCheck,
+  iconCarrotDown,
+  iconCarrotUp,
   iconCircleCheck,
   iconCircleUpLg,
   iconCircleDownLg,

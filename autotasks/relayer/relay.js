@@ -20,7 +20,8 @@ async function relay(request, context) {
     throw new Error(`Unrecognized sender: ${from}`)
   }
 
-  if (!allowed_contracts.includes(to)) {
+  const enforceAllowedContracts = process.env.MURMURATION !== "yes"
+  if (enforceAllowedContracts && !allowed_contracts.includes(to)) {
     throw new Error(`Unrecognized borrower contract: ${to}`)
   }
 
