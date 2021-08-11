@@ -16,4 +16,8 @@ contract TestTranchedPool is TranchedPool {
   ) public {
     collectInterestAndPrincipal(from, interest, principal);
   }
+
+  function _modifyJuniorTrancheLockedUntil(uint256 lockedUntil) public {
+    juniorTranche.lockedUntil = lockedUntil;
+  }
 }

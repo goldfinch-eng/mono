@@ -25,10 +25,11 @@ import {ecsign} from "ethereumjs-util"
 const CreditLine = artifacts.require("CreditLine")
 import {getApprovalDigest, getWallet} from "./permitHelpers"
 import {TranchedPoolInstance} from "../typechain/truffle"
-import {DepositMade} from "../typechain/truffle/MigratedTranchedPool"
+import {JuniorCapitalLocked, DepositMade} from "../typechain/truffle/TranchedPool"
 
 const RESERVE_FUNDS_COLLECTED_EVENT = "ReserveFundsCollected"
 const PAYMENT_APPLIED_EVENT = "PaymentApplied"
+const EXPECTED_JUNIOR_CAPITAL_LOCKED_EVENT_ARGS = ["0", "1", "__length__", "juniorTrancheLockedUntil", "pool"]
 
 const expectPaymentRelatedEventsEmitted = (
   receipt: unknown,
@@ -901,7 +902,17 @@ describe("TranchedPool", () => {
           let actor = borrower
           await tranchedPool.deposit(TRANCHES.Senior, usdcVal(10))
           const oneDayFromNow = (await time.latest()).add(SECONDS_PER_DAY)
-          await expectAction(async () => tranchedPool.lockJuniorCapital({from: actor})).toChange([
+          await expectAction(async () => {
+            const receipt = await tranchedPool.lockJuniorCapital({from: actor})
+
+            const logs = decodeLogs<JuniorCapitalLocked>(receipt.receipt.rawLogs, tranchedPool, "JuniorCapitalLocked")
+            const firstLog = getFirstLog(logs)
+            expect(Object.keys(firstLog.args).sort()).to.eql(EXPECTED_JUNIOR_CAPITAL_LOCKED_EVENT_ARGS)
+            expect(firstLog.args.pool).to.equal(tranchedPool.address)
+            expect(firstLog.args.juniorTrancheLockedUntil).to.be.bignumber.closeTo(oneDayFromNow, new BN(5))
+
+            return receipt
+          }).toChange([
             [async () => (await tranchedPool.getTranche(TRANCHES.Junior)).lockedUntil, {increase: true}],
             [async () => (await tranchedPool.getTranche(TRANCHES.Junior)).principalSharePrice, {unchanged: true}],
           ])
@@ -917,7 +928,17 @@ describe("TranchedPool", () => {
         it("locks the junior tranche", async () => {
           await tranchedPool.deposit(TRANCHES.Senior, usdcVal(10))
           const oneDayFromNow = (await time.latest()).add(SECONDS_PER_DAY)
-          await expectAction(async () => tranchedPool.lockJuniorCapital({from: borrower})).toChange([
+          await expectAction(async () => {
+            const receipt = await tranchedPool.lockJuniorCapital({from: borrower})
+
+            const logs = decodeLogs<JuniorCapitalLocked>(receipt.receipt.rawLogs, tranchedPool, "JuniorCapitalLocked")
+            const firstLog = getFirstLog(logs)
+            expect(Object.keys(firstLog.args).sort()).to.eql(EXPECTED_JUNIOR_CAPITAL_LOCKED_EVENT_ARGS)
+            expect(firstLog.args.pool).to.equal(tranchedPool.address)
+            expect(firstLog.args.juniorTrancheLockedUntil).to.be.bignumber.closeTo(oneDayFromNow, new BN(5))
+
+            return receipt
+          }).toChange([
             [async () => (await tranchedPool.getTranche(TRANCHES.Junior)).lockedUntil, {increase: true}],
             [async () => (await tranchedPool.getTranche(TRANCHES.Junior)).principalSharePrice, {unchanged: true}],
           ])

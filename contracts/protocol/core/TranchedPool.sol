@@ -56,6 +56,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   event DrawdownsPaused(address indexed pool);
   event DrawdownsUnpaused(address indexed pool);
   event EmergencyShutdown(address indexed pool);
+  event JuniorCapitalLocked(address indexed pool, uint256 juniorTrancheLockedUntil);
 
   function initialize(
     address _config,
@@ -190,7 +191,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   function drawdown(uint256 amount) external override onlyLocker whenNotPaused {
     require(!drawdownsPaused, "Drawdowns are currently paused");
     if (!locked()) {
-      // Assumes the senior fund has invested already (saves the borrower a separate transaction to lock the pool)
+      // Assumes the senior pool has invested already (saves the borrower a separate transaction to lock the pool)
       _lockPool();
     }
 
@@ -486,7 +487,10 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     require(!locked(), "Pool already locked");
     require(juniorTranche.lockedUntil == 0, "Junior tranche already locked");
 
-    juniorTranche.lockedUntil = currentTime().add(config.getDrawdownPeriodInSeconds());
+    uint256 lockedUntil = currentTime().add(config.getDrawdownPeriodInSeconds());
+    juniorTranche.lockedUntil = lockedUntil;
+
+    emit JuniorCapitalLocked(address(this), lockedUntil);
   }
 
   function _lockPool() internal {

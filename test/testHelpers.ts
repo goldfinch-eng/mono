@@ -23,6 +23,7 @@ import {
   TransferRestrictedVaultInstance,
 } from "../typechain/truffle"
 import {assertNonNullable} from "../utils/type"
+import { DynamicLeverageRatioStrategyInstance } from "../typechain/truffle/DynamicLeverageRatioStrategy"
 const decimals = new BN(String(1e18))
 const USDC_DECIMALS = new BN(String(1e6))
 const SECONDS_PER_DAY = new BN(86400)
@@ -167,10 +168,15 @@ function expectAction(action: any, debug?: boolean) {
   }
 }
 
+type DecodedLog<T extends Truffle.AnyEvent> = {
+  event: T['name']
+  args: T['args']
+}
+
 // This decodes logs for a single event type, and returns a decoded object in
 // the same form truffle-contract uses on its receipts
 // Mostly stolen from: https://github.com/OpenZeppelin/openzeppelin-test-helpers/blob/6e54db1e1f64a80c7632799776672297bbe543b3/src/expectEvent.js#L49
-function decodeLogs<T extends Truffle.AnyEvent>(logs, emitter, eventName): T[] {
+function decodeLogs<T extends Truffle.AnyEvent>(logs, emitter, eventName): DecodedLog<T>[] {
   let abi = emitter.abi
   let address = emitter.address
   let eventABI = abi.filter((x) => x.type === "event" && x.name === eventName)
@@ -192,7 +198,7 @@ function decodeLogs<T extends Truffle.AnyEvent>(logs, emitter, eventName): T[] {
     .map((decoded) => ({event: eventName, args: decoded}))
 }
 
-function getFirstLog<T extends Truffle.AnyEvent>(logs: T[]): T {
+function getFirstLog<T extends Truffle.AnyEvent>(logs: DecodedLog<T>[]): DecodedLog<T> {
   const firstLog = logs[0]
   assertNonNullable(firstLog)
   return firstLog
@@ -204,7 +210,8 @@ async function deployAllContracts(
 ): Promise<{
   pool: PoolInstance
   seniorPool: SeniorPoolInstance
-  seniorPoolStrategy: FixedLeverageRatioStrategyInstance
+  seniorPoolFixedStrategy: FixedLeverageRatioStrategyInstance
+  seniorPoolDynamicStrategy: DynamicLeverageRatioStrategyInstance
   usdc: ERC20Instance
   creditDesk: CreditDeskInstance
   fidu: FiduInstance
@@ -219,9 +226,13 @@ async function deployAllContracts(
   await deployments.fixture("base_deploy")
   const pool = await getDeployedAsTruffleContract<PoolInstance>(deployments, "Pool")
   const seniorPool = await getDeployedAsTruffleContract<SeniorPoolInstance>(deployments, "SeniorPool")
-  const seniorPoolStrategy = await getDeployedAsTruffleContract<FixedLeverageRatioStrategyInstance>(
+  const seniorPoolFixedStrategy = await getDeployedAsTruffleContract<FixedLeverageRatioStrategyInstance>(
     deployments,
     "FixedLeverageRatioStrategy"
+  )
+  const seniorPoolDynamicStrategy = await getDeployedAsTruffleContract<DynamicLeverageRatioStrategyInstance>(
+    deployments,
+    "DynamicLeverageRatioStrategy"
   )
   const usdc = await getDeployedAsTruffleContract<ERC20Instance>(deployments, "ERC20")
   const creditDesk = await getDeployedAsTruffleContract<CreditDeskInstance>(deployments, "CreditDesk")
@@ -243,7 +254,8 @@ async function deployAllContracts(
   return {
     pool,
     seniorPool,
-    seniorPoolStrategy,
+    seniorPoolFixedStrategy,
+    seniorPoolDynamicStrategy,
     usdc,
     creditDesk,
     fidu,
