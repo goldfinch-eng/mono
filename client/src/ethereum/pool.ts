@@ -2,7 +2,7 @@ import BigNumber from "bignumber.js"
 import {fetchDataFromAttributes, INTEREST_DECIMALS, USDC_DECIMALS} from "./utils"
 import {Tickers, usdcFromAtomic} from "./erc20"
 import {FIDU_DECIMALS, fiduFromAtomic} from "./fidu"
-import {roundDownPenny} from "../utils"
+import {dedupe, roundDownPenny} from "../utils"
 import {getFromBlock} from "./utils"
 import {getPoolEvents} from "./user"
 import _ from "lodash"
@@ -217,9 +217,16 @@ async function getCumulativeWritedowns(pool: SeniorFund) {
 
 async function getCumulativeDrawdowns(pool: SeniorFund) {
   const protocol = pool.goldfinchProtocol
-  const investmentEvents = await protocol.queryEvents(pool.contract, "InvestmentMade")
-  const tranchedPools = _.map(investmentEvents, (e) =>
-    pool.goldfinchProtocol.getContract<TranchedPool>("TranchedPool", e.returnValues.tranchedPool),
+  const investmentEvents = await protocol.queryEvents(pool.contract, [
+    "InvestmentMadeInSenior",
+    "InvestmentMadeInJunior",
+  ])
+  const mappedTranchedPoolAddresses = investmentEvents.map((e) => e.returnValues.tranchedPool)
+  // De-duplicate the tranched pool addresses, in case the senior pool has made more than one investment
+  // in a tranched pool.
+  const tranchedPoolAddresses: string[] = dedupe(mappedTranchedPoolAddresses)
+  const tranchedPools = tranchedPoolAddresses.map((address) =>
+    pool.goldfinchProtocol.getContract<TranchedPool>("TranchedPool", address),
   )
   let allDrawdownEvents = _.flatten(
     await Promise.all(tranchedPools.map((pool) => protocol.queryEvents(pool, "DrawdownMade"))),
@@ -287,9 +294,16 @@ function assetsAsOf(this: PoolData, dt) {
 
 async function getEstimatedTotalInterest(pool: SeniorFund): Promise<BigNumber> {
   const protocol = pool.goldfinchProtocol
-  const investmentEvents = await protocol.queryEvents(pool.contract, "InvestmentMade")
-  const tranchedPools = _.map(investmentEvents, (e) =>
-    pool.goldfinchProtocol.getContract<TranchedPool>("TranchedPool", e.returnValues.tranchedPool),
+  const investmentEvents = await protocol.queryEvents(pool.contract, [
+    "InvestmentMadeInSenior",
+    "InvestmentMadeInJunior",
+  ])
+  const mappedTranchedPoolAddresses = investmentEvents.map((e) => e.returnValues.tranchedPool)
+  // De-duplicate the tranched pool addresses, in case the senior pool has made more than one investment
+  // in a tranched pool.
+  const tranchedPoolAddresses: string[] = dedupe(mappedTranchedPoolAddresses)
+  const tranchedPools = tranchedPoolAddresses.map((address) =>
+    pool.goldfinchProtocol.getContract<TranchedPool>("TranchedPool", address),
   )
   const creditLineAddresses = await Promise.all(tranchedPools.map((p) => p.methods.creditLine().call()))
   const creditLines = creditLineAddresses.map((a) => buildCreditLine(a))
