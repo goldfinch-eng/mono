@@ -195,15 +195,16 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
   }
 
   /**
-   * @notice Invest in an ITranchedPool's junior tranche. In the interest of simplicity, we do not
-   * allow the senior fund to invest in both the senior tranche and the junior tranche. Therefore,
-   * this function requires that the senior tranche be empty prior to investing in the junior
-   * tranche, and it locks the tranched pool after investing in the junior tranche.
+   * @notice Invest in an ITranchedPool's junior tranche.
    * @param pool An ITranchedPool whose junior tranche to invest in
    */
   function investJunior(ITranchedPool pool, uint256 amount) public override whenNotPaused nonReentrant onlyAdmin {
     require(validPool(pool), "Pool must be valid");
 
+    // We don't intend to support allowing the senior fund to invest in the junior tranche if it
+    // has already invested in the senior tranche, so we prohibit that here. Note though that we
+    // don't care to prohibit the inverse order, of the senior fund investing in the senior
+    // tranche after investing in the junior tranche.
     ITranchedPool.TrancheInfo memory seniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Senior));
     require(
       seniorTranche.principalDeposited == 0,
@@ -214,16 +215,11 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
       _sweepFromCompound();
     }
 
+    // TODO[PR] Do we want to constrain max `amount` in any way?
     require(amount > 0, "Investment amount must be positive");
-    // TODO[PR] How to constrain max `amount`?
 
     approvePool(pool, amount);
     pool.deposit(uint256(ITranchedPool.Tranches.Junior), amount);
-
-    // Lock the tranched pool after depositing into the junior tranche, to ensure that
-    // the senior fund cannot become invested in both the junior and senior tranches.
-    pool.lockJuniorCapital();
-    pool.lockPool();
 
     emit InvestmentMadeInJunior(address(pool), amount);
     totalLoansOutstanding = totalLoansOutstanding.add(amount);

@@ -614,7 +614,7 @@ describe("SeniorFund", () => {
       it("reverts", async () => {
         const unknownPoolAddress = await simulateMaliciousTranchedPool(goldfinchConfig, person2)
 
-        await expect(seniorFund.investJunior(unknownPoolAddress, seniorPoolJuniorInvestmentAmount, {from: owner})).to.be.rejectedWith(
+        await expect(seniorFund.investJunior(unknownPoolAddress, seniorPoolJuniorInvestmentAmount)).to.be.rejectedWith(
           /Pool must be valid/
         )
       })
@@ -627,7 +627,7 @@ describe("SeniorFund", () => {
         expect(seniorTranche.principalDeposited).to.bignumber.equal(new BN(1))
 
         return expect(
-          seniorFund.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount, {from: owner})
+          seniorFund.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount)
         ).to.be.rejectedWith(/SeniorFund cannot invest in tranched pool with non-empty senior tranche\./)
       })
     })
@@ -647,7 +647,7 @@ describe("SeniorFund", () => {
         expect(seniorTranche2.lockedUntil).to.bignumber.equal(new BN(0))
 
         return expect(
-          seniorFund.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount, {from: owner})
+          seniorFund.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount)
         ).to.be.rejectedWith(/Tranche has been locked/)
       })
     })
@@ -655,7 +655,7 @@ describe("SeniorFund", () => {
     context("amount is > 0", () => {
       it("should deposit amount into the junior tranche", async () => {
         await expectAction(
-          async () => await seniorFund.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount, {from: owner})
+          async () => await seniorFund.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount)
         ).toChange([
           [async () => await getBalance(seniorFund.address, usdc), {by: seniorPoolJuniorInvestmentAmount.neg()}],
           // TODO[PR] Check balance of junior tranche
@@ -663,7 +663,7 @@ describe("SeniorFund", () => {
       })
 
       it("should emit an InvestmentMadeInJunior event", async () => {
-        let receipt = await seniorFund.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount, {from: owner})
+        let receipt = await seniorFund.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount)
         let event = receipt.logs[0]
 
         expect(event.event).to.equal("InvestmentMadeInJunior")
@@ -672,33 +672,42 @@ describe("SeniorFund", () => {
       })
 
       it("should track the investment in the assets calculation", async () => {
-        await expectAction(() => seniorFund.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount, {from: owner})).toChange([
+        await expectAction(() =>
+          seniorFund.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount)
+        ).toChange([
           [seniorFund.totalLoansOutstanding, {by: seniorPoolJuniorInvestmentAmount}],
           [() => getBalance(seniorFund.address, usdc), {by: seniorPoolJuniorInvestmentAmount.neg()}],
           [seniorFund.assets, {by: new BN(0)}], // loans outstanding + balance cancel out
         ])
       })
-
-      it("should lock the tranched pool's junior and senior tranches after depositing", async () => {
-        const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
-        const seniorTranche = await tranchedPool.getTranche(TRANCHES.Senior)
-        expect(juniorTranche.lockedUntil).to.bignumber.equal(new BN(0))
-        expect(seniorTranche.lockedUntil).to.bignumber.equal(new BN(0))
-
-        await seniorFund.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount, {from: owner})
-
-        const juniorTranche2 = await tranchedPool.getTranche(TRANCHES.Junior)
-        const seniorTranche2 = await tranchedPool.getTranche(TRANCHES.Senior)
-        expect(juniorTranche2.lockedUntil).to.bignumber.gt(new BN(0))
-        expect(seniorTranche2.lockedUntil).to.bignumber.equal(juniorTranche2.lockedUntil)
-      })
     })
 
     context("amount is 0", async () => {
       it("reverts", async () => {
-        await expect(
-          seniorFund.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount, {from: owner})
-        ).to.be.rejectedWith(/amount must be positive/)
+        await expect(seniorFund.investJunior(tranchedPool.address, new BN(0))).to.be.rejectedWith(
+          /amount must be positive/
+        )
+      })
+    })
+
+    context("has already invested in junior tranche", async () => {
+      it("allows investing in the junior tranche again", async () => {
+        const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
+        expect(juniorTranche.principalDeposited).to.bignumber.equal(juniorInvestmentAmount)
+
+        await seniorFund.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount)
+
+        const juniorTranche2 = await tranchedPool.getTranche(TRANCHES.Junior)
+        expect(juniorTranche2.principalDeposited).to.bignumber.equal(
+          juniorInvestmentAmount.add(seniorPoolJuniorInvestmentAmount)
+        )
+
+        await seniorFund.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount)
+
+        const juniorTranche3 = await tranchedPool.getTranche(TRANCHES.Junior)
+        expect(juniorTranche3.principalDeposited).to.bignumber.equal(
+          juniorInvestmentAmount.add(seniorPoolJuniorInvestmentAmount).add(seniorPoolJuniorInvestmentAmount)
+        )
       })
     })
   })
