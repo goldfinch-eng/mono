@@ -3,7 +3,7 @@ import moment from "moment"
 import BigNumber from "bignumber.js"
 import {usdcFromAtomic, usdcToAtomic} from "./erc20"
 import {fetchDataFromAttributes, INTEREST_DECIMALS, BLOCKS_PER_YEAR, BLOCKS_PER_DAY, getDeployments} from "./utils"
-import {roundUpPenny, croppedAddress} from "../utils"
+import {croppedAddress, roundDownPenny} from "../utils"
 
 const CreditLineAbi = require("../../abi/Creditline.json")
 
@@ -49,7 +49,7 @@ class BaseCreditLine {
   }
 
   inDollars(amount) {
-    return new BigNumber(roundUpPenny(usdcFromAtomic(amount)))
+    return new BigNumber(roundDownPenny(usdcFromAtomic(amount)))
   }
 }
 
