@@ -16,4 +16,12 @@ contract TestTranchedPool is TranchedPool {
   ) public {
     collectInterestAndPrincipal(from, interest, principal);
   }
+
+  function _setSeniorTranchePrincipalDeposited(uint256 principalDeposited) public {
+    seniorTranche.principalDeposited = principalDeposited;
+  }
+
+  function _setLimit(uint256 limit) public {
+    creditLine.setLimit(limit);
+  }
 }

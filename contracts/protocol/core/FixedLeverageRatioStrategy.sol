@@ -34,9 +34,9 @@ contract FixedLeverageRatioStrategy is BaseUpgradeablePausable, ISeniorPoolStrat
   /**
    * @notice Determines how much money to invest in the senior tranche based on what is committed to the junior
    * tranche and a fixed leverage ratio to the junior. Idempotent.
-   * @param seniorPool The fund to invest from
-   * @param pool The pool to invest into (as the senior)
-   * @return The amount of money to invest into the pool from the fund
+   * @param seniorPool The senior pool to invest from
+   * @param pool The tranched pool to invest into (as the senior)
+   * @return The amount of money to invest into the senior tranche of the tranched pool, from the senior pool
    */
   function invest(ISeniorPool seniorPool, ITranchedPool pool) public view override returns (uint256) {
     ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
@@ -54,9 +54,9 @@ contract FixedLeverageRatioStrategy is BaseUpgradeablePausable, ISeniorPoolStrat
    * @notice Determines how much money to invest in the senior tranche based on what is committed to the junior,
    * tranche and a fixed leverage ratio to the junior, as if all conditions for investment were
    * met. Idempotent.
-   * @param seniorPool The fund to invest from
-   * @param pool The pool to invest into (as the senior)
-   * @return The amount of money to invest into the pool from the fund
+   * @param seniorPool The senior pool to invest from
+   * @param pool The tranched pool to invest into (as the senior)
+   * @return The amount of money to invest into the senior tranche of the tranched pool, from the senior pool
    */
   function estimateInvestment(ISeniorPool seniorPool, ITranchedPool pool) public view override returns (uint256) {
     ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));

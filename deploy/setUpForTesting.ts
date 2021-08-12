@@ -36,18 +36,13 @@ import {
 } from "../blockchain_scripts/deployHelpers"
 import {
   MAINNET_MULTISIG,
-  upgradeContracts,
-  getExistingContracts,
   impersonateAccount,
   fundWithWhales,
-  getMainnetContracts,
-  performPostUpgradeMigration,
 } from "../blockchain_scripts/mainnetForkingHelpers"
-const deployV2 = require("../blockchain_scripts/v2/deployV2.js")
 import _ from "lodash"
 import {assertIsString, assertNonNullable} from "../utils/type"
 import {Result} from "ethers/lib/utils"
-import {advanceTime, SECONDS_PER_DAY} from "../test/testHelpers"
+import {advanceTime} from "../test/testHelpers"
 import {prepareMigration, deployAndMigrateToV2} from "../blockchain_scripts/v2/migrate"
 
 /*
@@ -66,7 +61,6 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   assertIsChainId(chainId)
 
   let underwriter = protocol_owner
-  let borrower = protocol_owner
   // If you uncomment this, make sure to also uncomment the line in the MainnetForking section,
   // which sets this var to the upgraded version of fidu
   // let fidu = await getDeployedAsEthersContract(getOrNull, "Fidu")
@@ -144,7 +138,7 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
       await giveMoneyToTestUser(borrower, erc20s)
     }
 
-    // Have the test user deposit into the senior fund
+    // Have the test user deposit into the senior pool
     await impersonateAccount(hre, borrower)
     let signer = ethers.provider.getSigner(borrower)
     let depositAmount = new BN(100).mul(USDCDecimals)
@@ -182,7 +176,7 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
     })
     await writePoolMetadata(pool2, borrower)
 
-    // Have the senior fund invest
+    // Have the senior pool invest
     await seniorPool.invest(pool2.address)
     let filter = pool2.filters.DepositMade(seniorPool.address)
     let depositLog = (await ethers.provider.getLogs(filter))[0]
@@ -259,20 +253,20 @@ async function addUsersToGoList(goldfinchConfig: GoldfinchConfig, users: string[
   await (await goldfinchConfig.bulkAddToGoList(users)).wait()
 }
 
-async function depositToTheSeniorPool(fund: SeniorPool, erc20: Contract) {
-  logger("Depositing funds into the fund...")
-  const originalBalance = await erc20.balanceOf(fund.address)
+async function depositToTheSeniorPool(seniorPool: SeniorPool, erc20: Contract) {
+  logger("Depositing funds into the senior pool...")
+  const originalBalance = await erc20.balanceOf(seniorPool.address)
 
   // Approve first
   logger("Approving the owner to deposit funds...")
-  var txn = await erc20.approve(fund.address, String(new BN(100000000).mul(USDCDecimals)))
+  var txn = await erc20.approve(seniorPool.address, String(new BN(100000000).mul(USDCDecimals)))
   await txn.wait()
   let depositAmount = new BN(100000).mul(USDCDecimals)
-  logger(`Depositing ${depositAmount} into the senior fund...`)
+  logger(`Depositing ${depositAmount} into the senior pool...`)
 
-  txn = await fund.deposit(String(depositAmount))
+  txn = await seniorPool.deposit(String(depositAmount))
   await txn.wait()
-  const newBalance = await erc20.balanceOf(fund.address)
+  const newBalance = await erc20.balanceOf(seniorPool.address)
   if (String(newBalance) != String(depositAmount.add(new BN(originalBalance.toString())))) {
     throw new Error(`Expected to deposit ${depositAmount} but got ${newBalance}`)
   }

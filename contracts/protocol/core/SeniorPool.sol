@@ -33,7 +33,8 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   event ReserveFundsCollected(address indexed user, uint256 amount);
 
   event PrincipalWrittenDown(address indexed tranchedPool, int256 amount);
-  event InvestmentMade(address indexed tranchedPool, uint256 amount);
+  event InvestmentMadeInSenior(address indexed tranchedPool, uint256 amount);
+  event InvestmentMadeInJunior(address indexed tranchedPool, uint256 amount);
 
   function initialize(address owner, GoldfinchConfig _config) public initializer {
     require(owner != address(0) && address(_config) != address(0), "Owner and config addresses cannot be empty");
@@ -65,7 +66,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     // Check if the amount of new shares to be added is within limits
     depositShares = getNumShares(amount);
     uint256 potentialNewTotalShares = totalShares().add(depositShares);
-    require(sharesWithinLimit(potentialNewTotalShares), "Deposit would put the fund over the total limit.");
+    require(sharesWithinLimit(potentialNewTotalShares), "Deposit would put the senior pool over the total limit.");
     emit DepositMade(msg.sender, amount, depositShares);
     bool success = doUSDCTransfer(msg.sender, address(this), amount);
     require(success, "Failed to transfer for deposit");
@@ -166,8 +167,8 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   }
 
   /**
-   * @notice Invest in an ITranchedPool using the fund's strategy
-   * @param pool An ITranchedPool that should be considered for investment
+   * @notice Invest in an ITranchedPool's senior tranche using the senior pool's strategy
+   * @param pool An ITranchedPool whose senior tranche should be considered for investment
    */
   function invest(ITranchedPool pool) public override whenNotPaused nonReentrant onlyAdmin {
     require(validPool(pool), "Pool must be valid");
@@ -178,12 +179,15 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
 
     ISeniorPoolStrategy strategy = config.getSeniorPoolStrategy();
     uint256 amount = strategy.invest(this, pool);
+
     require(amount > 0, "Investment amount must be positive");
+    // Sanity-check that the investment amount is not unreasonable.
+    require(amount <= pool.limit(), "Investment amount must not exceed pool limit.");
 
     approvePool(pool, amount);
     pool.deposit(uint256(ITranchedPool.Tranches.Senior), amount);
 
-    emit InvestmentMade(address(pool), amount);
+    emit InvestmentMadeInSenior(address(pool), amount);
     totalLoansOutstanding = totalLoansOutstanding.add(amount);
   }
 
@@ -191,6 +195,38 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     require(validPool(pool), "Pool must be valid");
     ISeniorPoolStrategy strategy = config.getSeniorPoolStrategy();
     return strategy.estimateInvestment(this, pool);
+  }
+
+  /**
+   * @notice Invest in an ITranchedPool's junior tranche.
+   * @param pool An ITranchedPool whose junior tranche to invest in
+   */
+  function investJunior(ITranchedPool pool, uint256 amount) public override whenNotPaused nonReentrant onlyAdmin {
+    require(validPool(pool), "Pool must be valid");
+
+    // We don't intend to support allowing the senior pool to invest in the junior tranche if it
+    // has already invested in the senior tranche, so we prohibit that here. Note though that we
+    // don't care to prohibit the inverse order, of the senior pool investing in the senior
+    // tranche after investing in the junior tranche.
+    ITranchedPool.TrancheInfo memory seniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Senior));
+    require(
+      seniorTranche.principalDeposited == 0,
+      "SeniorPool cannot invest in junior tranche of tranched pool with non-empty senior tranche."
+    );
+
+    if (compoundBalance > 0) {
+      _sweepFromCompound();
+    }
+
+    require(amount > 0, "Investment amount must be positive");
+    // Sanity-check that the investment amount is not unreasonable.
+    require(amount <= pool.limit(), "Investment amount must not exceed pool limit.");
+
+    approvePool(pool, amount);
+    pool.deposit(uint256(ITranchedPool.Tranches.Junior), amount);
+
+    emit InvestmentMadeInJunior(address(pool), amount);
+    totalLoansOutstanding = totalLoansOutstanding.add(amount);
   }
 
   /**
@@ -208,14 +244,14 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   }
 
   /**
-   * @notice Write down an ITranchedPool investment. This will adjust the fund's share price
+   * @notice Write down an ITranchedPool investment. This will adjust the senior pool's share price
    *  down if we're considering the investment a loss, or up if the borrower has subsequently
    *  made repayments that restore confidence that the full loan will be repaid.
    * @param tokenId the ID of an IPoolTokens token to be considered for writedown
    */
   function writedown(uint256 tokenId) public override whenNotPaused nonReentrant onlyAdmin {
     IPoolTokens poolTokens = config.getPoolTokens();
-    require(address(this) == poolTokens.ownerOf(tokenId), "Only tokens owned by the senior fund can be written down");
+    require(address(this) == poolTokens.ownerOf(tokenId), "Only tokens owned by the senior pool can be written down");
 
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
     ITranchedPool pool = ITranchedPool(tokenInfo.pool);
