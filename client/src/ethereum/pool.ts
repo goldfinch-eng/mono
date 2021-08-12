@@ -217,7 +217,10 @@ async function getCumulativeWritedowns(pool: SeniorFund) {
 
 async function getCumulativeDrawdowns(pool: SeniorFund) {
   const protocol = pool.goldfinchProtocol
-  const investmentEvents = await protocol.queryEvents(pool.contract, ["InvestmentMadeInSenior", "InvestmentMadeInJunior"])
+  const investmentEvents = await protocol.queryEvents(pool.contract, [
+    "InvestmentMadeInSenior",
+    "InvestmentMadeInJunior",
+  ])
   const tranchedPools = _.map(investmentEvents, (e) =>
     pool.goldfinchProtocol.getContract<TranchedPool>("TranchedPool", e.returnValues.tranchedPool),
   )
@@ -290,7 +293,10 @@ async function getEstimatedTotalInterest(pool: SeniorFund): Promise<BigNumber> {
   // TODO[PR] I'm not sure about this change. Is `interestApr` appropriate to use
   // for an investment in the junior tranche?. Also, why isn't any filtering
   // happening in this function, to prevent double-counting of credit lines?
-  const investmentEvents = await protocol.queryEvents(pool.contract, ["InvestmentMadeInSenior", "InvestmentMadeInJunior"])
+  const investmentEvents = await protocol.queryEvents(pool.contract, [
+    "InvestmentMadeInSenior",
+    "InvestmentMadeInJunior",
+  ])
   const tranchedPools = _.map(investmentEvents, (e) =>
     pool.goldfinchProtocol.getContract<TranchedPool>("TranchedPool", e.returnValues.tranchedPool),
   )
