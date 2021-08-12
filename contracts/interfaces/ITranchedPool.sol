@@ -32,8 +32,6 @@ abstract contract ITranchedPool {
 
   function getTranche(uint256 tranche) external view virtual returns (TrancheInfo memory);
 
-  function limit() public view virtual returns (uint256);
-
   function pay(uint256 amount) external virtual;
 
   function lockJuniorCapital() external virtual;
