@@ -631,7 +631,7 @@ describe("SeniorFund", () => {
 
         return expect(
           seniorFund.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount)
-        ).to.be.rejectedWith(/SeniorFund cannot invest in tranched pool with non-empty senior tranche\./)
+        ).to.be.rejectedWith(/SeniorFund cannot invest in junior tranche of tranched pool with non-empty senior tranche\./)
       })
     })
 

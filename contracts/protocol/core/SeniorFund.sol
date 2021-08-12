@@ -208,7 +208,7 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
     ITranchedPool.TrancheInfo memory seniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Senior));
     require(
       seniorTranche.principalDeposited == 0,
-      "SeniorFund cannot invest in tranched pool with non-empty senior tranche."
+      "SeniorFund cannot invest in junior tranche of tranched pool with non-empty senior tranche."
     );
 
     if (compoundBalance > 0) {
