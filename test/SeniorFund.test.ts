@@ -542,6 +542,24 @@ describe("SeniorFund", () => {
       })
     })
 
+    context("Pool's senior tranche is not empty", () => {
+      it("allows investing in the senior tranche", async () => {
+        await tranchedPool._setSeniorTranchePrincipalDeposited(new BN(1))
+        const seniorTranche = await tranchedPool.getTranche(TRANCHES.Senior)
+        expect(seniorTranche.principalDeposited).to.bignumber.equal(new BN(1))
+
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        const investmentAmount = await seniorFundStrategy.invest(seniorFund.address, tranchedPool.address)
+
+        await seniorFund.invest(tranchedPool.address)
+
+        const seniorTranche2 = await tranchedPool.getTranche(TRANCHES.Senior)
+        expect(seniorTranche2.principalDeposited).to.bignumber.equal(
+          investmentAmount.add(new BN(1))
+        )
+      })
+    })
+
     context("strategy amount is > 0", () => {
       it("should deposit amount into the senior tranche", async () => {
         // Make the strategy invest
