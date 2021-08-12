@@ -90,4 +90,13 @@ function dedupe(array: string[]): string[] {
   ).result
 }
 
-export {croppedAddress, displayNumber, displayDollars, roundUpPenny, roundDownPenny, displayPercent, secondsSinceEpoch, dedupe}
+export {
+  croppedAddress,
+  displayNumber,
+  displayDollars,
+  roundUpPenny,
+  roundDownPenny,
+  displayPercent,
+  secondsSinceEpoch,
+  dedupe,
+}
