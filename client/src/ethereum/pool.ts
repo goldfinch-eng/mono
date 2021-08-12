@@ -2,7 +2,7 @@ import BigNumber from "bignumber.js"
 import {fetchDataFromAttributes, INTEREST_DECIMALS, USDC_DECIMALS} from "./utils"
 import {Tickers, usdcFromAtomic} from "./erc20"
 import {FIDU_DECIMALS, fiduFromAtomic} from "./fidu"
-import {roundDownPenny} from "../utils"
+import {dedupe, roundDownPenny} from "../utils"
 import {getFromBlock} from "./utils"
 import {getPoolEvents} from "./user"
 import _ from "lodash"
@@ -290,9 +290,6 @@ function assetsAsOf(this: PoolData, dt) {
 
 async function getEstimatedTotalInterest(pool: SeniorFund): Promise<BigNumber> {
   const protocol = pool.goldfinchProtocol
-  // TODO[PR] I'm not sure about this change. Is `interestApr` appropriate to use
-  // for an investment in the junior tranche?. Also, why isn't any filtering
-  // happening in this function, to prevent double-counting of credit lines?
   const investmentEvents = await protocol.queryEvents(pool.contract, [
     "InvestmentMadeInSenior",
     "InvestmentMadeInJunior",
@@ -300,7 +297,10 @@ async function getEstimatedTotalInterest(pool: SeniorFund): Promise<BigNumber> {
   const tranchedPools = _.map(investmentEvents, (e) =>
     pool.goldfinchProtocol.getContract<TranchedPool>("TranchedPool", e.returnValues.tranchedPool),
   )
-  const creditLineAddresses = await Promise.all(tranchedPools.map((p) => p.methods.creditLine().call()))
+  const mappedCreditLineAddresses = await Promise.all(tranchedPools.map((p) => p.methods.creditLine().call()))
+  // De-duplicate the credit line addresses, in case the senior pool has made more than one investment
+  // in a tranched pool.
+  const creditLineAddresses = dedupe(mappedCreditLineAddresses)
   const creditLines = creditLineAddresses.map((a) => buildCreditLine(a))
   const creditLineData = await Promise.all(
     creditLines.map(async (cl) => {

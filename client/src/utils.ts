@@ -66,4 +66,28 @@ function secondsSinceEpoch(): number {
   return Math.floor(Date.now() / 1000)
 }
 
-export {croppedAddress, displayNumber, displayDollars, roundUpPenny, roundDownPenny, displayPercent, secondsSinceEpoch}
+type DedupeAccumulator = {
+  _seen: {[val: string]: true}
+  result: string[]
+}
+
+function dedupe(array: string[]): string[] {
+  return array.reduce<DedupeAccumulator>(
+    (acc: DedupeAccumulator, curr: string): DedupeAccumulator =>
+      curr in acc._seen
+        ? acc
+        : {
+            _seen: {
+              ...acc._seen,
+              [curr]: true,
+            },
+            result: acc.result.concat(curr),
+          },
+    {
+      _seen: {},
+      result: [],
+    },
+  ).result
+}
+
+export {croppedAddress, displayNumber, displayDollars, roundUpPenny, roundDownPenny, displayPercent, secondsSinceEpoch, dedupe}
