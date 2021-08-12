@@ -129,6 +129,28 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   await depositToTheSeniorFund(seniorFund, erc20!)
   await updateConfig(config, "number", CONFIG_KEYS.DrawdownPeriodInSeconds, 300, {logger})
 
+  const result = await (await goldfinchFactory.createBorrower(protocol_owner)).wait()
+  const lastEventArgs = getLastEventArgs(result)
+  let protocolBorrowerCon = lastEventArgs[0]
+  logger(`Created borrower contract: ${protocolBorrowerCon} for ${protocol_owner}`)
+
+  let commonPool = await createPoolForBorrower({
+    getOrNull,
+    underwriter,
+    goldfinchFactory,
+    borrower: protocolBorrowerCon,
+    erc20,
+  })
+  await writePoolMetadata(commonPool, "GFI")
+
+  let empty = await createPoolForBorrower({
+    getOrNull,
+    underwriter,
+    goldfinchFactory,
+    borrower: protocolBorrowerCon,
+    erc20,
+  })
+  await writePoolMetadata(empty, "Empty")
 
   for (const [i, borrower] of borrowers.entries()) {
     logger(`Setting up for borrower ${i}: ${borrower}`)
@@ -136,6 +158,8 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
     if (CHAIN_NAME_BY_ID[chainId] === LOCAL) {
       await giveMoneyToTestUser(borrower, erc20s)
     }
+
+    await addUsersToGoList(config, [borrower])
 
     // Have the test user deposit into the senior fund
     await impersonateAccount(hre, borrower)
@@ -145,65 +169,61 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
     await (erc20 as TestERC20).connect(signer).approve(seniorFund.address, depositAmount.toString())
     await seniorFund.connect(signer).deposit(depositAmount.toString())
 
-    await addUsersToGoList(config, [borrower])
+    let txn = await (erc20.connect(signer)).approve(commonPool.address, String(depositAmount))
+    await txn.wait()
+    txn = await (commonPool.connect(signer)).deposit(TRANCHES.Junior, String(depositAmount))
+    logger(`${JSON.stringify((await txn.wait()).events)}`)
+    logger(`Deposited ${depositAmount} into the common pool`)
 
     const result = await (await goldfinchFactory.createBorrower(borrower)).wait()
     const lastEventArgs = getLastEventArgs(result)
     let bwrConAddr = lastEventArgs[0]
     logger(`Created borrower contract: ${bwrConAddr} for ${borrower}`)
 
-    let pool1 = await createPoolForBorrower({
+    let filledPool = await createPoolForBorrower({
       getOrNull,
       underwriter,
       goldfinchFactory,
       borrower: bwrConAddr,
       erc20,
+      depositor: protocol_owner
     })
-    await writePoolMetadata(pool1, borrower)
-
-    if (i>0) {
-      // Only do pool 2 for the first borrower
-      continue
-    }
-
-    let pool2 = await createPoolForBorrower({
-      getOrNull,
-      underwriter,
-      goldfinchFactory,
-      borrower: bwrConAddr,
-      erc20,
-      depositor: borrower
-    })
-    await writePoolMetadata(pool2, borrower)
-
-    // Have the senior fund invest
-    await seniorFund.invest(pool2.address)
-    let filter = pool2.filters.DepositMade(seniorFund.address)
-    let depositLog = (await ethers.provider.getLogs(filter))[0]
-    assertNonNullable(depositLog)
-    let depositEvent = pool2.interface.parseLog(depositLog)
-    let tokenId = depositEvent.args.tokenId
-
-    await pool2.lockPool()
-    const amount = (await pool2.limit()).div(2)
-    await pool2.drawdown(amount)
-
-    await advanceTime({days: 32})
-
-    // Have the borrower repay a portion of their loan
-    await impersonateAccount(hre, borrower)
-    let borrowerSigner = ethers.provider.getSigner(borrower)
-    let bwrCon = (await ethers.getContractAt("Borrower", bwrConAddr)).connect(borrowerSigner!) as Borrower
-    let payAmount = new BN(100).mul(USDCDecimals)
-    await (erc20 as TestERC20).connect(borrowerSigner).approve(bwrCon.address, payAmount.mul(new BN(2)).toString())
-    await bwrCon.pay(pool2.address, payAmount.toString())
-
-    await advanceTime({days: 32})
-
-    await bwrCon.pay(pool2.address, payAmount.toString())
-
-    await seniorFund.redeem(tokenId)
+    txn = await filledPool.lockJuniorCapital()
+    await txn.wait()
+    await seniorFund.invest(filledPool.address)
+    logger(`Pool ready for ${borrower}`)
+    await writePoolMetadata(filledPool, borrower)
   }
+
+  // Have the senior fund invest
+  let txn = await commonPool.lockJuniorCapital()
+  await txn.wait()
+  await seniorFund.invest(commonPool.address)
+  let filter = commonPool.filters.DepositMade(seniorFund.address)
+  let depositLog = (await ethers.provider.getLogs(filter))[0]
+  assertNonNullable(depositLog)
+  let depositEvent = commonPool.interface.parseLog(depositLog)
+  let tokenId = depositEvent.args.tokenId
+
+  await commonPool.lockPool()
+  const amount = (await commonPool.limit()).div(2)
+  await commonPool.drawdown(amount)
+
+  await advanceTime({days: 32})
+
+  // Have the borrower repay a portion of their loan
+  await impersonateAccount(hre, protocol_owner)
+  let borrowerSigner = ethers.provider.getSigner(protocol_owner)
+  let bwrCon = (await ethers.getContractAt("Borrower", protocolBorrowerCon)).connect(borrowerSigner!) as Borrower
+  let payAmount = new BN(100).mul(USDCDecimals)
+  await (erc20 as TestERC20).connect(borrowerSigner).approve(bwrCon.address, payAmount.mul(new BN(2)).toString())
+  await bwrCon.pay(commonPool.address, payAmount.toString())
+
+  await advanceTime({days: 32})
+
+  await bwrCon.pay(commonPool.address, payAmount.toString())
+
+  await seniorFund.redeem(tokenId)
 }
 
 /**
@@ -229,7 +249,7 @@ async function writePoolMetadata(pool: TranchedPool, borrower: string) {
     metadata = {}
   }
   metadata[pool.address.toLowerCase()] = {
-    name: `${_.sample(names)} for ${borrower.slice(0, 5)}`,
+    name: `${borrower.slice(0, 5)}: ${_.sample(names)}`,
     category: _.sample(categories),
     icon: _.sample(icons),
     description: description,
@@ -361,14 +381,7 @@ async function createPoolForBorrower({
     txn = await pool.connect(depositorSigner).deposit(TRANCHES.Junior, depositAmount)
     await txn.wait()
 
-    txn = await pool.deposit(TRANCHES.Junior, depositAmount)
-    await txn.wait()
-
-    logger(`Deposited ${depositAmount} into the pool via ${depositor}`)
-
-    txn = await pool.lockJuniorCapital()
-    await txn.wait()
-    logger(`Locked junior capital`)
+    logger(`Deposited ${depositAmount} into ${pool.address} via ${depositor}`)
   }
   return pool
 }
