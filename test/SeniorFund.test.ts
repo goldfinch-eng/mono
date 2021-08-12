@@ -744,13 +744,22 @@ describe("SeniorFund", () => {
         // amount that exceeded the tranched pool's limit, but then decided we didn't want
         // to prohibit that, for parity with not doing so in `invest()`.
 
+        const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
+        expect(juniorTranche.principalDeposited).to.bignumber.equal(juniorInvestmentAmount)
+
         const expectedLimit = usdcVal(100000)
         expect(await tranchedPool.limit()).to.bignumber.equal(expectedLimit)
 
-        await seniorFund.investJunior(tranchedPool.address, expectedLimit.add(new BN(1)))
+        const reducedLimit = seniorPoolJuniorInvestmentAmount.sub(new BN(1))
+        await tranchedPool._setLimit(reducedLimit)
+        expect(await tranchedPool.limit()).to.bignumber.equal(reducedLimit)
 
-        const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
-        expect(juniorTranche.principalDeposited).to.bignumber.equal(expectedLimit.add(new BN(1)))
+        await seniorFund.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount)
+
+        const juniorTranche2 = await tranchedPool.getTranche(TRANCHES.Junior)
+        expect(juniorTranche2.principalDeposited).to.bignumber.equal(
+          juniorInvestmentAmount.add(seniorPoolJuniorInvestmentAmount)
+        )
       })
     })
 
