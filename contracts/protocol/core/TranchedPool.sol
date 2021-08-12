@@ -50,6 +50,14 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     uint256 remainingAmount,
     uint256 reserveAmount
   );
+  event SharePriceUpdated(
+    address indexed pool,
+    uint256 indexed tranche,
+    uint256 principalSharePrice,
+    int256 principalDelta,
+    uint256 interestSharePrice,
+    int256 interestDelta
+  );
   event ReserveFundsCollected(address indexed from, uint256 amount);
   event CreditLineMigrated(address indexed oldCreditLine, address indexed newCreditLine);
   event DrawdownMade(address indexed borrower, uint256 amount);
@@ -78,12 +86,14 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     require(owner != address(0), "Owner address cannot be empty");
     __BaseUpgradeablePausable__init(owner);
     seniorTranche = TrancheInfo({
+      id: uint256(ITranchedPool.Tranches.Senior),
       principalSharePrice: usdcToSharePrice(1, 1),
       interestSharePrice: 0,
       principalDeposited: 0,
       lockedUntil: 0
     });
     juniorTranche = TrancheInfo({
+      id: uint256(ITranchedPool.Tranches.Junior),
       principalSharePrice: usdcToSharePrice(1, 1),
       interestSharePrice: 0,
       principalDeposited: 0,
@@ -199,12 +209,30 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
 
     // Update the share price to reflect the amount remaining in the pool
     uint256 amountRemaining = totalDeposited().sub(creditLine.balance());
+    uint256 oldJuniorPrincipalSharePrice = juniorTranche.principalSharePrice;
+    uint256 oldSeniorPrincipalSharePrice = seniorTranche.principalSharePrice;
     juniorTranche.principalSharePrice = calculateExpectedSharePrice(amountRemaining, juniorTranche);
     seniorTranche.principalSharePrice = calculateExpectedSharePrice(amountRemaining, seniorTranche);
 
     address borrower = creditLine.borrower();
     safeERC20TransferFrom(config.getUSDC(), address(this), borrower, amount);
     emit DrawdownMade(borrower, amount);
+    emit SharePriceUpdated(
+      address(this),
+      juniorTranche.id,
+      juniorTranche.principalSharePrice,
+      int256(oldJuniorPrincipalSharePrice.sub(juniorTranche.principalSharePrice)) * -1,
+      juniorTranche.interestSharePrice,
+      0
+    );
+    emit SharePriceUpdated(
+      address(this),
+      seniorTranche.id,
+      seniorTranche.principalSharePrice,
+      int256(oldSeniorPrincipalSharePrice.sub(seniorTranche.principalSharePrice)) * -1,
+      seniorTranche.interestSharePrice,
+      0
+    );
   }
 
   /**
@@ -625,7 +653,8 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
       tranche == uint256(ITranchedPool.Tranches.Senior) || tranche == uint256(ITranchedPool.Tranches.Junior),
       "Unsupported tranche"
     );
-    return tranche == uint256(ITranchedPool.Tranches.Senior) ? seniorTranche : juniorTranche;
+    TrancheInfo storage trancheInfo = tranche == uint256(ITranchedPool.Tranches.Senior) ? seniorTranche : juniorTranche;
+    return trancheInfo;
   }
 
   function scaleByPercentOwnership(uint256 amount, TrancheInfo memory tranche) internal view returns (uint256) {
@@ -700,6 +729,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
       desiredInterestAmount,
       totalShares
     );
+    uint256 oldInterestSharePrice = tranche.interestSharePrice;
     tranche.interestSharePrice = newSharePrice;
 
     (principalRemaining, newSharePrice) = applyToSharePrice(
@@ -708,8 +738,16 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
       desiredPrincipalAmount,
       totalShares
     );
+    uint256 oldPrincipalSharePrice = tranche.principalSharePrice;
     tranche.principalSharePrice = newSharePrice;
-
+    emit SharePriceUpdated(
+      address(this),
+      tranche.id,
+      tranche.principalSharePrice,
+      int256(tranche.principalSharePrice.sub(oldPrincipalSharePrice)),
+      tranche.interestSharePrice,
+      int256(tranche.interestSharePrice.sub(oldInterestSharePrice))
+    );
     return (interestRemaining, principalRemaining);
   }
 

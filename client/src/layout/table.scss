@@ -61,7 +61,8 @@
 }
 
 .placeholder.table thead tr,
-.background-container .placeholder.table thead tr{
+.placeholder .table thead tr,
+.background-container.placeholder .table thead tr{
   border-bottom: 2px solid $sand;
 }
 

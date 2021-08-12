@@ -32,11 +32,51 @@ import {expectEvent} from "@openzeppelin/test-helpers"
 import {ecsign} from "ethereumjs-util"
 import {getApprovalDigest, getWallet} from "./permitHelpers"
 import {assertNonNullable} from "../utils/type"
-let accounts, owner, person2, person3, reserve, borrower
 const WITHDRAWL_FEE_DENOMINATOR = new BN(200)
 
+const simulateMaliciousTranchedPool = async (goldfinchConfig: any, person2: any): Promise<string> => {
+  // Simulate someone deploying their own malicious TranchedPool using our contracts
+  let accountant = await deployments.deploy("Accountant", {from: person2, args: []})
+  let poolDeployResult = await deployments.deploy("TranchedPool", {
+    from: person2,
+    libraries: {["Accountant"]: accountant.address},
+  })
+  let unknownPool = await artifacts.require("TranchedPool").at(poolDeployResult.address)
+  let creditLineResult = await deployments.deploy("CreditLine", {
+    from: person2,
+    libraries: {["Accountant"]: accountant.address},
+  })
+  let creditLine = await artifacts.require("CreditLine").at(creditLineResult.address)
+  await creditLine.initialize(
+    goldfinchConfig.address,
+    person2,
+    person2,
+    usdcVal(1000),
+    interestAprAsBN("0"),
+    new BN(1),
+    new BN(10),
+    interestAprAsBN("0")
+  )
+  await unknownPool.initialize(
+    goldfinchConfig.address,
+    person2,
+    new BN(20),
+    usdcVal(1000),
+    interestAprAsBN("0"),
+    new BN(1),
+    new BN(10),
+    interestAprAsBN("0")
+  )
+  await unknownPool.lockJuniorCapital({from: person2})
+
+  return unknownPool.address
+}
+
 describe("SeniorPool", () => {
+  let accounts, owner, person2, person3, reserve, borrower
+
   let seniorPool, seniorPoolFixedStrategy, usdc, fidu, goldfinchConfig, tranchedPool, creditLine
+
   let interestApr = interestAprAsBN("5.00")
   let paymentPeriodInDays = new BN(30)
   let lateFeeApr = new BN(0)
@@ -136,6 +176,10 @@ describe("SeniorPool", () => {
         await expect(seniorPool.invest(tranchedPool.address)).to.be.rejectedWith(/Pausable: paused/)
       })
 
+      it("disallows investJunior", async () => {
+        await expect(seniorPool.investJunior(tranchedPool.address, new BN(100))).to.be.rejectedWith(/Pausable: paused/)
+      })
+
       it("disallows redeem", async () => {
         return expect(seniorPool.redeem(tranchedPool.address)).to.be.rejectedWith(/Pausable: paused/)
       })
@@ -175,14 +219,14 @@ describe("SeniorPool", () => {
   })
 
   describe("deposit", () => {
-    describe("before you have approved the fund to transfer funds on your behalf", async () => {
+    describe("before you have approved the senior pool to transfer funds on your behalf", async () => {
       it("should fail", async () => {
         const expectedErr = "VM Exception while processing transaction: revert ERC20: transfer amount exceeds allowance"
         return expect(makeDeposit(person3)).to.be.rejectedWith(expectedErr)
       })
     })
 
-    describe("after you have approved the fund to transfer funds", async () => {
+    describe("after you have approved the senior pool to transfer funds", async () => {
       let capitalProvider
       beforeEach(async () => {
         await usdc.approve(seniorPool.address, new BN(100000).mul(USDC_DECIMALS), {from: person2})
@@ -190,7 +234,7 @@ describe("SeniorPool", () => {
         capitalProvider = person2
       })
 
-      it("increases the fund's balance of the ERC20 token when you call deposit", async () => {
+      it("increases the senior pool's balance of the ERC20 token when you call deposit", async () => {
         const balanceBefore = await getBalance(seniorPool.address, usdc)
         await makeDeposit()
         const balanceAfter = await getBalance(seniorPool.address, usdc)
@@ -412,7 +456,7 @@ describe("SeniorPool", () => {
 
         it("should fail if you're over the limit", async () => {
           return expect(makeDeposit(person2, new BN(limit).add(new BN(1)).mul(USDC_DECIMALS))).to.be.rejectedWith(
-            /put the pool over the total limit/
+            /put the senior pool over the total limit/
           )
         })
       })
@@ -461,41 +505,9 @@ describe("SeniorPool", () => {
 
     context("Pool is not valid", () => {
       it("reverts", async () => {
-        // Simulate someone deploying their own malicious TranchedPool using our contracts
-        let accountant = await deployments.deploy("Accountant", {from: person2, args: []})
-        let poolDeployResult = await deployments.deploy("TranchedPool", {
-          from: person2,
-          libraries: {["Accountant"]: accountant.address},
-        })
-        let unknownPool = await artifacts.require("TranchedPool").at(poolDeployResult.address)
-        let creditLineResult = await deployments.deploy("CreditLine", {
-          from: person2,
-          libraries: {["Accountant"]: accountant.address},
-        })
-        let creditLine = await artifacts.require("CreditLine").at(creditLineResult.address)
-        await creditLine.initialize(
-          goldfinchConfig.address,
-          person2,
-          person2,
-          usdcVal(1000),
-          interestAprAsBN("0"),
-          new BN(1),
-          new BN(10),
-          interestAprAsBN("0")
-        )
-        await unknownPool.initialize(
-          goldfinchConfig.address,
-          person2,
-          new BN(20),
-          usdcVal(1000),
-          interestAprAsBN("0"),
-          new BN(1),
-          new BN(10),
-          interestAprAsBN("0")
-        )
-        await unknownPool.lockJuniorCapital({from: person2})
+        const unknownPoolAddress = await simulateMaliciousTranchedPool(goldfinchConfig, person2)
 
-        await expect(seniorPool.invest(unknownPool.address)).to.be.rejectedWith(/Pool must be valid/)
+        await expect(seniorPool.invest(unknownPoolAddress)).to.be.rejectedWith(/Pool must be valid/)
       })
     })
 
@@ -528,46 +540,31 @@ describe("SeniorPool", () => {
 
     context("Pool is not valid", () => {
       it("reverts", async () => {
-        // Simulate someone deploying their own malicious TranchedPool using our contracts
-        let accountant = await deployments.deploy("Accountant", {from: person2, args: []})
-        let poolDeployResult = await deployments.deploy("TranchedPool", {
-          from: person2,
-          libraries: {["Accountant"]: accountant.address},
-        })
-        let unknownPool = await artifacts.require("TranchedPool").at(poolDeployResult.address)
-        let creditLineResult = await deployments.deploy("CreditLine", {
-          from: person2,
-          libraries: {["Accountant"]: accountant.address},
-        })
-        let creditLine = await artifacts.require("CreditLine").at(creditLineResult.address)
-        await creditLine.initialize(
-          goldfinchConfig.address,
-          person2,
-          person2,
-          usdcVal(1000),
-          interestAprAsBN("0"),
-          new BN(1),
-          new BN(10),
-          interestAprAsBN("0")
-        )
-        await unknownPool.initialize(
-          goldfinchConfig.address,
-          person2,
-          new BN(20),
-          usdcVal(1000),
-          interestAprAsBN("0"),
-          new BN(1),
-          new BN(10),
-          interestAprAsBN("0")
-        )
-        await unknownPool.lockJuniorCapital({from: person2})
+        const unknownPoolAddress = await simulateMaliciousTranchedPool(goldfinchConfig, person2)
 
-        await expect(seniorPool.invest(unknownPool.address)).to.be.rejectedWith(/Pool must be valid/)
+        await expect(seniorPool.invest(unknownPoolAddress)).to.be.rejectedWith(/Pool must be valid/)
+      })
+    })
+
+    context("Pool's senior tranche is not empty", () => {
+      it("allows investing in the senior tranche", async () => {
+        await tranchedPool._setSeniorTranchePrincipalDeposited(new BN(1))
+        const seniorTranche = await tranchedPool.getTranche(TRANCHES.Senior)
+        expect(seniorTranche.principalDeposited).to.bignumber.equal(new BN(1))
+
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        expect(await goldfinchConfig.getAddress(CONFIG_KEYS.SeniorPoolStrategy)).to.equal(seniorPoolFixedStrategy.address)
+        const investmentAmount = await seniorPoolFixedStrategy.invest(seniorPool.address, tranchedPool.address)
+
+        await seniorPool.invest(tranchedPool.address)
+
+        const seniorTranche2 = await tranchedPool.getTranche(TRANCHES.Senior)
+        expect(seniorTranche2.principalDeposited).to.bignumber.equal(investmentAmount.add(new BN(1)))
       })
     })
 
     context("strategy amount is > 0", () => {
-      it("should deposit amount into the pool", async () => {
+      it("should deposit amount into the senior tranche", async () => {
         // Make the strategy invest
         await tranchedPool.lockJuniorCapital({from: borrower})
         expect(await goldfinchConfig.getAddress(CONFIG_KEYS.SeniorPoolStrategy)).to.equal(seniorPoolFixedStrategy.address)
@@ -575,10 +572,14 @@ describe("SeniorPool", () => {
 
         await expectAction(async () => await seniorPool.invest(tranchedPool.address)).toChange([
           [async () => await getBalance(seniorPool.address, usdc), {by: investmentAmount.neg()}],
+          [
+            async () => new BN((await tranchedPool.getTranche(TRANCHES.Senior)).principalDeposited),
+            {by: investmentAmount},
+          ],
         ])
       })
 
-      it("should emit an event", async () => {
+      it("should emit an InvestmentMadeInSenior event", async () => {
         // Make the strategy invest
         await tranchedPool.lockJuniorCapital({from: borrower})
         expect(await goldfinchConfig.getAddress(CONFIG_KEYS.SeniorPoolStrategy)).to.equal(seniorPoolFixedStrategy.address)
@@ -587,12 +588,12 @@ describe("SeniorPool", () => {
         let receipt = await seniorPool.invest(tranchedPool.address)
         let event = receipt.logs[0]
 
-        expect(event.event).to.equal("InvestmentMade")
+        expect(event.event).to.equal("InvestmentMadeInSenior")
         expect(event.args.tranchedPool).to.equal(tranchedPool.address)
         expect(event.args.amount).to.bignumber.equal(investmentAmount)
       })
 
-      it("should track the investment in in the assets calculation", async () => {
+      it("should track the investment in the assets calculation", async () => {
         // Make the strategy invest
         await tranchedPool.lockJuniorCapital({from: borrower})
         expect(await goldfinchConfig.getAddress(CONFIG_KEYS.SeniorPoolStrategy)).to.equal(seniorPoolFixedStrategy.address)
@@ -614,6 +615,182 @@ describe("SeniorPool", () => {
         expect(investmentAmount).to.bignumber.equal(new BN(0))
 
         await expect(seniorPool.invest(tranchedPool.address)).to.be.rejectedWith(/amount must be positive/)
+      })
+    })
+
+    context("strategy amount exceeds tranched pool's limit", async () => {
+      it("allows investing in the senior tranche", async () => {
+        // NOTE: This test is a relic from when we considered prohibiting an investment
+        // amount that exceeded the tranched pool's limit, but then decided we didn't want
+        // to prohibit that, so that we are able to maintain the leverage ratio in a case
+        // where the juniors take "more than their share".
+
+        const expectedLimit = usdcVal(100000)
+        expect(await tranchedPool.limit()).to.bignumber.equal(expectedLimit)
+
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        expect(await goldfinchConfig.getAddress(CONFIG_KEYS.SeniorPoolStrategy)).to.equal(seniorPoolFixedStrategy.address)
+        const investmentAmount = await seniorPoolFixedStrategy.invest(seniorPool.address, tranchedPool.address)
+
+        const reducedLimit = investmentAmount.sub(new BN(1))
+        await tranchedPool._setLimit(reducedLimit)
+        expect(await tranchedPool.limit()).to.bignumber.equal(reducedLimit)
+
+        await seniorPool.invest(tranchedPool.address)
+
+        const seniorTranche = await tranchedPool.getTranche(TRANCHES.Senior)
+        expect(seniorTranche.principalDeposited).to.bignumber.equal(investmentAmount)
+      })
+    })
+  })
+
+  describe("investJunior", () => {
+    const juniorInvestmentAmount = usdcVal(10000)
+    const seniorPoolJuniorInvestmentAmount = usdcVal(30000)
+
+    beforeEach(async () => {
+      await erc20Approve(usdc, seniorPool.address, usdcVal(100000), [owner])
+      await makeDeposit(owner, usdcVal(100000))
+      await goldfinchConfig.addToGoList(seniorPool.address)
+      await tranchedPool.deposit(TRANCHES.Junior, juniorInvestmentAmount)
+    })
+
+    context("called by non-governance", async () => {
+      it("should revert", async () => {
+        return expect(
+          seniorPool.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount, {from: person2})
+        ).to.be.rejectedWith(/Must have admin/)
+      })
+    })
+
+    context("Pool is not valid", () => {
+      it("reverts", async () => {
+        const unknownPoolAddress = await simulateMaliciousTranchedPool(goldfinchConfig, person2)
+
+        await expect(seniorPool.investJunior(unknownPoolAddress, seniorPoolJuniorInvestmentAmount)).to.be.rejectedWith(
+          /Pool must be valid/
+        )
+      })
+    })
+
+    context("Pool's senior tranche is not empty", () => {
+      it("reverts", async () => {
+        await tranchedPool._setSeniorTranchePrincipalDeposited(new BN(1))
+        const seniorTranche = await tranchedPool.getTranche(TRANCHES.Senior)
+        expect(seniorTranche.principalDeposited).to.bignumber.equal(new BN(1))
+
+        return expect(
+          seniorPool.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount)
+        ).to.be.rejectedWith(
+          /SeniorPool cannot invest in junior tranche of tranched pool with non-empty senior tranche\./
+        )
+      })
+    })
+
+    context("Pool's junior tranche is locked", () => {
+      it("reverts", async () => {
+        const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
+        const seniorTranche = await tranchedPool.getTranche(TRANCHES.Senior)
+        expect(juniorTranche.lockedUntil).to.bignumber.equal(new BN(0))
+        expect(seniorTranche.lockedUntil).to.bignumber.equal(new BN(0))
+
+        await tranchedPool.lockJuniorCapital({from: borrower})
+
+        const juniorTranche2 = await tranchedPool.getTranche(TRANCHES.Junior)
+        const seniorTranche2 = await tranchedPool.getTranche(TRANCHES.Senior)
+        expect(juniorTranche2.lockedUntil).to.bignumber.gt(new BN(0))
+        expect(seniorTranche2.lockedUntil).to.bignumber.equal(new BN(0))
+
+        return expect(
+          seniorPool.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount)
+        ).to.be.rejectedWith(/Tranche has been locked/)
+      })
+    })
+
+    context("amount is > 0", () => {
+      it("should deposit amount into the junior tranche", async () => {
+        await expectAction(
+          async () => await seniorPool.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount)
+        ).toChange([
+          [async () => await getBalance(seniorPool.address, usdc), {by: seniorPoolJuniorInvestmentAmount.neg()}],
+          [
+            async () => new BN((await tranchedPool.getTranche(TRANCHES.Junior)).principalDeposited),
+            {by: seniorPoolJuniorInvestmentAmount},
+          ],
+        ])
+      })
+
+      it("should emit an InvestmentMadeInJunior event", async () => {
+        let receipt = await seniorPool.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount)
+        let event = receipt.logs[0]
+
+        expect(event.event).to.equal("InvestmentMadeInJunior")
+        expect(event.args.tranchedPool).to.equal(tranchedPool.address)
+        expect(event.args.amount).to.bignumber.equal(seniorPoolJuniorInvestmentAmount)
+      })
+
+      it("should track the investment in the assets calculation", async () => {
+        await expectAction(() =>
+          seniorPool.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount)
+        ).toChange([
+          [seniorPool.totalLoansOutstanding, {by: seniorPoolJuniorInvestmentAmount}],
+          [() => getBalance(seniorPool.address, usdc), {by: seniorPoolJuniorInvestmentAmount.neg()}],
+          [seniorPool.assets, {by: new BN(0)}], // loans outstanding + balance cancel out
+        ])
+      })
+    })
+
+    context("amount is 0", async () => {
+      it("reverts", async () => {
+        await expect(seniorPool.investJunior(tranchedPool.address, new BN(0))).to.be.rejectedWith(
+          /amount must be positive/
+        )
+      })
+    })
+
+    context("amount exceeds tranched pool's limit", async () => {
+      it("allows investing in the junior tranche", async () => {
+        // NOTE: This test is a relic from when we considered prohibiting an investment
+        // amount that exceeded the tranched pool's limit, but then decided we didn't want
+        // to prohibit that, for parity with not doing so in `invest()`.
+
+        const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
+        expect(juniorTranche.principalDeposited).to.bignumber.equal(juniorInvestmentAmount)
+
+        const expectedLimit = usdcVal(100000)
+        expect(await tranchedPool.limit()).to.bignumber.equal(expectedLimit)
+
+        const reducedLimit = seniorPoolJuniorInvestmentAmount.sub(new BN(1))
+        await tranchedPool._setLimit(reducedLimit)
+        expect(await tranchedPool.limit()).to.bignumber.equal(reducedLimit)
+
+        await seniorPool.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount)
+
+        const juniorTranche2 = await tranchedPool.getTranche(TRANCHES.Junior)
+        expect(juniorTranche2.principalDeposited).to.bignumber.equal(
+          juniorInvestmentAmount.add(seniorPoolJuniorInvestmentAmount)
+        )
+      })
+    })
+
+    context("has already invested in junior tranche", async () => {
+      it("allows investing in the junior tranche again", async () => {
+        const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
+        expect(juniorTranche.principalDeposited).to.bignumber.equal(juniorInvestmentAmount)
+
+        await seniorPool.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount)
+
+        const juniorTranche2 = await tranchedPool.getTranche(TRANCHES.Junior)
+        expect(juniorTranche2.principalDeposited).to.bignumber.equal(
+          juniorInvestmentAmount.add(seniorPoolJuniorInvestmentAmount)
+        )
+
+        await seniorPool.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount)
+
+        const juniorTranche3 = await tranchedPool.getTranche(TRANCHES.Junior)
+        expect(juniorTranche3.principalDeposited).to.bignumber.equal(
+          juniorInvestmentAmount.add(seniorPoolJuniorInvestmentAmount).add(seniorPoolJuniorInvestmentAmount)
+        )
       })
     })
   })

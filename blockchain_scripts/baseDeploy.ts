@@ -408,14 +408,14 @@ async function deploySeniorPool(hre: HardhatRuntimeEnvironment, {config, fidu}: 
     libraries: {["Accountant"]: accountant.address},
   })
   logger(`${contractName} was deployed to:`, deployResult.address)
-  const fund = (await ethers.getContractAt(contractName, deployResult.address)) as SeniorPool
-  await updateConfig(config, "address", CONFIG_KEYS.SeniorPool, fund.address, {logger})
-  await config.addToGoList(fund.address)
+  const seniorPool = (await ethers.getContractAt(contractName, deployResult.address)) as SeniorPool
+  await updateConfig(config, "address", CONFIG_KEYS.SeniorPool, seniorPool.address, {logger})
+  await config.addToGoList(seniorPool.address)
   if (fidu) {
     logger(`Granting minter role to ${contractName}`)
-    await grantMinterRoleToPool(fidu, fund)
+    await grantMinterRoleToPool(fidu, seniorPool)
   }
-  return fund
+  return seniorPool
 }
 
 async function deployFixedLeverageRatioStrategy(

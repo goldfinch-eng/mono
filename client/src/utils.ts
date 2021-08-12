@@ -40,8 +40,15 @@ function commaFormat(numberString) {
 }
 
 function displayDollars(val, decimals = 2) {
-  const valDisplay = isNaN(val) ? " --.--" : displayNumber(val, decimals)
-  return "$" + valDisplay
+  let prefix = ""
+  if (isNaN(val)) {
+    return " --.--"
+  }
+  if (parseFloat(val) < 0) {
+    val = parseFloat(val) * -1
+    prefix = "-"
+  }
+  return `${prefix}$${displayNumber(val, decimals)}`
 }
 
 function displayPercent(val, decimals = 2) {
@@ -66,4 +73,37 @@ function secondsSinceEpoch(): number {
   return Math.floor(Date.now() / 1000)
 }
 
-export {croppedAddress, displayNumber, displayDollars, roundUpPenny, roundDownPenny, displayPercent, secondsSinceEpoch}
+type DedupeAccumulator = {
+  _seen: {[val: string]: true}
+  result: string[]
+}
+
+function dedupe(array: string[]): string[] {
+  return array.reduce<DedupeAccumulator>(
+    (acc: DedupeAccumulator, curr: string): DedupeAccumulator =>
+      curr in acc._seen
+        ? acc
+        : {
+            _seen: {
+              ...acc._seen,
+              [curr]: true,
+            },
+            result: acc.result.concat(curr),
+          },
+    {
+      _seen: {},
+      result: [],
+    },
+  ).result
+}
+
+export {
+  croppedAddress,
+  displayNumber,
+  displayDollars,
+  roundUpPenny,
+  roundDownPenny,
+  displayPercent,
+  secondsSinceEpoch,
+  dedupe,
+}
