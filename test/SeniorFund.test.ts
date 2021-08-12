@@ -613,7 +613,8 @@ describe("SeniorFund", () => {
       it("allows investing in the senior tranche", async () => {
         // NOTE: This test is a relic from when we considered prohibiting an investment
         // amount that exceeded the tranched pool's limit, but then decided we didn't want
-        // to prohibit that.
+        // to prohibit that, so that we are able to maintain the leverage ratio in a case
+        // where the juniors take "more than their share".
 
         const expectedLimit = usdcVal(100000)
         expect(await tranchedPool.limit()).to.bignumber.equal(expectedLimit)
@@ -741,7 +742,7 @@ describe("SeniorFund", () => {
       it("allows investing in the junior tranche", async () => {
         // NOTE: This test is a relic from when we considered prohibiting an investment
         // amount that exceeded the tranched pool's limit, but then decided we didn't want
-        // to prohibit that.
+        // to prohibit that, for parity with not doing so in `invest()`.
 
         const expectedLimit = usdcVal(100000)
         expect(await tranchedPool.limit()).to.bignumber.equal(expectedLimit)
