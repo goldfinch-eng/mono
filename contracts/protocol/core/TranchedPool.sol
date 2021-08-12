@@ -364,7 +364,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   }
 
   // CreditLine proxy methods, for convenience
-  function limit() public view returns (uint256) {
+  function limit() public view override returns (uint256) {
     return creditLine.limit();
   }
 

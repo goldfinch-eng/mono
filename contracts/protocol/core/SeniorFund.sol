@@ -179,7 +179,10 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
 
     IFundStrategy strategy = config.getSeniorFundStrategy();
     uint256 amount = strategy.invest(this, pool);
+
     require(amount > 0, "Investment amount must be positive");
+    // Sanity-check that the investment amount is not unreasonable.
+    require(amount <= pool.limit(), "Investment amount must not exceed pool limit.");
 
     approvePool(pool, amount);
     pool.deposit(uint256(ITranchedPool.Tranches.Senior), amount);
@@ -215,8 +218,9 @@ contract SeniorFund is BaseUpgradeablePausable, IFund {
       _sweepFromCompound();
     }
 
-    // TODO[PR] Do we want to constrain max `amount` in any way?
     require(amount > 0, "Investment amount must be positive");
+    // Sanity-check that the investment amount is not unreasonable.
+    require(amount <= pool.limit(), "Investment amount must not exceed pool limit.");
 
     approvePool(pool, amount);
     pool.deposit(uint256(ITranchedPool.Tranches.Junior), amount);

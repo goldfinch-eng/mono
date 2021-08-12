@@ -610,6 +610,24 @@ describe("SeniorFund", () => {
         await expect(seniorFund.invest(tranchedPool.address)).to.be.rejectedWith(/amount must be positive/)
       })
     })
+
+    context("strategy amount exceeds tranched pool's limit", async () => {
+      it("reverts", async () => {
+        const expectedLimit = usdcVal(100000)
+        expect(await tranchedPool.limit()).to.bignumber.equal(expectedLimit)
+
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        const investmentAmount = await seniorFundStrategy.invest(seniorFund.address, tranchedPool.address)
+
+        const reducedLimit = investmentAmount.sub(new BN(1))
+        await tranchedPool._setLimit(reducedLimit)
+        expect(await tranchedPool.limit()).to.bignumber.equal(reducedLimit)
+
+        await expect(seniorFund.invest(tranchedPool.address)).to.be.rejectedWith(
+          /Investment amount must not exceed pool limit\./
+        )
+      })
+    })
   })
 
   describe("investJunior", () => {
@@ -711,6 +729,17 @@ describe("SeniorFund", () => {
       it("reverts", async () => {
         await expect(seniorFund.investJunior(tranchedPool.address, new BN(0))).to.be.rejectedWith(
           /amount must be positive/
+        )
+      })
+    })
+
+    context("amount exceeds tranched pool's limit", async () => {
+      it("reverts", async () => {
+        const expectedLimit = usdcVal(100000)
+        expect(await tranchedPool.limit()).to.bignumber.equal(expectedLimit)
+
+        await expect(seniorFund.investJunior(tranchedPool.address, expectedLimit.add(new BN(1)))).to.be.rejectedWith(
+          /Investment amount must not exceed pool limit\./
         )
       })
     })
