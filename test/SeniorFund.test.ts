@@ -695,7 +695,6 @@ describe("SeniorFund", () => {
       it("should deposit amount into the junior tranche", async () => {
         await expectAction(
           async () => await seniorFund.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount),
-          true
         ).toChange([
           [async () => await getBalance(seniorFund.address, usdc), {by: seniorPoolJuniorInvestmentAmount.neg()}],
           [
