@@ -550,7 +550,10 @@ describe("SeniorFund", () => {
 
         await expectAction(async () => await seniorFund.invest(tranchedPool.address)).toChange([
           [async () => await getBalance(seniorFund.address, usdc), {by: investmentAmount.neg()}],
-          // TODO[PR] Check balance of senior tranche
+          [
+            async () => new BN((await tranchedPool.getTranche(TRANCHES.Senior)).principalDeposited),
+            {by: investmentAmount},
+          ],
         ])
       })
 
@@ -655,10 +658,14 @@ describe("SeniorFund", () => {
     context("amount is > 0", () => {
       it("should deposit amount into the junior tranche", async () => {
         await expectAction(
-          async () => await seniorFund.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount)
+          async () => await seniorFund.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount),
+          true
         ).toChange([
           [async () => await getBalance(seniorFund.address, usdc), {by: seniorPoolJuniorInvestmentAmount.neg()}],
-          // TODO[PR] Check balance of junior tranche
+          [
+            async () => new BN((await tranchedPool.getTranche(TRANCHES.Junior)).principalDeposited),
+            {by: seniorPoolJuniorInvestmentAmount},
+          ],
         ])
       })
 
