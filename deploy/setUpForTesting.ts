@@ -164,7 +164,9 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
     // Have the test user deposit into the senior fund
     await impersonateAccount(hre, borrower)
     let signer = ethers.provider.getSigner(borrower)
-    let depositAmount = new BN(100).mul(USDCDecimals)
+    // Due to a bug with hardhat (I think nonce is not being incremented for impersonated transactions), we need to make sure
+    // the amounts are unique, otherwise causes transaction hash collisions
+    let depositAmount = new BN(100).mul(USDCDecimals).add(new BN(i))
 
     await (erc20 as TestERC20).connect(signer).approve(seniorFund.address, depositAmount.toString())
     await seniorFund.connect(signer).deposit(depositAmount.toString())
@@ -172,7 +174,6 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
     let txn = await (erc20.connect(signer)).approve(commonPool.address, String(depositAmount))
     await txn.wait()
     txn = await (commonPool.connect(signer)).deposit(TRANCHES.Junior, String(depositAmount))
-    logger(`${JSON.stringify((await txn.wait()).events)}`)
     logger(`Deposited ${depositAmount} into the common pool`)
 
     const result = await (await goldfinchFactory.createBorrower(borrower)).wait()
@@ -249,7 +250,7 @@ async function writePoolMetadata(pool: TranchedPool, borrower: string) {
     metadata = {}
   }
   metadata[pool.address.toLowerCase()] = {
-    name: `${borrower.slice(0, 5)}: ${_.sample(names)}`,
+    name: `${borrower.slice(0, 6)}: ${_.sample(names)}`,
     category: _.sample(categories),
     icon: _.sample(icons),
     description: description,
