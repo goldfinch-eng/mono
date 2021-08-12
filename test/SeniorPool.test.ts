@@ -559,9 +559,7 @@ describe("SeniorPool", () => {
         await seniorPool.invest(tranchedPool.address)
 
         const seniorTranche2 = await tranchedPool.getTranche(TRANCHES.Senior)
-        expect(seniorTranche2.principalDeposited).to.bignumber.equal(
-          investmentAmount.add(new BN(1))
-        )
+        expect(seniorTranche2.principalDeposited).to.bignumber.equal(investmentAmount.add(new BN(1)))
       })
     })
 
@@ -621,7 +619,12 @@ describe("SeniorPool", () => {
     })
 
     context("strategy amount exceeds tranched pool's limit", async () => {
-      it("reverts", async () => {
+      it("allows investing in the senior tranche", async () => {
+        // NOTE: This test is a relic from when we considered prohibiting an investment
+        // amount that exceeded the tranched pool's limit, but then decided we didn't want
+        // to prohibit that, so that we are able to maintain the leverage ratio in a case
+        // where the juniors take "more than their share".
+
         const expectedLimit = usdcVal(100000)
         expect(await tranchedPool.limit()).to.bignumber.equal(expectedLimit)
 
@@ -633,9 +636,10 @@ describe("SeniorPool", () => {
         await tranchedPool._setLimit(reducedLimit)
         expect(await tranchedPool.limit()).to.bignumber.equal(reducedLimit)
 
-        await expect(seniorPool.invest(tranchedPool.address)).to.be.rejectedWith(
-          /Investment amount must not exceed pool limit\./
-        )
+        await seniorPool.invest(tranchedPool.address)
+
+        const seniorTranche = await tranchedPool.getTranche(TRANCHES.Senior)
+        expect(seniorTranche.principalDeposited).to.bignumber.equal(investmentAmount)
       })
     })
   })
@@ -677,7 +681,9 @@ describe("SeniorPool", () => {
 
         return expect(
           seniorPool.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount)
-        ).to.be.rejectedWith(/SeniorPool cannot invest in junior tranche of tranched pool with non-empty senior tranche\./)
+        ).to.be.rejectedWith(
+          /SeniorPool cannot invest in junior tranche of tranched pool with non-empty senior tranche\./
+        )
       })
     })
 
@@ -704,7 +710,7 @@ describe("SeniorPool", () => {
     context("amount is > 0", () => {
       it("should deposit amount into the junior tranche", async () => {
         await expectAction(
-          async () => await seniorPool.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount),
+          async () => await seniorPool.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount)
         ).toChange([
           [async () => await getBalance(seniorPool.address, usdc), {by: seniorPoolJuniorInvestmentAmount.neg()}],
           [
@@ -743,12 +749,26 @@ describe("SeniorPool", () => {
     })
 
     context("amount exceeds tranched pool's limit", async () => {
-      it("reverts", async () => {
+      it("allows investing in the junior tranche", async () => {
+        // NOTE: This test is a relic from when we considered prohibiting an investment
+        // amount that exceeded the tranched pool's limit, but then decided we didn't want
+        // to prohibit that, for parity with not doing so in `invest()`.
+
+        const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
+        expect(juniorTranche.principalDeposited).to.bignumber.equal(juniorInvestmentAmount)
+
         const expectedLimit = usdcVal(100000)
         expect(await tranchedPool.limit()).to.bignumber.equal(expectedLimit)
 
-        await expect(seniorPool.investJunior(tranchedPool.address, expectedLimit.add(new BN(1)))).to.be.rejectedWith(
-          /Investment amount must not exceed pool limit\./
+        const reducedLimit = seniorPoolJuniorInvestmentAmount.sub(new BN(1))
+        await tranchedPool._setLimit(reducedLimit)
+        expect(await tranchedPool.limit()).to.bignumber.equal(reducedLimit)
+
+        await seniorPool.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount)
+
+        const juniorTranche2 = await tranchedPool.getTranche(TRANCHES.Junior)
+        expect(juniorTranche2.principalDeposited).to.bignumber.equal(
+          juniorInvestmentAmount.add(seniorPoolJuniorInvestmentAmount)
         )
       })
     })

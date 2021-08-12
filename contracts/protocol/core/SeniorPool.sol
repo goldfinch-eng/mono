@@ -181,8 +181,6 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     uint256 amount = strategy.invest(this, pool);
 
     require(amount > 0, "Investment amount must be positive");
-    // Sanity-check that the investment amount is not unreasonable.
-    require(amount <= pool.limit(), "Investment amount must not exceed pool limit.");
 
     approvePool(pool, amount);
     pool.deposit(uint256(ITranchedPool.Tranches.Senior), amount);
@@ -219,8 +217,6 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     }
 
     require(amount > 0, "Investment amount must be positive");
-    // Sanity-check that the investment amount is not unreasonable.
-    require(amount <= pool.limit(), "Investment amount must not exceed pool limit.");
 
     approvePool(pool, amount);
     pool.deposit(uint256(ITranchedPool.Tranches.Junior), amount);
