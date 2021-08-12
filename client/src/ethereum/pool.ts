@@ -221,8 +221,12 @@ async function getCumulativeDrawdowns(pool: SeniorFund) {
     "InvestmentMadeInSenior",
     "InvestmentMadeInJunior",
   ])
-  const tranchedPools = _.map(investmentEvents, (e) =>
-    pool.goldfinchProtocol.getContract<TranchedPool>("TranchedPool", e.returnValues.tranchedPool),
+  const mappedTranchedPoolAddresses = investmentEvents.map((e) => e.returnValues.tranchedPool)
+  // De-duplicate the tranched pool addresses, in case the senior pool has made more than one investment
+  // in a tranched pool.
+  const tranchedPoolAddresses: string[] = dedupe(mappedTranchedPoolAddresses)
+  const tranchedPools = tranchedPoolAddresses.map((address) =>
+    pool.goldfinchProtocol.getContract<TranchedPool>("TranchedPool", address),
   )
   let allDrawdownEvents = _.flatten(
     await Promise.all(tranchedPools.map((pool) => protocol.queryEvents(pool, "DrawdownMade"))),
@@ -294,13 +298,14 @@ async function getEstimatedTotalInterest(pool: SeniorFund): Promise<BigNumber> {
     "InvestmentMadeInSenior",
     "InvestmentMadeInJunior",
   ])
-  const tranchedPools = _.map(investmentEvents, (e) =>
-    pool.goldfinchProtocol.getContract<TranchedPool>("TranchedPool", e.returnValues.tranchedPool),
-  )
-  const mappedCreditLineAddresses = await Promise.all(tranchedPools.map((p) => p.methods.creditLine().call()))
-  // De-duplicate the credit line addresses, in case the senior pool has made more than one investment
+  const mappedTranchedPoolAddresses = investmentEvents.map((e) => e.returnValues.tranchedPool)
+  // De-duplicate the tranched pool addresses, in case the senior pool has made more than one investment
   // in a tranched pool.
-  const creditLineAddresses = dedupe(mappedCreditLineAddresses)
+  const tranchedPoolAddresses: string[] = dedupe(mappedTranchedPoolAddresses)
+  const tranchedPools = tranchedPoolAddresses.map((address) =>
+    pool.goldfinchProtocol.getContract<TranchedPool>("TranchedPool", address),
+  )
+  const creditLineAddresses = await Promise.all(tranchedPools.map((p) => p.methods.creditLine().call()))
   const creditLines = creditLineAddresses.map((a) => buildCreditLine(a))
   const creditLineData = await Promise.all(
     creditLines.map(async (cl) => {
