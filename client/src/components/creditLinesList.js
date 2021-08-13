@@ -10,7 +10,9 @@ function CreditLinesList(props) {
     let description = `${displayDollars(usdcFromAtomic(cl.limit), 0)} at ${displayPercent(cl.interestAprDecimal, 1)}`
     let nextPaymentAmount = `${displayDollars(cl.remainingPeriodDueAmountInDollars)}`
     let nextPaymentDate = "N/A"
-    if (cl.isPaymentDue) {
+    if (cl.isLate) {
+      nextPaymentDate = "Due now"
+    } else if (cl.isPaymentDue) {
       nextPaymentDate = `${cl.dueDate}`
     } else if (cl.isActive) {
       icon = iconCircleCheck

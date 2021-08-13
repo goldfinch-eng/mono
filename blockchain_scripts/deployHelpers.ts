@@ -15,7 +15,7 @@ import PROTOCOL_CONFIG from "../protocol_config.json"
 import {CONFIG_KEYS} from "./configKeys"
 import {GoldfinchConfig} from "../typechain/ethers"
 import {DeploymentsExtension} from "hardhat-deploy/types"
-import {Contract, Signer} from "ethers"
+import {Signer} from "ethers"
 import {AssertionError, assertIsString, assertNonNullable, genExhaustiveTuple} from "../utils/type"
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
@@ -273,7 +273,7 @@ async function setInitialConfigVals(config: GoldfinchConfig, logger = function (
   if (TRUSTED_FORWARDER_CONFIG[chainId]) {
     await updateConfig(config, "address", CONFIG_KEYS.TrustedForwarder, TRUSTED_FORWARDER_CONFIG[chainId], {logger})
   }
-  await config.setTreasuryReserve(multisigAddress)
+  await (await config.setTreasuryReserve(multisigAddress)).wait()
 }
 
 async function updateConfig(config: GoldfinchConfig, type: any, key: any, newValue: any, opts?: any) {
@@ -284,6 +284,7 @@ async function updateConfig(config: GoldfinchConfig, type: any, key: any, newVal
     currentValue = await config.getAddress(key)
     if (currentValue.toLowerCase() !== newValue.toLowerCase()) {
       await (await config.setAddress(key, newValue)).wait()
+      logger(`Updated config ${type} ${key} from ${currentValue} to ${newValue}`)
     }
   } else if (type === "number") {
     currentValue = await config.getNumber(key)

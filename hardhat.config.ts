@@ -45,6 +45,11 @@ module.exports = {
       // Uncomment when you actually want to run mainnet. Hardhat freaks out otherwise because the private keys are undefined in the default case
       // accounts: [`${MAINNET_PROTOCOL_OWNER_KEY}`, `${MAINNET_PROXY_OWNER_KEY}`],
     },
+    murmuration: {
+      url: "https://murmuration.goldfinch.finance/_chain",
+      chainId: 31337,
+      accounts: {mnemonic: "test test test test test test test test test test test junk"},
+    },
   },
   solidity: {
     compilers: [
