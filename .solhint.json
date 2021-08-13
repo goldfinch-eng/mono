@@ -75,6 +75,7 @@
           "lockPool": ["whenNotPaused", "onlyLocker"],
           "withdraw": ["whenNotPaused", "onlyTokenHolder"],
           "withdrawMax": ["whenNotPaused", "onlyTokenHolder"],
+          "withdrawMultiple": [],
           "drawdown": ["whenNotPaused"],
           "assess": ["whenNotPaused"],
           "pay": ["whenNotPaused"]
