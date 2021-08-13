@@ -648,6 +648,81 @@ describe("TranchedPool", () => {
     })
   })
 
+  describe("withdrawMultiple", async () => {
+    let firstToken, secondToken, thirdTokenFromDifferentUser
+
+    beforeEach(async () => {
+      let response = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(100))
+      let logs = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")
+      firstToken = getFirstLog(logs).args.tokenId
+
+      response = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(400))
+      logs = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")
+      secondToken = getFirstLog(logs).args.tokenId
+
+      await erc20Approve(usdc, tranchedPool.address, usdcVal(100000), [otherPerson])
+      response = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(500), {from: otherPerson})
+      logs = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")
+      thirdTokenFromDifferentUser = getFirstLog(logs).args.tokenId
+
+      await tranchedPool.lockJuniorCapital({from: borrower})
+      await tranchedPool.lockPool({from: borrower})
+      await tranchedPool.drawdown(usdcVal(500), {from: borrower})
+      // Move past drawdown window
+      await advanceTime({days: 5})
+      // Mine a block so the timestamp takes effect for view functions
+      await hre.ethers.provider.send("evm_mine", [])
+    })
+
+    describe("validations", async () => {
+      it("reverts if any token id is not owned by the sender", async () => {
+        await expect(
+          tranchedPool.withdrawMultiple(
+            [firstToken, thirdTokenFromDifferentUser],
+            [usdcVal(50), usdcVal(200)]
+          )
+        ).to.be.rejectedWith(
+          /Only the token owner/
+        )
+      })
+
+      it("reverts if any amount exceeds withdrawable amount for that token", async () => {
+        await expect(
+          tranchedPool.withdrawMultiple(
+            [firstToken, secondToken],
+            [usdcVal(50), usdcVal(250)]
+          )
+        ).to.be.rejectedWith(
+          /Invalid redeem amount/
+        )
+      })
+
+      it("reverts if array lengths don't match", async () => {
+        await expect(
+          tranchedPool.withdrawMultiple(
+            [firstToken, thirdTokenFromDifferentUser],
+            [usdcVal(50)]
+          )
+        ).to.be.rejectedWith(
+          /same length/
+        )
+      })
+    })
+
+    it("should withdraw from multiple token ids simultaneously", async () => {
+      await expectAction(
+        async () => tranchedPool.withdrawMultiple(
+          [firstToken, secondToken],
+          [usdcVal(50), usdcVal(200)]
+        )
+      ).toChange([
+        [async () => await getBalance(owner, usdc), {by: usdcVal(250)}],
+        [async () => (await tranchedPool.availableToWithdraw(firstToken))[1], {to: usdcVal(0)}],
+        [async () => (await tranchedPool.availableToWithdraw(secondToken))[1], {to: usdcVal(0)}],
+      ])
+    })
+  })
+
   describe("withdrawMax", async () => {
     it("should withdraw the max", async () => {
       // Total junior tranche investment is split between 2 people

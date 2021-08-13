@@ -170,6 +170,19 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   }
 
   /**
+   * @notice Withdraw from many tokens (that the sender owns) in a single transaction
+   * @param tokenIds An array of tokens ids representing the position
+   * @param amounts An array of amounts to withdraw from the corresponding tokenIds
+   */
+  function withdrawMultiple(uint256[] calldata tokenIds, uint256[] calldata amounts) public override {
+    require(tokenIds.length == amounts.length, "TokensIds and Amounts must be the same length");
+
+    for (uint256 i = 0; i < amounts.length; i++) {
+      withdraw(tokenIds[i], amounts[i]);
+    }
+  }
+
+  /**
    * @notice Similar to withdraw but will withdraw all available funds
    * @param tokenId The NFT representing the position
    * @return interestWithdrawn The interest amount that was withdrawn
