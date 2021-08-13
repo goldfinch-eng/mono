@@ -56,10 +56,10 @@ describe("Deployment", async () => {
       await deployments.run("setup_for_testing")
       const goldfinchFactory = await getDeployedContract(deployments, "GoldfinchFactory")
       const borrowerCreated = await goldfinchFactory.queryFilter(goldfinchFactory.filters.BorrowerCreated())
-      expect(borrowerCreated.length).to.equal(1)
+      expect(borrowerCreated.length).to.equal(2)
       const borrowerConAddr = borrowerCreated[0].borrower
       const result = await goldfinchFactory.queryFilter(goldfinchFactory.filters.PoolCreated(null, borrowerConAddr))
-      expect(result.length).to.equal(2)
+      expect(result.length).to.equal(3)
     })
   })
 

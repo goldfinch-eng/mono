@@ -14,7 +14,7 @@ import PROTOCOL_CONFIG from "../protocol_config.json"
 import {CONFIG_KEYS} from "./configKeys"
 import {GoldfinchConfig} from "../typechain/ethers"
 import {DeploymentsExtension} from "hardhat-deploy/types"
-import {Contract, Signer} from "ethers"
+import {Signer} from "ethers"
 import {AssertionError, assertIsString, assertNonNullable, genExhaustiveTuple} from "../utils/type"
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
