@@ -11113,7 +11113,7 @@
       "chainId": "4",
       "contracts": {
         "Accountant": {
-          "address": "0x72A8Ae819C79DD1fac1bFA3D842928f302060540",
+          "address": "0x4d092fB6d2E5bb87Fae258c34959a618163b3635",
           "abi": [
             {
               "inputs": [],
@@ -11412,7 +11412,7 @@
           ]
         },
         "CreditDesk": {
-          "address": "0xD11ccd32867C706490aedaD060e40C6b6F163571",
+          "address": "0x98F462B34f2687EBb359f971aB2DC24B84dE66f5",
           "abi": [
             {
               "anonymous": false,
@@ -12313,7 +12313,7 @@
           ]
         },
         "CreditDesk_Implementation": {
-          "address": "0xBE8FAA92598306D46E7a9A5820EaeF58E9f6Dc40",
+          "address": "0x81C2B2abEA2F70f820312a2FE750b01d8E2e8437",
           "abi": [
             {
               "anonymous": false,
@@ -13088,7 +13088,7 @@
           ]
         },
         "CreditDesk_Proxy": {
-          "address": "0xD11ccd32867C706490aedaD060e40C6b6F163571",
+          "address": "0x98F462B34f2687EBb359f971aB2DC24B84dE66f5",
           "abi": [
             {
               "inputs": [
@@ -13219,7 +13219,7 @@
           ]
         },
         "CreditLineFactory": {
-          "address": "0x9D0Df1EE54700FBEc66c287d95dD352f9a999B0c",
+          "address": "0x2175755A2aB6BE1a1E8C8fdc0BbFce430242f296",
           "abi": [
             {
               "anonymous": false,
@@ -13754,7 +13754,7 @@
           ]
         },
         "CreditLineFactory_Implementation": {
-          "address": "0x513150abaDE673a21b4b3e3d5213f6888cdFbE88",
+          "address": "0x699c6b9dCAFB1345f0ecE18C91050073fB7051A7",
           "abi": [
             {
               "anonymous": false,
@@ -14163,7 +14163,7 @@
           ]
         },
         "CreditLineFactory_Proxy": {
-          "address": "0x9D0Df1EE54700FBEc66c287d95dD352f9a999B0c",
+          "address": "0x2175755A2aB6BE1a1E8C8fdc0BbFce430242f296",
           "abi": [
             {
               "inputs": [
@@ -14294,7 +14294,7 @@
           ]
         },
         "Fidu": {
-          "address": "0xe397B6de1fd57306aE1D7B324a8E90b8366c6C98",
+          "address": "0x85F97dFf419216F65A416032744bB8bCfcA44baA",
           "abi": [
             {
               "anonymous": false,
@@ -15136,7 +15136,7 @@
           ]
         },
         "Fidu_Implementation": {
-          "address": "0xD228BB6EdCfb92eE79a281d0a1658292e6987712",
+          "address": "0xAd8DA39190b7a0719aAe8b7701EDf04Dfd9E92b0",
           "abi": [
             {
               "anonymous": false,
@@ -15852,7 +15852,7 @@
           ]
         },
         "Fidu_Proxy": {
-          "address": "0xe397B6de1fd57306aE1D7B324a8E90b8366c6C98",
+          "address": "0x85F97dFf419216F65A416032744bB8bCfcA44baA",
           "abi": [
             {
               "inputs": [
@@ -15983,7 +15983,7 @@
           ]
         },
         "GoldfinchConfig": {
-          "address": "0xe68E67431414d03BF800019acB82DB0cD5882DD1",
+          "address": "0x5124478C75DD9ae938014D59E765F2C8E1017dA8",
           "abi": [
             {
               "anonymous": false,
@@ -16503,7 +16503,7 @@
           ]
         },
         "Pool": {
-          "address": "0x1eb0DC529e9fab89E89d51eDFBe6b60ffB3c100F",
+          "address": "0x21A108df72393d6edE15BD5151F0c34ef3D39A68",
           "abi": [
             {
               "anonymous": false,
@@ -17330,7 +17330,7 @@
           ]
         },
         "Pool_Implementation": {
-          "address": "0x0bed8146A0cce507bf6466d04F8D2ae124edB1B0",
+          "address": "0x40E1B09aaF9e18A4434eaF34F4ad4496e41a38a2",
           "abi": [
             {
               "anonymous": false,
@@ -18031,7 +18031,7 @@
           ]
         },
         "Pool_Proxy": {
-          "address": "0x1eb0DC529e9fab89E89d51eDFBe6b60ffB3c100F",
+          "address": "0x21A108df72393d6edE15BD5151F0c34ef3D39A68",
           "abi": [
             {
               "inputs": [
@@ -18162,7 +18162,7 @@
           ]
         },
         "TestERC20": {
-          "address": "0xEe17A77790D479E9e25D7603904844bec1aae738",
+          "address": "0xfD3e7E12dF53072036D7c8ba7120aD698ce5c821",
           "abi": [
             {
               "inputs": [
@@ -18453,7 +18453,7 @@
           ]
         },
         "TestForwarder": {
-          "address": "0x073C8D6CBC0d3fB57e9bF0C76FDE74b78beED897",
+          "address": "0x1f4ba5A10e13dE504C77f10Df0a6475C7DE2cfEc",
           "abi": [
             {
               "inputs": [],

@@ -63,6 +63,7 @@ const chainIdToNetworkID = {
 const SUPPORTED_NETWORKS = {
   [MAINNET]: true,
   [LOCAL]: true,
+  [RINKEBY]: true,
 }
 
 let config
