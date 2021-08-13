@@ -926,6 +926,7 @@ describe("TranchedPool", () => {
       it("disallows withdrawing", async () => {
         await expect(tranchedPool.withdraw(tokenId, usdcVal(5))).to.be.rejectedWith(/Pausable: paused/)
         await expect(tranchedPool.withdrawMax(tokenId)).to.be.rejectedWith(/Pausable: paused/)
+        await expect(tranchedPool.withdrawMultiple([tokenId], [usdcVal(5)])).to.be.rejectedWith(/Pausable: paused/)
       })
 
       it("disallows drawdown", async () => {
