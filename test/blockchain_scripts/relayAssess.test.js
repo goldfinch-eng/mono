@@ -15,7 +15,7 @@ const {assessIfRequired} = require("../../autotasks/assessor/index.js")
 let accounts, owner, underwriter, borrower
 let creditLine, fakeProvider, fakeTimestamp
 let tranchedPool
-describe("relayAsses", () => {
+describe("relayAssess", () => {
   const setupTest = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
     // Just to be crystal clear
     const {protocol_owner} = await getNamedAccounts()
@@ -78,7 +78,7 @@ describe("relayAsses", () => {
       await advanceToTimestamp((await creditLine.nextDueTime()).sub(new BN(10)))
 
       await expectAction(() => assessIfRequired(tranchedPool, creditLine, fakeProvider)).toChange([
-        [creditLine.nextDueTime, {by: 0}],
+        [creditLine.nextDueTime, {by: new BN(0)}],
       ])
     })
 
@@ -95,7 +95,7 @@ describe("relayAsses", () => {
 
     it("does not assess if no balance", async () => {
       await expectAction(() => assessIfRequired(tranchedPool, creditLine, fakeProvider)).toChange([
-        [creditLine.nextDueTime, {by: 0}],
+        [creditLine.nextDueTime, {by: new BN(0)}],
       ])
     })
   })

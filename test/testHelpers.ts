@@ -21,6 +21,8 @@ import {
   TestForwarderInstance,
   TranchedPoolInstance,
   TransferRestrictedVaultInstance,
+  GFIInstance,
+  StakingRewardsInstance,
 } from "../typechain/truffle"
 import {assertNonNullable} from "../utils/type"
 import { DynamicLeverageRatioStrategyInstance } from "../typechain/truffle/DynamicLeverageRatioStrategy"
@@ -108,9 +110,21 @@ async function createCreditLine({
 
 const tolerance = usdcVal(1).div(new BN(1000)) // 0.001$
 
-function expectAction(action: any, debug?: boolean) {
+type Expectation<T> =
+  | {by: Numberish}
+  | {byCloseTo: Numberish}
+  | {fn: (originalValue: T, newValue: T) => any}
+  | {increase: boolean}
+  | {decrease: boolean}
+  | {to: T; bignumber?: boolean}
+  | {toCloseTo: Numberish}
+  | {unchanged: boolean}
+  | {beDifferent: boolean}
+
+type ItemsAndExpectations<T = any> = Array<[() => T, Expectation<T>]>
+function expectAction(action: () => any, debug?: boolean) {
   return {
-    toChange: async (itemsAndExpectations) => {
+    toChange: async (itemsAndExpectations: ItemsAndExpectations) => {
       const items = itemsAndExpectations.map((pair) => pair[0])
       const expectations = itemsAndExpectations.map((pair) => pair[1])
       const originalValues = (await Promise.all(items.map((i) => i()))) as any
@@ -128,18 +142,18 @@ function expectAction(action: any, debug?: boolean) {
       }
       expectations.forEach((expectation, i) => {
         try {
-          if (expectation.by) {
+          if ("by" in expectation) {
             expect(newValues[i].sub(originalValues[i])).to.bignumber.equal(expectation.by)
-          } else if (expectation.byCloseTo) {
-            const onePercent = expectation.byCloseTo.div(new BN(100)).abs()
-            expect(newValues[i].sub(originalValues[i])).to.bignumber.closeTo(expectation.byCloseTo, onePercent)
-          } else if (expectation.fn) {
+          } else if ("byCloseTo" in expectation) {
+            const onePercent = new BN(expectation.byCloseTo).div(new BN(100)).abs()
+            expect(newValues[i].sub(originalValues[i])).to.bignumber.closeTo(new BN(expectation.byCloseTo), onePercent)
+          } else if ("fn" in expectation) {
             expectation.fn(originalValues[i], newValues[i])
-          } else if (expectation.increase) {
+          } else if ("increase" in expectation) {
             expect(newValues[i]).to.bignumber.gt(originalValues[i])
-          } else if (expectation.decrease) {
+          } else if ("decrease" in expectation) {
             expect(newValues[i]).to.bignumber.lt(originalValues[i])
-          } else if (expectation.to) {
+          } else if ("to" in expectation) {
             if (expectation.bignumber === false) {
               // It was not originally the number we expected, but then was changed to it
               expect(originalValues[i]).to.not.eq(expectation.to)
@@ -149,14 +163,14 @@ function expectAction(action: any, debug?: boolean) {
               expect(originalValues[i]).to.not.bignumber.eq(expectation.to)
               expect(newValues[i]).to.bignumber.eq(expectation.to)
             }
-          } else if (expectation.toCloseTo) {
+          } else if ("toCloseTo" in expectation) {
             // It was not originally the number we expected, but then was changed to it
-            const onePercent = expectation.toCloseTo.div(new BN(100)).abs()
-            expect(originalValues[i]).to.not.bignumber.eq(expectation.toCloseTo)
-            expect(newValues[i]).to.bignumber.closeTo(expectation.toCloseTo, onePercent)
-          } else if (expectation.unchanged) {
+            const onePercent = new BN(expectation.toCloseTo).div(new BN(100)).abs()
+            expect(originalValues[i]).to.not.bignumber.eq(new BN(expectation.toCloseTo))
+            expect(newValues[i]).to.bignumber.closeTo(new BN(expectation.toCloseTo), onePercent)
+          } else if ("unchanged" in expectation) {
             expect(newValues[i]).to.bignumber.eq(originalValues[i])
-          } else if (expectation.beDifferent) {
+          } else if ("beDifferent" in expectation) {
             expect(String(originalValues[i])).to.not.eq(String(newValues[i]))
           }
         } catch (error) {
@@ -221,6 +235,8 @@ async function deployAllContracts(
   poolTokens: PoolTokensInstance
   tranchedPool: TranchedPoolInstance
   transferRestrictedVault: TransferRestrictedVaultInstance
+  gfi: GFIInstance
+  stakingRewards: StakingRewardsInstance
 }> {
   let {deployForwarder, fromAccount} = options
   await deployments.fixture("base_deploy")
@@ -251,6 +267,8 @@ async function deployAllContracts(
     deployments,
     "TransferRestrictedVault"
   )
+  const gfi = await getDeployedAsTruffleContract<GFIInstance>(deployments, "GFI")
+  const stakingRewards = await getDeployedAsTruffleContract<StakingRewardsInstance>(deployments, "StakingRewards")
   return {
     pool,
     seniorPool,
@@ -265,6 +283,8 @@ async function deployAllContracts(
     poolTokens,
     tranchedPool,
     transferRestrictedVault,
+    gfi,
+    stakingRewards,
   }
 }
 

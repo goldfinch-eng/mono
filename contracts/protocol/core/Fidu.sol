@@ -124,7 +124,7 @@ contract Fidu is ERC20PresetMinterPauserUpgradeSafe {
   }
 
   function updateGoldfinchConfig() external {
-    require(hasRole(MINTER_ROLE, _msgSender()), "ERC20PresetMinterPauser: Must have minter role to change config");
+    require(hasRole(OWNER_ROLE, _msgSender()), "ERC20PresetMinterPauser: Must have minter role to change config");
     config = GoldfinchConfig(config.configAddress());
   }
 }

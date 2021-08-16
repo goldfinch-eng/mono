@@ -58,6 +58,10 @@ library ConfigHelper {
     return IGoldfinchFactory(goldfinchFactoryAddress(config));
   }
 
+  function getGFI(GoldfinchConfig config) internal view returns (IERC20withDec) {
+    return IERC20withDec(gfiAddress(config));
+  }
+
   function oneInchAddress(GoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.OneInch));
   }
@@ -96,6 +100,10 @@ library ConfigHelper {
 
   function goldfinchFactoryAddress(GoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.GoldfinchFactory));
+  }
+
+  function gfiAddress(GoldfinchConfig config) internal view returns (address) {
+    return config.getAddress(uint256(ConfigOptions.Addresses.GFI));
   }
 
   function fiduAddress(GoldfinchConfig config) internal view returns (address) {

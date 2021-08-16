@@ -20,6 +20,7 @@ import {
   GoldfinchConfig,
   GoldfinchFactory,
   Fidu,
+  GFI,
   TransferRestrictedVault,
   Borrower,
   SeniorPool,
@@ -28,6 +29,7 @@ import {
 } from "../typechain/ethers"
 import {Logger, DeployFn, DeployOpts} from "./types"
 import {assertIsString} from "../utils/type"
+import {StakingRewards} from "../typechain/ethers/StakingRewards"
 
 let logger: Logger
 
@@ -62,6 +64,9 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   logger("Deploying GoldfinchFactory")
   await deployGoldfinchFactory(deploy, {config})
   await deployClImplementation(hre, {config})
+
+  await deployGFI(hre, {config})
+  await deployLPStakingRewards(hre, {config})
 
   logger("Granting ownership of Pool to CreditDesk")
   await grantOwnershipOfPoolToCreditDesk(pool, creditDesk.address)
@@ -213,6 +218,53 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
     await updateConfig(config, "address", CONFIG_KEYS.Fidu, fiduAddress, {logger})
     logger("Deployed Fidu to address:", fidu.address)
     return fidu
+  }
+
+  async function deployGFI(hre: HardhatRuntimeEnvironment, {config}: {config: GoldfinchConfig}): Promise<GFI> {
+    logger("About to deploy GFI...")
+    assertIsString(gf_deployer)
+    const deployResult = await deploy("GFI", {
+      from: gf_deployer,
+      gasLimit: 4000000,
+      proxy: {
+        execute: {
+          init: {
+            methodName: "__initialize__",
+            args: [protocol_owner, "GFI", "GFI", config.address],
+          },
+        },
+      },
+    })
+    const gfi = (await ethers.getContractAt("GFI", deployResult.address)) as GFI
+
+    await updateConfig(config, "address", CONFIG_KEYS.GFI, gfi.address, {logger})
+    logger("Deployed GFI to address:", gfi.address)
+    return gfi
+  }
+
+  async function deployLPStakingRewards(
+    hre: HardhatRuntimeEnvironment,
+    {config}: {config: GoldfinchConfig}
+  ): Promise<StakingRewards> {
+    logger("About to deploy LPStakingRewards...")
+    assertIsString(gf_deployer)
+    const deployResult = await deploy("StakingRewards", {
+      from: gf_deployer,
+      gasLimit: 4000000,
+      proxy: {
+        execute: {
+          init: {
+            methodName: "__initialize__",
+            args: [protocol_owner, config.address],
+          },
+        },
+      },
+    })
+    const contract = (await ethers.getContractAt("StakingRewards", deployResult.address)) as StakingRewards
+
+    // await updateConfig(config, "address", CONFIG_KEYS., contract.address, {logger})
+    logger("Deployed LPStakingRewards to address:", contract.address)
+    return contract
   }
 }
 

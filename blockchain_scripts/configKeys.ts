@@ -29,6 +29,7 @@ const CONFIG_KEYS = {
   SeniorPoolStrategy: 15,
   MigratedTranchedPoolImplementation: 16,
   BorrowerImplementation: 17,
+  GFI: 18,
 }
 
 export {CONFIG_KEYS}

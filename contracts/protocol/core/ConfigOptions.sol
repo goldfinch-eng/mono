@@ -42,7 +42,8 @@ library ConfigOptions {
     SeniorPool,
     SeniorPoolStrategy,
     MigratedTranchedPoolImplementation,
-    BorrowerImplementation
+    BorrowerImplementation,
+    GFI
   }
 
   function getNumberName(uint256 number) public pure returns (string memory) {
@@ -132,6 +133,9 @@ library ConfigOptions {
     }
     if (Addresses.BorrowerImplementation == addressName) {
       return "BorrowerImplementation";
+    }
+    if (Addresses.GFI == addressName) {
+      return "GFI";
     }
     revert("Unknown value passed to getAddressName");
   }

@@ -111,6 +111,17 @@
         "**/DynamicLeverageRatioStrategy.sol:DynamicLeverageRatioStrategy": {
           "setLeverageRatio": ["onlySetterRole"]
         },
+        "**/GFI.sol:GFI": {
+          "updateGoldfinchConfig": []
+        },
+        "**/StakingRewards.sol:StakingRewards": {
+          "stake": [],
+          "stakeWithLockup": [],
+          "unstake": [],
+          "getReward": [],
+          "kick": [],
+          "exit": []
+        },
         "**/contracts/test/**": {
           "*.*": []
         }

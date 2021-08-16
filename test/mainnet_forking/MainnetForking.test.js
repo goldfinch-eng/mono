@@ -632,10 +632,10 @@ describe("mainnet upgrade tests", async function () {
         // Won't be exact because cUSDC exchange rate will change when calling the migration function
         [() => getBalance(seniorPool.address, usdcTruffleContract), {toCloseTo: expectedTotalUSDC}],
         [() => getBalance(seniorPool.address, comp), {increase: true}],
-        [() => fidu.hasRole(PAUSER_ROLE, legacyPool.address), {to: false, bignumber: false}],
         [() => fidu.hasRole(MINTER_ROLE, legacyPool.address), {to: false, bignumber: false}],
         [() => legacyPool.paused(), {to: true, bignumber: false}],
       ])
+      expect(await fidu.hasRole(PAUSER_ROLE, legacyPool.address)).to.equal(false)
       // Share price should be unchanged
       expect(String(await seniorPool.sharePrice())).to.eq(String(seniorPoolSharePrice))
     }).timeout(TEST_TIMEOUT)
