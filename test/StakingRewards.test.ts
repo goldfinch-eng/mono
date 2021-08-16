@@ -24,8 +24,11 @@ import {
   advanceTime,
   bigVal,
   expectAction,
+  MAX_UINT,
 } from "./testHelpers"
 import {time, expectEvent} from "@openzeppelin/test-helpers"
+import {getApprovalDigest, getWallet} from "./permitHelpers"
+import {ecsign} from "ethereumjs-util"
 
 // Typechain doesn't generate types for solidity enums, so redefining here
 enum LockupPeriod {
@@ -56,6 +59,8 @@ describe("StakingRewards", () => {
 
   let yearInSeconds = new BN(365 * 24 * 60 * 60)
   let halfYearInSeconds = yearInSeconds.div(new BN(2))
+
+  let seniorPoolWithdrawalFeeDenominator = new BN(200)
 
   let lockupPeriodToDuration = {
     [LockupPeriod.SixMonths]: halfYearInSeconds,
@@ -243,6 +248,236 @@ describe("StakingRewards", () => {
     })
   })
 
+  describe("depositAndStake", async () => {
+    it("deposits into senior pool and stakes resulting shares", async () => {
+      let amount = usdcVal(1000)
+      let balanceBefore = await usdc.balanceOf(investor)
+      let seniorPoolAssetsBefore = await seniorPool.assets()
+
+      await usdc.approve(stakingRewards.address, amount, {from: investor})
+      let receipt = await stakingRewards.depositAndStake(amount, {from: investor})
+      let stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
+      let tokenId = stakedEvent.args.tokenId
+
+      // Verify deposit worked
+      expect(await usdc.balanceOf(investor)).to.bignumber.equal(balanceBefore.sub(amount))
+      expect(await seniorPool.assets()).to.bignumber.equal(seniorPoolAssetsBefore.add(amount))
+
+      // Verify shares were staked
+      expect(await stakingRewards.ownerOf(tokenId)).to.equal(investor)
+      expect(await stakingRewards.stakedBalanceOf(tokenId)).to.bignumber.equal(bigVal(1000))
+
+      // Verify that allowance was correctly used
+      expect(await usdc.allowance(stakingRewards.address, seniorPool.address)).to.bignumber.equal(new BN(0))
+    })
+
+    context("paused", async () => {
+      it("reverts", async () => {
+        await stakingRewards.pause()
+        await expect(stakingRewards.depositAndStake(usdcVal(1000), {from: investor})).to.be.rejectedWith(/paused/)
+      })
+    })
+  })
+
+  describe("depositWithPermitAndStake", async () => {
+    it("deposits into senior pool using permit and stakes resulting shares", async () => {
+      let nonce = await (usdc as any).nonces(investor)
+      let deadline = MAX_UINT
+      let amount = usdcVal(1000)
+
+      // Create signature for permit
+      let digest = await getApprovalDigest({
+        token: usdc,
+        owner: investor,
+        spender: stakingRewards.address,
+        value: amount,
+        nonce,
+        deadline,
+      })
+      let wallet = await getWallet(investor)
+      let {v, r, s} = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(wallet.privateKey.slice(2), "hex"))
+
+      let balanceBefore = await usdc.balanceOf(investor)
+      let seniorPoolAssetsBefore = await seniorPool.assets()
+
+      let receipt = await stakingRewards.depositWithPermitAndStake(amount, deadline, v, r as any, s as any, {
+        from: investor,
+      })
+      let stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
+      let tokenId = stakedEvent.args.tokenId
+
+      // Verify deposit worked
+      expect(await usdc.balanceOf(investor)).to.bignumber.equal(balanceBefore.sub(amount))
+      expect(await seniorPool.assets()).to.bignumber.equal(seniorPoolAssetsBefore.add(amount))
+
+      // Verify shares were staked
+      expect(await stakingRewards.ownerOf(tokenId)).to.equal(investor)
+      expect(await stakingRewards.stakedBalanceOf(tokenId)).to.bignumber.equal(bigVal(1000))
+
+      // Verify that allowance was correctly used
+      expect(await usdc.allowance(stakingRewards.address, seniorPool.address)).to.bignumber.equal(new BN(0))
+
+      // Verify that permit allowance was correctly used
+      expect(await usdc.allowance(investor, stakingRewards.address)).to.bignumber.equal(new BN(0))
+    })
+
+    context("paused", async () => {
+      it("reverts", async () => {
+        let nonce = await (usdc as any).nonces(investor)
+        let deadline = MAX_UINT
+        let amount = usdcVal(1000)
+
+        // Create signature for permit
+        let digest = await getApprovalDigest({
+          token: usdc,
+          owner: investor,
+          spender: stakingRewards.address,
+          value: amount,
+          nonce,
+          deadline,
+        })
+        let wallet = await getWallet(investor)
+        let {v, r, s} = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(wallet.privateKey.slice(2), "hex"))
+
+        await stakingRewards.pause()
+        await expect(
+          stakingRewards.depositWithPermitAndStake(amount, deadline, v, r as any, s as any, {
+            from: investor,
+          })
+        ).to.be.rejectedWith(/paused/)
+      })
+    })
+  })
+
+  describe("depositAndStakeWithLockup", async () => {
+    it("deposits into senior pool and stakes resulting shares with lockup", async () => {
+      let amount = usdcVal(1000)
+      let balanceBefore = await usdc.balanceOf(investor)
+      let seniorPoolAssetsBefore = await seniorPool.assets()
+
+      await usdc.approve(stakingRewards.address, amount, {from: investor})
+      let receipt = await stakingRewards.depositAndStakeWithLockup(amount, LockupPeriod.SixMonths, {from: investor})
+      let stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
+      let tokenId = stakedEvent.args.tokenId
+
+      // Verify deposit worked
+      expect(await usdc.balanceOf(investor)).to.bignumber.equal(balanceBefore.sub(amount))
+      expect(await seniorPool.assets()).to.bignumber.equal(seniorPoolAssetsBefore.add(amount))
+
+      // Verify shares were staked
+      expect(await stakingRewards.ownerOf(tokenId)).to.equal(investor)
+      expect(await stakingRewards.stakedBalanceOf(tokenId)).to.bignumber.equal(bigVal(1000))
+
+      // Verify that allowance was correctly used
+      expect(await usdc.allowance(stakingRewards.address, seniorPool.address)).to.bignumber.equal(new BN(0))
+
+      // Verify that shares are locked up
+      await expect(stakingRewards.unstake(tokenId, bigVal(1000), {from: investor})).to.be.rejectedWith(/locked/)
+      advanceTime({seconds: halfYearInSeconds})
+      await expect(stakingRewards.unstake(tokenId, bigVal(1000), {from: investor})).to.be.fulfilled
+    })
+
+    context("paused", async () => {
+      it("reverts", async () => {
+        await stakingRewards.pause()
+        await expect(
+          stakingRewards.depositAndStakeWithLockup(usdcVal(1000), LockupPeriod.SixMonths, {from: investor})
+        ).to.be.rejectedWith(/paused/)
+      })
+    })
+  })
+
+  describe("depositWithPermitAndStakeWithLockup", async () => {
+    it("deposits into senior pool and stakes resulting shares with lockup", async () => {
+      let nonce = await (usdc as any).nonces(investor)
+      let deadline = MAX_UINT
+      let amount = usdcVal(1000)
+
+      // Create signature for permit
+      let digest = await getApprovalDigest({
+        token: usdc,
+        owner: investor,
+        spender: stakingRewards.address,
+        value: amount,
+        nonce,
+        deadline,
+      })
+      let wallet = await getWallet(investor)
+      let {v, r, s} = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(wallet.privateKey.slice(2), "hex"))
+
+      let balanceBefore = await usdc.balanceOf(investor)
+      let seniorPoolAssetsBefore = await seniorPool.assets()
+
+      await usdc.approve(stakingRewards.address, amount, {from: investor})
+      let receipt = await stakingRewards.depositWithPermitAndStakeWithLockup(
+        amount,
+        LockupPeriod.SixMonths,
+        deadline,
+        v,
+        r as any,
+        s as any,
+        {from: investor}
+      )
+      let stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
+      let tokenId = stakedEvent.args.tokenId
+
+      // Verify deposit worked
+      expect(await usdc.balanceOf(investor)).to.bignumber.equal(balanceBefore.sub(amount))
+      expect(await seniorPool.assets()).to.bignumber.equal(seniorPoolAssetsBefore.add(amount))
+
+      // Verify shares were staked
+      expect(await stakingRewards.ownerOf(tokenId)).to.equal(investor)
+      expect(await stakingRewards.stakedBalanceOf(tokenId)).to.bignumber.equal(bigVal(1000))
+
+      // Verify that allowance was correctly used
+      expect(await usdc.allowance(stakingRewards.address, seniorPool.address)).to.bignumber.equal(new BN(0))
+
+      // Verify that permit allowance was correctly used
+      expect(await usdc.allowance(investor, stakingRewards.address)).to.bignumber.equal(new BN(0))
+
+      // Verify that shares are locked up
+      await expect(stakingRewards.unstake(tokenId, bigVal(1000), {from: investor})).to.be.rejectedWith(/locked/)
+      advanceTime({seconds: halfYearInSeconds})
+      await expect(stakingRewards.unstake(tokenId, bigVal(1000), {from: investor})).to.be.fulfilled
+    })
+
+    context("paused", async () => {
+      it("reverts", async () => {
+        let nonce = await (usdc as any).nonces(investor)
+        let deadline = MAX_UINT
+        let amount = usdcVal(1000)
+
+        // Create signature for permit
+        let digest = await getApprovalDigest({
+          token: usdc,
+          owner: investor,
+          spender: stakingRewards.address,
+          value: amount,
+          nonce,
+          deadline,
+        })
+        let wallet = await getWallet(investor)
+        let {v, r, s} = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(wallet.privateKey.slice(2), "hex"))
+
+        let balanceBefore = await usdc.balanceOf(investor)
+        let seniorPoolAssetsBefore = await seniorPool.assets()
+
+        await stakingRewards.pause()
+        await expect(
+          stakingRewards.depositWithPermitAndStakeWithLockup(
+            amount,
+            LockupPeriod.SixMonths,
+            deadline,
+            v,
+            r as any,
+            s as any,
+            {from: investor}
+          )
+        ).to.be.rejectedWith(/paused/)
+      })
+    })
+  })
+
   describe("unstake", async () => {
     let totalRewards: BN
     let rewardRate: BN
@@ -268,7 +503,10 @@ describe("StakingRewards", () => {
       let tokenId = await stake({amount: fiduAmount, from: investor})
 
       let withdrawAmount = fiduAmount.div(new BN(2))
-      await expectAction(() => stakingRewards.unstake(tokenId, withdrawAmount, {from: investor})).toChange([
+      await expectAction(async () => {
+        let receipt = await stakingRewards.unstake(tokenId, withdrawAmount, {from: investor})
+        expectEvent(receipt, "Unstaked", {user: investor, tokenId, amount: withdrawAmount})
+      }).toChange([
         [() => fidu.balanceOf(investor), {by: withdrawAmount}],
         [() => stakingRewards.totalStakedSupply(), {by: withdrawAmount.neg()}],
       ])
@@ -360,6 +598,150 @@ describe("StakingRewards", () => {
         let tokenId = await stake({amount: bigVal(100), from: investor})
         await stakingRewards.pause()
         await expect(stakingRewards.unstake(tokenId, bigVal(100), {from: investor})).to.be.rejectedWith(/paused/)
+      })
+    })
+  })
+
+  describe("unstakeAndWithdrawInFidu", async () => {
+    let totalRewards: BN
+    let rewardRate: BN
+
+    beforeEach(async () => {
+      // Mint rewards for a full year
+      rewardRate = bigVal(100)
+
+      // Fix the reward rate
+      await stakingRewards.setMinRate(rewardRate)
+      await stakingRewards.setMaxRate(rewardRate)
+
+      totalRewards = rewardRate.mul(yearInSeconds)
+      await mintRewards(totalRewards)
+
+      // Disable vesting
+      await stakingRewards.setVestingSchedule(new BN(0))
+    })
+
+    it("unstakes fidu and withdraws from the senior pool", async () => {
+      await stake({amount: fiduAmount.mul(new BN(4)), from: anotherUser})
+
+      let tokenId = await stake({amount: fiduAmount, from: investor})
+
+      let withdrawAmount = fiduAmount.div(new BN(2))
+      let withdrawAmountInUsdc = withdrawAmount
+        .mul(await seniorPool.sharePrice())
+        .div(new BN(String(1e18))) //share price mantissa
+        .div(new BN(String(1e18)).div(new BN(String(1e6)))) // usdc mantissa
+      let withdrawlFee = withdrawAmountInUsdc.div(seniorPoolWithdrawalFeeDenominator)
+
+      await expectAction(async () => {
+        let receipt = await stakingRewards.unstakeAndWithdrawInFidu(tokenId, withdrawAmount, {from: investor})
+        expectEvent(receipt, "Unstaked", {user: investor, tokenId, amount: withdrawAmount})
+      }).toChange([
+        [() => usdc.balanceOf(investor), {by: withdrawAmountInUsdc.sub(withdrawlFee)}],
+        [() => seniorPool.assets(), {by: withdrawAmountInUsdc.neg()}],
+        [() => stakingRewards.totalStakedSupply(), {by: withdrawAmount.neg()}],
+      ])
+      await expectAction(() =>
+        stakingRewards.unstakeAndWithdrawInFidu(tokenId, withdrawAmount, {from: investor})
+      ).toChange([
+        [() => usdc.balanceOf(investor), {by: withdrawAmountInUsdc.sub(withdrawlFee)}],
+        [() => seniorPool.assets(), {by: withdrawAmountInUsdc.neg()}],
+        [() => stakingRewards.totalStakedSupply(), {by: withdrawAmount.neg()}],
+      ])
+      await expect(stakingRewards.unstakeAndWithdrawInFidu(tokenId, withdrawAmount, {from: investor})).to.be.rejected
+    })
+
+    context("user does not own position token", async () => {
+      it("reverts", async () => {
+        let tokenId = await stakeWithLockup({amount: fiduAmount, from: investor})
+
+        await advanceTime({seconds: 10000})
+
+        await expect(
+          stakingRewards.unstakeAndWithdrawInFidu(tokenId, fiduAmount, {from: anotherUser})
+        ).to.be.rejectedWith(/access denied/)
+      })
+    })
+
+    context("paused", async () => {
+      it("reverts", async () => {
+        let tokenId = await stake({amount: bigVal(100), from: investor})
+        await stakingRewards.pause()
+        await expect(
+          stakingRewards.unstakeAndWithdrawInFidu(tokenId, bigVal(100), {from: investor})
+        ).to.be.rejectedWith(/paused/)
+      })
+    })
+  })
+
+  describe("unstakeAndWithdraw", async () => {
+    let totalRewards: BN
+    let rewardRate: BN
+
+    beforeEach(async () => {
+      // Mint rewards for a full year
+      rewardRate = bigVal(100)
+
+      // Fix the reward rate
+      await stakingRewards.setMinRate(rewardRate)
+      await stakingRewards.setMaxRate(rewardRate)
+
+      totalRewards = rewardRate.mul(yearInSeconds)
+      await mintRewards(totalRewards)
+
+      // Disable vesting
+      await stakingRewards.setVestingSchedule(new BN(0))
+    })
+
+    it("unstakes fidu and withdraws from the senior pool", async () => {
+      await stake({amount: fiduAmount.mul(new BN(4)), from: anotherUser})
+
+      let tokenId = await stake({amount: fiduAmount, from: investor})
+
+      let withdrawAmount = fiduAmount.div(new BN(2))
+      let withdrawAmountInUsdc = withdrawAmount
+        .mul(await seniorPool.sharePrice())
+        .div(new BN(String(1e18))) //share price mantissa
+        .div(new BN(String(1e18)).div(new BN(String(1e6)))) // usdc mantissa
+      let withdrawlFee = withdrawAmountInUsdc.div(seniorPoolWithdrawalFeeDenominator)
+
+      await expectAction(async () => {
+        let receipt = await stakingRewards.unstakeAndWithdraw(tokenId, withdrawAmountInUsdc, {from: investor})
+        expectEvent(receipt, "Unstaked", {user: investor, tokenId, amount: withdrawAmount})
+      }).toChange([
+        [() => usdc.balanceOf(investor), {by: withdrawAmountInUsdc.sub(withdrawlFee)}],
+        [() => seniorPool.assets(), {by: withdrawAmountInUsdc.neg()}],
+        [() => stakingRewards.totalStakedSupply(), {by: withdrawAmount.neg()}],
+      ])
+      await expectAction(() =>
+        stakingRewards.unstakeAndWithdraw(tokenId, withdrawAmountInUsdc, {from: investor})
+      ).toChange([
+        [() => usdc.balanceOf(investor), {by: withdrawAmountInUsdc.sub(withdrawlFee)}],
+        [() => seniorPool.assets(), {by: withdrawAmountInUsdc.neg()}],
+        [() => stakingRewards.totalStakedSupply(), {by: withdrawAmount.neg()}],
+      ])
+      await expect(stakingRewards.unstakeAndWithdraw(tokenId, withdrawAmountInUsdc, {from: investor})).to.be.rejected
+    })
+
+    context("user does not own position token", async () => {
+      it("reverts", async () => {
+        let tokenId = await stakeWithLockup({amount: fiduAmount, from: investor})
+
+        await advanceTime({seconds: 10000})
+
+        await expect(stakingRewards.unstakeAndWithdraw(tokenId, usdcVal(100), {from: anotherUser})).to.be.rejectedWith(
+          /access denied/
+        )
+      })
+    })
+
+    context("paused", async () => {
+      it("reverts", async () => {
+        let tokenId = await stake({amount: bigVal(100), from: investor})
+        await stakingRewards.pause()
+        await expect(stakingRewards.unstakeAndWithdraw(tokenId, usdcVal(100), {from: investor})).to.be.rejectedWith(
+          /paused/
+        )
       })
     })
   })
@@ -623,6 +1005,8 @@ describe("StakingRewards", () => {
 
       expect(await gfi.balanceOf(investor)).to.bignumber.equal(rewardRate.mul(yearInSeconds))
       expect(await fidu.balanceOf(investor)).to.bignumber.equal(fiduAmount)
+      expect(await stakingRewards.stakedBalanceOf(tokenId)).to.bignumber.equal(new BN(0))
+      await expect(stakingRewards.exit(tokenId, {from: investor})).to.be.rejectedWith(/Cannot unstake 0/)
     })
 
     context("user does not own position token", async () => {
@@ -641,6 +1025,58 @@ describe("StakingRewards", () => {
         await advanceTime({seconds: 10000})
         await stakingRewards.pause()
         await expect(stakingRewards.exit(tokenId, {from: investor})).to.be.rejectedWith(/paused/)
+      })
+    })
+  })
+
+  describe("exitAndWithdraw", async () => {
+    let rewardRate: BN
+
+    beforeEach(async () => {
+      rewardRate = new BN(String(2e18))
+      // Fix the reward rate to make testing easier
+      await stakingRewards.setMinRate(rewardRate)
+      await stakingRewards.setMaxRate(rewardRate)
+
+      // Mint rewards for one year
+      let totalRewards = rewardRate.mul(yearInSeconds)
+      await mintRewards(totalRewards)
+    })
+
+    it("exits staking and withdraws from the senior pool", async () => {
+      let tokenId = await stake({amount: fiduAmount, from: investor})
+
+      await advanceTime({seconds: yearInSeconds})
+
+      let withdrawAmountInUsdc = fiduAmount
+        .mul(await seniorPool.sharePrice())
+        .div(new BN(String(1e18))) //share price mantissa
+        .div(new BN(String(1e18)).div(new BN(String(1e6)))) // usdc mantissa
+      let withdrawalFee = withdrawAmountInUsdc.div(seniorPoolWithdrawalFeeDenominator)
+
+      await expectAction(() => stakingRewards.exitAndWithdraw(tokenId, {from: investor})).toChange([
+        [() => usdc.balanceOf(investor), {by: withdrawAmountInUsdc.sub(withdrawalFee)}],
+        [() => seniorPool.assets(), {by: withdrawAmountInUsdc.neg()}],
+        [() => stakingRewards.totalStakedSupply(), {by: fiduAmount.neg()}],
+        [() => stakingRewards.stakedBalanceOf(tokenId), {by: fiduAmount.neg()}],
+      ])
+    })
+
+    context("user does not own position token", async () => {
+      it("reverts", async () => {
+        let tokenId = await stakeWithLockup({amount: fiduAmount, from: investor})
+
+        await advanceTime({seconds: 10000})
+
+        await expect(stakingRewards.exitAndWithdraw(tokenId, {from: anotherUser})).to.be.rejectedWith(/access denied/)
+      })
+    })
+
+    context("paused", async () => {
+      it("reverts", async () => {
+        let tokenId = await stake({amount: bigVal(100), from: investor})
+        await stakingRewards.pause()
+        await expect(stakingRewards.exitAndWithdraw(tokenId, {from: investor})).to.be.rejectedWith(/paused/)
       })
     })
   })

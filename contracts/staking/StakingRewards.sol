@@ -6,9 +6,11 @@ import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/drafts/IERC20Permit.sol";
 
 import "../external/ERC721PresetMinterPauserAutoId.sol";
 import "../interfaces/IERC20withDec.sol";
+import "../interfaces/ISeniorPool.sol";
 import "../protocol/core/GoldfinchConfig.sol";
 import "../protocol/core/ConfigHelper.sol";
 import "../protocol/core/BaseUpgradeablePausable.sol";
@@ -245,7 +247,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   /// @dev This function checkpoints rewards.
   /// @param amount The amount of `stakingToken()` to stake
   function stake(uint256 amount) external nonReentrant whenNotPaused updateReward(0) {
-    _stakeWithLockup(amount, 0, MULTIPLIER_DECIMALS);
+    _stakeWithLockup(msg.sender, msg.sender, amount, 0, MULTIPLIER_DECIMALS);
   }
 
   /// @notice Stake `stakingToken()` and lock your position for a period of time to boost your rewards.
@@ -269,7 +271,58 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     uint256 lockDuration = lockupPeriodToDuration(lockupPeriod);
     uint256 leverageMultiplier = getLeverageMultiplier(lockupPeriod);
     uint256 lockedUntil = block.timestamp.add(lockDuration);
-    _stakeWithLockup(amount, lockedUntil, leverageMultiplier);
+    _stakeWithLockup(msg.sender, msg.sender, amount, lockedUntil, leverageMultiplier);
+  }
+
+  /// @notice Deposit to SeniorPool and stake your shares in the same transaction.
+  /// @param usdcAmount The amount of USDC to deposit into the senior pool. All shares from deposit
+  ///   will be staked.
+  function depositAndStake(uint256 usdcAmount) public nonReentrant whenNotPaused updateReward(0) {
+    uint256 fiduAmount = depositToSeniorPool(usdcAmount);
+    _stakeWithLockup(address(this), msg.sender, fiduAmount, 0, MULTIPLIER_DECIMALS);
+  }
+
+  function depositToSeniorPool(uint256 usdcAmount) internal returns (uint256 fiduAmount) {
+    IERC20withDec usdc = config.getUSDC();
+    usdc.safeTransferFrom(msg.sender, address(this), usdcAmount);
+
+    ISeniorPool seniorPool = config.getSeniorPool();
+    usdc.safeIncreaseAllowance(address(seniorPool), usdcAmount);
+    return seniorPool.deposit(usdcAmount);
+  }
+
+  /// @notice Identical to `depositAndStake`, except it allows for a signature to be passed that permits
+  ///   this contract to move funds on behalf of the user.
+  /// @param usdcAmount The amount of USDC to deposit
+  /// @param v secp256k1 signature component
+  /// @param r secp256k1 signature component
+  /// @param s secp256k1 signature component
+  function depositWithPermitAndStake(
+    uint256 usdcAmount,
+    uint256 deadline,
+    uint8 v,
+    bytes32 r,
+    bytes32 s
+  ) public {
+    IERC20Permit(config.usdcAddress()).permit(msg.sender, address(this), usdcAmount, deadline, v, r, s);
+    depositAndStake(usdcAmount);
+  }
+
+  /// @notice Deposit to the `SeniorPool` and stake your shares with a lock-up in the same transaction.
+  /// @param usdcAmount The amount of USDC to deposit into the senior pool. All shares from deposit
+  ///   will be staked.
+  /// @param lockupPeriod The period over which to lock staked tokens
+  function depositAndStakeWithLockup(uint256 usdcAmount, LockupPeriod lockupPeriod)
+    public
+    nonReentrant
+    whenNotPaused
+    updateReward(0)
+  {
+    uint256 fiduAmount = depositToSeniorPool(usdcAmount);
+    uint256 lockDuration = lockupPeriodToDuration(lockupPeriod);
+    uint256 leverageMultiplier = getLeverageMultiplier(lockupPeriod);
+    uint256 lockedUntil = block.timestamp.add(lockDuration);
+    _stakeWithLockup(address(this), msg.sender, fiduAmount, lockedUntil, leverageMultiplier);
   }
 
   function lockupPeriodToDuration(LockupPeriod lockupPeriod) internal pure returns (uint256 lockDuration) {
@@ -292,7 +345,28 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     return leverageMultiplier;
   }
 
+  /// @notice Identical to `depositAndStakeWithLockup`, except it allows for a signature to be passed that permits
+  ///   this contract to move funds on behalf of the user.
+  /// @param usdcAmount The amount of USDC to deposit
+  /// @param lockupPeriod The period over which to lock staked tokens
+  /// @param v secp256k1 signature component
+  /// @param r secp256k1 signature component
+  /// @param s secp256k1 signature component
+  function depositWithPermitAndStakeWithLockup(
+    uint256 usdcAmount,
+    LockupPeriod lockupPeriod,
+    uint256 deadline,
+    uint8 v,
+    bytes32 r,
+    bytes32 s
+  ) public {
+    IERC20Permit(config.usdcAddress()).permit(msg.sender, address(this), usdcAmount, deadline, v, r, s);
+    depositAndStakeWithLockup(usdcAmount, lockupPeriod);
+  }
+
   function _stakeWithLockup(
+    address staker,
+    address nftRecipient,
     uint256 amount,
     uint256 lockedUntil,
     uint256 leverageMultiplier
@@ -321,15 +395,18 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
       leverageMultiplier: leverageMultiplier,
       lockedUntil: lockedUntil
     });
-    _mint(msg.sender, tokenId);
+    _mint(nftRecipient, tokenId);
 
     uint256 leveredAmount = positionToLeveredAmount(positions[tokenId]);
     totalLeveragedStakedSupply = totalLeveragedStakedSupply.add(leveredAmount);
     totalStakedSupply = totalStakedSupply.add(amount);
 
-    stakingToken().safeTransferFrom(msg.sender, address(this), amount);
+    // Staker is address(this) when using depositAndStake or other convenience functions
+    if (staker != address(this)) {
+      stakingToken().safeTransferFrom(staker, address(this), amount);
+    }
 
-    emit Staked(msg.sender, tokenId, amount, lockedUntil, leverageMultiplier);
+    emit Staked(nftRecipient, tokenId, amount, lockedUntil, leverageMultiplier);
   }
 
   /// @notice Unstake an amount of `stakingToken()` associated with a given position and transfer to msg.sender.
@@ -339,6 +416,41 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   /// @param tokenId A staking position token ID
   /// @param amount Amount of `stakingToken()` to be unstaked from the position
   function unstake(uint256 tokenId, uint256 amount) public nonReentrant whenNotPaused updateReward(tokenId) {
+    _unstake(tokenId, amount);
+    stakingToken().safeTransfer(msg.sender, amount);
+  }
+
+  function unstakeAndWithdraw(uint256 tokenId, uint256 usdcAmount)
+    public
+    nonReentrant
+    whenNotPaused
+    updateReward(tokenId)
+  {
+    ISeniorPool seniorPool = config.getSeniorPool();
+    IFidu fidu = config.getFidu();
+
+    uint256 fiduBalanceBefore = fidu.balanceOf(address(this));
+
+    uint256 usdcAmountReceived = seniorPool.withdraw(usdcAmount);
+
+    uint256 fiduUsed = fiduBalanceBefore.sub(fidu.balanceOf(address(this)));
+
+    _unstake(tokenId, fiduUsed);
+    config.getUSDC().safeTransfer(msg.sender, usdcAmountReceived);
+  }
+
+  function unstakeAndWithdrawInFidu(uint256 tokenId, uint256 fiduAmount)
+    public
+    nonReentrant
+    whenNotPaused
+    updateReward(tokenId)
+  {
+    uint256 usdcAmount = config.getSeniorPool().withdrawInFidu(fiduAmount);
+    _unstake(tokenId, fiduAmount);
+    config.getUSDC().safeTransfer(msg.sender, usdcAmount);
+  }
+
+  function _unstake(uint256 tokenId, uint256 amount) internal {
     require(ownerOf(tokenId) == msg.sender, "access denied");
     require(amount > 0, "Cannot unstake 0");
 
@@ -359,8 +471,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     uint256 slashingPercentage = amount.mul(Vesting.PERCENTAGE_DECIMALS).div(prevAmount);
     position.rewards.slash(slashingPercentage);
 
-    stakingToken().safeTransfer(msg.sender, amount);
-    emit Withdrawn(msg.sender, tokenId, amount);
+    emit Unstaked(msg.sender, tokenId, amount);
   }
 
   /// @notice "Kick" a user's reward multiplier. If they are past their lock-up period, their reward
@@ -383,8 +494,12 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   /// @notice Unstake the position's full amount and claim all rewards
   /// @param tokenId A staking position token ID
   function exit(uint256 tokenId) external {
-    require(ownerOf(tokenId) == msg.sender, "access denied");
     unstake(tokenId, positions[tokenId].amount);
+    getReward(tokenId);
+  }
+
+  function exitAndWithdraw(uint256 tokenId) external {
+    unstakeAndWithdrawInFidu(tokenId, positions[tokenId].amount);
     getReward(tokenId);
   }
 
@@ -482,6 +597,6 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
   event RewardAdded(uint256 reward);
   event Staked(address indexed user, uint256 indexed tokenId, uint256 amount, uint256 lockedUntil, uint256 multiplier);
-  event Withdrawn(address indexed user, uint256 indexed tokenId, uint256 amount);
+  event Unstaked(address indexed user, uint256 indexed tokenId, uint256 amount);
   event RewardPaid(address indexed user, uint256 indexed tokenId, uint256 reward);
 }

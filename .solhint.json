@@ -117,10 +117,17 @@
         "**/StakingRewards.sol:StakingRewards": {
           "stake": [],
           "stakeWithLockup": [],
+          "depositAndStake": [],
+          "depositWithPermitAndStake": [],
+          "depositAndStakeWithLockup": [],
+          "depositWithPermitAndStakeWithLockup": [],
           "unstake": [],
+          "unstakeAndWithdraw": [],
+          "unstakeAndWithdrawInFidu": [],
           "getReward": [],
           "kick": [],
-          "exit": []
+          "exit": [],
+          "exitAndWithdraw": []
         },
         "**/contracts/test/**": {
           "*.*": []
