@@ -25,6 +25,7 @@ steps:
       - start-update
       - murmuration-goldfinch-finance
       - '--version=template=murmuration-goldfinch-finance'
+      - '--zone=us-central1-a'
     entrypoint: gcloud
     id: Deploy
 timeout: '1600s'
