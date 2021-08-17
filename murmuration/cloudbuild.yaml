@@ -23,8 +23,8 @@ steps:
       - managed
       - rolling-action
       - start-update
-      - murmuration-goldfinch-finance
-      - '--version=template=murmuration-goldfinch-finance'
+      - murmuration-goldfinch-finance-2
+      - '--version=template=murmuration-goldfinch-finance-2'
       - '--zone=us-central1-a'
     entrypoint: gcloud
     id: Deploy
