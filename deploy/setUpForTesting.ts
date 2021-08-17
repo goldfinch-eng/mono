@@ -96,7 +96,7 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
     await impersonateAccount(hre, protocol_owner)
     config = config.connect(protocol_owner)
 
-    await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [protocol_owner, gf_deployer, ...borrowers])
+    await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [protocol_owner, gf_deployer, ...borrowers], new BN("75000"))
 
     await prepareMigration()
     await deployAndMigrateToV2()
@@ -153,8 +153,8 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
     // the amounts are unique, otherwise causes transaction hash collisions
     let depositAmount = new BN(10000).mul(USDCDecimals).add(new BN(i))
 
-    await (erc20 as TestERC20).connect(signer).approve(seniorPool.address, depositAmount.mul(new BN(10)).toString())
-    await seniorPool.connect(signer).deposit(depositAmount.mul(new BN(10)).toString())
+    await (erc20 as TestERC20).connect(signer).approve(seniorPool.address, depositAmount.mul(new BN(5)).toString())
+    await seniorPool.connect(signer).deposit(depositAmount.mul(new BN(5)).toString())
 
     let txn = await (erc20.connect(signer)).approve(commonPool.address, String(depositAmount))
     await txn.wait()
