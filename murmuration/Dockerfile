@@ -1,5 +1,5 @@
-# Dockerfile for building `https://murmuration.goldfinch.finance` environment
-# deployed to Google App Engine.
+# Dockerfile for building `https://murmuration.goldfinch.finance` application
+# deployed to Google Compute Engine.
 
 FROM node:12.18.3
 

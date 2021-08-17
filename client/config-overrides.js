@@ -36,14 +36,13 @@ const gnosisSafeIntegration = () => (config) => {
 
 const murmuration = () => (config) => {
   if (process.env.MURMURATION === "yes") {
-    // Running on App Engine, we want the Webpack dev server to serve at hostname
+    // Running on Compute Engine, we want the Webpack dev server to serve at hostname
     // 0.0.0.0, so that it is accessible outside the Docker container in which it
     // runs (cf. https://stackoverflow.com/a/39638515).
     config.host = "0.0.0.0"
 
     // Note that we also need the dev server to listen on port 8080,
-    // because that is the port App Engine requires (cf.
-    // https://cloud.google.com/appengine/docs/flexible/custom-runtimes/build#listening_to_port_8080),
+    // because that is the port we have configured Compute Engine to use,
     // but react-app-rewired only supports specifying the port via an environment variable (cf.
     // https://github.com/timarney/react-app-rewired/issues/436),
     // so we do that in the npm `murmuration-start` command.

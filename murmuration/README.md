@@ -2,7 +2,7 @@
 
 `https://murmuration.goldfinch.finance` is a manual-testing environment that can be used by the entire team. In essence, it uses the same architecture as we use in local development, it's just running in the cloud.
 
-It runs on a Google App Engine instance, and is deployed to continuously via Google Cloud Build upon pushing to the `murmuration-goldfinch-finance` branch. (This Google Cloud Build trigger was configured manually in the Cloud Build console.) It runs using the same services that we use in local development:
+It runs on a Google Compute Engine instance, and is deployed to continuously via Google Cloud Build upon pushing to the `murmuration-goldfinch-finance` branch. (This Google Cloud Build trigger was configured manually in the Cloud Build console.) It runs using the same services that we use in local development:
 - the client is served by the Webpack dev server
 - the blockchain is run via `npx hardhat node`
 - the autotasks server runs via `npx hardhat run`
