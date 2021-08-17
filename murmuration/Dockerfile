@@ -28,7 +28,7 @@ WORKDIR /goldfinch-protocol/client
 RUN npm install
 
 # Used by the Webpack dev server. See `murmuration()` in `client/config-overrides.js`.
-EXPOSE 8080
+EXPOSE 80
 
 WORKDIR /goldfinch-protocol
 CMD npm run murmuration-start

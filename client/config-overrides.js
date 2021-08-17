@@ -41,7 +41,7 @@ const murmuration = () => (config) => {
     // runs (cf. https://stackoverflow.com/a/39638515).
     config.host = "0.0.0.0"
 
-    // Note that we also need the dev server to listen on port 8080,
+    // Note that we also need the dev server to listen on port 80,
     // because that is the port we have configured Compute Engine to use,
     // but react-app-rewired only supports specifying the port via an environment variable (cf.
     // https://github.com/timarney/react-app-rewired/issues/436),
