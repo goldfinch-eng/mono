@@ -69,30 +69,29 @@ describe("Deployment", async () => {
     })
 
     it("should allow you to change the owner of the implementation, without affecting the owner of the proxy", async () => {
-      const seniorFund = await getDeployedContract(deployments, "SeniorFund")
+      const seniorPool = await getDeployedContract(deployments, "SeniorPool")
       const someWallet = ethers.Wallet.createRandom()
 
-      const originally = await seniorFund.hasRole(OWNER_ROLE, someWallet.address)
+      const originally = await seniorPool.hasRole(OWNER_ROLE, someWallet.address)
       expect(originally).to.be.false
 
-      await seniorFund.grantRole(OWNER_ROLE, someWallet.address)
+      await seniorPool.grantRole(OWNER_ROLE, someWallet.address)
 
-      const afterGrant = await seniorFund.hasRole(OWNER_ROLE, someWallet.address)
+      const afterGrant = await seniorPool.hasRole(OWNER_ROLE, someWallet.address)
       expect(afterGrant).to.be.true
     })
 
     it("should allow for a way to transfer ownership of the proxy", async () => {
       const {protocol_owner, gf_deployer} = await getNamedAccounts()
-      const seniorFundProxy = await getDeployedContract(deployments, "SeniorFund_Proxy", gf_deployer)
+      const seniorPoolProxy = await getDeployedContract(deployments, "SeniorPool_Proxy", protocol_owner)
 
-      const originalOwner = await seniorFundProxy.owner()
-      expect(originalOwner).to.equal(gf_deployer)
+      const originalOwner = await seniorPoolProxy.owner()
+      expect(originalOwner).to.equal(protocol_owner)
 
-      const result = await seniorFundProxy.transferOwnership(protocol_owner)
+      const result = await seniorPoolProxy.transferOwnership(gf_deployer)
       await result.wait()
-
-      const newOwner = await seniorFundProxy.owner()
-      expect(newOwner).to.equal(protocol_owner)
+      const newOwner = await seniorPoolProxy.owner()
+      expect(newOwner).to.equal(gf_deployer)
     })
   })
 
@@ -112,7 +111,9 @@ describe("Deployment", async () => {
         withdrawFeeDenominator: 202,
         latenessGracePeriod: 9,
         latenessMaxDays: 6,
+        drawdownPeriodInSeconds: 11000,
         transferRestrictionPeriodInDays: 180,
+        leverageRatio: String(17e18),
       }
 
       await updateConfigs(hre, new_config)
@@ -137,9 +138,13 @@ describe("Deployment", async () => {
         String(new_config["latenessGracePeriod"])
       )
       expect(String(await config.getNumber(CONFIG_KEYS.LatenessMaxDays))).to.eq(String(new_config["latenessMaxDays"]))
+      expect(String(await config.getNumber(CONFIG_KEYS.DrawdownPeriodInSeconds))).to.eq(
+        String(new_config["drawdownPeriodInSeconds"])
+      )
       expect(String(await config.getNumber(CONFIG_KEYS.TransferPeriodRestrictionInDays))).to.eq(
         String(new_config["transferRestrictionPeriodInDays"])
       )
+      expect(String(await config.getNumber(CONFIG_KEYS.LeverageRatio))).to.eq(String(new_config["leverageRatio"]))
     })
   })
 })

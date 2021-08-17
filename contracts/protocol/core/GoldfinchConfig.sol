@@ -60,8 +60,8 @@ contract GoldfinchConfig is BaseUpgradeablePausable {
     addresses[key] = newTreasuryReserve;
   }
 
-  function setSeniorFundStrategy(address newStrategy) public onlyAdmin {
-    uint256 key = uint256(ConfigOptions.Addresses.SeniorFundStrategy);
+  function setSeniorPoolStrategy(address newStrategy) public onlyAdmin {
+    uint256 key = uint256(ConfigOptions.Addresses.SeniorPoolStrategy);
     emit AddressUpdated(msg.sender, key, addresses[key], newStrategy);
     addresses[key] = newStrategy;
   }
@@ -85,9 +85,9 @@ contract GoldfinchConfig is BaseUpgradeablePausable {
   }
 
   function initializeFromOtherConfig(address _initialConfig) public onlyAdmin {
-    require(!valuesInitialized, "Already initailized values");
+    require(!valuesInitialized, "Already initialized values");
     IGoldfinchConfig initialConfig = IGoldfinchConfig(_initialConfig);
-    for (uint256 i = 0; i < 7; i++) {
+    for (uint256 i = 0; i < 10; i++) {
       setNumber(i, initialConfig.getNumber(i));
     }
 

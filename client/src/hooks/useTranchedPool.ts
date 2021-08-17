@@ -99,10 +99,10 @@ function useRemainingCapacity({tranchedPool}: {tranchedPool?: TranchedPool}): Bi
 
 function useRemainingJuniorCapacity({tranchedPool}: {tranchedPool?: TranchedPool}): BigNumber | undefined {
   const remainingCapacity = useRemainingCapacity({tranchedPool})
-  const leverageRatio = useEstimatedLeverageRatio({tranchedPool})
+  const estimatedLeverageRatio = useEstimatedLeverageRatio({tranchedPool})
 
-  if (remainingCapacity && leverageRatio) {
-    return remainingCapacity.dividedBy(leverageRatio.plus(1))
+  if (remainingCapacity && estimatedLeverageRatio) {
+    return remainingCapacity.dividedBy(estimatedLeverageRatio.plus(1))
   }
 
   return

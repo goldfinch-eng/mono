@@ -21,13 +21,13 @@ describe("relayAsses", () => {
     const {protocol_owner} = await getNamedAccounts()
     owner = protocol_owner
 
-    const {seniorFund, usdc, fidu, creditDesk, goldfinchConfig, goldfinchFactory} = await deployAllContracts(
+    const {seniorPool, usdc, fidu, creditDesk, goldfinchConfig, goldfinchFactory} = await deployAllContracts(
       deployments
     )
     // A bit of setup for our test users
-    await erc20Approve(usdc, seniorFund.address, usdcVal(100000), [owner, borrower])
+    await erc20Approve(usdc, seniorPool.address, usdcVal(100000), [owner, borrower])
     await goldfinchConfig.bulkAddToGoList([owner, underwriter, borrower])
-    await seniorFund.deposit(String(usdcVal(10000)), {from: owner})
+    await seniorPool.deposit(String(usdcVal(10000)), {from: owner})
     const {tranchedPool, creditLine} = await createPoolWithCreditLine({
       people: {owner, borrower},
       goldfinchFactory,
@@ -37,7 +37,7 @@ describe("relayAsses", () => {
     await tranchedPool.deposit(TRANCHES.Senior, usdcVal(8))
     await tranchedPool.lockJuniorCapital({from: borrower})
     await tranchedPool.lockPool({from: borrower})
-    return {usdc, seniorFund, fidu, goldfinchConfig, creditDesk, goldfinchFactory, creditLine, tranchedPool}
+    return {usdc, seniorPool, fidu, goldfinchConfig, creditDesk, goldfinchFactory, creditLine, tranchedPool}
   })
 
   async function advanceToTimestamp(timestamp) {

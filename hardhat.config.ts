@@ -5,6 +5,7 @@ import "@nomiclabs/hardhat-ethers"
 import "hardhat-deploy"
 import "hardhat-gas-reporter"
 import "hardhat-contract-sizer" // npx hardhat size-contracts
+import "@tenderly/hardhat-tenderly"
 
 const INFURA_PROJECT_ID = "d8e13fc4893e4be5aae875d94fee67b7"
 // Note this came from a new instance of Metamask that Blake set up
@@ -87,5 +88,10 @@ module.exports = {
   typechain: {
     outDir: "typechain/truffle",
     target: "truffle-v5",
+  },
+  tenderly: {
+    project: "goldfinch-protocol",
+    username: "goldfinch",
+    forkNetwork: "1" //Network id of the network we want to fork
   },
 }

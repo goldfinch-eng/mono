@@ -45,7 +45,7 @@ contract MigratedTranchedPool is TranchedPool, IMigratedTranchedPool {
     uint256 totalInterestPaid,
     uint256 totalPrincipalPaid
   ) internal {
-    // Mint junior tokens to the SeniorFund, equal to current cl balance;
+    // Mint junior tokens to the SeniorPool, equal to current cl balance;
     require(!locked(), "Pool has been locked");
     // Hardcode to always get the JuniorTranche, since the migration case is when
     // the senior pool took the entire investment. Which we're expressing as the junior tranche
@@ -60,7 +60,7 @@ contract MigratedTranchedPool is TranchedPool, IMigratedTranchedPool {
     });
     IPoolTokens poolTokens = config.getPoolTokens();
 
-    uint256 tokenId = poolTokens.mint(params, config.seniorFundAddress());
+    uint256 tokenId = poolTokens.mint(params, config.seniorPoolAddress());
 
     // Account for the implicit redemptions already made by the Legacy Pool
     poolTokens.redeem(tokenId, totalPrincipalPaid, totalInterestPaid);

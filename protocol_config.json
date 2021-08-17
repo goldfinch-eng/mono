@@ -7,5 +7,6 @@
   "latenessGracePeriodInDays": 30,
   "latenessMaxDays": 120,
   "drawdownPeriodInSeconds": 86400,
-  "transferRestrictionPeriodInDays": 365
+  "transferRestrictionPeriodInDays": 365,
+  "leverageRatio": "4000000000000000000"
 }

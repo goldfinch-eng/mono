@@ -47,6 +47,9 @@
         "**/CreditLine.sol:CreditLine": {
           "setLimit": []
         },
+        "**/V2Migrator.sol:V2Migrator": {
+          "upgradeImplementations": []
+        },
         "**/MigratedTranchedPool.sol:MigratedTranchedPool": {
           "migrateCreditLine": []
         },
@@ -85,13 +88,13 @@
           "pause": [],
           "unpause": []
         },
-        "**/SeniorFund.sol:SeniorFund": {
+        "**/SeniorPool.sol:SeniorPool": {
           "deposit": [],
           "depositWithPermit": [],
           "withdraw": [],
           "withdrawInFidu": []
         },
-        "**/SeniorFundFidu.sol:SeniorFundFidu": {
+        "**/SeniorPoolFidu.sol:SeniorPoolFidu": {
           "__initialize__": [],
           "mintTo": [],
           "burnFrom": [],

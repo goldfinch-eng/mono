@@ -13,7 +13,7 @@ async function main() {
   }
   await impersonateAccount(hre, MAINNET_MULTISIG)
   const signer = await ethers.provider.getSigner(MAINNET_MULTISIG)
-  const contracts = await getExistingContracts(["Pool"], null, signer)
+  const contracts = await getExistingContracts(["Pool"], signer)
   const pool = (await ethers.getContractAt("Pool", contracts.Pool.ProxyContract.address)).connect(signer)
   await sweepToCompound(pool, signer)
 }

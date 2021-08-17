@@ -5,7 +5,7 @@ const {
   OWNER_ROLE,
   PAUSER_ROLE,
   MINTER_ROLE,
-} = require("./deployHelpers.js")
+} = require("./deployHelpers")
 const {CONFIG_KEYS} = require("./configKeys")
 const hre = require("hardhat")
 
@@ -47,6 +47,9 @@ async function ensurePermsOnContracts(contractNames, gf_deployer, protocol_owner
 
   for (let i = 0; i < contractNames.length; i++) {
     let contractName = contractNames[i]
+    if (contractName === "GoldfinchFactory") {
+      contractName = "CreditLineFactory"
+    }
     let contract = await getDeployedContract(deployments, contractName)
 
     if (contractName === "GoldfinchConfig") {

@@ -8,15 +8,15 @@ import {getPoolEvents} from "./user"
 import _ from "lodash"
 import {mapEventsToTx} from "./events"
 import {Contract} from "web3-eth-contract"
-import {SeniorFund as SeniorFundContract} from "../typechain/web3/SeniorFund"
+import {SeniorPool as SeniorPoolContract} from "../typechain/web3/SeniorPool"
 import {Fidu as FiduContract} from "../typechain/web3/Fidu"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {TranchedPool} from "../typechain/web3/TranchedPool"
 import {buildCreditLine} from "./creditLine"
 
-class SeniorFund {
+class SeniorPool {
   goldfinchProtocol: GoldfinchProtocol
-  contract: SeniorFundContract
+  contract: SeniorPoolContract
   usdc: Contract
   fidu: FiduContract
   chain: string
@@ -26,8 +26,8 @@ class SeniorFund {
 
   constructor(goldfinchProtocol: GoldfinchProtocol) {
     this.goldfinchProtocol = goldfinchProtocol
-    this.contract = goldfinchProtocol.getContract<SeniorFundContract>("SeniorFund")
-    this.address = goldfinchProtocol.getAddress("SeniorFund")
+    this.contract = goldfinchProtocol.getContract<SeniorPoolContract>("SeniorPool")
+    this.address = goldfinchProtocol.getAddress("SeniorPool")
     this.usdc = goldfinchProtocol.getERC20(Tickers.USDC).contract
     this.fidu = goldfinchProtocol.getContract<FiduContract>("Fidu")
     this.chain = goldfinchProtocol.networkId
@@ -69,7 +69,7 @@ function emptyCapitalProvider({loaded = false} = {}): CapitalProvider {
 }
 
 async function fetchCapitalProviderData(
-  pool: SeniorFund,
+  pool: SeniorPool,
   capitalProviderAddress: string | boolean,
 ): Promise<CapitalProvider> {
   if (!capitalProviderAddress && !pool.loaded) {
@@ -123,10 +123,10 @@ interface PoolData {
   assetsAsOf: any //TODO
   getRepaymentEvents: any //TODO
   loaded: boolean
-  pool: SeniorFund
+  pool: SeniorPool
 }
 
-async function fetchPoolData(pool: SeniorFund, erc20: Contract): Promise<PoolData> {
+async function fetchPoolData(pool: SeniorPool, erc20: Contract): Promise<PoolData> {
   const attributes = [{method: "sharePrice"}, {method: "compoundBalance"}]
   let {sharePrice, compoundBalance: _compoundBalance} = await fetchDataFromAttributes(pool.contract, attributes)
   let rawBalance = new BigNumber(await erc20.methods.balanceOf(pool.address).call())
@@ -210,12 +210,12 @@ async function getWeightedAverageSharePrice(pool, capitalProvider) {
   }
 }
 
-async function getCumulativeWritedowns(pool: SeniorFund) {
+async function getCumulativeWritedowns(pool: SeniorPool) {
   const events = await pool.goldfinchProtocol.queryEvents(pool.contract, "PrincipalWrittenDown")
   return new BigNumber(_.sumBy(events, (event) => parseInt(event.returnValues.amount, 10))).negated()
 }
 
-async function getCumulativeDrawdowns(pool: SeniorFund) {
+async function getCumulativeDrawdowns(pool: SeniorPool) {
   const protocol = pool.goldfinchProtocol
   const investmentEvents = await protocol.queryEvents(pool.contract, [
     "InvestmentMadeInSenior",
@@ -263,7 +263,7 @@ async function getRepaymentEvents(this: PoolData, goldfinchProtocol: GoldfinchPr
   return _.compact(combinedEvents)
 }
 
-async function getAllDepositAndWithdrawalTXs(pool: SeniorFund) {
+async function getAllDepositAndWithdrawalTXs(pool: SeniorPool) {
   const fromBlock = getFromBlock(pool.chain)
   const events = await Promise.all(
     ["DepositMade", "WithdrawalMade"].map(async (eventName) => {
@@ -292,7 +292,7 @@ function assetsAsOf(this: PoolData, dt) {
   )
 }
 
-async function getEstimatedTotalInterest(pool: SeniorFund): Promise<BigNumber> {
+async function getEstimatedTotalInterest(pool: SeniorPool): Promise<BigNumber> {
   const protocol = pool.goldfinchProtocol
   const investmentEvents = await protocol.queryEvents(pool.contract, [
     "InvestmentMadeInSenior",
@@ -320,5 +320,5 @@ async function getEstimatedTotalInterest(pool: SeniorFund): Promise<BigNumber> {
   )
 }
 
-export {fetchCapitalProviderData, fetchPoolData, SeniorFund, emptyCapitalProvider}
+export {fetchCapitalProviderData, fetchPoolData, SeniorPool, emptyCapitalProvider}
 export type {PoolData, CapitalProvider}

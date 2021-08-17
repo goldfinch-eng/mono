@@ -1,4 +1,11 @@
-import _isPlainObject from "lodash/isPlainObject"
+/*
+This is for simple utility types. DO NOT import other src files in here. Only export,
+or import from 3rd party libraries. Importing source files can cause downstream issues,
+such as our server/functions trying to run typescript against all our src files, but
+outside of the hardhat context and throwing all kinds of errors.
+*/
+
+import {isPlainObject as _isPlainObject} from "lodash"
 
 function getTypeof(obj: unknown) {
   return typeof obj
@@ -66,3 +73,4 @@ export function isUndefined(obj: unknown): obj is undefined {
 export function orUndefined<T>(typeGuard: (obj: unknown) => obj is T): (obj: unknown) => obj is T | undefined {
   return (obj: unknown): obj is T | undefined => typeGuard(obj) || isUndefined(obj)
 }
+

@@ -9,6 +9,12 @@ import {
   Ticker,
   AddressString,
   getSignerForAddress,
+  ChainId,
+  CHAIN_NAME_BY_ID,
+  getERC20Address,
+  currentChainId,
+  assertIsChainId,
+  assertIsTicker,
 } from "../blockchain_scripts/deployHelpers"
 import _ from 'lodash'
 import {CONFIG_KEYS} from "./configKeys"
@@ -17,6 +23,7 @@ import {Contract} from "@ethersproject/contracts"
 import {DeploymentsExtension} from "hardhat-deploy/types"
 import {HardhatRuntimeEnvironment} from "hardhat/types"
 import {Signer} from "ethers"
+import {assertIsString} from "../utils/type"
 const {ethers, artifacts} = hre
 const MAINNET_MULTISIG = "0xBEb28978B2c755155f20fd3d09Cb37e300A6981f"
 const MAINNET_UNDERWRITER = "0x79ea65C834EC137170E1aA40A42b9C80df9c0Bb4"
@@ -38,6 +45,7 @@ async function upgradeContracts(
   deployments: DeploymentsExtension,
   changeImplementation: boolean=true
 ) {
+  console.log("Deploying the accountant...")
   const accountantDeployResult = await deployments.deploy("Accountant", {from: deployFrom, gasLimit: 4000000, args: []})
   // Ensure a test forwarder is available. Using the test forwarder instead of the real forwarder on mainnet
   // gives us the ability to debug the forwarded transactions.
@@ -91,20 +99,18 @@ type ExistingContracts = {
 
 async function getExistingContracts(
   contractNames: string[],
-  mainnetConfig: any,
-  signer: string | Signer
+  signer: string | Signer,
+  chainId: ChainId=MAINNET_CHAIN_ID,
 ): Promise<ExistingContracts> {
   let contracts: ExistingContracts = {}
-  if (!mainnetConfig) {
-    mainnetConfig = getMainnetContracts()
-  }
+  const onChainConfig = getCurrentlyDeployedContracts(chainId)
   for (let contractName of contractNames) {
     // For backwards compatability until we deploy V2
     if (contractName === "GoldfinchFactory") {
       contractName = "CreditLineFactory"
     }
-    const contractConfig = mainnetConfig[contractName]
-    const proxyConfig = mainnetConfig[`${contractName}_Proxy`]
+    const contractConfig = onChainConfig[contractName] as any
+    const proxyConfig = onChainConfig[`${contractName}_Proxy`] as any
 
     const ethersSigner = await getSignerForAddress(signer)
     let contractProxy = proxyConfig && (await ethers.getContractAt(proxyConfig.abi, proxyConfig.address, ethersSigner))
@@ -118,24 +124,37 @@ async function getExistingContracts(
   return contracts
 }
 
-async function fundWithWhales(erc20s: any, recipients: string[], amount?: any) {
+async function fundWithWhales(currencies: string[], recipients: string[], amount?: any) {
   const whales: Record<Ticker, AddressString> = {
     USDC: "0x46aBbc9fc9d8E749746B00865BC2Cf7C4d85C837",
     USDT: "0x1062a747393198f70f71ec65a582423dba7e5ab3",
     BUSD: "0xbe0eb53f46cd790cd13851d5eff43d12404d33e8",
+    ETH: "0xdee6238780f98c0ca2c2c28453149bea49a3abc9",
   }
+  const chainId = await currentChainId()
+  assertIsChainId(chainId)
 
-  for (let erc20 of erc20s) {
-    if (!whales[erc20.ticker]) {
-      throw new Error(`We don't have a whale mapping for ${erc20.ticker}`)
+  for (let currency of currencies) {
+    if (!whales[currency]) {
+      throw new Error(`We don't have a whale mapping for ${currency}`)
     }
     for (let recipient of _.compact(recipients)) {
-      await fundWithWhale({
-        erc20: erc20,
-        whale: whales[erc20.ticker],
-        recipient: recipient,
-        amount: amount || new BN("200000"),
-      })
+      assertIsTicker(currency)
+      if (currency === "ETH") {
+        const whale = whales[currency]
+        await impersonateAccount(hre, whale)
+        let signer = await ethers.provider.getSigner(whale)
+        await signer!.sendTransaction({to: recipient, value: ethers.utils.parseEther("5.0")})
+      } else {
+        const erc20Address = getERC20Address(currency, chainId)
+        assertIsString(erc20Address)
+        await fundWithWhale({
+          erc20: await ethers.getContractAt("IERC20withDec", erc20Address),
+          whale: whales[currency],
+          recipient: recipient,
+          amount: amount || new BN("200000"),
+        })
+      }
     }
   }
 }
@@ -153,7 +172,7 @@ async function fundWithWhale({
 }) {
   await impersonateAccount(hre, whale)
   let signer = await ethers.provider.getSigner(whale)
-  const contract = erc20.contract.connect(signer)
+  const contract = erc20.connect(signer)
 
   let ten = new BN(10)
   let d = new BN((await contract.decimals()).toString())
@@ -203,13 +222,14 @@ type ContractInfo = {
   address: string,
   abi: {}[]
 }
-function getMainnetContracts() : {[key: string]: ContractInfo} {
+function getCurrentlyDeployedContracts(chainId: ChainId=MAINNET_CHAIN_ID) : {[key: string]: ContractInfo} {
   let deploymentsFile = require("../client/config/deployments.json")
-  return deploymentsFile[MAINNET_CHAIN_ID].mainnet.contracts
+  const chainName = CHAIN_NAME_BY_ID[chainId]
+  return deploymentsFile[chainId][chainName].contracts
 }
 
-async function getMainnetTruffleContracts() : Promise<{[key: string]: any }> {
-  const contracts = getMainnetContracts()
+async function getAllExistingContracts(chainId: ChainId=MAINNET_CHAIN_ID) : Promise<{[key: string]: any }> {
+  const contracts = getCurrentlyDeployedContracts(chainId)
   const result = {}
   await Promise.all(Object.entries(contracts).map(async ([contractName, contractInfo]) => {
     if (contractName.includes("Proxy") || contractName.includes("Implementation")) {
@@ -230,7 +250,7 @@ export {
   getExistingContracts,
   upgradeContracts,
   impersonateAccount,
-  getMainnetContracts,
+  getCurrentlyDeployedContracts,
   performPostUpgradeMigration,
-  getMainnetTruffleContracts,
+  getAllExistingContracts,
 }

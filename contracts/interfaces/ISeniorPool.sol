@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import "./ITranchedPool.sol";
 
-abstract contract IFund {
+abstract contract ISeniorPool {
   uint256 public sharePrice;
   uint256 public totalLoansOutstanding;
   uint256 public totalWritedowns;

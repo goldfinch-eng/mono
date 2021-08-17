@@ -29,7 +29,9 @@ async function updateConfigs(hre, protocolConfig) {
   const withdrawFeeDenominator = String(protocolConfig.withdrawFeeDenominator)
   const reserveDenominator = String(protocolConfig.reserveDenominator)
   const latenessMaxDays = String(protocolConfig.latenessMaxDays)
+  const drawdownPeriodInSeconds = String(protocolConfig.drawdownPeriodInSeconds)
   const transferPeriodRestrictionInDays = String(protocolConfig.transferRestrictionPeriodInDays)
+  const leverageRatio = String(protocolConfig.leverageRatio)
 
   await updateConfig(config, "number", CONFIG_KEYS.MaxUnderwriterLimit, toAtomic(maxUnderwriterLimit))
   await updateConfig(config, "number", CONFIG_KEYS.TransactionLimit, toAtomic(transactionLimit))
@@ -38,13 +40,11 @@ async function updateConfigs(hre, protocolConfig) {
   await updateConfig(config, "number", CONFIG_KEYS.WithdrawFeeDenominator, withdrawFeeDenominator)
   await updateConfig(config, "number", CONFIG_KEYS.LatenessGracePeriodInDays, latenessGracePeriod)
   await updateConfig(config, "number", CONFIG_KEYS.LatenessMaxDays, latenessMaxDays)
-  await updateConfig(
-    config,
-    "number",
-    CONFIG_KEYS.TransferPeriodRestrictionInDays,
-    String(transferPeriodRestrictionInDays),
-    {logger}
-  )
+  await updateConfig(config, "number", CONFIG_KEYS.DrawdownPeriodInSeconds, drawdownPeriodInSeconds)
+  await updateConfig(config, "number", CONFIG_KEYS.TransferPeriodRestrictionInDays, transferPeriodRestrictionInDays, {
+    logger,
+  })
+  await updateConfig(config, "number", CONFIG_KEYS.LeverageRatio, leverageRatio)
 
   logger("Done")
 }

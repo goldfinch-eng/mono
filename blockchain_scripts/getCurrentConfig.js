@@ -20,6 +20,9 @@ async function main() {
   console.log("WithdrawFeeDenominator ==", String(await config.getNumber(4)))
   console.log("LatenessGracePeriodInDays ==", String(await config.getNumber(5)))
   console.log("LatenessMaxDays ==", String(await config.getNumber(6)))
+  console.log("DrawdownPeriodInSeconds ==", String(await config.getNumber(7)))
+  console.log("TransferPeriodRestrictionInDays ==", String(await config.getNumber(8)))
+  console.log("LeverageRatio ==", String(await config.getNumber(9)))
 
   console.log("Pool ==", String(await config.getAddress(CONFIG_KEYS.Pool)))
   console.log("CreditLineImplementation ==", String(await config.getAddress(CONFIG_KEYS.CreditLineImplementation)))

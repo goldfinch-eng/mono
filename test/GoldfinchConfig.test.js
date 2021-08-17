@@ -53,6 +53,9 @@ describe("GoldfinchConfig", () => {
       expect(await goldfinchConfig.getNumber(CONFIG_KEYS.WithdrawFeeDenominator)).to.bignumber.equal(new BN(5))
       expect(await goldfinchConfig.getNumber(CONFIG_KEYS.LatenessGracePeriodInDays)).to.bignumber.equal(new BN(6))
       expect(await goldfinchConfig.getNumber(CONFIG_KEYS.LatenessMaxDays)).to.bignumber.equal(new BN(7))
+      expect(await goldfinchConfig.getNumber(CONFIG_KEYS.DrawdownPeriodInSeconds)).to.bignumber.equal(new BN(8))
+      expect(await goldfinchConfig.getNumber(CONFIG_KEYS.TransferPeriodRestrictionInDays)).to.bignumber.equal(new BN(9))
+      expect(await goldfinchConfig.getNumber(CONFIG_KEYS.LeverageRatio)).to.bignumber.equal(new BN(10))
 
       // Addresses
       expect(await goldfinchConfig.getAddress(CONFIG_KEYS.Pool)).to.equal("0xBAc2781706D0aA32Fb5928c9a5191A13959Dc4AE")
@@ -177,11 +180,11 @@ describe("GoldfinchConfig", () => {
     })
   })
 
-  describe("setSeniorFundStrategy", async () => {
+  describe("setSeniorPoolStrategy", async () => {
     context("not admin", async () => {
       it("reverts", async () => {
         const address = "0x0000000000000000000000000000000000000001"
-        await expect(goldfinchConfig.setSeniorFundStrategy(address, {from: person2})).to.be.rejectedWith(
+        await expect(goldfinchConfig.setSeniorPoolStrategy(address, {from: person2})).to.be.rejectedWith(
           /Must have admin role/
         )
       })
@@ -191,11 +194,11 @@ describe("GoldfinchConfig", () => {
       const firstAddress = "0x0000000000000000000000000000000000000001"
       const secondAddress = "0x0000000000000000000000000000000000000002"
 
-      await expectAction(() => goldfinchConfig.setSeniorFundStrategy(firstAddress, {from: owner})).toChange([
-        [() => goldfinchConfig.getAddress(CONFIG_KEYS.SeniorFundStrategy), {to: firstAddress, bignumber: false}],
+      await expectAction(() => goldfinchConfig.setSeniorPoolStrategy(firstAddress, {from: owner})).toChange([
+        [() => goldfinchConfig.getAddress(CONFIG_KEYS.SeniorPoolStrategy), {to: firstAddress, bignumber: false}],
       ])
-      await expectAction(() => goldfinchConfig.setSeniorFundStrategy(secondAddress, {from: owner})).toChange([
-        [() => goldfinchConfig.getAddress(CONFIG_KEYS.SeniorFundStrategy), {to: secondAddress, bignumber: false}],
+      await expectAction(() => goldfinchConfig.setSeniorPoolStrategy(secondAddress, {from: owner})).toChange([
+        [() => goldfinchConfig.getAddress(CONFIG_KEYS.SeniorPoolStrategy), {to: secondAddress, bignumber: false}],
       ])
     })
   })
