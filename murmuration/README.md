@@ -19,13 +19,15 @@ To use the client with the murmuration blockchain, you will need to add a custom
 # How to configure in Google Cloud
 
 1. Create a Compute Engine instance group template.
+    - From this directory, run:
     ```
     gcloud compute instance-templates create-with-container \
-      murmuration-goldfinch-finance-2 \
+      murmuration-goldfinch-finance-3 \
       --custom-cpu=2 \
       --custom-memory=4GB \
-      --boot-disk-size=20GB \
-      --tags=murmuration-goldfinch-finance-2 \
+      --boot-disk-size=30GB \
+      --metadata-from-file user-data=cloud-init.yaml \
+      --tags=murmuration-goldfinch-finance-3 \
       --container-image us.gcr.io/goldfinch-frontends-dev/goldfinch-protocol/murmuration-goldfinch-finance:latest \
       --project=goldfinch-frontends-dev
     ```
@@ -33,13 +35,13 @@ To use the client with the murmuration blockchain, you will need to add a custom
 1. Create a firewall rule allowing the load balancer's health checking and request forwarding. The firewall rule's target tags should be the tags of the instance group template.
     ```
     gcloud compute firewall-rules create \
-    murmuration-goldfinch-finance-2 \
+    murmuration-goldfinch-finance-3 \
     --network=default \
     --action=allow \
     --direction=ingress \
-    --source-ranges=130.211.0.0/22,35.191.0.0/16     --target-tags=murmuration-goldfinch-finance-2 \
+    --source-ranges=130.211.0.0/22,35.191.0.0/16     --target-tags=murmuration-goldfinch-finance-3 \
     --rules=tcp:80 \
     --project=goldfinch-frontends-dev
     ```
 1. In the Google Cloud console, create a load balancer that uses the health check you created when creating the instance group.
-1. For continuous deployment, the deploy command in `cloudbuild.yaml` should use the appropriate instance group and template name, i.e. `murmuration-goldfinch-finance-2`.
+1. For continuous deployment, the deploy command in `cloudbuild.yaml` should use the appropriate instance group and template name, i.e. `murmuration-goldfinch-finance-3`.
