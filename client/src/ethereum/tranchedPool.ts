@@ -10,6 +10,7 @@ import {ContractEventLog} from "../typechain/web3/types"
 import web3 from "../web3"
 import {usdcFromAtomic} from "./erc20"
 import {CONFIG_KEYS} from "../../../blockchain_scripts/configKeys"
+import {SeniorPool as SeniorPoolContract} from "../typechain/web3/SeniorPool"
 
 const ONE = new BigNumber(1)
 const ONE_HUNDRED = new BigNumber(100)
@@ -81,6 +82,8 @@ class TranchedPool {
   metadata?: PoolMetadata
   juniorFeePercent!: BigNumber
   reserveFeePercent!: BigNumber
+  estimatedLeverageRatio!: BigNumber
+  estimatedSeniorPoolContribution!: BigNumber
 
   juniorTranche!: TrancheInfo
   seniorTranche!: TrancheInfo
@@ -107,6 +110,10 @@ class TranchedPool {
     this.reserveFeePercent = new BigNumber(100).div(
       await this.goldfinchProtocol.getConfigNumber(CONFIG_KEYS.ReserveDenominator),
     )
+    let pool = this.goldfinchProtocol.getContract<SeniorPoolContract>("SeniorPool")
+    this.estimatedSeniorPoolContribution = new BigNumber(await pool.methods.estimateInvestment(this.address).call())
+    this.estimatedLeverageRatio = await this.estimateLeverageRatio()
+    console.log(`Estimated APY for ${this.address} is ${this.estimatedLeverageRatio}`)
 
     let now = secondsSinceEpoch()
     if (now < seniorTranche.lockedUntil) {
@@ -148,6 +155,23 @@ class TranchedPool {
   estimateMonthlyInterest(interestRate: BigNumber, principalAmount: BigNumber): BigNumber {
     let monthsPerYear = new BigNumber(12)
     return principalAmount.multipliedBy(interestRate).dividedBy(monthsPerYear)
+  }
+
+  estimatedTotalAssets(): BigNumber {
+    return this.juniorTranche.principalDeposited
+      .plus(this.seniorTranche.principalDeposited)
+      .plus(this.estimatedSeniorPoolContribution)
+  }
+
+  async estimateLeverageRatio(): Promise<BigNumber> {
+    let juniorContribution = this.juniorTranche.principalDeposited
+
+    if (juniorContribution.isZero()) {
+      let rawLeverageRatio = await this.goldfinchProtocol.getConfigNumber(CONFIG_KEYS.LeverageRatio)
+      return new BigNumber(fiduFromAtomic(rawLeverageRatio))
+    } else {
+      return this.estimatedTotalAssets().minus(juniorContribution).dividedBy(juniorContribution)
+    }
   }
 
   async recentTransactions() {
@@ -211,7 +235,7 @@ class TranchedPool {
   }
 }
 
-class Backer {
+class PoolBacker {
   address: string
   tranchedPool: TranchedPool
   goldfinchProtocol: GoldfinchProtocol
@@ -226,6 +250,7 @@ class Backer {
   balanceInDollars!: BigNumber
   availableToWithdraw!: BigNumber
   availableToWithdrawInDollars!: BigNumber
+  unrealizedGainsInDollars!: BigNumber
   tokenInfos!: TokenInfo[]
 
   constructor(address: string, tranchedPool: TranchedPool, goldfinchProtocol: GoldfinchProtocol) {
@@ -272,6 +297,7 @@ class Backer {
     this.balanceInDollars = new BigNumber(roundDownPenny(usdcFromAtomic(this.balance)))
     this.availableToWithdraw = this.interestRedeemable.plus(this.principalRedeemable)
     this.availableToWithdrawInDollars = new BigNumber(roundDownPenny(usdcFromAtomic(this.availableToWithdraw)))
+    this.unrealizedGainsInDollars = new BigNumber(roundDownPenny(usdcFromAtomic(this.interestRedeemable)))
   }
 }
 
@@ -295,4 +321,4 @@ function tokenInfo(tokenId: string, tuple: any): TokenInfo {
   }
 }
 
-export {TranchedPool, Backer, PoolState, TRANCHES}
+export {TranchedPool, PoolBacker, PoolState, TRANCHES}
