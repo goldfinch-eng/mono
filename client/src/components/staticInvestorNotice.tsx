@@ -25,7 +25,7 @@ export default function StaticInvestorNotice() {
         This offering is only available to non-U.S. persons. This offering has not been registered under the U.S.
         Securities Act of 1933 (“Securities Act”), as amended, and may not be offered or sold in the United States or to
         a U.S. person (as defined in Regulation S promulgated under the Securities Act) absent registration or an
-        applicable exemption from the registration requirements
+        applicable exemption from the registration requirements.
       </div>
     </div>
   )
