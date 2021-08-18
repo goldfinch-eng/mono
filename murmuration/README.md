@@ -54,6 +54,6 @@ To use the client with the murmuration blockchain, you will need to add a custom
 
 # Debugging
 
-From viewing the Compute Engine instance group in the Google Cloud console (i.e. https://console.cloud.google.com/compute/instanceGroups/list?project=goldfinch-frontends-dev), you can SSH into an instance, from within your web browser.
+When viewing the Compute Engine instance group in the Google Cloud console (i.e. https://console.cloud.google.com/compute/instanceGroups/list?project=goldfinch-frontends-dev), you can SSH into an instance, from within your web browser.
 
 Once you've SSH'ed into an instance, you can see what Docker process are running via `docker ps`. You can view the logs for a Docker process via `docker logs $CONTAINER_ID`, where `$CONTAINER_ID` is the container id value for the `us.gcr.io/goldfinch-frontends-dev/goldfinch-protocol/murmuration-goldfinch-finance:latest` image shown in the `docker ps` output. These logs are essential for understanding the outcome of the `npm run murmuration-start` command!
