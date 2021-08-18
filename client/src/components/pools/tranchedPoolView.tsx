@@ -21,15 +21,7 @@ import UnlockERC20Form from "../unlockERC20Form"
 import CreditBarViz from "../creditBarViz"
 import {DepositMade} from "../../typechain/web3/TranchedPool"
 import moment from "moment"
-import {
-  useBacker,
-  useEstimatedLeverageRatio,
-  useEstimatedSeniorPoolContribution,
-  useEstimatedTotalPoolAssets,
-  useRemainingCapacity,
-  useRemainingJuniorCapacity,
-  useTranchedPool,
-} from "../../hooks/useTranchedPool"
+import {useBacker, useTranchedPool} from "../../hooks/useTranchedPool"
 
 function useRecentPoolTransactions({tranchedPool}: {tranchedPool?: TranchedPool}): Record<string, any>[] {
   let recentTransactions = useAsync(() => tranchedPool && tranchedPool.recentTransactions(), [tranchedPool])
@@ -68,7 +60,6 @@ interface TranchedPoolActionFormProps {
 function TranchedPoolDepositForm({tranchedPool, actionComplete, closeForm}: TranchedPoolActionFormProps) {
   const {user, goldfinchConfig, usdc} = useNonNullContext(AppContext)
   const {gatherPermitSignature} = useERC20Permit()
-  const remainingJuniorCapacity = useRemainingJuniorCapacity({tranchedPool})
   const sendFromUser = useSendFromUser()
 
   async function action({transactionAmount}) {
@@ -104,6 +95,8 @@ function TranchedPoolDepositForm({tranchedPool, actionComplete, closeForm}: Tran
 
   function renderForm({formMethods}) {
     let warningMessage, disabled
+    const remainingJuniorCapacity = tranchedPool?.remainingJuniorCapacity()
+
     if (user.usdcBalance.eq(0)) {
       disabled = true
       warningMessage = (
@@ -212,11 +205,12 @@ function TranchedPoolWithdrawForm({tranchedPool, actionComplete, closeForm}: Tra
 function DepositStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
   const {user} = useContext(AppContext)
   const backer = useBacker({user, tranchedPool})
-  const leverageRatio = useEstimatedLeverageRatio({tranchedPool})
 
-  if (!tranchedPool || !backer || !leverageRatio) {
+  if (!tranchedPool || !backer) {
     return <></>
   }
+
+  const leverageRatio = tranchedPool.estimatedLeverageRatio
 
   let estimatedAPY = tranchedPool.estimateJuniorAPY(leverageRatio)
   let rightStatusItem
@@ -256,7 +250,6 @@ function DepositStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
 function ActionsContainer({tranchedPool, onComplete}: {tranchedPool?: TranchedPool; onComplete: () => Promise<any>}) {
   const {user} = useContext(AppContext)
   const [action, setAction] = useState<"" | "deposit" | "withdraw">("")
-  const remainingCapacity = useRemainingCapacity({tranchedPool: tranchedPool})
   const backer = useBacker({user, tranchedPool})
 
   function actionComplete() {
@@ -275,7 +268,7 @@ function ActionsContainer({tranchedPool, onComplete}: {tranchedPool?: TranchedPo
   }
   let depositAction
   let depositClass = "disabled"
-  if (tranchedPool?.state === PoolState.Open && remainingCapacity?.gt(new BigNumber(0))) {
+  if (tranchedPool?.state === PoolState.Open && tranchedPool?.remainingCapacity().gt(new BigNumber(0))) {
     depositAction = (e) => {
       setAction("deposit")
     }
@@ -317,28 +310,27 @@ function ActionsContainer({tranchedPool, onComplete}: {tranchedPool?: TranchedPo
 }
 
 function SupplyStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
-  const remainingJuniorCapacity = useRemainingJuniorCapacity({tranchedPool})
-  const leverageRatio = useEstimatedLeverageRatio({tranchedPool})
-  const estimatedSeniorSupply = useEstimatedSeniorPoolContribution({tranchedPool})
+  const remainingJuniorCapacity = tranchedPool?.remainingJuniorCapacity()
   const uniqueJuniorSuppliers = useUniqueJuniorSuppliers({tranchedPool})
-  const totalPoolAssets = useEstimatedTotalPoolAssets({tranchedPool})
 
   if (!tranchedPool) {
     return <></>
   }
 
   let juniorContribution = new BigNumber(tranchedPool?.juniorTranche.principalDeposited)
-  let seniorContribution = new BigNumber(tranchedPool?.seniorTranche.principalDeposited).plus(estimatedSeniorSupply!)
+  let seniorContribution = new BigNumber(tranchedPool?.seniorTranche.principalDeposited).plus(
+    tranchedPool.estimatedSeniorPoolContribution,
+  )
 
   let rows: Array<{label: string; value: string}> = [
     {
       label: "Senior Capital Supply",
       value: displayDollars(roundUpPenny(usdcFromAtomic(seniorContribution))),
     },
-    {label: "Leverage Ratio", value: `${leverageRatio?.toString()}x`},
+    {label: "Leverage Ratio", value: `${tranchedPool.estimatedLeverageRatio.toString()}x`},
     {
       label: "Total Capital Supply",
-      value: displayDollars(roundUpPenny(usdcFromAtomic(totalPoolAssets))),
+      value: displayDollars(roundUpPenny(usdcFromAtomic(tranchedPool.estimatedTotalAssets()))),
     },
   ]
 

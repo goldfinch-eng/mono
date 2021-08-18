@@ -7,7 +7,6 @@ import {croppedAddress, displayDollars, displayPercent, roundDownPenny} from "..
 import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
 import {PoolBacker, TranchedPool} from "../ethereum/tranchedPool"
 import {PoolCreated} from "../typechain/web3/GoldfinchFactory"
-import {useEstimatedLeverageRatio} from "../hooks/useTranchedPool"
 import BigNumber from "bignumber.js"
 import {User} from "../ethereum/user"
 
@@ -93,7 +92,7 @@ function SeniorPoolCard({balance, userBalance, apy}) {
 function TranchedPoolCard({poolBacker}: {poolBacker: PoolBacker}) {
   const history = useHistory()
   const tranchedPool = poolBacker.tranchedPool
-  const leverageRatio = useEstimatedLeverageRatio({tranchedPool})
+  const leverageRatio = tranchedPool.estimatedLeverageRatio
 
   let estimatedApy = new BigNumber(NaN)
   let disabledClass = ""

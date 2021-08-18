@@ -4,7 +4,6 @@ import {PoolBacker, TranchedPool} from "../ethereum/tranchedPool"
 import {useContext, useEffect} from "react"
 import {User} from "../ethereum/user"
 import {AppContext} from "../App"
-import {BigNumber} from "bignumber.js"
 
 function useTranchedPool({
   goldfinchProtocol,
@@ -44,76 +43,4 @@ function useBacker({user, tranchedPool}: {user: User; tranchedPool?: TranchedPoo
   return
 }
 
-function useEstimatedSeniorPoolContribution({tranchedPool}: {tranchedPool?: TranchedPool}): BigNumber | undefined {
-  let {pool} = useContext(AppContext)
-  let estimatedContribution = useAsync(
-    () => pool && tranchedPool && pool.contract.methods.estimateInvestment(tranchedPool.address).call(),
-    [pool, tranchedPool],
-  )
-
-  if (estimatedContribution.status === "succeeded") {
-    return new BigNumber(estimatedContribution.value)
-  }
-
-  return
-}
-
-function useEstimatedLeverageRatio({tranchedPool}: {tranchedPool?: TranchedPool}): BigNumber | undefined {
-  let estimatedTotalAssets = useEstimatedTotalPoolAssets({tranchedPool})
-  let juniorContribution = tranchedPool?.juniorTranche.principalDeposited
-
-  if (estimatedTotalAssets && juniorContribution) {
-    // When the pool is empty, assume max leverage
-    if (new BigNumber(juniorContribution).isZero()) {
-      // TODO: This is currently hardcoded, we'll pull it from config when it's available.
-      return new BigNumber(4)
-    }
-    return estimatedTotalAssets.minus(juniorContribution).dividedBy(juniorContribution)
-  }
-
-  return
-}
-
-function useEstimatedTotalPoolAssets({tranchedPool}: {tranchedPool?: TranchedPool}): BigNumber | undefined {
-  let estimatedSeniorPoolContribution = useEstimatedSeniorPoolContribution({tranchedPool})
-  let juniorContribution = tranchedPool?.juniorTranche.principalDeposited
-  let seniorContribution = tranchedPool?.seniorTranche.principalDeposited
-
-  if (estimatedSeniorPoolContribution && juniorContribution && seniorContribution) {
-    return estimatedSeniorPoolContribution.plus(juniorContribution).plus(seniorContribution)
-  }
-
-  return
-}
-
-function useRemainingCapacity({tranchedPool}: {tranchedPool?: TranchedPool}): BigNumber | undefined {
-  let estimatedTotalPoolAssets = useEstimatedTotalPoolAssets({tranchedPool})
-  let capacity
-
-  if (estimatedTotalPoolAssets && tranchedPool) {
-    capacity = tranchedPool.creditLine.limit.minus(estimatedTotalPoolAssets)
-  }
-
-  return capacity
-}
-
-function useRemainingJuniorCapacity({tranchedPool}: {tranchedPool?: TranchedPool}): BigNumber | undefined {
-  const remainingCapacity = useRemainingCapacity({tranchedPool})
-  const estimatedLeverageRatio = useEstimatedLeverageRatio({tranchedPool})
-
-  if (remainingCapacity && estimatedLeverageRatio) {
-    return remainingCapacity.dividedBy(estimatedLeverageRatio.plus(1))
-  }
-
-  return
-}
-
-export {
-  useTranchedPool,
-  useBacker,
-  useEstimatedLeverageRatio,
-  useRemainingJuniorCapacity,
-  useRemainingCapacity,
-  useEstimatedSeniorPoolContribution,
-  useEstimatedTotalPoolAssets,
-}
+export {useTranchedPool, useBacker}

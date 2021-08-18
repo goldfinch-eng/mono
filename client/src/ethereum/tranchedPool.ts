@@ -113,7 +113,6 @@ class TranchedPool {
     let pool = this.goldfinchProtocol.getContract<SeniorPoolContract>("SeniorPool")
     this.estimatedSeniorPoolContribution = new BigNumber(await pool.methods.estimateInvestment(this.address).call())
     this.estimatedLeverageRatio = await this.estimateLeverageRatio()
-    console.log(`Estimated APY for ${this.address} is ${this.estimatedLeverageRatio}`)
 
     let now = secondsSinceEpoch()
     if (now < seniorTranche.lockedUntil) {
@@ -161,6 +160,14 @@ class TranchedPool {
     return this.juniorTranche.principalDeposited
       .plus(this.seniorTranche.principalDeposited)
       .plus(this.estimatedSeniorPoolContribution)
+  }
+
+  remainingCapacity(): BigNumber {
+    return this.creditLine.limit.minus(this.estimatedTotalAssets())
+  }
+
+  remainingJuniorCapacity(): BigNumber {
+    return this.remainingCapacity().dividedBy(this.estimatedLeverageRatio.plus(1))
   }
 
   async estimateLeverageRatio(): Promise<BigNumber> {
