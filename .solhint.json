@@ -48,6 +48,9 @@
         "**/CreditLine.sol:CreditLine": {
           "setLimit": []
         },
+        "**/V2Migrator.sol:V2Migrator": {
+          "upgradeImplementations": []
+        },
         "**/MigratedTranchedPool.sol:MigratedTranchedPool": {
           "migrateCreditLine": []
         },

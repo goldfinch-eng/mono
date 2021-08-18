@@ -7,7 +7,7 @@ import "../core/BaseUpgradeablePausable.sol";
 import "../core/ConfigHelper.sol";
 import "../core/CreditLine.sol";
 import "../core/GoldfinchConfig.sol";
-import "../../interfaces/IBase.sol";
+import "../../interfaces/IMigrate.sol";
 
 /**
  * @title V2 Migrator Contract
@@ -34,10 +34,9 @@ contract V2Migrator is BaseUpgradeablePausable {
     config = GoldfinchConfig(_config);
   }
 
-  function migratePhase1(GoldfinchConfig newConfig, address[] calldata newDeployments) external onlyAdmin {
+  function migratePhase1(GoldfinchConfig newConfig) external onlyAdmin {
     pauseEverything();
     migrateToNewConfig(newConfig);
-    upgradeImplementations(newDeployments);
     migrateToSeniorPool(newConfig);
   }
 
@@ -46,7 +45,7 @@ contract V2Migrator is BaseUpgradeablePausable {
     address[][] calldata creditLinesToMigrate,
     uint256[][] calldata migrationData
   ) external onlyAdmin {
-    IBase creditDesk = IBase(newConfig.creditDeskAddress());
+    IMigrate creditDesk = IMigrate(newConfig.creditDeskAddress());
     IGoldfinchFactory factory = newConfig.getGoldfinchFactory();
     for (uint256 i = 0; i < creditLinesToMigrate.length; i++) {
       address[] calldata clData = creditLinesToMigrate[i];
@@ -76,11 +75,62 @@ contract V2Migrator is BaseUpgradeablePausable {
     newConfig.bulkAddToGoList(members);
   }
 
+  function pauseEverything() internal {
+    IMigrate(config.creditDeskAddress()).pause();
+    IMigrate(config.poolAddress()).pause();
+    IMigrate(config.fiduAddress()).pause();
+  }
+
+  function migrateToNewConfig(GoldfinchConfig newConfig) internal {
+    uint256 key = uint256(ConfigOptions.Addresses.GoldfinchConfig);
+    config.setAddress(key, address(newConfig));
+
+    IMigrate(config.creditDeskAddress()).updateGoldfinchConfig();
+    IMigrate(config.poolAddress()).updateGoldfinchConfig();
+    IMigrate(config.fiduAddress()).updateGoldfinchConfig();
+    IMigrate(config.goldfinchFactoryAddress()).updateGoldfinchConfig();
+
+    key = uint256(ConfigOptions.Numbers.DrawdownPeriodInSeconds);
+    newConfig.setNumber(key, 24 * 60 * 60);
+
+    key = uint256(ConfigOptions.Numbers.TransferRestrictionPeriodInDays);
+    newConfig.setNumber(key, 365);
+
+    key = uint256(ConfigOptions.Numbers.LeverageRatio);
+    // 1e18 is the LEVERAGE_RATIO_DECIMALS
+    newConfig.setNumber(key, 3 * 1e18);
+  }
+
+  function upgradeImplementations(GoldfinchConfig _config, address[] calldata newDeployments) public {
+    address newPoolAddress = newDeployments[0];
+    address newCreditDeskAddress = newDeployments[1];
+    address newFiduAddress = newDeployments[2];
+    address newGoldfinchFactoryAddress = newDeployments[3];
+
+    bytes memory data;
+    IMigrate pool = IMigrate(_config.poolAddress());
+    IMigrate creditDesk = IMigrate(_config.creditDeskAddress());
+    IMigrate fidu = IMigrate(_config.fiduAddress());
+    IMigrate goldfinchFactory = IMigrate(_config.goldfinchFactoryAddress());
+
+    // Upgrade implementations
+    pool.changeImplementation(newPoolAddress, data);
+    creditDesk.changeImplementation(newCreditDeskAddress, data);
+    fidu.changeImplementation(newFiduAddress, data);
+    goldfinchFactory.changeImplementation(newGoldfinchFactoryAddress, data);
+  }
+
+  function migrateToSeniorPool(GoldfinchConfig newConfig) internal {
+    IMigrate(config.fiduAddress()).grantRole(MINTER_ROLE, newConfig.seniorPoolAddress());
+    IMigrate(config.poolAddress()).unpause();
+    IMigrate(newConfig.poolAddress()).migrateToSeniorPool();
+  }
+
   function closeOutMigration(GoldfinchConfig newConfig) external onlyAdmin {
-    IBase fidu = IBase(newConfig.fiduAddress());
-    IBase creditDesk = IBase(newConfig.creditDeskAddress());
-    IBase oldPool = IBase(newConfig.poolAddress());
-    IBase goldfinchFactory = IBase(newConfig.goldfinchFactoryAddress());
+    IMigrate fidu = IMigrate(newConfig.fiduAddress());
+    IMigrate creditDesk = IMigrate(newConfig.creditDeskAddress());
+    IMigrate oldPool = IMigrate(newConfig.poolAddress());
+    IMigrate goldfinchFactory = IMigrate(newConfig.goldfinchFactoryAddress());
 
     fidu.unpause();
     fidu.renounceRole(MINTER_ROLE, address(this));
@@ -97,68 +147,9 @@ contract V2Migrator is BaseUpgradeablePausable {
     goldfinchFactory.renounceRole(PAUSER_ROLE, address(this));
 
     config.renounceRole(PAUSER_ROLE, address(this));
+    config.renounceRole(OWNER_ROLE, address(this));
 
     newConfig.renounceRole(OWNER_ROLE, address(this));
     newConfig.renounceRole(GO_LISTER_ROLE, address(this));
-
-    address goldfinchGovernance = config.protocolAdminAddress();
-    uint256 chainId = getChainID();
-    if (chainId == 1) {
-      require(goldfinchGovernance == address(0xBEb28978B2c755155f20fd3d09Cb37e300A6981f), "Wrong admin address!");
-    }
-    oldPool.transferOwnership(config.protocolAdminAddress());
-    creditDesk.transferOwnership(config.protocolAdminAddress());
-    goldfinchFactory.transferOwnership(config.protocolAdminAddress());
-    fidu.transferOwnership(config.protocolAdminAddress());
-  }
-
-  function pauseEverything() internal {
-    IBase(config.creditDeskAddress()).pause();
-    IBase(config.poolAddress()).pause();
-    IBase(config.fiduAddress()).pause();
-  }
-
-  function migrateToNewConfig(GoldfinchConfig newConfig) internal {
-    uint256 key = uint256(ConfigOptions.Addresses.GoldfinchConfig);
-    config.setAddress(key, address(newConfig));
-
-    IBase(config.creditDeskAddress()).updateGoldfinchConfig();
-    IBase(config.poolAddress()).updateGoldfinchConfig();
-    IBase(config.fiduAddress()).updateGoldfinchConfig();
-    IBase(config.goldfinchFactoryAddress()).updateGoldfinchConfig();
-
-    key = uint256(ConfigOptions.Numbers.DrawdownPeriodInSeconds);
-    newConfig.setNumber(key, 24 * 60 * 60);
-
-    key = uint256(ConfigOptions.Numbers.TransferRestrictionPeriodInDays);
-    newConfig.setNumber(key, 365);
-  }
-
-  function upgradeImplementations(address[] calldata newDeployments) public onlyAdmin {
-    address poolAddress = newDeployments[0];
-    address creditDeskAddress = newDeployments[1];
-    address fiduAddress = newDeployments[2];
-    address goldfinchFactoryAddress = newDeployments[3];
-
-    bytes calldata data;
-    IBase(config.poolAddress()).changeImplementation(poolAddress, data);
-    IBase(config.creditDeskAddress()).changeImplementation(creditDeskAddress, data);
-    IBase(config.fiduAddress()).changeImplementation(fiduAddress, data);
-    IBase(config.goldfinchFactoryAddress()).changeImplementation(goldfinchFactoryAddress, data);
-  }
-
-  function migrateToSeniorPool(GoldfinchConfig newConfig) internal {
-    IBase(config.fiduAddress()).grantRole(MINTER_ROLE, newConfig.seniorPoolAddress());
-    IBase(config.poolAddress()).unpause();
-    IBase(newConfig.poolAddress()).migrateToSeniorPool();
-  }
-
-  function getChainID() internal pure returns (uint256) {
-    uint256 id;
-    // solhint-disable-next-line no-inline-assembly
-    assembly {
-      id := chainid()
-    }
-    return id;
   }
 }

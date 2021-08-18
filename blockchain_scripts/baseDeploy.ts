@@ -9,10 +9,10 @@ import {
   getUSDCAddress,
   isTestEnv,
   setInitialConfigVals,
-  SAFE_CONFIG,
   isMainnetForking,
   assertIsChainId,
-  isSafeConfigChainId,
+  getProtocolOwner,
+  getContract,
 } from "./deployHelpers"
 import {HardhatRuntimeEnvironment} from "hardhat/types"
 import {DeployFunction} from "hardhat-deploy/types"
@@ -41,8 +41,8 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   const {deploy, log} = deployments
   logger = log
   logger("Starting deploy...")
-  const {protocol_owner, gf_deployer} = await getNamedAccounts()
-  logger("Will be deploying using the protocol_owner account:", protocol_owner)
+  const {gf_deployer} = await getNamedAccounts()
+  logger("Will be deploying using the gf_deployer account:", gf_deployer)
 
   const chainId = await getChainId()
   assertIsChainId(chainId)
@@ -89,6 +89,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
     let config = (await ethers.getContractAt(deployResult.abi, deployResult.address)) as GoldfinchConfig
     if (deployResult.newlyDeployed) {
       logger("Config newly deployed, initializing...")
+      const protocol_owner = await getProtocolOwner()
       assertIsString(protocol_owner)
       await (await config.initialize(protocol_owner)).wait()
     }
@@ -101,28 +102,31 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   async function getOrDeployUSDC() {
     assertIsChainId(chainId)
     let usdcAddress = getUSDCAddress(chainId)
+    const protocolOwner = await getProtocolOwner()
     if (!usdcAddress) {
       logger("We don't have a USDC address for this network, so deploying a fake USDC")
-      const initialAmount = String(new BN("1000000").mul(USDCDecimals))
+      const initialAmount = String(new BN("100000000").mul(USDCDecimals))
       const decimalPlaces = String(new BN(6))
-      assertIsString(protocol_owner)
+      assertIsString(gf_deployer)
       const fakeUSDC = await deploy("TestERC20", {
-        from: protocol_owner,
+        from: gf_deployer,
         gasLimit: 4000000,
         args: [initialAmount, decimalPlaces],
       })
       logger("Deployed the contract to:", fakeUSDC.address)
       usdcAddress = fakeUSDC.address
+      ;(await getContract("TestERC20", {from: gf_deployer})).transfer(protocolOwner, String(new BN(10000000).mul(USDCDecimals)))
     }
     await updateConfig(config, "address", CONFIG_KEYS.USDC, usdcAddress, logger)
     return usdcAddress
   }
 
   async function deployGoldfinchFactory(deploy: DeployFn, {config}: DeployOpts): Promise<GoldfinchFactory> {
-    logger("Deploying credit line factory")
-    assertIsString(protocol_owner)
-    const accountant = await deploy("Accountant", {from: protocol_owner, gasLimit: 4000000, args: []})
+    logger("Deploying goldfinch factory")
     assertIsString(gf_deployer)
+    const accountant = await deploy("Accountant", {from: gf_deployer, gasLimit: 4000000, args: []})
+    const protocol_owner = await getProtocolOwner()
+
     let goldfinchFactoryDeployResult = await deploy("GoldfinchFactory", {
       from: gf_deployer,
       proxy: {
@@ -149,8 +153,9 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   }
 
   async function deployCreditDesk(deploy: DeployFn, {config}: DeployOpts) {
-    assertIsString(protocol_owner)
-    const accountant = await deploy("Accountant", {from: protocol_owner, gasLimit: 4000000, args: []})
+    const protocol_owner = await getProtocolOwner()
+    assertIsString(gf_deployer)
+    const accountant = await deploy("Accountant", {from: gf_deployer, gasLimit: 4000000, args: []})
     logger("Accountant was deployed to:", accountant.address)
 
     let contractName = "CreditDesk"
@@ -200,6 +205,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   async function deployFidu(config: GoldfinchConfig): Promise<Fidu> {
     logger("About to deploy Fidu...")
     assertIsString(gf_deployer)
+    const protocol_owner = await getProtocolOwner()
     const fiduDeployResult = await deploy("Fidu", {
       from: gf_deployer,
       gasLimit: 4000000,
@@ -223,6 +229,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   async function deployGFI(hre: HardhatRuntimeEnvironment, {config}: {config: GoldfinchConfig}): Promise<GFI> {
     logger("About to deploy GFI...")
     assertIsString(gf_deployer)
+    const protocol_owner = await getProtocolOwner()
     const deployResult = await deploy("GFI", {
       from: gf_deployer,
       gasLimit: 4000000,
@@ -248,6 +255,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   ): Promise<StakingRewards> {
     logger("About to deploy LPStakingRewards...")
     assertIsString(gf_deployer)
+    const protocol_owner = await getProtocolOwner()
     const deployResult = await deploy("StakingRewards", {
       from: gf_deployer,
       gasLimit: 4000000,
@@ -299,10 +307,10 @@ async function deployTranchedPool(hre: HardhatRuntimeEnvironment, {config}: Depl
 async function deployClImplementation(hre: HardhatRuntimeEnvironment, {config}: DeployOpts) {
   const {deployments, getNamedAccounts} = hre
   const {deploy} = deployments
-  const {protocol_owner, gf_deployer} = await getNamedAccounts()
+  const {gf_deployer} = await getNamedAccounts()
 
-  assertIsString(protocol_owner)
-  const accountant = await deploy("Accountant", {from: protocol_owner, gasLimit: 4000000, args: []})
+  assertIsString(gf_deployer)
+  const accountant = await deploy("Accountant", {from: gf_deployer, gasLimit: 4000000, args: []})
   // Deploy the credit line as well so we generate the ABI
   assertIsString(gf_deployer)
   const clDeployResult = await deploy("CreditLine", {
@@ -343,7 +351,8 @@ async function deployTransferRestrictedVault(
   const {deployments, getNamedAccounts, getChainId} = hre
   const {deploy, log} = deployments
   const logger = log
-  const {protocol_owner, gf_deployer} = await getNamedAccounts()
+  const {gf_deployer} = await getNamedAccounts()
+  const protocol_owner = await getProtocolOwner()
   assertIsString(protocol_owner)
   assertIsString(gf_deployer)
   const chainId = await getChainId()
@@ -358,7 +367,7 @@ async function deployTransferRestrictedVault(
       execute: {
         init: {
           methodName: "__initialize__",
-          args: [isSafeConfigChainId(chainId) ? SAFE_CONFIG[chainId] : protocol_owner, config.address],
+          args: [protocol_owner, config.address],
         },
       },
     },
@@ -371,7 +380,8 @@ async function deployPoolTokens(hre: HardhatRuntimeEnvironment, {config}: Deploy
   const {deployments, getNamedAccounts, getChainId} = hre
   const {deploy, log} = deployments
   const logger = log
-  const {protocol_owner, gf_deployer} = await getNamedAccounts()
+  const {gf_deployer} = await getNamedAccounts()
+  const protocol_owner = await getProtocolOwner()
   assertIsString(protocol_owner)
   assertIsString(gf_deployer)
   const chainId = await getChainId()
@@ -390,7 +400,7 @@ async function deployPoolTokens(hre: HardhatRuntimeEnvironment, {config}: Deploy
       execute: {
         init: {
           methodName: "__initialize__",
-          args: [isSafeConfigChainId(chainId) ? SAFE_CONFIG[chainId] : protocol_owner, config.address],
+          args: [protocol_owner, config.address],
         },
       },
     },
@@ -410,7 +420,8 @@ async function deployPool(hre: HardhatRuntimeEnvironment, {config}: DeployOpts) 
   const {deployments, getNamedAccounts} = hre
   const {deploy, log} = deployments
   const logger = log
-  const {protocol_owner, gf_deployer} = await getNamedAccounts()
+  const {gf_deployer} = await getNamedAccounts()
+  const protocol_owner = await getProtocolOwner()
 
   assertIsString(gf_deployer)
   let poolDeployResult = await deploy(contractName, {
@@ -440,16 +451,18 @@ async function deploySeniorPool(hre: HardhatRuntimeEnvironment, {config, fidu}: 
   const {deployments, getNamedAccounts} = hre
   const {deploy, log} = deployments
   const logger = log
-  const {protocol_owner, gf_deployer} = await getNamedAccounts()
-
+  const {gf_deployer} = await getNamedAccounts()
+  const protocol_owner = await getProtocolOwner()
   assertIsString(protocol_owner)
-  const accountant = await deploy("Accountant", {from: protocol_owner, gasLimit: 4000000, args: []})
-  logger("Accountant was deployed to:", accountant.address)
-
   assertIsString(gf_deployer)
+  const accountant = await deploy("Accountant", {from: gf_deployer, gasLimit: 4000000, args: []})
+  logger("Accountant was deployed to:", accountant.address)
+  logger(`Deploying ...${contractName}`)
+  log("config address:", config.address)
   let deployResult = await deploy(contractName, {
     from: gf_deployer,
     proxy: {
+      owner: protocol_owner,
       execute: {
         init: {
           methodName: "initialize",
@@ -462,7 +475,7 @@ async function deploySeniorPool(hre: HardhatRuntimeEnvironment, {config, fidu}: 
   logger(`${contractName} was deployed to:`, deployResult.address)
   const seniorPool = (await ethers.getContractAt(contractName, deployResult.address)) as SeniorPool
   await updateConfig(config, "address", CONFIG_KEYS.SeniorPool, seniorPool.address, {logger})
-  await config.addToGoList(seniorPool.address)
+  await (await config.addToGoList(seniorPool.address)).wait()
   if (fidu) {
     logger(`Granting minter role to ${contractName}`)
     await grantMinterRoleToPool(fidu, seniorPool)
@@ -477,7 +490,8 @@ async function deployFixedLeverageRatioStrategy(
   const {deployments, getNamedAccounts} = hre
   const {deploy, log} = deployments
   const logger = log
-  const {protocol_owner, gf_deployer} = await getNamedAccounts()
+  const {gf_deployer} = await getNamedAccounts()
+  const protocol_owner = await getProtocolOwner()
 
   const contractName = "FixedLeverageRatioStrategy"
 
@@ -502,7 +516,8 @@ async function deployDynamicLeverageRatioStrategy(
   const {deployments, getNamedAccounts} = hre
   const {deploy, log} = deployments
   const logger = log
-  const {protocol_owner, gf_deployer} = await getNamedAccounts()
+  const {gf_deployer} = await getNamedAccounts()
+  const protocol_owner = await getProtocolOwner()
 
   const contractName = "DynamicLeverageRatioStrategy"
 

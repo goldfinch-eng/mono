@@ -1,4 +1,4 @@
-import {ethers} from "hardhat"
+import {ethers, getChainId, getNamedAccounts} from "hardhat"
 type Ethers = typeof ethers
 import {web3} from "hardhat"
 import BN from "bn.js"
@@ -16,7 +16,8 @@ import {CONFIG_KEYS} from "./configKeys"
 import {GoldfinchConfig} from "../typechain/ethers"
 import {DeploymentsExtension} from "hardhat-deploy/types"
 import {Signer} from "ethers"
-import {AssertionError, assertIsString, assertNonNullable, genExhaustiveTuple} from "../utils/type"
+import {AssertionError, assertIsString, genExhaustiveTuple} from "../utils/type"
+import {getExistingContracts, MAINNET_MULTISIG} from "./mainnetForkingHelpers"
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
@@ -71,6 +72,13 @@ const USDT = "USDT"
 type USDT = typeof USDT
 const BUSD = "BUSD"
 type BUSD = typeof BUSD
+const ETH = "ETH"
+type ETH = typeof ETH
+function assertIsTicker(val: string): asserts val is Ticker {
+  if (!TICKERS.includes(val)) {
+    throw new AssertionError(`${val} is not in the allowed Ticker list: ${TICKERS}`)
+  }
+}
 
 const USDC_ADDRESSES: Record<ROPSTEN | MAINNET, AddressString> = {
   [ROPSTEN]: ROPSTEN_USDC_ADDRESS,
@@ -138,7 +146,8 @@ function getUSDCAddress(chainId: ChainId): AddressString | undefined {
   return getERC20Address("USDC", chainId)
 }
 
-type Ticker = USDC | USDT | BUSD
+type Ticker = USDC | USDT | BUSD | ETH
+const TICKERS = [USDC, USDT, BUSD, ETH]
 function getERC20Address(ticker: Ticker, chainId: ChainId): AddressString | undefined {
   const mapping = ERC20_ADDRESSES[ticker]
   if (isMainnetForking()) {
@@ -318,15 +327,14 @@ type GetContractOptions = {
   at?: string,
   from?: string,
 }
-async function getContract(contractName: AddressString, opts: GetContractOptions={as: "truffle"}) {
-  let deployment = await hre.deployments.getOrNull(contractName)
-  if (!deployment && isTestEnv()) {
-    deployment = await hre.deployments.get(`Test${contractName}`)
+async function getContract(contractName: string, opts: GetContractOptions={as: "truffle"}) {
+  if (!opts.at) {
+    opts.at = await getExistingAddress(contractName)
   }
-  assertNonNullable(deployment)
-  const at = opts.at || deployment.address
+  const at = opts.at
   if (opts.as === "ethers") {
-    let contract = await ethers.getContractAt(deployment.abi, at)
+    let abi = await artifacts.require(contractName).abi
+    let contract = await ethers.getContractAt(abi, at)
     if (opts.from) {
       let signer = await ethers.getSigner(opts.from)
       return contract.connect(signer)
@@ -340,6 +348,43 @@ async function getContract(contractName: AddressString, opts: GetContractOptions
     }
     return contract.at(at)
   }
+}
+
+async function getExistingAddress(contractName: string) : Promise<string> {
+  let deployment: any = await hre.deployments.getOrNull(contractName)
+  let existingAddress: string | undefined = deployment?.address
+  if (!existingAddress && isTestEnv()) {
+    deployment = await hre.deployments.getOrNull(`Test${contractName}`)
+    existingAddress = deployment?.address
+  }
+  if (!existingAddress && isMainnetForking()) {
+    const mainnetContracts = await getExistingContracts([contractName], MAINNET_MULTISIG)
+    existingAddress = mainnetContracts[contractName]?.ExistingContract?.address
+  }
+  if (!existingAddress) {
+    throw new Error(`No address found for ${contractName}`)
+  }
+  assertIsString(existingAddress)
+  return existingAddress
+}
+
+async function getProtocolOwner() : Promise<string> {
+  const chainId = await getChainId()
+  const {protocol_owner} = await getNamedAccounts()
+  if (isMainnetForking()) {
+    return SAFE_CONFIG[MAINNET_CHAIN_ID].safeAddress
+  } else if (chainId === LOCAL_CHAIN_ID) {
+    assertIsString(protocol_owner)
+    return protocol_owner
+  } else if (SAFE_CONFIG[chainId]) {
+    return SAFE_CONFIG[chainId].safeAddress
+  } else {
+    throw new Error(`Unknown owner for chain id ${chainId}`)
+  }
+}
+
+async function currentChainId() : Promise<string> {
+  return isMainnetForking() ? MAINNET_CHAIN_ID : await getChainId()
 }
 
 export {
@@ -385,4 +430,9 @@ export {
   Ticker,
   AddressString,
   getContract,
+  getProtocolOwner,
+  currentChainId,
+  ChainId,
+  TICKERS,
+  assertIsTicker,
 }

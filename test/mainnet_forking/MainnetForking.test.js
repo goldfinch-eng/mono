@@ -13,6 +13,7 @@ const {
   TRANCHES,
   ETHDecimals,
   MAINNET_CHAIN_ID,
+  getProtocolOwner,
 } = require("../../blockchain_scripts/deployHelpers")
 const {migrateClToV2} = require("../../blockchain_scripts/v2/migrationHelpers")
 const {
@@ -20,7 +21,7 @@ const {
   MAINNET_UNDERWRITER,
   upgradeContracts,
   getExistingContracts,
-  getMainnetContracts,
+  getCurrentlyDeployedContracts,
   impersonateAccount,
   fundWithWhales,
   performPostUpgradeMigration,
@@ -100,7 +101,6 @@ describe("mainnet forking tests", async function () {
 
   async function upgrade(contractsToUpgrade) {
     ;[owner, bwr, person3, underwriter, reserve] = await web3.eth.getAccounts()
-    const mainnetConfig = getMainnetContracts()
     const mainnetMultisigSigner = await ethers.provider.getSigner(MAINNET_MULTISIG)
     const usdcAddress = getUSDCAddress(MAINNET_CHAIN_ID)
     assertIsString(usdcAddress)
@@ -110,9 +110,8 @@ describe("mainnet forking tests", async function () {
     await ownerAccount.sendTransaction({to: MAINNET_MULTISIG, value: ethers.utils.parseEther("10.0")})
 
     await impersonateAccount(hre, MAINNET_MULTISIG)
-    const erc20s = [{ticker: "USDC", contract: await ethers.getContractAt("IERC20withDec", usdcAddress)}]
-    await fundWithWhales(erc20s, [owner, bwr])
-    const existingContracts = await getExistingContracts(contractsToUpgrade, mainnetConfig, mainnetMultisigSigner)
+    await fundWithWhales(["USDC"], [owner, bwr])
+    const existingContracts = await getExistingContracts(contractsToUpgrade, mainnetMultisigSigner)
 
     const contracts = await upgradeContracts(
       contractsToUpgrade,
@@ -167,12 +166,7 @@ describe("mainnet forking tests", async function () {
     busd = await artifacts.require("IERC20withDec").at(busdAddress)
     usdt = await artifacts.require("IERC20withDec").at(usdtAddress)
 
-    let erc20s = [
-      {ticker: "USDC", contract: await ethers.getContractAt("IERC20withDec", usdcAddress)},
-      {ticker: "BUSD", contract: await ethers.getContractAt("IERC20withDec", busdAddress)},
-      {ticker: "USDT", contract: await ethers.getContractAt("IERC20withDec", usdtAddress)},
-    ]
-    await fundWithWhales(erc20s, [owner, bwr, person3])
+    await fundWithWhales(["USDC", "BUSD", "USDT"], [owner, bwr, person3])
     await erc20Approve(usdc, pool.address, MAX_UINT, accounts)
     await goldfinchConfig.bulkAddToGoList(accounts, {from: MAINNET_MULTISIG})
     await setupSeniorPool()
@@ -475,10 +469,10 @@ describe("mainnet forking tests", async function () {
         )
         let usdcAmount = await seniorPoolFixedStrategy.invest(seniorPool.address, tranchedPool.address)
         const seniorPoolValue = await getBalance(seniorPool.address, usdc)
+        const protocolOwner = await getProtocolOwner()
 
         await expectAction(() => {
-          // TODO: owner should be MAINNET_MULTISIG
-          return seniorPool.sweepToCompound({from: owner})
+          return seniorPool.sweepToCompound({from: protocolOwner})
         }).toChange([
           [() => getBalance(seniorPool.address, usdc), {to: new BN(0)}], // The pool balance is swept to compound
           [() => getBalance(seniorPool.address, cUSDC), {increase: true}], // Pool should gain some cTokens
@@ -492,7 +486,7 @@ describe("mainnet forking tests", async function () {
 
         let originalReserveBalance = await getBalance(reserveAddress, usdc)
 
-        await expectAction(() => seniorPool.invest(tranchedPool.address, {from: owner})).toChange([
+        await expectAction(() => seniorPool.invest(tranchedPool.address, {from: protocolOwner})).toChange([
           [() => getBalance(seniorPool.address, usdc), {byCloseTo: seniorPoolValue.sub(usdcAmount)}], // regained usdc
           [() => getBalance(seniorPool.address, cUSDC), {to: new BN(0)}], // No more cTokens
           [() => getBalance(tranchedPool.address, usdc), {by: usdcAmount}], // Funds were transferred to TranchedPool
@@ -528,8 +522,9 @@ describe("mainnet forking tests", async function () {
         let usdcAmount = usdcVal(100)
         await erc20Approve(usdc, seniorPool.address, usdcAmount, [bwr])
         await seniorPool.deposit(usdcAmount, {from: bwr})
+        const protocolOwner = await getProtocolOwner()
         await expectAction(() => {
-          return seniorPool.sweepToCompound({from: owner})
+          return seniorPool.sweepToCompound({from: protocolOwner})
         }).toChange([
           [() => getBalance(seniorPool.address, usdc), {to: new BN(0)}],
           [() => getBalance(seniorPool.address, cUSDC), {increase: true}],
@@ -549,9 +544,10 @@ describe("mainnet forking tests", async function () {
       }).timeout(TEST_TIMEOUT)
 
       it("does not allow sweeping to compound when there is already a balance", async () => {
-        await seniorPool.sweepToCompound({from: owner})
+        const protocolOwner = await getProtocolOwner()
+        await seniorPool.sweepToCompound({from: protocolOwner})
 
-        await expect(seniorPool.sweepToCompound({from: owner})).to.be.rejectedWith(/Cannot sweep/)
+        await expect(seniorPool.sweepToCompound({from: protocolOwner})).to.be.rejectedWith(/Cannot sweep/)
       }).timeout(TEST_TIMEOUT)
 
       it("can only be swept by the owner", async () => {
@@ -582,7 +578,7 @@ describe("mainnet upgrade tests", async function () {
     assertIsString(usdcAddress)
     usdcTruffleContract = await artifacts.require("IERC20withDec").at(usdcAddress)
 
-    mainnetConfig = getMainnetContracts()
+    mainnetConfig = getCurrentlyDeployedContracts()
     mainnetMultisigSigner = await ethers.provider.getSigner(MAINNET_MULTISIG)
 
     // Ensure the multisig has funds for upgrades and other transactions
@@ -594,8 +590,7 @@ describe("mainnet upgrade tests", async function () {
 
     await impersonateAccount(hre, MAINNET_MULTISIG)
     await impersonateAccount(hre, MAINNET_UNDERWRITER)
-    const erc20s = [{ticker: "USDC", contract: await ethers.getContractAt("IERC20withDec", usdcAddress)}]
-    await fundWithWhales(erc20s, [owner, bwr])
+    await fundWithWhales(["USDC"], [owner, bwr])
   })
 
   async function upgrade(contractsToUpgrade, contracts) {
@@ -607,7 +602,7 @@ describe("mainnet upgrade tests", async function () {
 
   describe("migrating the Pool to the Senior Pool", async () => {
     it("should work", async () => {
-      let contracts = await getExistingContracts(contractsToUpgrade, mainnetConfig, mainnetMultisigSigner)
+      let contracts = await getExistingContracts(contractsToUpgrade, mainnetMultisigSigner)
 
       let existingSharePrice = await contracts.Pool.ExistingContract.sharePrice()
 
@@ -641,7 +636,7 @@ describe("mainnet upgrade tests", async function () {
     }).timeout(TEST_TIMEOUT)
 
     it("should not affect the assets/liabilities when you withdraw", async () => {
-      let contracts = await getExistingContracts(contractsToUpgrade, mainnetConfig, mainnetMultisigSigner)
+      let contracts = await getExistingContracts(contractsToUpgrade, mainnetMultisigSigner)
       contracts = await upgrade(contractsToUpgrade, contracts)
       const {seniorPool} = await deployV2(contracts)
       const legacyPool = contracts.Pool.UpgradedContract
@@ -674,7 +669,7 @@ describe("mainnet upgrade tests", async function () {
   describe("migrating credit lines to V2", async () => {
     it("should correctly migrate a credit line", async () => {
       // Upgrade to V2
-      let contracts = await getExistingContracts(contractsToUpgrade, mainnetConfig, mainnetMultisigSigner)
+      let contracts = await getExistingContracts(contractsToUpgrade, mainnetMultisigSigner)
       contracts = await upgrade(contractsToUpgrade, contracts)
       const {poolTokens: poolTokensEthers, seniorPool} = await deployV2(contracts)
 
@@ -695,6 +690,7 @@ describe("mainnet upgrade tests", async function () {
         totalPrincipalPaid,
       } = await getMigrationData(quickCheck.address, contracts.Pool.UpgradedContract)
       const originalBalance = await quickCheck.balance()
+      const originalLimit = await quickCheck.limit()
       const originalUSDCBalance = await getBalance(quickCheck.address, usdcTruffleContract)
 
       // Sanity check the calculated numbers for QuickCheck's $300k credit line
@@ -743,6 +739,7 @@ describe("mainnet upgrade tests", async function () {
       expect(await quickCheck.limit()).to.bignumber.eq(new BN(0))
 
       // Group 2: New Creditline has all expected values set
+      expect(String(await newCl.limit())).to.eq(String(new BN(originalLimit)))
       expect(String(await newCl.balance())).to.eq(String(new BN(originalBalance)))
       expect(String(await newCl.termEndTime())).to.eq(String(termEndTime))
       expect(String(await newCl.nextDueTime())).to.eq(String(nextDueTime))
@@ -793,7 +790,7 @@ describe("mainnet upgrade tests", async function () {
     })
 
     it("should maintain the withdraw balance of senior pool investors after full migration", async () => {
-      let contracts = await getExistingContracts(contractsToUpgrade, mainnetConfig, mainnetMultisigSigner)
+      let contracts = await getExistingContracts(contractsToUpgrade, mainnetMultisigSigner)
       const fiduInvestor = "0x008c84421da5527f462886cec43d2717b686a7e4"
       await impersonateAccount(hre, fiduInvestor)
       let legacyPool = contracts.Pool.ExistingContract
@@ -861,7 +858,7 @@ describe("mainnet upgrade tests", async function () {
   })
 
   it("does not affect the storage layout", async () => {
-    let contracts = await getExistingContracts(contractsToUpgrade, mainnetConfig, mainnetMultisigSigner)
+    let contracts = await getExistingContracts(contractsToUpgrade, mainnetMultisigSigner)
 
     let existingSharePrice = await contracts.Pool.ExistingContract.sharePrice()
     let existingLoansOutstanding = await contracts.CreditDesk.ExistingContract.totalLoansOutstanding()
@@ -883,7 +880,7 @@ describe("mainnet upgrade tests", async function () {
   }).timeout(TEST_TIMEOUT)
 
   xit("supports basic credit desk functions", async () => {
-    let contracts = await getExistingContracts(contractsToUpgrade, mainnetConfig, mainnetMultisigSigner)
+    let contracts = await getExistingContracts(contractsToUpgrade, mainnetMultisigSigner)
     let bwrSigner = await ethers.provider.getSigner(bwr)
     let bwrCreditDesk = contracts.CreditDesk.ExistingContract.connect(bwrSigner)
     let bwrPool = contracts.Pool.ExistingContract.connect(bwrSigner)
