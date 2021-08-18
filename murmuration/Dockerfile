@@ -1,5 +1,5 @@
-# Dockerfile for building `https://murmuration.goldfinch.finance` environment
-# deployed to Google App Engine.
+# Dockerfile for building the `https://murmuration.goldfinch.finance` application
+# deployed to Google Compute Engine.
 
 FROM node:12.18.3
 
@@ -28,7 +28,7 @@ WORKDIR /goldfinch-protocol/client
 RUN npm install
 
 # Used by the Webpack dev server. See `murmuration()` in `client/config-overrides.js`.
-EXPOSE 8080
+EXPOSE 80
 
 WORKDIR /goldfinch-protocol
 CMD npm run murmuration-start
