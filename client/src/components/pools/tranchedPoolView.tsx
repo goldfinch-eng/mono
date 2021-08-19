@@ -335,9 +335,11 @@ function SupplyStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
   ]
 
   let rightAmountPrefix = ""
+  let rightAmountDescription = "Remaining"
   if (tranchedPool.state === PoolState.Open) {
     // Show an "approx." sign if the junior tranche is not yet locked
     rightAmountPrefix = "~"
+    rightAmountDescription = "Est. Remaining"
   }
 
   return (
@@ -354,7 +356,7 @@ function SupplyStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
           }
           rightAmount={new BigNumber(usdcFromAtomic(remainingJuniorCapacity))}
           rightAmountDisplay={`${rightAmountPrefix}${displayDollars(usdcFromAtomic(remainingJuniorCapacity))}`}
-          rightAmountDescription={"Est. Remaining"}
+          rightAmountDescription={rightAmountDescription}
         />
       </div>
       <InfoSection rows={rows} />

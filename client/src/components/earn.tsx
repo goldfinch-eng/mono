@@ -2,13 +2,16 @@ import {useState, useEffect, useContext} from "react"
 import {useHistory} from "react-router-dom"
 import {CapitalProvider, fetchCapitalProviderData, fetchPoolData, PoolData} from "../ethereum/pool"
 import {AppContext} from "../App"
-import {ERC20, usdcFromAtomic} from "../ethereum/erc20"
+import {ERC20, usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
 import {croppedAddress, displayDollars, displayPercent, roundDownPenny} from "../utils"
 import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
 import {PoolBacker, TranchedPool} from "../ethereum/tranchedPool"
 import {PoolCreated} from "../typechain/web3/GoldfinchFactory"
 import BigNumber from "bignumber.js"
 import {User} from "../ethereum/user"
+
+// Filter out 0 limit (inactive) and test pools
+const MIN_POOL_LIMIT = usdcToAtomic(process.env.REACT_APP_POOL_FILTER_LIMIT || "200")
 
 function PoolList({title, children}) {
   return (
@@ -144,7 +147,7 @@ function usePoolBackers({goldfinchProtocol, user}: {goldfinchProtocol?: Goldfinc
       let tranchedPools = poolAddresses.map((a) => new TranchedPool(a, goldfinchProtocol))
       await Promise.all(tranchedPools.map((p) => p.initialize()))
       const activePoolBackers = tranchedPools
-        .filter((p) => !p.creditLine.limit.isZero())
+        .filter((p) => p.creditLine.limit.gte(MIN_POOL_LIMIT))
         .map((p) => new PoolBacker(user.address, p, goldfinchProtocol))
       await Promise.all(activePoolBackers.map((b) => b.initialize()))
       setBackers(activePoolBackers.sort((a, b) => b.balanceInDollars.comparedTo(a.balanceInDollars)))

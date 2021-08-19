@@ -12,6 +12,7 @@ import {usdcFromAtomic} from "./erc20"
 import {CONFIG_KEYS} from "../../../blockchain_scripts/configKeys"
 import {SeniorPool as SeniorPoolContract} from "../typechain/web3/SeniorPool"
 
+const ZERO = new BigNumber(0)
 const ONE = new BigNumber(1)
 const ONE_HUNDRED = new BigNumber(100)
 
@@ -117,10 +118,10 @@ class TranchedPool {
     let now = secondsSinceEpoch()
     if (now < seniorTranche.lockedUntil) {
       this.state = PoolState.SeniorLocked
-    } else if (now < juniorTranche.lockedUntil) {
-      this.state = PoolState.JuniorLocked
     } else if (juniorTranche.lockedUntil === 0) {
       this.state = PoolState.Open
+    } else if (now < juniorTranche.lockedUntil || seniorTranche.lockedUntil === 0) {
+      this.state = PoolState.JuniorLocked
     } else {
       this.state = PoolState.WithdrawalsUnlocked
     }
@@ -163,10 +164,13 @@ class TranchedPool {
   }
 
   remainingCapacity(): BigNumber {
-    return this.creditLine.limit.minus(this.estimatedTotalAssets())
+    return BigNumber.maximum(ZERO, this.creditLine.limit.minus(this.estimatedTotalAssets()))
   }
 
   remainingJuniorCapacity(): BigNumber {
+    if (this.state >= PoolState.JuniorLocked) {
+      return ZERO
+    }
     return this.remainingCapacity().dividedBy(this.estimatedLeverageRatio.plus(1))
   }
 
