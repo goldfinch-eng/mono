@@ -20,7 +20,8 @@ function PoolStatus(props) {
       defaultRate = props.poolData.cumulativeWritedowns.dividedBy(props.creditDesk.gf.cumulativeDrawdowns)
       poolBalance = usdcFromAtomic(props.poolData.totalPoolAssets)
       totalLoansOutstanding = usdcFromAtomic(props.poolData.totalLoansOutstanding)
-      capacityRemaining = new BigNumber(maxPoolCapacity).minus(poolBalance)
+      let cappedBalance = BigNumber.min(poolBalance, maxPoolCapacity)
+      capacityRemaining = new BigNumber(maxPoolCapacity).minus(cappedBalance)
     }
 
     return [
