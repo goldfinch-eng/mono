@@ -533,12 +533,10 @@ function TranchedPoolView() {
 
   return (
     <div className="content-section">
-      <div className="page-header">
-        <InvestorNotice />
-        <div>{earnMessage}</div>
-      </div>
+      <div className="page-header">{earnMessage}</div>
       <ConnectionNotice requireUnlock={false} requireVerify={true} />
       {unlockForm}
+      <InvestorNotice />
       <ActionsContainer tranchedPool={tranchedPool} onComplete={async () => refreshTranchedPool()} />
       <CreditStatus tranchedPool={tranchedPool} />
       <SupplyStatus tranchedPool={tranchedPool} />
