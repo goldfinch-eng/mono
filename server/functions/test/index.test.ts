@@ -53,7 +53,7 @@ describe("functions", () => {
 
   describe("kycStatus", async () => {
     const generateKycRequest = (address: string, signature: string) => {
-      return {headers: {}, query: {address, signature}} as any
+      return {headers: {"X-Goldfinch-Signature": signature}, query: {address}} as any
     }
     describe("validation", async () => {
       it("checks if address is present", async () => {

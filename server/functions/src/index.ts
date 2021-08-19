@@ -59,7 +59,8 @@ const kycStatus = functions.https.onRequest(
   wrapWithSentry(
     async (req, res): Promise<void> => {
       const address = req.query.address?.toString()
-      const signature = req.query.signature?.toString()
+      const signatureHeader = req.headers["X-Goldfinch-Signature"]
+      const signature = Array.isArray(signatureHeader) ? signatureHeader.join("") : signatureHeader
 
       const response = {address: address, status: "unknown", countryCode: null}
       setCORSHeaders(req, res)
