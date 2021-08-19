@@ -344,6 +344,7 @@ async function deployPoolTokens(hre: HardhatRuntimeEnvironment, {config}: Deploy
   const poolTokensDeployResult = await deploy(contractName, {
     from: gf_deployer,
     proxy: {
+      owner: protocol_owner,
       execute: {
         init: {
           methodName: "__initialize__",
