@@ -19,9 +19,9 @@ describe("Migrating to V2", () => {
 
   const testSetup = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
     // Note: base_deploy always returns when mainnet forking, however
-    // we need it here, because the "fixture" part is what let's hardhat
+    // we need it here, because the "fixture" part is what lets hardhat
     // snapshot and give us a clean blockchain before each test.
-    // Otherewise, we have state leaking across tests.
+    // Otherwise, we have state leaking across tests.
     await deployments.fixture("base_deploy")
     const {gf_deployer} = await getNamedAccounts()
     mainnetContracts = await getAllExistingContracts()
