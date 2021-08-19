@@ -208,8 +208,10 @@ async function handleNewDeployments(migrator) {
     await newConfig.initializeFromOtherConfig(existingContracts.GoldfinchConfig.ExistingContract.address)
     console.log("Granting roles...")
     await newConfig.grantRole(OWNER_ROLE, protocolOwner)
+    await newConfig.grantRole(PAUSER_ROLE, protocolOwner)
     await newConfig.grantRole(GO_LISTER_ROLE, protocolOwner)
     await newConfig.grantRole(OWNER_ROLE, migrator.address)
+    await newConfig.grantRole(PAUSER_ROLE, migrator.address)
     await newConfig.grantRole(GO_LISTER_ROLE, migrator.address)
     console.log("Done granting roles...")
   } else {

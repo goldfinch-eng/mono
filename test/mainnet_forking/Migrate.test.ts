@@ -9,7 +9,6 @@ import {getAllExistingContracts, impersonateAccount, MAINNET_MULTISIG, MAINNET_U
 import BN from "bn.js"
 import _ from "lodash"
 import { prepareMigration } from "../../blockchain_scripts/v2/migrate"
-import { tenderly, tenderlyNetwork } from "hardhat"
 
 describe("Migrating to V2", () => {
   // Hack way to only run this suite when we actually want to.
@@ -152,6 +151,9 @@ describe("Migrating to V2", () => {
       expectedAmount = 2958904109
       await assertNewClStillCalculatesInterestCorrectly(tranchedPool2, newCl2, expectedAmount)
 
+      const newGoldfinchConfig = await getContract("GoldfinchConfig")
+      expect(newGoldfinchConfig.address).not.to.equal(goldfinchConfig.address)
+
       // Expect all perms to be returned
 
       expect(await fidu.hasRole(MINTER_ROLE, migrator.address)).to.equal(false)
@@ -171,6 +173,10 @@ describe("Migrating to V2", () => {
       expect(await goldfinchConfig.hasRole(PAUSER_ROLE, migrator.address)).to.equal(false)
       expect(await goldfinchConfig.hasRole(GO_LISTER_ROLE, migrator.address)).to.equal(false)
 
+      expect(await newGoldfinchConfig.hasRole(OWNER_ROLE, migrator.address)).to.equal(false)
+      expect(await newGoldfinchConfig.hasRole(PAUSER_ROLE, migrator.address)).to.equal(false)
+      expect(await newGoldfinchConfig.hasRole(GO_LISTER_ROLE, migrator.address)).to.equal(false)
+
       expect(await fidu.hasRole(MINTER_ROLE, MAINNET_MULTISIG)).to.equal(true)
       expect(await fidu.hasRole(OWNER_ROLE, MAINNET_MULTISIG)).to.equal(true)
       expect(await fidu.hasRole(PAUSER_ROLE, MAINNET_MULTISIG)).to.equal(true)
@@ -187,6 +193,10 @@ describe("Migrating to V2", () => {
       expect(await goldfinchConfig.hasRole(OWNER_ROLE, MAINNET_MULTISIG)).to.equal(true)
       expect(await goldfinchConfig.hasRole(PAUSER_ROLE, MAINNET_MULTISIG)).to.equal(true)
       expect(await goldfinchConfig.hasRole(GO_LISTER_ROLE, MAINNET_MULTISIG)).to.equal(false)
+
+      expect(await newGoldfinchConfig.hasRole(OWNER_ROLE, MAINNET_MULTISIG)).to.equal(true)
+      expect(await newGoldfinchConfig.hasRole(PAUSER_ROLE, MAINNET_MULTISIG)).to.equal(true)
+      expect(await newGoldfinchConfig.hasRole(GO_LISTER_ROLE, MAINNET_MULTISIG)).to.equal(true)
 
       // Proxy ownership given back to governance
 

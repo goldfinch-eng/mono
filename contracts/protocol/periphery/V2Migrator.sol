@@ -150,6 +150,7 @@ contract V2Migrator is BaseUpgradeablePausable {
     config.renounceRole(OWNER_ROLE, address(this));
 
     newConfig.renounceRole(OWNER_ROLE, address(this));
+    newConfig.renounceRole(PAUSER_ROLE, address(this));
     newConfig.renounceRole(GO_LISTER_ROLE, address(this));
   }
 }
