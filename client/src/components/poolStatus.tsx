@@ -25,13 +25,14 @@ function PoolStatus({poolData}: PoolStatusProps) {
       defaultRate = poolData.defaultRate
       poolBalance = usdcFromAtomic(poolData.totalPoolAssets)
       totalLoansOutstanding = usdcFromAtomic(poolData.totalLoansOutstanding)
-      capacityRemaining = new BigNumber(maxPoolCapacity).minus(poolBalance)
+      let cappedBalance = BigNumber.min(poolBalance, maxPoolCapacity)
+      capacityRemaining = new BigNumber(maxPoolCapacity).minus(cappedBalance)
     }
 
     return [
       {label: "Total pool balance", value: displayDollars(poolBalance)},
       {label: "Max pool capacity", value: displayDollars(maxPoolCapacity)},
-      {label: "Remaning capacity", value: displayDollars(capacityRemaining)},
+      {label: "Remaining capacity", value: displayDollars(capacityRemaining)},
       {label: "Loans outstanding", value: displayDollars(totalLoansOutstanding)},
       {label: "Default rate", value: displayPercent(defaultRate)},
     ]
