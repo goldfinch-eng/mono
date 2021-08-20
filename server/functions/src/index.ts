@@ -31,7 +31,7 @@ const setCORSHeaders = (req: any, res: any) => {
   const allowedOrigins = (getConfig(functions).kyc.allowed_origins || "").split(",")
   if (allowedOrigins.includes(req.headers.origin)) {
     res.set("Access-Control-Allow-Origin", req.headers.origin)
-    res.set("Access-Control-Allow-Headers", "X-Goldfinch-Signature")
+    res.set("Access-Control-Allow-Headers", "x-goldfinch-signature")
   }
 }
 
@@ -60,7 +60,7 @@ const kycStatus = functions.https.onRequest(
   wrapWithSentry(
     async (req, res): Promise<void> => {
       const address = req.query.address?.toString()
-      const signatureHeader = req.headers["X-Goldfinch-Signature"]
+      const signatureHeader = req.headers["x-goldfinch-Signature"]
       const signature = Array.isArray(signatureHeader) ? signatureHeader.join("") : signatureHeader
 
       const response = {address: address, status: "unknown", countryCode: null}
