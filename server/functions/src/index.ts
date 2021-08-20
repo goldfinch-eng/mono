@@ -31,6 +31,7 @@ const setCORSHeaders = (req: any, res: any) => {
   const allowedOrigins = (getConfig(functions).kyc.allowed_origins || "").split(",")
   if (allowedOrigins.includes(req.headers.origin)) {
     res.set("Access-Control-Allow-Origin", req.headers.origin)
+    res.set("Access-Control-Allow-Headers", "X-Goldfinch-Signature")
   }
 }
 
