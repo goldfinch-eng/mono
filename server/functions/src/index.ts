@@ -31,6 +31,7 @@ const setCORSHeaders = (req: any, res: any) => {
   const allowedOrigins = (getConfig(functions).kyc.allowed_origins || "").split(",")
   if (allowedOrigins.includes(req.headers.origin)) {
     res.set("Access-Control-Allow-Origin", req.headers.origin)
+    res.set("Access-Control-Allow-Headers", "x-goldfinch-signature")
   }
 }
 
@@ -58,12 +59,17 @@ const wrapWithSentry = (fn: HttpFunction, wrapOptions?: Partial<HttpFunctionWrap
 const kycStatus = functions.https.onRequest(
   wrapWithSentry(
     async (req, res): Promise<void> => {
-      const address = req.query.address?.toString()
-      const signatureHeader = req.headers["X-Goldfinch-Signature"]
-      const signature = Array.isArray(signatureHeader) ? signatureHeader.join("") : signatureHeader
-
-      const response = {address: address, status: "unknown", countryCode: null}
       setCORSHeaders(req, res)
+
+      // For a CORS preflight request, we're done.
+      if (req.method === "OPTIONS") {
+        res.status(200).send()
+        return
+      }
+
+      const address = req.query.address?.toString()
+      const signatureHeader = req.headers["x-goldfinch-signature"]
+      const signature = Array.isArray(signatureHeader) ? signatureHeader.join("") : signatureHeader
 
       if (!address || !signature) {
         res.status(400).send({error: "Address or signature not provided"})
@@ -81,6 +87,8 @@ const kycStatus = functions.https.onRequest(
 
       // Having verified the address, we can set the Sentry user context accordingly.
       Sentry.setUser({id: address.toLowerCase(), address: address.toLowerCase()})
+
+      const response = {address: address, status: "unknown", countryCode: null}
 
       const users = getUsers(admin.firestore())
       const user = await users.doc(`${address.toLowerCase()}`).get()

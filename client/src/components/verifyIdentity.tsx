@@ -247,7 +247,7 @@ function VerifyIdentity() {
   function getKYCStatusRequestInit(signature): RequestInit {
     signature = signature === "pending" ? "" : signature
     return {
-      headers: {"X-Goldfinch-Signature": signature}
+      headers: {"x-goldfinch-signature": signature}
     }
   }
 
