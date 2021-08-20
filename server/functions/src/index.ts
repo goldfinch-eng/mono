@@ -65,6 +65,11 @@ const kycStatus = functions.https.onRequest(
       const response = {address: address, status: "unknown", countryCode: null}
       setCORSHeaders(req, res)
 
+      if (req.method === "OPTIONS") {
+        res.status(200).send()
+        return
+      }
+
       if (!address || !signature) {
         res.status(400).send({error: "Address or signature not provided"})
         return
