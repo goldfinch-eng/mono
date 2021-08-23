@@ -26,19 +26,15 @@ Sentry.GCPFunction.init({
 admin.initializeApp()
 
 // Make sure to keep the structure of this message in sync with the frontend.
-const genVerificationMessage = (timestamp: string) => `Sign in to Goldfinch: ${timestamp}`
+const genVerificationMessage = (blockNum: number) => `Sign in to Goldfinch: ${blockNum}`
 
-// Cf. https://stackoverflow.com/a/12372720
-const isValidDate = (date: Date): boolean => !isNaN(date.getTime())
-
-const ONE_MINUTE_MILLIS = 1000 * 60
-const ONE_HOUR_MILLIS = 1000 * 60 * 60
+const ONE_DAY_SECONDS = 60 * 60 * 24
 
 const setCORSHeaders = (req: any, res: any) => {
   const allowedOrigins = (getConfig(functions).kyc.allowed_origins || "").split(",")
   if (allowedOrigins.includes(req.headers.origin)) {
     res.set("Access-Control-Allow-Origin", req.headers.origin)
-    res.set("Access-Control-Allow-Headers", "x-goldfinch-signature, x-goldfinch-signature-timestamp")
+    res.set("Access-Control-Allow-Headers", "x-goldfinch-signature, x-goldfinch-signature-block-num")
   }
 }
 
@@ -81,10 +77,10 @@ const kycStatus = functions.https.onRequest(
     const address = req.query.address?.toString()
     const signatureHeader = req.headers["x-goldfinch-signature"]
     const signature = Array.isArray(signatureHeader) ? signatureHeader.join("") : signatureHeader
-    const signatureTimestampHeader = req.headers["x-goldfinch-signature-timestamp"]
-    const signatureTimestamp = Array.isArray(signatureTimestampHeader)
-      ? signatureTimestampHeader.join("")
-      : signatureTimestampHeader
+    const signatureBlockNumHeader = req.headers["x-goldfinch-signature-block-num"]
+    const signatureBlockNumStr = Array.isArray(signatureBlockNumHeader)
+      ? signatureBlockNumHeader.join("")
+      : signatureBlockNumHeader
 
     if (!address) {
       return res.status(400).send({error: "Address not provided."})
@@ -92,11 +88,16 @@ const kycStatus = functions.https.onRequest(
     if (!signature) {
       return res.status(400).send({error: "Signature not provided."})
     }
-    if (!signatureTimestamp) {
-      return res.status(400).send({error: "Signature timestamp not provided."})
+    if (!signatureBlockNumStr) {
+      return res.status(400).send({error: "Signature block number not provided."})
     }
 
-    const verifiedAddress = ethers.utils.verifyMessage(genVerificationMessage(signatureTimestamp), signature)
+    const signatureBlockNum = parseInt(signatureBlockNumStr, 10)
+    if (!Number.isInteger(signatureBlockNum)) {
+      return res.status(400).send({error: "Invalid signature block number."})
+    }
+
+    const verifiedAddress = ethers.utils.verifyMessage(genVerificationMessage(signatureBlockNum), signature)
 
     console.log(`Received address: ${address}, Verified address: ${verifiedAddress}`)
 
@@ -104,20 +105,20 @@ const kycStatus = functions.https.onRequest(
       return res.status(403).send({error: "Invalid address or signature"})
     }
 
-    const signatureDate: Date = new Date(signatureTimestamp)
-    if (!isValidDate(signatureDate)) {
-      return res.status(400).send({error: "Invalid signature timestamp."})
+    const provider = ethers.getDefaultProvider()
+    const currentBlock = await provider.getBlock("latest")
+
+    // Don't allow signatures signed for the future.
+    if (currentBlock.number < signatureBlockNum) {
+      return res.status(401).send({error: "Unexpected signature block number."})
     }
-    const signatureTime = signatureDate.getTime()
-    const now = Date.now()
-    // Don't allow signatures signed for the future. (We allow a one-minute margin-of-error
-    // to accommodate differences between the client's clock that generated the timestamp
-    // and the server's clock that is verifying it.)
-    if (signatureTime > now + ONE_MINUTE_MILLIS) {
-      return res.status(401).send({error: "Unexpected signature timestamp."})
-    }
-    // Don't allow signatures more than an hour old.
-    if (signatureTime + ONE_HOUR_MILLIS < now) {
+
+    const signatureBlock = await provider.getBlock(signatureBlockNum)
+    const signatureTime = signatureBlock.timestamp
+    const now = currentBlock.timestamp
+
+    // Don't allow signatures more than a day old.
+    if (signatureTime + ONE_DAY_SECONDS < now) {
       return res.status(401).send({error: "Signature expired."})
     }
 

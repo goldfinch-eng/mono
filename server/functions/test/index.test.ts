@@ -73,7 +73,7 @@ describe("functions", () => {
       timestamp: number | string | undefined,
     ): Request => {
       return {
-        headers: {"x-goldfinch-signature": signature, "x-goldfinch-signature-timestamp": timestamp},
+        headers: {"x-goldfinch-signature": signature, "x-goldfinch-signature-block-num": timestamp},
         query: {address},
       } as unknown as Request
     }
