@@ -25,14 +25,20 @@ Sentry.GCPFunction.init({
 
 admin.initializeApp()
 
-// Make sure this is in sync with the frontend. This should have a none for added security, but it should be ok for now
-const VERIFICATION_MESSAGE = "Sign in to Goldfinch"
+// Make sure to keep the structure of this message in sync with the frontend.
+const genVerificationMessage = (timestamp: string) => `Sign in to Goldfinch: ${timestamp}`
+
+// Cf. https://stackoverflow.com/a/12372720
+const isValidDate = (date: Date): boolean => !isNaN(date.getTime())
+
+const ONE_MINUTE_MILLIS = 1000 * 60
+const ONE_HOUR_MILLIS = 1000 * 60 * 60
 
 const setCORSHeaders = (req: any, res: any) => {
   const allowedOrigins = (getConfig(functions).kyc.allowed_origins || "").split(",")
   if (allowedOrigins.includes(req.headers.origin)) {
     res.set("Access-Control-Allow-Origin", req.headers.origin)
-    res.set("Access-Control-Allow-Headers", "x-goldfinch-signature")
+    res.set("Access-Control-Allow-Headers", "x-goldfinch-signature, x-goldfinch-signature-timestamp")
   }
 }
 
@@ -70,18 +76,50 @@ const kycStatus = functions.https.onRequest(
     const address = req.query.address?.toString()
     const signatureHeader = req.headers["x-goldfinch-signature"]
     const signature = Array.isArray(signatureHeader) ? signatureHeader.join("") : signatureHeader
+    const signatureTimestampHeader = req.headers["x-goldfinch-signature-timestamp"]
+    const signatureTimestamp = Array.isArray(signatureTimestampHeader)
+      ? signatureTimestampHeader.join("")
+      : signatureTimestampHeader
 
-    if (!address || !signature) {
-      res.status(400).send({error: "Address or signature not provided"})
+    if (!address) {
+      res.status(400).send({error: "Address not provided."})
+      return
+    }
+    if (!signature) {
+      res.status(400).send({error: "Signature not provided."})
+      return
+    }
+    if (!signatureTimestamp) {
+      res.status(400).send({error: "Signature timestamp not provided."})
       return
     }
 
-    const verifiedAddress = ethers.utils.verifyMessage(VERIFICATION_MESSAGE, signature)
+    const verifiedAddress = ethers.utils.verifyMessage(genVerificationMessage(signatureTimestamp), signature)
 
     console.log(`Received address: ${address}, Verified address: ${verifiedAddress}`)
 
     if (address.toLowerCase() !== verifiedAddress.toLowerCase()) {
       res.status(403).send({error: "Invalid address or signature"})
+      return
+    }
+
+    const signatureDate: Date = new Date(signatureTimestamp)
+    if (!isValidDate(signatureDate)) {
+      res.status(400).send({error: "Invalid signature timestamp."})
+      return
+    }
+    const signatureTime = signatureDate.getTime()
+    const now = Date.now()
+    // Don't allow signatures signed for the future. (We allow a one-minute margin-of-error
+    // to accommodate differences between the client's clock that generated the timestamp
+    // and the server's clock that is verifying it.)
+    if (signatureTime > now + ONE_MINUTE_MILLIS) {
+      res.status(401).send({error: "Unexpected signature timestamp."})
+      return
+    }
+    // Don't allow signatures more than an hour old.
+    if (signatureTime + ONE_HOUR_MILLIS < now) {
+      res.status(401).send({error: "Signature expired."})
       return
     }
 
