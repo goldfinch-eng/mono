@@ -7,7 +7,7 @@ import firestore = admin.firestore
 import {assertIsString} from "../../../utils/type"
 import * as Sentry from "@sentry/serverless"
 import {CaptureConsole} from "@sentry/integrations"
-import {HttpFunction, Request} from "@sentry/serverless/dist/gcpfunction/general"
+import {HttpFunction, Request, Response} from "@sentry/serverless/dist/gcpfunction/general"
 import {HttpFunctionWrapperOptions} from "@sentry/serverless/dist/gcpfunction"
 
 const _config = getConfig(functions)
@@ -49,28 +49,33 @@ const setCORSHeaders = (req: any, res: any) => {
  * @return {HttpFunction} The wrapped handler suitable for passing to `functions.https.onRequest()`.
  */
 const wrapWithSentry = (fn: HttpFunction, wrapOptions?: Partial<HttpFunctionWrapperOptions>): HttpFunction => {
-  return Sentry.GCPFunction.wrapHttpFunction(async (req, res): Promise<void> => {
+  if (process.env.NODE_ENV === "test") {
+    // If we're in a testing environment, Sentry's wrapper just gets in the way of intelligible test
+    // errors. So we won't use it.
+    return fn
+  }
+
+  return Sentry.GCPFunction.wrapHttpFunction(async (req, res): Promise<Response> => {
     // Sentry does not fully do its job as you'd expect; currently it is not instrumented for
     // unhandled promise rejections! So to capture such events in Sentry, we must catch and
     // send them manually. Cf. https://github.com/getsentry/sentry-javascript/issues/3695#issuecomment-872350258,
     // https://github.com/getsentry/sentry-javascript/issues/3096#issuecomment-775582236.
     try {
-      await fn(req, res)
+      return await fn(req, res)
     } catch (err: unknown) {
       Sentry.captureException(err)
-      res.status(500).send("Internal error.")
+      return res.status(500).send("Internal error.")
     }
   }, wrapOptions)
 }
 
 const kycStatus = functions.https.onRequest(
-  wrapWithSentry(async (req, res): Promise<void> => {
+  wrapWithSentry(async (req, res): Promise<Response> => {
     setCORSHeaders(req, res)
 
     // For a CORS preflight request, we're done.
     if (req.method === "OPTIONS") {
-      res.status(200).send()
-      return
+      return res.status(200).send()
     }
 
     const address = req.query.address?.toString()
@@ -82,16 +87,13 @@ const kycStatus = functions.https.onRequest(
       : signatureTimestampHeader
 
     if (!address) {
-      res.status(400).send({error: "Address not provided."})
-      return
+      return res.status(400).send({error: "Address not provided."})
     }
     if (!signature) {
-      res.status(400).send({error: "Signature not provided."})
-      return
+      return res.status(400).send({error: "Signature not provided."})
     }
     if (!signatureTimestamp) {
-      res.status(400).send({error: "Signature timestamp not provided."})
-      return
+      return res.status(400).send({error: "Signature timestamp not provided."})
     }
 
     const verifiedAddress = ethers.utils.verifyMessage(genVerificationMessage(signatureTimestamp), signature)
@@ -99,14 +101,12 @@ const kycStatus = functions.https.onRequest(
     console.log(`Received address: ${address}, Verified address: ${verifiedAddress}`)
 
     if (address.toLowerCase() !== verifiedAddress.toLowerCase()) {
-      res.status(403).send({error: "Invalid address or signature"})
-      return
+      return res.status(403).send({error: "Invalid address or signature"})
     }
 
     const signatureDate: Date = new Date(signatureTimestamp)
     if (!isValidDate(signatureDate)) {
-      res.status(400).send({error: "Invalid signature timestamp."})
-      return
+      return res.status(400).send({error: "Invalid signature timestamp."})
     }
     const signatureTime = signatureDate.getTime()
     const now = Date.now()
@@ -114,13 +114,11 @@ const kycStatus = functions.https.onRequest(
     // to accommodate differences between the client's clock that generated the timestamp
     // and the server's clock that is verifying it.)
     if (signatureTime > now + ONE_MINUTE_MILLIS) {
-      res.status(401).send({error: "Unexpected signature timestamp."})
-      return
+      return res.status(401).send({error: "Unexpected signature timestamp."})
     }
     // Don't allow signatures more than an hour old.
     if (signatureTime + ONE_HOUR_MILLIS < now) {
-      res.status(401).send({error: "Signature expired."})
-      return
+      return res.status(401).send({error: "Signature expired."})
     }
 
     // Having verified the address, we can set the Sentry user context accordingly.
@@ -135,7 +133,7 @@ const kycStatus = functions.https.onRequest(
       response.status = userStatusFromPersonaStatus(user.data()?.persona?.status)
       response.countryCode = user.data()?.countryCode
     }
-    res.status(200).send(response)
+    return res.status(200).send(response)
   }),
 )
 
@@ -208,10 +206,9 @@ const getCountryCode = (eventPayload: Record<string, any>): string | null => {
 }
 
 const personaCallback = functions.https.onRequest(
-  wrapWithSentry(async (req, res): Promise<void> => {
+  wrapWithSentry(async (req, res): Promise<Response> => {
     if (!verifyRequest(req)) {
-      res.status(400).send({status: "error", message: "Request could not be verified"})
-      return
+      return res.status(400).send({status: "error", message: "Request could not be verified"})
     }
 
     const eventPayload = req.body.data.attributes.payload.data
@@ -256,11 +253,10 @@ const personaCallback = functions.https.onRequest(
       })
     } catch (e) {
       console.error(e)
-      res.status(500).send({status: "error", message: e.message})
-      return
+      return res.status(500).send({status: "error", message: e.message})
     }
 
-    res.status(200).send({status: "success"})
+    return res.status(200).send({status: "success"})
   }),
 )
 
