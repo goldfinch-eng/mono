@@ -67,7 +67,7 @@ function DrawdownForm(props) {
   }
 
   const maxAmount = minimumNumber(
-    props.creditLine.unroundedAvailableCreditInDollars,
+    props.creditLine.availableCreditInDollars,
     usdcFromAtomic(poolData.balance),
     usdcFromAtomic(goldfinchConfig.transactionLimit),
   )
@@ -160,7 +160,7 @@ function DrawdownForm(props) {
     <TransactionForm
       formClass="drawdown-form"
       title="Borrow"
-      headerMessage={`Available to borrow: ${displayDollars(props.creditLine.unroundedAvailableCreditInDollars)}`}
+      headerMessage={`Available to borrow: ${displayDollars(props.creditLine.availableCreditInDollars)}`}
       render={renderForm}
       closeForm={props.closeForm}
     />

@@ -3,7 +3,7 @@ import moment from "moment"
 import BigNumber from "bignumber.js"
 import {Tickers, usdcFromAtomic, usdcToAtomic} from "./erc20"
 import {fetchDataFromAttributes, INTEREST_DECIMALS, SECONDS_PER_YEAR, SECONDS_PER_DAY} from "./utils"
-import {roundDownPenny, croppedAddress} from "../utils"
+import {croppedAddress} from "../utils"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {CreditLine as CreditlineContract} from "../typechain/web3/CreditLine"
 import {Contract} from "web3-eth-contract"
@@ -48,10 +48,6 @@ abstract class BaseCreditLine {
     return this.inDollars(this.availableCredit)
   }
 
-  get unroundedAvailableCreditInDollars() {
-    return new BigNumber(usdcFromAtomic(this.availableCredit))
-  }
-
   get isMultiple() {
     return this.creditLines.length > 1
   }
@@ -67,7 +63,7 @@ abstract class BaseCreditLine {
   }
 
   inDollars(amount) {
-    return new BigNumber(roundDownPenny(usdcFromAtomic(amount)))
+    return new BigNumber(usdcFromAtomic(amount))
   }
 }
 

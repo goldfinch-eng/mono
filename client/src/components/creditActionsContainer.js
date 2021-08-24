@@ -87,7 +87,7 @@ function CreditActionsContainer(props) {
       <div className={`form-start split background-container ${placeholderClass}`}>
         <div className="form-start-section">
           <div className="form-start-label">Available to borrow</div>
-          <div className="form-start-value">{displayDollars(props.creditLine.unroundedAvailableCreditInDollars)}</div>
+          <div className="form-start-value">{displayDollars(props.creditLine.availableCreditInDollars)}</div>
           <button className={`button ${drawdownClass}`} onClick={drawdownAction}>
             {iconDownArrow} Borrow
           </button>
