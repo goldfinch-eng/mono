@@ -48,6 +48,10 @@ abstract class BaseCreditLine {
     return this.inDollars(this.availableCredit)
   }
 
+  get unroundedAvailableCreditInDollars() {
+    return new BigNumber(usdcFromAtomic(this.availableCredit))
+  }
+
   get isMultiple() {
     return this.creditLines.length > 1
   }

@@ -44,9 +44,13 @@ function displayDollars(val, decimals = 2) {
   if (isNaN(val)) {
     return " --.--"
   }
-  if (parseFloat(val) < 0) {
-    val = parseFloat(val) * -1
+  const valFloat = parseFloat(val)
+  if (valFloat < 0) {
+    val = valFloat * -1
     prefix = "-"
+  }
+  if (valFloat < 0.01 && valFloat > 0) {
+    return `${prefix}$<0.01`
   }
   return `${prefix}$${displayNumber(val, decimals)}`
 }
