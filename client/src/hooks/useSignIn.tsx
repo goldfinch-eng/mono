@@ -4,13 +4,30 @@ import {AppContext} from "../App"
 import {assertNonNullable, getBlockInfo, getCurrentBlock} from "../utils"
 import web3 from "../web3"
 
-export type Session = {status: "unknown"} | {status: "known"} | {status: "authenticated"; signature: string}
+export type Session =
+  | {status: "unknown"}
+  | {status: "known"}
+  | {status: "authenticated"; signature: string; signatureBlockNum: number}
 
-function getSession(address: string, signature: string | undefined): Session {
-  if (address && signature) {
-    return {status: "authenticated", signature}
+type GetSessionInfo =
+  | {
+      address: string
+      signature: undefined
+      signatureBlockNum: undefined
+    }
+  | {
+      address: string
+      signature: string
+      signatureBlockNum: number
+    }
+
+function getSession(info: GetSessionInfo): Session {
+  if (info.address && info.signature) {
+    const signature = info.signature
+    const signatureBlockNum = info.signatureBlockNum
+    return {status: "authenticated", signature, signatureBlockNum}
   }
-  if (address && !signature) {
+  if (info.address && !info.signature) {
     return {status: "known"}
   }
   return {status: "unknown"}
@@ -18,7 +35,11 @@ function getSession(address: string, signature: string | undefined): Session {
 
 export function useSession(): Session {
   const {sessionData, user} = useContext(AppContext)
-  return getSession(user.address, sessionData?.signature)
+  return getSession(
+    sessionData
+      ? {address: user.address, signature: sessionData.signature, signatureBlockNum: sessionData.signatureBlockNum}
+      : {address: user.address, signature: undefined, signatureBlockNum: undefined},
+  )
 }
 
 export function useSignIn(): [status: Session, signIn: () => Promise<Session>] {
@@ -38,7 +59,7 @@ export function useSignIn(): [status: Session, signIn: () => Promise<Session>] {
 
       const signature = await signer.signMessage(`Sign in to Goldfinch: ${signatureBlockNum}`)
       setSessionData({signature, signatureBlockNum, signatureBlockNumTimestamp})
-      return getSession(user.address, signature)
+      return getSession({address: user.address, signature, signatureBlockNum})
     },
     [user, setSessionData],
   )

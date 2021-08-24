@@ -259,10 +259,10 @@ function VerifyIdentity() {
     localhost: "https://us-central1-goldfinch-frontends-dev.cloudfunctions.net",
   }
 
-  function getKYCStatusRequestInit(signature): RequestInit {
+  function getKYCStatusRequestInit(signature: string, blockNum: number): RequestInit {
     signature = signature === "pending" ? "" : signature
     return {
-      headers: {"x-goldfinch-signature": signature},
+      headers: {"x-goldfinch-signature": signature, "x-goldfinch-signature-block-num": blockNum.toString()},
     }
   }
 
@@ -276,7 +276,10 @@ function VerifyIdentity() {
       return
     }
 
-    const response = await fetch(getKYCStatusURL(user.address), getKYCStatusRequestInit(session.signature))
+    const response = await fetch(
+      getKYCStatusURL(user.address),
+      getKYCStatusRequestInit(session.signature, session.signatureBlockNum),
+    )
     const responseJson = await response.json()
     if (response.ok) {
       setKycStatus(responseJson.status)
