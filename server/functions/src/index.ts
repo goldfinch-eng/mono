@@ -9,6 +9,7 @@ import * as Sentry from "@sentry/serverless"
 import {CaptureConsole} from "@sentry/integrations"
 import {HttpFunction, Request, Response} from "@sentry/serverless/dist/gcpfunction/general"
 import {HttpFunctionWrapperOptions} from "@sentry/serverless/dist/gcpfunction"
+import { BaseProvider } from "@ethersproject/providers"
 
 const _config = getConfig(functions)
 Sentry.GCPFunction.init({
@@ -36,6 +37,13 @@ const setCORSHeaders = (req: any, res: any) => {
     res.set("Access-Control-Allow-Origin", req.headers.origin)
     res.set("Access-Control-Allow-Headers", "x-goldfinch-signature, x-goldfinch-signature-block-num")
   }
+}
+
+const _getDefaultProvider = ethers.getDefaultProvider
+let getDefaultProvider: () => BaseProvider = _getDefaultProvider
+
+const mockGetDefaultProvider = (mock: (() => BaseProvider) | undefined): void => {
+  getDefaultProvider = mock || _getDefaultProvider
 }
 
 /**
@@ -102,10 +110,11 @@ const kycStatus = functions.https.onRequest(
     console.log(`Received address: ${address}, Verified address: ${verifiedAddress}`)
 
     if (address.toLowerCase() !== verifiedAddress.toLowerCase()) {
-      return res.status(403).send({error: "Invalid address or signature"})
+      return res.status(401).send({error: "Invalid address or signature."})
     }
 
-    const provider = ethers.getDefaultProvider()
+    // TODO[PR] Is it appropriate to always use the default provider?
+    const provider = getDefaultProvider()
     const currentBlock = await provider.getBlock("latest")
 
     // Don't allow signatures signed for the future.
@@ -261,4 +270,4 @@ const personaCallback = functions.https.onRequest(
   }),
 )
 
-export {kycStatus, personaCallback}
+export {kycStatus, personaCallback, mockGetDefaultProvider}
