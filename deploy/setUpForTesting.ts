@@ -231,6 +231,7 @@ async function writePoolMetadata(pool: TranchedPool, borrower: string) {
   const description =
     "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc eget mi fringilla, maximus quam sodales, condimentum arcu. Vivamus arcu lorem, ultrices at ligula ut, tempor consectetur nibh. Vivamus commodo felis eu urna facilisis, feugiat gravida lectus egestas. Suspendisse consectetur urna at ornare lacinia. Etiam erat nunc, interdum sed gravida at, condimentum in metus. Mauris at sagittis libero."
   const detailsUrl = "https://example.com"
+  const status = [true, false, undefined]
 
   let metadataPath = "client/config/pool-metadata/localhost.json"
   let metadata: any
@@ -246,6 +247,7 @@ async function writePoolMetadata(pool: TranchedPool, borrower: string) {
     icon: _.sample(icons),
     description: description,
     detailsUrl: detailsUrl,
+    disabled: _.sample(status),
   }
 
   await fs.promises.writeFile(metadataPath, JSON.stringify(metadata, null, 2))

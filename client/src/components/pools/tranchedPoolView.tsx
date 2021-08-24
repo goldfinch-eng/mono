@@ -607,7 +607,9 @@ function TranchedPoolView() {
       <ConnectionNotice requireUnlock={false} requireVerify={true} requireSignIn={true} />
       {unlockForm}
       <InvestorNotice />
-      <ActionsContainer tranchedPool={tranchedPool} onComplete={async () => refreshTranchedPool()} />
+      {!tranchedPool?.metadata?.disabled ? (
+        <ActionsContainer tranchedPool={tranchedPool} onComplete={async () => refreshTranchedPool()} />
+      ) : null}
       <CreditStatus tranchedPool={tranchedPool} />
       {tranchedPool?.isV1StyleDeal ? (
         <V1DealSupplyStatus tranchedPool={tranchedPool} />
