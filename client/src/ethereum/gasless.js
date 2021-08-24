@@ -48,8 +48,11 @@ async function submitGaslessTransaction(contractAddress, unsentAction) {
 
   const network = await provider.getNetwork()
   let ForwarderAddress = FORWARDER_ADDRESSES[network.chainId]
-  // If we're on a purely local deployment, use the TestForwarder
-  if (network.chainId === 31337 && !process.env.REACT_APP_HARDHAT_FORK) {
+  // If we're on a purely local deployment, or murmuration, use the TestForwarder.
+  if (
+    (network.chainId === 31337 && !process.env.REACT_APP_HARDHAT_FORK) ||
+    (network.chainId === 31337 && process.env.MURMURATION === "yes")
+  ) {
     const config = await getDeployments(chainIdToNetworkID[network.chainId])
     const deployedForwarder = config.contracts.TestForwarder
     ForwarderAddress = deployedForwarder.address

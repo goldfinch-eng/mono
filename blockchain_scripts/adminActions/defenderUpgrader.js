@@ -102,7 +102,7 @@ class DefenderUpgrader {
     this.logger("Defender URL: ", this.defenderUrl(contract.address))
   }
 
-  async send({method, contract, args, contractName, title, description, via, viaType}) {
+  async send({method, contract, args, contractName, title, description, via, viaType, metadata = {}}) {
     via = via || this.safeAddress
     viaType = viaType || "Gnosis Safe"
     if (method === "pause") {
@@ -123,7 +123,7 @@ class DefenderUpgrader {
       })[0]
       title = title || `Calling ${method} with args of ${args}`
       description = description || "No description provided"
-      this.client.createProposal({
+      return this.client.createProposal({
         contract: {address: contract.address, network: this.network}, // Target contract
         title: title,
         description: description,
@@ -133,6 +133,7 @@ class DefenderUpgrader {
         functionInputs: args,
         via: via,
         viaType: viaType, // Either Gnosis Safe or Gnosis Multisig
+        metadata: metadata,
       })
     }
   }

@@ -1,13 +1,14 @@
-/* global web3 */
+/* global web3 tenderly */
 const hre = require("hardhat")
 import {advanceTime, expect, expectAction, toTruffle} from "../testHelpers"
-import {isMainnetForking, getSignerForAddress, OWNER_ROLE, MINTER_ROLE, getContract} from "../../blockchain_scripts/deployHelpers"
+import {isMainnetForking, getSignerForAddress, OWNER_ROLE, MINTER_ROLE, getContract, PAUSER_ROLE, GO_LISTER_ROLE} from "../../blockchain_scripts/deployHelpers"
 const {deployments, artifacts, ethers} = hre
 const {deployMigrator, givePermsToMigrator, deployAndMigrateToV2} = require("../../blockchain_scripts/v2/migrate")
 const TEST_TIMEOUT = 180000 // 3 mins
-import {getMainnetTruffleContracts, impersonateAccount, MAINNET_MULTISIG, MAINNET_UNDERWRITER} from "../../blockchain_scripts/mainnetForkingHelpers"
+import {getAllExistingContracts, impersonateAccount, MAINNET_MULTISIG, MAINNET_UNDERWRITER} from "../../blockchain_scripts/mainnetForkingHelpers"
 import BN from "bn.js"
 import _ from "lodash"
+import { prepareMigration } from "../../blockchain_scripts/v2/migrate"
 
 describe("Migrating to V2", () => {
   // Hack way to only run this suite when we actually want to.
@@ -17,12 +18,12 @@ describe("Migrating to V2", () => {
 
   const testSetup = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
     // Note: base_deploy always returns when mainnet forking, however
-    // we need it here, because the "fixture" part is what let's hardhat
+    // we need it here, because the "fixture" part is what lets hardhat
     // snapshot and give us a clean blockchain before each test.
-    // Otherewise, we have state leaking across tests.
+    // Otherwise, we have state leaking across tests.
     await deployments.fixture("base_deploy")
     const {gf_deployer} = await getNamedAccounts()
-    mainnetContracts = await getMainnetTruffleContracts()
+    mainnetContracts = await getAllExistingContracts()
     const config = mainnetContracts.GoldfinchConfig
     const pool = mainnetContracts.Pool
     const creditDesk = mainnetContracts.CreditDesk
@@ -35,20 +36,20 @@ describe("Migrating to V2", () => {
     return {migrator, pool, creditDesk, goldfinchConfig, goldfinchFactory, fidu}
   })
 
-  let owner, person2, migrator, accounts, mainnetContracts, mainnetMultisigSigner, bwr
+  let owner, migrator, accounts, mainnetContracts, mainnetMultisigSigner, bwr
   let pool, creditDesk, goldfinchFactory, goldfinchConfig, fidu
 
   beforeEach(async function () {
     this.timeout(TEST_TIMEOUT)
     // Pull in our unlocked accounts
     accounts = await web3.eth.getAccounts()
-    ;[owner, person2] = accounts
+    ;[owner] = accounts
 
     ;({migrator, pool, creditDesk, goldfinchConfig, goldfinchFactory, fidu} = await testSetup())
 
     ;[owner, bwr] = await web3.eth.getAccounts()
 
-    mainnetContracts = await getMainnetTruffleContracts()
+    mainnetContracts = await getAllExistingContracts()
     mainnetMultisigSigner = await ethers.provider.getSigner(MAINNET_MULTISIG)
 
     // Ensure the multisig has funds for upgrades and other transactions
@@ -62,7 +63,7 @@ describe("Migrating to V2", () => {
   })
 
   async function getProxyVersion(address) {
-    return await artifacts.require("IBase").at(address)
+    return await artifacts.require("IMigrate").at(address)
   }
 
   async function assertNewClStillCalculatesInterestCorrectly(tranchedPool, newCl, expectedAmount) {
@@ -91,35 +92,52 @@ describe("Migrating to V2", () => {
   describe("givePermsToMigrator", async function () {
     it("should give all the perms to the migrator address", async () => {
       // Ensure we don't currently have the right perms
-      expect(await pool.hasRole(OWNER_ROLE, migrator.address)).to.equal(false)
-      expect(await creditDesk.hasRole(OWNER_ROLE, migrator.address)).to.equal(false)
-      expect(await goldfinchFactory.hasRole(OWNER_ROLE, migrator.address)).to.equal(false)
+
       expect(await fidu.hasRole(MINTER_ROLE, migrator.address)).to.equal(false)
+      expect(await fidu.hasRole(OWNER_ROLE, migrator.address)).to.equal(false)
+      expect(await fidu.hasRole(PAUSER_ROLE, migrator.address)).to.equal(false)
+
+      expect(await creditDesk.hasRole(OWNER_ROLE, migrator.address)).to.equal(false)
+      expect(await creditDesk.hasRole(PAUSER_ROLE, migrator.address)).to.equal(false)
+
+      expect(await pool.hasRole(OWNER_ROLE, migrator.address)).to.equal(false)
+      expect(await pool.hasRole(PAUSER_ROLE, migrator.address)).to.equal(false)
+
+      expect(await goldfinchFactory.hasRole(OWNER_ROLE, migrator.address)).to.equal(false)
+      expect(await goldfinchFactory.hasRole(PAUSER_ROLE, migrator.address)).to.equal(false)
+
       expect(await goldfinchConfig.hasRole(OWNER_ROLE, migrator.address)).to.equal(false)
+      expect(await goldfinchConfig.hasRole(PAUSER_ROLE, migrator.address)).to.equal(false)
+      expect(await goldfinchConfig.hasRole(GO_LISTER_ROLE, migrator.address)).to.equal(false)
 
       await givePermsToMigrator({pool, creditDesk, goldfinchFactory, fidu, migrator, oldConfig: goldfinchConfig})
 
-      // Adding new owner worked
-      expect(await pool.hasRole(OWNER_ROLE, migrator.address)).to.equal(true)
-      expect(await creditDesk.hasRole(OWNER_ROLE, migrator.address)).to.equal(true)
-      expect(await goldfinchFactory.hasRole(OWNER_ROLE, migrator.address)).to.equal(true)
-      expect(await fidu.hasRole(MINTER_ROLE, migrator.address)).to.equal(true)
-      expect(await goldfinchConfig.hasRole(OWNER_ROLE, migrator.address)).to.equal(true)
+      // Check that adding the new owner worked
 
-      // Proxy ownership change worked
-      expect(await (await getProxyVersion(pool.address)).owner()).to.equal(migrator.address)
-      expect(await (await getProxyVersion(creditDesk.address)).owner()).to.equal(migrator.address)
-      expect(await (await getProxyVersion(goldfinchFactory.address)).owner()).to.equal(migrator.address)
-      expect(await (await getProxyVersion(fidu.address)).owner()).to.equal(migrator.address)
+      expect(await fidu.hasRole(MINTER_ROLE, migrator.address)).to.equal(true)
+      expect(await fidu.hasRole(OWNER_ROLE, migrator.address)).to.equal(true)
+      expect(await fidu.hasRole(PAUSER_ROLE, migrator.address)).to.equal(true)
+
+      expect(await creditDesk.hasRole(OWNER_ROLE, migrator.address)).to.equal(true)
+      expect(await creditDesk.hasRole(PAUSER_ROLE, migrator.address)).to.equal(true)
+
+      expect(await pool.hasRole(OWNER_ROLE, migrator.address)).to.equal(true)
+      expect(await pool.hasRole(PAUSER_ROLE, migrator.address)).to.equal(true)
+
+      expect(await goldfinchFactory.hasRole(OWNER_ROLE, migrator.address)).to.equal(true)
+      expect(await goldfinchFactory.hasRole(PAUSER_ROLE, migrator.address)).to.equal(true)
+
+      expect(await goldfinchConfig.hasRole(OWNER_ROLE, migrator.address)).to.equal(true)
+      expect(await goldfinchConfig.hasRole(PAUSER_ROLE, migrator.address)).to.equal(false)
+      expect(await goldfinchConfig.hasRole(GO_LISTER_ROLE, migrator.address)).to.equal(false)
     }).timeout(TEST_TIMEOUT)
   })
   describe("step 1", async function () {
     it("should do lots of stuff", async () => {
-      await givePermsToMigrator({pool, creditDesk, goldfinchFactory, fidu, migrator, oldConfig: goldfinchConfig})
+      const migrator = await prepareMigration()
       const migrationEvents = await deployAndMigrateToV2(migrator)
 
       expect(await pool.paused()).to.eq(true)
-
 
       // QuickCheck's 300k creditline
       let {tranchedPool, newCl} = await getMigratedInfo("0x6dDC3a7233ecD5514607FB1a0E3475A7dA6E58ED", migrationEvents)
@@ -132,6 +150,69 @@ describe("Migrating to V2", () => {
       // except divided by 2, because at the time, Aspire happened to have accrued 2 periods worth of interest.
       expectedAmount = 2958904109
       await assertNewClStillCalculatesInterestCorrectly(tranchedPool2, newCl2, expectedAmount)
+
+      const newGoldfinchConfig = await getContract("GoldfinchConfig")
+      expect(newGoldfinchConfig.address).not.to.equal(goldfinchConfig.address)
+
+      // Expect all perms to be returned
+
+      expect(await fidu.hasRole(MINTER_ROLE, migrator.address)).to.equal(false)
+      expect(await fidu.hasRole(OWNER_ROLE, migrator.address)).to.equal(false)
+      expect(await fidu.hasRole(PAUSER_ROLE, migrator.address)).to.equal(false)
+
+      expect(await creditDesk.hasRole(OWNER_ROLE, migrator.address)).to.equal(false)
+      expect(await creditDesk.hasRole(PAUSER_ROLE, migrator.address)).to.equal(false)
+
+      expect(await pool.hasRole(OWNER_ROLE, migrator.address)).to.equal(false)
+      expect(await pool.hasRole(PAUSER_ROLE, migrator.address)).to.equal(false)
+
+      expect(await goldfinchFactory.hasRole(OWNER_ROLE, migrator.address)).to.equal(false)
+      expect(await goldfinchFactory.hasRole(PAUSER_ROLE, migrator.address)).to.equal(false)
+
+      expect(await goldfinchConfig.hasRole(OWNER_ROLE, migrator.address)).to.equal(false)
+      expect(await goldfinchConfig.hasRole(PAUSER_ROLE, migrator.address)).to.equal(false)
+      expect(await goldfinchConfig.hasRole(GO_LISTER_ROLE, migrator.address)).to.equal(false)
+
+      expect(await newGoldfinchConfig.hasRole(OWNER_ROLE, migrator.address)).to.equal(false)
+      expect(await newGoldfinchConfig.hasRole(PAUSER_ROLE, migrator.address)).to.equal(false)
+      expect(await newGoldfinchConfig.hasRole(GO_LISTER_ROLE, migrator.address)).to.equal(false)
+
+      expect(await fidu.hasRole(MINTER_ROLE, MAINNET_MULTISIG)).to.equal(true)
+      expect(await fidu.hasRole(OWNER_ROLE, MAINNET_MULTISIG)).to.equal(true)
+      expect(await fidu.hasRole(PAUSER_ROLE, MAINNET_MULTISIG)).to.equal(true)
+
+      expect(await creditDesk.hasRole(OWNER_ROLE, MAINNET_MULTISIG)).to.equal(true)
+      expect(await creditDesk.hasRole(PAUSER_ROLE, MAINNET_MULTISIG)).to.equal(true)
+
+      expect(await pool.hasRole(OWNER_ROLE, MAINNET_MULTISIG)).to.equal(true)
+      expect(await pool.hasRole(PAUSER_ROLE, MAINNET_MULTISIG)).to.equal(true)
+
+      expect(await goldfinchFactory.hasRole(OWNER_ROLE, MAINNET_MULTISIG)).to.equal(true)
+      expect(await goldfinchFactory.hasRole(PAUSER_ROLE, MAINNET_MULTISIG)).to.equal(true)
+
+      expect(await goldfinchConfig.hasRole(OWNER_ROLE, MAINNET_MULTISIG)).to.equal(true)
+      expect(await goldfinchConfig.hasRole(PAUSER_ROLE, MAINNET_MULTISIG)).to.equal(true)
+      expect(await goldfinchConfig.hasRole(GO_LISTER_ROLE, MAINNET_MULTISIG)).to.equal(false)
+
+      expect(await newGoldfinchConfig.hasRole(OWNER_ROLE, MAINNET_MULTISIG)).to.equal(true)
+      expect(await newGoldfinchConfig.hasRole(PAUSER_ROLE, MAINNET_MULTISIG)).to.equal(true)
+      expect(await newGoldfinchConfig.hasRole(GO_LISTER_ROLE, MAINNET_MULTISIG)).to.equal(true)
+
+      // Proxy ownership given back to governance
+
+      expect(await (await getProxyVersion(pool.address)).owner()).to.equal(MAINNET_MULTISIG)
+      expect(await (await getProxyVersion(creditDesk.address)).owner()).to.equal(MAINNET_MULTISIG)
+      expect(await (await getProxyVersion(goldfinchFactory.address)).owner()).to.equal(MAINNET_MULTISIG)
+      expect(await (await getProxyVersion(fidu.address)).owner()).to.equal(MAINNET_MULTISIG)
+
+      const poolTokens = await getContract("PoolTokens")
+      const seniorPool = await getContract("SeniorPool")
+
+      expect(await seniorPool.hasRole(OWNER_ROLE, MAINNET_MULTISIG)).to.equal(true)
+      expect(await poolTokens.hasRole(OWNER_ROLE, MAINNET_MULTISIG)).to.equal(true)
+      expect(await (await getProxyVersion(seniorPool.address)).owner()).to.equal(MAINNET_MULTISIG)
+      expect(await (await getProxyVersion(poolTokens.address)).owner()).to.equal(MAINNET_MULTISIG)
+
     }).timeout(TEST_TIMEOUT)
   })
 })

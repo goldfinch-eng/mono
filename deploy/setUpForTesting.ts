@@ -20,22 +20,20 @@ import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
 require("dotenv").config({path: ".env.local"})
 import {
   MAINNET_CHAIN_ID,
-  LOCAL,
-  CHAIN_NAME_BY_ID,
   getUSDCAddress,
   USDCDecimals,
   isTestEnv,
   interestAprAsBN,
   isMainnetForking,
-  getSignerForAddress,
   updateConfig,
-  getERC20Address,
   assertIsChainId,
   TRANCHES,
   getContract,
+  LOCAL_CHAIN_ID,
+  getProtocolOwner,
+  getSignerForAddress,
 } from "../blockchain_scripts/deployHelpers"
 import {
-  MAINNET_MULTISIG,
   impersonateAccount,
   fundWithWhales,
 } from "../blockchain_scripts/mainnetForkingHelpers"
@@ -53,7 +51,8 @@ let logger: Logger
 async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeEnvironment) {
   const {getOrNull, log} = deployments
   logger = log
-  let {protocol_owner, gf_deployer} = await getNamedAccounts()
+  let {gf_deployer} = await getNamedAccounts()
+  const protocol_owner = await getProtocolOwner()
   assertIsString(protocol_owner)
   assertIsString(gf_deployer)
 
@@ -87,40 +86,26 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
     },
   ]
 
+  if (chainId === LOCAL_CHAIN_ID && !isMainnetForking()) {
+    await fundFromLocalWhale(gf_deployer, erc20s)
+  }
+
   if (isMainnetForking()) {
     logger("Funding protocol_owner with whales")
-    underwriter = MAINNET_MULTISIG
-    await impersonateAccount(hre, MAINNET_MULTISIG)
-    let ownerAccount = await getSignerForAddress(protocol_owner)
-    await ownerAccount!.sendTransaction({to: MAINNET_MULTISIG, value: ethers.utils.parseEther("5.0")})
-    await ownerAccount!.sendTransaction({to: gf_deployer, value: ethers.utils.parseEther("5.0")})
-    config = config.connect(MAINNET_MULTISIG)
+    underwriter = protocol_owner
+    await impersonateAccount(hre, protocol_owner)
+    config = config.connect(protocol_owner)
 
-    const usdtAddress = getERC20Address("USDT", chainId)
-    assertIsString(usdtAddress)
-    const busdAddress = getERC20Address("BUSD", chainId)
-    assertIsString(busdAddress)
-    erc20s = erc20s.concat([
-      {
-        ticker: "USDT",
-        contract: await ethers.getContractAt("IERC20withDec", usdtAddress),
-      },
-      {
-        ticker: "BUSD",
-        contract: await ethers.getContractAt("IERC20withDec", busdAddress),
-      },
-    ])
-
-    await fundWithWhales(erc20s, [protocol_owner, MAINNET_MULTISIG, ...borrowers])
+    await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [protocol_owner, gf_deployer, ...borrowers], new BN("75000"))
 
     await prepareMigration()
     await deployAndMigrateToV2()
-    // Use old address because GoldfinchFactory will return new abi, but at the implementation address
+    // Use old address because GoldfinchFactory will return new abi, but at the implementation address (not proxy)
     // this happens because we renamed from CreditLineFactory -> GoldfinchFactory. Can be removed after
     // real mainnet migration is complete, and our deployments json is updated.
     const oldAddress = goldfinchFactory.address
-    goldfinchFactory = await getContract("GoldfinchFactory", {from: MAINNET_MULTISIG, as: "ethers", at: oldAddress})
-    config = await getContract("GoldfinchConfig", {from: MAINNET_MULTISIG, as: "ethers"})
+    goldfinchFactory = await getContract("GoldfinchFactory", {from: protocol_owner, as: "ethers", at: oldAddress})
+    config = await getContract("GoldfinchConfig", {from: protocol_owner, as: "ethers"})
   }
   await setupTestForwarder(deployments, config, getOrNull, protocol_owner)
 
@@ -156,8 +141,9 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   for (const [i, borrower] of borrowers.entries()) {
     logger(`Setting up for borrower ${i}: ${borrower}`)
 
-    if (CHAIN_NAME_BY_ID[chainId] === LOCAL) {
-      await giveMoneyToTestUser(borrower, erc20s)
+    // If we are mainnet forking, we fund them above.
+    if (chainId === LOCAL_CHAIN_ID && !isMainnetForking()) {
+      await fundFromLocalWhale(borrower, erc20s)
     }
 
     await addUsersToGoList(config, [borrower])
@@ -167,17 +153,17 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
     let signer = ethers.provider.getSigner(borrower)
     // Due to a bug with hardhat (I think nonce is not being incremented for impersonated transactions), we need to make sure
     // the amounts are unique, otherwise causes transaction hash collisions
-    let depositAmount = new BN(100).mul(USDCDecimals).add(new BN(i))
+    let depositAmount = new BN(10000).mul(USDCDecimals).add(new BN(i))
 
-    await (erc20 as TestERC20).connect(signer).approve(seniorPool.address, depositAmount.toString())
-    await seniorPool.connect(signer).deposit(depositAmount.toString())
+    await (erc20 as TestERC20).connect(signer).approve(seniorPool.address, depositAmount.mul(new BN(5)).toString())
+    await seniorPool.connect(signer).deposit(depositAmount.mul(new BN(5)).toString())
 
     let txn = await (erc20.connect(signer)).approve(commonPool.address, String(depositAmount))
     await txn.wait()
     txn = await (commonPool.connect(signer)).deposit(TRANCHES.Junior, String(depositAmount))
     logger(`Deposited ${depositAmount} into the common pool`)
 
-    const result = await (await goldfinchFactory.createBorrower(borrower)).wait()
+    const result = await (await  goldfinchFactory.createBorrower(borrower)).wait()
     const lastEventArgs = getLastEventArgs(result)
     let bwrConAddr = lastEventArgs[0]
     logger(`Created borrower contract: ${bwrConAddr} for ${borrower}`)
@@ -192,12 +178,16 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
     })
     txn = await filledPool.lockJuniorCapital()
     await txn.wait()
-    await seniorPool.invest(filledPool.address)
+    let ownerSigner = ethers.provider.getSigner(protocol_owner)
+    await seniorPool.connect(ownerSigner).invest(filledPool.address)
     logger(`Pool ready for ${borrower}`)
     await writePoolMetadata(filledPool, borrower)
   }
 
   // Have the senior fund invest
+  const protocolOwnerSigner = await ethers.provider.getSigner(protocol_owner)
+  assertNonNullable(protocolOwnerSigner)
+  seniorPool = seniorPool.connect(protocolOwnerSigner)
   let txn = await commonPool.lockJuniorCapital()
   await txn.wait()
   await seniorPool.invest(commonPool.address)
@@ -294,12 +284,13 @@ async function depositToTheSeniorPool(seniorPool: SeniorPool, erc20: Contract) {
   }
 }
 
-async function giveMoneyToTestUser(testUser: string, erc20s: any) {
-  logger("Sending money to the test user", testUser)
+async function fundFromLocalWhale(userToFund: string, erc20s: any) {
+  logger("Sending money to:", userToFund)
+
   const [protocol_owner] = await ethers.getSigners()
   if (protocol_owner) {
     await protocol_owner.sendTransaction({
-      to: testUser,
+      to: userToFund,
       value: ethers.utils.parseEther("10.0"),
     })
   } else {
@@ -310,7 +301,7 @@ async function giveMoneyToTestUser(testUser: string, erc20s: any) {
   for (let erc20 of erc20s) {
     const {contract} = erc20
     let decimals = ten.pow(new BN(await contract.decimals()))
-    await contract.transfer(testUser, String(new BN(10000).mul(decimals)))
+    await contract.transfer(userToFund, String(new BN(1000000).mul(decimals)))
   }
 }
 

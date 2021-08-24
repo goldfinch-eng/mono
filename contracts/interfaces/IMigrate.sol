@@ -3,7 +3,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-abstract contract IBase {
+abstract contract IMigrate {
   function pause() public virtual;
 
   function unpause() public virtual;

@@ -1,7 +1,7 @@
 import {DefenderUpgrader} from "./defenderUpgrader.js"
 import hre from "hardhat"
 const {artifacts}  = hre
-import {LOCAL_CHAIN_ID, MAINNET_CHAIN_ID, RINKEBY_CHAIN_ID} from "../deployHelpers"
+import {getContract, MAINNET_CHAIN_ID, RINKEBY_CHAIN_ID} from "../deployHelpers"
 import MethodMissing from 'method-missing'
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import _ from "lodash"
@@ -14,33 +14,49 @@ type DefenderOpts = {
   description?: string
   via?: string
   viaType?: VIA_TYPE
+  metadata?: object
 }
 
+/*
+THIS IS UNFINISHED. AS IS IT DOES NOT WORK.
+It's fairly close though, and it could be pretty cool,
+So I'm leaving it in. The idea is that you can wrap a contract,
+and call methods on it, and it will transparently know whether to call
+the "regular" method, or to create a Defender proposal. For example...
+
+```
+const wrappedPool = await new DefenderWrapper().initialize("SeniorPool")
+
+// If you were on mainnet forking, this would call through.
+// But if you were actually on mainnet, it would create a defender proposal
+await wrappedPool.pause()
+```
+
+In theory this works by leveraging the MethodMissing extension, which catches
+all methods, and then allows us to smartly route them to either Defender or the contract.
+*/
 class DefenderWrapper extends MethodMissing {
   hre!: HardhatRuntimeEnvironment
   chainId!: string
   contractName!: string
   contract: any
-  defender: DefenderUpgrader
+  defender!: DefenderUpgrader
 
-  constructor() {
-    super()
-    const chainId = LOCAL_CHAIN_ID
-    this.defender = new DefenderUpgrader({hre, logger: console.log, chainId: LOCAL_CHAIN_ID})
-  }
-
-  async initialize({contractName, logger}) {
-    logger = logger || console.log
-    const chainId = await this.hre.getChainId()
+  async initialize(contractName, opts) {
+    const logger = console.log
+    const chainId = await hre.getChainId()
     this.hre = hre
     this.chainId = chainId
     this.contractName = contractName
-    const deployed = await hre.deployments.get(contractName)
-    this.contract = await artifacts.require(contractName).at(deployed.address)
+    this.contract = await getContract(contractName, opts)
     this.defender = new DefenderUpgrader({hre, logger, chainId})
+    return this
   }
 
   __call(method, args) {
+    if (method === "then") {
+      return this[method].apply(this, args)
+    }
     const [opts, methodArgs] = this.getOptsAndArgs(args)
     const from = opts.from || this.contract.from
     if (!this.contract[method]) {
@@ -52,10 +68,11 @@ class DefenderWrapper extends MethodMissing {
           args: methodArgs,
           contract: this.contract,
           contractName: this.contractName,
-          title: `Call ${method} on ${this.contract}`,
+          title: `Call ${method} on ${this.contract.address}`,
           description: "",
           via: from,
-          viaType: "Gnosis Safe"
+          viaType: "Gnosis Safe",
+          metadata: opts.metadata,
         })
       } else {
         return this.contract[method].apply(this.contract, methodArgs)

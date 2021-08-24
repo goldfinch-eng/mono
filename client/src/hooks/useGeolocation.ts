@@ -41,7 +41,7 @@ class FakeClient implements GeolocationClient {
   }
 }
 
-const defaultClient = process.env.NODE_ENV === "development" ? new FakeClient() : new IpInfoClient()
+const defaultClient = process.env.NODE_ENV !== "production" ? new FakeClient() : new IpInfoClient()
 
 function useGeolocation(client: GeolocationClient = defaultClient): GeolocationData | undefined {
   let {geolocationData, setGeolocationData} = useContext(AppContext)
