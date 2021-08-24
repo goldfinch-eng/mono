@@ -1,4 +1,6 @@
 import _ from "lodash"
+import {AsyncReturnType} from "./types/util"
+import web3 from "./web3"
 
 function croppedAddress(address) {
   if (!address) {
@@ -102,6 +104,23 @@ export class AssertionError extends Error {}
 export function assertNonNullable<T>(val: T | null | undefined): asserts val is NonNullable<T> {
   if (val === null || val === undefined) {
     throw new AssertionError(`Value ${val} is not non-nullable.`)
+  }
+}
+
+export async function getCurrentBlock() {
+  return await web3.eth.getBlock("latest")
+}
+
+type BlockInfo = {
+  number: number
+  timestamp: number
+}
+
+export function getBlockInfo(block: AsyncReturnType<typeof getCurrentBlock>): BlockInfo {
+  return {
+    number: block.number,
+    // TODO[PR] Elsewhere we assert that `.timestamp` is a number. Are we sure it can't be a string?
+    timestamp: block.timestamp as Exclude<typeof block.timestamp, string>,
   }
 }
 

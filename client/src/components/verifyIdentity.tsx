@@ -8,6 +8,7 @@ import ConnectionNotice from "./connectionNotice"
 import LoadingButton from "./loadingButton"
 import {useForm, FormProvider} from "react-hook-form"
 import {Session, useSignIn} from "../hooks/useSignIn"
+import {assertNonNullable} from "../utils"
 
 function VerificationNotice({icon, notice}) {
   return (
@@ -246,7 +247,7 @@ function SignInForm({action, disabled}) {
 }
 
 function VerifyIdentity() {
-  const {user, network} = useContext(AppContext)
+  const {user, network, setSessionData} = useContext(AppContext)
   const [kycStatus, setKycStatus] = useState<string>("")
   // Determines the form to show. Can be empty, "US" or "entity"
   const [countryCode, setCountryCode] = useState<string>("")
@@ -277,10 +278,17 @@ function VerifyIdentity() {
 
     const response = await fetch(getKYCStatusURL(user.address), getKYCStatusRequestInit(session.signature))
     const responseJson = await response.json()
-    setKycStatus(responseJson.status)
-    if (responseJson.countryCode === "US") {
-      setEntityType("US")
-      setCountryCode("US")
+    if (response.ok) {
+      setKycStatus(responseJson.status)
+      if (responseJson.countryCode === "US") {
+        setEntityType("US")
+        setCountryCode("US")
+      }
+    } else if (response.status >= 400 && response.status < 500) {
+      assertNonNullable(setSessionData)
+      setSessionData(undefined)
+    } else {
+      console.error(`KYC status request failed: ${response.status} ${responseJson}`)
     }
   }
 
