@@ -9,7 +9,7 @@ import * as Sentry from "@sentry/serverless"
 import {CaptureConsole} from "@sentry/integrations"
 import {HttpFunction, Request, Response} from "@sentry/serverless/dist/gcpfunction/general"
 import {HttpFunctionWrapperOptions} from "@sentry/serverless/dist/gcpfunction"
-import { BaseProvider } from "@ethersproject/providers"
+import {BaseProvider} from "@ethersproject/providers"
 
 const _config = getConfig(functions)
 Sentry.GCPFunction.init({
