@@ -153,7 +153,7 @@ describe("functions", () => {
       })
     })
 
-    describe("with valid address and signature and timestamp", async () => {
+    describe("with valid address and signature and signature block number", async () => {
       describe("when the user doesn't exist", async () => {
         it("returns status unknown", async () => {
           const req = generateKycRequest(address, validSignature, currentBlockNum)
