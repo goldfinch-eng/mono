@@ -50,7 +50,7 @@ function displayDollars(val, decimals = 2) {
     prefix = "-"
   }
   if (valFloat < 0.01 && valFloat > 0) {
-    return `${prefix}$<0.01`
+    return "$<0.01"
   }
   return `${prefix}$${displayNumber(val, decimals)}`
 }
