@@ -370,7 +370,7 @@ class PoolBacker {
     this.balance = this.principalAmount.minus(this.principalRedeemed).plus(this.interestRedeemable)
     this.balanceInDollars = new BigNumber(roundDownPenny(usdcFromAtomic(this.balance)))
     this.availableToWithdraw = this.interestRedeemable.plus(this.principalRedeemable)
-    this.availableToWithdrawInDollars = new BigNumber(roundDownPenny(usdcFromAtomic(this.availableToWithdraw)))
+    this.availableToWithdrawInDollars = new BigNumber(usdcFromAtomic(this.availableToWithdraw))
     this.unrealizedGainsInDollars = new BigNumber(roundDownPenny(usdcFromAtomic(this.interestRedeemable)))
   }
 }
