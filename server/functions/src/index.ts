@@ -49,6 +49,11 @@ const defaultBlockchainIdentifierByOrigin: {[origin: string]: string | number} =
   "https://murmuration.goldfinch.finance": "https://murmuration.goldfinch.finance/_chain",
   "https://app.goldfinch.finance": 1,
 }
+const overrideBlockchainIdentifier = (): string | number | undefined => {
+  const override = process.env.CHAIN_IDENTIFIER
+  const overrideNumber = override ? parseInt(override, 10) : undefined
+  return overrideNumber && !isNaN(overrideNumber) ? overrideNumber : override
+}
 
 /**
  * Provides the blockchain we want to use in servicing a request. In descending priority, this is:
@@ -59,7 +64,7 @@ const defaultBlockchainIdentifierByOrigin: {[origin: string]: string | number} =
  * @return {BaseProvider} The blockchain provider.
  */
 const _getBlockchain = (origin: string): BaseProvider => {
-  let blockchain = process.env.CHAIN_IDENTIFIER || defaultBlockchainIdentifierByOrigin[origin]
+  let blockchain = overrideBlockchainIdentifier() || defaultBlockchainIdentifierByOrigin[origin]
   if (!blockchain) {
     console.warn(`Failed to identify appropriate blockchain for request origin: ${origin}. Defaulting to mainnet.`)
     blockchain = 1
