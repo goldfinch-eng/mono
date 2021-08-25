@@ -275,7 +275,8 @@ function ActionsContainer({tranchedPool, onComplete}: {tranchedPool?: TranchedPo
   if (
     session.status === "authenticated" &&
     tranchedPool?.state === PoolState.Open &&
-    tranchedPool?.remainingCapacity().gt(new BigNumber(0))
+    tranchedPool?.remainingCapacity().gt(new BigNumber(0)) &&
+    !tranchedPool?.metadata?.disabled
   ) {
     depositAction = (e) => {
       setAction("deposit")
@@ -285,7 +286,12 @@ function ActionsContainer({tranchedPool, onComplete}: {tranchedPool?: TranchedPo
 
   let withdrawAction
   let withdrawClass = "disabled"
-  if (session.status === "authenticated" && backer && !backer.availableToWithdrawInDollars.isZero()) {
+  if (
+    session.status === "authenticated" &&
+    backer &&
+    !backer.availableToWithdrawInDollars.isZero() &&
+    !tranchedPool?.metadata?.disabled
+  ) {
     withdrawAction = (e) => {
       setAction("withdraw")
     }
@@ -607,9 +613,7 @@ function TranchedPoolView() {
       <ConnectionNotice requireUnlock={false} requireVerify={true} requireSignIn={true} />
       {unlockForm}
       <InvestorNotice />
-      {!tranchedPool?.metadata?.disabled ? (
-        <ActionsContainer tranchedPool={tranchedPool} onComplete={async () => refreshTranchedPool()} />
-      ) : null}
+      <ActionsContainer tranchedPool={tranchedPool} onComplete={async () => refreshTranchedPool()} />
       <CreditStatus tranchedPool={tranchedPool} />
       {tranchedPool?.isV1StyleDeal ? (
         <V1DealSupplyStatus tranchedPool={tranchedPool} />
