@@ -41,23 +41,25 @@ const setCORSHeaders = (req: any, res: any) => {
 }
 
 /**
- * Maps a request origin to the url or chain id of the blockchain that is appropriate to use in
- * servicing the request.
+ * Maps a request origin to the url or chain id of the blockchain that we consider the appropriate
+ * one to use by default in servicing the request.
  */
-const blockchainIdentifierByOrigin: {[origin: string]: string | number} = {
+const defaultBlockchainIdentifierByOrigin: {[origin: string]: string | number} = {
   "http://localhost:3000": "http://localhost:8545",
   "https://murmuration.goldfinch.finance": "https://murmuration.goldfinch.finance/_chain",
   "https://app.goldfinch.finance": 1,
 }
 
 /**
- * Implements default `getBlockchain()` behavior: uses request origin to identify the
- * appropriate blockchain, defaulting to mainnet if one could not be identified.
+ * Provides the blockchain we want to use in servicing a request. In descending priority, this is:
+ * the chain specified by the CHAIN_IDENTIFIER env variable (this supports e.g. a client running on
+ * localhost using mainnet, rinkeby, etc.); the chain we consider the default appropriate one given the
+ * request origin; mainnet, if the chain was not otherwise identified.
  * @param {string} origin The request origin.
  * @return {BaseProvider} The blockchain provider.
  */
-const _defaultGetBlockchain = (origin: string): BaseProvider => {
-  let blockchain = blockchainIdentifierByOrigin[origin]
+const _getBlockchain = (origin: string): BaseProvider => {
+  let blockchain = process.env.CHAIN_IDENTIFIER || defaultBlockchainIdentifierByOrigin[origin]
   if (!blockchain) {
     console.warn(`Failed to identify appropriate blockchain for request origin: ${origin}. Defaulting to mainnet.`)
     blockchain = 1
@@ -69,7 +71,7 @@ const _defaultGetBlockchain = (origin: string): BaseProvider => {
 /**
  * This function is the API that our server functions should use if they need to get blockchain data.
  */
-let getBlockchain: (origin: string) => BaseProvider = _defaultGetBlockchain
+let getBlockchain: (origin: string) => BaseProvider = _getBlockchain
 
 /**
  * Helper that uses the dependency-injection pattern to enable mocking the blockchain provider.
@@ -78,7 +80,7 @@ let getBlockchain: (origin: string) => BaseProvider = _defaultGetBlockchain
  * @param {mocked|undefined} mock The getter to use to mock `getBlockchain()` behavior.
  */
 const mockGetBlockchain = (mock: ((origin: string) => BaseProvider) | undefined): void => {
-  getBlockchain = mock || _defaultGetBlockchain
+  getBlockchain = mock || _getBlockchain
 }
 
 /**
