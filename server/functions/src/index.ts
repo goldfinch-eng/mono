@@ -53,6 +53,8 @@ const blockchainIdentifierByOrigin: {[origin: string]: string | number} = {
 /**
  * Implements default `getBlockchain()` behavior: uses request origin to identify the
  * appropriate blockchain, defaulting to mainnet if one could not be identified.
+ * @param {string} origin The request origin.
+ * @return {BaseProvider} The blockchain provider.
  */
 const _defaultGetBlockchain = (origin: string): BaseProvider => {
   let blockchain = blockchainIdentifierByOrigin[origin]
@@ -72,6 +74,8 @@ let getBlockchain: (origin: string) => BaseProvider = _defaultGetBlockchain
 /**
  * Helper that uses the dependency-injection pattern to enable mocking the blockchain provider.
  * Useful for testing purposes.
+ * @callback mocked
+ * @param {mocked|undefined} mock The getter to use to mock `getBlockchain()` behavior.
  */
 const mockGetBlockchain = (mock: ((origin: string) => BaseProvider) | undefined): void => {
   getBlockchain = mock || _defaultGetBlockchain
