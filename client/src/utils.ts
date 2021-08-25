@@ -117,10 +117,12 @@ type BlockInfo = {
 }
 
 export function getBlockInfo(block: AsyncReturnType<typeof getCurrentBlock>): BlockInfo {
+  if (typeof block.timestamp !== "number") {
+    throw new Error(`Timestamp of block ${block.number} is not a number: ${block.timestamp}`)
+  }
   return {
     number: block.number,
-    // TODO[PR] Elsewhere we assert that `.timestamp` is a number. Are we sure it can't be a string?
-    timestamp: block.timestamp as Exclude<typeof block.timestamp, string>,
+    timestamp: block.timestamp,
   }
 }
 
