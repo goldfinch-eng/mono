@@ -2,6 +2,7 @@ import * as crypto from "crypto"
 import * as functions from "firebase-functions"
 import * as admin from "firebase-admin"
 import {ethers} from "ethers"
+import {getNetwork} from "@ethersproject/networks"
 import {getDb, getUsers, getConfig} from "./db"
 import firestore = admin.firestore
 import {assertIsString} from "../../../utils/type"
@@ -39,11 +40,41 @@ const setCORSHeaders = (req: any, res: any) => {
   }
 }
 
-const _getDefaultProvider = ethers.getDefaultProvider
-let getDefaultProvider: () => BaseProvider = _getDefaultProvider
+/**
+ * Maps a request origin to the url or chain id of the blockchain that is appropriate to use in
+ * servicing the request.
+ */
+const blockchainIdentifierByOrigin: {[origin: string]: string | number} = {
+  "http://localhost:3000": "http://localhost:8545",
+  "https://murmuration.goldfinch.finance": "https://murmuration.goldfinch.finance/_chain",
+  "https://app.goldfinch.finance": 1,
+}
 
-const mockGetDefaultProvider = (mock: (() => BaseProvider) | undefined): void => {
-  getDefaultProvider = mock || _getDefaultProvider
+/**
+ * Implements default `getBlockchain()` behavior: uses request origin to identify the
+ * appropriate blockchain, defaulting to mainnet if one could not be identified.
+ */
+const _defaultGetBlockchain = (origin: string): BaseProvider => {
+  let blockchain = blockchainIdentifierByOrigin[origin]
+  if (!blockchain) {
+    console.warn(`Failed to identify appropriate blockchain for request origin: ${origin}. Defaulting to mainnet.`)
+    blockchain = 1
+  }
+  const network = typeof blockchain === "number" ? getNetwork(blockchain) : blockchain
+  return ethers.getDefaultProvider(network)
+}
+
+/**
+ * This function is the API that our server functions should use if they need to get blockchain data.
+ */
+let getBlockchain: (origin: string) => BaseProvider = _defaultGetBlockchain
+
+/**
+ * Helper that uses the dependency-injection pattern to enable mocking the blockchain provider.
+ * Useful for testing purposes.
+ */
+const mockGetBlockchain = (mock: ((origin: string) => BaseProvider) | undefined): void => {
+  getBlockchain = mock || _defaultGetBlockchain
 }
 
 /**
@@ -113,16 +144,16 @@ const kycStatus = functions.https.onRequest(
       return res.status(401).send({error: "Invalid address or signature."})
     }
 
-    // TODO[PR] Is it appropriate to always use the default provider?
-    const provider = getDefaultProvider()
-    const currentBlock = await provider.getBlock("latest")
+    const origin = req.headers.origin || ""
+    const blockchain = getBlockchain(origin)
+    const currentBlock = await blockchain.getBlock("latest")
 
     // Don't allow signatures signed for the future.
     if (currentBlock.number < signatureBlockNum) {
       return res.status(401).send({error: "Unexpected signature block number."})
     }
 
-    const signatureBlock = await provider.getBlock(signatureBlockNum)
+    const signatureBlock = await blockchain.getBlock(signatureBlockNum)
     const signatureTime = signatureBlock.timestamp
     const now = currentBlock.timestamp
 
@@ -270,4 +301,4 @@ const personaCallback = functions.https.onRequest(
   }),
 )
 
-export {kycStatus, personaCallback, mockGetDefaultProvider}
+export {kycStatus, personaCallback, mockGetBlockchain}

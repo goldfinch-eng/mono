@@ -6,7 +6,7 @@ import crypto from "crypto"
 import sinon from "sinon"
 
 import {FirebaseConfig, getUsers, setEnvForTest} from "../src/db"
-import {kycStatus, mockGetDefaultProvider, personaCallback} from "../src"
+import {kycStatus, mockGetBlockchain, personaCallback} from "../src"
 
 chai.use(chaiSubset as any)
 const expect = chai.expect
@@ -54,7 +54,7 @@ describe("functions", () => {
         }
       },
     })
-    mockGetDefaultProvider(mock)
+    mockGetBlockchain(mock)
   })
 
   beforeEach(() => {
@@ -69,7 +69,7 @@ describe("functions", () => {
   })
 
   after(async () => {
-    mockGetDefaultProvider(undefined)
+    mockGetBlockchain(undefined)
   })
 
   afterEach(async () => {
