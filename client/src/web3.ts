@@ -17,7 +17,7 @@ if (typeof window.ethereum !== "undefined") {
     }
   })
   window.ethereum.on("accountsChanged", (accounts) => {
-    if (currentAccount && accounts[0] && currentAccount !== accounts[0]) {
+    if (accounts[0] && currentAccount !== accounts[0]) {
       window.location.reload()
       localStorage.setItem("currentAccount", accounts[0])
     }
