@@ -1,12 +1,16 @@
-import React from "react"
+import React, {useContext} from "react"
+import {AppContext} from "../App"
 import InfoSection from "./infoSection.js"
 import CreditBarViz from "./creditBarViz.js"
 import {usdcFromAtomic} from "../ethereum/erc20"
 import {decimals} from "../ethereum/utils"
 import {displayDollars, displayNumber} from "../utils"
-import {iconClock} from "./icons.js"
+import {iconClock, iconOutArrow} from "./icons.js"
 
 function CreditStatus(props) {
+  const {network} = useContext(AppContext)
+  const etherscanSubdomain = network.name === "mainnet" ? "" : `${network.name}.`
+
   function fromAtomicDecimals(val) {
     return usdcFromAtomic(val) * decimals
   }
@@ -49,9 +53,18 @@ function CreditStatus(props) {
   let remainingTotalDue = props.creditLine.remainingTotalDueAmountInDollars
   let availableToDrawdown = props.creditLine.availableCreditInDollars
 
+  const creditLineAddress = props.creditLine.address
+  const {address: tranchedPoolAddress} = props.user.borrower.tranchedPoolByCreditLine[creditLineAddress]
+  const tranchedPoolLink = `https://${etherscanSubdomain}etherscan.io/address/${tranchedPoolAddress}`
+
   return (
     <div className={`credit-status background-container ${placeholderClass}`}>
-      <h2>Credit Status</h2>
+      <div className="credit-status-header">
+        <h2>Credit Status</h2>
+        <a href={tranchedPoolLink} target="_blank" rel="noopener noreferrer" className="pool-link">
+          {iconOutArrow}
+        </a>
+      </div>
       <div className="credit-status-balance background-container-inner">
         <CreditBarViz
           leftAmount={remainingTotalDue}
