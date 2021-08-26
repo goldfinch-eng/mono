@@ -32,10 +32,7 @@ import {
   LOCAL_CHAIN_ID,
   getProtocolOwner,
 } from "../blockchain_scripts/deployHelpers"
-import {
-  impersonateAccount,
-  fundWithWhales,
-} from "../blockchain_scripts/mainnetForkingHelpers"
+import {impersonateAccount, fundWithWhales} from "../blockchain_scripts/mainnetForkingHelpers"
 import _ from "lodash"
 import {assertIsString, assertNonNullable} from "../utils/type"
 import {Result} from "ethers/lib/utils"
@@ -92,23 +89,22 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   if (isMainnetForking()) {
     logger("Funding protocol_owner with whales")
     underwriter = protocol_owner
-    await impersonateAccount(hre, protocol_owner)
     await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [protocol_owner, gf_deployer, ...borrowers], new BN("75000"))
-
-    await prepareMigration()
-    await deployAndMigrateToV2()
-    // Use old address because GoldfinchFactory will return new abi, but at the implementation address (not proxy)
-    // this happens because we renamed from CreditLineFactory -> GoldfinchFactory. Can be removed after
-    // real mainnet migration is complete, and our deployments json is updated.
-    const oldAddress = goldfinchFactory.address
-    goldfinchFactory = await getContract("GoldfinchFactory", {from: protocol_owner, as: "ethers", at: oldAddress})
-    config = await getContract("GoldfinchConfig", {from: protocol_owner, as: "ethers"})
-    await updateConfig(config, "number", CONFIG_KEYS.TotalFundsLimit, String(usdcVal(40000000)))
+    logger(`Finished funding with whales.`)
   }
+  await impersonateAccount(hre, protocol_owner)
   await setupTestForwarder(deployments, config, getOrNull, protocol_owner)
 
   let seniorPool = await getDeployedAsEthersContract<SeniorPool>(getOrNull, "SeniorPool")
+
+  let protocolOwnerSigner = ethers.provider.getSigner(protocol_owner)
+  assertNonNullable(protocolOwnerSigner)
+  config = config.connect(protocolOwnerSigner)
+
+  await updateConfig(config, "number", CONFIG_KEYS.TotalFundsLimit, String(usdcVal(40000000)))
+
   await addUsersToGoList(config, [underwriter])
+
   await updateConfig(config, "number", CONFIG_KEYS.DrawdownPeriodInSeconds, 300, {logger})
 
   const result = await (await goldfinchFactory.createBorrower(protocol_owner)).wait()
@@ -123,7 +119,7 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
     borrower: protocolBorrowerCon,
     erc20,
   })
-  await writePoolMetadata(commonPool, "GFI")
+  await writePoolMetadata({pool: commonPool, borrower: "GFI"})
 
   let empty = await createPoolForBorrower({
     getOrNull,
@@ -132,7 +128,7 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
     borrower: protocolBorrowerCon,
     erc20,
   })
-  await writePoolMetadata(empty, "Empty")
+  await writePoolMetadata({pool: empty, borrower: "Empty"})
 
   for (const [i, borrower] of borrowers.entries()) {
     logger(`Setting up for borrower ${i}: ${borrower}`)
@@ -154,12 +150,12 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
     await (erc20 as TestERC20).connect(signer).approve(seniorPool.address, depositAmount.mul(new BN(5)).toString())
     await seniorPool.connect(signer).deposit(depositAmount.mul(new BN(5)).toString())
 
-    let txn = await (erc20.connect(signer)).approve(commonPool.address, String(depositAmount))
+    let txn = await erc20.connect(signer).approve(commonPool.address, String(depositAmount))
     await txn.wait()
-    txn = await (commonPool.connect(signer)).deposit(TRANCHES.Junior, String(depositAmount))
+    txn = await commonPool.connect(signer).deposit(TRANCHES.Junior, String(depositAmount))
     logger(`Deposited ${depositAmount} into the common pool`)
 
-    const result = await (await  goldfinchFactory.createBorrower(borrower)).wait()
+    const result = await (await goldfinchFactory.createBorrower(borrower)).wait()
     const lastEventArgs = getLastEventArgs(result)
     let bwrConAddr = lastEventArgs[0]
     logger(`Created borrower contract: ${bwrConAddr} for ${borrower}`)
@@ -170,7 +166,7 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
       goldfinchFactory,
       borrower: bwrConAddr,
       erc20,
-      depositor: protocol_owner
+      depositor: protocol_owner,
     })
     txn = await filledPool.lockJuniorCapital()
     await txn.wait()
@@ -181,12 +177,10 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
     await txn.wait()
 
     logger(`Pool ready for ${borrower}`)
-    await writePoolMetadata(filledPool, borrower)
+    await writePoolMetadata({pool: filledPool, borrower})
   }
 
   // Have the senior fund invest
-  const protocolOwnerSigner = await ethers.provider.getSigner(protocol_owner)
-  assertNonNullable(protocolOwnerSigner)
   seniorPool = seniorPool.connect(protocolOwnerSigner)
   let txn = await commonPool.lockJuniorCapital()
   await txn.wait()
@@ -221,7 +215,15 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
 /**
  * Write fake TranchedPool metadata for local development
  */
-async function writePoolMetadata(pool: TranchedPool, borrower: string) {
+async function writePoolMetadata({
+  pool,
+  borrower,
+  backerLimit = "0.025",
+}: {
+  pool: TranchedPool
+  borrower: string
+  backerLimit?: string
+}) {
   const names = ["Degen Pool", "CryptoPunks Fund"]
   const categories = ["NFT Loans", "Loans to degens"]
   const icons = [
@@ -244,8 +246,9 @@ async function writePoolMetadata(pool: TranchedPool, borrower: string) {
     name: `${borrower.slice(0, 6)}: ${_.sample(names)}`,
     category: _.sample(categories),
     icon: _.sample(icons),
-    description: description,
-    detailsUrl: detailsUrl,
+    description,
+    detailsUrl,
+    backerLimit,
   }
 
   await fs.promises.writeFile(metadataPath, JSON.stringify(metadata, null, 2))
@@ -293,9 +296,6 @@ async function getDeployedAsEthersContract<T>(getter: any, name: string): Promis
   if (!deployed && isTestEnv()) {
     deployed = await getter(`Test${name}`)
   }
-  if (!deployed && name === "GoldfinchFactory") {
-    deployed = await getter("CreditLineFactory")
-  }
   if (!deployed) {
     throw new Error("Contract is not deployed")
   }
@@ -323,8 +323,9 @@ async function createPoolForBorrower({
   const paymentPeriodInDays = String(new BN(30))
   const termInDays = String(new BN(360))
   const lateFeeApr = String(new BN(0))
+  const underwriterSigner = ethers.provider.getSigner(underwriter)
   const result = await (
-    await goldfinchFactory.createPool(
+    await goldfinchFactory.connect(underwriterSigner).createPool(
       borrower,
       juniorFeePercent,
       limit,
@@ -332,12 +333,10 @@ async function createPoolForBorrower({
       paymentPeriodInDays,
       termInDays,
       lateFeeApr,
-      {from: underwriter}
     )
   ).wait()
   const lastEventArgs = getLastEventArgs(result)
   let poolAddress = lastEventArgs[0]
-  let underwriterSigner = ethers.provider.getSigner(underwriter)
   let pool = (await getDeployedAsEthersContract<TranchedPool>(getOrNull, "TranchedPool"))!
     .attach(poolAddress)
     .connect(underwriterSigner)
