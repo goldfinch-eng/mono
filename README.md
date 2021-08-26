@@ -21,7 +21,6 @@ You will need the correct version of node/npm on your local machine.
 - Lastly add the following into your new `.env.local` file.
  * `TEST_USERS={your Goldfinch Metamask address}`
  * `ALLOWED_SENDERS=<your Goldfinch Metamask address>`
- * `ALLOWED_CONTRACTS=<borrower contract address>`
 - Note that if you want the `client` to use variables in your `.env.local`, you'll need to create a symlink to this file from inside the `client` dir, or else create a separate `client/.env.local` file.
 
 *Note: To find the borrower contract address, you'll need to run `npm start`, and then find the line in the console output that says `[blockchain] Created borrower contract: {borrower contract address} for {your wallet address}` Use the borrower contract address and paste it into your .env.local!*

@@ -8,7 +8,7 @@ const TypeName = `ForwardRequest(${GenericParams})`
 const TypeHash = ethers.utils.id(TypeName)
 
 async function relay(request, context) {
-  const {forwarder, relayTx, allowed_senders, allowed_contracts, domain_separator} = context
+  const {forwarder, relayTx, allowed_senders, domain_separator} = context
   // Unpack request
   const {to, from, value, gas, nonce, data, signature} = request
 

@@ -11,7 +11,6 @@ const {bufferToHex} = require("ethereumjs-util")
 const port = process.env.RELAY_SERVER_PORT
 const FORWARDER_ADDRESS = process.env.FORWARDER_ADDRESS
 const ALLOWED_SENDERS = (process.env.ALLOWED_SENDERS || "").split(",").filter((val) => !!val)
-const ALLOWED_CONTRACTS = (process.env.ALLOWED_CONTRACTS || "").split(",").filter((val) => !!val)
 
 app.use(express.json())
 app.use(cors())
@@ -70,7 +69,6 @@ async function createContext() {
     chainId: chainId,
     forwarder: forwarder,
     allowed_senders: ALLOWED_SENDERS,
-    allowed_contracts: ALLOWED_CONTRACTS,
     relayTx: hardhatRelay,
     domain_separator: calculateDomainSeparator(chainId, forwarder.address),
   }
