@@ -8,7 +8,7 @@ const TypeName = `ForwardRequest(${GenericParams})`
 const TypeHash = ethers.utils.id(TypeName)
 
 async function relay(request, context) {
-  const {forwarder, relayTx, allowed_senders, allowed_contracts, domain_separator} = context
+  const {forwarder, relayTx, allowed_senders, domain_separator} = context
   // Unpack request
   const {to, from, value, gas, nonce, data, signature} = request
 
@@ -18,11 +18,6 @@ async function relay(request, context) {
 
   if (!allowed_senders.includes(from)) {
     throw new Error(`Unrecognized sender: ${from}`)
-  }
-
-  const enforceAllowedContracts = process.env.MURMURATION !== "yes"
-  if (enforceAllowedContracts && !allowed_contracts.includes(to)) {
-    throw new Error(`Unrecognized borrower contract: ${to}`)
   }
 
   // This verifies the unpacked message matches the signature and therefore validates that the to/from/data passed in
