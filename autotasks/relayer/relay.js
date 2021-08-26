@@ -20,11 +20,6 @@ async function relay(request, context) {
     throw new Error(`Unrecognized sender: ${from}`)
   }
 
-  const enforceAllowedContracts = process.env.MURMURATION !== "yes"
-  if (enforceAllowedContracts && !allowed_contracts.includes(to)) {
-    throw new Error(`Unrecognized borrower contract: ${to}`)
-  }
-
   // This verifies the unpacked message matches the signature and therefore validates that the to/from/data passed in
   // was actually signed by the whitelisted sender
   await forwarder.verify(...args)
