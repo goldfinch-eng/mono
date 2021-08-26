@@ -1,10 +1,9 @@
-const {BN, expect} = require("./testHelpers.js")
-const hre = require("hardhat")
+import {BN, expect} from "./testHelpers"
+import hre from "hardhat"
 const {deployments, getNamedAccounts, ethers} = hre
-const {upgrade, getDeployedContract, fromAtomic, toAtomic, OWNER_ROLE} = require("../blockchain_scripts/deployHelpers")
-const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
-const baseDeploy = require("../blockchain_scripts/baseDeploy")
-const updateConfigs = require("../blockchain_scripts/updateConfigs")
+import {getDeployedContract, fromAtomic, OWNER_ROLE} from "../blockchain_scripts/deployHelpers"
+import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
+import updateConfigs from "../blockchain_scripts/updateConfigs"
 
 describe("Deployment", async () => {
   describe("Base Deployment", () => {
@@ -39,13 +38,13 @@ describe("Deployment", async () => {
       expect(await pool.hasRole(OWNER_ROLE, creditDesk.address)).to.be.true
     })
     it("sets the right defaults", async () => {
-      const creditLineFactory = await getDeployedContract(deployments, "CreditLineFactory")
+      const goldfinchFactory = await getDeployedContract(deployments, "GoldfinchFactory")
       const goldfinchConfig = await getDeployedContract(deployments, "TestGoldfinchConfig")
 
       expect(String(await goldfinchConfig.getNumber(CONFIG_KEYS.TransactionLimit))).to.bignumber.gt(new BN(0))
       expect(String(await goldfinchConfig.getNumber(CONFIG_KEYS.TotalFundsLimit))).to.bignumber.gt(new BN(0))
       expect(String(await goldfinchConfig.getNumber(CONFIG_KEYS.MaxUnderwriterLimit))).to.bignumber.gt(new BN(0))
-      expect(await goldfinchConfig.getAddress(CONFIG_KEYS.CreditLineFactory)).to.equal(creditLineFactory.address)
+      expect(await goldfinchConfig.getAddress(CONFIG_KEYS.GoldfinchFactory)).to.equal(goldfinchFactory.address)
     })
   })
 
@@ -53,12 +52,14 @@ describe("Deployment", async () => {
     it("should not fail", async () => {
       return expect(deployments.run("setup_for_testing")).to.be.fulfilled
     })
-    it("should create an underwriter credit line for the protocol_owner", async () => {
-      const {protocol_owner} = await getNamedAccounts()
+    it("should create borrower contract and tranched pools", async () => {
       await deployments.run("setup_for_testing")
-      const creditDesk = await getDeployedContract(deployments, "TestCreditDesk")
-      const result = await creditDesk.getUnderwriterCreditLines(protocol_owner)
-      expect(result.length).to.equal(2)
+      const goldfinchFactory = await getDeployedContract(deployments, "GoldfinchFactory")
+      const borrowerCreated = await goldfinchFactory.queryFilter(goldfinchFactory.filters.BorrowerCreated())
+      expect(borrowerCreated.length).to.equal(2)
+      const borrowerConAddr = borrowerCreated[0].borrower
+      const result = await goldfinchFactory.queryFilter(goldfinchFactory.filters.PoolCreated(null, borrowerConAddr))
+      expect(result.length).to.equal(3)
     })
   })
 
@@ -66,67 +67,31 @@ describe("Deployment", async () => {
     beforeEach(async () => {
       await deployments.fixture()
     })
-    it("should allow for upgrading the logic", async () => {
-      const {proxy_owner} = await getNamedAccounts()
-      const creditDesk = await getDeployedContract(deployments, "TestCreditDesk")
-      expect(typeof creditDesk.someBrandNewFunction).not.to.equal("function")
-
-      await upgrade(deployments.deploy, "TestCreditDesk", proxy_owner, {contract: "FakeV2CreditDesk"})
-      const newCreditDesk = await getDeployedContract(deployments, "TestCreditDesk")
-
-      expect(typeof newCreditDesk.someBrandNewFunction).to.equal("function")
-      const result = String(await newCreditDesk.someBrandNewFunction())
-      expect(result).to.bignumber.equal(new BN(5))
-    })
-
-    it("should not change data after an upgrade", async () => {
-      //If this test fails, it usually means that the data layout changed between the credit desk
-      //and the FakeCreditDesk. Check the order of the variables.
-      const {protocol_owner, proxy_owner} = await getNamedAccounts()
-      const creditDesk = await getDeployedContract(deployments, "TestCreditDesk")
-      const originalResult = await creditDesk.getUnderwriterCreditLines(protocol_owner)
-
-      await upgrade(deployments.deploy, "TestCreditDesk", proxy_owner, {contract: "FakeV2CreditDesk"})
-      const newCreditDesk = await getDeployedContract(deployments, "TestCreditDesk")
-
-      const newResult = await newCreditDesk.getUnderwriterCreditLines(protocol_owner)
-      expect(originalResult).to.deep.equal(newResult)
-    })
 
     it("should allow you to change the owner of the implementation, without affecting the owner of the proxy", async () => {
-      const creditDesk = await getDeployedContract(deployments, "CreditDesk")
+      const seniorPool = await getDeployedContract(deployments, "SeniorPool")
       const someWallet = ethers.Wallet.createRandom()
 
-      const originally = await creditDesk.hasRole(OWNER_ROLE, someWallet.address)
+      const originally = await seniorPool.hasRole(OWNER_ROLE, someWallet.address)
       expect(originally).to.be.false
 
-      await creditDesk.grantRole(OWNER_ROLE, someWallet.address)
+      await seniorPool.grantRole(OWNER_ROLE, someWallet.address)
 
-      const afterGrant = await creditDesk.hasRole(OWNER_ROLE, someWallet.address)
+      const afterGrant = await seniorPool.hasRole(OWNER_ROLE, someWallet.address)
       expect(afterGrant).to.be.true
     })
 
     it("should allow for a way to transfer ownership of the proxy", async () => {
-      const {protocol_owner, proxy_owner} = await getNamedAccounts()
-      const creditDeskProxy = await getDeployedContract(deployments, "CreditDesk_Proxy", proxy_owner)
+      const {protocol_owner, gf_deployer} = await getNamedAccounts()
+      const seniorPoolProxy = await getDeployedContract(deployments, "SeniorPool_Proxy", protocol_owner)
 
-      const originalOwner = await creditDeskProxy.owner()
-      expect(originalOwner).to.equal(proxy_owner)
+      const originalOwner = await seniorPoolProxy.owner()
+      expect(originalOwner).to.equal(protocol_owner)
 
-      const result = await creditDeskProxy.transferOwnership(protocol_owner)
+      const result = await seniorPoolProxy.transferOwnership(gf_deployer)
       await result.wait()
-
-      const newOwner = await creditDeskProxy.owner()
-      expect(newOwner).to.equal(protocol_owner)
-    })
-  })
-
-  describe("Upgrading the whole protocol", async () => {
-    beforeEach(async () => {
-      await deployments.fixture()
-    })
-    it("should not fail", async () => {
-      return expect(baseDeploy(hre, {shouldUpgrade: true})).to.be.fulfilled
+      const newOwner = await seniorPoolProxy.owner()
+      expect(newOwner).to.equal(gf_deployer)
     })
   })
 
@@ -136,9 +101,6 @@ describe("Deployment", async () => {
     })
 
     it("Should update protocol configs", async () => {
-      const {protocol_owner} = await getNamedAccounts()
-      let underwriter = protocol_owner
-      const creditDesk = await getDeployedContract(deployments, "CreditDesk")
       const config = await getDeployedContract(deployments, "TestGoldfinchConfig")
 
       const new_config = {
@@ -149,15 +111,12 @@ describe("Deployment", async () => {
         withdrawFeeDenominator: 202,
         latenessGracePeriod: 9,
         latenessMaxDays: 6,
+        drawdownPeriodInSeconds: 11000,
+        transferRestrictionPeriodInDays: 180,
+        leverageRatio: String(17e18),
       }
 
-      await expect(creditDesk.setUnderwriterGovernanceLimit(underwriter, toAtomic(24000))).to.be.fulfilled
-
       await updateConfigs(hre, new_config)
-
-      await expect(creditDesk.setUnderwriterGovernanceLimit(underwriter, toAtomic(24000))).to.be.rejectedWith(
-        /greater than the max allowed/
-      )
 
       expect(fromAtomic(await config.getNumber(CONFIG_KEYS.TotalFundsLimit))).to.bignumber.eq(
         new BN(new_config["totalFundsLimit"])
@@ -179,6 +138,13 @@ describe("Deployment", async () => {
         String(new_config["latenessGracePeriod"])
       )
       expect(String(await config.getNumber(CONFIG_KEYS.LatenessMaxDays))).to.eq(String(new_config["latenessMaxDays"]))
+      expect(String(await config.getNumber(CONFIG_KEYS.DrawdownPeriodInSeconds))).to.eq(
+        String(new_config["drawdownPeriodInSeconds"])
+      )
+      expect(String(await config.getNumber(CONFIG_KEYS.TransferPeriodRestrictionInDays))).to.eq(
+        String(new_config["transferRestrictionPeriodInDays"])
+      )
+      expect(String(await config.getNumber(CONFIG_KEYS.LeverageRatio))).to.eq(String(new_config["leverageRatio"]))
     })
   })
 })

@@ -1,0 +1,41 @@
+@import "./utils.scss";
+
+.pool-overview {
+  @include space-y(1em);
+
+  .info-section {
+    margin-top: 0px;
+  }
+
+  .pool-description {
+    line-height: normal;
+  }
+
+  .pool-header {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+
+    .pool-links {
+      margin-top: 1em;
+    }
+  }
+}
+
+.pool-description {
+  font-size: $sans-size-xs;
+}
+
+@media only screen and (min-width: $screen-m) {
+  .pool-overview {
+    .pool-header {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+
+      .pool-links {
+        margin-top: 0;
+      }
+    }
+  }
+}

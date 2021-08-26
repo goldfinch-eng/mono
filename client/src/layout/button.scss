@@ -1,10 +1,20 @@
+button {
+  // The intention here is to override the user agent stylesheet
+  // styling to make the button as discreet as possible while still
+  // being consistent with our `.button` styling.
+  background-color: inherit;
+  padding: 0;
+  font-size: inherit;
+  color: $purp-dark;
+}
+
 .button{
-  background-color: $blue-xlight;
   border-radius: 6px;
   font-size: $sans-size-m;
   color: $purp-dark;
   height: 56px;
   outline: none;
+  background-color: $blue-xlight;
 
   &:hover{
     background-color: $blue-light;

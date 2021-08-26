@@ -18,12 +18,27 @@ steps:
     id: Push Image
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     args:
-      - app
-      - deploy
-      - '--appyaml=murmuration/app.yaml'
-      - '--image-url=$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:latest'
+      - compute
+      - instance-groups
+      - managed
+      - rolling-action
+      - start-update
+      - murmuration-goldfinch-finance-3
+      - '--version=template=murmuration-goldfinch-finance-3'
+      - '--zone=us-central1-a'
     entrypoint: gcloud
-    id: Deploy
+    id: Update Template
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    args:
+      - compute
+      - instance-groups
+      - managed
+      - rolling-action
+      - replace
+      - murmuration-goldfinch-finance-3
+      - '--zone=us-central1-a'
+    entrypoint: gcloud
+    id: Replace Instance
 timeout: '1600s'
 images:
   - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:latest'

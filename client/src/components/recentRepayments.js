@@ -1,29 +1,29 @@
 import _ from "lodash"
-import React, { useEffect, useState, useContext } from "react"
-import { AppContext } from "../App"
-import { usdcFromAtomic } from "../ethereum/erc20"
-import { displayDollars, croppedAddress } from "../utils"
-import { iconOutArrow } from "./icons.js"
+import React, {useEffect, useState, useContext} from "react"
+import {AppContext} from "../App"
+import {usdcFromAtomic} from "../ethereum/erc20"
+import {displayDollars, croppedAddress} from "../utils"
+import {iconOutArrow} from "./icons.js"
 
 function RecentRepayments() {
-  const { pool, user, network } = useContext(AppContext)
+  const {pool, user, network, goldfinchProtocol} = useContext(AppContext)
   const [repayments, setRepayments] = useState([])
   let transactionRows
 
   useEffect(() => {
-    if (pool.gf) {
-      pool.gf.getRepaymentEvents().then(repayments => {
+    if (pool && pool.gf && goldfinchProtocol) {
+      pool.gf.getRepaymentEvents(goldfinchProtocol).then((repayments) => {
         setRepayments(_.slice(repayments, 0, 3))
       })
     }
-  }, [pool])
+  }, [pool, goldfinchProtocol])
 
   function createTransactionRows(tx) {
-    const etherscanSubdomain = network.name === "mainnet" ? "" : `${network}.`
+    const etherscanSubdomain = network.name === "mainnet" ? "" : `${network.name}.`
     let yourPortion
     let yourPortionClass
 
-    if (user.loaded && pool.gf.loaded) {
+    if (user.loaded && pool && pool.gf.loaded) {
       let yourPortionValue = usdcFromAtomic(
         user
           .poolBalanceAsOf(tx.blockTime)

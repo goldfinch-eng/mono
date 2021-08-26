@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.6.12;
+pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-ethereum-package/contracts/presets/ERC20PresetMinterPauser.sol";
 import "./ConfigHelper.sol";
@@ -62,7 +63,7 @@ contract Fidu is ERC20PresetMinterPauserUpgradeSafe {
    */
   function mintTo(address to, uint256 amount) public {
     require(canMint(amount), "Cannot mint: it would create an asset/liability mismatch");
-    // This will lock the function down to only the minter
+    // This super call restricts to only the minter in its implementation, so we don't need to do it here.
     super.mint(to, amount);
   }
 
@@ -86,12 +87,12 @@ contract Fidu is ERC20PresetMinterPauserUpgradeSafe {
 
   // canMint assumes that the USDC that backs the new shares has already been sent to the Pool
   function canMint(uint256 newAmount) internal view returns (bool) {
-    IPool pool = config.getPool();
-    uint256 liabilities = totalSupply().add(newAmount).mul(pool.sharePrice()).div(fiduMantissa());
+    ISeniorPool seniorPool = config.getSeniorPool();
+    uint256 liabilities = totalSupply().add(newAmount).mul(seniorPool.sharePrice()).div(fiduMantissa());
     uint256 liabilitiesInDollars = fiduToUSDC(liabilities);
-    uint256 _assets = pool.assets();
+    uint256 _assets = seniorPool.assets();
     if (_assets >= liabilitiesInDollars) {
-      return _assets.sub(liabilitiesInDollars) <= ASSET_LIABILITY_MATCH_THRESHOLD;
+      return true;
     } else {
       return liabilitiesInDollars.sub(_assets) <= ASSET_LIABILITY_MATCH_THRESHOLD;
     }
@@ -99,12 +100,12 @@ contract Fidu is ERC20PresetMinterPauserUpgradeSafe {
 
   // canBurn assumes that the USDC that backed these shares has already been moved out the Pool
   function canBurn(uint256 amountToBurn) internal view returns (bool) {
-    IPool pool = config.getPool();
-    uint256 liabilities = totalSupply().sub(amountToBurn).mul(pool.sharePrice()).div(fiduMantissa());
+    ISeniorPool seniorPool = config.getSeniorPool();
+    uint256 liabilities = totalSupply().sub(amountToBurn).mul(seniorPool.sharePrice()).div(fiduMantissa());
     uint256 liabilitiesInDollars = fiduToUSDC(liabilities);
-    uint256 _assets = pool.assets();
+    uint256 _assets = seniorPool.assets();
     if (_assets >= liabilitiesInDollars) {
-      return _assets.sub(liabilitiesInDollars) <= ASSET_LIABILITY_MATCH_THRESHOLD;
+      return true;
     } else {
       return liabilitiesInDollars.sub(_assets) <= ASSET_LIABILITY_MATCH_THRESHOLD;
     }

@@ -2,7 +2,7 @@ import chai from "chai"
 import chaiSubset from "chai-subset"
 import * as firebaseTesting from "@firebase/rules-unit-testing"
 import * as admin from "firebase-admin"
-import * as crypto from "crypto"
+import crypto from "crypto"
 
 import {FirebaseConfig, getUsers, setEnvForTest} from "../src/db"
 import {kycStatus, personaCallback} from "../src"

@@ -1,17 +1,15 @@
-import React, { useState, useContext } from "react"
-import { AppContext } from "../App"
+import {useContext, useState} from "react"
+import {AppContext} from "../App"
 import Persona from "persona"
-import web3 from "../web3"
-import { ethers } from "ethers"
-import { iconCircleCheck, iconClock, iconAlert } from "./icons.js"
+import {iconCircleCheck, iconClock, iconAlert} from "./icons.js"
 import TransactionForm from "./transactionForm"
-import { ErrorMessage } from "@hookform/error-message"
+import {ErrorMessage} from "@hookform/error-message"
 import ConnectionNotice from "./connectionNotice"
 import LoadingButton from "./loadingButton"
-import { useForm, FormProvider } from "react-hook-form"
+import {useForm, FormProvider} from "react-hook-form"
+import {Session, useSignIn} from "../hooks/useSignIn"
 
-
-function VerificationNotice({ icon, notice }) {
+function VerificationNotice({icon, notice}) {
   return (
     <div className="info-banner background-container subtle">
       <div className="message">
@@ -22,7 +20,7 @@ function VerificationNotice({ icon, notice }) {
   )
 }
 
-function EntityForm({ onClose }) {
+function EntityForm({onClose}) {
   return (
     <TransactionForm
       headerMessage="Entity"
@@ -30,15 +28,26 @@ function EntityForm({ onClose }) {
         return (
           <>
             <div className="form-message paragraph">
-              Goldfinch is open to non-U.S. entities, and there may be opportunities soon for U.S. entities that qualify as accredited
-              investors.
+              Goldfinch is open to non-U.S. entities, and there may be opportunities soon for U.S. entities that qualify
+              as accredited investors.
             </div>
             <div className="form-message paragraph">
               To verify or pre-verify, please fill out{" "}
-              <a className="link" target="_blank" href="https://docs.google.com/forms/d/1qr5-dw3E3OplNjgUk5JidiT6zLS3ZVbVZ6bWl3QwTq4/viewform" rel="noreferrer">
+              <a
+                className="link"
+                target="_blank"
+                rel="noopener noreferrer"
+                href="https://docs.google.com/forms/d/1qr5-dw3E3OplNjgUk5JidiT6zLS3ZVbVZ6bWl3QwTq4/viewform"
+              >
                 this form
-              </a>. Then, get your free accredited investor verification from{" "}
-              <a className="link" target="_blank" href="https://parallelmarkets.com/get-accredited/" rel="noreferrer">
+              </a>
+              . Then, get your free accredited investor verification from{" "}
+              <a
+                className="link"
+                target="_blank"
+                rel="noopener noreferrer"
+                href="https://parallelmarkets.com/get-accredited/"
+              >
                 parallelmarkets.com
               </a>{" "}
               and email your electronic certificate to{" "}
@@ -55,11 +64,11 @@ function EntityForm({ onClose }) {
   )
 }
 
-function NonUSForm({ entityType, onClose, onEvent, network, address }) {
+function NonUSForm({entityType, onClose, onEvent, network, address}) {
   return (
     <TransactionForm
       headerMessage="Non-U.S. Individual"
-      render={({ formMethods }) => {
+      render={({formMethods}) => {
         return (
           <PersonaForm
             entityType={entityType}
@@ -75,11 +84,11 @@ function NonUSForm({ entityType, onClose, onEvent, network, address }) {
   )
 }
 
-function USForm({ kycStatus, entityType, onClose, onEvent, network, address }) {
+function USForm({kycStatus, entityType, onClose, onEvent, network, address}) {
   return (
     <TransactionForm
       headerMessage="U.S. Individual"
-      render={({ formMethods }) => {
+      render={({formMethods}) => {
         let verifyIdSection
         if (kycStatus === "approved") {
           verifyIdSection = (
@@ -105,13 +114,19 @@ function USForm({ kycStatus, entityType, onClose, onEvent, network, address }) {
         return (
           <>
             <div className="form-message paragraph">
-              Goldfinch may soon have opportunities for U.S. individuals who qualify as accredited investors. You can pre-verify your address.
+              Goldfinch may soon have opportunities for U.S. individuals who qualify as accredited investors. You can
+              pre-verify your address.
             </div>
             {verifyIdSection}
             <h2>Step 2: Verify Accredited Status</h2>
             <div className="form-message paragraph">
               Get your free accredited investor verification from{" "}
-              <a className="link" target="_blank" href="https://parallelmarkets.com/get-accredited/" rel="noreferrer">
+              <a
+                className="link"
+                target="_blank"
+                rel="noopener noreferrer"
+                href="https://parallelmarkets.com/get-accredited/"
+              >
                 parallelmarkets.com
               </a>
               . When you receive your electronic certificate, email it to{" "}
@@ -128,10 +143,10 @@ function USForm({ kycStatus, entityType, onClose, onEvent, network, address }) {
   )
 }
 
-function PersonaForm({ entityType, onEvent, network, address, formMethods }) {
+function PersonaForm({entityType, onEvent, network, address, formMethods}) {
   const PERSONA_CONFIG = {
-    mainnet: { templateId: "tmpl_vD1HECndpPFNeYHaaPQWjd6H", environment: "production" },
-    localhost: { templateId: "tmpl_vD1HECndpPFNeYHaaPQWjd6H", environment: "sandbox" },
+    mainnet: {templateId: "tmpl_vD1HECndpPFNeYHaaPQWjd6H", environment: "production"},
+    localhost: {templateId: "tmpl_vD1HECndpPFNeYHaaPQWjd6H", environment: "sandbox"},
   }
 
   function verifyOnPersona(data, e) {
@@ -146,14 +161,14 @@ function PersonaForm({ entityType, onEvent, network, address, formMethods }) {
         discord_name: data.discord,
         country_us: entityType === "US",
       } as any,
-      onLoad: _error => client.open(),
+      onLoad: (_error) => client.open(),
       onComplete: () => {
         onEvent("complete")
       },
-      onFail: id => {
+      onFail: (id) => {
         onEvent("fail")
       },
-      onExit: error => {
+      onExit: (error) => {
         onEvent("exit")
       },
     })
@@ -170,7 +185,7 @@ function PersonaForm({ entityType, onEvent, network, address, formMethods }) {
               name="email"
               placeholder="email@example.com"
               className="form-input small-text"
-              ref={formMethods.register({ required: true, pattern: /^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]{2,}$/ })}
+              ref={formMethods.register({required: true, pattern: /^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]{2,}$/})}
             ></input>
             <div className="form-input-note">
               <ErrorMessage errors={formMethods.errors} name="email" message="That doesn't look like a valid email" />
@@ -188,7 +203,7 @@ function PersonaForm({ entityType, onEvent, network, address, formMethods }) {
                 name="discord"
                 placeholder="user#1234"
                 className="form-input small-text"
-                ref={formMethods.register({ pattern: /[a-zA-Z0-9]+#[0-9]{4}/ })}
+                ref={formMethods.register({pattern: /[a-zA-Z0-9]+#[0-9]{4}/})}
               />
               <div className="form-input-note">
                 <ErrorMessage
@@ -206,24 +221,23 @@ function PersonaForm({ entityType, onEvent, network, address, formMethods }) {
       </div>
       <div className="form-footer-message">
         Please note: we use{" "}
-        <a className="link" target="_blank" href="https://withpersona.com/security/" rel="noreferrer">
+        <a className="link" target="_blank" rel="noopener noreferrer" href="https://withpersona.com/security/">
           Persona
         </a>{" "}
-        to verify your identity, and they handle all personal information. The only information we store is your
-        ETH address, country, and approval status. We take privacy seriously.
+        to verify your identity, and they handle all personal information. The only information we store is your ETH
+        address, country, and approval status. We take privacy seriously.
       </div>
-
     </>
   )
 }
 
-function SignInForm({ action, disabled }) {
-  const formMethods = useForm({ mode: "onChange", shouldUnregister: false })
+function SignInForm({action, disabled}) {
+  const formMethods = useForm({mode: "onChange", shouldUnregister: false})
   return (
     <FormProvider {...formMethods}>
       <div className="info-banner background-container subtle">
-        <div className="message">
-        <p>First, please sign in to confirm your address.</p>
+        <div className="message small">
+          <p>First, please sign in to confirm your address.</p>
         </div>
         <LoadingButton text="Sign in" action={action} disabled={disabled} />
       </div>
@@ -232,12 +246,12 @@ function SignInForm({ action, disabled }) {
 }
 
 function VerifyIdentity() {
-  const { user, network } = useContext(AppContext)
+  const {user, network} = useContext(AppContext)
   const [kycStatus, setKycStatus] = useState<string>("")
   // Determines the form to show. Can be empty, "US" or "entity"
   const [countryCode, setCountryCode] = useState<string>("")
   const [entityType, setEntityType] = useState<string>("")
-  const [userSignature, setUserSignature] = useState<string>("")
+  const [session, signIn] = useSignIn()
 
   const API_URLS = {
     mainnet: "https://us-central1-goldfinch-frontends-prod.cloudfunctions.net",
@@ -247,17 +261,21 @@ function VerifyIdentity() {
   function getKYCStatusRequestInit(signature): RequestInit {
     signature = signature === "pending" ? "" : signature
     return {
-      headers: {"x-goldfinch-signature": signature}
+      headers: {"x-goldfinch-signature": signature},
     }
   }
 
-  function getKYCStatusURL(address) {
+  function getKYCStatusURL(address): string {
     const baseURL = process.env.REACT_APP_GCLOUD_FUNCTIONS_URL || API_URLS[network?.name!]
-    return baseURL + "/kycStatus?" + new URLSearchParams({ address })
+    return baseURL + "/kycStatus?" + new URLSearchParams({address})
   }
 
-  async function fetchKYCStatus(signature) {
-    const response = await fetch(getKYCStatusURL(user.address), getKYCStatusRequestInit(signature))
+  async function fetchKYCStatus(session: Session) {
+    if (session.status !== "authenticated") {
+      return
+    }
+
+    const response = await fetch(getKYCStatusURL(user.address), getKYCStatusRequestInit(session.signature))
     const responseJson = await response.json()
     setKycStatus(responseJson.status)
     if (responseJson.countryCode === "US") {
@@ -266,16 +284,9 @@ function VerifyIdentity() {
     }
   }
 
-  async function getUserSignature() {
-    const provider = new ethers.providers.Web3Provider(web3.currentProvider as any)
-    const signer = provider.getSigner(user.address)
-    return await signer.signMessage("Sign in to Goldfinch")
-  }
-
   async function getSignatureAndKycStatus() {
-    const signature = await getUserSignature()
-    await fetchKYCStatus(signature)
-    setUserSignature(signature)
+    const session = await signIn()
+    await fetchKYCStatus(session)
   }
 
   function chooseEntity(chosenType) {
@@ -302,9 +313,7 @@ function VerifyIdentity() {
           onClose={() => setEntityType("")}
           network={network?.name!}
           address={user.address}
-          onEvent={() => {
-            fetchKYCStatus(userSignature)
-          }}
+          onEvent={() => fetchKYCStatus(session)}
         />
       )
     } else if (entityType === "entity") {
@@ -323,9 +332,7 @@ function VerifyIdentity() {
           entityType={entityType}
           network={network?.name!}
           address={user.address}
-          onEvent={() => {
-            fetchKYCStatus(userSignature)
-          }}
+          onEvent={() => fetchKYCStatus(session)}
         />
       )
     } else {

@@ -1,14 +1,14 @@
 import React from "react"
 import BigNumber from "bignumber.js"
-import { MAX_UINT } from "../ethereum/utils"
+import {MAX_UINT} from "../ethereum/utils"
 import LoadingButton from "./loadingButton"
-import { useForm, FormProvider } from "react-hook-form"
-import { iconInfo } from "./icons.js"
+import {useForm, FormProvider} from "react-hook-form"
+import {iconInfo} from "./icons.js"
 import useSendFromUser from "../hooks/useSendFromUser"
-import { usdcFromAtomic } from "../ethereum/erc20"
+import {usdcFromAtomic} from "../ethereum/erc20"
 
 function UnlockERC20Form(props) {
-  const { erc20, onUnlock, unlockAddress } = props
+  const {erc20, onUnlock, unlockAddress} = props
   const sendFromUser = useSendFromUser()
   const formMethods = useForm()
 
@@ -25,7 +25,7 @@ function UnlockERC20Form(props) {
   return (
     <FormProvider {...formMethods}>
       <div className="info-banner background-container">
-        <div className="message">
+        <div className="message small">
           {iconInfo}
           <p>Just this one time, you’ll first need to unlock your account to use {erc20.ticker} with Goldfinch.</p>
         </div>

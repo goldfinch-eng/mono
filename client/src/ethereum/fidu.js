@@ -1,7 +1,7 @@
 import web3 from "../web3"
 import BigNumber from "bignumber.js"
 import BN from "bn.js"
-import {getDeployments, ETHDecimals} from "./utils"
+import {getDeployments} from "./utils"
 
 async function getFidu(networkId) {
   const config = await getDeployments(networkId)

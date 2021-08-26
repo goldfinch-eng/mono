@@ -1,85 +1,106 @@
-import web3 from "../web3"
-import { submitGaslessTransaction } from "./gasless"
-import { getFromBlock } from "./utils"
+import {submitGaslessTransaction} from "./gasless"
 import BigNumber from "bignumber.js"
-import { getOneInchContract } from "./oneInch"
-import {Contract} from 'web3-eth-contract'
-import {ERC20} from './erc20'
-
-const BorrowerAbi = require("../../abi/Borrower.json")
+import {getOneInchContract} from "./oneInch"
+import {Contract} from "web3-eth-contract"
+import {ERC20, Tickers} from "./erc20"
+import {GoldfinchProtocol} from "./GoldfinchProtocol"
+import {PoolState, TranchedPool} from "./tranchedPool"
 
 class BorrowerInterface {
   userAddress: string
-  creditDesk: Contract
   borrowerContract: Contract
   usdc: ERC20
-  pool: Contract
+  goldfinchProtocol: GoldfinchProtocol
   oneInch: Contract
   borrowerAddress: string
   creditLinesAddresses!: string[]
+  borrowerPoolAddresses!: string[]
+  tranchedPools!: {[address: string]: TranchedPool}
+  tranchedPoolByCreditLine!: {[address: string]: TranchedPool}
   allowance!: BigNumber
-  
-  constructor(userAddress, creditDesk, borrowerContract, usdc, pool, oneInch) {
+
+  constructor(
+    userAddress: string,
+    borrowerContract: Contract,
+    goldfinchProtocol: GoldfinchProtocol,
+    oneInch: Contract,
+  ) {
     this.userAddress = userAddress
-    this.creditDesk = creditDesk
     this.borrowerContract = borrowerContract
-    this.usdc = usdc
-    this.pool = pool
+    this.goldfinchProtocol = goldfinchProtocol
+    this.usdc = goldfinchProtocol.getERC20(Tickers.USDC)
     this.oneInch = oneInch
-    this.borrowerAddress = this.isUsingBorrowerContract ? this.borrowerContract.options.address : this.userAddress
+    this.borrowerAddress = this.borrowerContract.options.address
+    this.tranchedPools = {}
+    this.tranchedPoolByCreditLine = {}
+    this.creditLinesAddresses = []
   }
 
   async initialize() {
-    this.creditLinesAddresses = await this.creditDesk.methods.getBorrowerCreditLines(this.borrowerAddress).call()
-    this.allowance = await this.usdc.getAllowance({ owner: this.userAddress, spender: this.borrowerAddress })
+    let poolEvents = await this.goldfinchProtocol.queryEvents("GoldfinchFactory", ["PoolCreated"], {
+      borrower: this.borrowerAddress,
+    })
+    this.borrowerPoolAddresses = poolEvents.map((e: any) => e.returnValues.pool)
+    for (let address of this.borrowerPoolAddresses) {
+      const tranchedPool = new TranchedPool(address, this.goldfinchProtocol)
+      await tranchedPool.initialize()
+      if (tranchedPool.state >= PoolState.SeniorLocked) {
+        this.creditLinesAddresses.push(tranchedPool.creditLineAddress)
+      }
+      this.tranchedPoolByCreditLine[tranchedPool.creditLineAddress] = tranchedPool
+      this.tranchedPools[address] = tranchedPool
+    }
+    this.allowance = await this.usdc.getAllowance({owner: this.userAddress, spender: this.borrowerAddress})
+  }
+
+  getPoolAddressFromCL(address: string): string {
+    const pool = this.tranchedPoolByCreditLine[address]
+    if (pool) {
+      return pool.address
+    } else {
+      throw new Error(`Tranched pool is undefined for address: ${address}`)
+    }
   }
 
   get shouldUseGasless() {
-    const gaslessEnabled = process.env.REACT_APP_DISABLE_GASLESS !== "true" && (window as any).disableGasless !== true
-    return this.isUsingBorrowerContract && gaslessEnabled
-  }
-
-  get isUsingBorrowerContract() {
-    return !!this.borrowerContract
+    return process.env.REACT_APP_DISABLE_GASLESS !== "true" && (window as any).disableGasless !== true
   }
 
   drawdown(creditLineAddress, drawdownAmount, sendToAddress) {
-    if (this.isUsingBorrowerContract) {
-      sendToAddress = sendToAddress || this.userAddress
-      return this.submit(this.borrowerContract.methods.drawdown(creditLineAddress, drawdownAmount, sendToAddress))
-    } else {
-      if (sendToAddress) {
-        throw new Error("SendToAddress not supported for non-borrower contracts")
-      }
-      return this.creditDesk.methods.drawdown(creditLineAddress, drawdownAmount)
-    }
+    sendToAddress = sendToAddress || this.userAddress
+    return this.submit(
+      this.borrowerContract.methods.drawdown(
+        this.getPoolAddressFromCL(creditLineAddress),
+        drawdownAmount,
+        sendToAddress,
+      ),
+    )
   }
 
   drawdownViaOneInch(creditLineAddress, amount, sendToAddress, toToken) {
     sendToAddress = sendToAddress || this.userAddress
-    return this.submit(this.drawdownViaOneInchAsync(creditLineAddress, amount, sendToAddress, toToken))
+    return this.submit(
+      this.drawdownViaOneInchAsync(this.getPoolAddressFromCL(creditLineAddress), amount, sendToAddress, toToken),
+    )
   }
 
   pay(creditLineAddress, amount) {
-    if (this.isUsingBorrowerContract) {
-      return this.submit(this.borrowerContract.methods.pay(creditLineAddress, amount))
-    } else {
-      return this.creditDesk.methods.pay(creditLineAddress, amount)
-    }
+    return this.submit(this.borrowerContract.methods.pay(this.getPoolAddressFromCL(creditLineAddress), amount))
   }
 
   payInFull(creditLineAddress, amount) {
-    return this.submit(this.borrowerContract.methods.payInFull(creditLineAddress, amount))
+    return this.submit(this.borrowerContract.methods.payInFull(this.getPoolAddressFromCL(creditLineAddress), amount))
   }
 
   payMultiple(creditLines, amounts) {
-    return this.submit(this.borrowerContract.methods.payMultiple(creditLines, amounts))
+    let poolAddresses = creditLines.map((a) => this.getPoolAddressFromCL(a))
+    return this.submit(this.borrowerContract.methods.payMultiple(poolAddresses, amounts))
   }
 
   payWithSwapOnOneInch(creditLineAddress, amount, minAmount, fromToken, quote) {
     return this.submit(
       this.borrowerContract.methods.payWithSwapOnOneInch(
-        creditLineAddress,
+        this.getPoolAddressFromCL(creditLineAddress),
         amount,
         fromToken,
         minAmount,
@@ -91,7 +112,7 @@ class BorrowerInterface {
   payMultipleWithSwapOnOneInch(creditLines, amounts, originAmount, fromToken, quote) {
     return this.submit(
       this.borrowerContract.methods.payMultipleWithSwapOnOneInch(
-        creditLines,
+        creditLines.map((a) => this.getPoolAddressFromCL(a)),
         amounts,
         originAmount,
         fromToken,
@@ -108,7 +129,7 @@ class BorrowerInterface {
       .getExpectedReturn(this.usdc.address, toToken, amount, splitParts, 0)
       .call()
     return this.borrowerContract.methods.drawdownWithSwapOnOneInch(
-      creditLineAddress,
+      this.getPoolAddressFromCL(creditLineAddress),
       amount,
       sendToAddress,
       toToken,
@@ -118,17 +139,11 @@ class BorrowerInterface {
   }
 
   withinOnePercent(amount): string {
-    return new BigNumber(amount)
-      .times(new BigNumber(99))
-      .idiv(new BigNumber(100))
-      .toString()
+    return new BigNumber(amount).times(new BigNumber(99)).idiv(new BigNumber(100)).toString()
   }
 
   submit(unsentAction) {
     if (this.shouldUseGasless) {
-      if (!this.isUsingBorrowerContract) {
-        throw new Error("Gasless transactions are only supported for borrower contracts")
-      }
       // This needs to be a function, otherwise the initial Promise.resolve in useSendFromUser will try to
       // resolve (and therefore initialize the signing request) before updating the network widget
       return () => submitGaslessTransaction(this.borrowerAddress, unsentAction)
@@ -138,21 +153,28 @@ class BorrowerInterface {
   }
 }
 
-async function getBorrowerContract(ownerAddress, creditLineFactory, creditDesk, usdc, pool, networkId) {
-  const borrowerCreatedEvents = await creditLineFactory.getPastEvents("BorrowerCreated", {
-    filter: { owner: ownerAddress },
-    fromBlock: getFromBlock(creditLineFactory.chain),
-    to: "latest",
+async function getBorrowerContract(
+  ownerAddress: string,
+  goldfinchProtocol: GoldfinchProtocol,
+): Promise<BorrowerInterface | undefined> {
+  const borrowerCreatedEvents = await goldfinchProtocol.queryEvents("GoldfinchFactory", "BorrowerCreated", {
+    owner: ownerAddress,
   })
-  let borrower
+  let borrower: Contract | null = null
   if (borrowerCreatedEvents.length > 0) {
     const lastIndex = borrowerCreatedEvents.length - 1
-    borrower = new web3.eth.Contract(BorrowerAbi, borrowerCreatedEvents[lastIndex].returnValues.borrower)
+    const lastEvent = borrowerCreatedEvents[lastIndex]
+    if (lastEvent) {
+      borrower = goldfinchProtocol.getContract<Contract>("Borrower", lastEvent.returnValues.borrower)
+      const oneInch = getOneInchContract(goldfinchProtocol.networkId)
+      const borrowerInterface = new BorrowerInterface(ownerAddress, borrower, goldfinchProtocol, oneInch)
+      await borrowerInterface.initialize()
+      return borrowerInterface
+    } else {
+      throw new Error("Failed to index into `borrowerCreatedEvents`.")
+    }
   }
-  const oneInch = getOneInchContract(networkId)
-  const borrowerInterface = new BorrowerInterface(ownerAddress, creditDesk, borrower, usdc, pool, oneInch)
-  await borrowerInterface.initialize()
-  return borrowerInterface
+  return
 }
 
-export { getBorrowerContract, BorrowerInterface }
+export {getBorrowerContract, BorrowerInterface}

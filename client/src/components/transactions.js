@@ -1,14 +1,14 @@
-import React, { useContext } from "react"
+import React, {useContext} from "react"
 import _ from "lodash"
-import ConnectionNotice from "./connectionNotice.js"
-import { AppContext } from "../App"
-import { displayDollars } from "../utils"
-import { MAX_UINT } from "../ethereum/utils"
+import ConnectionNotice from "./connectionNotice"
+import {AppContext} from "../App"
+import {displayDollars} from "../utils"
+import {MAX_UINT} from "../ethereum/utils"
 import BigNumber from "bignumber.js"
-import { iconCircleUpLg, iconCircleDownLg, iconCircleCheckLg, iconOutArrow } from "./icons.js"
+import {iconCircleUpLg, iconCircleDownLg, iconCircleCheckLg, iconOutArrow} from "./icons.js"
 
 function Transactions(props) {
-  const { user, network } = useContext(AppContext)
+  const {user, network} = useContext(AppContext)
 
   function transactionRow(tx) {
     const etherscanSubdomain = network.name === "mainnet" ? "" : `${network.name}.`

@@ -80,6 +80,7 @@ notes.txt
 
 autotasks/relayer/dist
 client/config/protocol-local.json
+client/config/pool-metadata/localhost.json
 deployments/localhost_31337
 deployments/localhost
 deployments/hardhat
@@ -94,3 +95,6 @@ client/config/deployments_dev.json
 typechain
 
 accounts.csv
+
+dist/
+venv/

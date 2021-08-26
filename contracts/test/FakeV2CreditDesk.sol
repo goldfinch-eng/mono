@@ -13,8 +13,7 @@ import "../protocol/core/GoldfinchConfig.sol";
 contract FakeV2CreditDesk is BaseUpgradeablePausable {
   uint256 public totalWritedowns;
   uint256 public totalLoansOutstanding;
-  // Approximate number of blocks
-  uint256 public constant BLOCKS_PER_DAY = 5760;
+  uint256 public constant SECONDS_PER_DAY = 60 * 60 * 24;
   GoldfinchConfig public config;
 
   struct Underwriter {

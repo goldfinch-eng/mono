@@ -1,12 +1,12 @@
-import { useState, useEffect, useContext } from "react"
+import {useState, useEffect, useContext} from "react"
 import BigNumber from "bignumber.js"
 
-import { AppContext } from "../App"
-import { getOneInchContract } from "../ethereum/oneInch"
-import { roundUpPenny, displayNumber } from "../utils"
+import {AppContext} from "../App"
+import {getOneInchContract} from "../ethereum/oneInch"
+import {roundUpPenny, displayNumber} from "../utils"
 
-function useOneInchQuote({ from, to, decimalAmount, parts = 10 }) {
-  const { network } = useContext(AppContext)
+function useOneInchQuote({from, to, decimalAmount, parts = 10}) {
+  const {network} = useContext(AppContext)
   const [expectedReturn, setExpectedReturn] = useState(null)
   const [isLoading, setLoading] = useState(false)
 
@@ -40,9 +40,9 @@ function useOneInchQuote({ from, to, decimalAmount, parts = 10 }) {
 //
 // The function estimates a reasonable amount by getting a quote from 1Inch, calculating the spread,
 // and adjusting the target amount by the spread + some pre-defined padding.
-function useAmountTargetingMinAmount({ from, to, targetMinAmount, padding = new BigNumber("0.0005") }) {
+function useAmountTargetingMinAmount({from, to, targetMinAmount, padding = new BigNumber("0.0005")}) {
   const [amount, setAmount] = useState(null)
-  let [quote, isLoading] = useOneInchQuote({ from, to, decimalAmount: targetMinAmount })
+  let [quote, isLoading] = useOneInchQuote({from, to, decimalAmount: targetMinAmount})
 
   useEffect(() => {
     if (quote) {
@@ -60,7 +60,7 @@ function useAmountTargetingMinAmount({ from, to, targetMinAmount, padding = new 
   return [amount, isLoading]
 }
 
-function formatQuote({ erc20, quote, decimals = 2, wrap = "" }) {
+function formatQuote({erc20, quote, decimals = 2, wrap = ""}) {
   if (!quote) {
     return ""
   }
@@ -68,8 +68,8 @@ function formatQuote({ erc20, quote, decimals = 2, wrap = "" }) {
   let left = wrap[0] || ""
   let right = wrap[1] || ""
 
-  let { returnAmount } = quote
+  let {returnAmount} = quote
   return `${left}${displayNumber(erc20.decimalAmount(returnAmount), decimals)} ${erc20.ticker}${right}`
 }
 
-export { useOneInchQuote, formatQuote, useAmountTargetingMinAmount }
+export {useOneInchQuote, formatQuote, useAmountTargetingMinAmount}

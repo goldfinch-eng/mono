@@ -3,11 +3,16 @@ const {getChainId} = require("hardhat")
 const hre = require("hardhat")
 const {deployments, getNamedAccounts} = hre
 const _ = require("lodash")
-const {getDeployedContract, getUSDCAddress} = require("../blockchain_scripts/deployHelpers.js")
+const {getDeployedContract, getUSDCAddress, assertIsChainId} = require("../blockchain_scripts/deployHelpers.js")
+const {assertIsString} = require("../utils/type.js")
 
 async function displayCreditLine(creditLineAddress) {
   const creditLine = await ethers.getContractAt("CreditLine", creditLineAddress)
-  const usdc = await ethers.getContractAt("Fidu", getUSDCAddress(await getChainId()))
+  const chainId = await getChainId()
+  assertIsChainId(chainId)
+  const usdcAddress = getUSDCAddress(chainId)
+  assertIsString(usdcAddress)
+  const usdc = await ethers.getContractAt("Fidu", usdcAddress)
 
   const [
     borrower,
@@ -16,10 +21,9 @@ async function displayCreditLine(creditLineAddress) {
     interestOwed,
     principalOwed,
     USDCBalance,
-    termEndBlock,
-    nextDueBlock,
-    interestAccruedAsOfBlock,
-    writedownAmount,
+    termEndTime,
+    nextDueTime,
+    interestAccruedAsOf,
     interestApr,
   ] = await Promise.all([
     creditLine.borrower(),
@@ -28,10 +32,9 @@ async function displayCreditLine(creditLineAddress) {
     creditLine.interestOwed(),
     creditLine.principalOwed(),
     usdc.balanceOf(creditLineAddress),
-    creditLine.termEndBlock(),
-    creditLine.nextDueBlock(),
-    creditLine.interestAccruedAsOfBlock(),
-    creditLine.writedownAmount(),
+    creditLine.termEndTime(),
+    creditLine.nextDueTime(),
+    creditLine.interestAccruedAsOf(),
     creditLine.interestApr(),
   ])
 
@@ -42,10 +45,9 @@ async function displayCreditLine(creditLineAddress) {
   console.log("interestOwed:", String(interestOwed))
   console.log("principalOwed:", String(principalOwed))
   console.log("USDCBalance:", String(USDCBalance))
-  console.log("termEndBlock:", String(termEndBlock))
-  console.log("nextDueBlock:", String(nextDueBlock))
-  console.log("interestAccruedAsOfBlock:", String(interestAccruedAsOfBlock))
-  console.log("writedownAmount:", String(writedownAmount))
+  console.log("termEndTime:", String(termEndTime))
+  console.log("nextDueTime:", String(nextDueTime))
+  console.log("interestAccruedAsOf:", String(interestAccruedAsOf))
   console.log("interestApr:", String(interestApr))
 }
 

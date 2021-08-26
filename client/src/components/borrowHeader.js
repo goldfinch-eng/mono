@@ -1,19 +1,19 @@
-import React, { useState, useEffect, useContext } from "react"
-import { fetchCreditLineData } from "../ethereum/creditLine"
-import { usdcFromAtomic } from "../ethereum/erc20"
-import { displayDollars } from "../utils"
+import React, {useState, useEffect, useContext} from "react"
+import {fetchCreditLineData} from "../ethereum/creditLine"
+import {usdcFromAtomic} from "../ethereum/erc20"
+import {displayDollars} from "../utils"
 import Dropdown from "./dropdown"
-import { AppContext } from "../App"
+import {AppContext} from "../App"
 
 function BorrowHeader(props) {
-  const { usdc } = useContext(AppContext)
+  const {goldfinchProtocol} = useContext(AppContext)
   const [creditLinePreviews, setCreditLinePreviews] = useState([])
 
   useEffect(() => {
     async function getCreditLinePreviews() {
       let creditLines = []
       if (props.creditLinesAddresses.length > 1) {
-        const multipleCreditLines = await fetchCreditLineData(props.creditLinesAddresses, usdc)
+        const multipleCreditLines = await fetchCreditLineData(props.creditLinesAddresses, goldfinchProtocol)
         if (multipleCreditLines.creditLines.length > 1) {
           // If there are multiple credit lines, we nee dto show the Multiple creditlines first (the "All" option), and
           // then each of the individual credit lines
@@ -24,15 +24,15 @@ function BorrowHeader(props) {
           creditLines = multipleCreditLines.creditLines
         }
       } else {
-        creditLines = [await fetchCreditLineData(props.creditLinesAddresses, usdc)]
+        creditLines = [await fetchCreditLineData(props.creditLinesAddresses, goldfinchProtocol)]
       }
       setCreditLinePreviews(creditLines)
     }
     getCreditLinePreviews()
-  }, [usdc, props.creditLinesAddresses])
+  }, [goldfinchProtocol, props.creditLinesAddresses])
 
   if (props.creditLinesAddresses.length > 1) {
-    const options = creditLinePreviews.map(cl => {
+    const options = creditLinePreviews.map((cl) => {
       return {
         value: cl.address,
         selectedEl: <>{cl.name}</>,
@@ -51,7 +51,7 @@ function BorrowHeader(props) {
         <Dropdown
           selected={props.selectedCreditLine.address}
           options={options}
-          onSelect={address => {
+          onSelect={(address) => {
             props.changeCreditLine(address)
           }}
         />

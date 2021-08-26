@@ -1,7 +1,7 @@
 import React from "react"
 import web3 from "../web3"
-import { ErrorMessage } from "@hookform/error-message"
-import { iconCheck } from "./icons.js"
+import {ErrorMessage} from "@hookform/error-message"
+import {iconCheck} from "./icons.js"
 
 function AddressInput(props) {
   const validValue = <div className="form-input-note verified-value">valid address {iconCheck}</div>
@@ -17,7 +17,7 @@ function AddressInput(props) {
           placeholder="0x0000"
           className="form-input small-text"
           ref={props.formMethods.register({
-            validate: value => {
+            validate: (value) => {
               return value === "" || web3.utils.isAddress(value)
             },
           })}

@@ -1,11 +1,11 @@
-import React, { useState, useContext } from "react"
+import React, {useState, useContext} from "react"
 import PaymentForm from "./paymentForm.js"
-import { iconUpArrow } from "./icons.js"
-import { AppContext } from "../App"
-import { displayDollars } from "../utils"
+import {iconUpArrow} from "./icons.js"
+import {AppContext} from "../App"
+import {displayDollars} from "../utils"
 
 function CreditActionsMultipleContainer(props) {
-  const { user } = useContext(AppContext)
+  const {user} = useContext(AppContext)
   const [showAction, setShowAction] = useState(null)
 
   function openAction(e, action) {
@@ -31,7 +31,7 @@ function CreditActionsMultipleContainer(props) {
   let payAction
   let payClass = "disabled"
   if (props.creditLine.remainingTotalDueAmount.gt(0) && user.usdcIsUnlocked("borrow")) {
-    payAction = e => {
+    payAction = (e) => {
       openAction(e, "payment")
     }
     payClass = ""
@@ -40,7 +40,7 @@ function CreditActionsMultipleContainer(props) {
   let nextDueDisplay = "No payments due"
   let paymentsDue = 0
   const amountDue = displayDollars(props.creditLine.remainingPeriodDueAmountInDollars)
-  props.creditLine.creditLines.forEach(cl => {
+  props.creditLine.creditLines.forEach((cl) => {
     if (cl.isPaymentDue) {
       paymentsDue += 1
     }

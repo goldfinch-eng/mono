@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity 0.6.12;
+pragma experimental ABIEncoderV2;
 
 /**
  * @title ConfigOptions
@@ -18,12 +19,15 @@ library ConfigOptions {
     ReserveDenominator,
     WithdrawFeeDenominator,
     LatenessGracePeriodInDays,
-    LatenessMaxDays
+    LatenessMaxDays,
+    DrawdownPeriodInSeconds,
+    TransferRestrictionPeriodInDays,
+    LeverageRatio
   }
   enum Addresses {
     Pool,
     CreditLineImplementation,
-    CreditLineFactory,
+    GoldfinchFactory,
     CreditDesk,
     Fidu,
     USDC,
@@ -32,7 +36,13 @@ library ConfigOptions {
     OneInch,
     TrustedForwarder,
     CUSDCContract,
-    GoldfinchConfig
+    GoldfinchConfig,
+    PoolTokens,
+    TranchedPoolImplementation,
+    SeniorPool,
+    SeniorPoolStrategy,
+    MigratedTranchedPoolImplementation,
+    BorrowerImplementation
   }
 
   function getNumberName(uint256 number) public pure returns (string memory) {
@@ -58,6 +68,15 @@ library ConfigOptions {
     if (Numbers.LatenessMaxDays == numberName) {
       return "LatenessMaxDays";
     }
+    if (Numbers.DrawdownPeriodInSeconds == numberName) {
+      return "DrawdownPeriodInSeconds";
+    }
+    if (Numbers.TransferRestrictionPeriodInDays == numberName) {
+      return "TransferRestrictionPeriodInDays";
+    }
+    if (Numbers.LeverageRatio == numberName) {
+      return "LeverageRatio";
+    }
     revert("Unknown value passed to getNumberName");
   }
 
@@ -69,8 +88,8 @@ library ConfigOptions {
     if (Addresses.CreditLineImplementation == addressName) {
       return "CreditLineImplementation";
     }
-    if (Addresses.CreditLineFactory == addressName) {
-      return "CreditLineFactory";
+    if (Addresses.GoldfinchFactory == addressName) {
+      return "GoldfinchFactory";
     }
     if (Addresses.CreditDesk == addressName) {
       return "CreditDesk";
@@ -95,6 +114,24 @@ library ConfigOptions {
     }
     if (Addresses.CUSDCContract == addressName) {
       return "CUSDCContract";
+    }
+    if (Addresses.PoolTokens == addressName) {
+      return "PoolTokens";
+    }
+    if (Addresses.TranchedPoolImplementation == addressName) {
+      return "TranchedPoolImplementation";
+    }
+    if (Addresses.SeniorPool == addressName) {
+      return "SeniorPool";
+    }
+    if (Addresses.SeniorPoolStrategy == addressName) {
+      return "SeniorPoolStrategy";
+    }
+    if (Addresses.MigratedTranchedPoolImplementation == addressName) {
+      return "MigratedTranchedPoolImplementation";
+    }
+    if (Addresses.BorrowerImplementation == addressName) {
+      return "BorrowerImplementation";
     }
     revert("Unknown value passed to getAddressName");
   }

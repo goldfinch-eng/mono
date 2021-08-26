@@ -5,5 +5,8 @@
   "reserveDenominator": 10,
   "withdrawFeeDenominator": 200,
   "latenessGracePeriodInDays": 30,
-  "latenessMaxDays": 120
+  "latenessMaxDays": 120,
+  "drawdownPeriodInSeconds": 86400,
+  "transferRestrictionPeriodInDays": 365,
+  "leverageRatio": "4000000000000000000"
 }

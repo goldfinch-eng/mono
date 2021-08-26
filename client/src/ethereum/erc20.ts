@@ -1,10 +1,11 @@
 import web3 from "../web3"
 import BigNumber from "bignumber.js"
 import * as ERC20Contract from "./ERC20.json"
-import { decimals, USDC_ADDRESSES, USDT_ADDRESSES, BUSD_ADDRESSES, getDeployments } from "./utils"
-import { memoize } from "lodash"
-import { Contract } from "web3-eth-contract"
+import {decimals, USDC_ADDRESSES, USDT_ADDRESSES, BUSD_ADDRESSES} from "./utils"
+import {memoize} from "lodash"
+import {Contract} from "web3-eth-contract"
 import {AbiItem} from "web3-utils/types"
+import {GoldfinchProtocol} from "./GoldfinchProtocol"
 
 const Tickers = {
   USDC: "USDC",
@@ -14,27 +15,28 @@ const Tickers = {
 
 class ERC20 {
   ticker: string
-  networkId: string
   networksToAddress: any
   localContractName?: string
+  permitVersion?: string
   decimals: number
   contract!: Contract
+  goldfinchProtocol: GoldfinchProtocol
 
-  constructor(networkId) {
+  constructor(goldfinchProtocol) {
     this.ticker = "ERC20"
-    this.networkId = networkId
+    this.goldfinchProtocol = goldfinchProtocol
     this.networksToAddress = {}
     this.decimals = 18
   }
 
-  async initialize() {
+  initialize() {
     if (!this.contract) {
-      this.contract = await this.initializeContract(this.networkId)
+      this.contract = this.initializeContract()
     }
   }
 
-  async initializeContract(networkId) {
-    const config = await getDeployments(networkId)
+  initializeContract() {
+    const config = this.goldfinchProtocol.deployments
     const localContract = this.localContractName && config.contracts[this.localContractName]
     let address
     if (localContract) {
@@ -44,7 +46,7 @@ class ERC20 {
         address = this.networksToAddress[process.env.REACT_APP_HARDHAT_FORK]
       } else {
         // Assume we're on testnet or mainnet
-        address = this.networksToAddress[this.networkId]
+        address = this.networksToAddress[this.goldfinchProtocol.networkId]
       }
     }
     const erc20 = new web3.eth.Contract(ERC20Contract.abi as AbiItem[], address)
@@ -56,7 +58,7 @@ class ERC20 {
   }
 
   async getAllowance(opts): Promise<BigNumber> {
-    const { owner, spender } = opts
+    const {owner, spender} = opts
     return new BigNumber(await this.contract.methods.allowance(owner, spender).call())
   }
 
@@ -82,6 +84,7 @@ class USDC extends ERC20 {
     this.networksToAddress = USDC_ADDRESSES
     this.localContractName = "TestERC20"
     this.decimals = 6
+    this.permitVersion = this.goldfinchProtocol.networkId === "localhost" ? "1" : "2"
   }
 }
 
@@ -104,31 +107,27 @@ class BUSD extends ERC20 {
 }
 
 let getERC20 = memoize(
-  async (ticker, networkId) => {
+  (ticker, goldfinchProtocol) => {
     let erc20
     switch (ticker) {
       case Tickers.USDC:
-        erc20 = new USDC(networkId)
+        erc20 = new USDC(goldfinchProtocol)
         break
       case Tickers.USDT:
-        erc20 = new USDT(networkId)
+        erc20 = new USDT(goldfinchProtocol)
         break
       case Tickers.BUSD:
-        erc20 = new BUSD(networkId)
+        erc20 = new BUSD(goldfinchProtocol)
         break
       default:
         throw new Error("Unsupported currency")
     }
 
-    await erc20.initialize()
+    erc20.initialize()
     return erc20
   },
   (...args) => JSON.stringify(args),
 )
-
-async function getUSDC(networkId) {
-  return getERC20(Tickers.USDC, networkId)
-}
 
 function usdcFromAtomic(amount) {
   return new BigNumber(String(amount)).div(decimals.toString()).toString(10)
@@ -142,4 +141,4 @@ function minimumNumber(...args) {
   return BigNumber.minimum(...args).toString(10)
 }
 
-export { getUSDC, getERC20, decimals, usdcFromAtomic, usdcToAtomic, minimumNumber, Tickers, ERC20}
+export {getERC20, decimals, usdcFromAtomic, usdcToAtomic, minimumNumber, Tickers, ERC20}

@@ -1,20 +1,17 @@
 import BigNumber from "bignumber.js"
 import BN from "bn.js"
 import _ from "lodash"
-import {Contract} from 'web3-eth-contract'
-import { AbiItem } from "web3-utils"
-import { ContractOptions } from "web3-eth-contract"
-import { BaseContract } from "../typechain/web3/types"
-import web3 from "../web3"
+import {Contract} from "web3-eth-contract"
+import {BaseContract} from "../typechain/web3/types"
 
 const decimalPlaces = 6
 const decimals = new BN(String(10 ** decimalPlaces))
 const USDC_DECIMALS = decimals
 const CONFIRMATION_THRESHOLD = 6
 const ETHDecimals = new BN(String(1e18))
-const INTEREST_DECIMALS = new BN(String(1e8))
-const BLOCKS_PER_DAY = 5760
-const BLOCKS_PER_YEAR = BLOCKS_PER_DAY * 365
+const INTEREST_DECIMALS = new BN(String(1e18))
+const SECONDS_PER_DAY = 60 * 60 * 24
+const SECONDS_PER_YEAR = SECONDS_PER_DAY * 365
 const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
 const MAINNET = "mainnet"
 const ROPSTEN = "ropsten"
@@ -73,20 +70,21 @@ async function getDeployments(networkId) {
   }
   const deploymentFileNameSuffix = process.env.NODE_ENV === "development" ? "_dev" : ""
   return import(`../../config/deployments${deploymentFileNameSuffix}.json`)
-    .then(result => {
+    .then((result) => {
       config = transformedConfig(result)
 
       if (networkId === "localhost" && process.env.REACT_APP_HARDHAT_FORK) {
         // If we're on the fork, then need to use the mainnet proxy contract addresses instead of the
         // freshly deployed version
-        const mainnetContracts = ["GoldfinchConfig", "CreditDesk", "Pool", "Fidu", "CreditLineFactory"]
+        const mainnetContracts = ["CreditDesk", "Pool", "Fidu", "GoldfinchFactory"]
         const mainnetConfig = config["mainnet"].contracts
-        mainnetContracts.forEach(contract => {
-          if (mainnetConfig[contract]) {
+        mainnetContracts.forEach((contract) => {
+          let mainnetName = contract
+          if (mainnetConfig[mainnetName]) {
             const networkContracts = config[networkId].contracts
-            networkContracts[contract].address = mainnetConfig[contract].address
+            networkContracts[contract].address = mainnetConfig[mainnetName].address
             networkContracts[`${contract}_Proxy`] = networkContracts[`${contract}_Proxy`] || {}
-            let mainnetProxy = mainnetConfig[`${contract}_Proxy`] || networkContracts[contract]
+            let mainnetProxy = mainnetConfig[`${mainnetName}_Proxy`] || networkContracts[contract]
             networkContracts[`${contract}_Proxy`].address = mainnetProxy.address
           }
         })
@@ -100,7 +98,7 @@ function transformedConfig(config) {
   return _.reduce(
     config,
     (result, item) => {
-      _.toArray(item).forEach(networkConfig => {
+      _.toArray(item).forEach((networkConfig) => {
         return _.merge(result, networkConfig)
       })
       return result
@@ -117,17 +115,21 @@ function getFromBlock(chain) {
   }
 }
 
-type MethodInfo = {method: string, name?: string, args?: any}
-function fetchDataFromAttributes(web3Obj: Contract | BaseContract, attributes: MethodInfo[], { bigNumber }: { bigNumber?: boolean } = {}): any {
+type MethodInfo = {method: string; name?: string; args?: any}
+function fetchDataFromAttributes(
+  web3Obj: Contract | BaseContract,
+  attributes: MethodInfo[],
+  {bigNumber}: {bigNumber?: boolean} = {},
+): any {
   const result = {}
   if (!web3Obj) {
     return Promise.resolve(result)
   }
-  var promises = attributes.map(methodInfo => {
+  var promises = attributes.map((methodInfo) => {
     return web3Obj.methods[methodInfo.method](...(methodInfo?.args || [])).call()
   })
   return Promise.all(promises)
-    .then(results => {
+    .then((results) => {
       attributes.forEach((methodInfo, index) => {
         if (bigNumber) {
           result[methodInfo?.name || methodInfo.method] = new BigNumber(results[index])
@@ -137,13 +139,9 @@ function fetchDataFromAttributes(web3Obj: Contract | BaseContract, attributes: M
       })
       return result
     })
-    .catch(e => {
+    .catch((e) => {
       throw new Error(e)
     })
-}
-
-function getContract<T extends BaseContract>(abi: AbiItem | AbiItem[], address?: string, options?: ContractOptions): T {
-  return new web3.eth.Contract(abi, address, options) as any as T
 }
 
 export {
@@ -161,13 +159,12 @@ export {
   MAX_UINT,
   USDC_DECIMALS,
   INTEREST_DECIMALS,
-  BLOCKS_PER_YEAR,
-  BLOCKS_PER_DAY,
+  SECONDS_PER_DAY,
+  SECONDS_PER_YEAR,
   CONFIRMATION_THRESHOLD,
   SUPPORTED_NETWORKS,
   ONE_INCH_ADDRESSES,
   getFromBlock,
   chainIdToNetworkID,
   MAINNET,
-  getContract,
 }

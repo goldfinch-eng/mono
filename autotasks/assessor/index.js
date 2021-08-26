@@ -70,32 +70,32 @@ exports.handler = async function (credentials) {
   }
 }
 
-const assessIfRequired = async function assessIfRequired(creditDesk, creditLine, provider) {
+const assessIfRequired = async function assessIfRequired(tranchedPool, creditLine, provider) {
   // Normalize everything to ethers.BigNumber because tests use Truffle and therefore bn.js
   // which is incompatible with BigNumber
-  const currentBlock = ethers.BigNumber.from((await provider.getBlockNumber()).toString())
-  const nextDueBlock = ethers.BigNumber.from((await creditLine.nextDueBlock()).toString())
-  const termEndBlock = ethers.BigNumber.from((await creditLine.nextDueBlock()).toString())
-  const limit = await creditLine.limit();
+  const currentTime = ethers.BigNumber.from((await provider.getBlock("latest")).timestamp.toString())
+  const nextDueTime = ethers.BigNumber.from((await creditLine.nextDueTime()).toString())
+  const termEndTime = ethers.BigNumber.from((await creditLine.termEndTime()).toString())
+  const limit = await creditLine.limit()
 
   if (limit.isZero()) {
     console.log(`Assess ${creditLine.address}: Skipped (Closed)`)
     return
   }
 
-  if (nextDueBlock.isZero()) {
+  if (nextDueTime.isZero()) {
     const balance = await creditLine.balance()
     if (!balance.isZero()) {
-      throw new Error(`Non-zero balance (${balance}) for creditLine ${creditLine.address} without a nextDueBlock`)
+      throw new Error(`Non-zero balance (${balance}) for creditLine ${creditLine.address} without a nextDueTime`)
     }
     console.log(`Assess ${creditLine.address}: Skipped (Zero balance)`)
   } else {
-    if (currentBlock.gte(termEndBlock)) {
+    if (currentTime.gte(termEndTime)) {
       // Currently we don't have a good way to track the last time we assessed a creditLine past it's
       // term end block. So we're going to keep assessing it everytime the script runs for now.
-      await creditDesk.assessCreditLine(creditLine.address)
-    } else if (currentBlock.gte(nextDueBlock)) {
-      await creditDesk.assessCreditLine(creditLine.address)
+      await tranchedPool.assess()
+    } else if (currentTime.gte(nextDueTime)) {
+      await tranchedPool.assess()
     } else {
       console.log(`Assess ${creditLine.address}: Skipped (Already assessed)`)
     }

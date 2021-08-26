@@ -7,7 +7,9 @@ import "./BaseUpgradeablePausable.sol";
 import "./ConfigHelper.sol";
 import "./Accountant.sol";
 import "./CreditLine.sol";
-import "./CreditLineFactory.sol";
+import "./GoldfinchFactory.sol";
+import "../../interfaces/IV1CreditLine.sol";
+import "../../interfaces/IMigratedTranchedPool.sol";
 
 /**
  * @title Goldfinch's CreditDesk contract
@@ -17,8 +19,7 @@ import "./CreditLineFactory.sol";
  */
 
 contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
-  // Approximate number of blocks per day
-  uint256 public constant BLOCKS_PER_DAY = 5760;
+  uint256 public constant SECONDS_PER_DAY = 60 * 60 * 24;
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
 
@@ -53,6 +54,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
    * @param _config The address of the GoldfinchConfig contract
    */
   function initialize(address owner, GoldfinchConfig _config) public initializer {
+    require(owner != address(0) && address(_config) != address(0), "Owner and config addresses cannot be empty");
     __BaseUpgradeablePausable__init(owner);
     config = _config;
   }
@@ -74,59 +76,6 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     require(withinMaxUnderwriterLimit(limit), "This limit is greater than the max allowed by the protocol");
     underwriters[underwriterAddress].governanceLimit = limit;
     emit GovernanceUpdatedUnderwriterLimit(underwriterAddress, limit);
-  }
-
-  /**
-   * @notice Allows an underwriter to create a new CreditLine for a single borrower
-   * @param _borrower The borrower for whom the CreditLine will be created
-   * @param _limit The maximum amount a borrower can drawdown from this CreditLine
-   * @param _interestApr The interest amount, on an annualized basis (APR, so non-compounding), expressed as an integer.
-   *  We assume 8 digits of precision. For example, to submit 15.34%, you would pass up 15340000,
-   *  and 5.34% would be 5340000
-   * @param _paymentPeriodInDays How many days in each payment period.
-   *  ie. the frequency with which they need to make payments.
-   * @param _termInDays Number of days in the credit term. It is used to set the `termEndBlock` upon first drawdown.
-   *  ie. The credit line should be fully paid off {_termIndays} days after the first drawdown.
-   * @param _lateFeeApr The additional interest you will pay if you are late. For example, if this is 3%, and your
-   *  normal rate is 15%, then you will pay 18% while you are late.
-   *
-   * Requirements:
-   *
-   * - the caller must be an underwriter with enough limit (see `setUnderwriterGovernanceLimit`)
-   */
-  function createCreditLine(
-    address _borrower,
-    uint256 _limit,
-    uint256 _interestApr,
-    uint256 _paymentPeriodInDays,
-    uint256 _termInDays,
-    uint256 _lateFeeApr
-  ) public override whenNotPaused returns (address) {
-    Underwriter storage underwriter = underwriters[msg.sender];
-    Borrower storage borrower = borrowers[_borrower];
-    require(underwriterCanCreateThisCreditLine(_limit, underwriter), "The underwriter cannot create this credit line");
-
-    address clAddress = getCreditLineFactory().createCreditLine();
-    CreditLine cl = CreditLine(clAddress);
-    cl.initialize(
-      address(this),
-      _borrower,
-      msg.sender,
-      _limit,
-      _interestApr,
-      _paymentPeriodInDays,
-      _termInDays,
-      _lateFeeApr
-    );
-
-    underwriter.creditLines.push(clAddress);
-    borrower.creditLines.push(clAddress);
-    creditLines[clAddress] = clAddress;
-    emit CreditLineCreated(_borrower, clAddress);
-
-    cl.grantRole(keccak256("OWNER_ROLE"), config.protocolAdminAddress());
-    cl.authorizePool(address(config));
-    return clAddress;
   }
 
   /**
@@ -160,8 +109,8 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     uint256 balance = cl.balance();
 
     if (balance == 0) {
-      cl.setInterestAccruedAsOfBlock(blockNumber());
-      cl.setLastFullPaymentBlock(blockNumber());
+      cl.setInterestAccruedAsOf(currentTime());
+      cl.setLastFullPaymentTime(currentTime());
     }
 
     IPool pool = config.getPool();
@@ -182,14 +131,14 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
       require(success, "Failed to drawdown");
     }
 
-    (uint256 interestOwed, uint256 principalOwed) = updateAndGetInterestAndPrincipalOwedAsOf(cl, blockNumber());
+    (uint256 interestOwed, uint256 principalOwed) = updateAndGetInterestAndPrincipalOwedAsOf(cl, currentTime());
     balance = balance.add(amount);
 
     updateCreditLineAccounting(cl, balance, interestOwed, principalOwed);
 
     // Must put this after we update the credit line accounting, so we're using the latest
     // interestOwed
-    require(!isLate(cl), "Cannot drawdown when payments are past due");
+    require(!isLate(cl, currentTime()), "Cannot drawdown when payments are past due");
     emit DrawdownMade(msg.sender, address(cl), amount.add(amountToTransferFromCL));
 
     if (amount > 0) {
@@ -200,7 +149,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
 
   /**
    * @notice Allows a borrower to repay their loan. Payment is *collected* immediately (by sending it to
-   *  the individual CreditLine), but it is not *applied* unless it is after the nextDueBlock, or until we assess
+   *  the individual CreditLine), but it is not *applied* unless it is after the nextDueTime, or until we assess
    *  the credit line (ie. payment period end).
    *  Any amounts over the minimum payment will be applied to outstanding principal (reducing the effective
    *  interest rate). If there is still any left over, it will remain in the USDC Balance
@@ -238,21 +187,21 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     require(cl.balance() > 0, "Must have balance to assess credit line");
 
     // Don't assess credit lines early!
-    if (blockNumber() < cl.nextDueBlock() && !isLate(cl)) {
+    if (currentTime() < cl.nextDueTime() && !isLate(cl, currentTime())) {
       return;
     }
 
-    uint256 blockToAssess = calculateNextDueBlock(cl);
-    cl.setNextDueBlock(blockToAssess);
+    uint256 timeToAssess = calculateNextDueTime(cl);
+    cl.setNextDueTime(timeToAssess);
 
-    // We always want to assess for the most recently *past* nextDueBlock.
-    // So if the recalculation above sets the nextDueBlock into the future,
+    // We always want to assess for the most recently *past* nextDueTime.
+    // So if the recalculation above sets the nextDueTime into the future,
     // then ensure we pass in the one just before this.
-    if (blockToAssess > blockNumber()) {
-      uint256 blocksPerPeriod = cl.paymentPeriodInDays().mul(BLOCKS_PER_DAY);
-      blockToAssess = blockToAssess.sub(blocksPerPeriod);
+    if (timeToAssess > currentTime()) {
+      uint256 secondsPerPeriod = cl.paymentPeriodInDays().mul(SECONDS_PER_DAY);
+      timeToAssess = timeToAssess.sub(secondsPerPeriod);
     }
-    _applyPayment(cl, getUSDCBalance(address(cl)), blockToAssess);
+    _applyPayment(cl, getUSDCBalance(address(cl)), timeToAssess);
   }
 
   function applyPayment(address creditLineAddress, uint256 amount)
@@ -263,46 +212,58 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
   {
     CreditLine cl = CreditLine(creditLineAddress);
     require(cl.borrower() == msg.sender, "You do not belong to this credit line");
-    _applyPayment(cl, amount, blockNumber());
+    _applyPayment(cl, amount, currentTime());
   }
 
-  function migrateCreditLine(
-    CreditLine clToMigrate,
+  function migrateV1CreditLine(
+    address _clToMigrate,
     address borrower,
-    uint256 limit,
-    uint256 interestApr,
-    uint256 paymentPeriodInDays,
-    uint256 termInDays,
-    uint256 lateFeeApr
-  ) public {
-    require(clToMigrate.underwriter() == msg.sender, "Caller must be the underwriter");
+    uint256 termEndTime,
+    uint256 nextDueTime,
+    uint256 interestAccruedAsOf,
+    uint256 lastFullPaymentTime,
+    uint256 totalInterestPaid
+  ) public onlyAdmin returns (address, address) {
+    IV1CreditLine clToMigrate = IV1CreditLine(_clToMigrate);
+    uint256 originalBalance = clToMigrate.balance();
     require(clToMigrate.limit() > 0, "Can't migrate empty credit line");
-    address newClAddress = createCreditLine(borrower, limit, interestApr, paymentPeriodInDays, termInDays, lateFeeApr);
+    require(originalBalance > 0, "Can't migrate credit line that's currently paid off");
+    // Ensure it is a v1 creditline by calling a function that only exists on v1
+    require(clToMigrate.nextDueBlock() > 0, "Invalid creditline");
+    if (borrower == address(0)) {
+      borrower = clToMigrate.borrower();
+    }
+    // We're migrating from 1e8 decimal precision of interest rates to 1e18
+    // So multiply the legacy rates by 1e10 to normalize them.
+    uint256 interestMigrationFactor = 1e10;
+    address pool = getGoldfinchFactory().createMigratedPool(
+      borrower,
+      20, // junior fee percent
+      clToMigrate.limit(),
+      clToMigrate.interestApr().mul(interestMigrationFactor),
+      clToMigrate.paymentPeriodInDays(),
+      clToMigrate.termInDays(),
+      clToMigrate.lateFeeApr()
+    );
 
-    CreditLine newCl = CreditLine(newClAddress);
-
-    // Set accounting state vars.
-    newCl.setBalance(clToMigrate.balance());
-    newCl.setInterestOwed(clToMigrate.interestOwed());
-    newCl.setPrincipalOwed(clToMigrate.principalOwed());
-    newCl.setTermEndBlock(clToMigrate.termEndBlock());
-    newCl.setNextDueBlock(clToMigrate.nextDueBlock());
-    newCl.setInterestAccruedAsOfBlock(clToMigrate.interestAccruedAsOfBlock());
-    newCl.setWritedownAmount(clToMigrate.writedownAmount());
-    newCl.setLastFullPaymentBlock(clToMigrate.lastFullPaymentBlock());
+    IV2CreditLine newCl = IMigratedTranchedPool(pool).migrateCreditLineToV2(
+      clToMigrate,
+      termEndTime,
+      nextDueTime,
+      interestAccruedAsOf,
+      lastFullPaymentTime,
+      totalInterestPaid
+    );
 
     // Close out the original credit line
     clToMigrate.setLimit(0);
     clToMigrate.setBalance(0);
-    bool success = config.getPool().transferFrom(
-      address(clToMigrate),
-      address(newCl),
-      config.getUSDC().balanceOf(address(clToMigrate))
-    );
-    require(success, "Failed to transfer funds");
-  }
 
-  // Public View Functions (Getters)
+    // Some sanity checks on the migration
+    require(newCl.balance() == originalBalance, "Balance did not migrate properly");
+    require(newCl.interestAccruedAsOf() == interestAccruedAsOf, "Interest accrued as of did not migrate properly");
+    return (address(newCl), pool);
+  }
 
   /**
    * @notice Simple getter for the creditlines of a given underwriter
@@ -322,30 +283,30 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
 
   /**
    * @notice This function is only meant to be used by frontends. It returns the total
-   * payment due for a given creditLine as of the provided blocknumber. Returns 0 if no
-   * payment is due (e.g. asOfBLock is before the nextDueBlock)
+   * payment due for a given creditLine as of the provided timestamp. Returns 0 if no
+   * payment is due (e.g. asOf is before the nextDueTime)
    * @param creditLineAddress The creditLine to calculate the payment for
-   * @param asOfBLock The block to use for the payment calculation, if it is set to 0, uses the current block number
+   * @param asOf The timestamp to use for the payment calculation, if it is set to 0, uses the current time
    */
-  function getNextPaymentAmount(address creditLineAddress, uint256 asOfBLock)
+  function getNextPaymentAmount(address creditLineAddress, uint256 asOf)
     external
     view
     override
     onlyValidCreditLine(creditLineAddress)
     returns (uint256)
   {
-    if (asOfBLock == 0) {
-      asOfBLock = blockNumber();
+    if (asOf == 0) {
+      asOf = currentTime();
     }
     CreditLine cl = CreditLine(creditLineAddress);
 
-    if (asOfBLock < cl.nextDueBlock() && !isLate(cl)) {
+    if (asOf < cl.nextDueTime() && !isLate(cl, currentTime())) {
       return 0;
     }
 
     (uint256 interestAccrued, uint256 principalAccrued) = Accountant.calculateInterestAndPrincipalAccrued(
       cl,
-      asOfBLock,
+      asOf,
       config.getLatenessGracePeriodInDays()
     );
     return cl.interestOwed().add(interestAccrued).add(cl.principalOwed().add(principalAccrued));
@@ -382,22 +343,21 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
    *  USDC Balance of the creditLine, where it will be automatically used for the next drawdown.
    * @param cl The CreditLine the payment will be collected for.
    * @param amount The amount, in USDC atomic units, to be applied
-   * @param blockNumber The blockNumber on which accrual calculations should be based. This allows us
+   * @param timestamp The timestamp on which accrual calculations should be based. This allows us
    *  to be precise when we assess a Credit Line
    */
   function _applyPayment(
     CreditLine cl,
     uint256 amount,
-    uint256 blockNumber
+    uint256 timestamp
   ) internal {
     (uint256 paymentRemaining, uint256 interestPayment, uint256 principalPayment) = handlePayment(
       cl,
       amount,
-      blockNumber
+      timestamp
     );
 
     IPool pool = config.getPool();
-    updateWritedownAmounts(cl, pool);
 
     if (interestPayment > 0 || principalPayment > 0) {
       emit PaymentApplied(cl.borrower(), address(cl), interestPayment, principalPayment, paymentRemaining);
@@ -408,7 +368,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
   function handlePayment(
     CreditLine cl,
     uint256 paymentAmount,
-    uint256 asOfBlock
+    uint256 timestamp
   )
     internal
     returns (
@@ -417,7 +377,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
       uint256
     )
   {
-    (uint256 interestOwed, uint256 principalOwed) = updateAndGetInterestAndPrincipalOwedAsOf(cl, asOfBlock);
+    (uint256 interestOwed, uint256 principalOwed) = updateAndGetInterestAndPrincipalOwedAsOf(cl, timestamp);
     Accountant.PaymentAllocation memory pa = Accountant.allocatePayment(
       paymentAmount,
       cl.balance(),
@@ -428,7 +388,6 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     uint256 newBalance = cl.balance().sub(pa.principalPayment);
     // Apply any additional payment towards the balance
     newBalance = newBalance.sub(pa.additionalBalancePayment);
-
     uint256 totalPrincipalPayment = cl.balance().sub(newBalance);
     uint256 paymentRemaining = paymentAmount.sub(pa.interestPayment).sub(totalPrincipalPayment);
 
@@ -444,51 +403,29 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     return (paymentRemaining, pa.interestPayment, totalPrincipalPayment);
   }
 
-  function updateWritedownAmounts(CreditLine cl, IPool pool) internal {
-    (uint256 writedownPercent, uint256 writedownAmount) = Accountant.calculateWritedownFor(
-      cl,
-      blockNumber(),
-      config.getLatenessGracePeriodInDays(),
-      config.getLatenessMaxDays()
-    );
-
-    if (writedownPercent == 0 && cl.writedownAmount() == 0) {
-      return;
-    }
-    int256 writedownDelta = int256(cl.writedownAmount()) - int256(writedownAmount);
-    cl.setWritedownAmount(writedownAmount);
-    if (writedownDelta > 0) {
-      // If writedownDelta is positive, that means we got money back. So subtract from totalWritedowns.
-      totalWritedowns = totalWritedowns.sub(uint256(writedownDelta));
-    } else {
-      totalWritedowns = totalWritedowns.add(uint256(writedownDelta * -1));
-    }
-    pool.distributeLosses(address(cl), writedownDelta);
+  function isLate(CreditLine cl, uint256 timestamp) internal view returns (bool) {
+    uint256 secondsElapsedSinceFullPayment = timestamp.sub(cl.lastFullPaymentTime());
+    return secondsElapsedSinceFullPayment > cl.paymentPeriodInDays().mul(SECONDS_PER_DAY);
   }
 
-  function isLate(CreditLine cl) internal view returns (bool) {
-    uint256 blocksElapsedSinceFullPayment = blockNumber().sub(cl.lastFullPaymentBlock());
-    return blocksElapsedSinceFullPayment > cl.paymentPeriodInDays().mul(BLOCKS_PER_DAY);
+  function getGoldfinchFactory() internal view returns (GoldfinchFactory) {
+    return GoldfinchFactory(config.getAddress(uint256(ConfigOptions.Addresses.GoldfinchFactory)));
   }
 
-  function getCreditLineFactory() internal view returns (CreditLineFactory) {
-    return CreditLineFactory(config.getAddress(uint256(ConfigOptions.Addresses.CreditLineFactory)));
-  }
-
-  function updateAndGetInterestAndPrincipalOwedAsOf(CreditLine cl, uint256 blockNumber)
+  function updateAndGetInterestAndPrincipalOwedAsOf(CreditLine cl, uint256 timestamp)
     internal
     returns (uint256, uint256)
   {
     (uint256 interestAccrued, uint256 principalAccrued) = Accountant.calculateInterestAndPrincipalAccrued(
       cl,
-      blockNumber,
+      timestamp,
       config.getLatenessGracePeriodInDays()
     );
     if (interestAccrued > 0) {
-      // If we've accrued any interest, update interestAccruedAsOfBLock to the block that we've
+      // If we've accrued any interest, update interestAccruedAsOf to the time that we've
       // calculated interest for. If we've not accrued any interest, then we keep the old value so the next
       // time the entire period is taken into account.
-      cl.setInterestAccruedAsOfBlock(blockNumber);
+      cl.setInterestAccruedAsOf(timestamp);
     }
     return (cl.interestOwed().add(interestAccrued), cl.principalOwed().add(principalAccrued));
   }
@@ -505,50 +442,50 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     return amount <= config.getNumber(uint256(ConfigOptions.Numbers.TransactionLimit));
   }
 
-  function calculateNewTermEndBlock(CreditLine cl, uint256 balance) internal view returns (uint256) {
-    // If there's no balance, there's no loan, so there's no term end block
+  function calculateNewTermEndTime(CreditLine cl, uint256 balance) internal view returns (uint256) {
+    // If there's no balance, there's no loan, so there's no term end time
     if (balance == 0) {
       return 0;
     }
-    // Don't allow any weird bugs where we add to your current end block. This
+    // Don't allow any weird bugs where we add to your current end time. This
     // function should only be used on new credit lines, when we are setting them up
-    if (cl.termEndBlock() != 0) {
-      return cl.termEndBlock();
+    if (cl.termEndTime() != 0) {
+      return cl.termEndTime();
     }
-    return blockNumber().add(BLOCKS_PER_DAY.mul(cl.termInDays()));
+    return currentTime().add(SECONDS_PER_DAY.mul(cl.termInDays()));
   }
 
-  function calculateNextDueBlock(CreditLine cl) internal view returns (uint256) {
-    uint256 blocksPerPeriod = cl.paymentPeriodInDays().mul(BLOCKS_PER_DAY);
+  function calculateNextDueTime(CreditLine cl) internal view returns (uint256) {
+    uint256 secondsPerPeriod = cl.paymentPeriodInDays().mul(SECONDS_PER_DAY);
     uint256 balance = cl.balance();
-    uint256 nextDueBlock = cl.nextDueBlock();
-    uint256 curBlockNumber = blockNumber();
+    uint256 nextDueTime = cl.nextDueTime();
+    uint256 curTimestamp = currentTime();
     // You must have just done your first drawdown
-    if (nextDueBlock == 0 && balance > 0) {
-      return curBlockNumber.add(blocksPerPeriod);
+    if (nextDueTime == 0 && balance > 0) {
+      return curTimestamp.add(secondsPerPeriod);
     }
 
-    // Active loan that has entered a new period, so return the *next* nextDueBlock.
-    // But never return something after the termEndBlock
-    if (balance > 0 && curBlockNumber >= nextDueBlock) {
-      uint256 blocksToAdvance = (curBlockNumber.sub(nextDueBlock).div(blocksPerPeriod)).add(1).mul(blocksPerPeriod);
-      nextDueBlock = nextDueBlock.add(blocksToAdvance);
-      return Math.min(nextDueBlock, cl.termEndBlock());
+    // Active loan that has entered a new period, so return the *next* nextDueTime.
+    // But never return something after the termEndTime
+    if (balance > 0 && curTimestamp >= nextDueTime) {
+      uint256 secondsToAdvance = (curTimestamp.sub(nextDueTime).div(secondsPerPeriod)).add(1).mul(secondsPerPeriod);
+      nextDueTime = nextDueTime.add(secondsToAdvance);
+      return Math.min(nextDueTime, cl.termEndTime());
     }
 
-    // Your paid off, or have not taken out a loan yet, so no next due block.
-    if (balance == 0 && nextDueBlock != 0) {
+    // Your paid off, or have not taken out a loan yet, so no next due time.
+    if (balance == 0 && nextDueTime != 0) {
       return 0;
     }
-    // Active loan in current period, where we've already set the nextDueBlock correctly, so should not change.
-    if (balance > 0 && curBlockNumber < nextDueBlock) {
-      return nextDueBlock;
+    // Active loan in current period, where we've already set the nextDueTime correctly, so should not change.
+    if (balance > 0 && curTimestamp < nextDueTime) {
+      return nextDueTime;
     }
-    revert("Error: could not calculate next due block.");
+    revert("Error: could not calculate next due time.");
   }
 
-  function blockNumber() internal view virtual returns (uint256) {
-    return block.number;
+  function currentTime() internal view virtual returns (uint256) {
+    return block.timestamp;
   }
 
   function underwriterCanCreateThisCreditLine(uint256 newAmount, Underwriter storage underwriter)
@@ -590,26 +527,26 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     cl.setInterestOwed(interestOwed);
     cl.setPrincipalOwed(principalOwed);
 
-    // This resets lastFullPaymentBlock. These conditions assure that they have
-    // indeed paid off all their interest and they have a real nextDueBlock. (ie. creditline isn't pre-drawdown)
-    uint256 nextDueBlock = cl.nextDueBlock();
-    if (interestOwed == 0 && nextDueBlock != 0) {
-      // If interest was fully paid off, then set the last full payment as the previous due block
-      uint256 mostRecentLastDueBlock;
-      if (blockNumber() < nextDueBlock) {
-        uint256 blocksPerPeriod = cl.paymentPeriodInDays().mul(BLOCKS_PER_DAY);
-        mostRecentLastDueBlock = nextDueBlock.sub(blocksPerPeriod);
+    // This resets lastFullPaymentTime. These conditions assure that they have
+    // indeed paid off all their interest and they have a real nextDueTime. (ie. creditline isn't pre-drawdown)
+    uint256 nextDueTime = cl.nextDueTime();
+    if (interestOwed == 0 && nextDueTime != 0) {
+      // If interest was fully paid off, then set the last full payment as the previous due time
+      uint256 mostRecentLastDueTime;
+      if (currentTime() < nextDueTime) {
+        uint256 secondsPerPeriod = cl.paymentPeriodInDays().mul(SECONDS_PER_DAY);
+        mostRecentLastDueTime = nextDueTime.sub(secondsPerPeriod);
       } else {
-        mostRecentLastDueBlock = nextDueBlock;
+        mostRecentLastDueTime = nextDueTime;
       }
-      cl.setLastFullPaymentBlock(mostRecentLastDueBlock);
+      cl.setLastFullPaymentTime(mostRecentLastDueTime);
     }
 
     // Add new amount back to total loans outstanding
     totalLoansOutstanding = totalLoansOutstanding.add(balance);
 
-    cl.setTermEndBlock(calculateNewTermEndBlock(cl, balance)); // pass in balance as a gas optimization
-    cl.setNextDueBlock(calculateNextDueBlock(cl));
+    cl.setTermEndTime(calculateNewTermEndTime(cl, balance)); // pass in balance as a gas optimization
+    cl.setNextDueTime(calculateNextDueTime(cl));
   }
 
   function getUSDCBalance(address _address) internal view returns (uint256) {

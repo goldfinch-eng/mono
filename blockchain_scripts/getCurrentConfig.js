@@ -6,8 +6,8 @@ const {CONFIG_KEYS} = require("./configKeys")
 
 async function main() {
   let configAddress = process.env.CONFIG_ADDRESS || (await deployments.get("GoldfinchConfig")).address
-  let {proxy_owner} = await hre.getNamedAccounts()
-  let signer = await getSignerForAddress(proxy_owner)
+  let {gf_deployer} = await hre.getNamedAccounts()
+  let signer = await getSignerForAddress(gf_deployer)
   const config = await ethers.getContractAt("GoldfinchConfig", configAddress, signer)
 
   console.log(`GoldfinchConfig (${config.address})`)
@@ -20,10 +20,13 @@ async function main() {
   console.log("WithdrawFeeDenominator ==", String(await config.getNumber(4)))
   console.log("LatenessGracePeriodInDays ==", String(await config.getNumber(5)))
   console.log("LatenessMaxDays ==", String(await config.getNumber(6)))
+  console.log("DrawdownPeriodInSeconds ==", String(await config.getNumber(7)))
+  console.log("TransferPeriodRestrictionInDays ==", String(await config.getNumber(8)))
+  console.log("LeverageRatio ==", String(await config.getNumber(9)))
 
   console.log("Pool ==", String(await config.getAddress(CONFIG_KEYS.Pool)))
   console.log("CreditLineImplementation ==", String(await config.getAddress(CONFIG_KEYS.CreditLineImplementation)))
-  console.log("CreditLineFactory ==", String(await config.getAddress(CONFIG_KEYS.CreditLineFactory)))
+  console.log("GoldfinchFactory ==", String(await config.getAddress(CONFIG_KEYS.GoldfinchFactory)))
   console.log("CreditDesk ==", String(await config.getAddress(CONFIG_KEYS.CreditDesk)))
   console.log("Fidu ==", String(await config.getAddress(CONFIG_KEYS.Fidu)))
   console.log("USDC ==", String(await config.getAddress(CONFIG_KEYS.USDC)))

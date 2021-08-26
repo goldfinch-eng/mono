@@ -1,8 +1,8 @@
 import BigNumber from "bignumber.js"
 import web3 from "../web3"
 import _ from "lodash"
-import { buildCreditLine } from "./creditLine"
-import { getDeployments, getFromBlock, fetchDataFromAttributes, INTEREST_DECIMALS } from "./utils"
+import {buildCreditLine} from "./creditLine"
+import {getDeployments, getFromBlock, fetchDataFromAttributes, INTEREST_DECIMALS} from "./utils"
 
 async function getCreditDesk(networkId) {
   const config = await getDeployments(networkId)
@@ -30,23 +30,23 @@ async function getEstimatedTotalInterest(creditDesk) {
     toBlock: "latest",
   })
   const creditLineDataPromises = allCreditLines
-    .map(event => buildCreditLine(event.returnValues.creditLine))
-    .map(async creditLine => {
-      return await fetchDataFromAttributes(creditLine, [{ method: "balance" }, { method: "interestApr" }], {
+    .map((event) => buildCreditLine(event.returnValues.creditLine))
+    .map(async (creditLine) => {
+      return await fetchDataFromAttributes(creditLine, [{method: "balance"}, {method: "interestApr"}], {
         bigNumber: true,
       })
     })
   const creditLineData = await Promise.all(creditLineDataPromises)
   return BigNumber.sum.apply(
     null,
-    creditLineData.map(cl => cl.balance.multipliedBy(cl.interestApr.dividedBy(INTEREST_DECIMALS))),
+    creditLineData.map((cl) => cl.balance.multipliedBy(cl.interestApr.dividedBy(INTEREST_DECIMALS))),
   )
 }
 
 async function getCumulativeDrawdowns(creditDesk) {
   const fromBlock = getFromBlock(creditDesk.chain)
-  const drawdownEvents = await creditDesk.getPastEvents("DrawdownMade", { fromBlock: fromBlock })
-  return new BigNumber(_.sumBy(drawdownEvents, event => parseInt(event.returnValues.drawdownAmount, 10)))
+  const drawdownEvents = await creditDesk.getPastEvents("DrawdownMade", {fromBlock: fromBlock})
+  return new BigNumber(_.sumBy(drawdownEvents, (event) => parseInt(event.returnValues.drawdownAmount, 10)))
 }
 
-export { getCreditDesk, fetchCreditDeskData }
+export {getCreditDesk, fetchCreditDeskData}

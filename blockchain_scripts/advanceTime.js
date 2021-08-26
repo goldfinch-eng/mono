@@ -1,6 +1,6 @@
 const hre = require("hardhat")
 const BN = require("bn.js")
-const {BLOCKS_PER_DAY} = require("../test/testHelpers.js")
+const {SECONDS_PER_DAY} = require("../test/testHelpers")
 
 async function main() {
   await advanceTime()
@@ -8,19 +8,13 @@ async function main() {
 
 async function advanceTime(logger = console.log) {
   const daysToAdvance = new BN(process.env.DAYS || "10")
-  const blocksToAdvance = BLOCKS_PER_DAY.mul(daysToAdvance)
-  logger(`Advancing time by ${daysToAdvance.toString()} days (${blocksToAdvance.toString()} blocks)`)
-  let day = new BN(0)
-  for (let i = 1; i <= blocksToAdvance.toNumber(); i++) {
-    await hre.network.provider.request({
-      method: "evm_mine",
-      params: [],
-    })
-    if (!new BN(i).divRound(BLOCKS_PER_DAY).eq(day)) {
-      day = new BN(i).divRound(BLOCKS_PER_DAY)
-      logger(`${day.toString()}/${daysToAdvance.toString()}`)
-    }
-  }
+  const secondsToAdvance = SECONDS_PER_DAY.mul(daysToAdvance)
+  const newTimestamp = new BN(Math.round(Date.now() / 1000)).add(new BN(secondsToAdvance))
+  logger(`Advancing time by ${daysToAdvance.toString()} days (timestamp: ${newTimestamp.toNumber()})`)
+  await hre.network.provider.request({
+    method: "evm_setNextBlockTimestamp",
+    params: [newTimestamp.toNumber()],
+  })
   logger("Done")
 }
 

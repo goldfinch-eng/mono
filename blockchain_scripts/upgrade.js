@@ -1,32 +1,33 @@
-const {deployContractUpgrade, SAFE_CONFIG, CHAIN_MAPPING} = require("./deployHelpers.js")
-const DefenderUpgrader = require("./defender-upgrader.js")
+const {deployContractUpgrade, SAFE_CONFIG, CHAIN_NAME_BY_ID, assertIsChainId} = require("./deployHelpers")
+const DefenderUpgrader = require("./adminActions/defenderUpgrader")
 const hre = require("hardhat")
 
 /*
 This script deploys the latest implementations of upgradeable contracts and requests an upgrade via the
-gnosis multisig
+gnosis upgradeViaMultisig
 */
 let logger
 
 async function main() {
-  await multisig(hre)
+  await upgradeViaMultisig(hre)
 }
 
-async function multisig(hre) {
+async function upgradeViaMultisig(hre) {
   const {getNamedAccounts, getChainId} = hre
-  const {proxy_owner} = await getNamedAccounts()
+  const {gf_deployer} = await getNamedAccounts()
 
   // Since this is not a "real" deployment (just a script),
   //the deployments.log is not enabled. So, just use console.log instead
   logger = console.log
   const chainId = await getChainId()
-  const network = CHAIN_MAPPING[chainId]
+  assertIsChainId(chainId)
+  const network = CHAIN_NAME_BY_ID[chainId]
 
   if (!SAFE_CONFIG[chainId]) {
     throw new Error(`Unsupported chain id: ${chainId}`)
   }
 
-  let contractsToUpgrade = process.env.CONTRACTS || "GoldfinchConfig, CreditLineFactory, CreditDesk, Pool, Fidu"
+  let contractsToUpgrade = process.env.CONTRACTS || "GoldfinchConfig, GoldfinchFactory, CreditDesk, Pool, Fidu"
   logger(`Deploying upgrades on chainId ${chainId} for: ${contractsToUpgrade}`)
   contractsToUpgrade = contractsToUpgrade.split(/[ ,]+/)
 
@@ -35,7 +36,7 @@ async function multisig(hre) {
     upgrader = new DefenderUpgrader({hre, logger, chainId, network})
   }
 
-  const contracts = await deployUpgrades({contractNames: contractsToUpgrade, proxy_owner, hre, upgrader})
+  const contracts = await deployUpgrades({contractNames: contractsToUpgrade, gf_deployer, hre, upgrader})
 
   logger(`Safe address: ${SAFE_CONFIG[chainId].safeAddress}`)
   for (let i = 0; i < contractsToUpgrade.length; i++) {
@@ -45,14 +46,15 @@ async function multisig(hre) {
   }
 
   logger("Done.")
+  return contracts
 }
 
-async function deployUpgrades({contractNames, proxy_owner, hre, upgrader}) {
+async function deployUpgrades({contractNames, gf_deployer, hre, upgrader}) {
   const {deployments, ethers} = hre
   const {deploy} = deployments
 
   let accountant = await deploy("Accountant", {
-    from: proxy_owner,
+    from: gf_deployer,
     gas: 4000000,
     args: [],
   })
@@ -63,12 +65,12 @@ async function deployUpgrades({contractNames, proxy_owner, hre, upgrader}) {
 
   for (let i = 0; i < contractNames.length; i++) {
     let contractName = contractNames[i]
-    let contractInfo = await deployContractUpgrade(contractName, dependencies, proxy_owner, deployments, ethers)
+    let contractInfo = await deployContractUpgrade(contractName, dependencies, gf_deployer, deployments, ethers)
 
     result[contractName] = contractInfo
 
     logger(`Writing out ABI for ${contractName}`)
-    await exportDeployment(deployments, contractName, dependencies, proxy_owner)
+    await exportDeployment(deployments, contractName, dependencies, gf_deployer)
 
     if (contractInfo.currentImplementation.toLowerCase() === contractInfo.newImplementation.toLowerCase()) {
       logger(`${contractName} did not change, skipping`)
@@ -86,15 +88,15 @@ async function deployUpgrades({contractNames, proxy_owner, hre, upgrader}) {
   return result
 }
 
-async function exportDeployment(deployments, contractName, dependencies, proxy_owner) {
+async function exportDeployment(deployments, contractName, dependencies, gf_deployer) {
   // As of hardhat-deploy ^0.7.0-beta.46, deploying a proxy where the implementation
   // has already been deployed "out of band" will do nothing but update the top level
   // contractName.json's ABIs and implementation address.
   await deployments.deploy(contractName, {
-    from: proxy_owner,
+    from: gf_deployer,
     gas: 4000000,
     args: [],
-    proxy: {owner: proxy_owner},
+    proxy: {owner: gf_deployer},
     libraries: dependencies[contractName],
   })
 }
@@ -109,4 +111,4 @@ if (require.main === module) {
     })
 }
 
-module.exports = {multisig, deployUpgrades, DefenderUpgrader}
+module.exports = {upgradeViaMultisig, deployUpgrades, DefenderUpgrader}

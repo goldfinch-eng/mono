@@ -3,6 +3,7 @@
   "rules": {
     "compiler-version": ["error", "^0.6.12"],
     "prettier/prettier": "error",
+    "not-rely-on-time": "off",
     "reason-string": ["warn",{"maxLength":120}],
     "max-line-length": ["error", 120],
     "modifiers/ensure-modifiers": ["error", {
@@ -10,21 +11,47 @@
         "*": ["onlyAdmin"]
       },
       "override": {
-        "*:*.initialize": [],
+        "**/PoolTokens.sol:PoolTokens": {
+          "mint": ["onlyPool"],
+          "redeem": ["onlyPool"],
+          "onPoolCreated": ["onlyGoldfinchFactory"],
+          "burn": [],
+          "getTokenInfo": []
+        },
+        "*:*.initialize": ["initializer"],
+        "*:*.__initialize__": ["initializer"],
+        "*:*.null": [],
         "**/CreditDesk.sol:CreditDesk": {
           "createCreditLine": [],
+          "createPool": [],
           "drawdown": [],
           "pay": [],
           "assessCreditLine": [],
           "applyPayment": [],
-          "migrateCreditLine": []
+          "migrateCreditLine": [],
+          "migrateV1CreditLine": []
         },
-        "**/CreditLineFactory.sol:CreditLineFactory": {
+        "**/GoldfinchConfig.sol:GoldfinchConfig": {
+          "addToGoList": ["onlyGoListerRole"],
+          "bulkAddToGoList": ["onlyGoListerRole"],
+          "removeFromGoList": ["onlyGoListerRole"],
+          "bulkRemoveFromGoList": ["onlyGoListerRole"]
+        },
+        "**/GoldfinchFactory.sol:GoldfinchFactory": {
           "createCreditLine": [],
-          "createBorrower": []
+          "createBorrower": [],
+          "createPool": [],
+          "validPool": [],
+          "createMigratedPool": []
         },
         "**/CreditLine.sol:CreditLine": {
           "setLimit": []
+        },
+        "**/V2Migrator.sol:V2Migrator": {
+          "upgradeImplementations": []
+        },
+        "**/MigratedTranchedPool.sol:MigratedTranchedPool": {
+          "migrateCreditLineToV2": []
         },
         "**/BaseUpgradeablePausable.sol:BaseUpgradeablePausable": {
           "__BaseUpgradeablePausable__init": []
@@ -44,10 +71,50 @@
           "transferFrom": [],
           "drawdown": []
         },
+        "**/TranchedPool.sol:TranchedPool": {
+          "deposit": ["whenNotPaused"],
+          "depositWithPermit": [],
+          "lockJuniorCapital": ["whenNotPaused", "onlyLocker"],
+          "lockPool": ["whenNotPaused", "onlyLocker"],
+          "withdraw": ["whenNotPaused", "onlyTokenHolder"],
+          "withdrawMax": ["whenNotPaused", "onlyTokenHolder"],
+          "withdrawMultiple": [],
+          "drawdown": ["whenNotPaused"],
+          "assess": ["whenNotPaused"],
+          "pay": ["whenNotPaused"]
+        },
         "**/PauserPausable.sol:PauserPausable": {
           "__PauserPausable__init": [],
           "pause": [],
           "unpause": []
+        },
+        "**/SeniorPool.sol:SeniorPool": {
+          "deposit": [],
+          "depositWithPermit": [],
+          "withdraw": [],
+          "withdrawInFidu": []
+        },
+        "**/SeniorPoolFidu.sol:SeniorPoolFidu": {
+          "__initialize__": [],
+          "mintTo": [],
+          "burnFrom": [],
+          "updateGoldfinchConfig": []
+        },
+        "**/TransferRestrictedVault.sol:TransferRestrictedVault": {
+          "depositJunior": [],
+          "depositJuniorWithPermit": [],
+          "depositSenior": [],
+          "depositSeniorWithPermit": [],
+          "withdrawJunior": [],
+          "withdrawSenior": [],
+          "withdrawSeniorInFidu": [],
+          "transferPosition": []
+        },
+        "**/FixedLeverageRatioStrategy.sol:FixedLeverageRatioStrategy": {
+          "invest": []
+        },
+        "**/contracts/test/**": {
+          "*.*": []
         }
       }
     }]

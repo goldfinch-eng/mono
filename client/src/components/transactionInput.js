@@ -1,10 +1,10 @@
 import React from "react"
-import { ErrorMessage } from "@hookform/error-message"
-import { Controller } from "react-hook-form"
-import { displayDollars } from "../utils"
+import {ErrorMessage} from "@hookform/error-message"
+import {Controller} from "react-hook-form"
+import {displayDollars} from "../utils"
 import BigNumber from "bignumber.js"
 import _ from "lodash"
-import { Tickers } from "../ethereum/erc20"
+import {Tickers} from "../ethereum/erc20"
 import NumberFormat from "react-number-format"
 
 function TransactionInput(props) {
@@ -18,18 +18,18 @@ function TransactionInput(props) {
   let notes = _.compact(props.notes || [])
   let ticker = props.ticker || Tickers.USDC
 
-  let noteEls = notes.map(({ key, content }) => (
+  let noteEls = notes.map(({key, content}) => (
     <div key={key} className="form-input-note">
       {content}
     </div>
   ))
   let errors = Object.keys(props.formMethods.errors)
   if (errors.length > 0) {
-    errors.map(name => {
+    errors.map((name) => {
       return noteEls.push(
         <div key={`error-${name}`} className="form-input-note">
           <ErrorMessage
-            message={(function(errors, name) {
+            message={(function (errors, name) {
               return errors[name] && errors[name].message
             })(props.formMethods.errors, name)}
             name={name}
@@ -50,23 +50,23 @@ function TransactionInput(props) {
             defaultValue="0"
             rules={{
               required: "Amount is required",
-              min: { value: 0.0000001, message: "Must be greater than 0" },
+              min: {value: 0.0000001, message: "Must be greater than 0"},
               max: {
                 value: props.maxAmount,
                 message: `Amount is above the max allowed (${displayDollars(props.maxAmount)}). `,
               },
               validate: {
-                decimals: value => new BigNumber(value).decimalPlaces() <= 6 || "Maximum allowed decimal places is 6",
+                decimals: (value) => new BigNumber(value).decimalPlaces() <= 6 || "Maximum allowed decimal places is 6",
                 ...validations,
               },
             }}
-            render={({ onChange, onBlur, value }) => {
+            render={({onChange, onBlur, value}) => {
               return (
                 <NumberFormat
                   allowNegative={false}
                   thousandSeparator={true}
                   onBlur={onBlur}
-                  onValueChange={v => {
+                  onValueChange={(v) => {
                     if (v.value !== value) {
                       onChange(v.value)
                       propsOnChange(v.value)

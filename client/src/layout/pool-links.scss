@@ -1,18 +1,19 @@
-.pool-links{
+.pool-links {
   font-size: $sans-size-xs;
   margin: 34px 0 0px;
 
-  a{
+  a,
+  button {
     border-radius: 4px;
     color: $purp-dark;
     margin: 0 16px 0 -9px;
     padding: 6px 9px;
 
-    path{
+    path {
       fill: $purp-dark;
     }
 
-    &:hover{
+    &:hover {
       background-color: $sand;
     }
   }
@@ -26,19 +27,20 @@
   }
 }
 
-.placeholder .pool-links{
-  a{
+.placeholder .pool-links {
+  a,
+  button {
     color: $sand-xdark;
   }
 
-  a path{
+  a,
+  button path {
     fill: $sand-xdark;
   }
 }
 
-
 @media only screen and (min-width: $screen-l) {
-  .pool-links{
+  .pool-links {
     margin: 40px 0 0px;
   }
 }

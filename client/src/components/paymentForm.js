@@ -1,6 +1,6 @@
-import React, { useContext, useState, useEffect } from "react"
-import { usdcToAtomic, usdcFromAtomic } from "../ethereum/erc20"
-import { AppContext } from "../App"
+import React, {useContext, useState, useEffect, useCallback} from "react"
+import {usdcToAtomic, usdcFromAtomic} from "../ethereum/erc20"
+import {AppContext} from "../App"
 import PaymentOptions from "./paymentOptions"
 import TransactionForm from "./transactionForm"
 import TransactionInput from "./transactionInput"
@@ -8,21 +8,20 @@ import LoadingButton from "./loadingButton"
 import CurrencyDropdown from "./currencyDropdown"
 import useSendFromUser from "../hooks/useSendFromUser"
 import UnlockERC20Form from "./unlockERC20Form"
-import { getERC20 } from "../ethereum/erc20"
 import useCurrencyUnlocked from "../hooks/useCurrencyUnlocked"
-import { useOneInchQuote, formatQuote } from "../hooks/useOneInchQuote"
+import {useOneInchQuote, formatQuote} from "../hooks/useOneInchQuote"
 import useDebounce from "../hooks/useDebounce"
 import BigNumber from "bignumber.js"
 
 function PaymentForm(props) {
-  const { borrower, creditLine, actionComplete } = props
-  const { usdc, user, goldfinchConfig, network } = useContext(AppContext)
+  const {borrower, creditLine, actionComplete} = props
+  const {usdc, user, goldfinchConfig, goldfinchProtocol} = useContext(AppContext)
 
   const [inputClass, setInputClass] = useState("")
   const [paymentOption, setPaymentOption] = useState("periodDue")
   const sendFromUser = useSendFromUser()
   const [erc20, setErc20] = useState(usdc)
-  const [erc20UserBalance, setErc20UserBalance] = useState(new BigNumber(0))
+  const [, setErc20UserBalance] = useState(new BigNumber(0))
   const [validations, setValidations] = useState({})
   const [unlocked, refreshUnlocked] = useCurrencyUnlocked(erc20, {
     owner: borrower.userAddress,
@@ -35,30 +34,44 @@ function PaymentForm(props) {
     to: usdc,
     decimalAmount: transactionAmount,
   })
-  const networkId = network.name
 
-  useEffect(() => {
-    const fetchBalance = async () => {
-      const decimalAmount = new BigNumber(erc20.decimalAmount(await erc20.getBalance(user.address)))
-      setErc20UserBalance(decimalAmount)
-      setValidations({
-        wallet: value => decimalAmount.gte(value) || `You do not have enough ${erc20.ticker}`,
-        transactionLimit: value =>
-          goldfinchConfig.transactionLimit.gte(usdcToAtomic(value)) ||
-          `This is over the per-transaction limit of $${usdcFromAtomic(goldfinchConfig.transactionLimit)}`,
-        creditLine: value => {
-          if (!isSwapping() && props.creditLine.remainingTotalDueAmountInDollars.lt(value)) {
-            return "This is over the total balance of the credit line."
-          }
-        },
-      })
-    }
-    fetchBalance()
-  }, [erc20, user])
-
-  function isSwapping() {
+  const isSwapping = useCallback(() => {
     return erc20 !== usdc
-  }
+  }, [erc20, usdc])
+
+  // HACK: Use `BigNumber.toString()` to prevent a re-render due to different BigNumber instances
+  // of the same number failing React's shallow equality check. This follows
+  // https://github.com/goldfinch-eng/goldfinch-protocol/pull/199/commits/6fcdf5307e7726b9a1dad8312e763f7a32039c3b#r593476200.
+  // Ideal solution is to implement caching / memoization as far upstream as possible, so that we
+  // receive a different BigNumber instance here only when the number has actually changed. In this case,
+  // that would be located in `BaseCreditLine.inDollars()`.
+  const remainingTotalDueAmountInDollarsDependency =
+    props.creditLine.remainingTotalDueAmountInDollars && props.creditLine.remainingTotalDueAmountInDollars.toString()
+
+  useEffect(
+    () => {
+      const fetchBalance = async () => {
+        const decimalAmount = new BigNumber(erc20.decimalAmount(await erc20.getBalance(user.address)))
+        setErc20UserBalance(decimalAmount)
+        setValidations({
+          wallet: (value) => decimalAmount.gte(value) || `You do not have enough ${erc20.ticker}`,
+          transactionLimit: (value) =>
+            goldfinchConfig.transactionLimit.gte(usdcToAtomic(value)) ||
+            `This is over the per-transaction limit of $${usdcFromAtomic(goldfinchConfig.transactionLimit)}`,
+          creditLine: (value) => {
+            if (!isSwapping() && props.creditLine.remainingTotalDueAmountInDollars.lt(value)) {
+              return "This is over the total balance of the credit line."
+            }
+          },
+        })
+      }
+      fetchBalance()
+    },
+    // HACK: Disable eslint's complaint about exhaustive-deps, since it doesn't understand our intention
+    // with `remainingTotalDueAmountInDollarsDependency`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [erc20, user, goldfinchConfig.transactionLimit, isSwapping, remainingTotalDueAmountInDollarsDependency],
+  )
 
   function getSelectedUSDCAmount() {
     if (paymentOption === "totalDue") {
@@ -70,21 +83,21 @@ function PaymentForm(props) {
     }
   }
 
-  function action({ transactionAmount }) {
+  function action({transactionAmount}) {
     const erc20Amount = erc20.atomicAmount(transactionAmount)
     let unsentAction
     if (creditLine.isMultiple) {
       let addresses = []
       let usdcAmounts = []
       if (paymentOption === "totalDue") {
-        creditLine.creditLines.forEach(cl => {
+        creditLine.creditLines.forEach((cl) => {
           if (cl.remainingTotalDueAmount.gt(0)) {
             addresses.push(cl.address)
             usdcAmounts.push(usdcToAtomic(cl.remainingTotalDueAmountInDollars))
           }
         })
       } else if (paymentOption === "periodDue") {
-        creditLine.creditLines.forEach(cl => {
+        creditLine.creditLines.forEach((cl) => {
           if (cl.remainingPeriodDueAmount.gt(0)) {
             addresses.push(cl.address)
             usdcAmounts.push(usdcToAtomic(cl.remainingPeriodDueAmountInDollars))
@@ -128,10 +141,9 @@ function PaymentForm(props) {
     }).then(actionComplete)
   }
 
-  function renderForm({ formMethods }) {
+  function renderForm({formMethods}) {
     async function changeTicker(ticker) {
-      let erc20 = await getERC20(ticker, networkId)
-      setErc20(erc20)
+      setErc20(goldfinchProtocol.getERC20(ticker))
     }
 
     return (
@@ -169,7 +181,7 @@ function PaymentForm(props) {
             <TransactionInput
               ticker={erc20.ticker}
               formMethods={formMethods}
-              onChange={e => {
+              onChange={(e) => {
                 setPaymentOption("other")
                 setInputClass("")
                 debouncedSetTransactionAmount(formMethods.getValues("transactionAmount"))
@@ -180,7 +192,7 @@ function PaymentForm(props) {
                 transactionAmountQuote &&
                   !isQuoteLoading && {
                     key: "quote",
-                    content: <p>~${formatQuote({ erc20: usdc, quote: transactionAmountQuote })}</p>,
+                    content: <p>~${formatQuote({erc20: usdc, quote: transactionAmountQuote})}</p>,
                   },
               ]}
             />

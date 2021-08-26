@@ -33,6 +33,8 @@ contract Pool is BaseUpgradeablePausable, IPool {
    * @param _config The address of the GoldfinchConfig contract
    */
   function initialize(address owner, GoldfinchConfig _config) public initializer {
+    require(owner != address(0) && address(_config) != address(0), "Owner and config addresses cannot be empty");
+
     __BaseUpgradeablePausable__init(owner);
 
     config = _config;
@@ -69,6 +71,11 @@ contract Pool is BaseUpgradeablePausable, IPool {
    */
   function withdraw(uint256 usdcAmount) external override whenNotPaused nonReentrant {
     require(usdcAmount > 0, "Must withdraw more than zero");
+    // This MUST happen before calculating withdrawShares, otherwise the share price
+    // changes between calculation and burning of Fidu, which creates a asset/liability mismatch
+    if (compoundBalance > 0) {
+      _sweepFromCompound();
+    }
     uint256 withdrawShares = getNumShares(usdcAmount);
     _withdraw(usdcAmount, withdrawShares);
   }
@@ -79,6 +86,9 @@ contract Pool is BaseUpgradeablePausable, IPool {
    */
   function withdrawInFidu(uint256 fiduAmount) external override whenNotPaused nonReentrant {
     require(fiduAmount > 0, "Must withdraw more than zero");
+    if (compoundBalance > 0) {
+      _sweepFromCompound();
+    }
     uint256 usdcAmount = getUSDCAmountFromShares(fiduAmount);
     uint256 withdrawShares = fiduAmount;
     _withdraw(usdcAmount, withdrawShares);
@@ -165,6 +175,55 @@ contract Pool is BaseUpgradeablePausable, IPool {
       );
   }
 
+  function migrateToSeniorPool() external onlyAdmin {
+    // Bring back all USDC
+    if (compoundBalance > 0) {
+      sweepFromCompound();
+    }
+
+    // Pause deposits/withdrawals
+    if (!paused()) {
+      pause();
+    }
+
+    // Remove special priveldges from Fidu
+    bytes32 minterRole = keccak256("MINTER_ROLE");
+    bytes32 pauserRole = keccak256("PAUSER_ROLE");
+    config.getFidu().renounceRole(minterRole, address(this));
+    config.getFidu().renounceRole(pauserRole, address(this));
+
+    // Move all USDC to the SeniorPool
+    address seniorPoolAddress = config.seniorPoolAddress();
+    uint256 balance = config.getUSDC().balanceOf(address(this));
+    bool success = doUSDCTransfer(address(this), seniorPoolAddress, balance);
+    require(success, "Failed to transfer USDC balance to the senior pool");
+
+    // Claim our COMP!
+    address compoundController = address(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
+    bytes memory data = abi.encodeWithSignature("claimComp(address)", address(this));
+    bytes memory _res;
+    // solhint-disable-next-line avoid-low-level-calls
+    (success, _res) = compoundController.call(data);
+    require(success, "Failed to claim COMP");
+
+    // Send our balance of COMP!
+    address compToken = address(0xc00e94Cb662C3520282E6f5717214004A7f26888);
+    data = abi.encodeWithSignature("balanceOf(address)", address(this));
+    // solhint-disable-next-line avoid-low-level-calls
+    (success, _res) = compToken.call(data);
+    uint256 compBalance = toUint256(_res);
+    data = abi.encodeWithSignature("transfer(address,uint256)", seniorPoolAddress, compBalance);
+    // solhint-disable-next-line avoid-low-level-calls
+    (success, _res) = compToken.call(data);
+    require(success, "Failed to transfer COMP");
+  }
+
+  function toUint256(bytes memory _bytes) internal pure returns (uint256 value) {
+    assembly {
+      value := mload(add(_bytes, 0x20))
+    }
+  }
+
   /**
    * @notice Moves any USDC still in the Pool to Compound, and tracks the amount internally.
    * This is done to earn interest on latent funds until we have other borrowers who can use it.
@@ -207,10 +266,6 @@ contract Pool is BaseUpgradeablePausable, IPool {
     uint256 currentShares = fidu.balanceOf(msg.sender);
     // Ensure the address has enough value in the pool
     require(withdrawShares <= currentShares, "Amount requested is greater than what this address owns");
-
-    if (compoundBalance > 0) {
-      _sweepFromCompound();
-    }
 
     uint256 reserveAmount = usdcAmount.div(config.getWithdrawFeeDenominator());
     uint256 userAmount = usdcAmount.sub(reserveAmount);
@@ -309,11 +364,13 @@ contract Pool is BaseUpgradeablePausable, IPool {
     // 1e16 is also what Sheraz at Certik said.
     uint256 usdcDecimals = 6;
     uint256 cUSDCDecimals = 8;
-    return
-      amount // Amount in cToken (1e8)
-        .mul(exchangeRate) // Amount in USDC (but scaled by 1e16, cause that's what exchange rate decimals are)
-        .div(10**(18 + usdcDecimals - cUSDCDecimals)) // Downscale to cToken decimals (1e8)
-        .div(10**2); // Downscale from cToken to USDC decimals (8 to 6)
+
+    // We multiply in the following order, for the following reasons...
+    // Amount in cToken (1e8)
+    // Amount in USDC (but scaled by 1e16, cause that's what exchange rate decimals are)
+    // Downscale to cToken decimals (1e8)
+    // Downscale from cToken to USDC decimals (8 to 6)
+    return amount.mul(exchangeRate).div(10**(18 + usdcDecimals - cUSDCDecimals)).div(10**2);
   }
 
   function totalShares() internal view returns (uint256) {

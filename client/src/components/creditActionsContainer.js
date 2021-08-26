@@ -1,12 +1,12 @@
-import React, { useState, useContext } from "react"
+import React, {useState, useContext} from "react"
 import PaymentForm from "./paymentForm.js"
 import DrawdownForm from "./drawdownForm.js"
-import { iconCircleCheck, iconUpArrow, iconDownArrow } from "./icons.js"
-import { AppContext } from "../App"
-import { displayDollars } from "../utils"
+import {iconCircleCheck, iconUpArrow, iconDownArrow} from "./icons.js"
+import {AppContext} from "../App"
+import {displayDollars} from "../utils"
 
 function CreditActionsContainer(props) {
-  const { user } = useContext(AppContext)
+  const {user} = useContext(AppContext)
   const [showAction, setShowAction] = useState(null)
   const availableCredit = props.creditLine.availableCredit
 
@@ -34,7 +34,7 @@ function CreditActionsContainer(props) {
   let drawdownClass = "disabled"
 
   if (availableCredit.gt(0) && user.usdcIsUnlocked("borrow")) {
-    drawdownAction = e => {
+    drawdownAction = (e) => {
       openAction(e, "drawdown")
     }
     drawdownClass = ""
@@ -43,7 +43,7 @@ function CreditActionsContainer(props) {
   let payAction
   let payClass = "disabled"
   if (props.creditLine.isActive && user.usdcIsUnlocked("borrow")) {
-    payAction = e => {
+    payAction = (e) => {
       openAction(e, "payment")
     }
     payClass = ""
