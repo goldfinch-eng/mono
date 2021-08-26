@@ -64,6 +64,7 @@ interface PoolMetadata {
   description: string
   detailsUrl?: string
   disabled?: boolean
+  backerLimit?: string
 }
 
 enum PoolState {
