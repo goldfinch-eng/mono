@@ -11,7 +11,8 @@ import _ from "lodash"
 import {prepareMigration} from "../../blockchain_scripts/v2/migrate"
 import { BorrowerInstance, CreditLineInstance, TranchedPoolInstance } from "../../typechain/truffle"
 
-describe("Migrating to V2", () => {
+// TODO[PR] Should we just delete this?
+describe.skip("Migrating to V2", () => {
   // Hack way to only run this suite when we actually want to.
   if (!isMainnetForking()) {
     return
