@@ -61,7 +61,12 @@ function CreditStatus(props) {
     <div className={`credit-status background-container ${placeholderClass}`}>
       <div className="credit-status-header">
         <h2>Credit Status</h2>
-        <a href={tranchedPoolLink} target="_blank" rel="noopener noreferrer" className="pool-link">
+        <a
+          href={tranchedPoolLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`pool-link ${placeholderClass !== "" && "disabled"}`}
+        >
           {iconOutArrow}
         </a>
       </div>
