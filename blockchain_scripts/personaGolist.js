@@ -115,9 +115,8 @@ async function main() {
   console.log("Fetching accounts")
   const approvedAccounts = Object.values(await fetchAllAccounts())
   for (let account of approvedAccounts) {
-    const golisted = await config.goList(account.id)
     account.countryCode = account.countryCode || account.verificationCountryCode
-    account.golisted = golisted
+    account.golisted = (await config.goList(account.id)) || (await config.goList(account.id.toLowerCase()))
   }
 
   const accountsToAdd = []
