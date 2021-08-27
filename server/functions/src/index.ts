@@ -2,7 +2,7 @@ import * as crypto from "crypto"
 import * as functions from "firebase-functions"
 import * as admin from "firebase-admin"
 import {ethers} from "ethers"
-import {getDb, getUsers, getConfig} from "./db"
+import {getDb, getUsers, getConfig, getAgreements} from "./db"
 import firestore = admin.firestore
 import {assertIsString} from "../../../utils/type"
 import * as Sentry from "@sentry/serverless"
@@ -32,7 +32,7 @@ const setCORSHeaders = (req: any, res: any) => {
   const allowedOrigins = (getConfig(functions).kyc.allowed_origins || "").split(",")
   if (allowedOrigins.includes(req.headers.origin)) {
     res.set("Access-Control-Allow-Origin", req.headers.origin)
-    res.set("Access-Control-Allow-Headers", "x-goldfinch-signature")
+    res.set("Access-Control-Allow-Headers", "*")
   }
 }
 
@@ -43,6 +43,12 @@ const setCORSHeaders = (req: any, res: any) => {
  * @return {HttpFunction} The wrapped handler suitable for passing to `functions.https.onRequest()`.
  */
 const wrapWithSentry = (fn: HttpFunction, wrapOptions?: Partial<HttpFunctionWrapperOptions>): HttpFunction => {
+  if (process.env.NODE_ENV === "test") {
+    // If we're in a testing environment, Sentry's wrapper just gets in the way of intelligible test
+    // errors. So we won't use it.
+    return fn
+  }
+
   return Sentry.GCPFunction.wrapHttpFunction(async (req, res): Promise<void> => {
     // Sentry does not fully do its job as you'd expect; currently it is not instrumented for
     // unhandled promise rejections! So to capture such events in Sentry, we must catch and
@@ -57,6 +63,26 @@ const wrapWithSentry = (fn: HttpFunction, wrapOptions?: Partial<HttpFunctionWrap
   }, wrapOptions)
 }
 
+const verifySignature = (req: Request, address: string) => {
+  const signatureHeader = req.headers["x-goldfinch-signature"]
+  const signature = Array.isArray(signatureHeader) ? signatureHeader.join("") : signatureHeader
+
+  if (!address || !signature) {
+    return false
+  }
+
+  const verifiedAddress = ethers.utils.verifyMessage(VERIFICATION_MESSAGE, signature)
+
+  console.log(`Received address: ${address}, Verified address: ${verifiedAddress}`)
+
+  if (verifiedAddress.toLowerCase() === address.toLowerCase()) {
+    // Having verified the address, we can set the Sentry user context accordingly.
+    Sentry.setUser({id: address.toLowerCase(), address: address.toLowerCase()})
+    return true
+  }
+  return false
+}
+
 const kycStatus = functions.https.onRequest(
   wrapWithSentry(async (req, res): Promise<void> => {
     setCORSHeaders(req, res)
@@ -68,25 +94,16 @@ const kycStatus = functions.https.onRequest(
     }
 
     const address = req.query.address?.toString()
-    const signatureHeader = req.headers["x-goldfinch-signature"]
-    const signature = Array.isArray(signatureHeader) ? signatureHeader.join("") : signatureHeader
 
-    if (!address || !signature) {
+    if (!address) {
       res.status(400).send({error: "Address or signature not provided"})
       return
     }
 
-    const verifiedAddress = ethers.utils.verifyMessage(VERIFICATION_MESSAGE, signature)
-
-    console.log(`Received address: ${address}, Verified address: ${verifiedAddress}`)
-
-    if (address.toLowerCase() !== verifiedAddress.toLowerCase()) {
+    if (!verifySignature(req, address)) {
       res.status(403).send({error: "Invalid address or signature"})
       return
     }
-
-    // Having verified the address, we can set the Sentry user context accordingly.
-    Sentry.setUser({id: address.toLowerCase(), address: address.toLowerCase()})
 
     const response = {address: address, status: "unknown", countryCode: null}
 
@@ -169,6 +186,44 @@ const getCountryCode = (eventPayload: Record<string, any>): string | null => {
   return account?.attributes?.countryCode || verification?.attributes?.countryCode || null
 }
 
+const signAgreement = functions.https.onRequest(
+  wrapWithSentry(async (req, res): Promise<void> => {
+    setCORSHeaders(req, res)
+
+    // For a CORS preflight request, we're done.
+    if (req.method === "OPTIONS") {
+      res.status(200).send()
+      return
+    }
+
+    const address = req.body.address
+
+    if (!verifySignature(req, address)) {
+      res.status(403).send({error: "Invalid address or signature"})
+      return
+    }
+
+    const pool = (req.body.pool || "").trim()
+    const fullName = (req.body.fullName || "").trim()
+
+    if (pool === "" || fullName === "") {
+      res.status(403).send({error: "Invalid name or pool"})
+      return
+    }
+
+    const agreements = getAgreements(admin.firestore())
+    const key = `${pool.toLowerCase()}-${address.toLowerCase()}`
+    const agreement = await agreements.doc(key)
+    await agreement.set({
+      address: address,
+      pool: pool,
+      fullName: fullName,
+      signedAt: Date.now(),
+    })
+    res.status(200).send({status: "success"})
+  }),
+)
+
 const personaCallback = functions.https.onRequest(
   wrapWithSentry(async (req, res): Promise<void> => {
     if (!verifyRequest(req)) {
@@ -226,4 +281,4 @@ const personaCallback = functions.https.onRequest(
   }),
 )
 
-export {kycStatus, personaCallback}
+export {kycStatus, personaCallback, signAgreement}

@@ -24,6 +24,7 @@ import moment from "moment"
 import {useBacker, useTranchedPool} from "../../hooks/useTranchedPool"
 import {useSession} from "../../hooks/useSignIn"
 import _ from "lodash"
+import DefaultGoldfinchClient from "../../hooks/useGoldfinchClient"
 
 function useRecentPoolTransactions({tranchedPool}: {tranchedPool?: TranchedPool}): Record<string, any>[] {
   let recentTransactions = useAsync(() => tranchedPool && tranchedPool.recentTransactions(), [tranchedPool])
@@ -61,17 +62,34 @@ interface TranchedPoolActionFormProps {
 }
 
 function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeForm}: TranchedPoolActionFormProps) {
-  const {user, goldfinchConfig, usdc} = useNonNullContext(AppContext)
+  const {user, goldfinchConfig, usdc, network, networkMonitor} = useNonNullContext(AppContext)
   const {gatherPermitSignature} = useERC20Permit()
   const sendFromUser = useSendFromUser()
+  const session = useSession()
 
-  async function action({transactionAmount}) {
+  async function action({transactionAmount, fullName}) {
+    if (session.status !== "authenticated") {
+      throw new Error("Not signed in")
+    }
+    const client = new DefaultGoldfinchClient(network.name!, session.signature)
+    try {
+      const response = await client.signAgreement(user.address, fullName, tranchedPool.address)
+
+      if (response.status !== "success") {
+        throw new Error(response.error)
+      }
+    } catch (e) {
+      const txData = networkMonitor.addPendingTX({status: "pending", type: "Deposit", amount: transactionAmount})
+      networkMonitor.markTXErrored(txData, e)
+      return
+    }
+
     const depositAmount = usdcToAtomic(transactionAmount)
     // USDC permit doesn't work on mainnet forking due to mismatch between hardcoded chain id in the contract
     if (process.env.REACT_APP_HARDHAT_FORK) {
       return sendFromUser(tranchedPool.contract.methods.deposit(TRANCHES.Junior, depositAmount), {
         type: "Deposit",
-        amount: depositAmount,
+        amount: transactionAmount,
       }).then(actionComplete)
     } else {
       let signatureData = await gatherPermitSignature({
@@ -90,7 +108,7 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
         ),
         {
           type: "Deposit",
-          amount: signatureData.value,
+          amount: transactionAmount,
         },
       ).then(actionComplete)
     }
@@ -112,6 +130,21 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
     return (
       <div className="form-inputs">
         {warningMessage}
+        <div className="form-footer-message">
+          By entering my name and clicking “I Agree” below, I hereby agree and acknowledge that (i) I am electronically
+          signing and becoming a party to the Loan Agreement for this pool, and (ii) my name and transaction information
+          may be shared with the borrower.
+        </div>
+        <div className="form-input-container">
+          <div className="form-input-label">Full legal name</div>
+          <input
+            type="text"
+            name="fullName"
+            placeholder="Name"
+            className="form-input small-text"
+            ref={formMethods.register({required: "Your full name is required"})}
+          />
+        </div>
         <div className="form-inputs-footer">
           <TransactionInput
             formMethods={formMethods}
@@ -143,7 +176,7 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
               },
             }}
           />
-          <LoadingButton action={action} disabled={disabled} />
+          <LoadingButton action={action} disabled={disabled} text="I Agree" />
         </div>
       </div>
     )
@@ -151,8 +184,8 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
 
   return (
     <TransactionForm
-      title="Deposit"
-      headerMessage={`Available to deposit: ${displayDollars(user.usdcBalanceInDollars)}`}
+      title="Supply"
+      headerMessage={`Available to supply: ${displayDollars(user.usdcBalanceInDollars)}`}
       render={renderForm}
       closeForm={closeForm}
     />
@@ -334,7 +367,7 @@ function ActionsContainer({tranchedPool, onComplete}: {tranchedPool?: TranchedPo
         <DepositStatus tranchedPool={tranchedPool} />
         <div className="form-start">
           <button className={`button ${depositClass}`} onClick={depositAction}>
-            {iconUpArrow} Deposit
+            {iconUpArrow} Supply
           </button>
           <button className={`button ${withdrawClass}`} onClick={withdrawAction}>
             {iconDownArrow} Withdraw
