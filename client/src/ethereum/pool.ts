@@ -147,8 +147,12 @@ async function fetchPoolData(pool: SeniorPool, erc20: Contract): Promise<PoolDat
   let cumulativeWritedowns = await getCumulativeWritedowns(pool)
   let cumulativeDrawdowns = await getCumulativeDrawdowns(pool)
   let poolTXs = await getAllDepositAndWithdrawalTXs(pool)
-  let estimatedTotalInterest = await getEstimatedTotalInterest(pool)
-  let estimatedApy = estimatedTotalInterest.dividedBy(totalPoolAssets)
+  // let estimatedTotalInterest = await getEstimatedTotalInterest(pool)
+  // HOTFIX: Hardcode to NaN so that APY displays as "--.--%" instead of 0%
+  let estimatedTotalInterest = new BigNumber(NaN)
+  // let estimatedApy = estimatedTotalInterest.dividedBy(totalPoolAssets)
+  // HOTFIX: Hardcode to NaN so that APY displays as "--.--%" instead of 0%
+  let estimatedApy = new BigNumber(NaN)
   let defaultRate = cumulativeWritedowns.dividedBy(cumulativeDrawdowns)
 
   let loaded = true
@@ -306,6 +310,7 @@ function remainingCapacity(this: PoolData, maxPoolCapacity: BigNumber): BigNumbe
   return new BigNumber(maxPoolCapacity).minus(cappedBalance)
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function getEstimatedTotalInterest(pool: SeniorPool): Promise<BigNumber> {
   const protocol = pool.goldfinchProtocol
   const investmentEvents = await protocol.queryEvents(pool.contract, [
