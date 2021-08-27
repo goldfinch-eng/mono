@@ -54,7 +54,7 @@ function CreditStatus(props) {
   let availableToDrawdown = props.creditLine.availableCreditInDollars
 
   const creditLineAddress = props.creditLine.address
-  const {address: tranchedPoolAddress} = props.user.borrower.tranchedPoolByCreditLine[creditLineAddress]
+  const tranchedPoolAddress = props.user.borrower?.tranchedPoolByCreditLine[creditLineAddress]?.address
   const tranchedPoolLink = `https://${etherscanSubdomain}etherscan.io/address/${tranchedPoolAddress}`
 
   return (
