@@ -4,7 +4,7 @@ import {CreditLine} from "./creditLine"
 import {IPoolTokens} from "../typechain/web3/IPoolTokens"
 import BigNumber from "bignumber.js"
 import {fiduFromAtomic} from "./fidu"
-import {roundDownPenny, secondsSinceEpoch} from "../utils"
+import {croppedAddress, roundDownPenny, secondsSinceEpoch} from "../utils"
 import _ from "lodash"
 import {ContractEventLog} from "../typechain/web3/types"
 import web3 from "../web3"
@@ -308,6 +308,13 @@ class TranchedPool {
     } catch (e) {
       return false
     }
+  }
+
+  /**
+   * The name to use for display / UI purposes.
+   */
+  get displayName(): string {
+    return this.metadata?.name ?? croppedAddress(this.address)
   }
 }
 
