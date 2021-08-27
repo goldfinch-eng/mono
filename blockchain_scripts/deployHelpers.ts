@@ -431,6 +431,7 @@ export {
   getProtocolOwner,
   currentChainId,
   ChainId,
+  ChainName,
   TICKERS,
   assertIsTicker,
 }

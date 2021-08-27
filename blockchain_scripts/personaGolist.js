@@ -2,7 +2,8 @@ const fetch = require("node-fetch")
 const fs = require("fs")
 const hre = require("hardhat")
 
-const {getDeployedContract, getDefenderClient, CHAIN_NAME_BY_ID, SAFE_CONFIG} = require("./deployHelpers")
+const {getDeployedContract} = require("./deployHelpers")
+const {default: DefenderProposer} = require("./DefenderProposer")
 
 const personaAPIKey = process.env.PERSONA_API_KEY
 
@@ -70,29 +71,11 @@ async function fetchAllAccounts() {
   return allAccounts
 }
 
-class DefenderProposer {
-  constructor({hre, logger, chainId}) {
-    this.hre = hre
-    this.logger = logger
-    this.chainId = chainId
-    this.network = CHAIN_NAME_BY_ID[chainId]
-    this.client = getDefenderClient()
-    const safe = SAFE_CONFIG[chainId]
-    if (!safe) {
-      throw new Error(`No safe address found for chain id: ${chainId}`)
-    } else {
-      this.safeAddress = safe.safeAddress
-    }
-  }
-
-  defenderUrl(contractAddress) {
-    return `https://defender.openzeppelin.com/#/admin/contracts/${this.network}-${contractAddress}`
-  }
-
+class AddToGoListProposer extends DefenderProposer {
   async proposeBulkAddToGoList(accounts, configAddress) {
     const numAccounts = accounts.length
     if (!numAccounts) {
-      this.logger("No accounts to propose adding.")
+      this.logger("No accounts to propose adding via a Defender proposal.")
       return
     }
 
@@ -177,7 +160,10 @@ async function main() {
 
   const {getChainId} = hre
   const chainId = await getChainId()
-  await new DefenderProposer({hre, logger: console.log, chainId}).proposeBulkAddToGoList(accountsToAdd, config.address)
+  await new AddToGoListProposer({hre, logger: console.log, chainId}).proposeBulkAddToGoList(
+    accountsToAdd,
+    config.address
+  )
 }
 
 if (require.main === module) {
