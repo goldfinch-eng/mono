@@ -3,7 +3,7 @@ import {useHistory} from "react-router-dom"
 import {CapitalProvider, fetchCapitalProviderData, fetchPoolData, PoolData} from "../ethereum/pool"
 import {AppContext} from "../App"
 import {ERC20, usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
-import {croppedAddress, displayDollars, displayPercent, roundDownPenny} from "../utils"
+import {displayDollars, displayPercent, roundDownPenny} from "../utils"
 import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
 import {PoolBacker, TranchedPool} from "../ethereum/tranchedPool"
 import {PoolCreated} from "../typechain/web3/GoldfinchFactory"
@@ -116,7 +116,7 @@ function TranchedPoolCard({poolBacker}: {poolBacker: PoolBacker}) {
       <div className="table-cell col40 pool-info">
         <img className={"icon"} src={tranchedPool.metadata?.icon} alt="pool-icon" />
         <div className="name">
-          <span>{tranchedPool.metadata?.name ?? croppedAddress(tranchedPool.address)}</span>
+          <span>{tranchedPool.displayName}</span>
           <span className="subheader">{tranchedPool.metadata?.category}</span>
         </div>
       </div>
@@ -147,7 +147,17 @@ function usePoolBackers({goldfinchProtocol, user}: {goldfinchProtocol?: Goldfinc
         .filter((p) => p.creditLine.limit.gte(MIN_POOL_LIMIT))
         .map((p) => new PoolBacker(user.address, p, goldfinchProtocol))
       await Promise.all(activePoolBackers.map((b) => b.initialize()))
-      setBackers(activePoolBackers.sort((a, b) => b.balanceInDollars.comparedTo(a.balanceInDollars)))
+      setBackers(
+        activePoolBackers.sort(
+          (a, b) =>
+            // Primary sort: ascending by tranched pool status (Open -> JuniorLocked -> ...)
+            a.tranchedPool.state - b.tranchedPool.state ||
+            // Secondary sort: descending by user's balance
+            b.balanceInDollars.comparedTo(a.balanceInDollars) ||
+            // Tertiary sort: alphabetical by display name, for the sake of stable ordering.
+            a.tranchedPool.displayName.localeCompare(b.tranchedPool.displayName),
+        ),
+      )
       setStatus("loaded")
     }
 
@@ -156,7 +166,7 @@ function usePoolBackers({goldfinchProtocol, user}: {goldfinchProtocol?: Goldfinc
     }
   }, [goldfinchProtocol, user])
 
-  return {backers: backers, status}
+  return {backers, status}
 }
 
 function Earn(props) {
