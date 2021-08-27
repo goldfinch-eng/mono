@@ -613,7 +613,7 @@ function TranchedPoolView() {
 
   let earnMessage = "Loading..."
   if (tranchedPool) {
-    earnMessage = `Earn Portfolio / ${tranchedPool.metadata?.name ?? croppedAddress(tranchedPool.address)}`
+    earnMessage = `Pools / ${tranchedPool.metadata?.name ?? croppedAddress(tranchedPool.address)}`
   }
 
   if (process.env.REACT_APP_HARDHAT_FORK && !unlocked) {

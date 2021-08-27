@@ -27,6 +27,14 @@
     margin-bottom: 16px;
     padding-top: 18px;
     padding-bottom: 18px;
+
+    &.clickable{
+      cursor: pointer;
+    }
+
+    &.clickable:hover{
+      background-color: $sand;
+    }
   }
 
   .table-cell.col16{ width: 16% }
@@ -58,7 +66,7 @@
 @media only screen and (min-width: $screen-m) {
   .table-spaced .table-row{
     font-size: $sans-size-s;
-  } 
+  }
 }
 
 
@@ -68,11 +76,11 @@
       font-size: $sans-size-s;
       margin-bottom: 20px;
     }
-    
+
     .table-row{
-      font-size: $sans-size-base;
-      padding-top: 26px;
-      padding-bottom: 26px;
+      font-size: $sans-size-m;
+      padding-top: 22px;
+      padding-bottom: 22px;
       margin-bottom: 24px;
     }
 
@@ -80,5 +88,5 @@
       font-size: $sans-size-s;
       padding: 10px 18px;
     }
-  } 
+  }
 }
