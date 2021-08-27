@@ -116,7 +116,7 @@ async function main() {
   const approvedAccounts = Object.values(await fetchAllAccounts())
   for (let account of approvedAccounts) {
     account.countryCode = account.countryCode || account.verificationCountryCode
-    account.golisted = (await config.goList(account.id)) || (await config.goList(account.id.toLowerCase()))
+    account.golisted = await config.goList(account.id)
   }
 
   const accountsToAdd = []
@@ -133,7 +133,6 @@ async function main() {
     accountsToAdd.push(account.id)
   }
 
-  console.log("Paste the following into the golist:\n")
   for (let i = 0; i < accountsToAdd.length; i++) {
     if (i === accountsToAdd.length - 1) {
       console.log(`"${accountsToAdd[i]}"`)
