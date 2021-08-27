@@ -285,6 +285,7 @@ function ActionsContainer({tranchedPool, onComplete}: {tranchedPool?: TranchedPo
   let depositClass = "disabled"
   if (
     session.status === "authenticated" &&
+    backer &&
     tranchedPool?.state === PoolState.Open &&
     tranchedPool?.remainingCapacity().gt(new BigNumber(0)) &&
     !tranchedPool?.metadata?.disabled
