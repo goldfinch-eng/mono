@@ -1,6 +1,8 @@
 const fetch = require("node-fetch")
-const goList = require("../client/src/goList.json")
 const fs = require("fs")
+const hre = require("hardhat")
+
+const {getDeployedContract} = require("./deployHelpers")
 
 const personaAPIKey = process.env.PERSONA_API_KEY
 
@@ -73,11 +75,16 @@ async function main() {
     console.log("Persona API key is missing. Please prepend the command with PERSONA_API_KEY=#KEY#")
     return
   }
+
+  const {deployments} = hre
+  const config = await getDeployedContract(deployments, "GoldfinchConfig")
+
   console.log("Fetching accounts")
   const approvedAccounts = Object.values(await fetchAllAccounts())
   for (let account of approvedAccounts) {
+    const golisted = await config.goList(account.id)
     account.countryCode = account.countryCode || account.verificationCountryCode
-    account.golisted = goList.includes(account.id) || goList.includes(account.id.toLowerCase())
+    account.golisted = golisted
   }
 
   const accountsToAdd = []
