@@ -142,6 +142,7 @@ function usePoolBackers({goldfinchProtocol, user}: {goldfinchProtocol?: Goldfinc
       let poolAddresses = poolEvents.map((e) => e.returnValues.pool)
       let tranchedPools = poolAddresses.map((a) => new TranchedPool(a, goldfinchProtocol))
       await Promise.all(tranchedPools.map((p) => p.initialize()))
+      tranchedPools = tranchedPools.filter((p) => p.metadata)
       const activePoolBackers = tranchedPools
         .filter((p) => p.creditLine.limit.gte(MIN_POOL_LIMIT))
         .map((p) => new PoolBacker(user.address, p, goldfinchProtocol))
