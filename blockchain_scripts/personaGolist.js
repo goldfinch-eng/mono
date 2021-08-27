@@ -2,7 +2,7 @@ const fetch = require("node-fetch")
 const fs = require("fs")
 const hre = require("hardhat")
 
-const {getDeployedContract} = require("./deployHelpers")
+const {getDeployedContract, getDefenderClient, CHAIN_NAME_BY_ID, SAFE_CONFIG} = require("./deployHelpers")
 
 const personaAPIKey = process.env.PERSONA_API_KEY
 
@@ -70,6 +70,56 @@ async function fetchAllAccounts() {
   return allAccounts
 }
 
+class DefenderProposer {
+  constructor({hre, logger, chainId}) {
+    this.hre = hre
+    this.logger = logger
+    this.chainId = chainId
+    this.network = CHAIN_NAME_BY_ID[chainId]
+    this.client = getDefenderClient()
+    const safe = SAFE_CONFIG[chainId]
+    if (!safe) {
+      throw new Error(`No safe address found for chain id: ${chainId}`)
+    } else {
+      this.safeAddress = safe.safeAddress
+    }
+  }
+
+  defenderUrl(contractAddress) {
+    return `https://defender.openzeppelin.com/#/admin/contracts/${this.network}-${contractAddress}`
+  }
+
+  async proposeBulkAddToGoList(accounts, configAddress) {
+    const numAccounts = accounts.length
+    if (!numAccounts) {
+      this.logger("No accounts to propose adding.")
+      return
+    }
+
+    this.logger(`Proposing adding ${numAccounts} to the go-list on GoldfinchConfig ${configAddress}`)
+    await this.client.createProposal({
+      contract: {address: configAddress, network: this.network}, // Target contract
+      title: "Add to go-list",
+      description: `Add to go-list on GoldfinchConfig ${configAddress}`,
+      type: "custom",
+      functionInterface: {
+        name: "bulkAddToGoList",
+        inputs: [
+          {
+            internalType: "address[]",
+            name: "_members",
+            type: "address[]",
+          },
+        ],
+      },
+      functionInputs: [accounts],
+      via: this.safeAddress,
+      viaType: "Gnosis Safe", // Either Gnosis Safe or Gnosis Multisig
+    })
+    this.logger("Defender URL: ", this.defenderUrl(configAddress))
+  }
+}
+
 async function main() {
   if (!personaAPIKey) {
     console.log("Persona API key is missing. Please prepend the command with PERSONA_API_KEY=#KEY#")
@@ -124,6 +174,10 @@ async function main() {
       resolve()
     })
   })
+
+  const {getChainId} = hre
+  const chainId = await getChainId()
+  await new DefenderProposer({hre, logger: console.log, chainId}).proposeBulkAddToGoList(accountsToAdd, config.address)
 }
 
 if (require.main === module) {
