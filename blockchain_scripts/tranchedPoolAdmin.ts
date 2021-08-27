@@ -1,13 +1,22 @@
 // /* globals ethers */
-import {getSignerForAddress, TRANCHES} from "./deployHelpers"
+import {TRANCHES} from "./deployHelpers"
 import {ethers} from "hardhat"
 import {CONFIG_KEYS} from "./configKeys"
+import {impersonateAccount, MAINNET_MULTISIG} from "./mainnetForkingHelpers"
+import {CreditLine, SeniorPool, TranchedPool} from "../typechain/ethers"
 const hre = require("hardhat")
 const {getNamedAccounts} = hre
 const deployedABIs = require("../client/config/deployments_dev.json")
 
 async function main() {
-  const {protocolOwner} = await getNamedAccounts()
+  let signerAddress: string
+  if (process.env.HARDHAT_FORK === "mainnet") {
+    signerAddress = MAINNET_MULTISIG
+    await impersonateAccount(hre, signerAddress)
+  } else {
+    const {protocolOwner} = await getNamedAccounts()
+    signerAddress = protocolOwner
+  }
 
   const poolAddress = process.env.POOL
   const action = process.env.ACTION
@@ -16,7 +25,7 @@ async function main() {
     throw new Error("Must specify an POOL and an ACTION")
   }
 
-  const tranchedPool = await getPool(poolAddress, protocolOwner)
+  const tranchedPool = await getPool(poolAddress, signerAddress)
 
   if (action === "lockJunior") {
     await lockJunior(tranchedPool)
@@ -27,6 +36,8 @@ async function main() {
     await investSeniorAndLock(tranchedPool)
   } else if (action === "assess") {
     await tranchedPool.assess()
+  } else if (action == "investJuniorAndLock") {
+    await investJuniorAndLock(tranchedPool)
   }
   console.log("Done")
 }
@@ -40,6 +51,15 @@ async function lockJunior(pool) {
   let txn = await pool.lockJuniorCapital()
   await txn.wait()
   console.log(`Locked the junior tranche for ${pool.address}`)
+}
+
+async function investJuniorAndLock(tranchedPool: TranchedPool) {
+  const seniorPool = await getSeniorPool(tranchedPool, tranchedPool.signer)
+  const creditLineAddress = await tranchedPool.creditLine()
+  const creditLine = await getCreditLine(creditLineAddress, tranchedPool.signer)
+  await seniorPool.investJunior(tranchedPool.address, await creditLine.limit())
+  await tranchedPool.lockJuniorCapital()
+  await tranchedPool.lockPool()
 }
 
 async function investSeniorAndLock(tranchedPool) {
@@ -72,28 +92,33 @@ async function investSeniorAndLock(tranchedPool) {
 }
 
 async function getPool(contractAddress, signerAddress) {
-  const signer = await getSignerForAddress(signerAddress)
-  const  abi = await getAbi("TranchedPool")
-  return await ethers.getContractAt(abi, contractAddress, signer)
+  const signer = typeof signerAddress === "string" ? await ethers.getSigner(signerAddress) : signerAddress
+  const abi = await getAbi("TranchedPool")
+  return (await ethers.getContractAt(abi, contractAddress, signer)) as TranchedPool
+}
+
+async function getCreditLine(contractAddress, signerAddress) {
+  const signer = typeof signerAddress === "string" ? await ethers.getSigner(signerAddress) : signerAddress
+  const abi = await getAbi("TranchedPool")
+  return (await ethers.getContractAt(abi, contractAddress, signer)) as CreditLine
 }
 
 async function getSeniorPool(pool, signerAddress) {
-  const signer = await getSignerForAddress(signerAddress)
+  const signer = typeof signerAddress === "string" ? await ethers.getSigner(signerAddress) : signerAddress
   const configAddress = await pool.config()
   const configABI = await getAbi("GoldfinchConfig")
   const config = await ethers.getContractAt(configABI, configAddress, signer)
 
   const poolAddress = await config.getAddress(CONFIG_KEYS.SeniorPool)
   const poolABI = await getAbi("SeniorPool")
-  return await ethers.getContractAt(poolABI, poolAddress, signer)
+  return (await ethers.getContractAt(poolABI, poolAddress, signer)) as SeniorPool
 }
 
 async function getAbi(contractName) {
-  const chainId = await hre.getChainId()
-  const networkName = chainId === "31337" ? "localhost" : process.env.HARDHAT_NETWORK
+  const chainId = process.env.HARDHAT_FORK === "mainnet" ? "1" : await hre.getChainId()
+  const networkName = process.env.HARDHAT_FORK ?? process.env.HARDHAT_NETWORK
   return deployedABIs[chainId][networkName!].contracts[contractName].abi
 }
-
 
 if (require.main === module) {
   // If this is run as a script, then call main. If it's imported (for tests), this block will not run
