@@ -33,6 +33,10 @@
 
   &:hover{
     background-color: $sand;
+
+    .icon path{
+      fill: $purp-dark;
+    }
   }
 
   .icon{
@@ -40,6 +44,10 @@
     height: 12px;
     width: 12px;
     vertical-align: top;
+  }
+
+  .icon path{
+    fill: $sand-xdark;
   }
 }
 
