@@ -48,7 +48,7 @@ function SeniorPoolView() {
 
   let earnMessage = "Loading..."
   if (capitalProvider.loaded || user.noWeb3) {
-    earnMessage = "Earn Portfolio / Senior Pool"
+    earnMessage = "Pools / Senior Pool"
   }
 
   let maxCapacityNotice = <></>

@@ -43,7 +43,7 @@
   },
   "0x67df471eacd82c3dbc95604618ff2a1f6b14b8a1": {
     "name": "Almavest Basket #1",
-    "category": "Consumer, SME and Asset Finance Loans Across Multiple Borrowers",
+    "category": "Global, multi-sector loans",
     "description": "Almavest provides debt capital to high-performing companies in a variety of sectors globally. This loan was used to provide debt capital to Selfin - an SME lender in India, Upwards - an consumer lender in India, Impact Water - a company that provides safe drinking water systems in Africa, and Greenway - an Indian company that makes ‘clean cookstoves’ for low-income households globally.",
     "icon": "%PUBLIC_URL%/icons/almavest.png"
   }

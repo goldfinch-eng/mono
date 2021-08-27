@@ -3,7 +3,7 @@ import {useParams} from "react-router-dom"
 import ConnectionNotice from "../connectionNotice"
 import {AppContext} from "../../App"
 import InvestorNotice from "../investorNotice"
-import {PoolState, TranchedPool, TRANCHES} from "../../ethereum/tranchedPool"
+import {PoolBacker, PoolState, TranchedPool, TRANCHES} from "../../ethereum/tranchedPool"
 import {croppedAddress, displayDollars, displayPercent, roundDownPenny, roundUpPenny} from "../../utils"
 import InfoSection from "../infoSection"
 import {usdcFromAtomic, usdcToAtomic} from "../../ethereum/erc20"
@@ -54,12 +54,13 @@ function useUniqueJuniorSuppliers({tranchedPool}: {tranchedPool?: TranchedPool})
 }
 
 interface TranchedPoolActionFormProps {
+  backer: PoolBacker
   tranchedPool: TranchedPool
   actionComplete: () => void
   closeForm: () => void
 }
 
-function TranchedPoolDepositForm({tranchedPool, actionComplete, closeForm}: TranchedPoolActionFormProps) {
+function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeForm}: TranchedPoolActionFormProps) {
   const {user, goldfinchConfig, usdc} = useNonNullContext(AppContext)
   const {gatherPermitSignature} = useERC20Permit()
   const sendFromUser = useSendFromUser()
@@ -118,6 +119,17 @@ function TranchedPoolDepositForm({tranchedPool, actionComplete, closeForm}: Tran
             maxAmount={remainingJuniorCapacity}
             validations={{
               wallet: (value) => user.usdcBalanceInDollars.gte(value) || "You do not have enough USDC",
+              backerLimit: (value) => {
+                const backerLimitPercent = new BigNumber(
+                  tranchedPool.metadata?.backerLimit ?? process.env.REACT_APP_GLOBAL_BACKER_LIMIT ?? "1",
+                )
+                const backerLimit = tranchedPool.creditLine.limit.multipliedBy(backerLimitPercent)
+                const backerDeposits = backer.principalAmount.plus(usdcToAtomic(value))
+                return (
+                  backerDeposits.lte(backerLimit) ||
+                  `This is over the per-backer limit for this pool of $${usdcFromAtomic(backerLimit)}`
+                )
+              },
               transactionLimit: (value) =>
                 goldfinchConfig.transactionLimit.gte(usdcToAtomic(value)) ||
                 `This is over the per-transaction limit of $${usdcFromAtomic(goldfinchConfig.transactionLimit)}`,
@@ -147,14 +159,13 @@ function TranchedPoolDepositForm({tranchedPool, actionComplete, closeForm}: Tran
   )
 }
 
-function TranchedPoolWithdrawForm({tranchedPool, actionComplete, closeForm}: TranchedPoolActionFormProps) {
+function TranchedPoolWithdrawForm({backer, tranchedPool, actionComplete, closeForm}: TranchedPoolActionFormProps) {
   const {user, goldfinchConfig} = useNonNullContext(AppContext)
   const sendFromUser = useSendFromUser()
-  const backer = useBacker({user, tranchedPool})
 
   async function action({transactionAmount}) {
     const withdrawAmount = usdcToAtomic(transactionAmount)
-    return sendFromUser(tranchedPool.contract.methods.withdraw(backer!.tokenInfos[0]!.id, withdrawAmount), {
+    return sendFromUser(tranchedPool.contract.methods.withdraw(backer.tokenInfos[0]!.id, withdrawAmount), {
       type: "Withdraw",
       amount: withdrawAmount,
     }).then(actionComplete)
@@ -166,13 +177,13 @@ function TranchedPoolWithdrawForm({tranchedPool, actionComplete, closeForm}: Tra
         <div className="form-inputs-footer">
           <TransactionInput
             formMethods={formMethods}
-            maxAmount={backer?.availableToWithdrawInDollars}
+            maxAmount={backer.availableToWithdrawInDollars}
             rightDecoration={
               <button
                 className="enter-max-amount"
                 type="button"
                 onClick={() => {
-                  formMethods.setValue("transactionAmount", roundDownPenny(backer?.availableToWithdrawInDollars), {
+                  formMethods.setValue("transactionAmount", roundDownPenny(backer.availableToWithdrawInDollars), {
                     shouldValidate: true,
                     shouldDirty: true,
                   })
@@ -197,7 +208,7 @@ function TranchedPoolWithdrawForm({tranchedPool, actionComplete, closeForm}: Tra
   return (
     <TransactionForm
       title="Withdraw"
-      headerMessage={`Available to withdraw: ${displayDollars(backer?.availableToWithdrawInDollars)}`}
+      headerMessage={`Available to withdraw: ${displayDollars(backer.availableToWithdrawInDollars)}`}
       render={renderForm}
       closeForm={closeForm}
     />
@@ -275,7 +286,8 @@ function ActionsContainer({tranchedPool, onComplete}: {tranchedPool?: TranchedPo
   if (
     session.status === "authenticated" &&
     tranchedPool?.state === PoolState.Open &&
-    tranchedPool?.remainingCapacity().gt(new BigNumber(0))
+    tranchedPool?.remainingCapacity().gt(new BigNumber(0)) &&
+    !tranchedPool?.metadata?.disabled
   ) {
     depositAction = (e) => {
       setAction("deposit")
@@ -285,7 +297,12 @@ function ActionsContainer({tranchedPool, onComplete}: {tranchedPool?: TranchedPo
 
   let withdrawAction
   let withdrawClass = "disabled"
-  if (session.status === "authenticated" && backer && !backer.availableToWithdrawInDollars.isZero()) {
+  if (
+    session.status === "authenticated" &&
+    backer &&
+    !backer.availableToWithdrawInDollars.isZero() &&
+    !tranchedPool?.metadata?.disabled
+  ) {
     withdrawAction = (e) => {
       setAction("withdraw")
     }
@@ -294,11 +311,21 @@ function ActionsContainer({tranchedPool, onComplete}: {tranchedPool?: TranchedPo
 
   if (action === "deposit") {
     return (
-      <TranchedPoolDepositForm tranchedPool={tranchedPool!} closeForm={closeForm} actionComplete={actionComplete} />
+      <TranchedPoolDepositForm
+        backer={backer!}
+        tranchedPool={tranchedPool!}
+        closeForm={closeForm}
+        actionComplete={actionComplete}
+      />
     )
   } else if (action === "withdraw") {
     return (
-      <TranchedPoolWithdrawForm tranchedPool={tranchedPool!} closeForm={closeForm} actionComplete={actionComplete} />
+      <TranchedPoolWithdrawForm
+        backer={backer!}
+        tranchedPool={tranchedPool!}
+        closeForm={closeForm}
+        actionComplete={actionComplete}
+      />
     )
   } else {
     return (
@@ -592,7 +619,7 @@ function TranchedPoolView() {
 
   let earnMessage = "Loading..."
   if (tranchedPool) {
-    earnMessage = `Earn Portfolio / ${tranchedPool.metadata?.name ?? croppedAddress(tranchedPool.address)}`
+    earnMessage = `Pools / ${tranchedPool.metadata?.name ?? croppedAddress(tranchedPool.address)}`
   }
 
   if (process.env.REACT_APP_HARDHAT_FORK && !unlocked) {

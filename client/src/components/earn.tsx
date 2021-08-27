@@ -19,8 +19,8 @@ function PoolList({title, children}) {
       <div className="table-header background-container-inner">
         <div className="table-cell col40 title">{title}</div>
         <div className="table-cell col22 numeric">Your Balance</div>
-        <div className="table-cell col22 numeric">Est. APY</div>
-        <div className="table-cell col16"></div>
+        <div className="table-cell col22 numeric">Pool Limit</div>
+        <div className="table-cell col16 numeric">Est. APY</div>
       </div>
       {children}
     </div>
@@ -72,22 +72,22 @@ function PortfolioOverview({
   )
 }
 
-function SeniorPoolCard({balance, userBalance, apy}) {
+function SeniorPoolCard({balance, userBalance, apy, limit}) {
   const history = useHistory()
 
   return (
-    <div key="senior-pool" className="table-row background-container-inner">
+    <div
+      key="senior-pool"
+      className="table-row background-container-inner clickable"
+      onClick={() => history.push("/pools/senior")}
+    >
       <div className="table-cell col40">
         {balance}
         <span className="subheader">Total Pool Balance</span>
       </div>
       <div className="table-cell col22 numeric">{userBalance}</div>
-      <div className="table-cell col22 numeric">{apy}</div>
-      <div className="table-cell col16 ">
-        <button className="view-button" onClick={() => history.push("/pools/senior")}>
-          View
-        </button>
-      </div>
+      <div className="table-cell col22 numeric">{limit}</div>
+      <div className="table-cell col16 numeric">{apy}</div>
     </div>
   )
 }
@@ -96,6 +96,7 @@ function TranchedPoolCard({poolBacker}: {poolBacker: PoolBacker}) {
   const history = useHistory()
   const tranchedPool = poolBacker.tranchedPool
   const leverageRatio = tranchedPool.estimatedLeverageRatio
+  const limit = usdcFromAtomic(tranchedPool.creditLine.limit)
 
   let estimatedApy = new BigNumber(NaN)
   let disabledClass = ""
@@ -108,7 +109,10 @@ function TranchedPoolCard({poolBacker}: {poolBacker: PoolBacker}) {
   }
 
   return (
-    <div className="table-row background-container-inner">
+    <div
+      className="table-row background-container-inner clickable"
+      onClick={() => history.push(`/pools/${tranchedPool.address}`)}
+    >
       <div className="table-cell col40 pool-info">
         <img className={"icon"} src={tranchedPool.metadata?.icon} alt="pool-icon" />
         <div className="name">
@@ -117,12 +121,8 @@ function TranchedPoolCard({poolBacker}: {poolBacker: PoolBacker}) {
         </div>
       </div>
       <div className={`${disabledClass} table-cell col22 numeric`}>{displayDollars(poolBacker?.balanceInDollars)}</div>
-      <div className="table-cell col22 numeric">{displayPercent(estimatedApy)}</div>
-      <div className="table-cell col16 ">
-        <button className="view-button" onClick={() => history.push(`/pools/${tranchedPool.address}`)}>
-          View
-        </button>
-      </div>
+      <div className="table-cell col22 numeric">{displayDollars(limit, 0)}</div>
+      <div className="table-cell col16 numeric">{displayPercent(estimatedApy)}</div>
     </div>
   )
 }
@@ -142,6 +142,7 @@ function usePoolBackers({goldfinchProtocol, user}: {goldfinchProtocol?: Goldfinc
       let poolAddresses = poolEvents.map((e) => e.returnValues.pool)
       let tranchedPools = poolAddresses.map((a) => new TranchedPool(a, goldfinchProtocol))
       await Promise.all(tranchedPools.map((p) => p.initialize()))
+      tranchedPools = tranchedPools.filter((p) => p.metadata)
       const activePoolBackers = tranchedPools
         .filter((p) => p.creditLine.limit.gte(MIN_POOL_LIMIT))
         .map((p) => new PoolBacker(user.address, p, goldfinchProtocol))
@@ -159,7 +160,7 @@ function usePoolBackers({goldfinchProtocol, user}: {goldfinchProtocol?: Goldfinc
 }
 
 function Earn(props) {
-  const {pool, usdc, user, goldfinchProtocol} = useContext(AppContext)
+  const {pool, usdc, user, goldfinchProtocol, goldfinchConfig} = useContext(AppContext)
   const [capitalProvider, setCapitalProvider] = useState<CapitalProvider>()
   const [poolData, setPoolData] = useState<PoolData>()
   const {backers, status: tranchedPoolsStatus} = usePoolBackers({goldfinchProtocol, user})
@@ -188,7 +189,7 @@ function Earn(props) {
 
   let earnMessage = "Loading..."
   if (capitalProvider?.loaded || user.noWeb3) {
-    earnMessage = "Earn"
+    earnMessage = "Pools"
   }
 
   return (
@@ -203,9 +204,10 @@ function Earn(props) {
             balance={displayDollars(usdcFromAtomic(poolData?.totalPoolAssets))}
             userBalance={displayDollars(capitalProvider?.availableToWithdrawInDollars)}
             apy={displayPercent(poolData?.estimatedApy)}
+            limit={displayDollars(usdcFromAtomic(goldfinchConfig?.totalFundsLimit), 0)}
           />
         </PoolList>
-        <PoolList title="Junior Pools">
+        <PoolList title="Borrower Pools">
           {tranchedPoolsStatus === "loading"
             ? "Loading..."
             : backers.map((p) => <TranchedPoolCard key={`${p.tranchedPool.address}`} poolBacker={p} />)}

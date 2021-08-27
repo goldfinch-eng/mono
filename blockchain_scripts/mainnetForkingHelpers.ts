@@ -60,11 +60,6 @@ async function upgradeContracts(
 
   for (const contractName of contractsToUpgrade) {
     let contract = contracts[contractName]
-    if (!contract && contractName === "GoldfinchFactory") {
-      // For backwards compatability until we deploy V2
-      contract = contracts["CreditLineFactory"]
-      contracts["GoldfinchFactory"] = contract
-    }
     let contractToDeploy = contractName
     if (isTestEnv() && ["Pool", "CreditDesk", "GoldfinchConfig"].includes(contractName)) {
       contractToDeploy = `Test${contractName}`
@@ -109,10 +104,6 @@ async function getExistingContracts(
   let contracts: ExistingContracts = {}
   const onChainConfig = getCurrentlyDeployedContracts(chainId)
   for (let contractName of contractNames) {
-    // For backwards compatability until we deploy V2
-    if (contractName === "GoldfinchFactory") {
-      contractName = "CreditLineFactory"
-    }
     const contractConfig = onChainConfig[contractName] as any
     const proxyConfig = onChainConfig[`${contractName}_Proxy`] as any
 
@@ -133,7 +124,7 @@ async function fundWithWhales(currencies: string[], recipients: string[], amount
     USDC: "0xf977814e90da44bfa03b6295a0616a897441acec",
     USDT: "0x28c6c06298d514db089934071355e5743bf21d60",
     BUSD: "0x28c6c06298d514db089934071355e5743bf21d60",
-    ETH: "0xdee6238780f98c0ca2c2c28453149bea49a3abc9",
+    ETH: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
   }
   const chainId = await currentChainId()
   assertIsChainId(chainId)
