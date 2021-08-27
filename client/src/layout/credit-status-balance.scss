@@ -51,11 +51,6 @@
   }
 }
 
-.disabled {
-  pointer-events: none;
-  cursor: default;
-}
-
 @media only screen and (min-width: $screen-l) {
   .term-due-date{
     font-size: $sans-size-s;

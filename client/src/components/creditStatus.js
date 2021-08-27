@@ -65,7 +65,7 @@ function CreditStatus(props) {
           href={tranchedPoolLink}
           target="_blank"
           rel="noopener noreferrer"
-          className={`pool-link ${placeholderClass !== "" && "disabled"}`}
+          className={`pool-link ${placeholderClass !== "" && "disabled-link"}`}
         >
           {iconOutArrow}
         </a>
