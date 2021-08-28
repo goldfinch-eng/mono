@@ -132,8 +132,11 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
         {warningMessage}
         <div className="form-footer-message">
           By entering my name and clicking “I Agree” below, I hereby agree and acknowledge that (i) I am electronically
-          signing and becoming a party to the Loan Agreement for this pool, and (ii) my name and transaction information
-          may be shared with the borrower.
+          signing and becoming a party to the{" "}
+          <a className="form-link" href={tranchedPool?.metadata?.agreement} target="_blank" rel="noreferrer">
+            Loan Agreement
+          </a>{" "}
+          for this pool, and (ii) my name and transaction information may be shared with the borrower.
         </div>
         <div className="form-input-container">
           <div className="form-input-label">Full legal name</div>

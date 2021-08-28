@@ -45,6 +45,9 @@ async function metadataStore(networkId: string): Promise<MetadataStore> {
       if (metadata.icon && metadata.icon.startsWith("%PUBLIC_URL%")) {
         metadata.icon = metadata.icon.replace("%PUBLIC_URL%", process.env.PUBLIC_URL)
       }
+      if (metadata.agreement && metadata.agreement.startsWith("%PUBLIC_URL%")) {
+        metadata.agreement = metadata.agreement.replace("%PUBLIC_URL%", process.env.PUBLIC_URL)
+      }
 
       metadataStore[addr.toLowerCase()] = metadata
     })
@@ -65,6 +68,7 @@ interface PoolMetadata {
   detailsUrl?: string
   disabled?: boolean
   backerLimit?: string
+  agreement?: string
 }
 
 enum PoolState {
