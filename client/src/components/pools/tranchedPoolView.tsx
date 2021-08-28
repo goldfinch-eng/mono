@@ -68,17 +68,19 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
   const session = useSession()
 
   async function action({transactionAmount, fullName}) {
-    if (session.status !== "authenticated") {
-      throw new Error("Not signed in")
-    }
-    const client = new DefaultGoldfinchClient(network.name!, session.signature)
     try {
+      if (session.status !== "authenticated") {
+        throw new Error("Not signed in. Please refresh the page and try again")
+      }
+      const client = new DefaultGoldfinchClient(network.name!, session.signature)
+
       const response = await client.signAgreement(user.address, fullName, tranchedPool.address)
 
       if (response.status !== "success") {
         throw new Error(response.error)
       }
     } catch (e) {
+      // Although it's not really a transaction error, this feels cleaner and more consistent than showing a form error
       const txData = networkMonitor.addPendingTX({status: "pending", type: "Deposit", amount: transactionAmount})
       networkMonitor.markTXErrored(txData, e)
       return

@@ -144,7 +144,7 @@ describe("functions", () => {
         expect(agreementDoc.data()).to.containSubset({address: address, fullName: "Test User", pool: pool})
       })
 
-      it("updates the details is submitted twice", async () => {
+      it("updates the details if submitted twice", async () => {
         const key = `${pool.toLowerCase()}-${address.toLowerCase()}`
 
         await signAgreement(
