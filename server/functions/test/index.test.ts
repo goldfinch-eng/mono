@@ -4,8 +4,8 @@ import * as firebaseTesting from "@firebase/rules-unit-testing"
 import * as admin from "firebase-admin"
 import crypto from "crypto"
 
-import {FirebaseConfig, getUsers, setEnvForTest} from "../src/db"
-import {kycStatus, personaCallback} from "../src"
+import {FirebaseConfig, getAgreements, getUsers, setEnvForTest} from "../src/db"
+import {kycStatus, personaCallback, signAgreement} from "../src"
 
 chai.use(chaiSubset as any)
 const expect = chai.expect
@@ -21,6 +21,7 @@ describe("functions", () => {
   const validSignature =
     "0xaf75579e99f8810b5c009041961852a4872d3b19031a283ff8ea451854ac072331610c5edaf6ec7430a11cea0f19a2a177ce3b5c52ee93b933fd91e2f9336ad71c"
   let users: firestore.CollectionReference<firestore.DocumentData>
+  let agreements: firestore.CollectionReference<firestore.DocumentData>
 
   beforeEach(() => {
     testApp = firebaseTesting.initializeAdminApp({projectId: projectId})
@@ -31,6 +32,7 @@ describe("functions", () => {
     }
     setEnvForTest(testFirestore, config)
     users = getUsers(testFirestore)
+    agreements = getAgreements(testFirestore)
   })
 
   afterEach(async () => {
@@ -61,10 +63,7 @@ describe("functions", () => {
       })
 
       it("checks if the signature is present", async () => {
-        await kycStatus(
-          generateKycRequest(address, ""),
-          expectResponse(400, {error: "Address or signature not provided"}),
-        )
+        await kycStatus(generateKycRequest(address, ""), expectResponse(403, {error: "Invalid address or signature"}))
       })
 
       it("returns an error if the signature is incorrect", async () => {
@@ -107,6 +106,62 @@ describe("functions", () => {
           })
           await kycStatus(req, expectResponse(200, {address, status: "unknown"}))
         })
+      })
+    })
+  })
+
+  describe("signAgreement", async () => {
+    const generateAgreementRequest = (address: string, pool: string, fullName: string, signature: string) => {
+      return {
+        headers: {"x-goldfinch-signature": signature},
+        body: {address, pool, fullName},
+      } as any
+    }
+    const pool = "0x1234asdADF"
+
+    describe("validation", async () => {
+      it("checks if address is present", async () => {
+        await signAgreement(
+          generateAgreementRequest("", "", "", ""),
+          expectResponse(403, {error: "Invalid address or signature"}),
+        )
+      })
+    })
+
+    describe("valid request", async () => {
+      it("saves the provided details to the agreements collection", async () => {
+        const key = `${pool.toLowerCase()}-${address.toLowerCase()}`
+
+        expect((await agreements.doc(key).get()).exists).to.be.false
+
+        await signAgreement(
+          generateAgreementRequest(address, pool, "Test User", validSignature),
+          expectResponse(200, {status: "success"}),
+        )
+
+        const agreementDoc = await agreements.doc(key).get()
+        expect(agreementDoc.exists).to.be.true
+        expect(agreementDoc.data()).to.containSubset({address: address, fullName: "Test User", pool: pool})
+      })
+
+      it("updates the details if submitted twice", async () => {
+        const key = `${pool.toLowerCase()}-${address.toLowerCase()}`
+
+        await signAgreement(
+          generateAgreementRequest(address, pool, "Test User", validSignature),
+          expectResponse(200, {status: "success"}),
+        )
+
+        let agreementDoc = await agreements.doc(key).get()
+        expect(agreementDoc.data()).to.containSubset({fullName: "Test User"})
+
+        await signAgreement(
+          generateAgreementRequest(address, pool, "Test User 2", validSignature),
+          expectResponse(200, {status: "success"}),
+        )
+
+        agreementDoc = await agreements.doc(key).get()
+        expect(agreementDoc.data()).to.containSubset({fullName: "Test User 2"})
       })
     })
   })

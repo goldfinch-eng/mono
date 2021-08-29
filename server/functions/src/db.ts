@@ -4,7 +4,7 @@ import firestore = admin.firestore
 
 let _firestoreForTest: firestore.Firestore
 let _configForTest: FirebaseConfig = {
-  kyc: {allowed_origins: ""},
+  kyc: {allowed_origins: "http://localhost:3000"},
   persona: {allowed_ips: ""},
   sentry: {
     dsn: "https://8c1adf3a336a4487b14ae1af080c26d1@o915675.ingest.sentry.io/5857894",
@@ -14,17 +14,33 @@ let _configForTest: FirebaseConfig = {
 }
 
 /**
- * Get the users collction give a reference to the firestore
+ * Get the users collection given a reference to the firestore
  * @param {firestore.Firestore} firestore The firestore the get the collection from (ignored for tests)
  * @return {firestore.CollectionReference} A Collection object that can be queried
  */
 function getUsers(firestore: firestore.Firestore): firestore.CollectionReference<firestore.DocumentData> {
+  return getCollection("users", firestore)
+}
+
+/**
+ * Get the agreements collection given a reference to the firestore
+ * @param {firestore.Firestore} firestore The firestore the get the collection from (ignored for tests)
+ * @return {firestore.CollectionReference} A Collection object that can be queried
+ */
+function getAgreements(firestore: firestore.Firestore): firestore.CollectionReference<firestore.DocumentData> {
+  return getCollection("agreements", firestore)
+}
+
+const getCollection = (
+  collection: string,
+  firestore: firestore.Firestore,
+): firestore.CollectionReference<firestore.DocumentData> => {
   let collectionPrefix = ""
 
   if (process.env.NODE_ENV === "test") {
     collectionPrefix = "test_"
   }
-  const collectionName = `${collectionPrefix}users`
+  const collectionName = `${collectionPrefix}${collection}`
   return getDb(firestore).collection(collectionName)
 }
 
@@ -128,4 +144,4 @@ function setEnvForTest(firestore: firestore.Firestore, config: Omit<FirebaseConf
   }
 }
 
-export {getUsers, getDb, getConfig, setEnvForTest}
+export {getUsers, getAgreements, getDb, getConfig, setEnvForTest}
