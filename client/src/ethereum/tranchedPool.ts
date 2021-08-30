@@ -20,7 +20,7 @@ interface MetadataStore {
   [address: string]: PoolMetadata
 }
 let _metadataStore: MetadataStore
-async function metadataStore(networkId: string): Promise<MetadataStore> {
+async function getMetadataStore(networkId: string): Promise<MetadataStore> {
   if (_metadataStore) {
     return Promise.resolve(_metadataStore)
   }
@@ -164,7 +164,7 @@ class TranchedPool {
   }
 
   private async loadPoolMetadata(): Promise<PoolMetadata | undefined> {
-    let store = await metadataStore(this.goldfinchProtocol.networkId)
+    let store = await getMetadataStore(this.goldfinchProtocol.networkId)
     return store[this.address.toLowerCase()]
   }
 
@@ -379,4 +379,4 @@ function tokenInfo(tokenId: string, tuple: any): TokenInfo {
   }
 }
 
-export {TranchedPool, PoolBacker, PoolState, TRANCHES}
+export {getMetadataStore, TranchedPool, PoolBacker, PoolState, TRANCHES}
