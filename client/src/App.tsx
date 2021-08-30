@@ -15,7 +15,7 @@ import {refreshGoldfinchConfigData} from "./ethereum/goldfinchConfig"
 import {getUserData, defaultUser, User} from "./ethereum/user"
 import {mapNetworkToID, SUPPORTED_NETWORKS} from "./ethereum/utils"
 import {NetworkMonitor} from "./ethereum/networkMonitor"
-import {SeniorPool} from "./ethereum/pool"
+import {Pool, SeniorPool} from "./ethereum/pool"
 import {GoldfinchProtocol} from "./ethereum/GoldfinchProtocol"
 import {GoldfinchConfig} from "./typechain/web3/GoldfinchConfig"
 import SeniorPoolView from "./components/pools/seniorPoolView"
@@ -40,6 +40,7 @@ interface GeolocationData {
 
 interface GlobalState {
   pool?: SeniorPool
+  v1Pool?: Pool
   creditDesk?: any
   user: User
   usdc?: ERC20
@@ -60,6 +61,7 @@ const AppContext = React.createContext<GlobalState>({user: defaultUser()})
 
 function App() {
   const [pool, setPool] = useState<SeniorPool>()
+  const [v1Pool, setV1Pool] = useState<Pool>()
   const [creditDesk, setCreditDesk] = useState<any>({})
   const [usdc, setUSDC] = useState<ERC20>()
   const [user, setUser] = useState<User>(defaultUser())
@@ -84,7 +86,7 @@ function App() {
       refreshUserData(overrideAddress)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [usdc, pool, creditDesk, network, goldfinchProtocol])
+  }, [usdc, pool, v1Pool, creditDesk, network, goldfinchProtocol])
 
   async function ensureWeb3() {
     if (!window.ethereum) {
@@ -111,6 +113,7 @@ function App() {
     setNetwork(networkConfig)
     let usdc: ERC20,
       pool: SeniorPool,
+      v1Pool: Pool,
       goldfinchConfigContract: any,
       creditDeskContract: any,
       protocol: GoldfinchProtocol
@@ -118,11 +121,13 @@ function App() {
       protocol = new GoldfinchProtocol(networkConfig)
       await protocol.initialize()
       usdc = await protocol.getERC20(Tickers.USDC)
-      pool = new SeniorPool(protocol)
+      v1Pool = new Pool(protocol)
+      pool = new SeniorPool(protocol, v1Pool)
       await pool.initialize()
       goldfinchConfigContract = protocol.getContract<GoldfinchConfig>("GoldfinchConfig")
       creditDeskContract = protocol.getContract("CreditDesk")
       setUSDC(usdc)
+      setV1Pool(v1Pool)
       setPool(pool)
       setCreditDesk(creditDeskContract)
       setGoldfinchConfig(await refreshGoldfinchConfigData(goldfinchConfigContract))
@@ -149,8 +154,8 @@ function App() {
     if (userAddress) {
       data.address = userAddress
     }
-    if (userAddress && goldfinchProtocol && creditDesk.loaded && pool?.loaded) {
-      data = await getUserData(userAddress, goldfinchProtocol, pool, creditDesk, network.name)
+    if (userAddress && goldfinchProtocol && creditDesk.loaded && pool?.loaded && v1Pool?.loaded) {
+      data = await getUserData(userAddress, goldfinchProtocol, pool, v1Pool, creditDesk, network.name)
     }
 
     Sentry.setUser({
@@ -168,6 +173,7 @@ function App() {
 
   const store: GlobalState = {
     pool,
+    v1Pool,
     creditDesk,
     user,
     usdc,

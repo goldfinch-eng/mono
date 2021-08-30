@@ -1,9 +1,9 @@
 import {useState, useEffect, useContext} from "react"
 import {useHistory} from "react-router-dom"
-import {CapitalProvider, fetchCapitalProviderData, PoolData} from "../ethereum/pool"
+import {CapitalProvider, fetchCapitalProviderData, fetchPoolData, Pool, PoolData, SeniorPool} from "../ethereum/pool"
 import {AppContext} from "../App"
-import {usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
-import {displayDollars, displayPercent, roundDownPenny} from "../utils"
+import {ERC20, usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
+import {assertNonNullable, displayDollars, displayPercent, roundDownPenny} from "../utils"
 import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
 import {PoolBacker, TranchedPool} from "../ethereum/tranchedPool"
 import {PoolCreated} from "../typechain/web3/GoldfinchFactory"
@@ -170,19 +170,23 @@ function usePoolBackers({goldfinchProtocol, user}: {goldfinchProtocol?: Goldfinc
 }
 
 function Earn(props) {
-  const {pool, usdc, user, goldfinchProtocol, goldfinchConfig} = useContext(AppContext)
+  const {pool, v1Pool, usdc, user, goldfinchProtocol, goldfinchConfig} = useContext(AppContext)
   const [capitalProvider, setCapitalProvider] = useState<CapitalProvider>()
   const {backers, status: tranchedPoolsStatus} = usePoolBackers({goldfinchProtocol, user})
 
   useEffect(() => {
     if (pool) {
       const capitalProviderAddress = user.loaded && user.address
-      refreshCapitalProviderData(pool, capitalProviderAddress)
-    }
-  }, [pool, usdc, user])
+      assertNonNullable(pool)
+      assertNonNullable(v1Pool)
+      assertNonNullable(usdc)
 
-  async function refreshCapitalProviderData(pool: any, address: string | boolean) {
-    const capitalProvider = await fetchCapitalProviderData(pool, address)
+      refreshCapitalProviderData(pool, v1Pool, capitalProviderAddress)
+    }
+  }, [pool, v1Pool, usdc, user])
+
+  async function refreshCapitalProviderData(pool: SeniorPool, v1Pool: Pool, address: string | boolean) {
+    const capitalProvider = await fetchCapitalProviderData(pool, v1Pool, address)
     setCapitalProvider(capitalProvider)
   }
 

@@ -6,38 +6,45 @@ import {
   CapitalProvider,
   emptyCapitalProvider,
   fetchCapitalProviderData,
+  Pool,
   PoolData,
   SeniorPool,
 } from "../../ethereum/pool"
 import {AppContext} from "../../App"
 import InvestorNotice from "../investorNotice"
-import {displayDollars} from "../../utils"
+import {assertNonNullable, displayDollars} from "../../utils"
 import {usdcFromAtomic} from "../../ethereum/erc20"
 
 function SeniorPoolView() {
-  const {pool, user, goldfinchConfig} = useContext(AppContext)
+  const {pool, v1Pool, user, goldfinchConfig} = useContext(AppContext)
   const [capitalProvider, setCapitalProvider] = useState<CapitalProvider>(emptyCapitalProvider())
   const [poolData, setPoolData] = useState<PoolData>()
 
   useEffect(() => {
     async function refreshAllData() {
       const capitalProviderAddress = user.loaded && user.address
-      refreshPoolData(pool!)
-      refreshCapitalProviderData(pool, capitalProviderAddress)
+      assertNonNullable(pool)
+      assertNonNullable(v1Pool)
+
+      refreshPoolData(pool)
+      refreshCapitalProviderData(pool, v1Pool, capitalProviderAddress)
     }
 
     if (pool) {
       refreshAllData()
     }
-  }, [pool, user])
+  }, [pool, v1Pool, user])
 
   async function actionComplete() {
-    await refreshPoolData(pool!)
-    return refreshCapitalProviderData(pool, capitalProvider!.address)
+    assertNonNullable(pool)
+    assertNonNullable(v1Pool)
+
+    await refreshPoolData(pool)
+    return refreshCapitalProviderData(pool, v1Pool, capitalProvider!.address)
   }
 
-  async function refreshCapitalProviderData(pool: any, address: string | boolean) {
-    const capitalProvider = await fetchCapitalProviderData(pool, address)
+  async function refreshCapitalProviderData(pool: SeniorPool, v1Pool: Pool, address: string | boolean) {
+    const capitalProvider = await fetchCapitalProviderData(pool, v1Pool, address)
     setCapitalProvider(capitalProvider)
   }
 
