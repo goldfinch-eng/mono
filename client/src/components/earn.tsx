@@ -178,7 +178,6 @@ function Earn(props) {
     if (pool) {
       const capitalProviderAddress = user.loaded && user.address
       assertNonNullable(pool)
-      assertNonNullable(usdc)
 
       refreshCapitalProviderData(pool, capitalProviderAddress)
     }

@@ -307,7 +307,8 @@ async function getRepaymentEvents(this: PoolData, goldfinchProtocol: GoldfinchPr
 
 async function getAllDepositAndWithdrawalTxs(pool: SeniorPool) {
   const eventNames = ["DepositMade", "WithdrawalMade"]
-  return await mapEventsToTx(await pool.getPoolEvents(undefined, eventNames))
+  const poolEvents = await pool.getPoolEvents(undefined, eventNames)
+  return await mapEventsToTx(poolEvents)
 }
 
 function assetsAsOf(this: PoolData, dt) {

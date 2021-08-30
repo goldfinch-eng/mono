@@ -225,7 +225,8 @@ async function getAndTransformERC20Events(erc20: ERC20, spender: string, owner: 
 }
 
 async function getAndTransformPoolEvents(pool: SeniorPool, address: string) {
-  return await mapEventsToTx(await pool.getPoolEvents(address))
+  const poolEvents = await pool.getPoolEvents(address)
+  return await mapEventsToTx(poolEvents)
 }
 
 async function getAndTransformCreditDeskEvents(creditDesk, address) {
