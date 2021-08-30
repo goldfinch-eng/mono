@@ -15,7 +15,7 @@ import useCurrencyUnlocked from "../hooks/useCurrencyUnlocked"
 import CurrencyDropdown from "./currencyDropdown"
 
 function DrawdownForm(props) {
-  const {pool, v1Pool, usdc, goldfinchConfig, goldfinchProtocol} = useContext(AppContext)
+  const {pool, usdc, goldfinchConfig, goldfinchProtocol} = useContext(AppContext)
   const [poolData, setPoolData] = useState({})
   const sendFromUser = useSendFromUser()
   const [erc20, setErc20] = useState(usdc)
@@ -35,9 +35,9 @@ function DrawdownForm(props) {
 
   useEffect(() => {
     ;(async () => {
-      setPoolData(await fetchPoolData(pool, v1Pool, usdc.contract))
+      setPoolData(await fetchPoolData(pool, usdc.contract))
     })()
-  }, [pool, v1Pool, usdc])
+  }, [pool, usdc])
 
   function isSwapping() {
     return erc20 !== usdc

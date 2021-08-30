@@ -16,7 +16,7 @@ import {assertNonNullable, displayDollars} from "../../utils"
 import {usdcFromAtomic} from "../../ethereum/erc20"
 
 function SeniorPoolView() {
-  const {pool, v1Pool, user, goldfinchConfig} = useContext(AppContext)
+  const {pool, user, goldfinchConfig} = useContext(AppContext)
   const [capitalProvider, setCapitalProvider] = useState<CapitalProvider>(emptyCapitalProvider())
   const [poolData, setPoolData] = useState<PoolData>()
 
@@ -24,27 +24,25 @@ function SeniorPoolView() {
     async function refreshAllData() {
       const capitalProviderAddress = user.loaded && user.address
       assertNonNullable(pool)
-      assertNonNullable(v1Pool)
 
       refreshPoolData(pool)
-      refreshCapitalProviderData(pool, v1Pool, capitalProviderAddress)
+      refreshCapitalProviderData(pool, capitalProviderAddress)
     }
 
     if (pool) {
       refreshAllData()
     }
-  }, [pool, v1Pool, user])
+  }, [pool, user])
 
   async function actionComplete() {
     assertNonNullable(pool)
-    assertNonNullable(v1Pool)
 
     await refreshPoolData(pool)
-    return refreshCapitalProviderData(pool, v1Pool, capitalProvider!.address)
+    return refreshCapitalProviderData(pool, capitalProvider!.address)
   }
 
-  async function refreshCapitalProviderData(pool: SeniorPool, v1Pool: Pool, address: string | boolean) {
-    const capitalProvider = await fetchCapitalProviderData(pool, v1Pool, address)
+  async function refreshCapitalProviderData(pool: SeniorPool, address: string | boolean) {
+    const capitalProvider = await fetchCapitalProviderData(pool, address)
     setCapitalProvider(capitalProvider)
   }
 

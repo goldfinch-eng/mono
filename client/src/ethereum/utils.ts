@@ -145,10 +145,10 @@ function fetchDataFromAttributes(
     })
 }
 
-async function getPoolEvents(pool: SeniorPool | Pool, address: string | undefined, events = ["DepositMade", "WithdrawalMade"]) {
+async function getPoolEvents(pool: SeniorPool | Pool, address: string | undefined, eventNames: string[]) {
   const fromBlock = getFromBlock(pool.chain)
-  const [depositEvents, withdrawalEvents] = await Promise.all(
-    events.map((eventName) => {
+  const events = await Promise.all(
+    eventNames.map((eventName) => {
       return pool.contract.getPastEvents(eventName, {
         filter: address ? {capitalProvider: address} : undefined,
         fromBlock,
@@ -156,7 +156,7 @@ async function getPoolEvents(pool: SeniorPool | Pool, address: string | undefine
       })
     }),
   )
-  return _.compact(_.concat(depositEvents, withdrawalEvents))
+  return _.compact(_.flatten(events))
 }
 
 export {

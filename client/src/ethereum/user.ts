@@ -1,10 +1,10 @@
 import BigNumber from "bignumber.js"
 import {ERC20, Tickers, usdcFromAtomic} from "./erc20"
 import _ from "lodash"
-import {getFromBlock, getPoolEvents, MAINNET} from "./utils"
+import {getFromBlock, MAINNET} from "./utils"
 import {mapEventsToTx} from "./events"
 import {BorrowerInterface, getBorrowerContract} from "./borrower"
-import {SeniorPool, Pool} from "./pool"
+import {SeniorPool} from "./pool"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {GoldfinchConfig} from "../typechain/web3/GoldfinchConfig"
 
@@ -12,10 +12,10 @@ declare let window: any
 
 const UNLOCK_THRESHOLD = new BigNumber(10000)
 
-async function getUserData(address, goldfinchProtocol, pool: SeniorPool, v1Pool: Pool, creditDesk, networkId): Promise<User> {
+async function getUserData(address, goldfinchProtocol, pool: SeniorPool, creditDesk, networkId): Promise<User> {
   const borrower = await getBorrowerContract(address, goldfinchProtocol)
 
-  const user = new Web3User(address, pool, v1Pool, creditDesk, goldfinchProtocol, networkId, borrower)
+  const user = new Web3User(address, pool, creditDesk, goldfinchProtocol, networkId, borrower)
   await user.initialize()
   return user
 }
@@ -62,14 +62,12 @@ class Web3User implements User {
 
   private borrower?: BorrowerInterface
   private pool: SeniorPool
-  private v1Pool: Pool
   private usdc: ERC20
   private creditDesk: any
 
   constructor(
     address: string,
     pool: SeniorPool,
-    v1Pool: Pool,
     creditDesk: any,
     goldfinchProtocol: GoldfinchProtocol,
     networkId: string,
@@ -79,7 +77,6 @@ class Web3User implements User {
     this.borrower = borrower
     this.goldfinchProtocol = goldfinchProtocol
     this.pool = pool
-    this.v1Pool = v1Pool
     this.usdc = goldfinchProtocol.getERC20(Tickers.USDC)
     this.creditDesk = creditDesk
     this.web3Connected = true
@@ -94,10 +91,10 @@ class Web3User implements User {
     this.poolAllowance = await this.getAllowance(this.pool.address)
 
     const [usdcTxs, poolTxs, creditDeskTxs] = await Promise.all([
-      // NOTE: We have no need to include usdc txs for `this.v1Pool` among the txs in
+      // NOTE: We have no need to include usdc txs for `this.pool.v1Pool` among the txs in
       // `this.pastTxs`. So we don't get them. We only need usdc txs for `this.pool`.
       getAndTransformERC20Events(this.usdc, this.pool.address, this.address),
-      getAndTransformPoolEvents(this.pool, this.v1Pool, this.address),
+      getAndTransformPoolEvents(this.pool, this.address),
       // Credit desk events could've come from the user directly or the borrower contract, we need to filter by both
       getAndTransformCreditDeskEvents(this.creditDesk, _.compact([this.address, this.borrower?.borrowerAddress])),
     ])
@@ -214,11 +211,11 @@ function defaultUser(): User {
   return new DefaultUser()
 }
 
-async function getAndTransformERC20Events(erc20, spender, owner) {
+async function getAndTransformERC20Events(erc20: ERC20, spender: string, owner: string) {
   let approvalEvents = await erc20.contract.getPastEvents("Approval", {
-    filter: {owner: owner, spender: spender},
+    filter: {owner, spender},
     fromBlock: "earliest",
-    to: "latest",
+    toBlock: "latest",
   })
   approvalEvents = _.chain(approvalEvents)
     .compact()
@@ -227,10 +224,8 @@ async function getAndTransformERC20Events(erc20, spender, owner) {
   return await mapEventsToTx(approvalEvents)
 }
 
-async function getAndTransformPoolEvents(pool: SeniorPool, v1Pool: Pool, address: string) {
-  const [poolEvents, v1PoolEvents] = await Promise.all([getPoolEvents(pool, address), getPoolEvents(v1Pool, address)])
-  const combinedEvents = v1PoolEvents.concat(poolEvents)
-  return await mapEventsToTx(combinedEvents)
+async function getAndTransformPoolEvents(pool: SeniorPool, address: string) {
+  return await mapEventsToTx(await pool.getPoolEvents(address))
 }
 
 async function getAndTransformCreditDeskEvents(creditDesk, address) {
@@ -248,5 +243,5 @@ async function getAndTransformCreditDeskEvents(creditDesk, address) {
   return await mapEventsToTx(creditDeskEvents)
 }
 
-export {getUserData, getPoolEvents, defaultUser}
+export {getUserData, defaultUser}
 export type {DefaultUser, User}

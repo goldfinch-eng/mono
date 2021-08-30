@@ -1,9 +1,8 @@
 import BigNumber from "bignumber.js"
-import {fetchDataFromAttributes, INTEREST_DECIMALS, USDC_DECIMALS} from "./utils"
+import {fetchDataFromAttributes, getPoolEvents, INTEREST_DECIMALS, USDC_DECIMALS} from "./utils"
 import {Tickers, usdcFromAtomic} from "./erc20"
 import {FIDU_DECIMALS, fiduFromAtomic} from "./fidu"
 import {dedupe, roundDownPenny} from "../utils"
-import {getPoolEvents} from "./user"
 import _ from "lodash"
 import {mapEventsToTx} from "./events"
 import {Contract} from "web3-eth-contract"
@@ -19,14 +18,18 @@ class Pool {
   contract: PoolContract
   chain: string
   address: string
-  loaded: boolean
+  _loaded: boolean
 
   constructor(goldfinchProtocol: GoldfinchProtocol) {
     this.goldfinchProtocol = goldfinchProtocol
     this.contract = goldfinchProtocol.getContract<PoolContract>("Pool")
     this.address = goldfinchProtocol.getAddress("Pool")
     this.chain = goldfinchProtocol.networkId
-    this.loaded = true
+    this._loaded = true
+  }
+
+  get loaded(): boolean {
+    return this._loaded
   }
 }
 
@@ -38,23 +41,42 @@ class SeniorPool {
   v1Pool: Pool
   chain: string
   address: string
-  loaded: boolean
+  _loaded: boolean
   gf!: PoolData
 
-  constructor(goldfinchProtocol: GoldfinchProtocol, v1Pool: Pool) {
+  constructor(goldfinchProtocol: GoldfinchProtocol) {
     this.goldfinchProtocol = goldfinchProtocol
     this.contract = goldfinchProtocol.getContract<SeniorPoolContract>("SeniorPool")
     this.address = goldfinchProtocol.getAddress("SeniorPool")
     this.usdc = goldfinchProtocol.getERC20(Tickers.USDC).contract
     this.fidu = goldfinchProtocol.getContract<FiduContract>("Fidu")
-    this.v1Pool = v1Pool
+    this.v1Pool = new Pool(goldfinchProtocol)
     this.chain = goldfinchProtocol.networkId
-    this.loaded = true
+    this._loaded = true
   }
 
   async initialize() {
-    let poolData = await fetchPoolData(this, this.v1Pool, this.usdc)
+    let poolData = await fetchPoolData(this, this.usdc)
     this.gf = poolData
+  }
+
+  async getPoolEvents(address: string | undefined, eventNames: string[] = ["DepositMade", "WithdrawalMade"]) {
+    // In migrating from v1 to v2 (i.e. from the `Pool` contract as modeling the senior pool,
+    // to the `SeniorPool` contract as modeling the senior pool), we transferred contract state
+    // from Pool to SeniorPool (e.g. the deposits that a `capitalProvider` had made into Pool
+    // became deposits in SeniorPool). But we did not do any sort of migrating (e.g. re-emitting)
+    // with respect to events, from the Pool contract onto the SeniorPool contract. So accurately
+    // representing the SeniorPool's events here -- e.g. to be able to accurately count all of a
+    // `capitalProvider`'s deposits -- requires querying for those events on both the SeniorPool
+    // and Pool contracts.
+
+    const [poolEvents, v1PoolEvents] = await Promise.all([getPoolEvents(this, address, eventNames), getPoolEvents(this.v1Pool, address, eventNames)])
+    const combinedEvents = v1PoolEvents.concat(poolEvents)
+    return combinedEvents
+  }
+
+  get loaded(): boolean {
+    return this._loaded && this.v1Pool.loaded
   }
 }
 
@@ -88,11 +110,10 @@ function emptyCapitalProvider({loaded = false} = {}): CapitalProvider {
 
 async function fetchCapitalProviderData(
   pool: SeniorPool,
-  v1Pool: Pool,
   capitalProviderAddress: string | boolean,
 ): Promise<CapitalProvider> {
   if (!capitalProviderAddress) {
-    return emptyCapitalProvider({ loaded: pool.loaded && v1Pool.loaded })
+    return emptyCapitalProvider({ loaded: pool.loaded })
   }
 
   const attributes = [{method: "sharePrice"}]
@@ -104,7 +125,7 @@ async function fetchCapitalProviderData(
   let availableToWithdrawInDollars = new BigNumber(fiduFromAtomic(availableToWithdraw))
   let address = capitalProviderAddress as string
   let allowance = new BigNumber(await pool.usdc.methods.allowance(capitalProviderAddress, pool.address).call())
-  let weightedAverageSharePrice = await getWeightedAverageSharePrice(pool, v1Pool, {numShares, address})
+  let weightedAverageSharePrice = await getWeightedAverageSharePrice(pool, {numShares, address})
   const sharePriceDelta = sharePrice.dividedBy(FIDU_DECIMALS).minus(weightedAverageSharePrice)
   let unrealizedGains = sharePriceDelta.multipliedBy(numShares)
   let unrealizedGainsInDollars = new BigNumber(roundDownPenny(unrealizedGains.div(FIDU_DECIMALS)))
@@ -144,7 +165,7 @@ interface PoolData {
   pool: SeniorPool
 }
 
-async function fetchPoolData(pool: SeniorPool, v1Pool: Pool, erc20: Contract): Promise<PoolData> {
+async function fetchPoolData(pool: SeniorPool, erc20: Contract): Promise<PoolData> {
   const attributes = [{method: "sharePrice"}, {method: "compoundBalance"}]
   let {sharePrice, compoundBalance: _compoundBalance} = await fetchDataFromAttributes(pool.contract, attributes)
   let rawBalance = new BigNumber(await erc20.methods.balanceOf(pool.address).call())
@@ -163,7 +184,7 @@ async function fetchPoolData(pool: SeniorPool, v1Pool: Pool, erc20: Contract): P
   let totalLoansOutstanding = new BigNumber(await pool.contract.methods.totalLoansOutstanding().call())
   let cumulativeWritedowns = await getCumulativeWritedowns(pool)
   let cumulativeDrawdowns = await getCumulativeDrawdowns(pool)
-  let poolTxs = await getAllDepositAndWithdrawalTxs(pool, v1Pool)
+  let poolTxs = await getAllDepositAndWithdrawalTxs(pool)
   // let estimatedTotalInterest = await getEstimatedTotalInterest(pool)
   // HOTFIX: Hardcode to NaN so that APY displays as "--.--%" instead of 0%
   let estimatedTotalInterest = new BigNumber(NaN)
@@ -204,17 +225,9 @@ async function fetchPoolData(pool: SeniorPool, v1Pool: Pool, erc20: Contract): P
 // than we have records of your deposits, so we would not be able to account
 // for your shares, and we would fail out, and return a "-" on the front-end.
 // Note: This also does not take into account realized gains, which we are also punting on.
-async function getWeightedAverageSharePrice(pool: SeniorPool, v1Pool: Pool, capitalProvider) {
-  // In migrating from v1 to v2 (i.e. from the `Pool` contract as modeling the senior pool,
-  // to the `SeniorPool` contract as modeling the senior pool), the deposits that a
-  // `capitalProvider` had made into Pool became deposits in SeniorPool. But we did not
-  // migrate / re-emit DepositMade events themselves, from the Pool contract onto the
-  // SeniorPool contract. So to accurately count all of a `capitalProvider`'s deposits, we
-  // need to query for their DepositMade events on both the SeniorPool and Pool contracts.
-  const v1PoolEvents = await getPoolEvents(v1Pool, capitalProvider.address, ["DepositMade"])
-  const poolEvents = await getPoolEvents(pool, capitalProvider.address, ["DepositMade"])
-  const combinedEvents = v1PoolEvents.concat(poolEvents)
-  const preparedEvents = _.reverse(_.sortBy(combinedEvents, "blockNumber"))
+async function getWeightedAverageSharePrice(pool: SeniorPool, capitalProvider) {
+  const poolEvents = await pool.getPoolEvents(capitalProvider.address, ["DepositMade"])
+  const preparedEvents = _.reverse(_.sortBy(poolEvents, "blockNumber"))
 
   let zero = new BigNumber(0)
   let sharesLeftToAccountFor = capitalProvider.numShares
@@ -302,11 +315,9 @@ async function getRepaymentEvents(this: PoolData, goldfinchProtocol: GoldfinchPr
   return _.compact(combinedEvents)
 }
 
-async function getAllDepositAndWithdrawalTxs(pool: SeniorPool, v1Pool: Pool) {
+async function getAllDepositAndWithdrawalTxs(pool: SeniorPool) {
   const eventNames = ["DepositMade", "WithdrawalMade"]
-  const [poolEvents, v1PoolEvents] = await Promise.all([getPoolEvents(pool, undefined, eventNames), getPoolEvents(v1Pool, undefined, eventNames)])
-  const combinedEvents = v1PoolEvents.concat(poolEvents)
-  return await mapEventsToTx(_.flatten(combinedEvents))
+  return await mapEventsToTx(await pool.getPoolEvents(undefined, eventNames))
 }
 
 function assetsAsOf(this: PoolData, dt) {

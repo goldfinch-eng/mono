@@ -61,7 +61,7 @@ class GoldfinchProtocol {
         })
       }),
     )
-    return _.compact(_.concat(_.flatten(eventArrays)))
+    return _.compact(_.flatten(eventArrays))
   }
 
   async queryEvent<T extends ContractEventLog<any>>(

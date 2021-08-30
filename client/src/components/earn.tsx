@@ -1,8 +1,8 @@
 import {useState, useEffect, useContext} from "react"
 import {useHistory} from "react-router-dom"
-import {CapitalProvider, fetchCapitalProviderData, fetchPoolData, Pool, PoolData, SeniorPool} from "../ethereum/pool"
+import {CapitalProvider, fetchCapitalProviderData, PoolData, SeniorPool} from "../ethereum/pool"
 import {AppContext} from "../App"
-import {ERC20, usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
+import {usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
 import {assertNonNullable, displayDollars, displayPercent, roundDownPenny} from "../utils"
 import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
 import {PoolBacker, TranchedPool} from "../ethereum/tranchedPool"
@@ -170,7 +170,7 @@ function usePoolBackers({goldfinchProtocol, user}: {goldfinchProtocol?: Goldfinc
 }
 
 function Earn(props) {
-  const {pool, v1Pool, usdc, user, goldfinchProtocol, goldfinchConfig} = useContext(AppContext)
+  const {pool, usdc, user, goldfinchProtocol, goldfinchConfig} = useContext(AppContext)
   const [capitalProvider, setCapitalProvider] = useState<CapitalProvider>()
   const {backers, status: tranchedPoolsStatus} = usePoolBackers({goldfinchProtocol, user})
 
@@ -178,15 +178,14 @@ function Earn(props) {
     if (pool) {
       const capitalProviderAddress = user.loaded && user.address
       assertNonNullable(pool)
-      assertNonNullable(v1Pool)
       assertNonNullable(usdc)
 
-      refreshCapitalProviderData(pool, v1Pool, capitalProviderAddress)
+      refreshCapitalProviderData(pool, capitalProviderAddress)
     }
-  }, [pool, v1Pool, usdc, user])
+  }, [pool, usdc, user])
 
-  async function refreshCapitalProviderData(pool: SeniorPool, v1Pool: Pool, address: string | boolean) {
-    const capitalProvider = await fetchCapitalProviderData(pool, v1Pool, address)
+  async function refreshCapitalProviderData(pool: SeniorPool, address: string | boolean) {
+    const capitalProvider = await fetchCapitalProviderData(pool, address)
     setCapitalProvider(capitalProvider)
   }
 
