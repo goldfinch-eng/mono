@@ -70,7 +70,10 @@ class SeniorPool {
     // `capitalProvider`'s deposits -- requires querying for those events on both the SeniorPool
     // and Pool contracts.
 
-    const [poolEvents, v1PoolEvents] = await Promise.all([getPoolEvents(this, address, eventNames), getPoolEvents(this.v1Pool, address, eventNames)])
+    const [poolEvents, v1PoolEvents] = await Promise.all([
+      getPoolEvents(this, address, eventNames),
+      getPoolEvents(this.v1Pool, address, eventNames),
+    ])
     const combinedEvents = v1PoolEvents.concat(poolEvents)
     return combinedEvents
   }
@@ -113,7 +116,7 @@ async function fetchCapitalProviderData(
   capitalProviderAddress: string | boolean,
 ): Promise<CapitalProvider> {
   if (!capitalProviderAddress) {
-    return emptyCapitalProvider({ loaded: pool.loaded })
+    return emptyCapitalProvider({loaded: pool.loaded})
   }
 
   const attributes = [{method: "sharePrice"}]

@@ -3,7 +3,7 @@ import BN from "bn.js"
 import _ from "lodash"
 import {Contract} from "web3-eth-contract"
 import {BaseContract} from "../typechain/web3/types"
-import { Pool, SeniorPool } from "./pool"
+import {Pool, SeniorPool} from "./pool"
 
 const decimalPlaces = 6
 const decimals = new BN(String(10 ** decimalPlaces))
