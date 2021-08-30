@@ -100,6 +100,11 @@ input::placeholder,
   }
 }
 
+.disabled-link {
+  pointer-events: none;
+  cursor: default;
+}
+
 @media only screen and (min-width: $screen-m) {
   body {
     padding: 0 60px 140px $nav-width + 60;

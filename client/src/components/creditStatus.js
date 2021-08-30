@@ -5,6 +5,7 @@ import {usdcFromAtomic} from "../ethereum/erc20"
 import {decimals} from "../ethereum/utils"
 import {displayDollars, displayNumber} from "../utils"
 import {iconClock} from "./icons.js"
+import EtherscanLink from "./etherscanLink.tsx"
 
 function CreditStatus(props) {
   function fromAtomicDecimals(val) {
@@ -49,9 +50,18 @@ function CreditStatus(props) {
   let remainingTotalDue = props.creditLine.remainingTotalDueAmountInDollars
   let availableToDrawdown = props.creditLine.availableCreditInDollars
 
+  const creditLineAddress = props.creditLine.address
+  const tranchedPoolAddress = props.user.borrower?.tranchedPoolByCreditLine[creditLineAddress]?.address
+
   return (
     <div className={`credit-status background-container ${placeholderClass}`}>
-      <h2>Credit Status</h2>
+      <div className="credit-status-header">
+        <h2>Credit Status</h2>
+        <EtherscanLink
+          tranchedPoolAddress={tranchedPoolAddress}
+          classNames={`pool-link ${placeholderClass !== "" && "disabled-link"}`}
+        />
+      </div>
       <div className="credit-status-balance background-container-inner">
         <CreditBarViz
           leftAmount={remainingTotalDue}
