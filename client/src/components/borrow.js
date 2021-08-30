@@ -68,7 +68,7 @@ function Borrow(props) {
           changeCreditLine={changeCreditLine}
         />
       </div>
-      <ConnectionNotice creditLine={creditLine} />
+      <ConnectionNotice creditLine={creditLine} requireUnlock={!!user.borrower} />
       {creditActionsContainer}
       {creditLineStatus}
     </div>
