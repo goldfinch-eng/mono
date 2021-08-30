@@ -1,16 +1,13 @@
-import React, {useContext} from "react"
-import {AppContext} from "../App"
+import React from "react"
 import InfoSection from "./infoSection.js"
 import CreditBarViz from "./creditBarViz.js"
 import {usdcFromAtomic} from "../ethereum/erc20"
 import {decimals} from "../ethereum/utils"
 import {displayDollars, displayNumber} from "../utils"
-import {iconClock, iconOutArrow} from "./icons.js"
+import {iconClock} from "./icons.js"
+import EtherscanLink from "./etherscanLink.tsx"
 
 function CreditStatus(props) {
-  const {network} = useContext(AppContext)
-  const etherscanSubdomain = network.name === "mainnet" ? "" : `${network.name}.`
-
   function fromAtomicDecimals(val) {
     return usdcFromAtomic(val) * decimals
   }
@@ -55,20 +52,15 @@ function CreditStatus(props) {
 
   const creditLineAddress = props.creditLine.address
   const tranchedPoolAddress = props.user.borrower?.tranchedPoolByCreditLine[creditLineAddress]?.address
-  const tranchedPoolLink = `https://${etherscanSubdomain}etherscan.io/address/${tranchedPoolAddress}`
 
   return (
     <div className={`credit-status background-container ${placeholderClass}`}>
       <div className="credit-status-header">
         <h2>Credit Status</h2>
-        <a
-          href={tranchedPoolLink}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`pool-link ${placeholderClass !== "" && "disabled-link"}`}
-        >
-          {iconOutArrow}
-        </a>
+        <EtherscanLink
+          tranchedPoolAddress={tranchedPoolAddress}
+          classNames={`pool-link ${placeholderClass !== "" && "disabled-link"}`}
+        />
       </div>
       <div className="credit-status-balance background-container-inner">
         <CreditBarViz
