@@ -84,7 +84,7 @@ async function fetchCapitalProviderData(
   let availableToWithdraw = new BigNumber(numShares)
     .multipliedBy(new BigNumber(sharePrice))
     .div(FIDU_DECIMALS.toString())
-  let availableToWithdrawInDollars = new BigNumber(roundDownPenny(fiduFromAtomic(availableToWithdraw)))
+  let availableToWithdrawInDollars = new BigNumber(fiduFromAtomic(availableToWithdraw))
   let address = capitalProviderAddress as string
   let allowance = new BigNumber(await pool.usdc.methods.allowance(capitalProviderAddress, pool.address).call())
   let weightedAverageSharePrice = await getWeightedAverageSharePrice(pool, {numShares, address})
