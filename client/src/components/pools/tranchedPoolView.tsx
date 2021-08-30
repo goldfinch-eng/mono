@@ -667,11 +667,23 @@ function TranchedPoolView() {
     )
   }
 
+  let maxCapacityNotice = <></>
+  if (tranchedPool?.remainingCapacity().isEqualTo("0")) {
+    maxCapacityNotice = (
+      <div className="info-banner background-container">
+        <div className="message">
+          <span>This borrower pool has has reached its capital limit and is closed to additional capital.</span>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="content-section">
       <div className="page-header">{earnMessage}</div>
       <ConnectionNotice requireUnlock={false} requireVerify={true} requireSignIn={true} />
       {unlockForm}
+      {maxCapacityNotice}
       <InvestorNotice />
       <ActionsContainer tranchedPool={tranchedPool} onComplete={async () => refreshTranchedPool()} />
       <CreditStatus tranchedPool={tranchedPool} />
