@@ -10,7 +10,6 @@ import TermsOfService from "./components/termsOfService.js"
 import PrivacyPolicy from "./components/privacyPolicy.js"
 import SeniorPoolAgreementNonUS from "./components/seniorPoolAgreementNonUS"
 import web3 from "./web3"
-import {fetchCreditDeskData} from "./ethereum/creditDesk.js"
 import {ERC20, Tickers} from "./ethereum/erc20"
 import {refreshGoldfinchConfigData} from "./ethereum/goldfinchConfig"
 import {getUserData, defaultUser, User} from "./ethereum/user"
@@ -123,7 +122,6 @@ function App() {
       await pool.initialize()
       goldfinchConfigContract = protocol.getContract<GoldfinchConfig>("GoldfinchConfig")
       creditDeskContract = protocol.getContract("CreditDesk")
-      creditDeskContract.gf = await fetchCreditDeskData(creditDeskContract)
       setUSDC(usdc)
       setPool(pool)
       setCreditDesk(creditDeskContract)

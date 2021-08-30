@@ -1,8 +1,8 @@
 import {useState, useEffect, useContext} from "react"
 import {useHistory} from "react-router-dom"
-import {CapitalProvider, fetchCapitalProviderData, fetchPoolData, PoolData} from "../ethereum/pool"
+import {CapitalProvider, fetchCapitalProviderData, PoolData} from "../ethereum/pool"
 import {AppContext} from "../App"
-import {ERC20, usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
+import {usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
 import {displayDollars, displayPercent, roundDownPenny} from "../utils"
 import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
 import {PoolBacker, TranchedPool} from "../ethereum/tranchedPool"
@@ -172,29 +172,18 @@ function usePoolBackers({goldfinchProtocol, user}: {goldfinchProtocol?: Goldfinc
 function Earn(props) {
   const {pool, usdc, user, goldfinchProtocol, goldfinchConfig} = useContext(AppContext)
   const [capitalProvider, setCapitalProvider] = useState<CapitalProvider>()
-  const [poolData, setPoolData] = useState<PoolData>()
   const {backers, status: tranchedPoolsStatus} = usePoolBackers({goldfinchProtocol, user})
 
   useEffect(() => {
-    async function refreshAllData() {
-      const capitalProviderAddress = user.loaded && user.address
-      refreshPoolData(pool, usdc!)
-      refreshCapitalProviderData(pool, capitalProviderAddress)
-    }
-
     if (pool) {
-      refreshAllData()
+      const capitalProviderAddress = user.loaded && user.address
+      refreshCapitalProviderData(pool, capitalProviderAddress)
     }
   }, [pool, usdc, user])
 
   async function refreshCapitalProviderData(pool: any, address: string | boolean) {
     const capitalProvider = await fetchCapitalProviderData(pool, address)
     setCapitalProvider(capitalProvider)
-  }
-
-  async function refreshPoolData(pool: any, usdc: ERC20) {
-    const poolData = await fetchPoolData(pool, usdc && usdc.contract)
-    setPoolData(poolData)
   }
 
   let earnMessage = "Loading..."
@@ -207,13 +196,13 @@ function Earn(props) {
       <div className="page-header">
         <div>{earnMessage}</div>
       </div>
-      <PortfolioOverview poolData={poolData} capitalProvider={capitalProvider} poolBackers={backers} />
+      <PortfolioOverview poolData={pool?.gf} capitalProvider={capitalProvider} poolBackers={backers} />
       <div className="pools">
         <PoolList title="Senior Pool">
           <SeniorPoolCard
-            balance={displayDollars(usdcFromAtomic(poolData?.totalPoolAssets))}
+            balance={displayDollars(usdcFromAtomic(pool?.gf.totalPoolAssets))}
             userBalance={displayDollars(capitalProvider?.availableToWithdrawInDollars)}
-            apy={displayPercent(poolData?.estimatedApy)}
+            apy={displayPercent(pool?.gf.estimatedApy)}
             limit={displayDollars(usdcFromAtomic(goldfinchConfig?.totalFundsLimit), 0)}
           />
         </PoolList>

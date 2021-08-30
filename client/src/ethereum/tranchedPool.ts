@@ -11,8 +11,6 @@ import web3 from "../web3"
 import {usdcFromAtomic} from "./erc20"
 import {CONFIG_KEYS} from "../../../blockchain_scripts/configKeys"
 import {SeniorPool as SeniorPoolContract} from "../typechain/web3/SeniorPool"
-import {TokenMinted} from "../typechain/web3/PoolTokens"
-import {MigratedTranchedPool} from "../typechain/web3/MigratedTranchedPool"
 
 const ZERO = new BigNumber(0)
 const ONE = new BigNumber(1)
@@ -69,6 +67,8 @@ interface PoolMetadata {
   disabled?: boolean
   backerLimit?: string
   agreement?: string
+  v1StyleDeal?: boolean
+  migrated?: boolean
 }
 
 enum PoolState {
@@ -138,6 +138,7 @@ class TranchedPool {
     let seniorTranche = await this.contract.methods.getTranche(TRANCHES.Senior).call().then(trancheInfo)
     this.juniorTranche = juniorTranche
     this.seniorTranche = seniorTranche
+
     this.totalDeposited = juniorTranche.principalDeposited.plus(seniorTranche.principalDeposited)
     this.juniorFeePercent = new BigNumber(await this.contract.methods.juniorFeePercent().call())
     this.reserveFeePercent = new BigNumber(100).div(
@@ -147,8 +148,8 @@ class TranchedPool {
     this.estimatedSeniorPoolContribution = new BigNumber(await pool.methods.estimateInvestment(this.address).call())
     this.estimatedLeverageRatio = await this.estimateLeverageRatio()
 
-    this.isV1StyleDeal = await this.getIsV1StyleDeal()
-    this.isMigrated = await this.getIsMigrated()
+    this.isV1StyleDeal = !!this.metadata?.v1StyleDeal
+    this.isMigrated = !!this.metadata?.migrated
 
     let now = secondsSinceEpoch()
     if (now < seniorTranche.lockedUntil) {
@@ -282,36 +283,6 @@ class TranchedPool {
     const result = {}
     blockTimestamps.map((t) => (result[t.blockNumber] = t.timestamp))
     return result
-  }
-
-  private async getIsV1StyleDeal(): Promise<boolean> {
-    let seniorPool = this.goldfinchProtocol.getContract<SeniorPoolContract>("SeniorPool")
-    let poolTokens = this.goldfinchProtocol.getContract<IPoolTokens>("PoolTokens")
-    let seniorPoolTokenMints = await this.goldfinchProtocol.queryEvent<TokenMinted>(poolTokens, "TokenMinted", {
-      owner: seniorPool.options.address,
-      pool: this.address,
-    })
-    let seniorPoolJuniorTokenMints = seniorPoolTokenMints.filter(
-      (m) => m.returnValues.tranche === String(TRANCHES.Junior),
-    )
-    let juniorInvestmentAmount = BigNumber.sum.apply(
-      null,
-      seniorPoolJuniorTokenMints.map((m) => new BigNumber(m.returnValues.amount)).concat(new BigNumber(0)),
-    )
-
-    return seniorPoolJuniorTokenMints.length > 0 && juniorInvestmentAmount.eq(this.creditLine.limit)
-  }
-
-  private async getIsMigrated(): Promise<boolean> {
-    let migratedTranchedPoolContract = this.goldfinchProtocol.getContract<MigratedTranchedPool>(
-      "MigratedTranchedPool",
-      this.address,
-    )
-    try {
-      return await migratedTranchedPoolContract.methods.migrated().call()
-    } catch (e) {
-      return false
-    }
   }
 
   /**
