@@ -70,12 +70,12 @@ class SeniorPool {
     // `capitalProvider`'s deposits -- requires querying for those events on both the SeniorPool
     // and Pool contracts.
 
-    const [poolEvents, v1PoolEvents] = await Promise.all([
+    const events = await Promise.all([
       getPoolEvents(this, address, eventNames),
       getPoolEvents(this.v1Pool, address, eventNames),
     ])
-    const combinedEvents = v1PoolEvents.concat(poolEvents)
-    return combinedEvents
+    const combined = _.flatten(events)
+    return combined
   }
 
   get loaded(): boolean {
