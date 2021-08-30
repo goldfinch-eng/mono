@@ -24,7 +24,6 @@ function SeniorPoolView() {
       const capitalProviderAddress = user.loaded && user.address
       assertNonNullable(pool)
 
-      refreshPoolData(pool)
       refreshCapitalProviderData(pool, capitalProviderAddress)
     }
 
@@ -36,18 +35,12 @@ function SeniorPoolView() {
   async function actionComplete() {
     assertNonNullable(pool)
 
-    await refreshPoolData(pool)
     return refreshCapitalProviderData(pool, capitalProvider!.address)
   }
 
   async function refreshCapitalProviderData(pool: SeniorPool, address: string | boolean) {
     const capitalProvider = await fetchCapitalProviderData(pool, address)
     setCapitalProvider(capitalProvider)
-  }
-
-  async function refreshPoolData(pool: SeniorPool) {
-    await pool.initialize()
-    setPoolData(pool.gf)
   }
 
   let earnMessage = "Loading..."
