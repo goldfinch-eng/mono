@@ -77,30 +77,6 @@ function secondsSinceEpoch(): number {
   return Math.floor(Date.now() / 1000)
 }
 
-type DedupeAccumulator = {
-  _seen: {[val: string]: true}
-  result: string[]
-}
-
-function dedupe(array: string[]): string[] {
-  return array.reduce<DedupeAccumulator>(
-    (acc: DedupeAccumulator, curr: string): DedupeAccumulator =>
-      curr in acc._seen
-        ? acc
-        : {
-            _seen: {
-              ...acc._seen,
-              [curr]: true,
-            },
-            result: acc.result.concat(curr),
-          },
-    {
-      _seen: {},
-      result: [],
-    },
-  ).result
-}
-
 export class AssertionError extends Error {}
 
 export function assertNonNullable<T>(val: T | null | undefined): asserts val is NonNullable<T> {
@@ -109,13 +85,4 @@ export function assertNonNullable<T>(val: T | null | undefined): asserts val is 
   }
 }
 
-export {
-  croppedAddress,
-  displayNumber,
-  displayDollars,
-  roundUpPenny,
-  roundDownPenny,
-  displayPercent,
-  secondsSinceEpoch,
-  dedupe,
-}
+export {croppedAddress, displayNumber, displayDollars, roundUpPenny, roundDownPenny, displayPercent, secondsSinceEpoch}

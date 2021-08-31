@@ -2,7 +2,7 @@ import BigNumber from "bignumber.js"
 import {fetchDataFromAttributes, getPoolEvents, INTEREST_DECIMALS, USDC_DECIMALS} from "./utils"
 import {Tickers, usdcFromAtomic} from "./erc20"
 import {FIDU_DECIMALS, fiduFromAtomic} from "./fidu"
-import {dedupe, roundDownPenny} from "../utils"
+import {roundDownPenny} from "../utils"
 import _ from "lodash"
 import {mapEventsToTx} from "./events"
 import {Contract} from "web3-eth-contract"
@@ -377,16 +377,17 @@ async function getTranchedPoolAddressesForSeniorPoolCalc(pool: SeniorPool): Prom
     protocol.queryEvents(pool.contract, ["InvestmentMadeInSenior", "InvestmentMadeInJunior"]),
   ])
   // In migrating to v2, we did not emit InvestmentMadeInJunior events for the tranched pools that we
-  // migrated from v1. So we need to supplement how we identify the tranched pools to use in doing a
-  // calculation for the senior pool, by explicitly including those that were migrated.
+  // migrated from v1 (we just minted them position tokens directly). So we need to supplement how we
+  // identify the tranched pools to use in doing a calculation for the senior pool, by explicitly
+  // including those that were migrated.
   const migratedTranchedPoolAddresses: string[] = Object.keys(metadataStore).filter(
     (address: string) => metadataStore[address]?.migrated,
   )
   const eventsTranchedPoolAddresses: string[] = investmentEvents.map((e) => e.returnValues.tranchedPool)
-  // De-duplicate the tranched pool addresses, in case investment events have been emitted relating to tranched
-  // pools that were migrated, or in case there has been more than one investment event for a tranched
-  // pool.
-  const tranchedPoolAddresses = dedupe(migratedTranchedPoolAddresses.concat(eventsTranchedPoolAddresses))
+  // De-duplicate the tranched pool addresses, in case investment events have subsequently been emitted
+  // relating to tranched pools that were migrated, or in case there has been more than one investment
+  // event for a tranched pool.
+  const tranchedPoolAddresses = _.uniq(migratedTranchedPoolAddresses.concat(eventsTranchedPoolAddresses))
   return tranchedPoolAddresses
 }
 

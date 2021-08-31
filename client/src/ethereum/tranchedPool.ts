@@ -340,14 +340,12 @@ class PoolBacker {
     let availableToWithdrawAmounts = await Promise.all(
       tokenIds.map((tokenId) => this.tranchedPool.contract.methods.availableToWithdraw(tokenId).call()),
     )
-    this.interestRedeemable = BigNumber.sum.apply(
-      null,
-      availableToWithdrawAmounts.map((a) => new BigNumber(a.interestRedeemable)).concat(zero),
-    )
-    this.principalRedeemable = BigNumber.sum.apply(
-      null,
-      availableToWithdrawAmounts.map((a) => new BigNumber(a.principalRedeemable)).concat(zero),
-    )
+    this.tokenInfos.forEach((tokenInfo, i) => {
+      tokenInfo.interestRedeemable = new BigNumber(availableToWithdrawAmounts[i]!.interestRedeemable)
+      tokenInfo.principalRedeemable = new BigNumber(availableToWithdrawAmounts[i]!.principalRedeemable)
+    })
+    this.interestRedeemable = BigNumber.sum.apply(null, this.tokenInfos.map((t) => t.interestRedeemable).concat(zero))
+    this.principalRedeemable = BigNumber.sum.apply(null, this.tokenInfos.map((t) => t.principalRedeemable).concat(zero))
 
     const unusedPrincipal = this.principalRedeemed.plus(this.principalRedeemable)
     this.principalAtRisk = this.principalAmount.minus(unusedPrincipal)
@@ -359,13 +357,15 @@ class PoolBacker {
   }
 }
 
-interface TokenInfo {
+export interface TokenInfo {
   id: string
   pool: string
   tranche: BigNumber
   principalAmount: BigNumber
   principalRedeemed: BigNumber
   interestRedeemed: BigNumber
+  principalRedeemable: BigNumber
+  interestRedeemable: BigNumber
 }
 
 function tokenInfo(tokenId: string, tuple: any): TokenInfo {
@@ -376,6 +376,8 @@ function tokenInfo(tokenId: string, tuple: any): TokenInfo {
     principalAmount: new BigNumber(tuple[2]),
     principalRedeemed: new BigNumber(tuple[3]),
     interestRedeemed: new BigNumber(tuple[4]),
+    principalRedeemable: new BigNumber(0), // Set later
+    interestRedeemable: new BigNumber(0), // Set later
   }
 }
 
