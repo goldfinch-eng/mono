@@ -114,9 +114,15 @@ async function main() {
 
   console.log("Fetching accounts")
   const approvedAccounts = Object.values(await fetchAllAccounts())
+  const total = approvedAccounts.length
+  let processedAccounts = 0
   for (let account of approvedAccounts) {
     account.countryCode = account.countryCode || account.verificationCountryCode
-    account.golisted = await config.goList(account.id)
+    account.golisted = await retry(3, () => config.goList(account.id))
+    processedAccounts += 1
+    if (processedAccounts % 100 === 0) {
+      console.log(`${processedAccounts}/${total} complete`)
+    }
   }
 
   const accountsToAdd = []
@@ -162,6 +168,18 @@ async function main() {
     accountsToAdd,
     config.address
   )
+}
+
+async function retry(maxRetries, func) {
+  try {
+    return await func()
+  } catch (e) {
+    if (maxRetries <= 0) {
+      throw e
+    }
+    console.log("Retrying " + e.message)
+    return retry(maxRetries - 1, func)
+  }
 }
 
 if (require.main === module) {
