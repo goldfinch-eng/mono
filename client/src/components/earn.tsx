@@ -3,7 +3,7 @@ import {useHistory} from "react-router-dom"
 import {CapitalProvider, fetchCapitalProviderData, PoolData, SeniorPool} from "../ethereum/pool"
 import {AppContext} from "../App"
 import {usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
-import {assertNonNullable, displayDollars, displayPercent, roundDownPenny} from "../utils"
+import {displayDollars, displayPercent, roundDownPenny} from "../utils"
 import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
 import {PoolBacker, TranchedPool} from "../ethereum/tranchedPool"
 import {PoolCreated} from "../typechain/web3/GoldfinchFactory"
@@ -177,7 +177,6 @@ function Earn(props) {
   useEffect(() => {
     if (pool) {
       const capitalProviderAddress = user.loaded && user.address
-      assertNonNullable(pool)
 
       refreshCapitalProviderData(pool, capitalProviderAddress)
     }
