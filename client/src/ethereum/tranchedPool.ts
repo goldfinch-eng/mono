@@ -20,7 +20,7 @@ interface MetadataStore {
   [address: string]: PoolMetadata
 }
 let _metadataStore: MetadataStore
-async function metadataStore(networkId: string): Promise<MetadataStore> {
+export async function metadataStore(networkId: string): Promise<MetadataStore> {
   if (_metadataStore) {
     return Promise.resolve(_metadataStore)
   }

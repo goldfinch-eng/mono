@@ -2,7 +2,7 @@ import BigNumber from "bignumber.js"
 import {fetchDataFromAttributes, INTEREST_DECIMALS, USDC_DECIMALS} from "./utils"
 import {Tickers, usdcFromAtomic} from "./erc20"
 import {FIDU_DECIMALS, fiduFromAtomic} from "./fidu"
-import {dedupe, roundDownPenny} from "../utils"
+import {roundDownPenny} from "../utils"
 import {getFromBlock} from "./utils"
 import {getPoolEvents} from "./user"
 import _ from "lodash"
@@ -13,6 +13,7 @@ import {Fidu as FiduContract} from "../typechain/web3/Fidu"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {TranchedPool} from "../typechain/web3/TranchedPool"
 import {buildCreditLine} from "./creditLine"
+import {metadataStore} from "./tranchedPool"
 
 class SeniorPool {
   goldfinchProtocol: GoldfinchProtocol
@@ -147,12 +148,8 @@ async function fetchPoolData(pool: SeniorPool, erc20: Contract): Promise<PoolDat
   let cumulativeWritedowns = await getCumulativeWritedowns(pool)
   let cumulativeDrawdowns = await getCumulativeDrawdowns(pool)
   let poolTXs = await getAllDepositAndWithdrawalTXs(pool)
-  // let estimatedTotalInterest = await getEstimatedTotalInterest(pool)
-  // HOTFIX: Hardcode to NaN so that APY displays as "--.--%" instead of 0%
-  let estimatedTotalInterest = new BigNumber(NaN)
-  // let estimatedApy = estimatedTotalInterest.dividedBy(totalPoolAssets)
-  // HOTFIX: Hardcode to NaN so that APY displays as "--.--%" instead of 0%
-  let estimatedApy = new BigNumber(NaN)
+  let estimatedTotalInterest = await getEstimatedTotalInterest(pool)
+  let estimatedApy = estimatedTotalInterest.dividedBy(totalPoolAssets)
   let defaultRate = cumulativeWritedowns.dividedBy(cumulativeDrawdowns)
 
   let loaded = true
@@ -230,7 +227,7 @@ async function getCumulativeDrawdowns(pool: SeniorPool) {
   const mappedTranchedPoolAddresses = investmentEvents.map((e) => e.returnValues.tranchedPool)
   // De-duplicate the tranched pool addresses, in case the senior pool has made more than one investment
   // in a tranched pool.
-  const tranchedPoolAddresses: string[] = dedupe(mappedTranchedPoolAddresses)
+  const tranchedPoolAddresses: string[] = _.uniq(mappedTranchedPoolAddresses)
   const tranchedPools = tranchedPoolAddresses.map((address) =>
     pool.goldfinchProtocol.getContract<TranchedPool>("TranchedPool", address),
   )
@@ -310,9 +307,16 @@ function remainingCapacity(this: PoolData, maxPoolCapacity: BigNumber): BigNumbe
   return new BigNumber(maxPoolCapacity).minus(cappedBalance)
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function getEstimatedTotalInterest(pool: SeniorPool): Promise<BigNumber> {
   const protocol = pool.goldfinchProtocol
+
+  // Migrated tranched pools do not have InvestmentMadeInJunior events, as the position tokens
+  // were minted directly. So, manually include these in the pools that should be considered
+  // for estimated interest, since the senior pool was guaranteed by the migration contract to have
+  // invested as junior.
+  let store = await metadataStore(protocol.networkId)
+  let migratedTranchedPoolAddresses = Object.keys(store).filter((addr) => store[addr]?.migrated === true)
+
   const investmentEvents = await protocol.queryEvents(pool.contract, [
     "InvestmentMadeInSenior",
     "InvestmentMadeInJunior",
@@ -320,7 +324,7 @@ async function getEstimatedTotalInterest(pool: SeniorPool): Promise<BigNumber> {
   const mappedTranchedPoolAddresses = investmentEvents.map((e) => e.returnValues.tranchedPool)
   // De-duplicate the tranched pool addresses, in case the senior pool has made more than one investment
   // in a tranched pool.
-  const tranchedPoolAddresses: string[] = dedupe(mappedTranchedPoolAddresses)
+  const tranchedPoolAddresses: string[] = _.uniq(_.concat(migratedTranchedPoolAddresses, mappedTranchedPoolAddresses))
   const tranchedPools = tranchedPoolAddresses.map((address) =>
     pool.goldfinchProtocol.getContract<TranchedPool>("TranchedPool", address),
   )
