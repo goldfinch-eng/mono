@@ -306,9 +306,16 @@ async function getRepaymentEvents(this: PoolData, goldfinchProtocol: GoldfinchPr
 }
 
 async function getAllDepositAndWithdrawalTxs(pool: SeniorPool) {
-  const eventNames = ["DepositMade", "WithdrawalMade"]
-  const poolEvents = await pool.getPoolEvents(undefined, eventNames)
-  return await mapEventsToTx(poolEvents)
+  // HOTFIX: Do not get all deposit and withdrawal transactions for `pool`, as we do
+  // not yet have a way to obtain the data we want sufficiently efficiently not to make the rest
+  // of the app unusable (from having triggered rate-limiting of our web3 calls). This is an
+  // acceptable hotfix because currently, this function is used only to define `PoolData.poolTxs`,
+  // and that is used only by `assetsAsOf()` which is used only in rendering RecentRepayments.
+  return []
+
+  // const eventNames = ["DepositMade", "WithdrawalMade"]
+  // const poolEvents = await pool.getPoolEvents(undefined, eventNames)
+  // return await mapEventsToTx(poolEvents)
 }
 
 function assetsAsOf(this: PoolData, dt) {
