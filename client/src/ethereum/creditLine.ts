@@ -141,9 +141,11 @@ class CreditLine extends BaseCreditLine {
       this[info.method] = new BigNumber(data[info.method])
     })
 
+    const formattedNextDueDate = moment.unix(this.nextDueTime.toNumber()).format("MMM D")
+
     this.isLate = await this._calculateIsLate()
     const interestOwed = this._calculateInterestOwed()
-    this.dueDate = moment.unix(this.nextDueTime.toNumber()).format("MMM D")
+    this.dueDate = this.nextDueTime.toNumber() === 0 ? "" : formattedNextDueDate
     this.termEndDate = moment.unix(this.termEndTime.toNumber()).format("MMM D, YYYY")
     this.collectedPaymentBalance = new BigNumber(await this.usdc.methods.balanceOf(this.address).call())
     this.periodDueAmount = this._calculateNextDueAmount()
@@ -216,7 +218,8 @@ class MultipleCreditLines extends BaseCreditLine {
     this.address = this.creditLines.map((cl) => cl.address)
 
     // Picks the minimum due date
-    this.dueDate = moment.unix(this.nextDueTime.toNumber()).format("MMM D")
+    const formattedNextDueDate = moment.unix(this.nextDueTime.toNumber()).format("MMM D")
+    this.dueDate = this.nextDueTime.toNumber() === 0 ? "" : formattedNextDueDate
   }
 
   splitPayment(dollarAmount) {
