@@ -712,7 +712,7 @@ function TranchedPoolView() {
     maxCapacityNotice = (
       <div className="info-banner background-container">
         <div className="message">
-          <span>This borrower pool has has reached its capital limit and is closed to additional capital.</span>
+          <span>This borrower pool has reached its capital limit and is closed to additional capital.</span>
         </div>
       </div>
     )
