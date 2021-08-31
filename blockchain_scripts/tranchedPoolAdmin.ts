@@ -1,9 +1,12 @@
 // /* globals ethers */
-import {TRANCHES} from "./deployHelpers"
+import {INTEREST_DECIMALS, TRANCHES, USDCDecimals} from "./deployHelpers"
 import {ethers} from "hardhat"
 import {CONFIG_KEYS} from "./configKeys"
 import {impersonateAccount, MAINNET_MULTISIG} from "./mainnetForkingHelpers"
-import {CreditLine, SeniorPool, TranchedPool} from "../typechain/ethers"
+import {Borrower, CreditLine, SeniorPool, TranchedPool} from "../typechain/ethers"
+import {BigNumber} from "bignumber.js"
+import {assertNonNullable} from "../utils/type"
+import {Signer} from "ethers"
 const hre = require("hardhat")
 const {getNamedAccounts} = hre
 const deployedABIs = require("../client/config/deployments_dev.json")
@@ -38,8 +41,63 @@ async function main() {
     await tranchedPool.assess()
   } else if (action == "investJuniorAndLock") {
     await investJuniorAndLock(tranchedPool)
+  } else if (action == "migrateCreditLine") {
+    await migrateCreditLine(tranchedPool)
+  } else if (action == "drawdown") {
+    await drawdown(tranchedPool)
   }
+
   console.log("Done")
+}
+
+async function drawdown(tranchedPool: TranchedPool) {
+  assertNonNullable(process.env.END_BORROWER)
+
+  let endBorrower = process.env.END_BORROWER
+  await impersonateAccount(hre, endBorrower)
+
+  const creditLineAddress = await tranchedPool.creditLine()
+  const creditLine = await getCreditLine(creditLineAddress, endBorrower)
+  let limit = await creditLine.limit()
+
+  const borrowerAddress = await tranchedPool.borrower()
+  const borrower = await getBorrower(borrowerAddress, endBorrower)
+
+  await borrower.drawdown(tranchedPool.address, limit, endBorrower)
+  console.log(`Drew down ${limit.toString()} as ${endBorrower} (${borrowerAddress}) from pool ${tranchedPool.address}`)
+}
+
+async function migrateCreditLine(tranchedPool: TranchedPool): Promise<void> {
+  assertNonNullable(process.env.BORROWER_ADDRESS)
+  assertNonNullable(process.env.LIMIT)
+  assertNonNullable(process.env.INTEREST_APR)
+  assertNonNullable(process.env.PAYMENT_PERIOD_IN_DAYS)
+  assertNonNullable(process.env.TERM_IN_DAYS)
+  assertNonNullable(process.env.LATE_FEE_APR)
+
+  const borrowerAddress = process.env.BORROWER_ADDRESS
+  const limit = new BigNumber(process.env.LIMIT).multipliedBy(USDCDecimals.toString())
+  const interestApr = new BigNumber(process.env.INTEREST_APR).multipliedBy(INTEREST_DECIMALS.toString())
+  const paymentPeriodInDays = new BigNumber(process.env.PAYMENT_PERIOD_IN_DAYS)
+  const termInDays = new BigNumber(process.env.TERM_IN_DAYS)
+  const lateFeeApr = new BigNumber(process.env.LATE_FEE_APR).multipliedBy(INTEREST_DECIMALS.toString())
+
+  await tranchedPool.migrateCreditLine(
+    borrowerAddress,
+    limit.toString(),
+    interestApr.toString(),
+    paymentPeriodInDays.toString(),
+    termInDays.toString(),
+    lateFeeApr.toString()
+  )
+
+  console.log("Migrated credit line with the following parameters:")
+  console.log("borrowerAddress:", borrowerAddress)
+  console.log("limit:", limit.toString())
+  console.log("interestApr:", interestApr.toString())
+  console.log("paymentPeriodInDays:", paymentPeriodInDays.toString())
+  console.log("termInDays:", termInDays.toString())
+  console.log("lateFeeApr:", lateFeeApr.toString())
 }
 
 async function lockJunior(pool) {
@@ -101,6 +159,12 @@ async function getCreditLine(contractAddress, signerAddress) {
   const signer = typeof signerAddress === "string" ? await ethers.getSigner(signerAddress) : signerAddress
   const abi = await getAbi("TranchedPool")
   return (await ethers.getContractAt(abi, contractAddress, signer)) as CreditLine
+}
+
+async function getBorrower(contractAddress: string, signerAddress: string | Signer) {
+  const signer = typeof signerAddress === "string" ? await ethers.getSigner(signerAddress) : signerAddress
+  const abi = await getAbi("Borrower")
+  return (await ethers.getContractAt(abi, contractAddress, signer)) as Borrower
 }
 
 async function getSeniorPool(pool, signerAddress) {

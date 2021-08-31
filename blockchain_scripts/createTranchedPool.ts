@@ -1,5 +1,5 @@
 // /* globals ethers */
-import {getSignerForAddress, TRANCHES} from "./deployHelpers"
+import {getSignerForAddress, INTEREST_DECIMALS, TRANCHES, USDCDecimals} from "./deployHelpers"
 import {ethers} from "hardhat"
 import {CONFIG_KEYS} from "./configKeys"
 import hre from "hardhat"
@@ -53,11 +53,11 @@ async function main() {
 
   const borrowerAddress = process.env.BORROWER_ADDRESS
   const juniorFeePercent = new BigNumber(20)
-  const limit = new BigNumber(process.env.LIMIT).multipliedBy(String(1e6))
-  const interestApr = new BigNumber(process.env.INTEREST_APR).multipliedBy(String(1e18))
+  const limit = new BigNumber(process.env.LIMIT).multipliedBy(USDCDecimals.toString())
+  const interestApr = new BigNumber(process.env.INTEREST_APR).multipliedBy(INTEREST_DECIMALS.toString())
   const paymentPeriodInDays = new BigNumber(process.env.PAYMENT_PERIOD_IN_DAYS)
   const termInDays = new BigNumber(process.env.TERM_IN_DAYS)
-  const lateFeeApr = new BigNumber(process.env.LATE_FEE_APR).multipliedBy(1e18)
+  const lateFeeApr = new BigNumber(process.env.LATE_FEE_APR).multipliedBy(INTEREST_DECIMALS.toString())
 
   console.log("Creating borrower pool...")
   const goldfinchFactory = await getGoldfinchFactory(MAINNET_MULTISIG)

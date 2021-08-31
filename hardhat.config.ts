@@ -29,7 +29,7 @@ module.exports = {
       forking: process.env.HARDHAT_FORK
         ? {
             url: "https://eth-mainnet.alchemyapi.io/v2/EG9mAEw6e3sYDZ6h6oevoe1IaR42B72b",
-            blockNumber: 13128469, // Aug-30-2021 06:17:41 PM +UTC
+            blockNumber: 13134164, // Aug-31-2021 03:41:05 PM +UTC
           }
         : undefined,
     },
