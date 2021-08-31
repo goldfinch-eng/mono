@@ -3,7 +3,7 @@ import {useParams} from "react-router-dom"
 import ConnectionNotice from "../connectionNotice"
 import {AppContext} from "../../App"
 import InvestorNotice from "../investorNotice"
-import {PoolBacker, PoolState, TranchedPool, TRANCHES} from "../../ethereum/tranchedPool"
+import {PoolBacker, PoolState, TokenInfo, TranchedPool, TRANCHES} from "../../ethereum/tranchedPool"
 import {croppedAddress, displayDollars, displayPercent, roundDownPenny, roundUpPenny} from "../../utils"
 import InfoSection from "../infoSection"
 import {usdcFromAtomic, usdcToAtomic} from "../../ethereum/erc20"
@@ -197,16 +197,50 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
   )
 }
 
+function splitWithdrawAmount(
+  withdrawAmount: BigNumber,
+  tokenInfos: TokenInfo[],
+): {tokenIds: string[]; amounts: string[]} {
+  let amountLeft = withdrawAmount
+  let tokenIds: string[] = []
+  let amounts: string[] = []
+
+  tokenInfos.forEach((tokenInfo) => {
+    if (amountLeft.isZero()) {
+      return
+    }
+
+    let amountFromThisToken = BigNumber.min(
+      amountLeft,
+      tokenInfo.principalRedeemable.plus(tokenInfo.interestRedeemable),
+    )
+    amountLeft = amountLeft.minus(amountFromThisToken)
+    tokenIds.push(tokenInfo.id)
+    amounts.push(amountFromThisToken.toString())
+  })
+
+  return {tokenIds, amounts}
+}
+
 function TranchedPoolWithdrawForm({backer, tranchedPool, actionComplete, closeForm}: TranchedPoolActionFormProps) {
   const {user, goldfinchConfig} = useNonNullContext(AppContext)
   const sendFromUser = useSendFromUser()
 
   async function action({transactionAmount}) {
     const withdrawAmount = usdcToAtomic(transactionAmount)
-    return sendFromUser(tranchedPool.contract.methods.withdraw(backer.tokenInfos[0]!.id, withdrawAmount), {
-      type: "Withdraw",
-      amount: withdrawAmount,
-    }).then(actionComplete)
+    let firstToken = backer.tokenInfos[0]!
+    if (new BigNumber(withdrawAmount).gt(firstToken.principalRedeemable.plus(firstToken.interestRedeemable))) {
+      let splits = splitWithdrawAmount(new BigNumber(withdrawAmount), backer.tokenInfos)
+      return sendFromUser(tranchedPool.contract.methods.withdrawMultiple(splits.tokenIds, splits.amounts), {
+        type: "Withdraw",
+        amount: withdrawAmount,
+      }).then(actionComplete)
+    } else {
+      return sendFromUser(tranchedPool.contract.methods.withdraw(backer.tokenInfos[0]!.id, withdrawAmount), {
+        type: "Withdraw",
+        amount: withdrawAmount,
+      }).then(actionComplete)
+    }
   }
 
   function renderForm({formMethods}) {
