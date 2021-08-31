@@ -1,4 +1,4 @@
-import {useContext, useState} from "react"
+import {useContext, useEffect, useState} from "react"
 import {useParams} from "react-router-dom"
 import ConnectionNotice from "../connectionNotice"
 import {AppContext} from "../../App"
@@ -162,7 +162,7 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
                   tranchedPool.metadata?.backerLimit ?? process.env.REACT_APP_GLOBAL_BACKER_LIMIT ?? "1",
                 )
                 const backerLimit = tranchedPool.creditLine.limit.multipliedBy(backerLimitPercent)
-                const backerDeposits = backer.principalAmount.plus(usdcToAtomic(value))
+                const backerDeposits = backer.principalAmount.minus(backer.principalRedeemed).plus(usdcToAtomic(value))
                 return (
                   backerDeposits.lte(backerLimit) ||
                   `This is over the per-backer limit for this pool of $${usdcFromAtomic(backerLimit)}`
@@ -206,7 +206,7 @@ function splitWithdrawAmount(
   let amounts: string[] = []
 
   tokenInfos.forEach((tokenInfo) => {
-    if (amountLeft.isZero()) {
+    if (amountLeft.isZero() || tokenInfo.principalRedeemable.plus(tokenInfo.interestRedeemable).isZero()) {
       return
     }
 
@@ -287,10 +287,7 @@ function TranchedPoolWithdrawForm({backer, tranchedPool, actionComplete, closeFo
   )
 }
 
-function DepositStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
-  const {user} = useContext(AppContext)
-  const backer = useBacker({user, tranchedPool})
-
+function DepositStatus({tranchedPool, backer}: {tranchedPool?: TranchedPool; backer?: PoolBacker}) {
   if (!tranchedPool || !backer) {
     return <></>
   }
@@ -335,8 +332,15 @@ function DepositStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
 function ActionsContainer({tranchedPool, onComplete}: {tranchedPool?: TranchedPool; onComplete: () => Promise<any>}) {
   const {user} = useContext(AppContext)
   const [action, setAction] = useState<"" | "deposit" | "withdraw">("")
-  const backer = useBacker({user, tranchedPool})
+  const backerResult = useBacker({user, tranchedPool})
+  const [backer, setBacker] = useState<PoolBacker>()
   const session = useSession()
+
+  useEffect(() => {
+    if (backerResult) {
+      setBacker(backerResult)
+    }
+  }, [backerResult])
 
   function actionComplete() {
     onComplete().then(() => {
@@ -403,7 +407,7 @@ function ActionsContainer({tranchedPool, onComplete}: {tranchedPool?: TranchedPo
   } else {
     return (
       <div className={`background-container ${placeholderClass}`}>
-        <DepositStatus tranchedPool={tranchedPool} />
+        <DepositStatus backer={backer} tranchedPool={tranchedPool} />
         <div className="form-start">
           <button className={`button ${depositClass}`} onClick={depositAction}>
             {iconUpArrow} Supply
@@ -673,14 +677,16 @@ function Overview({tranchedPool}: {tranchedPool?: TranchedPool}) {
 }
 
 function TranchedPoolView() {
-  let tranchedPool: TranchedPool | undefined
   const {poolAddress} = useParams()
   const {goldfinchProtocol, usdc, user} = useContext(AppContext)
   const [tranchedPoolResult, refreshTranchedPool] = useTranchedPool({address: poolAddress, goldfinchProtocol})
+  const [tranchedPool, setTranchedPool] = useState<TranchedPool>()
 
-  if (tranchedPoolResult.status === "succeeded") {
-    tranchedPool = tranchedPoolResult.value
-  }
+  useEffect(() => {
+    if (tranchedPoolResult.status === "succeeded") {
+      setTranchedPool(tranchedPoolResult.value)
+    }
+  }, [tranchedPoolResult])
 
   const [unlocked, refreshUnlocked] = useCurrencyUnlocked(usdc, {
     owner: user.address,
