@@ -69,5 +69,14 @@
     "description": "Almavest provides debt capital to high-performing companies in a variety of sectors globally. This loan was used to provide debt capital to Adelantos - an asset financier providing loans secured on mobile phones across LatAm.",
     "icon": "%PUBLIC_URL%/icons/almavest.png",
     "v1StyleDeal": true
+  },
+  "0xefeb69edf6b6999b0e3f2fa856a2acf3bdea4ab5": {
+    "name": "Almavest Basket #3",
+    "category": "Global, multi-sector loans",
+    "description": "Almavest provides debt capital to high-performing companies in a variety of sectors globally. This facility will be utilized by Almavest to invest in a) inclusive lenders (which pledge pools of underlying microfinance, small business, or other loans as collateral); and b) carbon reduction project developers (which pledge carbon offsets or receivables from their sale as collateral).",
+    "icon": "%PUBLIC_URL%/icons/almavest.png",
+    "backerLimit": "0.005",
+    "detailsUrl": "https://mailchi.mp/goldfinch/x6hozzm8fs",
+    "agreement": "https://s3.us-west-2.amazonaws.com/secure.notion-static.com/a22b60ac-89b7-4184-a6ba-3ed16c45ab8f/ALMA_Goldfinch_Protocol_Loan_Agreement_FINAL_%288-30-21%29.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAT73L2G45O3KS52Y5%2F20210831%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20210831T000715Z&X-Amz-Expires=86400&X-Amz-Signature=01c8b63f01e46afb753c4f37ba75836b0743fa8e82ce94fbf32aefbbad367e6a&X-Amz-SignedHeaders=host&response-content-disposition=filename%20%3D%22ALMA%2520Goldfinch%2520Protocol%2520Loan%2520Agreement%2520FINAL%2520%288-30-21%29.pdf%22"
   }
 }
