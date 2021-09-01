@@ -14,7 +14,7 @@ import firestore = admin.firestore
 import Firestore = firestore.Firestore
 import {Request} from "express"
 import {assertNonNullable} from "../../../utils/type"
-import { mockGetBlockchain } from "../src/helpers"
+import {mockGetBlockchain} from "../src/helpers"
 
 type FakeBlock = {
   number: number
@@ -100,7 +100,11 @@ describe("functions", () => {
       signatureBlockNum: number | string | undefined,
     ): Request => {
       return {
-        headers: {"x-goldfinch-address": address, "x-goldfinch-signature": signature, "x-goldfinch-signature-block-num": signatureBlockNum},
+        headers: {
+          "x-goldfinch-address": address,
+          "x-goldfinch-signature": signature,
+          "x-goldfinch-signature-block-num": signatureBlockNum,
+        },
       } as unknown as Request
     }
 
@@ -192,9 +196,19 @@ describe("functions", () => {
   })
 
   describe("signAgreement", async () => {
-      const generateAgreementRequest = (address: string, pool: string, fullName: string, signature: string, signatureBlockNum: number | string | undefined) => {
+    const generateAgreementRequest = (
+      address: string,
+      pool: string,
+      fullName: string,
+      signature: string,
+      signatureBlockNum: number | string | undefined,
+    ) => {
       return {
-        headers: {"x-goldfinch-address": address, "x-goldfinch-signature": signature, "x-goldfinch-signature-block-num": signatureBlockNum},
+        headers: {
+          "x-goldfinch-address": address,
+          "x-goldfinch-signature": signature,
+          "x-goldfinch-signature-block-num": signatureBlockNum,
+        },
         body: {pool, fullName},
       } as unknown as Request
     }

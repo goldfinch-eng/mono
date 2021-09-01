@@ -1,13 +1,13 @@
-import { CaptureConsole } from "@sentry/integrations"
+import {CaptureConsole} from "@sentry/integrations"
 import * as Sentry from "@sentry/serverless"
-import { Request, Response } from "@sentry/serverless/dist/gcpfunction/general"
+import {Request, Response} from "@sentry/serverless/dist/gcpfunction/general"
 import * as crypto from "crypto"
 import * as admin from "firebase-admin"
 import * as functions from "firebase-functions"
-import { assertIsString } from "../../../utils/type"
-import { getAgreements, getConfig, getDb, getUsers } from "./db"
-import { genRequestHandler } from "./helpers"
-import { SignatureVerificationSuccessResult } from "./types"
+import {assertIsString} from "../../../utils/type"
+import {getAgreements, getConfig, getDb, getUsers} from "./db"
+import {genRequestHandler} from "./helpers"
+import {SignatureVerificationSuccessResult} from "./types"
 import firestore = admin.firestore
 
 const _config = getConfig(functions)
@@ -201,5 +201,4 @@ const personaCallback = genRequestHandler({
   },
 })
 
-export { kycStatus, personaCallback, signAgreement }
-
+export {kycStatus, personaCallback, signAgreement}

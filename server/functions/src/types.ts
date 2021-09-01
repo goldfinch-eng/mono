@@ -1,4 +1,4 @@
-import { Request, Response } from "@sentry/serverless/dist/gcpfunction/general"
+import {Request, Response} from "@sentry/serverless/dist/gcpfunction/general"
 
 export type RequestHandlerConfig =
   | {

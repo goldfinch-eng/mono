@@ -1,12 +1,12 @@
-import { getNetwork } from "@ethersproject/networks"
-import { BaseProvider } from "@ethersproject/providers"
+import {getNetwork} from "@ethersproject/networks"
+import {BaseProvider} from "@ethersproject/providers"
 import * as Sentry from "@sentry/serverless"
-import { HttpFunctionWrapperOptions } from "@sentry/serverless/dist/gcpfunction"
-import { HttpFunction, Request, Response } from "@sentry/serverless/dist/gcpfunction/general"
-import { ethers } from "ethers"
+import {HttpFunctionWrapperOptions} from "@sentry/serverless/dist/gcpfunction"
+import {HttpFunction, Request, Response} from "@sentry/serverless/dist/gcpfunction/general"
+import {ethers} from "ethers"
 import * as functions from "firebase-functions"
-import { getConfig } from "./db"
-import { RequestHandlerConfig, SignatureVerificationResult } from "./types"
+import {getConfig} from "./db"
+import {RequestHandlerConfig, SignatureVerificationResult} from "./types"
 
 // Make sure to keep the structure of this message in sync with the frontend.
 const genVerificationMessage = (blockNum: number) => `Sign in to Goldfinch: ${blockNum}`
@@ -96,10 +96,7 @@ const wrapWithSentry = (fn: HttpFunction, wrapOptions?: Partial<HttpFunctionWrap
   }, wrapOptions)
 }
 
-const verifySignature = async (
-  req: Request,
-  res: Response,
-): Promise<SignatureVerificationResult> => {
+const verifySignature = async (req: Request, res: Response): Promise<SignatureVerificationResult> => {
   const addressHeader = req.headers["x-goldfinch-address"]
   const address = Array.isArray(addressHeader) ? addressHeader.join("") : addressHeader
   const signatureHeader = req.headers["x-goldfinch-signature"]
