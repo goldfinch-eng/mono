@@ -17,7 +17,7 @@
     }
 
     .icon {
-      margin-left: -0.25em;
+      margin-left: -0.4em;
       object-fit: contain;
       background-color: $sand-xlight;
       border-radius: 50%;
@@ -26,24 +26,19 @@
     }
   }
 
+  .name {
+    width: 100%;
+  }
+
   .subheader {
     font-size: $sans-size-xs;
     color: $purp-light;
     display: block;
-    margin: 5px 0 0;
-  }
-
-  .view-button {
-    background-color: $sand;
-    border-radius: 6px;
-    color: $purp-dark;
-    font-size: $sans-size-xs;
-    outline: none;
-    padding: 8px 12px;
-
-    &:hover {
-      background-color: $sand-dark;
-    }
+    margin: 5px 0 -3px;
+    padding: 0 0 3px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 
@@ -65,9 +60,6 @@
 
 .disabled {
   color: $sand-xxdark;
-}
-
-@media only screen and (min-width: $screen-m) {
 }
 
 @media only screen and (min-width: $screen-l) {

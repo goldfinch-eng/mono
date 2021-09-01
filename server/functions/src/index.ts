@@ -3,9 +3,9 @@ import * as functions from "firebase-functions"
 import * as admin from "firebase-admin"
 import {ethers} from "ethers"
 import {getNetwork} from "@ethersproject/networks"
-import {getDb, getUsers, getConfig} from "./db"
+import {getDb, getUsers, getConfig, getAgreements} from "./db"
 import firestore = admin.firestore
-import {assertIsString} from "../../../utils/type"
+import {assertIsString, assertNonNullable} from "../../../utils/type"
 import * as Sentry from "@sentry/serverless"
 import {CaptureConsole} from "@sentry/integrations"
 import {HttpFunction, Request, Response} from "@sentry/serverless/dist/gcpfunction/general"
@@ -36,7 +36,7 @@ const setCORSHeaders = (req: any, res: any) => {
   const allowedOrigins = (getConfig(functions).kyc.allowed_origins || "").split(",")
   if (allowedOrigins.includes(req.headers.origin)) {
     res.set("Access-Control-Allow-Origin", req.headers.origin)
-    res.set("Access-Control-Allow-Headers", "x-goldfinch-signature, x-goldfinch-signature-block-num")
+    res.set("Access-Control-Allow-Headers", "*")
   }
 }
 
@@ -115,6 +115,58 @@ const wrapWithSentry = (fn: HttpFunction, wrapOptions?: Partial<HttpFunctionWrap
   }, wrapOptions)
 }
 
+const verifySignature = async (req: Request, res: Response, address: string | undefined): Promise<Response | undefined> => {
+  const signatureHeader = req.headers["x-goldfinch-signature"]
+  const signature = Array.isArray(signatureHeader) ? signatureHeader.join("") : signatureHeader
+  const signatureBlockNumHeader = req.headers["x-goldfinch-signature-block-num"]
+  const signatureBlockNumStr = Array.isArray(signatureBlockNumHeader)
+    ? signatureBlockNumHeader.join("")
+    : signatureBlockNumHeader
+
+  if (!address) {
+    return res.status(400).send({error: "Address not provided."})
+  }
+  if (!signature) {
+    return res.status(400).send({error: "Signature not provided."})
+  }
+  if (!signatureBlockNumStr) {
+    return res.status(400).send({error: "Signature block number not provided."})
+  }
+
+  const signatureBlockNum = parseInt(signatureBlockNumStr, 10)
+  if (!Number.isInteger(signatureBlockNum)) {
+    return res.status(400).send({error: "Invalid signature block number."})
+  }
+
+  const verifiedAddress = ethers.utils.verifyMessage(genVerificationMessage(signatureBlockNum), signature)
+
+  console.log(`Received address: ${address}, Verified address: ${verifiedAddress}`)
+
+  if (address.toLowerCase() !== verifiedAddress.toLowerCase()) {
+    return res.status(401).send({error: "Invalid address or signature."})
+  }
+
+  const origin = req.headers.origin || ""
+  const blockchain = getBlockchain(origin)
+  const currentBlock = await blockchain.getBlock("latest")
+
+  // Don't allow signatures signed for the future.
+  if (currentBlock.number < signatureBlockNum) {
+    return res.status(401).send({error: "Unexpected signature block number."})
+  }
+
+  const signatureBlock = await blockchain.getBlock(signatureBlockNum)
+  const signatureTime = signatureBlock.timestamp
+  const now = currentBlock.timestamp
+
+  // Don't allow signatures more than a day old.
+  if (signatureTime + ONE_DAY_SECONDS < now) {
+    return res.status(401).send({error: "Signature expired."})
+  }
+
+  return
+}
+
 const kycStatus = functions.https.onRequest(
   wrapWithSentry(async (req, res): Promise<Response> => {
     setCORSHeaders(req, res)
@@ -125,67 +177,22 @@ const kycStatus = functions.https.onRequest(
     }
 
     const address = req.query.address?.toString()
-    const signatureHeader = req.headers["x-goldfinch-signature"]
-    const signature = Array.isArray(signatureHeader) ? signatureHeader.join("") : signatureHeader
-    const signatureBlockNumHeader = req.headers["x-goldfinch-signature-block-num"]
-    const signatureBlockNumStr = Array.isArray(signatureBlockNumHeader)
-      ? signatureBlockNumHeader.join("")
-      : signatureBlockNumHeader
-
-    if (!address) {
-      return res.status(400).send({error: "Address not provided."})
-    }
-    if (!signature) {
-      return res.status(400).send({error: "Signature not provided."})
-    }
-    if (!signatureBlockNumStr) {
-      return res.status(400).send({error: "Signature block number not provided."})
+    const verificationRes = await verifySignature(req, res, address)
+    if (verificationRes) {
+      return verificationRes
     }
 
-    const signatureBlockNum = parseInt(signatureBlockNumStr, 10)
-    if (!Number.isInteger(signatureBlockNum)) {
-      return res.status(400).send({error: "Invalid signature block number."})
-    }
-
-    const verifiedAddress = ethers.utils.verifyMessage(genVerificationMessage(signatureBlockNum), signature)
-
-    console.log(`Received address: ${address}, Verified address: ${verifiedAddress}`)
-
-    if (address.toLowerCase() !== verifiedAddress.toLowerCase()) {
-      return res.status(401).send({error: "Invalid address or signature."})
-    }
-
-    const origin = req.headers.origin || ""
-    const blockchain = getBlockchain(origin)
-    const currentBlock = await blockchain.getBlock("latest")
-
-    // Don't allow signatures signed for the future.
-    if (currentBlock.number < signatureBlockNum) {
-      return res.status(401).send({error: "Unexpected signature block number."})
-    }
-
-    const signatureBlock = await blockchain.getBlock(signatureBlockNum)
-    const signatureTime = signatureBlock.timestamp
-    const now = currentBlock.timestamp
-
-    // Don't allow signatures more than a day old.
-    if (signatureTime + ONE_DAY_SECONDS < now) {
-      return res.status(401).send({error: "Signature expired."})
-    }
-
-    // Having verified the address, we can set the Sentry user context accordingly.
-    Sentry.setUser({id: address.toLowerCase(), address: address.toLowerCase()})
-
-    const response = {address: address, status: "unknown", countryCode: null}
+    assertNonNullable(address)
+    const payload = {address, status: "unknown", countryCode: null}
 
     const users = getUsers(admin.firestore())
     const user = await users.doc(`${address.toLowerCase()}`).get()
 
     if (user.exists) {
-      response.status = userStatusFromPersonaStatus(user.data()?.persona?.status)
-      response.countryCode = user.data()?.countryCode
+      payload.status = userStatusFromPersonaStatus(user.data()?.persona?.status)
+      payload.countryCode = user.data()?.countryCode
     }
-    return res.status(200).send(response)
+    return res.status(200).send(payload)
   }),
 )
 
@@ -257,6 +264,42 @@ const getCountryCode = (eventPayload: Record<string, any>): string | null => {
   return account?.attributes?.countryCode || verification?.attributes?.countryCode || null
 }
 
+const signAgreement = functions.https.onRequest(
+  wrapWithSentry(async (req, res): Promise<Response> => {
+    setCORSHeaders(req, res)
+
+    // For a CORS preflight request, we're done.
+    if (req.method === "OPTIONS") {
+      return res.status(200).send()
+    }
+
+    const address = req.body.address
+
+    const verificationRes = await verifySignature(req, res, address)
+    if (verificationRes) {
+      return verificationRes
+    }
+
+    const pool = (req.body.pool || "").trim()
+    const fullName = (req.body.fullName || "").trim()
+
+    if (pool === "" || fullName === "") {
+      return res.status(403).send({error: "Invalid name or pool"})
+    }
+
+    const agreements = getAgreements(admin.firestore())
+    const key = `${pool.toLowerCase()}-${address.toLowerCase()}`
+    const agreement = await agreements.doc(key)
+    await agreement.set({
+      address: address,
+      pool: pool,
+      fullName: fullName,
+      signedAt: Date.now(),
+    })
+    return res.status(200).send({status: "success"})
+  }),
+)
+
 const personaCallback = functions.https.onRequest(
   wrapWithSentry(async (req, res): Promise<Response> => {
     if (!verifyRequest(req)) {
@@ -312,4 +355,4 @@ const personaCallback = functions.https.onRequest(
   }),
 )
 
-export {kycStatus, personaCallback, mockGetBlockchain}
+export {kycStatus, personaCallback, signAgreement, mockGetBlockchain}

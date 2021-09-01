@@ -46,9 +46,13 @@ function displayDollars(val, decimals = 2) {
   if (isNaN(val)) {
     return " --.--"
   }
-  if (parseFloat(val) < 0) {
-    val = parseFloat(val) * -1
+  const valFloat = parseFloat(val)
+  if (valFloat < 0) {
+    val = valFloat * -1
     prefix = "-"
+  }
+  if (valFloat < 0.01 && valFloat > 0) {
+    return "<$0.01"
   }
   return `${prefix}$${displayNumber(val, decimals)}`
 }
@@ -73,30 +77,6 @@ function roundDownPenny(val) {
 
 function secondsSinceEpoch(): number {
   return Math.floor(Date.now() / 1000)
-}
-
-type DedupeAccumulator = {
-  _seen: {[val: string]: true}
-  result: string[]
-}
-
-function dedupe(array: string[]): string[] {
-  return array.reduce<DedupeAccumulator>(
-    (acc: DedupeAccumulator, curr: string): DedupeAccumulator =>
-      curr in acc._seen
-        ? acc
-        : {
-            _seen: {
-              ...acc._seen,
-              [curr]: true,
-            },
-            result: acc.result.concat(curr),
-          },
-    {
-      _seen: {},
-      result: [],
-    },
-  ).result
 }
 
 export class AssertionError extends Error {}
@@ -134,5 +114,4 @@ export {
   roundDownPenny,
   displayPercent,
   secondsSinceEpoch,
-  dedupe,
 }

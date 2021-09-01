@@ -16,7 +16,7 @@ const TEST_GF_DEPLOYER_KEY = "f0dd5813eeba1588f31cb0f129cd3b42b3ad6646689f52b051
 // const MAINNET_PROTOCOL_OWNER_KEY = process.env.MAINNET_PROTOCOL_OWNER_KEY
 // const MAINNET_GF_DEPLOYER_KEY = process.env.MAINNET_GF_DEPLOYER_KEY
 if (process.env.HARDHAT_FORK) {
-  process.env['HARDHAT_DEPLOY_FORK'] = process.env.HARDHAT_FORK;
+  process.env["HARDHAT_DEPLOY_FORK"] = process.env.HARDHAT_FORK
 }
 
 module.exports = {
@@ -29,7 +29,7 @@ module.exports = {
       forking: process.env.HARDHAT_FORK
         ? {
             url: "https://eth-mainnet.alchemyapi.io/v2/EG9mAEw6e3sYDZ6h6oevoe1IaR42B72b",
-            blockNumber: 13097895, // Aug-26-2021 12:57:20 AM +UTC
+            blockNumber: 13134164, // Aug-31-2021 03:41:05 PM +UTC
           }
         : undefined,
     },
@@ -92,6 +92,6 @@ module.exports = {
   tenderly: {
     project: "goldfinch-protocol",
     username: "goldfinch",
-    forkNetwork: "1" //Network id of the network we want to fork
+    forkNetwork: "1", //Network id of the network we want to fork
   },
 }

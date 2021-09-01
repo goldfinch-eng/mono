@@ -1,27 +1,48 @@
 import BigNumber from "bignumber.js"
-import {fetchDataFromAttributes, INTEREST_DECIMALS, USDC_DECIMALS} from "./utils"
+import {fetchDataFromAttributes, getPoolEvents, INTEREST_DECIMALS, USDC_DECIMALS} from "./utils"
 import {Tickers, usdcFromAtomic} from "./erc20"
 import {FIDU_DECIMALS, fiduFromAtomic} from "./fidu"
-import {dedupe, roundDownPenny} from "../utils"
-import {getFromBlock} from "./utils"
-import {getPoolEvents} from "./user"
+import {roundDownPenny} from "../utils"
 import _ from "lodash"
 import {mapEventsToTx} from "./events"
 import {Contract} from "web3-eth-contract"
+import {Pool as PoolContract} from "../typechain/web3/Pool"
 import {SeniorPool as SeniorPoolContract} from "../typechain/web3/SeniorPool"
 import {Fidu as FiduContract} from "../typechain/web3/Fidu"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {TranchedPool} from "../typechain/web3/TranchedPool"
 import {buildCreditLine} from "./creditLine"
+import {getMetadataStore} from "./tranchedPool"
+
+class Pool {
+  goldfinchProtocol: GoldfinchProtocol
+  contract: PoolContract
+  chain: string
+  address: string
+  _loaded: boolean
+
+  constructor(goldfinchProtocol: GoldfinchProtocol) {
+    this.goldfinchProtocol = goldfinchProtocol
+    this.contract = goldfinchProtocol.getContract<PoolContract>("Pool")
+    this.address = goldfinchProtocol.getAddress("Pool")
+    this.chain = goldfinchProtocol.networkId
+    this._loaded = true
+  }
+
+  get loaded(): boolean {
+    return this._loaded
+  }
+}
 
 class SeniorPool {
   goldfinchProtocol: GoldfinchProtocol
   contract: SeniorPoolContract
   usdc: Contract
   fidu: FiduContract
+  v1Pool: Pool
   chain: string
   address: string
-  loaded: boolean
+  _loaded: boolean
   gf!: PoolData
 
   constructor(goldfinchProtocol: GoldfinchProtocol) {
@@ -30,13 +51,36 @@ class SeniorPool {
     this.address = goldfinchProtocol.getAddress("SeniorPool")
     this.usdc = goldfinchProtocol.getERC20(Tickers.USDC).contract
     this.fidu = goldfinchProtocol.getContract<FiduContract>("Fidu")
+    this.v1Pool = new Pool(goldfinchProtocol)
     this.chain = goldfinchProtocol.networkId
-    this.loaded = true
+    this._loaded = true
   }
 
   async initialize() {
     let poolData = await fetchPoolData(this, this.usdc)
     this.gf = poolData
+  }
+
+  async getPoolEvents(address: string | undefined, eventNames: string[] = ["DepositMade", "WithdrawalMade"]) {
+    // In migrating from v1 to v2 (i.e. from the `Pool` contract as modeling the senior pool,
+    // to the `SeniorPool` contract as modeling the senior pool), we transferred contract state
+    // from Pool to SeniorPool (e.g. the deposits that a capital provider had made into Pool
+    // became deposits in SeniorPool). But we did not do any sort of migrating (e.g. re-emitting)
+    // with respect to events, from the Pool contract onto the SeniorPool contract. So accurately
+    // representing the SeniorPool's events here -- e.g. to be able to accurately count all of a
+    // capital provider's deposits -- requires querying for those events on both the SeniorPool
+    // and Pool contracts.
+
+    const events = await Promise.all([
+      getPoolEvents(this, address, eventNames),
+      getPoolEvents(this.v1Pool, address, eventNames),
+    ])
+    const combined = _.flatten(events)
+    return combined
+  }
+
+  get loaded(): boolean {
+    return this._loaded && this.v1Pool.loaded
   }
 }
 
@@ -64,7 +108,7 @@ function emptyCapitalProvider({loaded = false} = {}): CapitalProvider {
     unrealizedGains: new BigNumber(0),
     unrealizedGainsInDollars: new BigNumber(0),
     unrealizedGainsPercentage: new BigNumber(0),
-    loaded: loaded,
+    loaded,
   }
 }
 
@@ -72,19 +116,17 @@ async function fetchCapitalProviderData(
   pool: SeniorPool,
   capitalProviderAddress: string | boolean,
 ): Promise<CapitalProvider> {
-  if (!capitalProviderAddress && !pool.loaded) {
-    return emptyCapitalProvider()
+  if (!capitalProviderAddress) {
+    return emptyCapitalProvider({loaded: pool.loaded})
   }
-  if (!capitalProviderAddress && pool.loaded) {
-    return emptyCapitalProvider({loaded: true})
-  }
+
   const attributes = [{method: "sharePrice"}]
   let {sharePrice} = await fetchDataFromAttributes(pool.contract, attributes, {bigNumber: true})
   let numShares = new BigNumber(await pool.fidu.methods.balanceOf(capitalProviderAddress as string).call())
   let availableToWithdraw = new BigNumber(numShares)
     .multipliedBy(new BigNumber(sharePrice))
     .div(FIDU_DECIMALS.toString())
-  let availableToWithdrawInDollars = new BigNumber(roundDownPenny(fiduFromAtomic(availableToWithdraw)))
+  let availableToWithdrawInDollars = new BigNumber(fiduFromAtomic(availableToWithdraw))
   let address = capitalProviderAddress as string
   let allowance = new BigNumber(await pool.usdc.methods.allowance(capitalProviderAddress, pool.address).call())
   let weightedAverageSharePrice = await getWeightedAverageSharePrice(pool, {numShares, address})
@@ -119,7 +161,7 @@ interface PoolData {
   estimatedTotalInterest: BigNumber
   estimatedApy: BigNumber
   defaultRate: BigNumber
-  poolTXs: any[] //TODO
+  poolTxs: any[] //TODO
   assetsAsOf: typeof assetsAsOf
   getRepaymentEvents: typeof getRepaymentEvents
   remainingCapacity: typeof remainingCapacity
@@ -146,7 +188,7 @@ async function fetchPoolData(pool: SeniorPool, erc20: Contract): Promise<PoolDat
   let totalLoansOutstanding = new BigNumber(await pool.contract.methods.totalLoansOutstanding().call())
   let cumulativeWritedowns = await getCumulativeWritedowns(pool)
   let cumulativeDrawdowns = await getCumulativeDrawdowns(pool)
-  let poolTXs = await getAllDepositAndWithdrawalTXs(pool)
+  let poolTxs = await getAllDepositAndWithdrawalTxs(pool)
   let estimatedTotalInterest = await getEstimatedTotalInterest(pool)
   let estimatedApy = estimatedTotalInterest.dividedBy(totalPoolAssets)
   let defaultRate = cumulativeWritedowns.dividedBy(cumulativeDrawdowns)
@@ -162,7 +204,7 @@ async function fetchPoolData(pool: SeniorPool, erc20: Contract): Promise<PoolDat
     totalLoansOutstanding,
     cumulativeWritedowns,
     cumulativeDrawdowns,
-    poolTXs,
+    poolTxs,
     assetsAsOf,
     getRepaymentEvents,
     remainingCapacity,
@@ -183,13 +225,14 @@ async function fetchPoolData(pool: SeniorPool, erc20: Contract): Promise<PoolDat
 // than we have records of your deposits, so we would not be able to account
 // for your shares, and we would fail out, and return a "-" on the front-end.
 // Note: This also does not take into account realized gains, which we are also punting on.
-async function getWeightedAverageSharePrice(pool, capitalProvider) {
-  let poolEvents = await getPoolEvents(pool, capitalProvider.address, ["DepositMade"])
-  poolEvents = _.reverse(_.sortBy(poolEvents, "blockNumber"))
+async function getWeightedAverageSharePrice(pool: SeniorPool, capitalProvider) {
+  const poolEvents = await pool.getPoolEvents(capitalProvider.address, ["DepositMade"])
+  const preparedEvents = _.reverse(_.sortBy(poolEvents, "blockNumber"))
+
   let zero = new BigNumber(0)
   let sharesLeftToAccountFor = capitalProvider.numShares
   let totalAmountPaid = zero
-  poolEvents.forEach((event) => {
+  preparedEvents.forEach((event) => {
     if (sharesLeftToAccountFor.lte(zero)) {
       return
     }
@@ -213,22 +256,19 @@ async function getWeightedAverageSharePrice(pool, capitalProvider) {
 }
 
 async function getCumulativeWritedowns(pool: SeniorPool) {
+  // In theory, we'd also want to include `PrincipalWrittendown` events emitted by `pool.v1Pool` here.
+  // But in practice, we don't need to, because only one such was emitted, due to a bug which was
+  // then fixed. So we include only `PrincipalWrittenDown` events emitted by `pool`.
+
   const events = await pool.goldfinchProtocol.queryEvents(pool.contract, "PrincipalWrittenDown")
   return new BigNumber(_.sumBy(events, (event) => parseInt(event.returnValues.amount, 10))).negated()
 }
 
 async function getCumulativeDrawdowns(pool: SeniorPool) {
   const protocol = pool.goldfinchProtocol
-  const investmentEvents = await protocol.queryEvents(pool.contract, [
-    "InvestmentMadeInSenior",
-    "InvestmentMadeInJunior",
-  ])
-  const mappedTranchedPoolAddresses = investmentEvents.map((e) => e.returnValues.tranchedPool)
-  // De-duplicate the tranched pool addresses, in case the senior pool has made more than one investment
-  // in a tranched pool.
-  const tranchedPoolAddresses: string[] = dedupe(mappedTranchedPoolAddresses)
+  const tranchedPoolAddresses = await getTranchedPoolAddressesForSeniorPoolCalc(pool)
   const tranchedPools = tranchedPoolAddresses.map((address) =>
-    pool.goldfinchProtocol.getContract<TranchedPool>("TranchedPool", address),
+    protocol.getContract<TranchedPool>("TranchedPool", address),
   )
   let allDrawdownEvents = _.flatten(
     await Promise.all(tranchedPools.map((pool) => protocol.queryEvents(pool, "DrawdownMade"))),
@@ -265,18 +305,21 @@ async function getRepaymentEvents(this: PoolData, goldfinchProtocol: GoldfinchPr
   return _.compact(combinedEvents)
 }
 
-async function getAllDepositAndWithdrawalTXs(pool: SeniorPool) {
-  const fromBlock = getFromBlock(pool.chain)
-  const events = await Promise.all(
-    ["DepositMade", "WithdrawalMade"].map(async (eventName) => {
-      return pool.contract.getPastEvents(eventName, {fromBlock: fromBlock})
-    }),
-  )
-  return await mapEventsToTx(_.flatten(events))
+async function getAllDepositAndWithdrawalTxs(pool: SeniorPool) {
+  // HOTFIX: Do not get all deposit and withdrawal transactions for `pool`, as we do
+  // not yet have a way to obtain the data we want sufficiently efficiently not to make the rest
+  // of the app unusable (from having triggered rate-limiting of our web3 calls). This is an
+  // acceptable hotfix because currently, this function is used only to define `PoolData.poolTxs`,
+  // and that is used only by `assetsAsOf()` which is used only in rendering RecentRepayments.
+  return []
+
+  // const eventNames = ["DepositMade", "WithdrawalMade"]
+  // const poolEvents = await pool.getPoolEvents(undefined, eventNames)
+  // return await mapEventsToTx(poolEvents)
 }
 
 function assetsAsOf(this: PoolData, dt) {
-  const filtered = _.filter(this.poolTXs, (transfer) => {
+  const filtered = _.filter(this.poolTxs, (transfer) => {
     return transfer.blockTime < dt
   })
   if (!filtered.length) {
@@ -308,16 +351,9 @@ function remainingCapacity(this: PoolData, maxPoolCapacity: BigNumber): BigNumbe
 
 async function getEstimatedTotalInterest(pool: SeniorPool): Promise<BigNumber> {
   const protocol = pool.goldfinchProtocol
-  const investmentEvents = await protocol.queryEvents(pool.contract, [
-    "InvestmentMadeInSenior",
-    "InvestmentMadeInJunior",
-  ])
-  const mappedTranchedPoolAddresses = investmentEvents.map((e) => e.returnValues.tranchedPool)
-  // De-duplicate the tranched pool addresses, in case the senior pool has made more than one investment
-  // in a tranched pool.
-  const tranchedPoolAddresses: string[] = dedupe(mappedTranchedPoolAddresses)
+  const tranchedPoolAddresses = await getTranchedPoolAddressesForSeniorPoolCalc(pool)
   const tranchedPools = tranchedPoolAddresses.map((address) =>
-    pool.goldfinchProtocol.getContract<TranchedPool>("TranchedPool", address),
+    protocol.getContract<TranchedPool>("TranchedPool", address),
   )
   const creditLineAddresses = await Promise.all(tranchedPools.map((p) => p.methods.creditLine().call()))
   const creditLines = creditLineAddresses.map((a) => buildCreditLine(a))
@@ -334,5 +370,33 @@ async function getEstimatedTotalInterest(pool: SeniorPool): Promise<BigNumber> {
   )
 }
 
-export {fetchCapitalProviderData, fetchPoolData, SeniorPool, emptyCapitalProvider}
+/**
+ * Helper that provides the addresses of the comprehensive set of tranched pools to compute
+ * over when performing a calculation relating to the senior pool.
+ *
+ * @param pool - The senior pool.
+ * @returns The set of tranched pool addresses.
+ */
+async function getTranchedPoolAddressesForSeniorPoolCalc(pool: SeniorPool): Promise<string[]> {
+  const protocol = pool.goldfinchProtocol
+  const [metadataStore, investmentEvents] = await Promise.all([
+    getMetadataStore(protocol.networkId),
+    protocol.queryEvents(pool.contract, ["InvestmentMadeInSenior", "InvestmentMadeInJunior"]),
+  ])
+  // In migrating to v2, we did not emit InvestmentMadeInJunior events for the tranched pools that we
+  // migrated from v1 (we just minted them position tokens directly). So we need to supplement how we
+  // identify the tranched pools to use in doing a calculation for the senior pool, by explicitly
+  // including those that were migrated.
+  const migratedTranchedPoolAddresses: string[] = Object.keys(metadataStore).filter(
+    (address: string) => metadataStore[address]?.migrated,
+  )
+  const eventsTranchedPoolAddresses: string[] = investmentEvents.map((e) => e.returnValues.tranchedPool)
+  // De-duplicate the tranched pool addresses, in case investment events have subsequently been emitted
+  // relating to tranched pools that were migrated, or in case there has been more than one investment
+  // event for a tranched pool.
+  const tranchedPoolAddresses = _.uniq(migratedTranchedPoolAddresses.concat(eventsTranchedPoolAddresses))
+  return tranchedPoolAddresses
+}
+
+export {fetchCapitalProviderData, fetchPoolData, SeniorPool, Pool, emptyCapitalProvider}
 export type {PoolData, CapitalProvider}

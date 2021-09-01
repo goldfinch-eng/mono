@@ -14,6 +14,7 @@ const Tickers = {
 }
 
 class ERC20 {
+  name: string
   ticker: string
   networksToAddress: any
   localContractName?: string
@@ -23,6 +24,7 @@ class ERC20 {
   goldfinchProtocol: GoldfinchProtocol
 
   constructor(goldfinchProtocol) {
+    this.name = "ERC20"
     this.ticker = "ERC20"
     this.goldfinchProtocol = goldfinchProtocol
     this.networksToAddress = {}
@@ -80,6 +82,7 @@ class ERC20 {
 class USDC extends ERC20 {
   constructor(networkId) {
     super(networkId)
+    this.name = "USD Coin"
     this.ticker = Tickers.USDC
     this.networksToAddress = USDC_ADDRESSES
     this.localContractName = "TestERC20"
@@ -91,6 +94,7 @@ class USDC extends ERC20 {
 class USDT extends ERC20 {
   constructor(networkId) {
     super(networkId)
+    this.name = "Tether USD"
     this.ticker = Tickers.USDT
     this.networksToAddress = USDT_ADDRESSES
     this.decimals = 6
@@ -100,6 +104,7 @@ class USDT extends ERC20 {
 class BUSD extends ERC20 {
   constructor(networkId) {
     super(networkId)
+    this.name = "Binance USD"
     this.ticker = Tickers.BUSD
     this.networksToAddress = BUSD_ADDRESSES
     this.decimals = 18

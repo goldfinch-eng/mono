@@ -3,7 +3,7 @@ import moment from "moment"
 import BigNumber from "bignumber.js"
 import {Tickers, usdcFromAtomic, usdcToAtomic} from "./erc20"
 import {fetchDataFromAttributes, INTEREST_DECIMALS, SECONDS_PER_YEAR, SECONDS_PER_DAY} from "./utils"
-import {roundDownPenny, croppedAddress} from "../utils"
+import {croppedAddress} from "../utils"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {CreditLine as CreditlineContract} from "../typechain/web3/CreditLine"
 import {Contract} from "web3-eth-contract"
@@ -63,7 +63,7 @@ abstract class BaseCreditLine {
   }
 
   inDollars(amount) {
-    return new BigNumber(roundDownPenny(usdcFromAtomic(amount)))
+    return new BigNumber(usdcFromAtomic(amount))
   }
 }
 
@@ -141,9 +141,11 @@ class CreditLine extends BaseCreditLine {
       this[info.method] = new BigNumber(data[info.method])
     })
 
+    const formattedNextDueDate = moment.unix(this.nextDueTime.toNumber()).format("MMM D")
+
     this.isLate = await this._calculateIsLate()
     const interestOwed = this._calculateInterestOwed()
-    this.dueDate = moment.unix(this.nextDueTime.toNumber()).format("MMM D")
+    this.dueDate = this.nextDueTime.toNumber() === 0 ? "" : formattedNextDueDate
     this.termEndDate = moment.unix(this.termEndTime.toNumber()).format("MMM D, YYYY")
     this.collectedPaymentBalance = new BigNumber(await this.usdc.methods.balanceOf(this.address).call())
     this.periodDueAmount = this._calculateNextDueAmount()
@@ -216,7 +218,8 @@ class MultipleCreditLines extends BaseCreditLine {
     this.address = this.creditLines.map((cl) => cl.address)
 
     // Picks the minimum due date
-    this.dueDate = moment.unix(this.nextDueTime.toNumber()).format("MMM D")
+    const formattedNextDueDate = moment.unix(this.nextDueTime.toNumber()).format("MMM D")
+    this.dueDate = this.nextDueTime.toNumber() === 0 ? "" : formattedNextDueDate
   }
 
   splitPayment(dollarAmount) {

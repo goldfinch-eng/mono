@@ -35,13 +35,4 @@ input.checkbox {
   cursor: pointer;
   display: flex;
   align-items: center;
-
-  .checkbox-label-link {
-    color: $purp-dark;
-    text-decoration: underline;
-
-    &:hover {
-      color: $purp;
-    }
-  }
 }

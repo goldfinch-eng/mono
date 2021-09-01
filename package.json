@@ -102,6 +102,7 @@
     "@types/is-odd": "^3.0.0",
     "@types/mocha": "^8.2.2",
     "@types/node": "^15.6.1",
+    "bignumber.js": "^9.0.1",
     "bn.js-typings": "^1.0.1",
     "builtin-modules": "^3.1.0",
     "chai": "^4.3.4",

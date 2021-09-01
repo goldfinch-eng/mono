@@ -4,15 +4,13 @@ import {CreditLine} from "./creditLine"
 import {IPoolTokens} from "../typechain/web3/IPoolTokens"
 import BigNumber from "bignumber.js"
 import {fiduFromAtomic} from "./fidu"
-import {roundDownPenny, secondsSinceEpoch} from "../utils"
+import {croppedAddress, roundDownPenny, secondsSinceEpoch} from "../utils"
 import _ from "lodash"
 import {ContractEventLog} from "../typechain/web3/types"
 import web3 from "../web3"
 import {usdcFromAtomic} from "./erc20"
 import {CONFIG_KEYS} from "../../../blockchain_scripts/configKeys"
 import {SeniorPool as SeniorPoolContract} from "../typechain/web3/SeniorPool"
-import {TokenMinted} from "../typechain/web3/PoolTokens"
-import {MigratedTranchedPool} from "../typechain/web3/MigratedTranchedPool"
 
 const ZERO = new BigNumber(0)
 const ONE = new BigNumber(1)
@@ -22,7 +20,7 @@ interface MetadataStore {
   [address: string]: PoolMetadata
 }
 let _metadataStore: MetadataStore
-async function metadataStore(networkId: string): Promise<MetadataStore> {
+async function getMetadataStore(networkId: string): Promise<MetadataStore> {
   if (_metadataStore) {
     return Promise.resolve(_metadataStore)
   }
@@ -45,6 +43,9 @@ async function metadataStore(networkId: string): Promise<MetadataStore> {
       if (metadata.icon && metadata.icon.startsWith("%PUBLIC_URL%")) {
         metadata.icon = metadata.icon.replace("%PUBLIC_URL%", process.env.PUBLIC_URL)
       }
+      if (metadata.agreement && metadata.agreement.startsWith("%PUBLIC_URL%")) {
+        metadata.agreement = metadata.agreement.replace("%PUBLIC_URL%", process.env.PUBLIC_URL)
+      }
 
       metadataStore[addr.toLowerCase()] = metadata
     })
@@ -63,7 +64,11 @@ interface PoolMetadata {
   icon: string
   description: string
   detailsUrl?: string
+  disabled?: boolean
   backerLimit?: string
+  agreement?: string
+  v1StyleDeal?: boolean
+  migrated?: boolean
 }
 
 enum PoolState {
@@ -133,6 +138,7 @@ class TranchedPool {
     let seniorTranche = await this.contract.methods.getTranche(TRANCHES.Senior).call().then(trancheInfo)
     this.juniorTranche = juniorTranche
     this.seniorTranche = seniorTranche
+
     this.totalDeposited = juniorTranche.principalDeposited.plus(seniorTranche.principalDeposited)
     this.juniorFeePercent = new BigNumber(await this.contract.methods.juniorFeePercent().call())
     this.reserveFeePercent = new BigNumber(100).div(
@@ -142,8 +148,8 @@ class TranchedPool {
     this.estimatedSeniorPoolContribution = new BigNumber(await pool.methods.estimateInvestment(this.address).call())
     this.estimatedLeverageRatio = await this.estimateLeverageRatio()
 
-    this.isV1StyleDeal = await this.getIsV1StyleDeal()
-    this.isMigrated = await this.getIsMigrated()
+    this.isV1StyleDeal = !!this.metadata?.v1StyleDeal
+    this.isMigrated = !!this.metadata?.migrated
 
     let now = secondsSinceEpoch()
     if (now < seniorTranche.lockedUntil) {
@@ -158,7 +164,7 @@ class TranchedPool {
   }
 
   private async loadPoolMetadata(): Promise<PoolMetadata | undefined> {
-    let store = await metadataStore(this.goldfinchProtocol.networkId)
+    let store = await getMetadataStore(this.goldfinchProtocol.networkId)
     return store[this.address.toLowerCase()]
   }
 
@@ -279,34 +285,11 @@ class TranchedPool {
     return result
   }
 
-  private async getIsV1StyleDeal(): Promise<boolean> {
-    let seniorPool = this.goldfinchProtocol.getContract<SeniorPoolContract>("SeniorPool")
-    let poolTokens = this.goldfinchProtocol.getContract<IPoolTokens>("PoolTokens")
-    let seniorPoolTokenMints = await this.goldfinchProtocol.queryEvent<TokenMinted>(poolTokens, "TokenMinted", {
-      owner: seniorPool.options.address,
-      pool: this.address,
-    })
-    let seniorPoolJuniorTokenMints = seniorPoolTokenMints.filter(
-      (m) => m.returnValues.tranche === String(TRANCHES.Junior),
-    )
-    let juniorInvestmentAmount = BigNumber.sum.apply(
-      null,
-      seniorPoolJuniorTokenMints.map((m) => new BigNumber(m.returnValues.amount)).concat(new BigNumber(0)),
-    )
-
-    return seniorPoolJuniorTokenMints.length > 0 && juniorInvestmentAmount.eq(this.creditLine.limit)
-  }
-
-  private async getIsMigrated(): Promise<boolean> {
-    let migratedTranchedPoolContract = this.goldfinchProtocol.getContract<MigratedTranchedPool>(
-      "MigratedTranchedPool",
-      this.address,
-    )
-    try {
-      return await migratedTranchedPoolContract.methods.migrated().call()
-    } catch (e) {
-      return false
-    }
+  /**
+   * The name to use for display / UI purposes.
+   */
+  get displayName(): string {
+    return this.metadata?.name ?? croppedAddress(this.address)
   }
 }
 
@@ -357,32 +340,32 @@ class PoolBacker {
     let availableToWithdrawAmounts = await Promise.all(
       tokenIds.map((tokenId) => this.tranchedPool.contract.methods.availableToWithdraw(tokenId).call()),
     )
-    this.interestRedeemable = BigNumber.sum.apply(
-      null,
-      availableToWithdrawAmounts.map((a) => new BigNumber(a.interestRedeemable)).concat(zero),
-    )
-    this.principalRedeemable = BigNumber.sum.apply(
-      null,
-      availableToWithdrawAmounts.map((a) => new BigNumber(a.principalRedeemable)).concat(zero),
-    )
+    this.tokenInfos.forEach((tokenInfo, i) => {
+      tokenInfo.interestRedeemable = new BigNumber(availableToWithdrawAmounts[i]!.interestRedeemable)
+      tokenInfo.principalRedeemable = new BigNumber(availableToWithdrawAmounts[i]!.principalRedeemable)
+    })
+    this.interestRedeemable = BigNumber.sum.apply(null, this.tokenInfos.map((t) => t.interestRedeemable).concat(zero))
+    this.principalRedeemable = BigNumber.sum.apply(null, this.tokenInfos.map((t) => t.principalRedeemable).concat(zero))
 
     const unusedPrincipal = this.principalRedeemed.plus(this.principalRedeemable)
     this.principalAtRisk = this.principalAmount.minus(unusedPrincipal)
     this.balance = this.principalAmount.minus(this.principalRedeemed).plus(this.interestRedeemable)
     this.balanceInDollars = new BigNumber(roundDownPenny(usdcFromAtomic(this.balance)))
     this.availableToWithdraw = this.interestRedeemable.plus(this.principalRedeemable)
-    this.availableToWithdrawInDollars = new BigNumber(roundDownPenny(usdcFromAtomic(this.availableToWithdraw)))
+    this.availableToWithdrawInDollars = new BigNumber(usdcFromAtomic(this.availableToWithdraw))
     this.unrealizedGainsInDollars = new BigNumber(roundDownPenny(usdcFromAtomic(this.interestRedeemable)))
   }
 }
 
-interface TokenInfo {
+export interface TokenInfo {
   id: string
   pool: string
   tranche: BigNumber
   principalAmount: BigNumber
   principalRedeemed: BigNumber
   interestRedeemed: BigNumber
+  principalRedeemable: BigNumber
+  interestRedeemable: BigNumber
 }
 
 function tokenInfo(tokenId: string, tuple: any): TokenInfo {
@@ -393,7 +376,9 @@ function tokenInfo(tokenId: string, tuple: any): TokenInfo {
     principalAmount: new BigNumber(tuple[2]),
     principalRedeemed: new BigNumber(tuple[3]),
     interestRedeemed: new BigNumber(tuple[4]),
+    principalRedeemable: new BigNumber(0), // Set later
+    interestRedeemable: new BigNumber(0), // Set later
   }
 }
 
-export {TranchedPool, PoolBacker, PoolState, TRANCHES}
+export {getMetadataStore, TranchedPool, PoolBacker, PoolState, TRANCHES}

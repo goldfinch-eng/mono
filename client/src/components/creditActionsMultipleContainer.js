@@ -46,7 +46,8 @@ function CreditActionsMultipleContainer(props) {
     }
   })
   if (props.creditLine.remainingPeriodDueAmount.gt(0)) {
-    nextDueDisplay = `${amountDue} total due ${props.creditLine.dueDate}`
+    const {dueDate} = props.creditLine
+    nextDueDisplay = `${amountDue} total ${dueDate && `due ${dueDate}`}`
   }
   let paymentsDueDisplay = "Upcoming Payments"
   if (paymentsDue === 1) {
