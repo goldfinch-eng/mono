@@ -11,7 +11,7 @@ import {
 } from "../../ethereum/pool"
 import {AppContext} from "../../App"
 import InvestorNotice from "../investorNotice"
-import {displayDollars} from "../../utils"
+import {assertNonNullable, displayDollars} from "../../utils"
 import {usdcFromAtomic} from "../../ethereum/erc20"
 
 function SeniorPoolView() {
@@ -22,7 +22,9 @@ function SeniorPoolView() {
   useEffect(() => {
     async function refreshAllData() {
       const capitalProviderAddress = user.loaded && user.address
-      refreshPoolData(pool!)
+      assertNonNullable(pool)
+
+      refreshPoolData(pool)
       refreshCapitalProviderData(pool, capitalProviderAddress)
     }
 
@@ -32,11 +34,13 @@ function SeniorPoolView() {
   }, [pool, user])
 
   async function actionComplete() {
-    await refreshPoolData(pool!)
+    assertNonNullable(pool)
+
+    await refreshPoolData(pool)
     return refreshCapitalProviderData(pool, capitalProvider!.address)
   }
 
-  async function refreshCapitalProviderData(pool: any, address: string | boolean) {
+  async function refreshCapitalProviderData(pool: SeniorPool, address: string | boolean) {
     const capitalProvider = await fetchCapitalProviderData(pool, address)
     setCapitalProvider(capitalProvider)
   }

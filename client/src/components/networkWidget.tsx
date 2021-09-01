@@ -117,7 +117,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
     enabledClass = "success"
   }
 
-  let allTx = _.compact(_.concat(props.currentTXs, _.slice(props.user.pastTXs, 0, 5)))
+  let allTx = _.compact(_.concat(props.currentTXs, _.slice(props.user.pastTxs, 0, 5)))
   allTx = _.uniqBy(allTx, "id")
   if (allTx.length > 0) {
     transactions = (

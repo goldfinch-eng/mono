@@ -33,7 +33,7 @@ interface User {
   usdcBalance: BigNumber
   usdcBalanceInDollars: BigNumber
   poolAllowance: BigNumber
-  pastTXs: any[]
+  pastTxs: any[]
   poolTxs: any[]
   goListed: boolean
   noWeb3: boolean
@@ -54,7 +54,7 @@ class Web3User implements User {
   usdcBalance!: BigNumber
   usdcBalanceInDollars!: BigNumber
   poolAllowance!: BigNumber
-  pastTXs!: any[]
+  pastTxs!: any[]
   poolTxs!: any[]
   goListed!: boolean
   noWeb3: boolean
@@ -91,12 +91,14 @@ class Web3User implements User {
     this.poolAllowance = await this.getAllowance(this.pool.address)
 
     const [usdcTxs, poolTxs, creditDeskTxs] = await Promise.all([
+      // NOTE: We have no need to include usdc txs for `this.pool.v1Pool` among the txs in
+      // `this.pastTxs`. So we don't get them. We only need usdc txs for `this.pool`.
       getAndTransformERC20Events(this.usdc, this.pool.address, this.address),
       getAndTransformPoolEvents(this.pool, this.address),
-      // Credit desk events could've some from the user directly or the borrower contract, we need to filter by both
+      // Credit desk events could've come from the user directly or the borrower contract, we need to filter by both
       getAndTransformCreditDeskEvents(this.creditDesk, _.compact([this.address, this.borrower?.borrowerAddress])),
     ])
-    this.pastTXs = _.reverse(_.sortBy(_.compact(_.concat(usdcTxs, poolTxs, creditDeskTxs)), "blockNumber"))
+    this.pastTxs = _.reverse(_.sortBy(_.compact(_.concat(usdcTxs, poolTxs, creditDeskTxs)), "blockNumber"))
     this.poolTxs = poolTxs
     this.goListed = await this.isGoListed(this.address)
     this.loaded = true
@@ -166,7 +168,7 @@ class DefaultUser implements User {
   usdcBalance: BigNumber
   usdcBalanceInDollars: BigNumber
   poolAllowance: BigNumber
-  pastTXs: any[]
+  pastTxs: any[]
   poolTxs: any[]
   goListed: boolean
   noWeb3: boolean
@@ -182,7 +184,7 @@ class DefaultUser implements User {
     this.noWeb3 = !window.ethereum
     this.web3Connected = false
     this.poolAllowance = new BigNumber(0)
-    this.pastTXs = []
+    this.pastTxs = []
     this.poolTxs = []
     this.goListed = false
   }
@@ -209,11 +211,11 @@ function defaultUser(): User {
   return new DefaultUser()
 }
 
-async function getAndTransformERC20Events(erc20, spender, owner) {
+async function getAndTransformERC20Events(erc20: ERC20, spender: string, owner: string) {
   let approvalEvents = await erc20.contract.getPastEvents("Approval", {
-    filter: {owner: owner, spender: spender},
+    filter: {owner, spender},
     fromBlock: "earliest",
-    to: "latest",
+    toBlock: "latest",
   })
   approvalEvents = _.chain(approvalEvents)
     .compact()
@@ -222,8 +224,8 @@ async function getAndTransformERC20Events(erc20, spender, owner) {
   return await mapEventsToTx(approvalEvents)
 }
 
-async function getAndTransformPoolEvents(pool, address) {
-  const poolEvents = await getPoolEvents(pool, address)
+async function getAndTransformPoolEvents(pool: SeniorPool, address: string) {
+  const poolEvents = await pool.getPoolEvents(address)
   return await mapEventsToTx(poolEvents)
 }
 
@@ -242,19 +244,5 @@ async function getAndTransformCreditDeskEvents(creditDesk, address) {
   return await mapEventsToTx(creditDeskEvents)
 }
 
-async function getPoolEvents(pool, address, events = ["DepositMade", "WithdrawalMade"]) {
-  const fromBlock = getFromBlock(pool.chain)
-  const [depositEvents, withdrawalEvents] = await Promise.all(
-    events.map((eventName) => {
-      return pool.contract.getPastEvents(eventName, {
-        filter: {capitalProvider: address},
-        fromBlock: fromBlock,
-        to: "latest",
-      })
-    }),
-  )
-  return _.compact(_.concat(depositEvents, withdrawalEvents))
-}
-
-export {getUserData, getPoolEvents, defaultUser}
+export {getUserData, defaultUser}
 export type {DefaultUser, User}

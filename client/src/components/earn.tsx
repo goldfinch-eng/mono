@@ -1,6 +1,6 @@
 import {useState, useEffect, useContext} from "react"
 import {useHistory} from "react-router-dom"
-import {CapitalProvider, fetchCapitalProviderData, PoolData} from "../ethereum/pool"
+import {CapitalProvider, fetchCapitalProviderData, PoolData, SeniorPool} from "../ethereum/pool"
 import {AppContext} from "../App"
 import {usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
 import {displayDollars, displayPercent, roundDownPenny} from "../utils"
@@ -177,11 +177,12 @@ function Earn(props) {
   useEffect(() => {
     if (pool) {
       const capitalProviderAddress = user.loaded && user.address
+
       refreshCapitalProviderData(pool, capitalProviderAddress)
     }
   }, [pool, usdc, user])
 
-  async function refreshCapitalProviderData(pool: any, address: string | boolean) {
+  async function refreshCapitalProviderData(pool: SeniorPool, address: string | boolean) {
     const capitalProvider = await fetchCapitalProviderData(pool, address)
     setCapitalProvider(capitalProvider)
   }

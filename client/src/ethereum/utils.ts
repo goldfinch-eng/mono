@@ -3,6 +3,7 @@ import BN from "bn.js"
 import _ from "lodash"
 import {Contract} from "web3-eth-contract"
 import {BaseContract} from "../typechain/web3/types"
+import {Pool, SeniorPool} from "./pool"
 
 const decimalPlaces = 6
 const decimals = new BN(String(10 ** decimalPlaces))
@@ -144,6 +145,20 @@ function fetchDataFromAttributes(
     })
 }
 
+async function getPoolEvents(pool: SeniorPool | Pool, address: string | undefined, eventNames: string[]) {
+  const fromBlock = getFromBlock(pool.chain)
+  const events = await Promise.all(
+    eventNames.map((eventName) => {
+      return pool.contract.getPastEvents(eventName, {
+        filter: address ? {capitalProvider: address} : undefined,
+        fromBlock,
+        toBlock: "latest",
+      })
+    }),
+  )
+  return _.compact(_.flatten(events))
+}
+
 export {
   getDeployments,
   mapNetworkToID,
@@ -167,4 +182,5 @@ export {
   getFromBlock,
   chainIdToNetworkID,
   MAINNET,
+  getPoolEvents,
 }
