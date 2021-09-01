@@ -1,11 +1,11 @@
 import {ErrorMessage} from "@hookform/error-message"
 import Persona from "persona"
-import {useState} from "react"
+import {useContext, useState} from "react"
 import {FormProvider, useForm} from "react-hook-form"
 import {AppContext} from "../App"
 import DefaultGoldfinchClient from "../hooks/useGoldfinchClient"
-import useNonNullContext from "../hooks/useNonNullContext"
 import {Session, useSignIn} from "../hooks/useSignIn"
+import {assertNonNullable} from "../utils"
 import ConnectionNotice from "./connectionNotice"
 import {iconAlert, iconCircleCheck, iconClock} from "./icons.js"
 import LoadingButton from "./loadingButton"
@@ -248,7 +248,7 @@ function SignInForm({action, disabled}) {
 }
 
 function VerifyIdentity() {
-  const {user, network, setSessionData} = useNonNullContext(AppContext)
+  const {user, network, setSessionData} = useContext(AppContext)
   const [kycStatus, setKycStatus] = useState<string>("")
   // Determines the form to show. Can be empty, "US" or "entity"
   const [countryCode, setCountryCode] = useState<string>("")
@@ -259,6 +259,8 @@ function VerifyIdentity() {
     if (session.status !== "authenticated") {
       return
     }
+    assertNonNullable(network)
+    assertNonNullable(setSessionData)
     const client = new DefaultGoldfinchClient(network.name!, session, setSessionData)
     const response = await client.fetchKYCStatus(user.address)
     if (response.ok) {
