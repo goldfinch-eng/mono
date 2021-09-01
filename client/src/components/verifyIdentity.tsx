@@ -1,14 +1,15 @@
-import {useContext, useState} from "react"
-import {AppContext} from "../App"
-import Persona from "persona"
-import {iconCircleCheck, iconClock, iconAlert} from "./icons.js"
-import TransactionForm from "./transactionForm"
 import {ErrorMessage} from "@hookform/error-message"
-import ConnectionNotice from "./connectionNotice"
-import LoadingButton from "./loadingButton"
-import {useForm, FormProvider} from "react-hook-form"
+import Persona from "persona"
+import {useState} from "react"
+import {FormProvider, useForm} from "react-hook-form"
+import {AppContext} from "../App"
+import DefaultGoldfinchClient from "../hooks/useGoldfinchClient"
+import useNonNullContext from "../hooks/useNonNullContext"
 import {Session, useSignIn} from "../hooks/useSignIn"
-import {assertNonNullable} from "../utils"
+import ConnectionNotice from "./connectionNotice"
+import {iconAlert, iconCircleCheck, iconClock} from "./icons.js"
+import LoadingButton from "./loadingButton"
+import TransactionForm from "./transactionForm"
 
 function VerificationNotice({icon, notice}) {
   return (
@@ -247,51 +248,25 @@ function SignInForm({action, disabled}) {
 }
 
 function VerifyIdentity() {
-  const {user, network, setSessionData} = useContext(AppContext)
+  const {user, network, setSessionData} = useNonNullContext(AppContext)
   const [kycStatus, setKycStatus] = useState<string>("")
   // Determines the form to show. Can be empty, "US" or "entity"
   const [countryCode, setCountryCode] = useState<string>("")
   const [entityType, setEntityType] = useState<string>("")
   const [session, signIn] = useSignIn()
 
-  const API_URLS = {
-    mainnet: "https://us-central1-goldfinch-frontends-prod.cloudfunctions.net",
-    localhost: "https://us-central1-goldfinch-frontends-dev.cloudfunctions.net",
-  }
-
-  function getKYCStatusRequestInit(signature: string, blockNum: number): RequestInit {
-    signature = signature === "pending" ? "" : signature
-    return {
-      headers: {"x-goldfinch-signature": signature, "x-goldfinch-signature-block-num": blockNum.toString()},
-    }
-  }
-
-  function getKYCStatusURL(address): string {
-    const baseURL = process.env.REACT_APP_GCLOUD_FUNCTIONS_URL || API_URLS[network?.name!]
-    return baseURL + "/kycStatus?" + new URLSearchParams({address})
-  }
-
   async function fetchKYCStatus(session: Session) {
     if (session.status !== "authenticated") {
       return
     }
-
-    const response = await fetch(
-      getKYCStatusURL(user.address),
-      getKYCStatusRequestInit(session.signature, session.signatureBlockNum),
-    )
-    const responseJson = await response.json()
+    const client = new DefaultGoldfinchClient(network.name!, session, setSessionData)
+    const response = await client.fetchKYCStatus(user.address)
     if (response.ok) {
-      setKycStatus(responseJson.status)
-      if (responseJson.countryCode === "US") {
+      setKycStatus(response.json.status)
+      if (response.json.countryCode === "US") {
         setEntityType("US")
         setCountryCode("US")
       }
-    } else if (response.status >= 400 && response.status < 500) {
-      assertNonNullable(setSessionData)
-      setSessionData(undefined)
-    } else {
-      console.error(`KYC status request failed: ${response.status} ${responseJson}`)
     }
   }
 

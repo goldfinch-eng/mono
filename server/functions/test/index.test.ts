@@ -100,8 +100,7 @@ describe("functions", () => {
       signatureBlockNum: number | string | undefined,
     ): Request => {
       return {
-        headers: {"x-goldfinch-signature": signature, "x-goldfinch-signature-block-num": signatureBlockNum},
-        query: {address},
+        headers: {"x-goldfinch-address": address, "x-goldfinch-signature": signature, "x-goldfinch-signature-block-num": signatureBlockNum},
       } as unknown as Request
     }
 
@@ -193,19 +192,19 @@ describe("functions", () => {
   })
 
   describe("signAgreement", async () => {
-    const generateAgreementRequest = (address: string, pool: string, fullName: string, signature: string) => {
+      const generateAgreementRequest = (address: string, pool: string, fullName: string, signature: string, signatureBlockNum: number | string | undefined) => {
       return {
-        headers: {"x-goldfinch-signature": signature},
-        body: {address, pool, fullName},
-      } as any
+        headers: {"x-goldfinch-address": address, "x-goldfinch-signature": signature, "x-goldfinch-signature-block-num": signatureBlockNum},
+        body: {pool, fullName},
+      } as unknown as Request
     }
     const pool = "0x1234asdADF"
 
     describe("validation", async () => {
       it("checks if address is present", async () => {
         await signAgreement(
-          generateAgreementRequest("", "", "", ""),
-          expectResponse(403, {error: "Invalid address or signature"}),
+          generateAgreementRequest("", "", "", "", currentBlockNum),
+          expectResponse(400, {error: "Address not provided."}),
         )
       })
     })
@@ -217,7 +216,7 @@ describe("functions", () => {
         expect((await agreements.doc(key).get()).exists).to.be.false
 
         await signAgreement(
-          generateAgreementRequest(address, pool, "Test User", validSignature),
+          generateAgreementRequest(address, pool, "Test User", validSignature, currentBlockNum),
           expectResponse(200, {status: "success"}),
         )
 
@@ -230,7 +229,7 @@ describe("functions", () => {
         const key = `${pool.toLowerCase()}-${address.toLowerCase()}`
 
         await signAgreement(
-          generateAgreementRequest(address, pool, "Test User", validSignature),
+          generateAgreementRequest(address, pool, "Test User", validSignature, currentBlockNum),
           expectResponse(200, {status: "success"}),
         )
 
@@ -238,7 +237,7 @@ describe("functions", () => {
         expect(agreementDoc.data()).to.containSubset({fullName: "Test User"})
 
         await signAgreement(
-          generateAgreementRequest(address, pool, "Test User 2", validSignature),
+          generateAgreementRequest(address, pool, "Test User 2", validSignature, currentBlockNum),
           expectResponse(200, {status: "success"}),
         )
 

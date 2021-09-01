@@ -99,8 +99,9 @@ const wrapWithSentry = (fn: HttpFunction, wrapOptions?: Partial<HttpFunctionWrap
 const verifySignature = async (
   req: Request,
   res: Response,
-  address: string | undefined,
 ): Promise<SignatureVerificationResult> => {
+  const addressHeader = req.headers["x-goldfinch-address"]
+  const address = Array.isArray(addressHeader) ? addressHeader.join("") : addressHeader
   const signatureHeader = req.headers["x-goldfinch-signature"]
   const signature = Array.isArray(signatureHeader) ? signatureHeader.join("") : signatureHeader
   const signatureBlockNumHeader = req.headers["x-goldfinch-signature-block-num"]
@@ -165,8 +166,7 @@ export const genRequestHandler = (config: RequestHandlerConfig) => {
       }
 
       if (config.requireAuth) {
-        const address = req.query.address?.toString()
-        const verificationResult = await verifySignature(req, res, address)
+        const verificationResult = await verifySignature(req, res)
         if (verificationResult.res) {
           return verificationResult.res
         }

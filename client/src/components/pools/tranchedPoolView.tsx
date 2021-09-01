@@ -4,7 +4,7 @@ import ConnectionNotice from "../connectionNotice"
 import {AppContext} from "../../App"
 import InvestorNotice from "../investorNotice"
 import {PoolBacker, PoolState, TokenInfo, TranchedPool, TRANCHES} from "../../ethereum/tranchedPool"
-import {croppedAddress, displayDollars, displayPercent, roundDownPenny, roundUpPenny} from "../../utils"
+import {assertError, croppedAddress, displayDollars, displayPercent, roundDownPenny, roundUpPenny} from "../../utils"
 import InfoSection from "../infoSection"
 import {usdcFromAtomic, usdcToAtomic} from "../../ethereum/erc20"
 import {iconDownArrow, iconOutArrow, iconUpArrow} from "../icons"
@@ -62,7 +62,7 @@ interface TranchedPoolActionFormProps {
 }
 
 function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeForm}: TranchedPoolActionFormProps) {
-  const {user, goldfinchConfig, usdc, network, networkMonitor} = useNonNullContext(AppContext)
+  const {user, goldfinchConfig, usdc, network, networkMonitor, setSessionData} = useNonNullContext(AppContext)
   const {gatherPermitSignature} = useERC20Permit()
   const sendFromUser = useSendFromUser()
   const session = useSession()
@@ -72,14 +72,14 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
       if (session.status !== "authenticated") {
         throw new Error("Not signed in. Please refresh the page and try again")
       }
-      const client = new DefaultGoldfinchClient(network.name!, session.signature)
-
+      const client = new DefaultGoldfinchClient(network.name!, session, setSessionData)
       const response = await client.signAgreement(user.address, fullName, tranchedPool.address)
-
-      if (response.status !== "success") {
-        throw new Error(response.error)
+      if (response.json.status !== "success") {
+        throw new Error(response.json.error)
       }
-    } catch (e) {
+    } catch (e: unknown) {
+      assertError(e)
+
       // Although it's not really a transaction error, this feels cleaner and more consistent than showing a form error
       const txData = networkMonitor.addPendingTX({status: "pending", type: "Deposit", amount: transactionAmount})
       networkMonitor.markTXErrored(txData, e)

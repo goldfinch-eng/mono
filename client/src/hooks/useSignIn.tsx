@@ -4,10 +4,10 @@ import {AppContext} from "../App"
 import {assertNonNullable, getBlockInfo, getCurrentBlock} from "../utils"
 import web3 from "../web3"
 
-export type Session =
-  | {status: "unknown"}
-  | {status: "known"}
-  | {status: "authenticated"; signature: string; signatureBlockNum: number}
+export type UnknownSession = {status: "unknown"}
+export type KnownSession = {status: "known"}
+export type AuthenticatedSession = {status: "authenticated"; signature: string; signatureBlockNum: number}
+export type Session = UnknownSession | KnownSession | AuthenticatedSession
 
 type GetSessionInfo =
   | {
