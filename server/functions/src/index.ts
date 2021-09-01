@@ -1,16 +1,14 @@
-import * as crypto from "crypto"
-import * as functions from "firebase-functions"
-import * as admin from "firebase-admin"
-import {ethers} from "ethers"
-import {getNetwork} from "@ethersproject/networks"
-import {getDb, getUsers, getConfig, getAgreements} from "./db"
-import firestore = admin.firestore
-import {assertIsString, assertNonNullable} from "../../../utils/type"
+import { CaptureConsole } from "@sentry/integrations"
 import * as Sentry from "@sentry/serverless"
-import {CaptureConsole} from "@sentry/integrations"
-import {HttpFunction, Request, Response} from "@sentry/serverless/dist/gcpfunction/general"
-import {HttpFunctionWrapperOptions} from "@sentry/serverless/dist/gcpfunction"
-import {BaseProvider} from "@ethersproject/providers"
+import { Request, Response } from "@sentry/serverless/dist/gcpfunction/general"
+import * as crypto from "crypto"
+import * as admin from "firebase-admin"
+import * as functions from "firebase-functions"
+import { assertIsString } from "../../../utils/type"
+import { getAgreements, getConfig, getDb, getUsers } from "./db"
+import { genRequestHandler } from "./helpers"
+import { SignatureVerificationSuccessResult } from "./types"
+import firestore = admin.firestore
 
 const _config = getConfig(functions)
 Sentry.GCPFunction.init({
@@ -27,163 +25,16 @@ Sentry.GCPFunction.init({
 
 admin.initializeApp()
 
-// Make sure to keep the structure of this message in sync with the frontend.
-const genVerificationMessage = (blockNum: number) => `Sign in to Goldfinch: ${blockNum}`
-
-const ONE_DAY_SECONDS = 60 * 60 * 24
-
-const setCORSHeaders = (req: any, res: any) => {
-  const allowedOrigins = (getConfig(functions).kyc.allowed_origins || "").split(",")
-  if (allowedOrigins.includes(req.headers.origin)) {
-    res.set("Access-Control-Allow-Origin", req.headers.origin)
-    res.set("Access-Control-Allow-Headers", "*")
-  }
-}
-
-/**
- * Maps a request origin to the url or chain id of the blockchain that we consider the appropriate
- * one to use by default in servicing the request.
- */
-const defaultBlockchainIdentifierByOrigin: {[origin: string]: string | number} = {
-  "http://localhost:3000": "http://localhost:8545",
-  "https://murmuration.goldfinch.finance": "https://murmuration.goldfinch.finance/_chain",
-  "https://app.goldfinch.finance": 1,
-}
-const overrideBlockchainIdentifier = (): string | number | undefined => {
-  const override = process.env.CHAIN_IDENTIFIER
-  const overrideNumber = override ? parseInt(override, 10) : undefined
-  return overrideNumber && !isNaN(overrideNumber) ? overrideNumber : override
-}
-
-/**
- * Provides the blockchain we want to use in servicing a request. In descending priority, this is:
- * the chain specified by the CHAIN_IDENTIFIER env variable (this supports e.g. a client running on
- * localhost using mainnet, rinkeby, etc.); the chain we consider the default appropriate one given the
- * request origin; mainnet, if the chain was not otherwise identified.
- * @param {string} origin The request origin.
- * @return {BaseProvider} The blockchain provider.
- */
-const _getBlockchain = (origin: string): BaseProvider => {
-  let blockchain = overrideBlockchainIdentifier() || defaultBlockchainIdentifierByOrigin[origin]
-  if (!blockchain) {
-    console.warn(`Failed to identify appropriate blockchain for request origin: ${origin}. Defaulting to mainnet.`)
-    blockchain = 1
-  }
-  const network = typeof blockchain === "number" ? getNetwork(blockchain) : blockchain
-  return ethers.getDefaultProvider(network)
-}
-
-/**
- * This function is the API that our server functions should use if they need to get blockchain data.
- */
-let getBlockchain: (origin: string) => BaseProvider = _getBlockchain
-
-/**
- * Helper that uses the dependency-injection pattern to enable mocking the blockchain provider.
- * Useful for testing purposes.
- * @callback mocked
- * @param {mocked|undefined} mock The getter to use to mock `getBlockchain()` behavior.
- */
-const mockGetBlockchain = (mock: ((origin: string) => BaseProvider) | undefined): void => {
-  getBlockchain = mock || _getBlockchain
-}
-
-/**
- * Helper for augmenting Sentry's default behavior for route handlers.
- * @param {HttpFunction} fn The route handler we want to wrap.
- * @param {Partial<HttpFunctionWrapperOptions>} wrapOptions Options to pass to Sentry's wrap function.
- * @return {HttpFunction} The wrapped handler suitable for passing to `functions.https.onRequest()`.
- */
-const wrapWithSentry = (fn: HttpFunction, wrapOptions?: Partial<HttpFunctionWrapperOptions>): HttpFunction => {
-  if (process.env.NODE_ENV === "test") {
-    // If we're in a testing environment, Sentry's wrapper just gets in the way of intelligible test
-    // errors. So we won't use it.
-    return fn
-  }
-
-  return Sentry.GCPFunction.wrapHttpFunction(async (req, res): Promise<Response> => {
-    // Sentry does not fully do its job as you'd expect; currently it is not instrumented for
-    // unhandled promise rejections! So to capture such events in Sentry, we must catch and
-    // send them manually. Cf. https://github.com/getsentry/sentry-javascript/issues/3695#issuecomment-872350258,
-    // https://github.com/getsentry/sentry-javascript/issues/3096#issuecomment-775582236.
-    try {
-      return await fn(req, res)
-    } catch (err: unknown) {
-      Sentry.captureException(err)
-      return res.status(500).send("Internal error.")
-    }
-  }, wrapOptions)
-}
-
-const verifySignature = async (req: Request, res: Response, address: string | undefined): Promise<Response | undefined> => {
-  const signatureHeader = req.headers["x-goldfinch-signature"]
-  const signature = Array.isArray(signatureHeader) ? signatureHeader.join("") : signatureHeader
-  const signatureBlockNumHeader = req.headers["x-goldfinch-signature-block-num"]
-  const signatureBlockNumStr = Array.isArray(signatureBlockNumHeader)
-    ? signatureBlockNumHeader.join("")
-    : signatureBlockNumHeader
-
-  if (!address) {
-    return res.status(400).send({error: "Address not provided."})
-  }
-  if (!signature) {
-    return res.status(400).send({error: "Signature not provided."})
-  }
-  if (!signatureBlockNumStr) {
-    return res.status(400).send({error: "Signature block number not provided."})
-  }
-
-  const signatureBlockNum = parseInt(signatureBlockNumStr, 10)
-  if (!Number.isInteger(signatureBlockNum)) {
-    return res.status(400).send({error: "Invalid signature block number."})
-  }
-
-  const verifiedAddress = ethers.utils.verifyMessage(genVerificationMessage(signatureBlockNum), signature)
-
-  console.log(`Received address: ${address}, Verified address: ${verifiedAddress}`)
-
-  if (address.toLowerCase() !== verifiedAddress.toLowerCase()) {
-    return res.status(401).send({error: "Invalid address or signature."})
-  }
-
-  const origin = req.headers.origin || ""
-  const blockchain = getBlockchain(origin)
-  const currentBlock = await blockchain.getBlock("latest")
-
-  // Don't allow signatures signed for the future.
-  if (currentBlock.number < signatureBlockNum) {
-    return res.status(401).send({error: "Unexpected signature block number."})
-  }
-
-  const signatureBlock = await blockchain.getBlock(signatureBlockNum)
-  const signatureTime = signatureBlock.timestamp
-  const now = currentBlock.timestamp
-
-  // Don't allow signatures more than a day old.
-  if (signatureTime + ONE_DAY_SECONDS < now) {
-    return res.status(401).send({error: "Signature expired."})
-  }
-
-  return
-}
-
-const kycStatus = functions.https.onRequest(
-  wrapWithSentry(async (req, res): Promise<Response> => {
-    setCORSHeaders(req, res)
-
-    // For a CORS preflight request, we're done.
-    if (req.method === "OPTIONS") {
-      return res.status(200).send()
-    }
-
-    const address = req.query.address?.toString()
-    const verificationRes = await verifySignature(req, res, address)
-    if (verificationRes) {
-      return verificationRes
-    }
-
-    assertNonNullable(address)
-    const payload = {address, status: "unknown", countryCode: null}
+const kycStatus = genRequestHandler({
+  requireAuth: true,
+  cors: true,
+  handler: async (
+    req: Request,
+    res: Response,
+    verificationResult: SignatureVerificationSuccessResult,
+  ): Promise<Response> => {
+    const address = verificationResult.address
+    const payload = {address: address, status: "unknown", countryCode: null}
 
     const users = getUsers(admin.firestore())
     const user = await users.doc(`${address.toLowerCase()}`).get()
@@ -193,8 +44,8 @@ const kycStatus = functions.https.onRequest(
       payload.countryCode = user.data()?.countryCode
     }
     return res.status(200).send(payload)
-  }),
-)
+  },
+})
 
 // Top level status transitions should be => pending -> approved | failed -> golisted
 // Where:
@@ -264,22 +115,15 @@ const getCountryCode = (eventPayload: Record<string, any>): string | null => {
   return account?.attributes?.countryCode || verification?.attributes?.countryCode || null
 }
 
-const signAgreement = functions.https.onRequest(
-  wrapWithSentry(async (req, res): Promise<Response> => {
-    setCORSHeaders(req, res)
-
-    // For a CORS preflight request, we're done.
-    if (req.method === "OPTIONS") {
-      return res.status(200).send()
-    }
-
-    const address = req.body.address
-
-    const verificationRes = await verifySignature(req, res, address)
-    if (verificationRes) {
-      return verificationRes
-    }
-
+const signAgreement = genRequestHandler({
+  requireAuth: true,
+  cors: true,
+  handler: async (
+    req: Request,
+    res: Response,
+    verificationResult: SignatureVerificationSuccessResult,
+  ): Promise<Response> => {
+    const address = verificationResult.address
     const pool = (req.body.pool || "").trim()
     const fullName = (req.body.fullName || "").trim()
 
@@ -297,11 +141,13 @@ const signAgreement = functions.https.onRequest(
       signedAt: Date.now(),
     })
     return res.status(200).send({status: "success"})
-  }),
-)
+  },
+})
 
-const personaCallback = functions.https.onRequest(
-  wrapWithSentry(async (req, res): Promise<Response> => {
+const personaCallback = genRequestHandler({
+  requireAuth: false,
+  cors: false,
+  handler: async (req, res): Promise<Response> => {
     if (!verifyRequest(req)) {
       return res.status(400).send({status: "error", message: "Request could not be verified"})
     }
@@ -352,7 +198,8 @@ const personaCallback = functions.https.onRequest(
     }
 
     return res.status(200).send({status: "success"})
-  }),
-)
+  },
+})
 
-export {kycStatus, personaCallback, signAgreement, mockGetBlockchain}
+export { kycStatus, personaCallback, signAgreement }
+

@@ -6,7 +6,7 @@ import crypto from "crypto"
 import sinon from "sinon"
 
 import {FirebaseConfig, getAgreements, getUsers, setEnvForTest} from "../src/db"
-import {kycStatus, personaCallback, signAgreement, mockGetBlockchain} from "../src"
+import {kycStatus, personaCallback, signAgreement} from "../src"
 
 chai.use(chaiSubset as any)
 const expect = chai.expect
@@ -14,6 +14,7 @@ import firestore = admin.firestore
 import Firestore = firestore.Firestore
 import {Request} from "express"
 import {assertNonNullable} from "../../../utils/type"
+import { mockGetBlockchain } from "../src/helpers"
 
 type FakeBlock = {
   number: number
