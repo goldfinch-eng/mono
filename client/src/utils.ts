@@ -106,12 +106,4 @@ export function getBlockInfo(block: AsyncReturnType<typeof getCurrentBlock>): Bl
   }
 }
 
-export {
-  croppedAddress,
-  displayNumber,
-  displayDollars,
-  roundUpPenny,
-  roundDownPenny,
-  displayPercent,
-  secondsSinceEpoch,
-}
+export {croppedAddress, displayNumber, displayDollars, roundUpPenny, roundDownPenny, displayPercent, secondsSinceEpoch}
