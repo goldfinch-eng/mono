@@ -27,6 +27,10 @@ button {
     width: 22px;
   }
 
+  &.right-icon .icon{
+    margin: -4px 0 0 8px;
+  }
+
   &.dark{
     background-color: $purp;
     color: $sand-xlight;
@@ -74,9 +78,13 @@ button {
 
     .icon{
       height: 24px;
-      margin: -4px 12px 0 0;
+      margin-right: 12px;
       vertical-align: middle;
       width: 24px;
+    }
+
+    &.right-icon .icon{
+      margin-left: 12px;
     }
   }
 }

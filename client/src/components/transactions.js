@@ -67,7 +67,12 @@ function Transactions(props) {
         </td>
         <td className="transaction-date">{txDate}</td>
         <td className="transaction-link">
-          <a href={`https://${etherscanSubdomain}etherscan.io/tx/${tx.id}`} target="_blank" rel="noopener noreferrer">
+          <a
+            className="inline-button"
+            href={`https://${etherscanSubdomain}etherscan.io/tx/${tx.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             {iconOutArrow}
           </a>
         </td>

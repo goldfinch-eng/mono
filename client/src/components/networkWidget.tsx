@@ -81,7 +81,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
         </div>
         {transactionlabel}&nbsp;
         <a
-          className="transaction-link"
+          className="inline-button"
           href={`https://${etherscanSubdomain}etherscan.io/tx/${tx.id}`}
           target="_blank"
           rel="noopener noreferrer"

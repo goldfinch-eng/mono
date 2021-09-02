@@ -18,9 +18,9 @@ function PoolList({title, children}) {
     <div className="pools-list table-spaced background-container">
       <div className="table-header background-container-inner">
         <div className="table-cell col40 title">{title}</div>
-        <div className="table-cell col22 numeric">Your Balance</div>
-        <div className="table-cell col22 numeric">Pool Limit</div>
-        <div className="table-cell col16 numeric">Est. APY</div>
+        <div className="table-cell col22 numeric balance">Your Balance</div>
+        <div className="table-cell col22 numeric limit">Pool Limit</div>
+        <div className="table-cell col16 numeric apy">Est. APY</div>
       </div>
       {children}
     </div>
@@ -85,9 +85,9 @@ function SeniorPoolCard({balance, userBalance, apy, limit}) {
         {balance}
         <span className="subheader">Total Pool Balance</span>
       </div>
-      <div className="table-cell col22 numeric">{userBalance}</div>
-      <div className="table-cell col22 numeric">{limit}</div>
-      <div className="table-cell col16 numeric">{apy}</div>
+      <div className="table-cell col22 numeric balance">{userBalance}</div>
+      <div className="table-cell col22 numeric limit">{limit}</div>
+      <div className="table-cell col16 numeric apy">{apy}</div>
     </div>
   )
 }
@@ -120,9 +120,11 @@ function TranchedPoolCard({poolBacker}: {poolBacker: PoolBacker}) {
           <span className="subheader">{tranchedPool.metadata?.category}</span>
         </div>
       </div>
-      <div className={`${disabledClass} table-cell col22 numeric`}>{displayDollars(poolBacker?.balanceInDollars)}</div>
-      <div className="table-cell col22 numeric">{displayDollars(limit, 0)}</div>
-      <div className="table-cell col16 numeric">{displayPercent(estimatedApy)}</div>
+      <div className={`${disabledClass} table-cell col22 numeric balance`}>
+        {displayDollars(poolBacker?.balanceInDollars)}
+      </div>
+      <div className="table-cell col22 numeric limit">{displayDollars(limit, 0)}</div>
+      <div className="table-cell col16 numeric apy">{displayPercent(estimatedApy)}</div>
     </div>
   )
 }
