@@ -3,6 +3,7 @@ import web3 from "../web3"
 import moment from "moment"
 import _ from "lodash"
 import {usdcFromAtomic} from "./erc20"
+import {EventData} from "web3-eth-contract"
 
 const EVENT_TYPE_MAP = {
   DepositMade: "Supply",
@@ -26,6 +27,14 @@ const EVENT_AMOUNT_FIELD = {
   Approval: "value",
 }
 
+function getEventAmount(eventData: EventData): string {
+  return eventData.returnValues[EVENT_AMOUNT_FIELD[eventData.event]]
+}
+export function getEventAmountBN(eventData: EventData): BigNumber {
+  const amount = getEventAmount(eventData)
+  return new BigNumber(amount)
+}
+
 async function mapEventsToTx(events) {
   const txs = await Promise.all(_.map(_.compact(events), mapEventToTx))
   return _.reverse(_.sortBy(txs, "blockNumber"))
@@ -33,13 +42,14 @@ async function mapEventsToTx(events) {
 
 function mapEventToTx(event) {
   return web3.eth.getBlock(event.blockNumber).then((block) => {
-    let amount = event.returnValues[EVENT_AMOUNT_FIELD[event.event]]
+    let amount = getEventAmount(event)
 
     // For the interest collected event, we need to support the v1 pool as well, which had a
     // different name for the amount field
     if (event.event === "InterestCollected" && !amount) {
       amount = event.returnValues["poolAmount"]
     }
+    const timestamp = typeof block.timestamp === "number" ? block.timestamp : parseInt(block.timestamp, 10)
     return {
       type: event.event,
       name: EVENT_TYPE_MAP[event.event],
@@ -48,7 +58,7 @@ function mapEventToTx(event) {
       id: event.transactionHash,
       blockNumber: event.blockNumber,
       blockTime: block.timestamp,
-      date: moment.unix(block.timestamp).format("MMM D, h:mma"),
+      date: moment.unix(timestamp).format("MMM D, h:mma"),
       status: "successful",
       eventId: event.id,
       erc20: event.erc20,

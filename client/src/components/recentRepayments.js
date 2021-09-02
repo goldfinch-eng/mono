@@ -27,7 +27,7 @@ function RecentRepayments() {
       let yourPortionValue = usdcFromAtomic(
         user
           .poolBalanceAsOf(tx.blockTime)
-          .dividedBy(pool.gf.assetsAsOf(tx.blockTime))
+          .dividedBy(pool.gf.assetsAsOf(tx.blockNumber))
           .multipliedBy(tx.interestAmountBN),
       )
 
