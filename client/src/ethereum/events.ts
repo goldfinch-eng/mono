@@ -4,6 +4,7 @@ import moment from "moment"
 import _ from "lodash"
 import {usdcFromAtomic} from "./erc20"
 import {EventData} from "web3-eth-contract"
+import { assertNumber } from "../utils"
 
 const EVENT_TYPE_MAP = {
   DepositMade: "Supply",
@@ -49,7 +50,7 @@ function mapEventToTx(event) {
     if (event.event === "InterestCollected" && !amount) {
       amount = event.returnValues["poolAmount"]
     }
-    const timestamp = typeof block.timestamp === "number" ? block.timestamp : parseInt(block.timestamp, 10)
+    assertNumber(block.timestamp)
     return {
       type: event.event,
       name: EVENT_TYPE_MAP[event.event],
@@ -58,7 +59,7 @@ function mapEventToTx(event) {
       id: event.transactionHash,
       blockNumber: event.blockNumber,
       blockTime: block.timestamp,
-      date: moment.unix(timestamp).format("MMM D, h:mma"),
+      date: moment.unix(block.timestamp).format("MMM D, h:mma"),
       status: "successful",
       eventId: event.id,
       erc20: event.erc20,

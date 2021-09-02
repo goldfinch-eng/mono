@@ -79,6 +79,12 @@ function secondsSinceEpoch(): number {
 
 export class AssertionError extends Error {}
 
+export function assertNumber(val: unknown): asserts val is number {
+  if (typeof val !== "number") {
+    throw new AssertionError(`Value ${val} is not a number.`)
+  }
+}
+
 export function assertNonNullable<T>(val: T | null | undefined): asserts val is NonNullable<T> {
   if (val === null || val === undefined) {
     throw new AssertionError(`Value ${val} is not non-nullable.`)
