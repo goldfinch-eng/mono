@@ -4,7 +4,7 @@ import moment from "moment"
 import _ from "lodash"
 import {usdcFromAtomic} from "./erc20"
 import {EventData} from "web3-eth-contract"
-import { assertNumber } from "../utils"
+import {assertNumber} from "../utils"
 
 const EVENT_TYPE_MAP = {
   DepositMade: "Supply",
