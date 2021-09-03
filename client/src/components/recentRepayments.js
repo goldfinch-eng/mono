@@ -32,7 +32,7 @@ function RecentRepayments() {
       )
 
       yourPortion = displayDollars(yourPortionValue, 4)
-      yourPortionClass = yourPortionValue > 0 ? "" : "zero"
+      yourPortionClass = isFinite(yourPortionValue) && yourPortionValue > 0 ? "" : "zero"
     } else {
       yourPortion = "Loading..."
     }
