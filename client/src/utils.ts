@@ -41,7 +41,7 @@ function commaFormat(numberString) {
 
 function displayDollars(val, decimals = 2) {
   let prefix = ""
-  if (isNaN(val)) {
+  if (!isFinite(val)) {
     return " --.--"
   }
   const valFloat = parseFloat(val)
