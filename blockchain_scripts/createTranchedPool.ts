@@ -70,8 +70,9 @@ async function main() {
     termInDays.toString(),
     lateFeeApr.toString()
   )
-  await tx.wait()
-  console.log("Created borrower pool with the following parameters:")
+  let res = await tx.wait()
+  let poolCreatedEvent = res.events?.find((e) => e.event === "PoolCreated")
+  console.log(`Created borrower pool ${poolCreatedEvent!.args![0]} with the following parameters:`)
   console.log("borrowerAddress:", borrowerAddress)
   console.log("juniorFeePercent:", juniorFeePercent.toString())
   console.log("limit:", limit.toString())
