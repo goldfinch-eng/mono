@@ -5,33 +5,28 @@ input.checkbox {
   margin: 0;
   left: 0;
   opacity: 0;
-  width: 1rem;
-  height: 1rem;
   cursor: pointer;
 
   + *::before {
     margin-right: 0.75em;
-    content: "";
-    padding: 3px;
+    flex: 0 0 28px;
+    line-height: 100%;
+    content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' class='check' viewBox='0 0 24 24' aria-hidden='true' focusable='false' %3E%3Cpath fill='none' stroke='#{url-encoded-color($sand-dark)}' stroke-width='3' d='M1.73 12.91l6.37 6.37L22.79 4.59' /%3E%3C/svg%3E");
+    padding: 5px;
     display: inline-block;
-    width: 1.25rem;
-    height: 1.25rem;
+    height: 28px;
     background-color: $sand;
     border-radius: 4px;
-    border-style: solid;
-    border-width: 0.1rem;
-    border-color: $sand;
   }
 
   &:checked + *::before {
-    content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' class='check' viewBox='0 0 24 24' aria-hidden='true' focusable='false' %3E%3Cpath fill='none' stroke='#{url-encoded-color($sand)}' stroke-width='3' d='M1.73 12.91l6.37 6.37L22.79 4.59' /%3E%3C/svg%3E");
     background-color: $purp;
     border-color: $purp;
+    content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' class='check' viewBox='0 0 24 24' aria-hidden='true' focusable='false' %3E%3Cpath fill='none' stroke='#{url-encoded-color($sand)}' stroke-width='3' d='M1.73 12.91l6.37 6.37L22.79 4.59' /%3E%3C/svg%3E");
   }
 }
 
 .checkbox-label {
-  font-size: $sans-size-xs;
   cursor: pointer;
   display: flex;
   align-items: center;

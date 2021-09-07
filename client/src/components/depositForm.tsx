@@ -52,7 +52,7 @@ function DepositForm(props: DepositFormProps) {
     return (
       <div className="form-inputs">
         {warningMessage}
-        <div className="checkbox-container">
+        <div className="checkbox-container form-input-label">
           <input
             className="checkbox"
             type="checkbox"
@@ -61,10 +61,12 @@ function DepositForm(props: DepositFormProps) {
             ref={(ref) => formMethods.register(ref, {required: "You must agree to the Senior Pool Agreement."})}
           />
           <label className="checkbox-label" htmlFor="agreement">
-            I agree to the&nbsp;
-            <a className="form-link" href="/senior-pool-agreement-non-us" target="_blank">
-              Senior Pool Agreement.
-            </a>
+            <div>
+              I agree to the&nbsp;
+              <a className="form-link" href="/senior-pool-agreement-non-us" target="_blank">
+                Senior Pool Agreement.
+              </a>
+            </div>
           </label>
         </div>
         <div>

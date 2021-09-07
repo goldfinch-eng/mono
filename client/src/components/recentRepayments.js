@@ -32,7 +32,7 @@ function RecentRepayments() {
       )
 
       yourPortion = displayDollars(yourPortionValue, 4)
-      yourPortionClass = yourPortionValue > 0 ? "" : "zero"
+      yourPortionClass = isFinite(yourPortionValue) && yourPortionValue > 0 ? "" : "zero"
     } else {
       yourPortion = "Loading..."
     }
@@ -41,7 +41,12 @@ function RecentRepayments() {
         <td className="transaction-date">{tx.date}</td>
         <td className="transaction-link">
           <span className="transaction-link-label">{croppedAddress(tx.id)}</span>
-          <a href={`https://${etherscanSubdomain}etherscan.io/tx/${tx.id}`} target="_blank" rel="noopener noreferrer">
+          <a
+            className="inline-button"
+            href={`https://${etherscanSubdomain}etherscan.io/tx/${tx.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             {iconOutArrow}
           </a>
         </td>
