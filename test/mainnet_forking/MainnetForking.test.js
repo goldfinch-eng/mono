@@ -104,6 +104,8 @@ that we can easily and realistically test interactions with outside protocols
 and contracts.
 */
 describe("mainnet forking tests", async function () {
+  this.retries(2)
+
   // Hack way to only run this suite when we actually want to.
   if (!isMainnetForking()) {
     return
