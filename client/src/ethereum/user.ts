@@ -243,5 +243,6 @@ async function getAndTransformCreditDeskEvents(creditDesk, address) {
   const creditDeskEvents = _.compact(_.concat(paymentEvents, drawdownEvents))
   return await mapEventsToTx(creditDeskEvents)
 }
+
 export {getUserData, defaultUser}
 export type {DefaultUser, User}
