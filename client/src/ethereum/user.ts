@@ -44,7 +44,7 @@ interface User {
   usdcIsUnlocked(type: string): boolean
   getUnlockStatus(type: string): UnlockedStatus
   isUnlocked(allowance): boolean
-  poolBalanceAsOf(blockNum: number): BigNumber
+  poolBalanceAsOf(blockNumExclusive: number): BigNumber
   getAllowance(address): Promise<BigNumber>
 }
 
@@ -194,7 +194,7 @@ class DefaultUser implements User {
   isUnlocked(allowance): boolean {
     return false
   }
-  poolBalanceAsOf(blockNum: number): BigNumber {
+  poolBalanceAsOf(blockNumExclusive: number): BigNumber {
     return new BigNumber(0)
   }
   async getAllowance(address) {
