@@ -2,7 +2,7 @@ import BigNumber from "bignumber.js"
 import {ERC20, Tickers, usdcFromAtomic} from "./erc20"
 import _ from "lodash"
 import {getFromBlock, MAINNET} from "./utils"
-import {getEventAmountBN, mapEventsToTx} from "./events"
+import {getBalanceAsOf, getEventAmountBN, mapEventsToTx} from "./events"
 import {BorrowerInterface, getBorrowerContract} from "./borrower"
 import {SeniorPool} from "./pool"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
@@ -146,23 +146,7 @@ class Web3User implements User {
   }
 
   poolBalanceAsOf(blockNum: number): BigNumber {
-    const filtered = _.filter(this.poolEvents, (eventData) => {
-      return eventData.blockNumber < blockNum
-    })
-    if (!filtered.length) {
-      return new BigNumber(0)
-    }
-    return BigNumber.sum.apply(
-      null,
-      filtered.map((eventData) => {
-        const amountBN = getEventAmountBN(eventData)
-        if (eventData.event === "WithdrawalMade") {
-          return amountBN.multipliedBy(new BigNumber(-1))
-        } else {
-          return amountBN
-        }
-      }),
-    )
+    return getBalanceAsOf(this.poolEvents, blockNum, "WithdrawalMade")
   }
 
   async getAllowance(address) {

@@ -67,4 +67,27 @@ function mapEventToTx(event) {
   })
 }
 
-export {mapEventsToTx}
+function getBalanceAsOf(
+  events: EventData[],
+  blockNum: number,
+  subtractiveEventName: string
+): BigNumber {
+  const filtered = events.filter((eventData: EventData) =>
+    eventData.blockNumber < blockNum)
+  if (!filtered.length) {
+    return new BigNumber(0)
+  }
+  return BigNumber.sum.apply(
+    null,
+    filtered.map((eventData) => {
+      const amountBN = getEventAmountBN(eventData)
+      if (eventData.event === subtractiveEventName) {
+        return amountBN.multipliedBy(new BigNumber(-1))
+      } else {
+        return amountBN
+      }
+    }),
+  )
+}
+
+export {mapEventsToTx, getBalanceAsOf}

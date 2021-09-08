@@ -4,7 +4,7 @@ import {Tickers, usdcFromAtomic} from "./erc20"
 import {FIDU_DECIMALS, fiduFromAtomic} from "./fidu"
 import {roundDownPenny} from "../utils"
 import _ from "lodash"
-import {getEventAmountBN, mapEventsToTx} from "./events"
+import {getBalanceAsOf, getEventAmountBN, mapEventsToTx} from "./events"
 import {Contract, EventData} from "web3-eth-contract"
 import {Pool as PoolContract} from "../typechain/web3/Pool"
 import {SeniorPool as SeniorPoolContract} from "../typechain/web3/SeniorPool"
@@ -315,23 +315,7 @@ async function getAllDepositAndWithdrawalEvents(pool: SeniorPool): Promise<Event
 }
 
 function assetsAsOf(this: PoolData, blockNum: number): BigNumber {
-  const filtered = _.filter(this.poolEvents, (transfer) => {
-    return transfer.blockNumber < blockNum
-  })
-  if (!filtered.length) {
-    return new BigNumber(0)
-  }
-  return BigNumber.sum.apply(
-    null,
-    filtered.map((transfer) => {
-      const amountBN = getEventAmountBN(transfer)
-      if (transfer.event === "WithdrawalMade") {
-        return amountBN.multipliedBy(new BigNumber(-1))
-      } else {
-        return amountBN
-      }
-    }),
-  )
+  return getBalanceAsOf(this.poolEvents, blockNum, "WithdrawalMade")
 }
 
 /**
