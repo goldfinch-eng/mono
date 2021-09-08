@@ -90,18 +90,15 @@ class Web3User implements User {
     this.usdcBalanceInDollars = new BigNumber(usdcFromAtomic(this.usdcBalance))
     this.poolAllowance = await this.getAllowance(this.pool.address)
 
-    const [usdcTxs, poolTxs, creditDeskTxs, tranchedPoolTxs] = await Promise.all([
+    const [usdcTxs, poolTxs, creditDeskTxs] = await Promise.all([
       // NOTE: We have no need to include usdc txs for `this.pool.v1Pool` among the txs in
       // `this.pastTxs`. So we don't get them. We only need usdc txs for `this.pool`.
       getAndTransformERC20Events(this.usdc, this.pool.address, this.address),
       getAndTransformPoolEvents(this.pool, this.address),
       // Credit desk events could've come from the user directly or the borrower contract, we need to filter by both
       getAndTransformCreditDeskEvents(this.creditDesk, _.compact([this.address, this.borrower?.borrowerAddress])),
-      getTranchedPoolEvents(this.goldfinchProtocol, this.borrower?.tranchedPools),
     ])
-    this.pastTxs = _.reverse(
-      _.sortBy(_.compact(_.concat(usdcTxs, poolTxs, creditDeskTxs, tranchedPoolTxs)), "blockNumber"),
-    )
+    this.pastTxs = _.reverse(_.sortBy(_.compact(_.concat(usdcTxs, poolTxs, creditDeskTxs)), "blockNumber"))
     this.poolTxs = poolTxs
     this.goListed = await this.isGoListed(this.address)
     this.loaded = true
@@ -246,20 +243,5 @@ async function getAndTransformCreditDeskEvents(creditDesk, address) {
   const creditDeskEvents = _.compact(_.concat(paymentEvents, drawdownEvents))
   return await mapEventsToTx(creditDeskEvents)
 }
-
-async function getTranchedPoolEvents(
-  goldfinchProtocol,
-  tranchedPools,
-  events = ["DepositMade", "WithdrawalMade", "PaymentApplied", "DrawdownMade"],
-) {
-  const tranchedPoolsAddresses = Object.keys(tranchedPools)
-  let combinedEvents = _.flatten(
-    await Promise.all(
-      tranchedPoolsAddresses.map((address) => goldfinchProtocol.queryEvents(tranchedPools[address].contract, events)),
-    ),
-  )
-  return await mapEventsToTx(combinedEvents)
-}
-
 export {getUserData, defaultUser}
 export type {DefaultUser, User}
