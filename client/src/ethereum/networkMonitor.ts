@@ -137,7 +137,7 @@ class NetworkMonitor {
     this.updateTX(tx, {status: "successful"})
   }
 
-  markTXErrored(failedTX, error) {
+  markTXErrored(failedTX, error: Error) {
     this.setCurrentTXs((currentPendingTXs) => {
       const matches = _.remove(currentPendingTXs, {id: failedTX.id})
       const tx = matches && matches[0]

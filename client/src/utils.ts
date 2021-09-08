@@ -1,4 +1,6 @@
 import _ from "lodash"
+import {AsyncReturnType} from "./types/util"
+import web3 from "./web3"
 
 function croppedAddress(address) {
   if (!address) {
@@ -79,9 +81,34 @@ function secondsSinceEpoch(): number {
 
 export class AssertionError extends Error {}
 
+export function assertError(val: unknown): asserts val is Error {
+  if (!(val instanceof Error)) {
+    throw new AssertionError(`Value ${val} is not an instance of Error.`)
+  }
+}
+
 export function assertNonNullable<T>(val: T | null | undefined): asserts val is NonNullable<T> {
   if (val === null || val === undefined) {
     throw new AssertionError(`Value ${val} is not non-nullable.`)
+  }
+}
+
+export async function getCurrentBlock() {
+  return await web3.eth.getBlock("latest")
+}
+
+type BlockInfo = {
+  number: number
+  timestamp: number
+}
+
+export function getBlockInfo(block: AsyncReturnType<typeof getCurrentBlock>): BlockInfo {
+  if (typeof block.timestamp !== "number") {
+    throw new Error(`Timestamp of block ${block.number} is not a number: ${block.timestamp}`)
+  }
+  return {
+    number: block.number,
+    timestamp: block.timestamp,
   }
 }
 
