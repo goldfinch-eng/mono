@@ -10,7 +10,7 @@
     "noUnusedLocals": true,
     "outDir": "lib",
     "sourceMap": true,
-    "noImplicitAny": true,
+    "noImplicitAny": true
   },
   "compileOnSave": true,
   "include": ["src"]

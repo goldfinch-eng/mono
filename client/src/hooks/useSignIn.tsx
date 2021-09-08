@@ -1,41 +1,67 @@
 import {ethers} from "ethers"
 import {useCallback, useContext} from "react"
 import {AppContext} from "../App"
-import {assertNonNullable} from "../utils"
+import {assertNonNullable, getBlockInfo, getCurrentBlock} from "../utils"
 import web3 from "../web3"
 
-export type Session = {status: "unknown"} | {status: "known"} | {status: "authenticated"; signature: string}
+export type UnknownSession = {status: "unknown"}
+export type KnownSession = {status: "known"}
+export type AuthenticatedSession = {status: "authenticated"; signature: string; signatureBlockNum: number}
+export type Session = UnknownSession | KnownSession | AuthenticatedSession
 
-function getSession(address: string | undefined, sessionSignature: string | undefined): Session {
-  if (address && sessionSignature) {
-    return {status: "authenticated", signature: sessionSignature}
+type GetSessionInfo =
+  | {
+      address: string
+      signature: undefined
+      signatureBlockNum: undefined
+    }
+  | {
+      address: string
+      signature: string
+      signatureBlockNum: number
+    }
+
+function getSession(info: GetSessionInfo): Session {
+  if (info.address && info.signature) {
+    const signature = info.signature
+    const signatureBlockNum = info.signatureBlockNum
+    return {status: "authenticated", signature, signatureBlockNum}
   }
-  if (address && !sessionSignature) {
+  if (info.address && !info.signature) {
     return {status: "known"}
   }
   return {status: "unknown"}
 }
 
 export function useSession(): Session {
-  const {sessionSignature, user} = useContext(AppContext)
-  return getSession(user.address, sessionSignature)
+  const {sessionData, user} = useContext(AppContext)
+  return getSession(
+    sessionData
+      ? {address: user.address, signature: sessionData.signature, signatureBlockNum: sessionData.signatureBlockNum}
+      : {address: user.address, signature: undefined, signatureBlockNum: undefined},
+  )
 }
 
 export function useSignIn(): [status: Session, signIn: () => Promise<Session>] {
-  const {setSessionSignature, user} = useContext(AppContext)
+  const {setSessionData, user} = useContext(AppContext)
   const session = useSession()
 
   const signIn = useCallback(
     async function () {
-      assertNonNullable(setSessionSignature)
+      assertNonNullable(setSessionData)
 
       const provider = new ethers.providers.Web3Provider(web3.currentProvider as any)
       const signer = provider.getSigner(user.address)
-      const signature = await signer.signMessage("Sign in to Goldfinch")
-      setSessionSignature(signature)
-      return getSession(user.address, signature)
+
+      const currentBlock = getBlockInfo(await getCurrentBlock())
+      const signatureBlockNum = currentBlock.number
+      const signatureBlockNumTimestamp = currentBlock.timestamp
+
+      const signature = await signer.signMessage(`Sign in to Goldfinch: ${signatureBlockNum}`)
+      setSessionData({signature, signatureBlockNum, signatureBlockNumTimestamp})
+      return getSession({address: user.address, signature, signatureBlockNum})
     },
-    [user, setSessionSignature],
+    [user, setSessionData],
   )
 
   return [session, signIn]
