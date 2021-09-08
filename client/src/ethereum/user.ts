@@ -9,7 +9,6 @@ import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {GoldfinchConfig} from "../typechain/web3/GoldfinchConfig"
 import {EventData} from "web3-eth-contract"
 
-
 declare let window: any
 
 const UNLOCK_THRESHOLD = new BigNumber(10000)

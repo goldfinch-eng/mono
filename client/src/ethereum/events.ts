@@ -67,13 +67,8 @@ function mapEventToTx(event) {
   })
 }
 
-function getBalanceAsOf(
-  events: EventData[],
-  blockNum: number,
-  subtractiveEventName: string
-): BigNumber {
-  const filtered = events.filter((eventData: EventData) =>
-    eventData.blockNumber < blockNum)
+function getBalanceAsOf(events: EventData[], blockNum: number, subtractiveEventName: string): BigNumber {
+  const filtered = events.filter((eventData: EventData) => eventData.blockNumber < blockNum)
   if (!filtered.length) {
     return new BigNumber(0)
   }
