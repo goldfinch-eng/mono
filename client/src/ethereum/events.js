@@ -40,6 +40,12 @@ function mapEventToTx(event) {
     if (event.event === "InterestCollected" && !amount) {
       amount = event.returnValues["poolAmount"]
     }
+
+    // Tranched pool drawdown made events have a different name for the amount field
+    if (event.event === "DrawdownMade" && !amount) {
+      amount = event.returnValues["amount"]
+    }
+
     return {
       type: event.event,
       name: EVENT_TYPE_MAP[event.event],

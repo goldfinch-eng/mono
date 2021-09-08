@@ -247,7 +247,11 @@ async function getAndTransformCreditDeskEvents(creditDesk, address) {
   return await mapEventsToTx(creditDeskEvents)
 }
 
-async function getTranchedPoolEvents(goldfinchProtocol, tranchedPools, events = ["DepositMade", "WithdrawalMade"]) {
+async function getTranchedPoolEvents(
+  goldfinchProtocol,
+  tranchedPools,
+  events = ["DepositMade", "WithdrawalMade", "PaymentApplied", "DrawdownMade"],
+) {
   const tranchedPoolsAddresses = Object.keys(tranchedPools)
   let combinedEvents = _.flatten(
     await Promise.all(
