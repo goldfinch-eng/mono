@@ -43,6 +43,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
   event DrawdownMade(address indexed borrower, address indexed creditLine, uint256 drawdownAmount);
   event CreditLineCreated(address indexed borrower, address indexed creditLine);
   event GovernanceUpdatedUnderwriterLimit(address indexed underwriter, uint256 newLimit);
+  event GoldfinchConfigUpdated(address indexed who, address config);
 
   mapping(address => Underwriter) public underwriters;
   mapping(address => Borrower) private borrowers;
@@ -316,6 +317,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
 
   function updateGoldfinchConfig() external onlyAdmin {
     config = GoldfinchConfig(config.configAddress());
+    emit GoldfinchConfigUpdated(msg.sender, config.configAddress());
   }
 
   /*

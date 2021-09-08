@@ -1,4 +1,5 @@
 /* global artifacts web3 */
+const {expectEvent} = require("@openzeppelin/test-helpers")
 const {expect, bigVal, getDeployedAsTruffleContract, expectAction} = require("./testHelpers")
 const {OWNER_ROLE} = require("../blockchain_scripts/deployHelpers")
 const hre = require("hardhat")
@@ -63,6 +64,16 @@ describe("Fidu", () => {
           [() => fidu.config(), {to: person2, bignumber: false}],
         ])
       })
+
+      it("should emit an event", async () => {
+        await goldfinchConfig.setAddress(CONFIG_KEYS.GoldfinchConfig, person2)
+        const tx = await fidu.updateGoldfinchConfig()
+        expectEvent(tx, "GoldfinchConfigUpdated", {
+          who: tx.receipt.from,
+          configAddress: CONFIG_KEYS.GoldfinchConfig,
+        })
+      })
+
       it("should disallow non-owner to set", async () => {
         return expect(fidu.updateGoldfinchConfig({from: person2})).to.be.rejectedWith(/Must have minter role/)
       })

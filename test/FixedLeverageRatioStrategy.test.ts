@@ -1,9 +1,10 @@
 /* global web3 */
 import hre from "hardhat"
 const {deployments, artifacts} = hre
-import {expect, BN, deployAllContracts, usdcVal, createPoolWithCreditLine} from "./testHelpers"
+import {expect, BN, deployAllContracts, usdcVal, createPoolWithCreditLine, bigVal} from "./testHelpers"
 import {interestAprAsBN, LEVERAGE_RATIO_DECIMALS, TRANCHES} from "../blockchain_scripts/deployHelpers"
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
+import {expectEvent} from "@openzeppelin/test-helpers"
 const FixedLeverageRatioStrategy = artifacts.require("FixedLeverageRatioStrategy")
 
 const EXPECTED_LEVERAGE_RATIO: BN = new BN(String(4e18))
@@ -346,6 +347,25 @@ describe("FixedLeverageRatioStrategy", () => {
 
           const amount = await strategy.invest(seniorPool.address, tranchedPool.address)
           expect(amount).to.bignumber.equal(new BN(0))
+        })
+      })
+    })
+  })
+
+  describe("updateGoldfinchConfig", () => {
+    let goldfinchConfig;
+    let tranchedPool;
+    beforeEach(async () => {
+      ;({goldfinchConfig, tranchedPool} = await setupTest())
+    })
+
+    describe("setting it", () => {
+      it("should emit an event", async () => {
+        await goldfinchConfig.setAddress(CONFIG_KEYS.GoldfinchConfig, "0x0000000000000000000000000000000000000000")
+        const tx = await tranchedPool.updateGoldfinchConfig();
+        expectEvent(tx, "GoldfinchConfigUpdated", {
+          who: tx.receipt.from,
+          configAddress: CONFIG_KEYS.GoldfinchConfig,
         })
       })
     })

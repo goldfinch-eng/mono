@@ -15,6 +15,8 @@ contract FixedLeverageRatioStrategy is LeverageRatioStrategy {
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
 
+  event GoldfinchConfigUpdated(address indexed who, address configAddress);
+
   function initialize(address owner, GoldfinchConfig _config) public initializer {
     require(owner != address(0) && address(_config) != address(0), "Owner and config addresses cannot be empty");
     __BaseUpgradeablePausable__init(owner);
@@ -23,6 +25,7 @@ contract FixedLeverageRatioStrategy is LeverageRatioStrategy {
 
   function updateGoldfinchConfig() external onlyAdmin {
     config = GoldfinchConfig(config.configAddress());
+    emit GoldfinchConfigUpdated(msg.sender, config.configAddress());
   }
 
   function getLeverageRatio(ITranchedPool pool) public view override returns (uint256) {

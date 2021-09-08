@@ -25,11 +25,12 @@ import {ecsign} from "ethereumjs-util"
 const CreditLine = artifacts.require("CreditLine")
 import {getApprovalDigest, getWallet} from "./permitHelpers"
 import {TranchedPoolInstance} from "../typechain/truffle"
-import {JuniorCapitalLocked, DepositMade} from "../typechain/truffle/TranchedPool"
+import {JuniorTrancheLocked, DepositMade} from "../typechain/truffle/TranchedPool"
+import { BigNumber } from "ethers"
 
 const RESERVE_FUNDS_COLLECTED_EVENT = "ReserveFundsCollected"
 const PAYMENT_APPLIED_EVENT = "PaymentApplied"
-const EXPECTED_JUNIOR_CAPITAL_LOCKED_EVENT_ARGS = ["0", "1", "__length__", "juniorTrancheLockedUntil", "pool"]
+const EXPECTED_JUNIOR_CAPITAL_LOCKED_EVENT_ARGS = ["0", "1", "__length__", "lockedUntil", "pool"]
 
 const expectPaymentRelatedEventsEmitted = (
   receipt: unknown,
@@ -333,6 +334,25 @@ describe("TranchedPool", () => {
     })
 
     describe("senior tranche", async () => {
+      context("when locking the pool", () => {
+
+
+        it("emits the right events", async () => {
+          await tranchedPool.lockJuniorCapital();
+          const tx = await tranchedPool.lockPool();
+          expectEvent(tx, "JuniorTrancheLocked", {
+            pool: tranchedPool.address,
+            // lockedUntil: BigNumber.from('0'),
+          })
+          expectEvent(tx, "SeniorTrancheLocked", {
+            pool: tranchedPool.address,
+            // lockedUntil: BigNumber.from('0'),
+          })
+        })
+
+      })
+
+
       it("does not allow deposits when pool is locked", async () => {
         await tranchedPool.deposit(TRANCHES.Junior, usdcVal(10))
         await tranchedPool.lockJuniorCapital({from: borrower})
@@ -1001,11 +1021,11 @@ describe("TranchedPool", () => {
           await expectAction(async () => {
             const receipt = await tranchedPool.lockJuniorCapital({from: actor})
 
-            const logs = decodeLogs<JuniorCapitalLocked>(receipt.receipt.rawLogs, tranchedPool, "JuniorCapitalLocked")
+            const logs = decodeLogs<JuniorTrancheLocked>(receipt.receipt.rawLogs, tranchedPool, "JuniorTrancheLocked")
             const firstLog = getFirstLog(logs)
             expect(Object.keys(firstLog.args).sort()).to.eql(EXPECTED_JUNIOR_CAPITAL_LOCKED_EVENT_ARGS)
             expect(firstLog.args.pool).to.equal(tranchedPool.address)
-            expect(firstLog.args.juniorTrancheLockedUntil).to.be.bignumber.closeTo(oneDayFromNow, new BN(5))
+            expect(firstLog.args.lockedUntil).to.be.bignumber.closeTo(oneDayFromNow, new BN(5))
 
             return receipt
           }).toChange([
@@ -1027,11 +1047,11 @@ describe("TranchedPool", () => {
           await expectAction(async () => {
             const receipt = await tranchedPool.lockJuniorCapital({from: borrower})
 
-            const logs = decodeLogs<JuniorCapitalLocked>(receipt.receipt.rawLogs, tranchedPool, "JuniorCapitalLocked")
+            const logs = decodeLogs<JuniorTrancheLocked>(receipt.receipt.rawLogs, tranchedPool, "JuniorTrancheLocked")
             const firstLog = getFirstLog(logs)
             expect(Object.keys(firstLog.args).sort()).to.eql(EXPECTED_JUNIOR_CAPITAL_LOCKED_EVENT_ARGS)
             expect(firstLog.args.pool).to.equal(tranchedPool.address)
-            expect(firstLog.args.juniorTrancheLockedUntil).to.be.bignumber.closeTo(oneDayFromNow, new BN(5))
+            expect(firstLog.args.lockedUntil).to.be.bignumber.closeTo(oneDayFromNow, new BN(5))
 
             return receipt
           }).toChange([
