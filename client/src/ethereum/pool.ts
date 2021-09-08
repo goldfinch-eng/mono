@@ -314,8 +314,8 @@ async function getAllDepositAndWithdrawalEvents(pool: SeniorPool): Promise<Event
   return poolEvents
 }
 
-function assetsAsOf(this: PoolData, blockNum: number): BigNumber {
-  return getBalanceAsOf(this.poolEvents, blockNum, "WithdrawalMade")
+function assetsAsOf(this: PoolData, blockNumExclusive: number): BigNumber {
+  return getBalanceAsOf(this.poolEvents, blockNumExclusive, "WithdrawalMade")
 }
 
 /**

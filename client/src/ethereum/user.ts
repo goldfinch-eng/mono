@@ -144,8 +144,8 @@ class Web3User implements User {
     }
   }
 
-  poolBalanceAsOf(blockNum: number): BigNumber {
-    return getBalanceAsOf(this.poolEvents, blockNum, "WithdrawalMade")
+  poolBalanceAsOf(blockNumExclusive: number): BigNumber {
+    return getBalanceAsOf(this.poolEvents, blockNumExclusive, "WithdrawalMade")
   }
 
   async getAllowance(address) {
