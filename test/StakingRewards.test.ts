@@ -10,14 +10,6 @@ import {
   StakingRewardsInstance,
 } from "../typechain/truffle"
 const {ethers} = hre
-import {LeverageMultiplierUpdated,
-  MaxRateAtPercentUpdated,
-  MaxRateUpdated,
-  MinRateAtPercentUpdated,
-  MinRateUpdated,
-  TargetCapacityUpdated,
-  VestingScheduleUpdated
-} from '../typechain/truffle/StakingRewards';
 import {DepositMade} from "../typechain/truffle/SeniorPool"
 import {RewardPaid, Staked} from "../typechain/truffle/StakingRewards"
 const {deployments} = hre
@@ -1625,15 +1617,14 @@ describe("StakingRewards", () => {
       expect(await stakingRewards.targetCapacity()).to.bignumber.equal(newTargetCapacity)
     })
 
-    it("emits correct events", async () => {
+    it("emits an event", async () => {
       let newTargetCapacity = bigVal(1234)
-      const tx = await stakingRewards.setTargetCapacity(newTargetCapacity)
-      
-      const logs = decodeLogs<TargetCapacityUpdated>(tx.receipt.rawLogs, stakingRewards, "TargetCapacityUpdated")
-      const firstLog = getFirstLog(logs)
+      const tx = await stakingRewards.setTargetCapacity(newTargetCapacity, {from: owner})
 
-      expect(firstLog.args.targetCapacity).to.bignumber.equal(newTargetCapacity)
-      expect(firstLog.args.who).to.match(new RegExp(tx.receipt.from, "i"))
+      expectEvent(tx, "TargetCapacityUpdated", {
+        who: owner,
+        targetCapacity: newTargetCapacity
+      })
     })
 
     it("checkpoints rewards", async () => {
@@ -1662,15 +1653,15 @@ describe("StakingRewards", () => {
       expect(await stakingRewards.maxRateAtPercent()).to.bignumber.equal(newMaxRateAtPercent)
     })
 
-    it("emits correct events", async () => {
+    it("emits an event", async () => {
       // 25%
       let newMaxRateAtPercent = new BN(25).mul(new BN(String(1e16)))
-      const tx = await stakingRewards.setMaxRateAtPercent(newMaxRateAtPercent)
+      const tx = await stakingRewards.setMaxRateAtPercent(newMaxRateAtPercent, {from: owner})
 
-      const logs = decodeLogs<MaxRateAtPercentUpdated>(tx.receipt.rawLogs, stakingRewards, "MaxRateAtPercentUpdated");
-      const firstLog = getFirstLog(logs);
-      expect(firstLog.args.who).to.match(new RegExp(tx.receipt.from, "i"))
-      expect(firstLog.args.maxRateAtPercent).to.bignumber.equal(newMaxRateAtPercent)
+      expectEvent(tx, "MaxRateAtPercentUpdated", {
+        who: owner,
+        maxRateAtPercent: newMaxRateAtPercent
+      })
     })
 
     it("checkpoints rewards", async () => {
@@ -1699,17 +1690,15 @@ describe("StakingRewards", () => {
       expect(await stakingRewards.minRateAtPercent()).to.bignumber.equal(newMinRateAtPercent)
     })
 
-    it("emits correct event", async () => {
+    it("emits an event", async () => {
        // 25%
       let newMinRateAtPercent = new BN(5).mul(new BN(String(1e18)))
       const tx = await stakingRewards.setMinRateAtPercent(newMinRateAtPercent)
 
-      const logs = decodeLogs<MinRateAtPercentUpdated>(tx.receipt.rawLogs, stakingRewards, "MinRateAtPercentUpdated")
-      const firstLog = getFirstLog(logs)
-
-      expect(firstLog.args.who).to.match(new RegExp(tx.receipt.from, "i"))
-      expect(firstLog.args.minRateAtPercent).to.bignumber.equal(newMinRateAtPercent)
-
+      expectEvent(tx, "MinRateAtPercentUpdated", {
+        who: owner,
+        minRateAtPercent: newMinRateAtPercent
+      })
     })
 
     it("checkpoints rewards", async () => {
@@ -1737,15 +1726,14 @@ describe("StakingRewards", () => {
       expect(await stakingRewards.maxRate()).to.bignumber.equal(newMaxRate)
     })
 
-    it("emits correct events", async () => {
+    it("emits an event", async () => {
       let newMaxRate = bigVal(2500)
-      const tx = await stakingRewards.setMaxRate(newMaxRate)
+      const tx = await stakingRewards.setMaxRate(newMaxRate, {from: owner})
 
-      const logs = decodeLogs<MaxRateUpdated>(tx.receipt.rawLogs, stakingRewards, "MaxRateUpdated")
-      const firstLog = getFirstLog(logs)
-
-      expect(firstLog.args.who).to.match(new RegExp(tx.receipt.from, "i"))
-      expect(firstLog.args.maxRate).to.bignumber.equal(newMaxRate)
+      expectEvent(tx, "MaxRateUpdated", {
+        who: owner,
+        maxRate: newMaxRate
+      })
     });
 
     it("checkpoints rewards", async () => {
@@ -1773,15 +1761,14 @@ describe("StakingRewards", () => {
       expect(await stakingRewards.minRate()).to.bignumber.equal(newMinRate)
     })
 
-    it("emits correct event", async () => {
+    it("emits an event", async () => {
       let newMinRate = bigVal(2500)
-      const tx = await stakingRewards.setMinRate(newMinRate)
+      const tx = await stakingRewards.setMinRate(newMinRate, {from: owner})
 
-      const logs = decodeLogs<MinRateUpdated>(tx.receipt.rawLogs, stakingRewards, "MinRateUpdated")
-      const firstLog = getFirstLog(logs)
-
-      expect(firstLog.args.who).to.match(new RegExp(tx.receipt.from, "i"))
-      expect(firstLog.args.minRate).to.bignumber.equal(newMinRate)
+      expectEvent(tx, "MinRateUpdated", {
+        who: owner,
+        minRate: newMinRate
+      })
     })
 
     it("checkpoints rewards", async () => {
@@ -1807,16 +1794,16 @@ describe("StakingRewards", () => {
       expect(await stakingRewards.getLeverageMultiplier(LockupPeriod.SixMonths)).to.bignumber.equal(bigVal(10))
     })
 
-    it("emits correct events", async () => {
+    it("emits an event", async () => {
       const newLockupPeriod = LockupPeriod.SixMonths
       const newLeverageMultiplier = bigVal(10)
       const tx = await stakingRewards.setLeverageMultiplier(LockupPeriod.SixMonths, newLeverageMultiplier)
 
-      const logs = decodeLogs<LeverageMultiplierUpdated>(tx.receipt.rawLogs, stakingRewards, "LeverageMultiplierUpdated")
-      const firstLog = getFirstLog(logs)
-      expect(firstLog.args.who).to.match(new RegExp(tx.receipt.from, "i"))
-      expect(firstLog.args.lockupPeriod).to.bignumber.equal(new BN(newLockupPeriod))
-      expect(firstLog.args.leverageMultiplier).to.bignumber.equal(newLeverageMultiplier)
+      expectEvent(tx, "LeverageMultiplierUpdated", {
+        who: owner,
+        lockupPeriod: newLockupPeriod,
+        leverageMultiplier: newLeverageMultiplier 
+      })
     });
 
     it("checkpoints rewards", async () => {
@@ -1843,14 +1830,14 @@ describe("StakingRewards", () => {
       expect(await stakingRewards.vestingLength()).to.bignumber.equal(vestingLength)
     })
 
-    it("emits correct events", async () => {
+    it("emits an event", async () => {
       let newVestingLength = halfYearInSeconds
-      const tx = await stakingRewards.setVestingSchedule(newVestingLength)
-      const logs = decodeLogs<VestingScheduleUpdated>(tx.receipt.rawLogs, stakingRewards, "VestingScheduleUpdated")
-      const firstLog = getFirstLog(logs)
+      const tx = await stakingRewards.setVestingSchedule(newVestingLength, {from: owner})
 
-      expect(firstLog.args.who).to.match(new RegExp(tx.receipt.from, "i"))
-      expect(firstLog.args.vestingLength).to.bignumber.equal(newVestingLength)
+      expectEvent(tx, "VestingScheduleUpdated", {
+        who: owner,
+        vestingLength: newVestingLength
+      })
     })
 
     it("checkpoints rewards", async () => {

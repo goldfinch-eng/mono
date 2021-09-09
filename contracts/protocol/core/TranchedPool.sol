@@ -291,7 +291,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   function updateGoldfinchConfig() external onlyAdmin {
     config = GoldfinchConfig(config.configAddress());
     creditLine.updateGoldfinchConfig();
-    emit GoldfinchConfigUpdated(msg.sender, config.configAddress());
+    emit GoldfinchConfigUpdated(msg.sender, address(config));
   }
 
   /**

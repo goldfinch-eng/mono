@@ -65,12 +65,14 @@ describe("Fidu", () => {
         ])
       })
 
-      it("should emit an event", async () => {
-        await goldfinchConfig.setAddress(CONFIG_KEYS.GoldfinchConfig, person2)
+      it("emits an event", async () => {
+        const newConfig = await deployments.deploy("GoldfinchConfig", {from: owner})
+        await goldfinchConfig.setAddress(CONFIG_KEYS.GoldfinchConfig, newConfig.address, {from: owner})
         const tx = await fidu.updateGoldfinchConfig()
+
         expectEvent(tx, "GoldfinchConfigUpdated", {
-          who: tx.receipt.from,
-          configAddress: CONFIG_KEYS.GoldfinchConfig,
+          who: owner,
+          configAddress: newConfig.address,
         })
       })
 

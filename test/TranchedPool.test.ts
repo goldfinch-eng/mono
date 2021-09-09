@@ -26,7 +26,6 @@ const CreditLine = artifacts.require("CreditLine")
 import {getApprovalDigest, getWallet} from "./permitHelpers"
 import {TranchedPoolInstance} from "../typechain/truffle"
 import {JuniorTrancheLocked, DepositMade} from "../typechain/truffle/TranchedPool"
-import { BigNumber } from "ethers"
 
 const RESERVE_FUNDS_COLLECTED_EVENT = "ReserveFundsCollected"
 const PAYMENT_APPLIED_EVENT = "PaymentApplied"
@@ -336,16 +335,17 @@ describe("TranchedPool", () => {
     describe("senior tranche", async () => {
       context("when locking the pool", () => {
 
-
-        it("emits the right events", async () => {
-          await tranchedPool.lockJuniorCapital();
-          const tx = await tranchedPool.lockPool();
+        it.only("emits junior and senior locking events", async () => {
+          await tranchedPool.lockJuniorCapital({from: owner}); // needs to be locked before we can lock the pool
+          const tx = await tranchedPool.lockPool({from: owner});
           expectEvent(tx, "JuniorTrancheLocked", {
             pool: tranchedPool.address,
+            // TODO(will):
             // lockedUntil: BigNumber.from('0'),
           })
           expectEvent(tx, "SeniorTrancheLocked", {
             pool: tranchedPool.address,
+            // TODO(will): how do we get drawdown period?
             // lockedUntil: BigNumber.from('0'),
           })
         })
@@ -1685,6 +1685,21 @@ describe("TranchedPool", () => {
           const totalInterest = totalPartialInterest.add(remainingInterest)
           expect(totalInterest.div(new BN(10))).to.bignumber.closeTo(expectedTotalProtocolFee, tolerance)
           expect(await usdc.balanceOf(treasury)).to.bignumber.eq(expectedTotalProtocolFee)
+        })
+      })
+    })
+  })
+
+  describe("updateGoldfinchConfig", async () => {
+    describe("setting it", async () => {
+      it("emits an event", async () => {
+        const newConfig = await deployments.deploy("GoldfinchConfig", {from: owner})
+
+        await goldfinchConfig.setGoldfinchConfig(newConfig.address);
+        const tx = await tranchedPool.updateGoldfinchConfig({from: owner})
+        expectEvent(tx, "GoldfinchConfigUpdated", {
+          who: owner,
+          configAddress: newConfig.address,
         })
       })
     })

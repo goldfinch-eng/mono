@@ -102,7 +102,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
    */
   function updateGoldfinchConfig() external onlyAdmin {
     config = GoldfinchConfig(config.configAddress());
-    emit GoldfinchConfigUpdated(msg.sender, config.configAddress());
+    emit GoldfinchConfigUpdated(msg.sender, address(config));
   }
 
   function setLateFeeApr(uint256 newLateFeeApr) external onlyAdmin {

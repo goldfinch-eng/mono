@@ -51,6 +51,6 @@ contract GFI is ERC20PresetMinterPauserUpgradeSafe {
   function updateGoldfinchConfig() external {
     require(hasRole(OWNER_ROLE, _msgSender()), "ERC20PresetMinterPauser: Must have owner role to change config");
     config = GoldfinchConfig(config.configAddress());
-    emit GoldfinchConfigUpdated(msg.sender, config.configAddress());
+    emit GoldfinchConfigUpdated(msg.sender, address(config));
   }
 }

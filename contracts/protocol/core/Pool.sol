@@ -344,7 +344,7 @@ contract Pool is BaseUpgradeablePausable, IPool {
 
   function updateGoldfinchConfig() external onlyAdmin {
     config = GoldfinchConfig(config.configAddress());
-    emit GoldfinchConfigUpdated(msg.sender, config.configAddress());
+    emit GoldfinchConfigUpdated(msg.sender, address(config));
   }
 
   function fiduMantissa() internal pure returns (uint256) {
