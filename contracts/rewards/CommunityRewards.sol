@@ -71,28 +71,32 @@ contract CommunityRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentran
   /// @notice Grant rewards to a recipient. The recipient address receives an
   ///   an NFT representing their rewards grant. They can present the NFT to `getReward()`
   ///   to claim their rewards. Rewards vest over a schedule.
-  /// @param recipient The recipient of the grant
-  /// @param amount The amount of `rewardsToken()` to grant
-  /// @param vestingLength The duration over which the grant vests
-  /// @param cliffLength The duration from the start of the grant, before which has elapsed
-  /// the vested amount remains 0
+  /// @param recipient The recipient of the grant.
+  /// @param amount The amount of `rewardsToken()` to grant.
+  /// @param vestingLength The duration (in seconds) over which the grant vests.
+  /// @param cliffLength The duration (in seconds) from the start of the grant, before which has elapsed
+  /// the vested amount remains 0.
+  /// @param vestingInterval The interval (in seconds) at which vesting occurs. Must be a factor of `vestingLength`.
   function grant(
     address recipient,
     uint256 amount,
     uint256 vestingLength,
-    uint256 cliffLength
+    uint256 cliffLength,
+    uint256 vestingInterval
   ) external nonReentrant whenNotPaused onlyAdmin {
-    _grant(recipient, amount, vestingLength, cliffLength);
+    _grant(recipient, amount, vestingLength, cliffLength, vestingInterval);
   }
 
   function _grant(
     address recipient,
     uint256 amount,
     uint256 vestingLength,
-    uint256 cliffLength
+    uint256 cliffLength,
+    uint256 vestingInterval
   ) internal {
     require(amount > 0, "Cannot grant 0 amount");
     require(cliffLength <= vestingLength, "Cliff length cannot exceed vesting length");
+    require(vestingLength.mod(vestingInterval) == 0, "Vesting interval must be a factor of vesting length");
     require(amount <= rewardsAvailable, "Cannot grant amount due to insufficient funds");
 
     rewardsAvailable = rewardsAvailable.sub(amount);
@@ -109,7 +113,7 @@ contract CommunityRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentran
     });
     _mint(recipient, tokenId);
 
-    emit Granted(recipient, tokenId, amount, vestingLength, cliffLength);
+    emit Granted(recipient, tokenId, amount, vestingLength, cliffLength, vestingInterval);
   }
 
   /// @notice Transfer rewards from msg.sender, to be used for reward distribution
@@ -152,7 +156,8 @@ contract CommunityRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentran
     uint256 indexed tokenId,
     uint256 amount,
     uint256 vestingLength,
-    uint256 cliffLength
+    uint256 cliffLength,
+    uint256 vestingInterval
   );
   event RewardPaid(address indexed user, uint256 indexed tokenId, uint256 reward);
 }

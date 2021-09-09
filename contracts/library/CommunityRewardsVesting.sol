@@ -15,6 +15,7 @@ library CommunityRewardsVesting {
     uint256 startTime;
     uint256 endTime;
     uint256 cliffLength;
+    uint256 vestingInterval;
   }
 
   function claim(Rewards storage rewards, uint256 reward) internal {
@@ -46,6 +47,8 @@ library CommunityRewardsVesting {
       return granted;
     }
 
-    return Math.min(granted.mul(time.sub(start)).div(end.sub(start)), granted);
+    uint256 elapsedVestingUnits = (time.sub(start)).div(vestingInterval);
+    uint256 totalVestingUnits = (end.sub(start)).div(vestingInterval);
+    return Math.min(granted.mul(elapsedVestingUnits).div(totalVestingUnits), granted);
   }
 }
