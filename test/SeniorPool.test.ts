@@ -217,7 +217,7 @@ describe("SeniorPool", () => {
         return expect(seniorPool.updateGoldfinchConfig({from: person2})).to.be.rejectedWith(/Must have admin/)
       })
 
-      it.only("should emit an event", async () => {
+      it("should emit an event", async () => {
         const newConfig = await deployments.deploy("GoldfinchConfig", {from: owner})
 
         await goldfinchConfig.setGoldfinchConfig(newConfig.address)

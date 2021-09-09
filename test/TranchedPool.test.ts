@@ -26,6 +26,7 @@ const CreditLine = artifacts.require("CreditLine")
 import {getApprovalDigest, getWallet} from "./permitHelpers"
 import {TranchedPoolInstance} from "../typechain/truffle"
 import {JuniorTrancheLocked, DepositMade} from "../typechain/truffle/TranchedPool"
+import { CONFIG_KEYS } from "../blockchain_scripts/configKeys"
 
 const RESERVE_FUNDS_COLLECTED_EVENT = "ReserveFundsCollected"
 const PAYMENT_APPLIED_EVENT = "PaymentApplied"
@@ -61,7 +62,7 @@ const expectPaymentRelatedEventsNotEmitted = (receipt: unknown) => {
 }
 
 describe("TranchedPool", () => {
-  let owner, borrower, otherPerson, goldfinchConfig, usdc, poolTokens, goldfinchFactory, creditLine, treasury
+  let owner, borrower, otherPerson, goldfinchConfig, usdc, poolTokens, goldfinchFactory, creditLine, treasury, configHelper
   let tranchedPool: TranchedPoolInstance
   let limit = usdcVal(1000)
   let interestApr = interestAprAsBN("5.00")
@@ -334,22 +335,25 @@ describe("TranchedPool", () => {
 
     describe("senior tranche", async () => {
       context("when locking the pool", () => {
-
         it.only("emits junior and senior locking events", async () => {
+          const startingTimeInSeconds = new BN(1e10)
+          // because we're making an assertion based on a time calculation, we need to advance the blockchain
+          // to a known point in time
+          await advanceTime({toSecond: startingTimeInSeconds})
+          const drawdownTimePeriod = await goldfinchConfig.getNumber(CONFIG_KEYS.DrawdownPeriodInSeconds)
+          // FIXME(will): why is the time calculation off by one?
+          const expectedLockedUntil = startingTimeInSeconds.add(drawdownTimePeriod).add(new BN(1))
           await tranchedPool.lockJuniorCapital({from: owner}); // needs to be locked before we can lock the pool
           const tx = await tranchedPool.lockPool({from: owner});
           expectEvent(tx, "JuniorTrancheLocked", {
             pool: tranchedPool.address,
-            // TODO(will):
-            // lockedUntil: BigNumber.from('0'),
+            lockedUntil: expectedLockedUntil
           })
           expectEvent(tx, "SeniorTrancheLocked", {
             pool: tranchedPool.address,
-            // TODO(will): how do we get drawdown period?
-            // lockedUntil: BigNumber.from('0'),
+            lockedUntil: expectedLockedUntil
           })
         })
-
       })
 
 

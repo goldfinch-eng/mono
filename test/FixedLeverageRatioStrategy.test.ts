@@ -361,7 +361,7 @@ describe("FixedLeverageRatioStrategy", () => {
     })
 
     describe("setting it", () => {
-      it.only("should emit an event", async () => {
+      it("should emit an event", async () => {
         const newConfig = await deployments.deploy("GoldfinchConfig", {from: owner})
         await goldfinchConfig.setAddress(CONFIG_KEYS.GoldfinchConfig, newConfig.address)
         const tx = await tranchedPool.updateGoldfinchConfig();

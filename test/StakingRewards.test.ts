@@ -1801,7 +1801,7 @@ describe("StakingRewards", () => {
 
       expectEvent(tx, "LeverageMultiplierUpdated", {
         who: owner,
-        lockupPeriod: newLockupPeriod,
+        lockupPeriod: new BN(newLockupPeriod),
         leverageMultiplier: newLeverageMultiplier 
       })
     });
