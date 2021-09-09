@@ -132,6 +132,9 @@
           "exit": [],
           "exitAndWithdraw": []
         },
+        "**/CommunityRewards.sol:CommunityRewards": {
+          "getReward": []
+        },
         "**/contracts/test/**": {
           "*.*": []
         }
