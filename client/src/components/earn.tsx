@@ -27,6 +27,25 @@ function PoolList({title, children}) {
   )
 }
 
+function PortfolioOverviewSkeleton() {
+  return (
+    <div className="background-container">
+      <div className="background-container-inner">
+        <div className="deposit-status-item">
+          <div className="label">Portfolio balance</div>
+          <div className="value disabled">$0.00</div>
+          <div className="sub-value disabled">--.-- (--.--%)</div>
+        </div>
+        <div className="deposit-status-item">
+          <div className="label">Est. Annual Growth</div>
+          <div className="value disabled">$0.00</div>
+          <div className="sub-value disabled">--.--% APY</div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function PortfolioOverview({
   poolData,
   capitalProvider,
@@ -51,6 +70,7 @@ function PortfolioOverview({
   })
   let unrealizedAPY = totalUnrealizedGains.dividedBy(totalBalance)
   let estimatedAPY = estimatedAnnualGrowth.dividedBy(totalBalance)
+  const displayUnrealizedGains = capitalProvider.empty ? null : roundDownPenny(totalUnrealizedGains)
 
   return (
     <div className="background-container">
@@ -59,7 +79,7 @@ function PortfolioOverview({
           <div className="label">Portfolio balance</div>
           <div className="value">{displayDollars(totalBalance)}</div>
           <div className="sub-value">
-            {displayDollars(roundDownPenny(totalUnrealizedGains))} ({displayPercent(unrealizedAPY)})
+            {displayDollars(displayUnrealizedGains)} ({displayPercent(unrealizedAPY)}
           </div>
         </div>
         <div className="deposit-status-item">
@@ -239,7 +259,11 @@ function Earn(props) {
       <div className="page-header">
         <div>{earnMessage}</div>
       </div>
-      <PortfolioOverview poolData={pool?.gf} capitalProvider={capitalProvider} poolBackers={backers} />
+      {earnMessage === "Loading..." ? (
+        <PortfolioOverviewSkeleton />
+      ) : (
+        <PortfolioOverview poolData={pool?.gf} capitalProvider={capitalProvider} poolBackers={backers} />
+      )}
       <div className="pools">
         <PoolList title="Senior Pool">
           <SeniorPoolCard
