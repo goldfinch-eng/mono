@@ -130,7 +130,10 @@ function TranchedPoolCardSkeleton() {
   return (
     <div className="table-row background-container-inner clickable">
       <div className="table-cell col40 pool-info fallback-content">
-        <span>Loading...</span>
+        <div className="circle-icon" />
+        <div className="name">
+          <span>Loading...</span>
+        </div>
       </div>
       <div className="disabled table-cell col22 numeric balance">$0.00</div>
       <div className="disabled table-cell col22 numeric limit">$0.00</div>
@@ -292,16 +295,18 @@ function Earn(props) {
           )}
         </PoolList>
         <PoolList title="Borrower Pools">
-          {tranchedPoolsStatus === "loading" ? (
+          {tranchedPoolsStatus === "loading" && poolAddressesStatus === "loading" && (
             <>
-              {poolAddressesStatus === "loading" && "Loading..."}
-              {poolsAddresses.map((a) => (
-                <TranchedPoolCardSkeleton key={a} />
-              ))}
+              <TranchedPoolCardSkeleton />
+              <TranchedPoolCardSkeleton />
+              <TranchedPoolCardSkeleton />
             </>
-          ) : (
-            backers.map((p) => <TranchedPoolCard key={`${p.tranchedPool.address}`} poolBacker={p} />)
           )}
+
+          {tranchedPoolsStatus === "loading" && poolsAddresses.map((a) => <TranchedPoolCardSkeleton key={a} />)}
+
+          {tranchedPoolsStatus !== "loading" &&
+            backers.map((p) => <TranchedPoolCard key={`${p.tranchedPool.address}`} poolBacker={p} />)}
         </PoolList>
       </div>
     </div>
