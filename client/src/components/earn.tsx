@@ -179,37 +179,16 @@ function TranchedPoolCard({poolBacker}: {poolBacker: PoolBacker}) {
   )
 }
 
-function usePoolsAddresses({goldfinchProtocol, user}: {goldfinchProtocol?: GoldfinchProtocol; user?: User}): {
-  poolsAddresses: string[]
-  status: string
-} {
-  const [poolsAddresses, setPoolsAddresses] = useState<string[]>([])
-  let [status, setStatus] = useState<string>("loading")
-
-  useEffect(() => {
-    async function loadPoolsAddresses(goldfinchProtocol: GoldfinchProtocol) {
-      let poolEvents = (await goldfinchProtocol.queryEvents("GoldfinchFactory", [
-        "PoolCreated",
-      ])) as unknown as PoolCreated[]
-      let poolsAddresses = poolEvents.map((e) => e.returnValues.pool)
-      setPoolsAddresses(poolsAddresses)
-      setStatus("loaded")
-    }
-
-    if (goldfinchProtocol && user?.loaded) {
-      loadPoolsAddresses(goldfinchProtocol)
-    }
-  }, [goldfinchProtocol, user])
-
-  return {poolsAddresses, status}
-}
-
 function usePoolBackers({goldfinchProtocol, user}: {goldfinchProtocol?: GoldfinchProtocol; user?: User}): {
   backers: PoolBacker[]
-  status: string
+  backersStatus: string
+  poolsAddresses: string[]
+  poolsAddressesStatus: string
 } {
   let [backers, setBackers] = useState<PoolBacker[]>([])
-  let [status, setStatus] = useState<string>("loading")
+  let [backersStatus, setBackersStatus] = useState<string>("loading")
+  const [poolsAddresses, setPoolsAddresses] = useState<string[]>([])
+  const [poolsAddressesStatus, setPoolsAddressesStatus] = useState<string>("loading")
 
   useEffect(() => {
     async function loadTranchedPools(goldfinchProtocol: GoldfinchProtocol, user: User) {
@@ -217,6 +196,8 @@ function usePoolBackers({goldfinchProtocol, user}: {goldfinchProtocol?: Goldfinc
         "PoolCreated",
       ])) as unknown as PoolCreated[]
       let poolAddresses = poolEvents.map((e) => e.returnValues.pool)
+      setPoolsAddresses(poolAddresses)
+      setPoolsAddressesStatus("loaded")
       let tranchedPools = poolAddresses.map((a) => new TranchedPool(a, goldfinchProtocol))
       await Promise.all(tranchedPools.map((p) => p.initialize()))
       tranchedPools = tranchedPools.filter((p) => p.metadata)
@@ -235,23 +216,31 @@ function usePoolBackers({goldfinchProtocol, user}: {goldfinchProtocol?: Goldfinc
             a.tranchedPool.displayName.localeCompare(b.tranchedPool.displayName),
         ),
       )
-      setStatus("loaded")
+      setBackersStatus("loaded")
     }
 
     if (goldfinchProtocol && user?.loaded) {
       loadTranchedPools(goldfinchProtocol, user)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [goldfinchProtocol, user])
 
-  return {backers, status}
+  return {backers, backersStatus, poolsAddresses, poolsAddressesStatus}
 }
 
 function Earn(props) {
   const {pool, usdc, user, goldfinchProtocol, goldfinchConfig} = useContext(AppContext)
   const [capitalProvider, setCapitalProvider] = useState<CapitalProvider>()
-  const {backers, status: tranchedPoolsStatus} = usePoolBackers({goldfinchProtocol, user})
+  const {
+    backers,
+    backersStatus: tranchedPoolsStatus,
+    poolsAddresses,
+    poolsAddressesStatus,
+  } = usePoolBackers({goldfinchProtocol, user})
 
-  const {poolsAddresses, status: poolAddressesStatus} = usePoolsAddresses({goldfinchProtocol, user})
+  console.log(poolsAddresses, "poolsAddresses")
+
+  // const {poolsAddresses, poolAddressesStatus: poolAddressesStatus} = usePoolsAddresses({goldfinchProtocol, user})
 
   useEffect(() => {
     if (pool) {
@@ -295,7 +284,7 @@ function Earn(props) {
           )}
         </PoolList>
         <PoolList title="Borrower Pools">
-          {tranchedPoolsStatus === "loading" && poolAddressesStatus === "loading" && (
+          {tranchedPoolsStatus === "loading" && poolsAddressesStatus === "loading" && (
             <>
               <TranchedPoolCardSkeleton />
               <TranchedPoolCardSkeleton />
