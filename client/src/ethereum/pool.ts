@@ -119,7 +119,6 @@ async function fetchCapitalProviderData(
   capitalProviderAddress: string | boolean,
 ): Promise<CapitalProvider> {
   if (!capitalProviderAddress) {
-    console.log("returnEmptyCapitalProvider")
     return emptyCapitalProvider({loaded: pool.loaded})
   }
 
