@@ -318,9 +318,13 @@ class PoolBacker {
   }
 
   async initialize() {
-    let events = await this.goldfinchProtocol.queryEvent<DepositMade>(this.tranchedPool.contract, "DepositMade", {
-      owner: this.address,
-    })
+    let events: DepositMade[] = []
+    if (this.address) {
+      events = await this.goldfinchProtocol.queryEvent<DepositMade>(this.tranchedPool.contract, "DepositMade", {
+        owner: this.address,
+      })
+    }
+
     let tokenIds = events.map((e) => e.returnValues.tokenId)
     let poolTokens = this.goldfinchProtocol.getContract<IPoolTokens>("PoolTokens")
     this.tokenInfos = await Promise.all(
