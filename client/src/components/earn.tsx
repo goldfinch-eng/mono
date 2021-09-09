@@ -238,10 +238,6 @@ function Earn(props) {
     poolsAddressesStatus,
   } = usePoolBackers({goldfinchProtocol, user})
 
-  console.log(poolsAddresses, "poolsAddresses")
-
-  // const {poolsAddresses, poolAddressesStatus: poolAddressesStatus} = usePoolsAddresses({goldfinchProtocol, user})
-
   useEffect(() => {
     if (pool) {
       const capitalProviderAddress = user.loaded && user.address
