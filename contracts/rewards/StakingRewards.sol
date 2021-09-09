@@ -24,11 +24,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
   using Vesting for Vesting.Rewards;
 
-  enum LockupPeriod {
-    SixMonths,
-    TwelveMonths,
-    TwentyFourMonths
-  }
+  enum LockupPeriod {SixMonths, TwelveMonths, TwentyFourMonths}
 
   struct StakedPosition {
     // @notice Staked amount denominated in `stakingToken().decimals()`
