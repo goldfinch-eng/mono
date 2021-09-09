@@ -123,6 +123,22 @@ contract CommunityRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentran
     emit RewardAdded(rewards);
   }
 
+  /// @notice Revokes rewards that have not yet vested, for a grant. The unvested rewards are
+  /// now considered available for allocation in another grant.
+  /// @param tokenId The tokenId corresponding to the grant whose unvested rewards to revoke.
+  function revokeUnvested(uint256 tokenId) external whenNotPaused onlyAdmin {
+    CommunityRewardsVesting.Rewards grant = grants[tokenId];
+
+    require(grant.revokedAt == 0, "Grant has already been revoked");
+
+    uint256 unvested = grant.totalUnvestedAt(block.timestamp);
+    require(unvested > 0, "Grant has fully vested");
+
+    grant.revokedAt = block.timestamp;
+
+    rewardsAvailable = rewardsAvailable.add(unvested);
+  }
+
   /* ========== MUTATIVE, NON-ADMIN-ONLY FUNCTIONS ========== */
 
   /// @notice Claim rewards for a given grant

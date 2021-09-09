@@ -16,6 +16,7 @@ library CommunityRewardsVesting {
     uint256 endTime;
     uint256 cliffLength;
     uint256 vestingInterval;
+    uint256 revokedAt;
   }
 
   function claim(Rewards storage rewards, uint256 reward) internal {
@@ -47,7 +48,8 @@ library CommunityRewardsVesting {
       return granted;
     }
 
-    uint256 elapsedVestingUnits = (time.sub(start)).div(vestingInterval);
+    uint256 elapsedVestingTimestamp = revokedAt > 0 ? Math.min(revokedAt, time) : time;
+    uint256 elapsedVestingUnits = (elapsedVestingTimestamp.sub(start)).div(vestingInterval);
     uint256 totalVestingUnits = (end.sub(start)).div(vestingInterval);
     return Math.min(granted.mul(elapsedVestingUnits).div(totalVestingUnits), granted);
   }
