@@ -79,7 +79,7 @@ function PortfolioOverview({
           <div className="label">Portfolio balance</div>
           <div className="value">{displayDollars(totalBalance)}</div>
           <div className="sub-value">
-            {displayDollars(displayUnrealizedGains)} ({displayPercent(unrealizedAPY)}
+            {displayDollars(displayUnrealizedGains)} ({displayPercent(unrealizedAPY)})
           </div>
         </div>
         <div className="deposit-status-item">
@@ -88,6 +88,20 @@ function PortfolioOverview({
           <div className="sub-value">{`${displayPercent(estimatedAPY)} APY`}</div>
         </div>
       </div>
+    </div>
+  )
+}
+
+function SeniorPoolCardSkeleton() {
+  return (
+    <div key="senior-pool" className="table-row background-container-inner clickable">
+      <div className="table-cell col40 disabled">
+        $0.00
+        <span className="subheader">Total Pool Balance</span>
+      </div>
+      <div className="table-cell col22 numeric balance disabled">$0.00</div>
+      <div className="table-cell col22 numeric limit disabled">$0.00</div>
+      <div className="table-cell col16 numeric apy disabled">$0.00%</div>
     </div>
   )
 }
@@ -266,12 +280,16 @@ function Earn(props) {
       )}
       <div className="pools">
         <PoolList title="Senior Pool">
-          <SeniorPoolCard
-            balance={displayDollars(usdcFromAtomic(pool?.gf.totalPoolAssets))}
-            userBalance={displayDollars(capitalProvider?.availableToWithdrawInDollars)}
-            apy={displayPercent(pool?.gf.estimatedApy)}
-            limit={displayDollars(usdcFromAtomic(goldfinchConfig?.totalFundsLimit), 0)}
-          />
+          {earnMessage === "Loading..." ? (
+            <SeniorPoolCardSkeleton />
+          ) : (
+            <SeniorPoolCard
+              balance={displayDollars(usdcFromAtomic(pool?.gf.totalPoolAssets))}
+              userBalance={displayDollars(capitalProvider?.availableToWithdrawInDollars)}
+              apy={displayPercent(pool?.gf.estimatedApy)}
+              limit={displayDollars(usdcFromAtomic(goldfinchConfig?.totalFundsLimit), 0)}
+            />
+          )}
         </PoolList>
         <PoolList title="Borrower Pools">
           {tranchedPoolsStatus === "loading" ? (
