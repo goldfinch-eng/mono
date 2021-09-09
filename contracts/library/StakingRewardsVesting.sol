@@ -5,9 +5,9 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 
-library Vesting {
+library StakingRewardsVesting {
   using SafeMath for uint256;
-  using Vesting for Rewards;
+  using StakingRewardsVesting for Rewards;
 
   uint256 internal constant PERCENTAGE_DECIMALS = 1e18;
 

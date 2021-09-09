@@ -15,14 +15,14 @@ import "../protocol/core/GoldfinchConfig.sol";
 import "../protocol/core/ConfigHelper.sol";
 import "../protocol/core/BaseUpgradeablePausable.sol";
 
-import "../library/Vesting.sol";
+import "../library/StakingRewardsVesting.sol";
 
 contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, ReentrancyGuardUpgradeSafe {
   using SafeMath for uint256;
   using SafeERC20 for IERC20withDec;
   using ConfigHelper for GoldfinchConfig;
 
-  using Vesting for Vesting.Rewards;
+  using StakingRewardsVesting for StakingRewardsVesting.Rewards;
 
   enum LockupPeriod {SixMonths, TwelveMonths, TwentyFourMonths}
 
@@ -30,7 +30,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     // @notice Staked amount denominated in `stakingToken().decimals()`
     uint256 amount;
     // @notice Struct describing rewards owed with vesting
-    Vesting.Rewards rewards;
+    StakingRewardsVesting.Rewards rewards;
     // @notice Multiplier applied to staked amount when locking up position
     uint256 leverageMultiplier;
     // @notice Time in seconds after which position can be unstaked
@@ -380,7 +380,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
     positions[tokenId] = StakedPosition({
       amount: amount,
-      rewards: Vesting.Rewards({
+      rewards: StakingRewardsVesting.Rewards({
         totalUnvested: 0,
         totalVested: 0,
         totalPreviouslyVested: 0,
@@ -464,7 +464,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     position.amount = prevAmount.sub(amount);
 
     // Slash unvested rewards
-    uint256 slashingPercentage = amount.mul(Vesting.PERCENTAGE_DECIMALS).div(prevAmount);
+    uint256 slashingPercentage = amount.mul(StakingRewardsVesting.PERCENTAGE_DECIMALS).div(prevAmount);
     position.rewards.slash(slashingPercentage);
 
     emit Unstaked(msg.sender, tokenId, amount);
@@ -561,7 +561,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
       uint256 additionalRewards = earnedSinceLastCheckpoint(tokenId);
 
       StakedPosition storage position = positions[tokenId];
-      Vesting.Rewards storage rewards = position.rewards;
+      StakingRewardsVesting.Rewards storage rewards = position.rewards;
       rewards.totalUnvested = rewards.totalUnvested.add(additionalRewards);
       rewards.checkpoint();
 
