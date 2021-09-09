@@ -335,15 +335,15 @@ describe("TranchedPool", () => {
 
     describe("senior tranche", async () => {
       context("when locking the pool", () => {
-        it.only("emits junior and senior locking events", async () => {
+        it("emits junior and senior locking events", async () => {
           const startingTimeInSeconds = new BN(1e10)
-          // because we're making an assertion based on a time calculation, we need to advance the blockchain
-          // to a known point in time
-          await advanceTime({toSecond: startingTimeInSeconds})
           const drawdownTimePeriod = await goldfinchConfig.getNumber(CONFIG_KEYS.DrawdownPeriodInSeconds)
-          // FIXME(will): why is the time calculation off by one?
-          const expectedLockedUntil = startingTimeInSeconds.add(drawdownTimePeriod).add(new BN(1))
+          const expectedLockedUntil = startingTimeInSeconds.add(drawdownTimePeriod)
           await tranchedPool.lockJuniorCapital({from: owner}); // needs to be locked before we can lock the pool
+
+          // because we're making an assertion based on a time calculation, we
+          // need to advance the blockchain to a known point in time
+          await advanceTime({toSecond: startingTimeInSeconds})
           const tx = await tranchedPool.lockPool({from: owner});
           expectEvent(tx, "JuniorTrancheLocked", {
             pool: tranchedPool.address,
