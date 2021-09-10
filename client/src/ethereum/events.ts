@@ -50,6 +50,12 @@ function mapEventToTx(event) {
     if (event.event === "InterestCollected" && !amount) {
       amount = event.returnValues["poolAmount"]
     }
+
+    // Tranched pool drawdown made events have a different name for the amount field
+    if (event.event === "DrawdownMade" && !amount) {
+      amount = event.returnValues["amount"]
+    }
+
     assertNumber(block.timestamp)
     return {
       type: event.event,

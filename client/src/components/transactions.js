@@ -1,4 +1,4 @@
-import React, {useContext} from "react"
+import React, {useContext, useEffect, useState} from "react"
 import _ from "lodash"
 import ConnectionNotice from "./connectionNotice"
 import {AppContext} from "../App"
@@ -6,9 +6,33 @@ import {displayDollars} from "../utils"
 import {MAX_UINT} from "../ethereum/utils"
 import BigNumber from "bignumber.js"
 import {iconCircleUpLg, iconCircleDownLg, iconCircleCheckLg, iconOutArrow} from "./icons.js"
+import {mapEventsToTx} from "../ethereum/events"
 
 function Transactions(props) {
-  const {user, network} = useContext(AppContext)
+  const {user, network, goldfinchProtocol} = useContext(AppContext)
+  const [tranchedPoolTxs, setTranchedPoolTxs] = useState()
+
+  async function loadTranchedPoolEvents(
+    tranchedPools,
+    events = ["DepositMade", "WithdrawalMade", "PaymentApplied", "DrawdownMade"],
+  ) {
+    const tranchedPoolsAddresses = Object.keys(tranchedPools)
+    let combinedEvents = _.flatten(
+      await Promise.all(
+        tranchedPoolsAddresses.map((address) => goldfinchProtocol.queryEvents(tranchedPools[address].contract, events)),
+      ),
+    )
+    setTranchedPoolTxs(await mapEventsToTx(combinedEvents))
+  }
+
+  useEffect(() => {
+    const borrower = user.borrower
+    if (!borrower) {
+      return
+    }
+    loadTranchedPoolEvents(user.borrower.tranchedPools)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
 
   function transactionRow(tx) {
     const etherscanSubdomain = network.name === "mainnet" ? "" : `${network.name}.`
@@ -82,7 +106,7 @@ function Transactions(props) {
 
   // Only show txs from currentTxs that are not already in user.pastTxs
   let pendingTxs = _.differenceBy(props.currentTXs, user.pastTxs, "id")
-  let allTxs = _.compact(_.concat(pendingTxs, user.pastTxs))
+  let allTxs = _.reverse(_.sortBy(_.compact(_.concat(pendingTxs, user.pastTxs, tranchedPoolTxs)), "blockNumber"))
   allTxs = _.uniqBy(allTxs, "eventId")
   let transactionRows = (
     <tr className="empty-row">
