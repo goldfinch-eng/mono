@@ -109,7 +109,9 @@ contract CommunityRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentran
       totalClaimed: 0,
       startTime: block.timestamp,
       endTime: block.timestamp.add(vestingLength),
-      cliffLength: cliffLength
+      cliffLength: cliffLength,
+      vestingInterval: vestingInterval,
+      revokedAt: 0
     });
 
     _mint(recipient, tokenId);
@@ -132,7 +134,7 @@ contract CommunityRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentran
   /// now considered available for allocation in another grant.
   /// @param tokenId The tokenId corresponding to the grant whose unvested rewards to revoke.
   function revokeGrant(uint256 tokenId) external whenNotPaused onlyAdmin {
-    CommunityRewardsVesting.Rewards grant = grants[tokenId];
+    CommunityRewardsVesting.Rewards storage grant = grants[tokenId];
 
     require(grant.totalGranted > 0, "Grant not defined for token id");
     require(grant.revokedAt == 0, "Grant has already been revoked");
@@ -140,7 +142,7 @@ contract CommunityRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentran
     uint256 totalUnvested = grant.totalUnvestedAt(block.timestamp);
     require(totalUnvested > 0, "Grant has fully vested");
 
-    rewardsAvailable = rewardsAvailable.add(unvested);
+    rewardsAvailable = rewardsAvailable.add(totalUnvested);
 
     grant.revokedAt = block.timestamp;
 
