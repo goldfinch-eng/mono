@@ -163,7 +163,7 @@ function usePoolBackers({goldfinchProtocol, user}: {goldfinchProtocol?: Goldfinc
       setStatus("loaded")
     }
 
-    if (goldfinchProtocol && user?.loaded) {
+    if (goldfinchProtocol && user) {
       loadTranchedPools(goldfinchProtocol, user)
     }
   }, [goldfinchProtocol, user])
