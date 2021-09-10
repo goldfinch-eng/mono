@@ -71,7 +71,7 @@ function ConnectionNotice({
     )
   } else if (session.status !== "authenticated" && requireSignIn) {
     notice = <SignInBanner />
-  } else if (creditLine && creditLine.loaded && !creditLine.address) {
+  } else if (creditLine && user.loaded && !creditLine.address) {
     notice = (
       <div className="info-banner background-container">
         <div className="message">
