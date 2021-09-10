@@ -172,21 +172,35 @@ describe("CommunityRewards", () => {
 
     it("updates state, mints an NFT owned by the grant recipient, and emits an event", async () => {
       expect(await communityRewards.rewardsAvailable()).to.bignumber.equal(new BN(1e6))
-      await grant({
+      const tokenId = await grant({
         recipient: anotherUser,
         amount: new BN(1e3),
         vestingLength: new BN(0),
         cliffLength: new BN(0),
         vestingInterval: new BN(1),
       })
-      // State updates
-      expect(await communityRewards.rewardsAvailable()).to.bignumber.equal(new BN(1e6 - 1e3))
-      // (Grant struct values established in `grant()`.)
 
-      // NFT ownership
+      // 1. State updates
+      // Decrements available rewards.
+      expect(await communityRewards.rewardsAvailable()).to.bignumber.equal(new BN(1e6 - 1e3))
+
+      // Stores grant state.
       // (Established in `grant()`.)
 
-      // Event behavior
+      // Increments token id.
+      const tokenId2 = await grant({
+        recipient: anotherUser,
+        amount: new BN(1e3),
+        vestingLength: new BN(0),
+        cliffLength: new BN(0),
+        vestingInterval: new BN(1),
+      })
+      expect(tokenId2).to.bignumber.equal(new BN(tokenId).add(new BN(1)))
+
+      // 2. NFT ownership
+      // (Established in `grant()`.)
+
+      // 3. Event behavior
       // (Established in `grant()`.)
     })
 
