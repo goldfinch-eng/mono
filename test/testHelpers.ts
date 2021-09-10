@@ -23,6 +23,7 @@ import {
   TransferRestrictedVaultInstance,
   GFIInstance,
   StakingRewardsInstance,
+  CommunityRewardsInstance,
 } from "../typechain/truffle"
 import {assertNonNullable} from "../utils/type"
 import { DynamicLeverageRatioStrategyInstance } from "../typechain/truffle/DynamicLeverageRatioStrategy"
@@ -237,6 +238,7 @@ async function deployAllContracts(
   transferRestrictedVault: TransferRestrictedVaultInstance
   gfi: GFIInstance
   stakingRewards: StakingRewardsInstance
+  communityRewards: CommunityRewardsInstance
 }> {
   let {deployForwarder, fromAccount} = options
   await deployments.fixture("base_deploy")
@@ -269,6 +271,7 @@ async function deployAllContracts(
   )
   const gfi = await getDeployedAsTruffleContract<GFIInstance>(deployments, "GFI")
   const stakingRewards = await getDeployedAsTruffleContract<StakingRewardsInstance>(deployments, "StakingRewards")
+  const communityRewards = await getDeployedAsTruffleContract<CommunityRewardsInstance>(deployments, "CommunityRewards")
   return {
     pool,
     seniorPool,
@@ -285,6 +288,7 @@ async function deployAllContracts(
     transferRestrictedVault,
     gfi,
     stakingRewards,
+    communityRewards,
   }
 }
 

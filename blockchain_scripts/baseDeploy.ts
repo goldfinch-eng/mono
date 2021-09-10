@@ -26,10 +26,12 @@ import {
   SeniorPool,
   FixedLeverageRatioStrategy,
   DynamicLeverageRatioStrategy,
+  StakingRewards,
+  CommunityRewards,
 } from "../typechain/ethers"
 import {Logger, DeployFn, DeployOpts} from "./types"
 import {assertIsString} from "../utils/type"
-import {StakingRewards} from "../typechain/ethers/StakingRewards"
+
 
 let logger: Logger
 
@@ -67,6 +69,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
 
   await deployGFI(hre, {config})
   await deployLPStakingRewards(hre, {config})
+  await deployCommunityRewards(hre, {config})
 
   logger("Granting ownership of Pool to CreditDesk")
   await grantOwnershipOfPoolToCreditDesk(pool, creditDesk.address)
@@ -272,6 +275,32 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
 
     // await updateConfig(config, "address", CONFIG_KEYS., contract.address, {logger})
     logger("Deployed LPStakingRewards to address:", contract.address)
+    return contract
+  }
+
+  async function deployCommunityRewards(
+    hre: HardhatRuntimeEnvironment,
+    {config}: {config: GoldfinchConfig}
+  ): Promise<CommunityRewards> {
+    logger("About to deploy CommunityRewards...")
+    assertIsString(gf_deployer)
+    const protocol_owner = await getProtocolOwner()
+    const deployResult = await deploy("CommunityRewards", {
+      from: gf_deployer,
+      gasLimit: 4000000,
+      proxy: {
+        execute: {
+          init: {
+            methodName: "__initialize__",
+            args: [protocol_owner, config.address],
+          },
+        },
+      },
+    })
+    const contract = (await ethers.getContractAt("CommunityRewards", deployResult.address)) as CommunityRewards
+
+    // await updateConfig(config, "address", CONFIG_KEYS., contract.address, {logger})
+    logger("Deployed CommunityRewards to address:", contract.address)
     return contract
   }
 }
