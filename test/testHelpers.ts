@@ -27,6 +27,7 @@ import {
 } from "../typechain/truffle"
 import {assertNonNullable} from "../utils/type"
 import { DynamicLeverageRatioStrategyInstance } from "../typechain/truffle/DynamicLeverageRatioStrategy"
+import { TestCommunityRewardsInstance } from "../typechain/truffle/TestCommunityRewards"
 const decimals = new BN(String(1e18))
 const USDC_DECIMALS = new BN(String(1e6))
 const SECONDS_PER_DAY = new BN(86400)
@@ -238,7 +239,7 @@ async function deployAllContracts(
   transferRestrictedVault: TransferRestrictedVaultInstance
   gfi: GFIInstance
   stakingRewards: StakingRewardsInstance
-  communityRewards: CommunityRewardsInstance
+  communityRewards: TestCommunityRewardsInstance
 }> {
   let {deployForwarder, fromAccount} = options
   await deployments.fixture("base_deploy")
@@ -271,7 +272,7 @@ async function deployAllContracts(
   )
   const gfi = await getDeployedAsTruffleContract<GFIInstance>(deployments, "GFI")
   const stakingRewards = await getDeployedAsTruffleContract<StakingRewardsInstance>(deployments, "StakingRewards")
-  const communityRewards = await getDeployedAsTruffleContract<CommunityRewardsInstance>(deployments, "CommunityRewards")
+  const communityRewards = await getDeployedAsTruffleContract<TestCommunityRewardsInstance>(deployments, "TestCommunityRewards")
   return {
     pool,
     seniorPool,
@@ -307,10 +308,14 @@ async function erc20Transfer(erc20, toAccounts, amount, fromAccount) {
   }
 }
 
+async function getCurrentTimestamp(): Promise<BN> {
+  return await time.latest()
+}
+
 type Numberish = BN | string | number
 async function advanceTime({days, seconds, toSecond}: {days?: Numberish; seconds?: Numberish; toSecond?: Numberish}) {
   let secondsPassed, newTimestamp
-  let currentTimestamp = await time.latest()
+  const currentTimestamp = await getCurrentTimestamp()
 
   if (days) {
     secondsPassed = SECONDS_PER_DAY.mul(new BN(days))
@@ -422,6 +427,7 @@ export {
   deployAllContracts,
   erc20Approve,
   erc20Transfer,
+  getCurrentTimestamp,
   advanceTime,
   createCreditLine,
   createPoolWithCreditLine,

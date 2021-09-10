@@ -29,7 +29,9 @@ contract CommunityRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentran
   uint256 public rewardsAvailable;
 
   /// @dev NFT tokenId => rewards grant
-  mapping(uint256 => CommunityRewardsVesting.Rewards) private grants;
+  // TODO[PR] This is internal, rather than private, only for the sake of being readable by
+  // the TestCommunityRewards contract, for testing purposes.
+  mapping(uint256 => CommunityRewardsVesting.Rewards) internal grants;
 
   // solhint-disable-next-line func-name-mixedcase
   function __initialize__(address owner, GoldfinchConfig _config) external initializer {

@@ -31,7 +31,7 @@ import {
 } from "../typechain/ethers"
 import {Logger, DeployFn, DeployOpts} from "./types"
 import {assertIsString} from "../utils/type"
-
+import {TestCommunityRewards} from "../typechain/ethers/TestCommunityRewards"
 
 let logger: Logger
 
@@ -118,7 +118,10 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
       })
       logger("Deployed the contract to:", fakeUSDC.address)
       usdcAddress = fakeUSDC.address
-      ;(await getContract("TestERC20", {from: gf_deployer})).transfer(protocolOwner, String(new BN(10000000).mul(USDCDecimals)))
+      ;(await getContract("TestERC20", {from: gf_deployer})).transfer(
+        protocolOwner,
+        String(new BN(10000000).mul(USDCDecimals))
+      )
     }
     await updateConfig(config, "address", CONFIG_KEYS.USDC, usdcAddress, logger)
     return usdcAddress
@@ -281,11 +284,12 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   async function deployCommunityRewards(
     hre: HardhatRuntimeEnvironment,
     {config}: {config: GoldfinchConfig}
-  ): Promise<CommunityRewards> {
-    logger("About to deploy CommunityRewards...")
+  ): Promise<CommunityRewards | TestCommunityRewards> {
+    const contractName = isTestEnv() ? "TestCommunityRewards" : "CommunityRewards"
+    logger(`About to deploy ${contractName}...`)
     assertIsString(gf_deployer)
     const protocol_owner = await getProtocolOwner()
-    const deployResult = await deploy("CommunityRewards", {
+    const deployResult = await deploy(contractName, {
       from: gf_deployer,
       gasLimit: 4000000,
       proxy: {
@@ -297,7 +301,9 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
         },
       },
     })
-    const contract = (await ethers.getContractAt("CommunityRewards", deployResult.address)) as CommunityRewards
+    const contract = (await ethers.getContractAt(contractName, deployResult.address)) as
+      | CommunityRewards
+      | TestCommunityRewards
 
     // await updateConfig(config, "address", CONFIG_KEYS., contract.address, {logger})
     logger("Deployed CommunityRewards to address:", contract.address)
@@ -541,7 +547,7 @@ async function deployFixedLeverageRatioStrategy(
 }
 
 async function deployDynamicLeverageRatioStrategy(
-  hre: HardhatRuntimeEnvironment,
+  hre: HardhatRuntimeEnvironment
 ): Promise<DynamicLeverageRatioStrategy> {
   const {deployments, getNamedAccounts} = hre
   const {deploy, log} = deployments

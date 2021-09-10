@@ -9,16 +9,19 @@ import {
   erc20Approve,
   erc20Transfer,
   expect,
+  getCurrentTimestamp,
   getFirstLog,
   usdcVal,
 } from "./testHelpers"
-import {GFIInstance, CommunityRewardsInstance} from "../typechain/truffle"
+import {GFIInstance} from "../typechain/truffle"
 import {Granted} from "../typechain/truffle/CommunityRewards"
+import { OWNER_ROLE } from "../blockchain_scripts/deployHelpers"
+import { TestCommunityRewardsInstance } from "../typechain/truffle/TestCommunityRewards"
 const {ethers} = hre
 const {deployments} = hre
 
 describe("CommunityRewards", () => {
-  let owner: string, anotherUser: string, gfi: GFIInstance, communityRewards: CommunityRewardsInstance
+  let owner: string, anotherUser: string, gfi: GFIInstance, communityRewards: TestCommunityRewardsInstance
 
   beforeEach(async () => {
     ;[owner, anotherUser] = await web3.eth.getAccounts()
@@ -42,15 +45,30 @@ describe("CommunityRewards", () => {
       from: owner,
     })
     const grantedEvent = getFirstLog<Granted>(decodeLogs(receipt.receipt.rawLogs, communityRewards, "Granted"))
+    const tokenId = grantedEvent.args.tokenId
 
-    // Verify event has correct fields
+    // Verify grant state.
+    const currentTimestamp = await getCurrentTimestamp()
+    const grantState = await communityRewards.getGrant(tokenId)
+    expect(grantState.totalGranted).to.bignumber.equal(amount)
+    expect(grantState.totalClaimed).to.bignumber.equal(new BN(0))
+    expect(grantState.startTime).to.bignumber.equal(currentTimestamp)
+    expect(grantState.endTime).to.bignumber.equal(new BN(grantState.startTime).add(vestingLength))
+    expect(grantState.cliffLength).to.bignumber.equal(cliffLength)
+    expect(grantState.vestingInterval).to.bignumber.equal(vestingInterval)
+    expect(grantState.revokedAt).to.bignumber.equal(new BN(0))
+
+    // Verify that NFT was minted that is owned by recipient.
+    expect(await communityRewards.ownerOf(tokenId)).to.equal(anotherUser)
+
+    // Verify that event was emitted.
     expect(grantedEvent.args.user).to.equal(recipient)
     expect(grantedEvent.args.amount).to.bignumber.equal(amount)
     expect(grantedEvent.args.vestingLength).to.bignumber.equal(vestingLength)
     expect(grantedEvent.args.cliffLength).to.bignumber.equal(cliffLength)
     expect(grantedEvent.args.vestingInterval).to.bignumber.equal(vestingInterval)
 
-    return grantedEvent.args.tokenId
+    return tokenId
   }
 
   async function mintAndLoadRewards(amount: BN) {
@@ -60,29 +78,123 @@ describe("CommunityRewards", () => {
   }
 
   describe("grant", () => {
-    beforeEach(async () => {})
+    beforeEach(async () => {
+      const amount = new BN(1e6)
+      await mintAndLoadRewards(amount)
+    })
 
-    it("rejects sender who lacks admin role", async () => {})
+    it("rejects sender who lacks owner role", async () => {
+      expect(await communityRewards.hasRole(OWNER_ROLE, anotherUser)).to.equal(false)
+      await expect(
+        communityRewards.grant(anotherUser, new BN(1e3), new BN(0), new BN(0), new BN(1), {from: anotherUser})
+      ).to.be.rejectedWith(/Must have admin role to perform this action/)
+    })
 
-    it("rejects 0 grant amount", async () => {})
+    it("allows sender who has owner role", async () => {
+      expect(await communityRewards.hasRole(OWNER_ROLE, owner)).to.equal(true)
+      await expect(
+        communityRewards.grant(anotherUser, new BN(1e3), new BN(0), new BN(0), new BN(1), {from: owner})
+      ).to.be.fulfilled
+    })
 
-    it("allows 0 vesting length", async () => {})
+    it("rejects 0 grant amount", async () => {
+      await expect(
+        communityRewards.grant(anotherUser, new BN(0), new BN(0), new BN(0), new BN(1), {from: owner})
+      ).to.be.rejectedWith(/Cannot grant 0 amount/)
+    })
 
-    it("rejects a cliff length that exceeds vesting length", async () => {})
+    it("allows 0 vesting length", async () => {
+      await expect(
+        communityRewards.grant(anotherUser, new BN(1e3), new BN(0), new BN(0), new BN(1), {from: owner})
+      ).to.be.fulfilled
+    })
 
-    it("rejects a vesting interval of 0", async () => {})
+    it("allows > 0 vesting length", async () => {
+      await expect(
+        communityRewards.grant(anotherUser, new BN(1e3), new BN(100), new BN(0), new BN(1), {from: owner})
+      ).to.be.fulfilled
+    })
 
-    it("rejects a vesting interval that is not a factor of vesting length", async () => {})
+    it("allows 0 cliff length", async () => {
+      await expect(
+        communityRewards.grant(anotherUser, new BN(1e3), new BN(0), new BN(0), new BN(1), {from: owner})
+      ).to.be.fulfilled
+    })
 
-    it("rejects granting an amount that exceeds the available rewards", async () => {})
+    it("allows > 0 cliff length less than vesting length", async () => {
+      await expect(
+        communityRewards.grant(anotherUser, new BN(1e3), new BN(100), new BN(10), new BN(1), {from: owner})
+      ).to.be.fulfilled
+    })
 
-    it("updates state, mints an NFT owned by the grant recipient, and emits an event", async () => {})
+    it("allows > 0 cliff length equal to vesting length", async () => {
+      await expect(
+        communityRewards.grant(anotherUser, new BN(1e3), new BN(100), new BN(100), new BN(1), {from: owner})
+      ).to.be.fulfilled
+    })
+
+    it("rejects a cliff length that exceeds vesting length", async () => {
+      await expect(
+        communityRewards.grant(anotherUser, new BN(1e3), new BN(0), new BN(1), new BN(1), {from: owner})
+      ).to.be.rejectedWith(/Cliff length cannot exceed vesting length/)
+    })
+
+    it("rejects a vesting interval of 0", async () => {
+      await expect(
+        communityRewards.grant(anotherUser, new BN(1e3), new BN(0), new BN(0), new BN(0), {from: owner})
+      ).to.be.rejectedWith(/revert SafeMath: modulo by zero/)
+    })
+
+    it("allows a vesting interval of 1", async () => {
+      await expect(
+        communityRewards.grant(anotherUser, new BN(1e3), new BN(0), new BN(0), new BN(1), {from: owner})
+      ).to.be.fulfilled
+    })
+
+    it("allows a > 1 vesting interval that is a factor of vesting length", async () => {
+      await expect(
+        communityRewards.grant(anotherUser, new BN(1e3), new BN(6), new BN(0), new BN(3), {from: owner})
+      ).to.be.fulfilled
+    })
+
+    it("rejects a > 1 vesting interval that is not a factor of vesting length", async () => {
+      await expect(
+        communityRewards.grant(anotherUser, new BN(1e3), new BN(6), new BN(0), new BN(4), {from: owner})
+      ).to.be.rejectedWith(/Vesting interval must be a factor of vesting length/)
+    })
+
+    it("rejects granting an amount that exceeds the available rewards", async () => {
+      expect(await communityRewards.rewardsAvailable()).to.bignumber.equal(new BN(1e6))
+      await expect(
+        communityRewards.grant(anotherUser, new BN(1e6 + 1), new BN(0), new BN(0), new BN(1), {from: owner})
+      ).to.be.rejectedWith(/Cannot grant amount due to insufficient funds/)
+    })
+
+    it("updates state, mints an NFT owned by the grant recipient, and emits an event", async () => {
+      expect(await communityRewards.rewardsAvailable()).to.bignumber.equal(new BN(1e6))
+      await grant({
+        recipient: anotherUser,
+        amount: new BN(1e3),
+        vestingLength: new BN(0),
+        cliffLength: new BN(0),
+        vestingInterval: new BN(1),
+      })
+      // State updates
+      expect(await communityRewards.rewardsAvailable()).to.bignumber.equal(new BN(1e6 - 1e3))
+      // (Grant struct values established in `grant()`.)
+
+      // NFT ownership
+      // (Established in `grant()`.)
+
+      // Event behavior
+      // (Established in `grant()`.)
+    })
 
     context("paused", async () => {
       it("reverts", async () => {
         await communityRewards.pause()
         await expect(
-          communityRewards.grant(anotherUser, new BN(1000), new BN(0), new BN(0), new BN(1), {from: owner})
+          communityRewards.grant(anotherUser, new BN(1e3), new BN(0), new BN(0), new BN(1), {from: owner})
         ).to.be.rejectedWith(/paused/)
       })
     })
@@ -113,7 +225,7 @@ describe("CommunityRewards", () => {
 
     context("paused", async () => {
       it("reverts", async () => {
-        const amount = new BN(1000)
+        const amount = new BN(1e3)
         await mintAndLoadRewards(amount)
         const tokenId = await grant({
           recipient: anotherUser,
@@ -169,7 +281,7 @@ describe("CommunityRewards", () => {
 
     context("paused", async () => {
       it("reverts", async () => {
-        const amount = new BN(1000)
+        const amount = new BN(1e3)
         await mintAndLoadRewards(amount)
         const tokenId = await grant({
           recipient: anotherUser,
