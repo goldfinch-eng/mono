@@ -111,6 +111,7 @@ contract CommunityRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentran
       endTime: block.timestamp.add(vestingLength),
       cliffLength: cliffLength
     });
+
     _mint(recipient, tokenId);
 
     emit Granted(recipient, tokenId, amount, vestingLength, cliffLength, vestingInterval);
@@ -118,25 +119,32 @@ contract CommunityRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentran
 
   /// @notice Transfer rewards from msg.sender, to be used for reward distribution
   function loadRewards(uint256 rewards) external onlyAdmin {
-    rewardsToken().safeTransferFrom(msg.sender, address(this), rewards);
+    require(rewards > 0, "Cannot load 0 rewards");
+
     rewardsAvailable = rewardsAvailable.add(rewards);
+
+    rewardsToken().safeTransferFrom(msg.sender, address(this), rewards);
+
     emit RewardAdded(rewards);
   }
 
   /// @notice Revokes rewards that have not yet vested, for a grant. The unvested rewards are
   /// now considered available for allocation in another grant.
   /// @param tokenId The tokenId corresponding to the grant whose unvested rewards to revoke.
-  function revokeUnvested(uint256 tokenId) external whenNotPaused onlyAdmin {
+  function revokeGrant(uint256 tokenId) external whenNotPaused onlyAdmin {
     CommunityRewardsVesting.Rewards grant = grants[tokenId];
 
+    require(grant.totalGranted > 0, "Grant not defined for token id");
     require(grant.revokedAt == 0, "Grant has already been revoked");
 
-    uint256 unvested = grant.totalUnvestedAt(block.timestamp);
-    require(unvested > 0, "Grant has fully vested");
+    uint256 totalUnvested = grant.totalUnvestedAt(block.timestamp);
+    require(totalUnvested > 0, "Grant has fully vested");
+
+    rewardsAvailable = rewardsAvailable.add(unvested);
 
     grant.revokedAt = block.timestamp;
 
-    rewardsAvailable = rewardsAvailable.add(unvested);
+    emit GrantRevoked(tokenId, totalUnvested);
   }
 
   /* ========== MUTATIVE, NON-ADMIN-ONLY FUNCTIONS ========== */
@@ -175,5 +183,6 @@ contract CommunityRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentran
     uint256 cliffLength,
     uint256 vestingInterval
   );
+  event GrantRevoked(uint256 indexed tokenId, uint256 totalUnvested);
   event RewardPaid(address indexed user, uint256 indexed tokenId, uint256 reward);
 }
