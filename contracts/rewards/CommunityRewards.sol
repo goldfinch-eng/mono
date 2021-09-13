@@ -8,12 +8,13 @@ import "@openzeppelin/contracts-ethereum-package/contracts/utils/ReentrancyGuard
 
 import "../external/ERC721PresetMinterPauserAutoId.sol";
 import "../interfaces/IERC20withDec.sol";
+import "../interfaces/ICommunityRewards.sol";
 import "../protocol/core/GoldfinchConfig.sol";
 import "../protocol/core/ConfigHelper.sol";
 
 import "../library/CommunityRewardsVesting.sol";
 
-contract CommunityRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, ReentrancyGuardUpgradeSafe {
+contract CommunityRewards is ICommunityRewards, ERC721PresetMinterPauserAutoIdUpgradeSafe, ReentrancyGuardUpgradeSafe {
   using SafeMath for uint256;
   using SafeERC20 for IERC20withDec;
   using ConfigHelper for GoldfinchConfig;
@@ -23,6 +24,8 @@ contract CommunityRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentran
   /* ========== STATE VARIABLES ========== */
 
   bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
+  bytes32 public constant DISTRIBUTOR_ROLE = keccak256("DISTRIBUTOR_ROLE");
+
   GoldfinchConfig public config;
 
   /// @notice Total rewards available for granting, denominated in `rewardsToken()`
@@ -47,9 +50,11 @@ contract CommunityRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentran
 
     _setupRole(OWNER_ROLE, owner);
     _setupRole(PAUSER_ROLE, owner);
+    _setupRole(DISTRIBUTOR_ROLE, owner);
 
-    _setRoleAdmin(PAUSER_ROLE, OWNER_ROLE);
     _setRoleAdmin(OWNER_ROLE, OWNER_ROLE);
+    _setRoleAdmin(PAUSER_ROLE, OWNER_ROLE);
+    _setRoleAdmin(DISTRIBUTOR_ROLE, OWNER_ROLE);
 
     config = _config;
   }
@@ -57,7 +62,7 @@ contract CommunityRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentran
   /* ========== VIEWS ========== */
 
   /// @notice The address of the token being disbursed as rewards
-  function rewardsToken() public view returns (IERC20withDec) {
+  function rewardsToken() public view override returns (IERC20withDec) {
     return config.getGFI();
   }
 
@@ -85,7 +90,7 @@ contract CommunityRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentran
     uint256 vestingLength,
     uint256 cliffLength,
     uint256 vestingInterval
-  ) external nonReentrant whenNotPaused onlyAdmin {
+  ) external override nonReentrant whenNotPaused onlyDistributor {
     _grant(recipient, amount, vestingLength, cliffLength, vestingInterval);
   }
 
@@ -122,7 +127,7 @@ contract CommunityRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentran
   }
 
   /// @notice Transfer rewards from msg.sender, to be used for reward distribution
-  function loadRewards(uint256 rewards) external onlyAdmin {
+  function loadRewards(uint256 rewards) external override onlyAdmin {
     require(rewards > 0, "Cannot load 0 rewards");
 
     rewardsAvailable = rewardsAvailable.add(rewards);
@@ -135,7 +140,7 @@ contract CommunityRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentran
   /// @notice Revokes rewards that have not yet vested, for a grant. The unvested rewards are
   /// now considered available for allocation in another grant.
   /// @param tokenId The tokenId corresponding to the grant whose unvested rewards to revoke.
-  function revokeGrant(uint256 tokenId) external whenNotPaused onlyAdmin {
+  function revokeGrant(uint256 tokenId) external override whenNotPaused onlyAdmin {
     CommunityRewardsVesting.Rewards storage grant = grants[tokenId];
 
     require(grant.totalGranted > 0, "Grant not defined for token id");
@@ -155,7 +160,7 @@ contract CommunityRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentran
 
   /// @notice Claim rewards for a given grant
   /// @param tokenId A grant token ID
-  function getReward(uint256 tokenId) external nonReentrant whenNotPaused {
+  function getReward(uint256 tokenId) external override nonReentrant whenNotPaused {
     require(ownerOf(tokenId) == msg.sender, "access denied");
     uint256 reward = claimableRewards(tokenId);
     if (reward > 0) {
@@ -176,17 +181,12 @@ contract CommunityRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentran
     _;
   }
 
-  /* ========== EVENTS ========== */
+  function isDistributor() public view returns (bool) {
+    return hasRole(DISTRIBUTOR_ROLE, _msgSender());
+  }
 
-  event RewardAdded(uint256 reward);
-  event Granted(
-    address indexed user,
-    uint256 indexed tokenId,
-    uint256 amount,
-    uint256 vestingLength,
-    uint256 cliffLength,
-    uint256 vestingInterval
-  );
-  event GrantRevoked(uint256 indexed tokenId, uint256 totalUnvested);
-  event RewardPaid(address indexed user, uint256 indexed tokenId, uint256 reward);
+  modifier onlyDistributor() {
+    require(isDistributor(), "Must have distributor role to perform this action");
+    _;
+  }
 }

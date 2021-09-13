@@ -3,25 +3,36 @@
 // Adapted from https://github.com/Uniswap/merkle-distributor/blob/c3255bfa2b684594ecd562cacd7664b0f18330bf/contracts/interfaces/IMerkleDistributor.sol.
 pragma solidity 0.6.12;
 
-// Allows anyone to claim a token if they exist in a merkle root.
+// Allows anyone to cause the accepting, by the recipient of a CommunityRewards grant, of that grant, if the grant
+// details exist in the merkle root.
 interface IMerkleDistributor {
-  // Returns the address of the token distributed by this contract.
-  function token() external view returns (address);
+  // Returns the address of the CommunityRewards contract whose grants are distributed by this contract.
+  function communityRewards() external view returns (address);
 
-  // Returns the merkle root of the merkle tree containing account balances available to claim.
+  // Returns the merkle root of the merkle tree containing grant details available to accept.
   function merkleRoot() external view returns (bytes32);
 
-  // Returns true if the index has been marked claimed.
-  function isClaimed(uint256 index) external view returns (bool);
+  // Returns true if the index has been marked accepted.
+  function isGrantAccepted(uint256 index) external view returns (bool);
 
-  // Claim the given amount of the token to the given address. Reverts if the inputs are invalid.
-  function claim(
+  // Causes the given `account` to accept the grant consisting of the given details. Reverts if the inputs are invalid.
+  function acceptGrant(
     uint256 index,
     address account,
     uint256 amount,
+    uint256 vestingLength,
+    uint256 cliffLength,
+    uint256 vestingInterval,
     bytes32[] calldata merkleProof
   ) external;
 
-  // This event is triggered whenever a call to #claim succeeds.
-  event Claimed(uint256 index, address account, uint256 amount);
+  // This event is triggered whenever a call to #acceptGrant succeeds.
+  event GrantAccepted(
+    uint256 index,
+    address account,
+    uint256 amount,
+    uint256 vestingLength,
+    uint256 cliffLength,
+    uint256 vestingInterval
+  );
 }
