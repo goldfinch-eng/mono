@@ -46,6 +46,8 @@ export function assertNonNullable<T>(val: T | null | undefined): asserts val is 
   }
 }
 
+export const assertNumber: (val: unknown) => asserts val is number = genAssertIsTypeof("number")
+
 /**
  * Helper for generating an exhaustive tuple from a union type, i.e. a tuple that
  * contains all of the possible values, and no impossible values, of the union type.

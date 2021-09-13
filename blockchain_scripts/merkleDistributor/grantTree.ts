@@ -1,13 +1,13 @@
 import MerkleTree from "./merkleTree"
 import {BigNumber, utils} from "ethers"
 
-type Grant = {
+export type Grant = {
   amount: BigNumber
   vestingLength: BigNumber
   cliffLength: BigNumber
   vestingInterval: BigNumber
 }
-type AccountedGrant = {
+export type AccountedGrant = {
   account: string
   grant: Grant
 }
