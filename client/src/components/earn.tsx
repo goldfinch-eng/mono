@@ -33,12 +33,12 @@ function PortfolioOverviewSkeleton() {
       <div className="background-container-inner">
         <div className="deposit-status-item">
           <div className="label">Portfolio balance</div>
-          <div className="value disabled">$0.00</div>
+          <div className="value disabled">$--.--</div>
           <div className="sub-value disabled">--.-- (--.--%)</div>
         </div>
         <div className="deposit-status-item">
           <div className="label">Est. Annual Growth</div>
-          <div className="value disabled">$0.00</div>
+          <div className="value disabled">$--.--</div>
           <div className="sub-value disabled">--.--% APY</div>
         </div>
       </div>
@@ -96,12 +96,12 @@ function SeniorPoolCardSkeleton() {
   return (
     <div key="senior-pool" className="table-row background-container-inner clickable">
       <div className="table-cell col40 disabled">
-        $0.00
+        $--.--
         <span className="subheader">Total Pool Balance</span>
       </div>
-      <div className="table-cell col22 numeric balance disabled">$0.00</div>
-      <div className="table-cell col22 numeric limit disabled">$0.00</div>
-      <div className="table-cell col16 numeric apy disabled">$0.00%</div>
+      <div className="table-cell col22 numeric balance disabled">$--.--</div>
+      <div className="table-cell col22 numeric limit disabled">$--.--</div>
+      <div className="table-cell col16 numeric apy disabled">$--.--%</div>
     </div>
   )
 }
@@ -135,9 +135,9 @@ function TranchedPoolCardSkeleton() {
           <span>Loading...</span>
         </div>
       </div>
-      <div className="disabled table-cell col22 numeric balance">$0.00</div>
-      <div className="disabled table-cell col22 numeric limit">$0.00</div>
-      <div className="disabled table-cell col16 numeric apy">0%</div>
+      <div className="disabled table-cell col22 numeric balance">$--.--</div>
+      <div className="disabled table-cell col22 numeric limit">$--.--</div>
+      <div className="disabled table-cell col16 numeric apy">--.--%</div>
     </div>
   )
 }
