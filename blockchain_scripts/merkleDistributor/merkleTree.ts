@@ -1,4 +1,5 @@
 import { bufferToHex, keccak256 } from 'ethereumjs-util'
+import { assertNonNullable, assertNumber } from '../../utils/type'
 
 export default class MerkleTree {
   private readonly elements: Buffer[]
@@ -26,12 +27,19 @@ export default class MerkleTree {
       throw new Error('empty tree')
     }
 
-    const layers = []
+    const layers: Buffer[][] = []
     layers.push(elements)
 
     // Get next layer until we reach the root
-    while (layers[layers.length - 1].length > 1) {
-      layers.push(this.getNextLayer(layers[layers.length - 1]))
+    let lastLayer = layers[layers.length - 1]
+    assertNonNullable(lastLayer)
+    let layer: Buffer[] = lastLayer
+    while (layer.length > 1) {
+      layers.push(this.getNextLayer(layer))
+
+      lastLayer = layers[layers.length - 1]
+      assertNonNullable(lastLayer)
+      layer = lastLayer
     }
 
     return layers
@@ -41,7 +49,9 @@ export default class MerkleTree {
     return elements.reduce<Buffer[]>((layer, el, idx, arr) => {
       if (idx % 2 === 0) {
         // Hash the current element with its pair element
-        layer.push(MerkleTree.combinedHash(el, arr[idx + 1]))
+        const pairEl = arr[idx + 1]
+        assertNonNullable(pairEl)
+        layer.push(MerkleTree.combinedHash(el, pairEl))
       }
 
       return layer
@@ -60,7 +70,11 @@ export default class MerkleTree {
   }
 
   getRoot(): Buffer {
-    return this.layers[this.layers.length - 1][0]
+    const lastLayer = this.layers[this.layers.length - 1]
+    assertNonNullable(lastLayer)
+    const root = lastLayer[0]
+    assertNonNullable(root)
+    return root
   }
 
   getHexRoot(): string {
@@ -75,6 +89,7 @@ export default class MerkleTree {
     }
 
     return this.layers.reduce((proof, layer) => {
+      assertNumber(idx)
       const pairElement = MerkleTree.getPairElement(idx, layer)
 
       if (pairElement) {
@@ -97,7 +112,9 @@ export default class MerkleTree {
     const pairIdx = idx % 2 === 0 ? idx + 1 : idx - 1
 
     if (pairIdx < layer.length) {
-      return layer[pairIdx]
+      const pairEl = layer[pairIdx]
+      assertNonNullable(pairEl)
+      return pairEl
     } else {
       return null
     }
@@ -105,7 +122,9 @@ export default class MerkleTree {
 
   private static bufDedup(elements: Buffer[]): Buffer[] {
     return elements.filter((el, idx) => {
-      return idx === 0 || !elements[idx - 1].equals(el)
+      const prevEl = elements[idx - 1]
+      assertNonNullable(prevEl)
+      return idx === 0 || !prevEl.equals(el)
     })
   }
 
