@@ -1,12 +1,23 @@
-import MerkleTree from './merkle-tree'
-import { BigNumber, utils } from 'ethers'
+import MerkleTree from "./merkleTree"
+import {BigNumber, utils} from "ethers"
 
-export default class BalanceTree {
+type Grant = {
+  amount: BigNumber
+  vestingLength: BigNumber
+  cliffLength: BigNumber
+  vestingInterval: BigNumber
+}
+type AccountedGrant = {
+  account: string
+  grant: Grant
+}
+
+export default class GrantTree {
   private readonly tree: MerkleTree
-  constructor(balances: { account: string; amount: BigNumber }[]) {
+  constructor(accountedGrants: AccountedGrant[]) {
     this.tree = new MerkleTree(
-      balances.map(({ account, amount }, index) => {
-        return BalanceTree.toNode(index, account, amount)
+      accountedGrants.map((accountedGrant: AccountedGrant, index: number) => {
+        return GrantTree.toNode(index, accountedGrant.account, accountedGrant.grant)
       })
     )
   }
@@ -14,11 +25,11 @@ export default class BalanceTree {
   public static verifyProof(
     index: number | BigNumber,
     account: string,
-    amount: BigNumber,
+    grant: Grant,
     proof: Buffer[],
     root: Buffer
   ): boolean {
-    let pair = BalanceTree.toNode(index, account, amount)
+    let pair = GrantTree.toNode(index, account, grant)
     for (const item of proof) {
       pair = MerkleTree.combinedHash(pair, item)
     }
@@ -26,11 +37,16 @@ export default class BalanceTree {
     return pair.equals(root)
   }
 
-  // keccak256(abi.encode(index, account, amount))
-  public static toNode(index: number | BigNumber, account: string, amount: BigNumber): Buffer {
+  // keccak256(abi.encode(index, account, amount, vestingLength, cliffLength, vestingInterval))
+  public static toNode(index: number | BigNumber, account: string, grant: Grant): Buffer {
     return Buffer.from(
-      utils.solidityKeccak256(['uint256', 'address', 'uint256'], [index, account, amount]).substr(2),
-      'hex'
+      utils
+        .solidityKeccak256(
+          ["uint256", "address", "uint256", "uint256", "uint256", "uint256"],
+          [index, account, grant.amount, grant.vestingLength, grant.cliffLength, grant.vestingInterval]
+        )
+        .substr(2),
+      "hex"
     )
   }
 
@@ -39,7 +55,7 @@ export default class BalanceTree {
   }
 
   // returns the hex bytes32 values of the proof
-  public getProof(index: number | BigNumber, account: string, amount: BigNumber): string[] {
-    return this.tree.getHexProof(BalanceTree.toNode(index, account, amount))
+  public getProof(index: number | BigNumber, account: string, grant: Grant): string[] {
+    return this.tree.getHexProof(GrantTree.toNode(index, account, grant))
   }
 }
