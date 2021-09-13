@@ -85,7 +85,7 @@ class DefaultCreditLine extends BaseCreditLine {
     this.totalDueAmount = zero
     this.remainingTotalDueAmount = zero
     this.isLate = false
-    this.loaded = false
+    this.loaded = true
     this.creditLines = []
     this.name = "No Credit Lines"
   }

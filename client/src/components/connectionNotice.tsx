@@ -71,15 +71,17 @@ function ConnectionNotice({
     )
   } else if (session.status !== "authenticated" && requireSignIn) {
     notice = <SignInBanner />
-  } else if (creditLine && user.loaded && !creditLine.address) {
-    notice = (
-      <div className="info-banner background-container">
-        <div className="message">
-          You do not have any credit lines. To borrow funds from the pool, you need a Goldfinch credit line.
-        </div>
-      </div>
-    )
   } else if (user.loaded) {
+    if (creditLine && creditLine.loaded && !creditLine.address) {
+      notice = (
+        <div className="info-banner background-container">
+          <div className="message">
+            You do not have any credit lines. To borrow funds from the pool, you need a Goldfinch credit line.
+          </div>
+        </div>
+      )
+    }
+
     if (requireUnlock) {
       let unlockStatus: UnlockedStatus | null = null
       if (location.pathname.startsWith("/pools/senior")) {
