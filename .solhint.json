@@ -135,6 +135,10 @@
         "**/CommunityRewards.sol:CommunityRewards": {
           "getReward": []
         },
+        "**/MerkleDistributor.sol:MerkleDistributor": {
+          "_setClaimed": [],
+          "claim": []
+        },
         "**/contracts/test/**": {
           "*.*": []
         }
