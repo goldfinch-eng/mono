@@ -134,13 +134,15 @@ async function assessAndRedeem(tranchedPool, seniorPool, poolTokens) {
   for (const tokenMinted of result) {
     const tokenId = tokenMinted.args.tokenId
     console.log(`Redeeming token ${tokenId} from pool ${tranchedPool.address}`)
-    await seniorPool.redeem(tokenId)
+    // TODO: Uncomment once we have a "redeemer" role that can redeem/writedown
+    // await seniorPool.redeem(tokenId)
 
     const writedownAmount = await seniorPool.calculateWritedown(tokenId)
 
     if (!writedownAmount.isZero()) {
       console.log(`Writedown for token ${tokenId} from pool ${tranchedPool.address}: ${writedownAmount.toString()}`)
-      await seniorPool.writedown(tokenId)
+      // TODO: Uncomment once we have a "redeemer" role that can redeem/writedown
+      // await seniorPool.writedown(tokenId)
     }
   }
 }

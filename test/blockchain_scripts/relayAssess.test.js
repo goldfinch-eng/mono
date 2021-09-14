@@ -81,7 +81,7 @@ describe("relayAsses", () => {
         assessIfRequired(tranchedPoolAsEthers, creditLineAsEthers, fakeProvider, seniorPoolAsEthers, poolTokensAsEthers)
       ).toChange([
         [creditLine.nextDueTime, {increase: true}],
-        [seniorPool.sharePrice, {increase: true}], // The senior pool should redeem the interest payments
+        // [seniorPool.sharePrice, {increase: true}], // The senior pool should redeem the interest payments
       ])
     })
 
@@ -106,8 +106,8 @@ describe("relayAsses", () => {
         assessIfRequired(tranchedPoolAsEthers, creditLineAsEthers, fakeProvider, seniorPoolAsEthers, poolTokensAsEthers)
       ).toChange([
         [creditLine.nextDueTime, {increase: true}],
-        [seniorPool.sharePrice, {decrease: true}], // There should also be a writedown because there were no payments
-        [seniorPool.totalWritedowns, {increase: true}],
+        // [seniorPool.sharePrice, {decrease: true}], // There should also be a writedown because there were no payments
+        // [seniorPool.totalWritedowns, {increase: true}],
       ])
     })
 
