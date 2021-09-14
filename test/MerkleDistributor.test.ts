@@ -8,6 +8,14 @@ describe("MerkleDistributor", () => {
 
   })
 
+  describe("communityRewards", () => {
+    it("returns the address of the CommunityRewards contract", () => {})
+  })
+
+  describe("merkleRoot", () => {
+    it("returns the Merkle root", () => {})
+  })
+
   describe("isGrantAccepted", () => {
     beforeEach(async () => {
 
@@ -25,7 +33,9 @@ describe("MerkleDistributor", () => {
 
     it("rejects an existent grant index with incorrect account", async () => {})
 
-    it("rejects an existent grant index with incorrect amount", async () => {})
+    it("rejects an existent grant index with incorrect (lesser) amount", async () => {})
+
+    it("rejects an existent grant index with incorrect (greater) amount", async () => {})
 
     it("rejects an existent grant index with incorrect vesting length", async () => {})
 
@@ -33,8 +43,14 @@ describe("MerkleDistributor", () => {
 
     it("rejects an existent grant index with incorrect vesting interval", async () => {})
 
+    it("rejects an existent grant index with incorrect (empty) proof", async () => {})
+
+    it("rejects an existent grant index with incorrect (non-empty) proof", async () => {})
+
     it("sets the grant as accepted, calls `CommunityRewards.grant()`, and emits an event", async () => {})
 
     it("is not aware of a, and therefore does not prevent a duplicate, grant with identical details that was not made by this contract", async () => {})
+
+    it("uses the expected amount of gas", async () => {})
   })
 })
