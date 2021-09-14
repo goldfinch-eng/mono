@@ -6,9 +6,10 @@ import {assertNonNullable} from "../../utils/type"
 
 /**
  * Script for verifying the Merkle root of a rewards distribution, from the publicly-released JSON file
- * containing the info about the distribution. Has no dependencies on the code used to generate the Merkle
- * root that was deployed to production. Suitable for public release, so that anyone can verify that the
- * rewards distribution consists exclusively of the grant details in the JSON file.
+ * containing the info about the distribution. Has no dependencies on the code (i.e. the `generateMerkleRoot`
+ * script) used to generate the Merkle root that was deployed to production. Suitable for public release,
+ * so that anyone can verify that the rewards distribution consists exclusively of the grant details in
+ * the JSON file.
  *
  * Adapted from https://github.com/Uniswap/merkle-distributor/blob/c3255bfa2b684594ecd562cacd7664b0f18330bf/scripts/verify-merkle-root.ts,
  * which is licensed under the GPL v3.0 license.
@@ -109,7 +110,7 @@ const getRoot = (parsed: ParsedGrantInfo[]): Buffer => {
 
 type VerificationResult = {
   reconstructedMerkleRoot: string
-  rootMatchesJson: boolean
+  matchesRootInJson: boolean
 }
 
 export function verifyMerkleRoot(json: unknown): VerificationResult {
@@ -150,11 +151,10 @@ export function verifyMerkleRoot(json: unknown): VerificationResult {
   }
   console.log("Done!")
 
-  // Root
-  const root = getRoot(parsed).toString("hex")
+  const rootHex = "0x" + getRoot(parsed).toString("hex")
   return {
-    reconstructedMerkleRoot: root,
-    rootMatchesJson: root === merkleRootHex.slice(2),
+    reconstructedMerkleRoot: rootHex,
+    matchesRootInJson: rootHex === merkleRootHex,
   }
 }
 
@@ -174,5 +174,5 @@ if (require.main === module) {
   const result = verifyMerkleRoot(json)
 
   console.log("Reconstructed Merkle root", result.reconstructedMerkleRoot)
-  console.log("Root matches the one read from the JSON?", result.rootMatchesJson)
+  console.log("Root matches the one read from the JSON?", result.matchesRootInJson)
 }
