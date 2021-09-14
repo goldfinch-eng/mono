@@ -31,15 +31,15 @@ export default class MerkleTree {
     layers.push(elements)
 
     // Get next layer until we reach the root
-    let lastLayer = layers[layers.length - 1]
-    assertNonNullable(lastLayer)
-    let layer: Buffer[] = lastLayer
+    let _layer: Buffer[] | undefined = layers[layers.length - 1]
+    assertNonNullable(_layer)
+    let layer: Buffer[] = _layer
     while (layer.length > 1) {
       layers.push(this.getNextLayer(layer))
 
-      lastLayer = layers[layers.length - 1]
-      assertNonNullable(lastLayer)
-      layer = lastLayer
+      _layer = layers[layers.length - 1]
+      assertNonNullable(_layer)
+      layer = _layer
     }
 
     return layers

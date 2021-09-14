@@ -4,6 +4,13 @@ import fs from 'fs'
 import { parseGrants } from './parseGrants'
 import { AccountedGrant, isArrayOfAccountedGrant, isArrayOfJsonAccountedGrant, JsonAccountedGrant } from './types'
 
+/**
+ * Script for generating the publicly-releasable info about a rewards distribution,
+ * from a JSON file containing an array of JsonAccountedGrant objects.
+ *
+ * The `merkleRoot` value in the output of this script is suitable for use in
+ * the deployment of a MerkleDistributor contract.
+ */
 program
   .version('0.0.0')
   .requiredOption(

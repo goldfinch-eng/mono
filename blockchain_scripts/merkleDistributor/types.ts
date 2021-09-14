@@ -1,5 +1,6 @@
 import {BigNumber} from "ethers"
-import {genIsArrayOf, isNonEmptyString, isPlainObject} from "../../utils/type"
+import {every} from "lodash"
+import {genIsArrayOf, isArrayOfNonEmptyString, isNonEmptyString, isNumber, isPlainObject} from "../../utils/type"
 
 export type Grant = {
   amount: BigNumber
@@ -48,6 +49,14 @@ export type MerkleDistributorGrantInfo = {
   vestingInterval: string
   proof: string[]
 }
+export const isMerkleDistributorGrantInfo = (obj: unknown): obj is MerkleDistributorGrantInfo =>
+  isPlainObject(obj) &&
+  isNumber(obj.index) &&
+  isNonEmptyString(obj.amount) &&
+  isNonEmptyString(obj.vestingLength) &&
+  isNonEmptyString(obj.cliffLength) &&
+  isNonEmptyString(obj.vestingInterval) &&
+  isArrayOfNonEmptyString(obj.proof)
 
 /**
  * This comprises the publicly-releasable information about the distribution of
@@ -62,3 +71,10 @@ export type MerkleDistributorInfo = {
     [account: string]: MerkleDistributorGrantInfo
   }
 }
+export const isMerkleDistributorInfo = (obj: unknown): obj is MerkleDistributorInfo =>
+  isPlainObject(obj) &&
+  isNonEmptyString(obj.merkleRoot) &&
+  isNonEmptyString(obj.amountTotal) &&
+  isPlainObject(obj.grants) &&
+  every(Object.keys(obj.grants), isNonEmptyString) &&
+  every(obj.grants, isMerkleDistributorGrantInfo)

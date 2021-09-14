@@ -1,16 +1,29 @@
-import { program } from 'commander'
-import fs from 'fs'
-import { BigNumber, utils } from 'ethers'
+import {program} from "commander"
+import fs from "fs"
+import {BigNumber, utils} from "ethers"
+import {Grant, isMerkleDistributorInfo} from "./types"
+import {assertNonNullable} from "../../utils/type"
 
+/**
+ * Script for verifying the Merkle root of a rewards distribution, from the publicly-released JSON file
+ * containing the info about the distribution. Has no dependencies on the code used to generate the Merkle
+ * root that was deployed to production. Suitable for public release, so that anyone can verify that the
+ * rewards distribution consists exclusively of the grant details in the JSON file.
+ *
+ * Adapted from https://github.com/Uniswap/merkle-distributor/blob/c3255bfa2b684594ecd562cacd7664b0f18330bf/scripts/verify-merkle-root.ts,
+ * which is licensed under the GPL v3.0 license.
+ */
 program
-  .version('0.0.0')
+  .version("0.0.0")
   .requiredOption(
-    '-i, --input <path>',
-    'input JSON file location containing the merkle proofs for each account and the merkle root'
+    "-i, --input <path>",
+    "input JSON file location containing the Merkle proof for each grant and the Merkle root"
   )
 
 program.parse(process.argv)
-const json = JSON.parse(fs.readFileSync(program.input, { encoding: 'utf8' }))
+
+const options = program.opts()
+const json = JSON.parse(fs.readFileSync(options.input, {encoding: "utf8"}))
 
 const combinedHash = (first: Buffer, second: Buffer): Buffer => {
   if (!first) {
@@ -21,24 +34,27 @@ const combinedHash = (first: Buffer, second: Buffer): Buffer => {
   }
 
   return Buffer.from(
-    utils.solidityKeccak256(['bytes32', 'bytes32'], [first, second].sort(Buffer.compare)).slice(2),
-    'hex'
+    utils.solidityKeccak256(["bytes32", "bytes32"], [first, second].sort(Buffer.compare)).slice(2),
+    "hex"
   )
 }
 
-const toNode = (index: number | BigNumber, account: string, amount: BigNumber): Buffer => {
-  const pairHex = utils.solidityKeccak256(['uint256', 'address', 'uint256'], [index, account, amount])
-  return Buffer.from(pairHex.slice(2), 'hex')
+const toNode = (index: number | BigNumber, account: string, grant: Grant): Buffer => {
+  const pairHex = utils.solidityKeccak256(
+    ["uint256", "address", "uint256", "uint256", "uint256", "uint256"],
+    [index, account, grant.amount, grant.vestingLength, grant.cliffLength, grant.vestingInterval]
+  )
+  return Buffer.from(pairHex.slice(2), "hex")
 }
 
 const verifyProof = (
   index: number | BigNumber,
   account: string,
-  amount: BigNumber,
+  grant: Grant,
   proof: Buffer[],
   root: Buffer
 ): boolean => {
-  let pair = toNode(index, account, amount)
+  let pair = toNode(index, account, grant)
   for (const item of proof) {
     pair = combinedHash(pair, item)
   }
@@ -50,62 +66,94 @@ const getNextLayer = (elements: Buffer[]): Buffer[] => {
   return elements.reduce<Buffer[]>((layer, el, idx, arr) => {
     if (idx % 2 === 0) {
       // Hash the current element with its pair element
-      layer.push(combinedHash(el, arr[idx + 1]))
+      const pairEl = arr[idx + 1]
+      assertNonNullable(pairEl)
+      layer.push(combinedHash(el, pairEl))
     }
 
     return layer
   }, [])
 }
 
-const getRoot = (balances: { account: string; amount: BigNumber; index: number }[]): Buffer => {
-  let nodes = balances
-    .map(({ account, amount, index }) => toNode(index, account, amount))
+type ParsedGrantInfo = {
+  index: number
+  account: string
+  grant: Grant
+}
+
+const getRoot = (parsed: ParsedGrantInfo[]): Buffer => {
+  let nodes = parsed
+    .map((parsedInfo) => toNode(parsedInfo.index, parsedInfo.account, parsedInfo.grant))
     // sort by lexicographical order
     .sort(Buffer.compare)
 
-  // deduplicate any eleents
+  // deduplicate any elements
   nodes = nodes.filter((el, idx) => {
-    return idx === 0 || !nodes[idx - 1].equals(el)
+    const prevEl = nodes[idx - 1]
+    assertNonNullable(prevEl)
+    return idx === 0 || !prevEl.equals(el)
   })
 
-  const layers = []
+  const layers: Buffer[][] = []
   layers.push(nodes)
 
   // Get next layer until we reach the root
-  while (layers[layers.length - 1].length > 1) {
-    layers.push(getNextLayer(layers[layers.length - 1]))
+  let _layer: Buffer[] | undefined = layers[layers.length - 1]
+  assertNonNullable(_layer)
+  let layer: Buffer[] = _layer
+  while (layer.length > 1) {
+    layers.push(getNextLayer(layer))
+
+    _layer = layers[layers.length - 1]
+    assertNonNullable(_layer)
+    layer = _layer
   }
 
-  return layers[layers.length - 1][0]
+  const root = layer[0]
+  assertNonNullable(root)
+  return root
 }
 
-if (typeof json !== 'object') throw new Error('Invalid JSON')
+if (!isMerkleDistributorInfo(json)) {
+  throw new Error("Invalid JSON.")
+}
 
 const merkleRootHex = json.merkleRoot
-const merkleRoot = Buffer.from(merkleRootHex.slice(2), 'hex')
+const merkleRoot = Buffer.from(merkleRootHex.slice(2), "hex")
 
-let balances: { index: number; account: string; amount: BigNumber }[] = []
+const parsed: ParsedGrantInfo[] = []
 let valid = true
 
-Object.keys(json.claims).forEach((address) => {
-  const claim = json.claims[address]
-  const proof = claim.proof.map((p: string) => Buffer.from(p.slice(2), 'hex'))
-  balances.push({ index: claim.index, account: address, amount: BigNumber.from(claim.amount) })
-  if (verifyProof(claim.index, address, claim.amount, proof, merkleRoot)) {
-    console.log('Verified proof for', claim.index, address)
+Object.keys(json.grants).forEach((address) => {
+  const info = json.grants[address]
+  assertNonNullable(info)
+  const proof = info.proof.map((p: string) => Buffer.from(p.slice(2), "hex"))
+  const parsedInfo: ParsedGrantInfo = {
+    index: info.index,
+    account: address,
+    grant: {
+      amount: BigNumber.from(info.amount),
+      vestingLength: BigNumber.from(info.vestingLength),
+      cliffLength: BigNumber.from(info.cliffLength),
+      vestingInterval: BigNumber.from(info.vestingInterval),
+    },
+  }
+  parsed.push(parsedInfo)
+  if (verifyProof(parsedInfo.index, parsedInfo.account, parsedInfo.grant, proof, merkleRoot)) {
+    console.log("Verified proof for", info.index, address)
   } else {
-    console.log('Verification for', address, 'failed')
+    console.log("Verification for", info.index, address, "failed")
     valid = false
   }
 })
 
 if (!valid) {
-  console.error('Failed validation for 1 or more proofs')
+  console.error("Failed validation for 1 or more proofs")
   process.exit(1)
 }
-console.log('Done!')
+console.log("Done!")
 
 // Root
-const root = getRoot(balances).toString('hex')
-console.log('Reconstructed merkle root', root)
-console.log('Root matches the one read from the JSON?', root === merkleRootHex.slice(2))
+const root = getRoot(parsed).toString("hex")
+console.log("Reconstructed merkle root", root)
+console.log("Root matches the one read from the JSON?", root === merkleRootHex.slice(2))

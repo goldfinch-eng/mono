@@ -35,6 +35,7 @@ export function isNonEmptyString(obj: unknown): obj is string {
   return typeof obj === "string" && obj !== ""
 }
 export const isStringOrUndefined = orUndefined(isString)
+export const isArrayOfNonEmptyString = genIsArrayOf(isNonEmptyString)
 
 export const assertIsString: (obj: unknown) => asserts obj is string = genAssertIsTypeof("string")
 
@@ -46,6 +47,7 @@ export function assertNonNullable<T>(val: T | null | undefined): asserts val is 
   }
 }
 
+export const isNumber = (val: unknown): val is number => typeof val === "number"
 export const assertNumber: (val: unknown) => asserts val is number = genAssertIsTypeof("number")
 
 /**
@@ -78,15 +80,10 @@ export function orUndefined<T>(typeGuard: (obj: unknown) => obj is T): (obj: unk
 
 export const isArray = (obj: unknown): obj is unknown[] => Array.isArray(obj)
 
-export function typeGuardedArray<T>(
-  objs: unknown,
-  typeGuard: (obj: unknown) => obj is T,
-): objs is T[] {
+export function typeGuardedArray<T>(objs: unknown, typeGuard: (obj: unknown) => obj is T): objs is T[] {
   return isArray(objs) && every(objs, typeGuard)
 }
 
-export function genIsArrayOf<T>(
-  typeGuard: (obj: unknown) => obj is T,
-): (objs: unknown) => objs is T[] {
+export function genIsArrayOf<T>(typeGuard: (obj: unknown) => obj is T): (objs: unknown) => objs is T[] {
   return (things: unknown): things is T[] => typeGuardedArray(things, typeGuard)
 }
