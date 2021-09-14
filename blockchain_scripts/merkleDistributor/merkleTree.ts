@@ -49,24 +49,24 @@ export default class MerkleTree {
     return elements.reduce<Buffer[]>((layer, el, idx, arr) => {
       if (idx % 2 === 0) {
         // Hash the current element with its pair element
-        const pairEl = arr[idx + 1]
-        assertNonNullable(pairEl)
-        layer.push(MerkleTree.combinedHash(el, pairEl))
+        layer.push(MerkleTree.combinedHash({first: el, second: arr[idx + 1]}))
       }
 
       return layer
     }, [])
   }
 
-  static combinedHash(first: Buffer, second: Buffer): Buffer {
-    if (!first) {
-      return second
+  static combinedHash(
+    pair: {first: Buffer; second: Buffer} | {first: undefined; second: Buffer} | {first: Buffer; second: undefined}
+  ): Buffer {
+    if (!pair.first) {
+      return pair.second
     }
-    if (!second) {
-      return first
+    if (!pair.second) {
+      return pair.first
     }
 
-    return keccak256(MerkleTree.sortAndConcat(first, second))
+    return keccak256(MerkleTree.sortAndConcat(pair.first, pair.second))
   }
 
   getRoot(): Buffer {

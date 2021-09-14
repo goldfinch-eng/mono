@@ -14,16 +14,18 @@ import {assertNonNullable} from "../../utils/type"
  * which is licensed under the GPL v3.0 license.
  */
 
-const combinedHash = (first: Buffer, second: Buffer): Buffer => {
-  if (!first) {
-    return second
+const combinedHash = (
+  pair: {first: Buffer; second: Buffer} | {first: undefined; second: Buffer} | {first: Buffer; second: undefined}
+): Buffer => {
+  if (!pair.first) {
+    return pair.second
   }
-  if (!second) {
-    return first
+  if (!pair.second) {
+    return pair.first
   }
 
   return Buffer.from(
-    utils.solidityKeccak256(["bytes32", "bytes32"], [first, second].sort(Buffer.compare)).slice(2),
+    utils.solidityKeccak256(["bytes32", "bytes32"], [pair.first, pair.second].sort(Buffer.compare)).slice(2),
     "hex"
   )
 }
@@ -45,7 +47,7 @@ const verifyProof = (
 ): boolean => {
   let pair = toNode(index, account, grant)
   for (const item of proof) {
-    pair = combinedHash(pair, item)
+    pair = combinedHash({first: pair, second: item})
   }
 
   return pair.equals(root)
@@ -55,9 +57,7 @@ const getNextLayer = (elements: Buffer[]): Buffer[] => {
   return elements.reduce<Buffer[]>((layer, el, idx, arr) => {
     if (idx % 2 === 0) {
       // Hash the current element with its pair element
-      const pairEl = arr[idx + 1]
-      assertNonNullable(pairEl)
-      layer.push(combinedHash(el, pairEl))
+      layer.push(combinedHash({first: el, second: arr[idx + 1]}))
     }
 
     return layer
