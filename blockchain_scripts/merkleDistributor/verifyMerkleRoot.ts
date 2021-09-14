@@ -132,10 +132,10 @@ Object.keys(json.grants).forEach((address) => {
     index: info.index,
     account: address,
     grant: {
-      amount: BigNumber.from(info.amount),
-      vestingLength: BigNumber.from(info.vestingLength),
-      cliffLength: BigNumber.from(info.cliffLength),
-      vestingInterval: BigNumber.from(info.vestingInterval),
+      amount: BigNumber.from(info.grant.amount),
+      vestingLength: BigNumber.from(info.grant.vestingLength),
+      cliffLength: BigNumber.from(info.grant.cliffLength),
+      vestingInterval: BigNumber.from(info.grant.vestingInterval),
     },
   }
   parsed.push(parsedInfo)

@@ -43,19 +43,22 @@ export const isArrayOfJsonAccountedGrant = genIsArrayOf(isJsonAccountedGrant)
 
 export type MerkleDistributorGrantInfo = {
   index: number
-  amount: string
-  vestingLength: string
-  cliffLength: string
-  vestingInterval: string
+  grant: {
+    amount: string
+    vestingLength: string
+    cliffLength: string
+    vestingInterval: string
+  }
   proof: string[]
 }
 export const isMerkleDistributorGrantInfo = (obj: unknown): obj is MerkleDistributorGrantInfo =>
   isPlainObject(obj) &&
   isNumber(obj.index) &&
-  isNonEmptyString(obj.amount) &&
-  isNonEmptyString(obj.vestingLength) &&
-  isNonEmptyString(obj.cliffLength) &&
-  isNonEmptyString(obj.vestingInterval) &&
+  isPlainObject(obj.grant) &&
+  isNonEmptyString(obj.grant.amount) &&
+  isNonEmptyString(obj.grant.vestingLength) &&
+  isNonEmptyString(obj.grant.cliffLength) &&
+  isNonEmptyString(obj.grant.vestingInterval) &&
   isArrayOfNonEmptyString(obj.proof)
 
 /**

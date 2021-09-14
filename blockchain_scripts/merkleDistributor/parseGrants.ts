@@ -15,10 +15,12 @@ export function parseGrants(unsortedGrants: AccountedGrant[]): MerkleDistributor
     const account = accountedGrant.account
     acc[account] = {
       index,
-      amount: accountedGrant.grant.amount.toHexString(),
-      vestingLength: accountedGrant.grant.vestingLength.toHexString(),
-      cliffLength: accountedGrant.grant.cliffLength.toHexString(),
-      vestingInterval: accountedGrant.grant.vestingInterval.toHexString(),
+      grant: {
+        amount: accountedGrant.grant.amount.toHexString(),
+        vestingLength: accountedGrant.grant.vestingLength.toHexString(),
+        cliffLength: accountedGrant.grant.cliffLength.toHexString(),
+        vestingInterval: accountedGrant.grant.vestingInterval.toHexString()
+      },
       proof: tree.getProof(index, account, accountedGrant.grant),
     }
     return acc
