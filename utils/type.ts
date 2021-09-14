@@ -5,7 +5,7 @@ such as our server/functions trying to run typescript against all our src files,
 outside of the hardhat context and throwing all kinds of errors.
 */
 
-import {isPlainObject as _isPlainObject} from "lodash"
+import {every, isPlainObject as _isPlainObject} from "lodash"
 
 function getTypeof(obj: unknown) {
   return typeof obj
@@ -76,3 +76,17 @@ export function orUndefined<T>(typeGuard: (obj: unknown) => obj is T): (obj: unk
   return (obj: unknown): obj is T | undefined => typeGuard(obj) || isUndefined(obj)
 }
 
+export const isArray = (obj: unknown): obj is unknown[] => Array.isArray(obj)
+
+export function typeGuardedArray<T>(
+  objs: unknown,
+  typeGuard: (obj: unknown) => obj is T,
+): objs is T[] {
+  return isArray(objs) && every(objs, typeGuard)
+}
+
+export function genIsArrayOf<T>(
+  typeGuard: (obj: unknown) => obj is T,
+): (objs: unknown) => objs is T[] {
+  return (things: unknown): things is T[] => typeGuardedArray(things, typeGuard)
+}

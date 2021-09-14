@@ -1,36 +1,16 @@
-import {BigNumber, utils} from "ethers"
+import {BigNumber} from "ethers"
 import _ from "lodash"
 
-import GrantTree, {AccountedGrant} from "./grantTree"
-
-type DistributorGrantInfo = {
-  index: number
-  amount: string
-  vestingLength: string
-  cliffLength: string
-  vestingInterval: string
-  proof: string[]
-}
-
-// This is the blob that gets distributed.
-// It is completely sufficient for recreating the entire merkle tree.
-interface MerkleDistributorInfo {
-  merkleRoot: string
-  amountTotal: string
-  grants: {
-    [account: string]: DistributorGrantInfo
-  }
-}
+import GrantTree from "./grantTree"
+import { AccountedGrant, MerkleDistributorGrantInfo, MerkleDistributorInfo } from "./types"
 
 export function parseGrants(unsortedGrants: AccountedGrant[]): MerkleDistributorInfo {
   const sortedGrants = _.sortBy(unsortedGrants, "address")
 
-  // construct a tree
   const tree = new GrantTree(sortedGrants)
 
-  // generate grants
   const grants = sortedGrants.reduce<{
-    [address: string]: DistributorGrantInfo
+    [address: string]: MerkleDistributorGrantInfo
   }>((acc, accountedGrant, index) => {
     const account = accountedGrant.account
     acc[account] = {

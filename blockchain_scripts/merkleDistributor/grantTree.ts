@@ -1,16 +1,6 @@
 import MerkleTree from "./merkleTree"
 import {BigNumber, utils} from "ethers"
-
-export type Grant = {
-  amount: BigNumber
-  vestingLength: BigNumber
-  cliffLength: BigNumber
-  vestingInterval: BigNumber
-}
-export type AccountedGrant = {
-  account: string
-  grant: Grant
-}
+import { AccountedGrant, Grant } from "./types"
 
 export default class GrantTree {
   private readonly tree: MerkleTree
