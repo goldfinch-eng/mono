@@ -77,10 +77,14 @@ const getRoot = (parsed: ParsedGrantInfo[]): Buffer => {
     .sort(Buffer.compare)
 
   // deduplicate any elements
-  nodes = nodes.filter((el, idx) => {
-    const prevEl = nodes[idx - 1]
-    assertNonNullable(prevEl)
-    return idx === 0 || !prevEl.equals(el)
+  nodes = nodes.filter((el, idx): boolean => {
+    if (idx) {
+      const prevEl = nodes[idx - 1]
+      assertNonNullable(prevEl)
+      return !prevEl.equals(el)
+    } else {
+      return true
+    }
   })
 
   const layers: Buffer[][] = []

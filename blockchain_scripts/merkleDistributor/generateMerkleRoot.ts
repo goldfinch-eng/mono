@@ -23,6 +23,10 @@ export function generateMerkleRoot(json: unknown): MerkleDistributorInfo {
     throw new Error("Invalid JSON.")
   }
 
+  if (!json.length) {
+    throw new Error("Grants array must not be empty.")
+  }
+
   const accountedGrants: AccountedGrant[] = json.map((info: JsonAccountedGrant) => ({
     account: info.account,
     grant: {

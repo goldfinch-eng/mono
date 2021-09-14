@@ -1,9 +1,9 @@
-import { bufferToHex, keccak256 } from 'ethereumjs-util'
-import { assertNonNullable, assertNumber } from '../../utils/type'
+import {bufferToHex, keccak256} from "ethereumjs-util"
+import {assertNonNullable, assertNumber} from "../../utils/type"
 
 export default class MerkleTree {
   private readonly elements: Buffer[]
-  private readonly bufferElementPositionIndex: { [hexElement: string]: number }
+  private readonly bufferElementPositionIndex: {[hexElement: string]: number}
   private readonly layers: Buffer[][]
 
   constructor(elements: Buffer[]) {
@@ -13,7 +13,7 @@ export default class MerkleTree {
     // Deduplicate elements
     this.elements = MerkleTree.bufDedup(this.elements)
 
-    this.bufferElementPositionIndex = this.elements.reduce<{ [hexElement: string]: number }>((memo, el, index) => {
+    this.bufferElementPositionIndex = this.elements.reduce<{[hexElement: string]: number}>((memo, el, index) => {
       memo[bufferToHex(el)] = index
       return memo
     }, {})
@@ -24,7 +24,7 @@ export default class MerkleTree {
 
   getLayers(elements: Buffer[]): Buffer[][] {
     if (elements.length === 0) {
-      throw new Error('empty tree')
+      throw new Error("empty tree")
     }
 
     const layers: Buffer[][] = []
@@ -84,8 +84,8 @@ export default class MerkleTree {
   getProof(el: Buffer) {
     let idx = this.bufferElementPositionIndex[bufferToHex(el)]
 
-    if (typeof idx !== 'number') {
-      throw new Error('Element does not exist in Merkle tree')
+    if (typeof idx !== "number") {
+      throw new Error("Element does not exist in Merkle tree")
     }
 
     return this.layers.reduce((proof, layer) => {
@@ -121,19 +121,23 @@ export default class MerkleTree {
   }
 
   private static bufDedup(elements: Buffer[]): Buffer[] {
-    return elements.filter((el, idx) => {
-      const prevEl = elements[idx - 1]
-      assertNonNullable(prevEl)
-      return idx === 0 || !prevEl.equals(el)
+    return elements.filter((el, idx): boolean => {
+      if (idx) {
+        const prevEl = elements[idx - 1]
+        assertNonNullable(prevEl)
+        return !prevEl.equals(el)
+      } else {
+        return true
+      }
     })
   }
 
   private static bufArrToHexArr(arr: Buffer[]): string[] {
     if (arr.some((el) => !Buffer.isBuffer(el))) {
-      throw new Error('Array is not an array of buffers')
+      throw new Error("Array is not an array of buffers")
     }
 
-    return arr.map((el) => '0x' + el.toString('hex'))
+    return arr.map((el) => "0x" + el.toString("hex"))
   }
 
   private static sortAndConcat(...args: Buffer[]): Buffer {
