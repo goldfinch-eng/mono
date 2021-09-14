@@ -1,8 +1,14 @@
 import {BigNumber} from "ethers"
-import { program } from 'commander'
-import fs from 'fs'
-import { parseGrants } from './parseGrants'
-import { AccountedGrant, isArrayOfAccountedGrant, isArrayOfJsonAccountedGrant, JsonAccountedGrant } from './types'
+import {program} from "commander"
+import fs from "fs"
+import {parseGrants} from "./parseGrants"
+import {
+  AccountedGrant,
+  isArrayOfAccountedGrant,
+  isArrayOfJsonAccountedGrant,
+  JsonAccountedGrant,
+  MerkleDistributorInfo,
+} from "./types"
 
 /**
  * Script for generating the publicly-releasable info about a rewards distribution,
@@ -11,34 +17,38 @@ import { AccountedGrant, isArrayOfAccountedGrant, isArrayOfJsonAccountedGrant, J
  * The `merkleRoot` value in the output of this script is suitable for use in
  * the deployment of a MerkleDistributor contract.
  */
-program
-  .version('0.0.0')
-  .requiredOption(
-    '-i, --input <path>',
-    'input JSON file location containing an array of JsonAccountedGrant objects'
-  )
 
-program.parse(process.argv)
-
-const options = program.opts()
-const json = JSON.parse(fs.readFileSync(options.input, { encoding: 'utf8' }))
-
-if (!isArrayOfJsonAccountedGrant(json)) {
-  throw new Error('Invalid JSON.')
-}
-
-const accountedGrants: AccountedGrant[] = json.map((info: JsonAccountedGrant) => ({
-  account: info.account,
-  grant: {
-    amount: BigNumber.from(info.grant.amount),
-    vestingLength: BigNumber.from(info.grant.vestingLength),
-    cliffLength: BigNumber.from(info.grant.cliffLength),
-    vestingInterval: BigNumber.from(info.grant.vestingInterval),
+export function generateMerkleRoot(json: unknown): MerkleDistributorInfo {
+  if (!isArrayOfJsonAccountedGrant(json)) {
+    throw new Error("Invalid JSON.")
   }
-}))
 
-if (!isArrayOfAccountedGrant(accountedGrants)) {
-  throw new Error('Failed to parse accounted grants.')
+  const accountedGrants: AccountedGrant[] = json.map((info: JsonAccountedGrant) => ({
+    account: info.account,
+    grant: {
+      amount: BigNumber.from(info.grant.amount),
+      vestingLength: BigNumber.from(info.grant.vestingLength),
+      cliffLength: BigNumber.from(info.grant.cliffLength),
+      vestingInterval: BigNumber.from(info.grant.vestingInterval),
+    },
+  }))
+
+  if (!isArrayOfAccountedGrant(accountedGrants)) {
+    throw new Error("Failed to parse accounted grants.")
+  }
+
+  return parseGrants(accountedGrants)
 }
 
-console.log(JSON.stringify(parseGrants(accountedGrants)))
+if (require.main === module) {
+  program
+    .version("0.0.0")
+    .requiredOption("-i, --input <path>", "input JSON file location containing an array of JsonAccountedGrant objects")
+
+  program.parse(process.argv)
+
+  const options = program.opts()
+  const json = JSON.parse(fs.readFileSync(options.input, {encoding: "utf8"}))
+
+  console.log(JSON.stringify(generateMerkleRoot(json)))
+}

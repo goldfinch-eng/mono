@@ -13,17 +13,6 @@ import {assertNonNullable} from "../../utils/type"
  * Adapted from https://github.com/Uniswap/merkle-distributor/blob/c3255bfa2b684594ecd562cacd7664b0f18330bf/scripts/verify-merkle-root.ts,
  * which is licensed under the GPL v3.0 license.
  */
-program
-  .version("0.0.0")
-  .requiredOption(
-    "-i, --input <path>",
-    "input JSON file location containing the Merkle proof for each grant and the Merkle root"
-  )
-
-program.parse(process.argv)
-
-const options = program.opts()
-const json = JSON.parse(fs.readFileSync(options.input, {encoding: "utf8"}))
 
 const combinedHash = (first: Buffer, second: Buffer): Buffer => {
   if (!first) {
@@ -114,45 +103,72 @@ const getRoot = (parsed: ParsedGrantInfo[]): Buffer => {
   return root
 }
 
-if (!isMerkleDistributorInfo(json)) {
-  throw new Error("Invalid JSON.")
+type VerificationResult = {
+  reconstructedMerkleRoot: string
+  rootMatchesJson: boolean
 }
 
-const merkleRootHex = json.merkleRoot
-const merkleRoot = Buffer.from(merkleRootHex.slice(2), "hex")
-
-const parsed: ParsedGrantInfo[] = []
-let valid = true
-
-json.grants.forEach((info: MerkleDistributorGrantInfo) => {
-  assertNonNullable(info)
-  const proof = info.proof.map((p: string) => Buffer.from(p.slice(2), "hex"))
-  const parsedInfo: ParsedGrantInfo = {
-    index: info.index,
-    account: info.account,
-    grant: {
-      amount: BigNumber.from(info.grant.amount),
-      vestingLength: BigNumber.from(info.grant.vestingLength),
-      cliffLength: BigNumber.from(info.grant.cliffLength),
-      vestingInterval: BigNumber.from(info.grant.vestingInterval),
-    },
+export function verifyMerkleRoot(json: unknown): VerificationResult {
+  if (!isMerkleDistributorInfo(json)) {
+    throw new Error("Invalid JSON.")
   }
-  parsed.push(parsedInfo)
-  if (verifyProof(parsedInfo.index, parsedInfo.account, parsedInfo.grant, proof, merkleRoot)) {
-    console.log("Verified proof for", info.index, info.account)
-  } else {
-    console.log("Verification for", info.index, info.account, "failed")
-    valid = false
-  }
-})
 
-if (!valid) {
-  console.error("Failed validation for 1 or more proofs")
-  process.exit(1)
+  const merkleRootHex = json.merkleRoot
+  const merkleRoot = Buffer.from(merkleRootHex.slice(2), "hex")
+
+  const parsed: ParsedGrantInfo[] = []
+  let valid = true
+
+  json.grants.forEach((info: MerkleDistributorGrantInfo) => {
+    assertNonNullable(info)
+    const proof = info.proof.map((p: string) => Buffer.from(p.slice(2), "hex"))
+    const parsedInfo: ParsedGrantInfo = {
+      index: info.index,
+      account: info.account,
+      grant: {
+        amount: BigNumber.from(info.grant.amount),
+        vestingLength: BigNumber.from(info.grant.vestingLength),
+        cliffLength: BigNumber.from(info.grant.cliffLength),
+        vestingInterval: BigNumber.from(info.grant.vestingInterval),
+      },
+    }
+    parsed.push(parsedInfo)
+    if (verifyProof(parsedInfo.index, parsedInfo.account, parsedInfo.grant, proof, merkleRoot)) {
+      console.log("Verified proof for", info.index, info.account)
+    } else {
+      console.log("Verification for", info.index, info.account, "failed")
+      valid = false
+    }
+  })
+
+  if (!valid) {
+    throw new Error("Failed validation for 1 or more proofs")
+  }
+  console.log("Done!")
+
+  // Root
+  const root = getRoot(parsed).toString("hex")
+  return {
+    reconstructedMerkleRoot: root,
+    rootMatchesJson: root === merkleRootHex.slice(2),
+  }
 }
-console.log("Done!")
 
-// Root
-const root = getRoot(parsed).toString("hex")
-console.log("Reconstructed merkle root", root)
-console.log("Root matches the one read from the JSON?", root === merkleRootHex.slice(2))
+if (require.main === module) {
+  program
+    .version("0.0.0")
+    .requiredOption(
+      "-i, --input <path>",
+      "input JSON file location containing the Merkle proof for each grant and the Merkle root"
+    )
+
+  program.parse(process.argv)
+
+  const options = program.opts()
+  const json = JSON.parse(fs.readFileSync(options.input, {encoding: "utf8"}))
+
+  const result = verifyMerkleRoot(json)
+
+  console.log("Reconstructed Merkle root", result.reconstructedMerkleRoot)
+  console.log("Root matches the one read from the JSON?", result.rootMatchesJson)
+}
