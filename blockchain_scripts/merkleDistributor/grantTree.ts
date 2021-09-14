@@ -21,7 +21,7 @@ export default class GrantTree {
   ): boolean {
     let pair = GrantTree.toNode(index, account, grant)
     for (const item of proof) {
-      pair = MerkleTree.combinedHash(pair, item)
+      pair = MerkleTree.combinedHash({first: pair, second: item})
     }
 
     return pair.equals(root)
