@@ -715,7 +715,7 @@ function TranchedPoolView() {
     )
   }
 
-  let isAtMaxCapacity = tranchedPool?.remainingCapacity().isEqualTo("0")
+  const isAtMaxCapacity = tranchedPool?.remainingCapacity().isEqualTo("0")
 
   let maxCapacityNotice = <></>
   if (isAtMaxCapacity) {
@@ -734,7 +734,7 @@ function TranchedPoolView() {
       <ConnectionNotice requireUnlock={false} requireVerify={true} requireSignIn={true} />
       {unlockForm}
       {maxCapacityNotice}
-      {(!isAtMaxCapacity || (backer && !backer?.balanceInDollars.isEqualTo("0"))) && (
+      {(!isAtMaxCapacity || !backer?.balanceInDollars.isZero()) && (
         <>
           <InvestorNotice />
           <ActionsContainer
