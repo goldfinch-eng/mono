@@ -36,7 +36,7 @@ import {impersonateAccount, fundWithWhales} from "../blockchain_scripts/mainnetF
 import _ from "lodash"
 import {assertIsString, assertNonNullable} from "../utils/type"
 import {Result} from "ethers/lib/utils"
-import {advanceTime, usdcVal} from "../test/testHelpers"
+import {advanceTime, toEthers, usdcVal} from "../test/testHelpers"
 import {prepareMigration, deployAndMigrateToV2} from "../blockchain_scripts/v2/migrate"
 
 /*
@@ -301,7 +301,7 @@ async function getDeployedAsEthersContract<T>(getter: any, name: string): Promis
   if (!deployed) {
     throw new Error("Contract is not deployed")
   }
-  return (await ethers.getContractAt(deployed.abi, deployed.address)) as unknown as T
+  return await toEthers<T>(deployed)
 }
 
 async function createPoolForBorrower({

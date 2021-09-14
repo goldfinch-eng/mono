@@ -82,7 +82,13 @@ exports.handler = async function (credentials) {
   }
 }
 
-const assessIfRequired = async function assessIfRequired(tranchedPool, creditLineContract, provider, seniorPool, poolTokens) {
+const assessIfRequired = async function assessIfRequired(
+  tranchedPool,
+  creditLineContract,
+  provider,
+  seniorPool,
+  poolTokens
+) {
   // Normalize everything to ethers.BigNumber because tests use Truffle and therefore bn.js
   // which is incompatible with BigNumber
   const creditLineAddress = await tranchedPool.creditLine()
