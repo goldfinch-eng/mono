@@ -43,6 +43,7 @@ export const isArrayOfJsonAccountedGrant = genIsArrayOf(isJsonAccountedGrant)
 
 export type MerkleDistributorGrantInfo = {
   index: number
+  account: string
   grant: {
     amount: string
     vestingLength: string
@@ -54,12 +55,14 @@ export type MerkleDistributorGrantInfo = {
 export const isMerkleDistributorGrantInfo = (obj: unknown): obj is MerkleDistributorGrantInfo =>
   isPlainObject(obj) &&
   isNumber(obj.index) &&
+  isNonEmptyString(obj.account) &&
   isPlainObject(obj.grant) &&
   isNonEmptyString(obj.grant.amount) &&
   isNonEmptyString(obj.grant.vestingLength) &&
   isNonEmptyString(obj.grant.cliffLength) &&
   isNonEmptyString(obj.grant.vestingInterval) &&
   isArrayOfNonEmptyString(obj.proof)
+export const isArrayOfMerkleDistributorGrantInfo = genIsArrayOf(isMerkleDistributorGrantInfo)
 
 /**
  * This comprises the publicly-releasable information about the distribution of
@@ -70,14 +73,10 @@ export const isMerkleDistributorGrantInfo = (obj: unknown): obj is MerkleDistrib
 export type MerkleDistributorInfo = {
   merkleRoot: string
   amountTotal: string
-  grants: {
-    [account: string]: MerkleDistributorGrantInfo
-  }
+  grants: MerkleDistributorGrantInfo[]
 }
 export const isMerkleDistributorInfo = (obj: unknown): obj is MerkleDistributorInfo =>
   isPlainObject(obj) &&
   isNonEmptyString(obj.merkleRoot) &&
   isNonEmptyString(obj.amountTotal) &&
-  isPlainObject(obj.grants) &&
-  every(Object.keys(obj.grants), isNonEmptyString) &&
-  every(obj.grants, isMerkleDistributorGrantInfo)
+  isArrayOfMerkleDistributorGrantInfo(obj.grants)

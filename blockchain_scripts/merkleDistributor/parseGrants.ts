@@ -9,22 +9,17 @@ export function parseGrants(unsortedGrants: AccountedGrant[]): MerkleDistributor
 
   const tree = new GrantTree(sortedGrants)
 
-  const grants = sortedGrants.reduce<{
-    [address: string]: MerkleDistributorGrantInfo
-  }>((acc, accountedGrant, index) => {
-    const account = accountedGrant.account
-    acc[account] = {
-      index,
-      grant: {
-        amount: accountedGrant.grant.amount.toHexString(),
-        vestingLength: accountedGrant.grant.vestingLength.toHexString(),
-        cliffLength: accountedGrant.grant.cliffLength.toHexString(),
-        vestingInterval: accountedGrant.grant.vestingInterval.toHexString()
-      },
-      proof: tree.getProof(index, account, accountedGrant.grant),
-    }
-    return acc
-  }, {})
+  const grants = sortedGrants.map((accountedGrant: AccountedGrant, index: number): MerkleDistributorGrantInfo => ({
+    index,
+    account: accountedGrant.account,
+    grant: {
+      amount: accountedGrant.grant.amount.toHexString(),
+      vestingLength: accountedGrant.grant.vestingLength.toHexString(),
+      cliffLength: accountedGrant.grant.cliffLength.toHexString(),
+      vestingInterval: accountedGrant.grant.vestingInterval.toHexString()
+    },
+    proof: tree.getProof(index, accountedGrant.account, accountedGrant.grant),
+  }))
 
   const amountTotal: BigNumber = sortedGrants.reduce<BigNumber>(
     (acc, accountedGrant) => acc.add(accountedGrant.grant.amount),

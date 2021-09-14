@@ -1,7 +1,7 @@
 import {program} from "commander"
 import fs from "fs"
 import {BigNumber, utils} from "ethers"
-import {Grant, isMerkleDistributorInfo} from "./types"
+import {Grant, isMerkleDistributorInfo, MerkleDistributorGrantInfo} from "./types"
 import {assertNonNullable} from "../../utils/type"
 
 /**
@@ -124,13 +124,12 @@ const merkleRoot = Buffer.from(merkleRootHex.slice(2), "hex")
 const parsed: ParsedGrantInfo[] = []
 let valid = true
 
-Object.keys(json.grants).forEach((address) => {
-  const info = json.grants[address]
+json.grants.forEach((info: MerkleDistributorGrantInfo) => {
   assertNonNullable(info)
   const proof = info.proof.map((p: string) => Buffer.from(p.slice(2), "hex"))
   const parsedInfo: ParsedGrantInfo = {
     index: info.index,
-    account: address,
+    account: info.account,
     grant: {
       amount: BigNumber.from(info.grant.amount),
       vestingLength: BigNumber.from(info.grant.vestingLength),
@@ -140,9 +139,9 @@ Object.keys(json.grants).forEach((address) => {
   }
   parsed.push(parsedInfo)
   if (verifyProof(parsedInfo.index, parsedInfo.account, parsedInfo.grant, proof, merkleRoot)) {
-    console.log("Verified proof for", info.index, address)
+    console.log("Verified proof for", info.index, info.account)
   } else {
-    console.log("Verification for", info.index, address, "failed")
+    console.log("Verification for", info.index, info.account, "failed")
     valid = false
   }
 })
