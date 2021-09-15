@@ -9,6 +9,7 @@ import {PoolBacker, TranchedPool} from "../ethereum/tranchedPool"
 import {PoolCreated} from "../typechain/web3/GoldfinchFactory"
 import BigNumber from "bignumber.js"
 import {User} from "../ethereum/user"
+import ConnectionNotice from "./connectionNotice"
 
 // Filter out 0 limit (inactive) and test pools
 const MIN_POOL_LIMIT = usdcToAtomic(process.env.REACT_APP_POOL_FILTER_LIMIT || "200")
@@ -262,7 +263,10 @@ function Earn(props) {
       {isLoading ? (
         <PortfolioOverviewSkeleton />
       ) : (
-        <PortfolioOverview poolData={pool?.gf} capitalProvider={capitalProvider} poolBackers={backers} />
+        <>
+          <ConnectionNotice />
+          <PortfolioOverview poolData={pool?.gf} capitalProvider={capitalProvider} poolBackers={backers} />
+        </>
       )}
       <div className="pools">
         <PoolList title="Senior Pool">
