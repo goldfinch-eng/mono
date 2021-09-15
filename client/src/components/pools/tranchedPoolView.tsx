@@ -715,7 +715,7 @@ function TranchedPoolView() {
     )
   }
 
-  const isAtMaxCapacity = tranchedPool?.remainingCapacity().isEqualTo("0")
+  const isAtMaxCapacity = tranchedPool?.remainingCapacity().isZero()
 
   let maxCapacityNotice = <></>
   if (isAtMaxCapacity) {
