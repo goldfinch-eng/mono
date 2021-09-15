@@ -13,6 +13,7 @@ import {
   assertIsChainId,
   getProtocolOwner,
   getContract,
+  DISTRIBUTOR_ROLE,
 } from "./deployHelpers"
 import {HardhatRuntimeEnvironment} from "hardhat/types"
 import {DeployFunction} from "hardhat-deploy/types"
@@ -35,6 +36,11 @@ import {assertIsString, assertNonEmptyString} from "../utils/type"
 import {TestCommunityRewards} from "../typechain/ethers/TestCommunityRewards"
 
 let logger: Logger
+
+type Deployed<T> = {
+  name: string
+  contract: T
+}
 
 const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   if (isMainnetForking()) {
@@ -289,7 +295,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   async function deployCommunityRewards(
     hre: HardhatRuntimeEnvironment,
     {config}: {config: GoldfinchConfig}
-  ): Promise<CommunityRewards | TestCommunityRewards> {
+  ): Promise<Deployed<CommunityRewards | TestCommunityRewards>> {
     const contractName = isTestEnv() ? "TestCommunityRewards" : "CommunityRewards"
     logger(`About to deploy ${contractName}...`)
     assertIsString(gf_deployer)
@@ -311,17 +317,20 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
       | TestCommunityRewards
 
     // await updateConfig(config, "address", CONFIG_KEYS., contract.address, {logger})
-    logger("Deployed CommunityRewards to address:", contract.address)
-    return contract
+    logger(`Deployed ${contractName} to address:`, contract.address)
+    return {name: contractName, contract}
   }
 
   async function deployMerkleDistributor(
     hre: HardhatRuntimeEnvironment,
-    {communityRewards, merkleRoot}: {
-      communityRewards: CommunityRewards | TestCommunityRewards
+    {
+      communityRewards,
+      merkleRoot,
+    }: {
+      communityRewards: Deployed<CommunityRewards | TestCommunityRewards>
       merkleRoot: string
     }
-  ): Promise<MerkleDistributor> {
+  ): Promise<Deployed<MerkleDistributor>> {
     assertNonEmptyString(merkleRoot)
     const contractName = "MerkleDistributor"
     logger(`About to deploy ${contractName}...`)
@@ -329,12 +338,36 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
     const deployResult = await deploy(contractName, {
       from: gf_deployer,
       gasLimit: 4000000,
-      args: [communityRewards.address, merkleRoot],
+      args: [communityRewards.contract.address, merkleRoot],
     })
     const contract = (await ethers.getContractAt(contractName, deployResult.address)) as MerkleDistributor
 
-    logger("Deployed MerkleDistributor to address:", contract.address)
-    return contract
+    logger(`Deployed ${contractName} to address: ${contract.address}`)
+
+    const deployed: Deployed<MerkleDistributor> = {
+      name: contractName,
+      contract,
+    }
+    await grantDistributorRoleToMerkleDistributor(communityRewards, deployed)
+
+    return deployed
+  }
+}
+
+async function grantDistributorRoleToMerkleDistributor(
+  communityRewards: Deployed<CommunityRewards | TestCommunityRewards>,
+  merkleDistributor: Deployed<MerkleDistributor>
+): Promise<void> {
+  let hasDistributorRole = await communityRewards.contract.hasRole(DISTRIBUTOR_ROLE, merkleDistributor.contract.address)
+  if (hasDistributorRole) {
+    throw new Error(`${merkleDistributor.name} already has DISTRIBUTOR_ROLE on ${communityRewards.name}.`)
+  }
+  await communityRewards.contract.grantRole(DISTRIBUTOR_ROLE, merkleDistributor.contract.address)
+  hasDistributorRole = await communityRewards.contract.hasRole(DISTRIBUTOR_ROLE, merkleDistributor.contract.address)
+  if (hasDistributorRole) {
+    logger(`Granted distributor role on ${communityRewards.name} to ${merkleDistributor.name}.`)
+  } else {
+    throw new Error(`Failed to grant DISTRIBUTOR role on ${communityRewards.name} to ${merkleDistributor.name}.`)
   }
 }
 

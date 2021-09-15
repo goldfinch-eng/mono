@@ -5,7 +5,7 @@ const expect = chai.expect
 import mochaEach from "mocha-each"
 import {time} from "@openzeppelin/test-helpers"
 import BN from "bn.js"
-import {isTestEnv, USDCDecimals, interestAprAsBN, ZERO_ADDRESS} from "../blockchain_scripts/deployHelpers"
+import {isTestEnv, USDCDecimals, interestAprAsBN, ZERO_ADDRESS, DISTRIBUTOR_ROLE} from "../blockchain_scripts/deployHelpers"
 import {DeploymentsExtension} from "hardhat-deploy/dist/types"
 import {
   CreditDeskInstance,
@@ -220,6 +220,10 @@ function getFirstLog<T extends Truffle.AnyEvent>(logs: DecodedLog<T>[]): Decoded
   assertNonNullable(firstLog)
   return firstLog
 }
+function getOnlyLog<T extends Truffle.AnyEvent>(logs: DecodedLog<T>[]): DecodedLog<T> {
+  expect(logs.length).to.equal(1)
+  return getFirstLog(logs)
+}
 
 type DeployAllContractsOptions = {
   deployForwarder?: {
@@ -295,6 +299,7 @@ async function deployAllContracts(
       gasLimit: 4000000,
     })
     merkleDistributor = await getDeployedAsTruffleContract<MerkleDistributorInstance>(deployments, "MerkleDistributor")
+    await communityRewards.grantRole(DISTRIBUTOR_ROLE, merkleDistributor.address)
   }
   return {
     pool,
@@ -461,5 +466,6 @@ export {
   createPoolWithCreditLine,
   decodeLogs,
   getFirstLog,
+  getOnlyLog,
   toTruffle,
 }

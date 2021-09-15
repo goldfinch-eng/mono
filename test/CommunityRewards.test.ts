@@ -1,22 +1,16 @@
 /* global web3 */
 import BN from "bn.js"
 import hre from "hardhat"
-import {DepositMade} from "../typechain/truffle/SeniorPool"
-import {
-  bigVal,
-  decodeLogs,
-  deployAllContracts,
-  erc20Approve,
-  erc20Transfer,
-  expect,
-  getCurrentTimestamp,
-  getFirstLog,
-  usdcVal,
-} from "./testHelpers"
-import {GFIInstance} from "../typechain/truffle"
-import {Granted} from "../typechain/truffle/CommunityRewards"
 import { DISTRIBUTOR_ROLE, OWNER_ROLE } from "../blockchain_scripts/deployHelpers"
+import { GFIInstance } from "../typechain/truffle"
+import { Granted } from "../typechain/truffle/CommunityRewards"
 import { TestCommunityRewardsInstance } from "../typechain/truffle/TestCommunityRewards"
+import { mintAndLoadRewards } from "./communityRewardsHelpers"
+import {
+  decodeLogs,
+  deployAllContracts, expect,
+  getCurrentTimestamp, getOnlyLog
+} from "./testHelpers"
 const {ethers} = hre
 const {deployments} = hre
 
@@ -44,7 +38,7 @@ describe("CommunityRewards", () => {
     const receipt = await communityRewards.grant(recipient, amount, vestingLength, cliffLength, vestingInterval, {
       from: owner,
     })
-    const grantedEvent = getFirstLog<Granted>(decodeLogs(receipt.receipt.rawLogs, communityRewards, "Granted"))
+    const grantedEvent = getOnlyLog<Granted>(decodeLogs(receipt.receipt.rawLogs, communityRewards, "Granted"))
     const tokenId = grantedEvent.args.tokenId
 
     // Verify grant state.
@@ -71,16 +65,10 @@ describe("CommunityRewards", () => {
     return tokenId
   }
 
-  async function mintAndLoadRewards(amount: BN) {
-    await gfi.mint(owner, amount)
-    await gfi.approve(communityRewards.address, amount)
-    await communityRewards.loadRewards(amount)
-  }
-
   describe("grant", () => {
     beforeEach(async () => {
       const amount = new BN(1e6)
-      await mintAndLoadRewards(amount)
+      await mintAndLoadRewards(gfi, communityRewards, owner, amount)
     })
 
     it("allows owner who has distributor role", async () => {
@@ -246,7 +234,7 @@ describe("CommunityRewards", () => {
     context("paused", async () => {
       it("reverts", async () => {
         const amount = new BN(1e3)
-        await mintAndLoadRewards(amount)
+        await mintAndLoadRewards(gfi, communityRewards, owner, amount)
         const tokenId = await grant({
           recipient: anotherUser,
           amount: amount,
@@ -302,7 +290,7 @@ describe("CommunityRewards", () => {
     context("paused", async () => {
       it("reverts", async () => {
         const amount = new BN(1e3)
-        await mintAndLoadRewards(amount)
+        await mintAndLoadRewards(gfi, communityRewards, owner, amount)
         const tokenId = await grant({
           recipient: anotherUser,
           amount,

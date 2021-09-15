@@ -23,9 +23,7 @@ const DYNAMIC_LEVERAGE_RATIO_TEST_VERSION = web3.utils.keccak256("DynamicLeverag
 const setupTest = deployments.createFixture(async ({deployments}) => {
   const [owner, borrower, person2] = await web3.eth.getAccounts()
 
-  const {seniorPool, goldfinchConfig, goldfinchFactory, usdc} = await deployAllContracts(deployments, {
-    fromAccount: owner,
-  })
+  const {seniorPool, goldfinchConfig, goldfinchFactory, usdc} = await deployAllContracts(deployments)
 
   await goldfinchConfig.bulkAddToGoList([owner, borrower])
 
