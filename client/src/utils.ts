@@ -43,7 +43,7 @@ function commaFormat(numberString) {
 
 function displayDollars(val, decimals = 2) {
   let prefix = ""
-  if (!isFinite(val)) {
+  if (!isFinite(val) || val === null) {
     return " --.--"
   }
   const valFloat = parseFloat(val)

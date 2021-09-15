@@ -32,6 +32,10 @@
     font-size: $sans-size-s;
     margin: 10px 0 0;
   }
+
+  .disabled {
+    color: $sand-xxdark;
+  }
 }
 
 .placeholder .deposit-status .label,

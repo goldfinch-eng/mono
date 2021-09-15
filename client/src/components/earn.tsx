@@ -28,6 +28,25 @@ function PoolList({title, children}) {
   )
 }
 
+function PortfolioOverviewSkeleton() {
+  return (
+    <div className="background-container">
+      <div className="background-container-inner">
+        <div className="deposit-status-item">
+          <div className="label">Portfolio balance</div>
+          <div className="value disabled">$--.--</div>
+          <div className="sub-value disabled">--.-- (--.--%)</div>
+        </div>
+        <div className="deposit-status-item">
+          <div className="label">Est. Annual Growth</div>
+          <div className="value disabled">$--.--</div>
+          <div className="sub-value disabled">--.--% APY</div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function PortfolioOverview({
   poolData,
   capitalProvider,
@@ -52,6 +71,7 @@ function PortfolioOverview({
   })
   let unrealizedAPY = totalUnrealizedGains.dividedBy(totalBalance)
   let estimatedAPY = estimatedAnnualGrowth.dividedBy(totalBalance)
+  const displayUnrealizedGains = capitalProvider.empty ? null : roundDownPenny(totalUnrealizedGains)
 
   return (
     <div className="background-container">
@@ -60,7 +80,7 @@ function PortfolioOverview({
           <div className="label">Portfolio balance</div>
           <div className="value">{displayDollars(totalBalance)}</div>
           <div className="sub-value">
-            {displayDollars(roundDownPenny(totalUnrealizedGains))} ({displayPercent(unrealizedAPY)})
+            {displayDollars(displayUnrealizedGains)} ({displayPercent(unrealizedAPY)})
           </div>
         </div>
         <div className="deposit-status-item">
@@ -69,6 +89,20 @@ function PortfolioOverview({
           <div className="sub-value">{`${displayPercent(estimatedAPY)} APY`}</div>
         </div>
       </div>
+    </div>
+  )
+}
+
+function SeniorPoolCardSkeleton() {
+  return (
+    <div key="senior-pool" className="table-row background-container-inner clickable">
+      <div className="table-cell col40 disabled">
+        $--.--
+        <span className="subheader">Total Pool Balance</span>
+      </div>
+      <div className="table-cell col22 numeric balance disabled">$--.--</div>
+      <div className="table-cell col22 numeric limit disabled">$--.--</div>
+      <div className="table-cell col16 numeric apy disabled">$--.--%</div>
     </div>
   )
 }
@@ -89,6 +123,22 @@ function SeniorPoolCard({balance, userBalance, apy, limit}) {
       <div className="table-cell col22 numeric balance">{userBalance}</div>
       <div className="table-cell col22 numeric limit">{limit}</div>
       <div className="table-cell col16 numeric apy">{apy}</div>
+    </div>
+  )
+}
+
+function TranchedPoolCardSkeleton() {
+  return (
+    <div className="table-row background-container-inner clickable">
+      <div className="table-cell col40 pool-info fallback-content">
+        <div className="circle-icon" />
+        <div className="name">
+          <span>Loading...</span>
+        </div>
+      </div>
+      <div className="disabled table-cell col22 numeric balance">$--.--</div>
+      <div className="disabled table-cell col22 numeric limit">$--.--</div>
+      <div className="disabled table-cell col16 numeric apy">--.--%</div>
     </div>
   )
 }
@@ -132,10 +182,14 @@ function TranchedPoolCard({poolBacker}: {poolBacker: PoolBacker}) {
 
 function usePoolBackers({goldfinchProtocol, user}: {goldfinchProtocol?: GoldfinchProtocol; user?: User}): {
   backers: PoolBacker[]
-  status: string
+  backersStatus: string
+  poolsAddresses: string[]
+  poolsAddressesStatus: string
 } {
   let [backers, setBackers] = useState<PoolBacker[]>([])
-  let [status, setStatus] = useState<string>("loading")
+  let [backersStatus, setBackersStatus] = useState<string>("loading")
+  const [poolsAddresses, setPoolsAddresses] = useState<string[]>([])
+  const [poolsAddressesStatus, setPoolsAddressesStatus] = useState<string>("loading")
 
   useEffect(() => {
     async function loadTranchedPools(goldfinchProtocol: GoldfinchProtocol, user: User) {
@@ -143,6 +197,8 @@ function usePoolBackers({goldfinchProtocol, user}: {goldfinchProtocol?: Goldfinc
         "PoolCreated",
       ])) as unknown as PoolCreated[]
       let poolAddresses = poolEvents.map((e) => e.returnValues.pool)
+      setPoolsAddresses(poolAddresses)
+      setPoolsAddressesStatus("loaded")
       let tranchedPools = poolAddresses.map((a) => new TranchedPool(a, goldfinchProtocol))
       await Promise.all(tranchedPools.map((p) => p.initialize()))
       tranchedPools = tranchedPools.filter((p) => p.metadata)
@@ -161,21 +217,27 @@ function usePoolBackers({goldfinchProtocol, user}: {goldfinchProtocol?: Goldfinc
             a.tranchedPool.displayName.localeCompare(b.tranchedPool.displayName),
         ),
       )
-      setStatus("loaded")
+      setBackersStatus("loaded")
     }
 
     if (goldfinchProtocol && user) {
       loadTranchedPools(goldfinchProtocol, user)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [goldfinchProtocol, user])
 
-  return {backers, status}
+  return {backers, backersStatus, poolsAddresses, poolsAddressesStatus}
 }
 
 function Earn(props) {
   const {pool, usdc, user, goldfinchProtocol, goldfinchConfig} = useContext(AppContext)
   const [capitalProvider, setCapitalProvider] = useState<CapitalProvider>()
-  const {backers, status: tranchedPoolsStatus} = usePoolBackers({goldfinchProtocol, user})
+  const {
+    backers,
+    backersStatus: tranchedPoolsStatus,
+    poolsAddresses,
+    poolsAddressesStatus,
+  } = usePoolBackers({goldfinchProtocol, user})
 
   useEffect(() => {
     if (pool) {
@@ -190,31 +252,48 @@ function Earn(props) {
     setCapitalProvider(capitalProvider)
   }
 
-  let earnMessage = "Loading..."
-  if (capitalProvider?.loaded || user.noWeb3) {
-    earnMessage = "Pools"
-  }
+  const isLoading = !(capitalProvider?.loaded || user.noWeb3)
+  const earnMessage = isLoading ? "Loading..." : "Pools"
 
   return (
     <div className="content-section">
       <div className="page-header">
         <div>{earnMessage}</div>
       </div>
-      <ConnectionNotice />
-      <PortfolioOverview poolData={pool?.gf} capitalProvider={capitalProvider} poolBackers={backers} />
+      {isLoading ? (
+        <PortfolioOverviewSkeleton />
+      ) : (
+        <>
+          <ConnectionNotice />
+          <PortfolioOverview poolData={pool?.gf} capitalProvider={capitalProvider} poolBackers={backers} />
+        </>
+      )}
       <div className="pools">
         <PoolList title="Senior Pool">
-          <SeniorPoolCard
-            balance={displayDollars(usdcFromAtomic(pool?.gf.totalPoolAssets))}
-            userBalance={displayDollars(capitalProvider?.availableToWithdrawInDollars)}
-            apy={displayPercent(pool?.gf.estimatedApy)}
-            limit={displayDollars(usdcFromAtomic(goldfinchConfig?.totalFundsLimit), 0)}
-          />
+          {isLoading ? (
+            <SeniorPoolCardSkeleton />
+          ) : (
+            <SeniorPoolCard
+              balance={displayDollars(usdcFromAtomic(pool?.gf.totalPoolAssets))}
+              userBalance={displayDollars(capitalProvider?.availableToWithdrawInDollars)}
+              apy={displayPercent(pool?.gf.estimatedApy)}
+              limit={displayDollars(usdcFromAtomic(goldfinchConfig?.totalFundsLimit), 0)}
+            />
+          )}
         </PoolList>
         <PoolList title="Borrower Pools">
-          {tranchedPoolsStatus === "loading"
-            ? "Loading..."
-            : backers.map((p) => <TranchedPoolCard key={`${p.tranchedPool.address}`} poolBacker={p} />)}
+          {tranchedPoolsStatus === "loading" && poolsAddressesStatus === "loading" && (
+            <>
+              <TranchedPoolCardSkeleton />
+              <TranchedPoolCardSkeleton />
+              <TranchedPoolCardSkeleton />
+            </>
+          )}
+
+          {tranchedPoolsStatus === "loading" && poolsAddresses.map((a) => <TranchedPoolCardSkeleton key={a} />)}
+
+          {tranchedPoolsStatus !== "loading" &&
+            backers.map((p) => <TranchedPoolCard key={`${p.tranchedPool.address}`} poolBacker={p} />)}
         </PoolList>
       </div>
     </div>
