@@ -80,24 +80,23 @@ function ConnectionNotice({
           </div>
         </div>
       )
-    }
-
-    if (requireUnlock) {
-      let unlockStatus: UnlockedStatus | null = null
-      if (location.pathname.startsWith("/pools/senior")) {
-        unlockStatus = user.getUnlockStatus("earn")
-      } else if (location.pathname.startsWith("/borrow")) {
-        unlockStatus = user.getUnlockStatus("borrow")
+    } else {
+      if (requireUnlock) {
+        let unlockStatus: UnlockedStatus | null = null
+        if (location.pathname.startsWith("/pools/senior")) {
+          unlockStatus = user.getUnlockStatus("earn")
+        } else if (location.pathname.startsWith("/borrow")) {
+          unlockStatus = user.getUnlockStatus("borrow")
+        }
+        if (unlockStatus && !unlockStatus.isUnlocked) {
+          notice = <UnlockUSDCForm unlockAddress={unlockStatus.unlockAddress} />
+        }
       }
-      if (unlockStatus && !unlockStatus.isUnlocked) {
-        notice = <UnlockUSDCForm unlockAddress={unlockStatus.unlockAddress} />
+      if (!user.goListed && requireVerify) {
+        notice = <VerifyAddressBanner />
       }
-    }
-    if (!user.goListed && requireVerify) {
-      notice = <VerifyAddressBanner />
     }
   }
-
   return notice
 }
 
