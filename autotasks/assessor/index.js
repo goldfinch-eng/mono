@@ -5,13 +5,15 @@ const fetch = require("node-fetch")
 
 const CONFIG = {
   mainnet: {
-    address: "0xD52dc1615c843c30F2e4668E101c0938e6007220",
-    underwriters: ["0xc840b3e21ff0eba77468ad450d868d4362cf67fe", "0x79ea65C834EC137170E1aA40A42b9C80df9c0Bb4"],
+    factoryAddress: "0xd20508E1E971b80EE172c73517905bfFfcBD87f9",
+    poolTokensAddress: "0x57686612C601Cb5213b01AA8e80AfEb24BBd01df",
+    seniorPoolAddress: "0x8481a6EbAf5c7DABc3F7e09e44A89531fd31F822",
     etherscanApi: "https://api.etherscan.io/api",
   },
   rinkeby: {
-    address: "0x8b84E427B9732f03a9EF4195F94737b3fE6f3FA7",
-    underwriters: ["0x83CB0ec2f0013a9641654b344D34615f95b7D7FC"],
+    factoryAddress: "0x2175755A2aB6BE1a1E8C8fdc0BbFce430242f296",
+    poolTokensAddress: "0x9aB3cfeA6f849a2106b2D3874D6d3Cb8b24cbcdC",
+    seniorPoolAddress: "0xF579fF2eDD4D46501a06e0F2fbdC59854d094f31",
     etherscanApi: "https://api-rinkeby.etherscan.io/api",
   },
 }
@@ -32,47 +34,65 @@ exports.handler = async function (credentials) {
     throw new Error(`Unsupported network: ${relayerInfo.network}`)
   }
 
-  const creditDeskAddress = config.address
+  const goldfinchFactoryAddress = config.factoryAddress
 
-  let creditLines = []
+  let pools = []
 
-  const creditDeskAbi = await getAbifor(config.etherscanApi, creditDeskAddress, provider)
-  const creditDesk = new ethers.Contract(creditDeskAddress, creditDeskAbi, signer)
+  const factoryAbi = await getAbifor(config.etherscanApi, goldfinchFactoryAddress, provider)
+  const factory = new ethers.Contract(goldfinchFactoryAddress, factoryAbi, signer)
+  const poolTokensAbi = await getAbifor(config.etherscanApi, config.poolTokensAddress, provider)
+  const poolTokens = new ethers.Contract(config.poolTokensAddress, poolTokensAbi, signer)
+  const seniorPoolAbi = await getAbifor(config.etherscanApi, config.seniorPoolAddress, provider)
+  const seniorPool = new ethers.Contract(config.seniorPoolAddress, seniorPoolAbi, signer)
 
-  for (const underwriter of config.underwriters) {
-    creditLines = creditLines.concat(await creditDesk.getUnderwriterCreditLines(underwriter))
+  const result = await factory.queryFilter(factory.filters.PoolCreated(null, null))
+
+  for (const poolCreated of result) {
+    pools = pools.concat(poolCreated.args.pool)
   }
 
-  if (creditLines.length === 0) {
-    console.log("No credit lines to assess")
+  if (pools.length === 0) {
+    console.log("No pools to assess")
     return
   }
 
-  const creditLineAbi = await getAbifor(config.etherscanApi, creditLines[0], provider)
-  const creditLine = new ethers.Contract(creditLines[0], creditLineAbi, signer)
+  const poolAbi = await getAbifor(config.etherscanApi, pools[0], provider)
+  const pool = new ethers.Contract(pools[0], poolAbi, signer)
 
-  console.log(`Found ${creditLines.length} creditlines for ${config.underwriters.length} underwriters`)
+  const creditLineAddress = await pool.creditLine()
+  const creditLineAbi = await getAbifor(config.etherscanApi, creditLineAddress, provider)
+  const creditLine = new ethers.Contract(creditLineAddress, creditLineAbi, signer)
+
+  console.log(`Found ${pools.length} tranched pools`)
   let success = 0
-  for (const creditLineAddress of creditLines) {
+  for (const poolAddress of pools) {
     try {
-      console.log(`Assessing ${creditLineAddress}`)
-      await assessIfRequired(creditDesk, creditLine.attach(creditLineAddress), provider)
+      console.log(`Assessing ${poolAddress}`)
+      await assessIfRequired(pool.attach(poolAddress), creditLine, provider, seniorPool, poolTokens)
       success += 1
     } catch (err) {
       console.log(`Error trying to assess creditline: ${err}`)
     }
   }
 
-  console.log(`Successfully assessed ${success} of ${creditLines.length} creditlines`)
+  console.log(`Successfully assessed ${success} of ${pools.length} pools`)
 
-  if (success !== creditLines.length && relayerInfo.network === "mainnet") {
-    throw new Error(`${creditLines.length - success} creditlines failed to asses`)
+  if (success !== pools.length && relayerInfo.network === "mainnet") {
+    throw new Error(`${pools.length - success} pools failed to asses`)
   }
 }
 
-const assessIfRequired = async function assessIfRequired(tranchedPool, creditLine, provider) {
+const assessIfRequired = async function assessIfRequired(
+  tranchedPool,
+  creditLineContract,
+  provider,
+  seniorPool,
+  poolTokens
+) {
   // Normalize everything to ethers.BigNumber because tests use Truffle and therefore bn.js
   // which is incompatible with BigNumber
+  const creditLineAddress = await tranchedPool.creditLine()
+  const creditLine = creditLineContract.attach(creditLineAddress)
   const currentTime = ethers.BigNumber.from((await provider.getBlock("latest")).timestamp.toString())
   const nextDueTime = ethers.BigNumber.from((await creditLine.nextDueTime()).toString())
   const termEndTime = ethers.BigNumber.from((await creditLine.termEndTime()).toString())
@@ -86,24 +106,49 @@ const assessIfRequired = async function assessIfRequired(tranchedPool, creditLin
   if (nextDueTime.isZero()) {
     const balance = await creditLine.balance()
     if (!balance.isZero()) {
-      throw new Error(`Non-zero balance (${balance}) for creditLine ${creditLine.address} without a nextDueTime`)
+      throw new Error(`Non-zero balance (${balance}) for pool ${tranchedPool.address} without a nextDueTime`)
     }
-    console.log(`Assess ${creditLine.address}: Skipped (Zero balance)`)
+    console.log(`Assess ${tranchedPool.address}: Skipped (Zero balance)`)
   } else {
     if (currentTime.gte(termEndTime)) {
       // Currently we don't have a good way to track the last time we assessed a creditLine past it's
       // term end block. So we're going to keep assessing it everytime the script runs for now.
-      await tranchedPool.assess()
+      console.log(`Assessing pool beyond the end time: ${tranchedPool.address}`)
+      await assessAndRedeem(tranchedPool, seniorPool, poolTokens)
     } else if (currentTime.gte(nextDueTime)) {
-      await tranchedPool.assess()
+      console.log(`Assessing ${tranchedPool.address}`)
+      await assessAndRedeem(tranchedPool, seniorPool, poolTokens)
     } else {
-      console.log(`Assess ${creditLine.address}: Skipped (Already assessed)`)
+      const nextDueTimeFormatted = new Date(nextDueTime.toNumber() * 1000).toISOString()
+      console.log(`Assess ${tranchedPool.address}: Skipped (Already assessed). Next Due: ${nextDueTimeFormatted}`)
+    }
+  }
+}
+
+async function assessAndRedeem(tranchedPool, seniorPool, poolTokens) {
+  await tranchedPool.assess()
+
+  // Now get the tokenId for the senior pool so we can redeem (or writedown if required)
+  const result = await poolTokens.queryFilter(poolTokens.filters.TokenMinted(seniorPool.address, tranchedPool.address))
+
+  for (const tokenMinted of result) {
+    const tokenId = tokenMinted.args.tokenId
+    console.log(`Redeeming token ${tokenId} from pool ${tranchedPool.address}`)
+    // TODO: Uncomment once we have a "redeemer" role that can redeem/writedown
+    // await seniorPool.redeem(tokenId)
+
+    const writedownAmount = await seniorPool.calculateWritedown(tokenId)
+
+    if (!writedownAmount.isZero()) {
+      console.log(`Writedown for token ${tokenId} from pool ${tranchedPool.address}: ${writedownAmount.toString()}`)
+      // TODO: Uncomment once we have a "redeemer" role that can redeem/writedown
+      // await seniorPool.writedown(tokenId)
     }
   }
 }
 
 async function getAbifor(etherscanApiUrl, address, provider) {
-  // Deference the proxy to the implementation if it is a proxy
+  // De-reference the proxy to the implementation if it is a proxy
   // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v3.2.0/contracts/proxy/TransparentUpgradeableProxy.sol#L81
   const implStorageLocation = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"
   let implementationAddress = await provider.getStorageAt(address, implStorageLocation)
