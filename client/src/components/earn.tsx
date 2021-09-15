@@ -251,24 +251,22 @@ function Earn(props) {
     setCapitalProvider(capitalProvider)
   }
 
-  let earnMessage = "Loading..."
-  if (capitalProvider?.loaded || user.noWeb3) {
-    earnMessage = "Pools"
-  }
+  const isLoading = !(capitalProvider?.loaded || user.noWeb3)
+  const earnMessage = isLoading ? "Loading..." : "Pools"
 
   return (
     <div className="content-section">
       <div className="page-header">
         <div>{earnMessage}</div>
       </div>
-      {earnMessage === "Loading..." ? (
+      {isLoading ? (
         <PortfolioOverviewSkeleton />
       ) : (
         <PortfolioOverview poolData={pool?.gf} capitalProvider={capitalProvider} poolBackers={backers} />
       )}
       <div className="pools">
         <PoolList title="Senior Pool">
-          {earnMessage === "Loading..." ? (
+          {isLoading ? (
             <SeniorPoolCardSkeleton />
           ) : (
             <SeniorPoolCard
