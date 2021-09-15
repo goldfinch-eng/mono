@@ -63,6 +63,8 @@ contract CommunityRewards is ICommunityRewards, ERC721PresetMinterPauserAutoIdUp
 
   /// @notice The address of the token being disbursed as rewards
   function rewardsToken() public view override returns (IERC20withDec) {
+    // TODO[PR] If we wanted to keep this contract completely unaware of the Config contract, we
+    // could; we'd just deploy it with a hardcoded address for the GFI contract.
     return config.getGFI();
   }
 
