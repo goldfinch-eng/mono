@@ -24,10 +24,11 @@ import {
   GFIInstance,
   StakingRewardsInstance,
   CommunityRewardsInstance,
+  MerkleDistributorInstance,
 } from "../typechain/truffle"
 import {assertNonNullable} from "../utils/type"
-import { DynamicLeverageRatioStrategyInstance } from "../typechain/truffle/DynamicLeverageRatioStrategy"
-import { TestCommunityRewardsInstance } from "../typechain/truffle/TestCommunityRewards"
+import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/DynamicLeverageRatioStrategy"
+import {TestCommunityRewardsInstance} from "../typechain/truffle/TestCommunityRewards"
 const decimals = new BN(String(1e18))
 const USDC_DECIMALS = new BN(String(1e6))
 const SECONDS_PER_DAY = new BN(86400)
@@ -185,8 +186,8 @@ function expectAction(action: () => any, debug?: boolean) {
 }
 
 type DecodedLog<T extends Truffle.AnyEvent> = {
-  event: T['name']
-  args: T['args']
+  event: T["name"]
+  args: T["args"]
 }
 
 // This decodes logs for a single event type, and returns a decoded object in
@@ -220,9 +221,19 @@ function getFirstLog<T extends Truffle.AnyEvent>(logs: DecodedLog<T>[]): Decoded
   return firstLog
 }
 
+type DeployAllContractsOptions = {
+  deployForwarder?: {
+    fromAccount: string
+  }
+  deployMerkleDistributor?: {
+    fromAccount: string
+    root: string
+  }
+}
+
 async function deployAllContracts(
   deployments: DeploymentsExtension,
-  options: {deployForwarder?: boolean; fromAccount?: string} = {}
+  options: DeployAllContractsOptions = {}
 ): Promise<{
   pool: PoolInstance
   seniorPool: SeniorPoolInstance
@@ -240,8 +251,8 @@ async function deployAllContracts(
   gfi: GFIInstance
   stakingRewards: StakingRewardsInstance
   communityRewards: TestCommunityRewardsInstance
+  merkleDistributor: MerkleDistributorInstance | null
 }> {
-  let {deployForwarder, fromAccount} = options
   await deployments.fixture("base_deploy")
   const pool = await getDeployedAsTruffleContract<PoolInstance>(deployments, "Pool")
   const seniorPool = await getDeployedAsTruffleContract<SeniorPoolInstance>(deployments, "SeniorPool")
@@ -260,8 +271,8 @@ async function deployAllContracts(
   const goldfinchFactory = await getDeployedAsTruffleContract<GoldfinchFactoryInstance>(deployments, "GoldfinchFactory")
   const poolTokens = await getDeployedAsTruffleContract<PoolTokensInstance>(deployments, "PoolTokens")
   let forwarder: TestForwarderInstance | null = null
-  if (deployForwarder) {
-    await deployments.deploy("TestForwarder", {from: fromAccount as string, gasLimit: 4000000})
+  if (options.deployForwarder) {
+    await deployments.deploy("TestForwarder", {from: options.deployForwarder.fromAccount, gasLimit: 4000000})
     forwarder = await getDeployedAsTruffleContract<TestForwarderInstance>(deployments, "TestForwarder")
     await forwarder!.registerDomainSeparator("Defender", "1")
   }
@@ -272,7 +283,19 @@ async function deployAllContracts(
   )
   const gfi = await getDeployedAsTruffleContract<GFIInstance>(deployments, "GFI")
   const stakingRewards = await getDeployedAsTruffleContract<StakingRewardsInstance>(deployments, "StakingRewards")
-  const communityRewards = await getDeployedAsTruffleContract<TestCommunityRewardsInstance>(deployments, "TestCommunityRewards")
+  const communityRewards = await getDeployedAsTruffleContract<TestCommunityRewardsInstance>(
+    deployments,
+    "TestCommunityRewards"
+  )
+  let merkleDistributor: MerkleDistributorInstance | null = null
+  if (options.deployMerkleDistributor) {
+    await deployments.deploy("MerkleDistributor", {
+      args: [communityRewards.address, options.deployMerkleDistributor.root],
+      from: options.deployMerkleDistributor.fromAccount,
+      gasLimit: 4000000,
+    })
+    merkleDistributor = await getDeployedAsTruffleContract<MerkleDistributorInstance>(deployments, "MerkleDistributor")
+  }
   return {
     pool,
     seniorPool,
@@ -290,6 +313,7 @@ async function deployAllContracts(
     gfi,
     stakingRewards,
     communityRewards,
+    merkleDistributor,
   }
 }
 
@@ -390,9 +414,13 @@ const createPoolWithCreditLine = async ({
   return {tranchedPool, creditLine}
 }
 
-async function toTruffle(address: Truffle.ContractInstance | string, contractName, opts?: {}) : Promise<Truffle.ContractInstance> {
+async function toTruffle(
+  address: Truffle.ContractInstance | string,
+  contractName,
+  opts?: {}
+): Promise<Truffle.ContractInstance> {
   let truffleContract = await artifacts.require(contractName)
-  address = typeof(address) === "string" ? address : address.address
+  address = typeof address === "string" ? address : address.address
   if (opts) {
     truffleContract.defaults(opts)
   }

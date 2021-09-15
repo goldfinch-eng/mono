@@ -28,9 +28,10 @@ import {
   DynamicLeverageRatioStrategy,
   StakingRewards,
   CommunityRewards,
+  MerkleDistributor,
 } from "../typechain/ethers"
 import {Logger, DeployFn, DeployOpts} from "./types"
-import {assertIsString} from "../utils/type"
+import {assertIsString, assertNonEmptyString} from "../utils/type"
 import {TestCommunityRewards} from "../typechain/ethers/TestCommunityRewards"
 
 let logger: Logger
@@ -69,7 +70,11 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
 
   await deployGFI(hre, {config})
   await deployLPStakingRewards(hre, {config})
-  await deployCommunityRewards(hre, {config})
+  const communityRewards = await deployCommunityRewards(hre, {config})
+  const merkleRoot = process.env.MERKLE_DISTRIBUTOR_ROOT
+  if (merkleRoot) {
+    await deployMerkleDistributor(hre, {communityRewards, merkleRoot})
+  }
 
   logger("Granting ownership of Pool to CreditDesk")
   await grantOwnershipOfPoolToCreditDesk(pool, creditDesk.address)
@@ -307,6 +312,28 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
 
     // await updateConfig(config, "address", CONFIG_KEYS., contract.address, {logger})
     logger("Deployed CommunityRewards to address:", contract.address)
+    return contract
+  }
+
+  async function deployMerkleDistributor(
+    hre: HardhatRuntimeEnvironment,
+    {communityRewards, merkleRoot}: {
+      communityRewards: CommunityRewards | TestCommunityRewards
+      merkleRoot: string
+    }
+  ): Promise<MerkleDistributor> {
+    assertNonEmptyString(merkleRoot)
+    const contractName = "MerkleDistributor"
+    logger(`About to deploy ${contractName}...`)
+    assertIsString(gf_deployer)
+    const deployResult = await deploy(contractName, {
+      from: gf_deployer,
+      gasLimit: 4000000,
+      args: [communityRewards.address, merkleRoot],
+    })
+    const contract = (await ethers.getContractAt(contractName, deployResult.address)) as MerkleDistributor
+
+    logger("Deployed MerkleDistributor to address:", contract.address)
     return contract
   }
 }

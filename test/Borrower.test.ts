@@ -64,7 +64,7 @@ describe("Borrower", async () => {
   const setupTest = deployments.createFixture(async ({deployments}) => {
     const {seniorPool, usdc, creditDesk, fidu, goldfinchConfig, goldfinchFactory, forwarder} = await deployAllContracts(
       deployments,
-      {deployForwarder: true, fromAccount: owner}
+      {deployForwarder: {fromAccount: owner}}
     )
     // Approve transfers for our test accounts
     await erc20Approve(usdc, seniorPool.address, usdcVal(100000), [owner, bwr, person3])

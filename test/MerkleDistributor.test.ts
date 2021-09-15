@@ -1,25 +1,50 @@
 /* global web3 */
 import hre from "hardhat"
+import {GFIInstance} from "../typechain/truffle/GFI"
+import {MerkleDistributorInstance} from "../typechain/truffle/MerkleDistributor"
+import {TestCommunityRewardsInstance} from "../typechain/truffle/TestCommunityRewards"
+import { assertNonNullable } from "../utils/type"
+import {fixtures} from "./merkleDistributorHelpers"
+import {deployAllContracts} from "./testHelpers"
 const {ethers} = hre
 const {deployments} = hre
 
 describe("MerkleDistributor", () => {
-  beforeEach(async () => {
+  let owner: string,
+    anotherUser: string,
+    gfi: GFIInstance,
+    communityRewards: TestCommunityRewardsInstance,
+    merkleDistributor: MerkleDistributorInstance
 
+  beforeEach(async () => {
+    ;[owner, anotherUser] = await web3.eth.getAccounts()
+    const deployed = await deployAllContracts(deployments, {
+      deployMerkleDistributor: {fromAccount: owner, root: fixtures.output.merkleRoot},
+    })
+    gfi = deployed.gfi
+    communityRewards = deployed.communityRewards
+    assertNonNullable(deployed.merkleDistributor)
+    merkleDistributor = deployed.merkleDistributor
   })
 
   describe("communityRewards", () => {
-    it("returns the address of the CommunityRewards contract", () => {})
+    it("returns the address of the CommunityRewards contract", async () => {
+      const communityRewardsAddress = await merkleDistributor.communityRewards()
+      expect(communityRewardsAddress).to.be.ok
+      expect(communityRewardsAddress).to.equal(communityRewards.address)
+    })
   })
 
   describe("merkleRoot", () => {
-    it("returns the Merkle root", () => {})
+    it("returns the Merkle root", async () => {
+      const merkleRoot = await merkleDistributor.merkleRoot()
+      expect(merkleRoot).to.be.ok
+      expect(merkleRoot).to.equal(fixtures.output.merkleRoot)
+    })
   })
 
   describe("isGrantAccepted", () => {
-    beforeEach(async () => {
-
-    })
+    beforeEach(async () => {})
 
     it("returns true for a grant that has been accepted", async () => {})
 
@@ -47,7 +72,10 @@ describe("MerkleDistributor", () => {
 
     it("rejects an existent grant index with incorrect (non-empty) proof", async () => {})
 
-    it("sets the grant as accepted, calls `CommunityRewards.grant()`, and emits an event", async () => {})
+    it("sets the grant as accepted, calls `CommunityRewards.grant()`, and emits an event", async () => {
+      // Note that the caller in this case is entirely unrelated to the grant recipient; anyone can call
+      // `acceptGrant()` for any grant recipient.
+    })
 
     it("is not aware of a, and therefore does not prevent a duplicate, grant with identical details that was not made by this contract", async () => {})
 

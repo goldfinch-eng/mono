@@ -38,6 +38,12 @@ export const isStringOrUndefined = orUndefined(isString)
 export const isArrayOfNonEmptyString = genIsArrayOf(isNonEmptyString)
 
 export const assertIsString: (obj: unknown) => asserts obj is string = genAssertIsTypeof("string")
+export const assertNonEmptyString: (obj: unknown) => asserts obj is string = (obj: unknown): asserts obj is string => {
+  assertIsString(obj)
+  if (!obj) {
+    throw new AssertionError("String value is not non-empty.")
+  }
+}
 
 export class AssertionError extends Error {}
 
