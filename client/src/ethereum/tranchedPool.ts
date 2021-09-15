@@ -11,6 +11,7 @@ import web3 from "../web3"
 import {usdcFromAtomic} from "./erc20"
 import {CONFIG_KEYS} from "../../../blockchain_scripts/configKeys"
 import {SeniorPool as SeniorPoolContract} from "../typechain/web3/SeniorPool"
+import {getCreditDesk} from "./creditDesk"
 
 const ZERO = new BigNumber(0)
 const ONE = new BigNumber(1)
@@ -69,6 +70,7 @@ interface PoolMetadata {
   agreement?: string
   v1StyleDeal?: boolean
   migrated?: boolean
+  migratedFrom?: string
 }
 
 enum PoolState {
@@ -226,24 +228,37 @@ class TranchedPool {
   }
 
   async recentTransactions() {
+    let oldTransactions: any[] = []
     let transactions = await this.goldfinchProtocol.queryEvents(this.contract, ["DrawdownMade", "PaymentApplied"])
+
+    if (this.isMigrated && transactions.length < 3) {
+      oldTransactions = await this.getOldTransactions()
+    }
+
+    transactions = transactions.concat(oldTransactions)
     transactions = _.reverse(_.sortBy(transactions, "blockNumber")).slice(0, 3)
     let sharePriceUpdates = await this.sharePriceUpdatesByTx(TRANCHES.Junior)
     let blockTimestamps = await this.timestampsByBlockNumber(transactions)
     return transactions.map((e) => {
-      const sharePriceUpdate = sharePriceUpdates[e.transactionHash]![0]!
+      let juniorInterest = new BigNumber(0)
+      const sharePriceUpdate = sharePriceUpdates[e.transactionHash]?.[0]
+      if (sharePriceUpdate) {
+        juniorInterest = new BigNumber(sharePriceUpdate.returnValues.interestDelta)
+      }
 
       let event = {
         txHash: e.transactionHash,
         event: e.event,
-        juniorInterestDelta: new BigNumber(sharePriceUpdate.returnValues.interestDelta),
-        juniorPrincipalDelta: new BigNumber(sharePriceUpdate.returnValues.principalDelta),
+        juniorInterestDelta: juniorInterest,
+        juniorPrincipalDelta: new BigNumber(sharePriceUpdate?.returnValues.principalDelta),
         timestamp: blockTimestamps[e.blockNumber],
       }
       if (e.event === "DrawdownMade") {
+        let amount = e.returnValues.amount || e.returnValues.drawdownAmount
+
         Object.assign(event, {
           name: "Drawdown",
-          amount: new BigNumber(e.returnValues.amount),
+          amount: new BigNumber(amount),
         })
       } else if (e.event === "PaymentApplied") {
         const interestAmount = new BigNumber(e.returnValues.interestAmount)
@@ -258,6 +273,17 @@ class TranchedPool {
         })
       }
       return event
+    })
+  }
+
+  async getOldTransactions() {
+    let oldCreditlineAddress = this.metadata?.migratedFrom
+    if (!oldCreditlineAddress) {
+      return []
+    }
+    const creditDesk = await getCreditDesk(this.goldfinchProtocol.networkId)
+    return await this.goldfinchProtocol.queryEvents(creditDesk, ["DrawdownMade", "PaymentApplied"], {
+      creditLine: oldCreditlineAddress,
     })
   }
 

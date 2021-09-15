@@ -16,7 +16,7 @@ import {
   assertIsChainId,
   assertIsTicker,
 } from "../blockchain_scripts/deployHelpers"
-import _ from 'lodash'
+import _ from "lodash"
 import {CONFIG_KEYS} from "./configKeys"
 import hre from "hardhat"
 import {Contract} from "ethers"
@@ -43,7 +43,7 @@ async function upgradeContracts(
   signer: string | Signer,
   deployFrom: any,
   deployments: DeploymentsExtension,
-  changeImplementation: boolean=true
+  changeImplementation: boolean = true
 ) {
   console.log("Deploying the accountant")
   const accountantDeployResult = await deployments.deploy("Accountant", {from: deployFrom, gasLimit: 4000000, args: []})
@@ -73,7 +73,7 @@ async function upgradeContracts(
     })
     console.log("Deployed...")
     // Get a contract object with the latest ABI, attached to the signer
-    const ethersSigner = await getSignerForAddress(signer)
+    const ethersSigner = typeof signer === "string" ? await ethers.getSigner(signer) : signer
     let upgradedContract = await ethers.getContractAt(deployResult.abi, deployResult.address, ethersSigner)
     let upgradedImplAddress = deployResult.address
 
@@ -83,7 +83,7 @@ async function upgradeContracts(
           `Changing implementation of ${contractName} from ${contract.ExistingImplAddress} to ${deployResult.address}`
         )
       }
-      await contract.ProxyContract.changeImplementation(deployResult.address, "0x")
+      await contract.ProxyContract.connect(ethersSigner).changeImplementation(deployResult.address, "0x")
       upgradedContract = upgradedContract.attach(contract.ProxyContract.address)
     }
     contract.UpgradedContract = upgradedContract
@@ -99,7 +99,7 @@ type ExistingContracts = {
 async function getExistingContracts(
   contractNames: string[],
   signer: string | Signer,
-  chainId: ChainId=MAINNET_CHAIN_ID,
+  chainId: ChainId = MAINNET_CHAIN_ID
 ): Promise<ExistingContracts> {
   let contracts: ExistingContracts = {}
   const onChainConfig = getCurrentlyDeployedContracts(chainId)
@@ -198,12 +198,7 @@ async function migrateToNewConfig(upgradedContracts: any) {
     await (await newConfig.initialize(safeAddress)).wait()
   }
   await newConfig.initializeFromOtherConfig(existingConfig.address)
-  await updateConfig(
-    existingConfig,
-    "address",
-    CONFIG_KEYS.GoldfinchConfig,
-    newConfig.address
-  )
+  await updateConfig(existingConfig, "address", CONFIG_KEYS.GoldfinchConfig, newConfig.address)
 
   const contractsToUpgrade = ["Fidu", "Pool", "CreditDesk", "CreditLineFactory"]
   await Promise.all(
@@ -214,27 +209,29 @@ async function migrateToNewConfig(upgradedContracts: any) {
 }
 
 type ContractInfo = {
-  address: string,
+  address: string
   abi: {}[]
 }
-function getCurrentlyDeployedContracts(chainId: ChainId=MAINNET_CHAIN_ID) : {[key: string]: ContractInfo} {
+function getCurrentlyDeployedContracts(chainId: ChainId = MAINNET_CHAIN_ID): {[key: string]: ContractInfo} {
   let deploymentsFile = require("../client/config/deployments.json")
   const chainName = CHAIN_NAME_BY_ID[chainId]
   return deploymentsFile[chainId][chainName].contracts
 }
 
-async function getAllExistingContracts(chainId: ChainId=MAINNET_CHAIN_ID) : Promise<{[key: string]: any }> {
+async function getAllExistingContracts(chainId: ChainId = MAINNET_CHAIN_ID): Promise<{[key: string]: any}> {
   const contracts = getCurrentlyDeployedContracts(chainId)
   const result = {}
-  await Promise.all(Object.entries(contracts).map(async ([contractName, contractInfo]) => {
-    if (contractName.includes("Proxy") || contractName.includes("Implementation")) {
-      return null
-    }
-    if (contractName === "CreditLineFactory") {
-      contractName = "GoldfinchFactory"
-    }
-    return result[contractName] = await artifacts.require(contractName).at(contractInfo.address)
-  }))
+  await Promise.all(
+    Object.entries(contracts).map(async ([contractName, contractInfo]) => {
+      if (contractName.includes("Proxy") || contractName.includes("Implementation")) {
+        return null
+      }
+      if (contractName === "CreditLineFactory") {
+        contractName = "GoldfinchFactory"
+      }
+      return (result[contractName] = await artifacts.require(contractName).at(contractInfo.address))
+    })
+  )
   return result
 }
 
