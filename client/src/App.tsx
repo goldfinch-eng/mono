@@ -21,6 +21,7 @@ import {GoldfinchConfig} from "./typechain/web3/GoldfinchConfig"
 import SeniorPoolView from "./components/pools/seniorPoolView"
 import VerifyIdentity from "./components/verifyIdentity"
 import TranchedPoolView from "./components/pools/tranchedPoolView"
+import {SessionData} from "./types/session.js"
 
 export interface NetworkConfig {
   name?: string
@@ -50,8 +51,8 @@ interface GlobalState {
   refreshUserData?: (overrideAddress?: string) => void
   geolocationData?: GeolocationData
   setGeolocationData?: (geolocationData: GeolocationData) => void
-  sessionSignature?: string
-  setSessionSignature?: (sessionSignature: string) => void
+  sessionData?: SessionData
+  setSessionData?: (data: SessionData | undefined) => void
 }
 
 declare let window: any
@@ -70,7 +71,7 @@ function App() {
   const [networkMonitor, setNetworkMonitor] = useState<NetworkMonitor>()
   const [goldfinchProtocol, setGoldfinchProtocol] = useState<GoldfinchProtocol>()
   const [geolocationData, setGeolocationData] = useState<GeolocationData>()
-  const [sessionSignature, setSessionSignature] = useState<string>()
+  const [sessionData, setSessionData] = useState<SessionData>()
 
   useEffect(() => {
     setupWeb3()
@@ -178,8 +179,8 @@ function App() {
     goldfinchProtocol,
     geolocationData,
     setGeolocationData,
-    sessionSignature,
-    setSessionSignature,
+    sessionData,
+    setSessionData,
   }
 
   return (

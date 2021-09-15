@@ -1,7 +1,7 @@
 import BigNumber from "bignumber.js"
 import BN from "bn.js"
 import _ from "lodash"
-import {Contract} from "web3-eth-contract"
+import {Contract, EventData} from "web3-eth-contract"
 import {BaseContract} from "../typechain/web3/types"
 import {Pool, SeniorPool} from "./pool"
 
@@ -145,7 +145,11 @@ function fetchDataFromAttributes(
     })
 }
 
-async function getPoolEvents(pool: SeniorPool | Pool, address: string | undefined, eventNames: string[]) {
+async function getPoolEvents(
+  pool: SeniorPool | Pool,
+  address: string | undefined,
+  eventNames: string[],
+): Promise<EventData[]> {
   const fromBlock = getFromBlock(pool.chain)
   const events = await Promise.all(
     eventNames.map((eventName) => {

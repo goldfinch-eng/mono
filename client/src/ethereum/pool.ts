@@ -4,8 +4,8 @@ import {Tickers, usdcFromAtomic} from "./erc20"
 import {FIDU_DECIMALS, fiduFromAtomic} from "./fidu"
 import {roundDownPenny} from "../utils"
 import _ from "lodash"
-import {mapEventsToTx} from "./events"
-import {Contract} from "web3-eth-contract"
+import {getBalanceAsOf, mapEventsToTx} from "./events"
+import {Contract, EventData} from "web3-eth-contract"
 import {Pool as PoolContract} from "../typechain/web3/Pool"
 import {SeniorPool as SeniorPoolContract} from "../typechain/web3/SeniorPool"
 import {Fidu as FiduContract} from "../typechain/web3/Fidu"
@@ -61,7 +61,10 @@ class SeniorPool {
     this.gf = poolData
   }
 
-  async getPoolEvents(address: string | undefined, eventNames: string[] = ["DepositMade", "WithdrawalMade"]) {
+  async getPoolEvents(
+    address: string | undefined,
+    eventNames: string[] = ["DepositMade", "WithdrawalMade"],
+  ): Promise<EventData[]> {
     // In migrating from v1 to v2 (i.e. from the `Pool` contract as modeling the senior pool,
     // to the `SeniorPool` contract as modeling the senior pool), we transferred contract state
     // from Pool to SeniorPool (e.g. the deposits that a capital provider had made into Pool
@@ -163,7 +166,7 @@ interface PoolData {
   estimatedTotalInterest: BigNumber
   estimatedApy: BigNumber
   defaultRate: BigNumber
-  poolTxs: any[] //TODO
+  poolEvents: EventData[]
   assetsAsOf: typeof assetsAsOf
   getRepaymentEvents: typeof getRepaymentEvents
   remainingCapacity: typeof remainingCapacity
@@ -190,7 +193,7 @@ async function fetchPoolData(pool: SeniorPool, erc20: Contract): Promise<PoolDat
   let totalLoansOutstanding = new BigNumber(await pool.contract.methods.totalLoansOutstanding().call())
   let cumulativeWritedowns = await getCumulativeWritedowns(pool)
   let cumulativeDrawdowns = await getCumulativeDrawdowns(pool)
-  let poolTxs = await getAllDepositAndWithdrawalTxs(pool)
+  let poolEvents = await getAllDepositAndWithdrawalEvents(pool)
   let estimatedTotalInterest = await getEstimatedTotalInterest(pool)
   let estimatedApy = estimatedTotalInterest.dividedBy(totalPoolAssets)
   let defaultRate = cumulativeWritedowns.dividedBy(cumulativeDrawdowns)
@@ -206,7 +209,7 @@ async function fetchPoolData(pool: SeniorPool, erc20: Contract): Promise<PoolDat
     totalLoansOutstanding,
     cumulativeWritedowns,
     cumulativeDrawdowns,
-    poolTxs,
+    poolEvents,
     assetsAsOf,
     getRepaymentEvents,
     remainingCapacity,
@@ -307,36 +310,14 @@ async function getRepaymentEvents(this: PoolData, goldfinchProtocol: GoldfinchPr
   return _.compact(combinedEvents)
 }
 
-async function getAllDepositAndWithdrawalTxs(pool: SeniorPool) {
-  // HOTFIX: Do not get all deposit and withdrawal transactions for `pool`, as we do
-  // not yet have a way to obtain the data we want sufficiently efficiently not to make the rest
-  // of the app unusable (from having triggered rate-limiting of our web3 calls). This is an
-  // acceptable hotfix because currently, this function is used only to define `PoolData.poolTxs`,
-  // and that is used only by `assetsAsOf()` which is used only in rendering RecentRepayments.
-  return []
-
-  // const eventNames = ["DepositMade", "WithdrawalMade"]
-  // const poolEvents = await pool.getPoolEvents(undefined, eventNames)
-  // return await mapEventsToTx(poolEvents)
+async function getAllDepositAndWithdrawalEvents(pool: SeniorPool): Promise<EventData[]> {
+  const eventNames = ["DepositMade", "WithdrawalMade"]
+  const poolEvents = await pool.getPoolEvents(undefined, eventNames)
+  return poolEvents
 }
 
-function assetsAsOf(this: PoolData, dt) {
-  const filtered = _.filter(this.poolTxs, (transfer) => {
-    return transfer.blockTime < dt
-  })
-  if (!filtered.length) {
-    return new BigNumber(0)
-  }
-  return BigNumber.sum.apply(
-    null,
-    filtered.map((transfer) => {
-      if (transfer.type === "WithdrawalMade") {
-        return transfer.amountBN.multipliedBy(new BigNumber(-1))
-      } else {
-        return transfer.amountBN
-      }
-    }),
-  )
+function assetsAsOf(this: PoolData, blockNumExclusive: number): BigNumber {
+  return getBalanceAsOf(this.poolEvents, blockNumExclusive, "WithdrawalMade")
 }
 
 /**

@@ -219,7 +219,7 @@ function usePoolBackers({goldfinchProtocol, user}: {goldfinchProtocol?: Goldfinc
       setBackersStatus("loaded")
     }
 
-    if (goldfinchProtocol && user?.loaded) {
+    if (goldfinchProtocol && user) {
       loadTranchedPools(goldfinchProtocol, user)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
