@@ -99,7 +99,6 @@ const wrapWithSentry = (fn: HttpFunction, wrapOptions?: Partial<HttpFunctionWrap
       return await fn(req, res)
     } catch (err: unknown) {
       Sentry.captureException(err)
-      console.error(err)
       return res.status(500).send("Internal error.")
     }
   }, wrapOptions)
