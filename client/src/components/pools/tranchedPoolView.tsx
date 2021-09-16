@@ -719,15 +719,19 @@ function TranchedPoolView() {
       <div className="page-header">{earnMessage}</div>
       <ConnectionNotice requireUnlock={false} requireGolist={true} requireSignIn={true} />
       {unlockForm}
-      {maxCapacityNotice}
-      {(!isAtMaxCapacity || !backer?.balanceInDollars.isZero()) && (
+      {user.loaded && (
         <>
-          <InvestorNotice />
-          <ActionsContainer
-            tranchedPool={tranchedPool}
-            backer={backer}
-            onComplete={async () => refreshTranchedPool()}
-          />
+          {maxCapacityNotice}
+          {(!isAtMaxCapacity || !backer?.balanceInDollars.isZero()) && (
+            <>
+              <InvestorNotice />
+              <ActionsContainer
+                tranchedPool={tranchedPool}
+                backer={backer}
+                onComplete={async () => refreshTranchedPool()}
+              />
+            </>
+          )}
         </>
       )}
       <CreditStatus tranchedPool={tranchedPool} />
