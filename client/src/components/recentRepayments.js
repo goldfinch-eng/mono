@@ -33,6 +33,8 @@ function RecentRepayments() {
 
       yourPortion = displayDollars(yourPortionValue, 4)
       yourPortionClass = isFinite(yourPortionValue) && yourPortionValue > 0 ? "" : "zero"
+    } else if (!user.loaded && !user.address) {
+      yourPortion = displayDollars(0, 4)
     } else {
       yourPortion = "Loading..."
     }
