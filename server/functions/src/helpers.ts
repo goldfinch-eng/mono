@@ -13,6 +13,9 @@ const genVerificationMessage = (blockNum: number) => `Sign in to Goldfinch: ${bl
 
 const ONE_DAY_SECONDS = 60 * 60 * 24
 
+// This is not a secret, so it's ok to hardcode this
+const INFURA_PROJECT_ID = "d8e13fc4893e4be5aae875d94fee67b7"
+
 const setCORSHeaders = (req: any, res: any) => {
   const allowedOrigins = (getConfig(functions).kyc.allowed_origins || "").split(",")
   if (allowedOrigins.includes(req.headers.origin)) {
@@ -51,7 +54,12 @@ const _getBlockchain = (origin: string): BaseProvider => {
     blockchain = 1
   }
   const network = typeof blockchain === "number" ? getNetwork(blockchain) : blockchain
-  return ethers.getDefaultProvider(network)
+  // If we're using urls for the network (hardhat or murmuration) use the default provider
+  if (typeof network === "string" && network.match(/^(ws|http)s?:/i)) {
+    return ethers.getDefaultProvider(network)
+  } else {
+    return new ethers.providers.InfuraProvider(network, INFURA_PROJECT_ID)
+  }
 }
 
 /**
