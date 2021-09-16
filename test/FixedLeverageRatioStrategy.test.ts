@@ -11,9 +11,7 @@ const EXPECTED_LEVERAGE_RATIO: BN = new BN(String(4e18))
 const setupTest = deployments.createFixture(async ({deployments}) => {
   const [owner, borrower] = await web3.eth.getAccounts()
 
-  const {seniorPool, goldfinchConfig, goldfinchFactory, usdc} = await deployAllContracts(deployments, {
-    fromAccount: owner,
-  })
+  const {seniorPool, goldfinchConfig, goldfinchFactory, usdc} = await deployAllContracts(deployments)
 
   await goldfinchConfig.bulkAddToGoList([owner, borrower])
 
