@@ -8,7 +8,7 @@ import {Granted, TestCommunityRewardsInstance} from "../typechain/truffle/TestCo
 import {assertNonNullable} from "../utils/type"
 import {mintAndLoadRewards} from "./communityRewardsHelpers"
 import {fixtures} from "./merkleDistributorHelpers"
-import {decodeLogs, deployAllContracts, getOnlyLog} from "./testHelpers"
+import {decodeLogs, deployAllContracts, genDifferentHexString, getOnlyLog} from "./testHelpers"
 const {ethers} = hre
 const {deployments} = hre
 
@@ -49,6 +49,8 @@ describe("MerkleDistributor", () => {
     vestingInterval: BN
     proof: string[]
   }): Promise<BN> {
+    const rewardsAvailableBefore = await communityRewards.rewardsAvailable()
+
     const receipt = await merkleDistributor.acceptGrant(
       index,
       account,
@@ -60,6 +62,14 @@ describe("MerkleDistributor", () => {
       {from}
     )
 
+    const rewardsAvailableAfter = await communityRewards.rewardsAvailable()
+
+    // MerkleDistributor's behavior
+
+    // Verify that the grant is now considered accepted.
+    const isGrantAccepted = await merkleDistributor.isGrantAccepted(index)
+    expect(isGrantAccepted).to.be.true
+
     // Verify the GrantAccepted event emitted by MerkleDistributor.
     const grantAcceptedEvent = getOnlyLog<GrantAccepted>(
       decodeLogs(receipt.receipt.rawLogs, merkleDistributor, "GrantAccepted")
@@ -70,6 +80,8 @@ describe("MerkleDistributor", () => {
     expect(grantAcceptedEvent.args.vestingLength).to.bignumber.equal(vestingLength)
     expect(grantAcceptedEvent.args.cliffLength).to.bignumber.equal(cliffLength)
     expect(grantAcceptedEvent.args.vestingInterval).to.bignumber.equal(vestingInterval)
+
+    // CommunityRewards's behavior
 
     // Verify the Granted event emitted by CommunityRewards.
     const grantedEvent = getOnlyLog<Granted>(decodeLogs(receipt.receipt.rawLogs, communityRewards, "Granted"))
@@ -83,6 +95,9 @@ describe("MerkleDistributor", () => {
     // Verify that ownership of the NFT minted by CommunityRewards belongs to the
     // address to whom the grant belongs (e.g. as opposed to `from`).
     expect(await communityRewards.ownerOf(tokenId)).to.equal(account)
+
+    // Verify that rewards available has been decremented reflecting the amount of the grant.
+    expect(rewardsAvailableBefore.sub(rewardsAvailableAfter)).to.bignumber.equal(amount)
 
     return new BN(tokenId)
   }
@@ -196,6 +211,8 @@ describe("MerkleDistributor", () => {
       grantInfo = _grantInfo
       index = grantInfo.index
       acceptGrantParams = {
+        // Note that the sender is a random user, unrelated to the grant recipient;
+        // anyone can call `acceptGrant()` for any grant recipient.
         from: anotherUser,
         index,
         account: grantInfo.account,
@@ -323,17 +340,60 @@ describe("MerkleDistributor", () => {
       expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
     })
 
-    it("rejects an existent grant index with incorrect (empty) proof", async () => {})
-
-    it("rejects an existent grant index with incorrect (non-empty) proof", async () => {})
-
-    it("sets the grant as accepted, calls `CommunityRewards.grant()`, and emits an event", async () => {
-      // Note that the caller in this case is entirely unrelated to the grant recipient; anyone can call
-      // `acceptGrant()` for any grant recipient.
+    it("rejects an existent grant index with incorrect (empty) proof array", async () => {
+      const invalidProof: string[] = []
+      const acceptance = acceptGrant({
+        ...acceptGrantParams,
+        proof: invalidProof,
+      })
+      expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
     })
 
-    it("is not aware of a, and therefore does not prevent a duplicate, grant with identical details that was not made by this contract", async () => {})
+    it("rejects an existent grant index with incorrect (empty) proof string", async () => {
+      const invalidProof: string[] = [web3.utils.asciiToHex("")]
+      const acceptance = acceptGrant({
+        ...acceptGrantParams,
+        proof: invalidProof,
+      })
+      expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
+    })
 
-    it("uses the expected amount of gas", async () => {})
+    it("rejects an existent grant index with incorrect (non-empty) proof", async () => {
+      const invalidProof: string[] = grantInfo.proof.slice()
+      const lastElement = invalidProof[invalidProof.length - 1]
+      assertNonNullable(lastElement)
+      invalidProof[invalidProof.length - 1] = genDifferentHexString(lastElement)
+      const acceptance = acceptGrant({
+        ...acceptGrantParams,
+        proof: invalidProof,
+      })
+      expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
+    })
+
+    it("sets the grant as accepted, calls `CommunityRewards.grant()`, and emits an event", async () => {
+      const acceptance = acceptGrant(acceptGrantParams)
+      expect(acceptance).to.be.fulfilled
+    })
+
+    it('is not aware of a, and therefore does not prevent a "duplicate", grant with identical details that was issued directly (i.e. not by this contract)', async () => {
+      await mintAndLoadRewards(gfi, communityRewards, owner, web3.utils.toBN(grantInfo.grant.amount))
+
+      const directIssuance = communityRewards.grant(
+        acceptGrantParams.account,
+        acceptGrantParams.amount,
+        acceptGrantParams.vestingLength,
+        acceptGrantParams.cliffLength,
+        acceptGrantParams.vestingInterval,
+        {from: owner}
+      )
+      expect(directIssuance).to.be.fulfilled
+
+      const acceptance = acceptGrant(acceptGrantParams)
+      expect(acceptance).to.be.fulfilled
+    })
+
+    it.skip("uses the expected amount of gas", async () => {
+      // TODO
+    })
   })
 })

@@ -1,6 +1,7 @@
 import { generateMerkleRoot } from "../../../blockchain_scripts/merkleDistributor/generateMerkleRoot"
 import {JsonAccountedGrant, MerkleDistributorInfo} from "../../../blockchain_scripts/merkleDistributor/types"
 import {verifyMerkleRoot} from "../../../blockchain_scripts/merkleDistributor/verifyMerkleRoot"
+import { genDifferentHexString } from "../../testHelpers"
 import fixtures from "./fixtures"
 
 describe("verifyMerkleRoot", () => {
@@ -19,9 +20,7 @@ describe("verifyMerkleRoot", () => {
   it("rejects an invalid proof for a grant", async () => {})
 
   it("rejects an invalid root", async () => {
-    const differentRoot = `${fixtures.output.merkleRoot.slice(0, -1)}${
-      fixtures.output.merkleRoot[fixtures.output.merkleRoot.length - 1] === "1" ? "2" : "1"
-    }`
+    const differentRoot = genDifferentHexString(fixtures.output.merkleRoot)
     const json: MerkleDistributorInfo = {
       ...fixtures.output,
       merkleRoot: differentRoot,

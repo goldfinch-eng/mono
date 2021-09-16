@@ -5,7 +5,13 @@ const expect = chai.expect
 import mochaEach from "mocha-each"
 import {time} from "@openzeppelin/test-helpers"
 import BN from "bn.js"
-import {isTestEnv, USDCDecimals, interestAprAsBN, ZERO_ADDRESS, DISTRIBUTOR_ROLE} from "../blockchain_scripts/deployHelpers"
+import {
+  isTestEnv,
+  USDCDecimals,
+  interestAprAsBN,
+  ZERO_ADDRESS,
+  DISTRIBUTOR_ROLE,
+} from "../blockchain_scripts/deployHelpers"
 import {DeploymentsExtension} from "hardhat-deploy/dist/types"
 import {
   CreditDeskInstance,
@@ -432,6 +438,8 @@ async function toTruffle(
   return truffleContract.at(address)
 }
 
+const genDifferentHexString = (hex: string): string => `${hex.slice(0, -1)}${hex[hex.length - 1] === "1" ? "2" : "1"}`
+
 export {
   chai,
   expect,
@@ -468,4 +476,5 @@ export {
   getFirstLog,
   getOnlyLog,
   toTruffle,
+  genDifferentHexString,
 }
