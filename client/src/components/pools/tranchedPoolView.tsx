@@ -1,4 +1,4 @@
-import {useContext, useEffect, useState} from "react"
+import {useContext, useState} from "react"
 import {useParams} from "react-router-dom"
 import ConnectionNotice from "../connectionNotice"
 import {AppContext} from "../../App"
@@ -679,22 +679,8 @@ function Overview({tranchedPool}: {tranchedPool?: TranchedPool}) {
 function TranchedPoolView() {
   const {poolAddress} = useParams()
   const {goldfinchProtocol, usdc, user} = useContext(AppContext)
-  const [tranchedPoolResult, refreshTranchedPool] = useTranchedPool({address: poolAddress, goldfinchProtocol})
-  const [tranchedPool, setTranchedPool] = useState<TranchedPool>()
-  const backerResult = useBacker({user, tranchedPool})
-  const [backer, setBacker] = useState<PoolBacker>()
-
-  useEffect(() => {
-    if (tranchedPoolResult.status === "succeeded") {
-      setTranchedPool(tranchedPoolResult.value)
-    }
-  }, [tranchedPoolResult])
-
-  useEffect(() => {
-    if (backerResult) {
-      setBacker(backerResult)
-    }
-  }, [backerResult])
+  const [tranchedPool, refreshTranchedPool] = useTranchedPool({address: poolAddress, goldfinchProtocol})
+  const backer = useBacker({user, tranchedPool})
 
   const [unlocked, refreshUnlocked] = useCurrencyUnlocked(usdc, {
     owner: user.address,
@@ -731,7 +717,7 @@ function TranchedPoolView() {
   return (
     <div className="content-section">
       <div className="page-header">{earnMessage}</div>
-      <ConnectionNotice requireUnlock={false} requireVerify={true} requireSignIn={true} />
+      <ConnectionNotice requireUnlock={false} requireGolist={true} requireSignIn={true} />
       {unlockForm}
       {maxCapacityNotice}
       {(!isAtMaxCapacity || !backer?.balanceInDollars.isZero()) && (

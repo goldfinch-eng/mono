@@ -6,14 +6,18 @@ import WithdrawalForm from "./withdrawalForm"
 import {iconUpArrow, iconDownArrow} from "./icons"
 import {CapitalProvider, PoolData} from "../ethereum/pool"
 import BigNumber from "bignumber.js"
+import {KYC} from "../hooks/useGoldfinchClient"
+import {eligibleForSeniorPool} from "../hooks/useKYC"
 
 interface EarnActionsContainerProps {
   actionComplete: () => Promise<any>
   capitalProvider: CapitalProvider
   poolData?: PoolData
+  kyc?: KYC
 }
 
 function EarnActionsContainer(props: EarnActionsContainerProps) {
+  const {kyc} = props
   const {user, goldfinchConfig} = useContext(AppContext)
   const [showAction, setShowAction] = useState<string>()
 
@@ -28,14 +32,14 @@ function EarnActionsContainer(props: EarnActionsContainerProps) {
   }
 
   let placeholderClass = ""
-  if (!user.address || !user.usdcIsUnlocked("earn") || !user.goListed) {
+  if (!user.address || !user.usdcIsUnlocked("earn") || !eligibleForSeniorPool(kyc)) {
     placeholderClass = "placeholder"
   }
 
   let depositAction
   let depositClass = "disabled"
   let remainingCapacity = props.poolData?.remainingCapacity(goldfinchConfig.totalFundsLimit) || new BigNumber("0")
-  if (user.usdcIsUnlocked("earn") && user.goListed && props.capitalProvider && remainingCapacity.gt("0")) {
+  if (user.usdcIsUnlocked("earn") && eligibleForSeniorPool(kyc) && props.capitalProvider && remainingCapacity.gt("0")) {
     depositAction = (e) => {
       setShowAction("deposit")
     }
@@ -44,7 +48,7 @@ function EarnActionsContainer(props: EarnActionsContainerProps) {
 
   let withdrawAction
   let withdrawClass = "disabled"
-  if (user.usdcIsUnlocked("earn") && props.capitalProvider.availableToWithdraw.gt(0)) {
+  if (user.usdcIsUnlocked("earn") && eligibleForSeniorPool(kyc) && props.capitalProvider.availableToWithdraw.gt(0)) {
     withdrawAction = (e) => {
       setShowAction("withdrawal")
     }

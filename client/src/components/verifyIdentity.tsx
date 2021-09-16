@@ -2,6 +2,7 @@ import {ErrorMessage} from "@hookform/error-message"
 import Persona from "persona"
 import {useContext, useState} from "react"
 import {FormProvider, useForm} from "react-hook-form"
+import {Link} from "react-router-dom"
 import {AppContext} from "../App"
 import DefaultGoldfinchClient from "../hooks/useGoldfinchClient"
 import {Session, useSignIn} from "../hooks/useSignIn"
@@ -310,7 +311,12 @@ function VerifyIdentity() {
       return (
         <VerificationNotice
           icon={iconClock}
-          notice="Your verification has been successfully submitted and is in progress. You can expect it to be complete within a few days, and usually much faster."
+          notice={
+            <>
+              Your verification was approved to immediately access the <Link to="/pools/senior">Senior Pool</Link>.
+              Later, we'll email you when you are on the Backer list and can supply to Borrower Pools.
+            </>
+          }
         />
       )
     } else if (entityType === "non-US") {

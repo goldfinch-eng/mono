@@ -13,11 +13,15 @@ import {AppContext} from "../../App"
 import InvestorNotice from "../investorNotice"
 import {assertNonNullable, displayDollars} from "../../utils"
 import {usdcFromAtomic} from "../../ethereum/erc20"
+import {useStaleWhileRevalidating} from "../../hooks/useAsync"
+import {eligibleForSeniorPool, useKYC} from "../../hooks/useKYC"
 
-function SeniorPoolView() {
+function SeniorPoolView(): JSX.Element {
   const {pool, user, goldfinchConfig} = useContext(AppContext)
   const [capitalProvider, setCapitalProvider] = useState<CapitalProvider>(emptyCapitalProvider())
   const [poolData, setPoolData] = useState<PoolData>()
+  const kycResult = useKYC()
+  const kyc = useStaleWhileRevalidating(kycResult)
 
   useEffect(() => {
     async function refreshAllData() {
@@ -73,10 +77,15 @@ function SeniorPoolView() {
   return (
     <div className="content-section">
       <div className="page-header"> {earnMessage}</div>
-      <ConnectionNotice requireVerify={true} />
+      <ConnectionNotice requireSignIn={true} requireKYC={{kyc, condition: eligibleForSeniorPool}} />
       {maxCapacityNotice}
       <InvestorNotice />
-      <EarnActionsContainer poolData={poolData} capitalProvider={capitalProvider} actionComplete={actionComplete} />
+      <EarnActionsContainer
+        poolData={poolData}
+        capitalProvider={capitalProvider}
+        actionComplete={actionComplete}
+        kyc={kyc}
+      />
       <PoolStatus poolData={poolData} />
     </div>
   )

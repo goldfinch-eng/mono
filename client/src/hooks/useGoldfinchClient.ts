@@ -6,17 +6,22 @@ const API_URLS = {
   localhost: "https://us-central1-goldfinch-frontends-dev.cloudfunctions.net",
 }
 
-type OkResponse = {
+type OkResponse<T = any> = {
   ok: true
   response: Response
-  json: any
+  json: T
 }
-type NotOkResponse = {
+type NotOkResponse<T = any> = {
   ok: false
   response: Response
-  json: any
+  json: T
 }
-type HandledResponse = OkResponse | NotOkResponse
+type HandledResponse<T = any> = OkResponse<T> | NotOkResponse<T>
+
+export interface KYC {
+  status: "unknown" | "approved" | "failed"
+  countryCode: string
+}
 
 interface GoldfinchClient {
   fetchKYCStatus(address: string): Promise<any>
@@ -49,9 +54,9 @@ class DefaultGoldfinchClient implements GoldfinchClient {
     this.setSessionData = setSessionData
   }
 
-  async _handleResponse(fetched: Promise<Response>): Promise<HandledResponse> {
+  async _handleResponse<T = any>(fetched: Promise<Response>): Promise<HandledResponse<T>> {
     const response = await fetched
-    const json = await response.json()
+    const json = (await response.json()) as T
     if (response.ok) {
       return {
         ok: response.ok,
@@ -90,7 +95,7 @@ class DefaultGoldfinchClient implements GoldfinchClient {
     return `${this.baseURL}/kycStatus`
   }
 
-  async fetchKYCStatus(address: string): Promise<HandledResponse> {
+  async fetchKYCStatus(address: string): Promise<HandledResponse<KYC>> {
     return this._handleResponse(fetch(this._getKYCStatusURL(), this._getKYCStatusRequestInit(address)))
   }
 
