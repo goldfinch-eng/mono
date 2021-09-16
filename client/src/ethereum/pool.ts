@@ -98,6 +98,7 @@ interface CapitalProvider {
   unrealizedGainsInDollars: BigNumber
   unrealizedGainsPercentage: BigNumber
   loaded: boolean
+  empty?: boolean
 }
 
 function emptyCapitalProvider({loaded = false} = {}): CapitalProvider {
@@ -112,6 +113,7 @@ function emptyCapitalProvider({loaded = false} = {}): CapitalProvider {
     unrealizedGainsInDollars: new BigNumber(0),
     unrealizedGainsPercentage: new BigNumber(0),
     loaded,
+    empty: true,
   }
 }
 

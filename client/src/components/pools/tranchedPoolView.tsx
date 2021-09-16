@@ -1,4 +1,4 @@
-import {useContext, useEffect, useState} from "react"
+import {useContext, useState} from "react"
 import {useParams} from "react-router-dom"
 import ConnectionNotice from "../connectionNotice"
 import {AppContext} from "../../App"
@@ -329,18 +329,18 @@ function DepositStatus({tranchedPool, backer}: {tranchedPool?: TranchedPool; bac
   )
 }
 
-function ActionsContainer({tranchedPool, onComplete}: {tranchedPool?: TranchedPool; onComplete: () => Promise<any>}) {
+function ActionsContainer({
+  tranchedPool,
+  onComplete,
+  backer,
+}: {
+  tranchedPool?: TranchedPool
+  onComplete: () => Promise<any>
+  backer?: PoolBacker
+}) {
   const {user} = useContext(AppContext)
   const [action, setAction] = useState<"" | "deposit" | "withdraw">("")
-  const backerResult = useBacker({user, tranchedPool})
-  const [backer, setBacker] = useState<PoolBacker>()
   const session = useSession()
-
-  useEffect(() => {
-    if (backerResult) {
-      setBacker(backerResult)
-    }
-  }, [backerResult])
 
   function actionComplete() {
     onComplete().then(() => {
@@ -679,14 +679,8 @@ function Overview({tranchedPool}: {tranchedPool?: TranchedPool}) {
 function TranchedPoolView() {
   const {poolAddress} = useParams()
   const {goldfinchProtocol, usdc, user} = useContext(AppContext)
-  const [tranchedPoolResult, refreshTranchedPool] = useTranchedPool({address: poolAddress, goldfinchProtocol})
-  const [tranchedPool, setTranchedPool] = useState<TranchedPool>()
-
-  useEffect(() => {
-    if (tranchedPoolResult.status === "succeeded") {
-      setTranchedPool(tranchedPoolResult.value)
-    }
-  }, [tranchedPoolResult])
+  const [tranchedPool, refreshTranchedPool] = useTranchedPool({address: poolAddress, goldfinchProtocol})
+  const backer = useBacker({user, tranchedPool})
 
   const [unlocked, refreshUnlocked] = useCurrencyUnlocked(usdc, {
     owner: user.address,
@@ -707,8 +701,10 @@ function TranchedPoolView() {
     )
   }
 
+  const isAtMaxCapacity = tranchedPool?.remainingCapacity().isZero()
+
   let maxCapacityNotice = <></>
-  if (tranchedPool?.remainingCapacity().isEqualTo("0")) {
+  if (isAtMaxCapacity) {
     maxCapacityNotice = (
       <div className="info-banner background-container">
         <div className="message">
@@ -721,11 +717,19 @@ function TranchedPoolView() {
   return (
     <div className="content-section">
       <div className="page-header">{earnMessage}</div>
-      <ConnectionNotice requireUnlock={false} requireVerify={true} requireSignIn={true} />
+      <ConnectionNotice requireUnlock={false} requireGolist={true} requireSignIn={true} />
       {unlockForm}
       {maxCapacityNotice}
-      <InvestorNotice />
-      <ActionsContainer tranchedPool={tranchedPool} onComplete={async () => refreshTranchedPool()} />
+      {(!isAtMaxCapacity || !backer?.balanceInDollars.isZero()) && (
+        <>
+          <InvestorNotice />
+          <ActionsContainer
+            tranchedPool={tranchedPool}
+            backer={backer}
+            onComplete={async () => refreshTranchedPool()}
+          />
+        </>
+      )}
       <CreditStatus tranchedPool={tranchedPool} />
       {tranchedPool?.isV1StyleDeal ? (
         <V1DealSupplyStatus tranchedPool={tranchedPool} />

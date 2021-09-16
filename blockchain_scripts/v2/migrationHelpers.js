@@ -145,7 +145,7 @@ async function calculateTermTimes(clAddress) {
     // We didn't update the termInDays because we can't directly change that, and
     // we could achieve the same effect by upping the termEndBlock. So for expediency,
     // just doing a change here so we get the right term start block
-    termInDays = new BN(1190)
+    termInDays = new BN(1196)
   }
   const termStartBlock = termEndBlock.sub(new BN(BLOCKS_PER_DAY).mul(termInDays))
   const termStartTime = await getBlockTimestamp(termStartBlock)
@@ -155,7 +155,14 @@ async function calculateTermTimes(clAddress) {
 async function calculateNextDueTime(clAddress, termStartTime) {
   const creditLine = await IV1CreditLine.at(clAddress)
   const nextDueBlock = await creditLine.nextDueBlock()
-  const termInDays = await creditLine.termInDays()
+  let termInDays = await creditLine.termInDays()
+  if (clAddress === "0x306e330d084f7996f41bb113b5f0f15501c821a5") {
+    // This is the Alma creditline, which we bumped the maturity date on.
+    // We didn't update the termInDays because we can't directly change that, and
+    // we could achieve the same effect by upping the termEndBlock. So for expediency,
+    // just doing a change here so we get the right term start block
+    termInDays = new BN(1196)
+  }
   const termEndBlock = await creditLine.termEndBlock()
   const termStartBlock = termEndBlock.sub(new BN(BLOCKS_PER_DAY).mul(termInDays))
   const percentComplete =
@@ -210,7 +217,14 @@ async function getMigrationData(clAddress, pool) {
 async function getInterestAccruedAsOf(clAddress, termStartTime) {
   const creditLine = await IV1CreditLine.at(clAddress)
   const interestAccruedAsOfBlock = await creditLine.interestAccruedAsOfBlock()
-  const termInDays = await creditLine.termInDays()
+  let termInDays = await creditLine.termInDays()
+  if (clAddress === "0x306e330d084f7996f41bb113b5f0f15501c821a5") {
+    // This is the Alma creditline, which we bumped the maturity date on.
+    // We didn't update the termInDays because we can't directly change that, and
+    // we could achieve the same effect by upping the termEndBlock. So for expediency,
+    // just doing a change here so we get the right term start block
+    termInDays = new BN(1196)
+  }
   const termInBlocks = termInDays.mul(new BN(BLOCKS_PER_DAY))
   const startBlock = (await creditLine.termEndBlock()).sub(termInBlocks)
   const fractionOfPeriod = interestAccruedAsOfBlock.sub(startBlock).toNumber() / termInBlocks.toNumber()

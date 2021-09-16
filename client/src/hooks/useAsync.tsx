@@ -87,3 +87,23 @@ export function useAsyncFn<T>(
 
   return [state, callback]
 }
+
+/**
+ * Returns state that is only updated when the `AsyncResult` has successfully produced a value.
+ * In other words, the returned state will only be undefined while the AsyncResult is loading
+ * for the first time. On subsequent loads, the returned state will keep its current value until
+ * the new value is ready.
+ *
+ * This behavior is similar to the "stale-while-revalidate" cache-control.
+ */
+export function useStaleWhileRevalidating<T>(result: AsyncResult<T>): T | undefined {
+  const [value, setValue] = useState<T>()
+
+  useEffect(() => {
+    if (result.status === "succeeded") {
+      setValue(result.value)
+    }
+  }, [result])
+
+  return value
+}

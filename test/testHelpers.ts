@@ -358,6 +358,11 @@ async function toTruffle(address: Truffle.ContractInstance | string, contractNam
   return truffleContract.at(address)
 }
 
+async function toEthers<T>(truffleContract: Truffle.ContractInstance): Promise<T> {
+  return (await ethers.getContractAt(truffleContract.abi, truffleContract.address)) as unknown as T
+}
+
+
 export {
   chai,
   expect,
@@ -392,4 +397,5 @@ export {
   decodeLogs,
   getFirstLog,
   toTruffle,
+  toEthers
 }

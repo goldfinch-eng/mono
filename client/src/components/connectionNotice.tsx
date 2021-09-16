@@ -8,12 +8,14 @@ import UnlockUSDCForm from "./unlockUSDCForm"
 import VerifyAddressBanner from "./verifyAddressBanner"
 import {useForm, FormProvider} from "react-hook-form"
 import LoadingButton from "./loadingButton"
+import {KYC} from "../hooks/useGoldfinchClient"
 
 interface ConnectionNoticeProps {
   creditLine?: CreditLine
-  requireVerify?: boolean
+  requireGolist?: boolean
   requireUnlock?: boolean
   requireSignIn?: boolean
+  requireKYC?: {kyc: KYC | undefined; condition: (kyc?: KYC) => boolean}
 }
 
 function SignInBanner() {
@@ -32,8 +34,9 @@ function SignInBanner() {
 
 function ConnectionNotice({
   requireUnlock = true,
-  requireVerify = false,
+  requireGolist = false,
   requireSignIn = false,
+  requireKYC,
   creditLine,
 }: ConnectionNoticeProps) {
   const {network, user} = useNonNullContext(AppContext)
@@ -80,20 +83,21 @@ function ConnectionNotice({
           </div>
         </div>
       )
-    } else {
-      if (requireUnlock) {
-        let unlockStatus: UnlockedStatus | null = null
-        if (location.pathname.startsWith("/pools/senior")) {
-          unlockStatus = user.getUnlockStatus("earn")
-        } else if (location.pathname.startsWith("/borrow")) {
-          unlockStatus = user.getUnlockStatus("borrow")
-        }
-        if (unlockStatus && !unlockStatus.isUnlocked) {
-          notice = <UnlockUSDCForm unlockAddress={unlockStatus.unlockAddress} />
-        }
-      }
-      if (!user.goListed && requireVerify) {
+    } else if (!user.goListed && requireGolist) {
+      notice = <VerifyAddressBanner />
+    } else if (requireKYC) {
+      if (requireKYC.kyc && !requireKYC.condition(requireKYC.kyc) && !user.goListed) {
         notice = <VerifyAddressBanner />
+      }
+    } else if (requireUnlock) {
+      let unlockStatus: UnlockedStatus | null = null
+      if (location.pathname.startsWith("/pools/senior")) {
+        unlockStatus = user.getUnlockStatus("earn")
+      } else if (location.pathname.startsWith("/borrow")) {
+        unlockStatus = user.getUnlockStatus("borrow")
+      }
+      if (unlockStatus && !unlockStatus.isUnlocked) {
+        notice = <UnlockUSDCForm unlockAddress={unlockStatus.unlockAddress} />
       }
     }
   }

@@ -25,6 +25,18 @@
     }
   }
 
+  .fallback-content {
+    height: 45px;
+  }
+
+  .circle-icon {
+    width: 45px;
+    height: 45px;
+    background: $sand-dark;
+    border-radius: 50%;
+    margin-right: 18px;
+  }
+
   .name {
     flex-grow: 1;
     min-width: 0px;
