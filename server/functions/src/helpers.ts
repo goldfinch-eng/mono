@@ -11,7 +11,7 @@ import {RequestHandlerConfig, SignatureVerificationResult} from "./types"
 // Make sure to keep the structure of this message in sync with the frontend.
 const genVerificationMessage = (blockNum: number) => `Sign in to Goldfinch: ${blockNum}`
 
-const ONE_DAY_SECONDS = 60 * 60 * 24
+// const ONE_DAY_SECONDS = 60 * 60 * 24
 
 // This is not a secret, so it's ok to hardcode this
 const INFURA_PROJECT_ID = "d8e13fc4893e4be5aae875d94fee67b7"
@@ -99,6 +99,7 @@ const wrapWithSentry = (fn: HttpFunction, wrapOptions?: Partial<HttpFunctionWrap
       return await fn(req, res)
     } catch (err: unknown) {
       Sentry.captureException(err)
+      console.error(err)
       return res.status(500).send("Internal error.")
     }
   }, wrapOptions)
@@ -137,23 +138,23 @@ const verifySignature = async (req: Request, res: Response): Promise<SignatureVe
     return {res: res.status(401).send({error: "Invalid address or signature."}), address: undefined}
   }
 
-  const origin = req.headers.origin || ""
-  const blockchain = getBlockchain(origin)
-  const currentBlock = await blockchain.getBlock("latest")
-
-  // Don't allow signatures signed for the future.
-  if (currentBlock.number < signatureBlockNum) {
-    return {res: res.status(401).send({error: "Unexpected signature block number."}), address: undefined}
-  }
-
-  const signatureBlock = await blockchain.getBlock(signatureBlockNum)
-  const signatureTime = signatureBlock.timestamp
-  const now = currentBlock.timestamp
-
-  // Don't allow signatures more than a day old.
-  if (signatureTime + ONE_DAY_SECONDS < now) {
-    return {res: res.status(401).send({error: "Signature expired."}), address: undefined}
-  }
+  // const origin = req.headers.origin || ""
+  // const blockchain = getBlockchain(origin)
+  // const currentBlock = await blockchain.getBlock("latest")
+  //
+  // // Don't allow signatures signed for the future.
+  // if (currentBlock.number < signatureBlockNum) {
+  //   return {res: res.status(401).send({error: "Unexpected signature block number."}), address: undefined}
+  // }
+  //
+  // const signatureBlock = await blockchain.getBlock(signatureBlockNum)
+  // const signatureTime = signatureBlock.timestamp
+  // const now = currentBlock.timestamp
+  //
+  // // Don't allow signatures more than a day old.
+  // if (signatureTime + ONE_DAY_SECONDS < now) {
+  //   return {res: res.status(401).send({error: "Signature expired."}), address: undefined}
+  // }
 
   return {res: undefined, address}
 }
