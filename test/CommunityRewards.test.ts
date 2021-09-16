@@ -62,7 +62,7 @@ describe("CommunityRewards", () => {
     expect(grantedEvent.args.cliffLength).to.bignumber.equal(cliffLength)
     expect(grantedEvent.args.vestingInterval).to.bignumber.equal(vestingInterval)
 
-    return tokenId
+    return new BN(tokenId)
   }
 
   describe("grant", () => {
@@ -189,7 +189,7 @@ describe("CommunityRewards", () => {
         cliffLength: new BN(0),
         vestingInterval: new BN(1),
       })
-      expect(tokenId2).to.bignumber.equal(new BN(tokenId).add(new BN(1)))
+      expect(tokenId2).to.bignumber.equal(tokenId.add(new BN(1)))
 
       // 2. NFT ownership
       // (Established in `grant()`.)

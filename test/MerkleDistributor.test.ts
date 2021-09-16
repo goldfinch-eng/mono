@@ -1,6 +1,7 @@
 /* global web3 */
 import {BN} from "ethereumjs-tx/node_modules/ethereumjs-util"
 import hre from "hardhat"
+import {MerkleDistributorGrantInfo} from "../blockchain_scripts/merkleDistributor/types"
 import {GFIInstance} from "../typechain/truffle/GFI"
 import {GrantAccepted, MerkleDistributorInstance} from "../typechain/truffle/MerkleDistributor"
 import {Granted, TestCommunityRewardsInstance} from "../typechain/truffle/TestCommunityRewards"
@@ -47,7 +48,7 @@ describe("MerkleDistributor", () => {
     cliffLength: BN
     vestingInterval: BN
     proof: string[]
-  }): Promise<void> {
+  }): Promise<BN> {
     const receipt = await merkleDistributor.acceptGrant(
       index,
       account,
@@ -82,6 +83,8 @@ describe("MerkleDistributor", () => {
     // Verify that ownership of the NFT minted by CommunityRewards belongs to the
     // address to whom the grant belongs (e.g. as opposed to `from`).
     expect(await communityRewards.ownerOf(tokenId)).to.equal(account)
+
+    return new BN(tokenId)
   }
 
   describe("communityRewards", () => {
@@ -101,28 +104,16 @@ describe("MerkleDistributor", () => {
   })
 
   describe("isGrantAccepted", () => {
-    beforeEach(async () => {})
+    let grantInfo: MerkleDistributorGrantInfo
+    let index: number
+    let acceptGrantParams: Parameters<typeof acceptGrant>[0]
 
-    it("returns false for a grant that has not been accepted", async () => {
-      const grantInfo = fixtures.output.grants[0]
-      assertNonNullable(grantInfo)
-
-      const index = grantInfo.index
-      const isGrantAccepted = await merkleDistributor.isGrantAccepted(index)
-      expect(isGrantAccepted).to.be.false
-    })
-
-    it("returns true for a grant that has been accepted", async () => {
-      const grantInfo = fixtures.output.grants[0]
-      assertNonNullable(grantInfo)
-
-      await mintAndLoadRewards(gfi, communityRewards, owner, web3.utils.toBN(grantInfo.grant.amount))
-
-      const index = grantInfo.index
-      const isGrantAccepted = await merkleDistributor.isGrantAccepted(index)
-      expect(isGrantAccepted).to.be.false
-
-      await acceptGrant({
+    beforeEach(async () => {
+      const _grantInfo = fixtures.output.grants[0]
+      assertNonNullable(_grantInfo)
+      grantInfo = _grantInfo
+      index = grantInfo.index
+      acceptGrantParams = {
         from: anotherUser,
         index,
         account: grantInfo.account,
@@ -131,39 +122,126 @@ describe("MerkleDistributor", () => {
         cliffLength: web3.utils.toBN(grantInfo.grant.cliffLength),
         vestingInterval: web3.utils.toBN(grantInfo.grant.vestingInterval),
         proof: grantInfo.proof,
-      })
+      }
+
+      await mintAndLoadRewards(gfi, communityRewards, owner, web3.utils.toBN(grantInfo.grant.amount))
+    })
+
+    it("returns false for a grant that has not been accepted", async () => {
+      const isGrantAccepted = await merkleDistributor.isGrantAccepted(index)
+      expect(isGrantAccepted).to.be.false
+    })
+
+    it("returns true for a grant that has been accepted", async () => {
+      const isGrantAccepted = await merkleDistributor.isGrantAccepted(index)
+      expect(isGrantAccepted).to.be.false
+
+      await acceptGrant(acceptGrantParams)
 
       const isGrantAccepted2 = await merkleDistributor.isGrantAccepted(index)
       expect(isGrantAccepted2).to.be.true
     })
 
     it("a grant's acceptance should not affect another grant", async () => {
-      const grantInfo = fixtures.output.grants[1]
-      assertNonNullable(grantInfo)
+      const grantInfo1 = fixtures.output.grants[1]
+      assertNonNullable(grantInfo1)
 
-      const otherGrantInfo = fixtures.output.grants[2]
-      assertNonNullable(otherGrantInfo)
+      const grantInfo2 = fixtures.output.grants[2]
+      assertNonNullable(grantInfo2)
 
-      expect(grantInfo.account).to.equal(otherGrantInfo.account)
+      expect(grantInfo1.account).to.equal(grantInfo2.account)
 
       await mintAndLoadRewards(
         gfi,
         communityRewards,
         owner,
-        web3.utils.toBN(grantInfo.grant.amount).add(web3.utils.toBN(otherGrantInfo.grant.amount))
+        web3.utils.toBN(grantInfo1.grant.amount).add(web3.utils.toBN(grantInfo2.grant.amount))
       )
 
-      const index = grantInfo.index
-      const isGrantAccepted = await merkleDistributor.isGrantAccepted(index)
-      expect(isGrantAccepted).to.be.false
+      const index1 = grantInfo1.index
+      const isGrant1Accepted = await merkleDistributor.isGrantAccepted(index1)
+      expect(isGrant1Accepted).to.be.false
 
-      const otherIndex = otherGrantInfo.index
-      const isOtherGrantAccepted = await merkleDistributor.isGrantAccepted(otherIndex)
-      expect(isOtherGrantAccepted).to.be.false
+      const index2 = grantInfo2.index
+      const isGrant2Accepted = await merkleDistributor.isGrantAccepted(index2)
+      expect(isGrant2Accepted).to.be.false
 
       await acceptGrant({
         from: anotherUser,
-        index: otherGrantInfo.index,
+        index: grantInfo2.index,
+        account: grantInfo2.account,
+        amount: web3.utils.toBN(grantInfo2.grant.amount),
+        vestingLength: web3.utils.toBN(grantInfo2.grant.vestingLength),
+        cliffLength: web3.utils.toBN(grantInfo2.grant.cliffLength),
+        vestingInterval: web3.utils.toBN(grantInfo2.grant.vestingInterval),
+        proof: grantInfo2.proof,
+      })
+
+      const isGrant2Accepted2 = await merkleDistributor.isGrantAccepted(index2)
+      expect(isGrant2Accepted2).to.be.true
+
+      const isGrant1Accepted2 = await merkleDistributor.isGrantAccepted(index1)
+      expect(isGrant1Accepted2).to.be.false
+    })
+  })
+
+  describe("acceptGrant", async () => {
+    let grantInfo: MerkleDistributorGrantInfo
+    let index: number
+    let acceptGrantParams: Parameters<typeof acceptGrant>[0]
+
+    beforeEach(async () => {
+      const _grantInfo = fixtures.output.grants[0]
+      assertNonNullable(_grantInfo)
+      grantInfo = _grantInfo
+      index = grantInfo.index
+      acceptGrantParams = {
+        from: anotherUser,
+        index,
+        account: grantInfo.account,
+        amount: web3.utils.toBN(grantInfo.grant.amount),
+        vestingLength: web3.utils.toBN(grantInfo.grant.vestingLength),
+        cliffLength: web3.utils.toBN(grantInfo.grant.cliffLength),
+        vestingInterval: web3.utils.toBN(grantInfo.grant.vestingInterval),
+        proof: grantInfo.proof,
+      }
+
+      await mintAndLoadRewards(gfi, communityRewards, owner, web3.utils.toBN(grantInfo.grant.amount))
+    })
+
+    it("rejects if the grant has already been accepted", async () => {
+      const isGrantAccepted = await merkleDistributor.isGrantAccepted(index)
+      expect(isGrantAccepted).to.be.false
+
+      await acceptGrant(acceptGrantParams)
+
+      const isGrantAccepted2 = await merkleDistributor.isGrantAccepted(index)
+      expect(isGrantAccepted2).to.be.true
+
+      expect(acceptGrant(acceptGrantParams)).to.be.rejectedWith(/MerkleDistributor: Grant already accepted\./)
+    })
+
+    it("rejection does not perform granting", async () => {
+      await mintAndLoadRewards(gfi, communityRewards, owner, new BN(1e3))
+
+      const grantedTokenId = await acceptGrant(acceptGrantParams)
+
+      const rewardsAvailableBefore = await communityRewards.rewardsAvailable()
+      expect(rewardsAvailableBefore).to.bignumber.equal(new BN(1e3))
+
+      expect(acceptGrant(acceptGrantParams)).to.be.rejectedWith(/MerkleDistributor: Grant already accepted\./)
+
+      // Check that rewards available was not decremented as part of the rejection.
+      const rewardsAvailableAfter = await communityRewards.rewardsAvailable()
+      expect(rewardsAvailableAfter).to.bignumber.equal(rewardsAvailableBefore)
+
+      const otherGrantInfo = fixtures.output.grants[1]
+      assertNonNullable(otherGrantInfo)
+
+      const otherIndex = otherGrantInfo.index
+      const otherGrantedTokenId = await acceptGrant({
+        from: anotherUser,
+        index: otherIndex,
         account: otherGrantInfo.account,
         amount: web3.utils.toBN(otherGrantInfo.grant.amount),
         vestingLength: web3.utils.toBN(otherGrantInfo.grant.vestingLength),
@@ -172,30 +250,78 @@ describe("MerkleDistributor", () => {
         proof: otherGrantInfo.proof,
       })
 
-      const isOtherGrantAccepted2 = await merkleDistributor.isGrantAccepted(otherIndex)
-      expect(isOtherGrantAccepted2).to.be.true
-
-      const isGrantAccepted2 = await merkleDistributor.isGrantAccepted(index)
-      expect(isGrantAccepted2).to.be.false
+      // Check that no token was issued as part of the rejection.
+      expect(otherGrantedTokenId).to.bignumber.equal(grantedTokenId.add(new BN(1)))
     })
-  })
 
-  describe("acceptGrant", async () => {
-    it("rejects if the grant has already been accepted", async () => {})
+    it("rejects a non-existent grant index", async () => {
+      const invalidIndex = fixtures.output.grants.length
+      const acceptance = acceptGrant({
+        ...acceptGrantParams,
+        index: invalidIndex,
+      })
+      expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
+    })
 
-    it("rejects a non-existent grant index", async () => {})
+    it("rejects an existent grant index with incorrect account", async () => {
+      const otherGrantInfo = fixtures.output.grants[1]
+      assertNonNullable(otherGrantInfo)
+      const invalidAccount = otherGrantInfo.account
+      expect(invalidAccount).not.to.equal(acceptGrantParams.account)
+      const acceptance = acceptGrant({
+        ...acceptGrantParams,
+        account: invalidAccount,
+      })
+      expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
+    })
 
-    it("rejects an existent grant index with incorrect account", async () => {})
+    it("rejects an existent grant index with incorrect (lesser) amount", async () => {
+      const invalidLesserAmount = acceptGrantParams.amount.sub(new BN(1))
+      const acceptance = acceptGrant({
+        ...acceptGrantParams,
+        amount: invalidLesserAmount,
+      })
+      expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
+    })
 
-    it("rejects an existent grant index with incorrect (lesser) amount", async () => {})
+    it("rejects an existent grant index with incorrect (greater) amount", async () => {
+      const invalidGreaterAmount = acceptGrantParams.amount.add(new BN(1))
+      const acceptance = acceptGrant({
+        ...acceptGrantParams,
+        amount: invalidGreaterAmount,
+      })
+      expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
+    })
 
-    it("rejects an existent grant index with incorrect (greater) amount", async () => {})
+    it("rejects an existent grant index with incorrect vesting length", async () => {
+      const invalidVestingLength = acceptGrantParams.vestingLength.add(new BN(1))
+      const acceptance = acceptGrant({
+        ...acceptGrantParams,
+        vestingLength: invalidVestingLength,
+      })
+      expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
+    })
 
-    it("rejects an existent grant index with incorrect vesting length", async () => {})
+    it("rejects an existent grant index with incorrect cliff length", async () => {
+      const invalidCliffLength = acceptGrantParams.cliffLength.add(new BN(1))
+      expect(invalidCliffLength).to.bignumber.lt(acceptGrantParams.vestingLength)
+      const acceptance = acceptGrant({
+        ...acceptGrantParams,
+        cliffLength: invalidCliffLength,
+      })
+      expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
+    })
 
-    it("rejects an existent grant index with incorrect cliff length", async () => {})
-
-    it("rejects an existent grant index with incorrect vesting interval", async () => {})
+    it("rejects an existent grant index with incorrect vesting interval", async () => {
+      const invalidVestingInterval = acceptGrantParams.vestingInterval.mul(new BN(2))
+      expect(invalidVestingInterval).to.bignumber.gt(new BN(0))
+      expect(acceptGrantParams.vestingLength.mod(invalidVestingInterval)).to.bignumber.equal(new BN(0))
+      const acceptance = acceptGrant({
+        ...acceptGrantParams,
+        vestingInterval: invalidVestingInterval,
+      })
+      expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
+    })
 
     it("rejects an existent grant index with incorrect (empty) proof", async () => {})
 
