@@ -80,7 +80,13 @@ describe("CommunityRewards", () => {
     })
 
     it("allows non-owner who has distributor role", async () => {
-      // TODO
+      expect(await communityRewards.hasRole(OWNER_ROLE, anotherUser)).to.equal(false)
+      expect(await communityRewards.hasRole(DISTRIBUTOR_ROLE, anotherUser)).to.equal(false)
+      await communityRewards.grantRole(DISTRIBUTOR_ROLE, anotherUser)
+      expect(await communityRewards.hasRole(DISTRIBUTOR_ROLE, anotherUser)).to.equal(true)
+      await expect(
+        communityRewards.grant(anotherUser, new BN(1e3), new BN(0), new BN(0), new BN(1), {from: owner})
+      ).to.be.fulfilled
     })
 
     it("rejects sender who lacks distributor role", async () => {
