@@ -3,7 +3,7 @@ import BN from "bn.js"
 import hre from "hardhat"
 import { DISTRIBUTOR_ROLE, OWNER_ROLE } from "../blockchain_scripts/deployHelpers"
 import { GFIInstance } from "../typechain/truffle"
-import { Granted } from "../typechain/truffle/CommunityRewards"
+import { Granted, RewardAdded } from "../typechain/truffle/CommunityRewards"
 import { TestCommunityRewardsInstance } from "../typechain/truffle/TestCommunityRewards"
 import { mintAndLoadRewards } from "./communityRewardsHelpers"
 import {
@@ -35,11 +35,19 @@ describe("CommunityRewards", () => {
     cliffLength: BN
     vestingInterval: BN
   }): Promise<BN> {
+    const rewardsAvailableBefore = await communityRewards.rewardsAvailable()
+
     const receipt = await communityRewards.grant(recipient, amount, vestingLength, cliffLength, vestingInterval, {
       from: owner,
     })
+
+    const rewardsAvailableAfter = await communityRewards.rewardsAvailable()
+
     const grantedEvent = getOnlyLog<Granted>(decodeLogs(receipt.receipt.rawLogs, communityRewards, "Granted"))
     const tokenId = grantedEvent.args.tokenId
+
+    // Verify rewards available state.
+    expect(rewardsAvailableBefore.sub(rewardsAvailableAfter)).to.bignumber.equal(amount)
 
     // Verify grant state.
     const currentTimestamp = await getCurrentTimestamp()
@@ -172,6 +180,7 @@ describe("CommunityRewards", () => {
 
     it("updates state, mints an NFT owned by the grant recipient, and emits an event", async () => {
       expect(await communityRewards.rewardsAvailable()).to.bignumber.equal(new BN(1e6))
+
       const tokenId = await grant({
         recipient: anotherUser,
         amount: new BN(1e3),
@@ -182,7 +191,7 @@ describe("CommunityRewards", () => {
 
       // 1. State updates
       // Decrements available rewards.
-      expect(await communityRewards.rewardsAvailable()).to.bignumber.equal(new BN(1e6 - 1e3))
+      // (Established in `grant()`.)
 
       // Stores grant state.
       // (Established in `grant()`.)
@@ -215,11 +224,51 @@ describe("CommunityRewards", () => {
   })
 
   describe("loadRewards", async () => {
-    it("rejects sender who lacks admin role", async () => {})
+    const amount = new BN(1e3)
 
-    it("rejects 0 amount", async () => {})
+    beforeEach(async () => {
+      await gfi.mint(owner, amount)
+      await gfi.approve(communityRewards.address, amount)
+    })
 
-    it("transfers GFI from sender, updates state, and emits an event", async () => {})
+    it("rejects sender who lacks owner role", async () => {
+      expect(await communityRewards.hasRole(OWNER_ROLE, anotherUser)).to.equal(false)
+      await expect(
+        communityRewards.loadRewards(amount, {from: anotherUser})
+      ).to.be.rejectedWith(/Must have admin role to perform this action/)
+    })
+
+    it("allows sender who has owner role", async () => {
+      expect(await communityRewards.hasRole(OWNER_ROLE, owner)).to.equal(true)
+      await expect(
+        communityRewards.loadRewards(amount, {from: owner})
+      ).to.be.fulfilled
+    })
+
+    it("rejects 0 amount", async () => {
+      await expect(
+        communityRewards.loadRewards(new BN(0), {from: owner})
+      ).to.be.rejectedWith(/Cannot load 0 rewards/)
+    })
+
+    it("transfers GFI from sender, updates state, and emits an event", async () => {
+      const gfiBalanceBefore = await gfi.balanceOf(communityRewards.address)
+      expect(gfiBalanceBefore).to.bignumber.equal(new BN(0))
+
+      const rewardsAvailableBefore = await communityRewards.rewardsAvailable()
+      expect(rewardsAvailableBefore).to.bignumber.equal(new BN(0))
+
+      const receipt = await communityRewards.loadRewards(amount, {from: owner})
+
+      const gfiBalanceAfter = await gfi.balanceOf(communityRewards.address)
+      expect(gfiBalanceAfter).to.bignumber.equal(amount)
+
+      const rewardsAvailableAfter = await communityRewards.rewardsAvailable()
+      expect(rewardsAvailableAfter).to.bignumber.equal(amount)
+
+      const rewardAddedEvent = getOnlyLog<RewardAdded>(decodeLogs(receipt.receipt.rawLogs, communityRewards, "RewardAdded"))
+      expect(rewardAddedEvent.args.reward).to.bignumber.equal(amount)
+    })
   })
 
   describe("revokeGrant", async () => {
