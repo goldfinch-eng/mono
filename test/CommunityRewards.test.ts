@@ -1,16 +1,12 @@
 /* global web3 */
 import BN from "bn.js"
 import hre from "hardhat"
-import { DISTRIBUTOR_ROLE, OWNER_ROLE } from "../blockchain_scripts/deployHelpers"
-import { GFIInstance } from "../typechain/truffle"
-import { Granted, RewardAdded } from "../typechain/truffle/CommunityRewards"
-import { TestCommunityRewardsInstance } from "../typechain/truffle/TestCommunityRewards"
-import { mintAndLoadRewards } from "./communityRewardsHelpers"
-import {
-  decodeLogs,
-  deployAllContracts, expect,
-  getCurrentTimestamp, getOnlyLog
-} from "./testHelpers"
+import {DISTRIBUTOR_ROLE, OWNER_ROLE} from "../blockchain_scripts/deployHelpers"
+import {GFIInstance} from "../typechain/truffle"
+import {Granted, GrantRevoked, RewardAdded} from "../typechain/truffle/CommunityRewards"
+import {TestCommunityRewardsInstance} from "../typechain/truffle/TestCommunityRewards"
+import {mintAndLoadRewards} from "./communityRewardsHelpers"
+import {advanceTime, decodeLogs, deployAllContracts, expect, getCurrentTimestamp, getOnlyLog} from "./testHelpers"
 const {ethers} = hre
 const {deployments} = hre
 
@@ -82,9 +78,8 @@ describe("CommunityRewards", () => {
     it("allows owner who has distributor role", async () => {
       expect(await communityRewards.hasRole(OWNER_ROLE, owner)).to.equal(true)
       expect(await communityRewards.hasRole(DISTRIBUTOR_ROLE, owner)).to.equal(true)
-      await expect(
-        communityRewards.grant(anotherUser, new BN(1e3), new BN(0), new BN(0), new BN(1), {from: owner})
-      ).to.be.fulfilled
+      await expect(communityRewards.grant(anotherUser, new BN(1e3), new BN(0), new BN(0), new BN(1), {from: owner})).to
+        .be.fulfilled
     })
 
     it("allows non-owner who has distributor role", async () => {
@@ -92,9 +87,8 @@ describe("CommunityRewards", () => {
       expect(await communityRewards.hasRole(DISTRIBUTOR_ROLE, anotherUser)).to.equal(false)
       await communityRewards.grantRole(DISTRIBUTOR_ROLE, anotherUser)
       expect(await communityRewards.hasRole(DISTRIBUTOR_ROLE, anotherUser)).to.equal(true)
-      await expect(
-        communityRewards.grant(anotherUser, new BN(1e3), new BN(0), new BN(0), new BN(1), {from: owner})
-      ).to.be.fulfilled
+      await expect(communityRewards.grant(anotherUser, new BN(1e3), new BN(0), new BN(0), new BN(1), {from: owner})).to
+        .be.fulfilled
     })
 
     it("rejects sender who lacks distributor role", async () => {
@@ -112,33 +106,28 @@ describe("CommunityRewards", () => {
     })
 
     it("allows 0 vesting length", async () => {
-      await expect(
-        communityRewards.grant(anotherUser, new BN(1e3), new BN(0), new BN(0), new BN(1), {from: owner})
-      ).to.be.fulfilled
+      await expect(communityRewards.grant(anotherUser, new BN(1e3), new BN(0), new BN(0), new BN(1), {from: owner})).to
+        .be.fulfilled
     })
 
     it("allows > 0 vesting length", async () => {
-      await expect(
-        communityRewards.grant(anotherUser, new BN(1e3), new BN(100), new BN(0), new BN(1), {from: owner})
-      ).to.be.fulfilled
+      await expect(communityRewards.grant(anotherUser, new BN(1e3), new BN(100), new BN(0), new BN(1), {from: owner}))
+        .to.be.fulfilled
     })
 
     it("allows 0 cliff length", async () => {
-      await expect(
-        communityRewards.grant(anotherUser, new BN(1e3), new BN(0), new BN(0), new BN(1), {from: owner})
-      ).to.be.fulfilled
+      await expect(communityRewards.grant(anotherUser, new BN(1e3), new BN(0), new BN(0), new BN(1), {from: owner})).to
+        .be.fulfilled
     })
 
     it("allows > 0 cliff length less than vesting length", async () => {
-      await expect(
-        communityRewards.grant(anotherUser, new BN(1e3), new BN(100), new BN(10), new BN(1), {from: owner})
-      ).to.be.fulfilled
+      await expect(communityRewards.grant(anotherUser, new BN(1e3), new BN(100), new BN(10), new BN(1), {from: owner}))
+        .to.be.fulfilled
     })
 
     it("allows > 0 cliff length equal to vesting length", async () => {
-      await expect(
-        communityRewards.grant(anotherUser, new BN(1e3), new BN(100), new BN(100), new BN(1), {from: owner})
-      ).to.be.fulfilled
+      await expect(communityRewards.grant(anotherUser, new BN(1e3), new BN(100), new BN(100), new BN(1), {from: owner}))
+        .to.be.fulfilled
     })
 
     it("rejects a cliff length that exceeds vesting length", async () => {
@@ -154,15 +143,13 @@ describe("CommunityRewards", () => {
     })
 
     it("allows a vesting interval of 1", async () => {
-      await expect(
-        communityRewards.grant(anotherUser, new BN(1e3), new BN(0), new BN(0), new BN(1), {from: owner})
-      ).to.be.fulfilled
+      await expect(communityRewards.grant(anotherUser, new BN(1e3), new BN(0), new BN(0), new BN(1), {from: owner})).to
+        .be.fulfilled
     })
 
     it("allows a > 1 vesting interval that is a factor of vesting length", async () => {
-      await expect(
-        communityRewards.grant(anotherUser, new BN(1e3), new BN(6), new BN(0), new BN(3), {from: owner})
-      ).to.be.fulfilled
+      await expect(communityRewards.grant(anotherUser, new BN(1e3), new BN(6), new BN(0), new BN(3), {from: owner})).to
+        .be.fulfilled
     })
 
     it("rejects a > 1 vesting interval that is not a factor of vesting length", async () => {
@@ -233,22 +220,18 @@ describe("CommunityRewards", () => {
 
     it("rejects sender who lacks owner role", async () => {
       expect(await communityRewards.hasRole(OWNER_ROLE, anotherUser)).to.equal(false)
-      await expect(
-        communityRewards.loadRewards(amount, {from: anotherUser})
-      ).to.be.rejectedWith(/Must have admin role to perform this action/)
+      await expect(communityRewards.loadRewards(amount, {from: anotherUser})).to.be.rejectedWith(
+        /Must have admin role to perform this action/
+      )
     })
 
     it("allows sender who has owner role", async () => {
       expect(await communityRewards.hasRole(OWNER_ROLE, owner)).to.equal(true)
-      await expect(
-        communityRewards.loadRewards(amount, {from: owner})
-      ).to.be.fulfilled
+      await expect(communityRewards.loadRewards(amount, {from: owner})).to.be.fulfilled
     })
 
     it("rejects 0 amount", async () => {
-      await expect(
-        communityRewards.loadRewards(new BN(0), {from: owner})
-      ).to.be.rejectedWith(/Cannot load 0 rewards/)
+      await expect(communityRewards.loadRewards(new BN(0), {from: owner})).to.be.rejectedWith(/Cannot load 0 rewards/)
     })
 
     it("transfers GFI from sender, updates state, and emits an event", async () => {
@@ -266,21 +249,91 @@ describe("CommunityRewards", () => {
       const rewardsAvailableAfter = await communityRewards.rewardsAvailable()
       expect(rewardsAvailableAfter).to.bignumber.equal(amount)
 
-      const rewardAddedEvent = getOnlyLog<RewardAdded>(decodeLogs(receipt.receipt.rawLogs, communityRewards, "RewardAdded"))
+      const rewardAddedEvent = getOnlyLog<RewardAdded>(
+        decodeLogs(receipt.receipt.rawLogs, communityRewards, "RewardAdded")
+      )
       expect(rewardAddedEvent.args.reward).to.bignumber.equal(amount)
     })
   })
 
   describe("revokeGrant", async () => {
-    it("rejects sender who lacks admin role", async () => {})
+    let tokenId: BN
+    let amount: BN
+    let vestingLength: BN
+    let grantedAt: BN
 
-    it("rejects call for a non-existent token id", async () => {})
+    beforeEach(async () => {
+      amount = new BN(1e6)
+      vestingLength = new BN(1000)
+      await mintAndLoadRewards(gfi, communityRewards, owner, amount)
+      tokenId = await grant({
+        recipient: anotherUser,
+        amount,
+        vestingLength,
+        cliffLength: new BN(0),
+        vestingInterval: new BN(1),
+      })
+      grantedAt = await getCurrentTimestamp()
+      await advanceTime({seconds: vestingLength.div(new BN(2))})
+    })
 
-    it("rejects if grant has already been revoked", async () => {})
+    it("rejects sender who lacks owner role", async () => {
+      expect(await communityRewards.hasRole(OWNER_ROLE, anotherUser)).to.equal(false)
+      await expect(communityRewards.revokeGrant(tokenId, {from: anotherUser})).to.be.rejectedWith(
+        /Must have admin role to perform this action/
+      )
+    })
 
-    it("rejects if grant has already fully vested", async () => {})
+    it("allows sender who has owner role", async () => {
+      expect(await communityRewards.hasRole(OWNER_ROLE, owner)).to.equal(true)
+      await expect(communityRewards.revokeGrant(tokenId, {from: owner})).to.be.fulfilled
+    })
 
-    it("updates state and emits an event", async () => {})
+    it("rejects call for a non-existent token id", async () => {
+      await expect(communityRewards.revokeGrant(tokenId.add(new BN(1)), {from: owner})).to.be.rejectedWith(
+        /Grant not defined for token id/
+      )
+    })
+
+    it("rejects if grant has already been revoked", async () => {
+      await communityRewards.revokeGrant(tokenId, {from: owner})
+      await expect(communityRewards.revokeGrant(tokenId, {from: owner})).to.be.rejectedWith(
+        /Grant has already been revoked/
+      )
+    })
+
+    it("rejects if grant has already fully vested", async () => {
+      await ethers.provider.send("evm_mine", [])
+      await advanceTime({seconds: vestingLength.div(new BN(2))})
+      await expect(communityRewards.revokeGrant(tokenId, {from: owner})).to.be.rejectedWith(/Grant has fully vested/)
+      const currentTimestamp = await getCurrentTimestamp()
+      expect(currentTimestamp).to.bignumber.equal(grantedAt.add(vestingLength))
+    })
+
+    it("updates state and emits an event", async () => {
+      const rewardsAvailableBefore = await communityRewards.rewardsAvailable()
+
+      const receipt = await communityRewards.revokeGrant(tokenId, {from: owner})
+
+      const expectedTotalUnvested = amount.div(new BN(2))
+
+      // Increments rewards available.
+      const rewardsAvailableAfter = await communityRewards.rewardsAvailable()
+      expect(rewardsAvailableAfter.sub(rewardsAvailableBefore)).to.bignumber.equal(expectedTotalUnvested)
+
+      // Sets revoked-at timestamp.
+      const grantState = await communityRewards.getGrant(tokenId)
+      expect(grantState.revokedAt).to.bignumber.equal(grantedAt.add(vestingLength.div(new BN(2))))
+      const currentTimestamp = await getCurrentTimestamp()
+      expect(grantState.revokedAt).to.bignumber.equal(currentTimestamp)
+
+      // Emits event.
+      const grantRevokedEvent = getOnlyLog<GrantRevoked>(
+        decodeLogs(receipt.receipt.rawLogs, communityRewards, "GrantRevoked")
+      )
+      expect(grantRevokedEvent.args.tokenId).to.bignumber.equal(tokenId)
+      expect(grantRevokedEvent.args.totalUnvested).to.bignumber.equal(expectedTotalUnvested)
+    })
 
     context("paused", async () => {
       it("reverts", async () => {
