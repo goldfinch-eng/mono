@@ -9,6 +9,15 @@ library CommunityRewardsVesting {
   using SafeMath for uint256;
   using CommunityRewardsVesting for Rewards;
 
+  /// @dev All time / timestamp values in the Rewards struct (i.e. `startTime`, `endTime`,
+  // `cliffLength`, `vestingInterval`, `revokedAt`) use the same units: seconds.
+  /// @dev `cliffLength` is the duration from the start of the grant, before which has elapsed
+  /// the vested amount remains 0.
+  /// @dev `vestingInterval` is the interval at which vesting occurs. For rewards to have
+  /// vested fully only at `endTime`, `vestingInterval` must be a factor of
+  /// `endTime.sub(startTime)`. If `vestingInterval` is not thusly a factor, the calculation
+  /// of `totalVestedAt()` would calculate rewards to have fully vested as of the time of the
+  /// last whole `vestingInterval`'s elapsing before `endTime`.
   struct Rewards {
     uint256 totalGranted;
     uint256 totalClaimed;
