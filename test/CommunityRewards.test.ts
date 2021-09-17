@@ -212,10 +212,6 @@ describe("CommunityRewards", () => {
         ).to.be.rejectedWith(/paused/)
       })
     })
-
-    context("reentrancy", async () => {
-      it("reverts", async () => {})
-    })
   })
 
   describe("loadRewards", async () => {
