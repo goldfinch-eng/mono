@@ -32,6 +32,7 @@ import {expectEvent} from "@openzeppelin/test-helpers"
 import {ecsign} from "ethereumjs-util"
 import {getApprovalDigest, getWallet} from "./permitHelpers"
 import {assertNonNullable} from "../utils/type"
+import { GoldfinchConfigUpdated } from "../typechain/truffle/SeniorPool"
 const WITHDRAWL_FEE_DENOMINATOR = new BN(200)
 
 const simulateMaliciousTranchedPool = async (goldfinchConfig: any, person2: any): Promise<string> => {
@@ -214,6 +215,17 @@ describe("SeniorPool", () => {
       })
       it("should disallow non-owner to set", async () => {
         return expect(seniorPool.updateGoldfinchConfig({from: person2})).to.be.rejectedWith(/Must have admin/)
+      })
+
+      it("should emit an event", async () => {
+        const newConfig = await deployments.deploy("GoldfinchConfig", {from: owner})
+
+        await goldfinchConfig.setGoldfinchConfig(newConfig.address)
+        const tx = await seniorPool.updateGoldfinchConfig({from: owner})
+        expectEvent(tx, "GoldfinchConfigUpdated", {
+          who: owner,
+          configAddress: newConfig.address
+        })
       })
     })
   })

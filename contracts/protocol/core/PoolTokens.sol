@@ -50,6 +50,8 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
 
   event TokenBurned(address indexed owner, address indexed pool, uint256 indexed tokenId);
 
+  event GoldfinchConfigUpdated(address indexed who, address configAddress);
+
   /*
     We are using our own initializer function so that OZ doesn't automatically
     set owner as msg.sender. Also, it lets us set our config contract
@@ -211,6 +213,7 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
    */
   function updateGoldfinchConfig() external onlyAdmin {
     config = GoldfinchConfig(config.configAddress());
+    emit GoldfinchConfigUpdated(msg.sender, address(config));
   }
 
   modifier onlyAdmin() {

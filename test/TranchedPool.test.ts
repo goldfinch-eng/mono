@@ -25,11 +25,12 @@ import {ecsign} from "ethereumjs-util"
 const CreditLine = artifacts.require("CreditLine")
 import {getApprovalDigest, getWallet} from "./permitHelpers"
 import {TranchedPoolInstance} from "../typechain/truffle"
-import {JuniorCapitalLocked, DepositMade} from "../typechain/truffle/TranchedPool"
+import {JuniorTrancheLocked, DepositMade} from "../typechain/truffle/TranchedPool"
+import { CONFIG_KEYS } from "../blockchain_scripts/configKeys"
 
 const RESERVE_FUNDS_COLLECTED_EVENT = "ReserveFundsCollected"
 const PAYMENT_APPLIED_EVENT = "PaymentApplied"
-const EXPECTED_JUNIOR_CAPITAL_LOCKED_EVENT_ARGS = ["0", "1", "__length__", "juniorTrancheLockedUntil", "pool"]
+const EXPECTED_JUNIOR_CAPITAL_LOCKED_EVENT_ARGS = ["0", "1", "__length__", "lockedUntil", "pool"]
 
 const expectPaymentRelatedEventsEmitted = (
   receipt: unknown,
@@ -61,7 +62,7 @@ const expectPaymentRelatedEventsNotEmitted = (receipt: unknown) => {
 }
 
 describe("TranchedPool", () => {
-  let owner, borrower, otherPerson, goldfinchConfig, usdc, poolTokens, goldfinchFactory, creditLine, treasury
+  let owner, borrower, otherPerson, goldfinchConfig, usdc, poolTokens, goldfinchFactory, creditLine, treasury, configHelper
   let tranchedPool: TranchedPoolInstance
   let limit = usdcVal(1000)
   let interestApr = interestAprAsBN("5.00")
@@ -333,6 +334,29 @@ describe("TranchedPool", () => {
     })
 
     describe("senior tranche", async () => {
+      context("when locking the pool", () => {
+        it("emits junior and senior locking events", async () => {
+          const startingTimeInSeconds = new BN(1e10)
+          const drawdownTimePeriod = await goldfinchConfig.getNumber(CONFIG_KEYS.DrawdownPeriodInSeconds)
+          const expectedLockedUntil = startingTimeInSeconds.add(drawdownTimePeriod)
+          await tranchedPool.lockJuniorCapital({from: owner}); // needs to be locked before we can lock the pool
+
+          // because we're making an assertion based on a time calculation, we
+          // need to advance the blockchain to a known point in time
+          await advanceTime({toSecond: startingTimeInSeconds})
+          const tx = await tranchedPool.lockPool({from: owner});
+          expectEvent(tx, "JuniorTrancheLocked", {
+            pool: tranchedPool.address,
+            lockedUntil: expectedLockedUntil
+          })
+          expectEvent(tx, "SeniorTrancheLocked", {
+            pool: tranchedPool.address,
+            lockedUntil: expectedLockedUntil
+          })
+        })
+      })
+
+
       it("does not allow deposits when pool is locked", async () => {
         await tranchedPool.deposit(TRANCHES.Junior, usdcVal(10))
         await tranchedPool.lockJuniorCapital({from: borrower})
@@ -1001,11 +1025,11 @@ describe("TranchedPool", () => {
           await expectAction(async () => {
             const receipt = await tranchedPool.lockJuniorCapital({from: actor})
 
-            const logs = decodeLogs<JuniorCapitalLocked>(receipt.receipt.rawLogs, tranchedPool, "JuniorCapitalLocked")
+            const logs = decodeLogs<JuniorTrancheLocked>(receipt.receipt.rawLogs, tranchedPool, "JuniorTrancheLocked")
             const firstLog = getFirstLog(logs)
             expect(Object.keys(firstLog.args).sort()).to.eql(EXPECTED_JUNIOR_CAPITAL_LOCKED_EVENT_ARGS)
             expect(firstLog.args.pool).to.equal(tranchedPool.address)
-            expect(firstLog.args.juniorTrancheLockedUntil).to.be.bignumber.closeTo(oneDayFromNow, new BN(5))
+            expect(firstLog.args.lockedUntil).to.be.bignumber.closeTo(oneDayFromNow, new BN(5))
 
             return receipt
           }).toChange([
@@ -1027,11 +1051,11 @@ describe("TranchedPool", () => {
           await expectAction(async () => {
             const receipt = await tranchedPool.lockJuniorCapital({from: borrower})
 
-            const logs = decodeLogs<JuniorCapitalLocked>(receipt.receipt.rawLogs, tranchedPool, "JuniorCapitalLocked")
+            const logs = decodeLogs<JuniorTrancheLocked>(receipt.receipt.rawLogs, tranchedPool, "JuniorTrancheLocked")
             const firstLog = getFirstLog(logs)
             expect(Object.keys(firstLog.args).sort()).to.eql(EXPECTED_JUNIOR_CAPITAL_LOCKED_EVENT_ARGS)
             expect(firstLog.args.pool).to.equal(tranchedPool.address)
-            expect(firstLog.args.juniorTrancheLockedUntil).to.be.bignumber.closeTo(oneDayFromNow, new BN(5))
+            expect(firstLog.args.lockedUntil).to.be.bignumber.closeTo(oneDayFromNow, new BN(5))
 
             return receipt
           }).toChange([
@@ -1665,6 +1689,21 @@ describe("TranchedPool", () => {
           const totalInterest = totalPartialInterest.add(remainingInterest)
           expect(totalInterest.div(new BN(10))).to.bignumber.closeTo(expectedTotalProtocolFee, tolerance)
           expect(await usdc.balanceOf(treasury)).to.bignumber.eq(expectedTotalProtocolFee)
+        })
+      })
+    })
+  })
+
+  describe("updateGoldfinchConfig", async () => {
+    describe("setting it", async () => {
+      it("emits an event", async () => {
+        const newConfig = await deployments.deploy("GoldfinchConfig", {from: owner})
+
+        await goldfinchConfig.setGoldfinchConfig(newConfig.address);
+        const tx = await tranchedPool.updateGoldfinchConfig({from: owner})
+        expectEvent(tx, "GoldfinchConfigUpdated", {
+          who: owner,
+          configAddress: newConfig.address,
         })
       })
     })

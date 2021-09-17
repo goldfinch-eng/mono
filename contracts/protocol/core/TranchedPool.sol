@@ -42,6 +42,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     uint256 principalWithdrawn
   );
 
+  event GoldfinchConfigUpdated(address indexed who, address configAddress);
   event PaymentApplied(
     address indexed payer,
     address indexed pool,
@@ -64,7 +65,8 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   event DrawdownsPaused(address indexed pool);
   event DrawdownsUnpaused(address indexed pool);
   event EmergencyShutdown(address indexed pool);
-  event JuniorCapitalLocked(address indexed pool, uint256 juniorTrancheLockedUntil);
+  event JuniorTrancheLocked(address indexed pool, uint256 lockedUntil);
+  event SeniorTrancheLocked(address indexed pool, uint256 lockedUntil);
 
   function initialize(
     address _config,
@@ -289,6 +291,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   function updateGoldfinchConfig() external onlyAdmin {
     config = GoldfinchConfig(config.configAddress());
     creditLine.updateGoldfinchConfig();
+    emit GoldfinchConfigUpdated(msg.sender, address(config));
   }
 
   /**
@@ -533,18 +536,20 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     uint256 lockedUntil = currentTime().add(config.getDrawdownPeriodInSeconds());
     juniorTranche.lockedUntil = lockedUntil;
 
-    emit JuniorCapitalLocked(address(this), lockedUntil);
+    emit JuniorTrancheLocked(address(this), lockedUntil);
   }
 
   function _lockPool() internal {
     require(juniorTranche.lockedUntil > 0, "Junior tranche must be locked first");
-
     creditLine.setLimit(Math.min(totalDeposited(), creditLine.limit()));
 
     // We start the drawdown period, so backers can withdraw unused capital after borrower draws down
     uint256 lockPeriod = config.getDrawdownPeriodInSeconds();
     seniorTranche.lockedUntil = currentTime().add(lockPeriod);
     juniorTranche.lockedUntil = currentTime().add(lockPeriod);
+
+    emit SeniorTrancheLocked(address(this), seniorTranche.lockedUntil);
+    emit JuniorTrancheLocked(address(this), juniorTranche.lockedUntil);
   }
 
   function collectInterestAndPrincipal(

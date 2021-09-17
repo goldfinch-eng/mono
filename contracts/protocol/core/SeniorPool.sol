@@ -36,6 +36,8 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   event InvestmentMadeInSenior(address indexed tranchedPool, uint256 amount);
   event InvestmentMadeInJunior(address indexed tranchedPool, uint256 amount);
 
+  event GoldfinchConfigUpdated(address indexed who, address configAddress);
+
   function initialize(address owner, GoldfinchConfig _config) public initializer {
     require(owner != address(0) && address(_config) != address(0), "Owner and config addresses cannot be empty");
 
@@ -130,6 +132,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
    */
   function updateGoldfinchConfig() external onlyAdmin {
     config = GoldfinchConfig(config.configAddress());
+    emit GoldfinchConfigUpdated(msg.sender, address(config));
   }
 
   /**

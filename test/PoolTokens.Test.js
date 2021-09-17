@@ -14,6 +14,7 @@ const hre = require("hardhat")
 const BN = require("bn.js")
 const {deployments} = hre
 const TranchedPool = artifacts.require("TranchedPool")
+const {expectEvent} = require("@openzeppelin/test-helpers")
 
 describe("PoolTokens", () => {
   let owner, person2, person3, goldfinchConfig, poolTokens, pool, goldfinchFactory, usdc
@@ -375,6 +376,20 @@ describe("PoolTokens", () => {
         await expect(poolTokens.transferFrom(owner, person3, tokenId, {from: owner})).to.be.rejectedWith(
           /has not been go-listed/
         )
+      })
+    })
+  })
+
+  describe("updateGoldfinchConfig", async () => {
+    describe("setting it", () => {
+      it("emits an event", async () => {
+        const newConfig = await deployments.deploy("GoldfinchConfig", {from: owner})
+        await goldfinchConfig.setGoldfinchConfig(newConfig.address)
+        const tx = await poolTokens.updateGoldfinchConfig()
+        expectEvent(tx, "GoldfinchConfigUpdated", {
+          who: owner,
+          configAddress: newConfig.address,
+        })
       })
     })
   })

@@ -1617,6 +1617,16 @@ describe("StakingRewards", () => {
       expect(await stakingRewards.targetCapacity()).to.bignumber.equal(newTargetCapacity)
     })
 
+    it("emits an event", async () => {
+      let newTargetCapacity = bigVal(1234)
+      const tx = await stakingRewards.setTargetCapacity(newTargetCapacity, {from: owner})
+
+      expectEvent(tx, "TargetCapacityUpdated", {
+        who: owner,
+        targetCapacity: newTargetCapacity
+      })
+    })
+
     it("checkpoints rewards", async () => {
       let newTargetCapacity = bigVal(1234)
       await stakingRewards.setTargetCapacity(newTargetCapacity)
@@ -1641,6 +1651,17 @@ describe("StakingRewards", () => {
       await stakingRewards.setMaxRateAtPercent(newMaxRateAtPercent)
 
       expect(await stakingRewards.maxRateAtPercent()).to.bignumber.equal(newMaxRateAtPercent)
+    })
+
+    it("emits an event", async () => {
+      // 25%
+      let newMaxRateAtPercent = new BN(25).mul(new BN(String(1e16)))
+      const tx = await stakingRewards.setMaxRateAtPercent(newMaxRateAtPercent, {from: owner})
+
+      expectEvent(tx, "MaxRateAtPercentUpdated", {
+        who: owner,
+        maxRateAtPercent: newMaxRateAtPercent
+      })
     })
 
     it("checkpoints rewards", async () => {
@@ -1669,6 +1690,17 @@ describe("StakingRewards", () => {
       expect(await stakingRewards.minRateAtPercent()).to.bignumber.equal(newMinRateAtPercent)
     })
 
+    it("emits an event", async () => {
+       // 25%
+      let newMinRateAtPercent = new BN(5).mul(new BN(String(1e18)))
+      const tx = await stakingRewards.setMinRateAtPercent(newMinRateAtPercent)
+
+      expectEvent(tx, "MinRateAtPercentUpdated", {
+        who: owner,
+        minRateAtPercent: newMinRateAtPercent
+      })
+    })
+
     it("checkpoints rewards", async () => {
       let newMinRateAtPercent = new BN(5).mul(new BN(String(1e18)))
       await stakingRewards.setMinRateAtPercent(newMinRateAtPercent)
@@ -1693,6 +1725,16 @@ describe("StakingRewards", () => {
 
       expect(await stakingRewards.maxRate()).to.bignumber.equal(newMaxRate)
     })
+
+    it("emits an event", async () => {
+      let newMaxRate = bigVal(2500)
+      const tx = await stakingRewards.setMaxRate(newMaxRate, {from: owner})
+
+      expectEvent(tx, "MaxRateUpdated", {
+        who: owner,
+        maxRate: newMaxRate
+      })
+    });
 
     it("checkpoints rewards", async () => {
       let newMaxRate = bigVal(2500)
@@ -1719,6 +1761,16 @@ describe("StakingRewards", () => {
       expect(await stakingRewards.minRate()).to.bignumber.equal(newMinRate)
     })
 
+    it("emits an event", async () => {
+      let newMinRate = bigVal(2500)
+      const tx = await stakingRewards.setMinRate(newMinRate, {from: owner})
+
+      expectEvent(tx, "MinRateUpdated", {
+        who: owner,
+        minRate: newMinRate
+      })
+    })
+
     it("checkpoints rewards", async () => {
       let newMinRate = bigVal(2500)
       await stakingRewards.setMinRate(newMinRate)
@@ -1742,6 +1794,18 @@ describe("StakingRewards", () => {
       expect(await stakingRewards.getLeverageMultiplier(LockupPeriod.SixMonths)).to.bignumber.equal(bigVal(10))
     })
 
+    it("emits an event", async () => {
+      const newLockupPeriod = LockupPeriod.SixMonths
+      const newLeverageMultiplier = bigVal(10)
+      const tx = await stakingRewards.setLeverageMultiplier(LockupPeriod.SixMonths, newLeverageMultiplier)
+
+      expectEvent(tx, "LeverageMultiplierUpdated", {
+        who: owner,
+        lockupPeriod: new BN(newLockupPeriod),
+        leverageMultiplier: newLeverageMultiplier 
+      })
+    });
+
     it("checkpoints rewards", async () => {
       await stakingRewards.setLeverageMultiplier(LockupPeriod.SixMonths, bigVal(10))
 
@@ -1764,6 +1828,16 @@ describe("StakingRewards", () => {
       await stakingRewards.setVestingSchedule(vestingLength)
 
       expect(await stakingRewards.vestingLength()).to.bignumber.equal(vestingLength)
+    })
+
+    it("emits an event", async () => {
+      let newVestingLength = halfYearInSeconds
+      const tx = await stakingRewards.setVestingSchedule(newVestingLength, {from: owner})
+
+      expectEvent(tx, "VestingScheduleUpdated", {
+        who: owner,
+        vestingLength: newVestingLength
+      })
     })
 
     it("checkpoints rewards", async () => {

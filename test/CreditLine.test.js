@@ -10,10 +10,12 @@ const {
   erc20Transfer,
   expectAction,
   SECONDS_PER_DAY,
+  decodeLogs,
+  getFirstLog,
 } = require("./testHelpers")
 const {OWNER_ROLE, PAUSER_ROLE, interestAprAsBN} = require("../blockchain_scripts/deployHelpers")
 const {CONFIG_KEYS} = require("../blockchain_scripts/configKeys")
-const {time} = require("@openzeppelin/test-helpers")
+const {time, expectEvent} = require("@openzeppelin/test-helpers")
 
 let accounts, owner, person2, person3, goldfinchConfig
 
@@ -150,8 +152,21 @@ describe("CreditLine", () => {
           [() => creditLine.config(), {to: person2, bignumber: false}],
         ])
       })
+
       it("should disallow non-owner to set", async () => {
         return expect(creditLine.updateGoldfinchConfig({from: person2})).to.be.rejectedWith(/Must have admin/)
+      })
+
+      it("emits an event", async () => {
+        const newConfig = await deployments.deploy("GoldfinchConfig", {from: owner})
+
+        await goldfinchConfig.setAddress(CONFIG_KEYS.GoldfinchConfig, newConfig.address)
+        const tx = await creditLine.updateGoldfinchConfig()
+        const logs = decodeLogs(tx.receipt.rawLogs, creditLine, "GoldfinchConfigUpdated")
+        const firstLog = getFirstLog(logs)
+        expect(firstLog.event).to.equal("GoldfinchConfigUpdated")
+        expect(firstLog.args.who).to.match(new RegExp(tx.receipt.from, "i"))
+        expect(firstLog.args.configAddress).to.match(new RegExp(newConfig.address, "i"))
       })
     })
   })
@@ -344,6 +359,18 @@ describe("CreditLine", () => {
       expect(await creditLine.termStartTime()).to.bignumber.equal(
         termEndTime.sub(SECONDS_PER_DAY.mul(new BN(termInDays)))
       )
+    })
+  })
+
+  describe("updateGoldfinchConfig", () => {
+    it("emits an event", async () => {
+      const newConfig = await deployments.deploy("GoldfinchConfig", {from: owner})
+      await goldfinchConfig.setGoldfinchConfig(newConfig.address)
+      const tx = await creditLine.updateGoldfinchConfig({from: owner})
+      expectEvent(tx, "GoldfinchConfigUpdated", {
+        who: owner,
+        configAddress: newConfig.address,
+      })
     })
   })
 })
