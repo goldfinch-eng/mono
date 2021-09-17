@@ -235,7 +235,7 @@ describe("MerkleDistributor", () => {
       const isGrantAccepted2 = await merkleDistributor.isGrantAccepted(index)
       expect(isGrantAccepted2).to.be.true
 
-      expect(acceptGrant(acceptGrantParams)).to.be.rejectedWith(/MerkleDistributor: Grant already accepted\./)
+      await expect(acceptGrant(acceptGrantParams)).to.be.rejectedWith(/MerkleDistributor: Grant already accepted\./)
     })
 
     it("rejection does not perform granting", async () => {
@@ -246,7 +246,7 @@ describe("MerkleDistributor", () => {
       const rewardsAvailableBefore = await communityRewards.rewardsAvailable()
       expect(rewardsAvailableBefore).to.bignumber.equal(new BN(1e3))
 
-      expect(acceptGrant(acceptGrantParams)).to.be.rejectedWith(/MerkleDistributor: Grant already accepted\./)
+      await expect(acceptGrant(acceptGrantParams)).to.be.rejectedWith(/MerkleDistributor: Grant already accepted\./)
 
       // Check that rewards available was not decremented as part of the rejection.
       const rewardsAvailableAfter = await communityRewards.rewardsAvailable()
@@ -277,7 +277,7 @@ describe("MerkleDistributor", () => {
         ...acceptGrantParams,
         index: invalidIndex,
       })
-      expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
+      await expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
     })
 
     it("rejects an existent grant index with incorrect account", async () => {
@@ -289,7 +289,7 @@ describe("MerkleDistributor", () => {
         ...acceptGrantParams,
         account: invalidAccount,
       })
-      expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
+      await expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
     })
 
     it("rejects an existent grant index with incorrect (lesser) amount", async () => {
@@ -298,7 +298,7 @@ describe("MerkleDistributor", () => {
         ...acceptGrantParams,
         amount: invalidLesserAmount,
       })
-      expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
+      await expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
     })
 
     it("rejects an existent grant index with incorrect (greater) amount", async () => {
@@ -307,7 +307,7 @@ describe("MerkleDistributor", () => {
         ...acceptGrantParams,
         amount: invalidGreaterAmount,
       })
-      expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
+      await expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
     })
 
     it("rejects an existent grant index with incorrect vesting length", async () => {
@@ -316,7 +316,7 @@ describe("MerkleDistributor", () => {
         ...acceptGrantParams,
         vestingLength: invalidVestingLength,
       })
-      expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
+      await expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
     })
 
     it("rejects an existent grant index with incorrect cliff length", async () => {
@@ -326,7 +326,7 @@ describe("MerkleDistributor", () => {
         ...acceptGrantParams,
         cliffLength: invalidCliffLength,
       })
-      expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
+      await expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
     })
 
     it("rejects an existent grant index with incorrect vesting interval", async () => {
@@ -337,7 +337,7 @@ describe("MerkleDistributor", () => {
         ...acceptGrantParams,
         vestingInterval: invalidVestingInterval,
       })
-      expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
+      await expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
     })
 
     it("rejects an existent grant index with incorrect (empty) proof array", async () => {
@@ -346,7 +346,7 @@ describe("MerkleDistributor", () => {
         ...acceptGrantParams,
         proof: invalidProof,
       })
-      expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
+      await expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
     })
 
     it("rejects an existent grant index with incorrect (empty) proof string", async () => {
@@ -355,7 +355,7 @@ describe("MerkleDistributor", () => {
         ...acceptGrantParams,
         proof: invalidProof,
       })
-      expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
+      await expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
     })
 
     it("rejects an existent grant index with incorrect (non-empty) proof", async () => {
@@ -367,12 +367,12 @@ describe("MerkleDistributor", () => {
         ...acceptGrantParams,
         proof: invalidProof,
       })
-      expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
+      await expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
     })
 
     it("sets the grant as accepted, calls `CommunityRewards.grant()`, and emits an event", async () => {
       const acceptance = acceptGrant(acceptGrantParams)
-      expect(acceptance).to.be.fulfilled
+      await expect(acceptance).to.be.fulfilled
     })
 
     it('is not aware of a, and therefore does not prevent a "duplicate", grant with identical details that was issued directly (i.e. not by this contract)', async () => {
@@ -386,13 +386,13 @@ describe("MerkleDistributor", () => {
         acceptGrantParams.vestingInterval,
         {from: owner}
       )
-      expect(directIssuance).to.be.fulfilled
+      await expect(directIssuance).to.be.fulfilled
 
       const acceptance = acceptGrant(acceptGrantParams)
-      expect(acceptance).to.be.fulfilled
+      await expect(acceptance).to.be.fulfilled
     })
 
-    it.skip("uses the expected amount of gas", async () => {
+    it("uses the expected amount of gas", async () => {
       // TODO
     })
   })
