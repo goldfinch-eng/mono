@@ -1,4 +1,5 @@
 import {ethers} from "hardhat"
+import fs from "fs"
 import BN from "bn.js"
 import {CONFIG_KEYS} from "./configKeys"
 import {
@@ -34,6 +35,8 @@ import {
 import {Logger, DeployFn, DeployOpts} from "./types"
 import {assertIsString, assertNonEmptyString} from "../utils/type"
 import {TestCommunityRewards} from "../typechain/ethers/TestCommunityRewards"
+import {generateMerkleRoot} from "./merkleDistributor/generateMerkleRoot"
+import {isMerkleDistributorInfo} from "./merkleDistributor/types"
 
 let logger: Logger
 
@@ -77,10 +80,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   await deployGFI(hre, {config})
   await deployLPStakingRewards(hre, {config})
   const communityRewards = await deployCommunityRewards(hre, {config})
-  const merkleRoot = process.env.MERKLE_DISTRIBUTOR_ROOT
-  if (merkleRoot) {
-    await deployMerkleDistributor(hre, {communityRewards, merkleRoot})
-  }
+  await deployMerkleDistributor(hre, {communityRewards})
 
   logger("Granting ownership of Pool to CreditDesk")
   await grantOwnershipOfPoolToCreditDesk(pool, creditDesk.address)
@@ -321,18 +321,36 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
     return {name: contractName, contract}
   }
 
+  async function getMerkleDistributorRoot(): Promise<string | undefined> {
+    const path = process.env.MERKLE_DISTRIBUTOR_INFO_PATH
+    if (!path) {
+      logger("Merkle distributor info path is undefined.")
+      return
+    }
+    const json = JSON.parse(fs.readFileSync(path, {encoding: "utf8"}))
+    if (!isMerkleDistributorInfo(json)) {
+      logger("Merkle distributor info json failed type guard.")
+      return
+    }
+    return json.merkleRoot
+  }
+
   async function deployMerkleDistributor(
     hre: HardhatRuntimeEnvironment,
     {
       communityRewards,
-      merkleRoot,
     }: {
       communityRewards: Deployed<CommunityRewards | TestCommunityRewards>
-      merkleRoot: string
     }
-  ): Promise<Deployed<MerkleDistributor>> {
-    assertNonEmptyString(merkleRoot)
+  ): Promise<Deployed<MerkleDistributor> | undefined> {
     const contractName = "MerkleDistributor"
+
+    const merkleRoot = await getMerkleDistributorRoot()
+    if (!merkleRoot) {
+      logger(`Merkle root is undefined. Skipping deploy of ${contractName}`)
+      return
+    }
+
     logger(`About to deploy ${contractName}...`)
     assertIsString(gf_deployer)
     const deployResult = await deploy(contractName, {
