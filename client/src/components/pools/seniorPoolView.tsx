@@ -77,7 +77,7 @@ function SeniorPoolView(): JSX.Element {
   return (
     <div className="content-section">
       <div className="page-header"> {earnMessage}</div>
-      <ConnectionNotice requireSignIn={true} requireKYC={{kyc, condition: eligibleForSeniorPool}} />
+      <ConnectionNotice requireSignIn={true} requireKYC={{kyc: kycResult, condition: eligibleForSeniorPool}} />
       {maxCapacityNotice}
       <InvestorNotice />
       <EarnActionsContainer

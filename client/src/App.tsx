@@ -39,7 +39,7 @@ interface GeolocationData {
   timezone: string
 }
 
-interface GlobalState {
+export interface GlobalState {
   pool?: SeniorPool
   creditDesk?: any
   user: User
