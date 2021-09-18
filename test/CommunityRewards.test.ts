@@ -1,9 +1,10 @@
 /* global web3 */
 import BN from "bn.js"
 import hre from "hardhat"
+import {expectEvent} from "@openzeppelin/test-helpers"
 import {DISTRIBUTOR_ROLE, OWNER_ROLE} from "../blockchain_scripts/deployHelpers"
 import {GFIInstance} from "../typechain/truffle"
-import {Granted, GrantRevoked, RewardAdded} from "../typechain/truffle/CommunityRewards"
+import {Granted, GrantRevoked, RewardAdded, RewardPaid} from "../typechain/truffle/CommunityRewards"
 import {TestCommunityRewardsInstance} from "../typechain/truffle/TestCommunityRewards"
 import {mintAndLoadRewards} from "./communityRewardsHelpers"
 import {advanceTime, decodeLogs, deployAllContracts, expect, getCurrentTimestamp, getOnlyLog} from "./testHelpers"
@@ -353,11 +354,101 @@ describe("CommunityRewards", () => {
   })
 
   describe("getReward", async () => {
-    it("rejects sender who is not owner of the token", async () => {})
+    let amount: BN
 
-    it("allows call if claimable amount is 0", async () => {})
+    beforeEach(async () => {
+      amount = new BN(1e6)
+      await mintAndLoadRewards(gfi, communityRewards, owner, amount)
+    })
+    it("rejects sender who is not owner of the token", async () => {
+      const tokenId = await grant({
+        recipient: anotherUser,
+        amount,
+        vestingLength: new BN(1000),
+        cliffLength: new BN(0),
+        vestingInterval: new BN(1),
+      })
+      await expect(communityRewards.ownerOf(tokenId)).to.equal(anotherUser)
+      await expect(communityRewards.getReward(tokenId, {from: owner})).to.be.rejectedWith(/access denied/)
+    })
 
-    it("updates state, transfers rewards, and emits an event, if claimable amount is > 0", async () => {})
+    it("allows call if claimable amount is 0", async () => {
+      const gfiBalanceBefore = await gfi.balanceOf(anotherUser)
+      expect(gfiBalanceBefore).to.bignumber.equal(new BN(0))
+
+      const tokenId = await grant({
+        recipient: anotherUser,
+        amount,
+        vestingLength: new BN(1000),
+        cliffLength: new BN(500),
+        vestingInterval: new BN(1),
+      })
+      const claimable = await communityRewards.getClaimable(tokenId)
+      expect(claimable).to.bignumber.equal(new BN(0))
+
+      const receipt = await communityRewards.getReward(tokenId, {from: anotherUser})
+
+      // Does not increment total claimed.
+      const grantState = await communityRewards.getGrant(tokenId)
+      expect(grantState.totalClaimed).to.bignumber.equal(new BN(0))
+
+      // Does not transfer GFI.
+      const gfiBalanceAfter = await gfi.balanceOf(anotherUser)
+      expect(gfiBalanceAfter).to.bignumber.equal(new BN(0))
+
+      // Does not emit event.
+      expectEvent.notEmitted(receipt, "RewardPaid")
+    })
+
+    it("updates state, transfers rewards, and emits an event, if claimable amount is > 0", async () => {
+      const gfiBalanceBefore = await gfi.balanceOf(anotherUser)
+      expect(gfiBalanceBefore).to.bignumber.equal(new BN(0))
+
+      const vestingLength = new BN(1000)
+      const cliffLength = new BN(500)
+      const tokenId = await grant({
+        recipient: anotherUser,
+        amount,
+        vestingLength,
+        cliffLength,
+        vestingInterval: new BN(1),
+      })
+      const grantedAt = await getCurrentTimestamp()
+
+      await advanceTime({seconds: cliffLength})
+      await ethers.provider.send("evm_mine", [])
+
+      const expectedClaimableAtCliff = amount.mul(cliffLength).div(vestingLength)
+      const claimable = await communityRewards.getClaimable(tokenId)
+      expect(claimable).to.bignumber.equal(expectedClaimableAtCliff)
+
+      const receipt = await communityRewards.getReward(tokenId, {from: anotherUser})
+      const currentTimestamp = await getCurrentTimestamp()
+      expect(currentTimestamp).to.bignumber.equal(grantedAt.add(cliffLength).add(new BN(1)))
+
+      const expectedClaimedJustAfterCliff = expectedClaimableAtCliff.add(amount.mul(new BN(1)).div(vestingLength))
+
+      // Increments total claimed.
+      const grantState = await communityRewards.getGrant(tokenId)
+      expect(grantState.totalGranted).to.bignumber.equal(amount)
+      expect(grantState.totalClaimed).to.bignumber.equal(expectedClaimedJustAfterCliff)
+
+      // Transfers GFI.
+      const gfiBalanceAfter = await gfi.balanceOf(anotherUser)
+      expect(gfiBalanceAfter).to.bignumber.equal(expectedClaimedJustAfterCliff)
+
+      // Emits event.
+      const rewardPaidEvent = getOnlyLog<RewardPaid>(
+        decodeLogs(receipt.receipt.rawLogs, communityRewards, "RewardPaid")
+      )
+      expect(rewardPaidEvent.args.user).to.equal(anotherUser)
+      expect(rewardPaidEvent.args.tokenId).to.bignumber.equal(tokenId)
+      expect(rewardPaidEvent.args.reward).to.bignumber.equal(expectedClaimedJustAfterCliff)
+
+      const expectedClaimableAfterClaimingJustAfterCliff = new BN(0)
+      const claimable2 = await communityRewards.getClaimable(tokenId)
+      expect(claimable2).to.bignumber.equal(expectedClaimableAfterClaimingJustAfterCliff)
+    })
 
     context("grant with 0 vesting length", async () => {
       it("gets full grant amount", async () => {})
