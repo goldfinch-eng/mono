@@ -696,9 +696,82 @@ describe("CommunityRewards", () => {
     })
 
     context("revoked grant", async () => {
-      it("after revocation, vested amount is still claimable", async () => {})
+      let amount: BN
+      let tokenId: BN
+      let vestingLength: BN
+      let grantedAt: BN
 
-      it("after revocation, no further amount vests, so no further amount is claimable", async () => {})
+      beforeEach(async () => {
+        amount = new BN(1e6)
+        await mintAndLoadRewards(gfi, communityRewards, owner, amount)
+        vestingLength = new BN(1000)
+        tokenId = await grant({
+          recipient: anotherUser,
+          amount,
+          vestingLength,
+          cliffLength: new BN(0),
+          vestingInterval: new BN(1),
+        })
+        grantedAt = await getCurrentTimestamp()
+        await advanceTime({seconds: vestingLength.div(new BN(2))})
+      })
+
+      it("after revocation, vested amount is still claimable", async () => {
+        await communityRewards.revokeGrant(tokenId, {from: owner})
+        const revocationTimestamp = await getCurrentTimestamp()
+        expect(revocationTimestamp).to.bignumber.equal(grantedAt.add(vestingLength.div(new BN(2))))
+
+        const grantState = await communityRewards.getGrant(tokenId)
+        expect(grantState.revokedAt).to.bignumber.equal(revocationTimestamp)
+
+        const expectedClaimable = amount.div(new BN(2))
+        const claimable = await communityRewards.getClaimable(tokenId)
+        expect(claimable).to.bignumber.equal(expectedClaimable)
+
+        await communityRewards.getReward(tokenId, {from: anotherUser})
+
+        const expectedClaimed = expectedClaimable
+        await expectStateAfterGetReward(
+          gfi,
+          communityRewards,
+          anotherUser,
+          tokenId,
+          amount,
+          expectedClaimed,
+          expectedClaimed
+        )
+      })
+
+      it("after revocation, no further amount vests, so no further amount is claimable", async () => {
+        await communityRewards.revokeGrant(tokenId, {from: owner})
+        const revocationTimestamp = await getCurrentTimestamp()
+        expect(revocationTimestamp).to.bignumber.equal(grantedAt.add(vestingLength.div(new BN(2))))
+
+        await advanceTime({seconds: new BN(200)})
+        await ethers.provider.send("evm_mine", [])
+
+        const currentTimestamp = await getCurrentTimestamp()
+        expect(currentTimestamp).to.bignumber.equal(revocationTimestamp.add(new BN(200)))
+        const grantState = await communityRewards.getGrant(tokenId)
+        expect(grantState.revokedAt).to.bignumber.equal(revocationTimestamp)
+
+        const expectedClaimable = amount.div(new BN(2))
+        const claimable = await communityRewards.getClaimable(tokenId)
+        expect(claimable).to.bignumber.equal(expectedClaimable)
+
+        await communityRewards.getReward(tokenId, {from: anotherUser})
+
+        const expectedClaimed = expectedClaimable
+        await expectStateAfterGetReward(
+          gfi,
+          communityRewards,
+          anotherUser,
+          tokenId,
+          amount,
+          expectedClaimed,
+          expectedClaimed
+        )
+      })
     })
 
     context("paused", async () => {
@@ -718,7 +791,9 @@ describe("CommunityRewards", () => {
     })
 
     context("reentrancy", async () => {
-      it("reverts", async () => {})
+      it("reverts", async () => {
+        // TODO
+      })
     })
   })
 })
