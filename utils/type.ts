@@ -45,6 +45,18 @@ export const assertNonEmptyString: (obj: unknown) => asserts obj is string = (ob
   }
 }
 
+export const assertArray: (obj: unknown) => asserts obj is unknown[] = (obj: unknown): asserts obj is unknown[] => {
+  if (!isArray(obj)) {
+    throw new AssertionError("Value is not an array.")
+  }
+}
+export const assertNonEmptyArray: (obj: unknown) => asserts obj is unknown[] = (obj: unknown): asserts obj is unknown[] => {
+  assertArray(obj)
+  if (!obj.length) {
+    throw new AssertionError("Value is not a non-empty array.")
+  }
+}
+
 export class AssertionError extends Error {}
 
 export function assertNonNullable<T>(val: T | null | undefined): asserts val is NonNullable<T> {

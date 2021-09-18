@@ -5,7 +5,7 @@ import {MerkleDistributorGrantInfo} from "../blockchain_scripts/merkleDistributo
 import {GFIInstance} from "../typechain/truffle/GFI"
 import {GrantAccepted, MerkleDistributorInstance} from "../typechain/truffle/MerkleDistributor"
 import {Granted, TestCommunityRewardsInstance} from "../typechain/truffle/TestCommunityRewards"
-import {assertNonNullable} from "../utils/type"
+import {assertNonEmptyArray, assertNonNullable} from "../utils/type"
 import {mintAndLoadRewards} from "./communityRewardsHelpers"
 import {fixtures} from "./merkleDistributorHelpers"
 import {decodeLogs, deployAllContracts, genDifferentHexString, getOnlyLog} from "./testHelpers"
@@ -350,7 +350,9 @@ describe("MerkleDistributor", () => {
     })
 
     it("rejects an existent grant index with incorrect (empty) proof string", async () => {
-      const invalidProof: string[] = [web3.utils.asciiToHex("")]
+      const invalidProof: string[] = grantInfo.proof.slice()
+      assertNonEmptyArray(invalidProof)
+      invalidProof[invalidProof.length - 1] = web3.utils.asciiToHex("")
       const acceptance = acceptGrant({
         ...acceptGrantParams,
         proof: invalidProof,
