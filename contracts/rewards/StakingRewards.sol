@@ -181,8 +181,8 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
   /// @notice Returns the rewards claimable by a given position token at the most recent checkpoint, taking into
   ///   account vesting schedule.
-  /// TODO[PR] Is the following comment incorrect? I think it returns amount denominated in `rewardsToken()`,
-  /// not `rewardsToken().decimals()`.
+  /// TODO[PR] Is the comment below correct? From my reading, it returns amount denominated in
+  /// units of `rewardsToken()` full stop, not `rewardsToken().decimals()`.
   /// @return rewards Amount of rewards denominated in `rewardsToken().decimals()`
   function claimableRewards(uint256 tokenId) internal view returns (uint256 rewards) {
     return positions[tokenId].rewards.claimable();
