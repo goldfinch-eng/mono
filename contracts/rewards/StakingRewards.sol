@@ -24,7 +24,11 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
   using StakingRewardsVesting for StakingRewardsVesting.Rewards;
 
-  enum LockupPeriod {SixMonths, TwelveMonths, TwentyFourMonths}
+  enum LockupPeriod {
+    SixMonths,
+    TwelveMonths,
+    TwentyFourMonths
+  }
 
   struct StakedPosition {
     // @notice Staked amount denominated in `stakingToken().decimals()`
@@ -177,6 +181,8 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
   /// @notice Returns the rewards claimable by a given position token at the most recent checkpoint, taking into
   ///   account vesting schedule.
+  /// TODO[PR] Is the following comment incorrect? I think it returns amount denominated in `rewardsToken()`,
+  /// not `rewardsToken().decimals()`.
   /// @return rewards Amount of rewards denominated in `rewardsToken().decimals()`
   function claimableRewards(uint256 tokenId) internal view returns (uint256 rewards) {
     return positions[tokenId].rewards.claimable();
