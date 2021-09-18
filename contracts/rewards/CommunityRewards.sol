@@ -70,7 +70,7 @@ contract CommunityRewards is ICommunityRewards, ERC721PresetMinterPauserAutoIdUp
 
   /// @notice Returns the rewards claimable by a given grant token, taking into
   ///   account vesting schedule.
-  /// @return rewards Amount of rewards denominated in `rewardsToken().decimals()`
+  /// @return rewards Amount of rewards denominated in `rewardsToken()`
   function claimableRewards(uint256 tokenId) internal view returns (uint256 rewards) {
     return grants[tokenId].claimable();
   }
