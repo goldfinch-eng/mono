@@ -6,7 +6,7 @@ import {DISTRIBUTOR_ROLE, OWNER_ROLE} from "../blockchain_scripts/deployHelpers"
 import {GFIInstance} from "../typechain/truffle"
 import {Granted, GrantRevoked, RewardAdded, RewardPaid} from "../typechain/truffle/CommunityRewards"
 import {TestCommunityRewardsInstance} from "../typechain/truffle/TestCommunityRewards"
-import {mintAndLoadRewards} from "./communityRewardsHelpers"
+import {expectStateAfterGetReward, mintAndLoadRewards} from "./communityRewardsHelpers"
 import {advanceTime, decodeLogs, deployAllContracts, expect, getCurrentTimestamp, getOnlyLog} from "./testHelpers"
 const {ethers} = hre
 const {deployments} = hre
@@ -388,13 +388,17 @@ describe("CommunityRewards", () => {
 
       const receipt = await communityRewards.getReward(tokenId, {from: anotherUser})
 
-      // Does not increment total claimed.
-      const grantState = await communityRewards.getGrant(tokenId)
-      expect(grantState.totalClaimed).to.bignumber.equal(new BN(0))
-
-      // Does not transfer GFI.
-      const gfiBalanceAfter = await gfi.balanceOf(anotherUser)
-      expect(gfiBalanceAfter).to.bignumber.equal(new BN(0))
+      await expectStateAfterGetReward(
+        gfi,
+        communityRewards,
+        anotherUser,
+        tokenId,
+        amount,
+        // Does not increment total claimed.
+        new BN(0),
+        // Does not transfer GFI.
+        new BN(0)
+      )
 
       // Does not emit event.
       expectEvent.notEmitted(receipt, "RewardPaid")
@@ -428,14 +432,17 @@ describe("CommunityRewards", () => {
 
       const expectedClaimedJustAfterCliff = expectedClaimableAtCliff.add(amount.mul(new BN(1)).div(vestingLength))
 
-      // Increments total claimed.
-      const grantState = await communityRewards.getGrant(tokenId)
-      expect(grantState.totalGranted).to.bignumber.equal(amount)
-      expect(grantState.totalClaimed).to.bignumber.equal(expectedClaimedJustAfterCliff)
-
-      // Transfers GFI.
-      const gfiBalanceAfter = await gfi.balanceOf(anotherUser)
-      expect(gfiBalanceAfter).to.bignumber.equal(expectedClaimedJustAfterCliff)
+      await expectStateAfterGetReward(
+        gfi,
+        communityRewards,
+        anotherUser,
+        tokenId,
+        amount,
+        // Increments total claimed.
+        expectedClaimedJustAfterCliff,
+        // Transfers GFI.
+        expectedClaimedJustAfterCliff
+      )
 
       // Emits event.
       const rewardPaidEvent = getOnlyLog<RewardPaid>(
@@ -467,14 +474,7 @@ describe("CommunityRewards", () => {
 
         await communityRewards.getReward(tokenId, {from: anotherUser})
 
-        const grantState = await communityRewards.getGrant(tokenId)
-        expect(grantState.totalClaimed).to.bignumber.equal(amount)
-
-        const gfiBalanceAfter = await gfi.balanceOf(anotherUser)
-        expect(gfiBalanceAfter).to.bignumber.equal(amount)
-
-        const claimableAfter = await communityRewards.getClaimable(tokenId)
-        expect(claimableAfter).to.bignumber.equal(new BN(0))
+        await expectStateAfterGetReward(gfi, communityRewards, anotherUser, tokenId, amount, amount, amount)
       })
     })
 
@@ -504,15 +504,15 @@ describe("CommunityRewards", () => {
             await communityRewards.getReward(tokenId, {from: anotherUser})
 
             const expectedClaimed = amount.div(new BN(2))
-
-            const grantState = await communityRewards.getGrant(tokenId)
-            expect(grantState.totalClaimed).to.bignumber.equal(expectedClaimed)
-
-            const gfiBalanceAfter = await gfi.balanceOf(anotherUser)
-            expect(gfiBalanceAfter).to.bignumber.equal(expectedClaimed)
-
-            const claimableAfter = await communityRewards.getClaimable(tokenId)
-            expect(claimableAfter).to.bignumber.equal(new BN(0))
+            await expectStateAfterGetReward(
+              gfi,
+              communityRewards,
+              anotherUser,
+              tokenId,
+              amount,
+              expectedClaimed,
+              expectedClaimed
+            )
           })
         })
         context("vesting interval > 1", async () => {
@@ -541,14 +541,15 @@ describe("CommunityRewards", () => {
             const expectedClaimed = amount.mul(elapsedVestingUnits).div(totalVestingUnits)
             expect(expectedClaimed).to.bignumber.equal(new BN(0.4e6))
 
-            const grantState = await communityRewards.getGrant(tokenId)
-            expect(grantState.totalClaimed).to.bignumber.equal(expectedClaimed)
-
-            const gfiBalanceAfter = await gfi.balanceOf(anotherUser)
-            expect(gfiBalanceAfter).to.bignumber.equal(expectedClaimed)
-
-            const claimableAfter = await communityRewards.getClaimable(tokenId)
-            expect(claimableAfter).to.bignumber.equal(new BN(0))
+            await expectStateAfterGetReward(
+              gfi,
+              communityRewards,
+              anotherUser,
+              tokenId,
+              amount,
+              expectedClaimed,
+              expectedClaimed
+            )
 
             const elapse2 = new BN(100)
             await advanceTime({seconds: elapse2})
@@ -560,14 +561,15 @@ describe("CommunityRewards", () => {
             const expectedClaimed2 = amount.mul(elapsedVestingUnits2).div(totalVestingUnits)
             expect(expectedClaimed2).to.bignumber.equal(new BN(0.6e6))
 
-            const grantState2 = await communityRewards.getGrant(tokenId)
-            expect(grantState2.totalClaimed).to.bignumber.equal(expectedClaimed2)
-
-            const gfiBalanceAfter2 = await gfi.balanceOf(anotherUser)
-            expect(gfiBalanceAfter2).to.bignumber.equal(expectedClaimed2)
-
-            const claimableAfter2 = await communityRewards.getClaimable(tokenId)
-            expect(claimableAfter2).to.bignumber.equal(new BN(0))
+            await expectStateAfterGetReward(
+              gfi,
+              communityRewards,
+              anotherUser,
+              tokenId,
+              amount,
+              expectedClaimed2,
+              expectedClaimed2
+            )
           })
         })
       })
@@ -594,30 +596,30 @@ describe("CommunityRewards", () => {
             await communityRewards.getReward(tokenId, {from: anotherUser})
 
             const expectedClaimedJustBeforeCliff = new BN(0)
-
-            const grantState = await communityRewards.getGrant(tokenId)
-            expect(grantState.totalClaimed).to.bignumber.equal(expectedClaimedJustBeforeCliff)
-
-            const gfiBalanceAfter = await gfi.balanceOf(anotherUser)
-            expect(gfiBalanceAfter).to.bignumber.equal(expectedClaimedJustBeforeCliff)
-
-            const claimableAfter = await communityRewards.getClaimable(tokenId)
-            expect(claimableAfter).to.bignumber.equal(new BN(0))
+            await expectStateAfterGetReward(
+              gfi,
+              communityRewards,
+              anotherUser,
+              tokenId,
+              amount,
+              expectedClaimedJustBeforeCliff,
+              expectedClaimedJustBeforeCliff
+            )
 
             await advanceTime({seconds: new BN(1)})
 
             await communityRewards.getReward(tokenId, {from: anotherUser})
 
             const expectedClaimedAtCliff = amount.mul(cliffLength).div(vestingLength)
-
-            const grantState2 = await communityRewards.getGrant(tokenId)
-            expect(grantState2.totalClaimed).to.bignumber.equal(expectedClaimedAtCliff)
-
-            const gfiBalanceAfter2 = await gfi.balanceOf(anotherUser)
-            expect(gfiBalanceAfter2).to.bignumber.equal(expectedClaimedAtCliff)
-
-            const claimableAfter2 = await communityRewards.getClaimable(tokenId)
-            expect(claimableAfter2).to.bignumber.equal(new BN(0))
+            await expectStateAfterGetReward(
+              gfi,
+              communityRewards,
+              anotherUser,
+              tokenId,
+              amount,
+              expectedClaimedAtCliff,
+              expectedClaimedAtCliff
+            )
           })
         })
         context("vesting interval > 1", async () => {
@@ -641,15 +643,15 @@ describe("CommunityRewards", () => {
             await communityRewards.getReward(tokenId, {from: anotherUser})
 
             const expectedClaimedJustBeforeCliff = new BN(0)
-
-            const grantState = await communityRewards.getGrant(tokenId)
-            expect(grantState.totalClaimed).to.bignumber.equal(expectedClaimedJustBeforeCliff)
-
-            const gfiBalanceAfter = await gfi.balanceOf(anotherUser)
-            expect(gfiBalanceAfter).to.bignumber.equal(expectedClaimedJustBeforeCliff)
-
-            const claimableAfter = await communityRewards.getClaimable(tokenId)
-            expect(claimableAfter).to.bignumber.equal(new BN(0))
+            await expectStateAfterGetReward(
+              gfi,
+              communityRewards,
+              anotherUser,
+              tokenId,
+              amount,
+              expectedClaimedJustBeforeCliff,
+              expectedClaimedJustBeforeCliff
+            )
 
             await advanceTime({seconds: new BN(1)})
 
@@ -660,14 +662,15 @@ describe("CommunityRewards", () => {
 
             await communityRewards.getReward(tokenId, {from: anotherUser})
 
-            const grantState2 = await communityRewards.getGrant(tokenId)
-            expect(grantState2.totalClaimed).to.bignumber.equal(expectedClaimedAtCliff)
-
-            const gfiBalanceAfter2 = await gfi.balanceOf(anotherUser)
-            expect(gfiBalanceAfter2).to.bignumber.equal(expectedClaimedAtCliff)
-
-            const claimableAfter2 = await communityRewards.getClaimable(tokenId)
-            expect(claimableAfter2).to.bignumber.equal(new BN(0))
+            await expectStateAfterGetReward(
+              gfi,
+              communityRewards,
+              anotherUser,
+              tokenId,
+              amount,
+              expectedClaimedAtCliff,
+              expectedClaimedAtCliff
+            )
 
             await advanceTime({seconds: new BN(100)})
 
@@ -678,18 +681,18 @@ describe("CommunityRewards", () => {
             const expectedClaimed3 = amount.mul(elapsedVestingUnits).div(totalVestingUnits)
             expect(expectedClaimed3).to.bignumber.equal(new BN(0.6e6))
 
-            const grantState3 = await communityRewards.getGrant(tokenId)
-            expect(grantState3.totalClaimed).to.bignumber.equal(expectedClaimed3)
-
-            const gfiBalanceAfter3 = await gfi.balanceOf(anotherUser)
-            expect(gfiBalanceAfter3).to.bignumber.equal(expectedClaimed3)
-
-            const claimableAfter3 = await communityRewards.getClaimable(tokenId)
-            expect(claimableAfter3).to.bignumber.equal(new BN(0))
+            await expectStateAfterGetReward(
+              gfi,
+              communityRewards,
+              anotherUser,
+              tokenId,
+              amount,
+              expectedClaimed3,
+              expectedClaimed3
+            )
           })
         })
       })
-
     })
 
     context("revoked grant", async () => {
