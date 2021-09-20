@@ -11,7 +11,7 @@ import {EventData} from "web3-eth-contract"
 
 declare let window: any
 
-const UNLOCK_THRESHOLD = new BigNumber(10000)
+export const UNLOCK_THRESHOLD = new BigNumber(10000)
 
 async function getUserData(address, goldfinchProtocol, pool: SeniorPool, creditDesk, networkId): Promise<User> {
   const borrower = await getBorrowerContract(address, goldfinchProtocol)

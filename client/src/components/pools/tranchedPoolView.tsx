@@ -676,8 +676,12 @@ function Overview({tranchedPool}: {tranchedPool?: TranchedPool}) {
   )
 }
 
+interface TranchedPoolViewURLParams {
+  poolAddress: string
+}
+
 function TranchedPoolView() {
-  const {poolAddress} = useParams()
+  const {poolAddress} = useParams<TranchedPoolViewURLParams>()
   const {goldfinchProtocol, usdc, user} = useContext(AppContext)
   const [tranchedPool, refreshTranchedPool] = useTranchedPool({address: poolAddress, goldfinchProtocol})
   const backer = useBacker({user, tranchedPool})
