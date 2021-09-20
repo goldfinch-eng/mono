@@ -40,9 +40,9 @@ export const assertIsString: (obj: unknown) => asserts obj is string = genAssert
 
 export class AssertionError extends Error {}
 
-export function assertNonNullable<T>(val: T | null | undefined): asserts val is NonNullable<T> {
+export function assertNonNullable<T>(val: T | null | undefined, errorMessage?: string): asserts val is NonNullable<T> {
   if (val === null || val === undefined) {
-    throw new AssertionError(`Value ${val} is not non-nullable.`)
+    throw new AssertionError(errorMessage || `Value ${val} is not non-nullable.`)
   }
 }
 
