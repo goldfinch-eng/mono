@@ -295,6 +295,7 @@ function DepositStatus({tranchedPool, backer}: {tranchedPool?: TranchedPool; bac
   const leverageRatio = tranchedPool.estimatedLeverageRatio
 
   let estimatedAPY = tranchedPool.estimateJuniorAPY(leverageRatio)
+
   let rightStatusItem
   if (tranchedPool.creditLine.balance.isZero()) {
     // Not yet drawdown
@@ -302,17 +303,24 @@ function DepositStatus({tranchedPool, backer}: {tranchedPool?: TranchedPool; bac
       <div className="deposit-status-item">
         <div className="label">Est. APY</div>
         <div className="value">{displayPercent(estimatedAPY)}</div>
-        <div className="sub-value">(awaiting drawdown)</div>
       </div>
     )
   } else {
     rightStatusItem = (
       <div className="deposit-status-item">
         <div className="label">Est. Monthly Interest</div>
-        <div className="value">
-          {displayDollars(usdcFromAtomic(tranchedPool.estimateMonthlyInterest(estimatedAPY, backer.principalAtRisk)))}
-        </div>
-        <div className="sub-value">{displayPercent(estimatedAPY)} APY</div>
+        {backer.balance.isZero() ? (
+          <div className="value">{displayPercent(estimatedAPY)}</div>
+        ) : (
+          <>
+            <div className="value">
+              {displayDollars(
+                usdcFromAtomic(tranchedPool.estimateMonthlyInterest(estimatedAPY, backer.principalAtRisk)),
+              )}
+            </div>
+            <div className="sub-value">{displayPercent(estimatedAPY)} APY</div>
+          </>
+        )}
       </div>
     )
   }
@@ -322,7 +330,9 @@ function DepositStatus({tranchedPool, backer}: {tranchedPool?: TranchedPool; bac
       <div className="deposit-status-item">
         <div className="label">Your balance</div>
         <div className="value">{displayDollars(backer.balanceInDollars)}</div>
-        <div className="sub-value">{displayDollars(backer.availableToWithdrawInDollars)} available</div>
+        {!backer.balance.isZero() && (
+          <div className="sub-value">{displayDollars(backer.availableToWithdrawInDollars)} available</div>
+        )}
       </div>
       {rightStatusItem}
     </div>
