@@ -92,7 +92,7 @@ export const strategies: ConnectionNoticeStrategy[] = [
   },
   {
     devName: "no_credit_line",
-    match: ({creditLine}) => !!creditLine && creditLine.loaded && !creditLine.address,
+    match: ({user, creditLine}) => user.loaded && !!creditLine && creditLine.loaded && !creditLine.address,
     render: (_props) => (
       <TextBanner>
         You do not have any credit lines. To borrow funds from the pool, you need a Goldfinch credit line.
