@@ -151,7 +151,7 @@ export function verifyMerkleRoot(json: unknown): VerificationResult {
   }
   console.log("Done!")
 
-  const rootHex = "0x" + getRoot(parsed).toString("hex")
+  const rootHex = `0x${getRoot(parsed).toString("hex")}`
   return {
     reconstructedMerkleRoot: rootHex,
     matchesRootInJson: rootHex === merkleRootHex,

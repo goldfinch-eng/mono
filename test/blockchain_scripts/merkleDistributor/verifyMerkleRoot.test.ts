@@ -10,13 +10,13 @@ import {genDifferentHexString} from "../../testHelpers"
 import fixtures from "./fixtures"
 
 const genInvalidMerkleDistributorInfo = (
-  genInvalidLastGrant: (lastGrant: MerkleDistributorGrantInfo) => MerkleDistributorGrantInfo
+  genInvalidLastGrantInfo: (lastGrantInfo: MerkleDistributorGrantInfo) => MerkleDistributorGrantInfo
 ): MerkleDistributorInfo => {
   const grants = fixtures.output.grants.slice()
-  const lastGrant = grants[grants.length - 1]
-  assertNonNullable(lastGrant)
-  const invalidLastGrant = genInvalidLastGrant(lastGrant)
-  grants[grants.length - 1] = invalidLastGrant
+  const last = grants[grants.length - 1]
+  assertNonNullable(last)
+  const invalidLastGrantInfo = genInvalidLastGrantInfo(last)
+  grants[grants.length - 1] = invalidLastGrantInfo
   const json: MerkleDistributorInfo = {
     ...fixtures.output,
     grants,
@@ -34,74 +34,86 @@ describe("verifyMerkleRoot", () => {
   })
 
   it("rejects an invalid index for a grant", async () => {
-    const json = genInvalidMerkleDistributorInfo((lastGrant) => ({
-      ...lastGrant,
-      index: lastGrant.index + 1,
+    const json = genInvalidMerkleDistributorInfo((lastGrantInfo) => ({
+      ...lastGrantInfo,
+      index: lastGrantInfo.index + 1,
     }))
     expect(() => verifyMerkleRoot(json)).to.throw("Failed validation for 1 or more proofs")
   })
 
   it("rejects an invalid amount for a grant", async () => {
-    const json = genInvalidMerkleDistributorInfo((lastGrant) => ({
-      ...lastGrant,
-      amount: genDifferentHexString(lastGrant.grant.amount),
+    const json = genInvalidMerkleDistributorInfo((lastGrantInfo) => ({
+      ...lastGrantInfo,
+      grant: {
+        ...lastGrantInfo.grant,
+        amount: genDifferentHexString(lastGrantInfo.grant.amount),
+      },
     }))
     expect(() => verifyMerkleRoot(json)).to.throw("Failed validation for 1 or more proofs")
   })
 
   it("rejects an invalid vestingLength for a grant", async () => {
-    const json = genInvalidMerkleDistributorInfo((lastGrant) => ({
-      ...lastGrant,
-      vestingLength: genDifferentHexString(lastGrant.grant.vestingLength),
+    const json = genInvalidMerkleDistributorInfo((lastGrantInfo) => ({
+      ...lastGrantInfo,
+      grant: {
+        ...lastGrantInfo.grant,
+        vestingLength: genDifferentHexString(lastGrantInfo.grant.vestingLength),
+      },
     }))
     expect(() => verifyMerkleRoot(json)).to.throw("Failed validation for 1 or more proofs")
   })
 
   it("rejects an invalid cliffLength for a grant", async () => {
-    const json = genInvalidMerkleDistributorInfo((lastGrant) => ({
-      ...lastGrant,
-      cliffLength: genDifferentHexString(lastGrant.grant.cliffLength),
+    const json = genInvalidMerkleDistributorInfo((lastGrantInfo) => ({
+      ...lastGrantInfo,
+      grant: {
+        ...lastGrantInfo.grant,
+        cliffLength: genDifferentHexString(lastGrantInfo.grant.cliffLength),
+      },
     }))
     expect(() => verifyMerkleRoot(json)).to.throw("Failed validation for 1 or more proofs")
   })
 
   it("rejects an invalid vestingInterval for a grant", async () => {
-    const json = genInvalidMerkleDistributorInfo((lastGrant) => ({
-      ...lastGrant,
-      vestingInterval: genDifferentHexString(lastGrant.grant.vestingInterval),
+    const json = genInvalidMerkleDistributorInfo((lastGrantInfo) => ({
+      ...lastGrantInfo,
+      grant: {
+        ...lastGrantInfo.grant,
+        vestingInterval: genDifferentHexString(lastGrantInfo.grant.vestingInterval),
+      },
     }))
     expect(() => verifyMerkleRoot(json)).to.throw("Failed validation for 1 or more proofs")
   })
 
   it("rejects an invalid (empty) proof array for a grant", async () => {
-    const json = genInvalidMerkleDistributorInfo((lastGrant) => ({
-      ...lastGrant,
+    const json = genInvalidMerkleDistributorInfo((lastGrantInfo) => ({
+      ...lastGrantInfo,
       proof: [],
     }))
     expect(() => verifyMerkleRoot(json)).to.throw("Failed validation for 1 or more proofs")
   })
 
   it("rejects an invalid (empty) proof string for a grant", async () => {
-    const json = genInvalidMerkleDistributorInfo((lastGrant) => {
-      const invalidProof: string[] = lastGrant.proof.slice()
+    const json = genInvalidMerkleDistributorInfo((lastGrantInfo) => {
+      const invalidProof: string[] = lastGrantInfo.proof.slice()
       assertNonEmptyArray(invalidProof)
       invalidProof[invalidProof.length - 1] = web3.utils.asciiToHex("")
       return {
-        ...lastGrant,
+        ...lastGrantInfo,
         proof: invalidProof,
       }
     })
-    expect(() => verifyMerkleRoot(json)).to.throw("Failed validation for 1 or more proofs")
+    expect(() => verifyMerkleRoot(json)).to.throw("invalid value for bytes32")
   })
 
   it("rejects an invalid (non-empty) proof string for a grant", async () => {
-    const json = genInvalidMerkleDistributorInfo((lastGrant) => {
-      const invalidProof: string[] = lastGrant.proof.slice()
+    const json = genInvalidMerkleDistributorInfo((lastGrantInfo) => {
+      const invalidProof: string[] = lastGrantInfo.proof.slice()
       const lastElement = invalidProof[invalidProof.length - 1]
       assertNonNullable(lastElement)
       invalidProof[invalidProof.length - 1] = genDifferentHexString(lastElement)
       return {
-        ...lastGrant,
+        ...lastGrantInfo,
         proof: invalidProof,
       }
     })
