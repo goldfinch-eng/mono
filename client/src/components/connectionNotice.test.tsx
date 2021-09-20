@@ -79,8 +79,9 @@ const scenarios: Scenario[] = [
   },
   {
     devName: "no_credit_line",
-    setUpMatch: ({props}) => {
+    setUpMatch: ({store, props}) => {
       defaultCreditLine.loaded = true
+      store.user.loaded = true
       props.creditLine = defaultCreditLine as CreditLine
     },
     setUpFallthrough: ({store}) => {
