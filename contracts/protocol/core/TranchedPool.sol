@@ -406,6 +406,11 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     emit CreditLineMigrated(originalClAddr, address(creditLine));
   }
 
+  // CreditLine proxy method
+  function setLimit(uint256 newAmount) external onlyAdmin {
+    return creditLine.setLimit(newAmount);
+  }
+
   // CreditLine proxy methods, for convenience
   function limit() public view returns (uint256) {
     return creditLine.limit();

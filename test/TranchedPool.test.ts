@@ -255,6 +255,18 @@ describe("TranchedPool", () => {
     })
   })
 
+  describe("setLimit", async () => {
+    beforeEach(async () => {
+      await createPoolWithCreditLine({})
+    });
+    it("should update the TranchedPool limit", async () => {
+      const newLimit = new BN(500);
+      await expectAction(() => tranchedPool.setLimit(newLimit)).toChange([
+        [tranchedPool.limit, {to: newLimit}],
+      ])
+    })
+  })
+
   describe("migrateAndSetNewCreditLine", async () => {
     let otherCreditLine: string
     beforeEach(async () => {
