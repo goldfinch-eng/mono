@@ -39,16 +39,17 @@ abstract class BaseCreditLine {
   get remainingPeriodDueAmountInDollars() {
     // We need to round up here to ensure the creditline is always fully paid,
     // this does mean the borrower may overpay by a penny max each time.
-    return this.inDollars(this.remainingPeriodDueAmount, true)
+    return this.inDollars(this.remainingPeriodDueAmount, {roundUp: true})
   }
 
   get remainingTotalDueAmountInDollars() {
-    // Same as above
-    return this.inDollars(this.remainingTotalDueAmount, true)
+    // We need to round up here to ensure the creditline is always fully paid,
+    // this does mean the borrower may overpay by a penny max each time.
+    return this.inDollars(this.remainingTotalDueAmount, {roundUp: true})
   }
 
   get availableCreditInDollars() {
-    return this.inDollars(this.availableCredit)
+    return this.inDollars(this.availableCredit, {roundUp: false})
   }
 
   get isMultiple() {
@@ -65,7 +66,7 @@ abstract class BaseCreditLine {
     return this.limit.gt(0) && this.remainingTotalDueAmount.gt(0)
   }
 
-  inDollars(amount, roundUp = false) {
+  inDollars(amount, {roundUp}: {roundUp: boolean}): BigNumber {
     if (roundUp) {
       amount = roundUpPenny(usdcFromAtomic(amount))
     } else {
