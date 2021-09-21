@@ -6,6 +6,7 @@ const IV1CreditLine = artifacts.require("IV1CreditLine")
 const {MAINNET_MULTISIG} = require("../mainnetForkingHelpers")
 const {MAINNET_CHAIN_ID, RINKEBY_CHAIN_ID, isMainnetForking, getContract} = require("../deployHelpers")
 const {getChainId} = require("hardhat")
+const {debug} = require("../../utils/debug")
 
 const borrowerCreditlines = {
   [MAINNET_CHAIN_ID]: {
@@ -44,9 +45,13 @@ const borrowerCreditlines = {
       label: "PayJoy $100k Creditline",
       owner: "0xC4aA3F35d54E6aAe7b32fBD239D309A3C805A156",
     },
-    "0x93fdcd12ee3169721720ee71c87636b7b48632ea": {
-      addresses: ["0x93fdcd12ee3169721720ee71c87636b7b48632ea"],
-      label: "Alamvest $500k Creditline",
+    "0x306e330d084f7996f41bb113b5f0f15501c821a5": {
+      addresses: [
+        "0x306e330d084f7996f41bb113b5f0f15501c821a5",
+        "0x93fdcd12ee3169721720ee71c87636b7b48632ea",
+        "0x4eADbF3b1052539C9d7f451bAD8d2Ed7DC624A01",
+      ],
+      label: "Alamvest $1.205M Creditline",
       owner: "0x4bBD638eb377ea00b84fAc2aA24A769a1516eCb6",
     },
     // Eliminating this from the list, because I have fully repaid it and drawn down again,
@@ -126,24 +131,38 @@ async function migrateClToV2(clAddress, borrowerContract, pool, creditDesk) {
     data.interestAccruedAsOf,
     data.lastFullPaymentTime,
     data.totalInterestPaid,
-    data.totalPrincipalPaid,
     {from: MAINNET_MULTISIG}
   )
 }
 
 async function calculateTermTimes(clAddress) {
+  debug("cl address:", clAddress)
   const creditLine = await IV1CreditLine.at(clAddress)
   const termEndBlock = await creditLine.termEndBlock()
-  const termInDays = await creditLine.termInDays()
+  let termInDays = await creditLine.termInDays()
+  if (clAddress === "0x306e330d084f7996f41bb113b5f0f15501c821a5") {
+    // This is the Alma creditline, which we bumped the maturity date on.
+    // We didn't update the termInDays because we can't directly change that, and
+    // we could achieve the same effect by upping the termEndBlock. So for expediency,
+    // just doing a change here so we get the right term start block
+    termInDays = new BN(1196)
+  }
   const termStartBlock = termEndBlock.sub(new BN(BLOCKS_PER_DAY).mul(termInDays))
-  const termStartTime = (await web3.eth.getBlock(String(termStartBlock))).timestamp
+  const termStartTime = await getBlockTimestamp(termStartBlock)
   return {termEndTime: termStartTime + SECONDS_PER_DAY * termInDays.toNumber(), termStartTime}
 }
 
 async function calculateNextDueTime(clAddress, termStartTime) {
   const creditLine = await IV1CreditLine.at(clAddress)
   const nextDueBlock = await creditLine.nextDueBlock()
-  const termInDays = await creditLine.termInDays()
+  let termInDays = await creditLine.termInDays()
+  if (clAddress === "0x306e330d084f7996f41bb113b5f0f15501c821a5") {
+    // This is the Alma creditline, which we bumped the maturity date on.
+    // We didn't update the termInDays because we can't directly change that, and
+    // we could achieve the same effect by upping the termEndBlock. So for expediency,
+    // just doing a change here so we get the right term start block
+    termInDays = new BN(1196)
+  }
   const termEndBlock = await creditLine.termEndBlock()
   const termStartBlock = termEndBlock.sub(new BN(BLOCKS_PER_DAY).mul(termInDays))
   const percentComplete =
@@ -157,13 +176,20 @@ async function getBlockTimestamp(blockNumber) {
   // attempting to call getBlock on this blockNumber. Lower block numbers work just fine
   // Not sure what's going on, but confirmed calling idential code on actual mainnet works
   // as expected. Don't want to fight with Hardhat right now, so hardcoding the true result
-  if (blockNumber === 12430756) {
+  if (blockNumber.eq(new BN(12430756))) {
     return 1620971896
   }
-  if (blockNumber == 12332752) {
+  if (blockNumber.eq(new BN(12332752))) {
     return 1619664127
   }
-  return (await web3.eth.getBlock(String(blockNumber))).timestamp
+  if (blockNumber.eq(new BN(12359067))) {
+    return 1620041245
+  }
+  const block = await web3.eth.getBlock(String(blockNumber))
+  if (block === null) {
+    throw new Error(`block ${String(blockNumber)} is null!`)
+  }
+  return block.timestamp
 }
 
 async function getMigrationData(clAddress, pool) {
@@ -174,7 +200,8 @@ async function getMigrationData(clAddress, pool) {
   const {termEndTime, termStartTime} = await calculateTermTimes(clAddress)
   const nextDueTime = await calculateNextDueTime(clAddress, termStartTime)
   const interestAccruedAsOf = await getInterestAccruedAsOf(clAddress, termStartTime)
-  const lastFullPaymentTime = await getBlockTimestamp((await cl.lastFullPaymentBlock()).toNumber())
+  const lastFullPaymentBlock = await cl.lastFullPaymentBlock()
+  const lastFullPaymentTime = await getBlockTimestamp(lastFullPaymentBlock)
   const {totalInterestPaid, totalPrincipalPaid} = await calculateTotalPaid(pool, clAddress)
   return {
     termEndTime,
@@ -190,7 +217,14 @@ async function getMigrationData(clAddress, pool) {
 async function getInterestAccruedAsOf(clAddress, termStartTime) {
   const creditLine = await IV1CreditLine.at(clAddress)
   const interestAccruedAsOfBlock = await creditLine.interestAccruedAsOfBlock()
-  const termInDays = await creditLine.termInDays()
+  let termInDays = await creditLine.termInDays()
+  if (clAddress === "0x306e330d084f7996f41bb113b5f0f15501c821a5") {
+    // This is the Alma creditline, which we bumped the maturity date on.
+    // We didn't update the termInDays because we can't directly change that, and
+    // we could achieve the same effect by upping the termEndBlock. So for expediency,
+    // just doing a change here so we get the right term start block
+    termInDays = new BN(1196)
+  }
   const termInBlocks = termInDays.mul(new BN(BLOCKS_PER_DAY))
   const startBlock = (await creditLine.termEndBlock()).sub(termInBlocks)
   const fractionOfPeriod = interestAccruedAsOfBlock.sub(startBlock).toNumber() / termInBlocks.toNumber()

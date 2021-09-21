@@ -3,8 +3,8 @@ import {useParams} from "react-router-dom"
 import ConnectionNotice from "../connectionNotice"
 import {AppContext} from "../../App"
 import InvestorNotice from "../investorNotice"
-import {PoolState, TranchedPool, TRANCHES} from "../../ethereum/tranchedPool"
-import {croppedAddress, displayDollars, displayPercent, roundDownPenny, roundUpPenny} from "../../utils"
+import {PoolBacker, PoolState, TokenInfo, TranchedPool, TRANCHES} from "../../ethereum/tranchedPool"
+import {assertError, croppedAddress, displayDollars, displayPercent, roundDownPenny, roundUpPenny} from "../../utils"
 import InfoSection from "../infoSection"
 import {usdcFromAtomic, usdcToAtomic} from "../../ethereum/erc20"
 import {iconDownArrow, iconOutArrow, iconUpArrow} from "../icons"
@@ -22,6 +22,9 @@ import CreditBarViz from "../creditBarViz"
 import {DepositMade} from "../../typechain/web3/TranchedPool"
 import moment from "moment"
 import {useBacker, useTranchedPool} from "../../hooks/useTranchedPool"
+import {useSession} from "../../hooks/useSignIn"
+import _ from "lodash"
+import DefaultGoldfinchClient from "../../hooks/useGoldfinchClient"
 
 function useRecentPoolTransactions({tranchedPool}: {tranchedPool?: TranchedPool}): Record<string, any>[] {
   let recentTransactions = useAsync(() => tranchedPool && tranchedPool.recentTransactions(), [tranchedPool])
@@ -52,23 +55,43 @@ function useUniqueJuniorSuppliers({tranchedPool}: {tranchedPool?: TranchedPool})
 }
 
 interface TranchedPoolActionFormProps {
+  backer: PoolBacker
   tranchedPool: TranchedPool
   actionComplete: () => void
   closeForm: () => void
 }
 
-function TranchedPoolDepositForm({tranchedPool, actionComplete, closeForm}: TranchedPoolActionFormProps) {
-  const {user, goldfinchConfig, usdc} = useNonNullContext(AppContext)
+function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeForm}: TranchedPoolActionFormProps) {
+  const {user, goldfinchConfig, usdc, network, networkMonitor, setSessionData} = useNonNullContext(AppContext)
   const {gatherPermitSignature} = useERC20Permit()
   const sendFromUser = useSendFromUser()
+  const session = useSession()
 
-  async function action({transactionAmount}) {
+  async function action({transactionAmount, fullName}) {
+    try {
+      if (session.status !== "authenticated") {
+        throw new Error("Not signed in. Please refresh the page and try again")
+      }
+      const client = new DefaultGoldfinchClient(network.name!, session, setSessionData)
+      const response = await client.signAgreement(user.address, fullName, tranchedPool.address)
+      if (response.json.status !== "success") {
+        throw new Error(response.json.error)
+      }
+    } catch (e: unknown) {
+      assertError(e)
+
+      // Although it's not really a transaction error, this feels cleaner and more consistent than showing a form error
+      const txData = networkMonitor.addPendingTX({status: "pending", type: "Deposit", amount: transactionAmount})
+      networkMonitor.markTXErrored(txData, e)
+      return
+    }
+
     const depositAmount = usdcToAtomic(transactionAmount)
     // USDC permit doesn't work on mainnet forking due to mismatch between hardcoded chain id in the contract
     if (process.env.REACT_APP_HARDHAT_FORK) {
       return sendFromUser(tranchedPool.contract.methods.deposit(TRANCHES.Junior, depositAmount), {
         type: "Deposit",
-        amount: depositAmount,
+        amount: transactionAmount,
       }).then(actionComplete)
     } else {
       let signatureData = await gatherPermitSignature({
@@ -87,7 +110,7 @@ function TranchedPoolDepositForm({tranchedPool, actionComplete, closeForm}: Tran
         ),
         {
           type: "Deposit",
-          amount: signatureData.value,
+          amount: transactionAmount,
         },
       ).then(actionComplete)
     }
@@ -109,6 +132,24 @@ function TranchedPoolDepositForm({tranchedPool, actionComplete, closeForm}: Tran
     return (
       <div className="form-inputs">
         {warningMessage}
+        <div className="form-footer-message">
+          By entering my name and clicking “I Agree” below, I hereby agree and acknowledge that (i) I am electronically
+          signing and becoming a party to the{" "}
+          <a className="form-link" href={tranchedPool?.metadata?.agreement} target="_blank" rel="noreferrer">
+            Loan Agreement
+          </a>{" "}
+          for this pool, and (ii) my name and transaction information may be shared with the borrower.
+        </div>
+        <div className="form-input-container">
+          <div className="form-input-label">Full legal name</div>
+          <input
+            type="text"
+            name="fullName"
+            placeholder="Name"
+            className="form-input small-text"
+            ref={formMethods.register({required: "Your full name is required"})}
+          />
+        </div>
         <div className="form-inputs-footer">
           <TransactionInput
             formMethods={formMethods}
@@ -116,6 +157,17 @@ function TranchedPoolDepositForm({tranchedPool, actionComplete, closeForm}: Tran
             maxAmount={remainingJuniorCapacity}
             validations={{
               wallet: (value) => user.usdcBalanceInDollars.gte(value) || "You do not have enough USDC",
+              backerLimit: (value) => {
+                const backerLimitPercent = new BigNumber(
+                  tranchedPool.metadata?.backerLimit ?? process.env.REACT_APP_GLOBAL_BACKER_LIMIT ?? "1",
+                )
+                const backerLimit = tranchedPool.creditLine.limit.multipliedBy(backerLimitPercent)
+                const backerDeposits = backer.principalAmount.minus(backer.principalRedeemed).plus(usdcToAtomic(value))
+                return (
+                  backerDeposits.lte(backerLimit) ||
+                  `This is over the per-backer limit for this pool of $${usdcFromAtomic(backerLimit)}`
+                )
+              },
               transactionLimit: (value) =>
                 goldfinchConfig.transactionLimit.gte(usdcToAtomic(value)) ||
                 `This is over the per-transaction limit of $${usdcFromAtomic(goldfinchConfig.transactionLimit)}`,
@@ -129,7 +181,7 @@ function TranchedPoolDepositForm({tranchedPool, actionComplete, closeForm}: Tran
               },
             }}
           />
-          <LoadingButton action={action} disabled={disabled} />
+          <LoadingButton action={action} disabled={disabled} text="I Agree" />
         </div>
       </div>
     )
@@ -137,25 +189,58 @@ function TranchedPoolDepositForm({tranchedPool, actionComplete, closeForm}: Tran
 
   return (
     <TransactionForm
-      title="Deposit"
-      headerMessage={`Available to deposit: ${displayDollars(user.usdcBalanceInDollars)}`}
+      title="Supply"
+      headerMessage={`Available to supply: ${displayDollars(user.usdcBalanceInDollars)}`}
       render={renderForm}
       closeForm={closeForm}
     />
   )
 }
 
-function TranchedPoolWithdrawForm({tranchedPool, actionComplete, closeForm}: TranchedPoolActionFormProps) {
+function splitWithdrawAmount(
+  withdrawAmount: BigNumber,
+  tokenInfos: TokenInfo[],
+): {tokenIds: string[]; amounts: string[]} {
+  let amountLeft = withdrawAmount
+  let tokenIds: string[] = []
+  let amounts: string[] = []
+
+  tokenInfos.forEach((tokenInfo) => {
+    if (amountLeft.isZero() || tokenInfo.principalRedeemable.plus(tokenInfo.interestRedeemable).isZero()) {
+      return
+    }
+
+    let amountFromThisToken = BigNumber.min(
+      amountLeft,
+      tokenInfo.principalRedeemable.plus(tokenInfo.interestRedeemable),
+    )
+    amountLeft = amountLeft.minus(amountFromThisToken)
+    tokenIds.push(tokenInfo.id)
+    amounts.push(amountFromThisToken.toString())
+  })
+
+  return {tokenIds, amounts}
+}
+
+function TranchedPoolWithdrawForm({backer, tranchedPool, actionComplete, closeForm}: TranchedPoolActionFormProps) {
   const {user, goldfinchConfig} = useNonNullContext(AppContext)
   const sendFromUser = useSendFromUser()
-  const backer = useBacker({user, tranchedPool})
 
   async function action({transactionAmount}) {
     const withdrawAmount = usdcToAtomic(transactionAmount)
-    return sendFromUser(tranchedPool.contract.methods.withdraw(backer!.tokenInfos[0]!.id, withdrawAmount), {
-      type: "Withdraw",
-      amount: withdrawAmount,
-    }).then(actionComplete)
+    let firstToken = backer.tokenInfos[0]!
+    if (new BigNumber(withdrawAmount).gt(firstToken.principalRedeemable.plus(firstToken.interestRedeemable))) {
+      let splits = splitWithdrawAmount(new BigNumber(withdrawAmount), backer.tokenInfos)
+      return sendFromUser(tranchedPool.contract.methods.withdrawMultiple(splits.tokenIds, splits.amounts), {
+        type: "Withdraw",
+        amount: withdrawAmount,
+      }).then(actionComplete)
+    } else {
+      return sendFromUser(tranchedPool.contract.methods.withdraw(backer.tokenInfos[0]!.id, withdrawAmount), {
+        type: "Withdraw",
+        amount: withdrawAmount,
+      }).then(actionComplete)
+    }
   }
 
   function renderForm({formMethods}) {
@@ -164,13 +249,13 @@ function TranchedPoolWithdrawForm({tranchedPool, actionComplete, closeForm}: Tra
         <div className="form-inputs-footer">
           <TransactionInput
             formMethods={formMethods}
-            maxAmount={backer?.availableToWithdrawInDollars}
+            maxAmount={backer.availableToWithdrawInDollars}
             rightDecoration={
               <button
                 className="enter-max-amount"
                 type="button"
                 onClick={() => {
-                  formMethods.setValue("transactionAmount", roundDownPenny(backer?.availableToWithdrawInDollars), {
+                  formMethods.setValue("transactionAmount", roundDownPenny(backer.availableToWithdrawInDollars), {
                     shouldValidate: true,
                     shouldDirty: true,
                   })
@@ -195,17 +280,14 @@ function TranchedPoolWithdrawForm({tranchedPool, actionComplete, closeForm}: Tra
   return (
     <TransactionForm
       title="Withdraw"
-      headerMessage={`Available to withdraw: ${displayDollars(backer?.availableToWithdrawInDollars)}`}
+      headerMessage={`Available to withdraw: ${displayDollars(backer.availableToWithdrawInDollars)}`}
       render={renderForm}
       closeForm={closeForm}
     />
   )
 }
 
-function DepositStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
-  const {user} = useContext(AppContext)
-  const backer = useBacker({user, tranchedPool})
-
+function DepositStatus({tranchedPool, backer}: {tranchedPool?: TranchedPool; backer?: PoolBacker}) {
   if (!tranchedPool || !backer) {
     return <></>
   }
@@ -213,6 +295,7 @@ function DepositStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
   const leverageRatio = tranchedPool.estimatedLeverageRatio
 
   let estimatedAPY = tranchedPool.estimateJuniorAPY(leverageRatio)
+
   let rightStatusItem
   if (tranchedPool.creditLine.balance.isZero()) {
     // Not yet drawdown
@@ -220,17 +303,24 @@ function DepositStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
       <div className="deposit-status-item">
         <div className="label">Est. APY</div>
         <div className="value">{displayPercent(estimatedAPY)}</div>
-        <div className="sub-value">(awaiting drawdown)</div>
       </div>
     )
   } else {
     rightStatusItem = (
       <div className="deposit-status-item">
         <div className="label">Est. Monthly Interest</div>
-        <div className="value">
-          {displayDollars(usdcFromAtomic(tranchedPool.estimateMonthlyInterest(estimatedAPY, backer.principalAtRisk)))}
-        </div>
-        <div className="sub-value">{displayPercent(estimatedAPY)}</div>
+        {backer.balance.isZero() ? (
+          <div className="value">{displayPercent(estimatedAPY)}</div>
+        ) : (
+          <>
+            <div className="value">
+              {displayDollars(
+                usdcFromAtomic(tranchedPool.estimateMonthlyInterest(estimatedAPY, backer.principalAtRisk)),
+              )}
+            </div>
+            <div className="sub-value">{displayPercent(estimatedAPY)} APY</div>
+          </>
+        )}
       </div>
     )
   }
@@ -240,17 +330,27 @@ function DepositStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
       <div className="deposit-status-item">
         <div className="label">Your balance</div>
         <div className="value">{displayDollars(backer.balanceInDollars)}</div>
-        <div className="sub-value">{displayDollars(backer.availableToWithdrawInDollars)} available</div>
+        {!backer.balance.isZero() && (
+          <div className="sub-value">{displayDollars(backer.availableToWithdrawInDollars)} available</div>
+        )}
       </div>
       {rightStatusItem}
     </div>
   )
 }
 
-function ActionsContainer({tranchedPool, onComplete}: {tranchedPool?: TranchedPool; onComplete: () => Promise<any>}) {
+function ActionsContainer({
+  tranchedPool,
+  onComplete,
+  backer,
+}: {
+  tranchedPool?: TranchedPool
+  onComplete: () => Promise<any>
+  backer?: PoolBacker
+}) {
   const {user} = useContext(AppContext)
   const [action, setAction] = useState<"" | "deposit" | "withdraw">("")
-  const backer = useBacker({user, tranchedPool})
+  const session = useSession()
 
   function actionComplete() {
     onComplete().then(() => {
@@ -263,21 +363,33 @@ function ActionsContainer({tranchedPool, onComplete}: {tranchedPool?: TranchedPo
   }
 
   let placeholderClass = ""
-  if (!user.address || !user.goListed) {
+  if (session.status !== "authenticated" || !user.goListed) {
     placeholderClass = "placeholder"
   }
+
   let depositAction
   let depositClass = "disabled"
-  if (tranchedPool?.state === PoolState.Open && tranchedPool?.remainingCapacity().gt(new BigNumber(0))) {
+  if (
+    session.status === "authenticated" &&
+    backer &&
+    tranchedPool?.state === PoolState.Open &&
+    tranchedPool?.remainingCapacity().gt(new BigNumber(0)) &&
+    !tranchedPool?.metadata?.disabled
+  ) {
     depositAction = (e) => {
       setAction("deposit")
     }
     depositClass = ""
   }
+
   let withdrawAction
   let withdrawClass = "disabled"
-
-  if (backer && !backer.availableToWithdrawInDollars.isZero()) {
+  if (
+    session.status === "authenticated" &&
+    backer &&
+    !backer.availableToWithdrawInDollars.isZero() &&
+    !tranchedPool?.metadata?.disabled
+  ) {
     withdrawAction = (e) => {
       setAction("withdraw")
     }
@@ -286,19 +398,29 @@ function ActionsContainer({tranchedPool, onComplete}: {tranchedPool?: TranchedPo
 
   if (action === "deposit") {
     return (
-      <TranchedPoolDepositForm tranchedPool={tranchedPool!} closeForm={closeForm} actionComplete={actionComplete} />
+      <TranchedPoolDepositForm
+        backer={backer!}
+        tranchedPool={tranchedPool!}
+        closeForm={closeForm}
+        actionComplete={actionComplete}
+      />
     )
   } else if (action === "withdraw") {
     return (
-      <TranchedPoolWithdrawForm tranchedPool={tranchedPool!} closeForm={closeForm} actionComplete={actionComplete} />
+      <TranchedPoolWithdrawForm
+        backer={backer!}
+        tranchedPool={tranchedPool!}
+        closeForm={closeForm}
+        actionComplete={actionComplete}
+      />
     )
   } else {
     return (
       <div className={`background-container ${placeholderClass}`}>
-        <DepositStatus tranchedPool={tranchedPool} />
+        <DepositStatus backer={backer} tranchedPool={tranchedPool} />
         <div className="form-start">
           <button className={`button ${depositClass}`} onClick={depositAction}>
-            {iconUpArrow} Deposit
+            {iconUpArrow} Supply
           </button>
           <button className={`button ${withdrawClass}`} onClick={withdrawAction}>
             {iconDownArrow} Withdraw
@@ -307,6 +429,52 @@ function ActionsContainer({tranchedPool, onComplete}: {tranchedPool?: TranchedPo
       </div>
     )
   }
+}
+
+function V1DealSupplyStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
+  if (!tranchedPool) {
+    return <></>
+  }
+
+  let juniorContribution = new BigNumber(tranchedPool.juniorTranche.principalDeposited)
+  let remainingJuniorCapacity = tranchedPool.creditLine.limit.minus(juniorContribution)
+
+  let rows: Array<{label: string; value: string}> = [
+    {
+      label: "Senior Capital Supply",
+      value: displayDollars(roundUpPenny(usdcFromAtomic(juniorContribution))),
+    },
+    {label: "Leverage Ratio", value: "N/A"},
+    {
+      label: "Total Capital Supply",
+      value: displayDollars(roundUpPenny(usdcFromAtomic(juniorContribution))),
+    },
+  ]
+
+  let rightAmountPrefix = ""
+  let rightAmountDescription = "Remaining"
+  if (tranchedPool.state === PoolState.Open) {
+    // Show an "approx." sign if the junior tranche is not yet locked
+    rightAmountPrefix = "~"
+    rightAmountDescription = "Est. Remaining"
+  }
+
+  return (
+    <div className="background-container">
+      <h2>Capital Supply</h2>
+      <div className="credit-status-balance background-container-inner">
+        <CreditBarViz
+          leftAmount={new BigNumber(usdcFromAtomic(juniorContribution))}
+          leftAmountDisplay={displayDollars(usdcFromAtomic(juniorContribution))}
+          leftAmountDescription={"From the Senior Pool"}
+          rightAmount={new BigNumber(usdcFromAtomic(remainingJuniorCapacity))}
+          rightAmountDisplay={`${rightAmountPrefix}${displayDollars(usdcFromAtomic(remainingJuniorCapacity))}`}
+          rightAmountDescription={rightAmountDescription}
+        />
+      </div>
+      <InfoSection rows={rows} />
+    </div>
+  )
 }
 
 function SupplyStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
@@ -351,8 +519,8 @@ function SupplyStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
           leftAmountDisplay={displayDollars(usdcFromAtomic(juniorContribution))}
           leftAmountDescription={
             uniqueJuniorSuppliers === 1
-              ? `From ${uniqueJuniorSuppliers} junior supplier`
-              : `From ${uniqueJuniorSuppliers} junior suppliers`
+              ? `From ${uniqueJuniorSuppliers} Backer`
+              : `From ${uniqueJuniorSuppliers} Backers`
           }
           rightAmount={new BigNumber(usdcFromAtomic(remainingJuniorCapacity))}
           rightAmountDisplay={`${rightAmountPrefix}${displayDollars(usdcFromAtomic(remainingJuniorCapacity))}`}
@@ -370,7 +538,7 @@ function CreditStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
   const backer = useBacker({user, tranchedPool})
 
   // Don't show the credit status component until the pool has a drawdown
-  if (!backer || !tranchedPool || transactions.length === 0) {
+  if (!backer || !tranchedPool || (transactions.length === 0 && !tranchedPool.isMigrated)) {
     return <></>
   }
   let creditLine = tranchedPool.creditLine
@@ -456,11 +624,16 @@ function CreditStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
 }
 
 function Overview({tranchedPool}: {tranchedPool?: TranchedPool}) {
+  const session = useSession()
+
   let rows: Array<{label: string; value: string}> = []
   if (tranchedPool) {
-    rows = [
+    let backerAPY = tranchedPool.estimateJuniorAPY(tranchedPool.estimatedLeverageRatio)
+    let backerBoost = backerAPY.minus(tranchedPool.creditLine.interestAprDecimal)
+    rows = _.compact([
       {label: "Credit limit", value: displayDollars(roundUpPenny(usdcFromAtomic(tranchedPool.creditLine.limit)))},
-      {label: "Interest rate APR", value: displayPercent(tranchedPool.creditLine.interestAprDecimal)},
+      {label: "Base Borrower APR", value: displayPercent(tranchedPool.creditLine.interestAprDecimal)},
+      !backerBoost.isZero() && {label: "Est. Backer APR boost", value: displayPercent(backerBoost)},
       {
         label: "Payment frequency",
         value:
@@ -475,20 +648,37 @@ function Overview({tranchedPool}: {tranchedPool?: TranchedPool}) {
             ? `${tranchedPool.creditLine.termInDays} day`
             : `${tranchedPool.creditLine.termInDays} days`,
       },
-    ]
+    ])
+  }
+
+  let detailsLink = <></>
+  if (tranchedPool?.metadata?.detailsUrl) {
+    if (session.status === "authenticated") {
+      detailsLink = (
+        <div className="pool-links">
+          <a href={tranchedPool.metadata.detailsUrl} target="_blank" rel="noopener noreferrer">
+            Details & Discussion <span className="outbound-link">{iconOutArrow}</span>
+          </a>
+        </div>
+      )
+    } else {
+      detailsLink = (
+        <div className="placeholder">
+          <div className="pool-links">
+            <button disabled={true}>
+              Details & Discussion <span className="outbound-link">{iconOutArrow}</span>
+            </button>
+          </div>
+        </div>
+      )
+    }
   }
 
   return (
     <div className={`pool-overview background-container ${!tranchedPool && "placeholder"}`}>
       <div className="pool-header">
         <h2>Overview</h2>
-        {tranchedPool?.metadata?.detailsUrl && (
-          <div className="pool-links">
-            <a href={tranchedPool.metadata.detailsUrl} target="_blank" rel="noopener noreferrer">
-              Details & Discussion <span className="outbound-link">{iconOutArrow}</span>
-            </a>
-          </div>
-        )}
+        {detailsLink}
       </div>
       <p className="pool-description">{tranchedPool?.metadata?.description}</p>
       <InfoSection rows={rows} />
@@ -496,15 +686,15 @@ function Overview({tranchedPool}: {tranchedPool?: TranchedPool}) {
   )
 }
 
-function TranchedPoolView() {
-  let tranchedPool: TranchedPool | undefined
-  const {poolAddress} = useParams()
-  const {goldfinchProtocol, usdc, user} = useContext(AppContext)
-  const [tranchedPoolResult, refreshTranchedPool] = useTranchedPool({address: poolAddress, goldfinchProtocol})
+interface TranchedPoolViewURLParams {
+  poolAddress: string
+}
 
-  if (tranchedPoolResult.status === "succeeded") {
-    tranchedPool = tranchedPoolResult.value
-  }
+function TranchedPoolView() {
+  const {poolAddress} = useParams<TranchedPoolViewURLParams>()
+  const {goldfinchProtocol, usdc, user} = useContext(AppContext)
+  const [tranchedPool, refreshTranchedPool] = useTranchedPool({address: poolAddress, goldfinchProtocol})
+  const backer = useBacker({user, tranchedPool})
 
   const [unlocked, refreshUnlocked] = useCurrencyUnlocked(usdc, {
     owner: user.address,
@@ -516,7 +706,7 @@ function TranchedPoolView() {
 
   let earnMessage = "Loading..."
   if (tranchedPool) {
-    earnMessage = `Earn Portfolio / ${tranchedPool.metadata?.name ?? croppedAddress(tranchedPool.address)}`
+    earnMessage = `Pools / ${tranchedPool.metadata?.name ?? croppedAddress(tranchedPool.address)}`
   }
 
   if (process.env.REACT_APP_HARDHAT_FORK && !unlocked) {
@@ -525,15 +715,45 @@ function TranchedPoolView() {
     )
   }
 
+  const isAtMaxCapacity = tranchedPool?.remainingCapacity().isZero()
+
+  let maxCapacityNotice = <></>
+  if (isAtMaxCapacity) {
+    maxCapacityNotice = (
+      <div className="info-banner background-container">
+        <div className="message">
+          <span>This borrower pool has reached its capital limit and is closed to additional capital.</span>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="content-section">
       <div className="page-header">{earnMessage}</div>
-      <ConnectionNotice requireUnlock={false} requireVerify={true} />
+      <ConnectionNotice requireUnlock={false} requireGolist={true} requireSignIn={true} />
       {unlockForm}
-      <InvestorNotice />
-      <ActionsContainer tranchedPool={tranchedPool} onComplete={async () => refreshTranchedPool()} />
+      {user.loaded && (
+        <>
+          {maxCapacityNotice}
+          {(!isAtMaxCapacity || !backer?.balanceInDollars.isZero()) && (
+            <>
+              <InvestorNotice />
+              <ActionsContainer
+                tranchedPool={tranchedPool}
+                backer={backer}
+                onComplete={async () => refreshTranchedPool()}
+              />
+            </>
+          )}
+        </>
+      )}
       <CreditStatus tranchedPool={tranchedPool} />
-      <SupplyStatus tranchedPool={tranchedPool} />
+      {tranchedPool?.isV1StyleDeal ? (
+        <V1DealSupplyStatus tranchedPool={tranchedPool} />
+      ) : (
+        <SupplyStatus tranchedPool={tranchedPool} />
+      )}
       <Overview tranchedPool={tranchedPool} />
     </div>
   )

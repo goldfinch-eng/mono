@@ -18,6 +18,10 @@
   }
 }
 
+.placeholder .label {
+  color: $sand-xxdark;
+}
+
 @media only screen and (min-width: $screen-s) {
   .small-info-item {
     width: 50%;

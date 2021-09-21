@@ -52,7 +52,7 @@ function DepositForm(props: DepositFormProps) {
     return (
       <div className="form-inputs">
         {warningMessage}
-        <div className="checkbox-container">
+        <div className="checkbox-container form-input-label">
           <input
             className="checkbox"
             type="checkbox"
@@ -61,10 +61,12 @@ function DepositForm(props: DepositFormProps) {
             ref={(ref) => formMethods.register(ref, {required: "You must agree to the Senior Pool Agreement."})}
           />
           <label className="checkbox-label" htmlFor="agreement">
-            I agree to the&nbsp;
-            <a className="checkbox-label-link" href="/senior-pool-agreement-non-us" target="_blank">
-              Senior Pool Agreement.
-            </a>
+            <div>
+              I agree to the&nbsp;
+              <a className="form-link" href="/senior-pool-agreement-non-us" target="_blank">
+                Senior Pool Agreement.
+              </a>
+            </div>
           </label>
         </div>
         <div>
@@ -79,7 +81,7 @@ function DepositForm(props: DepositFormProps) {
                   goldfinchConfig.transactionLimit.gte(usdcToAtomic(value)) ||
                   `This is over the per-transaction limit of $${usdcFromAtomic(goldfinchConfig.transactionLimit)}`,
                 totalFundsLimit: (value) => {
-                  let limit = goldfinchConfig.totalFundsLimit.minus(pool.gf.totalPoolAssets)
+                  let limit = pool.gf.remainingCapacity(goldfinchConfig.totalFundsLimit)
                   return (
                     limit.gte(usdcToAtomic(value)) ||
                     `This amount would put the pool over its limit. It can accept a max of $${usdcFromAtomic(limit)}.`

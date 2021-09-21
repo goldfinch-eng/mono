@@ -1,16 +1,18 @@
 /* global web3 tenderly */
 const hre = require("hardhat")
-import {advanceTime, expect, expectAction, toTruffle} from "../testHelpers"
-import {isMainnetForking, getSignerForAddress, OWNER_ROLE, MINTER_ROLE, getContract, PAUSER_ROLE, GO_LISTER_ROLE} from "../../blockchain_scripts/deployHelpers"
+import {advanceTime, expect, expectAction, getBalance, toTruffle, usdcVal} from "../testHelpers"
+import {isMainnetForking, getSignerForAddress, OWNER_ROLE, MINTER_ROLE, getContract, PAUSER_ROLE, GO_LISTER_ROLE, getUSDCAddress, MAINNET_CHAIN_ID} from "../../blockchain_scripts/deployHelpers"
 const {deployments, artifacts, ethers} = hre
 const {deployMigrator, givePermsToMigrator, deployAndMigrateToV2} = require("../../blockchain_scripts/v2/migrate")
 const TEST_TIMEOUT = 180000 // 3 mins
-import {getAllExistingContracts, impersonateAccount, MAINNET_MULTISIG, MAINNET_UNDERWRITER} from "../../blockchain_scripts/mainnetForkingHelpers"
+import {fundWithWhales, getAllExistingContracts, impersonateAccount, MAINNET_MULTISIG, MAINNET_UNDERWRITER} from "../../blockchain_scripts/mainnetForkingHelpers"
 import BN from "bn.js"
 import _ from "lodash"
-import { prepareMigration } from "../../blockchain_scripts/v2/migrate"
+import {prepareMigration} from "../../blockchain_scripts/v2/migrate"
+import { BorrowerInstance, CreditLineInstance, TranchedPoolInstance } from "../../typechain/truffle"
 
-describe("Migrating to V2", () => {
+// TODO[PR] Should we just delete this?
+describe.skip("Migrating to V2", () => {
   // Hack way to only run this suite when we actually want to.
   if (!isMainnetForking()) {
     return
@@ -37,7 +39,7 @@ describe("Migrating to V2", () => {
   })
 
   let owner, migrator, accounts, mainnetContracts, mainnetMultisigSigner, bwr
-  let pool, creditDesk, goldfinchFactory, goldfinchConfig, fidu
+  let pool, creditDesk, goldfinchFactory, goldfinchConfig, fidu, usdc
 
   beforeEach(async function () {
     this.timeout(TEST_TIMEOUT)
@@ -49,6 +51,7 @@ describe("Migrating to V2", () => {
 
     ;[owner, bwr] = await web3.eth.getAccounts()
 
+    usdc = await getContract("IERC20withDec", {at: await getUSDCAddress(MAINNET_CHAIN_ID)})
     mainnetContracts = await getAllExistingContracts()
     mainnetMultisigSigner = await ethers.provider.getSigner(MAINNET_MULTISIG)
 
@@ -77,15 +80,20 @@ describe("Migrating to V2", () => {
   }
 
   type MigratedInfo = {
-    tranchedPool: Truffle.ContractInstance,
-    newCl: Truffle.ContractInstance
+    tranchedPool: TranchedPoolInstance,
+    newCl: CreditLineInstance,
+    bwrCon: BorrowerInstance,
+    owner: string,
   }
   async function getMigratedInfo(clAddress: string, migrationEvents) : Promise<MigratedInfo> {
     const event = _.find(migrationEvents, (e) => e.args.clToMigrate.toLowerCase() === clAddress.toLowerCase())
-
+    const migrator = await getContract("V2Migrator")
+    const bwrAddr = await migrator.borrowerContracts(event.args.owner)
     return {
       tranchedPool: await getContract("MigratedTranchedPool", {at: event.args.tranchedPool}),
-      newCl: await getContract("CreditLine", {at: event.args.newCl})
+      newCl: await getContract("CreditLine", {at: event.args.newCl}),
+      bwrCon: await getContract("Borrower", {at: bwrAddr}),
+      owner: event.args.owner,
     }
   }
 
@@ -140,10 +148,20 @@ describe("Migrating to V2", () => {
       expect(await pool.paused()).to.eq(true)
 
       // QuickCheck's 300k creditline
-      let {tranchedPool, newCl} = await getMigratedInfo("0x6dDC3a7233ecD5514607FB1a0E3475A7dA6E58ED", migrationEvents)
+      let {tranchedPool, newCl, bwrCon, owner: quickCheck} = await getMigratedInfo("0x6dDC3a7233ecD5514607FB1a0E3475A7dA6E58ED", migrationEvents)
       // This value taken from the exact current amount of "interestOwed", according to etherscan
-      let expectedAmount = 3698625354
+      let expectedAmount = 3698625297
       await assertNewClStillCalculatesInterestCorrectly(tranchedPool, newCl, expectedAmount)
+
+      // Ensure they can pay and interest is received
+      await impersonateAccount(hre, quickCheck)
+      await fundWithWhales(["ETH", "USDC"], [quickCheck])
+      await usdc.approve(bwrCon.address, usdcVal(expectedAmount), {from: quickCheck})
+      await expectAction(() => bwrCon.pay(tranchedPool.address, new BN(expectedAmount), {from: quickCheck})).toChange([
+        [newCl.interestOwed, {by: new BN(expectedAmount).neg()}],
+        // Account for reserve fee
+        [() => getBalance(tranchedPool.address, usdc), {byCloseTo: new BN(expectedAmount).mul(new BN(9)).div(new BN(10))}],
+      ])
 
       const {tranchedPool: tranchedPool2, newCl: newCl2} = await getMigratedInfo("0xb2ad56df3bce9bad4d8f04be1fc0eda982a84f44", migrationEvents)
       // This value taken from the exact current amount of "interestOwed", according to etherscan

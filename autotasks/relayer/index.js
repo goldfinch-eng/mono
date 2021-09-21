@@ -21,23 +21,6 @@ const ALLOWED_SENDERS = {
   ],
 }
 
-const ALLOWED_CONTRACTS = {
-  4: ["0x84Cba6A96C7B1f2301f228C730672B2cA31f0Cb5", "0xC926fb67A27d3A8f1964fD9a14b3ACa8b295DC7D"],
-  1: [
-    "0xB7cEaCEB71267C21eF09076F68A3Fd3775fED4DF", // Blake
-    "0x927E1e532d25958c1C8CD4908ab8D1b27D3978e8", // Luis (Quickcheck)
-    "0xCcf4A39C3485D156EAdA0315Ac0554Cc4e488a89", // Mike
-    "0x3100720AEeFED70Cf0A840C8a0dd3c75Eec232F9", // Sanjay
-    "0x06483d98798dfFC23FABCc3ecd5a789e089e8CE2", // Mark
-    "0x998659b29Dd4Acda770c9ad8f0d495EaaA833b76", // Andrew
-    "0xEb734fa493bA766BAFcc6d89F0d52434CcF9187D", // Obinna
-    "0x0136173C1dD2AC3aCAE9ae6469Da78Dd66849DcF", // Almavest
-    "0x61544699Ae36fE72e3Efa5045E55A9c7e607E950", // Aspire
-    "0x9331Fb2d7EdB11C6dDa0d625B59eB7dDb506A355", // Sam
-    "0x65F9a32D80E8763756E8b0eb78E63cD334498230", // Ian
-  ],
-}
-
 const FORWARDER_ADDRESS = {
   4: "0x956868751Cc565507B3B58E53a6f9f41B56bed74",
   1: "0xa530F85085C6FE2f866E7FdB716849714a89f4CD",
@@ -68,7 +51,6 @@ async function handler(event) {
     chainId: network.chainId,
     forwarder: new ethers.Contract(FORWARDER_ADDRESS[network.chainId], ForwarderAbi, signer),
     allowed_senders: ALLOWED_SENDERS[network.chainId],
-    allowed_contracts: ALLOWED_CONTRACTS[network.chainId],
     domain_separator: DOMAIN_SEPARATOR[network.chainId],
     relayTx: async (txData) => {
       return await relayer.sendTransaction(txData)

@@ -25,7 +25,7 @@ function UnlockERC20Form(props) {
   return (
     <FormProvider {...formMethods}>
       <div className="info-banner background-container">
-        <div className="message">
+        <div className="message small">
           {iconInfo}
           <p>Just this one time, you’ll first need to unlock your account to use {erc20.ticker} with Goldfinch.</p>
         </div>

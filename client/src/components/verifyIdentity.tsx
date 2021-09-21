@@ -1,14 +1,16 @@
-import {useContext, useState} from "react"
-import {AppContext} from "../App"
-import Persona from "persona"
-import web3 from "../web3"
-import {ethers} from "ethers"
-import {iconCircleCheck, iconClock, iconAlert} from "./icons.js"
-import TransactionForm from "./transactionForm"
 import {ErrorMessage} from "@hookform/error-message"
+import Persona from "persona"
+import {useContext, useState} from "react"
+import {FormProvider, useForm} from "react-hook-form"
+import {Link} from "react-router-dom"
+import {AppContext} from "../App"
+import DefaultGoldfinchClient from "../hooks/useGoldfinchClient"
+import {Session, useSignIn} from "../hooks/useSignIn"
+import {assertNonNullable} from "../utils"
 import ConnectionNotice from "./connectionNotice"
+import {iconAlert, iconCircleCheck, iconClock} from "./icons.js"
 import LoadingButton from "./loadingButton"
-import {useForm, FormProvider} from "react-hook-form"
+import TransactionForm from "./transactionForm"
 
 function VerificationNotice({icon, notice}) {
   return (
@@ -237,7 +239,7 @@ function SignInForm({action, disabled}) {
   return (
     <FormProvider {...formMethods}>
       <div className="info-banner background-container subtle">
-        <div className="message">
+        <div className="message small">
           <p>First, please sign in to confirm your address.</p>
         </div>
         <LoadingButton text="Sign in" action={action} disabled={disabled} />
@@ -247,44 +249,33 @@ function SignInForm({action, disabled}) {
 }
 
 function VerifyIdentity() {
-  const {user, network} = useContext(AppContext)
+  const {user, network, setSessionData} = useContext(AppContext)
   const [kycStatus, setKycStatus] = useState<string>("")
   // Determines the form to show. Can be empty, "US" or "entity"
   const [countryCode, setCountryCode] = useState<string>("")
   const [entityType, setEntityType] = useState<string>("")
-  const [userSignature, setUserSignature] = useState<string>("")
+  const [session, signIn] = useSignIn()
 
-  const API_URLS = {
-    mainnet: "https://us-central1-goldfinch-frontends-prod.cloudfunctions.net",
-    localhost: "https://us-central1-goldfinch-frontends-dev.cloudfunctions.net",
-  }
-
-  function getKYCURL(address, signature) {
-    const baseURL = process.env.REACT_APP_GCLOUD_FUNCTIONS_URL || API_URLS[network?.name!]
-    signature = signature === "pending" ? "" : signature
-    return baseURL + "/kycStatus?" + new URLSearchParams({address, signature})
-  }
-
-  async function fetchKYCStatus(signature) {
-    const response = await fetch(getKYCURL(user.address, signature))
-    const responseJson = await response.json()
-    setKycStatus(responseJson.status)
-    if (responseJson.countryCode === "US") {
-      setEntityType("US")
-      setCountryCode("US")
+  async function fetchKYCStatus(session: Session) {
+    if (session.status !== "authenticated") {
+      return
+    }
+    assertNonNullable(network)
+    assertNonNullable(setSessionData)
+    const client = new DefaultGoldfinchClient(network.name!, session, setSessionData)
+    const response = await client.fetchKYCStatus(user.address)
+    if (response.ok) {
+      setKycStatus(response.json.status)
+      if (response.json.countryCode === "US") {
+        setEntityType("US")
+        setCountryCode("US")
+      }
     }
   }
 
-  async function getUserSignature() {
-    const provider = new ethers.providers.Web3Provider(web3.currentProvider as any)
-    const signer = provider.getSigner(user.address)
-    return await signer.signMessage("Sign in to Goldfinch")
-  }
-
   async function getSignatureAndKycStatus() {
-    const signature = await getUserSignature()
-    await fetchKYCStatus(signature)
-    setUserSignature(signature)
+    const session = await signIn()
+    await fetchKYCStatus(session)
   }
 
   function chooseEntity(chosenType) {
@@ -311,9 +302,7 @@ function VerifyIdentity() {
           onClose={() => setEntityType("")}
           network={network?.name!}
           address={user.address}
-          onEvent={() => {
-            fetchKYCStatus(userSignature)
-          }}
+          onEvent={() => fetchKYCStatus(session)}
         />
       )
     } else if (entityType === "entity") {
@@ -322,7 +311,12 @@ function VerifyIdentity() {
       return (
         <VerificationNotice
           icon={iconClock}
-          notice="Your verification has been successfully submitted and is in progress. You can expect it to be complete within a few days, and usually much faster."
+          notice={
+            <>
+              Your verification was approved to immediately access the <Link to="/pools/senior">Senior Pool</Link>.
+              Later, we'll email you when you are on the Backer list and can supply to Borrower Pools.
+            </>
+          }
         />
       )
     } else if (entityType === "non-US") {
@@ -332,9 +326,7 @@ function VerifyIdentity() {
           entityType={entityType}
           network={network?.name!}
           address={user.address}
-          onEvent={() => {
-            fetchKYCStatus(userSignature)
-          }}
+          onEvent={() => fetchKYCStatus(session)}
         />
       )
     } else {

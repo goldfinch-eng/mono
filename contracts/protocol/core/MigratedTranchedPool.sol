@@ -10,14 +10,13 @@ import "../../interfaces/IMigratedTranchedPool.sol";
 contract MigratedTranchedPool is TranchedPool, IMigratedTranchedPool {
   bool public migrated;
 
-  function migrateCreditLine(
+  function migrateCreditLineToV2(
     IV1CreditLine clToMigrate,
     uint256 termEndTime,
     uint256 nextDueTime,
     uint256 interestAccruedAsOf,
     uint256 lastFullPaymentTime,
-    uint256 totalInterestPaid,
-    uint256 totalPrincipalPaid
+    uint256 totalInterestPaid
   ) external override returns (IV2CreditLine) {
     require(msg.sender == config.creditDeskAddress(), "Only credit desk can call this");
     require(!migrated, "Already migrated");
@@ -33,27 +32,22 @@ contract MigratedTranchedPool is TranchedPool, IMigratedTranchedPool {
     newCl.setLastFullPaymentTime(lastFullPaymentTime);
     newCl.setTotalInterestAccrued(totalInterestPaid.add(clToMigrate.interestOwed()));
 
-    migrateDeposits(clToMigrate, totalInterestPaid, totalPrincipalPaid);
+    migrateDeposits(clToMigrate, totalInterestPaid);
 
     migrated = true;
 
     return newCl;
   }
 
-  function migrateDeposits(
-    IV1CreditLine clToMigrate,
-    uint256 totalInterestPaid,
-    uint256 totalPrincipalPaid
-  ) internal {
+  function migrateDeposits(IV1CreditLine clToMigrate, uint256 totalInterestPaid) internal {
     // Mint junior tokens to the SeniorPool, equal to current cl balance;
     require(!locked(), "Pool has been locked");
     // Hardcode to always get the JuniorTranche, since the migration case is when
     // the senior pool took the entire investment. Which we're expressing as the junior tranche
     uint256 tranche = uint256(ITranchedPool.Tranches.Junior);
-    uint256 amount = clToMigrate.balance();
     TrancheInfo storage trancheInfo = getTrancheInfo(tranche);
     require(trancheInfo.lockedUntil == 0, "Tranche has been locked");
-    trancheInfo.principalDeposited = trancheInfo.principalDeposited.add(amount.add(totalPrincipalPaid));
+    trancheInfo.principalDeposited = clToMigrate.limit();
     IPoolTokens.MintParams memory params = IPoolTokens.MintParams({
       tranche: tranche,
       principalAmount: trancheInfo.principalDeposited
@@ -61,18 +55,20 @@ contract MigratedTranchedPool is TranchedPool, IMigratedTranchedPool {
     IPoolTokens poolTokens = config.getPoolTokens();
 
     uint256 tokenId = poolTokens.mint(params, config.seniorPoolAddress());
+    uint256 balancePaid = creditLine.limit().sub(creditLine.balance());
 
     // Account for the implicit redemptions already made by the Legacy Pool
-    poolTokens.redeem(tokenId, totalPrincipalPaid, totalInterestPaid);
     _lockJuniorCapital();
     _lockPool();
 
+    juniorTranche.lockedUntil = block.timestamp - 1;
+    poolTokens.redeem(tokenId, balancePaid, totalInterestPaid);
+
     // Simulate the drawdown
-    uint256 amountRemaining = creditLine.limit().sub(creditLine.balance().add(totalPrincipalPaid));
-    juniorTranche.principalSharePrice = calculateExpectedSharePrice(amountRemaining, juniorTranche);
+    juniorTranche.principalSharePrice = 0;
     seniorTranche.principalSharePrice = 0;
 
     // Set junior's sharePrice correctly
-    applyToTrancheByAmount(totalInterestPaid, totalPrincipalPaid, totalInterestPaid, totalPrincipalPaid, juniorTranche);
+    applyToTrancheByAmount(totalInterestPaid, balancePaid, totalInterestPaid, balancePaid, juniorTranche);
   }
 }

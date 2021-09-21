@@ -1,8 +1,6 @@
 const hre = require("hardhat")
 const {getNamedAccounts, deployments} = hre
 const deployV2 = require("./deployV2")
-const Safe = require("@gnosis.pm/safe-core-sdk").default
-const {EthersAdapter} = require("@gnosis.pm/safe-core-sdk")
 const {
   MINTER_ROLE,
   OWNER_ROLE,
@@ -19,9 +17,8 @@ const {
   upgradeContracts,
   getExistingContracts,
   getAllExistingContracts,
-  impersonateAccount,
 } = require("../mainnetForkingHelpers")
-const {ethers, getChainId} = require("hardhat")
+const {getChainId, artifacts} = require("hardhat")
 const _ = require("lodash")
 const {decodeLogs} = require("../../test/testHelpers")
 const goList = require("../../client/src/goList.json")
@@ -81,12 +78,12 @@ async function prepareMigration() {
   const migrator = await deployMigrator(hre, {config})
   const result = await handleNewDeployments(migrator)
   console.log("Succesfully deployed things!")
-  await upgradeImplementations(migrator, config.address, [
-    result.pool,
-    result.creditDesk,
-    result.fidu,
-    result.goldfinchFactory,
-  ])
+  await upgradeImplementations(
+    migrator,
+    config.address,
+    [result.pool, result.creditDesk, result.fidu, result.goldfinchFactory],
+    {pool, creditDesk, fidu, goldfinchFactory}
+  )
   await givePermsToMigrator({
     pool,
     oldConfig: config,
@@ -119,18 +116,24 @@ async function deployAndMigrateToV2() {
   const chunkedOwnersWithCls = _.chunk(ownersWithCls, 5)
   const chunkedClMigrationData = _.chunk(clMigrationData, 5)
   let migrationEvents
+  let migrationTxs = []
   if (ownersWithCls.length > 0) {
-    const migrationTxs = await Promise.all(
-      chunkedOwnersWithCls.map(async (ownerChunk, i) => {
-        return migrator.migrateCreditLines(goldfinchConfig.address, ownerChunk, chunkedClMigrationData[i])
-      })
-    )
+    for (var i = 0; i < chunkedOwnersWithCls.length; i++) {
+      var ownerChunk = chunkedOwnersWithCls[i]
+      var migrationTxChunk = await migrator.migrateCreditLines(
+        goldfinchConfig.address,
+        ownerChunk,
+        chunkedClMigrationData[i]
+      )
+      migrationTxs.push(migrationTxChunk)
+    }
     migrationEvents = extractAllMigrationEvents(migrationTxs, migrator)
   }
   console.log("Adding everyone to the goList...")
   await addEveryoneToTheGoList(goldfinchConfig.address, migrator)
   console.log("Closing out the migration...")
   await closingOutTheMigration(goldfinchConfig.address, migrator)
+  console.log("All done!")
   return migrationEvents
 }
 
@@ -140,10 +143,15 @@ async function closingOutTheMigration(goldfinchConfigAddress, migrator) {
 
 async function addEveryoneToTheGoList(goldfinchConfigAddress, migrator) {
   const chunkedGoList = _.chunk(goList, 375)
+  const config = await getContract("GoldfinchConfig")
   for (var i = 0; i < chunkedGoList.length; i++) {
-    console.log("adding chunk", i, "to the goList")
+    console.log("Trying adding chunk", i, "to the goList")
     let chunk = chunkedGoList[i]
-    await migrator.bulkAddToGoList(goldfinchConfigAddress, chunk)
+    const alreadyAdded = await config.goList(chunk[0])
+    if (!alreadyAdded) {
+      console.log("Actually adding chunk", i, "to the goList")
+      await migrator.bulkAddToGoList(goldfinchConfigAddress, chunk)
+    }
   }
 }
 
@@ -265,17 +273,22 @@ async function givePermsToMigrator({pool, creditDesk, goldfinchFactory, fidu, mi
   }
 }
 
-async function upgradeImplementations(migrator, configAddress, newDeployments) {
+async function upgradeImplementations(
+  migrator,
+  configAddress,
+  newDeployments,
+  {pool, creditDesk, fidu, goldfinchFactory}
+) {
+  const protocolOwner = await getProtocolOwner()
   if (isMainnetForking()) {
-    const ethersMigrator = await getContract("V2Migrator", {as: "ethers"})
-    const tx = {
-      to: migrator.address,
-      value: "0",
-      data: ethersMigrator.interface.encodeFunctionData("upgradeImplementations", [configAddress, newDeployments]),
-    }
-    await delegateSafeTransaction(tx)
+    const iMigrate = artifacts.require("IMigrate")
+    await (await iMigrate.at(pool.address)).changeImplementation(newDeployments[0], "0x", {from: protocolOwner})
+    await (await iMigrate.at(creditDesk.address)).changeImplementation(newDeployments[1], "0x", {from: protocolOwner})
+    await (await iMigrate.at(fidu.address)).changeImplementation(newDeployments[2], "0x", {from: protocolOwner})
+    await (
+      await iMigrate.at(goldfinchFactory.address)
+    ).changeImplementation(newDeployments[3], "0x", {from: protocolOwner})
   } else {
-    const protocolOwner = await getProtocolOwner()
     const chainId = await getChainId()
     const defender = new DefenderUpgrader({hre, logger: console.log, chainId})
     await defender.send({
@@ -310,58 +323,75 @@ async function deployMigrator(hre, {config}) {
   return migrator
 }
 
-async function delegateSafeTransaction(tx) {
-  const safeAddress = MAINNET_MULTISIG
-  const blakesGovAddress = "0xf13eFa505444D09E176d83A4dfd50d10E399cFd5"
-  const mikesGovAddress = "0x5E7b1B5d5B03558BA57410e5dc4DbFCA71C92B84"
-  await impersonateAccount(hre, blakesGovAddress)
-  await impersonateAccount(hre, mikesGovAddress)
-  let ownerSigner = await ethers.getSigner(blakesGovAddress)
-  let ownerSigner2 = await ethers.getSigner(mikesGovAddress)
-  const ethAdapterOwner1 = new EthersAdapter({ethers, signer: ownerSigner})
-  const ethAdapterOwner2 = new EthersAdapter({ethers, signer: ownerSigner2})
-  const safeSdk = await Safe.create({
-    ethAdapter: ethAdapterOwner1,
-    safeAddress,
-    contractNetworks: {
-      31337: {
-        multiSendAddress: "0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761",
-        safeMasterCopyAddress: "0x6851D6fDFAfD08c0295C392436245E5bc78B0185",
-        safeProxyFactoryAddress: "0x76E2cFc1F5Fa8F6a5b3fC4c8F4788F0116861F9B",
-      },
-      1: {
-        multiSendAddress: "0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761",
-        safeMasterCopyAddress: "0x6851D6fDFAfD08c0295C392436245E5bc78B0185",
-        safeProxyFactoryAddress: "0x76E2cFc1F5Fa8F6a5b3fC4c8F4788F0116861F9B",
-      },
-      4: {
-        multiSendAddress: "0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761",
-        safeMasterCopyAddress: "0x6851D6fDFAfD08c0295C392436245E5bc78B0185",
-        safeProxyFactoryAddress: "0x76E2cFc1F5Fa8F6a5b3fC4c8F4788F0116861F9B",
-      },
-    },
-  })
-  const owner2 = await safeSdk.connect({ethAdapter: ethAdapterOwner2, safeAddress})
-  tx.operation = 1
-  const transactions = [tx]
+// Leaving this commented out because it will be useful after
+// gnosis fixes their library. Didn't want to have to re-discover all this.
+// Also, this file will basically never be used again, so it seemed find to keep it
+// here since it won't be bothering the daily developer.
 
-  const safeTx = await safeSdk.createTransaction(...transactions)
-  const txHash = await owner2.getTransactionHash(safeTx)
-  const approveTx = await owner2.approveTransactionHash(txHash)
-  await approveTx.transactionResponse.wait()
-  const executeTxResponse = await safeSdk.executeTransaction(safeTx)
-  const res = await executeTxResponse.transactionResponse.wait()
-  const executionResult = _.last(res.events)
-  if (executionResult.event === "ExecutionFailure") {
-    console.log("res:", res)
-    throw new Error("Delegation failed")
-  } else if (executionResult.event === "ExecutionSuccess") {
-    console.log("Delegation successful!")
-  } else {
-    console.log("res:", res)
-    throw new Error("Unexpected state. Did not detect either success or failure")
+// Usage:
+/*
+  const ethersMigrator = await getContract("V2Migrator", {as: "ethers"})
+  const tx = {
+    to: migrator.address,
+    value: "0",
+    data: ethersMigrator.interface.encodeFunctionData("upgradeImplementations", [configAddress, newDeployments]),
   }
-}
+  await delegateSafeTransaction(tx)
+*/
+
+// async function delegateSafeTransaction(tx) {
+//   const safeAddress = MAINNET_MULTISIG
+//   const blakesGovAddress = "0xf13eFa505444D09E176d83A4dfd50d10E399cFd5"
+//   const mikesGovAddress = "0x5E7b1B5d5B03558BA57410e5dc4DbFCA71C92B84"
+//   await impersonateAccount(hre, blakesGovAddress)
+//   await impersonateAccount(hre, mikesGovAddress)
+//   let ownerSigner = await ethers.getSigner(blakesGovAddress)
+//   let ownerSigner2 = await ethers.getSigner(mikesGovAddress)
+//   const ethAdapterOwner1 = new EthersAdapter({ethers, signer: ownerSigner})
+//   const ethAdapterOwner2 = new EthersAdapter({ethers, signer: ownerSigner2})
+//   const safeSdk = await Safe.create({
+//     ethAdapter: ethAdapterOwner1,
+//     safeAddress,
+//     contractNetworks: {
+//       31337: {
+//         multiSendAddress: "0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761",
+//         safeMasterCopyAddress: "0x6851D6fDFAfD08c0295C392436245E5bc78B0185",
+//         safeProxyFactoryAddress: "0x76E2cFc1F5Fa8F6a5b3fC4c8F4788F0116861F9B",
+//       },
+//       1: {
+//         multiSendAddress: "0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761",
+//         safeMasterCopyAddress: "0x6851D6fDFAfD08c0295C392436245E5bc78B0185",
+//         safeProxyFactoryAddress: "0x76E2cFc1F5Fa8F6a5b3fC4c8F4788F0116861F9B",
+//       },
+//       4: {
+//         multiSendAddress: "0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761",
+//         safeMasterCopyAddress: "0x6851D6fDFAfD08c0295C392436245E5bc78B0185",
+//         safeProxyFactoryAddress: "0x76E2cFc1F5Fa8F6a5b3fC4c8F4788F0116861F9B",
+//       },
+//     },
+//   })
+//   const owner2 = await safeSdk.connect({ethAdapter: ethAdapterOwner2, safeAddress})
+//   tx.operation = 1
+//   const transactions = [tx]
+
+//   const safeTx = await safeSdk.createTransaction(...transactions)
+//   safeTx.data.maxFeePerGas = 114026667 * 2
+//   const txHash = await owner2.getTransactionHash(safeTx)
+//   const approveTx = await owner2.approveTransactionHash(txHash)
+//   await approveTx.transactionResponse.wait()
+//   const executeTxResponse = await safeSdk.executeTransaction(safeTx)
+//   const res = await executeTxResponse.transactionResponse.wait()
+//   const executionResult = _.last(res.events)
+//   if (executionResult.event === "ExecutionFailure") {
+//     console.log("res:", res)
+//     throw new Error("Delegation failed")
+//   } else if (executionResult.event === "ExecutionSuccess") {
+//     console.log("Delegation successful!")
+//   } else {
+//     console.log("res:", res)
+//     throw new Error("Unexpected state. Did not detect either success or failure")
+//   }
+// }
 
 if (require.main === module) {
   // If this is run as a script, then call main. If it's imported (for tests), this block will not run

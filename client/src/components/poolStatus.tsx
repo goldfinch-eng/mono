@@ -20,19 +20,18 @@ function PoolStatus({poolData}: PoolStatusProps) {
     let poolBalance: string | undefined
     let totalLoansOutstanding: string | undefined
     let capacityRemaining: BigNumber | undefined
-    let maxPoolCapacity = usdcFromAtomic(goldfinchConfig.totalFundsLimit)
+    let maxPoolCapacity = goldfinchConfig.totalFundsLimit
     if (poolData?.loaded) {
       defaultRate = poolData.defaultRate
       poolBalance = usdcFromAtomic(poolData.totalPoolAssets)
       totalLoansOutstanding = usdcFromAtomic(poolData.totalLoansOutstanding)
-      let cappedBalance = BigNumber.min(poolBalance, maxPoolCapacity)
-      capacityRemaining = new BigNumber(maxPoolCapacity).minus(cappedBalance)
+      capacityRemaining = poolData.remainingCapacity(maxPoolCapacity)
     }
 
     return [
       {label: "Total pool balance", value: displayDollars(poolBalance)},
-      {label: "Max pool capacity", value: displayDollars(maxPoolCapacity)},
-      {label: "Remaining capacity", value: displayDollars(capacityRemaining)},
+      {label: "Max pool capacity", value: displayDollars(usdcFromAtomic(maxPoolCapacity))},
+      {label: "Remaining capacity", value: displayDollars(usdcFromAtomic(capacityRemaining))},
       {label: "Loans outstanding", value: displayDollars(totalLoansOutstanding)},
       {label: "Default rate", value: displayPercent(defaultRate)},
     ]
@@ -44,9 +43,6 @@ function PoolStatus({poolData}: PoolStatusProps) {
       <InfoSection rows={deriveRows()} />
       <RecentRepayments />
       <div className="pool-links">
-        <a href="https://duneanalytics.com/goldfinch/goldfinch" target="_blank" rel="noopener noreferrer">
-          Dashboard <span className="outbound-link">{iconOutArrow}</span>
-        </a>
         <a href={`https://etherscan.io/address/${poolData?.pool.address}`} target="_blank" rel="noopener noreferrer">
           Pool<span className="outbound-link">{iconOutArrow}</span>
         </a>

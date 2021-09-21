@@ -10,20 +10,21 @@ const {
   erc20Approve,
   usdcVal,
   createPoolWithCreditLine,
+  toEthers,
 } = require("../testHelpers")
 const {assessIfRequired} = require("../../autotasks/assessor/index.js")
 let accounts, owner, underwriter, borrower
 let creditLine, fakeProvider, fakeTimestamp
-let tranchedPool
-describe("relayAssess", () => {
+let tranchedPool, seniorPool, poolTokens
+
+describe("relayAsses", () => {
   const setupTest = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
     // Just to be crystal clear
     const {protocol_owner} = await getNamedAccounts()
     owner = protocol_owner
 
-    const {seniorPool, usdc, fidu, creditDesk, goldfinchConfig, goldfinchFactory} = await deployAllContracts(
-      deployments
-    )
+    const {seniorPool, usdc, fidu, creditDesk, goldfinchConfig, goldfinchFactory, poolTokens} =
+      await deployAllContracts(deployments)
     // A bit of setup for our test users
     await erc20Approve(usdc, seniorPool.address, usdcVal(100000), [owner, borrower])
     await goldfinchConfig.bulkAddToGoList([owner, underwriter, borrower])
@@ -34,10 +35,10 @@ describe("relayAssess", () => {
       usdc,
     })
     await tranchedPool.deposit(TRANCHES.Junior, usdcVal(2))
-    await tranchedPool.deposit(TRANCHES.Senior, usdcVal(8))
     await tranchedPool.lockJuniorCapital({from: borrower})
+    await seniorPool.invest(tranchedPool.address)
     await tranchedPool.lockPool({from: borrower})
-    return {usdc, seniorPool, fidu, goldfinchConfig, creditDesk, goldfinchFactory, creditLine, tranchedPool}
+    return {usdc, seniorPool, fidu, goldfinchConfig, creditDesk, goldfinchFactory, creditLine, tranchedPool, poolTokens}
   })
 
   async function advanceToTimestamp(timestamp) {
@@ -49,7 +50,7 @@ describe("relayAssess", () => {
     // Pull in our unlocked accounts
     accounts = await web3.eth.getAccounts()
     ;[owner, underwriter, borrower] = accounts
-    ;({tranchedPool, creditLine} = await setupTest())
+    ;({tranchedPool, creditLine, seniorPool, poolTokens} = await setupTest())
 
     fakeProvider = {
       getBlock: async function () {
@@ -62,12 +63,25 @@ describe("relayAssess", () => {
   })
 
   describe("assessIfRequired", async () => {
+    let tranchedPoolAsEthers, seniorPoolAsEthers, creditLineAsEthers, poolTokensAsEthers
+
+    beforeEach(async () => {
+      tranchedPoolAsEthers = await toEthers(tranchedPool)
+      seniorPoolAsEthers = await toEthers(seniorPool)
+      creditLineAsEthers = await toEthers(creditLine)
+      poolTokensAsEthers = await toEthers(poolTokens)
+    })
+
     it("assesses the credit line", async () => {
       await tranchedPool.drawdown(usdcVal(10), {from: borrower})
+      await tranchedPool.pay(usdcVal(1), {from: borrower})
       // Advance to just beyond the nextDueTime
       await advanceToTimestamp((await creditLine.nextDueTime()).add(new BN(10)))
-      await expectAction(() => assessIfRequired(tranchedPool, creditLine, fakeProvider)).toChange([
+      await expectAction(() =>
+        assessIfRequired(tranchedPoolAsEthers, creditLineAsEthers, fakeProvider, seniorPoolAsEthers, poolTokensAsEthers)
+      ).toChange([
         [creditLine.nextDueTime, {increase: true}],
+        // [seniorPool.sharePrice, {increase: true}], // The senior pool should redeem the interest payments
       ])
     })
 
@@ -77,9 +91,9 @@ describe("relayAssess", () => {
       // Advance to just before the next due block
       await advanceToTimestamp((await creditLine.nextDueTime()).sub(new BN(10)))
 
-      await expectAction(() => assessIfRequired(tranchedPool, creditLine, fakeProvider)).toChange([
-        [creditLine.nextDueTime, {by: new BN(0)}],
-      ])
+      await expectAction(() =>
+        assessIfRequired(tranchedPoolAsEthers, creditLineAsEthers, fakeProvider, seniorPoolAsEthers, poolTokensAsEthers)
+      ).toChange([[creditLine.nextDueTime, {by: 0}]])
     })
 
     it("assesses if beyond the term end block", async () => {
@@ -88,15 +102,19 @@ describe("relayAssess", () => {
       // Advance to just after the term due block
       await advanceToTimestamp((await creditLine.termEndTime()).add(new BN(10)))
 
-      await expectAction(() => assessIfRequired(tranchedPool, creditLine, fakeProvider)).toChange([
+      await expectAction(() =>
+        assessIfRequired(tranchedPoolAsEthers, creditLineAsEthers, fakeProvider, seniorPoolAsEthers, poolTokensAsEthers)
+      ).toChange([
         [creditLine.nextDueTime, {increase: true}],
+        // [seniorPool.sharePrice, {decrease: true}], // There should also be a writedown because there were no payments
+        // [seniorPool.totalWritedowns, {increase: true}],
       ])
     })
 
     it("does not assess if no balance", async () => {
-      await expectAction(() => assessIfRequired(tranchedPool, creditLine, fakeProvider)).toChange([
-        [creditLine.nextDueTime, {by: new BN(0)}],
-      ])
+      await expectAction(() =>
+        assessIfRequired(tranchedPoolAsEthers, creditLineAsEthers, fakeProvider, seniorPoolAsEthers, poolTokensAsEthers)
+      ).toChange([[creditLine.nextDueTime, {by: 0}]])
     })
   })
 })

@@ -1,14 +1,15 @@
 import {useState, useEffect, useContext} from "react"
 import {useHistory} from "react-router-dom"
-import {CapitalProvider, fetchCapitalProviderData, fetchPoolData, PoolData} from "../ethereum/pool"
+import {CapitalProvider, fetchCapitalProviderData, PoolData, SeniorPool} from "../ethereum/pool"
 import {AppContext} from "../App"
-import {ERC20, usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
-import {croppedAddress, displayDollars, displayPercent, roundDownPenny} from "../utils"
+import {usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
+import {displayDollars, displayPercent, roundDownPenny} from "../utils"
 import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
 import {PoolBacker, TranchedPool} from "../ethereum/tranchedPool"
 import {PoolCreated} from "../typechain/web3/GoldfinchFactory"
 import BigNumber from "bignumber.js"
 import {User} from "../ethereum/user"
+import ConnectionNotice from "./connectionNotice"
 
 // Filter out 0 limit (inactive) and test pools
 const MIN_POOL_LIMIT = usdcToAtomic(process.env.REACT_APP_POOL_FILTER_LIMIT || "200")
@@ -18,11 +19,30 @@ function PoolList({title, children}) {
     <div className="pools-list table-spaced background-container">
       <div className="table-header background-container-inner">
         <div className="table-cell col40 title">{title}</div>
-        <div className="table-cell col22 numeric">Your Balance</div>
-        <div className="table-cell col22 numeric">Est. APY</div>
-        <div className="table-cell col16"></div>
+        <div className="table-cell col22 numeric balance">Your Balance</div>
+        <div className="table-cell col22 numeric limit">Pool Limit</div>
+        <div className="table-cell col16 numeric apy">Est. APY</div>
       </div>
       {children}
+    </div>
+  )
+}
+
+function PortfolioOverviewSkeleton() {
+  return (
+    <div className="background-container">
+      <div className="background-container-inner">
+        <div className="deposit-status-item">
+          <div className="label">Portfolio balance</div>
+          <div className="value disabled">$--.--</div>
+          <div className="sub-value disabled">--.-- (--.--%)</div>
+        </div>
+        <div className="deposit-status-item">
+          <div className="label">Est. Annual Growth</div>
+          <div className="value disabled">$--.--</div>
+          <div className="sub-value disabled">--.--% APY</div>
+        </div>
+      </div>
     </div>
   )
 }
@@ -51,6 +71,7 @@ function PortfolioOverview({
   })
   let unrealizedAPY = totalUnrealizedGains.dividedBy(totalBalance)
   let estimatedAPY = estimatedAnnualGrowth.dividedBy(totalBalance)
+  const displayUnrealizedGains = capitalProvider.empty ? null : roundDownPenny(totalUnrealizedGains)
 
   return (
     <div className="background-container">
@@ -59,7 +80,7 @@ function PortfolioOverview({
           <div className="label">Portfolio balance</div>
           <div className="value">{displayDollars(totalBalance)}</div>
           <div className="sub-value">
-            {displayDollars(roundDownPenny(totalUnrealizedGains))} ({displayPercent(unrealizedAPY)})
+            {displayDollars(displayUnrealizedGains)} ({displayPercent(unrealizedAPY)})
           </div>
         </div>
         <div className="deposit-status-item">
@@ -72,22 +93,52 @@ function PortfolioOverview({
   )
 }
 
-function SeniorPoolCard({balance, userBalance, apy}) {
+function SeniorPoolCardSkeleton() {
+  return (
+    <div key="senior-pool" className="table-row background-container-inner clickable">
+      <div className="table-cell col40 disabled">
+        $--.--
+        <span className="subheader">Total Pool Balance</span>
+      </div>
+      <div className="table-cell col22 numeric balance disabled">$--.--</div>
+      <div className="table-cell col22 numeric limit disabled">$--.--</div>
+      <div className="table-cell col16 numeric apy disabled">$--.--%</div>
+    </div>
+  )
+}
+
+function SeniorPoolCard({balance, userBalance, apy, limit}) {
   const history = useHistory()
 
   return (
-    <div key="senior-pool" className="table-row background-container-inner">
+    <div
+      key="senior-pool"
+      className="table-row background-container-inner clickable"
+      onClick={() => history.push("/pools/senior")}
+    >
       <div className="table-cell col40">
         {balance}
         <span className="subheader">Total Pool Balance</span>
       </div>
-      <div className="table-cell col22 numeric">{userBalance}</div>
-      <div className="table-cell col22 numeric">{apy}</div>
-      <div className="table-cell col16 ">
-        <button className="view-button" onClick={() => history.push("/earn/pools/senior")}>
-          View
-        </button>
+      <div className="table-cell col22 numeric balance">{userBalance}</div>
+      <div className="table-cell col22 numeric limit">{limit}</div>
+      <div className="table-cell col16 numeric apy">{apy}</div>
+    </div>
+  )
+}
+
+function TranchedPoolCardSkeleton() {
+  return (
+    <div className="table-row background-container-inner clickable">
+      <div className="table-cell col40 pool-info fallback-content">
+        <div className="circle-icon" />
+        <div className="name">
+          <span>Loading...</span>
+        </div>
       </div>
+      <div className="disabled table-cell col22 numeric balance">$--.--</div>
+      <div className="disabled table-cell col22 numeric limit">$--.--</div>
+      <div className="disabled table-cell col16 numeric apy">--.--%</div>
     </div>
   )
 }
@@ -96,6 +147,7 @@ function TranchedPoolCard({poolBacker}: {poolBacker: PoolBacker}) {
   const history = useHistory()
   const tranchedPool = poolBacker.tranchedPool
   const leverageRatio = tranchedPool.estimatedLeverageRatio
+  const limit = usdcFromAtomic(tranchedPool.creditLine.limit)
 
   let estimatedApy = new BigNumber(NaN)
   let disabledClass = ""
@@ -108,35 +160,36 @@ function TranchedPoolCard({poolBacker}: {poolBacker: PoolBacker}) {
   }
 
   return (
-    <div className="table-row background-container-inner">
+    <div
+      className="table-row background-container-inner clickable"
+      onClick={() => history.push(`/pools/${tranchedPool.address}`)}
+    >
       <div className="table-cell col40 pool-info">
-        <img
-          className={`icon ${process.env.NODE_ENV === "development" && "pixelated"}`}
-          src={tranchedPool.metadata?.icon}
-          alt="pool-icon"
-        />
+        <img className={"icon"} src={tranchedPool.metadata?.icon} alt="pool-icon" />
         <div className="name">
-          <span>{tranchedPool.metadata?.name ?? croppedAddress(tranchedPool.address)}</span>
+          <span>{tranchedPool.displayName}</span>
           <span className="subheader">{tranchedPool.metadata?.category}</span>
         </div>
       </div>
-      <div className={`${disabledClass} table-cell col22 numeric`}>{displayDollars(poolBacker?.balanceInDollars)}</div>
-      <div className="table-cell col22 numeric">{displayPercent(estimatedApy)}</div>
-      <div className="table-cell col16 ">
-        <button className="view-button" onClick={() => history.push(`/earn/pools/junior/${tranchedPool.address}`)}>
-          View
-        </button>
+      <div className={`${disabledClass} table-cell col22 numeric balance`}>
+        {displayDollars(poolBacker?.balanceInDollars)}
       </div>
+      <div className="table-cell col22 numeric limit">{displayDollars(limit, 0)}</div>
+      <div className="table-cell col16 numeric apy">{displayPercent(estimatedApy)}</div>
     </div>
   )
 }
 
 function usePoolBackers({goldfinchProtocol, user}: {goldfinchProtocol?: GoldfinchProtocol; user?: User}): {
   backers: PoolBacker[]
-  status: string
+  backersStatus: string
+  poolsAddresses: string[]
+  poolsAddressesStatus: string
 } {
   let [backers, setBackers] = useState<PoolBacker[]>([])
-  let [status, setStatus] = useState<string>("loading")
+  let [backersStatus, setBackersStatus] = useState<string>("loading")
+  const [poolsAddresses, setPoolsAddresses] = useState<string[]>([])
+  const [poolsAddressesStatus, setPoolsAddressesStatus] = useState<string>("loading")
 
   useEffect(() => {
     async function loadTranchedPools(goldfinchProtocol: GoldfinchProtocol, user: User) {
@@ -144,75 +197,103 @@ function usePoolBackers({goldfinchProtocol, user}: {goldfinchProtocol?: Goldfinc
         "PoolCreated",
       ])) as unknown as PoolCreated[]
       let poolAddresses = poolEvents.map((e) => e.returnValues.pool)
+      setPoolsAddresses(poolAddresses)
+      setPoolsAddressesStatus("loaded")
       let tranchedPools = poolAddresses.map((a) => new TranchedPool(a, goldfinchProtocol))
       await Promise.all(tranchedPools.map((p) => p.initialize()))
+      tranchedPools = tranchedPools.filter((p) => p.metadata)
       const activePoolBackers = tranchedPools
         .filter((p) => p.creditLine.limit.gte(MIN_POOL_LIMIT))
         .map((p) => new PoolBacker(user.address, p, goldfinchProtocol))
       await Promise.all(activePoolBackers.map((b) => b.initialize()))
-      setBackers(activePoolBackers.sort((a, b) => b.balanceInDollars.comparedTo(a.balanceInDollars)))
-      setStatus("loaded")
+      setBackers(
+        activePoolBackers.sort(
+          (a, b) =>
+            // Primary sort: ascending by tranched pool status (Open -> JuniorLocked -> ...)
+            a.tranchedPool.state - b.tranchedPool.state ||
+            // Secondary sort: descending by user's balance
+            b.balanceInDollars.comparedTo(a.balanceInDollars) ||
+            // Tertiary sort: alphabetical by display name, for the sake of stable ordering.
+            a.tranchedPool.displayName.localeCompare(b.tranchedPool.displayName),
+        ),
+      )
+      setBackersStatus("loaded")
     }
 
-    if (goldfinchProtocol && user?.loaded) {
+    if (goldfinchProtocol && user) {
       loadTranchedPools(goldfinchProtocol, user)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [goldfinchProtocol, user])
 
-  return {backers: backers, status}
+  return {backers, backersStatus, poolsAddresses, poolsAddressesStatus}
 }
 
 function Earn(props) {
-  const {pool, usdc, user, goldfinchProtocol} = useContext(AppContext)
+  const {pool, usdc, user, goldfinchProtocol, goldfinchConfig} = useContext(AppContext)
   const [capitalProvider, setCapitalProvider] = useState<CapitalProvider>()
-  const [poolData, setPoolData] = useState<PoolData>()
-  const {backers, status: tranchedPoolsStatus} = usePoolBackers({goldfinchProtocol, user})
+  const {
+    backers,
+    backersStatus: tranchedPoolsStatus,
+    poolsAddresses,
+    poolsAddressesStatus,
+  } = usePoolBackers({goldfinchProtocol, user})
 
   useEffect(() => {
-    async function refreshAllData() {
-      const capitalProviderAddress = user.loaded && user.address
-      refreshPoolData(pool, usdc!)
-      refreshCapitalProviderData(pool, capitalProviderAddress)
-    }
-
     if (pool) {
-      refreshAllData()
+      const capitalProviderAddress = user.loaded && user.address
+
+      refreshCapitalProviderData(pool, capitalProviderAddress)
     }
   }, [pool, usdc, user])
 
-  async function refreshCapitalProviderData(pool: any, address: string | boolean) {
+  async function refreshCapitalProviderData(pool: SeniorPool, address: string | boolean) {
     const capitalProvider = await fetchCapitalProviderData(pool, address)
     setCapitalProvider(capitalProvider)
   }
 
-  async function refreshPoolData(pool: any, usdc: ERC20) {
-    const poolData = await fetchPoolData(pool, usdc && usdc.contract)
-    setPoolData(poolData)
-  }
-
-  let earnMessage = "Loading..."
-  if (capitalProvider?.loaded || user.noWeb3) {
-    earnMessage = "Earn"
-  }
+  const isLoading = !(capitalProvider?.loaded || user.noWeb3)
+  const earnMessage = isLoading ? "Loading..." : "Pools"
 
   return (
     <div className="content-section">
       <div className="page-header">
         <div>{earnMessage}</div>
       </div>
-      <PortfolioOverview poolData={poolData} capitalProvider={capitalProvider} poolBackers={backers} />
+      {isLoading ? (
+        <PortfolioOverviewSkeleton />
+      ) : (
+        <>
+          <ConnectionNotice />
+          <PortfolioOverview poolData={pool?.gf} capitalProvider={capitalProvider} poolBackers={backers} />
+        </>
+      )}
       <div className="pools">
         <PoolList title="Senior Pool">
-          <SeniorPoolCard
-            balance={displayDollars(usdcFromAtomic(poolData?.totalPoolAssets))}
-            userBalance={displayDollars(capitalProvider?.availableToWithdrawInDollars)}
-            apy={displayPercent(poolData?.estimatedApy)}
-          />
+          {isLoading ? (
+            <SeniorPoolCardSkeleton />
+          ) : (
+            <SeniorPoolCard
+              balance={displayDollars(usdcFromAtomic(pool?.gf.totalPoolAssets))}
+              userBalance={displayDollars(capitalProvider?.availableToWithdrawInDollars)}
+              apy={displayPercent(pool?.gf.estimatedApy)}
+              limit={displayDollars(usdcFromAtomic(goldfinchConfig?.totalFundsLimit), 0)}
+            />
+          )}
         </PoolList>
-        <PoolList title="Junior Pools">
-          {tranchedPoolsStatus === "loading"
-            ? "Loading..."
-            : backers.map((p) => <TranchedPoolCard key={`${p.tranchedPool.address}`} poolBacker={p} />)}
+        <PoolList title="Borrower Pools">
+          {tranchedPoolsStatus === "loading" && poolsAddressesStatus === "loading" && (
+            <>
+              <TranchedPoolCardSkeleton />
+              <TranchedPoolCardSkeleton />
+              <TranchedPoolCardSkeleton />
+            </>
+          )}
+
+          {tranchedPoolsStatus === "loading" && poolsAddresses.map((a) => <TranchedPoolCardSkeleton key={a} />)}
+
+          {tranchedPoolsStatus !== "loading" &&
+            backers.map((p) => <TranchedPoolCard key={`${p.tranchedPool.address}`} poolBacker={p} />)}
         </PoolList>
       </div>
     </div>

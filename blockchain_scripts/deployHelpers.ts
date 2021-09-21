@@ -265,13 +265,7 @@ async function setInitialConfigVals(config: GoldfinchConfig, logger = function (
     String(transferPeriodRestrictionInDays),
     {logger}
   )
-  await updateConfig(
-    config,
-    "number",
-    CONFIG_KEYS.LeverageRatio,
-    String(leverageRatio),
-    {logger}
-  )
+  await updateConfig(config, "number", CONFIG_KEYS.LeverageRatio, String(leverageRatio), {logger})
   // If we have a multisig safe, set that as the protocol admin, otherwise use the named account (local and test envs)
   const multisigAddress: AddressString = isSafeConfigChainId(chainId)
     ? SAFE_CONFIG[chainId].safeAddress
@@ -323,11 +317,11 @@ function getDefenderClient() {
 
 type ContractProviders = "ethers" | "truffle"
 type GetContractOptions = {
-  as?: ContractProviders,
-  at?: string,
-  from?: string,
+  as?: ContractProviders
+  at?: string
+  from?: string
 }
-async function getContract(contractName: string, opts: GetContractOptions={as: "truffle"}) {
+async function getContract(contractName: string, opts: GetContractOptions = {as: "truffle"}) {
   if (!opts.at) {
     opts.at = await getExistingAddress(contractName)
   }
@@ -350,7 +344,7 @@ async function getContract(contractName: string, opts: GetContractOptions={as: "
   }
 }
 
-async function getExistingAddress(contractName: string) : Promise<string> {
+async function getExistingAddress(contractName: string): Promise<string> {
   let deployment: any = await hre.deployments.getOrNull(contractName)
   let existingAddress: string | undefined = deployment?.address
   if (!existingAddress && isTestEnv()) {
@@ -368,7 +362,7 @@ async function getExistingAddress(contractName: string) : Promise<string> {
   return existingAddress
 }
 
-async function getProtocolOwner() : Promise<string> {
+async function getProtocolOwner(): Promise<string> {
   const chainId = await getChainId()
   const {protocol_owner} = await getNamedAccounts()
   if (isMainnetForking()) {
@@ -383,7 +377,7 @@ async function getProtocolOwner() : Promise<string> {
   }
 }
 
-async function currentChainId() : Promise<string> {
+async function currentChainId(): Promise<string> {
   return isMainnetForking() ? MAINNET_CHAIN_ID : await getChainId()
 }
 
@@ -433,6 +427,7 @@ export {
   getProtocolOwner,
   currentChainId,
   ChainId,
+  ChainName,
   TICKERS,
   assertIsTicker,
 }

@@ -53,6 +53,49 @@ const {
 const {getMigrationData} = require("../../blockchain_scripts/v2/migrationHelpers")
 const {assertIsString} = require("../../utils/type")
 
+const setupTest = deployments.createFixture(async ({deployments}) => {
+  // Note: base_deploy always returns when mainnet forking, however
+  // we need it here, because the "fixture" part is what let's hardhat
+  // snapshot and give us a clean blockchain before each test.
+  // Otherewise, we have state leaking across tests.
+  await deployments.fixture("base_deploy")
+
+  const [owner, bwr] = await web3.eth.getAccounts()
+  await fundWithWhales(["USDC"], [owner, bwr])
+
+  // Ensure the multisig has funds for various transactions
+  let ownerAccount = await getSignerForAddress(owner)
+  await ownerAccount.sendTransaction({to: MAINNET_MULTISIG, value: ethers.utils.parseEther("10.0")})
+
+  await impersonateAccount(hre, MAINNET_MULTISIG)
+
+  const mainnetMultisigSigner = await ethers.provider.getSigner(MAINNET_MULTISIG)
+  const contractNames = ["SeniorPool", "Fidu", "GoldfinchFactory", "GoldfinchConfig"]
+  const existingContracts = await getExistingContracts(contractNames, mainnetMultisigSigner)
+
+  const usdcAddress = getUSDCAddress(MAINNET_CHAIN_ID)
+  assertIsString(usdcAddress)
+  const usdc = await artifacts.require("IERC20withDec").at(usdcAddress)
+  const cUSDC = await artifacts.require("IERC20withDec").at(MAINNET_CUSDC_ADDRESS)
+
+  const seniorPool = await artifacts.require("SeniorPool").at(existingContracts.SeniorPool.ExistingContract.address)
+
+  const fidu = await artifacts.require("Fidu").at(existingContracts.Fidu.ExistingContract.address)
+
+  const goldfinchConfig = await artifacts
+    .require("GoldfinchConfig")
+    .at(existingContracts.GoldfinchConfig.ExistingContract.address)
+
+  const goldfinchFactory = await artifacts
+    .require("GoldfinchFactory")
+    .at(existingContracts.GoldfinchFactory.ExistingContract.address)
+
+  const seniorPoolStrategyAddress = await goldfinchConfig.getAddress(CONFIG_KEYS.SeniorPoolStrategy)
+  const seniorPoolStrategy = await artifacts.require("FixedLeverageRatioStrategy").at(seniorPoolStrategyAddress)
+
+  return {seniorPool, seniorPoolStrategy, usdc, fidu, goldfinchConfig, goldfinchFactory, cUSDC}
+})
+
 const TEST_TIMEOUT = 180000 // 3 mins
 
 /*
@@ -61,78 +104,21 @@ that we can easily and realistically test interactions with outside protocols
 and contracts.
 */
 describe("mainnet forking tests", async function () {
+  this.retries(2)
+
   // Hack way to only run this suite when we actually want to.
   if (!isMainnetForking()) {
     return
   }
   // eslint-disable-next-line no-unused-vars
-  let accounts, owner, bwr, person3, pool, reserve, underwriter, usdc, fidu, goldfinchConfig
+  let accounts, owner, bwr, person3, usdc, fidu, goldfinchConfig
   let goldfinchFactory, busd, usdt, cUSDC
-  let upgradedContracts
-  let reserveAddress, tranchedPool, borrower, seniorPool, seniorPoolFixedStrategy
-
-  const contractsToUpgrade = ["CreditDesk", "Pool", "Fidu", "GoldfinchFactory", "GoldfinchConfig"]
-  const setupTest = deployments.createFixture(async ({deployments}) => {
-    // Note: base_deploy always returns when mainnet forking, however
-    // we need it here, because the "fixture" part is what let's hardhat
-    // snapshot and give us a clean blockchain before each test.
-    // Otherewise, we have state leaking across tests.
-    await deployments.fixture("base_deploy")
-    upgradedContracts = await upgrade(contractsToUpgrade)
-    const usdcAddress = getUSDCAddress(MAINNET_CHAIN_ID)
-    assertIsString(usdcAddress)
-    const pool = await artifacts.require("TestPool").at(upgradedContracts.Pool.UpgradedContract.address)
-    const usdc = await artifacts.require("IERC20withDec").at(usdcAddress)
-    const creditDesk = await artifacts
-      .require("TestCreditDesk")
-      .at(upgradedContracts.CreditDesk.UpgradedContract.address)
-    const fidu = await artifacts.require("Fidu").at(upgradedContracts.Fidu.UpgradedContract.address)
-    const goldfinchConfig = await artifacts
-      .require("GoldfinchConfig")
-      .at(upgradedContracts.GoldfinchConfig.UpgradedContract.address)
-    const goldfinchFactory = await artifacts
-      .require("GoldfinchFactory")
-      .at(upgradedContracts.CreditLineFactory.UpgradedContract.address)
-    const cUSDC = await artifacts.require("IERC20withDec").at(MAINNET_CUSDC_ADDRESS)
-    await creditDesk.setUnderwriterGovernanceLimit(underwriter, usdcVal(100000), {from: MAINNET_MULTISIG})
-
-    return {pool, usdc, creditDesk, fidu, goldfinchConfig, goldfinchFactory, cUSDC}
-  })
-
-  async function upgrade(contractsToUpgrade) {
-    ;[owner, bwr, person3, underwriter, reserve] = await web3.eth.getAccounts()
-    const mainnetMultisigSigner = await ethers.provider.getSigner(MAINNET_MULTISIG)
-    const usdcAddress = getUSDCAddress(MAINNET_CHAIN_ID)
-    assertIsString(usdcAddress)
-
-    // Ensure the multisig has funds for upgrades and other transactions
-    let ownerAccount = await getSignerForAddress(owner)
-    await ownerAccount.sendTransaction({to: MAINNET_MULTISIG, value: ethers.utils.parseEther("10.0")})
-
-    await impersonateAccount(hre, MAINNET_MULTISIG)
-    await fundWithWhales(["USDC"], [owner, bwr])
-    const existingContracts = await getExistingContracts(contractsToUpgrade, mainnetMultisigSigner)
-
-    const contracts = await upgradeContracts(
-      contractsToUpgrade,
-      existingContracts,
-      mainnetMultisigSigner,
-      owner,
-      deployments
-    )
-    await performPostUpgradeMigration(contracts, deployments)
-    return contracts
-  }
+  let reserveAddress, tranchedPool, borrower, seniorPool, seniorPoolStrategy
 
   async function setupSeniorPool() {
-    ;({seniorPool, seniorPoolFixedStrategy} = await deployV2(upgradedContracts))
-    seniorPoolFixedStrategy = await artifacts.require("ISeniorPoolStrategy").at(seniorPoolFixedStrategy.address)
+    seniorPoolStrategy = await artifacts.require("ISeniorPoolStrategy").at(seniorPoolStrategy.address)
 
-    // TODO Can remove this once V2 upgrade logic incorporates leverage-ratio config value.
-    await goldfinchConfig.setNumber(CONFIG_KEYS.LeverageRatio, new BN(String(6e18)), {from: MAINNET_MULTISIG})
-
-    await pool.migrateToSeniorPool({from: MAINNET_MULTISIG})
-    await goldfinchConfig.setNumber(CONFIG_KEYS.TotalFundsLimit, usdcVal(20000000), {from: MAINNET_MULTISIG})
+    await goldfinchConfig.setNumber(CONFIG_KEYS.TotalFundsLimit, usdcVal(40000000), {from: MAINNET_MULTISIG})
     await erc20Approve(usdc, seniorPool.address, usdcVal(10000), [owner])
     await seniorPool.deposit(usdcVal(10000), {from: owner})
     await goldfinchConfig.setNumber(CONFIG_KEYS.TotalFundsLimit, usdcVal(20000000), {from: MAINNET_MULTISIG})
@@ -157,17 +143,16 @@ describe("mainnet forking tests", async function () {
   beforeEach(async function () {
     this.timeout(TEST_TIMEOUT)
     accounts = await web3.eth.getAccounts()
-    ;[owner, bwr, person3, underwriter, reserve] = accounts
-    ;({usdc, goldfinchFactory, pool, fidu, goldfinchConfig, cUSDC} = await setupTest())
+    ;[owner, bwr, person3] = accounts
+    ;({usdc, goldfinchFactory, seniorPool, seniorPoolStrategy, fidu, goldfinchConfig, cUSDC} = await setupTest())
     const usdcAddress = getUSDCAddress(MAINNET_CHAIN_ID)
     assertIsString(usdcAddress)
     const busdAddress = "0x4fabb145d64652a948d72533023f6e7a623c7c53"
     const usdtAddress = "0xdAC17F958D2ee523a2206206994597C13D831ec7"
     busd = await artifacts.require("IERC20withDec").at(busdAddress)
     usdt = await artifacts.require("IERC20withDec").at(usdtAddress)
-
     await fundWithWhales(["USDC", "BUSD", "USDT"], [owner, bwr, person3])
-    await erc20Approve(usdc, pool.address, MAX_UINT, accounts)
+    await erc20Approve(usdc, seniorPool.address, MAX_UINT, accounts)
     await goldfinchConfig.bulkAddToGoList(accounts, {from: MAINNET_MULTISIG})
     await setupSeniorPool()
   })
@@ -456,7 +441,7 @@ describe("mainnet forking tests", async function () {
         }))
 
         reserveAddress = await goldfinchConfig.getAddress(CONFIG_KEYS.TreasuryReserve)
-        await goldfinchConfig.setNumber(CONFIG_KEYS.TotalFundsLimit, usdcVal(20000000), {from: MAINNET_MULTISIG})
+        await goldfinchConfig.setNumber(CONFIG_KEYS.TotalFundsLimit, usdcVal(40000000), {from: MAINNET_MULTISIG})
 
         await erc20Approve(usdc, tranchedPool.address, usdcVal(100000), [owner])
         await tranchedPool.deposit(TRANCHES.Junior, juniorInvestmentAmount)
@@ -464,10 +449,7 @@ describe("mainnet forking tests", async function () {
 
       it("should redeem from compound and recognize interest on invest", async function () {
         await tranchedPool.lockJuniorCapital({from: borrower})
-        expect(await goldfinchConfig.getAddress(CONFIG_KEYS.SeniorPoolStrategy)).to.equal(
-          seniorPoolFixedStrategy.address
-        )
-        let usdcAmount = await seniorPoolFixedStrategy.invest(seniorPool.address, tranchedPool.address)
+        let usdcAmount = await seniorPoolStrategy.invest(seniorPool.address, tranchedPool.address)
         const seniorPoolValue = await getBalance(seniorPool.address, usdc)
         const protocolOwner = await getProtocolOwner()
 
@@ -559,7 +541,8 @@ describe("mainnet forking tests", async function () {
 })
 
 // Note: These tests use ethers contracts instead of the truffle contracts.
-describe("mainnet upgrade tests", async function () {
+// TODO[PR] Should we just delete this?
+describe.skip("mainnet upgrade tests", async function () {
   if (!isMainnetForking()) {
     return
   }
@@ -627,10 +610,10 @@ describe("mainnet upgrade tests", async function () {
         // Won't be exact because cUSDC exchange rate will change when calling the migration function
         [() => getBalance(seniorPool.address, usdcTruffleContract), {toCloseTo: expectedTotalUSDC}],
         [() => getBalance(seniorPool.address, comp), {increase: true}],
+        [() => fidu.hasRole(PAUSER_ROLE, legacyPool.address), {to: false, bignumber: false}],
         [() => fidu.hasRole(MINTER_ROLE, legacyPool.address), {to: false, bignumber: false}],
         [() => legacyPool.paused(), {to: true, bignumber: false}],
       ])
-      expect(await fidu.hasRole(PAUSER_ROLE, legacyPool.address)).to.equal(false)
       // Share price should be unchanged
       expect(String(await seniorPool.sharePrice())).to.eq(String(seniorPoolSharePrice))
     }).timeout(TEST_TIMEOUT)
@@ -696,8 +679,8 @@ describe("mainnet upgrade tests", async function () {
       // Sanity check the calculated numbers for QuickCheck's $300k credit line
       expect(termEndTime).to.eq(1643309098) // Thu Jan 27 2022 18:44:58 GMT
       expect(termStartTime).to.eq(1611773098) // Wed Jan 27 2021 18:44:58 GMT
-      expect(nextDueTime).to.eq(1629917098) // Wed Aug 25 2021 18:44:58 GMT
-      expect(interestAccruedAsOf).to.eq(1627325098) // Mon Jul 26 2021 14:44:58 GMT
+      expect(nextDueTime).to.eq(1632509098) // Fri Sep 24 2021 18:44:58 GMT
+      expect(interestAccruedAsOf).to.eq(1629917098) // Wed Aug 25 2021 18:44:58 GMT
 
       // Actually migrate
       const tx = await creditDesk.migrateV1CreditLine(
@@ -708,7 +691,6 @@ describe("mainnet upgrade tests", async function () {
         interestAccruedAsOf,
         lastFullPaymentTime,
         totalInterestPaid,
-        totalPrincipalPaid,
         {from: MAINNET_MULTISIG}
       )
       // Can't migrate twice!
@@ -721,7 +703,6 @@ describe("mainnet upgrade tests", async function () {
           interestAccruedAsOf,
           lastFullPaymentTime,
           totalInterestPaid,
-          totalPrincipalPaid,
           {from: MAINNET_MULTISIG}
         )
       ).to.be.rejectedWith(/Can't migrate empty credit line/)
@@ -761,20 +742,17 @@ describe("mainnet upgrade tests", async function () {
       expect(seniorTranche.lockedUntil).not.to.eq("0")
 
       // Group 5: Junior Tranch should be correct
-      const totalBalance = new BN(originalBalance).add(new BN(totalPrincipalPaid))
-      expect(juniorTranche.principalDeposited).to.eq(String(totalBalance))
-      expect(totalInterestPaid.mul(ETHDecimals).div(totalBalance)).to.bignumber.eq(
-        new BN(juniorTranche.interestSharePrice)
-      )
-      expect(totalPrincipalPaid.mul(ETHDecimals).div(totalBalance)).to.bignumber.eq(
-        new BN(juniorTranche.principalSharePrice)
-      )
+      const limit = await newCl.limit()
+      expect(juniorTranche.principalDeposited).to.eq(String(limit))
+      expect(new BN(juniorTranche.interestSharePrice)).to.bignumber.eq(totalInterestPaid.mul(ETHDecimals).div(limit))
+      const amountRemaining = limit.sub(originalBalance)
+      expect(amountRemaining.mul(ETHDecimals).div(limit)).to.bignumber.eq(new BN(juniorTranche.principalSharePrice))
       expect(juniorTranche.lockedUntil).not.to.eq("0")
 
       // Group 6: Minted the correct tokens to the SeniorPool
       const tokenInfo = await poolTokens.getTokenInfo(tokenId)
       expect(tokenInfo.tranche).to.equal(String(TRANCHES.Junior))
-      expect(tokenInfo.principalAmount).to.equal(String(new BN(originalBalance).add(new BN(totalPrincipalPaid))))
+      expect(tokenInfo.principalAmount).to.equal(String(limit))
       expect(tokenInfo.principalRedeemed).to.equal(String(totalPrincipalPaid))
       expect(tokenInfo.interestRedeemed).to.equal(String(totalInterestPaid))
       expect(await poolTokens.ownerOf(tokenId)).to.eq(seniorPool.address)
@@ -784,7 +762,7 @@ describe("mainnet upgrade tests", async function () {
       const afterNextDueTime = (await newCl.nextDueTime()).add(new BN(1))
       await advanceTime({toSecond: afterNextDueTime})
       await expectAction(() => tranchedPool.assess()).toChange([
-        [() => newCl.totalInterestAccrued(), {by: new BN(3698625354)}], // A period's worth of interest
+        [() => newCl.totalInterestAccrued(), {by: new BN(3698625297)}], // A period's worth of interest
         [() => newCl.principalOwed(), {by: new BN(0)}],
       ])
     })
@@ -806,7 +784,7 @@ describe("mainnet upgrade tests", async function () {
       contracts = await upgrade(contractsToUpgrade, contracts)
 
       expect(fiduBalance).to.bignumber.be.gt(new BN(0))
-      expect(legacyValueOfFidu).to.bignumber.eq(new BN(100514012890)) // About $100k
+      expect(legacyValueOfFidu).to.bignumber.eq(new BN(100719038020)) // About $100k
 
       const {seniorPool} = await deployV2(contracts)
       legacyPool = contracts.Pool.UpgradedContract

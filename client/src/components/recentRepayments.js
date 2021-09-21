@@ -26,13 +26,15 @@ function RecentRepayments() {
     if (user.loaded && pool && pool.gf.loaded) {
       let yourPortionValue = usdcFromAtomic(
         user
-          .poolBalanceAsOf(tx.blockTime)
-          .dividedBy(pool.gf.assetsAsOf(tx.blockTime))
+          .poolBalanceAsOf(tx.blockNumber)
+          .dividedBy(pool.gf.assetsAsOf(tx.blockNumber))
           .multipliedBy(tx.interestAmountBN),
       )
 
       yourPortion = displayDollars(yourPortionValue, 4)
-      yourPortionClass = yourPortionValue > 0 ? "" : "zero"
+      yourPortionClass = isFinite(yourPortionValue) && yourPortionValue > 0 ? "" : "zero"
+    } else if (!user.loaded && !user.address) {
+      yourPortion = displayDollars(0, 4)
     } else {
       yourPortion = "Loading..."
     }
@@ -41,7 +43,12 @@ function RecentRepayments() {
         <td className="transaction-date">{tx.date}</td>
         <td className="transaction-link">
           <span className="transaction-link-label">{croppedAddress(tx.id)}</span>
-          <a href={`https://${etherscanSubdomain}etherscan.io/tx/${tx.id}`} target="_blank" rel="noopener noreferrer">
+          <a
+            className="inline-button"
+            href={`https://${etherscanSubdomain}etherscan.io/tx/${tx.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             {iconOutArrow}
           </a>
         </td>

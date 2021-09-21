@@ -18,7 +18,7 @@ export default function VerifyAddressBanner() {
   return (
     <FormProvider {...formMethods}>
       <div className="info-banner background-container">
-        <div className="message">
+        <div className="message small">
           {iconInfo}
           <p>{qualifyText}</p>
         </div>

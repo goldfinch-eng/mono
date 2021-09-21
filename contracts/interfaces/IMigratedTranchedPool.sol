@@ -8,13 +8,12 @@ import "./IV1CreditLine.sol";
 import "./ITranchedPool.sol";
 
 abstract contract IMigratedTranchedPool is ITranchedPool {
-  function migrateCreditLine(
+  function migrateCreditLineToV2(
     IV1CreditLine clToMigrate,
     uint256 termEndTime,
     uint256 nextDueTime,
     uint256 interestAccruedAsOf,
     uint256 lastFullPaymentTime,
-    uint256 totalInterestPaid,
-    uint256 totalPrincipalPaid
+    uint256 totalInterestPaid
   ) external virtual returns (IV2CreditLine);
 }

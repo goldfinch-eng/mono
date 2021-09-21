@@ -21,10 +21,12 @@
 @import "./form-start.scss";
 @import "./info-banner.scss";
 @import "./info-section.scss";
+@import "./inline-button.scss";
 @import "./investor-notice.scss";
 @import "./junior-pool.scss";
 @import "./legal.scss";
 @import "./network-widget.scss";
+@import "./overlay.scss";
 @import "./payment-form.scss";
 @import "./pool-links.scss";
 @import "./pools-list.scss";
@@ -98,6 +100,11 @@ input::placeholder,
   .icon path {
     fill: $sand-xxdark;
   }
+}
+
+.disabled-link {
+  pointer-events: none;
+  cursor: default;
 }
 
 @media only screen and (min-width: $screen-m) {

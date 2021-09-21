@@ -3,26 +3,11 @@ import {AppContext} from "../App"
 import web3 from "../web3"
 
 function useSendFromUser() {
-  const {refreshUserData, user, gnosisSafeInfo, gnosisSafeSdk, networkMonitor} = useContext(AppContext)
+  const {refreshUserData, user, networkMonitor} = useContext(AppContext)
 
   async function sendTransaction(unsentAction, txData, gasPrice) {
     // unsent action could be a promise tha returns the action, so resolve it
     unsentAction = await Promise.resolve(unsentAction)
-    if (gnosisSafeInfo) {
-      const txs = [
-        {
-          to: unsentAction._parent._address, // _parent is the truffle contract
-          value: 0,
-          data: unsentAction.encodeABI(),
-        },
-      ]
-      txData = networkMonitor.addPendingTX({status: "awaiting_signers", ...txData})
-      const res = await gnosisSafeSdk.sendTransactions(txs)
-      networkMonitor.watch(res.safeTxHash, txData, () => {
-        refreshUserData()
-      })
-      return Promise.resolve(res)
-    }
 
     // Gasless transactions
     if (txData.gasless) {

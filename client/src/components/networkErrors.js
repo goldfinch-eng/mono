@@ -23,7 +23,7 @@ function NetworkErrors(props) {
   }
 
   if (!props.currentErrors.length) {
-    return ""
+    return <></>
   } else {
     return <div className="error-items">{props.currentErrors.map(errorItem)}</div>
   }

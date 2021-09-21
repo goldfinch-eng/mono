@@ -17,7 +17,7 @@
   @include space-x(0em);
   @include space-y(1em);
 
-  &.subtle{
+  &.subtle {
     background-color: $sand-light;
   }
 
@@ -31,10 +31,8 @@
     align-items: center;
     @include space-x(1em);
 
-    p {
+    &.small {
       font-size: $sans-size-xs;
-      position: relative;
-      line-height: 1.2;
     }
 
     .icon {
@@ -61,13 +59,12 @@
     flex-direction: row;
     font-size: $sans-size-m;
     align-items: center;
+    justify-content: space-between;
     @include space-x(30px);
     @include space-y(0em);
 
     .message {
-      width: 67%;
-
-      p {
+      &.small {
         font-size: $sans-size-s;
       }
 

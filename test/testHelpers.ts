@@ -25,7 +25,7 @@ import {
   StakingRewardsInstance,
 } from "../typechain/truffle"
 import {assertNonNullable} from "../utils/type"
-import { DynamicLeverageRatioStrategyInstance } from "../typechain/truffle/DynamicLeverageRatioStrategy"
+import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/DynamicLeverageRatioStrategy"
 const decimals = new BN(String(1e18))
 const USDC_DECIMALS = new BN(String(1e6))
 const SECONDS_PER_DAY = new BN(86400)
@@ -183,8 +183,8 @@ function expectAction(action: () => any, debug?: boolean) {
 }
 
 type DecodedLog<T extends Truffle.AnyEvent> = {
-  event: T['name']
-  args: T['args']
+  event: T["name"]
+  args: T["args"]
 }
 
 // This decodes logs for a single event type, and returns a decoded object in
@@ -381,13 +381,21 @@ const createPoolWithCreditLine = async ({
   return {tranchedPool, creditLine}
 }
 
-async function toTruffle(address: Truffle.ContractInstance | string, contractName, opts?: {}) : Promise<Truffle.ContractInstance> {
+async function toTruffle(
+  address: Truffle.ContractInstance | string,
+  contractName,
+  opts?: {}
+): Promise<Truffle.ContractInstance> {
   let truffleContract = await artifacts.require(contractName)
-  address = typeof(address) === "string" ? address : address.address
+  address = typeof address === "string" ? address : address.address
   if (opts) {
     truffleContract.defaults(opts)
   }
   return truffleContract.at(address)
+}
+
+async function toEthers<T>(truffleContract: Truffle.ContractInstance): Promise<T> {
+  return (await ethers.getContractAt(truffleContract.abi, truffleContract.address)) as unknown as T
 }
 
 export {
@@ -424,4 +432,5 @@ export {
   decodeLogs,
   getFirstLog,
   toTruffle,
+  toEthers,
 }

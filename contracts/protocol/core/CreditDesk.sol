@@ -43,7 +43,6 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
   event DrawdownMade(address indexed borrower, address indexed creditLine, uint256 drawdownAmount);
   event CreditLineCreated(address indexed borrower, address indexed creditLine);
   event GovernanceUpdatedUnderwriterLimit(address indexed underwriter, uint256 newLimit);
-  event GoldfinchConfigUpdated(address indexed who, address config);
 
   mapping(address => Underwriter) public underwriters;
   mapping(address => Borrower) private borrowers;
@@ -223,8 +222,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     uint256 nextDueTime,
     uint256 interestAccruedAsOf,
     uint256 lastFullPaymentTime,
-    uint256 totalInterestPaid,
-    uint256 totalPrincipalPaid
+    uint256 totalInterestPaid
   ) public onlyAdmin returns (address, address) {
     IV1CreditLine clToMigrate = IV1CreditLine(_clToMigrate);
     uint256 originalBalance = clToMigrate.balance();
@@ -248,14 +246,13 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
       clToMigrate.lateFeeApr()
     );
 
-    IV2CreditLine newCl = IMigratedTranchedPool(pool).migrateCreditLine(
+    IV2CreditLine newCl = IMigratedTranchedPool(pool).migrateCreditLineToV2(
       clToMigrate,
       termEndTime,
       nextDueTime,
       interestAccruedAsOf,
       lastFullPaymentTime,
-      totalInterestPaid,
-      totalPrincipalPaid
+      totalInterestPaid
     );
 
     // Close out the original credit line
@@ -317,7 +314,6 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
 
   function updateGoldfinchConfig() external onlyAdmin {
     config = GoldfinchConfig(config.configAddress());
-    emit GoldfinchConfigUpdated(msg.sender, address(config));
   }
 
   /*

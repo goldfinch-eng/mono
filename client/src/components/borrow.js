@@ -18,7 +18,7 @@ function Borrow(props) {
     if (borrower && creditDesk.loaded) {
       const borrowerCreditLines = borrower.creditLinesAddresses
       setCreditLinesAddresses(borrowerCreditLines)
-      if (!creditLine.loaded) {
+      if (!creditLine.loaded || (creditLine.loaded && !creditLine.address)) {
         changeCreditLine(borrowerCreditLines)
       }
     }
@@ -68,7 +68,7 @@ function Borrow(props) {
           changeCreditLine={changeCreditLine}
         />
       </div>
-      <ConnectionNotice creditLine={creditLine} />
+      <ConnectionNotice creditLine={creditLine} requireUnlock={!!user.borrower} />
       {creditActionsContainer}
       {creditLineStatus}
     </div>

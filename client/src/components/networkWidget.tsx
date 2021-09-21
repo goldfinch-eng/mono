@@ -1,4 +1,3 @@
-import React from "react"
 import _ from "lodash"
 import web3 from "../web3"
 import {croppedAddress, displayNumber} from "../utils"
@@ -7,17 +6,31 @@ import useCloseOnClickOrEsc from "../hooks/useCloseOnClickOrEsc"
 import NetworkErrors from "./networkErrors"
 import {iconCheck, iconOutArrow} from "./icons.js"
 import {usdcFromAtomic} from "../ethereum/erc20"
+import {User} from "../ethereum/user"
+import {NetworkConfig} from "../App"
+import {useSession} from "../hooks/useSignIn"
 
-function NetworkWidget(props) {
-  const {node, open: showNetworkWidgetInfo, setOpen: setShowNetworkWidgetInfo} = useCloseOnClickOrEsc()
+interface NetworkWidgetProps {
+  user: User
+  network: NetworkConfig
+  currentErrors: any[]
+  currentTXs: any[]
+
+  connectionComplete: () => any
+}
+
+function NetworkWidget(props: NetworkWidgetProps) {
+  const session = useSession()
+  const {node, open: showNetworkWidgetInfo, setOpen: setShowNetworkWidgetInfo} = useCloseOnClickOrEsc<HTMLDivElement>()
 
   function enableMetamask() {
-    if (props.user.address) {
-      return
+    if (session.status === "known") {
+      return Promise.resolve()
     }
-    window.ethereum
+
+    return (window as any).ethereum
       .request({method: "eth_requestAccounts"})
-      .then((_result) => {
+      .then(() => {
         props.connectionComplete()
       })
       .catch((error) => {
@@ -33,7 +46,7 @@ function NetworkWidget(props) {
     }
   }
 
-  let transactions = ""
+  let transactions: JSX.Element = <></>
   let enabledText = croppedAddress(props.user.address)
   let userAddressForDisplay = croppedAddress(props.user.address)
   let enabledClass = ""
@@ -47,7 +60,7 @@ function NetworkWidget(props) {
       etherscanSubdomain = `${props.network}.`
     }
 
-    let confirmationMessage = ""
+    let confirmationMessage: JSX.Element = <></>
 
     if (tx.status === "awaiting_signers") {
       confirmationMessage = (
@@ -68,7 +81,7 @@ function NetworkWidget(props) {
         </div>
         {transactionlabel}&nbsp;
         <a
-          className="transaction-link"
+          className="inline-button"
           href={`https://${etherscanSubdomain}etherscan.io/tx/${tx.id}`}
           target="_blank"
           rel="noopener noreferrer"
@@ -88,10 +101,11 @@ function NetworkWidget(props) {
     enabledClass = "pending"
     enabledText = "Awaiting signers"
   } else if (_.some(props.currentTXs, {status: "pending"})) {
-    const pendingTXCount = _.countBy(props.currentTXs, {status: "pending"}).true
-    const confirmingCount = _.countBy(props.currentTXs, (item) => {
-      return item.status === "pending" && item.confirmations > 0
-    }).true
+    const pendingTXCount: number = _.countBy(props.currentTXs, {status: "pending"}).true || 0
+    const confirmingCount: number =
+      _.countBy(props.currentTXs, (item) => {
+        return item.status === "pending" && item.confirmations > 0
+      }).true || 0
     enabledClass = "pending"
     if (confirmingCount > 0) {
       const pendingTX = props.currentTXs[0]
@@ -103,7 +117,7 @@ function NetworkWidget(props) {
     enabledClass = "success"
   }
 
-  let allTx = _.compact(_.concat(props.currentTXs, _.slice(props.user.pastTXs, 0, 5)))
+  let allTx = _.compact(_.concat(props.currentTXs, _.slice(props.user.pastTxs, 0, 5)))
   allTx = _.uniqBy(allTx, "id")
   if (allTx.length > 0) {
     transactions = (
@@ -115,10 +129,6 @@ function NetworkWidget(props) {
         {allTx.map(transactionItem)}
       </div>
     )
-  }
-
-  if (props.gnosisSafeInfo) {
-    userAddressForDisplay = `${enabledText} (Gnosis Safe)`
   }
 
   const connectMetamaskNetworkWidget = (
@@ -173,7 +183,7 @@ function NetworkWidget(props) {
     </div>
   )
 
-  if (!window.ethereum) {
+  if (!(window as any).ethereum) {
     return (
       <div ref={node} className="network-widget">
         <a href="https://metamask.io" className="network-widget-button bold">
@@ -198,7 +208,7 @@ function NetworkWidget(props) {
         <div className="network-widget-button disabled">Wrong Network</div>
       </div>
     )
-  } else if (props.user.web3Connected && !props.user.address) {
+  } else if (props.user.web3Connected && session.status === "unknown") {
     return connectMetamaskNetworkWidget
   } else {
     return enabledNetworkWidget

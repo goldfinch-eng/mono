@@ -238,9 +238,6 @@ describe("TransferRestrictedVault", async () => {
     let amount = usdcVal(1000)
 
     beforeEach(async () => {
-      await erc20Approve(usdc, transferRestrictedVault.address, usdcVal(10000), [otherPerson])
-      await transferRestrictedVault.depositSenior(usdcVal(10000), {from: otherPerson})
-
       await erc20Approve(usdc, transferRestrictedVault.address, usdcVal(100000), [owner])
       let receipt = await transferRestrictedVault.depositSenior(amount)
       tokenId = decodeLogs(receipt.receipt.rawLogs, transferRestrictedVault, "Transfer")[0].args.tokenId
@@ -291,9 +288,6 @@ describe("TransferRestrictedVault", async () => {
     let amount = usdcVal(1000)
 
     beforeEach(async () => {
-      await erc20Approve(usdc, transferRestrictedVault.address, usdcVal(10000), [otherPerson])
-      await transferRestrictedVault.depositSenior(usdcVal(10000), {from: otherPerson})
-
       await erc20Approve(usdc, transferRestrictedVault.address, usdcVal(100000), [owner])
       let receipt = await transferRestrictedVault.depositSenior(amount)
       tokenId = decodeLogs(receipt.receipt.rawLogs, transferRestrictedVault, "Transfer")[0].args.tokenId

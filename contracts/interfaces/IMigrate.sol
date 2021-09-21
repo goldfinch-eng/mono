@@ -29,8 +29,7 @@ abstract contract IMigrate {
     uint256 nextDueTime,
     uint256 interestAccruedAsOf,
     uint256 lastFullPaymentTime,
-    uint256 totalInterestPaid,
-    uint256 totalPrincipalPaid
+    uint256 totalInterestPaid
   ) public virtual returns (address, address);
 
   // Pool

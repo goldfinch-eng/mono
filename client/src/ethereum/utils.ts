@@ -1,8 +1,9 @@
 import BigNumber from "bignumber.js"
 import BN from "bn.js"
 import _ from "lodash"
-import {Contract} from "web3-eth-contract"
+import {Contract, EventData} from "web3-eth-contract"
 import {BaseContract} from "../typechain/web3/types"
+import {Pool, SeniorPool} from "./pool"
 
 const decimalPlaces = 6
 const decimals = new BN(String(10 ** decimalPlaces))
@@ -79,7 +80,7 @@ async function getDeployments(networkId) {
         const mainnetContracts = ["CreditDesk", "Pool", "Fidu", "GoldfinchFactory"]
         const mainnetConfig = config["mainnet"].contracts
         mainnetContracts.forEach((contract) => {
-          let mainnetName = contract === "GoldfinchFactory" ? "CreditLineFactory" : contract
+          let mainnetName = contract
           if (mainnetConfig[mainnetName]) {
             const networkContracts = config[networkId].contracts
             networkContracts[contract].address = mainnetConfig[mainnetName].address
@@ -144,6 +145,24 @@ function fetchDataFromAttributes(
     })
 }
 
+async function getPoolEvents(
+  pool: SeniorPool | Pool,
+  address: string | undefined,
+  eventNames: string[],
+): Promise<EventData[]> {
+  const fromBlock = getFromBlock(pool.chain)
+  const events = await Promise.all(
+    eventNames.map((eventName) => {
+      return pool.contract.getPastEvents(eventName, {
+        filter: address ? {capitalProvider: address} : undefined,
+        fromBlock,
+        toBlock: "latest",
+      })
+    }),
+  )
+  return _.compact(_.flatten(events))
+}
+
 export {
   getDeployments,
   mapNetworkToID,
@@ -167,4 +186,5 @@ export {
   getFromBlock,
   chainIdToNetworkID,
   MAINNET,
+  getPoolEvents,
 }

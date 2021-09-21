@@ -10,12 +10,10 @@ import TermsOfService from "./components/termsOfService.js"
 import PrivacyPolicy from "./components/privacyPolicy.js"
 import SeniorPoolAgreementNonUS from "./components/seniorPoolAgreementNonUS"
 import web3 from "./web3"
-import {fetchCreditDeskData} from "./ethereum/creditDesk.js"
 import {ERC20, Tickers} from "./ethereum/erc20"
 import {refreshGoldfinchConfigData} from "./ethereum/goldfinchConfig"
 import {getUserData, defaultUser, User} from "./ethereum/user"
 import {mapNetworkToID, SUPPORTED_NETWORKS} from "./ethereum/utils"
-import initSdk, {SafeInfo, SdkInstance} from "@gnosis.pm/safe-apps-sdk"
 import {NetworkMonitor} from "./ethereum/networkMonitor"
 import {SeniorPool} from "./ethereum/pool"
 import {GoldfinchProtocol} from "./ethereum/GoldfinchProtocol"
@@ -23,8 +21,9 @@ import {GoldfinchConfig} from "./typechain/web3/GoldfinchConfig"
 import SeniorPoolView from "./components/pools/seniorPoolView"
 import VerifyIdentity from "./components/verifyIdentity"
 import TranchedPoolView from "./components/pools/tranchedPoolView"
+import {SessionData} from "./types/session.js"
 
-interface NetworkConfig {
+export interface NetworkConfig {
   name?: string
   supported?: any
 }
@@ -40,7 +39,7 @@ interface GeolocationData {
   timezone: string
 }
 
-interface GlobalState {
+export interface GlobalState {
   pool?: SeniorPool
   creditDesk?: any
   user: User
@@ -48,12 +47,12 @@ interface GlobalState {
   goldfinchConfig?: any
   network?: NetworkConfig
   goldfinchProtocol?: GoldfinchProtocol
-  gnosisSafeInfo?: SafeInfo
-  gnosisSafeSdk?: SdkInstance
   networkMonitor?: NetworkMonitor
   refreshUserData?: (overrideAddress?: string) => void
   geolocationData?: GeolocationData
   setGeolocationData?: (geolocationData: GeolocationData) => void
+  sessionData?: SessionData
+  setSessionData?: (data: SessionData | undefined) => void
 }
 
 declare let window: any
@@ -66,14 +65,13 @@ function App() {
   const [usdc, setUSDC] = useState<ERC20>()
   const [user, setUser] = useState<User>(defaultUser())
   const [goldfinchConfig, setGoldfinchConfig] = useState({})
-  const [currentTXs, setCurrentTXs] = useState([])
-  const [currentErrors, setCurrentErrors] = useState([])
+  const [currentTXs, setCurrentTXs] = useState<any[]>([])
+  const [currentErrors, setCurrentErrors] = useState<any[]>([])
   const [network, setNetwork] = useState<NetworkConfig>({})
-  const [gnosisSafeInfo, setGnosisSafeInfo] = useState<SafeInfo>()
-  const [gnosisSafeSdk, setGnosisSafeSdk] = useState<SdkInstance>()
   const [networkMonitor, setNetworkMonitor] = useState<NetworkMonitor>()
   const [goldfinchProtocol, setGoldfinchProtocol] = useState<GoldfinchProtocol>()
   const [geolocationData, setGeolocationData] = useState<GeolocationData>()
+  const [sessionData, setSessionData] = useState<SessionData>()
 
   useEffect(() => {
     setupWeb3()
@@ -87,7 +85,7 @@ function App() {
       refreshUserData(overrideAddress)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gnosisSafeInfo, usdc, pool, creditDesk, network, goldfinchProtocol])
+  }, [usdc, pool, creditDesk, network, goldfinchProtocol])
 
   async function ensureWeb3() {
     if (!window.ethereum) {
@@ -108,14 +106,6 @@ function App() {
       return
     }
 
-    // Initialize gnosis safe
-    const safeSdk = initSdk()
-    safeSdk.addListeners({
-      onSafeInfo: setGnosisSafeInfo,
-      onTransactionConfirmation: () => {},
-    })
-    setGnosisSafeSdk(safeSdk)
-
     const networkName = await web3.eth.net.getNetworkType()
     const networkId = mapNetworkToID[networkName] || networkName
     const networkConfig: NetworkConfig = {name: networkId, supported: SUPPORTED_NETWORKS[networkId]}
@@ -133,7 +123,6 @@ function App() {
       await pool.initialize()
       goldfinchConfigContract = protocol.getContract<GoldfinchConfig>("GoldfinchConfig")
       creditDeskContract = protocol.getContract("CreditDesk")
-      creditDeskContract.gf = await fetchCreditDeskData(creditDeskContract)
       setUSDC(usdc)
       setPool(pool)
       setCreditDesk(creditDeskContract)
@@ -146,8 +135,6 @@ function App() {
       monitor.initialize() // initialize async, no need to block on this
       setNetworkMonitor(monitor)
     }
-
-    return () => safeSdk.removeListeners()
   }
 
   async function refreshUserData(overrideAddress?: string) {
@@ -158,7 +145,7 @@ function App() {
     let data: User = defaultUser()
     const accounts = await web3.eth.getAccounts()
     data.web3Connected = true
-    const _userAddress = (gnosisSafeInfo && gnosisSafeInfo.safeAddress) || (accounts && accounts[0]) || user.address
+    const _userAddress = (accounts && accounts[0]) || user.address
     const userAddress = overrideAddress || _userAddress
     if (userAddress) {
       data.address = userAddress
@@ -187,13 +174,13 @@ function App() {
     usdc,
     goldfinchConfig,
     network,
-    gnosisSafeInfo,
-    gnosisSafeSdk,
     networkMonitor,
     refreshUserData,
     goldfinchProtocol,
     geolocationData,
     setGeolocationData,
+    sessionData,
+    setSessionData,
   }
 
   return (
@@ -205,7 +192,6 @@ function App() {
           network={network}
           currentErrors={currentErrors}
           currentTXs={currentTXs}
-          gnosisSafeInfo={gnosisSafeInfo}
           connectionComplete={setupWeb3}
         />
         <div>
@@ -217,10 +203,10 @@ function App() {
             <Route path="/borrow">
               <Borrow />
             </Route>
-            <Route path="/earn/pools/senior">
+            <Route path="/pools/senior">
               <SeniorPoolView />
             </Route>
-            <Route path="/earn/pools/junior/:poolAddress">
+            <Route path="/pools/:poolAddress">
               <TranchedPoolView />
             </Route>
             <Route path="/earn">

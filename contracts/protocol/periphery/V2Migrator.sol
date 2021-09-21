@@ -64,8 +64,7 @@ contract V2Migrator is BaseUpgradeablePausable {
         data[1],
         data[2],
         data[3],
-        data[4],
-        data[5]
+        data[4]
       );
       emit CreditLineMigrated(owner, clAddress, newCl, pool);
     }

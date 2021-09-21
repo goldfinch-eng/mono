@@ -18,22 +18,6 @@ const solidityHotReloading = (solidityLoader) => (config) => {
   return config
 }
 
-const gnosisSafeIntegration = () => (config) => {
-  // Need to allow CORS for gnosis-safe integration locally
-  config.headers = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET",
-    "Access-Control-Allow-Headers": "X-Requested-With, content-type, Authorization",
-  }
-
-  config.proxy = {
-    ...(config.proxy || {}),
-    "/relay": "http://localhost:4000",
-  }
-
-  return config
-}
-
 const murmuration = () => (config) => {
   if (process.env.MURMURATION === "yes") {
     // Running on Compute Engine, we want the Webpack dev server to serve at hostname
@@ -62,6 +46,14 @@ const murmuration = () => (config) => {
   return config
 }
 
+const localRelayer = () => (config) => {
+  config.proxy = {
+    ...(config.proxy || {}),
+    "/relay": "http://localhost:4000",
+  }
+  return config
+}
+
 // prettier-ignore
 module.exports = {
   webpack: override(
@@ -69,7 +61,7 @@ module.exports = {
     solidityHotReloading(solidityLoader),
   ),
   devServer: overrideDevServer(
-    gnosisSafeIntegration(),
+    localRelayer(),
     murmuration(),
   ),
 };

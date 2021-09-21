@@ -69,7 +69,7 @@ export default function useERC20Permit(): {
       deadline: deadline.toString(),
     }
     const domain = {
-      name: token.ticker,
+      name: token.name,
       version: token.permitVersion,
       verifyingContract: tokenAddress,
       chainId: chainId,

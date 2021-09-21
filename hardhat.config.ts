@@ -10,13 +10,13 @@ import "@tenderly/hardhat-tenderly"
 const INFURA_PROJECT_ID = "d8e13fc4893e4be5aae875d94fee67b7"
 // Note this came from a new instance of Metamask that Blake set up
 const TEST_PROTOCOL_OWNER_KEY = "1774a8ac43395488c6856114659042665ee7267293744d7dc1411d31253e642b"
-const TEST_PROXY_OWNER_KEY = "f0dd5813eeba1588f31cb0f129cd3b42b3ad6646689f52b051bdd5d4b57e929e"
+const TEST_GF_DEPLOYER_KEY = "f0dd5813eeba1588f31cb0f129cd3b42b3ad6646689f52b051bdd5d4b57e929e"
 
 // UNCOMMENT WHEN YOU ACTUALLY WANT TO RUN ON MAINNET
 // const MAINNET_PROTOCOL_OWNER_KEY = process.env.MAINNET_PROTOCOL_OWNER_KEY
-// const MAINNET_PROXY_OWNER_KEY = process.env.MAINNET_PROXY_OWNER_KEY
+// const MAINNET_GF_DEPLOYER_KEY = process.env.MAINNET_GF_DEPLOYER_KEY
 if (process.env.HARDHAT_FORK) {
-  process.env['HARDHAT_DEPLOY_FORK'] = process.env.HARDHAT_FORK;
+  process.env["HARDHAT_DEPLOY_FORK"] = process.env.HARDHAT_FORK
 }
 
 module.exports = {
@@ -29,22 +29,22 @@ module.exports = {
       forking: process.env.HARDHAT_FORK
         ? {
             url: "https://eth-mainnet.alchemyapi.io/v2/EG9mAEw6e3sYDZ6h6oevoe1IaR42B72b",
-            blockNumber: 12896298, // Roughly July 25, 2021, 16:45 UTC
+            blockNumber: 13154356, // Sep-03-2021 06:26:27 PM +UTC
           }
         : undefined,
     },
     ropsten: {
       url: `https://ropsten.infura.io/v3/${INFURA_PROJECT_ID}`,
-      accounts: [`0x${TEST_PROTOCOL_OWNER_KEY}`, `0x${TEST_PROXY_OWNER_KEY}`],
+      accounts: [`0x${TEST_PROTOCOL_OWNER_KEY}`, `0x${TEST_GF_DEPLOYER_KEY}`],
     },
     rinkeby: {
       url: `https://rinkeby.infura.io/v3/${INFURA_PROJECT_ID}`,
-      accounts: [`0x${TEST_PROTOCOL_OWNER_KEY}`, `0x${TEST_PROXY_OWNER_KEY}`],
+      accounts: [`0x${TEST_PROTOCOL_OWNER_KEY}`, `0x${TEST_GF_DEPLOYER_KEY}`],
     },
     mainnet: {
       url: `https://mainnet.infura.io/v3/${INFURA_PROJECT_ID}`,
       // Uncomment when you actually want to run mainnet. Hardhat freaks out otherwise because the private keys are undefined in the default case
-      // accounts: [`${MAINNET_PROTOCOL_OWNER_KEY}`, `${MAINNET_PROXY_OWNER_KEY}`],
+      // accounts: [`${MAINNET_PROTOCOL_OWNER_KEY}`, `${MAINNET_GF_DEPLOYER_KEY}`],
     },
     murmuration: {
       url: "https://murmuration.goldfinch.finance/_chain",
@@ -92,6 +92,6 @@ module.exports = {
   tenderly: {
     project: "goldfinch-protocol",
     username: "goldfinch",
-    forkNetwork: "1" //Network id of the network we want to fork
+    forkNetwork: "1", //Network id of the network we want to fork
   },
 }

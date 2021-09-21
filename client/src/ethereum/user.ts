@@ -2,15 +2,16 @@ import BigNumber from "bignumber.js"
 import {ERC20, Tickers, usdcFromAtomic} from "./erc20"
 import _ from "lodash"
 import {getFromBlock, MAINNET} from "./utils"
-import {mapEventsToTx} from "./events"
+import {getBalanceAsOf, mapEventsToTx} from "./events"
 import {BorrowerInterface, getBorrowerContract} from "./borrower"
 import {SeniorPool} from "./pool"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {GoldfinchConfig} from "../typechain/web3/GoldfinchConfig"
+import {EventData} from "web3-eth-contract"
 
 declare let window: any
 
-const UNLOCK_THRESHOLD = new BigNumber(10000)
+export const UNLOCK_THRESHOLD = new BigNumber(10000)
 
 async function getUserData(address, goldfinchProtocol, pool: SeniorPool, creditDesk, networkId): Promise<User> {
   const borrower = await getBorrowerContract(address, goldfinchProtocol)
@@ -33,7 +34,8 @@ interface User {
   usdcBalance: BigNumber
   usdcBalanceInDollars: BigNumber
   poolAllowance: BigNumber
-  pastTXs: any[]
+  poolEvents: EventData[]
+  pastTxs: any[]
   poolTxs: any[]
   goListed: boolean
   noWeb3: boolean
@@ -42,7 +44,7 @@ interface User {
   usdcIsUnlocked(type: string): boolean
   getUnlockStatus(type: string): UnlockedStatus
   isUnlocked(allowance): boolean
-  poolBalanceAsOf(dt): BigNumber
+  poolBalanceAsOf(blockNumExclusive: number): BigNumber
   getAllowance(address): Promise<BigNumber>
 }
 
@@ -54,8 +56,9 @@ class Web3User implements User {
   usdcBalance!: BigNumber
   usdcBalanceInDollars!: BigNumber
   poolAllowance!: BigNumber
-  pastTXs!: any[]
-  poolTxs!: any[]
+  poolEvents: EventData[]
+  pastTxs: any[]
+  poolTxs: any[]
   goListed!: boolean
   noWeb3: boolean
   goldfinchProtocol: GoldfinchProtocol
@@ -82,6 +85,9 @@ class Web3User implements User {
     this.web3Connected = true
     this.loaded = false
     this.networkId = networkId
+    this.poolEvents = []
+    this.pastTxs = []
+    this.poolTxs = []
     this.noWeb3 = !window.ethereum
   }
 
@@ -90,14 +96,18 @@ class Web3User implements User {
     this.usdcBalanceInDollars = new BigNumber(usdcFromAtomic(this.usdcBalance))
     this.poolAllowance = await this.getAllowance(this.pool.address)
 
-    const [usdcTxs, poolTxs, creditDeskTxs] = await Promise.all([
+    const [usdcTxs, poolEvents, creditDeskTxs] = await Promise.all([
+      // NOTE: We have no need to include usdc txs for `this.pool.v1Pool` among the txs in
+      // `this.pastTxs`. So we don't get them. We only need usdc txs for `this.pool`.
       getAndTransformERC20Events(this.usdc, this.pool.address, this.address),
-      getAndTransformPoolEvents(this.pool, this.address),
-      // Credit desk events could've some from the user directly or the borrower contract, we need to filter by both
+      getPoolEvents(this.pool, this.address),
+      // Credit desk events could've come from the user directly or the borrower contract, we need to filter by both
       getAndTransformCreditDeskEvents(this.creditDesk, _.compact([this.address, this.borrower?.borrowerAddress])),
     ])
-    this.pastTXs = _.reverse(_.sortBy(_.compact(_.concat(usdcTxs, poolTxs, creditDeskTxs)), "blockNumber"))
+    const poolTxs = await mapEventsToTx(poolEvents)
+    this.poolEvents = poolEvents
     this.poolTxs = poolTxs
+    this.pastTxs = _.reverse(_.sortBy(_.compact(_.concat(usdcTxs, poolTxs, creditDeskTxs)), "blockNumber"))
     this.goListed = await this.isGoListed(this.address)
     this.loaded = true
   }
@@ -134,23 +144,8 @@ class Web3User implements User {
     }
   }
 
-  poolBalanceAsOf(dt) {
-    const filtered = _.filter(this.poolTxs, (tx) => {
-      return tx.blockTime < dt
-    })
-    if (!filtered.length) {
-      return new BigNumber(0)
-    }
-    return BigNumber.sum.apply(
-      null,
-      filtered.map((tx) => {
-        if (tx.type === "WithdrawalMade") {
-          return tx.amountBN.multipliedBy(new BigNumber(-1))
-        } else {
-          return tx.amountBN
-        }
-      }),
-    )
+  poolBalanceAsOf(blockNumExclusive: number): BigNumber {
+    return getBalanceAsOf(this.poolEvents, blockNumExclusive, "WithdrawalMade")
   }
 
   async getAllowance(address) {
@@ -166,7 +161,8 @@ class DefaultUser implements User {
   usdcBalance: BigNumber
   usdcBalanceInDollars: BigNumber
   poolAllowance: BigNumber
-  pastTXs: any[]
+  poolEvents: EventData[]
+  pastTxs: any[]
   poolTxs: any[]
   goListed: boolean
   noWeb3: boolean
@@ -182,7 +178,8 @@ class DefaultUser implements User {
     this.noWeb3 = !window.ethereum
     this.web3Connected = false
     this.poolAllowance = new BigNumber(0)
-    this.pastTXs = []
+    this.poolEvents = []
+    this.pastTxs = []
     this.poolTxs = []
     this.goListed = false
   }
@@ -197,7 +194,7 @@ class DefaultUser implements User {
   isUnlocked(allowance): boolean {
     return false
   }
-  poolBalanceAsOf(dt): BigNumber {
+  poolBalanceAsOf(blockNumExclusive: number): BigNumber {
     return new BigNumber(0)
   }
   async getAllowance(address) {
@@ -209,11 +206,11 @@ function defaultUser(): User {
   return new DefaultUser()
 }
 
-async function getAndTransformERC20Events(erc20, spender, owner) {
+async function getAndTransformERC20Events(erc20: ERC20, spender: string, owner: string) {
   let approvalEvents = await erc20.contract.getPastEvents("Approval", {
-    filter: {owner: owner, spender: spender},
+    filter: {owner, spender},
     fromBlock: "earliest",
-    to: "latest",
+    toBlock: "latest",
   })
   approvalEvents = _.chain(approvalEvents)
     .compact()
@@ -222,9 +219,8 @@ async function getAndTransformERC20Events(erc20, spender, owner) {
   return await mapEventsToTx(approvalEvents)
 }
 
-async function getAndTransformPoolEvents(pool, address) {
-  const poolEvents = await getPoolEvents(pool, address)
-  return await mapEventsToTx(poolEvents)
+async function getPoolEvents(pool: SeniorPool, address: string) {
+  return await pool.getPoolEvents(address)
 }
 
 async function getAndTransformCreditDeskEvents(creditDesk, address) {
@@ -242,19 +238,5 @@ async function getAndTransformCreditDeskEvents(creditDesk, address) {
   return await mapEventsToTx(creditDeskEvents)
 }
 
-async function getPoolEvents(pool, address, events = ["DepositMade", "WithdrawalMade"]) {
-  const fromBlock = getFromBlock(pool.chain)
-  const [depositEvents, withdrawalEvents] = await Promise.all(
-    events.map((eventName) => {
-      return pool.contract.getPastEvents(eventName, {
-        filter: {capitalProvider: address},
-        fromBlock: fromBlock,
-        to: "latest",
-      })
-    }),
-  )
-  return _.compact(_.concat(depositEvents, withdrawalEvents))
-}
-
-export {getUserData, getPoolEvents, defaultUser}
+export {getUserData, defaultUser}
 export type {DefaultUser, User}
