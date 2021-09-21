@@ -3,7 +3,7 @@ import moment from "moment"
 import BigNumber from "bignumber.js"
 import {Tickers, usdcFromAtomic, usdcToAtomic} from "./erc20"
 import {fetchDataFromAttributes, INTEREST_DECIMALS, SECONDS_PER_YEAR, SECONDS_PER_DAY} from "./utils"
-import {croppedAddress} from "../utils"
+import {croppedAddress, roundUpPenny} from "../utils"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {CreditLine as CreditlineContract} from "@goldfinch-eng/protocol/typechain/web3/CreditLine"
 import {Contract} from "web3-eth-contract"
@@ -37,11 +37,14 @@ abstract class BaseCreditLine {
   }
 
   get remainingPeriodDueAmountInDollars() {
-    return this.inDollars(this.remainingPeriodDueAmount)
+    // We need to round up here to ensure the creditline is always fully paid,
+    // this does mean the borrower may overpay by a penny max each time.
+    return this.inDollars(this.remainingPeriodDueAmount, true)
   }
 
   get remainingTotalDueAmountInDollars() {
-    return this.inDollars(this.remainingTotalDueAmount)
+    // Same as above
+    return this.inDollars(this.remainingTotalDueAmount, true)
   }
 
   get availableCreditInDollars() {
@@ -62,8 +65,13 @@ abstract class BaseCreditLine {
     return this.limit.gt(0) && this.remainingTotalDueAmount.gt(0)
   }
 
-  inDollars(amount) {
-    return new BigNumber(usdcFromAtomic(amount))
+  inDollars(amount, roundUp = false) {
+    if (roundUp) {
+      amount = roundUpPenny(usdcFromAtomic(amount))
+    } else {
+      amount = usdcFromAtomic(amount)
+    }
+    return new BigNumber(amount)
   }
 }
 

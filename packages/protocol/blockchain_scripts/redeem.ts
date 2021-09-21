@@ -31,7 +31,7 @@ async function main() {
       interest = res[0]
       principal = res[1]
     } catch (ex) {
-      console.log(`Failed to calculate for ${poolAddress} (${ex.message})`)
+      console.log(`Failed to calculate token ${tokenId} for ${poolAddress} (${ex.message})`)
       continue
     }
 
