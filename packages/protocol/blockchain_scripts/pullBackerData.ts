@@ -1,4 +1,3 @@
-import fetch from "node-fetch"
 import fs from "fs"
 import hre from "hardhat"
 const {deployments} = hre
@@ -27,6 +26,7 @@ async function main() {
 
   const poolAddress = process.env.POOL
 
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const serviceAccount = require(process.env.FIREBASE_ACCOUNT_KEYS_FILE)
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),

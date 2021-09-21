@@ -11,7 +11,10 @@
     "lint:fix": "eslint --resolve-plugins-relative-to=. --fix . && prettier . --write"
   },
   "lint-staged": {
-    "*.(js(x)?|ts(x)?)": ["prettier --write", "eslint --fix --resolve-plugins-relative-to=."]
+    "*.(js(x)?|ts(x)?)": [
+      "prettier --write",
+      "eslint --fix --resolve-plugins-relative-to=."
+    ]
   },
   "author": "",
   "license": "MIT",

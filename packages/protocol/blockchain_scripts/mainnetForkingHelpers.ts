@@ -23,7 +23,7 @@ import {Contract} from "ethers"
 import {DeploymentsExtension} from "hardhat-deploy/types"
 import {HardhatRuntimeEnvironment} from "hardhat/types"
 import {Signer} from "ethers"
-import {assertIsString} from "@goldfinch-eng/utils"
+import {assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
 const {ethers, artifacts} = hre
 const MAINNET_MULTISIG = "0xBEb28978B2c755155f20fd3d09Cb37e300A6981f"
 const MAINNET_UNDERWRITER = "0x79ea65C834EC137170E1aA40A42b9C80df9c0Bb4"
@@ -33,7 +33,7 @@ async function getProxyImplAddress(proxyContract: Contract) {
     return null
   }
   const implStorageLocation = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"
-  let currentImpl = await ethers.provider.getStorageAt(proxyContract.address, implStorageLocation)
+  const currentImpl = await ethers.provider.getStorageAt(proxyContract.address, implStorageLocation)
   return ethers.utils.hexStripZeros(currentImpl)
 }
 
@@ -43,7 +43,7 @@ async function upgradeContracts(
   signer: string | Signer,
   deployFrom: any,
   deployments: DeploymentsExtension,
-  changeImplementation: boolean = true
+  changeImplementation = true
 ) {
   console.log("Deploying the accountant")
   const accountantDeployResult = await deployments.deploy("Accountant", {from: deployFrom, gasLimit: 4000000, args: []})
@@ -59,14 +59,14 @@ async function upgradeContracts(
   }
 
   for (const contractName of contractsToUpgrade) {
-    let contract = contracts[contractName]
+    const contract = contracts[contractName]
     let contractToDeploy = contractName
     if (isTestEnv() && ["Pool", "CreditDesk", "GoldfinchConfig"].includes(contractName)) {
       contractToDeploy = `Test${contractName}`
     }
 
     console.log("Trying to deploy", contractToDeploy)
-    let deployResult = await deployments.deploy(contractToDeploy, {
+    const deployResult = await deployments.deploy(contractToDeploy, {
       from: deployFrom,
       args: [],
       libraries: dependencies[contractName],
@@ -75,7 +75,7 @@ async function upgradeContracts(
     // Get a contract object with the latest ABI, attached to the signer
     const ethersSigner = typeof signer === "string" ? await ethers.getSigner(signer) : signer
     let upgradedContract = await ethers.getContractAt(deployResult.abi, deployResult.address, ethersSigner)
-    let upgradedImplAddress = deployResult.address
+    const upgradedImplAddress = deployResult.address
 
     if (contract.ProxyContract && changeImplementation) {
       if (!isTestEnv()) {
@@ -101,15 +101,16 @@ async function getExistingContracts(
   signer: string | Signer,
   chainId: ChainId = MAINNET_CHAIN_ID
 ): Promise<ExistingContracts> {
-  let contracts: ExistingContracts = {}
+  const contracts: ExistingContracts = {}
   const onChainConfig = getCurrentlyDeployedContracts(chainId)
-  for (let contractName of contractNames) {
+  for (const contractName of contractNames) {
     const contractConfig = onChainConfig[contractName] as any
     const proxyConfig = onChainConfig[`${contractName}_Proxy`] as any
 
     const ethersSigner = await getSignerForAddress(signer)
-    let contractProxy = proxyConfig && (await ethers.getContractAt(proxyConfig.abi, proxyConfig.address, ethersSigner))
-    let contract = await ethers.getContractAt(contractConfig.abi, contractConfig.address, ethersSigner)
+    const contractProxy =
+      proxyConfig && (await ethers.getContractAt(proxyConfig.abi, proxyConfig.address, ethersSigner))
+    const contract = await ethers.getContractAt(contractConfig.abi, contractConfig.address, ethersSigner)
     contracts[contractName] = {
       ProxyContract: contractProxy,
       ExistingContract: contract,
@@ -129,17 +130,18 @@ async function fundWithWhales(currencies: string[], recipients: string[], amount
   const chainId = await currentChainId()
   assertIsChainId(chainId)
 
-  for (let currency of currencies) {
+  for (const currency of currencies) {
     if (!whales[currency]) {
       throw new Error(`We don't have a whale mapping for ${currency}`)
     }
-    for (let recipient of _.compact(recipients)) {
+    for (const recipient of _.compact(recipients)) {
       assertIsTicker(currency)
       if (currency === "ETH") {
         const whale = whales[currency]
         await impersonateAccount(hre, whale)
-        let signer = await ethers.provider.getSigner(whale)
-        await signer!.sendTransaction({to: recipient, value: ethers.utils.parseEther("5.0")})
+        const signer = ethers.provider.getSigner(whale)
+        assertNonNullable(signer)
+        await signer.sendTransaction({to: recipient, value: ethers.utils.parseEther("5.0")})
       } else {
         const erc20Address = getERC20Address(currency, chainId)
         assertIsString(erc20Address)
@@ -166,12 +168,12 @@ async function fundWithWhale({
   amount: BN
 }) {
   await impersonateAccount(hre, whale)
-  let signer = await ethers.provider.getSigner(whale)
+  const signer = await ethers.provider.getSigner(whale)
   const contract = erc20.connect(signer)
 
-  let ten = new BN(10)
-  let d = new BN((await contract.decimals()).toString())
-  let decimals = ten.pow(new BN(d))
+  const ten = new BN(10)
+  const d = new BN((await contract.decimals()).toString())
+  const decimals = ten.pow(new BN(d))
 
   await contract.transfer(recipient, new BN(amount).mul(decimals).toString())
 }
@@ -185,7 +187,8 @@ async function impersonateAccount(hre: HardhatRuntimeEnvironment, account: strin
 
 async function performPostUpgradeMigration(upgradedContracts: any, deployments: DeploymentsExtension) {
   const deployed = await deployments.getOrNull("TestForwarder")
-  const forwarder = await ethers.getContractAt(deployed!.abi, "0xa530F85085C6FE2f866E7FdB716849714a89f4CD")
+  assertNonNullable(deployed)
+  const forwarder = await ethers.getContractAt(deployed.abi, "0xa530F85085C6FE2f866E7FdB716849714a89f4CD")
   await forwarder.registerDomainSeparator("Defender", "1")
   await migrateToNewConfig(upgradedContracts)
 }
@@ -213,7 +216,8 @@ type ContractInfo = {
   abi: {}[]
 }
 function getCurrentlyDeployedContracts(chainId: ChainId = MAINNET_CHAIN_ID): {[key: string]: ContractInfo} {
-  let deploymentsFile = require("../deployments/all.json")
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const deploymentsFile = require("../deployments/all.json")
   const chainName = CHAIN_NAME_BY_ID[chainId]
   return deploymentsFile[chainId][chainName].contracts
 }

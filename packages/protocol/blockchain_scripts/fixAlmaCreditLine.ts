@@ -13,6 +13,7 @@ import {CreditLineInstance, GoldfinchFactoryInstance, TranchedPoolInstance} from
 import {fundWithWhales, getExistingContracts, impersonateAccount, upgradeContracts} from "./mainnetForkingHelpers"
 import {decodeLogs} from "../test/testHelpers"
 import {CreditLineCreated} from "../typechain/truffle/CreditDesk"
+import {asNonNullable} from "@goldfinch-eng/utils"
 
 async function main() {
   // let oldBorrowerAddress = "0x4bBD638eb377ea00b84fAc2aA24A769a1516eCb6"
@@ -52,30 +53,32 @@ async function main() {
     deployments
   )
 
-  let goldfinchFactoryAddress = upgradedContracts.GoldfinchFactory.ProxyContract.address
-  let goldfinchFactory = (await getContract("GoldfinchFactory", {
+  const goldfinchFactoryAddress = upgradedContracts.GoldfinchFactory.ProxyContract.address
+  const goldfinchFactory = (await getContract("GoldfinchFactory", {
     at: goldfinchFactoryAddress,
   })) as GoldfinchFactoryInstance
 
-  let tx = await goldfinchFactory.createCreditLine()
-  let events = decodeLogs<CreditLineCreated>(tx.receipt.rawLogs, goldfinchFactory, "CreditLineCreated")
-  let creditLineAddress = events[0]!.args.creditLine
-  let creditLine = (await getContract("CreditLine", {at: creditLineAddress})) as CreditLineInstance
+  const tx = await goldfinchFactory.createCreditLine()
+  const events = decodeLogs<CreditLineCreated>(tx.receipt.rawLogs, goldfinchFactory, "CreditLineCreated")
+  const creditLineAddress = asNonNullable(events[0]).args.creditLine
+  const creditLine = (await getContract("CreditLine", {at: creditLineAddress})) as CreditLineInstance
 
-  let tranchedPool = (await getContract("TranchedPool", {
+  const tranchedPool = (await getContract("TranchedPool", {
     at: "0x67df471EaCD82c3dbc95604618FF2a1f6b14b8a1",
   })) as TranchedPoolInstance
-  let currentCreditLine = (await getContract("CreditLine", {at: await tranchedPool.creditLine()})) as CreditLineInstance
+  const currentCreditLine = (await getContract("CreditLine", {
+    at: await tranchedPool.creditLine(),
+  })) as CreditLineInstance
 
   console.log("---- Run as gnosis multisend ----")
 
-  let configAddr = await currentCreditLine.config()
-  let borrower = await currentCreditLine.borrower()
-  let limit = await currentCreditLine.limit()
-  let interestApr = await currentCreditLine.interestApr()
-  let paymentPeriodInDays = await currentCreditLine.paymentPeriodInDays()
-  let termInDays = "1196"
-  let lateFeeApr = await currentCreditLine.lateFeeApr()
+  const configAddr = await currentCreditLine.config()
+  const borrower = await currentCreditLine.borrower()
+  const limit = await currentCreditLine.limit()
+  const interestApr = await currentCreditLine.interestApr()
+  const paymentPeriodInDays = await currentCreditLine.paymentPeriodInDays()
+  const termInDays = "1196"
+  const lateFeeApr = await currentCreditLine.lateFeeApr()
   await creditLine.initialize(
     configAddr,
     owner,
@@ -99,54 +102,54 @@ async function main() {
   console.log("  lateFeeApr", lateFeeApr.toString())
   console.log(")")
 
-  let balance = await currentCreditLine.balance()
+  const balance = await currentCreditLine.balance()
   await creditLine.setBalance(balance, {from: owner})
   console.log("CreditLine.setBalance(")
   console.log("  balance", balance.toString())
   console.log(")")
 
   // From spreadsheet
-  let interestOwed = 240277e4
+  const interestOwed = 240277e4
   await creditLine.setInterestOwed(interestOwed, {from: owner})
   console.log("CreditLine.setInterestOwed(")
   console.log("  interestOwed", interestOwed.toString())
   console.log(")")
 
-  let principalOwed = await currentCreditLine.principalOwed()
+  const principalOwed = await currentCreditLine.principalOwed()
   await creditLine.setPrincipalOwed(principalOwed, {from: owner})
   console.log("CreditLine.setPrincipalOwed(")
   console.log("  principalOwed", principalOwed.toString())
   console.log(")")
 
   // From corrected migration params
-  let termEndTime = "1725498350"
+  const termEndTime = "1725498350"
   await creditLine.setTermEndTime(termEndTime, {from: owner})
   console.log("CreditLine.setTermEndTime(")
   console.log("  termEndTime", termEndTime.toString())
   console.log(")")
 
   // From corrected migration params
-  let nextDueTime = "1632531950"
+  const nextDueTime = "1632531950"
   await creditLine.setNextDueTime(nextDueTime, {from: owner})
   console.log("CreditLine.setNextDueTime(")
   console.log("  nextDueTime", nextDueTime.toString())
   console.log(")")
 
   // From corrected migration params
-  let interestAccruedAsOf = "1629939950"
+  const interestAccruedAsOf = "1629939950"
   await creditLine.setInterestAccruedAsOf(interestAccruedAsOf, {from: owner})
   console.log("CreditLine.setInterestAccruedAsOf(")
   console.log("  interestAccruedAsOf", interestAccruedAsOf.toString())
   console.log(")")
 
-  let lastFullPaymentTime = await currentCreditLine.lastFullPaymentTime()
+  const lastFullPaymentTime = await currentCreditLine.lastFullPaymentTime()
   await creditLine.setLastFullPaymentTime(lastFullPaymentTime, {from: owner})
   console.log("CreditLine.setLastFullPaymentTime(")
   console.log("  lastFullPaymentTime", lastFullPaymentTime.toString())
   console.log(")")
 
   // From spreadsheet
-  let totalInterestAccrued = 2225959e4
+  const totalInterestAccrued = 2225959e4
   await creditLine.setTotalInterestAccrued(totalInterestAccrued, {from: owner})
   console.log("CreditLine.setTotalInterestAccrued(")
   console.log("  totalInterestAccrued", totalInterestAccrued.toString())

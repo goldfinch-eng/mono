@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../typechain/truffle/types.d.ts" />
 import chai from "chai"
 import {artifacts, web3, ethers} from "hardhat"
@@ -69,7 +70,8 @@ const getDeployedAsTruffleContract = async <T extends Truffle.ContractInstance>(
     contractName = `Test${contractName}`
     deployment = await deployments.get(contractName)
   }
-  return getTruffleContract(contractName, deployment!.address)
+  assertNonNullable(deployment)
+  return getTruffleContract(contractName, deployment.address)
 }
 
 async function getTruffleContract<T extends Truffle.ContractInstance>(name: string, address: string): Promise<T> {
@@ -204,7 +206,8 @@ async function deployAllContracts(
   if (deployForwarder) {
     await deployments.deploy("TestForwarder", {from: fromAccount as string, gasLimit: 4000000})
     forwarder = await getDeployedAsTruffleContract<TestForwarderInstance>(deployments, "TestForwarder")
-    await forwarder!.registerDomainSeparator("Defender", "1")
+    assertNonNullable(forwarder)
+    await forwarder.registerDomainSeparator("Defender", "1")
   }
   const tranchedPool = await getDeployedAsTruffleContract<TranchedPoolInstance>(deployments, "TranchedPool")
   const transferRestrictedVault = await getDeployedAsTruffleContract<TransferRestrictedVaultInstance>(
@@ -337,7 +340,6 @@ async function toEthers<T>(truffleContract: Truffle.ContractInstance): Promise<T
   return (await ethers.getContractAt(truffleContract.abi, truffleContract.address)) as unknown as T
 }
 
-
 export {
   chai,
   expect,
@@ -371,5 +373,5 @@ export {
   decodeLogs,
   getFirstLog,
   toTruffle,
-  toEthers
+  toEthers,
 }

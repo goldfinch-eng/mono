@@ -7,9 +7,9 @@ import {Borrower, CreditLine, SeniorPool, TranchedPool} from "../typechain/ether
 import {BigNumber} from "bignumber.js"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import {Signer} from "ethers"
-const hre = require("hardhat")
+import hre from "hardhat"
 const {getNamedAccounts} = hre
-const deployedABIs = require("../deployments/all_dev.json")
+import deployedABIs from "../deployments/all_dev.json"
 
 async function main() {
   let signerAddress: string
@@ -53,12 +53,12 @@ async function main() {
 async function drawdown(tranchedPool: TranchedPool) {
   assertNonNullable(process.env.END_BORROWER)
 
-  let endBorrower = process.env.END_BORROWER
+  const endBorrower = process.env.END_BORROWER
   await impersonateAccount(hre, endBorrower)
 
   const creditLineAddress = await tranchedPool.creditLine()
   const creditLine = await getCreditLine(creditLineAddress, endBorrower)
-  let limit = await creditLine.limit()
+  const limit = await creditLine.limit()
 
   const borrowerAddress = await tranchedPool.borrower()
   const borrower = await getBorrower(borrowerAddress, endBorrower)
@@ -106,7 +106,7 @@ async function lockJunior(pool) {
   if (juniorTrancheLockedUntil !== 0) {
     throw new Error("Junior tranche already locked")
   }
-  let txn = await pool.lockJuniorCapital()
+  const txn = await pool.lockJuniorCapital()
   await txn.wait()
   console.log(`Locked the junior tranche for ${pool.address}`)
 }
@@ -181,7 +181,8 @@ async function getSeniorPool(pool, signerAddress) {
 async function getAbi(contractName) {
   const chainId = process.env.HARDHAT_FORK === "mainnet" ? "1" : await hre.getChainId()
   const networkName = process.env.HARDHAT_FORK ?? process.env.HARDHAT_NETWORK
-  return deployedABIs[chainId][networkName!].contracts[contractName].abi
+  assertNonNullable(networkName)
+  return deployedABIs[chainId][networkName].contracts[contractName].abi
 }
 
 if (require.main === module) {
