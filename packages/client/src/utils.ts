@@ -1,4 +1,6 @@
 import _ from "lodash"
+import {AsyncReturnType} from "./types/util"
+import web3 from "./web3"
 
 function croppedAddress(address) {
   if (!address) {
@@ -41,12 +43,16 @@ function commaFormat(numberString) {
 
 function displayDollars(val, decimals = 2) {
   let prefix = ""
-  if (isNaN(val)) {
+  if (!isFinite(val) || val === null) {
     return " --.--"
   }
-  if (parseFloat(val) < 0) {
-    val = parseFloat(val) * -1
+  const valFloat = parseFloat(val)
+  if (valFloat < 0) {
+    val = valFloat * -1
     prefix = "-"
+  }
+  if (valFloat < 0.01 && valFloat > 0) {
+    return "<$0.01"
   }
   return `${prefix}$${displayNumber(val, decimals)}`
 }
@@ -73,37 +79,43 @@ function secondsSinceEpoch(): number {
   return Math.floor(Date.now() / 1000)
 }
 
-type DedupeAccumulator = {
-  _seen: {[val: string]: true}
-  result: string[]
+export class AssertionError extends Error {}
+
+export function assertNumber(val: unknown): asserts val is number {
+  if (typeof val !== "number") {
+    throw new AssertionError(`Value ${val} is not a number.`)
+  }
 }
 
-function dedupe(array: string[]): string[] {
-  return array.reduce<DedupeAccumulator>(
-    (acc: DedupeAccumulator, curr: string): DedupeAccumulator =>
-      curr in acc._seen
-        ? acc
-        : {
-            _seen: {
-              ...acc._seen,
-              [curr]: true,
-            },
-            result: acc.result.concat(curr),
-          },
-    {
-      _seen: {},
-      result: [],
-    },
-  ).result
+export function assertError(val: unknown): asserts val is Error {
+  if (!(val instanceof Error)) {
+    throw new AssertionError(`Value ${val} is not an instance of Error.`)
+  }
 }
 
-export {
-  croppedAddress,
-  displayNumber,
-  displayDollars,
-  roundUpPenny,
-  roundDownPenny,
-  displayPercent,
-  secondsSinceEpoch,
-  dedupe,
+export function assertNonNullable<T>(val: T | null | undefined): asserts val is NonNullable<T> {
+  if (val === null || val === undefined) {
+    throw new AssertionError(`Value ${val} is not non-nullable.`)
+  }
 }
+
+export async function getCurrentBlock() {
+  return await web3.eth.getBlock("latest")
+}
+
+type BlockInfo = {
+  number: number
+  timestamp: number
+}
+
+export function getBlockInfo(block: AsyncReturnType<typeof getCurrentBlock>): BlockInfo {
+  if (typeof block.timestamp !== "number") {
+    throw new Error(`Timestamp of block ${block.number} is not a number: ${block.timestamp}`)
+  }
+  return {
+    number: block.number,
+    timestamp: block.timestamp,
+  }
+}
+
+export {croppedAddress, displayNumber, displayDollars, roundUpPenny, roundDownPenny, displayPercent, secondsSinceEpoch}
