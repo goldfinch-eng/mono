@@ -1,0 +1,38 @@
+{
+  "name": "@goldfinch-eng/utils",
+  "version": "0.0.1",
+  "description": "",
+  "main": "dist/index",
+  "files": "dist/**",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "pre-commit": "lint-staged",
+    "lint": "eslint --resolve-plugins-relative-to=. .",
+    "lint:fix": "eslint --resolve-plugins-relative-to=. --fix . && prettier . --write"
+  },
+  "lint-staged": {
+    "*.(js(x)?|ts(x)?)": ["prettier --write", "eslint --fix --resolve-plugins-relative-to=."]
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^16.9.0",
+    "@typescript-eslint/eslint-plugin": "^4.31.1",
+    "@typescript-eslint/parser": "^4.31.1",
+    "eslint": "^7.32.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-import-resolver-typescript": "^2.5.0",
+    "eslint-plugin-import": "^2.23.4",
+    "eslint-plugin-mocha-no-only": "^1.1.1",
+    "eslint-plugin-prettier": "^4.0.0",
+    "eslint-plugin-react-hooks": "^4.2.0",
+    "lint-staged": "^11.1.2",
+    "prettier": "^2.4.0",
+    "tsconfig-paths": "^3.11.0",
+    "typescript": "^4.4.2"
+  },
+  "dependencies": {
+    "@types/lodash": "^4.14.172",
+    "lodash": "^4.17.21"
+  }
+}
