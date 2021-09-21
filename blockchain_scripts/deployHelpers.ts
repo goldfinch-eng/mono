@@ -115,11 +115,11 @@ const TRUSTED_FORWARDER_CONFIG: {[chainId: string]: string} = {
 }
 
 export let OWNER_ROLE = web3.utils.keccak256("OWNER_ROLE")
-export let REDEEMER_ROLE = web3.utils.keccak256("REDEEMER_ROLE")
 export let PAUSER_ROLE = web3.utils.keccak256("PAUSER_ROLE")
 export let GO_LISTER_ROLE = web3.utils.keccak256("GO_LISTER_ROLE")
 export let MINTER_ROLE = web3.utils.keccak256("MINTER_ROLE")
 export let LEVERAGE_RATIO_SETTER_ROLE = web3.utils.keccak256("LEVERAGE_RATIO_SETTER_ROLE")
+export let REDEEMER_ROLE = web3.utils.keccak256("REDEEMER_ROLE")
 
 const TRANCHES = {
   Senior: 1,
