@@ -4,6 +4,7 @@ import {
   TRANCHES,
   MAX_UINT,
   OWNER_ROLE,
+  REDEEMER_ROLE,
   PAUSER_ROLE,
   ETHDecimals,
 } from "../blockchain_scripts/deployHelpers"
@@ -215,6 +216,14 @@ describe("SeniorPool", () => {
       it("should disallow non-owner to set", async () => {
         return expect(seniorPool.updateGoldfinchConfig({from: person2})).to.be.rejectedWith(/Must have admin/)
       })
+    })
+  })
+
+  describe("setupRedeemerRole", () => {
+    it('should call _setupRole', async () => {
+      expect(await seniorPool.hasRole(REDEEMER_ROLE, owner)).to.equal(false)
+      await seniorPool.setupRedeemerRole()
+      expect(await seniorPool.hasRole(REDEEMER_ROLE, owner)).to.equal(true)
     })
   })
 
