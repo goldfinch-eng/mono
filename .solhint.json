@@ -52,7 +52,7 @@
           "upgradeImplementations": []
         },
         "**/MigratedTranchedPool.sol:MigratedTranchedPool": {
-          "migrateCreditLine": []
+          "migrateCreditLineToV2": []
         },
         "**/BaseUpgradeablePausable.sol:BaseUpgradeablePausable": {
           "__BaseUpgradeablePausable__init": []
@@ -131,6 +131,9 @@
           "kick": [],
           "exit": [],
           "exitAndWithdraw": []
+        },
+        "**/FixedLeverageRatioStrategy.sol:FixedLeverageRatioStrategy": {
+          "invest": []
         },
         "**/contracts/test/**": {
           "*.*": []
