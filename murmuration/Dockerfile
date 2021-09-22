@@ -5,8 +5,6 @@ FROM node:12.18.3
 
 RUN wget https://github.com/ethereum/solidity/releases/download/v0.6.8/solc-static-linux -O /bin/solc && chmod +x /bin/solc
 
-RUN mkdir -p /goldfinch-protocol/client
-
 WORKDIR /goldfinch-protocol
 
 COPY . .
@@ -17,18 +15,14 @@ RUN cp ./murmuration/.env.murmuration ./.env.local
 # Populate the config as necessary, for values known only at build time.
 RUN sed -i -e "s/REACT_APP_SENTRY_RELEASE=REPLACE_ME_IN_BUILD/REACT_APP_SENTRY_RELEASE=${SENTRY_RELEASE}/g" ./.env.local
 # Copy .env.local to the client dir, so the client can use its variables.
-RUN cp ./.env.local ./client/.env.local
+RUN cp ./.env.local ./packages/client/.env.local
 
 # We observed `postinstall` not running automatically (which seems to be
 # understood behavior in a Docker container: https://stackoverflow.com/q/47748075),
 # so we run it manually.
-RUN npm install && npm run postinstall
-
-WORKDIR /goldfinch-protocol/client
-RUN npm install
+RUN npm install && npm run bootstrap && npx lerna run postinstall
 
 # Used by the Webpack dev server. See `murmuration()` in `client/config-overrides.js`.
 EXPOSE 80
 
-WORKDIR /goldfinch-protocol
-CMD npm run murmuration-start
+CMD npm run start:murmuration
