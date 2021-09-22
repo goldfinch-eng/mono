@@ -29,6 +29,7 @@ import {
 import {time, expectEvent} from "@openzeppelin/test-helpers"
 import {getApprovalDigest, getWallet} from "./permitHelpers"
 import {ecsign} from "ethereumjs-util"
+import {asNonNullable} from "@goldfinch-eng/utils"
 
 // Typechain doesn't generate types for solidity enums, so redefining here
 enum LockupPeriod {
@@ -116,7 +117,10 @@ describe("StakingRewards", () => {
 
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;[owner, investor, anotherUser] = await web3.eth.getAccounts()
+    const [_owner, _investor, _anotherUser] = await web3.eth.getAccounts()
+    owner = asNonNullable(_owner)
+    investor = asNonNullable(_investor)
+    anotherUser = asNonNullable(_anotherUser)
     ;({goldfinchConfig, seniorPool, gfi, stakingRewards, fidu, usdc} = await deployAllContracts(deployments))
     await goldfinchConfig.bulkAddToGoList([owner, investor, anotherUser])
     await erc20Approve(usdc, investor, usdcVal(10000), [owner])

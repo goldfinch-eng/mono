@@ -233,7 +233,7 @@ describe("SeniorPool", () => {
   describe("deposit", () => {
     describe("before you have approved the senior pool to transfer funds on your behalf", async () => {
       it("should fail", async () => {
-        const expectedErr = "VM Exception while processing transaction: revert ERC20: transfer amount exceeds allowance"
+        const expectedErr = /transfer amount exceeds allowance/
         return expect(makeDeposit(person3)).to.be.rejectedWith(expectedErr)
       })
     })

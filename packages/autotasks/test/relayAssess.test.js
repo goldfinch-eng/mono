@@ -93,7 +93,7 @@ describe("relayAsses", () => {
 
       await expectAction(() =>
         assessIfRequired(tranchedPoolAsEthers, creditLineAsEthers, fakeProvider, seniorPoolAsEthers, poolTokensAsEthers)
-      ).toChange([[creditLine.nextDueTime, {by: 0}]])
+      ).toChange([[creditLine.nextDueTime, {by: "0"}]])
     })
 
     it("assesses if beyond the term end block", async () => {
@@ -114,7 +114,7 @@ describe("relayAsses", () => {
     it("does not assess if no balance", async () => {
       await expectAction(() =>
         assessIfRequired(tranchedPoolAsEthers, creditLineAsEthers, fakeProvider, seniorPoolAsEthers, poolTokensAsEthers)
-      ).toChange([[creditLine.nextDueTime, {by: 0}]])
+      ).toChange([[creditLine.nextDueTime, {by: "0"}]])
     })
   })
 })
