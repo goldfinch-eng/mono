@@ -31,12 +31,9 @@ import {
   getContract,
   LOCAL_CHAIN_ID,
   getProtocolOwner,
-  getSignerForAddress,
+  ETHERS_CONTRACT_PROVIDER,
 } from "../blockchain_scripts/deployHelpers"
-import {
-  impersonateAccount,
-  fundWithWhales,
-} from "../blockchain_scripts/mainnetForkingHelpers"
+import {impersonateAccount, fundWithWhales} from "../blockchain_scripts/mainnetForkingHelpers"
 import _ from "lodash"
 import {assertIsString, assertNonNullable} from "../utils/type"
 import {Result} from "ethers/lib/utils"
@@ -104,8 +101,11 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
     // this happens because we renamed from CreditLineFactory -> GoldfinchFactory. Can be removed after
     // real mainnet migration is complete, and our deployments json is updated.
     const oldAddress = goldfinchFactory.address
-    goldfinchFactory = await getContract("GoldfinchFactory", {from: protocol_owner, as: "ethers", at: oldAddress})
-    config = await getContract("GoldfinchConfig", {from: protocol_owner, as: "ethers"})
+    goldfinchFactory = await getContract("GoldfinchFactory", ETHERS_CONTRACT_PROVIDER, {
+      from: protocol_owner,
+      at: oldAddress,
+    })
+    config = await getContract("GoldfinchConfig", ETHERS_CONTRACT_PROVIDER, {from: protocol_owner})
   }
   await setupTestForwarder(deployments, config, getOrNull, protocol_owner)
 
@@ -158,12 +158,12 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
     await (erc20 as TestERC20).connect(signer).approve(seniorPool.address, depositAmount.mul(new BN(5)).toString())
     await seniorPool.connect(signer).deposit(depositAmount.mul(new BN(5)).toString())
 
-    let txn = await (erc20.connect(signer)).approve(commonPool.address, String(depositAmount))
+    let txn = await erc20.connect(signer).approve(commonPool.address, String(depositAmount))
     await txn.wait()
-    txn = await (commonPool.connect(signer)).deposit(TRANCHES.Junior, String(depositAmount))
+    txn = await commonPool.connect(signer).deposit(TRANCHES.Junior, String(depositAmount))
     logger(`Deposited ${depositAmount} into the common pool`)
 
-    const result = await (await  goldfinchFactory.createBorrower(borrower)).wait()
+    const result = await (await goldfinchFactory.createBorrower(borrower)).wait()
     const lastEventArgs = getLastEventArgs(result)
     let bwrConAddr = lastEventArgs[0]
     logger(`Created borrower contract: ${bwrConAddr} for ${borrower}`)
@@ -174,7 +174,7 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
       goldfinchFactory,
       borrower: bwrConAddr,
       erc20,
-      depositor: protocol_owner
+      depositor: protocol_owner,
     })
     txn = await filledPool.lockJuniorCapital()
     await txn.wait()

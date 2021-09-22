@@ -11,6 +11,9 @@ import {
   interestAprAsBN,
   ZERO_ADDRESS,
   DISTRIBUTOR_ROLE,
+  getContract,
+  GetContractOptions,
+  TRUFFLE_CONTRACT_PROVIDER,
 } from "../blockchain_scripts/deployHelpers"
 import {DeploymentsExtension} from "hardhat-deploy/dist/types"
 import {
@@ -35,6 +38,7 @@ import {
 import {assertNonNullable} from "../utils/type"
 import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/DynamicLeverageRatioStrategy"
 import {TestCommunityRewardsInstance} from "../typechain/truffle/TestCommunityRewards"
+import {MerkleDistributor, TestCommunityRewards} from "../typechain/ethers"
 const decimals = new BN(String(1e18))
 const USDC_DECIMALS = new BN(String(1e6))
 const SECONDS_PER_DAY = new BN(86400)
@@ -78,7 +82,7 @@ const getDeployedAsTruffleContract = async <T extends Truffle.ContractInstance>(
     contractName = `Test${contractName}`
     deployment = await deployments.get(contractName)
   }
-  return getTruffleContract(contractName, deployment!.address)
+  return getTruffleContract<T>(contractName, deployment!.address)
 }
 
 async function getTruffleContract<T extends Truffle.ContractInstance>(name: string, address: string): Promise<T> {
@@ -293,9 +297,9 @@ async function deployAllContracts(
   )
   const gfi = await getDeployedAsTruffleContract<GFIInstance>(deployments, "GFI")
   const stakingRewards = await getDeployedAsTruffleContract<StakingRewardsInstance>(deployments, "StakingRewards")
-  const communityRewards = await getDeployedAsTruffleContract<TestCommunityRewardsInstance>(
-    deployments,
-    "TestCommunityRewards"
+  const communityRewards = await getContract<TestCommunityRewards, TestCommunityRewardsInstance>(
+    "TestCommunityRewards",
+    TRUFFLE_CONTRACT_PROVIDER
   )
   let merkleDistributor: MerkleDistributorInstance | null = null
   if (options.deployMerkleDistributor) {
@@ -304,7 +308,10 @@ async function deployAllContracts(
       from: options.deployMerkleDistributor.fromAccount,
       gasLimit: 4000000,
     })
-    merkleDistributor = await getDeployedAsTruffleContract<MerkleDistributorInstance>(deployments, "MerkleDistributor")
+    merkleDistributor = await getContract<MerkleDistributor, MerkleDistributorInstance>(
+      "MerkleDistributor",
+      TRUFFLE_CONTRACT_PROVIDER
+    )
     await communityRewards.grantRole(DISTRIBUTOR_ROLE, merkleDistributor.address)
   }
   return {

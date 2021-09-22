@@ -12,6 +12,8 @@ const {
   getProtocolOwner,
   isMainnetForking,
   MAINNET_CHAIN_ID,
+  ETHERS_CONTRACT_PROVIDER,
+  TRUFFLE_CONTRACT_PROVIDER,
 } = require("../deployHelpers")
 const {borrowerCreditlines, getMigrationData} = require("./migrationHelpers")
 const {
@@ -46,7 +48,7 @@ async function main() {
       // JUST FOR TESTING
       const protocolOwner = await getProtocolOwner()
       const chainId = await getChainId()
-      const pool = await getContract("Pool")
+      const pool = await getContract("Pool", TRUFFLE_CONTRACT_PROVIDER)
       const defender = new DefenderUpgrader({hre, logger: console.log, chainId})
       await defender.send({
         method: "assets",
@@ -101,11 +103,11 @@ async function prepareMigration() {
 
 async function deployAndMigrateToV2() {
   const {gf_deployer} = await getNamedAccounts()
-  const migrator = await getContract("V2Migrator", {from: gf_deployer})
+  const migrator = await getContract("V2Migrator", TRUFFLE_CONTRACT_PROVIDER, {from: gf_deployer})
   const chainId = isMainnetForking() ? MAINNET_CHAIN_ID : await getChainId()
   const existingPool = (await getExistingContracts(["Pool"], gf_deployer, chainId)).Pool
   const existingPoolAddress = existingPool.ExistingContract.address
-  const goldfinchConfig = await getContract("GoldfinchConfig")
+  const goldfinchConfig = await getContract("GoldfinchConfig", TRUFFLE_CONTRACT_PROVIDER)
   if (!(await existingPool.ExistingContract.paused())) {
     console.log("Migrating phase 1")
     await migrator.migratePhase1(goldfinchConfig.address)
@@ -199,7 +201,7 @@ async function handleNewDeployments(migrator) {
     deployments,
     false
   )
-  const newConfig = await getContract("GoldfinchConfig", {from: gf_deployer})
+  const newConfig = await getContract("GoldfinchConfig", TRUFFLE_CONTRACT_PROVIDER, {from: gf_deployer})
   // Set the deployer, governance, and migrator as owners of the config. This gets revoked later.
   if (!(await newConfig.hasRole(GO_LISTER_ROLE, migrator.address))) {
     console.log("Initializing the new config...")
@@ -267,7 +269,7 @@ async function givePermsToMigrator({pool, creditDesk, goldfinchFactory, fidu, mi
 
 async function upgradeImplementations(migrator, configAddress, newDeployments) {
   if (isMainnetForking()) {
-    const ethersMigrator = await getContract("V2Migrator", {as: "ethers"})
+    const ethersMigrator = await getContract("V2Migrator", ETHERS_CONTRACT_PROVIDER)
     const tx = {
       to: migrator.address,
       value: "0",
@@ -300,7 +302,7 @@ async function deployMigrator(hre, {config}) {
   console.log("Deploying the migrator...")
   const protocolOwner = await getProtocolOwner()
   await deploy(contractName, {from: gf_deployer})
-  const migrator = await getContract("V2Migrator", {from: gf_deployer})
+  const migrator = await getContract("V2Migrator", TRUFFLE_CONTRACT_PROVIDER, {from: gf_deployer})
   if (!(await migrator.hasRole(OWNER_ROLE, protocolOwner))) {
     console.log("Initializing the migrator...")
     await migrator.initialize(gf_deployer, config.address)

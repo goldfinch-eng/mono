@@ -1,14 +1,36 @@
 /* global web3 tenderly */
 const hre = require("hardhat")
 import {advanceTime, expect, expectAction, toTruffle} from "../testHelpers"
-import {isMainnetForking, getSignerForAddress, OWNER_ROLE, MINTER_ROLE, getContract, PAUSER_ROLE, GO_LISTER_ROLE} from "../../blockchain_scripts/deployHelpers"
+import {
+  isMainnetForking,
+  getSignerForAddress,
+  OWNER_ROLE,
+  MINTER_ROLE,
+  getContract,
+  PAUSER_ROLE,
+  GO_LISTER_ROLE,
+  TRUFFLE_CONTRACT_PROVIDER,
+} from "../../blockchain_scripts/deployHelpers"
 const {deployments, artifacts, ethers} = hre
 const {deployMigrator, givePermsToMigrator, deployAndMigrateToV2} = require("../../blockchain_scripts/v2/migrate")
 const TEST_TIMEOUT = 180000 // 3 mins
-import {getAllExistingContracts, impersonateAccount, MAINNET_MULTISIG, MAINNET_UNDERWRITER} from "../../blockchain_scripts/mainnetForkingHelpers"
+import {
+  getAllExistingContracts,
+  impersonateAccount,
+  MAINNET_MULTISIG,
+  MAINNET_UNDERWRITER,
+} from "../../blockchain_scripts/mainnetForkingHelpers"
 import BN from "bn.js"
 import _ from "lodash"
-import { prepareMigration } from "../../blockchain_scripts/v2/migrate"
+import {prepareMigration} from "../../blockchain_scripts/v2/migrate"
+import {CreditLine, GoldfinchConfig, MigratedTranchedPool, PoolTokens, SeniorPool} from "../../typechain/ethers"
+import {
+  CreditDeskInstance,
+  GoldfinchConfigInstance,
+  MigratedTranchedPoolInstance,
+  PoolTokensInstance,
+  SeniorPoolInstance,
+} from "../../typechain/truffle"
 
 describe("Migrating to V2", () => {
   // Hack way to only run this suite when we actually want to.
@@ -44,9 +66,7 @@ describe("Migrating to V2", () => {
     // Pull in our unlocked accounts
     accounts = await web3.eth.getAccounts()
     ;[owner] = accounts
-
     ;({migrator, pool, creditDesk, goldfinchConfig, goldfinchFactory, fidu} = await testSetup())
-
     ;[owner, bwr] = await web3.eth.getAccounts()
 
     mainnetContracts = await getAllExistingContracts()
@@ -77,15 +97,25 @@ describe("Migrating to V2", () => {
   }
 
   type MigratedInfo = {
-    tranchedPool: Truffle.ContractInstance,
+    tranchedPool: Truffle.ContractInstance
     newCl: Truffle.ContractInstance
   }
-  async function getMigratedInfo(clAddress: string, migrationEvents) : Promise<MigratedInfo> {
+  async function getMigratedInfo(clAddress: string, migrationEvents): Promise<MigratedInfo> {
     const event = _.find(migrationEvents, (e) => e.args.clToMigrate.toLowerCase() === clAddress.toLowerCase())
 
     return {
-      tranchedPool: await getContract("MigratedTranchedPool", {at: event.args.tranchedPool}),
-      newCl: await getContract("CreditLine", {at: event.args.newCl})
+      tranchedPool: await getContract<MigratedTranchedPool, MigratedTranchedPoolInstance>(
+        "MigratedTranchedPool",
+        TRUFFLE_CONTRACT_PROVIDER,
+        {at: event.args.tranchedPool}
+      ),
+      newCl: await getContract<CreditLine, CreditDeskInstance>(
+        "CreditLine",
+        TRUFFLE_CONTRACT_PROVIDER,
+        {
+          at: event.args.newCl,
+        }
+      ),
     }
   }
 
@@ -145,13 +175,19 @@ describe("Migrating to V2", () => {
       let expectedAmount = 3698625354
       await assertNewClStillCalculatesInterestCorrectly(tranchedPool, newCl, expectedAmount)
 
-      const {tranchedPool: tranchedPool2, newCl: newCl2} = await getMigratedInfo("0xb2ad56df3bce9bad4d8f04be1fc0eda982a84f44", migrationEvents)
+      const {tranchedPool: tranchedPool2, newCl: newCl2} = await getMigratedInfo(
+        "0xb2ad56df3bce9bad4d8f04be1fc0eda982a84f44",
+        migrationEvents
+      )
       // This value taken from the exact current amount of "interestOwed", according to etherscan
       // except divided by 2, because at the time, Aspire happened to have accrued 2 periods worth of interest.
       expectedAmount = 2958904109
       await assertNewClStillCalculatesInterestCorrectly(tranchedPool2, newCl2, expectedAmount)
 
-      const newGoldfinchConfig = await getContract("GoldfinchConfig")
+      const newGoldfinchConfig = await getContract<GoldfinchConfig, GoldfinchConfigInstance>(
+        "GoldfinchConfig",
+        TRUFFLE_CONTRACT_PROVIDER
+      )
       expect(newGoldfinchConfig.address).not.to.equal(goldfinchConfig.address)
 
       // Expect all perms to be returned
@@ -205,14 +241,13 @@ describe("Migrating to V2", () => {
       expect(await (await getProxyVersion(goldfinchFactory.address)).owner()).to.equal(MAINNET_MULTISIG)
       expect(await (await getProxyVersion(fidu.address)).owner()).to.equal(MAINNET_MULTISIG)
 
-      const poolTokens = await getContract("PoolTokens")
-      const seniorPool = await getContract("SeniorPool")
+      const poolTokens = await getContract<PoolTokens, PoolTokensInstance>("PoolTokens", TRUFFLE_CONTRACT_PROVIDER)
+      const seniorPool = await getContract<SeniorPool, SeniorPoolInstance>("SeniorPool", TRUFFLE_CONTRACT_PROVIDER)
 
       expect(await seniorPool.hasRole(OWNER_ROLE, MAINNET_MULTISIG)).to.equal(true)
       expect(await poolTokens.hasRole(OWNER_ROLE, MAINNET_MULTISIG)).to.equal(true)
       expect(await (await getProxyVersion(seniorPool.address)).owner()).to.equal(MAINNET_MULTISIG)
       expect(await (await getProxyVersion(poolTokens.address)).owner()).to.equal(MAINNET_MULTISIG)
-
     }).timeout(TEST_TIMEOUT)
   })
 })

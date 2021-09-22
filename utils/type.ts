@@ -105,3 +105,14 @@ export function typeGuardedArray<T>(objs: unknown, typeGuard: (obj: unknown) => 
 export function genIsArrayOf<T>(typeGuard: (obj: unknown) => obj is T): (objs: unknown) => objs is T[] {
   return (things: unknown): things is T[] => typeGuardedArray(things, typeGuard)
 }
+
+export class UnreachableError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'UnreachableError'
+  }
+}
+
+export function assertUnreachable(x: never): never {
+  throw new UnreachableError('Expected not to get here.')
+}
