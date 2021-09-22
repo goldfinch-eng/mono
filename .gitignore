@@ -79,17 +79,15 @@ artifacts/
 notes.txt
 
 autotasks/relayer/dist
-client/config/protocol-local.json
-client/config/pool-metadata/localhost.json
-deployments/localhost_31337
-deployments/localhost
-deployments/hardhat
+**/*/client/config/protocol-local.json
+**/*/client/config/pool-metadata/localhost.json
+**/*/deployments/localhost_31337
+**/*/deployments/localhost
+**/*/deployments/hardhat
+**/*/deployments/all_dev.json
 
 # Misc
 .DS_Store
-
-# Local deployments
-client/config/deployments_dev.json
 
 .envrc
 typechain
@@ -98,3 +96,9 @@ accounts.csv
 
 dist/
 venv/
+
+.dir-locals.el
+.projectile
+.python-version
+.rgignore
+goldfinch-frontends-prod-firebase*.json
