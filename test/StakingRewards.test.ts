@@ -40,7 +40,9 @@ enum LockupPeriod {
 const BEFORE_EACH_TIMEOUT = 30000
 const TEST_TIMEOUT = 30000
 
-describe("StakingRewards", () => {
+describe("StakingRewards", function () {
+  this.timeout(TEST_TIMEOUT)
+
   let owner: string,
     investor: string,
     anotherUser: string,
@@ -1815,4 +1817,4 @@ describe("StakingRewards", () => {
       })
     })
   })
-}).timeout(TEST_TIMEOUT)
+})
