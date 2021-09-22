@@ -1,0 +1,28 @@
+footer {
+  font-size: $sans-size-xs;
+  padding: 30px 0;
+
+  a {
+    color: $sand-xxdark;
+  }
+
+  a:hover {
+    color: $purp;
+  }
+
+  .divider {
+    color: $sand-xxdark;
+    margin: 0 7px;
+  }
+}
+
+@media only screen and (min-width: $screen-m) {
+  footer {
+    bottom: 0;
+    left: 0;
+    position: fixed;
+    padding: 20px 20px;
+    width: $nav-width;
+    z-index: 10;
+  }
+}
