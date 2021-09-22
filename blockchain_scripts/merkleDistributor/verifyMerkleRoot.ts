@@ -173,6 +173,10 @@ if (require.main === module) {
 
   const result = verifyMerkleRoot(json)
 
-  console.log("Reconstructed Merkle root", result.reconstructedMerkleRoot)
-  console.log("Root matches the one read from the JSON?", result.matchesRootInJson)
+  console.log("Reconstructed Merkle root:", result.reconstructedMerkleRoot)
+  if (result.matchesRootInJson) {
+    console.log("Reconstructed root matches root from JSON.")
+  } else {
+    throw new Error("Reconstructed root does not match root from JSON.")
+  }
 }
