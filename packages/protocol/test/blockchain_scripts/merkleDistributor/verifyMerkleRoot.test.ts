@@ -5,7 +5,7 @@ import {
   MerkleDistributorGrantInfo,
 } from "../../../blockchain_scripts/merkleDistributor/types"
 import {verifyMerkleRoot} from "../../../blockchain_scripts/merkleDistributor/verifyMerkleRoot"
-import {assertNonEmptyArray, assertNonNullable} from "../../../utils/type"
+import {assertNonEmptyArray, assertNonNullable} from "@goldfinch-eng/utils"
 import {genDifferentHexString} from "../../testHelpers"
 import fixtures from "./fixtures"
 
