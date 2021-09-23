@@ -15,6 +15,8 @@ contract GFI is ERC20PresetMinterPauserUpgradeSafe {
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
 
+  event GoldfinchConfigUpdated(address indexed who, address configAddress);
+
   /*
     We are using our own initializer function so we can set the owner by passing it in.
     I would override the regular "initializer" function, but I can't because it's not marked
@@ -49,5 +51,6 @@ contract GFI is ERC20PresetMinterPauserUpgradeSafe {
   function updateGoldfinchConfig() external {
     require(hasRole(OWNER_ROLE, _msgSender()), "ERC20PresetMinterPauser: Must have owner role to change config");
     config = GoldfinchConfig(config.configAddress());
+    emit GoldfinchConfigUpdated(msg.sender, address(config));
   }
 }

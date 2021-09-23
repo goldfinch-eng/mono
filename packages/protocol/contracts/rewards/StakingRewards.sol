@@ -41,6 +41,15 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     uint256 lockedUntil;
   }
 
+  /* ========== EVENTS =================== */
+  event TargetCapacityUpdated(address indexed who, uint256 targetCapacity);
+  event VestingScheduleUpdated(address indexed who, uint256 vestingLength);
+  event MinRateUpdated(address indexed who, uint256 minRate);
+  event MaxRateUpdated(address indexed who, uint256 maxRate);
+  event MinRateAtPercentUpdated(address indexed who, uint256 minRateAtPercent);
+  event MaxRateAtPercentUpdated(address indexed who, uint256 maxRateAtPercent);
+  event LeverageMultiplierUpdated(address indexed who, LockupPeriod lockupPeriod, uint256 leverageMultiplier);
+
   /* ========== STATE VARIABLES ========== */
 
   uint256 private constant MULTIPLIER_DECIMALS = 1e18;
@@ -516,22 +525,27 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
   function setTargetCapacity(uint256 _targetCapacity) public onlyAdmin updateReward(0) {
     targetCapacity = _targetCapacity;
+    emit TargetCapacityUpdated(msg.sender, targetCapacity);
   }
 
   function setMaxRateAtPercent(uint256 _maxRateAtPercent) public onlyAdmin updateReward(0) {
     maxRateAtPercent = _maxRateAtPercent;
+    emit MaxRateAtPercentUpdated(msg.sender, maxRateAtPercent);
   }
 
   function setMinRateAtPercent(uint256 _minRateAtPercent) public onlyAdmin updateReward(0) {
     minRateAtPercent = _minRateAtPercent;
+    emit MinRateAtPercentUpdated(msg.sender, minRateAtPercent);
   }
 
   function setMaxRate(uint256 _maxRate) public onlyAdmin updateReward(0) {
     maxRate = _maxRate;
+    emit MaxRateUpdated(msg.sender, maxRate);
   }
 
   function setMinRate(uint256 _minRate) public onlyAdmin updateReward(0) {
     minRate = _minRate;
+    emit MinRateUpdated(msg.sender, minRate);
   }
 
   function setLeverageMultiplier(LockupPeriod lockupPeriod, uint256 leverageMultiplier)
@@ -540,10 +554,12 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     updateReward(0)
   {
     leverageMultipliers[lockupPeriod] = leverageMultiplier;
+    emit LeverageMultiplierUpdated(msg.sender, lockupPeriod, leverageMultiplier);
   }
 
   function setVestingSchedule(uint256 _vestingLength) public onlyAdmin updateReward(0) {
     vestingLength = _vestingLength;
+    emit VestingScheduleUpdated(msg.sender, vestingLength);
   }
 
   /* ========== MODIFIERS ========== */
