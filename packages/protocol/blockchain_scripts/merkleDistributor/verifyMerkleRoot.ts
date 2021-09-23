@@ -2,7 +2,7 @@ import {program} from "commander"
 import fs from "fs"
 import {BigNumber, utils} from "ethers"
 import {Grant, isMerkleDistributorInfo, MerkleDistributorGrantInfo} from "./types"
-import {assertNonNullable} from "../../utils/type"
+import {assertNonNullable} from "@goldfinch-eng/utils"
 
 /**
  * Script for verifying the Merkle root of a rewards distribution, from the publicly-released JSON file
