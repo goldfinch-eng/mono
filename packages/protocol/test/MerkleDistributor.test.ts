@@ -4,7 +4,7 @@ import hre from "hardhat"
 import {MerkleDistributorGrantInfo} from "../blockchain_scripts/merkleDistributor/types"
 import {GFIInstance} from "../typechain/truffle/GFI"
 import {GrantAccepted, MerkleDistributorInstance} from "../typechain/truffle/MerkleDistributor"
-import {Granted, TestCommunityRewardsInstance} from "../typechain/truffle/TestCommunityRewards"
+import {Granted, CommunityRewardsInstance} from "../typechain/truffle/CommunityRewards"
 import {asNonNullable, assertNonEmptyArray, assertNonNullable} from "@goldfinch-eng/utils"
 import {mintAndLoadRewards} from "./communityRewardsHelpers"
 import {fixtures} from "./merkleDistributorHelpers"
@@ -15,7 +15,7 @@ describe("MerkleDistributor", () => {
   let owner: string,
     anotherUser: string,
     gfi: GFIInstance,
-    communityRewards: TestCommunityRewardsInstance,
+    communityRewards: CommunityRewardsInstance,
     merkleDistributor: MerkleDistributorInstance
 
   beforeEach(async () => {

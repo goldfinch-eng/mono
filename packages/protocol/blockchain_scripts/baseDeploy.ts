@@ -34,14 +34,8 @@ import {
   TestERC20,
 } from "../typechain/ethers"
 import {Logger, DeployFn, DeployOpts} from "./types"
-import {TestCommunityRewards} from "../typechain/ethers/TestCommunityRewards"
 import {isMerkleDistributorInfo} from "./merkleDistributor/types"
-import {
-  CommunityRewardsInstance,
-  MerkleDistributorInstance,
-  TestCommunityRewardsInstance,
-  TestERC20Instance,
-} from "../typechain/truffle"
+import {CommunityRewardsInstance, MerkleDistributorInstance, TestERC20Instance} from "../typechain/truffle"
 import {assertIsString} from "@goldfinch-eng/utils"
 import {StakingRewards} from "../typechain/ethers/StakingRewards"
 
@@ -296,8 +290,8 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   async function deployCommunityRewards(
     hre: HardhatRuntimeEnvironment,
     {config}: {config: GoldfinchConfig}
-  ): Promise<Deployed<CommunityRewardsInstance | TestCommunityRewardsInstance>> {
-    const contractName = isTestEnv() ? "TestCommunityRewards" : "CommunityRewards"
+  ): Promise<Deployed<CommunityRewardsInstance>> {
+    const contractName = "CommunityRewards"
     logger(`About to deploy ${contractName}...`)
     assertIsString(gf_deployer)
     const protocol_owner = await getProtocolOwner()
@@ -313,10 +307,11 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
         },
       },
     })
-    const contract = await getContract<
-      CommunityRewards | TestCommunityRewards,
-      CommunityRewardsInstance | TestCommunityRewardsInstance
-    >(contractName, TRUFFLE_CONTRACT_PROVIDER, {at: deployResult.address})
+    const contract = await getContract<CommunityRewards, CommunityRewardsInstance>(
+      contractName,
+      TRUFFLE_CONTRACT_PROVIDER,
+      {at: deployResult.address}
+    )
 
     // await updateConfig(config, "address", CONFIG_KEYS., contract.address, {logger})
     logger(`Deployed ${contractName} to address:`, contract.address)
@@ -342,7 +337,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
     {
       communityRewards,
     }: {
-      communityRewards: Deployed<CommunityRewardsInstance | TestCommunityRewardsInstance>
+      communityRewards: Deployed<CommunityRewardsInstance>
     }
   ): Promise<Deployed<MerkleDistributorInstance> | undefined> {
     const contractName = "MerkleDistributor"
@@ -379,7 +374,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
 }
 
 async function grantDistributorRoleToMerkleDistributor(
-  communityRewards: Deployed<CommunityRewardsInstance | TestCommunityRewardsInstance>,
+  communityRewards: Deployed<CommunityRewardsInstance>,
   merkleDistributor: Deployed<MerkleDistributorInstance>
 ): Promise<void> {
   let hasDistributorRole = await communityRewards.contract.hasRole(DISTRIBUTOR_ROLE, merkleDistributor.contract.address)

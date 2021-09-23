@@ -39,8 +39,8 @@ import {
   MerkleDistributorInstance,
 } from "../typechain/truffle"
 import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/DynamicLeverageRatioStrategy"
-import {TestCommunityRewardsInstance} from "../typechain/truffle/TestCommunityRewards"
-import {MerkleDistributor, TestCommunityRewards} from "../typechain/ethers"
+import {CommunityRewardsInstance} from "../typechain/truffle/CommunityRewards"
+import {MerkleDistributor, CommunityRewards} from "../typechain/ethers"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import "./types"
 const decimals = new BN(String(1e18))
@@ -237,7 +237,7 @@ async function deployAllContracts(
   transferRestrictedVault: TransferRestrictedVaultInstance
   gfi: GFIInstance
   stakingRewards: StakingRewardsInstance
-  communityRewards: TestCommunityRewardsInstance
+  communityRewards: CommunityRewardsInstance
   merkleDistributor: MerkleDistributorInstance | null
 }> {
   await deployments.fixture("base_deploy")
@@ -271,8 +271,8 @@ async function deployAllContracts(
   )
   const gfi = await getDeployedAsTruffleContract<GFIInstance>(deployments, "GFI")
   const stakingRewards = await getDeployedAsTruffleContract<StakingRewardsInstance>(deployments, "StakingRewards")
-  const communityRewards = await getContract<TestCommunityRewards, TestCommunityRewardsInstance>(
-    "TestCommunityRewards",
+  const communityRewards = await getContract<CommunityRewards, CommunityRewardsInstance>(
+    "CommunityRewards",
     TRUFFLE_CONTRACT_PROVIDER
   )
   let merkleDistributor: MerkleDistributorInstance | null = null

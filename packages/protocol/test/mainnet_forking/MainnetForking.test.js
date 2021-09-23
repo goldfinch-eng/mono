@@ -541,7 +541,7 @@ describe("mainnet forking tests", async function () {
 })
 
 // Note: These tests use ethers contracts instead of the truffle contracts.
-// TODO[PR] Should we just delete this?
+// TODO Should we just delete this?
 describe.skip("mainnet upgrade tests", async function () {
   if (!isMainnetForking()) {
     return

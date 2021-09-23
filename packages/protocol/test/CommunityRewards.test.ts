@@ -4,16 +4,25 @@ import hre from "hardhat"
 import {expectEvent} from "@openzeppelin/test-helpers"
 import {DISTRIBUTOR_ROLE, OWNER_ROLE} from "../blockchain_scripts/deployHelpers"
 import {GFIInstance} from "../typechain/truffle"
-import {Granted, GrantRevoked, RewardAdded, RewardPaid} from "../typechain/truffle/CommunityRewards"
-import {TestCommunityRewardsInstance} from "../typechain/truffle/TestCommunityRewards"
-import {expectStateAfterGetReward, mintAndLoadRewards} from "./communityRewardsHelpers"
+import {
+  CommunityRewardsInstance,
+  Granted,
+  GrantRevoked,
+  RewardAdded,
+  RewardPaid,
+} from "../typechain/truffle/CommunityRewards"
+import {
+  assertCommunityRewardsVestingRewards,
+  expectStateAfterGetReward,
+  mintAndLoadRewards,
+} from "./communityRewardsHelpers"
 import {advanceTime, decodeLogs, deployAllContracts, expect, getCurrentTimestamp, getOnlyLog} from "./testHelpers"
 import {asNonNullable} from "../../utils/src"
 const {ethers} = hre
 const {deployments} = hre
 
 describe("CommunityRewards", () => {
-  let owner: string, anotherUser: string, gfi: GFIInstance, communityRewards: TestCommunityRewardsInstance
+  let owner: string, anotherUser: string, gfi: GFIInstance, communityRewards: CommunityRewardsInstance
 
   beforeEach(async () => {
     const [_owner, _anotherUser] = await web3.eth.getAccounts()
@@ -51,7 +60,8 @@ describe("CommunityRewards", () => {
 
     // Verify grant state.
     const currentTimestamp = await getCurrentTimestamp()
-    const grantState = await communityRewards.getGrant(tokenId)
+    const grantState = await communityRewards.grants(tokenId)
+    assertCommunityRewardsVestingRewards(grantState)
     expect(grantState.totalGranted).to.bignumber.equal(amount)
     expect(grantState.totalClaimed).to.bignumber.equal(new BN(0))
     expect(grantState.startTime).to.bignumber.equal(currentTimestamp)
@@ -326,7 +336,8 @@ describe("CommunityRewards", () => {
       expect(rewardsAvailableAfter.sub(rewardsAvailableBefore)).to.bignumber.equal(expectedTotalUnvested)
 
       // Sets revoked-at timestamp.
-      const grantState = await communityRewards.getGrant(tokenId)
+      const grantState = await communityRewards.grants(tokenId)
+      assertCommunityRewardsVestingRewards(grantState)
       expect(grantState.revokedAt).to.bignumber.equal(grantedAt.add(vestingLength.div(new BN(2))))
       const currentTimestamp = await getCurrentTimestamp()
       expect(grantState.revokedAt).to.bignumber.equal(currentTimestamp)
@@ -386,7 +397,7 @@ describe("CommunityRewards", () => {
         cliffLength: new BN(500),
         vestingInterval: new BN(1),
       })
-      const claimable = await communityRewards.getClaimable(tokenId)
+      const claimable = await communityRewards.claimableRewards(tokenId)
       expect(claimable).to.bignumber.equal(new BN(0))
 
       const receipt = await communityRewards.getReward(tokenId, {from: anotherUser})
@@ -426,7 +437,7 @@ describe("CommunityRewards", () => {
       await ethers.provider.send("evm_mine", [])
 
       const expectedClaimableAtCliff = amount.mul(cliffLength).div(vestingLength)
-      const claimable = await communityRewards.getClaimable(tokenId)
+      const claimable = await communityRewards.claimableRewards(tokenId)
       expect(claimable).to.bignumber.equal(expectedClaimableAtCliff)
 
       const receipt = await communityRewards.getReward(tokenId, {from: anotherUser})
@@ -456,7 +467,7 @@ describe("CommunityRewards", () => {
       expect(rewardPaidEvent.args.reward).to.bignumber.equal(expectedClaimedJustAfterCliff)
 
       const expectedClaimableAfterClaimingJustAfterCliff = new BN(0)
-      const claimable2 = await communityRewards.getClaimable(tokenId)
+      const claimable2 = await communityRewards.claimableRewards(tokenId)
       expect(claimable2).to.bignumber.equal(expectedClaimableAfterClaimingJustAfterCliff)
     })
 
@@ -472,7 +483,7 @@ describe("CommunityRewards", () => {
           cliffLength: new BN(0),
           vestingInterval: new BN(1),
         })
-        const claimableBefore = await communityRewards.getClaimable(tokenId)
+        const claimableBefore = await communityRewards.claimableRewards(tokenId)
         expect(claimableBefore).to.bignumber.equal(amount)
 
         await communityRewards.getReward(tokenId, {from: anotherUser})
@@ -724,11 +735,12 @@ describe("CommunityRewards", () => {
         const revocationTimestamp = await getCurrentTimestamp()
         expect(revocationTimestamp).to.bignumber.equal(grantedAt.add(vestingLength.div(new BN(2))))
 
-        const grantState = await communityRewards.getGrant(tokenId)
+        const grantState = await communityRewards.grants(tokenId)
+        assertCommunityRewardsVestingRewards(grantState)
         expect(grantState.revokedAt).to.bignumber.equal(revocationTimestamp)
 
         const expectedClaimable = amount.div(new BN(2))
-        const claimable = await communityRewards.getClaimable(tokenId)
+        const claimable = await communityRewards.claimableRewards(tokenId)
         expect(claimable).to.bignumber.equal(expectedClaimable)
 
         await communityRewards.getReward(tokenId, {from: anotherUser})
@@ -755,11 +767,12 @@ describe("CommunityRewards", () => {
 
         const currentTimestamp = await getCurrentTimestamp()
         expect(currentTimestamp).to.bignumber.equal(revocationTimestamp.add(new BN(200)))
-        const grantState = await communityRewards.getGrant(tokenId)
+        const grantState = await communityRewards.grants(tokenId)
+        assertCommunityRewardsVestingRewards(grantState)
         expect(grantState.revokedAt).to.bignumber.equal(revocationTimestamp)
 
         const expectedClaimable = amount.div(new BN(2))
-        const claimable = await communityRewards.getClaimable(tokenId)
+        const claimable = await communityRewards.claimableRewards(tokenId)
         expect(claimable).to.bignumber.equal(expectedClaimable)
 
         await communityRewards.getReward(tokenId, {from: anotherUser})

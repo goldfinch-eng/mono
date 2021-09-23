@@ -32,9 +32,7 @@ contract CommunityRewards is ICommunityRewards, ERC721PresetMinterPauserAutoIdUp
   uint256 public rewardsAvailable;
 
   /// @dev NFT tokenId => rewards grant
-  // TODO[PR] This is internal, rather than private, only for the sake of being readable by
-  // the TestCommunityRewards contract, for testing purposes.
-  mapping(uint256 => CommunityRewardsVesting.Rewards) internal grants;
+  mapping(uint256 => CommunityRewardsVesting.Rewards) public grants;
 
   // solhint-disable-next-line func-name-mixedcase
   function __initialize__(address owner, GoldfinchConfig _config) external initializer {
@@ -69,7 +67,7 @@ contract CommunityRewards is ICommunityRewards, ERC721PresetMinterPauserAutoIdUp
   /// @notice Returns the rewards claimable by a given grant token, taking into
   ///   account vesting schedule.
   /// @return rewards Amount of rewards denominated in `rewardsToken()`
-  function claimableRewards(uint256 tokenId) internal view returns (uint256 rewards) {
+  function claimableRewards(uint256 tokenId) public view returns (uint256 rewards) {
     return grants[tokenId].claimable();
   }
 
