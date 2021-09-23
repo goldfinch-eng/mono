@@ -1,5 +1,5 @@
 import {bufferToHex, keccak256} from "ethereumjs-util"
-import {assertNonNullable, assertNumber} from "../../utils/type"
+import {assertNonNullable, assertNumber} from "@goldfinch-eng/utils"
 
 export default class MerkleTree {
   private readonly elements: Buffer[]
