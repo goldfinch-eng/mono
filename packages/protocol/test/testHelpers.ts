@@ -39,7 +39,6 @@ import {
   MerkleDistributorInstance,
 } from "../typechain/truffle"
 import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/DynamicLeverageRatioStrategy"
-import {CommunityRewardsInstance} from "../typechain/truffle/CommunityRewards"
 import {MerkleDistributor, CommunityRewards} from "../typechain/ethers"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import "./types"
