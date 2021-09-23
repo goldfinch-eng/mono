@@ -232,7 +232,7 @@ describe("SeniorPool", () => {
   })
 
   describe("setupRedeemerRole", () => {
-    it('should call _setupRole', async () => {
+    it("should call _setupRole", async () => {
       expect(await seniorPool.hasRole(REDEEMER_ROLE, owner)).to.equal(false)
       await seniorPool.setupRedeemerRole()
       expect(await seniorPool.hasRole(REDEEMER_ROLE, owner)).to.equal(true)
