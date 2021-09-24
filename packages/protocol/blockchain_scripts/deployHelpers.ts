@@ -118,11 +118,12 @@ const TRUSTED_FORWARDER_CONFIG: {[chainId: string]: string} = {
   4: "0x956868751Cc565507B3B58E53a6f9f41B56bed74", // Rinkeby
 }
 
-const OWNER_ROLE = web3.utils.keccak256("OWNER_ROLE")
-const PAUSER_ROLE = web3.utils.keccak256("PAUSER_ROLE")
-const GO_LISTER_ROLE = web3.utils.keccak256("GO_LISTER_ROLE")
-const MINTER_ROLE = web3.utils.keccak256("MINTER_ROLE")
-const LEVERAGE_RATIO_SETTER_ROLE = web3.utils.keccak256("LEVERAGE_RATIO_SETTER_ROLE")
+export const OWNER_ROLE = web3.utils.keccak256("OWNER_ROLE")
+export const PAUSER_ROLE = web3.utils.keccak256("PAUSER_ROLE")
+export const GO_LISTER_ROLE = web3.utils.keccak256("GO_LISTER_ROLE")
+export const MINTER_ROLE = web3.utils.keccak256("MINTER_ROLE")
+export const LEVERAGE_RATIO_SETTER_ROLE = web3.utils.keccak256("LEVERAGE_RATIO_SETTER_ROLE")
+export const REDEEMER_ROLE = web3.utils.keccak256("REDEEMER_ROLE")
 
 const TRANCHES = {
   Senior: 1,
@@ -412,11 +413,6 @@ export {
   MAINNET_CHAIN_ID,
   RINKEBY_CHAIN_ID,
   LOCAL_CHAIN_ID,
-  OWNER_ROLE,
-  PAUSER_ROLE,
-  GO_LISTER_ROLE,
-  MINTER_ROLE,
-  LEVERAGE_RATIO_SETTER_ROLE,
   SAFE_CONFIG,
   TRUSTED_FORWARDER_CONFIG,
   isTestEnv,
