@@ -801,6 +801,10 @@ describe("CommunityRewards", () => {
         const revocationTimestamp = await getCurrentTimestamp()
         expect(revocationTimestamp).to.bignumber.equal(grantedAt.add(vestingLength.div(new BN(2))))
 
+        const expectedClaimable = amount.div(new BN(2))
+        const claimable = await communityRewards.claimableRewards(tokenId)
+        expect(claimable).to.bignumber.equal(expectedClaimable)
+
         await advanceTime({seconds: new BN(200)})
         await ethers.provider.send("evm_mine", [])
 
@@ -810,9 +814,9 @@ describe("CommunityRewards", () => {
         assertCommunityRewardsVestingRewards(grantState)
         expect(grantState.revokedAt).to.bignumber.equal(revocationTimestamp)
 
-        const expectedClaimable = amount.div(new BN(2))
-        const claimable = await communityRewards.claimableRewards(tokenId)
-        expect(claimable).to.bignumber.equal(expectedClaimable)
+        const expectedClaimable2 = expectedClaimable
+        const claimable2 = await communityRewards.claimableRewards(tokenId)
+        expect(claimable2).to.bignumber.equal(expectedClaimable2)
 
         await communityRewards.getReward(tokenId, {from: anotherUser})
 
