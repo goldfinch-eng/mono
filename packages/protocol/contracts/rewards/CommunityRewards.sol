@@ -73,6 +73,38 @@ contract CommunityRewards is ICommunityRewards, ERC721PresetMinterPauserAutoIdUp
 
   /* ========== MUTATIVE, ADMIN-ONLY FUNCTIONS ========== */
 
+  /// @notice Transfer rewards from msg.sender, to be used for reward distribution
+  function loadRewards(uint256 rewards) external override onlyAdmin {
+    require(rewards > 0, "Cannot load 0 rewards");
+
+    rewardsAvailable = rewardsAvailable.add(rewards);
+
+    rewardsToken().safeTransferFrom(msg.sender, address(this), rewards);
+
+    emit RewardAdded(rewards);
+  }
+
+  /// @notice Revokes rewards that have not yet vested, for a grant. The unvested rewards are
+  /// now considered available for allocation in another grant.
+  /// @param tokenId The tokenId corresponding to the grant whose unvested rewards to revoke.
+  function revokeGrant(uint256 tokenId) external override whenNotPaused onlyAdmin {
+    CommunityRewardsVesting.Rewards storage grant = grants[tokenId];
+
+    require(grant.totalGranted > 0, "Grant not defined for token id");
+    require(grant.revokedAt == 0, "Grant has already been revoked");
+
+    uint256 totalUnvested = grant.totalUnvestedAt(block.timestamp);
+    require(totalUnvested > 0, "Grant has fully vested");
+
+    rewardsAvailable = rewardsAvailable.add(totalUnvested);
+
+    grant.revokedAt = block.timestamp;
+
+    emit GrantRevoked(tokenId, totalUnvested);
+  }
+
+  /* ========== MUTATIVE, NON-ADMIN-ONLY FUNCTIONS ========== */
+
   /// @notice Grant rewards to a recipient. The recipient address receives an
   ///   an NFT representing their rewards grant. They can present the NFT to `getReward()`
   ///   to claim their rewards. Rewards vest over a schedule.
@@ -123,38 +155,6 @@ contract CommunityRewards is ICommunityRewards, ERC721PresetMinterPauserAutoIdUp
 
     emit Granted(recipient, tokenId, amount, vestingLength, cliffLength, vestingInterval);
   }
-
-  /// @notice Transfer rewards from msg.sender, to be used for reward distribution
-  function loadRewards(uint256 rewards) external override onlyAdmin {
-    require(rewards > 0, "Cannot load 0 rewards");
-
-    rewardsAvailable = rewardsAvailable.add(rewards);
-
-    rewardsToken().safeTransferFrom(msg.sender, address(this), rewards);
-
-    emit RewardAdded(rewards);
-  }
-
-  /// @notice Revokes rewards that have not yet vested, for a grant. The unvested rewards are
-  /// now considered available for allocation in another grant.
-  /// @param tokenId The tokenId corresponding to the grant whose unvested rewards to revoke.
-  function revokeGrant(uint256 tokenId) external override whenNotPaused onlyAdmin {
-    CommunityRewardsVesting.Rewards storage grant = grants[tokenId];
-
-    require(grant.totalGranted > 0, "Grant not defined for token id");
-    require(grant.revokedAt == 0, "Grant has already been revoked");
-
-    uint256 totalUnvested = grant.totalUnvestedAt(block.timestamp);
-    require(totalUnvested > 0, "Grant has fully vested");
-
-    rewardsAvailable = rewardsAvailable.add(totalUnvested);
-
-    grant.revokedAt = block.timestamp;
-
-    emit GrantRevoked(tokenId, totalUnvested);
-  }
-
-  /* ========== MUTATIVE, NON-ADMIN-ONLY FUNCTIONS ========== */
 
   /// @notice Claim rewards for a given grant
   /// @param tokenId A grant token ID
