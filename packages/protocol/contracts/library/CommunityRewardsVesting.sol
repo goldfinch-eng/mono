@@ -58,9 +58,12 @@ library CommunityRewardsVesting {
       return granted;
     }
 
-    uint256 elapsedVestingTimestamp = rewards.revokedAt > 0 ? Math.min(rewards.revokedAt, time) : time;
-    uint256 elapsedVestingUnits = (elapsedVestingTimestamp.sub(start)).div(rewards.vestingInterval);
-    uint256 totalVestingUnits = (end.sub(start)).div(rewards.vestingInterval);
+    uint256 revokedAt = rewards.revokedAt;
+    uint256 vestingInterval = rewards.vestingInterval;
+
+    uint256 elapsedVestingTimestamp = revokedAt > 0 ? Math.min(revokedAt, time) : time;
+    uint256 elapsedVestingUnits = (elapsedVestingTimestamp.sub(start)).div(vestingInterval);
+    uint256 totalVestingUnits = (end.sub(start)).div(vestingInterval);
     return Math.min(granted.mul(elapsedVestingUnits).div(totalVestingUnits), granted);
   }
 }
