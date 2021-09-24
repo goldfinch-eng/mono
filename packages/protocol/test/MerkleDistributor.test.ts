@@ -11,6 +11,23 @@ import {fixtures} from "./merkleDistributorHelpers"
 import {decodeLogs, deployAllContracts, genDifferentHexString, getOnlyLog} from "./testHelpers"
 const {deployments} = hre
 
+const setupTest = deployments.createFixture(async ({deployments}) => {
+  const [_owner] = await web3.eth.getAccounts()
+  const owner = asNonNullable(_owner)
+
+  const deployed = await deployAllContracts(deployments, {
+    deployMerkleDistributor: {fromAccount: owner, root: fixtures.output.merkleRoot},
+  })
+  await deployments.fixture("setup_for_testing_merkle_distributor")
+
+  const gfi = deployed.gfi
+  const communityRewards = deployed.communityRewards
+  assertNonNullable(deployed.merkleDistributor)
+  const merkleDistributor = deployed.merkleDistributor
+
+  return {owner, gfi, communityRewards, merkleDistributor}
+})
+
 describe("MerkleDistributor", () => {
   let owner: string,
     gfi: GFIInstance,
@@ -18,15 +35,8 @@ describe("MerkleDistributor", () => {
     merkleDistributor: MerkleDistributorInstance
 
   beforeEach(async () => {
-    const [_owner, _anotherUser] = await web3.eth.getAccounts()
-    owner = asNonNullable(_owner)
-    const deployed = await deployAllContracts(deployments, {
-      deployMerkleDistributor: {fromAccount: owner, root: fixtures.output.merkleRoot},
-    })
-    gfi = deployed.gfi
-    communityRewards = deployed.communityRewards
-    assertNonNullable(deployed.merkleDistributor)
-    merkleDistributor = deployed.merkleDistributor
+    // eslint-disable-next-line @typescript-eslint/no-extra-semi
+    ;({owner, gfi, communityRewards, merkleDistributor} = await setupTest())
   })
 
   async function acceptGrant({
