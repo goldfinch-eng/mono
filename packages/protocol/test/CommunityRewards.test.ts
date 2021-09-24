@@ -508,10 +508,6 @@ describe("CommunityRewards", () => {
       expect(rewardPaidEvent.args.user).to.equal(anotherUser)
       expect(rewardPaidEvent.args.tokenId).to.bignumber.equal(tokenId)
       expect(rewardPaidEvent.args.reward).to.bignumber.equal(expectedClaimedJustAfterCliff)
-
-      const expectedClaimableAfterClaimingJustAfterCliff = new BN(0)
-      const claimable2 = await communityRewards.claimableRewards(tokenId)
-      expect(claimable2).to.bignumber.equal(expectedClaimableAfterClaimingJustAfterCliff)
     })
 
     context("grant with 0 vesting length", async () => {
