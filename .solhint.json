@@ -138,7 +138,7 @@
         },
         "**/MerkleDistributor.sol:MerkleDistributor": {
           "_setGrantAccepted": [],
-          "acceptGrant": []
+          "acceptGrant": ["onlyGrantRecipient"]
         },
         "**/contracts/test/**": {
           "*.*": []
