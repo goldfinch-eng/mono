@@ -268,6 +268,19 @@ describe("TranchedPool", () => {
     })
   })
 
+  describe("setLimit", async () => {
+    const newLimit = new BN(500)
+    beforeEach(async () => {
+      await createPoolWithCreditLine({})
+    })
+    it("can only be called by governance", async () => {
+      await expect(tranchedPool.setLimit(newLimit, {from: otherPerson})).to.be.rejectedWith(/Must have admin role/)
+    })
+    it("should update the TranchedPool limit", async () => {
+      await expectAction(() => tranchedPool.setLimit(newLimit)).toChange([[tranchedPool.limit, {to: newLimit}]])
+    })
+  })
+
   describe("migrateAndSetNewCreditLine", async () => {
     let otherCreditLine: string
     beforeEach(async () => {
