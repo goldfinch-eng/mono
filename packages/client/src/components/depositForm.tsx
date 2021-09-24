@@ -6,6 +6,8 @@ import TransactionInput from "./transactionInput"
 import LoadingButton from "./loadingButton"
 import useSendFromUser from "../hooks/useSendFromUser"
 import useNonNullContext from "../hooks/useNonNullContext"
+import BigNumber from "bignumber.js"
+import {decimalPlaces} from "../ethereum/utils"
 
 interface DepositFormProps {
   actionComplete: () => void
@@ -49,6 +51,11 @@ function DepositForm(props: DepositFormProps) {
     }
     submitDisabled = submitDisabled || disabled
 
+    const remainingPoolCapacity = pool.gf.remainingCapacity(goldfinchConfig.totalFundsLimit)
+    const maxTxAmountInDollars = usdcFromAtomic(
+      BigNumber.min(remainingPoolCapacity, goldfinchConfig.transactionLimit, user.usdcBalance),
+    )
+
     return (
       <div className="form-inputs">
         {warningMessage}
@@ -75,16 +82,36 @@ function DepositForm(props: DepositFormProps) {
             <TransactionInput
               formMethods={formMethods}
               disabled={disabled}
+              maxAmount={remainingPoolCapacity}
+              rightDecoration={
+                <button
+                  className="enter-max-amount"
+                  type="button"
+                  onClick={() => {
+                    formMethods.setValue(
+                      "transactionAmount",
+                      new BigNumber(maxTxAmountInDollars).decimalPlaces(decimalPlaces, 1).toString(10),
+                      {
+                        shouldValidate: true,
+                        shouldDirty: true,
+                      },
+                    )
+                  }}
+                >
+                  Max
+                </button>
+              }
               validations={{
                 wallet: (value) => user.usdcBalanceInDollars.gte(value) || "You do not have enough USDC",
                 transactionLimit: (value) =>
                   goldfinchConfig.transactionLimit.gte(usdcToAtomic(value)) ||
                   `This is over the per-transaction limit of $${usdcFromAtomic(goldfinchConfig.transactionLimit)}`,
                 totalFundsLimit: (value) => {
-                  let limit = pool.gf.remainingCapacity(goldfinchConfig.totalFundsLimit)
                   return (
-                    limit.gte(usdcToAtomic(value)) ||
-                    `This amount would put the pool over its limit. It can accept a max of $${usdcFromAtomic(limit)}.`
+                    remainingPoolCapacity.gte(usdcToAtomic(value)) ||
+                    `This amount would put the pool over its limit. It can accept a max of $${usdcFromAtomic(
+                      remainingPoolCapacity,
+                    )}.`
                   )
                 },
               }}
@@ -95,7 +122,6 @@ function DepositForm(props: DepositFormProps) {
       </div>
     )
   }
-
   return (
     <TransactionForm
       title="Supply"
