@@ -126,7 +126,7 @@ jobs:
       env:
         cache-name: cache-hardhat-forking
       with:
-        path: ./cache
+        path: ./packages/protocol/cache
         key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/hardhat.config.js') }}
     - run: npx lerna bootstrap --ci
     - run: npm run build
