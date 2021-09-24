@@ -121,7 +121,6 @@ export function verifyMerkleRoot(json: unknown): VerificationResult {
   let valid = true
 
   json.grants.forEach((info: MerkleDistributorGrantInfo) => {
-    assertNonNullable(info)
     const proof = info.proof.map((p: string) => Buffer.from(p.slice(2), "hex"))
     const parsedInfo: ParsedGrantInfo = {
       index: info.index,
