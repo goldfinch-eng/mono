@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+
 import {program} from "commander"
 import fs from "fs"
 import {BigNumber, utils} from "ethers"
