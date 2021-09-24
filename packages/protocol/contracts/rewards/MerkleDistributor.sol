@@ -12,8 +12,8 @@ contract MerkleDistributor is IMerkleDistributor {
   address public immutable override communityRewards;
   bytes32 public immutable override merkleRoot;
 
-  // This is a packed array of booleans.
-  mapping(uint256 => uint256) private claimedBitMap;
+  // @dev This is a packed array of booleans.
+  mapping(uint256 => uint256) private acceptedBitMap;
 
   constructor(address communityRewards_, bytes32 merkleRoot_) public {
     communityRewards = communityRewards_;
@@ -21,17 +21,17 @@ contract MerkleDistributor is IMerkleDistributor {
   }
 
   function isGrantAccepted(uint256 index) public view override returns (bool) {
-    uint256 claimedWordIndex = index / 256;
-    uint256 claimedBitIndex = index % 256;
-    uint256 claimedWord = claimedBitMap[claimedWordIndex];
-    uint256 mask = (1 << claimedBitIndex);
-    return claimedWord & mask == mask;
+    uint256 acceptedWordIndex = index / 256;
+    uint256 acceptedBitIndex = index % 256;
+    uint256 acceptedWord = acceptedBitMap[acceptedWordIndex];
+    uint256 mask = (1 << acceptedBitIndex);
+    return acceptedWord & mask == mask;
   }
 
   function _setGrantAccepted(uint256 index) private {
-    uint256 claimedWordIndex = index / 256;
-    uint256 claimedBitIndex = index % 256;
-    claimedBitMap[claimedWordIndex] = claimedBitMap[claimedWordIndex] | (1 << claimedBitIndex);
+    uint256 acceptedWordIndex = index / 256;
+    uint256 acceptedBitIndex = index % 256;
+    acceptedBitMap[acceptedWordIndex] = acceptedBitMap[acceptedWordIndex] | (1 << acceptedBitIndex);
   }
 
   function acceptGrant(
