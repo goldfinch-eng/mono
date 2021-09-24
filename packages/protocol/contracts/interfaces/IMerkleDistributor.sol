@@ -6,16 +6,17 @@ pragma solidity 0.6.12;
 // Allows anyone to cause the accepting, by the recipient of a CommunityRewards grant, of that grant, if the grant
 // details exist in the merkle root.
 interface IMerkleDistributor {
-  // Returns the address of the CommunityRewards contract whose grants are distributed by this contract.
+  /// @notice Returns the address of the CommunityRewards contract whose grants are distributed by this contract.
   function communityRewards() external view returns (address);
 
-  // Returns the merkle root of the merkle tree containing grant details available to accept.
+  /// @notice Returns the merkle root of the merkle tree containing grant details available to accept.
   function merkleRoot() external view returns (bytes32);
 
-  // Returns true if the index has been marked accepted.
+  /// @notice Returns true if the index has been marked accepted.
   function isGrantAccepted(uint256 index) external view returns (bool);
 
-  // Causes the given `account` to accept the grant consisting of the given details. Reverts if the inputs are invalid.
+  /// @notice Causes the given `account` to accept the grant consisting of the given details. Reverts if
+  /// the inputs are invalid.
   function acceptGrant(
     uint256 index,
     address account,
@@ -26,7 +27,7 @@ interface IMerkleDistributor {
     bytes32[] calldata merkleProof
   ) external;
 
-  // This event is triggered whenever a call to #acceptGrant succeeds.
+  /// @notice This event is triggered whenever a call to #acceptGrant succeeds.
   event GrantAccepted(
     uint256 index,
     address account,
