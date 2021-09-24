@@ -239,7 +239,8 @@ async function deployAllContracts(
   communityRewards: CommunityRewardsInstance
   merkleDistributor: MerkleDistributorInstance | null
 }> {
-  await deployments.fixture("base_deploy")
+  // TODO[PR] Is this an appropriate usage of `setup_for_testing`, or should we keep it `base_deploy`?
+  await deployments.fixture("setup_for_testing")
   const pool = await getDeployedAsTruffleContract<PoolInstance>(deployments, "Pool")
   const seniorPool = await getDeployedAsTruffleContract<SeniorPoolInstance>(deployments, "SeniorPool")
   const seniorPoolFixedStrategy = await getDeployedAsTruffleContract<FixedLeverageRatioStrategyInstance>(

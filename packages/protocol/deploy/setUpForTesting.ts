@@ -47,10 +47,13 @@ let logger: Logger
 async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeEnvironment) {
   const {getOrNull, log} = deployments
   logger = log
-  const {gf_deployer} = await getNamedAccounts()
+  const {gf_deployer, test_merkle_distributor_recipient_a, test_merkle_distributor_recipient_b} =
+    await getNamedAccounts()
   const protocol_owner = await getProtocolOwner()
   assertIsString(protocol_owner)
   assertIsString(gf_deployer)
+  assertIsString(test_merkle_distributor_recipient_a)
+  assertIsString(test_merkle_distributor_recipient_b)
 
   const chainId = await getChainId()
   assertIsChainId(chainId)
@@ -85,12 +88,25 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
 
   if (chainId === LOCAL_CHAIN_ID && !isMainnetForking()) {
     await fundFromLocalWhale(gf_deployer, erc20s)
+
+    await fundFromLocalWhale(test_merkle_distributor_recipient_a, [])
+    await fundFromLocalWhale(test_merkle_distributor_recipient_b, [])
   }
 
   if (isMainnetForking()) {
     logger("Funding protocol_owner with whales")
     underwriter = protocol_owner
-    await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [protocol_owner, gf_deployer, ...borrowers], new BN("75000"))
+    await fundWithWhales(
+      ["USDT", "BUSD", "ETH", "USDC"],
+      [
+        protocol_owner,
+        gf_deployer,
+        test_merkle_distributor_recipient_a,
+        test_merkle_distributor_recipient_b,
+        ...borrowers,
+      ],
+      new BN("75000")
+    )
     logger(`Finished funding with whales.`)
   }
   await impersonateAccount(hre, protocol_owner)

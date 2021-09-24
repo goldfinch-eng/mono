@@ -13,7 +13,6 @@ const {deployments} = hre
 
 describe("MerkleDistributor", () => {
   let owner: string,
-    anotherUser: string,
     gfi: GFIInstance,
     communityRewards: CommunityRewardsInstance,
     merkleDistributor: MerkleDistributorInstance
@@ -21,7 +20,6 @@ describe("MerkleDistributor", () => {
   beforeEach(async () => {
     const [_owner, _anotherUser] = await web3.eth.getAccounts()
     owner = asNonNullable(_owner)
-    anotherUser = asNonNullable(_anotherUser)
     const deployed = await deployAllContracts(deployments, {
       deployMerkleDistributor: {fromAccount: owner, root: fixtures.output.merkleRoot},
     })
@@ -130,7 +128,7 @@ describe("MerkleDistributor", () => {
       grantInfo = _grantInfo
       index = grantInfo.index
       acceptGrantParams = {
-        from: anotherUser,
+        from: grantInfo.account,
         index,
         account: grantInfo.account,
         amount: web3.utils.toBN(grantInfo.grant.amount),
@@ -183,7 +181,7 @@ describe("MerkleDistributor", () => {
       expect(isGrant2Accepted).to.be.false
 
       await acceptGrant({
-        from: anotherUser,
+        from: grantInfo2.account,
         index: grantInfo2.index,
         account: grantInfo2.account,
         amount: web3.utils.toBN(grantInfo2.grant.amount),
@@ -212,9 +210,7 @@ describe("MerkleDistributor", () => {
       grantInfo = _grantInfo
       index = grantInfo.index
       acceptGrantParams = {
-        // Note that the sender is a random user, unrelated to the grant recipient;
-        // anyone can call `acceptGrant()` for any grant recipient.
-        from: anotherUser,
+        from: grantInfo.account,
         index,
         account: grantInfo.account,
         amount: web3.utils.toBN(grantInfo.grant.amount),
@@ -225,6 +221,24 @@ describe("MerkleDistributor", () => {
       }
 
       await mintAndLoadRewards(gfi, communityRewards, owner, web3.utils.toBN(grantInfo.grant.amount))
+    })
+
+    it("rejects sender who is not the recipient of the grant", async () => {
+      const otherGrantInfo = fixtures.output.grants[1]
+      assertNonNullable(otherGrantInfo)
+      expect(otherGrantInfo.account).not.to.equal(acceptGrantParams.account)
+      const nonRecipient = otherGrantInfo.account
+      await expect(
+        acceptGrant({
+          ...acceptGrantParams,
+          from: nonRecipient,
+        })
+      ).to.be.rejectedWith(/Only the grant recipient can accept a grant/)
+    })
+
+    it("allows sender who is the recipient of the grant", async () => {
+      expect(acceptGrantParams.from).to.equal(acceptGrantParams.account)
+      await expect(acceptGrant(acceptGrantParams)).to.be.fulfilled
     })
 
     it("rejects if the grant has already been accepted", async () => {
@@ -261,7 +275,7 @@ describe("MerkleDistributor", () => {
 
       const otherIndex = otherGrantInfo.index
       const otherGrantedTokenId = await acceptGrant({
-        from: anotherUser,
+        from: otherGrantInfo.account,
         index: otherIndex,
         account: otherGrantInfo.account,
         amount: web3.utils.toBN(otherGrantInfo.grant.amount),
@@ -291,6 +305,7 @@ describe("MerkleDistributor", () => {
       expect(invalidAccount).not.to.equal(acceptGrantParams.account)
       const acceptance = acceptGrant({
         ...acceptGrantParams,
+        from: invalidAccount,
         account: invalidAccount,
       })
       await expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)

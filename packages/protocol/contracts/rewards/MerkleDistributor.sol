@@ -42,7 +42,7 @@ contract MerkleDistributor is IMerkleDistributor {
     uint256 cliffLength,
     uint256 vestingInterval,
     bytes32[] calldata merkleProof
-  ) external override {
+  ) external override onlyGrantRecipient(account) {
     require(!isGrantAccepted(index), "MerkleDistributor: Grant already accepted.");
 
     // Verify the merkle proof.
@@ -54,5 +54,10 @@ contract MerkleDistributor is IMerkleDistributor {
     ICommunityRewards(communityRewards).grant(account, amount, vestingLength, cliffLength, vestingInterval);
 
     emit GrantAccepted(index, account, amount, vestingLength, cliffLength, vestingInterval);
+  }
+
+  modifier onlyGrantRecipient(address recipient) {
+    require(msg.sender == recipient, "Only the grant recipient can accept a grant");
+    _;
   }
 }

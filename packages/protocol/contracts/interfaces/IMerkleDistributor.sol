@@ -3,8 +3,8 @@
 // Adapted from https://github.com/Uniswap/merkle-distributor/blob/c3255bfa2b684594ecd562cacd7664b0f18330bf/contracts/interfaces/IMerkleDistributor.sol.
 pragma solidity 0.6.12;
 
-// Allows anyone to cause the accepting, by the recipient of a CommunityRewards grant, of that grant, if the grant
-// details exist in the merkle root.
+/// @notice Enables the granting of a CommunityRewards grant, if the grant details exist in this
+/// contract's Merkle root.
 interface IMerkleDistributor {
   /// @notice Returns the address of the CommunityRewards contract whose grants are distributed by this contract.
   function communityRewards() external view returns (address);

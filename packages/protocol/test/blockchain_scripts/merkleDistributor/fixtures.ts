@@ -1,7 +1,10 @@
 import {JsonAccountedGrant, MerkleDistributorInfo} from "../../../blockchain_scripts/merkleDistributor/types"
 
+export const TEST_MERKLE_DISTRIBUTOR_RECIPIENT_A = "0xd4ad17f7F7f62915A1F225BB1CB88d2492F89769"
+export const TEST_MERKLE_DISTRIBUTOR_RECIPIENT_B = "0xb5c52599dFc7F9858F948f003362A7f4B5E678A5"
+
 const accountedGrant0: JsonAccountedGrant = {
-  account: "0xd4ad17f7F7f62915A1F225BB1CB88d2492F89769",
+  account: TEST_MERKLE_DISTRIBUTOR_RECIPIENT_A,
   grant: {
     amount: "1000",
     vestingLength: "0",
@@ -10,7 +13,7 @@ const accountedGrant0: JsonAccountedGrant = {
   },
 }
 const accountedGrant1: JsonAccountedGrant = {
-  account: "0xd4ad17f7F7f62915A1F225BB1CB88d2492F89769",
+  account: TEST_MERKLE_DISTRIBUTOR_RECIPIENT_A,
   grant: {
     amount: "3000",
     vestingLength: "1000",
@@ -19,7 +22,7 @@ const accountedGrant1: JsonAccountedGrant = {
   },
 }
 const accountedGrant2: JsonAccountedGrant = {
-  account: "0xb5c52599dFc7F9858F948f003362A7f4B5E678A5",
+  account: TEST_MERKLE_DISTRIBUTOR_RECIPIENT_B,
   grant: {
     amount: "2000",
     vestingLength: "1000",
