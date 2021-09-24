@@ -7,9 +7,9 @@ import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC721/IERC721.
 import "../interfaces/IERC20withDec.sol";
 
 interface ICommunityRewards is IERC721 {
-  function rewardsToken() public view returns (IERC20withDec);
+  function rewardsToken() external view returns (IERC20withDec);
 
-  function claimableRewards(uint256 tokenId) public view returns (uint256 rewards);
+  function claimableRewards(uint256 tokenId) external view returns (uint256 rewards);
 
   function grant(
     address recipient,
