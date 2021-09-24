@@ -386,7 +386,7 @@ async function grantDistributorRoleToMerkleDistributor(
   if (hasDistributorRole) {
     logger(`Granted distributor role on ${communityRewards.name} to ${merkleDistributor.name}.`)
   } else {
-    throw new Error(`Failed to grant DISTRIBUTOR role on ${communityRewards.name} to ${merkleDistributor.name}.`)
+    throw new Error(`Failed to grant DISTRIBUTOR_ROLE on ${communityRewards.name} to ${merkleDistributor.name}.`)
   }
 }
 
