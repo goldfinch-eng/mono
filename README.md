@@ -4,6 +4,11 @@
 Goldfinch is a lending protocol built on the blockchain. This is a monorepo containing Goldfinch's smart contracts, web3 frontend and other supporting code.
 
 ## Getting Started
+
+### Github setup
+
+[Setup your GPG key for github signing commits](https://docs.github.com/en/authentication/managing-commit-signature-verification)
+
 ### Cloud setup
 
 Click the gitpod link above, and start developing immediately from your browser. Done!
@@ -35,7 +40,7 @@ npm run bootstrap
   * [`autotasks/`](./packages/autotasks) (`@goldfinch-eng/functions`): [Defender Autotasks and Relay](https://docs.openzeppelin.com/defender/autotasks) code for supporting gasless transactions and triggering periodic on-chain calls.
   * [`utils/`](./packages/utils) (`@goldfinch-eng/utils`): Generally useful utilities that are shared across packages.
 * [`murmuration/`](./murmuration): Provisioning scripts for our cloud staging environment, called Murmuration.
-  
+
 ### Front-end development
 
 #### One time setup
@@ -61,8 +66,8 @@ npm run bootstrap
 Run `npm run start` from the project root directory.
 
   - This will run a local, [mainnet-forked](https://hardhat.org/hardhat-network/guides/mainnet-forking.html) blockchain, deploy our smart contracts, and set up useful state for the frontend (give your user a Credit Line, ETH, and USDC, etc.)
-  - This will also start the front-end server, which will pop up on http://localhost:3000. 
-  
+  - This will also start the front-end server, which will pop up on http://localhost:3000.
+
 Changes to the frontend should be automatically hotloaded using react-refresh.
 
 Changes to smart contracts will require re-compiling and re-deploying. You can do this by re-running `npm run start`.
@@ -139,18 +144,18 @@ For more info, have a look at `npx lerna run -h` and `npx lerna exec -h`.
 
 ### Deployment
 #### Local deployment
-Contract deployment is handled automatically through the `npm run start` command, using [hardhat-deploy](https://github.com/wighawag/hardhat-deploy) and 
+Contract deployment is handled automatically through the `npm run start` command, using [hardhat-deploy](https://github.com/wighawag/hardhat-deploy) and
 custom build scripts in `packages/protocol/blockchain_scripts`.
 
 #### Testnet deployments
 
  Right now, we support Ropsten and Rinkeby testnets. We are already deployed to these. Re-running is idempotent. But if we want to blow away the existing deployments for whatever reason, we can do the following:
- 
+
 Redeploy with: `TEST_USERS={YOUR_METAMASK_ADDRESS} npx buidler deploy --network {ropsten|rinkeby} --export-all ./config/deployments.json --reset`
 
 #### Mainnet deployments:
 
-Contracts are already deployed to mainnet. We write custom scripts to do upgrades or deploy new contracts. 
+Contracts are already deployed to mainnet. We write custom scripts to do upgrades or deploy new contracts.
 
 ### Troubleshooting Frontend Issues
 

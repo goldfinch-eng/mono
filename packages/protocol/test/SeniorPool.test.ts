@@ -4,6 +4,7 @@ import {
   TRANCHES,
   MAX_UINT,
   OWNER_ROLE,
+  REDEEMER_ROLE,
   PAUSER_ROLE,
   ETHDecimals,
 } from "../blockchain_scripts/deployHelpers"
@@ -226,6 +227,14 @@ describe("SeniorPool", () => {
           configAddress: newConfig.address,
         })
       })
+    })
+  })
+
+  describe("setupRedeemerRole", () => {
+    it("should call _setupRole", async () => {
+      expect(await seniorPool.hasRole(REDEEMER_ROLE, owner)).to.equal(false)
+      await seniorPool.setupRedeemerRole()
+      expect(await seniorPool.hasRole(REDEEMER_ROLE, owner)).to.equal(true)
     })
   })
 
