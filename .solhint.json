@@ -133,7 +133,7 @@
           "exitAndWithdraw": []
         },
         "**/CommunityRewards.sol:CommunityRewards": {
-          "grant": ["whenNotPaused", "onlyDistributor"],
+          "grant": ["nonReentrant", "whenNotPaused", "onlyDistributor"],
           "getReward": []
         },
         "**/MerkleDistributor.sol:MerkleDistributor": {
