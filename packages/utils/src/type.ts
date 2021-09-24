@@ -67,12 +67,18 @@ export function assertNonNullable<T>(val: T | null | undefined, errorMessage?: s
   }
 }
 
-export const isNumber = (val: unknown): val is number => typeof val === "number"
-export const assertNumber: (val: unknown) => asserts val is number = genAssertIsTypeof("number")
-
 export function asNonNullable<T>(val: T | null | undefined, errorMessage?: string): NonNullable<T> {
   assertNonNullable(val, errorMessage)
   return val
+}
+
+export const isNumber = (val: unknown): val is number => typeof val === "number"
+export const assertNumber: (val: unknown) => asserts val is number = genAssertIsTypeof("number")
+
+export function assertError(val: unknown): asserts val is Error {
+  if (!(val instanceof Error)) {
+    throw new AssertionError(`Value ${val} is not an instance of Error.`)
+  }
 }
 
 /**
