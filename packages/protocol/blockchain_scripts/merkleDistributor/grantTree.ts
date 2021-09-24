@@ -12,13 +12,7 @@ export default class GrantTree {
     )
   }
 
-  public static verifyProof(
-    index: number | BigNumber,
-    account: string,
-    grant: Grant,
-    proof: Buffer[],
-    root: Buffer
-  ): boolean {
+  public static verifyProof(index: number, account: string, grant: Grant, proof: Buffer[], root: Buffer): boolean {
     let pair = GrantTree.toNode(index, account, grant)
     for (const item of proof) {
       pair = MerkleTree.combinedHash({first: pair, second: item})
@@ -28,7 +22,7 @@ export default class GrantTree {
   }
 
   // keccak256(abi.encode(index, account, amount, vestingLength, cliffLength, vestingInterval))
-  public static toNode(index: number | BigNumber, account: string, grant: Grant): Buffer {
+  public static toNode(index: number, account: string, grant: Grant): Buffer {
     return Buffer.from(
       utils
         .solidityKeccak256(
@@ -45,7 +39,7 @@ export default class GrantTree {
   }
 
   // returns the hex bytes32 values of the proof
-  public getProof(index: number | BigNumber, account: string, grant: Grant): string[] {
+  public getProof(index: number, account: string, grant: Grant): string[] {
     return this.tree.getHexProof(GrantTree.toNode(index, account, grant))
   }
 }

@@ -33,7 +33,7 @@ const combinedHash = (
   )
 }
 
-const toNode = (index: number | BigNumber, account: string, grant: Grant): Buffer => {
+const toNode = (index: number, account: string, grant: Grant): Buffer => {
   const pairHex = utils.solidityKeccak256(
     ["uint256", "address", "uint256", "uint256", "uint256", "uint256"],
     [index, account, grant.amount, grant.vestingLength, grant.cliffLength, grant.vestingInterval]
@@ -41,13 +41,7 @@ const toNode = (index: number | BigNumber, account: string, grant: Grant): Buffe
   return Buffer.from(pairHex.slice(2), "hex")
 }
 
-const verifyProof = (
-  index: number | BigNumber,
-  account: string,
-  grant: Grant,
-  proof: Buffer[],
-  root: Buffer
-): boolean => {
+const verifyProof = (index: number, account: string, grant: Grant, proof: Buffer[], root: Buffer): boolean => {
   let pair = toNode(index, account, grant)
   for (const item of proof) {
     pair = combinedHash({first: pair, second: item})
