@@ -1,4 +1,5 @@
 import BN from "bn.js"
+import _ from "lodash"
 import {AssertionError, isPlainObject} from "../../utils/src"
 
 import {GFIInstance, CommunityRewardsInstance} from "../typechain/truffle"
@@ -48,16 +49,24 @@ type CommunityRewardsVestingRewards = {
   revokedAt: BN
 }
 export const isCommunityRewardsVestingRewards = (obj: unknown): obj is CommunityRewardsVestingRewards => {
+  const plain = _.toPlainObject(obj)
   return (
-    isPlainObject(obj) &&
-    Object.keys(obj).length === 7 &&
-    BN.isBN(obj.totalGranted) &&
-    BN.isBN(obj.totalClaimed) &&
-    BN.isBN(obj.startTime) &&
-    BN.isBN(obj.endTime) &&
-    BN.isBN(obj.cliffLength) &&
-    BN.isBN(obj.vestingInterval) &&
-    BN.isBN(obj.revokedAt)
+    isPlainObject(plain) &&
+    Object.keys(plain).length === 14 &&
+    BN.isBN(plain["0"]) &&
+    BN.isBN(plain["1"]) &&
+    BN.isBN(plain["2"]) &&
+    BN.isBN(plain["3"]) &&
+    BN.isBN(plain["4"]) &&
+    BN.isBN(plain["5"]) &&
+    BN.isBN(plain["6"]) &&
+    BN.isBN(plain.totalGranted) &&
+    BN.isBN(plain.totalClaimed) &&
+    BN.isBN(plain.startTime) &&
+    BN.isBN(plain.endTime) &&
+    BN.isBN(plain.cliffLength) &&
+    BN.isBN(plain.vestingInterval) &&
+    BN.isBN(plain.revokedAt)
   )
 }
 export const assertCommunityRewardsVestingRewards: (obj: unknown) => asserts obj is CommunityRewardsVestingRewards = (

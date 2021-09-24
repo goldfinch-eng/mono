@@ -83,6 +83,49 @@ describe("CommunityRewards", () => {
     return new BN(tokenId)
   }
 
+  describe("grants", () => {
+    it("returns the state for a grant", async () => {
+      const amount = new BN(1e6)
+      const vestingLength = new BN(1000)
+      const cliffLength = new BN(500)
+      const vestingInterval = new BN(100)
+      await mintAndLoadRewards(gfi, communityRewards, owner, amount)
+      const tokenId = await grant({
+        recipient: anotherUser,
+        amount,
+        vestingLength,
+        cliffLength,
+        vestingInterval,
+      })
+      const currentTimestamp = await getCurrentTimestamp()
+      const grantState = await communityRewards.grants(tokenId)
+      assertCommunityRewardsVestingRewards(grantState)
+      expect(grantState.totalGranted).to.bignumber.equal(amount)
+      expect(grantState.totalClaimed).to.bignumber.equal(new BN(0))
+      expect(grantState.startTime).to.bignumber.equal(currentTimestamp)
+      expect(grantState.endTime).to.bignumber.equal(currentTimestamp.add(vestingLength))
+      expect(grantState.cliffLength).to.bignumber.equal(cliffLength)
+      expect(grantState.vestingInterval).to.bignumber.equal(vestingInterval)
+      expect(grantState.revokedAt).to.bignumber.equal(new BN(0))
+    })
+  })
+
+  describe("claimableRewards", () => {
+    it("returns the claimable rewards for a grant", async () => {
+      const amount = new BN(1e6)
+      await mintAndLoadRewards(gfi, communityRewards, owner, amount)
+      const tokenId = await grant({
+        recipient: anotherUser,
+        amount,
+        vestingLength: new BN(0),
+        cliffLength: new BN(0),
+        vestingInterval: new BN(1),
+      })
+      const claimable = await communityRewards.claimableRewards(tokenId)
+      expect(claimable).to.bignumber.equal(amount)
+    })
+  })
+
   describe("grant", () => {
     beforeEach(async () => {
       const amount = new BN(1e6)
@@ -153,7 +196,7 @@ describe("CommunityRewards", () => {
     it("rejects a vesting interval of 0", async () => {
       await expect(
         communityRewards.grant(anotherUser, new BN(1e3), new BN(0), new BN(0), new BN(0), {from: owner})
-      ).to.be.rejectedWith(/revert SafeMath: modulo by zero/)
+      ).to.be.rejectedWith(/SafeMath: modulo by zero/)
     })
 
     it("allows a vesting interval of 1", async () => {
