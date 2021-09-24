@@ -240,6 +240,9 @@ describe("MerkleDistributor", () => {
     })
 
     it("rejection does not perform granting", async () => {
+      // This test is arguably an unnecessary sanity check, because it should be impossible for
+      // a reverted transaction on the EVM to be state-changing.
+
       await mintAndLoadRewards(gfi, communityRewards, owner, new BN(1e3))
 
       const grantedTokenId = await acceptGrant(acceptGrantParams)
