@@ -447,7 +447,7 @@ describe("MerkleDistributor", () => {
         acceptGrantParams.vestingInterval,
         {from: owner}
       )
-      expect(receipt.receipt.gasUsed).to.eq(331731)
+      expect(receipt.receipt.gasUsed).to.eq(334296)
     })
   })
 })
