@@ -18,7 +18,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const deployed = await deployAllContracts(deployments, {
     deployMerkleDistributor: {fromAccount: owner, root: fixtures.output.merkleRoot},
   })
-  await deployments.fixture("setup_for_testing_merkle_distributor")
+  await deployments.run("setup_for_testing_merkle_distributor")
 
   const gfi = deployed.gfi
   const communityRewards = deployed.communityRewards
