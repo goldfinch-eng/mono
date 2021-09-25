@@ -1,6 +1,6 @@
 /* global web3 */
 import {BN} from "ethereumjs-tx/node_modules/ethereumjs-util"
-import hre from "hardhat"
+import hre, {ethers, getNamedAccounts} from "hardhat"
 import {MerkleDistributorGrantInfo} from "../blockchain_scripts/merkleDistributor/types"
 import {GFIInstance} from "../typechain/truffle/GFI"
 import {GrantAccepted, MerkleDistributorInstance} from "../typechain/truffle/MerkleDistributor"
@@ -11,14 +11,29 @@ import {fixtures} from "./merkleDistributorHelpers"
 import {decodeLogs, deployAllContracts, genDifferentHexString, getOnlyLog} from "./testHelpers"
 const {deployments} = hre
 
+async function fundFromLocalWhale(userToFund: string, amount: BN) {
+  const [protocol_owner] = await ethers.getSigners()
+  assertNonNullable(protocol_owner)
+  await protocol_owner.sendTransaction({
+    to: userToFund,
+    value: ethers.utils.parseEther(amount.toString()),
+  })
+}
+
 const setupTest = deployments.createFixture(async ({deployments}) => {
+  const amount = new BN("1")
+  const {test_merkle_distributor_recipient_a, test_merkle_distributor_recipient_b} = await getNamedAccounts()
+  assertNonNullable(test_merkle_distributor_recipient_a)
+  assertNonNullable(test_merkle_distributor_recipient_b)
   const [_owner] = await web3.eth.getAccounts()
   const owner = asNonNullable(_owner)
 
   const deployed = await deployAllContracts(deployments, {
     deployMerkleDistributor: {fromAccount: owner, root: fixtures.output.merkleRoot},
   })
-  await deployments.run("setup_for_testing_merkle_distributor")
+
+  await fundFromLocalWhale(test_merkle_distributor_recipient_a, amount)
+  await fundFromLocalWhale(test_merkle_distributor_recipient_b, amount)
 
   const gfi = deployed.gfi
   const communityRewards = deployed.communityRewards
