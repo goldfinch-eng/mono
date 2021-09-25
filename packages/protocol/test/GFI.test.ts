@@ -2,9 +2,10 @@ import {deployments} from "hardhat"
 import {getDeployedAsTruffleContract} from "./testHelpers"
 import {expectEvent} from "@openzeppelin/test-helpers"
 
+const BEFORE_EACH_TIMEOUT = 30000
+
 describe("GFI", () => {
   const testSetup = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
-    const {protocol_owner: owner} = await getNamedAccounts()
     await deployments.run("base_deploy")
     const gfi = await getDeployedAsTruffleContract(deployments, "GFI")
     const goldfinchConfig = await getDeployedAsTruffleContract(deployments, "GoldfinchConfig")
@@ -13,7 +14,9 @@ describe("GFI", () => {
   })
 
   let owner, gfi, goldfinchConfig
-  beforeEach(async () => {
+  beforeEach(async function () {
+    this.timeout(BEFORE_EACH_TIMEOUT)
+
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
     ;[owner] = await web3.eth.getAccounts()
     const deployments = await testSetup()

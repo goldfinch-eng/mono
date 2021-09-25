@@ -205,7 +205,7 @@ describe("PoolTokens", () => {
       const principalRedeemed1 = mintAmountA.sub(usdcVal(1))
       const interestRedeemed1 = usdcVal(0)
       const okRedemption1 = redeemToken(tokenIdA, principalRedeemed1, interestRedeemed1)
-      expect(okRedemption1).to.be.fulfilled
+      await expect(okRedemption1).to.be.fulfilled
       const principalRedeemed2 = usdcVal(1)
       const interestRedeemed2 = usdcVal(0)
       const okRedemption2 = redeemToken(tokenIdA, principalRedeemed2, interestRedeemed2)
@@ -225,7 +225,7 @@ describe("PoolTokens", () => {
       const principalRedeemed1 = mintAmountA.sub(usdcVal(1))
       const interestRedeemed1 = usdcVal(0)
       const okRedemption = redeemToken(tokenIdA, principalRedeemed1, interestRedeemed1)
-      expect(okRedemption).to.be.fulfilled
+      await expect(okRedemption).to.be.fulfilled
       const principalRedeemed2 = usdcVal(2)
       const interestRedeemed2 = usdcVal(0)
       const excessiveRedemption = redeemToken(tokenIdA, principalRedeemed2, interestRedeemed2)

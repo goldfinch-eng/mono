@@ -132,8 +132,13 @@
           "exit": [],
           "exitAndWithdraw": []
         },
-        "**/FixedLeverageRatioStrategy.sol:FixedLeverageRatioStrategy": {
-          "invest": []
+        "**/CommunityRewards.sol:CommunityRewards": {
+          "grant": ["nonReentrant", "whenNotPaused", "onlyDistributor"],
+          "getReward": []
+        },
+        "**/MerkleDistributor.sol:MerkleDistributor": {
+          "_setGrantAccepted": [],
+          "acceptGrant": ["onlyGrantRecipient"]
         },
         "**/contracts/test/**": {
           "*.*": []

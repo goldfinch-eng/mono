@@ -4,7 +4,13 @@ const hre = require("hardhat")
 const {artifacts} = hre
 const IV1CreditLine = artifacts.require("IV1CreditLine")
 const {MAINNET_MULTISIG} = require("../mainnetForkingHelpers")
-const {MAINNET_CHAIN_ID, RINKEBY_CHAIN_ID, isMainnetForking, getContract} = require("../deployHelpers")
+const {
+  MAINNET_CHAIN_ID,
+  RINKEBY_CHAIN_ID,
+  isMainnetForking,
+  getContract,
+  TRUFFLE_CONTRACT_PROVIDER,
+} = require("../deployHelpers")
 const {getChainId} = require("hardhat")
 const {debug} = require("@goldfinch-eng/utils")
 
@@ -236,7 +242,7 @@ async function calculateTotalPaid(pool, creditLine) {
   // I verified this appears to return the right amounts, based on events
   // received for the quick check creditline, cross checked with
   // https://docs.google.com/spreadsheets/d/1trna25FAnzBtTDnWoBC9-JMZ-PRn-I87jNc7o9KLrto/edit#gid=0
-  const otherPool = await getContract("Pool", {at: pool.address})
+  const otherPool = await getContract("Pool", TRUFFLE_CONTRACT_PROVIDER, {at: pool.address})
   const chainId = isMainnetForking() ? MAINNET_CHAIN_ID : await getChainId()
   const web3Pool = new web3.eth.Contract(otherPool.abi, pool.address)
   const info = borrowerCreditlines[chainId][creditLine]

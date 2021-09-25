@@ -33,7 +33,6 @@ import {expectEvent} from "@openzeppelin/test-helpers"
 import {ecsign} from "ethereumjs-util"
 import {getApprovalDigest, getWallet} from "./permitHelpers"
 import {assertNonNullable} from "@goldfinch-eng/utils"
-import {GoldfinchConfigUpdated} from "../typechain/truffle/SeniorPool"
 const WITHDRAWL_FEE_DENOMINATOR = new BN(200)
 
 const simulateMaliciousTranchedPool = async (goldfinchConfig: any, person2: any): Promise<string> => {

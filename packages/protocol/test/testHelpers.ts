@@ -8,7 +8,16 @@ const expect = chai.expect
 import mochaEach from "mocha-each"
 import {time} from "@openzeppelin/test-helpers"
 import BN from "bn.js"
-import {isTestEnv, USDCDecimals, interestAprAsBN, ZERO_ADDRESS} from "../blockchain_scripts/deployHelpers"
+import {
+  isTestEnv,
+  USDCDecimals,
+  interestAprAsBN,
+  ZERO_ADDRESS,
+  DISTRIBUTOR_ROLE,
+  getContract,
+  GetContractOptions,
+  TRUFFLE_CONTRACT_PROVIDER,
+} from "../blockchain_scripts/deployHelpers"
 import {DeploymentsExtension} from "hardhat-deploy/dist/types"
 import {
   CreditDeskInstance,
@@ -26,9 +35,12 @@ import {
   TransferRestrictedVaultInstance,
   GFIInstance,
   StakingRewardsInstance,
+  CommunityRewardsInstance,
+  MerkleDistributorInstance,
 } from "../typechain/truffle"
-import {assertNonNullable} from "@goldfinch-eng/utils"
 import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/DynamicLeverageRatioStrategy"
+import {MerkleDistributor, CommunityRewards} from "../typechain/ethers"
+import {assertNonNullable} from "@goldfinch-eng/utils"
 import "./types"
 const decimals = new BN(String(1e18))
 const USDC_DECIMALS = new BN(String(1e6))
@@ -74,7 +86,7 @@ const getDeployedAsTruffleContract = async <T extends Truffle.ContractInstance>(
     deployment = await deployments.get(contractName)
   }
   assertNonNullable(deployment)
-  return getTruffleContract(contractName, deployment.address)
+  return getTruffleContract<T>(contractName, deployment.address)
 }
 
 async function getTruffleContract<T extends Truffle.ContractInstance>(name: string, address: string): Promise<T> {
@@ -190,10 +202,24 @@ function getFirstLog<T extends Truffle.AnyEvent>(logs: DecodedLog<T>[]): Decoded
   assertNonNullable(firstLog)
   return firstLog
 }
+function getOnlyLog<T extends Truffle.AnyEvent>(logs: DecodedLog<T>[]): DecodedLog<T> {
+  expect(logs.length).to.equal(1)
+  return getFirstLog(logs)
+}
+
+type DeployAllContractsOptions = {
+  deployForwarder?: {
+    fromAccount: string
+  }
+  deployMerkleDistributor?: {
+    fromAccount: string
+    root: string
+  }
+}
 
 async function deployAllContracts(
   deployments: DeploymentsExtension,
-  options: {deployForwarder?: boolean; fromAccount?: string} = {}
+  options: DeployAllContractsOptions = {}
 ): Promise<{
   pool: PoolInstance
   seniorPool: SeniorPoolInstance
@@ -210,8 +236,9 @@ async function deployAllContracts(
   transferRestrictedVault: TransferRestrictedVaultInstance
   gfi: GFIInstance
   stakingRewards: StakingRewardsInstance
+  communityRewards: CommunityRewardsInstance
+  merkleDistributor: MerkleDistributorInstance | null
 }> {
-  const {deployForwarder, fromAccount} = options
   await deployments.fixture("base_deploy")
   const pool = await getDeployedAsTruffleContract<PoolInstance>(deployments, "Pool")
   const seniorPool = await getDeployedAsTruffleContract<SeniorPoolInstance>(deployments, "SeniorPool")
@@ -230,8 +257,8 @@ async function deployAllContracts(
   const goldfinchFactory = await getDeployedAsTruffleContract<GoldfinchFactoryInstance>(deployments, "GoldfinchFactory")
   const poolTokens = await getDeployedAsTruffleContract<PoolTokensInstance>(deployments, "PoolTokens")
   let forwarder: TestForwarderInstance | null = null
-  if (deployForwarder) {
-    await deployments.deploy("TestForwarder", {from: fromAccount as string, gasLimit: 4000000})
+  if (options.deployForwarder) {
+    await deployments.deploy("TestForwarder", {from: options.deployForwarder.fromAccount, gasLimit: 4000000})
     forwarder = await getDeployedAsTruffleContract<TestForwarderInstance>(deployments, "TestForwarder")
     assertNonNullable(forwarder)
     await forwarder.registerDomainSeparator("Defender", "1")
@@ -243,6 +270,23 @@ async function deployAllContracts(
   )
   const gfi = await getDeployedAsTruffleContract<GFIInstance>(deployments, "GFI")
   const stakingRewards = await getDeployedAsTruffleContract<StakingRewardsInstance>(deployments, "StakingRewards")
+  const communityRewards = await getContract<CommunityRewards, CommunityRewardsInstance>(
+    "CommunityRewards",
+    TRUFFLE_CONTRACT_PROVIDER
+  )
+  let merkleDistributor: MerkleDistributorInstance | null = null
+  if (options.deployMerkleDistributor) {
+    await deployments.deploy("MerkleDistributor", {
+      args: [communityRewards.address, options.deployMerkleDistributor.root],
+      from: options.deployMerkleDistributor.fromAccount,
+      gasLimit: 4000000,
+    })
+    merkleDistributor = await getContract<MerkleDistributor, MerkleDistributorInstance>(
+      "MerkleDistributor",
+      TRUFFLE_CONTRACT_PROVIDER
+    )
+    await communityRewards.grantRole(DISTRIBUTOR_ROLE, merkleDistributor.address)
+  }
   return {
     pool,
     seniorPool,
@@ -259,6 +303,8 @@ async function deployAllContracts(
     transferRestrictedVault,
     gfi,
     stakingRewards,
+    communityRewards,
+    merkleDistributor,
   }
 }
 
@@ -277,10 +323,14 @@ async function erc20Transfer(erc20, toAccounts, amount, fromAccount) {
   }
 }
 
+async function getCurrentTimestamp(): Promise<BN> {
+  return await time.latest()
+}
+
 type Numberish = BN | string | number
 async function advanceTime({days, seconds, toSecond}: {days?: Numberish; seconds?: Numberish; toSecond?: Numberish}) {
   let secondsPassed, newTimestamp
-  const currentTimestamp = await time.latest()
+  const currentTimestamp = await getCurrentTimestamp()
 
   if (days) {
     secondsPassed = SECONDS_PER_DAY.mul(new BN(days))
@@ -368,6 +418,8 @@ async function toTruffle(
   return truffleContract.at(address)
 }
 
+const genDifferentHexString = (hex: string): string => `${hex.slice(0, -1)}${hex[hex.length - 1] === "1" ? "2" : "1"}`
+
 async function toEthers<T>(truffleContract: Truffle.ContractInstance): Promise<T> {
   return (await ethers.getContractAt(truffleContract.abi, truffleContract.address)) as unknown as T
 }
@@ -400,10 +452,13 @@ export {
   deployAllContracts,
   erc20Approve,
   erc20Transfer,
+  getCurrentTimestamp,
   advanceTime,
   createPoolWithCreditLine,
   decodeLogs,
   getFirstLog,
+  getOnlyLog,
   toTruffle,
+  genDifferentHexString,
   toEthers,
 }

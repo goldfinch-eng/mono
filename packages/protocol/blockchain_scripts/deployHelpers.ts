@@ -24,7 +24,13 @@ import {CONFIG_KEYS} from "./configKeys"
 import {GoldfinchConfig} from "../typechain/ethers"
 import {DeploymentsExtension} from "hardhat-deploy/types"
 import {Signer} from "ethers"
-import {AssertionError, assertIsString, assertNonNullable, genExhaustiveTuple} from "@goldfinch-eng/utils"
+import {
+  AssertionError,
+  assertIsString,
+  assertNonNullable,
+  assertUnreachable,
+  genExhaustiveTuple,
+} from "@goldfinch-eng/utils"
 import {getExistingContracts, MAINNET_MULTISIG} from "./mainnetForkingHelpers"
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
@@ -124,6 +130,7 @@ export const GO_LISTER_ROLE = web3.utils.keccak256("GO_LISTER_ROLE")
 export const MINTER_ROLE = web3.utils.keccak256("MINTER_ROLE")
 export const LEVERAGE_RATIO_SETTER_ROLE = web3.utils.keccak256("LEVERAGE_RATIO_SETTER_ROLE")
 export const REDEEMER_ROLE = web3.utils.keccak256("REDEEMER_ROLE")
+export const DISTRIBUTOR_ROLE = web3.utils.keccak256("DISTRIBUTOR_ROLE")
 
 const TRANCHES = {
   Senior: 1,
@@ -323,32 +330,52 @@ function getDefenderClient() {
   return new AdminClient({apiKey: DEFENDER_API_KEY, apiSecret: DEFENDER_API_SECRET})
 }
 
-type ContractProviders = "ethers" | "truffle"
+const ETHERS_CONTRACT_PROVIDER = "ethers"
+type ETHERS_CONTRACT_PROVIDER = typeof ETHERS_CONTRACT_PROVIDER
+const TRUFFLE_CONTRACT_PROVIDER = "truffle"
+type TRUFFLE_CONTRACT_PROVIDER = typeof TRUFFLE_CONTRACT_PROVIDER
+type ContractProvider = ETHERS_CONTRACT_PROVIDER | TRUFFLE_CONTRACT_PROVIDER
+
+type ProvidedContract<
+  P extends ContractProvider,
+  E,
+  T extends Truffle.ContractInstance
+> = P extends TRUFFLE_CONTRACT_PROVIDER ? T : P extends ETHERS_CONTRACT_PROVIDER ? E : never
+
 type GetContractOptions = {
-  as?: ContractProviders
   at?: string
   from?: string
 }
-async function getContract(contractName: string, opts: GetContractOptions = {as: "truffle"}) {
+
+async function getContract<
+  E,
+  T extends Truffle.ContractInstance,
+  P extends ContractProvider = TRUFFLE_CONTRACT_PROVIDER
+>(contractName: string, as: P, opts: GetContractOptions = {}): Promise<ProvidedContract<P, E, T>> {
   if (!opts.at) {
     opts.at = await getExistingAddress(contractName)
   }
   const at = opts.at
-  if (opts.as === "ethers") {
-    const abi = await artifacts.require(contractName).abi
-    const contract = await ethers.getContractAt(abi, at)
-    if (opts.from) {
-      const signer = await ethers.getSigner(opts.from)
-      return contract.connect(signer)
-    } else {
-      return contract
+  switch (as) {
+    case ETHERS_CONTRACT_PROVIDER: {
+      const abi = await artifacts.require(contractName).abi
+      const contract = await ethers.getContractAt(abi, at)
+      if (opts.from) {
+        const signer = await ethers.getSigner(opts.from)
+        return contract.connect(signer) as unknown as ProvidedContract<P, E, T>
+      } else {
+        return contract as unknown as ProvidedContract<P, E, T>
+      }
     }
-  } else {
-    const contract = await artifacts.require(contractName)
-    if (opts.from) {
-      contract.defaults({from: opts.from})
+    case TRUFFLE_CONTRACT_PROVIDER: {
+      const contract = await artifacts.require(contractName)
+      if (opts.from) {
+        contract.defaults({from: opts.from})
+      }
+      return contract.at(at) as unknown as ProvidedContract<P, E, T>
     }
-    return contract.at(at)
+    default:
+      assertUnreachable(as)
   }
 }
 
@@ -424,6 +451,9 @@ export {
   setInitialConfigVals,
   TRANCHES,
   getContract,
+  GetContractOptions,
+  ETHERS_CONTRACT_PROVIDER,
+  TRUFFLE_CONTRACT_PROVIDER,
   getProtocolOwner,
   currentChainId,
   TICKERS,

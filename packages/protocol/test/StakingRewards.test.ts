@@ -38,7 +38,12 @@ enum LockupPeriod {
   TwentyFourMonths,
 }
 
-describe("StakingRewards", () => {
+const BEFORE_EACH_TIMEOUT = 30000
+const TEST_TIMEOUT = 30000
+
+describe("StakingRewards", function () {
+  this.timeout(TEST_TIMEOUT)
+
   let owner: string,
     investor: string,
     anotherUser: string,
@@ -115,7 +120,8 @@ describe("StakingRewards", () => {
     await stakingRewards.loadRewards(amount)
   }
 
-  beforeEach(async () => {
+  beforeEach(async function () {
+    this.timeout(BEFORE_EACH_TIMEOUT)
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
     const [_owner, _investor, _anotherUser] = await web3.eth.getAccounts()
     owner = asNonNullable(_owner)
@@ -155,7 +161,9 @@ describe("StakingRewards", () => {
   describe("stake", () => {
     let totalRewards: BN
 
-    beforeEach(async () => {
+    beforeEach(async function () {
+      this.timeout(BEFORE_EACH_TIMEOUT)
+
       // Mint rewards for a full year
       totalRewards = maxRate.mul(yearInSeconds)
       await mintRewards(totalRewards)
@@ -487,7 +495,9 @@ describe("StakingRewards", () => {
     let totalRewards: BN
     let rewardRate: BN
 
-    beforeEach(async () => {
+    beforeEach(async function () {
+      this.timeout(BEFORE_EACH_TIMEOUT)
+
       // Mint rewards for a full year
       rewardRate = bigVal(100)
 
@@ -552,7 +562,8 @@ describe("StakingRewards", () => {
     })
 
     context("position is vesting", async () => {
-      beforeEach(async () => {
+      beforeEach(async function () {
+        this.timeout(BEFORE_EACH_TIMEOUT)
         // Enable vesting
         await stakingRewards.setVestingSchedule(yearInSeconds)
       })
@@ -611,7 +622,9 @@ describe("StakingRewards", () => {
     let totalRewards: BN
     let rewardRate: BN
 
-    beforeEach(async () => {
+    beforeEach(async function () {
+      this.timeout(BEFORE_EACH_TIMEOUT)
+
       // Mint rewards for a full year
       rewardRate = bigVal(100)
 
@@ -683,7 +696,9 @@ describe("StakingRewards", () => {
     let totalRewards: BN
     let rewardRate: BN
 
-    beforeEach(async () => {
+    beforeEach(async function () {
+      this.timeout(BEFORE_EACH_TIMEOUT)
+
       // Mint rewards for a full year
       rewardRate = bigVal(100)
 
@@ -754,7 +769,9 @@ describe("StakingRewards", () => {
   describe("getReward", async () => {
     let totalRewards: BN
 
-    beforeEach(async () => {
+    beforeEach(async function () {
+      this.timeout(BEFORE_EACH_TIMEOUT)
+
       // Mint rewards for a full year
       totalRewards = maxRate.mul(yearInSeconds)
       await mintRewards(totalRewards)
@@ -931,7 +948,9 @@ describe("StakingRewards", () => {
   describe("earnedSinceLastCheckpoint", async () => {
     let rewardRate: BN
 
-    beforeEach(async () => {
+    beforeEach(async function () {
+      this.timeout(BEFORE_EACH_TIMEOUT)
+
       rewardRate = new BN(String(2e18))
       // Fix the reward rate to make testing easier
       await stakingRewards.setMinRate(rewardRate)
@@ -990,7 +1009,9 @@ describe("StakingRewards", () => {
   describe("exit", async () => {
     let rewardRate: BN
 
-    beforeEach(async () => {
+    beforeEach(async function () {
+      this.timeout(BEFORE_EACH_TIMEOUT)
+
       rewardRate = new BN(String(2e18))
       // Fix the reward rate to make testing easier
       await stakingRewards.setMinRate(rewardRate)
@@ -1037,7 +1058,9 @@ describe("StakingRewards", () => {
   describe("exitAndWithdraw", async () => {
     let rewardRate: BN
 
-    beforeEach(async () => {
+    beforeEach(async function () {
+      this.timeout(BEFORE_EACH_TIMEOUT)
+
       rewardRate = new BN(String(2e18))
       // Fix the reward rate to make testing easier
       await stakingRewards.setMinRate(rewardRate)
@@ -1087,7 +1110,8 @@ describe("StakingRewards", () => {
   })
 
   describe("vesting", async () => {
-    beforeEach(async () => {
+    beforeEach(async function () {
+      this.timeout(BEFORE_EACH_TIMEOUT)
       // Mint a small, fixed amount that limits reward disbursement
       // so we can test the vesting
       await mintRewards("100000")
@@ -1115,7 +1139,9 @@ describe("StakingRewards", () => {
     let totalRewards: BN
     const rewardRate = new BN(String(1e18))
 
-    beforeEach(async () => {
+    beforeEach(async function () {
+      this.timeout(BEFORE_EACH_TIMEOUT)
+
       // Fix the reward rate to make testing easier
       await stakingRewards.setMaxRate(rewardRate)
       await stakingRewards.setMinRate(rewardRate)
@@ -1405,7 +1431,9 @@ describe("StakingRewards", () => {
     const minRateAtPercent = bigVal(3)
     const targetCapacity = bigVal(500)
 
-    beforeEach(async () => {
+    beforeEach(async function () {
+      this.timeout(BEFORE_EACH_TIMEOUT)
+
       await stakingRewards.setMaxRate(maxRate)
       await stakingRewards.setMinRate(minRate)
       await stakingRewards.setMinRateAtPercent(minRateAtPercent)
@@ -1490,7 +1518,9 @@ describe("StakingRewards", () => {
     let totalRewards: BN
 
     context("total rewards available less than reward rate", async () => {
-      beforeEach(async () => {
+      beforeEach(async function () {
+        this.timeout(BEFORE_EACH_TIMEOUT)
+
         // Mint rewards for a full year
         totalRewards = maxRate.mul(yearInSeconds)
         await mintRewards(totalRewards)
@@ -1517,7 +1547,9 @@ describe("StakingRewards", () => {
     })
 
     context("staked supply is a fraction of 1 token", async () => {
-      beforeEach(async () => {
+      beforeEach(async function () {
+        this.timeout(BEFORE_EACH_TIMEOUT)
+
         // Mint rewards for a full year
         totalRewards = maxRate.mul(yearInSeconds)
         await mintRewards(totalRewards)
@@ -1540,7 +1572,9 @@ describe("StakingRewards", () => {
     })
 
     context("user transfers NFT", async () => {
-      beforeEach(async () => {
+      beforeEach(async function () {
+        this.timeout(BEFORE_EACH_TIMEOUT)
+
         // Mint rewards for a full year
         totalRewards = maxRate.mul(yearInSeconds)
         await mintRewards(totalRewards)
