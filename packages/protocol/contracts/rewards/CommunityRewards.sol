@@ -120,7 +120,7 @@ contract CommunityRewards is ICommunityRewards, ERC721PresetMinterPauserAutoIdUp
     uint256 vestingLength,
     uint256 cliffLength,
     uint256 vestingInterval
-  ) external override whenNotPaused onlyDistributor {
+  ) external override nonReentrant whenNotPaused onlyDistributor {
     _grant(recipient, amount, vestingLength, cliffLength, vestingInterval);
   }
 
