@@ -12,7 +12,7 @@ describe("GoldfinchFactory", async () => {
   })
 
   let owner, goldfinchFactory, goldfinchConfig
-  beforeEach(async () => {
+  beforeEach(async function () {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
     ;[owner] = await web3.eth.getAccounts()
     const deployments = await testSetup()
