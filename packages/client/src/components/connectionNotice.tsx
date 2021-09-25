@@ -18,6 +18,7 @@ export interface ConnectionNoticeProps {
   requireUnlock?: boolean
   requireSignIn?: boolean
   requireKYC?: {kyc: AsyncResult<KYC>; condition: (KYC: KYC) => boolean}
+  isPaused?: boolean
 }
 
 function SignInBanner() {
@@ -153,6 +154,16 @@ export const strategies: ConnectionNoticeStrategy[] = [
       return <UnlockUSDCForm unlockAddress={unlockStatus.unlockAddress} />
     },
   },
+  {
+    devName: "pool_paused",
+    match: ({isPaused}) => !!isPaused,
+    render: () => (
+      <TextBanner>
+        The pool is currently paused. Join our <a href="https://discord.gg/HVeaca3fN8">Discord</a> for updates on when
+        the cap is raised.
+      </TextBanner>
+    ),
+  },
 ]
 
 function getUnlockStatus({location, user}: {location: any; user: User}): UnlockedStatus | null {
@@ -165,13 +176,12 @@ function getUnlockStatus({location, user}: {location: any; user: User}): Unlocke
   return unlockStatus
 }
 
-function ConnectionNotice(props: ConnectionNoticeProps) {
-  props = {
-    requireUnlock: true,
-    requireGolist: false,
-    requireSignIn: false,
-    ...props,
-  }
+function ConnectionNotice({
+  requireUnlock = true,
+  requireGolist = false,
+  requireSignIn = false,
+  isPaused = false,
+}: ConnectionNoticeProps) {
   const {network, user} = useNonNullContext(AppContext)
   const session = useSession()
   let location = useLocation()
@@ -181,7 +191,10 @@ function ConnectionNotice(props: ConnectionNoticeProps) {
     user,
     session,
     location,
-    ...props,
+    requireUnlock,
+    requireGolist,
+    requireSignIn,
+    isPaused,
   }
 
   for (let strategy of strategies) {
@@ -192,5 +205,7 @@ function ConnectionNotice(props: ConnectionNoticeProps) {
 
   return null
 }
+
+ConnectionNotice.defaultProps = {}
 
 export default ConnectionNotice

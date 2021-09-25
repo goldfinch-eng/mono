@@ -123,6 +123,7 @@ class TranchedPool {
 
   isV1StyleDeal!: boolean
   isMigrated!: boolean
+  isPaused!: boolean
 
   constructor(address: string, goldfinchProtocol: GoldfinchProtocol) {
     this.address = address
@@ -152,6 +153,7 @@ class TranchedPool {
 
     this.isV1StyleDeal = !!this.metadata?.v1StyleDeal
     this.isMigrated = !!this.metadata?.migrated
+    this.isPaused = !!pool.methods.paused()
 
     let now = secondsSinceEpoch()
     if (now < seniorTranche.lockedUntil) {
