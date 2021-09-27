@@ -15,7 +15,7 @@ export function useFetchNDA({user, tranchedPool}: {user: User; tranchedPool?: Tr
     if (session.status !== "authenticated") {
       return
     }
-    if (!user.address || !tranchedPool.address) {
+    if (!user.address || !tranchedPool?.address) {
       return
     }
     const client = new DefaultGoldfinchClient(network.name!, session, setSessionData)
