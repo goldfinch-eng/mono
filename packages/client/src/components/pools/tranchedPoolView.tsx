@@ -106,12 +106,12 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
           signatureData.deadline,
           signatureData.v,
           signatureData.r,
-          signatureData.s,
+          signatureData.s
         ),
         {
           type: "Deposit",
           amount: transactionAmount,
-        },
+        }
       ).then(actionComplete)
     }
   }
@@ -159,7 +159,7 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
               wallet: (value) => user.usdcBalanceInDollars.gte(value) || "You do not have enough USDC",
               backerLimit: (value) => {
                 const backerLimitPercent = new BigNumber(
-                  tranchedPool.metadata?.backerLimit ?? process.env.REACT_APP_GLOBAL_BACKER_LIMIT ?? "1",
+                  tranchedPool.metadata?.backerLimit ?? process.env.REACT_APP_GLOBAL_BACKER_LIMIT ?? "1"
                 )
                 const backerLimit = tranchedPool.creditLine.limit.multipliedBy(backerLimitPercent)
                 const backerDeposits = backer.principalAmount.minus(backer.principalRedeemed).plus(usdcToAtomic(value))
@@ -175,7 +175,7 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
                 return (
                   remainingJuniorCapacity?.gte(usdcToAtomic(value)) ||
                   `This deposit would put the pool over its limit. It can accept a max of $${usdcFromAtomic(
-                    remainingJuniorCapacity,
+                    remainingJuniorCapacity
                   )}.`
                 )
               },
@@ -199,7 +199,7 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
 
 function splitWithdrawAmount(
   withdrawAmount: BigNumber,
-  tokenInfos: TokenInfo[],
+  tokenInfos: TokenInfo[]
 ): {tokenIds: string[]; amounts: string[]} {
   let amountLeft = withdrawAmount
   let tokenIds: string[] = []
@@ -212,7 +212,7 @@ function splitWithdrawAmount(
 
     let amountFromThisToken = BigNumber.min(
       amountLeft,
-      tokenInfo.principalRedeemable.plus(tokenInfo.interestRedeemable),
+      tokenInfo.principalRedeemable.plus(tokenInfo.interestRedeemable)
     )
     amountLeft = amountLeft.minus(amountFromThisToken)
     tokenIds.push(tokenInfo.id)
@@ -315,7 +315,7 @@ function DepositStatus({tranchedPool, backer}: {tranchedPool?: TranchedPool; bac
           <>
             <div className="value">
               {displayDollars(
-                usdcFromAtomic(tranchedPool.estimateMonthlyInterest(estimatedAPY, backer.principalAtRisk)),
+                usdcFromAtomic(tranchedPool.estimateMonthlyInterest(estimatedAPY, backer.principalAtRisk))
               )}
             </div>
             <div className="sub-value">{displayPercent(estimatedAPY)} APY</div>
@@ -487,7 +487,7 @@ function SupplyStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
 
   let juniorContribution = new BigNumber(tranchedPool?.juniorTranche.principalDeposited)
   let seniorContribution = new BigNumber(tranchedPool?.seniorTranche.principalDeposited).plus(
-    tranchedPool.estimatedSeniorPoolContribution,
+    tranchedPool.estimatedSeniorPoolContribution
   )
 
   let rows: Array<{label: string; value: string}> = [

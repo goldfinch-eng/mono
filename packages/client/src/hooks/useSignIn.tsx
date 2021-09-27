@@ -38,7 +38,7 @@ export function useSession(): Session {
   return getSession(
     sessionData
       ? {address: user.address, signature: sessionData.signature, signatureBlockNum: sessionData.signatureBlockNum}
-      : {address: user.address, signature: undefined, signatureBlockNum: undefined},
+      : {address: user.address, signature: undefined, signatureBlockNum: undefined}
   )
 }
 
@@ -61,7 +61,7 @@ export function useSignIn(): [status: Session, signIn: () => Promise<Session>] {
       setSessionData({signature, signatureBlockNum, signatureBlockNumTimestamp})
       return getSession({address: user.address, signature, signatureBlockNum})
     },
-    [user, setSessionData],
+    [user, setSessionData]
   )
 
   return [session, signIn]

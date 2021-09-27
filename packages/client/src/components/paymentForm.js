@@ -70,7 +70,7 @@ function PaymentForm(props) {
     // HACK: Disable eslint's complaint about exhaustive-deps, since it doesn't understand our intention
     // with `remainingTotalDueAmountInDollarsDependency`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [erc20, user, goldfinchConfig.transactionLimit, isSwapping, remainingTotalDueAmountInDollarsDependency],
+    [erc20, user, goldfinchConfig.transactionLimit, isSwapping, remainingTotalDueAmountInDollarsDependency]
   )
 
   function getSelectedUSDCAmount() {
@@ -115,7 +115,7 @@ function PaymentForm(props) {
           usdcAmounts,
           erc20Amount,
           erc20.address,
-          transactionAmountQuote,
+          transactionAmountQuote
         )
       } else {
         unsentAction = borrower.payMultiple(addresses, usdcAmounts)
@@ -127,7 +127,7 @@ function PaymentForm(props) {
           erc20Amount,
           getSelectedUSDCAmount(),
           erc20.address,
-          transactionAmountQuote,
+          transactionAmountQuote
         )
       } else {
         // When not swapping, the erc20 is usdc
