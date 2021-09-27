@@ -26,6 +26,8 @@ export interface KYC {
 interface GoldfinchClient {
   fetchKYCStatus(address: string): Promise<any>
   signAgreement(address: string, fullName: string, pool: string): Promise<any>
+  signNDA(address: string, fullName: string, pool: string): Promise<any>
+  fetchNDA(address: string, fullName: string, pool: string): Promise<any>
 }
 
 export class GoldfinchClientError extends Error {
@@ -118,6 +120,39 @@ class DefaultGoldfinchClient implements GoldfinchClient {
     return this._handleResponse(
       fetch(this._getSignAgreementURL(), this._getSignAgreementRequestInit(address, {fullName, pool})),
     )
+  }
+
+  _getSignNDARequestInit(address: string, body: {pool: string}): RequestInit {
+    return {
+      method: "POST",
+      headers: {
+        ...this._getAuthHeaders(address),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    }
+  }
+
+  _getSignNDAURL(): string {
+    return `${this.baseURL}/signNDA`
+  }
+
+  async signNDA(address: string, pool: string): Promise<any> {
+    return this._handleResponse(fetch(this._getSignNDAURL(), this._getSignNDARequestInit(address, {pool})))
+  }
+
+  _getFetchNDARequestInit(address: string): RequestInit {
+    return {
+      headers: this._getAuthHeaders(address),
+    }
+  }
+
+  _getFetchNDAURL(pool: string): string {
+    return `${this.baseURL}/fetchNDA/?pool=${pool}`
+  }
+
+  async fetchNDA(address: string, pool: string): Promise<HandledResponse<any>> {
+    return this._handleResponse(fetch(this._getFetchNDAURL(pool), this._getFetchNDARequestInit(address)))
   }
 }
 

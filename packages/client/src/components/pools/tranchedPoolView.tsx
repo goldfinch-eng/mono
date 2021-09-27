@@ -25,6 +25,8 @@ import {useBacker, useTranchedPool} from "../../hooks/useTranchedPool"
 import {useSession} from "../../hooks/useSignIn"
 import _ from "lodash"
 import DefaultGoldfinchClient from "../../hooks/useGoldfinchClient"
+import NdaPrompt from "../ndaPrompt"
+import {useFetchNDA} from "../../hooks/useNDA"
 
 function useRecentPoolTransactions({tranchedPool}: {tranchedPool?: TranchedPool}): Record<string, any>[] {
   let recentTransactions = useAsync(() => tranchedPool && tranchedPool.recentTransactions(), [tranchedPool])
@@ -623,7 +625,15 @@ function CreditStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
   )
 }
 
-function Overview({tranchedPool}: {tranchedPool?: TranchedPool}) {
+function Overview({
+  tranchedPool,
+  backer,
+  handleDetails,
+}: {
+  tranchedPool?: TranchedPool
+  backer?: PoolBacker
+  handleDetails: any
+}) {
   const session = useSession()
 
   let rows: Array<{label: string; value: string}> = []
@@ -652,13 +662,13 @@ function Overview({tranchedPool}: {tranchedPool?: TranchedPool}) {
   }
 
   let detailsLink = <></>
-  if (tranchedPool?.metadata?.detailsUrl) {
-    if (session.status === "authenticated") {
+  if (backer) {
+    if (session.status === "authenticated" && tranchedPool?.metadata?.detailsUrl) {
       detailsLink = (
         <div className="pool-links">
-          <a href={tranchedPool.metadata.detailsUrl} target="_blank" rel="noopener noreferrer">
+          <button onClick={() => handleDetails()}>
             Details & Discussion <span className="outbound-link">{iconOutArrow}</span>
-          </a>
+          </button>
         </div>
       )
     } else {
@@ -692,15 +702,42 @@ interface TranchedPoolViewURLParams {
 
 function TranchedPoolView() {
   const {poolAddress} = useParams<TranchedPoolViewURLParams>()
-  const {goldfinchProtocol, usdc, user} = useContext(AppContext)
+  const {goldfinchProtocol, usdc, user, network, setSessionData} = useNonNullContext(AppContext)
+  const session = useSession()
   const [tranchedPool, refreshTranchedPool] = useTranchedPool({address: poolAddress, goldfinchProtocol})
+  const [showModal, setShowModal] = useState(false)
   const backer = useBacker({user, tranchedPool})
+  const [nda, refreshNDA] = useFetchNDA({user, tranchedPool})
 
   const [unlocked, refreshUnlocked] = useCurrencyUnlocked(usdc, {
     owner: user.address,
     spender: tranchedPool?.address,
     minimum: null,
   })
+
+  function openDetailsUrl() {
+    window.open(tranchedPool?.metadata?.detailsUrl, "_blank")
+  }
+
+  const handleDetails = () => (nda && nda.status === "success" ? openDetailsUrl() : setShowModal(true))
+
+  async function handleSignNDA() {
+    if (session.status !== "authenticated") {
+      return
+    }
+    const client = new DefaultGoldfinchClient(network.name!, session, setSessionData)
+    return client
+      .signNDA(user.address, tranchedPool!.address)
+      .then((r) => {
+        openDetailsUrl()
+        setShowModal(false)
+        refreshNDA()
+      })
+      .catch((error) => {
+        setShowModal(false)
+        console.error(error)
+      })
+  }
 
   let unlockForm = <></>
 
@@ -754,7 +791,8 @@ function TranchedPoolView() {
       ) : (
         <SupplyStatus tranchedPool={tranchedPool} />
       )}
-      <Overview tranchedPool={tranchedPool} />
+      <Overview tranchedPool={tranchedPool} backer={backer} handleDetails={handleDetails} />
+      <NdaPrompt show={showModal} onClose={() => setShowModal(false)} onSign={handleSignNDA} />
     </div>
   )
 }
