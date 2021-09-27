@@ -214,8 +214,8 @@ function usePoolBackers({goldfinchProtocol, user}: {goldfinchProtocol?: Goldfinc
             // Secondary sort: descending by user's balance
             b.balanceInDollars.comparedTo(a.balanceInDollars) ||
             // Tertiary sort: alphabetical by display name, for the sake of stable ordering.
-            a.tranchedPool.displayName.localeCompare(b.tranchedPool.displayName),
-        ),
+            a.tranchedPool.displayName.localeCompare(b.tranchedPool.displayName)
+        )
       )
       setBackersStatus("loaded")
     }

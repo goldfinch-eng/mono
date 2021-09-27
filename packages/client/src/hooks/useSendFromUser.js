@@ -71,7 +71,7 @@ function useSendFromUser() {
       },
       (error) => {
         console.log(`Unable to get gas price: ${error}`)
-      },
+      }
     )
   }
 }

@@ -144,7 +144,7 @@ class TranchedPool {
     this.totalDeposited = juniorTranche.principalDeposited.plus(seniorTranche.principalDeposited)
     this.juniorFeePercent = new BigNumber(await this.contract.methods.juniorFeePercent().call())
     this.reserveFeePercent = new BigNumber(100).div(
-      await this.goldfinchProtocol.getConfigNumber(CONFIG_KEYS.ReserveDenominator),
+      await this.goldfinchProtocol.getConfigNumber(CONFIG_KEYS.ReserveDenominator)
     )
     let pool = this.goldfinchProtocol.getContract<SeniorPoolContract>("SeniorPool")
     this.estimatedSeniorPoolContribution = new BigNumber(await pool.methods.estimateInvestment(this.address).call())
@@ -263,7 +263,7 @@ class TranchedPool {
       } else if (e.event === "PaymentApplied") {
         const interestAmount = new BigNumber(e.returnValues.interestAmount)
         const totalPrincipalAmount = new BigNumber(e.returnValues.principalAmount).plus(
-          new BigNumber(e.returnValues.remainingAmount),
+          new BigNumber(e.returnValues.remainingAmount)
         )
         Object.assign(event, {
           name: "Interest payment",
@@ -304,7 +304,7 @@ class TranchedPool {
         return web3.eth.getBlock(tx.blockNumber).then((block) => {
           return {blockNumber: tx.blockNumber, timestamp: block.timestamp}
         })
-      }),
+      })
     )
     const result = {}
     blockTimestamps.map((t) => (result[t.blockNumber] = t.timestamp))
@@ -359,7 +359,7 @@ class PoolBacker {
           .getTokenInfo(tokenId)
           .call()
           .then((res) => tokenInfo(tokenId, res))
-      }),
+      })
     )
 
     let zero = new BigNumber(0)
@@ -368,7 +368,7 @@ class PoolBacker {
     this.interestRedeemed = BigNumber.sum.apply(null, this.tokenInfos.map((t) => t.interestRedeemed).concat(zero))
 
     let availableToWithdrawAmounts = await Promise.all(
-      tokenIds.map((tokenId) => this.tranchedPool.contract.methods.availableToWithdraw(tokenId).call()),
+      tokenIds.map((tokenId) => this.tranchedPool.contract.methods.availableToWithdraw(tokenId).call())
     )
     this.tokenInfos.forEach((tokenInfo, i) => {
       tokenInfo.interestRedeemable = new BigNumber(availableToWithdrawAmounts[i]!.interestRedeemable)
