@@ -1,37 +1,37 @@
-import * as dotenv from 'dotenv'
-dotenv.config({path: '.env.local'})
-import { fromAtomic, getContract } from "./deployHelpers"
+import * as dotenv from "dotenv"
+dotenv.config({path: ".env.local"})
+import {fromAtomic, getContract} from "./deployHelpers"
 import {SeniorPoolInstance, PoolTokensInstance, TranchedPoolInstance} from "../typechain/truffle"
-import { default as DefenderProposer } from "./DefenderProposer"
+import {default as DefenderProposer} from "./DefenderProposer"
 import hre from "hardhat"
 
 async function main() {
-  let seniorPool = (await getContract("SeniorPool")) as SeniorPoolInstance
-  let poolTokens = (await getContract("PoolTokens")) as PoolTokensInstance
+  const seniorPool = (await getContract("SeniorPool")) as SeniorPoolInstance
+  const poolTokens = (await getContract("PoolTokens")) as PoolTokensInstance
   const {getChainId} = hre
   const chainId = await getChainId()
   const poolProposer = new RedeemTranchedPoolProposer({hre, logger: console.log, chainId})
 
-  let events = await poolTokens.getPastEvents("TokenMinted", {
-    filter: { owner: seniorPool.address },
+  const events = await poolTokens.getPastEvents("TokenMinted", {
+    filter: {owner: seniorPool.address},
     fromBlock: "earliest",
     toBlock: "latest",
   })
   console.log(`Found ${events.length} tokens for the senior pool`)
 
-  for (let event of events) {
-    let tokenId = event.args.tokenId
-    let poolAddress = event.args.pool
-    let tranchedPool = (await getContract("TranchedPool", {at: poolAddress})) as TranchedPoolInstance
+  for (const event of events) {
+    const tokenId = event.args.tokenId
+    const poolAddress = event.args.pool
+    const tranchedPool = (await getContract("TranchedPool", {at: poolAddress})) as TranchedPoolInstance
     let interest
     let principal
 
     try {
-      let res = await tranchedPool.availableToWithdraw(tokenId)
+      const res = await tranchedPool.availableToWithdraw(tokenId)
       interest = res[0]
       principal = res[1]
     } catch (ex) {
-      console.log(`Failed to calculate for ${poolAddress} (${ex.message})`)
+      console.log(`Failed to calculate token ${tokenId} for ${poolAddress} (${ex.message})`)
       continue
     }
 
@@ -53,10 +53,10 @@ class RedeemTranchedPoolProposer extends DefenderProposer {
         name: "redeem",
         inputs: [
           {
-            "internalType": "uint256",
-            "name": "tokenId",
-            "type": "uint256"
-          }
+            internalType: "uint256",
+            name: "tokenId",
+            type: "uint256",
+          },
         ],
       },
       functionInputs: [tokenId.toString()],

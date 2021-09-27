@@ -6,5 +6,12 @@
     "target": "es2019",
     "isolatedModules": false
   },
-  "include": ["hardhat.config.ts", "./blockchain_scripts", "./deploy", "./test", "typechain/**/*"]
+  "include": [
+    "hardhat.config.ts",
+    "hardhat.config.base.ts",
+    "./blockchain_scripts",
+    "./deploy",
+    "./test",
+    "typechain/**/*"
+  ]
 }

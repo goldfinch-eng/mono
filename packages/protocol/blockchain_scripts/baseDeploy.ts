@@ -35,7 +35,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
     return
   }
   const {deployments, getNamedAccounts, getChainId} = hre
-  const {deploy, log} = deployments
+  const {deploy} = deployments
   logger = console.log
   logger("Starting deploy...")
   const {gf_deployer} = await getNamedAccounts()
@@ -76,11 +76,11 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
     }
 
     assertIsString(gf_deployer)
-    let deployResult = await deploy(contractName, {
+    const deployResult = await deploy(contractName, {
       from: gf_deployer,
     })
     logger("Config was deployed to:", deployResult.address)
-    let config = (await ethers.getContractAt(deployResult.abi, deployResult.address)) as GoldfinchConfig
+    const config = (await ethers.getContractAt(deployResult.abi, deployResult.address)) as GoldfinchConfig
     if (deployResult.newlyDeployed) {
       logger("Config newly deployed, initializing...")
       const protocol_owner = await getProtocolOwner()
@@ -123,7 +123,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
     const accountant = await deploy("Accountant", {from: gf_deployer, args: []})
     const protocol_owner = await getProtocolOwner()
 
-    let goldfinchFactoryDeployResult = await deploy("GoldfinchFactory", {
+    const goldfinchFactoryDeployResult = await deploy("GoldfinchFactory", {
       from: gf_deployer,
       proxy: {
         owner: gf_deployer,
@@ -141,7 +141,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
     logger("GoldfinchFactory was deployed to:", goldfinchFactoryDeployResult.address)
 
     const goldfinchFactory = await ethers.getContractAt("GoldfinchFactory", goldfinchFactoryDeployResult.address)
-    let goldfinchFactoryAddress = goldfinchFactory.address
+    const goldfinchFactoryAddress = goldfinchFactory.address
 
     await updateConfig(config, "address", CONFIG_KEYS.GoldfinchFactory, goldfinchFactoryAddress, {logger})
     return goldfinchFactory as GoldfinchFactory
@@ -161,7 +161,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
 
     logger("Deploying CreditDesk")
     assertIsString(gf_deployer)
-    let creditDeskDeployResult = await deploy(contractName, {
+    const creditDeskDeployResult = await deploy(contractName, {
       from: gf_deployer,
       proxy: {
         owner: gf_deployer,
@@ -175,7 +175,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
       libraries: {["Accountant"]: accountant.address},
     })
     logger("Credit Desk was deployed to:", creditDeskDeployResult.address)
-    let creditDeskAddress = creditDeskDeployResult.address
+    const creditDeskAddress = creditDeskDeployResult.address
     await updateConfig(config, "address", CONFIG_KEYS.CreditDesk, creditDeskAddress, {logger})
     return await ethers.getContractAt(creditDeskDeployResult.abi, creditDeskDeployResult.address)
   }
@@ -212,7 +212,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
       },
     })
     const fidu = (await ethers.getContractAt("Fidu", fiduDeployResult.address)) as Fidu
-    let fiduAddress = fidu.address
+    const fiduAddress = fidu.address
 
     await updateConfig(config, "address", CONFIG_KEYS.Fidu, fiduAddress, {logger})
     logger("Deployed Fidu to address:", fidu.address)
@@ -228,7 +228,7 @@ async function grantMinterRoleToPool(fidu: Fidu, pool: any) {
 
 async function deployTranchedPool(hre: HardhatRuntimeEnvironment, {config}: DeployOpts) {
   const {deployments, getNamedAccounts} = hre
-  const {deploy, log} = deployments
+  const {deploy} = deployments
   const logger = console.log
   const {gf_deployer} = await getNamedAccounts()
 
@@ -273,12 +273,12 @@ async function deployClImplementation(hre: HardhatRuntimeEnvironment, {config}: 
 
 async function deployMigratedTranchedPool(hre: HardhatRuntimeEnvironment, {config}: DeployOpts) {
   const {deployments, getNamedAccounts} = hre
-  const {deploy, log} = deployments
+  const {deploy} = deployments
   const logger = console.log
   const {gf_deployer} = await getNamedAccounts()
 
   logger("About to deploy MigratedTranchedPool...")
-  let contractName = "MigratedTranchedPool"
+  const contractName = "MigratedTranchedPool"
 
   assertIsString(gf_deployer)
   const migratedTranchedPoolImpl = await deploy(contractName, {from: gf_deployer})
@@ -298,7 +298,7 @@ async function deployTransferRestrictedVault(
   {config}: DeployOpts
 ): Promise<TransferRestrictedVault> {
   const {deployments, getNamedAccounts, getChainId} = hre
-  const {deploy, log} = deployments
+  const {deploy} = deployments
   const logger = console.log
   const {gf_deployer} = await getNamedAccounts()
   const protocol_owner = await getProtocolOwner()
@@ -307,7 +307,7 @@ async function deployTransferRestrictedVault(
   const chainId = await getChainId()
   assertIsChainId(chainId)
 
-  let contractName = "TransferRestrictedVault"
+  const contractName = "TransferRestrictedVault"
 
   logger(`About to deploy ${contractName}...`)
   const deployResult = await deploy(contractName, {
@@ -327,7 +327,7 @@ async function deployTransferRestrictedVault(
 
 async function deployPoolTokens(hre: HardhatRuntimeEnvironment, {config}: DeployOpts) {
   const {deployments, getNamedAccounts, getChainId} = hre
-  const {deploy, log} = deployments
+  const {deploy} = deployments
   const logger = console.log
   const {gf_deployer} = await getNamedAccounts()
   const protocol_owner = await getProtocolOwner()
@@ -370,13 +370,13 @@ async function deployPool(hre: HardhatRuntimeEnvironment, {config}: DeployOpts) 
     contractName = "TestPool"
   }
   const {deployments, getNamedAccounts} = hre
-  const {deploy, log} = deployments
+  const {deploy} = deployments
   const logger = console.log
   const {gf_deployer} = await getNamedAccounts()
   const protocol_owner = await getProtocolOwner()
 
   assertIsString(gf_deployer)
-  let poolDeployResult = await deploy(contractName, {
+  const poolDeployResult = await deploy(contractName, {
     from: gf_deployer,
     proxy: {
       execute: {
@@ -389,7 +389,7 @@ async function deployPool(hre: HardhatRuntimeEnvironment, {config}: DeployOpts) 
   })
   logger("Pool was deployed to:", poolDeployResult.address)
   const pool = await ethers.getContractAt(contractName, poolDeployResult.address)
-  let poolAddress = pool.address
+  const poolAddress = pool.address
   await updateConfig(config, "address", CONFIG_KEYS.Pool, poolAddress, {logger})
 
   return pool
@@ -411,7 +411,7 @@ async function deploySeniorPool(hre: HardhatRuntimeEnvironment, {config, fidu}: 
   logger("Accountant was deployed to:", accountant.address)
   logger(`Deploying ...${contractName}`)
   log("config address:", config.address)
-  let deployResult = await deploy(contractName, {
+  const deployResult = await deploy(contractName, {
     from: gf_deployer,
     proxy: {
       owner: protocol_owner,
@@ -438,16 +438,16 @@ async function deploySeniorPoolStrategy(
   hre: HardhatRuntimeEnvironment,
   {config}: DeployOpts
 ): Promise<FixedLeverageRatioStrategy> {
-  let contractName = "FixedLeverageRatioStrategy"
+  const contractName = "FixedLeverageRatioStrategy"
   const {deployments, getNamedAccounts} = hre
-  const {deploy, log} = deployments
+  const {deploy} = deployments
   const logger = console.log
   const {gf_deployer} = await getNamedAccounts()
   const protocol_owner = await getProtocolOwner()
 
   assertIsString(gf_deployer)
   logger("Trying to deploy", contractName)
-  let deployResult = await deploy(contractName, {
+  const deployResult = await deploy(contractName, {
     from: gf_deployer,
   })
   logger(`${contractName} was deployed to:`, deployResult.address)
@@ -465,14 +465,14 @@ async function deploySeniorPoolStrategy(
 }
 
 async function deployBorrower(hre: HardhatRuntimeEnvironment, {config}: DeployOpts): Promise<Borrower> {
-  let contractName = "Borrower"
+  const contractName = "Borrower"
   const {deployments, getNamedAccounts} = hre
-  const {deploy, log} = deployments
+  const {deploy} = deployments
   const logger = console.log
   const {gf_deployer} = await getNamedAccounts()
 
   assertIsString(gf_deployer)
-  let deployResult = await deploy(contractName, {
+  const deployResult = await deploy(contractName, {
     from: gf_deployer,
   })
   logger("Borrower implementation was deployed to:", deployResult.address)

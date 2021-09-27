@@ -27,6 +27,7 @@ import _ from "lodash"
 import DefaultGoldfinchClient from "../../hooks/useGoldfinchClient"
 import NdaPrompt from "../ndaPrompt"
 import {useFetchNDA} from "../../hooks/useNDA"
+import {decimalPlaces} from "../../ethereum/utils"
 
 function useRecentPoolTransactions({tranchedPool}: {tranchedPool?: TranchedPool}): Record<string, any>[] {
   let recentTransactions = useAsync(() => tranchedPool && tranchedPool.recentTransactions(), [tranchedPool])
@@ -121,6 +122,13 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
   function renderForm({formMethods}) {
     let warningMessage, disabled
     const remainingJuniorCapacity = tranchedPool?.remainingJuniorCapacity()
+    const backerLimitPercent = new BigNumber(
+      tranchedPool.metadata?.backerLimit ?? process.env.REACT_APP_GLOBAL_BACKER_LIMIT ?? "1",
+    )
+    const backerLimit = tranchedPool.creditLine.limit.multipliedBy(backerLimitPercent)
+    const maxTxAmountInDollars = usdcFromAtomic(
+      BigNumber.min(backerLimit, remainingJuniorCapacity, user.usdcBalance, goldfinchConfig.transactionLimit),
+    )
 
     if (user.usdcBalance.eq(0)) {
       disabled = true
@@ -157,13 +165,27 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
             formMethods={formMethods}
             disabled={disabled}
             maxAmount={remainingJuniorCapacity}
+            rightDecoration={
+              <button
+                className="enter-max-amount"
+                type="button"
+                onClick={() => {
+                  formMethods.setValue(
+                    "transactionAmount",
+                    new BigNumber(maxTxAmountInDollars).decimalPlaces(decimalPlaces, 1).toString(10),
+                    {
+                      shouldValidate: true,
+                      shouldDirty: true,
+                    },
+                  )
+                }}
+              >
+                Max
+              </button>
+            }
             validations={{
               wallet: (value) => user.usdcBalanceInDollars.gte(value) || "You do not have enough USDC",
               backerLimit: (value) => {
-                const backerLimitPercent = new BigNumber(
-                  tranchedPool.metadata?.backerLimit ?? process.env.REACT_APP_GLOBAL_BACKER_LIMIT ?? "1",
-                )
-                const backerLimit = tranchedPool.creditLine.limit.multipliedBy(backerLimitPercent)
                 const backerDeposits = backer.principalAmount.minus(backer.principalRedeemed).plus(usdcToAtomic(value))
                 return (
                   backerDeposits.lte(backerLimit) ||
@@ -796,5 +818,5 @@ function TranchedPoolView() {
     </div>
   )
 }
-
+export {TranchedPoolDepositForm}
 export default TranchedPoolView

@@ -4,10 +4,10 @@ import useGeolocation from "./useGeolocation"
 import {renderHook} from "@testing-library/react-hooks"
 
 describe("useGeolocation", () => {
-  let store: any, wrapper: any
+  let store: any, Wrapper: React.FunctionComponent
 
   beforeEach(() => {
-    wrapper = ({children}) => {
+    Wrapper = ({children}) => {
       let [geolocationData, setGeolocationData] = useState()
       store = {
         geolocationData,
@@ -18,7 +18,7 @@ describe("useGeolocation", () => {
   })
 
   it("fetches geolocation data and caches it in global state", async () => {
-    const {result, waitFor} = renderHook(() => useGeolocation(), {wrapper})
+    const {result, waitFor} = renderHook(() => useGeolocation(), {wrapper: Wrapper})
 
     await waitFor(() => {
       expect(store.geolocationData).not.toBeUndefined()

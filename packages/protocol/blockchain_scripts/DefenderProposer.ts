@@ -1,5 +1,5 @@
-import { AdminClient } from "defender-admin-client"
-import { ChainId, ChainName, CHAIN_NAME_BY_ID, getDefenderClient, SAFE_CONFIG } from "./deployHelpers"
+import {AdminClient} from "defender-admin-client"
+import {ChainId, ChainName, CHAIN_NAME_BY_ID, getDefenderClient, SAFE_CONFIG} from "./deployHelpers"
 
 export default abstract class DefenderProposer {
   hre: any

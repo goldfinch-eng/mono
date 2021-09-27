@@ -1,13 +1,13 @@
 import {DefenderUpgrader} from "./defenderUpgrader.js"
 import hre from "hardhat"
-const {artifacts}  = hre
+const {artifacts} = hre
 import {getContract, MAINNET_CHAIN_ID, RINKEBY_CHAIN_ID} from "../deployHelpers"
-import MethodMissing from 'method-missing'
-import { HardhatRuntimeEnvironment } from "hardhat/types"
+import MethodMissing from "method-missing"
+import {HardhatRuntimeEnvironment} from "hardhat/types"
 import _ from "lodash"
-import { isString, isPlainObject, isNonEmptyString } from "../../utils/type"
+import {isString, isPlainObject, isNonEmptyString} from "@goldfinch-eng/utils"
 
-type VIA_TYPE = 'EOA' | 'Contract' | 'Multisig' | 'Gnosis Safe' | 'Gnosis Multisig' | 'Unknown';
+type VIA_TYPE = "EOA" | "Contract" | "Multisig" | "Gnosis Safe" | "Gnosis Multisig" | "Unknown"
 type DefenderOpts = {
   from?: string
   title?: string
@@ -55,7 +55,7 @@ class DefenderWrapper extends MethodMissing {
 
   __call(method, args) {
     if (method === "then") {
-      return this[method].apply(this, args)
+      return this[method](...args)
     }
     const [opts, methodArgs] = this.getOptsAndArgs(args)
     const from = opts.from || this.contract.from
@@ -75,7 +75,7 @@ class DefenderWrapper extends MethodMissing {
           metadata: opts.metadata,
         })
       } else {
-        return this.contract[method].apply(this.contract, methodArgs)
+        return this.contract[method](...methodArgs)
       }
     }
   }
@@ -84,7 +84,7 @@ class DefenderWrapper extends MethodMissing {
     this.contract = artifacts.require(this.contractName).at(address)
   }
 
-  getOptsAndArgs(args) : [DefenderOpts, unknown[]] {
+  getOptsAndArgs(args): [DefenderOpts, unknown[]] {
     const lastArg = _.last(args)
     let methodArgs = args
     let opts: DefenderOpts
@@ -111,7 +111,7 @@ class DefenderWrapper extends MethodMissing {
         viaType: opts?.viaType,
       })
     } else {
-      return this.contract[method].apply(this.contract, args)
+      return this.contract[method](...args)
     }
   }
 
@@ -120,12 +120,14 @@ class DefenderWrapper extends MethodMissing {
   }
 
   isDefenderOpts(opts: unknown): opts is DefenderOpts {
-    return isPlainObject(opts) &&
+    return (
+      isPlainObject(opts) &&
       (isNonEmptyString(opts.from) ||
         isString(opts.title) ||
         isString(opts.description) ||
         isNonEmptyString(opts.via) ||
         isNonEmptyString(opts.viaType))
+    )
   }
 }
 

@@ -202,7 +202,7 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   await impersonateAccount(hre, protocol_owner)
   const borrowerSigner = ethers.provider.getSigner(protocol_owner)
   assertNonNullable(borrowerSigner)
-  const bwrCon = (await ethers.getContractAt("Borrower", protocolBorrowerCon)).connect(borrowerSigner!) as Borrower
+  const bwrCon = (await ethers.getContractAt("Borrower", protocolBorrowerCon)).connect(borrowerSigner) as Borrower
   const payAmount = new BN(100).mul(USDCDecimals)
   await (erc20 as TestERC20).connect(borrowerSigner).approve(bwrCon.address, payAmount.mul(new BN(2)).toString())
   await bwrCon.pay(commonPool.address, payAmount.toString())

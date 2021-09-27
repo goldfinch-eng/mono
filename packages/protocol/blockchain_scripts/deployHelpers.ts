@@ -1,6 +1,10 @@
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../node_modules/hardhat-deploy/dist/src/type-extensions.d.ts" />
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../node_modules/@nomiclabs/hardhat-ethers/src/internal/type-extensions.ts" />
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../node_modules/@nomiclabs/hardhat-web3/src/type-extensions.ts" />
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../node_modules/@nomiclabs/hardhat-truffle5/src/type-extensions.ts" />
 import {ethers, getChainId, getNamedAccounts} from "hardhat"
 type Ethers = typeof ethers
@@ -31,28 +35,24 @@ const MAINNET_ONE_SPLIT_ADDRESS = "0xC586BeF4a0992C495Cf22e1aeEE4E446CECDee0E"
 const MAINNET_CUSDC_ADDRESS = "0x39aa39c021dfbae8fac545936693ac917d5e7563"
 const MAINNET_COMP_ADDRESS = "0xc00e94cb662c3520282e6f5717214004a7f26888"
 const LOCAL = "local"
-type LOCAL = typeof LOCAL
 const ROPSTEN = "ropsten"
-type ROPSTEN = typeof ROPSTEN
 const RINKEBY = "rinkeby"
-type RINKEBY = typeof RINKEBY
 const MAINNET = "mainnet"
-type MAINNET = typeof MAINNET
 
-export type ChainName = LOCAL | ROPSTEN | RINKEBY | MAINNET
+export type ChainName = typeof LOCAL | typeof ROPSTEN | typeof RINKEBY | typeof MAINNET
 
 const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
 
 const LOCAL_CHAIN_ID = "31337"
-type LOCAL_CHAIN_ID = typeof LOCAL_CHAIN_ID
+type LocalChainId = typeof LOCAL_CHAIN_ID
 const ROPSTEN_CHAIN_ID = "3"
-type ROPSTEN_CHAIN_ID = typeof ROPSTEN_CHAIN_ID
+type RopstenChainId = typeof ROPSTEN_CHAIN_ID
 const MAINNET_CHAIN_ID = "1"
-type MAINNET_CHAIN_ID = typeof MAINNET_CHAIN_ID
+type MainnetChainId = typeof MAINNET_CHAIN_ID
 const RINKEBY_CHAIN_ID = "4"
-type RINKEBY_CHAIN_ID = typeof RINKEBY_CHAIN_ID
+type RinkebyChainId = typeof RINKEBY_CHAIN_ID
 
-export type ChainId = LOCAL_CHAIN_ID | ROPSTEN_CHAIN_ID | MAINNET_CHAIN_ID | RINKEBY_CHAIN_ID
+export type ChainId = LocalChainId | RopstenChainId | MainnetChainId | RinkebyChainId
 
 const CHAIN_IDS = genExhaustiveTuple<ChainId>()(LOCAL_CHAIN_ID, ROPSTEN_CHAIN_ID, MAINNET_CHAIN_ID, RINKEBY_CHAIN_ID)
 export const assertIsChainId: (val: unknown) => asserts val is ChainId = (val: unknown): asserts val is ChainId => {
@@ -71,27 +71,27 @@ const CHAIN_NAME_BY_ID: Record<ChainId, ChainName> = {
 export type AddressString = string
 
 const USDC = "USDC"
-type USDC = typeof USDC
+type USDCTicker = typeof USDC
 const USDT = "USDT"
-type USDT = typeof USDT
+type USDTTicker = typeof USDT
 const BUSD = "BUSD"
-type BUSD = typeof BUSD
+type BUSDTicker = typeof BUSD
 const ETH = "ETH"
-type ETH = typeof ETH
+type ETHTicker = typeof ETH
 function assertIsTicker(val: string): asserts val is Ticker {
   if (!TICKERS.includes(val)) {
     throw new AssertionError(`${val} is not in the allowed Ticker list: ${TICKERS}`)
   }
 }
 
-const USDC_ADDRESSES: Record<ROPSTEN | MAINNET, AddressString> = {
+const USDC_ADDRESSES: Record<typeof ROPSTEN | typeof MAINNET, AddressString> = {
   [ROPSTEN]: ROPSTEN_USDC_ADDRESS,
   [MAINNET]: MAINNET_USDC_ADDRESS,
 }
-const USDT_ADDRESSES: Record<MAINNET, AddressString> = {
+const USDT_ADDRESSES: Record<typeof MAINNET, AddressString> = {
   [MAINNET]: "0xdac17f958d2ee523a2206206994597c13d831ec7",
 }
-const BUSD_ADDRESSES: Record<MAINNET, AddressString> = {
+const BUSD_ADDRESSES: Record<typeof MAINNET, AddressString> = {
   [MAINNET]: "0x4Fabb145d64652a948d72533023f6E7A623C7C53",
 }
 const ERC20_ADDRESSES = {
@@ -100,7 +100,7 @@ const ERC20_ADDRESSES = {
   [BUSD]: BUSD_ADDRESSES,
 }
 
-type SafeConfigChainId = MAINNET_CHAIN_ID | RINKEBY_CHAIN_ID
+type SafeConfigChainId = MainnetChainId | RinkebyChainId
 const SAFE_CONFIG_CHAIN_IDS = genExhaustiveTuple<SafeConfigChainId>()(MAINNET_CHAIN_ID, RINKEBY_CHAIN_ID)
 export const isSafeConfigChainId = (val: unknown): val is SafeConfigChainId =>
   (SAFE_CONFIG_CHAIN_IDS as unknown[]).includes(val)
@@ -149,7 +149,7 @@ function getUSDCAddress(chainId: ChainId): AddressString | undefined {
   return getERC20Address("USDC", chainId)
 }
 
-export type Ticker = USDC | USDT | BUSD | ETH
+export type Ticker = USDCTicker | USDTTicker | BUSDTicker | ETHTicker
 const TICKERS = [USDC, USDT, BUSD, ETH]
 function getERC20Address(ticker: Ticker, chainId: ChainId): AddressString | undefined {
   const mapping = ERC20_ADDRESSES[ticker]

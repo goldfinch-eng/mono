@@ -1,11 +1,10 @@
 // /* globals ethers */
-import {getSignerForAddress, INTEREST_DECIMALS, TRANCHES, USDCDecimals} from "./deployHelpers"
+import {INTEREST_DECIMALS, USDCDecimals} from "./deployHelpers"
 import {ethers} from "hardhat"
-import {CONFIG_KEYS} from "./configKeys"
 import hre from "hardhat"
 const {getNamedAccounts} = hre
 import deployedABIs from "../deployments/all_dev.json"
-import {assertNonNullable} from "@goldfinch-eng/utils"
+import {assertNonNullable, asNonNullable} from "@goldfinch-eng/utils"
 import {GoldfinchFactory} from "../typechain/ethers"
 import {impersonateAccount, MAINNET_MULTISIG} from "./mainnetForkingHelpers"
 import {BigNumber} from "bignumber.js"
@@ -13,13 +12,15 @@ import {BigNumber} from "bignumber.js"
 async function getAbi(contractName: string) {
   const chainId = process.env.HARDHAT_FORK === "mainnet" ? "1" : await hre.getChainId()
   const networkName = process.env.HARDHAT_FORK ?? process.env.HARDHAT_NETWORK
-  return deployedABIs[chainId][networkName!].contracts[contractName].abi
+  assertNonNullable(networkName)
+  return deployedABIs[chainId][networkName].contracts[contractName].abi
 }
 
 async function getAddress(contractName: string) {
   const chainId = process.env.HARDHAT_FORK === "mainnet" ? "1" : await hre.getChainId()
   const networkName = process.env.HARDHAT_FORK ?? process.env.HARDHAT_NETWORK
-  return deployedABIs[chainId][networkName!].contracts[contractName].address
+  assertNonNullable(networkName)
+  return deployedABIs[chainId][networkName].contracts[contractName].address
 }
 
 async function getGoldfinchFactory(signerAddress: string) {
@@ -41,7 +42,8 @@ async function main() {
     await impersonateAccount(hre, signerAddress)
   } else {
     const {protocolOwner} = await getNamedAccounts()
-    signerAddress = protocolOwner!
+    assertNonNullable(protocolOwner)
+    signerAddress = protocolOwner
   }
 
   assertNonNullable(process.env.BORROWER_ADDRESS)
@@ -61,7 +63,7 @@ async function main() {
 
   console.log("Creating borrower pool...")
   const goldfinchFactory = await getGoldfinchFactory(MAINNET_MULTISIG)
-  let tx = await goldfinchFactory.createPool(
+  const tx = await goldfinchFactory.createPool(
     borrowerAddress,
     juniorFeePercent.toString(),
     limit.toString(),
@@ -70,9 +72,9 @@ async function main() {
     termInDays.toString(),
     lateFeeApr.toString()
   )
-  let res = await tx.wait()
-  let poolCreatedEvent = res.events?.find((e) => e.event === "PoolCreated")
-  console.log(`Created borrower pool ${poolCreatedEvent!.args![0]} with the following parameters:`)
+  const res = await tx.wait()
+  const poolCreatedEvent = res.events?.find((e) => e.event === "PoolCreated")
+  console.log(`Created borrower pool ${asNonNullable(poolCreatedEvent?.args[0])} with the following parameters:`)
   console.log("borrowerAddress:", borrowerAddress)
   console.log("juniorFeePercent:", juniorFeePercent.toString())
   console.log("limit:", limit.toString())

@@ -1,4 +1,4 @@
-/* global artifacts web3 ethers */
+/* global artifacts web3 */
 import BN from "bn.js"
 import hre from "hardhat"
 const {deployments, ethers} = hre
@@ -38,7 +38,7 @@ describe("Borrower", async () => {
 
   const createPoolWithCreditLine = async (_bwrCon?: BorrowerInstance) => {
     const bwrConToUse = bwrCon || _bwrCon
-    let res = await _createPoolWithCreditLine({
+    const res = await _createPoolWithCreditLine({
       people: {owner, borrower: bwrConToUse.address},
       goldfinchFactory,
       usdc,
@@ -55,8 +55,8 @@ describe("Borrower", async () => {
 
   const createBorrowerContract = async (_borrower) => {
     const result = await goldfinchFactory.createBorrower(_borrower)
-    let bwrConAddr = result.logs[result.logs.length - 1].args.borrower
-    let contract = await Borrower.at(bwrConAddr)
+    const bwrConAddr = result.logs[result.logs.length - 1].args.borrower
+    const contract = await Borrower.at(bwrConAddr)
     await erc20Approve(usdc, contract.address, usdcVal(100000), [_borrower])
     return contract
   }
@@ -85,7 +85,7 @@ describe("Borrower", async () => {
   })
 
   describe("drawdown", async () => {
-    let amount = usdcVal(10)
+    const amount = usdcVal(10)
     beforeEach(async () => {
       bwrCon = await createBorrowerContract(bwr)
       ;({tranchedPool} = await createPoolWithCreditLine())
@@ -112,12 +112,11 @@ describe("Borrower", async () => {
     })
 
     it("should block you from drawing down on some random credit line", async () => {
-      let originalBwrCon = bwrCon
-      let originalBwr = bwr
-      let tranchedPool2
+      const originalBwrCon = bwrCon
+      const originalBwr = bwr
       bwr = person3
       bwrCon = await createBorrowerContract(bwr)
-      ;({tranchedPool: tranchedPool2} = await createPoolWithCreditLine())
+      const {tranchedPool: tranchedPool2} = await createPoolWithCreditLine()
 
       return expect(
         originalBwrCon.drawdown(tranchedPool2.address, amount, bwr, {from: originalBwr})
@@ -187,7 +186,7 @@ describe("Borrower", async () => {
   })
 
   describe("gasless transactions", async () => {
-    let amount = usdcVal(1)
+    const amount = usdcVal(1)
 
     const EIP712DomainType = [
       {name: "name", type: "string"},
@@ -262,7 +261,7 @@ describe("Borrower", async () => {
           nonce: 0,
           data: bwrCon.contract.methods.drawdown(tranchedPool.address, amount.toNumber(), bwr).encodeABI(),
         }
-        let forwarderArgs = await signAndGenerateForwardRequest(request)
+        const forwarderArgs = await signAndGenerateForwardRequest(request)
         // Signature is still valid
         await forwarder.verify(...forwarderArgs)
         await expect(forwarder.execute(...forwarderArgs, {from: person3})).to.be.rejectedWith(/Must have admin role/)
@@ -280,7 +279,7 @@ describe("Borrower", async () => {
           nonce: 0,
           data: bwrCon.contract.methods.drawdown(tranchedPool.address, amount.toNumber(), bwr).encodeABI(),
         }
-        let forwarderArgs = await signAndGenerateForwardRequest(request)
+        const forwarderArgs = await signAndGenerateForwardRequest(request)
         await forwarder.verify(...forwarderArgs)
         await expectAction(() => forwarder.execute(...forwarderArgs, {from: person3})).toChange([
           [() => getBalance(tranchedPool.address, usdc), {by: amount.neg()}],
@@ -298,7 +297,7 @@ describe("Borrower", async () => {
           nonce: 0,
           data: bwrCon.contract.methods.drawdown(tranchedPool.address, amount.toNumber(), bwr).encodeABI(),
         }
-        let forwarderArgs = await signAndGenerateForwardRequest(request)
+        const forwarderArgs = await signAndGenerateForwardRequest(request)
         await forwarder.verify(...forwarderArgs)
         await forwarder.execute(...forwarderArgs, {from: person3})
         await expect(forwarder.verify(...forwarderArgs)).to.be.rejectedWith(/nonce mismatch/)
@@ -316,7 +315,7 @@ describe("Borrower", async () => {
             nonce: 0,
             data: bwrCon.contract.methods.drawdown(tranchedPool.address, amount.toNumber(), ZERO_ADDRESS).encodeABI(),
           }
-          let forwarderArgs = await signAndGenerateForwardRequest(request)
+          const forwarderArgs = await signAndGenerateForwardRequest(request)
           await forwarder.verify(...forwarderArgs)
           await expectAction(() => forwarder.execute(...forwarderArgs, {from: person3})).toChange([
             [() => getBalance(tranchedPool.address, usdc), {by: amount.neg()}],
@@ -336,7 +335,7 @@ describe("Borrower", async () => {
             nonce: 0,
             data: bwrCon.contract.methods.drawdown(tranchedPool.address, amount.toNumber(), bwrCon.address).encodeABI(),
           }
-          let forwarderArgs = await signAndGenerateForwardRequest(request)
+          const forwarderArgs = await signAndGenerateForwardRequest(request)
           await forwarder.verify(...forwarderArgs)
           await expectAction(() => forwarder.execute(...forwarderArgs, {from: person3})).toChange([
             [() => getBalance(tranchedPool.address, usdc), {by: amount.neg()}],
@@ -349,10 +348,10 @@ describe("Borrower", async () => {
 
   describe("pay", async () => {
     let bwrCon, cl
-    let amount = usdcVal(10)
+    const amount = usdcVal(10)
     beforeEach(async () => {
       const result = await goldfinchFactory.createBorrower(bwr)
-      let bwrConAddr = result.logs[result.logs.length - 1].args.borrower
+      const bwrConAddr = result.logs[result.logs.length - 1].args.borrower
       bwrCon = await Borrower.at(bwrConAddr)
       await erc20Approve(usdc, bwrCon.address, usdcVal(100000), [bwr])
       ;({tranchedPool, creditLine: cl} = await createPoolWithCreditLine(bwrCon))
@@ -377,11 +376,11 @@ describe("Borrower", async () => {
 
   describe("payMultiple", async () => {
     let tranchedPool2, cl2
-    let amount = usdcVal(10)
-    let amount2 = usdcVal(5)
+    const amount = usdcVal(10)
+    const amount2 = usdcVal(5)
     beforeEach(async () => {
       const result = await goldfinchFactory.createBorrower(bwr)
-      let bwrConAddr = result.logs[result.logs.length - 1].args.borrower
+      const bwrConAddr = result.logs[result.logs.length - 1].args.borrower
       bwrCon = await Borrower.at(bwrConAddr)
       await erc20Approve(usdc, bwrCon.address, usdcVal(100000), [bwr])
       ;({tranchedPool, creditLine: cl} = await createPoolWithCreditLine())
@@ -417,10 +416,10 @@ describe("Borrower", async () => {
   })
 
   describe("payInFull", async () => {
-    let amount = usdcVal(10)
+    const amount = usdcVal(10)
     beforeEach(async () => {
       const result = await goldfinchFactory.createBorrower(bwr)
-      let bwrConAddr = result.logs[result.logs.length - 1].args.borrower
+      const bwrConAddr = result.logs[result.logs.length - 1].args.borrower
       bwrCon = await Borrower.at(bwrConAddr)
       await erc20Approve(usdc, bwrCon.address, usdcVal(100000), [bwr])
       ;({tranchedPool, creditLine: cl} = await createPoolWithCreditLine())

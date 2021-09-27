@@ -4,9 +4,9 @@ import {CreditLineInstance, TranchedPoolInstance} from "../typechain/truffle"
 
 async function main() {
   assertNonNullable(process.env.POOL)
-  let poolAddress = process.env.POOL
-  let pool = (await getContract("TranchedPool", {at: poolAddress})) as TranchedPoolInstance
-  let creditLine = (await getContract("CreditLine", {at: await pool.creditLine()})) as CreditLineInstance
+  const poolAddress = process.env.POOL
+  const pool = (await getContract("TranchedPool", {at: poolAddress})) as TranchedPoolInstance
+  const creditLine = (await getContract("CreditLine", {at: await pool.creditLine()})) as CreditLineInstance
   await pool.assess()
 
   console.log("new interest owed", (await creditLine.interestOwed()).toString())

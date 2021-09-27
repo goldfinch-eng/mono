@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-namespace
 declare namespace Chai {
   export interface Assertion {
     bignumber: BigNumberAssertion
