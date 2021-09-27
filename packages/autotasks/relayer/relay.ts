@@ -1,13 +1,13 @@
 // Based on https://github.com/OpenZeppelin/defender-example-metatx-relay
 // Updated to use the GSN v2 Forwarder contracts
 
-const {ethers} = require("ethers")
+import {ethers} from "ethers"
 
 const GenericParams = "address from,address to,uint256 value,uint256 gas,uint256 nonce,bytes data"
 const TypeName = `ForwardRequest(${GenericParams})`
 const TypeHash = ethers.utils.id(TypeName)
 
-async function relay(request, context) {
+export async function relay(request, context) {
   const {forwarder, relayTx, allowed_senders, domain_separator} = context
   // Unpack request
   const {to, from, value, gas, nonce, data, signature} = request
@@ -37,5 +37,3 @@ async function relay(request, context) {
   console.log(`Sent meta-tx: ${tx.hash} on behalf of ${from}, data: ${forwardData}`)
   return tx
 }
-
-module.exports = {relay}

@@ -1,7 +1,8 @@
-const {ethers} = require("ethers")
-const {Relayer} = require("defender-relay-client")
-const {DefenderRelaySigner, DefenderRelayProvider} = require("defender-relay-client/lib/ethers")
-const fetch = require("node-fetch")
+import {ethers} from "ethers"
+import {Relayer} from "defender-relay-client"
+import {DefenderRelaySigner, DefenderRelayProvider} from "defender-relay-client/lib/ethers"
+import axios from "axios"
+import {asNonNullable} from "packages/utils/src/type"
 
 const CONFIG = {
   mainnet: {
@@ -29,7 +30,7 @@ exports.handler = async function (credentials) {
   const relayerInfo = await relayer.getRelayer()
   console.log(`Assessing using ${relayerInfo.name} on ${relayerInfo.network} `)
 
-  let config = CONFIG[relayerInfo.network]
+  const config = CONFIG[relayerInfo.network]
   if (!config) {
     throw new Error(`Unsupported network: ${relayerInfo.network}`)
   }
@@ -45,10 +46,11 @@ exports.handler = async function (credentials) {
   const seniorPoolAbi = await getAbifor(config.etherscanApi, config.seniorPoolAddress, provider)
   const seniorPool = new ethers.Contract(config.seniorPoolAddress, seniorPoolAbi, signer)
 
-  const result = await factory.queryFilter(factory.filters.PoolCreated(null, null))
+  const filter = asNonNullable(factory.filters.PoolCreated)
+  const result = await factory.queryFilter(filter(null, null))
 
   for (const poolCreated of result) {
-    pools = pools.concat(poolCreated.args.pool)
+    pools = pools.concat(asNonNullable(poolCreated.args?.pool))
   }
 
   if (pools.length === 0) {
@@ -57,7 +59,7 @@ exports.handler = async function (credentials) {
   }
 
   const poolAbi = await getAbifor(config.etherscanApi, pools[0], provider)
-  const pool = new ethers.Contract(pools[0], poolAbi, signer)
+  const pool = new ethers.Contract(asNonNullable(pools[0]), poolAbi, signer)
 
   const creditLineAddress = await pool.creditLine()
   const creditLineAbi = await getAbifor(config.etherscanApi, creditLineAddress, provider)
@@ -159,8 +161,8 @@ async function getAbifor(etherscanApiUrl, address, provider) {
 
   // https://etherscan.io/apis#contracts
   const url = `${etherscanApiUrl}?module=contract&action=getabi&address=${address}&apikey=${ETHERSCAN_API_KEY}`
-  const body = await fetch(url)
-  const bodyAsJson = await body.json()
+  const body = await axios.get(url)
+  const bodyAsJson = body.data
 
   if (bodyAsJson.message !== "OK") {
     throw new Error(`Error fetching ABI for ${address}: ${bodyAsJson.result}`)
@@ -169,10 +171,10 @@ async function getAbifor(etherscanApiUrl, address, provider) {
 }
 
 // For tests
-exports.assessIfRequired = assessIfRequired
+export {assessIfRequired}
 
 // To run locally (this code will not be executed in Autotasks)
-// Invoke with: API_KEY=<key> API_SECRET=<secret> node autotasks/assessor/index.js
+// Invoke with: API_KEY=<key> API_SECRET=<secret> node autotasks/assessor/dist/index.js
 if (require.main === module) {
   const {API_KEY: apiKey, API_SECRET: apiSecret} = process.env
   exports

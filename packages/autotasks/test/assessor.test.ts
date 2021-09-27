@@ -1,8 +1,8 @@
 /* global web3 */
-const hre = require("hardhat")
-const {TRANCHES} = require("@goldfinch-eng/protocol/blockchain_scripts/deployHelpers")
+import hre from "hardhat"
+import {TRANCHES} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
 const {deployments} = hre
-const {
+import {
   BN,
   deployAllContracts,
   advanceTime,
@@ -11,13 +11,13 @@ const {
   usdcVal,
   createPoolWithCreditLine,
   toEthers,
-} = require("@goldfinch-eng/protocol/test/testHelpers")
-const {assessIfRequired} = require("../assessor/")
+} from "@goldfinch-eng/protocol/test/testHelpers"
+import {assessIfRequired} from "../assessor"
 let accounts, owner, underwriter, borrower
 let creditLine, fakeProvider, fakeTimestamp
 let tranchedPool, seniorPool, poolTokens
 
-describe("relayAsses", () => {
+describe("assessor", () => {
   const setupTest = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
     // Just to be crystal clear
     const {protocol_owner} = await getNamedAccounts()
@@ -55,7 +55,7 @@ describe("relayAsses", () => {
     fakeProvider = {
       getBlock: async function () {
         if (!fakeTimestamp) {
-          return hre.ethers.provider.provider.getBlock("latest")
+          return hre.ethers.provider.getBlock("latest")
         }
         return {timestamp: fakeTimestamp}
       },

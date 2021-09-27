@@ -1,8 +1,8 @@
-const ethers = require("ethers")
-const relay = require("./relay").relay
-const ForwarderAbi = require("./Forwarder.json")
-const {Relayer} = require("defender-relay-client")
-const {DefenderRelaySigner, DefenderRelayProvider} = require("defender-relay-client/lib/ethers")
+import ethers from "ethers"
+import {relay} from "./relay"
+import ForwarderAbi from "./Forwarder.json"
+import {Relayer} from "defender-relay-client"
+import {DefenderRelaySigner, DefenderRelayProvider} from "defender-relay-client/lib/ethers"
 
 const ALLOWED_SENDERS = {
   4: ["0xE7f9ED35DA54b2e4A1857487dBf42A32C4DBD4a0", "0x3FeB1094eE48DB0B9aC25b82A3A34ABe16208590"],
@@ -63,7 +63,4 @@ async function handler(event) {
   return {txHash: tx.hash}
 }
 
-module.exports = {
-  handler,
-  relay,
-}
+export {handler, relay}

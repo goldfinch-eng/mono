@@ -6,5 +6,5 @@
     "target": "es2019",
     "isolatedModules": false
   },
-  "include": ["hardhat.config.ts", "./test"]
+  "include": ["hardhat.config.ts", "test/**/*", "assessor/**/*", "relayer/**/*", "server.ts"]
 }
