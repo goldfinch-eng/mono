@@ -176,12 +176,13 @@ function getUnlockStatus({location, user}: {location: any; user: User}): Unlocke
   return unlockStatus
 }
 
-function ConnectionNotice({
-  requireUnlock = true,
-  requireGolist = false,
-  requireSignIn = false,
-  isPaused = false,
-}: ConnectionNoticeProps) {
+function ConnectionNotice(props: ConnectionNoticeProps) {
+  props = {
+    requireUnlock: true,
+    requireGolist: false,
+    requireSignIn: false,
+    ...props,
+  }
   const {network, user} = useNonNullContext(AppContext)
   const session = useSession()
   let location = useLocation()
@@ -191,10 +192,7 @@ function ConnectionNotice({
     user,
     session,
     location,
-    requireUnlock,
-    requireGolist,
-    requireSignIn,
-    isPaused,
+    ...props,
   }
 
   for (let strategy of strategies) {
@@ -205,7 +203,5 @@ function ConnectionNotice({
 
   return null
 }
-
-ConnectionNotice.defaultProps = {}
 
 export default ConnectionNotice
