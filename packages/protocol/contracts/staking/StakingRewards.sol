@@ -521,28 +521,23 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     emit RewardAdded(rewards);
   }
 
-  function setTargetCapacity(uint256 _targetCapacity) public onlyAdmin updateReward(0) {
+  function setRates(
+    uint256 _targetCapacity,
+    uint256 _maxRateAtPercent,
+    uint256 _minRateAtPercent,
+    uint256 _maxRate,
+    uint256 _minRate
+  ) public onlyAdmin updateReward(0) {
     targetCapacity = _targetCapacity;
-    emit TargetCapacityUpdated(msg.sender, targetCapacity);
-  }
-
-  function setMaxRateAtPercent(uint256 _maxRateAtPercent) public onlyAdmin updateReward(0) {
     maxRateAtPercent = _maxRateAtPercent;
-    emit MaxRateAtPercentUpdated(msg.sender, maxRateAtPercent);
-  }
-
-  function setMinRateAtPercent(uint256 _minRateAtPercent) public onlyAdmin updateReward(0) {
     minRateAtPercent = _minRateAtPercent;
-    emit MinRateAtPercentUpdated(msg.sender, minRateAtPercent);
-  }
-
-  function setMaxRate(uint256 _maxRate) public onlyAdmin updateReward(0) {
     maxRate = _maxRate;
-    emit MaxRateUpdated(msg.sender, maxRate);
-  }
-
-  function setMinRate(uint256 _minRate) public onlyAdmin updateReward(0) {
     minRate = _minRate;
+
+    emit TargetCapacityUpdated(msg.sender, targetCapacity);
+    emit MaxRateAtPercentUpdated(msg.sender, maxRateAtPercent);
+    emit MinRateAtPercentUpdated(msg.sender, minRateAtPercent);
+    emit MaxRateUpdated(msg.sender, maxRate);
     emit MinRateUpdated(msg.sender, minRate);
   }
 
