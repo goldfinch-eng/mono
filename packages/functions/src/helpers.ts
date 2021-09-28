@@ -7,6 +7,7 @@ import {ethers} from "ethers"
 import * as functions from "firebase-functions"
 import {getConfig} from "./db"
 import {RequestHandlerConfig, SignatureVerificationResult} from "./types"
+import _ from "lodash"
 
 // Make sure to keep the structure of this message in sync with the frontend.
 const genVerificationMessage = (blockNum: number) => `Sign in to Goldfinch: ${blockNum}`
@@ -18,10 +19,26 @@ const INFURA_PROJECT_ID = "d8e13fc4893e4be5aae875d94fee67b7"
 
 const setCORSHeaders = (req: any, res: any) => {
   const allowedOrigins = (getConfig(functions).kyc.allowed_origins || "").split(",")
-  if (allowedOrigins.includes(req.headers.origin)) {
+  const origin = req.headers.origin || ""
+  if (originAllowed(allowedOrigins, origin)) {
     res.set("Access-Control-Allow-Origin", req.headers.origin)
     res.set("Access-Control-Allow-Headers", "*")
   }
+}
+
+export const originAllowed = (allowedOrigins: string[], origin: string): boolean => {
+  return _.some(allowedOrigins, (allowed) => {
+    // Respect the wildcard operator
+    const wildcard = "*"
+    if (allowed.includes(wildcard)) {
+      const allowedSplit = allowed.split(wildcard)
+      return _.every(allowedSplit, (allowedPiece) => {
+        return origin.includes(allowedPiece.trim())
+      })
+    } else {
+      return origin.includes(allowed)
+    }
+  })
 }
 
 /**
