@@ -38,6 +38,8 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
     bytes memory data,
     bytes memory signature
   ) public override(IGoldfinchIdentity) onlySigner(keccak256(abi.encodePacked(to, id, amount)), signature) {
+    require(id == 0, "Token id not supported");
+    require(amount > 0, "Amount must be greater than 0");
     _mint(to, id, amount, data);
   }
 
@@ -48,17 +50,32 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
     bytes memory data,
     bytes memory signature
   ) public override(IGoldfinchIdentity) onlySigner(keccak256(abi.encodePacked(to, ids, amounts)), signature) {
+    uint256 length = amounts.length;
+    require(ids.length == length, "ids and amounts length mismatch");
+    for (uint256 i = 0; i < length; i++) {
+      require(ids[i] == 0, "Token id not supported");
+      require(amounts[i] > 0, "Amount must be greater than 0");
+    }
     _mintBatch(to, ids, amounts, data);
   }
 
-  function _beforeTokenTransfer(
-    address operator,
+  function safeTransferFrom(
+    address from,
+    address to,
+    uint256 id,
+    uint256 amount,
+    bytes memory data
+  ) public virtual override {
+    require(false, "Transfer is disabled");
+  }
+
+  function safeBatchTransferFrom(
     address from,
     address to,
     uint256[] memory ids,
     uint256[] memory amounts,
     bytes memory data
-  ) internal override(ERC1155PresetPauserUpgradeable) {
+  ) public virtual override {
     require(false, "Transfer is disabled");
   }
 

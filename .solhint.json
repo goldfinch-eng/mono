@@ -147,6 +147,8 @@
         "**/GoldfinchIdentity.sol:GoldfinchIdentity": {
           "mint": ["onlySigner"],
           "mintBatch": ["onlySigner"],
+          "safeTransferFrom": [],
+          "safeBatchTransferFrom": [],
           "burn": ["onlySigner"],
           "burnBatch": ["onlySigner"]
         },
