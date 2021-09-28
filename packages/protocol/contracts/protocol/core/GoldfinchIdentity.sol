@@ -38,6 +38,7 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
     bytes memory data,
     bytes memory signature
   ) public override(IGoldfinchIdentity) onlySigner(keccak256(abi.encodePacked(to, id, amount)), signature) {
+    // TODO[PR] Check balances state to prevent using the signature more than once
     require(id == 0, "Token id not supported");
     require(amount > 0, "Amount must be greater than 0");
     _mint(to, id, amount, data);
@@ -50,6 +51,7 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
     bytes memory data,
     bytes memory signature
   ) public override(IGoldfinchIdentity) onlySigner(keccak256(abi.encodePacked(to, ids, amounts)), signature) {
+    // TODO[PR] Check balances state to prevent using the signature more than once
     uint256 length = amounts.length;
     require(ids.length == length, "ids and amounts length mismatch");
     for (uint256 i = 0; i < length; i++) {
