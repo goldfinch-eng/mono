@@ -65,7 +65,7 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
     uint256 id,
     uint256 amount,
     bytes memory data
-  ) public virtual override {
+  ) public virtual override(ERC1155Upgradeable, IERC1155Upgradeable) {
     require(false, "Transfer is disabled");
   }
 
@@ -75,7 +75,7 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
     uint256[] memory ids,
     uint256[] memory amounts,
     bytes memory data
-  ) public virtual override {
+  ) public virtual override(ERC1155Upgradeable, IERC1155Upgradeable) {
     require(false, "Transfer is disabled");
   }
 
