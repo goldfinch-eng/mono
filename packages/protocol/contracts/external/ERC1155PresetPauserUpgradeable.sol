@@ -21,8 +21,8 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
  * The account that deploys the contract will be granted the owner and pauser
  * roles.
  *
- * Adapted from @openzeppelin/contracts-upgradeable/token/ERC1155/presets/ERC1155PresetMinterPauserUpgradeable.sol:
- * removed MINTER_ROLE; replaced DEFAULT_ADMIN_ROLE with OWNER_ROLE.
+ * Adapted from OZ's ERC1155PresetMinterPauserUpgradeable.sol: removed MINTER_ROLE;
+ * replaced DEFAULT_ADMIN_ROLE with OWNER_ROLE.
  */
 contract ERC1155PresetPauserUpgradeable is
   Initializable,

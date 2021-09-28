@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
+import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
+
 import "../../external/ERC1155PresetPauserUpgradeable.sol";
 import "../../interfaces/IGoldfinchIdentity.sol";
 
@@ -65,11 +67,7 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
     uint256 id,
     uint256 value,
     bytes memory signature
-  )
-    public
-    override(ERC1155BurnableUpgradeable, IGoldfinchIdentity)
-    onlySigner(keccak256(abi.encodePacked(to, id, value)), signature)
-  {
+  ) public override onlySigner(keccak256(abi.encodePacked(account, id, value)), signature) {
     _burn(account, id, value);
   }
 
@@ -78,16 +76,12 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
     uint256[] memory ids,
     uint256[] memory values,
     bytes memory signature
-  )
-    public
-    override(ERC1155BurnableUpgradeable, IGoldfinchIdentity)
-    onlySigner(keccak256(abi.encodePacked(to, ids, values)), signature)
-  {
+  ) public override onlySigner(keccak256(abi.encodePacked(account, ids, values)), signature) {
     _burnBatch(account, ids, values);
   }
 
   modifier onlySigner(bytes32 hash, bytes memory signature) {
-    require(hasRole(SIGNER_ROLE, ECDSA.recover(hash, signature)), "Invalid signer");
+    require(hasRole(SIGNER_ROLE, ECDSAUpgradeable.recover(hash, signature)), "Invalid signer");
     _;
   }
 }
