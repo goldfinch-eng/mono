@@ -1,7 +1,7 @@
 {
   "extends": "solhint:recommended",
   "rules": {
-    "compiler-version": ["error", "^0.6.12 || ^0.8.8"],
+    "compiler-version": ["error", "^0.6.12 || ^0.8.4"],
     "prettier/prettier": "error",
     "not-rely-on-time": "off",
     "reason-string": ["warn",{"maxLength":120}],
