@@ -647,15 +647,8 @@ function CreditStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
   )
 }
 
-function Overview({
-  tranchedPool,
-  backer,
-  handleDetails,
-}: {
-  tranchedPool?: TranchedPool
-  backer?: PoolBacker
-  handleDetails: any
-}) {
+function Overview({tranchedPool, handleDetails}: {tranchedPool?: TranchedPool; handleDetails: any}) {
+  const {user} = useContext(AppContext)
   const session = useSession()
 
   let rows: Array<{label: string; value: string}> = []
@@ -684,23 +677,13 @@ function Overview({
   }
 
   let detailsLink = <></>
-  if (backer) {
+  if (user.loaded && user.goListed) {
     if (session.status === "authenticated" && tranchedPool?.metadata?.detailsUrl) {
       detailsLink = (
         <div className="pool-links">
           <button onClick={() => handleDetails()}>
             Details & Discussion <span className="outbound-link">{iconOutArrow}</span>
           </button>
-        </div>
-      )
-    } else {
-      detailsLink = (
-        <div className="placeholder">
-          <div className="pool-links">
-            <button disabled={true}>
-              Details & Discussion <span className="outbound-link">{iconOutArrow}</span>
-            </button>
-          </div>
         </div>
       )
     }
@@ -813,7 +796,7 @@ function TranchedPoolView() {
       ) : (
         <SupplyStatus tranchedPool={tranchedPool} />
       )}
-      <Overview tranchedPool={tranchedPool} backer={backer} handleDetails={handleDetails} />
+      <Overview tranchedPool={tranchedPool} handleDetails={handleDetails} />
       <NdaPrompt show={showModal} onClose={() => setShowModal(false)} onSign={handleSignNDA} />
     </div>
   )
