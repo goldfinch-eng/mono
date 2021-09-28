@@ -16,6 +16,8 @@ import "../../interfaces/IGoldfinchIdentity.sol";
 contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity {
   bytes32 public constant SIGNER_ROLE = keccak256("SIGNER_ROLE");
 
+  /// @dev We include a nonce in every hashed message, and increment the nonce as part of a
+  /// state-changing operation, so as to prevent replay attacks, i.e. the reuse of a signature.
   mapping(address => uint256) public nonces;
 
   /// TODO[PR] Do we need to worry about OZ automatically setting owner as msg.sender? (See PoolTokens.)
