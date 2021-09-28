@@ -23,7 +23,7 @@ class BorrowerInterface {
     userAddress: string,
     borrowerContract: Contract,
     goldfinchProtocol: GoldfinchProtocol,
-    oneInch: Contract,
+    oneInch: Contract
   ) {
     this.userAddress = userAddress
     this.borrowerContract = borrowerContract
@@ -72,15 +72,15 @@ class BorrowerInterface {
       this.borrowerContract.methods.drawdown(
         this.getPoolAddressFromCL(creditLineAddress),
         drawdownAmount,
-        sendToAddress,
-      ),
+        sendToAddress
+      )
     )
   }
 
   drawdownViaOneInch(creditLineAddress, amount, sendToAddress, toToken) {
     sendToAddress = sendToAddress || this.userAddress
     return this.submit(
-      this.drawdownViaOneInchAsync(this.getPoolAddressFromCL(creditLineAddress), amount, sendToAddress, toToken),
+      this.drawdownViaOneInchAsync(this.getPoolAddressFromCL(creditLineAddress), amount, sendToAddress, toToken)
     )
   }
 
@@ -104,8 +104,8 @@ class BorrowerInterface {
         amount,
         fromToken,
         minAmount,
-        quote.distribution,
-      ),
+        quote.distribution
+      )
     )
   }
 
@@ -116,8 +116,8 @@ class BorrowerInterface {
         amounts,
         originAmount,
         fromToken,
-        quote.distribution,
-      ),
+        quote.distribution
+      )
     )
   }
 
@@ -134,7 +134,7 @@ class BorrowerInterface {
       sendToAddress,
       toToken,
       this.withinOnePercent(result.returnAmount),
-      result.distribution,
+      result.distribution
     )
   }
 
@@ -155,7 +155,7 @@ class BorrowerInterface {
 
 async function getBorrowerContract(
   ownerAddress: string,
-  goldfinchProtocol: GoldfinchProtocol,
+  goldfinchProtocol: GoldfinchProtocol
 ): Promise<BorrowerInterface | undefined> {
   const borrowerCreatedEvents = await goldfinchProtocol.queryEvents("GoldfinchFactory", "BorrowerCreated", {
     owner: ownerAddress,
