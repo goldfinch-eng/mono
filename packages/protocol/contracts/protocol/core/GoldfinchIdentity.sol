@@ -16,6 +16,8 @@ import "../../interfaces/IGoldfinchIdentity.sol";
 contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity {
   bytes32 public constant SIGNER_ROLE = keccak256("SIGNER_ROLE");
 
+  mapping(address => uint256) public nonces;
+
   /// TODO[PR] Do we need to worry about OZ automatically setting owner as msg.sender? (See PoolTokens.)
 
   function initialize(string memory uri) public override(ERC1155PresetPauserUpgradeable) initializer {
@@ -37,10 +39,11 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
     uint256 amount,
     bytes memory data,
     bytes memory signature
-  ) public override(IGoldfinchIdentity) onlySigner(keccak256(abi.encodePacked(to, id, amount)), signature) {
-    // TODO[PR] Check balances state to prevent using the signature more than once
+  ) public override(IGoldfinchIdentity) onlySigner(keccak256(abi.encodePacked(to, id, amount, nonces[to])), signature) {
     require(id == 0, "Token id not supported");
     require(amount > 0, "Amount must be greater than 0");
+
+    nonces[to] += 1;
     _mint(to, id, amount, data);
   }
 
@@ -50,14 +53,19 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
     uint256[] memory amounts,
     bytes memory data,
     bytes memory signature
-  ) public override(IGoldfinchIdentity) onlySigner(keccak256(abi.encodePacked(to, ids, amounts)), signature) {
-    // TODO[PR] Check balances state to prevent using the signature more than once
+  )
+    public
+    override(IGoldfinchIdentity)
+    onlySigner(keccak256(abi.encodePacked(to, ids, amounts, nonces[to])), signature)
+  {
     uint256 length = amounts.length;
     require(ids.length == length, "ids and amounts length mismatch");
     for (uint256 i = 0; i < length; i++) {
       require(ids[i] == 0, "Token id not supported");
       require(amounts[i] > 0, "Amount must be greater than 0");
     }
+
+    nonces[to] += 1;
     _mintBatch(to, ids, amounts, data);
   }
 
@@ -86,7 +94,8 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
     uint256 id,
     uint256 value,
     bytes memory signature
-  ) public override onlySigner(keccak256(abi.encodePacked(account, id, value)), signature) {
+  ) public override onlySigner(keccak256(abi.encodePacked(account, id, value, nonces[account])), signature) {
+    nonces[account] += 1;
     _burn(account, id, value);
   }
 
@@ -95,7 +104,8 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
     uint256[] memory ids,
     uint256[] memory values,
     bytes memory signature
-  ) public override onlySigner(keccak256(abi.encodePacked(account, ids, values)), signature) {
+  ) public override onlySigner(keccak256(abi.encodePacked(account, ids, values, nonces[account])), signature) {
+    nonces[account] += 1;
     _burnBatch(account, ids, values);
   }
 
