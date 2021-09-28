@@ -1,7 +1,7 @@
 {
   "extends": "solhint:recommended",
   "rules": {
-    "compiler-version": ["error", "^0.6.12 || ^0.8.0"],
+    "compiler-version": ["error", "^0.6.12 || ^0.8.8"],
     "prettier/prettier": "error",
     "not-rely-on-time": "off",
     "reason-string": ["warn",{"maxLength":120}],
@@ -143,6 +143,12 @@
         "**/ERC1155PresetPauserUpgradeable.sol:ERC1155PresetPauserUpgradeable": {
           "pause": [],
           "unpause": []
+        },
+        "**/GoldfinchIdentity.sol:GoldfinchIdentity": {
+          "mint": ["onlySigner"],
+          "mintBatch": ["onlySigner"],
+          "burn": ["onlySigner"],
+          "burnBatch": ["onlySigner"]
         },
         "**/contracts/test/**": {
           "*.*": []

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.8;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155BurnableUpgradeable.sol";
@@ -20,6 +20,9 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
  *
  * The account that deploys the contract will be granted the owner and pauser
  * roles.
+ *
+ * Adapted from @openzeppelin/contracts-upgradeable/token/ERC1155/presets/ERC1155PresetMinterPauserUpgradeable.sol:
+ * removed MINTER_ROLE; replaced DEFAULT_ADMIN_ROLE with OWNER_ROLE.
  */
 contract ERC1155PresetPauserUpgradeable is
   Initializable,
