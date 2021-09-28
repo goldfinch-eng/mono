@@ -35,14 +35,25 @@ async function buildAndDeploy(id, name, dir, autoTaskClient) {
 }
 
 ;(async () => {
-  const autotaskClient = new AutotaskClient({
-    apiKey: process.env.AUTOTASK_API_KEY,
-    apiSecret: process.env.AUTOTASK_API_SECRET,
-  })
-  ;[
+  const builds = [
     {id: "348209ac-8cfd-41a4-be60-e97eab073f29", name: "RinkebyRelayer", dir: "relayer"},
     {id: "9d2053fd-507a-473f-8b5a-b079a694723a", name: "MainnetRelayer", dir: "relayer"},
     {id: "0157e8f0-3e4b-4510-af27-364207d8fdbd", name: "RinkebyAssessor", dir: "assessor"},
     {id: "98e14e44-4137-4f25-9560-984c000445c6", name: "MainnetAssessor", dir: "assessor"},
-  ].forEach(async (item) => await buildAndDeploy(item.id, item.name, item.dir, autotaskClient))
+  ]
+
+  const autotaskClient = new AutotaskClient({
+    apiKey: process.env.AUTOTASK_API_KEY,
+    apiSecret: process.env.AUTOTASK_API_SECRET,
+  })
+  for (const item of builds) {
+    await buildAndDeploy(item.id, item.name, item.dir, autotaskClient)
+  }
 })()
+  .then(() => {
+    process.exit(0)
+  })
+  .catch((e) => {
+    console.log(e)
+    process.exit(1)
+  })
