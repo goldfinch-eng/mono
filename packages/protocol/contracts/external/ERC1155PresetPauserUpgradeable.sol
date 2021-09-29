@@ -19,7 +19,8 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
  * different roles - head to its documentation for details.
  *
  * Adapted from OZ's ERC1155PresetMinterPauserUpgradeable.sol: removed MINTER_ROLE;
- * replaced DEFAULT_ADMIN_ROLE with OWNER_ROLE.
+ * replaced DEFAULT_ADMIN_ROLE with OWNER_ROLE; grants roles to owner param rather than
+ * `_msgSender()`.
  */
 contract ERC1155PresetPauserUpgradeable is
   Initializable,
@@ -28,10 +29,6 @@ contract ERC1155PresetPauserUpgradeable is
   ERC1155BurnableUpgradeable,
   ERC1155PausableUpgradeable
 {
-  function initialize(string memory uri) public virtual initializer {
-    __ERC1155PresetPauser_init(uri);
-  }
-
   bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
   bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
@@ -39,7 +36,7 @@ contract ERC1155PresetPauserUpgradeable is
    * @dev Grants `OWNER_ROLE` and `PAUSER_ROLE` to the account that
    * deploys the contract.
    */
-  function __ERC1155PresetPauser_init(string memory uri) internal initializer {
+  function __ERC1155PresetPauser_init(address owner, string memory uri) internal initializer {
     __Context_init_unchained();
     __ERC165_init_unchained();
     __AccessControl_init_unchained();
@@ -48,12 +45,12 @@ contract ERC1155PresetPauserUpgradeable is
     __ERC1155Burnable_init_unchained();
     __Pausable_init_unchained();
     __ERC1155Pausable_init_unchained();
-    __ERC1155PresetPauser_init_unchained(uri);
+    __ERC1155PresetPauser_init_unchained(owner);
   }
 
-  function __ERC1155PresetPauser_init_unchained(string memory uri) internal initializer {
-    _setupRole(OWNER_ROLE, _msgSender());
-    _setupRole(PAUSER_ROLE, _msgSender());
+  function __ERC1155PresetPauser_init_unchained(address owner) internal initializer {
+    _setupRole(OWNER_ROLE, owner);
+    _setupRole(PAUSER_ROLE, owner);
   }
 
   /**

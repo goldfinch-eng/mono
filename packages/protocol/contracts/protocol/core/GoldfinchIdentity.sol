@@ -22,19 +22,17 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
   /// state-changing operation, so as to prevent replay attacks, i.e. the reuse of a signature.
   mapping(address => uint256) public nonces;
 
-  /// TODO[PR] Do we need to worry about OZ automatically setting owner as msg.sender? (See PoolTokens.)
-
-  function initialize(string memory uri) public override(ERC1155PresetPauserUpgradeable) initializer {
-    super.initialize(uri);
-    __GoldfinchIdentity_init(uri);
+  function initialize(address owner, string memory uri) public override(ERC1155PresetPauserUpgradeable) initializer {
+    __ERC1155PresetPauser_init(owner, uri);
+    __GoldfinchIdentity_init(owner);
   }
 
-  function __GoldfinchIdentity_init(string memory uri) internal initializer {
-    __GoldfinchIdentity_init_unchained(uri);
+  function __GoldfinchIdentity_init(address owner) internal initializer {
+    __GoldfinchIdentity_init_unchained(owner);
   }
 
-  function __GoldfinchIdentity_init_unchained(string memory uri) internal initializer {
-    _setupRole(SIGNER_ROLE, _msgSender());
+  function __GoldfinchIdentity_init_unchained(address owner) internal initializer {
+    _setupRole(SIGNER_ROLE, owner);
   }
 
   function mint(
