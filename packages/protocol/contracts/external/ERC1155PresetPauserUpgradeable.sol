@@ -12,14 +12,11 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 /**
  * @dev {ERC1155} token, including:
  *
- *  - ability for holders to burn (destroy) their tokens
- *  - a pauser role that allows to stop all token transfers
+ *  - ability to burn (destroy) tokens
+ *  - a pauser role that allows to stop all token transfers (including minting and burning)
  *
  * This contract uses {AccessControl} to lock permissioned functions using the
  * different roles - head to its documentation for details.
- *
- * The account that deploys the contract will be granted the owner and pauser
- * roles.
  *
  * Adapted from OZ's ERC1155PresetMinterPauserUpgradeable.sol: removed MINTER_ROLE;
  * replaced DEFAULT_ADMIN_ROLE with OWNER_ROLE.

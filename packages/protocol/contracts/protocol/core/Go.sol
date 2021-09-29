@@ -11,7 +11,6 @@ import "../../interfaces/IGo.sol";
 import "../../interfaces/IGoldfinchIdentity0612.sol";
 
 contract Go is IGo, BaseUpgradeablePausable {
-  // TODO[PR] Alternative approach would be to get address of the GoldfinchIdentity contract from config.
   address public override goldfinchIdentity;
 
   using SafeMath for uint256;
@@ -20,7 +19,6 @@ contract Go is IGo, BaseUpgradeablePausable {
   using ConfigHelper for GoldfinchConfig;
 
   event GoldfinchConfigUpdated(address indexed who, address configAddress);
-  event GoldfinchIdentityUpdated(address indexed who, address goldfinchIdentity);
 
   function initialize(
     address owner,
@@ -39,11 +37,6 @@ contract Go is IGo, BaseUpgradeablePausable {
   function updateGoldfinchConfig() external onlyAdmin {
     config = GoldfinchConfig(config.configAddress());
     emit GoldfinchConfigUpdated(msg.sender, address(config));
-  }
-
-  function updateGoldfinchIdentity(address _goldfinchIdentity) external onlyAdmin {
-    goldfinchIdentity = _goldfinchIdentity;
-    emit GoldfinchIdentityUpdated(msg.sender, _goldfinchIdentity);
   }
 
   /**
