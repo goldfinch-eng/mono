@@ -71,26 +71,6 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
     _mintBatch(to, ids, amounts, data);
   }
 
-  function safeTransferFrom(
-    address from,
-    address to,
-    uint256 id,
-    uint256 amount,
-    bytes memory data
-  ) public virtual override(ERC1155Upgradeable, IERC1155Upgradeable) {
-    require(false, "Transfer is disabled");
-  }
-
-  function safeBatchTransferFrom(
-    address from,
-    address to,
-    uint256[] memory ids,
-    uint256[] memory amounts,
-    bytes memory data
-  ) public virtual override(ERC1155Upgradeable, IERC1155Upgradeable) {
-    require(false, "Transfer is disabled");
-  }
-
   function burn(
     address account,
     uint256 id,
@@ -109,6 +89,21 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
   ) public override onlySigner(keccak256(abi.encodePacked(account, ids, values, nonces[account])), signature) {
     nonces[account] += 1;
     _burnBatch(account, ids, values);
+  }
+
+  function _beforeTokenTransfer(
+    address operator,
+    address from,
+    address to,
+    uint256[] memory ids,
+    uint256[] memory amounts,
+    bytes memory data
+  ) internal override(ERC1155PresetPauserUpgradeable) {
+    require(
+      (from == address(0) && to != address(0)) || (from != address(0) && to == address(0)),
+      "Only mint xor burn transfers are allowed"
+    );
+    super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
   }
 
   modifier onlySigner(bytes32 hash, bytes memory signature) {
