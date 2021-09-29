@@ -2,7 +2,7 @@ import {ethers} from "ethers"
 import {Relayer} from "defender-relay-client"
 import {DefenderRelaySigner, DefenderRelayProvider} from "defender-relay-client/lib/ethers"
 import axios from "axios"
-import {asNonNullable} from "packages/utils/src/type"
+import {asNonNullable} from "@goldfinch-eng/utils"
 
 const CONFIG = {
   mainnet: {

@@ -14,7 +14,14 @@ async function buildAndDeploy(id, name, dir, autoTaskClient) {
   let dirToUpload = `./${dir}/`
   const inputOptions = {
     input: `./${dir}/index.ts`,
-    plugins: [resolve({preferBuiltins: true}), commonjs(), json({compact: true}), typescript()],
+    plugins: [
+      resolve({preferBuiltins: true}),
+      commonjs(),
+      json({compact: true}),
+      typescript({
+        tsconfig: "./tsconfig.build.json",
+      }),
+    ],
     external: [...builtins, "ethers", "web3", "axios", /^defender-relay-client(\/.*)?$/],
   }
   const outputOptions = {
