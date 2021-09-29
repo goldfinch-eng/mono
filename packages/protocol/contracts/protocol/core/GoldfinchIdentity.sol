@@ -16,7 +16,10 @@ import "../../interfaces/IGoldfinchIdentity.sol";
 contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity {
   bytes32 public constant SIGNER_ROLE = keccak256("SIGNER_ROLE");
 
-  uint256 public constant ID_VERSION_0;
+  uint256 public constant ID_VERSION_0 = 0;
+
+  uint256 public constant MINT_COST_PER_TOKEN = 830000 gwei;
+  bytes32 private constant MINT_COST_ERROR_MESSAGE = "Token mint requires 0.00083 ETH";
 
   /// @dev We include a nonce in every hashed message, and increment the nonce as part of a
   /// state-changing operation, so as to prevent replay attacks, i.e. the reuse of a signature.
@@ -41,7 +44,13 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
     uint256 amount,
     bytes memory data,
     bytes memory signature
-  ) public override(IGoldfinchIdentity) onlySigner(keccak256(abi.encodePacked(to, id, amount, nonces[to])), signature) {
+  )
+    public
+    payable
+    override(IGoldfinchIdentity)
+    onlySigner(keccak256(abi.encodePacked(to, id, amount, nonces[to])), signature)
+  {
+    require(msg.value >= MINT_COST_PER_TOKEN, MINT_COST_ERROR_MESSAGE);
     require(id == ID_VERSION_0, "Token id not supported");
     require(amount > 0, "Amount must be greater than 0");
 
@@ -57,11 +66,13 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
     bytes memory signature
   )
     public
+    payable
     override(IGoldfinchIdentity)
     onlySigner(keccak256(abi.encodePacked(to, ids, amounts, nonces[to])), signature)
   {
     uint256 length = amounts.length;
     require(ids.length == length, "ids and amounts length mismatch");
+    require(msg.value >= MINT_COST_PER_TOKEN * length, MINT_COST_ERROR_MESSAGE);
     for (uint256 i = 0; i < length; i++) {
       require(ids[i] == ID_VERSION_0, "Token id not supported");
       require(amounts[i] > 0, "Amount must be greater than 0");
