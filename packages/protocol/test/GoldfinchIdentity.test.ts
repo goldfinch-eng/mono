@@ -14,6 +14,9 @@ describe("GoldfinchIdentity", () => {
   })
 
   describe("initialize", () => {
+    it("rejects zero address owner", async () => {
+      // TODO
+    })
     it("grants owner the owner, pauser, and signer roles", async () => {
       // TODO
     })
