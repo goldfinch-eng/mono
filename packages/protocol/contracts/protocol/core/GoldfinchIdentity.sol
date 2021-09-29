@@ -22,7 +22,7 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
   /// state-changing operation, so as to prevent replay attacks, i.e. the reuse of a signature.
   mapping(address => uint256) public nonces;
 
-  function initialize(address owner, string memory uri) public override(ERC1155PresetPauserUpgradeable) initializer {
+  function initialize(address owner, string memory uri) public initializer {
     __ERC1155PresetPauser_init(owner, uri);
     __GoldfinchIdentity_init(owner);
   }
