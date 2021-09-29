@@ -18,6 +18,8 @@ contract Go is IGo, BaseUpgradeablePausable {
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
 
+  uint256 public constant ID_VERSION_0 = 0;
+
   event GoldfinchConfigUpdated(address indexed who, address configAddress);
 
   function initialize(
@@ -51,7 +53,7 @@ contract Go is IGo, BaseUpgradeablePausable {
     require(account != address(0), "Zero address is not go-listed.");
     // NOTE: If GoldfinchIdentity is upgraded to support token ids besides 0, this contract should
     // be upgraded to handle the set of possible ids.
-    uint256 balance = IGoldfinchIdentity0612(goldfinchIdentity).balanceOf(account, 0);
+    uint256 balance = IGoldfinchIdentity0612(goldfinchIdentity).balanceOf(account, ID_VERSION_0);
     return balance > 0 || config.goList(account);
   }
 }
