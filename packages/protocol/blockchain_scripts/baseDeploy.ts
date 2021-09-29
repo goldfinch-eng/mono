@@ -32,10 +32,18 @@ import {
   CommunityRewards,
   MerkleDistributor,
   TestERC20,
+  GoldfinchIdentity,
+  Go,
 } from "../typechain/ethers"
 import {Logger, DeployFn, DeployOpts} from "./types"
 import {isMerkleDistributorInfo} from "./merkleDistributor/types"
-import {CommunityRewardsInstance, MerkleDistributorInstance, TestERC20Instance} from "../typechain/truffle"
+import {
+  CommunityRewardsInstance,
+  GoInstance,
+  GoldfinchIdentityInstance,
+  MerkleDistributorInstance,
+  TestERC20Instance,
+} from "../typechain/truffle"
 import {assertIsString} from "@goldfinch-eng/utils"
 import {StakingRewards} from "../typechain/ethers/StakingRewards"
 
@@ -82,6 +90,9 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   await deployLPStakingRewards(hre, {config})
   const communityRewards = await deployCommunityRewards(hre, {config})
   await deployMerkleDistributor(hre, {communityRewards})
+
+  const goldfinchIdentity = await deployGoldfinchIdentity(hre)
+  await deployGo(hre, {config, goldfinchIdentity})
 
   logger("Granting ownership of Pool to CreditDesk")
   await grantOwnershipOfPoolToCreditDesk(pool, creditDesk.address)
@@ -370,6 +381,69 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
     await grantDistributorRoleToMerkleDistributor(communityRewards, deployed)
 
     return deployed
+  }
+
+  async function deployGoldfinchIdentity(hre: HardhatRuntimeEnvironment): Promise<Deployed<GoldfinchIdentityInstance>> {
+    // TODO[PR] What should this be?
+    const METADATA_URI = "https://app.goldfinch.finance"
+
+    const contractName = "GoldfinchIdentity"
+    logger(`About to deploy ${contractName}...`)
+    assertIsString(gf_deployer)
+    const protocol_owner = await getProtocolOwner()
+    const deployResult = await deploy(contractName, {
+      from: gf_deployer,
+      gasLimit: 4000000,
+      proxy: {
+        execute: {
+          init: {
+            methodName: "initialize",
+            args: [protocol_owner, METADATA_URI],
+          },
+        },
+      },
+    })
+    const contract = await getContract<GoldfinchIdentity, GoldfinchIdentityInstance>(
+      contractName,
+      TRUFFLE_CONTRACT_PROVIDER,
+      {at: deployResult.address}
+    )
+
+    logger(`Deployed ${contractName} to address:`, contract.address)
+    return {name: contractName, contract}
+  }
+
+  async function deployGo(
+    hre: HardhatRuntimeEnvironment,
+    {config, goldfinchIdentity}: {config: GoldfinchConfig; goldfinchIdentity: Deployed<GoldfinchIdentityInstance>}
+  ): Promise<Deployed<GoInstance>> {
+    const contractName = "Go"
+    logger(`About to deploy ${contractName}...`)
+    assertIsString(gf_deployer)
+    const protocol_owner = await getProtocolOwner()
+    const deployResult = await deploy(contractName, {
+      from: gf_deployer,
+      gasLimit: 4000000,
+      proxy: {
+        execute: {
+          init: {
+            methodName: "initialize",
+            args: [protocol_owner, config.address, goldfinchIdentity.contract.address],
+          },
+        },
+      },
+    })
+    const contract = await getContract<Go, GoInstance>(contractName, TRUFFLE_CONTRACT_PROVIDER, {
+      at: deployResult.address,
+    })
+
+    logger(`Deployed ${contractName} to address:`, contract.address)
+
+    logger("Updating config...")
+    await updateConfig(config, "address", CONFIG_KEYS.Go, contract.address, {logger})
+    logger("Updated Go config address to:", contract.address)
+
+    return {name: contractName, contract}
   }
 }
 
