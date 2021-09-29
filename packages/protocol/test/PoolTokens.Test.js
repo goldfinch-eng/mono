@@ -338,44 +338,91 @@ describe("PoolTokens", () => {
       beforeEach(async function () {
         amount = usdcVal(10)
       })
-      context("before you have been added to the go list", async () => {
-        it("should require adding them in order to work", async () => {
-          await expect(
-            withPoolSender(() => poolTokens.mint({principalAmount: String(amount), tranche: "1"}, person3))
-          ).to.be.rejectedWith(/has not been go-listed/)
-          await goldfinchConfig.addToGoList(person3)
-          return expect(withPoolSender(() => poolTokens.mint({principalAmount: String(amount), tranche: "1"}, person3)))
-            .to.be.fulfilled
+
+      context("account with 0 balance GoldfinchIdentity token (id 0)", () => {
+        context("account is on legacy go-list", () => {
+          it("allows", async () => {
+            // TODO Establish preconditions
+            await goldfinchConfig.addToGoList(person3)
+            return expect(
+              withPoolSender(() => poolTokens.mint({principalAmount: String(amount), tranche: "1"}, person3))
+            ).to.be.fulfilled
+          })
+        })
+        context("account is not on legacy go-list", () => {
+          it("rejects", async () => {
+            // TODO Establish preconditions
+            await expect(
+              withPoolSender(() => poolTokens.mint({principalAmount: String(amount), tranche: "1"}, person3))
+            ).to.be.rejectedWith(/has not been go-listed/)
+          })
         })
       })
-      context("after you've already been added", async () => {
-        beforeEach(async () => {
-          await goldfinchConfig.addToGoList(person3)
+
+      context("account with > 0 balance GoldfinchIdentity token (id 0)", () => {
+        context("account is on legacy go-list", () => {
+          it("allows", async () => {
+            // TODO Establish preconditions
+            await goldfinchConfig.addToGoList(person3)
+            return expect(
+              withPoolSender(() => poolTokens.mint({principalAmount: String(amount), tranche: "1"}, person3))
+            ).to.be.fulfilled
+          })
         })
-        it("should allow that person to receive a minted token", async () => {
-          return expect(withPoolSender(() => poolTokens.mint({principalAmount: String(amount), tranche: "1"}, person3)))
-            .to.be.fulfilled
+        context("account is not on legacy go-list", () => {
+          it("allows", async () => {
+            // TODO Establish preconditions
+            return expect(
+              withPoolSender(() => poolTokens.mint({principalAmount: String(amount), tranche: "1"}, person3))
+            ).to.be.fulfilled
+          })
         })
       })
     })
 
     describe("transferFrom", async () => {
-      it("should respect the go list", async () => {
-        const amount = usdcVal(5)
-        // Give some tokens to person2
-        const result = await withPoolSender(() =>
-          poolTokens.mint({principalAmount: String(amount), tranche: "1"}, person2)
-        )
-        const event = result.logs[1]
-        const tokenId = event.args.tokenId
+      // it("should respect the go list", async () => {
+      //   const amount = usdcVal(5)
+      //   // Give some tokens to person2
+      //   const result = await withPoolSender(() =>
+      //     poolTokens.mint({principalAmount: String(amount), tranche: "1"}, person2)
+      //   )
+      //   const event = result.logs[1]
+      //   const tokenId = event.args.tokenId
 
-        // Try to transfer to owner. Should work
-        await expect(poolTokens.transferFrom(person2, owner, tokenId, {from: person2})).to.be.fulfilled
+      //   // Try to transfer to owner. Should work
+      //   await expect(poolTokens.transferFrom(person2, owner, tokenId, {from: person2})).to.be.fulfilled
 
-        // Try to transfer to person3 (not on the list). Should fail
-        await expect(poolTokens.transferFrom(owner, person3, tokenId, {from: owner})).to.be.rejectedWith(
-          /has not been go-listed/
-        )
+      //   // Try to transfer to person3 (not on the list). Should fail
+      //   await expect(poolTokens.transferFrom(owner, person3, tokenId, {from: owner})).to.be.rejectedWith(
+      //     /has not been go-listed/
+      //   )
+      // })
+
+      context("recipient with 0 balance GoldfinchIdentity token (id 0)", () => {
+        context("recipient is on legacy go-list", () => {
+          it("allows transfer", async () => {
+            // TODO
+          })
+        })
+        context("recipient is not on legacy go-list", () => {
+          it("rejects transfer", async () => {
+            // TODO
+          })
+        })
+      })
+
+      context("recipient with > 0 balance GoldfinchIdentity token (id 0)", () => {
+        context("recipient is on legacy go-list", () => {
+          it("allows transfer", async () => {
+            // TODO
+          })
+        })
+        context("recipient is not on legacy go-list", () => {
+          it("allows transfer", async () => {
+            // TODO
+          })
+        })
       })
     })
   })

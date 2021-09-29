@@ -62,12 +62,12 @@ describe("Go", () => {
     })
 
     context("account with 0 balance GoldfinchIdentity token (id 0)", () => {
-      context("account is also on legacy go-list", () => {
+      context("account is on legacy go-list", () => {
         it("returns true", async () => {
           // TODO
         })
       })
-      context("account is not also on legacy go-list", () => {
+      context("account is not on legacy go-list", () => {
         it("returns false", async () => {
           // TODO
         })
@@ -75,12 +75,12 @@ describe("Go", () => {
     })
 
     context("account with > 0 balance GoldfinchIdentity token (id 0)", () => {
-      context("account is also on legacy go-list", () => {
+      context("account is on legacy go-list", () => {
         it("returns true", async () => {
           // TODO
         })
       })
-      context("account is not also on legacy go-list", () => {
+      context("account is not on legacy go-list", () => {
         it("returns true", async () => {
           // TODO
         })
