@@ -20,11 +20,6 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
 
   uint256 public constant MINT_COST_PER_TOKEN = 830000 gwei;
 
-  bytes32 private constant MINT_COST_ERROR_MESSAGE = "Token mint requires 0.00083 ETH";
-  bytes32 private constant ID_VERSION_ERROR_MESSAGE = "Token id not supported";
-  bytes32 private constant NON_ZERO_AMOUNT_ERROR_MESSAGE = "Amount must be greater than 0";
-  bytes32 private constant BURN_VALUE_ERROR_MESSAGE = "Burn value must equal balance";
-
   /// @dev We include a nonce in every hashed message, and increment the nonce as part of a
   /// state-changing operation, so as to prevent replay attacks, i.e. the reuse of a signature.
   mapping(address => uint256) public nonces;
@@ -54,9 +49,9 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
     override(IGoldfinchIdentity)
     onlySigner(keccak256(abi.encodePacked(to, id, amount, nonces[to])), signature)
   {
-    require(msg.value >= MINT_COST_PER_TOKEN, MINT_COST_ERROR_MESSAGE);
-    require(id == ID_VERSION_0, ID_VERSION_ERROR_MESSAGE);
-    require(amount > 0, NON_ZERO_AMOUNT_ERROR_MESSAGE);
+    require(msg.value >= MINT_COST_PER_TOKEN, "Token mint requires 0.00083 ETH");
+    require(id == ID_VERSION_0, "Token id not supported");
+    require(amount > 0, "Amount must be greater than 0");
 
     nonces[to] += 1;
     _mint(to, id, amount, data);
@@ -76,10 +71,10 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
   {
     uint256 length = amounts.length;
     require(ids.length == length, "ids and amounts length mismatch");
-    require(msg.value >= MINT_COST_PER_TOKEN * length, MINT_COST_ERROR_MESSAGE);
+    require(msg.value >= MINT_COST_PER_TOKEN * length, "Token mint requires 0.00083 ETH");
     for (uint256 i = 0; i < length; i++) {
-      require(ids[i] == ID_VERSION_0, ID_VERSION_ERROR_MESSAGE);
-      require(amounts[i] > 0, NON_ZERO_AMOUNT_ERROR_MESSAGE);
+      require(ids[i] == ID_VERSION_0, "Token id not supported");
+      require(amounts[i] > 0, "Amount must be greater than 0");
     }
 
     nonces[to] += 1;
@@ -92,11 +87,11 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
     uint256 value,
     bytes memory signature
   ) public override onlySigner(keccak256(abi.encodePacked(account, id, value, nonces[account])), signature) {
-    uint256 accountBalance = _balances[id][account];
-    require(accountBalance == value, BURN_VALUE_ERROR_MESSAGE);
-
     nonces[account] += 1;
     _burn(account, id, value);
+
+    uint256 accountBalance = balanceOf(account, id);
+    require(accountBalance == 0, "Balance after burn must be 0");
   }
 
   function burnBatch(
@@ -105,15 +100,13 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
     uint256[] memory values,
     bytes memory signature
   ) public override onlySigner(keccak256(abi.encodePacked(account, ids, values, nonces[account])), signature) {
-    uint256 length = values.length;
-    require(ids.length == length, "ids and values length mismatch");
-    for (uint256 i = 0; i < length; i++) {
-      uint256 accountBalance = _balances[ids[i]][account];
-      require(accountBalance == values[i], BURN_VALUE_ERROR_MESSAGE);
-    }
-
     nonces[account] += 1;
     _burnBatch(account, ids, values);
+
+    for (uint256 i = 0; i < ids.length; i++) {
+      uint256 accountBalance = balanceOf(account, ids[i]);
+      require(accountBalance == 0, "Balance after burn must be 0");
+    }
   }
 
   function _beforeTokenTransfer(

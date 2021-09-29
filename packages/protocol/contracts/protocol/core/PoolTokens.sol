@@ -7,6 +7,7 @@ import "./GoldfinchConfig.sol";
 import "./ConfigHelper.sol";
 import "../../interfaces/ITranchedPool.sol";
 import "../../interfaces/IPoolTokens.sol";
+import "../../interfaces/IGo.sol";
 
 /**
  * @title PoolTokens
