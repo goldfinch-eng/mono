@@ -21,7 +21,7 @@ function renderSeniorPoolCard(remainingCapacity) {
   return render(
     <AppContext.Provider value={store}>
       <SeniorPoolCard {...props} />
-    </AppContext.Provider>,
+    </AppContext.Provider>
   )
 }
 

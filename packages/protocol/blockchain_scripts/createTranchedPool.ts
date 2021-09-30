@@ -74,7 +74,7 @@ async function main() {
   )
   const res = await tx.wait()
   const poolCreatedEvent = res.events?.find((e) => e.event === "PoolCreated")
-  console.log(`Created borrower pool ${asNonNullable(poolCreatedEvent?.args[0])} with the following parameters:`)
+  console.log(`Created borrower pool ${asNonNullable(poolCreatedEvent?.args)[0]} with the following parameters:`)
   console.log("borrowerAddress:", borrowerAddress)
   console.log("juniorFeePercent:", juniorFeePercent.toString())
   console.log("limit:", limit.toString())

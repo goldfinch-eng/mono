@@ -33,6 +33,7 @@ const SECONDS_PER_DAY = new BN(86400)
 const SECONDS_PER_YEAR = SECONDS_PER_DAY.mul(new BN(365))
 const UNIT_SHARE_PRICE = new BN("1000000000000000000") // Corresponds to share price of 100% (no interest or writedowns)
 import ChaiBN from "chai-bn"
+import {BaseContract} from "ethers"
 chai.use(ChaiBN(BN))
 
 const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
@@ -245,7 +246,7 @@ async function erc20Transfer(erc20, toAccounts, amount, fromAccount) {
   }
 }
 
-type Numberish = BN | string | number
+export type Numberish = BN | string | number
 async function advanceTime({days, seconds, toSecond}: {days?: Numberish; seconds?: Numberish; toSecond?: Numberish}) {
   let secondsPassed, newTimestamp
   const currentTimestamp = await time.latest()
@@ -280,7 +281,7 @@ const createPoolWithCreditLine = async ({
   people,
   goldfinchFactory,
   usdc,
-  juniorFeePercent = 20,
+  juniorFeePercent = new BN("20"),
   interestApr = interestAprAsBN("15.0"),
   paymentPeriodInDays = new BN(30),
   termInDays = new BN(365),
@@ -324,7 +325,7 @@ const createPoolWithCreditLine = async ({
 }
 
 async function toTruffle(
-  address: Truffle.ContractInstance | string,
+  address: Truffle.ContractInstance | BaseContract | string,
   contractName,
   opts?: {}
 ): Promise<Truffle.ContractInstance> {
