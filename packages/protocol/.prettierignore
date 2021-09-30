@@ -1,3 +1,2 @@
-abi/
+deployments/
 package-lock.json
-.netlify/

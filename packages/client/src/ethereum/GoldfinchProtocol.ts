@@ -59,7 +59,7 @@ class GoldfinchProtocol {
           fromBlock: getFromBlock(this.networkId),
           toBlock: "latest",
         })
-      }),
+      })
     )
     return _.compact(_.concat(_.flatten(eventArrays)))
   }
@@ -67,7 +67,7 @@ class GoldfinchProtocol {
   async queryEvent<T extends ContractEventLog<any>>(
     contract: string | Contract | BaseContract,
     event: string,
-    filter?: Filter,
+    filter?: Filter
   ) {
     return (await this.queryEvents(contract, event, filter)) as any as T[]
   }

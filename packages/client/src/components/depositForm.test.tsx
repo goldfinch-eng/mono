@@ -24,7 +24,7 @@ function renderDepositForm(transactionLimit, userBalance, remainingCapacity) {
   return render(
     <AppContext.Provider value={store}>
       <DepositForm actionComplete={_.noop} closeForm={_.noop} />
-    </AppContext.Provider>,
+    </AppContext.Provider>
   )
 }
 

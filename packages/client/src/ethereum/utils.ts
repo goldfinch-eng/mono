@@ -104,7 +104,7 @@ function transformedConfig(config) {
       })
       return result
     },
-    {},
+    {}
   )
 }
 
@@ -120,7 +120,7 @@ type MethodInfo = {method: string; name?: string; args?: any}
 function fetchDataFromAttributes(
   web3Obj: Contract | BaseContract,
   attributes: MethodInfo[],
-  {bigNumber}: {bigNumber?: boolean} = {},
+  {bigNumber}: {bigNumber?: boolean} = {}
 ): any {
   const result = {}
   if (!web3Obj) {
@@ -148,7 +148,7 @@ function fetchDataFromAttributes(
 async function getPoolEvents(
   pool: SeniorPool | Pool,
   address: string | undefined,
-  eventNames: string[],
+  eventNames: string[]
 ): Promise<EventData[]> {
   const fromBlock = getFromBlock(pool.chain)
   const events = await Promise.all(
@@ -158,7 +158,7 @@ async function getPoolEvents(
         fromBlock,
         toBlock: "latest",
       })
-    }),
+    })
   )
   return _.compact(_.flatten(events))
 }
