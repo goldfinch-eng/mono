@@ -1,20 +1,13 @@
 const {findEnvLocal} = require("@goldfinch-eng/utils")
 require("dotenv").config({path: findEnvLocal()})
 
-const express = require("express")
-const cors = require("cors")
-const app = express()
 const {relay} = require("./relayer/relay")
 const hre = require("hardhat")
 const {TypedDataUtils} = require("eth-sig-util")
 const {bufferToHex} = require("ethereumjs-util")
 
-const port = process.env.RELAY_SERVER_PORT
 const FORWARDER_ADDRESS = process.env.FORWARDER_ADDRESS
 const ALLOWED_SENDERS = (process.env.ALLOWED_SENDERS || "").split(",").filter((val) => !!val)
-
-app.use(express.json())
-app.use(cors())
 
 async function hardhatRelay(txData) {
   const {protocol_owner} = await hre.getNamedAccounts()
@@ -75,7 +68,7 @@ async function createContext() {
   }
 }
 
-const relayHandler = async (req, res) => {
+export const relayHandler = async (req, res) => {
   try {
     console.log(`Forwarding: ${JSON.stringify(req.body)}`)
     const context = await createContext()
@@ -86,9 +79,3 @@ const relayHandler = async (req, res) => {
     res.status(500).send({status: "error", message: error.toString()})
   }
 }
-
-app.post("/relay", relayHandler)
-
-app.listen(port, () => {
-  console.log(`App listening at http://localhost:${port}`)
-})

@@ -1,36 +1,47 @@
 {
-  "name": "@goldfinch-eng/autotasks",
-  "version": "0.0.1",
-  "private": true,
-  "description": "",
-  "scripts": {
-    "test": "NODE_ENV=test npx hardhat test --show-stack-traces",
-    "start": "npx hardhat run index.js",
-    "pre-commit": "lint-staged",
-    "lint": "eslint --resolve-plugins-relative-to=. .",
-    "lint:fix": "eslint --resolve-plugins-relative-to=. --fix .",
-    "deploy": "node deployAutoTasks.js"
+  "name": "@goldfinch-eng/server",
+  "version": "0.0.0",
+  "description": "> TODO: description",
+  "author": "gregan <greg@goldfinch.finance>",
+  "homepage": "https://github.com/goldfinch-eng/goldfinch-protocol#readme",
+  "license": "ISC",
+  "main": "lib/server.js",
+  "directories": {
+    "lib": "lib",
+    "test": "__tests__"
   },
-  "author": "Goldfinch",
-  "license": "MIT",
-  "lint-staged": {
-    "*.(js(x)?|ts(x)?)": [
-      "prettier --write",
-      "eslint --resolve-plugins-relative-to=. --fix"
-    ]
+  "files": [
+    "lib"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/goldfinch-eng/goldfinch-protocol.git"
+  },
+  "scripts": {
+    "test": "echo \"Error: run tests from root\" && exit 1",
+    "start": "npx hardhat run server.js"
+  },
+  "bugs": {
+    "url": "https://github.com/goldfinch-eng/goldfinch-protocol/issues"
   },
   "dependencies": {
     "@goldfinch-eng/protocol": "^0.1.0",
+    "cors": "^2.8.5",
     "defender-relay-client": "^1.11.1",
     "dotenv": "^10.0.0",
     "eth-sig-util": "^3.0.1",
     "ethereumjs-util": "^7.1.0",
     "ethers": "^5.4.6",
+    "express": "^4.17.1",
     "hardhat": "^2.6.3",
     "hardhat-deploy": "^0.9.1"
   },
   "devDependencies": {
     "@goldfinch-eng/utils": "^0.0.1",
+    "@goldfinch-eng/autotasks": "^0.0.1",
     "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@nomiclabs/hardhat-truffle5": "^2.0.1",
     "@nomiclabs/hardhat-web3": "^2.0.0",
