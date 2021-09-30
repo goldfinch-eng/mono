@@ -45,12 +45,7 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
     uint256 amount,
     bytes memory data,
     bytes memory signature
-  )
-    public
-    payable
-    override(IGoldfinchIdentity)
-    onlySigner(keccak256(abi.encodePacked(to, id, amount, nonces[to])), signature)
-  {
+  ) public payable override onlySigner(keccak256(abi.encodePacked(to, id, amount, nonces[to])), signature) {
     require(msg.value >= MINT_COST_PER_TOKEN, "Token mint requires 0.00083 ETH");
     require(id == ID_VERSION_0, "Token id not supported");
     require(amount > 0, "Amount must be greater than 0");
@@ -59,18 +54,20 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
     _mint(to, id, amount, data);
   }
 
+  /// @dev We use `abi.encode()` rather than `abi.encodePacked()` for generating the hashed
+  /// message passed to `onlySigner()`, because `ids` and `amounts` have dynamic types. Per the Warning in
+  /// https://github.com/ethereum/solidity/blob/v0.8.4/docs/abi-spec.rst#non-standard-packed-mode,
+  /// `abi.encodePacked()` generates an ambiguous result if more than one dynamic type is passed to it.
+  // TODO[PR] See if gas cost is cheaper if instead of using `abi.encode()`, we used `abi.encodePacked()`,
+  // plus `keccak256(abi.encodePacked(ids))` to represent ids as a static type (i.e. bytes32), so that only
+  // one parameter of the outer `abi.encodePacked()` was dynamic.
   function mintBatch(
     address to,
     uint256[] memory ids,
     uint256[] memory amounts,
     bytes memory data,
     bytes memory signature
-  )
-    public
-    payable
-    override(IGoldfinchIdentity)
-    onlySigner(keccak256(abi.encodePacked(to, ids, amounts, nonces[to])), signature)
-  {
+  ) public payable override onlySigner(keccak256(abi.encode(to, ids, amounts, nonces[to])), signature) {
     uint256 length = amounts.length;
     require(ids.length == length, "ids and amounts length mismatch");
     require(msg.value >= MINT_COST_PER_TOKEN * length, "Token mint requires 0.00083 ETH");
@@ -96,12 +93,14 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
     require(accountBalance == 0, "Balance after burn must be 0");
   }
 
+  /// @dev Same comment as for `mintBatch()` regarding use of `abi.encode()` in generating hashed message
+  /// passed to `onlySigner()`.
   function burnBatch(
     address account,
     uint256[] memory ids,
     uint256[] memory values,
     bytes memory signature
-  ) public override onlySigner(keccak256(abi.encodePacked(account, ids, values, nonces[account])), signature) {
+  ) public override onlySigner(keccak256(abi.encode(account, ids, values, nonces[account])), signature) {
     nonces[account] += 1;
     _burnBatch(account, ids, values);
 
@@ -127,7 +126,8 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
   }
 
   modifier onlySigner(bytes32 hash, bytes memory signature) {
-    require(hasRole(SIGNER_ROLE, ECDSAUpgradeable.recover(hash, signature)), "Invalid signer");
+    bytes32 ethSignedMessage = ECDSAUpgradeable.toEthSignedMessageHash(hash);
+    require(hasRole(SIGNER_ROLE, ECDSAUpgradeable.recover(ethSignedMessage, signature)), "Invalid signer");
     _;
   }
 }

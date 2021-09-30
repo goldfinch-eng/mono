@@ -3,30 +3,26 @@
 pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155BurnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 /**
- * @dev {ERC1155} token, including:
- *
- *  - ability to burn (destroy) tokens
- *  - a pauser role that allows to stop all token transfers (including minting and burning)
+ * @dev {ERC1155} token, including a pauser role that allows to stop all token transfers
+ * (including minting and burning).
  *
  * This contract uses {AccessControl} to lock permissioned functions using the
  * different roles - head to its documentation for details.
  *
- * Adapted from OZ's ERC1155PresetMinterPauserUpgradeable.sol: removed MINTER_ROLE;
- * replaced DEFAULT_ADMIN_ROLE with OWNER_ROLE; grants roles to owner param rather than
- * `_msgSender()`.
+ * Adapted from OZ's ERC1155PresetMinterPauserUpgradeable.sol: removed inheritance of
+ * ERC1155BurnableUpgradeable; removed MINTER_ROLE; replaced DEFAULT_ADMIN_ROLE with OWNER_ROLE;
+ * grants roles to owner param rather than `_msgSender()`.
  */
 contract ERC1155PresetPauserUpgradeable is
   Initializable,
   ContextUpgradeable,
   AccessControlEnumerableUpgradeable,
-  ERC1155BurnableUpgradeable,
   ERC1155PausableUpgradeable
 {
   bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
@@ -42,7 +38,6 @@ contract ERC1155PresetPauserUpgradeable is
     __AccessControl_init_unchained();
     __AccessControlEnumerable_init_unchained();
     __ERC1155_init_unchained(uri);
-    __ERC1155Burnable_init_unchained();
     __Pausable_init_unchained();
     __ERC1155Pausable_init_unchained();
     __ERC1155PresetPauser_init_unchained(owner);
@@ -101,7 +96,7 @@ contract ERC1155PresetPauserUpgradeable is
     uint256[] memory ids,
     uint256[] memory amounts,
     bytes memory data
-  ) internal virtual override(ERC1155Upgradeable, ERC1155PausableUpgradeable) {
+  ) internal virtual override(ERC1155PausableUpgradeable) {
     super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
   }
 

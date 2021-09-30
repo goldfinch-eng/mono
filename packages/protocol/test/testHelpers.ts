@@ -438,6 +438,15 @@ async function toEthers<T>(truffleContract: Truffle.ContractInstance): Promise<T
   return (await ethers.getContractAt(truffleContract.abi, truffleContract.address)) as unknown as T
 }
 
+async function fundWithEthFromLocalWhale(userToFund: string, amount: BN) {
+  const [protocol_owner] = await ethers.getSigners()
+  assertNonNullable(protocol_owner)
+  await protocol_owner.sendTransaction({
+    to: userToFund,
+    value: ethers.utils.parseEther(amount.toString()),
+  })
+}
+
 export {
   chai,
   expect,
@@ -475,4 +484,5 @@ export {
   toTruffle,
   genDifferentHexString,
   toEthers,
+  fundWithEthFromLocalWhale,
 }

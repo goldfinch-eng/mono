@@ -1,8 +1,8 @@
 /* global web3 */
 import hre from "hardhat"
-import {asNonNullable, assertNonEmptyArray, assertNonNullable} from "@goldfinch-eng/utils"
+import _ from "lodash"
+import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
 import {deployAllContracts} from "./testHelpers"
-import {GoldfinchIdentityInstance} from "../typechain/truffle"
 import {
   getContract,
   OWNER_ROLE,
@@ -11,15 +11,22 @@ import {
   TRUFFLE_CONTRACT_PROVIDER,
 } from "../blockchain_scripts/deployHelpers"
 import {GoldfinchIdentity} from "../typechain/ethers"
-import {constants as ethersConstants} from "ethers"
+import {constants as ethersConstants, BigNumber} from "ethers"
 import {GOLDFINCH_IDENTITY_METADATA_URI} from "../blockchain_scripts/goldfinchIdentity/constants"
+import {BN} from "ethereumjs-tx/node_modules/ethereumjs-util"
+import {pack} from "@ethersproject/solidity"
+import {keccak256} from "@ethersproject/keccak256"
+import {GoldfinchIdentityInstance} from "../typechain/truffle/GoldfinchIdentity"
 const {deployments} = hre
+
+const EMPTY_STRING_HEX = web3.utils.asciiToHex("")
 
 const setupTest = deployments.createFixture(async ({deployments}) => {
   const {deploy} = deployments
-  const [_owner, _anotherUser] = await web3.eth.getAccounts()
+  const [_owner, _anotherUser, _anotherUser2] = await web3.eth.getAccounts()
   const owner = asNonNullable(_owner)
-  const uninitializedGoldfinchIdentityDeployer = asNonNullable(_anotherUser)
+  const anotherUser = asNonNullable(_anotherUser)
+  const uninitializedGoldfinchIdentityDeployer = asNonNullable(_anotherUser2)
 
   const deployed = await deployAllContracts(deployments)
 
@@ -37,20 +44,66 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
     }
   )
 
-  return {owner, goldfinchIdentity, uninitializedGoldfinchIdentity, uninitializedGoldfinchIdentityDeployer}
+  return {owner, anotherUser, goldfinchIdentity, uninitializedGoldfinchIdentity, uninitializedGoldfinchIdentityDeployer}
 })
+
+const sign = async (
+  signerAddress: string,
+  messageBaseElements: {types: string[]; values: Array<BN | string>},
+  nonce: BN
+): Promise<string> => {
+  const signer = (await hre.ethers.getSigners()).find((signer) => signer.address === signerAddress)
+  assertNonNullable(signer)
+
+  if (messageBaseElements.types.length !== messageBaseElements.values.length) {
+    throw new Error("Invalid message elements")
+  }
+
+  // Append nonce to base elements of message.
+  const types = messageBaseElements.types.concat("uint256")
+  const _values = messageBaseElements.values.concat(nonce)
+
+  // Convert BN values to BigNumber, since ethers utils use BigNumber.
+  const values = _values.map((val: BN | string) => (BN.isBN(val) ? BigNumber.from(val.toString()) : val))
+
+  // Use packed encoding if none of the message elements is an array. This corresponds to our usage of `abi.encode()`
+  // instead of `abi.encodePacked()` in the GoldfinchIdentity contract, based on whether any of the parameters are of dynamic type.
+  const encoded = _.some(values, Array.isArray) ? web3.eth.abi.encodeParameters(types, values) : pack(types, values)
+
+  const hashed = keccak256(encoded)
+
+  // Cf. https://github.com/ethers-io/ethers.js/blob/ce8f1e4015c0f27bf178238770b1325136e3351a/docs/v5/api/signer/README.md#note
+  const arrayified = hre.ethers.utils.arrayify(hashed)
+  return signer.signMessage(arrayified)
+}
 
 describe("GoldfinchIdentity", () => {
   let owner: string,
+    anotherUser: string,
     goldfinchIdentity: GoldfinchIdentityInstance,
     uninitializedGoldfinchIdentityDeployer: string,
     uninitializedGoldfinchIdentity: GoldfinchIdentityInstance
 
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;({owner, goldfinchIdentity, uninitializedGoldfinchIdentityDeployer, uninitializedGoldfinchIdentity} =
+    ;({owner, anotherUser, goldfinchIdentity, uninitializedGoldfinchIdentityDeployer, uninitializedGoldfinchIdentity} =
       await setupTest())
   })
+
+  async function mint(recipient: string, tokenId: BN, amount: BN, nonce: BN, signer: string): Promise<void> {
+    const messageElements: [string, BN, BN] = [recipient, tokenId, amount]
+    const signature = await sign(signer, {types: ["address", "uint256", "uint256"], values: messageElements}, nonce)
+    await goldfinchIdentity.mint(...messageElements, EMPTY_STRING_HEX, signature, {
+      from: recipient,
+      value: new BN(0.00083e18),
+    })
+  }
+
+  async function burn(recipient: string, tokenId: BN, value: BN, nonce: BN, signer: string): Promise<void> {
+    const messageElements: [string, BN, BN] = [recipient, tokenId, value]
+    const signature = await sign(signer, {types: ["address", "uint256", "uint256"], values: messageElements}, nonce)
+    await goldfinchIdentity.burn(...messageElements, signature, {from: recipient})
+  }
 
   describe("initialize", () => {
     it("rejects zero address owner", async () => {
@@ -77,13 +130,20 @@ describe("GoldfinchIdentity", () => {
 
   describe("balanceOf", () => {
     it("returns 0 for a non-minted token", async () => {
-      // TODO
+      expect(await goldfinchIdentity.balanceOf(anotherUser, new BN(0))).to.bignumber.equal(new BN(0))
     })
     it("returns the amount for a minted token", async () => {
-      // TODO
+      const tokenId = new BN(0)
+      const amount = new BN(1)
+      await mint(anotherUser, tokenId, amount, new BN(0), owner)
+      expect(await goldfinchIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(amount)
     })
     it("returns 0 for a token that was minted and then burned", async () => {
-      // TODO
+      const tokenId = new BN(0)
+      const amount = new BN(1)
+      await mint(anotherUser, tokenId, amount, new BN(0), owner)
+      await burn(anotherUser, tokenId, amount, new BN(1), owner)
+      expect(await goldfinchIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(new BN(0))
     })
   })
 
@@ -287,6 +347,10 @@ describe("GoldfinchIdentity", () => {
     })
 
     describe("validates signature", () => {
+      it("rejects if called without signature", async () => {
+        // TODO
+      })
+
       it("rejects incorrect `to` address in hashed message", async () => {
         // TODO
       })
@@ -357,6 +421,10 @@ describe("GoldfinchIdentity", () => {
     })
 
     describe("validates signature", () => {
+      it("rejects if called without signature", async () => {
+        // TODO
+      })
+
       it("rejects incorrect `to` address in hashed message", async () => {
         // TODO
       })

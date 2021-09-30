@@ -145,6 +145,14 @@ contract TestForwarder {
     bytes32 requestTypeHash,
     bytes memory suffixData
   ) public pure returns (bytes memory) {
+    /// TODO[PR] I think use of `abi.encodePacked()` here, given that the latter two
+    /// arguments to it are dynamic types (i.e. `bytes`), violates the Warning here:
+    /// https://github.com/ethereum/solidity/blob/8a37f56e98118571ab315c22b3a882fd88bd19a1/
+    /// docs/abi-spec.rst#non-standard-packed-mode. In theory, this would allow someone to
+    /// abuse suffixData to forge a signed request having different internals (i.e. `from`,
+    /// and/or `to`, and/or `value` etc.) that happened to encode the same as the original / legit request.
+    /// I may be missing something though, as the fact that both `abi.encodePacked()` and
+    /// `abi.encode()` are used here would suggest the author was aware of a difference between them.
     return
       abi.encodePacked(
         requestTypeHash,
