@@ -14,6 +14,8 @@ import "../../interfaces/IGoldfinchIdentity.sol";
  */
 
 contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity {
+  // TODO[PR] Should we disable / remove operator approval logic? It's unused.
+
   bytes32 public constant SIGNER_ROLE = keccak256("SIGNER_ROLE");
 
   uint256 public constant ID_VERSION_0 = 0;

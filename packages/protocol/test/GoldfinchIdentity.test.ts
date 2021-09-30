@@ -2,7 +2,7 @@
 import hre from "hardhat"
 import _ from "lodash"
 import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
-import {deployAllContracts} from "./testHelpers"
+import {decodeLogs, deployAllContracts, getOnlyLog} from "./testHelpers"
 import {
   getContract,
   OWNER_ROLE,
@@ -16,17 +16,19 @@ import {GOLDFINCH_IDENTITY_METADATA_URI} from "../blockchain_scripts/goldfinchId
 import {BN} from "ethereumjs-tx/node_modules/ethereumjs-util"
 import {pack} from "@ethersproject/solidity"
 import {keccak256} from "@ethersproject/keccak256"
-import {GoldfinchIdentityInstance} from "../typechain/truffle/GoldfinchIdentity"
+import {GoldfinchIdentityInstance, TransferSingle} from "../typechain/truffle/GoldfinchIdentity"
 const {deployments} = hre
 
 const EMPTY_STRING_HEX = web3.utils.asciiToHex("")
+const MINT_PAYMENT = new BN(0.00083e18)
 
 const setupTest = deployments.createFixture(async ({deployments}) => {
   const {deploy} = deployments
-  const [_owner, _anotherUser, _anotherUser2] = await web3.eth.getAccounts()
+  const [_owner, _anotherUser, _anotherUser2, _anotherUser3] = await web3.eth.getAccounts()
   const owner = asNonNullable(_owner)
   const anotherUser = asNonNullable(_anotherUser)
-  const uninitializedGoldfinchIdentityDeployer = asNonNullable(_anotherUser2)
+  const anotherUser2 = asNonNullable(_anotherUser2)
+  const uninitializedGoldfinchIdentityDeployer = asNonNullable(_anotherUser3)
 
   const deployed = await deployAllContracts(deployments)
 
@@ -44,7 +46,14 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
     }
   )
 
-  return {owner, anotherUser, goldfinchIdentity, uninitializedGoldfinchIdentity, uninitializedGoldfinchIdentityDeployer}
+  return {
+    owner,
+    anotherUser,
+    anotherUser2,
+    goldfinchIdentity,
+    uninitializedGoldfinchIdentity,
+    uninitializedGoldfinchIdentityDeployer,
+  }
 })
 
 const sign = async (
@@ -80,23 +89,69 @@ const sign = async (
 describe("GoldfinchIdentity", () => {
   let owner: string,
     anotherUser: string,
+    anotherUser2: string,
     goldfinchIdentity: GoldfinchIdentityInstance,
     uninitializedGoldfinchIdentityDeployer: string,
     uninitializedGoldfinchIdentity: GoldfinchIdentityInstance
 
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;({owner, anotherUser, goldfinchIdentity, uninitializedGoldfinchIdentityDeployer, uninitializedGoldfinchIdentity} =
-      await setupTest())
+    ;({
+      owner,
+      anotherUser,
+      anotherUser2,
+      goldfinchIdentity,
+      uninitializedGoldfinchIdentityDeployer,
+      uninitializedGoldfinchIdentity,
+    } = await setupTest())
   })
 
-  async function mint(recipient: string, tokenId: BN, amount: BN, nonce: BN, signer: string): Promise<void> {
+  type MintParams = [string, BN, BN, string]
+
+  async function mint(
+    recipient: string,
+    tokenId: BN,
+    amount: BN,
+    nonce: BN,
+    signer: string,
+    overrideMintParams?: MintParams,
+    overrideFrom?: string
+  ): Promise<void> {
+    const contractBalanceBefore = await web3.eth.getBalance(goldfinchIdentity.address)
+    const tokenBalanceBefore = await goldfinchIdentity.balanceOf(recipient, tokenId)
+
     const messageElements: [string, BN, BN] = [recipient, tokenId, amount]
     const signature = await sign(signer, {types: ["address", "uint256", "uint256"], values: messageElements}, nonce)
-    await goldfinchIdentity.mint(...messageElements, EMPTY_STRING_HEX, signature, {
-      from: recipient,
-      value: new BN(0.00083e18),
+
+    const defaultMintParams: MintParams = [recipient, tokenId, amount, EMPTY_STRING_HEX]
+    const mintParams: MintParams = overrideMintParams || defaultMintParams
+
+    const defaultFrom = recipient
+    const from = overrideFrom || defaultFrom
+
+    const receipt = await goldfinchIdentity.mint(...mintParams, signature, {
+      from,
+      value: MINT_PAYMENT,
     })
+
+    // Verify contract state.
+    const contractBalanceAfter = await web3.eth.getBalance(goldfinchIdentity.address)
+    expect(new BN(contractBalanceAfter).sub(new BN(contractBalanceBefore))).to.bignumber.equal(MINT_PAYMENT)
+
+    const tokenBalanceAfter = await goldfinchIdentity.balanceOf(recipient, tokenId)
+    expect(tokenBalanceAfter.sub(tokenBalanceBefore)).to.bignumber.equal(amount)
+
+    expect(await goldfinchIdentity.nonces(recipient)).to.bignumber.equal(nonce.add(new BN(1)))
+
+    // Verify that event was emitted.
+    const transferEvent = getOnlyLog<TransferSingle>(
+      decodeLogs(receipt.receipt.rawLogs, goldfinchIdentity, "TransferSingle")
+    )
+    expect(transferEvent.args.operator).to.equal(from)
+    expect(transferEvent.args.from).to.equal(ethersConstants.AddressZero)
+    expect(transferEvent.args.to).to.equal(recipient)
+    expect(transferEvent.args.id).to.bignumber.equal(tokenId)
+    expect(transferEvent.args.value).to.bignumber.equal(amount)
   }
 
   async function burn(recipient: string, tokenId: BN, value: BN, nonce: BN, signer: string): Promise<void> {
@@ -130,101 +185,207 @@ describe("GoldfinchIdentity", () => {
 
   describe("balanceOf", () => {
     it("returns 0 for a non-minted token", async () => {
-      expect(await goldfinchIdentity.balanceOf(anotherUser, new BN(0))).to.bignumber.equal(new BN(0))
+      const recipient = anotherUser
+      expect(await goldfinchIdentity.balanceOf(recipient, new BN(0))).to.bignumber.equal(new BN(0))
     })
     it("returns the amount for a minted token", async () => {
+      const recipient = anotherUser
       const tokenId = new BN(0)
       const amount = new BN(1)
-      await mint(anotherUser, tokenId, amount, new BN(0), owner)
-      expect(await goldfinchIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(amount)
+      await mint(recipient, tokenId, amount, new BN(0), owner)
+      expect(await goldfinchIdentity.balanceOf(recipient, tokenId)).to.bignumber.equal(amount)
     })
     it("returns 0 for a token that was minted and then burned", async () => {
+      const recipient = anotherUser
       const tokenId = new BN(0)
       const amount = new BN(1)
-      await mint(anotherUser, tokenId, amount, new BN(0), owner)
-      await burn(anotherUser, tokenId, amount, new BN(1), owner)
-      expect(await goldfinchIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(new BN(0))
+      await mint(recipient, tokenId, amount, new BN(0), owner)
+      await burn(recipient, tokenId, amount, new BN(1), owner)
+      expect(await goldfinchIdentity.balanceOf(recipient, tokenId)).to.bignumber.equal(new BN(0))
     })
   })
 
   describe("mint", () => {
+    let recipient: string, tokenId: BN, amount: BN
+
     beforeEach(async () => {
-      // TODO
+      recipient = anotherUser
+      tokenId = new BN(0)
+      amount = new BN(1)
     })
 
     describe("validates signature", () => {
       it("rejects incorrect `to` address in hashed message", async () => {
-        // TODO
+        const incorrectTo = owner
+        await expect(
+          mint(recipient, tokenId, amount, new BN(0), owner, [incorrectTo, tokenId, amount, EMPTY_STRING_HEX])
+        ).to.be.rejectedWith(/Invalid signer/)
       })
       it("rejects incorrect `id` in hashed message", async () => {
-        // TODO
+        const incorrectId = tokenId.add(new BN(1))
+        await expect(
+          mint(recipient, tokenId, amount, new BN(0), owner, [recipient, incorrectId, amount, EMPTY_STRING_HEX])
+        ).to.be.rejectedWith(/Invalid signer/)
       })
       it("rejects incorrect `amount` in hashed message", async () => {
-        // TODO
+        const incorrectAmount = amount.add(new BN(1))
+        await expect(
+          mint(recipient, tokenId, amount, new BN(0), owner, [recipient, tokenId, incorrectAmount, EMPTY_STRING_HEX])
+        ).to.be.rejectedWith(/Invalid signer/)
       })
       it("ignores `data` in hashed message", async () => {
-        // TODO
+        const incorrectData = "0xf00"
+        await expect(mint(recipient, tokenId, amount, new BN(0), owner, [recipient, tokenId, amount, incorrectData])).to
+          .be.fulfilled
       })
       it("allows address with signer role", async () => {
-        // TODO
+        expect(await goldfinchIdentity.hasRole(SIGNER_ROLE, owner)).to.equal(true)
+        await expect(mint(recipient, tokenId, amount, new BN(0), owner)).to.be.fulfilled
       })
       it("rejects address without signer role", async () => {
-        // TODO
+        expect(await goldfinchIdentity.hasRole(SIGNER_ROLE, recipient)).to.equal(false)
+        await expect(mint(recipient, tokenId, amount, new BN(0), recipient)).to.be.rejectedWith(/Invalid signer/)
       })
       it("rejects empty signature", async () => {
-        // TODO
+        const emptySignature = EMPTY_STRING_HEX
+        const mintParams: MintParams = [recipient, tokenId, amount, EMPTY_STRING_HEX]
+        await expect(
+          goldfinchIdentity.mint(...mintParams, emptySignature, {
+            from: recipient,
+            value: MINT_PAYMENT,
+          })
+        ).to.be.rejectedWith(/ECDSA: invalid signature length/)
       })
       it("rejects reuse of a signature", async () => {
-        // TODO
+        const messageElements: [string, BN, BN] = [recipient, tokenId, amount]
+        const signature = await sign(
+          owner,
+          {types: ["address", "uint256", "uint256"], values: messageElements},
+          new BN(0)
+        )
+        const mintParams: MintParams = [recipient, tokenId, amount, EMPTY_STRING_HEX]
+        await goldfinchIdentity.mint(...mintParams, signature, {
+          from: recipient,
+          value: MINT_PAYMENT,
+        })
+        await expect(
+          goldfinchIdentity.mint(...mintParams, signature, {
+            from: recipient,
+            value: MINT_PAYMENT,
+          })
+        ).to.be.rejectedWith(/Invalid signer/)
+      })
+      it("allows any sender bearing a valid signature", async () => {
+        await expect(mint(recipient, tokenId, amount, new BN(0), owner, undefined, anotherUser2)).to.be.fulfilled
       })
     })
 
     describe("requires payment", () => {
       it("rejects insufficient payment", async () => {
-        // TODO
+        const messageElements: [string, BN, BN] = [recipient, tokenId, amount]
+        const signature = await sign(
+          owner,
+          {types: ["address", "uint256", "uint256"], values: messageElements},
+          new BN(0)
+        )
+        const mintParams: MintParams = [recipient, tokenId, amount, EMPTY_STRING_HEX]
+        await expect(
+          goldfinchIdentity.mint(...mintParams, signature, {
+            from: recipient,
+            value: MINT_PAYMENT.sub(new BN(1)),
+          })
+        ).to.be.rejectedWith(/Token mint requires 0\.00083 ETH/)
       })
       it("accepts minimum payment", async () => {
-        // TODO
+        const messageElements: [string, BN, BN] = [recipient, tokenId, amount]
+        const signature = await sign(
+          owner,
+          {types: ["address", "uint256", "uint256"], values: messageElements},
+          new BN(0)
+        )
+        const mintParams: MintParams = [recipient, tokenId, amount, EMPTY_STRING_HEX]
+        await expect(
+          goldfinchIdentity.mint(...mintParams, signature, {
+            from: recipient,
+            value: MINT_PAYMENT,
+          })
+        ).to.be.fulfilled
       })
       it("accepts overpayment", async () => {
-        // TODO
+        const messageElements: [string, BN, BN] = [recipient, tokenId, amount]
+        const signature = await sign(
+          owner,
+          {types: ["address", "uint256", "uint256"], values: messageElements},
+          new BN(0)
+        )
+        const mintParams: MintParams = [recipient, tokenId, amount, EMPTY_STRING_HEX]
+        await expect(
+          goldfinchIdentity.mint(...mintParams, signature, {
+            from: recipient,
+            value: MINT_PAYMENT.add(new BN(1)),
+          })
+        ).to.be.fulfilled
       })
     })
 
     describe("validates account", () => {
       it("rejects 0 address", async () => {
-        // TODO
+        const messageElements: [string, BN, BN] = [ethersConstants.AddressZero, tokenId, amount]
+        const signature = await sign(
+          owner,
+          {types: ["address", "uint256", "uint256"], values: messageElements},
+          new BN(0)
+        )
+        const mintParams: MintParams = [ethersConstants.AddressZero, tokenId, amount, EMPTY_STRING_HEX]
+        await expect(
+          goldfinchIdentity.mint(...mintParams, signature, {
+            from: recipient,
+            value: MINT_PAYMENT,
+          })
+        ).to.be.rejectedWith(/ERC1155: mint to the zero address/)
       })
     })
 
     describe("validates id", () => {
       it("allows token id of 0", async () => {
-        // TODO
+        await expect(mint(recipient, new BN(0), amount, new BN(0), owner)).to.be.fulfilled
       })
       it("rejects token id > 0", async () => {
-        // TODO
+        await expect(mint(recipient, new BN(1), amount, new BN(0), owner)).to.be.rejectedWith(/Token id not supported/)
       })
     })
 
     describe("validates amount", () => {
       it("rejects 0 amount", async () => {
-        // TODO
+        await expect(mint(recipient, tokenId, new BN(0), new BN(0), owner)).to.be.rejectedWith(
+          /Amount must be greater than 0/
+        )
       })
       it("allows amount of 1", async () => {
-        // TODO
+        await expect(mint(recipient, tokenId, new BN(1), new BN(0), owner)).to.be.fulfilled
       })
       it("allows amount > 1", async () => {
-        // TODO
+        await expect(mint(recipient, tokenId, new BN(2), new BN(0), owner)).to.be.fulfilled
+      })
+      it("does not reject duplicative minting, i.e. where amount before minting is > 0", async () => {
+        // TODO[PR] Should we reject in this case?
+        await mint(recipient, tokenId, amount, new BN(0), owner)
+        expect(await goldfinchIdentity.balanceOf(recipient, new BN(0))).to.bignumber.equal(new BN(1))
+        await expect(mint(recipient, tokenId, amount, new BN(1), owner)).to.be.fulfilled
       })
     })
 
     it("updates state and emits an event", async () => {
-      // TODO
+      await expect(mint(recipient, tokenId, amount, new BN(0), owner)).to.be.fulfilled
+      // (State updates and event emitted are established in `mint()`.)
     })
 
     context("paused", () => {
       it("reverts", async () => {
-        // TODO
+        await goldfinchIdentity.pause()
+        await expect(mint(recipient, tokenId, amount, new BN(0), owner)).to.be.rejectedWith(
+          /ERC1155Pausable: token transfer while paused/
+        )
       })
     })
   })
@@ -257,6 +418,9 @@ describe("GoldfinchIdentity", () => {
         // TODO
       })
       it("rejects reuse of a signature", async () => {
+        // TODO
+      })
+      it("allows any sender bearing a valid signature", async () => {
         // TODO
       })
     })
@@ -300,6 +464,9 @@ describe("GoldfinchIdentity", () => {
       })
       it("allows amount > 1", async () => {
         // TODO
+      })
+      it("does not reject duplicative minting, i.e. where amount before minting is > 0", async () => {
+        // TODO[PR] Should we reject in this case?
       })
       it("rejects amounts of different length than ids", async () => {
         // TODO
@@ -370,6 +537,9 @@ describe("GoldfinchIdentity", () => {
         // TODO
       })
       it("rejects reuse of a signature", async () => {
+        // TODO
+      })
+      it("allows any sender bearing a valid signature", async () => {
         // TODO
       })
     })
@@ -444,6 +614,9 @@ describe("GoldfinchIdentity", () => {
         // TODO
       })
       it("rejects reuse of a signature", async () => {
+        // TODO
+      })
+      it("allows any sender bearing a valid signature", async () => {
         // TODO
       })
     })
