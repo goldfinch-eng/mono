@@ -114,6 +114,10 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
       from: gf_deployer,
     })
     logger("Config was deployed to:", deployResult.address)
+    await hre.tenderly.persistArtifacts({
+      name: contractName,
+      address: deployResult.address,
+    })
     const config = (await ethers.getContractAt(deployResult.abi, deployResult.address)) as GoldfinchConfig
     if (deployResult.newlyDeployed) {
       logger("Config newly deployed, initializing...")
@@ -141,6 +145,10 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
         args: [initialAmount, decimalPlaces],
       })
       logger("Deployed the contract to:", fakeUSDC.address)
+      await hre.tenderly.persistArtifacts({
+        name: "FakeUSDC",
+        address: fakeUSDC.address,
+      })
       usdcAddress = fakeUSDC.address
       ;(
         await getContract<TestERC20, TestERC20Instance>("TestERC20", TRUFFLE_CONTRACT_PROVIDER, {from: gf_deployer})
@@ -172,6 +180,10 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
       },
     })
     logger("GoldfinchFactory was deployed to:", goldfinchFactoryDeployResult.address)
+    await hre.tenderly.persistArtifacts({
+      name: "GoldfinchFactory",
+      address: goldfinchFactoryDeployResult.address,
+    })
 
     const goldfinchFactory = await ethers.getContractAt("GoldfinchFactory", goldfinchFactoryDeployResult.address)
     const goldfinchFactoryAddress = goldfinchFactory.address
@@ -208,6 +220,11 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
       libraries: {["Accountant"]: accountant.address},
     })
     logger("Credit Desk was deployed to:", creditDeskDeployResult.address)
+    await hre.tenderly.persistArtifacts({
+      name: contractName,
+      address: creditDeskDeployResult.address,
+    })
+
     const creditDeskAddress = creditDeskDeployResult.address
     await updateConfig(config, "address", CONFIG_KEYS.CreditDesk, creditDeskAddress, {logger})
     return await ethers.getContractAt(creditDeskDeployResult.abi, creditDeskDeployResult.address)
@@ -244,6 +261,11 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
         },
       },
     })
+    await hre.tenderly.persistArtifacts({
+      name: "Fidu",
+      address: fiduDeployResult.address,
+    })
+
     const fidu = (await ethers.getContractAt("Fidu", fiduDeployResult.address)) as Fidu
     const fiduAddress = fidu.address
 
@@ -490,6 +512,11 @@ async function deployTranchedPool(hre: HardhatRuntimeEnvironment, {config}: Depl
   const tranchedPoolImpl = await deploy(contractName, {
     from: gf_deployer,
   })
+  await hre.tenderly.persistArtifacts({
+    name: contractName,
+    address: tranchedPoolImpl.address,
+  })
+
   logger("Deployed TranchedPool...")
   logger("Updating config...")
   await updateConfig(config, "address", CONFIG_KEYS.TranchedPoolImplementation, tranchedPoolImpl.address, {logger})
@@ -513,6 +540,11 @@ async function deployClImplementation(hre: HardhatRuntimeEnvironment, {config}: 
     from: gf_deployer,
     libraries: {["Accountant"]: accountant.address},
   })
+  await hre.tenderly.persistArtifacts({
+    name: "CreditLine",
+    address: clDeployResult.address,
+  })
+
   console.log("Deployed...")
   console.log("Updating config...")
   await updateConfig(config, "address", CONFIG_KEYS.CreditLineImplementation, clDeployResult.address)
@@ -529,6 +561,11 @@ async function deployMigratedTranchedPool(hre: HardhatRuntimeEnvironment, {confi
 
   assertIsString(gf_deployer)
   const migratedTranchedPoolImpl = await deploy(contractName, {from: gf_deployer})
+  await hre.tenderly.persistArtifacts({
+    name: contractName,
+    address: migratedTranchedPoolImpl.address,
+  })
+
   await updateConfig(
     config,
     "address",
@@ -568,6 +605,11 @@ async function deployTransferRestrictedVault(
       },
     },
   })
+  await hre.tenderly.persistArtifacts({
+    name: contractName,
+    address: deployResult.address,
+  })
+
   const contract = (await ethers.getContractAt(contractName, deployResult.address)) as TransferRestrictedVault
   return contract
 }
@@ -602,6 +644,11 @@ async function deployPoolTokens(hre: HardhatRuntimeEnvironment, {config}: Deploy
       },
     },
   })
+  await hre.tenderly.persistArtifacts({
+    name: contractName,
+    address: poolTokensDeployResult.address,
+  })
+
   logger("Initialized Pool Tokens...")
   logger("And updating config...")
   await updateConfig(config, "address", CONFIG_KEYS.PoolTokens, poolTokensDeployResult.address, {logger})
@@ -634,6 +681,11 @@ async function deployPool(hre: HardhatRuntimeEnvironment, {config}: DeployOpts) 
       },
     },
   })
+  await hre.tenderly.persistArtifacts({
+    name: contractName,
+    address: poolDeployResult.address,
+  })
+
   logger("Pool was deployed to:", poolDeployResult.address)
   const pool = await ethers.getContractAt(contractName, poolDeployResult.address)
   const poolAddress = pool.address
