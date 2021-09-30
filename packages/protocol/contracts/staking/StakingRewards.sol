@@ -521,13 +521,15 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     emit RewardAdded(rewards);
   }
 
-  function setRates(
+  function setRewardsParameters(
     uint256 _targetCapacity,
     uint256 _maxRateAtPercent,
     uint256 _minRateAtPercent,
     uint256 _maxRate,
     uint256 _minRate
   ) public onlyAdmin updateReward(0) {
+    require(maxRate >= minRate, "maxRate must be >= then minRate");
+    require(maxRateAtPercent <= minRateAtPercent, "maxRateAtPercent must be <= minRateAtPercent");
     targetCapacity = _targetCapacity;
     maxRateAtPercent = _maxRateAtPercent;
     minRateAtPercent = _minRateAtPercent;
