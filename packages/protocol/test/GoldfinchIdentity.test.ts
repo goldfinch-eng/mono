@@ -19,6 +19,7 @@ import {keccak256} from "@ethersproject/keccak256"
 import {GoldfinchIdentityInstance, TransferSingle} from "../typechain/truffle/GoldfinchIdentity"
 const {deployments} = hre
 
+const MINT_MESSAGE_ELEMENT_TYPES = ["address", "uint256", "uint256"]
 const EMPTY_STRING_HEX = web3.utils.asciiToHex("")
 const MINT_PAYMENT = new BN(0.00083e18)
 
@@ -121,7 +122,7 @@ describe("GoldfinchIdentity", () => {
     const tokenBalanceBefore = await goldfinchIdentity.balanceOf(recipient, tokenId)
 
     const messageElements: [string, BN, BN] = [recipient, tokenId, amount]
-    const signature = await sign(signer, {types: ["address", "uint256", "uint256"], values: messageElements}, nonce)
+    const signature = await sign(signer, {types: MINT_MESSAGE_ELEMENT_TYPES, values: messageElements}, nonce)
 
     const defaultMintParams: MintParams = [recipient, tokenId, amount, EMPTY_STRING_HEX]
     const mintParams: MintParams = overrideMintParams || defaultMintParams
@@ -156,7 +157,7 @@ describe("GoldfinchIdentity", () => {
 
   async function burn(recipient: string, tokenId: BN, value: BN, nonce: BN, signer: string): Promise<void> {
     const messageElements: [string, BN, BN] = [recipient, tokenId, value]
-    const signature = await sign(signer, {types: ["address", "uint256", "uint256"], values: messageElements}, nonce)
+    const signature = await sign(signer, {types: MINT_MESSAGE_ELEMENT_TYPES, values: messageElements}, nonce)
     await goldfinchIdentity.burn(...messageElements, signature, {from: recipient})
   }
 
@@ -258,11 +259,7 @@ describe("GoldfinchIdentity", () => {
       })
       it("rejects reuse of a signature", async () => {
         const messageElements: [string, BN, BN] = [recipient, tokenId, amount]
-        const signature = await sign(
-          owner,
-          {types: ["address", "uint256", "uint256"], values: messageElements},
-          new BN(0)
-        )
+        const signature = await sign(owner, {types: MINT_MESSAGE_ELEMENT_TYPES, values: messageElements}, new BN(0))
         const mintParams: MintParams = [recipient, tokenId, amount, EMPTY_STRING_HEX]
         await goldfinchIdentity.mint(...mintParams, signature, {
           from: recipient,
@@ -283,11 +280,7 @@ describe("GoldfinchIdentity", () => {
     describe("requires payment", () => {
       it("rejects insufficient payment", async () => {
         const messageElements: [string, BN, BN] = [recipient, tokenId, amount]
-        const signature = await sign(
-          owner,
-          {types: ["address", "uint256", "uint256"], values: messageElements},
-          new BN(0)
-        )
+        const signature = await sign(owner, {types: MINT_MESSAGE_ELEMENT_TYPES, values: messageElements}, new BN(0))
         const mintParams: MintParams = [recipient, tokenId, amount, EMPTY_STRING_HEX]
         await expect(
           goldfinchIdentity.mint(...mintParams, signature, {
@@ -298,11 +291,7 @@ describe("GoldfinchIdentity", () => {
       })
       it("accepts minimum payment", async () => {
         const messageElements: [string, BN, BN] = [recipient, tokenId, amount]
-        const signature = await sign(
-          owner,
-          {types: ["address", "uint256", "uint256"], values: messageElements},
-          new BN(0)
-        )
+        const signature = await sign(owner, {types: MINT_MESSAGE_ELEMENT_TYPES, values: messageElements}, new BN(0))
         const mintParams: MintParams = [recipient, tokenId, amount, EMPTY_STRING_HEX]
         await expect(
           goldfinchIdentity.mint(...mintParams, signature, {
@@ -313,11 +302,7 @@ describe("GoldfinchIdentity", () => {
       })
       it("accepts overpayment", async () => {
         const messageElements: [string, BN, BN] = [recipient, tokenId, amount]
-        const signature = await sign(
-          owner,
-          {types: ["address", "uint256", "uint256"], values: messageElements},
-          new BN(0)
-        )
+        const signature = await sign(owner, {types: MINT_MESSAGE_ELEMENT_TYPES, values: messageElements}, new BN(0))
         const mintParams: MintParams = [recipient, tokenId, amount, EMPTY_STRING_HEX]
         await expect(
           goldfinchIdentity.mint(...mintParams, signature, {
@@ -331,11 +316,7 @@ describe("GoldfinchIdentity", () => {
     describe("validates account", () => {
       it("rejects 0 address", async () => {
         const messageElements: [string, BN, BN] = [ethersConstants.AddressZero, tokenId, amount]
-        const signature = await sign(
-          owner,
-          {types: ["address", "uint256", "uint256"], values: messageElements},
-          new BN(0)
-        )
+        const signature = await sign(owner, {types: MINT_MESSAGE_ELEMENT_TYPES, values: messageElements}, new BN(0))
         const mintParams: MintParams = [ethersConstants.AddressZero, tokenId, amount, EMPTY_STRING_HEX]
         await expect(
           goldfinchIdentity.mint(...mintParams, signature, {
