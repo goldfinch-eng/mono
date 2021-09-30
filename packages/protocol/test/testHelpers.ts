@@ -37,9 +37,11 @@ import {
   StakingRewardsInstance,
   CommunityRewardsInstance,
   MerkleDistributorInstance,
+  GoldfinchIdentityInstance,
+  GoInstance,
 } from "../typechain/truffle"
 import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/DynamicLeverageRatioStrategy"
-import {MerkleDistributor, CommunityRewards} from "../typechain/ethers"
+import {MerkleDistributor, CommunityRewards, GoldfinchIdentity, Go} from "../typechain/ethers"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import "./types"
 const decimals = new BN(String(1e18))
@@ -238,6 +240,8 @@ async function deployAllContracts(
   stakingRewards: StakingRewardsInstance
   communityRewards: CommunityRewardsInstance
   merkleDistributor: MerkleDistributorInstance | null
+  goldfinchIdentity: GoldfinchIdentityInstance
+  go: GoInstance
 }> {
   await deployments.fixture("base_deploy")
   const pool = await getDeployedAsTruffleContract<PoolInstance>(deployments, "Pool")
@@ -270,6 +274,7 @@ async function deployAllContracts(
   )
   const gfi = await getDeployedAsTruffleContract<GFIInstance>(deployments, "GFI")
   const stakingRewards = await getDeployedAsTruffleContract<StakingRewardsInstance>(deployments, "StakingRewards")
+
   const communityRewards = await getContract<CommunityRewards, CommunityRewardsInstance>(
     "CommunityRewards",
     TRUFFLE_CONTRACT_PROVIDER
@@ -287,6 +292,13 @@ async function deployAllContracts(
     )
     await communityRewards.grantRole(DISTRIBUTOR_ROLE, merkleDistributor.address)
   }
+
+  const goldfinchIdentity = await getContract<GoldfinchIdentity, GoldfinchIdentityInstance>(
+    "GoldfinchIdentity",
+    TRUFFLE_CONTRACT_PROVIDER
+  )
+  const go = await getContract<Go, GoInstance>("Go", TRUFFLE_CONTRACT_PROVIDER)
+
   return {
     pool,
     seniorPool,
@@ -305,6 +317,8 @@ async function deployAllContracts(
     stakingRewards,
     communityRewards,
     merkleDistributor,
+    goldfinchIdentity,
+    go,
   }
 }
 

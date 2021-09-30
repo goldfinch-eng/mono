@@ -131,6 +131,7 @@ export const MINTER_ROLE = web3.utils.keccak256("MINTER_ROLE")
 export const LEVERAGE_RATIO_SETTER_ROLE = web3.utils.keccak256("LEVERAGE_RATIO_SETTER_ROLE")
 export const REDEEMER_ROLE = web3.utils.keccak256("REDEEMER_ROLE")
 export const DISTRIBUTOR_ROLE = web3.utils.keccak256("DISTRIBUTOR_ROLE")
+export const SIGNER_ROLE = web3.utils.keccak256("SIGNER_ROLE")
 
 const TRANCHES = {
   Senior: 1,

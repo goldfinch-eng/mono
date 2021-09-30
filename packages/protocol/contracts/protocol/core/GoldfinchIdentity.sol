@@ -25,6 +25,8 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
   mapping(address => uint256) public nonces;
 
   function initialize(address owner, string memory uri) public initializer {
+    require(owner != address(0), "Owner address cannot be empty");
+
     __ERC1155PresetPauser_init(owner, uri);
     __GoldfinchIdentity_init(owner);
   }

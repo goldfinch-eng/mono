@@ -46,6 +46,7 @@ import {
 } from "../typechain/truffle"
 import {assertIsString} from "@goldfinch-eng/utils"
 import {StakingRewards} from "../typechain/ethers/StakingRewards"
+import {GOLDFINCH_IDENTITY_METADATA_URI} from "./goldfinchIdentity/constants"
 
 let logger: Logger
 
@@ -384,9 +385,6 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   }
 
   async function deployGoldfinchIdentity(hre: HardhatRuntimeEnvironment): Promise<Deployed<GoldfinchIdentityInstance>> {
-    // TODO[PR] What should this be?
-    const METADATA_URI = "https://app.goldfinch.finance"
-
     const contractName = "GoldfinchIdentity"
     logger(`About to deploy ${contractName}...`)
     assertIsString(gf_deployer)
@@ -398,7 +396,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
         execute: {
           init: {
             methodName: "initialize",
-            args: [protocol_owner, METADATA_URI],
+            args: [protocol_owner, GOLDFINCH_IDENTITY_METADATA_URI],
           },
         },
       },

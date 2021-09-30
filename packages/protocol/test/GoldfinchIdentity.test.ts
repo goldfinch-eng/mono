@@ -1,27 +1,77 @@
 /* global web3 */
 import hre from "hardhat"
+import {asNonNullable, assertNonEmptyArray, assertNonNullable} from "@goldfinch-eng/utils"
+import {deployAllContracts} from "./testHelpers"
+import {GoldfinchIdentityInstance} from "../typechain/truffle"
+import {
+  getContract,
+  OWNER_ROLE,
+  PAUSER_ROLE,
+  SIGNER_ROLE,
+  TRUFFLE_CONTRACT_PROVIDER,
+} from "../blockchain_scripts/deployHelpers"
+import {GoldfinchIdentity} from "../typechain/ethers"
+import {constants as ethersConstants} from "ethers"
+import {GOLDFINCH_IDENTITY_METADATA_URI} from "../blockchain_scripts/goldfinchIdentity/constants"
 const {deployments} = hre
 
 const setupTest = deployments.createFixture(async ({deployments}) => {
-  // TODO
+  const {deploy} = deployments
+  const [_owner, _anotherUser] = await web3.eth.getAccounts()
+  const owner = asNonNullable(_owner)
+  const uninitializedGoldfinchIdentityDeployer = asNonNullable(_anotherUser)
+
+  const deployed = await deployAllContracts(deployments)
+
+  const goldfinchIdentity = deployed.goldfinchIdentity
+
+  const uninitializedGoldfinchIdentityDeployResult = await deploy("GoldfinchIdentity", {
+    from: uninitializedGoldfinchIdentityDeployer,
+    gasLimit: 4000000,
+  })
+  const uninitializedGoldfinchIdentity = await getContract<GoldfinchIdentity, GoldfinchIdentityInstance>(
+    "GoldfinchIdentity",
+    TRUFFLE_CONTRACT_PROVIDER,
+    {
+      at: uninitializedGoldfinchIdentityDeployResult.address,
+    }
+  )
+
+  return {owner, goldfinchIdentity, uninitializedGoldfinchIdentity, uninitializedGoldfinchIdentityDeployer}
 })
 
 describe("GoldfinchIdentity", () => {
-  let owner: string
+  let owner: string,
+    goldfinchIdentity: GoldfinchIdentityInstance,
+    uninitializedGoldfinchIdentityDeployer: string,
+    uninitializedGoldfinchIdentity: GoldfinchIdentityInstance
 
   beforeEach(async () => {
-    // TODO
+    // eslint-disable-next-line @typescript-eslint/no-extra-semi
+    ;({owner, goldfinchIdentity, uninitializedGoldfinchIdentityDeployer, uninitializedGoldfinchIdentity} =
+      await setupTest())
   })
 
   describe("initialize", () => {
     it("rejects zero address owner", async () => {
-      // TODO
+      const initialized = uninitializedGoldfinchIdentity.initialize(
+        ethersConstants.AddressZero,
+        GOLDFINCH_IDENTITY_METADATA_URI
+      )
+      await expect(initialized).to.be.rejectedWith(/Owner address cannot be empty/)
     })
     it("grants owner the owner, pauser, and signer roles", async () => {
-      // TODO
+      expect(await goldfinchIdentity.hasRole(OWNER_ROLE, owner)).to.equal(true)
+      expect(await goldfinchIdentity.hasRole(PAUSER_ROLE, owner)).to.equal(true)
+      expect(await goldfinchIdentity.hasRole(SIGNER_ROLE, owner)).to.equal(true)
     })
     it("does not grant the deployer the owner, pauser, nor signer roles", async () => {
-      // TODO
+      await uninitializedGoldfinchIdentity.initialize(owner, GOLDFINCH_IDENTITY_METADATA_URI, {
+        from: uninitializedGoldfinchIdentityDeployer,
+      })
+      expect(await goldfinchIdentity.hasRole(OWNER_ROLE, uninitializedGoldfinchIdentityDeployer)).to.equal(false)
+      expect(await goldfinchIdentity.hasRole(PAUSER_ROLE, uninitializedGoldfinchIdentityDeployer)).to.equal(false)
+      expect(await goldfinchIdentity.hasRole(SIGNER_ROLE, uninitializedGoldfinchIdentityDeployer)).to.equal(false)
     })
   })
 
