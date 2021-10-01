@@ -21,14 +21,21 @@ import {asNonNullable} from "../../utils/src"
 const {ethers} = hre
 const {deployments} = hre
 
+const setupTest = deployments.createFixture(async ({deployments}) => {
+  const [_owner, _anotherUser] = await web3.eth.getAccounts()
+  const owner = asNonNullable(_owner)
+  const anotherUser = asNonNullable(_anotherUser)
+
+  const deployed = await deployAllContracts(deployments)
+  return {owner, anotherUser, gfi: deployed.gfi, communityRewards: deployed.communityRewards}
+})
+
 describe("CommunityRewards", () => {
   let owner: string, anotherUser: string, gfi: GFIInstance, communityRewards: CommunityRewardsInstance
 
   beforeEach(async () => {
-    const [_owner, _anotherUser] = await web3.eth.getAccounts()
-    owner = asNonNullable(_owner)
-    anotherUser = asNonNullable(_anotherUser)
-    ;({gfi, communityRewards} = await deployAllContracts(deployments))
+    // eslint-disable-next-line @typescript-eslint/no-extra-semi
+    ;({owner, anotherUser, gfi, communityRewards} = await setupTest())
   })
 
   async function grant({
