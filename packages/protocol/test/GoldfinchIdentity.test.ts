@@ -330,7 +330,8 @@ describe("GoldfinchIdentity", () => {
         await expect(mint(recipient, tokenId, new BN(2), new BN(0), owner)).to.be.fulfilled
       })
       it("does not reject duplicative minting, i.e. where amount before minting is > 0", async () => {
-        // TODO[PR] Should we reject in this case?
+        // TODO[PR] Alternatively, we could reject in this case, as minting if balance is already > 0
+        // serves no purpose.
         await mint(recipient, tokenId, amount, new BN(0), owner)
         expect(await goldfinchIdentity.balanceOf(recipient, new BN(0))).to.bignumber.equal(new BN(1))
         await expect(mint(recipient, tokenId, amount, new BN(1), owner)).to.be.fulfilled
