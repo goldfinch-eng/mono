@@ -50,7 +50,7 @@ contract Go is IGo, BaseUpgradeablePausable {
    * @return The account's go status
    */
   function go(address account) public view override returns (bool) {
-    require(account != address(0), "Zero address is not go-listed.");
+    require(account != address(0), "Zero address is not go-listed");
     // NOTE: If GoldfinchIdentity is upgraded to support token ids besides 0, this contract should
     // be upgraded to handle the set of possible ids.
     uint256 balance = IGoldfinchIdentity0612(goldfinchIdentity).balanceOf(account, ID_VERSION_0);

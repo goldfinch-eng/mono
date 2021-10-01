@@ -1,11 +1,9 @@
 /* global web3 */
-import {keccak256} from "@ethersproject/keccak256"
-import {pack} from "@ethersproject/solidity"
-import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
+
+import {asNonNullable} from "@goldfinch-eng/utils"
 import {BN} from "ethereumjs-tx/node_modules/ethereumjs-util"
-import {BigNumber, constants as ethersConstants} from "ethers"
+import {constants as ethersConstants} from "ethers"
 import hre from "hardhat"
-import _ from "lodash"
 import {
   getContract,
   OWNER_ROLE,
@@ -15,16 +13,18 @@ import {
 } from "../blockchain_scripts/deployHelpers"
 import {GOLDFINCH_IDENTITY_METADATA_URI} from "../blockchain_scripts/goldfinchIdentity/constants"
 import {TestGoldfinchIdentity} from "../typechain/ethers"
-import {TransferSingle} from "../typechain/truffle/GoldfinchIdentity"
 import {TestGoldfinchIdentityInstance} from "../typechain/truffle/TestGoldfinchIdentity"
-import {decodeLogs, deployAllContracts, getOnlyLog} from "./testHelpers"
+import {
+  BurnParams,
+  BURN_MESSAGE_ELEMENT_TYPES,
+  EMPTY_STRING_HEX,
+  MintParams,
+  MINT_MESSAGE_ELEMENT_TYPES,
+  MINT_PAYMENT,
+} from "./goldfinchIdentityHelpers"
+import {deployAllContracts} from "./testHelpers"
+import {mint as mintHelper, burn as burnHelper, sign as signHelper} from "./goldfinchIdentityHelpers"
 const {deployments} = hre
-
-const MINT_MESSAGE_ELEMENT_TYPES = ["address", "uint256", "uint256"]
-const EMPTY_STRING_HEX = web3.utils.asciiToHex("")
-const MINT_PAYMENT = new BN(0.00083e18)
-
-const BURN_MESSAGE_ELEMENT_TYPES = ["address", "uint256", "uint256"]
 
 const setupTest = deployments.createFixture(async ({deployments}) => {
   const {deploy} = deployments
@@ -60,41 +60,6 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   }
 })
 
-const sign = async (
-  signerAddress: string,
-  messageBaseElements: {types: string[]; values: Array<BN | string>},
-  nonce: BN
-): Promise<string> => {
-  const signer = (await hre.ethers.getSigners()).find((signer) => signer.address === signerAddress)
-  assertNonNullable(signer)
-
-  if (messageBaseElements.types.length !== messageBaseElements.values.length) {
-    throw new Error("Invalid message elements")
-  }
-
-  // Append nonce to base elements of message.
-  const types = messageBaseElements.types.concat("uint256")
-  const _values = messageBaseElements.values.concat(nonce)
-
-  // Convert BN values to BigNumber, since ethers utils use BigNumber.
-  const values = _values.map((val: BN | string) => (BN.isBN(val) ? BigNumber.from(val.toString()) : val))
-
-  if (_.some(values, Array.isArray)) {
-    // If we want to support signing a message whose elements can be arrays, we'd want to encode the values using
-    // a utility corresponding to `abi.encode()`, rather than `abi.encodePacked()`, because packed encoding is
-    // ambiguous for multiple parameters of dynamic type (cf. https://github.com/ethereum/solidity/blob/v0.8.4/docs/abi-spec.rst#non-standard-packed-mode).
-    // This is something to keep in mind if we ever implement `mintBatch()` or `burnBatch()`, which would use
-    // array parameters. For now, we're defensive here against this issue.
-    throw new Error("Expected no array values.")
-  }
-  const encoded = pack(types, values)
-  const hashed = keccak256(encoded)
-
-  // Cf. https://github.com/ethers-io/ethers.js/blob/ce8f1e4015c0f27bf178238770b1325136e3351a/docs/v5/api/signer/README.md#note
-  const arrayified = hre.ethers.utils.arrayify(hashed)
-  return signer.signMessage(arrayified)
-}
-
 describe("GoldfinchIdentity", () => {
   let owner: string,
     anotherUser: string,
@@ -115,8 +80,13 @@ describe("GoldfinchIdentity", () => {
     } = await setupTest())
   })
 
-  type MintParams = [string, BN, BN, string]
-  type BurnParams = [string, BN, BN]
+  async function sign(
+    signerAddress: string,
+    messageBaseElements: {types: string[]; values: Array<BN | string>},
+    nonce: BN
+  ): Promise<string> {
+    return signHelper(hre, signerAddress, messageBaseElements, nonce)
+  }
 
   async function mint(
     recipient: string,
@@ -127,41 +97,17 @@ describe("GoldfinchIdentity", () => {
     overrideMintParams?: MintParams,
     overrideFrom?: string
   ): Promise<void> {
-    const contractBalanceBefore = await web3.eth.getBalance(goldfinchIdentity.address)
-    const tokenBalanceBefore = await goldfinchIdentity.balanceOf(recipient, tokenId)
-
-    const messageElements: [string, BN, BN] = [recipient, tokenId, amount]
-    const signature = await sign(signer, {types: MINT_MESSAGE_ELEMENT_TYPES, values: messageElements}, nonce)
-
-    const defaultMintParams: MintParams = [recipient, tokenId, amount, EMPTY_STRING_HEX]
-    const mintParams: MintParams = overrideMintParams || defaultMintParams
-
-    const defaultFrom = recipient
-    const from = overrideFrom || defaultFrom
-
-    const receipt = await goldfinchIdentity.mint(...mintParams, signature, {
-      from,
-      value: MINT_PAYMENT,
-    })
-
-    // Verify contract state.
-    const contractBalanceAfter = await web3.eth.getBalance(goldfinchIdentity.address)
-    expect(new BN(contractBalanceAfter).sub(new BN(contractBalanceBefore))).to.bignumber.equal(MINT_PAYMENT)
-
-    const tokenBalanceAfter = await goldfinchIdentity.balanceOf(recipient, tokenId)
-    expect(tokenBalanceAfter.sub(tokenBalanceBefore)).to.bignumber.equal(amount)
-
-    expect(await goldfinchIdentity.nonces(recipient)).to.bignumber.equal(nonce.add(new BN(1)))
-
-    // Verify that event was emitted.
-    const transferEvent = getOnlyLog<TransferSingle>(
-      decodeLogs(receipt.receipt.rawLogs, goldfinchIdentity, "TransferSingle")
+    return mintHelper(
+      hre,
+      goldfinchIdentity,
+      recipient,
+      tokenId,
+      amount,
+      nonce,
+      signer,
+      overrideMintParams,
+      overrideFrom
     )
-    expect(transferEvent.args.operator).to.equal(from)
-    expect(transferEvent.args.from).to.equal(ethersConstants.AddressZero)
-    expect(transferEvent.args.to).to.equal(recipient)
-    expect(transferEvent.args.id).to.bignumber.equal(tokenId)
-    expect(transferEvent.args.value).to.bignumber.equal(amount)
   }
 
   async function burn(
@@ -173,39 +119,17 @@ describe("GoldfinchIdentity", () => {
     overrideBurnParams?: BurnParams,
     overrideFrom?: string
   ): Promise<void> {
-    const contractBalanceBefore = await web3.eth.getBalance(goldfinchIdentity.address)
-    const tokenBalanceBefore = await goldfinchIdentity.balanceOf(recipient, tokenId)
-
-    const messageElements: [string, BN, BN] = [recipient, tokenId, value]
-    const signature = await sign(signer, {types: BURN_MESSAGE_ELEMENT_TYPES, values: messageElements}, nonce)
-
-    const defaultBurnParams: BurnParams = [recipient, tokenId, value]
-    const burnParams: BurnParams = overrideBurnParams || defaultBurnParams
-
-    const defaultFrom = recipient
-    const from = overrideFrom || defaultFrom
-
-    const receipt = await goldfinchIdentity.burn(...burnParams, signature, {from})
-
-    // Verify contract state.
-    const contractBalanceAfter = await web3.eth.getBalance(goldfinchIdentity.address)
-    expect(new BN(contractBalanceAfter)).to.bignumber.equal(new BN(contractBalanceBefore))
-
-    const tokenBalanceAfter = await goldfinchIdentity.balanceOf(recipient, tokenId)
-    expect(tokenBalanceBefore.sub(tokenBalanceAfter)).to.bignumber.equal(value)
-    expect(tokenBalanceAfter).to.bignumber.equal(new BN(0))
-
-    expect(await goldfinchIdentity.nonces(recipient)).to.bignumber.equal(nonce.add(new BN(1)))
-
-    // Verify that event was emitted.
-    const transferEvent = getOnlyLog<TransferSingle>(
-      decodeLogs(receipt.receipt.rawLogs, goldfinchIdentity, "TransferSingle")
+    return burnHelper(
+      hre,
+      goldfinchIdentity,
+      recipient,
+      tokenId,
+      value,
+      nonce,
+      signer,
+      overrideBurnParams,
+      overrideFrom
     )
-    expect(transferEvent.args.operator).to.equal(from)
-    expect(transferEvent.args.from).to.equal(recipient)
-    expect(transferEvent.args.to).to.equal(ethersConstants.AddressZero)
-    expect(transferEvent.args.id).to.bignumber.equal(tokenId)
-    expect(transferEvent.args.value).to.bignumber.equal(value)
   }
 
   describe("initialize", () => {

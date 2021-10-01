@@ -3,9 +3,17 @@ import hre from "hardhat"
 import {constants as ethersConstants} from "ethers"
 import {asNonNullable} from "@goldfinch-eng/utils"
 import {deployAllContracts} from "./testHelpers"
-import {getContract, OWNER_ROLE, PAUSER_ROLE, TRUFFLE_CONTRACT_PROVIDER} from "../blockchain_scripts/deployHelpers"
+import {
+  getContract,
+  GO_LISTER_ROLE,
+  OWNER_ROLE,
+  PAUSER_ROLE,
+  TRUFFLE_CONTRACT_PROVIDER,
+} from "../blockchain_scripts/deployHelpers"
 import {Go} from "../typechain/ethers"
 import {GoInstance, GoldfinchConfigInstance, TestGoldfinchIdentityInstance} from "../typechain/truffle"
+import {mint} from "./goldfinchIdentityHelpers"
+import {BN} from "ethereumjs-tx/node_modules/ethereumjs-util"
 const {deployments} = hre
 
 const setupTest = deployments.createFixture(async ({deployments}) => {
@@ -131,43 +139,83 @@ describe("Go", () => {
   })
 
   describe("go", () => {
-    beforeEach(async () => {
-      // TODO
-    })
-
     it("rejects zero address account", async () => {
-      // TODO
+      await expect(go.go(ethersConstants.AddressZero)).to.be.rejectedWith(/Zero address is not go-listed/)
     })
 
     context("account with 0 balance GoldfinchIdentity token (id 0)", () => {
+      beforeEach(async () => {
+        const tokenId = new BN(0)
+        expect(await goldfinchIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(new BN(0))
+      })
+
       context("account is on legacy go-list", () => {
+        beforeEach(async () => {
+          expect(await goldfinchConfig.goList(anotherUser)).to.equal(false)
+          expect(await goldfinchConfig.hasRole(GO_LISTER_ROLE, owner)).to.equal(true)
+          await goldfinchConfig.addToGoList(anotherUser, {from: owner})
+          expect(await goldfinchConfig.goList(anotherUser)).to.equal(true)
+        })
+
         it("returns true", async () => {
-          // TODO
+          expect(await go.go(anotherUser)).to.equal(true)
         })
       })
       context("account is not on legacy go-list", () => {
+        beforeEach(async () => {
+          expect(await goldfinchConfig.goList(anotherUser)).to.equal(false)
+        })
+
         it("returns false", async () => {
-          // TODO
+          expect(await go.go(anotherUser)).to.equal(false)
         })
       })
     })
 
     context("account with > 0 balance GoldfinchIdentity token (id 0)", () => {
+      beforeEach(async () => {
+        const tokenId = new BN(0)
+        const amount = new BN(1)
+        await mint(hre, goldfinchIdentity, anotherUser, tokenId, amount, new BN(0), owner)
+        expect(await goldfinchIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(amount)
+      })
+
       context("account is on legacy go-list", () => {
+        beforeEach(async () => {
+          expect(await goldfinchConfig.goList(anotherUser)).to.equal(false)
+          expect(await goldfinchConfig.hasRole(GO_LISTER_ROLE, owner)).to.equal(true)
+          await goldfinchConfig.addToGoList(anotherUser, {from: owner})
+          expect(await goldfinchConfig.goList(anotherUser)).to.equal(true)
+        })
+
         it("returns true", async () => {
-          // TODO
+          expect(await go.go(anotherUser)).to.equal(true)
         })
       })
       context("account is not on legacy go-list", () => {
+        beforeEach(async () => {
+          expect(await goldfinchConfig.goList(anotherUser)).to.equal(false)
+        })
+
         it("returns true", async () => {
-          // TODO
+          expect(await go.go(anotherUser)).to.equal(true)
         })
       })
     })
 
     context("paused", () => {
+      beforeEach(async () => {
+        const tokenId = new BN(0)
+        const amount = new BN(1)
+        await mint(hre, goldfinchIdentity, anotherUser, tokenId, amount, new BN(0), owner)
+        expect(await goldfinchIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(amount)
+      })
+
       it("returns anyway", async () => {
-        // TODO
+        await go.pause()
+        expect(await go.paused()).to.equal(true)
+
+        expect(await go.go(anotherUser)).to.equal(true)
       })
     })
   })
