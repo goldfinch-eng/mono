@@ -79,10 +79,15 @@ const sign = async (
   // Convert BN values to BigNumber, since ethers utils use BigNumber.
   const values = _values.map((val: BN | string) => (BN.isBN(val) ? BigNumber.from(val.toString()) : val))
 
-  // Use packed encoding if none of the message elements is an array. This corresponds to our usage of `abi.encode()`
-  // instead of `abi.encodePacked()` in the GoldfinchIdentity contract, based on whether any of the parameters are of dynamic type.
-  const encoded = _.some(values, Array.isArray) ? web3.eth.abi.encodeParameters(types, values) : pack(types, values)
-
+  if (_.some(values, Array.isArray)) {
+    // If we want to support signing a message whose elements can be arrays, we'd want to encode the values using
+    // a utility corresponding to `abi.encode()`, rather than `abi.encodePacked()`, because packed encoding is
+    // ambiguous for multiple parameters of dynamic type (cf. https://github.com/ethereum/solidity/blob/v0.8.4/docs/abi-spec.rst#non-standard-packed-mode).
+    // This is something to keep in mind if we ever implement `mintBatch()` or `burnBatch()`, which would use
+    // array parameters. For now, we're defensive here against this issue.
+    throw new Error("Expected no array values.")
+  }
+  const encoded = pack(types, values)
   const hashed = keccak256(encoded)
 
   // Cf. https://github.com/ethers-io/ethers.js/blob/ce8f1e4015c0f27bf178238770b1325136e3351a/docs/v5/api/signer/README.md#note
@@ -415,102 +420,6 @@ describe("GoldfinchIdentity", () => {
     // TODO[PR] Should we test execution of the received hook?
   })
 
-  describe("mintBatch", () => {
-    beforeEach(async () => {
-      // TODO
-    })
-
-    describe("validates signature", () => {
-      it("rejects incorrect `to` address in hashed message", async () => {
-        // TODO
-      })
-      it("rejects incorrect `ids` in hashed message", async () => {
-        // TODO
-      })
-      it("rejects incorrect `amounts` in hashed message", async () => {
-        // TODO
-      })
-      it("ignores `data` in hashed message", async () => {
-        // TODO
-      })
-      it("allows address with signer role", async () => {
-        // TODO
-      })
-      it("rejects address without signer role", async () => {
-        // TODO
-      })
-      it("rejects empty signature", async () => {
-        // TODO
-      })
-      it("rejects reuse of a signature", async () => {
-        // TODO
-      })
-      it("allows any sender bearing a valid signature", async () => {
-        // TODO
-      })
-    })
-
-    describe("requires payment", () => {
-      it("rejects insufficient payment", async () => {
-        // TODO
-      })
-      it("accepts minimum payment", async () => {
-        // TODO
-      })
-      it("accepts overpayment", async () => {
-        // TODO
-      })
-    })
-
-    describe("validates account", () => {
-      it("rejects 0 address", async () => {
-        // TODO
-      })
-    })
-
-    describe("validates ids", () => {
-      it("allows token id of 0", async () => {
-        // TODO
-      })
-      it("rejects token id > 0", async () => {
-        // TODO
-      })
-      it("rejects ids of different length than amounts", async () => {
-        // TODO
-      })
-    })
-
-    describe("validates amount", () => {
-      it("rejects 0 amount", async () => {
-        // TODO
-      })
-      it("allows amount of 1", async () => {
-        // TODO
-      })
-      it("allows amount > 1", async () => {
-        // TODO
-      })
-      it("does not reject duplicative minting, i.e. where amount before minting is > 0", async () => {
-        // TODO[PR] Should we reject in this case?
-      })
-      it("rejects amounts of different length than ids", async () => {
-        // TODO
-      })
-    })
-
-    it("updates state and emits an event", async () => {
-      // TODO
-    })
-
-    context("paused", () => {
-      it("reverts", async () => {
-        // TODO
-      })
-    })
-
-    // TODO[PR] Should we test execution of the received hook?
-  })
-
   describe("safeTransferFrom", () => {
     it("rejects because transfer is disabled", async () => {
       // TODO
@@ -671,88 +580,6 @@ describe("GoldfinchIdentity", () => {
         await expect(burn(recipient, tokenId, value, new BN(1), owner)).to.be.rejectedWith(
           /ERC1155Pausable: token transfer while paused/
         )
-      })
-    })
-  })
-
-  describe("burnBatch", () => {
-    beforeEach(async () => {
-      // TODO
-    })
-
-    describe("validates signature", () => {
-      it("rejects incorrect `to` address in hashed message", async () => {
-        // TODO
-      })
-      it("rejects incorrect `ids` in hashed message", async () => {
-        // TODO
-      })
-      it("rejects incorrect `values` in hashed message", async () => {
-        // TODO
-      })
-      it("allows address with signer role", async () => {
-        // TODO
-      })
-      it("rejects address without signer role", async () => {
-        // TODO
-      })
-      it("rejects empty signature", async () => {
-        // TODO
-      })
-      it("rejects reuse of a signature", async () => {
-        // TODO
-      })
-      it("allows any sender bearing a valid signature", async () => {
-        // TODO
-      })
-    })
-
-    describe("validates account", () => {
-      it("rejects 0 address", async () => {
-        // TODO
-      })
-      it("allows account having token ids", async () => {
-        // TODO
-      })
-      it("allows account not having token id", async () => {
-        // TODO
-      })
-    })
-
-    describe("validates ids", () => {
-      it("allows for token ids for which minting is supported", async () => {
-        // TODO
-      })
-      it("allows for token id for which minting is not supported", async () => {
-        // TODO
-      })
-      it("rejects ids of different length than values", async () => {
-        // TODO
-      })
-    })
-
-    describe("validates value", () => {
-      it("rejects value less than amount on token", async () => {
-        // TODO
-      })
-      it("rejects value greater than amount on token", async () => {
-        // TODO
-      })
-      it("allows values that equal amounts on tokens", async () => {
-        // TODO expect balanceOf before the burn not to equal 0 and after the burn to equal 0.
-      })
-      it("rejects values of different length than ids", async () => {
-        // TODO
-      })
-    })
-
-    it("updates state and emits an event", async () => {
-      // TODO
-    })
-
-    context("paused", () => {
-      it("reverts", async () => {
-        // TODO
       })
     })
   })

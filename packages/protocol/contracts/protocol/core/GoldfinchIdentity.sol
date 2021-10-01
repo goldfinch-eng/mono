@@ -56,32 +56,6 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
     _mint(to, id, amount, data);
   }
 
-  /// @dev We use `abi.encode()` rather than `abi.encodePacked()` for generating the hashed
-  /// message passed to `onlySigner()`, because `ids` and `amounts` have dynamic types. Per the Warning in
-  /// https://github.com/ethereum/solidity/blob/v0.8.4/docs/abi-spec.rst#non-standard-packed-mode,
-  /// `abi.encodePacked()` generates an ambiguous result if more than one dynamic type is passed to it.
-  // TODO[PR] See if gas cost is cheaper if instead of using `abi.encode()`, we used `abi.encodePacked()`,
-  // plus `keccak256(abi.encodePacked(ids))` to represent ids as a static type (i.e. bytes32), so that only
-  // one parameter of the outer `abi.encodePacked()` was dynamic.
-  function mintBatch(
-    address to,
-    uint256[] memory ids,
-    uint256[] memory amounts,
-    bytes memory data,
-    bytes memory signature
-  ) public payable override onlySigner(keccak256(abi.encode(to, ids, amounts, nonces[to])), signature) {
-    uint256 length = amounts.length;
-    require(ids.length == length, "ids and amounts length mismatch");
-    require(msg.value >= MINT_COST_PER_TOKEN * length, "Token mint requires 0.00083 ETH");
-    for (uint256 i = 0; i < length; i++) {
-      require(ids[i] == ID_VERSION_0, "Token id not supported");
-      require(amounts[i] > 0, "Amount must be greater than 0");
-    }
-
-    nonces[to] += 1;
-    _mintBatch(to, ids, amounts, data);
-  }
-
   function burn(
     address account,
     uint256 id,
@@ -93,23 +67,6 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
 
     uint256 accountBalance = balanceOf(account, id);
     require(accountBalance == 0, "Balance after burn must be 0");
-  }
-
-  /// @dev Same comment as for `mintBatch()` regarding use of `abi.encode()` in generating hashed message
-  /// passed to `onlySigner()`.
-  function burnBatch(
-    address account,
-    uint256[] memory ids,
-    uint256[] memory values,
-    bytes memory signature
-  ) public override onlySigner(keccak256(abi.encode(account, ids, values, nonces[account])), signature) {
-    nonces[account] += 1;
-    _burnBatch(account, ids, values);
-
-    for (uint256 i = 0; i < ids.length; i++) {
-      uint256 accountBalance = balanceOf(account, ids[i]);
-      require(accountBalance == 0, "Balance after burn must be 0");
-    }
   }
 
   function _beforeTokenTransfer(

@@ -13,25 +13,10 @@ interface IGoldfinchIdentity is IERC1155Upgradeable {
     bytes memory signature
   ) external payable;
 
-  function mintBatch(
-    address to,
-    uint256[] memory ids,
-    uint256[] memory amounts,
-    bytes memory data,
-    bytes memory signature
-  ) external payable;
-
   function burn(
     address account,
     uint256 id,
     uint256 value,
-    bytes memory signature
-  ) external;
-
-  function burnBatch(
-    address account,
-    uint256[] memory ids,
-    uint256[] memory values,
     bytes memory signature
   ) external;
 }
