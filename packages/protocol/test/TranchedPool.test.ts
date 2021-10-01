@@ -27,6 +27,7 @@ import {getApprovalDigest, getWallet} from "./permitHelpers"
 import {TranchedPoolInstance} from "../typechain/truffle"
 import {JuniorTrancheLocked, DepositMade} from "../typechain/truffle/TranchedPool"
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
+import {assertNonNullable} from "@goldfinch-eng/utils"
 
 const RESERVE_FUNDS_COLLECTED_EVENT = "ReserveFundsCollected"
 const PAYMENT_APPLIED_EVENT = "PaymentApplied"
@@ -89,7 +90,7 @@ describe("TranchedPool", () => {
       paymentPeriodInDays,
       termInDays,
       lateFeeApr,
-      juniorFeePercent: juniorFeePercent.toNumber(),
+      juniorFeePercent,
       usdc,
     })
   }
@@ -445,6 +446,7 @@ describe("TranchedPool", () => {
         deadline,
       })
       const wallet = await getWallet(otherPersonAddress)
+      assertNonNullable(wallet)
       const {v, r, s} = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(wallet.privateKey.slice(2), "hex"))
 
       const receipt = await (tranchedPool as any).depositWithPermit(TRANCHES.Junior, value, deadline, v, r, s, {
@@ -957,6 +959,7 @@ describe("TranchedPool", () => {
           deadline,
         })
         const wallet = await getWallet(owner)
+        assertNonNullable(wallet)
         const {v, r, s} = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(wallet.privateKey.slice(2), "hex"))
         await expect(
           (tranchedPool as any).depositWithPermit(TRANCHES.Junior, usdcVal(10), deadline, v, r, s)

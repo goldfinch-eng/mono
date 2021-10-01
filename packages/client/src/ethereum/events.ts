@@ -87,7 +87,7 @@ function getBalanceAsOf(events: EventData[], blockNumExclusive: number, subtract
       } else {
         return amountBN
       }
-    }),
+    })
   )
 }
 

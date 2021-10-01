@@ -25,6 +25,7 @@ import {useBacker, useTranchedPool} from "../../hooks/useTranchedPool"
 import {useSession} from "../../hooks/useSignIn"
 import _ from "lodash"
 import DefaultGoldfinchClient from "../../hooks/useGoldfinchClient"
+import {decimalPlaces} from "../../ethereum/utils"
 
 function useRecentPoolTransactions({tranchedPool}: {tranchedPool?: TranchedPool}): Record<string, any>[] {
   let recentTransactions = useAsync(() => tranchedPool && tranchedPool.recentTransactions(), [tranchedPool])
@@ -106,12 +107,12 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
           signatureData.deadline,
           signatureData.v,
           signatureData.r,
-          signatureData.s,
+          signatureData.s
         ),
         {
           type: "Deposit",
           amount: transactionAmount,
-        },
+        }
       ).then(actionComplete)
     }
   }
@@ -119,6 +120,13 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
   function renderForm({formMethods}) {
     let warningMessage, disabled
     const remainingJuniorCapacity = tranchedPool?.remainingJuniorCapacity()
+    const backerLimitPercent = new BigNumber(
+      tranchedPool.metadata?.backerLimit ?? process.env.REACT_APP_GLOBAL_BACKER_LIMIT ?? "1"
+    )
+    const backerLimit = tranchedPool.creditLine.limit.multipliedBy(backerLimitPercent)
+    const maxTxAmountInDollars = usdcFromAtomic(
+      BigNumber.min(backerLimit, remainingJuniorCapacity, user.usdcBalance, goldfinchConfig.transactionLimit)
+    )
 
     if (user.usdcBalance.eq(0)) {
       disabled = true
@@ -155,13 +163,27 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
             formMethods={formMethods}
             disabled={disabled}
             maxAmount={remainingJuniorCapacity}
+            rightDecoration={
+              <button
+                className="enter-max-amount"
+                type="button"
+                onClick={() => {
+                  formMethods.setValue(
+                    "transactionAmount",
+                    new BigNumber(maxTxAmountInDollars).decimalPlaces(decimalPlaces, 1).toString(10),
+                    {
+                      shouldValidate: true,
+                      shouldDirty: true,
+                    }
+                  )
+                }}
+              >
+                Max
+              </button>
+            }
             validations={{
               wallet: (value) => user.usdcBalanceInDollars.gte(value) || "You do not have enough USDC",
               backerLimit: (value) => {
-                const backerLimitPercent = new BigNumber(
-                  tranchedPool.metadata?.backerLimit ?? process.env.REACT_APP_GLOBAL_BACKER_LIMIT ?? "1",
-                )
-                const backerLimit = tranchedPool.creditLine.limit.multipliedBy(backerLimitPercent)
                 const backerDeposits = backer.principalAmount.minus(backer.principalRedeemed).plus(usdcToAtomic(value))
                 return (
                   backerDeposits.lte(backerLimit) ||
@@ -175,7 +197,7 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
                 return (
                   remainingJuniorCapacity?.gte(usdcToAtomic(value)) ||
                   `This deposit would put the pool over its limit. It can accept a max of $${usdcFromAtomic(
-                    remainingJuniorCapacity,
+                    remainingJuniorCapacity
                   )}.`
                 )
               },
@@ -199,7 +221,7 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
 
 function splitWithdrawAmount(
   withdrawAmount: BigNumber,
-  tokenInfos: TokenInfo[],
+  tokenInfos: TokenInfo[]
 ): {tokenIds: string[]; amounts: string[]} {
   let amountLeft = withdrawAmount
   let tokenIds: string[] = []
@@ -212,7 +234,7 @@ function splitWithdrawAmount(
 
     let amountFromThisToken = BigNumber.min(
       amountLeft,
-      tokenInfo.principalRedeemable.plus(tokenInfo.interestRedeemable),
+      tokenInfo.principalRedeemable.plus(tokenInfo.interestRedeemable)
     )
     amountLeft = amountLeft.minus(amountFromThisToken)
     tokenIds.push(tokenInfo.id)
@@ -315,7 +337,7 @@ function DepositStatus({tranchedPool, backer}: {tranchedPool?: TranchedPool; bac
           <>
             <div className="value">
               {displayDollars(
-                usdcFromAtomic(tranchedPool.estimateMonthlyInterest(estimatedAPY, backer.principalAtRisk)),
+                usdcFromAtomic(tranchedPool.estimateMonthlyInterest(estimatedAPY, backer.principalAtRisk))
               )}
             </div>
             <div className="sub-value">{displayPercent(estimatedAPY)} APY</div>
@@ -487,7 +509,7 @@ function SupplyStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
 
   let juniorContribution = new BigNumber(tranchedPool?.juniorTranche.principalDeposited)
   let seniorContribution = new BigNumber(tranchedPool?.seniorTranche.principalDeposited).plus(
-    tranchedPool.estimatedSeniorPoolContribution,
+    tranchedPool.estimatedSeniorPoolContribution
   )
 
   let rows: Array<{label: string; value: string}> = [
@@ -758,5 +780,5 @@ function TranchedPoolView() {
     </div>
   )
 }
-
+export {TranchedPoolDepositForm}
 export default TranchedPoolView

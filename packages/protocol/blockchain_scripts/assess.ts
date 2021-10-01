@@ -1,5 +1,5 @@
 import {getContract} from "./deployHelpers"
-import {assertNonNullable} from "../utils/type"
+import {assertNonNullable} from "@goldfinch-eng/utils"
 import {CreditLineInstance, TranchedPoolInstance} from "../typechain/truffle"
 
 async function main() {

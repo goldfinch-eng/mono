@@ -8,7 +8,7 @@ import {
   MAINNET_CHAIN_ID,
   OWNER_ROLE,
 } from "./deployHelpers"
-import {assertNonNullable} from "../utils/type"
+import {assertNonNullable} from "@goldfinch-eng/utils"
 import {CreditLineInstance, GoldfinchFactoryInstance, TranchedPoolInstance} from "../typechain/truffle"
 import {fundWithWhales, getExistingContracts, impersonateAccount, upgradeContracts} from "./mainnetForkingHelpers"
 import {decodeLogs} from "../test/testHelpers"
@@ -53,7 +53,7 @@ async function main() {
     deployments
   )
 
-  const goldfinchFactoryAddress = upgradedContracts.GoldfinchFactory.ProxyContract.address
+  const goldfinchFactoryAddress = asNonNullable(upgradedContracts.GoldfinchFactory).ProxyContract.address
   const goldfinchFactory = (await getContract("GoldfinchFactory", {
     at: goldfinchFactoryAddress,
   })) as GoldfinchFactoryInstance

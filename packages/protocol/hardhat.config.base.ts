@@ -10,7 +10,7 @@ if (process.env.HARDHAT_FORK) {
   process.env["HARDHAT_DEPLOY_FORK"] = process.env.HARDHAT_FORK
 }
 
-module.exports = {
+export default {
   defaultNetwork: "hardhat",
   networks: {
     hardhat: {

@@ -87,7 +87,7 @@ async function submitGaslessTransaction(contractAddress, unsentAction) {
     body: JSON.stringify({...request, signature}),
   }).then(
     (r) => r.json(),
-    (e) => e.json(),
+    (e) => e.json()
   )
 
   return response
