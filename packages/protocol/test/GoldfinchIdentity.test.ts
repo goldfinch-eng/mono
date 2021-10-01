@@ -253,6 +253,10 @@ describe("GoldfinchIdentity", () => {
     })
   })
 
+  describe("balanceOfBatch", () => {
+    // TODO
+  })
+
   describe("mint", () => {
     let recipient: string, tokenId: BN, amount: BN
 
@@ -421,25 +425,121 @@ describe("GoldfinchIdentity", () => {
   })
 
   describe("safeTransferFrom", () => {
-    it("rejects because transfer is disabled", async () => {
-      // TODO
+    let tokenId: BN, amount: BN
+
+    beforeEach(async () => {
+      tokenId = new BN(0)
+      amount = new BN(1)
+
+      await mint(anotherUser, tokenId, amount, new BN(0), owner)
     })
 
-    context("paused", () => {
-      it("reverts", async () => {
-        // TODO
+    describe("by token owner", () => {
+      it("rejects because transfer is disabled", async () => {
+        await expect(
+          goldfinchIdentity.safeTransferFrom(anotherUser, anotherUser2, tokenId, amount, EMPTY_STRING_HEX, {
+            from: anotherUser,
+          })
+        ).to.be.rejectedWith(/Only mint xor burn transfers are allowed/)
+      })
+
+      context("paused", () => {
+        it("reverts", async () => {
+          await goldfinchIdentity.pause()
+          expect(await goldfinchIdentity.paused()).to.equal(true)
+          await expect(
+            goldfinchIdentity.safeTransferFrom(anotherUser, anotherUser2, tokenId, amount, EMPTY_STRING_HEX, {
+              from: anotherUser,
+            })
+          ).to.be.rejectedWith(/Only mint xor burn transfers are allowed/)
+        })
+      })
+    })
+
+    describe("by approved sender who is not token owner", () => {
+      it("rejects because transfer is disabled", async () => {
+        await goldfinchIdentity.setApprovalForAll(anotherUser2, true, {from: anotherUser})
+        expect(await goldfinchIdentity.isApprovedForAll(anotherUser, anotherUser2)).to.equal(true)
+        await expect(
+          goldfinchIdentity.safeTransferFrom(anotherUser, anotherUser2, tokenId, amount, EMPTY_STRING_HEX, {
+            from: anotherUser2,
+          })
+        ).to.be.rejectedWith(/Only mint xor burn transfers are allowed/)
+      })
+
+      context("paused", () => {
+        it("reverts", async () => {
+          await goldfinchIdentity.pause()
+          expect(await goldfinchIdentity.paused()).to.equal(true)
+
+          await goldfinchIdentity.setApprovalForAll(anotherUser2, true, {from: anotherUser})
+          expect(await goldfinchIdentity.isApprovedForAll(anotherUser, anotherUser2)).to.equal(true)
+          await expect(
+            goldfinchIdentity.safeTransferFrom(anotherUser, anotherUser2, tokenId, amount, EMPTY_STRING_HEX, {
+              from: anotherUser2,
+            })
+          ).to.be.rejectedWith(/Only mint xor burn transfers are allowed/)
+        })
       })
     })
   })
 
   describe("safeBatchTransferFrom", () => {
-    it("rejects because transfer is disabled", async () => {
-      // TODO
+    let tokenId: BN, amount: BN
+
+    beforeEach(async () => {
+      tokenId = new BN(0)
+      amount = new BN(1)
+
+      await mint(anotherUser, tokenId, amount, new BN(0), owner)
     })
 
-    context("paused", () => {
-      it("reverts", async () => {
-        // TODO
+    describe("by token owner", () => {
+      it("rejects because transfer is disabled", async () => {
+        await expect(
+          goldfinchIdentity.safeBatchTransferFrom(anotherUser, anotherUser2, [tokenId], [amount], EMPTY_STRING_HEX, {
+            from: anotherUser,
+          })
+        ).to.be.rejectedWith(/Only mint xor burn transfers are allowed/)
+      })
+
+      context("paused", () => {
+        it("reverts", async () => {
+          await goldfinchIdentity.pause()
+          expect(await goldfinchIdentity.paused()).to.equal(true)
+          await expect(
+            goldfinchIdentity.safeBatchTransferFrom(anotherUser, anotherUser2, [tokenId], [amount], EMPTY_STRING_HEX, {
+              from: anotherUser,
+            })
+          ).to.be.rejectedWith(/Only mint xor burn transfers are allowed/)
+        })
+      })
+    })
+
+    describe("by approved sender who is not token owner", () => {
+      it("rejects because transfer is disabled", async () => {
+        await goldfinchIdentity.setApprovalForAll(anotherUser2, true, {from: anotherUser})
+        expect(await goldfinchIdentity.isApprovedForAll(anotherUser, anotherUser2)).to.equal(true)
+        await expect(
+          goldfinchIdentity.safeBatchTransferFrom(anotherUser, anotherUser2, [tokenId], [amount], EMPTY_STRING_HEX, {
+            from: anotherUser2,
+          })
+        ).to.be.rejectedWith(/Only mint xor burn transfers are allowed/)
+      })
+
+      context("paused", () => {
+        it("reverts", async () => {
+          await goldfinchIdentity.pause()
+          expect(await goldfinchIdentity.paused()).to.equal(true)
+
+          await goldfinchIdentity.setApprovalForAll(anotherUser2, true, {from: anotherUser})
+          expect(await goldfinchIdentity.isApprovedForAll(anotherUser, anotherUser2)).to.equal(true)
+          await expect(
+            goldfinchIdentity.safeBatchTransferFrom(anotherUser, anotherUser2, [tokenId], [amount], EMPTY_STRING_HEX, {
+              from: anotherUser2,
+            })
+          ).to.be.rejectedWith(/Only mint xor burn transfers are allowed/)
+        })
       })
     })
   })
