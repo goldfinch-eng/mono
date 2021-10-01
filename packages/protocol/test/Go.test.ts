@@ -14,6 +14,8 @@ import {Go} from "../typechain/ethers"
 import {GoInstance, GoldfinchConfigInstance, TestGoldfinchIdentityInstance} from "../typechain/truffle"
 import {mint} from "./goldfinchIdentityHelpers"
 import {BN} from "ethereumjs-tx/node_modules/ethereumjs-util"
+import {DeployResult} from "hardhat-deploy/types"
+import {expectEvent} from "@openzeppelin/test-helpers"
 const {deployments} = hre
 
 const setupTest = deployments.createFixture(async ({deployments}) => {
@@ -121,19 +123,39 @@ describe("Go", () => {
   })
 
   describe("updateGoldfinchConfig", () => {
+    let newConfig: DeployResult
+
+    beforeEach(async () => {
+      newConfig = await deployments.deploy("GoldfinchConfig", {from: owner})
+      await goldfinchConfig.setGoldfinchConfig(newConfig.address)
+    })
+
     it("rejects sender who lacks owner role", async () => {
-      // TODO
+      expect(await go.hasRole(OWNER_ROLE, anotherUser)).to.equal(false)
+      await expect(go.updateGoldfinchConfig({from: anotherUser})).to.be.rejectedWith(
+        /Must have admin role to perform this action/
+      )
     })
     it("allows sender who has owner role", async () => {
-      // TODO
+      expect(await go.hasRole(OWNER_ROLE, owner)).to.equal(true)
+      await expect(go.updateGoldfinchConfig({from: owner})).to.be.fulfilled
     })
     it("updates config address, emits an event", async () => {
-      // TODO
+      expect(await go.config()).to.equal(goldfinchConfig.address)
+      const receipt = await go.updateGoldfinchConfig({from: owner})
+      expect(await go.config()).to.equal(newConfig.address)
+      expectEvent(receipt, "GoldfinchConfigUpdated", {
+        who: owner,
+        configAddress: newConfig.address,
+      })
     })
 
     context("paused", () => {
       it("does not reject", async () => {
-        // TODO
+        await go.pause()
+        expect(await go.paused()).to.equal(true)
+
+        await expect(go.updateGoldfinchConfig({from: owner})).to.be.fulfilled
       })
     })
   })
