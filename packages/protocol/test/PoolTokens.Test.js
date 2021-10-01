@@ -506,6 +506,10 @@ describe("PoolTokens", () => {
         })
       })
     })
+
+    describe("safeTransferFrom", () => {
+      // TODO Reuse logic from tests of `transferFrom()`.
+    })
   })
 
   describe("updateGoldfinchConfig", async () => {
