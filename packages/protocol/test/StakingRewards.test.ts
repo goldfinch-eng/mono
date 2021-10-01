@@ -38,6 +38,24 @@ enum LockupPeriod {
   TwentyFourMonths,
 }
 
+async function quoteFiduToUSDC({
+  fiduAmount,
+  seniorPool,
+}: {
+  fiduAmount: BN
+  seniorPool: SeniorPoolInstance
+}): Promise<BN> {
+  return fiduAmount
+    .mul(await seniorPool.sharePrice())
+    .div(new BN(String(1e18))) //share price mantissa
+    .div(new BN(String(1e18)).div(new BN(String(1e6)))) // usdc mantissa
+}
+
+function withWithdrawalFee(usdcAmount: BN): BN {
+  const seniorPoolWithdrawalFeeDenominator = new BN(200)
+  return usdcAmount.sub(usdcAmount.div(seniorPoolWithdrawalFeeDenominator))
+}
+
 describe("StakingRewards", function () {
   let owner: string,
     investor: string,
@@ -60,8 +78,6 @@ describe("StakingRewards", function () {
 
   const yearInSeconds = new BN(365 * 24 * 60 * 60)
   const halfYearInSeconds = yearInSeconds.div(new BN(2))
-
-  const seniorPoolWithdrawalFeeDenominator = new BN(200)
 
   const lockupPeriodToDuration = {
     [LockupPeriod.SixMonths]: halfYearInSeconds,
@@ -676,24 +692,20 @@ describe("StakingRewards", function () {
       const tokenId = await stake({amount: fiduAmount, from: investor})
 
       const withdrawAmount = fiduAmount.div(new BN(2))
-      const withdrawAmountInUsdc = withdrawAmount
-        .mul(await seniorPool.sharePrice())
-        .div(new BN(String(1e18))) //share price mantissa
-        .div(new BN(String(1e18)).div(new BN(String(1e6)))) // usdc mantissa
-      const withdrawlFee = withdrawAmountInUsdc.div(seniorPoolWithdrawalFeeDenominator)
+      const withdrawAmountInUsdc = await quoteFiduToUSDC({seniorPool, fiduAmount: withdrawAmount})
 
       await expectAction(async () => {
         const receipt = await stakingRewards.unstakeAndWithdrawInFidu(tokenId, withdrawAmount, {from: investor})
         expectEvent(receipt, "Unstaked", {user: investor, tokenId, amount: withdrawAmount})
       }).toChange([
-        [() => usdc.balanceOf(investor), {by: withdrawAmountInUsdc.sub(withdrawlFee)}],
+        [() => usdc.balanceOf(investor), {by: withWithdrawalFee(withdrawAmountInUsdc)}],
         [() => seniorPool.assets(), {by: withdrawAmountInUsdc.neg()}],
         [() => stakingRewards.totalStakedSupply(), {by: withdrawAmount.neg()}],
       ])
       await expectAction(() =>
         stakingRewards.unstakeAndWithdrawInFidu(tokenId, withdrawAmount, {from: investor})
       ).toChange([
-        [() => usdc.balanceOf(investor), {by: withdrawAmountInUsdc.sub(withdrawlFee)}],
+        [() => usdc.balanceOf(investor), {by: withWithdrawalFee(withdrawAmountInUsdc)}],
         [() => seniorPool.assets(), {by: withdrawAmountInUsdc.neg()}],
         [() => stakingRewards.totalStakedSupply(), {by: withdrawAmount.neg()}],
       ])
@@ -748,24 +760,20 @@ describe("StakingRewards", function () {
       const tokenId = await stake({amount: fiduAmount, from: investor})
 
       const withdrawAmount = fiduAmount.div(new BN(2))
-      const withdrawAmountInUsdc = withdrawAmount
-        .mul(await seniorPool.sharePrice())
-        .div(new BN(String(1e18))) //share price mantissa
-        .div(new BN(String(1e18)).div(new BN(String(1e6)))) // usdc mantissa
-      const withdrawlFee = withdrawAmountInUsdc.div(seniorPoolWithdrawalFeeDenominator)
+      const withdrawAmountInUsdc = await quoteFiduToUSDC({seniorPool, fiduAmount: withdrawAmount})
 
       await expectAction(async () => {
         const receipt = await stakingRewards.unstakeAndWithdraw(tokenId, withdrawAmountInUsdc, {from: investor})
         expectEvent(receipt, "Unstaked", {user: investor, tokenId, amount: withdrawAmount})
       }).toChange([
-        [() => usdc.balanceOf(investor), {by: withdrawAmountInUsdc.sub(withdrawlFee)}],
+        [() => usdc.balanceOf(investor), {by: withWithdrawalFee(withdrawAmountInUsdc)}],
         [() => seniorPool.assets(), {by: withdrawAmountInUsdc.neg()}],
         [() => stakingRewards.totalStakedSupply(), {by: withdrawAmount.neg()}],
       ])
       await expectAction(() =>
         stakingRewards.unstakeAndWithdraw(tokenId, withdrawAmountInUsdc, {from: investor})
       ).toChange([
-        [() => usdc.balanceOf(investor), {by: withdrawAmountInUsdc.sub(withdrawlFee)}],
+        [() => usdc.balanceOf(investor), {by: withWithdrawalFee(withdrawAmountInUsdc)}],
         [() => seniorPool.assets(), {by: withdrawAmountInUsdc.neg()}],
         [() => stakingRewards.totalStakedSupply(), {by: withdrawAmount.neg()}],
       ])
@@ -791,6 +799,233 @@ describe("StakingRewards", function () {
         await expect(stakingRewards.unstakeAndWithdraw(tokenId, usdcVal(100), {from: investor})).to.be.rejectedWith(
           /paused/
         )
+      })
+    })
+  })
+
+  describe("unstakeAndWithdrawMultiple", async () => {
+    let totalRewards: BN
+    let rewardRate: BN
+    let firstToken: BN, secondToken: BN, thirdTokenFromDifferentUser: BN
+    let firstTokenAmount: BN, secondTokenAmount: BN, thirdTokenAmount: BN
+
+    beforeEach(async function () {
+      // Mint rewards for a full year
+      rewardRate = bigVal(100)
+
+      // Fix the reward rate
+      await stakingRewards.setMinRate(rewardRate)
+      await stakingRewards.setMaxRate(rewardRate)
+
+      totalRewards = rewardRate.mul(yearInSeconds)
+      await mintRewards(totalRewards)
+
+      // Disable vesting
+      await stakingRewards.setVestingSchedule(new BN(0))
+
+      // Set up stakes
+      firstTokenAmount = fiduAmount.mul(new BN(3)).div(new BN(4))
+      firstToken = await stake({amount: firstTokenAmount, from: investor})
+
+      secondTokenAmount = fiduAmount.mul(new BN(1)).div(new BN(4))
+      secondToken = await stake({amount: secondTokenAmount, from: investor})
+
+      thirdTokenAmount = fiduAmount.mul(new BN(4))
+      thirdTokenFromDifferentUser = await stake({amount: thirdTokenAmount, from: anotherUser})
+    })
+
+    it("unstakes fidu and withdraws from the senior pool for multiple position tokens", async () => {
+      const firstTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: firstTokenAmount})
+      const secondTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: secondTokenAmount})
+      const thirdTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: thirdTokenAmount})
+
+      const totalWithdrawalAmountInFidu = firstTokenAmount.add(secondTokenAmount)
+      const totalWithdrawalAmountInUsdc = firstTokenWithdrawAmount.add(secondTokenWithdrawAmount)
+      await expectAction(() =>
+        stakingRewards.unstakeAndWithdrawMultiple(
+          [firstToken, secondToken],
+          [firstTokenWithdrawAmount, secondTokenWithdrawAmount],
+          {from: investor}
+        )
+      ).toChange([
+        [() => usdc.balanceOf(investor), {by: withWithdrawalFee(totalWithdrawalAmountInUsdc)}],
+        [() => seniorPool.assets(), {by: totalWithdrawalAmountInUsdc.neg()}],
+        [() => stakingRewards.totalStakedSupply(), {by: totalWithdrawalAmountInFidu.neg()}],
+      ])
+      await expect(
+        stakingRewards.unstakeAndWithdrawMultiple(
+          [firstToken, secondToken],
+          [firstTokenWithdrawAmount, secondTokenWithdrawAmount],
+          {from: investor}
+        )
+      ).to.be.rejected
+    })
+
+    describe("validations", async () => {
+      context("user does not own position token", async () => {
+        it("reverts", async () => {
+          const firstTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: firstTokenAmount})
+          const secondTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: secondTokenAmount})
+          const thirdTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: thirdTokenAmount})
+
+          await expect(
+            stakingRewards.unstakeAndWithdrawMultiple(
+              [firstToken, secondToken, thirdTokenFromDifferentUser],
+              [firstTokenWithdrawAmount, secondTokenWithdrawAmount, thirdTokenWithdrawAmount],
+              {from: investor}
+            )
+          ).to.be.rejectedWith(/access denied/)
+        })
+      })
+
+      context("paused", async () => {
+        it("reverts", async () => {
+          const firstTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: firstTokenAmount})
+          const secondTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: secondTokenAmount})
+
+          await stakingRewards.pause()
+          await expect(
+            stakingRewards.unstakeAndWithdrawMultiple(
+              [firstToken, secondToken],
+              [firstTokenWithdrawAmount, secondTokenWithdrawAmount],
+              {from: investor}
+            )
+          ).to.be.rejectedWith(/paused/)
+        })
+      })
+
+      context("any amount exceeds withdrawable amount for that token", async () => {
+        it("reverts", async () => {
+          const firstTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: firstTokenAmount})
+          const secondTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: secondTokenAmount})
+
+          await expect(
+            stakingRewards.unstakeAndWithdrawMultiple(
+              [firstToken, secondToken],
+              [firstTokenWithdrawAmount, secondTokenWithdrawAmount.add(new BN(100))],
+              {from: investor}
+            )
+          ).to.be.rejectedWith(/cannot unstake more than staked balance/)
+        })
+      })
+
+      context("tokenIds and usdcAmounts lengths mismatch", async () => {
+        it("reverts", async () => {
+          const firstTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: firstTokenAmount})
+
+          await expect(
+            stakingRewards.unstakeAndWithdrawMultiple([firstToken, secondToken], [firstTokenWithdrawAmount], {
+              from: investor,
+            })
+          ).to.be.rejectedWith(/tokenIds and usdcAmounts must be the same length/)
+        })
+      })
+    })
+  })
+
+  describe("unstakeAndWithdrawMultipleInFidu", async () => {
+    let totalRewards: BN
+    let rewardRate: BN
+    let firstToken: BN, secondToken: BN, thirdTokenFromDifferentUser: BN
+    let firstTokenAmount: BN, secondTokenAmount: BN, thirdTokenAmount: BN
+
+    beforeEach(async function () {
+      // Mint rewards for a full year
+      rewardRate = bigVal(100)
+
+      // Fix the reward rate
+      await stakingRewards.setMinRate(rewardRate)
+      await stakingRewards.setMaxRate(rewardRate)
+
+      totalRewards = rewardRate.mul(yearInSeconds)
+      await mintRewards(totalRewards)
+
+      // Disable vesting
+      await stakingRewards.setVestingSchedule(new BN(0))
+
+      // Set up stakes
+      firstTokenAmount = fiduAmount.mul(new BN(3)).div(new BN(4))
+      firstToken = await stake({amount: firstTokenAmount, from: investor})
+
+      secondTokenAmount = fiduAmount.mul(new BN(1)).div(new BN(4))
+      secondToken = await stake({amount: secondTokenAmount, from: investor})
+
+      thirdTokenAmount = fiduAmount.mul(new BN(4))
+      thirdTokenFromDifferentUser = await stake({amount: thirdTokenAmount, from: anotherUser})
+    })
+
+    it("unstakes fidu and withdraws from the senior pool for multiple position tokens", async () => {
+      const firstTokenAmountInUsdc = await quoteFiduToUSDC({seniorPool, fiduAmount: firstTokenAmount})
+      const secondTokenAmountInUsd = await quoteFiduToUSDC({seniorPool, fiduAmount: secondTokenAmount})
+
+      const totalWithdrawalAmountInFidu = firstTokenAmount.add(secondTokenAmount)
+      const totalWithdrawalAmountInUsdc = firstTokenAmountInUsdc.add(secondTokenAmountInUsd)
+      await expectAction(() =>
+        stakingRewards.unstakeAndWithdrawMultipleInFidu(
+          [firstToken, secondToken],
+          [firstTokenAmount, secondTokenAmount],
+          {from: investor}
+        )
+      ).toChange([
+        [() => usdc.balanceOf(investor), {by: withWithdrawalFee(totalWithdrawalAmountInUsdc)}],
+        [() => seniorPool.assets(), {by: totalWithdrawalAmountInUsdc.neg()}],
+        [() => stakingRewards.totalStakedSupply(), {by: totalWithdrawalAmountInFidu.neg()}],
+      ])
+      await expect(
+        stakingRewards.unstakeAndWithdrawMultipleInFidu(
+          [firstToken, secondToken],
+          [firstTokenAmount, secondTokenAmount],
+          {from: investor}
+        )
+      ).to.be.rejected
+    })
+
+    describe("validations", async () => {
+      context("user does not own position token", async () => {
+        it("reverts", async () => {
+          await expect(
+            stakingRewards.unstakeAndWithdrawMultipleInFidu(
+              [firstToken, secondToken, thirdTokenFromDifferentUser],
+              [firstTokenAmount, secondTokenAmount, thirdTokenAmount],
+              {from: investor}
+            )
+          ).to.be.rejectedWith(/access denied/)
+        })
+      })
+
+      context("paused", async () => {
+        it("reverts", async () => {
+          await stakingRewards.pause()
+          await expect(
+            stakingRewards.unstakeAndWithdrawMultipleInFidu(
+              [firstToken, secondToken],
+              [firstTokenAmount, secondTokenAmount],
+              {from: investor}
+            )
+          ).to.be.rejectedWith(/paused/)
+        })
+      })
+
+      context("any amount exceeds withdrawable amount for that token", async () => {
+        it("reverts", async () => {
+          await expect(
+            stakingRewards.unstakeAndWithdrawMultipleInFidu(
+              [firstToken, secondToken],
+              [firstTokenAmount, secondTokenAmount.add(new BN(100))],
+              {from: investor}
+            )
+          ).to.be.rejectedWith(/cannot unstake more than staked balance/)
+        })
+      })
+
+      context("tokenIds and usdcAmounts lengths mismatch", async () => {
+        it("reverts", async () => {
+          await expect(
+            stakingRewards.unstakeAndWithdrawMultipleInFidu([firstToken, secondToken], [firstTokenAmount], {
+              from: investor,
+            })
+          ).to.be.rejectedWith(/tokenIds and usdcAmounts must be the same length/)
+        })
       })
     })
   })
@@ -1097,14 +1332,10 @@ describe("StakingRewards", function () {
 
       await advanceTime({seconds: yearInSeconds})
 
-      const withdrawAmountInUsdc = fiduAmount
-        .mul(await seniorPool.sharePrice())
-        .div(new BN(String(1e18))) //share price mantissa
-        .div(new BN(String(1e18)).div(new BN(String(1e6)))) // usdc mantissa
-      const withdrawalFee = withdrawAmountInUsdc.div(seniorPoolWithdrawalFeeDenominator)
+      const withdrawAmountInUsdc = await quoteFiduToUSDC({seniorPool, fiduAmount})
 
       await expectAction(() => stakingRewards.exitAndWithdraw(tokenId, {from: investor})).toChange([
-        [() => usdc.balanceOf(investor), {by: withdrawAmountInUsdc.sub(withdrawalFee)}],
+        [() => usdc.balanceOf(investor), {by: withWithdrawalFee(withdrawAmountInUsdc)}],
         [() => seniorPool.assets(), {by: withdrawAmountInUsdc.neg()}],
         [() => stakingRewards.totalStakedSupply(), {by: fiduAmount.neg()}],
         [() => stakingRewards.stakedBalanceOf(tokenId), {by: fiduAmount.neg()}],
