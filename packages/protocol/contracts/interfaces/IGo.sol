@@ -8,4 +8,6 @@ interface IGo {
   function goldfinchIdentity() external view returns (address);
 
   function go(address account) external view returns (bool);
+
+  function updateGoldfinchConfig() external;
 }
