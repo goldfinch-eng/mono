@@ -422,46 +422,86 @@ describe("PoolTokens", () => {
     })
 
     describe("transferFrom", async () => {
-      // it("should respect the go list", async () => {
-      //   const amount = usdcVal(5)
-      //   // Give some tokens to person2
-      //   const result = await withPoolSender(() =>
-      //     poolTokens.mint({principalAmount: String(amount), tranche: "1"}, person2)
-      //   )
-      //   const event = result.logs[1]
-      //   const tokenId = event.args.tokenId
+      let tokenId
 
-      //   // Try to transfer to owner. Should work
-      //   await expect(poolTokens.transferFrom(person2, owner, tokenId, {from: person2})).to.be.fulfilled
-
-      //   // Try to transfer to person3 (not on the list). Should fail
-      //   await expect(poolTokens.transferFrom(owner, person3, tokenId, {from: owner})).to.be.rejectedWith(
-      //     /has not been go-listed/
-      //   )
-      // })
+      beforeEach(async () => {
+        const amount = usdcVal(5)
+        // Give some tokens to person2
+        const result = await withPoolSender(() =>
+          poolTokens.mint({principalAmount: String(amount), tranche: "1"}, person2)
+        )
+        const event = result.logs[1]
+        tokenId = event.args.tokenId
+      })
 
       context("recipient with 0 balance GoldfinchIdentity token (id 0)", () => {
+        beforeEach(async () => {
+          const goldfinchIdentityTokenId = new BN(0)
+          expect(await goldfinchIdentity.balanceOf(person3, goldfinchIdentityTokenId)).to.bignumber.equal(new BN(0))
+        })
+
         context("recipient is on legacy go-list", () => {
+          beforeEach(async () => {
+            expect(await goldfinchConfig.goList(person3)).to.equal(false)
+            expect(await goldfinchConfig.hasRole(GO_LISTER_ROLE, owner)).to.equal(true)
+            await goldfinchConfig.addToGoList(person3, {from: owner})
+            expect(await goldfinchConfig.goList(person3)).to.equal(true)
+          })
+
           it("allows transfer", async () => {
-            // TODO
+            await expect(poolTokens.transferFrom(person2, person3, tokenId, {from: person2})).to.be.fulfilled
           })
         })
         context("recipient is not on legacy go-list", () => {
+          beforeEach(async () => {
+            expect(await goldfinchConfig.goList(person3)).to.equal(false)
+          })
+
           it("rejects transfer", async () => {
-            // TODO
+            await expect(poolTokens.transferFrom(person2, person3, tokenId, {from: person2})).to.be.rejectedWith(
+              /has not been go-listed/
+            )
           })
         })
       })
 
       context("recipient with > 0 balance GoldfinchIdentity token (id 0)", () => {
+        beforeEach(async () => {
+          const goldfinchIdentityTokenId = new BN(0)
+          const goldfinchIdentityTokenAmount = new BN(1)
+          await mint(
+            hre,
+            goldfinchIdentity,
+            person3,
+            goldfinchIdentityTokenId,
+            goldfinchIdentityTokenAmount,
+            new BN(0),
+            owner
+          )
+          expect(await goldfinchIdentity.balanceOf(person3, goldfinchIdentityTokenId)).to.bignumber.equal(
+            goldfinchIdentityTokenAmount
+          )
+        })
+
         context("recipient is on legacy go-list", () => {
+          beforeEach(async () => {
+            expect(await goldfinchConfig.goList(person3)).to.equal(false)
+            expect(await goldfinchConfig.hasRole(GO_LISTER_ROLE, owner)).to.equal(true)
+            await goldfinchConfig.addToGoList(person3, {from: owner})
+            expect(await goldfinchConfig.goList(person3)).to.equal(true)
+          })
+
           it("allows transfer", async () => {
-            // TODO
+            await expect(poolTokens.transferFrom(person2, person3, tokenId, {from: person2})).to.be.fulfilled
           })
         })
         context("recipient is not on legacy go-list", () => {
+          beforeEach(async () => {
+            expect(await goldfinchConfig.goList(person3)).to.equal(false)
+          })
+
           it("allows transfer", async () => {
-            // TODO
+            await expect(poolTokens.transferFrom(person2, person3, tokenId, {from: person2})).to.be.fulfilled
           })
         })
       })
