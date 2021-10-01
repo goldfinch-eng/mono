@@ -47,7 +47,6 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
     address to,
     uint256 id,
     uint256 amount,
-    bytes memory data,
     bytes memory signature
   ) public payable override onlySigner(keccak256(abi.encodePacked(to, id, amount, nonces[to])), signature) {
     require(msg.value >= MINT_COST_PER_TOKEN, "Token mint requires 0.00083 ETH");
@@ -55,7 +54,7 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
     require(amount > 0, "Amount must be greater than 0");
 
     nonces[to] += 1;
-    _mint(to, id, amount, data);
+    _mint(to, id, amount, "");
   }
 
   function burn(

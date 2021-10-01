@@ -50,7 +50,7 @@ export const sign = async (
   return signer.signMessage(arrayified)
 }
 
-export type MintParams = [string, BN, BN, string]
+export type MintParams = [string, BN, BN]
 
 export async function mint(
   hre: HardhatRuntimeEnvironment,
@@ -69,7 +69,7 @@ export async function mint(
   const messageElements: [string, BN, BN] = [recipient, tokenId, amount]
   const signature = await sign(hre, signer, {types: MINT_MESSAGE_ELEMENT_TYPES, values: messageElements}, nonce)
 
-  const defaultMintParams: MintParams = [recipient, tokenId, amount, EMPTY_STRING_HEX]
+  const defaultMintParams: MintParams = [recipient, tokenId, amount]
   const mintParams: MintParams = overrideMintParams || defaultMintParams
 
   const defaultFrom = recipient

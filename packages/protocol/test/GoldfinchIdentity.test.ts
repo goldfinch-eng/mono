@@ -200,25 +200,20 @@ describe("GoldfinchIdentity", () => {
       it("rejects incorrect `to` address in hashed message", async () => {
         const incorrectTo = owner
         await expect(
-          mint(recipient, tokenId, amount, new BN(0), owner, [incorrectTo, tokenId, amount, EMPTY_STRING_HEX])
+          mint(recipient, tokenId, amount, new BN(0), owner, [incorrectTo, tokenId, amount])
         ).to.be.rejectedWith(/Invalid signer/)
       })
       it("rejects incorrect `id` in hashed message", async () => {
         const incorrectId = tokenId.add(new BN(1))
         await expect(
-          mint(recipient, tokenId, amount, new BN(0), owner, [recipient, incorrectId, amount, EMPTY_STRING_HEX])
+          mint(recipient, tokenId, amount, new BN(0), owner, [recipient, incorrectId, amount])
         ).to.be.rejectedWith(/Invalid signer/)
       })
       it("rejects incorrect `amount` in hashed message", async () => {
         const incorrectAmount = amount.add(new BN(1))
         await expect(
-          mint(recipient, tokenId, amount, new BN(0), owner, [recipient, tokenId, incorrectAmount, EMPTY_STRING_HEX])
+          mint(recipient, tokenId, amount, new BN(0), owner, [recipient, tokenId, incorrectAmount])
         ).to.be.rejectedWith(/Invalid signer/)
-      })
-      it("ignores `data` in hashed message", async () => {
-        const incorrectData = "0xf00"
-        await expect(mint(recipient, tokenId, amount, new BN(0), owner, [recipient, tokenId, amount, incorrectData])).to
-          .be.fulfilled
       })
       it("allows address with signer role", async () => {
         expect(await goldfinchIdentity.hasRole(SIGNER_ROLE, owner)).to.equal(true)
@@ -230,7 +225,7 @@ describe("GoldfinchIdentity", () => {
       })
       it("rejects empty signature", async () => {
         const emptySignature = EMPTY_STRING_HEX
-        const mintParams: MintParams = [recipient, tokenId, amount, EMPTY_STRING_HEX]
+        const mintParams: MintParams = [recipient, tokenId, amount]
         await expect(
           goldfinchIdentity.mint(...mintParams, emptySignature, {
             from: recipient,
@@ -241,7 +236,7 @@ describe("GoldfinchIdentity", () => {
       it("rejects reuse of a signature", async () => {
         const messageElements: [string, BN, BN] = [recipient, tokenId, amount]
         const signature = await sign(owner, {types: MINT_MESSAGE_ELEMENT_TYPES, values: messageElements}, new BN(0))
-        const mintParams: MintParams = [recipient, tokenId, amount, EMPTY_STRING_HEX]
+        const mintParams: MintParams = [recipient, tokenId, amount]
         await goldfinchIdentity.mint(...mintParams, signature, {
           from: recipient,
           value: MINT_PAYMENT,
@@ -262,7 +257,7 @@ describe("GoldfinchIdentity", () => {
       it("rejects insufficient payment", async () => {
         const messageElements: [string, BN, BN] = [recipient, tokenId, amount]
         const signature = await sign(owner, {types: MINT_MESSAGE_ELEMENT_TYPES, values: messageElements}, new BN(0))
-        const mintParams: MintParams = [recipient, tokenId, amount, EMPTY_STRING_HEX]
+        const mintParams: MintParams = [recipient, tokenId, amount]
         await expect(
           goldfinchIdentity.mint(...mintParams, signature, {
             from: recipient,
@@ -273,7 +268,7 @@ describe("GoldfinchIdentity", () => {
       it("accepts minimum payment", async () => {
         const messageElements: [string, BN, BN] = [recipient, tokenId, amount]
         const signature = await sign(owner, {types: MINT_MESSAGE_ELEMENT_TYPES, values: messageElements}, new BN(0))
-        const mintParams: MintParams = [recipient, tokenId, amount, EMPTY_STRING_HEX]
+        const mintParams: MintParams = [recipient, tokenId, amount]
         await expect(
           goldfinchIdentity.mint(...mintParams, signature, {
             from: recipient,
@@ -284,7 +279,7 @@ describe("GoldfinchIdentity", () => {
       it("accepts overpayment", async () => {
         const messageElements: [string, BN, BN] = [recipient, tokenId, amount]
         const signature = await sign(owner, {types: MINT_MESSAGE_ELEMENT_TYPES, values: messageElements}, new BN(0))
-        const mintParams: MintParams = [recipient, tokenId, amount, EMPTY_STRING_HEX]
+        const mintParams: MintParams = [recipient, tokenId, amount]
         await expect(
           goldfinchIdentity.mint(...mintParams, signature, {
             from: recipient,
@@ -298,7 +293,7 @@ describe("GoldfinchIdentity", () => {
       it("rejects 0 address", async () => {
         const messageElements: [string, BN, BN] = [ethersConstants.AddressZero, tokenId, amount]
         const signature = await sign(owner, {types: MINT_MESSAGE_ELEMENT_TYPES, values: messageElements}, new BN(0))
-        const mintParams: MintParams = [ethersConstants.AddressZero, tokenId, amount, EMPTY_STRING_HEX]
+        const mintParams: MintParams = [ethersConstants.AddressZero, tokenId, amount]
         await expect(
           goldfinchIdentity.mint(...mintParams, signature, {
             from: recipient,

@@ -9,7 +9,6 @@ interface IGoldfinchIdentity is IERC1155Upgradeable {
     address to,
     uint256 id,
     uint256 amount,
-    bytes memory data,
     bytes memory signature
   ) external payable;
 
