@@ -698,20 +698,6 @@ describe("SeniorPool", () => {
       })
     })
 
-    context("Pool's senior tranche is not empty", () => {
-      it("reverts", async () => {
-        await tranchedPool._setSeniorTranchePrincipalDeposited(new BN(1))
-        const seniorTranche = await tranchedPool.getTranche(TRANCHES.Senior)
-        expect(seniorTranche.principalDeposited).to.bignumber.equal(new BN(1))
-
-        return expect(
-          seniorPool.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount)
-        ).to.be.rejectedWith(
-          /SeniorPool cannot invest in junior tranche of tranched pool with non-empty senior tranche\./
-        )
-      })
-    })
-
     context("Pool's junior tranche is locked", () => {
       it("reverts", async () => {
         const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
@@ -749,6 +735,18 @@ describe("SeniorPool", () => {
         const receipt = await seniorPool.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount)
         const event = receipt.logs[0]
 
+        expect(event.event).to.equal("InvestmentMadeInJunior")
+        expect(event.args.tranchedPool).to.equal(tranchedPool.address)
+        expect(event.args.amount).to.bignumber.equal(seniorPoolJuniorInvestmentAmount)
+      })
+
+      it("Should allow senior pool to invest in junior tranche if already invested in senior tranche", async () => {
+        await tranchedPool._setSeniorTranchePrincipalDeposited(new BN(1))
+        const seniorTranche = await tranchedPool.getTranche(TRANCHES.Senior)
+        expect(seniorTranche.principalDeposited).to.bignumber.equal(new BN(1))
+
+        const receipt = await seniorPool.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount)
+        const event = receipt.logs[0]
         expect(event.event).to.equal("InvestmentMadeInJunior")
         expect(event.args.tranchedPool).to.equal(tranchedPool.address)
         expect(event.args.amount).to.bignumber.equal(seniorPoolJuniorInvestmentAmount)
