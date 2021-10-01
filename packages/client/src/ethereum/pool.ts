@@ -63,7 +63,7 @@ class SeniorPool {
 
   async getPoolEvents(
     address: string | undefined,
-    eventNames: string[] = ["DepositMade", "WithdrawalMade"],
+    eventNames: string[] = ["DepositMade", "WithdrawalMade"]
   ): Promise<EventData[]> {
     // In migrating from v1 to v2 (i.e. from the `Pool` contract as modeling the senior pool,
     // to the `SeniorPool` contract as modeling the senior pool), we transferred contract state
@@ -119,7 +119,7 @@ function emptyCapitalProvider({loaded = false} = {}): CapitalProvider {
 
 async function fetchCapitalProviderData(
   pool: SeniorPool,
-  capitalProviderAddress: string | boolean,
+  capitalProviderAddress: string | boolean
 ): Promise<CapitalProvider> {
   if (!capitalProviderAddress) {
     return emptyCapitalProvider({loaded: pool.loaded})
@@ -273,10 +273,10 @@ async function getCumulativeDrawdowns(pool: SeniorPool) {
   const protocol = pool.goldfinchProtocol
   const tranchedPoolAddresses = await getTranchedPoolAddressesForSeniorPoolCalc(pool)
   const tranchedPools = tranchedPoolAddresses.map((address) =>
-    protocol.getContract<TranchedPool>("TranchedPool", address),
+    protocol.getContract<TranchedPool>("TranchedPool", address)
   )
   let allDrawdownEvents = _.flatten(
-    await Promise.all(tranchedPools.map((pool) => protocol.queryEvents(pool, "DrawdownMade"))),
+    await Promise.all(tranchedPools.map((pool) => protocol.queryEvents(pool, "DrawdownMade")))
   )
   return new BigNumber(_.sumBy(allDrawdownEvents, (event) => parseInt(event.returnValues.amount, 10)))
 }
@@ -336,7 +336,7 @@ async function getEstimatedTotalInterest(pool: SeniorPool): Promise<BigNumber> {
   const protocol = pool.goldfinchProtocol
   const tranchedPoolAddresses = await getTranchedPoolAddressesForSeniorPoolCalc(pool)
   const tranchedPools = tranchedPoolAddresses.map((address) =>
-    protocol.getContract<TranchedPool>("TranchedPool", address),
+    protocol.getContract<TranchedPool>("TranchedPool", address)
   )
   const creditLineAddresses = await Promise.all(tranchedPools.map((p) => p.methods.creditLine().call()))
   const creditLines = creditLineAddresses.map((a) => buildCreditLine(a))
@@ -345,11 +345,11 @@ async function getEstimatedTotalInterest(pool: SeniorPool): Promise<BigNumber> {
       let balance = new BigNumber(await cl.methods.balance().call())
       let interestApr = new BigNumber(await cl.methods.interestApr().call())
       return {balance, interestApr}
-    }),
+    })
   )
   return BigNumber.sum.apply(
     null,
-    creditLineData.map((cl) => cl.balance.multipliedBy(cl.interestApr.dividedBy(INTEREST_DECIMALS.toString()))),
+    creditLineData.map((cl) => cl.balance.multipliedBy(cl.interestApr.dividedBy(INTEREST_DECIMALS.toString())))
   )
 }
 
@@ -371,7 +371,7 @@ async function getTranchedPoolAddressesForSeniorPoolCalc(pool: SeniorPool): Prom
   // identify the tranched pools to use in doing a calculation for the senior pool, by explicitly
   // including those that were migrated.
   const migratedTranchedPoolAddresses: string[] = Object.keys(metadataStore).filter(
-    (address: string) => metadataStore[address]?.migrated,
+    (address: string) => metadataStore[address]?.migrated
   )
   const eventsTranchedPoolAddresses: string[] = investmentEvents.map((e) => e.returnValues.tranchedPool)
   // De-duplicate the tranched pool addresses, in case investment events have subsequently been emitted

@@ -10,7 +10,7 @@ module.exports = {
     ecmaVersion: 11,
     sourceType: "module",
   },
-  plugins: ["mocha-no-only", "@typescript-eslint", "prettier"],
+  plugins: ["mocha-no-only", "@typescript-eslint", "prettier", "chai-friendly"],
   globals: {
     process: "readonly",
   },
@@ -52,15 +52,6 @@ module.exports = {
             typedefs: false,
           },
         ],
-        "no-unused-expressions": "off",
-        "@typescript-eslint/no-unused-expressions": [
-          "error",
-          {
-            allowShortCircuit: true,
-            allowTernary: true,
-            allowTaggedTemplates: true,
-          },
-        ],
         "no-unused-vars": "off",
         "@typescript-eslint/no-unused-vars": [
           "warn",
@@ -81,5 +72,7 @@ module.exports = {
     semi: ["error", "never"],
     "object-curly-spacing": ["error", "never"],
     "mocha-no-only/mocha-no-only": ["error"],
+    "no-unused-expressions": "off",
+    "chai-friendly/no-unused-expressions": "error",
   },
 }

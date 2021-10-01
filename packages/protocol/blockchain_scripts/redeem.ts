@@ -20,8 +20,8 @@ async function main() {
   console.log(`Found ${events.length} tokens for the senior pool`)
 
   for (const event of events) {
-    const tokenId = event.args.tokenId
-    const poolAddress = event.args.pool
+    const tokenId = event.returnValues.tokenId
+    const poolAddress = event.returnValues.pool
     const tranchedPool = (await getContract("TranchedPool", {at: poolAddress})) as TranchedPoolInstance
     let interest
     let principal
@@ -31,7 +31,7 @@ async function main() {
       interest = res[0]
       principal = res[1]
     } catch (ex) {
-      console.log(`Failed to calculate for ${poolAddress} (${ex.message})`)
+      console.log(`Failed to calculate token ${tokenId} for ${poolAddress} (${(ex as Error).message})`)
       continue
     }
 

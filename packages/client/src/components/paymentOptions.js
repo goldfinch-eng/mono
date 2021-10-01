@@ -66,7 +66,7 @@ function PaymentOptions(props) {
       }
       return valueOptions
     },
-    [props.erc20.ticker, fullDueAmount, minimumDueAmount],
+    [props.erc20.ticker, fullDueAmount, minimumDueAmount]
   )
 
   useEffect(() => {

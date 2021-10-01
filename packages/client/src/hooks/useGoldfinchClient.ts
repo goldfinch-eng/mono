@@ -47,7 +47,7 @@ class DefaultGoldfinchClient implements GoldfinchClient {
   constructor(
     networkName: string,
     session: AuthenticatedSession,
-    setSessionData: (data: SessionData | undefined) => void,
+    setSessionData: (data: SessionData | undefined) => void
   ) {
     this.baseURL = process.env.REACT_APP_GCLOUD_FUNCTIONS_URL || API_URLS[networkName]
     this.session = session
@@ -116,7 +116,7 @@ class DefaultGoldfinchClient implements GoldfinchClient {
 
   async signAgreement(address: string, fullName: string, pool: string): Promise<HandledResponse> {
     return this._handleResponse(
-      fetch(this._getSignAgreementURL(), this._getSignAgreementRequestInit(address, {fullName, pool})),
+      fetch(this._getSignAgreementURL(), this._getSignAgreementRequestInit(address, {fullName, pool}))
     )
   }
 }
