@@ -44,9 +44,16 @@ describe("PoolTokens", () => {
   }
 
   beforeEach(async () => {
+<<<<<<< HEAD:packages/protocol/test/PoolTokens.Test.ts
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
     ;({owner, person2, person3, poolTokens, goldfinchConfig, goldfinchFactory, usdc, uniqueIdentity} =
       await testSetup())
+=======
+    // Pull in our unlocked accounts
+    // eslint-disable-next-line @typescript-eslint/no-extra-semi
+    ;[owner, person2, person3] = await web3.eth.getAccounts()
+    ;({poolTokens, goldfinchConfig, goldfinchFactory, usdc} = await testSetup())
+>>>>>>> [chore] Merge master (#591):packages/protocol/test/PoolTokens.Test.ts
 
     await poolTokens._disablePoolValidation(true)
   })
