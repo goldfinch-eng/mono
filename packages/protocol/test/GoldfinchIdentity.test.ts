@@ -132,6 +132,12 @@ describe("GoldfinchIdentity", () => {
     )
   }
 
+  async function pause(): Promise<void> {
+    expect(await goldfinchIdentity.paused()).to.equal(false)
+    await goldfinchIdentity.pause()
+    expect(await goldfinchIdentity.paused()).to.equal(true)
+  }
+
   describe("initialize", () => {
     it("rejects zero address owner", async () => {
       const initialized = uninitializedGoldfinchIdentity.initialize(
@@ -338,14 +344,18 @@ describe("GoldfinchIdentity", () => {
 
     context("paused", () => {
       it("reverts", async () => {
-        await goldfinchIdentity.pause()
+        await pause()
         await expect(mint(recipient, tokenId, amount, new BN(0), owner)).to.be.rejectedWith(
           /ERC1155Pausable: token transfer while paused/
         )
       })
     })
 
-    // TODO[PR] Should we test execution of the received hook?
+    context("recipient is a contract", () => {
+      it("calls received hook", async () => {
+        // TODO
+      })
+    })
   })
 
   describe("safeTransferFrom", () => {
@@ -369,8 +379,7 @@ describe("GoldfinchIdentity", () => {
 
       context("paused", () => {
         it("reverts", async () => {
-          await goldfinchIdentity.pause()
-          expect(await goldfinchIdentity.paused()).to.equal(true)
+          await pause()
           await expect(
             goldfinchIdentity.safeTransferFrom(anotherUser, anotherUser2, tokenId, amount, EMPTY_STRING_HEX, {
               from: anotherUser,
@@ -393,9 +402,7 @@ describe("GoldfinchIdentity", () => {
 
       context("paused", () => {
         it("reverts", async () => {
-          await goldfinchIdentity.pause()
-          expect(await goldfinchIdentity.paused()).to.equal(true)
-
+          await pause()
           await goldfinchIdentity.setApprovalForAll(anotherUser2, true, {from: anotherUser})
           expect(await goldfinchIdentity.isApprovedForAll(anotherUser, anotherUser2)).to.equal(true)
           await expect(
@@ -429,8 +436,7 @@ describe("GoldfinchIdentity", () => {
 
       context("paused", () => {
         it("reverts", async () => {
-          await goldfinchIdentity.pause()
-          expect(await goldfinchIdentity.paused()).to.equal(true)
+          await pause()
           await expect(
             goldfinchIdentity.safeBatchTransferFrom(anotherUser, anotherUser2, [tokenId], [amount], EMPTY_STRING_HEX, {
               from: anotherUser,
@@ -453,9 +459,7 @@ describe("GoldfinchIdentity", () => {
 
       context("paused", () => {
         it("reverts", async () => {
-          await goldfinchIdentity.pause()
-          expect(await goldfinchIdentity.paused()).to.equal(true)
-
+          await pause()
           await goldfinchIdentity.setApprovalForAll(anotherUser2, true, {from: anotherUser})
           expect(await goldfinchIdentity.isApprovedForAll(anotherUser, anotherUser2)).to.equal(true)
           await expect(
@@ -600,7 +604,7 @@ describe("GoldfinchIdentity", () => {
 
     context("paused", () => {
       it("reverts", async () => {
-        await goldfinchIdentity.pause()
+        await pause()
         await expect(burn(recipient, tokenId, value, new BN(1), owner)).to.be.rejectedWith(
           /ERC1155Pausable: token transfer while paused/
         )
