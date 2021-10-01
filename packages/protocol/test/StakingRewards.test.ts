@@ -145,7 +145,7 @@ describe("StakingRewards", () => {
     maxRateAtPercent = new BN(5).mul(new BN(String(1e17))) // 50%
     minRateAtPercent = new BN(3).mul(new BN(String(1e18))) // 300%
 
-    await stakingRewards.setRewardsParameters(targetCapacity, maxRateAtPercent, minRateAtPercent, maxRate, minRate)
+    await stakingRewards.setRewardsParameters(targetCapacity, minRate, maxRate, minRateAtPercent, maxRateAtPercent)
   })
 
   describe("stake", () => {
@@ -157,7 +157,7 @@ describe("StakingRewards", () => {
       await mintRewards(totalRewards)
 
       // Fix the reward rate to make testing easier
-      await stakingRewards.setRewardsParameters(targetCapacity, maxRateAtPercent, minRateAtPercent, maxRate, maxRate)
+      await stakingRewards.setRewardsParameters(targetCapacity, maxRate, maxRate, minRateAtPercent, maxRateAtPercent)
 
       // Disable vesting, to make testing base staking functionality easier
       await stakingRewards.setVestingSchedule(new BN(0))
@@ -490,10 +490,10 @@ describe("StakingRewards", () => {
       // Fix the reward rate
       await stakingRewards.setRewardsParameters(
         targetCapacity,
-        maxRateAtPercent,
-        minRateAtPercent,
         rewardRate,
-        rewardRate
+        rewardRate,
+        minRateAtPercent,
+        maxRateAtPercent
       )
 
       totalRewards = rewardRate.mul(yearInSeconds)
@@ -619,10 +619,10 @@ describe("StakingRewards", () => {
       // Fix the reward rate
       await stakingRewards.setRewardsParameters(
         targetCapacity,
-        maxRateAtPercent,
-        minRateAtPercent,
         rewardRate,
-        rewardRate
+        rewardRate,
+        minRateAtPercent,
+        maxRateAtPercent
       )
 
       totalRewards = rewardRate.mul(yearInSeconds)
@@ -696,10 +696,10 @@ describe("StakingRewards", () => {
       // Fix the reward rate
       await stakingRewards.setRewardsParameters(
         targetCapacity,
-        maxRateAtPercent,
-        minRateAtPercent,
         rewardRate,
-        rewardRate
+        rewardRate,
+        minRateAtPercent,
+        maxRateAtPercent
       )
 
       totalRewards = rewardRate.mul(yearInSeconds)
@@ -771,7 +771,7 @@ describe("StakingRewards", () => {
       await mintRewards(totalRewards)
 
       // Fix the reward rate to make testing easier
-      await stakingRewards.setRewardsParameters(targetCapacity, maxRateAtPercent, minRateAtPercent, maxRate, maxRate)
+      await stakingRewards.setRewardsParameters(targetCapacity, maxRate, maxRate, minRateAtPercent, maxRateAtPercent)
 
       // Disable vesting, to make testing base staking functionality easier
       await stakingRewards.setVestingSchedule(new BN(0))
@@ -839,10 +839,10 @@ describe("StakingRewards", () => {
       // Fix the reward rate to make testing easier
       await stakingRewards.setRewardsParameters(
         targetCapacity,
-        maxRateAtPercent,
-        minRateAtPercent,
         rewardRate,
-        rewardRate
+        rewardRate,
+        minRateAtPercent,
+        maxRateAtPercent
       )
 
       const totalRewards = rewardRate.mul(yearInSeconds.mul(new BN(2)))
@@ -884,10 +884,10 @@ describe("StakingRewards", () => {
         // Fix the reward rate to make testing easier
         await stakingRewards.setRewardsParameters(
           targetCapacity,
-          maxRateAtPercent,
-          minRateAtPercent,
           rewardRate,
-          rewardRate
+          rewardRate,
+          minRateAtPercent,
+          maxRateAtPercent
         )
 
         // Mint rewards for one year
@@ -913,10 +913,10 @@ describe("StakingRewards", () => {
         // Fix the reward rate to make testing easier
         await stakingRewards.setRewardsParameters(
           targetCapacity,
-          maxRateAtPercent,
-          minRateAtPercent,
           rewardRate1,
-          rewardRate1
+          rewardRate1,
+          minRateAtPercent,
+          maxRateAtPercent
         )
 
         // Mint rewards for one year
@@ -932,10 +932,10 @@ describe("StakingRewards", () => {
         const rewardRate2 = new BN(String(1e18))
         await stakingRewards.setRewardsParameters(
           targetCapacity,
-          maxRateAtPercent,
-          minRateAtPercent,
           rewardRate2,
-          rewardRate2
+          rewardRate2,
+          minRateAtPercent,
+          maxRateAtPercent
         )
 
         await advanceTime({seconds: halfYearInSeconds})
@@ -967,10 +967,10 @@ describe("StakingRewards", () => {
       // Fix the reward rate to make testing easier
       await stakingRewards.setRewardsParameters(
         targetCapacity,
-        maxRateAtPercent,
-        minRateAtPercent,
         rewardRate,
-        rewardRate
+        rewardRate,
+        minRateAtPercent,
+        maxRateAtPercent
       )
 
       // Mint rewards for one year
@@ -1031,10 +1031,10 @@ describe("StakingRewards", () => {
       // Fix the reward rate to make testing easier
       await stakingRewards.setRewardsParameters(
         targetCapacity,
-        maxRateAtPercent,
-        minRateAtPercent,
         rewardRate,
-        rewardRate
+        rewardRate,
+        minRateAtPercent,
+        maxRateAtPercent
       )
 
       // Mint rewards for one year
@@ -1083,10 +1083,10 @@ describe("StakingRewards", () => {
       // Fix the reward rate to make testing easier
       await stakingRewards.setRewardsParameters(
         targetCapacity,
-        maxRateAtPercent,
-        minRateAtPercent,
         rewardRate,
-        rewardRate
+        rewardRate,
+        minRateAtPercent,
+        maxRateAtPercent
       )
 
       // Mint rewards for one year
@@ -1165,10 +1165,10 @@ describe("StakingRewards", () => {
       // Fix the reward rate to make testing easier
       await stakingRewards.setRewardsParameters(
         targetCapacity,
-        maxRateAtPercent,
-        minRateAtPercent,
         rewardRate,
-        rewardRate
+        rewardRate,
+        minRateAtPercent,
+        maxRateAtPercent
       )
 
       totalRewards = rewardRate.mul(yearInSeconds.mul(new BN(3)))
@@ -1457,7 +1457,7 @@ describe("StakingRewards", () => {
     const targetCapacity = bigVal(500)
 
     beforeEach(async () => {
-      await stakingRewards.setRewardsParameters(targetCapacity, maxRateAtPercent, minRateAtPercent, maxRate, minRate)
+      await stakingRewards.setRewardsParameters(targetCapacity, minRate, maxRate, minRateAtPercent, maxRateAtPercent)
 
       // Mint rewards for a full year
       totalRewards = maxRate.mul(yearInSeconds)
@@ -1543,7 +1543,7 @@ describe("StakingRewards", () => {
         await mintRewards(totalRewards)
 
         // Fix the reward rate to make testing easier
-        await stakingRewards.setRewardsParameters(targetCapacity, maxRateAtPercent, minRateAtPercent, maxRate, maxRate)
+        await stakingRewards.setRewardsParameters(targetCapacity, maxRate, maxRate, minRateAtPercent, maxRateAtPercent)
       })
 
       it("grants rewards up to available rewards", async () => {
@@ -1570,7 +1570,7 @@ describe("StakingRewards", () => {
         await mintRewards(totalRewards)
 
         // Fix the reward rate to make testing easier
-        await stakingRewards.setRewardsParameters(targetCapacity, maxRateAtPercent, minRateAtPercent, maxRate, maxRate)
+        await stakingRewards.setRewardsParameters(targetCapacity, maxRate, maxRate, minRateAtPercent, maxRateAtPercent)
       })
 
       it("reverts", async () => {
@@ -1593,7 +1593,7 @@ describe("StakingRewards", () => {
         await mintRewards(totalRewards)
 
         // Fix the reward rate to make testing easier
-        await stakingRewards.setRewardsParameters(targetCapacity, maxRateAtPercent, minRateAtPercent, maxRate, maxRate)
+        await stakingRewards.setRewardsParameters(targetCapacity, maxRate, maxRate, minRateAtPercent, maxRateAtPercent)
 
         // Disable vesting, to make testing base staking functionality easier
         await stakingRewards.setVestingSchedule(new BN(0))
@@ -1661,227 +1661,94 @@ describe("StakingRewards", () => {
     })
   })
 
-  describe("setTargetCapacity", async () => {
-    it("sets target capacity", async () => {
-      const newTargetCapacity = bigVal(1234)
-      await stakingRewards.setRewardsParameters(newTargetCapacity, maxRateAtPercent, minRateAtPercent, maxRate, minRate)
+  describe("setRewardsParameters", async () => {
+    it("sets reward parameters", async () => {
+      const newTargetCapacity = bigVal(1)
+      const newMinRate = bigVal(12)
+      const newMaxRate = bigVal(123)
+      const newMinRateAtPercent = new BN(25).mul(new BN(String(1e18)))
+      const newMaxRateAtPercent = new BN(25).mul(new BN(String(1e16)))
+      await stakingRewards.setRewardsParameters(
+        newTargetCapacity,
+        newMinRate,
+        newMaxRate,
+        newMinRateAtPercent,
+        newMaxRateAtPercent
+      )
 
       expect(await stakingRewards.targetCapacity()).to.bignumber.equal(newTargetCapacity)
+      expect(await stakingRewards.minRate()).to.bignumber.equal(newMinRate)
+      expect(await stakingRewards.maxRate()).to.bignumber.equal(newMaxRate)
+      expect(await stakingRewards.minRateAtPercent()).to.bignumber.equal(newMinRateAtPercent)
+      expect(await stakingRewards.maxRateAtPercent()).to.bignumber.equal(newMaxRateAtPercent)
     })
 
     it("emits an event", async () => {
-      const newTargetCapacity = bigVal(1234)
+      const newTargetCapacity = bigVal(1)
+      const newMinRate = bigVal(12)
+      const newMaxRate = bigVal(123)
+      const newMinRateAtPercent = new BN(25).mul(new BN(String(1e18)))
+      const newMaxRateAtPercent = new BN(25).mul(new BN(String(1e18)))
       const tx = await stakingRewards.setRewardsParameters(
         newTargetCapacity,
-        maxRateAtPercent,
-        minRateAtPercent,
-        maxRate,
-        minRate,
+        newMinRate,
+        newMaxRate,
+        newMinRateAtPercent,
+        newMaxRateAtPercent,
         {from: owner}
       )
 
-      expectEvent(tx, "TargetCapacityUpdated", {
+      expectEvent(tx, "RewardsParametersUpdated", {
         who: owner,
         targetCapacity: newTargetCapacity,
+        minRate: newMinRate,
+        maxRate: newMaxRate,
+        minRateAtPercent: newMinRateAtPercent,
+        maxRateAtPercent: newMaxRateAtPercent,
       })
     })
 
     it("checkpoints rewards", async () => {
       const newTargetCapacity = bigVal(1234)
-      await stakingRewards.setRewardsParameters(newTargetCapacity, maxRateAtPercent, minRateAtPercent, maxRate, minRate)
+      await stakingRewards.setRewardsParameters(newTargetCapacity, minRate, maxRate, minRateAtPercent, maxRateAtPercent)
 
       const t = await time.latest()
       expect(await stakingRewards.lastUpdateTime()).to.bignumber.equal(t)
+    })
+
+    it("reverts if minRate > maxRate", async () => {
+      const newMinRate = bigVal(1000)
+      const newMaxRate = bigVal(100)
+      await expect(
+        stakingRewards.setRewardsParameters(targetCapacity, newMinRate, newMaxRate, minRateAtPercent, maxRateAtPercent)
+      ).to.be.rejectedWith(/maxRate must be >= then minRate/)
+    })
+
+    it("reverts if maxRateAtPercent > minRateAtPercent", async () => {
+      let newMinRateAtPercent = new BN(25).mul(new BN(String(1e16)))
+      let newMaxRateAtPercent = new BN(25).mul(new BN(String(1e18)))
+      await expect(
+        stakingRewards.setRewardsParameters(targetCapacity, minRate, maxRate, newMinRateAtPercent, newMaxRateAtPercent)
+      ).to.be.rejectedWith(/maxRateAtPercent must be <= minRateAtPercent/)
+
+      newMinRateAtPercent = new BN(25).mul(new BN(String(1e16)))
+      newMaxRateAtPercent = new BN(25).mul(new BN(String(1e16)))
+      await expect(
+        stakingRewards.setRewardsParameters(targetCapacity, minRate, maxRate, newMinRateAtPercent, newMaxRateAtPercent)
+      ).to.be.fulfilled
+
+      newMinRateAtPercent = new BN(25).mul(new BN(String(1e16)))
+      newMaxRateAtPercent = new BN(25).mul(new BN(String(1e15)))
+      await expect(
+        stakingRewards.setRewardsParameters(targetCapacity, minRate, maxRate, newMinRateAtPercent, newMaxRateAtPercent)
+      ).to.be.fulfilled
     })
 
     context("user is not admin", async () => {
       it("reverts", async () => {
         const newTargetCapacity = bigVal(1000)
         await expect(
-          stakingRewards.setRewardsParameters(newTargetCapacity, maxRateAtPercent, minRateAtPercent, maxRate, minRate, {
-            from: anotherUser,
-          })
-        ).to.be.rejectedWith(/Must have admin role/)
-      })
-    })
-  })
-
-  describe("setMaxRateAtPercent", async () => {
-    it("sets maxRateAtPercent", async () => {
-      // 25%
-      const newMaxRateAtPercent = new BN(25).mul(new BN(String(1e16)))
-      await stakingRewards.setRewardsParameters(targetCapacity, newMaxRateAtPercent, minRateAtPercent, maxRate, minRate)
-
-      expect(await stakingRewards.maxRateAtPercent()).to.bignumber.equal(newMaxRateAtPercent)
-    })
-
-    it("emits an event", async () => {
-      // 25%
-      const newMaxRateAtPercent = new BN(25).mul(new BN(String(1e16)))
-      const tx = await stakingRewards.setRewardsParameters(
-        targetCapacity,
-        newMaxRateAtPercent,
-        minRateAtPercent,
-        maxRate,
-        minRate,
-        {from: owner}
-      )
-
-      expectEvent(tx, "MaxRateAtPercentUpdated", {
-        who: owner,
-        maxRateAtPercent: newMaxRateAtPercent,
-      })
-    })
-
-    it("checkpoints rewards", async () => {
-      const newMaxRateAtPercent = new BN(25).mul(new BN(String(1e16)))
-      await stakingRewards.setRewardsParameters(targetCapacity, newMaxRateAtPercent, minRateAtPercent, maxRate, minRate)
-
-      const t = await time.latest()
-      expect(await stakingRewards.lastUpdateTime()).to.bignumber.equal(t)
-    })
-
-    context("user is not admin", async () => {
-      it("reverts", async () => {
-        const newMaxRateAtPercent = bigVal(10)
-        await expect(
-          stakingRewards.setRewardsParameters(targetCapacity, newMaxRateAtPercent, minRateAtPercent, maxRate, minRate, {
-            from: anotherUser,
-          })
-        ).to.be.rejectedWith(/Must have admin role/)
-      })
-    })
-  })
-
-  describe("setMinRateAtPercent", async () => {
-    it("sets minRateAtPercent", async () => {
-      // 25%
-      const newMinRateAtPercent = new BN(5).mul(new BN(String(1e18)))
-      await stakingRewards.setRewardsParameters(targetCapacity, maxRateAtPercent, newMinRateAtPercent, maxRate, minRate)
-
-      expect(await stakingRewards.minRateAtPercent()).to.bignumber.equal(newMinRateAtPercent)
-    })
-
-    it("emits an event", async () => {
-      // 25%
-      const newMinRateAtPercent = new BN(5).mul(new BN(String(1e18)))
-      const tx = await stakingRewards.setRewardsParameters(
-        targetCapacity,
-        maxRateAtPercent,
-        newMinRateAtPercent,
-        maxRate,
-        minRate
-      )
-
-      expectEvent(tx, "MinRateAtPercentUpdated", {
-        who: owner,
-        minRateAtPercent: newMinRateAtPercent,
-      })
-    })
-
-    it("checkpoints rewards", async () => {
-      const newMinRateAtPercent = new BN(5).mul(new BN(String(1e18)))
-      await stakingRewards.setRewardsParameters(targetCapacity, maxRateAtPercent, newMinRateAtPercent, maxRate, minRate)
-
-      const t = await time.latest()
-      expect(await stakingRewards.lastUpdateTime()).to.bignumber.equal(t)
-    })
-
-    context("user is not admin", async () => {
-      it("reverts", async () => {
-        const newMinRateAtPercent = bigVal(5)
-        await expect(
-          stakingRewards.setRewardsParameters(targetCapacity, maxRateAtPercent, newMinRateAtPercent, maxRate, minRate, {
-            from: anotherUser,
-          })
-        ).to.be.rejectedWith(/Must have admin role/)
-      })
-    })
-  })
-
-  describe("setMaxRate", async () => {
-    it("sets maxRate", async () => {
-      const newMaxRate = bigVal(2500)
-      await stakingRewards.setRewardsParameters(targetCapacity, maxRateAtPercent, minRateAtPercent, newMaxRate, minRate)
-
-      expect(await stakingRewards.maxRate()).to.bignumber.equal(newMaxRate)
-    })
-
-    it("emits an event", async () => {
-      const newMaxRate = bigVal(2500)
-      const tx = await stakingRewards.setRewardsParameters(
-        targetCapacity,
-        maxRateAtPercent,
-        minRateAtPercent,
-        newMaxRate,
-        minRate,
-        {from: owner}
-      )
-
-      expectEvent(tx, "MaxRateUpdated", {
-        who: owner,
-        maxRate: newMaxRate,
-      })
-    })
-
-    it("checkpoints rewards", async () => {
-      const newMaxRate = bigVal(2500)
-      await stakingRewards.setRewardsParameters(targetCapacity, maxRateAtPercent, minRateAtPercent, newMaxRate, minRate)
-
-      const t = await time.latest()
-      expect(await stakingRewards.lastUpdateTime()).to.bignumber.equal(t)
-    })
-
-    context("user is not admin", async () => {
-      it("reverts", async () => {
-        const newMaxRate = bigVal(5)
-        await expect(
-          stakingRewards.setRewardsParameters(targetCapacity, maxRateAtPercent, minRateAtPercent, newMaxRate, minRate, {
-            from: anotherUser,
-          })
-        ).to.be.rejectedWith(/Must have admin role/)
-      })
-    })
-  })
-
-  describe("setMinRate", async () => {
-    it("sets minRate", async () => {
-      const newMinRate = bigVal(2500)
-      await stakingRewards.setRewardsParameters(targetCapacity, maxRateAtPercent, minRateAtPercent, maxRate, newMinRate)
-
-      expect(await stakingRewards.minRate()).to.bignumber.equal(newMinRate)
-    })
-
-    it("emits an event", async () => {
-      const newMinRate = bigVal(2500)
-      const tx = await stakingRewards.setRewardsParameters(
-        targetCapacity,
-        maxRateAtPercent,
-        minRateAtPercent,
-        maxRate,
-        newMinRate,
-        {from: owner}
-      )
-
-      expectEvent(tx, "MinRateUpdated", {
-        who: owner,
-        minRate: newMinRate,
-      })
-    })
-
-    it("checkpoints rewards", async () => {
-      const newMinRate = bigVal(2500)
-      await stakingRewards.setRewardsParameters(targetCapacity, maxRateAtPercent, minRateAtPercent, maxRate, newMinRate)
-
-      const t = await time.latest()
-      expect(await stakingRewards.lastUpdateTime()).to.bignumber.equal(t)
-    })
-
-    context("user is not admin", async () => {
-      it("reverts", async () => {
-        const newMinRate = bigVal(5)
-        await expect(
-          stakingRewards.setRewardsParameters(targetCapacity, maxRateAtPercent, minRateAtPercent, maxRate, newMinRate, {
+          stakingRewards.setRewardsParameters(newTargetCapacity, minRate, maxRate, minRateAtPercent, maxRateAtPercent, {
             from: anotherUser,
           })
         ).to.be.rejectedWith(/Must have admin role/)

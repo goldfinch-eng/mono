@@ -42,6 +42,14 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   }
 
   /* ========== EVENTS =================== */
+  event RewardsParametersUpdated(
+    address indexed who,
+    uint256 targetCapacity,
+    uint256 minRate,
+    uint256 maxRate,
+    uint256 minRateAtPercent,
+    uint256 maxRateAtPercent
+  );
   event TargetCapacityUpdated(address indexed who, uint256 targetCapacity);
   event VestingScheduleUpdated(address indexed who, uint256 vestingLength);
   event MinRateUpdated(address indexed who, uint256 minRate);
@@ -523,24 +531,20 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
   function setRewardsParameters(
     uint256 _targetCapacity,
-    uint256 _maxRateAtPercent,
-    uint256 _minRateAtPercent,
+    uint256 _minRate,
     uint256 _maxRate,
-    uint256 _minRate
+    uint256 _minRateAtPercent,
+    uint256 _maxRateAtPercent
   ) public onlyAdmin updateReward(0) {
-    require(maxRate >= minRate, "maxRate must be >= then minRate");
-    require(maxRateAtPercent <= minRateAtPercent, "maxRateAtPercent must be <= minRateAtPercent");
+    require(_maxRate >= _minRate, "maxRate must be >= then minRate");
+    require(_maxRateAtPercent <= _minRateAtPercent, "maxRateAtPercent must be <= minRateAtPercent");
     targetCapacity = _targetCapacity;
-    maxRateAtPercent = _maxRateAtPercent;
-    minRateAtPercent = _minRateAtPercent;
-    maxRate = _maxRate;
     minRate = _minRate;
+    maxRate = _maxRate;
+    minRateAtPercent = _minRateAtPercent;
+    maxRateAtPercent = _maxRateAtPercent;
 
-    emit TargetCapacityUpdated(msg.sender, targetCapacity);
-    emit MaxRateAtPercentUpdated(msg.sender, maxRateAtPercent);
-    emit MinRateAtPercentUpdated(msg.sender, minRateAtPercent);
-    emit MaxRateUpdated(msg.sender, maxRate);
-    emit MinRateUpdated(msg.sender, minRate);
+    emit RewardsParametersUpdated(msg.sender, targetCapacity, minRate, maxRate, minRateAtPercent, maxRateAtPercent);
   }
 
   function setLeverageMultiplier(LockupPeriod lockupPeriod, uint256 leverageMultiplier)
