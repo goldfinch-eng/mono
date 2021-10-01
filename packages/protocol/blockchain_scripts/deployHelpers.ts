@@ -23,7 +23,7 @@ import PROTOCOL_CONFIG from "../protocol_config.json"
 import {CONFIG_KEYS} from "./configKeys"
 import {GoldfinchConfig} from "../typechain/ethers"
 import {DeploymentsExtension} from "hardhat-deploy/types"
-import {Signer} from "ethers"
+import {Contract, Signer} from "ethers"
 import {
   AssertionError,
   assertIsString,
@@ -181,7 +181,11 @@ async function getSignerForAddress(signerAddress?: string | Signer): Promise<Sig
   }
 }
 
-async function getDeployedContract(deployments: DeploymentsExtension, contractName: string, signerAddress?: string) {
+async function getDeployedContract<T extends Contract = Contract>(
+  deployments: DeploymentsExtension,
+  contractName: string,
+  signerAddress?: string
+) {
   let deployment = await deployments.getOrNull(contractName)
   if (!deployment && isTestEnv()) {
     deployment = await deployments.getOrNull(`Test${contractName}`)
@@ -197,7 +201,7 @@ async function getDeployedContract(deployments: DeploymentsExtension, contractNa
   }
   const signer = await getSignerForAddress(signerAddress)
   assertNonNullable(deployment)
-  return await ethers.getContractAt(abi, deployment.address, signer)
+  return (await ethers.getContractAt(abi, deployment.address, signer)) as T
 }
 
 export type DepList = {[contractName: string]: {[contractName: string]: string}}

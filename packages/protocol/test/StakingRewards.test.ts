@@ -29,7 +29,7 @@ import {
 import {time, expectEvent} from "@openzeppelin/test-helpers"
 import {getApprovalDigest, getWallet} from "./permitHelpers"
 import {ecsign} from "ethereumjs-util"
-import {asNonNullable} from "@goldfinch-eng/utils"
+import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
 
 // Typechain doesn't generate types for solidity enums, so redefining here
 enum LockupPeriod {
@@ -38,12 +38,7 @@ enum LockupPeriod {
   TwentyFourMonths,
 }
 
-const BEFORE_EACH_TIMEOUT = 30000
-const TEST_TIMEOUT = 30000
-
 describe("StakingRewards", function () {
-  this.timeout(TEST_TIMEOUT)
-
   let owner: string,
     investor: string,
     anotherUser: string,
@@ -120,14 +115,12 @@ describe("StakingRewards", function () {
     await stakingRewards.loadRewards(amount)
   }
 
-  beforeEach(async function () {
-    this.timeout(BEFORE_EACH_TIMEOUT)
-    // eslint-disable-next-line @typescript-eslint/no-extra-semi
+  const testSetup = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
     const [_owner, _investor, _anotherUser] = await web3.eth.getAccounts()
-    owner = asNonNullable(_owner)
-    investor = asNonNullable(_investor)
-    anotherUser = asNonNullable(_anotherUser)
-    ;({goldfinchConfig, seniorPool, gfi, stakingRewards, fidu, usdc} = await deployAllContracts(deployments))
+    const owner = asNonNullable(_owner)
+    const investor = asNonNullable(_investor)
+    const anotherUser = asNonNullable(_anotherUser)
+    const {goldfinchConfig, seniorPool, gfi, stakingRewards, fidu, usdc} = await deployAllContracts(deployments)
     await goldfinchConfig.bulkAddToGoList([owner, investor, anotherUser])
     await erc20Approve(usdc, investor, usdcVal(10000), [owner])
     await erc20Transfer(usdc, [investor], usdcVal(10000), owner)
@@ -138,32 +131,71 @@ describe("StakingRewards", function () {
     await erc20Approve(usdc, seniorPool.address, usdcVal(50000), [anotherUser])
     let receipt = await seniorPool.deposit(usdcVal(50000), {from: anotherUser})
     let depositEvent = getFirstLog<DepositMade>(decodeLogs(receipt.receipt.rawLogs, seniorPool, "DepositMade"))
-    anotherUserFiduAmount = depositEvent.args.shares
+    const anotherUserFiduAmount = depositEvent.args.shares
 
     await erc20Approve(usdc, seniorPool.address, usdcVal(5000), [investor])
     receipt = await seniorPool.deposit(usdcVal(5000), {from: investor})
     depositEvent = getFirstLog<DepositMade>(decodeLogs(receipt.receipt.rawLogs, seniorPool, "DepositMade"))
-    fiduAmount = new BN(depositEvent.args.shares)
+    const fiduAmount = new BN(depositEvent.args.shares)
 
-    targetCapacity = bigVal(1000)
-    maxRate = bigVal(1000)
-    minRate = bigVal(100)
-    maxRateAtPercent = new BN(5).mul(new BN(String(1e17))) // 50%
-    minRateAtPercent = new BN(3).mul(new BN(String(1e18))) // 300%
+    const targetCapacity = bigVal(1000)
+    const maxRate = bigVal(1000)
+    const minRate = bigVal(100)
+    const maxRateAtPercent = new BN(5).mul(new BN(String(1e17))) // 50%
+    const minRateAtPercent = new BN(3).mul(new BN(String(1e18))) // 300%
 
     await stakingRewards.setTargetCapacity(targetCapacity)
     await stakingRewards.setMaxRate(maxRate)
     await stakingRewards.setMinRate(minRate)
     await stakingRewards.setMinRateAtPercent(minRateAtPercent)
     await stakingRewards.setMaxRateAtPercent(maxRateAtPercent)
+
+    return {
+      owner,
+      investor,
+      anotherUser,
+      goldfinchConfig,
+      seniorPool,
+      gfi,
+      stakingRewards,
+      fidu,
+      usdc,
+      targetCapacity,
+      maxRate,
+      minRate,
+      maxRateAtPercent,
+      minRateAtPercent,
+      fiduAmount,
+      anotherUserFiduAmount,
+    }
+  })
+
+  beforeEach(async () => {
+    // eslint-disable-next-line @typescript-eslint/no-extra-semi
+    ;({
+      owner,
+      investor,
+      anotherUser,
+      goldfinchConfig,
+      seniorPool,
+      gfi,
+      stakingRewards,
+      fidu,
+      usdc,
+      targetCapacity,
+      maxRate,
+      minRate,
+      maxRateAtPercent,
+      minRateAtPercent,
+      fiduAmount,
+      anotherUserFiduAmount,
+    } = await testSetup())
   })
 
   describe("stake", () => {
     let totalRewards: BN
 
     beforeEach(async function () {
-      this.timeout(BEFORE_EACH_TIMEOUT)
-
       // Mint rewards for a full year
       totalRewards = maxRate.mul(yearInSeconds)
       await mintRewards(totalRewards)
@@ -308,6 +340,7 @@ describe("StakingRewards", function () {
         deadline,
       })
       const wallet = await getWallet(investor)
+      assertNonNullable(wallet)
       const {v, r, s} = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(wallet.privateKey.slice(2), "hex"))
 
       const balanceBefore = await usdc.balanceOf(investor)
@@ -350,6 +383,7 @@ describe("StakingRewards", function () {
           deadline,
         })
         const wallet = await getWallet(investor)
+        assertNonNullable(wallet)
         const {v, r, s} = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(wallet.privateKey.slice(2), "hex"))
 
         await stakingRewards.pause()
@@ -416,6 +450,7 @@ describe("StakingRewards", function () {
         deadline,
       })
       const wallet = await getWallet(investor)
+      assertNonNullable(wallet)
       const {v, r, s} = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(wallet.privateKey.slice(2), "hex"))
 
       const balanceBefore = await usdc.balanceOf(investor)
@@ -470,6 +505,7 @@ describe("StakingRewards", function () {
           deadline,
         })
         const wallet = await getWallet(investor)
+        assertNonNullable(wallet)
         const {v, r, s} = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(wallet.privateKey.slice(2), "hex"))
 
         const balanceBefore = await usdc.balanceOf(investor)
@@ -496,8 +532,6 @@ describe("StakingRewards", function () {
     let rewardRate: BN
 
     beforeEach(async function () {
-      this.timeout(BEFORE_EACH_TIMEOUT)
-
       // Mint rewards for a full year
       rewardRate = bigVal(100)
 
@@ -563,7 +597,6 @@ describe("StakingRewards", function () {
 
     context("position is vesting", async () => {
       beforeEach(async function () {
-        this.timeout(BEFORE_EACH_TIMEOUT)
         // Enable vesting
         await stakingRewards.setVestingSchedule(yearInSeconds)
       })
@@ -623,8 +656,6 @@ describe("StakingRewards", function () {
     let rewardRate: BN
 
     beforeEach(async function () {
-      this.timeout(BEFORE_EACH_TIMEOUT)
-
       // Mint rewards for a full year
       rewardRate = bigVal(100)
 
@@ -697,8 +728,6 @@ describe("StakingRewards", function () {
     let rewardRate: BN
 
     beforeEach(async function () {
-      this.timeout(BEFORE_EACH_TIMEOUT)
-
       // Mint rewards for a full year
       rewardRate = bigVal(100)
 
@@ -770,8 +799,6 @@ describe("StakingRewards", function () {
     let totalRewards: BN
 
     beforeEach(async function () {
-      this.timeout(BEFORE_EACH_TIMEOUT)
-
       // Mint rewards for a full year
       totalRewards = maxRate.mul(yearInSeconds)
       await mintRewards(totalRewards)
@@ -949,8 +976,6 @@ describe("StakingRewards", function () {
     let rewardRate: BN
 
     beforeEach(async function () {
-      this.timeout(BEFORE_EACH_TIMEOUT)
-
       rewardRate = new BN(String(2e18))
       // Fix the reward rate to make testing easier
       await stakingRewards.setMinRate(rewardRate)
@@ -1010,8 +1035,6 @@ describe("StakingRewards", function () {
     let rewardRate: BN
 
     beforeEach(async function () {
-      this.timeout(BEFORE_EACH_TIMEOUT)
-
       rewardRate = new BN(String(2e18))
       // Fix the reward rate to make testing easier
       await stakingRewards.setMinRate(rewardRate)
@@ -1059,8 +1082,6 @@ describe("StakingRewards", function () {
     let rewardRate: BN
 
     beforeEach(async function () {
-      this.timeout(BEFORE_EACH_TIMEOUT)
-
       rewardRate = new BN(String(2e18))
       // Fix the reward rate to make testing easier
       await stakingRewards.setMinRate(rewardRate)
@@ -1111,7 +1132,6 @@ describe("StakingRewards", function () {
 
   describe("vesting", async () => {
     beforeEach(async function () {
-      this.timeout(BEFORE_EACH_TIMEOUT)
       // Mint a small, fixed amount that limits reward disbursement
       // so we can test the vesting
       await mintRewards("100000")
@@ -1140,8 +1160,6 @@ describe("StakingRewards", function () {
     const rewardRate = new BN(String(1e18))
 
     beforeEach(async function () {
-      this.timeout(BEFORE_EACH_TIMEOUT)
-
       // Fix the reward rate to make testing easier
       await stakingRewards.setMaxRate(rewardRate)
       await stakingRewards.setMinRate(rewardRate)
@@ -1432,8 +1450,6 @@ describe("StakingRewards", function () {
     const targetCapacity = bigVal(500)
 
     beforeEach(async function () {
-      this.timeout(BEFORE_EACH_TIMEOUT)
-
       await stakingRewards.setMaxRate(maxRate)
       await stakingRewards.setMinRate(minRate)
       await stakingRewards.setMinRateAtPercent(minRateAtPercent)
@@ -1519,8 +1535,6 @@ describe("StakingRewards", function () {
 
     context("total rewards available less than reward rate", async () => {
       beforeEach(async function () {
-        this.timeout(BEFORE_EACH_TIMEOUT)
-
         // Mint rewards for a full year
         totalRewards = maxRate.mul(yearInSeconds)
         await mintRewards(totalRewards)
@@ -1548,8 +1562,6 @@ describe("StakingRewards", function () {
 
     context("staked supply is a fraction of 1 token", async () => {
       beforeEach(async function () {
-        this.timeout(BEFORE_EACH_TIMEOUT)
-
         // Mint rewards for a full year
         totalRewards = maxRate.mul(yearInSeconds)
         await mintRewards(totalRewards)
@@ -1573,8 +1585,6 @@ describe("StakingRewards", function () {
 
     context("user transfers NFT", async () => {
       beforeEach(async function () {
-        this.timeout(BEFORE_EACH_TIMEOUT)
-
         // Mint rewards for a full year
         totalRewards = maxRate.mul(yearInSeconds)
         await mintRewards(totalRewards)

@@ -55,7 +55,7 @@ async function main() {
     deployments
   )
 
-  const goldfinchFactoryAddress = upgradedContracts.GoldfinchFactory.ProxyContract.address
+  const goldfinchFactoryAddress = asNonNullable(upgradedContracts.GoldfinchFactory).ProxyContract.address
   const goldfinchFactory = await getContract<GoldfinchFactory, GoldfinchFactoryInstance>(
     "GoldfinchFactory",
     TRUFFLE_CONTRACT_PROVIDER,
