@@ -411,6 +411,8 @@ describe("GoldfinchIdentity", () => {
         )
       })
     })
+
+    // TODO[PR] Should we test execution of the received hook?
   })
 
   describe("mintBatch", () => {
@@ -505,6 +507,8 @@ describe("GoldfinchIdentity", () => {
         // TODO
       })
     })
+
+    // TODO[PR] Should we test execution of the received hook?
   })
 
   describe("safeTransferFrom", () => {
