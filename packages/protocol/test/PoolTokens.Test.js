@@ -50,6 +50,30 @@ describe("PoolTokens", () => {
     await poolTokens._disablePoolValidation(true)
   })
 
+  async function addToLegacyGoList(target, goLister) {
+    expect(await goldfinchConfig.goList(target)).to.equal(false)
+    expect(await goldfinchConfig.hasRole(GO_LISTER_ROLE, goLister)).to.equal(true)
+    await goldfinchConfig.addToGoList(target, {from: goLister})
+    expect(await goldfinchConfig.goList(target)).to.equal(true)
+  }
+
+  async function mintGoldfinchIdentityToken(recipient, signer) {
+    const goldfinchIdentityTokenId = new BN(0)
+    const goldfinchIdentityTokenAmount = new BN(1)
+    await mint(
+      hre,
+      goldfinchIdentity,
+      recipient,
+      goldfinchIdentityTokenId,
+      goldfinchIdentityTokenAmount,
+      new BN(0),
+      signer
+    )
+    expect(await goldfinchIdentity.balanceOf(recipient, goldfinchIdentityTokenId)).to.bignumber.equal(
+      goldfinchIdentityTokenAmount
+    )
+  }
+
   describe("initialization", async () => {
     it("should not allow it to be called twice", async () => {
       return expect(poolTokens.__initialize__(owner, goldfinchConfig.address)).to.be.rejectedWith(
@@ -350,10 +374,7 @@ describe("PoolTokens", () => {
 
         context("account is on legacy go-list", () => {
           beforeEach(async () => {
-            expect(await goldfinchConfig.goList(person3)).to.equal(false)
-            expect(await goldfinchConfig.hasRole(GO_LISTER_ROLE, owner)).to.equal(true)
-            await goldfinchConfig.addToGoList(person3, {from: owner})
-            expect(await goldfinchConfig.goList(person3)).to.equal(true)
+            await addToLegacyGoList(person3, owner)
           })
 
           it("allows", async () => {
@@ -377,28 +398,12 @@ describe("PoolTokens", () => {
 
       context("account with > 0 balance GoldfinchIdentity token (id 0)", () => {
         beforeEach(async () => {
-          const goldfinchIdentityTokenId = new BN(0)
-          const goldfinchIdentityTokenAmount = new BN(1)
-          await mint(
-            hre,
-            goldfinchIdentity,
-            person3,
-            goldfinchIdentityTokenId,
-            goldfinchIdentityTokenAmount,
-            new BN(0),
-            owner
-          )
-          expect(await goldfinchIdentity.balanceOf(person3, goldfinchIdentityTokenId)).to.bignumber.equal(
-            goldfinchIdentityTokenAmount
-          )
+          await mintGoldfinchIdentityToken(person3, owner)
         })
 
         context("account is on legacy go-list", () => {
           beforeEach(async () => {
-            expect(await goldfinchConfig.goList(person3)).to.equal(false)
-            expect(await goldfinchConfig.hasRole(GO_LISTER_ROLE, owner)).to.equal(true)
-            await goldfinchConfig.addToGoList(person3, {from: owner})
-            expect(await goldfinchConfig.goList(person3)).to.equal(true)
+            await addToLegacyGoList(person3, owner)
           })
 
           it("allows", async () => {
@@ -442,10 +447,7 @@ describe("PoolTokens", () => {
 
         context("recipient is on legacy go-list", () => {
           beforeEach(async () => {
-            expect(await goldfinchConfig.goList(person3)).to.equal(false)
-            expect(await goldfinchConfig.hasRole(GO_LISTER_ROLE, owner)).to.equal(true)
-            await goldfinchConfig.addToGoList(person3, {from: owner})
-            expect(await goldfinchConfig.goList(person3)).to.equal(true)
+            await addToLegacyGoList(person3, owner)
           })
 
           it("allows transfer", async () => {
@@ -467,28 +469,12 @@ describe("PoolTokens", () => {
 
       context("recipient with > 0 balance GoldfinchIdentity token (id 0)", () => {
         beforeEach(async () => {
-          const goldfinchIdentityTokenId = new BN(0)
-          const goldfinchIdentityTokenAmount = new BN(1)
-          await mint(
-            hre,
-            goldfinchIdentity,
-            person3,
-            goldfinchIdentityTokenId,
-            goldfinchIdentityTokenAmount,
-            new BN(0),
-            owner
-          )
-          expect(await goldfinchIdentity.balanceOf(person3, goldfinchIdentityTokenId)).to.bignumber.equal(
-            goldfinchIdentityTokenAmount
-          )
+          await mintGoldfinchIdentityToken(person3, owner)
         })
 
         context("recipient is on legacy go-list", () => {
           beforeEach(async () => {
-            expect(await goldfinchConfig.goList(person3)).to.equal(false)
-            expect(await goldfinchConfig.hasRole(GO_LISTER_ROLE, owner)).to.equal(true)
-            await goldfinchConfig.addToGoList(person3, {from: owner})
-            expect(await goldfinchConfig.goList(person3)).to.equal(true)
+            await addToLegacyGoList(person3, owner)
           })
 
           it("allows transfer", async () => {

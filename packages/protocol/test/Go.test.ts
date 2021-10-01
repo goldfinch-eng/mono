@@ -76,6 +76,12 @@ describe("Go", () => {
     } = await setupTest())
   })
 
+  async function pause(): Promise<void> {
+    expect(await go.paused()).to.equal(false)
+    await go.pause()
+    expect(await go.paused()).to.equal(true)
+  }
+
   describe("initialize", () => {
     it("rejects zero address owner", async () => {
       const initialized = uninitializedGo.initialize(
@@ -152,9 +158,7 @@ describe("Go", () => {
 
     context("paused", () => {
       it("does not reject", async () => {
-        await go.pause()
-        expect(await go.paused()).to.equal(true)
-
+        await pause()
         await expect(go.updateGoldfinchConfig({from: owner})).to.be.fulfilled
       })
     })
@@ -234,9 +238,7 @@ describe("Go", () => {
       })
 
       it("returns anyway", async () => {
-        await go.pause()
-        expect(await go.paused()).to.equal(true)
-
+        await pause()
         expect(await go.go(anotherUser)).to.equal(true)
       })
     })
