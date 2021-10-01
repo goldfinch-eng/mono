@@ -1,6 +1,5 @@
 const {findEnvLocal} = require("@goldfinch-eng/utils")
 require("dotenv").config({path: findEnvLocal()})
-
 const {relay} = require("./relayer/relay")
 const hre = require("hardhat")
 const {TypedDataUtils} = require("eth-sig-util")

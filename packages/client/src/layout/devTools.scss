@@ -23,6 +23,8 @@
 }
 
 .devTools.open {
+  cursor: default;
+
   bottom: 10px;
   writing-mode: horizontal-tb;
   margin: 0 auto;
@@ -43,7 +45,7 @@
   width: 100%;
   height: 100%;
   .header {
-    display:  flex;
+    display: flex;
     justify-content: space-between;
     font-weight: 500;
     font-size: $sans-size-s;
