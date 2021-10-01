@@ -34,6 +34,7 @@ import {
   TestERC20,
   GoldfinchIdentity,
   Go,
+  TestGoldfinchIdentity,
 } from "../typechain/ethers"
 import {Logger, DeployFn, DeployOpts} from "./types"
 import {isMerkleDistributorInfo} from "./merkleDistributor/types"
@@ -43,6 +44,7 @@ import {
   GoldfinchIdentityInstance,
   MerkleDistributorInstance,
   TestERC20Instance,
+  TestGoldfinchIdentityInstance,
 } from "../typechain/truffle"
 import {assertIsString} from "@goldfinch-eng/utils"
 import {StakingRewards} from "../typechain/ethers/StakingRewards"
@@ -384,8 +386,10 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
     return deployed
   }
 
-  async function deployGoldfinchIdentity(hre: HardhatRuntimeEnvironment): Promise<Deployed<GoldfinchIdentityInstance>> {
-    const contractName = "GoldfinchIdentity"
+  async function deployGoldfinchIdentity(
+    hre: HardhatRuntimeEnvironment
+  ): Promise<Deployed<GoldfinchIdentityInstance | TestGoldfinchIdentityInstance>> {
+    const contractName = isTestEnv() ? "TestGoldfinchIdentity" : "GoldfinchIdentity"
     logger(`About to deploy ${contractName}...`)
     assertIsString(gf_deployer)
     const protocol_owner = await getProtocolOwner()
@@ -401,11 +405,10 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
         },
       },
     })
-    const contract = await getContract<GoldfinchIdentity, GoldfinchIdentityInstance>(
-      contractName,
-      TRUFFLE_CONTRACT_PROVIDER,
-      {at: deployResult.address}
-    )
+    const contract = await getContract<
+      GoldfinchIdentity | TestGoldfinchIdentity,
+      GoldfinchIdentityInstance | TestGoldfinchIdentityInstance
+    >(contractName, TRUFFLE_CONTRACT_PROVIDER, {at: deployResult.address})
 
     logger(`Deployed ${contractName} to address:`, contract.address)
     return {name: contractName, contract}
@@ -413,7 +416,10 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
 
   async function deployGo(
     hre: HardhatRuntimeEnvironment,
-    {config, goldfinchIdentity}: {config: GoldfinchConfig; goldfinchIdentity: Deployed<GoldfinchIdentityInstance>}
+    {
+      config,
+      goldfinchIdentity,
+    }: {config: GoldfinchConfig; goldfinchIdentity: Deployed<GoldfinchIdentityInstance | TestGoldfinchIdentityInstance>}
   ): Promise<Deployed<GoInstance>> {
     const contractName = "Go"
     logger(`About to deploy ${contractName}...`)

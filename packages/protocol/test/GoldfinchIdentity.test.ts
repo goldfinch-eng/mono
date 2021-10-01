@@ -1,8 +1,11 @@
 /* global web3 */
+import {keccak256} from "@ethersproject/keccak256"
+import {pack} from "@ethersproject/solidity"
+import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
+import {BN} from "ethereumjs-tx/node_modules/ethereumjs-util"
+import {BigNumber, constants as ethersConstants} from "ethers"
 import hre from "hardhat"
 import _ from "lodash"
-import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
-import {decodeLogs, deployAllContracts, getOnlyLog} from "./testHelpers"
 import {
   getContract,
   OWNER_ROLE,
@@ -10,18 +13,18 @@ import {
   SIGNER_ROLE,
   TRUFFLE_CONTRACT_PROVIDER,
 } from "../blockchain_scripts/deployHelpers"
-import {GoldfinchIdentity} from "../typechain/ethers"
-import {constants as ethersConstants, BigNumber} from "ethers"
 import {GOLDFINCH_IDENTITY_METADATA_URI} from "../blockchain_scripts/goldfinchIdentity/constants"
-import {BN} from "ethereumjs-tx/node_modules/ethereumjs-util"
-import {pack} from "@ethersproject/solidity"
-import {keccak256} from "@ethersproject/keccak256"
-import {GoldfinchIdentityInstance, TransferSingle} from "../typechain/truffle/GoldfinchIdentity"
+import {TestGoldfinchIdentity} from "../typechain/ethers"
+import {TransferSingle} from "../typechain/truffle/GoldfinchIdentity"
+import {TestGoldfinchIdentityInstance} from "../typechain/truffle/TestGoldfinchIdentity"
+import {decodeLogs, deployAllContracts, getOnlyLog} from "./testHelpers"
 const {deployments} = hre
 
 const MINT_MESSAGE_ELEMENT_TYPES = ["address", "uint256", "uint256"]
 const EMPTY_STRING_HEX = web3.utils.asciiToHex("")
 const MINT_PAYMENT = new BN(0.00083e18)
+
+const BURN_MESSAGE_ELEMENT_TYPES = ["address", "uint256", "uint256"]
 
 const setupTest = deployments.createFixture(async ({deployments}) => {
   const {deploy} = deployments
@@ -35,12 +38,12 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
 
   const goldfinchIdentity = deployed.goldfinchIdentity
 
-  const uninitializedGoldfinchIdentityDeployResult = await deploy("GoldfinchIdentity", {
+  const uninitializedGoldfinchIdentityDeployResult = await deploy("TestGoldfinchIdentity", {
     from: uninitializedGoldfinchIdentityDeployer,
     gasLimit: 4000000,
   })
-  const uninitializedGoldfinchIdentity = await getContract<GoldfinchIdentity, GoldfinchIdentityInstance>(
-    "GoldfinchIdentity",
+  const uninitializedGoldfinchIdentity = await getContract<TestGoldfinchIdentity, TestGoldfinchIdentityInstance>(
+    "TestGoldfinchIdentity",
     TRUFFLE_CONTRACT_PROVIDER,
     {
       at: uninitializedGoldfinchIdentityDeployResult.address,
@@ -91,9 +94,9 @@ describe("GoldfinchIdentity", () => {
   let owner: string,
     anotherUser: string,
     anotherUser2: string,
-    goldfinchIdentity: GoldfinchIdentityInstance,
+    goldfinchIdentity: TestGoldfinchIdentityInstance,
     uninitializedGoldfinchIdentityDeployer: string,
-    uninitializedGoldfinchIdentity: GoldfinchIdentityInstance
+    uninitializedGoldfinchIdentity: TestGoldfinchIdentityInstance
 
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
@@ -108,6 +111,7 @@ describe("GoldfinchIdentity", () => {
   })
 
   type MintParams = [string, BN, BN, string]
+  type BurnParams = [string, BN, BN]
 
   async function mint(
     recipient: string,
@@ -155,10 +159,48 @@ describe("GoldfinchIdentity", () => {
     expect(transferEvent.args.value).to.bignumber.equal(amount)
   }
 
-  async function burn(recipient: string, tokenId: BN, value: BN, nonce: BN, signer: string): Promise<void> {
+  async function burn(
+    recipient: string,
+    tokenId: BN,
+    value: BN,
+    nonce: BN,
+    signer: string,
+    overrideBurnParams?: BurnParams,
+    overrideFrom?: string
+  ): Promise<void> {
+    const contractBalanceBefore = await web3.eth.getBalance(goldfinchIdentity.address)
+    const tokenBalanceBefore = await goldfinchIdentity.balanceOf(recipient, tokenId)
+
     const messageElements: [string, BN, BN] = [recipient, tokenId, value]
-    const signature = await sign(signer, {types: MINT_MESSAGE_ELEMENT_TYPES, values: messageElements}, nonce)
-    await goldfinchIdentity.burn(...messageElements, signature, {from: recipient})
+    const signature = await sign(signer, {types: BURN_MESSAGE_ELEMENT_TYPES, values: messageElements}, nonce)
+
+    const defaultBurnParams: BurnParams = [recipient, tokenId, value]
+    const burnParams: BurnParams = overrideBurnParams || defaultBurnParams
+
+    const defaultFrom = recipient
+    const from = overrideFrom || defaultFrom
+
+    const receipt = await goldfinchIdentity.burn(...burnParams, signature, {from})
+
+    // Verify contract state.
+    const contractBalanceAfter = await web3.eth.getBalance(goldfinchIdentity.address)
+    expect(new BN(contractBalanceAfter)).to.bignumber.equal(new BN(contractBalanceBefore))
+
+    const tokenBalanceAfter = await goldfinchIdentity.balanceOf(recipient, tokenId)
+    expect(tokenBalanceBefore.sub(tokenBalanceAfter)).to.bignumber.equal(value)
+    expect(tokenBalanceAfter).to.bignumber.equal(new BN(0))
+
+    expect(await goldfinchIdentity.nonces(recipient)).to.bignumber.equal(nonce.add(new BN(1)))
+
+    // Verify that event was emitted.
+    const transferEvent = getOnlyLog<TransferSingle>(
+      decodeLogs(receipt.receipt.rawLogs, goldfinchIdentity, "TransferSingle")
+    )
+    expect(transferEvent.args.operator).to.equal(from)
+    expect(transferEvent.args.from).to.equal(recipient)
+    expect(transferEvent.args.to).to.equal(ethersConstants.AddressZero)
+    expect(transferEvent.args.id).to.bignumber.equal(tokenId)
+    expect(transferEvent.args.value).to.bignumber.equal(value)
   }
 
   describe("initialize", () => {
@@ -490,78 +532,141 @@ describe("GoldfinchIdentity", () => {
   })
 
   describe("burn", () => {
+    let recipient: string, tokenId: BN, value: BN
+
     beforeEach(async () => {
-      // TODO
+      recipient = anotherUser
+      tokenId = new BN(0)
+      value = new BN(1)
+
+      await mint(recipient, tokenId, value, new BN(0), owner)
     })
 
     describe("validates signature", () => {
-      it("rejects if called without signature", async () => {
-        // TODO
-      })
-
       it("rejects incorrect `to` address in hashed message", async () => {
-        // TODO
+        const incorrectTo = owner
+        await expect(
+          burn(recipient, tokenId, value, new BN(1), owner, [incorrectTo, tokenId, value])
+        ).to.be.rejectedWith(/Invalid signer/)
       })
       it("rejects incorrect `id` in hashed message", async () => {
-        // TODO
+        const incorrectId = tokenId.add(new BN(1))
+        await expect(
+          burn(recipient, tokenId, value, new BN(1), owner, [recipient, incorrectId, value])
+        ).to.be.rejectedWith(/Invalid signer/)
       })
       it("rejects incorrect `value` in hashed message", async () => {
-        // TODO
+        const incorrectValue = value.add(new BN(1))
+        await expect(
+          burn(recipient, tokenId, value, new BN(1), owner, [recipient, tokenId, incorrectValue])
+        ).to.be.rejectedWith(/Invalid signer/)
       })
       it("allows address with signer role", async () => {
-        // TODO
+        expect(await goldfinchIdentity.hasRole(SIGNER_ROLE, owner)).to.equal(true)
+        await expect(burn(recipient, tokenId, value, new BN(1), owner)).to.be.fulfilled
       })
       it("rejects address without signer role", async () => {
-        // TODO
+        expect(await goldfinchIdentity.hasRole(SIGNER_ROLE, recipient)).to.equal(false)
+        await expect(burn(recipient, tokenId, value, new BN(1), recipient)).to.be.rejectedWith(/Invalid signer/)
       })
       it("rejects empty signature", async () => {
-        // TODO
+        const emptySignature = EMPTY_STRING_HEX
+        const burnParams: BurnParams = [recipient, tokenId, value]
+        await expect(
+          goldfinchIdentity.burn(...burnParams, emptySignature, {
+            from: recipient,
+          })
+        ).to.be.rejectedWith(/ECDSA: invalid signature length/)
       })
       it("rejects reuse of a signature", async () => {
-        // TODO
+        const messageElements: [string, BN, BN] = [recipient, tokenId, value]
+        const signature = await sign(owner, {types: BURN_MESSAGE_ELEMENT_TYPES, values: messageElements}, new BN(1))
+        const burnParams: BurnParams = [recipient, tokenId, value]
+        await goldfinchIdentity.burn(...burnParams, signature, {
+          from: recipient,
+        })
+        await expect(
+          goldfinchIdentity.burn(...burnParams, signature, {
+            from: recipient,
+          })
+        ).to.be.rejectedWith(/Invalid signer/)
       })
       it("allows any sender bearing a valid signature", async () => {
-        // TODO
+        await expect(burn(recipient, tokenId, value, new BN(1), owner, undefined, anotherUser2)).to.be.fulfilled
       })
     })
 
     describe("validates account", () => {
       it("rejects 0 address", async () => {
-        // TODO
+        const messageElements: [string, BN, BN] = [ethersConstants.AddressZero, tokenId, value]
+        const signature = await sign(owner, {types: BURN_MESSAGE_ELEMENT_TYPES, values: messageElements}, new BN(0))
+        const burnParams: BurnParams = [ethersConstants.AddressZero, tokenId, value]
+        await expect(
+          goldfinchIdentity.burn(...burnParams, signature, {
+            from: recipient,
+          })
+        ).to.be.rejectedWith(/ERC1155: burn from the zero address/)
       })
-      it("allows account for which token id exists", async () => {
-        // TODO
+      it("allows account having token id", async () => {
+        expect(await goldfinchIdentity.balanceOf(recipient, tokenId)).to.bignumber.equal(value)
+        await expect(burn(recipient, tokenId, value, new BN(1), owner)).to.be.fulfilled
       })
-      it("rejects account for which token id does not exist", async () => {
-        // TODO
+      it("allows account not having token id", async () => {
+        expect(await goldfinchIdentity.balanceOf(anotherUser2, tokenId)).to.bignumber.equal(new BN(0))
+        await expect(burn(anotherUser2, tokenId, new BN(0), new BN(0), owner)).to.be.fulfilled
       })
     })
 
     describe("validates id", () => {
-      it("allows token id that exists", async () => {
-        // TODO
+      it("allows for token id for which minting is supported", async () => {
+        await expect(burn(recipient, tokenId, value, new BN(1), owner)).to.be.fulfilled
       })
-      it("rejects token id that does not exist", async () => {
-        // TODO
+      it("allows for token id for which minting is not supported", async () => {
+        // Retaining the ability to burn a token of id for which minting is not supported is useful for at least two reasons:
+        // (1) in case such tokens should never have been mintable but were somehow minted; (2) in case we have deprecated
+        // the ability to mint tokens of that id.
+        const unsupportedTokenId = tokenId.add(new BN(1))
+        expect(await goldfinchIdentity.balanceOf(recipient, unsupportedTokenId)).to.bignumber.equal(new BN(0))
+        await expect(mint(recipient, unsupportedTokenId, value, new BN(1), owner)).to.be.rejectedWith(
+          /Token id not supported/
+        )
+        await goldfinchIdentity._mintForTest(recipient, unsupportedTokenId, value, EMPTY_STRING_HEX, {from: owner})
+        expect(await goldfinchIdentity.balanceOf(recipient, unsupportedTokenId)).to.bignumber.equal(value)
+        await expect(burn(recipient, unsupportedTokenId, value, new BN(2), owner)).to.be.fulfilled
       })
     })
 
     describe("validates value", () => {
-      it("rejects value that does not equal amount on token", async () => {
-        // TODO
+      it("rejects value less than amount on token", async () => {
+        expect(await goldfinchIdentity.balanceOf(recipient, tokenId)).to.bignumber.equal(new BN(1))
+        await expect(burn(recipient, tokenId, new BN(0), new BN(1), owner)).to.be.rejectedWith(
+          /Balance after burn must be 0/
+        )
+      })
+      it("rejects value greater than amount on token", async () => {
+        expect(await goldfinchIdentity.balanceOf(recipient, tokenId)).to.bignumber.equal(value)
+        await expect(burn(recipient, tokenId, value.add(new BN(1)), new BN(1), owner)).to.be.rejectedWith(
+          /ERC1155: burn amount exceeds balance/
+        )
       })
       it("allows value that equals amount on token", async () => {
-        // TODO expect balanceOf before the burn not to equal 0 and after the burn to equal 0.
+        expect(await goldfinchIdentity.balanceOf(recipient, tokenId)).to.bignumber.equal(value)
+        await expect(burn(recipient, tokenId, value, new BN(1), owner)).to.be.fulfilled
+        expect(await goldfinchIdentity.balanceOf(recipient, tokenId)).to.bignumber.equal(new BN(0))
       })
     })
 
     it("updates state and emits an event", async () => {
-      // TODO
+      await expect(burn(recipient, tokenId, value, new BN(1), owner)).to.be.fulfilled
+      // (State updates and event emitted are established in `burn()`.)
     })
 
     context("paused", () => {
       it("reverts", async () => {
-        // TODO
+        await goldfinchIdentity.pause()
+        await expect(burn(recipient, tokenId, value, new BN(1), owner)).to.be.rejectedWith(
+          /ERC1155Pausable: token transfer while paused/
+        )
       })
     })
   })
@@ -572,10 +677,6 @@ describe("GoldfinchIdentity", () => {
     })
 
     describe("validates signature", () => {
-      it("rejects if called without signature", async () => {
-        // TODO
-      })
-
       it("rejects incorrect `to` address in hashed message", async () => {
         // TODO
       })
@@ -606,19 +707,19 @@ describe("GoldfinchIdentity", () => {
       it("rejects 0 address", async () => {
         // TODO
       })
-      it("allows account for which token id exists", async () => {
+      it("allows account having token ids", async () => {
         // TODO
       })
-      it("rejects account for which token id does not exist", async () => {
+      it("allows account not having token id", async () => {
         // TODO
       })
     })
 
     describe("validates ids", () => {
-      it("allows token ids that exist", async () => {
+      it("allows for token ids for which minting is supported", async () => {
         // TODO
       })
-      it("rejects token id that does not exist", async () => {
+      it("allows for token id for which minting is not supported", async () => {
         // TODO
       })
       it("rejects ids of different length than values", async () => {
@@ -627,7 +728,10 @@ describe("GoldfinchIdentity", () => {
     })
 
     describe("validates value", () => {
-      it("rejects value that does not equal amount on token", async () => {
+      it("rejects value less than amount on token", async () => {
+        // TODO
+      })
+      it("rejects value greater than amount on token", async () => {
         // TODO
       })
       it("allows values that equal amounts on tokens", async () => {

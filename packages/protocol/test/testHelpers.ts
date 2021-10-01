@@ -37,11 +37,11 @@ import {
   StakingRewardsInstance,
   CommunityRewardsInstance,
   MerkleDistributorInstance,
-  GoldfinchIdentityInstance,
   GoInstance,
+  TestGoldfinchIdentityInstance,
 } from "../typechain/truffle"
 import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/DynamicLeverageRatioStrategy"
-import {MerkleDistributor, CommunityRewards, GoldfinchIdentity, Go} from "../typechain/ethers"
+import {MerkleDistributor, CommunityRewards, GoldfinchIdentity, Go, TestGoldfinchIdentity} from "../typechain/ethers"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import "./types"
 const decimals = new BN(String(1e18))
@@ -240,7 +240,7 @@ async function deployAllContracts(
   stakingRewards: StakingRewardsInstance
   communityRewards: CommunityRewardsInstance
   merkleDistributor: MerkleDistributorInstance | null
-  goldfinchIdentity: GoldfinchIdentityInstance
+  goldfinchIdentity: TestGoldfinchIdentityInstance
   go: GoInstance
 }> {
   await deployments.fixture("base_deploy")
@@ -293,8 +293,8 @@ async function deployAllContracts(
     await communityRewards.grantRole(DISTRIBUTOR_ROLE, merkleDistributor.address)
   }
 
-  const goldfinchIdentity = await getContract<GoldfinchIdentity, GoldfinchIdentityInstance>(
-    "GoldfinchIdentity",
+  const goldfinchIdentity = await getContract<TestGoldfinchIdentity, TestGoldfinchIdentityInstance>(
+    "TestGoldfinchIdentity",
     TRUFFLE_CONTRACT_PROVIDER
   )
   const go = await getContract<Go, GoInstance>("Go", TRUFFLE_CONTRACT_PROVIDER)
