@@ -46,7 +46,7 @@ contract GFI is ERC20PresetMinterPauser {
    * @dev this function will fail if the caller attempts to mint over the current cap
    */
   // solhint-disable-next-line modifiers/ensure-modifiers
-  function mintTo(address account, uint256 amount) external onlyMinter {
+  function mint(address account, uint256 amount) public override onlyMinter {
     require(mintingAmountIsWithinCap(amount, totalSupply(), cap), "Cannot mint more than cap");
     _mint(account, amount);
   }
@@ -71,12 +71,12 @@ contract GFI is ERC20PresetMinterPauser {
   }
 
   modifier onlyOwner() {
-    require(hasRole(OWNER_ROLE, _msgSender()), "Must be owner to modify the cap");
+    require(hasRole(OWNER_ROLE, _msgSender()), "Must be owner");
     _;
   }
 
   modifier onlyMinter() {
-    require(hasRole(MINTER_ROLE, _msgSender()), "Must be owner to modify the cap");
+    require(hasRole(MINTER_ROLE, _msgSender()), "Must be minter");
     _;
   }
 }

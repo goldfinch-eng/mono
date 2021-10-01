@@ -24,14 +24,14 @@ describe("GFI", () => {
   let gfi: GFIInstance
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;[owner, notOwner] = await web3.eth.getAccounts()
+    ;[owner, , notOwner] = await web3.eth.getAccounts()
     const deployments = await testSetup()
     gfi = deployments.gfi
+    await gfi.mint(owner!, new BN(10000))
   })
 
   describe("symbol", () => {
     it("is GFI", async () => {
-      console.log(gfi.constructor.name)
       expect(await gfi.symbol()).to.eq("GFI")
     })
   })
@@ -55,7 +55,9 @@ describe("GFI", () => {
       it("does not allow you to decrease the cap below the total supply", async () => {
         const totalSupply = await gfi.totalSupply({from: owner})
         const belowTotalSupply = totalSupply.sub(new BN(1))
-        expect(gfi.setCap(belowTotalSupply, {from: owner})).to.be.rejected
+        expect(gfi.setCap(belowTotalSupply, {from: owner})).to.be.rejectedWith(
+          /cannot decrease the cap below existing supply/i
+        )
       })
 
       it("emits an event", async () => {
@@ -70,13 +72,13 @@ describe("GFI", () => {
     describe("not as owner", () => {
       it("forbids you from using the setCap function", async () => {
         const cap = await gfi.cap({from: notOwner})
-        expect(gfi.setCap(new BN(100000000000), {from: notOwner})).to.be.rejected
+        expect(gfi.setCap(new BN(100000000000), {from: notOwner})).to.be.rejectedWith(/must be owner/i)
         expect(await gfi.cap({from: notOwner})).to.bignumber.eq(cap)
       })
     })
   })
 
-  describe("mintTo", () => {
+  describe("mint", () => {
     describe("as owner", () => {
       it("minting over the cap fails", async () => {
         const cap = await gfi.cap({from: owner})
@@ -84,7 +86,7 @@ describe("GFI", () => {
         const remainingUnderCap = cap.sub(totalSupply)
         const overCap = remainingUnderCap.add(new BN(1))
 
-        expect(gfi.mintTo(owner!, overCap, {from: owner})).to.be.rejected
+        expect(gfi.mint(owner!, overCap, {from: owner})).to.be.rejectedWith(/Cannot mint more than cap/i)
       })
 
       it("minting up to the cap succeeds", async () => {
@@ -94,7 +96,7 @@ describe("GFI", () => {
 
         const initialBalance = await gfi.balanceOf(owner!)
         const expectedFinalBalance = initialBalance.add(remainingCap)
-        await gfi.mintTo(owner!, remainingCap)
+        await gfi.mint(owner!, remainingCap)
         expect(await gfi.balanceOf(owner!)).to.bignumber.eq(expectedFinalBalance)
       })
     })
@@ -106,7 +108,7 @@ describe("GFI", () => {
         const remainingUnderCap = cap.sub(totalSupply)
         const overCap = remainingUnderCap.add(new BN(1))
 
-        expect(gfi.setCap(overCap, {from: notOwner})).to.be.rejected
+        expect(gfi.mint(notOwner!, overCap, {from: notOwner})).to.be.rejectedWith(/must be minter/i)
         expect(await gfi.cap({from: notOwner})).to.bignumber.equal(cap)
       })
 
@@ -116,7 +118,7 @@ describe("GFI", () => {
         const remainingUnderCap = cap.sub(totalSupply)
         const underCap = remainingUnderCap.sub(new BN(1))
 
-        expect(gfi.setCap(underCap, {from: notOwner})).to.be.rejected
+        expect(gfi.mint(notOwner!, underCap, {from: notOwner})).to.be.rejectedWith(/must be minter/i)
         expect(await gfi.cap({from: notOwner})).to.bignumber.equal(cap)
       })
     })
