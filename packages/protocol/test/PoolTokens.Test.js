@@ -9,15 +9,16 @@ const {
   erc20Transfer,
   erc20Approve,
 } = require("./testHelpers")
-const {OWNER_ROLE, interestAprAsBN} = require("../blockchain_scripts/deployHelpers")
+const {OWNER_ROLE, GO_LISTER_ROLE, interestAprAsBN} = require("../blockchain_scripts/deployHelpers")
 const hre = require("hardhat")
 const BN = require("bn.js")
 const {deployments} = hre
 const TranchedPool = artifacts.require("TranchedPool")
 const {expectEvent} = require("@openzeppelin/test-helpers")
+const {mint} = require("./goldfinchIdentityHelpers")
 
 describe("PoolTokens", () => {
-  let owner, person2, person3, goldfinchConfig, poolTokens, pool, goldfinchFactory, usdc
+  let owner, person2, person3, goldfinchConfig, poolTokens, pool, goldfinchFactory, usdc, goldfinchIdentity
 
   const withPoolSender = async (func, otherPoolAddress) => {
     // We need to fake the address so we can bypass the pool
@@ -33,16 +34,18 @@ describe("PoolTokens", () => {
     // Just to be crystal clear
     owner = protocol_owner
 
-    const {poolTokens, goldfinchConfig, goldfinchFactory, usdc} = await deployAllContracts(deployments)
+    const {poolTokens, goldfinchConfig, goldfinchFactory, usdc, goldfinchIdentity} = await deployAllContracts(
+      deployments
+    )
     await goldfinchConfig.bulkAddToGoList([owner, person2])
     await erc20Transfer(usdc, [person2], usdcVal(1000), owner)
 
-    return {poolTokens, goldfinchConfig, goldfinchFactory, usdc}
+    return {poolTokens, goldfinchConfig, goldfinchFactory, usdc, goldfinchIdentity}
   })
   beforeEach(async () => {
     // Pull in our unlocked accounts
     ;[owner, person2, person3] = await web3.eth.getAccounts()
-    ;({poolTokens, goldfinchConfig, goldfinchFactory, usdc} = await testSetup())
+    ;({poolTokens, goldfinchConfig, goldfinchFactory, usdc, goldfinchIdentity} = await testSetup())
 
     await poolTokens._disablePoolValidation(true)
   })
@@ -340,18 +343,31 @@ describe("PoolTokens", () => {
       })
 
       context("account with 0 balance GoldfinchIdentity token (id 0)", () => {
+        beforeEach(async () => {
+          const goldfinchIdentityTokenId = new BN(0)
+          expect(await goldfinchIdentity.balanceOf(person3, goldfinchIdentityTokenId)).to.bignumber.equal(new BN(0))
+        })
+
         context("account is on legacy go-list", () => {
+          beforeEach(async () => {
+            expect(await goldfinchConfig.goList(person3)).to.equal(false)
+            expect(await goldfinchConfig.hasRole(GO_LISTER_ROLE, owner)).to.equal(true)
+            await goldfinchConfig.addToGoList(person3, {from: owner})
+            expect(await goldfinchConfig.goList(person3)).to.equal(true)
+          })
+
           it("allows", async () => {
-            // TODO Establish preconditions
-            await goldfinchConfig.addToGoList(person3)
             return expect(
               withPoolSender(() => poolTokens.mint({principalAmount: String(amount), tranche: "1"}, person3))
             ).to.be.fulfilled
           })
         })
         context("account is not on legacy go-list", () => {
+          beforeEach(async () => {
+            expect(await goldfinchConfig.goList(person3)).to.equal(false)
+          })
+
           it("rejects", async () => {
-            // TODO Establish preconditions
             await expect(
               withPoolSender(() => poolTokens.mint({principalAmount: String(amount), tranche: "1"}, person3))
             ).to.be.rejectedWith(/has not been go-listed/)
@@ -360,18 +376,43 @@ describe("PoolTokens", () => {
       })
 
       context("account with > 0 balance GoldfinchIdentity token (id 0)", () => {
+        beforeEach(async () => {
+          const goldfinchIdentityTokenId = new BN(0)
+          const goldfinchIdentityTokenAmount = new BN(1)
+          await mint(
+            hre,
+            goldfinchIdentity,
+            person3,
+            goldfinchIdentityTokenId,
+            goldfinchIdentityTokenAmount,
+            new BN(0),
+            owner
+          )
+          expect(await goldfinchIdentity.balanceOf(person3, goldfinchIdentityTokenId)).to.bignumber.equal(
+            goldfinchIdentityTokenAmount
+          )
+        })
+
         context("account is on legacy go-list", () => {
+          beforeEach(async () => {
+            expect(await goldfinchConfig.goList(person3)).to.equal(false)
+            expect(await goldfinchConfig.hasRole(GO_LISTER_ROLE, owner)).to.equal(true)
+            await goldfinchConfig.addToGoList(person3, {from: owner})
+            expect(await goldfinchConfig.goList(person3)).to.equal(true)
+          })
+
           it("allows", async () => {
-            // TODO Establish preconditions
-            await goldfinchConfig.addToGoList(person3)
             return expect(
               withPoolSender(() => poolTokens.mint({principalAmount: String(amount), tranche: "1"}, person3))
             ).to.be.fulfilled
           })
         })
         context("account is not on legacy go-list", () => {
+          beforeEach(async () => {
+            expect(await goldfinchConfig.goList(person3)).to.equal(false)
+          })
+
           it("allows", async () => {
-            // TODO Establish preconditions
             return expect(
               withPoolSender(() => poolTokens.mint({principalAmount: String(amount), tranche: "1"}, person3))
             ).to.be.fulfilled

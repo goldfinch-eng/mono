@@ -197,8 +197,7 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
     address to,
     uint256 tokenId
   ) internal virtual override(ERC721PresetMinterPauserAutoIdUpgradeSafe) whenNotPaused {
-    bool goListed = IGo(config.goAddress()).go(to);
-    require(goListed || to == address(0), "This address has not been go-listed");
+    require(to == address(0) || IGo(config.goAddress()).go(to), "This address has not been go-listed");
     super._beforeTokenTransfer(from, to, tokenId);
   }
 
