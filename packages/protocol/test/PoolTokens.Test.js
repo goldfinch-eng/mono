@@ -161,6 +161,12 @@ describe("PoolTokens", () => {
       expect(tokenMinted.args.amount).to.bignumber.equal(amount)
       expect(tokenMinted.args.tranche).to.bignumber.equal(new BN(1))
     })
+
+    context("paused", async () => {
+      it("reverts", async () => {
+        // TODO
+      })
+    })
   })
 
   describe("redeem", async () => {
@@ -289,6 +295,12 @@ describe("PoolTokens", () => {
       const tokenInfo = await poolTokens.getTokenInfo(tokenIdA)
       expect(tokenRedeemedEvent.args.tranche).to.bignumber.equal(tokenInfo.tranche)
     })
+
+    context("paused", async () => {
+      it("reverts", async () => {
+        // TODO
+      })
+    })
   })
 
   describe("burning", async () => {
@@ -342,6 +354,32 @@ describe("PoolTokens", () => {
       expect(tokenBurnedEvent.args.owner).to.equal(person2)
       expect(tokenBurnedEvent.args.pool).to.equal(pool.address)
       expect(tokenBurnedEvent.args.tokenId).to.bignumber.equal(tokenId)
+    })
+
+    context("paused", async () => {
+      it("reverts", async () => {
+        // TODO
+      })
+    })
+  })
+
+  describe("safeTransfer", () => {
+    // TODO
+
+    context("paused", async () => {
+      it("reverts", async () => {
+        // TODO
+      })
+    })
+  })
+
+  describe("safeTransferFrom", () => {
+    // TODO
+
+    context("paused", async () => {
+      it("reverts", async () => {
+        // TODO
+      })
     })
   })
 
@@ -508,6 +546,12 @@ describe("PoolTokens", () => {
           who: owner,
           configAddress: newConfig.address,
         })
+      })
+    })
+
+    context("paused", async () => {
+      it("does not revert", async () => {
+        // TODO
       })
     })
   })
