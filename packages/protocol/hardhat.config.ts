@@ -8,7 +8,6 @@ import "hardhat-gas-reporter"
 import "hardhat-contract-sizer" // npx hardhat size-contracts
 import "@tenderly/hardhat-tenderly"
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const config = require("./hardhat.config.base")
+import config from "./hardhat.config.base"
 
-module.exports = config
+export default config

@@ -29,7 +29,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const {tranchedPool} = await createPoolWithCreditLine({
     people: {owner, borrower},
     goldfinchFactory,
-    juniorFeePercent: juniorFeePercent.toNumber(),
+    juniorFeePercent: juniorFeePercent,
     limit,
     interestApr,
     paymentPeriodInDays,

@@ -44,20 +44,7 @@ function EntityForm({onClose}) {
               >
                 this form
               </a>
-              . Then, get your free accredited investor verification from{" "}
-              <a
-                className="link"
-                target="_blank"
-                rel="noopener noreferrer"
-                href="https://parallelmarkets.com/get-accredited/"
-              >
-                parallelmarkets.com
-              </a>{" "}
-              and email your electronic certificate to{" "}
-              <a className="link" href="mailto:verify@goldfinch.finance">
-                verify@goldfinch.finance
-              </a>
-              .
+              . Then we will reach out with next steps.
             </div>
           </>
         )
@@ -123,20 +110,11 @@ function USForm({kycStatus, entityType, onClose, onEvent, network, address}) {
             {verifyIdSection}
             <h2>Step 2: Verify Accredited Status</h2>
             <div className="form-message paragraph">
-              Get your free accredited investor verification from{" "}
-              <a
-                className="link"
-                target="_blank"
-                rel="noopener noreferrer"
-                href="https://parallelmarkets.com/get-accredited/"
-              >
-                parallelmarkets.com
+              To verify your accredited status, start by filling out{" "}
+              <a className="link" target="_blank" rel="noopener noreferrer" href="https://forms.gle/DmhWgpJUbMphtqC19">
+                this form
               </a>
-              . When you receive your electronic certificate, email it to{" "}
-              <a className="link" href="mailto:verify@goldfinch.finance">
-                verify@goldfinch.finance
-              </a>
-              , along with your Metamask address.
+              . Then we will reach out with next steps.
             </div>
           </>
         )

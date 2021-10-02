@@ -1,0 +1,33 @@
+.badge-container {
+  height: 22px;
+  width: fit-content;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .badge-content {
+    font-size: 12px;
+    padding: 8px;
+  }
+
+  &.gray {
+    background-color: $sand;
+
+    .badge-content {
+      color: $sand-xxxdark;
+    }
+  }
+
+  &.blue {
+    background-color: $blue-xlight;
+
+    .badge-content {
+      color:#599BC0;
+    }
+  }
+  
+  &.fixed-width {
+    width: 48px;
+  }
+}

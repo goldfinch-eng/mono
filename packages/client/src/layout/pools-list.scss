@@ -25,6 +25,17 @@
     }
   }
 
+  .pool-card {
+    position: relative;
+    justify-content: space-between;
+
+    .pool-capacity {
+      position: absolute;
+      top: -6px;
+      right: -8px;
+    }
+  }
+
   .fallback-content {
     height: 45px;
   }
@@ -68,6 +79,10 @@
     .table-cell:last-child {
       width: 25%;
     }
+  }
+
+  .table-spaced .table-cell.col16.apy {
+    white-space: nowrap;
   }
 }
 

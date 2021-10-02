@@ -772,7 +772,7 @@ async function deployBorrower(hre: HardhatRuntimeEnvironment, {config}: DeployOp
   return borrower
 }
 
-module.exports = {
+export {
   baseDeploy,
   deployPoolTokens,
   deployTransferRestrictedVault,
