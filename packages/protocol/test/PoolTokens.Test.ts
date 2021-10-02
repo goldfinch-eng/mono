@@ -12,11 +12,24 @@ import {
 import {OWNER_ROLE, interestAprAsBN, GO_LISTER_ROLE} from "../blockchain_scripts/deployHelpers"
 import hre from "hardhat"
 import BN from "bn.js"
-import {assertNonNullable} from "@goldfinch-eng/utils"
+import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
 const {deployments} = hre
 const TranchedPool = artifacts.require("TranchedPool")
 import {expectEvent} from "@openzeppelin/test-helpers"
 import {mint} from "./goldfinchIdentityHelpers"
+
+const testSetup = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
+  const [_owner, _person2, _person3] = await web3.eth.getAccounts()
+  const owner = asNonNullable(_owner)
+  const person2 = asNonNullable(_person2)
+  const person3 = asNonNullable(_person3)
+
+  const {poolTokens, goldfinchConfig, goldfinchFactory, usdc, goldfinchIdentity} = await deployAllContracts(deployments)
+  await goldfinchConfig.bulkAddToGoList([owner, person2])
+  await erc20Transfer(usdc, [person2], usdcVal(1000), owner)
+
+  return {owner, person2, person3, poolTokens, goldfinchConfig, goldfinchFactory, usdc, goldfinchIdentity}
+})
 
 describe("PoolTokens", () => {
   let owner, person2, person3, goldfinchConfig, poolTokens, pool, goldfinchFactory, usdc, goldfinchIdentity
@@ -30,24 +43,10 @@ describe("PoolTokens", () => {
     })
   }
 
-  const testSetup = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
-    const {protocol_owner} = await getNamedAccounts()
-    // Just to be crystal clear
-    owner = protocol_owner
-
-    const {poolTokens, goldfinchConfig, goldfinchFactory, usdc, goldfinchIdentity} = await deployAllContracts(
-      deployments
-    )
-    await goldfinchConfig.bulkAddToGoList([owner, person2])
-    await erc20Transfer(usdc, [person2], usdcVal(1000), owner)
-
-    return {poolTokens, goldfinchConfig, goldfinchFactory, usdc, goldfinchIdentity}
-  })
   beforeEach(async () => {
-    // Pull in our unlocked accounts
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;[owner, person2, person3] = await web3.eth.getAccounts()
-    ;({poolTokens, goldfinchConfig, goldfinchFactory, usdc, goldfinchIdentity} = await testSetup())
+    ;({owner, person2, person3, poolTokens, goldfinchConfig, goldfinchFactory, usdc, goldfinchIdentity} =
+      await testSetup())
 
     await poolTokens._disablePoolValidation(true)
   })
