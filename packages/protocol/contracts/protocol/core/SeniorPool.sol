@@ -205,16 +205,6 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   function investJunior(ITranchedPool pool, uint256 amount) public override whenNotPaused nonReentrant onlyAdmin {
     require(validPool(pool), "Pool must be valid");
 
-    // We don't intend to support allowing the senior pool to invest in the junior tranche if it
-    // has already invested in the senior tranche, so we prohibit that here. Note though that we
-    // don't care to prohibit the inverse order, of the senior pool investing in the senior
-    // tranche after investing in the junior tranche.
-    ITranchedPool.TrancheInfo memory seniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Senior));
-    require(
-      seniorTranche.principalDeposited == 0,
-      "SeniorPool cannot invest in junior tranche of tranched pool with non-empty senior tranche."
-    );
-
     if (compoundBalance > 0) {
       _sweepFromCompound();
     }
