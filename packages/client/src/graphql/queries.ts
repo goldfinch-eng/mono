@@ -1,8 +1,8 @@
 import gql from "graphql-tag"
 
-export const getSeniorPoolByID = gql(`
-  query getSeniorPoolByID($id: ID!) {
-    seniorPool(id: $id) {
+export const GET_SENIOR_POOL_AND_PROVIDER_DATA = gql(`
+  query getSeniorPoolAndProviders($userID: ID!) {
+    seniorPools(first: 1) {
       id
       lastestPoolStatus {
         id
@@ -20,12 +20,7 @@ export const getSeniorPoolByID = gql(`
         remainingCapacity
       }
     }
-  }
-`)
-
-export const getUserByID = gql(`
-  query getUserByID($id: ID!) {
-    user(id: $id) {
+    user(id: $userID) {
       id
     }
   }

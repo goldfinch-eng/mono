@@ -1,97 +1,56 @@
 import {useState, useEffect, useContext} from "react"
-import EarnActionsContainer from "../earnActionsContainerV2"
-import PoolStatus from "../poolStatusV2"
+import EarnActionsContainer from "../earnActionsContainer"
+import PoolStatus from "../poolStatus"
 import ConnectionNotice from "../connectionNotice"
 import {AppContext} from "../../App"
 import InvestorNotice from "../investorNotice"
-import {assertNonNullable, displayDollars} from "../../utils"
+import {displayDollars} from "../../utils"
 import {usdcFromAtomic} from "../../ethereum/erc20"
 import {useStaleWhileRevalidating} from "../../hooks/useAsync"
 import {eligibleForSeniorPool, useKYC} from "../../hooks/useKYC"
-import {useApolloClient} from "@apollo/client"
-import {getSeniorPoolByID, getUserByID} from "../../graphql/queries"
-import {User, SeniorPool, Query} from "../../graphql/types"
-import BigNumber from "bignumber.js"
+import {ApolloQueryResult, useApolloClient} from "@apollo/client"
+import {GET_SENIOR_POOL_AND_PROVIDER_DATA} from "../../graphql/queries"
+import {parseSeniorPool, parseUser} from "../../helpers"
+import {Query} from "../../graphql/types"
+import {CapitalProvider, emptyCapitalProvider, PoolData} from "../../ethereum/pool"
 
 function SeniorPoolViewV2(): JSX.Element {
-  const {pool, user, goldfinchConfig} = useContext(AppContext)
-  const [capitalProvider, setCapitalProvider] = useState<User>()
-  const [poolData, setPoolData] = useState<SeniorPool>()
+  const {user, goldfinchConfig} = useContext(AppContext)
+  const [capitalProvider, setCapitalProvider] = useState<CapitalProvider>(emptyCapitalProvider())
+  const [poolData, setPoolData] = useState<PoolData>()
   const client = useApolloClient()
 
   const kycResult = useKYC()
   const kyc = useStaleWhileRevalidating(kycResult)
 
   useEffect(() => {
-    async function refreshAllData() {
-      const capitalProviderAddress = user.loaded && user.address
-      assertNonNullable(pool)
-
-      refreshPoolData(pool.address)
-      refreshCapitalProviderData(capitalProviderAddress)
-    }
-
-    if (pool) {
-      refreshAllData()
-    }
-  }, [pool, user])
+    const capitalProviderAddress = user.loaded && user.address
+    refreshData(capitalProviderAddress)
+  }, [user])
 
   async function actionComplete() {
-    assertNonNullable(pool)
-
-    await refreshPoolData(pool.address)
-    return refreshCapitalProviderData(capitalProvider!.id)
+    return await refreshData(capitalProvider.address)
   }
 
-  async function refreshCapitalProviderData(address: string | boolean) {
-    if (address) {
-      const {data} = await client.query<User>({query: getUserByID, variables: {id: address.toLowerCase()}})
-      console.log(data)
-      setCapitalProvider(data)
-    }
-  }
-
-  function remainingCapacity(this: any, maxPoolCapacity: BigNumber): BigNumber {
-    let cappedBalance = BigNumber.min(this.totalPoolAssets, maxPoolCapacity)
-    return new BigNumber(maxPoolCapacity).minus(cappedBalance)
-  }
-
-  async function refreshPoolData(address: string) {
+  async function refreshData(capitalProviderAddress: string | false) {
     const {
-      data: {seniorPool},
-    } = await client.query<Query>({query: getSeniorPoolByID, variables: {id: address.toLowerCase()}})
-
-    const seniorPoolData = {
-      ...seniorPool,
-      lastestPoolStatus: {
-        ...seniorPool?.lastestPoolStatus,
-        balance: new BigNumber(seniorPool?.lastestPoolStatus?.balance),
-        compoundBalance: new BigNumber(seniorPool?.lastestPoolStatus?.compoundBalance),
-        cumulativeDrawdowns: new BigNumber(seniorPool?.lastestPoolStatus?.cumulativeDrawdowns),
-        cumulativeWritedowns: new BigNumber(seniorPool?.lastestPoolStatus?.cumulativeWritedowns),
-        defaultRate: new BigNumber(seniorPool?.lastestPoolStatus?.defaultRate),
-        estimatedApy: new BigNumber(seniorPool?.lastestPoolStatus?.estimatedApy),
-        estimatedTotalInterest: new BigNumber(seniorPool?.lastestPoolStatus?.estimatedTotalInterest),
-        id: new BigNumber(seniorPool!.lastestPoolStatus.id),
-        rawBalance: new BigNumber(seniorPool?.lastestPoolStatus?.rawBalance),
-        totalLoansOutstanding: new BigNumber(seniorPool?.lastestPoolStatus?.totalLoansOutstanding),
-        totalPoolAssets: new BigNumber(seniorPool?.lastestPoolStatus?.totalPoolAssets),
-        totalShares: new BigNumber(seniorPool?.lastestPoolStatus?.totalShares),
-        remainingCapacity: remainingCapacity,
+      data: {seniorPools, user: capitalProvider},
+    }: ApolloQueryResult<Query> = await client.query({
+      query: GET_SENIOR_POOL_AND_PROVIDER_DATA,
+      variables: {
+        userID: capitalProviderAddress ? capitalProviderAddress.toLowerCase() : "",
       },
-    }
+    })
 
-    setPoolData(seniorPoolData)
-  }
+    const seniorPool = seniorPools![0]!
 
-  let earnMessage = "Loading..."
-  if (capitalProvider || user.noWeb3) {
-    earnMessage = "Pools / Senior Pool"
+    setCapitalProvider(parseUser(capitalProvider))
+    setPoolData(parseSeniorPool(seniorPool))
   }
 
   let maxCapacityNotice = <></>
   let maxCapacity = goldfinchConfig.totalFundsLimit
-  if (poolData && goldfinchConfig && poolData.lastestPoolStatus?.remainingCapacity(maxCapacity).isEqualTo("0")) {
+  if (poolData && goldfinchConfig && poolData.remainingCapacity(maxCapacity).isEqualTo("0")) {
     maxCapacityNotice = (
       <div className="info-banner background-container">
         <div className="message">
@@ -106,13 +65,13 @@ function SeniorPoolViewV2(): JSX.Element {
 
   return (
     <div className="content-section">
-      <div className="page-header"> {earnMessage}</div>
+      <div className="page-header">{capitalProvider.loaded || user.noWeb3 ? "Pools / Senior Pool" : "Loading..."}</div>
       <ConnectionNotice requireSignIn={true} requireKYC={{kyc: kycResult, condition: eligibleForSeniorPool}} />
       {maxCapacityNotice}
       <InvestorNotice />
       <EarnActionsContainer
         poolData={poolData}
-        capitalProvider={capitalProvider!}
+        capitalProvider={capitalProvider}
         actionComplete={actionComplete}
         kyc={kyc}
       />

@@ -23,7 +23,7 @@ import SeniorPoolViewV2 from "./components/pools/seniorPoolViewV2"
 import VerifyIdentity from "./components/verifyIdentity"
 import TranchedPoolView from "./components/pools/tranchedPoolView"
 import {SessionData} from "./types/session.js"
-import {apolloClient} from "./graphql"
+import {apolloClient} from "./graphql/client"
 import {ApolloProvider} from "@apollo/client"
 
 export interface NetworkConfig {
