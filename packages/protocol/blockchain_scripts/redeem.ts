@@ -22,8 +22,8 @@ async function main() {
   console.log(`Found ${events.length} tokens for the senior pool`)
 
   for (const event of events) {
-    const tokenId = event.args.tokenId
-    const poolAddress = event.args.pool
+    const tokenId = event.returnValues.tokenId
+    const poolAddress = event.returnValues.pool
     const tranchedPool = await getContract<TranchedPool, TranchedPoolInstance>(
       "TranchedPool",
       TRUFFLE_CONTRACT_PROVIDER,

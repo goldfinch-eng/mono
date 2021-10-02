@@ -11,7 +11,15 @@ Goldfinch is a lending protocol built on the blockchain. This is a monorepo cont
 
 ### Cloud setup
 
-Click the gitpod link above, and start developing immediately from your browser. Done!
+We use Github Codespaces for cloud development. Goldfinch eng team members can simply click "Code" from the main repo page, and create a Codespace. Some key things to be aware of.
+  - You can actually use your local VS Code instance (highly recommended) and connect directly to the cloud. You can also use a browser instance of VSCode if you like.
+  - I would recommend going into your [personal codespace settings](https://github.com/settings/codespaces), and turning your Editor preference to "Visual Studio Code". This will default new Codespace instances to open up in your local VSCode, rather than the browser.
+  - Choosing a 4-core machine is sufficient.
+
+**Tips**
+  - Codespaces has awesome "personalization" support through the use of `dotfiles` repos. If you set up a public repo called `dotfiles` under your Github handle, then Codespaces will automatically pull this in and run setup scripts, or use the bash_profile or what have you. It actually just takes all the files that start with `.` within that repo, and symlinks them to the Codespaces home directory. You can fork my dotfiles repo [here](https://github.com/blakewest/dotfiles) if you want.
+  - Once forked (or if you have your own), then go to your [personal codespace settings](https://github.com/settings/codespaces) and turn on "Automatically import Dotfiles", and from then on it will "just work", and your coding experience will feel right at home.
+  - Codespaces always use VSCode. But VS Code has plugins for 'vim mode" if you want that.
 
 ### Local setup
 
@@ -46,7 +54,7 @@ npm run bootstrap
 #### One time setup
 
 - Create a Goldfinch specific Metamask, which you can use for testing. The easiest way to do this is by creating a separate Chrome profile for Goldfinch, and then simply installing the Metamask extension.
-- Ensure you have Java installed (Firebase emulator requires the JVM)
+- Ensure you have Java installed (Firebase emulator requires the JVM) -> *Not required if you use Codespaces*
 - Copy `.env.example` to `.env.local` (the local will be ignored from git).
 - Add the following into your new `.env.local` file. Our local dev scripts will use these vars to automatically send you test ETH, and give you a credit line and USDC to play with.
 
@@ -56,10 +64,6 @@ npm run bootstrap
   ```
 
 - If you want the `client` to use variables in your `.env.local`, create a symlink to this file from inside the `packages/client` dir, or else create a separate `packages/client/.env.local` file.
-
-***Note**: To find the borrower contract address, you'll need to run `npm run start`, and then find the line in the console output that says `[blockchain] Created borrower contract: {borrower contract address} for {your wallet address}` Use the borrower contract address and paste it into your .env.local!*
-
-***Also note**: If/when we upgrade the borrower contract, you will need to update that address.*
 
 #### Running the stack
 
@@ -79,18 +83,6 @@ Changes to smart contracts will require re-compiling and re-deploying. You can d
 ***Note** When running with `start:local`, the Fake USDC address that we create will also not be visible to Metamask by default. So you'll need to add this as well
 by looking at the terminal output of the `@goldfinch-eng/protocol` start command. Search "USDC Address", and you should see something. Take that address, and
 then go to `Add Token` in Metamask, and paste it in there. Your fake USDC balance should show up.*
-
-#### Gitpod notes
-
-When using Gitpod, the local blockchain that gets spun up will not be visible to Metamask by default. So if you try to join
-"localhost 8545", it will not connect. You can fix this by creating a custom network on Metamask that points to the open port on your Gitpod instance.
-This is easy.
-
-1. Open the Gitpod front-end in the browser,
-2. Copy that url, and you should see a `3000` at the beginning of it. Change that to `8545`
-3. Open Metamask, and click `Custom RPC`. Paste in that url from step 2 into the `New RPC URL` area.
-4. Set the chainID to be 31337
-4. Hit save. You're done.
 
 ### Gasless transactions
 

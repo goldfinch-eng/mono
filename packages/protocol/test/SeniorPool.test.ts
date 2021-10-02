@@ -120,7 +120,7 @@ describe("SeniorPool", () => {
       paymentPeriodInDays,
       termInDays,
       lateFeeApr,
-      juniorFeePercent: juniorFeePercent.toNumber(),
+      juniorFeePercent,
       usdc,
     }))
 
@@ -321,6 +321,7 @@ describe("SeniorPool", () => {
         deadline,
       })
       const wallet = await getWallet(capitalProviderAddress)
+      assertNonNullable(wallet)
       const {v, r, s} = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(wallet.privateKey.slice(2), "hex"))
 
       // Sanity check that deposit is correct

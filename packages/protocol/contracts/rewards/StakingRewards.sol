@@ -429,12 +429,11 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     stakingToken().safeTransfer(msg.sender, amount);
   }
 
-  function unstakeAndWithdraw(uint256 tokenId, uint256 usdcAmount)
-    public
-    nonReentrant
-    whenNotPaused
-    updateReward(tokenId)
-  {
+  function unstakeAndWithdraw(uint256 tokenId, uint256 usdcAmount) public nonReentrant whenNotPaused {
+    _unstakeAndWithdraw(tokenId, usdcAmount);
+  }
+
+  function _unstakeAndWithdraw(uint256 tokenId, uint256 usdcAmount) internal updateReward(tokenId) {
     ISeniorPool seniorPool = config.getSeniorPool();
     IFidu fidu = config.getFidu();
 
@@ -448,15 +447,38 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     config.getUSDC().safeTransfer(msg.sender, usdcAmountReceived);
   }
 
-  function unstakeAndWithdrawInFidu(uint256 tokenId, uint256 fiduAmount)
+  function unstakeAndWithdrawMultiple(uint256[] calldata tokenIds, uint256[] calldata usdcAmounts)
     public
     nonReentrant
     whenNotPaused
-    updateReward(tokenId)
   {
+    require(tokenIds.length == usdcAmounts.length, "tokenIds and usdcAmounts must be the same length");
+
+    for (uint256 i = 0; i < usdcAmounts.length; i++) {
+      _unstakeAndWithdraw(tokenIds[i], usdcAmounts[i]);
+    }
+  }
+
+  function unstakeAndWithdrawInFidu(uint256 tokenId, uint256 fiduAmount) public nonReentrant whenNotPaused {
+    _unstakeAndWithdrawInFidu(tokenId, fiduAmount);
+  }
+
+  function _unstakeAndWithdrawInFidu(uint256 tokenId, uint256 fiduAmount) internal updateReward(tokenId) {
     uint256 usdcAmount = config.getSeniorPool().withdrawInFidu(fiduAmount);
     _unstake(tokenId, fiduAmount);
     config.getUSDC().safeTransfer(msg.sender, usdcAmount);
+  }
+
+  function unstakeAndWithdrawMultipleInFidu(uint256[] calldata tokenIds, uint256[] calldata fiduAmounts)
+    public
+    nonReentrant
+    whenNotPaused
+  {
+    require(tokenIds.length == fiduAmounts.length, "tokenIds and usdcAmounts must be the same length");
+
+    for (uint256 i = 0; i < fiduAmounts.length; i++) {
+      _unstakeAndWithdrawInFidu(tokenIds[i], fiduAmounts[i]);
+    }
   }
 
   function _unstake(uint256 tokenId, uint256 amount) internal {

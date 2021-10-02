@@ -43,6 +43,9 @@ function PoolStatus({poolData}: PoolStatusProps) {
       <InfoSection rows={deriveRows()} />
       <RecentRepayments />
       <div className="pool-links">
+        <a href={"https://dune.xyz/goldfinch/goldfinch"} target="_blank" rel="noopener noreferrer">
+          Dashboard<span className="outbound-link">{iconOutArrow}</span>
+        </a>
         <a href={`https://etherscan.io/address/${poolData?.pool.address}`} target="_blank" rel="noopener noreferrer">
           Pool<span className="outbound-link">{iconOutArrow}</span>
         </a>

@@ -29,7 +29,7 @@ import {
 import {time, expectEvent} from "@openzeppelin/test-helpers"
 import {getApprovalDigest, getWallet} from "./permitHelpers"
 import {ecsign} from "ethereumjs-util"
-import {asNonNullable} from "@goldfinch-eng/utils"
+import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
 
 // Typechain doesn't generate types for solidity enums, so redefining here
 enum LockupPeriod {
@@ -38,12 +38,25 @@ enum LockupPeriod {
   TwentyFourMonths,
 }
 
-const BEFORE_EACH_TIMEOUT = 30000
-const TEST_TIMEOUT = 30000
+async function quoteFiduToUSDC({
+  fiduAmount,
+  seniorPool,
+}: {
+  fiduAmount: BN
+  seniorPool: SeniorPoolInstance
+}): Promise<BN> {
+  return fiduAmount
+    .mul(await seniorPool.sharePrice())
+    .div(new BN(String(1e18))) //share price mantissa
+    .div(new BN(String(1e18)).div(new BN(String(1e6)))) // usdc mantissa
+}
+
+function withWithdrawalFee(usdcAmount: BN): BN {
+  const seniorPoolWithdrawalFeeDenominator = new BN(200)
+  return usdcAmount.sub(usdcAmount.div(seniorPoolWithdrawalFeeDenominator))
+}
 
 describe("StakingRewards", function () {
-  this.timeout(TEST_TIMEOUT)
-
   let owner: string,
     investor: string,
     anotherUser: string,
@@ -65,8 +78,6 @@ describe("StakingRewards", function () {
 
   const yearInSeconds = new BN(365 * 24 * 60 * 60)
   const halfYearInSeconds = yearInSeconds.div(new BN(2))
-
-  const seniorPoolWithdrawalFeeDenominator = new BN(200)
 
   const lockupPeriodToDuration = {
     [LockupPeriod.SixMonths]: halfYearInSeconds,
@@ -120,14 +131,12 @@ describe("StakingRewards", function () {
     await stakingRewards.loadRewards(amount)
   }
 
-  beforeEach(async function () {
-    this.timeout(BEFORE_EACH_TIMEOUT)
-    // eslint-disable-next-line @typescript-eslint/no-extra-semi
+  const testSetup = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
     const [_owner, _investor, _anotherUser] = await web3.eth.getAccounts()
-    owner = asNonNullable(_owner)
-    investor = asNonNullable(_investor)
-    anotherUser = asNonNullable(_anotherUser)
-    ;({goldfinchConfig, seniorPool, gfi, stakingRewards, fidu, usdc} = await deployAllContracts(deployments))
+    const owner = asNonNullable(_owner)
+    const investor = asNonNullable(_investor)
+    const anotherUser = asNonNullable(_anotherUser)
+    const {goldfinchConfig, seniorPool, gfi, stakingRewards, fidu, usdc} = await deployAllContracts(deployments)
     await goldfinchConfig.bulkAddToGoList([owner, investor, anotherUser])
     await erc20Approve(usdc, investor, usdcVal(10000), [owner])
     await erc20Transfer(usdc, [investor], usdcVal(10000), owner)
@@ -138,32 +147,71 @@ describe("StakingRewards", function () {
     await erc20Approve(usdc, seniorPool.address, usdcVal(50000), [anotherUser])
     let receipt = await seniorPool.deposit(usdcVal(50000), {from: anotherUser})
     let depositEvent = getFirstLog<DepositMade>(decodeLogs(receipt.receipt.rawLogs, seniorPool, "DepositMade"))
-    anotherUserFiduAmount = depositEvent.args.shares
+    const anotherUserFiduAmount = depositEvent.args.shares
 
     await erc20Approve(usdc, seniorPool.address, usdcVal(5000), [investor])
     receipt = await seniorPool.deposit(usdcVal(5000), {from: investor})
     depositEvent = getFirstLog<DepositMade>(decodeLogs(receipt.receipt.rawLogs, seniorPool, "DepositMade"))
-    fiduAmount = new BN(depositEvent.args.shares)
+    const fiduAmount = new BN(depositEvent.args.shares)
 
-    targetCapacity = bigVal(1000)
-    maxRate = bigVal(1000)
-    minRate = bigVal(100)
-    maxRateAtPercent = new BN(5).mul(new BN(String(1e17))) // 50%
-    minRateAtPercent = new BN(3).mul(new BN(String(1e18))) // 300%
+    const targetCapacity = bigVal(1000)
+    const maxRate = bigVal(1000)
+    const minRate = bigVal(100)
+    const maxRateAtPercent = new BN(5).mul(new BN(String(1e17))) // 50%
+    const minRateAtPercent = new BN(3).mul(new BN(String(1e18))) // 300%
 
     await stakingRewards.setTargetCapacity(targetCapacity)
     await stakingRewards.setMaxRate(maxRate)
     await stakingRewards.setMinRate(minRate)
     await stakingRewards.setMinRateAtPercent(minRateAtPercent)
     await stakingRewards.setMaxRateAtPercent(maxRateAtPercent)
+
+    return {
+      owner,
+      investor,
+      anotherUser,
+      goldfinchConfig,
+      seniorPool,
+      gfi,
+      stakingRewards,
+      fidu,
+      usdc,
+      targetCapacity,
+      maxRate,
+      minRate,
+      maxRateAtPercent,
+      minRateAtPercent,
+      fiduAmount,
+      anotherUserFiduAmount,
+    }
+  })
+
+  beforeEach(async () => {
+    // eslint-disable-next-line @typescript-eslint/no-extra-semi
+    ;({
+      owner,
+      investor,
+      anotherUser,
+      goldfinchConfig,
+      seniorPool,
+      gfi,
+      stakingRewards,
+      fidu,
+      usdc,
+      targetCapacity,
+      maxRate,
+      minRate,
+      maxRateAtPercent,
+      minRateAtPercent,
+      fiduAmount,
+      anotherUserFiduAmount,
+    } = await testSetup())
   })
 
   describe("stake", () => {
     let totalRewards: BN
 
     beforeEach(async function () {
-      this.timeout(BEFORE_EACH_TIMEOUT)
-
       // Mint rewards for a full year
       totalRewards = maxRate.mul(yearInSeconds)
       await mintRewards(totalRewards)
@@ -308,6 +356,7 @@ describe("StakingRewards", function () {
         deadline,
       })
       const wallet = await getWallet(investor)
+      assertNonNullable(wallet)
       const {v, r, s} = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(wallet.privateKey.slice(2), "hex"))
 
       const balanceBefore = await usdc.balanceOf(investor)
@@ -350,6 +399,7 @@ describe("StakingRewards", function () {
           deadline,
         })
         const wallet = await getWallet(investor)
+        assertNonNullable(wallet)
         const {v, r, s} = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(wallet.privateKey.slice(2), "hex"))
 
         await stakingRewards.pause()
@@ -416,6 +466,7 @@ describe("StakingRewards", function () {
         deadline,
       })
       const wallet = await getWallet(investor)
+      assertNonNullable(wallet)
       const {v, r, s} = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(wallet.privateKey.slice(2), "hex"))
 
       const balanceBefore = await usdc.balanceOf(investor)
@@ -470,6 +521,7 @@ describe("StakingRewards", function () {
           deadline,
         })
         const wallet = await getWallet(investor)
+        assertNonNullable(wallet)
         const {v, r, s} = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(wallet.privateKey.slice(2), "hex"))
 
         const balanceBefore = await usdc.balanceOf(investor)
@@ -496,8 +548,6 @@ describe("StakingRewards", function () {
     let rewardRate: BN
 
     beforeEach(async function () {
-      this.timeout(BEFORE_EACH_TIMEOUT)
-
       // Mint rewards for a full year
       rewardRate = bigVal(100)
 
@@ -563,7 +613,6 @@ describe("StakingRewards", function () {
 
     context("position is vesting", async () => {
       beforeEach(async function () {
-        this.timeout(BEFORE_EACH_TIMEOUT)
         // Enable vesting
         await stakingRewards.setVestingSchedule(yearInSeconds)
       })
@@ -623,8 +672,6 @@ describe("StakingRewards", function () {
     let rewardRate: BN
 
     beforeEach(async function () {
-      this.timeout(BEFORE_EACH_TIMEOUT)
-
       // Mint rewards for a full year
       rewardRate = bigVal(100)
 
@@ -645,24 +692,20 @@ describe("StakingRewards", function () {
       const tokenId = await stake({amount: fiduAmount, from: investor})
 
       const withdrawAmount = fiduAmount.div(new BN(2))
-      const withdrawAmountInUsdc = withdrawAmount
-        .mul(await seniorPool.sharePrice())
-        .div(new BN(String(1e18))) //share price mantissa
-        .div(new BN(String(1e18)).div(new BN(String(1e6)))) // usdc mantissa
-      const withdrawlFee = withdrawAmountInUsdc.div(seniorPoolWithdrawalFeeDenominator)
+      const withdrawAmountInUsdc = await quoteFiduToUSDC({seniorPool, fiduAmount: withdrawAmount})
 
       await expectAction(async () => {
         const receipt = await stakingRewards.unstakeAndWithdrawInFidu(tokenId, withdrawAmount, {from: investor})
         expectEvent(receipt, "Unstaked", {user: investor, tokenId, amount: withdrawAmount})
       }).toChange([
-        [() => usdc.balanceOf(investor), {by: withdrawAmountInUsdc.sub(withdrawlFee)}],
+        [() => usdc.balanceOf(investor), {by: withWithdrawalFee(withdrawAmountInUsdc)}],
         [() => seniorPool.assets(), {by: withdrawAmountInUsdc.neg()}],
         [() => stakingRewards.totalStakedSupply(), {by: withdrawAmount.neg()}],
       ])
       await expectAction(() =>
         stakingRewards.unstakeAndWithdrawInFidu(tokenId, withdrawAmount, {from: investor})
       ).toChange([
-        [() => usdc.balanceOf(investor), {by: withdrawAmountInUsdc.sub(withdrawlFee)}],
+        [() => usdc.balanceOf(investor), {by: withWithdrawalFee(withdrawAmountInUsdc)}],
         [() => seniorPool.assets(), {by: withdrawAmountInUsdc.neg()}],
         [() => stakingRewards.totalStakedSupply(), {by: withdrawAmount.neg()}],
       ])
@@ -697,8 +740,6 @@ describe("StakingRewards", function () {
     let rewardRate: BN
 
     beforeEach(async function () {
-      this.timeout(BEFORE_EACH_TIMEOUT)
-
       // Mint rewards for a full year
       rewardRate = bigVal(100)
 
@@ -719,24 +760,20 @@ describe("StakingRewards", function () {
       const tokenId = await stake({amount: fiduAmount, from: investor})
 
       const withdrawAmount = fiduAmount.div(new BN(2))
-      const withdrawAmountInUsdc = withdrawAmount
-        .mul(await seniorPool.sharePrice())
-        .div(new BN(String(1e18))) //share price mantissa
-        .div(new BN(String(1e18)).div(new BN(String(1e6)))) // usdc mantissa
-      const withdrawlFee = withdrawAmountInUsdc.div(seniorPoolWithdrawalFeeDenominator)
+      const withdrawAmountInUsdc = await quoteFiduToUSDC({seniorPool, fiduAmount: withdrawAmount})
 
       await expectAction(async () => {
         const receipt = await stakingRewards.unstakeAndWithdraw(tokenId, withdrawAmountInUsdc, {from: investor})
         expectEvent(receipt, "Unstaked", {user: investor, tokenId, amount: withdrawAmount})
       }).toChange([
-        [() => usdc.balanceOf(investor), {by: withdrawAmountInUsdc.sub(withdrawlFee)}],
+        [() => usdc.balanceOf(investor), {by: withWithdrawalFee(withdrawAmountInUsdc)}],
         [() => seniorPool.assets(), {by: withdrawAmountInUsdc.neg()}],
         [() => stakingRewards.totalStakedSupply(), {by: withdrawAmount.neg()}],
       ])
       await expectAction(() =>
         stakingRewards.unstakeAndWithdraw(tokenId, withdrawAmountInUsdc, {from: investor})
       ).toChange([
-        [() => usdc.balanceOf(investor), {by: withdrawAmountInUsdc.sub(withdrawlFee)}],
+        [() => usdc.balanceOf(investor), {by: withWithdrawalFee(withdrawAmountInUsdc)}],
         [() => seniorPool.assets(), {by: withdrawAmountInUsdc.neg()}],
         [() => stakingRewards.totalStakedSupply(), {by: withdrawAmount.neg()}],
       ])
@@ -766,12 +803,237 @@ describe("StakingRewards", function () {
     })
   })
 
+  describe("unstakeAndWithdrawMultiple", async () => {
+    let totalRewards: BN
+    let rewardRate: BN
+    let firstToken: BN, secondToken: BN, thirdTokenFromDifferentUser: BN
+    let firstTokenAmount: BN, secondTokenAmount: BN, thirdTokenAmount: BN
+
+    beforeEach(async function () {
+      // Mint rewards for a full year
+      rewardRate = bigVal(100)
+
+      // Fix the reward rate
+      await stakingRewards.setMinRate(rewardRate)
+      await stakingRewards.setMaxRate(rewardRate)
+
+      totalRewards = rewardRate.mul(yearInSeconds)
+      await mintRewards(totalRewards)
+
+      // Disable vesting
+      await stakingRewards.setVestingSchedule(new BN(0))
+
+      // Set up stakes
+      firstTokenAmount = fiduAmount.mul(new BN(3)).div(new BN(4))
+      firstToken = await stake({amount: firstTokenAmount, from: investor})
+
+      secondTokenAmount = fiduAmount.mul(new BN(1)).div(new BN(4))
+      secondToken = await stake({amount: secondTokenAmount, from: investor})
+
+      thirdTokenAmount = fiduAmount.mul(new BN(4))
+      thirdTokenFromDifferentUser = await stake({amount: thirdTokenAmount, from: anotherUser})
+    })
+
+    it("unstakes fidu and withdraws from the senior pool for multiple position tokens", async () => {
+      const firstTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: firstTokenAmount})
+      const secondTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: secondTokenAmount})
+      const thirdTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: thirdTokenAmount})
+
+      const totalWithdrawalAmountInFidu = firstTokenAmount.add(secondTokenAmount)
+      const totalWithdrawalAmountInUsdc = firstTokenWithdrawAmount.add(secondTokenWithdrawAmount)
+      await expectAction(() =>
+        stakingRewards.unstakeAndWithdrawMultiple(
+          [firstToken, secondToken],
+          [firstTokenWithdrawAmount, secondTokenWithdrawAmount],
+          {from: investor}
+        )
+      ).toChange([
+        [() => usdc.balanceOf(investor), {by: withWithdrawalFee(totalWithdrawalAmountInUsdc)}],
+        [() => seniorPool.assets(), {by: totalWithdrawalAmountInUsdc.neg()}],
+        [() => stakingRewards.totalStakedSupply(), {by: totalWithdrawalAmountInFidu.neg()}],
+      ])
+      await expect(
+        stakingRewards.unstakeAndWithdrawMultiple(
+          [firstToken, secondToken],
+          [firstTokenWithdrawAmount, secondTokenWithdrawAmount],
+          {from: investor}
+        )
+      ).to.be.rejected
+    })
+
+    describe("validations", async () => {
+      context("user does not own position token", async () => {
+        it("reverts", async () => {
+          const firstTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: firstTokenAmount})
+          const secondTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: secondTokenAmount})
+          const thirdTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: thirdTokenAmount})
+
+          await expect(
+            stakingRewards.unstakeAndWithdrawMultiple(
+              [firstToken, secondToken, thirdTokenFromDifferentUser],
+              [firstTokenWithdrawAmount, secondTokenWithdrawAmount, thirdTokenWithdrawAmount],
+              {from: investor}
+            )
+          ).to.be.rejectedWith(/access denied/)
+        })
+      })
+
+      context("paused", async () => {
+        it("reverts", async () => {
+          const firstTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: firstTokenAmount})
+          const secondTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: secondTokenAmount})
+
+          await stakingRewards.pause()
+          await expect(
+            stakingRewards.unstakeAndWithdrawMultiple(
+              [firstToken, secondToken],
+              [firstTokenWithdrawAmount, secondTokenWithdrawAmount],
+              {from: investor}
+            )
+          ).to.be.rejectedWith(/paused/)
+        })
+      })
+
+      context("any amount exceeds withdrawable amount for that token", async () => {
+        it("reverts", async () => {
+          const firstTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: firstTokenAmount})
+          const secondTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: secondTokenAmount})
+
+          await expect(
+            stakingRewards.unstakeAndWithdrawMultiple(
+              [firstToken, secondToken],
+              [firstTokenWithdrawAmount, secondTokenWithdrawAmount.add(new BN(100))],
+              {from: investor}
+            )
+          ).to.be.rejectedWith(/cannot unstake more than staked balance/)
+        })
+      })
+
+      context("tokenIds and usdcAmounts lengths mismatch", async () => {
+        it("reverts", async () => {
+          const firstTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: firstTokenAmount})
+
+          await expect(
+            stakingRewards.unstakeAndWithdrawMultiple([firstToken, secondToken], [firstTokenWithdrawAmount], {
+              from: investor,
+            })
+          ).to.be.rejectedWith(/tokenIds and usdcAmounts must be the same length/)
+        })
+      })
+    })
+  })
+
+  describe("unstakeAndWithdrawMultipleInFidu", async () => {
+    let totalRewards: BN
+    let rewardRate: BN
+    let firstToken: BN, secondToken: BN, thirdTokenFromDifferentUser: BN
+    let firstTokenAmount: BN, secondTokenAmount: BN, thirdTokenAmount: BN
+
+    beforeEach(async function () {
+      // Mint rewards for a full year
+      rewardRate = bigVal(100)
+
+      // Fix the reward rate
+      await stakingRewards.setMinRate(rewardRate)
+      await stakingRewards.setMaxRate(rewardRate)
+
+      totalRewards = rewardRate.mul(yearInSeconds)
+      await mintRewards(totalRewards)
+
+      // Disable vesting
+      await stakingRewards.setVestingSchedule(new BN(0))
+
+      // Set up stakes
+      firstTokenAmount = fiduAmount.mul(new BN(3)).div(new BN(4))
+      firstToken = await stake({amount: firstTokenAmount, from: investor})
+
+      secondTokenAmount = fiduAmount.mul(new BN(1)).div(new BN(4))
+      secondToken = await stake({amount: secondTokenAmount, from: investor})
+
+      thirdTokenAmount = fiduAmount.mul(new BN(4))
+      thirdTokenFromDifferentUser = await stake({amount: thirdTokenAmount, from: anotherUser})
+    })
+
+    it("unstakes fidu and withdraws from the senior pool for multiple position tokens", async () => {
+      const firstTokenAmountInUsdc = await quoteFiduToUSDC({seniorPool, fiduAmount: firstTokenAmount})
+      const secondTokenAmountInUsd = await quoteFiduToUSDC({seniorPool, fiduAmount: secondTokenAmount})
+
+      const totalWithdrawalAmountInFidu = firstTokenAmount.add(secondTokenAmount)
+      const totalWithdrawalAmountInUsdc = firstTokenAmountInUsdc.add(secondTokenAmountInUsd)
+      await expectAction(() =>
+        stakingRewards.unstakeAndWithdrawMultipleInFidu(
+          [firstToken, secondToken],
+          [firstTokenAmount, secondTokenAmount],
+          {from: investor}
+        )
+      ).toChange([
+        [() => usdc.balanceOf(investor), {by: withWithdrawalFee(totalWithdrawalAmountInUsdc)}],
+        [() => seniorPool.assets(), {by: totalWithdrawalAmountInUsdc.neg()}],
+        [() => stakingRewards.totalStakedSupply(), {by: totalWithdrawalAmountInFidu.neg()}],
+      ])
+      await expect(
+        stakingRewards.unstakeAndWithdrawMultipleInFidu(
+          [firstToken, secondToken],
+          [firstTokenAmount, secondTokenAmount],
+          {from: investor}
+        )
+      ).to.be.rejected
+    })
+
+    describe("validations", async () => {
+      context("user does not own position token", async () => {
+        it("reverts", async () => {
+          await expect(
+            stakingRewards.unstakeAndWithdrawMultipleInFidu(
+              [firstToken, secondToken, thirdTokenFromDifferentUser],
+              [firstTokenAmount, secondTokenAmount, thirdTokenAmount],
+              {from: investor}
+            )
+          ).to.be.rejectedWith(/access denied/)
+        })
+      })
+
+      context("paused", async () => {
+        it("reverts", async () => {
+          await stakingRewards.pause()
+          await expect(
+            stakingRewards.unstakeAndWithdrawMultipleInFidu(
+              [firstToken, secondToken],
+              [firstTokenAmount, secondTokenAmount],
+              {from: investor}
+            )
+          ).to.be.rejectedWith(/paused/)
+        })
+      })
+
+      context("any amount exceeds withdrawable amount for that token", async () => {
+        it("reverts", async () => {
+          await expect(
+            stakingRewards.unstakeAndWithdrawMultipleInFidu(
+              [firstToken, secondToken],
+              [firstTokenAmount, secondTokenAmount.add(new BN(100))],
+              {from: investor}
+            )
+          ).to.be.rejectedWith(/cannot unstake more than staked balance/)
+        })
+      })
+
+      context("tokenIds and usdcAmounts lengths mismatch", async () => {
+        it("reverts", async () => {
+          await expect(
+            stakingRewards.unstakeAndWithdrawMultipleInFidu([firstToken, secondToken], [firstTokenAmount], {
+              from: investor,
+            })
+          ).to.be.rejectedWith(/tokenIds and usdcAmounts must be the same length/)
+        })
+      })
+    })
+  })
+
   describe("getReward", async () => {
     let totalRewards: BN
 
     beforeEach(async function () {
-      this.timeout(BEFORE_EACH_TIMEOUT)
-
       // Mint rewards for a full year
       totalRewards = maxRate.mul(yearInSeconds)
       await mintRewards(totalRewards)
@@ -949,8 +1211,6 @@ describe("StakingRewards", function () {
     let rewardRate: BN
 
     beforeEach(async function () {
-      this.timeout(BEFORE_EACH_TIMEOUT)
-
       rewardRate = new BN(String(2e18))
       // Fix the reward rate to make testing easier
       await stakingRewards.setMinRate(rewardRate)
@@ -1010,8 +1270,6 @@ describe("StakingRewards", function () {
     let rewardRate: BN
 
     beforeEach(async function () {
-      this.timeout(BEFORE_EACH_TIMEOUT)
-
       rewardRate = new BN(String(2e18))
       // Fix the reward rate to make testing easier
       await stakingRewards.setMinRate(rewardRate)
@@ -1059,8 +1317,6 @@ describe("StakingRewards", function () {
     let rewardRate: BN
 
     beforeEach(async function () {
-      this.timeout(BEFORE_EACH_TIMEOUT)
-
       rewardRate = new BN(String(2e18))
       // Fix the reward rate to make testing easier
       await stakingRewards.setMinRate(rewardRate)
@@ -1076,14 +1332,10 @@ describe("StakingRewards", function () {
 
       await advanceTime({seconds: yearInSeconds})
 
-      const withdrawAmountInUsdc = fiduAmount
-        .mul(await seniorPool.sharePrice())
-        .div(new BN(String(1e18))) //share price mantissa
-        .div(new BN(String(1e18)).div(new BN(String(1e6)))) // usdc mantissa
-      const withdrawalFee = withdrawAmountInUsdc.div(seniorPoolWithdrawalFeeDenominator)
+      const withdrawAmountInUsdc = await quoteFiduToUSDC({seniorPool, fiduAmount})
 
       await expectAction(() => stakingRewards.exitAndWithdraw(tokenId, {from: investor})).toChange([
-        [() => usdc.balanceOf(investor), {by: withdrawAmountInUsdc.sub(withdrawalFee)}],
+        [() => usdc.balanceOf(investor), {by: withWithdrawalFee(withdrawAmountInUsdc)}],
         [() => seniorPool.assets(), {by: withdrawAmountInUsdc.neg()}],
         [() => stakingRewards.totalStakedSupply(), {by: fiduAmount.neg()}],
         [() => stakingRewards.stakedBalanceOf(tokenId), {by: fiduAmount.neg()}],
@@ -1111,7 +1363,6 @@ describe("StakingRewards", function () {
 
   describe("vesting", async () => {
     beforeEach(async function () {
-      this.timeout(BEFORE_EACH_TIMEOUT)
       // Mint a small, fixed amount that limits reward disbursement
       // so we can test the vesting
       await mintRewards("100000")
@@ -1140,8 +1391,6 @@ describe("StakingRewards", function () {
     const rewardRate = new BN(String(1e18))
 
     beforeEach(async function () {
-      this.timeout(BEFORE_EACH_TIMEOUT)
-
       // Fix the reward rate to make testing easier
       await stakingRewards.setMaxRate(rewardRate)
       await stakingRewards.setMinRate(rewardRate)
@@ -1432,8 +1681,6 @@ describe("StakingRewards", function () {
     const targetCapacity = bigVal(500)
 
     beforeEach(async function () {
-      this.timeout(BEFORE_EACH_TIMEOUT)
-
       await stakingRewards.setMaxRate(maxRate)
       await stakingRewards.setMinRate(minRate)
       await stakingRewards.setMinRateAtPercent(minRateAtPercent)
@@ -1519,8 +1766,6 @@ describe("StakingRewards", function () {
 
     context("total rewards available less than reward rate", async () => {
       beforeEach(async function () {
-        this.timeout(BEFORE_EACH_TIMEOUT)
-
         // Mint rewards for a full year
         totalRewards = maxRate.mul(yearInSeconds)
         await mintRewards(totalRewards)
@@ -1548,8 +1793,6 @@ describe("StakingRewards", function () {
 
     context("staked supply is a fraction of 1 token", async () => {
       beforeEach(async function () {
-        this.timeout(BEFORE_EACH_TIMEOUT)
-
         // Mint rewards for a full year
         totalRewards = maxRate.mul(yearInSeconds)
         await mintRewards(totalRewards)
@@ -1573,8 +1816,6 @@ describe("StakingRewards", function () {
 
     context("user transfers NFT", async () => {
       beforeEach(async function () {
-        this.timeout(BEFORE_EACH_TIMEOUT)
-
         // Mint rewards for a full year
         totalRewards = maxRate.mul(yearInSeconds)
         await mintRewards(totalRewards)

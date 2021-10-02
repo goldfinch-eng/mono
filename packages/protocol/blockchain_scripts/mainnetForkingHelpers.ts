@@ -39,12 +39,12 @@ async function getProxyImplAddress(proxyContract: Contract) {
 
 async function upgradeContracts(
   contractsToUpgrade: string[],
-  contracts: any,
+  contracts: ExistingContracts,
   signer: string | Signer,
   deployFrom: any,
   deployments: DeploymentsExtension,
   changeImplementation = true
-) {
+): Promise<UpgradedContracts> {
   console.log("Deploying the accountant")
   const accountantDeployResult = await deployments.deploy("Accountant", {from: deployFrom, gasLimit: 4000000, args: []})
   console.log("Deployed...")
@@ -58,8 +58,11 @@ async function upgradeContracts(
     CreditDesk: {["Accountant"]: accountantDeployResult.address},
   }
 
+  const upgradedContracts: UpgradedContracts = {}
   for (const contractName of contractsToUpgrade) {
     const contract = contracts[contractName]
+    assertNonNullable(contract)
+
     let contractToDeploy = contractName
     if (isTestEnv() && ["Pool", "CreditDesk", "GoldfinchConfig"].includes(contractName)) {
       contractToDeploy = `Test${contractName}`
@@ -86,14 +89,30 @@ async function upgradeContracts(
       await contract.ProxyContract.connect(ethersSigner).changeImplementation(deployResult.address, "0x")
       upgradedContract = upgradedContract.attach(contract.ProxyContract.address)
     }
-    contract.UpgradedContract = upgradedContract
-    contract.UpgradedImplAddress = upgradedImplAddress
+
+    upgradedContracts[contractName] = {
+      ...contract,
+      UpgradedContract: upgradedContract,
+      UpgradedImplAddress: upgradedImplAddress,
+    }
   }
-  return contracts
+  return upgradedContracts
 }
 
-type ExistingContracts = {
-  [contractName: string]: {ProxyContract: Contract; ExistingContract: Contract; ExistingImplAddress: string}
+export type ContractHolder = {
+  ProxyContract: Contract
+  ExistingContract: Contract
+  ExistingImplAddress: string
+  UpgradedContract: Contract
+  UpgradedImplAddress: string
+}
+
+export type ExistingContracts = {
+  [contractName: string]: Omit<ContractHolder, "UpgradedContract" | "UpgradedImplAddress">
+}
+
+export type UpgradedContracts = {
+  [contractName: string]: ContractHolder
 }
 
 async function getExistingContracts(
