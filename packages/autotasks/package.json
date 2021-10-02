@@ -5,7 +5,7 @@
   "description": "",
   "scripts": {
     "test": "NODE_ENV=test npx hardhat test --show-stack-traces",
-    "start": "npx hardhat run index.js",
+    "start": "npx hardhat run index.js --network localhost",
     "pre-commit": "lint-staged",
     "lint": "eslint --resolve-plugins-relative-to=. .",
     "lint:fix": "eslint --resolve-plugins-relative-to=. --fix .",

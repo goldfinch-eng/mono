@@ -1,12 +1,14 @@
-import {useContext} from "react"
+import {useContext, useState} from "react"
 import useCloseOnClickOrEsc from "../hooks/useCloseOnClickOrEsc"
 import {iconX} from "./icons.js"
+import LoadingButton from "./loadingButton"
 import {AppContext} from "../App"
 
 export default function DevTools(props) {
   const {open: showDevTools, setOpen: setShowDevTools} = useCloseOnClickOrEsc()
 
   const {user} = useContext(AppContext)
+  const [disabled, setDisabled] = useState(0)
 
   function toggleDevTools() {
     if (showDevTools === "") {
@@ -35,8 +37,11 @@ export default function DevTools(props) {
           </div>
           <div className="actions">
             <button
-              className="button dark"
-              onClick={async () => {
+              className={`button dark ${disabled ? "disabled" : ""}`}
+              disabled={disabled}
+              onClick={async (e) => {
+                e.preventDefault()
+                setDisabled(true)
                 await fetch("/fundWithWhales", {
                   method: "POST",
                   headers: {"Content-Type": "application/json"},
@@ -44,13 +49,11 @@ export default function DevTools(props) {
                     address: user.address,
                   }),
                 })
+                setDisabled(false)
               }}
             >
               Fund account
             </button>
-            <button className="button dark">Button number 2</button>
-            <button className="button dark">Button three</button>
-            <button className="button dark">Button four</button>
           </div>
         </div>
       )}
