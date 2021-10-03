@@ -10,8 +10,7 @@ contract TestUniqueIdentity is UniqueIdentity {
     uint256 id,
     uint256 amount,
     bytes memory data
-  ) public onlyAdmin {
-    nonces[to] += 1;
+  ) public onlyAdmin incrementNonce(to) {
     _mint(to, id, amount, data);
   }
 }
