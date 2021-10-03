@@ -47,6 +47,7 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
   ) public payable override onlySigner(keccak256(abi.encodePacked(to, id, amount, nonces[to])), signature) {
     require(msg.value >= MINT_COST_PER_TOKEN, "Token mint requires 0.00083 ETH");
     require(id == ID_VERSION_0, "Token id not supported");
+    require(balanceOf(to, id) == 0, "Balance before mint must be 0");
     require(amount > 0, "Amount must be greater than 0");
 
     nonces[to] += 1;
