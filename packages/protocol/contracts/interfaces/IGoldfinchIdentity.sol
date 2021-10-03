@@ -9,13 +9,13 @@ interface IGoldfinchIdentity is IERC1155Upgradeable {
     address to,
     uint256 id,
     uint256 amount,
-    bytes memory signature
+    bytes calldata signature
   ) external payable;
 
   function burn(
     address account,
     uint256 id,
     uint256 value,
-    bytes memory signature
+    bytes calldata signature
   ) external;
 }

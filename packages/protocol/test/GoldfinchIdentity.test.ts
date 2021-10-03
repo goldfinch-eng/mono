@@ -329,7 +329,7 @@ describe("GoldfinchIdentity", () => {
             from: recipient,
             value: MINT_PAYMENT,
           })
-        ).to.be.rejectedWith(/ERC1155: mint to the zero address/)
+        ).to.be.rejectedWith(/Cannot mint to the zero address/)
       })
     })
 
@@ -366,6 +366,17 @@ describe("GoldfinchIdentity", () => {
     it("updates state and emits an event", async () => {
       await expect(mint(recipient, tokenId, amount, new BN(0), owner)).to.be.fulfilled
       // (State updates and event emitted are established in `mint()`.)
+    })
+
+    it("uses the expected amount of gas", async () => {
+      const messageElements: [string, BN, BN] = [recipient, tokenId, amount]
+      const signature = await sign(owner, {types: MINT_MESSAGE_ELEMENT_TYPES, values: messageElements}, new BN(0))
+      const mintParams: MintParams = [recipient, tokenId, amount]
+      const receipt = await goldfinchIdentity.mint(...mintParams, signature, {
+        from: recipient,
+        value: MINT_PAYMENT,
+      })
+      expect(receipt.receipt.gasUsed).to.eq(86437)
     })
 
     context("paused", () => {
@@ -620,6 +631,16 @@ describe("GoldfinchIdentity", () => {
     it("updates state and emits an event", async () => {
       await expect(burn(recipient, tokenId, value, new BN(1), owner)).to.be.fulfilled
       // (State updates and event emitted are established in `burn()`.)
+    })
+
+    it("uses the expected amount of gas", async () => {
+      const messageElements: [string, BN, BN] = [recipient, tokenId, value]
+      const signature = await sign(owner, {types: BURN_MESSAGE_ELEMENT_TYPES, values: messageElements}, new BN(1))
+      const burnParams: BurnParams = [recipient, tokenId, value]
+      const receipt = await goldfinchIdentity.burn(...burnParams, signature, {
+        from: recipient,
+      })
+      expect(receipt.receipt.gasUsed).to.eq(47304)
     })
 
     context("paused", () => {

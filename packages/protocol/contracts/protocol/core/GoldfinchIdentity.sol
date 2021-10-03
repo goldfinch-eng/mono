@@ -43,7 +43,7 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
     address to,
     uint256 id,
     uint256 amount,
-    bytes memory signature
+    bytes calldata signature
   )
     public
     payable
@@ -52,6 +52,7 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
     incrementNonce(to)
   {
     require(msg.value >= MINT_COST_PER_TOKEN, "Token mint requires 0.00083 ETH");
+    require(to != address(0), "Cannot mint to the zero address");
     require(id == ID_VERSION_0, "Token id not supported");
     require(balanceOf(to, id) == 0, "Balance before mint must be 0");
     require(amount > 0, "Amount must be greater than 0");
@@ -63,7 +64,7 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
     address account,
     uint256 id,
     uint256 value,
-    bytes memory signature
+    bytes calldata signature
   )
     public
     override
@@ -91,7 +92,7 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
     super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
   }
 
-  modifier onlySigner(bytes32 hash, bytes memory signature) {
+  modifier onlySigner(bytes32 hash, bytes calldata signature) {
     bytes32 ethSignedMessage = ECDSAUpgradeable.toEthSignedMessageHash(hash);
     require(hasRole(SIGNER_ROLE, ECDSAUpgradeable.recover(ethSignedMessage, signature)), "Invalid signer");
     _;
