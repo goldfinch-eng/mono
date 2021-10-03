@@ -18,7 +18,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
  * Adapted from OZ's ERC1155PresetMinterPauserUpgradeable.sol: removed inheritance of
  * ERC1155BurnableUpgradeable; removed MINTER_ROLE; replaced DEFAULT_ADMIN_ROLE with OWNER_ROLE;
  * grants roles to owner param rather than `_msgSender()`; added `setURI()`, to give owner ability
- * to set the URI after initialization.
+ * to set the URI after initialization; added `isAdmin()` helper and `onlyAdmin` modifier.
  */
 contract ERC1155PresetPauserUpgradeable is
   Initializable,
