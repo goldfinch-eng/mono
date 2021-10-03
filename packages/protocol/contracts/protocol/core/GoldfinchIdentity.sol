@@ -86,7 +86,7 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
   ) internal override(ERC1155PresetPauserUpgradeable) {
     require(
       (from == address(0) && to != address(0)) || (from != address(0) && to == address(0)),
-      "Only mint xor burn transfers are allowed"
+      "Only mint or burn transfers are allowed"
     );
     super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
   }
