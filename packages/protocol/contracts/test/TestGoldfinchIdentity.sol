@@ -14,13 +14,4 @@ contract TestGoldfinchIdentity is GoldfinchIdentity {
     nonces[to] += 1;
     _mint(to, id, amount, data);
   }
-
-  function isAdmin() public view returns (bool) {
-    return hasRole(OWNER_ROLE, _msgSender());
-  }
-
-  modifier onlyAdmin() {
-    require(isAdmin(), "Must have admin role to perform this action");
-    _;
-  }
 }

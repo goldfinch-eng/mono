@@ -2,6 +2,7 @@
 
 import {asNonNullable} from "@goldfinch-eng/utils"
 import {BN} from "ethereumjs-tx/node_modules/ethereumjs-util"
+import {expectEvent} from "@openzeppelin/test-helpers"
 import {constants as ethersConstants} from "ethers"
 import hre from "hardhat"
 import {
@@ -183,8 +184,37 @@ describe("GoldfinchIdentity", () => {
     })
   })
 
-  describe("balanceOfBatch", () => {
-    // TODO
+  describe("setURI", () => {
+    const NEW_URI = "https://example.com"
+
+    it("allows sender who has owner role", async () => {
+      expect(await goldfinchIdentity.hasRole(OWNER_ROLE, owner)).to.equal(true)
+      await expect(goldfinchIdentity.setURI(NEW_URI, {from: owner})).to.be.fulfilled
+    })
+
+    it("rejects sender who lacks owner role", async () => {
+      expect(await goldfinchIdentity.hasRole(OWNER_ROLE, anotherUser)).to.equal(false)
+      await expect(goldfinchIdentity.setURI(NEW_URI, {from: anotherUser})).to.be.rejectedWith(
+        /Must have admin role to perform this action/
+      )
+    })
+
+    it("updates state but does not emit an event", async () => {
+      const tokenId = new BN(0)
+      const uriBefore = await goldfinchIdentity.uri(tokenId)
+      expect(uriBefore).to.equal(GOLDFINCH_IDENTITY_METADATA_URI)
+      const receipt = await goldfinchIdentity.setURI(NEW_URI, {from: owner})
+      const uriAfter = await goldfinchIdentity.uri(tokenId)
+      expect(uriAfter).to.equal(NEW_URI)
+      expectEvent.notEmitted(receipt, "URI")
+    })
+
+    context("paused", () => {
+      it("allows anyway", async () => {
+        await pause()
+        await expect(goldfinchIdentity.setURI(NEW_URI)).to.be.fulfilled
+      })
+    })
   })
 
   describe("mint", () => {
@@ -344,12 +374,6 @@ describe("GoldfinchIdentity", () => {
         await expect(mint(recipient, tokenId, amount, new BN(0), owner)).to.be.rejectedWith(
           /ERC1155Pausable: token transfer while paused/
         )
-      })
-    })
-
-    context("recipient is a contract", () => {
-      it("calls received hook", async () => {
-        // TODO
       })
     })
   })

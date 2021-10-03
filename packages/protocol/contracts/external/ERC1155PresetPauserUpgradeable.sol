@@ -17,7 +17,8 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
  *
  * Adapted from OZ's ERC1155PresetMinterPauserUpgradeable.sol: removed inheritance of
  * ERC1155BurnableUpgradeable; removed MINTER_ROLE; replaced DEFAULT_ADMIN_ROLE with OWNER_ROLE;
- * grants roles to owner param rather than `_msgSender()`.
+ * grants roles to owner param rather than `_msgSender()`; added `setURI()`, to give owner ability
+ * to set the URI after initialization.
  */
 contract ERC1155PresetPauserUpgradeable is
   Initializable,
@@ -46,6 +47,12 @@ contract ERC1155PresetPauserUpgradeable is
   function __ERC1155PresetPauser_init_unchained(address owner) internal initializer {
     _setupRole(OWNER_ROLE, owner);
     _setupRole(PAUSER_ROLE, owner);
+  }
+
+  function setURI(string memory newuri) external onlyAdmin {
+    /// @dev Because the `newuri` is not id-specific, we do not emit a URI event here. See the comment
+    /// on `_setURI()`.
+    _setURI(newuri);
   }
 
   /**
@@ -101,4 +108,13 @@ contract ERC1155PresetPauserUpgradeable is
   }
 
   uint256[50] private __gap;
+
+  function isAdmin() public view returns (bool) {
+    return hasRole(OWNER_ROLE, _msgSender());
+  }
+
+  modifier onlyAdmin() {
+    require(isAdmin(), "Must have admin role to perform this action");
+    _;
+  }
 }
