@@ -2,9 +2,9 @@
 
 pragma solidity 0.8.4;
 
-import "../protocol/core/GoldfinchIdentity.sol";
+import "../protocol/core/UniqueIdentity.sol";
 
-contract TestGoldfinchIdentity is GoldfinchIdentity {
+contract TestUniqueIdentity is UniqueIdentity {
   function _mintForTest(
     address to,
     uint256 id,

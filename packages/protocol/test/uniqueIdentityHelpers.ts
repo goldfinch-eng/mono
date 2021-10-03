@@ -2,8 +2,8 @@ import _ from "lodash"
 import {keccak256} from "@ethersproject/keccak256"
 import {pack} from "@ethersproject/solidity"
 import {assertNonNullable} from "@goldfinch-eng/utils"
-import {TestGoldfinchIdentityInstance} from "../typechain/truffle"
-import {TransferSingle} from "../typechain/truffle/TestGoldfinchIdentity"
+import {TestUniqueIdentityInstance} from "../typechain/truffle"
+import {TransferSingle} from "../typechain/truffle/TestUniqueIdentity"
 import {BN, decodeLogs, getOnlyLog} from "./testHelpers"
 import {BigNumber, constants as ethersConstants} from "ethers"
 import {HardhatRuntimeEnvironment} from "hardhat/types"
@@ -54,7 +54,7 @@ export type MintParams = [string, BN]
 
 export async function mint(
   hre: HardhatRuntimeEnvironment,
-  goldfinchIdentity: TestGoldfinchIdentityInstance,
+  uniqueIdentity: TestUniqueIdentityInstance,
   recipient: string,
   tokenId: BN,
   nonce: BN,
@@ -62,8 +62,8 @@ export async function mint(
   overrideMintParams?: MintParams,
   overrideFrom?: string
 ): Promise<void> {
-  const contractBalanceBefore = await web3.eth.getBalance(goldfinchIdentity.address)
-  const tokenBalanceBefore = await goldfinchIdentity.balanceOf(recipient, tokenId)
+  const contractBalanceBefore = await web3.eth.getBalance(uniqueIdentity.address)
+  const tokenBalanceBefore = await uniqueIdentity.balanceOf(recipient, tokenId)
 
   const messageElements: [string, BN] = [recipient, tokenId]
   const signature = await sign(hre, signer, {types: MINT_MESSAGE_ELEMENT_TYPES, values: messageElements}, nonce)
@@ -74,24 +74,24 @@ export async function mint(
   const defaultFrom = recipient
   const from = overrideFrom || defaultFrom
 
-  const receipt = await goldfinchIdentity.mint(...mintParams, signature, {
+  const receipt = await uniqueIdentity.mint(...mintParams, signature, {
     from,
     value: MINT_PAYMENT,
   })
 
   // Verify contract state.
-  const contractBalanceAfter = await web3.eth.getBalance(goldfinchIdentity.address)
+  const contractBalanceAfter = await web3.eth.getBalance(uniqueIdentity.address)
   expect(new BN(contractBalanceAfter).sub(new BN(contractBalanceBefore))).to.bignumber.equal(MINT_PAYMENT)
 
-  const tokenBalanceAfter = await goldfinchIdentity.balanceOf(recipient, tokenId)
+  const tokenBalanceAfter = await uniqueIdentity.balanceOf(recipient, tokenId)
   expect(tokenBalanceAfter.sub(tokenBalanceBefore)).to.bignumber.equal(new BN(1))
   expect(tokenBalanceAfter).to.bignumber.equal(new BN(1))
 
-  expect(await goldfinchIdentity.nonces(recipient)).to.bignumber.equal(nonce.add(new BN(1)))
+  expect(await uniqueIdentity.nonces(recipient)).to.bignumber.equal(nonce.add(new BN(1)))
 
   // Verify that event was emitted.
   const transferEvent = getOnlyLog<TransferSingle>(
-    decodeLogs(receipt.receipt.rawLogs, goldfinchIdentity, "TransferSingle")
+    decodeLogs(receipt.receipt.rawLogs, uniqueIdentity, "TransferSingle")
   )
   expect(transferEvent.args.operator).to.equal(from)
   expect(transferEvent.args.from).to.equal(ethersConstants.AddressZero)
@@ -104,7 +104,7 @@ export type BurnParams = [string, BN]
 
 export async function burn(
   hre: HardhatRuntimeEnvironment,
-  goldfinchIdentity: TestGoldfinchIdentityInstance,
+  uniqueIdentity: TestUniqueIdentityInstance,
   recipient: string,
   tokenId: BN,
   nonce: BN,
@@ -112,8 +112,8 @@ export async function burn(
   overrideBurnParams?: BurnParams,
   overrideFrom?: string
 ): Promise<void> {
-  const contractBalanceBefore = await web3.eth.getBalance(goldfinchIdentity.address)
-  const tokenBalanceBefore = await goldfinchIdentity.balanceOf(recipient, tokenId)
+  const contractBalanceBefore = await web3.eth.getBalance(uniqueIdentity.address)
+  const tokenBalanceBefore = await uniqueIdentity.balanceOf(recipient, tokenId)
 
   const messageElements: [string, BN] = [recipient, tokenId]
   const signature = await sign(hre, signer, {types: BURN_MESSAGE_ELEMENT_TYPES, values: messageElements}, nonce)
@@ -124,21 +124,21 @@ export async function burn(
   const defaultFrom = recipient
   const from = overrideFrom || defaultFrom
 
-  const receipt = await goldfinchIdentity.burn(...burnParams, signature, {from})
+  const receipt = await uniqueIdentity.burn(...burnParams, signature, {from})
 
   // Verify contract state.
-  const contractBalanceAfter = await web3.eth.getBalance(goldfinchIdentity.address)
+  const contractBalanceAfter = await web3.eth.getBalance(uniqueIdentity.address)
   expect(new BN(contractBalanceAfter)).to.bignumber.equal(new BN(contractBalanceBefore))
 
-  const tokenBalanceAfter = await goldfinchIdentity.balanceOf(recipient, tokenId)
+  const tokenBalanceAfter = await uniqueIdentity.balanceOf(recipient, tokenId)
   expect(tokenBalanceBefore.sub(tokenBalanceAfter)).to.bignumber.equal(new BN(1))
   expect(tokenBalanceAfter).to.bignumber.equal(new BN(0))
 
-  expect(await goldfinchIdentity.nonces(recipient)).to.bignumber.equal(nonce.add(new BN(1)))
+  expect(await uniqueIdentity.nonces(recipient)).to.bignumber.equal(nonce.add(new BN(1)))
 
   // Verify that event was emitted.
   const transferEvent = getOnlyLog<TransferSingle>(
-    decodeLogs(receipt.receipt.rawLogs, goldfinchIdentity, "TransferSingle")
+    decodeLogs(receipt.receipt.rawLogs, uniqueIdentity, "TransferSingle")
   )
   expect(transferEvent.args.operator).to.equal(from)
   expect(transferEvent.args.from).to.equal(recipient)

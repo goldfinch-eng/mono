@@ -146,7 +146,7 @@
           "pause": [],
           "unpause": []
         },
-        "**/GoldfinchIdentity.sol:GoldfinchIdentity": {
+        "**/UniqueIdentity.sol:UniqueIdentity": {
           "mint": ["onlySigner"],
           "safeTransferFrom": [],
           "safeBatchTransferFrom": [],

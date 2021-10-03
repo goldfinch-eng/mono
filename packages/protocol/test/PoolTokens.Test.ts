@@ -16,7 +16,7 @@ import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
 const {deployments} = hre
 const TranchedPool = artifacts.require("TranchedPool")
 import {expectEvent} from "@openzeppelin/test-helpers"
-import {mint} from "./goldfinchIdentityHelpers"
+import {mint} from "./uniqueIdentityHelpers"
 
 const testSetup = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
   const [_owner, _person2, _person3] = await web3.eth.getAccounts()
@@ -24,15 +24,15 @@ const testSetup = deployments.createFixture(async ({deployments, getNamedAccount
   const person2 = asNonNullable(_person2)
   const person3 = asNonNullable(_person3)
 
-  const {poolTokens, goldfinchConfig, goldfinchFactory, usdc, goldfinchIdentity} = await deployAllContracts(deployments)
+  const {poolTokens, goldfinchConfig, goldfinchFactory, usdc, uniqueIdentity} = await deployAllContracts(deployments)
   await goldfinchConfig.bulkAddToGoList([owner, person2])
   await erc20Transfer(usdc, [person2], usdcVal(1000), owner)
 
-  return {owner, person2, person3, poolTokens, goldfinchConfig, goldfinchFactory, usdc, goldfinchIdentity}
+  return {owner, person2, person3, poolTokens, goldfinchConfig, goldfinchFactory, usdc, uniqueIdentity}
 })
 
 describe("PoolTokens", () => {
-  let owner, person2, person3, goldfinchConfig, poolTokens, pool, goldfinchFactory, usdc, goldfinchIdentity
+  let owner, person2, person3, goldfinchConfig, poolTokens, pool, goldfinchFactory, usdc, uniqueIdentity
 
   const withPoolSender = async (func, otherPoolAddress?) => {
     // We need to fake the address so we can bypass the pool
@@ -45,7 +45,7 @@ describe("PoolTokens", () => {
 
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;({owner, person2, person3, poolTokens, goldfinchConfig, goldfinchFactory, usdc, goldfinchIdentity} =
+    ;({owner, person2, person3, poolTokens, goldfinchConfig, goldfinchFactory, usdc, uniqueIdentity} =
       await testSetup())
 
     await poolTokens._disablePoolValidation(true)
@@ -58,20 +58,12 @@ describe("PoolTokens", () => {
     expect(await goldfinchConfig.goList(target)).to.equal(true)
   }
 
-  async function mintGoldfinchIdentityToken(recipient, signer) {
-    const goldfinchIdentityTokenId = new BN(0)
-    const goldfinchIdentityTokenAmount = new BN(1)
-    await mint(
-      hre,
-      goldfinchIdentity,
-      recipient,
-      goldfinchIdentityTokenId,
-      goldfinchIdentityTokenAmount,
-      new BN(0),
-      signer
-    )
-    expect(await goldfinchIdentity.balanceOf(recipient, goldfinchIdentityTokenId)).to.bignumber.equal(
-      goldfinchIdentityTokenAmount
+  async function mintUniqueIdentityToken(recipient, signer) {
+    const uniqueIdentityTokenId = new BN(0)
+    const uniqueIdentityTokenAmount = new BN(1)
+    await mint(hre, uniqueIdentity, recipient, uniqueIdentityTokenId, uniqueIdentityTokenAmount, new BN(0), signer)
+    expect(await uniqueIdentity.balanceOf(recipient, uniqueIdentityTokenId)).to.bignumber.equal(
+      uniqueIdentityTokenAmount
     )
   }
 
@@ -406,10 +398,10 @@ describe("PoolTokens", () => {
         amount = usdcVal(10)
       })
 
-      context("account with 0 balance GoldfinchIdentity token (id 0)", () => {
+      context("account with 0 balance UniqueIdentity token (id 0)", () => {
         beforeEach(async () => {
-          const goldfinchIdentityTokenId = new BN(0)
-          expect(await goldfinchIdentity.balanceOf(person3, goldfinchIdentityTokenId)).to.bignumber.equal(new BN(0))
+          const uniqueIdentityTokenId = new BN(0)
+          expect(await uniqueIdentity.balanceOf(person3, uniqueIdentityTokenId)).to.bignumber.equal(new BN(0))
         })
 
         context("account is on legacy go-list", () => {
@@ -436,9 +428,9 @@ describe("PoolTokens", () => {
         })
       })
 
-      context("account with > 0 balance GoldfinchIdentity token (id 0)", () => {
+      context("account with > 0 balance UniqueIdentity token (id 0)", () => {
         beforeEach(async () => {
-          await mintGoldfinchIdentityToken(person3, owner)
+          await mintUniqueIdentityToken(person3, owner)
         })
 
         context("account is on legacy go-list", () => {
@@ -479,10 +471,10 @@ describe("PoolTokens", () => {
         tokenId = event.args.tokenId
       })
 
-      context("recipient with 0 balance GoldfinchIdentity token (id 0)", () => {
+      context("recipient with 0 balance UniqueIdentity token (id 0)", () => {
         beforeEach(async () => {
-          const goldfinchIdentityTokenId = new BN(0)
-          expect(await goldfinchIdentity.balanceOf(person3, goldfinchIdentityTokenId)).to.bignumber.equal(new BN(0))
+          const uniqueIdentityTokenId = new BN(0)
+          expect(await uniqueIdentity.balanceOf(person3, uniqueIdentityTokenId)).to.bignumber.equal(new BN(0))
         })
 
         context("recipient is on legacy go-list", () => {
@@ -507,9 +499,9 @@ describe("PoolTokens", () => {
         })
       })
 
-      context("recipient with > 0 balance GoldfinchIdentity token (id 0)", () => {
+      context("recipient with > 0 balance UniqueIdentity token (id 0)", () => {
         beforeEach(async () => {
-          await mintGoldfinchIdentityToken(person3, owner)
+          await mintUniqueIdentityToken(person3, owner)
         })
 
         context("recipient is on legacy go-list", () => {

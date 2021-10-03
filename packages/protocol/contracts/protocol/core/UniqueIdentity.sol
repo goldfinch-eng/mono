@@ -4,16 +4,16 @@ pragma solidity 0.8.4;
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 
 import "../../external/ERC1155PresetPauserUpgradeable.sol";
-import "../../interfaces/IGoldfinchIdentity.sol";
+import "../../interfaces/IUniqueIdentity.sol";
 
 /**
- * @title GoldfinchIdentity
- * @notice GoldfinchIdentity is an ERC1155-compliant contract for representing
+ * @title UniqueIdentity
+ * @notice UniqueIdentity is an ERC1155-compliant contract for representing
  * the identity verification status of addresses.
  * @author Goldfinch
  */
 
-contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity {
+contract UniqueIdentity is ERC1155PresetPauserUpgradeable, IUniqueIdentity {
   bytes32 public constant SIGNER_ROLE = keccak256("SIGNER_ROLE");
 
   uint256 public constant ID_VERSION_0 = 0;
@@ -38,14 +38,14 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
     require(owner != address(0), "Owner address cannot be empty");
 
     __ERC1155PresetPauser_init(owner, uri);
-    __GoldfinchIdentity_init(owner);
+    __UniqueIdentity_init(owner);
   }
 
-  function __GoldfinchIdentity_init(address owner) internal initializer {
-    __GoldfinchIdentity_init_unchained(owner);
+  function __UniqueIdentity_init(address owner) internal initializer {
+    __UniqueIdentity_init_unchained(owner);
   }
 
-  function __GoldfinchIdentity_init_unchained(address owner) internal initializer {
+  function __UniqueIdentity_init_unchained(address owner) internal initializer {
     _setupRole(SIGNER_ROLE, owner);
   }
 

@@ -12,9 +12,9 @@ import {
   SIGNER_ROLE,
   TRUFFLE_CONTRACT_PROVIDER,
 } from "../blockchain_scripts/deployHelpers"
-import {GOLDFINCH_IDENTITY_METADATA_URI} from "../blockchain_scripts/goldfinchIdentity/constants"
-import {TestGoldfinchIdentity} from "../typechain/ethers"
-import {TestGoldfinchIdentityInstance} from "../typechain/truffle/TestGoldfinchIdentity"
+import {UNIQUE_IDENTITY_METADATA_URI} from "../blockchain_scripts/uniqueIdentity/constants"
+import {TestUniqueIdentity} from "../typechain/ethers"
+import {TestUniqueIdentityInstance} from "../typechain/truffle/TestUniqueIdentity"
 import {
   BurnParams,
   BURN_MESSAGE_ELEMENT_TYPES,
@@ -22,9 +22,9 @@ import {
   MintParams,
   MINT_MESSAGE_ELEMENT_TYPES,
   MINT_PAYMENT,
-} from "./goldfinchIdentityHelpers"
+} from "./uniqueIdentityHelpers"
 import {deployAllContracts} from "./testHelpers"
-import {mint as mintHelper, burn as burnHelper, sign as signHelper} from "./goldfinchIdentityHelpers"
+import {mint as mintHelper, burn as burnHelper, sign as signHelper} from "./uniqueIdentityHelpers"
 const {deployments} = hre
 
 const setupTest = deployments.createFixture(async ({deployments}) => {
@@ -33,21 +33,21 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const owner = asNonNullable(_owner)
   const anotherUser = asNonNullable(_anotherUser)
   const anotherUser2 = asNonNullable(_anotherUser2)
-  const uninitializedGoldfinchIdentityDeployer = asNonNullable(_anotherUser3)
+  const uninitializedUniqueIdentityDeployer = asNonNullable(_anotherUser3)
 
   const deployed = await deployAllContracts(deployments)
 
-  const goldfinchIdentity = deployed.goldfinchIdentity
+  const uniqueIdentity = deployed.uniqueIdentity
 
-  const uninitializedGoldfinchIdentityDeployResult = await deploy("TestGoldfinchIdentity", {
-    from: uninitializedGoldfinchIdentityDeployer,
+  const uninitializedUniqueIdentityDeployResult = await deploy("TestUniqueIdentity", {
+    from: uninitializedUniqueIdentityDeployer,
     gasLimit: 4000000,
   })
-  const uninitializedGoldfinchIdentity = await getContract<TestGoldfinchIdentity, TestGoldfinchIdentityInstance>(
-    "TestGoldfinchIdentity",
+  const uninitializedUniqueIdentity = await getContract<TestUniqueIdentity, TestUniqueIdentityInstance>(
+    "TestUniqueIdentity",
     TRUFFLE_CONTRACT_PROVIDER,
     {
-      at: uninitializedGoldfinchIdentityDeployResult.address,
+      at: uninitializedUniqueIdentityDeployResult.address,
     }
   )
 
@@ -55,19 +55,19 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
     owner,
     anotherUser,
     anotherUser2,
-    goldfinchIdentity,
-    uninitializedGoldfinchIdentity,
-    uninitializedGoldfinchIdentityDeployer,
+    uniqueIdentity,
+    uninitializedUniqueIdentity,
+    uninitializedUniqueIdentityDeployer,
   }
 })
 
-describe("GoldfinchIdentity", () => {
+describe("UniqueIdentity", () => {
   let owner: string,
     anotherUser: string,
     anotherUser2: string,
-    goldfinchIdentity: TestGoldfinchIdentityInstance,
-    uninitializedGoldfinchIdentityDeployer: string,
-    uninitializedGoldfinchIdentity: TestGoldfinchIdentityInstance
+    uniqueIdentity: TestUniqueIdentityInstance,
+    uninitializedUniqueIdentityDeployer: string,
+    uninitializedUniqueIdentity: TestUniqueIdentityInstance
 
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
@@ -75,9 +75,9 @@ describe("GoldfinchIdentity", () => {
       owner,
       anotherUser,
       anotherUser2,
-      goldfinchIdentity,
-      uninitializedGoldfinchIdentityDeployer,
-      uninitializedGoldfinchIdentity,
+      uniqueIdentity,
+      uninitializedUniqueIdentityDeployer,
+      uninitializedUniqueIdentity,
     } = await setupTest())
   })
 
@@ -97,7 +97,7 @@ describe("GoldfinchIdentity", () => {
     overrideMintParams?: MintParams,
     overrideFrom?: string
   ): Promise<void> {
-    return mintHelper(hre, goldfinchIdentity, recipient, tokenId, nonce, signer, overrideMintParams, overrideFrom)
+    return mintHelper(hre, uniqueIdentity, recipient, tokenId, nonce, signer, overrideMintParams, overrideFrom)
   }
 
   async function burn(
@@ -108,55 +108,55 @@ describe("GoldfinchIdentity", () => {
     overrideBurnParams?: BurnParams,
     overrideFrom?: string
   ): Promise<void> {
-    return burnHelper(hre, goldfinchIdentity, recipient, tokenId, nonce, signer, overrideBurnParams, overrideFrom)
+    return burnHelper(hre, uniqueIdentity, recipient, tokenId, nonce, signer, overrideBurnParams, overrideFrom)
   }
 
   async function pause(): Promise<void> {
-    expect(await goldfinchIdentity.paused()).to.equal(false)
-    await goldfinchIdentity.pause()
-    expect(await goldfinchIdentity.paused()).to.equal(true)
+    expect(await uniqueIdentity.paused()).to.equal(false)
+    await uniqueIdentity.pause()
+    expect(await uniqueIdentity.paused()).to.equal(true)
   }
 
   describe("initialize", () => {
     it("rejects zero address owner", async () => {
-      const initialized = uninitializedGoldfinchIdentity.initialize(
+      const initialized = uninitializedUniqueIdentity.initialize(
         ethersConstants.AddressZero,
-        GOLDFINCH_IDENTITY_METADATA_URI
+        UNIQUE_IDENTITY_METADATA_URI
       )
       await expect(initialized).to.be.rejectedWith(/Owner address cannot be empty/)
     })
     it("grants owner the owner, pauser, and signer roles", async () => {
-      expect(await goldfinchIdentity.hasRole(OWNER_ROLE, owner)).to.equal(true)
-      expect(await goldfinchIdentity.hasRole(PAUSER_ROLE, owner)).to.equal(true)
-      expect(await goldfinchIdentity.hasRole(SIGNER_ROLE, owner)).to.equal(true)
+      expect(await uniqueIdentity.hasRole(OWNER_ROLE, owner)).to.equal(true)
+      expect(await uniqueIdentity.hasRole(PAUSER_ROLE, owner)).to.equal(true)
+      expect(await uniqueIdentity.hasRole(SIGNER_ROLE, owner)).to.equal(true)
     })
     it("does not grant the deployer the owner, pauser, nor signer roles", async () => {
-      await uninitializedGoldfinchIdentity.initialize(owner, GOLDFINCH_IDENTITY_METADATA_URI, {
-        from: uninitializedGoldfinchIdentityDeployer,
+      await uninitializedUniqueIdentity.initialize(owner, UNIQUE_IDENTITY_METADATA_URI, {
+        from: uninitializedUniqueIdentityDeployer,
       })
-      expect(await goldfinchIdentity.hasRole(OWNER_ROLE, uninitializedGoldfinchIdentityDeployer)).to.equal(false)
-      expect(await goldfinchIdentity.hasRole(PAUSER_ROLE, uninitializedGoldfinchIdentityDeployer)).to.equal(false)
-      expect(await goldfinchIdentity.hasRole(SIGNER_ROLE, uninitializedGoldfinchIdentityDeployer)).to.equal(false)
+      expect(await uniqueIdentity.hasRole(OWNER_ROLE, uninitializedUniqueIdentityDeployer)).to.equal(false)
+      expect(await uniqueIdentity.hasRole(PAUSER_ROLE, uninitializedUniqueIdentityDeployer)).to.equal(false)
+      expect(await uniqueIdentity.hasRole(SIGNER_ROLE, uninitializedUniqueIdentityDeployer)).to.equal(false)
     })
   })
 
   describe("balanceOf", () => {
     it("returns 0 for a non-minted token", async () => {
       const recipient = anotherUser
-      expect(await goldfinchIdentity.balanceOf(recipient, new BN(0))).to.bignumber.equal(new BN(0))
+      expect(await uniqueIdentity.balanceOf(recipient, new BN(0))).to.bignumber.equal(new BN(0))
     })
     it("returns the amount for a minted token", async () => {
       const recipient = anotherUser
       const tokenId = new BN(0)
       await mint(recipient, tokenId, new BN(0), owner)
-      expect(await goldfinchIdentity.balanceOf(recipient, tokenId)).to.bignumber.equal(new BN(1))
+      expect(await uniqueIdentity.balanceOf(recipient, tokenId)).to.bignumber.equal(new BN(1))
     })
     it("returns 0 for a token that was minted and then burned", async () => {
       const recipient = anotherUser
       const tokenId = new BN(0)
       await mint(recipient, tokenId, new BN(0), owner)
       await burn(recipient, tokenId, new BN(1), owner)
-      expect(await goldfinchIdentity.balanceOf(recipient, tokenId)).to.bignumber.equal(new BN(0))
+      expect(await uniqueIdentity.balanceOf(recipient, tokenId)).to.bignumber.equal(new BN(0))
     })
   })
 
@@ -164,23 +164,23 @@ describe("GoldfinchIdentity", () => {
     const NEW_URI = "https://example.com"
 
     it("allows sender who has owner role", async () => {
-      expect(await goldfinchIdentity.hasRole(OWNER_ROLE, owner)).to.equal(true)
-      await expect(goldfinchIdentity.setURI(NEW_URI, {from: owner})).to.be.fulfilled
+      expect(await uniqueIdentity.hasRole(OWNER_ROLE, owner)).to.equal(true)
+      await expect(uniqueIdentity.setURI(NEW_URI, {from: owner})).to.be.fulfilled
     })
 
     it("rejects sender who lacks owner role", async () => {
-      expect(await goldfinchIdentity.hasRole(OWNER_ROLE, anotherUser)).to.equal(false)
-      await expect(goldfinchIdentity.setURI(NEW_URI, {from: anotherUser})).to.be.rejectedWith(
+      expect(await uniqueIdentity.hasRole(OWNER_ROLE, anotherUser)).to.equal(false)
+      await expect(uniqueIdentity.setURI(NEW_URI, {from: anotherUser})).to.be.rejectedWith(
         /Must have admin role to perform this action/
       )
     })
 
     it("updates state but does not emit an event", async () => {
       const tokenId = new BN(0)
-      const uriBefore = await goldfinchIdentity.uri(tokenId)
-      expect(uriBefore).to.equal(GOLDFINCH_IDENTITY_METADATA_URI)
-      const receipt = await goldfinchIdentity.setURI(NEW_URI, {from: owner})
-      const uriAfter = await goldfinchIdentity.uri(tokenId)
+      const uriBefore = await uniqueIdentity.uri(tokenId)
+      expect(uriBefore).to.equal(UNIQUE_IDENTITY_METADATA_URI)
+      const receipt = await uniqueIdentity.setURI(NEW_URI, {from: owner})
+      const uriAfter = await uniqueIdentity.uri(tokenId)
       expect(uriAfter).to.equal(NEW_URI)
       expectEvent.notEmitted(receipt, "URI")
     })
@@ -188,7 +188,7 @@ describe("GoldfinchIdentity", () => {
     context("paused", () => {
       it("allows anyway", async () => {
         await pause()
-        await expect(goldfinchIdentity.setURI(NEW_URI)).to.be.fulfilled
+        await expect(uniqueIdentity.setURI(NEW_URI)).to.be.fulfilled
       })
     })
   })
@@ -215,18 +215,18 @@ describe("GoldfinchIdentity", () => {
         )
       })
       it("allows address with signer role", async () => {
-        expect(await goldfinchIdentity.hasRole(SIGNER_ROLE, owner)).to.equal(true)
+        expect(await uniqueIdentity.hasRole(SIGNER_ROLE, owner)).to.equal(true)
         await expect(mint(recipient, tokenId, new BN(0), owner)).to.be.fulfilled
       })
       it("rejects address without signer role", async () => {
-        expect(await goldfinchIdentity.hasRole(SIGNER_ROLE, recipient)).to.equal(false)
+        expect(await uniqueIdentity.hasRole(SIGNER_ROLE, recipient)).to.equal(false)
         await expect(mint(recipient, tokenId, new BN(0), recipient)).to.be.rejectedWith(/Invalid signer/)
       })
       it("rejects empty signature", async () => {
         const emptySignature = EMPTY_STRING_HEX
         const mintParams: MintParams = [recipient, tokenId]
         await expect(
-          goldfinchIdentity.mint(...mintParams, emptySignature, {
+          uniqueIdentity.mint(...mintParams, emptySignature, {
             from: recipient,
             value: MINT_PAYMENT,
           })
@@ -236,12 +236,12 @@ describe("GoldfinchIdentity", () => {
         const messageElements: [string, BN] = [recipient, tokenId]
         const signature = await sign(owner, {types: MINT_MESSAGE_ELEMENT_TYPES, values: messageElements}, new BN(0))
         const mintParams: MintParams = [recipient, tokenId]
-        await goldfinchIdentity.mint(...mintParams, signature, {
+        await uniqueIdentity.mint(...mintParams, signature, {
           from: recipient,
           value: MINT_PAYMENT,
         })
         await expect(
-          goldfinchIdentity.mint(...mintParams, signature, {
+          uniqueIdentity.mint(...mintParams, signature, {
             from: recipient,
             value: MINT_PAYMENT,
           })
@@ -258,7 +258,7 @@ describe("GoldfinchIdentity", () => {
         const signature = await sign(owner, {types: MINT_MESSAGE_ELEMENT_TYPES, values: messageElements}, new BN(0))
         const mintParams: MintParams = [recipient, tokenId]
         await expect(
-          goldfinchIdentity.mint(...mintParams, signature, {
+          uniqueIdentity.mint(...mintParams, signature, {
             from: recipient,
             value: MINT_PAYMENT.sub(new BN(1)),
           })
@@ -269,7 +269,7 @@ describe("GoldfinchIdentity", () => {
         const signature = await sign(owner, {types: MINT_MESSAGE_ELEMENT_TYPES, values: messageElements}, new BN(0))
         const mintParams: MintParams = [recipient, tokenId]
         await expect(
-          goldfinchIdentity.mint(...mintParams, signature, {
+          uniqueIdentity.mint(...mintParams, signature, {
             from: recipient,
             value: MINT_PAYMENT,
           })
@@ -280,7 +280,7 @@ describe("GoldfinchIdentity", () => {
         const signature = await sign(owner, {types: MINT_MESSAGE_ELEMENT_TYPES, values: messageElements}, new BN(0))
         const mintParams: MintParams = [recipient, tokenId]
         await expect(
-          goldfinchIdentity.mint(...mintParams, signature, {
+          uniqueIdentity.mint(...mintParams, signature, {
             from: recipient,
             value: MINT_PAYMENT.add(new BN(1)),
           })
@@ -294,7 +294,7 @@ describe("GoldfinchIdentity", () => {
         const signature = await sign(owner, {types: MINT_MESSAGE_ELEMENT_TYPES, values: messageElements}, new BN(0))
         const mintParams: MintParams = [ethersConstants.AddressZero, tokenId]
         await expect(
-          goldfinchIdentity.mint(...mintParams, signature, {
+          uniqueIdentity.mint(...mintParams, signature, {
             from: recipient,
             value: MINT_PAYMENT,
           })
@@ -314,7 +314,7 @@ describe("GoldfinchIdentity", () => {
     describe("validation of mint amount", () => {
       it("rejects duplicative minting, i.e. where amount before minting is > 0", async () => {
         await mint(recipient, tokenId, new BN(0), owner)
-        expect(await goldfinchIdentity.balanceOf(recipient, new BN(0))).to.bignumber.equal(new BN(1))
+        expect(await uniqueIdentity.balanceOf(recipient, new BN(0))).to.bignumber.equal(new BN(1))
         await expect(mint(recipient, tokenId, new BN(1), owner)).to.be.rejectedWith(/Balance before mint must be 0/)
       })
     })
@@ -328,7 +328,7 @@ describe("GoldfinchIdentity", () => {
       const messageElements: [string, BN] = [recipient, tokenId]
       const signature = await sign(owner, {types: MINT_MESSAGE_ELEMENT_TYPES, values: messageElements}, new BN(0))
       const mintParams: MintParams = [recipient, tokenId]
-      const receipt = await goldfinchIdentity.mint(...mintParams, signature, {
+      const receipt = await uniqueIdentity.mint(...mintParams, signature, {
         from: recipient,
         value: MINT_PAYMENT,
       })
@@ -356,9 +356,9 @@ describe("GoldfinchIdentity", () => {
 
     describe("by token owner", () => {
       it("rejects because transfer is disabled", async () => {
-        const amount = await goldfinchIdentity.balanceOf(anotherUser, tokenId)
+        const amount = await uniqueIdentity.balanceOf(anotherUser, tokenId)
         await expect(
-          goldfinchIdentity.safeTransferFrom(anotherUser, anotherUser2, tokenId, amount, EMPTY_STRING_HEX, {
+          uniqueIdentity.safeTransferFrom(anotherUser, anotherUser2, tokenId, amount, EMPTY_STRING_HEX, {
             from: anotherUser,
           })
         ).to.be.rejectedWith(/Only mint or burn transfers are allowed/)
@@ -367,9 +367,9 @@ describe("GoldfinchIdentity", () => {
       context("paused", () => {
         it("reverts", async () => {
           await pause()
-          const amount = await goldfinchIdentity.balanceOf(anotherUser, tokenId)
+          const amount = await uniqueIdentity.balanceOf(anotherUser, tokenId)
           await expect(
-            goldfinchIdentity.safeTransferFrom(anotherUser, anotherUser2, tokenId, amount, EMPTY_STRING_HEX, {
+            uniqueIdentity.safeTransferFrom(anotherUser, anotherUser2, tokenId, amount, EMPTY_STRING_HEX, {
               from: anotherUser,
             })
           ).to.be.rejectedWith(/Only mint or burn transfers are allowed/)
@@ -379,11 +379,11 @@ describe("GoldfinchIdentity", () => {
 
     describe("by approved sender who is not token owner", () => {
       it("rejects because transfer is disabled", async () => {
-        await goldfinchIdentity.setApprovalForAll(anotherUser2, true, {from: anotherUser})
-        expect(await goldfinchIdentity.isApprovedForAll(anotherUser, anotherUser2)).to.equal(true)
-        const amount = await goldfinchIdentity.balanceOf(anotherUser, tokenId)
+        await uniqueIdentity.setApprovalForAll(anotherUser2, true, {from: anotherUser})
+        expect(await uniqueIdentity.isApprovedForAll(anotherUser, anotherUser2)).to.equal(true)
+        const amount = await uniqueIdentity.balanceOf(anotherUser, tokenId)
         await expect(
-          goldfinchIdentity.safeTransferFrom(anotherUser, anotherUser2, tokenId, amount, EMPTY_STRING_HEX, {
+          uniqueIdentity.safeTransferFrom(anotherUser, anotherUser2, tokenId, amount, EMPTY_STRING_HEX, {
             from: anotherUser2,
           })
         ).to.be.rejectedWith(/Only mint or burn transfers are allowed/)
@@ -392,11 +392,11 @@ describe("GoldfinchIdentity", () => {
       context("paused", () => {
         it("reverts", async () => {
           await pause()
-          await goldfinchIdentity.setApprovalForAll(anotherUser2, true, {from: anotherUser})
-          expect(await goldfinchIdentity.isApprovedForAll(anotherUser, anotherUser2)).to.equal(true)
-          const amount = await goldfinchIdentity.balanceOf(anotherUser, tokenId)
+          await uniqueIdentity.setApprovalForAll(anotherUser2, true, {from: anotherUser})
+          expect(await uniqueIdentity.isApprovedForAll(anotherUser, anotherUser2)).to.equal(true)
+          const amount = await uniqueIdentity.balanceOf(anotherUser, tokenId)
           await expect(
-            goldfinchIdentity.safeTransferFrom(anotherUser, anotherUser2, tokenId, amount, EMPTY_STRING_HEX, {
+            uniqueIdentity.safeTransferFrom(anotherUser, anotherUser2, tokenId, amount, EMPTY_STRING_HEX, {
               from: anotherUser2,
             })
           ).to.be.rejectedWith(/Only mint or burn transfers are allowed/)
@@ -416,9 +416,9 @@ describe("GoldfinchIdentity", () => {
 
     describe("by token owner", () => {
       it("rejects because transfer is disabled", async () => {
-        const amount = await goldfinchIdentity.balanceOf(anotherUser, tokenId)
+        const amount = await uniqueIdentity.balanceOf(anotherUser, tokenId)
         await expect(
-          goldfinchIdentity.safeBatchTransferFrom(anotherUser, anotherUser2, [tokenId], [amount], EMPTY_STRING_HEX, {
+          uniqueIdentity.safeBatchTransferFrom(anotherUser, anotherUser2, [tokenId], [amount], EMPTY_STRING_HEX, {
             from: anotherUser,
           })
         ).to.be.rejectedWith(/Only mint or burn transfers are allowed/)
@@ -427,9 +427,9 @@ describe("GoldfinchIdentity", () => {
       context("paused", () => {
         it("reverts", async () => {
           await pause()
-          const amount = await goldfinchIdentity.balanceOf(anotherUser, tokenId)
+          const amount = await uniqueIdentity.balanceOf(anotherUser, tokenId)
           await expect(
-            goldfinchIdentity.safeBatchTransferFrom(anotherUser, anotherUser2, [tokenId], [amount], EMPTY_STRING_HEX, {
+            uniqueIdentity.safeBatchTransferFrom(anotherUser, anotherUser2, [tokenId], [amount], EMPTY_STRING_HEX, {
               from: anotherUser,
             })
           ).to.be.rejectedWith(/Only mint or burn transfers are allowed/)
@@ -439,11 +439,11 @@ describe("GoldfinchIdentity", () => {
 
     describe("by approved sender who is not token owner", () => {
       it("rejects because transfer is disabled", async () => {
-        await goldfinchIdentity.setApprovalForAll(anotherUser2, true, {from: anotherUser})
-        expect(await goldfinchIdentity.isApprovedForAll(anotherUser, anotherUser2)).to.equal(true)
-        const amount = await goldfinchIdentity.balanceOf(anotherUser, tokenId)
+        await uniqueIdentity.setApprovalForAll(anotherUser2, true, {from: anotherUser})
+        expect(await uniqueIdentity.isApprovedForAll(anotherUser, anotherUser2)).to.equal(true)
+        const amount = await uniqueIdentity.balanceOf(anotherUser, tokenId)
         await expect(
-          goldfinchIdentity.safeBatchTransferFrom(anotherUser, anotherUser2, [tokenId], [amount], EMPTY_STRING_HEX, {
+          uniqueIdentity.safeBatchTransferFrom(anotherUser, anotherUser2, [tokenId], [amount], EMPTY_STRING_HEX, {
             from: anotherUser2,
           })
         ).to.be.rejectedWith(/Only mint or burn transfers are allowed/)
@@ -452,11 +452,11 @@ describe("GoldfinchIdentity", () => {
       context("paused", () => {
         it("reverts", async () => {
           await pause()
-          await goldfinchIdentity.setApprovalForAll(anotherUser2, true, {from: anotherUser})
-          expect(await goldfinchIdentity.isApprovedForAll(anotherUser, anotherUser2)).to.equal(true)
-          const amount = await goldfinchIdentity.balanceOf(anotherUser, tokenId)
+          await uniqueIdentity.setApprovalForAll(anotherUser2, true, {from: anotherUser})
+          expect(await uniqueIdentity.isApprovedForAll(anotherUser, anotherUser2)).to.equal(true)
+          const amount = await uniqueIdentity.balanceOf(anotherUser, tokenId)
           await expect(
-            goldfinchIdentity.safeBatchTransferFrom(anotherUser, anotherUser2, [tokenId], [amount], EMPTY_STRING_HEX, {
+            uniqueIdentity.safeBatchTransferFrom(anotherUser, anotherUser2, [tokenId], [amount], EMPTY_STRING_HEX, {
               from: anotherUser2,
             })
           ).to.be.rejectedWith(/Only mint or burn transfers are allowed/)
@@ -489,18 +489,18 @@ describe("GoldfinchIdentity", () => {
         )
       })
       it("allows address with signer role", async () => {
-        expect(await goldfinchIdentity.hasRole(SIGNER_ROLE, owner)).to.equal(true)
+        expect(await uniqueIdentity.hasRole(SIGNER_ROLE, owner)).to.equal(true)
         await expect(burn(recipient, tokenId, new BN(1), owner)).to.be.fulfilled
       })
       it("rejects address without signer role", async () => {
-        expect(await goldfinchIdentity.hasRole(SIGNER_ROLE, recipient)).to.equal(false)
+        expect(await uniqueIdentity.hasRole(SIGNER_ROLE, recipient)).to.equal(false)
         await expect(burn(recipient, tokenId, new BN(1), recipient)).to.be.rejectedWith(/Invalid signer/)
       })
       it("rejects empty signature", async () => {
         const emptySignature = EMPTY_STRING_HEX
         const burnParams: BurnParams = [recipient, tokenId]
         await expect(
-          goldfinchIdentity.burn(...burnParams, emptySignature, {
+          uniqueIdentity.burn(...burnParams, emptySignature, {
             from: recipient,
           })
         ).to.be.rejectedWith(/ECDSA: invalid signature length/)
@@ -509,11 +509,11 @@ describe("GoldfinchIdentity", () => {
         const messageElements: [string, BN] = [recipient, tokenId]
         const signature = await sign(owner, {types: BURN_MESSAGE_ELEMENT_TYPES, values: messageElements}, new BN(1))
         const burnParams: BurnParams = [recipient, tokenId]
-        await goldfinchIdentity.burn(...burnParams, signature, {
+        await uniqueIdentity.burn(...burnParams, signature, {
           from: recipient,
         })
         await expect(
-          goldfinchIdentity.burn(...burnParams, signature, {
+          uniqueIdentity.burn(...burnParams, signature, {
             from: recipient,
           })
         ).to.be.rejectedWith(/Invalid signer/)
@@ -529,17 +529,17 @@ describe("GoldfinchIdentity", () => {
         const signature = await sign(owner, {types: BURN_MESSAGE_ELEMENT_TYPES, values: messageElements}, new BN(0))
         const burnParams: BurnParams = [ethersConstants.AddressZero, tokenId]
         await expect(
-          goldfinchIdentity.burn(...burnParams, signature, {
+          uniqueIdentity.burn(...burnParams, signature, {
             from: recipient,
           })
         ).to.be.rejectedWith(/ERC1155: burn from the zero address/)
       })
       it("allows account having token id", async () => {
-        expect(await goldfinchIdentity.balanceOf(recipient, tokenId)).to.bignumber.equal(new BN(1))
+        expect(await uniqueIdentity.balanceOf(recipient, tokenId)).to.bignumber.equal(new BN(1))
         await expect(burn(recipient, tokenId, new BN(1), owner)).to.be.fulfilled
       })
       it("rejects account not having token id", async () => {
-        expect(await goldfinchIdentity.balanceOf(anotherUser2, tokenId)).to.bignumber.equal(new BN(0))
+        expect(await uniqueIdentity.balanceOf(anotherUser2, tokenId)).to.bignumber.equal(new BN(0))
         await expect(burn(anotherUser2, tokenId, new BN(0), owner)).to.be.rejectedWith(
           /ERC1155: burn amount exceeds balance/
         )
@@ -555,11 +555,11 @@ describe("GoldfinchIdentity", () => {
         // (1) in case such tokens should never have been mintable but were somehow minted; (2) in case we have deprecated
         // the ability to mint tokens of that id.
         const unsupportedTokenId = tokenId.add(new BN(1))
-        expect(await goldfinchIdentity.balanceOf(recipient, unsupportedTokenId)).to.bignumber.equal(new BN(0))
+        expect(await uniqueIdentity.balanceOf(recipient, unsupportedTokenId)).to.bignumber.equal(new BN(0))
         await expect(mint(recipient, unsupportedTokenId, new BN(1), owner)).to.be.rejectedWith(/Token id not supported/)
         const value = new BN(1)
-        await goldfinchIdentity._mintForTest(recipient, unsupportedTokenId, value, EMPTY_STRING_HEX, {from: owner})
-        expect(await goldfinchIdentity.balanceOf(recipient, unsupportedTokenId)).to.bignumber.equal(value)
+        await uniqueIdentity._mintForTest(recipient, unsupportedTokenId, value, EMPTY_STRING_HEX, {from: owner})
+        expect(await uniqueIdentity.balanceOf(recipient, unsupportedTokenId)).to.bignumber.equal(value)
         await expect(burn(recipient, unsupportedTokenId, new BN(2), owner)).to.be.fulfilled
       })
     })
@@ -572,21 +572,21 @@ describe("GoldfinchIdentity", () => {
         // An implication of the behavior established by this test is, if the case ever arises in practice where a token
         // balance becomes > 1 (e.g. due to a bug or hack), we'd need to upgrade the contract to be able to burn that token.
         const unsupportedValue = new BN(2)
-        expect(await goldfinchIdentity.balanceOf(anotherUser2, tokenId)).to.bignumber.equal(new BN(0))
-        await goldfinchIdentity._mintForTest(anotherUser2, tokenId, unsupportedValue, EMPTY_STRING_HEX, {from: owner})
-        expect(await goldfinchIdentity.balanceOf(anotherUser2, tokenId)).to.bignumber.equal(unsupportedValue)
+        expect(await uniqueIdentity.balanceOf(anotherUser2, tokenId)).to.bignumber.equal(new BN(0))
+        await uniqueIdentity._mintForTest(anotherUser2, tokenId, unsupportedValue, EMPTY_STRING_HEX, {from: owner})
+        expect(await uniqueIdentity.balanceOf(anotherUser2, tokenId)).to.bignumber.equal(unsupportedValue)
         await expect(burn(anotherUser2, tokenId, new BN(1), owner)).to.be.rejectedWith(/Balance after burn must be 0/)
       })
       it("rejects burn value greater than amount on token", async () => {
-        expect(await goldfinchIdentity.balanceOf(anotherUser2, tokenId)).to.bignumber.equal(new BN(0))
+        expect(await uniqueIdentity.balanceOf(anotherUser2, tokenId)).to.bignumber.equal(new BN(0))
         await expect(burn(anotherUser2, tokenId, new BN(0), owner)).to.be.rejectedWith(
           /ERC1155: burn amount exceeds balance/
         )
       })
       it("allows burn value that equals amount on token", async () => {
-        expect(await goldfinchIdentity.balanceOf(recipient, tokenId)).to.bignumber.equal(new BN(1))
+        expect(await uniqueIdentity.balanceOf(recipient, tokenId)).to.bignumber.equal(new BN(1))
         await expect(burn(recipient, tokenId, new BN(1), owner)).to.be.fulfilled
-        expect(await goldfinchIdentity.balanceOf(recipient, tokenId)).to.bignumber.equal(new BN(0))
+        expect(await uniqueIdentity.balanceOf(recipient, tokenId)).to.bignumber.equal(new BN(0))
       })
     })
 
@@ -599,7 +599,7 @@ describe("GoldfinchIdentity", () => {
       const messageElements: [string, BN] = [recipient, tokenId]
       const signature = await sign(owner, {types: BURN_MESSAGE_ELEMENT_TYPES, values: messageElements}, new BN(1))
       const burnParams: BurnParams = [recipient, tokenId]
-      const receipt = await goldfinchIdentity.burn(...burnParams, signature, {
+      const receipt = await uniqueIdentity.burn(...burnParams, signature, {
         from: recipient,
       })
       expect(receipt.receipt.gasUsed).to.eq(47110)

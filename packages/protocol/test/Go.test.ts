@@ -11,8 +11,8 @@ import {
   TRUFFLE_CONTRACT_PROVIDER,
 } from "../blockchain_scripts/deployHelpers"
 import {Go} from "../typechain/ethers"
-import {GoInstance, GoldfinchConfigInstance, TestGoldfinchIdentityInstance} from "../typechain/truffle"
-import {mint} from "./goldfinchIdentityHelpers"
+import {GoInstance, GoldfinchConfigInstance, TestUniqueIdentityInstance} from "../typechain/truffle"
+import {mint} from "./uniqueIdentityHelpers"
 import {BN} from "ethereumjs-tx/node_modules/ethereumjs-util"
 import {DeployResult} from "hardhat-deploy/types"
 import {expectEvent} from "@openzeppelin/test-helpers"
@@ -29,7 +29,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const deployed = await deployAllContracts(deployments)
 
   const goldfinchConfig = deployed.goldfinchConfig
-  const goldfinchIdentity = deployed.goldfinchIdentity
+  const uniqueIdentity = deployed.uniqueIdentity
   const go = deployed.go
 
   const uninitializedGoDeployResult = await deploy("Go", {
@@ -48,7 +48,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
     uninitializedGo,
     uninitializedGoDeployer,
     goldfinchConfig,
-    goldfinchIdentity,
+    uniqueIdentity,
   }
 })
 
@@ -60,7 +60,7 @@ describe("Go", () => {
     uninitializedGoDeployer: string,
     uninitializedGo: GoInstance,
     goldfinchConfig: GoldfinchConfigInstance,
-    goldfinchIdentity: TestGoldfinchIdentityInstance
+    uniqueIdentity: TestUniqueIdentityInstance
 
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
@@ -72,7 +72,7 @@ describe("Go", () => {
       uninitializedGoDeployer,
       uninitializedGo,
       goldfinchConfig,
-      goldfinchIdentity,
+      uniqueIdentity,
     } = await setupTest())
   })
 
@@ -87,20 +87,20 @@ describe("Go", () => {
       const initialized = uninitializedGo.initialize(
         ethersConstants.AddressZero,
         goldfinchConfig.address,
-        goldfinchIdentity.address
+        uniqueIdentity.address
       )
-      await expect(initialized).to.be.rejectedWith(/Owner and config and GoldfinchIdentity addresses cannot be empty/)
+      await expect(initialized).to.be.rejectedWith(/Owner and config and UniqueIdentity addresses cannot be empty/)
     })
     it("rejects zero address config", async () => {
-      const initialized = uninitializedGo.initialize(owner, ethersConstants.AddressZero, goldfinchIdentity.address)
-      await expect(initialized).to.be.rejectedWith(/Owner and config and GoldfinchIdentity addresses cannot be empty/)
+      const initialized = uninitializedGo.initialize(owner, ethersConstants.AddressZero, uniqueIdentity.address)
+      await expect(initialized).to.be.rejectedWith(/Owner and config and UniqueIdentity addresses cannot be empty/)
     })
-    it("rejects zero address goldfinchIdentity", async () => {
+    it("rejects zero address uniqueIdentity", async () => {
       const initialized = uninitializedGo.initialize(owner, goldfinchConfig.address, ethersConstants.AddressZero)
-      await expect(initialized).to.be.rejectedWith(/Owner and config and GoldfinchIdentity addresses cannot be empty/)
+      await expect(initialized).to.be.rejectedWith(/Owner and config and UniqueIdentity addresses cannot be empty/)
     })
     it("grants owner the owner and pauser roles", async () => {
-      await uninitializedGo.initialize(owner, goldfinchConfig.address, goldfinchIdentity.address, {
+      await uninitializedGo.initialize(owner, goldfinchConfig.address, uniqueIdentity.address, {
         from: uninitializedGoDeployer,
       })
       expect(await uninitializedGo.hasRole(OWNER_ROLE, owner)).to.equal(true)
@@ -110,21 +110,21 @@ describe("Go", () => {
       expect(await go.hasRole(PAUSER_ROLE, owner)).to.equal(true)
     })
     it("does not grant deployer the owner and pauser roles", async () => {
-      await uninitializedGo.initialize(owner, goldfinchConfig.address, goldfinchIdentity.address, {
+      await uninitializedGo.initialize(owner, goldfinchConfig.address, uniqueIdentity.address, {
         from: uninitializedGoDeployer,
       })
       expect(await uninitializedGo.hasRole(OWNER_ROLE, uninitializedGoDeployer)).to.equal(false)
       expect(await uninitializedGo.hasRole(PAUSER_ROLE, uninitializedGoDeployer)).to.equal(false)
     })
-    it("sets config and goldfinchIdentity addresses in state", async () => {
-      await uninitializedGo.initialize(owner, goldfinchConfig.address, goldfinchIdentity.address, {
+    it("sets config and uniqueIdentity addresses in state", async () => {
+      await uninitializedGo.initialize(owner, goldfinchConfig.address, uniqueIdentity.address, {
         from: uninitializedGoDeployer,
       })
       expect(await uninitializedGo.config()).to.equal(goldfinchConfig.address)
-      expect(await uninitializedGo.goldfinchIdentity()).to.equal(goldfinchIdentity.address)
+      expect(await uninitializedGo.uniqueIdentity()).to.equal(uniqueIdentity.address)
 
       expect(await go.config()).to.equal(goldfinchConfig.address)
-      expect(await go.goldfinchIdentity()).to.equal(goldfinchIdentity.address)
+      expect(await go.uniqueIdentity()).to.equal(uniqueIdentity.address)
     })
   })
 
@@ -169,10 +169,10 @@ describe("Go", () => {
       await expect(go.go(ethersConstants.AddressZero)).to.be.rejectedWith(/Zero address is not go-listed/)
     })
 
-    context("account with 0 balance GoldfinchIdentity token (id 0)", () => {
+    context("account with 0 balance UniqueIdentity token (id 0)", () => {
       beforeEach(async () => {
         const tokenId = new BN(0)
-        expect(await goldfinchIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(new BN(0))
+        expect(await uniqueIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(new BN(0))
       })
 
       context("account is on legacy go-list", () => {
@@ -198,11 +198,11 @@ describe("Go", () => {
       })
     })
 
-    context("account with > 0 balance GoldfinchIdentity token (id 0)", () => {
+    context("account with > 0 balance UniqueIdentity token (id 0)", () => {
       beforeEach(async () => {
         const tokenId = new BN(0)
-        await mint(hre, goldfinchIdentity, anotherUser, tokenId, new BN(0), owner)
-        expect(await goldfinchIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(new BN(1))
+        await mint(hre, uniqueIdentity, anotherUser, tokenId, new BN(0), owner)
+        expect(await uniqueIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(new BN(1))
       })
 
       context("account is on legacy go-list", () => {
@@ -231,8 +231,8 @@ describe("Go", () => {
     context("paused", () => {
       beforeEach(async () => {
         const tokenId = new BN(0)
-        await mint(hre, goldfinchIdentity, anotherUser, tokenId, new BN(0), owner)
-        expect(await goldfinchIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(new BN(1))
+        await mint(hre, uniqueIdentity, anotherUser, tokenId, new BN(0), owner)
+        expect(await uniqueIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(new BN(1))
       })
 
       it("returns anyway", async () => {
