@@ -160,6 +160,9 @@ describe("UniqueIdentity", () => {
       expect(await uniqueIdentity.hasRole(PAUSER_ROLE, uninitializedUniqueIdentityDeployer)).to.equal(false)
       expect(await uniqueIdentity.hasRole(SIGNER_ROLE, uninitializedUniqueIdentityDeployer)).to.equal(false)
     })
+    it("zero-address lacks signer role", async () => {
+      expect(await uniqueIdentity.hasRole(SIGNER_ROLE, ethersConstants.AddressZero)).to.equal(false)
+    })
   })
 
   describe("balanceOf", () => {
@@ -319,7 +322,7 @@ describe("UniqueIdentity", () => {
     })
 
     describe("validates account", () => {
-      it("rejects 0 address", async () => {
+      it("rejects zero-address", async () => {
         const messageElements: [string, BN] = [ethersConstants.AddressZero, tokenId]
         const signature = await sign(owner, {types: MINT_MESSAGE_ELEMENT_TYPES, values: messageElements}, new BN(0))
         const mintParams: MintParams = [ethersConstants.AddressZero, tokenId]
@@ -562,7 +565,7 @@ describe("UniqueIdentity", () => {
     })
 
     describe("validates account", () => {
-      it("rejects 0 address", async () => {
+      it("rejects zero-address", async () => {
         const messageElements: [string, BN] = [ethersConstants.AddressZero, tokenId]
         const signature = await sign(owner, {types: BURN_MESSAGE_ELEMENT_TYPES, values: messageElements}, new BN(0))
         const burnParams: BurnParams = [ethersConstants.AddressZero, tokenId]
