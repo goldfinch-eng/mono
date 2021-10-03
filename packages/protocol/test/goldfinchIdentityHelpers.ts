@@ -8,11 +8,11 @@ import {BN, decodeLogs, getOnlyLog} from "./testHelpers"
 import {BigNumber, constants as ethersConstants} from "ethers"
 import {HardhatRuntimeEnvironment} from "hardhat/types"
 
-export const MINT_MESSAGE_ELEMENT_TYPES = ["address", "uint256", "uint256"]
+export const MINT_MESSAGE_ELEMENT_TYPES = ["address", "uint256"]
 export const EMPTY_STRING_HEX = web3.utils.asciiToHex("")
 export const MINT_PAYMENT = new BN(0.00083e18)
 
-export const BURN_MESSAGE_ELEMENT_TYPES = ["address", "uint256", "uint256"]
+export const BURN_MESSAGE_ELEMENT_TYPES = ["address", "uint256"]
 
 export const sign = async (
   hre: HardhatRuntimeEnvironment,
@@ -50,14 +50,13 @@ export const sign = async (
   return signer.signMessage(arrayified)
 }
 
-export type MintParams = [string, BN, BN]
+export type MintParams = [string, BN]
 
 export async function mint(
   hre: HardhatRuntimeEnvironment,
   goldfinchIdentity: TestGoldfinchIdentityInstance,
   recipient: string,
   tokenId: BN,
-  amount: BN,
   nonce: BN,
   signer: string,
   overrideMintParams?: MintParams,
@@ -66,10 +65,10 @@ export async function mint(
   const contractBalanceBefore = await web3.eth.getBalance(goldfinchIdentity.address)
   const tokenBalanceBefore = await goldfinchIdentity.balanceOf(recipient, tokenId)
 
-  const messageElements: [string, BN, BN] = [recipient, tokenId, amount]
+  const messageElements: [string, BN] = [recipient, tokenId]
   const signature = await sign(hre, signer, {types: MINT_MESSAGE_ELEMENT_TYPES, values: messageElements}, nonce)
 
-  const defaultMintParams: MintParams = [recipient, tokenId, amount]
+  const defaultMintParams: MintParams = [recipient, tokenId]
   const mintParams: MintParams = overrideMintParams || defaultMintParams
 
   const defaultFrom = recipient
@@ -85,7 +84,8 @@ export async function mint(
   expect(new BN(contractBalanceAfter).sub(new BN(contractBalanceBefore))).to.bignumber.equal(MINT_PAYMENT)
 
   const tokenBalanceAfter = await goldfinchIdentity.balanceOf(recipient, tokenId)
-  expect(tokenBalanceAfter.sub(tokenBalanceBefore)).to.bignumber.equal(amount)
+  expect(tokenBalanceAfter.sub(tokenBalanceBefore)).to.bignumber.equal(new BN(1))
+  expect(tokenBalanceAfter).to.bignumber.equal(new BN(1))
 
   expect(await goldfinchIdentity.nonces(recipient)).to.bignumber.equal(nonce.add(new BN(1)))
 
@@ -97,17 +97,16 @@ export async function mint(
   expect(transferEvent.args.from).to.equal(ethersConstants.AddressZero)
   expect(transferEvent.args.to).to.equal(recipient)
   expect(transferEvent.args.id).to.bignumber.equal(tokenId)
-  expect(transferEvent.args.value).to.bignumber.equal(amount)
+  expect(transferEvent.args.value).to.bignumber.equal(new BN(1))
 }
 
-export type BurnParams = [string, BN, BN]
+export type BurnParams = [string, BN]
 
 export async function burn(
   hre: HardhatRuntimeEnvironment,
   goldfinchIdentity: TestGoldfinchIdentityInstance,
   recipient: string,
   tokenId: BN,
-  value: BN,
   nonce: BN,
   signer: string,
   overrideBurnParams?: BurnParams,
@@ -116,10 +115,10 @@ export async function burn(
   const contractBalanceBefore = await web3.eth.getBalance(goldfinchIdentity.address)
   const tokenBalanceBefore = await goldfinchIdentity.balanceOf(recipient, tokenId)
 
-  const messageElements: [string, BN, BN] = [recipient, tokenId, value]
+  const messageElements: [string, BN] = [recipient, tokenId]
   const signature = await sign(hre, signer, {types: BURN_MESSAGE_ELEMENT_TYPES, values: messageElements}, nonce)
 
-  const defaultBurnParams: BurnParams = [recipient, tokenId, value]
+  const defaultBurnParams: BurnParams = [recipient, tokenId]
   const burnParams: BurnParams = overrideBurnParams || defaultBurnParams
 
   const defaultFrom = recipient
@@ -132,7 +131,7 @@ export async function burn(
   expect(new BN(contractBalanceAfter)).to.bignumber.equal(new BN(contractBalanceBefore))
 
   const tokenBalanceAfter = await goldfinchIdentity.balanceOf(recipient, tokenId)
-  expect(tokenBalanceBefore.sub(tokenBalanceAfter)).to.bignumber.equal(value)
+  expect(tokenBalanceBefore.sub(tokenBalanceAfter)).to.bignumber.equal(new BN(1))
   expect(tokenBalanceAfter).to.bignumber.equal(new BN(0))
 
   expect(await goldfinchIdentity.nonces(recipient)).to.bignumber.equal(nonce.add(new BN(1)))
@@ -145,5 +144,5 @@ export async function burn(
   expect(transferEvent.args.from).to.equal(recipient)
   expect(transferEvent.args.to).to.equal(ethersConstants.AddressZero)
   expect(transferEvent.args.id).to.bignumber.equal(tokenId)
-  expect(transferEvent.args.value).to.bignumber.equal(value)
+  expect(transferEvent.args.value).to.bignumber.equal(new BN(1))
 }

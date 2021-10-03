@@ -52,36 +52,27 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
   function mint(
     address to,
     uint256 id,
-    uint256 amount,
     bytes calldata signature
-  )
-    public
-    payable
-    override
-    onlySigner(keccak256(abi.encodePacked(to, id, amount, nonces[to])), signature)
-    incrementNonce(to)
-  {
+  ) public payable override onlySigner(keccak256(abi.encodePacked(to, id, nonces[to])), signature) incrementNonce(to) {
     require(msg.value >= MINT_COST_PER_TOKEN, "Token mint requires 0.00083 ETH");
     require(to != address(0), "Cannot mint to the zero address");
     require(id == ID_VERSION_0, "Token id not supported");
     require(balanceOf(to, id) == 0, "Balance before mint must be 0");
-    require(amount > 0, "Amount must be greater than 0");
 
-    _mint(to, id, amount, "");
+    _mint(to, id, 1, "");
   }
 
   function burn(
     address account,
     uint256 id,
-    uint256 value,
     bytes calldata signature
   )
     public
     override
-    onlySigner(keccak256(abi.encodePacked(account, id, value, nonces[account])), signature)
+    onlySigner(keccak256(abi.encodePacked(account, id, nonces[account])), signature)
     incrementNonce(account)
   {
-    _burn(account, id, value);
+    _burn(account, id, 1);
 
     uint256 accountBalance = balanceOf(account, id);
     require(accountBalance == 0, "Balance after burn must be 0");
