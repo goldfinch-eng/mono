@@ -405,7 +405,7 @@ describe("GoldfinchIdentity", () => {
           goldfinchIdentity.safeTransferFrom(anotherUser, anotherUser2, tokenId, amount, EMPTY_STRING_HEX, {
             from: anotherUser,
           })
-        ).to.be.rejectedWith(/Only mint xor burn transfers are allowed/)
+        ).to.be.rejectedWith(/Only mint or burn transfers are allowed/)
       })
 
       context("paused", () => {
@@ -415,7 +415,7 @@ describe("GoldfinchIdentity", () => {
             goldfinchIdentity.safeTransferFrom(anotherUser, anotherUser2, tokenId, amount, EMPTY_STRING_HEX, {
               from: anotherUser,
             })
-          ).to.be.rejectedWith(/Only mint xor burn transfers are allowed/)
+          ).to.be.rejectedWith(/Only mint or burn transfers are allowed/)
         })
       })
     })
@@ -428,7 +428,7 @@ describe("GoldfinchIdentity", () => {
           goldfinchIdentity.safeTransferFrom(anotherUser, anotherUser2, tokenId, amount, EMPTY_STRING_HEX, {
             from: anotherUser2,
           })
-        ).to.be.rejectedWith(/Only mint xor burn transfers are allowed/)
+        ).to.be.rejectedWith(/Only mint or burn transfers are allowed/)
       })
 
       context("paused", () => {
@@ -440,7 +440,7 @@ describe("GoldfinchIdentity", () => {
             goldfinchIdentity.safeTransferFrom(anotherUser, anotherUser2, tokenId, amount, EMPTY_STRING_HEX, {
               from: anotherUser2,
             })
-          ).to.be.rejectedWith(/Only mint xor burn transfers are allowed/)
+          ).to.be.rejectedWith(/Only mint or burn transfers are allowed/)
         })
       })
     })
@@ -462,7 +462,7 @@ describe("GoldfinchIdentity", () => {
           goldfinchIdentity.safeBatchTransferFrom(anotherUser, anotherUser2, [tokenId], [amount], EMPTY_STRING_HEX, {
             from: anotherUser,
           })
-        ).to.be.rejectedWith(/Only mint xor burn transfers are allowed/)
+        ).to.be.rejectedWith(/Only mint or burn transfers are allowed/)
       })
 
       context("paused", () => {
@@ -472,7 +472,7 @@ describe("GoldfinchIdentity", () => {
             goldfinchIdentity.safeBatchTransferFrom(anotherUser, anotherUser2, [tokenId], [amount], EMPTY_STRING_HEX, {
               from: anotherUser,
             })
-          ).to.be.rejectedWith(/Only mint xor burn transfers are allowed/)
+          ).to.be.rejectedWith(/Only mint or burn transfers are allowed/)
         })
       })
     })
@@ -485,7 +485,7 @@ describe("GoldfinchIdentity", () => {
           goldfinchIdentity.safeBatchTransferFrom(anotherUser, anotherUser2, [tokenId], [amount], EMPTY_STRING_HEX, {
             from: anotherUser2,
           })
-        ).to.be.rejectedWith(/Only mint xor burn transfers are allowed/)
+        ).to.be.rejectedWith(/Only mint or burn transfers are allowed/)
       })
 
       context("paused", () => {
@@ -497,7 +497,7 @@ describe("GoldfinchIdentity", () => {
             goldfinchIdentity.safeBatchTransferFrom(anotherUser, anotherUser2, [tokenId], [amount], EMPTY_STRING_HEX, {
               from: anotherUser2,
             })
-          ).to.be.rejectedWith(/Only mint xor burn transfers are allowed/)
+          ).to.be.rejectedWith(/Only mint or burn transfers are allowed/)
         })
       })
     })
