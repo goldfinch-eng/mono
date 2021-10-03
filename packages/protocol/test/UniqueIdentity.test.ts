@@ -160,6 +160,16 @@ describe("UniqueIdentity", () => {
       expect(await uniqueIdentity.hasRole(PAUSER_ROLE, uninitializedUniqueIdentityDeployer)).to.equal(false)
       expect(await uniqueIdentity.hasRole(SIGNER_ROLE, uninitializedUniqueIdentityDeployer)).to.equal(false)
     })
+    it("cannot be called twice", async () => {
+      await uninitializedUniqueIdentity.initialize(owner, UNIQUE_IDENTITY_METADATA_URI, {
+        from: uninitializedUniqueIdentityDeployer,
+      })
+      await expect(
+        uninitializedUniqueIdentity.initialize(anotherUser2, UNIQUE_IDENTITY_METADATA_URI, {
+          from: uninitializedUniqueIdentityDeployer,
+        })
+      ).to.be.rejectedWith(/Initializable: contract is already initialized/)
+    })
     it("zero-address lacks signer role", async () => {
       expect(await uniqueIdentity.hasRole(SIGNER_ROLE, ethersConstants.AddressZero)).to.equal(false)
     })

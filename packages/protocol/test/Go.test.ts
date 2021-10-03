@@ -126,6 +126,16 @@ describe("Go", () => {
       expect(await go.config()).to.equal(goldfinchConfig.address)
       expect(await go.uniqueIdentity()).to.equal(uniqueIdentity.address)
     })
+    it("cannot be called twice", async () => {
+      await uninitializedGo.initialize(owner, goldfinchConfig.address, uniqueIdentity.address, {
+        from: uninitializedGoDeployer,
+      })
+      await expect(
+        uninitializedGo.initialize(anotherUser2, goldfinchConfig.address, uniqueIdentity.address, {
+          from: uninitializedGoDeployer,
+        })
+      ).to.be.rejectedWith(/Initializable: contract is already initialized/)
+    })
   })
 
   describe("updateGoldfinchConfig", () => {
