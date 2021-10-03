@@ -201,9 +201,8 @@ describe("Go", () => {
     context("account with > 0 balance GoldfinchIdentity token (id 0)", () => {
       beforeEach(async () => {
         const tokenId = new BN(0)
-        const amount = new BN(1)
-        await mint(hre, goldfinchIdentity, anotherUser, tokenId, amount, new BN(0), owner)
-        expect(await goldfinchIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(amount)
+        await mint(hre, goldfinchIdentity, anotherUser, tokenId, new BN(0), owner)
+        expect(await goldfinchIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(new BN(1))
       })
 
       context("account is on legacy go-list", () => {
@@ -232,9 +231,8 @@ describe("Go", () => {
     context("paused", () => {
       beforeEach(async () => {
         const tokenId = new BN(0)
-        const amount = new BN(1)
-        await mint(hre, goldfinchIdentity, anotherUser, tokenId, amount, new BN(0), owner)
-        expect(await goldfinchIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(amount)
+        await mint(hre, goldfinchIdentity, anotherUser, tokenId, new BN(0), owner)
+        expect(await goldfinchIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(new BN(1))
       })
 
       it("returns anyway", async () => {
