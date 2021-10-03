@@ -14,10 +14,6 @@ import "../../interfaces/IGoldfinchIdentity.sol";
  */
 
 contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity {
-  // TODO[PR] We could disable / remove operator-approval logic from this contract,
-  // because it's unused. Though we don't need to do so, as the tests establish that
-  // it is ineffectual, given that we disable transferring tokens.
-
   bytes32 public constant SIGNER_ROLE = keccak256("SIGNER_ROLE");
 
   uint256 public constant ID_VERSION_0 = 0;
