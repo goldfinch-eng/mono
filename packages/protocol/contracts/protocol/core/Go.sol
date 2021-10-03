@@ -19,6 +19,16 @@ contract Go is IGo, BaseUpgradeablePausable {
   using ConfigHelper for GoldfinchConfig;
 
   uint256 public constant ID_VERSION_0 = 0;
+  uint256 public constant ID_VERSION_1 = 1;
+  uint256 public constant ID_VERSION_2 = 2;
+  uint256 public constant ID_VERSION_3 = 3;
+  uint256 public constant ID_VERSION_4 = 4;
+  uint256 public constant ID_VERSION_5 = 5;
+  uint256 public constant ID_VERSION_6 = 6;
+  uint256 public constant ID_VERSION_7 = 7;
+  uint256 public constant ID_VERSION_8 = 8;
+  uint256 public constant ID_VERSION_9 = 9;
+  uint256 public constant ID_VERSION_10 = 10;
 
   event GoldfinchConfigUpdated(address indexed who, address configAddress);
 

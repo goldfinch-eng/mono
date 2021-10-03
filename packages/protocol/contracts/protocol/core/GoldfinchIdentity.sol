@@ -17,6 +17,16 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
   bytes32 public constant SIGNER_ROLE = keccak256("SIGNER_ROLE");
 
   uint256 public constant ID_VERSION_0 = 0;
+  uint256 public constant ID_VERSION_1 = 1;
+  uint256 public constant ID_VERSION_2 = 2;
+  uint256 public constant ID_VERSION_3 = 3;
+  uint256 public constant ID_VERSION_4 = 4;
+  uint256 public constant ID_VERSION_5 = 5;
+  uint256 public constant ID_VERSION_6 = 6;
+  uint256 public constant ID_VERSION_7 = 7;
+  uint256 public constant ID_VERSION_8 = 8;
+  uint256 public constant ID_VERSION_9 = 9;
+  uint256 public constant ID_VERSION_10 = 10;
 
   uint256 public constant MINT_COST_PER_TOKEN = 830000 gwei;
 
