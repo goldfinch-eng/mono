@@ -44,13 +44,18 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
     uint256 id,
     uint256 amount,
     bytes memory signature
-  ) public payable override onlySigner(keccak256(abi.encodePacked(to, id, amount, nonces[to])), signature) {
+  )
+    public
+    payable
+    override
+    onlySigner(keccak256(abi.encodePacked(to, id, amount, nonces[to])), signature)
+    incrementNonce(to)
+  {
     require(msg.value >= MINT_COST_PER_TOKEN, "Token mint requires 0.00083 ETH");
     require(id == ID_VERSION_0, "Token id not supported");
     require(balanceOf(to, id) == 0, "Balance before mint must be 0");
     require(amount > 0, "Amount must be greater than 0");
 
-    nonces[to] += 1;
     _mint(to, id, amount, "");
   }
 
@@ -59,8 +64,12 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
     uint256 id,
     uint256 value,
     bytes memory signature
-  ) public override onlySigner(keccak256(abi.encodePacked(account, id, value, nonces[account])), signature) {
-    nonces[account] += 1;
+  )
+    public
+    override
+    onlySigner(keccak256(abi.encodePacked(account, id, value, nonces[account])), signature)
+    incrementNonce(account)
+  {
     _burn(account, id, value);
 
     uint256 accountBalance = balanceOf(account, id);
@@ -85,6 +94,11 @@ contract GoldfinchIdentity is ERC1155PresetPauserUpgradeable, IGoldfinchIdentity
   modifier onlySigner(bytes32 hash, bytes memory signature) {
     bytes32 ethSignedMessage = ECDSAUpgradeable.toEthSignedMessageHash(hash);
     require(hasRole(SIGNER_ROLE, ECDSAUpgradeable.recover(ethSignedMessage, signature)), "Invalid signer");
+    _;
+  }
+
+  modifier incrementNonce(address account) {
+    nonces[account] += 1;
     _;
   }
 }
