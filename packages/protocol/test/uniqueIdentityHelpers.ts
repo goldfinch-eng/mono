@@ -18,7 +18,8 @@ export const sign = async (
   hre: HardhatRuntimeEnvironment,
   signerAddress: string,
   messageBaseElements: {types: string[]; values: Array<BN | string>},
-  nonce: BN
+  nonce: BN,
+  overrideChainId?: BN
 ): Promise<string> => {
   const signer = (await hre.ethers.getSigners()).find((signer) => signer.address === signerAddress)
   assertNonNullable(signer)
@@ -27,9 +28,10 @@ export const sign = async (
     throw new Error("Invalid message elements")
   }
 
-  // Append nonce to base elements of message.
-  const types = messageBaseElements.types.concat("uint256")
-  const _values = messageBaseElements.values.concat(nonce)
+  // Append nonce and chainId to base elements of message.
+  const chainId = overrideChainId || (await hre.getChainId())
+  const types = messageBaseElements.types.concat(["uint256", "uint256"])
+  const _values = messageBaseElements.values.concat([nonce, chainId])
 
   // Convert BN values to BigNumber, since ethers utils use BigNumber.
   const values = _values.map((val: BN | string) => (BN.isBN(val) ? BigNumber.from(val.toString()) : val))
@@ -60,13 +62,20 @@ export async function mint(
   nonce: BN,
   signer: string,
   overrideMintParams?: MintParams,
-  overrideFrom?: string
+  overrideFrom?: string,
+  overrideChainId?: BN
 ): Promise<void> {
   const contractBalanceBefore = await web3.eth.getBalance(uniqueIdentity.address)
   const tokenBalanceBefore = await uniqueIdentity.balanceOf(recipient, tokenId)
 
   const messageElements: [string, BN] = [recipient, tokenId]
-  const signature = await sign(hre, signer, {types: MINT_MESSAGE_ELEMENT_TYPES, values: messageElements}, nonce)
+  const signature = await sign(
+    hre,
+    signer,
+    {types: MINT_MESSAGE_ELEMENT_TYPES, values: messageElements},
+    nonce,
+    overrideChainId
+  )
 
   const defaultMintParams: MintParams = [recipient, tokenId]
   const mintParams: MintParams = overrideMintParams || defaultMintParams
@@ -110,13 +119,20 @@ export async function burn(
   nonce: BN,
   signer: string,
   overrideBurnParams?: BurnParams,
-  overrideFrom?: string
+  overrideFrom?: string,
+  overrideChainId?: BN
 ): Promise<void> {
   const contractBalanceBefore = await web3.eth.getBalance(uniqueIdentity.address)
   const tokenBalanceBefore = await uniqueIdentity.balanceOf(recipient, tokenId)
 
   const messageElements: [string, BN] = [recipient, tokenId]
-  const signature = await sign(hre, signer, {types: BURN_MESSAGE_ELEMENT_TYPES, values: messageElements}, nonce)
+  const signature = await sign(
+    hre,
+    signer,
+    {types: BURN_MESSAGE_ELEMENT_TYPES, values: messageElements},
+    nonce,
+    overrideChainId
+  )
 
   const defaultBurnParams: BurnParams = [recipient, tokenId]
   const burnParams: BurnParams = overrideBurnParams || defaultBurnParams

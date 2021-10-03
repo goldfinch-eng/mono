@@ -53,7 +53,13 @@ contract UniqueIdentity is ERC1155PresetPauserUpgradeable, IUniqueIdentity {
     address to,
     uint256 id,
     bytes calldata signature
-  ) public payable override onlySigner(keccak256(abi.encodePacked(to, id, nonces[to])), signature) incrementNonce(to) {
+  )
+    public
+    payable
+    override
+    onlySigner(keccak256(abi.encodePacked(to, id, nonces[to], block.chainid)), signature)
+    incrementNonce(to)
+  {
     require(msg.value >= MINT_COST_PER_TOKEN, "Token mint requires 0.00083 ETH");
     require(to != address(0), "Cannot mint to the zero address");
     require(id == ID_VERSION_0, "Token id not supported");
@@ -69,7 +75,7 @@ contract UniqueIdentity is ERC1155PresetPauserUpgradeable, IUniqueIdentity {
   )
     public
     override
-    onlySigner(keccak256(abi.encodePacked(account, id, nonces[account])), signature)
+    onlySigner(keccak256(abi.encodePacked(account, id, nonces[account], block.chainid)), signature)
     incrementNonce(account)
   {
     _burn(account, id, 1);

@@ -95,9 +95,20 @@ describe("UniqueIdentity", () => {
     nonce: BN,
     signer: string,
     overrideMintParams?: MintParams,
-    overrideFrom?: string
+    overrideFrom?: string,
+    overrideChainId?: BN
   ): Promise<void> {
-    return mintHelper(hre, uniqueIdentity, recipient, tokenId, nonce, signer, overrideMintParams, overrideFrom)
+    return mintHelper(
+      hre,
+      uniqueIdentity,
+      recipient,
+      tokenId,
+      nonce,
+      signer,
+      overrideMintParams,
+      overrideFrom,
+      overrideChainId
+    )
   }
 
   async function burn(
@@ -106,9 +117,20 @@ describe("UniqueIdentity", () => {
     nonce: BN,
     signer: string,
     overrideBurnParams?: BurnParams,
-    overrideFrom?: string
+    overrideFrom?: string,
+    overrideChainId?: BN
   ): Promise<void> {
-    return burnHelper(hre, uniqueIdentity, recipient, tokenId, nonce, signer, overrideBurnParams, overrideFrom)
+    return burnHelper(
+      hre,
+      uniqueIdentity,
+      recipient,
+      tokenId,
+      nonce,
+      signer,
+      overrideBurnParams,
+      overrideFrom,
+      overrideChainId
+    )
   }
 
   async function pause(): Promise<void> {
@@ -213,6 +235,14 @@ describe("UniqueIdentity", () => {
         await expect(mint(recipient, tokenId, new BN(0), owner, [recipient, incorrectId])).to.be.rejectedWith(
           /Invalid signer/
         )
+      })
+      it("rejects incorrect chain id in hashed message", async () => {
+        const chainId = await hre.getChainId()
+        expect(chainId).to.bignumber.equal(new BN(31337))
+        const incorrectChainId = new BN(1)
+        await expect(
+          mint(recipient, tokenId, new BN(0), owner, undefined, undefined, incorrectChainId)
+        ).to.be.rejectedWith(/Invalid signer/)
       })
       it("allows address with signer role", async () => {
         expect(await uniqueIdentity.hasRole(SIGNER_ROLE, owner)).to.equal(true)
@@ -332,7 +362,7 @@ describe("UniqueIdentity", () => {
         from: recipient,
         value: MINT_PAYMENT,
       })
-      expect(receipt.receipt.gasUsed).to.eq(86173)
+      expect(receipt.receipt.gasUsed).to.eq(86187)
     })
 
     context("paused", () => {
@@ -488,6 +518,14 @@ describe("UniqueIdentity", () => {
           /Invalid signer/
         )
       })
+      it("rejects incorrect chain id in hashed message", async () => {
+        const chainId = await hre.getChainId()
+        expect(chainId).to.bignumber.equal(new BN(31337))
+        const incorrectChainId = new BN(1)
+        await expect(
+          burn(recipient, tokenId, new BN(1), owner, undefined, undefined, incorrectChainId)
+        ).to.be.rejectedWith(/Invalid signer/)
+      })
       it("allows address with signer role", async () => {
         expect(await uniqueIdentity.hasRole(SIGNER_ROLE, owner)).to.equal(true)
         await expect(burn(recipient, tokenId, new BN(1), owner)).to.be.fulfilled
@@ -602,7 +640,7 @@ describe("UniqueIdentity", () => {
       const receipt = await uniqueIdentity.burn(...burnParams, signature, {
         from: recipient,
       })
-      expect(receipt.receipt.gasUsed).to.eq(47110)
+      expect(receipt.receipt.gasUsed).to.eq(47136)
     })
 
     context("paused", () => {
