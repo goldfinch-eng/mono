@@ -12,10 +12,13 @@ export function useFetchNDA({user, tranchedPool}: {user: User; tranchedPool?: Tr
   const [session] = useSignIn()
 
   const [result, refresh] = useAsyncFn(() => {
-    if (session.status !== "authenticated") {
-      return
-    }
-    if (!user.address || !tranchedPool?.address) {
+    if (
+      session.status !== "authenticated" ||
+      !user.address ||
+      !tranchedPool?.address ||
+      !tranchedPool?.metadata?.NDAUrl ||
+      !tranchedPool?.metadata?.detailsUrl
+    ) {
       return
     }
     const client = new DefaultGoldfinchClient(network.name!, session, setSessionData)

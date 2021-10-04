@@ -647,7 +647,12 @@ function CreditStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
   )
 }
 
-function Overview({tranchedPool, handleDetails}: {tranchedPool?: TranchedPool; handleDetails: any}) {
+interface OverviewProps {
+  tranchedPool?: TranchedPool
+  handleDetails: () => void
+}
+
+function Overview({tranchedPool, handleDetails}: OverviewProps) {
   const {user} = useContext(AppContext)
   const session = useSession()
 
@@ -677,16 +682,20 @@ function Overview({tranchedPool, handleDetails}: {tranchedPool?: TranchedPool; h
   }
 
   let detailsLink = <></>
-  if (user.loaded && user.goListed) {
-    if (session.status === "authenticated" && tranchedPool?.metadata?.detailsUrl) {
-      detailsLink = (
-        <div className="pool-links">
-          <button onClick={() => handleDetails()}>
-            Details & Discussion <span className="outbound-link">{iconOutArrow}</span>
-          </button>
-        </div>
-      )
-    }
+  if (
+    user.loaded &&
+    user.goListed &&
+    session.status === "authenticated" &&
+    tranchedPool?.metadata?.detailsUrl &&
+    tranchedPool?.metadata?.NDAUrl
+  ) {
+    detailsLink = (
+      <div className="pool-links">
+        <button onClick={() => handleDetails()}>
+          Details & Discussion <span className="outbound-link">{iconOutArrow}</span>
+        </button>
+      </div>
+    )
   }
 
   return (
@@ -797,7 +806,12 @@ function TranchedPoolView() {
         <SupplyStatus tranchedPool={tranchedPool} />
       )}
       <Overview tranchedPool={tranchedPool} handleDetails={handleDetails} />
-      <NdaPrompt show={showModal} onClose={() => setShowModal(false)} onSign={handleSignNDA} />
+      <NdaPrompt
+        show={showModal}
+        onClose={() => setShowModal(false)}
+        onSign={handleSignNDA}
+        NDAUrl={tranchedPool?.metadata?.NDAUrl}
+      />
     </div>
   )
 }

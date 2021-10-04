@@ -71,6 +71,7 @@ interface PoolMetadata {
   v1StyleDeal?: boolean
   migrated?: boolean
   migratedFrom?: string
+  NDAUrl?: string
 }
 
 enum PoolState {

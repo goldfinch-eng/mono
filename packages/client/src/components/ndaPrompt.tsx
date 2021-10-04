@@ -4,7 +4,14 @@ import {FormProvider, useForm} from "react-hook-form"
 import {iconOutArrow, iconX} from "./icons"
 import LoadingButton from "./loadingButton"
 
-function NdaPrompt({show, onClose, onSign}) {
+interface NdaPrompProps {
+  show: boolean
+  onClose: () => void
+  onSign: () => void
+  NDAUrl?: string
+}
+
+function NdaPrompt({show, onClose, onSign, NDAUrl}: NdaPrompProps) {
   const formMethods = useForm()
 
   useEffect(() => {
@@ -35,7 +42,7 @@ function NdaPrompt({show, onClose, onSign}) {
             <label className="checkbox-label" htmlFor="agreement">
               <div>
                 I agree to the&nbsp;
-                <a className="checkbox-label-link" href="/non-disclosure-agreement" target="_blank">
+                <a className="checkbox-label-link" href={NDAUrl} target="_blank" rel="noreferrer">
                   Non-Disclosure Agreement
                 </a>
                 &nbsp;for all Goldfinch borrower pools.

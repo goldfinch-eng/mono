@@ -137,7 +137,7 @@ class DefaultGoldfinchClient implements GoldfinchClient {
     return `${this.baseURL}/signNDA`
   }
 
-  async signNDA(address: string, pool: string): Promise<any> {
+  async signNDA(address: string, pool: string): Promise<HandledResponse> {
     return this._handleResponse(fetch(this._getSignNDAURL(), this._getSignNDARequestInit(address, {pool})))
   }
 
@@ -151,7 +151,7 @@ class DefaultGoldfinchClient implements GoldfinchClient {
     return `${this.baseURL}/fetchNDA/?pool=${pool}`
   }
 
-  async fetchNDA(address: string, pool: string): Promise<HandledResponse<any>> {
+  async fetchNDA(address: string, pool: string): Promise<HandledResponse> {
     return this._handleResponse(fetch(this._getFetchNDAURL(pool), this._getFetchNDARequestInit(address)))
   }
 }
