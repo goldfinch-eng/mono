@@ -1,7 +1,6 @@
 import {useContext, useState} from "react"
 import useCloseOnClickOrEsc from "../hooks/useCloseOnClickOrEsc"
 import {iconX} from "./icons.js"
-import LoadingButton from "./loadingButton"
 import {AppContext} from "../App"
 
 export default function DevTools(props) {
