@@ -217,7 +217,7 @@ describe("ConnectionNotice", () => {
     )
   })
 
-  describe.only.each(scenarios)("scenario %#", (scenario) => {
+  describe.each(scenarios)("scenario %#", (scenario) => {
     describe("all other strategies fall through", () => {
       it("renders this component", async () => {
         const {devName} = scenario
