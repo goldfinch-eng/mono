@@ -46,6 +46,12 @@ contract MerkleDistributor is IMerkleDistributor {
     require(!isGrantAccepted(index), "MerkleDistributor: Grant already accepted.");
 
     // Verify the merkle proof.
+    //
+    /// @dev Per the Warning in
+    /// https://github.com/ethereum/solidity/blob/v0.6.12/docs/abi-spec.rst#non-standard-packed-mode,
+    /// it is important that no more than one of the arguments to `abi.encodePacked()` here be a
+    /// dynamic type (see definition in
+    /// https://github.com/ethereum/solidity/blob/v0.6.12/docs/abi-spec.rst#formal-specification-of-the-encoding).
     bytes32 node = keccak256(abi.encodePacked(index, account, amount, vestingLength, cliffLength, vestingInterval));
     require(MerkleProof.verify(merkleProof, merkleRoot, node), "MerkleDistributor: Invalid proof.");
 

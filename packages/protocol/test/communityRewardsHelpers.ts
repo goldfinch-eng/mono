@@ -22,15 +22,19 @@ export async function expectStateAfterGetReward(
   tokenId: BN,
   grantAmount: BN,
   expectedTotalClaimed: BN,
-  expectedGFIBalance: BN
+  expectedAccountGFIBalance: BN,
+  expectedContractGFIBalance: BN
 ): Promise<void> {
   const grantState = await communityRewards.grants(tokenId)
   assertCommunityRewardsVestingRewards(grantState)
   expect(grantState.totalGranted).to.bignumber.equal(grantAmount)
   expect(grantState.totalClaimed).to.bignumber.equal(expectedTotalClaimed)
 
-  const gfiBalance = await gfi.balanceOf(account)
-  expect(gfiBalance).to.bignumber.equal(expectedGFIBalance)
+  const accountGfiBalance = await gfi.balanceOf(account)
+  expect(accountGfiBalance).to.bignumber.equal(expectedAccountGFIBalance)
+
+  const contractGfiBalance = await gfi.balanceOf(communityRewards.address)
+  expect(contractGfiBalance).to.bignumber.equal(expectedContractGFIBalance)
 
   const claimable = await communityRewards.claimableRewards(tokenId)
   expect(claimable).to.bignumber.equal(new BN(0))
