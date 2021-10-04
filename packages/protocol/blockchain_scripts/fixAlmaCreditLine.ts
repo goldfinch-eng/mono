@@ -7,13 +7,15 @@ import {
   isMainnetForking,
   MAINNET_CHAIN_ID,
   OWNER_ROLE,
+  TRUFFLE_CONTRACT_PROVIDER,
 } from "./deployHelpers"
-import {assertNonNullable} from "../utils/type"
+import {assertNonNullable} from "@goldfinch-eng/utils"
 import {CreditLineInstance, GoldfinchFactoryInstance, TranchedPoolInstance} from "../typechain/truffle"
 import {fundWithWhales, getExistingContracts, impersonateAccount, upgradeContracts} from "./mainnetForkingHelpers"
 import {decodeLogs} from "../test/testHelpers"
 import {CreditLineCreated} from "../typechain/truffle/CreditDesk"
 import {asNonNullable} from "@goldfinch-eng/utils"
+import {CreditLine, GoldfinchFactory, TranchedPool} from "../typechain/ethers"
 
 async function main() {
   // let oldBorrowerAddress = "0x4bBD638eb377ea00b84fAc2aA24A769a1516eCb6"
@@ -53,22 +55,32 @@ async function main() {
     deployments
   )
 
-  const goldfinchFactoryAddress = upgradedContracts.GoldfinchFactory.ProxyContract.address
-  const goldfinchFactory = (await getContract("GoldfinchFactory", {
-    at: goldfinchFactoryAddress,
-  })) as GoldfinchFactoryInstance
+  const goldfinchFactoryAddress = asNonNullable(upgradedContracts.GoldfinchFactory).ProxyContract.address
+  const goldfinchFactory = await getContract<GoldfinchFactory, GoldfinchFactoryInstance>(
+    "GoldfinchFactory",
+    TRUFFLE_CONTRACT_PROVIDER,
+    {
+      at: goldfinchFactoryAddress,
+    }
+  )
 
   const tx = await goldfinchFactory.createCreditLine()
   const events = decodeLogs<CreditLineCreated>(tx.receipt.rawLogs, goldfinchFactory, "CreditLineCreated")
   const creditLineAddress = asNonNullable(events[0]).args.creditLine
-  const creditLine = (await getContract("CreditLine", {at: creditLineAddress})) as CreditLineInstance
+  const creditLine = await getContract<CreditLine, CreditLineInstance>("CreditLine", TRUFFLE_CONTRACT_PROVIDER, {
+    at: creditLineAddress,
+  })
 
-  const tranchedPool = (await getContract("TranchedPool", {
-    at: "0x67df471EaCD82c3dbc95604618FF2a1f6b14b8a1",
-  })) as TranchedPoolInstance
-  const currentCreditLine = (await getContract("CreditLine", {
+  const tranchedPool = await getContract<TranchedPool, TranchedPoolInstance>(
+    "TranchedPool",
+    TRUFFLE_CONTRACT_PROVIDER,
+    {
+      at: "0x67df471EaCD82c3dbc95604618FF2a1f6b14b8a1",
+    }
+  )
+  const currentCreditLine = await getContract<CreditLine, CreditLineInstance>("CreditLine", TRUFFLE_CONTRACT_PROVIDER, {
     at: await tranchedPool.creditLine(),
-  })) as CreditLineInstance
+  })
 
   console.log("---- Run as gnosis multisend ----")
 

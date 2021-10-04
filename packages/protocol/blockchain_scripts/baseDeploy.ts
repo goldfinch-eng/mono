@@ -1,4 +1,5 @@
 import {ethers} from "hardhat"
+import fs from "fs"
 import BN from "bn.js"
 import {CONFIG_KEYS} from "./configKeys"
 import {
@@ -13,6 +14,8 @@ import {
   assertIsChainId,
   getProtocolOwner,
   getContract,
+  DISTRIBUTOR_ROLE,
+  TRUFFLE_CONTRACT_PROVIDER,
 } from "./deployHelpers"
 import {HardhatRuntimeEnvironment} from "hardhat/types"
 import {DeployFunction} from "hardhat-deploy/types"
@@ -26,12 +29,33 @@ import {
   SeniorPool,
   FixedLeverageRatioStrategy,
   DynamicLeverageRatioStrategy,
+  CommunityRewards,
+  MerkleDistributor,
+  TestERC20,
+  UniqueIdentity,
+  Go,
+  TestUniqueIdentity,
 } from "../typechain/ethers"
 import {Logger, DeployFn, DeployOpts} from "./types"
+import {isMerkleDistributorInfo} from "./merkleDistributor/types"
+import {
+  CommunityRewardsInstance,
+  GoInstance,
+  UniqueIdentityInstance,
+  MerkleDistributorInstance,
+  TestERC20Instance,
+  TestUniqueIdentityInstance,
+} from "../typechain/truffle"
 import {assertIsString} from "@goldfinch-eng/utils"
 import {StakingRewards} from "../typechain/ethers/StakingRewards"
+import {UNIQUE_IDENTITY_METADATA_URI} from "./uniqueIdentity/constants"
 
 let logger: Logger
+
+type Deployed<T> = {
+  name: string
+  contract: T
+}
 
 const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   if (isMainnetForking()) {
@@ -67,6 +91,11 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
 
   await deployGFI(hre, {config})
   await deployLPStakingRewards(hre, {config})
+  const communityRewards = await deployCommunityRewards(hre, {config})
+  await deployMerkleDistributor(hre, {communityRewards})
+
+  const uniqueIdentity = await deployUniqueIdentity(hre)
+  await deployGo(hre, {config, uniqueIdentity})
 
   logger("Granting ownership of Pool to CreditDesk")
   await grantOwnershipOfPoolToCreditDesk(pool, creditDesk.address)
@@ -113,10 +142,9 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
       })
       logger("Deployed the contract to:", fakeUSDC.address)
       usdcAddress = fakeUSDC.address
-      ;(await getContract("TestERC20", {from: gf_deployer})).transfer(
-        protocolOwner,
-        String(new BN(10000000).mul(USDCDecimals))
-      )
+      ;(
+        await getContract<TestERC20, TestERC20Instance>("TestERC20", TRUFFLE_CONTRACT_PROVIDER, {from: gf_deployer})
+      ).transfer(protocolOwner, String(new BN(10000000).mul(USDCDecimals)))
     }
     await updateConfig(config, "address", CONFIG_KEYS.USDC, usdcAddress, logger)
     return usdcAddress
@@ -271,6 +299,172 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
     // await updateConfig(config, "address", CONFIG_KEYS., contract.address, {logger})
     logger("Deployed LPStakingRewards to address:", contract.address)
     return contract
+  }
+
+  async function deployCommunityRewards(
+    hre: HardhatRuntimeEnvironment,
+    {config}: {config: GoldfinchConfig}
+  ): Promise<Deployed<CommunityRewardsInstance>> {
+    const contractName = "CommunityRewards"
+    logger(`About to deploy ${contractName}...`)
+    assertIsString(gf_deployer)
+    const protocol_owner = await getProtocolOwner()
+    const deployResult = await deploy(contractName, {
+      from: gf_deployer,
+      gasLimit: 4000000,
+      proxy: {
+        execute: {
+          init: {
+            methodName: "__initialize__",
+            args: [protocol_owner, config.address],
+          },
+        },
+      },
+    })
+    const contract = await getContract<CommunityRewards, CommunityRewardsInstance>(
+      contractName,
+      TRUFFLE_CONTRACT_PROVIDER,
+      {at: deployResult.address}
+    )
+
+    // await updateConfig(config, "address", CONFIG_KEYS., contract.address, {logger})
+    logger(`Deployed ${contractName} to address:`, contract.address)
+    return {name: contractName, contract}
+  }
+
+  async function getMerkleDistributorRoot(): Promise<string | undefined> {
+    const path = process.env.MERKLE_DISTRIBUTOR_INFO_PATH
+    if (!path) {
+      logger("Merkle distributor info path is undefined.")
+      return
+    }
+    const json = JSON.parse(fs.readFileSync(path, {encoding: "utf8"}))
+    if (!isMerkleDistributorInfo(json)) {
+      logger("Merkle distributor info json failed type guard.")
+      return
+    }
+    return json.merkleRoot
+  }
+
+  async function deployMerkleDistributor(
+    hre: HardhatRuntimeEnvironment,
+    {
+      communityRewards,
+    }: {
+      communityRewards: Deployed<CommunityRewardsInstance>
+    }
+  ): Promise<Deployed<MerkleDistributorInstance> | undefined> {
+    const contractName = "MerkleDistributor"
+
+    const merkleRoot = await getMerkleDistributorRoot()
+    if (!merkleRoot) {
+      logger(`Merkle root is undefined. Skipping deploy of ${contractName}`)
+      return
+    }
+
+    logger(`About to deploy ${contractName}...`)
+    assertIsString(gf_deployer)
+    const deployResult = await deploy(contractName, {
+      from: gf_deployer,
+      gasLimit: 4000000,
+      args: [communityRewards.contract.address, merkleRoot],
+    })
+    const contract = await getContract<MerkleDistributor, MerkleDistributorInstance>(
+      contractName,
+      TRUFFLE_CONTRACT_PROVIDER,
+      {at: deployResult.address}
+    )
+
+    logger(`Deployed ${contractName} to address: ${contract.address}`)
+
+    const deployed: Deployed<MerkleDistributorInstance> = {
+      name: contractName,
+      contract,
+    }
+    await grantDistributorRoleToMerkleDistributor(communityRewards, deployed)
+
+    return deployed
+  }
+
+  async function deployUniqueIdentity(
+    hre: HardhatRuntimeEnvironment
+  ): Promise<Deployed<UniqueIdentityInstance | TestUniqueIdentityInstance>> {
+    const contractName = isTestEnv() ? "TestUniqueIdentity" : "UniqueIdentity"
+    logger(`About to deploy ${contractName}...`)
+    assertIsString(gf_deployer)
+    const protocol_owner = await getProtocolOwner()
+    const deployResult = await deploy(contractName, {
+      from: gf_deployer,
+      gasLimit: 4000000,
+      proxy: {
+        execute: {
+          init: {
+            methodName: "initialize",
+            args: [protocol_owner, UNIQUE_IDENTITY_METADATA_URI],
+          },
+        },
+      },
+    })
+    const contract = await getContract<
+      UniqueIdentity | TestUniqueIdentity,
+      UniqueIdentityInstance | TestUniqueIdentityInstance
+    >(contractName, TRUFFLE_CONTRACT_PROVIDER, {at: deployResult.address})
+
+    logger(`Deployed ${contractName} to address:`, contract.address)
+    return {name: contractName, contract}
+  }
+
+  async function deployGo(
+    hre: HardhatRuntimeEnvironment,
+    {
+      config,
+      uniqueIdentity,
+    }: {config: GoldfinchConfig; uniqueIdentity: Deployed<UniqueIdentityInstance | TestUniqueIdentityInstance>}
+  ): Promise<Deployed<GoInstance>> {
+    const contractName = "Go"
+    logger(`About to deploy ${contractName}...`)
+    assertIsString(gf_deployer)
+    const protocol_owner = await getProtocolOwner()
+    const deployResult = await deploy(contractName, {
+      from: gf_deployer,
+      gasLimit: 4000000,
+      proxy: {
+        execute: {
+          init: {
+            methodName: "initialize",
+            args: [protocol_owner, config.address, uniqueIdentity.contract.address],
+          },
+        },
+      },
+    })
+    const contract = await getContract<Go, GoInstance>(contractName, TRUFFLE_CONTRACT_PROVIDER, {
+      at: deployResult.address,
+    })
+
+    logger(`Deployed ${contractName} to address:`, contract.address)
+
+    logger("Updating config...")
+    await updateConfig(config, "address", CONFIG_KEYS.Go, contract.address, {logger})
+    logger("Updated Go config address to:", contract.address)
+
+    return {name: contractName, contract}
+  }
+}
+
+async function grantDistributorRoleToMerkleDistributor(
+  communityRewards: Deployed<CommunityRewardsInstance>,
+  merkleDistributor: Deployed<MerkleDistributorInstance>
+): Promise<void> {
+  let hasDistributorRole = await communityRewards.contract.hasRole(DISTRIBUTOR_ROLE, merkleDistributor.contract.address)
+  if (hasDistributorRole) {
+    throw new Error(`${merkleDistributor.name} already has DISTRIBUTOR_ROLE on ${communityRewards.name}.`)
+  }
+  await communityRewards.contract.grantRole(DISTRIBUTOR_ROLE, merkleDistributor.contract.address)
+  hasDistributorRole = await communityRewards.contract.hasRole(DISTRIBUTOR_ROLE, merkleDistributor.contract.address)
+  if (hasDistributorRole) {
+    logger(`Granted distributor role on ${communityRewards.name} to ${merkleDistributor.name}.`)
+  } else {
+    throw new Error(`Failed to grant DISTRIBUTOR_ROLE on ${communityRewards.name} to ${merkleDistributor.name}.`)
   }
 }
 
@@ -578,7 +772,7 @@ async function deployBorrower(hre: HardhatRuntimeEnvironment, {config}: DeployOp
   return borrower
 }
 
-module.exports = {
+export {
   baseDeploy,
   deployPoolTokens,
   deployTransferRestrictedVault,

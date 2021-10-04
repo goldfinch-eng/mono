@@ -34,7 +34,7 @@ function TransactionInput(props) {
             })(props.formMethods.errors, name)}
             name={name}
           />
-        </div>,
+        </div>
       )
     })
   }

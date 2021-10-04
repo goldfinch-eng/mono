@@ -25,6 +25,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
 
   uint256 public compoundBalance;
   mapping(ITranchedPool => uint256) public writedowns;
+  bytes32 public constant REDEEMER_ROLE = keccak256("REDEEMER_ROLE");
 
   event DepositMade(address indexed capitalProvider, uint256 amount, uint256 shares);
   event WithdrawalMade(address indexed capitalProvider, uint256 userAmount, uint256 reserveAmount);
@@ -156,6 +157,13 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     // Remove compound approval to be extra safe
     success = config.getUSDC().approve(address(cUSDC), 0);
     require(success, "Failed to approve USDC for compound");
+  }
+
+  // Grants `role` redeemer to `account` & sets `adminRole` as `role`'s admin role.
+  function setupRedeemerRole() external onlyAdmin whenNotPaused {
+    _setupRole(REDEEMER_ROLE, config.protocolAdminAddress());
+    _setRoleAdmin(REDEEMER_ROLE, OWNER_ROLE);
+    require(hasRole(REDEEMER_ROLE, config.protocolAdminAddress()), "Failed to set redeemer role to owner");
   }
 
   /**

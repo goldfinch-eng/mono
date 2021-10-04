@@ -10,6 +10,7 @@ import {PoolCreated} from "@goldfinch-eng/protocol/typechain/web3/GoldfinchFacto
 import BigNumber from "bignumber.js"
 import {User} from "../ethereum/user"
 import ConnectionNotice from "./connectionNotice"
+import Badge from "./badge"
 
 // Filter out 0 limit (inactive) and test pools
 const MIN_POOL_LIMIT = usdcToAtomic(process.env.REACT_APP_POOL_FILTER_LIMIT || "200")
@@ -107,13 +108,13 @@ function SeniorPoolCardSkeleton() {
   )
 }
 
-function SeniorPoolCard({balance, userBalance, apy, limit}) {
+export function SeniorPoolCard({balance, userBalance, apy, limit, remainingCapacity}) {
   const history = useHistory()
 
   return (
     <div
       key="senior-pool"
-      className="table-row background-container-inner clickable"
+      className="table-row background-container-inner clickable pool-card"
       onClick={() => history.push("/pools/senior")}
     >
       <div className="table-cell col40">
@@ -123,6 +124,13 @@ function SeniorPoolCard({balance, userBalance, apy, limit}) {
       <div className="table-cell col22 numeric balance">{userBalance}</div>
       <div className="table-cell col22 numeric limit">{limit}</div>
       <div className="table-cell col16 numeric apy">{apy}</div>
+      <div className="pool-capacity">
+        {remainingCapacity?.isZero() ? (
+          <Badge text="Full" variant="gray" fixedWidth />
+        ) : (
+          <Badge text="Open" variant="blue" fixedWidth />
+        )}
+      </div>
     </div>
   )
 }
@@ -143,7 +151,7 @@ function TranchedPoolCardSkeleton() {
   )
 }
 
-function TranchedPoolCard({poolBacker}: {poolBacker: PoolBacker}) {
+export function TranchedPoolCard({poolBacker}: {poolBacker: PoolBacker}) {
   const history = useHistory()
   const tranchedPool = poolBacker.tranchedPool
   const leverageRatio = tranchedPool.estimatedLeverageRatio
@@ -161,7 +169,7 @@ function TranchedPoolCard({poolBacker}: {poolBacker: PoolBacker}) {
 
   return (
     <div
-      className="table-row background-container-inner clickable"
+      className="table-row background-container-inner clickable pool-card"
       onClick={() => history.push(`/pools/${tranchedPool.address}`)}
     >
       <div className="table-cell col40 pool-info">
@@ -176,6 +184,13 @@ function TranchedPoolCard({poolBacker}: {poolBacker: PoolBacker}) {
       </div>
       <div className="table-cell col22 numeric limit">{displayDollars(limit, 0)}</div>
       <div className="table-cell col16 numeric apy">{displayPercent(estimatedApy)}</div>
+      <div className="pool-capacity">
+        {tranchedPool.remainingCapacity().isZero() ? (
+          <Badge text="Full" variant="gray" fixedWidth />
+        ) : (
+          <Badge text="Open" variant="blue" fixedWidth />
+        )}
+      </div>
     </div>
   )
 }
@@ -214,8 +229,8 @@ function usePoolBackers({goldfinchProtocol, user}: {goldfinchProtocol?: Goldfinc
             // Secondary sort: descending by user's balance
             b.balanceInDollars.comparedTo(a.balanceInDollars) ||
             // Tertiary sort: alphabetical by display name, for the sake of stable ordering.
-            a.tranchedPool.displayName.localeCompare(b.tranchedPool.displayName),
-        ),
+            a.tranchedPool.displayName.localeCompare(b.tranchedPool.displayName)
+        )
       )
       setBackersStatus("loaded")
     }
@@ -278,6 +293,7 @@ function Earn() {
               userBalance={displayDollars(capitalProvider?.availableToWithdrawInDollars)}
               apy={displayPercent(pool?.gf.estimatedApy)}
               limit={displayDollars(usdcFromAtomic(goldfinchConfig?.totalFundsLimit), 0)}
+              remainingCapacity={pool?.gf.remainingCapacity(goldfinchConfig?.totalFundsLimit)}
             />
           )}
         </PoolList>

@@ -4,6 +4,7 @@ import {
   TRANCHES,
   MAX_UINT,
   OWNER_ROLE,
+  REDEEMER_ROLE,
   PAUSER_ROLE,
   ETHDecimals,
 } from "../blockchain_scripts/deployHelpers"
@@ -32,7 +33,6 @@ import {expectEvent} from "@openzeppelin/test-helpers"
 import {ecsign} from "ethereumjs-util"
 import {getApprovalDigest, getWallet} from "./permitHelpers"
 import {assertNonNullable} from "@goldfinch-eng/utils"
-import {GoldfinchConfigUpdated} from "../typechain/truffle/SeniorPool"
 const WITHDRAWL_FEE_DENOMINATOR = new BN(200)
 
 const simulateMaliciousTranchedPool = async (goldfinchConfig: any, person2: any): Promise<string> => {
@@ -120,7 +120,7 @@ describe("SeniorPool", () => {
       paymentPeriodInDays,
       termInDays,
       lateFeeApr,
-      juniorFeePercent: juniorFeePercent.toNumber(),
+      juniorFeePercent,
       usdc,
     }))
 
@@ -230,6 +230,14 @@ describe("SeniorPool", () => {
     })
   })
 
+  describe("setupRedeemerRole", () => {
+    it("should call _setupRole", async () => {
+      expect(await seniorPool.hasRole(REDEEMER_ROLE, owner)).to.equal(false)
+      await seniorPool.setupRedeemerRole()
+      expect(await seniorPool.hasRole(REDEEMER_ROLE, owner)).to.equal(true)
+    })
+  })
+
   describe("deposit", () => {
     describe("before you have approved the senior pool to transfer funds on your behalf", async () => {
       it("should fail", async () => {
@@ -313,6 +321,7 @@ describe("SeniorPool", () => {
         deadline,
       })
       const wallet = await getWallet(capitalProviderAddress)
+      assertNonNullable(wallet)
       const {v, r, s} = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(wallet.privateKey.slice(2), "hex"))
 
       // Sanity check that deposit is correct

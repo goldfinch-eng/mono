@@ -7,21 +7,38 @@ import {ethers} from "ethers"
 import * as functions from "firebase-functions"
 import {getConfig} from "./db"
 import {RequestHandlerConfig, SignatureVerificationResult} from "./types"
+import _ from "lodash"
 
 // Make sure to keep the structure of this message in sync with the frontend.
 const genVerificationMessage = (blockNum: number) => `Sign in to Goldfinch: ${blockNum}`
 
-// const ONE_DAY_SECONDS = 60 * 60 * 24
+const ONE_DAY_SECONDS = 60 * 60 * 24
 
 // This is not a secret, so it's ok to hardcode this
 const INFURA_PROJECT_ID = "d8e13fc4893e4be5aae875d94fee67b7"
 
 const setCORSHeaders = (req: any, res: any) => {
   const allowedOrigins = (getConfig(functions).kyc.allowed_origins || "").split(",")
-  if (allowedOrigins.includes(req.headers.origin)) {
+  const origin = req.headers.origin || ""
+  if (originAllowed(allowedOrigins, origin)) {
     res.set("Access-Control-Allow-Origin", req.headers.origin)
     res.set("Access-Control-Allow-Headers", "*")
   }
+}
+
+export const originAllowed = (allowedOrigins: string[], origin: string): boolean => {
+  return _.some(allowedOrigins, (allowed) => {
+    // Respect the wildcard operator
+    const wildcard = "*"
+    if (allowed.includes(wildcard)) {
+      const allowedSplit = allowed.split(wildcard)
+      return _.every(allowedSplit, (allowedPiece) => {
+        return origin.includes(allowedPiece.trim())
+      })
+    } else {
+      return origin.includes(allowed)
+    }
+  })
 }
 
 /**
@@ -98,7 +115,9 @@ const wrapWithSentry = (fn: HttpFunction, wrapOptions?: Partial<HttpFunctionWrap
     try {
       return await fn(req, res)
     } catch (err: unknown) {
-      Sentry.captureException(err)
+      // Sentry captures these error logs automatically. This also provides a fallback (google cloud logs) in
+      // case sentry fails to capture the error (see above comment about unhandled promise rejections)
+      console.error(err)
       return res.status(500).send("Internal error.")
     }
   }, wrapOptions)
@@ -124,6 +143,8 @@ const verifySignature = async (req: Request, res: Response): Promise<SignatureVe
     return {res: res.status(400).send({error: "Signature block number not provided."}), address: undefined}
   }
 
+  Sentry.setUser({id: address, address})
+
   const signatureBlockNum = parseInt(signatureBlockNumStr, 10)
   if (!Number.isInteger(signatureBlockNum)) {
     return {res: res.status(400).send({error: "Invalid signature block number."}), address: undefined}
@@ -131,29 +152,29 @@ const verifySignature = async (req: Request, res: Response): Promise<SignatureVe
 
   const verifiedAddress = ethers.utils.verifyMessage(genVerificationMessage(signatureBlockNum), signature)
 
-  console.log(`Received address: ${address}, Verified address: ${verifiedAddress}`)
+  console.debug(`Received address: ${address}, Verified address: ${verifiedAddress}`)
 
   if (address.toLowerCase() !== verifiedAddress.toLowerCase()) {
     return {res: res.status(401).send({error: "Invalid address or signature."}), address: undefined}
   }
 
-  // const origin = req.headers.origin || ""
-  // const blockchain = getBlockchain(origin)
-  // const currentBlock = await blockchain.getBlock("latest")
-  //
-  // // Don't allow signatures signed for the future.
-  // if (currentBlock.number < signatureBlockNum) {
-  //   return {res: res.status(401).send({error: "Unexpected signature block number."}), address: undefined}
-  // }
-  //
-  // const signatureBlock = await blockchain.getBlock(signatureBlockNum)
-  // const signatureTime = signatureBlock.timestamp
-  // const now = currentBlock.timestamp
-  //
-  // // Don't allow signatures more than a day old.
-  // if (signatureTime + ONE_DAY_SECONDS < now) {
-  //   return {res: res.status(401).send({error: "Signature expired."}), address: undefined}
-  // }
+  const origin = req.headers.origin || ""
+  const blockchain = getBlockchain(origin)
+  const currentBlock = await blockchain.getBlock("latest")
+
+  // Don't allow signatures signed for the future.
+  if (currentBlock.number < signatureBlockNum) {
+    return {res: res.status(401).send({error: "Unexpected signature block number."}), address: undefined}
+  }
+
+  const signatureBlock = await blockchain.getBlock(signatureBlockNum)
+  const signatureTime = signatureBlock.timestamp
+  const now = currentBlock.timestamp
+
+  // Don't allow signatures more than a day old.
+  if (signatureTime + ONE_DAY_SECONDS < now) {
+    return {res: res.status(401).send({error: "Signature expired."}), address: undefined}
+  }
 
   return {res: undefined, address}
 }

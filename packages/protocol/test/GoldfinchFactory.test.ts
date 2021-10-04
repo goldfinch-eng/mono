@@ -4,7 +4,6 @@ import {expectEvent} from "@openzeppelin/test-helpers"
 
 describe("GoldfinchFactory", async () => {
   const testSetup = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
-    const {protocol_owner: owner} = await getNamedAccounts()
     await deployments.run("base_deploy")
     const goldfinchConfig = await getDeployedAsTruffleContract(deployments, "GoldfinchConfig")
     const goldfinchFactory = await getDeployedAsTruffleContract(deployments, "GoldfinchFactory")
@@ -13,7 +12,7 @@ describe("GoldfinchFactory", async () => {
   })
 
   let owner, goldfinchFactory, goldfinchConfig
-  beforeEach(async () => {
+  beforeEach(async function () {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
     ;[owner] = await web3.eth.getAccounts()
     const deployments = await testSetup()

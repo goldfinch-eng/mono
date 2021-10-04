@@ -15,9 +15,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   assertNonNullable(owner)
   assertNonNullable(borrower)
 
-  const {seniorPool, goldfinchConfig, goldfinchFactory, usdc} = await deployAllContracts(deployments, {
-    fromAccount: owner,
-  })
+  const {seniorPool, goldfinchConfig, goldfinchFactory, usdc} = await deployAllContracts(deployments)
 
   await goldfinchConfig.bulkAddToGoList([owner, borrower])
 
@@ -31,7 +29,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const {tranchedPool} = await createPoolWithCreditLine({
     people: {owner, borrower},
     goldfinchFactory,
-    juniorFeePercent: juniorFeePercent.toNumber(),
+    juniorFeePercent: juniorFeePercent,
     limit,
     interestApr,
     paymentPeriodInDays,

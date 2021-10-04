@@ -1,7 +1,7 @@
 {
   "extends": "solhint:recommended",
   "rules": {
-    "compiler-version": ["error", "^0.6.12"],
+    "compiler-version": ["error", "^0.6.12 || ^0.8.4"],
     "prettier/prettier": "error",
     "not-rely-on-time": "off",
     "reason-string": ["warn",{"maxLength":120}],
@@ -126,14 +126,31 @@
           "depositWithPermitAndStakeWithLockup": [],
           "unstake": [],
           "unstakeAndWithdraw": [],
+          "unstakeAndWithdrawMultiple": [],
           "unstakeAndWithdrawInFidu": [],
+          "unstakeAndWithdrawMultipleInFidu": [],
           "getReward": [],
           "kick": [],
           "exit": [],
           "exitAndWithdraw": []
         },
-        "**/FixedLeverageRatioStrategy.sol:FixedLeverageRatioStrategy": {
-          "invest": []
+        "**/CommunityRewards.sol:CommunityRewards": {
+          "grant": ["nonReentrant", "whenNotPaused", "onlyDistributor"],
+          "getReward": []
+        },
+        "**/MerkleDistributor.sol:MerkleDistributor": {
+          "_setGrantAccepted": [],
+          "acceptGrant": ["onlyGrantRecipient"]
+        },
+        "**/ERC1155PresetPauserUpgradeable.sol:ERC1155PresetPauserUpgradeable": {
+          "pause": [],
+          "unpause": []
+        },
+        "**/UniqueIdentity.sol:UniqueIdentity": {
+          "mint": ["onlySigner"],
+          "safeTransferFrom": [],
+          "safeBatchTransferFrom": [],
+          "burn": ["onlySigner"]
         },
         "**/contracts/test/**": {
           "*.*": []
