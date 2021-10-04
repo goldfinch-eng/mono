@@ -126,7 +126,7 @@ jobs:
       env:
         cache-name: cache-hardhat-forking
       with:
-        path: ./cache
+        path: ./packages/protocol/cache
         key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/hardhat.config.js') }}
     - run: npx lerna bootstrap --ci
     - run: npm run build
@@ -200,6 +200,7 @@ jobs:
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         run: npx lerna run ci_functions_config_set_dev --stream --scope @goldfinch-eng/functions && npx lerna exec --scope @goldfinch-eng/functions "npm run pre-deploy && npx firebase deploy --only functions --project dev"
+        if: github.ref == 'refs/heads/master'
       - name: deploy-prod
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}

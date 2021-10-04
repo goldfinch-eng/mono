@@ -14,3 +14,4 @@ README.md
 .gitpod.yml
 .prettierrc
 .solhint.json
+package-lock.json

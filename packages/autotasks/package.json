@@ -14,10 +14,7 @@
   "author": "Goldfinch",
   "license": "MIT",
   "lint-staged": {
-    "*.(js(x)?|ts(x)?)": [
-      "prettier --write",
-      "eslint --resolve-plugins-relative-to=. --fix"
-    ]
+    "*.(js(x)?|ts(x)?)": ["prettier --write", "eslint --resolve-plugins-relative-to=. --fix"]
   },
   "dependencies": {
     "@goldfinch-eng/protocol": "^0.1.0",
@@ -37,6 +34,7 @@
     "@rollup/plugin-commonjs": "^20.0.0",
     "@rollup/plugin-json": "^4.1.0",
     "@rollup/plugin-node-resolve": "^13.0.4",
+    "@rollup/plugin-typescript": "^8.2.5",
     "@typescript-eslint/eslint-plugin": "^4.31.1",
     "@typescript-eslint/parser": "^4.31.1",
     "builtin-modules": "^3.2.0",
