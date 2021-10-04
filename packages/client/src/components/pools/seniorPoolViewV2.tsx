@@ -15,7 +15,7 @@ import {Query} from "../../graphql/types"
 import {CapitalProvider, emptyCapitalProvider, PoolData} from "../../ethereum/pool"
 
 function SeniorPoolViewV2(): JSX.Element {
-  const {user, goldfinchConfig} = useContext(AppContext)
+  const {pool, user, goldfinchConfig} = useContext(AppContext)
   const [capitalProvider, setCapitalProvider] = useState<CapitalProvider>(emptyCapitalProvider())
   const [poolData, setPoolData] = useState<PoolData>()
   const client = useApolloClient()
@@ -26,6 +26,7 @@ function SeniorPoolViewV2(): JSX.Element {
   useEffect(() => {
     const capitalProviderAddress = user.loaded && user.address
     refreshData(capitalProviderAddress)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
   async function actionComplete() {
@@ -45,7 +46,7 @@ function SeniorPoolViewV2(): JSX.Element {
     const seniorPool = seniorPools![0]!
 
     setCapitalProvider(parseUser(capitalProvider))
-    setPoolData(parseSeniorPool(seniorPool))
+    setPoolData(parseSeniorPool(seniorPool, pool!))
   }
 
   let maxCapacityNotice = <></>

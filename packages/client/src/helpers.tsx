@@ -1,18 +1,24 @@
 import BigNumber from "bignumber.js"
-import {fiduFromAtomic} from "./ethereum/fidu"
-import {CapitalProvider, emptyCapitalProvider, PoolData} from "./ethereum/pool"
-import {SeniorPool, User} from "./graphql/types"
+import {fiduFromAtomic, FIDU_DECIMALS} from "./ethereum/fidu"
+import {CapitalProvider, emptyCapitalProvider, PoolData, SeniorPool} from "./ethereum/pool"
+import {USDC_DECIMALS} from "./ethereum/utils"
+import {SeniorPool as SeniorPoolGQL, User} from "./graphql/types"
 
-function remainingCapacity(this: any, maxPoolCapacity: BigNumber): BigNumber {
+function remainingCapacity(this: PoolData, maxPoolCapacity: BigNumber): BigNumber {
   let cappedBalance = BigNumber.min(this.totalPoolAssets, maxPoolCapacity)
   return new BigNumber(maxPoolCapacity).minus(cappedBalance)
 }
 
-export function parseSeniorPool(seniorPool: SeniorPool): PoolData {
+export function parseSeniorPool(seniorPool: SeniorPoolGQL, pool: SeniorPool): PoolData {
   const compoundBalance = new BigNumber(seniorPool.lastestPoolStatus.compoundBalance)
   const balance = compoundBalance.plus(seniorPool.lastestPoolStatus.rawBalance)
   const totalShares = new BigNumber(seniorPool.lastestPoolStatus.totalShares)
-  const totalPoolAssets = new BigNumber(seniorPool.lastestPoolStatus.totalPoolAssets)
+  const sharePrice = new BigNumber(seniorPool.lastestPoolStatus.totalPoolAssets).dividedBy(totalShares)
+  const totalPoolAssetsInDollars = totalShares
+    .div(FIDU_DECIMALS.toString())
+    .multipliedBy(new BigNumber(sharePrice))
+    .div(FIDU_DECIMALS.toString())
+  let totalPoolAssets = totalPoolAssetsInDollars.multipliedBy(USDC_DECIMALS.toString())
   const totalLoansOutstanding = new BigNumber(seniorPool.lastestPoolStatus.totalLoansOutstanding)
   const estimatedTotalInterest = new BigNumber(seniorPool.lastestPoolStatus.estimatedTotalInterest)
   const estimatedApy = new BigNumber(seniorPool.lastestPoolStatus.estimatedApy)
@@ -30,13 +36,14 @@ export function parseSeniorPool(seniorPool: SeniorPool): PoolData {
     estimatedApy,
     defaultRate,
     rawBalance,
-    pool: {address: seniorPool.id},
+    pool: {...pool, address: seniorPool.id, loaded: true, initialize: async () => {}, getPoolEvents: async () => []},
     cumulativeDrawdowns,
     cumulativeWritedowns,
     remainingCapacity,
     loaded: true,
     poolEvents: [],
-    assetsAsOf: totalPoolAssets,
+    assetsAsOf: () => new BigNumber(totalPoolAssets),
+    getRepaymentEvents: async () => [],
   }
 }
 
