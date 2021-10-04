@@ -110,7 +110,7 @@ contract GFI is Context, AccessControl, ERC20Burnable, ERC20Pausable {
   }
 
   modifier onlyPauser() {
-    require(hasRole(PAUSER_ROLE, _msgSender()), "Must be minter");
+    require(hasRole(PAUSER_ROLE, _msgSender()), "Must be pauser");
     _;
   }
 }
