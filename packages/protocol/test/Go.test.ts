@@ -134,7 +134,7 @@ describe("Go", () => {
         uninitializedGo.initialize(anotherUser2, goldfinchConfig.address, uniqueIdentity.address, {
           from: uninitializedGoDeployer,
         })
-      ).to.be.rejectedWith(/Initializable: contract is already initialized/)
+      ).to.be.rejectedWith(/Contract instance has already been initialized/)
     })
   })
 
