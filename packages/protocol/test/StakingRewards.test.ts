@@ -126,6 +126,8 @@ describe("StakingRewards", function () {
   }
 
   async function mintRewards(amount: BN | string) {
+    const totalSupply = await gfi.totalSupply()
+    await gfi.setCap(totalSupply.add(new BN(amount)))
     await gfi.mint(owner, amount)
     await gfi.approve(stakingRewards.address, amount)
     await stakingRewards.loadRewards(amount)

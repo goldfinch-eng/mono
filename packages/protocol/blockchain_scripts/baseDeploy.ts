@@ -255,18 +255,17 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   async function deployGFI(hre: HardhatRuntimeEnvironment, {config}: {config: GoldfinchConfig}): Promise<GFI> {
     logger("About to deploy GFI...")
     assertIsString(gf_deployer)
+    const initialCap = "100000000000000000000000000"
     const protocol_owner = await getProtocolOwner()
     const deployResult = await deploy("GFI", {
       from: gf_deployer,
       gasLimit: 4000000,
-      proxy: {
-        execute: {
-          init: {
-            methodName: "__initialize__",
-            args: [protocol_owner, "GFI", "GFI", config.address],
-          },
-        },
-      },
+      args: [
+        protocol_owner, // owner
+        "GFI", // name
+        "GFI", // symbol
+        initialCap, //initialCap
+      ],
     })
     const gfi = (await ethers.getContractAt("GFI", deployResult.address)) as GFI
 

@@ -1,39 +1,205 @@
 import {deployments} from "hardhat"
 import {getDeployedAsTruffleContract} from "./testHelpers"
+import BN from "bn.js"
 import {expectEvent} from "@openzeppelin/test-helpers"
+import {GFIInstance} from "../typechain/truffle"
+import {assertNonNullable} from "@goldfinch-eng/utils"
 
-const BEFORE_EACH_TIMEOUT = 30000
+interface TestSetupReturn {
+  gfi: GFIInstance
+}
 
 describe("GFI", () => {
-  const testSetup = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
-    await deployments.run("base_deploy")
-    const gfi = await getDeployedAsTruffleContract(deployments, "GFI")
-    const goldfinchConfig = await getDeployedAsTruffleContract(deployments, "GoldfinchConfig")
+  let deployer: string
+  let owner: string
+  let notMinter: string
+  let gfi: GFIInstance
 
-    return {gfi, goldfinchConfig}
-  })
+  const testSetup: (options?: any) => Promise<TestSetupReturn> = deployments.createFixture(
+    async ({deployments, getNamedAccounts}) => {
+      const {protocol_owner: owner, gf_deployer} = await getNamedAccounts()
+      assertNonNullable(gf_deployer)
+      deployer = gf_deployer
+      await deployments.run("base_deploy")
+      const gfi = await getDeployedAsTruffleContract<GFIInstance>(deployments, "GFI")
 
-  let owner, gfi, goldfinchConfig
-  beforeEach(async function () {
-    this.timeout(BEFORE_EACH_TIMEOUT)
+      return {gfi}
+    }
+  )
 
-    // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;[owner] = await web3.eth.getAccounts()
+  beforeEach(async () => {
+    const [maybeOwner, maybeMinter, maybeNotMinter] = await web3.eth.getAccounts()
+    assertNonNullable(maybeOwner)
+    assertNonNullable(maybeNotMinter)
+    assertNonNullable(maybeMinter)
+    owner = maybeOwner
+    notMinter = maybeNotMinter
+
     const deployments = await testSetup()
     gfi = deployments.gfi
-    goldfinchConfig = deployments.goldfinchConfig
+    await gfi.mint(owner, new BN(10000))
   })
 
-  describe("updateGoldfinchConfig", () => {
-    describe("setting it", () => {
+  describe("symbol", () => {
+    it("is GFI", async () => {
+      expect(await gfi.symbol()).to.eq("GFI")
+    })
+  })
+
+  describe("name", () => {
+    it("is GFI", async () => {
+      expect(await gfi.name()).to.eq("GFI")
+    })
+  })
+
+  describe("pause", () => {
+    context("as owner", () => {
+      it("succeeds", async () => {
+        expect(gfi.pause()).not.to.be.rejected
+      })
+    })
+
+    context("as deployer", () => {
+      it("reverts", async () => {
+        expect(gfi.pause({from: deployer})).to.be.rejectedWith(/must be pauser/i)
+      })
+    })
+  })
+
+  describe("unpause", () => {
+    context("as owner", () => {
+      it("succeeds", async () => {
+        await gfi.pause({from: owner})
+        expect(gfi.unpause({from: owner})).to.not.be.rejected
+      })
+    })
+
+    context("as deployer", async () => {
+      it("reverts", async () => {
+        await gfi.pause({from: owner})
+        expect(gfi.unpause({from: deployer})).to.be.rejectedWith(/must be pauser/i)
+      })
+    })
+  })
+
+  describe("hasRole", () => {
+    describe("deployer", () => {
+      it("does not have minter role", async () => {
+        expect(await gfi.hasRole(await gfi.MINTER_ROLE(), deployer)).to.eq(false)
+      })
+
+      it("does not have owner role", async () => {
+        expect(await gfi.hasRole(await gfi.OWNER_ROLE(), deployer)).to.eq(false)
+      })
+
+      it("does not have pauser role", async () => {
+        expect(await gfi.hasRole(await gfi.PAUSER_ROLE(), deployer)).to.eq(false)
+      })
+    })
+
+    describe("owner", () => {
+      it("has minter role", async () => {
+        expect(await gfi.hasRole(await gfi.MINTER_ROLE(), owner)).to.eq(true)
+      })
+
+      it("has owner role", async () => {
+        expect(await gfi.hasRole(await gfi.OWNER_ROLE(), owner)).to.eq(true)
+      })
+
+      it("has pauser role", async () => {
+        expect(await gfi.hasRole(await gfi.PAUSER_ROLE(), owner)).to.eq(true)
+      })
+    })
+  })
+
+  describe("setCap", () => {
+    describe("as owner", () => {
+      it("allows you to increase the cap", async () => {
+        const cap = await gfi.cap({from: owner})
+        const newCap = cap.add(new BN(1000000))
+
+        await gfi.setCap(newCap, {from: owner})
+        expect(await gfi.cap({from: owner})).to.bignumber.eq(newCap)
+      })
+
+      it("does not allow you to decrease the cap below the total supply", async () => {
+        const totalSupply = await gfi.totalSupply({from: owner})
+        const belowTotalSupply = totalSupply.sub(new BN(1))
+        expect(gfi.setCap(belowTotalSupply, {from: owner})).to.be.rejectedWith(
+          /cannot decrease the cap below existing supply/i
+        )
+      })
+
       it("emits an event", async () => {
-        const newConfig = await deployments.deploy("GoldfinchConfig", {from: owner})
-        await goldfinchConfig.setGoldfinchConfig(newConfig.address, {from: owner})
-        const tx = await gfi.updateGoldfinchConfig({from: owner})
-        expectEvent(tx, "GoldfinchConfigUpdated", {
-          who: owner,
-          configAddress: newConfig.address,
+        const cap = await gfi.cap({from: owner})
+        const newCap = cap.add(new BN(1000000))
+
+        const tx = await gfi.setCap(newCap, {from: owner})
+        expectEvent(tx, "CapUpdated", {cap: newCap})
+      })
+    })
+
+    describe("not as owner", () => {
+      it("reverts", async () => {
+        const cap = await gfi.cap({from: notMinter})
+        expect(gfi.setCap(new BN(100000000000), {from: notMinter})).to.be.rejectedWith(/must be owner/i)
+        expect(await gfi.cap({from: notMinter})).to.bignumber.eq(cap)
+      })
+    })
+  })
+
+  describe("mint", () => {
+    describe("as minter", () => {
+      it("reverts when minting over the cap", async () => {
+        const cap = await gfi.cap({from: owner})
+        const totalSupply = await gfi.totalSupply({from: owner})
+        const remainingUnderCap = cap.sub(totalSupply)
+        const overCap = remainingUnderCap.add(new BN(1))
+
+        expect(gfi.mint(owner, overCap, {from: owner})).to.be.rejectedWith(/Cannot mint more than cap/i)
+      })
+
+      it("minting up to the cap succeeds", async () => {
+        const initialSupply = await gfi.totalSupply({from: owner})
+        const cap: BN = await gfi.cap({from: owner})
+        const remainingCap = cap.sub(initialSupply)
+
+        const initialBalance = await gfi.balanceOf(owner)
+        const expectedFinalBalance = initialBalance.add(remainingCap)
+        await gfi.mint(owner, remainingCap)
+        expect(await gfi.balanceOf(owner)).to.bignumber.eq(expectedFinalBalance)
+      })
+
+      context("while paused", async () => {
+        beforeEach(async () => {
+          await gfi.pause({from: owner})
         })
+
+        it("reverts", async () => {
+          expect(gfi.mint(owner, new BN(100))).to.be.rejectedWith(/paused/i)
+        })
+      })
+    })
+
+    describe("not as minter", () => {
+      it("minting over the cap fails", async () => {
+        const totalSupply = await gfi.totalSupply({from: notMinter})
+        const cap = await gfi.cap({from: notMinter})
+        const remainingUnderCap = cap.sub(totalSupply)
+        const overCap = remainingUnderCap.add(new BN(1))
+
+        expect(gfi.mint(notMinter, overCap, {from: notMinter})).to.be.rejectedWith(/must be minter/i)
+        expect(await gfi.cap({from: notMinter})).to.bignumber.equal(cap)
+      })
+
+      it("minting under the cap fails", async () => {
+        const totalSupply = await gfi.totalSupply({from: notMinter})
+        const cap = await gfi.cap({from: notMinter})
+        const remainingUnderCap = cap.sub(totalSupply)
+        const underCap = remainingUnderCap.sub(new BN(1))
+
+        expect(gfi.mint(notMinter, underCap, {from: notMinter})).to.be.rejectedWith(/must be minter/i)
+        expect(await gfi.cap({from: notMinter})).to.bignumber.equal(cap)
       })
     })
   })
