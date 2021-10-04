@@ -22,6 +22,7 @@ import SeniorPoolView from "./components/pools/seniorPoolView"
 import VerifyIdentity from "./components/verifyIdentity"
 import TranchedPoolView from "./components/pools/tranchedPoolView"
 import {SessionData} from "./types/session.js"
+import {EarnProvider} from "./contexts/EarnContext"
 
 export interface NetworkConfig {
   name?: string
@@ -185,56 +186,58 @@ function App() {
 
   return (
     <AppContext.Provider value={store}>
-      <Router>
-        <Sidebar />
-        <NetworkWidget
-          user={user}
-          network={network}
-          currentErrors={currentErrors}
-          currentTXs={currentTXs}
-          connectionComplete={setupWeb3}
-        />
-        <div>
-          <Switch>
-            <Route exact path="/">
-              <Redirect to="/earn" />
-            </Route>
-            <Route path="/about">{/* <About /> */}</Route>
-            <Route path="/borrow">
-              <Borrow />
-            </Route>
-            <Route path="/pools/senior">
-              <SeniorPoolView />
-            </Route>
-            <Route path="/pools/:poolAddress">
-              <TranchedPoolView />
-            </Route>
-            <Route path="/earn">
-              <Earn />
-            </Route>
-            <Route path="/transactions">
-              <Transactions currentTXs={currentTXs} />
-            </Route>
-            <Route path="/verify">
-              <VerifyIdentity />
-            </Route>
-            <Route path="/terms">
-              <TermsOfService />
-            </Route>
-            <Route path="/privacy">
-              <PrivacyPolicy />
-            </Route>
-            <Route path="/senior-pool-agreement-non-us">
-              <SeniorPoolAgreementNonUS />
-            </Route>
-          </Switch>
-        </div>
-        <footer>
-          <a href="/terms">Terms</a>
-          <span className="divider">•</span>
-          <a href="/privacy">Privacy</a>
-        </footer>
-      </Router>
+      <NetworkWidget
+        user={user}
+        network={network}
+        currentErrors={currentErrors}
+        currentTXs={currentTXs}
+        connectionComplete={setupWeb3}
+      />
+      <EarnProvider>
+        <Router>
+          <Sidebar />
+          <div>
+            <Switch>
+              <Route exact path="/">
+                <Redirect to="/earn" />
+              </Route>
+              <Route path="/about">{/* <About /> */}</Route>
+              <Route path="/earn">
+                <Earn />
+              </Route>
+              <Route path="/borrow">
+                <Borrow />
+              </Route>
+              <Route path="/transactions">
+                <Transactions currentTXs={currentTXs} />
+              </Route>
+              <Route path="/pools/senior">
+                <SeniorPoolView />
+              </Route>
+              <Route path="/pools/:poolAddress">
+                <TranchedPoolView />
+              </Route>
+              <Route path="/verify">
+                <VerifyIdentity />
+              </Route>
+              <Route path="/terms">
+                <TermsOfService />
+              </Route>
+              <Route path="/privacy">
+                <PrivacyPolicy />
+              </Route>
+              <Route path="/senior-pool-agreement-non-us">
+                <SeniorPoolAgreementNonUS />
+              </Route>
+            </Switch>
+          </div>
+        </Router>
+      </EarnProvider>
+      <footer>
+        <a href="/terms">Terms</a>
+        <span className="divider">•</span>
+        <a href="/privacy">Privacy</a>
+      </footer>
     </AppContext.Provider>
   )
 }
