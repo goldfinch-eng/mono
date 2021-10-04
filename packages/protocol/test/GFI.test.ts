@@ -108,7 +108,7 @@ describe("GFI", () => {
         const remainingUnderCap = cap.sub(totalSupply)
         const overCap = remainingUnderCap.add(new BN(1))
 
-        expect(gfi.mint(notMinter!, overCap, {from: notMinter})).to.be.rejectedWith(/must be minter/i)
+        expect(gfi.mint(notMinter!, overCap, {from: notMinter})).to.be.rejectedWith(/Cannot mint more than cap/i)
         expect(await gfi.cap({from: notMinter})).to.bignumber.equal(cap)
       })
 
@@ -118,7 +118,9 @@ describe("GFI", () => {
         const remainingUnderCap = cap.sub(totalSupply)
         const underCap = remainingUnderCap.sub(new BN(1))
 
-        expect(gfi.mint(notMinter!, underCap, {from: notMinter})).to.be.rejectedWith(/must be minter/i)
+        expect(gfi.mint(notMinter!, underCap, {from: notMinter})).to.be.rejectedWith(
+          /ERC20PresetMinterPauser: must have minter role to mint/i
+        )
         expect(await gfi.cap({from: notMinter})).to.bignumber.equal(cap)
       })
     })

@@ -115,7 +115,7 @@
           "setLeverageRatio": ["onlySetterRole"]
         },
         "**/GFI.sol:GFI": {
-          "mint": ["onlyMinter"],
+          "mint": [],
           "setCap": ["onlyOwner"]
         },
         "**/StakingRewards.sol:StakingRewards": {

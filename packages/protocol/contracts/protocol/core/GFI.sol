@@ -40,9 +40,9 @@ contract GFI is ERC20PresetMinterPauser {
    * @notice create and send tokens to a specified address
    * @dev this function will fail if the caller attempts to mint over the current cap
    */
-  function mint(address account, uint256 amount) public override whenNotPaused onlyMinter {
+  function mint(address account, uint256 amount) public override whenNotPaused {
     require(mintingAmountIsWithinCap(amount), "Cannot mint more than cap");
-    _mint(account, amount);
+    super.mint(account, amount);
   }
 
   /**
