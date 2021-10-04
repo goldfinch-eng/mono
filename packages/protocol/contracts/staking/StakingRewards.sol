@@ -42,6 +42,14 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   }
 
   /* ========== EVENTS =================== */
+  event RewardsParametersUpdated(
+    address indexed who,
+    uint256 targetCapacity,
+    uint256 minRate,
+    uint256 maxRate,
+    uint256 minRateAtPercent,
+    uint256 maxRateAtPercent
+  );
   event TargetCapacityUpdated(address indexed who, uint256 targetCapacity);
   event VestingScheduleUpdated(address indexed who, uint256 vestingLength);
   event MinRateUpdated(address indexed who, uint256 minRate);
@@ -521,29 +529,22 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     emit RewardAdded(rewards);
   }
 
-  function setTargetCapacity(uint256 _targetCapacity) public onlyAdmin updateReward(0) {
+  function setRewardsParameters(
+    uint256 _targetCapacity,
+    uint256 _minRate,
+    uint256 _maxRate,
+    uint256 _minRateAtPercent,
+    uint256 _maxRateAtPercent
+  ) public onlyAdmin updateReward(0) {
+    require(_maxRate >= _minRate, "maxRate must be >= then minRate");
+    require(_maxRateAtPercent <= _minRateAtPercent, "maxRateAtPercent must be <= minRateAtPercent");
     targetCapacity = _targetCapacity;
-    emit TargetCapacityUpdated(msg.sender, targetCapacity);
-  }
-
-  function setMaxRateAtPercent(uint256 _maxRateAtPercent) public onlyAdmin updateReward(0) {
-    maxRateAtPercent = _maxRateAtPercent;
-    emit MaxRateAtPercentUpdated(msg.sender, maxRateAtPercent);
-  }
-
-  function setMinRateAtPercent(uint256 _minRateAtPercent) public onlyAdmin updateReward(0) {
-    minRateAtPercent = _minRateAtPercent;
-    emit MinRateAtPercentUpdated(msg.sender, minRateAtPercent);
-  }
-
-  function setMaxRate(uint256 _maxRate) public onlyAdmin updateReward(0) {
-    maxRate = _maxRate;
-    emit MaxRateUpdated(msg.sender, maxRate);
-  }
-
-  function setMinRate(uint256 _minRate) public onlyAdmin updateReward(0) {
     minRate = _minRate;
-    emit MinRateUpdated(msg.sender, minRate);
+    maxRate = _maxRate;
+    minRateAtPercent = _minRateAtPercent;
+    maxRateAtPercent = _maxRateAtPercent;
+
+    emit RewardsParametersUpdated(msg.sender, targetCapacity, minRate, maxRate, minRateAtPercent, maxRateAtPercent);
   }
 
   function setLeverageMultiplier(LockupPeriod lockupPeriod, uint256 leverageMultiplier)
