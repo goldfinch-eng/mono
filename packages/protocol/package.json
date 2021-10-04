@@ -11,6 +11,7 @@
     "tenderly-test": "HARDHAT_FORK=mainnet NODE_ENV=test npx hardhat test test/mainnet_forking/*.test.* --show-stack-traces --network tenderly",
     "build": "npx hardhat compile && npm run typechain",
     "pre-commit": "npx lint-staged",
+    "generate-merkle-root:dev": "node --require hardhat/register ./blockchain_scripts/merkleDistributor/generateMerkleRoot -i ./blockchain_scripts/merkleDistributor/grants.dev.json > ./blockchain_scripts/merkleDistributor/merkleDistributorInfo.dev.json",
     "lint": "eslint --resolve-plugins-relative-to=. .",
     "lint:fix": "eslint --resolve-plugins-relative-to=. . --fix && prettier . --write && solhint 'contracts/**/*.sol' --fix",
     "docs": "npx solidity-docgen && rm -rf docs/test",
