@@ -81,10 +81,13 @@ function App() {
   }, [])
 
   useEffect(() => {
-    refreshUserData()
-    // Admin function to be able to assume the role of any address
-    window.setUserAddress = function (overrideAddress: string) {
-      refreshUserData(overrideAddress)
+    // React doesn't batch updates for async functions and that's why we need this check.
+    if (usdc && pool && creditDesk && network && goldfinchProtocol) {
+      refreshUserData()
+      // Admin function to be able to assume the role of any address
+      window.setUserAddress = function (overrideAddress: string) {
+        refreshUserData(overrideAddress)
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [usdc, pool, creditDesk, network, goldfinchProtocol])
