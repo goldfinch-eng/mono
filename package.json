@@ -10,7 +10,7 @@
     "start:murmuration": "npx lerna run start:murmuration --stream --no-sort",
     "kill-ports": "npx kill-port 4001 4000 3000 5001 8545 8080",
     "test": "npx lerna run test --stream",
-    "test-client": "npm run test -- --scope @goldfinch-eng/client",
+    "test:client": "npm run test -- --scope @goldfinch-eng/client",
     "lint": "npx lerna run lint --no-bail",
     "lint:fix": "npx lerna run lint:fix --no-bail",
     "prepare": "husky install",
