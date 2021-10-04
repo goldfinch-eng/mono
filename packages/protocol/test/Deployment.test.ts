@@ -7,6 +7,8 @@ import updateConfigs from "../blockchain_scripts/updateConfigs"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import {GoldfinchFactory} from "../typechain/ethers"
 
+const TEST_TIMEOUT = 30000
+
 describe("Deployment", async () => {
   describe("Base Deployment", () => {
     beforeEach(async () => {
@@ -50,7 +52,9 @@ describe("Deployment", async () => {
     })
   })
 
-  describe("Setup for Testing", () => {
+  describe("Setup for Testing", function () {
+    this.timeout(TEST_TIMEOUT)
+
     it("should not fail", async () => {
       return expect(deployments.run("setup_for_testing")).to.be.fulfilled
     })
