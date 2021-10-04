@@ -9,9 +9,15 @@ interface TestSetupReturn {
 }
 
 describe("GFI", () => {
+  let deployer: string | undefined
+  let owner: string | undefined
+  let notMinter: string | undefined
+  let gfi: GFIInstance
+
   const testSetup: (options?: any) => Promise<TestSetupReturn> = deployments.createFixture(
     async ({deployments, getNamedAccounts}) => {
-      const {protocol_owner: owner} = await getNamedAccounts()
+      const {protocol_owner: owner, gf_deployer} = await getNamedAccounts()
+      deployer = gf_deployer
       await deployments.run("base_deploy")
       const gfi = await getDeployedAsTruffleContract<GFIInstance>(deployments, "GFI")
 
@@ -19,9 +25,6 @@ describe("GFI", () => {
     }
   )
 
-  let owner: string | undefined
-  let notMinter: string | undefined
-  let gfi: GFIInstance
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
     ;[owner, , notMinter] = await web3.eth.getAccounts()
@@ -39,6 +42,36 @@ describe("GFI", () => {
   describe("name", () => {
     it("is GFI", async () => {
       expect(await gfi.name()).to.eq("GFI")
+    })
+  })
+
+  describe("hasRole", () => {
+    describe("as deployer", () => {
+      it("does not have minter role", async () => {
+        expect(await gfi.hasRole(await gfi.MINTER_ROLE(), deployer!)).to.eq(false)
+      })
+
+      it("does not have owner role", async () => {
+        expect(await gfi.hasRole(await gfi.OWNER_ROLE(), deployer!)).to.eq(false)
+      })
+
+      it("does not have pauser role", async () => {
+        expect(await gfi.hasRole(await gfi.PAUSER_ROLE(), deployer!)).to.eq(false)
+      })
+    })
+
+    describe("as owner", () => {
+      it("has minter role", async () => {
+        expect(await gfi.hasRole(await gfi.MINTER_ROLE(), owner!)).to.eq(true)
+      })
+
+      it("has owner role", async () => {
+        expect(await gfi.hasRole(await gfi.OWNER_ROLE(), owner!)).to.eq(true)
+      })
+
+      it("has pauser role", async () => {
+        expect(await gfi.hasRole(await gfi.PAUSER_ROLE(), owner!)).to.eq(true)
+      })
     })
   })
 
@@ -108,7 +141,7 @@ describe("GFI", () => {
         const remainingUnderCap = cap.sub(totalSupply)
         const overCap = remainingUnderCap.add(new BN(1))
 
-        expect(gfi.mint(notMinter!, overCap, {from: notMinter})).to.be.rejectedWith(/Cannot mint more than cap/i)
+        expect(gfi.mint(notMinter!, overCap, {from: notMinter})).to.be.rejectedWith(/must be minter/i)
         expect(await gfi.cap({from: notMinter})).to.bignumber.equal(cap)
       })
 
@@ -118,9 +151,7 @@ describe("GFI", () => {
         const remainingUnderCap = cap.sub(totalSupply)
         const underCap = remainingUnderCap.sub(new BN(1))
 
-        expect(gfi.mint(notMinter!, underCap, {from: notMinter})).to.be.rejectedWith(
-          /ERC20PresetMinterPauser: must have minter role to mint/i
-        )
+        expect(gfi.mint(notMinter!, underCap, {from: notMinter})).to.be.rejectedWith(/must be minter/i)
         expect(await gfi.cap({from: notMinter})).to.bignumber.equal(cap)
       })
     })

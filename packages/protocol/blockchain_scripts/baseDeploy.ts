@@ -255,7 +255,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   async function deployGFI(hre: HardhatRuntimeEnvironment, {config}: {config: GoldfinchConfig}): Promise<GFI> {
     logger("About to deploy GFI...")
     assertIsString(gf_deployer)
-    const initialCap = "1000000000000000000"
+    const initialCap = "100000000000000000000000000"
     const protocol_owner = await getProtocolOwner()
     const deployResult = await deploy("GFI", {
       from: gf_deployer,
