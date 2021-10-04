@@ -104,7 +104,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   mapping(LockupPeriod => uint256) private leverageMultipliers;
 
   /// @dev NFT tokenId => staked position
-  mapping(uint256 => StakedPosition) private positions;
+  mapping(uint256 => StakedPosition) public positions;
 
   // solhint-disable-next-line func-name-mixedcase
   function __initialize__(address owner, GoldfinchConfig _config) external initializer {
@@ -191,7 +191,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   /// @notice Returns the rewards claimable by a given position token at the most recent checkpoint, taking into
   ///   account vesting schedule.
   /// @return rewards Amount of rewards denominated in `rewardsToken()`
-  function claimableRewards(uint256 tokenId) internal view returns (uint256 rewards) {
+  function claimableRewards(uint256 tokenId) public view returns (uint256 rewards) {
     return positions[tokenId].rewards.claimable();
   }
 
