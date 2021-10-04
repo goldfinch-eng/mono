@@ -20,11 +20,11 @@ describe("GFI", () => {
   )
 
   let owner: string | undefined
-  let notOwner: string | undefined
+  let notMinter: string | undefined
   let gfi: GFIInstance
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;[owner, , notOwner] = await web3.eth.getAccounts()
+    ;[owner, , notMinter] = await web3.eth.getAccounts()
     const deployments = await testSetup()
     gfi = deployments.gfi
     await gfi.mint(owner!, new BN(10000))
@@ -71,15 +71,15 @@ describe("GFI", () => {
 
     describe("not as owner", () => {
       it("forbids you from using the setCap function", async () => {
-        const cap = await gfi.cap({from: notOwner})
-        expect(gfi.setCap(new BN(100000000000), {from: notOwner})).to.be.rejectedWith(/must be owner/i)
-        expect(await gfi.cap({from: notOwner})).to.bignumber.eq(cap)
+        const cap = await gfi.cap({from: notMinter})
+        expect(gfi.setCap(new BN(100000000000), {from: notMinter})).to.be.rejectedWith(/must be owner/i)
+        expect(await gfi.cap({from: notMinter})).to.bignumber.eq(cap)
       })
     })
   })
 
   describe("mint", () => {
-    describe("as owner", () => {
+    describe("as minter", () => {
       it("minting over the cap fails", async () => {
         const cap = await gfi.cap({from: owner})
         const totalSupply = await gfi.totalSupply({from: owner})
@@ -101,25 +101,25 @@ describe("GFI", () => {
       })
     })
 
-    describe("not as owner", () => {
+    describe("not as minter", () => {
       it("minting over the cap fails", async () => {
-        const totalSupply = await gfi.totalSupply({from: notOwner})
-        const cap = await gfi.cap({from: notOwner})
+        const totalSupply = await gfi.totalSupply({from: notMinter})
+        const cap = await gfi.cap({from: notMinter})
         const remainingUnderCap = cap.sub(totalSupply)
         const overCap = remainingUnderCap.add(new BN(1))
 
-        expect(gfi.mint(notOwner!, overCap, {from: notOwner})).to.be.rejectedWith(/must be minter/i)
-        expect(await gfi.cap({from: notOwner})).to.bignumber.equal(cap)
+        expect(gfi.mint(notMinter!, overCap, {from: notMinter})).to.be.rejectedWith(/must be minter/i)
+        expect(await gfi.cap({from: notMinter})).to.bignumber.equal(cap)
       })
 
       it("minting under the cap fails", async () => {
-        const totalSupply = await gfi.totalSupply({from: notOwner})
-        const cap = await gfi.cap({from: notOwner})
+        const totalSupply = await gfi.totalSupply({from: notMinter})
+        const cap = await gfi.cap({from: notMinter})
         const remainingUnderCap = cap.sub(totalSupply)
         const underCap = remainingUnderCap.sub(new BN(1))
 
-        expect(gfi.mint(notOwner!, underCap, {from: notOwner})).to.be.rejectedWith(/must be minter/i)
-        expect(await gfi.cap({from: notOwner})).to.bignumber.equal(cap)
+        expect(gfi.mint(notMinter!, underCap, {from: notMinter})).to.be.rejectedWith(/must be minter/i)
+        expect(await gfi.cap({from: notMinter})).to.bignumber.equal(cap)
       })
     })
   })

@@ -255,8 +255,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   async function deployGFI(hre: HardhatRuntimeEnvironment, {config}: {config: GoldfinchConfig}): Promise<GFI> {
     logger("About to deploy GFI...")
     assertIsString(gf_deployer)
-    // TODO(will): what value is this?
-    const initialCap = 100000
+    const initialCap = "1000000000000000000"
     const protocol_owner = await getProtocolOwner()
     const deployResult = await deploy("GFI", {
       from: gf_deployer,
@@ -265,7 +264,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
         protocol_owner, // owner
         "GFI", // name
         "GFI", // symbol
-        initialCap,
+        initialCap, //initialCap
       ],
     })
     const gfi = (await ethers.getContractAt("GFI", deployResult.address)) as GFI
