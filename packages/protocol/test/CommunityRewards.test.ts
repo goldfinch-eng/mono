@@ -21,14 +21,21 @@ import {asNonNullable} from "../../utils/src"
 const {ethers} = hre
 const {deployments} = hre
 
+const setupTest = deployments.createFixture(async ({deployments}) => {
+  const [_owner, _anotherUser] = await web3.eth.getAccounts()
+  const owner = asNonNullable(_owner)
+  const anotherUser = asNonNullable(_anotherUser)
+
+  const deployed = await deployAllContracts(deployments)
+  return {owner, anotherUser, gfi: deployed.gfi, communityRewards: deployed.communityRewards}
+})
+
 describe("CommunityRewards", () => {
   let owner: string, anotherUser: string, gfi: GFIInstance, communityRewards: CommunityRewardsInstance
 
   beforeEach(async () => {
-    const [_owner, _anotherUser] = await web3.eth.getAccounts()
-    owner = asNonNullable(_owner)
-    anotherUser = asNonNullable(_anotherUser)
-    ;({gfi, communityRewards} = await deployAllContracts(deployments))
+    // eslint-disable-next-line @typescript-eslint/no-extra-semi
+    ;({owner, anotherUser, gfi, communityRewards} = await setupTest())
   })
 
   async function grant({
@@ -44,16 +51,23 @@ describe("CommunityRewards", () => {
     cliffLength: BN
     vestingInterval: BN
   }): Promise<BN> {
+    const contractGfiBalanceBefore = await gfi.balanceOf(communityRewards.address)
+
     const rewardsAvailableBefore = await communityRewards.rewardsAvailable()
 
     const receipt = await communityRewards.grant(recipient, amount, vestingLength, cliffLength, vestingInterval, {
       from: owner,
     })
 
+    const contractGfiBalanceAfter = await gfi.balanceOf(communityRewards.address)
+
     const rewardsAvailableAfter = await communityRewards.rewardsAvailable()
 
     const grantedEvent = getOnlyLog<Granted>(decodeLogs(receipt.receipt.rawLogs, communityRewards, "Granted"))
     const tokenId = grantedEvent.args.tokenId
+
+    // Verify contract GFI balance.
+    expect(contractGfiBalanceBefore).to.bignumber.equal(contractGfiBalanceAfter)
 
     // Verify rewards available state.
     expect(rewardsAvailableBefore.sub(rewardsAvailableAfter)).to.bignumber.equal(amount)
@@ -298,16 +312,16 @@ describe("CommunityRewards", () => {
     })
 
     it("transfers GFI from sender, updates state, and emits an event", async () => {
-      const gfiBalanceBefore = await gfi.balanceOf(communityRewards.address)
-      expect(gfiBalanceBefore).to.bignumber.equal(new BN(0))
+      const contractGfiBalanceBefore = await gfi.balanceOf(communityRewards.address)
+      expect(contractGfiBalanceBefore).to.bignumber.equal(new BN(0))
 
       const rewardsAvailableBefore = await communityRewards.rewardsAvailable()
       expect(rewardsAvailableBefore).to.bignumber.equal(new BN(0))
 
       const receipt = await communityRewards.loadRewards(amount, {from: owner})
 
-      const gfiBalanceAfter = await gfi.balanceOf(communityRewards.address)
-      expect(gfiBalanceAfter).to.bignumber.equal(amount)
+      const contractGfiBalanceAfter = await gfi.balanceOf(communityRewards.address)
+      expect(contractGfiBalanceAfter).to.bignumber.equal(amount)
 
       const rewardsAvailableAfter = await communityRewards.rewardsAvailable()
       expect(rewardsAvailableAfter).to.bignumber.equal(amount)
@@ -436,8 +450,11 @@ describe("CommunityRewards", () => {
     })
 
     it("allows call if claimable amount is 0", async () => {
-      const gfiBalanceBefore = await gfi.balanceOf(anotherUser)
-      expect(gfiBalanceBefore).to.bignumber.equal(new BN(0))
+      const contractGfiBalanceBefore = await gfi.balanceOf(communityRewards.address)
+      expect(contractGfiBalanceBefore).to.bignumber.equal(amount)
+
+      const accountGfiBalanceBefore = await gfi.balanceOf(anotherUser)
+      expect(accountGfiBalanceBefore).to.bignumber.equal(new BN(0))
 
       const tokenId = await grant({
         recipient: anotherUser,
@@ -460,7 +477,8 @@ describe("CommunityRewards", () => {
         // Does not increment total claimed.
         new BN(0),
         // Does not transfer GFI.
-        new BN(0)
+        new BN(0),
+        contractGfiBalanceBefore
       )
 
       // Does not emit event.
@@ -468,8 +486,11 @@ describe("CommunityRewards", () => {
     })
 
     it("updates state, transfers rewards, and emits an event, if claimable amount is > 0", async () => {
-      const gfiBalanceBefore = await gfi.balanceOf(anotherUser)
-      expect(gfiBalanceBefore).to.bignumber.equal(new BN(0))
+      const contractGfiBalanceBefore = await gfi.balanceOf(communityRewards.address)
+      expect(contractGfiBalanceBefore).to.bignumber.equal(amount)
+
+      const accountGfiBalanceBefore = await gfi.balanceOf(anotherUser)
+      expect(accountGfiBalanceBefore).to.bignumber.equal(new BN(0))
 
       const vestingLength = new BN(1000)
       const cliffLength = new BN(500)
@@ -504,7 +525,8 @@ describe("CommunityRewards", () => {
         // Increments total claimed.
         expectedClaimedJustAfterCliff,
         // Transfers GFI.
-        expectedClaimedJustAfterCliff
+        expectedClaimedJustAfterCliff,
+        contractGfiBalanceBefore.sub(expectedClaimedJustAfterCliff)
       )
 
       // Emits event.
@@ -518,8 +540,11 @@ describe("CommunityRewards", () => {
 
     context("grant with 0 vesting length", async () => {
       it("gets full grant amount", async () => {
-        const gfiBalanceBefore = await gfi.balanceOf(anotherUser)
-        expect(gfiBalanceBefore).to.bignumber.equal(new BN(0))
+        const contractGfiBalanceBefore = await gfi.balanceOf(communityRewards.address)
+        expect(contractGfiBalanceBefore).to.bignumber.equal(amount)
+
+        const accountGfiBalanceBefore = await gfi.balanceOf(anotherUser)
+        expect(accountGfiBalanceBefore).to.bignumber.equal(new BN(0))
 
         const tokenId = await grant({
           recipient: anotherUser,
@@ -533,7 +558,7 @@ describe("CommunityRewards", () => {
 
         await communityRewards.getReward(tokenId, {from: anotherUser})
 
-        await expectStateAfterGetReward(gfi, communityRewards, anotherUser, tokenId, amount, amount, amount)
+        await expectStateAfterGetReward(gfi, communityRewards, anotherUser, tokenId, amount, amount, amount, new BN(0))
       })
     })
 
@@ -547,8 +572,11 @@ describe("CommunityRewards", () => {
           const vestingInterval = new BN(1)
 
           it("gets the vested amount", async () => {
-            const gfiBalanceBefore = await gfi.balanceOf(anotherUser)
-            expect(gfiBalanceBefore).to.bignumber.equal(new BN(0))
+            const contractGfiBalanceBefore = await gfi.balanceOf(communityRewards.address)
+            expect(contractGfiBalanceBefore).to.bignumber.equal(amount)
+
+            const accountGfiBalanceBefore = await gfi.balanceOf(anotherUser)
+            expect(accountGfiBalanceBefore).to.bignumber.equal(new BN(0))
 
             const tokenId = await grant({
               recipient: anotherUser,
@@ -570,7 +598,8 @@ describe("CommunityRewards", () => {
               tokenId,
               amount,
               expectedClaimed,
-              expectedClaimed
+              expectedClaimed,
+              contractGfiBalanceBefore.sub(expectedClaimed)
             )
           })
         })
@@ -579,8 +608,11 @@ describe("CommunityRewards", () => {
           const totalVestingUnits = vestingLength.div(vestingInterval)
 
           it("gets the vested amount", async () => {
-            const gfiBalanceBefore = await gfi.balanceOf(anotherUser)
-            expect(gfiBalanceBefore).to.bignumber.equal(new BN(0))
+            const contractGfiBalanceBefore = await gfi.balanceOf(communityRewards.address)
+            expect(contractGfiBalanceBefore).to.bignumber.equal(amount)
+
+            const accountGfiBalanceBefore = await gfi.balanceOf(anotherUser)
+            expect(accountGfiBalanceBefore).to.bignumber.equal(new BN(0))
 
             const tokenId = await grant({
               recipient: anotherUser,
@@ -607,7 +639,8 @@ describe("CommunityRewards", () => {
               tokenId,
               amount,
               expectedClaimed,
-              expectedClaimed
+              expectedClaimed,
+              contractGfiBalanceBefore.sub(expectedClaimed)
             )
 
             const elapse2 = new BN(100)
@@ -627,7 +660,8 @@ describe("CommunityRewards", () => {
               tokenId,
               amount,
               expectedClaimed2,
-              expectedClaimed2
+              expectedClaimed2,
+              contractGfiBalanceBefore.sub(expectedClaimed2)
             )
           })
         })
@@ -639,8 +673,11 @@ describe("CommunityRewards", () => {
           const vestingInterval = new BN(1)
 
           it("gets 0 before cliff has elapsed and vested amount once cliff has elapsed", async () => {
-            const gfiBalanceBefore = await gfi.balanceOf(anotherUser)
-            expect(gfiBalanceBefore).to.bignumber.equal(new BN(0))
+            const contractGfiBalanceBefore = await gfi.balanceOf(communityRewards.address)
+            expect(contractGfiBalanceBefore).to.bignumber.equal(amount)
+
+            const accountGfiBalanceBefore = await gfi.balanceOf(anotherUser)
+            expect(accountGfiBalanceBefore).to.bignumber.equal(new BN(0))
 
             const tokenId = await grant({
               recipient: anotherUser,
@@ -662,7 +699,8 @@ describe("CommunityRewards", () => {
               tokenId,
               amount,
               expectedClaimedJustBeforeCliff,
-              expectedClaimedJustBeforeCliff
+              expectedClaimedJustBeforeCliff,
+              contractGfiBalanceBefore.sub(expectedClaimedJustBeforeCliff)
             )
 
             await advanceTime({seconds: new BN(1)})
@@ -677,7 +715,8 @@ describe("CommunityRewards", () => {
               tokenId,
               amount,
               expectedClaimedAtCliff,
-              expectedClaimedAtCliff
+              expectedClaimedAtCliff,
+              contractGfiBalanceBefore.sub(expectedClaimedAtCliff)
             )
           })
         })
@@ -686,8 +725,11 @@ describe("CommunityRewards", () => {
           const totalVestingUnits = vestingLength.div(vestingInterval)
 
           it("gets 0 before cliff has elapsed and vested amount once cliff has elapsed", async () => {
-            const gfiBalanceBefore = await gfi.balanceOf(anotherUser)
-            expect(gfiBalanceBefore).to.bignumber.equal(new BN(0))
+            const contractGfiBalanceBefore = await gfi.balanceOf(communityRewards.address)
+            expect(contractGfiBalanceBefore).to.bignumber.equal(amount)
+
+            const accountGfiBalanceBefore = await gfi.balanceOf(anotherUser)
+            expect(accountGfiBalanceBefore).to.bignumber.equal(new BN(0))
 
             const tokenId = await grant({
               recipient: anotherUser,
@@ -709,7 +751,8 @@ describe("CommunityRewards", () => {
               tokenId,
               amount,
               expectedClaimedJustBeforeCliff,
-              expectedClaimedJustBeforeCliff
+              expectedClaimedJustBeforeCliff,
+              contractGfiBalanceBefore.sub(expectedClaimedJustBeforeCliff)
             )
 
             await advanceTime({seconds: new BN(1)})
@@ -728,7 +771,8 @@ describe("CommunityRewards", () => {
               tokenId,
               amount,
               expectedClaimedAtCliff,
-              expectedClaimedAtCliff
+              expectedClaimedAtCliff,
+              contractGfiBalanceBefore.sub(expectedClaimedAtCliff)
             )
 
             await advanceTime({seconds: new BN(100)})
@@ -747,7 +791,8 @@ describe("CommunityRewards", () => {
               tokenId,
               amount,
               expectedClaimed3,
-              expectedClaimed3
+              expectedClaimed3,
+              contractGfiBalanceBefore.sub(expectedClaimed3)
             )
           })
         })
@@ -755,14 +800,11 @@ describe("CommunityRewards", () => {
     })
 
     context("revoked grant", async () => {
-      let amount: BN
       let tokenId: BN
       let vestingLength: BN
       let grantedAt: BN
 
       beforeEach(async () => {
-        amount = new BN(1e6)
-        await mintAndLoadRewards(gfi, communityRewards, owner, amount)
         vestingLength = new BN(1000)
         tokenId = await grant({
           recipient: anotherUser,
@@ -776,6 +818,12 @@ describe("CommunityRewards", () => {
       })
 
       it("after revocation, vested amount is still claimable", async () => {
+        const contractGfiBalanceBefore = await gfi.balanceOf(communityRewards.address)
+        expect(contractGfiBalanceBefore).to.bignumber.equal(amount)
+
+        const accountGfiBalanceBefore = await gfi.balanceOf(anotherUser)
+        expect(accountGfiBalanceBefore).to.bignumber.equal(new BN(0))
+
         await communityRewards.revokeGrant(tokenId, {from: owner})
         const revocationTimestamp = await getCurrentTimestamp()
         expect(revocationTimestamp).to.bignumber.equal(grantedAt.add(vestingLength.div(new BN(2))))
@@ -798,11 +846,18 @@ describe("CommunityRewards", () => {
           tokenId,
           amount,
           expectedClaimed,
-          expectedClaimed
+          expectedClaimed,
+          contractGfiBalanceBefore.sub(expectedClaimed)
         )
       })
 
       it("after revocation, no further amount vests, so no further amount is claimable", async () => {
+        const contractGfiBalanceBefore = await gfi.balanceOf(communityRewards.address)
+        expect(contractGfiBalanceBefore).to.bignumber.equal(amount)
+
+        const accountGfiBalanceBefore = await gfi.balanceOf(anotherUser)
+        expect(accountGfiBalanceBefore).to.bignumber.equal(new BN(0))
+
         await communityRewards.revokeGrant(tokenId, {from: owner})
         const revocationTimestamp = await getCurrentTimestamp()
         expect(revocationTimestamp).to.bignumber.equal(grantedAt.add(vestingLength.div(new BN(2))))
@@ -834,7 +889,8 @@ describe("CommunityRewards", () => {
           tokenId,
           amount,
           expectedClaimed,
-          expectedClaimed
+          expectedClaimed,
+          contractGfiBalanceBefore.sub(expectedClaimed)
         )
       })
     })

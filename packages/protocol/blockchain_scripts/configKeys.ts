@@ -30,6 +30,7 @@ const CONFIG_KEYS = {
   MigratedTranchedPoolImplementation: 16,
   BorrowerImplementation: 17,
   GFI: 18,
+  Go: 19,
 }
 
 export {CONFIG_KEYS}

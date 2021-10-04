@@ -8,17 +8,14 @@ import {Granted, CommunityRewardsInstance} from "../typechain/truffle/CommunityR
 import {asNonNullable, assertNonEmptyArray, assertNonNullable} from "@goldfinch-eng/utils"
 import {mintAndLoadRewards} from "./communityRewardsHelpers"
 import {fixtures} from "./merkleDistributorHelpers"
-import {decodeLogs, deployAllContracts, genDifferentHexString, getOnlyLog} from "./testHelpers"
+import {
+  decodeLogs,
+  deployAllContracts,
+  fundWithEthFromLocalWhale,
+  genDifferentHexString,
+  getOnlyLog,
+} from "./testHelpers"
 const {deployments} = hre
-
-async function fundFromLocalWhale(userToFund: string, amount: BN) {
-  const [protocol_owner] = await ethers.getSigners()
-  assertNonNullable(protocol_owner)
-  await protocol_owner.sendTransaction({
-    to: userToFund,
-    value: ethers.utils.parseEther(amount.toString()),
-  })
-}
 
 const setupTest = deployments.createFixture(async ({deployments}) => {
   const amount = new BN("1")
@@ -32,8 +29,8 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
     deployMerkleDistributor: {fromAccount: owner, root: fixtures.output.merkleRoot},
   })
 
-  await fundFromLocalWhale(test_merkle_distributor_recipient_a, amount)
-  await fundFromLocalWhale(test_merkle_distributor_recipient_b, amount)
+  await fundWithEthFromLocalWhale(test_merkle_distributor_recipient_a, amount)
+  await fundWithEthFromLocalWhale(test_merkle_distributor_recipient_b, amount)
 
   const gfi = deployed.gfi
   const communityRewards = deployed.communityRewards
