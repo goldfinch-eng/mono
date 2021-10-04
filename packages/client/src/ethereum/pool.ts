@@ -55,12 +55,12 @@ class SeniorPool {
     this.v1Pool = new Pool(goldfinchProtocol)
     this.chain = goldfinchProtocol.networkId
     this._loaded = true
-    this.isPaused = !!this.contract.methods.paused()
   }
 
   async initialize() {
     let poolData = await fetchPoolData(this, this.usdc)
     this.gf = poolData
+    this.isPaused = await this.contract.methods.paused().call()
   }
 
   async getPoolEvents(
