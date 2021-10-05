@@ -682,13 +682,7 @@ function Overview({tranchedPool, handleDetails}: OverviewProps) {
   }
 
   let detailsLink = <></>
-  if (
-    user.loaded &&
-    user.goListed &&
-    session.status === "authenticated" &&
-    tranchedPool?.metadata?.detailsUrl &&
-    tranchedPool?.metadata?.NDAUrl
-  ) {
+  if (user.loaded && user.goListed && session.status === "authenticated" && tranchedPool?.metadata?.detailsUrl) {
     detailsLink = (
       <div className="pool-links">
         <button onClick={() => handleDetails()}>
@@ -722,6 +716,7 @@ function TranchedPoolView() {
   const [showModal, setShowModal] = useState(false)
   const backer = useBacker({user, tranchedPool})
   const [nda, refreshNDA] = useFetchNDA({user, tranchedPool})
+  const hasSignedNDA = nda && nda?.status === "success"
 
   const [unlocked, refreshUnlocked] = useCurrencyUnlocked(usdc, {
     owner: user.address,
@@ -733,7 +728,13 @@ function TranchedPoolView() {
     window.open(tranchedPool?.metadata?.detailsUrl, "_blank")
   }
 
-  const handleDetails = () => (nda && nda.status === "success" ? openDetailsUrl() : setShowModal(true))
+  const handleDetails = () => {
+    if (!tranchedPool?.metadata?.NDAUrl || hasSignedNDA) {
+      openDetailsUrl()
+    } else {
+      setShowModal(true)
+    }
+  }
 
   async function handleSignNDA() {
     if (session.status !== "authenticated") {
