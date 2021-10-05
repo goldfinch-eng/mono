@@ -7,14 +7,23 @@
   @include space-y(1.5em);
 
   .inner-banner {
-    align-items: center;
-    width: 100%;
     display: flex;
     flex-direction: row;
+    align-items: center;
     justify-content: space-between;
+    width: 100%;
 
     .message {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
       width: 100%;
+      @include space-x(1em);
+
+      &.small {
+        font-size: $sans-size-xs;
+      }
+
       p {
         font-size: $sans-size-xs;
       }

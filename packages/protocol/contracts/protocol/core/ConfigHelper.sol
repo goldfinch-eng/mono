@@ -13,6 +13,7 @@ import "../../interfaces/IERC20withDec.sol";
 import "../../interfaces/ICUSDCContract.sol";
 import "../../interfaces/IPoolTokens.sol";
 import "../../interfaces/IGoldfinchFactory.sol";
+import "../../interfaces/IGo.sol";
 
 /**
  * @title ConfigHelper
@@ -60,6 +61,10 @@ library ConfigHelper {
 
   function getGFI(GoldfinchConfig config) internal view returns (IERC20withDec) {
     return IERC20withDec(gfiAddress(config));
+  }
+
+  function getGo(GoldfinchConfig config) internal view returns (IGo) {
+    return IGo(goAddress(config));
   }
 
   function oneInchAddress(GoldfinchConfig config) internal view returns (address) {
@@ -136,6 +141,10 @@ library ConfigHelper {
 
   function borrowerImplementationAddress(GoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.BorrowerImplementation));
+  }
+
+  function goAddress(GoldfinchConfig config) internal view returns (address) {
+    return config.getAddress(uint256(ConfigOptions.Addresses.Go));
   }
 
   function getReserveDenominator(GoldfinchConfig config) internal view returns (uint256) {
