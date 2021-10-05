@@ -9,7 +9,7 @@ import Sidebar from "./components/sidebar"
 import TermsOfService from "./components/termsOfService.js"
 import PrivacyPolicy from "./components/privacyPolicy.js"
 import SeniorPoolAgreementNonUS from "./components/seniorPoolAgreementNonUS"
-import web3 from "./web3"
+import web3, {SESSION_DATA_KEY} from "./web3"
 import {ERC20, Tickers} from "./ethereum/erc20"
 import {refreshGoldfinchConfigData} from "./ethereum/goldfinchConfig"
 import {getUserData, defaultUser, User} from "./ethereum/user"
@@ -22,6 +22,7 @@ import SeniorPoolView from "./components/pools/seniorPoolView"
 import VerifyIdentity from "./components/verifyIdentity"
 import TranchedPoolView from "./components/pools/tranchedPoolView"
 import {SessionData} from "./types/session.js"
+import {useSessionLocalStorage} from "./hooks/useSignIn"
 import {EarnProvider} from "./contexts/EarnContext"
 import {BorrowProvider} from "./contexts/BorrowContext"
 
@@ -73,7 +74,10 @@ function App() {
   const [networkMonitor, setNetworkMonitor] = useState<NetworkMonitor>()
   const [goldfinchProtocol, setGoldfinchProtocol] = useState<GoldfinchProtocol>()
   const [geolocationData, setGeolocationData] = useState<GeolocationData>()
-  const [sessionData, setSessionData] = useState<SessionData>()
+  const {localStorageValue: sessionData, setLocalStorageValue: setSessionData} = useSessionLocalStorage(
+    SESSION_DATA_KEY,
+    {}
+  )
 
   useEffect(() => {
     setupWeb3()

@@ -9,11 +9,9 @@ export function useKYC(): AsyncResult<KYC> {
   const {user, network, setSessionData} = useContext(AppContext)
   const [session] = useSignIn()
   const result = useAsync(() => {
-    if (session.status !== "authenticated") {
+    if (session.status !== "authenticated" || !network?.name) {
       return
     }
-    assertNonNullable(network)
-    assertNonNullable(network.name)
     assertNonNullable(setSessionData)
     const client = new DefaultGoldfinchClient(network.name, session, setSessionData)
     const promise = client.fetchKYCStatus(user.address)
