@@ -17,8 +17,11 @@ import express from "express"
 import cors from "cors"
 import {relayHandler} from "@goldfinch-eng/autotasks"
 import BN from "bn.js"
+import hre from "hardhat"
+import "hardhat-deploy"
 
 import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
+import setUpForTesting from "@goldfinch-eng/protocol/deploy/setUpForTesting"
 
 const app = express()
 app.use(express.json())
@@ -29,12 +32,28 @@ const port = process.env.RELAY_SERVER_PORT
 app.post("/relay", relayHandler)
 
 app.post("/fundWithWhales", async (req, res) => {
-  if (process.env.NODE_ENV !== "development" && process.env.MURMURATION !== "yes") {
+  if (process.env.NODE_ENV === "production") {
     return res.status(404).send({message: "fundWithWhales only available on local and murmuration"})
   }
 
   const {address} = req.body
   await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [address], new BN("75000"))
+  res.status(200).send({status: "success", result: JSON.stringify({success: true})})
+})
+
+app.post("/setupForTesting", async (req, res) => {
+  if (process.env.NODE_ENV === "production") {
+    return res.status(404).send({message: "setupForTesting only available on local and murmuration"})
+  }
+  const {address} = req.body
+  const {getNamedAccounts, deployments, getChainId} = hre
+
+  try {
+    await setUpForTesting({getNamedAccounts, deployments, getChainId}, {overrideAddress: address})
+  } catch (e) {
+    return res.status(404).send({message: "setupForTesting error"})
+  }
+
   res.status(200).send({status: "success", result: JSON.stringify({success: true})})
 })
 

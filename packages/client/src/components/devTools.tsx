@@ -41,6 +41,24 @@ export default function DevTools(props) {
               onClick={async (e) => {
                 e.preventDefault()
                 setDisabled(true)
+                await fetch("/setupForTesting", {
+                  method: "POST",
+                  headers: {"Content-Type": "application/json"},
+                  body: JSON.stringify({
+                    address: user.address,
+                  }),
+                })
+                setDisabled(false)
+              }}
+            >
+              SetupForTesting (refresh)
+            </button>
+            <button
+              className={`button dark ${disabled ? "disabled" : ""}`}
+              disabled={disabled}
+              onClick={async (e) => {
+                e.preventDefault()
+                setDisabled(true)
                 await fetch("/fundWithWhales", {
                   method: "POST",
                   headers: {"Content-Type": "application/json"},
