@@ -48,7 +48,7 @@ type OverrideOptions = {
 }
 
 let logger: Logger
-async function main({getNamedAccounts, deployments, getChainId}, options: OverrideOptions) {
+async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeEnvironment, options: OverrideOptions) {
   const {getOrNull, log} = deployments
   logger = log
   const {gf_deployer} = await getNamedAccounts()
