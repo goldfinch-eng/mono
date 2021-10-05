@@ -1,11 +1,8 @@
 import {MerkleDistributor as MerkleDistributorContract} from "@goldfinch-eng/protocol/typechain/web3/MerkleDistributor"
 import {CommunityRewards as CommunityRewardsContract} from "@goldfinch-eng/protocol/typechain/web3/CommunityRewards"
-import {GoldfinchProtocol} from "./GoldfinchProtocol"
-import {
-  MerkleDistributorGrantInfo,
-  MerkleDistributorInfo,
-} from "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types"
-import {getMerkleDistributorInfo} from "./utils"
+import {GoldfinchProtocol} from "../GoldfinchProtocol"
+import {getMerkleDistributorInfo} from "../utils"
+import {MerkleDistributorGrantInfo, MerkleDistributorInfo} from "./types"
 
 export class MerkleDistributor {
   goldfinchProtocol: GoldfinchProtocol

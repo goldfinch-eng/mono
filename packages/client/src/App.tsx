@@ -22,7 +22,7 @@ import SeniorPoolView from "./components/pools/seniorPoolView"
 import VerifyIdentity from "./components/verifyIdentity"
 import TranchedPoolView from "./components/pools/tranchedPoolView"
 import {SessionData} from "./types/session.js"
-import {CommunityRewards, MerkleDistributor} from "./ethereum/communityRewards"
+import {CommunityRewards, MerkleDistributor} from "./ethereum/communityRewards/communityRewards"
 
 export interface NetworkConfig {
   name?: string
@@ -54,6 +54,8 @@ export interface GlobalState {
   setGeolocationData?: (geolocationData: GeolocationData) => void
   sessionData?: SessionData
   setSessionData?: (data: SessionData | undefined) => void
+  communityRewards?: CommunityRewards
+  merkleDistributor?: MerkleDistributor
 }
 
 declare let window: any
@@ -190,6 +192,8 @@ function App() {
     setGeolocationData,
     sessionData,
     setSessionData,
+    communityRewards,
+    merkleDistributor,
   }
 
   return (

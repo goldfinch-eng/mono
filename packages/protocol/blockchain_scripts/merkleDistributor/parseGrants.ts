@@ -13,6 +13,7 @@ export function parseGrants(unsortedGrants: AccountedGrant[]): MerkleDistributor
     (accountedGrant: AccountedGrant, index: number): MerkleDistributorGrantInfo => ({
       index,
       account: accountedGrant.account,
+      reason: accountedGrant.reason,
       grant: {
         amount: accountedGrant.grant.amount.toHexString(),
         vestingLength: accountedGrant.grant.vestingLength.toHexString(),

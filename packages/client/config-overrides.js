@@ -1,13 +1,61 @@
 /* config-overrides.js */
+const path = require("path")
 const {solidityLoader} = require("./config/webpack")
 const {override, overrideDevServer} = require("customize-cra")
 
-const allowOutsideImports = () => (config) => {
-  // allow importing from outside of app/src folder, ModuleScopePlugin prevents this.
-  const scope = config.resolve.plugins.findIndex((o) => o.constructor.name === "ModuleScopePlugin")
-  if (scope > -1) {
-    config.resolve.plugins.splice(scope, 1)
+const findWebpackPlugin = (webpackConfig, pluginName) =>
+  webpackConfig.resolve.plugins.find(({constructor}) => constructor && constructor.name === pluginName)
+
+const genEnableImportsFromExternalPaths = (ruleStringPredicate) => (webpackConfig, newIncludePaths) => {
+  const oneOfRule = webpackConfig.module.rules.find((rule) => rule.oneOf)
+  if (oneOfRule) {
+    const tsRule = oneOfRule.oneOf.find((rule) => {
+      const ruleString = rule.test ? rule.test.toString() : undefined
+      return ruleStringPredicate(ruleString)
+    })
+    if (tsRule) {
+      tsRule.include = Array.isArray(tsRule.include)
+        ? [...tsRule.include, ...newIncludePaths]
+        : [tsRule.include, ...newIncludePaths]
+    }
   }
+}
+
+const enableTypescriptImportsFromExternalPaths = genEnableImportsFromExternalPaths(
+  (ruleString) => ruleString && (ruleString.includes("ts") || ruleString.includes("tsx"))
+)
+const enableJsonImportsFromExternalPaths = genEnableImportsFromExternalPaths(
+  (ruleString) => ruleString && ruleString.includes("json")
+)
+
+const addPathsToModuleScopePlugin = (webpackConfig, paths) => {
+  const moduleScopePlugin = findWebpackPlugin(webpackConfig, "ModuleScopePlugin")
+  if (!moduleScopePlugin) {
+    throw new Error("Expected to find plugin 'ModuleScopePlugin', but didn't.")
+  }
+  moduleScopePlugin.appSrcs = [...moduleScopePlugin.appSrcs, ...paths]
+}
+
+const allowOutsideImports = () => (config) => {
+  // Allow imports from above the `src` dir, which the ModuleScopePlugin otherwise prevents.
+  // Cf. https://stackoverflow.com/a/68017931. Allow-listing specific paths to allow to be
+  // imported seems preferable to disabling the ModuleScopePlugin altogether, so that Webpack
+  // can't arbitrarily reach anywhere in the repo.
+
+  const jsonPaths = [
+    path.resolve(__dirname, "../../packages/autotasks/relayer/Forwarder.json"),
+    path.resolve(__dirname, "../../packages/client/abi/Creditline.json"),
+    path.resolve(__dirname, "../../packages/client/abi/ERC20Permit.json"),
+    path.resolve(__dirname, "../../packages/client/abi/OneSplit.json"),
+    path.resolve(__dirname, "../../packages/client/config/pool-metadata/mainnet.json"),
+  ]
+  const tsPaths = []
+  const paths = jsonPaths.concat(tsPaths)
+
+  enableJsonImportsFromExternalPaths(config, jsonPaths)
+  enableTypescriptImportsFromExternalPaths(config, tsPaths)
+  addPathsToModuleScopePlugin(config, paths)
+
   return config
 }
 
