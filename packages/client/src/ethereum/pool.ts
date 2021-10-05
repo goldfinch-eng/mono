@@ -8,6 +8,7 @@ import {getBalanceAsOf, mapEventsToTx} from "./events"
 import {Contract, EventData} from "web3-eth-contract"
 import {Pool as PoolContract} from "@goldfinch-eng/protocol/typechain/web3/Pool"
 import {SeniorPool as SeniorPoolContract} from "@goldfinch-eng/protocol/typechain/web3/SeniorPool"
+import {StakingRewards as StakingRewardsContract} from "@goldfinch-eng/protocol/typechain/web3/StakingRewards"
 import {Fidu as FiduContract} from "@goldfinch-eng/protocol/typechain/web3/Fidu"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {TranchedPool} from "@goldfinch-eng/protocol/typechain/web3/TranchedPool"
@@ -381,5 +382,66 @@ async function getTranchedPoolAddressesForSeniorPoolCalc(pool: SeniorPool): Prom
   return tranchedPoolAddresses
 }
 
-export {fetchCapitalProviderData, fetchPoolData, SeniorPool, Pool, emptyCapitalProvider}
-export type {PoolData, CapitalProvider}
+interface Position {
+  id: string
+  amount: BigNumber
+  leverageMultiplier: BigNumber
+  lockedUntil: BigNumber
+  totalUnvested: BigNumber
+  totalVested: BigNumber
+  totalPreviouslyVested: BigNumber
+  totalClaimed: BigNumber
+  startTime: string
+  endTime: string
+}
+
+function parsePosition(tokenId: string, tuple: any): Position {
+  return {
+    id: tokenId,
+    amount: new BigNumber(tuple[0]),
+    leverageMultiplier: new BigNumber(tuple[2]),
+    lockedUntil: new BigNumber(tuple[3]),
+    totalUnvested: new BigNumber(tuple[1][0]),
+    totalVested: new BigNumber(tuple[1][1]),
+    totalPreviouslyVested: new BigNumber(tuple[1][3]),
+    totalClaimed: new BigNumber(tuple[1][4]),
+    startTime: tuple[1][5],
+    endTime: tuple[1][6],
+  }
+}
+
+class StakingRewards {
+  goldfinchProtocol: GoldfinchProtocol
+  contract: StakingRewardsContract
+  _loaded: boolean
+  positions!: Position[]
+
+  constructor(goldfinchProtocol: GoldfinchProtocol) {
+    this.goldfinchProtocol = goldfinchProtocol
+    this.contract = goldfinchProtocol.getContract<StakingRewardsContract>("StakingRewards")
+    this._loaded = false
+  }
+
+  async initialize(recipient: string) {
+    let stakedEvents = await this.getStakedEvents(recipient)
+    const tokenIds = stakedEvents.map((e) => e.returnValues.tokenId)
+    this.positions = await Promise.all(
+      tokenIds.map((tokenId) => {
+        return this.contract.methods
+          .positions(tokenId)
+          .call()
+          .then((res) => parsePosition(tokenId, res))
+      })
+    )
+    this._loaded = true
+  }
+
+  async getStakedEvents(recipient: string): Promise<EventData[]> {
+    const eventNames = ["Staked"]
+    let events = await this.goldfinchProtocol.queryEvents(this.contract, eventNames, {user: recipient})
+    return events
+  }
+}
+
+export {fetchCapitalProviderData, fetchPoolData, SeniorPool, Pool, emptyCapitalProvider, StakingRewards}
+export type {PoolData, CapitalProvider, Position}
