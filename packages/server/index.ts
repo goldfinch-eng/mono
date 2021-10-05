@@ -19,6 +19,7 @@ import {relayHandler} from "@goldfinch-eng/autotasks"
 import BN from "bn.js"
 import hre from "hardhat"
 import "hardhat-deploy"
+import {HardhatRuntimeEnvironment} from "hardhat/types"
 
 import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
 import setUpForTesting from "@goldfinch-eng/protocol/deploy/setUpForTesting"
@@ -49,7 +50,9 @@ app.post("/setupForTesting", async (req, res) => {
   const {getNamedAccounts, deployments, getChainId} = hre
 
   try {
-    await setUpForTesting({getNamedAccounts, deployments, getChainId}, {overrideAddress: address})
+    await setUpForTesting({getNamedAccounts, deployments, getChainId} as HardhatRuntimeEnvironment, {
+      overrideAddress: address,
+    })
   } catch (e) {
     return res.status(404).send({message: "setupForTesting error"})
   }
