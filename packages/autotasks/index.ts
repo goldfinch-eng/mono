@@ -1,3 +1,7 @@
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference
+/// <reference path="./node_modules/hardhat-deploy/dist/src/type-extensions.d.ts" />
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference
+/// <reference path="./node_modules/@nomiclabs/hardhat-ethers/src/internal/type-extensions.ts" />
 import {findEnvLocal, assertNonNullable} from "@goldfinch-eng/utils"
 import dotenv from "dotenv"
 dotenv.config({path: findEnvLocal()})
