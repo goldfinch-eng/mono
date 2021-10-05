@@ -1,9 +1,11 @@
-const {findEnvLocal} = require("@goldfinch-eng/utils")
-require("dotenv").config({path: findEnvLocal()})
-const {relay} = require("./relayer/relay")
-const hre = require("hardhat")
-const {TypedDataUtils} = require("eth-sig-util")
-const {bufferToHex} = require("ethereumjs-util")
+import {findEnvLocal, assertNonNullable} from "@goldfinch-eng/utils"
+import dotenv from "dotenv"
+dotenv.config({path: findEnvLocal()})
+
+import {relay} from "./relayer/relay"
+import hre from "hardhat"
+import {TypedDataUtils} from "eth-sig-util"
+import {bufferToHex} from "ethereumjs-util"
 
 const FORWARDER_ADDRESS = process.env.FORWARDER_ADDRESS
 const ALLOWED_SENDERS = (process.env.ALLOWED_SENDERS || "").split(",").filter((val) => !!val)
@@ -12,6 +14,7 @@ async function hardhatRelay(txData) {
   const {protocol_owner} = await hre.getNamedAccounts()
   const signer = (await hre.ethers.getSigners()).find((signer) => signer.address === protocol_owner)
   console.log(`Sending: ${JSON.stringify(txData)}`)
+  assertNonNullable(signer)
   const result = await signer.sendTransaction({to: txData.to, data: txData.data})
   console.log(`Result: ${JSON.stringify(result)}`)
   return result
@@ -56,6 +59,8 @@ async function createContext() {
   const {getOrNull} = deployments
 
   const deployed = await getOrNull("TestForwarder")
+  assertNonNullable(deployed)
+  assertNonNullable(FORWARDER_ADDRESS)
   const forwarder = await ethers.getContractAt(deployed.abi, FORWARDER_ADDRESS)
   const chainId = await hre.getChainId()
   return {
@@ -73,7 +78,7 @@ export const relayHandler = async (req, res) => {
     const context = await createContext()
     const tx = await relay(req.body, context)
     res.status(200).send({status: "success", result: JSON.stringify(tx)})
-  } catch (error) {
+  } catch (error: any) {
     console.log(`Failed: ${error}`)
     res.status(500).send({status: "error", message: error.toString()})
   }

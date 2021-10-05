@@ -7,13 +7,12 @@
       "es2020.bigint",
       "es2020.string"
     ],
-    "module": "commonjs",
     "target": "es2019",
     "isolatedModules": false
   },
   "include": [
     "hardhat.config.ts",
-    "./test",
-    "../protocol/typechain/**/*"
+    "test/**/*",
+    "index.ts"
   ]
 }

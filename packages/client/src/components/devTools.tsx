@@ -7,7 +7,7 @@ export default function DevTools(props) {
   const {open: showDevTools, setOpen: setShowDevTools} = useCloseOnClickOrEsc()
 
   const {user} = useContext(AppContext)
-  const [disabled, setDisabled] = useState(0)
+  const [disabled, setDisabled] = useState<boolean>(false)
 
   function toggleDevTools() {
     if (showDevTools === "") {
