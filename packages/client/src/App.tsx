@@ -22,6 +22,7 @@ import SeniorPoolView from "./components/pools/seniorPoolView"
 import VerifyIdentity from "./components/verifyIdentity"
 import TranchedPoolView from "./components/pools/tranchedPoolView"
 import {SessionData} from "./types/session.js"
+import {CommunityRewards, MerkleDistributor} from "./ethereum/communityRewards"
 
 export interface NetworkConfig {
   name?: string
@@ -72,6 +73,8 @@ function App() {
   const [goldfinchProtocol, setGoldfinchProtocol] = useState<GoldfinchProtocol>()
   const [geolocationData, setGeolocationData] = useState<GeolocationData>()
   const [sessionData, setSessionData] = useState<SessionData>()
+  const [merkleDistributor, setMerkleDistributor] = useState<MerkleDistributor>()
+  const [communityRewards, setCommunityRewards] = useState<CommunityRewards>()
 
   useEffect(() => {
     setupWeb3()
@@ -110,24 +113,30 @@ function App() {
     const networkId = mapNetworkToID[networkName] || networkName
     const networkConfig: NetworkConfig = {name: networkId, supported: SUPPORTED_NETWORKS[networkId]}
     setNetwork(networkConfig)
-    let usdc: ERC20,
-      pool: SeniorPool,
-      goldfinchConfigContract: any,
-      creditDeskContract: any,
-      protocol: GoldfinchProtocol
     if (networkConfig.supported) {
-      protocol = new GoldfinchProtocol(networkConfig)
+      const protocol = new GoldfinchProtocol(networkConfig)
       await protocol.initialize()
-      usdc = await protocol.getERC20(Tickers.USDC)
-      pool = new SeniorPool(protocol)
+
+      const usdc = await protocol.getERC20(Tickers.USDC)
+
+      const pool = new SeniorPool(protocol)
       await pool.initialize()
-      goldfinchConfigContract = protocol.getContract<GoldfinchConfig>("GoldfinchConfig")
-      creditDeskContract = protocol.getContract("CreditDesk")
+
+      const goldfinchConfigContract = protocol.getContract<GoldfinchConfig>("GoldfinchConfig")
+      const creditDeskContract = protocol.getContract("CreditDesk")
       setUSDC(usdc)
       setPool(pool)
       setCreditDesk(creditDeskContract)
       setGoldfinchConfig(await refreshGoldfinchConfigData(goldfinchConfigContract))
       setGoldfinchProtocol(protocol)
+
+      const communityRewards = new CommunityRewards(protocol)
+      communityRewards.initialize() // initialize async, no need to block on this
+      setCommunityRewards(communityRewards)
+      const merkleDistributor = new MerkleDistributor(protocol)
+      merkleDistributor.initialize() // initialize async, no need to block on this
+      setMerkleDistributor(merkleDistributor)
+
       const monitor = new NetworkMonitor(web3, {
         setCurrentTXs,
         setCurrentErrors,

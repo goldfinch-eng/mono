@@ -4,6 +4,10 @@ import _ from "lodash"
 import {Contract, EventData} from "web3-eth-contract"
 import {BaseContract} from "@goldfinch-eng/protocol/typechain/web3/types"
 import {Pool, SeniorPool} from "./pool"
+import {
+  MerkleDistributorInfo,
+  isMerkleDistributorInfo,
+} from "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types"
 
 const decimalPlaces = 6
 const decimals = new BN(String(10 ** decimalPlaces))
@@ -95,6 +99,24 @@ async function getDeployments(networkId) {
     .catch(console.error)
 }
 
+async function getMerkleDistributorInfo(): Promise<MerkleDistributorInfo | undefined> {
+  const deploymentFileNameSuffix = process.env.NODE_ENV === "development" ? ".dev" : ""
+  return import(
+    `@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/merkleDistributorInfo${deploymentFileNameSuffix}.json`
+  )
+    .then((result): MerkleDistributorInfo => {
+      if (isMerkleDistributorInfo(result)) {
+        return result
+      } else {
+        throw new Error("Merkle distributor info failed type guard.")
+      }
+    })
+    .catch((err: unknown): undefined => {
+      console.error(err)
+      return
+    })
+}
+
 function transformedConfig(config) {
   return _.reduce(
     config,
@@ -165,6 +187,7 @@ async function getPoolEvents(
 
 export {
   getDeployments,
+  getMerkleDistributorInfo,
   mapNetworkToID,
   transformedConfig,
   fetchDataFromAttributes,
