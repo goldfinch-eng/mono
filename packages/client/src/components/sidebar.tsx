@@ -20,6 +20,7 @@ function Sidebar(props) {
   }
 
   return (
+    // @ts-expect-error ts-migrate(2322) FIXME: Type 'RefObject<HTMLElement>' is not assignable to... Remove this comment to see the full error message
     <div ref={node} className={`sidebar ${showSidebar}`}>
       <button className="open-sidebar" onClick={toggleSidebar}>
         {iconMenu}

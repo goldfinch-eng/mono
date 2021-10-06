@@ -18,6 +18,7 @@ function TransactionInput(props) {
   let notes = _.compact(props.notes || [])
   let ticker = props.ticker || Tickers.USDC
 
+  // @ts-expect-error ts-migrate(2345) FIXME: Argument of type '({ key, content }: { key: any; c... Remove this comment to see the full error message
   let noteEls = notes.map(({key, content}) => (
     <div key={key} className="form-input-note">
       {content}

@@ -5,6 +5,7 @@ import {Tickers, usdcFromAtomic, usdcToAtomic} from "./erc20"
 import {fetchDataFromAttributes, INTEREST_DECIMALS, SECONDS_PER_YEAR, SECONDS_PER_DAY} from "./utils"
 import {croppedAddress, roundUpPenny} from "../utils"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
+// @ts-expect-error ts-migrate(2307) FIXME: Cannot find module '@goldfinch-eng/protocol/typech... Remove this comment to see the full error message
 import {CreditLine as CreditlineContract} from "@goldfinch-eng/protocol/typechain/web3/CreditLine"
 import {Contract} from "web3-eth-contract"
 

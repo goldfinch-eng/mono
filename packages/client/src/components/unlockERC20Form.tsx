@@ -17,6 +17,7 @@ function UnlockERC20Form(props) {
     return sendFromUser(erc20.contract.methods.approve(unlockAddress, MAX_UINT), {
       type: "Approval",
       amount: usdcFromAtomic(MAX_UINT),
+      // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'BN' is not assignable to paramet... Remove this comment to see the full error message
       amountBN: new BigNumber(MAX_UINT),
       erc20: erc20,
     }).then(onUnlock)

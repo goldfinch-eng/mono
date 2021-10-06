@@ -40,6 +40,7 @@ function PoolStatus({poolData}: PoolStatusProps) {
   return (
     <div className={`pool-status background-container ${poolData?.loaded ? "" : "placeholder"}`}>
       <h2>Pool Status</h2>
+      {/* @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call. */}
       <InfoSection rows={deriveRows()} />
       <RecentRepayments />
       <div className="pool-links">

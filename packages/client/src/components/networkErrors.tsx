@@ -11,6 +11,7 @@ function NetworkErrors(props) {
         <div className="error-label">Error</div>
         <div
           onClick={() => {
+            // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
             networkMonitor.removeError(error)
           }}
           className="dismiss-error-item"

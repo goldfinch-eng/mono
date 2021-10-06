@@ -23,6 +23,7 @@ function PaymentForm(props) {
   const [erc20, setErc20] = useState(usdc)
   const [, setErc20UserBalance] = useState(new BigNumber(0))
   const [validations, setValidations] = useState({})
+  // @ts-expect-error ts-migrate(2345) FIXME: Argument of type '{ owner: any; spender: any; }' i... Remove this comment to see the full error message
   const [unlocked, refreshUnlocked] = useCurrencyUnlocked(erc20, {
     owner: borrower.userAddress,
     spender: borrower.borrowerAddress,
@@ -51,13 +52,16 @@ function PaymentForm(props) {
   useEffect(
     () => {
       const fetchBalance = async () => {
+        // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
         const decimalAmount = new BigNumber(erc20.decimalAmount(await erc20.getBalance(user.address)))
         setErc20UserBalance(decimalAmount)
         setValidations({
+          // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
           wallet: (value) => decimalAmount.gte(value) || `You do not have enough ${erc20.ticker}`,
           transactionLimit: (value) =>
             goldfinchConfig.transactionLimit.gte(usdcToAtomic(value)) ||
             `This is over the per-transaction limit of $${usdcFromAtomic(goldfinchConfig.transactionLimit)}`,
+          // @ts-expect-error ts-migrate(7030) FIXME: Not all code paths return a value.
           creditLine: (value) => {
             if (!isSwapping() && props.creditLine.remainingTotalDueAmountInDollars.lt(value)) {
               return "This is over the total balance of the credit line."
@@ -79,11 +83,12 @@ function PaymentForm(props) {
     } else if (paymentOption === "periodDue") {
       return usdcToAtomic(creditLine.remainingPeriodDueAmountInDollars)
     } else if (paymentOption === "other") {
-      return isSwapping() ? transactionAmountQuote.returnAmount : transactionAmount
+      return isSwapping() ? (transactionAmountQuote as any).returnAmount : transactionAmount
     }
   }
 
   function action({transactionAmount}) {
+    // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
     const erc20Amount = erc20.atomicAmount(transactionAmount)
     let unsentAction
     if (creditLine.isMultiple) {
@@ -92,14 +97,18 @@ function PaymentForm(props) {
       if (paymentOption === "totalDue") {
         creditLine.creditLines.forEach((cl) => {
           if (cl.remainingTotalDueAmount.gt(0)) {
+            // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'any' is not assignable to parame... Remove this comment to see the full error message
             addresses.push(cl.address)
+            // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'string' is not assignable to par... Remove this comment to see the full error message
             usdcAmounts.push(usdcToAtomic(cl.remainingTotalDueAmountInDollars))
           }
         })
       } else if (paymentOption === "periodDue") {
         creditLine.creditLines.forEach((cl) => {
           if (cl.remainingPeriodDueAmount.gt(0)) {
+            // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'any' is not assignable to parame... Remove this comment to see the full error message
             addresses.push(cl.address)
+            // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'string' is not assignable to par... Remove this comment to see the full error message
             usdcAmounts.push(usdcToAtomic(cl.remainingPeriodDueAmountInDollars))
           }
         })
@@ -114,6 +123,7 @@ function PaymentForm(props) {
           addresses,
           usdcAmounts,
           erc20Amount,
+          // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
           erc20.address,
           transactionAmountQuote
         )
@@ -126,6 +136,7 @@ function PaymentForm(props) {
           creditLine.address,
           erc20Amount,
           getSelectedUSDCAmount(),
+          // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
           erc20.address,
           transactionAmountQuote
         )
@@ -143,6 +154,7 @@ function PaymentForm(props) {
 
   function renderForm({formMethods}) {
     async function changeTicker(ticker) {
+      // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
       setErc20(goldfinchProtocol.getERC20(ticker))
     }
 
@@ -153,6 +165,7 @@ function PaymentForm(props) {
           <CurrencyDropdown onChange={changeTicker} />
         </div>
         {unlocked || (
+          // @ts-expect-error ts-migrate(2349) FIXME: This expression is not callable.
           <UnlockERC20Form erc20={erc20} onUnlock={() => refreshUnlocked()} unlockAddress={borrower.borrowerAddress} />
         )}
         <div className="form-inputs">
@@ -179,6 +192,7 @@ function PaymentForm(props) {
           />
           <div className="form-inputs-footer">
             <TransactionInput
+              // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
               ticker={erc20.ticker}
               formMethods={formMethods}
               onChange={(e) => {

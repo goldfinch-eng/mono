@@ -19,22 +19,25 @@ function Transactions(props) {
     const tranchedPoolsAddresses = Object.keys(tranchedPools)
     let combinedEvents = _.flatten(
       await Promise.all(
+        // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
         tranchedPoolsAddresses.map((address) => goldfinchProtocol.queryEvents(tranchedPools[address].contract, events))
       )
     )
+    // @ts-expect-error ts-migrate(2345) FIXME: Argument of type '{ type: any; name: any; amount: ... Remove this comment to see the full error message
     setTranchedPoolTxs(await mapEventsToTx(combinedEvents))
   }
 
   useEffect(() => {
-    const borrower = user.borrower
+    const borrower = (user as any).borrower
     if (!borrower) {
       return
     }
-    loadTranchedPoolEvents(user.borrower.tranchedPools)
+    loadTranchedPoolEvents((user as any).borrower.tranchedPools)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
   function transactionRow(tx) {
+    // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
     const etherscanSubdomain = network.name === "mainnet" ? "" : `${network.name}.`
 
     let typeLabel = tx.name
@@ -117,6 +120,7 @@ function Transactions(props) {
     </tr>
   )
   if (allTxs.length > 0) {
+    // @ts-expect-error ts-migrate(2739) FIXME: Type 'Element[]' is missing the following properti... Remove this comment to see the full error message
     transactionRows = allTxs.map(transactionRow)
   }
 

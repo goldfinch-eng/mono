@@ -19,6 +19,7 @@ function DrawdownForm(props) {
   const [poolData, setPoolData] = useState({})
   const sendFromUser = useSendFromUser()
   const [erc20, setErc20] = useState(usdc)
+  // @ts-expect-error ts-migrate(2345) FIXME: Argument of type '{ owner: any; spender: any; }' i... Remove this comment to see the full error message
   const [unlocked, refreshUnlocked] = useCurrencyUnlocked(erc20, {
     owner: props.borrower.userAddress,
     spender: props.borrower.borrowerAddress,
@@ -35,6 +36,7 @@ function DrawdownForm(props) {
 
   useEffect(() => {
     ;(async () => {
+      // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'SeniorPool | undefined' is not a... Remove this comment to see the full error message
       setPoolData(await fetchPoolData(pool, usdc.contract))
     })()
   }, [pool, usdc])
@@ -53,6 +55,7 @@ function DrawdownForm(props) {
         props.creditLine.address,
         drawdownAmount,
         sendToAddress,
+        // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
         erc20.address
       )
     } else {
@@ -68,11 +71,12 @@ function DrawdownForm(props) {
 
   const maxAmount = minimumNumber(
     props.creditLine.availableCreditInDollars,
-    usdcFromAtomic(poolData.balance),
+    usdcFromAtomic((poolData as any).balance),
     usdcFromAtomic(goldfinchConfig.transactionLimit)
   )
 
   async function changeTicker(ticker) {
+    // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
     setErc20(goldfinchProtocol.getERC20(ticker))
   }
 
@@ -111,6 +115,7 @@ function DrawdownForm(props) {
           {unlocked || (
             <UnlockERC20Form
               erc20={erc20}
+              // @ts-expect-error ts-migrate(2349) FIXME: This expression is not callable.
               onUnlock={() => refreshUnlocked()}
               unlockAddress={props.borrower.borrowerAddress}
             />

@@ -19,6 +19,7 @@ import useERC20Permit from "../../hooks/useERC20Permit"
 import useCurrencyUnlocked from "../../hooks/useCurrencyUnlocked"
 import UnlockERC20Form from "../unlockERC20Form"
 import CreditBarViz from "../creditBarViz"
+// @ts-expect-error ts-migrate(2307) FIXME: Cannot find module '@goldfinch-eng/protocol/typech... Remove this comment to see the full error message
 import {DepositMade} from "@goldfinch-eng/protocol/typechain/web3/TranchedPool"
 import moment from "moment"
 import {useBacker, useTranchedPool} from "../../hooks/useTranchedPool"
@@ -496,6 +497,7 @@ function V1DealSupplyStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
           rightAmountDescription={rightAmountDescription}
         />
       </div>
+      {/* @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call. */}
       <InfoSection rows={rows} />
     </div>
   )
@@ -551,6 +553,7 @@ function SupplyStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
           rightAmountDescription={rightAmountDescription}
         />
       </div>
+      {/* @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call. */}
       <InfoSection rows={rows} />
     </div>
   )
@@ -625,6 +628,7 @@ function CreditStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
       <div className="background-container">
         <h2>Credit Status</h2>
         <div className="background-container-inner">
+          {/* @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call. */}
           <InfoSection rows={rows} />
         </div>
         <div className="background-container-inner recent-repayments">
@@ -699,6 +703,7 @@ function Overview({tranchedPool, handleDetails}: OverviewProps) {
         {detailsLink}
       </div>
       <p className="pool-description">{tranchedPool?.metadata?.description}</p>
+      {/* @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call. */}
       <InfoSection rows={rows} />
     </div>
   )

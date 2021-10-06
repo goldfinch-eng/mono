@@ -13,23 +13,31 @@ function useSendFromUser() {
     if (txData.gasless) {
       // We need to assign it a temporary id, so we can update it if we get an error back
       // (since we only get a txid if relay call succeed)
+      // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
       txData = networkMonitor.addPendingTX({status: "pending", ...txData})
       return new Promise((resolve) => {
         unsentAction()
           .then((res) => {
             if (res.status === "success") {
               const txResult = JSON.parse(res.result)
+              // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
               networkMonitor.watch(txResult.txHash, txData, () => {
+                // @ts-expect-error ts-migrate(2722) FIXME: Cannot invoke an object which is possibly 'undefin... Remove this comment to see the full error message
                 refreshUserData()
+                // @ts-expect-error ts-migrate(2794) FIXME: Expected 1 arguments, but got 0. Did you forget to... Remove this comment to see the full error message
                 resolve()
               })
             } else {
+              // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
               networkMonitor.markTXErrored(txData, {message: res.message})
+              // @ts-expect-error ts-migrate(2794) FIXME: Expected 1 arguments, but got 0. Did you forget to... Remove this comment to see the full error message
               resolve()
             }
           })
           .catch((error) => {
+            // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
             networkMonitor.markTXErrored(txData, {message: error.message})
+            // @ts-expect-error ts-migrate(2794) FIXME: Expected 1 arguments, but got 0. Did you forget to... Remove this comment to see the full error message
             resolve()
           })
       })
@@ -42,11 +50,15 @@ function useSendFromUser() {
           gasPrice: gasPrice,
         })
         .once("sent", (_) => {
+          // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
           txData = networkMonitor.addPendingTX(txData)
         })
         .once("transactionHash", (transactionHash) => {
+          // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
           txData = networkMonitor.watch(transactionHash, txData, () => {
+            // @ts-expect-error ts-migrate(2722) FIXME: Cannot invoke an object which is possibly 'undefin... Remove this comment to see the full error message
             refreshUserData()
+            // @ts-expect-error ts-migrate(2794) FIXME: Expected 1 arguments, but got 0. Did you forget to... Remove this comment to see the full error message
             resolve()
           })
         })
@@ -54,7 +66,9 @@ function useSendFromUser() {
           if (error.code === -32603) {
             error.message = "Something went wrong with your transaction."
           }
+          // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
           networkMonitor.markTXErrored(txData, error)
+          // @ts-expect-error ts-migrate(2794) FIXME: Expected 1 arguments, but got 0. Did you forget to... Remove this comment to see the full error message
           resolve()
         })
     })

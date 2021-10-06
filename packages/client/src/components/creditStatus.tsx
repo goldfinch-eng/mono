@@ -5,10 +5,12 @@ import {usdcFromAtomic} from "../ethereum/erc20"
 import {decimals} from "../ethereum/utils"
 import {displayDollars, displayNumber} from "../utils"
 import {iconClock} from "./icons.js"
+// @ts-expect-error ts-migrate(2691) FIXME: An import path cannot end with a '.tsx' extension.... Remove this comment to see the full error message
 import EtherscanLink from "./etherscanLink.tsx"
 
 function CreditStatus(props) {
   function fromAtomicDecimals(val) {
+    // @ts-expect-error ts-migrate(2362) FIXME: The left-hand side of an arithmetic operation must... Remove this comment to see the full error message
     return usdcFromAtomic(val) * decimals
   }
 
@@ -73,6 +75,7 @@ function CreditStatus(props) {
         />
         {termDueDate}
       </div>
+      {/* @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call. */}
       <InfoSection rows={rows} />
     </div>
   )

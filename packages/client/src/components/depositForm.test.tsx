@@ -22,6 +22,7 @@ function renderDepositForm(transactionLimit, userBalance, remainingCapacity) {
     },
   }
   return render(
+    // @ts-expect-error ts-migrate(2322) FIXME: Type '{ goldfinchConfig: { transactionLimit: BigNu... Remove this comment to see the full error message
     <AppContext.Provider value={store}>
       <DepositForm actionComplete={_.noop} closeForm={_.noop} />
     </AppContext.Provider>

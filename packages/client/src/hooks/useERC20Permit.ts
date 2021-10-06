@@ -1,6 +1,7 @@
 import {BigNumber} from "bignumber.js"
 import {AppContext} from "../App"
 import {ERC20} from "../ethereum/erc20"
+// @ts-expect-error ts-migrate(2307) FIXME: Cannot find module '@goldfinch-eng/protocol/typech... Remove this comment to see the full error message
 import {IERC20Permit} from "@goldfinch-eng/protocol/typechain/web3/IERC20Permit"
 import ERC20PermitABI from "../../abi/ERC20Permit.json"
 import useNonNullContext from "./useNonNullContext"

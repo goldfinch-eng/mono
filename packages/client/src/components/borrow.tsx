@@ -16,7 +16,7 @@ function Borrow(props) {
   const {borrowStore, setBorrowStore} = useBorrow()
 
   async function updateBorrowerAndCreditLine() {
-    const borrower = user.borrower
+    const borrower = (user as any).borrower
     if (borrower && creditDesk.loaded) {
       const borrowerCreditLines = borrower.creditLinesAddresses
       setCreditLinesAddresses(borrowerCreditLines)
@@ -48,6 +48,7 @@ function Borrow(props) {
   }
 
   async function changeCreditLine(clAddresses) {
+    // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'GoldfinchProtocol | undefined' i... Remove this comment to see the full error message
     setCreditLine(await fetchCreditLineData(clAddresses, goldfinchProtocol))
   }
 
@@ -56,7 +57,7 @@ function Borrow(props) {
   if (creditLineData.isMultiple) {
     creditActionsContainer = (
       <CreditActionsMultipleContainer
-        borrower={user.borrower}
+        borrower={(user as any).borrower}
         creditLine={creditLineData}
         actionComplete={actionComplete}
       />
@@ -64,7 +65,11 @@ function Borrow(props) {
     creditLineStatus = <CreditLinesList creditLine={creditLineData} user={user} changeCreditLine={changeCreditLine} />
   } else {
     creditActionsContainer = (
-      <CreditActionsContainer borrower={user.borrower} creditLine={creditLineData} actionComplete={actionComplete} />
+      <CreditActionsContainer
+        borrower={(user as any).borrower}
+        creditLine={creditLineData}
+        actionComplete={actionComplete}
+      />
     )
     creditLineStatus = <CreditStatus creditLine={creditLineData} user={user} />
   }
@@ -72,6 +77,7 @@ function Borrow(props) {
   return (
     <div className="content-section">
       <div className="page-header">
+        {/* @ts-expect-error ts-migrate(2786) FIXME: 'BorrowHeader' cannot be used as a JSX component. */}
         <BorrowHeader
           user={user}
           selectedCreditLine={creditLineData}
@@ -79,7 +85,7 @@ function Borrow(props) {
           changeCreditLine={changeCreditLine}
         />
       </div>
-      <ConnectionNotice creditLine={creditLineData} requireUnlock={!!user.borrower} />
+      <ConnectionNotice creditLine={creditLineData} requireUnlock={!!(user as any).borrower} />
       {creditActionsContainer}
       {creditLineStatus}
     </div>

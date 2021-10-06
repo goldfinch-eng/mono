@@ -73,6 +73,7 @@ const scenarios: Scenario[] = [
       props.requireSignIn = true
     },
     setUpFallthrough: ({store}) => {
+      // @ts-expect-error ts-migrate(2741) FIXME: Property 'version' is missing in type '{ signature... Remove this comment to see the full error message
       store.sessionData = {signature: "foo", signatureBlockNum: 42, signatureBlockNumTimestamp: 47}
     },
     expectedText: /Please sign in to continue./,
@@ -86,6 +87,7 @@ const scenarios: Scenario[] = [
     },
     setUpFallthrough: ({store}) => {
       defaultCreditLine.loaded = false
+      // @ts-expect-error ts-migrate(2741) FIXME: Property 'version' is missing in type '{ signature... Remove this comment to see the full error message
       store.sessionData = {signature: "foo", signatureBlockNum: 42, signatureBlockNumTimestamp: 47}
     },
     expectedText: /You do not have any credit lines./,

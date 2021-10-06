@@ -13,12 +13,14 @@ function RecentRepayments() {
   useEffect(() => {
     if (pool && pool.gf && goldfinchProtocol) {
       pool.gf.getRepaymentEvents(goldfinchProtocol).then((repayments) => {
+        // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'any[]' is not assignable to para... Remove this comment to see the full error message
         setRepayments(_.slice(repayments, 0, 3))
       })
     }
   }, [pool, goldfinchProtocol])
 
   function createTransactionRows(tx) {
+    // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
     const etherscanSubdomain = network.name === "mainnet" ? "" : `${network.name}.`
     let yourPortion
     let yourPortionClass
@@ -32,6 +34,7 @@ function RecentRepayments() {
       )
 
       yourPortion = displayDollars(yourPortionValue, 4)
+      // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'string' is not assignable to par... Remove this comment to see the full error message
       yourPortionClass = isFinite(yourPortionValue) && yourPortionValue > 0 ? "" : "zero"
     } else if (!user.loaded && !user.address) {
       yourPortion = displayDollars(0, 4)

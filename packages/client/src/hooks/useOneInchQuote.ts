@@ -11,6 +11,7 @@ function useOneInchQuote({from, to, decimalAmount, parts = 10}) {
   const [isLoading, setLoading] = useState(false)
 
   useEffect(() => {
+    // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
     const oneInch = getOneInchContract(network.name)
 
     async function getExpectedReturn() {
@@ -46,10 +47,11 @@ function useAmountTargetingMinAmount({from, to, targetMinAmount, padding = new B
 
   useEffect(() => {
     if (quote) {
-      let decimalReturnAmount = to.decimalAmount(quote.returnAmount)
+      let decimalReturnAmount = to.decimalAmount((quote as any).returnAmount)
       let spread = targetMinAmount.minus(decimalReturnAmount).dividedBy(decimalReturnAmount)
       let amount = targetMinAmount.plus(targetMinAmount.times(spread))
       let paddedAmount = new BigNumber(roundUpPenny(amount.plus(amount.times(padding))))
+      // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'BigNumber' is not assignable to ... Remove this comment to see the full error message
       setAmount(paddedAmount)
     } else {
       setAmount(null)
