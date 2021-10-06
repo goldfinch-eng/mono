@@ -318,4 +318,11 @@ async function fetchCreditLineData(creditLineAddresses: string | string[], goldf
 
 const defaultCreditLine = new DefaultCreditLine()
 
+export function displayDueDate(cl: CreditLine): string {
+  if (cl.isLate) {
+    return "now"
+  }
+  return cl.dueDate
+}
+
 export {buildCreditLine, fetchCreditLineData, defaultCreditLine, CreditLine}

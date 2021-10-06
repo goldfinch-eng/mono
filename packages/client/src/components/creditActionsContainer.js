@@ -4,6 +4,7 @@ import DrawdownForm from "./drawdownForm.js"
 import {iconCircleCheck, iconUpArrow, iconDownArrow} from "./icons.js"
 import {AppContext} from "../App"
 import {displayDollars} from "../utils"
+import {displayDueDate} from "../ethereum/creditLine"
 
 function CreditActionsContainer(props) {
   const {user} = useContext(AppContext)
@@ -53,11 +54,7 @@ function CreditActionsContainer(props) {
   let nextDueIcon
   const nextDueValueDisplay = displayDollars(props.creditLine.remainingPeriodDueAmountInDollars)
   if (props.creditLine.isPaymentDue) {
-    if (props.creditLine.isLate) {
-      nextDueDisplay = `${nextDueValueDisplay} due now`
-    } else {
-      nextDueDisplay = `${nextDueValueDisplay} due ${props.creditLine.dueDate}`
-    }
+    nextDueDisplay = `${nextDueValueDisplay} due ${displayDueDate(props.creditLine)}`
   } else if (props.creditLine.isActive) {
     nextDueIcon = iconCircleCheck
     nextDueDisplay = `Paid through ${props.creditLine.dueDate}`
@@ -70,7 +67,7 @@ function CreditActionsContainer(props) {
         actionComplete={actionComplete}
         borrower={props.borrower}
         creditLine={props.creditLine}
-        title={`Next payment: ${nextDueValueDisplay} due ${props.creditLine.dueDate}`}
+        title={`Next payment: ${nextDueValueDisplay} due ${displayDueDate(props.creditLine)}`}
       />
     )
   } else if (showAction === "drawdown") {
