@@ -3,7 +3,7 @@ import BigNumber from "bignumber.js"
 import {MAX_UINT} from "../ethereum/utils"
 import LoadingButton from "./loadingButton"
 import {useForm, FormProvider} from "react-hook-form"
-import {iconInfo} from "./icons.js"
+import {iconInfo} from "./icons"
 import useSendFromUser from "../hooks/useSendFromUser"
 import {usdcFromAtomic} from "../ethereum/erc20"
 

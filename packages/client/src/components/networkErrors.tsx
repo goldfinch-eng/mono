@@ -1,7 +1,7 @@
 import React, {useContext} from "react"
-import {iconX} from "./icons.js"
+import {iconX} from "./icons"
 import {AppContext} from "../App"
-import {assertNonNullable} from "../utils.js"
+import {assertNonNullable} from "../utils"
 
 function NetworkErrors(props) {
   const {networkMonitor} = useContext(AppContext)

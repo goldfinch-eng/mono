@@ -3,7 +3,7 @@ import React, {useEffect, useState, useContext} from "react"
 import {AppContext} from "../App"
 import {usdcFromAtomic} from "../ethereum/erc20"
 import {displayDollars, croppedAddress, assertNonNullable} from "../utils"
-import {iconOutArrow} from "./icons.js"
+import {iconOutArrow} from "./icons"
 
 function RecentRepayments() {
   const {pool, user, network, goldfinchProtocol} = useContext(AppContext)

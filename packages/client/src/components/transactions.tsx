@@ -5,7 +5,7 @@ import {AppContext} from "../App"
 import {displayDollars} from "../utils"
 import {MAX_UINT} from "../ethereum/utils"
 import BigNumber from "bignumber.js"
-import {iconCircleUpLg, iconCircleDownLg, iconCircleCheckLg, iconOutArrow} from "./icons.js"
+import {iconCircleUpLg, iconCircleDownLg, iconCircleCheckLg, iconOutArrow} from "./icons"
 import {mapEventsToTx} from "../ethereum/events"
 
 function Transactions(props) {

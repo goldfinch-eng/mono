@@ -1,6 +1,6 @@
 import React from "react"
 import {useForm, FormProvider} from "react-hook-form"
-import {iconX} from "./icons.js"
+import {iconX} from "./icons"
 import useCloseOnClickOrEsc from "../hooks/useCloseOnClickOrEsc"
 
 function TransactionForm(props) {

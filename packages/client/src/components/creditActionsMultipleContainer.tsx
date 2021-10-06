@@ -1,6 +1,6 @@
 import React, {useState, useContext} from "react"
-import PaymentForm from "./paymentForm.js"
-import {iconUpArrow} from "./icons.js"
+import PaymentForm from "./paymentForm"
+import {iconUpArrow} from "./icons"
 import {AppContext} from "../App"
 import {displayDollars} from "../utils"
 

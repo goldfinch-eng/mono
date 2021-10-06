@@ -1,10 +1,10 @@
 import {useContext} from "react"
 import {AppContext} from "../App"
-import InfoSection from "./infoSection.js"
+import InfoSection from "./infoSection"
 import RecentRepayments from "./recentRepayments"
 import {usdcFromAtomic} from "../ethereum/erc20"
 import {displayDollars, displayPercent} from "../utils"
-import {iconOutArrow} from "./icons.js"
+import {iconOutArrow} from "./icons"
 import {PoolData} from "../ethereum/pool"
 import {BigNumber} from "bignumber.js"
 

@@ -1,14 +1,14 @@
 import React, {useState, useContext, useEffect} from "react"
-import CreditActionsContainer from "./creditActionsContainer.js"
+import CreditActionsContainer from "./creditActionsContainer"
 import CreditActionsMultipleContainer from "./creditActionsMultipleContainer"
-import CreditStatus from "./creditStatus.js"
+import CreditStatus from "./creditStatus"
 import ConnectionNotice from "./connectionNotice"
 import BorrowHeader from "./borrowHeader"
 import {fetchCreditLineData, defaultCreditLine} from "../ethereum/creditLine"
 import {AppContext} from "../App"
 import CreditLinesList from "./creditLinesList"
 import {useBorrow} from "../contexts/BorrowContext"
-import {assertNonNullable} from "../utils.js"
+import {assertNonNullable} from "../utils"
 
 function Borrow(props) {
   const {creditDesk, user, goldfinchProtocol} = useContext(AppContext)

@@ -1,7 +1,7 @@
 import React from "react"
 import web3 from "../web3"
 import {ErrorMessage} from "@hookform/error-message"
-import {iconCheck} from "./icons.js"
+import {iconCheck} from "./icons"
 
 function AddressInput(props) {
   const validValue = <div className="form-input-note verified-value">valid address {iconCheck}</div>

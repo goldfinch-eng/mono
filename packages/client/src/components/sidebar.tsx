@@ -2,7 +2,7 @@ import React from "react"
 import {NavLink} from "react-router-dom"
 import useCloseOnClickOrEsc from "../hooks/useCloseOnClickOrEsc"
 import logoPurp from "../images/logomark-purp.svg"
-import {iconMenu} from "./icons.js"
+import {iconMenu} from "./icons"
 
 function Sidebar(props) {
   const {node, open: showSidebar, setOpen: setShowSidebar} = useCloseOnClickOrEsc()

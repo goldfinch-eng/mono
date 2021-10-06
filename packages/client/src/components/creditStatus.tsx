@@ -1,10 +1,10 @@
 import React from "react"
-import InfoSection from "./infoSection.js"
-import CreditBarViz from "./creditBarViz.js"
+import InfoSection from "./infoSection"
+import CreditBarViz from "./creditBarViz"
 import {usdcFromAtomic} from "../ethereum/erc20"
 import {decimals} from "../ethereum/utils"
 import {displayDollars, displayNumber} from "../utils"
-import {iconClock} from "./icons.js"
+import {iconClock} from "./icons"
 import EtherscanLink from "./etherscanLink"
 import BN from "bn.js"
 
