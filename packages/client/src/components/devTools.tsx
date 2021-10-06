@@ -49,9 +49,10 @@ export default function DevTools(props) {
                   }),
                 })
                 setDisabled(false)
+                window.location.reload()
               }}
             >
-              SetupForTesting (refresh)
+              setupForTesting
             </button>
             <button
               className={`button dark ${disabled ? "disabled" : ""}`}
@@ -69,7 +70,7 @@ export default function DevTools(props) {
                 setDisabled(false)
               }}
             >
-              Fund account
+              fundWithWhales
             </button>
           </div>
         </div>

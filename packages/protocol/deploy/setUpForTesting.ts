@@ -66,37 +66,22 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   let config = await getDeployedAsEthersContract<GoldfinchConfig>(getOrNull, "GoldfinchConfig")
   assertNonNullable(config)
   const goldfinchFactory = await getDeployedAsEthersContract<GoldfinchFactory>(getOrNull, "GoldfinchFactory")
-  if (process.env.TEST_USER) {
-    throw new Error("`TEST_USER` is deprecated. Use `TEST_USERS` instead.")
+  if (process.env.TEST_USERS) {
+    throw new Error("`TEST_USERS` is deprecated. Use `TEST_USER` instead.")
   }
-  const borrowers = (options?.overrideAddress || process.env.TEST_USERS || protocol_owner)
-    .split(",")
-    .filter((val) => !!val)
+  const borrower = options?.overrideAddress || process.env.TEST_USER || protocol_owner
 
-  let erc20
-  const chainUsdcAddress = getUSDCAddress(chainId)
-  if (chainUsdcAddress) {
-    logger("On a network with known USDC address, so firing up that contract...")
-    erc20 = await ethers.getContractAt("TestERC20", chainUsdcAddress)
-  } else {
-    erc20 = await getDeployedAsEthersContract<Contract>(getOrNull, "TestERC20")
-  }
-
-  const erc20s = [
-    {
-      ticker: "USDC",
-      contract: erc20,
-    },
-  ]
+  const {erc20, erc20s} = await getERC20s({getOrNull, chainId})
 
   if (chainId === LOCAL_CHAIN_ID && !isMainnetForking()) {
     await fundFromLocalWhale(gf_deployer, erc20s)
+    await fundFromLocalWhale(borrower, erc20s)
   }
 
   if (isMainnetForking()) {
     logger("Funding protocol_owner with whales")
     underwriter = protocol_owner
-    await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [protocol_owner, gf_deployer, ...borrowers], new BN("75000"))
+    await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [protocol_owner, gf_deployer, borrower], new BN("75000"))
     logger(`Finished funding with whales.`)
   }
   await impersonateAccount(hre, protocol_owner)
@@ -137,54 +122,16 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   })
   await writePoolMetadata({pool: empty, borrower: "Empty"})
 
-  for (const [i, borrower] of borrowers.entries()) {
-    logger(`Setting up for borrower ${i}: ${borrower}`)
-
-    // If we are mainnet forking, we fund them above.
-    if (chainId === LOCAL_CHAIN_ID && !isMainnetForking()) {
-      await fundFromLocalWhale(borrower, erc20s)
-    }
-
-    await addUsersToGoList(config, [borrower])
-
-    // Have the test user deposit into the senior fund
-    await impersonateAccount(hre, borrower)
-    const signer = ethers.provider.getSigner(borrower)
-    // Due to a bug with hardhat (I think nonce is not being incremented for impersonated transactions), we need to make sure
-    // the amounts are unique, otherwise causes transaction hash collisions
-    const depositAmount = new BN(10000).mul(USDCDecimals).add(new BN(i))
-
-    await (erc20 as TestERC20).connect(signer).approve(seniorPool.address, depositAmount.mul(new BN(5)).toString())
-    await seniorPool.connect(signer).deposit(depositAmount.mul(new BN(5)).toString())
-
-    let txn = await erc20.connect(signer).approve(commonPool.address, String(depositAmount))
-    await txn.wait()
-    txn = await commonPool.connect(signer).deposit(TRANCHES.Junior, String(depositAmount))
-    logger(`Deposited ${depositAmount} into the common pool`)
-
-    const result = await (await goldfinchFactory.createBorrower(borrower)).wait()
-    const lastEventArgs = getLastEventArgs(result)
-    const bwrConAddr = lastEventArgs[0]
-    logger(`Created borrower contract: ${bwrConAddr} for ${borrower}`)
-
-    const filledPool = await createPoolForBorrower({
-      getOrNull,
-      underwriter,
-      goldfinchFactory,
-      borrower: bwrConAddr,
+  await addUsersToGoList(config, [borrower])
+  await fundAddressAndDepositToCommonPool({erc20, address: borrower, commonPool, seniorPool})
+  if (options?.overrideAddress) {
+    await createBorrowerContractAndPool({
       erc20,
-      depositor: protocol_owner,
+      address: borrower,
+      getOrNull,
+      seniorPool,
+      goldfinchFactory,
     })
-    txn = await filledPool.lockJuniorCapital()
-    await txn.wait()
-    const ownerSigner = ethers.provider.getSigner(protocol_owner)
-    await seniorPool.connect(ownerSigner).invest(filledPool.address)
-
-    txn = await filledPool.lockPool()
-    await txn.wait()
-
-    logger(`Pool ready for ${borrower}`)
-    await writePoolMetadata({pool: filledPool, borrower})
   }
 
   // Have the senior fund invest
@@ -218,6 +165,96 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   await bwrCon.pay(commonPool.address, payAmount.toString())
 
   await seniorPool.redeem(tokenId)
+}
+
+async function getERC20s({chainId, getOrNull}) {
+  let erc20
+  const chainUsdcAddress = getUSDCAddress(chainId)
+  if (chainUsdcAddress) {
+    logger("On a network with known USDC address, so firing up that contract...")
+    erc20 = await ethers.getContractAt("TestERC20", chainUsdcAddress)
+  } else {
+    erc20 = await getDeployedAsEthersContract<Contract>(getOrNull, "TestERC20")
+  }
+
+  const erc20s = [
+    {
+      ticker: "USDC",
+      contract: erc20,
+    },
+  ]
+  return {erc20, erc20s}
+}
+
+// Fund Address to sr Fund, Deposit funds to common pool
+async function fundAddressAndDepositToCommonPool({
+  erc20,
+  address,
+  commonPool,
+  seniorPool,
+}: {
+  erc20: Contract
+  address: string
+  commonPool: any
+  seniorPool: any
+}): Promise<void> {
+  // fund with address into sr fund
+  await impersonateAccount(hre, address)
+  const signer = ethers.provider.getSigner(address)
+  const depositAmount = new BN(10000).mul(USDCDecimals)
+  await (erc20 as TestERC20).connect(signer).approve(seniorPool.address, depositAmount.mul(new BN(5)).toString())
+  await seniorPool.connect(signer).deposit(depositAmount.mul(new BN(5)).toString())
+
+  // Deposit funds into Common Pool
+  let txn = await erc20.connect(signer).approve(commonPool.address, String(depositAmount))
+  await txn.wait()
+  txn = await commonPool.connect(signer).deposit(TRANCHES.Junior, String(depositAmount))
+  await txn.wait()
+  logger(`Deposited ${depositAmount} into the common pool`)
+}
+
+// Create a borrower contract
+async function createBorrowerContractAndPool({
+  erc20,
+  address,
+  getOrNull,
+  seniorPool,
+  goldfinchFactory,
+}: {
+  erc20: Contract
+  address: string
+  getOrNull: any
+  seniorPool: any
+  goldfinchFactory: GoldfinchFactory
+}): Promise<void> {
+  const protocol_owner = await getProtocolOwner()
+  const underwriter = await getProtocolOwner()
+  logger(`Setting up for borrower: ${address}`)
+
+  // Create Borrower Contract
+  const result = await (await goldfinchFactory.createBorrower(address)).wait()
+  const lastEventArgs = getLastEventArgs(result)
+  const bwrConAddr = lastEventArgs[0]
+  logger(`Created borrower contract: ${bwrConAddr} for ${address}`)
+
+  const filledPool = await createPoolForBorrower({
+    getOrNull,
+    underwriter,
+    goldfinchFactory,
+    borrower: bwrConAddr,
+    erc20,
+    depositor: protocol_owner,
+  })
+  let txn = await filledPool.lockJuniorCapital()
+  await txn.wait()
+  const ownerSigner = ethers.provider.getSigner(protocol_owner)
+  await seniorPool.connect(ownerSigner).invest(filledPool.address)
+
+  txn = await filledPool.lockPool()
+  await txn.wait()
+
+  logger(`Pool ready for ${address}`)
+  await writePoolMetadata({pool: filledPool, borrower: address})
 }
 
 /**
