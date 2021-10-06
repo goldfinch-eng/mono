@@ -22,6 +22,22 @@ export const GET_SENIOR_POOL_AND_PROVIDER_DATA = gql(`
     }
     user(id: $userID) {
       id
+      capitalProviderStatus {
+        numShares
+        availableToWithdraw
+        availableToWithdrawInDollars
+        allowance
+        weightedAverageSharePrice
+        unrealizedGains
+        unrealizedGainsPercentage
+        unrealizedGainsInDollars
+      }
+      seniorPoolDeposits {
+        amount
+        shares
+        blockNumber
+        timestamp
+      }
     }
   }
 `)

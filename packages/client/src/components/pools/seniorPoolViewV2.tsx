@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import {useState, useEffect, useContext} from "react"
-import EarnActionsContainer from "../earnActionsContainer"
-import PoolStatus from "../poolStatus"
+import EarnActionsContainer from "../earnActionsContainerV2"
+import PoolStatus from "../poolStatusV2"
 import ConnectionNotice from "../connectionNotice"
 import {AppContext} from "../../App"
 import InvestorNotice from "../investorNotice"
@@ -8,46 +9,33 @@ import {displayDollars} from "../../utils"
 import {usdcFromAtomic} from "../../ethereum/erc20"
 import {useStaleWhileRevalidating} from "../../hooks/useAsync"
 import {eligibleForSeniorPool, useKYC} from "../../hooks/useKYC"
-import {ApolloQueryResult, useApolloClient} from "@apollo/client"
+import {useQuery} from "@apollo/client"
 import {GET_SENIOR_POOL_AND_PROVIDER_DATA} from "../../graphql/queries"
-import {parseSeniorPool, parseUser} from "../../helpers"
+import {parseSeniorPool, parseUser, SeniorPoolData, UserData} from "../../helpers"
 import {Query} from "../../graphql/types"
-import {CapitalProvider, emptyCapitalProvider, PoolData} from "../../ethereum/pool"
 
 function SeniorPoolViewV2(): JSX.Element {
-  const {pool, user, goldfinchConfig} = useContext(AppContext)
-  const [capitalProvider, setCapitalProvider] = useState<CapitalProvider>(emptyCapitalProvider())
-  const [poolData, setPoolData] = useState<PoolData>()
-  const client = useApolloClient()
+  const {user, goldfinchConfig} = useContext(AppContext)
+  const [poolData, setPoolData] = useState<SeniorPoolData>()
+  const [capitalProvider, setCapitalProvider] = useState<UserData>()
+  const {data, refetch} = useQuery<Query>(GET_SENIOR_POOL_AND_PROVIDER_DATA, {
+    variables: {
+      userID: "0x001e80fcda3f860e42d9e0934becb1138cd1d536",
+    },
+  })
 
   const kycResult = useKYC()
   const kyc = useStaleWhileRevalidating(kycResult)
 
   useEffect(() => {
-    const capitalProviderAddress = user.loaded && user.address
-    refreshData(capitalProviderAddress)
+    if (data) {
+      const {seniorPools, user} = data
+      let seniorPool = seniorPools![0]!
+      setPoolData(parseSeniorPool(seniorPool))
+      setCapitalProvider(parseUser(user))
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user])
-
-  async function actionComplete() {
-    return await refreshData(capitalProvider.address)
-  }
-
-  async function refreshData(capitalProviderAddress: string | false) {
-    const {
-      data: {seniorPools, user: capitalProvider},
-    }: ApolloQueryResult<Query> = await client.query({
-      query: GET_SENIOR_POOL_AND_PROVIDER_DATA,
-      variables: {
-        userID: capitalProviderAddress ? capitalProviderAddress.toLowerCase() : "",
-      },
-    })
-
-    const seniorPool = seniorPools![0]!
-
-    setCapitalProvider(parseUser(capitalProvider))
-    setPoolData(parseSeniorPool(seniorPool, pool!))
-  }
+  }, [user, data])
 
   let maxCapacityNotice = <></>
   let maxCapacity = goldfinchConfig.totalFundsLimit
@@ -66,16 +54,11 @@ function SeniorPoolViewV2(): JSX.Element {
 
   return (
     <div className="content-section">
-      <div className="page-header">{capitalProvider.loaded || user.noWeb3 ? "Pools / Senior Pool" : "Loading..."}</div>
+      <div className="page-header">{poolData || user.noWeb3 ? "Pools / Senior Pool" : "Loading..."}</div>
       <ConnectionNotice requireSignIn={true} requireKYC={{kyc: kycResult, condition: eligibleForSeniorPool}} />
       {maxCapacityNotice}
       <InvestorNotice />
-      <EarnActionsContainer
-        poolData={poolData}
-        capitalProvider={capitalProvider}
-        actionComplete={actionComplete}
-        kyc={kyc}
-      />
+      <EarnActionsContainer poolData={poolData} capitalProvider={capitalProvider} actionComplete={refetch} kyc={kyc} />
       <PoolStatus poolData={poolData} />
     </div>
   )

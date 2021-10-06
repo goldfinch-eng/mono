@@ -29,7 +29,7 @@ function SeniorPoolView(): JSX.Element {
       assertNonNullable(pool)
 
       refreshPoolData(pool)
-      refreshCapitalProviderData(pool, capitalProviderAddress)
+      refreshCapitalProviderData(pool, "0x001e80fcda3f860e42d9e0934becb1138cd1d536")
     }
 
     if (pool) {
@@ -41,11 +41,11 @@ function SeniorPoolView(): JSX.Element {
     assertNonNullable(pool)
 
     await refreshPoolData(pool)
-    return refreshCapitalProviderData(pool, capitalProvider!.address)
+    return refreshCapitalProviderData(pool, "0x001e80fcda3f860e42d9e0934becb1138cd1d536")
   }
 
   async function refreshCapitalProviderData(pool: SeniorPool, address: string | boolean) {
-    const capitalProvider = await fetchCapitalProviderData(pool, address)
+    const capitalProvider = await fetchCapitalProviderData(pool, "0x001e80fcda3f860e42d9e0934becb1138cd1d536")
     setCapitalProvider(capitalProvider)
   }
 
