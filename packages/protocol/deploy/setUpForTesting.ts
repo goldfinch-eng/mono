@@ -1,4 +1,5 @@
-import {HardhatRuntimeEnvironment} from "hardhat/types"
+import {HardhatRuntimeEnvironment} from "hardhat/types/runtime"
+import {DeploymentsExtension} from "hardhat-deploy/types"
 import {Logger} from "../blockchain_scripts/types"
 import fs from "fs"
 
@@ -13,7 +14,6 @@ import {
   TestForwarder,
   TranchedPool,
 } from "../typechain/ethers"
-import {DeploymentsExtension} from "hardhat-deploy/dist/types"
 import {Contract, ContractReceipt} from "ethers"
 const {ethers} = hre
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
