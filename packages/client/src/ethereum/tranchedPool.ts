@@ -1,20 +1,15 @@
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
-// @ts-expect-error ts-migrate(2307) FIXME: Cannot find module '@goldfinch-eng/protocol/typech... Remove this comment to see the full error message
 import {DepositMade, TranchedPool as TranchedPoolContract} from "@goldfinch-eng/protocol/typechain/web3/TranchedPool"
 import {CreditLine} from "./creditLine"
-// @ts-expect-error ts-migrate(2307) FIXME: Cannot find module '@goldfinch-eng/protocol/typech... Remove this comment to see the full error message
 import {IPoolTokens} from "@goldfinch-eng/protocol/typechain/web3/IPoolTokens"
 import BigNumber from "bignumber.js"
 import {fiduFromAtomic} from "./fidu"
 import {croppedAddress, roundDownPenny, secondsSinceEpoch} from "../utils"
 import _ from "lodash"
-// @ts-expect-error ts-migrate(2307) FIXME: Cannot find module '@goldfinch-eng/protocol/typech... Remove this comment to see the full error message
 import {ContractEventLog} from "@goldfinch-eng/protocol/typechain/web3/types"
 import web3 from "../web3"
 import {usdcFromAtomic} from "./erc20"
-// @ts-expect-error ts-migrate(2307) FIXME: Cannot find module '@goldfinch-eng/protocol/blockc... Remove this comment to see the full error message
 import {CONFIG_KEYS} from "@goldfinch-eng/protocol/blockchain_scripts/configKeys"
-// @ts-expect-error ts-migrate(2307) FIXME: Cannot find module '@goldfinch-eng/protocol/typech... Remove this comment to see the full error message
 import {SeniorPool as SeniorPoolContract} from "@goldfinch-eng/protocol/typechain/web3/SeniorPool"
 import {getCreditDesk} from "./creditDesk"
 

@@ -6,7 +6,6 @@ import {getBalanceAsOf, mapEventsToTx} from "./events"
 import {BorrowerInterface, getBorrowerContract} from "./borrower"
 import {SeniorPool} from "./pool"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
-// @ts-expect-error ts-migrate(2307) FIXME: Cannot find module '@goldfinch-eng/protocol/typech... Remove this comment to see the full error message
 import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/web3/GoldfinchConfig"
 import {EventData} from "web3-eth-contract"
 

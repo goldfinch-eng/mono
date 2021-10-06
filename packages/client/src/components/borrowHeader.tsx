@@ -1,11 +1,11 @@
 import React, {useState, useEffect, useContext} from "react"
 import {fetchCreditLineData} from "../ethereum/creditLine"
 import {usdcFromAtomic} from "../ethereum/erc20"
-import {displayDollars} from "../utils"
+import {assertNonNullable, displayDollars} from "../utils"
 import Dropdown from "./dropdown"
 import {AppContext} from "../App"
 
-function BorrowHeader(props) {
+function BorrowHeader(props): JSX.Element {
   const {goldfinchProtocol} = useContext(AppContext)
   const [creditLinePreviews, setCreditLinePreviews] = useState([])
 
@@ -13,7 +13,7 @@ function BorrowHeader(props) {
     async function getCreditLinePreviews() {
       let creditLines = []
       if (props.creditLinesAddresses.length > 1) {
-        // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'GoldfinchProtocol | undefined' i... Remove this comment to see the full error message
+        assertNonNullable(goldfinchProtocol)
         const multipleCreditLines = await fetchCreditLineData(props.creditLinesAddresses, goldfinchProtocol)
         if (multipleCreditLines.creditLines.length > 1) {
           // If there are multiple credit lines, we nee dto show the Multiple creditlines first (the "All" option), and
@@ -69,7 +69,7 @@ function BorrowHeader(props) {
   } else if (props.user.loaded) {
     header = "Credit Line"
   }
-  return header
+  return <>{header}</>
 }
 
 export default BorrowHeader

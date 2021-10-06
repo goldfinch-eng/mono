@@ -3,10 +3,8 @@ import {getDeployments, getFromBlock} from "./utils"
 import {ERC20, getERC20} from "./erc20"
 import _ from "lodash"
 import {Contract, Filter} from "web3-eth-contract"
-// @ts-expect-error ts-migrate(2307) FIXME: Cannot find module '@goldfinch-eng/protocol/typech... Remove this comment to see the full error message
 import {BaseContract, ContractEventLog} from "@goldfinch-eng/protocol/typechain/web3/types"
 import BigNumber from "bignumber.js"
-// @ts-expect-error ts-migrate(2307) FIXME: Cannot find module '@goldfinch-eng/protocol/typech... Remove this comment to see the full error message
 import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/web3/GoldfinchConfig"
 
 class GoldfinchProtocol {

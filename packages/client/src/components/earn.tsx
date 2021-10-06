@@ -6,7 +6,6 @@ import {usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
 import {displayDollars, displayPercent, roundDownPenny} from "../utils"
 import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
 import {PoolBacker, TranchedPool} from "../ethereum/tranchedPool"
-// @ts-expect-error ts-migrate(2307) FIXME: Cannot find module '@goldfinch-eng/protocol/typech... Remove this comment to see the full error message
 import {PoolCreated} from "@goldfinch-eng/protocol/typechain/web3/GoldfinchFactory"
 import BigNumber from "bignumber.js"
 import {User} from "../ethereum/user"

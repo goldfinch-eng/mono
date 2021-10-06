@@ -12,6 +12,7 @@ import useCurrencyUnlocked from "../hooks/useCurrencyUnlocked"
 import {useOneInchQuote, formatQuote} from "../hooks/useOneInchQuote"
 import useDebounce from "../hooks/useDebounce"
 import BigNumber from "bignumber.js"
+import {assertNonNullable} from "../utils"
 
 function PaymentForm(props) {
   const {borrower, creditLine, actionComplete} = props
@@ -52,11 +53,10 @@ function PaymentForm(props) {
   useEffect(
     () => {
       const fetchBalance = async () => {
-        // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
+        assertNonNullable(erc20)
         const decimalAmount = new BigNumber(erc20.decimalAmount(await erc20.getBalance(user.address)))
         setErc20UserBalance(decimalAmount)
         setValidations({
-          // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
           wallet: (value) => decimalAmount.gte(value) || `You do not have enough ${erc20.ticker}`,
           transactionLimit: (value) =>
             goldfinchConfig.transactionLimit.gte(usdcToAtomic(value)) ||
@@ -88,7 +88,7 @@ function PaymentForm(props) {
   }
 
   function action({transactionAmount}) {
-    // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
+    assertNonNullable(erc20)
     const erc20Amount = erc20.atomicAmount(transactionAmount)
     let unsentAction
     if (creditLine.isMultiple) {
@@ -123,7 +123,6 @@ function PaymentForm(props) {
           addresses,
           usdcAmounts,
           erc20Amount,
-          // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
           erc20.address,
           transactionAmountQuote
         )
@@ -136,7 +135,6 @@ function PaymentForm(props) {
           creditLine.address,
           erc20Amount,
           getSelectedUSDCAmount(),
-          // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
           erc20.address,
           transactionAmountQuote
         )
@@ -154,9 +152,10 @@ function PaymentForm(props) {
 
   function renderForm({formMethods}) {
     async function changeTicker(ticker) {
-      // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
+      assertNonNullable(goldfinchProtocol)
       setErc20(goldfinchProtocol.getERC20(ticker))
     }
+    assertNonNullable(erc20)
 
     return (
       <>
@@ -192,7 +191,6 @@ function PaymentForm(props) {
           />
           <div className="form-inputs-footer">
             <TransactionInput
-              // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
               ticker={erc20.ticker}
               formMethods={formMethods}
               onChange={(e) => {

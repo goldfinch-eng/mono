@@ -1,17 +1,18 @@
 import React, {useContext} from "react"
 import {iconX} from "./icons.js"
 import {AppContext} from "../App"
+import {assertNonNullable} from "../utils.js"
 
 function NetworkErrors(props) {
   const {networkMonitor} = useContext(AppContext)
 
   function errorItem(error) {
+    assertNonNullable(networkMonitor)
     return (
       <div key={error.id} className="error-item">
         <div className="error-label">Error</div>
         <div
           onClick={() => {
-            // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
             networkMonitor.removeError(error)
           }}
           className="dismiss-error-item"

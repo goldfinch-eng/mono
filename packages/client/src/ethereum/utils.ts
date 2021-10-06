@@ -2,7 +2,6 @@ import BigNumber from "bignumber.js"
 import BN from "bn.js"
 import _ from "lodash"
 import {Contract, EventData} from "web3-eth-contract"
-// @ts-expect-error ts-migrate(2307) FIXME: Cannot find module '@goldfinch-eng/protocol/typech... Remove this comment to see the full error message
 import {BaseContract} from "@goldfinch-eng/protocol/typechain/web3/types"
 import {Pool, SeniorPool} from "./pool"
 

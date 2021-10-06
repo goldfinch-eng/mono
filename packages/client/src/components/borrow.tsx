@@ -8,6 +8,7 @@ import {fetchCreditLineData, defaultCreditLine} from "../ethereum/creditLine"
 import {AppContext} from "../App"
 import CreditLinesList from "./creditLinesList"
 import {useBorrow} from "../contexts/BorrowContext"
+import {assertNonNullable} from "../utils.js"
 
 function Borrow(props) {
   const {creditDesk, user, goldfinchProtocol} = useContext(AppContext)
@@ -48,7 +49,7 @@ function Borrow(props) {
   }
 
   async function changeCreditLine(clAddresses) {
-    // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'GoldfinchProtocol | undefined' i... Remove this comment to see the full error message
+    assertNonNullable(goldfinchProtocol)
     setCreditLine(await fetchCreditLineData(clAddresses, goldfinchProtocol))
   }
 
@@ -77,7 +78,6 @@ function Borrow(props) {
   return (
     <div className="content-section">
       <div className="page-header">
-        {/* @ts-expect-error ts-migrate(2786) FIXME: 'BorrowHeader' cannot be used as a JSX component. */}
         <BorrowHeader
           user={user}
           selectedCreditLine={creditLineData}

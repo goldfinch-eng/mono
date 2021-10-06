@@ -2,7 +2,7 @@ import _ from "lodash"
 import React, {useEffect, useState, useContext} from "react"
 import {AppContext} from "../App"
 import {usdcFromAtomic} from "../ethereum/erc20"
-import {displayDollars, croppedAddress} from "../utils"
+import {displayDollars, croppedAddress, assertNonNullable} from "../utils"
 import {iconOutArrow} from "./icons.js"
 
 function RecentRepayments() {
@@ -20,7 +20,7 @@ function RecentRepayments() {
   }, [pool, goldfinchProtocol])
 
   function createTransactionRows(tx) {
-    // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
+    assertNonNullable(network)
     const etherscanSubdomain = network.name === "mainnet" ? "" : `${network.name}.`
     let yourPortion
     let yourPortionClass

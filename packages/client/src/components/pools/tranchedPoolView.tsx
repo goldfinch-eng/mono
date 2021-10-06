@@ -19,7 +19,6 @@ import useERC20Permit from "../../hooks/useERC20Permit"
 import useCurrencyUnlocked from "../../hooks/useCurrencyUnlocked"
 import UnlockERC20Form from "../unlockERC20Form"
 import CreditBarViz from "../creditBarViz"
-// @ts-expect-error ts-migrate(2307) FIXME: Cannot find module '@goldfinch-eng/protocol/typech... Remove this comment to see the full error message
 import {DepositMade} from "@goldfinch-eng/protocol/typechain/web3/TranchedPool"
 import moment from "moment"
 import {useBacker, useTranchedPool} from "../../hooks/useTranchedPool"
