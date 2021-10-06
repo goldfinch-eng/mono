@@ -6,7 +6,7 @@ import TransactionInput from "./transactionInput"
 import LoadingButton from "./loadingButton"
 import useSendFromUser from "../hooks/useSendFromUser"
 import useNonNullContext from "../hooks/useNonNullContext"
-import {SeniorPoolData, UserData} from "../helpers"
+import {SeniorPoolData, UserData} from "../graphql/helpers"
 
 interface WithdrawalFormProps {
   poolData: SeniorPoolData

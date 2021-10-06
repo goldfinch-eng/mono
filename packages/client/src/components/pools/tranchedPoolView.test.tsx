@@ -32,7 +32,7 @@ function renderDepositForm(backerLimit, transactionLimit, userBalance, remaining
   return render(
     <AppContext.Provider value={store}>
       <TranchedPoolDepositForm tranchedPool={tranchedPool} backer={backer} actionComplete={_.noop} closeForm={_.noop} />
-    </AppContext.Provider>,
+    </AppContext.Provider>
   )
 }
 

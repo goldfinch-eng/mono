@@ -7,7 +7,7 @@ import {iconUpArrow, iconDownArrow} from "./icons"
 import BigNumber from "bignumber.js"
 import {KYC} from "../hooks/useGoldfinchClient"
 import {eligibleForSeniorPool} from "../hooks/useKYC"
-import {SeniorPoolData, UserData} from "../helpers"
+import {SeniorPoolData, UserData} from "../graphql/helpers"
 
 interface EarnActionsContainerProps {
   actionComplete: () => Promise<any>

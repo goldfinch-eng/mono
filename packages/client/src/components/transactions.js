@@ -14,13 +14,13 @@ function Transactions(props) {
 
   async function loadTranchedPoolEvents(
     tranchedPools,
-    events = ["DepositMade", "WithdrawalMade", "PaymentApplied", "DrawdownMade"],
+    events = ["DepositMade", "WithdrawalMade", "PaymentApplied", "DrawdownMade"]
   ) {
     const tranchedPoolsAddresses = Object.keys(tranchedPools)
     let combinedEvents = _.flatten(
       await Promise.all(
-        tranchedPoolsAddresses.map((address) => goldfinchProtocol.queryEvents(tranchedPools[address].contract, events)),
-      ),
+        tranchedPoolsAddresses.map((address) => goldfinchProtocol.queryEvents(tranchedPools[address].contract, events))
+      )
     )
     setTranchedPoolTxs(await mapEventsToTx(combinedEvents))
   }

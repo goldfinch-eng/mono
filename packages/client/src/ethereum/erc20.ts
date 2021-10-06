@@ -131,7 +131,7 @@ let getERC20 = memoize(
     erc20.initialize()
     return erc20
   },
-  (...args) => JSON.stringify(args),
+  (...args) => JSON.stringify(args)
 )
 
 function usdcFromAtomic(amount) {

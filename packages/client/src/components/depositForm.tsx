@@ -53,7 +53,7 @@ function DepositForm(props: DepositFormProps) {
 
     const remainingPoolCapacity = pool.gf.remainingCapacity(goldfinchConfig.totalFundsLimit)
     const maxTxAmountInDollars = usdcFromAtomic(
-      BigNumber.min(remainingPoolCapacity, goldfinchConfig.transactionLimit, user.usdcBalance),
+      BigNumber.min(remainingPoolCapacity, goldfinchConfig.transactionLimit, user.usdcBalance)
     )
 
     return (
@@ -94,7 +94,7 @@ function DepositForm(props: DepositFormProps) {
                       {
                         shouldValidate: true,
                         shouldDirty: true,
-                      },
+                      }
                     )
                   }}
                 >
@@ -110,7 +110,7 @@ function DepositForm(props: DepositFormProps) {
                   return (
                     remainingPoolCapacity.gte(usdcToAtomic(value)) ||
                     `This amount would put the pool over its limit. It can accept a max of $${usdcFromAtomic(
-                      remainingPoolCapacity,
+                      remainingPoolCapacity
                     )}.`
                   )
                 },

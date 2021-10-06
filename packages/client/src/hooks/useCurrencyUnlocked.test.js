@@ -38,7 +38,7 @@ describe("useCurrencyUnlocked", () => {
             spender: "spender",
             minimum: allowance.minus(1),
           }),
-        {wrapper},
+        {wrapper}
       )
 
       await waitFor(() => {
@@ -57,7 +57,7 @@ describe("useCurrencyUnlocked", () => {
             spender: "spender",
             minimum: allowance.plus(1),
           }),
-        {wrapper},
+        {wrapper}
       )
 
       await waitForNextUpdate()
@@ -76,7 +76,7 @@ describe("useCurrencyUnlocked", () => {
             owner: "owner",
             spender: "spender",
           }),
-        {wrapper},
+        {wrapper}
       )
 
       await waitForNextUpdate()
@@ -94,7 +94,7 @@ describe("useCurrencyUnlocked", () => {
             spender: "spender",
             minimum: allowance.plus(1),
           }),
-        {wrapper},
+        {wrapper}
       )
 
       await waitForNextUpdate()

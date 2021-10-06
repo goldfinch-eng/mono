@@ -24,6 +24,7 @@
     "@typescript-eslint/parser": "^4.31.1",
     "eslint": "^7.32.0",
     "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-chai-friendly": "^0.7.2",
     "eslint-plugin-mocha-no-only": "^1.1.1",
     "husky": "^7.0.2",
     "kill-port": "^1.6.1",

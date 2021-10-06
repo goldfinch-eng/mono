@@ -11,7 +11,7 @@ import {useStaleWhileRevalidating} from "../../hooks/useAsync"
 import {eligibleForSeniorPool, useKYC} from "../../hooks/useKYC"
 import {useQuery} from "@apollo/client"
 import {GET_SENIOR_POOL_AND_PROVIDER_DATA} from "../../graphql/queries"
-import {parseSeniorPool, parseUser, SeniorPoolData, UserData} from "../../helpers"
+import {parseSeniorPool, parseUser, SeniorPoolData, UserData} from "../../graphql/helpers"
 import {Query} from "../../graphql/types"
 
 function SeniorPoolViewV2(): JSX.Element {

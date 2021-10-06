@@ -74,7 +74,7 @@ class Web3User implements User {
     creditDesk: any,
     goldfinchProtocol: GoldfinchProtocol,
     networkId: string,
-    borrower?: BorrowerInterface,
+    borrower?: BorrowerInterface
   ) {
     this.address = address
     this.borrower = borrower
@@ -232,7 +232,7 @@ async function getAndTransformCreditDeskEvents(creditDesk, address) {
         fromBlock: fromBlock,
         to: "latest",
       })
-    }),
+    })
   )
   const creditDeskEvents = _.compact(_.concat(paymentEvents, drawdownEvents))
   return await mapEventsToTx(creditDeskEvents)

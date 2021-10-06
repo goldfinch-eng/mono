@@ -5,10 +5,10 @@ const {ethers} = hre
 import {Block} from "@ethersproject/abstract-provider"
 import {getDeployedContract, TRANCHES, USDCDecimals} from "./deployHelpers"
 import {TranchedPool} from "../typechain/ethers"
-import {getAgreements, getUsers} from "../server/functions/src/db"
+import {getAgreements, getUsers} from "@goldfinch-eng/functions/db"
 
 import admin from "firebase-admin"
-import {assertNonNullable} from "../utils/type"
+import {assertNonNullable} from "@goldfinch-eng/utils"
 import {BigNumber} from "bignumber.js"
 import {BigNumberish} from "ethers"
 
@@ -87,4 +87,4 @@ if (require.main === module) {
     })
 }
 
-module.exports = main
+export default main

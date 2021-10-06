@@ -1,3 +1,4 @@
+import React, {useEffect, useState} from "react"
 import _ from "lodash"
 import web3 from "../web3"
 import {croppedAddress, displayNumber} from "../utils"
@@ -8,7 +9,7 @@ import {iconCheck, iconOutArrow} from "./icons.js"
 import {usdcFromAtomic} from "../ethereum/erc20"
 import {User} from "../ethereum/user"
 import {NetworkConfig} from "../App"
-import {useSession} from "../hooks/useSignIn"
+import {useSession, useSignIn} from "../hooks/useSignIn"
 
 interface NetworkWidgetProps {
   user: User
@@ -21,7 +22,16 @@ interface NetworkWidgetProps {
 
 function NetworkWidget(props: NetworkWidgetProps) {
   const session = useSession()
+  const [, signIn] = useSignIn()
+  const [showSignIn, setShowSignIn] = useState<Boolean>(false)
   const {node, open: showNetworkWidgetInfo, setOpen: setShowNetworkWidgetInfo} = useCloseOnClickOrEsc<HTMLDivElement>()
+
+  useEffect(() => {
+    if (props.user.address && session.status !== "authenticated" && showSignIn) {
+      signIn()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.user.address, showSignIn])
 
   function enableMetamask() {
     if (session.status === "known") {
@@ -32,6 +42,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
       .request({method: "eth_requestAccounts"})
       .then(() => {
         props.connectionComplete()
+        setShowSignIn(true)
       })
       .catch((error) => {
         console.error("Error connecting to metamask", error)

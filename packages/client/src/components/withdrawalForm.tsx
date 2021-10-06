@@ -31,7 +31,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
   const availableToWithdraw = minimumNumber(
     availableAmount,
     usdcFromAtomic(props.poolData.balance),
-    usdcFromAtomic(goldfinchConfig.transactionLimit),
+    usdcFromAtomic(goldfinchConfig.transactionLimit)
   )
 
   function renderForm({formMethods}) {

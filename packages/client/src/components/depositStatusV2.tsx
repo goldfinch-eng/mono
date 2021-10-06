@@ -1,5 +1,5 @@
 import {BigNumber} from "bignumber.js"
-import {SeniorPoolData, UserData} from "../helpers"
+import {SeniorPoolData, UserData} from "../graphql/helpers"
 import {displayDollars, displayPercent} from "../utils"
 
 interface DepositStatusProps {

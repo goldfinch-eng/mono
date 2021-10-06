@@ -22,7 +22,7 @@ function renderTranchedPoolCard(remainingCapacity) {
   return render(
     <AppContext.Provider value={store}>
       <TranchedPoolCard poolBacker={poolBacker as any} />
-    </AppContext.Provider>,
+    </AppContext.Provider>
   )
 }
 

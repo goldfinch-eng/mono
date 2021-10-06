@@ -53,7 +53,7 @@ function DrawdownForm(props) {
         props.creditLine.address,
         drawdownAmount,
         sendToAddress,
-        erc20.address,
+        erc20.address
       )
     } else {
       unsentAction = props.borrower.drawdown(props.creditLine.address, drawdownAmount, sendToAddress)
@@ -69,7 +69,7 @@ function DrawdownForm(props) {
   const maxAmount = minimumNumber(
     props.creditLine.availableCreditInDollars,
     usdcFromAtomic(poolData.balance),
-    usdcFromAtomic(goldfinchConfig.transactionLimit),
+    usdcFromAtomic(goldfinchConfig.transactionLimit)
   )
 
   async function changeTicker(ticker) {

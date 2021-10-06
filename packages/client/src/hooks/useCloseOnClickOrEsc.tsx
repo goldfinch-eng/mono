@@ -1,7 +1,7 @@
 import {useState, useRef, useEffect, useCallback} from "react"
 
 function useCloseOnClickOrEsc<T extends HTMLElement>(
-  opts: {closeOnEsc?: boolean; closeFormFn?: () => void; closeOnClick?: boolean} = {},
+  opts: {closeOnEsc?: boolean; closeFormFn?: () => void; closeOnClick?: boolean} = {}
 ): {node: React.RefObject<T>; open: string; setOpen: (s: string) => void} {
   const node = useRef<T>(null)
   const handleEscFunction = useCallback(
@@ -22,7 +22,7 @@ function useCloseOnClickOrEsc<T extends HTMLElement>(
         }
       }
     },
-    [opts],
+    [opts]
   )
 
   const [open, setOpen] = useState<string>("")
@@ -40,7 +40,7 @@ function useCloseOnClickOrEsc<T extends HTMLElement>(
         setOpen("")
       }
     },
-    [opts],
+    [opts]
   )
 
   useEffect(() => {

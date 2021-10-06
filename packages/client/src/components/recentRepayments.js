@@ -28,7 +28,7 @@ function RecentRepayments() {
         user
           .poolBalanceAsOf(tx.blockNumber)
           .dividedBy(pool.gf.assetsAsOf(tx.blockNumber))
-          .multipliedBy(tx.interestAmountBN),
+          .multipliedBy(tx.interestAmountBN)
       )
 
       yourPortion = displayDollars(yourPortionValue, 4)

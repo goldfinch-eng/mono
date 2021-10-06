@@ -9,7 +9,7 @@ import Sidebar from "./components/sidebar"
 import TermsOfService from "./components/termsOfService.js"
 import PrivacyPolicy from "./components/privacyPolicy.js"
 import SeniorPoolAgreementNonUS from "./components/seniorPoolAgreementNonUS"
-import web3 from "./web3"
+import web3, {SESSION_DATA_KEY} from "./web3"
 import {ERC20, Tickers} from "./ethereum/erc20"
 import {refreshGoldfinchConfigData} from "./ethereum/goldfinchConfig"
 import {getUserData, defaultUser, User} from "./ethereum/user"
@@ -25,6 +25,9 @@ import TranchedPoolView from "./components/pools/tranchedPoolView"
 import {SessionData} from "./types/session.js"
 import {apolloClient} from "./graphql/client"
 import {ApolloProvider} from "@apollo/client"
+import {useSessionLocalStorage} from "./hooks/useSignIn"
+import {EarnProvider} from "./contexts/EarnContext"
+import {BorrowProvider} from "./contexts/BorrowContext"
 
 export interface NetworkConfig {
   name?: string
@@ -74,7 +77,10 @@ function App() {
   const [networkMonitor, setNetworkMonitor] = useState<NetworkMonitor>()
   const [goldfinchProtocol, setGoldfinchProtocol] = useState<GoldfinchProtocol>()
   const [geolocationData, setGeolocationData] = useState<GeolocationData>()
-  const [sessionData, setSessionData] = useState<SessionData>()
+  const {localStorageValue: sessionData, setLocalStorageValue: setSessionData} = useSessionLocalStorage(
+    SESSION_DATA_KEY,
+    {}
+  )
 
   useEffect(() => {
     setupWeb3()
@@ -82,10 +88,13 @@ function App() {
   }, [])
 
   useEffect(() => {
-    refreshUserData()
-    // Admin function to be able to assume the role of any address
-    window.setUserAddress = function (overrideAddress: string) {
-      refreshUserData(overrideAddress)
+    // React doesn't batch updates for async functions and that's why we need this check.
+    if (usdc && pool && creditDesk && network && goldfinchProtocol) {
+      refreshUserData()
+      // Admin function to be able to assume the role of any address
+      window.setUserAddress = function (overrideAddress: string) {
+        refreshUserData(overrideAddress)
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [usdc, pool, creditDesk, network, goldfinchProtocol])
@@ -189,59 +198,63 @@ function App() {
   return (
     <ApolloProvider client={apolloClient}>
       <AppContext.Provider value={store}>
-        <Router>
-          <Sidebar />
-          <NetworkWidget
-            user={user}
-            network={network}
-            currentErrors={currentErrors}
-            currentTXs={currentTXs}
-            connectionComplete={setupWeb3}
-          />
-          <div>
-            <Switch>
-              <Route exact path="/">
-                <Redirect to="/earn" />
-              </Route>
-              <Route path="/about">{/* <About /> */}</Route>
-              <Route path="/borrow">
-                <Borrow />
-              </Route>
-              <Route path="/pools/senior">
-                <SeniorPoolView />
-              </Route>
-              <Route path="/pools/senior_v2">
-                <SeniorPoolViewV2 />
-              </Route>
-              <Route path="/pools/:poolAddress">
-                <TranchedPoolView />
-              </Route>
-              <Route path="/earn">
-                <Earn />
-              </Route>
-              <Route path="/transactions">
-                <Transactions currentTXs={currentTXs} />
-              </Route>
-              <Route path="/verify">
-                <VerifyIdentity />
-              </Route>
-              <Route path="/terms">
-                <TermsOfService />
-              </Route>
-              <Route path="/privacy">
-                <PrivacyPolicy />
-              </Route>
-              <Route path="/senior-pool-agreement-non-us">
-                <SeniorPoolAgreementNonUS />
-              </Route>
-            </Switch>
-          </div>
-          <footer>
-            <a href="/terms">Terms</a>
-            <span className="divider">•</span>
-            <a href="/privacy">Privacy</a>
-          </footer>
-        </Router>
+        <NetworkWidget
+          user={user}
+          network={network}
+          currentErrors={currentErrors}
+          currentTXs={currentTXs}
+          connectionComplete={setupWeb3}
+        />
+        <EarnProvider>
+          <BorrowProvider>
+            <Router>
+              <Sidebar />
+              <div>
+                <Switch>
+                  <Route exact path="/">
+                    <Redirect to="/earn" />
+                  </Route>
+                  <Route path="/about">{/* <About /> */}</Route>
+                  <Route path="/earn">
+                    <Earn />
+                  </Route>
+                  <Route path="/borrow">
+                    <Borrow />
+                  </Route>
+                  <Route path="/transactions">
+                    <Transactions currentTXs={currentTXs} />
+                  </Route>
+                  <Route path="/pools/senior">
+                    <SeniorPoolView />
+                  </Route>
+                  <Route path="/pools/senior_v2">
+                    <SeniorPoolViewV2 />
+                  </Route>
+                  <Route path="/pools/:poolAddress">
+                    <TranchedPoolView />
+                  </Route>
+                  <Route path="/verify">
+                    <VerifyIdentity />
+                  </Route>
+                  <Route path="/terms">
+                    <TermsOfService />
+                  </Route>
+                  <Route path="/privacy">
+                    <PrivacyPolicy />
+                  </Route>
+                  <Route path="/senior-pool-agreement-non-us">
+                    <SeniorPoolAgreementNonUS />
+                  </Route>
+                </Switch>
+              </div>
+            </Router>
+          </BorrowProvider>
+        </EarnProvider>
+        <footer>
+          <a href="/terms">Terms</a>
+          <span className="divider">•</span>
+          <a href="/privacy">Privacy</a>
+        </footer>
       </AppContext.Provider>
     </ApolloProvider>
   )
