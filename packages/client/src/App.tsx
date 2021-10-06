@@ -6,6 +6,7 @@ import Earn from "./components/earn"
 import Transactions from "./components/transactions.js"
 import NetworkWidget from "./components/networkWidget"
 import Sidebar from "./components/sidebar"
+import Footer from "./components/footer"
 import TermsOfService from "./components/termsOfService.js"
 import PrivacyPolicy from "./components/privacyPolicy.js"
 import SeniorPoolAgreementNonUS from "./components/seniorPoolAgreementNonUS"
@@ -243,11 +244,7 @@ function App() {
           </Router>
         </BorrowProvider>
       </EarnProvider>
-      <footer>
-        <a href="/terms">Terms</a>
-        <span className="divider">•</span>
-        <a href="/privacy">Privacy</a>
-      </footer>
+      <Footer />
     </AppContext.Provider>
   )
 }
