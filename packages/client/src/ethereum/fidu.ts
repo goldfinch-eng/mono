@@ -6,8 +6,8 @@ import {getDeployments} from "./utils"
 async function getFidu(networkId) {
   const config = await getDeployments(networkId)
   const fiduContract = config.contracts.Fidu
-  // @ts-expect-error ts-migrate(2349) FIXME: This expression is not callable.
-  const fidu = (new web3.eth.Contract(fiduContract.abi, fiduContract.address)(fidu as any).chain = networkId)
+  const fidu = new web3.eth.Contract(fiduContract.abi, fiduContract.address)
+  ;(fidu as any).chain = networkId
   return fidu
 }
 
