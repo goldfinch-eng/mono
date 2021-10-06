@@ -6,9 +6,6 @@
 /// <reference path="../node_modules/@nomiclabs/hardhat-web3/src/type-extensions.ts" />
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../node_modules/@nomiclabs/hardhat-truffle5/src/type-extensions.ts" />
-// eslint-disable-next-line @typescript-eslint/triple-slash-reference
-/// <reference path="../typechain/truffle/types.d.ts" />
-
 import {ethers, getChainId, getNamedAccounts} from "hardhat"
 type Ethers = typeof ethers
 import {web3} from "hardhat"
