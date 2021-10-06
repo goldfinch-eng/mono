@@ -29,6 +29,7 @@ export function generateMerkleRoot(json: unknown): MerkleDistributorInfo {
 
   const accountedGrants: AccountedGrant[] = json.map((info: JsonAccountedGrant) => ({
     account: info.account,
+    reason: info.reason,
     grant: {
       amount: BigNumber.from(info.grant.amount),
       vestingLength: BigNumber.from(info.grant.vestingLength),

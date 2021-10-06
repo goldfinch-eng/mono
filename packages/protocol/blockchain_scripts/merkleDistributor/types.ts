@@ -1,6 +1,22 @@
 import {BigNumber} from "ethers"
 import {genIsArrayOf, isArrayOfNonEmptyString, isNonEmptyString, isNumber, isPlainObject} from "@goldfinch-eng/utils"
 
+export const FLIGHT_ACADEMY_GRANT_REASON = "flight_academy"
+export type FLIGHT_ACADEMY_GRANT_REASON = typeof FLIGHT_ACADEMY_GRANT_REASON
+export const GOLDFINCH_INVESTMENT_GRANT_REASON = "goldfinch_investment"
+export type GOLDFINCH_INVESTMENT_GRANT_REASON = typeof GOLDFINCH_INVESTMENT_GRANT_REASON
+export const LIQUIDITY_PROVIDER_GRANT_REASON = "liquidity_provider"
+export type LIQUIDITY_PROVIDER_GRANT_REASON = typeof LIQUIDITY_PROVIDER_GRANT_REASON
+
+export type GrantReason =
+  | FLIGHT_ACADEMY_GRANT_REASON
+  | GOLDFINCH_INVESTMENT_GRANT_REASON
+  | LIQUIDITY_PROVIDER_GRANT_REASON
+export const isGrantReason = (obj: unknown): obj is GrantReason =>
+  obj === FLIGHT_ACADEMY_GRANT_REASON ||
+  obj === GOLDFINCH_INVESTMENT_GRANT_REASON ||
+  obj === LIQUIDITY_PROVIDER_GRANT_REASON
+
 export type Grant = {
   amount: BigNumber
   vestingLength: BigNumber
@@ -26,23 +42,26 @@ export const isJsonGrant = (obj: unknown): obj is JsonGrant =>
 
 export type AccountedGrant = {
   account: string
+  reason: GrantReason
   grant: Grant
 }
 export const isAccountedGrant = (obj: unknown): obj is AccountedGrant =>
-  isPlainObject(obj) && isNonEmptyString(obj.account) && isGrant(obj.grant)
+  isPlainObject(obj) && isNonEmptyString(obj.account) && isGrantReason(obj.reason) && isGrant(obj.grant)
 export const isArrayOfAccountedGrant = genIsArrayOf(isAccountedGrant)
 
 export type JsonAccountedGrant = {
   account: string
+  reason: GrantReason
   grant: JsonGrant
 }
 export const isJsonAccountedGrant = (obj: unknown): obj is JsonAccountedGrant =>
-  isPlainObject(obj) && isNonEmptyString(obj.account) && isJsonGrant(obj.grant)
+  isPlainObject(obj) && isNonEmptyString(obj.account) && isGrantReason(obj.reason) && isJsonGrant(obj.grant)
 export const isArrayOfJsonAccountedGrant = genIsArrayOf(isJsonAccountedGrant)
 
 export type MerkleDistributorGrantInfo = {
   index: number
   account: string
+  reason: GrantReason
   grant: {
     amount: string
     vestingLength: string
@@ -55,6 +74,7 @@ export const isMerkleDistributorGrantInfo = (obj: unknown): obj is MerkleDistrib
   isPlainObject(obj) &&
   isNumber(obj.index) &&
   isNonEmptyString(obj.account) &&
+  isGrantReason(obj.reason) &&
   isPlainObject(obj.grant) &&
   isNonEmptyString(obj.grant.amount) &&
   isNonEmptyString(obj.grant.vestingLength) &&
