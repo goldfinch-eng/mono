@@ -1,4 +1,10 @@
-import {isPlainObject, isNumber, isNonEmptyString, isArrayOfNonEmptyString, genIsArrayOf} from "@goldfinch-eng/utils"
+import {
+  isPlainObject,
+  isNumber,
+  isNonEmptyString,
+  isArrayOfNonEmptyString,
+  genIsArrayOf,
+} from "@goldfinch-eng/utils/src/type"
 
 // HACK: I could not successfully get Webpack to compile TS imported from
 // "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types". So here we re-define the subset
