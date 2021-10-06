@@ -43,8 +43,12 @@ import {advanceTime, toEthers, usdcVal} from "../test/testHelpers"
 This deployment deposits some funds to the pool, and creates an underwriter, and a credit line.
 It is only really used for test purposes, and should never be used on Mainnet (which it automatically never does);
 */
+type OverrideOptions = {
+  overrideAddress?: string
+}
+
 let logger: Logger
-async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeEnvironment) {
+async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeEnvironment, options: OverrideOptions) {
   const {getOrNull, log} = deployments
   logger = log
   const {gf_deployer} = await getNamedAccounts()
@@ -65,7 +69,9 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   if (process.env.TEST_USER) {
     throw new Error("`TEST_USER` is deprecated. Use `TEST_USERS` instead.")
   }
-  const borrowers = (process.env.TEST_USERS || protocol_owner).split(",").filter((val) => !!val)
+  const borrowers = (options?.overrideAddress || process.env.TEST_USERS || protocol_owner)
+    .split(",")
+    .filter((val) => !!val)
 
   let erc20
   const chainUsdcAddress = getUSDCAddress(chainId)
@@ -386,3 +392,5 @@ module.exports.skip = async ({getChainId}: HardhatRuntimeEnvironment) => {
   const chainId = await getChainId()
   return String(chainId) === MAINNET_CHAIN_ID
 }
+
+export default main
