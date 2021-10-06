@@ -104,9 +104,10 @@ async function getMerkleDistributorInfo(): Promise<MerkleDistributorInfo | undef
   return import(
     `@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/merkleDistributorInfo${deploymentFileNameSuffix}.json`
   )
-    .then((result): MerkleDistributorInfo => {
-      if (isMerkleDistributorInfo(result)) {
-        return result
+    .then((result: unknown): MerkleDistributorInfo => {
+      const plain = _.toPlainObject(result)
+      if (isMerkleDistributorInfo(plain)) {
+        return plain
       } else {
         throw new Error("Merkle distributor info failed type guard.")
       }
