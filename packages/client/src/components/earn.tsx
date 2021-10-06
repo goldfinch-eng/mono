@@ -1,4 +1,4 @@
-import {useState, useEffect, useContext} from "react"
+import React, {useState, useEffect, useContext} from "react"
 import {useHistory} from "react-router-dom"
 import {CapitalProvider, fetchCapitalProviderData, PoolData, SeniorPool} from "../ethereum/pool"
 import {AppContext} from "../App"
@@ -10,6 +10,7 @@ import {PoolCreated} from "@goldfinch-eng/protocol/typechain/web3/GoldfinchFacto
 import BigNumber from "bignumber.js"
 import {User} from "../ethereum/user"
 import ConnectionNotice from "./connectionNotice"
+import {useEarn} from "../contexts/EarnContext"
 import Badge from "./badge"
 
 // Filter out 0 limit (inactive) and test pools
@@ -253,6 +254,7 @@ function Earn(props) {
     poolsAddresses,
     poolsAddressesStatus,
   } = usePoolBackers({goldfinchProtocol, user})
+  const {earnStore, setEarnStore} = useEarn()
 
   useEffect(() => {
     if (pool) {
@@ -267,7 +269,21 @@ function Earn(props) {
     setCapitalProvider(capitalProvider)
   }
 
-  const isLoading = !(capitalProvider?.loaded || user.noWeb3)
+  useEffect(() => {
+    if (capitalProvider?.loaded) {
+      setEarnStore({...earnStore, capitalProvider})
+    }
+    if (backers.length > 0) {
+      setEarnStore({...earnStore, backers})
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [capitalProvider, backers])
+
+  const capitalProviderData = earnStore.capitalProvider
+  const backersData = earnStore.backers
+  const tranchedPoolsStatusData = earnStore.backers.length > 0 ? "loaded" : tranchedPoolsStatus
+
+  const isLoading = !(capitalProviderData?.loaded || user.noWeb3)
   const earnMessage = isLoading ? "Loading..." : "Pools"
 
   return (
@@ -280,7 +296,7 @@ function Earn(props) {
       ) : (
         <>
           <ConnectionNotice />
-          <PortfolioOverview poolData={pool?.gf} capitalProvider={capitalProvider} poolBackers={backers} />
+          <PortfolioOverview poolData={pool?.gf} capitalProvider={capitalProviderData} poolBackers={backersData} />
         </>
       )}
       <div className="pools">
@@ -290,7 +306,7 @@ function Earn(props) {
           ) : (
             <SeniorPoolCard
               balance={displayDollars(usdcFromAtomic(pool?.gf.totalPoolAssets))}
-              userBalance={displayDollars(capitalProvider?.availableToWithdrawInDollars)}
+              userBalance={displayDollars(capitalProviderData?.availableToWithdrawInDollars)}
               apy={displayPercent(pool?.gf.estimatedApy)}
               limit={displayDollars(usdcFromAtomic(goldfinchConfig?.totalFundsLimit), 0)}
               remainingCapacity={pool?.gf.remainingCapacity(goldfinchConfig?.totalFundsLimit)}
@@ -298,7 +314,7 @@ function Earn(props) {
           )}
         </PoolList>
         <PoolList title="Borrower Pools">
-          {tranchedPoolsStatus === "loading" && poolsAddressesStatus === "loading" && (
+          {tranchedPoolsStatusData === "loading" && poolsAddressesStatus === "loading" && (
             <>
               <TranchedPoolCardSkeleton />
               <TranchedPoolCardSkeleton />
@@ -306,10 +322,10 @@ function Earn(props) {
             </>
           )}
 
-          {tranchedPoolsStatus === "loading" && poolsAddresses.map((a) => <TranchedPoolCardSkeleton key={a} />)}
+          {tranchedPoolsStatusData === "loading" && poolsAddresses.map((a) => <TranchedPoolCardSkeleton key={a} />)}
 
-          {tranchedPoolsStatus !== "loading" &&
-            backers.map((p) => <TranchedPoolCard key={`${p.tranchedPool.address}`} poolBacker={p} />)}
+          {tranchedPoolsStatusData !== "loading" &&
+            backersData.map((p) => <TranchedPoolCard key={`${p.tranchedPool.address}`} poolBacker={p} />)}
         </PoolList>
       </div>
     </div>
