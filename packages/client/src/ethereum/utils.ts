@@ -4,7 +4,10 @@ import _ from "lodash"
 import {Contract, EventData} from "web3-eth-contract"
 import {BaseContract} from "@goldfinch-eng/protocol/typechain/web3/types"
 import {Pool, SeniorPool} from "./pool"
-import {isMerkleDistributorInfo, MerkleDistributorInfo} from "./communityRewards/types"
+import {
+  isMerkleDistributorInfo,
+  MerkleDistributorInfo,
+} from "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types"
 
 const decimalPlaces = 6
 const decimals = new BN(String(10 ** decimalPlaces))

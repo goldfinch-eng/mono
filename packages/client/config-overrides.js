@@ -14,6 +14,11 @@ const genEnableImportsFromExternalPaths = (ruleStringPredicate) => (webpackConfi
       return ruleStringPredicate(ruleString)
     })
     if (tsRule) {
+      // Include `newIncludePaths` in the "include" specification for `tsRule`, so that whatever loader(s)
+      // are applied for files matching the rule are also applied to the `newIncludePaths` files. This
+      // application of the loader(s) is necessary, for example, in the case of Typescript files
+      // specified in `newIncludePaths`: it transpiles those files, like the Typescript files in the
+      // `src` dir get transpiled.
       tsRule.include = Array.isArray(tsRule.include)
         ? [...tsRule.include, ...newIncludePaths]
         : [tsRule.include, ...newIncludePaths]
@@ -21,11 +26,12 @@ const genEnableImportsFromExternalPaths = (ruleStringPredicate) => (webpackConfi
   }
 }
 
-const enableTypescriptImportsFromExternalPaths = genEnableImportsFromExternalPaths(
-  (ruleString) => ruleString && (ruleString.includes("ts") || ruleString.includes("tsx"))
-)
 const enableJsonImportsFromExternalPaths = genEnableImportsFromExternalPaths(
   (ruleString) => ruleString && ruleString.includes("json")
+)
+
+const enableTypescriptImportsFromExternalPaths = genEnableImportsFromExternalPaths(
+  (ruleString) => ruleString && (ruleString.includes("ts") || ruleString.includes("tsx"))
 )
 
 const addPathsToModuleScopePlugin = (webpackConfig, paths) => {
@@ -49,7 +55,11 @@ const allowOutsideImports = () => (config) => {
     path.resolve(__dirname, "../../packages/client/abi/OneSplit.json"),
     path.resolve(__dirname, "../../packages/client/config/pool-metadata/mainnet.json"),
   ]
-  const tsPaths = []
+  const tsPaths = [
+    path.resolve(__dirname, "../../packages/protocol/blockchain_scripts/configKeys"),
+    path.resolve(__dirname, "../../packages/protocol/blockchain_scripts/merkleDistributor/types.ts"),
+    path.resolve(__dirname, "../../packages/utils/src/type.ts"),
+  ]
   const paths = jsonPaths.concat(tsPaths)
 
   enableJsonImportsFromExternalPaths(config, jsonPaths)
