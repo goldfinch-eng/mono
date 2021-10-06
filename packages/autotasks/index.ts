@@ -1,22 +1,18 @@
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference
+/// <reference path="./node_modules/hardhat-deploy/dist/src/type-extensions.d.ts" />
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference
+/// <reference path="./node_modules/@nomiclabs/hardhat-ethers/src/internal/type-extensions.ts" />
 import {findEnvLocal, assertNonNullable} from "@goldfinch-eng/utils"
 import dotenv from "dotenv"
 dotenv.config({path: findEnvLocal()})
 
-import express from "express"
-import cors from "cors"
-const app = express()
 import {relay} from "./relayer/relay"
 import hre from "hardhat"
 import {TypedDataUtils} from "eth-sig-util"
 import {bufferToHex} from "ethereumjs-util"
-import {ERC165UpgradeSafe} from "packages/protocol/typechain/ethers"
 
-const port = process.env.RELAY_SERVER_PORT
 const FORWARDER_ADDRESS = process.env.FORWARDER_ADDRESS
 const ALLOWED_SENDERS = (process.env.ALLOWED_SENDERS || "").split(",").filter((val) => !!val)
-
-app.use(express.json())
-app.use(cors())
 
 async function hardhatRelay(txData) {
   const {protocol_owner} = await hre.getNamedAccounts()
@@ -80,7 +76,7 @@ async function createContext() {
   }
 }
 
-const relayHandler = async (req, res) => {
+export const relayHandler = async (req, res) => {
   try {
     console.log(`Forwarding: ${JSON.stringify(req.body)}`)
     const context = await createContext()
@@ -91,9 +87,3 @@ const relayHandler = async (req, res) => {
     res.status(500).send({status: "error", message: error.toString()})
   }
 }
-
-app.post("/relay", relayHandler)
-
-app.listen(port, () => {
-  console.log(`App listening at http://localhost:${port}`)
-})
