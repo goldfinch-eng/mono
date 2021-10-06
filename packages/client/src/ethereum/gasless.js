@@ -6,7 +6,7 @@ const {ethers} = require("ethers")
 const RELAY_URLS = {
   1: "https://api.defender.openzeppelin.com/autotasks/9d2053fd-507a-473f-8b5a-b079a694723a/runs/webhook/6a51e904-1439-4c68-981b-5f22f1c0b560/MiuRjp5Lnd6fjjYARR4j4r",
   4: "https://api.defender.openzeppelin.com/autotasks/348209ac-8cfd-41a4-be60-e97eab073f29/runs/webhook/6a51e904-1439-4c68-981b-5f22f1c0b560/Ug7a1WChPSLRPtcT4PCUnQ",
-  31337: "/relay", // Proxied by webpack to packages/server/index.ts
+  31337: "/relay", // Proxied by webpack to server.js
 }
 const MAX_GAS = 2e6
 

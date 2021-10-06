@@ -1,21 +1,10 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "lib": [
-      "es2019",
-      "es2020.promise",
-      "es2020.bigint",
-      "es2020.string"
-    ],
+    "lib": ["es2019", "es2020.promise", "es2020.bigint", "es2020.string"],
     "module": "es6",
     "target": "es2019",
     "isolatedModules": false
   },
-  "include": [
-    "hardhat.config.ts",
-    "test/**/*",
-    "assessor/**/*",
-    "relayer/**/*",
-    "index.ts"
-  ]
+  "include": ["hardhat.config.ts", "test/**/*", "assessor/**/*", "relayer/**/*", "server.ts"]
 }
