@@ -50,7 +50,7 @@ describe("useSessionLocalStorage hook", () => {
     Storage.prototype.getItem = jest.fn(
       () =>
         // eslint-disable-next-line
-        '{"signature":"sig","signatureBlockNum":13,"signatureBlockNumTimestamp":1631996519,"version":1,"extra":"extra"}'
+        '{"signature":"sig","signatureBlockNum":13,"signatureBlockNumTimestamp":1631996519,"version":1,"extra":"extra"}',
     )
     const {result} = renderHook(() => useSessionLocalStorage("sessionData", {}))
     expect(setItem).toHaveBeenCalled()
@@ -76,7 +76,7 @@ describe("useSessionLocalStorage hook", () => {
     Storage.prototype.getItem = jest.fn(
       () =>
         // eslint-disable-next-line
-        '{"signature":"sig","signatureBlockNum":13,"signatureBlockNumTimestamp":1631996519,"version":1}'
+        '{"signature":"sig","signatureBlockNum":13,"signatureBlockNumTimestamp":1631996519,"version":1}',
     )
 
     const {result} = renderHook(() => useSessionLocalStorage("sessionData", {}))
@@ -90,7 +90,7 @@ describe("useSessionLocalStorage hook", () => {
     const setItem = jest.spyOn(Storage.prototype, "setItem")
     Storage.prototype.getItem = jest.fn(
       // eslint-disable-next-line
-      () => '{"signature":"sig","signatureBlockNum":13,"signatureBlockNumTimestamp":1631996519,"version":1}'
+      () => '{"signature":"sig","signatureBlockNum":13,"signatureBlockNumTimestamp":1631996519,"version":1}',
     )
 
     const spy = jest.spyOn(utils, "secondsSinceEpoch")
