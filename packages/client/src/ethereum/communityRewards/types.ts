@@ -5,16 +5,13 @@ import {isPlainObject, isNumber, isNonEmptyString, isArrayOfNonEmptyString, genI
 // of MerkleDistributor-related types that the client needs.
 
 const FLIGHT_ACADEMY_GRANT_REASON = "flight_academy"
-type FLIGHT_ACADEMY_GRANT_REASON = typeof FLIGHT_ACADEMY_GRANT_REASON
 const GOLDFINCH_INVESTMENT_GRANT_REASON = "goldfinch_investment"
-type GOLDFINCH_INVESTMENT_GRANT_REASON = typeof GOLDFINCH_INVESTMENT_GRANT_REASON
 const LIQUIDITY_PROVIDER_GRANT_REASON = "liquidity_provider"
-type LIQUIDITY_PROVIDER_GRANT_REASON = typeof LIQUIDITY_PROVIDER_GRANT_REASON
 
 export type GrantReason =
-  | FLIGHT_ACADEMY_GRANT_REASON
-  | GOLDFINCH_INVESTMENT_GRANT_REASON
-  | LIQUIDITY_PROVIDER_GRANT_REASON
+  | typeof FLIGHT_ACADEMY_GRANT_REASON
+  | typeof GOLDFINCH_INVESTMENT_GRANT_REASON
+  | typeof LIQUIDITY_PROVIDER_GRANT_REASON
 export const isGrantReason = (obj: unknown): obj is GrantReason =>
   obj === FLIGHT_ACADEMY_GRANT_REASON ||
   obj === GOLDFINCH_INVESTMENT_GRANT_REASON ||
