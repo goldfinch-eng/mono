@@ -16,7 +16,6 @@ RUN cp ./murmuration/.env.murmuration ./.env.local
 RUN sed -i -e "s/REACT_APP_SENTRY_RELEASE=REPLACE_ME_IN_BUILD/REACT_APP_SENTRY_RELEASE=${SENTRY_RELEASE}/g" ./.env.local
 # Copy .env.local to the client dir, so the client can use its variables.
 RUN cp ./.env.local ./packages/client/.env.local
-RUN cp ./.env.local ./packages/server/.env.local
 
 # We observed `postinstall` not running automatically (which seems to be
 # understood behavior in a Docker container: https://stackoverflow.com/q/47748075),
