@@ -1,21 +1,21 @@
 import {useContext} from "react"
 import {AppContext} from "../App"
-import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
 import {StakingRewards} from "../ethereum/pool"
 import {useAsync, useStaleWhileRevalidating} from "./useAsync"
 
 export function useStakingRewards(): StakingRewards | undefined {
   const {goldfinchProtocol, user} = useContext(AppContext)
-  let stakingRewardsResult = useAsync<StakingRewards>(() => {
-    if (!user.loaded) {
+
+  const stakingRewardsResult = useAsync<StakingRewards>(() => {
+    if (!user.loaded || !goldfinchProtocol) {
       return
     }
 
-    let rewards = new StakingRewards(goldfinchProtocol as GoldfinchProtocol)
+    const rewards = new StakingRewards(goldfinchProtocol)
     return rewards.initialize(user.address).then(() => rewards)
   }, [goldfinchProtocol, user])
 
-  const rewards = useStaleWhileRevalidating(stakingRewardsResult)
+  const stakingRewards = useStaleWhileRevalidating(stakingRewardsResult)
 
-  return rewards
+  return stakingRewards
 }
