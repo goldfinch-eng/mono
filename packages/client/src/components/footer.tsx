@@ -1,5 +1,5 @@
 import React from "react"
-import {iconImmunefi, iconNexusMutual} from "./icons.js"
+import {iconImmunefi, iconNexusMutual} from "./icons"
 
 function Footer() {
   return (
