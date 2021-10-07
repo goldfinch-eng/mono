@@ -15,6 +15,7 @@ import {
   currentChainId,
   assertIsChainId,
   assertIsTicker,
+  ContractDeployer,
 } from "../blockchain_scripts/deployHelpers"
 import _ from "lodash"
 import {CONFIG_KEYS} from "./configKeys"
@@ -42,17 +43,17 @@ async function upgradeContracts(
   contracts: ExistingContracts,
   signer: string | Signer,
   deployFrom: any,
-  deployments: DeploymentsExtension,
+  deployer: ContractDeployer,
   changeImplementation = true
 ): Promise<UpgradedContracts> {
-  console.log("Deploying the accountant")
-  const accountantDeployResult = await deployments.deploy("Accountant", {from: deployFrom, gasLimit: 4000000, args: []})
-  console.log("Deployed...")
+  const accountantDeployResult = await deployer.deployLibrary("Accountant", {
+    from: deployFrom,
+    gasLimit: 4000000,
+    args: [],
+  })
   // Ensure a test forwarder is available. Using the test forwarder instead of the real forwarder on mainnet
   // gives us the ability to debug the forwarded transactions.
-  console.log("Deploying test forwarder...")
-  await deployments.deploy("TestForwarder", {from: deployFrom, gasLimit: 4000000, args: []})
-  console.log("Deployed...")
+  await deployer.deploy("TestForwarder", {from: deployFrom, gasLimit: 4000000, args: []})
 
   const dependencies: DepList = {
     CreditDesk: {["Accountant"]: accountantDeployResult.address},
@@ -69,12 +70,11 @@ async function upgradeContracts(
     }
 
     console.log("Trying to deploy", contractToDeploy)
-    const deployResult = await deployments.deploy(contractToDeploy, {
+    const deployResult = await deployer.deploy(contractToDeploy, {
       from: deployFrom,
       args: [],
       libraries: dependencies[contractName],
     })
-    console.log("Deployed...")
     // Get a contract object with the latest ABI, attached to the signer
     const ethersSigner = typeof signer === "string" ? await ethers.getSigner(signer) : signer
     let upgradedContract = await ethers.getContractAt(deployResult.abi, deployResult.address, ethersSigner)

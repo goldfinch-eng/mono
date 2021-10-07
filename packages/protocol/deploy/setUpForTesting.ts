@@ -32,6 +32,7 @@ import {
   TRANCHES,
   LOCAL_CHAIN_ID,
   getProtocolOwner,
+  ContractDeployer,
 } from "../blockchain_scripts/deployHelpers"
 import {impersonateAccount, fundWithWhales} from "../blockchain_scripts/mainnetForkingHelpers"
 import _ from "lodash"
@@ -48,11 +49,13 @@ type OverrideOptions = {
 }
 
 let logger: Logger
-async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeEnvironment, options: OverrideOptions) {
+async function main(hre: HardhatRuntimeEnvironment, options: OverrideOptions) {
+  const {getNamedAccounts, deployments, getChainId} = hre
   const {getOrNull, log} = deployments
   logger = log
   const {gf_deployer} = await getNamedAccounts()
   const protocol_owner = await getProtocolOwner()
+  const deployer = new ContractDeployer(logger, hre)
   assertIsString(protocol_owner)
   assertIsString(gf_deployer)
 
@@ -86,7 +89,7 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
     logger(`Finished funding with whales.`)
   }
   await impersonateAccount(hre, protocol_owner)
-  await setupTestForwarder(deployments, config, getOrNull, protocol_owner)
+  await setupTestForwarder(deployer, config, getOrNull, protocol_owner)
 
   let seniorPool: SeniorPool = await getDeployedAsEthersContract<SeniorPool>(getOrNull, "SeniorPool")
 
@@ -409,7 +412,7 @@ async function createPoolForBorrower({
 }
 
 async function setupTestForwarder(
-  deployments: DeploymentsExtension,
+  deployer: ContractDeployer,
   config: GoldfinchConfig,
   getOrNull: any,
   protocol_owner: string
@@ -418,17 +421,16 @@ async function setupTestForwarder(
   if (await config.getAddress(CONFIG_KEYS.TrustedForwarder)) {
     return
   }
-  const deployResult = await deployments.deploy("TestForwarder", {
+  const forwarder = await deployer.deploy("TestForwarder", {
     from: protocol_owner,
     gasLimit: 4000000,
   })
-  logger(`Created Forwarder at ${deployResult.address}`)
+  logger(`Created Forwarder at ${forwarder.address}`)
 
-  const forwarder = await getDeployedAsEthersContract<TestForwarder>(getOrNull, "TestForwarder")
   assertNonNullable(forwarder)
   await forwarder.registerDomainSeparator("Defender", "1")
 
-  await updateConfig(config, "address", CONFIG_KEYS.TrustedForwarder, deployResult.address, {logger})
+  await updateConfig(config, "address", CONFIG_KEYS.TrustedForwarder, forwarder.address, {logger})
 }
 
 module.exports = main
