@@ -8,6 +8,7 @@ import {getBalanceAsOf, mapEventsToTx} from "./events"
 import {Contract, EventData} from "web3-eth-contract"
 import {Pool as PoolContract} from "@goldfinch-eng/protocol/typechain/web3/Pool"
 import {SeniorPool as SeniorPoolContract} from "@goldfinch-eng/protocol/typechain/web3/SeniorPool"
+import {StakingRewards as StakingRewardsContract} from "@goldfinch-eng/protocol/typechain/web3/StakingRewards"
 import {Fidu as FiduContract} from "@goldfinch-eng/protocol/typechain/web3/Fidu"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {TranchedPool} from "@goldfinch-eng/protocol/typechain/web3/TranchedPool"
@@ -381,5 +382,78 @@ async function getTranchedPoolAddressesForSeniorPoolCalc(pool: SeniorPool): Prom
   return tranchedPoolAddresses
 }
 
-export {fetchCapitalProviderData, fetchPoolData, SeniorPool, Pool, emptyCapitalProvider}
-export type {PoolData, CapitalProvider}
+interface Rewards {
+  totalUnvested: BigNumber
+  totalVested: BigNumber
+  totalPreviouslyVested: BigNumber
+  totalClaimed: BigNumber
+  startTime: string
+  endTime: string
+}
+
+interface StakedPosition {
+  id: string
+  amount: BigNumber
+  leverageMultiplier: BigNumber
+  lockedUntil: BigNumber
+  rewards: Rewards
+}
+
+function parseStakedPosition(
+  tokenId: string,
+  tuple: {0: string; 1: [string, string, string, string, string, string]; 2: string; 3: string}
+): StakedPosition {
+  return {
+    id: tokenId,
+    amount: new BigNumber(tuple[0]),
+    leverageMultiplier: new BigNumber(tuple[2]),
+    lockedUntil: new BigNumber(tuple[3]),
+    rewards: {
+      totalUnvested: new BigNumber(tuple[1][0]),
+      totalVested: new BigNumber(tuple[1][1]),
+      totalPreviouslyVested: new BigNumber(tuple[1][2]),
+      totalClaimed: new BigNumber(tuple[1][3]),
+      startTime: tuple[1][4],
+      endTime: tuple[1][5],
+    },
+  }
+}
+
+class StakingRewards {
+  goldfinchProtocol: GoldfinchProtocol
+  contract: StakingRewardsContract
+  address: string
+  _loaded: boolean
+  positions: StakedPosition[]
+
+  constructor(goldfinchProtocol: GoldfinchProtocol) {
+    this.goldfinchProtocol = goldfinchProtocol
+    this.contract = goldfinchProtocol.getContract<StakingRewardsContract>("StakingRewards")
+    this.address = goldfinchProtocol.getAddress("StakingRewards")
+    this._loaded = false
+    this.positions = []
+  }
+
+  async initialize(recipient: string) {
+    const stakedEvents = await this.getStakedEvents(recipient)
+    const tokenIds = stakedEvents.map((e) => e.returnValues.tokenId)
+    this.positions = await Promise.all(
+      tokenIds.map((tokenId) => {
+        return this.contract.methods
+          .positions(tokenId)
+          .call()
+          .then((res) => parseStakedPosition(tokenId, res))
+      })
+    )
+    this._loaded = true
+  }
+
+  async getStakedEvents(recipient: string): Promise<EventData[]> {
+    const eventNames = ["Staked"]
+    const events = await this.goldfinchProtocol.queryEvents(this.contract, eventNames, {user: recipient})
+    return events
+  }
+}
+
+export {fetchCapitalProviderData, fetchPoolData, SeniorPool, Pool, emptyCapitalProvider, StakingRewards}
+export type {PoolData, CapitalProvider, StakedPosition}
