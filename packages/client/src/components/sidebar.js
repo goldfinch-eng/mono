@@ -7,6 +7,8 @@ import {iconMenu} from "./icons.js"
 function Sidebar(props) {
   const {node, open: showSidebar, setOpen: setShowSidebar} = useCloseOnClickOrEsc()
 
+  const toggleRewards = process.env.REACT_APP_TOGGLE_REWARDS === "true"
+
   function closeSidebar() {
     setShowSidebar("")
   }
@@ -34,6 +36,11 @@ function Sidebar(props) {
         <NavLink to="/borrow" onClick={closeSidebar}>
           Borrow
         </NavLink>
+        {toggleRewards && (
+          <NavLink to="/rewards" onClick={closeSidebar}>
+            Rewards
+          </NavLink>
+        )}
         <NavLink to="/transactions" onClick={closeSidebar}>
           Transactions
         </NavLink>
