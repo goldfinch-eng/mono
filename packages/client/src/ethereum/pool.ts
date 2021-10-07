@@ -422,12 +422,14 @@ function parseStakedPosition(
 class StakingRewards {
   goldfinchProtocol: GoldfinchProtocol
   contract: StakingRewardsContract
+  address: string
   _loaded: boolean
   positions: StakedPosition[]
 
   constructor(goldfinchProtocol: GoldfinchProtocol) {
     this.goldfinchProtocol = goldfinchProtocol
     this.contract = goldfinchProtocol.getContract<StakingRewardsContract>("StakingRewards")
+    this.address = goldfinchProtocol.getAddress("StakingRewards")
     this._loaded = false
     this.positions = []
   }
