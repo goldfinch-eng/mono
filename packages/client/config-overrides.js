@@ -3,7 +3,7 @@ const {solidityLoader} = require("./config/webpack")
 const {override, overrideDevServer} = require("customize-cra")
 
 const allowOutsideImports = () => (config) => {
-  // allow importing from outside of app/src folder, ModuleScopePlugin prevents this.
+  // allow importing from outside of app/src folder, ModuleScopePlugin prevents this
   const scope = config.resolve.plugins.findIndex((o) => o.constructor.name === "ModuleScopePlugin")
   if (scope > -1) {
     config.resolve.plugins.splice(scope, 1)
