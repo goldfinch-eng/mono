@@ -3,7 +3,7 @@ import BigNumber from "bignumber.js"
 
 import {AppContext} from "../App"
 import {getOneInchContract} from "../ethereum/oneInch"
-import {roundUpPenny, displayNumber} from "../utils"
+import {roundUpPenny, displayNumber, assertNonNullable} from "../utils"
 
 function useOneInchQuote({from, to, decimalAmount, parts = 10}) {
   const {network} = useContext(AppContext)
@@ -11,6 +11,7 @@ function useOneInchQuote({from, to, decimalAmount, parts = 10}) {
   const [isLoading, setLoading] = useState(false)
 
   useEffect(() => {
+    assertNonNullable(network)
     const oneInch = getOneInchContract(network.name)
 
     async function getExpectedReturn() {
@@ -41,12 +42,12 @@ function useOneInchQuote({from, to, decimalAmount, parts = 10}) {
 // The function estimates a reasonable amount by getting a quote from 1Inch, calculating the spread,
 // and adjusting the target amount by the spread + some pre-defined padding.
 function useAmountTargetingMinAmount({from, to, targetMinAmount, padding = new BigNumber("0.0005")}) {
-  const [amount, setAmount] = useState(null)
+  const [amount, setAmount] = useState<BigNumber | null>(null)
   let [quote, isLoading] = useOneInchQuote({from, to, decimalAmount: targetMinAmount})
 
   useEffect(() => {
     if (quote) {
-      let decimalReturnAmount = to.decimalAmount(quote.returnAmount)
+      let decimalReturnAmount = to.decimalAmount((quote as any).returnAmount)
       let spread = targetMinAmount.minus(decimalReturnAmount).dividedBy(decimalReturnAmount)
       let amount = targetMinAmount.plus(targetMinAmount.times(spread))
       let paddedAmount = new BigNumber(roundUpPenny(amount.plus(amount.times(padding))))

@@ -5,6 +5,7 @@ import useCurrencyUnlocked from "./useCurrencyUnlocked"
 import {renderHook, act} from "@testing-library/react-hooks"
 
 class FakeERC20 {
+  allowance: any
   constructor(allowance) {
     this.allowance = allowance || new BigNumber(100)
   }
@@ -72,6 +73,7 @@ describe("useCurrencyUnlocked", () => {
 
       const {result, waitForNextUpdate} = renderHook(
         () =>
+          // @ts-expect-error ts-migrate(2345) FIXME: Argument of type '{ owner: string; spender: string... Remove this comment to see the full error message
           useCurrencyUnlocked(erc20, {
             owner: "owner",
             spender: "spender",
@@ -103,6 +105,7 @@ describe("useCurrencyUnlocked", () => {
 
       // Simulate user approving for greater than minimum
       erc20.allowance = allowance.plus(2)
+      // @ts-expect-error ts-migrate(2349) FIXME: This expression is not callable.
       await act(() => refreshUnlocked())
       ;[unlocked, refreshUnlocked] = result.current
       expect(unlocked).toBe(true)

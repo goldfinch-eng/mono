@@ -1,11 +1,13 @@
 import React, {useContext} from "react"
-import {iconX} from "./icons.js"
+import {iconX} from "./icons"
 import {AppContext} from "../App"
+import {assertNonNullable} from "../utils"
 
 function NetworkErrors(props) {
   const {networkMonitor} = useContext(AppContext)
 
   function errorItem(error) {
+    assertNonNullable(networkMonitor)
     return (
       <div key={error.id} className="error-item">
         <div className="error-label">Error</div>

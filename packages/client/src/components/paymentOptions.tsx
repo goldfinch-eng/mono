@@ -81,6 +81,7 @@ function PaymentOptions(props) {
   }, [getValueOptions, selected, creditLine, onSelect, formMethods])
 
   function getValueOptionsList() {
+    // @ts-expect-error ts-migrate(2554) FIXME: Expected 1 arguments, but got 2.
     const valueOptions = getValueOptions(creditLine, selected)
     return valueOptions.map((valueOption, index) => {
       return (

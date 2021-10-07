@@ -1,10 +1,10 @@
 import {useContext} from "react"
 import {AppContext} from "../App"
-import InfoSection from "./infoSection.js"
+import InfoSection from "./infoSection"
 import RecentRepayments from "./recentRepayments"
 import {usdcFromAtomic} from "../ethereum/erc20"
 import {displayDollars, displayPercent} from "../utils"
-import {iconOutArrow} from "./icons.js"
+import {iconOutArrow} from "./icons"
 import {PoolData} from "../ethereum/pool"
 import {BigNumber} from "bignumber.js"
 
@@ -40,6 +40,7 @@ function PoolStatus({poolData}: PoolStatusProps) {
   return (
     <div className={`pool-status background-container ${poolData?.loaded ? "" : "placeholder"}`}>
       <h2>Pool Status</h2>
+      {/* @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call. */}
       <InfoSection rows={deriveRows()} />
       <RecentRepayments />
       <div className="pool-links">

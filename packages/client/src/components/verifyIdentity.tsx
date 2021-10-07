@@ -8,7 +8,7 @@ import DefaultGoldfinchClient from "../hooks/useGoldfinchClient"
 import {Session, useSignIn} from "../hooks/useSignIn"
 import {assertNonNullable} from "../utils"
 import ConnectionNotice from "./connectionNotice"
-import {iconAlert, iconCircleCheck, iconClock} from "./icons.js"
+import {iconAlert, iconCircleCheck, iconClock} from "./icons"
 import LoadingButton from "./loadingButton"
 import TransactionForm from "./transactionForm"
 

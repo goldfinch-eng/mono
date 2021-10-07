@@ -2,7 +2,7 @@ import React from "react"
 import {NavLink} from "react-router-dom"
 import useCloseOnClickOrEsc from "../hooks/useCloseOnClickOrEsc"
 import logoPurp from "../images/logomark-purp.svg"
-import {iconMenu} from "./icons.js"
+import {iconMenu} from "./icons"
 
 function Sidebar(props) {
   const {node, open: showSidebar, setOpen: setShowSidebar} = useCloseOnClickOrEsc()
@@ -20,6 +20,7 @@ function Sidebar(props) {
   }
 
   return (
+    // @ts-expect-error ts-migrate(2322) FIXME: Type 'RefObject<HTMLElement>' is not assignable to... Remove this comment to see the full error message
     <div ref={node} className={`sidebar ${showSidebar}`}>
       <button className="open-sidebar" onClick={toggleSidebar}>
         {iconMenu}

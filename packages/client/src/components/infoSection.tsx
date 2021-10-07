@@ -11,7 +11,7 @@ class InfoSection extends Component {
   }
 
   render() {
-    return <div className="info-section">{this.props.rows.map(this.convertRowToItem)}</div>
+    return <div className="info-section">{(this.props as any).rows.map(this.convertRowToItem)}</div>
   }
 }
 

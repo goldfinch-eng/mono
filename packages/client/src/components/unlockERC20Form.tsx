@@ -3,7 +3,7 @@ import BigNumber from "bignumber.js"
 import {MAX_UINT} from "../ethereum/utils"
 import LoadingButton from "./loadingButton"
 import {useForm, FormProvider} from "react-hook-form"
-import {iconInfo} from "./icons.js"
+import {iconInfo} from "./icons"
 import useSendFromUser from "../hooks/useSendFromUser"
 import {usdcFromAtomic} from "../ethereum/erc20"
 
@@ -17,6 +17,7 @@ function UnlockERC20Form(props) {
     return sendFromUser(erc20.contract.methods.approve(unlockAddress, MAX_UINT), {
       type: "Approval",
       amount: usdcFromAtomic(MAX_UINT),
+      // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'BN' is not assignable to paramet... Remove this comment to see the full error message
       amountBN: new BigNumber(MAX_UINT),
       erc20: erc20,
     }).then(onUnlock)

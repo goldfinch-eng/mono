@@ -22,6 +22,7 @@ function CurrencyDropdown(props) {
   const [selected, setSelected] = useState(Tickers.USDC)
 
   return (
+    // @ts-expect-error ts-migrate(2739) FIXME: Type '{ className: string; selectedClassName: any;... Remove this comment to see the full error message
     <Dropdown
       className={`currency-dropdown ${className}`}
       selectedClassName={selectedClassName}

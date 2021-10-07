@@ -1,13 +1,14 @@
 import React, {useState, useContext, useEffect} from "react"
-import CreditActionsContainer from "./creditActionsContainer.js"
+import CreditActionsContainer from "./creditActionsContainer"
 import CreditActionsMultipleContainer from "./creditActionsMultipleContainer"
-import CreditStatus from "./creditStatus.js"
+import CreditStatus from "./creditStatus"
 import ConnectionNotice from "./connectionNotice"
 import BorrowHeader from "./borrowHeader"
 import {fetchCreditLineData, defaultCreditLine} from "../ethereum/creditLine"
 import {AppContext} from "../App"
 import CreditLinesList from "./creditLinesList"
 import {useBorrow} from "../contexts/BorrowContext"
+import {assertNonNullable} from "../utils"
 
 function Borrow(props) {
   const {creditDesk, user, goldfinchProtocol} = useContext(AppContext)
@@ -16,7 +17,7 @@ function Borrow(props) {
   const {borrowStore, setBorrowStore} = useBorrow()
 
   async function updateBorrowerAndCreditLine() {
-    const borrower = user.borrower
+    const borrower = (user as any).borrower
     if (borrower && creditDesk.loaded) {
       const borrowerCreditLines = borrower.creditLinesAddresses
       setCreditLinesAddresses(borrowerCreditLines)
@@ -48,6 +49,7 @@ function Borrow(props) {
   }
 
   async function changeCreditLine(clAddresses) {
+    assertNonNullable(goldfinchProtocol)
     setCreditLine(await fetchCreditLineData(clAddresses, goldfinchProtocol))
   }
 
@@ -56,7 +58,7 @@ function Borrow(props) {
   if (creditLineData.isMultiple) {
     creditActionsContainer = (
       <CreditActionsMultipleContainer
-        borrower={user.borrower}
+        borrower={(user as any).borrower}
         creditLine={creditLineData}
         actionComplete={actionComplete}
       />
@@ -64,7 +66,11 @@ function Borrow(props) {
     creditLineStatus = <CreditLinesList creditLine={creditLineData} user={user} changeCreditLine={changeCreditLine} />
   } else {
     creditActionsContainer = (
-      <CreditActionsContainer borrower={user.borrower} creditLine={creditLineData} actionComplete={actionComplete} />
+      <CreditActionsContainer
+        borrower={(user as any).borrower}
+        creditLine={creditLineData}
+        actionComplete={actionComplete}
+      />
     )
     creditLineStatus = <CreditStatus creditLine={creditLineData} user={user} />
   }
@@ -79,7 +85,7 @@ function Borrow(props) {
           changeCreditLine={changeCreditLine}
         />
       </div>
-      <ConnectionNotice creditLine={creditLineData} requireUnlock={!!user.borrower} />
+      <ConnectionNotice creditLine={creditLineData} requireUnlock={!!(user as any).borrower} />
       {creditActionsContainer}
       {creditLineStatus}
     </div>
