@@ -22,7 +22,7 @@ import SeniorPoolView from "./components/pools/seniorPoolView"
 import VerifyIdentity from "./components/verifyIdentity"
 import TranchedPoolView from "./components/pools/tranchedPoolView"
 import {SessionData} from "./types/session.js"
-import {CommunityRewards, MerkleDistributor} from "./ethereum/communityRewards/communityRewards"
+import {CommunityRewards, MerkleDistributor} from "./ethereum/communityRewards"
 
 export interface NetworkConfig {
   name?: string
