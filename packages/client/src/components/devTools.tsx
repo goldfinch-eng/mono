@@ -49,7 +49,6 @@ export default function DevTools(props) {
                   }),
                 })
                 setDisabled(false)
-                window.location.reload()
               }}
             >
               setupForTesting

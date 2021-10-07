@@ -70,6 +70,7 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
     throw new Error("`TEST_USERS` is deprecated. Use `TEST_USER` instead.")
   }
   const borrower = options?.overrideAddress || process.env.TEST_USER || protocol_owner
+  const requestFromClient = !!options?.overrideAddress
 
   const {erc20, erc20s} = await getERC20s({getOrNull, chainId})
 
@@ -87,7 +88,7 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   await impersonateAccount(hre, protocol_owner)
   await setupTestForwarder(deployments, config, getOrNull, protocol_owner)
 
-  let seniorPool = await getDeployedAsEthersContract<SeniorPool>(getOrNull, "SeniorPool")
+  let seniorPool: SeniorPool = await getDeployedAsEthersContract<SeniorPool>(getOrNull, "SeniorPool")
 
   const protocolOwnerSigner = ethers.provider.getSigner(protocol_owner)
   assertNonNullable(protocolOwnerSigner)
@@ -123,8 +124,11 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
   await writePoolMetadata({pool: empty, borrower: "Empty"})
 
   await addUsersToGoList(config, [borrower])
-  await fundAddressAndDepositToCommonPool({erc20, address: borrower, commonPool, seniorPool})
-  if (options?.overrideAddress) {
+
+  if (!requestFromClient) {
+    await fundAddressAndDepositToCommonPool({erc20, address: borrower, commonPool, seniorPool})
+  }
+  if (requestFromClient) {
     await createBorrowerContractAndPool({
       erc20,
       address: borrower,
@@ -134,37 +138,39 @@ async function main({getNamedAccounts, deployments, getChainId}: HardhatRuntimeE
     })
   }
 
-  // Have the senior fund invest
-  seniorPool = seniorPool.connect(protocolOwnerSigner)
-  const txn = await commonPool.lockJuniorCapital()
-  await txn.wait()
-  await seniorPool.invest(commonPool.address)
-  const filter = commonPool.filters.DepositMade(seniorPool.address)
-  const depositLog = (await ethers.provider.getLogs(filter))[0]
-  assertNonNullable(depositLog)
-  const depositEvent = commonPool.interface.parseLog(depositLog)
-  const tokenId = depositEvent.args.tokenId
+  if (!requestFromClient) {
+    // Have the senior fund invest
+    seniorPool = seniorPool.connect(protocolOwnerSigner)
+    const txn = await commonPool.lockJuniorCapital()
+    await txn.wait()
+    await seniorPool.invest(commonPool.address)
+    const filter = commonPool.filters.DepositMade(seniorPool.address)
+    const depositLog = (await ethers.provider.getLogs(filter))[0]
+    assertNonNullable(depositLog)
+    const depositEvent = commonPool.interface.parseLog(depositLog)
+    const tokenId = depositEvent.args.tokenId
 
-  await commonPool.lockPool()
-  const amount = (await commonPool.limit()).div(2)
-  await commonPool.drawdown(amount)
+    await commonPool.lockPool()
+    const amount = (await commonPool.limit()).div(2)
+    await commonPool.drawdown(amount)
 
-  await advanceTime({days: 32})
+    await advanceTime({days: 32})
 
-  // Have the borrower repay a portion of their loan
-  await impersonateAccount(hre, protocol_owner)
-  const borrowerSigner = ethers.provider.getSigner(protocol_owner)
-  assertNonNullable(borrowerSigner)
-  const bwrCon = (await ethers.getContractAt("Borrower", protocolBorrowerCon)).connect(borrowerSigner) as Borrower
-  const payAmount = new BN(100).mul(USDCDecimals)
-  await (erc20 as TestERC20).connect(borrowerSigner).approve(bwrCon.address, payAmount.mul(new BN(2)).toString())
-  await bwrCon.pay(commonPool.address, payAmount.toString())
+    // Have the borrower repay a portion of their loan
+    await impersonateAccount(hre, protocol_owner)
+    const borrowerSigner = ethers.provider.getSigner(protocol_owner)
+    assertNonNullable(borrowerSigner)
+    const bwrCon = (await ethers.getContractAt("Borrower", protocolBorrowerCon)).connect(borrowerSigner) as Borrower
+    const payAmount = new BN(100).mul(USDCDecimals)
+    await (erc20 as TestERC20).connect(borrowerSigner).approve(bwrCon.address, payAmount.mul(new BN(2)).toString())
+    await bwrCon.pay(commonPool.address, payAmount.toString())
 
-  await advanceTime({days: 32})
+    await advanceTime({days: 32})
 
-  await bwrCon.pay(commonPool.address, payAmount.toString())
+    await bwrCon.pay(commonPool.address, payAmount.toString())
 
-  await seniorPool.redeem(tokenId)
+    await seniorPool.redeem(tokenId)
+  }
 }
 
 async function getERC20s({chainId, getOrNull}) {
@@ -196,8 +202,9 @@ async function fundAddressAndDepositToCommonPool({
   erc20: Contract
   address: string
   commonPool: any
-  seniorPool: any
+  seniorPool: SeniorPool
 }): Promise<void> {
+  logger(`Deposit into senior fund address:${address}`)
   // fund with address into sr fund
   await impersonateAccount(hre, address)
   const signer = ethers.provider.getSigner(address)
@@ -224,7 +231,7 @@ async function createBorrowerContractAndPool({
   erc20: Contract
   address: string
   getOrNull: any
-  seniorPool: any
+  seniorPool: SeniorPool
   goldfinchFactory: GoldfinchFactory
 }): Promise<void> {
   const protocol_owner = await getProtocolOwner()
@@ -288,8 +295,10 @@ async function writePoolMetadata({
   } catch (error) {
     metadata = {}
   }
+  const name = `${borrower.slice(0, 6)}: ${_.sample(names)}`
+  logger(`Write metadata for ${pool.address}:${name}`)
   metadata[pool.address.toLowerCase()] = {
-    name: `${borrower.slice(0, 6)}: ${_.sample(names)}`,
+    name,
     category: _.sample(categories),
     icon: _.sample(icons),
     description,
