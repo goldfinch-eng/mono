@@ -13,7 +13,7 @@ function DepositStatus(props: DepositStatusProps) {
 
   let apyDisplay: string, estimatedAPY: BigNumber | null
   if (props.poolData?.loaded) {
-    estimatedAPY = props.poolData.estimatedApy
+    estimatedAPY = props.poolData.estimatedApy.plus(props.poolData.estimatedApyFromGfi || new BigNumber(0))
     apyDisplay = `${displayPercent(estimatedAPY)}`
   } else {
     estimatedAPY = null
@@ -41,7 +41,9 @@ function DepositStatus(props: DepositStatusProps) {
         <div className="deposit-status-item">
           <div className="label">Est. Annual Growth</div>
           <div className="value">{estimatedGrowthDisplay}</div>
-          <div className="sub-value">{`${apyDisplay} APY`}</div>
+          <div className="sub-value">{`${apyDisplay} APY${
+            props.poolData?.estimatedApyFromGfi ? " (with GFI)" : ""
+          }`}</div>
         </div>
       </div>
     )

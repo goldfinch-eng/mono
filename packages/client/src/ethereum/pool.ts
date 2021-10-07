@@ -166,6 +166,7 @@ interface PoolData {
   cumulativeDrawdowns: BigNumber
   estimatedTotalInterest: BigNumber
   estimatedApy: BigNumber
+  estimatedApyFromGfi: BigNumber | undefined
   defaultRate: BigNumber
   poolEvents: EventData[]
   assetsAsOf: typeof assetsAsOf
@@ -197,6 +198,7 @@ async function fetchPoolData(pool: SeniorPool, erc20: Contract): Promise<PoolDat
   let poolEvents = await getAllDepositAndWithdrawalEvents(pool)
   let estimatedTotalInterest = await getEstimatedTotalInterest(pool)
   let estimatedApy = estimatedTotalInterest.dividedBy(totalPoolAssets)
+  const estimatedApyFromGfi = undefined // TODO[PR]
   let defaultRate = cumulativeWritedowns.dividedBy(cumulativeDrawdowns)
 
   let loaded = true
@@ -216,6 +218,7 @@ async function fetchPoolData(pool: SeniorPool, erc20: Contract): Promise<PoolDat
     remainingCapacity,
     estimatedTotalInterest,
     estimatedApy,
+    estimatedApyFromGfi,
     defaultRate,
     loaded,
     pool,

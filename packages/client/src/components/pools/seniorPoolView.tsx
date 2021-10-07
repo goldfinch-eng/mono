@@ -1,7 +1,6 @@
-import {useState, useEffect, useContext} from "react"
-import EarnActionsContainer from "../earnActionsContainer"
-import PoolStatus from "../poolStatus"
-import ConnectionNotice from "../connectionNotice"
+import {useContext, useEffect, useState} from "react"
+import {AppContext} from "../../App"
+import {usdcFromAtomic} from "../../ethereum/erc20"
 import {
   CapitalProvider,
   emptyCapitalProvider,
@@ -9,12 +8,14 @@ import {
   PoolData,
   SeniorPool,
 } from "../../ethereum/pool"
-import {AppContext} from "../../App"
-import InvestorNotice from "../investorNotice"
-import {assertNonNullable, displayDollars} from "../../utils"
-import {usdcFromAtomic} from "../../ethereum/erc20"
 import {useStaleWhileRevalidating} from "../../hooks/useAsync"
 import {eligibleForSeniorPool, useKYC} from "../../hooks/useKYC"
+import {assertNonNullable, displayDollars} from "../../utils"
+import ConnectionNotice from "../connectionNotice"
+import EarnActionsContainer from "../earnActionsContainer"
+import InvestorNotice from "../investorNotice"
+import PoolStatus from "../poolStatus"
+import StakeFiduBanner from "../stakeFiduBanner"
 
 function SeniorPoolView(): JSX.Element {
   const {pool, user, goldfinchConfig} = useContext(AppContext)
@@ -86,6 +87,7 @@ function SeniorPoolView(): JSX.Element {
         actionComplete={actionComplete}
         kyc={kyc}
       />
+      <StakeFiduBanner poolData={poolData} capitalProvider={capitalProvider} />
       <PoolStatus poolData={poolData} />
     </div>
   )

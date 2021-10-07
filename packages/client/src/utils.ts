@@ -20,6 +20,9 @@ function displayNumber(val, decimals) {
     decimals = valFloat.toString().split(".")[1]?.length || 0
   }
 
+  // TODO[PR] Should we have a similar check here for `valFloat < 0.01 && valFloat > 0`,
+  // like we do in `displayDollars()`?
+
   return commaFormat(valFloat.toFixed(decimals))
 }
 

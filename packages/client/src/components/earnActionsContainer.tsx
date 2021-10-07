@@ -12,8 +12,8 @@ import {eligibleForSeniorPool} from "../hooks/useKYC"
 interface EarnActionsContainerProps {
   actionComplete: () => Promise<any>
   capitalProvider: CapitalProvider
-  poolData?: PoolData
-  kyc?: KYC
+  poolData: PoolData | undefined
+  kyc: KYC | undefined
 }
 
 function EarnActionsContainer(props: EarnActionsContainerProps) {
