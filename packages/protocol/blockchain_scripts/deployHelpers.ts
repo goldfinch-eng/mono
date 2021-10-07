@@ -445,10 +445,6 @@ class ContractDeployer {
   async deploy(contractName: string, options): Promise<Contract> {
     const result = await this.hre.deployments.deploy(contractName, options)
     this.logger(`${contractName} was deployed to: ${result.address}`)
-    await this.hre.tenderly.persistArtifacts({
-      name: contractName,
-      address: result.address,
-    })
     return ethers.getContractAt(result.abi, result.address)
   }
 

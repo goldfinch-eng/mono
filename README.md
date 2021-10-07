@@ -84,6 +84,26 @@ Changes to smart contracts will require re-compiling and re-deploying. You can d
 by looking at the terminal output of the `@goldfinch-eng/protocol` start command. Search "USDC Address", and you should see something. Take that address, and
 then go to `Add Token` in Metamask, and paste it in there. Your fake USDC balance should show up.*
 
+### Tenderly debugging
+We have the ability to debug/profile local transactions via [Tenderly](Tenderly.co). To do this, get hold of a transaction hash and then run:
+
+```bash
+# Ensure tenderly-cli is installed via `brew tap tenderly/tenderly && brew install tenderly`
+# And run this from the protocol directory
+tenderly export --force <txhash>
+```
+
+To get a local transaction, run the app as normal, and make the transaction via the frontend, and get the hash from metamask after it's confirmed.
+
+To get a test transaction, write a MainnetForking test, log the transaction hash in the test. Then run the mainnet forking test via:
+
+```
+# Run from the protocol directory
+npm run tenderly-test
+```
+
+Pick up the transaction hash from the output of the test and run export as above
+
 ### Gasless transactions
 
 To support gasless transactions, we need to collect the signature from the client, perform some server side checks to validate
