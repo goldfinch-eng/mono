@@ -1,5 +1,6 @@
 import {useContext} from "react"
 import {AppContext} from "../App"
+import {User} from "../ethereum/user"
 import {assertNonNullable} from "../utils"
 import {AsyncResult, useAsync} from "./useAsync"
 import DefaultGoldfinchClient, {KYC} from "./useGoldfinchClient"
@@ -21,6 +22,8 @@ export function useKYC(): AsyncResult<KYC> {
   return result
 }
 
-export function eligibleForSeniorPool(kyc: KYC | undefined) {
-  return kyc?.status === "approved" && kyc?.countryCode !== "US"
+export function eligibleForSeniorPool(kyc: KYC | undefined, user: User) {
+  const approved = kyc?.status === "approved" && kyc?.countryCode !== "US"
+  const goListed = user.goListed
+  return approved || goListed
 }
