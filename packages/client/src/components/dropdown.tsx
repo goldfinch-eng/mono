@@ -14,8 +14,8 @@ interface DropdownProps {
   selected?: any
   options: DropdownOption[]
   onSelect?(value: any): void
-  highlightSelected: boolean
-  arrow: boolean
+  highlightSelected?: boolean
+  arrow?: boolean
 }
 
 function Dropdown({
