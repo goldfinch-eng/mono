@@ -24,7 +24,7 @@ import PROTOCOL_CONFIG from "../protocol_config.json"
 import {CONFIG_KEYS} from "./configKeys"
 import {GoldfinchConfig} from "../typechain/ethers"
 import {DeploymentsExtension, DeployResult} from "hardhat-deploy/types"
-import {Contract, Signer} from "ethers"
+import {Contract, BaseContract, Signer} from "ethers"
 import {
   AssertionError,
   assertIsString,
@@ -442,10 +442,10 @@ class ContractDeployer {
     return this.hre.getChainId()
   }
 
-  async deploy(contractName: string, options): Promise<Contract> {
+  async deploy<T extends BaseContract | Contract = Contract>(contractName: string, options): Promise<T> {
     const result = await this.hre.deployments.deploy(contractName, options)
     this.logger(`${contractName} was deployed to: ${result.address}`)
-    return ethers.getContractAt(result.abi, result.address)
+    return (await ethers.getContractAt(result.abi, result.address)) as T
   }
 
   async deployLibrary(libraryName: string, options): Promise<DeployResult> {

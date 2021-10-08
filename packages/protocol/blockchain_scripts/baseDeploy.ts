@@ -110,7 +110,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
     }
 
     assertIsString(gf_deployer)
-    const config = (await deployer.deploy(contractName, {from: gf_deployer})) as GoldfinchConfig
+    const config = await deployer.deploy<GoldfinchConfig>(contractName, {from: gf_deployer})
     const checkAddress = await config.getAddress(CONFIG_KEYS.TreasuryReserve)
     if (checkAddress === ZERO_ADDRESS) {
       logger("Config newly deployed, initializing...")
@@ -152,7 +152,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
     const accountant = await deployer.deployLibrary("Accountant", {from: gf_deployer, args: []})
     const protocol_owner = await getProtocolOwner()
 
-    const goldfinchFactory = await deployer.deploy("GoldfinchFactory", {
+    const goldfinchFactory = await deployer.deploy<GoldfinchFactory>("GoldfinchFactory", {
       from: gf_deployer,
       proxy: {
         owner: gf_deployer,
@@ -170,7 +170,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
     const goldfinchFactoryAddress = goldfinchFactory.address
 
     await updateConfig(config, "address", CONFIG_KEYS.GoldfinchFactory, goldfinchFactoryAddress, {logger})
-    return goldfinchFactory as GoldfinchFactory
+    return goldfinchFactory
   }
 
   async function deployCreditDesk(deployer: ContractDeployer, {config}: DeployOpts) {
@@ -223,7 +223,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
     logger("About to deploy Fidu...")
     assertIsString(gf_deployer)
     const protocol_owner = await getProtocolOwner()
-    const fidu = await deployer.deploy("Fidu", {
+    const fidu = await deployer.deploy<Fidu>("Fidu", {
       from: gf_deployer,
       proxy: {
         execute: {
@@ -237,7 +237,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
     const fiduAddress = fidu.address
 
     await updateConfig(config, "address", CONFIG_KEYS.Fidu, fiduAddress, {logger})
-    return fidu as Fidu
+    return fidu
   }
 
   async function deployGFI(deployer: ContractDeployer, {config}: {config: GoldfinchConfig}): Promise<GFI> {
@@ -245,7 +245,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
     assertIsString(gf_deployer)
     const initialCap = "100000000000000000000000000"
     const protocol_owner = await getProtocolOwner()
-    const gfi = await deployer.deploy("GFI", {
+    const gfi = await deployer.deploy<GFI>("GFI", {
       from: gf_deployer,
       gasLimit: 4000000,
       args: [
@@ -256,7 +256,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
       ],
     })
     await updateConfig(config, "address", CONFIG_KEYS.GFI, gfi.address, {logger})
-    return gfi as GFI
+    return gfi
   }
 
   async function deployLPStakingRewards(
@@ -266,7 +266,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
     logger("About to deploy LPStakingRewards...")
     assertIsString(gf_deployer)
     const protocol_owner = await getProtocolOwner()
-    const stakingRewards = await deployer.deploy("StakingRewards", {
+    const stakingRewards = await deployer.deploy<StakingRewards>("StakingRewards", {
       from: gf_deployer,
       gasLimit: 4000000,
       proxy: {
@@ -278,7 +278,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
         },
       },
     })
-    return stakingRewards as StakingRewards
+    return stakingRewards
   }
 
   async function deployCommunityRewards(
@@ -514,7 +514,7 @@ async function deployTransferRestrictedVault(
   const contractName = "TransferRestrictedVault"
 
   logger(`About to deploy ${contractName}...`)
-  const contract = await deployer.deploy(contractName, {
+  return await deployer.deploy<TransferRestrictedVault>(contractName, {
     from: gf_deployer,
     proxy: {
       execute: {
@@ -525,7 +525,6 @@ async function deployTransferRestrictedVault(
       },
     },
   })
-  return contract as TransferRestrictedVault
 }
 
 async function deployPoolTokens(deployer: ContractDeployer, {config}: DeployOpts) {
@@ -594,7 +593,7 @@ async function deploySeniorPool(deployer: ContractDeployer, {config, fidu}: Depl
   assertIsString(protocol_owner)
   assertIsString(gf_deployer)
   const accountant = await deployer.deployLibrary("Accountant", {from: gf_deployer, args: []})
-  const seniorPool = await deployer.deploy(contractName, {
+  const seniorPool = await deployer.deploy<SeniorPool>(contractName, {
     from: gf_deployer,
     proxy: {
       owner: protocol_owner,
@@ -613,7 +612,7 @@ async function deploySeniorPool(deployer: ContractDeployer, {config, fidu}: Depl
     logger(`Granting minter role to ${contractName}`)
     await grantMinterRoleToPool(fidu, seniorPool)
   }
-  return seniorPool as SeniorPool
+  return seniorPool
 }
 
 async function deployFixedLeverageRatioStrategy(
@@ -626,11 +625,11 @@ async function deployFixedLeverageRatioStrategy(
   const contractName = "FixedLeverageRatioStrategy"
 
   assertIsString(gf_deployer)
-  const strategy = await deployer.deploy(contractName, {
+  const strategy = await deployer.deploy<FixedLeverageRatioStrategy>(contractName, {
     from: gf_deployer,
   })
   await (await strategy.initialize(protocol_owner, config.address)).wait()
-  return strategy as FixedLeverageRatioStrategy
+  return strategy
 }
 
 async function deployDynamicLeverageRatioStrategy(deployer: ContractDeployer): Promise<DynamicLeverageRatioStrategy> {
@@ -640,11 +639,11 @@ async function deployDynamicLeverageRatioStrategy(deployer: ContractDeployer): P
   const contractName = "DynamicLeverageRatioStrategy"
 
   assertIsString(gf_deployer)
-  const strategy = await deployer.deploy(contractName, {
+  const strategy = await deployer.deploy<DynamicLeverageRatioStrategy>(contractName, {
     from: gf_deployer,
   })
   await (await strategy.initialize(protocol_owner)).wait()
-  return strategy as DynamicLeverageRatioStrategy
+  return strategy
 }
 
 async function deploySeniorPoolStrategies(
@@ -665,12 +664,12 @@ async function deployBorrower(deployer: ContractDeployer, {config}: DeployOpts):
   const {gf_deployer} = await deployer.getNamedAccounts()
 
   assertIsString(gf_deployer)
-  const borrower = await deployer.deploy(contractName, {
+  const borrower = await deployer.deploy<Borrower>(contractName, {
     from: gf_deployer,
   })
   await updateConfig(config, "address", CONFIG_KEYS.BorrowerImplementation, borrower.address, {logger})
 
-  return borrower as Borrower
+  return borrower
 }
 
 export {
