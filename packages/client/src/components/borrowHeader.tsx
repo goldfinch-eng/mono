@@ -51,7 +51,6 @@ function BorrowHeader(props): JSX.Element {
     return (
       <div>
         <span>Credit Line /</span>
-        {/* @ts-expect-error ts-migrate(2739) FIXME: Type '{ selected: any; options: { value: any; sele... Remove this comment to see the full error message */}
         <Dropdown
           selected={props.selectedCreditLine.address}
           options={options}

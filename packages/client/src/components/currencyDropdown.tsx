@@ -2,9 +2,25 @@ import React, {useState} from "react"
 import {Tickers} from "../ethereum/erc20"
 import Dropdown from "./dropdown"
 
-function CurrencyDropdown(props) {
-  const {onChange, className = "", selectedClassName = ""} = props
+interface CurrencyDropdownProps {
+  onChange: (val: any) => any
+  className?: string
+  selectedClassName?: string
+}
 
+/**
+ * A component to display currencies available for use
+ * @param props
+ * @param props.onChange callback used when the selected currency changes
+ * @param props.className classname to apply to dropdown
+ * @param props.selectedClassName classname to apply to selected element
+ * @returns component
+ */
+export default function CurrencyDropdown({
+  onChange,
+  className = "",
+  selectedClassName = "",
+}: CurrencyDropdownProps): JSX.Element {
   const options = [
     {
       value: Tickers.USDC,
@@ -22,7 +38,6 @@ function CurrencyDropdown(props) {
   const [selected, setSelected] = useState(Tickers.USDC)
 
   return (
-    // @ts-expect-error ts-migrate(2739) FIXME: Type '{ className: string; selectedClassName: any;... Remove this comment to see the full error message
     <Dropdown
       className={`currency-dropdown ${className}`}
       selectedClassName={selectedClassName}
@@ -35,5 +50,3 @@ function CurrencyDropdown(props) {
     />
   )
 }
-
-export default CurrencyDropdown
