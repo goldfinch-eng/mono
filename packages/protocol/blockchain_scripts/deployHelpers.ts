@@ -11,7 +11,7 @@
 
 import {ethers, getChainId, getNamedAccounts} from "hardhat"
 type Ethers = typeof ethers
-import {web3} from "hardhat"
+import hre, {web3, artifacts} from "hardhat"
 import BN from "bn.js"
 const USDCDecimals = new BN(String(1e6))
 const ETHDecimals = new BN(String(1e18))
@@ -20,12 +20,11 @@ const INTEREST_DECIMALS = new BN(String(1e18))
 const DEFENDER_API_KEY = process.env.DEFENDER_API_KEY || "A2UgCPgn8jQbkSVuSCxEMhFmivdV9C6d"
 const DEFENDER_API_SECRET = process.env.DEFENDER_API_SECRET
 import {AdminClient} from "defender-admin-client"
-import hre from "hardhat"
-const {artifacts} = hre
 import PROTOCOL_CONFIG from "../protocol_config.json"
 import {CONFIG_KEYS} from "./configKeys"
 import {GoldfinchConfig} from "../typechain/ethers"
 import {DeploymentsExtension} from "hardhat-deploy/types"
+
 import {Contract, Signer} from "ethers"
 import {
   AssertionError,
