@@ -18,7 +18,7 @@ import {
   GetContractOptions,
   TRUFFLE_CONTRACT_PROVIDER,
 } from "../blockchain_scripts/deployHelpers"
-import {DeploymentsExtension} from "hardhat-deploy/dist/types"
+import {DeploymentsExtension} from "hardhat-deploy/types"
 import {
   CreditDeskInstance,
   ERC20Instance,
