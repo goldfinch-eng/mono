@@ -137,7 +137,7 @@ export const strategies: ConnectionNoticeStrategy[] = [
         return false
       }
       const kycStatus = kyc.value
-      return !requireKYC.condition(kycStatus) && !user.goListed
+      return !requireKYC.condition(kycStatus)
     },
     render: (_props) => <VerifyAddressBanner />,
   },
