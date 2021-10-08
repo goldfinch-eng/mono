@@ -3,7 +3,7 @@ const {solidityLoader} = require("./config/webpack")
 const {override, overrideDevServer} = require("customize-cra")
 
 const allowOutsideImports = () => (config) => {
-  // allow importing from outside of app/src folder, ModuleScopePlugin prevents this.
+  // allow importing from outside of app/src folder, ModuleScopePlugin prevents this
   const scope = config.resolve.plugins.findIndex((o) => o.constructor.name === "ModuleScopePlugin")
   if (scope > -1) {
     config.resolve.plugins.splice(scope, 1)
@@ -46,10 +46,14 @@ const murmuration = () => (config) => {
   return config
 }
 
+// https://webpack.js.org/configuration/dev-server/#devserverproxy
+// Proxy URLs for separate API backend development server and to send API requests to the same domain
 const localRelayer = () => (config) => {
   config.proxy = {
     ...(config.proxy || {}),
     "/relay": "http://localhost:4000",
+    "/fundWithWhales": "http://localhost:4000",
+    "/setupForTesting": "http://localhost:4000",
   }
   return config
 }
