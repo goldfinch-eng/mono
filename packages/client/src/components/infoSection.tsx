@@ -1,6 +1,15 @@
 import React, {Component} from "react"
 
-class InfoSection extends Component {
+interface InfoSectionRow {
+  label: string
+  value: string
+}
+
+interface InfoSectionProps {
+  rows: InfoSectionRow[]
+}
+
+export default class InfoSection extends Component<InfoSectionProps> {
   convertRowToItem(row, index) {
     return (
       <div className="small-info-item" key={index}>
@@ -14,5 +23,3 @@ class InfoSection extends Component {
     return <div className="info-section">{(this.props as any).rows.map(this.convertRowToItem)}</div>
   }
 }
-
-export default InfoSection

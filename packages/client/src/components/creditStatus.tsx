@@ -74,7 +74,6 @@ function CreditStatus(props) {
         />
         {termDueDate}
       </div>
-      {/* @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call. */}
       <InfoSection rows={rows} />
     </div>
   )
