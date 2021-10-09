@@ -23,9 +23,8 @@ import {AdminClient} from "defender-admin-client"
 import PROTOCOL_CONFIG from "../protocol_config.json"
 import {CONFIG_KEYS} from "./configKeys"
 import {GoldfinchConfig} from "../typechain/ethers"
-import {DeploymentsExtension} from "hardhat-deploy/types"
-
-import {Contract, Signer} from "ethers"
+import {DeploymentsExtension, DeployResult} from "hardhat-deploy/types"
+import {Contract, BaseContract, Signer} from "ethers"
 import {
   AssertionError,
   assertIsString,
@@ -34,6 +33,8 @@ import {
   genExhaustiveTuple,
 } from "@goldfinch-eng/utils"
 import {getExistingContracts, MAINNET_MULTISIG} from "./mainnetForkingHelpers"
+import {HardhatRuntimeEnvironment} from "hardhat/types"
+import {Logger} from "./types"
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
@@ -423,6 +424,37 @@ async function currentChainId(): Promise<string> {
   return isMainnetForking() ? MAINNET_CHAIN_ID : await getChainId()
 }
 
+class ContractDeployer {
+  private readonly logger: Logger
+  private readonly hre: HardhatRuntimeEnvironment
+
+  constructor(logger: Logger, hre: HardhatRuntimeEnvironment) {
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    this.logger = process.env.NODE_ENV === "test" ? () => {} : logger
+    this.hre = hre
+  }
+
+  async getNamedAccounts() {
+    return this.hre.getNamedAccounts()
+  }
+
+  async getChainId() {
+    return this.hre.getChainId()
+  }
+
+  async deploy<T extends BaseContract | Contract = Contract>(contractName: string, options): Promise<T> {
+    const result = await this.hre.deployments.deploy(contractName, options)
+    this.logger(`${contractName} was deployed to: ${result.address}`)
+    return (await ethers.getContractAt(result.abi, result.address)) as T
+  }
+
+  async deployLibrary(libraryName: string, options): Promise<DeployResult> {
+    const result = await this.hre.deployments.deploy(libraryName, options)
+    this.logger(`${libraryName} library was deployed to: ${result.address}`)
+    return result
+  }
+}
+
 export {
   CHAIN_NAME_BY_ID,
   ZERO_ADDRESS,
@@ -465,4 +497,5 @@ export {
   currentChainId,
   TICKERS,
   assertIsTicker,
+  ContractDeployer,
 }

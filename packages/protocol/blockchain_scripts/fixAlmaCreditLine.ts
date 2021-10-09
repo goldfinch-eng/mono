@@ -1,7 +1,7 @@
 import hre, {getChainId, getNamedAccounts} from "hardhat"
-const {deployments} = hre
 import {
   assertIsChainId,
+  ContractDeployer,
   getContract,
   getProtocolOwner,
   isMainnetForking,
@@ -46,14 +46,9 @@ async function main() {
   await fundWithWhales(["ETH"], [owner])
   const chainId = isMainnetForking() ? MAINNET_CHAIN_ID : await getChainId()
   assertIsChainId(chainId)
+  const deployer = new ContractDeployer(console.log, hre)
   const existingContracts = await getExistingContracts(contractsToUpgrade, owner, chainId)
-  const upgradedContracts = await upgradeContracts(
-    contractsToUpgrade,
-    existingContracts,
-    owner,
-    gf_deployer,
-    deployments
-  )
+  const upgradedContracts = await upgradeContracts(contractsToUpgrade, existingContracts, owner, gf_deployer, deployer)
 
   const goldfinchFactoryAddress = asNonNullable(upgradedContracts.GoldfinchFactory).ProxyContract.address
   const goldfinchFactory = await getContract<GoldfinchFactory, GoldfinchFactoryInstance>(
