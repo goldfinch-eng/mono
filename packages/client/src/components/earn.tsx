@@ -152,39 +152,37 @@ function TranchedPoolCardSkeleton() {
   )
 }
 
-export function TranchedPoolCard({poolBacker}: {poolBacker: PoolBacker}) {
+export function TranchedPoolCard({poolBacker, disabled}: {poolBacker: PoolBacker; disabled: boolean}) {
   const history = useHistory()
   const tranchedPool = poolBacker.tranchedPool
   const leverageRatio = tranchedPool.estimatedLeverageRatio
   const limit = usdcFromAtomic(tranchedPool.creditLine.limit)
 
   let estimatedApy = new BigNumber(NaN)
-  let disabledClass = ""
   if (leverageRatio) {
     estimatedApy = tranchedPool.estimateJuniorAPY(leverageRatio)
   }
 
-  if (poolBacker?.tokenInfos.length === 0) {
-    disabledClass = "disabled"
-  }
+  const disabledClass = disabled ? "disabled" : ""
+  const balanceDisabledClass = poolBacker?.tokenInfos.length === 0 ? "disabled" : ""
 
   return (
     <div
       className="table-row background-container-inner clickable pool-card"
       onClick={() => history.push(`/pools/${tranchedPool.address}`)}
     >
-      <div className="table-cell col40 pool-info">
-        <img className={"icon"} src={tranchedPool.metadata?.icon} alt="pool-icon" />
+      <div className={`table-cell col40 pool-info ${disabledClass}`}>
+        <img className={`icon ${disabledClass}`} src={tranchedPool.metadata?.icon} alt="pool-icon" />
         <div className="name">
           <span>{tranchedPool.displayName}</span>
-          <span className="subheader">{tranchedPool.metadata?.category}</span>
+          <span className={`subheader ${disabledClass}`}>{tranchedPool.metadata?.category}</span>
         </div>
       </div>
-      <div className={`${disabledClass} table-cell col22 numeric balance`}>
+      <div className={`${balanceDisabledClass} ${disabledClass} table-cell col22 numeric balance`}>
         {displayDollars(poolBacker?.balanceInDollars)}
       </div>
-      <div className="table-cell col22 numeric limit">{displayDollars(limit, 0)}</div>
-      <div className="table-cell col16 numeric apy">{displayPercent(estimatedApy)}</div>
+      <div className={`table-cell col22 numeric limit ${disabledClass}`}>{displayDollars(limit, 0)}</div>
+      <div className={`table-cell col16 numeric apy ${disabledClass}`}>{displayPercent(estimatedApy)}</div>
       <div className="pool-capacity">
         {tranchedPool.remainingCapacity().isZero() ? (
           <Badge text="Full" variant="gray" fixedWidth />
@@ -283,6 +281,8 @@ function Earn(props) {
   const backersData = earnStore.backers
   const tranchedPoolsStatusData = earnStore.backers.length > 0 ? "loaded" : tranchedPoolsStatus
 
+  const disabled = !capitalProvider?.loaded || !(backers.length > 0)
+
   const isLoading = !(capitalProviderData?.loaded || user.noWeb3)
   const earnMessage = isLoading ? "Loading..." : "Pools"
 
@@ -325,7 +325,9 @@ function Earn(props) {
           {tranchedPoolsStatusData === "loading" && poolsAddresses.map((a) => <TranchedPoolCardSkeleton key={a} />)}
 
           {tranchedPoolsStatusData !== "loading" &&
-            backersData.map((p) => <TranchedPoolCard key={`${p.tranchedPool.address}`} poolBacker={p} />)}
+            backersData.map((p) => (
+              <TranchedPoolCard key={`${p.tranchedPool.address}`} poolBacker={p} disabled={disabled} />
+            ))}
         </PoolList>
       </div>
     </div>

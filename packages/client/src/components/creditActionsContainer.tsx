@@ -27,14 +27,14 @@ function CreditActionsContainer(props) {
   }
 
   let placeholderClass = ""
-  if (!user.address || !user.usdcIsUnlocked("borrow") || !props.creditLine.address) {
+  if (!user.address || !user.usdcIsUnlocked("borrow") || !props.creditLine.address || props.disabled) {
     placeholderClass = "placeholder"
   }
 
   let drawdownAction
   let drawdownClass = "disabled"
 
-  if (availableCredit.gt(0) && user.usdcIsUnlocked("borrow")) {
+  if (availableCredit.gt(0) && user.usdcIsUnlocked("borrow") && !props.disabled) {
     drawdownAction = (e) => {
       openAction(e, "drawdown")
     }

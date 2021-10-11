@@ -81,6 +81,7 @@ class DefaultCreditLine extends BaseCreditLine {
   remainingPeriodDueAmount: BigNumber
   remainingTotalDueAmount: BigNumber
   availableCredit: BigNumber
+  isDefaultObject: boolean
 
   constructor() {
     super()
@@ -97,6 +98,7 @@ class DefaultCreditLine extends BaseCreditLine {
     this.loaded = true
     this.creditLines = []
     this.name = "No Credit Lines"
+    this.isDefaultObject = true
   }
 }
 

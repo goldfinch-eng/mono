@@ -18,7 +18,7 @@ const BorrowContext = React.createContext<BorrowContextType | undefined>(undefin
 
 function BorrowProvider({children}: BorrowProviderProps) {
   const [borrowStore, setBorrowStore] = useState<BorrowStoreType>({
-    creditLine: defaultCreditLine as CreditLine,
+    creditLine: defaultCreditLine as unknown as CreditLine,
   })
 
   const value = {borrowStore, setBorrowStore}

@@ -35,8 +35,9 @@ function Borrow(props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [creditDesk, user])
 
+  const isDefaultCreditLine = creditLine.isDefaultObject
   useEffect(() => {
-    if (creditLine.name !== "No Credit Lines") {
+    if (!isDefaultCreditLine) {
       setBorrowStore({...borrowStore, creditLine})
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -61,18 +62,27 @@ function Borrow(props) {
         borrower={(user as any).borrower}
         creditLine={creditLineData}
         actionComplete={actionComplete}
+        disabled={isDefaultCreditLine}
       />
     )
-    creditLineStatus = <CreditLinesList creditLine={creditLineData} user={user} changeCreditLine={changeCreditLine} />
+    creditLineStatus = (
+      <CreditLinesList
+        creditLine={creditLineData}
+        user={user}
+        changeCreditLine={changeCreditLine}
+        disabled={isDefaultCreditLine}
+      />
+    )
   } else {
     creditActionsContainer = (
       <CreditActionsContainer
         borrower={(user as any).borrower}
         creditLine={creditLineData}
         actionComplete={actionComplete}
+        disabled={isDefaultCreditLine}
       />
     )
-    creditLineStatus = <CreditStatus creditLine={creditLineData} user={user} />
+    creditLineStatus = <CreditStatus creditLine={creditLineData} user={user} disabled={isDefaultCreditLine} />
   }
 
   return (

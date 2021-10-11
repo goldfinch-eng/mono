@@ -24,7 +24,7 @@ function CreditActionsMultipleContainer(props) {
   }
 
   let placeholderClass = ""
-  if (!user.address || !user.usdcIsUnlocked("borrow") || !props.creditLine.address) {
+  if (!user.address || !user.usdcIsUnlocked("borrow") || !props.creditLine.address || props.disabled) {
     placeholderClass = "placeholder"
   }
 

@@ -19,11 +19,13 @@ function CreditLinesList(props) {
       nextPaymentDate = "Paid"
     }
 
+    const disabledClass = props.disabled ? "disabled" : ""
+
     return (
       <div className="table-row background-container-inner" key={cl.name}>
-        <div className="table-cell col40">{description}</div>
-        <div className="table-cell col22 numeric">{nextPaymentAmount}</div>
-        <div className="table-cell col22 date">
+        <div className={`table-cell col40 ${disabledClass}`}>{description}</div>
+        <div className={`table-cell col22 numeric ${disabledClass}`}>{nextPaymentAmount}</div>
+        <div className={`table-cell col22 date ${disabledClass}`}>
           {icon}
           {nextPaymentDate}
         </div>
