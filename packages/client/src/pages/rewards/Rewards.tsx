@@ -95,6 +95,16 @@ function RewardsListItem(props: RewardsListItemProps) {
 
   const valueDisabledClass = !accepted ? "disabled-text" : ""
 
+  const actionButtonComponent = !accepted ? (
+    <ActionButton text="Accept" onClick={handleAccept} />
+  ) : (
+    <ActionButton
+      text="Claim GFI"
+      onClick={() => console.log("claim action")}
+      disabled={props.claimableGFI === "0.00"}
+    />
+  )
+
   return (
     <>
       {!isTabletOrMobile && (
@@ -102,15 +112,7 @@ function RewardsListItem(props: RewardsListItemProps) {
           <div className="table-cell col32">{props.title}</div>
           <div className={`table-cell col20 numeric ${valueDisabledClass}`}>{props.grantedGFI}</div>
           <div className={`table-cell col20 numeric ${valueDisabledClass}`}>{props.claimableGFI}</div>
-          {!accepted ? (
-            <ActionButton text="Accept" onClick={handleAccept} />
-          ) : (
-            <ActionButton
-              text="Claim GFI"
-              disabled={props.claimableGFI === "0.00"}
-              onClick={() => console.log("claim action")}
-            />
-          )}
+          {actionButtonComponent}
           <button className="expand">{iconCarrotDown}</button>
         </li>
       )}
@@ -131,15 +133,7 @@ function RewardsListItem(props: RewardsListItemProps) {
               <div className={`${valueDisabledClass}`}>{props.claimableGFI}</div>
             </div>
           </div>
-          {!accepted ? (
-            <ActionButton text="Accept" onClick={handleAccept} />
-          ) : (
-            <ActionButton
-              text="Claim GFI"
-              onClick={() => console.log("claim action")}
-              disabled={props.claimableGFI === "0.00"}
-            />
-          )}
+          {actionButtonComponent}
         </li>
       )}
     </>
