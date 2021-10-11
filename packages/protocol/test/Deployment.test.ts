@@ -58,11 +58,11 @@ describe("Deployment", async () => {
     it("should not fail", async () => {
       return expect(deployments.run("setup_for_testing")).to.be.fulfilled
     })
-    it("should create borrower contract and tranched pools", async () => {
+    it("should create borrower contract and tranched pool", async () => {
       await deployments.run("setup_for_testing")
       const goldfinchFactory = await getDeployedContract<GoldfinchFactory>(deployments, "GoldfinchFactory")
       const borrowerCreated = await goldfinchFactory.queryFilter(goldfinchFactory.filters.BorrowerCreated())
-      expect(borrowerCreated.length).to.equal(2)
+      expect(borrowerCreated.length).to.equal(1)
       const event = borrowerCreated[0]
       assertNonNullable(event)
       const borrowerConAddr = event.args.borrower
