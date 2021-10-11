@@ -87,6 +87,10 @@ button.expand {
       fill: $sand-xdark;
     }
   }
+
+  &:hover {
+    background-color: $sand;
+  }
 }
 
 .gfi-rewards {
