@@ -11,6 +11,7 @@ import BigNumber from "bignumber.js"
 import {User} from "../ethereum/user"
 import ConnectionNotice from "./connectionNotice"
 import Badge from "./badge"
+import {InfoIcon} from "../icons"
 
 // Filter out 0 limit (inactive) and test pools
 const MIN_POOL_LIMIT = usdcToAtomic(process.env.REACT_APP_POOL_FILTER_LIMIT || "200")
@@ -29,6 +30,23 @@ function PoolList({title, children}) {
   )
 }
 
+const getTooltipHtmlContent = (seniorPoolAPY?: number, GFIRewardsAPY?: number, total?: number) => `<div>
+  <p class="tooltip-descritpion">Includes the senior pool yield from allocating to borrower pools, plus GFI rewards:</p>
+  <div class="tooltip-row">
+    <p>Senior Pool APY</p>
+    <span>--.--%</span>
+  </div>
+  <div class="tooltip-row">
+    <p>GFI Rewards APY</p>
+    <span>--.--%</span>
+  </div>
+  <div class="tooltip-divider"></div>
+  <div class="tooltip-row">
+    <p>Total Est. APY</p>
+    <span>--.--%</span>
+  </div>
+</div>`
+
 function PortfolioOverviewSkeleton() {
   return (
     <div className="background-container">
@@ -39,7 +57,17 @@ function PortfolioOverviewSkeleton() {
           <div className="sub-value disabled">--.-- (--.--%)</div>
         </div>
         <div className="deposit-status-item">
-          <div className="label">Est. Annual Growth</div>
+          <div className="deposit-status-item-flex">
+            <div className="label">Est. Annual Growth</div>
+            <span
+              data-tip={getTooltipHtmlContent()}
+              data-html={true}
+              data-offset="{'top': 0, 'left': 0}"
+              data-place="bottom"
+            >
+              <InfoIcon />
+            </span>
+          </div>
           <div className="value disabled">$--.--</div>
           <div className="sub-value disabled">--.--% APY</div>
         </div>
