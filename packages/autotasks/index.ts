@@ -1,15 +1,18 @@
-// eslint-disable-next-line @typescript-eslint/triple-slash-reference
-/// <reference path="./node_modules/hardhat-deploy/dist/src/type-extensions.d.ts" />
-// eslint-disable-next-line @typescript-eslint/triple-slash-reference
-/// <reference path="./node_modules/@nomiclabs/hardhat-ethers/src/internal/type-extensions.ts" />
 import {findEnvLocal, assertNonNullable} from "@goldfinch-eng/utils"
 import dotenv from "dotenv"
 dotenv.config({path: findEnvLocal()})
 
 import {relay} from "./relayer/relay"
-import hre from "hardhat"
+import * as uniqueIdentitySigner from "./unique-identity-signer"
+import {hardhat as hre} from "@goldfinch-eng/protocol"
 import {TypedDataUtils} from "eth-sig-util"
 import {bufferToHex} from "ethereumjs-util"
+import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers"
+
+assertNonNullable(
+  process.env.FORWARDER_ADDRESS,
+  "FORWARDER_ADDRESS must be passed as an envvar when running the development server"
+)
 
 const FORWARDER_ADDRESS = process.env.FORWARDER_ADDRESS
 const ALLOWED_SENDERS = (process.env.ALLOWED_SENDERS || "").split(",").filter((val) => !!val)
@@ -76,12 +79,32 @@ async function createContext() {
   }
 }
 
-export const relayHandler = async (req, res) => {
+export async function relayHandler(req, res) {
   try {
     console.log(`Forwarding: ${JSON.stringify(req.body)}`)
     const context = await createContext()
     const tx = await relay(req.body, context)
     res.status(200).send({status: "success", result: JSON.stringify(tx)})
+  } catch (error: any) {
+    console.log(`Failed: ${error}`)
+    res.status(500).send({status: "error", message: error.toString()})
+  }
+}
+
+export async function uniqueIdentitySignerHandler(req, res) {
+  try {
+    console.log(`Forwarding: ${JSON.stringify(req.body)}`)
+
+    // Set up params / dependencies for handler logic
+    const deployment = await hre.deployments.get("UniqueIdentity")
+    const uniqueIdentity = (await hre.ethers.getContractAt(deployment.abi, deployment.address)) as UniqueIdentity
+    const signer = uniqueIdentity.signer
+    assertNonNullable(signer.provider, "Signer provider is null")
+    const network = await signer.provider.getNetwork()
+
+    // Run handler
+    const result = await uniqueIdentitySigner.main({headers: req.headers, signer, network, uniqueIdentity})
+    res.status(200).send({status: "success", result: JSON.stringify(result)})
   } catch (error: any) {
     console.log(`Failed: ${error}`)
     res.status(500).send({status: "error", message: error.toString()})

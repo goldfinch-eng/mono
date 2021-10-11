@@ -1,9 +1,5 @@
-// eslint-disable-next-line @typescript-eslint/triple-slash-reference
-/// <reference path="../node_modules/hardhat-deploy/dist/src/type-extensions.d.ts" />
-// eslint-disable-next-line @typescript-eslint/triple-slash-reference
-/// <reference path="../typechain/truffle/types.d.ts" />
 import chai from "chai"
-import {artifacts, web3, ethers} from "hardhat"
+import hardhat, {artifacts, web3, ethers} from "hardhat"
 import AsPromised from "chai-as-promised"
 chai.use(AsPromised)
 const expect = chai.expect
@@ -20,7 +16,7 @@ import {
   GetContractOptions,
   TRUFFLE_CONTRACT_PROVIDER,
 } from "../blockchain_scripts/deployHelpers"
-import {DeploymentsExtension} from "hardhat-deploy/dist/types"
+import {DeploymentsExtension} from "hardhat-deploy/types"
 import {
   CreditDeskInstance,
   ERC20Instance,
@@ -451,6 +447,7 @@ async function fundWithEthFromLocalWhale(userToFund: string, amount: BN) {
 }
 
 export {
+  hardhat,
   chai,
   expect,
   decimals,
