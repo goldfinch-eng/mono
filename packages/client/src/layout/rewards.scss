@@ -63,11 +63,43 @@
 .gfi-rewards {
   h2 {
     font-size: $sans-size-s;
+    color: $purp-dark;
   }
 
-  .reward-list-item {
+  .rewards-list-item {
+    display: flex;
+    justify-content: space-between;
+    border-radius: 6px;
+    font-size: $sans-size-s;
+
+    button.claim {
+      margin-left: auto;
+      background-color: $blue-xlight;
+
+      &:hover {
+        background-color: $blue-light;
+      }
+    }
+
+    button.expand {
+      padding: 0;
+      background: none;
+
+      & svg {
+        height: 24px;
+        margin-left: 28px;
+
+        path {
+          fill: $sand-xdark;
+        }
+      }
+    }
+  }
+
+  .rewards-list-item.no-rewards {
     font-size: $sans-size-s;
     color: $sand-xxdark;
+    justify-content: flex-start;
   }
 
   .senior-pool-link {

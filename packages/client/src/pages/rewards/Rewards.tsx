@@ -1,5 +1,6 @@
 import React from "react"
 import {Link} from "react-router-dom"
+import {iconCarrotDown} from "../../components/icons"
 
 interface RewardsSummaryProps {
   fullyVested: string
@@ -61,15 +62,26 @@ function Rewards(props) {
 
       <RewardsSummary fullyVested="0.00" stillVesting="0.00" totalGFI="0.00" totalUSD="0.00" walletBalance="0.00" />
 
-      <div className="gfi-rewards">
-        <h2>GFI Rewards</h2>
+      <div className="gfi-rewards table-spaced">
+        <div className="table-header background-container-inner">
+          <h2 className="table-cell col32 title">GFI Rewards</h2>
+          <div className="table-cell col20 numeric balance">Granted GFI</div>
+          <div className="table-cell col20 numeric limit">Claimable GFI</div>
+        </div>
         <ul className="rewards-list">
-          <li className="reward-list-item background-container">
-            You have no rewards. You can earn rewards by supplying to{" "}
+          {/* <li className="table-row rewards-list-item no-rewards background-container">
+            You have no rewards. You can earn rewards by supplying to&nbsp;
             <Link to="/pools/senior">
               <span className="senior-pool-link">pools</span>
             </Link>
             .
+          </li> */}
+          <li className="rewards-list-item table-row background-container clickable">
+            <div className="table-cell col32">Staked 16K FIDU on Nov 1</div>
+            <div className="table-cell col20 numeric">50.34</div>
+            <div className="table-cell col20 numeric">4.03</div>
+            <button className="claim">Claim GFI</button>
+            <button className="expand">{iconCarrotDown}</button>
           </li>
         </ul>
       </div>
