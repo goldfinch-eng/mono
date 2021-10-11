@@ -1,8 +1,12 @@
-import React from "react"
+import BigNumber from "bignumber.js"
+import React, {useEffect, useState} from "react"
 import {Link} from "react-router-dom"
+import {usdcFromAtomic} from "../../ethereum/erc20"
+import {useGFIBalance, useRewards} from "../../hooks/useRewards"
+import {displayDollars, displayNumber} from "../../utils"
 
 interface RewardsSummaryProps {
-  fullyVested: string
+  claimable: string
   stillVesting: string
   totalGFI: string
   totalUSD: string
@@ -27,9 +31,9 @@ function RewardsSummary(props: RewardsSummaryProps) {
           </div>
         </div>
         <div className="details-item">
-          <span>Fully vested</span>
+          <span>Claimable</span>
           <div>
-            <span className="value">{props.fullyVested}</span>
+            <span className="value">{props.claimable}</span>
             <span>GFI</span>
           </div>
         </div>
@@ -53,13 +57,32 @@ function RewardsSummary(props: RewardsSummaryProps) {
 }
 
 function Rewards(props) {
+  const {stakingRewards, merkleDistributor} = useRewards()
+  const [claimable, setClaimable] = useState<BigNumber>(new BigNumber(0))
+  const [stillVesting, setStillVesting] = useState<BigNumber>(new BigNumber(0))
+  const [granted, setGranted] = useState<BigNumber>(new BigNumber(0))
+  const gfiBalance = useGFIBalance()
+
+  useEffect(() => {
+    if (!stakingRewards || !merkleDistributor || !merkleDistributor._loaded) return
+    setClaimable(stakingRewards.totalClaimable.plus(merkleDistributor.totalClaimable))
+    setStillVesting(stakingRewards.stillVesting.plus(merkleDistributor.stillVesting))
+    setGranted(stakingRewards.granted.plus(merkleDistributor.granted))
+  }, [stakingRewards, merkleDistributor, merkleDistributor?._loaded])
+  console.log(stakingRewards)
   return (
     <div className="content-section">
       <div className="page-header">
         <h1>Rewards</h1>
       </div>
 
-      <RewardsSummary fullyVested="0.00" stillVesting="0.00" totalGFI="0.00" totalUSD="0.00" walletBalance="0.00" />
+      <RewardsSummary
+        claimable={displayNumber(usdcFromAtomic(claimable), 2)}
+        stillVesting={displayNumber(usdcFromAtomic(stillVesting), 2)}
+        totalGFI={displayNumber(usdcFromAtomic(granted), 2)}
+        totalUSD={displayDollars(null)}
+        walletBalance={displayNumber(usdcFromAtomic(gfiBalance), 2)}
+      />
 
       <div className="gfi-rewards">
         <h2>GFI Rewards</h2>
