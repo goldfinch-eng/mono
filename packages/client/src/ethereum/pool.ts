@@ -91,7 +91,18 @@ class SeniorPool {
 }
 
 interface CapitalProvider {
-  numShares: BigNumber
+  shares: {
+    parts: {
+      notStaked: BigNumber
+      stakedNotLocked: BigNumber
+      stakedLocked: BigNumber
+    }
+    aggregates: {
+      withdrawable: BigNumber
+      total: BigNumber
+    }
+  }
+  availableToStakeInDollars: BigNumber
   availableToWithdraw: BigNumber
   availableToWithdrawInDollars: BigNumber
   address: string
@@ -106,7 +117,18 @@ interface CapitalProvider {
 
 function emptyCapitalProvider({loaded = false} = {}): CapitalProvider {
   return {
-    numShares: new BigNumber(0),
+    shares: {
+      parts: {
+        notStaked: new BigNumber(0),
+        stakedNotLocked: new BigNumber(0),
+        stakedLocked: new BigNumber(0),
+      },
+      aggregates: {
+        withdrawable: new BigNumber(0),
+        total: new BigNumber(0),
+      },
+    },
+    availableToStakeInDollars: new BigNumber(0),
     availableToWithdraw: new BigNumber(0),
     availableToWithdrawInDollars: new BigNumber(0),
     address: "",
@@ -122,29 +144,52 @@ function emptyCapitalProvider({loaded = false} = {}): CapitalProvider {
 
 async function fetchCapitalProviderData(
   pool: SeniorPool,
-  capitalProviderAddress: string | boolean
+  capitalProviderAddress: string | undefined
 ): Promise<CapitalProvider> {
   if (!capitalProviderAddress) {
     return emptyCapitalProvider({loaded: pool.loaded})
   }
 
   const attributes = [{method: "sharePrice"}]
-  let {sharePrice} = await fetchDataFromAttributes(pool.contract, attributes, {bigNumber: true})
-  let numShares = new BigNumber(await pool.fidu.methods.balanceOf(capitalProviderAddress as string).call())
-  let availableToWithdraw = new BigNumber(numShares)
+  const {sharePrice} = await fetchDataFromAttributes(pool.contract, attributes, {bigNumber: true})
+
+  const numSharesNotStaked = new BigNumber(await pool.fidu.methods.balanceOf(capitalProviderAddress).call())
+  const numSharesStakedLocked = new BigNumber(0) // TODO[PR]
+  const numSharesStakedNotLocked = new BigNumber(0) // TODO[PR]
+
+  const numSharesWithdrawable = numSharesNotStaked.plus(numSharesStakedNotLocked)
+  const numSharesTotal = numSharesNotStaked.plus(numSharesStakedLocked).plus(numSharesStakedNotLocked)
+
+  const availableToStake = numSharesNotStaked.multipliedBy(new BigNumber(sharePrice)).div(FIDU_DECIMALS.toString())
+  const availableToStakeInDollars = new BigNumber(fiduFromAtomic(availableToStake))
+
+  const availableToWithdraw = numSharesWithdrawable
     .multipliedBy(new BigNumber(sharePrice))
     .div(FIDU_DECIMALS.toString())
-  let availableToWithdrawInDollars = new BigNumber(fiduFromAtomic(availableToWithdraw))
-  let address = capitalProviderAddress as string
-  let allowance = new BigNumber(await pool.usdc.methods.allowance(capitalProviderAddress, pool.address).call())
-  let weightedAverageSharePrice = await getWeightedAverageSharePrice(pool, {numShares, address})
+  const availableToWithdrawInDollars = new BigNumber(fiduFromAtomic(availableToWithdraw))
+
+  const address = capitalProviderAddress
+  const allowance = new BigNumber(await pool.usdc.methods.allowance(capitalProviderAddress, pool.address).call())
+  const weightedAverageSharePrice = await getWeightedAverageSharePrice(pool, capitalProviderAddress, numSharesTotal)
   const sharePriceDelta = sharePrice.dividedBy(FIDU_DECIMALS).minus(weightedAverageSharePrice)
-  let unrealizedGains = sharePriceDelta.multipliedBy(numShares)
-  let unrealizedGainsInDollars = new BigNumber(roundDownPenny(unrealizedGains.div(FIDU_DECIMALS)))
-  let unrealizedGainsPercentage = sharePriceDelta.dividedBy(weightedAverageSharePrice)
-  let loaded = true
+  const unrealizedGains = sharePriceDelta.multipliedBy(numSharesTotal)
+  const unrealizedGainsInDollars = new BigNumber(roundDownPenny(unrealizedGains.div(FIDU_DECIMALS)))
+  const unrealizedGainsPercentage = sharePriceDelta.dividedBy(weightedAverageSharePrice)
+  const loaded = true
+
   return {
-    numShares,
+    shares: {
+      parts: {
+        notStaked: numSharesNotStaked,
+        stakedNotLocked: numSharesStakedNotLocked,
+        stakedLocked: numSharesStakedLocked,
+      },
+      aggregates: {
+        withdrawable: numSharesWithdrawable,
+        total: numSharesTotal,
+      },
+    },
+    availableToStakeInDollars,
     availableToWithdraw,
     availableToWithdrawInDollars,
     address,
@@ -236,12 +281,16 @@ async function fetchPoolData(pool: SeniorPool, erc20: Contract): Promise<PoolDat
 // than we have records of your deposits, so we would not be able to account
 // for your shares, and we would fail out, and return a "-" on the front-end.
 // Note: This also does not take into account realized gains, which we are also punting on.
-async function getWeightedAverageSharePrice(pool: SeniorPool, capitalProvider) {
-  const poolEvents = await pool.getPoolEvents(capitalProvider.address, ["DepositMade"])
+async function getWeightedAverageSharePrice(
+  pool: SeniorPool,
+  capitalProviderAddress: string,
+  capitalProviderTotalShares: BigNumber
+) {
+  const poolEvents = await pool.getPoolEvents(capitalProviderAddress, ["DepositMade"])
   const preparedEvents = _.reverse(_.sortBy(poolEvents, "blockNumber"))
 
   let zero = new BigNumber(0)
-  let sharesLeftToAccountFor = capitalProvider.numShares
+  let sharesLeftToAccountFor = capitalProviderTotalShares
   let totalAmountPaid = zero
   preparedEvents.forEach((event) => {
     if (sharesLeftToAccountFor.lte(zero)) {
@@ -262,7 +311,7 @@ async function getWeightedAverageSharePrice(pool: SeniorPool, capitalProvider) {
     // the case, and turn it into a '-' on the front-end
     return new BigNumber("")
   } else {
-    return totalAmountPaid.dividedBy(capitalProvider.numShares)
+    return totalAmountPaid.dividedBy(capitalProviderTotalShares)
   }
 }
 

@@ -26,7 +26,7 @@ function SeniorPoolView(): JSX.Element {
 
   useEffect(() => {
     async function refreshAllData() {
-      const capitalProviderAddress = user.loaded && user.address
+      const capitalProviderAddress: string | undefined = user.loaded ? user.address : undefined
       assertNonNullable(pool)
 
       refreshPoolData(pool)
@@ -45,7 +45,7 @@ function SeniorPoolView(): JSX.Element {
     return refreshCapitalProviderData(pool, capitalProvider!.address)
   }
 
-  async function refreshCapitalProviderData(pool: SeniorPool, address: string | boolean) {
+  async function refreshCapitalProviderData(pool: SeniorPool, address: string | undefined) {
     const capitalProvider = await fetchCapitalProviderData(pool, address)
     setCapitalProvider(capitalProvider)
   }

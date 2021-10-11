@@ -256,13 +256,13 @@ function Earn() {
 
   useEffect(() => {
     if (pool) {
-      const capitalProviderAddress = user.loaded && user.address
+      const capitalProviderAddress: string | undefined = user.loaded ? user.address : undefined
 
       refreshCapitalProviderData(pool, capitalProviderAddress)
     }
   }, [pool, usdc, user])
 
-  async function refreshCapitalProviderData(pool: SeniorPool, address: string | boolean) {
+  async function refreshCapitalProviderData(pool: SeniorPool, address: string | undefined) {
     const capitalProvider = await fetchCapitalProviderData(pool, address)
     setCapitalProvider(capitalProvider)
   }

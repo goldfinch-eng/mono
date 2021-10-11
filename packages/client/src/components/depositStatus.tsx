@@ -13,7 +13,14 @@ function DepositStatus(props: DepositStatusProps) {
 
   let apyDisplay: string, estimatedAPY: BigNumber | null
   if (props.poolData?.loaded) {
-    estimatedAPY = props.poolData.estimatedApy.plus(props.poolData.estimatedApyFromGfi || new BigNumber(0))
+    estimatedAPY = props.poolData.estimatedApy.plus(
+      // NOTE: Because the UI does not currently support staking with lockup, we do not
+      // worry about adjusting `estimatedApyFromGfi` here by the appropriate multiplier
+      // to reflect the boosted rewards APY the user may in fact be receiving (i.e. would
+      // be receiving if they have staked-with-lockup e.g. by interacting with the contract
+      // directly).
+      props.poolData.estimatedApyFromGfi || new BigNumber(0)
+    )
     apyDisplay = `${displayPercent(estimatedAPY)}`
   } else {
     estimatedAPY = null
