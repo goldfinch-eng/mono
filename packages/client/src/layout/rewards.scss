@@ -67,10 +67,9 @@
   }
 
   .rewards-list-item {
-    display: flex;
-    justify-content: space-between;
     border-radius: 6px;
     font-size: $sans-size-s;
+    margin-bottom: 24px;
 
     .disabled-text {
       color: $sand-xxdark;
@@ -107,14 +106,45 @@
   }
 
   .rewards-list-item.no-rewards {
+    display: block;
     font-size: $sans-size-s;
     color: $sand-xxdark;
-    justify-content: flex-start;
   }
 
   .senior-pool-link {
     text-decoration: underline;
     color: $sand-xxdark;
+  }
+}
+
+.mobile-ui.rewards-list-item {
+  margin: 0 0 24px 0;
+
+  .rewards-list-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .item-details {
+    display: flex;
+    margin: 12px 0 18px 0;
+  }
+
+  .detail-container {
+    width: 100%;
+  }
+
+  .detail-label {
+    display: block;
+    margin: 0 0 4px 0;
+    color: $sand-xxdark;
+  }
+
+  button.action {
+    float: none;
+    width: 100%;
+    margin: 0 0 0 0;
   }
 }
 

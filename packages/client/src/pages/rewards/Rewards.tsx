@@ -1,6 +1,7 @@
 import React, {useState} from "react"
 import {Link} from "react-router-dom"
 import {iconCarrotDown} from "../../components/icons"
+import {useMediaQuery} from "react-responsive"
 
 interface RewardsSummaryProps {
   fullyVested: string
@@ -66,10 +67,11 @@ function NoRewardsListItem(props) {
 }
 
 function ActionButton(props) {
+  const isTabletOrMobile = useMediaQuery({query: "(max-width: 900px)"})
   const disabledClass = props.disabled ? "disabled-button" : ""
 
   return (
-    <button className={`table-cell col16 action ${disabledClass}`} onClick={props.onClick}>
+    <button className={`${!isTabletOrMobile && "table-cell col16"} action ${disabledClass}`} onClick={props.onClick}>
       {props.text}
     </button>
   )
@@ -79,6 +81,7 @@ function RewardsListItem(props) {
   // TODO: modify to get from prop
   const communityRewards = true
   const [accepted, setAccepted] = useState(communityRewards ? false : true)
+  const isTabletOrMobile = useMediaQuery({query: "(max-width: 900px)"})
 
   function handleAccept() {
     setAccepted(!accepted)
@@ -87,21 +90,51 @@ function RewardsListItem(props) {
   const valueDisabledClass = !accepted ? "disabled-text" : ""
 
   return (
-    <li className="rewards-list-item table-row background-container clickable">
-      <div className="table-cell col32">Staked 16K FIDU on Nov 1</div>
-      <div className={`table-cell col20 numeric ${valueDisabledClass}`}>50.34</div>
-      <div className={`table-cell col20 numeric ${valueDisabledClass}`}>4.03</div>
-      {!accepted ? (
-        <ActionButton text="Accept" onClick={handleAccept} />
-      ) : (
-        <ActionButton text="Claim GFI" onClick={() => console.log("claim action")} disabled />
+    <>
+      {isTabletOrMobile && (
+        <li className="mobile-ui rewards-list-item background-container clickable">
+          <div className="rewards-list-item-header">
+            <div className="">Staked 16K FIDU on Nov 1</div>
+            <button className="expand">{iconCarrotDown}</button>
+          </div>
+          <div className="item-details">
+            <div className="detail-container">
+              <span className="detail-label">Granted GFI</span>
+              <div className={`${valueDisabledClass} detail-value`}>50.34</div>
+            </div>
+            <div className="detail-container">
+              <span className="detail-label">Claimable GFI</span>
+              <div className={`${valueDisabledClass} detail-value`}>4.03</div>
+            </div>
+          </div>
+          {!accepted ? (
+            <ActionButton text="Accept" onClick={handleAccept} />
+          ) : (
+            <ActionButton text="Claim GFI" onClick={() => console.log("claim action")} />
+          )}
+        </li>
       )}
-      <button className="expand">{iconCarrotDown}</button>
-    </li>
+
+      {!isTabletOrMobile && (
+        <li className="rewards-list-item table-row background-container clickable">
+          <div className="table-cell col32">Staked 16K FIDU on Nov 1</div>
+          <div className={`table-cell col20 numeric ${valueDisabledClass}`}>50.34</div>
+          <div className={`table-cell col20 numeric ${valueDisabledClass}`}>4.03</div>
+          {!accepted ? (
+            <ActionButton text="Accept" onClick={handleAccept} />
+          ) : (
+            <ActionButton text="Claim GFI" onClick={() => console.log("claim action")} disabled />
+          )}
+          <button className="expand">{iconCarrotDown}</button>
+        </li>
+      )}
+    </>
   )
 }
 
 function Rewards(props) {
+  const isTabletOrMobile = useMediaQuery({query: "(max-width: 900px)"})
+
   return (
     <div className="content-section">
       <div className="page-header">
@@ -113,11 +146,18 @@ function Rewards(props) {
       <div className="gfi-rewards table-spaced">
         <div className="table-header background-container-inner">
           <h2 className="table-cell col32 title">GFI Rewards</h2>
-          <div className="table-cell col20 numeric balance">Granted GFI</div>
-          <div className="table-cell col20 numeric limit">Claimable GFI</div>
+          {!isTabletOrMobile && (
+            <>
+              <div className="table-cell col20 numeric balance">Granted GFI</div>
+              <div className="table-cell col20 numeric limit">Claimable GFI</div>
+            </>
+          )}
         </div>
         <ul className="rewards-list">
           <RewardsListItem />
+          <RewardsListItem />
+          <RewardsListItem />
+          {/* <NoRewardsListItem /> */}
         </ul>
       </div>
     </div>
