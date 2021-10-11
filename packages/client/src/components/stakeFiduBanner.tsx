@@ -1,4 +1,5 @@
 import {assertNonNullable} from "@goldfinch-eng/utils/src/type"
+import BigNumber from "bignumber.js"
 import {useContext} from "react"
 import {FormProvider, useForm} from "react-hook-form"
 import {AppContext} from "../App"
@@ -23,33 +24,36 @@ export default function StakeFiduBanner(props: StakeFiduBannerProps) {
   const stake = async () => {
     assertNonNullable(pool)
     assertNonNullable(rewards)
-    const amount = await pool.fidu.methods.balanceOf(user.address).call()
+    const amount = new BigNumber(await pool.fidu.methods.balanceOf(user.address).call())
 
     // For the StakingRewards contract to be able to transfer the user's FIDU as part of
     // staking (more precisely, staking directly via `stake()`, as opposed to via `depositAndStake*()`),
     // the user must have approved the StakingRewards contract to do so, in the amount
     // to be transferred. So if the StakingRewards contract is not already thusly approved,
     // staking requires two transactions: one to grant the approval, then one to actually stake.
-    const alreadyApprovedAmount = await pool.fidu.methods.allowance(user.address, rewards.address).call()
+    const alreadyApprovedAmount = new BigNumber(await pool.fidu.methods.allowance(user.address, rewards.address).call())
     const amountRequiringApproval = amount.minus(alreadyApprovedAmount)
     if (amountRequiringApproval.gt(0)) {
+      const amountRequiringApprovalString = amountRequiringApproval.toString(10)
+      const amountString = amount.toString(10)
       return sendFromUser(
-        pool.fidu.methods.approve(rewards.address, amountRequiringApproval),
+        pool.fidu.methods.approve(rewards.address, amountRequiringApprovalString),
         {
           type: "Approve",
-          amount: amountRequiringApproval,
+          amount: amountRequiringApprovalString,
         },
         {rejectOnError: true}
       ).then(() =>
-        sendFromUser(rewards.contract.methods.stake(amount), {
+        sendFromUser(rewards.contract.methods.stake(amountString), {
           type: "Stake",
-          amount: amount,
+          amount: amountString,
         })
       )
     } else {
-      return sendFromUser(rewards.contract.methods.stake(amount), {
+      const amountString = amount.toString(10)
+      return sendFromUser(rewards.contract.methods.stake(amountString), {
         type: "Stake",
-        amount: amount,
+        amount: amountString,
       })
     }
   }
