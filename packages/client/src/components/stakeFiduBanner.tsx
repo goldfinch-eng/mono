@@ -24,19 +24,34 @@ export default function StakeFiduBanner(props: StakeFiduBannerProps) {
     assertNonNullable(pool)
     assertNonNullable(rewards)
     const amount = await pool.fidu.methods.balanceOf(user.address).call()
-    return sendFromUser(
-      pool.fidu.methods.approve(rewards.address, amount),
-      {
-        type: "Approve",
-        amount: amount,
-      },
-      {rejectOnError: true}
-    ).then(() =>
-      sendFromUser(rewards.contract.methods.stake(amount), {
+
+    // For the StakingRewards contract to be able to transfer the user's FIDU as part of
+    // staking (more precisely, staking directly via `stake()`, as opposed to via `depositAndStake*()`),
+    // the user must have approved the StakingRewards contract to do so, in the amount
+    // to be transferred. So if the StakingRewards contract is not already thusly approved,
+    // staking requires two transactions: one to grant the approval, then one to actually stake.
+    const alreadyApprovedAmount = await pool.fidu.methods.allowance(user.address, rewards.address).call()
+    const amountRequiringApproval = amount.minus(alreadyApprovedAmount)
+    if (amountRequiringApproval.gt(0)) {
+      return sendFromUser(
+        pool.fidu.methods.approve(rewards.address, amountRequiringApproval),
+        {
+          type: "Approve",
+          amount: amountRequiringApproval,
+        },
+        {rejectOnError: true}
+      ).then(() =>
+        sendFromUser(rewards.contract.methods.stake(amount), {
+          type: "Stake",
+          amount: amount,
+        })
+      )
+    } else {
+      return sendFromUser(rewards.contract.methods.stake(amount), {
         type: "Stake",
         amount: amount,
       })
-    )
+    }
   }
 
   return props.capitalProvider.numShares.gt(0) ? (
