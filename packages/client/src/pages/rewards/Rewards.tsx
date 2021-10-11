@@ -87,7 +87,7 @@ interface RewardsListItemProps {
 
 function RewardsListItem(props: RewardsListItemProps) {
   const [accepted, setAccepted] = useState(props.isCommunityRewards ? false : true)
-  const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenXL})`}) // equivalent to the sass variable $screen-l
+  const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenXL})`})
 
   function handleAccept() {
     setAccepted(!accepted)
@@ -105,7 +105,11 @@ function RewardsListItem(props: RewardsListItemProps) {
           {!accepted ? (
             <ActionButton text="Accept" onClick={handleAccept} />
           ) : (
-            <ActionButton text="Claim GFI" onClick={() => console.log("claim action")} />
+            <ActionButton
+              text="Claim GFI"
+              disabled={props.claimableGFI === "0.00"}
+              onClick={() => console.log("claim action")}
+            />
           )}
           <button className="expand">{iconCarrotDown}</button>
         </li>
@@ -130,7 +134,11 @@ function RewardsListItem(props: RewardsListItemProps) {
           {!accepted ? (
             <ActionButton text="Accept" onClick={handleAccept} />
           ) : (
-            <ActionButton text="Claim GFI" onClick={() => console.log("claim action")} />
+            <ActionButton
+              text="Claim GFI"
+              onClick={() => console.log("claim action")}
+              disabled={props.claimableGFI === "0.00"}
+            />
           )}
         </li>
       )}
