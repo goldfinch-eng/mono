@@ -60,6 +60,35 @@
   }
 }
 
+button.action {
+  margin-left: auto;
+  background-color: $blue-xlight;
+
+  &:hover {
+    background-color: $blue-light;
+  }
+
+  &.disabled-button {
+    pointer-events: none;
+    background-color: $sand;
+    color: $sand-xxdark;
+  }
+}
+
+button.expand {
+  padding: 0;
+  background: none;
+
+  & svg {
+    height: 24px;
+    margin-left: 28px;
+
+    path {
+      fill: $sand-xdark;
+    }
+  }
+}
+
 .gfi-rewards {
   h2 {
     font-size: $sans-size-s;
@@ -74,35 +103,6 @@
     .disabled-text {
       color: $sand-xxdark;
     }
-
-    button.action {
-      margin-left: auto;
-      background-color: $blue-xlight;
-
-      &:hover {
-        background-color: $blue-light;
-      }
-
-      &.disabled-button {
-        pointer-events: none;
-        background-color: $sand;
-        color: $sand-xxdark;
-      }
-    }
-
-    button.expand {
-      padding: 0;
-      background: none;
-
-      & svg {
-        height: 24px;
-        margin-left: 28px;
-
-        path {
-          fill: $sand-xdark;
-        }
-      }
-    }
   }
 
   .rewards-list-item.no-rewards {
@@ -114,37 +114,6 @@
   .senior-pool-link {
     text-decoration: underline;
     color: $sand-xxdark;
-  }
-}
-
-.mobile-ui.rewards-list-item {
-  margin-bottom: 24px;
-
-  .rewards-list-item-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .item-details {
-    display: flex;
-    margin: 12px 0 18px 0;
-  }
-
-  .detail-container {
-    width: 100%;
-  }
-
-  .detail-label {
-    display: block;
-    margin: 0 0 4px 0;
-    color: $sand-xxdark;
-  }
-
-  button.action {
-    float: none;
-    width: 100%;
-    margin: 0 0 0 0;
   }
 }
 
@@ -162,5 +131,38 @@
 
   .rewards-summary-right-item {
     padding: 24px 24px;
+  }
+}
+
+@media only screen and (max-width: $screen-xl) {
+  button.action {
+    float: none;
+    width: 100%;
+    margin: 0;
+  }
+
+  .rewards-list-item.mobile {
+    margin-bottom: 24px;
+  
+    .item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+  
+    .item-details {
+      display: flex;
+      margin: 12px 0 18px 0;
+    }
+  
+    .detail-container {
+      width: 100%;
+    }
+  
+    .detail-label {
+      display: block;
+      margin: 0 0 4px 0;
+      color: $sand-xxdark;
+    }
   }
 }

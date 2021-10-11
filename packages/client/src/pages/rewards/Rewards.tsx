@@ -2,6 +2,7 @@ import React, {useState} from "react"
 import {Link} from "react-router-dom"
 import {iconCarrotDown} from "../../components/icons"
 import {useMediaQuery} from "react-responsive"
+import {WIDTH_TYPES} from "../../components/styleConstants"
 
 interface RewardsSummaryProps {
   fullyVested: string
@@ -67,7 +68,7 @@ function NoRewards(props) {
 }
 
 function ActionButton(props) {
-  const isTabletOrMobile = useMediaQuery({query: "(max-width: 900px)"})
+  const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenXL})`})
   const disabledClass = props.disabled ? "disabled-button" : ""
 
   return (
@@ -86,7 +87,7 @@ interface RewardsListItemProps {
 
 function RewardsListItem(props: RewardsListItemProps) {
   const [accepted, setAccepted] = useState(props.isCommunityRewards ? false : true)
-  const isTabletOrMobile = useMediaQuery({query: "(max-width: 900px)"}) // equivalent to the sass variable $screen-l
+  const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenXL})`}) // equivalent to the sass variable $screen-l
 
   function handleAccept() {
     setAccepted(!accepted)
@@ -111,19 +112,19 @@ function RewardsListItem(props: RewardsListItemProps) {
       )}
 
       {isTabletOrMobile && (
-        <li className="mobile-ui rewards-list-item background-container clickable">
-          <div className="rewards-list-item-header">
+        <li className="rewards-list-item background-container clickable mobile">
+          <div className="item-header">
             <div>{props.title}</div>
             <button className="expand">{iconCarrotDown}</button>
           </div>
           <div className="item-details">
             <div className="detail-container">
               <span className="detail-label">Granted GFI</span>
-              <div className={`${valueDisabledClass} detail-value`}>{props.grantedGFI}</div>
+              <div className={`${valueDisabledClass}`}>{props.grantedGFI}</div>
             </div>
             <div className="detail-container">
               <span className="detail-label">Claimable GFI</span>
-              <div className={`${valueDisabledClass} detail-value`}>{props.claimableGFI}</div>
+              <div className={`${valueDisabledClass}`}>{props.claimableGFI}</div>
             </div>
           </div>
           {!accepted ? (
@@ -138,7 +139,7 @@ function RewardsListItem(props: RewardsListItemProps) {
 }
 
 function Rewards(props) {
-  const isTabletOrMobile = useMediaQuery({query: "(max-width: 900px)"})
+  const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenXL})`})
 
   // TODO: remove this variable when getting real data
   const gfiRewards = [
