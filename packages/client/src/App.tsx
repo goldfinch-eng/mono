@@ -23,6 +23,7 @@ import VerifyIdentity from "./components/verifyIdentity"
 import TranchedPoolView from "./components/pools/tranchedPoolView"
 import {SessionData} from "./types/session.js"
 import {CommunityRewards, MerkleDistributor} from "./ethereum/communityRewards"
+import Rewards from "./pages/rewards"
 
 export interface NetworkConfig {
   name?: string
@@ -77,6 +78,8 @@ function App() {
   const [sessionData, setSessionData] = useState<SessionData>()
   const [merkleDistributor, setMerkleDistributor] = useState<MerkleDistributor>()
   const [communityRewards, setCommunityRewards] = useState<CommunityRewards>()
+
+  const toggleRewards = process.env.REACT_APP_TOGGLE_REWARDS === "true"
 
   useEffect(() => {
     setupWeb3()
@@ -225,6 +228,11 @@ function App() {
             <Route path="/earn">
               <Earn />
             </Route>
+            {toggleRewards && (
+              <Route path="/rewards">
+                <Rewards />
+              </Route>
+            )}
             <Route path="/transactions">
               <Transactions currentTXs={currentTXs} />
             </Route>

@@ -1,0 +1,94 @@
+.rewards-summary {
+  display: flex;
+  justify-content: space-between;
+  padding: 0;
+}
+
+.rewards-summary-left-item {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  border-right: 2px solid $sand;
+  padding: 48px;
+
+  > * + * {
+    margin-top: 12px;
+  }
+
+  .total-gfi-balance {
+    font-size: $sans-size-s;
+  }
+
+  .total-gfi {
+    font-size: $sans-size-xxl;
+  }
+
+  .total-usd {
+    font-size: $sans-size-base;
+    color: $blue;
+  }
+}
+
+.rewards-summary-right-item {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 100%;
+  padding: 0 48px;
+
+  > * + * {
+    margin-top: 12px;
+  }
+
+  .details-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: $sans-size-s;
+    flex-wrap: wrap;
+  }
+
+  .value {
+    color: $sand-xxdark;
+    margin-right: 4px;
+  }
+
+  .total-balance {
+    border-top:  2px solid $sand;
+    padding: 12px 0 0 0;
+  }
+}
+
+.gfi-rewards {
+  h2 {
+    font-size: $sans-size-s;
+  }
+
+  .reward-list-item {
+    font-size: $sans-size-s;
+    color: $sand-xxdark;
+  }
+
+  .senior-pool-link {
+    text-decoration: underline;
+    color: $sand-xxdark;
+  }
+}
+
+@media only screen and (max-width: $screen-l) {
+  .rewards-summary {
+    flex-direction: column;
+    padding: 0;
+  }
+
+  .rewards-summary-left-item {
+    border-right: 0;
+    border-bottom: 2px solid $sand;
+    padding: 24px;
+  }
+
+  .rewards-summary-right-item {
+    padding: 24px 24px;
+  }
+}
