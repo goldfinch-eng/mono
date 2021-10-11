@@ -13,8 +13,6 @@
   "include": [
     "hardhat.config.ts",
     "test/**/*",
-    "assessor/**/*",
-    "relayer/**/*",
     "index.ts"
   ]
 }

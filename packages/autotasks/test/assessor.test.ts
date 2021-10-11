@@ -1,7 +1,9 @@
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference
+/// <reference path="../node_modules/hardhat-deploy/dist/src/type-extensions.d.ts" />
 /* global web3 */
-import hre from "hardhat"
+import hre, {deployments} from "hardhat"
+
 import {TRANCHES} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
-const {deployments} = hre
 import {
   BN,
   deployAllContracts,

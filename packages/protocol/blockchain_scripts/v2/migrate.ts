@@ -1,5 +1,5 @@
 import hre from "hardhat"
-const {getNamedAccounts, deployments} = hre
+const {getNamedAccounts} = hre
 import deployV2 from "./deployV2"
 import {
   MINTER_ROLE,
@@ -12,6 +12,7 @@ import {
   MAINNET_CHAIN_ID,
   TRUFFLE_CONTRACT_PROVIDER,
   assertIsChainId,
+  ContractDeployer,
 } from "../deployHelpers"
 import {borrowerCreditlines, getMigrationData} from "./migrationHelpers"
 import {
@@ -206,13 +207,14 @@ async function handleNewDeployments(migrator) {
   const protocolOwner = await getProtocolOwner()
   const chainId = isMainnetForking() ? MAINNET_CHAIN_ID : await getChainId()
   assertIsChainId(chainId)
+  const deployer = new ContractDeployer(console.log, hre)
   const existingContracts = await getExistingContracts(contractsToUpgrade, gf_deployer, chainId)
   const upgradedContracts = await upgradeContracts(
     contractsToUpgrade,
     existingContracts,
     gf_deployer,
     gf_deployer,
-    deployments,
+    deployer,
     false
   )
   const newConfig = await getContract("GoldfinchConfig", TRUFFLE_CONTRACT_PROVIDER, {from: gf_deployer})
