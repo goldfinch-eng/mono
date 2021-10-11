@@ -66,8 +66,10 @@ function NoRewardsListItem(props) {
 }
 
 function ActionButton(props) {
+  const disabledClass = props.disabled ? "disabled-button" : ""
+
   return (
-    <button className="table-cell col16 action" onClick={props.onClick}>
+    <button className={`table-cell col16 action ${disabledClass}`} onClick={props.onClick}>
       {props.text}
     </button>
   )
@@ -92,7 +94,7 @@ function RewardsListItem(props) {
       {!accepted ? (
         <ActionButton text="Accept" onClick={handleAccept} />
       ) : (
-        <ActionButton text="Claim GFI" onClick={() => console.log("claim action")} />
+        <ActionButton text="Claim GFI" onClick={() => console.log("claim action")} disabled />
       )}
       <button className="expand">{iconCarrotDown}</button>
     </li>

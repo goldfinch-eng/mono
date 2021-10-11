@@ -83,6 +83,12 @@
       &:hover {
         background-color: $blue-light;
       }
+
+      &.disabled-button {
+        pointer-events: none;
+        background-color: $sand;
+        color: $sand-xxdark;
+      }
     }
 
     button.expand {
