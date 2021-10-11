@@ -1,4 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
+/// <reference path="../node_modules/hardhat-deploy/dist/src/type-extensions.d.ts" />
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../typechain/truffle/types.d.ts" />
 import chai from "chai"
 import {artifacts, web3, ethers} from "hardhat"
