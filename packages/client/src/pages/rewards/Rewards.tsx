@@ -1,4 +1,4 @@
-import React from "react"
+import React, {useState} from "react"
 import {Link} from "react-router-dom"
 import {iconCarrotDown} from "../../components/icons"
 
@@ -53,6 +53,52 @@ function RewardsSummary(props: RewardsSummaryProps) {
   )
 }
 
+function NoRewardsListItem(props) {
+  return (
+    <li className="table-row rewards-list-item no-rewards background-container">
+      You have no rewards. You can earn rewards by supplying to&nbsp;
+      <Link to="/pools/senior">
+        <span className="senior-pool-link">pools</span>
+      </Link>
+      .
+    </li>
+  )
+}
+
+function ActionButton(props) {
+  return (
+    <button className="table-cell col16 action" onClick={props.onClick}>
+      {props.text}
+    </button>
+  )
+}
+
+function RewardsListItem(props) {
+  // TODO: modify to get from prop
+  const communityRewards = true
+  const [accepted, setAccepted] = useState(communityRewards ? false : true)
+
+  function handleAccept() {
+    setAccepted(!accepted)
+  }
+
+  const valueDisabledClass = !accepted ? "disabled-text" : ""
+
+  return (
+    <li className="rewards-list-item table-row background-container clickable">
+      <div className="table-cell col32">Staked 16K FIDU on Nov 1</div>
+      <div className={`table-cell col20 numeric ${valueDisabledClass}`}>50.34</div>
+      <div className={`table-cell col20 numeric ${valueDisabledClass}`}>4.03</div>
+      {!accepted ? (
+        <ActionButton text="Accept" onClick={handleAccept} />
+      ) : (
+        <ActionButton text="Claim GFI" onClick={() => console.log("claim action")} />
+      )}
+      <button className="expand">{iconCarrotDown}</button>
+    </li>
+  )
+}
+
 function Rewards(props) {
   return (
     <div className="content-section">
@@ -69,20 +115,7 @@ function Rewards(props) {
           <div className="table-cell col20 numeric limit">Claimable GFI</div>
         </div>
         <ul className="rewards-list">
-          {/* <li className="table-row rewards-list-item no-rewards background-container">
-            You have no rewards. You can earn rewards by supplying to&nbsp;
-            <Link to="/pools/senior">
-              <span className="senior-pool-link">pools</span>
-            </Link>
-            .
-          </li> */}
-          <li className="rewards-list-item table-row background-container clickable">
-            <div className="table-cell col32">Staked 16K FIDU on Nov 1</div>
-            <div className="table-cell col20 numeric">50.34</div>
-            <div className="table-cell col20 numeric">4.03</div>
-            <button className="claim">Claim GFI</button>
-            <button className="expand">{iconCarrotDown}</button>
-          </li>
+          <RewardsListItem />
         </ul>
       </div>
     </div>
