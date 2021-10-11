@@ -415,7 +415,6 @@ function parseStakedPosition(
   tokenId: string,
   tuple: {0: string; 1: [string, string, string, string, string, string]; 2: string; 3: string}
 ): StakedPosition {
-  console.log("tokenID", tuple)
   return new StakedPosition(tokenId, new BigNumber(tuple[0]), new BigNumber(tuple[2]), tuple[3], {
     totalUnvested: new BigNumber(tuple[1][0]),
     totalVested: new BigNumber(tuple[1][1]),

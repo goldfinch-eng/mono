@@ -9,18 +9,6 @@ import {
 } from "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types"
 import BigNumber from "bignumber.js"
 
-interface CommunityRewardsVesting {
-  id: string
-  user: string
-  totalGranted: BigNumber
-  totalClaimed: BigNumber
-  startTime: string
-  endTime: string
-  cliffLength: BigNumber
-  vestingInterval: BigNumber
-  revokedAt: BigNumber
-}
-
 export class MerkleDistributor {
   goldfinchProtocol: GoldfinchProtocol
   contract: MerkleDistributorContract
@@ -59,16 +47,12 @@ export class MerkleDistributor {
   }
 
   getGrants(recipient: string): MerkleDistributorGrantInfo[] | [] {
-    if (this.info) {
-      return this.info.grants.filter((grant) => grant.account === recipient)
-    } else {
-      return []
-    }
+    if (!this.info) return []
+    return this.info.grants.filter((grant) => grant.account === recipient)
   }
 
   async calculateTotalClaimable() {
     if (this.acceptedGrants.length === 0) return new BigNumber(0)
-
     const tokenIds = this.acceptedGrants.map((grant) => grant.id)
     const claimableResults = await Promise.all(
       tokenIds.map((id) => {
@@ -96,6 +80,18 @@ export class MerkleDistributor {
       this.acceptedGrants.map((grant) => grant.totalGranted)
     )
   }
+}
+
+interface CommunityRewardsVesting {
+  id: string
+  user: string
+  totalGranted: BigNumber
+  totalClaimed: BigNumber
+  startTime: string
+  endTime: string
+  cliffLength: BigNumber
+  vestingInterval: BigNumber
+  revokedAt: BigNumber
 }
 
 function parseCommunityRewardsVesting(

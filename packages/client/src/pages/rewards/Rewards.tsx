@@ -2,7 +2,7 @@ import BigNumber from "bignumber.js"
 import React, {useEffect, useState} from "react"
 import {Link} from "react-router-dom"
 import {usdcFromAtomic} from "../../ethereum/erc20"
-import {useGFIBalance, useRewards} from "../../hooks/useRewards"
+import {useGFIBalance, useRewards} from "../../hooks/useStakingRewards"
 import {displayDollars, displayNumber} from "../../utils"
 
 interface RewardsSummaryProps {
@@ -69,7 +69,7 @@ function Rewards(props) {
     setStillVesting(stakingRewards.stillVesting.plus(merkleDistributor.stillVesting))
     setGranted(stakingRewards.granted.plus(merkleDistributor.granted))
   }, [stakingRewards, merkleDistributor, merkleDistributor?._loaded])
-  console.log(stakingRewards)
+
   return (
     <div className="content-section">
       <div className="page-header">
