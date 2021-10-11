@@ -149,7 +149,6 @@ export class CommunityRewards {
     this._loaded = true
   }
 
-  // can use this to get accepted grants
   async getGrantedEvents(recipient: string): Promise<EventData[]> {
     const eventNames = ["Granted"]
     const events = await this.goldfinchProtocol.queryEvents(this.contract, eventNames, {user: recipient})
