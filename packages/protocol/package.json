@@ -128,7 +128,6 @@
     "solhint": "^3.3.6",
     "solhint-plugin-modifiers": "0.0.3",
     "solhint-plugin-prettier": "0.0.5",
-    "solidity-docgen": "^0.5.7",
     "truffle-contract-size": "^2.0.0",
     "ts-node": "^10.0.0",
     "tsconfig-paths": "^3.11.0",
