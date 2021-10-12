@@ -271,6 +271,13 @@ describe("CommunityRewards", () => {
       // (Established in `grant()`.)
     })
 
+    it("uses the expected amount of gas", async () => {
+      const receipt = await communityRewards.grant(anotherUser, new BN(1e3), new BN(0), new BN(0), new BN(1), {
+        from: owner,
+      })
+      expect(receipt.receipt.gasUsed).to.eq(319172)
+    })
+
     context("paused", async () => {
       it("reverts", async () => {
         await communityRewards.pause()
