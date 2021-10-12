@@ -98,10 +98,13 @@ interface CapitalProvider {
       stakedLocked: BigNumber
     }
     aggregates: {
+      staked: BigNumber
       withdrawable: BigNumber
       total: BigNumber
     }
   }
+  stakedSeniorPoolBalanceInDollars: BigNumber
+  totalSeniorPoolBalanceInDollars: BigNumber
   availableToStakeInDollars: BigNumber
   availableToWithdraw: BigNumber
   availableToWithdrawInDollars: BigNumber
@@ -124,10 +127,13 @@ function emptyCapitalProvider({loaded = false} = {}): CapitalProvider {
         stakedLocked: new BigNumber(0),
       },
       aggregates: {
+        staked: new BigNumber(0),
         withdrawable: new BigNumber(0),
         total: new BigNumber(0),
       },
     },
+    stakedSeniorPoolBalanceInDollars: new BigNumber(0),
+    totalSeniorPoolBalanceInDollars: new BigNumber(0),
     availableToStakeInDollars: new BigNumber(0),
     availableToWithdraw: new BigNumber(0),
     availableToWithdrawInDollars: new BigNumber(0),
@@ -144,11 +150,14 @@ function emptyCapitalProvider({loaded = false} = {}): CapitalProvider {
 
 async function fetchCapitalProviderData(
   pool: SeniorPool,
-  stakingRewards: StakingRewards,
+  stakingRewards: StakingRewards | undefined,
   capitalProviderAddress: string | undefined
 ): Promise<CapitalProvider> {
+  if (!stakingRewards) {
+    return emptyCapitalProvider({loaded: false})
+  }
   if (!capitalProviderAddress) {
-    return emptyCapitalProvider({loaded: pool.loaded})
+    return emptyCapitalProvider({loaded: pool.loaded && stakingRewards._loaded})
   }
 
   const attributes = [{method: "sharePrice"}]
@@ -158,8 +167,15 @@ async function fetchCapitalProviderData(
   const numSharesStakedLocked = new BigNumber(0) // TODO[PR]
   const numSharesStakedNotLocked = new BigNumber(0) // TODO[PR]
 
+  const numSharesStaked = numSharesStakedLocked.plus(numSharesStakedNotLocked)
   const numSharesWithdrawable = numSharesNotStaked.plus(numSharesStakedNotLocked)
   const numSharesTotal = numSharesNotStaked.plus(numSharesStakedLocked).plus(numSharesStakedNotLocked)
+
+  const stakedSeniorPoolBalance = numSharesStaked.multipliedBy(new BigNumber(sharePrice)).div(FIDU_DECIMALS.toString())
+  const stakedSeniorPoolBalanceInDollars = new BigNumber(fiduFromAtomic(stakedSeniorPoolBalance))
+
+  const totalSeniorPoolBalance = numSharesTotal.multipliedBy(new BigNumber(sharePrice)).div(FIDU_DECIMALS.toString())
+  const totalSeniorPoolBalanceInDollars = new BigNumber(fiduFromAtomic(totalSeniorPoolBalance))
 
   const availableToStake = numSharesNotStaked.multipliedBy(new BigNumber(sharePrice)).div(FIDU_DECIMALS.toString())
   const availableToStakeInDollars = new BigNumber(fiduFromAtomic(availableToStake))
@@ -191,10 +207,13 @@ async function fetchCapitalProviderData(
         stakedLocked: numSharesStakedLocked,
       },
       aggregates: {
+        staked: numSharesStaked,
         withdrawable: numSharesWithdrawable,
         total: numSharesTotal,
       },
     },
+    stakedSeniorPoolBalanceInDollars,
+    totalSeniorPoolBalanceInDollars,
     availableToStakeInDollars,
     availableToWithdraw,
     availableToWithdrawInDollars,

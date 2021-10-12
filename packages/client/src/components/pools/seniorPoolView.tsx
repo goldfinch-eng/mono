@@ -7,9 +7,11 @@ import {
   fetchCapitalProviderData,
   PoolData,
   SeniorPool,
+  StakingRewards,
 } from "../../ethereum/pool"
 import {useStaleWhileRevalidating} from "../../hooks/useAsync"
 import {eligibleForSeniorPool, useKYC} from "../../hooks/useKYC"
+import {useStakingRewards} from "../../hooks/useStakingRewards"
 import {assertNonNullable, displayDollars} from "../../utils"
 import ConnectionNotice from "../connectionNotice"
 import EarnActionsContainer from "../earnActionsContainer"
@@ -21,6 +23,7 @@ function SeniorPoolView(): JSX.Element {
   const {pool, user, goldfinchConfig} = useContext(AppContext)
   const [capitalProvider, setCapitalProvider] = useState<CapitalProvider>(emptyCapitalProvider())
   const [poolData, setPoolData] = useState<PoolData>()
+  const stakingRewards = useStakingRewards()
   const kycResult = useKYC()
   const kyc = useStaleWhileRevalidating(kycResult)
 
@@ -30,23 +33,27 @@ function SeniorPoolView(): JSX.Element {
       assertNonNullable(pool)
 
       refreshPoolData(pool)
-      refreshCapitalProviderData(pool, capitalProviderAddress)
+      refreshCapitalProviderData(pool, stakingRewards, capitalProviderAddress)
     }
 
     if (pool) {
       refreshAllData()
     }
-  }, [pool, user])
+  }, [pool, stakingRewards, user])
 
   async function actionComplete() {
     assertNonNullable(pool)
 
     await refreshPoolData(pool)
-    return refreshCapitalProviderData(pool, capitalProvider!.address)
+    return refreshCapitalProviderData(pool, stakingRewards, capitalProvider.address)
   }
 
-  async function refreshCapitalProviderData(pool: SeniorPool, address: string | undefined) {
-    const capitalProvider = await fetchCapitalProviderData(pool, address)
+  async function refreshCapitalProviderData(
+    pool: SeniorPool,
+    stakingRewards: StakingRewards | undefined,
+    address: string | undefined
+  ) {
+    const capitalProvider = await fetchCapitalProviderData(pool, stakingRewards, address)
     setCapitalProvider(capitalProvider)
   }
 
