@@ -115,7 +115,10 @@
           "setLeverageRatio": ["onlySetterRole"]
         },
         "**/GFI.sol:GFI": {
-          "updateGoldfinchConfig": []
+          "mint": ["onlyMinter"],
+          "setCap": ["onlyOwner"],
+          "pause": ["onlyPauser"],
+          "unpause": ["onlyPauser"]
         },
         "**/StakingRewards.sol:StakingRewards": {
           "stake": [],

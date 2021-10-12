@@ -104,10 +104,14 @@ const murmuration = () => (config) => {
   return config
 }
 
+// https://webpack.js.org/configuration/dev-server/#devserverproxy
+// Proxy URLs for separate API backend development server and to send API requests to the same domain
 const localRelayer = () => (config) => {
   config.proxy = {
     ...(config.proxy || {}),
     "/relay": "http://localhost:4000",
+    "/fundWithWhales": "http://localhost:4000",
+    "/setupForTesting": "http://localhost:4000",
   }
   return config
 }

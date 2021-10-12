@@ -6,6 +6,7 @@ import Earn from "./components/earn"
 import Transactions from "./components/transactions.js"
 import NetworkWidget from "./components/networkWidget"
 import Sidebar from "./components/sidebar"
+import DevTools from "./components/devTools"
 import TermsOfService from "./components/termsOfService.js"
 import PrivacyPolicy from "./components/privacyPolicy.js"
 import SeniorPoolAgreementNonUS from "./components/seniorPoolAgreementNonUS"
@@ -188,6 +189,7 @@ function App() {
   return (
     <AppContext.Provider value={store}>
       <Router>
+        {(process.env.NODE_ENV === "development" || process.env.MURMURATION === "yes") && <DevTools />}
         <Sidebar />
         <NetworkWidget
           user={user}
