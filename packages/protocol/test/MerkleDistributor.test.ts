@@ -436,15 +436,17 @@ describe("MerkleDistributor", () => {
     })
 
     it("uses the expected amount of gas", async () => {
-      const receipt = await communityRewards.grant(
+      const receipt = await merkleDistributor.acceptGrant(
+        acceptGrantParams.index,
         acceptGrantParams.account,
         acceptGrantParams.amount,
         acceptGrantParams.vestingLength,
         acceptGrantParams.cliffLength,
         acceptGrantParams.vestingInterval,
-        {from: owner}
+        acceptGrantParams.proof,
+        {from: acceptGrantParams.from}
       )
-      expect(receipt.receipt.gasUsed).to.eq(334296)
+      expect(receipt.receipt.gasUsed).to.eq(365370)
     })
   })
 })
