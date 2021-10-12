@@ -31,23 +31,6 @@ function PoolList({title, children}) {
   )
 }
 
-const getTooltipHtmlContent = (seniorPoolAPY?: number, GFIRewardsAPY?: number, total?: number) => `<div>
-  <p class="tooltip-descritpion">Includes the senior pool yield from allocating to borrower pools, plus GFI rewards:</p>
-  <div class="tooltip-row">
-    <p>Senior Pool APY</p>
-    <span>--.--%</span>
-  </div>
-  <div class="tooltip-row">
-    <p>GFI Rewards APY</p>
-    <span>--.--%</span>
-  </div>
-  <div class="tooltip-divider"></div>
-  <div class="tooltip-row">
-    <p>Total Est. APY</p>
-    <span>--.--%</span>
-  </div>
-</div>`
-
 function PortfolioOverviewSkeleton() {
   return (
     <div className="background-container">
@@ -58,30 +41,12 @@ function PortfolioOverviewSkeleton() {
           <div className="sub-value disabled">--.-- (--.--%)</div>
         </div>
         <div className="deposit-status-item">
-          <div className="deposit-status-item-flex">
-            <div className="label">Est. Annual Growth</div>
-            <span
-              data-tip={getTooltipHtmlContent()}
-              data-html={true}
-              data-for="annual-growth-tooltip"
-              data-offset="{'top': 0, 'left': 0}"
-              data-place="bottom"
-            >
-              <InfoIcon />
-            </span>
-          </div>
+          <div className="label">Est. Annual Growth</div>
+
           <div className="value disabled">$--.--</div>
           <div className="sub-value disabled">--.--% APY</div>
         </div>
       </div>
-      <ReactTooltip
-        className="goldfinch-tooltip"
-        id="annual-growth-tooltip"
-        effect="solid"
-        arrowColor="transparent"
-        delayShow={200}
-        html={true}
-      />
     </div>
   )
 }
@@ -123,11 +88,42 @@ function PortfolioOverview({
           </div>
         </div>
         <div className="deposit-status-item">
-          <div className="label">Est. Annual Growth</div>
+          <div className="deposit-status-item-flex">
+            <div className="label">Est. Annual Growth</div>
+            <span data-tip="" data-for="annual-growth-tooltip" data-offset="{'top': 0, 'left': 0}" data-place="bottom">
+              <InfoIcon />
+            </span>
+          </div>
           <div className="value">{displayDollars(roundDownPenny(estimatedAnnualGrowth))}</div>
           <div className="sub-value">{`${displayPercent(estimatedAPY)} APY`}</div>
         </div>
       </div>
+      <ReactTooltip
+        className="goldfinch-tooltip"
+        id="annual-growth-tooltip"
+        effect="solid"
+        arrowColor="transparent"
+        delayShow={200}
+      >
+        <div>
+          <p className="tooltip-description">
+            Includes the senior pool yield from allocating to borrower pools, plus GFI rewards:
+          </p>
+          <div className="tooltip-row">
+            <p>Senior Pool APY</p>
+            <span>--.--%</span>
+          </div>
+          <div className="tooltip-row">
+            <p>GFI Rewards APY</p>
+            <span>--.--%</span>
+          </div>
+          <div className="tooltip-divider"></div>
+          <div className="tooltip-row">
+            <p>Total Est. APY</p>
+            <span>--.--%</span>
+          </div>
+        </div>
+      </ReactTooltip>
     </div>
   )
 }
