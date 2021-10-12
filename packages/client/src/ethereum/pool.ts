@@ -144,6 +144,7 @@ function emptyCapitalProvider({loaded = false} = {}): CapitalProvider {
 
 async function fetchCapitalProviderData(
   pool: SeniorPool,
+  stakingRewards: StakingRewards,
   capitalProviderAddress: string | undefined
 ): Promise<CapitalProvider> {
   if (!capitalProviderAddress) {
@@ -170,7 +171,12 @@ async function fetchCapitalProviderData(
 
   const address = capitalProviderAddress
   const allowance = new BigNumber(await pool.usdc.methods.allowance(capitalProviderAddress, pool.address).call())
-  const weightedAverageSharePrice = await getWeightedAverageSharePrice(pool, capitalProviderAddress, numSharesTotal)
+  const weightedAverageSharePrice = await getWeightedAverageSharePrice(
+    pool,
+    stakingRewards,
+    capitalProviderAddress,
+    numSharesTotal
+  )
   const sharePriceDelta = sharePrice.dividedBy(FIDU_DECIMALS).minus(weightedAverageSharePrice)
   const unrealizedGains = sharePriceDelta.multipliedBy(numSharesTotal)
   const unrealizedGainsInDollars = new BigNumber(roundDownPenny(unrealizedGains.div(FIDU_DECIMALS)))
@@ -272,22 +278,84 @@ async function fetchPoolData(pool: SeniorPool, erc20: Contract): Promise<PoolDat
   }
 }
 
+type StakedEventsByBlockNumberAndTransactionHash = {
+  [blockNumber: number]: {
+    [transactionHash: string]: EventData
+  }
+}
+
+async function getDepositEventsForCapitalProvider(
+  pool: SeniorPool,
+  stakingRewards: StakingRewards,
+  capitalProviderAddress: string
+): Promise<EventData[]> {
+  const depositEventsByCapitalProviderDirectly: EventData[] = await pool.getPoolEvents(capitalProviderAddress, [
+    "DepositMade",
+  ])
+
+  // TODO[PR] Getting all deposit events by the StakingRewards contract seems likely to become inefficient rapidly.
+  // We should probably invert the approach and get only those in block numbers for which there was a Staked event for
+  // `capitalProviderAddress`, which will be much fewer in number.
+  // TODO[PR] For efficiency, use util that skips v1Pool deposit events, as those can't have corresponding Staked events.
+  const depositEventsViaStakingRewards: EventData[] = await pool.getPoolEvents(stakingRewards.address, ["DepositMade"])
+  const stakedEventsForCapitalProvider: EventData[] = await stakingRewards.getStakedEvents(capitalProviderAddress)
+  const stakedEventsForCapitalProviderByBlockNumberAndTransactionHash =
+    stakedEventsForCapitalProvider.reduce<StakedEventsByBlockNumberAndTransactionHash>((acc, curr) => {
+      const eventsByTransactionHash = acc[curr.blockNumber]
+      if (eventsByTransactionHash && curr.transactionHash in eventsByTransactionHash) {
+        throw new Error("Expected at most one Staked event per transaction hash.")
+      }
+      return {
+        ...acc,
+        [curr.blockNumber]: {
+          ...eventsByTransactionHash,
+          [curr.transactionHash]: curr,
+        },
+      }
+    }, {})
+  const depositEventsByCapitalProviderViaStakingRewards: EventData[] = depositEventsViaStakingRewards.filter(
+    (eventData: EventData): boolean => {
+      const stakedEventsByTransactionHash =
+        stakedEventsForCapitalProviderByBlockNumberAndTransactionHash[eventData.blockNumber]
+      const correspondingStakedEvent = stakedEventsByTransactionHash
+        ? stakedEventsByTransactionHash[eventData.transactionHash]
+        : undefined
+      if (correspondingStakedEvent) {
+        if (eventData.returnValues.amount === correspondingStakedEvent.returnValues.amount) {
+          return true
+        } else {
+          throw new Error(
+            `Staked event ${correspondingStakedEvent.transactionHash} corresponding to DepositMade event differs in amount.`
+          )
+        }
+      } else {
+        return false
+      }
+    }
+  )
+
+  return depositEventsByCapitalProviderDirectly.concat(depositEventsByCapitalProviderViaStakingRewards)
+}
+
 // This uses the FIFO method of calculating cost-basis. Thus we
 // add up the deposits *in reverse* to arrive at your current number of shares.
 // We calculate the weighted average price based on that, which can then be used
 // to calculate unrealized gains.
-// Note: This does not take into account transfers of Fidu that happen outside
+// NOTE: This does not take into account transfers of Fidu that happen outside
 // the protocol. In such a case, you would necessarily end up with more Fidu
 // than we have records of your deposits, so we would not be able to account
 // for your shares, and we would fail out, and return a "-" on the front-end.
-// Note: This also does not take into account realized gains, which we are also punting on.
+// NOTE: This also does not take into account realized gains, which we are also
+// punting on.
+// TODO[PR] Can we really still get away with punting on taking realized gains into account?
 async function getWeightedAverageSharePrice(
   pool: SeniorPool,
+  stakingRewards: StakingRewards,
   capitalProviderAddress: string,
   capitalProviderTotalShares: BigNumber
 ) {
-  const poolEvents = await pool.getPoolEvents(capitalProviderAddress, ["DepositMade"])
-  const preparedEvents = _.reverse(_.sortBy(poolEvents, "blockNumber"))
+  const depositEvents = await getDepositEventsForCapitalProvider(pool, stakingRewards, capitalProviderAddress)
+  const preparedEvents = _.reverse(_.sortBy(depositEvents, ["blockNumber", "transactionIndex"]))
 
   let zero = new BigNumber(0)
   let sharesLeftToAccountFor = capitalProviderTotalShares
