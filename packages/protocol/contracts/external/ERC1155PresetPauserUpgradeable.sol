@@ -47,6 +47,9 @@ contract ERC1155PresetPauserUpgradeable is
   function __ERC1155PresetPauser_init_unchained(address owner) internal initializer {
     _setupRole(OWNER_ROLE, owner);
     _setupRole(PAUSER_ROLE, owner);
+
+    _setRoleAdmin(PAUSER_ROLE, OWNER_ROLE);
+    _setRoleAdmin(OWNER_ROLE, OWNER_ROLE);
   }
 
   function setURI(string memory newuri) external onlyAdmin {
