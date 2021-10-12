@@ -1,5 +1,6 @@
 import {useState, useEffect, useContext} from "react"
 import {useHistory} from "react-router-dom"
+import ReactTooltip from "react-tooltip"
 import {CapitalProvider, fetchCapitalProviderData, PoolData, SeniorPool} from "../ethereum/pool"
 import {AppContext} from "../App"
 import {usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
@@ -62,6 +63,7 @@ function PortfolioOverviewSkeleton() {
             <span
               data-tip={getTooltipHtmlContent()}
               data-html={true}
+              data-for="annual-growth-tooltip"
               data-offset="{'top': 0, 'left': 0}"
               data-place="bottom"
             >
@@ -72,6 +74,14 @@ function PortfolioOverviewSkeleton() {
           <div className="sub-value disabled">--.--% APY</div>
         </div>
       </div>
+      <ReactTooltip
+        className="goldfinch-tooltip"
+        id="annual-growth-tooltip"
+        effect="solid"
+        arrowColor="transparent"
+        delayShow={200}
+        html={true}
+      />
     </div>
   )
 }

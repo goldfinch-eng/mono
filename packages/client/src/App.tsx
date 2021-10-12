@@ -1,7 +1,6 @@
 import React, {useState, useEffect} from "react"
 import {BrowserRouter as Router, Switch, Route, Redirect} from "react-router-dom"
 import * as Sentry from "@sentry/react"
-import ReactTooltip from "react-tooltip"
 import Borrow from "./components/borrow.js"
 import Earn from "./components/earn"
 import Transactions from "./components/transactions.js"
@@ -253,13 +252,6 @@ function App() {
             </Route>
           </Switch>
         </div>
-        <ReactTooltip
-          className="goldfinch-tooltip"
-          effect="solid"
-          arrowColor="transparent"
-          delayShow={200}
-          html={true}
-        />
         <footer>
           <a href="/terms">Terms</a>
           <span className="divider">•</span>
