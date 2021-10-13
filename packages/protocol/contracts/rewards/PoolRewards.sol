@@ -19,14 +19,14 @@ contract PoolRewards is BaseUpgradeablePausable, SafeERC20Transfer {
   }
 
   struct PoolTokenInfo {
-    uint256 rewardDebt; // amount of rewards claimed
+    uint256 rewardDebt; // amount of rewards claimed per PoolToken
   }
 
-  uint256 public maxRewardsAvailable;
+  uint256 public totalSupply; // total amount of GFI rewards available
   uint256 public maxAmountEligibleForRewards;
   uint256 public totalInterestReceived; // counter of on-time interest repayments across all jr pools
 
-  uint256 private sqrtMaxRewardsAvailable;
+  uint256 private sqrtTotalSupply;
   uint256 private rewardRatio;
 
   mapping(uint256 => PoolTokenInfo) public tokens; // poolTokenId -> poolTokenInfo
@@ -40,10 +40,10 @@ contract PoolRewards is BaseUpgradeablePausable, SafeERC20Transfer {
 
   function initialize(
     address owner,
-    uint256 _maxRewardsAvailable,
+    uint256 _totalSupply,
     uint256 _maxAmountEligibleForRewards
   ) public initializer {
-    maxRewardsAvailable = _maxRewardsAvailable;
+    totalSupply = _totalSupply;
     maxAmountEligibleForRewards = _maxAmountEligibleForRewards;
     _calcRewardRatio();
     __BaseUpgradeablePausable__init(owner);
@@ -54,8 +54,8 @@ contract PoolRewards is BaseUpgradeablePausable, SafeERC20Transfer {
     _calcRewardRatio();
   }
 
-  function setMaxRewardsAvailable(uint256 _maxRewardsAvailable) public onlyAdmin {
-    maxRewardsAvailable = _maxRewardsAvailable;
+  function setTotalSupply(uint256 _totalSupply) public onlyAdmin {
+    totalSupply = _totalSupply;
     _calcRewardRatio();
   }
 
@@ -67,14 +67,14 @@ contract PoolRewards is BaseUpgradeablePausable, SafeERC20Transfer {
 
     uint256 rewards;
     uint256 sum = _totalInterestReceived + _interestPaymentAmount;
-    uint256 _maxRewardsAvailable = maxRewardsAvailable;
+    uint256 _totalSupply = totalSupply;
 
     // increment the total interest recieved across all junior pools
     totalInterestReceived = sum;
 
-    // if over threshold of maxRewardsAvailable, only grant rewards to limit
-    if (sum > _maxRewardsAvailable) {
-      rewards = _calcRewards(_maxRewardsAvailable);
+    // if over threshold of totalSupply, only grant rewards to limit
+    if (sum > _totalSupply) {
+      rewards = _calcRewards(_totalSupply);
     } else {
       rewards = _calcRewards(_totalInterestReceived + _interestPaymentAmount);
     }
@@ -125,24 +125,20 @@ contract PoolRewards is BaseUpgradeablePausable, SafeERC20Transfer {
 
     tokens[tokenId].rewardDebt = poolTokenRewardDebt + _amount;
 
-    // tokenId = config.getPoolTokens().mint(params, msg.sender);
-    // safeERC20TransferFrom(config.getUSDC(), msg.sender, address(this), amount);
+    safeERC20TransferFrom(config.getGFI(), poolTokens.ownerOf(tokenId), address(this), _amount);
     // emit RewardWithdraw(msg.sender, tranche, tokenId, amount);
-    // return tokenId;
   }
 
   /* Internal functions  */
 
   function _calcRewardRatio() internal {
-    uint256 _maxRewardsAvailable = maxRewardsAvailable;
-    rewardRatio = _maxRewardsAvailable / maxAmountEligibleForRewards;
-    sqrtMaxRewardsAvailable = Babylonian.sqrt(_maxRewardsAvailable);
+    uint256 _totalSupply = totalSupply;
+    rewardRatio = _totalSupply / maxAmountEligibleForRewards;
+    sqrtTotalSupply = Babylonian.sqrt(_totalSupply);
   }
 
   // Calculate the total rewards between two intervals
   function _calcRewards(uint256 _endInterval) internal view returns (uint256) {
-    return
-      ((Babylonian.sqrt(totalInterestReceived) - Babylonian.sqrt(_endInterval)) / sqrtMaxRewardsAvailable) *
-      rewardRatio;
+    return ((Babylonian.sqrt(totalInterestReceived) - Babylonian.sqrt(_endInterval)) / sqrtTotalSupply) * rewardRatio;
   }
 }
