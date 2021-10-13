@@ -58,7 +58,7 @@ export function useGFIBalance() {
     if (!goldfinchProtocol || !user || !user.address) return
     const getGFIBalance = async (goldfinchProtocol) => {
       const gfi = new GFI(goldfinchProtocol)
-      gfi.initialize()
+      await gfi.initialize()
       const balance = await gfi.contract.methods.balanceOf(user.address).call()
       setGfiBalance(new BigNumber(balance))
     }
