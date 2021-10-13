@@ -31,7 +31,9 @@ export class MerkleDistributor {
   async initialize(recipient: string) {
     const contractAddress = await this.contract.methods.communityRewards().call()
     if (contractAddress !== this.communityRewards.address) {
-      return
+      throw new Error(
+        "MerkleDistributor community rewards address doesn't match with deployed CommunityRewards address"
+      )
     }
 
     const info = await getMerkleDistributorInfo()
@@ -60,7 +62,9 @@ export class MerkleDistributor {
     if (!this.communityRewards.grants || this.communityRewards.grants.length === 0) return new BigNumber(0)
     return BigNumber.sum.apply(
       null,
-      this.communityRewards.grants.map((grant) => grant.totalGranted.minus(grant.totalClaimed.plus(grant.claimable)))
+      this.communityRewards.grants.map((grant) =>
+        grant.rewards.totalGranted.minus(grant.rewards.totalClaimed.plus(grant.claimable))
+      )
     )
   }
 
@@ -68,14 +72,12 @@ export class MerkleDistributor {
     if (!this.communityRewards.grants || this.communityRewards.grants.length === 0) return new BigNumber(0)
     return BigNumber.sum.apply(
       null,
-      this.communityRewards.grants.map((grant) => grant.totalGranted)
+      this.communityRewards.grants.map((grant) => grant.rewards.totalGranted)
     )
   }
 }
 
-interface CommunityRewardsVesting {
-  id: string
-  user: string
+interface Rewards {
   totalGranted: BigNumber
   totalClaimed: BigNumber
   startTime: string
@@ -83,7 +85,13 @@ interface CommunityRewardsVesting {
   cliffLength: BigNumber
   vestingInterval: BigNumber
   revokedAt: BigNumber
+}
+
+interface CommunityRewardsVesting {
+  id: string
+  user: string
   claimable: BigNumber
+  rewards: Rewards
 }
 
 function parseCommunityRewardsVesting(
@@ -103,14 +111,16 @@ function parseCommunityRewardsVesting(
   return {
     id: tokenId,
     user: user,
-    totalGranted: new BigNumber(tuple[0]),
-    totalClaimed: new BigNumber(tuple[1]),
-    startTime: tuple[2],
-    endTime: tuple[3],
-    cliffLength: new BigNumber(tuple[4]),
-    vestingInterval: new BigNumber(tuple[5]),
-    revokedAt: new BigNumber(tuple[6]),
     claimable: new BigNumber(claimable),
+    rewards: {
+      totalGranted: new BigNumber(tuple[0]),
+      totalClaimed: new BigNumber(tuple[1]),
+      startTime: tuple[2],
+      endTime: tuple[3],
+      cliffLength: new BigNumber(tuple[4]),
+      vestingInterval: new BigNumber(tuple[5]),
+      revokedAt: new BigNumber(tuple[6]),
+    },
   }
 }
 
