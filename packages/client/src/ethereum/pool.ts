@@ -391,40 +391,37 @@ interface Rewards {
   totalClaimed: BigNumber
   startTime: string
   endTime: string
+  claimable: BigNumber
 }
 
-class StakedPosition {
+interface StakedPosition {
   id: string
   amount: BigNumber
   leverageMultiplier: BigNumber
   lockedUntil: string
   rewards: Rewards
-
-  constructor(id: string, amount: BigNumber, leverageMultiplier: BigNumber, lockedUntil: string, rewards: Rewards) {
-    this.id = id
-    this.amount = amount
-    this.leverageMultiplier = leverageMultiplier
-    this.lockedUntil = lockedUntil
-    this.rewards = rewards
-  }
-
-  claimable(): BigNumber {
-    return this.rewards.totalVested.plus(this.rewards.totalPreviouslyVested).minus(this.rewards.totalClaimed)
-  }
 }
 
 function parseStakedPosition(
   tokenId: string,
+  claimable: string,
   tuple: {0: string; 1: [string, string, string, string, string, string]; 2: string; 3: string}
 ): StakedPosition {
-  return new StakedPosition(tokenId, new BigNumber(tuple[0]), new BigNumber(tuple[2]), tuple[3], {
-    totalUnvested: new BigNumber(tuple[1][0]),
-    totalVested: new BigNumber(tuple[1][1]),
-    totalPreviouslyVested: new BigNumber(tuple[1][2]),
-    totalClaimed: new BigNumber(tuple[1][3]),
-    startTime: tuple[1][4],
-    endTime: tuple[1][5],
-  })
+  return {
+    id: tokenId,
+    amount: new BigNumber(tuple[0]),
+    leverageMultiplier: new BigNumber(tuple[2]),
+    lockedUntil: tuple[3],
+    rewards: {
+      totalUnvested: new BigNumber(tuple[1][0]),
+      totalVested: new BigNumber(tuple[1][1]),
+      totalPreviouslyVested: new BigNumber(tuple[1][2]),
+      totalClaimed: new BigNumber(tuple[1][3]),
+      startTime: tuple[1][4],
+      endTime: tuple[1][5],
+      claimable: new BigNumber(claimable),
+    },
+  }
 }
 
 class StakingRewards {
@@ -432,19 +429,15 @@ class StakingRewards {
   contract: StakingRewardsContract
   address: string
   _loaded: boolean
-  positions: StakedPosition[]
-  totalClaimable: BigNumber
-  stillVesting: BigNumber
-  granted: BigNumber
+  positions: StakedPosition[] | undefined
+  totalClaimable: BigNumber | undefined
+  unvested: BigNumber | undefined
+  granted: BigNumber | undefined
 
   constructor(goldfinchProtocol: GoldfinchProtocol) {
     this.goldfinchProtocol = goldfinchProtocol
     this.contract = goldfinchProtocol.getContract<StakingRewardsContract>("StakingRewards")
     this.address = goldfinchProtocol.getAddress("StakingRewards")
-    this.positions = []
-    this.totalClaimable = new BigNumber(0)
-    this.stillVesting = new BigNumber(0)
-    this.granted = new BigNumber(0)
     this._loaded = false
   }
 
@@ -456,11 +449,14 @@ class StakingRewards {
         return this.contract.methods
           .positions(tokenId)
           .call()
-          .then((res) => parseStakedPosition(tokenId, res))
+          .then(async (res) => {
+            const claimable = await this.contract.methods.claimableRewards(tokenId).call()
+            return parseStakedPosition(tokenId, claimable, res)
+          })
       })
     )
     this.totalClaimable = this.calculateTotalClaimable()
-    this.stillVesting = this.calculateStillVesting()
+    this.unvested = this.calculateUnvested()
     this.granted = this.calculateGranted()
     this._loaded = true
   }
@@ -472,31 +468,30 @@ class StakingRewards {
   }
 
   calculateTotalClaimable(): BigNumber {
-    if (this.positions.length === 0) return new BigNumber(0)
+    if (!this.positions || this.positions.length === 0) return new BigNumber(0)
     return BigNumber.sum.apply(
       null,
-      this.positions.map((stakedPosition) => stakedPosition.claimable())
+      this.positions.map((stakedPosition) => stakedPosition.rewards.claimable)
     )
   }
 
-  calculateStillVesting(): BigNumber {
-    if (this.positions.length === 0) return new BigNumber(0)
+  calculateUnvested(): BigNumber {
+    if (!this.positions || this.positions.length === 0) return new BigNumber(0)
     return BigNumber.sum.apply(
       null,
-      this.positions.map((stakedPosition) =>
-        stakedPosition.amount
-          .minus(stakedPosition.rewards.totalVested)
-          .minus(stakedPosition.rewards.totalClaimed)
-          .minus(stakedPosition.rewards.totalPreviouslyVested)
-      )
+      this.positions.map((stakedPosition) => stakedPosition.rewards.totalUnvested)
     )
   }
 
   calculateGranted(): BigNumber {
-    if (this.positions.length === 0) return new BigNumber(0)
+    if (!this.positions || this.positions.length === 0) return new BigNumber(0)
     return BigNumber.sum.apply(
       null,
-      this.positions.map((stakedPosition) => stakedPosition.amount)
+      this.positions.map((stakedPosition) =>
+        stakedPosition.rewards.totalUnvested
+          .plus(stakedPosition.rewards.totalVested)
+          .plus(stakedPosition.rewards.totalPreviouslyVested)
+      )
     )
   }
 }

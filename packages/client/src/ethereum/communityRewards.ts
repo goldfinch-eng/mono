@@ -15,69 +15,60 @@ export class MerkleDistributor {
   address: string
   _loaded: boolean
   info: MerkleDistributorInfo | undefined
-  acceptedGrants: CommunityRewardsVesting[]
   communityRewards: CommunityRewards
-  totalClaimable: BigNumber
-  stillVesting: BigNumber
-  granted: BigNumber
+  totalClaimable: BigNumber | undefined
+  unvested: BigNumber | undefined
+  granted: BigNumber | undefined
 
   constructor(goldfinchProtocol: GoldfinchProtocol) {
     this.goldfinchProtocol = goldfinchProtocol
     this.contract = goldfinchProtocol.getContract<MerkleDistributorContract>("MerkleDistributor")
     this.address = goldfinchProtocol.getAddress("MerkleDistributor")
-    this.acceptedGrants = []
     this.communityRewards = new CommunityRewards(goldfinchProtocol)
-    this.totalClaimable = new BigNumber(0)
-    this.stillVesting = new BigNumber(0)
-    this.granted = new BigNumber(0)
     this._loaded = true
   }
 
   async initialize(recipient: string) {
+    const contractAddress = await this.contract.methods.communityRewards().call()
+    if (contractAddress !== this.communityRewards.address) {
+      return
+    }
+
     const info = await getMerkleDistributorInfo()
     if (!info) return
     this.info = info
 
     await this.communityRewards.initialize(recipient)
-    this.acceptedGrants = this.communityRewards.grants
-    this.totalClaimable = await this.calculateTotalClaimable()
-    this.stillVesting = this.calculateStillVesting()
+    this.totalClaimable = this.calculateTotalClaimable()
+    this.unvested = this.calculateUnvested()
     this.granted = this.calculateGranted()
     this._loaded = true
   }
 
-  getGrants(recipient: string): MerkleDistributorGrantInfo[] | [] {
+  getGrantsInfo(recipient: string): MerkleDistributorGrantInfo[] {
     if (!this.info) return []
     return this.info.grants.filter((grant) => grant.account === recipient)
   }
 
-  async calculateTotalClaimable() {
-    if (this.acceptedGrants.length === 0) return new BigNumber(0)
-    const tokenIds = this.acceptedGrants.map((grant) => grant.id)
-    const claimableResults = await Promise.all(
-      tokenIds.map((id) => {
-        return this.communityRewards.contract.methods
-          .claimableRewards(id)
-          .call()
-          .then((res) => new BigNumber(res))
-      })
-    )
+  calculateTotalClaimable(): BigNumber {
+    if (!this.communityRewards.grants || this.communityRewards.grants.length === 0) return new BigNumber(0)
+    const claimableResults = this.communityRewards.grants.map((grant) => grant.claimable)
     return BigNumber.sum.apply(null, claimableResults)
   }
 
-  calculateStillVesting(): BigNumber {
-    if (this.acceptedGrants.length === 0) return new BigNumber(0)
+  calculateUnvested(): BigNumber {
+    if (!this.communityRewards.grants || this.communityRewards.grants.length === 0) return new BigNumber(0)
     return BigNumber.sum.apply(
       null,
-      this.acceptedGrants.map((grant) => grant.totalGranted.minus(grant.totalClaimed))
+      this.communityRewards.grants.map((grant) => grant.totalGranted.minus(grant.totalClaimed.plus(grant.claimable)))
     )
   }
 
   calculateGranted(): BigNumber {
-    if (this.acceptedGrants.length === 0) return new BigNumber(0)
+    if (!this.communityRewards.grants || this.communityRewards.grants.length === 0) return new BigNumber(0)
     return BigNumber.sum.apply(
       null,
-      this.acceptedGrants.map((grant) => grant.totalGranted)
+      this.communityRewards.grants.map((grant) => grant.totalGranted)
     )
   }
 }
@@ -92,11 +83,13 @@ interface CommunityRewardsVesting {
   cliffLength: BigNumber
   vestingInterval: BigNumber
   revokedAt: BigNumber
+  claimable: BigNumber
 }
 
 function parseCommunityRewardsVesting(
   tokenId: string,
   user: string,
+  claimable: string,
   tuple: {
     0: string
     1: string
@@ -117,6 +110,7 @@ function parseCommunityRewardsVesting(
     cliffLength: new BigNumber(tuple[4]),
     vestingInterval: new BigNumber(tuple[5]),
     revokedAt: new BigNumber(tuple[6]),
+    claimable: new BigNumber(claimable),
   }
 }
 
@@ -125,7 +119,7 @@ export class CommunityRewards {
   contract: CommunityRewardsContract
   address: string
   _loaded: boolean
-  grants: CommunityRewardsVesting[]
+  grants: CommunityRewardsVesting[] | undefined
 
   constructor(goldfinchProtocol: GoldfinchProtocol) {
     this.goldfinchProtocol = goldfinchProtocol
@@ -143,7 +137,10 @@ export class CommunityRewards {
         return this.contract.methods
           .grants(tokenId)
           .call()
-          .then((res) => parseCommunityRewardsVesting(tokenId, recipient, res))
+          .then(async (res) => {
+            const claimable = await this.contract.methods.claimableRewards(tokenId).call()
+            return parseCommunityRewardsVesting(tokenId, recipient, claimable, res)
+          })
       })
     )
     this._loaded = true

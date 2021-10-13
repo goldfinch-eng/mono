@@ -41,16 +41,14 @@ export function useMerkleDistributor(): MerkleDistributor | undefined {
   return merkleDistributor
 }
 
-function isGrantNotAccepted(acceptedGrants: CommunityRewardsVesting[], grant: MerkleDistributorGrantInfo) {
+function isGrantAccepted(acceptedGrants: CommunityRewardsVesting[], grant: MerkleDistributorGrantInfo) {
   return acceptedGrants.every(
     (acceptedGrant) =>
-      !(
-        grant.account === acceptedGrant.user &&
-        new BigNumber(grant.grant.amount) === acceptedGrant.totalGranted &&
-        new BigNumber(grant.grant.cliffLength) === acceptedGrant.cliffLength &&
-        new BigNumber(grant.grant.vestingInterval) === acceptedGrant.vestingInterval &&
-        Number(grant.grant.vestingLength) === Number(acceptedGrant.endTime) - Number(acceptedGrant.startTime)
-      )
+      grant.account === acceptedGrant.user &&
+      new BigNumber(grant.grant.amount) === acceptedGrant.totalGranted &&
+      new BigNumber(grant.grant.cliffLength) === acceptedGrant.cliffLength &&
+      new BigNumber(grant.grant.vestingInterval) === acceptedGrant.vestingInterval &&
+      Number(grant.grant.vestingLength) === Number(acceptedGrant.endTime) - Number(acceptedGrant.startTime)
   )
 }
 
@@ -63,9 +61,11 @@ export function useRewards() {
     return {}
   }
 
-  const airedGrants = merkleDistributor.getGrants(user.address)
-  const acceptedGrants = merkleDistributor.acceptedGrants
-  const actionRequiredGrants = airedGrants.map((grant) => isGrantNotAccepted(acceptedGrants, grant))
+  const airdrops = merkleDistributor.getGrantsInfo(user.address)
+  const acceptedGrants = merkleDistributor.communityRewards.grants
+  const actionRequiredGrants = acceptedGrants
+    ? airdrops.map((grantInfo) => !isGrantAccepted(acceptedGrants, grantInfo))
+    : airdrops
   return {actionRequiredGrants, stakingRewards, merkleDistributor}
 }
 
