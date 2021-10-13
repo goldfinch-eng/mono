@@ -104,16 +104,9 @@ function PortfolioOverview({
         <div className="deposit-status-item">
           <div className="deposit-status-item-flex">
             <div className="label">Est. Annual Growth</div>
-            {process.env.REACT_APP_TOGGLE_REWARDS && (
-              <span
-                data-tip=""
-                data-for="annual-growth-tooltip"
-                data-offset="{'top': 0, 'left': 0}"
-                data-place="bottom"
-              >
-                <InfoIcon />
-              </span>
-            )}
+            <span data-tip="" data-for="annual-growth-tooltip" data-offset="{'top': 0, 'left': 0}" data-place="bottom">
+              <InfoIcon />
+            </span>
           </div>
           <div className="value">{displayDollars(roundDownPenny(estimatedAnnualGrowth))}</div>
           <div className="sub-value">{`${displayPercent(estimatedApy)} APY${
@@ -121,12 +114,7 @@ function PortfolioOverview({
           }`}</div>
         </div>
       </div>
-      {process.env.REACT_APP_TOGGLE_REWARDS && (
-        <AnnualGrowthTooltipContent
-          estimatedApyFromSupplying={new BigNumber(0)}
-          estimatedApyFromGfi={new BigNumber(0)}
-        />
-      )}
+      <AnnualGrowthTooltipContent estimatedApyFromSupplying={new BigNumber(0)} estimatedApyFromGfi={new BigNumber(0)} />
     </div>
   )
 }

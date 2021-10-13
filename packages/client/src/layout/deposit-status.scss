@@ -24,7 +24,7 @@
 
       &:hover {
         path {
-          fill: #483E5E;
+          fill: $purp-dark;
         }
       }
     }
@@ -52,6 +52,12 @@
 
   .disabled {
     color: $sand-xxdark;
+  }
+}
+
+.placeholder .deposit-status .deposit-status-item .deposit-status-item-flex svg:hover {
+  path {
+    fill: #C4BeB7;
   }
 }
 
