@@ -8,6 +8,7 @@ import {
   MerkleDistributorInfo,
 } from "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types"
 import BigNumber from "bignumber.js"
+import {getBlockInfo, getCurrentBlock} from "../utils"
 
 export class MerkleDistributor {
   goldfinchProtocol: GoldfinchProtocol
@@ -141,21 +142,14 @@ export class CommunityRewards {
   async initialize(recipient: string) {
     const events = await this.getGrantedEvents(recipient)
     const tokenIds = events.map((e) => e.returnValues.tokenId)
+    const currentBlock = getBlockInfo(await getCurrentBlock())
     this.grants = await Promise.all(
       tokenIds.map((tokenId) => {
         return this.contract.methods
           .grants(tokenId)
-          .call()
+          .call(undefined, currentBlock.number)
           .then(async (res) => {
-            // NOTE: In theory, we should be concerned here about retrieving the amount of claimable
-            // rewards in a way that is not atomic / necessarily consistent with the grant info just retrieved
-            // (i.e. because the grant state could have been updated by the time the claimable rewards info was
-            // retrieved). (If we wanted to retrieve both pieces of info atomically, we'd need to define a view
-            // function on the contract for that purpose.) In practice, we don't need to worry about that in this
-            // case, because the logic on the contract happens to be such that neither the grant info nor the
-            // claimable rewards info is made possibly obsolete / incorrect by having retrieved them asynchronously
-            // relative to each other.
-            const claimable = await this.contract.methods.claimableRewards(tokenId).call()
+            const claimable = await this.contract.methods.claimableRewards(tokenId).call(undefined, currentBlock.number)
             return parseCommunityRewardsVesting(tokenId, recipient, claimable, res)
           })
       })

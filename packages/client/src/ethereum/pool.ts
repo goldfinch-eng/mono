@@ -2,7 +2,7 @@ import BigNumber from "bignumber.js"
 import {fetchDataFromAttributes, getPoolEvents, INTEREST_DECIMALS, USDC_DECIMALS} from "./utils"
 import {Tickers, usdcFromAtomic} from "./erc20"
 import {FIDU_DECIMALS, fiduFromAtomic} from "./fidu"
-import {roundDownPenny} from "../utils"
+import {getBlockInfo, getCurrentBlock, roundDownPenny} from "../utils"
 import _ from "lodash"
 import {getBalanceAsOf, mapEventsToTx} from "./events"
 import {Contract, EventData} from "web3-eth-contract"
@@ -444,13 +444,14 @@ class StakingRewards {
   async initialize(recipient: string) {
     const stakedEvents = await this.getStakedEvents(recipient)
     const tokenIds = stakedEvents.map((e) => e.returnValues.tokenId)
+    const currentBlock = getBlockInfo(await getCurrentBlock())
     this.positions = await Promise.all(
       tokenIds.map((tokenId) => {
         return this.contract.methods
           .positions(tokenId)
-          .call()
+          .call(undefined, currentBlock.number)
           .then(async (res) => {
-            const claimable = await this.contract.methods.claimableRewards(tokenId).call()
+            const claimable = await this.contract.methods.claimableRewards(tokenId).call(undefined, currentBlock.number)
             return parseStakedPosition(tokenId, claimable, res)
           })
       })
