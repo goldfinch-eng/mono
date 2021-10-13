@@ -1,8 +1,33 @@
 import React, {useState} from "react"
 import {Link} from "react-router-dom"
-import {iconCarrotDown} from "../../components/icons"
+import {iconCarrotDown, iconCarrotUp} from "../../components/icons"
 import {useMediaQuery} from "react-responsive"
 import {WIDTH_TYPES} from "../../components/styleConstants"
+import styled from "styled-components"
+
+import colors from "../../layout/colors"
+import Text from "../../components/text"
+
+const DetailsContainer = styled.div`
+  display: flex;
+  margin: 0 0 24px 0;
+`
+
+const Detail = styled.div`
+  display: flex;
+  flex-direction: column;
+  padding: 0 0 24px 0;
+
+  > * + * {
+    margin: 4px 0 0 0;
+  }
+`
+
+const Column = styled.div`
+  width: 100%;
+`
+
+const EtherscanLinkContainer = styled.div``
 
 interface RewardsSummaryProps {
   fullyVested: string
@@ -87,6 +112,7 @@ interface RewardsListItemProps {
 
 function RewardsListItem(props: RewardsListItemProps) {
   const [accepted, setAccepted] = useState(props.isCommunityRewards ? false : true)
+  const [open, setOpen] = useState<boolean>(true)
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenXL})`})
 
   function handleAccept() {
@@ -108,12 +134,74 @@ function RewardsListItem(props: RewardsListItemProps) {
   return (
     <>
       {!isTabletOrMobile && (
-        <li className="rewards-list-item table-row background-container clickable">
-          <div className="table-cell col32">{props.title}</div>
-          <div className={`table-cell col20 numeric ${valueDisabledClass}`}>{props.grantedGFI}</div>
-          <div className={`table-cell col20 numeric ${valueDisabledClass}`}>{props.claimableGFI}</div>
-          {actionButtonComponent}
-          <button className="expand">{iconCarrotDown}</button>
+        <li>
+          <div className="rewards-list-item table-row background-container clickable">
+            <div className="table-cell col32">{props.title}</div>
+            <div className={`table-cell col20 numeric ${valueDisabledClass}`}>{props.grantedGFI}</div>
+            <div className={`table-cell col20 numeric ${valueDisabledClass}`}>{props.claimableGFI}</div>
+            {actionButtonComponent}
+
+            {/* TODO: move this to a component */}
+            {open ? (
+              <button className="expand close" onClick={() => setOpen(false)}>
+                {iconCarrotUp}
+              </button>
+            ) : (
+              <button className="expand" onClick={() => setOpen(true)}>
+                {iconCarrotDown}
+              </button>
+            )}
+          </div>
+          {open && (
+            <DetailsContainer>
+              <Column>
+                <Detail>
+                  <Text color={colors.purpLight} size={15}>
+                    Transaction details
+                  </Text>
+                  <Text color={colors.purpDark} size={18}>
+                    16,179.69 FIDU staked on Nov 1, 2021
+                  </Text>
+                </Detail>
+                <Detail>
+                  <Text color={colors.purpLight} size={15}>
+                    Vesting schedule
+                  </Text>
+                  <Text color={colors.purpDark} size={18}>
+                    Linear until 100% on Nov 1, 2022
+                  </Text>
+                </Detail>
+                <Detail>
+                  <Text color={colors.purpLight} size={15}>
+                    Claim status
+                  </Text>
+                  <Text color={colors.purpDark} size={18}>
+                    0 GFI claimed of your total vested 4.03 GFI
+                  </Text>
+                </Detail>
+              </Column>
+              <Column>
+                <Detail>
+                  <Text color={colors.purpLight} size={15}>
+                    Current earn rate
+                  </Text>
+                  <Text color={colors.purpDark} size={18}>
+                    +10.21 granted per week
+                  </Text>
+                </Detail>
+                <Detail>
+                  <Text color={colors.purpLight} size={15}>
+                    Vesting status
+                  </Text>
+                  <Text color={colors.purpDark} size={18}>
+                    8.0% (4.03 GFI) vested so far
+                  </Text>
+                </Detail>
+              </Column>
+              {/* TODO: use EtherscanLink component */}
+              {/* <EtherscanLinkContainer>Etherscan</EtherscanLinkContainer> */}
+            </DetailsContainer>
+          )}
         </li>
       )}
 
