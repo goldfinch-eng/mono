@@ -1,5 +1,5 @@
+import React from "react"
 import BigNumber from "bignumber.js"
-import React, {useEffect, useState} from "react"
 import {Link} from "react-router-dom"
 import {gfiFromAtomic} from "../../ethereum/gfi"
 import {useGFIBalance, useRewards} from "../../hooks/useStakingRewards"
@@ -58,30 +58,25 @@ function RewardsSummary(props: RewardsSummaryProps) {
 
 function Rewards(props) {
   const {stakingRewards, merkleDistributor} = useRewards()
-  const [claimable, setClaimable] = useState<BigNumber>()
-  const [unvested, setUnvested] = useState<BigNumber>()
-  const [granted, setGranted] = useState<BigNumber>()
   const gfiBalance = useGFIBalance()
 
-  useEffect(() => {
-    if (!stakingRewards || !merkleDistributor || !merkleDistributor._loaded) return
+  let claimable
+  let unvested
+  let granted
+  if (stakingRewards?.totalClaimable || merkleDistributor?.totalClaimable) {
+    let val = stakingRewards?.totalClaimable || new BigNumber(0)
+    claimable = val.plus(merkleDistributor?.totalClaimable || new BigNumber(0))
+  }
 
-    let stakes
-    if (stakingRewards.totalClaimable || merkleDistributor.totalClaimable) {
-      stakes = stakingRewards.totalClaimable || new BigNumber(0)
-      setClaimable(stakes.plus(merkleDistributor.totalClaimable || new BigNumber(0)))
-    }
+  if (stakingRewards?.unvested || merkleDistributor?.unvested) {
+    let val = stakingRewards?.unvested || new BigNumber(0)
+    unvested = val.plus(merkleDistributor?.unvested || new BigNumber(0))
+  }
 
-    if (stakingRewards.unvested || merkleDistributor.unvested) {
-      stakes = stakingRewards.unvested || new BigNumber(0)
-      setUnvested(stakes.plus(merkleDistributor.unvested || new BigNumber(0)))
-    }
-
-    if (stakingRewards.granted || merkleDistributor.granted) {
-      stakes = stakingRewards.granted || new BigNumber(0)
-      setGranted(stakes.plus(merkleDistributor.granted || new BigNumber(0)))
-    }
-  }, [stakingRewards, merkleDistributor, merkleDistributor?._loaded])
+  if (stakingRewards?.granted || merkleDistributor?.granted) {
+    let val = stakingRewards?.granted || new BigNumber(0)
+    granted = val.plus(merkleDistributor?.granted || new BigNumber(0))
+  }
 
   return (
     <div className="content-section">
