@@ -7,7 +7,7 @@ import {displayDollars, displayNumber} from "../../utils"
 
 interface RewardsSummaryProps {
   claimable: string
-  stillVesting: string
+  unvested: string
   totalGFI: string
   totalUSD: string
   walletBalance: string
@@ -40,7 +40,7 @@ function RewardsSummary(props: RewardsSummaryProps) {
         <div className="details-item">
           <span>Still vesting</span>
           <div>
-            <span className="value">{props.stillVesting}</span>
+            <span className="value">{props.unvested}</span>
             <span>GFI</span>
           </div>
         </div>
@@ -59,7 +59,7 @@ function RewardsSummary(props: RewardsSummaryProps) {
 function Rewards(props) {
   const {stakingRewards, merkleDistributor} = useRewards()
   const [claimable, setClaimable] = useState<BigNumber>()
-  const [stillVesting, setStillVesting] = useState<BigNumber>()
+  const [unvested, setUnvested] = useState<BigNumber>()
   const [granted, setGranted] = useState<BigNumber>()
   const gfiBalance = useGFIBalance()
 
@@ -74,7 +74,7 @@ function Rewards(props) {
 
     if (stakingRewards.unvested || merkleDistributor.unvested) {
       stakes = stakingRewards.unvested || new BigNumber(0)
-      setStillVesting(stakes.plus(merkleDistributor.unvested || new BigNumber(0)))
+      setUnvested(stakes.plus(merkleDistributor.unvested || new BigNumber(0)))
     }
 
     if (stakingRewards.granted || merkleDistributor.granted) {
@@ -91,7 +91,7 @@ function Rewards(props) {
 
       <RewardsSummary
         claimable={displayNumber(gfiFromAtomic(claimable), 2)}
-        stillVesting={displayNumber(gfiFromAtomic(stillVesting), 2)}
+        unvested={displayNumber(gfiFromAtomic(unvested), 2)}
         totalGFI={displayNumber(gfiFromAtomic(granted), 2)}
         totalUSD={displayDollars(null)} // TODO: this needs to be updated once we have a price for GFI in USD.
         walletBalance={displayNumber(gfiFromAtomic(gfiBalance), 2)}
