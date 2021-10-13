@@ -12,6 +12,7 @@ import "../interfaces/ITranchedPool.sol";
 contract PoolRewards is BaseUpgradeablePausable, SafeERC20Transfer {
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
+
   struct PoolInfo {
     bool paused; // ability to pause each pool withdraws
     uint256 rewards;
@@ -42,7 +43,6 @@ contract PoolRewards is BaseUpgradeablePausable, SafeERC20Transfer {
     uint256 _maxRewardsAvailable,
     uint256 _maxAmountEligibleForRewards
   ) public initializer {
-    require(owner != address(0), "Owner address cannot be empty");
     maxRewardsAvailable = _maxRewardsAvailable;
     maxAmountEligibleForRewards = _maxAmountEligibleForRewards;
     _calcRewardRatio();
@@ -61,14 +61,9 @@ contract PoolRewards is BaseUpgradeablePausable, SafeERC20Transfer {
 
   // Allocates rewards to a given pool
   function grant(address _poolAddress, uint256 _interestPaymentAmount) public onlyAdmin {
-    // TODO: should we make grant() pausable?
-
     uint256 _totalInterestReceived = totalInterestReceived;
 
-    // All reward grants exhausted :(
-    if (_totalInterestReceived >= maxAmountEligibleForRewards) {
-      return;
-    }
+    require(_totalInterestReceived < maxAmountEligibleForRewards, "All rewards exhausted");
 
     uint256 rewards;
     uint256 sum = _totalInterestReceived + _interestPaymentAmount;
