@@ -66,23 +66,28 @@ class SeniorPool {
 
   async getPoolEvents(
     address: string | undefined,
-    eventNames: string[] = ["DepositMade", "WithdrawalMade"]
+    eventNames: string[] = ["DepositMade", "WithdrawalMade"],
+    includeV1Pool: boolean = true
   ): Promise<EventData[]> {
-    // In migrating from v1 to v2 (i.e. from the `Pool` contract as modeling the senior pool,
-    // to the `SeniorPool` contract as modeling the senior pool), we transferred contract state
-    // from Pool to SeniorPool (e.g. the deposits that a capital provider had made into Pool
-    // became deposits in SeniorPool). But we did not do any sort of migrating (e.g. re-emitting)
-    // with respect to events, from the Pool contract onto the SeniorPool contract. So accurately
-    // representing the SeniorPool's events here -- e.g. to be able to accurately count all of a
-    // capital provider's deposits -- requires querying for those events on both the SeniorPool
-    // and Pool contracts.
+    if (includeV1Pool) {
+      // In migrating from v1 to v2 (i.e. from the `Pool` contract as modeling the senior pool,
+      // to the `SeniorPool` contract as modeling the senior pool), we transferred contract state
+      // from Pool to SeniorPool (e.g. the deposits that a capital provider had made into Pool
+      // became deposits in SeniorPool). But we did not do any sort of migrating (e.g. re-emitting)
+      // with respect to events, from the Pool contract onto the SeniorPool contract. So fully
+      // representing the SeniorPool's events here -- e.g. to be able to accurately count all of a
+      // capital provider's deposits -- entails querying for those events on both the SeniorPool
+      // and Pool contracts.
 
-    const events = await Promise.all([
-      getPoolEvents(this, address, eventNames),
-      getPoolEvents(this.v1Pool, address, eventNames),
-    ])
-    const combined = _.flatten(events)
-    return combined
+      const events = await Promise.all([
+        getPoolEvents(this, address, eventNames),
+        getPoolEvents(this.v1Pool, address, eventNames),
+      ])
+      const combined = _.flatten(events)
+      return combined
+    } else {
+      return getPoolEvents(this, address, eventNames)
+    }
   }
 
   get loaded(): boolean {
@@ -270,7 +275,8 @@ async function fetchPoolData(pool: SeniorPool, erc20: Contract): Promise<PoolDat
   let poolEvents = await getAllDepositAndWithdrawalEvents(pool)
   let estimatedTotalInterest = await getEstimatedTotalInterest(pool)
   let estimatedApy = estimatedTotalInterest.dividedBy(totalPoolAssets)
-  const estimatedApyFromGfi = undefined // TODO[PR]
+  // TODO Calculate this value using Uniswap price oracle for GFI, once that becomes available.
+  const estimatedApyFromGfi = undefined
   let defaultRate = cumulativeWritedowns.dividedBy(cumulativeDrawdowns)
 
   let loaded = true
@@ -312,11 +318,17 @@ async function getDepositEventsForCapitalProvider(
     "DepositMade",
   ])
 
-  // TODO[PR] Getting all deposit events by the StakingRewards contract seems likely to become inefficient rapidly.
-  // We should probably invert the approach and get only those in block numbers for which there was a Staked event for
+  // TODO Getting all deposit events by the StakingRewards contract seems likely to become inefficient rapidly.
+  // We should invert the approach and get only those in block numbers for which there was a Staked event for
   // `capitalProviderAddress`, which will be much fewer in number.
-  // TODO[PR] For efficiency, use util that skips v1Pool deposit events, as those can't have corresponding Staked events.
-  const depositEventsViaStakingRewards: EventData[] = await pool.getPoolEvents(stakingRewards.address, ["DepositMade"])
+  const depositEventsViaStakingRewards: EventData[] = await pool.getPoolEvents(
+    stakingRewards.address,
+    ["DepositMade"],
+    // No events from the v1 Pool contract could correspond to Staked events (because the StakingRewards
+    // contract did not exist until after the migration to the v2 SeniorPool contract), so we can exclude them,
+    // for efficiency.
+    false
+  )
   const stakedEventsForCapitalProvider: EventData[] = await stakingRewards.getStakedEvents(capitalProviderAddress)
   const stakedEventsForCapitalProviderByBlockNumberAndTransactionHash =
     stakedEventsForCapitalProvider.reduce<StakedEventsByBlockNumberAndTransactionHash>((acc, curr) => {
