@@ -58,15 +58,15 @@ export default function StakeFiduBanner(props: StakeFiduBannerProps) {
     }
   }
 
-  return props.capitalProvider.numShares.gt(0) ? (
+  return props.capitalProvider.shares.parts.notStaked.gt(0) ? (
     <FormProvider {...formMethods}>
       <div className="info-banner background-container">
         <div className="message">
           {`You have ${displayNumber(
-            props.capitalProvider.numShares.div(FIDU_DECIMALS.toString()),
+            props.capitalProvider.shares.parts.notStaked.div(FIDU_DECIMALS.toString()),
             2
           )} FIDU (${displayDollars(
-            props.capitalProvider.availableToWithdrawInDollars,
+            props.capitalProvider.availableToStakeInDollars,
             2
           )}) that is not staked. Stake FIDU to earn an additional estimated ${displayPercent(
             props.poolData?.estimatedApyFromGfi
