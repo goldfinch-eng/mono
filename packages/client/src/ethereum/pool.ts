@@ -153,6 +153,40 @@ function emptyCapitalProvider({loaded = false} = {}): CapitalProvider {
   }
 }
 
+type CapitalProviderStaked = {
+  numSharesStakedLocked: BigNumber
+  numSharesStakedNotLocked: BigNumber
+}
+
+async function fetchCapitalProviderStaked(
+  stakingRewards: StakingRewards,
+  capitalProviderAddress: string
+): Promise<CapitalProviderStaked> {
+  const numPositions = await stakingRewards.contract.methods.balanceOf(capitalProviderAddress).call()
+  const tokenIds = await Promise.all(
+    _.fill(Array(numPositions), undefined).map((val, i) =>
+      stakingRewards.contract.methods.tokenOfOwnerByIndex(capitalProviderAddress, i).call()
+    )
+  )
+  const positions = await Promise.all(
+    tokenIds.map((tokenId) => stakingRewards.contract.methods.positions(tokenId).call())
+  )
+  const staked = positions.map((position) => ({
+    amount: new BigNumber(position.amount),
+    locked: new BigNumber(position.lockedUntil).gt(0),
+  }))
+  return {
+    numSharesStakedLocked: BigNumber.sum.apply(
+      null,
+      staked.filter((val) => val.locked).map((val) => val.amount)
+    ),
+    numSharesStakedNotLocked: BigNumber.sum.apply(
+      null,
+      staked.filter((val) => !val.locked).map((val) => val.amount)
+    ),
+  }
+}
+
 async function fetchCapitalProviderData(
   pool: SeniorPool,
   stakingRewards: StakingRewards | undefined,
@@ -169,8 +203,10 @@ async function fetchCapitalProviderData(
   const {sharePrice} = await fetchDataFromAttributes(pool.contract, attributes, {bigNumber: true})
 
   const numSharesNotStaked = new BigNumber(await pool.fidu.methods.balanceOf(capitalProviderAddress).call())
-  const numSharesStakedLocked = new BigNumber(0) // TODO[PR]
-  const numSharesStakedNotLocked = new BigNumber(0) // TODO[PR]
+  const {numSharesStakedLocked, numSharesStakedNotLocked} = await fetchCapitalProviderStaked(
+    stakingRewards,
+    capitalProviderAddress
+  )
 
   const numSharesStaked = numSharesStakedLocked.plus(numSharesStakedNotLocked)
   const numSharesWithdrawable = numSharesNotStaked.plus(numSharesStakedNotLocked)
