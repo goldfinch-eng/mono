@@ -1,8 +1,8 @@
 import {BigNumber} from "bignumber.js"
-import ReactTooltip from "react-tooltip"
 import {CapitalProvider, PoolData} from "../ethereum/pool"
-import {InfoIcon} from "../icons"
+import {InfoIcon} from "../ui/icons"
 import {displayDollars, displayPercent} from "../utils"
+import AnnualGrowthTooltipContent from "./AnnualGrowthTooltipContent"
 
 interface DepositStatusProps {
   poolData?: PoolData
@@ -54,39 +54,26 @@ function DepositStatus(props: DepositStatusProps) {
         <div className="deposit-status-item">
           <div className="deposit-status-item-flex">
             <div className="label">Est. Annual Growth</div>
-            <span data-tip="" data-for="annual-growth-tooltip" data-offset="{'top': 0, 'left': 0}" data-place="bottom">
-              <InfoIcon />
-            </span>
+            {process.env.REACT_APP_TOGGLE_REWARDS && (
+              <span
+                data-tip=""
+                data-for="annual-growth-tooltip"
+                data-offset="{'top': 0, 'left': 0}"
+                data-place="bottom"
+              >
+                <InfoIcon />
+              </span>
+            )}
           </div>
           <div className="value">{estimatedGrowthDisplay}</div>
           <div className="sub-value">{`${apyDisplay} APY${estimatedApyFromGfi?.gt(0) ? " (with GFI)" : ""}`}</div>
         </div>
-        <ReactTooltip
-          className="goldfinch-tooltip"
-          id="annual-growth-tooltip"
-          effect="solid"
-          arrowColor="transparent"
-          delayShow={200}
-        >
-          <div>
-            <p className="tooltip-description">
-              Includes the senior pool yield from allocating to borrower pools, plus GFI rewards:
-            </p>
-            <div className="tooltip-row">
-              <p>Senior Pool APY</p>
-              <span>--.--%</span>
-            </div>
-            <div className="tooltip-row">
-              <p>GFI Rewards APY</p>
-              <span>--.--%</span>
-            </div>
-            <div className="tooltip-divider"></div>
-            <div className="tooltip-row">
-              <p>Total Est. APY</p>
-              <span>--.--%</span>
-            </div>
-          </div>
-        </ReactTooltip>
+        {process.env.REACT_APP_TOGGLE_REWARDS && (
+          <AnnualGrowthTooltipContent
+            estimatedApyFromSupplying={new BigNumber(0)}
+            estimatedApyFromGfi={new BigNumber(0)}
+          />
+        )}
       </div>
     )
   } else {

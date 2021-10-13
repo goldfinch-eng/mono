@@ -1,6 +1,5 @@
 import {useState, useEffect, useContext} from "react"
 import {useHistory} from "react-router-dom"
-import ReactTooltip from "react-tooltip"
 import {CapitalProvider, fetchCapitalProviderData, PoolData, SeniorPool, StakingRewards} from "../ethereum/pool"
 import {AppContext} from "../App"
 import {usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
@@ -12,8 +11,9 @@ import BigNumber from "bignumber.js"
 import {User} from "../ethereum/user"
 import ConnectionNotice from "./connectionNotice"
 import Badge from "./badge"
-import {InfoIcon} from "../icons"
+import {InfoIcon} from "../ui/icons"
 import {useStakingRewards} from "../hooks/useStakingRewards"
+import AnnualGrowthTooltipContent from "./AnnualGrowthTooltipContent"
 
 // Filter out 0 limit (inactive) and test pools
 const MIN_POOL_LIMIT = usdcToAtomic(process.env.REACT_APP_POOL_FILTER_LIMIT || "200")
@@ -104,9 +104,16 @@ function PortfolioOverview({
         <div className="deposit-status-item">
           <div className="deposit-status-item-flex">
             <div className="label">Est. Annual Growth</div>
-            <span data-tip="" data-for="annual-growth-tooltip" data-offset="{'top': 0, 'left': 0}" data-place="bottom">
-              <InfoIcon />
-            </span>
+            {process.env.REACT_APP_TOGGLE_REWARDS && (
+              <span
+                data-tip=""
+                data-for="annual-growth-tooltip"
+                data-offset="{'top': 0, 'left': 0}"
+                data-place="bottom"
+              >
+                <InfoIcon />
+              </span>
+            )}
           </div>
           <div className="value">{displayDollars(roundDownPenny(estimatedAnnualGrowth))}</div>
           <div className="sub-value">{`${displayPercent(estimatedApy)} APY${
@@ -114,32 +121,12 @@ function PortfolioOverview({
           }`}</div>
         </div>
       </div>
-      <ReactTooltip
-        className="goldfinch-tooltip"
-        id="annual-growth-tooltip"
-        effect="solid"
-        arrowColor="transparent"
-        delayShow={200}
-      >
-        <div>
-          <p className="tooltip-description">
-            Includes the senior pool yield from allocating to borrower pools, plus GFI rewards:
-          </p>
-          <div className="tooltip-row">
-            <p>Senior Pool APY</p>
-            <span>--.--%</span>
-          </div>
-          <div className="tooltip-row">
-            <p>GFI Rewards APY</p>
-            <span>--.--%</span>
-          </div>
-          <div className="tooltip-divider"></div>
-          <div className="tooltip-row">
-            <p>Total Est. APY</p>
-            <span>--.--%</span>
-          </div>
-        </div>
-      </ReactTooltip>
+      {process.env.REACT_APP_TOGGLE_REWARDS && (
+        <AnnualGrowthTooltipContent
+          estimatedApyFromSupplying={new BigNumber(0)}
+          estimatedApyFromGfi={new BigNumber(0)}
+        />
+      )}
     </div>
   )
 }
