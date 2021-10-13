@@ -9,8 +9,18 @@ import colors from "../../layout/colors"
 import Text from "../../components/text"
 
 const DetailsContainer = styled.div`
+  margin: -28px -30px 24px -30px;
+  background-color: ${colors.sandLight};
+  padding: 30px;
+  border-bottom-right-radius: 6px;
+  border-bottom-left-radius: 6px;
+
+  ${({open}) => open && `border-top: 2px solid ${colors.sand};`};
+`
+
+const ColumnsContainer = styled.div`
   display: flex;
-  margin: 0 0 24px 0;
+  width: 100%;
 `
 
 const Detail = styled.div`
@@ -19,12 +29,16 @@ const Detail = styled.div`
   padding: 0 0 24px 0;
 
   > * + * {
-    margin: 4px 0 0 0;
+    margin: 8px 0 0 0;
   }
 `
 
 const Column = styled.div`
   width: 100%;
+
+  > * + * {
+    margin: 0 44px 0 0;
+  }
 `
 
 const EtherscanLinkContainer = styled.div``
@@ -153,53 +167,55 @@ function RewardsListItem(props: RewardsListItemProps) {
             )}
           </div>
           {open && (
-            <DetailsContainer>
-              <Column>
-                <Detail>
-                  <Text color={colors.purpLight} size={15}>
-                    Transaction details
-                  </Text>
-                  <Text color={colors.purpDark} size={18}>
-                    16,179.69 FIDU staked on Nov 1, 2021
-                  </Text>
-                </Detail>
-                <Detail>
-                  <Text color={colors.purpLight} size={15}>
-                    Vesting schedule
-                  </Text>
-                  <Text color={colors.purpDark} size={18}>
-                    Linear until 100% on Nov 1, 2022
-                  </Text>
-                </Detail>
-                <Detail>
-                  <Text color={colors.purpLight} size={15}>
-                    Claim status
-                  </Text>
-                  <Text color={colors.purpDark} size={18}>
-                    0 GFI claimed of your total vested 4.03 GFI
-                  </Text>
-                </Detail>
-              </Column>
-              <Column>
-                <Detail>
-                  <Text color={colors.purpLight} size={15}>
-                    Current earn rate
-                  </Text>
-                  <Text color={colors.purpDark} size={18}>
-                    +10.21 granted per week
-                  </Text>
-                </Detail>
-                <Detail>
-                  <Text color={colors.purpLight} size={15}>
-                    Vesting status
-                  </Text>
-                  <Text color={colors.purpDark} size={18}>
-                    8.0% (4.03 GFI) vested so far
-                  </Text>
-                </Detail>
-              </Column>
+            <DetailsContainer open={open}>
+              <ColumnsContainer>
+                <Column>
+                  <Detail>
+                    <Text color={colors.purpLight} size={15}>
+                      Transaction details
+                    </Text>
+                    <Text color={colors.purpDark} size={18}>
+                      16,179.69 FIDU staked on Nov 1, 2021
+                    </Text>
+                  </Detail>
+                  <Detail>
+                    <Text color={colors.purpLight} size={15}>
+                      Vesting schedule
+                    </Text>
+                    <Text color={colors.purpDark} size={18}>
+                      Linear until 100% on Nov 1, 2022
+                    </Text>
+                  </Detail>
+                  <Detail>
+                    <Text color={colors.purpLight} size={15}>
+                      Claim status
+                    </Text>
+                    <Text color={colors.purpDark} size={18}>
+                      0 GFI claimed of your total vested 4.03 GFI
+                    </Text>
+                  </Detail>
+                </Column>
+                <Column>
+                  <Detail>
+                    <Text color={colors.purpLight} size={15}>
+                      Current earn rate
+                    </Text>
+                    <Text color={colors.purpDark} size={18}>
+                      +10.21 granted per week
+                    </Text>
+                  </Detail>
+                  <Detail>
+                    <Text color={colors.purpLight} size={15}>
+                      Vesting status
+                    </Text>
+                    <Text color={colors.purpDark} size={18}>
+                      8.0% (4.03 GFI) vested so far
+                    </Text>
+                  </Detail>
+                </Column>
+              </ColumnsContainer>
               {/* TODO: use EtherscanLink component */}
-              {/* <EtherscanLinkContainer>Etherscan</EtherscanLinkContainer> */}
+              <EtherscanLinkContainer>Etherscan</EtherscanLinkContainer>
             </DetailsContainer>
           )}
         </li>

@@ -91,6 +91,12 @@ button.expand {
   &:hover {
     background-color: $sand;
   }
+
+  &.close {
+    svg path {
+      fill: $purp-dark;
+    }
+  }
 }
 
 .gfi-rewards {
