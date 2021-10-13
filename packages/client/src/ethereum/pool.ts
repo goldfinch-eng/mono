@@ -2,7 +2,7 @@ import BigNumber from "bignumber.js"
 import {fetchDataFromAttributes, getPoolEvents, INTEREST_DECIMALS, USDC_DECIMALS} from "./utils"
 import {Tickers, usdcFromAtomic} from "./erc20"
 import {FIDU_DECIMALS, fiduFromAtomic} from "./fidu"
-import {roundDownPenny} from "../utils"
+import {getBlockInfo, getCurrentBlock, roundDownPenny} from "../utils"
 import _ from "lodash"
 import {getBalanceAsOf, mapEventsToTx} from "./events"
 import {Contract, EventData} from "web3-eth-contract"
@@ -578,25 +578,27 @@ interface Rewards {
   totalClaimed: BigNumber
   startTime: string
   endTime: string
+  claimable: BigNumber
 }
 
 interface StakedPosition {
   id: string
   amount: BigNumber
   leverageMultiplier: BigNumber
-  lockedUntil: BigNumber
+  lockedUntil: string
   rewards: Rewards
 }
 
 function parseStakedPosition(
   tokenId: string,
+  claimable: string,
   tuple: {0: string; 1: [string, string, string, string, string, string]; 2: string; 3: string}
 ): StakedPosition {
   return {
     id: tokenId,
     amount: new BigNumber(tuple[0]),
     leverageMultiplier: new BigNumber(tuple[2]),
-    lockedUntil: new BigNumber(tuple[3]),
+    lockedUntil: tuple[3],
     rewards: {
       totalUnvested: new BigNumber(tuple[1][0]),
       totalVested: new BigNumber(tuple[1][1]),
@@ -604,6 +606,7 @@ function parseStakedPosition(
       totalClaimed: new BigNumber(tuple[1][3]),
       startTime: tuple[1][4],
       endTime: tuple[1][5],
+      claimable: new BigNumber(claimable),
     },
   }
 }
@@ -613,27 +616,36 @@ class StakingRewards {
   contract: StakingRewardsContract
   address: string
   _loaded: boolean
-  positions: StakedPosition[]
+  positions: StakedPosition[] | undefined
+  totalClaimable: BigNumber | undefined
+  unvested: BigNumber | undefined
+  granted: BigNumber | undefined
 
   constructor(goldfinchProtocol: GoldfinchProtocol) {
     this.goldfinchProtocol = goldfinchProtocol
     this.contract = goldfinchProtocol.getContract<StakingRewardsContract>("StakingRewards")
     this.address = goldfinchProtocol.getAddress("StakingRewards")
     this._loaded = false
-    this.positions = []
   }
 
   async initialize(recipient: string) {
     const stakedEvents = await this.getStakedEvents(recipient)
     const tokenIds = stakedEvents.map((e) => e.returnValues.tokenId)
+    const currentBlock = getBlockInfo(await getCurrentBlock())
     this.positions = await Promise.all(
       tokenIds.map((tokenId) => {
         return this.contract.methods
           .positions(tokenId)
-          .call()
-          .then((res) => parseStakedPosition(tokenId, res))
+          .call(undefined, currentBlock.number)
+          .then(async (res) => {
+            const claimable = await this.contract.methods.claimableRewards(tokenId).call(undefined, currentBlock.number)
+            return parseStakedPosition(tokenId, claimable, res)
+          })
       })
     )
+    this.totalClaimable = this.calculateTotalClaimable()
+    this.unvested = this.calculateUnvested()
+    this.granted = this.calculateGranted()
     this._loaded = true
   }
 
@@ -641,6 +653,34 @@ class StakingRewards {
     const eventNames = ["Staked"]
     const events = await this.goldfinchProtocol.queryEvents(this.contract, eventNames, {user: recipient})
     return events
+  }
+
+  calculateTotalClaimable(): BigNumber {
+    if (!this.positions || this.positions.length === 0) return new BigNumber(0)
+    return BigNumber.sum.apply(
+      null,
+      this.positions.map((stakedPosition) => stakedPosition.rewards.claimable)
+    )
+  }
+
+  calculateUnvested(): BigNumber {
+    if (!this.positions || this.positions.length === 0) return new BigNumber(0)
+    return BigNumber.sum.apply(
+      null,
+      this.positions.map((stakedPosition) => stakedPosition.rewards.totalUnvested)
+    )
+  }
+
+  calculateGranted(): BigNumber {
+    if (!this.positions || this.positions.length === 0) return new BigNumber(0)
+    return BigNumber.sum.apply(
+      null,
+      this.positions.map((stakedPosition) =>
+        stakedPosition.rewards.totalUnvested
+          .plus(stakedPosition.rewards.totalVested)
+          .plus(stakedPosition.rewards.totalPreviouslyVested)
+      )
+    )
   }
 }
 
