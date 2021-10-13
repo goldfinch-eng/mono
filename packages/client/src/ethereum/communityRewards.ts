@@ -135,7 +135,6 @@ export class CommunityRewards {
     this.goldfinchProtocol = goldfinchProtocol
     this.contract = goldfinchProtocol.getContract<CommunityRewardsContract>("CommunityRewards")
     this.address = goldfinchProtocol.getAddress("CommunityRewards")
-    this.grants = []
     this._loaded = false
   }
 
