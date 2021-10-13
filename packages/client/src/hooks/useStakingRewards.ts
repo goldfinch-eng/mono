@@ -1,8 +1,7 @@
-import {MerkleDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types"
 import BigNumber from "bignumber.js"
 import {useContext, useEffect, useState} from "react"
 import {AppContext} from "../App"
-import {CommunityRewardsVesting, MerkleDistributor} from "../ethereum/communityRewards"
+import {MerkleDistributor} from "../ethereum/communityRewards"
 import {GFI} from "../ethereum/gfi"
 import {StakingRewards} from "../ethereum/pool"
 import {useAsync, useStaleWhileRevalidating} from "./useAsync"
@@ -41,32 +40,14 @@ export function useMerkleDistributor(): MerkleDistributor | undefined {
   return merkleDistributor
 }
 
-function isGrantAccepted(acceptedGrants: CommunityRewardsVesting[], grant: MerkleDistributorGrantInfo) {
-  return acceptedGrants.every(
-    (acceptedGrant) =>
-      grant.account === acceptedGrant.user &&
-      new BigNumber(grant.grant.amount) === acceptedGrant.totalGranted &&
-      new BigNumber(grant.grant.cliffLength) === acceptedGrant.cliffLength &&
-      new BigNumber(grant.grant.vestingInterval) === acceptedGrant.vestingInterval &&
-      Number(grant.grant.vestingLength) === Number(acceptedGrant.endTime) - Number(acceptedGrant.startTime)
-  )
-}
-
 export function useRewards() {
-  const {user} = useContext(AppContext)
   const stakingRewards = useStakingRewards()
   const merkleDistributor = useMerkleDistributor()
 
   if (!stakingRewards || !merkleDistributor) {
     return {}
   }
-
-  const airdrops = merkleDistributor.getGrantsInfo(user.address)
-  const acceptedGrants = merkleDistributor.communityRewards.grants
-  const actionRequiredGrants = acceptedGrants
-    ? airdrops.map((grantInfo) => !isGrantAccepted(acceptedGrants, grantInfo))
-    : airdrops
-  return {actionRequiredGrants, stakingRewards, merkleDistributor}
+  return {stakingRewards, merkleDistributor}
 }
 
 export function useGFIBalance() {
