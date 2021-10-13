@@ -2,8 +2,9 @@ import BigNumber from "bignumber.js"
 import _ from "lodash"
 import {fiduFromAtomic, FIDU_DECIMALS} from "../ethereum/fidu"
 import {USDC_DECIMALS} from "../ethereum/utils"
-import {SeniorPool as SeniorPoolGQL, User} from "./types"
+import {SeniorPool as SeniorPoolGQL, SeniorPoolDeposit, User} from "./types"
 import {roundDownPenny} from "../utils"
+import {SeniorPool} from "../ethereum/pool"
 
 export interface SeniorPoolData {
   compoundBalance: BigNumber
@@ -33,11 +34,8 @@ export interface UserData {
   unrealizedGainsPercentage: BigNumber
 }
 
-function getWeightedAverageSharePrice(capitalProvider: User) {
-  const poolEvents = capitalProvider.seniorPoolDeposits
-  const preparedEvents = _.reverse(_.sortBy(poolEvents, "blockNumber"))
-
-  const numShares = new BigNumber(capitalProvider.capitalProviderStatus?.numShares)
+function getWeightedAverageSharePrice(seniorPoolDeposits: SeniorPoolDeposit[], numShares: BigNumber) {
+  const preparedEvents = _.reverse(_.sortBy(seniorPoolDeposits, "blockNumber"))
 
   let zero = new BigNumber(0)
   let sharesLeftToAccountFor = numShares
@@ -105,22 +103,28 @@ export function parseSeniorPool(seniorPool: SeniorPoolGQL): SeniorPoolData {
   }
 }
 
-export function parseUser(user: User | undefined | null): UserData {
+export async function parseUser(
+  user: User | undefined | null,
+  sharePriceStr: string,
+  pool: SeniorPool
+): Promise<UserData> {
+  const userAddress = user?.id || ""
+  const seniorPoolDeposits = user?.seniorPoolDeposits || []
   const capitalProviderStatus = user?.capitalProviderStatus
-  let userAddress = user?.id || ""
-  let goListed = user?.goListed || false
-  let numShares = new BigNumber(capitalProviderStatus?.numShares)
-  let sharePrice = new BigNumber(capitalProviderStatus?.availableToWithdraw).div(numShares) as any
-  let availableToWithdraw = new BigNumber(numShares)
+  const goListed = user?.goListed || false
+
+  const sharePrice = new BigNumber(sharePriceStr) as any
+  const numShares = new BigNumber(await pool.fidu.methods.balanceOf(userAddress).call())
+  const availableToWithdraw = new BigNumber(numShares)
     .multipliedBy(new BigNumber(sharePrice))
     .div(FIDU_DECIMALS.toString())
-  let availableToWithdrawInDollars = new BigNumber(fiduFromAtomic(availableToWithdraw))
-  let allowance = new BigNumber(capitalProviderStatus?.allowance)
-  let weightedAverageSharePrice = user ? getWeightedAverageSharePrice(user) : new BigNumber("0")
+  const availableToWithdrawInDollars = new BigNumber(fiduFromAtomic(availableToWithdraw))
+  const allowance = new BigNumber(capitalProviderStatus?.allowance)
+  const weightedAverageSharePrice = getWeightedAverageSharePrice(seniorPoolDeposits, numShares)
   const sharePriceDelta = sharePrice.dividedBy(FIDU_DECIMALS).minus(weightedAverageSharePrice)
-  let unrealizedGains = sharePriceDelta.multipliedBy(numShares)
-  let unrealizedGainsInDollars = new BigNumber(roundDownPenny(unrealizedGains.div(FIDU_DECIMALS)))
-  let unrealizedGainsPercentage = sharePriceDelta.dividedBy(weightedAverageSharePrice)
+  const unrealizedGains = sharePriceDelta.multipliedBy(numShares)
+  const unrealizedGainsInDollars = new BigNumber(roundDownPenny(unrealizedGains.div(FIDU_DECIMALS)))
+  const unrealizedGainsPercentage = sharePriceDelta.dividedBy(weightedAverageSharePrice)
   return {
     id: userAddress,
     goListed,

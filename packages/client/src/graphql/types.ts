@@ -1,3 +1,4 @@
+import {gql} from "@apollo/client"
 export type Maybe<T> = T | null
 export type Exact<T extends {[key: string]: unknown}> = {[K in keyof T]: T[K]}
 export type MakeOptional<T, K extends keyof T> = Omit<T, K> & {[SubKey in K]?: Maybe<T[SubKey]>}
@@ -347,6 +348,7 @@ export type SeniorPoolStatus = {
   id: Scalars["ID"]
   rawBalance: Scalars["BigInt"]
   remainingCapacity?: Maybe<Scalars["BigInt"]>
+  sharePrice: Scalars["BigInt"]
   totalLoansOutstanding: Scalars["BigInt"]
   totalPoolAssets: Scalars["BigInt"]
   totalShares: Scalars["BigInt"]
@@ -433,6 +435,14 @@ export type SeniorPoolStatus_Filter = {
   remainingCapacity_lte?: Maybe<Scalars["BigInt"]>
   remainingCapacity_not?: Maybe<Scalars["BigInt"]>
   remainingCapacity_not_in?: Maybe<Array<Scalars["BigInt"]>>
+  sharePrice?: Maybe<Scalars["BigInt"]>
+  sharePrice_gt?: Maybe<Scalars["BigInt"]>
+  sharePrice_gte?: Maybe<Scalars["BigInt"]>
+  sharePrice_in?: Maybe<Array<Scalars["BigInt"]>>
+  sharePrice_lt?: Maybe<Scalars["BigInt"]>
+  sharePrice_lte?: Maybe<Scalars["BigInt"]>
+  sharePrice_not?: Maybe<Scalars["BigInt"]>
+  sharePrice_not_in?: Maybe<Array<Scalars["BigInt"]>>
   totalLoansOutstanding?: Maybe<Scalars["BigInt"]>
   totalLoansOutstanding_gt?: Maybe<Scalars["BigInt"]>
   totalLoansOutstanding_gte?: Maybe<Scalars["BigInt"]>
@@ -470,6 +480,7 @@ export enum SeniorPoolStatus_OrderBy {
   Id = "id",
   RawBalance = "rawBalance",
   RemainingCapacity = "remainingCapacity",
+  SharePrice = "sharePrice",
   TotalLoansOutstanding = "totalLoansOutstanding",
   TotalPoolAssets = "totalPoolAssets",
   TotalShares = "totalShares",

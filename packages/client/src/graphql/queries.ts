@@ -10,6 +10,7 @@ export const GET_SENIOR_POOL_AND_PROVIDER_DATA = gql(`
         compoundBalance
         balance
         totalShares
+        sharePrice
         totalPoolAssets
         totalLoansOutstanding
         cumulativeWritedowns

@@ -15,7 +15,7 @@ import {parseSeniorPool, parseUser, SeniorPoolData, UserData} from "../../graphq
 import {Query} from "../../graphql/types"
 
 function SeniorPoolViewV2(): JSX.Element {
-  const {user, goldfinchConfig} = useContext(AppContext)
+  const {pool, user, goldfinchConfig} = useContext(AppContext)
   const [poolData, setPoolData] = useState<SeniorPoolData>()
   const [capitalProvider, setCapitalProvider] = useState<UserData>()
   const {data, refetch} = useQuery<Query>(GET_SENIOR_POOL_AND_PROVIDER_DATA, {
@@ -28,14 +28,18 @@ function SeniorPoolViewV2(): JSX.Element {
   const kyc = useStaleWhileRevalidating(kycResult)
 
   useEffect(() => {
-    if (data) {
-      const {seniorPools, user} = data
-      let seniorPool = seniorPools![0]!
-      setPoolData(parseSeniorPool(seniorPool))
-      setCapitalProvider(parseUser(user))
+    async function setData() {
+      if (data && pool) {
+        const {seniorPools, user} = data
+        let seniorPool = seniorPools[0]!
+        setPoolData(parseSeniorPool(seniorPool))
+        setCapitalProvider(await parseUser(user, seniorPool.lastestPoolStatus.sharePrice, pool))
+      }
     }
+
+    setData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, data])
+  }, [user, data, pool])
 
   let maxCapacityNotice = <></>
   let maxCapacity = goldfinchConfig.totalFundsLimit
