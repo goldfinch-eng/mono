@@ -13,12 +13,12 @@ contract PoolRewards is BaseUpgradeablePausable, SafeERC20Transfer {
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
 
-  struct PoolInfo {
+  struct PoolRewardsInfo {
     bool paused; // ability to pause each pool withdraws
     uint256 rewards;
   }
 
-  struct PoolTokenInfo {
+  struct PoolRewardsTokenInfo {
     uint256 rewardDebt; // amount of rewards claimed per PoolToken
   }
 
@@ -29,12 +29,12 @@ contract PoolRewards is BaseUpgradeablePausable, SafeERC20Transfer {
   uint256 private sqrtTotalSupply;
   uint256 private rewardRatio;
 
-  mapping(uint256 => PoolTokenInfo) public tokens; // poolTokenId -> poolTokenInfo
-  mapping(address => PoolInfo) public pools; // pool.address -> PoolInfo
+  mapping(uint256 => PoolRewardsTokenInfo) public tokens; // poolTokenId -> poolRewardsTokenInfo
+  mapping(address => PoolRewardsInfo) public pools; // pool.address -> PoolRewardsInfo
 
   // TODO: define events
-  event RewardGrant();
-  event RewardWithdraw();
+  event PoolRewardsAllocated();
+  event PoolTokenRewardWithdraw();
   event PoolRewardsPaused();
   event PoolRewardsUnpaused();
 
@@ -60,7 +60,7 @@ contract PoolRewards is BaseUpgradeablePausable, SafeERC20Transfer {
   }
 
   // Allocates rewards to a given pool
-  function grant(address _poolAddress, uint256 _interestPaymentAmount) public onlyAdmin {
+  function allocateRewards(address _poolAddress, uint256 _interestPaymentAmount) public onlyAdmin {
     uint256 _totalInterestReceived = totalInterestReceived;
 
     require(_totalInterestReceived < maxAmountEligibleForRewards, "All rewards exhausted");
@@ -79,10 +79,10 @@ contract PoolRewards is BaseUpgradeablePausable, SafeERC20Transfer {
       rewards = _calcRewards(_totalInterestReceived + _interestPaymentAmount);
     }
 
-    PoolInfo storage _poolInfo = pools[_poolAddress];
+    PoolRewardsInfo storage _poolInfo = pools[_poolAddress];
     _poolInfo.rewards = _poolInfo.rewards + rewards;
     _poolInfo.paused = _poolInfo.paused || false;
-    emit RewardGrant();
+    emit PoolRewardsAllocated();
   }
 
   // calculate PoolToken principal % of total JuniorTranche and subtract already withdrawn amount
@@ -91,10 +91,10 @@ contract PoolRewards is BaseUpgradeablePausable, SafeERC20Transfer {
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
     ITranchedPool pool = ITranchedPool(tokenInfo.pool);
 
-    ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
-
     address poolAddr = tokenInfo.pool;
-    require(tokenInfo.pool != address(0), "Invalid tokenId");
+    require(poolAddr != address(0), "Invalid tokenId");
+
+    ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
 
     return
       (tokenInfo.principalAmount / juniorTranche.principalDeposited) *
@@ -119,14 +119,14 @@ contract PoolRewards is BaseUpgradeablePausable, SafeERC20Transfer {
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
 
     address poolAddr = tokenInfo.pool;
-
+    require(poolAddr != address(0), "Invalid tokenId");
     require(!pools[poolAddr].paused, "Pool withdraw paused");
     require(poolTokenRewardDebt + _amount <= totalClaimableRewards, "Rewards overwithdraw attempt");
 
     tokens[tokenId].rewardDebt = poolTokenRewardDebt + _amount;
 
     safeERC20TransferFrom(config.getGFI(), poolTokens.ownerOf(tokenId), address(this), _amount);
-    // emit RewardWithdraw(msg.sender, tranche, tokenId, amount);
+    emit PoolTokenRewardWithdraw();
   }
 
   /* Internal functions  */
