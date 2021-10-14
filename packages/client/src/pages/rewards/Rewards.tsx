@@ -1,7 +1,8 @@
 import React, {useState} from "react"
+import _ from "lodash"
 import BigNumber from "bignumber.js"
 import {Link} from "react-router-dom"
-import {gfiFromAtomic} from "../../ethereum/gfi"
+import {gfiFromAtomic, gfiToAtomic} from "../../ethereum/gfi"
 import {useGFIBalance, useRewards} from "../../hooks/useStakingRewards"
 import {displayDollars, displayNumber} from "../../utils"
 import {iconCarrotDown} from "../../components/icons"
@@ -146,29 +147,6 @@ function RewardsListItem(props: RewardsListItemProps) {
 
 function Rewards(props) {
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenXL})`})
-
-  // TODO: remove this variable when getting real data
-  const gfiRewards = [
-    {
-      isCommunityRewards: false,
-      title: "Staked 16K FIDU on Nov 1",
-      grantedGFI: "50.34",
-      claimableGFI: "4.03",
-    },
-    {
-      isCommunityRewards: true,
-      title: "Flight Academy Reward",
-      grantedGFI: "12,500.00",
-      claimableGFI: "0.00",
-    },
-    {
-      isCommunityRewards: true,
-      title: "Liquidity Provider Airdrop",
-      grantedGFI: "100,000.00",
-      claimableGFI: "50,000.00",
-    },
-  ]
-
   const {stakingRewards, merkleDistributor} = useRewards()
   const gfiBalance = useGFIBalance()
 
@@ -215,16 +193,21 @@ function Rewards(props) {
           )}
         </div>
         <ul className="rewards-list">
-          {gfiRewards.length === 0 && <NoRewards />}
+          {!merkleDistributor?.communityRewards.grants &&
+            !merkleDistributor?.actionRequiredAirdrops &&
+            !stakingRewards?.positions && <NoRewards />}
 
-          {gfiRewards.length > 0 &&
-            gfiRewards.map((item) => (
+          {merkleDistributor?.actionRequiredAirdrops &&
+            merkleDistributor.actionRequiredAirdrops.map((item) => (
               <RewardsListItem
-                key={item.title}
-                isCommunityRewards={item.isCommunityRewards}
-                title={item.title}
-                grantedGFI={item.grantedGFI}
-                claimableGFI={item.claimableGFI}
+                key={`${item.reason}-${item.index}`}
+                isCommunityRewards={true}
+                title={item.reason
+                  .split("_")
+                  .map((s) => _.capitalize(s))
+                  .join(" ")}
+                grantedGFI={displayNumber(gfiFromAtomic(gfiToAtomic(item.grant.amount)), 2)}
+                claimableGFI={displayNumber(new BigNumber(0), 2)}
               />
             ))}
         </ul>

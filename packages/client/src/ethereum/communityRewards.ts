@@ -2,13 +2,13 @@ import {EventData} from "web3-eth-contract"
 import {MerkleDistributor as MerkleDistributorContract} from "@goldfinch-eng/protocol/typechain/web3/MerkleDistributor"
 import {CommunityRewards as CommunityRewardsContract} from "@goldfinch-eng/protocol/typechain/web3/CommunityRewards"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
-import {getMerkleDistributorInfo} from "./utils"
 import {
   MerkleDistributorGrantInfo,
   MerkleDistributorInfo,
 } from "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types"
 import BigNumber from "bignumber.js"
 import {getBlockInfo, getCurrentBlock} from "../utils"
+import {getMerkleDistributorInfo} from "./utils"
 
 export class MerkleDistributor {
   goldfinchProtocol: GoldfinchProtocol
@@ -17,6 +17,7 @@ export class MerkleDistributor {
   _loaded: boolean
   info: MerkleDistributorInfo | undefined
   communityRewards: CommunityRewards
+  actionRequiredAirdrops: MerkleDistributorGrantInfo[] | undefined
   totalClaimable: BigNumber | undefined
   unvested: BigNumber | undefined
   granted: BigNumber | undefined
@@ -45,12 +46,28 @@ export class MerkleDistributor {
     this.totalClaimable = this.calculateTotalClaimable()
     this.unvested = this.calculateUnvested()
     this.granted = this.calculateGranted()
+
+    this.actionRequiredAirdrops = await this.getActionRequiredAirdrops(recipient)
     this._loaded = true
   }
 
   getGrantsInfo(recipient: string): MerkleDistributorGrantInfo[] {
     if (!this.info) return []
     return this.info.grants.filter((grant) => grant.account === recipient)
+  }
+
+  async getGrantsAccepted(recipient: string) {
+    if (!this.info) return []
+    return await this.goldfinchProtocol.queryEvents(this.contract, ["GrantAccepted"], {
+      account: recipient,
+    })
+  }
+
+  async getActionRequiredAirdrops(recipient: string) {
+    const airdrops = this.getGrantsInfo(recipient)
+    const acceptedAirdropsEvents = await this.getGrantsAccepted(recipient)
+
+    return airdrops.filter((airdrop) => !acceptedAirdropsEvents.find((e) => e.returnValues.index === airdrop.index))
   }
 
   calculateTotalClaimable(): BigNumber {
@@ -88,11 +105,26 @@ interface Rewards {
   revokedAt: BigNumber
 }
 
-interface CommunityRewardsVesting {
+export class CommunityRewardsVesting {
   id: string
   user: string
   claimable: BigNumber
   rewards: Rewards
+
+  constructor(id: string, user: string, claimable: BigNumber, rewards: Rewards) {
+    this.id = id
+    this.user = user
+    this.rewards = rewards
+    this.claimable = claimable
+  }
+
+  reason(): string {
+    return "Community Rewards"
+  }
+
+  granted(): BigNumber {
+    return this.rewards.totalGranted
+  }
 }
 
 function parseCommunityRewardsVesting(
@@ -109,20 +141,15 @@ function parseCommunityRewardsVesting(
     6: string
   }
 ): CommunityRewardsVesting {
-  return {
-    id: tokenId,
-    user: user,
-    claimable: new BigNumber(claimable),
-    rewards: {
-      totalGranted: new BigNumber(tuple[0]),
-      totalClaimed: new BigNumber(tuple[1]),
-      startTime: tuple[2],
-      endTime: tuple[3],
-      cliffLength: new BigNumber(tuple[4]),
-      vestingInterval: new BigNumber(tuple[5]),
-      revokedAt: new BigNumber(tuple[6]),
-    },
-  }
+  return new CommunityRewardsVesting(tokenId, user, new BigNumber(claimable), {
+    totalGranted: new BigNumber(tuple[0]),
+    totalClaimed: new BigNumber(tuple[1]),
+    startTime: tuple[2],
+    endTime: tuple[3],
+    cliffLength: new BigNumber(tuple[4]),
+    vestingInterval: new BigNumber(tuple[5]),
+    revokedAt: new BigNumber(tuple[6]),
+  })
 }
 
 export class CommunityRewards {
@@ -163,5 +190,3 @@ export class CommunityRewards {
     return events
   }
 }
-
-export type {CommunityRewardsVesting}
