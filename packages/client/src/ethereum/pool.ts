@@ -412,18 +412,18 @@ async function getDepositEventsForCapitalProvider(
       }
     }, {})
   const depositEventsByCapitalProviderViaStakingRewards: EventData[] = depositEventsViaStakingRewards.filter(
-    (eventData: EventData): boolean => {
+    (depositEvent: EventData): boolean => {
       const stakedEventsByTransactionHash =
-        stakedEventsForCapitalProviderByBlockNumberAndTransactionHash[eventData.blockNumber]
+        stakedEventsForCapitalProviderByBlockNumberAndTransactionHash[depositEvent.blockNumber]
       const correspondingStakedEvent = stakedEventsByTransactionHash
-        ? stakedEventsByTransactionHash[eventData.transactionHash]
+        ? stakedEventsByTransactionHash[depositEvent.transactionHash]
         : undefined
       if (correspondingStakedEvent) {
-        if (eventData.returnValues.amount === correspondingStakedEvent.returnValues.amount) {
+        if (depositEvent.returnValues.shares === correspondingStakedEvent.returnValues.amount) {
           return true
         } else {
           throw new Error(
-            `Staked event ${correspondingStakedEvent.transactionHash} corresponding to DepositMade event differs in amount.`
+            `Staked event ${correspondingStakedEvent.transactionHash} \`amount\` corresponding to DepositMade event differs from \`shares\`.`
           )
         }
       } else {
