@@ -59,10 +59,7 @@ function SeniorPoolViewV2(): JSX.Element {
   return (
     <div className="content-section">
       <div className="page-header">{poolData || user.noWeb3 ? "Pools / Senior Pool" : "Loading..."}</div>
-      <ConnectionNotice
-        requireSignIn={true}
-        requireKYC={{kyc: kycResult, condition: (kyc) => eligibleForSeniorPool(kyc, user)}}
-      />
+      <ConnectionNotice requireKYC={{kyc: kycResult, condition: (kyc) => eligibleForSeniorPool(kyc, user)}} />
       {maxCapacityNotice}
       <InvestorNotice />
       <EarnActionsContainer poolData={poolData} capitalProvider={capitalProvider} actionComplete={refetch} kyc={kyc} />
