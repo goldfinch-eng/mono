@@ -169,10 +169,10 @@ function getSortedRewards(
     }
 
     if (i1 instanceof StakedPosition && i2 instanceof StakedPosition) {
-      return i1.rewards.startTime < i2.rewards.startTime ? -1 : 1
+      return i1.rewards.startTime < i2.rewards.startTime ? 1 : -1
     }
 
-    return i1.rewards.startTime < i2.rewards.startTime ? -1 : 1
+    return i1.rewards.startTime < i2.rewards.startTime ? 1 : -1
   })
   return rewards
 }

@@ -48,6 +48,22 @@ export class MerkleDistributor {
     this.granted = this.calculateGranted()
 
     this.actionRequiredAirdrops = await this.getActionRequiredAirdrops(recipient)
+
+    if (this.communityRewards.grants) {
+      this.communityRewards.grants.map((acceptedGrant) => {
+        const airdrop = this.getGrantsInfo(recipient).find(
+          (airdrop) =>
+            airdrop.account === acceptedGrant.user &&
+            new BigNumber(airdrop.grant.amount) === acceptedGrant.rewards.totalGranted &&
+            new BigNumber(airdrop.grant.cliffLength) === acceptedGrant.rewards.cliffLength &&
+            new BigNumber(airdrop.grant.vestingInterval) === acceptedGrant.rewards.vestingInterval &&
+            Number(airdrop.grant.vestingLength) ===
+              Number(acceptedGrant.rewards.endTime) - Number(acceptedGrant.rewards.startTime)
+        )
+        acceptedGrant._reason = airdrop?.reason
+        return acceptedGrant
+      })
+    }
     this._loaded = true
   }
 
@@ -110,6 +126,7 @@ export class CommunityRewardsVesting {
   user: string
   claimable: BigNumber
   rewards: Rewards
+  _reason?: string
 
   constructor(id: string, user: string, claimable: BigNumber, rewards: Rewards) {
     this.id = id
@@ -119,7 +136,7 @@ export class CommunityRewardsVesting {
   }
 
   reason(): string {
-    return "Community Rewards"
+    return !this._reason ? "Community Rewards" : this._reason
   }
 
   granted(): BigNumber {
