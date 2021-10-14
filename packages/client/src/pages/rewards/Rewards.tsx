@@ -8,6 +8,8 @@ import {displayDollars, displayNumber} from "../../utils"
 import {iconCarrotDown} from "../../components/icons"
 import {useMediaQuery} from "react-responsive"
 import {WIDTH_TYPES} from "../../components/styleConstants"
+import {CommunityRewardsVesting, MerkleDistributor} from "../../ethereum/communityRewards"
+import {StakedPosition, StakingRewards} from "../../ethereum/pool"
 
 interface RewardsSummaryProps {
   claimable: string
@@ -145,6 +147,36 @@ function RewardsListItem(props: RewardsListItemProps) {
   )
 }
 
+function getSortedRewards(
+  stakingRewards: StakingRewards | undefined,
+  merkleDistributor: MerkleDistributor | undefined
+): (StakedPosition | CommunityRewardsVesting)[] {
+  const stakes = !stakingRewards || !stakingRewards?.positions ? [] : stakingRewards.positions
+  const airdrops =
+    !merkleDistributor || !merkleDistributor?.communityRewards?.grants ? [] : merkleDistributor.communityRewards.grants
+
+  const rewards: (StakedPosition | CommunityRewardsVesting)[] = [...stakes, ...airdrops]
+  rewards.sort((i1, i2) => {
+    let val = (i1.claimable as any) - (i2.claimable as any)
+    if (val) return val
+
+    if (i1 instanceof CommunityRewardsVesting && i2 instanceof StakedPosition) {
+      return -1
+    }
+
+    if (i1 instanceof StakedPosition && i2 instanceof CommunityRewardsVesting) {
+      return 1
+    }
+
+    if (i1 instanceof StakedPosition && i2 instanceof StakedPosition) {
+      return i1.rewards.startTime < i2.rewards.startTime ? -1 : 1
+    }
+
+    return i1.rewards.startTime < i2.rewards.startTime ? -1 : 1
+  })
+  return rewards
+}
+
 function Rewards(props) {
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenXL})`})
   const {stakingRewards, merkleDistributor} = useRewards()
@@ -168,6 +200,7 @@ function Rewards(props) {
     granted = val.plus(merkleDistributor?.granted || new BigNumber(0))
   }
 
+  const rewards = getSortedRewards(stakingRewards, merkleDistributor)
   return (
     <div className="content-section">
       <div className="page-header">
@@ -196,6 +229,19 @@ function Rewards(props) {
           {!merkleDistributor?.communityRewards.grants &&
             !merkleDistributor?.actionRequiredAirdrops &&
             !stakingRewards?.positions && <NoRewards />}
+
+          {rewards &&
+            rewards.map((item) => {
+              return (
+                <RewardsListItem
+                  key={`staked-${item.rewards.startTime}`}
+                  isCommunityRewards={item instanceof CommunityRewardsVesting}
+                  title={item.reason()}
+                  grantedGFI={displayNumber(gfiFromAtomic(item.granted()), 2)}
+                  claimableGFI={displayNumber(gfiFromAtomic(item.claimable), 2)}
+                />
+              )
+            })}
 
           {merkleDistributor?.actionRequiredAirdrops &&
             merkleDistributor.actionRequiredAirdrops.map((item) => (
