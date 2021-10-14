@@ -20,7 +20,7 @@ function SeniorPoolViewV2(): JSX.Element {
   const [capitalProvider, setCapitalProvider] = useState<UserData>()
   const {data, refetch} = useQuery<Query>(GET_SENIOR_POOL_AND_PROVIDER_DATA, {
     variables: {
-      userID: user.loaded ? user.address : "",
+      userID: user.loaded ? "0x0000000506063a51c6ce59906d8c40f7d7fe92a7" : "",
     },
   })
 
