@@ -783,7 +783,7 @@ function TranchedPoolView() {
   return (
     <div className="content-section">
       <div className="page-header">{earnMessage}</div>
-      <ConnectionNotice requireUnlock={false} requireGolist={true} requireSignIn={true} />
+      <ConnectionNotice requireUnlock={false} requireGolist={true} />
       {unlockForm}
       {user.loaded && (
         <>

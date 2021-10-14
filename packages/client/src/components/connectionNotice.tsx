@@ -3,11 +3,9 @@ import {AppContext, NetworkConfig} from "../App"
 import {CreditLine} from "../ethereum/creditLine"
 import {UnlockedStatus, User} from "../ethereum/user"
 import useNonNullContext from "../hooks/useNonNullContext"
-import {Session, useSession, useSignIn} from "../hooks/useSignIn"
+import {Session, useSession} from "../hooks/useSignIn"
 import UnlockUSDCForm from "./unlockUSDCForm"
 import VerifyAddressBanner from "./verifyAddressBanner"
-import {useForm, FormProvider} from "react-hook-form"
-import LoadingButton from "./loadingButton"
 import {KYC} from "../hooks/useGoldfinchClient"
 import {AsyncResult} from "../hooks/useAsync"
 import {assertNonNullable} from "../utils"
@@ -16,22 +14,7 @@ export interface ConnectionNoticeProps {
   creditLine?: CreditLine
   requireGolist?: boolean
   requireUnlock?: boolean
-  requireSignIn?: boolean
   requireKYC?: {kyc: AsyncResult<KYC>; condition: (KYC: KYC) => boolean}
-}
-
-function SignInBanner() {
-  const [, signIn] = useSignIn()
-  const formMethods = useForm()
-
-  return (
-    <FormProvider {...formMethods}>
-      <div className="info-banner background-container">
-        <div className="message">Please sign in to continue.</div>
-        <LoadingButton action={signIn} text="Sign in" />
-      </div>
-    </FormProvider>
-  )
 }
 
 function TextBanner({children}: React.PropsWithChildren<{}>) {
@@ -86,9 +69,11 @@ export const strategies: ConnectionNoticeStrategy[] = [
     ),
   },
   {
-    devName: "not_signed_in",
-    match: ({session, requireSignIn}) => !!requireSignIn && session.status !== "authenticated",
-    render: (_props) => <SignInBanner />,
+    devName: "connected_user_with_expired_session",
+    match: ({user, session}) => user.web3Connected && session.status === "known",
+    render: (_props) => (
+      <TextBanner>Your session has expired. To use Goldfinch, you first need to reconnect to Metamask.</TextBanner>
+    ),
   },
   {
     devName: "no_credit_line",
@@ -169,7 +154,6 @@ function ConnectionNotice(props: ConnectionNoticeProps) {
   props = {
     requireUnlock: true,
     requireGolist: false,
-    requireSignIn: false,
     ...props,
   }
   const {network, user} = useNonNullContext(AppContext)

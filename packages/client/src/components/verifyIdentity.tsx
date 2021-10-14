@@ -1,7 +1,6 @@
 import {ErrorMessage} from "@hookform/error-message"
 import Persona from "persona"
-import {useContext, useState} from "react"
-import {FormProvider, useForm} from "react-hook-form"
+import {useContext, useEffect, useState} from "react"
 import {Link} from "react-router-dom"
 import {AppContext} from "../App"
 import DefaultGoldfinchClient from "../hooks/useGoldfinchClient"
@@ -9,7 +8,6 @@ import {Session, useSignIn} from "../hooks/useSignIn"
 import {assertNonNullable} from "../utils"
 import ConnectionNotice from "./connectionNotice"
 import {iconAlert, iconCircleCheck, iconClock} from "./icons"
-import LoadingButton from "./loadingButton"
 import TransactionForm from "./transactionForm"
 
 function VerificationNotice({icon, notice}) {
@@ -212,20 +210,6 @@ function PersonaForm({entityType, onEvent, network, address, formMethods}) {
   )
 }
 
-function SignInForm({action, disabled}) {
-  const formMethods = useForm({mode: "onChange", shouldUnregister: false})
-  return (
-    <FormProvider {...formMethods}>
-      <div className="info-banner background-container subtle">
-        <div className="message small">
-          <p>First, please sign in to confirm your address.</p>
-        </div>
-        <LoadingButton text="Sign in" action={action} disabled={disabled} />
-      </div>
-    </FormProvider>
-  )
-}
-
 function VerifyIdentity() {
   const {user, network, setSessionData} = useContext(AppContext)
   const [kycStatus, setKycStatus] = useState<string>("")
@@ -233,6 +217,13 @@ function VerifyIdentity() {
   const [countryCode, setCountryCode] = useState<string>("")
   const [entityType, setEntityType] = useState<string>("")
   const [session, signIn] = useSignIn()
+
+  useEffect(() => {
+    if (session.status === "authenticated" && kycStatus === "") {
+      getSignatureAndKycStatus(session)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [network?.name, user.address, session])
 
   async function fetchKYCStatus(session: Session) {
     if (session.status !== "authenticated") {
@@ -251,9 +242,13 @@ function VerifyIdentity() {
     }
   }
 
-  async function getSignatureAndKycStatus() {
-    const session = await signIn()
-    await fetchKYCStatus(session)
+  async function getSignatureAndKycStatus(session) {
+    if (session.status === "authenticated") {
+      await fetchKYCStatus(session)
+      return
+    }
+    const updatedSession = await signIn()
+    await fetchKYCStatus(updatedSession)
   }
 
   function chooseEntity(chosenType) {
@@ -263,8 +258,10 @@ function VerifyIdentity() {
   function renderForm() {
     if (user.goListed) {
       return <VerificationNotice icon={iconCircleCheck} notice="Your address verification is complete." />
-    } else if (kycStatus === "") {
-      return <SignInForm disabled={!user.address} action={() => getSignatureAndKycStatus()} />
+    } else if (kycStatus === "" && session.status === "authenticated") {
+      return <VerificationNotice icon={iconClock} notice="Loading..." />
+    } else if (kycStatus === "" && session.status !== "authenticated") {
+      return <></>
     } else if (kycStatus === "failed") {
       return (
         <VerificationNotice
