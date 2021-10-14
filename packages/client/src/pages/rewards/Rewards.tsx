@@ -200,6 +200,13 @@ function Rewards(props) {
     granted = val.plus(merkleDistributor?.granted || new BigNumber(0))
   }
 
+  function capitalizeReason(reason: string): string {
+    return reason
+      .split("_")
+      .map((s) => _.capitalize(s))
+      .join(" ")
+  }
+
   const rewards = getSortedRewards(stakingRewards, merkleDistributor)
   return (
     <div className="content-section">
@@ -248,10 +255,7 @@ function Rewards(props) {
               <RewardsListItem
                 key={`${item.reason}-${item.index}`}
                 isCommunityRewards={true}
-                title={item.reason
-                  .split("_")
-                  .map((s) => _.capitalize(s))
-                  .join(" ")}
+                title={capitalizeReason(item.reason)}
                 grantedGFI={displayNumber(gfiFromAtomic(gfiToAtomic(item.grant.amount)), 2)}
                 claimableGFI={displayNumber(new BigNumber(0), 2)}
               />
