@@ -20,7 +20,7 @@ function SeniorPoolViewV2(): JSX.Element {
   const [capitalProvider, setCapitalProvider] = useState<UserData>()
   const {data, refetch} = useQuery<Query>(GET_SENIOR_POOL_AND_PROVIDER_DATA, {
     variables: {
-      userID: user.loaded && user.address,
+      userID: user.loaded ? user.address : "",
     },
   })
 
@@ -29,15 +29,15 @@ function SeniorPoolViewV2(): JSX.Element {
 
   useEffect(() => {
     async function setData() {
-      if (data && pool) {
-        const {seniorPools, user} = data
-        let seniorPool = seniorPools[0]!
-        setPoolData(parseSeniorPool(seniorPool))
-        setCapitalProvider(await parseUser(user, seniorPool.lastestPoolStatus.sharePrice, pool))
-      }
+      const {seniorPools, user} = data!
+      let seniorPool = seniorPools[0]!
+      setPoolData(parseSeniorPool(seniorPool))
+      setCapitalProvider(await parseUser(user, seniorPool.lastestPoolStatus.sharePrice, pool!))
     }
 
-    setData()
+    if (data && pool) {
+      setData()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, data, pool])
 
@@ -59,7 +59,10 @@ function SeniorPoolViewV2(): JSX.Element {
   return (
     <div className="content-section">
       <div className="page-header">{poolData || user.noWeb3 ? "Pools / Senior Pool" : "Loading..."}</div>
-      <ConnectionNotice requireSignIn={true} requireKYC={{kyc: kycResult, condition: eligibleForSeniorPool}} />
+      <ConnectionNotice
+        requireSignIn={true}
+        requireKYC={{kyc: kycResult, condition: (kyc) => eligibleForSeniorPool(kyc, user)}}
+      />
       {maxCapacityNotice}
       <InvestorNotice />
       <EarnActionsContainer poolData={poolData} capitalProvider={capitalProvider} actionComplete={refetch} kyc={kyc} />

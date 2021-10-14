@@ -34,6 +34,10 @@
       top: -6px;
       right: -8px;
     }
+
+    .icon.disabled {
+      opacity: 50%;
+    }
   }
 
   .fallback-content {

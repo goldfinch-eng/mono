@@ -1,6 +1,6 @@
 import React, {useContext} from "react"
 import {AppContext} from "../App"
-import {iconOutArrow} from "./icons.js"
+import {iconOutArrow} from "./icons"
 
 interface EtherscanLinkProps {
   tranchedPoolAddress: string

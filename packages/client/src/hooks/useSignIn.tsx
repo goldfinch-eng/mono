@@ -117,11 +117,10 @@ function getLocalStorageOrDefault(key: string, defaultValue: any): any {
   if (!stored) {
     return defaultValue
   }
-
   try {
     const sessionData = JSON.parse(stored)
 
-    if (isSessionDataFormatInvalid(sessionData) || isSessionDataExpired(sessionData?.signatureBlockNumTimestamp)) {
+    if (isSessionDataInvalid(sessionData)) {
       localStorage.removeItem(key)
       return defaultValue
     }
@@ -134,11 +133,15 @@ function getLocalStorageOrDefault(key: string, defaultValue: any): any {
   }
 }
 
+export function isSessionDataInvalid(sessionData) {
+  return isSessionDataFormatInvalid(sessionData) || isSessionDataExpired(sessionData?.signatureBlockNumTimestamp)
+}
+
 export function useSessionLocalStorage(key: string, defaultValue: any): SessionLocalStorageType {
   const [localStorageValue, setLocalStorageValue] = useState(getLocalStorageOrDefault(key, defaultValue))
 
   useEffect(() => {
-    const value = isSessionDataFormatInvalid(localStorageValue) ? defaultValue : localStorageValue
+    const value = isSessionDataInvalid(localStorageValue) ? defaultValue : localStorageValue
     localStorage.setItem(key, JSON.stringify(value))
   }, [key, localStorageValue, defaultValue])
 

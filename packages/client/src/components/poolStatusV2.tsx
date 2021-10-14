@@ -1,14 +1,15 @@
 import {useContext} from "react"
 import {AppContext} from "../App"
-import InfoSection from "./infoSection.js"
+import InfoSection from "./infoSection"
 import RecentRepayments from "./recentRepayments"
 import {usdcFromAtomic} from "../ethereum/erc20"
 import {displayDollars, displayPercent} from "../utils"
-import {iconOutArrow} from "./icons.js"
+import {iconOutArrow} from "./icons"
 import {BigNumber} from "bignumber.js"
+import {SeniorPoolData} from "../graphql/helpers"
 
 interface PoolStatusProps {
-  poolData?: any
+  poolData?: SeniorPoolData
 }
 
 function PoolStatus({poolData}: PoolStatusProps) {
@@ -45,7 +46,7 @@ function PoolStatus({poolData}: PoolStatusProps) {
         <a href={"https://dune.xyz/goldfinch/goldfinch"} target="_blank" rel="noopener noreferrer">
           Dashboard<span className="outbound-link">{iconOutArrow}</span>
         </a>
-        <a href={`https://etherscan.io/address/${poolData?.address}`} target="_blank" rel="noopener noreferrer">
+        <a href={`https://etherscan.io/address/${poolData?.id}`} target="_blank" rel="noopener noreferrer">
           Pool<span className="outbound-link">{iconOutArrow}</span>
         </a>
       </div>

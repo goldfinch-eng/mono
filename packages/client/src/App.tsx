@@ -1,13 +1,14 @@
 import React, {useState, useEffect} from "react"
 import {BrowserRouter as Router, Switch, Route, Redirect} from "react-router-dom"
 import * as Sentry from "@sentry/react"
-import Borrow from "./components/borrow.js"
+import Borrow from "./components/borrow"
 import Earn from "./components/earn"
-import Transactions from "./components/transactions.js"
+import Transactions from "./components/transactions"
 import NetworkWidget from "./components/networkWidget"
 import Sidebar from "./components/sidebar"
-import TermsOfService from "./components/termsOfService.js"
-import PrivacyPolicy from "./components/privacyPolicy.js"
+import Footer from "./components/footer"
+import TermsOfService from "./components/termsOfService"
+import PrivacyPolicy from "./components/privacyPolicy"
 import SeniorPoolAgreementNonUS from "./components/seniorPoolAgreementNonUS"
 import web3, {SESSION_DATA_KEY} from "./web3"
 import {ERC20, Tickers} from "./ethereum/erc20"
@@ -22,9 +23,9 @@ import SeniorPoolView from "./components/pools/seniorPoolView"
 import SeniorPoolViewV2 from "./components/pools/seniorPoolViewV2"
 import VerifyIdentity from "./components/verifyIdentity"
 import TranchedPoolView from "./components/pools/tranchedPoolView"
-import {SessionData} from "./types/session.js"
 import {apolloClient} from "./graphql/client"
 import {ApolloProvider} from "@apollo/client"
+import {SessionData} from "./types/session"
 import {useSessionLocalStorage} from "./hooks/useSignIn"
 import {EarnProvider} from "./contexts/EarnContext"
 import {BorrowProvider} from "./contexts/BorrowContext"
@@ -60,6 +61,8 @@ export interface GlobalState {
   sessionData?: SessionData
   setSessionData?: (data: SessionData | undefined) => void
 }
+
+const enableSeniorPoolV2 = process.env.REACT_APP_SENIOR_POOL_PAGE_VERSION === "V2"
 
 declare let window: any
 
@@ -224,12 +227,7 @@ function App() {
                   <Route path="/transactions">
                     <Transactions currentTXs={currentTXs} />
                   </Route>
-                  <Route path="/pools/senior">
-                    <SeniorPoolView />
-                  </Route>
-                  <Route path="/pools/senior_v2">
-                    <SeniorPoolViewV2 />
-                  </Route>
+                  <Route path="/pools/senior">{enableSeniorPoolV2 ? <SeniorPoolViewV2 /> : <SeniorPoolView />}</Route>
                   <Route path="/pools/:poolAddress">
                     <TranchedPoolView />
                   </Route>
@@ -250,11 +248,7 @@ function App() {
             </Router>
           </BorrowProvider>
         </EarnProvider>
-        <footer>
-          <a href="/terms">Terms</a>
-          <span className="divider">•</span>
-          <a href="/privacy">Privacy</a>
-        </footer>
+        <Footer />
       </AppContext.Provider>
     </ApolloProvider>
   )

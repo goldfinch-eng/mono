@@ -7,6 +7,7 @@ import {roundDownPenny} from "../utils"
 import {SeniorPool} from "../ethereum/pool"
 
 export interface SeniorPoolData {
+  id: string
   compoundBalance: BigNumber
   balance: BigNumber
   totalShares: BigNumber
@@ -88,6 +89,7 @@ export function parseSeniorPool(seniorPool: SeniorPoolGQL): SeniorPoolData {
   let estimatedApy = estimatedTotalInterest.dividedBy(totalPoolAssets)
 
   return {
+    id: seniorPool.id,
     compoundBalance,
     balance,
     totalShares,
@@ -114,7 +116,9 @@ export async function parseUser(
   const goListed = user?.goListed || false
 
   const sharePrice = new BigNumber(sharePriceStr) as any
-  const numShares = new BigNumber(await pool.fidu.methods.balanceOf(userAddress).call())
+  const numShares = userAddress
+    ? new BigNumber(await pool.fidu.methods.balanceOf(userAddress).call())
+    : new BigNumber("0")
   const availableToWithdraw = new BigNumber(numShares)
     .multipliedBy(new BigNumber(sharePrice))
     .div(FIDU_DECIMALS.toString())
