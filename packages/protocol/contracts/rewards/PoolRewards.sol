@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.6.12;
 
+import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import "@uniswap/lib/contracts/libraries/Babylonian.sol";
 
 import "../library/SafeERC20Transfer.sol";
@@ -9,27 +11,47 @@ import "../protocol/core/BaseUpgradeablePausable.sol";
 import "../interfaces/IPoolTokens.sol";
 import "../interfaces/ITranchedPool.sol";
 
+// Basically, Every time a on-time interest payment comes back across any JrPool
+// we keep a running total of dollars (totalInterestReceived) until it reaches the maxInterestDollarsEligible limit
+// Every dollar of interest received from 0->maxInterestDollarsEligible
+// has a allocated amount of rewards based on a sqrt function.
+
+// When a on-time interest payment comes in for a given Pool or the pool balance increases
+// we recalculate the pool's accRewardsPerShare
+
+// equation ref `_calculateNewRewards()`:
+// (sqrtNewTotalInterest - sqrtOrigTotalInterest) / sqrtTotalRewards * (totalRewards / totalGFISupply)
+
+// When a PoolToken is minted, we set the mint price to the pool's current accRewardsPerShare
+// Every time a PoolToken withdraws rewards, we determine the allocated rewards,  increase that PoolToken's rewardDebt,
+// and transfer the owner the gfi
+
+// equation to find a PoolToken's allocated rewards ref: `poolTokenClaimableRewards()`
+// Token.principalAmount * (Pool.accRewardsPerShare - Token.accRewardsPerShareMintPrice) - Token.rewardDebt
+
 contract PoolRewards is BaseUpgradeablePausable, SafeERC20Transfer {
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
+  using SafeMath for uint256;
 
   struct PoolRewardsInfo {
-    bool paused; // ability to pause each pool withdraws
-    uint256 rewards;
+    bool paused; // per-pool pause
+    uint256 accRewardsPerShare; // accumulator gfi per interest dollar
   }
 
   struct PoolRewardsTokenInfo {
-    uint256 rewardDebt; // amount of rewards claimed per PoolToken
+    uint256 rewardDebt; // gfi claimed
+    uint256 accRewardsPerShareMintPrice; // Pool's accRewardsPerShare at PoolToken mint()
   }
 
-  uint256 public totalSupply; // total amount of GFI rewards available
-  uint256 public maxAmountEligibleForRewards;
+  uint256 public totalRewards; // total amount of GFI rewards available
+  uint256 public maxInterestDollarsEligible; // interest $ eligible for gfi rewards
   uint256 public totalInterestReceived; // counter of on-time interest repayments across all jr pools
 
-  uint256 private sqrtTotalSupply;
-  uint256 private rewardRatio;
+  uint256 private sqrtTotalRewards; // sqrt(totalRewards)
+  uint256 private totalRewardPercentOfTotalGFI; // totalRewards/totalGFISupply
 
-  mapping(uint256 => PoolRewardsTokenInfo) public tokens; // poolTokenId -> poolRewardsTokenInfo
+  mapping(uint256 => PoolRewardsTokenInfo) public tokens; // poolTokenId -> PoolRewardsTokenInfo
   mapping(address => PoolRewardsInfo) public pools; // pool.address -> PoolRewardsInfo
 
   // TODO: define events
@@ -40,65 +62,81 @@ contract PoolRewards is BaseUpgradeablePausable, SafeERC20Transfer {
 
   function initialize(
     address owner,
-    uint256 _totalSupply,
-    uint256 _maxAmountEligibleForRewards
+    uint256 _totalRewards,
+    uint256 _maxInterestDollarsEligible
   ) public initializer {
-    totalSupply = _totalSupply;
-    maxAmountEligibleForRewards = _maxAmountEligibleForRewards;
-    _calcRewardRatio();
+    totalRewards = _totalRewards;
+    sqrtTotalRewards = Babylonian.sqrt(_totalRewards);
+    totalRewardPercentOfTotalGFI = _totalRewards.div(config.getGFI().totalSupply());
+    maxInterestDollarsEligible = _maxInterestDollarsEligible;
     __BaseUpgradeablePausable__init(owner);
   }
 
-  function setMaxAmountEligibleForRewards(uint256 _maxAmountEligibleForRewards) public onlyAdmin {
-    maxAmountEligibleForRewards = _maxAmountEligibleForRewards;
-    _calcRewardRatio();
-  }
+  // re-updates all pools accRewardsPerShare
+  // function massUpdatePools() public onlyAdmin {
+  // loop through all juniortranches and calculate pool accRewardsPerShareMintPrice
+  // sum all junior tranche interest payments and set totalInterestReceived
+  // }
 
-  function setTotalSupply(uint256 _totalSupply) public onlyAdmin {
-    totalSupply = _totalSupply;
-    _calcRewardRatio();
-  }
+  // todo: do we need to recalculate all pools accRewardsPerShare if maxInterestDollarsEligible changes
+  // function setMaxInterestDollarsEligible(uint256 _maxInterestDollarsEligible) public onlyAdmin {
+  //   maxInterestDollarsEligible = _maxInterestDollarsEligible;
+  // }
 
-  // Allocates rewards to a given pool
+  // todo: do we need to recalculate all pools accRewardsPerShare if totalSupply changes
+  // function setTotalSupply(uint256 _totalSupply) public onlyAdmin {
+  //   totalSupply = _totalSupply;
+  //   totalRewardPercentOfTotalGFI = _totalSupply.div(config.getGFI().totalSupply());
+  //   sqrtTotalRewards = Babylonian.sqrt(_totalSupply);
+  // }
+
+  // When a new interest payment is received by a pool, recalculate accRewardsPerShare
   function allocateRewards(address _poolAddress, uint256 _interestPaymentAmount) public onlyAdmin {
     uint256 _totalInterestReceived = totalInterestReceived;
 
-    require(_totalInterestReceived < maxAmountEligibleForRewards, "All rewards exhausted");
+    require(_totalInterestReceived < maxInterestDollarsEligible, "All rewards exhausted");
 
-    uint256 rewards;
-    uint256 sum = _totalInterestReceived + _interestPaymentAmount;
-    uint256 _totalSupply = totalSupply;
+    // Rewards earned between _totalInterestReceived & (_totalInterestReceived+_interestPaymentAmount)
+    uint256 rewards = _calculateNewRewards(_interestPaymentAmount);
 
-    // increment the total interest recieved across all junior pools
-    totalInterestReceived = sum;
-
-    // if over threshold of totalSupply, only grant rewards to limit
-    if (sum > _totalSupply) {
-      rewards = _calcRewards(_totalSupply);
-    } else {
-      rewards = _calcRewards(_totalInterestReceived + _interestPaymentAmount);
-    }
+    ITranchedPool pool = ITranchedPool(_poolAddress);
+    ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
 
     PoolRewardsInfo storage _poolInfo = pools[_poolAddress];
-    _poolInfo.rewards = _poolInfo.rewards + rewards;
-    _poolInfo.paused = _poolInfo.paused || false;
+    uint256 previousRewards = juniorTranche.interestSharePrice.mul(_poolInfo.accRewardsPerShare);
+    _poolInfo.accRewardsPerShare = previousRewards.add(rewards).div(_totalInterestReceived);
     emit PoolRewardsAllocated();
   }
 
-  // calculate PoolToken principal % of total JuniorTranche and subtract already withdrawn amount
-  function _claimableRewards(uint256 tokenId) public view returns (uint256) {
+  // calculate the rewards allocated to a given PoolToken
+  // PoolToken.principalAmount * (accRewardsPerShare-accRewardsPerShareMintPrice) - rewardDebt
+  function poolTokenClaimableRewards(uint256 tokenId) public view returns (uint256) {
     IPoolTokens poolTokens = config.getPoolTokens();
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
-    ITranchedPool pool = ITranchedPool(tokenInfo.pool);
+    return
+      tokenInfo
+        .principalAmount
+        .mul(pools[tokenInfo.pool].accRewardsPerShare.sub(tokens[tokenId].accRewardsPerShareMintPrice))
+        .sub(tokens[tokenId].rewardDebt);
+  }
+
+  // PoolToken request to withdraw currently allocated rewards
+  function withdraw(uint256 tokenId, uint256 _amount) public onlyAdmin {
+    uint256 totalClaimableRewards = poolTokenClaimableRewards(tokenId);
+    uint256 poolTokenRewardDebt = tokens[tokenId].rewardDebt;
+
+    IPoolTokens poolTokens = config.getPoolTokens();
+    IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
 
     address poolAddr = tokenInfo.pool;
     require(poolAddr != address(0), "Invalid tokenId");
+    require(!pools[poolAddr].paused, "Pool withdraw paused");
+    require(poolTokenRewardDebt.add(_amount) <= totalClaimableRewards, "Rewards overwithdraw attempt");
 
-    ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
+    tokens[tokenId].rewardDebt = poolTokenRewardDebt.add(_amount);
 
-    return
-      (tokenInfo.principalAmount / juniorTranche.principalDeposited) *
-      (pools[poolAddr].rewards - tokens[tokenId].rewardDebt);
+    safeERC20TransferFrom(config.getGFI(), poolTokens.ownerOf(tokenId), address(this), _amount);
+    emit PoolTokenRewardWithdraw();
   }
 
   function pausePoolWithdraws(address _poolAddress) public onlyAdmin {
@@ -111,34 +149,40 @@ contract PoolRewards is BaseUpgradeablePausable, SafeERC20Transfer {
     emit PoolRewardsUnpaused();
   }
 
-  function withdraw(uint256 tokenId, uint256 _amount) public onlyAdmin {
-    uint256 totalClaimableRewards = _claimableRewards(tokenId);
-    uint256 poolTokenRewardDebt = tokens[tokenId].rewardDebt;
-
-    IPoolTokens poolTokens = config.getPoolTokens();
-    IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
-
-    address poolAddr = tokenInfo.pool;
-    require(poolAddr != address(0), "Invalid tokenId");
-    require(!pools[poolAddr].paused, "Pool withdraw paused");
-    require(poolTokenRewardDebt + _amount <= totalClaimableRewards, "Rewards overwithdraw attempt");
-
-    tokens[tokenId].rewardDebt = poolTokenRewardDebt + _amount;
-
-    safeERC20TransferFrom(config.getGFI(), poolTokens.ownerOf(tokenId), address(this), _amount);
-    emit PoolTokenRewardWithdraw();
-  }
-
   /* Internal functions  */
 
-  function _calcRewardRatio() internal {
-    uint256 _totalSupply = totalSupply;
-    rewardRatio = _totalSupply / maxAmountEligibleForRewards;
-    sqrtTotalSupply = Babylonian.sqrt(_totalSupply);
+  // Calculate the total rewards allocated to a pool
+  // jrTranche.interestSharePrice * jrTranche.principalDeposited * pool.accRewardsPerShare
+  function _getPoolTotalAllocatedRewards(uint256 tokenId) internal view returns (uint256) {
+    IPoolTokens poolTokens = config.getPoolTokens();
+    IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
+    ITranchedPool pool = ITranchedPool(tokenInfo.pool);
+
+    require(tokenInfo.pool != address(0), "Invalid tokenId");
+
+    ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
+
+    return
+      juniorTranche.interestSharePrice.mul(juniorTranche.principalDeposited).mul(
+        pools[tokenInfo.pool].accRewardsPerShare
+      );
   }
 
-  // Calculate the total rewards between two intervals
-  function _calcRewards(uint256 _endInterval) internal view returns (uint256) {
-    return ((Babylonian.sqrt(totalInterestReceived) - Babylonian.sqrt(_endInterval)) / sqrtTotalSupply) * rewardRatio;
+  // Calculate the rewards earned for a given interest payment
+  // (sqrtNewTotalInterest - sqrtOrigTotalInterest) / sqrtTotalRewards * (totalRewards / totalGFISupply)
+  function _calculateNewRewards(uint256 interestPaymentAmount) internal view returns (uint256) {
+    uint256 _totalRewards = totalRewards;
+    uint256 _originalTotalInterest = totalInterestReceived;
+    uint256 newTotalInterest = _originalTotalInterest.add(interestPaymentAmount);
+
+    // interest payment passed the cap, should only partially be rewarded
+    if (newTotalInterest > _totalRewards) {
+      newTotalInterest = _totalRewards.sub(_originalTotalInterest);
+    }
+
+    uint256 sqrtOrigTotalInterest = Babylonian.sqrt(_originalTotalInterest);
+    uint256 sqrtNewTotalInterest = Babylonian.sqrt(newTotalInterest);
+
+    return (sqrtNewTotalInterest.sub(sqrtOrigTotalInterest)).div(sqrtTotalRewards).mul(totalRewardPercentOfTotalGFI);
   }
 }
