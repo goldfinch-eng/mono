@@ -2,12 +2,10 @@ import "tsconfig-paths/register"
 import "@nomiclabs/hardhat-truffle5"
 import "@nomiclabs/hardhat-ethers"
 import "hardhat-deploy"
+import baseConfig from "@goldfinch-eng/protocol/hardhat.config.base"
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-let config = require("@goldfinch-eng/protocol/hardhat.config.base")
-
-config = {
-  ...config,
+const config = {
+  ...baseConfig,
   paths: {
     artifacts: "../protocol/artifacts",
     cache: "../protocol/cache",
@@ -27,4 +25,4 @@ config = {
   },
 }
 
-module.exports = config
+export default config

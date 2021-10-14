@@ -14,7 +14,7 @@
     "lint": "eslint --resolve-plugins-relative-to=. .",
     "lint:fix": "eslint --resolve-plugins-relative-to=. . --fix && prettier . --write && solhint 'contracts/**/*.sol' --fix",
     "docs": "npx solidity-docgen && rm -rf docs/test",
-    "verify": "npx hardhat etherscan-verify --api-key DQUC8Y678J5RN5P7XE9RT91SWI7SSEDD53 --solc-input --network",
+    "verify": "env-cmd -f ../../.env.local npx hardhat etherscan-verify --api-key $ETHERSCAN_API_KEY --solc-input --network",
     "update-configs": "npx hardhat run ./blockchain_scripts/updateConfigs.js --network",
     "upgrade-multisig": "npx hardhat run ./blockchain_scripts/upgrade.js --network",
     "autotask-update": "node autotasks/deployAutoTasks.js",
@@ -25,8 +25,14 @@
     "pre-push": ""
   },
   "lint-staged": {
-    "*.(js(x)?|ts(x)?)": ["prettier --write", "eslint --resolve-plugins-relative-to=. --fix"],
-    "*.sol": ["prettier --write", "solhint --fix"]
+    "*.(js(x)?|ts(x)?)": [
+      "prettier --write",
+      "eslint --resolve-plugins-relative-to=. --fix"
+    ],
+    "*.sol": [
+      "prettier --write",
+      "solhint --fix"
+    ]
   },
   "repository": {
     "type": "git",
@@ -44,12 +50,9 @@
     "web3js",
     "ethereum"
   ],
-  "author": "Blake West <blake@goldfinch.finance>",
+  "author": "The Goldfinch Community <engineering@goldfinch.finance>",
   "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/OpenZeppelin/starter-kit/issues"
-  },
-  "homepage": "https://github.com/OpenZeppelin/starter-kit/blob/stable/README.md",
+  "homepage": "https://github.com/goldfinch-eng/goldfinch-protocol/README.md",
   "dependencies": {
     "@opengsn/gsn": "^2.1.0",
     "@openzeppelin/contracts": "^3.4.1",
@@ -69,6 +72,7 @@
   },
   "devDependencies": {
     "@gnosis.pm/safe-core-sdk": "^0.3.1",
+    "@goldfinch-eng/functions": "^0.0.1",
     "@goldfinch-eng/utils": "^0.0.1",
     "@nomiclabs/hardhat-ethers": "^2.0.1",
     "@nomiclabs/hardhat-truffle5": "^2.0.0",
@@ -96,6 +100,7 @@
     "chai-bn": "github:OpenZeppelin/chai-bn#v0.2.1",
     "concurrently": "^5.3.0",
     "defender-admin-client": "^1.4.0",
+    "env-cmd": "^10.1.0",
     "eslint": "^7.30.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-import-resolver-typescript": "^2.5.0",
@@ -107,6 +112,7 @@
     "eslint-plugin-react": "^7.22.0",
     "eslint-plugin-react-hooks": "^4.2.0",
     "ethers": "^5.4.4",
+    "firebase-admin": "^9.12.0",
     "ganache-cli": "^6.10.2",
     "hardhat": "^2.6.0",
     "hardhat-contract-sizer": "^2.0.3",
@@ -122,7 +128,6 @@
     "solhint": "^3.3.6",
     "solhint-plugin-modifiers": "0.0.3",
     "solhint-plugin-prettier": "0.0.5",
-    "solidity-docgen": "^0.5.7",
     "truffle-contract-size": "^2.0.0",
     "ts-node": "^10.0.0",
     "tsconfig-paths": "^3.11.0",

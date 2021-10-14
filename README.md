@@ -5,8 +5,15 @@ Goldfinch is a lending protocol built on the blockchain. This is a monorepo cont
 
 ## Getting Started
 ### Cloud setup
+We use Github Codespaces for cloud development. Goldfinch eng team members can simply click "Code" from the main repo page, and create a Codespace. Some key things to be aware of.
+  - You can actually use your local VS Code instance (highly recommended) and connect directly to the cloud. You can also use a browser instance of VSCode if you like.
+  - I would recommend going into your [personal codespace settings](https://github.com/settings/codespaces), and turning your Editor preference to "Visual Studio Code". This will default new Codespace instances to open up in your local VSCode, rather than the browser.
+  - Choosing a 4-core machine is sufficient.
 
-Click the gitpod link above, and start developing immediately from your browser. Done!
+**Tips**
+  - Codespaces has awesome "personalization" support through the use of `dotfiles` repos. If you set up a public repo called `dotfiles` under your Github handle, then Codespaces will automatically pull this in and run setup scripts, or use the bash_profile or what have you. It actually just takes all the files that start with `.` within that repo, and symlinks them to the Codespaces home directory. You can fork my dotfiles repo [here](https://github.com/blakewest/dotfiles) if you want.
+  - Once forked (or if you have your own), then go to your [personal codespace settings](https://github.com/settings/codespaces) and turn on "Automatically import Dotfiles", and from then on it will "just work", and your coding experience will feel right at home.
+  - Codespaces always use VSCode. But VS Code has plugins for 'vim mode" if you want that.
 
 ### Local setup
 
@@ -35,13 +42,13 @@ npm run bootstrap
   * [`autotasks/`](./packages/autotasks) (`@goldfinch-eng/functions`): [Defender Autotasks and Relay](https://docs.openzeppelin.com/defender/autotasks) code for supporting gasless transactions and triggering periodic on-chain calls.
   * [`utils/`](./packages/utils) (`@goldfinch-eng/utils`): Generally useful utilities that are shared across packages.
 * [`murmuration/`](./murmuration): Provisioning scripts for our cloud staging environment, called Murmuration.
-  
+
 ### Front-end development
 
 #### One time setup
 
 - Create a Goldfinch specific Metamask, which you can use for testing. The easiest way to do this is by creating a separate Chrome profile for Goldfinch, and then simply installing the Metamask extension.
-- Ensure you have Java installed (Firebase emulator requires the JVM)
+- Ensure you have Java installed (Firebase emulator requires the JVM) -> *Not required if you use Codespaces*
 - Copy `.env.example` to `.env.local` (the local will be ignored from git).
 - Add the following into your new `.env.local` file. Our local dev scripts will use these vars to automatically send you test ETH, and give you a credit line and USDC to play with.
 
@@ -52,17 +59,13 @@ npm run bootstrap
 
 - If you want the `client` to use variables in your `.env.local`, create a symlink to this file from inside the `packages/client` dir, or else create a separate `packages/client/.env.local` file.
 
-***Note**: To find the borrower contract address, you'll need to run `npm run start`, and then find the line in the console output that says `[blockchain] Created borrower contract: {borrower contract address} for {your wallet address}` Use the borrower contract address and paste it into your .env.local!*
-
-***Also note**: If/when we upgrade the borrower contract, you will need to update that address.*
-
 #### Running the stack
 
 Run `npm run start` from the project root directory.
 
   - This will run a local, [mainnet-forked](https://hardhat.org/hardhat-network/guides/mainnet-forking.html) blockchain, deploy our smart contracts, and set up useful state for the frontend (give your user a Credit Line, ETH, and USDC, etc.)
-  - This will also start the front-end server, which will pop up on http://localhost:3000. 
-  
+  - This will also start the front-end server, which will pop up on http://localhost:3000.
+
 Changes to the frontend should be automatically hotloaded using react-refresh.
 
 Changes to smart contracts will require re-compiling and re-deploying. You can do this by re-running `npm run start`.
@@ -75,17 +78,8 @@ Changes to smart contracts will require re-compiling and re-deploying. You can d
 by looking at the terminal output of the `@goldfinch-eng/protocol` start command. Search "USDC Address", and you should see something. Take that address, and
 then go to `Add Token` in Metamask, and paste it in there. Your fake USDC balance should show up.*
 
-#### Gitpod notes
-
-When using Gitpod, the local blockchain that gets spun up will not be visible to Metamask by default. So if you try to join
-"localhost 8545", it will not connect. You can fix this by creating a custom network on Metamask that points to the open port on your Gitpod instance.
-This is easy.
-
-1. Open the Gitpod front-end in the browser,
-2. Copy that url, and you should see a `3000` at the beginning of it. Change that to `8545`
-3. Open Metamask, and click `Custom RPC`. Paste in that url from step 2 into the `New RPC URL` area.
-4. Set the chainID to be 31337
-4. Hit save. You're done.
+### Contributing
+- See the [`CONTRIBUTING.MD`](./CONTRIBUTING.MD)
 
 ### Gasless transactions
 
@@ -139,18 +133,18 @@ For more info, have a look at `npx lerna run -h` and `npx lerna exec -h`.
 
 ### Deployment
 #### Local deployment
-Contract deployment is handled automatically through the `npm run start` command, using [hardhat-deploy](https://github.com/wighawag/hardhat-deploy) and 
+Contract deployment is handled automatically through the `npm run start` command, using [hardhat-deploy](https://github.com/wighawag/hardhat-deploy) and
 custom build scripts in `packages/protocol/blockchain_scripts`.
 
 #### Testnet deployments
 
  Right now, we support Ropsten and Rinkeby testnets. We are already deployed to these. Re-running is idempotent. But if we want to blow away the existing deployments for whatever reason, we can do the following:
- 
+
 Redeploy with: `TEST_USERS={YOUR_METAMASK_ADDRESS} npx buidler deploy --network {ropsten|rinkeby} --export-all ./config/deployments.json --reset`
 
 #### Mainnet deployments:
 
-Contracts are already deployed to mainnet. We write custom scripts to do upgrades or deploy new contracts. 
+Contracts are already deployed to mainnet. We write custom scripts to do upgrades or deploy new contracts.
 
 ### Troubleshooting Frontend Issues
 
