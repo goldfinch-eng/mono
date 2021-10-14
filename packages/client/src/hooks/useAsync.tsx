@@ -63,7 +63,7 @@ export function useAsync<T>(fn: () => Promise<T> | undefined, deps: DependencyLi
  */
 export function useAsyncFn<T>(
   fn: () => Promise<T> | undefined,
-  deps: DependencyList = [],
+  deps: DependencyList = []
 ): [AsyncResult<T>, RefreshFn] {
   const lastCallId = useRef(0)
   const [state, setState] = useState<AsyncResult<T>>({status: "idle"})
@@ -78,7 +78,7 @@ export function useAsyncFn<T>(
       setState({status: "loading"})
       promise
         .then(
-          (result: T) => isMounted() && callId === lastCallId.current && setState({status: "succeeded", value: result}),
+          (result: T) => isMounted() && callId === lastCallId.current && setState({status: "succeeded", value: result})
         )
         .catch((e) => isMounted() && callId === lastCallId.current && setState({status: "errored", error: e}))
     }

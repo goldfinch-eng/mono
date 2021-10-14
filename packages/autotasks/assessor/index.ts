@@ -2,7 +2,7 @@ import {ethers} from "ethers"
 import {Relayer} from "defender-relay-client"
 import {DefenderRelaySigner, DefenderRelayProvider} from "defender-relay-client/lib/ethers"
 import axios from "axios"
-import {asNonNullable} from "packages/utils/src/type"
+import {asNonNullable} from "@goldfinch-eng/utils"
 
 const CONFIG = {
   mainnet: {
@@ -19,10 +19,9 @@ const CONFIG = {
   },
 }
 
-const ETHERSCAN_API_KEY = "DQUC8Y678J5RN5P7XE9RT91SWI7SSEDD53"
-
 // Entrypoint for the Autotask
 exports.handler = async function (credentials) {
+  const {etherscanApiKey} = credentials.secrets
   const relayer = new Relayer(credentials)
   const provider = new DefenderRelayProvider(credentials)
   const signer = new DefenderRelaySigner(credentials, provider, {speed: "fast"})
@@ -39,11 +38,11 @@ exports.handler = async function (credentials) {
 
   let pools = []
 
-  const factoryAbi = await getAbifor(config.etherscanApi, goldfinchFactoryAddress, provider)
+  const factoryAbi = await getAbifor(config.etherscanApi, goldfinchFactoryAddress, provider, etherscanApiKey)
   const factory = new ethers.Contract(goldfinchFactoryAddress, factoryAbi, signer)
-  const poolTokensAbi = await getAbifor(config.etherscanApi, config.poolTokensAddress, provider)
+  const poolTokensAbi = await getAbifor(config.etherscanApi, config.poolTokensAddress, provider, etherscanApiKey)
   const poolTokens = new ethers.Contract(config.poolTokensAddress, poolTokensAbi, signer)
-  const seniorPoolAbi = await getAbifor(config.etherscanApi, config.seniorPoolAddress, provider)
+  const seniorPoolAbi = await getAbifor(config.etherscanApi, config.seniorPoolAddress, provider, etherscanApiKey)
   const seniorPool = new ethers.Contract(config.seniorPoolAddress, seniorPoolAbi, signer)
 
   const filter = asNonNullable(factory.filters.PoolCreated)
@@ -58,11 +57,11 @@ exports.handler = async function (credentials) {
     return
   }
 
-  const poolAbi = await getAbifor(config.etherscanApi, pools[0], provider)
+  const poolAbi = await getAbifor(config.etherscanApi, pools[0], provider, etherscanApiKey)
   const pool = new ethers.Contract(asNonNullable(pools[0]), poolAbi, signer)
 
   const creditLineAddress = await pool.creditLine()
-  const creditLineAbi = await getAbifor(config.etherscanApi, creditLineAddress, provider)
+  const creditLineAbi = await getAbifor(config.etherscanApi, creditLineAddress, provider, etherscanApiKey)
   const creditLine = new ethers.Contract(creditLineAddress, creditLineAbi, signer)
 
   console.log(`Found ${pools.length} tranched pools`)
@@ -149,7 +148,7 @@ async function assessAndRedeem(tranchedPool, seniorPool, poolTokens) {
   }
 }
 
-async function getAbifor(etherscanApiUrl, address, provider) {
+async function getAbifor(etherscanApiUrl, address, provider, etherscanApiKey: string) {
   // De-reference the proxy to the implementation if it is a proxy
   // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v3.2.0/contracts/proxy/TransparentUpgradeableProxy.sol#L81
   const implStorageLocation = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"
@@ -160,7 +159,7 @@ async function getAbifor(etherscanApiUrl, address, provider) {
   }
 
   // https://etherscan.io/apis#contracts
-  const url = `${etherscanApiUrl}?module=contract&action=getabi&address=${address}&apikey=${ETHERSCAN_API_KEY}`
+  const url = `${etherscanApiUrl}?module=contract&action=getabi&address=${address}&apikey=${etherscanApiKey}`
   const body = await axios.get(url)
   const bodyAsJson = body.data
 

@@ -2,9 +2,6 @@ artifacts
 typechain
 contracts/external
 cache
-# This is handled by the pretier config inside the client
-client
-client/src/typechain
 .venv
 deployments
 .vscode
@@ -17,3 +14,4 @@ README.md
 .gitpod.yml
 .prettierrc
 .solhint.json
+package-lock.json
