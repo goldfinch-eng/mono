@@ -2,8 +2,8 @@
   "name": "@goldfinch-eng/subgraph",
   "scripts": {
     "codegen": "graph codegen",
-    "build": "graph codegen && graph build",
-    "deploy": "graph deploy --node https://api.studio.thegraph.com/deploy/ goldfinch-subgraph",
+    "build": "graph codegen",
+    "deploy": "graph build && graph deploy --node https://api.studio.thegraph.com/deploy/ goldfinch-subgraph",
     "create-local": "graph create --node http://localhost:8020/ goldfinch-subgraph",
     "remove-local": "graph remove --node http://localhost:8020/ goldfinch-subgraph",
     "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5002 goldfinch-subgraph"
