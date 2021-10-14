@@ -21,7 +21,7 @@ export function displayNumber(val, decimals) {
   }
 
   // TODO[PR] Should we have a similar check here for `valFloat < 0.01 && valFloat > 0`,
-  // like we do in `displayDollars()`?
+  // like we do in `displayDollars()`? Otherwise we're at risk of displaying `0.00`.
 
   return commaFormat(valFloat.toFixed(decimals))
 }
