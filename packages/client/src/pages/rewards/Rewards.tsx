@@ -5,17 +5,18 @@ import {useMediaQuery} from "react-responsive"
 import {WIDTH_TYPES} from "../../components/styleConstants"
 import styled from "styled-components"
 
-import colors from "../../layout/colors"
-import Text from "../../components/text"
+interface DetailsContainerProps {
+  open: boolean
+}
 
-const DetailsContainer = styled.div`
+const DetailsContainer = styled.div<DetailsContainerProps>`
   margin: -28px -30px 24px -30px;
-  background-color: ${colors.sandLight};
+  background-color: ${({theme}) => theme.colors.sandLight};
   padding: 30px;
   border-bottom-right-radius: 6px;
   border-bottom-left-radius: 6px;
 
-  ${({open}) => open && `border-top: 2px solid ${colors.sand};`};
+  ${({open, theme}) => open && `border-top: 2px solid ${theme.colors.sand};`}
 `
 
 const ColumnsContainer = styled.div`
@@ -31,6 +32,16 @@ const Detail = styled.div`
   > * + * {
     margin: 8px 0 0 0;
   }
+`
+
+const DetailLabel = styled.span`
+  color: ${({theme}) => theme.colors.purpLight};
+  font-size: ${({theme}) => theme.typography.fontSize.sansSizeXs};
+`
+
+const DetailValue = styled.span`
+  color: ${({theme}) => theme.colors.purpDark};
+  font-size: ${({theme}) => theme.typography.fontSize.sansSizeS};
 `
 
 const Column = styled.div`
@@ -171,46 +182,26 @@ function RewardsListItem(props: RewardsListItemProps) {
               <ColumnsContainer>
                 <Column>
                   <Detail>
-                    <Text color={colors.purpLight} size={15}>
-                      Transaction details
-                    </Text>
-                    <Text color={colors.purpDark} size={18}>
-                      16,179.69 FIDU staked on Nov 1, 2021
-                    </Text>
+                    <DetailLabel>Transaction details</DetailLabel>
+                    <DetailValue>16,179.69 FIDU staked on Nov 1, 2021</DetailValue>
                   </Detail>
                   <Detail>
-                    <Text color={colors.purpLight} size={15}>
-                      Vesting schedule
-                    </Text>
-                    <Text color={colors.purpDark} size={18}>
-                      Linear until 100% on Nov 1, 2022
-                    </Text>
+                    <DetailLabel>Vesting schedule</DetailLabel>
+                    <DetailValue>Linear until 100% on Nov 1, 2022</DetailValue>
                   </Detail>
                   <Detail>
-                    <Text color={colors.purpLight} size={15}>
-                      Claim status
-                    </Text>
-                    <Text color={colors.purpDark} size={18}>
-                      0 GFI claimed of your total vested 4.03 GFI
-                    </Text>
+                    <DetailLabel>Claim status</DetailLabel>
+                    <DetailValue>0 GFI claimed of your total vested 4.03 GFI</DetailValue>
                   </Detail>
                 </Column>
                 <Column>
                   <Detail>
-                    <Text color={colors.purpLight} size={15}>
-                      Current earn rate
-                    </Text>
-                    <Text color={colors.purpDark} size={18}>
-                      +10.21 granted per week
-                    </Text>
+                    <DetailLabel>Current earn rate</DetailLabel>
+                    <DetailValue>+10.21 granted per week</DetailValue>
                   </Detail>
                   <Detail>
-                    <Text color={colors.purpLight} size={15}>
-                      Vesting status
-                    </Text>
-                    <Text color={colors.purpDark} size={18}>
-                      8.0% (4.03 GFI) vested so far
-                    </Text>
+                    <DetailLabel>Vesting status</DetailLabel>
+                    <DetailValue>8.0% (4.03 GFI) vested so far</DetailValue>
                   </Detail>
                 </Column>
               </ColumnsContainer>
