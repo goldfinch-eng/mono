@@ -9,28 +9,31 @@ New routes: be sure to update the webpack proxy
 packages/client/config-overrides.js
 
 */
-import {findEnvLocal} from "@goldfinch-eng/utils"
+import {assertNonNullable, findEnvLocal} from "@goldfinch-eng/utils"
 import dotenv from "dotenv"
 dotenv.config({path: findEnvLocal()})
 
 import express from "express"
 import cors from "cors"
-import {relayHandler} from "@goldfinch-eng/autotasks"
+import {relayHandler, uniqueIdentitySignerHandler} from "@goldfinch-eng/autotasks"
 import BN from "bn.js"
-import hre from "hardhat"
-import "hardhat-deploy/dist/src/type-extensions"
-import {HardhatRuntimeEnvironment} from "hardhat/types/runtime"
 
 import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
 import setUpForTesting from "@goldfinch-eng/protocol/deploy/setUpForTesting"
+import {hardhat as hre} from "@goldfinch-eng/protocol"
 
 const app = express()
 app.use(express.json())
 app.use(cors())
 
+assertNonNullable(
+  process.env.RELAY_SERVER_PORT,
+  "RELAY_SERVER_PORT must be passed as an envvar when running the development server"
+)
 const port = process.env.RELAY_SERVER_PORT
 
 app.post("/relay", relayHandler)
+app.post("/unique-identity-signer", uniqueIdentitySignerHandler)
 
 app.post("/fundWithWhales", async (req, res) => {
   if (process.env.NODE_ENV === "production") {
@@ -47,10 +50,9 @@ app.post("/setupForTesting", async (req, res) => {
     return res.status(404).send({message: "setupForTesting only available on local and murmuration"})
   }
   const {address} = req.body
-  const {getNamedAccounts, deployments, getChainId} = hre
 
   try {
-    await setUpForTesting({getNamedAccounts, deployments, getChainId} as HardhatRuntimeEnvironment, {
+    await setUpForTesting(hre, {
       overrideAddress: address,
     })
   } catch (e) {

@@ -1,5 +1,5 @@
-import {HardhatRuntimeEnvironment} from "hardhat/types/runtime"
-import {DeploymentsExtension} from "hardhat-deploy/dist/types"
+import {HardhatRuntimeEnvironment} from "hardhat/types"
+import {DeploymentsExtension} from "hardhat-deploy/types"
 import {Logger} from "../blockchain_scripts/types"
 import fs from "fs"
 
