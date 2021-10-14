@@ -495,8 +495,13 @@ async function getCumulativeWritedowns(pool: SeniorPool) {
   // then fixed. So we include only `PrincipalWrittenDown` events emitted by `pool`.
 
   const events = await pool.goldfinchProtocol.queryEvents(pool.contract, "PrincipalWrittenDown")
-  // TODO[PR] I don't think `parseInt()` can be used safely here?
-  return new BigNumber(_.sumBy(events, (event) => parseInt(event.returnValues.amount, 10))).negated()
+  const sum: BigNumber = events.length
+    ? BigNumber.sum.apply(
+        null,
+        events.map((eventData) => new BigNumber(eventData.returnValues.amount))
+      )
+    : new BigNumber(0)
+  return sum.negated()
 }
 
 async function getCumulativeDrawdowns(pool: SeniorPool) {
@@ -508,8 +513,13 @@ async function getCumulativeDrawdowns(pool: SeniorPool) {
   let allDrawdownEvents = _.flatten(
     await Promise.all(tranchedPools.map((pool) => protocol.queryEvents(pool, "DrawdownMade")))
   )
-  // TODO[PR] I don't think `parseInt()` can be used safely here?
-  return new BigNumber(_.sumBy(allDrawdownEvents, (event) => parseInt(event.returnValues.amount, 10)))
+  const sum: BigNumber = allDrawdownEvents.length
+    ? BigNumber.sum.apply(
+        null,
+        allDrawdownEvents.map((eventData) => new BigNumber(eventData.returnValues.amount))
+      )
+    : new BigNumber(0)
+  return sum
 }
 
 async function getRepaymentEvents(this: PoolData, goldfinchProtocol: GoldfinchProtocol) {
