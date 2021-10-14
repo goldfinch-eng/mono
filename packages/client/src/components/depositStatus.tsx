@@ -13,8 +13,10 @@ function DepositStatus(props: DepositStatusProps) {
 
   let apyDisplay: string, estimatedApy: BigNumber | undefined, estimatedApyFromGfi: BigNumber | undefined
   if (props.poolData?.loaded) {
-    const estimatedApyFromSupplying = props.poolData.estimatedApy
+    const globalEstimatedApyFromSupplying = props.poolData.estimatedApy
+    const estimatedApyFromSupplying = globalEstimatedApyFromSupplying
 
+    const globalEstimatedApyFromGfi = props.poolData.estimatedApyFromGfi || new BigNumber(0)
     const balancePortionEarningGfi = props.capitalProvider.stakedSeniorPoolBalanceInDollars.div(
       props.capitalProvider.totalSeniorPoolBalanceInDollars
     )
@@ -23,7 +25,8 @@ function DepositStatus(props: DepositStatusProps) {
     // GFI from staking, but is earning that GFI at a boosted rate due to having staked-with-lockup
     // (which they could have achieved by interacting with the contract directly, rather than using
     // our frontend).
-    estimatedApyFromGfi = balancePortionEarningGfi.multipliedBy(props.poolData.estimatedApyFromGfi || new BigNumber(0))
+    const userEstimatedApyFromGfi = balancePortionEarningGfi.multipliedBy(globalEstimatedApyFromGfi)
+    estimatedApyFromGfi = portfolioBalance.gt(0) ? userEstimatedApyFromGfi : globalEstimatedApyFromGfi
 
     estimatedApy = estimatedApyFromSupplying.plus(estimatedApyFromGfi)
     apyDisplay = `${displayPercent(estimatedApy)}`
@@ -64,8 +67,8 @@ function DepositStatus(props: DepositStatusProps) {
           <div className="value">{portfolioBalanceDisplay}</div>
         </div>
         <div className="deposit-status-item">
-          <div className="label">Est. APY</div>
-          <div className="value">{apyDisplay}</div>
+          <div className="label">Est. Annual Growth</div>
+          <div className="value">{`${apyDisplay} APY${estimatedApyFromGfi?.gt(0) ? " (with GFI)" : ""}`}</div>
         </div>
       </div>
     )

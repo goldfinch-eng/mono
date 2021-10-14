@@ -2,7 +2,7 @@ import BigNumber from "bignumber.js"
 import {fetchDataFromAttributes, getPoolEvents, INTEREST_DECIMALS, USDC_DECIMALS} from "./utils"
 import {Tickers, usdcFromAtomic} from "./erc20"
 import {FIDU_DECIMALS, fiduFromAtomic} from "./fidu"
-import {getBlockInfo, getCurrentBlock, roundDownPenny} from "../utils"
+import {getBlockInfo, getCurrentBlock, roundDownPenny, BlockInfo} from "../utils"
 import _ from "lodash"
 import {getBalanceAsOf, mapEventsToTx} from "./events"
 import {Contract, EventData} from "web3-eth-contract"
@@ -14,24 +14,21 @@ import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {TranchedPool} from "@goldfinch-eng/protocol/typechain/web3/TranchedPool"
 import {buildCreditLine} from "./creditLine"
 import {getMetadataStore} from "./tranchedPool"
+import {BlockNumber} from "web3-core"
 
 class Pool {
   goldfinchProtocol: GoldfinchProtocol
   contract: PoolContract
   chain: string
   address: string
-  _loaded: boolean
+  loaded: boolean
 
   constructor(goldfinchProtocol: GoldfinchProtocol) {
     this.goldfinchProtocol = goldfinchProtocol
     this.contract = goldfinchProtocol.getContract<PoolContract>("Pool")
     this.address = goldfinchProtocol.getAddress("Pool")
     this.chain = goldfinchProtocol.networkId
-    this._loaded = true
-  }
-
-  get loaded(): boolean {
-    return this._loaded
+    this.loaded = true
   }
 }
 
@@ -67,7 +64,8 @@ class SeniorPool {
   async getPoolEvents(
     address: string | undefined,
     eventNames: string[] = ["DepositMade", "WithdrawalMade"],
-    includeV1Pool: boolean = true
+    includeV1Pool: boolean = true,
+    toBlock: BlockNumber = "latest"
   ): Promise<EventData[]> {
     if (includeV1Pool) {
       // In migrating from v1 to v2 (i.e. from the `Pool` contract as modeling the senior pool,
@@ -80,13 +78,13 @@ class SeniorPool {
       // and Pool contracts.
 
       const events = await Promise.all([
-        getPoolEvents(this, address, eventNames),
-        getPoolEvents(this.v1Pool, address, eventNames),
+        getPoolEvents(this, address, eventNames, toBlock),
+        getPoolEvents(this.v1Pool, address, eventNames, toBlock),
       ])
       const combined = _.flatten(events)
       return combined
     } else {
-      return getPoolEvents(this, address, eventNames)
+      return getPoolEvents(this, address, eventNames, toBlock)
     }
   }
 
@@ -160,30 +158,44 @@ type CapitalProviderStaked = {
 
 async function fetchCapitalProviderStaked(
   stakingRewards: StakingRewards,
-  capitalProviderAddress: string
+  capitalProviderAddress: string,
+  currentBlock: BlockInfo
 ): Promise<CapitalProviderStaked> {
-  const numPositions = await stakingRewards.contract.methods.balanceOf(capitalProviderAddress).call()
-  const tokenIds = await Promise.all(
-    _.fill(Array(numPositions), undefined).map((val, i) =>
-      stakingRewards.contract.methods.tokenOfOwnerByIndex(capitalProviderAddress, i).call()
-    )
+  const numPositions = parseInt(
+    await stakingRewards.contract.methods.balanceOf(capitalProviderAddress).call(undefined, currentBlock.number),
+    10
+  )
+  const tokenIds: string[] = await Promise.all(
+    Array(numPositions)
+      .fill("")
+      .map((val, i) =>
+        stakingRewards.contract.methods
+          .tokenOfOwnerByIndex(capitalProviderAddress, i)
+          .call(undefined, currentBlock.number)
+      )
   )
   const positions = await Promise.all(
-    tokenIds.map((tokenId) => stakingRewards.contract.methods.positions(tokenId).call())
+    tokenIds.map((tokenId) => stakingRewards.contract.methods.positions(tokenId).call(undefined, currentBlock.number))
   )
   const staked = positions.map((position) => ({
     amount: new BigNumber(position.amount),
     locked: new BigNumber(position.lockedUntil).gt(0),
   }))
+  const locked = staked.filter((val) => val.locked)
+  const notLocked = staked.filter((val) => !val.locked)
   return {
-    numSharesStakedLocked: BigNumber.sum.apply(
-      null,
-      staked.filter((val) => val.locked).map((val) => val.amount)
-    ),
-    numSharesStakedNotLocked: BigNumber.sum.apply(
-      null,
-      staked.filter((val) => !val.locked).map((val) => val.amount)
-    ),
+    numSharesStakedLocked: locked.length
+      ? BigNumber.sum.apply(
+          null,
+          locked.map((val) => val.amount)
+        )
+      : new BigNumber(0),
+    numSharesStakedNotLocked: notLocked.length
+      ? BigNumber.sum.apply(
+          null,
+          notLocked.map((val) => val.amount)
+        )
+      : new BigNumber(0),
   }
 }
 
@@ -196,16 +208,23 @@ async function fetchCapitalProviderData(
     return emptyCapitalProvider({loaded: false})
   }
   if (!capitalProviderAddress) {
-    return emptyCapitalProvider({loaded: pool.loaded && stakingRewards._loaded})
+    return emptyCapitalProvider({loaded: pool.loaded && stakingRewards.loaded})
   }
 
+  const currentBlock = getBlockInfo(await getCurrentBlock())
   const attributes = [{method: "sharePrice"}]
-  const {sharePrice} = await fetchDataFromAttributes(pool.contract, attributes, {bigNumber: true})
+  const {sharePrice} = await fetchDataFromAttributes(pool.contract, attributes, {
+    bigNumber: true,
+    blockNumber: currentBlock.number,
+  })
 
-  const numSharesNotStaked = new BigNumber(await pool.fidu.methods.balanceOf(capitalProviderAddress).call())
+  const numSharesNotStaked = new BigNumber(
+    await pool.fidu.methods.balanceOf(capitalProviderAddress).call(undefined, currentBlock.number)
+  )
   const {numSharesStakedLocked, numSharesStakedNotLocked} = await fetchCapitalProviderStaked(
     stakingRewards,
-    capitalProviderAddress
+    capitalProviderAddress,
+    currentBlock
   )
 
   const numSharesStaked = numSharesStakedLocked.plus(numSharesStakedNotLocked)
@@ -227,12 +246,15 @@ async function fetchCapitalProviderData(
   const availableToWithdrawInDollars = new BigNumber(fiduFromAtomic(availableToWithdraw))
 
   const address = capitalProviderAddress
-  const allowance = new BigNumber(await pool.usdc.methods.allowance(capitalProviderAddress, pool.address).call())
+  const allowance = new BigNumber(
+    await pool.usdc.methods.allowance(capitalProviderAddress, pool.address).call(undefined, currentBlock.number)
+  )
   const weightedAverageSharePrice = await getWeightedAverageSharePrice(
     pool,
     stakingRewards,
     capitalProviderAddress,
-    numSharesTotal
+    numSharesTotal,
+    currentBlock
   )
   const sharePriceDelta = sharePrice.dividedBy(FIDU_DECIMALS).minus(weightedAverageSharePrice)
   const unrealizedGains = sharePriceDelta.multipliedBy(numSharesTotal)
@@ -290,6 +312,7 @@ interface PoolData {
 }
 
 async function fetchPoolData(pool: SeniorPool, erc20: Contract): Promise<PoolData> {
+  // TODO[PR] We should probably use a consistent block number for all the calls in this method.
   const attributes = [{method: "sharePrice"}, {method: "compoundBalance"}]
   let {sharePrice, compoundBalance: _compoundBalance} = await fetchDataFromAttributes(pool.contract, attributes)
   let rawBalance = new BigNumber(await erc20.methods.balanceOf(pool.address).call())
@@ -348,11 +371,15 @@ type StakedEventsByBlockNumberAndTransactionHash = {
 async function getDepositEventsForCapitalProvider(
   pool: SeniorPool,
   stakingRewards: StakingRewards,
-  capitalProviderAddress: string
+  capitalProviderAddress: string,
+  currentBlock: BlockInfo
 ): Promise<EventData[]> {
-  const depositEventsByCapitalProviderDirectly: EventData[] = await pool.getPoolEvents(capitalProviderAddress, [
-    "DepositMade",
-  ])
+  const depositEventsByCapitalProviderDirectly: EventData[] = await pool.getPoolEvents(
+    capitalProviderAddress,
+    ["DepositMade"],
+    true,
+    currentBlock.number
+  )
 
   // TODO Getting all deposit events by the StakingRewards contract seems likely to become inefficient rapidly.
   // We should invert the approach and get only those in block numbers for which there was a Staked event for
@@ -363,9 +390,13 @@ async function getDepositEventsForCapitalProvider(
     // No events from the v1 Pool contract could correspond to Staked events (because the StakingRewards
     // contract did not exist until after the migration to the v2 SeniorPool contract), so we can exclude them,
     // for efficiency.
-    false
+    false,
+    currentBlock.number
   )
-  const stakedEventsForCapitalProvider: EventData[] = await stakingRewards.getStakedEvents(capitalProviderAddress)
+  const stakedEventsForCapitalProvider: EventData[] = await stakingRewards.getStakedEvents(
+    capitalProviderAddress,
+    currentBlock
+  )
   const stakedEventsForCapitalProviderByBlockNumberAndTransactionHash =
     stakedEventsForCapitalProvider.reduce<StakedEventsByBlockNumberAndTransactionHash>((acc, curr) => {
       const eventsByTransactionHash = acc[curr.blockNumber]
@@ -409,7 +440,8 @@ async function getDepositEventsForCapitalProvider(
 // We calculate the weighted average price based on that, which can then be used
 // to calculate unrealized gains.
 // NOTE: This does not take into account transfers of Fidu that happen outside
-// the protocol. In such a case, you would necessarily end up with more Fidu
+// the protocol. In such a case, you would necessarily end up with more Fidu (in
+// the case of inbound transfers; or less Fidu, in the case of outbound transfers)
 // than we have records of your deposits, so we would not be able to account
 // for your shares, and we would fail out, and return a "-" on the front-end.
 // NOTE: This also does not take into account realized gains, which we are also
@@ -419,9 +451,15 @@ async function getWeightedAverageSharePrice(
   pool: SeniorPool,
   stakingRewards: StakingRewards,
   capitalProviderAddress: string,
-  capitalProviderTotalShares: BigNumber
+  capitalProviderTotalShares: BigNumber,
+  currentBlock: BlockInfo
 ) {
-  const depositEvents = await getDepositEventsForCapitalProvider(pool, stakingRewards, capitalProviderAddress)
+  const depositEvents = await getDepositEventsForCapitalProvider(
+    pool,
+    stakingRewards,
+    capitalProviderAddress,
+    currentBlock
+  )
   const preparedEvents = _.reverse(_.sortBy(depositEvents, ["blockNumber", "transactionIndex"]))
 
   let zero = new BigNumber(0)
@@ -456,6 +494,7 @@ async function getCumulativeWritedowns(pool: SeniorPool) {
   // then fixed. So we include only `PrincipalWrittenDown` events emitted by `pool`.
 
   const events = await pool.goldfinchProtocol.queryEvents(pool.contract, "PrincipalWrittenDown")
+  // TODO[PR] I don't think `parseInt()` can be used safely here?
   return new BigNumber(_.sumBy(events, (event) => parseInt(event.returnValues.amount, 10))).negated()
 }
 
@@ -468,6 +507,7 @@ async function getCumulativeDrawdowns(pool: SeniorPool) {
   let allDrawdownEvents = _.flatten(
     await Promise.all(tranchedPools.map((pool) => protocol.queryEvents(pool, "DrawdownMade")))
   )
+  // TODO[PR] I don't think `parseInt()` can be used safely here?
   return new BigNumber(_.sumBy(allDrawdownEvents, (event) => parseInt(event.returnValues.amount, 10)))
 }
 
@@ -615,7 +655,7 @@ class StakingRewards {
   goldfinchProtocol: GoldfinchProtocol
   contract: StakingRewardsContract
   address: string
-  _loaded: boolean
+  loaded: boolean
   positions: StakedPosition[] | undefined
   totalClaimable: BigNumber | undefined
   unvested: BigNumber | undefined
@@ -625,13 +665,24 @@ class StakingRewards {
     this.goldfinchProtocol = goldfinchProtocol
     this.contract = goldfinchProtocol.getContract<StakingRewardsContract>("StakingRewards")
     this.address = goldfinchProtocol.getAddress("StakingRewards")
-    this._loaded = false
+    this.loaded = false
   }
 
   async initialize(recipient: string) {
-    const stakedEvents = await this.getStakedEvents(recipient)
-    const tokenIds = stakedEvents.map((e) => e.returnValues.tokenId)
+    // NOTE: In defining `this.positions`, we want to use `balanceOf()` plus `tokenOfOwnerByIndex()`
+    // to determine `tokenIds`, rather than using the set of Staked events for the `recipient`.
+    // The former approach reflects any token transfers that may have occurred to or from the
+    // `recipient`, whereas the latter does not.
     const currentBlock = getBlockInfo(await getCurrentBlock())
+    const numPositions = parseInt(
+      await this.contract.methods.balanceOf(recipient).call(undefined, currentBlock.number),
+      10
+    )
+    const tokenIds: string[] = await Promise.all(
+      Array(numPositions)
+        .fill("")
+        .map((val, i) => this.contract.methods.tokenOfOwnerByIndex(recipient, i).call(undefined, currentBlock.number))
+    )
     this.positions = await Promise.all(
       tokenIds.map((tokenId) => {
         return this.contract.methods
@@ -646,12 +697,17 @@ class StakingRewards {
     this.totalClaimable = this.calculateTotalClaimable()
     this.unvested = this.calculateUnvested()
     this.granted = this.calculateGranted()
-    this._loaded = true
+    this.loaded = true
   }
 
-  async getStakedEvents(recipient: string): Promise<EventData[]> {
+  async getStakedEvents(recipient: string, currentBlock: BlockInfo): Promise<EventData[]> {
     const eventNames = ["Staked"]
-    const events = await this.goldfinchProtocol.queryEvents(this.contract, eventNames, {user: recipient})
+    const events = await this.goldfinchProtocol.queryEvents(
+      this.contract,
+      eventNames,
+      {user: recipient},
+      currentBlock.number
+    )
     return events
   }
 
