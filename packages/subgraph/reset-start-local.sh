@@ -23,6 +23,8 @@ docker-compose up -d;
 
 sleep 30
 
-graph create --node http://localhost:8020/ local-goldfinch-subgraph
+npm run codegen && npm run build
 
-yarn build && yarn deploy-local --version-label v0.0.1
+graph create --node http://localhost:8020/ goldfinch-subgraph
+
+npm run deploy-local --version-label v0.0.1

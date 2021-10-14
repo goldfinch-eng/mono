@@ -1,6 +1,5 @@
 {
-  "name": "goldfinch-subgraph",
-  "license": "UNLICENSED",
+  "name": "@goldfinch-eng/subgraph",
   "scripts": {
     "codegen": "graph codegen",
     "build": "graph build",
