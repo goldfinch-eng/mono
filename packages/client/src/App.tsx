@@ -25,6 +25,8 @@ import TranchedPoolView from "./components/pools/tranchedPoolView"
 import {SessionData} from "./types/session.js"
 import {CommunityRewards, MerkleDistributor} from "./ethereum/communityRewards"
 import Rewards from "./pages/rewards"
+import {ThemeProvider} from "styled-components"
+import {defaultTheme} from "./styles/theme"
 
 export interface NetworkConfig {
   name?: string
@@ -202,62 +204,64 @@ function App() {
 
   return (
     <AppContext.Provider value={store}>
-      <Router>
-        {(process.env.NODE_ENV === "development" || process.env.MURMURATION === "yes") && <DevTools />}
-        <Sidebar />
-        <NetworkWidget
-          user={user}
-          network={network}
-          currentErrors={currentErrors}
-          currentTXs={currentTXs}
-          connectionComplete={setupWeb3}
-        />
-        <div>
-          <Switch>
-            <Route exact path="/">
-              <Redirect to="/earn" />
-            </Route>
-            <Route path="/about">{/* <About /> */}</Route>
-            <Route path="/borrow">
-              <Borrow />
-            </Route>
-            <Route path="/pools/senior">
-              <SeniorPoolView />
-            </Route>
-            <Route path="/pools/:poolAddress">
-              <TranchedPoolView />
-            </Route>
-            <Route path="/earn">
-              <Earn />
-            </Route>
-            {toggleRewards && (
-              <Route path="/rewards">
-                <Rewards />
+      <ThemeProvider theme={defaultTheme}>
+        <Router>
+          {(process.env.NODE_ENV === "development" || process.env.MURMURATION === "yes") && <DevTools />}
+          <Sidebar />
+          <NetworkWidget
+            user={user}
+            network={network}
+            currentErrors={currentErrors}
+            currentTXs={currentTXs}
+            connectionComplete={setupWeb3}
+          />
+          <div>
+            <Switch>
+              <Route exact path="/">
+                <Redirect to="/earn" />
               </Route>
-            )}
-            <Route path="/transactions">
-              <Transactions currentTXs={currentTXs} />
-            </Route>
-            <Route path="/verify">
-              <VerifyIdentity />
-            </Route>
-            <Route path="/terms">
-              <TermsOfService />
-            </Route>
-            <Route path="/privacy">
-              <PrivacyPolicy />
-            </Route>
-            <Route path="/senior-pool-agreement-non-us">
-              <SeniorPoolAgreementNonUS />
-            </Route>
-          </Switch>
-        </div>
-        <footer>
-          <a href="/terms">Terms</a>
-          <span className="divider">•</span>
-          <a href="/privacy">Privacy</a>
-        </footer>
-      </Router>
+              <Route path="/about">{/* <About /> */}</Route>
+              <Route path="/borrow">
+                <Borrow />
+              </Route>
+              <Route path="/pools/senior">
+                <SeniorPoolView />
+              </Route>
+              <Route path="/pools/:poolAddress">
+                <TranchedPoolView />
+              </Route>
+              <Route path="/earn">
+                <Earn />
+              </Route>
+              {toggleRewards && (
+                <Route path="/rewards">
+                  <Rewards />
+                </Route>
+              )}
+              <Route path="/transactions">
+                <Transactions currentTXs={currentTXs} />
+              </Route>
+              <Route path="/verify">
+                <VerifyIdentity />
+              </Route>
+              <Route path="/terms">
+                <TermsOfService />
+              </Route>
+              <Route path="/privacy">
+                <PrivacyPolicy />
+              </Route>
+              <Route path="/senior-pool-agreement-non-us">
+                <SeniorPoolAgreementNonUS />
+              </Route>
+            </Switch>
+          </div>
+          <footer>
+            <a href="/terms">Terms</a>
+            <span className="divider">•</span>
+            <a href="/privacy">Privacy</a>
+          </footer>
+        </Router>
+      </ThemeProvider>
     </AppContext.Provider>
   )
 }
