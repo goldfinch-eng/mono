@@ -50,7 +50,7 @@ export class MerkleDistributor {
     this.actionRequiredAirdrops = await this.getActionRequiredAirdrops(recipient)
 
     if (this.communityRewards.grants) {
-      this.communityRewards.grants.map((acceptedGrant) => {
+      for (let acceptedGrant of this.communityRewards.grants) {
         const airdrop = this.getGrantsInfo(recipient).find(
           (airdrop) =>
             airdrop.account === acceptedGrant.user &&
@@ -61,8 +61,7 @@ export class MerkleDistributor {
               Number(acceptedGrant.rewards.endTime) - Number(acceptedGrant.rewards.startTime)
         )
         acceptedGrant._reason = airdrop?.reason
-        return acceptedGrant
-      })
+      }
     }
     this._loaded = true
   }
