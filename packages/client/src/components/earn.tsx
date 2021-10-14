@@ -88,9 +88,6 @@ function PortfolioOverview({
 
   const estimatedApy = estimatedApyFromSupplying.plus(estimatedApyFromGfi)
 
-  // TODO[PR] Flagging to confirm that this is not in fact an "APY", as it was named originally. I don't
-  // think `p.unrealizedGainsInDollars` is an annual figure...so I don't think anything about the figure
-  // is annualized.
   const unrealizedGainsPercent = totalUnrealizedGains.dividedBy(totalBalance)
   const displayUnrealizedGains = capitalProvider.empty ? null : roundDownPenny(totalUnrealizedGains)
 

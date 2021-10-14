@@ -312,7 +312,7 @@ interface PoolData {
 }
 
 async function fetchPoolData(pool: SeniorPool, erc20: Contract): Promise<PoolData> {
-  // TODO[PR] We should probably use a consistent block number for all the calls in this method.
+  // TODO We should probably use a consistent block number for all the calls in this method.
   const attributes = [{method: "sharePrice"}, {method: "compoundBalance"}]
   let {sharePrice, compoundBalance: _compoundBalance} = await fetchDataFromAttributes(pool.contract, attributes)
   let rawBalance = new BigNumber(await erc20.methods.balanceOf(pool.address).call())
