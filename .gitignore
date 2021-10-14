@@ -102,3 +102,6 @@ venv/
 .python-version
 .rgignore
 goldfinch-frontends-prod-firebase*.json
+
+**/subgraph/build/
+**/subgraph/data/
