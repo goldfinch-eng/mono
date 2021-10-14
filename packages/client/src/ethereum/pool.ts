@@ -362,9 +362,9 @@ async function fetchPoolData(pool: SeniorPool, erc20: Contract): Promise<PoolDat
   }
 }
 
-type StakedEventsByBlockNumberAndTransactionHash = {
+type StakedEventsByBlockNumberAndTxIndex = {
   [blockNumber: number]: {
-    [transactionHash: string]: EventData
+    [txIndex: number]: EventData
   }
 }
 
@@ -397,33 +397,32 @@ async function getDepositEventsForCapitalProvider(
     capitalProviderAddress,
     currentBlock
   )
-  const stakedEventsForCapitalProviderByBlockNumberAndTransactionHash =
-    stakedEventsForCapitalProvider.reduce<StakedEventsByBlockNumberAndTransactionHash>((acc, curr) => {
-      const eventsByTransactionHash = acc[curr.blockNumber]
-      if (eventsByTransactionHash && curr.transactionHash in eventsByTransactionHash) {
+  const stakedEventsForCapitalProviderByBlockNumberAndTxIndex =
+    stakedEventsForCapitalProvider.reduce<StakedEventsByBlockNumberAndTxIndex>((acc, curr) => {
+      const eventsByTxIndex = acc[curr.blockNumber]
+      if (eventsByTxIndex && curr.transactionIndex in eventsByTxIndex) {
         throw new Error("Expected at most one Staked event per transaction hash.")
       }
       return {
         ...acc,
         [curr.blockNumber]: {
-          ...eventsByTransactionHash,
-          [curr.transactionHash]: curr,
+          ...eventsByTxIndex,
+          [curr.transactionIndex]: curr,
         },
       }
     }, {})
   const depositEventsByCapitalProviderViaStakingRewards: EventData[] = depositEventsViaStakingRewards.filter(
     (depositEvent: EventData): boolean => {
-      const stakedEventsByTransactionHash =
-        stakedEventsForCapitalProviderByBlockNumberAndTransactionHash[depositEvent.blockNumber]
-      const correspondingStakedEvent = stakedEventsByTransactionHash
-        ? stakedEventsByTransactionHash[depositEvent.transactionHash]
+      const stakedEventsByTxIndex = stakedEventsForCapitalProviderByBlockNumberAndTxIndex[depositEvent.blockNumber]
+      const correspondingStakedEvent = stakedEventsByTxIndex
+        ? stakedEventsByTxIndex[depositEvent.transactionIndex]
         : undefined
       if (correspondingStakedEvent) {
         if (depositEvent.returnValues.shares === correspondingStakedEvent.returnValues.amount) {
           return true
         } else {
           throw new Error(
-            `Staked event ${correspondingStakedEvent.transactionHash} \`amount\` corresponding to DepositMade event differs from \`shares\`.`
+            `Staked event in block ${correspondingStakedEvent.blockNumber} tx ${correspondingStakedEvent.transactionIndex} \`amount\` corresponding to DepositMade event differs from \`shares\`.`
           )
         }
       } else {
