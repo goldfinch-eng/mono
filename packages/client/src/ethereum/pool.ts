@@ -656,6 +656,7 @@ class StakingRewards {
   contract: StakingRewardsContract
   address: string
   loaded: boolean
+  isPaused: boolean
   positions: StakedPosition[] | undefined
   totalClaimable: BigNumber | undefined
   unvested: BigNumber | undefined
@@ -666,14 +667,17 @@ class StakingRewards {
     this.contract = goldfinchProtocol.getContract<StakingRewardsContract>("StakingRewards")
     this.address = goldfinchProtocol.getAddress("StakingRewards")
     this.loaded = false
+    this.isPaused = false
   }
 
   async initialize(recipient: string) {
+    const currentBlock = getBlockInfo(await getCurrentBlock())
+    this.isPaused = await this.contract.methods.paused().call(undefined, currentBlock.number)
+
     // NOTE: In defining `this.positions`, we want to use `balanceOf()` plus `tokenOfOwnerByIndex()`
     // to determine `tokenIds`, rather than using the set of Staked events for the `recipient`.
     // The former approach reflects any token transfers that may have occurred to or from the
     // `recipient`, whereas the latter does not.
-    const currentBlock = getBlockInfo(await getCurrentBlock())
     const numPositions = parseInt(
       await this.contract.methods.balanceOf(recipient).call(undefined, currentBlock.number),
       10
