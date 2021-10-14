@@ -151,6 +151,8 @@ function getSortedRewards(
   stakingRewards: StakingRewards | undefined,
   merkleDistributor: MerkleDistributor | undefined
 ): (StakedPosition | CommunityRewardsVesting)[] {
+  /* NOTE: First order by 0 or >0 claimable rewards (0 claimable at the bottom), then group by type
+   (e.g. all the staking together, then all the airdrops), then order by most recent first */
   const stakes = !stakingRewards || !stakingRewards?.positions ? [] : stakingRewards.positions
   const airdrops =
     !merkleDistributor || !merkleDistributor?.communityRewards?.grants ? [] : merkleDistributor.communityRewards.grants
@@ -160,12 +162,12 @@ function getSortedRewards(
     let val = (i1.claimable as any) - (i2.claimable as any)
     if (val) return val
 
-    if (i1 instanceof CommunityRewardsVesting && i2 instanceof StakedPosition) {
-      return -1
-    }
-
     if (i1 instanceof StakedPosition && i2 instanceof CommunityRewardsVesting) {
       return 1
+    }
+
+    if (i1 instanceof CommunityRewardsVesting && i2 instanceof StakedPosition) {
+      return -1
     }
 
     if (i1 instanceof StakedPosition && i2 instanceof StakedPosition) {
