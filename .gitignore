@@ -105,3 +105,4 @@ goldfinch-frontends-prod-firebase*.json
 
 **/subgraph/build/
 **/subgraph/data/
+**/subgraph/generated/
