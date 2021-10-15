@@ -70,23 +70,11 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
     __BaseUpgradeablePausable__init(owner);
   }
 
-  // re-updates all pools accRewardsPerShare
-  // function massUpdatePools() public onlyAdmin {
-  // loop through all juniortranches and calculate pool accRewardsPerShareMintPrice
-  // sum all junior tranche interest payments and set totalInterestReceived
-  // }
-
-  // todo: do we need to recalculate all pools accRewardsPerShare if maxInterestDollarsEligible changes
-  // function setMaxInterestDollarsEligible(uint256 _maxInterestDollarsEligible) public onlyAdmin {
-  //   maxInterestDollarsEligible = _maxInterestDollarsEligible;
-  // }
-
-  // todo: do we need to recalculate all pools accRewardsPerShare if totalSupply changes
-  // function setTotalSupply(uint256 _totalSupply) public onlyAdmin {
-  //   totalSupply = _totalSupply;
-  //   totalRewardPercentOfTotalGFI = _totalSupply.div(config.getGFI().totalSupply());
-  //   sqrtTotalRewards = Babylonian.sqrt(_totalSupply);
-  // }
+  function setTotalRewards(uint256 _totalRewards) public onlyAdmin {
+    totalRewards = _totalRewards;
+    sqrtTotalRewards = Babylonian.sqrt(_totalRewards);
+    totalRewardPercentOfTotalGFI = _totalRewards.div(config.getGFI().totalSupply());
+  }
 
   // When a new interest payment is received by a pool, recalculate accRewardsPerShare
   function allocateRewards(address _poolAddress, uint256 _interestPaymentAmount) public override onlyAdmin {
