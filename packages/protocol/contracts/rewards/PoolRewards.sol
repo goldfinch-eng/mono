@@ -134,6 +134,9 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
     require(!pools[poolAddr].paused, "Pool withdraw paused");
     require(poolTokenRewardDebt.add(_amount) <= totalClaimableRewards, "Rewards overwithdraw attempt");
 
+    ITranchedPool pool = ITranchedPool(poolAddr);
+    require(!pool.isLate(block.timestamp), "Pool currently has late payments");
+
     tokens[tokenId].rewardDebt = poolTokenRewardDebt.add(_amount);
 
     safeERC20TransferFrom(config.getGFI(), poolTokens.ownerOf(tokenId), address(this), _amount);

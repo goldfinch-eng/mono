@@ -827,11 +827,15 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
         reserveAmount
       );
     }
-    // QUESTION: should this be interest only sent to jrpool or across all interest dollars
+
     // QUESTION: should we be incrementing 'totalInterestReceived' even if it's late, but not allocate rewards?
     if (interestPayment > 0 && !isLate) {
       config.getPoolRewards().allocateRewards(address(this), interestPayment);
     }
+  }
+
+  function isLate(uint256 timestamp) external view returns (bool) {
+    return creditLine.isLate(block.timestamp);
   }
 
   modifier onlyLocker() {
