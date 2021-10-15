@@ -8,7 +8,7 @@ import {iconCarrotDown, iconCarrotUp, iconOutArrow} from "../../components/icons
 import {useMediaQuery} from "react-responsive"
 import {WIDTH_TYPES} from "../../components/styleConstants"
 import styled from "styled-components"
-import MediaPoint from "../../styles/mediaPoint"
+import {mediaPoint} from "../../styles/mediaPoint"
 
 interface DetailsContainerProps {
   open: boolean
@@ -23,11 +23,11 @@ const DetailsContainer = styled.div<DetailsContainerProps>`
 
   ${({open, theme}) => open && `border-top: 2px solid ${theme.colors.sand};`}
 
-  ${MediaPoint.screenL} {
+  ${({theme}) => mediaPoint(theme).screenL} {
     margin: -28px -25px 24px;
   }
 
-  ${MediaPoint.screenM} {
+  ${({theme}) => mediaPoint(theme).screenM} {
     margin: -28px 0 24px;
   }
 `
@@ -36,7 +36,7 @@ const ColumnsContainer = styled.div`
   display: flex;
   width: 100%;
 
-  ${MediaPoint.screenL} {
+  ${({theme}) => mediaPoint(theme).screenL} {
     flex-direction: column;
   }
 `
