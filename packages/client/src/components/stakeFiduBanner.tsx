@@ -16,6 +16,7 @@ interface StakeFiduBannerProps {
   poolData: PoolData | undefined
   capitalProvider: CapitalProvider
   kyc: KYC | undefined
+  actionComplete: () => void
 }
 
 export default function StakeFiduBanner(props: StakeFiduBannerProps) {
@@ -48,18 +49,20 @@ export default function StakeFiduBanner(props: StakeFiduBannerProps) {
           amount: amountRequiringApprovalString,
         },
         {rejectOnError: true}
-      ).then(() =>
-        sendFromUser(stakingRewards.contract.methods.stake(amountString), {
-          type: "Stake",
-          amount: amountString,
-        })
       )
+        .then(() =>
+          sendFromUser(stakingRewards.contract.methods.stake(amountString), {
+            type: "Stake",
+            amount: amountString,
+          })
+        )
+        .then(props.actionComplete)
     } else {
       const amountString = amount.toString(10)
       return sendFromUser(stakingRewards.contract.methods.stake(amountString), {
         type: "Stake",
         amount: amountString,
-      })
+      }).then(props.actionComplete)
     }
   }
 
