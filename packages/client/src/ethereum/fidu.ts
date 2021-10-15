@@ -1,9 +1,17 @@
 import web3 from "../web3"
 import BigNumber from "bignumber.js"
-import BN from "bn.js"
 import {getDeployments} from "./utils"
+import {Contract} from "web3-eth-contract"
 
-async function getFidu(networkId) {
+export const FIDU_DECIMAL_PLACES = 18
+export const FIDU_DECIMALS = new BigNumber(String(10 ** FIDU_DECIMAL_PLACES))
+
+/**
+ * Returns a Fidu contract deployed on a given network
+ * @param networkId network to get deployed fidu on
+ * @returns Fidu contract
+ */
+export async function getFidu(networkId: string): Promise<Contract> {
   const config = await getDeployments(networkId)
   const fiduContract = config.contracts.Fidu
   const fidu = new web3.eth.Contract(fiduContract.abi, fiduContract.address)
@@ -11,17 +19,20 @@ async function getFidu(networkId) {
   return fidu
 }
 
-const FIDU_DECIMAL_PLACES = 18
-const FIDU_DECIMALS = new BN(String(10 ** FIDU_DECIMAL_PLACES))
-
-function fiduFromAtomic(amount) {
-  // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'BN' is not assignable to paramet... Remove this comment to see the full error message
+/**
+ * Returns the number of Fidu tokens given a number of atoms
+ * @param amount number of Fidu atoms as a string
+ * @returns amount of Fidu tokens as a string
+ */
+export function fiduFromAtomic(amount: string | BigNumber): string {
   return new BigNumber(String(amount)).div(FIDU_DECIMALS).toString(10)
 }
 
-function fiduToAtomic(amount) {
-  // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'BN' is not assignable to paramet... Remove this comment to see the full error message
+/**
+ * Return the number of Fidu atoms given a number of Fidu tokens
+ * @param amount amount of fidu tokens as a string
+ * @returns amount of fidu atoms as a string
+ */
+export function fiduToAtomic(amount: string | BigNumber): string {
   return new BigNumber(String(amount)).multipliedBy(FIDU_DECIMALS).toString(10)
 }
-
-export {getFidu, FIDU_DECIMALS, FIDU_DECIMAL_PLACES, fiduFromAtomic, fiduToAtomic}
