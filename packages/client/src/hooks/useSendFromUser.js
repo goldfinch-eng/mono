@@ -5,8 +5,8 @@ import web3 from "../web3"
 function useSendFromUser() {
   const {refreshUserData, user, networkMonitor} = useContext(AppContext)
 
-  async function sendTransaction(unsentAction, txData, gasPrice) {
-    // unsent action could be a promise tha returns the action, so resolve it
+  async function sendTransaction(unsentAction, txData, gasPrice, options) {
+    // unsent action could be a promise that returns the action, so resolve it
     unsentAction = await Promise.resolve(unsentAction)
 
     // Gasless transactions
@@ -30,12 +30,17 @@ function useSendFromUser() {
           })
           .catch((error) => {
             networkMonitor.markTXErrored(txData, {message: error.message})
-            resolve()
+
+            if (options.rejectOnError) {
+              throw error
+            } else {
+              resolve()
+            }
           })
       })
     }
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       unsentAction
         .send({
           from: user.address,
@@ -55,22 +60,37 @@ function useSendFromUser() {
             error.message = "Something went wrong with your transaction."
           }
           networkMonitor.markTXErrored(txData, error)
-          resolve()
+
+          if (options.rejectOnError) {
+            reject(error)
+          } else {
+            resolve()
+          }
         })
     })
   }
 
-  return (unsentAction, txData) => {
+  return (unsentAction, txData, options) => {
+    options = options || {}
+
     return web3.eth.getGasPrice().then(
       async (gasPrice) => {
         try {
-          await sendTransaction(unsentAction, txData, gasPrice)
+          await sendTransaction(unsentAction, txData, gasPrice, options)
         } catch (err) {
           console.log(`Error sending transaction: ${err}`)
+
+          if (options.rejectOnError) {
+            throw err
+          }
         }
       },
-      (error) => {
-        console.log(`Unable to get gas price: ${error}`)
+      (err) => {
+        console.log(`Unable to get gas price: ${err}`)
+
+        if (options.rejectOnError) {
+          throw err
+        }
       }
     )
   }

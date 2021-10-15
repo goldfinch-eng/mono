@@ -6,6 +6,7 @@ import {Contract, Filter} from "web3-eth-contract"
 import {BaseContract, ContractEventLog} from "@goldfinch-eng/protocol/typechain/web3/types"
 import BigNumber from "bignumber.js"
 import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/web3/GoldfinchConfig"
+import {BlockNumber} from "web3-core"
 
 class GoldfinchProtocol {
   networkId: string
@@ -45,7 +46,12 @@ class GoldfinchProtocol {
     return new BigNumber(result)
   }
 
-  async queryEvents(contract: string | Contract | BaseContract, events: string | string[], filter?: Filter) {
+  async queryEvents(
+    contract: string | Contract | BaseContract,
+    events: string | string[],
+    filter?: Filter,
+    toBlock: BlockNumber = "latest"
+  ) {
     let contractObj: Contract
     if (typeof contract == "string") {
       contractObj = this.getContract<Contract>(contract)
@@ -57,7 +63,7 @@ class GoldfinchProtocol {
         return contractObj.getPastEvents(eventName, {
           filter: filter,
           fromBlock: getFromBlock(this.networkId),
-          toBlock: "latest",
+          toBlock,
         })
       })
     )
@@ -67,9 +73,10 @@ class GoldfinchProtocol {
   async queryEvent<T extends ContractEventLog<any>>(
     contract: string | Contract | BaseContract,
     event: string,
-    filter?: Filter
+    filter?: Filter,
+    toBlock: BlockNumber = "latest"
   ) {
-    return (await this.queryEvents(contract, event, filter)) as any as T[]
+    return (await this.queryEvents(contract, event, filter, toBlock)) as any as T[]
   }
 }
 

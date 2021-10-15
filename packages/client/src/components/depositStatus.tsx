@@ -8,20 +8,34 @@ interface DepositStatusProps {
 }
 
 function DepositStatus(props: DepositStatusProps) {
-  const portfolioBalance = props.capitalProvider.availableToWithdrawInDollars
+  const portfolioBalance = props.capitalProvider.totalSeniorPoolBalanceInDollars
   const portfolioBalanceDisplay = displayDollars(portfolioBalance)
 
-  let apyDisplay: string, estimatedAPY: BigNumber | null
+  let apyDisplay: string, estimatedApy: BigNumber | undefined, estimatedApyFromGfi: BigNumber | undefined
   if (props.poolData?.loaded) {
-    estimatedAPY = props.poolData.estimatedApy
-    apyDisplay = `${displayPercent(estimatedAPY)}`
+    const globalEstimatedApyFromSupplying = props.poolData.estimatedApy
+    const estimatedApyFromSupplying = globalEstimatedApyFromSupplying
+
+    const globalEstimatedApyFromGfi = props.poolData.estimatedApyFromGfi || new BigNumber(0)
+    const balancePortionEarningGfi = props.capitalProvider.stakedSeniorPoolBalanceInDollars.div(
+      props.capitalProvider.totalSeniorPoolBalanceInDollars
+    )
+    // NOTE: Because our frontend does not currently support staking with lockup, we do not
+    // worry here about adjusting for the portion of the user's balance that is not only earning
+    // GFI from staking, but is earning that GFI at a boosted rate due to having staked-with-lockup
+    // (which they could have achieved by interacting with the contract directly, rather than using
+    // our frontend).
+    const userEstimatedApyFromGfi = balancePortionEarningGfi.multipliedBy(globalEstimatedApyFromGfi)
+    estimatedApyFromGfi = portfolioBalance.gt(0) ? userEstimatedApyFromGfi : globalEstimatedApyFromGfi
+
+    estimatedApy = estimatedApyFromSupplying.plus(estimatedApyFromGfi)
+    apyDisplay = `${displayPercent(estimatedApy)}`
   } else {
-    estimatedAPY = null
-    apyDisplay = `${displayPercent(estimatedAPY)}`
+    apyDisplay = `${displayPercent(estimatedApy)}`
   }
 
-  if (portfolioBalance.gt(0) && estimatedAPY) {
-    const estimatedGrowth = estimatedAPY.multipliedBy(portfolioBalance)
+  if (portfolioBalance.gt(0) && estimatedApy) {
+    const estimatedGrowth = portfolioBalance.multipliedBy(estimatedApy)
     const estimatedGrowthDisplay = displayDollars(estimatedGrowth)
 
     let unrealizedGainsPrefix = props.capitalProvider.unrealizedGainsInDollars.gte(0) ? "+" : ""
@@ -41,7 +55,7 @@ function DepositStatus(props: DepositStatusProps) {
         <div className="deposit-status-item">
           <div className="label">Est. Annual Growth</div>
           <div className="value">{estimatedGrowthDisplay}</div>
-          <div className="sub-value">{`${apyDisplay} APY`}</div>
+          <div className="sub-value">{`${apyDisplay} APY${estimatedApyFromGfi?.gt(0) ? " (with GFI)" : ""}`}</div>
         </div>
       </div>
     )
@@ -53,8 +67,8 @@ function DepositStatus(props: DepositStatusProps) {
           <div className="value">{portfolioBalanceDisplay}</div>
         </div>
         <div className="deposit-status-item">
-          <div className="label">Est. APY</div>
-          <div className="value">{apyDisplay}</div>
+          <div className="label">Est. Annual Growth</div>
+          <div className="value">{`${apyDisplay} APY${estimatedApyFromGfi?.gt(0) ? " (with GFI)" : ""}`}</div>
         </div>
       </div>
     )

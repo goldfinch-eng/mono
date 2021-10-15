@@ -2,6 +2,7 @@ import BigNumber from "bignumber.js"
 import BN from "bn.js"
 import _ from "lodash"
 import {Contract, EventData} from "web3-eth-contract"
+import {BlockNumber} from "web3-core"
 import {BaseContract} from "@goldfinch-eng/protocol/typechain/web3/types"
 import {Pool, SeniorPool} from "./pool"
 import {
@@ -143,14 +144,14 @@ type MethodInfo = {method: string; name?: string; args?: any}
 function fetchDataFromAttributes(
   web3Obj: Contract | BaseContract,
   attributes: MethodInfo[],
-  {bigNumber}: {bigNumber?: boolean} = {}
+  {bigNumber, blockNumber}: {bigNumber?: boolean; blockNumber?: number} = {}
 ): any {
   const result = {}
   if (!web3Obj) {
     return Promise.resolve(result)
   }
   var promises = attributes.map((methodInfo) => {
-    return web3Obj.methods[methodInfo.method](...(methodInfo?.args || [])).call()
+    return web3Obj.methods[methodInfo.method](...(methodInfo?.args || [])).call(undefined, blockNumber)
   })
   return Promise.all(promises)
     .then((results) => {
@@ -171,7 +172,8 @@ function fetchDataFromAttributes(
 async function getPoolEvents(
   pool: SeniorPool | Pool,
   address: string | undefined,
-  eventNames: string[]
+  eventNames: string[],
+  toBlock: BlockNumber = "latest"
 ): Promise<EventData[]> {
   const fromBlock = getFromBlock(pool.chain)
   const events = await Promise.all(
@@ -179,7 +181,7 @@ async function getPoolEvents(
       return pool.contract.getPastEvents(eventName, {
         filter: address ? {capitalProvider: address} : undefined,
         fromBlock,
-        toBlock: "latest",
+        toBlock,
       })
     })
   )

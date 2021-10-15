@@ -14,7 +14,7 @@ export class MerkleDistributor {
   goldfinchProtocol: GoldfinchProtocol
   contract: MerkleDistributorContract
   address: string
-  _loaded: boolean
+  loaded: boolean
   info: MerkleDistributorInfo | undefined
   communityRewards: CommunityRewards
   actionRequiredAirdrops: MerkleDistributorGrantInfo[] | undefined
@@ -27,7 +27,7 @@ export class MerkleDistributor {
     this.contract = goldfinchProtocol.getContract<MerkleDistributorContract>("MerkleDistributor")
     this.address = goldfinchProtocol.getAddress("MerkleDistributor")
     this.communityRewards = new CommunityRewards(goldfinchProtocol)
-    this._loaded = true
+    this.loaded = true
   }
 
   async initialize(recipient: string) {
@@ -62,7 +62,7 @@ export class MerkleDistributor {
         acceptedGrant._reason = airdrop?.reason
       }
     }
-    this._loaded = true
+    this.loaded = true
   }
 
   getGrantsInfo(recipient: string): MerkleDistributorGrantInfo[] {
@@ -171,32 +171,43 @@ export class CommunityRewards {
   goldfinchProtocol: GoldfinchProtocol
   contract: CommunityRewardsContract
   address: string
-  _loaded: boolean
+  loaded: boolean
   grants: CommunityRewardsVesting[] | undefined
 
   constructor(goldfinchProtocol: GoldfinchProtocol) {
     this.goldfinchProtocol = goldfinchProtocol
     this.contract = goldfinchProtocol.getContract<CommunityRewardsContract>("CommunityRewards")
     this.address = goldfinchProtocol.getAddress("CommunityRewards")
-    this._loaded = false
+    this.loaded = false
   }
 
   async initialize(recipient: string) {
-    const events = await this.getGrantedEvents(recipient)
-    const tokenIds = events.map((e) => e.returnValues.tokenId)
+    // NOTE: In defining `this.grants`, we want to use `balanceOf()` plus `tokenOfOwnerByIndex`
+    // to determine `tokenIds`, rather than using the set of Granted events for the `recipient`.
+    // The former approach reflects any token transfers that may have occurred to or from the
+    // `recipient`, whereas the latter does not.
     const currentBlock = getBlockInfo(await getCurrentBlock())
+    const numPositions = parseInt(
+      await this.contract.methods.balanceOf(recipient).call(undefined, currentBlock.number),
+      10
+    )
+    const tokenIds: string[] = await Promise.all(
+      Array(numPositions)
+        .fill("")
+        .map((val, i) => this.contract.methods.tokenOfOwnerByIndex(recipient, i).call(undefined, currentBlock.number))
+    )
     this.grants = await Promise.all(
-      tokenIds.map((tokenId) => {
-        return this.contract.methods
+      tokenIds.map((tokenId) =>
+        this.contract.methods
           .grants(tokenId)
           .call(undefined, currentBlock.number)
           .then(async (res) => {
             const claimable = await this.contract.methods.claimableRewards(tokenId).call(undefined, currentBlock.number)
             return parseCommunityRewardsVesting(tokenId, recipient, claimable, res)
           })
-      })
+      )
     )
-    this._loaded = true
+    this.loaded = true
   }
 
   async getGrantedEvents(recipient: string): Promise<EventData[]> {
