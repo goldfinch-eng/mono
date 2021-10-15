@@ -570,11 +570,6 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     uint256 interestRemaining = interest;
     uint256 principalRemaining = principal;
 
-    // QUESTION: should this be interest only sent to jrpool or across all interest dollars
-    if (interestAccrued > 0) {
-      config.getPoolRewards().allocateRewards(address(this), interest);
-    }
-
     // First determine the expected share price for the senior tranche. This is the gross amount the senior
     // tranche should receive.
     uint256 expectedInterestSharePrice = calculateExpectedSharePrice(interestAccrued, seniorTranche);
@@ -815,6 +810,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   }
 
   function _assess() internal {
+    bool isLate = creditLine.isLate(block.timestamp);
     (uint256 paymentRemaining, uint256 interestPayment, uint256 principalPayment) = creditLine.assess();
     if (interestPayment > 0 || principalPayment > 0) {
       uint256 reserveAmount = collectInterestAndPrincipal(
@@ -830,6 +826,11 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
         paymentRemaining,
         reserveAmount
       );
+    }
+    // QUESTION: should this be interest only sent to jrpool or across all interest dollars
+    // QUESTION: should we be incrementing 'totalInterestReceived' even if it's late, but not allocate rewards?
+    if (interestPayment > 0 && !isLate) {
+      config.getPoolRewards().allocateRewards(address(this), interestPayment);
     }
   }
 
