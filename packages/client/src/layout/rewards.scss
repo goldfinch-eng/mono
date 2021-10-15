@@ -80,10 +80,10 @@ button.action {
 button.expand {
   padding: 0;
   background: none;
+  margin-left: 18px;
 
   & svg {
     height: 24px;
-    margin-left: 18px;
 
     path {
       fill: $sand-xdark;
