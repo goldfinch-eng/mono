@@ -4,10 +4,11 @@ import {Link} from "react-router-dom"
 import {gfiFromAtomic} from "../../ethereum/gfi"
 import {useGFIBalance, useRewards} from "../../hooks/useStakingRewards"
 import {displayDollars, displayNumber} from "../../utils"
-import {iconCarrotDown, iconCarrotUp} from "../../components/icons"
+import {iconCarrotDown, iconCarrotUp, iconOutArrow} from "../../components/icons"
 import {useMediaQuery} from "react-responsive"
 import {WIDTH_TYPES} from "../../components/styleConstants"
 import styled from "styled-components"
+import MediaPoint from "../../styles/mediaPoint"
 
 interface DetailsContainerProps {
   open: boolean
@@ -21,11 +22,23 @@ const DetailsContainer = styled.div<DetailsContainerProps>`
   border-bottom-left-radius: 6px;
 
   ${({open, theme}) => open && `border-top: 2px solid ${theme.colors.sand};`}
+
+  ${MediaPoint.screenL} {
+    margin: -28px -25px 24px;
+  }
+
+  ${MediaPoint.screenM} {
+    margin: -28px 0 24px;
+  }
 `
 
 const ColumnsContainer = styled.div`
   display: flex;
   width: 100%;
+
+  ${MediaPoint.screenL} {
+    flex-direction: column;
+  }
 `
 
 const Detail = styled.div`
@@ -56,7 +69,9 @@ const Column = styled.div`
   }
 `
 
-const EtherscanLinkContainer = styled.div``
+const EtherscanLinkContainer = styled.div`
+  margin-top: 0;
+`
 
 interface RewardsSummaryProps {
   claimable: string
@@ -132,6 +147,58 @@ function ActionButton(props) {
   )
 }
 
+function OpenDetails(props) {
+  if (props.open) {
+    return (
+      <button className="expand close" onClick={props.onClick}>
+        {iconCarrotUp}
+      </button>
+    )
+  }
+
+  return (
+    <button className="expand" onClick={props.onClick}>
+      {iconCarrotDown}
+    </button>
+  )
+}
+
+function Details(props) {
+  return (
+    <DetailsContainer open={props.open}>
+      <ColumnsContainer>
+        <Column>
+          <Detail>
+            <DetailLabel>Transaction details</DetailLabel>
+            <DetailValue>16,179.69 FIDU staked on Nov 1, 2021</DetailValue>
+          </Detail>
+          <Detail>
+            <DetailLabel>Vesting schedule</DetailLabel>
+            <DetailValue>Linear until 100% on Nov 1, 2022</DetailValue>
+          </Detail>
+          <Detail>
+            <DetailLabel>Claim status</DetailLabel>
+            <DetailValue>0 GFI claimed of your total vested 4.03 GFI</DetailValue>
+          </Detail>
+        </Column>
+        <Column>
+          <Detail>
+            <DetailLabel>Current earn rate</DetailLabel>
+            <DetailValue>+10.21 granted per week</DetailValue>
+          </Detail>
+          <Detail>
+            <DetailLabel>Vesting status</DetailLabel>
+            <DetailValue>8.0% (4.03 GFI) vested so far</DetailValue>
+          </Detail>
+        </Column>
+      </ColumnsContainer>
+      <EtherscanLinkContainer className="pool-links">
+        Etherscan<span className="outbound-link">{iconOutArrow}</span>
+      </EtherscanLinkContainer>
+    </DetailsContainer>
+  )
+}
+
 interface RewardsListItemProps {
   isCommunityRewards: boolean
   title: string
@@ -169,70 +236,32 @@ function RewardsListItem(props: RewardsListItemProps) {
             <div className={`table-cell col20 numeric ${valueDisabledClass}`}>{props.grantedGFI}</div>
             <div className={`table-cell col20 numeric ${valueDisabledClass}`}>{props.claimableGFI}</div>
             {actionButtonComponent}
-
-            {/* TODO: move this to a component */}
-            {open ? (
-              <button className="expand close" onClick={() => setOpen(false)}>
-                {iconCarrotUp}
-              </button>
-            ) : (
-              <button className="expand" onClick={() => setOpen(true)}>
-                {iconCarrotDown}
-              </button>
-            )}
+            <OpenDetails open={open} onClick={() => setOpen(!open)} />
           </div>
-          {open && (
-            <DetailsContainer open={open}>
-              <ColumnsContainer>
-                <Column>
-                  <Detail>
-                    <DetailLabel>Transaction details</DetailLabel>
-                    <DetailValue>16,179.69 FIDU staked on Nov 1, 2021</DetailValue>
-                  </Detail>
-                  <Detail>
-                    <DetailLabel>Vesting schedule</DetailLabel>
-                    <DetailValue>Linear until 100% on Nov 1, 2022</DetailValue>
-                  </Detail>
-                  <Detail>
-                    <DetailLabel>Claim status</DetailLabel>
-                    <DetailValue>0 GFI claimed of your total vested 4.03 GFI</DetailValue>
-                  </Detail>
-                </Column>
-                <Column>
-                  <Detail>
-                    <DetailLabel>Current earn rate</DetailLabel>
-                    <DetailValue>+10.21 granted per week</DetailValue>
-                  </Detail>
-                  <Detail>
-                    <DetailLabel>Vesting status</DetailLabel>
-                    <DetailValue>8.0% (4.03 GFI) vested so far</DetailValue>
-                  </Detail>
-                </Column>
-              </ColumnsContainer>
-              {/* TODO: use EtherscanLink component */}
-              <EtherscanLinkContainer>Etherscan</EtherscanLinkContainer>
-            </DetailsContainer>
-          )}
+          {open && <Details open={open} />}
         </li>
       )}
 
       {isTabletOrMobile && (
-        <li className="rewards-list-item background-container clickable mobile">
-          <div className="item-header">
-            <div>{props.title}</div>
-            <button className="expand">{iconCarrotDown}</button>
-          </div>
-          <div className="item-details">
-            <div className="detail-container">
-              <span className="detail-label">Granted GFI</span>
-              <div className={`${valueDisabledClass}`}>{props.grantedGFI}</div>
+        <li>
+          <div className="rewards-list-item background-container clickable mobile">
+            <div className="item-header">
+              <div>{props.title}</div>
+              <OpenDetails open={open} onClick={() => setOpen(!open)} />
             </div>
-            <div className="detail-container">
-              <span className="detail-label">Claimable GFI</span>
-              <div className={`${valueDisabledClass}`}>{props.claimableGFI}</div>
+            <div className="item-details">
+              <div className="detail-container">
+                <span className="detail-label">Granted GFI</span>
+                <div className={`${valueDisabledClass}`}>{props.grantedGFI}</div>
+              </div>
+              <div className="detail-container">
+                <span className="detail-label">Claimable GFI</span>
+                <div className={`${valueDisabledClass}`}>{props.claimableGFI}</div>
+              </div>
             </div>
+            {actionButtonComponent}
           </div>
-          {actionButtonComponent}
+          {open && <Details open={open} />}
         </li>
       )}
     </>
