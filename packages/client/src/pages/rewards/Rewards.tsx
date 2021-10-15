@@ -153,14 +153,13 @@ function getSortedRewards(
 ): (StakedPosition | CommunityRewardsVesting)[] {
   /* NOTE: First order by 0 or >0 claimable rewards (0 claimable at the bottom), then group by type
    (e.g. all the staking together, then all the airdrops), then order by most recent first */
-  const stakes = !stakingRewards || !stakingRewards?.positions ? [] : stakingRewards.positions
-  const airdrops =
-    !merkleDistributor || !merkleDistributor?.communityRewards?.grants ? [] : merkleDistributor.communityRewards.grants
+  const stakes = stakingRewards?.positions || []
+  const airdrops = merkleDistributor?.communityRewards?.grants || []
 
   const rewards: (StakedPosition | CommunityRewardsVesting)[] = [...stakes, ...airdrops]
   rewards.sort((i1, i2) => {
-    let val = (i1.claimable as any) - (i2.claimable as any)
-    if (val) return val
+    let val = i1.claimable.minus(i2.claimable)
+    if (!val.isZero()) return val.isNegative() ? -1 : 1
 
     if (i1 instanceof StakedPosition && i2 instanceof CommunityRewardsVesting) {
       return 1
@@ -171,10 +170,10 @@ function getSortedRewards(
     }
 
     if (i1 instanceof StakedPosition && i2 instanceof StakedPosition) {
-      return i1.rewards.startTime < i2.rewards.startTime ? 1 : -1
+      return i2.rewards.startTime - i1.rewards.startTime
     }
 
-    return i1.rewards.startTime < i2.rewards.startTime ? 1 : -1
+    return i2.rewards.startTime - i1.rewards.startTime
   })
   return rewards
 }
@@ -210,6 +209,10 @@ function Rewards(props) {
   }
 
   const rewards = getSortedRewards(stakingRewards, merkleDistributor)
+  const emptyRewards =
+    !merkleDistributor?.communityRewards.grants &&
+    !merkleDistributor?.actionRequiredAirdrops &&
+    !stakingRewards?.positions
   return (
     <div className="content-section">
       <div className="page-header">
@@ -235,33 +238,35 @@ function Rewards(props) {
           )}
         </div>
         <ul className="rewards-list">
-          {!merkleDistributor?.communityRewards.grants &&
-            !merkleDistributor?.actionRequiredAirdrops &&
-            !stakingRewards?.positions && <NoRewards />}
+          {emptyRewards ? (
+            <NoRewards />
+          ) : (
+            <>
+              {rewards &&
+                rewards.map((item) => {
+                  return (
+                    <RewardsListItem
+                      key={`staked-${item.rewards.startTime}`}
+                      isCommunityRewards={item instanceof CommunityRewardsVesting}
+                      title={item.reason}
+                      grantedGFI={displayNumber(gfiFromAtomic(item.granted), 2)}
+                      claimableGFI={displayNumber(gfiFromAtomic(item.claimable), 2)}
+                    />
+                  )
+                })}
 
-          {rewards &&
-            rewards.map((item) => {
-              return (
-                <RewardsListItem
-                  key={`staked-${item.rewards.startTime}`}
-                  isCommunityRewards={item instanceof CommunityRewardsVesting}
-                  title={item.reason()}
-                  grantedGFI={displayNumber(gfiFromAtomic(item.granted()), 2)}
-                  claimableGFI={displayNumber(gfiFromAtomic(item.claimable), 2)}
-                />
-              )
-            })}
-
-          {merkleDistributor?.actionRequiredAirdrops &&
-            merkleDistributor.actionRequiredAirdrops.map((item) => (
-              <RewardsListItem
-                key={`${item.reason}-${item.index}`}
-                isCommunityRewards={true}
-                title={capitalizeReason(item.reason)}
-                grantedGFI={displayNumber(gfiFromAtomic(gfiToAtomic(item.grant.amount)), 2)}
-                claimableGFI={displayNumber(new BigNumber(0), 2)}
-              />
-            ))}
+              {merkleDistributor?.actionRequiredAirdrops &&
+                merkleDistributor.actionRequiredAirdrops.map((item) => (
+                  <RewardsListItem
+                    key={`${item.reason}-${item.index}`}
+                    isCommunityRewards={true}
+                    title={capitalizeReason(item.reason)}
+                    grantedGFI={displayNumber(gfiFromAtomic(item.grant.amount), 2)}
+                    claimableGFI={displayNumber(new BigNumber(0), 2)}
+                  />
+                ))}
+            </>
+          )}
         </ul>
       </div>
     </div>

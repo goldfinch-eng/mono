@@ -390,8 +390,8 @@ interface Rewards {
   totalVested: BigNumber
   totalPreviouslyVested: BigNumber
   totalClaimed: BigNumber
-  startTime: string
-  endTime: string
+  startTime: number
+  endTime: number
 }
 
 class StakedPosition {
@@ -418,11 +418,12 @@ class StakedPosition {
     this.claimable = claimable
   }
 
-  reason(): string {
-    return `Staked ${this.amount} FIDU on ${moment.unix(Number(this.rewards.startTime)).format("MMM D")}`
+  get reason(): string {
+    const fiduAmount = this.amount.div(FIDU_DECIMALS.toString())
+    return `Staked ${fiduAmount} FIDU on ${moment.unix(this.rewards.startTime).format("MMM D")}`
   }
 
-  granted(): BigNumber {
+  get granted(): BigNumber {
     return this.rewards.totalUnvested.plus(this.rewards.totalVested).plus(this.rewards.totalPreviouslyVested)
   }
 }
@@ -443,8 +444,8 @@ function parseStakedPosition(
       totalVested: new BigNumber(tuple[1][1]),
       totalPreviouslyVested: new BigNumber(tuple[1][2]),
       totalClaimed: new BigNumber(tuple[1][3]),
-      startTime: tuple[1][4],
-      endTime: tuple[1][5],
+      startTime: Number(tuple[1][4]),
+      endTime: Number(tuple[1][5]),
     }
   )
 }

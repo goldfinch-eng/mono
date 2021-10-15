@@ -57,8 +57,7 @@ export class MerkleDistributor {
             new BigNumber(airdrop.grant.amount) === acceptedGrant.rewards.totalGranted &&
             new BigNumber(airdrop.grant.cliffLength) === acceptedGrant.rewards.cliffLength &&
             new BigNumber(airdrop.grant.vestingInterval) === acceptedGrant.rewards.vestingInterval &&
-            Number(airdrop.grant.vestingLength) ===
-              Number(acceptedGrant.rewards.endTime) - Number(acceptedGrant.rewards.startTime)
+            Number(airdrop.grant.vestingLength) === acceptedGrant.rewards.endTime - acceptedGrant.rewards.startTime
         )
         acceptedGrant._reason = airdrop?.reason
       }
@@ -113,8 +112,8 @@ export class MerkleDistributor {
 interface Rewards {
   totalGranted: BigNumber
   totalClaimed: BigNumber
-  startTime: string
-  endTime: string
+  startTime: number
+  endTime: number
   cliffLength: BigNumber
   vestingInterval: BigNumber
   revokedAt: BigNumber
@@ -134,11 +133,11 @@ export class CommunityRewardsVesting {
     this.claimable = claimable
   }
 
-  reason(): string {
+  get reason(): string {
     return !this._reason ? "Community Rewards" : this._reason
   }
 
-  granted(): BigNumber {
+  get granted(): BigNumber {
     return this.rewards.totalGranted
   }
 }
@@ -160,8 +159,8 @@ function parseCommunityRewardsVesting(
   return new CommunityRewardsVesting(tokenId, user, new BigNumber(claimable), {
     totalGranted: new BigNumber(tuple[0]),
     totalClaimed: new BigNumber(tuple[1]),
-    startTime: tuple[2],
-    endTime: tuple[3],
+    startTime: Number(tuple[2]),
+    endTime: Number(tuple[3]),
     cliffLength: new BigNumber(tuple[4]),
     vestingInterval: new BigNumber(tuple[5]),
     revokedAt: new BigNumber(tuple[6]),
