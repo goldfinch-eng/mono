@@ -36,7 +36,6 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
   using SafeMath for uint256;
 
   struct PoolRewardsInfo {
-    // bool paused; // per-pool pause
     uint256 accRewardsPerShare; // accumulator gfi per interest dollar
   }
 
@@ -58,9 +57,6 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
   // TODO: define events
   event PoolRewardsAllocated();
   event PoolTokenRewardWithdraw();
-
-  // event PoolRewardsPaused();
-  // event PoolRewardsUnpaused();
 
   function initialize(
     address owner,
@@ -146,16 +142,6 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
     safeERC20TransferFrom(config.getGFI(), address(this), poolTokens.ownerOf(tokenId), _amount);
     emit PoolTokenRewardWithdraw();
   }
-
-  // function pausePoolWithdraws(address _poolAddress) public onlyAdmin {
-  //   pools[_poolAddress].paused = true;
-  //   emit PoolRewardsPaused();
-  // }
-
-  // function unpausePoolWithdraws(address _poolAddress) public onlyAdmin {
-  //   pools[_poolAddress].paused = false;
-  //   emit PoolRewardsUnpaused();
-  // }
 
   /* Internal functions  */
 
