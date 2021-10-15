@@ -1,5 +1,5 @@
 import {usdcFromAtomic, minimumNumber, usdcToAtomic} from "../ethereum/erc20"
-import {displayDollars, roundDownPenny} from "../utils"
+import {displayDollars, displayNumber, roundDownPenny} from "../utils"
 import {AppContext} from "../App"
 import TransactionForm from "./transactionForm"
 import TransactionInput from "./transactionInput"
@@ -7,6 +7,7 @@ import LoadingButton from "./loadingButton"
 import useSendFromUser from "../hooks/useSendFromUser"
 import useNonNullContext from "../hooks/useNonNullContext"
 import {CapitalProvider, PoolData} from "../ethereum/pool"
+import {GFI_DECIMALS} from "../ethereum/gfi"
 
 interface WithdrawalFormProps {
   poolData: PoolData
@@ -35,9 +36,38 @@ function WithdrawalForm(props: WithdrawalFormProps) {
   )
 
   function renderForm({formMethods}) {
+    const lastVestingEnd = props.capitalProvider.stakingRewards.hasUnvested
+      ? new Date(props.capitalProvider.stakingRewards.lastVestingEndTime * 1000)
+      : undefined
+    // NOTE: The figure we show about how much GFI will be forfeited because it is unvested has
+    // some element of imprecision; it should be considered an estimate. That's because the actual
+    // amount forfeited is determined at the time of executing the unstaking transaction, and the
+    // unstaking transaction causes its own checkpointing / updating of rewards info. So the sum
+    // of unvested rewards we have computed here, as the basis for telling the user how much unvested
+    // rewards their withdrawal entails forfeiting, will not necessarily equal the amount that will
+    // actually be forfeited when the transaction is executed.
+    const forfeitAdvisory = props.capitalProvider.stakingRewards.hasUnvested ? (
+      <div className="form-message">
+        You have {displayNumber(props.capitalProvider.stakingRewards.unvested.div(GFI_DECIMALS.toString()), 2)} GFI (~
+        {displayDollars(props.capitalProvider.stakingRewards.unvestedInDollars, 2)}) that is still vesting until{" "}
+        {lastVestingEnd!.toLocaleDateString(undefined, {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        })}
+        . If you withdraw before then, you will forfeit a portion of your unvested GFI.
+      </div>
+    ) : undefined
+    const protocolFeeAdvisory = (
+      <div className="form-message">
+        {forfeitAdvisory ? "Also note," : "Note:"} the protocol will deduct a 0.50% fee from your withdrawal amount for
+        protocol reserves.
+      </div>
+    )
     return (
       <div className="form-inputs">
-        <div className="form-message">Note: the protocol will deduct a 0.50% fee from your withdrawal amount.</div>
+        {forfeitAdvisory}
+        {protocolFeeAdvisory}
         <div className="form-inputs-footer">
           <TransactionInput
             formMethods={formMethods}

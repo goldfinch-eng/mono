@@ -15,6 +15,7 @@ import {TranchedPool} from "@goldfinch-eng/protocol/typechain/web3/TranchedPool"
 import {buildCreditLine} from "./creditLine"
 import {getMetadataStore} from "./tranchedPool"
 import {BlockNumber} from "web3-core"
+import {gfiFromAtomic, GFI_DECIMALS} from "./gfi"
 
 class Pool {
   goldfinchProtocol: GoldfinchProtocol
@@ -111,6 +112,7 @@ interface CapitalProvider {
   availableToStakeInDollars: BigNumber
   availableToWithdraw: BigNumber
   availableToWithdrawInDollars: BigNumber
+  stakingRewards: CapitalProviderStakingRewardsInfo
   address: string
   allowance: BigNumber
   weightedAverageSharePrice: BigNumber
@@ -140,6 +142,12 @@ function emptyCapitalProvider({loaded = false} = {}): CapitalProvider {
     availableToStakeInDollars: new BigNumber(0),
     availableToWithdraw: new BigNumber(0),
     availableToWithdrawInDollars: new BigNumber(0),
+    stakingRewards: {
+      hasUnvested: false,
+      unvested: null,
+      unvestedInDollars: null,
+      lastVestingEndTime: null,
+    },
     address: "",
     allowance: new BigNumber(0),
     weightedAverageSharePrice: new BigNumber(0),
@@ -151,16 +159,33 @@ function emptyCapitalProvider({loaded = false} = {}): CapitalProvider {
   }
 }
 
-type CapitalProviderStaked = {
-  numSharesStakedLocked: BigNumber
-  numSharesStakedNotLocked: BigNumber
+type CapitalProviderStakingRewardsInfo =
+  | {
+      hasUnvested: true
+      unvested: BigNumber
+      unvestedInDollars: BigNumber
+      lastVestingEndTime: number
+    }
+  | {
+      hasUnvested: false
+      unvested: null
+      unvestedInDollars: null
+      lastVestingEndTime: null
+    }
+
+type CapitalProviderStakingInfo = {
+  shares: {
+    locked: BigNumber
+    notLocked: BigNumber
+  }
+  rewards: CapitalProviderStakingRewardsInfo
 }
 
-async function fetchCapitalProviderStaked(
+async function fetchCapitalProviderStakingInfo(
   stakingRewards: StakingRewards,
   capitalProviderAddress: string,
   currentBlock: BlockInfo
-): Promise<CapitalProviderStaked> {
+): Promise<CapitalProviderStakingInfo> {
   const numPositions = parseInt(
     await stakingRewards.contract.methods.balanceOf(capitalProviderAddress).call(undefined, currentBlock.number),
     10
@@ -177,25 +202,66 @@ async function fetchCapitalProviderStaked(
   const positions = await Promise.all(
     tokenIds.map((tokenId) => stakingRewards.contract.methods.positions(tokenId).call(undefined, currentBlock.number))
   )
-  const staked = positions.map((position) => ({
+  const parsed = positions.map((position) => ({
+    // TODO[PR] Would be ideal to always use a helper to parse the position struct data.
     amount: new BigNumber(position.amount),
     locked: new BigNumber(position.lockedUntil).gt(0),
+    rewards: {
+      unvested: new BigNumber(position.rewards[0]),
+      endTime: parseInt(position.rewards[5], 10),
+    },
   }))
-  const locked = staked.filter((val) => val.locked)
-  const notLocked = staked.filter((val) => !val.locked)
+
+  const sharesLockedPositions = parsed.filter((val) => val.locked)
+  const sharesNotLockedPositions = parsed.filter((val) => !val.locked)
+
+  const unvestedRewardsPositions = parsed.filter((val) => val.rewards.endTime > currentBlock.timestamp)
+
+  let rewards: CapitalProviderStakingRewardsInfo
+  if (unvestedRewardsPositions.length) {
+    const unvested = unvestedRewardsPositions.length
+      ? BigNumber.sum.apply(
+          null,
+          unvestedRewardsPositions.map((val) => val.rewards.unvested)
+        )
+      : new BigNumber(0)
+    const gfiPrice = new BigNumber(1) // TODO[PR]
+    rewards = {
+      hasUnvested: true,
+      unvested,
+      unvestedInDollars: new BigNumber(
+        gfiFromAtomic(unvested.multipliedBy(new BigNumber(gfiPrice)).div(GFI_DECIMALS.toString()))
+      ),
+      lastVestingEndTime: unvestedRewardsPositions.reduce(
+        (acc, curr) => (curr.rewards.endTime > acc ? curr.rewards.endTime : acc),
+        0
+      ),
+    }
+  } else {
+    rewards = {
+      hasUnvested: false,
+      unvested: null,
+      unvestedInDollars: null,
+      lastVestingEndTime: null,
+    }
+  }
+
   return {
-    numSharesStakedLocked: locked.length
-      ? BigNumber.sum.apply(
-          null,
-          locked.map((val) => val.amount)
-        )
-      : new BigNumber(0),
-    numSharesStakedNotLocked: notLocked.length
-      ? BigNumber.sum.apply(
-          null,
-          notLocked.map((val) => val.amount)
-        )
-      : new BigNumber(0),
+    shares: {
+      locked: sharesLockedPositions.length
+        ? BigNumber.sum.apply(
+            null,
+            sharesLockedPositions.map((val) => val.amount)
+          )
+        : new BigNumber(0),
+      notLocked: sharesNotLockedPositions.length
+        ? BigNumber.sum.apply(
+            null,
+            sharesNotLockedPositions.map((val) => val.amount)
+          )
+        : new BigNumber(0),
+    },
+    rewards,
   }
 }
 
@@ -221,11 +287,9 @@ async function fetchCapitalProviderData(
   const numSharesNotStaked = new BigNumber(
     await pool.fidu.methods.balanceOf(capitalProviderAddress).call(undefined, currentBlock.number)
   )
-  const {numSharesStakedLocked, numSharesStakedNotLocked} = await fetchCapitalProviderStaked(
-    stakingRewards,
-    capitalProviderAddress,
-    currentBlock
-  )
+  const stakingInfo = await fetchCapitalProviderStakingInfo(stakingRewards, capitalProviderAddress, currentBlock)
+  const numSharesStakedLocked = stakingInfo.shares.locked
+  const numSharesStakedNotLocked = stakingInfo.shares.notLocked
 
   const numSharesStaked = numSharesStakedLocked.plus(numSharesStakedNotLocked)
   const numSharesWithdrawable = numSharesNotStaked.plus(numSharesStakedNotLocked)
@@ -280,6 +344,7 @@ async function fetchCapitalProviderData(
     availableToStakeInDollars,
     availableToWithdraw,
     availableToWithdrawInDollars,
+    stakingRewards: stakingInfo.rewards,
     address,
     allowance,
     weightedAverageSharePrice,
