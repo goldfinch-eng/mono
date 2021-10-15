@@ -46,18 +46,22 @@ export class MerkleDistributor {
     this.totalClaimable = this.calculateTotalClaimable()
     this.unvested = this.calculateUnvested()
     this.granted = this.calculateGranted()
-
-    this.actionRequiredAirdrops = await this.getActionRequiredAirdrops(recipient)
+    this.actionRequiredAirdrops = (await this.getActionRequiredAirdrops(recipient)) as MerkleDistributorGrantInfo[]
 
     if (this.communityRewards.grants) {
+      const currentBlock = getBlockInfo(await getCurrentBlock())
+
       for (let acceptedGrant of this.communityRewards.grants) {
+        /* NOTE: Filtering GrantAccept events by tokenId to account for any token transfers that may
+        have occurred to or from the recipient */
+        const merkleAcceptedEvents = await this.goldfinchProtocol.queryEvent(
+          this.contract,
+          "GrantAccepted",
+          {tokenId: acceptedGrant.id},
+          currentBlock.number
+        )
         const airdrop = this.getGrantsInfo(recipient).find(
-          (airdrop) =>
-            airdrop.account === acceptedGrant.user &&
-            new BigNumber(airdrop.grant.amount) === acceptedGrant.rewards.totalGranted &&
-            new BigNumber(airdrop.grant.cliffLength) === acceptedGrant.rewards.cliffLength &&
-            new BigNumber(airdrop.grant.vestingInterval) === acceptedGrant.rewards.vestingInterval &&
-            Number(airdrop.grant.vestingLength) === acceptedGrant.rewards.endTime - acceptedGrant.rewards.startTime
+          (airdrop) => merkleAcceptedEvents[0]?.returnValues.index === airdrop.index
         )
         acceptedGrant._reason = airdrop?.reason
       }
@@ -70,18 +74,16 @@ export class MerkleDistributor {
     return this.info.grants.filter((grant) => grant.account === recipient)
   }
 
-  async getGrantsAccepted(recipient: string) {
-    if (!this.info) return []
-    return await this.goldfinchProtocol.queryEvents(this.contract, ["GrantAccepted"], {
-      account: recipient,
-    })
-  }
-
   async getActionRequiredAirdrops(recipient: string) {
     const airdrops = this.getGrantsInfo(recipient)
-    const acceptedAirdropsEvents = await this.getGrantsAccepted(recipient)
-
-    return airdrops.filter((airdrop) => !acceptedAirdropsEvents.find((e) => e.returnValues.index === airdrop.index))
+    return (
+      await Promise.all(
+        airdrops.map(async (grantInfo) => {
+          const isAccepted = await this.contract.methods.isGrantAccepted(grantInfo.index).call()
+          return !isAccepted ? grantInfo : undefined
+        })
+      )
+    ).filter((val) => !!val)
   }
 
   calculateTotalClaimable(): BigNumber {

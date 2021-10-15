@@ -86,14 +86,14 @@ function ActionButton(props) {
 }
 
 interface RewardsListItemProps {
-  isCommunityRewards: boolean
+  isAcceptRequired: boolean
   title: string
   grantedGFI: string
   claimableGFI: string
 }
 
 function RewardsListItem(props: RewardsListItemProps) {
-  const [accepted, setAccepted] = useState(props.isCommunityRewards ? false : true)
+  const [accepted, setAccepted] = useState(props.isAcceptRequired ? false : true)
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenXL})`})
 
   function handleAccept() {
@@ -238,7 +238,7 @@ function Rewards(props) {
           )}
         </div>
         <ul className="rewards-list">
-          {emptyRewards ? (
+          {emptyRewards && merkleDistributor?.loaded && stakingRewards?.loaded ? (
             <NoRewards />
           ) : (
             <>
@@ -247,7 +247,7 @@ function Rewards(props) {
                   return (
                     <RewardsListItem
                       key={`staked-${item.rewards.startTime}`}
-                      isCommunityRewards={item instanceof CommunityRewardsVesting}
+                      isAcceptRequired={false}
                       title={item.reason}
                       grantedGFI={displayNumber(gfiFromAtomic(item.granted), 2)}
                       claimableGFI={displayNumber(gfiFromAtomic(item.claimable), 2)}
@@ -259,7 +259,7 @@ function Rewards(props) {
                 merkleDistributor.actionRequiredAirdrops.map((item) => (
                   <RewardsListItem
                     key={`${item.reason}-${item.index}`}
-                    isCommunityRewards={true}
+                    isAcceptRequired={true}
                     title={capitalizeReason(item.reason)}
                     grantedGFI={displayNumber(gfiFromAtomic(item.grant.amount), 2)}
                     claimableGFI={displayNumber(new BigNumber(0), 2)}
