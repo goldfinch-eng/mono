@@ -12,23 +12,23 @@ import "../protocol/core/BaseUpgradeablePausable.sol";
 import "../interfaces/IPoolTokens.sol";
 import "../interfaces/ITranchedPool.sol";
 
-// Basically, Every time a on-time interest payment comes back across any JrPool
+// Basically, Every time a interest payment comes back
 // we keep a running total of dollars (totalInterestReceived) until it reaches the maxInterestDollarsEligible limit
 // Every dollar of interest received from 0->maxInterestDollarsEligible
 // has a allocated amount of rewards based on a sqrt function.
 
-// When a on-time interest payment comes in for a given Pool or the pool balance increases
+// When a interest payment comes in for a given Pool or the pool balance increases
 // we recalculate the pool's accRewardsPerShare
 
 // equation ref `_calculateNewRewards()`:
 // (sqrtNewTotalInterest - sqrtOrigTotalInterest) / sqrtTotalRewards * (totalRewards / totalGFISupply)
 
 // When a PoolToken is minted, we set the mint price to the pool's current accRewardsPerShare
-// Every time a PoolToken withdraws rewards, we determine the allocated rewards,  increase that PoolToken's rewardDebt,
-// and transfer the owner the gfi
+// Every time a PoolToken withdraws rewards, we determine the allocated rewards,
+// increase that PoolToken's rewardsClaimed, and transfer the owner the gfi
 
 // equation to find a PoolToken's allocated rewards ref: `poolTokenClaimableRewards()`
-// Token.principalAmount * (Pool.accRewardsPerShare - Token.accRewardsPerShareMintPrice) - Token.rewardDebt
+// Token.principalAmount * (Pool.accRewardsPerShare - Token.accRewardsPerShareMintPrice) - Token.rewardsClaimed
 
 contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer {
   GoldfinchConfig public config;
@@ -36,18 +36,18 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
   using SafeMath for uint256;
 
   struct PoolRewardsInfo {
-    bool paused; // per-pool pause
+    // bool paused; // per-pool pause
     uint256 accRewardsPerShare; // accumulator gfi per interest dollar
   }
 
   struct PoolRewardsTokenInfo {
-    uint256 rewardDebt; // gfi claimed
+    uint256 rewardsClaimed; // gfi claimed
     uint256 accRewardsPerShareMintPrice; // Pool's accRewardsPerShare at PoolToken mint()
   }
 
   uint256 public totalRewards; // total amount of GFI rewards available
   uint256 public maxInterestDollarsEligible; // interest $ eligible for gfi rewards
-  uint256 public totalInterestReceived; // counter of on-time interest repayments across all jr pools
+  uint256 public totalInterestReceived; // counter of total interest repayments
 
   uint256 private sqrtTotalRewards; // sqrt(totalRewards)
   uint256 private totalRewardPercentOfTotalGFI; // totalRewards/totalGFISupply
@@ -58,8 +58,9 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
   // TODO: define events
   event PoolRewardsAllocated();
   event PoolTokenRewardWithdraw();
-  event PoolRewardsPaused();
-  event PoolRewardsUnpaused();
+
+  // event PoolRewardsPaused();
+  // event PoolRewardsUnpaused();
 
   function initialize(
     address owner,
@@ -93,6 +94,8 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
 
   // When a new interest payment is received by a pool, recalculate accRewardsPerShare
   function allocateRewards(address _poolAddress, uint256 _interestPaymentAmount) public override onlyAdmin {
+    require(config.getPoolTokens().validPool(_poolAddress), "Not a valid pool");
+
     uint256 _totalInterestReceived = totalInterestReceived;
 
     require(_totalInterestReceived < maxInterestDollarsEligible, "All rewards exhausted");
@@ -101,6 +104,7 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
     uint256 rewards = _calculateNewRewards(_interestPaymentAmount);
 
     ITranchedPool pool = ITranchedPool(_poolAddress);
+
     ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
 
     PoolRewardsInfo storage _poolInfo = pools[_poolAddress];
@@ -110,7 +114,7 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
   }
 
   // calculate the rewards allocated to a given PoolToken
-  // PoolToken.principalAmount * (accRewardsPerShare-accRewardsPerShareMintPrice) - rewardDebt
+  // PoolToken.principalAmount * (accRewardsPerShare-accRewardsPerShareMintPrice) - rewardsClaimed
   function poolTokenClaimableRewards(uint256 tokenId) public view returns (uint256) {
     IPoolTokens poolTokens = config.getPoolTokens();
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
@@ -118,40 +122,40 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
       tokenInfo
         .principalAmount
         .mul(pools[tokenInfo.pool].accRewardsPerShare.sub(tokens[tokenId].accRewardsPerShareMintPrice))
-        .sub(tokens[tokenId].rewardDebt);
+        .sub(tokens[tokenId].rewardsClaimed);
   }
 
   // PoolToken request to withdraw currently allocated rewards
   function withdraw(uint256 tokenId, uint256 _amount) public onlyAdmin {
     uint256 totalClaimableRewards = poolTokenClaimableRewards(tokenId);
-    uint256 poolTokenRewardDebt = tokens[tokenId].rewardDebt;
+    uint256 poolTokenRewardsClaimed = tokens[tokenId].rewardsClaimed;
 
     IPoolTokens poolTokens = config.getPoolTokens();
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
 
     address poolAddr = tokenInfo.pool;
     require(poolAddr != address(0), "Invalid tokenId");
-    require(!pools[poolAddr].paused, "Pool withdraw paused");
-    require(poolTokenRewardDebt.add(_amount) <= totalClaimableRewards, "Rewards overwithdraw attempt");
+    require(poolTokenRewardsClaimed.add(_amount) <= totalClaimableRewards, "Rewards overwithdraw attempt");
 
     ITranchedPool pool = ITranchedPool(poolAddr);
+    require(pool.whenNotPaused(), "Pool withdraw paused");
     require(!pool.isLate(block.timestamp), "Pool currently has late payments");
 
-    tokens[tokenId].rewardDebt = poolTokenRewardDebt.add(_amount);
+    tokens[tokenId].rewardsClaimed = poolTokenRewardsClaimed.add(_amount);
 
-    safeERC20TransferFrom(config.getGFI(), poolTokens.ownerOf(tokenId), address(this), _amount);
+    safeERC20TransferFrom(config.getGFI(), address(this), poolTokens.ownerOf(tokenId), _amount);
     emit PoolTokenRewardWithdraw();
   }
 
-  function pausePoolWithdraws(address _poolAddress) public onlyAdmin {
-    pools[_poolAddress].paused = true;
-    emit PoolRewardsPaused();
-  }
+  // function pausePoolWithdraws(address _poolAddress) public onlyAdmin {
+  //   pools[_poolAddress].paused = true;
+  //   emit PoolRewardsPaused();
+  // }
 
-  function unpausePoolWithdraws(address _poolAddress) public onlyAdmin {
-    pools[_poolAddress].paused = false;
-    emit PoolRewardsUnpaused();
-  }
+  // function unpausePoolWithdraws(address _poolAddress) public onlyAdmin {
+  //   pools[_poolAddress].paused = false;
+  //   emit PoolRewardsUnpaused();
+  // }
 
   /* Internal functions  */
 

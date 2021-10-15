@@ -48,6 +48,8 @@ abstract contract ITranchedPool {
 
   function isLate(uint256 timestamp) external virtual returns (bool);
 
+  function whenNotPaused() external virtual returns (bool);
+
   function assess() external virtual;
 
   function depositWithPermit(
