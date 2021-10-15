@@ -810,9 +810,11 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   }
 
   function _assess() internal {
-    bool isLate = creditLine.isLate(block.timestamp);
     (uint256 paymentRemaining, uint256 interestPayment, uint256 principalPayment) = creditLine.assess();
     if (interestPayment > 0 || principalPayment > 0) {
+      if (interestPayment > 0) {
+        config.getPoolRewards().allocateRewards(address(this), interestPayment);
+      }
       uint256 reserveAmount = collectInterestAndPrincipal(
         address(creditLine),
         interestPayment,
@@ -827,14 +829,9 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
         reserveAmount
       );
     }
-
-    // QUESTION: should we be incrementing 'totalInterestReceived' even if it's late, but not allocate rewards?
-    if (interestPayment > 0 && !isLate) {
-      config.getPoolRewards().allocateRewards(address(this), interestPayment);
-    }
   }
 
-  function isLate(uint256 timestamp) external view returns (bool) {
+  function isLate(uint256 timestamp) external override onlyAdmin returns (bool) {
     return creditLine.isLate(block.timestamp);
   }
 
