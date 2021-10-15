@@ -62,7 +62,7 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
     address owner,
     uint256 _totalRewards,
     uint256 _maxInterestDollarsEligible
-  ) public initializer {
+  ) public initializer whenNotPaused {
     totalRewards = _totalRewards;
     sqrtTotalRewards = Babylonian.sqrt(_totalRewards);
     totalRewardPercentOfTotalGFI = _totalRewards.div(config.getGFI().totalSupply());
@@ -70,14 +70,19 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
     __BaseUpgradeablePausable__init(owner);
   }
 
-  function setTotalRewards(uint256 _totalRewards) public onlyAdmin {
+  function setTotalRewards(uint256 _totalRewards) public onlyAdmin whenNotPaused {
     totalRewards = _totalRewards;
     sqrtTotalRewards = Babylonian.sqrt(_totalRewards);
     totalRewardPercentOfTotalGFI = _totalRewards.div(config.getGFI().totalSupply());
   }
 
   // When a new interest payment is received by a pool, recalculate accRewardsPerShare
-  function allocateRewards(address _poolAddress, uint256 _interestPaymentAmount) public override onlyAdmin {
+  function allocateRewards(address _poolAddress, uint256 _interestPaymentAmount)
+    public
+    override
+    onlyAdmin
+    whenNotPaused
+  {
     require(config.getPoolTokens().validPool(_poolAddress), "Not a valid pool");
 
     uint256 _totalInterestReceived = totalInterestReceived;
@@ -99,7 +104,7 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
 
   // calculate the rewards allocated to a given PoolToken
   // PoolToken.principalAmount * (accRewardsPerShare-accRewardsPerShareMintPrice) - rewardsClaimed
-  function poolTokenClaimableRewards(uint256 tokenId) public view returns (uint256) {
+  function poolTokenClaimableRewards(uint256 tokenId) public view whenNotPaused returns (uint256) {
     IPoolTokens poolTokens = config.getPoolTokens();
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
     return
@@ -110,7 +115,7 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
   }
 
   // PoolToken request to withdraw currently allocated rewards
-  function withdraw(uint256 tokenId, uint256 _amount) public onlyAdmin {
+  function withdraw(uint256 tokenId, uint256 _amount) public onlyAdmin whenNotPaused {
     uint256 totalClaimableRewards = poolTokenClaimableRewards(tokenId);
     uint256 poolTokenRewardsClaimed = tokens[tokenId].rewardsClaimed;
 
