@@ -174,13 +174,8 @@ button.expand {
 }
 
 @media only screen and (max-width: 1050px) {
-  .gfi-rewards {
-    .table-cell.col32 {
-      width: 22%;
-    }
-    .table-cell.col20 {
-      width: 22%;
-    }
+  .gfi-rewards .table-cell.col32, .gfi-rewards .table-cell.col20{
+    width: 23%;
   }
 
   .break-claimable-column {
