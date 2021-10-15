@@ -9,6 +9,7 @@ import {useMediaQuery} from "react-responsive"
 import {WIDTH_TYPES} from "../../components/styleConstants"
 import styled from "styled-components"
 import {mediaPoint} from "../../styles/mediaPoint"
+import EtherscanLink from "../../components/etherscanLink"
 
 interface DetailsContainerProps {
   open: boolean
@@ -70,7 +71,7 @@ const Column = styled.div`
 `
 
 const EtherscanLinkContainer = styled.div`
-  margin-top: 0;
+  margin-top: 16px;
 `
 
 interface RewardsSummaryProps {
@@ -193,7 +194,9 @@ function Details(props) {
         </Column>
       </ColumnsContainer>
       <EtherscanLinkContainer className="pool-links">
-        Etherscan<span className="outbound-link">{iconOutArrow}</span>
+        <EtherscanLink tranchedPoolAddress="">
+          Etherscan<span className="outbound-link">{iconOutArrow}</span>
+        </EtherscanLink>
       </EtherscanLinkContainer>
     </DetailsContainer>
   )
