@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.6.12;
+pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
@@ -29,7 +30,7 @@ import "../interfaces/ITranchedPool.sol";
 // equation to find a PoolToken's allocated rewards ref: `poolTokenClaimableRewards()`
 // Token.principalAmount * (Pool.accRewardsPerShare - Token.accRewardsPerShareMintPrice) - Token.rewardDebt
 
-contract PoolRewards is BaseUpgradeablePausable, SafeERC20Transfer {
+contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer {
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
   using SafeMath for uint256;
@@ -91,7 +92,7 @@ contract PoolRewards is BaseUpgradeablePausable, SafeERC20Transfer {
   // }
 
   // When a new interest payment is received by a pool, recalculate accRewardsPerShare
-  function allocateRewards(address _poolAddress, uint256 _interestPaymentAmount) public onlyAdmin {
+  function allocateRewards(address _poolAddress, uint256 _interestPaymentAmount) public override onlyAdmin {
     uint256 _totalInterestReceived = totalInterestReceived;
 
     require(_totalInterestReceived < maxInterestDollarsEligible, "All rewards exhausted");
@@ -150,23 +151,6 @@ contract PoolRewards is BaseUpgradeablePausable, SafeERC20Transfer {
   }
 
   /* Internal functions  */
-
-  // Calculate the total rewards allocated to a pool
-  // jrTranche.interestSharePrice * jrTranche.principalDeposited * pool.accRewardsPerShare
-  function _getPoolTotalAllocatedRewards(uint256 tokenId) internal view returns (uint256) {
-    IPoolTokens poolTokens = config.getPoolTokens();
-    IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
-    ITranchedPool pool = ITranchedPool(tokenInfo.pool);
-
-    require(tokenInfo.pool != address(0), "Invalid tokenId");
-
-    ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
-
-    return
-      juniorTranche.interestSharePrice.mul(juniorTranche.principalDeposited).mul(
-        pools[tokenInfo.pool].accRewardsPerShare
-      );
-  }
 
   // Calculate the rewards earned for a given interest payment
   // (sqrtNewTotalInterest - sqrtOrigTotalInterest) / sqrtTotalRewards * (totalRewards / totalGFISupply)

@@ -570,6 +570,11 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     uint256 interestRemaining = interest;
     uint256 principalRemaining = principal;
 
+    // QUESTION: should this be interest only sent to jrpool or across all interest dollars
+    if (interestAccrued > 0) {
+      config.getPoolRewards().allocateRewards(address(this), interest);
+    }
+
     // First determine the expected share price for the senior tranche. This is the gross amount the senior
     // tranche should receive.
     uint256 expectedInterestSharePrice = calculateExpectedSharePrice(interestAccrued, seniorTranche);
