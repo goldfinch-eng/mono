@@ -4,7 +4,9 @@
 ### Why?
 <!-- What's the real reason behind this change? -->
 
-**Merge Checklist**
-- [ ] I have reviewed this code
-- [ ] This functionality is tested. (If not, explain why or what else you did to test it)
-- [ ] The front-ends still generally work.
+### How has this been tested?
+<!-- Unit tests? Local testing? Something else? -->
+
+**Checklist**
+- [ ] I have reviewed this code myself
+- [ ] Screenshots of the key change are present (if this is a front-end PR)
