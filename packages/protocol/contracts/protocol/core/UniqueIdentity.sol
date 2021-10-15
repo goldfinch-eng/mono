@@ -47,6 +47,7 @@ contract UniqueIdentity is ERC1155PresetPauserUpgradeable, IUniqueIdentity {
 
   function __UniqueIdentity_init_unchained(address owner) internal initializer {
     _setupRole(SIGNER_ROLE, owner);
+    _setRoleAdmin(SIGNER_ROLE, OWNER_ROLE);
   }
 
   function mint(

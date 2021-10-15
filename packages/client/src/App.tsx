@@ -23,7 +23,6 @@ import SeniorPoolView from "./components/pools/seniorPoolView"
 import VerifyIdentity from "./components/verifyIdentity"
 import TranchedPoolView from "./components/pools/tranchedPoolView"
 import {SessionData} from "./types/session.js"
-import {CommunityRewards, MerkleDistributor} from "./ethereum/communityRewards"
 import Rewards from "./pages/rewards"
 import {ThemeProvider} from "styled-components"
 import {defaultTheme} from "./styles/theme"
@@ -58,8 +57,6 @@ export interface GlobalState {
   setGeolocationData?: (geolocationData: GeolocationData) => void
   sessionData?: SessionData
   setSessionData?: (data: SessionData | undefined) => void
-  communityRewards?: CommunityRewards
-  merkleDistributor?: MerkleDistributor
 }
 
 declare let window: any
@@ -79,8 +76,6 @@ function App() {
   const [goldfinchProtocol, setGoldfinchProtocol] = useState<GoldfinchProtocol>()
   const [geolocationData, setGeolocationData] = useState<GeolocationData>()
   const [sessionData, setSessionData] = useState<SessionData>()
-  const [merkleDistributor, setMerkleDistributor] = useState<MerkleDistributor>()
-  const [communityRewards, setCommunityRewards] = useState<CommunityRewards>()
 
   const toggleRewards = process.env.REACT_APP_TOGGLE_REWARDS === "true"
 
@@ -138,13 +133,6 @@ function App() {
       setGoldfinchConfig(await refreshGoldfinchConfigData(goldfinchConfigContract))
       setGoldfinchProtocol(protocol)
 
-      const communityRewards = new CommunityRewards(protocol)
-      communityRewards.initialize() // initialize async, no need to block on this
-      setCommunityRewards(communityRewards)
-      const merkleDistributor = new MerkleDistributor(protocol)
-      merkleDistributor.initialize() // initialize async, no need to block on this
-      setMerkleDistributor(merkleDistributor)
-
       const monitor = new NetworkMonitor(web3, {
         setCurrentTXs,
         setCurrentErrors,
@@ -198,8 +186,6 @@ function App() {
     setGeolocationData,
     sessionData,
     setSessionData,
-    communityRewards,
-    merkleDistributor,
   }
 
   return (

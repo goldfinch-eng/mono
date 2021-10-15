@@ -63,6 +63,8 @@
 button.action {
   margin-left: auto;
   background-color: $blue-xlight;
+  white-space: nowrap;
+  width: 116px;
 
   &:hover {
     background-color: $blue-light;
@@ -81,7 +83,7 @@ button.expand {
 
   & svg {
     height: 24px;
-    margin-left: 28px;
+    margin-left: 18px;
 
     path {
       fill: $sand-xdark;
@@ -144,7 +146,7 @@ button.expand {
   }
 }
 
-@media only screen and (max-width: $screen-xl) {
+@media only screen and (max-width: $screen-l) {
   button.action {
     float: none;
     width: 100%;
@@ -174,5 +176,19 @@ button.expand {
       margin: 0 0 4px 0;
       color: $sand-xxdark;
     }
+  }
+}
+
+@media only screen and (max-width: 1050px) {
+  .gfi-rewards .table-cell.col32, .gfi-rewards .table-cell.col20{
+    width: 23%;
+  }
+
+  .break-claimable-column {
+    padding-left: 35px;
+  }
+
+  .break-granted-column {
+    padding-left: 50px;
   }
 }

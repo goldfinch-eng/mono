@@ -1,5 +1,9 @@
 import React, {useState} from "react"
+import BigNumber from "bignumber.js"
 import {Link} from "react-router-dom"
+import {gfiFromAtomic} from "../../ethereum/gfi"
+import {useGFIBalance, useRewards} from "../../hooks/useStakingRewards"
+import {displayDollars, displayNumber} from "../../utils"
 import {iconCarrotDown, iconCarrotUp} from "../../components/icons"
 import {useMediaQuery} from "react-responsive"
 import {WIDTH_TYPES} from "../../components/styleConstants"
@@ -55,8 +59,8 @@ const Column = styled.div`
 const EtherscanLinkContainer = styled.div``
 
 interface RewardsSummaryProps {
-  fullyVested: string
-  stillVesting: string
+  claimable: string
+  unvested: string
   totalGFI: string
   totalUSD: string
   walletBalance: string
@@ -80,16 +84,16 @@ function RewardsSummary(props: RewardsSummaryProps) {
           </div>
         </div>
         <div className="details-item">
-          <span>Fully vested</span>
+          <span>Claimable</span>
           <div>
-            <span className="value">{props.fullyVested}</span>
+            <span className="value">{props.claimable}</span>
             <span>GFI</span>
           </div>
         </div>
         <div className="details-item">
           <span>Still vesting</span>
           <div>
-            <span className="value">{props.stillVesting}</span>
+            <span className="value">{props.unvested}</span>
             <span>GFI</span>
           </div>
         </div>
@@ -118,11 +122,11 @@ function NoRewards(props) {
 }
 
 function ActionButton(props) {
-  const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenXL})`})
+  const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
   const disabledClass = props.disabled ? "disabled-button" : ""
 
   return (
-    <button className={`${!isTabletOrMobile && "table-cell col16"} action ${disabledClass}`} onClick={props.onClick}>
+    <button className={`${!isTabletOrMobile && "table-cell"} action ${disabledClass}`} onClick={props.onClick}>
       {props.text}
     </button>
   )
@@ -138,7 +142,7 @@ interface RewardsListItemProps {
 function RewardsListItem(props: RewardsListItemProps) {
   const [accepted, setAccepted] = useState(props.isCommunityRewards ? false : true)
   const [open, setOpen] = useState<boolean>(true)
-  const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenXL})`})
+  const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
 
   function handleAccept() {
     setAccepted(!accepted)
@@ -236,7 +240,7 @@ function RewardsListItem(props: RewardsListItemProps) {
 }
 
 function Rewards(props) {
-  const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenXL})`})
+  const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
 
   // TODO: remove this variable when getting real data
   const gfiRewards = [
@@ -260,21 +264,48 @@ function Rewards(props) {
     },
   ]
 
+  const {stakingRewards, merkleDistributor} = useRewards()
+  const gfiBalance = useGFIBalance()
+
+  let claimable
+  let unvested
+  let granted
+  if (stakingRewards?.totalClaimable || merkleDistributor?.totalClaimable) {
+    let val = stakingRewards?.totalClaimable || new BigNumber(0)
+    claimable = val.plus(merkleDistributor?.totalClaimable || new BigNumber(0))
+  }
+
+  if (stakingRewards?.unvested || merkleDistributor?.unvested) {
+    let val = stakingRewards?.unvested || new BigNumber(0)
+    unvested = val.plus(merkleDistributor?.unvested || new BigNumber(0))
+  }
+
+  if (stakingRewards?.granted || merkleDistributor?.granted) {
+    let val = stakingRewards?.granted || new BigNumber(0)
+    granted = val.plus(merkleDistributor?.granted || new BigNumber(0))
+  }
+
   return (
     <div className="content-section">
       <div className="page-header">
         <h1>Rewards</h1>
       </div>
 
-      <RewardsSummary fullyVested="0.00" stillVesting="0.00" totalGFI="0.00" totalUSD="0.00" walletBalance="0.00" />
+      <RewardsSummary
+        claimable={displayNumber(gfiFromAtomic(claimable), 2)}
+        unvested={displayNumber(gfiFromAtomic(unvested), 2)}
+        totalGFI={displayNumber(gfiFromAtomic(granted), 2)}
+        totalUSD={displayDollars(null)} // TODO: this needs to be updated once we have a price for GFI in USD.
+        walletBalance={displayNumber(gfiFromAtomic(gfiBalance), 2)}
+      />
 
       <div className="gfi-rewards table-spaced">
         <div className="table-header background-container-inner">
           <h2 className="table-cell col32 title">GFI Rewards</h2>
           {!isTabletOrMobile && (
             <>
-              <div className="table-cell col20 numeric balance">Granted GFI</div>
-              <div className="table-cell col20 numeric limit">Claimable GFI</div>
+              <div className="table-cell col20 numeric balance break-granted-column">Granted GFI</div>
+              <div className="table-cell col20 numeric limit break-claimable-column">Claimable GFI</div>
             </>
           )}
         </div>
