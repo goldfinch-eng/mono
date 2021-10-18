@@ -445,8 +445,6 @@ async function getDepositEventsForCapitalProvider(
 // for your shares, and we would fail out, and return a "-" on the front-end.
 // NOTE: This also does not take into account realized gains, which we are also
 // punting on.
-// TODO[PR] Flagging this for reconsideration of how long we want to continue
-// punting on taking realized gains into account.
 async function getWeightedAverageSharePrice(
   pool: SeniorPool,
   stakingRewards: StakingRewards,
