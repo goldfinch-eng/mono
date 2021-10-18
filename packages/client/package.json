@@ -16,6 +16,7 @@
     "@types/node": "^15.9.0",
     "@types/react": "^17.0.9",
     "@types/react-dom": "^17.0.6",
+    "apollo": "^2.33.6",
     "bignumber.js": "^9.0.0",
     "bnc-notify": "^1.5.1",
     "classnames": "^2.2.6",
@@ -50,7 +51,8 @@
     "lint": "npx eslint .",
     "lint:fix": "eslint . --fix && prettier . --write",
     "pre-commit": "lint-staged",
-    "tsc": "tsc"
+    "tsc": "tsc",
+    "gen-graphql-types": "npx apollo client:codegen ./src/graphql/types.ts --endpoint=https://api.thegraph.com/subgraphs/name/goldfinch-eng/goldfinch --target=typescript --outputFlat --tagName=gql --includes=./src/graphql/*.ts"
   },
   "lint-staged": {
     "*.(js(x)?|ts(x)?)": [

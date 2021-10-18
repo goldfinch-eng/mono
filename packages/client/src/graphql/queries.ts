@@ -1,6 +1,6 @@
 import gql from "graphql-tag"
 
-export const GET_SENIOR_POOL_AND_PROVIDER_DATA = gql(`
+export const GET_SENIOR_POOL_AND_PROVIDER_DATA = gql`
   query getSeniorPoolAndProviders($userID: ID!) {
     seniorPools(first: 1) {
       id
@@ -41,4 +41,4 @@ export const GET_SENIOR_POOL_AND_PROVIDER_DATA = gql(`
       }
     }
   }
-`)
+`
