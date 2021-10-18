@@ -6,6 +6,7 @@
       "@goldfinch-eng/utils": ["packages/utils/src"],
       "@goldfinch-eng/protocol": ["packages/protocol"],
       "@goldfinch-eng/autotasks": ["packages/autotasks"],
+      "@goldfinch-eng/subgraph": ["packages/subgraph"],
       "@goldfinch-eng/functions": ["packages/functions/src"],
       "@goldfinch-eng/functions/*": ["packages/functions/src/*"]
     }
