@@ -30,6 +30,14 @@ export const ColumnsContainer = styled.div`
   ${({theme}) => mediaPoint(theme).screenL} {
     flex-direction: column;
   }
+
+  > * + * {
+    margin-left: 12px;
+
+    ${({theme}) => mediaPoint(theme).screenL} {
+      margin-left: 0;
+    }
+  }
 `
 
 export const Detail = styled.div`

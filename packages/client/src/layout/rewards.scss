@@ -81,6 +81,7 @@ button.expand {
   padding: 0;
   background: none;
   margin-left: 18px;
+  display: flex;
 
   & svg {
     height: 24px;
@@ -151,6 +152,10 @@ button.expand {
     float: none;
     width: 100%;
     margin: 0;
+  }
+
+  .gfi-rewards .table-cell.col32.title {
+    width: 100%;
   }
 
   .rewards-list-item.mobile {
