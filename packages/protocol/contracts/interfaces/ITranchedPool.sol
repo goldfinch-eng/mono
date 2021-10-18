@@ -46,8 +46,6 @@ abstract contract ITranchedPool {
 
   function deposit(uint256 tranche, uint256 amount) external virtual returns (uint256 tokenId);
 
-  function isLate(uint256 timestamp) external virtual returns (bool);
-
   function whenNotPaused() external virtual returns (bool);
 
   function assess() external virtual;
