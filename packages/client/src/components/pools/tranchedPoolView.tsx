@@ -28,6 +28,7 @@ import DefaultGoldfinchClient from "../../hooks/useGoldfinchClient"
 import NdaPrompt from "../ndaPrompt"
 import {useFetchNDA} from "../../hooks/useNDA"
 import {decimalPlaces} from "../../ethereum/utils"
+import EtherscanLink from "../etherscanLink"
 
 function useRecentPoolTransactions({tranchedPool}: {tranchedPool?: TranchedPool}): Record<string, any>[] {
   let recentTransactions = useAsync(() => tranchedPool && tranchedPool.recentTransactions(), [tranchedPool])
@@ -700,6 +701,11 @@ function Overview({tranchedPool, handleDetails}: OverviewProps) {
       </div>
       <p className="pool-description">{tranchedPool?.metadata?.description}</p>
       <InfoSection rows={rows} />
+      <div className="pool-links">
+        <EtherscanLink tranchedPoolAddress={tranchedPool?.address!}>
+          Pool<span className="outbound-link">{iconOutArrow}</span>
+        </EtherscanLink>
+      </div>
     </div>
   )
 }
