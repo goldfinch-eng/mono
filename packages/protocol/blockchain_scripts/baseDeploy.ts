@@ -49,6 +49,7 @@ import {
 } from "../typechain/truffle"
 import {assertIsString} from "@goldfinch-eng/utils"
 import {StakingRewards} from "../typechain/ethers/StakingRewards"
+import {PoolRewards} from "../typechain/ethers/PoolRewards"
 import {UNIQUE_IDENTITY_METADATA_URI} from "./uniqueIdentity/constants"
 
 let logger: Logger
@@ -91,6 +92,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
 
   await deployGFI(deployer, {config})
   await deployLPStakingRewards(deployer, {config})
+  await deployPoolRewards(deployer, {config})
   const communityRewards = await deployCommunityRewards(deployer, {config})
   await deployMerkleDistributor(deployer, {communityRewards})
 
@@ -279,6 +281,28 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
       },
     })
     return stakingRewards
+  }
+
+  async function deployPoolRewards(
+    deployer: ContractDeployer,
+    {config}: {config: GoldfinchConfig}
+  ): Promise<PoolRewards> {
+    logger("About to deploy PoolRewards...")
+    assertIsString(gf_deployer)
+    const protocol_owner = await getProtocolOwner()
+    const poolRewards = await deployer.deploy<PoolRewards>("PoolRewards", {
+      from: gf_deployer,
+      gasLimit: 4000000,
+      proxy: {
+        execute: {
+          init: {
+            methodName: "__initialize__",
+            args: [protocol_owner, config.address],
+          },
+        },
+      },
+    })
+    return poolRewards
   }
 
   async function deployCommunityRewards(

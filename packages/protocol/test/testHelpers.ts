@@ -34,6 +34,7 @@ import {
   GFIInstance,
   StakingRewardsInstance,
   CommunityRewardsInstance,
+  PoolRewardsInstance,
   MerkleDistributorInstance,
   GoInstance,
   TestUniqueIdentityInstance,
@@ -237,6 +238,7 @@ async function deployAllContracts(
   transferRestrictedVault: TransferRestrictedVaultInstance
   gfi: GFIInstance
   stakingRewards: StakingRewardsInstance
+  poolRewards: PoolRewardsInstance
   communityRewards: CommunityRewardsInstance
   merkleDistributor: MerkleDistributorInstance | null
   uniqueIdentity: TestUniqueIdentityInstance
@@ -273,6 +275,8 @@ async function deployAllContracts(
   )
   const gfi = await getDeployedAsTruffleContract<GFIInstance>(deployments, "GFI")
   const stakingRewards = await getDeployedAsTruffleContract<StakingRewardsInstance>(deployments, "StakingRewards")
+
+  const poolRewards = await getDeployedAsTruffleContract<PoolRewardsInstance>(deployments, "PoolRewards")
 
   const communityRewards = await getContract<CommunityRewards, CommunityRewardsInstance>(
     "CommunityRewards",
@@ -314,6 +318,7 @@ async function deployAllContracts(
     transferRestrictedVault,
     gfi,
     stakingRewards,
+    poolRewards,
     communityRewards,
     merkleDistributor,
     uniqueIdentity,

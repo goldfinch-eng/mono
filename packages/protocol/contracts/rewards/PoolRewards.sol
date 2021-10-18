@@ -11,6 +11,7 @@ import "../protocol/core/ConfigHelper.sol";
 import "../protocol/core/BaseUpgradeablePausable.sol";
 import "../interfaces/IPoolTokens.sol";
 import "../interfaces/ITranchedPool.sol";
+import "../interfaces/IPoolRewards.sol";
 
 // Basically, Every time a interest payment comes back
 // we keep a running total of dollars (totalInterestReceived) until it reaches the maxInterestDollarsEligible limit
@@ -58,31 +59,23 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
   event PoolRewardsAllocated();
   event PoolTokenRewardWithdraw();
 
-  function initialize(
-    address owner,
-    uint256 _totalRewards,
-    uint256 _maxInterestDollarsEligible
-  ) public initializer whenNotPaused {
-    totalRewards = _totalRewards;
-    sqrtTotalRewards = Babylonian.sqrt(_totalRewards);
-    totalRewardPercentOfTotalGFI = _totalRewards.div(config.getGFI().totalSupply());
-    maxInterestDollarsEligible = _maxInterestDollarsEligible;
+  function __initialize__(address owner, GoldfinchConfig _config) public initializer {
+    config = _config;
     __BaseUpgradeablePausable__init(owner);
   }
 
-  function setTotalRewards(uint256 _totalRewards) public onlyAdmin whenNotPaused {
+  function setTotalRewards(uint256 _totalRewards) public onlyAdmin {
     totalRewards = _totalRewards;
     sqrtTotalRewards = Babylonian.sqrt(_totalRewards);
     totalRewardPercentOfTotalGFI = _totalRewards.div(config.getGFI().totalSupply());
   }
 
+  function setMaxInterestDollarsEligible(uint256 _maxInterestDollarsEligible) public onlyAdmin {
+    maxInterestDollarsEligible = _maxInterestDollarsEligible;
+  }
+
   // When a new interest payment is received by a pool, recalculate accRewardsPerShare
-  function allocateRewards(address _poolAddress, uint256 _interestPaymentAmount)
-    public
-    override
-    onlyAdmin
-    whenNotPaused
-  {
+  function allocateRewards(address _poolAddress, uint256 _interestPaymentAmount) public override onlyAdmin {
     require(config.getPoolTokens().validPool(_poolAddress), "Not a valid pool");
 
     uint256 _totalInterestReceived = totalInterestReceived;
@@ -104,7 +97,7 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
 
   // calculate the rewards allocated to a given PoolToken
   // PoolToken.principalAmount * (accRewardsPerShare-accRewardsPerShareMintPrice) - rewardsClaimed
-  function poolTokenClaimableRewards(uint256 tokenId) public view whenNotPaused returns (uint256) {
+  function poolTokenClaimableRewards(uint256 tokenId) public view returns (uint256) {
     IPoolTokens poolTokens = config.getPoolTokens();
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
     return
@@ -115,23 +108,17 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
   }
 
   // PoolToken request to withdraw currently allocated rewards
-  function withdraw(uint256 tokenId, uint256 _amount) public onlyAdmin whenNotPaused {
+  function withdraw(uint256 tokenId, uint256 _amount) public onlyAdmin {
     uint256 totalClaimableRewards = poolTokenClaimableRewards(tokenId);
     uint256 poolTokenRewardsClaimed = tokens[tokenId].rewardsClaimed;
-
     IPoolTokens poolTokens = config.getPoolTokens();
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
-
     address poolAddr = tokenInfo.pool;
     require(poolAddr != address(0), "Invalid tokenId");
     require(poolTokenRewardsClaimed.add(_amount) <= totalClaimableRewards, "Rewards overwithdraw attempt");
-
-    ITranchedPool pool = ITranchedPool(poolAddr);
-    require(pool.whenNotPaused(), "Pool withdraw paused");
-    require(!pool.isLate(block.timestamp), "Pool currently has late payments");
-
+    BaseUpgradeablePausable pool = BaseUpgradeablePausable(poolAddr);
+    require(!pool.paused(), "Pool withdraw paused");
     tokens[tokenId].rewardsClaimed = poolTokenRewardsClaimed.add(_amount);
-
     safeERC20TransferFrom(config.getGFI(), address(this), poolTokens.ownerOf(tokenId), _amount);
     emit PoolTokenRewardWithdraw();
   }
@@ -144,15 +131,12 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
     uint256 _totalRewards = totalRewards;
     uint256 _originalTotalInterest = totalInterestReceived;
     uint256 newTotalInterest = _originalTotalInterest.add(interestPaymentAmount);
-
     // interest payment passed the cap, should only partially be rewarded
     if (newTotalInterest > _totalRewards) {
       newTotalInterest = _totalRewards.sub(_originalTotalInterest);
     }
-
     uint256 sqrtOrigTotalInterest = Babylonian.sqrt(_originalTotalInterest);
     uint256 sqrtNewTotalInterest = Babylonian.sqrt(newTotalInterest);
-
     return (sqrtNewTotalInterest.sub(sqrtOrigTotalInterest)).div(sqrtTotalRewards).mul(totalRewardPercentOfTotalGFI);
   }
 }
