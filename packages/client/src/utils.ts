@@ -13,6 +13,7 @@ export function displayNumber(val, decimals) {
   if (val === "") {
     return ""
   }
+
   const valFloat = parseFloat(val)
   if (!decimals && Math.floor(valFloat) === valFloat) {
     decimals = 0
@@ -20,9 +21,9 @@ export function displayNumber(val, decimals) {
     decimals = valFloat.toString().split(".")[1]?.length || 0
   }
 
-  // TODO[PR] Should we have a similar check here for `valFloat < 0.01 && valFloat > 0`,
-  // like we do in `displayDollars()`? Otherwise we're at risk of displaying `0.00`.
-
+  if (decimals === 2 && valFloat < 0.01 && valFloat > 0) {
+    return "<0.01"
+  }
   return commaFormat(valFloat.toFixed(decimals))
 }
 
@@ -49,12 +50,14 @@ export function displayDollars(val, decimals = 2) {
   if (!isFinite(val) || val === null) {
     return " --.--"
   }
+
   const valFloat = parseFloat(val)
   if (valFloat < 0) {
     val = valFloat * -1
     prefix = "-"
   }
-  if (valFloat < 0.01 && valFloat > 0) {
+
+  if (decimals === 2 && valFloat < 0.01 && valFloat > 0) {
     return "<$0.01"
   }
   return `${prefix}$${displayNumber(val, decimals)}`
