@@ -1,7 +1,7 @@
 import BigNumber from "bignumber.js"
 import {fetchDataFromAttributes, getPoolEvents, INTEREST_DECIMALS, USDC_DECIMALS} from "./utils"
 import {Tickers, usdcFromAtomic} from "./erc20"
-import {FIDU_DECIMALS, fiduFromAtomic} from "./fidu"
+import {FIDU_DECIMALS, fiduFromAtomic, sharesToBalance, balanceInDollars} from "./fidu"
 import {getBlockInfo, getCurrentBlock, roundDownPenny, BlockInfo} from "../utils"
 import _ from "lodash"
 import {getBalanceAsOf, mapEventsToTx} from "./events"
@@ -231,19 +231,17 @@ async function fetchCapitalProviderData(
   const numSharesWithdrawable = numSharesNotStaked.plus(numSharesStakedNotLocked)
   const numSharesTotal = numSharesNotStaked.plus(numSharesStakedLocked).plus(numSharesStakedNotLocked)
 
-  const stakedSeniorPoolBalance = numSharesStaked.multipliedBy(new BigNumber(sharePrice)).div(FIDU_DECIMALS.toString())
-  const stakedSeniorPoolBalanceInDollars = new BigNumber(fiduFromAtomic(stakedSeniorPoolBalance))
+  const stakedSeniorPoolBalance = sharesToBalance(numSharesStaked, sharePrice)
+  const stakedSeniorPoolBalanceInDollars = balanceInDollars(stakedSeniorPoolBalance)
 
-  const totalSeniorPoolBalance = numSharesTotal.multipliedBy(new BigNumber(sharePrice)).div(FIDU_DECIMALS.toString())
-  const totalSeniorPoolBalanceInDollars = new BigNumber(fiduFromAtomic(totalSeniorPoolBalance))
+  const totalSeniorPoolBalance = sharesToBalance(numSharesTotal, sharePrice)
+  const totalSeniorPoolBalanceInDollars = balanceInDollars(totalSeniorPoolBalance)
 
-  const availableToStake = numSharesNotStaked.multipliedBy(new BigNumber(sharePrice)).div(FIDU_DECIMALS.toString())
-  const availableToStakeInDollars = new BigNumber(fiduFromAtomic(availableToStake))
+  const availableToStake = sharesToBalance(numSharesNotStaked, sharePrice)
+  const availableToStakeInDollars = balanceInDollars(availableToStake)
 
-  const availableToWithdraw = numSharesWithdrawable
-    .multipliedBy(new BigNumber(sharePrice))
-    .div(FIDU_DECIMALS.toString())
-  const availableToWithdrawInDollars = new BigNumber(fiduFromAtomic(availableToWithdraw))
+  const availableToWithdraw = sharesToBalance(numSharesWithdrawable, sharePrice)
+  const availableToWithdrawInDollars = balanceInDollars(availableToWithdraw)
 
   const address = capitalProviderAddress
   const allowance = new BigNumber(
