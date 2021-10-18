@@ -211,7 +211,7 @@ interface RewardsListItemProps {
 
 function RewardsListItem(props: RewardsListItemProps) {
   const [accepted, setAccepted] = useState(props.isCommunityRewards ? false : true)
-  const [open, setOpen] = useState<boolean>(true)
+  const [open, setOpen] = useState<boolean>(false)
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
 
   function handleAccept() {
