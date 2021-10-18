@@ -70,12 +70,12 @@ class SeniorPool {
     if (includeV1Pool) {
       // In migrating from v1 to v2 (i.e. from the `Pool` contract as modeling the senior pool,
       // to the `SeniorPool` contract as modeling the senior pool), we transferred contract state
-      // from Pool to SeniorPool (e.g. the deposits that a capital provider had made into Pool
-      // became deposits in SeniorPool). But we did not do any sort of migrating (e.g. re-emitting)
-      // with respect to events, from the Pool contract onto the SeniorPool contract. So fully
-      // representing the SeniorPool's events here -- e.g. to be able to accurately count all of a
-      // capital provider's deposits -- entails querying for those events on both the SeniorPool
-      // and Pool contracts.
+      // from Pool to SeniorPool (e.g. the capital supplied by a capital provider to Pool
+      // became capital supplied by that provider to SeniorPool). But we did not do any sort of
+      // migrating (e.g. re-emitting) with respect to events, from the Pool contract onto the
+      // SeniorPool contract. So fully representing the SeniorPool's events here -- e.g. to be
+      // able to accurately count all of a capital provider's supplier capital -- entails querying
+      // for those events on both the SeniorPool and Pool contracts.
 
       const events = await Promise.all([
         getPoolEvents(this, address, eventNames, toBlock),
