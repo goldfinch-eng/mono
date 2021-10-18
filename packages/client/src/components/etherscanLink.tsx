@@ -2,7 +2,7 @@ import React, {useContext} from "react"
 import {AppContext} from "../App"
 
 interface EtherscanLinkProps {
-  tranchedPoolAddress: string
+  address: string
   classNames?: string
   children: React.ReactNode
 }
@@ -13,7 +13,7 @@ function EtherscanLink(props: EtherscanLinkProps) {
 
   return (
     <a
-      href={`https://${etherscanSubdomain}etherscan.io/address/${props.tranchedPoolAddress}`}
+      href={`https://${etherscanSubdomain}etherscan.io/address/${props.address}`}
       target="_blank"
       rel="noopener noreferrer"
       className={props.classNames}

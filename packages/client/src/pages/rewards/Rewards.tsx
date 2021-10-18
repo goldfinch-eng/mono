@@ -194,7 +194,7 @@ function Details(props) {
         </Column>
       </ColumnsContainer>
       <EtherscanLinkContainer className="pool-links">
-        <EtherscanLink tranchedPoolAddress="">
+        <EtherscanLink address="">
           Etherscan<span className="outbound-link">{iconOutArrow}</span>
         </EtherscanLink>
       </EtherscanLinkContainer>
