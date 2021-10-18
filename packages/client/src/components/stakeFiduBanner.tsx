@@ -66,11 +66,6 @@ export default function StakeFiduBanner(props: StakeFiduBannerProps) {
     }
   }
 
-  // TODO[PR] Do we want the UI to allow you to stake your unstaked FIDU even if you're not allowed to
-  // otherwise participate in the senior pool? My current implementation answers no, which I think makes sense:
-  // if we don't think you're worthy of supplying anew, we probably shouldn't consider you worthy of
-  // earning rewards from staking.
-  //
   // Having unlocked USDC and being eligible for the senior pool are logically independent of, and therefore
   // not necessary, for being able to stake any unstaked FIDU you may have. But for consistency of UX in
   // relation to the other actions on the senior pool page, we condition here on having satisfied those
