@@ -7,72 +7,17 @@ import {displayDollars, displayNumber} from "../../utils"
 import {iconCarrotDown, iconCarrotUp, iconOutArrow} from "../../components/icons"
 import {useMediaQuery} from "react-responsive"
 import {WIDTH_TYPES} from "../../components/styleConstants"
-import styled from "styled-components"
-import {mediaPoint} from "../../styles/mediaPoint"
 import EtherscanLink from "../../components/etherscanLink"
 
-interface DetailsContainerProps {
-  open: boolean
-}
-
-const DetailsContainer = styled.div<DetailsContainerProps>`
-  margin: -28px -30px 24px -30px;
-  background-color: ${({theme}) => theme.colors.sandLight};
-  padding: 30px;
-  border-bottom-right-radius: 6px;
-  border-bottom-left-radius: 6px;
-
-  ${({open, theme}) => open && `border-top: 2px solid ${theme.colors.sand};`}
-
-  ${({theme}) => mediaPoint(theme).screenL} {
-    margin: -28px -25px 24px;
-  }
-
-  ${({theme}) => mediaPoint(theme).screenM} {
-    margin: -28px 0 24px;
-  }
-`
-
-const ColumnsContainer = styled.div`
-  display: flex;
-  width: 100%;
-
-  ${({theme}) => mediaPoint(theme).screenL} {
-    flex-direction: column;
-  }
-`
-
-const Detail = styled.div`
-  display: flex;
-  flex-direction: column;
-  padding: 0 0 24px 0;
-
-  > * + * {
-    margin: 8px 0 0 0;
-  }
-`
-
-const DetailLabel = styled.span`
-  color: ${({theme}) => theme.colors.purpLight};
-  font-size: ${({theme}) => theme.typography.fontSize.sansSizeXs};
-`
-
-const DetailValue = styled.span`
-  color: ${({theme}) => theme.colors.purpDark};
-  font-size: ${({theme}) => theme.typography.fontSize.sansSizeS};
-`
-
-const Column = styled.div`
-  width: 100%;
-
-  > * + * {
-    margin: 0 44px 0 0;
-  }
-`
-
-const EtherscanLinkContainer = styled.div`
-  margin-top: 16px;
-`
+import {
+  DetailsContainer,
+  ColumnsContainer,
+  Detail,
+  DetailLabel,
+  DetailValue,
+  Column,
+  EtherscanLinkContainer,
+} from "./styles"
 
 interface RewardsSummaryProps {
   claimable: string
@@ -137,7 +82,13 @@ function NoRewards(props) {
   )
 }
 
-function ActionButton(props) {
+interface ActionButtonProps {
+  disabled?: boolean
+  onClick: () => void
+  text: string
+}
+
+function ActionButton(props: ActionButtonProps) {
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
   const disabledClass = props.disabled ? "disabled-button" : ""
 
@@ -148,7 +99,12 @@ function ActionButton(props) {
   )
 }
 
-function OpenDetails(props) {
+interface OpenDetailsProps {
+  open: boolean
+  onClick: () => void
+}
+
+function OpenDetails(props: OpenDetailsProps) {
   if (props.open) {
     return (
       <button className="expand close" onClick={props.onClick}>
@@ -164,37 +120,47 @@ function OpenDetails(props) {
   )
 }
 
-function Details(props) {
+interface DetailsProps {
+  open: boolean
+  transactionDetails: string
+  vestingSchedule: string
+  claimStatus: string
+  currentEarnRate: string
+  vestingStatus: string
+  etherscanAddress: string
+}
+
+function Details(props: DetailsProps) {
   return (
     <DetailsContainer open={props.open}>
       <ColumnsContainer>
         <Column>
           <Detail>
             <DetailLabel>Transaction details</DetailLabel>
-            <DetailValue>16,179.69 FIDU staked on Nov 1, 2021</DetailValue>
+            <DetailValue>{props.transactionDetails}</DetailValue>
           </Detail>
           <Detail>
             <DetailLabel>Vesting schedule</DetailLabel>
-            <DetailValue>Linear until 100% on Nov 1, 2022</DetailValue>
+            <DetailValue>{props.vestingSchedule}</DetailValue>
           </Detail>
           <Detail>
             <DetailLabel>Claim status</DetailLabel>
-            <DetailValue>0 GFI claimed of your total vested 4.03 GFI</DetailValue>
+            <DetailValue>{props.claimStatus}</DetailValue>
           </Detail>
         </Column>
         <Column>
           <Detail>
             <DetailLabel>Current earn rate</DetailLabel>
-            <DetailValue>+10.21 granted per week</DetailValue>
+            <DetailValue>{props.currentEarnRate}</DetailValue>
           </Detail>
           <Detail>
             <DetailLabel>Vesting status</DetailLabel>
-            <DetailValue>8.0% (4.03 GFI) vested so far</DetailValue>
+            <DetailValue>{props.vestingStatus}</DetailValue>
           </Detail>
         </Column>
       </ColumnsContainer>
       <EtherscanLinkContainer className="pool-links">
-        <EtherscanLink address="">
+        <EtherscanLink address={props.etherscanAddress}>
           Etherscan<span className="outbound-link">{iconOutArrow}</span>
         </EtherscanLink>
       </EtherscanLinkContainer>
@@ -230,6 +196,16 @@ function RewardsListItem(props: RewardsListItemProps) {
     />
   )
 
+  // TODO: remove when using real data
+  const fakeDetailsObject = {
+    transactionDetails: "16,179.69 FIDU staked on Nov 1, 2021",
+    vestingSchedule: "Linear until 100% on Nov 1, 2022",
+    claimStatus: "0 GFI claimed of your total vested 4.03 GFI",
+    currentEarnRate: "+10.21 granted per week",
+    vestingStatus: "8.0% (4.03 GFI) vested so far",
+    etherscanAddress: "",
+  }
+
   return (
     <>
       {!isTabletOrMobile && (
@@ -241,7 +217,17 @@ function RewardsListItem(props: RewardsListItemProps) {
             {actionButtonComponent}
             <OpenDetails open={open} onClick={() => setOpen(!open)} />
           </div>
-          {open && <Details open={open} />}
+          {open && (
+            <Details
+              open={open}
+              transactionDetails={fakeDetailsObject.transactionDetails}
+              vestingSchedule={fakeDetailsObject.vestingSchedule}
+              claimStatus={fakeDetailsObject.claimStatus}
+              currentEarnRate={fakeDetailsObject.currentEarnRate}
+              vestingStatus={fakeDetailsObject.vestingStatus}
+              etherscanAddress={fakeDetailsObject.etherscanAddress}
+            />
+          )}
         </li>
       )}
 
@@ -264,7 +250,17 @@ function RewardsListItem(props: RewardsListItemProps) {
             </div>
             {actionButtonComponent}
           </div>
-          {open && <Details open={open} />}
+          {open && (
+            <Details
+              open={open}
+              transactionDetails={fakeDetailsObject.transactionDetails}
+              vestingSchedule={fakeDetailsObject.vestingSchedule}
+              claimStatus={fakeDetailsObject.claimStatus}
+              currentEarnRate={fakeDetailsObject.currentEarnRate}
+              vestingStatus={fakeDetailsObject.vestingStatus}
+              etherscanAddress={fakeDetailsObject.etherscanAddress}
+            />
+          )}
         </li>
       )}
     </>
