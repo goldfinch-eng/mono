@@ -1,10 +1,10 @@
 import React, {useContext} from "react"
 import {AppContext} from "../App"
-import {iconOutArrow} from "./icons"
 
 interface EtherscanLinkProps {
   tranchedPoolAddress: string
-  classNames: string
+  classNames?: string
+  children: React.ReactNode
 }
 
 function EtherscanLink(props: EtherscanLinkProps) {
@@ -18,7 +18,7 @@ function EtherscanLink(props: EtherscanLinkProps) {
       rel="noopener noreferrer"
       className={props.classNames}
     >
-      {iconOutArrow}
+      {props.children}
     </a>
   )
 }

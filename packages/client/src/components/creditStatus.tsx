@@ -4,7 +4,7 @@ import CreditBarViz from "./creditBarViz"
 import {usdcFromAtomic} from "../ethereum/erc20"
 import {decimals} from "../ethereum/utils"
 import {displayDollars, displayNumber} from "../utils"
-import {iconClock} from "./icons"
+import {iconClock, iconOutArrow} from "./icons"
 import EtherscanLink from "./etherscanLink"
 import BN from "bn.js"
 
@@ -61,7 +61,9 @@ function CreditStatus(props) {
         <EtherscanLink
           tranchedPoolAddress={tranchedPoolAddress}
           classNames={`pool-link ${placeholderClass !== "" && "disabled-link"}`}
-        />
+        >
+          {iconOutArrow}
+        </EtherscanLink>
       </div>
       <div className="credit-status-balance background-container-inner">
         <CreditBarViz
