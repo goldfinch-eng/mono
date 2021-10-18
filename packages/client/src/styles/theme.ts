@@ -46,8 +46,15 @@ interface BreakPointsObject {
   screenS: string
   screenM: string
   screenL: string
+}
+
+interface WidthsObject {
   contentMaxWidth: string
   navWidth: string
+}
+
+interface HeightsObject {
+  widgetButtonHeight: string
 }
 
 declare module "styled-components" {
@@ -55,6 +62,8 @@ declare module "styled-components" {
     colors: ColorsObject
     typography: TypographyObject
     breakpoints: BreakPointsObject
+    widths: WidthsObject
+    heights: HeightsObject
   }
 }
 
@@ -101,7 +110,12 @@ export const defaultTheme: DefaultTheme = {
     screenS: "350px",
     screenM: "600px",
     screenL: "900px",
+  },
+  widths: {
     contentMaxWidth: "750px",
     navWidth: "180px",
+  },
+  heights: {
+    widgetButtonHeight: "40px",
   },
 }
