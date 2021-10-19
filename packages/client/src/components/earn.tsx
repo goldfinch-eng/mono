@@ -117,7 +117,11 @@ function PortfolioOverview({
           }`}</div>
         </div>
       </div>
-      <AnnualGrowthTooltipContent estimatedApyFromSupplying={new BigNumber(0)} estimatedApyFromGfi={new BigNumber(0)} />
+      <AnnualGrowthTooltipContent
+        estimatedApyFromSupplying={estimatedApyFromSupplying}
+        estimatedApyFromGfi={estimatedApyFromGfi}
+        estimatedApy={estimatedApy}
+      />
     </div>
   )
 }

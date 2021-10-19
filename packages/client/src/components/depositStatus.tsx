@@ -13,10 +13,13 @@ function DepositStatus(props: DepositStatusProps) {
   const portfolioBalance = props.capitalProvider.totalSeniorPoolBalanceInDollars
   const portfolioBalanceDisplay = displayDollars(portfolioBalance)
 
-  let apyDisplay: string, estimatedApy: BigNumber | undefined, estimatedApyFromGfi: BigNumber | undefined
+  let apyDisplay: string,
+    estimatedApy: BigNumber | undefined,
+    estimatedApyFromSupplying: BigNumber | undefined,
+    estimatedApyFromGfi: BigNumber | undefined
   if (props.poolData?.loaded) {
     const globalEstimatedApyFromSupplying = props.poolData.estimatedApy
-    const estimatedApyFromSupplying = globalEstimatedApyFromSupplying
+    estimatedApyFromSupplying = globalEstimatedApyFromSupplying
 
     const globalEstimatedApyFromGfi = props.poolData.estimatedApyFromGfi || new BigNumber(0)
     const balancePortionEarningGfi = portfolioBalance.gt(0)
@@ -36,7 +39,7 @@ function DepositStatus(props: DepositStatusProps) {
     apyDisplay = `${displayPercent(estimatedApy)}`
   }
 
-  if (portfolioBalance.gt(0) && estimatedApy) {
+  if (portfolioBalance.gt(0) && estimatedApy && estimatedApyFromSupplying && estimatedApyFromGfi) {
     const estimatedGrowth = portfolioBalance.multipliedBy(estimatedApy)
     const estimatedGrowthDisplay = displayDollars(estimatedGrowth)
 
@@ -65,8 +68,9 @@ function DepositStatus(props: DepositStatusProps) {
           <div className="sub-value">{`${apyDisplay} APY${estimatedApyFromGfi?.gt(0) ? " (with GFI)" : ""}`}</div>
         </div>
         <AnnualGrowthTooltipContent
-          estimatedApyFromSupplying={new BigNumber(0)}
-          estimatedApyFromGfi={new BigNumber(0)}
+          estimatedApyFromSupplying={estimatedApyFromSupplying}
+          estimatedApyFromGfi={estimatedApyFromGfi}
+          estimatedApy={estimatedApy}
         />
       </div>
     )

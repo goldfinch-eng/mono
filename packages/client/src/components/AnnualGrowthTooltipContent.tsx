@@ -5,11 +5,13 @@ import {displayPercent} from "../utils"
 type AnnualGrowthTooltipContentProps = {
   estimatedApyFromSupplying: BigNumber
   estimatedApyFromGfi: BigNumber
+  estimatedApy: BigNumber
 }
 
 const AnnualGrowthTooltipContent = ({
   estimatedApyFromSupplying,
   estimatedApyFromGfi,
+  estimatedApy,
 }: AnnualGrowthTooltipContentProps) => (
   <Tooltip id="annual-growth-tooltip" className="annual-growth-tooltip">
     <div>
@@ -27,7 +29,7 @@ const AnnualGrowthTooltipContent = ({
       <div className="tooltip-divider"></div>
       <div className="tooltip-row">
         <p>Total Est. APY</p>
-        <span>{displayPercent(estimatedApyFromSupplying.plus(estimatedApyFromGfi))}</span>
+        <span>{displayPercent(estimatedApy)}</span>
       </div>
     </div>
   </Tooltip>
