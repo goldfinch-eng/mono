@@ -80,18 +80,16 @@ export class MerkleDistributor {
     return this.info.grants.filter((grant) => grant.account === recipient)
   }
 
-  async getActionRequiredAirdrops(recipient: string, currentBlock: BlockInfo): Promise<MerkleDistributorGrantInfo[]> {
+  getActionRequiredAirdrops(recipient: string, currentBlock: BlockInfo): Promise<MerkleDistributorGrantInfo[]> {
     const airdrops = this.getGrantsInfo(recipient)
-    return (
-      await Promise.all(
-        airdrops.map(async (grantInfo) => {
-          const isAccepted = await this.contract.methods
-            .isGrantAccepted(grantInfo.index)
-            .call(undefined, currentBlock.number)
-          return !isAccepted ? grantInfo : undefined
-        })
-      )
-    ).filter((val) => !!val) as MerkleDistributorGrantInfo[]
+    return Promise.all(
+      airdrops.map(async (grantInfo) => {
+        const isAccepted = await this.contract.methods
+          .isGrantAccepted(grantInfo.index)
+          .call(undefined, currentBlock.number)
+        return !isAccepted ? grantInfo : undefined
+      })
+    ).then((results) => results.filter((val) => !!val) as MerkleDistributorGrantInfo[])
   }
 
   calculateTotalClaimable(): BigNumber {
