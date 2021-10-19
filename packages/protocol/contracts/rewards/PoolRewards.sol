@@ -55,19 +55,22 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
   mapping(uint256 => PoolRewardsTokenInfo) public tokens; // poolTokenId -> PoolRewardsTokenInfo
   mapping(address => PoolRewardsInfo) public pools; // pool.address -> PoolRewardsInfo
 
-  // TODO: define events
   event PoolRewardsAllocated();
   event PoolTokenRewardWithdraw();
 
+  // solhint-disable-next-line func-name-mixedcase
   function __initialize__(address owner, GoldfinchConfig _config) public initializer {
     config = _config;
+    totalInterestReceived = 0;
     __BaseUpgradeablePausable__init(owner);
   }
 
   function setTotalRewards(uint256 _totalRewards) public onlyAdmin {
     totalRewards = _totalRewards;
     sqrtTotalRewards = Babylonian.sqrt(_totalRewards);
-    totalRewardPercentOfTotalGFI = _totalRewards.div(config.getGFI().totalSupply());
+    uint256 totalGFISupply = config.getGFI().totalSupply();
+    // No fixed point support in solidity
+    totalRewardPercentOfTotalGFI = _totalRewards.div(totalGFISupply);
   }
 
   function setMaxInterestDollarsEligible(uint256 _maxInterestDollarsEligible) public onlyAdmin {
@@ -91,7 +94,15 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
 
     PoolRewardsInfo storage _poolInfo = pools[_poolAddress];
     uint256 previousRewards = juniorTranche.interestSharePrice.mul(_poolInfo.accRewardsPerShare);
-    _poolInfo.accRewardsPerShare = previousRewards.add(rewards).div(_totalInterestReceived);
+
+    if (_totalInterestReceived != 0) {
+      _poolInfo.accRewardsPerShare = previousRewards.add(rewards).div(_totalInterestReceived);
+    } else {
+      _poolInfo.accRewardsPerShare = previousRewards.add(rewards);
+    }
+
+    totalInterestReceived = _totalInterestReceived.add(_interestPaymentAmount);
+
     emit PoolRewardsAllocated();
   }
 
@@ -137,6 +148,9 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
     }
     uint256 sqrtOrigTotalInterest = Babylonian.sqrt(_originalTotalInterest);
     uint256 sqrtNewTotalInterest = Babylonian.sqrt(newTotalInterest);
-    return (sqrtNewTotalInterest.sub(sqrtOrigTotalInterest)).div(sqrtTotalRewards).mul(totalRewardPercentOfTotalGFI);
+    uint256 newRewards = sqrtNewTotalInterest.sub(sqrtOrigTotalInterest).mul(totalRewardPercentOfTotalGFI).div(
+      sqrtTotalRewards
+    );
+    return newRewards;
   }
 }
