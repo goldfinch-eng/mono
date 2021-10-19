@@ -2,7 +2,7 @@ import React, {useState} from "react"
 import _ from "lodash"
 import BigNumber from "bignumber.js"
 import {Link} from "react-router-dom"
-import {gfiFromAtomic, gfiToAtomic} from "../../ethereum/gfi"
+import {gfiFromAtomic} from "../../ethereum/gfi"
 import {useGFIBalance, useRewards} from "../../hooks/useStakingRewards"
 import {displayDollars, displayNumber} from "../../utils"
 import {iconCarrotDown} from "../../components/icons"
@@ -12,11 +12,11 @@ import {CommunityRewardsVesting, MerkleDistributor} from "../../ethereum/communi
 import {StakedPosition, StakingRewards} from "../../ethereum/pool"
 
 interface RewardsSummaryProps {
-  claimable: string
-  unvested: string
-  totalGFI: string
-  totalUSD: string
-  walletBalance: string
+  claimable: BigNumber
+  unvested: BigNumber
+  totalGFI: BigNumber
+  totalUSD: BigNumber
+  walletBalance: BigNumber
 }
 
 function RewardsSummary(props: RewardsSummaryProps) {
@@ -24,36 +24,36 @@ function RewardsSummary(props: RewardsSummaryProps) {
     <div className="rewards-summary background-container">
       <div className="rewards-summary-left-item">
         <span className="total-gfi-balance">Total GFI balance</span>
-        <span className="total-gfi">{props.totalGFI}</span>
-        <span className="total-usd">${props.totalUSD}</span>
+        <span className="total-gfi">{displayNumber(gfiFromAtomic(props.totalGFI), 2)}</span>
+        <span className="total-usd">${displayDollars(props.totalUSD)}</span>
       </div>
 
       <div className="rewards-summary-right-item">
         <div className="details-item">
           <span>Wallet balance</span>
           <div>
-            <span className="value">{props.walletBalance}</span>
+            <span className="value">{displayNumber(gfiFromAtomic(props.walletBalance), 2)}</span>
             <span>GFI</span>
           </div>
         </div>
         <div className="details-item">
           <span>Claimable</span>
           <div>
-            <span className="value">{props.claimable}</span>
+            <span className="value">{displayNumber(gfiFromAtomic(props.claimable), 2)}</span>
             <span>GFI</span>
           </div>
         </div>
         <div className="details-item">
           <span>Still vesting</span>
           <div>
-            <span className="value">{props.unvested}</span>
+            <span className="value">{displayNumber(gfiFromAtomic(props.unvested), 2)}</span>
             <span>GFI</span>
           </div>
         </div>
         <div className="details-item total-balance">
           <span>Total balance</span>
           <div>
-            <span className="value">{props.totalGFI}</span>
+            <span className="value">{displayNumber(gfiFromAtomic(props.totalGFI), 2)}</span>
             <span>GFI</span>
           </div>
         </div>
@@ -88,12 +88,12 @@ function ActionButton(props) {
 interface RewardsListItemProps {
   isAcceptRequired: boolean
   title: string
-  grantedGFI: string
-  claimableGFI: string
+  grantedGFI: BigNumber
+  claimableGFI: BigNumber
 }
 
 function RewardsListItem(props: RewardsListItemProps) {
-  const [accepted, setAccepted] = useState(props.isAcceptRequired ? false : true)
+  const [accepted, setAccepted] = useState(!props.isAcceptRequired)
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
 
   function handleAccept() {
@@ -105,11 +105,7 @@ function RewardsListItem(props: RewardsListItemProps) {
   const actionButtonComponent = !accepted ? (
     <ActionButton text="Accept" onClick={handleAccept} />
   ) : (
-    <ActionButton
-      text="Claim GFI"
-      onClick={() => console.log("claim action")}
-      disabled={props.claimableGFI === "0.00"}
-    />
+    <ActionButton text="Claim GFI" onClick={() => console.error("error")} disabled={props.claimableGFI.eq(0)} />
   )
 
   return (
@@ -117,8 +113,12 @@ function RewardsListItem(props: RewardsListItemProps) {
       {!isTabletOrMobile && (
         <li className="rewards-list-item table-row background-container clickable">
           <div className="table-cell col32">{props.title}</div>
-          <div className={`table-cell col20 numeric ${valueDisabledClass}`}>{props.grantedGFI}</div>
-          <div className={`table-cell col20 numeric ${valueDisabledClass}`}>{props.claimableGFI}</div>
+          <div className={`table-cell col20 numeric ${valueDisabledClass}`}>
+            {displayNumber(gfiFromAtomic(props.grantedGFI), 2)}
+          </div>
+          <div className={`table-cell col20 numeric ${valueDisabledClass}`}>
+            {displayNumber(gfiFromAtomic(props.claimableGFI), 2)}
+          </div>
           {actionButtonComponent}
           <button className="expand">{iconCarrotDown}</button>
         </li>
@@ -133,11 +133,11 @@ function RewardsListItem(props: RewardsListItemProps) {
           <div className="item-details">
             <div className="detail-container">
               <span className="detail-label">Granted GFI</span>
-              <div className={`${valueDisabledClass}`}>{props.grantedGFI}</div>
+              <div className={`${valueDisabledClass}`}>{displayNumber(gfiFromAtomic(props.grantedGFI), 2)}</div>
             </div>
             <div className="detail-container">
               <span className="detail-label">Claimable GFI</span>
-              <div className={`${valueDisabledClass}`}>{props.claimableGFI}</div>
+              <div className={`${valueDisabledClass}`}>{displayNumber(gfiFromAtomic(props.claimableGFI), 2)}</div>
             </div>
           </div>
           {actionButtonComponent}
@@ -210,9 +210,12 @@ function Rewards(props) {
 
   const rewards = getSortedRewards(stakingRewards, merkleDistributor)
   const emptyRewards =
-    !merkleDistributor?.communityRewards.grants &&
-    !merkleDistributor?.actionRequiredAirdrops &&
-    !stakingRewards?.positions
+    (!merkleDistributor?.communityRewards.grants &&
+      !merkleDistributor?.actionRequiredAirdrops &&
+      !stakingRewards?.positions) ||
+    (!merkleDistributor?.communityRewards?.grants?.length &&
+      !merkleDistributor?.actionRequiredAirdrops?.length &&
+      !stakingRewards?.positions?.length)
   return (
     <div className="content-section">
       <div className="page-header">
@@ -220,11 +223,11 @@ function Rewards(props) {
       </div>
 
       <RewardsSummary
-        claimable={displayNumber(gfiFromAtomic(claimable), 2)}
-        unvested={displayNumber(gfiFromAtomic(unvested), 2)}
-        totalGFI={displayNumber(gfiFromAtomic(granted), 2)}
-        totalUSD={displayDollars(null)} // TODO: this needs to be updated once we have a price for GFI in USD.
-        walletBalance={displayNumber(gfiFromAtomic(gfiBalance), 2)}
+        claimable={claimable}
+        unvested={unvested}
+        totalGFI={granted}
+        totalUSD={new BigNumber("")} // TODO: this needs to be updated once we have a price for GFI in USD.
+        walletBalance={gfiBalance || new BigNumber(0)}
       />
 
       <div className="gfi-rewards table-spaced">
@@ -238,7 +241,7 @@ function Rewards(props) {
           )}
         </div>
         <ul className="rewards-list">
-          {emptyRewards && merkleDistributor?.loaded && stakingRewards?.loaded ? (
+          {merkleDistributor?.loaded && stakingRewards?.loaded && emptyRewards ? (
             <NoRewards />
           ) : (
             <>
@@ -249,8 +252,8 @@ function Rewards(props) {
                       key={`staked-${item.rewards.startTime}`}
                       isAcceptRequired={false}
                       title={item.reason}
-                      grantedGFI={displayNumber(gfiFromAtomic(item.granted), 2)}
-                      claimableGFI={displayNumber(gfiFromAtomic(item.claimable), 2)}
+                      grantedGFI={item.granted}
+                      claimableGFI={item.claimable}
                     />
                   )
                 })}
@@ -261,8 +264,8 @@ function Rewards(props) {
                     key={`${item.reason}-${item.index}`}
                     isAcceptRequired={true}
                     title={capitalizeReason(item.reason)}
-                    grantedGFI={displayNumber(gfiFromAtomic(item.grant.amount), 2)}
-                    claimableGFI={displayNumber(new BigNumber(0), 2)}
+                    grantedGFI={new BigNumber(item.grant.amount)}
+                    claimableGFI={new BigNumber(0)}
                   />
                 ))}
             </>
