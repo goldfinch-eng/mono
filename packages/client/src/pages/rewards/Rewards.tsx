@@ -249,7 +249,7 @@ function Rewards(props) {
                 rewards.map((item) => {
                   return (
                     <RewardsListItem
-                      key={`staked-${item.rewards.startTime}`}
+                      key={`reward-${item.rewards.startTime}`}
                       isAcceptRequired={false}
                       title={item.reason}
                       grantedGFI={item.granted}
