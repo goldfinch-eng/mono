@@ -14,7 +14,6 @@ import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {TranchedPool} from "@goldfinch-eng/protocol/typechain/web3/TranchedPool"
 import {buildCreditLine} from "./creditLine"
 import {getMetadataStore} from "./tranchedPool"
-import moment from "moment"
 import {BlockNumber} from "web3-core"
 
 class Pool {
@@ -628,22 +627,22 @@ interface Rewards {
 }
 
 class StakedPosition {
-  id: string
+  tokenId: string
   amount: BigNumber
   leverageMultiplier: BigNumber
-  lockedUntil: string
+  lockedUntil: number
   rewards: Rewards
   claimable: BigNumber
 
   constructor(
-    id: string,
+    tokenId: string,
     amount: BigNumber,
     leverageMultiplier: BigNumber,
-    lockedUntil: string,
+    lockedUntil: number,
     claimable: BigNumber,
     rewards: Rewards
   ) {
-    this.id = id
+    this.tokenId = tokenId
     this.amount = amount
     this.leverageMultiplier = leverageMultiplier
     this.lockedUntil = lockedUntil
@@ -653,7 +652,11 @@ class StakedPosition {
 
   get reason(): string {
     const fiduAmount = this.amount.div(FIDU_DECIMALS.toString())
-    return `Staked ${fiduAmount} FIDU on ${moment.unix(this.rewards.startTime).format("MMM D")}`
+    const date = new Date(this.rewards.startTime).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+    })
+    return `Staked ${fiduAmount} FIDU on ${date}`
   }
 
   get granted(): BigNumber {
@@ -670,7 +673,7 @@ function parseStakedPosition(
     tokenId,
     new BigNumber(tuple[0]),
     new BigNumber(tuple[2]),
-    tuple[3],
+    Number(tuple[3]),
     new BigNumber(claimable),
     {
       totalUnvested: new BigNumber(tuple[1][0]),
