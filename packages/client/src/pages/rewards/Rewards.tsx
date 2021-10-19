@@ -282,7 +282,7 @@ function Rewards(props) {
                       grantedGFI={item.granted}
                       claimableGFI={item.claimable}
                     >
-                      {item.rewards.totalClaimed.isEqualTo(item.granted) && item.granted.eq(0) ? (
+                      {item.rewards.totalClaimed.isEqualTo(item.granted) && !item.granted.eq(0) ? (
                         <ActionButton
                           text="Claimed"
                           onClick={() => handleClaim(merkleDistributor?.communityRewards, item.tokenId, item.claimable)}
