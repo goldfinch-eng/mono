@@ -4,6 +4,7 @@
   "private": true,
   "author": "The Goldfinch Community <engineering@goldfinch.finance>",
   "dependencies": {
+    "@apollo/client": "^3.4.16",
     "@gnosis.pm/safe-apps-sdk": "^0.4.2",
     "@goldfinch-eng/protocol": "^0.1.0",
     "@hookform/error-message": "0.0.4",
@@ -16,7 +17,6 @@
     "@types/node": "^15.9.0",
     "@types/react": "^17.0.9",
     "@types/react-dom": "^17.0.6",
-    "apollo": "^2.33.6",
     "bignumber.js": "^9.0.0",
     "bnc-notify": "^1.5.1",
     "classnames": "^2.2.6",
@@ -75,6 +75,7 @@
     "@types/react-router-dom": "^5.1.9",
     "@typescript-eslint/eslint-plugin": "^4.31.1",
     "@typescript-eslint/parser": "^4.31.1",
+    "apollo": "^2.33.6",
     "customize-cra": "^1.0.0",
     "eslint": "^7.32.0",
     "eslint-config-prettier": "^8.3.0",
