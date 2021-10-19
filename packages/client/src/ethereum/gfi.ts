@@ -6,13 +6,13 @@ class GFI {
   goldfinchProtocol: GoldfinchProtocol
   contract: GFIContract
   address: string
-  _loaded: boolean
+  loaded: boolean
 
   constructor(goldfinchProtocol: GoldfinchProtocol) {
     this.goldfinchProtocol = goldfinchProtocol
     this.contract = goldfinchProtocol.getContract<GFIContract>("GFI")
     this.address = goldfinchProtocol.getAddress("GFI")
-    this._loaded = true
+    this.loaded = true
   }
 
   async initialize() {}

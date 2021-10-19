@@ -1,6 +1,6 @@
 import {useState, useEffect, useContext} from "react"
 import {useHistory} from "react-router-dom"
-import {CapitalProvider, fetchCapitalProviderData, PoolData, SeniorPool} from "../ethereum/pool"
+import {CapitalProvider, fetchCapitalProviderData, PoolData, SeniorPool, StakingRewards} from "../ethereum/pool"
 import {AppContext} from "../App"
 import {usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
 import {displayDollars, displayPercent, roundDownPenny} from "../utils"
@@ -11,6 +11,7 @@ import BigNumber from "bignumber.js"
 import {User} from "../ethereum/user"
 import ConnectionNotice from "./connectionNotice"
 import Badge from "./badge"
+import {useStakingRewards} from "../hooks/useStakingRewards"
 
 // Filter out 0 limit (inactive) and test pools
 const MIN_POOL_LIMIT = usdcToAtomic(process.env.REACT_APP_POOL_FILTER_LIMIT || "200")
@@ -61,17 +62,33 @@ function PortfolioOverview({
     return <></>
   }
 
-  let totalBalance = capitalProvider.availableToWithdrawInDollars
+  const globalEstimatedApyFromSupplying = poolData.estimatedApy
+
+  let totalBalance = capitalProvider.totalSeniorPoolBalanceInDollars
   let totalUnrealizedGains = capitalProvider.unrealizedGainsInDollars
-  let estimatedAnnualGrowth = capitalProvider.availableToWithdrawInDollars.multipliedBy(poolData.estimatedApy)
+  let estimatedAnnualGrowth = totalBalance.multipliedBy(globalEstimatedApyFromSupplying)
   poolBackers.forEach((p) => {
     totalBalance = totalBalance.plus(p.balanceInDollars)
     totalUnrealizedGains = totalUnrealizedGains.plus(p.unrealizedGainsInDollars)
     const estimatedJuniorApy = p.tranchedPool.estimateJuniorAPY(p.tranchedPool.estimatedLeverageRatio)
     estimatedAnnualGrowth = estimatedAnnualGrowth.plus(p.balanceInDollars.multipliedBy(estimatedJuniorApy))
   })
-  let unrealizedAPY = totalUnrealizedGains.dividedBy(totalBalance)
-  let estimatedAPY = estimatedAnnualGrowth.dividedBy(totalBalance)
+
+  const userEstimatedApyFromSupplying = estimatedAnnualGrowth.dividedBy(totalBalance)
+  const estimatedApyFromSupplying = totalBalance.gt(0) ? userEstimatedApyFromSupplying : globalEstimatedApyFromSupplying
+
+  const globalEstimatedApyFromGfi = poolData.estimatedApyFromGfi || new BigNumber(0)
+  // NOTE: Same comment applies here as in `DepositStatus()` in `components/depositStatus`, that
+  // we do not worry about adjusting `userEstimatedApyFromGfi` here for a boosted reward rate the user
+  // would receive from having staked-with-lockup. The frontend does not currently support staking
+  // with lockup, so we punt on that subtlety.
+  const balancePortionEarningGfi = capitalProvider.stakedSeniorPoolBalanceInDollars.div(totalBalance)
+  const userEstimatedApyFromGfi = balancePortionEarningGfi.multipliedBy(globalEstimatedApyFromGfi)
+  const estimatedApyFromGfi = totalBalance.gt(0) ? userEstimatedApyFromGfi : globalEstimatedApyFromGfi
+
+  const estimatedApy = estimatedApyFromSupplying.plus(estimatedApyFromGfi)
+
+  const unrealizedGainsPercent = totalUnrealizedGains.dividedBy(totalBalance)
   const displayUnrealizedGains = capitalProvider.empty ? null : roundDownPenny(totalUnrealizedGains)
 
   return (
@@ -81,13 +98,15 @@ function PortfolioOverview({
           <div className="label">Portfolio balance</div>
           <div className="value">{displayDollars(totalBalance)}</div>
           <div className="sub-value">
-            {displayDollars(displayUnrealizedGains)} ({displayPercent(unrealizedAPY)})
+            {displayDollars(displayUnrealizedGains)} ({displayPercent(unrealizedGainsPercent)})
           </div>
         </div>
         <div className="deposit-status-item">
           <div className="label">Est. Annual Growth</div>
           <div className="value">{displayDollars(roundDownPenny(estimatedAnnualGrowth))}</div>
-          <div className="sub-value">{`${displayPercent(estimatedAPY)} APY`}</div>
+          <div className="sub-value">{`${displayPercent(estimatedApy)} APY${
+            estimatedApyFromGfi.gt(0) ? " (with GFI)" : ""
+          }`}</div>
         </div>
       </div>
     </div>
@@ -253,17 +272,22 @@ function Earn() {
     poolsAddresses,
     poolsAddressesStatus,
   } = usePoolBackers({goldfinchProtocol, user})
+  const stakingRewards = useStakingRewards()
 
   useEffect(() => {
     if (pool) {
-      const capitalProviderAddress = user.loaded && user.address
+      const capitalProviderAddress: string | undefined = user.loaded ? user.address : undefined
 
-      refreshCapitalProviderData(pool, capitalProviderAddress)
+      refreshCapitalProviderData(pool, stakingRewards, capitalProviderAddress)
     }
-  }, [pool, usdc, user])
+  }, [pool, stakingRewards, usdc, user])
 
-  async function refreshCapitalProviderData(pool: SeniorPool, address: string | boolean) {
-    const capitalProvider = await fetchCapitalProviderData(pool, address)
+  async function refreshCapitalProviderData(
+    pool: SeniorPool,
+    stakingRewards: StakingRewards | undefined,
+    address: string | undefined
+  ) {
+    const capitalProvider = await fetchCapitalProviderData(pool, stakingRewards, address)
     setCapitalProvider(capitalProvider)
   }
 
