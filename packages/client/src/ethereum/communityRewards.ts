@@ -7,7 +7,7 @@ import {
   MerkleDistributorInfo,
 } from "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types"
 import BigNumber from "bignumber.js"
-import {getBlockInfo, getCurrentBlock} from "../utils"
+import {BlockInfo, getBlockInfo, getCurrentBlock} from "../utils"
 import {getMerkleDistributorInfo} from "./utils"
 
 export class MerkleDistributor {
@@ -43,29 +43,35 @@ export class MerkleDistributor {
     this.info = info
 
     await this.communityRewards.initialize(recipient)
+    const currentBlock = getBlockInfo(await getCurrentBlock())
     this.totalClaimable = this.calculateTotalClaimable()
     this.unvested = this.calculateUnvested()
     this.granted = this.calculateGranted()
-    this.actionRequiredAirdrops = (await this.getActionRequiredAirdrops(recipient)) as MerkleDistributorGrantInfo[]
+    this.actionRequiredAirdrops = await this.getActionRequiredAirdrops(recipient, currentBlock)
 
-    if (this.communityRewards.grants) {
-      const currentBlock = getBlockInfo(await getCurrentBlock())
-
-      for (let acceptedGrant of this.communityRewards.grants) {
-        /* NOTE: Filtering GrantAccept events by tokenId to account for any token transfers that may
-        have occurred to or from the recipient */
-        const merkleAcceptedEvents = await this.goldfinchProtocol.queryEvent(
-          this.contract,
-          "GrantAccepted",
-          {tokenId: acceptedGrant.id},
-          currentBlock.number
-        )
-        const airdrop = this.getGrantsInfo(recipient).find(
-          (airdrop) => merkleAcceptedEvents[0]?.returnValues.index === airdrop.index
-        )
-        acceptedGrant._reason = airdrop?.reason
-      }
+    if (!this.communityRewards.grants) {
+      this.loaded = true
+      return
     }
+
+    this.communityRewards.grants.forEach(async (acceptedGrant) => {
+      const merkleAcceptedEvents = await this.goldfinchProtocol.queryEvent(
+        this.contract,
+        "GrantAccepted",
+        {tokenId: acceptedGrant.tokenId},
+        currentBlock.number
+      )
+      const airdrop = this.getGrantsInfo(recipient).find(
+        (airdrop) => Number(merkleAcceptedEvents[0]?.returnValues.index) === airdrop.index
+      )
+      if (airdrop) {
+        acceptedGrant._reason = airdrop.reason
+      } else {
+        console.warn(
+          `Failed to tokenIdentify GrantAccepted event corresponding to CommunityRewards grant ${acceptedGrant.tokenId}.`
+        )
+      }
+    })
     this.loaded = true
   }
 
@@ -74,16 +80,18 @@ export class MerkleDistributor {
     return this.info.grants.filter((grant) => grant.account === recipient)
   }
 
-  async getActionRequiredAirdrops(recipient: string) {
+  async getActionRequiredAirdrops(recipient: string, currentBlock: BlockInfo): Promise<MerkleDistributorGrantInfo[]> {
     const airdrops = this.getGrantsInfo(recipient)
     return (
       await Promise.all(
         airdrops.map(async (grantInfo) => {
-          const isAccepted = await this.contract.methods.isGrantAccepted(grantInfo.index).call()
+          const isAccepted = await this.contract.methods
+            .isGrantAccepted(grantInfo.index)
+            .call(undefined, currentBlock.number)
           return !isAccepted ? grantInfo : undefined
         })
       )
-    ).filter((val) => !!val)
+    ).filter((val) => !!val) as MerkleDistributorGrantInfo[]
   }
 
   calculateTotalClaimable(): BigNumber {
@@ -116,20 +124,20 @@ interface Rewards {
   totalClaimed: BigNumber
   startTime: number
   endTime: number
-  cliffLength: BigNumber
-  vestingInterval: BigNumber
-  revokedAt: BigNumber
+  cliffLength: number
+  vestingInterval: number
+  revokedAt: number
 }
 
 export class CommunityRewardsVesting {
-  id: string
+  tokenId: string
   user: string
   claimable: BigNumber
   rewards: Rewards
   _reason?: string
 
-  constructor(id: string, user: string, claimable: BigNumber, rewards: Rewards) {
-    this.id = id
+  constructor(tokenId: string, user: string, claimable: BigNumber, rewards: Rewards) {
+    this.tokenId = tokenId
     this.user = user
     this.rewards = rewards
     this.claimable = claimable
@@ -163,9 +171,9 @@ function parseCommunityRewardsVesting(
     totalClaimed: new BigNumber(tuple[1]),
     startTime: Number(tuple[2]),
     endTime: Number(tuple[3]),
-    cliffLength: new BigNumber(tuple[4]),
-    vestingInterval: new BigNumber(tuple[5]),
-    revokedAt: new BigNumber(tuple[6]),
+    cliffLength: Number(tuple[4]),
+    vestingInterval: Number(tuple[5]),
+    revokedAt: Number(tuple[6]),
   })
 }
 
