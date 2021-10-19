@@ -17,9 +17,9 @@ function DepositStatus(props: DepositStatusProps) {
     const estimatedApyFromSupplying = globalEstimatedApyFromSupplying
 
     const globalEstimatedApyFromGfi = props.poolData.estimatedApyFromGfi || new BigNumber(0)
-    const balancePortionEarningGfi = props.capitalProvider.stakedSeniorPoolBalanceInDollars.div(
-      props.capitalProvider.totalSeniorPoolBalanceInDollars
-    )
+    const balancePortionEarningGfi = portfolioBalance.gt(0)
+      ? props.capitalProvider.stakedSeniorPoolBalanceInDollars.div(portfolioBalance)
+      : new BigNumber(0)
     // NOTE: Because our frontend does not currently support staking with lockup, we do not
     // worry here about adjusting for the portion of the user's balance that is not only earning
     // GFI from staking, but is earning that GFI at a boosted rate due to having staked-with-lockup

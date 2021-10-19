@@ -75,11 +75,11 @@ function NoRewards(props) {
 }
 
 function ActionButton(props) {
-  const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenXL})`})
+  const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
   const disabledClass = props.disabled ? "disabled-button" : ""
 
   return (
-    <button className={`${!isTabletOrMobile && "table-cell col16"} action ${disabledClass}`} onClick={props.onClick}>
+    <button className={`${!isTabletOrMobile && "table-cell"} action ${disabledClass}`} onClick={props.onClick}>
       {props.text}
     </button>
   )
@@ -179,7 +179,7 @@ function getSortedRewards(
 }
 
 function Rewards(props) {
-  const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenXL})`})
+  const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
   const {stakingRewards, merkleDistributor} = useRewards()
   const gfiBalance = useGFIBalance()
 
@@ -232,8 +232,8 @@ function Rewards(props) {
           <h2 className="table-cell col32 title">GFI Rewards</h2>
           {!isTabletOrMobile && (
             <>
-              <div className="table-cell col20 numeric balance">Granted GFI</div>
-              <div className="table-cell col20 numeric limit">Claimable GFI</div>
+              <div className="table-cell col20 numeric balance break-granted-column">Granted GFI</div>
+              <div className="table-cell col20 numeric limit break-claimable-column">Claimable GFI</div>
             </>
           )}
         </div>

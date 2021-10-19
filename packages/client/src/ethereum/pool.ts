@@ -1,7 +1,7 @@
 import BigNumber from "bignumber.js"
 import {fetchDataFromAttributes, getPoolEvents, INTEREST_DECIMALS, USDC_DECIMALS} from "./utils"
 import {Tickers, usdcFromAtomic} from "./erc20"
-import {FIDU_DECIMALS, fiduFromAtomic} from "./fidu"
+import {FIDU_DECIMALS, sharesToBalance, balanceInDollars} from "./fidu"
 import {getBlockInfo, getCurrentBlock, roundDownPenny, BlockInfo} from "../utils"
 import _ from "lodash"
 import {getBalanceAsOf, mapEventsToTx} from "./events"
@@ -71,12 +71,12 @@ class SeniorPool {
     if (includeV1Pool) {
       // In migrating from v1 to v2 (i.e. from the `Pool` contract as modeling the senior pool,
       // to the `SeniorPool` contract as modeling the senior pool), we transferred contract state
-      // from Pool to SeniorPool (e.g. the deposits that a capital provider had made into Pool
-      // became deposits in SeniorPool). But we did not do any sort of migrating (e.g. re-emitting)
-      // with respect to events, from the Pool contract onto the SeniorPool contract. So fully
-      // representing the SeniorPool's events here -- e.g. to be able to accurately count all of a
-      // capital provider's deposits -- entails querying for those events on both the SeniorPool
-      // and Pool contracts.
+      // from Pool to SeniorPool (e.g. the capital supplied by a capital provider to Pool
+      // became capital supplied by that provider to SeniorPool). But we did not do any sort of
+      // migrating (e.g. re-emitting) with respect to events, from the Pool contract onto the
+      // SeniorPool contract. So fully representing the SeniorPool's events here -- e.g. to be
+      // able to accurately count all of a capital provider's supplier capital -- entails querying
+      // for those events on both the SeniorPool and Pool contracts.
 
       const events = await Promise.all([
         getPoolEvents(this, address, eventNames, toBlock),
@@ -232,19 +232,17 @@ async function fetchCapitalProviderData(
   const numSharesWithdrawable = numSharesNotStaked.plus(numSharesStakedNotLocked)
   const numSharesTotal = numSharesNotStaked.plus(numSharesStakedLocked).plus(numSharesStakedNotLocked)
 
-  const stakedSeniorPoolBalance = numSharesStaked.multipliedBy(new BigNumber(sharePrice)).div(FIDU_DECIMALS.toString())
-  const stakedSeniorPoolBalanceInDollars = new BigNumber(fiduFromAtomic(stakedSeniorPoolBalance))
+  const stakedSeniorPoolBalance = sharesToBalance(numSharesStaked, sharePrice)
+  const stakedSeniorPoolBalanceInDollars = balanceInDollars(stakedSeniorPoolBalance)
 
-  const totalSeniorPoolBalance = numSharesTotal.multipliedBy(new BigNumber(sharePrice)).div(FIDU_DECIMALS.toString())
-  const totalSeniorPoolBalanceInDollars = new BigNumber(fiduFromAtomic(totalSeniorPoolBalance))
+  const totalSeniorPoolBalance = sharesToBalance(numSharesTotal, sharePrice)
+  const totalSeniorPoolBalanceInDollars = balanceInDollars(totalSeniorPoolBalance)
 
-  const availableToStake = numSharesNotStaked.multipliedBy(new BigNumber(sharePrice)).div(FIDU_DECIMALS.toString())
-  const availableToStakeInDollars = new BigNumber(fiduFromAtomic(availableToStake))
+  const availableToStake = sharesToBalance(numSharesNotStaked, sharePrice)
+  const availableToStakeInDollars = balanceInDollars(availableToStake)
 
-  const availableToWithdraw = numSharesWithdrawable
-    .multipliedBy(new BigNumber(sharePrice))
-    .div(FIDU_DECIMALS.toString())
-  const availableToWithdrawInDollars = new BigNumber(fiduFromAtomic(availableToWithdraw))
+  const availableToWithdraw = sharesToBalance(numSharesWithdrawable, sharePrice)
+  const availableToWithdrawInDollars = balanceInDollars(availableToWithdraw)
 
   const address = capitalProviderAddress
   const allowance = new BigNumber(
@@ -446,8 +444,6 @@ async function getDepositEventsForCapitalProvider(
 // for your shares, and we would fail out, and return a "-" on the front-end.
 // NOTE: This also does not take into account realized gains, which we are also
 // punting on.
-// TODO[PR] Flagging this for reconsideration of how long we want to continue
-// punting on taking realized gains into account.
 async function getWeightedAverageSharePrice(
   pool: SeniorPool,
   stakingRewards: StakingRewards,
