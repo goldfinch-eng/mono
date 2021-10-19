@@ -2,17 +2,18 @@ import _ from "lodash"
 import {AsyncReturnType} from "./types/util"
 import web3 from "./web3"
 
-function croppedAddress(address) {
+export function croppedAddress(address) {
   if (!address) {
     return ""
   }
   return `${address.slice(0, 6)}...${address.slice(-4)}`
 }
 
-function displayNumber(val, decimals) {
+export function displayNumber(val, decimals) {
   if (val === "") {
     return ""
   }
+
   const valFloat = parseFloat(val)
   if (!decimals && Math.floor(valFloat) === valFloat) {
     decimals = 0
@@ -20,9 +21,9 @@ function displayNumber(val, decimals) {
     decimals = valFloat.toString().split(".")[1]?.length || 0
   }
 
-  // TODO[PR] Should we have a similar check here for `valFloat < 0.01 && valFloat > 0`,
-  // like we do in `displayDollars()`?
-
+  if (decimals === 2 && valFloat < 0.01 && valFloat > 0) {
+    return "<0.01"
+  }
   return commaFormat(valFloat.toFixed(decimals))
 }
 
@@ -44,23 +45,25 @@ function commaFormat(numberString) {
   return `${_.join(_.reverse(withCommas), "")}${decimalString}`
 }
 
-function displayDollars(val, decimals = 2) {
+export function displayDollars(val, decimals = 2) {
   let prefix = ""
   if (!isFinite(val) || val === null) {
     return " --.--"
   }
+
   const valFloat = parseFloat(val)
   if (valFloat < 0) {
     val = valFloat * -1
     prefix = "-"
   }
-  if (valFloat < 0.01 && valFloat > 0) {
+
+  if (decimals === 2 && valFloat < 0.01 && valFloat > 0) {
     return "<$0.01"
   }
   return `${prefix}$${displayNumber(val, decimals)}`
 }
 
-function displayPercent(val, decimals = 2) {
+export function displayPercent(val, decimals = 2) {
   let valDisplay
   if (!val || isNaN(val)) {
     valDisplay = "--.--"
@@ -70,15 +73,15 @@ function displayPercent(val, decimals = 2) {
   return `${valDisplay}%`
 }
 
-function roundUpPenny(val) {
+export function roundUpPenny(val) {
   return Math.ceil(val * 100) / 100
 }
 
-function roundDownPenny(val) {
+export function roundDownPenny(val) {
   return Math.floor(val * 100) / 100
 }
 
-function secondsSinceEpoch(): number {
+export function secondsSinceEpoch(): number {
   return Math.floor(Date.now() / 1000)
 }
 
@@ -106,7 +109,7 @@ export async function getCurrentBlock() {
   return await web3.eth.getBlock("latest")
 }
 
-type BlockInfo = {
+export type BlockInfo = {
   number: number
   timestamp: number
 }
@@ -120,5 +123,3 @@ export function getBlockInfo(block: AsyncReturnType<typeof getCurrentBlock>): Bl
     timestamp: block.timestamp,
   }
 }
-
-export {croppedAddress, displayNumber, displayDollars, roundUpPenny, roundDownPenny, displayPercent, secondsSinceEpoch}

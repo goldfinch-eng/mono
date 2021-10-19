@@ -51,6 +51,17 @@
     &:hover {
       background-color: $blue-light;
     }
+
+    &.disabled,
+    &.disabled.dark {
+      background-color: $sand;
+      color: $sand-xxdark;
+      cursor: auto;
+
+      & .icon path {
+        fill: $sand-xxdark;
+      }
+    }
   }
 }
 

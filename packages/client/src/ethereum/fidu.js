@@ -22,4 +22,11 @@ function fiduToAtomic(amount) {
   return new BigNumber(String(amount)).multipliedBy(FIDU_DECIMALS).toString(10)
 }
 
-export {getFidu, FIDU_DECIMALS, FIDU_DECIMAL_PLACES, fiduFromAtomic, fiduToAtomic}
+function sharesToBalance(shares, sharePrice) {
+  return shares.multipliedBy(new BigNumber(sharePrice)).div(FIDU_DECIMALS.toString())
+}
+function balanceInDollars(balance) {
+  return new BigNumber(fiduFromAtomic(balance))
+}
+
+export {getFidu, FIDU_DECIMALS, FIDU_DECIMAL_PLACES, fiduFromAtomic, fiduToAtomic, sharesToBalance, balanceInDollars}

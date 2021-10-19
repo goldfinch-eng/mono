@@ -1,10 +1,6 @@
-// eslint-disable-next-line @typescript-eslint/triple-slash-reference
-/// <reference path="../node_modules/hardhat-deploy/dist/src/type-extensions.d.ts" />
-/* global web3 */
-import hre, {deployments} from "hardhat"
-
 import {TRANCHES} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
 import {
+  hardhat,
   BN,
   deployAllContracts,
   advanceTime,
@@ -14,6 +10,7 @@ import {
   createPoolWithCreditLine,
   toEthers,
 } from "@goldfinch-eng/protocol/test/testHelpers"
+const {deployments, web3, ethers} = hardhat
 import {assessIfRequired} from "../assessor"
 let accounts, owner, underwriter, borrower
 let creditLine, fakeProvider, fakeTimestamp
@@ -57,7 +54,7 @@ describe("assessor", () => {
     fakeProvider = {
       getBlock: async function () {
         if (!fakeTimestamp) {
-          return hre.ethers.provider.getBlock("latest")
+          return ethers.provider.getBlock("latest")
         }
         return {timestamp: fakeTimestamp}
       },

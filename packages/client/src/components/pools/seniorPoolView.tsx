@@ -98,7 +98,12 @@ function SeniorPoolView(): JSX.Element {
         actionComplete={actionComplete}
         kyc={kyc}
       />
-      <StakeFiduBanner poolData={poolData} capitalProvider={capitalProvider} />
+      <StakeFiduBanner
+        poolData={poolData}
+        capitalProvider={capitalProvider}
+        actionComplete={actionComplete}
+        kyc={kyc}
+      />
       <PoolStatus poolData={poolData} />
     </div>
   )
