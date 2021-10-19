@@ -1,7 +1,7 @@
 import BigNumber from "bignumber.js"
 import {fetchDataFromAttributes, getPoolEvents, INTEREST_DECIMALS, USDC_DECIMALS} from "./utils"
 import {Tickers, usdcFromAtomic} from "./erc20"
-import {FIDU_DECIMALS, fiduFromAtomic, sharesToBalance, balanceInDollars} from "./fidu"
+import {FIDU_DECIMALS, sharesToBalance, balanceInDollars} from "./fidu"
 import {getBlockInfo, getCurrentBlock, roundDownPenny, BlockInfo} from "../utils"
 import _ from "lodash"
 import {getBalanceAsOf, mapEventsToTx} from "./events"
