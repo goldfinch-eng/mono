@@ -7,6 +7,8 @@ import BN from "bn.js"
 import hre from "hardhat"
 import {
   Borrower,
+  CommunityRewards,
+  GFI,
   GoldfinchConfig,
   GoldfinchFactory,
   SeniorPool,
@@ -38,7 +40,7 @@ import {impersonateAccount, fundWithWhales} from "../blockchain_scripts/mainnetF
 import _ from "lodash"
 import {assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
 import {Result} from "ethers/lib/utils"
-import {advanceTime, toEthers, usdcVal} from "../test/testHelpers"
+import {advanceTime, GFI_DECIMALS, toEthers, usdcVal, USDC_DECIMALS} from "../test/testHelpers"
 
 /*
 This deployment deposits some funds to the pool, and creates an underwriter, and a credit line.
@@ -174,6 +176,14 @@ async function main(hre: HardhatRuntimeEnvironment, options: OverrideOptions) {
 
     await seniorPool.redeem(tokenId)
   }
+
+  const amount = new BN(String(1e8)).mul(GFI_DECIMALS)
+  const communityRewards = await getDeployedAsEthersContract<CommunityRewards>(getOrNull, "CommunityRewards")
+  const gfi = await getDeployedAsEthersContract<GFI>(getOrNull, "GFI")
+
+  await gfi.mint(protocol_owner, amount.toString())
+  await gfi.approve(communityRewards.address, amount.toString())
+  await communityRewards.loadRewards(amount.toString())
 }
 
 async function getERC20s({chainId, getOrNull}) {

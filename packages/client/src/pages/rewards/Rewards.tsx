@@ -10,6 +10,7 @@ import {useMediaQuery} from "react-responsive"
 import {WIDTH_TYPES} from "../../components/styleConstants"
 import {CommunityRewardsVesting, MerkleDistributor} from "../../ethereum/communityRewards"
 import {StakedPosition, StakingRewards} from "../../ethereum/pool"
+import useSendFromUser from "../../hooks/useSendFromUser"
 
 interface RewardsSummaryProps {
   claimable: BigNumber
@@ -75,11 +76,18 @@ function NoRewards(props) {
 }
 
 function ActionButton(props) {
+  const [isLoading, setIsLoading] = useState<boolean>(false)
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
-  const disabledClass = props.disabled ? "disabled-button" : ""
+  const disabledClass = props.disabled || isLoading ? "disabled-button" : ""
+
+  async function action() {
+    setIsLoading(true)
+    await props.onClick()
+    setIsLoading(false)
+  }
 
   return (
-    <button className={`${!isTabletOrMobile && "table-cell"} action ${disabledClass}`} onClick={props.onClick}>
+    <button className={`${!isTabletOrMobile && "table-cell"} action ${disabledClass}`} onClick={action}>
       {props.text}
     </button>
   )
@@ -90,36 +98,32 @@ interface RewardsListItemProps {
   title: string
   grantedGFI: BigNumber
   claimableGFI: BigNumber
+  children: JSX.Element
 }
 
 function RewardsListItem(props: RewardsListItemProps) {
-  const [accepted, setAccepted] = useState(!props.isAcceptRequired)
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
+  const valueDisabledClass = props.isAcceptRequired ? "disabled-text" : ""
 
-  function handleAccept() {
-    setAccepted(!accepted)
+  function capitalizeTitle(reason: string): string {
+    return reason
+      .split("_")
+      .map((s) => _.capitalize(s))
+      .join(" ")
   }
-
-  const valueDisabledClass = !accepted ? "disabled-text" : ""
-
-  const actionButtonComponent = !accepted ? (
-    <ActionButton text="Accept" onClick={handleAccept} />
-  ) : (
-    <ActionButton text="Claim GFI" onClick={() => console.error("error")} disabled={props.claimableGFI.eq(0)} />
-  )
 
   return (
     <>
       {!isTabletOrMobile && (
         <li className="rewards-list-item table-row background-container clickable">
-          <div className="table-cell col32">{props.title}</div>
+          <div className="table-cell col32">{capitalizeTitle(props.title)}</div>
           <div className={`table-cell col20 numeric ${valueDisabledClass}`}>
             {displayNumber(gfiFromAtomic(props.grantedGFI), 2)}
           </div>
           <div className={`table-cell col20 numeric ${valueDisabledClass}`}>
             {displayNumber(gfiFromAtomic(props.claimableGFI), 2)}
           </div>
-          {actionButtonComponent}
+          {props.children}
           <button className="expand">{iconCarrotDown}</button>
         </li>
       )}
@@ -127,7 +131,7 @@ function RewardsListItem(props: RewardsListItemProps) {
       {isTabletOrMobile && (
         <li className="rewards-list-item background-container clickable mobile">
           <div className="item-header">
-            <div>{props.title}</div>
+            <div>{capitalizeTitle(props.title)}</div>
             <button className="expand">{iconCarrotDown}</button>
           </div>
           <div className="item-details">
@@ -140,7 +144,7 @@ function RewardsListItem(props: RewardsListItemProps) {
               <div className={`${valueDisabledClass}`}>{displayNumber(gfiFromAtomic(props.claimableGFI), 2)}</div>
             </div>
           </div>
-          {actionButtonComponent}
+          {props.children}
         </li>
       )}
     </>
@@ -179,6 +183,7 @@ function getSortedRewards(
 }
 
 function Rewards(props) {
+  const sendFromUser = useSendFromUser()
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
   const {stakingRewards, merkleDistributor} = useRewards()
   const gfiBalance = useGFIBalance()
@@ -201,11 +206,33 @@ function Rewards(props) {
     granted = val.plus(merkleDistributor?.granted || new BigNumber(0))
   }
 
-  function capitalizeReason(reason: string): string {
-    return reason
-      .split("_")
-      .map((s) => _.capitalize(s))
-      .join(" ")
+  async function handleAccept(info) {
+    if (!merkleDistributor) return
+    return sendFromUser(
+      merkleDistributor.contract.methods.acceptGrant(
+        info.index,
+        info.account,
+        info.grant.amount,
+        info.grant.vestingLength,
+        info.grant.cliffLength,
+        info.grant.vestingInterval,
+        info.proof
+      ),
+      {
+        type: "Accept",
+        amount: gfiFromAtomic(info.grant.amount),
+      }
+    )
+  }
+
+  async function handleClaim(communityRewards, tokenId, amount) {
+    if (!communityRewards) return
+
+    const amountString = amount.toString(10)
+    return sendFromUser(communityRewards.contract.methods.getReward(tokenId), {
+      type: "Claim",
+      amount: amountString,
+    })
   }
 
   const rewards = getSortedRewards(stakingRewards, merkleDistributor)
@@ -254,7 +281,27 @@ function Rewards(props) {
                       title={item.reason}
                       grantedGFI={item.granted}
                       claimableGFI={item.claimable}
-                    />
+                    >
+                      {item.rewards.totalClaimed.isEqualTo(item.granted) && item.granted.eq(0) ? (
+                        <ActionButton
+                          text="Claimed"
+                          onClick={() => handleClaim(merkleDistributor?.communityRewards, item.tokenId, item.claimable)}
+                          disabled={item.claimable.eq(0)}
+                        />
+                      ) : item instanceof CommunityRewardsVesting ? (
+                        <ActionButton
+                          text="Claim GFI"
+                          onClick={() => handleClaim(merkleDistributor?.communityRewards, item.tokenId, item.claimable)}
+                          disabled={item.claimable.eq(0)}
+                        />
+                      ) : (
+                        <ActionButton
+                          text="Claim GFI"
+                          onClick={() => handleClaim(stakingRewards?.contract, item.tokenId, item.claimable)}
+                          disabled={item.claimable.eq(0)}
+                        />
+                      )}
+                    </RewardsListItem>
                   )
                 })}
 
@@ -263,10 +310,12 @@ function Rewards(props) {
                   <RewardsListItem
                     key={`${item.reason}-${item.index}`}
                     isAcceptRequired={true}
-                    title={capitalizeReason(item.reason)}
+                    title={item.reason}
                     grantedGFI={new BigNumber(item.grant.amount)}
                     claimableGFI={new BigNumber(0)}
-                  />
+                  >
+                    <ActionButton text="Accept" onClick={async () => await handleAccept(item)} />
+                  </RewardsListItem>
                 ))}
             </>
           )}
