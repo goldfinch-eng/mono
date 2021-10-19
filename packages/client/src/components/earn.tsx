@@ -310,8 +310,9 @@ function Earn() {
               // There is still a scenario, namely mainnet-forking, where we can't use the permit approach with
               // StakingRewards, but the relevant approval there is for the StakingRewards contract, not
               // the SeniorPool contract -- so unless there's something I'm missing, we could still set this
-              // to `false`.
-              true
+              // to `false`. If this reasoning is correct, that leaves the Borrow component as the only
+              // situation in which we need `requireUnlock: true`.
+              false
             }
           />
           <PortfolioOverview poolData={pool?.gf} capitalProvider={capitalProvider} poolBackers={backers} />
