@@ -49,29 +49,23 @@ export class MerkleDistributor {
     this.granted = this.calculateGranted()
     this.actionRequiredAirdrops = await this.getActionRequiredAirdrops(recipient, currentBlock)
 
-    if (!this.communityRewards.grants) {
-      this.loaded = true
-      return
+    if (this.communityRewards.grants) {
+      await Promise.all(
+        this.communityRewards.grants.map(async (acceptedGrant) => {
+          const merkleAcceptedEvents = await this.goldfinchProtocol.queryEvent(
+            this.contract,
+            "GrantAccepted",
+            {tokenId: acceptedGrant.tokenId},
+            currentBlock.number
+          )
+          const airdrop = this.getGrantsInfo(recipient).find(
+            (airdrop) => Number(merkleAcceptedEvents[0]?.returnValues.index) === airdrop.index
+          )
+          acceptedGrant._reason = airdrop?.reason
+          return acceptedGrant
+        })
+      )
     }
-
-    this.communityRewards.grants.forEach(async (acceptedGrant) => {
-      const merkleAcceptedEvents = await this.goldfinchProtocol.queryEvent(
-        this.contract,
-        "GrantAccepted",
-        {tokenId: acceptedGrant.tokenId},
-        currentBlock.number
-      )
-      const airdrop = this.getGrantsInfo(recipient).find(
-        (airdrop) => Number(merkleAcceptedEvents[0]?.returnValues.index) === airdrop.index
-      )
-      if (airdrop) {
-        acceptedGrant._reason = airdrop.reason
-      } else {
-        console.warn(
-          `Failed to tokenIdentify GrantAccepted event corresponding to CommunityRewards grant ${acceptedGrant.tokenId}.`
-        )
-      }
-    })
     this.loaded = true
   }
 

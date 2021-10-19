@@ -159,7 +159,7 @@ function getSortedRewards(
   const rewards: (StakedPosition | CommunityRewardsVesting)[] = [...stakes, ...airdrops]
   rewards.sort((i1, i2) => {
     let val = i1.claimable.minus(i2.claimable)
-    if (!val.isZero()) return val.isNegative() ? -1 : 1
+    if (!val.isZero()) return val.isPositive() ? -1 : 1
 
     if (i1 instanceof StakedPosition && i2 instanceof CommunityRewardsVesting) {
       return 1
@@ -251,7 +251,7 @@ function Rewards(props) {
                     <RewardsListItem
                       key={`reward-${item.rewards.startTime}`}
                       isAcceptRequired={false}
-                      title={item.reason}
+                      title={capitalizeReason(item.reason)}
                       grantedGFI={item.granted}
                       claimableGFI={item.claimable}
                     />
