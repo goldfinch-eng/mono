@@ -305,13 +305,14 @@ function Earn() {
         <>
           <ConnectionNotice
             requireUnlock={
-              // TODO[PR] I believe we could no longer require unlocking USDC, because the user now supplies
+              // TODO[PR] I think no longer need to require unlocking USDC, because the user now supplies
               // into the senior pool via StakingRewards, which supports the "permit" signature approach.
               // There is still a scenario, namely mainnet-forking, where we can't use the permit approach with
               // StakingRewards, but the relevant approval there is for the StakingRewards contract, not
-              // the SeniorPool contract -- so unless there's something I'm missing, we could still set this
-              // to `false`. If this reasoning is correct, that leaves the Borrow component as the only
-              // situation in which we need `requireUnlock: true`.
+              // the SeniorPool contract -- so unless there's some other reason we want to keep requiring
+              // max unlocking of USDC for the SeniorPool contract, we can set this to `false`. By my reasoning,
+              // the Borrow component is the only situation now where we need `requireUnlock: true`, for the
+              // purpose of making a repayment.
               false
             }
           />
