@@ -6,7 +6,7 @@ import ERC20PermitABI from "../../abi/ERC20Permit.json"
 import useNonNullContext from "./useNonNullContext"
 import web3 from "../web3"
 import {ethers} from "ethers"
-import {secondsSinceEpoch} from "../utils"
+import {getBlockInfo, getCurrentBlock} from "../utils"
 const splitSignature = ethers.utils.splitSignature
 
 interface SignatureData {
@@ -52,12 +52,15 @@ export default function useERC20Permit(): {
   const owner = user.address
 
   async function gatherPermitSignature({token, value, spender}: {token: ERC20; value: BigNumber; spender: string}) {
+    const currentBlock = getBlockInfo(await getCurrentBlock())
+
     const tokenAddress = token.address
     const contract = goldfinchProtocol.getContract<IERC20Permit>(ERC20PermitABI, tokenAddress)
 
     // Default to one hour
     const deadlineFromNow = new BigNumber(process.env.REACT_APP_PERMIT_DEADLINE || 60 * 60)
-    const deadline = new BigNumber(secondsSinceEpoch()).plus(deadlineFromNow)
+    const now = currentBlock.timestamp
+    const deadline = new BigNumber(now).plus(deadlineFromNow)
 
     const nonce = await contract.methods.nonces(owner).call()
     const chainId = await web3.eth.getChainId()

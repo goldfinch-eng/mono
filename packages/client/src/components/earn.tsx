@@ -303,7 +303,17 @@ function Earn() {
         <PortfolioOverviewSkeleton />
       ) : (
         <>
-          <ConnectionNotice />
+          <ConnectionNotice
+            requireUnlock={
+              // TODO[PR] I believe we could no longer require unlocking USDC, because the user now supplies
+              // into the senior pool via StakingRewards, which supports the "permit" signature approach.
+              // There is still a scenario, namely mainnet-forking, where we can't use the permit approach with
+              // StakingRewards, but the relevant approval there is for the StakingRewards contract, not
+              // the SeniorPool contract -- so unless there's something I'm missing, we could still set this
+              // to `false`.
+              true
+            }
+          />
           <PortfolioOverview poolData={pool?.gf} capitalProvider={capitalProvider} poolBackers={backers} />
         </>
       )}

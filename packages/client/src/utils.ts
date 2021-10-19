@@ -81,10 +81,6 @@ export function roundDownPenny(val) {
   return Math.floor(val * 100) / 100
 }
 
-export function secondsSinceEpoch(): number {
-  return Math.floor(Date.now() / 1000)
-}
-
 export class AssertionError extends Error {}
 
 export function assertNumber(val: unknown): asserts val is number {
