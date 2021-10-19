@@ -94,7 +94,7 @@ interface RewardsListItemProps {
 
 function RewardsListItem(props: RewardsListItemProps) {
   const [accepted, setAccepted] = useState(props.isAcceptRequired ? false : true)
-  const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenXL})`})
+  const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
 
   function handleAccept() {
     setAccepted(!accepted)
