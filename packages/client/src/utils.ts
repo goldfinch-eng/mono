@@ -10,7 +10,7 @@ export function croppedAddress(address) {
 }
 
 export function displayNumber(val, decimals) {
-  if (val === "") {
+  if (val === "" || isNaN(val)) {
     return ""
   }
 
