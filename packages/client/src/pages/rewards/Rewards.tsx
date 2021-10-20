@@ -1,5 +1,4 @@
 import React from "react"
-import _ from "lodash"
 import BigNumber from "bignumber.js"
 import {Link} from "react-router-dom"
 import {gfiFromAtomic} from "../../ethereum/gfi"
@@ -88,7 +87,7 @@ function getSortedRewards(
     let val = i1.claimable.minus(i2.claimable)
     if (!val.isZero()) return val.isPositive() ? -1 : 1
 
-    // deprioritizes already claimed rewards
+    // deprioritizes completely claimed rewards
     if (i1.granted.minus(i1.rewards.totalClaimed).eq(0) || i2.granted.minus(i2.rewards.totalClaimed).eq(0)) {
       return 1
     }
@@ -176,6 +175,7 @@ function Rewards(props) {
               {merkleDistributor?.actionRequiredAirdrops &&
                 merkleDistributor.actionRequiredAirdrops.map((item) => (
                   <RewardActionsContainer
+                    key={item.index}
                     item={item}
                     merkleDistributor={merkleDistributor}
                     stakingRewards={stakingRewards}
@@ -186,6 +186,7 @@ function Rewards(props) {
                 rewards.map((item) => {
                   return (
                     <RewardActionsContainer
+                      key={item.tokenId}
                       item={item}
                       merkleDistributor={merkleDistributor}
                       stakingRewards={stakingRewards}

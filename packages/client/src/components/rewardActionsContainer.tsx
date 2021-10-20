@@ -16,8 +16,7 @@ import TransactionForm from "./transactionForm"
 interface ActionButtonProps {
   text: string
   disabled: boolean
-  pendingText?: string
-  onClick: () => void
+  onClick: () => Promise<any>
 }
 
 function ActionButton(props: ActionButtonProps) {
@@ -33,7 +32,7 @@ function ActionButton(props: ActionButtonProps) {
 
   return (
     <button className={`${!isTabletOrMobile && "table-cell"} action ${disabledClass}`} onClick={action}>
-      {isPending && props.pendingText ? props.pendingText : props.text}
+      {props.text}
     </button>
   )
 }
@@ -43,7 +42,7 @@ interface ClaimFormProps {
   claimable: BigNumber
   disabled: boolean
   onClose: () => void
-  action: () => void
+  action: () => any
 }
 
 function ClaimForm(props: ClaimFormProps) {
@@ -73,7 +72,7 @@ interface RewardsListItemProps {
   grantedGFI: BigNumber
   claimableGFI: BigNumber
   status: RewardStatus
-  handleOnClick: () => void
+  handleOnClick: () => any
 }
 
 function RewardsListItem(props: RewardsListItemProps) {
@@ -142,13 +141,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     setShowAction(false)
   }
 
-  async function handleClaim(
-    rewards: CommunityRewards | StakingRewards | undefined,
-    tokenId: string,
-    amount: BigNumber
-  ) {
-    if (!rewards) return
-
+  function handleClaim(rewards: CommunityRewards | StakingRewards, tokenId: string, amount: BigNumber) {
     const amountString = amount.toString(10)
     return sendFromUser(rewards.contract.methods.getReward(tokenId), {
       type: "Claim",
@@ -156,8 +149,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     })
   }
 
-  async function handleAccept(info) {
-    if (!props.merkleDistributor) return
+  function handleAccept(info) {
     return sendFromUser(
       props.merkleDistributor.contract.methods.acceptGrant(
         info.index,
@@ -197,18 +189,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
           handleOnClick={_.noop}
         />
       )
-    } else if (item instanceof CommunityRewardsVesting && !showAction) {
-      return (
-        <RewardsListItem
-          key={`reward-${item.rewards.startTime}`}
-          status={RewardStatus.Claim}
-          title={title}
-          grantedGFI={item.granted}
-          claimableGFI={item.claimable}
-          handleOnClick={() => setShowAction(true)}
-        />
-      )
-    } else if (item instanceof StakedPosition && !showAction) {
+    } else if (!showAction) {
       return (
         <RewardsListItem
           key={`reward-${item.rewards.startTime}`}
@@ -224,7 +205,10 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     const reward = item instanceof StakedPosition ? props.stakingRewards : props.merkleDistributor.communityRewards
     return (
       <ClaimForm
-        action={() => handleClaim(reward, item.tokenId, item.claimable)}
+        action={async () => {
+          await handleClaim(reward, item.tokenId, item.claimable)
+          closeForm()
+        }}
         disabled={item.claimable.eq(0)}
         claimable={item.claimable}
         totalUSD={new BigNumber("")} // TODO: this needs to be updated once we have a price for GFI in USD.
