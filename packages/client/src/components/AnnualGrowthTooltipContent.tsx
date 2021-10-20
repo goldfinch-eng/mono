@@ -3,12 +3,14 @@ import Tooltip from "../ui/components/Tooltip"
 import {displayPercent} from "../utils"
 
 type AnnualGrowthTooltipContentProps = {
+  supplyingCombined: boolean
   estimatedApyFromSupplying: BigNumber
   estimatedApyFromGfi: BigNumber
   estimatedApy: BigNumber
 }
 
 const AnnualGrowthTooltipContent = ({
+  supplyingCombined,
   estimatedApyFromSupplying,
   estimatedApyFromGfi,
   estimatedApy,
@@ -16,10 +18,12 @@ const AnnualGrowthTooltipContent = ({
   <Tooltip id="annual-growth-tooltip" className="annual-growth-tooltip">
     <div>
       <p className="tooltip-description">
-        Includes the senior pool yield from allocating to borrower pools, plus GFI rewards:
+        {supplyingCombined
+          ? "Includes the combined yield from supplying to the senior pool and borrower pools, plus GFI rewards:"
+          : "Includes the senior pool yield from allocating to borrower pools, plus GFI rewards:"}
       </p>
       <div className="tooltip-row">
-        <p>Senior Pool APY</p>
+        <p>{supplyingCombined ? "Pool APY" : "Senior Pool APY"}</p>
         <span>{displayPercent(estimatedApyFromSupplying)}</span>
       </div>
       <div className="tooltip-row">

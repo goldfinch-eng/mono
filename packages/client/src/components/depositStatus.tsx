@@ -68,6 +68,7 @@ function DepositStatus(props: DepositStatusProps) {
           <div className="sub-value">{`${apyDisplay} APY${estimatedApyFromGfi?.gt(0) ? " (with GFI)" : ""}`}</div>
         </div>
         <AnnualGrowthTooltipContent
+          supplyingCombined={false}
           estimatedApyFromSupplying={estimatedApyFromSupplying}
           estimatedApyFromGfi={estimatedApyFromGfi}
           estimatedApy={estimatedApy}

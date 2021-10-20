@@ -118,6 +118,7 @@ function PortfolioOverview({
         </div>
       </div>
       <AnnualGrowthTooltipContent
+        supplyingCombined={true}
         estimatedApyFromSupplying={estimatedApyFromSupplying}
         estimatedApyFromGfi={estimatedApyFromGfi}
         estimatedApy={estimatedApy}
