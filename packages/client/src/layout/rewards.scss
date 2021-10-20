@@ -101,6 +101,12 @@ button.expand {
     color: $purp-dark;
   }
 
+  .info-banner {
+    button {
+      font-size: $sans-size-base;
+    }
+  }
+
   .rewards-list-item {
     border-radius: 6px;
     font-size: $sans-size-s;
@@ -149,22 +155,22 @@ button.expand {
 
   .rewards-list-item.mobile {
     margin-bottom: 24px;
-  
+
     .item-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
-  
+
     .item-details {
       display: flex;
       margin: 12px 0 18px 0;
     }
-  
+
     .detail-container {
       width: 100%;
     }
-  
+
     .detail-label {
       display: block;
       margin: 0 0 4px 0;
