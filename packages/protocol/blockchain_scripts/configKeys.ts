@@ -31,6 +31,7 @@ const CONFIG_KEYS = {
   BorrowerImplementation: 17,
   GFI: 18,
   Go: 19,
+  PoolRewards: 20,
 }
 
 export {CONFIG_KEYS}

@@ -28,10 +28,6 @@ library ConfigHelper {
     return IPool(poolAddress(config));
   }
 
-  function getPoolRewards(GoldfinchConfig config) internal view returns (IPoolRewards) {
-    return IPoolRewards(poolAddress(config));
-  }
-
   function getSeniorPool(GoldfinchConfig config) internal view returns (ISeniorPool) {
     return ISeniorPool(seniorPoolAddress(config));
   }
@@ -58,6 +54,10 @@ library ConfigHelper {
 
   function getPoolTokens(GoldfinchConfig config) internal view returns (IPoolTokens) {
     return IPoolTokens(poolTokensAddress(config));
+  }
+
+  function getPoolRewards(GoldfinchConfig config) internal view returns (IPoolRewards) {
+    return IPoolRewards(poolRewardsAddress(config));
   }
 
   function getGoldfinchFactory(GoldfinchConfig config) internal view returns (IGoldfinchFactory) {
@@ -94,6 +94,10 @@ library ConfigHelper {
 
   function poolTokensAddress(GoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.PoolTokens));
+  }
+
+  function poolRewardsAddress(GoldfinchConfig config) internal view returns (address) {
+    return config.getAddress(uint256(ConfigOptions.Addresses.PoolRewards));
   }
 
   function seniorPoolAddress(GoldfinchConfig config) internal view returns (address) {

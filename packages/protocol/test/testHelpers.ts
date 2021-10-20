@@ -275,7 +275,6 @@ async function deployAllContracts(
   )
   const gfi = await getDeployedAsTruffleContract<GFIInstance>(deployments, "GFI")
   const stakingRewards = await getDeployedAsTruffleContract<StakingRewardsInstance>(deployments, "StakingRewards")
-
   const poolRewards = await getDeployedAsTruffleContract<PoolRewardsInstance>(deployments, "PoolRewards")
 
   const communityRewards = await getContract<CommunityRewards, CommunityRewardsInstance>(
@@ -318,11 +317,11 @@ async function deployAllContracts(
     transferRestrictedVault,
     gfi,
     stakingRewards,
-    poolRewards,
     communityRewards,
     merkleDistributor,
     uniqueIdentity,
     go,
+    poolRewards,
   }
 }
 

@@ -42,6 +42,7 @@ import {isMerkleDistributorInfo} from "./merkleDistributor/types"
 import {
   CommunityRewardsInstance,
   GoInstance,
+  PoolRewardsInstance,
   UniqueIdentityInstance,
   MerkleDistributorInstance,
   TestERC20Instance,
@@ -287,10 +288,11 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
     deployer: ContractDeployer,
     {config}: {config: GoldfinchConfig}
   ): Promise<PoolRewards> {
+    const contractName = "PoolRewards"
     logger("About to deploy PoolRewards...")
     assertIsString(gf_deployer)
     const protocol_owner = await getProtocolOwner()
-    const poolRewards = await deployer.deploy<PoolRewards>("PoolRewards", {
+    const poolRewards = await deployer.deploy<PoolRewards>(contractName, {
       from: gf_deployer,
       gasLimit: 4000000,
       proxy: {
@@ -302,6 +304,15 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
         },
       },
     })
+
+    const contract = await getContract<PoolRewards, PoolRewardsInstance>(contractName, TRUFFLE_CONTRACT_PROVIDER, {
+      at: poolRewards.address,
+    })
+
+    logger("Updating config...")
+    await updateConfig(config, "address", CONFIG_KEYS.PoolRewards, contract.address, {logger})
+    logger("Updated PoolRewards config address to:", contract.address)
+
     return poolRewards
   }
 
