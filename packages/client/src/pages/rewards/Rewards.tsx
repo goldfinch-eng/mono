@@ -101,23 +101,14 @@ function ActionButton(props: ActionButtonProps) {
 
 interface OpenDetailsProps {
   open: boolean
-  onClick: () => void
 }
 
 function OpenDetails(props: OpenDetailsProps) {
   if (props.open) {
-    return (
-      <button className="expand close" onClick={props.onClick}>
-        {iconCarrotUp}
-      </button>
-    )
+    return <button className="expand close">{iconCarrotUp}</button>
   }
 
-  return (
-    <button className="expand" onClick={props.onClick}>
-      {iconCarrotDown}
-    </button>
-  )
+  return <button className="expand">{iconCarrotDown}</button>
 }
 
 interface DetailsProps {
@@ -209,13 +200,13 @@ function RewardsListItem(props: RewardsListItemProps) {
   return (
     <>
       {!isTabletOrMobile && (
-        <li>
+        <li onClick={() => setOpen(!open)}>
           <div className="rewards-list-item table-row background-container clickable">
             <div className="table-cell col32">{props.title}</div>
             <div className={`table-cell col20 numeric ${valueDisabledClass}`}>{props.grantedGFI}</div>
             <div className={`table-cell col20 numeric ${valueDisabledClass}`}>{props.claimableGFI}</div>
             {actionButtonComponent}
-            <OpenDetails open={open} onClick={() => setOpen(!open)} />
+            <OpenDetails open={open} />
           </div>
           {open && (
             <Details
@@ -232,11 +223,11 @@ function RewardsListItem(props: RewardsListItemProps) {
       )}
 
       {isTabletOrMobile && (
-        <li>
+        <li onClick={() => setOpen(!open)}>
           <div className="rewards-list-item background-container clickable mobile">
             <div className="item-header">
               <div>{props.title}</div>
-              <OpenDetails open={open} onClick={() => setOpen(!open)} />
+              <OpenDetails open={open} />
             </div>
             <div className="item-details">
               <div className="detail-container">
