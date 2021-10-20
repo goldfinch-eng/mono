@@ -41,7 +41,7 @@ interface ClaimFormProps {
   totalUSD: BigNumber
   claimable: BigNumber
   disabled: boolean
-  onClose: () => void
+  onCloseForm: () => void
   action: () => any
 }
 
@@ -51,14 +51,14 @@ function ClaimForm(props: ClaimFormProps) {
       <div className="info-banner background-container subtle">
         <div className="message">
           Claim the total available {displayNumber(gfiFromAtomic(props.claimable), 2)} GFI ($
-          {displayDollars(props.totalUSD)}&nbsp;) that has vested.
+          {displayDollars(props.totalUSD)}) that has vested.
         </div>
         <LoadingButton text="Submit" action={props.action} disabled={props.disabled} />
       </div>
     )
   }
 
-  return <TransactionForm headerMessage="Claim" render={renderForm} closeForm={props.onClose} />
+  return <TransactionForm headerMessage="Claim" render={renderForm} closeForm={props.onCloseForm} />
 }
 
 enum RewardStatus {
@@ -137,7 +137,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
   const sendFromUser = useSendFromUser()
   const [showAction, setShowAction] = useState<boolean>(false)
 
-  function closeForm() {
+  function onCloseForm() {
     setShowAction(false)
   }
 
@@ -207,12 +207,12 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
       <ClaimForm
         action={async () => {
           await handleClaim(reward, item.tokenId, item.claimable)
-          closeForm()
+          onCloseForm()
         }}
         disabled={item.claimable.eq(0)}
         claimable={item.claimable}
         totalUSD={new BigNumber("")} // TODO: this needs to be updated once we have a price for GFI in USD.
-        onClose={closeForm}
+        onCloseForm={onCloseForm}
       />
     )
   } else {
