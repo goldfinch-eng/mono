@@ -11,7 +11,7 @@ import {
 } from "../typechain/truffle"
 const {ethers} = hre
 import {DepositMade} from "../typechain/truffle/SeniorPool"
-import {RewardPaid, Staked} from "../typechain/truffle/StakingRewards"
+import {DepositedAndStaked, RewardPaid, Staked} from "../typechain/truffle/StakingRewards"
 const {deployments} = hre
 import {
   usdcVal,
@@ -25,11 +25,17 @@ import {
   bigVal,
   expectAction,
   MAX_UINT,
+  getCurrentTimestamp,
+  USDC_DECIMALS,
+  usdcToFidu,
+  decimals,
 } from "./testHelpers"
 import {time, expectEvent} from "@openzeppelin/test-helpers"
 import {getApprovalDigest, getWallet} from "./permitHelpers"
 import {ecsign} from "ethereumjs-util"
 import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
+
+const MULTIPLIER_DECIMALS = new BN(String(1e18))
 
 // Typechain doesn't generate types for solidity enums, so redefining here
 enum LockupPeriod {
@@ -320,7 +326,24 @@ describe("StakingRewards", function () {
       await usdc.approve(stakingRewards.address, amount, {from: investor})
       const receipt = await stakingRewards.depositAndStake(amount, {from: investor})
       const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
+      const depositedAndStakedEvent = getFirstLog<DepositedAndStaked>(
+        decodeLogs(receipt.receipt.rawLogs, stakingRewards, "DepositedAndStaked")
+      )
+      const expectedSharePrice = new BN(1).mul(decimals)
+
+      // Verify events
+      expect(stakedEvent.args.user).to.equal(investor)
       const tokenId = stakedEvent.args.tokenId
+      expect(stakedEvent.args.amount).to.bignumber.equal(usdcToFidu(amount).mul(decimals).div(expectedSharePrice))
+      expect(stakedEvent.args.lockedUntil).to.bignumber.equal(new BN(0))
+      expect(stakedEvent.args.multiplier).to.bignumber.equal(MULTIPLIER_DECIMALS)
+
+      expect(depositedAndStakedEvent.args.user).to.equal(stakedEvent.args.user)
+      expect(depositedAndStakedEvent.args.depositedAmount).to.bignumber.equal(amount)
+      expect(depositedAndStakedEvent.args.tokenId).to.equal(tokenId)
+      expect(depositedAndStakedEvent.args.amount).to.bignumber.equal(stakedEvent.args.amount)
+      expect(depositedAndStakedEvent.args.lockedUntil).to.bignumber.equal(stakedEvent.args.lockedUntil)
+      expect(depositedAndStakedEvent.args.multiplier).to.bignumber.equal(stakedEvent.args.multiplier)
 
       // Verify deposit worked
       expect(await usdc.balanceOf(investor)).to.bignumber.equal(balanceBefore.sub(amount))
@@ -368,7 +391,24 @@ describe("StakingRewards", function () {
         from: investor,
       })
       const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
+      const depositedAndStakedEvent = getFirstLog<DepositedAndStaked>(
+        decodeLogs(receipt.receipt.rawLogs, stakingRewards, "DepositedAndStaked")
+      )
+      const expectedSharePrice = new BN(1).mul(decimals)
+
+      // Verify events
+      expect(stakedEvent.args.user).to.equal(investor)
       const tokenId = stakedEvent.args.tokenId
+      expect(stakedEvent.args.amount).to.bignumber.equal(usdcToFidu(amount).mul(decimals).div(expectedSharePrice))
+      expect(stakedEvent.args.lockedUntil).to.bignumber.equal(new BN(0))
+      expect(stakedEvent.args.multiplier).to.bignumber.equal(MULTIPLIER_DECIMALS)
+
+      expect(depositedAndStakedEvent.args.user).to.equal(stakedEvent.args.user)
+      expect(depositedAndStakedEvent.args.depositedAmount).to.bignumber.equal(amount)
+      expect(depositedAndStakedEvent.args.tokenId).to.equal(tokenId)
+      expect(depositedAndStakedEvent.args.amount).to.bignumber.equal(stakedEvent.args.amount)
+      expect(depositedAndStakedEvent.args.lockedUntil).to.bignumber.equal(stakedEvent.args.lockedUntil)
+      expect(depositedAndStakedEvent.args.multiplier).to.bignumber.equal(stakedEvent.args.multiplier)
 
       // Verify deposit worked
       expect(await usdc.balanceOf(investor)).to.bignumber.equal(balanceBefore.sub(amount))
@@ -422,8 +462,26 @@ describe("StakingRewards", function () {
 
       await usdc.approve(stakingRewards.address, amount, {from: investor})
       const receipt = await stakingRewards.depositAndStakeWithLockup(amount, LockupPeriod.SixMonths, {from: investor})
+      const currentTimestamp = await getCurrentTimestamp()
       const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
+      const depositedAndStakedEvent = getFirstLog<DepositedAndStaked>(
+        decodeLogs(receipt.receipt.rawLogs, stakingRewards, "DepositedAndStaked")
+      )
+      const expectedSharePrice = new BN(1).mul(decimals)
+
+      // Verify events
+      expect(stakedEvent.args.user).to.equal(investor)
       const tokenId = stakedEvent.args.tokenId
+      expect(stakedEvent.args.amount).to.bignumber.equal(usdcToFidu(amount).mul(decimals).div(expectedSharePrice))
+      expect(stakedEvent.args.lockedUntil).to.bignumber.equal(currentTimestamp.add(new BN((60 * 60 * 24 * 365) / 2)))
+      expect(stakedEvent.args.multiplier).to.bignumber.equal(MULTIPLIER_DECIMALS.mul(new BN(15)).div(new BN(10)))
+
+      expect(depositedAndStakedEvent.args.user).to.equal(stakedEvent.args.user)
+      expect(depositedAndStakedEvent.args.depositedAmount).to.bignumber.equal(amount)
+      expect(depositedAndStakedEvent.args.tokenId).to.equal(tokenId)
+      expect(depositedAndStakedEvent.args.amount).to.bignumber.equal(stakedEvent.args.amount)
+      expect(depositedAndStakedEvent.args.lockedUntil).to.bignumber.equal(stakedEvent.args.lockedUntil)
+      expect(depositedAndStakedEvent.args.multiplier).to.bignumber.equal(stakedEvent.args.multiplier)
 
       // Verify deposit worked
       expect(await usdc.balanceOf(investor)).to.bignumber.equal(balanceBefore.sub(amount))
@@ -484,8 +542,26 @@ describe("StakingRewards", function () {
         s as any,
         {from: investor}
       )
+      const currentTimestamp = await getCurrentTimestamp()
       const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
+      const depositedAndStakedEvent = getFirstLog<DepositedAndStaked>(
+        decodeLogs(receipt.receipt.rawLogs, stakingRewards, "DepositedAndStaked")
+      )
+      const expectedSharePrice = new BN(1).mul(decimals)
+
+      // Verify events
+      expect(stakedEvent.args.user).to.equal(investor)
       const tokenId = stakedEvent.args.tokenId
+      expect(stakedEvent.args.amount).to.bignumber.equal(usdcToFidu(amount).mul(decimals).div(expectedSharePrice))
+      expect(stakedEvent.args.lockedUntil).to.bignumber.equal(currentTimestamp.add(new BN((60 * 60 * 24 * 365) / 2)))
+      expect(stakedEvent.args.multiplier).to.bignumber.equal(MULTIPLIER_DECIMALS.mul(new BN(15)).div(new BN(10)))
+
+      expect(depositedAndStakedEvent.args.user).to.equal(stakedEvent.args.user)
+      expect(depositedAndStakedEvent.args.depositedAmount).to.bignumber.equal(amount)
+      expect(depositedAndStakedEvent.args.tokenId).to.equal(tokenId)
+      expect(depositedAndStakedEvent.args.amount).to.bignumber.equal(stakedEvent.args.amount)
+      expect(depositedAndStakedEvent.args.lockedUntil).to.bignumber.equal(stakedEvent.args.lockedUntil)
+      expect(depositedAndStakedEvent.args.multiplier).to.bignumber.equal(stakedEvent.args.multiplier)
 
       // Verify deposit worked
       expect(await usdc.balanceOf(investor)).to.bignumber.equal(balanceBefore.sub(amount))
