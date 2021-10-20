@@ -189,7 +189,7 @@ describe("unique-identity-signer", () => {
           fetchKYCStatus: fetchKYCFunction,
         })
 
-        await uniqueIdentity.mint(anotherUser, 0, result.expiresAt, result.signature, {
+        await uniqueIdentity.mint(0, result.expiresAt, result.signature, {
           from: anotherUser,
           value: web3.utils.toWei("0.00083"),
         })
