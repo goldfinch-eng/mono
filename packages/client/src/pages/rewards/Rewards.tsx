@@ -3,6 +3,7 @@ import _ from "lodash"
 import BigNumber from "bignumber.js"
 import {Link} from "react-router-dom"
 import {gfiFromAtomic} from "../../ethereum/gfi"
+import {FormProvider, useForm} from "react-hook-form"
 import {useGFIBalance, useRewards} from "../../hooks/useStakingRewards"
 import {displayDollars, displayNumber} from "../../utils"
 import {iconCarrotDown} from "../../components/icons"
@@ -11,6 +12,9 @@ import {WIDTH_TYPES} from "../../components/styleConstants"
 import {CommunityRewards, CommunityRewardsVesting, MerkleDistributor} from "../../ethereum/communityRewards"
 import {StakedPosition, StakingRewards} from "../../ethereum/pool"
 import useSendFromUser from "../../hooks/useSendFromUser"
+import LoadingButton from "../../components/loadingButton"
+import TransactionForm from "../../components/transactionForm"
+import TransactionInput from "../../components/transactionInput"
 
 interface RewardsSummaryProps {
   claimable: BigNumber
@@ -93,6 +97,19 @@ function ActionButton(props) {
   )
 }
 
+function ClaimForm(props) {
+  function renderForm({formMethods}) {
+    return (
+      <div className="info-banner background-container subtle">
+        <div className="message">Claim the total available 4.03 GFI ($14.11) that has vested.</div>
+        <LoadingButton text="Submit" action={props.action} disabled={props.disabled} />
+      </div>
+    )
+  }
+
+  return <TransactionForm headerMessage="Claim" render={renderForm} closeForm={props.onClose} />
+}
+
 interface RewardsListItemProps {
   isAcceptRequired: boolean
   title: string
@@ -149,6 +166,68 @@ function RewardsListItem(props: RewardsListItemProps) {
       )}
     </>
   )
+}
+
+interface RewardActionsContainerProps {
+  merkleDistributor: MerkleDistributor
+  stakingRewards: StakingRewards
+  item: CommunityRewardsVesting | StakedPosition
+  isAcceptRequired: boolean
+}
+
+function RewardActionsContainer(props: RewardActionsContainerProps) {
+  const sendFromUser = useSendFromUser()
+  const [showAction, setShowAction] = useState<boolean>(false)
+
+  function closeForm() {
+    setShowAction(false)
+  }
+
+  async function handleClaim(
+    rewards: CommunityRewards | StakingRewards | undefined,
+    tokenId: string,
+    amount: BigNumber
+  ) {
+    if (!rewards) return
+
+    const amountString = amount.toString(10)
+    return sendFromUser(rewards.contract.methods.getReward(tokenId), {
+      type: "Claim",
+      amount: amountString,
+    })
+  }
+
+  if (!showAction) {
+    return (
+      <RewardsListItem
+        key={`reward-${props.item.rewards.startTime}`}
+        isAcceptRequired={false}
+        title={props.item.reason}
+        grantedGFI={props.item.granted}
+        claimableGFI={props.item.claimable}
+      >
+        {props.item.rewards.totalClaimed.isEqualTo(props.item.granted) && !props.item.granted.eq(0) ? (
+          <ActionButton text="Claimed" onClick={_.noop} disabled />
+        ) : props.item instanceof CommunityRewardsVesting ? (
+          <ActionButton
+            text="Claim GFI"
+            pendingText="Claiming..."
+            onClick={() => setShowAction(true)}
+            disabled={props.item.claimable.eq(0)}
+          />
+        ) : (
+          <ActionButton
+            text="Claim GFI"
+            pendingText="Claiming..."
+            onClick={() => setShowAction(true)}
+            disabled={props.item.claimable.eq(0)}
+          />
+        )}
+      </RewardsListItem>
+    )
+  } else {
+    return <ClaimForm action={handleClaim} disabled={false} onClose={closeForm} />
+  }
 }
 
 function getSortedRewards(
@@ -225,20 +304,6 @@ function Rewards(props) {
     )
   }
 
-  async function handleClaim(
-    rewards: CommunityRewards | StakingRewards | undefined,
-    tokenId: string,
-    amount: BigNumber
-  ) {
-    if (!rewards) return
-
-    const amountString = amount.toString(10)
-    return sendFromUser(rewards.contract.methods.getReward(tokenId), {
-      type: "Claim",
-      amount: amountString,
-    })
-  }
-
   const rewards = getSortedRewards(stakingRewards, merkleDistributor)
   const emptyRewards =
     (!merkleDistributor?.communityRewards.grants &&
@@ -292,31 +357,11 @@ function Rewards(props) {
               {rewards &&
                 rewards.map((item) => {
                   return (
-                    <RewardsListItem
-                      key={`reward-${item.rewards.startTime}`}
-                      isAcceptRequired={false}
-                      title={item.reason}
-                      grantedGFI={item.granted}
-                      claimableGFI={item.claimable}
-                    >
-                      {item.rewards.totalClaimed.isEqualTo(item.granted) && !item.granted.eq(0) ? (
-                        <ActionButton text="Claimed" onClick={_.noop} disabled />
-                      ) : item instanceof CommunityRewardsVesting ? (
-                        <ActionButton
-                          text="Claim GFI"
-                          pendingText="Claiming..."
-                          onClick={() => handleClaim(merkleDistributor?.communityRewards, item.tokenId, item.claimable)}
-                          disabled={item.claimable.eq(0)}
-                        />
-                      ) : (
-                        <ActionButton
-                          text="Claim GFI"
-                          pendingText="Claiming..."
-                          onClick={() => handleClaim(stakingRewards, item.tokenId, item.claimable)}
-                          disabled={item.claimable.eq(0)}
-                        />
-                      )}
-                    </RewardsListItem>
+                    <RewardActionsContainer
+                      item={item}
+                      merkleDistributor={merkleDistributor}
+                      stakingRewards={stakingRewards}
+                    />
                   )
                 })}
             </>
