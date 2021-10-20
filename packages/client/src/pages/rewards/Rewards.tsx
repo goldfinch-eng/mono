@@ -92,8 +92,13 @@ function ActionButton(props: ActionButtonProps) {
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
   const disabledClass = props.disabled ? "disabled-button" : ""
 
+  function handleClick(e) {
+    e.stopPropagation()
+    props.onClick()
+  }
+
   return (
-    <button className={`${!isTabletOrMobile && "table-cell"} action ${disabledClass}`} onClick={props.onClick}>
+    <button className={`${!isTabletOrMobile && "table-cell"} action ${disabledClass}`} onClick={handleClick}>
       {props.text}
     </button>
   )
@@ -173,6 +178,11 @@ function RewardsListItem(props: RewardsListItemProps) {
 
   function handleAccept() {
     setAccepted(!accepted)
+  }
+
+  function handleClick(e) {
+    e.stopPropagation()
+    setOpen(!open)
   }
 
   const valueDisabledClass = !accepted ? "disabled-text" : ""
