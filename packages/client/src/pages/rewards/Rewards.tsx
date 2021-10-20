@@ -8,7 +8,7 @@ import {displayDollars, displayNumber} from "../../utils"
 import {iconCarrotDown} from "../../components/icons"
 import {useMediaQuery} from "react-responsive"
 import {WIDTH_TYPES} from "../../components/styleConstants"
-import {CommunityRewardsVesting, MerkleDistributor} from "../../ethereum/communityRewards"
+import {CommunityRewards, CommunityRewardsVesting, MerkleDistributor} from "../../ethereum/communityRewards"
 import {StakedPosition, StakingRewards} from "../../ethereum/pool"
 import useSendFromUser from "../../hooks/useSendFromUser"
 
@@ -76,19 +76,19 @@ function NoRewards(props) {
 }
 
 function ActionButton(props) {
-  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [isPending, setIsPending] = useState<boolean>(false)
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
-  const disabledClass = props.disabled || isLoading ? "disabled-button" : ""
+  const disabledClass = props.disabled || isPending ? "disabled-button" : ""
 
   async function action() {
-    setIsLoading(true)
+    setIsPending(true)
     await props.onClick()
-    setIsLoading(false)
+    setIsPending(false)
   }
 
   return (
     <button className={`${!isTabletOrMobile && "table-cell"} action ${disabledClass}`} onClick={action}>
-      {props.text}
+      {isPending ? props.pendingText : props.text}
     </button>
   )
 }
@@ -225,11 +225,15 @@ function Rewards(props) {
     )
   }
 
-  async function handleClaim(communityRewards, tokenId, amount) {
-    if (!communityRewards) return
+  async function handleClaim(
+    rewards: CommunityRewards | StakingRewards | undefined,
+    tokenId: string,
+    amount: BigNumber
+  ) {
+    if (!rewards) return
 
     const amountString = amount.toString(10)
-    return sendFromUser(communityRewards.contract.methods.getReward(tokenId), {
+    return sendFromUser(rewards.contract.methods.getReward(tokenId), {
       type: "Claim",
       amount: amountString,
     })
@@ -272,6 +276,19 @@ function Rewards(props) {
             <NoRewards />
           ) : (
             <>
+              {merkleDistributor?.actionRequiredAirdrops &&
+                merkleDistributor.actionRequiredAirdrops.map((item) => (
+                  <RewardsListItem
+                    key={`${item.reason}-${item.index}`}
+                    isAcceptRequired={true}
+                    title={item.reason}
+                    grantedGFI={new BigNumber(item.grant.amount)}
+                    claimableGFI={new BigNumber(0)}
+                  >
+                    <ActionButton text="Accept" pendingText="Accepting..." onClick={() => handleAccept(item)} />
+                  </RewardsListItem>
+                ))}
+
               {rewards &&
                 rewards.map((item) => {
                   return (
@@ -283,40 +300,25 @@ function Rewards(props) {
                       claimableGFI={item.claimable}
                     >
                       {item.rewards.totalClaimed.isEqualTo(item.granted) && !item.granted.eq(0) ? (
-                        <ActionButton
-                          text="Claimed"
-                          onClick={() => handleClaim(merkleDistributor?.communityRewards, item.tokenId, item.claimable)}
-                          disabled={item.claimable.eq(0)}
-                        />
+                        <ActionButton text="Claimed" onClick={_.noop} disabled />
                       ) : item instanceof CommunityRewardsVesting ? (
                         <ActionButton
                           text="Claim GFI"
+                          pendingText="Claiming..."
                           onClick={() => handleClaim(merkleDistributor?.communityRewards, item.tokenId, item.claimable)}
                           disabled={item.claimable.eq(0)}
                         />
                       ) : (
                         <ActionButton
                           text="Claim GFI"
-                          onClick={() => handleClaim(stakingRewards?.contract, item.tokenId, item.claimable)}
+                          pendingText="Claiming..."
+                          onClick={() => handleClaim(stakingRewards, item.tokenId, item.claimable)}
                           disabled={item.claimable.eq(0)}
                         />
                       )}
                     </RewardsListItem>
                   )
                 })}
-
-              {merkleDistributor?.actionRequiredAirdrops &&
-                merkleDistributor.actionRequiredAirdrops.map((item) => (
-                  <RewardsListItem
-                    key={`${item.reason}-${item.index}`}
-                    isAcceptRequired={true}
-                    title={item.reason}
-                    grantedGFI={new BigNumber(item.grant.amount)}
-                    claimableGFI={new BigNumber(0)}
-                  >
-                    <ActionButton text="Accept" onClick={async () => await handleAccept(item)} />
-                  </RewardsListItem>
-                ))}
             </>
           )}
         </ul>
