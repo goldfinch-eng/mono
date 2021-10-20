@@ -180,11 +180,6 @@ function RewardsListItem(props: RewardsListItemProps) {
     setAccepted(!accepted)
   }
 
-  function handleClick(e) {
-    e.stopPropagation()
-    setOpen(!open)
-  }
-
   const valueDisabledClass = !accepted ? "disabled-text" : ""
 
   const actionButtonComponent = !accepted ? (
