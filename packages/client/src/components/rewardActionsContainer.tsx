@@ -8,7 +8,7 @@ import {WIDTH_TYPES} from "./styleConstants"
 import {MerkleDistributor, CommunityRewardsVesting, CommunityRewards} from "../ethereum/communityRewards"
 import {StakingRewards, StakedPosition} from "../ethereum/pool"
 import useSendFromUser from "../hooks/useSendFromUser"
-import {displayNumber, displayDollars} from "../utils"
+import {displayNumber, displayDollars, assertNonNullable} from "../utils"
 import {iconCarrotDown} from "./icons"
 import LoadingButton from "./loadingButton"
 import TransactionForm from "./transactionForm"
@@ -16,7 +16,7 @@ import TransactionForm from "./transactionForm"
 interface ActionButtonProps {
   text: string
   disabled: boolean
-  onClick: () => Promise<any>
+  onClick: () => any
 }
 
 function ActionButton(props: ActionButtonProps) {
@@ -142,6 +142,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
   }
 
   function handleClaim(rewards: CommunityRewards | StakingRewards, tokenId: string, amount: BigNumber) {
+    assertNonNullable(rewards)
     const amountString = amount.toString(10)
     return sendFromUser(rewards.contract.methods.getReward(tokenId), {
       type: "Claim",
@@ -150,6 +151,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
   }
 
   function handleAccept(info) {
+    assertNonNullable(props.merkleDistributor)
     return sendFromUser(
       props.merkleDistributor.contract.methods.acceptGrant(
         info.index,
