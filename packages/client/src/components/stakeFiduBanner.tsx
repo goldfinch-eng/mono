@@ -1,15 +1,14 @@
-import {assertNonNullable} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
 import {useContext} from "react"
 import {FormProvider, useForm} from "react-hook-form"
 import {AppContext} from "../App"
-import {FIDU_DECIMALS} from "../ethereum/fidu"
+import {fiduFromAtomic, FIDU_DECIMALS} from "../ethereum/fidu"
 import {CapitalProvider, PoolData} from "../ethereum/pool"
 import {KYC} from "../hooks/useGoldfinchClient"
 import {eligibleForSeniorPool} from "../hooks/useKYC"
 import useSendFromUser from "../hooks/useSendFromUser"
 import {useStakingRewards} from "../hooks/useStakingRewards"
-import {displayDollars, displayNumber, displayPercent} from "../utils"
+import {displayDollars, displayNumber, displayPercent, assertNonNullable} from "../utils"
 import LoadingButton from "./loadingButton"
 
 interface StakeFiduBannerProps {
@@ -39,31 +38,24 @@ export default function StakeFiduBanner(props: StakeFiduBannerProps) {
       await pool.fidu.methods.allowance(user.address, stakingRewards.address).call()
     )
     const amountRequiringApproval = amount.minus(alreadyApprovedAmount)
-    if (amountRequiringApproval.gt(0)) {
-      const amountRequiringApprovalString = amountRequiringApproval.toString(10)
-      const amountString = amount.toString(10)
-      return sendFromUser(
-        pool.fidu.methods.approve(stakingRewards.address, amountRequiringApprovalString),
-        {
-          type: "Approve",
-          amount: amountRequiringApprovalString,
-        },
-        {rejectOnError: true}
-      )
-        .then(() =>
-          sendFromUser(stakingRewards.contract.methods.stake(amountString), {
-            type: "Stake",
-            amount: amountString,
-          })
+    const approval = amountRequiringApproval.gt(0)
+      ? sendFromUser(
+          pool.fidu.methods.approve(stakingRewards.address, amountRequiringApproval.toString(10)),
+          {
+            type: "Approve",
+            amount: fiduFromAtomic(amountRequiringApproval),
+          },
+          {rejectOnError: true}
         )
-        .then(props.actionComplete)
-    } else {
-      const amountString = amount.toString(10)
-      return sendFromUser(stakingRewards.contract.methods.stake(amountString), {
-        type: "Stake",
-        amount: amountString,
-      }).then(props.actionComplete)
-    }
+      : Promise.resolve()
+    return approval
+      .then(() =>
+        sendFromUser(stakingRewards.contract.methods.stake(amount.toString(10)), {
+          type: "Stake",
+          amount: fiduFromAtomic(amount),
+        })
+      )
+      .then(props.actionComplete)
   }
 
   // Being eligible for supplying into the senior pool is logically independent of, and therefore not
