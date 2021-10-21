@@ -16,7 +16,7 @@
       "eslint --fix --resolve-plugins-relative-to=."
     ]
   },
-  "author": "",
+  "author": "The Goldfinch Community <engineering@goldfinch.finance>",
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^16.9.0",

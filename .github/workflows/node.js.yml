@@ -130,7 +130,10 @@ jobs:
         key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/hardhat.config.js') }}
     - run: npx lerna bootstrap --ci
     - run: npm run build
-    - run: npx lerna run mainnet-test --stream --scope @goldfinch-eng/protocol
+    - name: Run tests
+      env:
+        ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
+      run: npx lerna run mainnet-test --stream --scope @goldfinch-eng/protocol
 
   client:
     runs-on: ubuntu-latest

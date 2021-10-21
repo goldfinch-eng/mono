@@ -25,6 +25,7 @@ describe("useSessionLocalStorage hook", () => {
 
   it("should return the default value with data format invalid as undefined", () => {
     const setItem = jest.spyOn(Storage.prototype, "setItem")
+    // @ts-expect-error ts-migrate(2322) FIXME: Type 'Mock<undefined, []>' is not assignable to ty... Remove this comment to see the full error message
     Storage.prototype.getItem = jest.fn(() => undefined)
 
     const {result} = renderHook(() => useSessionLocalStorage("sessionData", {}))
