@@ -20,7 +20,6 @@ import {SeniorPool} from "./ethereum/pool"
 import {GoldfinchProtocol} from "./ethereum/GoldfinchProtocol"
 import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/web3/GoldfinchConfig"
 import SeniorPoolView from "./components/pools/seniorPoolView"
-import SeniorPoolViewV2 from "./components/pools/seniorPoolViewV2"
 import VerifyIdentity from "./components/verifyIdentity"
 import TranchedPoolView from "./components/pools/tranchedPoolView"
 import {ApolloClient, ApolloProvider, NormalizedCacheObject} from "@apollo/client"
@@ -61,8 +60,6 @@ export interface GlobalState {
   sessionData?: SessionData
   setSessionData?: (data: SessionData | undefined) => void
 }
-
-const enableSeniorPoolV2 = process.env.REACT_APP_SENIOR_POOL_PAGE_VERSION === "V2"
 
 declare let window: any
 
@@ -233,7 +230,9 @@ function App() {
                   <Route path="/transactions">
                     <Transactions currentTXs={currentTXs} />
                   </Route>
-                  <Route path="/pools/senior">{enableSeniorPoolV2 ? <SeniorPoolViewV2 /> : <SeniorPoolView />}</Route>
+                  <Route path="/pools/senior">
+                    <SeniorPoolView />
+                  </Route>
                   <Route path="/pools/:poolAddress">
                     <TranchedPoolView />
                   </Route>

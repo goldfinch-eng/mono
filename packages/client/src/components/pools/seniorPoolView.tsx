@@ -2,46 +2,82 @@ import {useState, useEffect, useContext} from "react"
 import EarnActionsContainer from "../earnActionsContainer"
 import PoolStatus from "../poolStatus"
 import ConnectionNotice from "../connectionNotice"
-import {
-  CapitalProvider,
-  emptyCapitalProvider,
-  fetchCapitalProviderData,
-  PoolData,
-  SeniorPool,
-} from "../../ethereum/pool"
+import {CapitalProvider, fetchCapitalProviderData, PoolData, SeniorPool} from "../../ethereum/pool"
 import {AppContext} from "../../App"
 import InvestorNotice from "../investorNotice"
 import {assertNonNullable, displayDollars} from "../../utils"
 import {usdcFromAtomic} from "../../ethereum/erc20"
 import {useStaleWhileRevalidating} from "../../hooks/useAsync"
 import {eligibleForSeniorPool, useKYC} from "../../hooks/useKYC"
+import {
+  isCapitalProvider,
+  isPoolData,
+  parseSeniorPool,
+  parseUser,
+  SeniorPoolData,
+  UserData,
+} from "../../graphql/helpers"
+import {useLazyQuery} from "@apollo/client"
+import {GET_SENIOR_POOL_AND_PROVIDER_DATA} from "../../graphql/queries"
+import {getSeniorPoolAndProviders, getSeniorPoolAndProvidersVariables} from "../../graphql/types"
+import BigNumber from "bignumber.js"
+
+const enableSeniorPoolV2 = process.env.REACT_APP_TOGGLE_THE_GRAPH === "true"
 
 function SeniorPoolView(): JSX.Element {
   const {pool, user, goldfinchConfig} = useContext(AppContext)
-  const [capitalProvider, setCapitalProvider] = useState<CapitalProvider>(emptyCapitalProvider())
-  const [poolData, setPoolData] = useState<PoolData>()
+  const [capitalProvider, setCapitalProvider] = useState<CapitalProvider | UserData>()
+  const [poolData, setPoolData] = useState<PoolData | SeniorPoolData>()
   const kycResult = useKYC()
   const kyc = useStaleWhileRevalidating(kycResult)
 
-  useEffect(() => {
-    async function refreshAllData() {
-      const capitalProviderAddress = user.loaded && user.address
-      assertNonNullable(pool)
+  const [fetchSeniorPoolAndProviderData, {data}] = useLazyQuery<
+    getSeniorPoolAndProviders,
+    getSeniorPoolAndProvidersVariables
+  >(GET_SENIOR_POOL_AND_PROVIDER_DATA)
 
-      refreshPoolData(pool)
-      refreshCapitalProviderData(pool, capitalProviderAddress)
-    }
+  const loadedCapitalProvider = isCapitalProvider(capitalProvider) ? capitalProvider.loaded : Boolean(capitalProvider)
+  const loadedPoolData = isPoolData(poolData) ? poolData.loaded : Boolean(poolData)
 
-    if (pool) {
-      refreshAllData()
-    }
-  }, [pool, user])
-
-  async function actionComplete() {
+  async function refreshAllData(capitalProviderAddress) {
     assertNonNullable(pool)
 
-    await refreshPoolData(pool)
-    return refreshCapitalProviderData(pool, capitalProvider!.address)
+    refreshPoolData(pool)
+    refreshCapitalProviderData(pool, capitalProviderAddress)
+  }
+
+  async function fetchData(capitalProviderAddress) {
+    if (enableSeniorPoolV2) {
+      fetchSeniorPoolAndProviderData({variables: {userID: capitalProviderAddress || ""}})
+    } else {
+      refreshAllData(capitalProviderAddress)
+    }
+  }
+
+  useEffect(() => {
+    const capitalProviderAddress = user.loaded && user.address
+    if (pool) {
+      fetchData(capitalProviderAddress)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pool, user])
+
+  useEffect(() => {
+    async function setGraphData() {
+      const {seniorPools, user} = data!
+      let seniorPool = seniorPools[0]!
+      setPoolData(parseSeniorPool(seniorPool))
+      setCapitalProvider(await parseUser(user, seniorPool.lastestPoolStatus.sharePrice, pool!))
+    }
+
+    if (data) {
+      setGraphData()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data])
+
+  async function actionComplete() {
+    fetchData(capitalProvider!.address)
   }
 
   async function refreshCapitalProviderData(pool: SeniorPool, address: string | boolean) {
@@ -55,13 +91,14 @@ function SeniorPoolView(): JSX.Element {
   }
 
   let earnMessage = "Loading..."
-  if (capitalProvider.loaded || user.noWeb3) {
+  if (loadedCapitalProvider || user.noWeb3) {
     earnMessage = "Pools / Senior Pool"
   }
 
   let maxCapacityNotice = <></>
   let maxCapacity = goldfinchConfig.totalFundsLimit
-  if (poolData?.loaded && goldfinchConfig && poolData.remainingCapacity(maxCapacity).isEqualTo("0")) {
+  let remainingCapacity = poolData?.remainingCapacity(maxCapacity) || new BigNumber("0")
+  if (loadedPoolData && goldfinchConfig && remainingCapacity.isEqualTo("0")) {
     maxCapacityNotice = (
       <div className="info-banner background-container">
         <div className="message">

@@ -39,7 +39,7 @@ export interface UserData {
   unrealizedGainsPercentage: BigNumber
 }
 
-export function isCapitalProvider(value: CapitalProvider | UserData): value is CapitalProvider {
+export function isCapitalProvider(value: CapitalProvider | UserData | undefined): value is CapitalProvider {
   if (!value) return false
   return value.hasOwnProperty("loaded")
 }

@@ -10,7 +10,6 @@ interface DepositStatusProps {
 
 function DepositStatus(props: DepositStatusProps) {
   const {capitalProvider, poolData} = props
-
   const portfolioBalance = capitalProvider?.availableToWithdrawInDollars || new BigNumber("0")
   const portfolioBalanceDisplay = displayDollars(portfolioBalance)
 

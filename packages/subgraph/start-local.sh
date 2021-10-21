@@ -4,8 +4,8 @@ root_dir=$(dirname $(dirname $(dirname $(readlink -f "$0"))))
 env_path="${root_dir}/.env.local"
 source "${env_path}"
 
-if [ "$REACT_APP_SENIOR_POOL_PAGE_VERSION"!="V2" ]; then
-    echo "Subgraph feature flag is toggled off. Exiting..."
+if [ "$REACT_APP_TOGGLE_THE_GRAPH" != "true" ]; then
+    echo "The graph feature flag is toggled off. Exiting..."
     exit 0
 fi
 
