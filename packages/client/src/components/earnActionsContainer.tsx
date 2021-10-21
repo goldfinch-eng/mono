@@ -8,12 +8,12 @@ import {CapitalProvider, PoolData} from "../ethereum/pool"
 import BigNumber from "bignumber.js"
 import {KYC} from "../hooks/useGoldfinchClient"
 import {eligibleForSeniorPool} from "../hooks/useKYC"
-import {SeniorPoolData, UserData} from "../graphql/helpers"
+import {GraphSeniorPoolData, GraphUserData} from "../graphql/utils"
 
 interface EarnActionsContainerProps {
   actionComplete: () => Promise<any>
-  capitalProvider?: CapitalProvider | UserData
-  poolData?: PoolData | SeniorPoolData
+  capitalProvider?: CapitalProvider | GraphUserData
+  poolData?: PoolData | GraphSeniorPoolData
   kyc?: KYC
 }
 

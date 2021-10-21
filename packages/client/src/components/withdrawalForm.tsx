@@ -7,11 +7,11 @@ import LoadingButton from "./loadingButton"
 import useSendFromUser from "../hooks/useSendFromUser"
 import useNonNullContext from "../hooks/useNonNullContext"
 import {CapitalProvider, PoolData} from "../ethereum/pool"
-import {SeniorPoolData, UserData} from "../graphql/helpers"
+import {GraphSeniorPoolData, GraphUserData} from "../graphql/utils"
 
 interface WithdrawalFormProps {
-  poolData: PoolData | SeniorPoolData
-  capitalProvider?: CapitalProvider | UserData
+  poolData: PoolData | GraphSeniorPoolData
+  capitalProvider?: CapitalProvider | GraphUserData
   actionComplete: () => void
   closeForm: () => void
 }
