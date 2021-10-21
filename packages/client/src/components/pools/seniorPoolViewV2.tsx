@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {useState, useEffect, useContext} from "react"
-import EarnActionsContainer from "../earnActionsContainerV2"
-import PoolStatus from "../poolStatusV2"
+import EarnActionsContainer from "../earnActionsContainer"
+import PoolStatus from "../poolStatus"
 import ConnectionNotice from "../connectionNotice"
 import {AppContext} from "../../App"
 import InvestorNotice from "../investorNotice"
@@ -11,21 +11,25 @@ import {useStaleWhileRevalidating} from "../../hooks/useAsync"
 import {eligibleForSeniorPool, useKYC} from "../../hooks/useKYC"
 import {useQuery} from "@apollo/client"
 import {GET_SENIOR_POOL_AND_PROVIDER_DATA} from "../../graphql/queries"
-import {parseSeniorPool, parseUser, SeniorPoolData, UserData} from "../../graphql/helpers"
-import {Query} from "../../graphql/types"
+import {isPoolData, parseSeniorPool, parseUser, SeniorPoolData, UserData} from "../../graphql/helpers"
+import {getSeniorPoolAndProviders} from "../../graphql/types"
+import {PoolData} from "../../ethereum/pool"
+import BigNumber from "bignumber.js"
 
 function SeniorPoolViewV2(): JSX.Element {
   const {pool, user, goldfinchConfig} = useContext(AppContext)
-  const [poolData, setPoolData] = useState<SeniorPoolData>()
+  const [poolData, setPoolData] = useState<SeniorPoolData | PoolData>()
   const [capitalProvider, setCapitalProvider] = useState<UserData>()
-  const {data, refetch} = useQuery<Query>(GET_SENIOR_POOL_AND_PROVIDER_DATA, {
+  const kycResult = useKYC()
+  const kyc = useStaleWhileRevalidating(kycResult)
+  const {data, refetch} = useQuery<getSeniorPoolAndProviders>(GET_SENIOR_POOL_AND_PROVIDER_DATA, {
     variables: {
       userID: user.loaded ? user.address : "",
     },
   })
 
-  const kycResult = useKYC()
-  const kyc = useStaleWhileRevalidating(kycResult)
+  let remainingCapacity
+  remainingCapacity = poolData?.remainingCapacity(goldfinchConfig.totalFundsLimit)
 
   useEffect(() => {
     async function setData() {
@@ -39,7 +43,7 @@ function SeniorPoolViewV2(): JSX.Element {
       setData()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, data, pool])
+  }, [user, data])
 
   let maxCapacityNotice = <></>
   let maxCapacity = goldfinchConfig.totalFundsLimit

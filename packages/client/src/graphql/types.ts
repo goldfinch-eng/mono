@@ -54,6 +54,7 @@ export interface getSeniorPoolAndProviders_user_seniorPoolDeposits {
 export interface getSeniorPoolAndProviders_user {
   __typename: "User"
   id: string
+  goListed: boolean | null
   capitalProviderStatus: getSeniorPoolAndProviders_user_capitalProviderStatus | null
   seniorPoolDeposits: getSeniorPoolAndProviders_user_seniorPoolDeposits[]
 }

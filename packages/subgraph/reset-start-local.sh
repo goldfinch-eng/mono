@@ -27,4 +27,4 @@ npm run build
 
 npm run create-local
 
-npm run deploy-local --version-label v0.0.1
+npm run deploy-local

@@ -1,8 +1,18 @@
-import {ApolloClient, InMemoryCache} from "@apollo/client"
+import {ApolloClient, InMemoryCache, NormalizedCacheObject} from "@apollo/client"
+import {NetworkConfig} from "../App"
 
-const apolloClient = new ApolloClient({
-  uri: process.env.REACT_APP_GRAPHQL_QUERY_URL,
-  cache: new InMemoryCache(),
-})
+const API_URLS = {
+  mainnet: "https://api.thegraph.com/subgraphs/name/goldfinch-eng/goldfinch",
+  localhost: "http://localhost:8000",
+}
 
-export {apolloClient}
+const getApolloClient = (network?: NetworkConfig): ApolloClient<NormalizedCacheObject> => {
+  const networkName = network?.name || "mainnet"
+
+  return new ApolloClient({
+    cache: new InMemoryCache(),
+    uri: API_URLS[networkName],
+  })
+}
+
+export default getApolloClient

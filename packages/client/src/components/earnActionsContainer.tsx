@@ -8,18 +8,20 @@ import {CapitalProvider, PoolData} from "../ethereum/pool"
 import BigNumber from "bignumber.js"
 import {KYC} from "../hooks/useGoldfinchClient"
 import {eligibleForSeniorPool} from "../hooks/useKYC"
+import {SeniorPoolData, UserData} from "../graphql/helpers"
 
 interface EarnActionsContainerProps {
   actionComplete: () => Promise<any>
-  capitalProvider: CapitalProvider
-  poolData?: PoolData
+  capitalProvider?: CapitalProvider | UserData
+  poolData?: PoolData | SeniorPoolData
   kyc?: KYC
 }
 
 function EarnActionsContainer(props: EarnActionsContainerProps) {
-  const {kyc} = props
+  const {kyc, poolData, capitalProvider} = props
   const {user, goldfinchConfig} = useContext(AppContext)
   const [showAction, setShowAction] = useState<string>()
+  const remainingCapacity = poolData?.remainingCapacity(goldfinchConfig.totalFundsLimit) || new BigNumber("0")
 
   function closeForm() {
     setShowAction("")
@@ -38,13 +40,8 @@ function EarnActionsContainer(props: EarnActionsContainerProps) {
 
   let depositAction
   let depositClass = "disabled"
-  let remainingCapacity = props.poolData?.remainingCapacity(goldfinchConfig.totalFundsLimit) || new BigNumber("0")
-  if (
-    user.usdcIsUnlocked("earn") &&
-    eligibleForSeniorPool(kyc, user) &&
-    props.capitalProvider &&
-    remainingCapacity.gt("0")
-  ) {
+
+  if (user.usdcIsUnlocked("earn") && eligibleForSeniorPool(kyc, user) && capitalProvider && remainingCapacity.gt("0")) {
     depositAction = (e) => {
       setShowAction("deposit")
     }
@@ -53,11 +50,7 @@ function EarnActionsContainer(props: EarnActionsContainerProps) {
 
   let withdrawAction
   let withdrawClass = "disabled"
-  if (
-    user.usdcIsUnlocked("earn") &&
-    eligibleForSeniorPool(kyc, user) &&
-    props.capitalProvider.availableToWithdraw.gt(0)
-  ) {
+  if (user.usdcIsUnlocked("earn") && eligibleForSeniorPool(kyc, user) && capitalProvider?.availableToWithdraw.gt(0)) {
     withdrawAction = (e) => {
       setShowAction("withdrawal")
     }
@@ -70,15 +63,15 @@ function EarnActionsContainer(props: EarnActionsContainerProps) {
     return (
       <WithdrawalForm
         closeForm={closeForm}
-        capitalProvider={props.capitalProvider}
-        poolData={props.poolData!}
+        capitalProvider={capitalProvider}
+        poolData={poolData!}
         actionComplete={actionComplete}
       />
     )
   } else {
     return (
       <div className={`background-container ${placeholderClass}`}>
-        <DepositStatus capitalProvider={props.capitalProvider} poolData={props.poolData} />
+        <DepositStatus capitalProvider={capitalProvider} poolData={poolData} />
         <div className="form-start">
           <button className={`button ${depositClass}`} onClick={depositAction}>
             {iconUpArrow} Supply

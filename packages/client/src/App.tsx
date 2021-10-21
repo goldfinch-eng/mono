@@ -23,12 +23,12 @@ import SeniorPoolView from "./components/pools/seniorPoolView"
 import SeniorPoolViewV2 from "./components/pools/seniorPoolViewV2"
 import VerifyIdentity from "./components/verifyIdentity"
 import TranchedPoolView from "./components/pools/tranchedPoolView"
-import {apolloClient} from "./graphql/client"
-import {ApolloProvider} from "@apollo/client"
+import {ApolloClient, ApolloProvider, NormalizedCacheObject} from "@apollo/client"
 import {SessionData} from "./types/session"
 import {useSessionLocalStorage} from "./hooks/useSignIn"
 import {EarnProvider} from "./contexts/EarnContext"
 import {BorrowProvider} from "./contexts/BorrowContext"
+import getApolloClient from "./graphql/client"
 
 export interface NetworkConfig {
   name?: string
@@ -84,6 +84,7 @@ function App() {
     SESSION_DATA_KEY,
     {}
   )
+  const [apolloClient, setApolloClient] = useState<ApolloClient<NormalizedCacheObject>>(getApolloClient())
 
   useEffect(() => {
     setupWeb3()
@@ -101,6 +102,11 @@ function App() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [usdc, pool, creditDesk, network, goldfinchProtocol])
+
+  useEffect(() => {
+    setApolloClient(getApolloClient(network))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [network])
 
   async function ensureWeb3() {
     if (!window.ethereum) {

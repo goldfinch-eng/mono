@@ -3,10 +3,11 @@
   "scripts": {
     "codegen": "graph codegen",
     "build": "graph codegen",
+    "start": "bash ./start-local.sh",
     "deploy": "graph build && graph deploy --node https://api.studio.thegraph.com/deploy/ goldfinch-subgraph",
     "create-local": "graph create --node http://localhost:8020/ goldfinch-subgraph",
     "remove-local": "graph remove --node http://localhost:8020/ goldfinch-subgraph",
-    "deploy-local": "graph build && graph deploy --node http://localhost:8020/ --ipfs http://localhost:5002 goldfinch-subgraph"
+    "deploy-local": "graph build && graph deploy --node http://localhost:8020/ --ipfs http://localhost:5002 goldfinch-subgraph --version-label v0.0.1"
   },
   "dependencies": {
     "@graphprotocol/graph-cli": "0.22.3",

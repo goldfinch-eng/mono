@@ -7,15 +7,17 @@ import LoadingButton from "./loadingButton"
 import useSendFromUser from "../hooks/useSendFromUser"
 import useNonNullContext from "../hooks/useNonNullContext"
 import {CapitalProvider, PoolData} from "../ethereum/pool"
+import {SeniorPoolData, UserData} from "../graphql/helpers"
 
 interface WithdrawalFormProps {
-  poolData: PoolData
-  capitalProvider: CapitalProvider
+  poolData: PoolData | SeniorPoolData
+  capitalProvider?: CapitalProvider | UserData
   actionComplete: () => void
   closeForm: () => void
 }
 
 function WithdrawalForm(props: WithdrawalFormProps) {
+  const {poolData, capitalProvider, actionComplete, closeForm} = props
   const sendFromUser = useSendFromUser()
   const {pool, goldfinchConfig} = useNonNullContext(AppContext)
 
@@ -24,13 +26,13 @@ function WithdrawalForm(props: WithdrawalFormProps) {
     return sendFromUser(pool.contract.methods.withdraw(withdrawalAmount), {
       type: "Withdrawal",
       amount: transactionAmount,
-    }).then(props.actionComplete)
+    }).then(actionComplete)
   }
 
-  const availableAmount = props.capitalProvider.availableToWithdrawInDollars
+  const availableAmount = capitalProvider?.availableToWithdrawInDollars
   const availableToWithdraw = minimumNumber(
     availableAmount,
-    usdcFromAtomic(props.poolData.balance),
+    usdcFromAtomic(poolData.balance),
     usdcFromAtomic(goldfinchConfig.transactionLimit)
   )
 
@@ -68,7 +70,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
       title="Withdraw"
       headerMessage={`Available to withdraw: ${displayDollars(availableAmount)}`}
       render={renderForm}
-      closeForm={props.closeForm}
+      closeForm={closeForm}
       maxAmount={availableToWithdraw}
     />
   )

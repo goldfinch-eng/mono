@@ -23,6 +23,7 @@ export const GET_SENIOR_POOL_AND_PROVIDER_DATA = gql`
     }
     user(id: $userID) {
       id
+      goListed
       capitalProviderStatus {
         numShares
         availableToWithdraw

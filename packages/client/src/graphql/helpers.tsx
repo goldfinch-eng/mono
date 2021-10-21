@@ -2,12 +2,16 @@ import BigNumber from "bignumber.js"
 import _ from "lodash"
 import {fiduFromAtomic, FIDU_DECIMALS} from "../ethereum/fidu"
 import {USDC_DECIMALS} from "../ethereum/utils"
-import {SeniorPool as SeniorPoolGQL, SeniorPoolDeposit, User} from "./types"
+import {
+  getSeniorPoolAndProviders_seniorPools as SeniorPoolGQL,
+  getSeniorPoolAndProviders_user_seniorPoolDeposits as SeniorPoolDeposit,
+  getSeniorPoolAndProviders_user as User,
+} from "./types"
 import {roundDownPenny} from "../utils"
-import {SeniorPool} from "../ethereum/pool"
+import {CapitalProvider, PoolData, SeniorPool} from "../ethereum/pool"
 
 export interface SeniorPoolData {
-  id: string
+  address: string
   compoundBalance: BigNumber
   balance: BigNumber
   totalShares: BigNumber
@@ -19,11 +23,11 @@ export interface SeniorPoolData {
   rawBalance: BigNumber
   cumulativeDrawdowns: BigNumber
   cumulativeWritedowns: BigNumber
-  remainingCapacity: (this: SeniorPoolData, maxCapacity: BigNumber) => BigNumber
+  remainingCapacity: (this: any, maxCapacity: BigNumber) => BigNumber
 }
 
 export interface UserData {
-  id: string
+  address: string
   goListed: boolean
   numShares: BigNumber
   availableToWithdraw: BigNumber
@@ -33,6 +37,16 @@ export interface UserData {
   unrealizedGains: BigNumber
   unrealizedGainsInDollars: BigNumber
   unrealizedGainsPercentage: BigNumber
+}
+
+export function isCapitalProvider(value: CapitalProvider | UserData): value is CapitalProvider {
+  if (!value) return false
+  return value.hasOwnProperty("loaded")
+}
+
+export function isPoolData(value: PoolData | SeniorPoolData | undefined): value is PoolData {
+  if (!value) return false
+  return value.hasOwnProperty("loaded")
 }
 
 function getWeightedAverageSharePrice(seniorPoolDeposits: SeniorPoolDeposit[], numShares: BigNumber) {
@@ -64,7 +78,7 @@ function getWeightedAverageSharePrice(seniorPoolDeposits: SeniorPoolDeposit[], n
   }
 }
 
-function remainingCapacity(this: SeniorPoolData, maxPoolCapacity: BigNumber): BigNumber {
+function remainingCapacity(this: any, maxPoolCapacity: BigNumber): BigNumber {
   let cappedBalance = BigNumber.min(this.totalPoolAssets, maxPoolCapacity)
   return new BigNumber(maxPoolCapacity).minus(cappedBalance)
 }
@@ -89,7 +103,7 @@ export function parseSeniorPool(seniorPool: SeniorPoolGQL): SeniorPoolData {
   let estimatedApy = estimatedTotalInterest.dividedBy(totalPoolAssets)
 
   return {
-    id: seniorPool.id,
+    address: seniorPool.id,
     compoundBalance,
     balance,
     totalShares,
@@ -130,7 +144,7 @@ export async function parseUser(
   const unrealizedGainsInDollars = new BigNumber(roundDownPenny(unrealizedGains.div(FIDU_DECIMALS)))
   const unrealizedGainsPercentage = sharePriceDelta.dividedBy(weightedAverageSharePrice)
   return {
-    id: userAddress,
+    address: userAddress,
     goListed,
     numShares,
     availableToWithdraw,
