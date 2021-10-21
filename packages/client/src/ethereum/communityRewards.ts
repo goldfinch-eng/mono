@@ -121,8 +121,8 @@ interface Rewards {
   totalClaimed: BigNumber
   startTime: number
   endTime: number
-  cliffLength: number
-  vestingInterval: number
+  cliffLength: BigNumber
+  vestingInterval: BigNumber
   revokedAt: number
 }
 
@@ -166,11 +166,11 @@ function parseCommunityRewardsVesting(
   return new CommunityRewardsVesting(tokenId, user, new BigNumber(claimable), {
     totalGranted: new BigNumber(tuple[0]),
     totalClaimed: new BigNumber(tuple[1]),
-    startTime: Number(tuple[2]),
-    endTime: Number(tuple[3]),
-    cliffLength: Number(tuple[4]),
-    vestingInterval: Number(tuple[5]),
-    revokedAt: Number(tuple[6]),
+    startTime: parseInt(tuple[2], 10),
+    endTime: parseInt(tuple[3], 10),
+    cliffLength: new BigNumber(tuple[4]),
+    vestingInterval: new BigNumber(tuple[5]),
+    revokedAt: parseInt(tuple[6], 10),
   })
 }
 
