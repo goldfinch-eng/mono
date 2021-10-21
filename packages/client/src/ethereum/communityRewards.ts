@@ -62,13 +62,12 @@ export class MerkleDistributor {
             (airdrop) => Number(merkleAcceptedEvents[0]?.returnValues.index) === airdrop.index
           )
           if (airdrop) {
-            acceptedGrant._reason = airdrop?.reason
+            acceptedGrant._reason = airdrop.reason
           } else {
             console.warn(
               `Failed to identify GrantAccepted event corresponding to CommunityRewards grant ${acceptedGrant.tokenId}.`
             )
           }
-          return acceptedGrant
         })
       )
     }
