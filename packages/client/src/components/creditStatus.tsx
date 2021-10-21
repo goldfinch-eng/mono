@@ -1,18 +1,12 @@
 import React from "react"
-import InfoSection from "./infoSection"
-import CreditBarViz from "./creditBarViz"
 import {usdcFromAtomic} from "../ethereum/erc20"
-import {decimals} from "../ethereum/utils"
 import {displayDollars, displayNumber} from "../utils"
-import {iconClock, iconOutArrow} from "./icons"
+import CreditBarViz from "./creditBarViz"
 import EtherscanLink from "./etherscanLink"
-import BN from "bn.js"
+import {iconClock, iconOutArrow} from "./icons"
+import InfoSection from "./infoSection"
 
 function CreditStatus(props) {
-  function fromAtomicDecimals(val) {
-    return new BN(usdcFromAtomic(val)).mul(decimals)
-  }
-
   let placeholderClass = ""
   if (!props.user.address || !props.user.usdcIsUnlocked("borrow") || props.creditLine.limit.eq(0) || props.disabled) {
     placeholderClass = "placeholder"
