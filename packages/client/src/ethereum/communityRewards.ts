@@ -88,7 +88,7 @@ export class MerkleDistributor {
           .call(undefined, currentBlock.number)
         return !isAccepted ? grantInfo : undefined
       })
-    ).then((results) => results.filter((val) => !!val) as MerkleDistributorGrantInfo[])
+    ).then((results) => results.filter((val): val is NonNullable<typeof val> => !!val))
   }
 
   calculateTotalClaimable(): BigNumber {
