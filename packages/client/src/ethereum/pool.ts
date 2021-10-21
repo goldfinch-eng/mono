@@ -652,7 +652,7 @@ class StakedPosition {
 
   get reason(): string {
     const fiduAmount = this.amount.div(FIDU_DECIMALS.toString())
-    const date = new Date(this.rewards.startTime).toLocaleDateString(undefined, {
+    const date = new Date(this.rewards.startTime * 1000).toLocaleDateString(undefined, {
       month: "short",
       day: "numeric",
     })
