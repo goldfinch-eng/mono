@@ -11,7 +11,7 @@ fi
 
 docker-compose down -v;
 
-echo "Building the sugraph..."
+echo "Building the subgraph..."
 
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     echo "On a linux system running setup script"
