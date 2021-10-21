@@ -673,15 +673,15 @@ function parseStakedPosition(
     tokenId,
     new BigNumber(tuple[0]),
     new BigNumber(tuple[2]),
-    Number(tuple[3]),
+    parseInt(tuple[3], 10),
     new BigNumber(claimable),
     {
       totalUnvested: new BigNumber(tuple[1][0]),
       totalVested: new BigNumber(tuple[1][1]),
       totalPreviouslyVested: new BigNumber(tuple[1][2]),
       totalClaimed: new BigNumber(tuple[1][3]),
-      startTime: Number(tuple[1][4]),
-      endTime: Number(tuple[1][5]),
+      startTime: parseInt(tuple[1][4], 10),
+      endTime: parseInt(tuple[1][5], 10),
     }
   )
 }
