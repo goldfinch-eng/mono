@@ -1,5 +1,5 @@
 import {useHistory} from "react-router-dom"
-import {iconInfo} from "./icons.js"
+import {iconInfo} from "./icons"
 import {useForm, FormProvider} from "react-hook-form"
 import LoadingButton from "./loadingButton"
 
