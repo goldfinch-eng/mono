@@ -134,12 +134,9 @@ function Rewards(props) {
 
   const rewards = getSortedRewards(stakingRewards, merkleDistributor)
   const emptyRewards =
-    (!merkleDistributor?.communityRewards.grants &&
-      !merkleDistributor?.actionRequiredAirdrops &&
-      !stakingRewards?.positions) ||
-    (!merkleDistributor?.communityRewards?.grants?.length &&
-      !merkleDistributor?.actionRequiredAirdrops?.length &&
-      !stakingRewards?.positions?.length)
+    (!merkleDistributor?.communityRewards.grants || !merkleDistributor?.communityRewards.grants.length) &&
+    (!merkleDistributor?.actionRequiredAirdrops || !merkleDistributor?.actionRequiredAirdrops.length) &&
+    (!stakingRewards?.positions || !stakingRewards?.positions.length)
   const isLoaded = merkleDistributor?.loaded && stakingRewards?.loaded
   return (
     <div className="content-section">

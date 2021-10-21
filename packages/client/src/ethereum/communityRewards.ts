@@ -62,13 +62,12 @@ export class MerkleDistributor {
             (airdrop) => Number(merkleAcceptedEvents[0]?.returnValues.index) === airdrop.index
           )
           if (airdrop) {
-            acceptedGrant._reason = airdrop?.reason
+            acceptedGrant._reason = airdrop.reason
           } else {
             console.warn(
-              `Failed to tokenIdentify GrantAccepted event corresponding to CommunityRewards grant ${acceptedGrant.tokenId}.`
+              `Failed to identify GrantAccepted event corresponding to CommunityRewards grant ${acceptedGrant.tokenId}.`
             )
           }
-          return acceptedGrant
         })
       )
     }
@@ -89,7 +88,7 @@ export class MerkleDistributor {
           .call(undefined, currentBlock.number)
         return !isAccepted ? grantInfo : undefined
       })
-    ).then((results) => results.filter((val) => !!val) as MerkleDistributorGrantInfo[])
+    ).then((results) => results.filter((val): val is NonNullable<typeof val> => !!val))
   }
 
   calculateTotalClaimable(): BigNumber {
@@ -122,8 +121,8 @@ interface Rewards {
   totalClaimed: BigNumber
   startTime: number
   endTime: number
-  cliffLength: number
-  vestingInterval: number
+  cliffLength: BigNumber
+  vestingInterval: BigNumber
   revokedAt: number
 }
 
@@ -167,11 +166,11 @@ function parseCommunityRewardsVesting(
   return new CommunityRewardsVesting(tokenId, user, new BigNumber(claimable), {
     totalGranted: new BigNumber(tuple[0]),
     totalClaimed: new BigNumber(tuple[1]),
-    startTime: Number(tuple[2]),
-    endTime: Number(tuple[3]),
-    cliffLength: Number(tuple[4]),
-    vestingInterval: Number(tuple[5]),
-    revokedAt: Number(tuple[6]),
+    startTime: parseInt(tuple[2], 10),
+    endTime: parseInt(tuple[3], 10),
+    cliffLength: new BigNumber(tuple[4]),
+    vestingInterval: new BigNumber(tuple[5]),
+    revokedAt: parseInt(tuple[6], 10),
   })
 }
 

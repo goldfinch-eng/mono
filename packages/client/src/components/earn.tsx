@@ -11,7 +11,9 @@ import BigNumber from "bignumber.js"
 import {User} from "../ethereum/user"
 import ConnectionNotice from "./connectionNotice"
 import Badge from "./badge"
+import {InfoIcon} from "../ui/icons"
 import {useStakingRewards} from "../hooks/useStakingRewards"
+import AnnualGrowthTooltipContent from "./AnnualGrowthTooltipContent"
 
 // Filter out 0 limit (inactive) and test pools
 const MIN_POOL_LIMIT = usdcToAtomic(process.env.REACT_APP_POOL_FILTER_LIMIT || "200")
@@ -41,6 +43,7 @@ function PortfolioOverviewSkeleton() {
         </div>
         <div className="deposit-status-item">
           <div className="label">Est. Annual Growth</div>
+
           <div className="value disabled">$--.--</div>
           <div className="sub-value disabled">--.--% APY</div>
         </div>
@@ -102,13 +105,24 @@ function PortfolioOverview({
           </div>
         </div>
         <div className="deposit-status-item">
-          <div className="label">Est. Annual Growth</div>
+          <div className="deposit-status-item-flex">
+            <div className="label">Est. Annual Growth</div>
+            <span data-tip="" data-for="annual-growth-tooltip" data-offset="{'top': 0, 'left': 0}" data-place="bottom">
+              <InfoIcon />
+            </span>
+          </div>
           <div className="value">{displayDollars(roundDownPenny(estimatedAnnualGrowth))}</div>
           <div className="sub-value">{`${displayPercent(estimatedApy)} APY${
             estimatedApyFromGfi.gt(0) ? " (with GFI)" : ""
           }`}</div>
         </div>
       </div>
+      <AnnualGrowthTooltipContent
+        supplyingCombined={true}
+        estimatedApyFromSupplying={estimatedApyFromSupplying}
+        estimatedApyFromGfi={estimatedApyFromGfi}
+        estimatedApy={estimatedApy}
+      />
     </div>
   )
 }
