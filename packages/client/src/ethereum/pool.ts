@@ -134,7 +134,7 @@ async function fetchCapitalProviderData(
   let availableToWithdrawInDollars = new BigNumber(fiduFromAtomic(availableToWithdraw))
   let address = capitalProviderAddress as string
   let allowance = new BigNumber(await pool.usdc.methods.allowance(capitalProviderAddress, pool.address).call())
-  let weightedAverageSharePrice = await getWeightedAverageSharePrice(pool, {numShares, address})
+  let weightedAverageSharePrice = await getWeightedAverageSharePrice({numShares, address}, pool)
   const sharePriceDelta = sharePrice.dividedBy(FIDU_DECIMALS).minus(weightedAverageSharePrice)
   let unrealizedGains = sharePriceDelta.multipliedBy(numShares)
   let unrealizedGainsInDollars = new BigNumber(roundDownPenny(unrealizedGains.div(FIDU_DECIMALS)))
@@ -230,21 +230,36 @@ async function fetchPoolData(pool: SeniorPool, erc20: Contract): Promise<PoolDat
 // than we have records of your deposits, so we would not be able to account
 // for your shares, and we would fail out, and return a "-" on the front-end.
 // Note: This also does not take into account realized gains, which we are also punting on.
-async function getWeightedAverageSharePrice(pool: SeniorPool, capitalProvider) {
-  const poolEvents = await pool.getPoolEvents(capitalProvider.address, ["DepositMade"])
-  const preparedEvents = _.reverse(_.sortBy(poolEvents, "blockNumber"))
+export async function getWeightedAverageSharePrice(capitalProvider, pool?: SeniorPool): Promise<BigNumber> {
+  let preparedEvents
+  if (pool) {
+    const poolEvents = await pool.getPoolEvents(capitalProvider.address, ["DepositMade"])
+    preparedEvents = _.reverse(_.sortBy(poolEvents, "blockNumber"))
+  } else {
+    preparedEvents = _.reverse(_.sortBy(capitalProvider.seniorPoolDeposits, "blockNumber"))
+  }
 
   let zero = new BigNumber(0)
   let sharesLeftToAccountFor = capitalProvider.numShares
   let totalAmountPaid = zero
   preparedEvents.forEach((event) => {
+    let amount, shares
     if (sharesLeftToAccountFor.lte(zero)) {
       return
     }
-    const sharePrice = new BigNumber(event.returnValues.amount)
+
+    if (pool) {
+      amount = event.returnValues.amount
+      shares = event.returnValues.shares
+    } else {
+      amount = event.amount
+      shares = event.shares
+    }
+
+    const sharePrice = new BigNumber(amount)
       .dividedBy(USDC_DECIMALS.toString())
-      .dividedBy(new BigNumber(event.returnValues.shares).dividedBy(FIDU_DECIMALS.toString()))
-    const sharesToAccountFor = BigNumber.min(sharesLeftToAccountFor, new BigNumber(event.returnValues.shares))
+      .dividedBy(new BigNumber(shares).dividedBy(FIDU_DECIMALS.toString()))
+    const sharesToAccountFor = BigNumber.min(sharesLeftToAccountFor, new BigNumber(shares))
     totalAmountPaid = totalAmountPaid.plus(sharesToAccountFor.multipliedBy(sharePrice))
     sharesLeftToAccountFor = sharesLeftToAccountFor.minus(sharesToAccountFor)
   })

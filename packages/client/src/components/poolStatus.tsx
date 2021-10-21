@@ -7,23 +7,16 @@ import {displayDollars, displayPercent} from "../utils"
 import {iconOutArrow} from "./icons"
 import {PoolData} from "../ethereum/pool"
 import {BigNumber} from "bignumber.js"
-import {isPoolData, SeniorPoolData} from "../graphql/helpers"
+import {isGraphSeniorPoolData, GraphSeniorPoolData} from "../graphql/utils"
 
 interface PoolStatusProps {
-  poolData?: PoolData | SeniorPoolData
+  poolData?: PoolData | GraphSeniorPoolData
 }
 
 function PoolStatus({poolData}: PoolStatusProps) {
   const {goldfinchConfig} = useContext(AppContext)
-  let loaded: Boolean, poolAddress: string | undefined
-
-  if (isPoolData(poolData)) {
-    loaded = poolData.loaded
-    poolAddress = poolData.pool.address
-  } else {
-    loaded = true
-    poolAddress = poolData?.address
-  }
+  let loaded = isGraphSeniorPoolData(poolData) || poolData?.loaded
+  let poolAddress = isGraphSeniorPoolData(poolData) ? poolData.address : poolData?.pool?.address
 
   function deriveRows() {
     let defaultRate: BigNumber | undefined

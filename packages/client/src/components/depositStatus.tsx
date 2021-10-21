@@ -1,11 +1,11 @@
 import {BigNumber} from "bignumber.js"
 import {CapitalProvider, PoolData} from "../ethereum/pool"
-import {isPoolData, SeniorPoolData, UserData} from "../graphql/helpers"
+import {isGraphSeniorPoolData, GraphSeniorPoolData, GraphUserData} from "../graphql/utils"
 import {displayDollars, displayPercent} from "../utils"
 
 interface DepositStatusProps {
-  poolData?: PoolData | SeniorPoolData
-  capitalProvider?: CapitalProvider | UserData
+  poolData?: PoolData | GraphSeniorPoolData
+  capitalProvider?: CapitalProvider | GraphUserData
 }
 
 function DepositStatus(props: DepositStatusProps) {
@@ -15,10 +15,8 @@ function DepositStatus(props: DepositStatusProps) {
 
   let estimatedAPY: BigNumber | null = null
 
-  if (poolData) {
-    if (!isPoolData(poolData) || poolData.loaded) {
-      estimatedAPY = poolData.estimatedApy
-    }
+  if (isGraphSeniorPoolData(poolData) || poolData?.loaded) {
+    estimatedAPY = poolData.estimatedApy
   }
   let apyDisplay: string = `${displayPercent(estimatedAPY)}`
 

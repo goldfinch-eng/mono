@@ -9,35 +9,28 @@ import {assertNonNullable, displayDollars} from "../../utils"
 import {usdcFromAtomic} from "../../ethereum/erc20"
 import {useStaleWhileRevalidating} from "../../hooks/useAsync"
 import {eligibleForSeniorPool, useKYC} from "../../hooks/useKYC"
-import {
-  isCapitalProvider,
-  isPoolData,
-  parseSeniorPool,
-  parseUser,
-  SeniorPoolData,
-  UserData,
-} from "../../graphql/helpers"
 import {useLazyQuery} from "@apollo/client"
 import {GET_SENIOR_POOL_AND_PROVIDER_DATA} from "../../graphql/queries"
 import {getSeniorPoolAndProviders, getSeniorPoolAndProvidersVariables} from "../../graphql/types"
 import BigNumber from "bignumber.js"
-
-const enableSeniorPoolV2 = process.env.REACT_APP_TOGGLE_THE_GRAPH === "true"
+import {GraphSeniorPoolData, GraphUserData, isGraphSeniorPoolData, isGraphUserData} from "../../graphql/utils"
+import {parseSeniorPool, parseUser} from "../../graphql/helpers"
 
 function SeniorPoolView(): JSX.Element {
   const {pool, user, goldfinchConfig} = useContext(AppContext)
-  const [capitalProvider, setCapitalProvider] = useState<CapitalProvider | UserData>()
-  const [poolData, setPoolData] = useState<PoolData | SeniorPoolData>()
+  const [capitalProvider, setCapitalProvider] = useState<CapitalProvider | GraphUserData>()
+  const [poolData, setPoolData] = useState<PoolData | GraphSeniorPoolData>()
   const kycResult = useKYC()
   const kyc = useStaleWhileRevalidating(kycResult)
-
   const [fetchSeniorPoolAndProviderData, {data}] = useLazyQuery<
     getSeniorPoolAndProviders,
     getSeniorPoolAndProvidersVariables
   >(GET_SENIOR_POOL_AND_PROVIDER_DATA)
 
-  const loadedCapitalProvider = isCapitalProvider(capitalProvider) ? capitalProvider.loaded : Boolean(capitalProvider)
-  const loadedPoolData = isPoolData(poolData) ? poolData.loaded : Boolean(poolData)
+  const enableSeniorPoolV2 = process.env.REACT_APP_TOGGLE_THE_GRAPH === "true"
+
+  const loadedCapitalProvider = isGraphUserData(capitalProvider) || capitalProvider?.loaded
+  const loadedPoolData = isGraphSeniorPoolData(poolData) || poolData?.loaded
 
   async function refreshAllData(capitalProviderAddress) {
     assertNonNullable(pool)
@@ -67,7 +60,7 @@ function SeniorPoolView(): JSX.Element {
       const {seniorPools, user} = data!
       let seniorPool = seniorPools[0]!
       setPoolData(parseSeniorPool(seniorPool))
-      setCapitalProvider(await parseUser(user, seniorPool.lastestPoolStatus.sharePrice, pool!))
+      setCapitalProvider(await parseUser(user, seniorPool, pool!.fidu))
     }
 
     if (data) {
@@ -98,7 +91,7 @@ function SeniorPoolView(): JSX.Element {
   let maxCapacityNotice = <></>
   let maxCapacity = goldfinchConfig.totalFundsLimit
   let remainingCapacity = poolData?.remainingCapacity(maxCapacity) || new BigNumber("0")
-  if (loadedPoolData && goldfinchConfig && remainingCapacity.isEqualTo("0")) {
+  if (loadedPoolData && goldfinchConfig && remainingCapacity.isZero()) {
     maxCapacityNotice = (
       <div className="info-banner background-container">
         <div className="message">

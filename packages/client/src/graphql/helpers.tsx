@@ -1,89 +1,18 @@
 import BigNumber from "bignumber.js"
-import _ from "lodash"
 import {fiduFromAtomic, FIDU_DECIMALS} from "../ethereum/fidu"
 import {USDC_DECIMALS} from "../ethereum/utils"
-import {
-  getSeniorPoolAndProviders_seniorPools as SeniorPoolGQL,
-  getSeniorPoolAndProviders_user_seniorPoolDeposits as SeniorPoolDeposit,
-  getSeniorPoolAndProviders_user as User,
-} from "./types"
+import {getSeniorPoolAndProviders_seniorPools as SeniorPoolGQL, getSeniorPoolAndProviders_user as User} from "./types"
 import {roundDownPenny} from "../utils"
-import {CapitalProvider, PoolData, SeniorPool} from "../ethereum/pool"
-
-export interface SeniorPoolData {
-  address: string
-  compoundBalance: BigNumber
-  balance: BigNumber
-  totalShares: BigNumber
-  totalPoolAssets: BigNumber
-  totalLoansOutstanding: BigNumber
-  estimatedTotalInterest: BigNumber
-  estimatedApy: BigNumber
-  defaultRate: BigNumber
-  rawBalance: BigNumber
-  cumulativeDrawdowns: BigNumber
-  cumulativeWritedowns: BigNumber
-  remainingCapacity: (this: any, maxCapacity: BigNumber) => BigNumber
-}
-
-export interface UserData {
-  address: string
-  goListed: boolean
-  numShares: BigNumber
-  availableToWithdraw: BigNumber
-  availableToWithdrawInDollars: BigNumber
-  allowance: BigNumber
-  weightedAverageSharePrice: BigNumber
-  unrealizedGains: BigNumber
-  unrealizedGainsInDollars: BigNumber
-  unrealizedGainsPercentage: BigNumber
-}
-
-export function isCapitalProvider(value: CapitalProvider | UserData | undefined): value is CapitalProvider {
-  if (!value) return false
-  return value.hasOwnProperty("loaded")
-}
-
-export function isPoolData(value: PoolData | SeniorPoolData | undefined): value is PoolData {
-  if (!value) return false
-  return value.hasOwnProperty("loaded")
-}
-
-function getWeightedAverageSharePrice(seniorPoolDeposits: SeniorPoolDeposit[], numShares: BigNumber) {
-  const preparedEvents = _.reverse(_.sortBy(seniorPoolDeposits, "blockNumber"))
-
-  let zero = new BigNumber(0)
-  let sharesLeftToAccountFor = numShares
-  let totalAmountPaid = zero
-  preparedEvents.forEach((event) => {
-    if (sharesLeftToAccountFor.lte(zero)) {
-      return
-    }
-    const sharePrice = new BigNumber(event.amount)
-      .dividedBy(USDC_DECIMALS.toString())
-      .dividedBy(new BigNumber(event.shares).dividedBy(FIDU_DECIMALS.toString()))
-    const sharesToAccountFor = BigNumber.min(sharesLeftToAccountFor, new BigNumber(event.shares))
-    totalAmountPaid = totalAmountPaid.plus(sharesToAccountFor.multipliedBy(sharePrice))
-    sharesLeftToAccountFor = sharesLeftToAccountFor.minus(sharesToAccountFor)
-  })
-  if (sharesLeftToAccountFor.gt(zero)) {
-    // This case means you must have received Fidu outside of depositing,
-    // which we don't have price data for, and therefore can't calculate
-    // a correct weighted average price. By returning empty string,
-    // the result becomes NaN, and our display functions automatically handle
-    // the case, and turn it into a '-' on the front-end
-    return new BigNumber("")
-  } else {
-    return totalAmountPaid.dividedBy(numShares)
-  }
-}
+import {getWeightedAverageSharePrice} from "../ethereum/pool"
+import {GraphSeniorPoolData, GraphUserData} from "./utils"
+import {Fidu} from "@goldfinch-eng/protocol/typechain/web3/Fidu"
 
 function remainingCapacity(this: any, maxPoolCapacity: BigNumber): BigNumber {
   let cappedBalance = BigNumber.min(this.totalPoolAssets, maxPoolCapacity)
   return new BigNumber(maxPoolCapacity).minus(cappedBalance)
 }
 
-export function parseSeniorPool(seniorPool: SeniorPoolGQL): SeniorPoolData {
+export function parseSeniorPool(seniorPool: SeniorPoolGQL): GraphSeniorPoolData {
   const latestPoolStatus = seniorPool.lastestPoolStatus
   const compoundBalance = new BigNumber(latestPoolStatus.compoundBalance)
   const balance = compoundBalance.plus(latestPoolStatus.rawBalance)
@@ -103,6 +32,7 @@ export function parseSeniorPool(seniorPool: SeniorPoolGQL): SeniorPoolData {
   let estimatedApy = estimatedTotalInterest.dividedBy(totalPoolAssets)
 
   return {
+    type: "GraphSeniorPoolData",
     address: seniorPool.id,
     compoundBalance,
     balance,
@@ -121,29 +51,33 @@ export function parseSeniorPool(seniorPool: SeniorPoolGQL): SeniorPoolData {
 
 export async function parseUser(
   user: User | undefined | null,
-  sharePriceStr: string,
-  pool: SeniorPool
-): Promise<UserData> {
+  seniorPool: SeniorPoolGQL,
+  fidu: Fidu
+): Promise<GraphUserData> {
   const userAddress = user?.id || ""
   const seniorPoolDeposits = user?.seniorPoolDeposits || []
   const capitalProviderStatus = user?.capitalProviderStatus
   const goListed = user?.goListed || false
 
-  const sharePrice = new BigNumber(sharePriceStr) as any
-  const numShares = userAddress
-    ? new BigNumber(await pool.fidu.methods.balanceOf(userAddress).call())
-    : new BigNumber("0")
+  const sharePrice = new BigNumber(seniorPool.lastestPoolStatus.sharePrice) as any
+  const numShares = userAddress ? new BigNumber(await fidu.methods.balanceOf(userAddress).call()) : new BigNumber("0")
   const availableToWithdraw = new BigNumber(numShares)
     .multipliedBy(new BigNumber(sharePrice))
     .div(FIDU_DECIMALS.toString())
   const availableToWithdrawInDollars = new BigNumber(fiduFromAtomic(availableToWithdraw))
   const allowance = new BigNumber(capitalProviderStatus?.allowance)
-  const weightedAverageSharePrice = getWeightedAverageSharePrice(seniorPoolDeposits, numShares)
+  const weightedAverageSharePrice = await getWeightedAverageSharePrice({
+    numShares,
+    address: userAddress,
+    seniorPoolDeposits,
+  })
   const sharePriceDelta = sharePrice.dividedBy(FIDU_DECIMALS).minus(weightedAverageSharePrice)
   const unrealizedGains = sharePriceDelta.multipliedBy(numShares)
   const unrealizedGainsInDollars = new BigNumber(roundDownPenny(unrealizedGains.div(FIDU_DECIMALS)))
   const unrealizedGainsPercentage = sharePriceDelta.dividedBy(weightedAverageSharePrice)
+
   return {
+    type: "GraphUserData",
     address: userAddress,
     goListed,
     numShares,
