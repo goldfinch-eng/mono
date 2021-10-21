@@ -65,7 +65,7 @@ export class MerkleDistributor {
             acceptedGrant._reason = airdrop?.reason
           } else {
             console.warn(
-              `Failed to tokenIdentify GrantAccepted event corresponding to CommunityRewards grant ${acceptedGrant.tokenId}.`
+              `Failed to identify GrantAccepted event corresponding to CommunityRewards grant ${acceptedGrant.tokenId}.`
             )
           }
           return acceptedGrant
