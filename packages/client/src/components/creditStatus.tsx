@@ -29,8 +29,8 @@ function CreditStatus(props) {
   } else {
     const limit = usdcFromAtomic(props.creditLine.limit)
     const interestRateAPR = props.creditLine.interestAprDecimal.multipliedBy(100)
-    const paymentFrequency = fromAtomicDecimals(props.creditLine.paymentPeriodInDays)
-    const paybackTerm = fromAtomicDecimals(props.creditLine.termInDays)
+    const paymentFrequency = props.creditLine.paymentPeriodInDays.toString()
+    const paybackTerm = props.creditLine.termInDays.toString()
 
     rows = [
       {label: "Limit", value: "$" + displayNumber(limit, 2)},
