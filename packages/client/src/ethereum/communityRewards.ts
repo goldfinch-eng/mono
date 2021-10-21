@@ -2,21 +2,22 @@ import {EventData} from "web3-eth-contract"
 import {MerkleDistributor as MerkleDistributorContract} from "@goldfinch-eng/protocol/typechain/web3/MerkleDistributor"
 import {CommunityRewards as CommunityRewardsContract} from "@goldfinch-eng/protocol/typechain/web3/CommunityRewards"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
-import {getMerkleDistributorInfo} from "./utils"
 import {
   MerkleDistributorGrantInfo,
   MerkleDistributorInfo,
 } from "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types"
 import BigNumber from "bignumber.js"
-import {getBlockInfo, getCurrentBlock} from "../utils"
+import {BlockInfo, getBlockInfo, getCurrentBlock} from "../utils"
+import {getMerkleDistributorInfo} from "./utils"
 
 export class MerkleDistributor {
   goldfinchProtocol: GoldfinchProtocol
   contract: MerkleDistributorContract
   address: string
-  _loaded: boolean
+  loaded: boolean
   info: MerkleDistributorInfo | undefined
   communityRewards: CommunityRewards
+  actionRequiredAirdrops: MerkleDistributorGrantInfo[] | undefined
   totalClaimable: BigNumber | undefined
   unvested: BigNumber | undefined
   granted: BigNumber | undefined
@@ -26,7 +27,7 @@ export class MerkleDistributor {
     this.contract = goldfinchProtocol.getContract<MerkleDistributorContract>("MerkleDistributor")
     this.address = goldfinchProtocol.getAddress("MerkleDistributor")
     this.communityRewards = new CommunityRewards(goldfinchProtocol)
-    this._loaded = true
+    this.loaded = true
   }
 
   async initialize(recipient: string) {
@@ -42,15 +43,52 @@ export class MerkleDistributor {
     this.info = info
 
     await this.communityRewards.initialize(recipient)
+    const currentBlock = getBlockInfo(await getCurrentBlock())
     this.totalClaimable = this.calculateTotalClaimable()
     this.unvested = this.calculateUnvested()
     this.granted = this.calculateGranted()
-    this._loaded = true
+    this.actionRequiredAirdrops = await this.getActionRequiredAirdrops(recipient, currentBlock)
+
+    if (this.communityRewards.grants) {
+      await Promise.all(
+        this.communityRewards.grants.map(async (acceptedGrant) => {
+          const merkleAcceptedEvents = await this.goldfinchProtocol.queryEvent(
+            this.contract,
+            "GrantAccepted",
+            {tokenId: acceptedGrant.tokenId},
+            currentBlock.number
+          )
+          const airdrop = this.getGrantsInfo(recipient).find(
+            (airdrop) => Number(merkleAcceptedEvents[0]?.returnValues.index) === airdrop.index
+          )
+          if (airdrop) {
+            acceptedGrant._reason = airdrop.reason
+          } else {
+            console.warn(
+              `Failed to identify GrantAccepted event corresponding to CommunityRewards grant ${acceptedGrant.tokenId}.`
+            )
+          }
+        })
+      )
+    }
+    this.loaded = true
   }
 
   getGrantsInfo(recipient: string): MerkleDistributorGrantInfo[] {
     if (!this.info) return []
     return this.info.grants.filter((grant) => grant.account === recipient)
+  }
+
+  getActionRequiredAirdrops(recipient: string, currentBlock: BlockInfo): Promise<MerkleDistributorGrantInfo[]> {
+    const airdrops = this.getGrantsInfo(recipient)
+    return Promise.all(
+      airdrops.map(async (grantInfo) => {
+        const isAccepted = await this.contract.methods
+          .isGrantAccepted(grantInfo.index)
+          .call(undefined, currentBlock.number)
+        return !isAccepted ? grantInfo : undefined
+      })
+    ).then((results) => results.filter((val): val is NonNullable<typeof val> => !!val))
   }
 
   calculateTotalClaimable(): BigNumber {
@@ -81,18 +119,34 @@ export class MerkleDistributor {
 interface Rewards {
   totalGranted: BigNumber
   totalClaimed: BigNumber
-  startTime: string
-  endTime: string
+  startTime: number
+  endTime: number
   cliffLength: BigNumber
   vestingInterval: BigNumber
-  revokedAt: BigNumber
+  revokedAt: number
 }
 
-interface CommunityRewardsVesting {
-  id: string
+export class CommunityRewardsVesting {
+  tokenId: string
   user: string
   claimable: BigNumber
   rewards: Rewards
+  _reason?: string
+
+  constructor(tokenId: string, user: string, claimable: BigNumber, rewards: Rewards) {
+    this.tokenId = tokenId
+    this.user = user
+    this.rewards = rewards
+    this.claimable = claimable
+  }
+
+  get reason(): string {
+    return !this._reason ? "Community Rewards" : this._reason
+  }
+
+  get granted(): BigNumber {
+    return this.rewards.totalGranted
+  }
 }
 
 function parseCommunityRewardsVesting(
@@ -109,52 +163,58 @@ function parseCommunityRewardsVesting(
     6: string
   }
 ): CommunityRewardsVesting {
-  return {
-    id: tokenId,
-    user: user,
-    claimable: new BigNumber(claimable),
-    rewards: {
-      totalGranted: new BigNumber(tuple[0]),
-      totalClaimed: new BigNumber(tuple[1]),
-      startTime: tuple[2],
-      endTime: tuple[3],
-      cliffLength: new BigNumber(tuple[4]),
-      vestingInterval: new BigNumber(tuple[5]),
-      revokedAt: new BigNumber(tuple[6]),
-    },
-  }
+  return new CommunityRewardsVesting(tokenId, user, new BigNumber(claimable), {
+    totalGranted: new BigNumber(tuple[0]),
+    totalClaimed: new BigNumber(tuple[1]),
+    startTime: parseInt(tuple[2], 10),
+    endTime: parseInt(tuple[3], 10),
+    cliffLength: new BigNumber(tuple[4]),
+    vestingInterval: new BigNumber(tuple[5]),
+    revokedAt: parseInt(tuple[6], 10),
+  })
 }
 
 export class CommunityRewards {
   goldfinchProtocol: GoldfinchProtocol
   contract: CommunityRewardsContract
   address: string
-  _loaded: boolean
+  loaded: boolean
   grants: CommunityRewardsVesting[] | undefined
 
   constructor(goldfinchProtocol: GoldfinchProtocol) {
     this.goldfinchProtocol = goldfinchProtocol
     this.contract = goldfinchProtocol.getContract<CommunityRewardsContract>("CommunityRewards")
     this.address = goldfinchProtocol.getAddress("CommunityRewards")
-    this._loaded = false
+    this.loaded = false
   }
 
   async initialize(recipient: string) {
-    const events = await this.getGrantedEvents(recipient)
-    const tokenIds = events.map((e) => e.returnValues.tokenId)
+    // NOTE: In defining `this.grants`, we want to use `balanceOf()` plus `tokenOfOwnerByIndex`
+    // to determine `tokenIds`, rather than using the set of Granted events for the `recipient`.
+    // The former approach reflects any token transfers that may have occurred to or from the
+    // `recipient`, whereas the latter does not.
     const currentBlock = getBlockInfo(await getCurrentBlock())
+    const numPositions = parseInt(
+      await this.contract.methods.balanceOf(recipient).call(undefined, currentBlock.number),
+      10
+    )
+    const tokenIds: string[] = await Promise.all(
+      Array(numPositions)
+        .fill("")
+        .map((val, i) => this.contract.methods.tokenOfOwnerByIndex(recipient, i).call(undefined, currentBlock.number))
+    )
     this.grants = await Promise.all(
-      tokenIds.map((tokenId) => {
-        return this.contract.methods
+      tokenIds.map((tokenId) =>
+        this.contract.methods
           .grants(tokenId)
           .call(undefined, currentBlock.number)
           .then(async (res) => {
             const claimable = await this.contract.methods.claimableRewards(tokenId).call(undefined, currentBlock.number)
             return parseCommunityRewardsVesting(tokenId, recipient, claimable, res)
           })
-      })
+      )
     )
-    this._loaded = true
+    this.loaded = true
   }
 
   async getGrantedEvents(recipient: string): Promise<EventData[]> {
@@ -163,5 +223,3 @@ export class CommunityRewards {
     return events
   }
 }
-
-export type {CommunityRewardsVesting}

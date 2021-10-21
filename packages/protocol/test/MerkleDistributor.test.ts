@@ -85,23 +85,6 @@ describe("MerkleDistributor", () => {
 
     const rewardsAvailableAfter = await communityRewards.rewardsAvailable()
 
-    // MerkleDistributor's behavior
-
-    // Verify that the grant is now considered accepted.
-    const isGrantAccepted = await merkleDistributor.isGrantAccepted(index)
-    expect(isGrantAccepted).to.be.true
-
-    // Verify the GrantAccepted event emitted by MerkleDistributor.
-    const grantAcceptedEvent = getOnlyLog<GrantAccepted>(
-      decodeLogs(receipt.receipt.rawLogs, merkleDistributor, "GrantAccepted")
-    )
-    expect(grantAcceptedEvent.args.index).to.bignumber.equal(new BN(index))
-    expect(grantAcceptedEvent.args.account).to.equal(account)
-    expect(grantAcceptedEvent.args.amount).to.bignumber.equal(amount)
-    expect(grantAcceptedEvent.args.vestingLength).to.bignumber.equal(vestingLength)
-    expect(grantAcceptedEvent.args.cliffLength).to.bignumber.equal(cliffLength)
-    expect(grantAcceptedEvent.args.vestingInterval).to.bignumber.equal(vestingInterval)
-
     // CommunityRewards's behavior
 
     // Verify the Granted event emitted by CommunityRewards.
@@ -119,6 +102,24 @@ describe("MerkleDistributor", () => {
 
     // Verify that rewards available has been decremented reflecting the amount of the grant.
     expect(rewardsAvailableBefore.sub(rewardsAvailableAfter)).to.bignumber.equal(amount)
+
+    // MerkleDistributor's behavior
+
+    // Verify that the grant is now considered accepted.
+    const isGrantAccepted = await merkleDistributor.isGrantAccepted(index)
+    expect(isGrantAccepted).to.be.true
+
+    // Verify the GrantAccepted event emitted by MerkleDistributor.
+    const grantAcceptedEvent = getOnlyLog<GrantAccepted>(
+      decodeLogs(receipt.receipt.rawLogs, merkleDistributor, "GrantAccepted")
+    )
+    expect(grantAcceptedEvent.args.tokenId).to.bignumber.equal(tokenId)
+    expect(grantAcceptedEvent.args.index).to.bignumber.equal(new BN(index))
+    expect(grantAcceptedEvent.args.account).to.equal(account)
+    expect(grantAcceptedEvent.args.amount).to.bignumber.equal(amount)
+    expect(grantAcceptedEvent.args.vestingLength).to.bignumber.equal(vestingLength)
+    expect(grantAcceptedEvent.args.cliffLength).to.bignumber.equal(cliffLength)
+    expect(grantAcceptedEvent.args.vestingInterval).to.bignumber.equal(vestingInterval)
 
     return new BN(tokenId)
   }
@@ -446,7 +447,7 @@ describe("MerkleDistributor", () => {
         acceptGrantParams.proof,
         {from: acceptGrantParams.from}
       )
-      expect(receipt.receipt.gasUsed).to.eq(365370)
+      expect(receipt.receipt.gasUsed).to.eq(366104)
     })
   })
 })
