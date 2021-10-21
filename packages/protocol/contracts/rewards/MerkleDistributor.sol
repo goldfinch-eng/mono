@@ -16,6 +16,8 @@ contract MerkleDistributor is IMerkleDistributor {
   mapping(uint256 => uint256) private acceptedBitMap;
 
   constructor(address communityRewards_, bytes32 merkleRoot_) public {
+    require(communityRewards_ != address(0), "Cannot use the null address as the community rewards contract address");
+    require(merkleRoot_ != 0, "invalid merkle root provided");
     communityRewards = communityRewards_;
     merkleRoot = merkleRoot_;
   }
