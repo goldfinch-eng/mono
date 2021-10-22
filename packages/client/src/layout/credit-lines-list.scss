@@ -8,6 +8,10 @@
     margin: 0 6px -3px 0;
     width: 18px;
   }
+
+  .disabled {
+    color: $sand-xxdark;
+  }
 }
 
 @media only screen and (max-width: 480px), only screen and (min-width: $screen-m) and (max-width: 750px) {
