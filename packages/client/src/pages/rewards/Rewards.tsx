@@ -84,35 +84,34 @@ function getSortedRewards(
   const airdrops = merkleDistributor?.communityRewards?.grants || []
 
   const rewards: (StakedPosition | CommunityRewardsVesting)[] = [...stakes, ...airdrops]
-  rewards.sort((i1, i2) => {
-    let val = i1.claimable.minus(i2.claimable)
-    if (!val.isZero()) return val.isPositive() ? -1 : 1
+  const initiallySorted = [...rewards.sort((i1, i2) => i1.rewards.startTime - i2.rewards.startTime)]
+  const sortedRewards = [
+    ...initiallySorted.sort((i1, i2) => {
+      let val = i1.claimable.minus(i2.claimable)
+      if (!val.isZero()) return val.isPositive() ? -1 : 1
 
-    // deprioritizes i1 if completely claimed
-    if (i1.granted.minus(i1.rewards.totalClaimed).eq(0) && !i2.granted.minus(i2.rewards.totalClaimed).eq(0)) {
-      return 1
-    }
+      // deprioritizes i1 if completely claimed
+      if (i1.granted.minus(i1.rewards.totalClaimed).eq(0) && !i2.granted.minus(i2.rewards.totalClaimed).eq(0)) {
+        return 1
+      }
 
-    // deprioritizes i2 if completely claimed
-    if (!i1.granted.minus(i1.rewards.totalClaimed).eq(0) && i2.granted.minus(i2.rewards.totalClaimed).eq(0)) {
-      return -1
-    }
+      // deprioritizes i2 if completely claimed
+      if (!i1.granted.minus(i1.rewards.totalClaimed).eq(0) && i2.granted.minus(i2.rewards.totalClaimed).eq(0)) {
+        return -1
+      }
 
-    if (i1 instanceof StakedPosition && i2 instanceof CommunityRewardsVesting) {
-      return -1
-    }
+      if (i1 instanceof StakedPosition && i2 instanceof CommunityRewardsVesting) {
+        return -1
+      }
 
-    if (i1 instanceof CommunityRewardsVesting && i2 instanceof StakedPosition) {
-      return 1
-    }
+      if (i1 instanceof CommunityRewardsVesting && i2 instanceof StakedPosition) {
+        return 1
+      }
 
-    if (i1 instanceof StakedPosition && i2 instanceof StakedPosition) {
       return i2.rewards.startTime - i1.rewards.startTime
-    }
-
-    return i2.rewards.startTime - i1.rewards.startTime
-  })
-  return rewards
+    }),
+  ]
+  return sortedRewards
 }
 
 function Rewards(props) {
@@ -178,7 +177,7 @@ function Rewards(props) {
               {merkleDistributor?.actionRequiredAirdrops &&
                 merkleDistributor.actionRequiredAirdrops.map((item) => (
                   <RewardActionsContainer
-                    key={item.index}
+                    key={`airdrop-${item.index}`}
                     item={item}
                     merkleDistributor={merkleDistributor}
                     stakingRewards={stakingRewards}
@@ -189,7 +188,7 @@ function Rewards(props) {
                 rewards.map((item) => {
                   return (
                     <RewardActionsContainer
-                      key={item.tokenId}
+                      key={`reward-${item.tokenId}-${item.rewards.startTime}`}
                       item={item}
                       merkleDistributor={merkleDistributor}
                       stakingRewards={stakingRewards}
