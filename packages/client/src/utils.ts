@@ -1,3 +1,4 @@
+import BigNumber from "bignumber.js"
 import _ from "lodash"
 import {AsyncReturnType} from "./types/util"
 import web3 from "./web3"
@@ -9,7 +10,7 @@ export function croppedAddress(address) {
   return `${address.slice(0, 6)}...${address.slice(-4)}`
 }
 
-export function displayNumber(val, decimals) {
+export function displayNumber(val, decimals): string {
   if (val === "") {
     return ""
   }
@@ -27,7 +28,7 @@ export function displayNumber(val, decimals) {
   return commaFormat(valFloat.toFixed(decimals))
 }
 
-function commaFormat(numberString) {
+function commaFormat(numberString): string {
   if (isNaN(numberString)) {
     return numberString
   }
@@ -63,9 +64,9 @@ export function displayDollars(val, decimals = 2) {
   return `${prefix}$${displayNumber(val, decimals)}`
 }
 
-export function displayPercent(val, decimals = 2) {
-  let valDisplay
-  if (!val || isNaN(val)) {
+export function displayPercent(val: BigNumber | undefined, decimals = 2) {
+  let valDisplay: string
+  if (!val || val.eq(0)) {
     valDisplay = "--.--"
   } else {
     valDisplay = displayNumber(val.multipliedBy(100), decimals)

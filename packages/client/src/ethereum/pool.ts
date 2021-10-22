@@ -581,17 +581,46 @@ interface Rewards {
   totalVested: BigNumber
   totalPreviouslyVested: BigNumber
   totalClaimed: BigNumber
-  startTime: string
-  endTime: string
-  claimable: BigNumber
+  startTime: number
+  endTime: number
 }
 
-interface StakedPosition {
-  id: string
+class StakedPosition {
+  tokenId: string
   amount: BigNumber
   leverageMultiplier: BigNumber
-  lockedUntil: string
+  lockedUntil: number
   rewards: Rewards
+  claimable: BigNumber
+
+  constructor(
+    tokenId: string,
+    amount: BigNumber,
+    leverageMultiplier: BigNumber,
+    lockedUntil: number,
+    claimable: BigNumber,
+    rewards: Rewards
+  ) {
+    this.tokenId = tokenId
+    this.amount = amount
+    this.leverageMultiplier = leverageMultiplier
+    this.lockedUntil = lockedUntil
+    this.rewards = rewards
+    this.claimable = claimable
+  }
+
+  get reason(): string {
+    const fiduAmount = this.amount.div(FIDU_DECIMALS.toString())
+    const date = new Date(this.rewards.startTime * 1000).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+    })
+    return `Staked ${fiduAmount} FIDU on ${date}`
+  }
+
+  get granted(): BigNumber {
+    return this.rewards.totalUnvested.plus(this.rewards.totalVested).plus(this.rewards.totalPreviouslyVested)
+  }
 }
 
 function parseStakedPosition(
@@ -599,21 +628,21 @@ function parseStakedPosition(
   claimable: string,
   tuple: {0: string; 1: [string, string, string, string, string, string]; 2: string; 3: string}
 ): StakedPosition {
-  return {
-    id: tokenId,
-    amount: new BigNumber(tuple[0]),
-    leverageMultiplier: new BigNumber(tuple[2]),
-    lockedUntil: tuple[3],
-    rewards: {
+  return new StakedPosition(
+    tokenId,
+    new BigNumber(tuple[0]),
+    new BigNumber(tuple[2]),
+    parseInt(tuple[3], 10),
+    new BigNumber(claimable),
+    {
       totalUnvested: new BigNumber(tuple[1][0]),
       totalVested: new BigNumber(tuple[1][1]),
       totalPreviouslyVested: new BigNumber(tuple[1][2]),
       totalClaimed: new BigNumber(tuple[1][3]),
-      startTime: tuple[1][4],
-      endTime: tuple[1][5],
-      claimable: new BigNumber(claimable),
-    },
-  }
+      startTime: parseInt(tuple[1][4], 10),
+      endTime: parseInt(tuple[1][5], 10),
+    }
+  )
 }
 
 class StakingRewards {
@@ -682,7 +711,7 @@ class StakingRewards {
     if (!this.positions || this.positions.length === 0) return new BigNumber(0)
     return BigNumber.sum.apply(
       null,
-      this.positions.map((stakedPosition) => stakedPosition.rewards.claimable)
+      this.positions.map((stakedPosition) => stakedPosition.claimable)
     )
   }
 
@@ -707,5 +736,5 @@ class StakingRewards {
   }
 }
 
-export {fetchCapitalProviderData, fetchPoolData, SeniorPool, Pool, emptyCapitalProvider, StakingRewards}
-export type {PoolData, CapitalProvider, StakedPosition}
+export {fetchCapitalProviderData, fetchPoolData, SeniorPool, Pool, emptyCapitalProvider, StakingRewards, StakedPosition}
+export type {PoolData, CapitalProvider}

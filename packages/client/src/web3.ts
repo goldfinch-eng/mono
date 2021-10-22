@@ -7,6 +7,12 @@ declare let window: any
 let localStorage = window.localStorage
 let currentChain = localStorage.getItem("currentChain")
 let currentAccount = localStorage.getItem("currentAccount")
+export const SESSION_DATA_KEY = "sessionData"
+
+function cleanSessionAndReload() {
+  localStorage.removeItem(SESSION_DATA_KEY)
+  window.location.reload()
+}
 
 function withTracing(provider) {
   let requestFn = provider.request.bind(provider)
@@ -24,14 +30,22 @@ if (typeof window.ethereum !== "undefined") {
   window.ethereum.autoRefreshOnNetworkChange = false
   window.ethereum.on("chainChanged", (chainId) => {
     if (currentChain !== chainId) {
-      window.location.reload()
+      cleanSessionAndReload()
       localStorage.setItem("currentChain", chainId)
     }
   })
   window.ethereum.on("accountsChanged", (accounts) => {
     if (accounts[0] && currentAccount !== accounts[0]) {
-      window.location.reload()
+      localStorage.removeItem(SESSION_DATA_KEY)
+      if (Boolean(currentAccount)) {
+        // If the currentAccount is null or undefined the user is connecting to metamask
+        // and not changing accounts therefore a reload should be avoided to show the sign in
+        window.location.reload()
+      }
       localStorage.setItem("currentAccount", accounts[0])
+    }
+    if (accounts.length === 0) {
+      cleanSessionAndReload()
     }
   })
 } else {
