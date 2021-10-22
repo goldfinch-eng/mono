@@ -827,8 +827,13 @@ describe("StakingRewards", function () {
       rewardRate = bigVal(100)
 
       // Fix the reward rate
-      await stakingRewards.setMinRate(rewardRate)
-      await stakingRewards.setMaxRate(rewardRate)
+      await stakingRewards.setRewardsParameters(
+        targetCapacity,
+        rewardRate,
+        rewardRate,
+        minRateAtPercent,
+        maxRateAtPercent
+      )
 
       totalRewards = rewardRate.mul(yearInSeconds)
       await mintRewards(totalRewards)
@@ -947,8 +952,13 @@ describe("StakingRewards", function () {
       rewardRate = bigVal(100)
 
       // Fix the reward rate
-      await stakingRewards.setMinRate(rewardRate)
-      await stakingRewards.setMaxRate(rewardRate)
+      await stakingRewards.setRewardsParameters(
+        targetCapacity,
+        rewardRate,
+        rewardRate,
+        minRateAtPercent,
+        maxRateAtPercent
+      )
 
       totalRewards = rewardRate.mul(yearInSeconds)
       await mintRewards(totalRewards)
