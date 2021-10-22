@@ -12,6 +12,7 @@ import {
   GoldfinchConfig,
   GoldfinchFactory,
   SeniorPool,
+  StakingRewards,
   TestERC20,
   TestForwarder,
   TranchedPool,
@@ -179,11 +180,27 @@ async function main(hre: HardhatRuntimeEnvironment, options: OverrideOptions) {
 
   const amount = new BN(String(1e8)).mul(GFI_DECIMALS)
   const communityRewards = await getDeployedAsEthersContract<CommunityRewards>(getOrNull, "CommunityRewards")
-  const gfi = await getDeployedAsEthersContract<GFI>(getOrNull, "GFI")
+  const stakingRewards = await getDeployedAsEthersContract<StakingRewards>(getOrNull, "StakingRewards")
+  const rewardsAmount = amount.div(new BN(2))
 
+  const gfi = await getDeployedAsEthersContract<GFI>(getOrNull, "GFI")
   await gfi.mint(protocol_owner, amount.toString())
-  await gfi.approve(communityRewards.address, amount.toString())
-  await communityRewards.loadRewards(amount.toString())
+  await gfi.approve(communityRewards.address, rewardsAmount.toString())
+  await gfi.approve(stakingRewards.address, rewardsAmount.toString())
+
+  await communityRewards.loadRewards(rewardsAmount.toString())
+  await stakingRewards.loadRewards(rewardsAmount.toString())
+
+  const targetCapacity = new BN(1000).mul(new BN(String(1e18)))
+  const maxRate = new BN(1000).mul(new BN(String(1e18)))
+  const minRate = new BN(100).mul(new BN(String(1e18)))
+  const maxRateAtPercent = new BN(5).mul(new BN(String(1e17))) // 50%
+  const minRateAtPercent = new BN(3).mul(new BN(String(1e18))) // 300%
+  await stakingRewards.setTargetCapacity(targetCapacity.toString())
+  await stakingRewards.setMaxRateAtPercent(maxRateAtPercent.toString())
+  await stakingRewards.setMinRateAtPercent(minRateAtPercent.toString())
+  await stakingRewards.setMaxRate(maxRate.toString())
+  await stakingRewards.setMinRate(minRate.toString())
 }
 
 async function getERC20s({chainId, getOrNull}) {
