@@ -3,10 +3,18 @@ import {AppContext} from "../App"
 import {assertNonNullable} from "../utils"
 import web3 from "../web3"
 
+type UseSendFromUserOptions = {
+  rejectOnError: boolean
+}
+
+type SendTransactionOptions = {
+  rejectOnError: boolean
+}
+
 function useSendFromUser() {
   const {refreshUserData, user, networkMonitor} = useContext(AppContext)
 
-  async function sendTransaction(unsentAction, txData, gasPrice, options) {
+  async function sendTransaction(unsentAction, txData, gasPrice, options: SendTransactionOptions) {
     assertNonNullable(networkMonitor)
     // unsent action could be a promise that returns the action, so resolve it
     unsentAction = await Promise.resolve(unsentAction)
@@ -16,7 +24,7 @@ function useSendFromUser() {
       // We need to assign it a temporary id, so we can update it if we get an error back
       // (since we only get a txid if relay call succeed)
       txData = networkMonitor.addPendingTX({status: "pending", ...txData})
-      return new Promise<void>((resolve) => {
+      return new Promise<void>((resolve, reject) => {
         unsentAction()
           .then((res) => {
             if (res.status === "success") {
@@ -32,12 +40,12 @@ function useSendFromUser() {
               resolve()
             }
           })
-          .catch((error) => {
+          .catch((err: unknown) => {
             // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
-            networkMonitor.markTXErrored(txData, {message: error.message})
+            networkMonitor.markTXErrored(txData, {message: err.message})
 
             if (options.rejectOnError) {
-              throw error
+              reject(err)
             } else {
               resolve()
             }
@@ -62,14 +70,14 @@ function useSendFromUser() {
             resolve()
           })
         })
-        .on("error", (error) => {
-          if (error.code === -32603) {
-            error.message = "Something went wrong with your transaction."
+        .on("error", (err) => {
+          if (err.code === -32603) {
+            err.message = "Something went wrong with your transaction."
           }
-          networkMonitor.markTXErrored(txData, error)
+          networkMonitor.markTXErrored(txData, err)
 
           if (options.rejectOnError) {
-            reject(error)
+            reject(err)
           } else {
             // @ts-expect-error ts-migrate(2794) FIXME: Expected 1 arguments, but got 0. Did you forget to... Remove this comment to see the full error message
             resolve()
@@ -78,14 +86,12 @@ function useSendFromUser() {
     })
   }
 
-  return (unsentAction, txData, options) => {
-    options = options || {}
-
+  return (unsentAction, txData, options: UseSendFromUserOptions = {rejectOnError: false}) => {
     return web3.eth.getGasPrice().then(
       async (gasPrice) => {
         try {
           await sendTransaction(unsentAction, txData, gasPrice, options)
-        } catch (err) {
+        } catch (err: unknown) {
           console.log(`Error sending transaction: ${err}`)
 
           if (options.rejectOnError) {
@@ -93,7 +99,7 @@ function useSendFromUser() {
           }
         }
       },
-      (err) => {
+      (err: unknown) => {
         console.log(`Unable to get gas price: ${err}`)
 
         if (options.rejectOnError) {
