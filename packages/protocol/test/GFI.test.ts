@@ -4,6 +4,7 @@ import BN from "bn.js"
 import {expectEvent} from "@openzeppelin/test-helpers"
 import {GFIInstance} from "../typechain/truffle"
 import {assertNonNullable} from "@goldfinch-eng/utils"
+import {ETHDecimals} from "../blockchain_scripts/deployHelpers"
 
 interface TestSetupReturn {
   gfi: GFIInstance
@@ -109,6 +110,14 @@ describe("GFI", () => {
       it("has pauser role", async () => {
         expect(await gfi.hasRole(await gfi.PAUSER_ROLE(), owner)).to.eq(true)
       })
+    })
+  })
+
+  describe("cap", () => {
+    it("is initially 1e26", async () => {
+      const oneHundredMillion = new BN("100000000")
+      const expectedCap = oneHundredMillion.mul(ETHDecimals)
+      expect(await gfi.cap()).to.bignumber.eq(expectedCap)
     })
   })
 
