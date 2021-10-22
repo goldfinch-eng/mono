@@ -190,17 +190,6 @@ async function main(hre: HardhatRuntimeEnvironment, options: OverrideOptions) {
 
   await communityRewards.loadRewards(rewardsAmount.toString())
   await stakingRewards.loadRewards(rewardsAmount.toString())
-
-  const targetCapacity = new BN(1000).mul(new BN(String(1e18)))
-  const maxRate = new BN(1000).mul(new BN(String(1e18)))
-  const minRate = new BN(100).mul(new BN(String(1e18)))
-  const maxRateAtPercent = new BN(5).mul(new BN(String(1e17))) // 50%
-  const minRateAtPercent = new BN(3).mul(new BN(String(1e18))) // 300%
-  await stakingRewards.setTargetCapacity(targetCapacity.toString())
-  await stakingRewards.setMaxRateAtPercent(maxRateAtPercent.toString())
-  await stakingRewards.setMinRateAtPercent(minRateAtPercent.toString())
-  await stakingRewards.setMaxRate(maxRate.toString())
-  await stakingRewards.setMinRate(minRate.toString())
 }
 
 async function getERC20s({chainId, getOrNull}) {
