@@ -87,8 +87,7 @@ function SeniorPoolView(): JSX.Element {
       <div className="page-header"> {earnMessage}</div>
       <ConnectionNotice
         requireUnlock={false}
-        requireSignIn={true}
-        requireKYC={{kyc: kycResult, condition: eligibleForSeniorPool}}
+        requireKYC={{kyc: kycResult, condition: (kyc) => eligibleForSeniorPool(kyc, user)}}
         isPaused={!!poolData?.pool?.isPaused}
       />
       {maxCapacityNotice}

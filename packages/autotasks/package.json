@@ -10,7 +10,7 @@
     "lint:fix": "eslint --resolve-plugins-relative-to=. --fix .",
     "deploy": "node deployAutoTasks.js"
   },
-  "author": "Goldfinch",
+  "author": "The Goldfinch Community <engineering@goldfinch.finance>",
   "license": "MIT",
   "lint-staged": {
     "*.(js(x)?|ts(x)?)": ["prettier --write", "eslint --resolve-plugins-relative-to=. --fix"]

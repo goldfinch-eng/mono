@@ -32,14 +32,14 @@ function EarnActionsContainer(props: EarnActionsContainerProps) {
   }
 
   let placeholderClass = ""
-  if (!user.address || !eligibleForSeniorPool(kyc)) {
+  if (!user.address || !eligibleForSeniorPool(kyc, user)) {
     placeholderClass = "placeholder"
   }
 
   let depositAction
   let depositClass = "disabled"
   let remainingCapacity = props.poolData?.remainingCapacity(goldfinchConfig.totalFundsLimit) || new BigNumber("0")
-  if (eligibleForSeniorPool(kyc) && props.capitalProvider && remainingCapacity.gt("0")) {
+  if (eligibleForSeniorPool(kyc, user) && props.capitalProvider && remainingCapacity.gt("0")) {
     depositAction = (e) => {
       setShowAction("deposit")
     }
@@ -48,7 +48,7 @@ function EarnActionsContainer(props: EarnActionsContainerProps) {
 
   let withdrawAction
   let withdrawClass = "disabled"
-  if (eligibleForSeniorPool(kyc) && props.capitalProvider.availableToWithdraw.gt(0)) {
+  if (eligibleForSeniorPool(kyc, user) && props.capitalProvider.availableToWithdraw.gt(0)) {
     withdrawAction = (e) => {
       setShowAction("withdrawal")
     }

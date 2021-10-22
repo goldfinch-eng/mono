@@ -120,8 +120,8 @@ contract CommunityRewards is ICommunityRewards, ERC721PresetMinterPauserAutoIdUp
     uint256 vestingLength,
     uint256 cliffLength,
     uint256 vestingInterval
-  ) external override nonReentrant whenNotPaused onlyDistributor {
-    _grant(recipient, amount, vestingLength, cliffLength, vestingInterval);
+  ) external override nonReentrant whenNotPaused onlyDistributor returns (uint256 tokenId) {
+    return _grant(recipient, amount, vestingLength, cliffLength, vestingInterval);
   }
 
   function _grant(
@@ -130,7 +130,7 @@ contract CommunityRewards is ICommunityRewards, ERC721PresetMinterPauserAutoIdUp
     uint256 vestingLength,
     uint256 cliffLength,
     uint256 vestingInterval
-  ) internal {
+  ) internal returns (uint256 tokenId) {
     require(amount > 0, "Cannot grant 0 amount");
     require(cliffLength <= vestingLength, "Cliff length cannot exceed vesting length");
     require(vestingLength.mod(vestingInterval) == 0, "Vesting interval must be a factor of vesting length");
@@ -139,7 +139,7 @@ contract CommunityRewards is ICommunityRewards, ERC721PresetMinterPauserAutoIdUp
     rewardsAvailable = rewardsAvailable.sub(amount);
 
     _tokenIdTracker.increment();
-    uint256 tokenId = _tokenIdTracker.current();
+    tokenId = _tokenIdTracker.current();
 
     grants[tokenId] = CommunityRewardsVesting.Rewards({
       totalGranted: amount,
@@ -154,6 +154,8 @@ contract CommunityRewards is ICommunityRewards, ERC721PresetMinterPauserAutoIdUp
     _mint(recipient, tokenId);
 
     emit Granted(recipient, tokenId, amount, vestingLength, cliffLength, vestingInterval);
+
+    return tokenId;
   }
 
   /// @notice Claim rewards for a given grant
