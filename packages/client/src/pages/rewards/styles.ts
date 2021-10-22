@@ -64,7 +64,7 @@ export const Column = styled.div`
   width: 100%;
 
   > * + * {
-    margin: 0 44px 0 0;
+    margin: 0 12px 0 0;
   }
 `
 
