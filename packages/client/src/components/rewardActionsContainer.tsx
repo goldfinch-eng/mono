@@ -82,8 +82,10 @@ function RewardsListItem(props: RewardsListItemProps) {
   const actionButtonComponent =
     props.status === RewardStatus.Accept ? (
       <ActionButton text="Accept" onClick={props.handleOnClick} disabled={false} />
-    ) : props.status === RewardStatus.Claim ? (
-      <ActionButton text="Claim GFI" onClick={props.handleOnClick} disabled={props.claimableGFI.eq(0)} />
+    ) : props.status === RewardStatus.Claim && props.claimableGFI.eq(0) ? (
+      <ActionButton text="Vesting" onClick={props.handleOnClick} disabled />
+    ) : props.status === RewardStatus.Claim && !props.claimableGFI.eq(0) ? (
+      <ActionButton text="Claim GFI" onClick={props.handleOnClick} disabled={false} />
     ) : (
       <ActionButton text="Claimed" onClick={props.handleOnClick} disabled />
     )
@@ -183,7 +185,6 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     if (item.rewards.totalClaimed.isEqualTo(item.granted) && !item.granted.eq(0)) {
       return (
         <RewardsListItem
-          key={`reward-${item.rewards.startTime}`}
           status={RewardStatus.Finished}
           title={title}
           grantedGFI={item.granted}
@@ -194,7 +195,6 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     } else if (!showAction) {
       return (
         <RewardsListItem
-          key={`reward-${item.rewards.startTime}`}
           status={RewardStatus.Claim}
           title={title}
           grantedGFI={item.granted}
@@ -221,7 +221,6 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     const title = capitalizeReason(props.item.reason)
     return (
       <RewardsListItem
-        key={`${props.item.reason}-${props.item.index}`}
         status={RewardStatus.Accept}
         title={title}
         grantedGFI={new BigNumber(props.item.grant.amount)}
