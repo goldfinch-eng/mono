@@ -5,8 +5,11 @@ import Web3 from "web3"
 import {CONFIRMATION_THRESHOLD} from "../ethereum/utils"
 import {Subscription} from "web3-core-subscriptions"
 import {BlockHeader} from "web3-eth"
+import {AbstractProvider} from "web3-core"
+import {assertNonNullable} from "../utils"
 
 const NOTIFY_API_KEY = "8447e1ef-75ab-4f77-b98f-f1ade3bb1982"
+const MURMURATION_CHAIN_ID = 31337
 
 class NetworkMonitor {
   web3: Web3
@@ -34,6 +37,12 @@ class NetworkMonitor {
     this.blockHeaderSubscription.on("data", (blockHeader) => {
       this.newBlockHeaderReceived(blockHeader)
     })
+
+    if (process.env.REACT_APP_MURMURATION === "yes" && this.networkId !== MURMURATION_CHAIN_ID) {
+      const currentProvider: AbstractProvider = this.web3.currentProvider as AbstractProvider
+      assertNonNullable(currentProvider.request)
+      await currentProvider.request({method: "wallet_switchEthereumChain", params: [{chainId: "0x7A69"}]})
+    }
   }
 
   get isLocalNetwork() {

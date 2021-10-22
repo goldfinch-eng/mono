@@ -101,6 +101,7 @@ async function prepareMigration() {
 
 async function deployAndMigrateToV2() {
   const {gf_deployer} = await getNamedAccounts()
+  assertNonNullable(gf_deployer)
   const migrator = await getContract("V2Migrator", TRUFFLE_CONTRACT_PROVIDER, {from: gf_deployer})
   const chainId = isMainnetForking() ? MAINNET_CHAIN_ID : await getChainId()
   assertIsChainId(chainId)

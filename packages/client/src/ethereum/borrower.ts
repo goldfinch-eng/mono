@@ -38,7 +38,7 @@ class BorrowerInterface {
 
   async initialize() {
     let poolEvents = await this.goldfinchProtocol.queryEvents("GoldfinchFactory", ["PoolCreated"], {
-      borrower: this.borrowerAddress,
+      borrower: [this.borrowerAddress, this.userAddress],
     })
     this.borrowerPoolAddresses = poolEvents.map((e: any) => e.returnValues.pool)
     for (let address of this.borrowerPoolAddresses) {

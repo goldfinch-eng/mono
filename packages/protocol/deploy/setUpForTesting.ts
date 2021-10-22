@@ -288,6 +288,7 @@ async function writePoolMetadata({
   const description =
     "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc eget mi fringilla, maximus quam sodales, condimentum arcu. Vivamus arcu lorem, ultrices at ligula ut, tempor consectetur nibh. Vivamus commodo felis eu urna facilisis, feugiat gravida lectus egestas. Suspendisse consectetur urna at ornare lacinia. Etiam erat nunc, interdum sed gravida at, condimentum in metus. Mauris at sagittis libero."
   const detailsUrl = "https://example.com"
+  const NDAUrl = "https://example.com"
   const status = [false, true, undefined]
 
   const metadataPath = "../../packages/client/config/pool-metadata/localhost.json"
@@ -306,6 +307,7 @@ async function writePoolMetadata({
     icon: _.sample(icons),
     description,
     detailsUrl,
+    NDAUrl,
     backerLimit,
     disabled: _.sample(status),
   }
