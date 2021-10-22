@@ -1,4 +1,5 @@
 import BigNumber from "bignumber.js"
+import BN from "bn.js"
 import {fetchDataFromAttributes, getPoolEvents, INTEREST_DECIMALS, USDC_DECIMALS} from "./utils"
 import {Tickers, usdcFromAtomic} from "./erc20"
 import {FIDU_DECIMALS, sharesToBalance, balanceInDollars} from "./fidu"
@@ -9,6 +10,7 @@ import {Contract, EventData} from "web3-eth-contract"
 import {Pool as PoolContract} from "@goldfinch-eng/protocol/typechain/web3/Pool"
 import {SeniorPool as SeniorPoolContract} from "@goldfinch-eng/protocol/typechain/web3/SeniorPool"
 import {StakingRewards as StakingRewardsContract} from "@goldfinch-eng/protocol/typechain/web3/StakingRewards"
+import {StakingRewardsVesting} from "@goldfinch-eng/protocol/typechain/web3/StakingRewardsVesting"
 import {Fidu as FiduContract} from "@goldfinch-eng/protocol/typechain/web3/Fidu"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {TranchedPool} from "@goldfinch-eng/protocol/typechain/web3/TranchedPool"
@@ -664,9 +666,20 @@ class StakedPosition {
   }
 }
 
+function parseRewards(tuple: {0: string; 1: [string, string, string, string, string, string]; 2: string; 3: string}) {
+  return {
+    totalUnvested: new BigNumber(tuple[1][0]),
+    totalVested: new BigNumber(tuple[1][1]),
+    totalPreviouslyVested: new BigNumber(tuple[1][2]),
+    totalClaimed: new BigNumber(tuple[1][3]),
+    startTime: parseInt(tuple[1][4], 10),
+    endTime: parseInt(tuple[1][5], 10),
+  }
+}
+
 function parseStakedPosition(
   tokenId: string,
-  claimable: string,
+  claimable: BigNumber,
   tuple: {0: string; 1: [string, string, string, string, string, string]; 2: string; 3: string}
 ): StakedPosition {
   return new StakedPosition(
@@ -674,21 +687,15 @@ function parseStakedPosition(
     new BigNumber(tuple[0]),
     new BigNumber(tuple[2]),
     parseInt(tuple[3], 10),
-    new BigNumber(claimable),
-    {
-      totalUnvested: new BigNumber(tuple[1][0]),
-      totalVested: new BigNumber(tuple[1][1]),
-      totalPreviouslyVested: new BigNumber(tuple[1][2]),
-      totalClaimed: new BigNumber(tuple[1][3]),
-      startTime: parseInt(tuple[1][4], 10),
-      endTime: parseInt(tuple[1][5], 10),
-    }
+    claimable,
+    parseRewards(tuple)
   )
 }
 
 class StakingRewards {
   goldfinchProtocol: GoldfinchProtocol
   contract: StakingRewardsContract
+  stakingRewardsVesting: StakingRewardsVesting
   address: string
   loaded: boolean
   isPaused: boolean
@@ -700,6 +707,7 @@ class StakingRewards {
   constructor(goldfinchProtocol: GoldfinchProtocol) {
     this.goldfinchProtocol = goldfinchProtocol
     this.contract = goldfinchProtocol.getContract<StakingRewardsContract>("StakingRewards")
+    this.stakingRewardsVesting = this.goldfinchProtocol.getContract<StakingRewardsVesting>("StakingRewardsVesting")
     this.address = goldfinchProtocol.getAddress("StakingRewards")
     this.loaded = false
     this.isPaused = false
@@ -728,7 +736,22 @@ class StakingRewards {
           .positions(tokenId)
           .call(undefined, currentBlock.number)
           .then(async (res) => {
-            const claimable = await this.contract.methods.claimableRewards(tokenId).call(undefined, currentBlock.number)
+            const earnedSinceLastCheckpoint = new BigNumber(
+              await this.contract.methods.earnedSinceLastCheckpoint(tokenId).call(undefined, currentBlock.number)
+            )
+            const rewards = parseRewards(res)
+            const currentGrant = rewards.totalUnvested.plus(rewards.totalVested).plus(earnedSinceLastCheckpoint)
+            const currentGrantTotalVested = await this.stakingRewardsVesting.methods
+              .totalVestedAt(
+                String(rewards.startTime),
+                String(rewards.endTime),
+                String(currentBlock.timestamp),
+                new BN(String(currentGrant))
+              )
+              .call(undefined, currentBlock.number)
+
+            const totalVested = rewards.totalPreviouslyVested.plus(new BigNumber(currentGrantTotalVested))
+            const claimable = totalVested.minus(rewards.totalClaimed)
             return parseStakedPosition(tokenId, claimable, res)
           })
       })
