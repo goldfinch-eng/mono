@@ -49,8 +49,12 @@
     flex-wrap: wrap;
   }
 
-  .value {
+  .disabled-value {
     color: $sand-xxdark;
+    margin-right: 4px;
+  }
+
+  .value {
     margin-right: 4px;
   }
 

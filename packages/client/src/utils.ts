@@ -11,7 +11,7 @@ export function croppedAddress(address) {
 }
 
 export function displayNumber(val, decimals): string {
-  if (val === "") {
+  if (val === "" || isNaN(val)) {
     return ""
   }
 

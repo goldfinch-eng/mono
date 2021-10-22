@@ -19,6 +19,7 @@ interface RewardsSummaryProps {
 }
 
 function RewardsSummary(props: RewardsSummaryProps) {
+  const valueDisabledClass = !props.totalGFI || props.totalGFI.eq(0) ? "disabled-value" : "value"
   return (
     <div className="rewards-summary background-container">
       <div className="rewards-summary-left-item">
@@ -31,28 +32,28 @@ function RewardsSummary(props: RewardsSummaryProps) {
         <div className="details-item">
           <span>Wallet balance</span>
           <div>
-            <span className="value">{displayNumber(gfiFromAtomic(props.walletBalance), 2)}</span>
+            <span className={valueDisabledClass}>{displayNumber(gfiFromAtomic(props.walletBalance), 2)}</span>
             <span>GFI</span>
           </div>
         </div>
         <div className="details-item">
           <span>Claimable</span>
           <div>
-            <span className="value">{displayNumber(gfiFromAtomic(props.claimable), 2)}</span>
+            <span className={valueDisabledClass}>{displayNumber(gfiFromAtomic(props.claimable), 2)}</span>
             <span>GFI</span>
           </div>
         </div>
         <div className="details-item">
           <span>Still vesting</span>
           <div>
-            <span className="value">{displayNumber(gfiFromAtomic(props.unvested), 2)}</span>
+            <span className={valueDisabledClass}>{displayNumber(gfiFromAtomic(props.unvested), 2)}</span>
             <span>GFI</span>
           </div>
         </div>
         <div className="details-item total-balance">
           <span>Total balance</span>
           <div>
-            <span className="value">{displayNumber(gfiFromAtomic(props.totalGFI), 2)}</span>
+            <span className={valueDisabledClass}>{displayNumber(gfiFromAtomic(props.totalGFI), 2)}</span>
             <span>GFI</span>
           </div>
         </div>
@@ -87,9 +88,14 @@ function getSortedRewards(
     let val = i1.claimable.minus(i2.claimable)
     if (!val.isZero()) return val.isPositive() ? -1 : 1
 
-    // deprioritizes completely claimed rewards
-    if (i1.granted.minus(i1.rewards.totalClaimed).eq(0) || i2.granted.minus(i2.rewards.totalClaimed).eq(0)) {
+    // deprioritizes i1 if completely claimed
+    if (i1.granted.minus(i1.rewards.totalClaimed).eq(0) && !i2.granted.minus(i2.rewards.totalClaimed).eq(0)) {
       return 1
+    }
+
+    // deprioritizes i2 if completely claimed
+    if (!i1.granted.minus(i1.rewards.totalClaimed).eq(0) && i2.granted.minus(i2.rewards.totalClaimed).eq(0)) {
+      return -1
     }
 
     if (i1 instanceof StakedPosition && i2 instanceof CommunityRewardsVesting) {
