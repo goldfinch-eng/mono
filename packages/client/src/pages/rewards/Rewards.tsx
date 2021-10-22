@@ -121,6 +121,7 @@ function OpenDetails(props: OpenDetailsProps) {
 
 interface DetailsProps {
   open: boolean
+  disabled: boolean
   transactionDetails: string
   vestingSchedule: string
   claimStatus: string
@@ -131,7 +132,7 @@ interface DetailsProps {
 
 function Details(props: DetailsProps) {
   return (
-    <DetailsContainer open={props.open}>
+    <DetailsContainer open={props.open} disabled={props.disabled}>
       <ColumnsContainer>
         <Column>
           <Detail>
@@ -219,6 +220,7 @@ function RewardsListItem(props: RewardsListItemProps) {
           {open && (
             <Details
               open={open}
+              disabled={props.claimableGFI.eq(0)}
               transactionDetails={fakeDetailsObject.transactionDetails}
               vestingSchedule={fakeDetailsObject.vestingSchedule}
               claimStatus={fakeDetailsObject.claimStatus}
@@ -252,6 +254,7 @@ function RewardsListItem(props: RewardsListItemProps) {
           {open && (
             <Details
               open={open}
+              disabled={props.claimableGFI.eq(0)}
               transactionDetails={fakeDetailsObject.transactionDetails}
               vestingSchedule={fakeDetailsObject.vestingSchedule}
               claimStatus={fakeDetailsObject.claimStatus}

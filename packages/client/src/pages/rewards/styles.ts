@@ -3,6 +3,7 @@ import {mediaPoint} from "../../styles/mediaPoint"
 
 interface DetailsContainerProps {
   open: boolean
+  disabled: boolean
 }
 
 export const DetailsContainer = styled.div<DetailsContainerProps>`
@@ -13,6 +14,19 @@ export const DetailsContainer = styled.div<DetailsContainerProps>`
   border-bottom-left-radius: 6px;
 
   ${({open, theme}) => open && `border-top: 2px solid ${theme.colors.sand};`}
+
+  ${({disabled, theme}) =>
+    disabled &&
+    `
+      span, a {
+        color: ${theme.colors.sandXxDark};
+        pointer-events: none;
+      }
+      
+      ${EtherscanLinkContainer} svg path {
+        fill: ${theme.colors.sandXxDark};
+      }
+    `}
 
   ${({theme}) => mediaPoint(theme).screenL} {
     margin: -28px -25px 24px;
