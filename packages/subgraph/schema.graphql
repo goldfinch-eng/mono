@@ -1,0 +1,68 @@
+"""
+Notes
+- address are mapped as IDs
+"""
+
+type SeniorPool @entity {
+  id: ID!
+  capitalProviders: [User!]!
+  lastestPoolStatus: SeniorPoolStatus!
+}
+
+type SeniorPoolStatus @entity {
+  id: ID!
+  rawBalance: BigInt!
+  compoundBalance: BigInt!
+  balance: BigInt!
+  sharePrice: BigInt!
+  totalShares: BigInt!
+  totalPoolAssets: BigInt!
+  totalLoansOutstanding: BigInt!
+  cumulativeWritedowns: BigInt!
+  cumulativeDrawdowns: BigInt!      # TODO requries tranched pool data
+  estimatedTotalInterest: BigInt!   # TODO requries tranched pool data
+  estimatedApy: BigInt!             # TODO requires estimatedTotalInterest
+  defaultRate: BigInt!              # TODO requires cumulativeDrawdowns
+
+  remainingCapacity: BigInt         # TODO requires goldfinchConfig.totalFundsLimit
+}
+
+type CapitalProviderStatus @entity {
+  id: ID!
+  user: User!
+  numShares: BigInt!
+  availableToWithdraw: BigInt!
+  allowance: BigInt!
+  weightedAverageSharePrice: BigDecimal
+  unrealizedGains: BigDecimal
+  unrealizedGainsPercentage: BigDecimal   # TODO conversion issues
+  availableToWithdrawInDollars: BigInt    # TODO
+  unrealizedGainsInDollars: BigInt        # TODO
+}
+
+type SeniorPoolDeposit @entity {
+  """
+  tx hash
+  """
+  id: ID!
+  user: User!
+  shares: BigInt!
+  amount: BigInt!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+}
+
+enum UserType {
+  BACKER
+  CAPITAL_PROVIDER
+  BORROWER
+}
+
+type User @entity {
+  id: ID!
+  type: UserType
+  capitalProviderStatus: CapitalProviderStatus
+  goListed: Boolean
+
+  seniorPoolDeposits: [SeniorPoolDeposit!]! @derivedFrom(field: "user")
+}
