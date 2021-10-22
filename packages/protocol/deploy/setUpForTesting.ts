@@ -33,12 +33,15 @@ import {
   LOCAL_CHAIN_ID,
   getProtocolOwner,
   ContractDeployer,
+  SIGNER_ROLE,
 } from "../blockchain_scripts/deployHelpers"
 import {impersonateAccount, fundWithWhales} from "../blockchain_scripts/mainnetForkingHelpers"
 import _ from "lodash"
 import {assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
 import {Result} from "ethers/lib/utils"
 import {advanceTime, toEthers, usdcVal} from "../test/testHelpers"
+
+import * as migrate from "../blockchain_scripts/migrations/v2.1/migrate"
 
 /*
 This deployment deposits some funds to the pool, and creates an underwriter, and a credit line.
@@ -83,6 +86,11 @@ async function main(hre: HardhatRuntimeEnvironment, options: OverrideOptions) {
   }
 
   if (isMainnetForking()) {
+    const protocolOwner = await getProtocolOwner()
+    await impersonateAccount(hre, protocolOwner)
+    await fundWithWhales(["ETH"], [protocolOwner])
+    await migrate.main()
+
     logger("Funding protocol_owner with whales")
     underwriter = protocol_owner
     await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [protocol_owner, gf_deployer, borrower], new BN("75000"))

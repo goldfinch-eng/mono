@@ -1,13 +1,13 @@
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
-/// <reference path="../node_modules/hardhat-deploy/src/type-extensions.ts" />
+/// <reference path="../../node_modules/hardhat-deploy/src/type-extensions.ts" />
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
-/// <reference path="../node_modules/@nomiclabs/hardhat-ethers/src/internal/type-extensions.ts" />
+/// <reference path="../../node_modules/@nomiclabs/hardhat-ethers/src/internal/type-extensions.ts" />
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
-/// <reference path="../node_modules/@nomiclabs/hardhat-web3/src/type-extensions.ts" />
+/// <reference path="../../node_modules/@nomiclabs/hardhat-web3/src/type-extensions.ts" />
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
-/// <reference path="../node_modules/@nomiclabs/hardhat-truffle5/src/type-extensions.ts" />
+/// <reference path="../../node_modules/@nomiclabs/hardhat-truffle5/src/type-extensions.ts" />
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
-/// <reference path="../typechain/truffle/types.d.ts" />
+/// <reference path="../../typechain/truffle/types.d.ts" />
 
 import {ethers, getChainId, getNamedAccounts} from "hardhat"
 type Ethers = typeof ethers
@@ -20,10 +20,10 @@ const INTEREST_DECIMALS = new BN(String(1e18))
 const DEFENDER_API_KEY = process.env.DEFENDER_API_KEY || "A2UgCPgn8jQbkSVuSCxEMhFmivdV9C6d"
 const DEFENDER_API_SECRET = process.env.DEFENDER_API_SECRET
 import {AdminClient} from "defender-admin-client"
-import PROTOCOL_CONFIG from "../protocol_config.json"
-import {CONFIG_KEYS} from "./configKeys"
-import {GoldfinchConfig} from "../typechain/ethers"
-import {DeploymentsExtension, DeployResult} from "hardhat-deploy/types"
+import PROTOCOL_CONFIG from "../../protocol_config.json"
+import {CONFIG_KEYS} from "../configKeys"
+import {GoldfinchConfig} from "../../typechain/ethers"
+import {DeploymentsExtension, DeployResult, DeployOptions} from "hardhat-deploy/types"
 import {Contract, BaseContract, Signer} from "ethers"
 import {
   AssertionError,
@@ -32,9 +32,12 @@ import {
   assertUnreachable,
   genExhaustiveTuple,
 } from "@goldfinch-eng/utils"
-import {getExistingContracts, MAINNET_MULTISIG} from "./mainnetForkingHelpers"
+import {getExistingContracts, MAINNET_MULTISIG} from "../mainnetForkingHelpers"
 import {HardhatRuntimeEnvironment} from "hardhat/types"
-import {Logger} from "./types"
+import {Logger} from "../types"
+
+import {ContractDeployer} from "./contractDeployer"
+import {ContractUpgrader} from "./contractUpgrader"
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
@@ -43,7 +46,7 @@ const MAINNET_USDC_ADDRESS = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
 const MAINNET_ONE_SPLIT_ADDRESS = "0xC586BeF4a0992C495Cf22e1aeEE4E446CECDee0E"
 const MAINNET_CUSDC_ADDRESS = "0x39aa39c021dfbae8fac545936693ac917d5e7563"
 const MAINNET_COMP_ADDRESS = "0xc00e94cb662c3520282e6f5717214004a7f26888"
-const LOCAL = "local"
+const LOCAL = "localhost"
 const ROPSTEN = "ropsten"
 const RINKEBY = "rinkeby"
 const MAINNET = "mainnet"
@@ -355,6 +358,20 @@ type GetContractOptions = {
   from?: string
 }
 
+export async function getEthersContract<T extends BaseContract | Contract = Contract>(
+  contractName: string,
+  opts: GetContractOptions = {}
+): Promise<T> {
+  return await getContract<T, never, ETHERS_CONTRACT_PROVIDER>(contractName, ETHERS_CONTRACT_PROVIDER, opts)
+}
+
+export async function getTruffleContract<T extends Truffle.ContractInstance = Truffle.ContractInstance>(
+  contractName: string,
+  opts: GetContractOptions = {}
+): Promise<T> {
+  return await getContract<never, T, TRUFFLE_CONTRACT_PROVIDER>(contractName, TRUFFLE_CONTRACT_PROVIDER, opts)
+}
+
 async function getContract<
   E,
   T extends Truffle.ContractInstance,
@@ -420,39 +437,10 @@ async function getProtocolOwner(): Promise<string> {
   }
 }
 
-async function currentChainId(): Promise<string> {
-  return isMainnetForking() ? MAINNET_CHAIN_ID : await getChainId()
-}
-
-class ContractDeployer {
-  private readonly logger: Logger
-  private readonly hre: HardhatRuntimeEnvironment
-
-  constructor(logger: Logger, hre: HardhatRuntimeEnvironment) {
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
-    this.logger = process.env.NODE_ENV === "test" ? () => {} : logger
-    this.hre = hre
-  }
-
-  async getNamedAccounts() {
-    return this.hre.getNamedAccounts()
-  }
-
-  async getChainId() {
-    return this.hre.getChainId()
-  }
-
-  async deploy<T extends BaseContract | Contract = Contract>(contractName: string, options): Promise<T> {
-    const result = await this.hre.deployments.deploy(contractName, options)
-    this.logger(`${contractName} was deployed to: ${result.address}`)
-    return (await ethers.getContractAt(result.abi, result.address)) as T
-  }
-
-  async deployLibrary(libraryName: string, options): Promise<DeployResult> {
-    const result = await this.hre.deployments.deploy(libraryName, options)
-    this.logger(`${libraryName} library was deployed to: ${result.address}`)
-    return result
-  }
+async function currentChainId(): Promise<ChainId> {
+  const chainId = isMainnetForking() ? MAINNET_CHAIN_ID : await getChainId()
+  assertIsChainId(chainId)
+  return chainId
 }
 
 export {
@@ -498,4 +486,5 @@ export {
   TICKERS,
   assertIsTicker,
   ContractDeployer,
+  ContractUpgrader,
 }

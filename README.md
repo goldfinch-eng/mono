@@ -103,7 +103,7 @@ To get a test transaction, write a MainnetForking test, log the transaction hash
 
 ```
 # Run from the protocol directory
-npm run tenderly-test
+npm run test:tenderly
 ```
 
 Pick up the transaction hash from the output of the test and run export as above

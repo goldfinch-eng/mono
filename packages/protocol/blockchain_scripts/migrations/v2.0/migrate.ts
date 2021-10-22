@@ -13,19 +13,19 @@ import {
   TRUFFLE_CONTRACT_PROVIDER,
   assertIsChainId,
   ContractDeployer,
-} from "../deployHelpers"
+} from "../../deployHelpers"
 import {borrowerCreditlines, getMigrationData} from "./migrationHelpers"
 import {
   MAINNET_MULTISIG,
   upgradeContracts,
   getExistingContracts,
   getAllExistingContracts,
-} from "../mainnetForkingHelpers"
+} from "../../mainnetForkingHelpers"
 import {getChainId, artifacts} from "hardhat"
 import _ from "lodash"
-import {decodeLogs} from "../../test/testHelpers"
+import {decodeLogs} from "../../../test/testHelpers"
 const goList: any[] = []
-import {DefenderUpgrader} from "../adminActions/defenderUpgrader"
+import {DefenderUpgrader} from "../../adminActions/defenderUpgrader"
 import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
 
 async function main() {

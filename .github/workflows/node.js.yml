@@ -133,7 +133,7 @@ jobs:
     - name: Run tests
       env:
         ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
-      run: npx lerna run mainnet-test --stream --scope @goldfinch-eng/protocol
+      run: npx lerna run test:mainnet-forking --stream --scope @goldfinch-eng/protocol
 
   client:
     runs-on: ubuntu-latest
