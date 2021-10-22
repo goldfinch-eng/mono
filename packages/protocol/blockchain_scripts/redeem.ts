@@ -38,7 +38,7 @@ async function main() {
       principal = res[1]
     } catch (ex: unknown) {
       assertError(ex)
-      console.log(`Failed to calculate for ${poolAddress} (${ex.message})`)
+      console.log(`Failed to calculate token ${tokenId} for ${poolAddress} (${ex.message})`)
       continue
     }
 
