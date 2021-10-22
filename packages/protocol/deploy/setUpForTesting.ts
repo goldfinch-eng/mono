@@ -41,7 +41,7 @@ import {impersonateAccount, fundWithWhales} from "../blockchain_scripts/mainnetF
 import _ from "lodash"
 import {assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
 import {Result} from "ethers/lib/utils"
-import {advanceTime, GFI_DECIMALS, toEthers, usdcVal, USDC_DECIMALS} from "../test/testHelpers"
+import {advanceTime, GFI_DECIMALS, toEthers, usdcVal} from "../test/testHelpers"
 
 /*
 This deployment deposits some funds to the pool, and creates an underwriter, and a credit line.
