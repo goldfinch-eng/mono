@@ -1,9 +1,11 @@
 import {ethers} from "ethers"
 import {useCallback, useContext, useState, useEffect} from "react"
 import {AppContext} from "../App"
-import {assertNonNullable, getBlockInfo, getCurrentBlock, secondsSinceEpoch} from "../utils"
+import {assertNonNullable, getBlockInfo, getCurrentBlock} from "../utils"
 import web3 from "../web3"
 import {SESSION_DATA_VERSION} from "../types/session"
+import {isNumber, PlainObject} from "@goldfinch-eng/utils/src/type"
+import difference from "lodash/difference"
 
 export type UnknownSession = {status: "unknown"}
 export type KnownSession = {status: "known"}
@@ -81,38 +83,53 @@ export function useSignIn(): [status: Session, signIn: () => Promise<Session>] {
   return [session, signIn]
 }
 
-function isSessionDataFormatInvalid(storedInfo: Object): boolean {
-  if (!Boolean(storedInfo)) {
+const sessionDataFormatSchema = {
+  signature: (value: unknown) => typeof value === "string" && value !== undefined,
+  signatureBlockNum: (value: unknown) => typeof value === "number" && value !== undefined,
+  signatureBlockNumTimestamp: (value: unknown) => typeof value === "number" && value !== undefined,
+  version: (value: unknown) => typeof value === "number" && value !== undefined,
+}
+
+const validateSessionDataFormat = (object: PlainObject): Error[] => {
+  const requiredKeys = Object.keys(sessionDataFormatSchema)
+  const requiredKeysErrors = Object.keys(sessionDataFormatSchema)
+    .filter((key) => !sessionDataFormatSchema[key](object[key]))
+    .map((key) => new Error(`${key} is invalid.`))
+
+  const extraKeys = difference(Object.keys(object), requiredKeys)
+  const extraKeysErrors = extraKeys.length ? [new Error(`${extraKeys} are invalid.`)] : []
+
+  return requiredKeysErrors.concat(extraKeysErrors)
+}
+
+function isSessionDataFormatInvalid(storedInfo: PlainObject | undefined): boolean {
+  if (!storedInfo) {
     return true
   }
-
-  const schema = {
-    signature: (value) => typeof value === "string" && value !== undefined,
-    signatureBlockNum: (value) => typeof value === "number" && value !== undefined,
-    signatureBlockNumTimestamp: (value) => typeof value === "number" && value !== undefined,
-    version: (value) => typeof value === "number" && value !== undefined,
-  }
-
-  const validate = (object, schema) =>
-    Object.keys(schema)
-      .filter((key) => !schema[key](object[key]))
-      .map((key) => new Error(`${key} is invalid.`))
-
-  const errors = validate(storedInfo, schema)
-
+  const errors = validateSessionDataFormat(storedInfo)
   return errors.length > 0
 }
 
 const EXPIRY_IN_SECONDS = 24 * 60 * 60 // 24 hours in seconds
 
-function isSessionDataExpired(timestamp: number): boolean {
-  const currentTimestamp = secondsSinceEpoch()
-  const difference = currentTimestamp - timestamp
-
-  return EXPIRY_IN_SECONDS < difference
+function isSessionDataExpired(timestamp: number | undefined, currentTimestamp: number | undefined): boolean {
+  if (currentTimestamp) {
+    if (timestamp) {
+      const difference = currentTimestamp - timestamp
+      return EXPIRY_IN_SECONDS < difference
+    } else {
+      return true
+    }
+  } else {
+    return false
+  }
 }
 
-function getLocalStorageOrDefault(key: string, defaultValue: any): any {
+function getLocalStorageOrDefault(
+  key: string,
+  defaultValue: PlainObject,
+  currentTimestamp: number | undefined
+): PlainObject {
   const stored = localStorage.getItem(key)
   if (!stored) {
     return defaultValue
@@ -120,7 +137,7 @@ function getLocalStorageOrDefault(key: string, defaultValue: any): any {
   try {
     const sessionData = JSON.parse(stored)
 
-    if (isSessionDataInvalid(sessionData)) {
+    if (isSessionDataInvalid(sessionData, currentTimestamp)) {
       localStorage.removeItem(key)
       return defaultValue
     }
@@ -133,17 +150,27 @@ function getLocalStorageOrDefault(key: string, defaultValue: any): any {
   }
 }
 
-export function isSessionDataInvalid(sessionData) {
-  return isSessionDataFormatInvalid(sessionData) || isSessionDataExpired(sessionData?.signatureBlockNumTimestamp)
+export function isSessionDataInvalid(sessionData: PlainObject | undefined, currentTimestamp: number | undefined) {
+  const signatureBlockNumTimestamp =
+    sessionData && "signatureBlockNumTimestamp" in sessionData && isNumber(sessionData.signatureBlockNumTimestamp)
+      ? sessionData.signatureBlockNumTimestamp
+      : undefined
+  return isSessionDataFormatInvalid(sessionData) || isSessionDataExpired(signatureBlockNumTimestamp, currentTimestamp)
 }
 
-export function useSessionLocalStorage(key: string, defaultValue: any): SessionLocalStorageType {
-  const [localStorageValue, setLocalStorageValue] = useState(getLocalStorageOrDefault(key, defaultValue))
+export function useSessionLocalStorage(
+  key: string,
+  defaultValue: PlainObject,
+  currentTimestamp: number | undefined
+): SessionLocalStorageType {
+  const [localStorageValue, setLocalStorageValue] = useState(
+    getLocalStorageOrDefault(key, defaultValue, currentTimestamp)
+  )
 
   useEffect(() => {
-    const value = isSessionDataInvalid(localStorageValue) ? defaultValue : localStorageValue
+    const value = isSessionDataInvalid(localStorageValue, currentTimestamp) ? defaultValue : localStorageValue
     localStorage.setItem(key, JSON.stringify(value))
-  }, [key, localStorageValue, defaultValue])
+  }, [key, localStorageValue, defaultValue, currentTimestamp])
 
   return {localStorageValue, setLocalStorageValue}
 }
