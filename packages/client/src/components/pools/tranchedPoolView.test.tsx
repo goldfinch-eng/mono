@@ -30,7 +30,9 @@ function renderDepositForm(backerLimit, transactionLimit, userBalance, remaining
     principalAmount: new BigNumber(0),
   }
   return render(
+    // @ts-expect-error ts-migrate(2322) FIXME: Type '{ goldfinchConfig: { transactionLimit: BigNu... Remove this comment to see the full error message
     <AppContext.Provider value={store}>
+      {/* @ts-expect-error ts-migrate(2740) FIXME: Type '{ metadata: {}; creditLine: { limit: BigNumb... Remove this comment to see the full error message */}
       <TranchedPoolDepositForm tranchedPool={tranchedPool} backer={backer} actionComplete={_.noop} closeForm={_.noop} />
     </AppContext.Provider>
   )
