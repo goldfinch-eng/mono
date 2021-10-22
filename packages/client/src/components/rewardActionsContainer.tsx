@@ -16,7 +16,7 @@ import TransactionForm from "./transactionForm"
 interface ActionButtonProps {
   text: string
   disabled: boolean
-  onClick: () => any
+  onClick: () => unknown
 }
 
 function ActionButton(props: ActionButtonProps) {
@@ -42,7 +42,7 @@ interface ClaimFormProps {
   claimable: BigNumber
   disabled: boolean
   onCloseForm: () => void
-  action: () => any
+  action: () => unknown
 }
 
 function ClaimForm(props: ClaimFormProps) {
@@ -72,7 +72,7 @@ interface RewardsListItemProps {
   grantedGFI: BigNumber
   claimableGFI: BigNumber
   status: RewardStatus
-  handleOnClick: () => any
+  handleOnClick: () => unknown
 }
 
 function RewardsListItem(props: RewardsListItemProps) {
