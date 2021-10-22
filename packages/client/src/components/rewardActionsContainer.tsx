@@ -82,9 +82,9 @@ function RewardsListItem(props: RewardsListItemProps) {
   const actionButtonComponent =
     props.status === RewardStatus.Accept ? (
       <ActionButton text="Accept" onClick={props.handleOnClick} disabled={false} />
-    ) : props.status === RewardStatus.Claim && props.claimableGFI.eq(0) ? (
+    ) : props.status === RewardStatus.Claim && props.claimableGFI.isLessThanOrEqualTo(0) ? (
       <ActionButton text="Vesting" onClick={props.handleOnClick} disabled />
-    ) : props.status === RewardStatus.Claim && !props.claimableGFI.eq(0) ? (
+    ) : props.status === RewardStatus.Claim && props.claimableGFI.isGreaterThan(0) ? (
       <ActionButton text="Claim GFI" onClick={props.handleOnClick} disabled={false} />
     ) : (
       <ActionButton text="Claimed" onClick={props.handleOnClick} disabled />
