@@ -736,22 +736,8 @@ class StakingRewards {
           .positions(tokenId)
           .call(undefined, currentBlock.number)
           .then(async (res) => {
-            const earnedSinceLastCheckpoint = new BigNumber(
-              await this.contract.methods.earnedSinceLastCheckpoint(tokenId).call(undefined, currentBlock.number)
-            )
             const rewards = parseRewards(res)
-            const currentGrant = rewards.totalUnvested.plus(rewards.totalVested).plus(earnedSinceLastCheckpoint)
-            const currentGrantTotalVested = await this.stakingRewardsVesting.methods
-              .totalVestedAt(
-                String(rewards.startTime),
-                String(rewards.endTime),
-                String(currentBlock.timestamp),
-                new BN(String(currentGrant))
-              )
-              .call(undefined, currentBlock.number)
-
-            const totalVested = rewards.totalPreviouslyVested.plus(new BigNumber(currentGrantTotalVested))
-            const claimable = totalVested.minus(rewards.totalClaimed)
+            const claimable = await this.calculatedPositionClaimableAt(tokenId, currentBlock, rewards)
             return parseStakedPosition(tokenId, claimable, res)
           })
       })
@@ -760,6 +746,25 @@ class StakingRewards {
     this.unvested = this.calculateUnvested()
     this.granted = this.calculateGranted()
     this.loaded = true
+  }
+
+  async calculatedPositionClaimableAt(tokenId: string, currentBlock: BlockInfo, rewards: Rewards) {
+    const earnedSinceLastCheckpoint = new BigNumber(
+      await this.contract.methods.earnedSinceLastCheckpoint(tokenId).call(undefined, currentBlock.number)
+    )
+    const currentGrant = rewards.totalUnvested.plus(rewards.totalVested).plus(earnedSinceLastCheckpoint)
+    const currentGrantTotalVested = await this.stakingRewardsVesting.methods
+      .totalVestedAt(
+        String(rewards.startTime),
+        String(rewards.endTime),
+        String(currentBlock.timestamp),
+        new BN(String(currentGrant))
+      )
+      .call(undefined, currentBlock.number)
+
+    const totalVested = rewards.totalPreviouslyVested.plus(new BigNumber(currentGrantTotalVested))
+    const claimable = totalVested.minus(rewards.totalClaimed)
+    return claimable.isNegative() ? new BigNumber(0) : claimable
   }
 
   async getStakedEvents(recipient: string, currentBlock: BlockInfo): Promise<EventData[]> {
