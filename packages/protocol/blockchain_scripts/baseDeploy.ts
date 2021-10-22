@@ -27,6 +27,7 @@ import {
   GFI,
   TransferRestrictedVault,
   Borrower,
+  StakingRewardsVesting,
   SeniorPool,
   FixedLeverageRatioStrategy,
   DynamicLeverageRatioStrategy,
@@ -90,7 +91,8 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   await deployClImplementation(deployer, {config})
 
   await deployGFI(deployer, {config})
-  await deployLPStakingRewards(deployer, {config})
+  const stakingRewardsVesting = await deployLPStakingRewardsVestingLibrary(deployer, {config})
+  await deployLPStakingRewards(deployer, stakingRewardsVesting, {config})
   const communityRewards = await deployCommunityRewards(deployer, {config})
   await deployMerkleDistributor(deployer, {communityRewards})
 
@@ -261,6 +263,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
 
   async function deployLPStakingRewards(
     deployer: ContractDeployer,
+    stakingRewardsVesting: StakingRewardsVesting,
     {config}: {config: GoldfinchConfig}
   ): Promise<StakingRewards> {
     logger("About to deploy LPStakingRewards...")
@@ -269,6 +272,9 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
     const stakingRewards = await deployer.deploy<StakingRewards>("StakingRewards", {
       from: gf_deployer,
       gasLimit: 4000000,
+      libraries: {
+        StakingRewardsVesting: stakingRewardsVesting.address,
+      },
       proxy: {
         execute: {
           init: {
@@ -279,6 +285,19 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
       },
     })
     return stakingRewards
+  }
+
+  async function deployLPStakingRewardsVestingLibrary(
+    deployer: ContractDeployer,
+    {config}: {config: GoldfinchConfig}
+  ): Promise<StakingRewardsVesting> {
+    logger("About to deploy LPStakingRewardsVesting...")
+    assertIsString(gf_deployer)
+    const stakingRewardsVesting = await deployer.deploy<StakingRewardsVesting>("StakingRewardsVesting", {
+      from: gf_deployer,
+      gasLimit: 4000000,
+    })
+    return stakingRewardsVesting
   }
 
   async function deployCommunityRewards(
