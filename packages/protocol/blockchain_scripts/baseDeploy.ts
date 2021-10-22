@@ -258,7 +258,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
       gasLimit: 4000000,
       args: [
         protocol_owner, // owner
-        "GFI", // name
+        "Goldfinch", // name
         "GFI", // symbol
         initialCap, //initialCap
       ],
