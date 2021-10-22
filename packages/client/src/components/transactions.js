@@ -123,13 +123,7 @@ function Transactions(props) {
   return (
     <div className="content-section">
       <div className="page-header">Transactions</div>
-      <ConnectionNotice
-        requireUnlock={
-          // TODO[PR] I don't believe requiring USDC unlocking is necessary here; I think it would
-          // only have been done here to support usage elsewhere in the app.
-          false
-        }
-      />
+      <ConnectionNotice requireUnlock={false} />
       <table className={`table transactions-table ${user.address ? "" : "placeholder"}`}>
         <thead>
           <tr>

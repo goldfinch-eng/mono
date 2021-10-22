@@ -337,13 +337,7 @@ function VerifyIdentity() {
   return (
     <div className="content-section">
       <div className="page-header">Verify Address</div>
-      <ConnectionNotice
-        requireUnlock={
-          // TODO[PR] I don't believe requiring USDC unlocking is necessary here; I think it would
-          // only have been done here to support usage elsewhere in the app.
-          false
-        }
-      />
+      <ConnectionNotice requireUnlock={false} />
       {renderForm()}
     </div>
   )
