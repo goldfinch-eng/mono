@@ -1,10 +1,11 @@
 import React, {useState} from "react"
-import {CapitalProvider, emptyCapitalProvider} from "../ethereum/pool"
+import {CapitalProvider} from "../ethereum/pool"
 import {PoolBacker} from "../ethereum/tranchedPool"
+import {Loadable} from "../types/loadable"
 
 interface EarnStoreType {
-  capitalProvider: CapitalProvider
-  backers: PoolBacker[]
+  capitalProvider: Loadable<CapitalProvider>
+  backers: Loadable<PoolBacker[]>
 }
 interface EarnProviderProps {
   children: React.ReactNode
@@ -12,15 +13,21 @@ interface EarnProviderProps {
 
 interface EarnContextType {
   earnStore: EarnStoreType
-  setEarnStore: (EarnStoreType) => void
+  setEarnStore: (val: EarnStoreType) => void
 }
 
 const EarnContext = React.createContext<EarnContextType | undefined>(undefined)
 
 function EarnProvider({children}: EarnProviderProps) {
   const [earnStore, setEarnStore] = useState<EarnStoreType>({
-    capitalProvider: emptyCapitalProvider(),
-    backers: new Array<PoolBacker>(),
+    capitalProvider: {
+      loaded: false,
+      value: undefined,
+    },
+    backers: {
+      loaded: false,
+      value: undefined,
+    },
   })
 
   const value = {earnStore, setEarnStore}
@@ -31,7 +38,7 @@ function EarnProvider({children}: EarnProviderProps) {
 function useEarn() {
   const context = React.useContext(EarnContext)
   if (context === undefined) {
-    throw new Error("useEarn must be used within a EarnProvider")
+    throw new Error("useEarn must be used within an EarnProvider")
   }
   return context
 }

@@ -15,6 +15,7 @@ import Badge from "./badge"
 import {InfoIcon} from "../ui/icons"
 import {useStakingRewards} from "../hooks/useStakingRewards"
 import AnnualGrowthTooltipContent from "./AnnualGrowthTooltipContent"
+import {Loadable, Loaded} from "../types/loadable"
 
 // Filter out 0 limit (inactive) and test pools
 const MIN_POOL_LIMIT = usdcToAtomic(process.env.REACT_APP_POOL_FILTER_LIMIT || "200")
@@ -58,20 +59,21 @@ function PortfolioOverview({
   capitalProvider,
   poolBackers,
 }: {
-  poolData?: PoolData
-  capitalProvider?: CapitalProvider
-  poolBackers?: PoolBacker[]
+  poolData: PoolData | undefined
+  capitalProvider: Loaded<CapitalProvider>
+  poolBackers: Loaded<PoolBacker[]>
 }) {
-  if (!poolData?.loaded || !capitalProvider?.loaded || !poolBackers) {
+  const loaded = !!poolData?.loaded && capitalProvider.loaded && poolBackers.loaded
+  if (!loaded) {
     return <></>
   }
 
   const globalEstimatedApyFromSupplying = poolData.estimatedApy
 
-  let totalBalance = capitalProvider.totalSeniorPoolBalanceInDollars
-  let totalUnrealizedGains = capitalProvider.unrealizedGainsInDollars
+  let totalBalance = capitalProvider.value.totalSeniorPoolBalanceInDollars
+  let totalUnrealizedGains = capitalProvider.value.unrealizedGainsInDollars
   let estimatedAnnualGrowth = totalBalance.multipliedBy(globalEstimatedApyFromSupplying)
-  poolBackers.forEach((p) => {
+  poolBackers.value.forEach((p) => {
     totalBalance = totalBalance.plus(p.balanceInDollars)
     totalUnrealizedGains = totalUnrealizedGains.plus(p.unrealizedGainsInDollars)
     const estimatedJuniorApy = p.tranchedPool.estimateJuniorAPY(p.tranchedPool.estimatedLeverageRatio)
@@ -86,14 +88,14 @@ function PortfolioOverview({
   // we do not worry about adjusting `userEstimatedApyFromGfi` here for a boosted reward rate the user
   // would receive from having staked-with-lockup. The frontend does not currently support staking
   // with lockup, so we punt on that subtlety.
-  const balancePortionEarningGfi = capitalProvider.stakedSeniorPoolBalanceInDollars.div(totalBalance)
+  const balancePortionEarningGfi = capitalProvider.value.stakedSeniorPoolBalanceInDollars.div(totalBalance)
   const userEstimatedApyFromGfi = balancePortionEarningGfi.multipliedBy(globalEstimatedApyFromGfi)
   const estimatedApyFromGfi = totalBalance.gt(0) ? userEstimatedApyFromGfi : globalEstimatedApyFromGfi
 
   const estimatedApy = estimatedApyFromSupplying.plus(estimatedApyFromGfi)
 
   const unrealizedGainsPercent = totalUnrealizedGains.dividedBy(totalBalance)
-  const displayUnrealizedGains = capitalProvider.empty ? null : roundDownPenny(totalUnrealizedGains)
+  const displayUnrealizedGains = roundDownPenny(totalUnrealizedGains)
 
   return (
     <div className="background-container">
@@ -228,15 +230,17 @@ export function TranchedPoolCard({poolBacker, disabled}: {poolBacker: PoolBacker
 }
 
 function usePoolBackers({goldfinchProtocol, user}: {goldfinchProtocol?: GoldfinchProtocol; user?: User}): {
-  backers: PoolBacker[]
-  backersStatus: string
-  poolsAddresses: string[]
-  poolsAddressesStatus: string
+  backers: Loadable<PoolBacker[]>
+  poolsAddresses: Loadable<string[]>
 } {
-  let [backers, setBackers] = useState<PoolBacker[]>([])
-  let [backersStatus, setBackersStatus] = useState<string>("loading")
-  const [poolsAddresses, setPoolsAddresses] = useState<string[]>([])
-  const [poolsAddressesStatus, setPoolsAddressesStatus] = useState<string>("loading")
+  let [backers, setBackers] = useState<Loadable<PoolBacker[]>>({
+    loaded: false,
+    value: undefined,
+  })
+  const [poolsAddresses, setPoolsAddresses] = useState<Loadable<string[]>>({
+    loaded: false,
+    value: undefined,
+  })
 
   useEffect(() => {
     async function loadTranchedPools(goldfinchProtocol: GoldfinchProtocol, user: User) {
@@ -244,8 +248,10 @@ function usePoolBackers({goldfinchProtocol, user}: {goldfinchProtocol?: Goldfinc
         "PoolCreated",
       ])) as unknown as PoolCreated[]
       let poolAddresses = poolEvents.map((e) => e.returnValues.pool)
-      setPoolsAddresses(poolAddresses)
-      setPoolsAddressesStatus("loaded")
+      setPoolsAddresses({
+        loaded: true,
+        value: poolAddresses,
+      })
       let tranchedPools = poolAddresses.map((a) => new TranchedPool(a, goldfinchProtocol))
       await Promise.all(tranchedPools.map((p) => p.initialize()))
       tranchedPools = tranchedPools.filter((p) => p.metadata)
@@ -253,8 +259,9 @@ function usePoolBackers({goldfinchProtocol, user}: {goldfinchProtocol?: Goldfinc
         .filter((p) => p.creditLine.limit.gte(MIN_POOL_LIMIT))
         .map((p) => new PoolBacker(user.address, p, goldfinchProtocol))
       await Promise.all(activePoolBackers.map((b) => b.initialize()))
-      setBackers(
-        activePoolBackers.sort(
+      setBackers({
+        loaded: true,
+        value: activePoolBackers.sort(
           (a, b) =>
             // Primary sort: ascending by tranched pool status (Open -> JuniorLocked -> ...)
             a.tranchedPool.state - b.tranchedPool.state ||
@@ -262,9 +269,8 @@ function usePoolBackers({goldfinchProtocol, user}: {goldfinchProtocol?: Goldfinc
             b.balanceInDollars.comparedTo(a.balanceInDollars) ||
             // Tertiary sort: alphabetical by display name, for the sake of stable ordering.
             a.tranchedPool.displayName.localeCompare(b.tranchedPool.displayName)
-        )
-      )
-      setBackersStatus("loaded")
+        ),
+      })
     }
 
     if (goldfinchProtocol && user) {
@@ -273,25 +279,22 @@ function usePoolBackers({goldfinchProtocol, user}: {goldfinchProtocol?: Goldfinc
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [goldfinchProtocol, user])
 
-  return {backers, backersStatus, poolsAddresses, poolsAddressesStatus}
+  return {backers, poolsAddresses}
 }
 
 function Earn() {
   const {pool, usdc, user, goldfinchProtocol, goldfinchConfig} = useContext(AppContext)
-  const [capitalProvider, setCapitalProvider] = useState<CapitalProvider>()
-  const {
-    backers,
-    backersStatus: tranchedPoolsStatus,
-    poolsAddresses,
-    poolsAddressesStatus,
-  } = usePoolBackers({goldfinchProtocol, user})
-  const stakingRewards = useStakingRewards()
   const {earnStore, setEarnStore} = useEarn()
+  const [capitalProvider, setCapitalProvider] = useState<Loadable<CapitalProvider>>({
+    loaded: false,
+    value: undefined,
+  })
+  const {backers, poolsAddresses} = usePoolBackers({goldfinchProtocol, user})
+  const stakingRewards = useStakingRewards()
 
   useEffect(() => {
     if (pool) {
       const capitalProviderAddress: string | undefined = user.loaded ? user.address : undefined
-
       refreshCapitalProviderData(pool, stakingRewards, capitalProviderAddress)
     }
   }, [pool, stakingRewards, usdc, user])
@@ -306,22 +309,17 @@ function Earn() {
   }
 
   useEffect(() => {
-    if (capitalProvider?.loaded) {
-      setEarnStore({...earnStore, capitalProvider})
-    }
-    if (backers.length > 0) {
-      setEarnStore({...earnStore, backers})
-    }
+    setEarnStore({
+      capitalProvider,
+      backers,
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [capitalProvider, backers])
 
   const capitalProviderData = earnStore.capitalProvider
   const backersData = earnStore.backers
-  const tranchedPoolsStatusData = earnStore.backers.length > 0 ? "loaded" : tranchedPoolsStatus
 
-  const disabled = !capitalProvider?.loaded || !(backers.length > 0)
-
-  const isLoading = !(capitalProviderData?.loaded || user.noWeb3)
+  const isLoading = !capitalProviderData.loaded || !backersData.loaded || user.noWeb3
   const earnMessage = isLoading ? "Loading..." : "Pools"
 
   return (
@@ -344,7 +342,7 @@ function Earn() {
           ) : (
             <SeniorPoolCard
               balance={displayDollars(usdcFromAtomic(pool?.gf.totalPoolAssets))}
-              userBalance={displayDollars(capitalProviderData?.availableToWithdrawInDollars)}
+              userBalance={displayDollars(capitalProviderData.value.availableToWithdrawInDollars)}
               apy={displayPercent(pool?.gf.estimatedApy)}
               limit={displayDollars(usdcFromAtomic(goldfinchConfig?.totalFundsLimit), 0)}
               remainingCapacity={pool?.gf.remainingCapacity(goldfinchConfig?.totalFundsLimit)}
@@ -352,7 +350,7 @@ function Earn() {
           )}
         </PoolList>
         <PoolList title="Borrower Pools">
-          {tranchedPoolsStatusData === "loading" && poolsAddressesStatus === "loading" && (
+          {!poolsAddresses.loaded && !backersData.loaded && (
             <>
               <TranchedPoolCardSkeleton />
               <TranchedPoolCardSkeleton />
@@ -360,11 +358,13 @@ function Earn() {
             </>
           )}
 
-          {tranchedPoolsStatusData === "loading" && poolsAddresses.map((a) => <TranchedPoolCardSkeleton key={a} />)}
+          {poolsAddresses.loaded &&
+            !backersData.loaded &&
+            poolsAddresses.value.map((a) => <TranchedPoolCardSkeleton key={a} />)}
 
-          {tranchedPoolsStatusData !== "loading" &&
-            backersData.map((p) => (
-              <TranchedPoolCard key={`${p.tranchedPool.address}`} poolBacker={p} disabled={disabled} />
+          {backersData.loaded &&
+            backersData.value.map((p) => (
+              <TranchedPoolCard key={`${p.tranchedPool.address}`} poolBacker={p} disabled={isLoading} />
             ))}
         </PoolList>
       </div>
