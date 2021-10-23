@@ -189,7 +189,7 @@ describe("unique-identity-signer", () => {
           fetchKYCStatus: fetchKYCFunction,
         })
 
-        await uniqueIdentity.mint(anotherUser, 0, result.signature, {
+        await uniqueIdentity.mint(anotherUser, 0, result.expiresAt, result.signature, {
           from: anotherUser,
           value: web3.utils.toWei("0.00083"),
         })
@@ -204,7 +204,7 @@ describe("unique-identity-signer", () => {
           fetchKYCStatus: fetchKYCFunction,
         })
 
-        await uniqueIdentity.burn(anotherUser, 0, result.signature, {from: anotherUser})
+        await uniqueIdentity.burn(anotherUser, 0, result.expiresAt, result.signature, {from: anotherUser})
         expect(await uniqueIdentity.balanceOf(anotherUser, 0)).to.bignumber.eq(new BN(0))
       })
     })
