@@ -402,7 +402,7 @@ describe("UniqueIdentity", () => {
         from: recipient,
         value: MINT_PAYMENT,
       })
-      expect(receipt.receipt.gasUsed).to.eq(86655)
+      expect(receipt.receipt.gasUsed).to.eq(86635)
     })
 
     context("paused", () => {
@@ -702,7 +702,7 @@ describe("UniqueIdentity", () => {
       const receipt = await uniqueIdentity.burn(...burnParams, signature, {
         from: recipient,
       })
-      expect(receipt.receipt.gasUsed).to.eq(47547)
+      expect(receipt.receipt.gasUsed).to.eq(47527)
     })
 
     context("paused", () => {
