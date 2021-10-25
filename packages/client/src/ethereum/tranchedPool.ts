@@ -4,7 +4,7 @@ import {CreditLine} from "./creditLine"
 import {IPoolTokens} from "@goldfinch-eng/protocol/typechain/web3/IPoolTokens"
 import BigNumber from "bignumber.js"
 import {fiduFromAtomic} from "./fidu"
-import {croppedAddress, roundDownPenny, secondsSinceEpoch} from "../utils"
+import {croppedAddress, getBlockInfo, getCurrentBlock, roundDownPenny} from "../utils"
 import _ from "lodash"
 import {ContractEventLog} from "@goldfinch-eng/protocol/typechain/web3/types"
 import web3 from "../web3"
@@ -133,6 +133,7 @@ class TranchedPool {
   }
 
   async initialize() {
+    const currentBlock = getBlockInfo(await getCurrentBlock())
     this.creditLineAddress = await this.contract.methods.creditLine().call()
     this.creditLine = new CreditLine(this.creditLineAddress, this.goldfinchProtocol)
     await this.creditLine.initialize()
@@ -156,7 +157,7 @@ class TranchedPool {
     this.isMigrated = !!this.metadata?.migrated
     this.isPaused = await pool.methods.paused().call()
 
-    let now = secondsSinceEpoch()
+    const now = currentBlock.timestamp
     if (now < seniorTranche.lockedUntil) {
       this.state = PoolState.SeniorLocked
     } else if (juniorTranche.lockedUntil === 0) {
