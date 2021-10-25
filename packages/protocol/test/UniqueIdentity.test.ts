@@ -23,7 +23,7 @@ import {
   MINT_MESSAGE_ELEMENT_TYPES,
   MINT_PAYMENT,
 } from "./uniqueIdentityHelpers"
-import {deployAllContracts} from "./testHelpers"
+import {deployAllContracts, getCurrentTimestamp, SECONDS_PER_DAY} from "./testHelpers"
 import {mint as mintHelper, burn as burnHelper, sign as signHelper} from "./uniqueIdentityHelpers"
 const {deployments} = hre
 
@@ -98,11 +98,13 @@ describe("UniqueIdentity", () => {
     overrideFrom?: string,
     overrideChainId?: BN
   ): Promise<void> {
+    const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
     return mintHelper(
       hre,
       uniqueIdentity,
       recipient,
       tokenId,
+      expiresAt,
       nonce,
       signer,
       overrideMintParams,
@@ -120,11 +122,13 @@ describe("UniqueIdentity", () => {
     overrideFrom?: string,
     overrideChainId?: BN
   ): Promise<void> {
+    const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
     return burnHelper(
       hre,
       uniqueIdentity,
       recipient,
       tokenId,
+      expiresAt,
       nonce,
       signer,
       overrideBurnParams,
@@ -229,25 +233,26 @@ describe("UniqueIdentity", () => {
   })
 
   describe("mint", () => {
-    let recipient: string, tokenId: BN
+    let recipient: string, tokenId: BN, timestamp: BN
 
     beforeEach(async () => {
       recipient = anotherUser
       tokenId = new BN(0)
+      timestamp = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
     })
 
     describe("validates signature", () => {
       it("rejects incorrect `to` address in hashed message", async () => {
         const incorrectTo = owner
-        await expect(mint(recipient, tokenId, new BN(0), owner, [incorrectTo, tokenId])).to.be.rejectedWith(
+        await expect(mint(recipient, tokenId, new BN(0), owner, [incorrectTo, tokenId, timestamp])).to.be.rejectedWith(
           /Invalid signer/
         )
       })
       it("rejects incorrect `id` in hashed message", async () => {
         const incorrectId = tokenId.add(new BN(1))
-        await expect(mint(recipient, tokenId, new BN(0), owner, [recipient, incorrectId])).to.be.rejectedWith(
-          /Invalid signer/
-        )
+        await expect(
+          mint(recipient, tokenId, new BN(0), owner, [recipient, incorrectId, timestamp])
+        ).to.be.rejectedWith(/Invalid signer/)
       })
       it("rejects incorrect chain id in hashed message", async () => {
         const chainId = await hre.getChainId()
@@ -265,9 +270,15 @@ describe("UniqueIdentity", () => {
         expect(await uniqueIdentity.hasRole(SIGNER_ROLE, recipient)).to.equal(false)
         await expect(mint(recipient, tokenId, new BN(0), recipient)).to.be.rejectedWith(/Invalid signer/)
       })
+      it("rejects an expired timestamp", async () => {
+        timestamp = (await getCurrentTimestamp()).sub(SECONDS_PER_DAY)
+        await expect(mint(recipient, tokenId, new BN(0), owner, [recipient, tokenId, timestamp])).to.be.rejectedWith(
+          /Signature has expired/
+        )
+      })
       it("rejects empty signature", async () => {
         const emptySignature = EMPTY_STRING_HEX
-        const mintParams: MintParams = [recipient, tokenId]
+        const mintParams: MintParams = [recipient, tokenId, timestamp]
         await expect(
           uniqueIdentity.mint(...mintParams, emptySignature, {
             from: recipient,
@@ -275,10 +286,21 @@ describe("UniqueIdentity", () => {
           })
         ).to.be.rejectedWith(/ECDSA: invalid signature length/)
       })
-      it("rejects reuse of a signature", async () => {
-        const messageElements: [string, BN] = [recipient, tokenId]
+      it("rejects an incorrect contract address", async () => {
+        const messageElements: [string, BN, BN, string] = [recipient, tokenId, timestamp, owner]
         const signature = await sign(owner, {types: MINT_MESSAGE_ELEMENT_TYPES, values: messageElements}, new BN(0))
-        const mintParams: MintParams = [recipient, tokenId]
+        const mintParams: MintParams = [recipient, tokenId, timestamp]
+        await expect(
+          uniqueIdentity.mint(...mintParams, signature, {
+            from: recipient,
+            value: MINT_PAYMENT,
+          })
+        ).to.be.rejectedWith(/Invalid signer/)
+      })
+      it("rejects reuse of a signature", async () => {
+        const messageElements: [string, BN, BN, string] = [recipient, tokenId, timestamp, uniqueIdentity.address]
+        const signature = await sign(owner, {types: MINT_MESSAGE_ELEMENT_TYPES, values: messageElements}, new BN(0))
+        const mintParams: MintParams = [recipient, tokenId, timestamp]
         await uniqueIdentity.mint(...mintParams, signature, {
           from: recipient,
           value: MINT_PAYMENT,
@@ -297,9 +319,9 @@ describe("UniqueIdentity", () => {
 
     describe("requires payment", () => {
       it("rejects insufficient payment", async () => {
-        const messageElements: [string, BN] = [recipient, tokenId]
+        const messageElements: [string, BN, BN, string] = [recipient, tokenId, timestamp, uniqueIdentity.address]
         const signature = await sign(owner, {types: MINT_MESSAGE_ELEMENT_TYPES, values: messageElements}, new BN(0))
-        const mintParams: MintParams = [recipient, tokenId]
+        const mintParams: MintParams = [recipient, tokenId, timestamp]
         await expect(
           uniqueIdentity.mint(...mintParams, signature, {
             from: recipient,
@@ -308,9 +330,9 @@ describe("UniqueIdentity", () => {
         ).to.be.rejectedWith(/Token mint requires 0\.00083 ETH/)
       })
       it("accepts minimum payment", async () => {
-        const messageElements: [string, BN] = [recipient, tokenId]
+        const messageElements: [string, BN, BN, string] = [recipient, tokenId, timestamp, uniqueIdentity.address]
         const signature = await sign(owner, {types: MINT_MESSAGE_ELEMENT_TYPES, values: messageElements}, new BN(0))
-        const mintParams: MintParams = [recipient, tokenId]
+        const mintParams: MintParams = [recipient, tokenId, timestamp]
         await expect(
           uniqueIdentity.mint(...mintParams, signature, {
             from: recipient,
@@ -319,9 +341,9 @@ describe("UniqueIdentity", () => {
         ).to.be.fulfilled
       })
       it("accepts overpayment", async () => {
-        const messageElements: [string, BN] = [recipient, tokenId]
+        const messageElements: [string, BN, BN, string] = [recipient, tokenId, timestamp, uniqueIdentity.address]
         const signature = await sign(owner, {types: MINT_MESSAGE_ELEMENT_TYPES, values: messageElements}, new BN(0))
-        const mintParams: MintParams = [recipient, tokenId]
+        const mintParams: MintParams = [recipient, tokenId, timestamp]
         await expect(
           uniqueIdentity.mint(...mintParams, signature, {
             from: recipient,
@@ -333,9 +355,14 @@ describe("UniqueIdentity", () => {
 
     describe("validates account", () => {
       it("rejects zero-address", async () => {
-        const messageElements: [string, BN] = [ethersConstants.AddressZero, tokenId]
+        const messageElements: [string, BN, BN, string] = [
+          ethersConstants.AddressZero,
+          tokenId,
+          timestamp,
+          uniqueIdentity.address,
+        ]
         const signature = await sign(owner, {types: MINT_MESSAGE_ELEMENT_TYPES, values: messageElements}, new BN(0))
-        const mintParams: MintParams = [ethersConstants.AddressZero, tokenId]
+        const mintParams: MintParams = [ethersConstants.AddressZero, tokenId, timestamp]
         await expect(
           uniqueIdentity.mint(...mintParams, signature, {
             from: recipient,
@@ -368,14 +395,15 @@ describe("UniqueIdentity", () => {
     })
 
     it("uses the expected amount of gas", async () => {
-      const messageElements: [string, BN] = [recipient, tokenId]
+      const messageElements: [string, BN, BN, string] = [recipient, tokenId, timestamp, uniqueIdentity.address]
       const signature = await sign(owner, {types: MINT_MESSAGE_ELEMENT_TYPES, values: messageElements}, new BN(0))
-      const mintParams: MintParams = [recipient, tokenId]
+      const mintParams: MintParams = [recipient, tokenId, timestamp]
       const receipt = await uniqueIdentity.mint(...mintParams, signature, {
         from: recipient,
         value: MINT_PAYMENT,
       })
-      expect(receipt.receipt.gasUsed).to.eq(86187)
+      const tolerance = new BN(50)
+      expect(new BN(receipt.receipt.gasUsed)).to.bignumber.closeTo(new BN(86635), tolerance)
     })
 
     context("paused", () => {
@@ -509,11 +537,12 @@ describe("UniqueIdentity", () => {
   })
 
   describe("burn", () => {
-    let recipient: string, tokenId: BN
+    let recipient: string, tokenId: BN, timestamp: BN
 
     beforeEach(async () => {
       recipient = anotherUser
       tokenId = new BN(0)
+      timestamp = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
 
       await mint(recipient, tokenId, new BN(0), owner)
     })
@@ -521,15 +550,15 @@ describe("UniqueIdentity", () => {
     describe("validates signature", () => {
       it("rejects incorrect `to` address in hashed message", async () => {
         const incorrectTo = owner
-        await expect(burn(recipient, tokenId, new BN(1), owner, [incorrectTo, tokenId])).to.be.rejectedWith(
+        await expect(burn(recipient, tokenId, new BN(1), owner, [incorrectTo, tokenId, timestamp])).to.be.rejectedWith(
           /Invalid signer/
         )
       })
       it("rejects incorrect `id` in hashed message", async () => {
         const incorrectId = tokenId.add(new BN(1))
-        await expect(burn(recipient, tokenId, new BN(1), owner, [recipient, incorrectId])).to.be.rejectedWith(
-          /Invalid signer/
-        )
+        await expect(
+          burn(recipient, tokenId, new BN(1), owner, [recipient, incorrectId, timestamp])
+        ).to.be.rejectedWith(/Invalid signer/)
       })
       it("rejects incorrect chain id in hashed message", async () => {
         const chainId = await hre.getChainId()
@@ -547,19 +576,35 @@ describe("UniqueIdentity", () => {
         expect(await uniqueIdentity.hasRole(SIGNER_ROLE, recipient)).to.equal(false)
         await expect(burn(recipient, tokenId, new BN(1), recipient)).to.be.rejectedWith(/Invalid signer/)
       })
+      it("rejects an expired timestamp", async () => {
+        timestamp = (await getCurrentTimestamp()).sub(SECONDS_PER_DAY)
+        await expect(burn(recipient, tokenId, new BN(0), owner, [recipient, tokenId, timestamp])).to.be.rejectedWith(
+          /Signature has expired/
+        )
+      })
       it("rejects empty signature", async () => {
         const emptySignature = EMPTY_STRING_HEX
-        const burnParams: BurnParams = [recipient, tokenId]
+        const burnParams: BurnParams = [recipient, tokenId, timestamp]
         await expect(
           uniqueIdentity.burn(...burnParams, emptySignature, {
             from: recipient,
           })
         ).to.be.rejectedWith(/ECDSA: invalid signature length/)
       })
-      it("rejects reuse of a signature", async () => {
-        const messageElements: [string, BN] = [recipient, tokenId]
+      it("rejects an incorrect contract address", async () => {
+        const messageElements: [string, BN, BN, string] = [recipient, tokenId, timestamp, owner]
         const signature = await sign(owner, {types: BURN_MESSAGE_ELEMENT_TYPES, values: messageElements}, new BN(1))
-        const burnParams: BurnParams = [recipient, tokenId]
+        const burnParams: BurnParams = [recipient, tokenId, timestamp]
+        await expect(
+          uniqueIdentity.burn(...burnParams, signature, {
+            from: recipient,
+          })
+        ).to.be.rejectedWith(/Invalid signer/)
+      })
+      it("rejects reuse of a signature", async () => {
+        const messageElements: [string, BN, BN, string] = [recipient, tokenId, timestamp, uniqueIdentity.address]
+        const signature = await sign(owner, {types: BURN_MESSAGE_ELEMENT_TYPES, values: messageElements}, new BN(1))
+        const burnParams: BurnParams = [recipient, tokenId, timestamp]
         await uniqueIdentity.burn(...burnParams, signature, {
           from: recipient,
         })
@@ -576,9 +621,14 @@ describe("UniqueIdentity", () => {
 
     describe("validates account", () => {
       it("rejects zero-address", async () => {
-        const messageElements: [string, BN] = [ethersConstants.AddressZero, tokenId]
+        const messageElements: [string, BN, BN, string] = [
+          ethersConstants.AddressZero,
+          tokenId,
+          timestamp,
+          uniqueIdentity.address,
+        ]
         const signature = await sign(owner, {types: BURN_MESSAGE_ELEMENT_TYPES, values: messageElements}, new BN(0))
-        const burnParams: BurnParams = [ethersConstants.AddressZero, tokenId]
+        const burnParams: BurnParams = [ethersConstants.AddressZero, tokenId, timestamp]
         await expect(
           uniqueIdentity.burn(...burnParams, signature, {
             from: recipient,
@@ -647,13 +697,14 @@ describe("UniqueIdentity", () => {
     })
 
     it("uses the expected amount of gas", async () => {
-      const messageElements: [string, BN] = [recipient, tokenId]
+      const messageElements: [string, BN, BN, string] = [recipient, tokenId, timestamp, uniqueIdentity.address]
       const signature = await sign(owner, {types: BURN_MESSAGE_ELEMENT_TYPES, values: messageElements}, new BN(1))
-      const burnParams: BurnParams = [recipient, tokenId]
+      const burnParams: BurnParams = [recipient, tokenId, timestamp]
       const receipt = await uniqueIdentity.burn(...burnParams, signature, {
         from: recipient,
       })
-      expect(receipt.receipt.gasUsed).to.eq(47136)
+      const tolerance = new BN(50)
+      expect(new BN(receipt.receipt.gasUsed)).to.bignumber.closeTo(new BN(47527), tolerance)
     })
 
     context("paused", () => {

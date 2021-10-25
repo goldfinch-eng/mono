@@ -9,6 +9,8 @@ import {keccak256} from "@ethersproject/keccak256"
 import {pack} from "@ethersproject/solidity"
 import UniqueIdentityAbi from "./UniqueIdentity.json"
 
+const SIGNATURE_EXPIRY_IN_SECONDS = 3600 // 1 hour
+
 export interface KYC {
   status: "unknown" | "approved" | "failed"
   countryCode: string
@@ -77,15 +79,15 @@ export async function main({
   if (kycStatus.status !== "approved" || kycStatus.countryCode === "US" || kycStatus.countryCode === "") {
     throw new Error("Does not meet mint requirements")
   }
-
+  const expiresAt = Math.floor(Date.now() / 1000) + SIGNATURE_EXPIRY_IN_SECONDS
   const userAddress = forwardedHeaders["x-goldfinch-address"]
   const nonce = await uniqueIdentity.nonces(userAddress)
   const idVersion = await uniqueIdentity.ID_VERSION_0()
-  const signTypes = ["address", "uint256", "uint256", "uint256"]
-  const signParams = [userAddress, idVersion, nonce, network.chainId]
+  const signTypes = ["address", "uint256", "uint256", "address", "uint256", "uint256"]
+  const signParams = [userAddress, idVersion, expiresAt, uniqueIdentity.address, nonce, network.chainId]
   const encoded = pack(signTypes, signParams)
   const hashed = keccak256(encoded)
   const signature = await signer.signMessage(ethers.utils.arrayify(hashed))
 
-  return {signature}
+  return {signature, expiresAt}
 }

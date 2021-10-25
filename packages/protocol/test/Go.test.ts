@@ -2,7 +2,7 @@
 import hre from "hardhat"
 import {constants as ethersConstants} from "ethers"
 import {asNonNullable} from "@goldfinch-eng/utils"
-import {deployAllContracts} from "./testHelpers"
+import {deployAllContracts, getCurrentTimestamp, SECONDS_PER_DAY} from "./testHelpers"
 import {
   getContract,
   GO_LISTER_ROLE,
@@ -211,7 +211,8 @@ describe("Go", () => {
     context("account with > 0 balance UniqueIdentity token (id 0)", () => {
       beforeEach(async () => {
         const tokenId = new BN(0)
-        await mint(hre, uniqueIdentity, anotherUser, tokenId, new BN(0), owner)
+        const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
+        await mint(hre, uniqueIdentity, anotherUser, tokenId, expiresAt, new BN(0), owner)
         expect(await uniqueIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(new BN(1))
       })
 
@@ -241,7 +242,8 @@ describe("Go", () => {
     context("paused", () => {
       beforeEach(async () => {
         const tokenId = new BN(0)
-        await mint(hre, uniqueIdentity, anotherUser, tokenId, new BN(0), owner)
+        const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
+        await mint(hre, uniqueIdentity, anotherUser, tokenId, expiresAt, new BN(0), owner)
         expect(await uniqueIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(new BN(1))
       })
 

@@ -8,11 +8,11 @@ import {BN, decodeLogs, getOnlyLog} from "./testHelpers"
 import {BigNumber, constants as ethersConstants} from "ethers"
 import {HardhatRuntimeEnvironment} from "hardhat/types"
 
-export const MINT_MESSAGE_ELEMENT_TYPES = ["address", "uint256"]
+export const MINT_MESSAGE_ELEMENT_TYPES = ["address", "uint256", "uint256", "address"]
 export const EMPTY_STRING_HEX = web3.utils.asciiToHex("")
 export const MINT_PAYMENT = new BN(0.00083e18)
 
-export const BURN_MESSAGE_ELEMENT_TYPES = ["address", "uint256"]
+export const BURN_MESSAGE_ELEMENT_TYPES = ["address", "uint256", "uint256", "address"]
 
 export const sign = async (
   hre: HardhatRuntimeEnvironment,
@@ -52,13 +52,14 @@ export const sign = async (
   return signer.signMessage(arrayified)
 }
 
-export type MintParams = [string, BN]
+export type MintParams = [string, BN, BN]
 
 export async function mint(
   hre: HardhatRuntimeEnvironment,
   uniqueIdentity: TestUniqueIdentityInstance,
   recipient: string,
   tokenId: BN,
+  expiresAt: BN,
   nonce: BN,
   signer: string,
   overrideMintParams?: MintParams,
@@ -68,7 +69,7 @@ export async function mint(
   const contractBalanceBefore = await web3.eth.getBalance(uniqueIdentity.address)
   const tokenBalanceBefore = await uniqueIdentity.balanceOf(recipient, tokenId)
 
-  const messageElements: [string, BN] = [recipient, tokenId]
+  const messageElements: [string, BN, BN, string] = [recipient, tokenId, expiresAt, uniqueIdentity.address]
   const signature = await sign(
     hre,
     signer,
@@ -77,7 +78,7 @@ export async function mint(
     overrideChainId
   )
 
-  const defaultMintParams: MintParams = [recipient, tokenId]
+  const defaultMintParams: MintParams = [recipient, tokenId, expiresAt]
   const mintParams: MintParams = overrideMintParams || defaultMintParams
 
   const defaultFrom = recipient
@@ -109,13 +110,14 @@ export async function mint(
   expect(transferEvent.args.value).to.bignumber.equal(new BN(1))
 }
 
-export type BurnParams = [string, BN]
+export type BurnParams = [string, BN, BN]
 
 export async function burn(
   hre: HardhatRuntimeEnvironment,
   uniqueIdentity: TestUniqueIdentityInstance,
   recipient: string,
   tokenId: BN,
+  expiresAt: BN,
   nonce: BN,
   signer: string,
   overrideBurnParams?: BurnParams,
@@ -125,7 +127,7 @@ export async function burn(
   const contractBalanceBefore = await web3.eth.getBalance(uniqueIdentity.address)
   const tokenBalanceBefore = await uniqueIdentity.balanceOf(recipient, tokenId)
 
-  const messageElements: [string, BN] = [recipient, tokenId]
+  const messageElements: [string, BN, BN, string] = [recipient, tokenId, expiresAt, uniqueIdentity.address]
   const signature = await sign(
     hre,
     signer,
@@ -134,7 +136,7 @@ export async function burn(
     overrideChainId
   )
 
-  const defaultBurnParams: BurnParams = [recipient, tokenId]
+  const defaultBurnParams: BurnParams = [recipient, tokenId, expiresAt]
   const burnParams: BurnParams = overrideBurnParams || defaultBurnParams
 
   const defaultFrom = recipient
