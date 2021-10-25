@@ -1,7 +1,7 @@
 import _ from "lodash"
-import {Signer, ethers} from "ethers"
+import {ethers, Signer} from "ethers"
 import axios from "axios"
-import {DefenderRelaySigner, DefenderRelayProvider} from "defender-relay-client/lib/ethers"
+import {DefenderRelayProvider, DefenderRelaySigner} from "defender-relay-client/lib/ethers"
 import {HandlerParams, Request} from "../types"
 import {assertNonNullable, isPlainObject, isString} from "@goldfinch-eng/utils"
 import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers"
@@ -79,7 +79,9 @@ export async function main({
   if (kycStatus.status !== "approved" || kycStatus.countryCode === "US" || kycStatus.countryCode === "") {
     throw new Error("Does not meet mint requirements")
   }
-  const expiresAt = Math.floor(Date.now() / 1000) + SIGNATURE_EXPIRY_IN_SECONDS
+
+  const currentBlock = await signer.provider.getBlock("latest")
+  const expiresAt = currentBlock.timestamp + SIGNATURE_EXPIRY_IN_SECONDS
   const userAddress = forwardedHeaders["x-goldfinch-address"]
   const nonce = await uniqueIdentity.nonces(userAddress)
   const idVersion = await uniqueIdentity.ID_VERSION_0()
