@@ -40,26 +40,31 @@ app.post("/fundWithWhales", async (req, res) => {
     return res.status(404).send({message: "fundWithWhales only available on local and murmuration"})
   }
 
-  const {address} = req.body
-  await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [address], new BN("75000"))
-  res.status(200).send({status: "success", result: JSON.stringify({success: true})})
+  try {
+    const {address} = req.body
+    await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [address], new BN("75000"))
+  } catch (e) {
+    return res.status(500).send({message: "fundWithWhales error"})
+  }
+
+  return res.status(200).send({status: "success", result: JSON.stringify({success: true})})
 })
 
 app.post("/setupForTesting", async (req, res) => {
   if (process.env.NODE_ENV === "production") {
     return res.status(404).send({message: "setupForTesting only available on local and murmuration"})
   }
-  const {address} = req.body
 
   try {
+    const {address} = req.body
     await setUpForTesting(hre, {
       overrideAddress: address,
     })
   } catch (e) {
-    return res.status(404).send({message: "setupForTesting error"})
+    return res.status(500).send({message: "setupForTesting error"})
   }
 
-  res.status(200).send({status: "success", result: JSON.stringify({success: true})})
+  return res.status(200).send({status: "success", result: JSON.stringify({success: true})})
 })
 
 app.listen(port, () => {
