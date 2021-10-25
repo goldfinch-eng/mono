@@ -584,6 +584,7 @@ class StakedPosition {
     const date = new Date(this.rewards.startTime * 1000).toLocaleDateString(undefined, {
       month: "short",
       day: "numeric",
+      year: "numeric",
     })
     return `Staked ${displayNumber(fiduAmount, 2)} FIDU on ${date}`
   }
