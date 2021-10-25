@@ -90,7 +90,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   await deployClImplementation(deployer, {config})
 
   await deployGFI(deployer, {config})
-  await deployLPStakingRewards(deployer, stakingRewardsVesting, {config})
+  await deployLPStakingRewards(deployer, {config})
   const communityRewards = await deployCommunityRewards(deployer, {config})
   await deployMerkleDistributor(deployer, {communityRewards})
 
