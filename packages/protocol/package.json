@@ -6,6 +6,7 @@
   "scripts": {
     "start": "npx hardhat node --hostname 0.0.0.0 --export-all deployments/all_dev.json",
     "start:murmuration": "REACT_APP_DISABLE_GASLESS=true REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet MURMURATION=yes npm run start",
+    "start:murmuration:liquidity-mining": "REACT_APP_DISABLE_GASLESS=true REACT_APP_HARDHAT_FORK= HARDHAT_FORK= MURMURATION=yes npm run start",
     "test": "NODE_ENV=test npx hardhat test --show-stack-traces",
     "mainnet-test": "HARDHAT_FORK=mainnet NODE_ENV=test npx hardhat test test/mainnet_forking/*.test.* --show-stack-traces",
     "tenderly-test": "HARDHAT_FORK=mainnet NODE_ENV=test npx hardhat test test/mainnet_forking/*.test.* --show-stack-traces --network localhost",
