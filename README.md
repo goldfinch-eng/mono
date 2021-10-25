@@ -13,11 +13,18 @@ Using nvm, you can do this with `nvm install 12.18.3`. If you don't have `nvm`, 
 The repository is organized as a monorepo using [lerna](https://lerna.js.org/). Run the following to install lerna and then use it to install all package dependencies:
 
 ```shell
+# Just the first time
 npm install
 npm run bootstrap
 ```
 
-From here on out, every time you pull the repo and any packages change, you'll need to run `npx lerna bootstrap`
+From here on out, every time you pull the repo and any packages change, you'll need to run
+
+```shell
+npm install
+# Note use lerna bootstrap, and not npm run bootstrap. It's much faster
+npx lerna bootstrap
+```
 
 ## Developing
 
