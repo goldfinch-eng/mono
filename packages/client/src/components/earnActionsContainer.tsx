@@ -39,7 +39,7 @@ function EarnActionsContainer(props: EarnActionsContainerProps) {
   let depositAction
   let depositClass = "disabled"
   let remainingCapacity = props.poolData?.remainingCapacity(goldfinchConfig.totalFundsLimit) || new BigNumber("0")
-  if (eligibleForSeniorPool(kyc, user) && props.capitalProvider && remainingCapacity.gt("0")) {
+  if (eligibleForSeniorPool(kyc, user) && remainingCapacity.gt("0")) {
     depositAction = (e) => {
       setShowAction("deposit")
     }
