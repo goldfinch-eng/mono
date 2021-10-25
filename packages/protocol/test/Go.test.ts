@@ -212,7 +212,7 @@ describe("Go", () => {
       beforeEach(async () => {
         const tokenId = new BN(0)
         const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
-        await mint(hre, uniqueIdentity, anotherUser, tokenId, expiresAt, new BN(0), owner)
+        await mint(hre, uniqueIdentity, tokenId, expiresAt, new BN(0), owner, undefined, anotherUser)
         expect(await uniqueIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(new BN(1))
       })
 
@@ -243,7 +243,7 @@ describe("Go", () => {
       beforeEach(async () => {
         const tokenId = new BN(0)
         const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
-        await mint(hre, uniqueIdentity, anotherUser, tokenId, expiresAt, new BN(0), owner)
+        await mint(hre, uniqueIdentity, tokenId, expiresAt, new BN(0), owner, undefined, anotherUser)
         expect(await uniqueIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(new BN(1))
       })
 

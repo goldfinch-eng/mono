@@ -60,7 +60,7 @@ describe("PoolTokens", () => {
 
   async function mintUniqueIdentityToken(recipient, signer) {
     const uniqueIdentityTokenId = new BN(0)
-    await mint(hre, uniqueIdentity, recipient, uniqueIdentityTokenId, new BN(0), signer)
+    await mint(hre, uniqueIdentity, uniqueIdentityTokenId, new BN(0), signer, undefined, recipient)
     expect(await uniqueIdentity.balanceOf(recipient, uniqueIdentityTokenId)).to.bignumber.equal(new BN(1))
   }
 
