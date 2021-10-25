@@ -153,6 +153,7 @@ describe("mainnet forking tests", async function () {
   describe("drawing down into another currency", async function () {
     let bwrCon, oneSplit
     beforeEach(async function () {
+      this.timeout(TEST_TIMEOUT)
       oneSplit = await IOneSplit.at(MAINNET_ONE_SPLIT_ADDRESS)
       bwrCon = await createBorrowerContract()
       ;({tranchedPool} = await createPoolWithCreditLine({
