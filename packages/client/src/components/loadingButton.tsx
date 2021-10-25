@@ -1,7 +1,13 @@
 import React, {useState} from "react"
 import {useFormContext} from "react-hook-form"
 
-function LoadingButton(props) {
+type LoadingButtonProps = {
+  action: (data: any) => Promise<void>
+  text?: string
+  disabled?: boolean
+}
+
+function LoadingButton(props: LoadingButtonProps) {
   const [isPending, setIsPending] = useState(false)
   const formMethods = useFormContext()
 
