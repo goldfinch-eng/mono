@@ -212,7 +212,7 @@ function App() {
       <EarnProvider>
         <BorrowProvider>
           <Router>
-            {(process.env.NODE_ENV === "development" || process.env.MURMURATION === "yes") && <DevTools />}
+            {(process.env.NODE_ENV === "development" || process.env.REACT_APP_MURMURATION === "yes") && <DevTools />}
             <Sidebar />
             <div>
               <Switch>
