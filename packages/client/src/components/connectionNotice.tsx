@@ -21,7 +21,9 @@ export interface ConnectionNoticeProps {
 function TextBanner({children}: React.PropsWithChildren<{}>) {
   return (
     <div className="info-banner background-container">
-      <div className="message">{children}</div>
+      <div className="message">
+        <p>{children}</p>
+      </div>
     </div>
   )
 }

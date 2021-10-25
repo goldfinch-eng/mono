@@ -25,7 +25,7 @@
     font-size: $sans-size-xs;
   }
 
-  &.message {
+  .message {
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -44,9 +44,12 @@
   }
 
   .button {
+    width: 100%;
+  }
+
+  .button:not(.disabled) {
     background-color: $blue-xlight;
     color: $purp-dark;
-    width: 100%;
 
     &:hover {
       background-color: $blue-light;

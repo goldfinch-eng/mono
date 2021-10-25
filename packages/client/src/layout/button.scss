@@ -59,7 +59,9 @@ button {
   }
 
   &.disabled,
-  &.disabled.dark {
+  &.disabled.dark,
+  &.disabled:hover,
+  &:disabled {
     background-color: $sand;
     color: $sand-xxdark;
     cursor: auto;

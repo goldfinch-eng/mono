@@ -7,17 +7,14 @@
   "license": "MIT",
   "scripts": {
     "test": "NODE_ENV=test npx hardhat test --show-stack-traces",
-    "start": "npx hardhat run index.ts --network localhost",
+    "start": "HARDHAT_FORK=mainnet FIRESTORE_EMULATOR_HOST=localhost:8080 npx hardhat run index.ts --network localhost",
     "start:murmuration": "REACT_APP_DISABLE_GASLESS=true REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet MURMURATION=yes npm run start",
     "pre-commit": "lint-staged",
     "lint": "eslint --resolve-plugins-relative-to=. .",
     "lint:fix": "eslint --resolve-plugins-relative-to=. --fix ."
   },
   "lint-staged": {
-    "*.(js(x)?|ts(x)?)": [
-      "prettier --write",
-      "eslint --resolve-plugins-relative-to=. --fix"
-    ]
+    "*.(js(x)?|ts(x)?)": ["prettier --write", "eslint --resolve-plugins-relative-to=. --fix"]
   },
   "dependencies": {
     "@goldfinch-eng/protocol": "^0.1.0",
@@ -29,6 +26,7 @@
     "ethereumjs-util": "^7.1.0",
     "ethers": "^5.4.6",
     "express": "^4.17.1",
+    "firebase-admin": "^10.0.0",
     "hardhat": "^2.6.3",
     "hardhat-deploy": "^0.9.1"
   },

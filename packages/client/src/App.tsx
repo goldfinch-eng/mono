@@ -44,6 +44,7 @@ interface GeolocationData {
   timezone: string
 }
 
+export type SetSessionFn = (data: SessionData | undefined) => void
 export interface GlobalState {
   pool?: SeniorPool
   creditDesk?: any
@@ -57,7 +58,7 @@ export interface GlobalState {
   geolocationData?: GeolocationData
   setGeolocationData?: (geolocationData: GeolocationData) => void
   sessionData?: SessionData
-  setSessionData?: (data: SessionData | undefined) => void
+  setSessionData?: SetSessionFn
 }
 
 declare let window: any
