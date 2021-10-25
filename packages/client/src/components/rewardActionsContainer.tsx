@@ -16,7 +16,7 @@ import TransactionForm from "./transactionForm"
 interface ActionButtonProps {
   text: string
   disabled: boolean
-  onClick: () => unknown
+  onClick: () => Promise<void>
 }
 
 function ActionButton(props: ActionButtonProps) {
@@ -24,7 +24,7 @@ function ActionButton(props: ActionButtonProps) {
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
   const disabledClass = props.disabled || isPending ? "disabled-button" : ""
 
-  async function action() {
+  async function action(): Promise<void> {
     setIsPending(true)
     await props.onClick()
     setIsPending(false)
@@ -42,7 +42,7 @@ interface ClaimFormProps {
   claimable: BigNumber
   disabled: boolean
   onCloseForm: () => void
-  action: () => unknown
+  action: () => Promise<void>
 }
 
 function ClaimForm(props: ClaimFormProps) {
@@ -72,7 +72,7 @@ interface RewardsListItemProps {
   grantedGFI: BigNumber
   claimableGFI: BigNumber
   status: RewardStatus
-  handleOnClick: () => unknown
+  handleOnClick: () => Promise<void>
 }
 
 function RewardsListItem(props: RewardsListItemProps) {
@@ -152,7 +152,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     })
   }
 
-  function handleAccept(info) {
+  function handleAccept(info): Promise<void> {
     assertNonNullable(props.merkleDistributor)
     return sendFromUser(
       props.merkleDistributor.contract.methods.acceptGrant(
@@ -189,7 +189,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
           title={title}
           grantedGFI={item.granted}
           claimableGFI={item.claimable}
-          handleOnClick={_.noop}
+          handleOnClick={() => Promise.resolve()}
         />
       )
     } else if (!showAction) {
@@ -199,7 +199,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
           title={title}
           grantedGFI={item.granted}
           claimableGFI={item.claimable}
-          handleOnClick={() => setShowAction(true)}
+          handleOnClick={async () => setShowAction(true)}
         />
       )
     }
@@ -207,7 +207,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     const reward = item instanceof StakedPosition ? props.stakingRewards : props.merkleDistributor.communityRewards
     return (
       <ClaimForm
-        action={async () => {
+        action={async (): Promise<void> => {
           await handleClaim(reward, item.tokenId, item.claimable)
           onCloseForm()
         }}
