@@ -58,11 +58,11 @@ export default function StakeFiduBanner(props: StakeFiduBannerProps) {
       .then(props.actionComplete)
   }
 
-  // Having unlocked USDC and being eligible for the senior pool are logically independent of, and therefore
-  // not necessary, for being able to stake any unstaked FIDU you may have. But for consistency of UX in
-  // relation to the other actions on the senior pool page, we condition here on having satisfied those
-  // base requirements that the other actions require.
-  const userSatisfiesSeniorPoolRequirements = user.usdcIsUnlocked("earn") && eligibleForSeniorPool(props.kyc, user)
+  // Being eligible for supplying into the senior pool is logically independent of, and therefore not
+  // necessary for, being able to stake any unstaked FIDU you may have. But for consistency of UX in
+  // relation to the other actions on the senior pool page, we condition here on having satisfied the
+  // same base requirement(s) that the other actions require.
+  const userSatisfiesSeniorPoolRequirements = eligibleForSeniorPool(props.kyc, user)
   const disabled = !userSatisfiesSeniorPoolRequirements || !stakingRewards || stakingRewards.isPaused
 
   const placeholderClass = disabled ? "placeholder" : ""
