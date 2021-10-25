@@ -402,7 +402,8 @@ describe("UniqueIdentity", () => {
         from: recipient,
         value: MINT_PAYMENT,
       })
-      expect(receipt.receipt.gasUsed).to.eq(86635)
+      const tolerance = new BN(50)
+      expect(new BN(receipt.receipt.gasUsed)).to.bignumber.closeTo(new BN(86635), tolerance)
     })
 
     context("paused", () => {
@@ -702,7 +703,8 @@ describe("UniqueIdentity", () => {
       const receipt = await uniqueIdentity.burn(...burnParams, signature, {
         from: recipient,
       })
-      expect(receipt.receipt.gasUsed).to.eq(47527)
+      const tolerance = new BN(50)
+      expect(new BN(receipt.receipt.gasUsed)).to.bignumber.closeTo(new BN(47527), tolerance)
     })
 
     context("paused", () => {
