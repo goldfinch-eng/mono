@@ -1,7 +1,7 @@
 import React, {useContext, useEffect, useState} from "react"
 import _ from "lodash"
 import web3 from "../web3"
-import {croppedAddress, displayNumber} from "../utils"
+import {BlockInfo, croppedAddress, displayNumber} from "../utils"
 import {CONFIRMATION_THRESHOLD} from "../ethereum/utils"
 import useCloseOnClickOrEsc from "../hooks/useCloseOnClickOrEsc"
 import NetworkErrors from "./networkErrors"
@@ -13,6 +13,7 @@ import {isSessionDataInvalid, useSession, useSignIn} from "../hooks/useSignIn"
 
 interface NetworkWidgetProps {
   user: User
+  currentBlock: BlockInfo | undefined
   network: NetworkConfig
   currentErrors: any[]
   currentTXs: any[]
@@ -26,6 +27,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
   const [, signIn] = useSignIn()
   const [showSignIn, setShowSignIn] = useState<Boolean>(false)
   const {node, open: showNetworkWidgetInfo, setOpen: setShowNetworkWidgetInfo} = useCloseOnClickOrEsc<HTMLDivElement>()
+  const currentTimestamp = props.currentBlock?.timestamp
 
   useEffect(() => {
     if (props.user.address && session.status !== "authenticated" && showSignIn) {
@@ -35,7 +37,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
   }, [props.user.address, showSignIn])
 
   function enableMetamask() {
-    if (session.status === "known" && !isSessionDataInvalid(sessionData)) {
+    if (session.status === "known" && !isSessionDataInvalid(sessionData, currentTimestamp)) {
       return Promise.resolve()
     }
 
@@ -220,7 +222,11 @@ function NetworkWidget(props: NetworkWidgetProps) {
         <div className="network-widget-button disabled">Wrong Network</div>
       </div>
     )
-  } else if (props.user.web3Connected && session.status !== "authenticated" && isSessionDataInvalid(sessionData)) {
+  } else if (
+    props.user.web3Connected &&
+    session.status !== "authenticated" &&
+    isSessionDataInvalid(sessionData, currentTimestamp)
+  ) {
     return connectMetamaskNetworkWidget
   } else {
     return enabledNetworkWidget
