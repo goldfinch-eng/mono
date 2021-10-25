@@ -1,7 +1,7 @@
 import {useState, useEffect, useContext, useCallback} from "react"
 import {AppContext} from "../App"
 
-function useCurrencyUnlocked(erc20, {owner, spender, minimum}) {
+function useCurrencyUnlocked(erc20, {owner, spender, minimum}): [boolean, () => Promise<void>] {
   const [unlocked, setUnlocked] = useState(true)
   const {goldfinchConfig} = useContext(AppContext)
   minimum = minimum || goldfinchConfig.transactionLimit
