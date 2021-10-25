@@ -178,6 +178,13 @@ function getSortedRewards(
   return rewards
 }
 
+function capitalizeMerkleDistributorGrantReason(reason: string): string {
+  return reason
+    .split("_")
+    .map((s) => _.startCase(s))
+    .join(" ")
+}
+
 function Rewards(props) {
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
   const {stakingRewards, merkleDistributor} = useRewards()
@@ -199,13 +206,6 @@ function Rewards(props) {
   if (stakingRewards?.granted || merkleDistributor?.granted) {
     let val = stakingRewards?.granted || new BigNumber(0)
     granted = val.plus(merkleDistributor?.granted || new BigNumber(0))
-  }
-
-  function capitalizeReason(reason: string): string {
-    return reason
-      .split("_")
-      .map((s) => _.capitalize(s))
-      .join(" ")
   }
 
   const rewards = getSortedRewards(stakingRewards, merkleDistributor)
@@ -248,7 +248,7 @@ function Rewards(props) {
                     <RewardsListItem
                       key={`reward-${item.rewards.startTime}`}
                       isAcceptRequired={false}
-                      title={capitalizeReason(item.reason)}
+                      title={item.reason}
                       grantedGFI={item.granted}
                       claimableGFI={item.claimable}
                     />
@@ -260,7 +260,7 @@ function Rewards(props) {
                   <RewardsListItem
                     key={`${item.reason}-${item.index}`}
                     isAcceptRequired={true}
-                    title={capitalizeReason(item.reason)}
+                    title={capitalizeMerkleDistributorGrantReason(item.reason)}
                     grantedGFI={new BigNumber(item.grant.amount)}
                     claimableGFI={new BigNumber(0)}
                   />
