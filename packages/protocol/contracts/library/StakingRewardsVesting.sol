@@ -69,7 +69,7 @@ library StakingRewardsVesting {
     uint256 end,
     uint256 time,
     uint256 grantedAmount
-  ) public pure returns (uint256) {
+  ) internal pure returns (uint256) {
     if (end <= start) {
       return grantedAmount;
     }

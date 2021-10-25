@@ -10,7 +10,6 @@ import {Contract, EventData} from "web3-eth-contract"
 import {Pool as PoolContract} from "@goldfinch-eng/protocol/typechain/web3/Pool"
 import {SeniorPool as SeniorPoolContract} from "@goldfinch-eng/protocol/typechain/web3/SeniorPool"
 import {StakingRewards as StakingRewardsContract} from "@goldfinch-eng/protocol/typechain/web3/StakingRewards"
-import {StakingRewardsVesting} from "@goldfinch-eng/protocol/typechain/web3/StakingRewardsVesting"
 import {Fidu as FiduContract} from "@goldfinch-eng/protocol/typechain/web3/Fidu"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {TranchedPool} from "@goldfinch-eng/protocol/typechain/web3/TranchedPool"
@@ -654,7 +653,6 @@ function parseStakedPosition(
 class StakingRewards {
   goldfinchProtocol: GoldfinchProtocol
   contract: StakingRewardsContract
-  stakingRewardsVesting: StakingRewardsVesting
   address: string
   loaded: boolean
   isPaused: boolean
@@ -666,7 +664,6 @@ class StakingRewards {
   constructor(goldfinchProtocol: GoldfinchProtocol) {
     this.goldfinchProtocol = goldfinchProtocol
     this.contract = goldfinchProtocol.getContract<StakingRewardsContract>("StakingRewards")
-    this.stakingRewardsVesting = this.goldfinchProtocol.getContract<StakingRewardsVesting>("StakingRewardsVesting")
     this.address = goldfinchProtocol.getAddress("StakingRewards")
     this.loaded = false
     this.isPaused = false
@@ -712,7 +709,7 @@ class StakingRewards {
       await this.contract.methods.earnedSinceLastCheckpoint(tokenId).call(undefined, currentBlock.number)
     )
     const currentGrant = rewards.totalUnvested.plus(rewards.totalVested).plus(earnedSinceLastCheckpoint)
-    const currentGrantTotalVested = await this.stakingRewardsVesting.methods
+    const currentGrantTotalVested = await this.contract.methods
       .totalVestedAt(
         String(rewards.startTime),
         String(rewards.endTime),
