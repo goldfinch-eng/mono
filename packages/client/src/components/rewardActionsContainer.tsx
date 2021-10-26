@@ -62,9 +62,9 @@ function ClaimForm(props: ClaimFormProps) {
 }
 
 enum RewardStatus {
-  Accept,
-  Claim,
-  Finished,
+  Acceptable,
+  Claimable,
+  Claimed,
 }
 
 interface RewardsListItemProps {
@@ -77,14 +77,14 @@ interface RewardsListItemProps {
 
 function RewardsListItem(props: RewardsListItemProps) {
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
-  const valueDisabledClass = props.status === RewardStatus.Accept ? "disabled-text" : ""
+  const valueDisabledClass = props.status === RewardStatus.Acceptable ? "disabled-text" : ""
 
   const actionButtonComponent =
-    props.status === RewardStatus.Accept ? (
+    props.status === RewardStatus.Acceptable ? (
       <ActionButton text="Accept" onClick={props.handleOnClick} disabled={false} />
-    ) : props.status === RewardStatus.Claim && props.claimableGFI.isLessThanOrEqualTo(0) ? (
+    ) : props.status === RewardStatus.Claimable && props.claimableGFI.isLessThanOrEqualTo(0) ? (
       <ActionButton text="Vesting" onClick={props.handleOnClick} disabled />
-    ) : props.status === RewardStatus.Claim && props.claimableGFI.isGreaterThan(0) ? (
+    ) : props.status === RewardStatus.Claimable && props.claimableGFI.isGreaterThan(0) ? (
       <ActionButton text="Claim GFI" onClick={props.handleOnClick} disabled={false} />
     ) : (
       <ActionButton text="Claimed" onClick={props.handleOnClick} disabled />
@@ -185,7 +185,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     if (item.rewards.totalClaimed.isEqualTo(item.granted) && !item.granted.eq(0)) {
       return (
         <RewardsListItem
-          status={RewardStatus.Finished}
+          status={RewardStatus.Claimed}
           title={title}
           grantedGFI={item.granted}
           claimableGFI={item.claimable}
@@ -195,7 +195,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     } else if (!showAction) {
       return (
         <RewardsListItem
-          status={RewardStatus.Claim}
+          status={RewardStatus.Claimable}
           title={title}
           grantedGFI={item.granted}
           claimableGFI={item.claimable}
@@ -221,7 +221,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     const title = capitalizeMerkleDistributorGrantReason(item.reason)
     return (
       <RewardsListItem
-        status={RewardStatus.Accept}
+        status={RewardStatus.Acceptable}
         title={title}
         grantedGFI={new BigNumber(item.grant.amount)}
         claimableGFI={new BigNumber(0)}
