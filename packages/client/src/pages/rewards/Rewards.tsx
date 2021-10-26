@@ -208,6 +208,19 @@ function RewardsListItem(props: RewardsListItemProps) {
     etherscanAddress: "",
   }
 
+  const detailsComponent = (
+    <Details
+      open={open}
+      disabled={props.claimableGFI.eq(0)}
+      transactionDetails={fakeDetailsObject.transactionDetails}
+      vestingSchedule={fakeDetailsObject.vestingSchedule}
+      claimStatus={fakeDetailsObject.claimStatus}
+      currentEarnRate={fakeDetailsObject.currentEarnRate}
+      vestingStatus={fakeDetailsObject.vestingStatus}
+      etherscanAddress={fakeDetailsObject.etherscanAddress}
+    />
+  )
+
   return (
     <>
       {isTabletOrMobile ? (
@@ -229,18 +242,7 @@ function RewardsListItem(props: RewardsListItemProps) {
             </div>
             {actionButtonComponent}
           </div>
-          {open && (
-            <Details
-              open={open}
-              disabled={props.claimableGFI.eq(0)}
-              transactionDetails={fakeDetailsObject.transactionDetails}
-              vestingSchedule={fakeDetailsObject.vestingSchedule}
-              claimStatus={fakeDetailsObject.claimStatus}
-              currentEarnRate={fakeDetailsObject.currentEarnRate}
-              vestingStatus={fakeDetailsObject.vestingStatus}
-              etherscanAddress={fakeDetailsObject.etherscanAddress}
-            />
-          )}
+          {open && detailsComponent}
         </li>
       ) : (
         <li onClick={() => setOpen(!open)}>
@@ -255,18 +257,7 @@ function RewardsListItem(props: RewardsListItemProps) {
             {actionButtonComponent}
             <OpenDetails open={open} />
           </div>
-          {open && (
-            <Details
-              open={open}
-              disabled={props.claimableGFI.eq(0)}
-              transactionDetails={fakeDetailsObject.transactionDetails}
-              vestingSchedule={fakeDetailsObject.vestingSchedule}
-              claimStatus={fakeDetailsObject.claimStatus}
-              currentEarnRate={fakeDetailsObject.currentEarnRate}
-              vestingStatus={fakeDetailsObject.vestingStatus}
-              etherscanAddress={fakeDetailsObject.etherscanAddress}
-            />
-          )}
+          {open && detailsComponent}
         </li>
       )}
     </>
