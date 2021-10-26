@@ -69,6 +69,7 @@ button.action {
   background-color: $blue-xlight;
   white-space: nowrap;
   width: 116px;
+  border-radius: 6px;
 
   &:hover {
     background-color: $blue-light;
@@ -84,10 +85,11 @@ button.action {
 button.expand {
   padding: 0;
   background: none;
+  margin-left: 18px;
+  display: flex;
 
   & svg {
     height: 24px;
-    margin-left: 18px;
 
     path {
       fill: $sand-xdark;
@@ -96,6 +98,12 @@ button.expand {
 
   &:hover {
     background-color: $sand;
+  }
+
+  &.close {
+    svg path {
+      fill: $purp-dark;
+    }
   }
 }
 
@@ -155,6 +163,10 @@ button.expand {
     float: none;
     width: 100%;
     margin: 0;
+  }
+
+  .gfi-rewards .table-cell.col32.title {
+    width: 100%;
   }
 
   .rewards-list-item.mobile {

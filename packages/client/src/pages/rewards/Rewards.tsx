@@ -1,15 +1,15 @@
-import React from "react"
+import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
-import {Link} from "react-router-dom"
-import {gfiFromAtomic} from "../../ethereum/gfi"
-import {useGFIBalance, useRewards} from "../../hooks/useStakingRewards"
-import {displayDollars, displayNumber} from "../../utils"
+import React from "react"
 import {useMediaQuery} from "react-responsive"
+import {Link} from "react-router-dom"
+import RewardActionsContainer from "../../components/rewardActionsContainer"
 import {WIDTH_TYPES} from "../../components/styleConstants"
 import {CommunityRewardsGrant, MerkleDistributor} from "../../ethereum/communityRewards"
-import {StakingRewardsPosition, StakingRewards} from "../../ethereum/pool"
-import RewardActionsContainer from "../../components/rewardActionsContainer"
-import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
+import {gfiFromAtomic} from "../../ethereum/gfi"
+import {StakingRewards, StakingRewardsPosition} from "../../ethereum/pool"
+import {useGFIBalance, useRewards} from "../../hooks/useStakingRewards"
+import {displayDollars, displayNumber} from "../../utils"
 
 interface RewardsSummaryProps {
   claimable: BigNumber | undefined

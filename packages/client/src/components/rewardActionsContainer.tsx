@@ -9,9 +9,19 @@ import {MerkleDistributor, CommunityRewardsGrant, CommunityRewards} from "../eth
 import {StakingRewards, StakingRewardsPosition} from "../ethereum/pool"
 import useSendFromUser from "../hooks/useSendFromUser"
 import {displayNumber, displayDollars, assertNonNullable} from "../utils"
-import {iconCarrotDown} from "./icons"
 import LoadingButton from "./loadingButton"
 import TransactionForm from "./transactionForm"
+import {
+  Column,
+  ColumnsContainer,
+  Detail,
+  DetailLabel,
+  DetailsContainer,
+  DetailValue,
+  EtherscanLinkContainer,
+} from "../pages/rewards/styles"
+import EtherscanLink from "./etherscanLink"
+import {iconCarrotDown, iconCarrotUp, iconOutArrow} from "./icons"
 import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
 
 interface ActionButtonProps {
@@ -35,6 +45,67 @@ function ActionButton(props: ActionButtonProps) {
     <button className={`${!isTabletOrMobile && "table-cell"} action ${disabledClass}`} onClick={action}>
       {props.text}
     </button>
+  )
+}
+
+interface OpenDetailsProps {
+  open: boolean
+}
+
+function OpenDetails(props: OpenDetailsProps) {
+  if (props.open) {
+    return <button className="expand close">{iconCarrotUp}</button>
+  }
+
+  return <button className="expand">{iconCarrotDown}</button>
+}
+
+interface DetailsProps {
+  open: boolean
+  disabled: boolean
+  transactionDetails: string
+  vestingSchedule: string
+  claimStatus: string
+  currentEarnRate: string
+  vestingStatus: string
+  etherscanAddress: string
+}
+
+function Details(props: DetailsProps) {
+  return (
+    <DetailsContainer open={props.open} disabled={props.disabled}>
+      <ColumnsContainer>
+        <Column>
+          <Detail>
+            <DetailLabel>Transaction details</DetailLabel>
+            <DetailValue>{props.transactionDetails}</DetailValue>
+          </Detail>
+          <Detail>
+            <DetailLabel>Vesting schedule</DetailLabel>
+            <DetailValue>{props.vestingSchedule}</DetailValue>
+          </Detail>
+          <Detail>
+            <DetailLabel>Claim status</DetailLabel>
+            <DetailValue>{props.claimStatus}</DetailValue>
+          </Detail>
+        </Column>
+        <Column>
+          <Detail>
+            <DetailLabel>Current earn rate</DetailLabel>
+            <DetailValue>{props.currentEarnRate}</DetailValue>
+          </Detail>
+          <Detail>
+            <DetailLabel>Vesting status</DetailLabel>
+            <DetailValue>{props.vestingStatus}</DetailValue>
+          </Detail>
+        </Column>
+      </ColumnsContainer>
+      <EtherscanLinkContainer className="pool-links">
+        <EtherscanLink address={props.etherscanAddress}>
+          Etherscan<span className="outbound-link">{iconOutArrow}</span>
+        </EtherscanLink>
+      </EtherscanLinkContainer>
+    </DetailsContainer>
   )
 }
 
@@ -112,44 +183,74 @@ interface RewardsListItemProps {
 }
 
 function RewardsListItem(props: RewardsListItemProps) {
+  const [open, setOpen] = useState<boolean>(false)
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
-  const valueDisabledClass = props.status === RewardStatus.Acceptable ? "disabled-text" : ""
+
+  const disabledText = props.status === RewardStatus.Acceptable
+  const valueDisabledClass = disabledText ? "disabled-text" : ""
 
   const actionButtonComponent = <ActionButton {...getActionButtonProps(props)} />
 
+  // TODO: remove when using real data
+  const fakeDetailsObject = {
+    transactionDetails: "16,179.69 FIDU staked on Nov 1, 2021",
+    vestingSchedule: "Linear until 100% on Nov 1, 2022",
+    claimStatus: "0 GFI claimed of your total vested 4.03 GFI",
+    currentEarnRate: "+10.21 granted per week",
+    vestingStatus: "8.0% (4.03 GFI) vested so far",
+    etherscanAddress: "",
+  }
+
+  const detailsComponent = (
+    <Details
+      open={open}
+      disabled={disabledText}
+      transactionDetails={fakeDetailsObject.transactionDetails}
+      vestingSchedule={fakeDetailsObject.vestingSchedule}
+      claimStatus={fakeDetailsObject.claimStatus}
+      currentEarnRate={fakeDetailsObject.currentEarnRate}
+      vestingStatus={fakeDetailsObject.vestingStatus}
+      etherscanAddress={fakeDetailsObject.etherscanAddress}
+    />
+  )
+
   return (
     <>
-      {!isTabletOrMobile && (
-        <li className="rewards-list-item table-row background-container clickable">
-          <div className="table-cell col32">{props.title}</div>
-          <div className={`table-cell col20 numeric ${valueDisabledClass}`}>
-            {displayNumber(gfiFromAtomic(props.grantedGFI), 2)}
+      {isTabletOrMobile ? (
+        <li onClick={() => setOpen(!open)}>
+          <div className="rewards-list-item background-container clickable mobile">
+            <div className="item-header">
+              <div>{props.title}</div>
+              <OpenDetails open={open} />
+            </div>
+            <div className="item-details">
+              <div className="detail-container">
+                <span className="detail-label">Granted GFI</span>
+                <div className={`${valueDisabledClass}`}>{displayNumber(gfiFromAtomic(props.grantedGFI), 2)}</div>
+              </div>
+              <div className="detail-container">
+                <span className="detail-label">Claimable GFI</span>
+                <div className={`${valueDisabledClass}`}>{displayNumber(gfiFromAtomic(props.claimableGFI), 2)}</div>
+              </div>
+            </div>
+            {actionButtonComponent}
           </div>
-          <div className={`table-cell col20 numeric ${valueDisabledClass}`}>
-            {displayNumber(gfiFromAtomic(props.claimableGFI), 2)}
-          </div>
-          {actionButtonComponent}
-          <button className="expand">{iconCarrotDown}</button>
+          {open && detailsComponent}
         </li>
-      )}
-
-      {isTabletOrMobile && (
-        <li className="rewards-list-item background-container clickable mobile">
-          <div className="item-header">
-            <div>{props.title}</div>
-            <button className="expand">{iconCarrotDown}</button>
-          </div>
-          <div className="item-details">
-            <div className="detail-container">
-              <span className="detail-label">Granted GFI</span>
-              <div className={`${valueDisabledClass}`}>{displayNumber(gfiFromAtomic(props.grantedGFI), 2)}</div>
+      ) : (
+        <li onClick={() => setOpen(!open)}>
+          <div className="rewards-list-item table-row background-container clickable">
+            <div className="table-cell col32">{props.title}</div>
+            <div className={`table-cell col20 numeric ${valueDisabledClass}`}>
+              {displayNumber(gfiFromAtomic(props.grantedGFI), 2)}
             </div>
-            <div className="detail-container">
-              <span className="detail-label">Claimable GFI</span>
-              <div className={`${valueDisabledClass}`}>{displayNumber(gfiFromAtomic(props.claimableGFI), 2)}</div>
+            <div className={`table-cell col20 numeric ${valueDisabledClass}`}>
+              {displayNumber(gfiFromAtomic(props.claimableGFI), 2)}
             </div>
+            {actionButtonComponent}
+            <OpenDetails open={open} />
           </div>
-          {actionButtonComponent}
+          {open && detailsComponent}
         </li>
       )}
     </>
