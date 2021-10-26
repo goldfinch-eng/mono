@@ -200,8 +200,8 @@ async function setUpRewards(getOrNull: (name: string) => Promise<Deployment | nu
   await stakingRewards.loadRewards(rewardsAmount.toString())
   await stakingRewards.setRewardsParameters(
     toAtomic(new BN(1000), FIDU_DECIMALS),
-    toAtomic(new BN(100), GFI_DECIMALS),
-    toAtomic(new BN(1000), GFI_DECIMALS),
+    toAtomic(new BN(4), GFI_DECIMALS),
+    toAtomic(new BN(9), GFI_DECIMALS),
     toAtomic(new BN(3), STAKING_REWARDS_MULTIPLIER_DECIMALS), // 300%
     toAtomic(new BN(0.5), STAKING_REWARDS_MULTIPLIER_DECIMALS) // 50%
   )
