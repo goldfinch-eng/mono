@@ -1,15 +1,15 @@
-import React, {useState} from "react"
-import _ from "lodash"
+import React from "react"
 import BigNumber from "bignumber.js"
 import {Link} from "react-router-dom"
 import {gfiFromAtomic} from "../../ethereum/gfi"
 import {useGFIBalance, useRewards} from "../../hooks/useStakingRewards"
 import {displayDollars, displayNumber} from "../../utils"
-import {iconCarrotDown} from "../../components/icons"
 import {useMediaQuery} from "react-responsive"
 import {WIDTH_TYPES} from "../../components/styleConstants"
-import {CommunityRewardsVesting, MerkleDistributor} from "../../ethereum/communityRewards"
-import {StakedPosition, StakingRewards} from "../../ethereum/pool"
+import {CommunityRewardsGrant, MerkleDistributor} from "../../ethereum/communityRewards"
+import {StakingRewardsPosition, StakingRewards} from "../../ethereum/pool"
+import RewardActionsContainer from "../../components/rewardActionsContainer"
+import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
 
 interface RewardsSummaryProps {
   claimable: BigNumber | undefined
@@ -26,6 +26,8 @@ function RewardsSummary(props: RewardsSummaryProps) {
   const totalUSD = props.totalUSD || new BigNumber(0)
   const walletBalance = props.walletBalance || new BigNumber(0)
 
+  const valueDisabledClass = totalGFI.eq(0) ? "disabled-value" : "value"
+
   return (
     <div className="rewards-summary background-container">
       <div className="rewards-summary-left-item">
@@ -38,28 +40,28 @@ function RewardsSummary(props: RewardsSummaryProps) {
         <div className="details-item">
           <span>Wallet balance</span>
           <div>
-            <span className="value">{displayNumber(gfiFromAtomic(walletBalance), 2)}</span>
+            <span className={valueDisabledClass}>{displayNumber(gfiFromAtomic(walletBalance), 2)}</span>
             <span>GFI</span>
           </div>
         </div>
         <div className="details-item">
           <span>Claimable</span>
           <div>
-            <span className="value">{displayNumber(gfiFromAtomic(claimable), 2)}</span>
+            <span className={valueDisabledClass}>{displayNumber(gfiFromAtomic(claimable), 2)}</span>
             <span>GFI</span>
           </div>
         </div>
         <div className="details-item">
           <span>Still vesting</span>
           <div>
-            <span className="value">{displayNumber(gfiFromAtomic(unvested), 2)}</span>
+            <span className={valueDisabledClass}>{displayNumber(gfiFromAtomic(unvested), 2)}</span>
             <span>GFI</span>
           </div>
         </div>
         <div className="details-item total-balance">
           <span>Total balance</span>
           <div>
-            <span className="value">{displayNumber(gfiFromAtomic(totalGFI), 2)}</span>
+            <span className={valueDisabledClass}>{displayNumber(gfiFromAtomic(totalGFI), 2)}</span>
             <span>GFI</span>
           </div>
         </div>
@@ -80,118 +82,79 @@ function NoRewards() {
   )
 }
 
-function ActionButton(props) {
-  const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
-  const disabledClass = props.disabled ? "disabled-button" : ""
+type SortableRewards =
+  | {
+      type: "stakingRewards"
+      value: StakingRewardsPosition
+    }
+  | {
+      type: "communityRewards"
+      value: CommunityRewardsGrant
+    }
 
-  return (
-    <button className={`${!isTabletOrMobile && "table-cell"} action ${disabledClass}`} onClick={props.onClick}>
-      {props.text}
-    </button>
-  )
-}
-
-interface RewardsListItemProps {
-  isAcceptRequired: boolean
-  title: string
-  grantedGFI: BigNumber
-  claimableGFI: BigNumber
-}
-
-function RewardsListItem(props: RewardsListItemProps) {
-  const [accepted, setAccepted] = useState(!props.isAcceptRequired)
-  const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
-
-  function handleAccept() {
-    setAccepted(!accepted)
+const getStartTime = (sortable: SortableRewards): number => {
+  switch (sortable.type) {
+    case "stakingRewards":
+      return sortable.value.position.rewards.startTime
+    case "communityRewards":
+      return sortable.value.rewards.startTime
+    default:
+      assertUnreachable(sortable)
   }
-
-  const valueDisabledClass = !accepted ? "disabled-text" : ""
-
-  const actionButtonComponent = !accepted ? (
-    <ActionButton text="Accept" onClick={handleAccept} />
-  ) : (
-    <ActionButton text="Claim GFI" onClick={() => console.error("error")} disabled={props.claimableGFI.eq(0)} />
-  )
-
-  return (
-    <>
-      {!isTabletOrMobile && (
-        <li className="rewards-list-item table-row background-container clickable">
-          <div className="table-cell col32">{props.title}</div>
-          <div className={`table-cell col20 numeric ${valueDisabledClass}`}>
-            {displayNumber(gfiFromAtomic(props.grantedGFI), 2)}
-          </div>
-          <div className={`table-cell col20 numeric ${valueDisabledClass}`}>
-            {displayNumber(gfiFromAtomic(props.claimableGFI), 2)}
-          </div>
-          {actionButtonComponent}
-          <button className="expand">{iconCarrotDown}</button>
-        </li>
-      )}
-
-      {isTabletOrMobile && (
-        <li className="rewards-list-item background-container clickable mobile">
-          <div className="item-header">
-            <div>{props.title}</div>
-            <button className="expand">{iconCarrotDown}</button>
-          </div>
-          <div className="item-details">
-            <div className="detail-container">
-              <span className="detail-label">Granted GFI</span>
-              <div className={`${valueDisabledClass}`}>{displayNumber(gfiFromAtomic(props.grantedGFI), 2)}</div>
-            </div>
-            <div className="detail-container">
-              <span className="detail-label">Claimable GFI</span>
-              <div className={`${valueDisabledClass}`}>{displayNumber(gfiFromAtomic(props.claimableGFI), 2)}</div>
-            </div>
-          </div>
-          {actionButtonComponent}
-        </li>
-      )}
-    </>
-  )
+}
+const getClaimable = (sortable: SortableRewards): BigNumber => {
+  switch (sortable.type) {
+    case "stakingRewards":
+      return sortable.value.claimable
+    case "communityRewards":
+      return sortable.value.claimable
+    default:
+      assertUnreachable(sortable)
+  }
 }
 
 function getSortedRewards(
   stakingRewards: StakingRewards | undefined,
   merkleDistributor: MerkleDistributor | undefined
-): (StakedPosition | CommunityRewardsVesting)[] {
+): SortableRewards[] {
   /* NOTE: First order by 0 or >0 claimable rewards (0 claimable at the bottom), then group by type
    (e.g. all the staking together, then all the airdrops), then order by most recent first */
   const stakes = stakingRewards?.positions || []
   const airdrops = merkleDistributor?.communityRewards?.grants || []
 
-  const rewards: (StakedPosition | CommunityRewardsVesting)[] = [...stakes, ...airdrops]
-  rewards.sort((i1, i2) => {
-    let val = i1.claimable.minus(i2.claimable)
-    if (!val.isZero()) return val.isPositive() ? -1 : 1
+  const sorted: SortableRewards[] = [
+    ...stakes.map(
+      (value): SortableRewards => ({
+        type: "stakingRewards",
+        value,
+      })
+    ),
+    ...airdrops.map(
+      (value): SortableRewards => ({
+        type: "communityRewards",
+        value,
+      })
+    ),
+  ]
+  sorted.sort((i1, i2) => getStartTime(i1) - getStartTime(i2))
+  sorted.sort((i1, i2) => {
+    const comparedByClaimable = getClaimable(i1).minus(getClaimable(i2))
+    if (!comparedByClaimable.isZero()) return comparedByClaimable.isPositive() ? -1 : 1
 
-    if (i1 instanceof StakedPosition && i2 instanceof CommunityRewardsVesting) {
-      return 1
-    }
-
-    if (i1 instanceof CommunityRewardsVesting && i2 instanceof StakedPosition) {
+    if (i1.type === "stakingRewards" && i2.type === "communityRewards") {
       return -1
     }
 
-    if (i1 instanceof StakedPosition && i2 instanceof StakedPosition) {
-      return i2.rewards.startTime - i1.rewards.startTime
+    if (i1.type === "communityRewards" && i2.type === "stakingRewards") {
+      return 1
     }
 
-    return i2.rewards.startTime - i1.rewards.startTime
+    return getStartTime(i2) - getStartTime(i1)
   })
-  return rewards
+  return sorted
 }
 
-function capitalizeMerkleDistributorGrantReason(reason: string): string {
-  return reason
-    .split("_")
-    .map((s) => _.startCase(s))
-    .join(" ")
-}
-
-function Rewards(props) {
+function Rewards() {
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
   const {stakingRewards, merkleDistributor} = useRewards()
   const gfiBalance = useGFIBalance()
@@ -199,19 +162,19 @@ function Rewards(props) {
   let claimable: BigNumber | undefined
   let unvested: BigNumber | undefined
   let granted: BigNumber | undefined
-  if (stakingRewards?.totalClaimable || merkleDistributor?.totalClaimable) {
-    let val = stakingRewards?.totalClaimable || new BigNumber(0)
-    claimable = val.plus(merkleDistributor?.totalClaimable || new BigNumber(0))
-  }
-
-  if (stakingRewards?.unvested || merkleDistributor?.unvested) {
-    let val = stakingRewards?.unvested || new BigNumber(0)
-    unvested = val.plus(merkleDistributor?.unvested || new BigNumber(0))
-  }
-
-  if (stakingRewards?.granted || merkleDistributor?.granted) {
-    let val = stakingRewards?.granted || new BigNumber(0)
-    granted = val.plus(merkleDistributor?.granted || new BigNumber(0))
+  if (stakingRewards && merkleDistributor) {
+    claimable =
+      stakingRewards.claimable && merkleDistributor.claimable
+        ? stakingRewards.claimable.plus(merkleDistributor.claimable)
+        : undefined
+    unvested =
+      stakingRewards.unvested && merkleDistributor.unvested
+        ? stakingRewards.unvested.plus(merkleDistributor.unvested)
+        : undefined
+    granted =
+      stakingRewards.granted && merkleDistributor.granted
+        ? stakingRewards.granted.plus(merkleDistributor.granted)
+        : undefined
   }
 
   const rewards = getSortedRewards(stakingRewards, merkleDistributor)
@@ -219,6 +182,7 @@ function Rewards(props) {
     (!merkleDistributor?.communityRewards.grants || !merkleDistributor?.communityRewards.grants.length) &&
     (!merkleDistributor?.actionRequiredAirdrops || !merkleDistributor?.actionRequiredAirdrops.length) &&
     (!stakingRewards?.positions || !stakingRewards?.positions.length)
+  const isLoaded = merkleDistributor?.loaded && stakingRewards?.loaded
   return (
     <div className="content-section">
       <div className="page-header">
@@ -247,33 +211,33 @@ function Rewards(props) {
           )}
         </div>
         <ul className="rewards-list">
-          {merkleDistributor?.loaded && stakingRewards?.loaded && emptyRewards ? (
+          {!merkleDistributor || !stakingRewards || !isLoaded ? (
+            <span>Loading...</span>
+          ) : emptyRewards ? (
             <NoRewards />
           ) : (
             <>
+              {merkleDistributor?.actionRequiredAirdrops &&
+                merkleDistributor.actionRequiredAirdrops.map((item) => (
+                  <RewardActionsContainer
+                    key={`airdrop-${item.index}`}
+                    item={item}
+                    merkleDistributor={merkleDistributor}
+                    stakingRewards={stakingRewards}
+                  />
+                ))}
+
               {rewards &&
                 rewards.map((item) => {
                   return (
-                    <RewardsListItem
-                      key={`reward-${item.rewards.startTime}`}
-                      isAcceptRequired={false}
-                      title={item.reason}
-                      grantedGFI={item.granted}
-                      claimableGFI={item.claimable}
+                    <RewardActionsContainer
+                      key={`${item.type}-${item.value.tokenId}`}
+                      item={item.value}
+                      merkleDistributor={merkleDistributor}
+                      stakingRewards={stakingRewards}
                     />
                   )
                 })}
-
-              {merkleDistributor?.actionRequiredAirdrops &&
-                merkleDistributor.actionRequiredAirdrops.map((item) => (
-                  <RewardsListItem
-                    key={`${item.reason}-${item.index}`}
-                    isAcceptRequired={true}
-                    title={capitalizeMerkleDistributorGrantReason(item.reason)}
-                    grantedGFI={new BigNumber(item.grant.amount)}
-                    claimableGFI={new BigNumber(0)}
-                  />
-                ))}
             </>
           )}
         </ul>
