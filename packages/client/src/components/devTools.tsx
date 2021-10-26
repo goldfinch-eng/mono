@@ -71,6 +71,21 @@ export default function DevTools(props) {
             >
               fundWithWhales
             </button>
+            <button
+              className={`button dark ${disabled ? "disabled" : ""}`}
+              disabled={disabled}
+              onClick={async (e) => {
+                e.preventDefault()
+                setDisabled(true)
+                await fetch("/advanceTimeOneDay", {
+                  method: "POST",
+                  headers: {"Content-Type": "application/json"},
+                })
+                setDisabled(false)
+              }}
+            >
+              advanceTimeOneDay
+            </button>
           </div>
         </div>
       )}
