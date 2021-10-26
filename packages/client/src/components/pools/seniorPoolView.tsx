@@ -32,6 +32,12 @@ const emptyCapitalProvider: CapitalProvider = {
   availableToStakeInDollars: new BigNumber(0),
   availableToWithdraw: new BigNumber(0),
   availableToWithdrawInDollars: new BigNumber(0),
+  stakingRewards: {
+    hasUnvested: false,
+    unvested: null,
+    unvestedInDollars: null,
+    lastVestingEndTime: null,
+  },
   address: "",
   allowance: new BigNumber(0),
   weightedAverageSharePrice: new BigNumber(0),
