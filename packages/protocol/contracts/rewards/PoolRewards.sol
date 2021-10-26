@@ -191,6 +191,32 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
       newTotalInterest = maxInterestDollarsEligible;
     }
 
+    /*
+      equation:
+        (sqrtNewTotalInterest-sqrtOrigTotalInterest)
+        * totalRewardPercentOfTotalGFI
+        / sqrtMaxInterestDollarsEligible
+        / 100
+        * totalGFISupply
+        / 10^18
+
+      example scenario:
+      - new payment = 5000*10^18
+      - original interest received = 0*10^18
+      - total reward percent = 3 * 10^18
+      - max interest dollars = 1 * 10^27 ($1 billion)
+      - totalGfiSupply = 100_000_000 * 10^18
+      -
+
+      example math:
+        (70710678118 - 0)
+        * 3000000000000000000
+        / 31622776601683
+        / 100
+        * 100000000000000000000000000
+        / 10^18
+        = 6708203932437400000000 (6,708.2039 GFI)
+    */
     uint256 a = Babylonian.sqrt(newTotalInterest).sub(sqrtOrigTotalInterest);
     uint256 b = Babylonian.sqrt(maxInterestDollarsEligible);
     uint256 newGrossRewards = a.mul(totalRewardPercentOfTotalGFI).div(b).div(100).mul(totalGFISupply).div(
