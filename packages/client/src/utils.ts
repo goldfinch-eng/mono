@@ -1,3 +1,4 @@
+import BigNumber from "bignumber.js"
 import _ from "lodash"
 import {AsyncReturnType} from "./types/util"
 import web3 from "./web3"
@@ -9,10 +10,11 @@ export function croppedAddress(address) {
   return `${address.slice(0, 6)}...${address.slice(-4)}`
 }
 
-export function displayNumber(val, decimals) {
+export function displayNumber(val, decimals): string {
   if (val === "") {
     return ""
   }
+
   const valFloat = parseFloat(val)
   if (!decimals && Math.floor(valFloat) === valFloat) {
     decimals = 0
@@ -20,13 +22,13 @@ export function displayNumber(val, decimals) {
     decimals = valFloat.toString().split(".")[1]?.length || 0
   }
 
-  // TODO[PR] Should we have a similar check here for `valFloat < 0.01 && valFloat > 0`,
-  // like we do in `displayDollars()`? Otherwise we're at risk of displaying `0.00`.
-
+  if (decimals === 2 && valFloat < 0.01 && valFloat > 0) {
+    return "<0.01"
+  }
   return commaFormat(valFloat.toFixed(decimals))
 }
 
-function commaFormat(numberString) {
+function commaFormat(numberString): string {
   if (isNaN(numberString)) {
     return numberString
   }
@@ -49,20 +51,22 @@ export function displayDollars(val, decimals = 2) {
   if (!isFinite(val) || val === null) {
     return " --.--"
   }
+
   const valFloat = parseFloat(val)
   if (valFloat < 0) {
     val = valFloat * -1
     prefix = "-"
   }
-  if (valFloat < 0.01 && valFloat > 0) {
+
+  if (decimals === 2 && valFloat < 0.01 && valFloat > 0) {
     return "<$0.01"
   }
   return `${prefix}$${displayNumber(val, decimals)}`
 }
 
-export function displayPercent(val, decimals = 2) {
-  let valDisplay
-  if (!val || isNaN(val)) {
+export function displayPercent(val: BigNumber | undefined, decimals = 2, displayZero = false) {
+  let valDisplay: string
+  if (!val || val.isNaN() || (val.eq(0) && !displayZero)) {
     valDisplay = "--.--"
   } else {
     valDisplay = displayNumber(val.multipliedBy(100), decimals)
@@ -76,10 +80,6 @@ export function roundUpPenny(val) {
 
 export function roundDownPenny(val) {
   return Math.floor(val * 100) / 100
-}
-
-export function secondsSinceEpoch(): number {
-  return Math.floor(Date.now() / 1000)
 }
 
 export class AssertionError extends Error {}

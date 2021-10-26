@@ -1,4 +1,11 @@
 {
+  "0xaa2ccc5547f64c5dffd0a624eb4af2543a67ba65": {
+    "name": "Tugende",
+    "category": "Asset Finance Loans in Kenya",
+    "description": "Tugende uses asset finance, technology, and a customer-centric model to help informal sector entrepreneurs increase their economic trajectory. By providing them with financing and value-added services, Tugende is building a long-term ecosystem for Micro, Small & Medium Enterprises (MSMEs) to grow.",
+    "icon": "%PUBLIC_URL%/icons/tugende.png",
+    "v1StyleDeal": true
+  },
   "0xd798d527F770ad920BB50680dBC202bB0a1DaFD6": {
     "name": "QuickCheck #1",
     "category": "Consumer loans in Nigeria",

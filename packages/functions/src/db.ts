@@ -31,6 +31,15 @@ function getAgreements(firestore: firestore.Firestore): firestore.CollectionRefe
   return getCollection("agreements", firestore)
 }
 
+/**
+ * Get the agreements collection given a reference to the firestore
+ * @param {firestore.Firestore} firestore The firestore the get the collection from (ignored for tests)
+ * @return {firestore.CollectionReference} A Collection object that can be queried
+ */
+function getNDAs(firestore: firestore.Firestore): firestore.CollectionReference<firestore.DocumentData> {
+  return getCollection("ndas", firestore)
+}
+
 const getCollection = (
   collection: string,
   firestore: firestore.Firestore,
@@ -144,4 +153,4 @@ function setEnvForTest(firestore: firestore.Firestore, config: Omit<FirebaseConf
   }
 }
 
-export {getUsers, getAgreements, getDb, getConfig, setEnvForTest}
+export {getUsers, getAgreements, getNDAs, getDb, getConfig, setEnvForTest}

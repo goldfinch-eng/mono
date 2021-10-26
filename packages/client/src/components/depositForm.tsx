@@ -1,6 +1,6 @@
 import {usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
 import {AppContext} from "../App"
-import {displayDollars} from "../utils"
+import {assertNonNullable, displayDollars} from "../utils"
 import TransactionForm from "./transactionForm"
 import TransactionInput from "./transactionInput"
 import LoadingButton from "./loadingButton"
@@ -8,6 +8,8 @@ import useSendFromUser from "../hooks/useSendFromUser"
 import useNonNullContext from "../hooks/useNonNullContext"
 import BigNumber from "bignumber.js"
 import {decimalPlaces} from "../ethereum/utils"
+import {useStakingRewards} from "../hooks/useStakingRewards"
+import useERC20Permit from "../hooks/useERC20Permit"
 
 interface DepositFormProps {
   actionComplete: () => void
@@ -15,15 +17,58 @@ interface DepositFormProps {
 }
 
 function DepositForm(props: DepositFormProps) {
-  const {pool, user, goldfinchConfig} = useNonNullContext(AppContext)
+  const {pool, usdc, user, goldfinchConfig} = useNonNullContext(AppContext)
   const sendFromUser = useSendFromUser()
+  const stakingRewards = useStakingRewards()
+  const {gatherPermitSignature} = useERC20Permit()
 
-  function action({transactionAmount}) {
-    const depositAmount = usdcToAtomic(transactionAmount)
-    return sendFromUser(pool.contract.methods.deposit(depositAmount), {
-      type: "Supply",
-      amount: transactionAmount,
-    }).then(props.actionComplete)
+  async function action({transactionAmount}) {
+    assertNonNullable(stakingRewards)
+    const depositAmountString = usdcToAtomic(transactionAmount)
+    // USDC permit doesn't work on mainnet forking due to mismatch between hardcoded chain id in the contract
+    if (process.env.REACT_APP_HARDHAT_FORK) {
+      const alreadyApprovedAmount = new BigNumber(
+        await usdc.contract.methods.allowance(user.address, stakingRewards.address).call()
+      )
+      const amountRequiringApproval = new BigNumber(depositAmountString).minus(alreadyApprovedAmount)
+      const approval = amountRequiringApproval.gt(0)
+        ? sendFromUser(
+            usdc.contract.methods.approve(stakingRewards.address, amountRequiringApproval.toString(10)),
+            {
+              type: "Approve",
+              amount: usdcFromAtomic(amountRequiringApproval),
+            },
+            {rejectOnError: true}
+          )
+        : Promise.resolve()
+      return approval
+        .then(() =>
+          sendFromUser(stakingRewards.contract.methods.depositAndStake(depositAmountString), {
+            type: "Supply",
+            amount: transactionAmount,
+          })
+        )
+        .then(props.actionComplete)
+    } else {
+      let signatureData = await gatherPermitSignature({
+        token: usdc,
+        value: new BigNumber(depositAmountString),
+        spender: stakingRewards.address,
+      })
+      return sendFromUser(
+        stakingRewards.contract.methods.depositWithPermitAndStake(
+          signatureData.value,
+          signatureData.deadline,
+          signatureData.v,
+          signatureData.r,
+          signatureData.s
+        ),
+        {
+          type: "Supply",
+          amount: transactionAmount,
+        }
+      ).then(props.actionComplete)
+    }
   }
 
   function renderForm({formMethods}) {

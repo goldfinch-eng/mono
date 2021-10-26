@@ -1,6 +1,8 @@
 import {BigNumber} from "bignumber.js"
 import {CapitalProvider, PoolData} from "../ethereum/pool"
+import {InfoIcon} from "../ui/icons"
 import {displayDollars, displayPercent} from "../utils"
+import AnnualGrowthTooltipContent from "./AnnualGrowthTooltipContent"
 
 interface DepositStatusProps {
   poolData?: PoolData
@@ -11,15 +13,18 @@ function DepositStatus(props: DepositStatusProps) {
   const portfolioBalance = props.capitalProvider.totalSeniorPoolBalanceInDollars
   const portfolioBalanceDisplay = displayDollars(portfolioBalance)
 
-  let apyDisplay: string, estimatedApy: BigNumber | undefined, estimatedApyFromGfi: BigNumber | undefined
+  let apyDisplay: string,
+    estimatedApy: BigNumber | undefined,
+    estimatedApyFromSupplying: BigNumber | undefined,
+    estimatedApyFromGfi: BigNumber | undefined
   if (props.poolData?.loaded) {
     const globalEstimatedApyFromSupplying = props.poolData.estimatedApy
-    const estimatedApyFromSupplying = globalEstimatedApyFromSupplying
+    estimatedApyFromSupplying = globalEstimatedApyFromSupplying
 
     const globalEstimatedApyFromGfi = props.poolData.estimatedApyFromGfi || new BigNumber(0)
-    const balancePortionEarningGfi = props.capitalProvider.stakedSeniorPoolBalanceInDollars.div(
-      props.capitalProvider.totalSeniorPoolBalanceInDollars
-    )
+    const balancePortionEarningGfi = portfolioBalance.gt(0)
+      ? props.capitalProvider.stakedSeniorPoolBalanceInDollars.div(portfolioBalance)
+      : new BigNumber(0)
     // NOTE: Because our frontend does not currently support staking with lockup, we do not
     // worry here about adjusting for the portion of the user's balance that is not only earning
     // GFI from staking, but is earning that GFI at a boosted rate due to having staked-with-lockup
@@ -34,7 +39,7 @@ function DepositStatus(props: DepositStatusProps) {
     apyDisplay = `${displayPercent(estimatedApy)}`
   }
 
-  if (portfolioBalance.gt(0) && estimatedApy) {
+  if (portfolioBalance.gt(0) && estimatedApy && estimatedApyFromSupplying && estimatedApyFromGfi) {
     const estimatedGrowth = portfolioBalance.multipliedBy(estimatedApy)
     const estimatedGrowthDisplay = displayDollars(estimatedGrowth)
 
@@ -53,10 +58,21 @@ function DepositStatus(props: DepositStatusProps) {
           </div>
         </div>
         <div className="deposit-status-item">
-          <div className="label">Est. Annual Growth</div>
+          <div className="deposit-status-item-flex">
+            <div className="label">Est. Annual Growth</div>
+            <span data-tip="" data-for="annual-growth-tooltip" data-offset="{'top': 0, 'left': 0}" data-place="bottom">
+              <InfoIcon />
+            </span>
+          </div>
           <div className="value">{estimatedGrowthDisplay}</div>
           <div className="sub-value">{`${apyDisplay} APY${estimatedApyFromGfi?.gt(0) ? " (with GFI)" : ""}`}</div>
         </div>
+        <AnnualGrowthTooltipContent
+          supplyingCombined={false}
+          estimatedApyFromSupplying={estimatedApyFromSupplying}
+          estimatedApyFromGfi={estimatedApyFromGfi}
+          estimatedApy={estimatedApy}
+        />
       </div>
     )
   } else {

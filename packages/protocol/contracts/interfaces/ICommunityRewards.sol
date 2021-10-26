@@ -17,7 +17,7 @@ interface ICommunityRewards is IERC721 {
     uint256 vestingLength,
     uint256 cliffLength,
     uint256 vestingInterval
-  ) external;
+  ) external returns (uint256 tokenId);
 
   function loadRewards(uint256 rewards) external;
 

@@ -21,12 +21,12 @@ class GFI {
 const GFI_DECIMAL_PLACES = 18
 const GFI_DECIMALS = new BigNumber(String(10 ** GFI_DECIMAL_PLACES))
 
-function gfiFromAtomic(amount) {
-  return new BigNumber(String(amount)).div(GFI_DECIMALS).toString(10)
+function gfiFromAtomic(amount: BigNumber) {
+  return amount.div(GFI_DECIMALS).toString(10)
 }
 
-function gfiToAtomic(amount) {
-  return new BigNumber(String(amount)).multipliedBy(GFI_DECIMALS).toString(10)
+function gfiToAtomic(amount: BigNumber) {
+  return amount.multipliedBy(GFI_DECIMALS).toString(10)
 }
 
 export {GFI, GFI_DECIMAL_PLACES, GFI_DECIMALS, gfiFromAtomic, gfiToAtomic}

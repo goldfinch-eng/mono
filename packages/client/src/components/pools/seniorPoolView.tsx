@@ -1,17 +1,12 @@
+import BigNumber from "bignumber.js"
 import {useContext, useEffect, useState} from "react"
 import {AppContext} from "../../App"
 import {usdcFromAtomic} from "../../ethereum/erc20"
-import {
-  CapitalProvider,
-  emptyCapitalProvider,
-  fetchCapitalProviderData,
-  PoolData,
-  SeniorPool,
-  StakingRewards,
-} from "../../ethereum/pool"
+import {CapitalProvider, fetchCapitalProviderData, PoolData, SeniorPool, StakingRewards} from "../../ethereum/pool"
 import {useStaleWhileRevalidating} from "../../hooks/useAsync"
 import {eligibleForSeniorPool, useKYC} from "../../hooks/useKYC"
 import {useStakingRewards} from "../../hooks/useStakingRewards"
+import {Loadable} from "../../types/loadable"
 import {assertNonNullable, displayDollars} from "../../utils"
 import ConnectionNotice from "../connectionNotice"
 import EarnActionsContainer from "../earnActionsContainer"
@@ -19,9 +14,38 @@ import InvestorNotice from "../investorNotice"
 import PoolStatus from "../poolStatus"
 import StakeFiduBanner from "../stakeFiduBanner"
 
+const emptyCapitalProvider: CapitalProvider = {
+  shares: {
+    parts: {
+      notStaked: new BigNumber(0),
+      stakedNotLocked: new BigNumber(0),
+      stakedLocked: new BigNumber(0),
+    },
+    aggregates: {
+      staked: new BigNumber(0),
+      withdrawable: new BigNumber(0),
+      total: new BigNumber(0),
+    },
+  },
+  stakedSeniorPoolBalanceInDollars: new BigNumber(0),
+  totalSeniorPoolBalanceInDollars: new BigNumber(0),
+  availableToStakeInDollars: new BigNumber(0),
+  availableToWithdraw: new BigNumber(0),
+  availableToWithdrawInDollars: new BigNumber(0),
+  address: "",
+  allowance: new BigNumber(0),
+  weightedAverageSharePrice: new BigNumber(0),
+  unrealizedGains: new BigNumber(0),
+  unrealizedGainsInDollars: new BigNumber(0),
+  unrealizedGainsPercentage: new BigNumber(0),
+}
+
 function SeniorPoolView(): JSX.Element {
   const {pool, user, goldfinchConfig} = useContext(AppContext)
-  const [capitalProvider, setCapitalProvider] = useState<CapitalProvider>(emptyCapitalProvider())
+  const [capitalProvider, setCapitalProvider] = useState<Loadable<CapitalProvider>>({
+    loaded: false,
+    value: undefined,
+  })
   const [poolData, setPoolData] = useState<PoolData>()
   const stakingRewards = useStakingRewards()
   const kycResult = useKYC()
@@ -45,7 +69,11 @@ function SeniorPoolView(): JSX.Element {
     assertNonNullable(pool)
 
     await refreshPoolData(pool)
-    return refreshCapitalProviderData(pool, stakingRewards, capitalProvider.address)
+    return refreshCapitalProviderData(
+      pool,
+      stakingRewards,
+      capitalProvider.loaded ? capitalProvider.value.address : undefined
+    )
   }
 
   async function refreshCapitalProviderData(
@@ -86,21 +114,21 @@ function SeniorPoolView(): JSX.Element {
     <div className="content-section">
       <div className="page-header"> {earnMessage}</div>
       <ConnectionNotice
-        requireSignIn={true}
-        requireKYC={{kyc: kycResult, condition: eligibleForSeniorPool}}
+        requireUnlock={false}
+        requireKYC={{kyc: kycResult, condition: (kyc) => eligibleForSeniorPool(kyc, user)}}
         isPaused={!!poolData?.pool?.isPaused}
       />
       {maxCapacityNotice}
       <InvestorNotice />
       <EarnActionsContainer
         poolData={poolData}
-        capitalProvider={capitalProvider}
+        capitalProvider={capitalProvider.loaded ? capitalProvider.value : emptyCapitalProvider}
         actionComplete={actionComplete}
         kyc={kyc}
       />
       <StakeFiduBanner
         poolData={poolData}
-        capitalProvider={capitalProvider}
+        capitalProvider={capitalProvider.loaded ? capitalProvider.value : emptyCapitalProvider}
         actionComplete={actionComplete}
         kyc={kyc}
       />

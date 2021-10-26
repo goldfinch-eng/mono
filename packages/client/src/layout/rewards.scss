@@ -60,12 +60,59 @@
   }
 }
 
+button.action {
+  margin-left: auto;
+  background-color: $blue-xlight;
+  white-space: nowrap;
+  width: 116px;
+
+  &:hover {
+    background-color: $blue-light;
+  }
+
+  &.disabled-button {
+    pointer-events: none;
+    background-color: $sand;
+    color: $sand-xxdark;
+  }
+}
+
+button.expand {
+  padding: 0;
+  background: none;
+
+  & svg {
+    height: 24px;
+    margin-left: 18px;
+
+    path {
+      fill: $sand-xdark;
+    }
+  }
+
+  &:hover {
+    background-color: $sand;
+  }
+}
+
 .gfi-rewards {
   h2 {
     font-size: $sans-size-s;
+    color: $purp-dark;
   }
 
-  .reward-list-item {
+  .rewards-list-item {
+    border-radius: 6px;
+    font-size: $sans-size-s;
+    margin-bottom: 24px;
+
+    .disabled-text {
+      color: $sand-xxdark;
+    }
+  }
+
+  .rewards-list-item.no-rewards {
+    display: block;
     font-size: $sans-size-s;
     color: $sand-xxdark;
   }
@@ -90,5 +137,52 @@
 
   .rewards-summary-right-item {
     padding: 24px 24px;
+  }
+}
+
+@media only screen and (max-width: $screen-l) {
+  button.action {
+    float: none;
+    width: 100%;
+    margin: 0;
+  }
+
+  .rewards-list-item.mobile {
+    margin-bottom: 24px;
+  
+    .item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+  
+    .item-details {
+      display: flex;
+      margin: 12px 0 18px 0;
+    }
+  
+    .detail-container {
+      width: 100%;
+    }
+  
+    .detail-label {
+      display: block;
+      margin: 0 0 4px 0;
+      color: $sand-xxdark;
+    }
+  }
+}
+
+@media only screen and (max-width: 1050px) {
+  .gfi-rewards .table-cell.col32, .gfi-rewards .table-cell.col20{
+    width: 23%;
+  }
+
+  .break-claimable-column {
+    padding-left: 35px;
+  }
+
+  .break-granted-column {
+    padding-left: 50px;
   }
 }

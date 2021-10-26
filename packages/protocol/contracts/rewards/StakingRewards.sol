@@ -42,6 +42,14 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   }
 
   /* ========== EVENTS =================== */
+  event RewardsParametersUpdated(
+    address indexed who,
+    uint256 targetCapacity,
+    uint256 minRate,
+    uint256 maxRate,
+    uint256 minRateAtPercent,
+    uint256 maxRateAtPercent
+  );
   event TargetCapacityUpdated(address indexed who, uint256 targetCapacity);
   event VestingScheduleUpdated(address indexed who, uint256 vestingLength);
   event MinRateUpdated(address indexed who, uint256 minRate);
@@ -288,7 +296,9 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   ///   will be staked.
   function depositAndStake(uint256 usdcAmount) public nonReentrant whenNotPaused updateReward(0) {
     uint256 fiduAmount = depositToSeniorPool(usdcAmount);
-    _stakeWithLockup(address(this), msg.sender, fiduAmount, 0, MULTIPLIER_DECIMALS);
+    uint256 lockedUntil = 0;
+    uint256 tokenId = _stakeWithLockup(address(this), msg.sender, fiduAmount, lockedUntil, MULTIPLIER_DECIMALS);
+    emit DepositedAndStaked(msg.sender, usdcAmount, tokenId, fiduAmount, lockedUntil, MULTIPLIER_DECIMALS);
   }
 
   function depositToSeniorPool(uint256 usdcAmount) internal returns (uint256 fiduAmount) {
@@ -331,7 +341,8 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     uint256 lockDuration = lockupPeriodToDuration(lockupPeriod);
     uint256 leverageMultiplier = getLeverageMultiplier(lockupPeriod);
     uint256 lockedUntil = block.timestamp.add(lockDuration);
-    _stakeWithLockup(address(this), msg.sender, fiduAmount, lockedUntil, leverageMultiplier);
+    uint256 tokenId = _stakeWithLockup(address(this), msg.sender, fiduAmount, lockedUntil, leverageMultiplier);
+    emit DepositedAndStaked(msg.sender, usdcAmount, tokenId, fiduAmount, lockedUntil, leverageMultiplier);
   }
 
   function lockupPeriodToDuration(LockupPeriod lockupPeriod) internal pure returns (uint256 lockDuration) {
@@ -379,11 +390,11 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     uint256 amount,
     uint256 lockedUntil,
     uint256 leverageMultiplier
-  ) internal {
+  ) internal returns (uint256 tokenId) {
     require(amount > 0, "Cannot stake 0");
 
     _tokenIdTracker.increment();
-    uint256 tokenId = _tokenIdTracker.current();
+    tokenId = _tokenIdTracker.current();
 
     // Ensure we snapshot accumulatedRewardsPerToken for tokenId after it is available
     // We do this before setting the position, because we don't want `earned` to (incorrectly) account for
@@ -416,6 +427,8 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     }
 
     emit Staked(nftRecipient, tokenId, amount, lockedUntil, leverageMultiplier);
+
+    return tokenId;
   }
 
   /// @notice Unstake an amount of `stakingToken()` associated with a given position and transfer to msg.sender.
@@ -543,29 +556,22 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     emit RewardAdded(rewards);
   }
 
-  function setTargetCapacity(uint256 _targetCapacity) public onlyAdmin updateReward(0) {
+  function setRewardsParameters(
+    uint256 _targetCapacity,
+    uint256 _minRate,
+    uint256 _maxRate,
+    uint256 _minRateAtPercent,
+    uint256 _maxRateAtPercent
+  ) public onlyAdmin updateReward(0) {
+    require(_maxRate >= _minRate, "maxRate must be >= then minRate");
+    require(_maxRateAtPercent <= _minRateAtPercent, "maxRateAtPercent must be <= minRateAtPercent");
     targetCapacity = _targetCapacity;
-    emit TargetCapacityUpdated(msg.sender, targetCapacity);
-  }
-
-  function setMaxRateAtPercent(uint256 _maxRateAtPercent) public onlyAdmin updateReward(0) {
-    maxRateAtPercent = _maxRateAtPercent;
-    emit MaxRateAtPercentUpdated(msg.sender, maxRateAtPercent);
-  }
-
-  function setMinRateAtPercent(uint256 _minRateAtPercent) public onlyAdmin updateReward(0) {
-    minRateAtPercent = _minRateAtPercent;
-    emit MinRateAtPercentUpdated(msg.sender, minRateAtPercent);
-  }
-
-  function setMaxRate(uint256 _maxRate) public onlyAdmin updateReward(0) {
-    maxRate = _maxRate;
-    emit MaxRateUpdated(msg.sender, maxRate);
-  }
-
-  function setMinRate(uint256 _minRate) public onlyAdmin updateReward(0) {
     minRate = _minRate;
-    emit MinRateUpdated(msg.sender, minRate);
+    maxRate = _maxRate;
+    minRateAtPercent = _minRateAtPercent;
+    maxRateAtPercent = _maxRateAtPercent;
+
+    emit RewardsParametersUpdated(msg.sender, targetCapacity, minRate, maxRate, minRateAtPercent, maxRateAtPercent);
   }
 
   function setLeverageMultiplier(LockupPeriod lockupPeriod, uint256 leverageMultiplier)
@@ -635,6 +641,14 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
   event RewardAdded(uint256 reward);
   event Staked(address indexed user, uint256 indexed tokenId, uint256 amount, uint256 lockedUntil, uint256 multiplier);
+  event DepositedAndStaked(
+    address indexed user,
+    uint256 depositedAmount,
+    uint256 indexed tokenId,
+    uint256 amount,
+    uint256 lockedUntil,
+    uint256 multiplier
+  );
   event Unstaked(address indexed user, uint256 indexed tokenId, uint256 amount);
   event RewardPaid(address indexed user, uint256 indexed tokenId, uint256 reward);
 }
