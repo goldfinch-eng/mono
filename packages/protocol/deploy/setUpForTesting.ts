@@ -1,5 +1,5 @@
 import {HardhatRuntimeEnvironment} from "hardhat/types"
-import {DeploymentsExtension} from "hardhat-deploy/types"
+import {Deployment, DeploymentsExtension} from "hardhat-deploy/types"
 import {Logger} from "../blockchain_scripts/types"
 import fs from "fs"
 
@@ -36,6 +36,9 @@ import {
   LOCAL_CHAIN_ID,
   getProtocolOwner,
   ContractDeployer,
+  STAKING_REWARDS_MULTIPLIER_DECIMALS,
+  FIDU_DECIMALS,
+  toAtomic,
 } from "../blockchain_scripts/deployHelpers"
 import {impersonateAccount, fundWithWhales} from "../blockchain_scripts/mainnetForkingHelpers"
 import _ from "lodash"
@@ -178,18 +181,30 @@ async function main(hre: HardhatRuntimeEnvironment, options: OverrideOptions) {
     await seniorPool.redeem(tokenId)
   }
 
+  await setUpRewards(getOrNull, protocol_owner)
+}
+
+async function setUpRewards(getOrNull: (name: string) => Promise<Deployment | null>, protocolOwner: string) {
   const amount = new BN(String(1e8)).mul(GFI_DECIMALS)
   const communityRewards = await getDeployedAsEthersContract<CommunityRewards>(getOrNull, "CommunityRewards")
   const stakingRewards = await getDeployedAsEthersContract<StakingRewards>(getOrNull, "StakingRewards")
   const rewardsAmount = amount.div(new BN(2))
 
   const gfi = await getDeployedAsEthersContract<GFI>(getOrNull, "GFI")
-  await gfi.mint(protocol_owner, amount.toString())
+  await gfi.mint(protocolOwner, amount.toString())
   await gfi.approve(communityRewards.address, rewardsAmount.toString())
   await gfi.approve(stakingRewards.address, rewardsAmount.toString())
 
   await communityRewards.loadRewards(rewardsAmount.toString())
+
   await stakingRewards.loadRewards(rewardsAmount.toString())
+  await stakingRewards.setRewardsParameters(
+    toAtomic(new BN(1000), FIDU_DECIMALS),
+    toAtomic(new BN(100), GFI_DECIMALS),
+    toAtomic(new BN(1000), GFI_DECIMALS),
+    toAtomic(new BN(3), STAKING_REWARDS_MULTIPLIER_DECIMALS), // 300%
+    toAtomic(new BN(0.5), STAKING_REWARDS_MULTIPLIER_DECIMALS) // 50%
+  )
 }
 
 async function getERC20s({chainId, getOrNull}) {

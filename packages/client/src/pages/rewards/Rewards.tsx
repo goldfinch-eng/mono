@@ -162,19 +162,19 @@ function Rewards() {
   let claimable: BigNumber | undefined
   let unvested: BigNumber | undefined
   let granted: BigNumber | undefined
-  if (stakingRewards?.totalClaimable || merkleDistributor?.totalClaimable) {
-    let val = stakingRewards?.totalClaimable || new BigNumber(0)
-    claimable = val.plus(merkleDistributor?.totalClaimable || new BigNumber(0))
-  }
-
-  if (stakingRewards?.unvested || merkleDistributor?.unvested) {
-    let val = stakingRewards?.unvested || new BigNumber(0)
-    unvested = val.plus(merkleDistributor?.unvested || new BigNumber(0))
-  }
-
-  if (stakingRewards?.granted || merkleDistributor?.granted) {
-    let val = stakingRewards?.granted || new BigNumber(0)
-    granted = val.plus(merkleDistributor?.granted || new BigNumber(0))
+  if (stakingRewards && merkleDistributor) {
+    claimable =
+      stakingRewards.claimable && merkleDistributor.claimable
+        ? stakingRewards.claimable.plus(merkleDistributor.claimable)
+        : undefined
+    unvested =
+      stakingRewards.unvested && merkleDistributor.unvested
+        ? stakingRewards.unvested.plus(merkleDistributor.unvested)
+        : undefined
+    granted =
+      stakingRewards.granted && merkleDistributor.granted
+        ? stakingRewards.granted.plus(merkleDistributor.granted)
+        : undefined
   }
 
   const rewards = getSortedRewards(stakingRewards, merkleDistributor)

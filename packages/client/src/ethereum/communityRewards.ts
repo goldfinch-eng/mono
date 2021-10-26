@@ -18,7 +18,7 @@ export class MerkleDistributor {
   info: MerkleDistributorInfo | undefined
   communityRewards: CommunityRewards
   actionRequiredAirdrops: MerkleDistributorGrantInfo[] | undefined
-  totalClaimable: BigNumber | undefined
+  claimable: BigNumber | undefined
   unvested: BigNumber | undefined
   granted: BigNumber | undefined
 
@@ -44,7 +44,7 @@ export class MerkleDistributor {
 
     await this.communityRewards.initialize(recipient)
     const currentBlock = getBlockInfo(await getCurrentBlock())
-    this.totalClaimable = this.calculateTotalClaimable()
+    this.claimable = this.calculateClaimable()
     this.unvested = this.calculateUnvested()
     this.granted = this.calculateGranted()
     this.actionRequiredAirdrops = await this.getActionRequiredAirdrops(recipient, currentBlock)
@@ -91,7 +91,7 @@ export class MerkleDistributor {
     ).then((results) => results.filter((val): val is NonNullable<typeof val> => !!val))
   }
 
-  calculateTotalClaimable(): BigNumber {
+  calculateClaimable(): BigNumber {
     if (!this.communityRewards.grants || this.communityRewards.grants.length === 0) return new BigNumber(0)
     const claimableResults = this.communityRewards.grants.map((grant) => grant.claimable)
     return BigNumber.sum.apply(null, claimableResults)

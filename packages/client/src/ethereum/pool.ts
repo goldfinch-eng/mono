@@ -1,5 +1,4 @@
 import BigNumber from "bignumber.js"
-import BN from "bn.js"
 import {fetchDataFromAttributes, getPoolEvents, INTEREST_DECIMALS, USDC_DECIMALS} from "./utils"
 import {Tickers, usdcFromAtomic} from "./erc20"
 import {FIDU_DECIMALS, sharesToBalance, balanceInDollars, fiduFromAtomic} from "./fidu"
@@ -559,12 +558,12 @@ interface StakingRewardsVesting {
 class StakingRewardsPosition {
   tokenId: string
   position: ParsedPosition
-  claimable: BigNumber
+  optimisticIncrement: PositionOptimisticIncrement
 
-  constructor(tokenId: string, position: ParsedPosition, claimable: BigNumber) {
+  constructor(tokenId: string, position: ParsedPosition, optimisticIncrement: PositionOptimisticIncrement) {
     this.tokenId = tokenId
     this.position = position
-    this.claimable = claimable
+    this.optimisticIncrement = optimisticIncrement
   }
 
   get reason(): string {
@@ -579,7 +578,48 @@ class StakingRewardsPosition {
   get granted(): BigNumber {
     return this.position.rewards.totalUnvested
       .plus(this.position.rewards.totalVested)
+      .plus(this.optimisticIncrement.unvested)
+      .plus(this.optimisticIncrement.vested)
       .plus(this.position.rewards.totalPreviouslyVested)
+  }
+
+  get vested(): BigNumber {
+    // console.log(
+    //   this.tokenId,
+    //   "VESTED",
+    //   this.position.rewards.totalVested
+    //     .plus(this.optimisticIncrement.vested)
+    //     .plus(this.position.rewards.totalPreviouslyVested)
+    //     .toString(),
+    //   this.position.rewards.totalVested.toString(),
+    //   this.optimisticIncrement.vested.toString(),
+    //   this.position.rewards.totalPreviouslyVested.toString()
+    // )
+    return this.position.rewards.totalVested
+      .plus(this.optimisticIncrement.vested)
+      .plus(this.position.rewards.totalPreviouslyVested)
+  }
+
+  get unvested(): BigNumber {
+    return this.granted.minus(this.vested)
+  }
+
+  get claimed(): BigNumber {
+    return this.position.rewards.totalClaimed
+  }
+
+  get claimable(): BigNumber {
+    // console.log(
+    //   "CLAIMABLE",
+    //   this.vested
+    //     .minus(this.position.rewards.totalPreviouslyVested)
+    //     .minus(this.position.rewards.totalClaimed)
+    //     .toString(),
+    //   this.vested.toString(),
+    //   this.position.rewards.totalPreviouslyVested.toString(),
+    //   this.position.rewards.totalClaimed.toString()
+    // )
+    return this.vested.minus(this.claimed)
   }
 }
 
@@ -588,6 +628,11 @@ type ParsedPosition = {
   rewards: StakingRewardsVesting
   leverageMultiplier: BigNumber
   lockedUntil: number
+}
+
+type PositionOptimisticIncrement = {
+  vested: BigNumber
+  unvested: BigNumber
 }
 
 const parsePosition = (tuple: {
@@ -616,7 +661,7 @@ class StakingRewards {
   loaded: boolean
   isPaused: boolean
   positions: StakingRewardsPosition[] | undefined
-  totalClaimable: BigNumber | undefined
+  claimable: BigNumber | undefined
   unvested: BigNumber | undefined
   granted: BigNumber | undefined
 
@@ -652,29 +697,47 @@ class StakingRewards {
           .call(undefined, currentBlock.number)
           .then(async (position) => {
             const parsed = parsePosition(position)
-            const claimable = await this.calculatePositionClaimableAt(tokenId, parsed.rewards, currentBlock)
-            return new StakingRewardsPosition(tokenId, parsed, claimable)
+            const optimisticIncrement = await this.calculatePositionOptimisticIncrement(
+              tokenId,
+              parsed.rewards,
+              currentBlock
+            )
+            return new StakingRewardsPosition(tokenId, parsed, optimisticIncrement)
           })
       })
     )
-    this.totalClaimable = this.calculateTotalClaimable()
+    this.claimable = this.calculateClaimable()
     this.unvested = this.calculateUnvested()
     this.granted = this.calculateGranted()
     this.loaded = true
   }
 
-  async calculatePositionClaimableAt(tokenId: string, rewards: StakingRewardsVesting, currentBlock: BlockInfo) {
+  async calculatePositionOptimisticIncrement(
+    tokenId: string,
+    rewards: StakingRewardsVesting,
+    currentBlock: BlockInfo
+  ): Promise<PositionOptimisticIncrement> {
     const earnedSinceLastCheckpoint = new BigNumber(
       await this.contract.methods.earnedSinceLastCheckpoint(tokenId).call(undefined, currentBlock.number)
     )
-    const currentGrant = rewards.totalUnvested.plus(rewards.totalVested).plus(earnedSinceLastCheckpoint)
-    const currentGrantTotalVested = await this.contract.methods
-      .totalVestedAt(rewards.startTime, rewards.endTime, currentBlock.timestamp, new BN(String(currentGrant)))
-      .call(undefined, currentBlock.number)
+    // console.log(tokenId, "EARNED SINCE LAST CHECKPOINT", earnedSinceLastCheckpoint.toString())
+    const optimisticCurrentGrant = rewards.totalUnvested.plus(rewards.totalVested).plus(earnedSinceLastCheckpoint)
+    // console.log(tokenId, "OPTIMISTIC CURRENT GRANT", optimisticCurrentGrant.toString())
+    const optimisticTotalVested = new BigNumber(
+      await this.contract.methods
+        .totalVestedAt(rewards.startTime, rewards.endTime, currentBlock.timestamp, optimisticCurrentGrant.toString())
+        .call(undefined, currentBlock.number)
+    )
+    // console.log(tokenId, "OPTIMISTIC TOTAL VESTED", optimisticTotalVested.toString())
+    const optimisticTotalUnvested = optimisticCurrentGrant.minus(optimisticTotalVested)
 
-    const totalVested = rewards.totalPreviouslyVested.plus(new BigNumber(currentGrantTotalVested))
-    const claimable = totalVested.minus(rewards.totalClaimed)
-    return claimable
+    const optimisticVestedIncrement = optimisticTotalVested.minus(rewards.totalVested)
+    const optimisticUnvestedIncrement = optimisticTotalUnvested.minus(rewards.totalUnvested)
+
+    return {
+      vested: optimisticVestedIncrement,
+      unvested: optimisticUnvestedIncrement,
+    }
   }
 
   async getStakingEvents(
@@ -686,11 +749,11 @@ class StakingRewards {
     return events
   }
 
-  calculateTotalClaimable(): BigNumber {
+  calculateClaimable(): BigNumber {
     if (!this.positions || this.positions.length === 0) return new BigNumber(0)
     return BigNumber.sum.apply(
       null,
-      this.positions.map((stakedPosition) => stakedPosition.claimable)
+      this.positions.map((position) => position.claimable)
     )
   }
 
@@ -698,7 +761,7 @@ class StakingRewards {
     if (!this.positions || this.positions.length === 0) return new BigNumber(0)
     return BigNumber.sum.apply(
       null,
-      this.positions.map((stakedPosition) => stakedPosition.position.rewards.totalUnvested)
+      this.positions.map((position) => position.unvested)
     )
   }
 
@@ -706,11 +769,7 @@ class StakingRewards {
     if (!this.positions || this.positions.length === 0) return new BigNumber(0)
     return BigNumber.sum.apply(
       null,
-      this.positions.map((stakedPosition) =>
-        stakedPosition.position.rewards.totalUnvested
-          .plus(stakedPosition.position.rewards.totalVested)
-          .plus(stakedPosition.position.rewards.totalPreviouslyVested)
-      )
+      this.positions.map((position) => position.granted)
     )
   }
 }

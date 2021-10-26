@@ -14,6 +14,9 @@ type Ethers = typeof ethers
 import hre, {web3, artifacts} from "hardhat"
 import BN from "bn.js"
 const USDCDecimals = new BN(String(1e6))
+const FIDU_DECIMALS = new BN(String(1e18))
+const GFI_DECIMALS = new BN(String(1e18))
+const STAKING_REWARDS_MULTIPLIER_DECIMALS = new BN(String(1e18))
 const ETHDecimals = new BN(String(1e18))
 const LEVERAGE_RATIO_DECIMALS = new BN(String(1e18))
 const INTEREST_DECIMALS = new BN(String(1e18))
@@ -323,11 +326,11 @@ async function updateConfig(config: GoldfinchConfig, type: any, key: any, newVal
   }
 }
 
-function fromAtomic(amount: BN, decimals = USDCDecimals) {
+function fromAtomic(amount: BN, decimals = USDCDecimals): string {
   return new BN(String(amount)).div(decimals).toString(10)
 }
 
-function toAtomic(amount: BN, decimals = USDCDecimals) {
+function toAtomic(amount: BN, decimals = USDCDecimals): string {
   return new BN(String(amount)).mul(decimals).toString(10)
 }
 
@@ -469,6 +472,9 @@ export {
   ETHDecimals,
   LEVERAGE_RATIO_DECIMALS,
   INTEREST_DECIMALS,
+  FIDU_DECIMALS,
+  GFI_DECIMALS,
+  STAKING_REWARDS_MULTIPLIER_DECIMALS,
   getUSDCAddress,
   getERC20Address,
   getDeployedContract,
