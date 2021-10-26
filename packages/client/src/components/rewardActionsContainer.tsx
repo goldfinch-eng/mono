@@ -180,7 +180,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
   if (item instanceof CommunityRewardsVesting || item instanceof StakedPosition) {
     const title = item instanceof StakedPosition ? item.reason : capitalizeMerkleDistributorGrantReason(item.reason)
 
-    if (item.rewards.totalClaimed.isEqualTo(item.granted) && !item.granted.eq(0)) {
+    if (item.claimable.eq(0)) {
       return (
         <RewardsListItem
           status={RewardStatus.Claimed}
