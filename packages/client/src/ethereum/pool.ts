@@ -2,7 +2,7 @@ import BigNumber from "bignumber.js"
 import BN from "bn.js"
 import {fetchDataFromAttributes, getPoolEvents, INTEREST_DECIMALS, USDC_DECIMALS} from "./utils"
 import {Tickers, usdcFromAtomic} from "./erc20"
-import {FIDU_DECIMALS, sharesToBalance, balanceInDollars} from "./fidu"
+import {FIDU_DECIMALS, sharesToBalance, balanceInDollars, fiduFromAtomic} from "./fidu"
 import {getBlockInfo, getCurrentBlock, roundDownPenny, BlockInfo, displayNumber} from "../utils"
 import _ from "lodash"
 import {getBalanceAsOf, mapEventsToTx} from "./events"
@@ -581,13 +581,12 @@ class StakedPosition {
   }
 
   get reason(): string {
-    const fiduAmount = displayNumber(this.amount.div(FIDU_DECIMALS.toString()), 2)
     const date = new Date(this.rewards.startTime * 1000).toLocaleDateString(undefined, {
       month: "short",
       day: "numeric",
       year: "numeric",
     })
-    return `Staked ${displayNumber(fiduAmount, 2)} FIDU on ${date}`
+    return `Staked ${displayNumber(fiduFromAtomic(this.amount), 2)} FIDU on ${date}`
   }
 
   get granted(): BigNumber {
