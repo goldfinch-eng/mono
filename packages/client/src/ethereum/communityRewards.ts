@@ -126,7 +126,7 @@ interface CommunityRewardsVestingRewards {
   revokedAt: number
 }
 
-export class CommunityRewardsVesting {
+export class CommunityRewardsGrant {
   tokenId: string
   user: string
   claimable: BigNumber
@@ -149,7 +149,7 @@ export class CommunityRewardsVesting {
   }
 }
 
-function parseCommunityRewardsVesting(
+function parseCommunityRewardsGrant(
   tokenId: string,
   user: string,
   claimable: string,
@@ -162,8 +162,8 @@ function parseCommunityRewardsVesting(
     5: string
     6: string
   }
-): CommunityRewardsVesting {
-  return new CommunityRewardsVesting(tokenId, user, new BigNumber(claimable), {
+): CommunityRewardsGrant {
+  return new CommunityRewardsGrant(tokenId, user, new BigNumber(claimable), {
     totalGranted: new BigNumber(tuple[0]),
     totalClaimed: new BigNumber(tuple[1]),
     startTime: parseInt(tuple[2], 10),
@@ -179,7 +179,7 @@ export class CommunityRewards {
   contract: CommunityRewardsContract
   address: string
   loaded: boolean
-  grants: CommunityRewardsVesting[] | undefined
+  grants: CommunityRewardsGrant[] | undefined
 
   constructor(goldfinchProtocol: GoldfinchProtocol) {
     this.goldfinchProtocol = goldfinchProtocol
@@ -208,9 +208,9 @@ export class CommunityRewards {
         this.contract.methods
           .grants(tokenId)
           .call(undefined, currentBlock.number)
-          .then(async (res) => {
+          .then(async (grant) => {
             const claimable = await this.contract.methods.claimableRewards(tokenId).call(undefined, currentBlock.number)
-            return parseCommunityRewardsVesting(tokenId, recipient, claimable, res)
+            return parseCommunityRewardsGrant(tokenId, recipient, claimable, grant)
           })
       )
     )

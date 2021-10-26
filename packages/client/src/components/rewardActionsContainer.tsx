@@ -5,8 +5,8 @@ import BigNumber from "bignumber.js"
 import {MerkleDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types"
 import {gfiFromAtomic} from "../ethereum/gfi"
 import {WIDTH_TYPES} from "./styleConstants"
-import {MerkleDistributor, CommunityRewardsVesting, CommunityRewards} from "../ethereum/communityRewards"
-import {StakingRewards, StakedPosition} from "../ethereum/pool"
+import {MerkleDistributor, CommunityRewardsGrant, CommunityRewards} from "../ethereum/communityRewards"
+import {StakingRewards, StakingRewardsPosition} from "../ethereum/pool"
 import useSendFromUser from "../hooks/useSendFromUser"
 import {displayNumber, displayDollars, assertNonNullable} from "../utils"
 import {iconCarrotDown} from "./icons"
@@ -139,7 +139,7 @@ function capitalizeMerkleDistributorGrantReason(reason: string): string {
 interface RewardActionsContainerProps {
   merkleDistributor: MerkleDistributor
   stakingRewards: StakingRewards
-  item: CommunityRewardsVesting | StakedPosition | MerkleDistributorGrantInfo
+  item: CommunityRewardsGrant | StakingRewardsPosition | MerkleDistributorGrantInfo
 }
 
 function RewardActionsContainer(props: RewardActionsContainerProps) {
@@ -177,8 +177,9 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     )
   }
 
-  if (item instanceof CommunityRewardsVesting || item instanceof StakedPosition) {
-    const title = item instanceof StakedPosition ? item.reason : capitalizeMerkleDistributorGrantReason(item.reason)
+  if (item instanceof CommunityRewardsGrant || item instanceof StakingRewardsPosition) {
+    const title =
+      item instanceof StakingRewardsPosition ? item.reason : capitalizeMerkleDistributorGrantReason(item.reason)
 
     if (item.claimable.eq(0)) {
       return (
@@ -202,7 +203,8 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
       )
     }
 
-    const reward = item instanceof StakedPosition ? props.stakingRewards : props.merkleDistributor.communityRewards
+    const reward =
+      item instanceof StakingRewardsPosition ? props.stakingRewards : props.merkleDistributor.communityRewards
     return (
       <ClaimForm
         action={async (): Promise<void> => {

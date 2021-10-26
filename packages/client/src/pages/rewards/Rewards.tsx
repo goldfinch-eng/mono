@@ -6,9 +6,10 @@ import {useGFIBalance, useRewards} from "../../hooks/useStakingRewards"
 import {displayDollars, displayNumber} from "../../utils"
 import {useMediaQuery} from "react-responsive"
 import {WIDTH_TYPES} from "../../components/styleConstants"
-import {CommunityRewardsVesting, MerkleDistributor} from "../../ethereum/communityRewards"
-import {StakedPosition, StakingRewards} from "../../ethereum/pool"
+import {CommunityRewardsGrant, MerkleDistributor} from "../../ethereum/communityRewards"
+import {StakingRewardsPosition, StakingRewards} from "../../ethereum/pool"
 import RewardActionsContainer from "../../components/rewardActionsContainer"
+import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
 
 interface RewardsSummaryProps {
   claimable: BigNumber | undefined
@@ -81,44 +82,76 @@ function NoRewards() {
   )
 }
 
+type SortableRewards =
+  | {
+      type: "stakingRewards"
+      value: StakingRewardsPosition
+    }
+  | {
+      type: "communityRewards"
+      value: CommunityRewardsGrant
+    }
+
+const getStartTime = (sortable: SortableRewards): number => {
+  switch (sortable.type) {
+    case "stakingRewards":
+      return sortable.value.position.rewards.startTime
+    case "communityRewards":
+      return sortable.value.rewards.startTime
+    default:
+      assertUnreachable(sortable)
+  }
+}
+const getClaimable = (sortable: SortableRewards): BigNumber => {
+  switch (sortable.type) {
+    case "stakingRewards":
+      return sortable.value.claimable
+    case "communityRewards":
+      return sortable.value.claimable
+    default:
+      assertUnreachable(sortable)
+  }
+}
+
 function getSortedRewards(
   stakingRewards: StakingRewards | undefined,
   merkleDistributor: MerkleDistributor | undefined
-): (StakedPosition | CommunityRewardsVesting)[] {
+): SortableRewards[] {
   /* NOTE: First order by 0 or >0 claimable rewards (0 claimable at the bottom), then group by type
    (e.g. all the staking together, then all the airdrops), then order by most recent first */
   const stakes = stakingRewards?.positions || []
   const airdrops = merkleDistributor?.communityRewards?.grants || []
 
-  const rewards: (StakedPosition | CommunityRewardsVesting)[] = [...stakes, ...airdrops]
-  const initiallySorted = [...rewards.sort((i1, i2) => i1.rewards.startTime - i2.rewards.startTime)]
-  const sortedRewards = [
-    ...initiallySorted.sort((i1, i2) => {
-      let val = i1.claimable.minus(i2.claimable)
-      if (!val.isZero()) return val.isPositive() ? -1 : 1
-
-      // deprioritizes i1 if completely claimed
-      if (i1.granted.minus(i1.rewards.totalClaimed).eq(0) && !i2.granted.minus(i2.rewards.totalClaimed).eq(0)) {
-        return 1
-      }
-
-      // deprioritizes i2 if completely claimed
-      if (!i1.granted.minus(i1.rewards.totalClaimed).eq(0) && i2.granted.minus(i2.rewards.totalClaimed).eq(0)) {
-        return -1
-      }
-
-      if (i1 instanceof StakedPosition && i2 instanceof CommunityRewardsVesting) {
-        return -1
-      }
-
-      if (i1 instanceof CommunityRewardsVesting && i2 instanceof StakedPosition) {
-        return 1
-      }
-
-      return i2.rewards.startTime - i1.rewards.startTime
-    }),
+  const sorted: SortableRewards[] = [
+    ...stakes.map(
+      (value): SortableRewards => ({
+        type: "stakingRewards",
+        value,
+      })
+    ),
+    ...airdrops.map(
+      (value): SortableRewards => ({
+        type: "communityRewards",
+        value,
+      })
+    ),
   ]
-  return sortedRewards
+  sorted.sort((i1, i2) => getStartTime(i1) - getStartTime(i2))
+  sorted.sort((i1, i2) => {
+    const comparedByClaimable = getClaimable(i1).minus(getClaimable(i2))
+    if (!comparedByClaimable.isZero()) return comparedByClaimable.isPositive() ? -1 : 1
+
+    if (i1.type === "stakingRewards" && i2.type === "communityRewards") {
+      return -1
+    }
+
+    if (i1.type === "communityRewards" && i2.type === "stakingRewards") {
+      return 1
+    }
+
+    return getStartTime(i2) - getStartTime(i1)
+  })
+  return sorted
 }
 
 function Rewards(props) {
@@ -198,8 +231,8 @@ function Rewards(props) {
                 rewards.map((item) => {
                   return (
                     <RewardActionsContainer
-                      key={`reward-${item.tokenId}-${item.rewards.startTime}`}
-                      item={item}
+                      key={`${item.type}-${item.value.tokenId}`}
+                      item={item.value}
                       merkleDistributor={merkleDistributor}
                       stakingRewards={stakingRewards}
                     />

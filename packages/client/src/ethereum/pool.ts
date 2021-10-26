@@ -547,7 +547,7 @@ async function getTranchedPoolAddressesForSeniorPoolCalc(pool: SeniorPool): Prom
   return tranchedPoolAddresses
 }
 
-interface StakedPositionRewards {
+interface StakingRewardsVesting {
   totalUnvested: BigNumber
   totalVested: BigNumber
   totalPreviouslyVested: BigNumber
@@ -556,69 +556,58 @@ interface StakedPositionRewards {
   endTime: number
 }
 
-class StakedPosition {
+class StakingRewardsPosition {
   tokenId: string
-  amount: BigNumber
-  leverageMultiplier: BigNumber
-  lockedUntil: number
-  rewards: StakedPositionRewards
+  position: ParsedPosition
   claimable: BigNumber
 
-  constructor(
-    tokenId: string,
-    amount: BigNumber,
-    leverageMultiplier: BigNumber,
-    lockedUntil: number,
-    claimable: BigNumber,
-    rewards: StakedPositionRewards
-  ) {
+  constructor(tokenId: string, position: ParsedPosition, claimable: BigNumber) {
     this.tokenId = tokenId
-    this.amount = amount
-    this.leverageMultiplier = leverageMultiplier
-    this.lockedUntil = lockedUntil
-    this.rewards = rewards
+    this.position = position
     this.claimable = claimable
   }
 
   get reason(): string {
-    const date = new Date(this.rewards.startTime * 1000).toLocaleDateString(undefined, {
+    const date = new Date(this.position.rewards.startTime * 1000).toLocaleDateString(undefined, {
       month: "short",
       day: "numeric",
       year: "numeric",
     })
-    return `Staked ${displayNumber(fiduFromAtomic(this.amount), 2)} FIDU on ${date}`
+    return `Staked ${displayNumber(fiduFromAtomic(this.position.amount), 2)} FIDU on ${date}`
   }
 
   get granted(): BigNumber {
-    return this.rewards.totalUnvested.plus(this.rewards.totalVested).plus(this.rewards.totalPreviouslyVested)
+    return this.position.rewards.totalUnvested
+      .plus(this.position.rewards.totalVested)
+      .plus(this.position.rewards.totalPreviouslyVested)
   }
 }
 
-function parseRewards(tuple: {0: string; 1: [string, string, string, string, string, string]; 2: string; 3: string}) {
-  return {
+type ParsedPosition = {
+  amount: BigNumber
+  rewards: StakingRewardsVesting
+  leverageMultiplier: BigNumber
+  lockedUntil: number
+}
+
+const parsePosition = (tuple: {
+  0: string
+  1: [string, string, string, string, string, string]
+  2: string
+  3: string
+}): ParsedPosition => ({
+  amount: new BigNumber(tuple[0]),
+  rewards: {
     totalUnvested: new BigNumber(tuple[1][0]),
     totalVested: new BigNumber(tuple[1][1]),
     totalPreviouslyVested: new BigNumber(tuple[1][2]),
     totalClaimed: new BigNumber(tuple[1][3]),
     startTime: parseInt(tuple[1][4], 10),
     endTime: parseInt(tuple[1][5], 10),
-  }
-}
-
-function parseStakedPosition(
-  tokenId: string,
-  claimable: BigNumber,
-  tuple: {0: string; 1: [string, string, string, string, string, string]; 2: string; 3: string}
-): StakedPosition {
-  return new StakedPosition(
-    tokenId,
-    new BigNumber(tuple[0]),
-    new BigNumber(tuple[2]),
-    parseInt(tuple[3], 10),
-    claimable,
-    parseRewards(tuple)
-  )
-}
+  },
+  leverageMultiplier: new BigNumber(tuple[2]),
+  lockedUntil: parseInt(tuple[3], 10),
+})
 
 class StakingRewards {
   goldfinchProtocol: GoldfinchProtocol
@@ -626,7 +615,7 @@ class StakingRewards {
   address: string
   loaded: boolean
   isPaused: boolean
-  positions: StakedPosition[] | undefined
+  positions: StakingRewardsPosition[] | undefined
   totalClaimable: BigNumber | undefined
   unvested: BigNumber | undefined
   granted: BigNumber | undefined
@@ -661,10 +650,10 @@ class StakingRewards {
         return this.contract.methods
           .positions(tokenId)
           .call(undefined, currentBlock.number)
-          .then(async (res) => {
-            const rewards = parseRewards(res)
-            const claimable = await this.calculatedPositionClaimableAt(tokenId, currentBlock, rewards)
-            return parseStakedPosition(tokenId, claimable, res)
+          .then(async (position) => {
+            const parsed = parsePosition(position)
+            const claimable = await this.calculatedPositionClaimableAt(tokenId, parsed.rewards, currentBlock)
+            return new StakingRewardsPosition(tokenId, parsed, claimable)
           })
       })
     )
@@ -674,7 +663,7 @@ class StakingRewards {
     this.loaded = true
   }
 
-  async calculatedPositionClaimableAt(tokenId: string, currentBlock: BlockInfo, rewards: StakedPositionRewards) {
+  async calculatedPositionClaimableAt(tokenId: string, rewards: StakingRewardsVesting, currentBlock: BlockInfo) {
     const earnedSinceLastCheckpoint = new BigNumber(
       await this.contract.methods.earnedSinceLastCheckpoint(tokenId).call(undefined, currentBlock.number)
     )
@@ -714,7 +703,7 @@ class StakingRewards {
     if (!this.positions || this.positions.length === 0) return new BigNumber(0)
     return BigNumber.sum.apply(
       null,
-      this.positions.map((stakedPosition) => stakedPosition.rewards.totalUnvested)
+      this.positions.map((stakedPosition) => stakedPosition.position.rewards.totalUnvested)
     )
   }
 
@@ -723,13 +712,13 @@ class StakingRewards {
     return BigNumber.sum.apply(
       null,
       this.positions.map((stakedPosition) =>
-        stakedPosition.rewards.totalUnvested
-          .plus(stakedPosition.rewards.totalVested)
-          .plus(stakedPosition.rewards.totalPreviouslyVested)
+        stakedPosition.position.rewards.totalUnvested
+          .plus(stakedPosition.position.rewards.totalVested)
+          .plus(stakedPosition.position.rewards.totalPreviouslyVested)
       )
     )
   }
 }
 
-export {fetchCapitalProviderData, fetchPoolData, SeniorPool, Pool, StakingRewards, StakedPosition}
+export {fetchCapitalProviderData, fetchPoolData, SeniorPool, Pool, StakingRewards, StakingRewardsPosition}
 export type {PoolData, CapitalProvider}
