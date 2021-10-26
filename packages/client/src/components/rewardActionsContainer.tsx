@@ -172,6 +172,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
       ),
       {
         type: "Accept",
+        index: info.index,
       }
     )
   }
