@@ -584,17 +584,6 @@ class StakingRewardsPosition {
   }
 
   get vested(): BigNumber {
-    // console.log(
-    //   this.tokenId,
-    //   "VESTED",
-    //   this.position.rewards.totalVested
-    //     .plus(this.optimisticIncrement.vested)
-    //     .plus(this.position.rewards.totalPreviouslyVested)
-    //     .toString(),
-    //   this.position.rewards.totalVested.toString(),
-    //   this.optimisticIncrement.vested.toString(),
-    //   this.position.rewards.totalPreviouslyVested.toString()
-    // )
     return this.position.rewards.totalVested
       .plus(this.optimisticIncrement.vested)
       .plus(this.position.rewards.totalPreviouslyVested)
@@ -609,16 +598,6 @@ class StakingRewardsPosition {
   }
 
   get claimable(): BigNumber {
-    // console.log(
-    //   "CLAIMABLE",
-    //   this.vested
-    //     .minus(this.position.rewards.totalPreviouslyVested)
-    //     .minus(this.position.rewards.totalClaimed)
-    //     .toString(),
-    //   this.vested.toString(),
-    //   this.position.rewards.totalPreviouslyVested.toString(),
-    //   this.position.rewards.totalClaimed.toString()
-    // )
     return this.vested.minus(this.claimed)
   }
 }
@@ -720,15 +699,12 @@ class StakingRewards {
     const earnedSinceLastCheckpoint = new BigNumber(
       await this.contract.methods.earnedSinceLastCheckpoint(tokenId).call(undefined, currentBlock.number)
     )
-    // console.log(tokenId, "EARNED SINCE LAST CHECKPOINT", earnedSinceLastCheckpoint.toString())
     const optimisticCurrentGrant = rewards.totalUnvested.plus(rewards.totalVested).plus(earnedSinceLastCheckpoint)
-    // console.log(tokenId, "OPTIMISTIC CURRENT GRANT", optimisticCurrentGrant.toString())
     const optimisticTotalVested = new BigNumber(
       await this.contract.methods
-        .totalVestedAt(rewards.startTime, rewards.endTime, currentBlock.timestamp, optimisticCurrentGrant.toString())
+        .totalVestedAt(rewards.startTime, rewards.endTime, currentBlock.timestamp, optimisticCurrentGrant.toString(10))
         .call(undefined, currentBlock.number)
     )
-    // console.log(tokenId, "OPTIMISTIC TOTAL VESTED", optimisticTotalVested.toString())
     const optimisticTotalUnvested = optimisticCurrentGrant.minus(optimisticTotalVested)
 
     const optimisticVestedIncrement = optimisticTotalVested.minus(rewards.totalVested)
