@@ -813,7 +813,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     (uint256 paymentRemaining, uint256 interestPayment, uint256 principalPayment) = creditLine.assess();
     if (interestPayment > 0 || principalPayment > 0) {
       if (interestPayment > 0) {
-        config.getPoolRewards().allocateRewards(address(this), interestPayment);
+        config.getPoolRewards().allocateRewards(interestPayment);
       }
       uint256 reserveAmount = collectInterestAndPrincipal(
         address(creditLine),

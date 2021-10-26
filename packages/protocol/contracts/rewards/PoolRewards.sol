@@ -19,17 +19,14 @@ import "../interfaces/IPoolRewards.sol";
 // has a allocated amount of rewards based on a sqrt function.
 
 // When a interest payment comes in for a given Pool or the pool balance increases
-// we recalculate the pool's accRewardsPerShare
+// we recalculate the pool's accRewardsPerPrincipalShare
 
-// equation ref `_calculateNewRewards()`:
-// (sqrtNewTotalInterest - sqrtOrigTotalInterest) / sqrtTotalRewards * (totalRewards / totalGFISupply)
+// equation ref `_calculateNewGrossGFIRewardsForInterestAmount()`:
+// (sqrtNewTotalInterest - sqrtOrigTotalInterest) / sqrtMaxInterestDollarsEligible * (totalRewards / totalGFISupply)
 
-// When a PoolToken is minted, we set the mint price to the pool's current accRewardsPerShare
+// When a PoolToken is minted, we set the mint price to the pool's current accRewardsPerPrincipalShare
 // Every time a PoolToken withdraws rewards, we determine the allocated rewards,
 // increase that PoolToken's rewardsClaimed, and transfer the owner the gfi
-
-// equation to find a PoolToken's allocated rewards ref: `poolTokenClaimableRewards()`
-// Token.principalAmount * (Pool.accRewardsPerShare - Token.accRewardsPerShareMintPrice) - Token.rewardsClaimed
 
 contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer {
   GoldfinchConfig public config;
@@ -37,120 +34,191 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
   using SafeMath for uint256;
 
   struct PoolRewardsInfo {
-    uint256 accRewardsPerShare; // accumulator gfi per interest dollar
+    uint256 accRewardsPerPrincipalShare; // accumulator gfi per interest dollar
   }
 
   struct PoolRewardsTokenInfo {
     uint256 rewardsClaimed; // gfi claimed
-    uint256 accRewardsPerShareMintPrice; // Pool's accRewardsPerShare at PoolToken mint()
+    uint256 accRewardsPerPrincipalShareAtMint; // Pool's accRewardsPerPrincipalShare at PoolToken mint()
   }
 
-  uint256 public totalRewards; // total amount of GFI rewards available
-  uint256 public maxInterestDollarsEligible; // interest $ eligible for gfi rewards
-  uint256 public totalInterestReceived; // counter of total interest repayments
-
-  uint256 private sqrtTotalRewards; // sqrt(totalRewards)
-  uint256 private totalRewardPercentOfTotalGFI; // totalRewards/totalGFISupply
+  uint256 public totalRewards; // total amount of GFI rewards available, times 1e18
+  uint256 public maxInterestDollarsEligible; // interest $ eligible for gfi rewards, times 1e18
+  uint256 public totalInterestReceived; // counter of total interest repayments, times 1e6
+  uint256 public totalRewardPercentOfTotalGFI; // totalRewards/totalGFISupply, times 1e18
 
   mapping(uint256 => PoolRewardsTokenInfo) public tokens; // poolTokenId -> PoolRewardsTokenInfo
   mapping(address => PoolRewardsInfo) public pools; // pool.address -> PoolRewardsInfo
 
-  event PoolRewardsAllocated();
-  event PoolTokenRewardWithdraw();
-
   // solhint-disable-next-line func-name-mixedcase
   function __initialize__(address owner, GoldfinchConfig _config) public initializer {
+    require(owner != address(0) && address(_config) != address(0), "Owner and config addresses cannot be empty");
+    __BaseUpgradeablePausable__init(owner);
     config = _config;
     totalInterestReceived = 0;
-    __BaseUpgradeablePausable__init(owner);
   }
 
+  /**
+   * @notice Calculates the accRewardsPerPrincipalShare for a given pool,
+   when a interest payment is received by the protocol
+   * @param _interestPaymentAmount The amount of total dollars the interest payment, expects 10^6 value
+   */
+  // solhint-disable-next-line modifiers/ensure-modifiers
+  function allocateRewards(uint256 _interestPaymentAmount) external override onlyPool {
+    _allocateRewards(_interestPaymentAmount);
+  }
+
+  /**
+   * @notice Set the total gfi rewards and the % of total GFI
+   * @param _totalRewards The amount of GFI rewards available, expects 10^18 value
+   */
   function setTotalRewards(uint256 _totalRewards) public onlyAdmin {
     totalRewards = _totalRewards;
-    sqrtTotalRewards = Babylonian.sqrt(_totalRewards);
     uint256 totalGFISupply = config.getGFI().totalSupply();
-    // No fixed point support in solidity
-    totalRewardPercentOfTotalGFI = _totalRewards.div(totalGFISupply);
+    totalRewardPercentOfTotalGFI = _totalRewards.mul(fiduMantissa()).div(totalGFISupply).mul(100);
   }
 
+  /**
+   * @notice Set the total interest received to date.
+   This should only be called once on contract deploy.
+   * @param _totalInterestReceived The amount of interest the protocol has received to date, expects 10^6 value
+   */
+  function setTotalInterestReceived(uint256 _totalInterestReceived) public onlyAdmin {
+    totalInterestReceived = _totalInterestReceived;
+  }
+
+  /**
+   * @notice Set the max dollars across the entire protocol that are eligible for GFI rewards
+   * @param _maxInterestDollarsEligible The amount of interest dollars eligible for GFI rewards, expects 10^18 value
+   */
   function setMaxInterestDollarsEligible(uint256 _maxInterestDollarsEligible) public onlyAdmin {
     maxInterestDollarsEligible = _maxInterestDollarsEligible;
   }
 
-  // When a new interest payment is received by a pool, recalculate accRewardsPerShare
-  function allocateRewards(address _poolAddress, uint256 _interestPaymentAmount) public override onlyAdmin {
-    require(config.getPoolTokens().validPool(_poolAddress), "Not a valid pool");
-
-    uint256 _totalInterestReceived = totalInterestReceived;
-
-    require(_totalInterestReceived < maxInterestDollarsEligible, "All rewards exhausted");
-
-    // Rewards earned between _totalInterestReceived & (_totalInterestReceived+_interestPaymentAmount)
-    uint256 rewards = _calculateNewRewards(_interestPaymentAmount);
-
-    ITranchedPool pool = ITranchedPool(_poolAddress);
-
-    ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
-
-    PoolRewardsInfo storage _poolInfo = pools[_poolAddress];
-    uint256 previousRewards = juniorTranche.interestSharePrice.mul(_poolInfo.accRewardsPerShare);
-
-    if (_totalInterestReceived != 0) {
-      _poolInfo.accRewardsPerShare = previousRewards.add(rewards).div(_totalInterestReceived);
-    } else {
-      _poolInfo.accRewardsPerShare = previousRewards.add(rewards);
-    }
-
-    totalInterestReceived = _totalInterestReceived.add(_interestPaymentAmount);
-
-    emit PoolRewardsAllocated();
-  }
-
-  // calculate the rewards allocated to a given PoolToken
-  // PoolToken.principalAmount * (accRewardsPerShare-accRewardsPerShareMintPrice) - rewardsClaimed
+  /**
+   * @notice Calculate the gross available gfi rewards for a PoolToken
+   * @param tokenId Pool token id
+   * @return The amount of GFI claimable
+   */
   function poolTokenClaimableRewards(uint256 tokenId) public view returns (uint256) {
     IPoolTokens poolTokens = config.getPoolTokens();
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
-    return
-      tokenInfo
-        .principalAmount
-        .mul(pools[tokenInfo.pool].accRewardsPerShare.sub(tokens[tokenId].accRewardsPerShareMintPrice))
-        .sub(tokens[tokenId].rewardsClaimed);
+    // TODO: security vulnerability Since our pools allow people to deposit beyond the limit,
+    // we should adjust for that and only allow claiming for capital that was at risk.
+    uint256 claimableRewards = usdcToFidu(tokenInfo.principalAmount)
+      .mul(pools[tokenInfo.pool].accRewardsPerPrincipalShare.sub(tokens[tokenId].accRewardsPerPrincipalShareAtMint))
+      .sub(tokens[tokenId].rewardsClaimed.mul(fiduMantissa()))
+      .div(fiduMantissa());
+
+    return claimableRewards;
   }
 
-  // PoolToken request to withdraw currently allocated rewards
+  /**
+   * @notice PoolToken request to withdraw currently allocated rewards
+   * @param tokenId Pool token id
+   * @param _amount amount of GFI, times 10^18
+   */
   function withdraw(uint256 tokenId, uint256 _amount) public onlyAdmin {
     uint256 totalClaimableRewards = poolTokenClaimableRewards(tokenId);
     uint256 poolTokenRewardsClaimed = tokens[tokenId].rewardsClaimed;
     IPoolTokens poolTokens = config.getPoolTokens();
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
+
     address poolAddr = tokenInfo.pool;
     require(poolAddr != address(0), "Invalid tokenId");
+
     require(poolTokenRewardsClaimed.add(_amount) <= totalClaimableRewards, "Rewards overwithdraw attempt");
+
     BaseUpgradeablePausable pool = BaseUpgradeablePausable(poolAddr);
     require(!pool.paused(), "Pool withdraw paused");
+
     tokens[tokenId].rewardsClaimed = poolTokenRewardsClaimed.add(_amount);
+    safeERC20Approve(config.getGFI(), address(this), _amount);
     safeERC20TransferFrom(config.getGFI(), address(this), poolTokens.ownerOf(tokenId), _amount);
-    emit PoolTokenRewardWithdraw();
   }
 
   /* Internal functions  */
 
-  // Calculate the rewards earned for a given interest payment
-  // (sqrtNewTotalInterest - sqrtOrigTotalInterest) / sqrtTotalRewards * (totalRewards / totalGFISupply)
-  function _calculateNewRewards(uint256 interestPaymentAmount) internal view returns (uint256) {
-    uint256 _totalRewards = totalRewards;
-    uint256 _originalTotalInterest = totalInterestReceived;
-    uint256 newTotalInterest = _originalTotalInterest.add(interestPaymentAmount);
-    // interest payment passed the cap, should only partially be rewarded
-    if (newTotalInterest > _totalRewards) {
-      newTotalInterest = _totalRewards.sub(_originalTotalInterest);
+  // When a new interest payment is received by a pool, recalculate accRewardsPerPrincipalShare
+  function _allocateRewards(uint256 _interestPaymentAmount) internal {
+    address _poolAddress = _msgSender();
+    uint256 _totalInterestReceived = totalInterestReceived;
+
+    require(usdcToFidu(_totalInterestReceived) < maxInterestDollarsEligible, "All rewards exhausted");
+
+    // Gross GFI Rewards earned for incoming interest dollars
+    uint256 newGrossRewards = _calculateNewGrossGFIRewardsForInterestAmount(_interestPaymentAmount);
+
+    ITranchedPool pool = ITranchedPool(_poolAddress);
+    ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
+    PoolRewardsInfo storage _poolInfo = pools[_poolAddress];
+
+    if (_totalInterestReceived != 0) {
+      _poolInfo.accRewardsPerPrincipalShare = _poolInfo.accRewardsPerPrincipalShare.add(
+        newGrossRewards.mul(fiduMantissa()).div(usdcToFidu(juniorTranche.principalDeposited))
+      );
+    } else {
+      _poolInfo.accRewardsPerPrincipalShare = newGrossRewards.mul(fiduMantissa()).div(
+        usdcToFidu(juniorTranche.principalDeposited)
+      );
     }
-    uint256 sqrtOrigTotalInterest = Babylonian.sqrt(_originalTotalInterest);
-    uint256 sqrtNewTotalInterest = Babylonian.sqrt(newTotalInterest);
-    uint256 newRewards = sqrtNewTotalInterest.sub(sqrtOrigTotalInterest).mul(totalRewardPercentOfTotalGFI).div(
-      sqrtTotalRewards
+
+    totalInterestReceived = _totalInterestReceived.add(_interestPaymentAmount);
+  }
+
+  // Calculate the rewards earned for a given interest payment
+  // @input: interestPaymentAmount = interest payment amount times 1e6
+  function _calculateNewGrossGFIRewardsForInterestAmount(uint256 _interestPaymentAmount)
+    internal
+    view
+    returns (uint256)
+  {
+    uint256 totalGFISupply = config.getGFI().totalSupply();
+
+    // incoming interest payment, times * 1e18 divided by 1e6
+    uint256 interestPaymentAmount = usdcToFidu(_interestPaymentAmount);
+
+    // all-time interest payments prior to the incoming amount, times 1e18
+    uint256 _previousTotalInterestReceived = usdcToFidu(totalInterestReceived);
+    uint256 sqrtOrigTotalInterest = Babylonian.sqrt(_previousTotalInterestReceived);
+
+    // sum of new interest payment + previous total interest payments, times 1e18
+    uint256 newTotalInterest = usdcToFidu(
+      fiduToUSDC(_previousTotalInterestReceived).add(fiduToUSDC(interestPaymentAmount))
     );
-    return newRewards;
+
+    // interest payment passed the maxInterestDollarsEligible cap, should only partially be rewarded
+    if (newTotalInterest > maxInterestDollarsEligible) {
+      newTotalInterest = maxInterestDollarsEligible;
+    }
+
+    uint256 a = Babylonian.sqrt(newTotalInterest).sub(sqrtOrigTotalInterest);
+    uint256 b = Babylonian.sqrt(maxInterestDollarsEligible);
+    uint256 newGrossRewards = a.mul(totalRewardPercentOfTotalGFI).div(b).div(100).mul(totalGFISupply).div(
+      fiduMantissa()
+    );
+
+    return newGrossRewards;
+  }
+
+  function fiduMantissa() internal pure returns (uint256) {
+    return uint256(10)**uint256(18);
+  }
+
+  function usdcMantissa() internal pure returns (uint256) {
+    return uint256(10)**uint256(6);
+  }
+
+  function usdcToFidu(uint256 amount) internal pure returns (uint256) {
+    return amount.mul(fiduMantissa()).div(usdcMantissa());
+  }
+
+  function fiduToUSDC(uint256 amount) internal pure returns (uint256) {
+    return amount.div(fiduMantissa().div(usdcMantissa()));
+  }
+
+  modifier onlyPool() {
+    require(config.getPoolTokens().validPool(_msgSender()), "Invalid pool!");
+    _;
   }
 }
