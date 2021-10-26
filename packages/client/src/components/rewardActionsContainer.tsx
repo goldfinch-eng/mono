@@ -151,12 +151,10 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     setShowAction(false)
   }
 
-  function handleClaim(rewards: CommunityRewards | StakingRewards, tokenId: string, amount: BigNumber) {
+  function handleClaim(rewards: CommunityRewards | StakingRewards, tokenId: string) {
     assertNonNullable(rewards)
-    const amountString = amount.toString(10)
     return sendFromUser(rewards.contract.methods.getReward(tokenId), {
       type: "Claim",
-      amount: amountString,
     })
   }
 
@@ -208,7 +206,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     return (
       <ClaimForm
         action={async (): Promise<void> => {
-          await handleClaim(reward, item.tokenId, item.claimable)
+          await handleClaim(reward, item.tokenId)
           onCloseForm()
         }}
         disabled={item.claimable.eq(0)}
