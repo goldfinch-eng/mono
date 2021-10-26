@@ -87,7 +87,7 @@ function RewardsListItem(props: RewardsListItemProps) {
     ) : props.status === RewardStatus.Claimable && props.claimableGFI.gt(0) ? (
       <ActionButton text="Claim GFI" onClick={props.handleOnClick} disabled={false} />
     ) : (
-      <ActionButton text="Claimed" onClick={props.handleOnClick} disabled={true} />
+      <ActionButton text="Claim GFI" onClick={props.handleOnClick} disabled={true} />
     )
 
   return (
