@@ -334,7 +334,7 @@ function VerifyIdentity() {
   return (
     <div className="content-section">
       <div className="page-header">Verify Address</div>
-      <ConnectionNotice />
+      <ConnectionNotice requireUnlock={false} />
       {renderForm()}
     </div>
   )
