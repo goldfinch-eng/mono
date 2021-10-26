@@ -63,7 +63,6 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
    when a interest payment is received by the protocol
    * @param _interestPaymentAmount The amount of total dollars the interest payment, expects 10^6 value
    */
-  // solhint-disable-next-line modifiers/ensure-modifiers
   function allocateRewards(uint256 _interestPaymentAmount) external override onlyPool {
     _allocateRewards(_interestPaymentAmount);
   }

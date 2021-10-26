@@ -141,6 +141,9 @@
           "grant": ["nonReentrant", "whenNotPaused", "onlyDistributor"],
           "getReward": []
         },
+        "**/PoolRewards.sol:PoolRewards": {
+          "allocateRewards": ["onlyPool"]
+        },
         "**/MerkleDistributor.sol:MerkleDistributor": {
           "_setGrantAccepted": [],
           "acceptGrant": ["onlyGrantRecipient"]
