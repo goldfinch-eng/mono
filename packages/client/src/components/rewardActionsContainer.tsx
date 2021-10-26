@@ -158,7 +158,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     })
   }
 
-  function handleAccept(info): Promise<void> {
+  function handleAccept(info: MerkleDistributorGrantInfo): Promise<void> {
     assertNonNullable(props.merkleDistributor)
     return sendFromUser(
       props.merkleDistributor.contract.methods.acceptGrant(
@@ -172,7 +172,6 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
       ),
       {
         type: "Accept",
-        amount: gfiFromAtomic(info.grant.amount),
       }
     )
   }
