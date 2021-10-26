@@ -129,6 +129,13 @@ function RewardsListItem(props: RewardsListItemProps) {
   )
 }
 
+function capitalizeMerkleDistributorGrantReason(reason: string): string {
+  return reason
+    .split("_")
+    .map((s) => _.startCase(s))
+    .join(" ")
+}
+
 interface RewardActionsContainerProps {
   merkleDistributor: MerkleDistributor
   stakingRewards: StakingRewards
@@ -138,6 +145,7 @@ interface RewardActionsContainerProps {
 function RewardActionsContainer(props: RewardActionsContainerProps) {
   const sendFromUser = useSendFromUser()
   const [showAction, setShowAction] = useState<boolean>(false)
+  const {item} = props
 
   function onCloseForm() {
     setShowAction(false)
@@ -171,16 +179,8 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     )
   }
 
-  function capitalizeReason(reason: string): string {
-    return reason
-      .split("_")
-      .map((s) => _.capitalize(s))
-      .join(" ")
-  }
-
-  if (props.item instanceof CommunityRewardsVesting || props.item instanceof StakedPosition) {
-    const item = props.item
-    const title = item instanceof StakedPosition ? item.reason : capitalizeReason(item.reason)
+  if (item instanceof CommunityRewardsVesting || item instanceof StakedPosition) {
+    const title = item instanceof StakedPosition ? item.reason : capitalizeMerkleDistributorGrantReason(item.reason)
 
     if (item.rewards.totalClaimed.isEqualTo(item.granted) && !item.granted.eq(0)) {
       return (
@@ -218,14 +218,14 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
       />
     )
   } else {
-    const title = capitalizeReason(props.item.reason)
+    const title = capitalizeMerkleDistributorGrantReason(item.reason)
     return (
       <RewardsListItem
         status={RewardStatus.Accept}
         title={title}
-        grantedGFI={new BigNumber(props.item.grant.amount)}
+        grantedGFI={new BigNumber(item.grant.amount)}
         claimableGFI={new BigNumber(0)}
-        handleOnClick={() => handleAccept(props.item)}
+        handleOnClick={() => handleAccept(item)}
       />
     )
   }

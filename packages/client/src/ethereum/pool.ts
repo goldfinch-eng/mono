@@ -16,6 +16,7 @@ import {TranchedPool} from "@goldfinch-eng/protocol/typechain/web3/TranchedPool"
 import {buildCreditLine} from "./creditLine"
 import {getMetadataStore} from "./tranchedPool"
 import {BlockNumber} from "web3-core"
+import {Loadable} from "../types/loadable"
 
 class Pool {
   goldfinchProtocol: GoldfinchProtocol
@@ -118,38 +119,6 @@ interface CapitalProvider {
   unrealizedGains: BigNumber
   unrealizedGainsInDollars: BigNumber
   unrealizedGainsPercentage: BigNumber
-  loaded: boolean
-  empty?: boolean
-}
-
-function emptyCapitalProvider({loaded = false} = {}): CapitalProvider {
-  return {
-    shares: {
-      parts: {
-        notStaked: new BigNumber(0),
-        stakedNotLocked: new BigNumber(0),
-        stakedLocked: new BigNumber(0),
-      },
-      aggregates: {
-        staked: new BigNumber(0),
-        withdrawable: new BigNumber(0),
-        total: new BigNumber(0),
-      },
-    },
-    stakedSeniorPoolBalanceInDollars: new BigNumber(0),
-    totalSeniorPoolBalanceInDollars: new BigNumber(0),
-    availableToStakeInDollars: new BigNumber(0),
-    availableToWithdraw: new BigNumber(0),
-    availableToWithdrawInDollars: new BigNumber(0),
-    address: "",
-    allowance: new BigNumber(0),
-    weightedAverageSharePrice: new BigNumber(0),
-    unrealizedGains: new BigNumber(0),
-    unrealizedGainsInDollars: new BigNumber(0),
-    unrealizedGainsPercentage: new BigNumber(0),
-    loaded,
-    empty: true,
-  }
 }
 
 type CapitalProviderStaked = {
@@ -204,12 +173,12 @@ async function fetchCapitalProviderData(
   pool: SeniorPool,
   stakingRewards: StakingRewards | undefined,
   capitalProviderAddress: string | undefined
-): Promise<CapitalProvider> {
-  if (!stakingRewards) {
-    return emptyCapitalProvider({loaded: false})
-  }
-  if (!capitalProviderAddress) {
-    return emptyCapitalProvider({loaded: pool.loaded && stakingRewards.loaded})
+): Promise<Loadable<CapitalProvider>> {
+  if (!stakingRewards || !capitalProviderAddress) {
+    return {
+      loaded: false,
+      value: undefined,
+    }
   }
 
   const currentBlock = getBlockInfo(await getCurrentBlock())
@@ -259,33 +228,34 @@ async function fetchCapitalProviderData(
   const unrealizedGains = sharePriceDelta.multipliedBy(numSharesTotal)
   const unrealizedGainsInDollars = new BigNumber(roundDownPenny(unrealizedGains.div(FIDU_DECIMALS)))
   const unrealizedGainsPercentage = sharePriceDelta.dividedBy(weightedAverageSharePrice)
-  const loaded = true
 
   return {
-    shares: {
-      parts: {
-        notStaked: numSharesNotStaked,
-        stakedNotLocked: numSharesStakedNotLocked,
-        stakedLocked: numSharesStakedLocked,
+    loaded: true,
+    value: {
+      shares: {
+        parts: {
+          notStaked: numSharesNotStaked,
+          stakedNotLocked: numSharesStakedNotLocked,
+          stakedLocked: numSharesStakedLocked,
+        },
+        aggregates: {
+          staked: numSharesStaked,
+          withdrawable: numSharesWithdrawable,
+          total: numSharesTotal,
+        },
       },
-      aggregates: {
-        staked: numSharesStaked,
-        withdrawable: numSharesWithdrawable,
-        total: numSharesTotal,
-      },
+      stakedSeniorPoolBalanceInDollars,
+      totalSeniorPoolBalanceInDollars,
+      availableToStakeInDollars,
+      availableToWithdraw,
+      availableToWithdrawInDollars,
+      address,
+      allowance,
+      weightedAverageSharePrice,
+      unrealizedGains,
+      unrealizedGainsInDollars,
+      unrealizedGainsPercentage,
     },
-    stakedSeniorPoolBalanceInDollars,
-    totalSeniorPoolBalanceInDollars,
-    availableToStakeInDollars,
-    availableToWithdraw,
-    availableToWithdrawInDollars,
-    address,
-    allowance,
-    weightedAverageSharePrice,
-    unrealizedGains,
-    unrealizedGainsInDollars,
-    unrealizedGainsPercentage,
-    loaded,
   }
 }
 
@@ -577,7 +547,7 @@ async function getTranchedPoolAddressesForSeniorPoolCalc(pool: SeniorPool): Prom
   return tranchedPoolAddresses
 }
 
-interface Rewards {
+interface StakedPositionRewards {
   totalUnvested: BigNumber
   totalVested: BigNumber
   totalPreviouslyVested: BigNumber
@@ -591,7 +561,7 @@ class StakedPosition {
   amount: BigNumber
   leverageMultiplier: BigNumber
   lockedUntil: number
-  rewards: Rewards
+  rewards: StakedPositionRewards
   claimable: BigNumber
 
   constructor(
@@ -600,7 +570,7 @@ class StakedPosition {
     leverageMultiplier: BigNumber,
     lockedUntil: number,
     claimable: BigNumber,
-    rewards: Rewards
+    rewards: StakedPositionRewards
   ) {
     this.tokenId = tokenId
     this.amount = amount
@@ -615,8 +585,9 @@ class StakedPosition {
     const date = new Date(this.rewards.startTime * 1000).toLocaleDateString(undefined, {
       month: "short",
       day: "numeric",
+      year: "numeric",
     })
-    return `Staked ${fiduAmount} FIDU on ${date}`
+    return `Staked ${displayNumber(fiduAmount, 2)} FIDU on ${date}`
   }
 
   get granted(): BigNumber {
@@ -704,7 +675,7 @@ class StakingRewards {
     this.loaded = true
   }
 
-  async calculatedPositionClaimableAt(tokenId: string, currentBlock: BlockInfo, rewards: Rewards) {
+  async calculatedPositionClaimableAt(tokenId: string, currentBlock: BlockInfo, rewards: StakedPositionRewards) {
     const earnedSinceLastCheckpoint = new BigNumber(
       await this.contract.methods.earnedSinceLastCheckpoint(tokenId).call(undefined, currentBlock.number)
     )
@@ -761,5 +732,5 @@ class StakingRewards {
   }
 }
 
-export {fetchCapitalProviderData, fetchPoolData, SeniorPool, Pool, emptyCapitalProvider, StakingRewards, StakedPosition}
+export {fetchCapitalProviderData, fetchPoolData, SeniorPool, Pool, StakingRewards, StakedPosition}
 export type {PoolData, CapitalProvider}

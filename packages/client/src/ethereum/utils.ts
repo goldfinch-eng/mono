@@ -74,8 +74,8 @@ async function getDeployments(networkId) {
   if (config) {
     return Promise.resolve(config[networkId])
   }
-  const deploymentFileNameSuffix = process.env.NODE_ENV === "development" ? "_dev" : ""
-  return import(`@goldfinch-eng/protocol/deployments/all${deploymentFileNameSuffix}.json`)
+  const fileNameSuffix = process.env.NODE_ENV === "development" ? "_dev" : ""
+  return import(`@goldfinch-eng/protocol/deployments/all${fileNameSuffix}.json`)
     .then((result) => {
       config = transformedConfig(result)
 
@@ -101,9 +101,10 @@ async function getDeployments(networkId) {
 }
 
 async function getMerkleDistributorInfo(): Promise<MerkleDistributorInfo | undefined> {
-  const deploymentFileNameSuffix = process.env.NODE_ENV === "development" ? ".dev" : ""
+  const fileNameSuffix =
+    process.env.REACT_APP_MURMURATION === "yes" ? ".murmuration" : process.env.NODE_ENV === "development" ? ".dev" : ""
   return import(
-    `@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/merkleDistributorInfo${deploymentFileNameSuffix}.json`
+    `@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/merkleDistributorInfo${fileNameSuffix}.json`
   )
     .then((result: unknown): MerkleDistributorInfo => {
       const plain = _.toPlainObject(result)

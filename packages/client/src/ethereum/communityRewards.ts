@@ -116,7 +116,7 @@ export class MerkleDistributor {
   }
 }
 
-interface Rewards {
+interface CommunityRewardsVestingRewards {
   totalGranted: BigNumber
   totalClaimed: BigNumber
   startTime: number
@@ -130,10 +130,10 @@ export class CommunityRewardsVesting {
   tokenId: string
   user: string
   claimable: BigNumber
-  rewards: Rewards
+  rewards: CommunityRewardsVestingRewards
   _reason?: string
 
-  constructor(tokenId: string, user: string, claimable: BigNumber, rewards: Rewards) {
+  constructor(tokenId: string, user: string, claimable: BigNumber, rewards: CommunityRewardsVestingRewards) {
     this.tokenId = tokenId
     this.user = user
     this.rewards = rewards

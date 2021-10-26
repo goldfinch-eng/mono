@@ -11,49 +11,56 @@ import {StakedPosition, StakingRewards} from "../../ethereum/pool"
 import RewardActionsContainer from "../../components/rewardActionsContainer"
 
 interface RewardsSummaryProps {
-  claimable: BigNumber
-  unvested: BigNumber
-  totalGFI: BigNumber
-  totalUSD: BigNumber
-  walletBalance: BigNumber
+  claimable: BigNumber | undefined
+  unvested: BigNumber | undefined
+  totalGFI: BigNumber | undefined
+  totalUSD: BigNumber | undefined
+  walletBalance: BigNumber | undefined
 }
 
 function RewardsSummary(props: RewardsSummaryProps) {
+  const claimable = props.claimable || new BigNumber(0)
+  const unvested = props.unvested || new BigNumber(0)
+  const totalGFI = props.totalGFI || new BigNumber(0)
+  const totalUSD = props.totalUSD || new BigNumber(0)
+  const walletBalance = props.walletBalance || new BigNumber(0)
+
   const valueDisabledClass = !props.totalGFI || props.totalGFI.eq(0) ? "disabled-value" : "value"
+
   return (
     <div className="rewards-summary background-container">
       <div className="rewards-summary-left-item">
         <span className="total-gfi-balance">Total GFI balance</span>
-        <span className="total-gfi">{displayNumber(gfiFromAtomic(props.totalGFI), 2)}</span>
-        <span className="total-usd">${displayDollars(props.totalUSD)}</span>
+        <span className="total-gfi">{displayNumber(gfiFromAtomic(totalGFI), 2)}</span>
+        <span className="total-usd">{displayDollars(totalUSD)}</span>
       </div>
 
       <div className="rewards-summary-right-item">
         <div className="details-item">
           <span>Wallet balance</span>
           <div>
-            <span className={valueDisabledClass}>{displayNumber(gfiFromAtomic(props.walletBalance), 2)}</span>
+            <span className={valueDisabledClass}>{displayNumber(gfiFromAtomic(walletBalance), 2)}</span>
             <span>GFI</span>
           </div>
         </div>
         <div className="details-item">
           <span>Claimable</span>
           <div>
-            <span className={valueDisabledClass}>{displayNumber(gfiFromAtomic(props.claimable), 2)}</span>
+            <span className={valueDisabledClass}>{displayNumber(gfiFromAtomic(claimable), 2)}</span>
             <span>GFI</span>
           </div>
         </div>
         <div className="details-item">
           <span>Still vesting</span>
           <div>
-            <span className={valueDisabledClass}>{displayNumber(gfiFromAtomic(props.unvested), 2)}</span>
+            <span className={valueDisabledClass}>{displayNumber(gfiFromAtomic(unvested), 2)}</span>
             <span>GFI</span>
           </div>
         </div>
         <div className="details-item total-balance">
           <span>Total balance</span>
           <div>
-            <span className={valueDisabledClass}>{displayNumber(gfiFromAtomic(props.totalGFI), 2)}</span>
+            <span className={valueDisabledClass}>{displayNumber(gfiFromAtomic(totalGFI), 2)}</span>
             <span>GFI</span>
           </div>
         </div>
@@ -62,7 +69,7 @@ function RewardsSummary(props: RewardsSummaryProps) {
   )
 }
 
-function NoRewards(props) {
+function NoRewards() {
   return (
     <li className="table-row rewards-list-item no-rewards background-container">
       You have no rewards. You can earn rewards by supplying to&nbsp;
@@ -119,9 +126,9 @@ function Rewards(props) {
   const {stakingRewards, merkleDistributor} = useRewards()
   const gfiBalance = useGFIBalance()
 
-  let claimable
-  let unvested
-  let granted
+  let claimable: BigNumber | undefined
+  let unvested: BigNumber | undefined
+  let granted: BigNumber | undefined
   if (stakingRewards?.totalClaimable || merkleDistributor?.totalClaimable) {
     let val = stakingRewards?.totalClaimable || new BigNumber(0)
     claimable = val.plus(merkleDistributor?.totalClaimable || new BigNumber(0))
@@ -153,8 +160,11 @@ function Rewards(props) {
         claimable={claimable}
         unvested={unvested}
         totalGFI={granted}
-        totalUSD={new BigNumber("")} // TODO: this needs to be updated once we have a price for GFI in USD.
-        walletBalance={gfiBalance || new BigNumber(0)}
+        totalUSD={
+          // TODO: this needs to be updated once we have a price for GFI in USD.
+          undefined
+        }
+        walletBalance={gfiBalance}
       />
 
       <div className="gfi-rewards table-spaced">

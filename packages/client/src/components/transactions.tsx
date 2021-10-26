@@ -127,7 +127,7 @@ function Transactions(props) {
   return (
     <div className="content-section">
       <div className="page-header">Transactions</div>
-      <ConnectionNotice />
+      <ConnectionNotice requireUnlock={false} />
       <table className={`table transactions-table ${user.address ? "" : "placeholder"}`}>
         <thead>
           <tr>

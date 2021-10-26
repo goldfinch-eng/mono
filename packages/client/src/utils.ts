@@ -64,9 +64,9 @@ export function displayDollars(val, decimals = 2) {
   return `${prefix}$${displayNumber(val, decimals)}`
 }
 
-export function displayPercent(val: BigNumber | undefined, decimals = 2) {
+export function displayPercent(val: BigNumber | undefined, decimals = 2, displayZero = false) {
   let valDisplay: string
-  if (!val || val.eq(0)) {
+  if (!val || val.isNaN() || (val.eq(0) && !displayZero)) {
     valDisplay = "--.--"
   } else {
     valDisplay = displayNumber(val.multipliedBy(100), decimals)
@@ -80,10 +80,6 @@ export function roundUpPenny(val) {
 
 export function roundDownPenny(val) {
   return Math.floor(val * 100) / 100
-}
-
-export function secondsSinceEpoch(): number {
-  return Math.floor(Date.now() / 1000)
 }
 
 export class AssertionError extends Error {}

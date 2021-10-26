@@ -28,6 +28,7 @@ import {SessionData} from "./types/session"
 import {useSessionLocalStorage} from "./hooks/useSignIn"
 import {EarnProvider} from "./contexts/EarnContext"
 import {BorrowProvider} from "./contexts/BorrowContext"
+import useCurrentBlock from "./hooks/useCurrentBlock"
 
 export interface NetworkConfig {
   name?: string
@@ -77,9 +78,11 @@ function App() {
   const [networkMonitor, setNetworkMonitor] = useState<NetworkMonitor>()
   const [goldfinchProtocol, setGoldfinchProtocol] = useState<GoldfinchProtocol>()
   const [geolocationData, setGeolocationData] = useState<GeolocationData>()
+  const currentBlock = useCurrentBlock()
   const {localStorageValue: sessionData, setLocalStorageValue: setSessionData} = useSessionLocalStorage(
     SESSION_DATA_KEY,
-    {}
+    {},
+    currentBlock?.timestamp
   )
 
   const toggleRewards = process.env.REACT_APP_TOGGLE_REWARDS === "true"
@@ -200,6 +203,7 @@ function App() {
     <AppContext.Provider value={store}>
       <NetworkWidget
         user={user}
+        currentBlock={currentBlock}
         network={network}
         currentErrors={currentErrors}
         currentTXs={currentTXs}
@@ -208,7 +212,7 @@ function App() {
       <EarnProvider>
         <BorrowProvider>
           <Router>
-            {(process.env.NODE_ENV === "development" || process.env.MURMURATION === "yes") && <DevTools />}
+            {(process.env.NODE_ENV === "development" || process.env.REACT_APP_MURMURATION === "yes") && <DevTools />}
             <Sidebar />
             <div>
               <Switch>

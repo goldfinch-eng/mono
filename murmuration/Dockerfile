@@ -25,4 +25,4 @@ RUN npm install && npm run bootstrap && npx lerna run postinstall
 # Used by the Webpack dev server. See `murmuration()` in `client/config-overrides.js`.
 EXPOSE 80
 
-CMD npm run start:murmuration
+CMD npm run start:murmuration:liquidity-mining
