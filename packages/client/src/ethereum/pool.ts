@@ -243,11 +243,11 @@ export async function getWeightedAverageSharePrice(capitalProvider, pool?: Senio
   let sharesLeftToAccountFor = capitalProvider.numShares
   let totalAmountPaid = zero
   preparedEvents.forEach((event) => {
-    let amount, shares
     if (sharesLeftToAccountFor.lte(zero)) {
       return
     }
 
+    let amount, shares
     if (pool) {
       amount = event.returnValues.amount
       shares = event.returnValues.shares

@@ -22,7 +22,7 @@ function SeniorPoolView(): JSX.Element {
   const [poolData, setPoolData] = useState<PoolData | GraphSeniorPoolData>()
   const kycResult = useKYC()
   const kyc = useStaleWhileRevalidating(kycResult)
-  const [fetchSeniorPoolAndProviderData, {data}] = useLazyQuery<
+  const [fetchSeniorPoolAndProviderData, {data, refetch}] = useLazyQuery<
     getSeniorPoolAndProviders,
     getSeniorPoolAndProvidersVariables
   >(GET_SENIOR_POOL_AND_PROVIDER_DATA)
@@ -31,21 +31,6 @@ function SeniorPoolView(): JSX.Element {
 
   const loadedCapitalProvider = isGraphUserData(capitalProvider) || capitalProvider?.loaded
   const loadedPoolData = isGraphSeniorPoolData(poolData) || poolData?.loaded
-
-  async function refreshAllData(capitalProviderAddress) {
-    assertNonNullable(pool)
-
-    refreshPoolData(pool)
-    refreshCapitalProviderData(pool, capitalProviderAddress)
-  }
-
-  async function fetchData(capitalProviderAddress) {
-    if (enableSeniorPoolV2) {
-      fetchSeniorPoolAndProviderData({variables: {userID: capitalProviderAddress || ""}})
-    } else {
-      refreshAllData(capitalProviderAddress)
-    }
-  }
 
   useEffect(() => {
     const capitalProviderAddress = user.loaded && user.address
@@ -62,15 +47,35 @@ function SeniorPoolView(): JSX.Element {
       setPoolData(parseSeniorPool(seniorPool))
       setCapitalProvider(await parseUser(user, seniorPool, pool!.fidu))
     }
-
     if (data) {
       setGraphData()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data])
 
+  async function refreshAllData(capitalProviderAddress) {
+    assertNonNullable(pool)
+
+    refreshPoolData(pool)
+    refreshCapitalProviderData(pool, capitalProviderAddress)
+  }
+
+  async function fetchData(capitalProviderAddress) {
+    if (enableSeniorPoolV2) {
+      fetchSeniorPoolAndProviderData({
+        variables: {userID: capitalProviderAddress ? capitalProviderAddress.toLowerCase() : ""},
+      })
+    } else {
+      refreshAllData(capitalProviderAddress)
+    }
+  }
+
   async function actionComplete() {
-    fetchData(capitalProvider!.address)
+    if (refetch) {
+      refetch({userID: capitalProvider!.address.toLowerCase()})
+    } else {
+      refreshAllData(capitalProvider!.address)
+    }
   }
 
   async function refreshCapitalProviderData(pool: SeniorPool, address: string | boolean) {

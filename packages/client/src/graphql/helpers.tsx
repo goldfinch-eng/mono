@@ -59,7 +59,7 @@ export async function parseUser(
   const capitalProviderStatus = user?.capitalProviderStatus
   const goListed = user?.goListed || false
 
-  const sharePrice = new BigNumber(seniorPool.lastestPoolStatus.sharePrice) as any
+  const sharePrice = new BigNumber(seniorPool.lastestPoolStatus.sharePrice)
   const numShares = userAddress ? new BigNumber(await fidu.methods.balanceOf(userAddress).call()) : new BigNumber("0")
   const availableToWithdraw = new BigNumber(numShares)
     .multipliedBy(new BigNumber(sharePrice))
