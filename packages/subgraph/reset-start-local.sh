@@ -4,6 +4,13 @@ root_dir=$(dirname $(dirname $(dirname $(readlink -f "$0"))))
 env_path="${root_dir}/.env.local"
 source "${env_path}"
 
+if [ -z "$REACT_APP_HARDHAT_FORK" ]; then
+    echo "Cannot start subgraph with local forking." \
+         "Either start with mainnet forking or set REACT_APP_TOGGLE_THE_GRAPH as false." \
+         "Exiting..."
+    exit 1
+fi
+
 if [ "$REACT_APP_TOGGLE_THE_GRAPH" != "true" ]; then
     echo "The graph feature flag is toggled off. Exiting..."
     exit 0
