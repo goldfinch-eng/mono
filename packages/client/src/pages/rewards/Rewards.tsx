@@ -210,7 +210,7 @@ function RewardsListItem(props: RewardsListItemProps) {
 
   return (
     <>
-      {!isTabletOrMobile && (
+      {!isTabletOrMobile ? (
         <li onClick={() => setOpen(!open)}>
           <div className="rewards-list-item table-row background-container clickable">
             <div className="table-cell col32">{props.title}</div>
@@ -236,9 +236,7 @@ function RewardsListItem(props: RewardsListItemProps) {
             />
           )}
         </li>
-      )}
-
-      {isTabletOrMobile && (
+      ) : (
         <li onClick={() => setOpen(!open)}>
           <div className="rewards-list-item background-container clickable mobile">
             <div className="item-header">
