@@ -210,33 +210,7 @@ function RewardsListItem(props: RewardsListItemProps) {
 
   return (
     <>
-      {!isTabletOrMobile ? (
-        <li onClick={() => setOpen(!open)}>
-          <div className="rewards-list-item table-row background-container clickable">
-            <div className="table-cell col32">{props.title}</div>
-            <div className={`table-cell col20 numeric ${valueDisabledClass}`}>
-              {displayNumber(gfiFromAtomic(props.grantedGFI), 2)}
-            </div>
-            <div className={`table-cell col20 numeric ${valueDisabledClass}`}>
-              {displayNumber(gfiFromAtomic(props.claimableGFI), 2)}
-            </div>
-            {actionButtonComponent}
-            <OpenDetails open={open} />
-          </div>
-          {open && (
-            <Details
-              open={open}
-              disabled={props.claimableGFI.eq(0)}
-              transactionDetails={fakeDetailsObject.transactionDetails}
-              vestingSchedule={fakeDetailsObject.vestingSchedule}
-              claimStatus={fakeDetailsObject.claimStatus}
-              currentEarnRate={fakeDetailsObject.currentEarnRate}
-              vestingStatus={fakeDetailsObject.vestingStatus}
-              etherscanAddress={fakeDetailsObject.etherscanAddress}
-            />
-          )}
-        </li>
-      ) : (
+      {isTabletOrMobile ? (
         <li onClick={() => setOpen(!open)}>
           <div className="rewards-list-item background-container clickable mobile">
             <div className="item-header">
@@ -254,6 +228,32 @@ function RewardsListItem(props: RewardsListItemProps) {
               </div>
             </div>
             {actionButtonComponent}
+          </div>
+          {open && (
+            <Details
+              open={open}
+              disabled={props.claimableGFI.eq(0)}
+              transactionDetails={fakeDetailsObject.transactionDetails}
+              vestingSchedule={fakeDetailsObject.vestingSchedule}
+              claimStatus={fakeDetailsObject.claimStatus}
+              currentEarnRate={fakeDetailsObject.currentEarnRate}
+              vestingStatus={fakeDetailsObject.vestingStatus}
+              etherscanAddress={fakeDetailsObject.etherscanAddress}
+            />
+          )}
+        </li>
+      ) : (
+        <li onClick={() => setOpen(!open)}>
+          <div className="rewards-list-item table-row background-container clickable">
+            <div className="table-cell col32">{props.title}</div>
+            <div className={`table-cell col20 numeric ${valueDisabledClass}`}>
+              {displayNumber(gfiFromAtomic(props.grantedGFI), 2)}
+            </div>
+            <div className={`table-cell col20 numeric ${valueDisabledClass}`}>
+              {displayNumber(gfiFromAtomic(props.claimableGFI), 2)}
+            </div>
+            {actionButtonComponent}
+            <OpenDetails open={open} />
           </div>
           {open && (
             <Details
