@@ -44,6 +44,7 @@ import {assertNonNullable} from "@goldfinch-eng/utils"
 import "./types"
 const decimals = new BN(String(1e18))
 const USDC_DECIMALS = new BN(String(1e6))
+const GFI_DECIMALS = new BN(String(1e18))
 const SECONDS_PER_DAY = new BN(86400)
 const SECONDS_PER_YEAR = SECONDS_PER_DAY.mul(new BN(365))
 const UNIT_SHARE_PRICE = new BN("1000000000000000000") // Corresponds to share price of 100% (no interest or writedowns)
@@ -361,6 +362,10 @@ async function advanceTime({days, seconds, toSecond}: {days?: Numberish; seconds
   return newTimestamp
 }
 
+async function mineBlock(): Promise<void> {
+  await ethers.provider.send("evm_mine", [])
+}
+
 async function getBalance(address, erc20) {
   if (typeof address !== "string") {
     throw new Error("Address must be a string")
@@ -452,6 +457,7 @@ export {
   expect,
   decimals,
   USDC_DECIMALS,
+  GFI_DECIMALS,
   BN,
   MAX_UINT,
   tolerance,
@@ -477,6 +483,7 @@ export {
   erc20Transfer,
   getCurrentTimestamp,
   advanceTime,
+  mineBlock,
   createPoolWithCreditLine,
   decodeLogs,
   getFirstLog,

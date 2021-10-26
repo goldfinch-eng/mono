@@ -5,7 +5,7 @@ import {AppContext} from "../App"
 import {getOneInchContract} from "../ethereum/oneInch"
 import {roundUpPenny, displayNumber, assertNonNullable} from "../utils"
 
-function useOneInchQuote({from, to, decimalAmount, parts = 10}) {
+function useOneInchQuote({from, to, decimalAmount, parts = 10}): [null, boolean] {
   const {network} = useContext(AppContext)
   const [expectedReturn, setExpectedReturn] = useState(null)
   const [isLoading, setLoading] = useState(false)

@@ -24,6 +24,8 @@ import SeniorPoolView from "./components/pools/seniorPoolView"
 import VerifyIdentity from "./components/verifyIdentity"
 import TranchedPoolView from "./components/pools/tranchedPoolView"
 import Rewards from "./pages/rewards"
+import {ThemeProvider} from "styled-components"
+import {defaultTheme} from "./styles/theme"
 import {SessionData} from "./types/session"
 import {useSessionLocalStorage} from "./hooks/useSignIn"
 import {EarnProvider} from "./contexts/EarnContext"
@@ -201,63 +203,65 @@ function App() {
 
   return (
     <AppContext.Provider value={store}>
-      <NetworkWidget
-        user={user}
-        currentBlock={currentBlock}
-        network={network}
-        currentErrors={currentErrors}
-        currentTXs={currentTXs}
-        connectionComplete={setupWeb3}
-      />
-      <EarnProvider>
-        <BorrowProvider>
-          <Router>
-            {(process.env.NODE_ENV === "development" || process.env.REACT_APP_MURMURATION === "yes") && <DevTools />}
-            <Sidebar />
-            <div>
-              <Switch>
-                <Route exact path="/">
-                  <Redirect to="/earn" />
-                </Route>
-                <Route path="/about">{/* <About /> */}</Route>
-                <Route path="/earn">
-                  <Earn />
-                </Route>
-                {toggleRewards && (
-                  <Route path="/rewards">
-                    <Rewards />
+      <ThemeProvider theme={defaultTheme}>
+        <NetworkWidget
+          user={user}
+          currentBlock={currentBlock}
+          network={network}
+          currentErrors={currentErrors}
+          currentTXs={currentTXs}
+          connectionComplete={setupWeb3}
+        />
+        <EarnProvider>
+          <BorrowProvider>
+            <Router>
+              {(process.env.NODE_ENV === "development" || process.env.MURMURATION === "yes") && <DevTools />}
+              <Sidebar />
+              <div>
+                <Switch>
+                  <Route exact path="/">
+                    <Redirect to="/earn" />
                   </Route>
-                )}
-                <Route path="/borrow">
-                  <Borrow />
-                </Route>
-                <Route path="/transactions">
-                  <Transactions currentTXs={currentTXs} />
-                </Route>
-                <Route path="/pools/senior">
-                  <SeniorPoolView />
-                </Route>
-                <Route path="/pools/:poolAddress">
-                  <TranchedPoolView />
-                </Route>
-                <Route path="/verify">
-                  <VerifyIdentity />
-                </Route>
-                <Route path="/terms">
-                  <TermsOfService />
-                </Route>
-                <Route path="/privacy">
-                  <PrivacyPolicy />
-                </Route>
-                <Route path="/senior-pool-agreement-non-us">
-                  <SeniorPoolAgreementNonUS />
-                </Route>
-              </Switch>
-            </div>
-          </Router>
-        </BorrowProvider>
-      </EarnProvider>
-      <Footer />
+                  <Route path="/about">{/* <About /> */}</Route>
+                  <Route path="/earn">
+                    <Earn />
+                  </Route>
+                  {toggleRewards && (
+                    <Route path="/rewards">
+                      <Rewards />
+                    </Route>
+                  )}
+                  <Route path="/borrow">
+                    <Borrow />
+                  </Route>
+                  <Route path="/transactions">
+                    <Transactions currentTXs={currentTXs} />
+                  </Route>
+                  <Route path="/pools/senior">
+                    <SeniorPoolView />
+                  </Route>
+                  <Route path="/pools/:poolAddress">
+                    <TranchedPoolView />
+                  </Route>
+                  <Route path="/verify">
+                    <VerifyIdentity />
+                  </Route>
+                  <Route path="/terms">
+                    <TermsOfService />
+                  </Route>
+                  <Route path="/privacy">
+                    <PrivacyPolicy />
+                  </Route>
+                  <Route path="/senior-pool-agreement-non-us">
+                    <SeniorPoolAgreementNonUS />
+                  </Route>
+                </Switch>
+              </div>
+            </Router>
+          </BorrowProvider>
+        </EarnProvider>
+        <Footer />
+      </ThemeProvider>
     </AppContext.Provider>
   )
 }

@@ -203,6 +203,17 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     return positions[tokenId].rewards.claimable();
   }
 
+  /// @notice Returns the rewards that will have vested for some position with the given params.
+  /// @return rewards Amount of rewards denominated in `rewardsToken()`
+  function totalVestedAt(
+    uint256 start,
+    uint256 end,
+    uint256 time,
+    uint256 grantedAmount
+  ) external pure returns (uint256 rewards) {
+    return StakingRewardsVesting.totalVestedAt(start, end, time, grantedAmount);
+  }
+
   /// @notice Number of rewards, in `rewardsToken().decimals()`, to disburse each second
   function rewardRate() internal view returns (uint256) {
     // The reward rate can be thought of as a piece-wise function:

@@ -21,6 +21,7 @@ import BN from "bn.js"
 import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
 import setUpForTesting from "@goldfinch-eng/protocol/deploy/setUpForTesting"
 import {hardhat as hre} from "@goldfinch-eng/protocol"
+import {advanceTime, mineBlock} from "@goldfinch-eng/protocol/test/testHelpers"
 
 const app = express()
 app.use(express.json())
@@ -62,6 +63,21 @@ app.post("/setupForTesting", async (req, res) => {
     })
   } catch (e) {
     return res.status(500).send({message: "setupForTesting error"})
+  }
+
+  return res.status(200).send({status: "success", result: JSON.stringify({success: true})})
+})
+
+app.post("/advanceTimeOneDay", async (req, res) => {
+  if (process.env.NODE_ENV === "production") {
+    return res.status(404).send({message: "advanceTimeOnDay only available on local and murmuration"})
+  }
+
+  try {
+    await advanceTime({days: 1})
+    await mineBlock()
+  } catch (e) {
+    return res.status(500).send({message: "advanceTimeOneDay error"})
   }
 
   return res.status(200).send({status: "success", result: JSON.stringify({success: true})})

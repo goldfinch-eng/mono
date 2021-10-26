@@ -53,7 +53,7 @@ function CreditStatus(props) {
       <div className="credit-status-header">
         <h2>Credit Status</h2>
         <EtherscanLink
-          tranchedPoolAddress={tranchedPoolAddress}
+          address={tranchedPoolAddress}
           classNames={`pool-link ${placeholderClass !== "" && "disabled-link"}`}
         >
           {iconOutArrow}

@@ -702,7 +702,7 @@ function Overview({tranchedPool, handleDetails}: OverviewProps) {
       <p className="pool-description">{tranchedPool?.metadata?.description}</p>
       <InfoSection rows={rows} />
       <div className="pool-links">
-        <EtherscanLink tranchedPoolAddress={tranchedPool?.address!}>
+        <EtherscanLink address={tranchedPool?.address!}>
           Pool<span className="outbound-link">{iconOutArrow}</span>
         </EtherscanLink>
       </div>
