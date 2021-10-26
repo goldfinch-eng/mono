@@ -26,7 +26,7 @@ function RewardsSummary(props: RewardsSummaryProps) {
   const totalUSD = props.totalUSD || new BigNumber(0)
   const walletBalance = props.walletBalance || new BigNumber(0)
 
-  const valueDisabledClass = !props.totalGFI || props.totalGFI.eq(0) ? "disabled-value" : "value"
+  const valueDisabledClass = totalGFI.eq(0) ? "disabled-value" : "value"
 
   return (
     <div className="rewards-summary background-container">
@@ -154,7 +154,7 @@ function getSortedRewards(
   return sorted
 }
 
-function Rewards(props) {
+function Rewards() {
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
   const {stakingRewards, merkleDistributor} = useRewards()
   const gfiBalance = useGFIBalance()
