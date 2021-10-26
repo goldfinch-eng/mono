@@ -185,7 +185,9 @@ interface RewardsListItemProps {
 function RewardsListItem(props: RewardsListItemProps) {
   const [open, setOpen] = useState<boolean>(false)
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
-  const valueDisabledClass = props.status === RewardStatus.Acceptable ? "disabled-text" : ""
+
+  const disabledText = props.status === RewardStatus.Acceptable
+  const valueDisabledClass = disabledText ? "disabled-text" : ""
 
   const actionButtonComponent = <ActionButton {...getActionButtonProps(props)} />
 
@@ -202,7 +204,7 @@ function RewardsListItem(props: RewardsListItemProps) {
   const detailsComponent = (
     <Details
       open={open}
-      disabled={props.claimableGFI.eq(0)}
+      disabled={disabledText}
       transactionDetails={fakeDetailsObject.transactionDetails}
       vestingSchedule={fakeDetailsObject.vestingSchedule}
       claimStatus={fakeDetailsObject.claimStatus}
