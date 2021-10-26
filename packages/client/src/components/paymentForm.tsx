@@ -164,7 +164,6 @@ function PaymentForm(props) {
           <CurrencyDropdown onChange={changeTicker} />
         </div>
         {unlocked || (
-          // @ts-expect-error ts-migrate(2349) FIXME: This expression is not callable.
           <UnlockERC20Form erc20={erc20} onUnlock={() => refreshUnlocked()} unlockAddress={borrower.borrowerAddress} />
         )}
         <div className="form-inputs">

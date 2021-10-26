@@ -110,8 +110,9 @@ const localRelayer = () => (config) => {
   config.proxy = {
     ...(config.proxy || {}),
     "/relay": "http://localhost:4000",
-    "/fundWithWhales": "http://localhost:4000",
     "/setupForTesting": "http://localhost:4000",
+    "/fundWithWhales": "http://localhost:4000",
+    "/advanceTimeOneDay": "http://localhost:4000",
   }
   return config
 }

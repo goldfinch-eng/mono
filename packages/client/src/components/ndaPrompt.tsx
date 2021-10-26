@@ -4,14 +4,14 @@ import {FormProvider, useForm} from "react-hook-form"
 import {iconOutArrow, iconX} from "./icons"
 import LoadingButton from "./loadingButton"
 
-interface NdaPrompProps {
+interface NdaPromptProps {
   show: boolean
   onClose: () => void
-  onSign: () => void
+  onSign: () => Promise<void>
   NDAUrl?: string
 }
 
-function NdaPrompt({show, onClose, onSign, NDAUrl}: NdaPrompProps) {
+function NdaPrompt({show, onClose, onSign, NDAUrl}: NdaPromptProps) {
   const formMethods = useForm()
 
   useEffect(() => {
@@ -52,7 +52,7 @@ function NdaPrompt({show, onClose, onSign, NDAUrl}: NdaPrompProps) {
               <ErrorMessage errors={formMethods.errors} name="agreement" />
             </div>
           </div>
-          <LoadingButton className="button right-icon" action={onSign} text={<>View{iconOutArrow}</>} />
+          <LoadingButton className="right-icon" action={onSign} text={<>View{iconOutArrow}</>} />
           <button className="close-button" onClick={() => onClose()}>
             {iconX}
           </button>

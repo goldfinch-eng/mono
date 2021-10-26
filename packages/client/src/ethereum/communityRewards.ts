@@ -18,7 +18,7 @@ export class MerkleDistributor {
   info: MerkleDistributorInfo | undefined
   communityRewards: CommunityRewards
   actionRequiredAirdrops: MerkleDistributorGrantInfo[] | undefined
-  totalClaimable: BigNumber | undefined
+  claimable: BigNumber | undefined
   unvested: BigNumber | undefined
   granted: BigNumber | undefined
 
@@ -44,7 +44,7 @@ export class MerkleDistributor {
 
     await this.communityRewards.initialize(recipient)
     const currentBlock = getBlockInfo(await getCurrentBlock())
-    this.totalClaimable = this.calculateTotalClaimable()
+    this.claimable = this.calculateClaimable()
     this.unvested = this.calculateUnvested()
     this.granted = this.calculateGranted()
     this.actionRequiredAirdrops = await this.getActionRequiredAirdrops(recipient, currentBlock)
@@ -91,7 +91,7 @@ export class MerkleDistributor {
     ).then((results) => results.filter((val): val is NonNullable<typeof val> => !!val))
   }
 
-  calculateTotalClaimable(): BigNumber {
+  calculateClaimable(): BigNumber {
     if (!this.communityRewards.grants || this.communityRewards.grants.length === 0) return new BigNumber(0)
     const claimableResults = this.communityRewards.grants.map((grant) => grant.claimable)
     return BigNumber.sum.apply(null, claimableResults)
@@ -116,7 +116,7 @@ export class MerkleDistributor {
   }
 }
 
-interface Rewards {
+interface CommunityRewardsVestingRewards {
   totalGranted: BigNumber
   totalClaimed: BigNumber
   startTime: number
@@ -126,14 +126,14 @@ interface Rewards {
   revokedAt: number
 }
 
-export class CommunityRewardsVesting {
+export class CommunityRewardsGrant {
   tokenId: string
   user: string
   claimable: BigNumber
-  rewards: Rewards
+  rewards: CommunityRewardsVestingRewards
   _reason?: string
 
-  constructor(tokenId: string, user: string, claimable: BigNumber, rewards: Rewards) {
+  constructor(tokenId: string, user: string, claimable: BigNumber, rewards: CommunityRewardsVestingRewards) {
     this.tokenId = tokenId
     this.user = user
     this.rewards = rewards
@@ -147,9 +147,13 @@ export class CommunityRewardsVesting {
   get granted(): BigNumber {
     return this.rewards.totalGranted
   }
+
+  get claimed(): BigNumber {
+    return this.rewards.totalClaimed
+  }
 }
 
-function parseCommunityRewardsVesting(
+function parseCommunityRewardsGrant(
   tokenId: string,
   user: string,
   claimable: string,
@@ -162,8 +166,8 @@ function parseCommunityRewardsVesting(
     5: string
     6: string
   }
-): CommunityRewardsVesting {
-  return new CommunityRewardsVesting(tokenId, user, new BigNumber(claimable), {
+): CommunityRewardsGrant {
+  return new CommunityRewardsGrant(tokenId, user, new BigNumber(claimable), {
     totalGranted: new BigNumber(tuple[0]),
     totalClaimed: new BigNumber(tuple[1]),
     startTime: parseInt(tuple[2], 10),
@@ -179,7 +183,7 @@ export class CommunityRewards {
   contract: CommunityRewardsContract
   address: string
   loaded: boolean
-  grants: CommunityRewardsVesting[] | undefined
+  grants: CommunityRewardsGrant[] | undefined
 
   constructor(goldfinchProtocol: GoldfinchProtocol) {
     this.goldfinchProtocol = goldfinchProtocol
@@ -208,9 +212,9 @@ export class CommunityRewards {
         this.contract.methods
           .grants(tokenId)
           .call(undefined, currentBlock.number)
-          .then(async (res) => {
+          .then(async (grant) => {
             const claimable = await this.contract.methods.claimableRewards(tokenId).call(undefined, currentBlock.number)
-            return parseCommunityRewardsVesting(tokenId, recipient, claimable, res)
+            return parseCommunityRewardsGrant(tokenId, recipient, claimable, grant)
           })
       )
     )

@@ -115,7 +115,6 @@ function DrawdownForm(props) {
           {unlocked || (
             <UnlockERC20Form
               erc20={erc20}
-              // @ts-expect-error ts-migrate(2349) FIXME: This expression is not callable.
               onUnlock={() => refreshUnlocked()}
               unlockAddress={props.borrower.borrowerAddress}
             />
