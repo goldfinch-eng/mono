@@ -362,6 +362,10 @@ async function advanceTime({days, seconds, toSecond}: {days?: Numberish; seconds
   return newTimestamp
 }
 
+async function mineBlock(): Promise<void> {
+  await ethers.provider.send("evm_mine", [])
+}
+
 async function getBalance(address, erc20) {
   if (typeof address !== "string") {
     throw new Error("Address must be a string")
@@ -479,6 +483,7 @@ export {
   erc20Transfer,
   getCurrentTimestamp,
   advanceTime,
+  mineBlock,
   createPoolWithCreditLine,
   decodeLogs,
   getFirstLog,
