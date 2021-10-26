@@ -8,6 +8,7 @@ import useSendFromUser from "../hooks/useSendFromUser"
 import useNonNullContext from "../hooks/useNonNullContext"
 import {CapitalProvider, PoolData} from "../ethereum/pool"
 import {GFI_DECIMALS} from "../ethereum/gfi"
+import BigNumber from "bignumber.js"
 
 interface WithdrawalFormProps {
   poolData: PoolData
@@ -47,8 +48,8 @@ function WithdrawalForm(props: WithdrawalFormProps) {
     // rewards their withdrawal entails forfeiting, will not necessarily equal the amount that will
     // actually be forfeited when the transaction is executed.
     const forfeitAdvisory = props.capitalProvider.stakingRewards.hasUnvested ? (
-      <div className="form-message">
-        You have {displayNumber(props.capitalProvider.stakingRewards.unvested.div(GFI_DECIMALS.toString()), 2)} GFI (~
+      <div className="form-message paragraph">
+        You have {displayNumber(props.capitalProvider.stakingRewards.unvested.div(GFI_DECIMALS.toString()), 2)} GFI (
         {displayDollars(props.capitalProvider.stakingRewards.unvestedInDollars, 2)}) that is still vesting until{" "}
         {lastVestingEnd!.toLocaleDateString(undefined, {
           year: "numeric",
@@ -59,9 +60,9 @@ function WithdrawalForm(props: WithdrawalFormProps) {
       </div>
     ) : undefined
     const protocolFeeAdvisory = (
-      <div className="form-message">
-        {forfeitAdvisory ? "Also note," : "Note:"} the protocol will deduct a 0.50% fee from your withdrawal amount for
-        protocol reserves.
+      <div className="form-message paragraph">
+        {forfeitAdvisory ? "Also as a reminder," : "Note that"} the protocol will deduct a 0.50% fee from your
+        withdrawal amount for protocol reserves.
       </div>
     )
     return (
@@ -86,6 +87,21 @@ function WithdrawalForm(props: WithdrawalFormProps) {
                 Max
               </button>
             }
+            notes={[
+              {
+                key: "advisory",
+                content: (
+                  <p>
+                    You will <span className="font-bold">receive {displayDollars(new BigNumber(0), 2)}</span>
+                    {" net of protocol reserves and "}
+                    <span className="font-bold">
+                      forfeit {displayNumber(new BigNumber(0), 2)} GFI ({displayDollars(new BigNumber(0), 2)})
+                    </span>{" "}
+                    that is still unvested.
+                  </p>
+                ),
+              },
+            ]}
           />
           <LoadingButton action={action} />
         </div>
