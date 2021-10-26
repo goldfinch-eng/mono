@@ -12,6 +12,7 @@ import {displayNumber, displayDollars, assertNonNullable} from "../utils"
 import {iconCarrotDown} from "./icons"
 import LoadingButton from "./loadingButton"
 import TransactionForm from "./transactionForm"
+import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
 
 interface ActionButtonProps {
   text: string
@@ -64,7 +65,42 @@ function ClaimForm(props: ClaimFormProps) {
 enum RewardStatus {
   Acceptable,
   Claimable,
-  Claimed,
+  TemporarilyAllClaimed,
+  PermanentlyAllClaimed,
+}
+
+function getActionButtonProps(props: RewardsListItemProps): ActionButtonProps {
+  const baseProps: Pick<ActionButtonProps, "onClick"> = {
+    onClick: props.handleOnClick,
+  }
+  switch (props.status) {
+    case RewardStatus.Acceptable:
+      return {
+        ...baseProps,
+        text: "Accept",
+        disabled: false,
+      }
+    case RewardStatus.Claimable:
+      return {
+        ...baseProps,
+        text: "Claim GFI",
+        disabled: false,
+      }
+    case RewardStatus.TemporarilyAllClaimed:
+      return {
+        ...baseProps,
+        text: "Claim GFI",
+        disabled: true,
+      }
+    case RewardStatus.PermanentlyAllClaimed:
+      return {
+        ...baseProps,
+        text: "Claimed",
+        disabled: true,
+      }
+    default:
+      assertUnreachable(props.status)
+  }
 }
 
 interface RewardsListItemProps {
@@ -79,16 +115,7 @@ function RewardsListItem(props: RewardsListItemProps) {
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
   const valueDisabledClass = props.status === RewardStatus.Acceptable ? "disabled-text" : ""
 
-  const actionButtonComponent =
-    props.status === RewardStatus.Acceptable ? (
-      <ActionButton text="Accept" onClick={props.handleOnClick} disabled={false} />
-    ) : props.status === RewardStatus.Claimable && props.claimableGFI.eq(0) ? (
-      <ActionButton text="Vesting" onClick={props.handleOnClick} disabled={true} />
-    ) : props.status === RewardStatus.Claimable && props.claimableGFI.gt(0) ? (
-      <ActionButton text="Claim GFI" onClick={props.handleOnClick} disabled={false} />
-    ) : (
-      <ActionButton text="Claim GFI" onClick={props.handleOnClick} disabled={true} />
-    )
+  const actionButtonComponent = <ActionButton {...getActionButtonProps(props)} />
 
   return (
     <>
@@ -182,9 +209,17 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
       item instanceof StakingRewardsPosition ? item.reason : capitalizeMerkleDistributorGrantReason(item.reason)
 
     if (item.claimable.eq(0)) {
+      const status: RewardStatus =
+        item instanceof CommunityRewardsGrant
+          ? item.claimed.lt(item.granted)
+            ? RewardStatus.TemporarilyAllClaimed
+            : RewardStatus.PermanentlyAllClaimed
+          : // Staking rewards are never "permanently" all-claimed; even after vesting is finished, stakings keep
+            // earning rewards that vest immediately.
+            RewardStatus.TemporarilyAllClaimed
       return (
         <RewardsListItem
-          status={RewardStatus.Claimed}
+          status={status}
           title={title}
           grantedGFI={item.granted}
           claimableGFI={item.claimable}

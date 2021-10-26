@@ -147,6 +147,10 @@ export class CommunityRewardsGrant {
   get granted(): BigNumber {
     return this.rewards.totalGranted
   }
+
+  get claimed(): BigNumber {
+    return this.rewards.totalClaimed
+  }
 }
 
 function parseCommunityRewardsGrant(
