@@ -1,21 +1,13 @@
+import {MerkleDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types"
+import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
+import BigNumber from "bignumber.js"
+import _ from "lodash"
 import React, {useState} from "react"
 import {useMediaQuery} from "react-responsive"
-import _ from "lodash"
-import BigNumber from "bignumber.js"
-import {MerkleDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types"
+import {CommunityRewards, CommunityRewardsGrant, MerkleDistributorLoaded} from "../ethereum/communityRewards"
 import {gfiFromAtomic} from "../ethereum/gfi"
-import {WIDTH_TYPES} from "./styleConstants"
-import {
-  MerkleDistributor,
-  CommunityRewardsGrant,
-  CommunityRewards,
-  MerkleDistributorLoaded,
-} from "../ethereum/communityRewards"
 import {StakingRewards, StakingRewardsLoaded, StakingRewardsPosition} from "../ethereum/pool"
 import useSendFromUser from "../hooks/useSendFromUser"
-import {displayNumber, displayDollars, assertNonNullable} from "../utils"
-import LoadingButton from "./loadingButton"
-import TransactionForm from "./transactionForm"
 import {
   Column,
   ColumnsContainer,
@@ -25,9 +17,12 @@ import {
   DetailValue,
   EtherscanLinkContainer,
 } from "../pages/rewards/styles"
+import {assertNonNullable, displayDollars, displayNumber} from "../utils"
 import EtherscanLink from "./etherscanLink"
 import {iconCarrotDown, iconCarrotUp, iconOutArrow} from "./icons"
-import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
+import LoadingButton from "./loadingButton"
+import {WIDTH_TYPES} from "./styleConstants"
+import TransactionForm from "./transactionForm"
 
 interface ActionButtonProps {
   text: string

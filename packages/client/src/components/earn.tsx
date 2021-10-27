@@ -1,28 +1,21 @@
-import React, {useState, useEffect, useContext} from "react"
-import {useHistory} from "react-router-dom"
-import {
-  CapitalProvider,
-  fetchCapitalProviderData,
-  PoolData,
-  SeniorPool,
-  StakingRewards,
-  StakingRewardsLoaded,
-} from "../ethereum/pool"
-import {AppContext} from "../App"
-import {usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
-import {displayDollars, displayPercent, roundDownPenny} from "../utils"
-import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
-import {PoolBacker, TranchedPool} from "../ethereum/tranchedPool"
 import {PoolCreated} from "@goldfinch-eng/protocol/typechain/web3/GoldfinchFactory"
 import BigNumber from "bignumber.js"
-import {User} from "../ethereum/user"
-import ConnectionNotice from "./connectionNotice"
+import React, {useContext, useEffect, useState} from "react"
+import {useHistory} from "react-router-dom"
+import {AppContext} from "../App"
 import {useEarn} from "../contexts/EarnContext"
-import Badge from "./badge"
-import {InfoIcon} from "../ui/icons"
+import {usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
+import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
+import {CapitalProvider, fetchCapitalProviderData, PoolData, SeniorPool, StakingRewardsLoaded} from "../ethereum/pool"
+import {PoolBacker, TranchedPool} from "../ethereum/tranchedPool"
+import {User} from "../ethereum/user"
 import {useStakingRewards} from "../hooks/useStakingRewards"
-import AnnualGrowthTooltipContent from "./AnnualGrowthTooltipContent"
 import {Loadable, Loaded} from "../types/loadable"
+import {InfoIcon} from "../ui/icons"
+import {displayDollars, displayPercent, roundDownPenny} from "../utils"
+import AnnualGrowthTooltipContent from "./AnnualGrowthTooltipContent"
+import Badge from "./badge"
+import ConnectionNotice from "./connectionNotice"
 
 // Filter out 0 limit (inactive) and test pools
 const MIN_POOL_LIMIT = usdcToAtomic(process.env.REACT_APP_POOL_FILTER_LIMIT || "200")
