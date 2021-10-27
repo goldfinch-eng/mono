@@ -179,9 +179,9 @@ async function main(hre: HardhatRuntimeEnvironment, options: OverrideOptions) {
     await bwrCon.pay(commonPool.address, payAmount.toString())
 
     await seniorPool.redeem(tokenId)
-  }
 
-  await setUpRewards(getOrNull, protocol_owner)
+    await setUpRewards(getOrNull, protocol_owner)
+  }
 }
 
 async function setUpRewards(getOrNull: (name: string) => Promise<Deployment | null>, protocolOwner: string) {
@@ -191,13 +191,13 @@ async function setUpRewards(getOrNull: (name: string) => Promise<Deployment | nu
   const rewardsAmount = amount.div(new BN(2))
 
   const gfi = await getDeployedAsEthersContract<GFI>(getOrNull, "GFI")
-  await gfi.mint(protocolOwner, amount.toString())
-  await gfi.approve(communityRewards.address, rewardsAmount.toString())
-  await gfi.approve(stakingRewards.address, rewardsAmount.toString())
+  await gfi.mint(protocolOwner, amount.toString(10))
+  await gfi.approve(communityRewards.address, rewardsAmount.toString(10))
+  await gfi.approve(stakingRewards.address, rewardsAmount.toString(10))
 
-  await communityRewards.loadRewards(rewardsAmount.toString())
+  await communityRewards.loadRewards(rewardsAmount.toString(10))
 
-  await stakingRewards.loadRewards(rewardsAmount.toString())
+  await stakingRewards.loadRewards(rewardsAmount.toString(10))
   await stakingRewards.setRewardsParameters(
     toAtomic(new BN(1000), FIDU_DECIMALS),
     toAtomic(new BN(4), GFI_DECIMALS),
