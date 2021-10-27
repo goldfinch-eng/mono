@@ -10,11 +10,11 @@ import {usdcFromAtomic} from "../../ethereum/erc20"
 import {useStaleWhileRevalidating} from "../../hooks/useAsync"
 import {eligibleForSeniorPool, useKYC} from "../../hooks/useKYC"
 import {useLazyQuery} from "@apollo/client"
+import BigNumber from "bignumber.js"
 import {GET_SENIOR_POOL_AND_PROVIDER_DATA} from "../../graphql/queries"
 import {getSeniorPoolAndProviders, getSeniorPoolAndProvidersVariables} from "../../graphql/types"
-import BigNumber from "bignumber.js"
 import {GraphSeniorPoolData, GraphUserData, isGraphSeniorPoolData, isGraphUserData} from "../../graphql/utils"
-import {parseSeniorPool, parseUser} from "../../graphql/helpers"
+import {parseSeniorPool, parseUser} from "../../graphql/parsers"
 
 function SeniorPoolView(): JSX.Element {
   const {pool, user, goldfinchConfig} = useContext(AppContext)
@@ -42,7 +42,9 @@ function SeniorPoolView(): JSX.Element {
 
   useEffect(() => {
     async function setGraphData() {
-      const {seniorPools, user} = data!
+      assertNonNullable(data)
+
+      const {seniorPools, user} = data
       let seniorPool = seniorPools[0]!
       setPoolData(parseSeniorPool(seniorPool))
       setCapitalProvider(await parseUser(user, seniorPool, pool!.fidu))

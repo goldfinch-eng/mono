@@ -3,14 +3,9 @@ import {fiduFromAtomic, FIDU_DECIMALS} from "../ethereum/fidu"
 import {USDC_DECIMALS} from "../ethereum/utils"
 import {getSeniorPoolAndProviders_seniorPools as SeniorPoolGQL, getSeniorPoolAndProviders_user as User} from "./types"
 import {roundDownPenny} from "../utils"
-import {getWeightedAverageSharePrice} from "../ethereum/pool"
+import {getWeightedAverageSharePrice, remainingCapacity} from "../ethereum/pool"
 import {GraphSeniorPoolData, GraphUserData} from "./utils"
 import {Fidu} from "@goldfinch-eng/protocol/typechain/web3/Fidu"
-
-function remainingCapacity(this: any, maxPoolCapacity: BigNumber): BigNumber {
-  let cappedBalance = BigNumber.min(this.totalPoolAssets, maxPoolCapacity)
-  return new BigNumber(maxPoolCapacity).minus(cappedBalance)
-}
 
 export function parseSeniorPool(seniorPool: SeniorPoolGQL): GraphSeniorPoolData {
   const latestPoolStatus = seniorPool.lastestPoolStatus
