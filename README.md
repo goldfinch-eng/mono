@@ -76,7 +76,7 @@ Changes to the subgraph will also require re-deploying, to do this run `npm run 
 
 #### Other ways to run
 * `npm run start:no-gasless` is available if gasless transactions are giving you trouble, or if you're having trouble finding the borrower contract address.
-* `npm run start:local` is available for running a non-forked local chain. The contracts will be deployed to a clean-slate, local blockchain.
+* `npm run start:local` is available for running a non-forked local chain. The contracts will be deployed to a clean-slate, local blockchain. The subgraph will not be deployed since it requires mainnet forking.
 
 ***Note** When running with `start:local`, the Fake USDC address that we create will also not be visible to Metamask by default. So you'll need to add this as well
 by looking at the terminal output of the `@goldfinch-eng/protocol` start command. Search "USDC Address", and you should see something. Take that address, and
