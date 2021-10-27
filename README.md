@@ -65,7 +65,7 @@ Run `npm run start` from the project root directory. This will:
   - Run a local, [mainnet-forked](https://hardhat.org/hardhat-network/guides/mainnet-forking.html) blockchain
   - Deploy our smart contracts
   - Set up useful state for the frontend (give your user a Credit Line, ETH, and USDC, etc.)
-  - Create and deploy our subgraph to a local graph node
+  - Create and deploy our subgraph to a local graph node (when `REACT_APP_TOGGLE_THE_GRAPH` is enabled).
   - Start the front-end server, which will pop up on http://localhost:3000.
 
 Changes to the frontend should be automatically hotloaded using react-refresh.
