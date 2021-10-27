@@ -5,7 +5,7 @@ env_path="${root_dir}/.env.local"
 source "${env_path}"
 
 if [ -z "$REACT_APP_HARDHAT_FORK" ]; then
-    echo 1>&2 "Cannot start subgraph with local forking." \
+    echo "Cannot start subgraph without mainnet forking." \
          "Either start with mainnet forking or set REACT_APP_TOGGLE_THE_GRAPH as false." \
          "Exiting..."
     exit 1
