@@ -1,21 +1,25 @@
 import BigNumber from "bignumber.js"
 import {useContext, useEffect, useState} from "react"
 import {AppContext} from "../App"
-import {MerkleDistributor} from "../ethereum/communityRewards"
+import {MerkleDistributor, MerkleDistributorLoaded} from "../ethereum/communityRewards"
 import {GFI} from "../ethereum/gfi"
-import {StakingRewards} from "../ethereum/pool"
+import {StakingRewards, StakingRewardsLoaded} from "../ethereum/pool"
+import {assertWithLoadedInfo} from "../types/loadable"
 import {useAsync, useStaleWhileRevalidating} from "./useAsync"
 
-export function useStakingRewards(): StakingRewards | undefined {
+export function useStakingRewards(): StakingRewardsLoaded | undefined {
   const {goldfinchProtocol, user} = useContext(AppContext)
 
-  const stakingRewardsResult = useAsync<StakingRewards>(() => {
+  const stakingRewardsResult = useAsync<StakingRewardsLoaded>(() => {
     if (!user.loaded || !goldfinchProtocol) {
       return
     }
 
     const rewards = new StakingRewards(goldfinchProtocol)
-    return rewards.initialize(user.address).then(() => rewards)
+    return rewards.initialize(user.address).then((): StakingRewardsLoaded => {
+      assertWithLoadedInfo(rewards)
+      return rewards
+    })
   }, [goldfinchProtocol, user])
 
   const stakingRewards = useStaleWhileRevalidating(stakingRewardsResult)
@@ -23,16 +27,19 @@ export function useStakingRewards(): StakingRewards | undefined {
   return stakingRewards
 }
 
-export function useMerkleDistributor(): MerkleDistributor | undefined {
+export function useMerkleDistributor(): MerkleDistributorLoaded | undefined {
   const {goldfinchProtocol, user} = useContext(AppContext)
 
-  const merkleDistributorResult = useAsync<MerkleDistributor>(() => {
+  const merkleDistributorResult = useAsync<MerkleDistributorLoaded>(() => {
     if (!user.loaded || !goldfinchProtocol) {
       return
     }
 
     const merkleDistributor = new MerkleDistributor(goldfinchProtocol)
-    return merkleDistributor.initialize(user.address).then(() => merkleDistributor)
+    return merkleDistributor.initialize(user.address).then((): MerkleDistributorLoaded => {
+      assertWithLoadedInfo(merkleDistributor)
+      return merkleDistributor
+    })
   }, [goldfinchProtocol, user])
 
   const merkleDistributor = useStaleWhileRevalidating(merkleDistributorResult)
@@ -40,12 +47,17 @@ export function useMerkleDistributor(): MerkleDistributor | undefined {
   return merkleDistributor
 }
 
-export function useRewards() {
+export function useRewards():
+  | {
+      stakingRewards: StakingRewardsLoaded
+      merkleDistributor: MerkleDistributorLoaded
+    }
+  | undefined {
   const stakingRewards = useStakingRewards()
   const merkleDistributor = useMerkleDistributor()
 
   if (!stakingRewards || !merkleDistributor) {
-    return {}
+    return
   }
   return {stakingRewards, merkleDistributor}
 }

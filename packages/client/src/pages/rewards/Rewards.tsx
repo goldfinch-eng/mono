@@ -5,9 +5,9 @@ import {useMediaQuery} from "react-responsive"
 import {Link} from "react-router-dom"
 import RewardActionsContainer from "../../components/rewardActionsContainer"
 import {WIDTH_TYPES} from "../../components/styleConstants"
-import {CommunityRewardsGrant, MerkleDistributor} from "../../ethereum/communityRewards"
+import {CommunityRewardsGrant, MerkleDistributor, MerkleDistributorLoaded} from "../../ethereum/communityRewards"
 import {gfiFromAtomic} from "../../ethereum/gfi"
-import {StakingRewards, StakingRewardsPosition} from "../../ethereum/pool"
+import {StakingRewards, StakingRewardsLoaded, StakingRewardsPosition} from "../../ethereum/pool"
 import {useGFIBalance, useRewards} from "../../hooks/useStakingRewards"
 import {displayDollars, displayNumber} from "../../utils"
 
@@ -95,7 +95,7 @@ type SortableRewards =
 const getStartTime = (sortable: SortableRewards): number => {
   switch (sortable.type) {
     case "stakingRewards":
-      return sortable.value.position.rewards.startTime
+      return sortable.value.storedPosition.rewards.startTime
     case "communityRewards":
       return sortable.value.rewards.startTime
     default:
@@ -114,13 +114,13 @@ const getClaimable = (sortable: SortableRewards): BigNumber => {
 }
 
 function getSortedRewards(
-  stakingRewards: StakingRewards | undefined,
-  merkleDistributor: MerkleDistributor | undefined
+  stakingRewards: StakingRewardsLoaded,
+  merkleDistributor: MerkleDistributorLoaded
 ): SortableRewards[] {
   /* NOTE: First order by 0 or >0 claimable rewards (0 claimable at the bottom), then group by type
    (e.g. all the staking together, then all the airdrops), then order by most recent first */
-  const stakes = stakingRewards?.positions || []
-  const airdrops = merkleDistributor?.communityRewards?.grants || []
+  const stakes = stakingRewards.info.value.positions
+  const grants = merkleDistributor.info.value.communityRewards.info.value.grants
 
   const sorted: SortableRewards[] = [
     ...stakes.map(
@@ -129,7 +129,7 @@ function getSortedRewards(
         value,
       })
     ),
-    ...airdrops.map(
+    ...grants.map(
       (value): SortableRewards => ({
         type: "communityRewards",
         value,
@@ -156,33 +156,59 @@ function getSortedRewards(
 
 function Rewards() {
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
-  const {stakingRewards, merkleDistributor} = useRewards()
+  const rewardsHelpers = useRewards()
   const gfiBalance = useGFIBalance()
 
+  let loaded: boolean = false
   let claimable: BigNumber | undefined
   let unvested: BigNumber | undefined
   let granted: BigNumber | undefined
-  if (stakingRewards && merkleDistributor) {
-    claimable =
-      stakingRewards.claimable && merkleDistributor.claimable
-        ? stakingRewards.claimable.plus(merkleDistributor.claimable)
-        : undefined
-    unvested =
-      stakingRewards.unvested && merkleDistributor.unvested
-        ? stakingRewards.unvested.plus(merkleDistributor.unvested)
-        : undefined
-    granted =
-      stakingRewards.granted && merkleDistributor.granted
-        ? stakingRewards.granted.plus(merkleDistributor.granted)
-        : undefined
+  let rewards: React.ReactNode | undefined
+  if (rewardsHelpers) {
+    const {stakingRewards, merkleDistributor} = rewardsHelpers
+
+    loaded = merkleDistributor.info.loaded && stakingRewards.info.loaded
+
+    const sortedRewards = getSortedRewards(stakingRewards, merkleDistributor)
+
+    const emptyRewards =
+      !merkleDistributor.info.value.communityRewards.info.value.grants.length &&
+      !merkleDistributor.info.value.actionRequiredAirdrops.length &&
+      !stakingRewards.info.value.positions.length
+
+    claimable = stakingRewards.info.value.claimable.plus(merkleDistributor.info.value.claimable)
+    unvested = stakingRewards.info.value.unvested.plus(merkleDistributor.info.value.unvested)
+    granted = stakingRewards.info.value.granted.plus(merkleDistributor.info.value.granted)
+
+    rewards = emptyRewards ? (
+      <NoRewards />
+    ) : (
+      <>
+        {merkleDistributor &&
+          merkleDistributor.info.value.actionRequiredAirdrops.map((item) => (
+            <RewardActionsContainer
+              key={`airdrop-${item.index}`}
+              item={item}
+              merkleDistributor={merkleDistributor}
+              stakingRewards={stakingRewards}
+            />
+          ))}
+
+        {sortedRewards &&
+          sortedRewards.map((item) => {
+            return (
+              <RewardActionsContainer
+                key={`${item.type}-${item.value.tokenId}`}
+                item={item.value}
+                merkleDistributor={merkleDistributor}
+                stakingRewards={stakingRewards}
+              />
+            )
+          })}
+      </>
+    )
   }
 
-  const rewards = getSortedRewards(stakingRewards, merkleDistributor)
-  const emptyRewards =
-    (!merkleDistributor?.communityRewards.grants || !merkleDistributor?.communityRewards.grants.length) &&
-    (!merkleDistributor?.actionRequiredAirdrops || !merkleDistributor?.actionRequiredAirdrops.length) &&
-    (!stakingRewards?.positions || !stakingRewards?.positions.length)
-  const isLoaded = merkleDistributor?.loaded && stakingRewards?.loaded
   return (
     <div className="content-section">
       <div className="page-header">
@@ -210,37 +236,7 @@ function Rewards() {
             </>
           )}
         </div>
-        <ul className="rewards-list">
-          {!merkleDistributor || !stakingRewards || !isLoaded ? (
-            <span>Loading...</span>
-          ) : emptyRewards ? (
-            <NoRewards />
-          ) : (
-            <>
-              {merkleDistributor?.actionRequiredAirdrops &&
-                merkleDistributor.actionRequiredAirdrops.map((item) => (
-                  <RewardActionsContainer
-                    key={`airdrop-${item.index}`}
-                    item={item}
-                    merkleDistributor={merkleDistributor}
-                    stakingRewards={stakingRewards}
-                  />
-                ))}
-
-              {rewards &&
-                rewards.map((item) => {
-                  return (
-                    <RewardActionsContainer
-                      key={`${item.type}-${item.value.tokenId}`}
-                      item={item.value}
-                      merkleDistributor={merkleDistributor}
-                      stakingRewards={stakingRewards}
-                    />
-                  )
-                })}
-            </>
-          )}
-        </ul>
+        <ul className="rewards-list">{loaded ? rewards : <span>Loading...</span>}</ul>
       </div>
     </div>
   )

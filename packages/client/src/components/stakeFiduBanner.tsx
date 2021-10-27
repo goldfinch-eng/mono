@@ -63,7 +63,7 @@ export default function StakeFiduBanner(props: StakeFiduBannerProps) {
   // relation to the other actions on the senior pool page, we condition here on having satisfied the
   // same base requirement(s) that the other actions require.
   const userSatisfiesSeniorPoolRequirements = eligibleForSeniorPool(props.kyc, user)
-  const disabled = !userSatisfiesSeniorPoolRequirements || !stakingRewards || stakingRewards.isPaused
+  const disabled = !userSatisfiesSeniorPoolRequirements || !stakingRewards || stakingRewards.info.value.isPaused
 
   const placeholderClass = disabled ? "placeholder" : ""
 

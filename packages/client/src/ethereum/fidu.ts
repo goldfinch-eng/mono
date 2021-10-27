@@ -37,9 +37,9 @@ export function fiduToAtomic(amount: string | BigNumber): string {
   return new BigNumber(String(amount)).multipliedBy(FIDU_DECIMALS).toString(10)
 }
 
-export function sharesToBalance(shares, sharePrice) {
-  return shares.multipliedBy(new BigNumber(sharePrice)).div(FIDU_DECIMALS.toString())
+export function sharesToBalance(shares, sharePrice): BigNumber {
+  return shares.multipliedBy(new BigNumber(sharePrice)).div(FIDU_DECIMALS)
 }
-export function balanceInDollars(balance) {
+export function balanceInDollars(balance): BigNumber {
   return new BigNumber(fiduFromAtomic(balance))
 }

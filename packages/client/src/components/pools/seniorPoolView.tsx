@@ -2,7 +2,13 @@ import BigNumber from "bignumber.js"
 import {useContext, useEffect, useState} from "react"
 import {AppContext} from "../../App"
 import {usdcFromAtomic} from "../../ethereum/erc20"
-import {CapitalProvider, fetchCapitalProviderData, PoolData, SeniorPool, StakingRewards} from "../../ethereum/pool"
+import {
+  CapitalProvider,
+  fetchCapitalProviderData,
+  PoolData,
+  SeniorPool,
+  StakingRewardsLoaded,
+} from "../../ethereum/pool"
 import {useStaleWhileRevalidating} from "../../hooks/useAsync"
 import {eligibleForSeniorPool, useKYC} from "../../hooks/useKYC"
 import {useStakingRewards} from "../../hooks/useStakingRewards"
@@ -84,7 +90,7 @@ function SeniorPoolView(): JSX.Element {
 
   async function refreshCapitalProviderData(
     pool: SeniorPool,
-    stakingRewards: StakingRewards | undefined,
+    stakingRewards: StakingRewardsLoaded | undefined,
     address: string | undefined
   ) {
     const capitalProvider = await fetchCapitalProviderData(pool, stakingRewards, address)

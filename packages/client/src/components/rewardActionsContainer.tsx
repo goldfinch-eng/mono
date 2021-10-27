@@ -5,8 +5,13 @@ import BigNumber from "bignumber.js"
 import {MerkleDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types"
 import {gfiFromAtomic} from "../ethereum/gfi"
 import {WIDTH_TYPES} from "./styleConstants"
-import {MerkleDistributor, CommunityRewardsGrant, CommunityRewards} from "../ethereum/communityRewards"
-import {StakingRewards, StakingRewardsPosition} from "../ethereum/pool"
+import {
+  MerkleDistributor,
+  CommunityRewardsGrant,
+  CommunityRewards,
+  MerkleDistributorLoaded,
+} from "../ethereum/communityRewards"
+import {StakingRewards, StakingRewardsLoaded, StakingRewardsPosition} from "../ethereum/pool"
 import useSendFromUser from "../hooks/useSendFromUser"
 import {displayNumber, displayDollars, assertNonNullable} from "../utils"
 import LoadingButton from "./loadingButton"
@@ -265,8 +270,8 @@ function capitalizeMerkleDistributorGrantReason(reason: string): string {
 }
 
 interface RewardActionsContainerProps {
-  merkleDistributor: MerkleDistributor
-  stakingRewards: StakingRewards
+  merkleDistributor: MerkleDistributorLoaded
+  stakingRewards: StakingRewardsLoaded
   item: CommunityRewardsGrant | StakingRewardsPosition | MerkleDistributorGrantInfo
 }
 
@@ -340,7 +345,9 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     }
 
     const reward =
-      item instanceof StakingRewardsPosition ? props.stakingRewards : props.merkleDistributor.communityRewards
+      item instanceof StakingRewardsPosition
+        ? props.stakingRewards
+        : props.merkleDistributor.info.value.communityRewards
     return (
       <ClaimForm
         action={async (): Promise<void> => {

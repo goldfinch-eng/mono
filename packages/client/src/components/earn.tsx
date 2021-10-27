@@ -1,6 +1,13 @@
 import React, {useState, useEffect, useContext} from "react"
 import {useHistory} from "react-router-dom"
-import {CapitalProvider, fetchCapitalProviderData, PoolData, SeniorPool, StakingRewards} from "../ethereum/pool"
+import {
+  CapitalProvider,
+  fetchCapitalProviderData,
+  PoolData,
+  SeniorPool,
+  StakingRewards,
+  StakingRewardsLoaded,
+} from "../ethereum/pool"
 import {AppContext} from "../App"
 import {usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
 import {displayDollars, displayPercent, roundDownPenny} from "../utils"
@@ -301,7 +308,7 @@ function Earn() {
 
   async function refreshCapitalProviderData(
     pool: SeniorPool,
-    stakingRewards: StakingRewards | undefined,
+    stakingRewards: StakingRewardsLoaded | undefined,
     address: string | undefined
   ) {
     const capitalProvider = await fetchCapitalProviderData(pool, stakingRewards, address)

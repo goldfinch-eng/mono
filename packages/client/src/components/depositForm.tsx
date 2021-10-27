@@ -44,7 +44,7 @@ function DepositForm(props: DepositFormProps) {
       return approval
         .then(() =>
           sendFromUser(stakingRewards.contract.methods.depositAndStake(depositAmountString), {
-            type: "Supply",
+            type: "Supply and Stake",
             amount: transactionAmount,
           })
         )
@@ -64,7 +64,7 @@ function DepositForm(props: DepositFormProps) {
           signatureData.s
         ),
         {
-          type: "Supply",
+          type: "Supply and Stake",
           amount: transactionAmount,
         }
       ).then(props.actionComplete)
