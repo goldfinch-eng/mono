@@ -19,9 +19,18 @@ import {relayHandler, uniqueIdentitySignerHandler} from "@goldfinch-eng/autotask
 import BN from "bn.js"
 
 import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
-import setUpForTesting from "@goldfinch-eng/protocol/deploy/setUpForTesting"
+import {
+  setUpForTesting,
+  fundFromLocalWhale,
+  getERC20s,
+} from "@goldfinch-eng/protocol/blockchain_scripts/setUpForTesting"
 import {hardhat as hre} from "@goldfinch-eng/protocol"
 import {advanceTime, mineBlock} from "@goldfinch-eng/protocol/test/testHelpers"
+import {
+  assertIsChainId,
+  isMainnetForking,
+  LOCAL_CHAIN_ID,
+} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
 
 const app = express()
 app.use(express.json())
@@ -43,8 +52,21 @@ app.post("/fundWithWhales", async (req, res) => {
 
   try {
     const {address} = req.body
-    await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [address], new BN("75000"))
+    if (isMainnetForking()) {
+      await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [address], new BN("75000"))
+    } else {
+      const chainId = await hre.getChainId()
+      assertIsChainId(chainId)
+
+      if (chainId === LOCAL_CHAIN_ID) {
+        const {erc20s} = await getERC20s({chainId, hre})
+        await fundFromLocalWhale(address, erc20s, hre)
+      } else {
+        throw new Error(`Unexpected chain id: ${chainId}`)
+      }
+    }
   } catch (e) {
+    console.error("fundWithWhales error", e)
     return res.status(500).send({message: "fundWithWhales error"})
   }
 
@@ -62,6 +84,7 @@ app.post("/setupForTesting", async (req, res) => {
       overrideAddress: address,
     })
   } catch (e) {
+    console.error("setupForTesting error", e)
     return res.status(500).send({message: "setupForTesting error"})
   }
 
@@ -77,6 +100,7 @@ app.post("/advanceTimeOneDay", async (req, res) => {
     await advanceTime({days: 1})
     await mineBlock()
   } catch (e) {
+    console.error("advanceTimeOneDay error", e)
     return res.status(500).send({message: "advanceTimeOneDay error"})
   }
 
