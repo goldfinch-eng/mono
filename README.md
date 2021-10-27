@@ -61,14 +61,18 @@ npm run bootstrap
 
 #### Running the stack
 
-Run `npm run start` from the project root directory.
-
-  - This will run a local, [mainnet-forked](https://hardhat.org/hardhat-network/guides/mainnet-forking.html) blockchain, deploy our smart contracts, and set up useful state for the frontend (give your user a Credit Line, ETH, and USDC, etc.)
-  - This will also start the front-end server, which will pop up on http://localhost:3000.
+Run `npm run start` from the project root directory. This will:
+  - Run a local, [mainnet-forked](https://hardhat.org/hardhat-network/guides/mainnet-forking.html) blockchain
+  - Deploy our smart contracts
+  - Set up useful state for the frontend (give your user a Credit Line, ETH, and USDC, etc.)
+  - Create and deploy our subgraph to a local graph node
+  - Start the front-end server, which will pop up on http://localhost:3000.
 
 Changes to the frontend should be automatically hotloaded using react-refresh.
 
 Changes to smart contracts will require re-compiling and re-deploying. You can do this by re-running `npm run start`.
+
+Changes to the subgraph will also require re-deploying, to do this run `npm run deploy` from the subgraph directory.
 
 #### Other ways to run
 * `npm run start:no-gasless` is available if gasless transactions are giving you trouble, or if you're having trouble finding the borrower contract address.
