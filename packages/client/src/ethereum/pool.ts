@@ -148,55 +148,29 @@ type CapitalProviderStakingInfo = {
   rewards: CapitalProviderStakingRewardsInfo
 }
 
-async function fetchCapitalProviderStakingInfo(
+function getCapitalProviderStakingInfo(
   stakingRewards: StakingRewardsLoaded,
-  capitalProviderAddress: string,
   currentBlock: BlockInfo
-): Promise<CapitalProviderStakingInfo> {
-  // TODO[PR] Refactor to use `stakingRewards.info` for computing. Don't need to make new queries here; we have
-  // everything we need through `stakingRewards`!
-
-  const numPositions = parseInt(
-    await stakingRewards.contract.methods.balanceOf(capitalProviderAddress).call(undefined, currentBlock.number),
-    10
-  )
-  const tokenIds: string[] = await Promise.all(
-    Array(numPositions)
-      .fill("")
-      .map((val, i) =>
-        stakingRewards.contract.methods
-          .tokenOfOwnerByIndex(capitalProviderAddress, i)
-          .call(undefined, currentBlock.number)
-      )
-  )
-  const positions = await Promise.all(
-    tokenIds.map((tokenId) => stakingRewards.contract.methods.positions(tokenId).call(undefined, currentBlock.number))
-  )
-  const parsed = positions.map((position) => ({
-    // TODO[PR] Would be ideal to always use a helper to parse the position struct data.
-    amount: new BigNumber(position.amount),
-    locked: new BigNumber(position.lockedUntil).gt(currentBlock.timestamp),
+): CapitalProviderStakingInfo {
+  const positions = stakingRewards.info.value.positions.map((position) => ({
+    amount: new BigNumber(position.storedPosition.amount),
+    locked: position.storedPosition.lockedUntil > currentBlock.timestamp,
     rewards: {
-      unvested: new BigNumber(position.rewards[0]),
-      endTime: parseInt(position.rewards[5], 10),
+      unvested: position.unvested,
+      endTime: position.storedPosition.rewards.endTime,
     },
   }))
 
-  const sharesLockedPositions = parsed.filter((val) => val.locked)
-  const sharesNotLockedPositions = parsed.filter((val) => !val.locked)
+  const sharesLockedPositions = positions.filter((val) => val.locked)
+  const sharesNotLockedPositions = positions.filter((val) => !val.locked)
 
-  const unvestedRewardsPositions = parsed.filter((val) => val.rewards.endTime > currentBlock.timestamp)
+  const unvestedRewardsPositions = positions.filter((val) => val.rewards.endTime > currentBlock.timestamp)
 
   const gfiPrice = new BigNumber(1) // TODO[PR]
 
   let rewards: CapitalProviderStakingRewardsInfo
-  if (unvestedRewardsPositions.length) {
-    const unvested = unvestedRewardsPositions.length
-      ? BigNumber.sum.apply(
-          null,
-          unvestedRewardsPositions.map((val) => val.rewards.unvested)
-        )
-      : new BigNumber(0)
+  const unvested = stakingRewards.info.value.unvested
+  if (unvested.gt(0)) {
     rewards = {
       hasUnvested: true,
       unvested,
@@ -262,7 +236,7 @@ async function fetchCapitalProviderData(
   const numSharesNotStaked = new BigNumber(
     await pool.fidu.methods.balanceOf(capitalProviderAddress).call(undefined, currentBlock.number)
   )
-  const stakingInfo = await fetchCapitalProviderStakingInfo(stakingRewards, capitalProviderAddress, currentBlock)
+  const stakingInfo = await getCapitalProviderStakingInfo(stakingRewards, currentBlock)
   const numSharesStakedLocked = stakingInfo.shares.locked
   const numSharesStakedNotLocked = stakingInfo.shares.notLocked
 
