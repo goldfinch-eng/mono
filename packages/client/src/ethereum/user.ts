@@ -15,7 +15,7 @@ declare let window: any
 
 export const UNLOCK_THRESHOLD = new BigNumber(10000)
 
-async function getUserData(
+export async function getUserData(
   address: string,
   goldfinchProtocol: GoldfinchProtocol,
   pool: SeniorPoolLoaded,
@@ -35,7 +35,7 @@ export interface UnlockedStatus {
   isUnlocked: boolean
 }
 
-interface User {
+export interface User {
   address: string
   web3Connected: boolean
   loaded: boolean
@@ -166,7 +166,7 @@ class Web3User implements User {
   }
 }
 
-class DefaultUser implements User {
+export class DefaultUser implements User {
   address: string
   web3Connected: boolean
   loaded: boolean
@@ -197,7 +197,7 @@ class DefaultUser implements User {
     this.goListed = false
   }
 
-  async initialize() {}
+  async initialize(currentBlock: BlockInfo) {}
   usdcIsUnlocked(type: string) {
     return false
   }
@@ -215,7 +215,7 @@ class DefaultUser implements User {
   }
 }
 
-function defaultUser(): User {
+export function defaultUser(): User {
   return new DefaultUser()
 }
 
@@ -250,6 +250,3 @@ async function getAndTransformCreditDeskEvents(creditDesk, address, currentBlock
   const creditDeskEvents = _.compact(_.concat(paymentEvents, drawdownEvents))
   return await mapEventsToTx(creditDeskEvents)
 }
-
-export {getUserData, defaultUser}
-export type {DefaultUser, User}

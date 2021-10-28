@@ -1,21 +1,34 @@
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {GFI as GFIContract} from "@goldfinch-eng/protocol/typechain/web3/GFI"
 import BigNumber from "bignumber.js"
+import {Loadable} from "../types/loadable"
+import {BlockInfo} from "../utils"
+
+type GFILoadedInfo = {
+  currentBlock: BlockInfo
+}
 
 class GFI {
   goldfinchProtocol: GoldfinchProtocol
   contract: GFIContract
   address: string
-  loaded: boolean
+  info: Loadable<GFILoadedInfo>
 
   constructor(goldfinchProtocol: GoldfinchProtocol) {
     this.goldfinchProtocol = goldfinchProtocol
     this.contract = goldfinchProtocol.getContract<GFIContract>("GFI")
     this.address = goldfinchProtocol.getAddress("GFI")
-    this.loaded = true
+    this.info = {loaded: false, value: undefined}
   }
 
-  async initialize() {}
+  async initialize(currentBlock: BlockInfo) {
+    this.info = {
+      loaded: true,
+      value: {
+        currentBlock,
+      },
+    }
+  }
 }
 
 const GFI_DECIMAL_PLACES = 18
