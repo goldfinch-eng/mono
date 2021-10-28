@@ -34,9 +34,7 @@ function SeniorPoolView(): JSX.Element {
 
   useEffect(() => {
     const capitalProviderAddress = user.loaded && user.address
-    if (pool) {
-      fetchData(capitalProviderAddress)
-    }
+    fetchData(capitalProviderAddress)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pool, user])
 
@@ -46,8 +44,8 @@ function SeniorPoolView(): JSX.Element {
 
       const {seniorPools, user} = data
       let seniorPool = seniorPools[0]!
-      setPoolData(parseSeniorPool(seniorPool))
-      setCapitalProvider(await parseUser(user, seniorPool, pool!.fidu))
+      setPoolData(await parseSeniorPool(seniorPool, pool))
+      setCapitalProvider(await parseUser(user, seniorPool, pool?.fidu))
     }
     if (data) {
       setGraphData()
@@ -56,7 +54,9 @@ function SeniorPoolView(): JSX.Element {
   }, [data])
 
   async function refreshAllData(capitalProviderAddress) {
-    assertNonNullable(pool)
+    if (!pool) {
+      return
+    }
 
     refreshPoolData(pool)
     refreshCapitalProviderData(pool, capitalProviderAddress)
