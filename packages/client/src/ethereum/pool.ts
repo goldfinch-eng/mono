@@ -1,8 +1,8 @@
 import BigNumber from "bignumber.js"
 import {fetchDataFromAttributes, getPoolEvents, INTEREST_DECIMALS, USDC_DECIMALS} from "./utils"
 import {Tickers, usdcFromAtomic} from "./erc20"
-import {FIDU_DECIMALS, sharesToBalance, balanceInDollars, fiduFromAtomic} from "./fidu"
-import {getBlockInfo, getCurrentBlock, roundDownPenny, BlockInfo, displayNumber} from "../utils"
+import {FIDU_DECIMALS, sharesToBalance, sharesBalanceInDollars, fiduFromAtomic} from "./fidu"
+import {getBlockInfo, getCurrentBlock, roundDownPenny, BlockInfo, displayNumber, assertBigNumber} from "../utils"
 import _ from "lodash"
 import {getBalanceAsOf, mapEventsToTx} from "./events"
 import {Contract, EventData} from "web3-eth-contract"
@@ -15,7 +15,7 @@ import {TranchedPool} from "@goldfinch-eng/protocol/typechain/web3/TranchedPool"
 import {buildCreditLine} from "./creditLine"
 import {getMetadataStore} from "./tranchedPool"
 import {BlockNumber} from "web3-core"
-import {gfiFromAtomic, GFI_DECIMALS} from "./gfi"
+import {gfiBalanceInDollars, gfiFromAtomic, gfiToBalance, GFI_DECIMALS} from "./gfi"
 import {assertWithLoadedInfo, Loadable, WithLoadedInfo} from "../types/loadable"
 
 class Pool {
@@ -96,6 +96,9 @@ class SeniorPool {
 }
 
 interface CapitalProvider {
+  currentBlock: BlockInfo
+  sharePrice: BigNumber
+  gfiPrice: BigNumber
   shares: {
     parts: {
       notStaked: BigNumber
@@ -137,6 +140,7 @@ type CapitalProviderStakingRewardsInfo =
     }
 
 type CapitalProviderStakingInfo = {
+  gfiPrice: BigNumber
   shares: {
     locked: BigNumber
     notLocked: BigNumber
@@ -149,6 +153,9 @@ async function fetchCapitalProviderStakingInfo(
   capitalProviderAddress: string,
   currentBlock: BlockInfo
 ): Promise<CapitalProviderStakingInfo> {
+  // TODO[PR] Refactor to use `stakingRewards.info` for computing. Don't need to make new queries here; we have
+  // everything we need through `stakingRewards`!
+
   const numPositions = parseInt(
     await stakingRewards.contract.methods.balanceOf(capitalProviderAddress).call(undefined, currentBlock.number),
     10
@@ -180,6 +187,8 @@ async function fetchCapitalProviderStakingInfo(
 
   const unvestedRewardsPositions = parsed.filter((val) => val.rewards.endTime > currentBlock.timestamp)
 
+  const gfiPrice = new BigNumber(1) // TODO[PR]
+
   let rewards: CapitalProviderStakingRewardsInfo
   if (unvestedRewardsPositions.length) {
     const unvested = unvestedRewardsPositions.length
@@ -188,13 +197,10 @@ async function fetchCapitalProviderStakingInfo(
           unvestedRewardsPositions.map((val) => val.rewards.unvested)
         )
       : new BigNumber(0)
-    const gfiPrice = new BigNumber(1) // TODO[PR]
     rewards = {
       hasUnvested: true,
       unvested,
-      unvestedInDollars: new BigNumber(
-        gfiFromAtomic(unvested.multipliedBy(new BigNumber(gfiPrice)).div(GFI_DECIMALS.toString()))
-      ),
+      unvestedInDollars: gfiBalanceInDollars(gfiToBalance(unvested, gfiPrice)),
       lastVestingEndTime: unvestedRewardsPositions.reduce(
         (acc, curr) => (curr.rewards.endTime > acc ? curr.rewards.endTime : acc),
         0
@@ -210,6 +216,7 @@ async function fetchCapitalProviderStakingInfo(
   }
 
   return {
+    gfiPrice,
     shares: {
       locked: sharesLockedPositions.length
         ? BigNumber.sum.apply(
@@ -240,13 +247,18 @@ async function fetchCapitalProviderData(
     }
   }
 
+  // TODO[PR] Re-use the current block value that was used in fetching `pool` and `stakingRewards` data,
+  // so that `sharePrice` is consistent with those values.
   const currentBlock = getBlockInfo(await getCurrentBlock())
   const attributes = [{method: "sharePrice"}]
   const {sharePrice} = await fetchDataFromAttributes(pool.contract, attributes, {
     bigNumber: true,
     blockNumber: currentBlock.number,
   })
+  assertBigNumber(sharePrice)
 
+  // TODO[PR] Could make this value a responsibility of `stakingRewards`, then `stakingRewards` would be sufficient
+  // for withdrawal form.
   const numSharesNotStaked = new BigNumber(
     await pool.fidu.methods.balanceOf(capitalProviderAddress).call(undefined, currentBlock.number)
   )
@@ -259,16 +271,16 @@ async function fetchCapitalProviderData(
   const numSharesTotal = numSharesNotStaked.plus(numSharesStakedLocked).plus(numSharesStakedNotLocked)
 
   const stakedSeniorPoolBalance = sharesToBalance(numSharesStaked, sharePrice)
-  const stakedSeniorPoolBalanceInDollars = balanceInDollars(stakedSeniorPoolBalance)
+  const stakedSeniorPoolBalanceInDollars = sharesBalanceInDollars(stakedSeniorPoolBalance)
 
   const totalSeniorPoolBalance = sharesToBalance(numSharesTotal, sharePrice)
-  const totalSeniorPoolBalanceInDollars = balanceInDollars(totalSeniorPoolBalance)
+  const totalSeniorPoolBalanceInDollars = sharesBalanceInDollars(totalSeniorPoolBalance)
 
   const availableToStake = sharesToBalance(numSharesNotStaked, sharePrice)
-  const availableToStakeInDollars = balanceInDollars(availableToStake)
+  const availableToStakeInDollars = sharesBalanceInDollars(availableToStake)
 
   const availableToWithdraw = sharesToBalance(numSharesWithdrawable, sharePrice)
-  const availableToWithdrawInDollars = balanceInDollars(availableToWithdraw)
+  const availableToWithdrawInDollars = sharesBalanceInDollars(availableToWithdraw)
 
   const address = capitalProviderAddress
   const allowance = new BigNumber(
@@ -289,6 +301,9 @@ async function fetchCapitalProviderData(
   return {
     loaded: true,
     value: {
+      currentBlock,
+      sharePrice,
+      gfiPrice: stakingInfo.gfiPrice,
       shares: {
         parts: {
           notStaked: numSharesNotStaked,
@@ -777,6 +792,7 @@ class StakingRewards {
     const unlockedPositions = value.positions.filter(
       (position) => position.storedPosition.lockedUntil <= value.currentBlock.timestamp
     )
+    // Any position that is not locked can be unstaked.
     return unlockedPositions
   }
 

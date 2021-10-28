@@ -21,6 +21,12 @@ import PoolStatus from "../poolStatus"
 import StakeFiduBanner from "../stakeFiduBanner"
 
 const emptyCapitalProvider: CapitalProvider = {
+  currentBlock: {
+    number: 0,
+    timestamp: 0,
+  },
+  sharePrice: new BigNumber(0),
+  gfiPrice: new BigNumber(0),
   shares: {
     parts: {
       notStaked: new BigNumber(0),

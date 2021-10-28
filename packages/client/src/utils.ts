@@ -10,12 +10,12 @@ export function croppedAddress(address) {
   return `${address.slice(0, 6)}...${address.slice(-4)}`
 }
 
-export function displayNumber(val, decimals): string {
-  if (val === "" || isNaN(val)) {
+export function displayNumber(val: string | BigNumber, decimals = 2): string {
+  if (!val || (BigNumber.isBigNumber(val) && val.isNaN())) {
     return ""
   }
 
-  const valFloat = parseFloat(val)
+  const valFloat = BigNumber.isBigNumber(val) ? parseFloat(val.toString(10)) : parseFloat(val)
   if (!decimals && Math.floor(valFloat) === valFloat) {
     decimals = 0
   } else if (!decimals) {
@@ -99,6 +99,12 @@ export function assertError(val: unknown): asserts val is Error {
 export function assertNonNullable<T>(val: T | null | undefined): asserts val is NonNullable<T> {
   if (val === null || val === undefined) {
     throw new AssertionError(`Value ${val} is not non-nullable.`)
+  }
+}
+
+export function assertBigNumber(val: unknown): asserts val is BigNumber {
+  if (!BigNumber.isBigNumber(val)) {
+    throw new AssertionError(`Value ${val} is not a BigNumber.`)
   }
 }
 

@@ -12,6 +12,7 @@ import {getMerkleDistributorInfo} from "./utils"
 import {assertWithLoadedInfo, Loadable, WithLoadedInfo} from "../types/loadable"
 
 type MerkleDistributorLoadedInfo = {
+  currentBlock: BlockInfo
   communityRewards: CommunityRewardsLoaded
   merkleDistributorInfo: MerkleDistributorInfo
   actionRequiredAirdrops: MerkleDistributorGrantInfo[]
@@ -102,6 +103,7 @@ export class MerkleDistributor {
     this.info = {
       loaded: true,
       value: {
+        currentBlock,
         merkleDistributorInfo,
         communityRewards,
         actionRequiredAirdrops,
@@ -219,6 +221,7 @@ function parseCommunityRewardsGrant(
 }
 
 type CommunityRewardsLoadedInfo = {
+  currentBlock: BlockInfo
   grants: CommunityRewardsGrant[]
 }
 
@@ -268,6 +271,7 @@ export class CommunityRewards {
     this.info = {
       loaded: true,
       value: {
+        currentBlock,
         grants,
       },
     }

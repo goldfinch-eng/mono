@@ -1,11 +1,12 @@
 import web3 from "../web3"
 import BigNumber from "bignumber.js"
 import * as ERC20Contract from "./ERC20.json"
-import {decimals, USDC_ADDRESSES, USDT_ADDRESSES, BUSD_ADDRESSES} from "./utils"
+import {decimals, USDC_ADDRESSES, USDT_ADDRESSES, BUSD_ADDRESSES, USDC_DECIMALS} from "./utils"
 import {memoize} from "lodash"
 import {Contract} from "web3-eth-contract"
 import {AbiItem} from "web3-utils/types"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
+import {FIDU_DECIMALS} from "./fidu"
 
 const Tickers = {
   USDC: "USDC",
@@ -134,16 +135,40 @@ let getERC20 = memoize(
   (...args) => JSON.stringify(args)
 )
 
-function usdcFromAtomic(amount) {
+function usdcFromAtomic(amount): string {
   return new BigNumber(String(amount)).div(decimals.toString()).toString(10)
 }
 
-function usdcToAtomic(amount) {
+function usdcToAtomic(amount): string {
   return new BigNumber(String(amount)).multipliedBy(decimals.toString()).toString(10)
+}
+
+function usdcToFidu(usdcAmount: BigNumber): BigNumber {
+  return usdcAmount.multipliedBy(FIDU_DECIMALS).dividedBy(decimals.toString())
+}
+
+function getNumSharesFromUsdc(usdcAmount: BigNumber, sharePrice: BigNumber): BigNumber {
+  return usdcToFidu(usdcAmount)
+    .multipliedBy(
+      // This might be better thought of as multiplying by the share-price mantissa,
+      // which happens to be the same as `FIDU_DECIMALS`.
+      FIDU_DECIMALS
+    )
+    .dividedBy(sharePrice)
 }
 
 function minimumNumber(...args) {
   return BigNumber.minimum(...args).toString(10)
 }
 
-export {getERC20, decimals, usdcFromAtomic, usdcToAtomic, minimumNumber, Tickers, ERC20}
+export {
+  getERC20,
+  decimals,
+  usdcFromAtomic,
+  usdcToAtomic,
+  usdcToFidu,
+  getNumSharesFromUsdc,
+  minimumNumber,
+  Tickers,
+  ERC20,
+}
