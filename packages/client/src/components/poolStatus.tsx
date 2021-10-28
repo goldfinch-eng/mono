@@ -1,18 +1,18 @@
+import {BigNumber} from "bignumber.js"
 import {useContext} from "react"
 import {AppContext} from "../App"
-import InfoSection from "./infoSection"
-import RecentRepayments from "./recentRepayments"
 import {usdcFromAtomic} from "../ethereum/erc20"
+import {SeniorPoolLoaded} from "../ethereum/pool"
 import {displayDollars, displayPercent} from "../utils"
 import {iconOutArrow} from "./icons"
-import {PoolData} from "../ethereum/pool"
-import {BigNumber} from "bignumber.js"
+import InfoSection from "./infoSection"
+import RecentRepayments from "./recentRepayments"
 
 interface PoolStatusProps {
-  poolData?: PoolData
+  pool: SeniorPoolLoaded | undefined
 }
 
-function PoolStatus({poolData}: PoolStatusProps) {
+function PoolStatus({pool}: PoolStatusProps) {
   const {goldfinchConfig} = useContext(AppContext)
 
   function deriveRows() {
@@ -21,7 +21,8 @@ function PoolStatus({poolData}: PoolStatusProps) {
     let totalLoansOutstanding: string | undefined
     let capacityRemaining: BigNumber | undefined
     let maxPoolCapacity = goldfinchConfig.totalFundsLimit
-    if (poolData?.loaded) {
+    if (pool) {
+      const poolData = pool.info.value.poolData
       defaultRate = poolData.defaultRate
       poolBalance = usdcFromAtomic(poolData.totalPoolAssets)
       totalLoansOutstanding = usdcFromAtomic(poolData.totalLoansOutstanding)
@@ -38,7 +39,7 @@ function PoolStatus({poolData}: PoolStatusProps) {
   }
 
   return (
-    <div className={`pool-status background-container ${poolData?.loaded ? "" : "placeholder"}`}>
+    <div className={`pool-status background-container ${pool ? "" : "placeholder"}`}>
       <h2>Pool Status</h2>
       <InfoSection rows={deriveRows()} />
       <RecentRepayments />
@@ -46,7 +47,7 @@ function PoolStatus({poolData}: PoolStatusProps) {
         <a href={"https://dune.xyz/goldfinch/goldfinch"} target="_blank" rel="noopener noreferrer">
           Dashboard<span className="outbound-link">{iconOutArrow}</span>
         </a>
-        <a href={`https://etherscan.io/address/${poolData?.pool.address}`} target="_blank" rel="noopener noreferrer">
+        <a href={pool ? `https://etherscan.io/address/${pool.address}` : ""} target="_blank" rel="noopener noreferrer">
           Pool<span className="outbound-link">{iconOutArrow}</span>
         </a>
       </div>

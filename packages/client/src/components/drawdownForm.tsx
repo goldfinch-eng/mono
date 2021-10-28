@@ -1,22 +1,20 @@
-import React, {useContext, useState, useEffect} from "react"
-import {usdcFromAtomic, minimumNumber, usdcToAtomic} from "../ethereum/erc20"
+import React, {useContext, useEffect, useState} from "react"
 import {AppContext} from "../App"
-import TransactionForm from "./transactionForm"
-import {fetchPoolData} from "../ethereum/pool"
+import {minimumNumber, usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
+import useCurrencyUnlocked from "../hooks/useCurrencyUnlocked"
+import useDebounce from "../hooks/useDebounce"
+import {formatQuote, useOneInchQuote} from "../hooks/useOneInchQuote"
+import useSendFromUser from "../hooks/useSendFromUser"
 import {displayDollars, roundDownPenny} from "../utils"
 import AddressInput from "./addressInput"
-import TransactionInput from "./transactionInput"
-import LoadingButton from "./loadingButton"
-import useSendFromUser from "../hooks/useSendFromUser"
-import {useOneInchQuote, formatQuote} from "../hooks/useOneInchQuote"
-import useDebounce from "../hooks/useDebounce"
-import UnlockERC20Form from "./unlockERC20Form"
-import useCurrencyUnlocked from "../hooks/useCurrencyUnlocked"
 import CurrencyDropdown from "./currencyDropdown"
+import LoadingButton from "./loadingButton"
+import TransactionForm from "./transactionForm"
+import TransactionInput from "./transactionInput"
+import UnlockERC20Form from "./unlockERC20Form"
 
 function DrawdownForm(props) {
   const {pool, usdc, goldfinchConfig, goldfinchProtocol} = useContext(AppContext)
-  const [poolData, setPoolData] = useState({})
   const sendFromUser = useSendFromUser()
   const [erc20, setErc20] = useState(usdc)
   // @ts-expect-error ts-migrate(2345) FIXME: Argument of type '{ owner: any; spender: any; }' i... Remove this comment to see the full error message
@@ -35,10 +33,7 @@ function DrawdownForm(props) {
   const [isOptionsOpen, setOptionsOpen] = useState(false)
 
   useEffect(() => {
-    ;(async () => {
-      // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'SeniorPool | undefined' is not a... Remove this comment to see the full error message
-      setPoolData(await fetchPoolData(pool, usdc.contract))
-    })()
+    void pool?.initialize()
   }, [pool, usdc])
 
   function isSwapping() {
@@ -71,7 +66,7 @@ function DrawdownForm(props) {
 
   const maxAmount = minimumNumber(
     props.creditLine.availableCreditInDollars,
-    usdcFromAtomic((poolData as any).balance),
+    usdcFromAtomic(pool?.info.value.poolData.balance),
     usdcFromAtomic(goldfinchConfig.transactionLimit)
   )
 

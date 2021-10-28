@@ -6,7 +6,13 @@ import {AppContext} from "../App"
 import {useEarn} from "../contexts/EarnContext"
 import {usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
 import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
-import {CapitalProvider, fetchCapitalProviderData, PoolData, SeniorPool, StakingRewardsLoaded} from "../ethereum/pool"
+import {
+  CapitalProvider,
+  fetchCapitalProviderData,
+  PoolData,
+  SeniorPoolLoaded,
+  StakingRewardsLoaded,
+} from "../ethereum/pool"
 import {PoolBacker, TranchedPool} from "../ethereum/tranchedPool"
 import {User} from "../ethereum/user"
 import {useStakingRewards} from "../hooks/useStakingRewards"
@@ -63,7 +69,7 @@ function PortfolioOverview({
   capitalProvider: Loaded<CapitalProvider>
   poolBackers: Loaded<PoolBacker[]>
 }) {
-  const loaded = !!poolData?.loaded && capitalProvider.loaded && poolBackers.loaded
+  const loaded = poolData && capitalProvider.loaded && poolBackers.loaded
   if (!loaded) {
     return <></>
   }
@@ -300,7 +306,7 @@ function Earn() {
   }, [pool, stakingRewards, usdc, user])
 
   async function refreshCapitalProviderData(
-    pool: SeniorPool,
+    pool: SeniorPoolLoaded,
     stakingRewards: StakingRewardsLoaded | undefined,
     address: string | undefined
   ) {
@@ -319,7 +325,7 @@ function Earn() {
   const capitalProviderData = earnStore.capitalProvider
   const backersData = earnStore.backers
 
-  const isLoading = !capitalProviderData.loaded || !backersData.loaded || user.noWeb3
+  const isLoading = !pool || !capitalProviderData.loaded || !backersData.loaded || user.noWeb3
   const earnMessage = isLoading ? "Loading..." : "Pools"
 
   return (
@@ -332,7 +338,11 @@ function Earn() {
       ) : (
         <>
           <ConnectionNotice requireUnlock={false} />
-          <PortfolioOverview poolData={pool?.gf} capitalProvider={capitalProviderData} poolBackers={backersData} />
+          <PortfolioOverview
+            poolData={pool.info.value.poolData}
+            capitalProvider={capitalProviderData}
+            poolBackers={backersData}
+          />
         </>
       )}
       <div className="pools">
@@ -341,11 +351,11 @@ function Earn() {
             <SeniorPoolCardSkeleton />
           ) : (
             <SeniorPoolCard
-              balance={displayDollars(usdcFromAtomic(pool?.gf.totalPoolAssets))}
+              balance={displayDollars(usdcFromAtomic(pool.info.value.poolData.totalPoolAssets))}
               userBalance={displayDollars(capitalProviderData.value.availableToWithdrawInDollars)}
-              apy={displayPercent(pool?.gf.estimatedApy)}
+              apy={displayPercent(pool.info.value.poolData.estimatedApy)}
               limit={displayDollars(usdcFromAtomic(goldfinchConfig?.totalFundsLimit), 0)}
-              remainingCapacity={pool?.gf.remainingCapacity(goldfinchConfig?.totalFundsLimit)}
+              remainingCapacity={pool.info.value.poolData.remainingCapacity(goldfinchConfig?.totalFundsLimit)}
             />
           )}
         </PoolList>

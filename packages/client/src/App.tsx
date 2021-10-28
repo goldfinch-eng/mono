@@ -17,7 +17,7 @@ import {refreshGoldfinchConfigData} from "./ethereum/goldfinchConfig"
 import {getUserData, defaultUser, User} from "./ethereum/user"
 import {mapNetworkToID, SUPPORTED_NETWORKS} from "./ethereum/utils"
 import {NetworkMonitor} from "./ethereum/networkMonitor"
-import {SeniorPool} from "./ethereum/pool"
+import {SeniorPool, SeniorPoolLoaded} from "./ethereum/pool"
 import {GoldfinchProtocol} from "./ethereum/GoldfinchProtocol"
 import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/web3/GoldfinchConfig"
 import SeniorPoolView from "./components/pools/seniorPoolView"
@@ -31,6 +31,7 @@ import {useSessionLocalStorage} from "./hooks/useSignIn"
 import {EarnProvider} from "./contexts/EarnContext"
 import {BorrowProvider} from "./contexts/BorrowContext"
 import useCurrentBlock from "./hooks/useCurrentBlock"
+import {assertWithLoadedInfo} from "./types/loadable"
 
 export interface NetworkConfig {
   name?: string
@@ -49,7 +50,7 @@ interface GeolocationData {
 }
 
 export interface GlobalState {
-  pool?: SeniorPool
+  pool?: SeniorPoolLoaded
   creditDesk?: any
   user: User
   usdc?: ERC20
@@ -69,7 +70,7 @@ declare let window: any
 const AppContext = React.createContext<GlobalState>({user: defaultUser()})
 
 function App() {
-  const [pool, setPool] = useState<SeniorPool>()
+  const [pool, setPool] = useState<SeniorPoolLoaded>()
   const [creditDesk, setCreditDesk] = useState<any>({})
   const [usdc, setUSDC] = useState<ERC20>()
   const [user, setUser] = useState<User>(defaultUser())
@@ -137,6 +138,7 @@ function App() {
 
       const pool = new SeniorPool(protocol)
       await pool.initialize()
+      assertWithLoadedInfo(pool)
 
       const goldfinchConfigContract = protocol.getContract<GoldfinchConfig>("GoldfinchConfig")
       const creditDeskContract = protocol.getContract("CreditDesk")
@@ -168,7 +170,7 @@ function App() {
     if (userAddress) {
       data.address = userAddress
     }
-    if (userAddress && goldfinchProtocol && creditDesk.loaded && pool?.loaded) {
+    if (userAddress && goldfinchProtocol && creditDesk.loaded && pool?.info.loaded) {
       data = await getUserData(userAddress, goldfinchProtocol, pool, creditDesk, network.name)
     }
 

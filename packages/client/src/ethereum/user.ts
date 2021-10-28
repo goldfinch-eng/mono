@@ -1,19 +1,25 @@
-import BigNumber from "bignumber.js"
-import {ERC20, Tickers, usdcFromAtomic} from "./erc20"
-import _ from "lodash"
-import {getFromBlock, MAINNET} from "./utils"
-import {getBalanceAsOf, mapEventsToTx} from "./events"
-import {BorrowerInterface, getBorrowerContract} from "./borrower"
-import {SeniorPool} from "./pool"
-import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/web3/GoldfinchConfig"
+import BigNumber from "bignumber.js"
+import _ from "lodash"
 import {EventData} from "web3-eth-contract"
+import {BorrowerInterface, getBorrowerContract} from "./borrower"
+import {ERC20, Tickers, usdcFromAtomic} from "./erc20"
+import {getBalanceAsOf, mapEventsToTx} from "./events"
+import {GoldfinchProtocol} from "./GoldfinchProtocol"
+import {SeniorPoolLoaded} from "./pool"
+import {getFromBlock, MAINNET} from "./utils"
 
 declare let window: any
 
 export const UNLOCK_THRESHOLD = new BigNumber(10000)
 
-async function getUserData(address, goldfinchProtocol, pool: SeniorPool, creditDesk, networkId): Promise<User> {
+async function getUserData(
+  address: string,
+  goldfinchProtocol,
+  pool: SeniorPoolLoaded,
+  creditDesk,
+  networkId
+): Promise<User> {
   const borrower = await getBorrowerContract(address, goldfinchProtocol)
 
   const user = new Web3User(address, pool, creditDesk, goldfinchProtocol, networkId, borrower)
@@ -64,13 +70,13 @@ class Web3User implements User {
   goldfinchProtocol: GoldfinchProtocol
 
   private borrower?: BorrowerInterface
-  private pool: SeniorPool
+  private pool: SeniorPoolLoaded
   private usdc: ERC20
   private creditDesk: any
 
   constructor(
     address: string,
-    pool: SeniorPool,
+    pool: SeniorPoolLoaded,
     creditDesk: any,
     goldfinchProtocol: GoldfinchProtocol,
     networkId: string,
@@ -219,7 +225,7 @@ async function getAndTransformERC20Events(erc20: ERC20, spender: string, owner: 
   return await mapEventsToTx(approvalEvents)
 }
 
-async function getPoolEvents(pool: SeniorPool, address: string) {
+async function getPoolEvents(pool: SeniorPoolLoaded, address: string) {
   return await pool.getPoolEvents(address)
 }
 

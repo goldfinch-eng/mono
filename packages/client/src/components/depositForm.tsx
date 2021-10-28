@@ -80,7 +80,7 @@ function DepositForm(props: DepositFormProps) {
           You don't have any USDC to supply. You'll need to first send USDC to your address to supply capital.
         </p>
       )
-    } else if (pool.gf?.totalPoolAssets.gte(goldfinchConfig.totalFundsLimit)) {
+    } else if (pool.info.value.poolData.totalPoolAssets.gte(goldfinchConfig.totalFundsLimit)) {
       disabled = true
       warningMessage = (
         <p className="form-message">
@@ -96,7 +96,7 @@ function DepositForm(props: DepositFormProps) {
     }
     submitDisabled = submitDisabled || disabled
 
-    const remainingPoolCapacity = pool.gf.remainingCapacity(goldfinchConfig.totalFundsLimit)
+    const remainingPoolCapacity = pool.info.value.poolData.remainingCapacity(goldfinchConfig.totalFundsLimit)
     const maxTxAmountInDollars = usdcFromAtomic(
       BigNumber.min(remainingPoolCapacity, goldfinchConfig.transactionLimit, user.usdcBalance)
     )

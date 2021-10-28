@@ -11,8 +11,8 @@ function RecentRepayments() {
   let transactionRows
 
   useEffect(() => {
-    if (pool && pool.gf && goldfinchProtocol) {
-      pool.gf.getRepaymentEvents(goldfinchProtocol).then((repayments) => {
+    if (pool && goldfinchProtocol) {
+      pool.info.value.poolData.getRepaymentEvents(pool, goldfinchProtocol).then((repayments) => {
         // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'any[]' is not assignable to para... Remove this comment to see the full error message
         setRepayments(_.slice(repayments, 0, 3))
       })
@@ -25,11 +25,11 @@ function RecentRepayments() {
     let yourPortion
     let yourPortionClass
 
-    if (user.loaded && pool && pool.gf.loaded) {
+    if (user.loaded && pool) {
       let yourPortionValue = usdcFromAtomic(
         user
           .poolBalanceAsOf(tx.blockNumber)
-          .dividedBy(pool.gf.assetsAsOf(tx.blockNumber))
+          .dividedBy(pool.info.value.poolData.assetsAsOf(tx.blockNumber))
           .multipliedBy(tx.interestAmountBN)
       )
 

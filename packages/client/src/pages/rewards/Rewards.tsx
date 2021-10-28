@@ -8,7 +8,8 @@ import {WIDTH_TYPES} from "../../components/styleConstants"
 import {CommunityRewardsGrant, MerkleDistributorLoaded} from "../../ethereum/communityRewards"
 import {gfiFromAtomic} from "../../ethereum/gfi"
 import {StakingRewardsLoaded, StakingRewardsPosition} from "../../ethereum/pool"
-import {useGFIBalance, useRewards} from "../../hooks/useStakingRewards"
+import {useGFIBalance} from "../../hooks/useGFIBalance"
+import {useRewards} from "../../hooks/useRewards"
 import {displayDollars, displayNumber} from "../../utils"
 
 interface RewardsSummaryProps {

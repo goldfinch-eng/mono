@@ -1,7 +1,7 @@
 import web3 from "../web3"
 import BigNumber from "bignumber.js"
 import * as ERC20Contract from "./ERC20.json"
-import {decimals, USDC_ADDRESSES, USDT_ADDRESSES, BUSD_ADDRESSES, USDC_DECIMALS} from "./utils"
+import {decimals, USDC_ADDRESSES, USDT_ADDRESSES, BUSD_ADDRESSES} from "./utils"
 import {memoize} from "lodash"
 import {Contract} from "web3-eth-contract"
 import {AbiItem} from "web3-utils/types"

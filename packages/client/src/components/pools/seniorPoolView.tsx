@@ -6,13 +6,13 @@ import {
   CapitalProvider,
   fetchCapitalProviderData,
   PoolData,
-  SeniorPool,
+  SeniorPoolLoaded,
   StakingRewardsLoaded,
 } from "../../ethereum/pool"
 import {useStaleWhileRevalidating} from "../../hooks/useAsync"
 import {eligibleForSeniorPool, useKYC} from "../../hooks/useKYC"
 import {useStakingRewards} from "../../hooks/useStakingRewards"
-import {Loadable} from "../../types/loadable"
+import {assertWithLoadedInfo, Loadable} from "../../types/loadable"
 import {assertNonNullable, displayDollars} from "../../utils"
 import ConnectionNotice from "../connectionNotice"
 import EarnActionsContainer from "../earnActionsContainer"
@@ -95,7 +95,7 @@ function SeniorPoolView(): JSX.Element {
   }
 
   async function refreshCapitalProviderData(
-    pool: SeniorPool,
+    pool: SeniorPoolLoaded,
     stakingRewards: StakingRewardsLoaded | undefined,
     address: string | undefined
   ) {
@@ -103,9 +103,10 @@ function SeniorPoolView(): JSX.Element {
     setCapitalProvider(capitalProvider)
   }
 
-  async function refreshPoolData(pool: SeniorPool) {
+  async function refreshPoolData(pool: SeniorPoolLoaded) {
     await pool.initialize()
-    setPoolData(pool.gf)
+    assertWithLoadedInfo(pool)
+    setPoolData(pool.info.value.poolData)
   }
 
   let earnMessage = "Loading..."
@@ -115,7 +116,7 @@ function SeniorPoolView(): JSX.Element {
 
   let maxCapacityNotice = <></>
   let maxCapacity = goldfinchConfig.totalFundsLimit
-  if (poolData?.loaded && goldfinchConfig && poolData.remainingCapacity(maxCapacity).isEqualTo("0")) {
+  if (pool && goldfinchConfig && pool.info.value.poolData.remainingCapacity(maxCapacity).isEqualTo("0")) {
     maxCapacityNotice = (
       <div className="info-banner background-container">
         <div className="message">
@@ -134,7 +135,7 @@ function SeniorPoolView(): JSX.Element {
       <ConnectionNotice
         requireUnlock={false}
         requireKYC={{kyc: kycResult, condition: (kyc) => eligibleForSeniorPool(kyc, user)}}
-        isPaused={!!poolData?.pool?.isPaused}
+        isPaused={pool?.info.value.isPaused}
       />
       {maxCapacityNotice}
       <InvestorNotice />
@@ -150,7 +151,7 @@ function SeniorPoolView(): JSX.Element {
         actionComplete={actionComplete}
         kyc={kyc}
       />
-      <PoolStatus poolData={poolData} />
+      <PoolStatus pool={pool} />
     </div>
   )
 }

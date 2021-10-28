@@ -5,7 +5,7 @@ import {displayDollars, displayPercent} from "../utils"
 import AnnualGrowthTooltipContent from "./AnnualGrowthTooltipContent"
 
 interface DepositStatusProps {
-  poolData?: PoolData
+  poolData: PoolData | undefined
   capitalProvider: CapitalProvider
 }
 
@@ -17,7 +17,7 @@ function DepositStatus(props: DepositStatusProps) {
     estimatedApy: BigNumber | undefined,
     estimatedApyFromSupplying: BigNumber | undefined,
     estimatedApyFromGfi: BigNumber | undefined
-  if (props.poolData?.loaded) {
+  if (props.poolData) {
     const globalEstimatedApyFromSupplying = props.poolData.estimatedApy
     estimatedApyFromSupplying = globalEstimatedApyFromSupplying
 
