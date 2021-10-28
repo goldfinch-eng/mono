@@ -1,18 +1,18 @@
-import {usdcFromAtomic, minimumNumber, usdcToAtomic, getNumSharesFromUsdc} from "../ethereum/erc20"
-import {assertNonNullable, displayDollars, displayNumber, roundDownPenny} from "../utils"
+import BigNumber from "bignumber.js"
+import {useState} from "react"
 import {AppContext} from "../App"
+import {getNumSharesFromUsdc, minimumNumber, usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
+import {fiduFromAtomic} from "../ethereum/fidu"
+import {gfiInDollars, gfiFromAtomic, gfiToDollarsAtomic} from "../ethereum/gfi"
+import {CapitalProvider, PoolData, StakingRewardsLoaded, StakingRewardsPosition} from "../ethereum/pool"
+import useDebounce from "../hooks/useDebounce"
+import useNonNullContext from "../hooks/useNonNullContext"
+import useSendFromUser from "../hooks/useSendFromUser"
+import {useStakingRewards} from "../hooks/useStakingRewards"
+import {assertNonNullable, displayDollars, displayNumber, roundDownPenny} from "../utils"
+import LoadingButton from "./loadingButton"
 import TransactionForm from "./transactionForm"
 import TransactionInput from "./transactionInput"
-import LoadingButton from "./loadingButton"
-import useSendFromUser from "../hooks/useSendFromUser"
-import useNonNullContext from "../hooks/useNonNullContext"
-import {CapitalProvider, PoolData, StakingRewardsLoaded, StakingRewardsPosition} from "../ethereum/pool"
-import {gfiBalanceInDollars, gfiFromAtomic, gfiToBalance, GFI_DECIMALS} from "../ethereum/gfi"
-import BigNumber from "bignumber.js"
-import {useStakingRewards} from "../hooks/useStakingRewards"
-import {fiduFromAtomic, fiduToAtomic} from "../ethereum/fidu"
-import {useState} from "react"
-import useDebounce from "../hooks/useDebounce"
 
 type UnstakeTokensAccumulator = {
   fiduSum: BigNumber
@@ -256,7 +256,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
                 {"forfeit "}
                 {displayNumber(gfiFromAtomic(forfeitedGfi), 2)}
                 {" GFI ("}
-                {displayDollars(gfiBalanceInDollars(gfiToBalance(forfeitedGfi, props.capitalProvider.gfiPrice)), 2)}
+                {displayDollars(gfiInDollars(gfiToDollarsAtomic(forfeitedGfi, props.capitalProvider.gfiPrice)), 2)}
                 {")"}
               </span>
               {" that is still unvested."}

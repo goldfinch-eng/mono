@@ -1,7 +1,7 @@
 import BigNumber from "bignumber.js"
 import {fetchDataFromAttributes, getPoolEvents, INTEREST_DECIMALS, USDC_DECIMALS} from "./utils"
 import {Tickers, usdcFromAtomic} from "./erc20"
-import {FIDU_DECIMALS, sharesToBalance, sharesBalanceInDollars, fiduFromAtomic} from "./fidu"
+import {FIDU_DECIMALS, fiduToDollarsAtomic, fiduInDollars, fiduFromAtomic} from "./fidu"
 import {getBlockInfo, getCurrentBlock, roundDownPenny, BlockInfo, displayNumber, assertBigNumber} from "../utils"
 import _ from "lodash"
 import {getBalanceAsOf, mapEventsToTx} from "./events"
@@ -15,7 +15,7 @@ import {TranchedPool} from "@goldfinch-eng/protocol/typechain/web3/TranchedPool"
 import {buildCreditLine} from "./creditLine"
 import {getMetadataStore} from "./tranchedPool"
 import {BlockNumber} from "web3-core"
-import {gfiBalanceInDollars, gfiFromAtomic, gfiToBalance, GFI_DECIMALS} from "./gfi"
+import {gfiInDollars, gfiFromAtomic, gfiToDollarsAtomic, GFI_DECIMALS} from "./gfi"
 import {assertWithLoadedInfo, Loadable, WithLoadedInfo} from "../types/loadable"
 
 class Pool {
@@ -200,7 +200,7 @@ async function fetchCapitalProviderStakingInfo(
     rewards = {
       hasUnvested: true,
       unvested,
-      unvestedInDollars: gfiBalanceInDollars(gfiToBalance(unvested, gfiPrice)),
+      unvestedInDollars: gfiInDollars(gfiToDollarsAtomic(unvested, gfiPrice)),
       lastVestingEndTime: unvestedRewardsPositions.reduce(
         (acc, curr) => (curr.rewards.endTime > acc ? curr.rewards.endTime : acc),
         0
@@ -270,17 +270,17 @@ async function fetchCapitalProviderData(
   const numSharesWithdrawable = numSharesNotStaked.plus(numSharesStakedNotLocked)
   const numSharesTotal = numSharesNotStaked.plus(numSharesStakedLocked).plus(numSharesStakedNotLocked)
 
-  const stakedSeniorPoolBalance = sharesToBalance(numSharesStaked, sharePrice)
-  const stakedSeniorPoolBalanceInDollars = sharesBalanceInDollars(stakedSeniorPoolBalance)
+  const stakedSeniorPoolBalance = fiduToDollarsAtomic(numSharesStaked, sharePrice)
+  const stakedSeniorPoolBalanceInDollars = fiduInDollars(stakedSeniorPoolBalance)
 
-  const totalSeniorPoolBalance = sharesToBalance(numSharesTotal, sharePrice)
-  const totalSeniorPoolBalanceInDollars = sharesBalanceInDollars(totalSeniorPoolBalance)
+  const totalSeniorPoolBalance = fiduToDollarsAtomic(numSharesTotal, sharePrice)
+  const totalSeniorPoolBalanceInDollars = fiduInDollars(totalSeniorPoolBalance)
 
-  const availableToStake = sharesToBalance(numSharesNotStaked, sharePrice)
-  const availableToStakeInDollars = sharesBalanceInDollars(availableToStake)
+  const availableToStake = fiduToDollarsAtomic(numSharesNotStaked, sharePrice)
+  const availableToStakeInDollars = fiduInDollars(availableToStake)
 
-  const availableToWithdraw = sharesToBalance(numSharesWithdrawable, sharePrice)
-  const availableToWithdrawInDollars = sharesBalanceInDollars(availableToWithdraw)
+  const availableToWithdraw = fiduToDollarsAtomic(numSharesWithdrawable, sharePrice)
+  const availableToWithdrawInDollars = fiduInDollars(availableToWithdraw)
 
   const address = capitalProviderAddress
   const allowance = new BigNumber(

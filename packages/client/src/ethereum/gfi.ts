@@ -29,15 +29,15 @@ function gfiToAtomic(amount: BigNumber): string {
   return amount.multipliedBy(GFI_DECIMALS).toString(10)
 }
 
-export function gfiToBalance(gfi: BigNumber, gfiPrice: BigNumber): BigNumber {
+export function gfiToDollarsAtomic(gfi: BigNumber, gfiPrice: BigNumber): BigNumber {
   return gfi.multipliedBy(gfiPrice).div(
     // This might be better thought of as the GFI-price mantissa, which happens to
     // be the same as `GFI_DECIMALS`.
     GFI_DECIMALS
   )
 }
-export function gfiBalanceInDollars(balance: BigNumber): BigNumber {
-  return new BigNumber(gfiFromAtomic(balance))
+export function gfiInDollars(gfiInDollarsAtomic: BigNumber): BigNumber {
+  return new BigNumber(gfiFromAtomic(gfiInDollarsAtomic))
 }
 
 export {GFI, GFI_DECIMAL_PLACES, GFI_DECIMALS, gfiFromAtomic, gfiToAtomic}
