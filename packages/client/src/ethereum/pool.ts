@@ -243,11 +243,11 @@ export async function getWeightedAverageSharePrice(capitalProvider, pool?: Senio
   let sharesLeftToAccountFor = capitalProvider.numShares
   let totalAmountPaid = zero
   preparedEvents.forEach((event) => {
-    let amount, shares
     if (sharesLeftToAccountFor.lte(zero)) {
       return
     }
 
+    let amount, shares
     if (pool) {
       amount = event.returnValues.amount
       shares = event.returnValues.shares
@@ -275,7 +275,7 @@ export async function getWeightedAverageSharePrice(capitalProvider, pool?: Senio
   }
 }
 
-async function getCumulativeWritedowns(pool: SeniorPool) {
+export async function getCumulativeWritedowns(pool: SeniorPool) {
   // In theory, we'd also want to include `PrincipalWrittendown` events emitted by `pool.v1Pool` here.
   // But in practice, we don't need to, because only one such was emitted, due to a bug which was
   // then fixed. So we include only `PrincipalWrittenDown` events emitted by `pool`.
@@ -284,7 +284,7 @@ async function getCumulativeWritedowns(pool: SeniorPool) {
   return new BigNumber(_.sumBy(events, (event) => parseInt(event.returnValues.amount, 10))).negated()
 }
 
-async function getCumulativeDrawdowns(pool: SeniorPool) {
+export async function getCumulativeDrawdowns(pool: SeniorPool) {
   const protocol = pool.goldfinchProtocol
   const tranchedPoolAddresses = await getTranchedPoolAddressesForSeniorPoolCalc(pool)
   const tranchedPools = tranchedPoolAddresses.map((address) =>
@@ -342,12 +342,12 @@ function assetsAsOf(this: PoolData, blockNumExclusive: number): BigNumber {
  * @param maxPoolCapacity - Maximum capacity of the pool
  * @returns Remaining capacity of pool in atomic units
  */
-function remainingCapacity(this: PoolData, maxPoolCapacity: BigNumber): BigNumber {
+export function remainingCapacity(this: any, maxPoolCapacity: BigNumber): BigNumber {
   let cappedBalance = BigNumber.min(this.totalPoolAssets, maxPoolCapacity)
   return new BigNumber(maxPoolCapacity).minus(cappedBalance)
 }
 
-async function getEstimatedTotalInterest(pool: SeniorPool): Promise<BigNumber> {
+export async function getEstimatedTotalInterest(pool: SeniorPool): Promise<BigNumber> {
   const protocol = pool.goldfinchProtocol
   const tranchedPoolAddresses = await getTranchedPoolAddressesForSeniorPoolCalc(pool)
   const tranchedPools = tranchedPoolAddresses.map((address) =>

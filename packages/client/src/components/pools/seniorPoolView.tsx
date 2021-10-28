@@ -10,11 +10,11 @@ import {usdcFromAtomic} from "../../ethereum/erc20"
 import {useStaleWhileRevalidating} from "../../hooks/useAsync"
 import {eligibleForSeniorPool, useKYC} from "../../hooks/useKYC"
 import {useLazyQuery} from "@apollo/client"
+import BigNumber from "bignumber.js"
 import {GET_SENIOR_POOL_AND_PROVIDER_DATA} from "../../graphql/queries"
 import {getSeniorPoolAndProviders, getSeniorPoolAndProvidersVariables} from "../../graphql/types"
-import BigNumber from "bignumber.js"
 import {GraphSeniorPoolData, GraphUserData, isGraphSeniorPoolData, isGraphUserData} from "../../graphql/utils"
-import {parseSeniorPool, parseUser} from "../../graphql/helpers"
+import {parseSeniorPool, parseUser} from "../../graphql/parsers"
 
 function SeniorPoolView(): JSX.Element {
   const {pool, user, goldfinchConfig} = useContext(AppContext)
@@ -22,7 +22,7 @@ function SeniorPoolView(): JSX.Element {
   const [poolData, setPoolData] = useState<PoolData | GraphSeniorPoolData>()
   const kycResult = useKYC()
   const kyc = useStaleWhileRevalidating(kycResult)
-  const [fetchSeniorPoolAndProviderData, {data}] = useLazyQuery<
+  const [fetchSeniorPoolAndProviderData, {data, refetch}] = useLazyQuery<
     getSeniorPoolAndProviders,
     getSeniorPoolAndProvidersVariables
   >(GET_SENIOR_POOL_AND_PROVIDER_DATA)
@@ -32,8 +32,31 @@ function SeniorPoolView(): JSX.Element {
   const loadedCapitalProvider = isGraphUserData(capitalProvider) || capitalProvider?.loaded
   const loadedPoolData = isGraphSeniorPoolData(poolData) || poolData?.loaded
 
+  useEffect(() => {
+    const capitalProviderAddress = user.loaded && user.address
+    fetchData(capitalProviderAddress)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pool, user])
+
+  useEffect(() => {
+    async function setGraphData() {
+      assertNonNullable(data)
+
+      const {seniorPools, user} = data
+      let seniorPool = seniorPools[0]!
+      setPoolData(await parseSeniorPool(seniorPool, pool))
+      setCapitalProvider(await parseUser(user, seniorPool, pool?.fidu))
+    }
+    if (data) {
+      setGraphData()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data])
+
   async function refreshAllData(capitalProviderAddress) {
-    assertNonNullable(pool)
+    if (!pool) {
+      return
+    }
 
     refreshPoolData(pool)
     refreshCapitalProviderData(pool, capitalProviderAddress)
@@ -41,36 +64,20 @@ function SeniorPoolView(): JSX.Element {
 
   async function fetchData(capitalProviderAddress) {
     if (enableSeniorPoolV2) {
-      fetchSeniorPoolAndProviderData({variables: {userID: capitalProviderAddress || ""}})
+      fetchSeniorPoolAndProviderData({
+        variables: {userID: capitalProviderAddress ? capitalProviderAddress.toLowerCase() : ""},
+      })
     } else {
       refreshAllData(capitalProviderAddress)
     }
   }
 
-  useEffect(() => {
-    const capitalProviderAddress = user.loaded && user.address
-    if (pool) {
-      fetchData(capitalProviderAddress)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pool, user])
-
-  useEffect(() => {
-    async function setGraphData() {
-      const {seniorPools, user} = data!
-      let seniorPool = seniorPools[0]!
-      setPoolData(parseSeniorPool(seniorPool))
-      setCapitalProvider(await parseUser(user, seniorPool, pool!.fidu))
-    }
-
-    if (data) {
-      setGraphData()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data])
-
   async function actionComplete() {
-    fetchData(capitalProvider!.address)
+    if (refetch) {
+      refetch({userID: capitalProvider!.address.toLowerCase()})
+    } else {
+      refreshAllData(capitalProvider!.address)
+    }
   }
 
   async function refreshCapitalProviderData(pool: SeniorPool, address: string | boolean) {

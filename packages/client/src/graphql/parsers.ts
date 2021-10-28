@@ -3,16 +3,19 @@ import {fiduFromAtomic, FIDU_DECIMALS} from "../ethereum/fidu"
 import {USDC_DECIMALS} from "../ethereum/utils"
 import {getSeniorPoolAndProviders_seniorPools as SeniorPoolGQL, getSeniorPoolAndProviders_user as User} from "./types"
 import {roundDownPenny} from "../utils"
-import {getWeightedAverageSharePrice} from "../ethereum/pool"
+import {
+  getCumulativeDrawdowns,
+  getCumulativeWritedowns,
+  getEstimatedTotalInterest,
+  getWeightedAverageSharePrice,
+  remainingCapacity,
+  SeniorPool,
+} from "../ethereum/pool"
 import {GraphSeniorPoolData, GraphUserData} from "./utils"
 import {Fidu} from "@goldfinch-eng/protocol/typechain/web3/Fidu"
 
-function remainingCapacity(this: any, maxPoolCapacity: BigNumber): BigNumber {
-  let cappedBalance = BigNumber.min(this.totalPoolAssets, maxPoolCapacity)
-  return new BigNumber(maxPoolCapacity).minus(cappedBalance)
-}
-
-export function parseSeniorPool(seniorPool: SeniorPoolGQL): GraphSeniorPoolData {
+export async function parseSeniorPool(seniorPool: SeniorPoolGQL, pool?: SeniorPool): Promise<GraphSeniorPoolData> {
+  const zero = new BigNumber("0")
   const latestPoolStatus = seniorPool.lastestPoolStatus
   const compoundBalance = new BigNumber(latestPoolStatus.compoundBalance)
   const balance = compoundBalance.plus(latestPoolStatus.rawBalance)
@@ -24,12 +27,12 @@ export function parseSeniorPool(seniorPool: SeniorPoolGQL): GraphSeniorPoolData 
     .div(FIDU_DECIMALS.toString())
   let totalPoolAssets = totalPoolAssetsInDollars.multipliedBy(USDC_DECIMALS.toString())
   const totalLoansOutstanding = new BigNumber(latestPoolStatus.totalLoansOutstanding)
-  const estimatedTotalInterest = new BigNumber(latestPoolStatus.estimatedTotalInterest)
-  const cumulativeDrawdowns = new BigNumber(latestPoolStatus.cumulativeDrawdowns)
-  const cumulativeWritedowns = new BigNumber(latestPoolStatus.cumulativeWritedowns)
-  const defaultRate = new BigNumber(latestPoolStatus.defaultRate)
+  const estimatedTotalInterest = pool ? await getEstimatedTotalInterest(pool) : zero
+  const cumulativeDrawdowns = pool ? await getCumulativeDrawdowns(pool) : zero
+  const cumulativeWritedowns = pool ? await getCumulativeWritedowns(pool) : zero
+  const defaultRate = cumulativeWritedowns.dividedBy(cumulativeDrawdowns)
   const rawBalance = new BigNumber(latestPoolStatus.rawBalance)
-  let estimatedApy = estimatedTotalInterest.dividedBy(totalPoolAssets)
+  const estimatedApy = estimatedTotalInterest.dividedBy(totalPoolAssets)
 
   return {
     type: "GraphSeniorPoolData",
@@ -52,15 +55,16 @@ export function parseSeniorPool(seniorPool: SeniorPoolGQL): GraphSeniorPoolData 
 export async function parseUser(
   user: User | undefined | null,
   seniorPool: SeniorPoolGQL,
-  fidu: Fidu
+  fidu?: Fidu
 ): Promise<GraphUserData> {
   const userAddress = user?.id || ""
   const seniorPoolDeposits = user?.seniorPoolDeposits || []
   const capitalProviderStatus = user?.capitalProviderStatus
   const goListed = user?.goListed || false
 
-  const sharePrice = new BigNumber(seniorPool.lastestPoolStatus.sharePrice) as any
-  const numShares = userAddress ? new BigNumber(await fidu.methods.balanceOf(userAddress).call()) : new BigNumber("0")
+  const sharePrice = new BigNumber(seniorPool.lastestPoolStatus.sharePrice)
+  const numShares =
+    userAddress && fidu ? new BigNumber(await fidu.methods.balanceOf(userAddress).call()) : new BigNumber("0")
   const availableToWithdraw = new BigNumber(numShares)
     .multipliedBy(new BigNumber(sharePrice))
     .div(FIDU_DECIMALS.toString())
