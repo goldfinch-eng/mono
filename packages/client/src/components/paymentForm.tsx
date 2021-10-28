@@ -16,7 +16,7 @@ import {assertNonNullable} from "../utils"
 
 function PaymentForm(props) {
   const {borrower, creditLine, actionComplete} = props
-  const {usdc, user, goldfinchConfig, goldfinchProtocol} = useContext(AppContext)
+  const {usdc, user, goldfinchConfig, goldfinchProtocol, currentBlock} = useContext(AppContext)
 
   const [inputClass, setInputClass] = useState("")
   const [paymentOption, setPaymentOption] = useState("periodDue")
@@ -54,7 +54,8 @@ function PaymentForm(props) {
     () => {
       const fetchBalance = async () => {
         assertNonNullable(erc20)
-        const decimalAmount = new BigNumber(erc20.decimalAmount(await erc20.getBalance(user.address)))
+        assertNonNullable(currentBlock)
+        const decimalAmount = new BigNumber(erc20.decimalAmount(await erc20.getBalance(user.address, currentBlock)))
         setErc20UserBalance(decimalAmount)
         setValidations({
           wallet: (value) => decimalAmount.gte(value) || `You do not have enough ${erc20.ticker}`,
@@ -74,7 +75,14 @@ function PaymentForm(props) {
     // HACK: Disable eslint's complaint about exhaustive-deps, since it doesn't understand our intention
     // with `remainingTotalDueAmountInDollarsDependency`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [erc20, user, goldfinchConfig.transactionLimit, isSwapping, remainingTotalDueAmountInDollarsDependency]
+    [
+      erc20,
+      currentBlock,
+      user,
+      goldfinchConfig.transactionLimit,
+      isSwapping,
+      remainingTotalDueAmountInDollarsDependency,
+    ]
   )
 
   function getSelectedUSDCAmount() {

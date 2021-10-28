@@ -18,7 +18,7 @@ function Borrow(props) {
 
   async function updateBorrowerAndCreditLine() {
     const borrower = (user as any).borrower
-    if (borrower && creditDesk.loaded) {
+    if (borrower && creditDesk) {
       const borrowerCreditLines = borrower.creditLinesAddresses
       setCreditLinesAddresses(borrowerCreditLines)
       if (!creditLine.loaded || (creditLine.loaded && !creditLine.address)) {

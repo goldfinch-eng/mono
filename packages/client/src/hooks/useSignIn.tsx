@@ -59,17 +59,17 @@ export function useSession(): Session {
 }
 
 export function useSignIn(): [status: Session, signIn: () => Promise<Session>] {
-  const {setSessionData, user} = useContext(AppContext)
+  const {setSessionData, user, currentBlock} = useContext(AppContext)
   const session = useSession()
 
   const signIn = useCallback(
     async function () {
       assertNonNullable(setSessionData)
+      assertNonNullable(currentBlock)
 
       const provider = new ethers.providers.Web3Provider(web3.currentProvider as any)
       const signer = provider.getSigner(user.address)
 
-      const currentBlock = getBlockInfo(await getCurrentBlock())
       const signatureBlockNum = currentBlock.number
       const signatureBlockNumTimestamp = currentBlock.timestamp
       const version = SESSION_DATA_VERSION
@@ -77,7 +77,7 @@ export function useSignIn(): [status: Session, signIn: () => Promise<Session>] {
       setSessionData({signature, signatureBlockNum, signatureBlockNumTimestamp, version})
       return getSession({address: user.address, signature, signatureBlockNum, signatureBlockNumTimestamp, version})
     },
-    [user, setSessionData]
+    [user, setSessionData, currentBlock]
   )
 
   return [session, signIn]

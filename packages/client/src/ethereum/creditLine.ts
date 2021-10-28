@@ -3,7 +3,7 @@ import moment from "moment"
 import BigNumber from "bignumber.js"
 import {Tickers, usdcFromAtomic, usdcToAtomic} from "./erc20"
 import {fetchDataFromAttributes, INTEREST_DECIMALS, SECONDS_PER_YEAR, SECONDS_PER_DAY} from "./utils"
-import {croppedAddress, roundUpPenny} from "../utils"
+import {BlockInfo, croppedAddress, roundUpPenny} from "../utils"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {CreditLine as CreditlineContract} from "@goldfinch-eng/protocol/typechain/web3/CreditLine"
 import {Contract} from "web3-eth-contract"
@@ -32,7 +32,7 @@ abstract class BaseCreditLine {
   name!: string
   goldfinchProtocol!: GoldfinchProtocol
 
-  async initialize() {
+  async initialize(currentBlock: BlockInfo) {
     // no-op
   }
 
@@ -134,7 +134,7 @@ class CreditLine extends BaseCreditLine {
     this.name = croppedAddress(this.address)
   }
 
-  async initialize() {
+  async initialize(currentBlock: BlockInfo) {
     const attributes = [
       {method: "balance"},
       {method: "interestApr"},
@@ -147,14 +147,14 @@ class CreditLine extends BaseCreditLine {
       {method: "termEndTime"},
       {method: "lastFullPaymentTime"},
     ]
-    let data = await fetchDataFromAttributes(this.creditLine, attributes)
+    let data = await fetchDataFromAttributes(this.creditLine, attributes, {blockNumber: currentBlock.number})
     attributes.forEach((info) => {
       this[info.method] = new BigNumber(data[info.method])
     })
 
     const formattedNextDueDate = moment.unix(this.nextDueTime.toNumber()).format("MMM D")
 
-    this.isLate = await this._calculateIsLate()
+    this.isLate = this._calculateIsLate(currentBlock)
     const interestOwed = this._calculateInterestOwed()
     this.dueDate = this.nextDueTime.toNumber() === 0 ? "" : formattedNextDueDate
     this.termEndDate = moment.unix(this.termEndTime.toNumber()).format("MMM D, YYYY")
@@ -170,13 +170,12 @@ class CreditLine extends BaseCreditLine {
     this.loaded = true
   }
 
-  async _calculateIsLate() {
-    const currentTime = (await web3.eth.getBlock("latest")).timestamp as number
+  _calculateIsLate(currentBlock: BlockInfo) {
     if (this.lastFullPaymentTime.isZero()) {
       // Brand new creditline
       return false
     }
-    const secondsSinceLastFullPayment = currentTime - this.lastFullPaymentTime.toNumber()
+    const secondsSinceLastFullPayment = currentBlock.timestamp - this.lastFullPaymentTime.toNumber()
     return secondsSinceLastFullPayment > this.paymentPeriodInDays.toNumber() * SECONDS_PER_DAY
   }
 
@@ -220,9 +219,9 @@ class MultipleCreditLines extends BaseCreditLine {
     this.usdc = goldfinchProtocol.getERC20(Tickers.USDC).contract
   }
 
-  async initialize() {
+  async initialize(currentBlock: BlockInfo) {
     this.creditLines = this.address.map((address) => new CreditLine(address, this.goldfinchProtocol))
-    await Promise.all(this.creditLines.map((cl) => cl.initialize()))
+    await Promise.all(this.creditLines.map((cl) => cl.initialize(currentBlock)))
     // Filter by active and sort by most recent
     this.creditLines = this.creditLines.filter((cl) => cl.limit.gt(0)).reverse()
     // Reset address to match creditlines

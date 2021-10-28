@@ -50,7 +50,7 @@ const ONE_INCH_ADDRESSES = {
 
 // Only keep entries for supported networks
 // (ie. where we deployed the latest contracts)
-const mapNetworkToID = {
+const mapNetworkToID: Record<string, string> = {
   main: MAINNET,
   ropsten: ROPSTEN,
   private: "localhost",

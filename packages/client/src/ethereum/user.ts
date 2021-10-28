@@ -1,7 +1,9 @@
+import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
 import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/web3/GoldfinchConfig"
 import BigNumber from "bignumber.js"
 import _ from "lodash"
 import {EventData} from "web3-eth-contract"
+import {BlockInfo} from "../utils"
 import {BorrowerInterface, getBorrowerContract} from "./borrower"
 import {ERC20, Tickers, usdcFromAtomic} from "./erc20"
 import {getBalanceAsOf, mapEventsToTx} from "./events"
@@ -15,15 +17,16 @@ export const UNLOCK_THRESHOLD = new BigNumber(10000)
 
 async function getUserData(
   address: string,
-  goldfinchProtocol,
+  goldfinchProtocol: GoldfinchProtocol,
   pool: SeniorPoolLoaded,
-  creditDesk,
-  networkId
+  creditDesk: CreditDesk,
+  networkId: string,
+  currentBlock: BlockInfo
 ): Promise<User> {
-  const borrower = await getBorrowerContract(address, goldfinchProtocol)
+  const borrower = await getBorrowerContract(address, goldfinchProtocol, currentBlock)
 
   const user = new Web3User(address, pool, creditDesk, goldfinchProtocol, networkId, borrower)
-  await user.initialize()
+  await user.initialize(currentBlock)
   return user
 }
 
@@ -46,12 +49,12 @@ interface User {
   goListed: boolean
   noWeb3: boolean
 
-  initialize(): Promise<void>
+  initialize(currentBlock: BlockInfo): Promise<void>
   usdcIsUnlocked(type: string): boolean
   getUnlockStatus(type: string): UnlockedStatus
   isUnlocked(allowance): boolean
   poolBalanceAsOf(blockNumExclusive: number): BigNumber
-  getAllowance(address): Promise<BigNumber>
+  getAllowance(address: string, currentBlock: BlockInfo): Promise<BigNumber>
 }
 
 class Web3User implements User {
@@ -77,7 +80,7 @@ class Web3User implements User {
   constructor(
     address: string,
     pool: SeniorPoolLoaded,
-    creditDesk: any,
+    creditDesk: CreditDesk,
     goldfinchProtocol: GoldfinchProtocol,
     networkId: string,
     borrower?: BorrowerInterface
@@ -97,24 +100,28 @@ class Web3User implements User {
     this.noWeb3 = !window.ethereum
   }
 
-  async initialize() {
-    this.usdcBalance = await this.usdc.getBalance(this.address)
+  async initialize(currentBlock: BlockInfo) {
+    this.usdcBalance = await this.usdc.getBalance(this.address, currentBlock)
     this.usdcBalanceInDollars = new BigNumber(usdcFromAtomic(this.usdcBalance))
-    this.poolAllowance = await this.getAllowance(this.pool.address)
+    this.poolAllowance = await this.getAllowance(this.pool.address, currentBlock)
 
     const [usdcTxs, poolEvents, creditDeskTxs] = await Promise.all([
       // NOTE: We have no need to include usdc txs for `this.pool.v1Pool` among the txs in
       // `this.pastTxs`. So we don't get them. We only need usdc txs for `this.pool`.
-      getAndTransformERC20Events(this.usdc, this.pool.address, this.address),
-      getPoolEvents(this.pool, this.address),
+      getAndTransformERC20Events(this.usdc, this.pool.address, this.address, currentBlock),
+      getPoolEvents(this.pool, this.address, currentBlock),
       // Credit desk events could've come from the user directly or the borrower contract, we need to filter by both
-      getAndTransformCreditDeskEvents(this.creditDesk, _.compact([this.address, this.borrower?.borrowerAddress])),
+      getAndTransformCreditDeskEvents(
+        this.creditDesk,
+        _.compact([this.address, this.borrower?.borrowerAddress]),
+        currentBlock
+      ),
     ])
     const poolTxs = await mapEventsToTx(poolEvents)
     this.poolEvents = poolEvents
     this.poolTxs = poolTxs
     this.pastTxs = _.reverse(_.sortBy(_.compact(_.concat(usdcTxs, poolTxs, creditDeskTxs)), "blockNumber"))
-    this.goListed = await this.isGoListed(this.address)
+    this.goListed = await this.isGoListed(this.address, currentBlock)
     this.loaded = true
   }
 
@@ -141,10 +148,10 @@ class Web3User implements User {
     return !allowance || allowance.gte(UNLOCK_THRESHOLD)
   }
 
-  private async isGoListed(address) {
+  private async isGoListed(address: string, currentBlock: BlockInfo): Promise<boolean> {
     if (process.env.REACT_APP_ENFORCE_GO_LIST || this.networkId === MAINNET) {
       let config = this.goldfinchProtocol.getContract<GoldfinchConfig>("GoldfinchConfig")
-      return await config.methods.goList(address).call()
+      return await config.methods.goList(address).call(undefined, currentBlock.number)
     } else {
       return true
     }
@@ -154,8 +161,8 @@ class Web3User implements User {
     return getBalanceAsOf(this.poolEvents, blockNumExclusive, "WithdrawalMade")
   }
 
-  async getAllowance(address) {
-    return this.usdc.getAllowance({owner: this.address, spender: address})
+  async getAllowance(address: string, currentBlock: BlockInfo) {
+    return this.usdc.getAllowance({owner: this.address, spender: address}, currentBlock)
   }
 }
 
@@ -203,7 +210,7 @@ class DefaultUser implements User {
   poolBalanceAsOf(blockNumExclusive: number): BigNumber {
     return new BigNumber(0)
   }
-  async getAllowance(address) {
+  async getAllowance(address: string, currentBlock: BlockInfo) {
     return new BigNumber(0)
   }
 }
@@ -212,11 +219,11 @@ function defaultUser(): User {
   return new DefaultUser()
 }
 
-async function getAndTransformERC20Events(erc20: ERC20, spender: string, owner: string) {
+async function getAndTransformERC20Events(erc20: ERC20, spender: string, owner: string, currentBlock: BlockInfo) {
   let approvalEvents = await erc20.contract.getPastEvents("Approval", {
     filter: {owner, spender},
     fromBlock: "earliest",
-    toBlock: "latest",
+    toBlock: currentBlock.number,
   })
   approvalEvents = _.chain(approvalEvents)
     .compact()
@@ -225,18 +232,18 @@ async function getAndTransformERC20Events(erc20: ERC20, spender: string, owner: 
   return await mapEventsToTx(approvalEvents)
 }
 
-async function getPoolEvents(pool: SeniorPoolLoaded, address: string) {
-  return await pool.getPoolEvents(address)
+async function getPoolEvents(pool: SeniorPoolLoaded, address: string, currentBlock: BlockInfo) {
+  return await pool.getPoolEvents(address, ["DepositMade", "WithdrawalMade"], true, currentBlock.number)
 }
 
-async function getAndTransformCreditDeskEvents(creditDesk, address) {
+async function getAndTransformCreditDeskEvents(creditDesk, address, currentBlock: BlockInfo) {
   const fromBlock = getFromBlock(creditDesk.chain)
   const [paymentEvents, drawdownEvents] = await Promise.all(
     ["PaymentCollected", "DrawdownMade"].map((eventName) => {
       return creditDesk.getPastEvents(eventName, {
         filter: {payer: address, borrower: address},
         fromBlock: fromBlock,
-        to: "latest",
+        to: currentBlock.number,
       })
     })
   )

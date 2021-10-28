@@ -5,19 +5,19 @@ import {assertWithLoadedInfo} from "../types/loadable"
 import {useAsync, useStaleWhileRevalidating} from "./useAsync"
 
 export function useStakingRewards(): StakingRewardsLoaded | undefined {
-  const {goldfinchProtocol, user} = useContext(AppContext)
+  const {goldfinchProtocol, user, currentBlock} = useContext(AppContext)
 
   const stakingRewardsResult = useAsync<StakingRewardsLoaded>(() => {
-    if (!user.loaded || !goldfinchProtocol) {
+    if (!user.address || !goldfinchProtocol || !currentBlock) {
       return
     }
 
     const rewards = new StakingRewards(goldfinchProtocol)
-    return rewards.initialize(user.address).then((): StakingRewardsLoaded => {
+    return rewards.initialize(user.address, currentBlock).then((): StakingRewardsLoaded => {
       assertWithLoadedInfo(rewards)
       return rewards
     })
-  }, [goldfinchProtocol, user])
+  }, [goldfinchProtocol, user.address, currentBlock])
 
   const stakingRewards = useStaleWhileRevalidating(stakingRewardsResult)
 

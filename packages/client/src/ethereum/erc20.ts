@@ -7,6 +7,7 @@ import {Contract} from "web3-eth-contract"
 import {AbiItem} from "web3-utils/types"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {FIDU_DECIMALS} from "./fidu"
+import {BlockInfo} from "../utils"
 
 const Tickers = {
   USDC: "USDC",
@@ -60,13 +61,12 @@ class ERC20 {
     return this.contract.options.address
   }
 
-  async getAllowance(opts): Promise<BigNumber> {
-    const {owner, spender} = opts
-    return new BigNumber(await this.contract.methods.allowance(owner, spender).call())
+  async getAllowance({owner, spender}: {owner: string; spender: string}, currentBlock: BlockInfo): Promise<BigNumber> {
+    return new BigNumber(await this.contract.methods.allowance(owner, spender).call(undefined, currentBlock.number))
   }
 
-  async getBalance(address): Promise<BigNumber> {
-    return new BigNumber(await this.contract.methods.balanceOf(address).call())
+  async getBalance(address: string, currentBlock: BlockInfo): Promise<BigNumber> {
+    return new BigNumber(await this.contract.methods.balanceOf(address).call(undefined, currentBlock.number))
   }
 
   atomicAmount(decimalAmount) {

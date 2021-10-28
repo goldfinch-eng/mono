@@ -1,15 +1,15 @@
-import {EventData} from "web3-eth-contract"
-import {MerkleDistributor as MerkleDistributorContract} from "@goldfinch-eng/protocol/typechain/web3/MerkleDistributor"
-import {CommunityRewards as CommunityRewardsContract} from "@goldfinch-eng/protocol/typechain/web3/CommunityRewards"
-import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {
   MerkleDistributorGrantInfo,
   MerkleDistributorInfo,
 } from "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types"
+import {CommunityRewards as CommunityRewardsContract} from "@goldfinch-eng/protocol/typechain/web3/CommunityRewards"
+import {MerkleDistributor as MerkleDistributorContract} from "@goldfinch-eng/protocol/typechain/web3/MerkleDistributor"
 import BigNumber from "bignumber.js"
-import {assertNonNullable, BlockInfo, getBlockInfo, getCurrentBlock} from "../utils"
-import {getMerkleDistributorInfo} from "./utils"
+import {EventData} from "web3-eth-contract"
 import {assertWithLoadedInfo, Loadable, WithLoadedInfo} from "../types/loadable"
+import {assertNonNullable, BlockInfo} from "../utils"
+import {GoldfinchProtocol} from "./GoldfinchProtocol"
+import {getMerkleDistributorInfo} from "./utils"
 
 type MerkleDistributorLoadedInfo = {
   currentBlock: BlockInfo
@@ -39,7 +39,7 @@ export class MerkleDistributor {
     }
   }
 
-  async initialize(recipient: string): Promise<void> {
+  async initialize(recipient: string, currentBlock: BlockInfo): Promise<void> {
     const communityRewards = new CommunityRewards(this.goldfinchProtocol)
 
     const contractAddress = await this.contract.methods.communityRewards().call()
@@ -51,8 +51,6 @@ export class MerkleDistributor {
 
     const merkleDistributorInfo = await getMerkleDistributorInfo()
     if (!merkleDistributorInfo) return
-
-    const currentBlock = getBlockInfo(await getCurrentBlock())
 
     await communityRewards.initialize(recipient, currentBlock)
     assertWithLoadedInfo(communityRewards)

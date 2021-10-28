@@ -5,9 +5,15 @@ import LoadingButton from "./loadingButton"
 import {useForm, FormProvider} from "react-hook-form"
 import {iconInfo} from "./icons"
 import useSendFromUser from "../hooks/useSendFromUser"
-import {usdcFromAtomic} from "../ethereum/erc20"
+import {ERC20, usdcFromAtomic} from "../ethereum/erc20"
 
-function UnlockERC20Form(props) {
+type UnlockERC20Props = {
+  erc20: ERC20
+  onUnlock: () => Promise<void>
+  unlockAddress: string
+}
+
+function UnlockERC20Form(props: UnlockERC20Props) {
   const {erc20, onUnlock, unlockAddress} = props
   const sendFromUser = useSendFromUser()
   const formMethods = useForm()

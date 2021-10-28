@@ -5,19 +5,19 @@ import {assertWithLoadedInfo} from "../types/loadable"
 import {useAsync, useStaleWhileRevalidating} from "./useAsync"
 
 export function useMerkleDistributor(): MerkleDistributorLoaded | undefined {
-  const {goldfinchProtocol, user} = useContext(AppContext)
+  const {goldfinchProtocol, user, currentBlock} = useContext(AppContext)
 
   const merkleDistributorResult = useAsync<MerkleDistributorLoaded>(() => {
-    if (!user.loaded || !goldfinchProtocol) {
+    if (!user.address || !goldfinchProtocol || !currentBlock) {
       return
     }
 
     const merkleDistributor = new MerkleDistributor(goldfinchProtocol)
-    return merkleDistributor.initialize(user.address).then((): MerkleDistributorLoaded => {
+    return merkleDistributor.initialize(user.address, currentBlock).then((): MerkleDistributorLoaded => {
       assertWithLoadedInfo(merkleDistributor)
       return merkleDistributor
     })
-  }, [goldfinchProtocol, user])
+  }, [goldfinchProtocol, user.address, currentBlock])
 
   const merkleDistributor = useStaleWhileRevalidating(merkleDistributorResult)
 

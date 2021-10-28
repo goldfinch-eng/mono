@@ -2,13 +2,13 @@ import {useLocation} from "react-router-dom"
 import {AppContext, NetworkConfig} from "../App"
 import {CreditLine} from "../ethereum/creditLine"
 import {UnlockedStatus, User} from "../ethereum/user"
-import useNonNullContext from "../hooks/useNonNullContext"
 import {Session, useSession} from "../hooks/useSignIn"
 import UnlockUSDCForm from "./unlockUSDCForm"
 import VerifyAddressBanner from "./verifyAddressBanner"
 import {KYC} from "../hooks/useGoldfinchClient"
 import {AsyncResult} from "../hooks/useAsync"
 import {assertNonNullable} from "../utils"
+import {useContext} from "react"
 
 export interface ConnectionNoticeProps {
   creditLine?: CreditLine
@@ -167,21 +167,23 @@ function ConnectionNotice(props: ConnectionNoticeProps) {
     requireGolist: false,
     ...props,
   }
-  const {network, user} = useNonNullContext(AppContext)
+  const {network, user} = useContext(AppContext)
   const session = useSession()
   let location = useLocation()
 
-  const strategyProps = {
-    network,
-    user,
-    session,
-    location,
-    ...props,
-  }
+  if (network) {
+    const strategyProps = {
+      network,
+      user,
+      session,
+      location,
+      ...props,
+    }
 
-  for (let strategy of strategies) {
-    if (strategy.match(strategyProps)) {
-      return strategy.render(strategyProps)
+    for (let strategy of strategies) {
+      if (strategy.match(strategyProps)) {
+        return strategy.render(strategyProps)
+      }
     }
   }
 

@@ -13,7 +13,7 @@ import LoadingButton from "./loadingButton"
 
 interface StakeFiduBannerProps {
   poolData: PoolData | undefined
-  capitalProvider: CapitalProvider
+  capitalProvider: CapitalProvider | undefined
   kyc: KYC | undefined
   actionComplete: () => void
 }
@@ -67,7 +67,7 @@ export default function StakeFiduBanner(props: StakeFiduBannerProps) {
 
   const placeholderClass = disabled ? "placeholder" : ""
 
-  return props.capitalProvider.shares.parts.notStaked.gt(0) ? (
+  return props.capitalProvider?.shares.parts.notStaked.gt(0) ? (
     <FormProvider {...formMethods}>
       <div className={`info-banner subtle background-container ${placeholderClass}`}>
         <div className="message">

@@ -8,8 +8,8 @@ const InfoIcon = ({width = 18, height = 18, color = "#C4BeB7", className = ""}) 
     xmlns="http://www.w3.org/2000/svg"
   >
     <path
-      fill-rule="evenodd"
-      clip-rule="evenodd"
+      fillRule="evenodd"
+      clipRule="evenodd"
       d="M9 16.481A7.481 7.481 0 1 0 9 1.52 7.481 7.481 0 0 0 9 16.48ZM9 18A9 9 0 1 0 9 0a9 9 0 0 0 0 18Z"
       fill={color}
     />

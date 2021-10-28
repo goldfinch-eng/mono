@@ -1,17 +1,17 @@
-import {useState, useContext} from "react"
-import DepositForm from "./depositForm"
-import DepositStatus from "./depositStatus"
+import {useContext, useState} from "react"
 import {AppContext} from "../App"
-import WithdrawalForm from "./withdrawalForm"
-import {iconUpArrow, iconDownArrow} from "./icons"
 import {CapitalProvider, PoolData} from "../ethereum/pool"
-import BigNumber from "bignumber.js"
 import {KYC} from "../hooks/useGoldfinchClient"
 import {eligibleForSeniorPool} from "../hooks/useKYC"
+import {assertNonNullable} from "../utils"
+import DepositForm from "./depositForm"
+import DepositStatus from "./depositStatus"
+import {iconDownArrow, iconUpArrow} from "./icons"
+import WithdrawalForm from "./withdrawalForm"
 
 interface EarnActionsContainerProps {
   actionComplete: () => Promise<any>
-  capitalProvider: CapitalProvider
+  capitalProvider: CapitalProvider | undefined
   poolData: PoolData | undefined
   kyc: KYC | undefined
 }
@@ -31,15 +31,17 @@ function EarnActionsContainer(props: EarnActionsContainerProps) {
     })
   }
 
+  const readyAndEligible =
+    !!user.address && !!props.poolData && !!props.capitalProvider && eligibleForSeniorPool(kyc, user)
+
   let placeholderClass = ""
-  if (!user.address || !eligibleForSeniorPool(kyc, user)) {
+  if (!readyAndEligible) {
     placeholderClass = "placeholder"
   }
 
   let depositAction
   let depositClass = "disabled"
-  let remainingCapacity = props.poolData?.remainingCapacity(goldfinchConfig.totalFundsLimit) || new BigNumber("0")
-  if (eligibleForSeniorPool(kyc, user) && remainingCapacity.gt("0")) {
+  if (readyAndEligible && props.poolData?.remainingCapacity(goldfinchConfig.totalFundsLimit).gt("0")) {
     depositAction = (e) => {
       setShowAction("deposit")
     }
@@ -48,7 +50,7 @@ function EarnActionsContainer(props: EarnActionsContainerProps) {
 
   let withdrawAction
   let withdrawClass = "disabled"
-  if (eligibleForSeniorPool(kyc, user) && props.capitalProvider.availableToWithdraw.gt(0)) {
+  if (readyAndEligible && props.capitalProvider?.availableToWithdraw.gt(0)) {
     withdrawAction = (e) => {
       setShowAction("withdrawal")
     }
@@ -58,11 +60,13 @@ function EarnActionsContainer(props: EarnActionsContainerProps) {
   if (showAction === "deposit") {
     return <DepositForm closeForm={closeForm} actionComplete={actionComplete} />
   } else if (showAction === "withdrawal") {
+    assertNonNullable(props.capitalProvider)
+    assertNonNullable(props.poolData)
     return (
       <WithdrawalForm
         closeForm={closeForm}
         capitalProvider={props.capitalProvider}
-        poolData={props.poolData!}
+        poolData={props.poolData}
         actionComplete={actionComplete}
       />
     )

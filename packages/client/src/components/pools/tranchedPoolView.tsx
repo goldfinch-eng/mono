@@ -716,9 +716,9 @@ interface TranchedPoolViewURLParams {
 
 function TranchedPoolView() {
   const {poolAddress} = useParams<TranchedPoolViewURLParams>()
-  const {goldfinchProtocol, usdc, user, network, setSessionData} = useNonNullContext(AppContext)
+  const {goldfinchProtocol, usdc, user, network, setSessionData, currentBlock} = useNonNullContext(AppContext)
   const session = useSession()
-  const [tranchedPool, refreshTranchedPool] = useTranchedPool({address: poolAddress, goldfinchProtocol})
+  const [tranchedPool, refreshTranchedPool] = useTranchedPool({address: poolAddress, goldfinchProtocol, currentBlock})
   const [showModal, setShowModal] = useState(false)
   const backer = useBacker({user, tranchedPool})
   const [nda, refreshNDA] = useFetchNDA({user, tranchedPool})
@@ -767,9 +767,9 @@ function TranchedPoolView() {
     earnMessage = `Pools / ${tranchedPool.metadata?.name ?? croppedAddress(tranchedPool.address)}`
   }
 
-  if (process.env.REACT_APP_HARDHAT_FORK && !unlocked) {
+  if (process.env.REACT_APP_HARDHAT_FORK && !unlocked && tranchedPool) {
     unlockForm = (
-      <UnlockERC20Form erc20={usdc} onUnlock={() => (refreshUnlocked as any)()} unlockAddress={tranchedPool?.address} />
+      <UnlockERC20Form erc20={usdc} onUnlock={() => refreshUnlocked()} unlockAddress={tranchedPool.address} />
     )
   }
 

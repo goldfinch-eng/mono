@@ -37,11 +37,11 @@ export function getEventAmountBN(eventData: EventData): BigNumber {
 }
 
 async function mapEventsToTx(events) {
-  const txs = await Promise.all(_.map(_.compact(events), mapEventToTx))
+  const txs = await Promise.all(_.compact(events).map(mapEventToTx))
   return _.reverse(_.sortBy(txs, "blockNumber"))
 }
 
-function mapEventToTx(event) {
+async function mapEventToTx(event) {
   return web3.eth.getBlock(event.blockNumber).then((block) => {
     let amount = getEventAmount(event)
 

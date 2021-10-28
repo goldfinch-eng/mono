@@ -7,8 +7,8 @@ import BigNumber from "bignumber.js"
 import _ from "lodash"
 import {BlockNumber} from "web3-core"
 import {Contract, EventData} from "web3-eth-contract"
-import {assertWithLoadedInfo, Loadable, WithLoadedInfo} from "../types/loadable"
-import {assertBigNumber, BlockInfo, displayNumber, getBlockInfo, getCurrentBlock, roundDownPenny} from "../utils"
+import {assertWithLoadedInfo, Loadable, Loaded, WithLoadedInfo} from "../types/loadable"
+import {assertBigNumber, BlockInfo, displayNumber, roundDownPenny} from "../utils"
 import {buildCreditLine} from "./creditLine"
 import {Tickers, usdcFromAtomic} from "./erc20"
 import {getBalanceAsOf, mapEventsToTx} from "./events"
@@ -33,6 +33,7 @@ class Pool {
 }
 
 type SeniorPoolLoadedInfo = {
+  currentBlock: BlockInfo
   poolData: PoolData
   isPaused: boolean
 }
@@ -61,12 +62,13 @@ class SeniorPool {
     }
   }
 
-  async initialize(): Promise<void> {
-    const poolData = await fetchPoolData(this, this.usdc)
+  async initialize(currentBlock: BlockInfo): Promise<void> {
+    const poolData = await fetchPoolData(this, this.usdc, currentBlock)
     const isPaused = await this.contract.methods.paused().call()
     this.info = {
       loaded: true,
       value: {
+        currentBlock,
         poolData,
         isPaused,
       },
@@ -219,19 +221,14 @@ function getCapitalProviderStakingInfo(
 
 async function fetchCapitalProviderData(
   pool: SeniorPoolLoaded,
-  stakingRewards: StakingRewardsLoaded | undefined,
-  capitalProviderAddress: string | undefined
-): Promise<Loadable<CapitalProvider>> {
-  if (!stakingRewards || !capitalProviderAddress) {
-    return {
-      loaded: false,
-      value: undefined,
-    }
+  stakingRewards: StakingRewardsLoaded,
+  capitalProviderAddress: string
+): Promise<Loaded<CapitalProvider>> {
+  if (pool.info.value.currentBlock.number !== stakingRewards.info.value.currentBlock.number) {
+    throw new Error("`pool` and `stakingRewards` data are based on different blocks.")
   }
+  const currentBlock = pool.info.value.currentBlock
 
-  // TODO[PR] Re-use the current block value that was used in fetching `pool` and `stakingRewards` data,
-  // so that `sharePrice` is consistent with those values.
-  const currentBlock = getBlockInfo(await getCurrentBlock())
   const attributes = [{method: "sharePrice"}]
   const {sharePrice} = await fetchDataFromAttributes(pool.contract, attributes, {
     bigNumber: true,
@@ -333,14 +330,15 @@ type PoolData = {
   remainingCapacity: typeof remainingCapacity
 }
 
-async function fetchPoolData(pool: SeniorPool, erc20: Contract): Promise<PoolData> {
-  // TODO We should probably use a consistent block number for all the calls in this method.
+async function fetchPoolData(pool: SeniorPool, erc20: Contract, currentBlock: BlockInfo): Promise<PoolData> {
   const attributes = [{method: "sharePrice"}, {method: "compoundBalance"}]
-  let {sharePrice, compoundBalance: _compoundBalance} = await fetchDataFromAttributes(pool.contract, attributes)
-  let rawBalance = new BigNumber(await erc20.methods.balanceOf(pool.address).call())
+  let {sharePrice, compoundBalance: _compoundBalance} = await fetchDataFromAttributes(pool.contract, attributes, {
+    blockNumber: currentBlock.number,
+  })
+  let rawBalance = new BigNumber(await erc20.methods.balanceOf(pool.address).call(undefined, currentBlock.number))
   let compoundBalance = new BigNumber(_compoundBalance)
   let balance = compoundBalance.plus(rawBalance)
-  let totalShares = new BigNumber(await pool.fidu.methods.totalSupply().call())
+  let totalShares = new BigNumber(await pool.fidu.methods.totalSupply().call(undefined, currentBlock.number))
 
   // Do some slightly goofy multiplication and division here so that we have consistent units across
   // 'balance', 'totalPoolBalance', and 'totalLoansOutstanding', allowing us to do arithmetic between them
@@ -350,11 +348,13 @@ async function fetchPoolData(pool: SeniorPool, erc20: Contract): Promise<PoolDat
     .multipliedBy(new BigNumber(sharePrice))
     .div(FIDU_DECIMALS.toString())
   let totalPoolAssets = totalPoolAssetsInDollars.multipliedBy(USDC_DECIMALS.toString())
-  let totalLoansOutstanding = new BigNumber(await pool.contract.methods.totalLoansOutstanding().call())
-  let cumulativeWritedowns = await getCumulativeWritedowns(pool)
-  let cumulativeDrawdowns = await getCumulativeDrawdowns(pool)
-  let poolEvents = await getAllDepositAndWithdrawalEvents(pool)
-  let estimatedTotalInterest = await getEstimatedTotalInterest(pool)
+  let totalLoansOutstanding = new BigNumber(
+    await pool.contract.methods.totalLoansOutstanding().call(undefined, currentBlock.number)
+  )
+  let cumulativeWritedowns = await getCumulativeWritedowns(pool, currentBlock)
+  let cumulativeDrawdowns = await getCumulativeDrawdowns(pool, currentBlock)
+  let poolEvents = await getAllDepositAndWithdrawalEvents(pool, currentBlock)
+  let estimatedTotalInterest = await getEstimatedTotalInterest(pool, currentBlock)
   let estimatedApy = estimatedTotalInterest.dividedBy(totalPoolAssets)
   // TODO Calculate this value using Uniswap price oracle for GFI, once that becomes available.
   const estimatedApyFromGfi = undefined
@@ -463,12 +463,17 @@ async function getWeightedAverageSharePrice(
   }
 }
 
-async function getCumulativeWritedowns(pool: SeniorPool) {
+async function getCumulativeWritedowns(pool: SeniorPool, currentBlock: BlockInfo) {
   // In theory, we'd also want to include `PrincipalWrittendown` events emitted by `pool.v1Pool` here.
   // But in practice, we don't need to, because only one such was emitted, due to a bug which was
   // then fixed. So we include only `PrincipalWrittenDown` events emitted by `pool`.
 
-  const events = await pool.goldfinchProtocol.queryEvents(pool.contract, "PrincipalWrittenDown")
+  const events = await pool.goldfinchProtocol.queryEvents(
+    pool.contract,
+    "PrincipalWrittenDown",
+    undefined,
+    currentBlock.number
+  )
   const sum: BigNumber = events.length
     ? BigNumber.sum.apply(
         null,
@@ -478,14 +483,16 @@ async function getCumulativeWritedowns(pool: SeniorPool) {
   return sum.negated()
 }
 
-async function getCumulativeDrawdowns(pool: SeniorPool) {
+async function getCumulativeDrawdowns(pool: SeniorPool, currentBlock: BlockInfo) {
   const protocol = pool.goldfinchProtocol
-  const tranchedPoolAddresses = await getTranchedPoolAddressesForSeniorPoolCalc(pool)
+  const tranchedPoolAddresses = await getTranchedPoolAddressesForSeniorPoolCalc(pool, currentBlock)
   const tranchedPools = tranchedPoolAddresses.map((address) =>
     protocol.getContract<TranchedPool>("TranchedPool", address)
   )
   let allDrawdownEvents = _.flatten(
-    await Promise.all(tranchedPools.map((pool) => protocol.queryEvents(pool, "DrawdownMade")))
+    await Promise.all(
+      tranchedPools.map((pool) => protocol.queryEvents(pool, "DrawdownMade", undefined, currentBlock.number))
+    )
   )
   const sum: BigNumber = allDrawdownEvents.length
     ? BigNumber.sum.apply(
@@ -525,9 +532,9 @@ async function getRepaymentEvents(pool: SeniorPoolLoaded, goldfinchProtocol: Gol
   return _.compact(combinedEvents)
 }
 
-async function getAllDepositAndWithdrawalEvents(pool: SeniorPool): Promise<EventData[]> {
+async function getAllDepositAndWithdrawalEvents(pool: SeniorPool, currentBlock: BlockInfo): Promise<EventData[]> {
   const eventNames = ["DepositMade", "WithdrawalMade"]
-  const poolEvents = await pool.getPoolEvents(undefined, eventNames)
+  const poolEvents = await pool.getPoolEvents(undefined, eventNames, true, currentBlock.number)
   return poolEvents
 }
 
@@ -547,18 +554,20 @@ function remainingCapacity(this: PoolData, maxPoolCapacity: BigNumber): BigNumbe
   return new BigNumber(maxPoolCapacity).minus(cappedBalance)
 }
 
-async function getEstimatedTotalInterest(pool: SeniorPool): Promise<BigNumber> {
+async function getEstimatedTotalInterest(pool: SeniorPool, currentBlock: BlockInfo): Promise<BigNumber> {
   const protocol = pool.goldfinchProtocol
-  const tranchedPoolAddresses = await getTranchedPoolAddressesForSeniorPoolCalc(pool)
+  const tranchedPoolAddresses = await getTranchedPoolAddressesForSeniorPoolCalc(pool, currentBlock)
   const tranchedPools = tranchedPoolAddresses.map((address) =>
     protocol.getContract<TranchedPool>("TranchedPool", address)
   )
-  const creditLineAddresses = await Promise.all(tranchedPools.map((p) => p.methods.creditLine().call()))
+  const creditLineAddresses = await Promise.all(
+    tranchedPools.map((p) => p.methods.creditLine().call(undefined, currentBlock.number))
+  )
   const creditLines = creditLineAddresses.map((a) => buildCreditLine(a))
   const creditLineData = await Promise.all(
     creditLines.map(async (cl) => {
-      let balance = new BigNumber(await cl.methods.balance().call())
-      let interestApr = new BigNumber(await cl.methods.interestApr().call())
+      let balance = new BigNumber(await cl.methods.balance().call(undefined, currentBlock.number))
+      let interestApr = new BigNumber(await cl.methods.interestApr().call(undefined, currentBlock.number))
       return {balance, interestApr}
     })
   )
@@ -575,11 +584,16 @@ async function getEstimatedTotalInterest(pool: SeniorPool): Promise<BigNumber> {
  * @param pool - The senior pool.
  * @returns The set of tranched pool addresses.
  */
-async function getTranchedPoolAddressesForSeniorPoolCalc(pool: SeniorPool): Promise<string[]> {
+async function getTranchedPoolAddressesForSeniorPoolCalc(pool: SeniorPool, currentBlock: BlockInfo): Promise<string[]> {
   const protocol = pool.goldfinchProtocol
   const [metadataStore, investmentEvents] = await Promise.all([
     getMetadataStore(protocol.networkId),
-    protocol.queryEvents(pool.contract, ["InvestmentMadeInSenior", "InvestmentMadeInJunior"]),
+    protocol.queryEvents(
+      pool.contract,
+      ["InvestmentMadeInSenior", "InvestmentMadeInJunior"],
+      undefined,
+      currentBlock.number
+    ),
   ])
   // In migrating to v2, we did not emit InvestmentMadeInJunior events for the tranched pools that we
   // migrated from v1 (we just minted them position tokens directly). So we need to supplement how we
@@ -710,8 +724,7 @@ class StakingRewards {
     }
   }
 
-  async initialize(recipient: string): Promise<void> {
-    const currentBlock = getBlockInfo(await getCurrentBlock())
+  async initialize(recipient: string, currentBlock: BlockInfo): Promise<void> {
     const isPaused = await this.contract.methods.paused().call(undefined, currentBlock.number)
 
     // NOTE: In defining `this.positions`, we want to use `balanceOf()` plus `tokenOfOwnerByIndex()`
@@ -733,6 +746,10 @@ class StakingRewards {
           .positions(tokenId)
           .call(undefined, currentBlock.number)
           .then(async (rawPosition) => {
+            // TODO[PR] Amount remaining on position does not necessarily equal amount originally staked, due to
+            // the possibility of having partially unstaked. So to be able to display the original staked amount
+            // in the UI, we need to query for the relevant event, and keep that value.
+
             const storedPosition = parseStoredPosition(rawPosition)
             const optimisticIncrement = await this.calculatePositionOptimisticIncrement(
               tokenId,

@@ -20,6 +20,7 @@ import {NetworkMonitor} from "./ethereum/networkMonitor"
 import {SeniorPool, SeniorPoolLoaded} from "./ethereum/pool"
 import {GoldfinchProtocol} from "./ethereum/GoldfinchProtocol"
 import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/web3/GoldfinchConfig"
+import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
 import SeniorPoolView from "./components/pools/seniorPoolView"
 import VerifyIdentity from "./components/verifyIdentity"
 import TranchedPoolView from "./components/pools/tranchedPoolView"
@@ -30,12 +31,12 @@ import {SessionData} from "./types/session"
 import {useSessionLocalStorage} from "./hooks/useSignIn"
 import {EarnProvider} from "./contexts/EarnContext"
 import {BorrowProvider} from "./contexts/BorrowContext"
-import useCurrentBlock from "./hooks/useCurrentBlock"
 import {assertWithLoadedInfo} from "./types/loadable"
+import {assertNonNullable, BlockInfo, getBlockInfo, getCurrentBlock} from "./utils"
 
 export interface NetworkConfig {
-  name?: string
-  supported?: any
+  name: string
+  supported: boolean
 }
 
 interface GeolocationData {
@@ -50,19 +51,20 @@ interface GeolocationData {
 }
 
 export interface GlobalState {
+  currentBlock?: BlockInfo
   pool?: SeniorPoolLoaded
-  creditDesk?: any
+  creditDesk?: CreditDesk
   user: User
   usdc?: ERC20
   goldfinchConfig?: any
   network?: NetworkConfig
   goldfinchProtocol?: GoldfinchProtocol
   networkMonitor?: NetworkMonitor
-  refreshUserData?: (overrideAddress?: string) => void
   geolocationData?: GeolocationData
   setGeolocationData?: (geolocationData: GeolocationData) => void
   sessionData?: SessionData
   setSessionData?: (data: SessionData | undefined) => void
+  refreshCurrentBlock?: () => Promise<void>
 }
 
 declare let window: any
@@ -71,17 +73,18 @@ const AppContext = React.createContext<GlobalState>({user: defaultUser()})
 
 function App() {
   const [pool, setPool] = useState<SeniorPoolLoaded>()
-  const [creditDesk, setCreditDesk] = useState<any>({})
+  const [creditDesk, setCreditDesk] = useState<CreditDesk>()
   const [usdc, setUSDC] = useState<ERC20>()
+  const [overrideAddress, setOverrideAdress] = useState<string>()
   const [user, setUser] = useState<User>(defaultUser())
+  const [currentBlock, setCurrentBlock] = useState<BlockInfo>()
   const [goldfinchConfig, setGoldfinchConfig] = useState({})
   const [currentTXs, setCurrentTXs] = useState<any[]>([])
   const [currentErrors, setCurrentErrors] = useState<any[]>([])
-  const [network, setNetwork] = useState<NetworkConfig>({})
+  const [network, setNetwork] = useState<NetworkConfig>()
   const [networkMonitor, setNetworkMonitor] = useState<NetworkMonitor>()
   const [goldfinchProtocol, setGoldfinchProtocol] = useState<GoldfinchProtocol>()
   const [geolocationData, setGeolocationData] = useState<GeolocationData>()
-  const currentBlock = useCurrentBlock()
   const {localStorageValue: sessionData, setLocalStorageValue: setSessionData} = useSessionLocalStorage(
     SESSION_DATA_KEY,
     {},
@@ -92,20 +95,27 @@ function App() {
 
   useEffect(() => {
     setupWeb3()
+
+    // Admin function to be able to assume the role of any address
+    window.setUserAddress = function (overrideAddress: string) {
+      setOverrideAdress(overrideAddress)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
-    // React doesn't batch updates for async functions and that's why we need this check.
-    if (usdc && pool && creditDesk && network && goldfinchProtocol) {
-      refreshUserData()
-      // Admin function to be able to assume the role of any address
-      window.setUserAddress = function (overrideAddress: string) {
-        refreshUserData(overrideAddress)
-      }
+    if (goldfinchProtocol && currentBlock) {
+      refreshPool()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [usdc, pool, creditDesk, network, goldfinchProtocol])
+  }, [goldfinchProtocol, currentBlock])
+
+  useEffect(() => {
+    if (goldfinchProtocol && pool && creditDesk && network) {
+      refreshUserData()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [goldfinchProtocol, pool, creditDesk, network, overrideAddress])
 
   async function ensureWeb3() {
     if (!window.ethereum) {
@@ -128,39 +138,63 @@ function App() {
 
     const networkName = await web3.eth.net.getNetworkType()
     const networkId = mapNetworkToID[networkName] || networkName
-    const networkConfig: NetworkConfig = {name: networkId, supported: SUPPORTED_NETWORKS[networkId]}
-    setNetwork(networkConfig)
-    if (networkConfig.supported) {
+    const name = networkId
+    const supported = SUPPORTED_NETWORKS[networkId] || false
+    if (name && supported) {
+      const networkConfig: NetworkConfig = {name, supported}
+      setNetwork(networkConfig)
+
+      const currentBlock = getBlockInfo(await getCurrentBlock())
+
       const protocol = new GoldfinchProtocol(networkConfig)
       await protocol.initialize()
 
       const usdc = await protocol.getERC20(Tickers.USDC)
 
-      const pool = new SeniorPool(protocol)
-      await pool.initialize()
-      assertWithLoadedInfo(pool)
-
       const goldfinchConfigContract = protocol.getContract<GoldfinchConfig>("GoldfinchConfig")
-      const creditDeskContract = protocol.getContract("CreditDesk")
+      const goldfinchConfigData = await refreshGoldfinchConfigData(goldfinchConfigContract, currentBlock)
+
+      const creditDeskContract = protocol.getContract<CreditDesk>("CreditDesk")
+
+      setCurrentBlock(currentBlock)
       setUSDC(usdc)
-      setPool(pool)
       setCreditDesk(creditDeskContract)
-      setGoldfinchConfig(await refreshGoldfinchConfigData(goldfinchConfigContract))
+      setGoldfinchConfig(goldfinchConfigData)
       setGoldfinchProtocol(protocol)
 
       const monitor = new NetworkMonitor(web3, {
         setCurrentTXs,
         setCurrentErrors,
       })
-      monitor.initialize() // initialize async, no need to block on this
+      monitor.initialize(currentBlock) // initialize async, no need to block on this
       setNetworkMonitor(monitor)
     }
   }
 
-  async function refreshUserData(overrideAddress?: string) {
+  async function refreshPool(): Promise<void> {
     if (!(await ensureWeb3())) {
       return
     }
+
+    assertNonNullable(goldfinchProtocol)
+    assertNonNullable(currentBlock)
+
+    const pool = new SeniorPool(goldfinchProtocol)
+    await pool.initialize(currentBlock)
+    assertWithLoadedInfo(pool)
+    setPool(pool)
+  }
+
+  async function refreshUserData(): Promise<void> {
+    if (!(await ensureWeb3())) {
+      return
+    }
+
+    assertNonNullable(goldfinchProtocol)
+    assertNonNullable(pool)
+    assertNonNullable(creditDesk)
+    assertNonNullable(network)
+    assertNonNullable(currentBlock)
 
     let data: User = defaultUser()
     const accounts = await web3.eth.getAccounts()
@@ -170,9 +204,8 @@ function App() {
     if (userAddress) {
       data.address = userAddress
     }
-    if (userAddress && goldfinchProtocol && creditDesk.loaded && pool?.info.loaded) {
-      data = await getUserData(userAddress, goldfinchProtocol, pool, creditDesk, network.name)
-    }
+
+    data = await getUserData(userAddress, goldfinchProtocol, pool, creditDesk, network.name, currentBlock)
 
     Sentry.setUser({
       // NOTE: The info we use here to identify / define the user for the purpose of
@@ -187,7 +220,13 @@ function App() {
     setUser(data)
   }
 
+  async function refreshCurrentBlock(): Promise<void> {
+    const currentBlock = getBlockInfo(await getCurrentBlock())
+    setCurrentBlock(currentBlock)
+  }
+
   const store: GlobalState = {
+    currentBlock,
     pool,
     creditDesk,
     user,
@@ -195,25 +234,27 @@ function App() {
     goldfinchConfig,
     network,
     networkMonitor,
-    refreshUserData,
     goldfinchProtocol,
     geolocationData,
     setGeolocationData,
     sessionData,
     setSessionData,
+    refreshCurrentBlock,
   }
 
   return (
     <AppContext.Provider value={store}>
       <ThemeProvider theme={defaultTheme}>
-        <NetworkWidget
-          user={user}
-          currentBlock={currentBlock}
-          network={network}
-          currentErrors={currentErrors}
-          currentTXs={currentTXs}
-          connectionComplete={setupWeb3}
-        />
+        {network && currentBlock ? (
+          <NetworkWidget
+            user={user}
+            currentBlock={currentBlock}
+            network={network}
+            currentErrors={currentErrors}
+            currentTXs={currentTXs}
+            connectionComplete={setupWeb3}
+          />
+        ) : undefined}
         <EarnProvider>
           <BorrowProvider>
             <Router>

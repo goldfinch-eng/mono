@@ -13,7 +13,7 @@ import {isSessionDataInvalid, useSession, useSignIn} from "../hooks/useSignIn"
 
 interface NetworkWidgetProps {
   user: User
-  currentBlock: BlockInfo | undefined
+  currentBlock: BlockInfo
   network: NetworkConfig
   currentErrors: any[]
   currentTXs: any[]
