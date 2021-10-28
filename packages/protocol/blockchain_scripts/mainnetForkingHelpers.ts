@@ -31,6 +31,7 @@ const MAINNET_UNDERWRITER = "0x79ea65C834EC137170E1aA40A42b9C80df9c0Bb4"
 
 import {mergeABIs} from "hardhat-deploy/dist/src/utils"
 import {FormatTypes} from "ethers/lib/utils"
+import {Logger} from "./types"
 
 async function getProxyImplAddress(proxyContract: Contract) {
   if (!proxyContract) {
@@ -48,6 +49,7 @@ async function upgradeContracts({
   deployFrom,
   deployer,
   deployTestForwarder = false,
+  logger = console.log,
 }: {
   contractsToUpgrade: string[]
   contracts: ExistingContracts
@@ -55,7 +57,9 @@ async function upgradeContracts({
   deployFrom: any
   deployer: ContractDeployer
   deployTestForwarder?: boolean
+  logger: Logger
 }): Promise<UpgradedContracts> {
+  logger("Deploying accountant")
   const accountantDeployResult = await deployer.deployLibrary("Accountant", {
     from: deployFrom,
     gasLimit: 4000000,
@@ -63,6 +67,7 @@ async function upgradeContracts({
   })
 
   if (deployTestForwarder) {
+    logger("Deploying test forwarder")
     // Ensure a test forwarder is available. Using the test forwarder instead of the real forwarder on mainnet
     // gives us the ability to debug the forwarded transactions.
     await deployer.deploy("TestForwarder", {from: deployFrom, gasLimit: 4000000, args: []})
@@ -82,7 +87,7 @@ async function upgradeContracts({
       contractToDeploy = `Test${contractName}`
     }
 
-    console.log("Trying to deploy", contractToDeploy)
+    logger("Trying to deploy", contractToDeploy)
     const ethersSigner = typeof signer === "string" ? await ethers.getSigner(signer) : signer
     const upgradedContract = (
       await deployer.deploy(contractToDeploy, {

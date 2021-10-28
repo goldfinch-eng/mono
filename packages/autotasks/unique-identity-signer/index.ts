@@ -24,14 +24,14 @@ const API_URLS = {
 }
 
 const UNIQUE_IDENTITY_ADDRESS = {
-  // TODO: Fill in when we deploy to mainnet
+  1: "0xba0439088dc1e75F58e0A7C107627942C15cbb41",
 }
 
-export type FetchKYCFunction = ({headers: any, chainId: number}) => Promise<KYC>
-const defaultFetchKYCStatus: FetchKYCFunction = async ({headers, chainId}) => {
+export type FetchKYCFunction = ({auth: Auth, chainId: number}) => Promise<KYC>
+const defaultFetchKYCStatus: FetchKYCFunction = async ({auth, chainId}) => {
   const baseUrl = API_URLS[chainId]
   assertNonNullable(baseUrl, `No function URL defined for chain ${chainId}`)
-  const response = await axios.get(`${baseUrl}/kycStatus`, {headers})
+  const response = await axios.get(`${baseUrl}/kycStatus`, {headers: auth})
   if (isKYC(response.data)) {
     return response.data
   } else {
@@ -39,8 +39,32 @@ const defaultFetchKYCStatus: FetchKYCFunction = async ({headers, chainId}) => {
   }
 }
 
+type Auth = {
+  "x-goldfinch-address": any
+  "x-goldfinch-signature": any
+  "x-goldfinch-signature-block-num": any
+}
+
+export function asAuth(obj: any): Auth {
+  assertNonNullable(obj)
+
+  if (typeof obj !== "object") {
+    throw new Error("auth does not conform")
+  }
+
+  if (!("x-goldfinch-address" in obj && "x-goldfinch-signature" in obj && "x-goldfinch-signature-block-num" in obj)) {
+    throw new Error("auth does not conform")
+  }
+
+  const auth = _.pick(obj, ["x-goldfinch-address", "x-goldfinch-signature", "x-goldfinch-signature-block-num"])
+
+  return auth
+}
+
 export async function handler(event: HandlerParams) {
   if (!event.request || !event.request.body) throw new Error("Missing payload")
+
+  const auth = event.request.body.auth
 
   const credentials = {...event}
   const provider = new DefenderRelayProvider(credentials)
@@ -51,30 +75,26 @@ export async function handler(event: HandlerParams) {
   assertNonNullable(uniqueIdentityAddress, "UniqueIdentity address is not defined for this network")
   const uniqueIdentity = new ethers.Contract(uniqueIdentityAddress, UniqueIdentityAbi, signer) as UniqueIdentity
 
-  return await main({signer, headers: event.request.headers, network, uniqueIdentity})
+  return await main({signer, auth: auth, network, uniqueIdentity})
 }
 
 export async function main({
-  headers,
+  auth,
   signer,
   network,
   uniqueIdentity,
   fetchKYCStatus = defaultFetchKYCStatus,
 }: {
-  headers: Request["headers"]
+  auth: any
   signer: Signer
   network: ethers.providers.Network
   uniqueIdentity: UniqueIdentity
   fetchKYCStatus?: FetchKYCFunction
 }) {
   assertNonNullable(signer.provider)
+  auth = asAuth(auth)
 
-  const forwardedHeaders = _.pick(headers, [
-    "x-goldfinch-address",
-    "x-goldfinch-signature",
-    "x-goldfinch-signature-block-num",
-  ])
-  const kycStatus = await fetchKYCStatus({headers: forwardedHeaders, chainId: network.chainId})
+  const kycStatus = await fetchKYCStatus({auth, chainId: network.chainId})
 
   if (kycStatus.status !== "approved" || kycStatus.countryCode === "US" || kycStatus.countryCode === "") {
     throw new Error("Does not meet mint requirements")
@@ -82,7 +102,7 @@ export async function main({
 
   const currentBlock = await signer.provider.getBlock("latest")
   const expiresAt = currentBlock.timestamp + SIGNATURE_EXPIRY_IN_SECONDS
-  const userAddress = forwardedHeaders["x-goldfinch-address"]
+  const userAddress = auth["x-goldfinch-address"]
   const nonce = await uniqueIdentity.nonces(userAddress)
   const idVersion = await uniqueIdentity.ID_VERSION_0()
   const signTypes = ["address", "uint256", "uint256", "address", "uint256", "uint256"]

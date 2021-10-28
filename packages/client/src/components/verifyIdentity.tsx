@@ -5,7 +5,7 @@ import {FormProvider, useForm} from "react-hook-form"
 import {Link} from "react-router-dom"
 import {AppContext, NetworkConfig, SetSessionFn} from "../App"
 import {User} from "../ethereum/user"
-import {LOCAL} from "../ethereum/utils"
+import {LOCAL, MAINNET} from "../ethereum/utils"
 import DefaultGoldfinchClient, {KYC} from "../hooks/useGoldfinchClient"
 import useNonNullContext from "../hooks/useNonNullContext"
 import useSendFromUser from "../hooks/useSendFromUser"
@@ -259,6 +259,10 @@ function VerifyAddress({disabled, dispatch}: {disabled: boolean; dispatch: React
   const [errored, setErrored] = useState<boolean>(false)
 
   useEffect(() => {
+    if (errored || loading) {
+      return
+    }
+
     if (!kyc && session.status === "authenticated") {
       fetchKYCStatus(session)
     } else if (isElligible(kyc, user) && !disabled) {
@@ -400,6 +404,8 @@ function LoadingCard({title}: {title?: string}) {
 
 const UNIQUE_IDENTITY_SIGNER_URLS = {
   [LOCAL]: "/uniqueIdentitySigner", // Proxied by webpack to packages/server/index.ts
+  [MAINNET]:
+    "https://api.defender.openzeppelin.com/autotasks/bc31d6f7-0ab4-4170-9ba0-4978a6ed6034/runs/webhook/6a51e904-1439-4c68-981b-5f22f1c0b560/3fwK6xbVKfeBHZjSdsYQWe",
 }
 
 const UNIQUE_IDENTITY_MINT_PRICE = web3.utils.toWei("0.00083", "ether")
@@ -472,13 +478,11 @@ async function fetchTrustedSignature({
     throw new Error("not authenticated")
   }
   const client = new DefaultGoldfinchClient(network.name, session, setSessionData)
-  const headers = client._getAuthHeaders(user.address)
+  const auth = client._getAuthHeaders(user.address)
 
   const response = await fetch(UNIQUE_IDENTITY_SIGNER_URLS[network.name], {
-    headers: {
-      ...headers,
-      "Content-Type": "application/json",
-    },
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({auth}),
     method: "POST",
   })
   const body = await response.json()
