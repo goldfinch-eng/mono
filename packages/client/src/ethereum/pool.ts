@@ -13,7 +13,7 @@ import {buildCreditLine} from "./creditLine"
 import {Tickers, usdcFromAtomic} from "./erc20"
 import {getBalanceAsOf, mapEventsToTx} from "./events"
 import {fiduFromAtomic, fiduInDollars, fiduToDollarsAtomic, FIDU_DECIMALS} from "./fidu"
-import {gfiInDollars, gfiToDollarsAtomic} from "./gfi"
+import {gfiInDollars, gfiToDollarsAtomic, GFI_DECIMALS} from "./gfi"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {getMetadataStore} from "./tranchedPool"
 import {fetchDataFromAttributes, getPoolEvents, INTEREST_DECIMALS, USDC_DECIMALS} from "./utils"
@@ -174,7 +174,7 @@ function getCapitalProviderStakingInfo(
 
   const unvestedRewardsPositions = positions.filter((val) => val.rewards.endTime > currentBlock.timestamp)
 
-  const gfiPrice = new BigNumber(1) // TODO[PR]
+  const gfiPrice = new BigNumber(1).multipliedBy(GFI_DECIMALS) // TODO[PR]
 
   let rewards: CapitalProviderStakingRewardsInfo
   const unvested = stakingRewards.info.value.unvested

@@ -148,13 +148,18 @@ function usdcToFidu(usdcAmount: BigNumber): BigNumber {
 }
 
 function getNumSharesFromUsdc(usdcAmount: BigNumber, sharePrice: BigNumber): BigNumber {
-  return usdcToFidu(usdcAmount)
-    .multipliedBy(
-      // This might be better thought of as multiplying by the share-price mantissa,
-      // which happens to be the same as `FIDU_DECIMALS`.
-      FIDU_DECIMALS
-    )
-    .dividedBy(sharePrice)
+  return (
+    usdcToFidu(usdcAmount)
+      .multipliedBy(
+        // This might be better thought of as multiplying by the share-price mantissa,
+        // which happens to be the same as `FIDU_DECIMALS`.
+        FIDU_DECIMALS
+      )
+      // We use `.dividedToIntegerBy()` rather than `.dividedBy()` because we want to end
+      // up with an integer, for the sake of parity with how num shares are represented
+      // in the EVM, namely as a 256-bit integer.
+      .dividedToIntegerBy(sharePrice)
+  )
 }
 
 function minimumNumber(...args) {

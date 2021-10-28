@@ -102,7 +102,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
           .sort((a, b) => a.storedPosition.rewards.endTime - b.storedPosition.rewards.endTime)
         const reduced = sorted.reduceRight<UnstakeTokensAccumulator>(
           (acc: UnstakeTokensAccumulator, curr: StakingRewardsPosition): UnstakeTokensAccumulator => {
-            if (acc.fiduSum < withdrawalFiduAmountRemaining) {
+            if (acc.fiduSum.lt(withdrawalFiduAmountRemaining)) {
               const fiduPortion = BigNumber.min(
                 curr.storedPosition.amount,
                 withdrawalFiduAmountRemaining.minus(acc.fiduSum)
