@@ -3,6 +3,7 @@ import {relay} from "./relay"
 import ForwarderAbi from "./Forwarder.json"
 import {Relayer} from "defender-relay-client"
 import {DefenderRelaySigner, DefenderRelayProvider} from "defender-relay-client/lib/ethers"
+import {HandlerParams} from "../types"
 
 const ALLOWED_SENDERS = {
   4: ["0xE7f9ED35DA54b2e4A1857487dBf42A32C4DBD4a0", "0x3FeB1094eE48DB0B9aC25b82A3A34ABe16208590"],
@@ -34,7 +35,7 @@ const DOMAIN_SEPARATOR = {
   4: "0xd8f4a5d52f3a3cda60774fb6efa0dc496380a66839eb524f5613de676bbb265c",
 }
 
-async function handler(event) {
+async function handler(event: HandlerParams) {
   // Parse webhook payload
   if (!event.request || !event.request.body) throw new Error("Missing payload")
   // console.log("Relaying", event.request)

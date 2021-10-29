@@ -1,3 +1,8 @@
+import {
+  TEST_MERKLE_DISTRIBUTOR_RECIPIENT_A,
+  TEST_MERKLE_DISTRIBUTOR_RECIPIENT_B,
+} from "./test/blockchain_scripts/merkleDistributor/fixtures"
+
 import {findEnvLocal} from "@goldfinch-eng/utils"
 import dotenv from "dotenv"
 dotenv.config({path: findEnvLocal()})
@@ -54,6 +59,15 @@ export default {
           },
         },
       },
+      {
+        version: "0.8.4",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+        },
+      },
     ],
   },
   namedAccounts: {
@@ -66,6 +80,12 @@ export default {
       default: 1,
       1: "0xa083880F7a5df37Bf00a25380C3eB9AF9cD92D8f",
       4: "0xf3c9B38c155410456b5A98fD8bBf5E35B87F6d96",
+    },
+    test_merkle_distributor_recipient_a: {
+      hardhat: TEST_MERKLE_DISTRIBUTOR_RECIPIENT_A,
+    },
+    test_merkle_distributor_recipient_b: {
+      hardhat: TEST_MERKLE_DISTRIBUTOR_RECIPIENT_B,
     },
   },
   gasReporter: {

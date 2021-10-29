@@ -37,6 +37,14 @@ const scenarios: Scenario[] = [
     expectedText: /you'll first need to download and install the Metamask plug-in/,
   },
   {
+    devName: "pool_paused",
+    setUpMatch: ({props}) => {
+      props.isPaused = true
+    },
+    setUpFallthrough: (_props) => {},
+    expectedText: /The pool is currently paused/,
+  },
+  {
     devName: "wrong_network",
     setUpMatch: ({store}) => {
       store.network = {
@@ -232,8 +240,8 @@ describe("ConnectionNotice", () => {
         scenario.setUpMatch({store, props, context})
 
         render(<ConnectionNotice {...props} />, {wrapper})
-
-        expect(await screen.findByText(scenario.expectedText)).toBeVisible()
+        const renderedText = await screen.findByText(scenario.expectedText)
+        expect(renderedText).toBeVisible()
       })
     })
 

@@ -1,10 +1,10 @@
 import React from "react"
-import InfoSection from "./infoSection"
-import CreditBarViz from "./creditBarViz"
 import {usdcFromAtomic} from "../ethereum/erc20"
 import {displayDollars, displayNumber} from "../utils"
-import {iconClock, iconOutArrow} from "./icons"
+import CreditBarViz from "./creditBarViz"
 import EtherscanLink from "./etherscanLink"
+import {iconClock, iconOutArrow} from "./icons"
+import InfoSection from "./infoSection"
 
 function CreditStatus(props) {
   let placeholderClass = ""
