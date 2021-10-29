@@ -3,8 +3,8 @@ import {useState} from "react"
 import {AppContext} from "../App"
 import {getNumSharesFromUsdc, minimumNumber, usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
 import {fiduFromAtomic} from "../ethereum/fidu"
-import {gfiInDollars, gfiFromAtomic, gfiToDollarsAtomic} from "../ethereum/gfi"
-import {CapitalProvider, PoolData, StakingRewardsLoaded, StakingRewardsPosition} from "../ethereum/pool"
+import {gfiFromAtomic, gfiInDollars, gfiToDollarsAtomic} from "../ethereum/gfi"
+import {CapitalProvider, PoolData, StakingRewardsPosition} from "../ethereum/pool"
 import useDebounce from "../hooks/useDebounce"
 import useNonNullContext from "../hooks/useNonNullContext"
 import useSendFromUser from "../hooks/useSendFromUser"
@@ -58,7 +58,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
   const [transactionAmount, setTransactionAmount] = useState()
   const debouncedSetTransactionAmount = useDebounce(setTransactionAmount, 200)
 
-  function getWithdrawalInfo(withdrawalAmount: BigNumber, stakingRewards: StakingRewardsLoaded): WithdrawalInfo {
+  function getWithdrawalInfo(withdrawalAmount: BigNumber): WithdrawalInfo {
     const withdrawalFiduAmount = getNumSharesFromUsdc(withdrawalAmount, props.capitalProvider.sharePrice)
 
     if (withdrawalFiduAmount.gt(props.capitalProvider.shares.aggregates.withdrawable)) {
@@ -92,21 +92,20 @@ function WithdrawalForm(props: WithdrawalFormProps) {
     // another, as all such positions earn rewards at the same rate.
     let unstakeAndWithdraw: UnstakeAndWithdrawInfo | undefined
     if (withdrawalFiduAmountRemaining.gt(0)) {
-      // TODO Refactor not to use `stakingRewards`. Refactor `props.capitalProvider` to provide the positions array
-      // that must be iterated over.
-      if (props.capitalProvider.currentBlock.number === stakingRewards.info.value.currentBlock.number) {
-        const positions = stakingRewards.unstakeablePositions
-        assertNonNullable(positions)
-        const sorted = positions
-          .slice()
-          .sort((a, b) => a.storedPosition.rewards.endTime - b.storedPosition.rewards.endTime)
-        const reduced = sorted.reduceRight<UnstakeTokensAccumulator>(
-          (acc: UnstakeTokensAccumulator, curr: StakingRewardsPosition): UnstakeTokensAccumulator => {
-            if (acc.fiduSum.lt(withdrawalFiduAmountRemaining)) {
-              const fiduPortion = BigNumber.min(
-                curr.storedPosition.amount,
-                withdrawalFiduAmountRemaining.minus(acc.fiduSum)
-              )
+      const positions = props.capitalProvider.unstakeablePositions
+      const sorted = positions
+        .slice()
+        .sort((a, b) => a.storedPosition.rewards.endTime - b.storedPosition.rewards.endTime)
+      const reduced = sorted.reduceRight<UnstakeTokensAccumulator>(
+        (acc: UnstakeTokensAccumulator, curr: StakingRewardsPosition): UnstakeTokensAccumulator => {
+          if (acc.fiduSum.lt(withdrawalFiduAmountRemaining)) {
+            const fiduPortion = BigNumber.min(
+              curr.storedPosition.amount,
+              withdrawalFiduAmountRemaining.minus(acc.fiduSum)
+            )
+            if (fiduPortion.eq(0)) {
+              return acc
+            } else {
               let forfeitedGfiPortion: BigNumber
               if (curr.storedPosition.amount.eq(0)) {
                 // Zero FIDU remaining on the position is possible via having fully unstaked.
@@ -115,7 +114,9 @@ function WithdrawalForm(props: WithdrawalFormProps) {
                 }
                 forfeitedGfiPortion = new BigNumber(0)
               } else {
-                forfeitedGfiPortion = curr.unvested.multipliedBy(fiduPortion).dividedBy(curr.storedPosition.amount)
+                forfeitedGfiPortion = curr.unvested
+                  .multipliedBy(fiduPortion)
+                  .dividedToIntegerBy(curr.storedPosition.amount)
               }
               return {
                 fiduSum: acc.fiduSum.plus(fiduPortion),
@@ -128,26 +129,24 @@ function WithdrawalForm(props: WithdrawalFormProps) {
                   },
                 ]),
               }
-            } else {
-              return acc
             }
-          },
-          {
-            fiduSum: new BigNumber(0),
-            forfeitedGfiSum: new BigNumber(0),
-            tokens: [],
+          } else {
+            return acc
           }
-        )
-
-        withdrawalFiduAmountRemaining = withdrawalFiduAmountRemaining.minus(reduced.fiduSum)
-        if (!withdrawalFiduAmountRemaining.eq(0)) {
-          throw new Error("Failed to prepare withdrawals of desired FIDU amount.")
+        },
+        {
+          fiduSum: new BigNumber(0),
+          forfeitedGfiSum: new BigNumber(0),
+          tokens: [],
         }
+      )
 
-        unstakeAndWithdraw = reduced
-      } else {
-        throw new Error("`capitalProvider` and `stakingRewards` info are based on different blocks.")
+      withdrawalFiduAmountRemaining = withdrawalFiduAmountRemaining.minus(reduced.fiduSum)
+      if (!withdrawalFiduAmountRemaining.eq(0)) {
+        throw new Error("Failed to prepare withdrawals of desired FIDU amount.")
       }
+
+      unstakeAndWithdraw = reduced
     }
 
     if (withdraw && unstakeAndWithdraw) {
@@ -166,7 +165,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
 
     const withdrawalAmountString = usdcToAtomic(transactionAmount)
     const withdrawalAmount = new BigNumber(withdrawalAmountString)
-    const info = getWithdrawalInfo(withdrawalAmount, stakingRewards)
+    const info = getWithdrawalInfo(withdrawalAmount)
 
     return (
       info.withdraw
@@ -211,9 +210,17 @@ function WithdrawalForm(props: WithdrawalFormProps) {
   )
 
   function renderForm({formMethods}) {
-    const lastVestingEnd = props.capitalProvider.stakingRewards.hasUnvested
-      ? new Date(props.capitalProvider.stakingRewards.lastVestingEndTime * 1000)
+    // NOTE: `props.capitalProvider.rewardsInfo` reflects unvested rewards from *all* positions,
+    // including any locked positions. Even though our UI doesn't enable using lock-up, it seems
+    // appropriate to use unvested rewards info here from all positions (rather than only the
+    // unstakeable positions), because (1) that does not impact correctness of the calculation
+    // of how much would be forfeited for the user's intended withdrawal amount; and (2) that amount
+    // of unvested rewards corresponds to what's shown as the "Still vesting" amount on the Rewards
+    // page.
+    const lastVestingEnd = props.capitalProvider.rewardsInfo.hasUnvested
+      ? new Date(props.capitalProvider.rewardsInfo.lastVestingEndTime * 1000)
       : undefined
+
     // NOTE: The figure we show about how much GFI will be forfeited because it is unvested should
     // be considered an estimate. That's because the actual amount forfeited is determined at the
     // time of executing the unstaking transaction, and the unstaking transaction causes its own
@@ -221,12 +228,12 @@ function WithdrawalForm(props: WithdrawalFormProps) {
     // here, as the basis for telling the user how much unvested rewards their withdrawal entails
     // forfeiting, will not necessarily equal the amount that will actually be forfeited when the
     // transaction is executed.
-    const forfeitAdvisory = props.capitalProvider.stakingRewards.hasUnvested ? (
+    const forfeitAdvisory = props.capitalProvider.rewardsInfo.hasUnvested ? (
       <div className="form-message paragraph">
         {"You have "}
-        {displayNumber(gfiFromAtomic(props.capitalProvider.stakingRewards.unvested), 2)}
+        {displayNumber(gfiFromAtomic(props.capitalProvider.rewardsInfo.unvested), 2)}
         {" GFI ("}
-        {displayDollars(props.capitalProvider.stakingRewards.unvestedInDollars, 2)}
+        {displayDollars(props.capitalProvider.rewardsInfo.unvestedInDollars, 2)}
         {") that is still vesting until "}
         {lastVestingEnd!.toLocaleDateString(undefined, {
           year: "numeric",
@@ -244,11 +251,12 @@ function WithdrawalForm(props: WithdrawalFormProps) {
         {" the protocol will deduct a 0.50% fee from your withdrawal amount for protocol reserves."}
       </div>
     )
+
     let notes: React.ReactNode[] = []
     if (transactionAmount && stakingRewards) {
       const withdrawalAmountString = usdcToAtomic(transactionAmount)
       const withdrawalAmount = new BigNumber(withdrawalAmountString)
-      const info = getWithdrawalInfo(withdrawalAmount, stakingRewards)
+      const info = getWithdrawalInfo(withdrawalAmount)
       const forfeitedGfi = info.unstakeAndWithdraw ? info.unstakeAndWithdraw.forfeitedGfiSum : new BigNumber(0)
       notes = [
         {
@@ -274,6 +282,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
         },
       ]
     }
+
     return (
       <div className="form-inputs">
         {forfeitAdvisory}

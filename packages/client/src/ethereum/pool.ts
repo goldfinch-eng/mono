@@ -6,7 +6,7 @@ import {TranchedPool} from "@goldfinch-eng/protocol/typechain/web3/TranchedPool"
 import BigNumber from "bignumber.js"
 import _ from "lodash"
 import {BlockNumber} from "web3-core"
-import {Contract, EventData} from "web3-eth-contract"
+import {Contract, EventData, Filter} from "web3-eth-contract"
 import {assertWithLoadedInfo, Loadable, Loaded, WithLoadedInfo} from "../types/loadable"
 import {assertBigNumber, BlockInfo, displayNumber, roundDownPenny} from "../utils"
 import {buildCreditLine} from "./creditLine"
@@ -112,7 +112,7 @@ interface CapitalProvider {
   shares: {
     parts: {
       notStaked: BigNumber
-      stakedNotLocked: BigNumber
+      stakedUnlocked: BigNumber
       stakedLocked: BigNumber
     }
     aggregates: {
@@ -126,7 +126,8 @@ interface CapitalProvider {
   availableToStakeInDollars: BigNumber
   availableToWithdraw: BigNumber
   availableToWithdrawInDollars: BigNumber
-  stakingRewards: CapitalProviderStakingRewardsInfo
+  unstakeablePositions: StakingRewardsPosition[]
+  rewardsInfo: CapitalProviderStakingRewardsInfo
   address: string
   allowance: BigNumber
   weightedAverageSharePrice: BigNumber
@@ -153,28 +154,18 @@ type CapitalProviderStakingInfo = {
   gfiPrice: BigNumber
   shares: {
     locked: BigNumber
-    notLocked: BigNumber
+    unlocked: BigNumber
   }
+  unstakeablePositions: StakingRewardsPosition[]
   rewards: CapitalProviderStakingRewardsInfo
 }
 
-function getCapitalProviderStakingInfo(
+async function getCapitalProviderStakingInfo(
   stakingRewards: StakingRewardsLoaded,
   currentBlock: BlockInfo
-): CapitalProviderStakingInfo {
-  const positions = stakingRewards.info.value.positions.map((position) => ({
-    amount: new BigNumber(position.storedPosition.amount),
-    locked: position.storedPosition.lockedUntil > currentBlock.timestamp,
-    rewards: {
-      unvested: position.unvested,
-      endTime: position.storedPosition.rewards.endTime,
-    },
-  }))
-
-  const sharesLockedPositions = positions.filter((val) => val.locked)
-  const sharesNotLockedPositions = positions.filter((val) => !val.locked)
-
-  const unvestedRewardsPositions = positions.filter((val) => val.rewards.endTime > currentBlock.timestamp)
+): Promise<CapitalProviderStakingInfo> {
+  const lockedPositions = stakingRewards.lockedPositions
+  const unlockedPositions = stakingRewards.unlockedPositions
 
   const gfiPrice = new BigNumber(1).multipliedBy(GFI_DECIMALS) // TODO[PR]
 
@@ -185,8 +176,8 @@ function getCapitalProviderStakingInfo(
       hasUnvested: true,
       unvested,
       unvestedInDollars: gfiInDollars(gfiToDollarsAtomic(unvested, gfiPrice)),
-      lastVestingEndTime: unvestedRewardsPositions.reduce(
-        (acc, curr) => (curr.rewards.endTime > acc ? curr.rewards.endTime : acc),
+      lastVestingEndTime: stakingRewards.unvestedRewardsPositions.reduce(
+        (acc, curr) => (curr.storedPosition.rewards.endTime > acc ? curr.storedPosition.rewards.endTime : acc),
         0
       ),
     }
@@ -202,19 +193,21 @@ function getCapitalProviderStakingInfo(
   return {
     gfiPrice,
     shares: {
-      locked: sharesLockedPositions.length
+      locked: lockedPositions.length
         ? BigNumber.sum.apply(
             null,
-            sharesLockedPositions.map((val) => val.amount)
+            lockedPositions.map((val) => val.storedPosition.amount)
           )
         : new BigNumber(0),
-      notLocked: sharesNotLockedPositions.length
+      unlocked: unlockedPositions.length
         ? BigNumber.sum.apply(
             null,
-            sharesNotLockedPositions.map((val) => val.amount)
+            unlockedPositions.map((val) => val.storedPosition.amount)
           )
         : new BigNumber(0),
     },
+    // Any position that is not locked can be unstaked.
+    unstakeablePositions: unlockedPositions,
     rewards,
   }
 }
@@ -236,18 +229,16 @@ async function fetchCapitalProviderData(
   })
   assertBigNumber(sharePrice)
 
-  // TODO[PR] Could make this value a responsibility of `stakingRewards`, then `stakingRewards` would be sufficient
-  // for withdrawal form.
   const numSharesNotStaked = new BigNumber(
     await pool.fidu.methods.balanceOf(capitalProviderAddress).call(undefined, currentBlock.number)
   )
   const stakingInfo = await getCapitalProviderStakingInfo(stakingRewards, currentBlock)
   const numSharesStakedLocked = stakingInfo.shares.locked
-  const numSharesStakedNotLocked = stakingInfo.shares.notLocked
+  const numSharesStakedUnlocked = stakingInfo.shares.unlocked
 
-  const numSharesStaked = numSharesStakedLocked.plus(numSharesStakedNotLocked)
-  const numSharesWithdrawable = numSharesNotStaked.plus(numSharesStakedNotLocked)
-  const numSharesTotal = numSharesNotStaked.plus(numSharesStakedLocked).plus(numSharesStakedNotLocked)
+  const numSharesStaked = numSharesStakedLocked.plus(numSharesStakedUnlocked)
+  const numSharesWithdrawable = numSharesNotStaked.plus(numSharesStakedUnlocked)
+  const numSharesTotal = numSharesNotStaked.plus(numSharesStakedLocked).plus(numSharesStakedUnlocked)
 
   const stakedSeniorPoolBalance = fiduToDollarsAtomic(numSharesStaked, sharePrice)
   const stakedSeniorPoolBalanceInDollars = fiduInDollars(stakedSeniorPoolBalance)
@@ -286,7 +277,7 @@ async function fetchCapitalProviderData(
       shares: {
         parts: {
           notStaked: numSharesNotStaked,
-          stakedNotLocked: numSharesStakedNotLocked,
+          stakedUnlocked: numSharesStakedUnlocked,
           stakedLocked: numSharesStakedLocked,
         },
         aggregates: {
@@ -300,7 +291,8 @@ async function fetchCapitalProviderData(
       availableToStakeInDollars,
       availableToWithdraw,
       availableToWithdrawInDollars,
-      stakingRewards: stakingInfo.rewards,
+      unstakeablePositions: stakingInfo.unstakeablePositions,
+      rewardsInfo: stakingInfo.rewards,
       address,
       allowance,
       weightedAverageSharePrice,
@@ -395,6 +387,7 @@ async function getDepositEventsByCapitalProvider(
   const depositedAndStakedEventsByCapitalProvider: EventData[] = await stakingRewards.getStakingEvents(
     capitalProviderAddress,
     ["DepositedAndStaked"],
+    undefined,
     currentBlock.number
   )
   return depositMadeEventsByCapitalProvider.concat(depositedAndStakedEventsByCapitalProvider)
@@ -625,11 +618,18 @@ interface StakingRewardsVesting {
 
 class StakingRewardsPosition {
   tokenId: string
+  stakedEvent: EventData
   storedPosition: StoredPosition
   optimisticIncrement: PositionOptimisticIncrement
 
-  constructor(tokenId: string, storedPosition: StoredPosition, optimisticIncrement: PositionOptimisticIncrement) {
+  constructor(
+    tokenId: string,
+    stakedEvent: EventData,
+    storedPosition: StoredPosition,
+    optimisticIncrement: PositionOptimisticIncrement
+  ) {
     this.tokenId = tokenId
+    this.stakedEvent = stakedEvent
     this.storedPosition = storedPosition
     this.optimisticIncrement = optimisticIncrement
   }
@@ -640,7 +640,11 @@ class StakingRewardsPosition {
       day: "numeric",
       year: "numeric",
     })
-    return `Staked ${displayNumber(fiduFromAtomic(this.storedPosition.amount), 2)} FIDU on ${date}`
+    const origStakedAmount = fiduFromAtomic(this.stakedEvent.returnValues.amount)
+    const remainingAmount = fiduFromAtomic(this.storedPosition.amount)
+    return `Staked ${displayNumber(origStakedAmount, 2)} FIDU on ${date}${
+      origStakedAmount === remainingAmount ? "" : ` (${displayNumber(remainingAmount, 2)} FIDU remaining)`
+    }`
   }
 
   get granted(): BigNumber {
@@ -667,6 +671,10 @@ class StakingRewardsPosition {
 
   get claimable(): BigNumber {
     return this.vested.minus(this.claimed)
+  }
+
+  getLocked(currentBlock: BlockInfo): boolean {
+    return this.storedPosition.lockedUntil > currentBlock.timestamp
   }
 }
 
@@ -750,23 +758,21 @@ class StakingRewards {
           .positions(tokenId)
           .call(undefined, currentBlock.number)
           .then(async (rawPosition) => {
-            // TODO[PR] Amount remaining on position does not necessarily equal amount originally staked, due to
-            // the possibility of having partially unstaked. So to be able to display the original staked amount
-            // in the UI, we need to query for the relevant event, and keep that value.
-
             const storedPosition = parseStoredPosition(rawPosition)
-            const optimisticIncrement = await this.calculatePositionOptimisticIncrement(
-              tokenId,
-              storedPosition.rewards,
-              currentBlock
-            )
-            return new StakingRewardsPosition(tokenId, storedPosition, optimisticIncrement)
+            const [stakedEvent, optimisticIncrement] = await Promise.all([
+              this.getStakedEvent(recipient, tokenId, currentBlock.number),
+              this.calculatePositionOptimisticIncrement(tokenId, storedPosition.rewards, currentBlock),
+            ])
+            if (!stakedEvent) {
+              throw new Error(`Failed to retrieve Staked event for tokenId: ${tokenId}`)
+            }
+            return new StakingRewardsPosition(tokenId, stakedEvent, storedPosition, optimisticIncrement)
           })
       })
     )
-    const claimable = StakingRewards.calculateClaimable(positions)
-    const unvested = StakingRewards.calculateUnvested(positions)
-    const granted = StakingRewards.calculateGranted(positions)
+    const claimable = StakingRewards.calculateClaimableRewards(positions)
+    const unvested = StakingRewards.calculateUnvestedRewards(positions)
+    const granted = StakingRewards.calculateGrantedRewards(positions)
 
     this.info = {
       loaded: true,
@@ -781,16 +787,24 @@ class StakingRewards {
     }
   }
 
-  get unstakeablePositions(): StakingRewardsPosition[] {
+  get lockedPositions(): StakingRewardsPosition[] {
     // We expect this getter to be used only once info has been loaded.
     assertWithLoadedInfo(this)
-
     const value = this.info.value
-    const unlockedPositions = value.positions.filter(
-      (position) => position.storedPosition.lockedUntil <= value.currentBlock.timestamp
-    )
-    // Any position that is not locked can be unstaked.
-    return unlockedPositions
+    return value.positions.filter((position) => position.getLocked(value.currentBlock))
+  }
+
+  get unlockedPositions(): StakingRewardsPosition[] {
+    // We expect this getter to be used only once info has been loaded.
+    assertWithLoadedInfo(this)
+    const value = this.info.value
+    return value.positions.filter((position) => !position.getLocked(value.currentBlock))
+  }
+
+  get unvestedRewardsPositions(): StakingRewardsPosition[] {
+    assertWithLoadedInfo(this)
+    const value = this.info.value
+    return value.positions.filter((position) => position.storedPosition.rewards.endTime > value.currentBlock.timestamp)
   }
 
   async calculatePositionOptimisticIncrement(
@@ -818,16 +832,39 @@ class StakingRewards {
     }
   }
 
+  async getStakedEvent(recipient: string, tokenId: string, toBlock: BlockNumber): Promise<EventData | undefined> {
+    const events = await this.getStakingEvents(recipient, ["Staked"], {tokenId}, toBlock)
+    if (events.length) {
+      if (events.length === 1) {
+        const event = events[0]
+        return event
+      } else {
+        throw new Error(`Expected only one Staked event for tokenId: ${tokenId}`)
+      }
+    } else {
+      return
+    }
+  }
+
   async getStakingEvents(
     recipient: string,
     eventNames: ["Staked"] | ["DepositedAndStaked"] | ["Staked", "DepositedAndStaked"],
+    filter: Filter | undefined,
     toBlock: BlockNumber
   ): Promise<EventData[]> {
-    const events = await this.goldfinchProtocol.queryEvents(this.contract, eventNames, {user: recipient}, toBlock)
+    const events = await this.goldfinchProtocol.queryEvents(
+      this.contract,
+      eventNames,
+      {
+        ...(filter || {}),
+        user: recipient,
+      },
+      toBlock
+    )
     return events
   }
 
-  static calculateClaimable(positions: StakingRewardsPosition[]): BigNumber {
+  static calculateClaimableRewards(positions: StakingRewardsPosition[]): BigNumber {
     if (positions.length === 0) return new BigNumber(0)
     return BigNumber.sum.apply(
       null,
@@ -835,7 +872,7 @@ class StakingRewards {
     )
   }
 
-  static calculateUnvested(positions: StakingRewardsPosition[]): BigNumber {
+  static calculateUnvestedRewards(positions: StakingRewardsPosition[]): BigNumber {
     if (positions.length === 0) return new BigNumber(0)
     return BigNumber.sum.apply(
       null,
@@ -843,7 +880,7 @@ class StakingRewards {
     )
   }
 
-  static calculateGranted(positions: StakingRewardsPosition[]): BigNumber {
+  static calculateGrantedRewards(positions: StakingRewardsPosition[]): BigNumber {
     if (positions.length === 0) return new BigNumber(0)
     return BigNumber.sum.apply(
       null,
