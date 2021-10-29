@@ -2,25 +2,34 @@ import React, {useContext, useEffect, useState} from "react"
 import _ from "lodash"
 import ConnectionNotice from "./connectionNotice"
 import {AppContext} from "../App"
-import {displayDollars} from "../utils"
+import {BlockInfo, displayDollars} from "../utils"
 import {MAX_UINT} from "../ethereum/utils"
 import BigNumber from "bignumber.js"
 import {iconCircleUpLg, iconCircleDownLg, iconCircleCheckLg, iconOutArrow} from "./icons"
 import {mapEventsToTx} from "../ethereum/events"
+import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
+import {TranchedPool} from "../ethereum/tranchedPool"
 
 function Transactions(props) {
-  const {user, network, goldfinchProtocol} = useContext(AppContext)
+  const {user, network, goldfinchProtocol, currentBlock} = useContext(AppContext)
   const [tranchedPoolTxs, setTranchedPoolTxs] = useState()
 
   async function loadTranchedPoolEvents(
-    tranchedPools,
-    events = ["DepositMade", "WithdrawalMade", "PaymentApplied", "DrawdownMade"]
+    tranchedPools: {[address: string]: TranchedPool},
+    goldfinchProtocol: GoldfinchProtocol,
+    currentBlock: BlockInfo
   ) {
     const tranchedPoolsAddresses = Object.keys(tranchedPools)
     let combinedEvents = _.flatten(
       await Promise.all(
-        // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
-        tranchedPoolsAddresses.map((address) => goldfinchProtocol.queryEvents(tranchedPools[address].contract, events))
+        tranchedPoolsAddresses.map((address) =>
+          goldfinchProtocol.queryEvents(
+            tranchedPools[address]!.contract,
+            ["DepositMade", "WithdrawalMade", "PaymentApplied", "DrawdownMade"],
+            undefined,
+            currentBlock.number
+          )
+        )
       )
     )
     // @ts-expect-error ts-migrate(2345) FIXME: Argument of type '{ type: any; name: any; amount: ... Remove this comment to see the full error message
@@ -28,13 +37,13 @@ function Transactions(props) {
   }
 
   useEffect(() => {
-    const borrower = (user as any).borrower
-    if (!borrower) {
+    const borrower = user.borrower
+    if (!borrower || !goldfinchProtocol || !currentBlock) {
       return
     }
-    loadTranchedPoolEvents((user as any).borrower.tranchedPools)
+    loadTranchedPoolEvents(borrower.tranchedPools, goldfinchProtocol, currentBlock)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user])
+  }, [user.borrower, goldfinchProtocol, currentBlock])
 
   function transactionRow(tx) {
     // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.

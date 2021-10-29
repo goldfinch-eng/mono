@@ -50,8 +50,8 @@ class GoldfinchProtocol {
   async queryEvents(
     contract: string | Contract | BaseContract,
     events: string | string[],
-    filter?: Filter,
-    toBlock: BlockNumber = "latest"
+    filter: Filter | undefined,
+    toBlock: BlockNumber
   ) {
     let contractObj: Contract
     if (typeof contract == "string") {
@@ -74,8 +74,8 @@ class GoldfinchProtocol {
   async queryEvent<T extends ContractEventLog<any>>(
     contract: string | Contract | BaseContract,
     event: string,
-    filter?: Filter,
-    toBlock: BlockNumber = "latest"
+    filter: Filter | undefined,
+    toBlock: BlockNumber
   ) {
     return (await this.queryEvents(contract, event, filter, toBlock)) as any as T[]
   }

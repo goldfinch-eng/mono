@@ -64,7 +64,7 @@ class SeniorPool {
 
   async initialize(currentBlock: BlockInfo): Promise<void> {
     const poolData = await fetchPoolData(this, this.usdc, currentBlock)
-    const isPaused = await this.contract.methods.paused().call()
+    const isPaused = await this.contract.methods.paused().call(undefined, currentBlock.number)
     this.info = {
       loaded: true,
       value: {
@@ -503,10 +503,14 @@ async function getCumulativeDrawdowns(pool: SeniorPool, currentBlock: BlockInfo)
   return sum
 }
 
-async function getRepaymentEvents(pool: SeniorPoolLoaded, goldfinchProtocol: GoldfinchProtocol) {
+async function getRepaymentEvents(
+  pool: SeniorPoolLoaded,
+  goldfinchProtocol: GoldfinchProtocol,
+  currentBlock: BlockInfo
+) {
   const eventNames = ["InterestCollected", "PrincipalCollected", "ReserveFundsCollected"]
-  let events = await goldfinchProtocol.queryEvents(pool.contract, eventNames)
-  const oldEvents = await goldfinchProtocol.queryEvents("Pool", eventNames)
+  let events = await goldfinchProtocol.queryEvents(pool.contract, eventNames, undefined, currentBlock.number)
+  const oldEvents = await goldfinchProtocol.queryEvents("Pool", eventNames, undefined, currentBlock.number)
   events = oldEvents.concat(events)
   const eventTxs = await mapEventsToTx(events)
   const combinedEvents = _.map(_.groupBy(eventTxs, "id"), (val) => {
@@ -817,7 +821,7 @@ class StakingRewards {
   async getStakingEvents(
     recipient: string,
     eventNames: ["Staked"] | ["DepositedAndStaked"] | ["Staked", "DepositedAndStaked"],
-    toBlock: BlockNumber = "latest"
+    toBlock: BlockNumber
   ): Promise<EventData[]> {
     const events = await this.goldfinchProtocol.queryEvents(this.contract, eventNames, {user: recipient}, toBlock)
     return events

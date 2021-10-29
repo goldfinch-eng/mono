@@ -158,7 +158,9 @@ class CreditLine extends BaseCreditLine {
     const interestOwed = this._calculateInterestOwed()
     this.dueDate = this.nextDueTime.toNumber() === 0 ? "" : formattedNextDueDate
     this.termEndDate = moment.unix(this.termEndTime.toNumber()).format("MMM D, YYYY")
-    this.collectedPaymentBalance = new BigNumber(await this.usdc.methods.balanceOf(this.address).call())
+    this.collectedPaymentBalance = new BigNumber(
+      await this.usdc.methods.balanceOf(this.address).call(undefined, currentBlock.number)
+    )
     this.periodDueAmount = this._calculateNextDueAmount()
     this.remainingPeriodDueAmount = BigNumber.max(this.periodDueAmount.minus(this.collectedPaymentBalance), zero)
     this.interestAprDecimal = new BigNumber(this.interestApr).div(INTEREST_DECIMALS.toString())

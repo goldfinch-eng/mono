@@ -19,7 +19,7 @@ interface StakeFiduBannerProps {
 }
 
 export default function StakeFiduBanner(props: StakeFiduBannerProps) {
-  const {pool, user} = useContext(AppContext)
+  const {pool, user, currentBlock} = useContext(AppContext)
   const sendFromUser = useSendFromUser()
   const stakingRewards = useStakingRewards()
   const formMethods = useForm()
@@ -27,7 +27,8 @@ export default function StakeFiduBanner(props: StakeFiduBannerProps) {
   const stake = async () => {
     assertNonNullable(pool)
     assertNonNullable(stakingRewards)
-    const amount = new BigNumber(await pool.fidu.methods.balanceOf(user.address).call())
+    assertNonNullable(currentBlock)
+    const amount = new BigNumber(await pool.fidu.methods.balanceOf(user.address).call(undefined, "latest"))
 
     // For the StakingRewards contract to be able to transfer the user's FIDU as part of
     // staking (more precisely, staking directly via `stake()`, as opposed to via `depositAndStake*()`),
@@ -35,7 +36,7 @@ export default function StakeFiduBanner(props: StakeFiduBannerProps) {
     // to be transferred. So if the StakingRewards contract is not already thusly approved,
     // staking requires two transactions: one to grant the approval, then one to actually stake.
     const alreadyApprovedAmount = new BigNumber(
-      await pool.fidu.methods.allowance(user.address, stakingRewards.address).call()
+      await pool.fidu.methods.allowance(user.address, stakingRewards.address).call(undefined, "latest")
     )
     const amountRequiringApproval = amount.minus(alreadyApprovedAmount)
     const approval = amountRequiringApproval.gt(0)

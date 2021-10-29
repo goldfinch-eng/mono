@@ -136,7 +136,7 @@ class BorrowerInterface {
 
     const result = await this.oneInch.methods
       .getExpectedReturn(this.usdc.address, toToken, amount, splitParts, 0)
-      .call()
+      .call(undefined, "latest")
     return this.borrowerContract.methods.drawdownWithSwapOnOneInch(
       this.getPoolAddressFromCL(creditLineAddress),
       amount,

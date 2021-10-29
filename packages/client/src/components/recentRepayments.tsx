@@ -6,18 +6,18 @@ import {displayDollars, croppedAddress, assertNonNullable} from "../utils"
 import {iconOutArrow} from "./icons"
 
 function RecentRepayments() {
-  const {pool, user, network, goldfinchProtocol} = useContext(AppContext)
+  const {pool, user, network, goldfinchProtocol, currentBlock} = useContext(AppContext)
   const [repayments, setRepayments] = useState([])
   let transactionRows
 
   useEffect(() => {
-    if (pool && goldfinchProtocol) {
-      pool.info.value.poolData.getRepaymentEvents(pool, goldfinchProtocol).then((repayments) => {
+    if (pool && goldfinchProtocol && currentBlock) {
+      pool.info.value.poolData.getRepaymentEvents(pool, goldfinchProtocol, currentBlock).then((repayments) => {
         // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'any[]' is not assignable to para... Remove this comment to see the full error message
         setRepayments(_.slice(repayments, 0, 3))
       })
     }
-  }, [pool, goldfinchProtocol])
+  }, [pool, goldfinchProtocol, currentBlock])
 
   function createTransactionRows(tx) {
     assertNonNullable(network)

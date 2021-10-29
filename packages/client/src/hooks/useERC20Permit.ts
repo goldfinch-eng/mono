@@ -59,7 +59,7 @@ export default function useERC20Permit(): {
     const now = currentBlock.timestamp
     const deadline = new BigNumber(now).plus(deadlineFromNow)
 
-    const nonce = await contract.methods.nonces(owner).call()
+    const nonce = await contract.methods.nonces(owner).call(undefined, "latest")
     const chainId = await web3.eth.getChainId()
     const message = {
       owner,

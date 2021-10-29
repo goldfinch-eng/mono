@@ -48,6 +48,7 @@ export interface User {
   poolTxs: any[]
   goListed: boolean
   noWeb3: boolean
+  borrower: BorrowerInterface | undefined
 
   initialize(currentBlock: BlockInfo): Promise<void>
   usdcIsUnlocked(type: string): boolean
@@ -72,7 +73,7 @@ class Web3User implements User {
   noWeb3: boolean
   goldfinchProtocol: GoldfinchProtocol
 
-  private borrower?: BorrowerInterface
+  borrower: BorrowerInterface | undefined
   private pool: SeniorPoolLoaded
   private usdc: ERC20
   private creditDesk: any
@@ -179,6 +180,7 @@ export class DefaultUser implements User {
   poolTxs: any[]
   goListed: boolean
   noWeb3: boolean
+  borrower: undefined
 
   constructor() {
     this.address = ""
@@ -195,6 +197,7 @@ export class DefaultUser implements User {
     this.pastTxs = []
     this.poolTxs = []
     this.goListed = false
+    this.borrower = undefined
   }
 
   async initialize(currentBlock: BlockInfo) {}

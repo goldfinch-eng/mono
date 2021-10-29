@@ -28,7 +28,7 @@ function DepositForm(props: DepositFormProps) {
     // USDC permit doesn't work on mainnet forking due to mismatch between hardcoded chain id in the contract
     if (process.env.REACT_APP_HARDHAT_FORK) {
       const alreadyApprovedAmount = new BigNumber(
-        await usdc.contract.methods.allowance(user.address, stakingRewards.address).call()
+        await usdc.contract.methods.allowance(user.address, stakingRewards.address).call(undefined, "latest")
       )
       const amountRequiringApproval = new BigNumber(depositAmountString).minus(alreadyApprovedAmount)
       const approval = amountRequiringApproval.gt(0)

@@ -4,7 +4,16 @@ import ConnectionNotice from "../connectionNotice"
 import {AppContext} from "../../App"
 import InvestorNotice from "../investorNotice"
 import {PoolBacker, PoolState, TokenInfo, TranchedPool, TRANCHES} from "../../ethereum/tranchedPool"
-import {assertError, croppedAddress, displayDollars, displayPercent, roundDownPenny, roundUpPenny} from "../../utils"
+import {
+  assertError,
+  assertNonNullable,
+  BlockInfo,
+  croppedAddress,
+  displayDollars,
+  displayPercent,
+  roundDownPenny,
+  roundUpPenny,
+} from "../../utils"
 import InfoSection from "../infoSection"
 import {usdcFromAtomic, usdcToAtomic} from "../../ethereum/erc20"
 import {iconDownArrow, iconOutArrow, iconUpArrow} from "../icons"
@@ -30,8 +39,17 @@ import {useFetchNDA} from "../../hooks/useNDA"
 import {decimalPlaces} from "../../ethereum/utils"
 import EtherscanLink from "../etherscanLink"
 
-function useRecentPoolTransactions({tranchedPool}: {tranchedPool?: TranchedPool}): Record<string, any>[] {
-  let recentTransactions = useAsync(() => tranchedPool && tranchedPool.recentTransactions(), [tranchedPool])
+function useRecentPoolTransactions({
+  tranchedPool,
+  currentBlock,
+}: {
+  tranchedPool?: TranchedPool
+  currentBlock?: BlockInfo
+}): Record<string, any>[] {
+  let recentTransactions = useAsync(
+    () => tranchedPool && currentBlock && tranchedPool.recentTransactions(currentBlock),
+    [tranchedPool, currentBlock]
+  )
   if (recentTransactions.status === "succeeded") {
     return recentTransactions.value
   }
@@ -40,16 +58,21 @@ function useRecentPoolTransactions({tranchedPool}: {tranchedPool?: TranchedPool}
 
 function useUniqueJuniorSuppliers({tranchedPool}: {tranchedPool?: TranchedPool}) {
   let uniqueSuppliers = 0
-  const {goldfinchProtocol} = useContext(AppContext)
+  const {goldfinchProtocol, currentBlock} = useContext(AppContext)
 
   let depositsQuery = useAsync(async () => {
-    if (!tranchedPool || !goldfinchProtocol) {
+    if (!tranchedPool || !goldfinchProtocol || !currentBlock) {
       return []
     }
-    return await goldfinchProtocol.queryEvent<DepositMade>(tranchedPool.contract, "DepositMade", {
-      tranche: TRANCHES.Junior.toString(),
-    })
-  }, [tranchedPool, goldfinchProtocol])
+    return await goldfinchProtocol.queryEvent<DepositMade>(
+      tranchedPool.contract,
+      "DepositMade",
+      {
+        tranche: TRANCHES.Junior.toString(),
+      },
+      currentBlock.number
+    )
+  }, [tranchedPool, goldfinchProtocol, currentBlock])
 
   if (depositsQuery.status === "succeeded") {
     uniqueSuppliers = new Set(depositsQuery.value.map((e) => e.returnValues.owner)).size
@@ -558,8 +581,8 @@ function SupplyStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
 }
 
 function CreditStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
-  const {user} = useContext(AppContext)
-  const transactions = useRecentPoolTransactions({tranchedPool})
+  const {user, currentBlock} = useContext(AppContext)
+  const transactions = useRecentPoolTransactions({tranchedPool, currentBlock})
   const backer = useBacker({user, tranchedPool})
 
   // Don't show the credit status component until the pool has a drawdown
@@ -716,7 +739,7 @@ interface TranchedPoolViewURLParams {
 
 function TranchedPoolView() {
   const {poolAddress} = useParams<TranchedPoolViewURLParams>()
-  const {goldfinchProtocol, usdc, user, network, setSessionData, currentBlock} = useNonNullContext(AppContext)
+  const {goldfinchProtocol, usdc, user, network, setSessionData, currentBlock} = useContext(AppContext)
   const session = useSession()
   const [tranchedPool, refreshTranchedPool] = useTranchedPool({address: poolAddress, goldfinchProtocol, currentBlock})
   const [showModal, setShowModal] = useState(false)
@@ -743,6 +766,8 @@ function TranchedPoolView() {
   }
 
   async function handleSignNDA() {
+    assertNonNullable(network)
+    assertNonNullable(setSessionData)
     if (session.status !== "authenticated") {
       return
     }
@@ -767,7 +792,7 @@ function TranchedPoolView() {
     earnMessage = `Pools / ${tranchedPool.metadata?.name ?? croppedAddress(tranchedPool.address)}`
   }
 
-  if (process.env.REACT_APP_HARDHAT_FORK && !unlocked && tranchedPool) {
+  if (process.env.REACT_APP_HARDHAT_FORK && !unlocked && usdc && tranchedPool) {
     unlockForm = (
       <UnlockERC20Form erc20={usdc} onUnlock={() => refreshUnlocked()} unlockAddress={tranchedPool.address} />
     )

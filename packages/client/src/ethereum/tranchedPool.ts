@@ -240,17 +240,22 @@ class TranchedPool {
     }
   }
 
-  async recentTransactions() {
+  async recentTransactions(currentBlock: BlockInfo) {
     let oldTransactions: any[] = []
-    let transactions = await this.goldfinchProtocol.queryEvents(this.contract, ["DrawdownMade", "PaymentApplied"])
+    let transactions = await this.goldfinchProtocol.queryEvents(
+      this.contract,
+      ["DrawdownMade", "PaymentApplied"],
+      undefined,
+      currentBlock.number
+    )
 
     if (this.isMigrated && transactions.length < 3) {
-      oldTransactions = await this.getOldTransactions()
+      oldTransactions = await this.getOldTransactions(currentBlock)
     }
 
     transactions = transactions.concat(oldTransactions)
     transactions = _.reverse(_.sortBy(transactions, "blockNumber")).slice(0, 3)
-    let sharePriceUpdates = await this.sharePriceUpdatesByTx(TRANCHES.Junior)
+    let sharePriceUpdates = await this.sharePriceUpdatesByTx(TRANCHES.Junior, currentBlock)
     let blockTimestamps = await this.timestampsByBlockNumber(transactions)
     return transactions.map((e) => {
       let juniorInterest = new BigNumber(0)
@@ -289,25 +294,35 @@ class TranchedPool {
     })
   }
 
-  async getOldTransactions() {
+  async getOldTransactions(currentBlock: BlockInfo) {
     let oldCreditlineAddress = this.metadata?.migratedFrom
     if (!oldCreditlineAddress) {
       return []
     }
     const creditDesk = await getCreditDesk(this.goldfinchProtocol.networkId)
-    return await this.goldfinchProtocol.queryEvents(creditDesk, ["DrawdownMade", "PaymentApplied"], {
-      creditLine: oldCreditlineAddress,
-    })
+    return await this.goldfinchProtocol.queryEvents(
+      creditDesk,
+      ["DrawdownMade", "PaymentApplied"],
+      {
+        creditLine: oldCreditlineAddress,
+      },
+      currentBlock.number
+    )
   }
 
   sharePriceToUSDC(sharePrice: BigNumber, amount: BigNumber): BigNumber {
     return new BigNumber(fiduFromAtomic(sharePrice.multipliedBy(amount)))
   }
 
-  async sharePriceUpdatesByTx(tranche: number) {
-    let transactions = await this.goldfinchProtocol.queryEvents(this.contract, ["SharePriceUpdated"], {
-      tranche: tranche,
-    })
+  async sharePriceUpdatesByTx(tranche: number, currentBlock: BlockInfo) {
+    let transactions = await this.goldfinchProtocol.queryEvents(
+      this.contract,
+      ["SharePriceUpdated"],
+      {
+        tranche: tranche,
+      },
+      currentBlock.number
+    )
     return _.groupBy(transactions, (e) => e.transactionHash)
   }
 
