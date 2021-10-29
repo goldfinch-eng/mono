@@ -79,7 +79,7 @@ class SeniorPool {
     address: string | undefined,
     eventNames: string[] = ["DepositMade", "WithdrawalMade"],
     includeV1Pool: boolean = true,
-    toBlock: BlockNumber = "latest"
+    toBlock: BlockNumber
   ): Promise<EventData[]> {
     if (includeV1Pool) {
       // In migrating from v1 to v2 (i.e. from the `Pool` contract as modeling the senior pool,

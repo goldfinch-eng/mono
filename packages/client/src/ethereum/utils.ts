@@ -174,7 +174,7 @@ async function getPoolEvents(
   pool: SeniorPool | Pool,
   address: string | undefined,
   eventNames: string[],
-  toBlock: BlockNumber = "latest"
+  toBlock: BlockNumber
 ): Promise<EventData[]> {
   const fromBlock = getFromBlock(pool.chain)
   const events = await Promise.all(
