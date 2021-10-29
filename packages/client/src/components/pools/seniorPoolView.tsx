@@ -33,8 +33,19 @@ function SeniorPoolView(): JSX.Element {
   const loadedPoolData = isGraphSeniorPoolData(poolData) || poolData?.loaded
 
   useEffect(() => {
-    const capitalProviderAddress = user.loaded && user.address
-    fetchData(capitalProviderAddress)
+    if (enableSeniorPoolV2) {
+      fetchSeniorPoolAndProviderData({
+        variables: {userID: ""},
+      })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    const capitalProviderAddress = user.loaded && "0x001be549fa377710b9e59d57bbdf593ce1e379ca"
+    if (pool) {
+      fetchData(capitalProviderAddress)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pool, user])
 
@@ -54,9 +65,7 @@ function SeniorPoolView(): JSX.Element {
   }, [data])
 
   async function refreshAllData(capitalProviderAddress) {
-    if (!pool) {
-      return
-    }
+    assertNonNullable(pool)
 
     refreshPoolData(pool)
     refreshCapitalProviderData(pool, capitalProviderAddress)
