@@ -222,7 +222,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
         <div className="network-widget-button disabled">Wrong Network</div>
       </div>
     )
-  } else if (props.user.web3Connected && session.status !== "authenticated" && isSessionDataInvalid(sessionData)) {
+  } else if ((props.user.web3Connected && session.status !== "authenticated") || isSessionDataInvalid(sessionData)) {
     return connectMetamaskNetworkWidget
   } else {
     return enabledNetworkWidget
