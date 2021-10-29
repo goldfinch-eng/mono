@@ -15,9 +15,14 @@ function renderDepositForm(transactionLimit, userBalance, remainingCapacity) {
       usdcBalance: new BigNumber(usdcToAtomic(userBalance)),
     },
     pool: {
-      gf: {
-        remainingCapacity: () => new BigNumber(usdcToAtomic(remainingCapacity)),
-        totalPoolAssets: new BigNumber(0),
+      info: {
+        loaded: true,
+        value: {
+          poolData: {
+            remainingCapacity: () => new BigNumber(usdcToAtomic(remainingCapacity)),
+            totalPoolAssets: new BigNumber(0),
+          },
+        },
       },
     },
   }
