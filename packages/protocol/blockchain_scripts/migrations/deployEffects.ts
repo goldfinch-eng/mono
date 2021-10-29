@@ -202,7 +202,7 @@ class IndividualTxEffects extends MultisendEffects {
 const GNOSIS_EXECUTOR = "0xf13eFa505444D09E176d83A4dfd50d10E399cFd5"
 
 async function getSafe(): Promise<Safe> {
-  await fundWithWhales(["ETH"], [GNOSIS_EXECUTOR], ethers.utils.parseEther("10"))
+  await fundWithWhales(["ETH"], [GNOSIS_EXECUTOR])
   const signer = await ethers.getSigner(GNOSIS_EXECUTOR)
   const ethAdapter = new EthersAdapter({ethers, signer})
   const safe = await Safe.create({
