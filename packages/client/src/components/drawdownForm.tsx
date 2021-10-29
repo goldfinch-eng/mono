@@ -103,13 +103,13 @@ function DrawdownForm(props) {
             </div>
           </div>
           {isOptionsOpen && <div className="form-separator background-container-inner"></div>}
-          {unlocked ? undefined : erc20 ? (
+          {unlocked || (
             <UnlockERC20Form
               erc20={erc20}
               onUnlock={() => refreshUnlocked()}
               unlockAddress={props.borrower.borrowerAddress}
             />
-          ) : undefined}
+          )}
           <div>
             <div className="form-input-label">Amount</div>
             <div className="form-inputs-footer">

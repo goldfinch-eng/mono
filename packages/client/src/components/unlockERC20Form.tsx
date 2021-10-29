@@ -6,9 +6,10 @@ import {useForm, FormProvider} from "react-hook-form"
 import {iconInfo} from "./icons"
 import useSendFromUser from "../hooks/useSendFromUser"
 import {ERC20, usdcFromAtomic} from "../ethereum/erc20"
+import {assertNonNullable} from "../utils"
 
 type UnlockERC20Props = {
-  erc20: ERC20
+  erc20: ERC20 | undefined
   onUnlock: () => Promise<void>
   unlockAddress: string
 }
@@ -19,6 +20,7 @@ function UnlockERC20Form(props: UnlockERC20Props) {
   const formMethods = useForm()
 
   const unlock = () => {
+    assertNonNullable(erc20)
     // The txData parameters must use the schema defined in src/ethereum/events:mapEventToTx
     return sendFromUser(erc20.contract.methods.approve(unlockAddress, MAX_UINT), {
       type: "Approval",
@@ -29,7 +31,7 @@ function UnlockERC20Form(props: UnlockERC20Props) {
     }).then(onUnlock)
   }
 
-  return (
+  return erc20 ? (
     <FormProvider {...formMethods}>
       <div className="info-banner background-container">
         <div className="message small">
@@ -39,7 +41,7 @@ function UnlockERC20Form(props: UnlockERC20Props) {
         <LoadingButton action={unlock} text={`Unlock ${erc20.ticker}`} />
       </div>
     </FormProvider>
-  )
+  ) : null
 }
 
 export default UnlockERC20Form

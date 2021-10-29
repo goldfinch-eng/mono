@@ -61,8 +61,15 @@ class ERC20 {
     return this.contract.options.address
   }
 
-  async getAllowance({owner, spender}: {owner: string; spender: string}, currentBlock: BlockInfo): Promise<BigNumber> {
-    return new BigNumber(await this.contract.methods.allowance(owner, spender).call(undefined, currentBlock.number))
+  async getAllowance(
+    {owner, spender}: {owner: string; spender: string},
+    currentBlock: BlockInfo | undefined
+  ): Promise<BigNumber> {
+    return new BigNumber(
+      await this.contract.methods
+        .allowance(owner, spender)
+        .call(undefined, currentBlock ? currentBlock.number : "latest")
+    )
   }
 
   async getBalance(address: string, currentBlock: BlockInfo): Promise<BigNumber> {

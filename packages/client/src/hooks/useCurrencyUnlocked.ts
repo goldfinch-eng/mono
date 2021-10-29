@@ -10,10 +10,17 @@ function useCurrencyUnlocked(erc20, {owner, spender, minimum}): [boolean, () => 
     if (!erc20 || !owner || !spender) {
       return
     }
-    let allowance = await erc20.getAllowance({
-      owner: owner,
-      spender: spender,
-    })
+    let allowance = await erc20.getAllowance(
+      {
+        owner: owner,
+        spender: spender,
+      },
+      // TODO For the sake of consistency (of all chain data rendered in the UI being based on
+      // the same block), it would be ideal to refresh this allowance by way of using the
+      // `refreshCurrentBlock()` method from app context. Then we would pass `currentBlock`
+      // from app context here.
+      undefined
+    )
     let ul = allowance.gt(minimum)
     if (ul !== unlocked) {
       setUnlocked(ul)

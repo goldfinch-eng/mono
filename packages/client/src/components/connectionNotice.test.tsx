@@ -90,7 +90,7 @@ const scenarios: Scenario[] = [
     setUpMatch: ({store, props}) => {
       defaultCreditLine.loaded = true
       store.user.loaded = true
-      props.creditLine = defaultCreditLine as CreditLine
+      props.creditLine = defaultCreditLine as unknown as CreditLine
     },
     setUpFallthrough: ({store}) => {
       defaultCreditLine.loaded = false

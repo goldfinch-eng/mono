@@ -1,5 +1,6 @@
 import React, {useContext} from "react"
 import {AppContext} from "../App"
+import {assertNonNullable} from "../utils"
 import UnlockERC20Form from "./unlockERC20Form"
 
 type UnlockUSDCFormProps = {
@@ -10,9 +11,12 @@ function UnlockUSDCForm(props: UnlockUSDCFormProps) {
   const {usdc, refreshCurrentBlock} = useContext(AppContext)
   const {unlockAddress} = props
 
-  return usdc && refreshCurrentBlock ? (
-    <UnlockERC20Form erc20={usdc} onUnlock={refreshCurrentBlock} unlockAddress={unlockAddress} />
-  ) : null
+  async function handleUnlock(): Promise<void> {
+    assertNonNullable(refreshCurrentBlock)
+    refreshCurrentBlock()
+  }
+
+  return <UnlockERC20Form erc20={usdc} onUnlock={handleUnlock} unlockAddress={unlockAddress} />
 }
 
 export default UnlockUSDCForm

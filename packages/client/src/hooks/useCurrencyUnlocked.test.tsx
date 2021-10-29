@@ -10,7 +10,7 @@ class FakeERC20 {
     this.allowance = allowance || new BigNumber(100)
   }
 
-  async getAllowance(opts) {
+  async getAllowance(opts, currentBlock) {
     return this.allowance
   }
 }

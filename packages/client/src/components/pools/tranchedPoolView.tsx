@@ -792,7 +792,7 @@ function TranchedPoolView() {
     earnMessage = `Pools / ${tranchedPool.metadata?.name ?? croppedAddress(tranchedPool.address)}`
   }
 
-  if (process.env.REACT_APP_HARDHAT_FORK && !unlocked && usdc && tranchedPool) {
+  if (process.env.REACT_APP_HARDHAT_FORK && !unlocked && tranchedPool) {
     unlockForm = (
       <UnlockERC20Form erc20={usdc} onUnlock={() => refreshUnlocked()} unlockAddress={tranchedPool.address} />
     )
