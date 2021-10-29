@@ -8,7 +8,7 @@
     "start:no-gasless": "npm run kill-ports && REACT_APP_DISABLE_GASLESS=true REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet npx lerna run start --parallel",
     "start:local": "npm run kill-ports && REACT_APP_HARDHAT_FORK= HARDHAT_FORK= npx lerna run start --parallel",
     "start:murmuration": "npx lerna run start:murmuration --parallel",
-    "kill-ports": "for i in 4000 4001 3000 5001 8545 8080; do lsof -t -i:$i | xargs kill; done",
+    "kill-ports": "for i in 4000 4001 3000 5001 8545 8080; do lsof -t -i:$i | xargs -r kill; done",
     "test": "npx lerna run test --stream",
     "test:client": "npm run test -- --scope @goldfinch-eng/client",
     "lint": "npx lerna run lint --no-bail",
