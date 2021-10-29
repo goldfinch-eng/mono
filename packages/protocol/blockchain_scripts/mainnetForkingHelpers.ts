@@ -203,7 +203,7 @@ async function fundWithWhales(currencies: string[], recipients: string[], amount
         await impersonateAccount(hre, whale)
         const signer = ethers.provider.getSigner(whale)
         assertNonNullable(signer)
-        await signer.sendTransaction({to: recipient, value: ethers.utils.parseEther("5.0")})
+        await signer.sendTransaction({to: recipient, value: amount || ethers.utils.parseEther("5.0")})
       } else {
         const erc20Address = getERC20Address(currency, chainId)
         assertIsString(erc20Address)
