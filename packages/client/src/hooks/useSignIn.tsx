@@ -1,11 +1,11 @@
-import {ethers} from "ethers"
-import {useCallback, useContext, useState, useEffect} from "react"
-import {AppContext} from "../App"
-import {assertNonNullable, getBlockInfo, getCurrentBlock} from "../utils"
-import web3 from "../web3"
-import {SESSION_DATA_VERSION} from "../types/session"
 import {isNumber, PlainObject} from "@goldfinch-eng/utils/src/type"
+import {ethers} from "ethers"
 import difference from "lodash/difference"
+import {useCallback, useContext, useEffect, useState} from "react"
+import {AppContext} from "../App"
+import {SESSION_DATA_VERSION} from "../types/session"
+import {assertNonNullable} from "../utils"
+import web3 from "../web3"
 
 export type UnknownSession = {status: "unknown"}
 export type KnownSession = {status: "known"}
