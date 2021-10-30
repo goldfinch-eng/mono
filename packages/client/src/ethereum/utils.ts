@@ -63,7 +63,7 @@ const chainIdToNetworkID = {
   31337: "localhost",
 }
 
-const SUPPORTED_NETWORKS = {
+const SUPPORTED_NETWORKS: Record<string, boolean> = {
   [MAINNET]: true,
   [LOCAL]: true,
   [RINKEBY]: true,

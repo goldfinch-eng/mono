@@ -140,10 +140,9 @@ function App() {
     const networkId = mapNetworkToID[networkName] || networkName
     const name = networkId
     const supported = SUPPORTED_NETWORKS[networkId] || false
-    if (name && supported) {
-      const networkConfig: NetworkConfig = {name, supported}
-      setNetwork(networkConfig)
-
+    const networkConfig: NetworkConfig = {name, supported}
+    setNetwork(networkConfig)
+    if (networkConfig.supported) {
       const currentBlock = getBlockInfo(await getCurrentBlock())
 
       const protocol = new GoldfinchProtocol(networkConfig)
