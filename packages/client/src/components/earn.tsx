@@ -15,7 +15,7 @@ import {
   StakingRewardsLoaded,
 } from "../ethereum/pool"
 import {PoolBacker, TranchedPool} from "../ethereum/tranchedPool"
-import {User} from "../ethereum/user"
+import {User, UserLoaded} from "../ethereum/user"
 import {Loadable, Loaded} from "../types/loadable"
 import {InfoIcon} from "../ui/icons"
 import {BlockInfo, displayDollars, displayPercent, roundDownPenny} from "../utils"
@@ -310,16 +310,16 @@ function Earn() {
   const {backers, poolsAddresses} = usePoolBackers({goldfinchProtocol, user, currentBlock})
 
   useEffect(() => {
-    if (pool && stakingRewards && gfi && user.address) {
-      refreshCapitalProviderData(pool, stakingRewards, gfi, user.address)
+    if (pool && stakingRewards && gfi && user) {
+      refreshCapitalProviderData(pool, stakingRewards, gfi, user)
     }
-  }, [pool, stakingRewards, gfi, usdc, user.address])
+  }, [pool, stakingRewards, gfi, usdc, user])
 
   async function refreshCapitalProviderData(
     pool: SeniorPoolLoaded,
     stakingRewards: StakingRewardsLoaded,
     gfi: GFILoaded,
-    address: string
+    user: UserLoaded
   ) {
     // TODO Would be ideal to refactor this component so that the child components it renders all
     // receive state that is consistent, i.e. using `pool.poolData`, `capitalProvider` state,
@@ -329,8 +329,13 @@ function Earn() {
     const poolBlockNumber = pool.info.value.currentBlock.number
     const stakingRewardsBlockNumber = stakingRewards.info.value.currentBlock.number
     const gfiBlockNumber = gfi.info.value.currentBlock.number
-    if (poolBlockNumber === stakingRewardsBlockNumber && poolBlockNumber === gfiBlockNumber) {
-      const capitalProvider = await fetchCapitalProviderData(pool, stakingRewards, gfi, address)
+    const userBlockNumber = user.info.value.currentBlock.number
+    if (
+      poolBlockNumber === stakingRewardsBlockNumber &&
+      poolBlockNumber === gfiBlockNumber &&
+      poolBlockNumber === userBlockNumber
+    ) {
+      const capitalProvider = await fetchCapitalProviderData(pool, stakingRewards, gfi, user.address)
       setCapitalProvider(capitalProvider)
     }
   }
@@ -346,7 +351,7 @@ function Earn() {
   const capitalProviderData = earnStore.capitalProvider
   const backersData = earnStore.backers
 
-  const isLoading = !pool || !capitalProviderData.loaded || !backersData.loaded || user.noWeb3
+  const isLoading = !pool || !capitalProviderData.loaded || !backersData.loaded || !user || user.noWeb3
   const earnMessage = isLoading ? "Loading..." : "Pools"
 
   return (

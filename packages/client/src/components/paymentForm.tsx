@@ -53,6 +53,7 @@ function PaymentForm(props) {
   useEffect(
     () => {
       const fetchBalance = async () => {
+        assertNonNullable(user)
         assertNonNullable(erc20)
         assertNonNullable(currentBlock)
         const decimalAmount = new BigNumber(erc20.decimalAmount(await erc20.getBalance(user.address, currentBlock)))

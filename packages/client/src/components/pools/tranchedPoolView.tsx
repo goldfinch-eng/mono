@@ -151,10 +151,15 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
     )
     const backerLimit = tranchedPool.creditLine.limit.multipliedBy(backerLimitPercent)
     const maxTxAmountInDollars = usdcFromAtomic(
-      BigNumber.min(backerLimit, remainingJuniorCapacity, user.usdcBalance, goldfinchConfig.transactionLimit)
+      BigNumber.min(
+        backerLimit,
+        remainingJuniorCapacity,
+        user ? user.info.value.usdcBalance : new BigNumber(0),
+        goldfinchConfig.transactionLimit
+      )
     )
 
-    if (user.usdcBalance.eq(0)) {
+    if (!user || user.info.value.usdcBalance.eq(0)) {
       disabled = true
       warningMessage = (
         <p className="form-message">
@@ -208,7 +213,8 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
               </button>
             }
             validations={{
-              wallet: (value) => user.usdcBalanceInDollars.gte(value) || "You do not have enough USDC",
+              wallet: (value) =>
+                (user && user.info.value.usdcBalanceInDollars.gte(value)) || "You do not have enough USDC",
               backerLimit: (value) => {
                 const backerDeposits = backer.principalAmount.minus(backer.principalRedeemed).plus(usdcToAtomic(value))
                 return (
@@ -241,7 +247,7 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
   return (
     <TransactionForm
       title="Supply"
-      headerMessage={`Available to supply: ${displayDollars(user.usdcBalanceInDollars)}`}
+      headerMessage={`Available to supply: ${displayDollars(user ? user.info.value.usdcBalanceInDollars : undefined)}`}
       render={renderForm}
       closeForm={closeForm}
     />
@@ -316,7 +322,8 @@ function TranchedPoolWithdrawForm({backer, tranchedPool, actionComplete, closeFo
               </button>
             }
             validations={{
-              wallet: (value) => user.usdcBalanceInDollars.gte(value) || "You do not have enough USDC",
+              wallet: (value) =>
+                (user && user.info.value.usdcBalanceInDollars.gte(value)) || "You do not have enough USDC",
               transactionLimit: (value) =>
                 goldfinchConfig.transactionLimit.gte(usdcToAtomic(value)) ||
                 `This is over the per-transaction limit of ${displayDollars(
@@ -417,7 +424,7 @@ function ActionsContainer({
   }
 
   let placeholderClass = ""
-  if (session.status !== "authenticated" || !user.goListed) {
+  if (session.status !== "authenticated" || !user || !user.info.value.goListed) {
     placeholderClass = "placeholder"
   }
 
@@ -716,7 +723,7 @@ function Overview({tranchedPool, handleDetails}: OverviewProps) {
   }
 
   let detailsLink = <></>
-  if (user.loaded && user.goListed && session.status === "authenticated" && tranchedPool?.metadata?.detailsUrl) {
+  if (user && user.info.value.goListed && session.status === "authenticated" && tranchedPool?.metadata?.detailsUrl) {
     detailsLink = (
       <div className="pool-links">
         <button onClick={() => handleDetails()}>
@@ -758,7 +765,7 @@ function TranchedPoolView() {
   const hasSignedNDA = nda && nda?.status === "success"
 
   const [unlocked, refreshUnlocked] = useCurrencyUnlocked(usdc, {
-    owner: user.address,
+    owner: user?.address,
     spender: tranchedPool?.address,
     minimum: null,
   })
@@ -776,6 +783,7 @@ function TranchedPoolView() {
   }
 
   async function handleSignNDA() {
+    assertNonNullable(user)
     assertNonNullable(network)
     assertNonNullable(setSessionData)
     if (session.status !== "authenticated") {
@@ -826,7 +834,7 @@ function TranchedPoolView() {
       <div className="page-header">{earnMessage}</div>
       <ConnectionNotice requireUnlock={false} requireGolist={true} isPaused={!!tranchedPool?.isPaused} />
       {unlockForm}
-      {user.loaded && (
+      {user && (
         <>
           {maxCapacityNotice}
           {(!isAtMaxCapacity || !backer?.balanceInDollars.isZero()) && (

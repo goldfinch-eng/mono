@@ -27,14 +27,14 @@ function CreditActionsContainer(props) {
   }
 
   let placeholderClass = ""
-  if (!user.address || !user.usdcIsUnlocked("borrow") || !props.creditLine.address || props.disabled) {
+  if (!user || !user.info.value.usdcIsUnlocked.borrow.isUnlocked || !props.creditLine.address || props.disabled) {
     placeholderClass = "placeholder"
   }
 
   let drawdownAction
   let drawdownClass = "disabled"
 
-  if (availableCredit.gt(0) && user.usdcIsUnlocked("borrow") && !props.disabled) {
+  if (availableCredit.gt(0) && user && user.info.value.usdcIsUnlocked.borrow.isUnlocked && !props.disabled) {
     drawdownAction = (e) => {
       openAction(e, "drawdown")
     }
@@ -43,7 +43,7 @@ function CreditActionsContainer(props) {
 
   let payAction
   let payClass = "disabled"
-  if (props.creditLine.isActive && user.usdcIsUnlocked("borrow")) {
+  if (props.creditLine.isActive && user && user.info.value.usdcIsUnlocked.borrow.isUnlocked) {
     payAction = (e) => {
       openAction(e, "payment")
     }

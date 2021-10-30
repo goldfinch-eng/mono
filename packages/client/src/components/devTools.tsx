@@ -16,7 +16,7 @@ export default function DevTools(props) {
       setShowDevTools("")
     }
   }
-  return (
+  return user ? (
     <div
       className={`devTools ${showDevTools}`}
       onClick={() => {
@@ -90,5 +90,5 @@ export default function DevTools(props) {
         </div>
       )}
     </div>
-  )
+  ) : null
 }

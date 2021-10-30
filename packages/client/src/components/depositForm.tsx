@@ -71,7 +71,7 @@ function DepositForm(props: DepositFormProps) {
 
   function renderForm({formMethods}) {
     let warningMessage, disabled, submitDisabled
-    if (user.usdcBalance.eq(0)) {
+    if (!user || user.info.value.usdcBalance.eq(0)) {
       disabled = true
       warningMessage = (
         <p className="form-message">
@@ -96,7 +96,11 @@ function DepositForm(props: DepositFormProps) {
 
     const remainingPoolCapacity = pool.info.value.poolData.remainingCapacity(goldfinchConfig.totalFundsLimit)
     const maxTxAmountInDollars = usdcFromAtomic(
-      BigNumber.min(remainingPoolCapacity, goldfinchConfig.transactionLimit, user.usdcBalance)
+      BigNumber.min(
+        remainingPoolCapacity,
+        goldfinchConfig.transactionLimit,
+        user ? user.info.value.usdcBalance : new BigNumber(0)
+      )
     )
 
     return (
@@ -145,7 +149,8 @@ function DepositForm(props: DepositFormProps) {
                 </button>
               }
               validations={{
-                wallet: (value) => user.usdcBalanceInDollars.gte(value) || "You do not have enough USDC",
+                wallet: (value) =>
+                  (user && user.info.value.usdcBalanceInDollars.gte(value)) || "You do not have enough USDC",
                 transactionLimit: (value) =>
                   goldfinchConfig.transactionLimit.gte(usdcToAtomic(value)) ||
                   `This is over the per-transaction limit of ${displayDollars(
@@ -171,7 +176,7 @@ function DepositForm(props: DepositFormProps) {
   return (
     <TransactionForm
       title="Supply"
-      headerMessage={`Available to supply: ${displayDollars(user.usdcBalanceInDollars)}`}
+      headerMessage={`Available to supply: ${displayDollars(user ? user.info.value.usdcBalanceInDollars : undefined)}`}
       render={renderForm}
       closeForm={props.closeForm}
     />

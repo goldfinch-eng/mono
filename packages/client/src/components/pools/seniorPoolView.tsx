@@ -3,6 +3,7 @@ import {AppContext} from "../../App"
 import {usdcFromAtomic} from "../../ethereum/erc20"
 import {GFILoaded} from "../../ethereum/gfi"
 import {CapitalProvider, fetchCapitalProviderData, SeniorPoolLoaded, StakingRewardsLoaded} from "../../ethereum/pool"
+import {UserLoaded} from "../../ethereum/user"
 import {useStaleWhileRevalidating} from "../../hooks/useAsync"
 import {eligibleForSeniorPool, useKYC} from "../../hooks/useKYC"
 import {Loadable} from "../../types/loadable"
@@ -23,16 +24,16 @@ function SeniorPoolView(): JSX.Element {
   const kyc = useStaleWhileRevalidating(kycResult)
 
   useEffect(() => {
-    if (pool && stakingRewards && gfi && user.address) {
-      refreshCapitalProviderData(pool, stakingRewards, gfi, user.address)
+    if (pool && stakingRewards && gfi && user) {
+      refreshCapitalProviderData(pool, stakingRewards, gfi, user)
     }
-  }, [pool, stakingRewards, gfi, user.address])
+  }, [pool, stakingRewards, gfi, user])
 
   async function refreshCapitalProviderData(
     pool: SeniorPoolLoaded,
     stakingRewards: StakingRewardsLoaded,
     gfi: GFILoaded,
-    address: string
+    user: UserLoaded
   ) {
     // TODO Would be ideal to refactor this component so that the child components it renders all
     // receive state that is consistent, i.e. using `pool.poolData`, `capitalProvider` state,
@@ -42,8 +43,13 @@ function SeniorPoolView(): JSX.Element {
     const poolBlockNumber = pool.info.value.currentBlock.number
     const stakingRewardsBlockNumber = stakingRewards.info.value.currentBlock.number
     const gfiBlockNumber = gfi.info.value.currentBlock.number
-    if (poolBlockNumber === stakingRewardsBlockNumber && poolBlockNumber === gfiBlockNumber) {
-      const capitalProvider = await fetchCapitalProviderData(pool, stakingRewards, gfi, address)
+    const userBlockNumber = user.info.value.currentBlock.number
+    if (
+      poolBlockNumber === stakingRewardsBlockNumber &&
+      poolBlockNumber === gfiBlockNumber &&
+      poolBlockNumber === userBlockNumber
+    ) {
+      const capitalProvider = await fetchCapitalProviderData(pool, stakingRewards, gfi, user.address)
       setCapitalProvider(capitalProvider)
     }
   }
@@ -54,7 +60,7 @@ function SeniorPoolView(): JSX.Element {
   }
 
   let earnMessage = "Loading..."
-  if (capitalProvider.loaded || user.noWeb3) {
+  if (capitalProvider.loaded || (user && user.noWeb3)) {
     earnMessage = "Pools / Senior Pool"
   }
 

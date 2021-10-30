@@ -14,7 +14,7 @@ import SeniorPoolAgreementNonUS from "./components/seniorPoolAgreementNonUS"
 import web3, {SESSION_DATA_KEY} from "./web3"
 import {ERC20, Tickers} from "./ethereum/erc20"
 import {GoldfinchConfigData, refreshGoldfinchConfigData} from "./ethereum/goldfinchConfig"
-import {getUserData, defaultUser, User} from "./ethereum/user"
+import {getUserData, UserLoaded} from "./ethereum/user"
 import {mapNetworkToID, SUPPORTED_NETWORKS} from "./ethereum/utils"
 import {NetworkMonitor} from "./ethereum/networkMonitor"
 import {SeniorPool, SeniorPoolLoaded, StakingRewards, StakingRewardsLoaded} from "./ethereum/pool"
@@ -58,7 +58,7 @@ export interface GlobalState {
   stakingRewards?: StakingRewardsLoaded
   pool?: SeniorPoolLoaded
   creditDesk?: CreditDesk
-  user: User
+  user?: UserLoaded
   usdc?: ERC20
   goldfinchConfig?: GoldfinchConfigData
   network?: NetworkConfig
@@ -73,7 +73,7 @@ export interface GlobalState {
 
 declare let window: any
 
-const AppContext = React.createContext<GlobalState>({user: defaultUser()})
+const AppContext = React.createContext<GlobalState>({})
 
 function App() {
   const [_gfi, setGfi] = useState<GFILoaded>()
@@ -82,7 +82,7 @@ function App() {
   const [creditDesk, setCreditDesk] = useState<CreditDesk>()
   const [usdc, setUSDC] = useState<ERC20>()
   const [overrideAddress, setOverrideAdress] = useState<string>()
-  const [user, setUser] = useState<User>(defaultUser())
+  const [user, setUser] = useState<UserLoaded>()
   const [currentBlock, setCurrentBlock] = useState<BlockInfo>()
   const [goldfinchConfig, setGoldfinchConfig] = useState<GoldfinchConfigData>()
   const [currentTXs, setCurrentTXs] = useState<any[]>([])
@@ -227,28 +227,26 @@ function App() {
     assertNonNullable(currentBlock)
     assertNonNullable(gfi)
 
-    let data: User = defaultUser()
     const accounts = await web3.eth.getAccounts()
-    data.web3Connected = true
-    const _userAddress = (accounts && accounts[0]) || user.address
-    const userAddress = overrideAddress || _userAddress
-    if (userAddress) {
-      data.address = userAddress
+    const _userAddress = accounts && accounts[0]
+    if (!_userAddress) {
+      throw new Error("Web3 connected but failed to obtain user address.")
     }
+    const userAddress = overrideAddress || _userAddress
 
-    data = await getUserData(userAddress, goldfinchProtocol, pool, creditDesk, network.name, gfi, currentBlock)
+    const user = await getUserData(userAddress, goldfinchProtocol, pool, creditDesk, network.name, gfi, currentBlock)
 
     Sentry.setUser({
       // NOTE: The info we use here to identify / define the user for the purpose of
       // error tracking with Sentry MUST be kept consistent with (i.e. not exceed
       // the bounds set by) what our Terms of Service, Privacy Policy, and marketing
       // copy state about the identifying information that Goldfinch stores.
-      id: data.address,
-      address: data.address,
+      id: user.address,
+      address: user.address,
       isOverrideOf: overrideAddress ? _userAddress : undefined,
     })
 
-    setUser(data)
+    setUser(user)
   }
 
   async function refreshCurrentBlock(): Promise<void> {

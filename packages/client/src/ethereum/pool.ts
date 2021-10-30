@@ -767,7 +767,7 @@ class StakingRewards {
     const [isPaused, currentEarnRate, positions] = await Promise.all([
       this.contract.methods.paused().call(undefined, currentBlock.number),
       this.contract.methods
-        .currentEarnRate()
+        .currentEarnRatePerToken()
         .call(undefined, currentBlock.number)
         .then((currentEarnRate: string) => new BigNumber(currentEarnRate)),
       this.contract.methods

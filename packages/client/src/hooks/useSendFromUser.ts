@@ -17,6 +17,7 @@ function useSendFromUser() {
   async function sendTransaction(unsentAction, txData, gasPrice, options: SendTransactionOptions) {
     assertNonNullable(refreshCurrentBlock)
     assertNonNullable(networkMonitor)
+    assertNonNullable(user)
     // unsent action could be a promise that returns the action, so resolve it
     unsentAction = await Promise.resolve(unsentAction)
 

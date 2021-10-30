@@ -1,7 +1,7 @@
 import {useLocation} from "react-router-dom"
 import {AppContext, NetworkConfig} from "../App"
 import {CreditLine} from "../ethereum/creditLine"
-import {UnlockedStatus, User} from "../ethereum/user"
+import {UnlockedStatus, UserLoaded} from "../ethereum/user"
 import {Session, useSession} from "../hooks/useSignIn"
 import UnlockUSDCForm from "./unlockUSDCForm"
 import VerifyAddressBanner from "./verifyAddressBanner"
@@ -28,7 +28,7 @@ function TextBanner({children}: React.PropsWithChildren<{}>) {
 
 interface ConditionProps extends ConnectionNoticeProps {
   network: NetworkConfig
-  user: User
+  user: UserLoaded | undefined
   session: Session
   location: any
 }
@@ -62,7 +62,7 @@ export const strategies: ConnectionNoticeStrategy[] = [
   },
   {
     devName: "not_connected_to_metamask",
-    match: ({user, session}) => user.web3Connected && session.status === "unknown",
+    match: ({user, session}) => !user || (user.web3Connected && session.status === "unknown"),
     render: (_props) => (
       <TextBanner>
         You are not currently connected to Metamask. To use Goldfinch, you first need to connect to Metamask.
@@ -71,14 +71,14 @@ export const strategies: ConnectionNoticeStrategy[] = [
   },
   {
     devName: "connected_user_with_expired_session",
-    match: ({user, session}) => user.web3Connected && session.status === "known",
+    match: ({user, session}) => !!user && user.web3Connected && session.status === "known",
     render: (_props) => (
       <TextBanner>Your session has expired. To use Goldfinch, you first need to reconnect to Metamask.</TextBanner>
     ),
   },
   {
     devName: "no_credit_line",
-    match: ({user, creditLine}) => user.loaded && !!creditLine && creditLine.loaded && !creditLine.address,
+    match: ({user, creditLine}) => !!user && !!creditLine && creditLine.loaded && !creditLine.address,
     render: (_props) => (
       <TextBanner>
         You do not have any credit lines. To borrow funds from the pool, you need a Goldfinch credit line.
@@ -87,7 +87,7 @@ export const strategies: ConnectionNoticeStrategy[] = [
   },
   {
     devName: "no_golist",
-    match: ({user, requireGolist}) => user.loaded && !user.goListed && !!requireGolist,
+    match: ({user, requireGolist}) => !!user && !user.info.value.goListed && !!requireGolist,
     render: (_props) => <VerifyAddressBanner />,
   },
   {
@@ -131,7 +131,7 @@ export const strategies: ConnectionNoticeStrategy[] = [
     devName: "require_unlock",
     match: ({requireUnlock, location, user}) => {
       let unlockStatus = getUnlockStatus({location, user})
-      return user.loaded && !!requireUnlock && !!unlockStatus && !unlockStatus.isUnlocked
+      return !!user && !!requireUnlock && !!unlockStatus && !unlockStatus.isUnlocked
     },
     render: ({location, user}) => {
       let unlockStatus = getUnlockStatus({location, user})
@@ -151,12 +151,14 @@ export const strategies: ConnectionNoticeStrategy[] = [
   },
 ]
 
-function getUnlockStatus({location, user}: {location: any; user: User}): UnlockedStatus | null {
+function getUnlockStatus({location, user}: {location: any; user: UserLoaded | undefined}): UnlockedStatus | null {
   let unlockStatus: UnlockedStatus | null = null
-  if (location.pathname.startsWith("/pools/senior")) {
-    unlockStatus = user.getUnlockStatus("earn")
-  } else if (location.pathname.startsWith("/borrow")) {
-    unlockStatus = user.getUnlockStatus("borrow")
+  if (user) {
+    if (location.pathname.startsWith("/pools/senior")) {
+      unlockStatus = user.info.value.usdcIsUnlocked.earn
+    } else if (location.pathname.startsWith("/borrow")) {
+      unlockStatus = user.info.value.usdcIsUnlocked.borrow
+    }
   }
   return unlockStatus
 }

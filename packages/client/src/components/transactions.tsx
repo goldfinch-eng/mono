@@ -37,13 +37,12 @@ function Transactions(props) {
   }
 
   useEffect(() => {
-    const borrower = user.borrower
-    if (!borrower || !goldfinchProtocol || !currentBlock) {
+    if (!user || !user.borrower || !goldfinchProtocol || !currentBlock) {
       return
     }
-    loadTranchedPoolEvents(borrower.tranchedPools, goldfinchProtocol, currentBlock)
+    loadTranchedPoolEvents(user.borrower.tranchedPools, goldfinchProtocol, currentBlock)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user.borrower, goldfinchProtocol, currentBlock])
+  }, [user, goldfinchProtocol, currentBlock])
 
   function transactionRow(tx) {
     // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
@@ -117,8 +116,10 @@ function Transactions(props) {
   }
 
   // Only show txs from currentTxs that are not already in user.pastTxs
-  let pendingTxs = _.differenceBy(props.currentTXs, user.pastTxs, "id")
-  let allTxs = _.reverse(_.sortBy(_.compact(_.concat(pendingTxs, user.pastTxs, tranchedPoolTxs)), "blockNumber"))
+  let pendingTxs = _.differenceBy(props.currentTXs, user ? user.info.value.pastTxs : [], "id")
+  let allTxs = _.reverse(
+    _.sortBy(_.compact(_.concat(pendingTxs, user ? user.info.value.pastTxs : [], tranchedPoolTxs)), "blockNumber")
+  )
   allTxs = _.uniqBy(allTxs, "eventId")
   let transactionRows = (
     <tr className="empty-row">
@@ -137,7 +138,7 @@ function Transactions(props) {
     <div className="content-section">
       <div className="page-header">Transactions</div>
       <ConnectionNotice requireUnlock={false} />
-      <table className={`table transactions-table ${user.address ? "" : "placeholder"}`}>
+      <table className={`table transactions-table ${user ? "" : "placeholder"}`}>
         <thead>
           <tr>
             <th>Type</th>

@@ -25,7 +25,7 @@ function RecentRepayments() {
     let yourPortion
     let yourPortionClass
 
-    if (user.loaded && pool) {
+    if (user && pool) {
       let yourPortionValue = usdcFromAtomic(
         user
           .poolBalanceAsOf(tx.blockNumber)
@@ -36,7 +36,7 @@ function RecentRepayments() {
       yourPortion = displayDollars(yourPortionValue, 4)
       // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'string' is not assignable to par... Remove this comment to see the full error message
       yourPortionClass = isFinite(yourPortionValue) && yourPortionValue > 0 ? "" : "zero"
-    } else if (!user.loaded && !user.address) {
+    } else if (!user) {
       yourPortion = displayDollars(0, 4)
     } else {
       yourPortion = "Loading..."

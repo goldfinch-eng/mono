@@ -8,7 +8,7 @@ export function useMerkleDistributor(): MerkleDistributorLoaded | undefined {
   const {goldfinchProtocol, user, currentBlock} = useContext(AppContext)
 
   const merkleDistributorResult = useAsync<MerkleDistributorLoaded>(() => {
-    if (!user.address || !goldfinchProtocol || !currentBlock) {
+    if (!user || !goldfinchProtocol || !currentBlock) {
       return
     }
 
@@ -17,7 +17,7 @@ export function useMerkleDistributor(): MerkleDistributorLoaded | undefined {
       assertWithLoadedInfo(merkleDistributor)
       return merkleDistributor
     })
-  }, [goldfinchProtocol, user.address, currentBlock])
+  }, [goldfinchProtocol, user, currentBlock])
 
   const merkleDistributor = useStaleWhileRevalidating(merkleDistributorResult)
 

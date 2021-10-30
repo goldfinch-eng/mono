@@ -31,30 +31,34 @@ interface SessionLocalStorageType {
   setLocalStorageValue: (value: any) => void
 }
 
-function getSession(info: GetSessionInfo): Session {
-  if (info.address && info.signature) {
-    const signature = info.signature
-    const signatureBlockNum = info.signatureBlockNum
-    return {status: "authenticated", signature, signatureBlockNum}
+function getSession(info: GetSessionInfo | undefined): Session {
+  if (info) {
+    if (info.address && info.signature) {
+      const signature = info.signature
+      const signatureBlockNum = info.signatureBlockNum
+      return {status: "authenticated", signature, signatureBlockNum}
+    } else {
+      return {status: "known"}
+    }
+  } else {
+    return {status: "unknown"}
   }
-  if (info.address && !info.signature) {
-    return {status: "known"}
-  }
-  return {status: "unknown"}
 }
 
 export function useSession(): Session {
   const {sessionData, user} = useContext(AppContext)
   return getSession(
-    sessionData
-      ? {
-          address: user.address,
-          signature: sessionData.signature,
-          signatureBlockNum: sessionData.signatureBlockNum,
-          signatureBlockNumTimestamp: sessionData.signatureBlockNumTimestamp,
-          version: sessionData.version,
-        }
-      : {address: user.address, signature: undefined, signatureBlockNum: undefined}
+    user
+      ? sessionData
+        ? {
+            address: user.address,
+            signature: sessionData.signature,
+            signatureBlockNum: sessionData.signatureBlockNum,
+            signatureBlockNumTimestamp: sessionData.signatureBlockNumTimestamp,
+            version: sessionData.version,
+          }
+        : {address: user.address, signature: undefined, signatureBlockNum: undefined}
+      : undefined
   )
 }
 
@@ -64,6 +68,7 @@ export function useSignIn(): [status: Session, signIn: () => Promise<Session>] {
 
   const signIn = useCallback(
     async function () {
+      assertNonNullable(user)
       assertNonNullable(setSessionData)
       assertNonNullable(currentBlock)
 

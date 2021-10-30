@@ -11,8 +11,11 @@ function renderNetworkWidget(sessionData) {
     },
     user: {
       address: "0x0",
-      loaded: true,
       web3Connected: true,
+      info: {
+        loaded: true,
+        value: {},
+      },
     },
     sessionData: sessionData,
     setSessionData: () => {},

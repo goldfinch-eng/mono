@@ -223,12 +223,13 @@ function VerifyIdentity() {
       getSignatureAndKycStatus(session)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [network?.name, user.address, session])
+  }, [network?.name, user, session])
 
   async function fetchKYCStatus(session: Session) {
     if (session.status !== "authenticated") {
       return
     }
+    assertNonNullable(user)
     assertNonNullable(network)
     assertNonNullable(setSessionData)
     const client = new DefaultGoldfinchClient(network.name!, session, setSessionData)
@@ -256,7 +257,7 @@ function VerifyIdentity() {
   }
 
   function renderForm() {
-    if (user.goListed) {
+    if (user && user.info.value.goListed) {
       return <VerificationNotice icon={iconCircleCheck} notice="Your address verification is complete." />
     } else if (kycStatus === "" && session.status === "authenticated") {
       return <VerificationNotice icon={iconClock} notice="Loading..." />
@@ -275,8 +276,8 @@ function VerifyIdentity() {
           kycStatus={kycStatus}
           entityType={entityType}
           onClose={() => setEntityType("")}
-          network={network?.name!}
-          address={user.address}
+          network={network?.name}
+          address={user?.address}
           onEvent={() => fetchKYCStatus(session)}
         />
       )
@@ -299,8 +300,8 @@ function VerifyIdentity() {
         <NonUSForm
           onClose={() => setEntityType("")}
           entityType={entityType}
-          network={network?.name!}
-          address={user.address}
+          network={network?.name}
+          address={user?.address}
           onEvent={() => fetchKYCStatus(session)}
         />
       )
