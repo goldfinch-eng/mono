@@ -103,21 +103,16 @@ function WithdrawalForm(props: WithdrawalFormProps) {
               curr.storedPosition.amount,
               withdrawalFiduAmountRemaining.minus(acc.fiduSum)
             )
+            // Zero FIDU remaining on the position is possible via having fully unstaked.
             if (fiduPortion.eq(0)) {
+              if (!curr.unvested.eq(0)) {
+                console.error("Expected zero unvested rewards if FIDU amount on position is 0.")
+              }
               return acc
             } else {
-              let forfeitedGfiPortion: BigNumber
-              if (curr.storedPosition.amount.eq(0)) {
-                // Zero FIDU remaining on the position is possible via having fully unstaked.
-                if (!curr.unvested.eq(0)) {
-                  console.error("Expected zero unvested rewards if FIDU amount on position is 0.")
-                }
-                forfeitedGfiPortion = new BigNumber(0)
-              } else {
-                forfeitedGfiPortion = curr.unvested
-                  .multipliedBy(fiduPortion)
-                  .dividedToIntegerBy(curr.storedPosition.amount)
-              }
+              const forfeitedGfiPortion = curr.unvested
+                .multipliedBy(fiduPortion)
+                .dividedToIntegerBy(curr.storedPosition.amount)
               return {
                 fiduSum: acc.fiduSum.plus(fiduPortion),
                 forfeitedGfiSum: acc.forfeitedGfiSum.plus(forfeitedGfiPortion),
