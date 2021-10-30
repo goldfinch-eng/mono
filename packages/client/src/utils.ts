@@ -1,3 +1,4 @@
+import {isNumber} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
 import _ from "lodash"
 import {AsyncReturnType} from "./types/util"
@@ -10,12 +11,12 @@ export function croppedAddress(address) {
   return `${address.slice(0, 6)}...${address.slice(-4)}`
 }
 
-export function displayNumber(val: string | BigNumber, decimals = 2): string {
-  if (!val || (BigNumber.isBigNumber(val) && val.isNaN())) {
+export function displayNumber(val: number | string | BigNumber, decimals = 2): string {
+  if (!val || (BigNumber.isBigNumber(val) && !val.isFinite())) {
     return ""
   }
 
-  const valFloat = BigNumber.isBigNumber(val) ? parseFloat(val.toString(10)) : parseFloat(val)
+  const valFloat = BigNumber.isBigNumber(val) ? parseFloat(val.toString(10)) : isNumber(val) ? val : parseFloat(val)
   if (!decimals && Math.floor(valFloat) === valFloat) {
     decimals = 0
   } else if (!decimals) {
@@ -46,13 +47,13 @@ function commaFormat(numberString): string {
   return `${_.join(_.reverse(withCommas), "")}${decimalString}`
 }
 
-export function displayDollars(val, decimals = 2) {
+export function displayDollars(val: number | string | BigNumber | undefined, decimals = 2, displayZero = false) {
   let prefix = ""
-  if (!isFinite(val) || val === null) {
-    return " --.--"
+  if (!val || (BigNumber.isBigNumber(val) && (!val.isFinite() || (val.eq(0) && !displayZero)))) {
+    return "$--.--"
   }
 
-  const valFloat = parseFloat(val)
+  let valFloat = BigNumber.isBigNumber(val) ? parseFloat(val.toString(10)) : isNumber(val) ? val : parseFloat(val)
   if (valFloat < 0) {
     val = valFloat * -1
     prefix = "-"
@@ -66,7 +67,7 @@ export function displayDollars(val, decimals = 2) {
 
 export function displayPercent(val: BigNumber | undefined, decimals = 2, displayZero = false) {
   let valDisplay: string
-  if (!val || val.isNaN() || (val.eq(0) && !displayZero)) {
+  if (!val || !val.isFinite() || (val.eq(0) && !displayZero)) {
     valDisplay = "--.--"
   } else {
     valDisplay = displayNumber(val.multipliedBy(100), decimals)

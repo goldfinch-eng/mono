@@ -218,7 +218,10 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
               },
               transactionLimit: (value) =>
                 goldfinchConfig.transactionLimit.gte(usdcToAtomic(value)) ||
-                `This is over the per-transaction limit of $${usdcFromAtomic(goldfinchConfig.transactionLimit)}`,
+                `This is over the per-transaction limit of ${displayDollars(
+                  usdcFromAtomic(goldfinchConfig.transactionLimit),
+                  0
+                )}`,
               totalFundsLimit: (value) => {
                 return (
                   remainingJuniorCapacity?.gte(usdcToAtomic(value)) ||
@@ -316,7 +319,10 @@ function TranchedPoolWithdrawForm({backer, tranchedPool, actionComplete, closeFo
               wallet: (value) => user.usdcBalanceInDollars.gte(value) || "You do not have enough USDC",
               transactionLimit: (value) =>
                 goldfinchConfig.transactionLimit.gte(usdcToAtomic(value)) ||
-                `This is over the per-transaction limit of $${usdcFromAtomic(goldfinchConfig.transactionLimit)}`,
+                `This is over the per-transaction limit of ${displayDollars(
+                  usdcFromAtomic(goldfinchConfig.transactionLimit),
+                  0
+                )}`,
             }}
           />
           <LoadingButton action={action} />
@@ -570,8 +576,12 @@ function SupplyStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
               ? `From ${uniqueJuniorSuppliers} Backer`
               : `From ${uniqueJuniorSuppliers} Backers`
           }
-          rightAmount={new BigNumber(usdcFromAtomic(remainingJuniorCapacity))}
-          rightAmountDisplay={`${rightAmountPrefix}${displayDollars(usdcFromAtomic(remainingJuniorCapacity))}`}
+          rightAmount={remainingJuniorCapacity ? new BigNumber(usdcFromAtomic(remainingJuniorCapacity)) : undefined}
+          rightAmountDisplay={
+            remainingJuniorCapacity
+              ? `${rightAmountPrefix}${displayDollars(usdcFromAtomic(remainingJuniorCapacity))}`
+              : undefined
+          }
           rightAmountDescription={rightAmountDescription}
         />
       </div>

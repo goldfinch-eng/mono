@@ -4,7 +4,8 @@ import {AppContext} from "../App"
 function useCurrencyUnlocked(erc20, {owner, spender, minimum}): [boolean, () => Promise<void>] {
   const [unlocked, setUnlocked] = useState(true)
   const {goldfinchConfig} = useContext(AppContext)
-  minimum = minimum || goldfinchConfig.transactionLimit
+  const transactionLimit = goldfinchConfig ? goldfinchConfig.transactionLimit : undefined
+  minimum = minimum || transactionLimit
 
   const refreshUnlocked = useCallback(async () => {
     if (!erc20 || !owner || !spender) {

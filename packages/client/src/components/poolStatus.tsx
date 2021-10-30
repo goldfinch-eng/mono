@@ -20,8 +20,8 @@ function PoolStatus({pool}: PoolStatusProps) {
     let poolBalance: string | undefined
     let totalLoansOutstanding: string | undefined
     let capacityRemaining: BigNumber | undefined
-    let maxPoolCapacity = goldfinchConfig.totalFundsLimit
-    if (pool) {
+    const maxPoolCapacity: BigNumber | undefined = goldfinchConfig ? goldfinchConfig.totalFundsLimit : undefined
+    if (pool && maxPoolCapacity) {
       const poolData = pool.info.value.poolData
       defaultRate = poolData.defaultRate
       poolBalance = usdcFromAtomic(poolData.totalPoolAssets)
@@ -31,8 +31,14 @@ function PoolStatus({pool}: PoolStatusProps) {
 
     return [
       {label: "Total pool balance", value: displayDollars(poolBalance)},
-      {label: "Max pool capacity", value: displayDollars(usdcFromAtomic(maxPoolCapacity))},
-      {label: "Remaining capacity", value: displayDollars(usdcFromAtomic(capacityRemaining))},
+      {
+        label: "Max pool capacity",
+        value: displayDollars(maxPoolCapacity ? usdcFromAtomic(maxPoolCapacity) : undefined),
+      },
+      {
+        label: "Remaining capacity",
+        value: displayDollars(capacityRemaining ? usdcFromAtomic(capacityRemaining) : undefined),
+      },
       {label: "Loans outstanding", value: displayDollars(totalLoansOutstanding)},
       {label: "Default rate", value: displayPercent(defaultRate)},
     ]

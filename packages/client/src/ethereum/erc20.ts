@@ -8,6 +8,7 @@ import {AbiItem} from "web3-utils/types"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {FIDU_DECIMALS} from "./fidu"
 import {BlockInfo} from "../utils"
+import BN from "bn.js"
 
 const Tickers = {
   USDC: "USDC",
@@ -142,11 +143,11 @@ let getERC20 = memoize(
   (...args) => JSON.stringify(args)
 )
 
-function usdcFromAtomic(amount): string {
+function usdcFromAtomic(amount: string | BigNumber | BN): string {
   return new BigNumber(String(amount)).div(decimals.toString()).toString(10)
 }
 
-function usdcToAtomic(amount): string {
+function usdcToAtomic(amount: string | BigNumber): string {
   return new BigNumber(String(amount)).multipliedBy(decimals.toString()).toString(10)
 }
 

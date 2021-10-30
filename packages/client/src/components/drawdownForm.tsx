@@ -62,8 +62,8 @@ function DrawdownForm(props) {
 
   const maxAmount = minimumNumber(
     props.creditLine.availableCreditInDollars,
-    usdcFromAtomic(pool?.info.value.poolData.balance),
-    usdcFromAtomic(goldfinchConfig.transactionLimit)
+    pool ? usdcFromAtomic(pool.info.value.poolData.balance) : undefined,
+    goldfinchConfig ? usdcFromAtomic(goldfinchConfig.transactionLimit) : undefined
   )
 
   async function changeTicker(ticker) {

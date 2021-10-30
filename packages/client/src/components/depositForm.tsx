@@ -150,7 +150,10 @@ function DepositForm(props: DepositFormProps) {
                 wallet: (value) => user.usdcBalanceInDollars.gte(value) || "You do not have enough USDC",
                 transactionLimit: (value) =>
                   goldfinchConfig.transactionLimit.gte(usdcToAtomic(value)) ||
-                  `This is over the per-transaction limit of $${usdcFromAtomic(goldfinchConfig.transactionLimit)}`,
+                  `This is over the per-transaction limit of ${displayDollars(
+                    usdcFromAtomic(goldfinchConfig.transactionLimit),
+                    0
+                  )}`,
                 totalFundsLimit: (value) => {
                   return (
                     remainingPoolCapacity.gte(usdcToAtomic(value)) ||

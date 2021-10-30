@@ -56,14 +56,17 @@ function SeniorPoolView(): JSX.Element {
   }
 
   let maxCapacityNotice = <></>
-  let maxCapacity = goldfinchConfig.totalFundsLimit
-  if (pool && goldfinchConfig && pool.info.value.poolData.remainingCapacity(maxCapacity).isEqualTo("0")) {
+  if (
+    pool &&
+    goldfinchConfig &&
+    pool.info.value.poolData.remainingCapacity(goldfinchConfig.totalFundsLimit).isEqualTo("0")
+  ) {
     maxCapacityNotice = (
       <div className="info-banner background-container">
         <div className="message">
           <span>
-            The pool has reached its max capacity of {displayDollars(usdcFromAtomic(maxCapacity))}. Join our{" "}
-            <a href="https://discord.gg/HVeaca3fN8">Discord</a> for updates on when the cap is raised.
+            The pool has reached its max capacity of {displayDollars(usdcFromAtomic(goldfinchConfig.totalFundsLimit))}.
+            Join our <a href="https://discord.gg/HVeaca3fN8">Discord</a> for updates on when the cap is raised.
           </span>
         </div>
       </div>

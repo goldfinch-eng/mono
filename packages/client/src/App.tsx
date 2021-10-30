@@ -13,7 +13,7 @@ import PrivacyPolicy from "./components/privacyPolicy"
 import SeniorPoolAgreementNonUS from "./components/seniorPoolAgreementNonUS"
 import web3, {SESSION_DATA_KEY} from "./web3"
 import {ERC20, Tickers} from "./ethereum/erc20"
-import {refreshGoldfinchConfigData} from "./ethereum/goldfinchConfig"
+import {GoldfinchConfigData, refreshGoldfinchConfigData} from "./ethereum/goldfinchConfig"
 import {getUserData, defaultUser, User} from "./ethereum/user"
 import {mapNetworkToID, SUPPORTED_NETWORKS} from "./ethereum/utils"
 import {NetworkMonitor} from "./ethereum/networkMonitor"
@@ -56,7 +56,7 @@ export interface GlobalState {
   creditDesk?: CreditDesk
   user: User
   usdc?: ERC20
-  goldfinchConfig?: any
+  goldfinchConfig?: GoldfinchConfigData
   network?: NetworkConfig
   goldfinchProtocol?: GoldfinchProtocol
   networkMonitor?: NetworkMonitor
@@ -78,7 +78,7 @@ function App() {
   const [overrideAddress, setOverrideAdress] = useState<string>()
   const [user, setUser] = useState<User>(defaultUser())
   const [currentBlock, setCurrentBlock] = useState<BlockInfo>()
-  const [goldfinchConfig, setGoldfinchConfig] = useState({})
+  const [goldfinchConfig, setGoldfinchConfig] = useState<GoldfinchConfigData>()
   const [currentTXs, setCurrentTXs] = useState<any[]>([])
   const [currentErrors, setCurrentErrors] = useState<any[]>([])
   const [network, setNetwork] = useState<NetworkConfig>()

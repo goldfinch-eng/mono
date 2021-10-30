@@ -72,7 +72,7 @@ function DepositStatus(props: DepositStatusProps) {
       <div className="deposit-status background-container-inner">
         <div className="deposit-status-item">
           <div className="label">Portfolio balance</div>
-          <div className="value">{displayDollars(null, 2)}</div>
+          <div className="value">{displayDollars(undefined, 2)}</div>
         </div>
         <div className="deposit-status-item">
           <div className="label">Est. Annual Growth</div>
