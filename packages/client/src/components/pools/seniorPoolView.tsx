@@ -37,9 +37,9 @@ function SeniorPoolView(): JSX.Element {
   ) {
     // TODO Would be ideal to refactor this component so that the child components it renders all
     // receive state that is consistent, i.e. using `pool.poolData`, `capitalProvider` state,
-    // `stakingRewards`, and `gfi` that are guaranteed to be based on the same block number. For now,
+    // `stakingRewards`, `gfi`, and `user` that are guaranteed to be based on the same block number. For now,
     // here we ensure that the derivation of `capitalProvider` state is done using `pool.poolData`,
-    // `stakingRewards`, and `gfi` that are consistent with each other.
+    // `stakingRewards`, `gfi`, and `user` that are consistent with each other.
     const poolBlockNumber = pool.info.value.currentBlock.number
     const stakingRewardsBlockNumber = stakingRewards.info.value.currentBlock.number
     const gfiBlockNumber = gfi.info.value.currentBlock.number
