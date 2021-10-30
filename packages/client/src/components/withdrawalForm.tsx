@@ -270,7 +270,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
                 {"You will "}
                 <span className="font-bold">
                   {"receive "}
-                  {displayDollars(usdcFromAtomic(withdrawalAmount.multipliedBy(995).dividedBy(1000)), 2)}
+                  {displayDollars(usdcFromAtomic(withdrawalAmount.multipliedBy(995).dividedToIntegerBy(1000)), 2)}
                 </span>
                 {" net of protocol reserves and "}
                 <span className="font-bold">
