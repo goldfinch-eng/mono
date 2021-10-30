@@ -254,7 +254,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
 
     let notes: React.ReactNode[] = []
     let withdrawalInfo: WithdrawalInfo | undefined
-    if (transactionAmount && stakingRewards) {
+    if (transactionAmount) {
       const withdrawalAmountString = usdcToAtomic(transactionAmount)
       const withdrawalAmount = new BigNumber(withdrawalAmountString)
       if (withdrawalAmount.gt(0)) {
