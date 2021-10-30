@@ -159,15 +159,16 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     return config.getFidu();
   }
 
-  /// @notice The additional rewards earned per token, since the last time rewards were checkpointed.
-  /// This amount is limited by the amount of rewards that are available for distribution; if there
-  /// aren't enough rewards in the balance of this contract, then we shouldn't be giving them out.
+  /// @notice The additional rewards earned per token, between the provided time and the last
+  ///   time rewards were checkpointed, given the prevailing `rewardRate()`. This amount is limited
+  ///   by the amount of rewards that are available for distribution; if there aren't enough
+  ///   rewards in the balance of this contract, then we shouldn't be giving them out.
   /// @return Amount of rewards denominated in `rewardsToken().decimals()`.
-  function additionalRewardsPerTokenSinceLastUpdate() internal view returns (uint256) {
+  function additionalRewardsPerTokenSinceLastUpdate(uint256 time) internal view returns (uint256) {
     if (totalLeveragedStakedSupply == 0) {
       return 0;
     }
-    uint256 rewardsSinceLastUpdate = Math.min(block.timestamp.sub(lastUpdateTime).mul(rewardRate()), rewardsAvailable);
+    uint256 rewardsSinceLastUpdate = Math.min(time.sub(lastUpdateTime).mul(rewardRate()), rewardsAvailable);
     uint256 additionalRewardsPerToken = rewardsSinceLastUpdate.mul(stakingTokenMantissa()).div(
       totalLeveragedStakedSupply
     );
@@ -186,7 +187,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   /// @notice Returns accumulated rewards per token up to the current block timestamp
   /// @return Amount of rewards denominated in `rewardsToken().decimals()`
   function rewardPerToken() public view returns (uint256) {
-    uint256 additionalRewardsPerToken = additionalRewardsPerTokenSinceLastUpdate();
+    uint256 additionalRewardsPerToken = additionalRewardsPerTokenSinceLastUpdate(block.timestamp);
     return accumulatedRewardsPerToken.add(additionalRewardsPerToken);
   }
 
@@ -276,15 +277,18 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
   /// @notice The amount of rewards currently being earned per token per second. This amount takes into
   ///   account how many rewards are actually available for disbursal -- unlike `rewardRate()` which does not.
-  ///   This function is intended for public consumption, to know the rate at which rewards are actually being
-  //    earned, and not as an input to the mutative calculations in this contract.
+  ///   This function is intended for public consumption, to know the rate at which rewards are being
+  ///   earned, and not as an input to the mutative calculations in this contract.
   /// @return Amount of rewards denominated in `rewardsToken().decimals()`.
   function currentEarnRatePerToken() public view returns (uint256) {
-    uint256 elapsed = block.timestamp.sub(lastUpdateTime);
-    return additionalRewardsPerTokenSinceLastUpdate().div(elapsed);
+    uint256 time = block.timestamp == lastUpdateTime ? block.timestamp + 1 : block.timestamp;
+    uint256 elapsed = time.sub(lastUpdateTime);
+    return additionalRewardsPerTokenSinceLastUpdate(time).div(elapsed);
   }
 
-  /// @notice The amount of rewards currently being earned per second, for a given position.
+  /// @notice The amount of rewards currently being earned per second, for a given position. This function
+  ///   is intended for public consumption, to know the rate at which rewards are being earned
+  ///   for a given position, and not as an input to the mutative calculations in this contract.
   /// @return Amount of rewards denominated in `rewardsToken().decimals()`.
   function positionCurrentEarnRate(uint256 tokenId) external view returns (uint256) {
     StakedPosition storage position = positions[tokenId];
