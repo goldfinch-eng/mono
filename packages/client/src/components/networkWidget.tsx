@@ -13,8 +13,8 @@ import {isSessionDataInvalid, useSession, useSignIn} from "../hooks/useSignIn"
 
 interface NetworkWidgetProps {
   user: User
-  currentBlock: BlockInfo
-  network: NetworkConfig
+  currentBlock: BlockInfo | undefined
+  network: NetworkConfig | undefined
   currentErrors: any[]
   currentTXs: any[]
 
@@ -68,10 +68,8 @@ function NetworkWidget(props: NetworkWidgetProps) {
   function transactionItem(tx) {
     const transactionlabel = tx.name === "Approval" ? tx.name : `$${tx.amount} ${tx.name}`
     let etherscanSubdomain
-    if (props.network.name === "mainnet") {
-      etherscanSubdomain = ""
-    } else {
-      etherscanSubdomain = `${props.network}.`
+    if (props.network) {
+      etherscanSubdomain = props.network.name === "mainnet" ? "" : props.network.name
     }
 
     let confirmationMessage: JSX.Element = <></>
@@ -216,7 +214,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
         </div>
       </div>
     )
-  } else if (web3 && props.network.name && !props.network.supported) {
+  } else if (web3 && props.network && props.network.name && !props.network.supported) {
     return (
       <div ref={node} className="network-widget">
         <div className="network-widget-button disabled">Wrong Network</div>

@@ -244,16 +244,14 @@ function App() {
   return (
     <AppContext.Provider value={store}>
       <ThemeProvider theme={defaultTheme}>
-        {network && currentBlock ? (
-          <NetworkWidget
-            user={user}
-            currentBlock={currentBlock}
-            network={network}
-            currentErrors={currentErrors}
-            currentTXs={currentTXs}
-            connectionComplete={setupWeb3}
-          />
-        ) : undefined}
+        <NetworkWidget
+          user={user}
+          currentBlock={currentBlock}
+          network={network}
+          currentErrors={currentErrors}
+          currentTXs={currentTXs}
+          connectionComplete={setupWeb3}
+        />
         <EarnProvider>
           <BorrowProvider>
             <Router>
