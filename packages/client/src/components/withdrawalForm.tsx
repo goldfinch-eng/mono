@@ -61,6 +61,10 @@ function WithdrawalForm(props: WithdrawalFormProps) {
   function getWithdrawalInfo(withdrawalAmount: BigNumber): WithdrawalInfo {
     const withdrawalFiduAmount = getNumSharesFromUsdc(withdrawalAmount, props.capitalProvider.sharePrice)
 
+    if (!withdrawalFiduAmount.gt(0)) {
+      throw new Error("Withdrawal amount in FIDU must be greater than 0.")
+    }
+
     if (withdrawalFiduAmount.gt(props.capitalProvider.shares.aggregates.withdrawable)) {
       throw new Error(
         `Tried to withdraw more shares (${withdrawalFiduAmount.toString(
@@ -248,34 +252,39 @@ function WithdrawalForm(props: WithdrawalFormProps) {
     )
 
     let notes: React.ReactNode[] = []
+    let withdrawalInfo: WithdrawalInfo | undefined
     if (transactionAmount && stakingRewards) {
       const withdrawalAmountString = usdcToAtomic(transactionAmount)
       const withdrawalAmount = new BigNumber(withdrawalAmountString)
-      const info = getWithdrawalInfo(withdrawalAmount)
-      const forfeitedGfi = info.unstakeAndWithdraw ? info.unstakeAndWithdraw.forfeitedGfiSum : new BigNumber(0)
-      notes = [
-        {
-          key: "advisory",
-          content: (
-            <p>
-              {"You will "}
-              <span className="font-bold">
-                {"receive "}
-                {displayDollars(usdcFromAtomic(withdrawalAmount.multipliedBy(995).dividedBy(1000)), 2)}
-              </span>
-              {" net of protocol reserves and "}
-              <span className="font-bold">
-                {"forfeit "}
-                {displayNumber(gfiFromAtomic(forfeitedGfi), 2)}
-                {" GFI ("}
-                {displayDollars(gfiInDollars(gfiToDollarsAtomic(forfeitedGfi, props.capitalProvider.gfiPrice)), 2)}
-                {")"}
-              </span>
-              {" that is still unvested."}
-            </p>
-          ),
-        },
-      ]
+      if (withdrawalAmount.gt(0)) {
+        withdrawalInfo = getWithdrawalInfo(withdrawalAmount)
+        const forfeitedGfi = withdrawalInfo.unstakeAndWithdraw
+          ? withdrawalInfo.unstakeAndWithdraw.forfeitedGfiSum
+          : new BigNumber(0)
+        notes = [
+          {
+            key: "advisory",
+            content: (
+              <p>
+                {"You will "}
+                <span className="font-bold">
+                  {"receive "}
+                  {displayDollars(usdcFromAtomic(withdrawalAmount.multipliedBy(995).dividedBy(1000)), 2)}
+                </span>
+                {" net of protocol reserves and "}
+                <span className="font-bold">
+                  {"forfeit "}
+                  {displayNumber(gfiFromAtomic(forfeitedGfi), 2)}
+                  {" GFI ("}
+                  {displayDollars(gfiInDollars(gfiToDollarsAtomic(forfeitedGfi, props.capitalProvider.gfiPrice)), 2)}
+                  {")"}
+                </span>
+                {" that is still unvested."}
+              </p>
+            ),
+          },
+        ]
+      }
     }
 
     return (
@@ -305,7 +314,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
             }
             notes={notes}
           />
-          <LoadingButton action={action} />
+          <LoadingButton disabled={!withdrawalInfo} action={action} />
         </div>
       </div>
     )
