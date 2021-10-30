@@ -10,7 +10,7 @@ import {ERC20, Tickers, usdcFromAtomic} from "./erc20"
 import {getBalanceAsOf, mapEventsToTx} from "./events"
 import {GFILoaded} from "./gfi"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
-import {SeniorPoolLoaded} from "./pool"
+import {SeniorPoolLoaded, StakingRewardsLoaded, StakingRewardsPosition, StoredPosition} from "./pool"
 import {getFromBlock, MAINNET} from "./utils"
 
 declare let window: any
@@ -23,13 +23,14 @@ export async function getUserData(
   pool: SeniorPoolLoaded,
   creditDesk: CreditDesk,
   networkId: string,
+  stakingRewards: StakingRewardsLoaded,
   gfi: GFILoaded,
   currentBlock: BlockInfo
 ): Promise<UserLoaded> {
   const borrower = await getBorrowerContract(address, goldfinchProtocol, currentBlock)
 
   const user = new User(address, networkId, creditDesk, goldfinchProtocol, borrower)
-  await user.initialize(pool, gfi, currentBlock)
+  await user.initialize(pool, stakingRewards, gfi, currentBlock)
   assertWithLoadedInfo(user)
   return user
 }
@@ -38,6 +39,153 @@ export interface UnlockedStatus {
   unlockAddress: string
   isUnlocked: boolean
 }
+
+type UserStakingRewardsLoadedInfo = {
+  currentBlock: BlockInfo
+  positions: StakingRewardsPosition[]
+  claimable: BigNumber
+  unvested: BigNumber
+  granted: BigNumber
+}
+
+class UserStakingRewards {
+  info: Loadable<UserStakingRewardsLoadedInfo>
+
+  constructor() {
+    this.info = {
+      loaded: false,
+      value: undefined,
+    }
+  }
+
+  async initialize(address: string, stakingRewards: StakingRewardsLoaded, currentBlock: BlockInfo): Promise<void> {
+    if (stakingRewards.info.value.currentBlock.number !== currentBlock.number) {
+      throw new Error("`stakingRewards` is based on a different block number from `currentBlock`.")
+    }
+    const positions = await stakingRewards.contract.methods
+      .balanceOf(address)
+      .call(undefined, currentBlock.number)
+      .then((balance: string) => {
+        // NOTE: In defining `this.positions`, we want to use `balanceOf()` plus `tokenOfOwnerByIndex()`
+        // to determine `tokenIds`, rather than using the set of Staked events for the `recipient`.
+        // The former approach reflects any token transfers that may have occurred to or from the
+        // `recipient`, whereas the latter does not.
+        const numPositions = parseInt(balance, 10)
+        return numPositions
+      })
+      .then((numPositions: number) =>
+        Promise.all(
+          Array(numPositions)
+            .fill("")
+            .map((val, i) =>
+              stakingRewards.contract.methods.tokenOfOwnerByIndex(address, i).call(undefined, currentBlock.number)
+            )
+        )
+      )
+      .then((tokenIds: string[]) =>
+        Promise.all(
+          tokenIds.map((tokenId) =>
+            stakingRewards.contract.methods
+              .positions(tokenId)
+              .call(undefined, currentBlock.number)
+              .then(async (rawPosition) => {
+                const storedPosition = UserStakingRewards.parseStoredPosition(rawPosition)
+                const [stakedEvent, optimisticIncrement] = await Promise.all([
+                  stakingRewards.getStakedEvent(address, tokenId, currentBlock.number),
+                  stakingRewards.calculatePositionOptimisticIncrement(tokenId, storedPosition.rewards, currentBlock),
+                ])
+                if (!stakedEvent) {
+                  throw new Error(`Failed to retrieve Staked event for tokenId: ${tokenId}`)
+                }
+                return new StakingRewardsPosition(tokenId, stakedEvent, storedPosition, optimisticIncrement)
+              })
+          )
+        )
+      )
+
+    const claimable = UserStakingRewards.calculateClaimableRewards(positions)
+    const unvested = UserStakingRewards.calculateUnvestedRewards(positions)
+    const granted = UserStakingRewards.calculateGrantedRewards(positions)
+
+    this.info = {
+      loaded: true,
+      value: {
+        currentBlock,
+        positions,
+        claimable,
+        unvested,
+        granted,
+      },
+    }
+  }
+
+  get lockedPositions(): StakingRewardsPosition[] {
+    // We expect this getter to be used only once info has been loaded.
+    assertWithLoadedInfo(this)
+    const value = this.info.value
+    return value.positions.filter((position) => position.getLocked(value.currentBlock))
+  }
+
+  get unlockedPositions(): StakingRewardsPosition[] {
+    // We expect this getter to be used only once info has been loaded.
+    assertWithLoadedInfo(this)
+    const value = this.info.value
+    return value.positions.filter((position) => !position.getLocked(value.currentBlock))
+  }
+
+  get unvestedRewardsPositions(): StakingRewardsPosition[] {
+    assertWithLoadedInfo(this)
+    const value = this.info.value
+    return value.positions.filter((position) => position.storedPosition.rewards.endTime > value.currentBlock.timestamp)
+  }
+
+  static calculateClaimableRewards(positions: StakingRewardsPosition[]): BigNumber {
+    if (positions.length === 0) return new BigNumber(0)
+    return BigNumber.sum.apply(
+      null,
+      positions.map((position) => position.claimable)
+    )
+  }
+
+  static calculateUnvestedRewards(positions: StakingRewardsPosition[]): BigNumber {
+    if (positions.length === 0) return new BigNumber(0)
+    return BigNumber.sum.apply(
+      null,
+      positions.map((position) => position.unvested)
+    )
+  }
+
+  static calculateGrantedRewards(positions: StakingRewardsPosition[]): BigNumber {
+    if (positions.length === 0) return new BigNumber(0)
+    return BigNumber.sum.apply(
+      null,
+      positions.map((position) => position.granted)
+    )
+  }
+
+  static parseStoredPosition(tuple: {
+    0: string
+    1: [string, string, string, string, string, string]
+    2: string
+    3: string
+  }): StoredPosition {
+    return {
+      amount: new BigNumber(tuple[0]),
+      rewards: {
+        totalUnvested: new BigNumber(tuple[1][0]),
+        totalVested: new BigNumber(tuple[1][1]),
+        totalPreviouslyVested: new BigNumber(tuple[1][2]),
+        totalClaimed: new BigNumber(tuple[1][3]),
+        startTime: parseInt(tuple[1][4], 10),
+        endTime: parseInt(tuple[1][5], 10),
+      },
+      leverageMultiplier: new BigNumber(tuple[2]),
+      lockedUntil: parseInt(tuple[3], 10),
+    }
+  }
+}
+
+export type UserStakingRewardsLoaded = WithLoadedInfo<UserStakingRewards, UserStakingRewardsLoadedInfo>
 
 type UserLoadedInfo = {
   currentBlock: BlockInfo
@@ -59,6 +207,7 @@ type UserLoadedInfo = {
       isUnlocked: boolean
     }
   }
+  stakingRewards: UserStakingRewardsLoaded
 }
 
 export type UserLoaded = WithLoadedInfo<User, UserLoadedInfo>
@@ -98,7 +247,22 @@ export class User {
     }
   }
 
-  async initialize(pool: SeniorPoolLoaded, gfi: GFILoaded, currentBlock: BlockInfo) {
+  async initialize(
+    pool: SeniorPoolLoaded,
+    stakingRewards: StakingRewardsLoaded,
+    gfi: GFILoaded,
+    currentBlock: BlockInfo
+  ) {
+    if (pool.info.value.currentBlock.number !== currentBlock.number) {
+      throw new Error("`pool` is based on a different block number from `currentBlock`.")
+    }
+    if (pool.info.value.currentBlock.number !== stakingRewards.info.value.currentBlock.number) {
+      throw new Error("`pool` and `stakingRewards` are based on different block numbers.")
+    }
+    if (pool.info.value.currentBlock.number !== gfi.info.value.currentBlock.number) {
+      throw new Error("`pool` and `gfi` are based on different block numbers.")
+    }
+
     const usdc = this.goldfinchProtocol.getERC20(Tickers.USDC)
     const poolBlockNumber = pool.info.value.currentBlock.number
     const gfiBlockNumber = gfi.info.value.currentBlock.number
@@ -131,6 +295,11 @@ export class User {
     const gfiBalance = new BigNumber(
       await gfi.contract.methods.balanceOf(this.address).call(undefined, currentBlock.number)
     )
+
+    const userStakingRewards = new UserStakingRewards()
+    await userStakingRewards.initialize(this.address, stakingRewards, currentBlock)
+    assertWithLoadedInfo(userStakingRewards)
+
     this.info = {
       loaded: true,
       value: {
@@ -153,6 +322,7 @@ export class User {
             isUnlocked: this.borrower?.allowance ? this.isUnlocked(this.borrower.allowance) : false,
           },
         },
+        stakingRewards: userStakingRewards,
       },
     }
   }

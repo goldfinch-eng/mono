@@ -127,7 +127,7 @@ function App() {
   }, [stakingRewards, gfi])
 
   useEffect(() => {
-    if (goldfinchProtocol && pool && creditDesk && network && gfi && currentBlock) {
+    if (goldfinchProtocol && pool && creditDesk && network && stakingRewards && gfi && currentBlock) {
       refreshUserData()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -225,6 +225,7 @@ function App() {
     assertNonNullable(creditDesk)
     assertNonNullable(network)
     assertNonNullable(currentBlock)
+    assertNonNullable(stakingRewards)
     assertNonNullable(gfi)
 
     const accounts = await web3.eth.getAccounts()
@@ -234,7 +235,16 @@ function App() {
     }
     const userAddress = overrideAddress || _userAddress
 
-    const user = await getUserData(userAddress, goldfinchProtocol, pool, creditDesk, network.name, gfi, currentBlock)
+    const user = await getUserData(
+      userAddress,
+      goldfinchProtocol,
+      pool,
+      creditDesk,
+      network.name,
+      stakingRewards,
+      gfi,
+      currentBlock
+    )
 
     Sentry.setUser({
       // NOTE: The info we use here to identify / define the user for the purpose of

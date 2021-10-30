@@ -7,7 +7,7 @@ import BigNumber from "bignumber.js"
 import _ from "lodash"
 import {BlockNumber} from "web3-core"
 import {Contract, EventData, Filter} from "web3-eth-contract"
-import {assertWithLoadedInfo, Loadable, Loaded, WithLoadedInfo} from "../types/loadable"
+import {Loadable, Loaded, WithLoadedInfo} from "../types/loadable"
 import {assertBigNumber, BlockInfo, displayNumber, roundDownPenny} from "../utils"
 import {buildCreditLine} from "./creditLine"
 import {Tickers, usdcFromAtomic} from "./erc20"
@@ -16,6 +16,7 @@ import {fiduFromAtomic, fiduInDollars, fiduToDollarsAtomic, FIDU_DECIMALS} from 
 import {gfiInDollars, GFILoaded, gfiToDollarsAtomic, GFI_DECIMALS} from "./gfi"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {getMetadataStore} from "./tranchedPool"
+import {UserLoaded, UserStakingRewardsLoaded} from "./user"
 import {fetchDataFromAttributes, getPoolEvents, INTEREST_DECIMALS, USDC_DECIMALS} from "./utils"
 
 class Pool {
@@ -168,21 +169,21 @@ type CapitalProviderStakingInfo = {
 }
 
 function getCapitalProviderStakingInfo(
-  stakingRewards: StakingRewardsLoaded,
+  userStakingRewards: UserStakingRewardsLoaded,
   gfi: GFILoaded
 ): CapitalProviderStakingInfo {
   const gfiPrice = gfi.info.value.price
-  const lockedPositions = stakingRewards.lockedPositions
-  const unlockedPositions = stakingRewards.unlockedPositions
+  const lockedPositions = userStakingRewards.lockedPositions
+  const unlockedPositions = userStakingRewards.unlockedPositions
 
   let rewards: CapitalProviderStakingRewardsInfo
-  const unvested = stakingRewards.info.value.unvested
+  const unvested = userStakingRewards.info.value.unvested
   if (unvested.gt(0)) {
     rewards = {
       hasUnvested: true,
       unvested,
       unvestedInDollars: gfiInDollars(gfiToDollarsAtomic(unvested, gfiPrice)),
-      lastVestingEndTime: stakingRewards.unvestedRewardsPositions.reduce(
+      lastVestingEndTime: userStakingRewards.unvestedRewardsPositions.reduce(
         (acc, curr) => (curr.storedPosition.rewards.endTime > acc ? curr.storedPosition.rewards.endTime : acc),
         0
       ),
@@ -222,13 +223,16 @@ async function fetchCapitalProviderData(
   pool: SeniorPoolLoaded,
   stakingRewards: StakingRewardsLoaded,
   gfi: GFILoaded,
-  capitalProviderAddress: string
+  user: UserLoaded
 ): Promise<Loaded<CapitalProvider>> {
   if (pool.info.value.currentBlock.number !== stakingRewards.info.value.currentBlock.number) {
     throw new Error("`pool` and `stakingRewards` data are based on different blocks.")
   }
   if (pool.info.value.currentBlock.number !== gfi.info.value.currentBlock.number) {
     throw new Error("`pool` and `gfi` data are based on different blocks.")
+  }
+  if (pool.info.value.currentBlock.number !== user.info.value.currentBlock.number) {
+    throw new Error("`pool` and `user` data are based on different blocks.")
   }
   const currentBlock = pool.info.value.currentBlock
 
@@ -240,9 +244,9 @@ async function fetchCapitalProviderData(
   assertBigNumber(sharePrice)
 
   const numSharesNotStaked = new BigNumber(
-    await pool.fidu.methods.balanceOf(capitalProviderAddress).call(undefined, currentBlock.number)
+    await pool.fidu.methods.balanceOf(user.address).call(undefined, currentBlock.number)
   )
-  const stakingInfo = getCapitalProviderStakingInfo(stakingRewards, gfi)
+  const stakingInfo = getCapitalProviderStakingInfo(user.info.value.stakingRewards, gfi)
   const numSharesStakedLocked = stakingInfo.shares.locked
   const numSharesStakedUnlocked = stakingInfo.shares.unlocked
 
@@ -262,14 +266,14 @@ async function fetchCapitalProviderData(
   const availableToWithdraw = fiduToDollarsAtomic(numSharesWithdrawable, sharePrice)
   const availableToWithdrawInDollars = fiduInDollars(availableToWithdraw)
 
-  const address = capitalProviderAddress
+  const address = user.address
   const allowance = new BigNumber(
-    await pool.usdc.methods.allowance(capitalProviderAddress, pool.address).call(undefined, currentBlock.number)
+    await pool.usdc.methods.allowance(address, pool.address).call(undefined, currentBlock.number)
   )
   const weightedAverageSharePrice = await getWeightedAverageSharePrice(
     pool,
     stakingRewards,
-    capitalProviderAddress,
+    address,
     numSharesTotal,
     currentBlock
   )
@@ -704,7 +708,7 @@ class StakingRewardsPosition {
   }
 }
 
-type StoredPosition = {
+export type StoredPosition = {
   amount: BigNumber
   rewards: StakingRewardsVesting
   leverageMultiplier: BigNumber
@@ -716,33 +720,10 @@ type PositionOptimisticIncrement = {
   unvested: BigNumber
 }
 
-const parseStoredPosition = (tuple: {
-  0: string
-  1: [string, string, string, string, string, string]
-  2: string
-  3: string
-}): StoredPosition => ({
-  amount: new BigNumber(tuple[0]),
-  rewards: {
-    totalUnvested: new BigNumber(tuple[1][0]),
-    totalVested: new BigNumber(tuple[1][1]),
-    totalPreviouslyVested: new BigNumber(tuple[1][2]),
-    totalClaimed: new BigNumber(tuple[1][3]),
-    startTime: parseInt(tuple[1][4], 10),
-    endTime: parseInt(tuple[1][5], 10),
-  },
-  leverageMultiplier: new BigNumber(tuple[2]),
-  lockedUntil: parseInt(tuple[3], 10),
-})
-
 type StakingRewardsLoadedInfo = {
   currentBlock: BlockInfo
   isPaused: boolean
   currentEarnRate: BigNumber
-  positions: StakingRewardsPosition[]
-  claimable: BigNumber
-  unvested: BigNumber
-  granted: BigNumber
 }
 
 export type StakingRewardsLoaded = WithLoadedInfo<StakingRewards, StakingRewardsLoadedInfo>
@@ -763,58 +744,14 @@ class StakingRewards {
     }
   }
 
-  async initialize(recipient: string, currentBlock: BlockInfo): Promise<void> {
-    const [isPaused, currentEarnRate, positions] = await Promise.all([
+  async initialize(currentBlock: BlockInfo): Promise<void> {
+    const [isPaused, currentEarnRate] = await Promise.all([
       this.contract.methods.paused().call(undefined, currentBlock.number),
       this.contract.methods
         .currentEarnRatePerToken()
         .call(undefined, currentBlock.number)
         .then((currentEarnRate: string) => new BigNumber(currentEarnRate)),
-      this.contract.methods
-        .balanceOf(recipient)
-        .call(undefined, currentBlock.number)
-        .then((balance: string) => {
-          // NOTE: In defining `this.positions`, we want to use `balanceOf()` plus `tokenOfOwnerByIndex()`
-          // to determine `tokenIds`, rather than using the set of Staked events for the `recipient`.
-          // The former approach reflects any token transfers that may have occurred to or from the
-          // `recipient`, whereas the latter does not.
-          const numPositions = parseInt(balance, 10)
-          return numPositions
-        })
-        .then((numPositions: number) =>
-          Promise.all(
-            Array(numPositions)
-              .fill("")
-              .map((val, i) =>
-                this.contract.methods.tokenOfOwnerByIndex(recipient, i).call(undefined, currentBlock.number)
-              )
-          )
-        )
-        .then((tokenIds: string[]) =>
-          Promise.all(
-            tokenIds.map((tokenId) => {
-              return this.contract.methods
-                .positions(tokenId)
-                .call(undefined, currentBlock.number)
-                .then(async (rawPosition) => {
-                  const storedPosition = parseStoredPosition(rawPosition)
-                  const [stakedEvent, optimisticIncrement] = await Promise.all([
-                    this.getStakedEvent(recipient, tokenId, currentBlock.number),
-                    this.calculatePositionOptimisticIncrement(tokenId, storedPosition.rewards, currentBlock),
-                  ])
-                  if (!stakedEvent) {
-                    throw new Error(`Failed to retrieve Staked event for tokenId: ${tokenId}`)
-                  }
-                  return new StakingRewardsPosition(tokenId, stakedEvent, storedPosition, optimisticIncrement)
-                })
-            })
-          )
-        ),
     ])
-
-    const claimable = StakingRewards.calculateClaimableRewards(positions)
-    const unvested = StakingRewards.calculateUnvestedRewards(positions)
-    const granted = StakingRewards.calculateGrantedRewards(positions)
 
     this.info = {
       loaded: true,
@@ -822,32 +759,8 @@ class StakingRewards {
         currentBlock,
         isPaused,
         currentEarnRate,
-        positions,
-        claimable,
-        unvested,
-        granted,
       },
     }
-  }
-
-  get lockedPositions(): StakingRewardsPosition[] {
-    // We expect this getter to be used only once info has been loaded.
-    assertWithLoadedInfo(this)
-    const value = this.info.value
-    return value.positions.filter((position) => position.getLocked(value.currentBlock))
-  }
-
-  get unlockedPositions(): StakingRewardsPosition[] {
-    // We expect this getter to be used only once info has been loaded.
-    assertWithLoadedInfo(this)
-    const value = this.info.value
-    return value.positions.filter((position) => !position.getLocked(value.currentBlock))
-  }
-
-  get unvestedRewardsPositions(): StakingRewardsPosition[] {
-    assertWithLoadedInfo(this)
-    const value = this.info.value
-    return value.positions.filter((position) => position.storedPosition.rewards.endTime > value.currentBlock.timestamp)
   }
 
   async calculatePositionOptimisticIncrement(
@@ -905,30 +818,6 @@ class StakingRewards {
       toBlock
     )
     return events
-  }
-
-  static calculateClaimableRewards(positions: StakingRewardsPosition[]): BigNumber {
-    if (positions.length === 0) return new BigNumber(0)
-    return BigNumber.sum.apply(
-      null,
-      positions.map((position) => position.claimable)
-    )
-  }
-
-  static calculateUnvestedRewards(positions: StakingRewardsPosition[]): BigNumber {
-    if (positions.length === 0) return new BigNumber(0)
-    return BigNumber.sum.apply(
-      null,
-      positions.map((position) => position.unvested)
-    )
-  }
-
-  static calculateGrantedRewards(positions: StakingRewardsPosition[]): BigNumber {
-    if (positions.length === 0) return new BigNumber(0)
-    return BigNumber.sum.apply(
-      null,
-      positions.map((position) => position.granted)
-    )
   }
 }
 

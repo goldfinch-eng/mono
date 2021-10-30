@@ -335,7 +335,7 @@ function Earn() {
       poolBlockNumber === gfiBlockNumber &&
       poolBlockNumber === userBlockNumber
     ) {
-      const capitalProvider = await fetchCapitalProviderData(pool, stakingRewards, gfi, user.address)
+      const capitalProvider = await fetchCapitalProviderData(pool, stakingRewards, gfi, user)
       setCapitalProvider(capitalProvider)
     }
   }

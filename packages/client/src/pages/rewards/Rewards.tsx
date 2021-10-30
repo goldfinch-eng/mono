@@ -9,7 +9,7 @@ import {WIDTH_TYPES} from "../../components/styleConstants"
 import {CommunityRewardsGrant, MerkleDistributorLoaded} from "../../ethereum/communityRewards"
 import {gfiFromAtomic, gfiInDollars, GFILoaded, gfiToDollarsAtomic} from "../../ethereum/gfi"
 import {StakingRewardsLoaded, StakingRewardsPosition} from "../../ethereum/pool"
-import {UserLoaded} from "../../ethereum/user"
+import {UserLoaded, UserStakingRewardsLoaded} from "../../ethereum/user"
 import {useFromSameBlock} from "../../hooks/useFromSameBlock"
 import {useMerkleDistributor} from "../../hooks/useMerkleDistributor"
 import {displayDollars, displayNumber} from "../../utils"
@@ -121,12 +121,12 @@ const getClaimable = (sortable: SortableRewards): BigNumber => {
 }
 
 function getSortedRewards(
-  stakingRewards: StakingRewardsLoaded,
+  userStakingRewards: UserStakingRewardsLoaded,
   merkleDistributor: MerkleDistributorLoaded
 ): SortableRewards[] {
   /* NOTE: First order by 0 or >0 claimable rewards (0 claimable at the bottom), then group by type
    (e.g. all the staking together, then all the airdrops), then order by most recent first */
-  const stakes = stakingRewards.info.value.positions
+  const stakes = userStakingRewards.info.value.positions
   const grants = merkleDistributor.info.value.communityRewards.info.value.grants
 
   const sorted: SortableRewards[] = [
@@ -185,18 +185,19 @@ function Rewards() {
     const merkleDistributor = consistent[2]
     const user = consistent[3]
 
-    loaded = merkleDistributor.info.loaded && stakingRewards.info.loaded
+    loaded = stakingRewards.info.loaded && gfi.info.loaded && merkleDistributor.info.loaded && user.info.loaded
 
-    const sortedRewards = getSortedRewards(stakingRewards, merkleDistributor)
+    const userStakingRewards = user.info.value.stakingRewards
+    const sortedRewards = getSortedRewards(userStakingRewards, merkleDistributor)
 
     const emptyRewards =
       !merkleDistributor.info.value.communityRewards.info.value.grants.length &&
       !merkleDistributor.info.value.actionRequiredAirdrops.length &&
-      !stakingRewards.info.value.positions.length
+      !userStakingRewards.info.value.positions.length
 
-    claimable = stakingRewards.info.value.claimable.plus(merkleDistributor.info.value.claimable)
-    unvested = stakingRewards.info.value.unvested.plus(merkleDistributor.info.value.unvested)
-    granted = stakingRewards.info.value.granted.plus(merkleDistributor.info.value.granted)
+    claimable = userStakingRewards.info.value.claimable.plus(merkleDistributor.info.value.claimable)
+    unvested = userStakingRewards.info.value.unvested.plus(merkleDistributor.info.value.unvested)
+    granted = userStakingRewards.info.value.granted.plus(merkleDistributor.info.value.granted)
 
     gfiBalance = user.info.value.gfiBalance
 
