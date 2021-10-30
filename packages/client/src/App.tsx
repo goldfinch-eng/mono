@@ -96,7 +96,7 @@ function App() {
     {},
     currentBlock?.timestamp
   )
-  const consistent = useFromSameBlock(_gfi, _stakingRewards)
+  const consistent = useFromSameBlock(currentBlock, _gfi, _stakingRewards)
   const gfi = consistent?.[0]
   const stakingRewards = consistent?.[1]
 
@@ -266,6 +266,8 @@ function App() {
 
   const store: GlobalState = {
     currentBlock,
+    stakingRewards,
+    gfi,
     pool,
     creditDesk,
     user,

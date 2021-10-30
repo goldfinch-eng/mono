@@ -3,7 +3,7 @@ import {useContext} from "react"
 import {FormProvider, useForm} from "react-hook-form"
 import {AppContext} from "../App"
 import {fiduFromAtomic, FIDU_DECIMALS} from "../ethereum/fidu"
-import {CapitalProvider, PoolData} from "../ethereum/pool"
+import {CapitalProvider} from "../ethereum/pool"
 import {useFromSameBlock} from "../hooks/useFromSameBlock"
 import {KYC} from "../hooks/useGoldfinchClient"
 import {eligibleForSeniorPool} from "../hooks/useKYC"
@@ -18,10 +18,10 @@ interface StakeFiduBannerProps {
 }
 
 export default function StakeFiduBanner(props: StakeFiduBannerProps) {
-  const {pool: _pool, user: _user, stakingRewards: _stakingRewards} = useContext(AppContext)
+  const {pool: _pool, user: _user, stakingRewards: _stakingRewards, currentBlock} = useContext(AppContext)
   const sendFromUser = useSendFromUser()
   const formMethods = useForm()
-  const consistent = useFromSameBlock(_pool, _user, _stakingRewards)
+  const consistent = useFromSameBlock(currentBlock, _pool, _user, _stakingRewards)
 
   const stake = async () => {
     assertNonNullable(consistent)

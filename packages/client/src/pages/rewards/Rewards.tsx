@@ -162,10 +162,11 @@ function getSortedRewards(
 }
 
 function Rewards() {
-  const {stakingRewards: _stakingRewards, gfi: _gfi, user: _user} = useContext(AppContext)
+  const {stakingRewards: _stakingRewards, gfi: _gfi, user: _user, currentBlock} = useContext(AppContext)
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
   const _merkleDistributor = useMerkleDistributor()
   const consistent = useFromSameBlock<StakingRewardsLoaded, GFILoaded, MerkleDistributorLoaded, UserLoaded>(
+    currentBlock,
     _stakingRewards,
     _gfi,
     _merkleDistributor,

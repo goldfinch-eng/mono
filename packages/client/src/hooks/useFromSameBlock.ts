@@ -1,5 +1,4 @@
-import {useContext, useEffect, useState} from "react"
-import {AppContext} from "../App"
+import {useEffect, useState} from "react"
 import {Loadable, WithLoadedInfo} from "../types/loadable"
 import {BlockInfo} from "../utils"
 
@@ -8,20 +7,23 @@ type InfoWithCurrentBlock = {currentBlock: BlockInfo}
 export function useFromSameBlock<
   T extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
   U extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>
->(...deps: [T | undefined, U | undefined]): [T, U] | undefined
+>(currentBlock: BlockInfo | undefined, ...deps: [T | undefined, U | undefined]): [T, U] | undefined
 
 export function useFromSameBlock<
   T extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
   U extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
   V extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>
->(...deps: [T | undefined, U | undefined, V | undefined]): [T, U, V] | undefined
+>(currentBlock: BlockInfo | undefined, ...deps: [T | undefined, U | undefined, V | undefined]): [T, U, V] | undefined
 
 export function useFromSameBlock<
   T extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
   U extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
   V extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
   W extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>
->(...deps: [T | undefined, U | undefined, V | undefined, W | undefined]): [T, U, V, W] | undefined
+>(
+  currentBlock: BlockInfo | undefined,
+  ...deps: [T | undefined, U | undefined, V | undefined, W | undefined]
+): [T, U, V, W] | undefined
 
 /**
  * Hook for ensuring that the loadable items provided to it are all loaded with
@@ -37,8 +39,7 @@ export function useFromSameBlock<
  */
 export function useFromSameBlock<
   T extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>
->(...deps: Array<T | undefined>): T[] | undefined {
-  const {currentBlock} = useContext(AppContext)
+>(currentBlock: BlockInfo | undefined, ...deps: Array<T | undefined>): T[] | undefined {
   const [value, setValue] = useState<T[]>()
 
   useEffect(() => {
@@ -58,6 +59,7 @@ export function useFromSameBlock<
         setValue(reduced)
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [...deps, currentBlock])
 
   return value

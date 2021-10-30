@@ -1,6 +1,6 @@
 import {useContext, useState} from "react"
 import {AppContext} from "../App"
-import {CapitalProvider, PoolData} from "../ethereum/pool"
+import {CapitalProvider} from "../ethereum/pool"
 import {useFromSameBlock} from "../hooks/useFromSameBlock"
 import {KYC} from "../hooks/useGoldfinchClient"
 import {eligibleForSeniorPool} from "../hooks/useKYC"
@@ -18,9 +18,9 @@ interface EarnActionsContainerProps {
 
 function EarnActionsContainer(props: EarnActionsContainerProps) {
   const {kyc} = props
-  const {pool: _pool, user: _user, goldfinchConfig} = useContext(AppContext)
+  const {pool: _pool, user: _user, goldfinchConfig, currentBlock} = useContext(AppContext)
   const [showAction, setShowAction] = useState<string>()
-  const consistent = useFromSameBlock(_pool, _user)
+  const consistent = useFromSameBlock(currentBlock, _pool, _user)
 
   function closeForm() {
     setShowAction("")
