@@ -86,11 +86,6 @@ async function main(hre: HardhatRuntimeEnvironment, options: OverrideOptions) {
   }
 
   if (isMainnetForking()) {
-    const protocolOwner = await getProtocolOwner()
-    await impersonateAccount(hre, protocolOwner)
-    await fundWithWhales(["ETH"], [protocolOwner])
-    await migrate.main()
-
     logger("Funding protocol_owner with whales")
     underwriter = protocol_owner
     await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [protocol_owner, gf_deployer, borrower], new BN("75000"))
