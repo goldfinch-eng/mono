@@ -140,12 +140,13 @@ function WithdrawalForm(props: WithdrawalFormProps) {
         }
       )
 
-      withdrawalFiduAmountRemaining = withdrawalFiduAmountRemaining.minus(reduced.fiduSum)
-      if (!withdrawalFiduAmountRemaining.eq(0)) {
-        throw new Error("Failed to prepare withdrawals of desired FIDU amount.")
-      }
-
       unstakeAndWithdraw = reduced
+
+      withdrawalFiduAmountRemaining = withdrawalFiduAmountRemaining.minus(reduced.fiduSum)
+    }
+
+    if (!withdrawalFiduAmountRemaining.eq(0)) {
+      throw new Error("Failed to prepare withdrawals of desired FIDU amount.")
     }
 
     if (withdraw && unstakeAndWithdraw) {
