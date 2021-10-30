@@ -79,7 +79,7 @@ function SeniorPoolView(): JSX.Element {
       <ConnectionNotice
         requireUnlock={false}
         requireKYC={{kyc: kycResult, condition: (kyc) => eligibleForSeniorPool(kyc, user)}}
-        isPaused={pool?.info.value.isPaused}
+        isPaused={pool?.info.loaded ? pool.info.value.isPaused : undefined}
       />
       {maxCapacityNotice}
       <InvestorNotice />
