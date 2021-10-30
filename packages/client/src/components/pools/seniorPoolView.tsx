@@ -1,10 +1,10 @@
 import {useContext, useEffect, useState} from "react"
 import {AppContext} from "../../App"
 import {usdcFromAtomic} from "../../ethereum/erc20"
+import {GFILoaded} from "../../ethereum/gfi"
 import {CapitalProvider, fetchCapitalProviderData, SeniorPoolLoaded, StakingRewardsLoaded} from "../../ethereum/pool"
 import {useStaleWhileRevalidating} from "../../hooks/useAsync"
 import {eligibleForSeniorPool, useKYC} from "../../hooks/useKYC"
-import {useStakingRewards} from "../../hooks/useStakingRewards"
 import {Loadable} from "../../types/loadable"
 import {assertNonNullable, displayDollars} from "../../utils"
 import ConnectionNotice from "../connectionNotice"
@@ -14,33 +14,36 @@ import PoolStatus from "../poolStatus"
 import StakeFiduBanner from "../stakeFiduBanner"
 
 function SeniorPoolView(): JSX.Element {
-  const {pool, user, goldfinchConfig, refreshCurrentBlock} = useContext(AppContext)
+  const {pool, user, goldfinchConfig, stakingRewards, gfi, refreshCurrentBlock} = useContext(AppContext)
   const [capitalProvider, setCapitalProvider] = useState<Loadable<CapitalProvider>>({
     loaded: false,
     value: undefined,
   })
-  const stakingRewards = useStakingRewards()
   const kycResult = useKYC()
   const kyc = useStaleWhileRevalidating(kycResult)
 
   useEffect(() => {
-    if (pool && stakingRewards && user.address) {
-      refreshCapitalProviderData(pool, stakingRewards, user.address)
+    if (pool && stakingRewards && gfi && user.address) {
+      refreshCapitalProviderData(pool, stakingRewards, gfi, user.address)
     }
-  }, [pool, stakingRewards, user.address])
+  }, [pool, stakingRewards, gfi, user.address])
 
   async function refreshCapitalProviderData(
     pool: SeniorPoolLoaded,
     stakingRewards: StakingRewardsLoaded,
+    gfi: GFILoaded,
     address: string
   ) {
     // TODO Would be ideal to refactor this component so that the child components it renders all
-    // receive state that is consistent, i.e. using `pool.poolData`, `capitalProvider` state, and
-    // `stakingRewards` that are guaranteed to be based on the same block number. For now, here
-    // we ensure that the derivation of `capitalProvider` state is done using `pool.poolData` and
-    // `stakingRewards` that are consistent with each other.
-    if (pool.info.value.currentBlock.number === stakingRewards.info.value.currentBlock.number) {
-      const capitalProvider = await fetchCapitalProviderData(pool, stakingRewards, address)
+    // receive state that is consistent, i.e. using `pool.poolData`, `capitalProvider` state,
+    // `stakingRewards`, and `gfi` that are guaranteed to be based on the same block number. For now,
+    // here we ensure that the derivation of `capitalProvider` state is done using `pool.poolData`,
+    // `stakingRewards`, and `gfi` that are consistent with each other.
+    const poolBlockNumber = pool.info.value.currentBlock.number
+    const stakingRewardsBlockNumber = stakingRewards.info.value.currentBlock.number
+    const gfiBlockNumber = gfi.info.value.currentBlock.number
+    if (poolBlockNumber === stakingRewardsBlockNumber && poolBlockNumber === gfiBlockNumber) {
+      const capitalProvider = await fetchCapitalProviderData(pool, stakingRewards, gfi, address)
       setCapitalProvider(capitalProvider)
     }
   }
@@ -84,18 +87,16 @@ function SeniorPoolView(): JSX.Element {
       {maxCapacityNotice}
       <InvestorNotice />
       <EarnActionsContainer
-        poolData={pool?.info.loaded ? pool.info.value.poolData : undefined}
         capitalProvider={capitalProvider.loaded ? capitalProvider.value : undefined}
         actionComplete={actionComplete}
         kyc={kyc}
       />
       <StakeFiduBanner
-        poolData={pool?.info.loaded ? pool.info.value.poolData : undefined}
         capitalProvider={capitalProvider.loaded ? capitalProvider.value : undefined}
         actionComplete={actionComplete}
         kyc={kyc}
       />
-      <PoolStatus pool={pool} />
+      <PoolStatus />
     </div>
   )
 }

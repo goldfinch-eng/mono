@@ -8,7 +8,6 @@ import useSendFromUser from "../hooks/useSendFromUser"
 import useNonNullContext from "../hooks/useNonNullContext"
 import BigNumber from "bignumber.js"
 import {decimalPlaces} from "../ethereum/utils"
-import {useStakingRewards} from "../hooks/useStakingRewards"
 import useERC20Permit from "../hooks/useERC20Permit"
 
 interface DepositFormProps {
@@ -17,9 +16,8 @@ interface DepositFormProps {
 }
 
 function DepositForm(props: DepositFormProps) {
-  const {pool, usdc, user, goldfinchConfig} = useNonNullContext(AppContext)
+  const {pool, usdc, user, goldfinchConfig, stakingRewards} = useNonNullContext(AppContext)
   const sendFromUser = useSendFromUser()
-  const stakingRewards = useStakingRewards()
   const {gatherPermitSignature} = useERC20Permit()
 
   async function action({transactionAmount}) {

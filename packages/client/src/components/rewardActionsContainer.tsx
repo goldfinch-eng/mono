@@ -5,7 +5,7 @@ import _ from "lodash"
 import React, {useState} from "react"
 import {useMediaQuery} from "react-responsive"
 import {CommunityRewards, CommunityRewardsGrant, MerkleDistributorLoaded} from "../ethereum/communityRewards"
-import {gfiFromAtomic} from "../ethereum/gfi"
+import {gfiFromAtomic, gfiInDollars, GFILoaded, gfiToDollarsAtomic} from "../ethereum/gfi"
 import {StakingRewards, StakingRewardsLoaded, StakingRewardsPosition} from "../ethereum/pool"
 import useSendFromUser from "../hooks/useSendFromUser"
 import {
@@ -265,6 +265,7 @@ function capitalizeMerkleDistributorGrantReason(reason: string): string {
 }
 
 interface RewardActionsContainerProps {
+  gfi: GFILoaded
   merkleDistributor: MerkleDistributorLoaded
   stakingRewards: StakingRewardsLoaded
   item: CommunityRewardsGrant | StakingRewardsPosition | MerkleDistributorGrantInfo
@@ -351,7 +352,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
         }}
         disabled={item.claimable.eq(0)}
         claimable={item.claimable}
-        totalUSD={new BigNumber("")} // TODO: this needs to be updated once we have a price for GFI in USD.
+        totalUSD={gfiInDollars(gfiToDollarsAtomic(item.claimable, props.gfi.info.value.price))}
         onCloseForm={onCloseForm}
       />
     )

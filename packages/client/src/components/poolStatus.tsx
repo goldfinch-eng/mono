@@ -2,18 +2,15 @@ import {BigNumber} from "bignumber.js"
 import {useContext} from "react"
 import {AppContext} from "../App"
 import {usdcFromAtomic} from "../ethereum/erc20"
-import {SeniorPoolLoaded} from "../ethereum/pool"
 import {displayDollars, displayPercent} from "../utils"
 import {iconOutArrow} from "./icons"
 import InfoSection from "./infoSection"
 import RecentRepayments from "./recentRepayments"
 
-interface PoolStatusProps {
-  pool: SeniorPoolLoaded | undefined
-}
+interface PoolStatusProps {}
 
-function PoolStatus({pool}: PoolStatusProps) {
-  const {goldfinchConfig} = useContext(AppContext)
+function PoolStatus(props: PoolStatusProps) {
+  const {goldfinchConfig, pool} = useContext(AppContext)
 
   function deriveRows() {
     let defaultRate: BigNumber | undefined

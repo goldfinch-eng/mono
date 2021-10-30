@@ -5,6 +5,7 @@ import {useHistory} from "react-router-dom"
 import {AppContext} from "../App"
 import {useEarn} from "../contexts/EarnContext"
 import {usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
+import {GFILoaded} from "../ethereum/gfi"
 import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
 import {
   CapitalProvider,
@@ -15,7 +16,6 @@ import {
 } from "../ethereum/pool"
 import {PoolBacker, TranchedPool} from "../ethereum/tranchedPool"
 import {User} from "../ethereum/user"
-import {useStakingRewards} from "../hooks/useStakingRewards"
 import {Loadable, Loaded} from "../types/loadable"
 import {InfoIcon} from "../ui/icons"
 import {BlockInfo, displayDollars, displayPercent, roundDownPenny} from "../utils"
@@ -300,28 +300,37 @@ function usePoolBackers({
 }
 
 function Earn() {
-  const {pool, usdc, user, goldfinchProtocol, goldfinchConfig, currentBlock} = useContext(AppContext)
+  const {pool, usdc, user, goldfinchProtocol, goldfinchConfig, stakingRewards, gfi, currentBlock} =
+    useContext(AppContext)
   const {earnStore, setEarnStore} = useEarn()
   const [capitalProvider, setCapitalProvider] = useState<Loadable<CapitalProvider>>({
     loaded: false,
     value: undefined,
   })
   const {backers, poolsAddresses} = usePoolBackers({goldfinchProtocol, user, currentBlock})
-  const stakingRewards = useStakingRewards()
 
   useEffect(() => {
-    if (pool && stakingRewards && user.address) {
-      refreshCapitalProviderData(pool, stakingRewards, user.address)
+    if (pool && stakingRewards && gfi && user.address) {
+      refreshCapitalProviderData(pool, stakingRewards, gfi, user.address)
     }
-  }, [pool, stakingRewards, usdc, user.address])
+  }, [pool, stakingRewards, gfi, usdc, user.address])
 
   async function refreshCapitalProviderData(
     pool: SeniorPoolLoaded,
     stakingRewards: StakingRewardsLoaded,
+    gfi: GFILoaded,
     address: string
   ) {
-    if (pool.info.value.currentBlock.number === stakingRewards.info.value.currentBlock.number) {
-      const capitalProvider = await fetchCapitalProviderData(pool, stakingRewards, address)
+    // TODO Would be ideal to refactor this component so that the child components it renders all
+    // receive state that is consistent, i.e. using `pool.poolData`, `capitalProvider` state,
+    // `stakingRewards`, and `gfi` that are guaranteed to be based on the same block number. For now, here
+    // we ensure that the derivation of `capitalProvider` state is done using `pool.poolData`,
+    // `stakingRewards`, and `gfi` that are consistent with each other.
+    const poolBlockNumber = pool.info.value.currentBlock.number
+    const stakingRewardsBlockNumber = stakingRewards.info.value.currentBlock.number
+    const gfiBlockNumber = gfi.info.value.currentBlock.number
+    if (poolBlockNumber === stakingRewardsBlockNumber && poolBlockNumber === gfiBlockNumber) {
+      const capitalProvider = await fetchCapitalProviderData(pool, stakingRewards, gfi, address)
       setCapitalProvider(capitalProvider)
     }
   }

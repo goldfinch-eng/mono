@@ -8,7 +8,6 @@ import {CapitalProvider, PoolData, StakingRewardsPosition} from "../ethereum/poo
 import useDebounce from "../hooks/useDebounce"
 import useNonNullContext from "../hooks/useNonNullContext"
 import useSendFromUser from "../hooks/useSendFromUser"
-import {useStakingRewards} from "../hooks/useStakingRewards"
 import {assertNonNullable, displayDollars, displayNumber, roundDownPenny} from "../utils"
 import LoadingButton from "./loadingButton"
 import TransactionForm from "./transactionForm"
@@ -51,9 +50,8 @@ interface WithdrawalFormProps {
 }
 
 function WithdrawalForm(props: WithdrawalFormProps) {
-  const {goldfinchConfig, pool} = useNonNullContext(AppContext)
+  const {goldfinchConfig, pool, stakingRewards} = useNonNullContext(AppContext)
   const sendFromUser = useSendFromUser()
-  const stakingRewards = useStakingRewards()
 
   const [transactionAmount, setTransactionAmount] = useState()
   const debouncedSetTransactionAmount = useDebounce(setTransactionAmount, 200)

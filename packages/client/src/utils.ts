@@ -11,7 +11,7 @@ export function croppedAddress(address) {
   return `${address.slice(0, 6)}...${address.slice(-4)}`
 }
 
-export function displayNumber(val: number | string | BigNumber, decimals = 2): string {
+export function displayNumber(val: number | string | BigNumber | undefined, decimals = 2): string {
   if (!val || (BigNumber.isBigNumber(val) && !val.isFinite())) {
     return ""
   }

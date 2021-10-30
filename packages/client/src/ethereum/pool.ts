@@ -13,7 +13,7 @@ import {buildCreditLine} from "./creditLine"
 import {Tickers, usdcFromAtomic} from "./erc20"
 import {getBalanceAsOf, mapEventsToTx} from "./events"
 import {fiduFromAtomic, fiduInDollars, fiduToDollarsAtomic, FIDU_DECIMALS} from "./fidu"
-import {gfiInDollars, gfiToDollarsAtomic, GFI_DECIMALS} from "./gfi"
+import {gfiInDollars, GFILoaded, gfiToDollarsAtomic, GFI_DECIMALS} from "./gfi"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {getMetadataStore} from "./tranchedPool"
 import {fetchDataFromAttributes, getPoolEvents, INTEREST_DECIMALS, USDC_DECIMALS} from "./utils"
@@ -62,8 +62,15 @@ class SeniorPool {
     }
   }
 
-  async initialize(currentBlock: BlockInfo): Promise<void> {
-    const poolData = await fetchPoolData(this, this.usdc, currentBlock)
+  async initialize(stakingRewards: StakingRewardsLoaded, gfi: GFILoaded, currentBlock: BlockInfo): Promise<void> {
+    if (stakingRewards.info.value.currentBlock.number !== currentBlock.number) {
+      throw new Error("`stakingRewards` is not based on current block number.")
+    }
+    if (stakingRewards.info.value.currentBlock.number !== gfi.info.value.currentBlock.number) {
+      throw new Error("`stakingRewards` and `gfi` data are based on different blocks.")
+    }
+
+    const poolData = await fetchPoolData(this, this.usdc, stakingRewards, gfi, currentBlock)
     const isPaused = await this.contract.methods.paused().call(undefined, currentBlock.number)
     this.info = {
       loaded: true,
@@ -160,14 +167,13 @@ type CapitalProviderStakingInfo = {
   rewards: CapitalProviderStakingRewardsInfo
 }
 
-async function getCapitalProviderStakingInfo(
+function getCapitalProviderStakingInfo(
   stakingRewards: StakingRewardsLoaded,
-  currentBlock: BlockInfo
-): Promise<CapitalProviderStakingInfo> {
+  gfi: GFILoaded
+): CapitalProviderStakingInfo {
+  const gfiPrice = gfi.info.value.price
   const lockedPositions = stakingRewards.lockedPositions
   const unlockedPositions = stakingRewards.unlockedPositions
-
-  const gfiPrice = new BigNumber(1).multipliedBy(GFI_DECIMALS) // TODO[PR]
 
   let rewards: CapitalProviderStakingRewardsInfo
   const unvested = stakingRewards.info.value.unvested
@@ -215,10 +221,14 @@ async function getCapitalProviderStakingInfo(
 async function fetchCapitalProviderData(
   pool: SeniorPoolLoaded,
   stakingRewards: StakingRewardsLoaded,
+  gfi: GFILoaded,
   capitalProviderAddress: string
 ): Promise<Loaded<CapitalProvider>> {
   if (pool.info.value.currentBlock.number !== stakingRewards.info.value.currentBlock.number) {
     throw new Error("`pool` and `stakingRewards` data are based on different blocks.")
+  }
+  if (pool.info.value.currentBlock.number !== gfi.info.value.currentBlock.number) {
+    throw new Error("`pool` and `gfi` data are based on different blocks.")
   }
   const currentBlock = pool.info.value.currentBlock
 
@@ -232,7 +242,7 @@ async function fetchCapitalProviderData(
   const numSharesNotStaked = new BigNumber(
     await pool.fidu.methods.balanceOf(capitalProviderAddress).call(undefined, currentBlock.number)
   )
-  const stakingInfo = await getCapitalProviderStakingInfo(stakingRewards, currentBlock)
+  const stakingInfo = getCapitalProviderStakingInfo(stakingRewards, gfi)
   const numSharesStakedLocked = stakingInfo.shares.locked
   const numSharesStakedUnlocked = stakingInfo.shares.unlocked
 
@@ -322,7 +332,13 @@ type PoolData = {
   remainingCapacity: typeof remainingCapacity
 }
 
-async function fetchPoolData(pool: SeniorPool, erc20: Contract, currentBlock: BlockInfo): Promise<PoolData> {
+async function fetchPoolData(
+  pool: SeniorPool,
+  erc20: Contract,
+  stakingRewards: StakingRewardsLoaded,
+  gfi: GFILoaded,
+  currentBlock: BlockInfo
+): Promise<PoolData> {
   const attributes = [{method: "sharePrice"}, {method: "compoundBalance"}]
   let {sharePrice, compoundBalance: _compoundBalance} = await fetchDataFromAttributes(pool.contract, attributes, {
     blockNumber: currentBlock.number,
@@ -348,8 +364,18 @@ async function fetchPoolData(pool: SeniorPool, erc20: Contract, currentBlock: Bl
   let poolEvents = await getAllDepositAndWithdrawalEvents(pool, currentBlock)
   let estimatedTotalInterest = await getEstimatedTotalInterest(pool, currentBlock)
   let estimatedApy = estimatedTotalInterest.dividedBy(totalPoolAssets)
-  // TODO Calculate this value using Uniswap price oracle for GFI, once that becomes available.
-  const estimatedApyFromGfi = undefined
+  const estimatedApyFromGfi = gfiToDollarsAtomic(stakingRewards.info.value.currentEarnRate, gfi.info.value.price)
+    .multipliedBy(
+      // This might be better thought of as the share-price mantissa, which happens to be the
+      // same as `FIDU_DECIMALS`.
+      FIDU_DECIMALS
+    )
+    .dividedBy(
+      // This might be better thought of as the GFI-price mantissa, which happens to be the
+      // same as `GFI_DECIMALS`.
+      GFI_DECIMALS
+    )
+    .dividedBy(sharePrice)
   let defaultRate = cumulativeWritedowns.dividedBy(cumulativeDrawdowns)
 
   return {
@@ -712,6 +738,7 @@ const parseStoredPosition = (tuple: {
 type StakingRewardsLoadedInfo = {
   currentBlock: BlockInfo
   isPaused: boolean
+  currentEarnRate: BigNumber
   positions: StakingRewardsPosition[]
   claimable: BigNumber
   unvested: BigNumber
@@ -737,39 +764,54 @@ class StakingRewards {
   }
 
   async initialize(recipient: string, currentBlock: BlockInfo): Promise<void> {
-    const isPaused = await this.contract.methods.paused().call(undefined, currentBlock.number)
+    const [isPaused, currentEarnRate, positions] = await Promise.all([
+      this.contract.methods.paused().call(undefined, currentBlock.number),
+      this.contract.methods
+        .currentEarnRate()
+        .call(undefined, currentBlock.number)
+        .then((currentEarnRate: string) => new BigNumber(currentEarnRate)),
+      this.contract.methods
+        .balanceOf(recipient)
+        .call(undefined, currentBlock.number)
+        .then((balance: string) => {
+          // NOTE: In defining `this.positions`, we want to use `balanceOf()` plus `tokenOfOwnerByIndex()`
+          // to determine `tokenIds`, rather than using the set of Staked events for the `recipient`.
+          // The former approach reflects any token transfers that may have occurred to or from the
+          // `recipient`, whereas the latter does not.
+          const numPositions = parseInt(balance, 10)
+          return numPositions
+        })
+        .then((numPositions: number) =>
+          Promise.all(
+            Array(numPositions)
+              .fill("")
+              .map((val, i) =>
+                this.contract.methods.tokenOfOwnerByIndex(recipient, i).call(undefined, currentBlock.number)
+              )
+          )
+        )
+        .then((tokenIds: string[]) =>
+          Promise.all(
+            tokenIds.map((tokenId) => {
+              return this.contract.methods
+                .positions(tokenId)
+                .call(undefined, currentBlock.number)
+                .then(async (rawPosition) => {
+                  const storedPosition = parseStoredPosition(rawPosition)
+                  const [stakedEvent, optimisticIncrement] = await Promise.all([
+                    this.getStakedEvent(recipient, tokenId, currentBlock.number),
+                    this.calculatePositionOptimisticIncrement(tokenId, storedPosition.rewards, currentBlock),
+                  ])
+                  if (!stakedEvent) {
+                    throw new Error(`Failed to retrieve Staked event for tokenId: ${tokenId}`)
+                  }
+                  return new StakingRewardsPosition(tokenId, stakedEvent, storedPosition, optimisticIncrement)
+                })
+            })
+          )
+        ),
+    ])
 
-    // NOTE: In defining `this.positions`, we want to use `balanceOf()` plus `tokenOfOwnerByIndex()`
-    // to determine `tokenIds`, rather than using the set of Staked events for the `recipient`.
-    // The former approach reflects any token transfers that may have occurred to or from the
-    // `recipient`, whereas the latter does not.
-    const numPositions = parseInt(
-      await this.contract.methods.balanceOf(recipient).call(undefined, currentBlock.number),
-      10
-    )
-    const tokenIds: string[] = await Promise.all(
-      Array(numPositions)
-        .fill("")
-        .map((val, i) => this.contract.methods.tokenOfOwnerByIndex(recipient, i).call(undefined, currentBlock.number))
-    )
-    const positions = await Promise.all(
-      tokenIds.map((tokenId) => {
-        return this.contract.methods
-          .positions(tokenId)
-          .call(undefined, currentBlock.number)
-          .then(async (rawPosition) => {
-            const storedPosition = parseStoredPosition(rawPosition)
-            const [stakedEvent, optimisticIncrement] = await Promise.all([
-              this.getStakedEvent(recipient, tokenId, currentBlock.number),
-              this.calculatePositionOptimisticIncrement(tokenId, storedPosition.rewards, currentBlock),
-            ])
-            if (!stakedEvent) {
-              throw new Error(`Failed to retrieve Staked event for tokenId: ${tokenId}`)
-            }
-            return new StakingRewardsPosition(tokenId, stakedEvent, storedPosition, optimisticIncrement)
-          })
-      })
-    )
     const claimable = StakingRewards.calculateClaimableRewards(positions)
     const unvested = StakingRewards.calculateUnvestedRewards(positions)
     const granted = StakingRewards.calculateGrantedRewards(positions)
@@ -779,6 +821,7 @@ class StakingRewards {
       value: {
         currentBlock,
         isPaused,
+        currentEarnRate,
         positions,
         claimable,
         unvested,

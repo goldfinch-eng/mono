@@ -1,6 +1,7 @@
 import {useContext, useState} from "react"
 import {AppContext} from "../App"
 import {CapitalProvider, PoolData} from "../ethereum/pool"
+import {useFromSameBlock} from "../hooks/useFromSameBlock"
 import {KYC} from "../hooks/useGoldfinchClient"
 import {eligibleForSeniorPool} from "../hooks/useKYC"
 import {assertNonNullable} from "../utils"
@@ -12,14 +13,14 @@ import WithdrawalForm from "./withdrawalForm"
 interface EarnActionsContainerProps {
   actionComplete: () => Promise<any>
   capitalProvider: CapitalProvider | undefined
-  poolData: PoolData | undefined
   kyc: KYC | undefined
 }
 
 function EarnActionsContainer(props: EarnActionsContainerProps) {
   const {kyc} = props
-  const {user, goldfinchConfig} = useContext(AppContext)
+  const {pool: _pool, user: _user, goldfinchConfig} = useContext(AppContext)
   const [showAction, setShowAction] = useState<string>()
+  const consistent = useFromSameBlock(_pool, _user)
 
   function closeForm() {
     setShowAction("")
@@ -31,8 +32,13 @@ function EarnActionsContainer(props: EarnActionsContainerProps) {
     })
   }
 
-  const readyAndEligible =
-    !!user.address && !!props.poolData && !!props.capitalProvider && eligibleForSeniorPool(kyc, user)
+  let readyAndEligible = false
+  if (consistent) {
+    const pool = consistent[0]
+    const user = consistent[1]
+    readyAndEligible =
+      !!user.address && !!pool.info.value.poolData && !!props.capitalProvider && eligibleForSeniorPool(kyc, user)
+  }
 
   let placeholderClass = ""
   if (!readyAndEligible) {
@@ -44,7 +50,7 @@ function EarnActionsContainer(props: EarnActionsContainerProps) {
   if (
     readyAndEligible &&
     goldfinchConfig &&
-    props.poolData?.remainingCapacity(goldfinchConfig.totalFundsLimit).gt("0")
+    consistent?.[0].info.value.poolData?.remainingCapacity(goldfinchConfig.totalFundsLimit).gt("0")
   ) {
     depositAction = (e) => {
       setShowAction("deposit")
@@ -65,19 +71,21 @@ function EarnActionsContainer(props: EarnActionsContainerProps) {
     return <DepositForm closeForm={closeForm} actionComplete={actionComplete} />
   } else if (showAction === "withdrawal") {
     assertNonNullable(props.capitalProvider)
-    assertNonNullable(props.poolData)
+    assertNonNullable(consistent)
+    const pool = consistent[0]
     return (
       <WithdrawalForm
         closeForm={closeForm}
         capitalProvider={props.capitalProvider}
-        poolData={props.poolData}
+        poolData={pool.info.value.poolData}
         actionComplete={actionComplete}
       />
     )
   } else {
+    const poolData = consistent?.[0].info.value.poolData
     return (
       <div className={`background-container ${placeholderClass}`}>
-        <DepositStatus capitalProvider={props.capitalProvider} poolData={props.poolData} />
+        <DepositStatus capitalProvider={props.capitalProvider} poolData={poolData} />
         <div className="form-start">
           <button className={`button ${depositClass}`} onClick={depositAction}>
             {iconUpArrow} Supply

@@ -17,7 +17,7 @@ import {GoldfinchConfigData, refreshGoldfinchConfigData} from "./ethereum/goldfi
 import {getUserData, defaultUser, User} from "./ethereum/user"
 import {mapNetworkToID, SUPPORTED_NETWORKS} from "./ethereum/utils"
 import {NetworkMonitor} from "./ethereum/networkMonitor"
-import {SeniorPool, SeniorPoolLoaded} from "./ethereum/pool"
+import {SeniorPool, SeniorPoolLoaded, StakingRewards, StakingRewardsLoaded} from "./ethereum/pool"
 import {GoldfinchProtocol} from "./ethereum/GoldfinchProtocol"
 import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/web3/GoldfinchConfig"
 import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
@@ -33,6 +33,8 @@ import {EarnProvider} from "./contexts/EarnContext"
 import {BorrowProvider} from "./contexts/BorrowContext"
 import {assertWithLoadedInfo} from "./types/loadable"
 import {assertNonNullable, BlockInfo, getBlockInfo, getCurrentBlock} from "./utils"
+import {GFI, GFILoaded} from "./ethereum/gfi"
+import {useFromSameBlock} from "./hooks/useFromSameBlock"
 
 export interface NetworkConfig {
   name: string
@@ -52,6 +54,8 @@ interface GeolocationData {
 
 export interface GlobalState {
   currentBlock?: BlockInfo
+  gfi?: GFILoaded
+  stakingRewards?: StakingRewardsLoaded
   pool?: SeniorPoolLoaded
   creditDesk?: CreditDesk
   user: User
@@ -72,6 +76,8 @@ declare let window: any
 const AppContext = React.createContext<GlobalState>({user: defaultUser()})
 
 function App() {
+  const [_gfi, setGfi] = useState<GFILoaded>()
+  const [_stakingRewards, setStakingRewards] = useState<StakingRewardsLoaded>()
   const [pool, setPool] = useState<SeniorPoolLoaded>()
   const [creditDesk, setCreditDesk] = useState<CreditDesk>()
   const [usdc, setUSDC] = useState<ERC20>()
@@ -90,6 +96,9 @@ function App() {
     {},
     currentBlock?.timestamp
   )
+  const consistent = useFromSameBlock(_gfi, _stakingRewards)
+  const gfi = consistent?.[0]
+  const stakingRewards = consistent?.[1]
 
   const toggleRewards = process.env.REACT_APP_TOGGLE_REWARDS === "true"
 
@@ -105,17 +114,24 @@ function App() {
 
   useEffect(() => {
     if (goldfinchProtocol && currentBlock) {
-      refreshPool()
+      refreshGfiAndStakingRewards()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [goldfinchProtocol, currentBlock])
 
   useEffect(() => {
-    if (goldfinchProtocol && pool && creditDesk && network) {
+    if (goldfinchProtocol && stakingRewards && gfi && currentBlock) {
+      refreshPool()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stakingRewards, gfi])
+
+  useEffect(() => {
+    if (goldfinchProtocol && pool && creditDesk && network && gfi && currentBlock) {
       refreshUserData()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [goldfinchProtocol, usdc, pool, creditDesk, network, overrideAddress])
+  }, [usdc, pool, overrideAddress])
 
   async function ensureWeb3() {
     if (!window.ethereum) {
@@ -170,7 +186,7 @@ function App() {
     }
   }
 
-  async function refreshPool(): Promise<void> {
+  async function refreshGfiAndStakingRewards(): Promise<void> {
     if (!(await ensureWeb3())) {
       return
     }
@@ -178,22 +194,38 @@ function App() {
     assertNonNullable(goldfinchProtocol)
     assertNonNullable(currentBlock)
 
+    const gfi = new GFI(goldfinchProtocol)
+    const stakingRewards = new StakingRewards(goldfinchProtocol)
+
+    await Promise.all([gfi.initialize(currentBlock), stakingRewards.initialize(currentBlock)])
+
+    assertWithLoadedInfo(gfi)
+    assertWithLoadedInfo(stakingRewards)
+
+    setGfi(gfi)
+    setStakingRewards(stakingRewards)
+  }
+
+  async function refreshPool(): Promise<void> {
+    assertNonNullable(goldfinchProtocol)
+    assertNonNullable(currentBlock)
+    assertNonNullable(stakingRewards)
+    assertNonNullable(gfi)
+
     const pool = new SeniorPool(goldfinchProtocol)
-    await pool.initialize(currentBlock)
+    await pool.initialize(stakingRewards, gfi, currentBlock)
     assertWithLoadedInfo(pool)
+
     setPool(pool)
   }
 
   async function refreshUserData(): Promise<void> {
-    if (!(await ensureWeb3())) {
-      return
-    }
-
     assertNonNullable(goldfinchProtocol)
     assertNonNullable(pool)
     assertNonNullable(creditDesk)
     assertNonNullable(network)
     assertNonNullable(currentBlock)
+    assertNonNullable(gfi)
 
     let data: User = defaultUser()
     const accounts = await web3.eth.getAccounts()
@@ -204,7 +236,7 @@ function App() {
       data.address = userAddress
     }
 
-    data = await getUserData(userAddress, goldfinchProtocol, pool, creditDesk, network.name, currentBlock)
+    data = await getUserData(userAddress, goldfinchProtocol, pool, creditDesk, network.name, gfi, currentBlock)
 
     Sentry.setUser({
       // NOTE: The info we use here to identify / define the user for the purpose of

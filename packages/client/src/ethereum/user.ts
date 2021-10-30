@@ -1,5 +1,6 @@
 import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
 import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/web3/GoldfinchConfig"
+import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
 import _ from "lodash"
 import {EventData} from "web3-eth-contract"
@@ -7,6 +8,7 @@ import {BlockInfo} from "../utils"
 import {BorrowerInterface, getBorrowerContract} from "./borrower"
 import {ERC20, Tickers, usdcFromAtomic} from "./erc20"
 import {getBalanceAsOf, mapEventsToTx} from "./events"
+import {GFILoaded} from "./gfi"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {SeniorPoolLoaded} from "./pool"
 import {getFromBlock, MAINNET} from "./utils"
@@ -21,12 +23,13 @@ export async function getUserData(
   pool: SeniorPoolLoaded,
   creditDesk: CreditDesk,
   networkId: string,
+  gfi: GFILoaded,
   currentBlock: BlockInfo
 ): Promise<User> {
   const borrower = await getBorrowerContract(address, goldfinchProtocol, currentBlock)
 
   const user = new Web3User(address, pool, creditDesk, goldfinchProtocol, networkId, borrower)
-  await user.initialize(currentBlock)
+  await user.initialize(pool, gfi, currentBlock)
   return user
 }
 
@@ -49,8 +52,9 @@ export interface User {
   goListed: boolean
   noWeb3: boolean
   borrower: BorrowerInterface | undefined
+  gfiBalance: BigNumber | undefined
 
-  initialize(currentBlock: BlockInfo): Promise<void>
+  initialize(gfi: GFILoaded, currentBlock: BlockInfo): Promise<void>
   usdcIsUnlocked(type: string): boolean
   getUnlockStatus(type: string): UnlockedStatus
   isUnlocked(allowance): boolean
@@ -72,9 +76,9 @@ class Web3User implements User {
   goListed!: boolean
   noWeb3: boolean
   goldfinchProtocol: GoldfinchProtocol
-
   borrower: BorrowerInterface | undefined
-  private pool: SeniorPoolLoaded
+  gfiBalance: BigNumber | undefined
+
   private usdc: ERC20
   private creditDesk: any
 
@@ -89,7 +93,6 @@ class Web3User implements User {
     this.address = address
     this.borrower = borrower
     this.goldfinchProtocol = goldfinchProtocol
-    this.pool = pool
     this.usdc = goldfinchProtocol.getERC20(Tickers.USDC)
     this.creditDesk = creditDesk
     this.web3Connected = true
@@ -101,16 +104,25 @@ class Web3User implements User {
     this.noWeb3 = !window.ethereum
   }
 
-  async initialize(currentBlock: BlockInfo) {
+  async initialize(pool: SeniorPoolLoaded, gfi: GFILoaded, currentBlock: BlockInfo) {
+    const poolBlockNumber = pool.info.value.currentBlock.number
+    const gfiBlockNumber = gfi.info.value.currentBlock.number
+    if (poolBlockNumber !== currentBlock.number) {
+      throw new Error("`pool` is not based on current block number.")
+    }
+    if (poolBlockNumber !== gfiBlockNumber) {
+      throw new Error("`pool` and `gfi` are not based on the same block number.")
+    }
+
     this.usdcBalance = await this.usdc.getBalance(this.address, currentBlock)
     this.usdcBalanceInDollars = new BigNumber(usdcFromAtomic(this.usdcBalance))
-    this.poolAllowance = await this.getAllowance(this.pool.address, currentBlock)
+    this.poolAllowance = await this.getAllowance(pool.address, currentBlock)
 
     const [usdcTxs, poolEvents, creditDeskTxs] = await Promise.all([
-      // NOTE: We have no need to include usdc txs for `this.pool.v1Pool` among the txs in
+      // NOTE: We have no need to include usdc txs for `pool.v1Pool` among the txs in
       // `this.pastTxs`. So we don't get them. We only need usdc txs for `this.pool`.
-      getAndTransformERC20Events(this.usdc, this.pool.address, this.address, currentBlock),
-      getPoolEvents(this.pool, this.address, currentBlock),
+      getAndTransformERC20Events(this.usdc, pool.address, this.address, currentBlock),
+      getPoolEvents(pool, this.address, currentBlock),
       // Credit desk events could've come from the user directly or the borrower contract, we need to filter by both
       getAndTransformCreditDeskEvents(
         this.creditDesk,
@@ -123,17 +135,20 @@ class Web3User implements User {
     this.poolTxs = poolTxs
     this.pastTxs = _.reverse(_.sortBy(_.compact(_.concat(usdcTxs, poolTxs, creditDeskTxs)), "blockNumber"))
     this.goListed = await this.isGoListed(this.address, currentBlock)
+    this.gfiBalance = new BigNumber(
+      await gfi.contract.methods.balanceOf(this.address).call(undefined, currentBlock.number)
+    )
     this.loaded = true
   }
 
-  usdcIsUnlocked(type) {
-    return this.getUnlockStatus(type).isUnlocked
+  usdcIsUnlocked(type: "earn" | "borrow", pool: SeniorPoolLoaded) {
+    return this.getUnlockStatus(type, pool).isUnlocked
   }
 
-  getUnlockStatus(type): UnlockedStatus {
+  getUnlockStatus(type: "earn" | "borrow", pool: SeniorPoolLoaded): UnlockedStatus {
     if (type === "earn") {
       return {
-        unlockAddress: this.pool.address,
+        unlockAddress: pool.address,
         isUnlocked: this.isUnlocked(this.poolAllowance),
       }
     } else if (type === "borrow") {
@@ -141,8 +156,9 @@ class Web3User implements User {
         unlockAddress: this.borrower?.borrowerAddress ?? this.address,
         isUnlocked: this.borrower?.allowance ? this.isUnlocked(this.borrower.allowance) : false,
       }
+    } else {
+      assertUnreachable(type)
     }
-    throw new Error("Invalid type")
   }
 
   isUnlocked(allowance) {
@@ -181,6 +197,7 @@ export class DefaultUser implements User {
   goListed: boolean
   noWeb3: boolean
   borrower: undefined
+  gfiBalance: BigNumber
 
   constructor() {
     this.address = ""
@@ -198,9 +215,10 @@ export class DefaultUser implements User {
     this.poolTxs = []
     this.goListed = false
     this.borrower = undefined
+    this.gfiBalance = new BigNumber(0)
   }
 
-  async initialize(currentBlock: BlockInfo) {}
+  async initialize(gfi: GFILoaded, currentBlock: BlockInfo) {}
   usdcIsUnlocked(type: string) {
     return false
   }

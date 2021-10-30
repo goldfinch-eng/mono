@@ -1,15 +1,16 @@
 import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
-import React from "react"
+import React, {useContext} from "react"
 import {useMediaQuery} from "react-responsive"
 import {Link} from "react-router-dom"
+import {AppContext} from "../../App"
 import RewardActionsContainer from "../../components/rewardActionsContainer"
 import {WIDTH_TYPES} from "../../components/styleConstants"
 import {CommunityRewardsGrant, MerkleDistributorLoaded} from "../../ethereum/communityRewards"
-import {gfiFromAtomic} from "../../ethereum/gfi"
+import {gfiFromAtomic, gfiInDollars, GFILoaded, gfiToDollarsAtomic} from "../../ethereum/gfi"
 import {StakingRewardsLoaded, StakingRewardsPosition} from "../../ethereum/pool"
-import {useGFIBalance} from "../../hooks/useGFIBalance"
-import {useRewards} from "../../hooks/useRewards"
+import {useFromSameBlock} from "../../hooks/useFromSameBlock"
+import {useMerkleDistributor} from "../../hooks/useMerkleDistributor"
 import {displayDollars, displayNumber} from "../../utils"
 
 interface RewardsSummaryProps {
@@ -21,19 +22,15 @@ interface RewardsSummaryProps {
 }
 
 function RewardsSummary(props: RewardsSummaryProps) {
-  const claimable = props.claimable || new BigNumber(0)
-  const unvested = props.unvested || new BigNumber(0)
-  const totalGFI = props.totalGFI || new BigNumber(0)
-  const totalUSD = props.totalUSD || new BigNumber(0)
-  const walletBalance = props.walletBalance || new BigNumber(0)
+  const {claimable, unvested, totalGFI, totalUSD, walletBalance} = props
 
-  const valueDisabledClass = totalGFI.eq(0) ? "disabled-value" : "value"
+  const valueDisabledClass = totalGFI && totalGFI.gt(0) ? "value" : "disabled-value"
 
   return (
     <div className="rewards-summary background-container">
       <div className="rewards-summary-left-item">
         <span className="total-gfi-balance">Total GFI balance</span>
-        <span className="total-gfi">{displayNumber(gfiFromAtomic(totalGFI), 2)}</span>
+        <span className="total-gfi">{displayNumber(totalGFI ? gfiFromAtomic(totalGFI) : undefined, 2)}</span>
         <span className="total-usd">{displayDollars(totalUSD)}</span>
       </div>
 
@@ -41,28 +38,36 @@ function RewardsSummary(props: RewardsSummaryProps) {
         <div className="details-item">
           <span>Wallet balance</span>
           <div>
-            <span className={valueDisabledClass}>{displayNumber(gfiFromAtomic(walletBalance), 2)}</span>
+            <span className={valueDisabledClass}>
+              {displayNumber(walletBalance ? gfiFromAtomic(walletBalance) : undefined, 2)}
+            </span>
             <span>GFI</span>
           </div>
         </div>
         <div className="details-item">
           <span>Claimable</span>
           <div>
-            <span className={valueDisabledClass}>{displayNumber(gfiFromAtomic(claimable), 2)}</span>
+            <span className={valueDisabledClass}>
+              {displayNumber(claimable ? gfiFromAtomic(claimable) : undefined, 2)}
+            </span>
             <span>GFI</span>
           </div>
         </div>
         <div className="details-item">
           <span>Still vesting</span>
           <div>
-            <span className={valueDisabledClass}>{displayNumber(gfiFromAtomic(unvested), 2)}</span>
+            <span className={valueDisabledClass}>
+              {displayNumber(unvested ? gfiFromAtomic(unvested) : undefined, 2)}
+            </span>
             <span>GFI</span>
           </div>
         </div>
         <div className="details-item total-balance">
           <span>Total balance</span>
           <div>
-            <span className={valueDisabledClass}>{displayNumber(gfiFromAtomic(totalGFI), 2)}</span>
+            <span className={valueDisabledClass}>
+              {displayNumber(totalGFI ? gfiFromAtomic(totalGFI) : undefined, 2)}
+            </span>
             <span>GFI</span>
           </div>
         </div>
@@ -156,17 +161,28 @@ function getSortedRewards(
 }
 
 function Rewards() {
+  const {stakingRewards: _stakingRewards, gfi: _gfi, user: _user} = useContext(AppContext)
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
-  const rewardsHelpers = useRewards()
-  const gfiBalance = useGFIBalance()
+  const _merkleDistributor = useMerkleDistributor()
+  const consistent = useFromSameBlock<StakingRewardsLoaded, GFILoaded, MerkleDistributorLoaded, UserLoaded>(
+    _stakingRewards,
+    _gfi,
+    _merkleDistributor,
+    _user
+  )
 
   let loaded: boolean = false
   let claimable: BigNumber | undefined
   let unvested: BigNumber | undefined
   let granted: BigNumber | undefined
+  let totalUSD: BigNumber | undefined
+  let gfiBalance: BigNumber | undefined
   let rewards: React.ReactNode | undefined
-  if (rewardsHelpers) {
-    const {stakingRewards, merkleDistributor} = rewardsHelpers
+  if (consistent) {
+    const stakingRewards = consistent[0]
+    const gfi = consistent[1]
+    const merkleDistributor = consistent[2]
+    const user = consistent[3]
 
     loaded = merkleDistributor.info.loaded && stakingRewards.info.loaded
 
@@ -181,6 +197,10 @@ function Rewards() {
     unvested = stakingRewards.info.value.unvested.plus(merkleDistributor.info.value.unvested)
     granted = stakingRewards.info.value.granted.plus(merkleDistributor.info.value.granted)
 
+    gfiBalance = user.info.value.gfiBalance
+
+    totalUSD = gfiInDollars(gfiToDollarsAtomic(granted, gfi.info.value.price))
+
     rewards = emptyRewards ? (
       <NoRewards />
     ) : (
@@ -190,6 +210,7 @@ function Rewards() {
             <RewardActionsContainer
               key={`airdrop-${item.index}`}
               item={item}
+              gfi={gfi}
               merkleDistributor={merkleDistributor}
               stakingRewards={stakingRewards}
             />
@@ -201,6 +222,7 @@ function Rewards() {
               <RewardActionsContainer
                 key={`${item.type}-${item.value.tokenId}`}
                 item={item.value}
+                gfi={gfi}
                 merkleDistributor={merkleDistributor}
                 stakingRewards={stakingRewards}
               />
@@ -220,10 +242,7 @@ function Rewards() {
         claimable={claimable}
         unvested={unvested}
         totalGFI={granted}
-        totalUSD={
-          // TODO: this needs to be updated once we have a price for GFI in USD.
-          undefined
-        }
+        totalUSD={totalUSD}
         walletBalance={gfiBalance}
       />
 

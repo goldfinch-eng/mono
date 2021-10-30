@@ -1,11 +1,12 @@
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {GFI as GFIContract} from "@goldfinch-eng/protocol/typechain/web3/GFI"
 import BigNumber from "bignumber.js"
-import {Loadable} from "../types/loadable"
+import {Loadable, WithLoadedInfo} from "../types/loadable"
 import {BlockInfo} from "../utils"
 
 type GFILoadedInfo = {
   currentBlock: BlockInfo
+  price: BigNumber
 }
 
 class GFI {
@@ -26,10 +27,14 @@ class GFI {
       loaded: true,
       value: {
         currentBlock,
+        // // TODO Use a remote source for this price once there is one.
+        price: new BigNumber(1).multipliedBy(GFI_DECIMALS),
       },
     }
   }
 }
+
+export type GFILoaded = WithLoadedInfo<GFI, GFILoadedInfo>
 
 const GFI_DECIMAL_PLACES = 18
 const GFI_DECIMALS = new BigNumber(String(10 ** GFI_DECIMAL_PLACES))
