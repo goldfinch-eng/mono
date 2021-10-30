@@ -115,7 +115,7 @@ function App() {
       refreshUserData()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [goldfinchProtocol, pool, creditDesk, network, overrideAddress])
+  }, [goldfinchProtocol, usdc, pool, creditDesk, network, overrideAddress])
 
   async function ensureWeb3() {
     if (!window.ethereum) {
