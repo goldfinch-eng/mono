@@ -39,6 +39,7 @@ import {
   TestERC20,
   TranchedPool,
 } from "../typechain/ethers"
+import * as migrate from "../blockchain_scripts/migrations/v2.1/migrate"
 
 dotenv.config({path: findEnvLocal()})
 
@@ -85,6 +86,11 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, options: O
   }
 
   if (isMainnetForking()) {
+    const protocolOwner = await getProtocolOwner()
+    await impersonateAccount(hre, protocolOwner)
+    await fundWithWhales(["ETH"], [protocolOwner])
+    await migrate.main()
+
     logger("Funding protocol_owner with whales")
     underwriter = protocol_owner
     await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [protocol_owner, gf_deployer, borrower], new BN("75000"))

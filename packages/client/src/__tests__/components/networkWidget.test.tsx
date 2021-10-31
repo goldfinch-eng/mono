@@ -2,15 +2,16 @@ import "@testing-library/jest-dom"
 import {AppContext} from "../../App"
 import {render, screen, fireEvent} from "@testing-library/react"
 import NetworkWidget from "../../components/networkWidget"
+import * as utils from "../../utils"
 
-function renderNetworkWidget(sessionData) {
+function renderNetworkWidget(sessionData, address) {
   let store = {
     network: {
       name: "localhost",
       supported: true,
     },
     user: {
-      address: "0x0",
+      address,
       web3Connected: true,
       info: {
         loaded: true,
@@ -42,7 +43,7 @@ describe("network widget sign in", () => {
     ;(global.window as any).ethereum.request = () => {
       return Promise.resolve()
     }
-    renderNetworkWidget(undefined)
+    renderNetworkWidget(undefined, "0x000")
 
     // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'HTMLElement | undefined' is not ... Remove this comment to see the full error message
     fireEvent.click(screen.getAllByText("Connect Metamask")[0])
@@ -54,7 +55,7 @@ describe("network widget sign in", () => {
     global.window.ethereum.request = () => {
       return Promise.resolve()
     }
-    renderNetworkWidget(undefined)
+    renderNetworkWidget(undefined, "0x000")
     expect(screen.getAllByText("Connect Metamask")[0]).toBeInTheDocument()
   })
 
@@ -63,17 +64,30 @@ describe("network widget sign in", () => {
     global.window.ethereum.request = () => {
       return Promise.resolve()
     }
-    renderNetworkWidget({signature: "foo", signatureBlockNum: 42, signatureBlockNumTimestamp: 47, version: 1})
+    const spy = jest.spyOn(utils, "secondsSinceEpoch")
+    spy.mockReturnValue(1631996519)
+
+    renderNetworkWidget(
+      {signature: "foo", signatureBlockNum: 42, signatureBlockNumTimestamp: 1631996519, version: 1},
+      "0x000"
+    )
     expect(screen.getByText("USDC balance")).toBeInTheDocument()
   })
 
-  it("shows signed in with signature", async () => {
+  it("shows signed in when user has session data but address doesn't exist", async () => {
     global.window.ethereum = jest.fn()
     global.window.ethereum.request = () => {
       return Promise.resolve()
     }
-    renderNetworkWidget({signature: "foo", signatureBlockNum: 42, signatureBlockNumTimestamp: 47})
-    expect(screen.getByText("USDC balance")).toBeInTheDocument()
+
+    const spy = jest.spyOn(utils, "secondsSinceEpoch")
+    spy.mockReturnValue(1631996519)
+
+    renderNetworkWidget(
+      {signature: "foo", signatureBlockNum: 42, signatureBlockNumTimestamp: 1631996519, version: 1},
+      ""
+    )
+    expect(screen.getAllByText("Connect Metamask")[0]).toBeInTheDocument()
   })
 
   it("shows connect with metamask with missing signature", async () => {
@@ -81,7 +95,7 @@ describe("network widget sign in", () => {
     global.window.ethereum.request = () => {
       return Promise.resolve()
     }
-    renderNetworkWidget({signatureBlockNum: 42, signatureBlockNumTimestamp: 47})
+    renderNetworkWidget({signatureBlockNum: 42, signatureBlockNumTimestamp: 47}, "0x000")
     expect(screen.getAllByText("Connect Metamask")[0]).toBeInTheDocument()
   })
 })

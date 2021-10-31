@@ -1,7 +1,7 @@
 import hre from "hardhat"
 const {deployments, ethers} = hre
 import {getSignerForAddress} from "../blockchain_scripts/deployHelpers"
-import {CONFIG_KEYS} from "./configKeys"
+import {CONFIG_KEYS, CONFIG_KEYS_BY_TYPE} from "./configKeys"
 
 async function main() {
   const configAddress = process.env.CONFIG_ADDRESS || (await deployments.get("GoldfinchConfig")).address
@@ -12,29 +12,13 @@ async function main() {
   console.log(`GoldfinchConfig (${config.address})`)
   console.log("------------------------------------------------------------")
 
-  console.log("TransactionLimit ==", String(await config.getNumber(0)))
-  console.log("TotalFundsLimit ==", String(await config.getNumber(1)))
-  console.log("MaxUnderwriterLimit ==", String(await config.getNumber(2)))
-  console.log("ReserveDenominator ==", String(await config.getNumber(3)))
-  console.log("WithdrawFeeDenominator ==", String(await config.getNumber(4)))
-  console.log("LatenessGracePeriodInDays ==", String(await config.getNumber(5)))
-  console.log("LatenessMaxDays ==", String(await config.getNumber(6)))
-  console.log("DrawdownPeriodInSeconds ==", String(await config.getNumber(7)))
-  console.log("TransferPeriodRestrictionInDays ==", String(await config.getNumber(8)))
-  console.log("LeverageRatio ==", String(await config.getNumber(9)))
+  for (const configKey of Object.keys(CONFIG_KEYS_BY_TYPE.numbers)) {
+    console.log(`${configKey} =`, String(await config.getNumber(CONFIG_KEYS_BY_TYPE.numbers[configKey])))
+  }
 
-  console.log("Pool ==", String(await config.getAddress(CONFIG_KEYS.Pool)))
-  console.log("CreditLineImplementation ==", String(await config.getAddress(CONFIG_KEYS.CreditLineImplementation)))
-  console.log("GoldfinchFactory ==", String(await config.getAddress(CONFIG_KEYS.GoldfinchFactory)))
-  console.log("CreditDesk ==", String(await config.getAddress(CONFIG_KEYS.CreditDesk)))
-  console.log("Fidu ==", String(await config.getAddress(CONFIG_KEYS.Fidu)))
-  console.log("USDC ==", String(await config.getAddress(CONFIG_KEYS.USDC)))
-  console.log("TreasuryReserve ==", String(await config.getAddress(CONFIG_KEYS.TreasuryReserve)))
-  console.log("ProtocolAdmin ==", String(await config.getAddress(CONFIG_KEYS.ProtocolAdmin)))
-  console.log("OneInch ==", String(await config.getAddress(CONFIG_KEYS.OneInch)))
-  console.log("TrustedForwarder ==", String(await config.getAddress(CONFIG_KEYS.TrustedForwarder)))
-  console.log("CUSDCContract ==", String(await config.getAddress(CONFIG_KEYS.CUSDCContract)))
-  console.log("GoldfinchConfig ==", String(await config.getAddress(CONFIG_KEYS.GoldfinchConfig)))
+  for (const configKey of Object.keys(CONFIG_KEYS_BY_TYPE.addresses)) {
+    console.log(`${configKey} =`, String(await config.getAddress(CONFIG_KEYS_BY_TYPE.addresses[configKey])))
+  }
 }
 
 if (require.main === module) {

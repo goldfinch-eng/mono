@@ -14,7 +14,7 @@ type SendTransactionOptions = {
 function useSendFromUser() {
   const {refreshCurrentBlock, user, networkMonitor} = useContext(AppContext)
 
-  async function sendTransaction(unsentAction, txData, gasPrice, options: SendTransactionOptions) {
+  async function sendTransaction(unsentAction, txData, {gasPrice, value}, options: SendTransactionOptions) {
     assertNonNullable(refreshCurrentBlock)
     assertNonNullable(networkMonitor)
     assertNonNullable(user)
@@ -57,7 +57,8 @@ function useSendFromUser() {
       unsentAction
         .send({
           from: user.address,
-          gasPrice: gasPrice,
+          gasPrice,
+          value,
         })
         .once("sent", (_) => {
           txData = networkMonitor.addPendingTX(txData)
@@ -83,11 +84,16 @@ function useSendFromUser() {
     })
   }
 
-  return (unsentAction, txData, options: UseSendFromUserOptions = {rejectOnError: false}) => {
+  return (
+    unsentAction,
+    txData,
+    {value}: {value?: string} = {},
+    options: UseSendFromUserOptions = {rejectOnError: false}
+  ) => {
     return web3.eth.getGasPrice().then(
       async (gasPrice) => {
         try {
-          await sendTransaction(unsentAction, txData, gasPrice, options)
+          await sendTransaction(unsentAction, txData, {gasPrice, value}, options)
         } catch (err: unknown) {
           console.log(`Error sending transaction: ${err}`)
 

@@ -58,6 +58,7 @@ interface GeolocationData {
   timezone: string
 }
 
+export type SetSessionFn = (data: SessionData | undefined) => void
 export interface GlobalState {
   currentBlock?: BlockInfo
   gfi?: GFILoaded
@@ -75,7 +76,7 @@ export interface GlobalState {
   geolocationData?: GeolocationData
   setGeolocationData?: (geolocationData: GeolocationData) => void
   sessionData?: SessionData
-  setSessionData?: (data: SessionData | undefined) => void
+  setSessionData?: SetSessionFn
   refreshCurrentBlock?: () => Promise<void>
 }
 

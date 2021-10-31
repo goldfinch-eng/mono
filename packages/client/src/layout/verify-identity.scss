@@ -1,3 +1,25 @@
+.verify-identity {
+  .background-container {
+    margin-bottom: 1em;
+  }
+}
+
+.verify-card {
+  .info-banner {
+    padding: 0;
+  }
+
+  .title {
+    font-size: $sans-size-m;
+    font-weight: 500;
+    margin-bottom: 1em;
+  }
+
+  .message {
+    margin-top: 0;
+  }
+}
+
 .verify-types {
   display: grid;
   gap: 15px;

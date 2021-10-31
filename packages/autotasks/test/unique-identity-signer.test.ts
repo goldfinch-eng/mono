@@ -57,17 +57,17 @@ describe("unique-identity-signer", () => {
 
   describe("main", async () => {
     it("forwards signature headers to the KYC function", async () => {
-      const fetchFunction: FetchKYCFunction = ({headers, chainId}) => {
+      const fetchFunction: FetchKYCFunction = ({auth, chainId}) => {
         // No other headers should be present
-        expect(headers).to.deep.equal({
+        expect(auth).to.deep.equal({
           "x-goldfinch-address": anotherUser,
           "x-goldfinch-signature": "test_signature",
           "x-goldfinch-signature-block-num": "fake_block_number",
         })
-        return fetchElligibleKycStatus({headers, chainId})
+        return fetchElligibleKycStatus({auth, chainId})
       }
 
-      const headers = {
+      const auth = {
         "x-some-random-header": "test",
         "x-goldfinch-address": anotherUser,
         "x-goldfinch-signature": "test_signature",
@@ -77,7 +77,7 @@ describe("unique-identity-signer", () => {
       // Run handler
       await expect(
         uniqueIdentitySigner.main({
-          headers,
+          auth,
           signer,
           network,
           uniqueIdentity: ethersUniqueIdentity,
@@ -96,7 +96,7 @@ describe("unique-identity-signer", () => {
         })
 
         it("throws an error", async () => {
-          const headers = {
+          const auth = {
             "x-goldfinch-address": anotherUser,
             "x-goldfinch-signature": "test_signature",
             "x-goldfinch-signature-block-num": "fake_block_number",
@@ -104,7 +104,7 @@ describe("unique-identity-signer", () => {
 
           await expect(
             uniqueIdentitySigner.main({
-              headers,
+              auth,
               signer,
               network,
               uniqueIdentity: ethersUniqueIdentity,
@@ -123,7 +123,7 @@ describe("unique-identity-signer", () => {
         })
 
         it("throws an error", async () => {
-          const headers = {
+          const auth = {
             "x-goldfinch-address": anotherUser,
             "x-goldfinch-signature": "test_signature",
             "x-goldfinch-signature-block-num": "fake_block_number",
@@ -131,7 +131,7 @@ describe("unique-identity-signer", () => {
 
           await expect(
             uniqueIdentitySigner.main({
-              headers,
+              auth,
               signer,
               network,
               uniqueIdentity: ethersUniqueIdentity,
@@ -150,7 +150,7 @@ describe("unique-identity-signer", () => {
         })
 
         it("throws an error", async () => {
-          const headers = {
+          const auth = {
             "x-goldfinch-address": anotherUser,
             "x-goldfinch-signature": "test_signature",
             "x-goldfinch-signature-block-num": "fake_block_number",
@@ -158,7 +158,7 @@ describe("unique-identity-signer", () => {
 
           await expect(
             uniqueIdentitySigner.main({
-              headers,
+              auth,
               signer,
               network,
               uniqueIdentity: ethersUniqueIdentity,
@@ -175,21 +175,21 @@ describe("unique-identity-signer", () => {
       })
 
       it("returns a signature that can be used to mint", async () => {
-        const headers = {
+        const auth = {
           "x-goldfinch-address": anotherUser,
           "x-goldfinch-signature": "test_signature",
           "x-goldfinch-signature-block-num": "fake_block_number",
         }
 
         let result = await uniqueIdentitySigner.main({
-          headers,
+          auth,
           signer,
           network,
           uniqueIdentity: ethersUniqueIdentity,
           fetchKYCStatus: fetchKYCFunction,
         })
 
-        await uniqueIdentity.mint(anotherUser, 0, result.signature, {
+        await uniqueIdentity.mint(0, result.expiresAt, result.signature, {
           from: anotherUser,
           value: web3.utils.toWei("0.00083"),
         })
@@ -197,14 +197,14 @@ describe("unique-identity-signer", () => {
 
         // Indirectly test that the nonce is correctly used, thereby allowing the burn to succeed
         result = await uniqueIdentitySigner.main({
-          headers,
+          auth,
           signer,
           network,
           uniqueIdentity: ethersUniqueIdentity,
           fetchKYCStatus: fetchKYCFunction,
         })
 
-        await uniqueIdentity.burn(anotherUser, 0, result.signature, {from: anotherUser})
+        await uniqueIdentity.burn(anotherUser, 0, result.expiresAt, result.signature, {from: anotherUser})
         expect(await uniqueIdentity.balanceOf(anotherUser, 0)).to.bignumber.eq(new BN(0))
       })
     })

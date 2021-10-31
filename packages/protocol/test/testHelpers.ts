@@ -423,11 +423,11 @@ const createPoolWithCreditLine = async ({
   return {tranchedPool, creditLine}
 }
 
-async function toTruffle(
+async function toTruffle<T extends Truffle.ContractInstance = Truffle.ContractInstance>(
   address: Truffle.ContractInstance | BaseContract | string,
-  contractName,
+  contractName: string,
   opts?: {}
-): Promise<Truffle.ContractInstance> {
+): Promise<T> {
   const truffleContract = await artifacts.require(contractName)
   address = typeof address === "string" ? address : address.address
   if (opts) {
