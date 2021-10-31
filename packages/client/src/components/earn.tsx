@@ -380,7 +380,7 @@ function Earn() {
               balance={displayDollars(usdcFromAtomic(pool.info.value.poolData.totalPoolAssets))}
               userBalance={displayDollars(capitalProviderData.value.availableToWithdrawInDollars)}
               apy={displayPercent(pool.info.value.poolData.estimatedApy)}
-              limit={displayDollars(goldfinchConfig ? usdcFromAtomic(goldfinchConfig?.totalFundsLimit) : undefined, 0)}
+              limit={displayDollars(goldfinchConfig ? usdcFromAtomic(goldfinchConfig.totalFundsLimit) : undefined, 0)}
               remainingCapacity={
                 goldfinchConfig
                   ? pool.info.value.poolData.remainingCapacity(goldfinchConfig.totalFundsLimit)
