@@ -16,7 +16,7 @@ import {assertNonNullable, displayDollars} from "../utils"
 
 function PaymentForm(props) {
   const {borrower, creditLine, actionComplete} = props
-  const {usdc, user, goldfinchConfig, goldfinchProtocol, currentBlock} = useContext(AppContext)
+  const {usdc, user, goldfinchConfig, goldfinchProtocol} = useContext(AppContext)
 
   const [inputClass, setInputClass] = useState("")
   const [paymentOption, setPaymentOption] = useState("periodDue")
