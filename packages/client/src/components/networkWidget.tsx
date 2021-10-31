@@ -34,7 +34,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
       signIn()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.user, showSignIn])
+  }, [props.user?.address, showSignIn])
 
   function enableMetamask() {
     if (session.status === "known" && !isSessionDataInvalid(sessionData, currentTimestamp)) {
