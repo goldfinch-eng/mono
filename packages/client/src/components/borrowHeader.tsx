@@ -63,9 +63,9 @@ function BorrowHeader(props): JSX.Element {
   }
 
   let header = "Loading..."
-  if (props.user.loaded && props.selectedCreditLine.address) {
+  if (props.user && props.selectedCreditLine.address) {
     header = `Credit Line / ${props.selectedCreditLine.name}`
-  } else if (props.user.loaded) {
+  } else if (props.user) {
     header = "Credit Line"
   }
   return <>{header}</>

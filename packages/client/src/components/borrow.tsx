@@ -12,14 +12,13 @@ import {assertNonNullable} from "../utils"
 
 function Borrow(props) {
   const {creditDesk, user, goldfinchProtocol} = useContext(AppContext)
-  const [creditLinesAddresses, setCreditLinesAddresses] = useState([])
+  const [creditLinesAddresses, setCreditLinesAddresses] = useState<string[]>([])
   const [creditLine, setCreditLine] = useState(defaultCreditLine)
   const {borrowStore, setBorrowStore} = useBorrow()
 
   async function updateBorrowerAndCreditLine() {
-    const borrower = (user as any).borrower
-    if (borrower && creditDesk) {
-      const borrowerCreditLines = borrower.creditLinesAddresses
+    if (user && user.borrower && creditDesk) {
+      const borrowerCreditLines = user.borrower.creditLinesAddresses
       setCreditLinesAddresses(borrowerCreditLines)
       if (!creditLine.loaded || (creditLine.loaded && !creditLine.address)) {
         changeCreditLine(borrowerCreditLines)
@@ -59,7 +58,7 @@ function Borrow(props) {
   if (creditLineData.isMultiple) {
     creditActionsContainer = (
       <CreditActionsMultipleContainer
-        borrower={(user as any).borrower}
+        borrower={user?.borrower}
         creditLine={creditLineData}
         actionComplete={actionComplete}
         disabled={isDefaultCreditLine}
@@ -76,7 +75,7 @@ function Borrow(props) {
   } else {
     creditActionsContainer = (
       <CreditActionsContainer
-        borrower={(user as any).borrower}
+        borrower={user?.borrower}
         creditLine={creditLineData}
         actionComplete={actionComplete}
         disabled={isDefaultCreditLine}
@@ -95,7 +94,7 @@ function Borrow(props) {
           changeCreditLine={changeCreditLine}
         />
       </div>
-      <ConnectionNotice creditLine={creditLineData} requireUnlock={!!(user as any).borrower} />
+      <ConnectionNotice creditLine={creditLineData} requireUnlock={!!user && !!user.borrower} />
       {creditActionsContainer}
       {creditLineStatus}
     </div>
