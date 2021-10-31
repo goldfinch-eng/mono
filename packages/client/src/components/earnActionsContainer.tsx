@@ -1,25 +1,26 @@
-import {useState, useContext} from "react"
-import DepositForm from "./depositForm"
-import DepositStatus from "./depositStatus"
+import {useContext, useState} from "react"
 import {AppContext} from "../App"
-import WithdrawalForm from "./withdrawalForm"
-import {iconUpArrow, iconDownArrow} from "./icons"
-import {CapitalProvider, PoolData} from "../ethereum/pool"
-import BigNumber from "bignumber.js"
+import {CapitalProvider} from "../ethereum/pool"
+import {useFromSameBlock} from "../hooks/useFromSameBlock"
 import {KYC} from "../hooks/useGoldfinchClient"
 import {eligibleForSeniorPool} from "../hooks/useKYC"
+import {assertNonNullable} from "../utils"
+import DepositForm from "./depositForm"
+import DepositStatus from "./depositStatus"
+import {iconDownArrow, iconUpArrow} from "./icons"
+import WithdrawalForm from "./withdrawalForm"
 
 interface EarnActionsContainerProps {
   actionComplete: () => Promise<any>
-  capitalProvider: CapitalProvider
-  poolData: PoolData | undefined
+  capitalProvider: CapitalProvider | undefined
   kyc: KYC | undefined
 }
 
 function EarnActionsContainer(props: EarnActionsContainerProps) {
   const {kyc} = props
-  const {user, goldfinchConfig} = useContext(AppContext)
+  const {pool: _pool, user: _user, goldfinchConfig, currentBlock} = useContext(AppContext)
   const [showAction, setShowAction] = useState<string>()
+  const consistent = useFromSameBlock(currentBlock, _pool, _user)
 
   function closeForm() {
     setShowAction("")
@@ -31,15 +32,26 @@ function EarnActionsContainer(props: EarnActionsContainerProps) {
     })
   }
 
+  let readyAndEligible = false
+  if (consistent) {
+    const pool = consistent[0]
+    const user = consistent[1]
+    readyAndEligible =
+      !!user && !!pool.info.value.poolData && !!props.capitalProvider && eligibleForSeniorPool(kyc, user)
+  }
+
   let placeholderClass = ""
-  if (!user.address || !eligibleForSeniorPool(kyc, user)) {
+  if (!readyAndEligible) {
     placeholderClass = "placeholder"
   }
 
   let depositAction
   let depositClass = "disabled"
-  let remainingCapacity = props.poolData?.remainingCapacity(goldfinchConfig.totalFundsLimit) || new BigNumber("0")
-  if (eligibleForSeniorPool(kyc, user) && remainingCapacity.gt("0")) {
+  if (
+    readyAndEligible &&
+    goldfinchConfig &&
+    consistent?.[0].info.value.poolData.remainingCapacity(goldfinchConfig.totalFundsLimit).gt("0")
+  ) {
     depositAction = (e) => {
       setShowAction("deposit")
     }
@@ -48,7 +60,7 @@ function EarnActionsContainer(props: EarnActionsContainerProps) {
 
   let withdrawAction
   let withdrawClass = "disabled"
-  if (eligibleForSeniorPool(kyc, user) && props.capitalProvider.availableToWithdraw.gt(0)) {
+  if (readyAndEligible && props.capitalProvider?.availableToWithdraw.gt(0)) {
     withdrawAction = (e) => {
       setShowAction("withdrawal")
     }
@@ -58,18 +70,22 @@ function EarnActionsContainer(props: EarnActionsContainerProps) {
   if (showAction === "deposit") {
     return <DepositForm closeForm={closeForm} actionComplete={actionComplete} />
   } else if (showAction === "withdrawal") {
+    assertNonNullable(props.capitalProvider)
+    assertNonNullable(consistent)
+    const pool = consistent[0]
     return (
       <WithdrawalForm
         closeForm={closeForm}
         capitalProvider={props.capitalProvider}
-        poolData={props.poolData!}
+        poolData={pool.info.value.poolData}
         actionComplete={actionComplete}
       />
     )
   } else {
+    const poolData = consistent?.[0].info.value.poolData
     return (
       <div className={`background-container ${placeholderClass}`}>
-        <DepositStatus capitalProvider={props.capitalProvider} poolData={props.poolData} />
+        <DepositStatus capitalProvider={props.capitalProvider} poolData={poolData} />
         <div className="form-start">
           <button className={`button ${depositClass}`} onClick={depositAction}>
             {iconUpArrow} Supply

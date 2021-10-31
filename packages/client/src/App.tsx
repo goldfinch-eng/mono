@@ -13,13 +13,14 @@ import PrivacyPolicy from "./components/privacyPolicy"
 import SeniorPoolAgreementNonUS from "./components/seniorPoolAgreementNonUS"
 import web3, {SESSION_DATA_KEY} from "./web3"
 import {ERC20, Tickers} from "./ethereum/erc20"
-import {refreshGoldfinchConfigData} from "./ethereum/goldfinchConfig"
-import {getUserData, defaultUser, User} from "./ethereum/user"
+import {GoldfinchConfigData, refreshGoldfinchConfigData} from "./ethereum/goldfinchConfig"
+import {getUserData, UserLoaded} from "./ethereum/user"
 import {mapNetworkToID, SUPPORTED_NETWORKS} from "./ethereum/utils"
 import {NetworkMonitor} from "./ethereum/networkMonitor"
-import {SeniorPool} from "./ethereum/pool"
+import {SeniorPool, SeniorPoolLoaded, StakingRewards, StakingRewardsLoaded} from "./ethereum/pool"
 import {GoldfinchProtocol} from "./ethereum/GoldfinchProtocol"
 import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/web3/GoldfinchConfig"
+import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
 import SeniorPoolView from "./components/pools/seniorPoolView"
 import VerifyIdentity from "./components/verifyIdentity"
 import TranchedPoolView from "./components/pools/tranchedPoolView"
@@ -30,11 +31,20 @@ import {SessionData} from "./types/session"
 import {useSessionLocalStorage} from "./hooks/useSignIn"
 import {EarnProvider} from "./contexts/EarnContext"
 import {BorrowProvider} from "./contexts/BorrowContext"
-import useCurrentBlock from "./hooks/useCurrentBlock"
+import {assertWithLoadedInfo} from "./types/loadable"
+import {assertNonNullable, BlockInfo, getBlockInfo, getCurrentBlock} from "./utils"
+import {GFI, GFILoaded} from "./ethereum/gfi"
+import {useFromSameBlock} from "./hooks/useFromSameBlock"
+import {
+  CommunityRewards,
+  CommunityRewardsLoaded,
+  MerkleDistributor,
+  MerkleDistributorLoaded,
+} from "./ethereum/communityRewards"
 
 export interface NetworkConfig {
-  name?: string
-  supported?: any
+  name: string
+  supported: boolean
 }
 
 interface GeolocationData {
@@ -49,62 +59,105 @@ interface GeolocationData {
 }
 
 export interface GlobalState {
-  pool?: SeniorPool
-  creditDesk?: any
-  user: User
+  currentBlock?: BlockInfo
+  gfi?: GFILoaded
+  stakingRewards?: StakingRewardsLoaded
+  communityRewards?: CommunityRewardsLoaded
+  merkleDistributor?: MerkleDistributorLoaded
+  pool?: SeniorPoolLoaded
+  creditDesk?: CreditDesk
+  user?: UserLoaded
   usdc?: ERC20
-  goldfinchConfig?: any
+  goldfinchConfig?: GoldfinchConfigData
   network?: NetworkConfig
   goldfinchProtocol?: GoldfinchProtocol
   networkMonitor?: NetworkMonitor
-  refreshUserData?: (overrideAddress?: string) => void
   geolocationData?: GeolocationData
   setGeolocationData?: (geolocationData: GeolocationData) => void
   sessionData?: SessionData
   setSessionData?: (data: SessionData | undefined) => void
+  refreshCurrentBlock?: () => Promise<void>
 }
 
 declare let window: any
 
-const AppContext = React.createContext<GlobalState>({user: defaultUser()})
+const AppContext = React.createContext<GlobalState>({})
 
 function App() {
-  const [pool, setPool] = useState<SeniorPool>()
-  const [creditDesk, setCreditDesk] = useState<any>({})
+  const [_gfi, setGfi] = useState<GFILoaded>()
+  const [_stakingRewards, setStakingRewards] = useState<StakingRewardsLoaded>()
+  const [_communityRewards, setCommunityRewards] = useState<CommunityRewardsLoaded>()
+  const [_merkleDistributor, setMerkleDistributor] = useState<MerkleDistributorLoaded>()
+  const [pool, setPool] = useState<SeniorPoolLoaded>()
+  const [creditDesk, setCreditDesk] = useState<CreditDesk>()
   const [usdc, setUSDC] = useState<ERC20>()
-  const [user, setUser] = useState<User>(defaultUser())
-  const [goldfinchConfig, setGoldfinchConfig] = useState({})
+  const [overrideAddress, setOverrideAdress] = useState<string>()
+  const [user, setUser] = useState<UserLoaded>()
+  const [currentBlock, setCurrentBlock] = useState<BlockInfo>()
+  const [goldfinchConfig, setGoldfinchConfig] = useState<GoldfinchConfigData>()
   const [currentTXs, setCurrentTXs] = useState<any[]>([])
   const [currentErrors, setCurrentErrors] = useState<any[]>([])
-  const [network, setNetwork] = useState<NetworkConfig>({})
+  const [network, setNetwork] = useState<NetworkConfig>()
   const [networkMonitor, setNetworkMonitor] = useState<NetworkMonitor>()
   const [goldfinchProtocol, setGoldfinchProtocol] = useState<GoldfinchProtocol>()
   const [geolocationData, setGeolocationData] = useState<GeolocationData>()
-  const currentBlock = useCurrentBlock()
   const {localStorageValue: sessionData, setLocalStorageValue: setSessionData} = useSessionLocalStorage(
     SESSION_DATA_KEY,
     {},
     currentBlock?.timestamp
   )
+  const consistent = useFromSameBlock(currentBlock, _gfi, _stakingRewards, _communityRewards, _merkleDistributor)
+  const gfi = consistent?.[0]
+  const stakingRewards = consistent?.[1]
+  const communityRewards = consistent?.[2]
+  const merkleDistributor = consistent?.[3]
+
+  // TODO We should use `useFromSameBlock()` again to make gfi, stakingRewards, communityRewards,
+  // merkleDistributor, and pool be from same block.
 
   const toggleRewards = process.env.REACT_APP_TOGGLE_REWARDS === "true"
 
   useEffect(() => {
     setupWeb3()
+
+    // Admin function to be able to assume the role of any address
+    window.setUserAddress = function (overrideAddress: string) {
+      setOverrideAdress(overrideAddress)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
-    // React doesn't batch updates for async functions and that's why we need this check.
-    if (usdc && pool && creditDesk && network && goldfinchProtocol) {
-      refreshUserData()
-      // Admin function to be able to assume the role of any address
-      window.setUserAddress = function (overrideAddress: string) {
-        refreshUserData(overrideAddress)
-      }
+    if (goldfinchProtocol && currentBlock) {
+      refreshGfiAndRewards()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [usdc, pool, creditDesk, network, goldfinchProtocol])
+  }, [goldfinchProtocol, currentBlock])
+
+  useEffect(() => {
+    if (goldfinchProtocol && stakingRewards && gfi && currentBlock) {
+      refreshPool()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stakingRewards, gfi])
+
+  useEffect(() => {
+    if (
+      goldfinchProtocol &&
+      pool &&
+      creditDesk &&
+      network &&
+      stakingRewards &&
+      gfi &&
+      communityRewards &&
+      merkleDistributor &&
+      currentBlock
+    ) {
+      refreshUserData()
+    }
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [usdc, pool, overrideAddress])
 
   async function ensureWeb3() {
     if (!window.ethereum) {
@@ -127,65 +180,137 @@ function App() {
 
     const networkName = await web3.eth.net.getNetworkType()
     const networkId = mapNetworkToID[networkName] || networkName
-    const networkConfig: NetworkConfig = {name: networkId, supported: SUPPORTED_NETWORKS[networkId]}
+    const name = networkId
+    const supported = SUPPORTED_NETWORKS[networkId] || false
+    const networkConfig: NetworkConfig = {name, supported}
     setNetwork(networkConfig)
     if (networkConfig.supported) {
+      const currentBlock = getBlockInfo(await getCurrentBlock())
+
       const protocol = new GoldfinchProtocol(networkConfig)
       await protocol.initialize()
 
       const usdc = await protocol.getERC20(Tickers.USDC)
 
-      const pool = new SeniorPool(protocol)
-      await pool.initialize()
-
       const goldfinchConfigContract = protocol.getContract<GoldfinchConfig>("GoldfinchConfig")
-      const creditDeskContract = protocol.getContract("CreditDesk")
+      const goldfinchConfigData = await refreshGoldfinchConfigData(goldfinchConfigContract, currentBlock)
+
+      const creditDeskContract = protocol.getContract<CreditDesk>("CreditDesk")
+
+      setCurrentBlock(currentBlock)
       setUSDC(usdc)
-      setPool(pool)
       setCreditDesk(creditDeskContract)
-      setGoldfinchConfig(await refreshGoldfinchConfigData(goldfinchConfigContract))
+      setGoldfinchConfig(goldfinchConfigData)
       setGoldfinchProtocol(protocol)
 
       const monitor = new NetworkMonitor(web3, {
         setCurrentTXs,
         setCurrentErrors,
       })
-      monitor.initialize() // initialize async, no need to block on this
+      monitor.initialize(currentBlock) // initialize async, no need to block on this
       setNetworkMonitor(monitor)
     }
   }
 
-  async function refreshUserData(overrideAddress?: string) {
+  async function refreshGfiAndRewards(): Promise<void> {
     if (!(await ensureWeb3())) {
       return
     }
 
-    let data: User = defaultUser()
+    assertNonNullable(goldfinchProtocol)
+    assertNonNullable(currentBlock)
+
+    const gfi = new GFI(goldfinchProtocol)
+    const stakingRewards = new StakingRewards(goldfinchProtocol)
+    const communityRewards = new CommunityRewards(goldfinchProtocol)
+    const merkleDistributor = new MerkleDistributor(goldfinchProtocol)
+
+    await Promise.all([
+      gfi.initialize(currentBlock),
+      stakingRewards.initialize(currentBlock),
+      communityRewards.initialize(currentBlock),
+      merkleDistributor.initialize(currentBlock),
+    ])
+
+    assertWithLoadedInfo(gfi)
+    assertWithLoadedInfo(stakingRewards)
+    assertWithLoadedInfo(communityRewards)
+    assertWithLoadedInfo(merkleDistributor)
+
+    setGfi(gfi)
+    setStakingRewards(stakingRewards)
+    setCommunityRewards(communityRewards)
+    setMerkleDistributor(merkleDistributor)
+  }
+
+  async function refreshPool(): Promise<void> {
+    assertNonNullable(goldfinchProtocol)
+    assertNonNullable(currentBlock)
+    assertNonNullable(stakingRewards)
+    assertNonNullable(gfi)
+
+    const pool = new SeniorPool(goldfinchProtocol)
+    await pool.initialize(stakingRewards, gfi, currentBlock)
+    assertWithLoadedInfo(pool)
+
+    setPool(pool)
+  }
+
+  async function refreshUserData(): Promise<void> {
+    assertNonNullable(goldfinchProtocol)
+    assertNonNullable(pool)
+    assertNonNullable(creditDesk)
+    assertNonNullable(network)
+    assertNonNullable(currentBlock)
+    assertNonNullable(stakingRewards)
+    assertNonNullable(gfi)
+    assertNonNullable(communityRewards)
+    assertNonNullable(merkleDistributor)
+
     const accounts = await web3.eth.getAccounts()
-    data.web3Connected = true
-    const _userAddress = (accounts && accounts[0]) || user.address
+    const _userAddress = accounts && accounts[0]
     const userAddress = overrideAddress || _userAddress
-    if (userAddress) {
-      data.address = userAddress
+    if (!userAddress) {
+      return
     }
-    if (userAddress && goldfinchProtocol && creditDesk.loaded && pool?.loaded) {
-      data = await getUserData(userAddress, goldfinchProtocol, pool, creditDesk, network.name)
-    }
+
+    const user = await getUserData(
+      userAddress,
+      goldfinchProtocol,
+      pool,
+      creditDesk,
+      network.name,
+      stakingRewards,
+      gfi,
+      communityRewards,
+      merkleDistributor,
+      currentBlock
+    )
 
     Sentry.setUser({
       // NOTE: The info we use here to identify / define the user for the purpose of
       // error tracking with Sentry MUST be kept consistent with (i.e. not exceed
       // the bounds set by) what our Terms of Service, Privacy Policy, and marketing
       // copy state about the identifying information that Goldfinch stores.
-      id: data.address,
-      address: data.address,
+      id: user.address,
+      address: user.address,
       isOverrideOf: overrideAddress ? _userAddress : undefined,
     })
 
-    setUser(data)
+    setUser(user)
+  }
+
+  async function refreshCurrentBlock(): Promise<void> {
+    const currentBlock = getBlockInfo(await getCurrentBlock())
+    setCurrentBlock(currentBlock)
   }
 
   const store: GlobalState = {
+    currentBlock,
+    stakingRewards,
+    gfi,
+    communityRewards,
+    merkleDistributor,
     pool,
     creditDesk,
     user,
@@ -193,12 +318,12 @@ function App() {
     goldfinchConfig,
     network,
     networkMonitor,
-    refreshUserData,
     goldfinchProtocol,
     geolocationData,
     setGeolocationData,
     sessionData,
     setSessionData,
+    refreshCurrentBlock,
   }
 
   return (

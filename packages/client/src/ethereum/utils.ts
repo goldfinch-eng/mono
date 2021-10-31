@@ -1,14 +1,14 @@
-import BigNumber from "bignumber.js"
-import BN from "bn.js"
-import _ from "lodash"
-import {Contract, EventData} from "web3-eth-contract"
-import {BlockNumber} from "web3-core"
-import {BaseContract} from "@goldfinch-eng/protocol/typechain/web3/types"
-import {Pool, SeniorPool} from "./pool"
 import {
   isMerkleDistributorInfo,
   MerkleDistributorInfo,
 } from "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types"
+import {BaseContract} from "@goldfinch-eng/protocol/typechain/web3/types"
+import BigNumber from "bignumber.js"
+import BN from "bn.js"
+import _ from "lodash"
+import {BlockNumber} from "web3-core"
+import {Contract, EventData} from "web3-eth-contract"
+import {Pool, SeniorPool} from "./pool"
 
 const decimalPlaces = 6
 const decimals = new BN(String(10 ** decimalPlaces))
@@ -50,7 +50,7 @@ const ONE_INCH_ADDRESSES = {
 
 // Only keep entries for supported networks
 // (ie. where we deployed the latest contracts)
-const mapNetworkToID = {
+const mapNetworkToID: Record<string, string> = {
   main: MAINNET,
   ropsten: ROPSTEN,
   private: "localhost",
@@ -63,7 +63,7 @@ const chainIdToNetworkID = {
   31337: "localhost",
 }
 
-const SUPPORTED_NETWORKS = {
+const SUPPORTED_NETWORKS: Record<string, boolean> = {
   [MAINNET]: true,
   [LOCAL]: true,
   [RINKEBY]: true,
@@ -174,7 +174,7 @@ async function getPoolEvents(
   pool: SeniorPool | Pool,
   address: string | undefined,
   eventNames: string[],
-  toBlock: BlockNumber = "latest"
+  toBlock: BlockNumber
 ): Promise<EventData[]> {
   const fromBlock = getFromBlock(pool.chain)
   const events = await Promise.all(

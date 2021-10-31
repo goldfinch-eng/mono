@@ -12,7 +12,7 @@ import useCurrencyUnlocked from "../hooks/useCurrencyUnlocked"
 import {useOneInchQuote, formatQuote} from "../hooks/useOneInchQuote"
 import useDebounce from "../hooks/useDebounce"
 import BigNumber from "bignumber.js"
-import {assertNonNullable} from "../utils"
+import {assertNonNullable, displayDollars} from "../utils"
 
 function PaymentForm(props) {
   const {borrower, creditLine, actionComplete} = props
@@ -53,14 +53,19 @@ function PaymentForm(props) {
   useEffect(
     () => {
       const fetchBalance = async () => {
+        assertNonNullable(user)
         assertNonNullable(erc20)
-        const decimalAmount = new BigNumber(erc20.decimalAmount(await erc20.getBalance(user.address)))
+        const decimalAmount = new BigNumber(erc20.decimalAmount(await erc20.getBalance(user.address, undefined)))
         setErc20UserBalance(decimalAmount)
         setValidations({
           wallet: (value) => decimalAmount.gte(value) || `You do not have enough ${erc20.ticker}`,
           transactionLimit: (value) =>
-            goldfinchConfig.transactionLimit.gte(usdcToAtomic(value)) ||
-            `This is over the per-transaction limit of $${usdcFromAtomic(goldfinchConfig.transactionLimit)}`,
+            goldfinchConfig && goldfinchConfig.transactionLimit.gte(usdcToAtomic(value))
+              ? `This is over the per-transaction limit of ${displayDollars(
+                  usdcFromAtomic(goldfinchConfig.transactionLimit),
+                  0
+                )}`
+              : undefined,
           // @ts-expect-error ts-migrate(7030) FIXME: Not all code paths return a value.
           creditLine: (value) => {
             if (!isSwapping() && props.creditLine.remainingTotalDueAmountInDollars.lt(value)) {
@@ -74,7 +79,7 @@ function PaymentForm(props) {
     // HACK: Disable eslint's complaint about exhaustive-deps, since it doesn't understand our intention
     // with `remainingTotalDueAmountInDollarsDependency`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [erc20, user, goldfinchConfig.transactionLimit, isSwapping, remainingTotalDueAmountInDollarsDependency]
+    [erc20, user, goldfinchConfig?.transactionLimit, isSwapping, remainingTotalDueAmountInDollarsDependency]
   )
 
   function getSelectedUSDCAmount() {

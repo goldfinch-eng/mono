@@ -1,6 +1,6 @@
 import {useContext} from "react"
 import {AppContext} from "../App"
-import {User} from "../ethereum/user"
+import {UserLoaded} from "../ethereum/user"
 import {assertNonNullable} from "../utils"
 import {AsyncResult, useAsync} from "./useAsync"
 import DefaultGoldfinchClient, {KYC} from "./useGoldfinchClient"
@@ -13,17 +13,18 @@ export function useKYC(): AsyncResult<KYC> {
     if (session.status !== "authenticated" || !network?.name) {
       return
     }
+    assertNonNullable(user)
     assertNonNullable(setSessionData)
     const client = new DefaultGoldfinchClient(network.name, session, setSessionData)
     const promise = client.fetchKYCStatus(user.address)
     return promise.then((response) => response.json)
-  }, [session.status, network, setSessionData, user.address])
+  }, [session.status, network, setSessionData, user?.address])
 
   return result
 }
 
-export function eligibleForSeniorPool(kyc: KYC | undefined, user: User): boolean {
+export function eligibleForSeniorPool(kyc: KYC | undefined, user: UserLoaded | undefined): boolean {
   const approved = kyc?.status === "approved" && kyc?.countryCode !== "US"
-  const goListed = user.goListed
+  const goListed = !!user && user.info.value.goListed
   return approved || goListed
 }

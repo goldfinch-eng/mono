@@ -1,11 +1,11 @@
-import {ethers} from "ethers"
-import {useCallback, useContext, useState, useEffect} from "react"
-import {AppContext} from "../App"
-import {assertNonNullable, getBlockInfo, getCurrentBlock} from "../utils"
-import web3 from "../web3"
-import {SESSION_DATA_VERSION} from "../types/session"
 import {isNumber, PlainObject} from "@goldfinch-eng/utils/src/type"
+import {ethers} from "ethers"
 import difference from "lodash/difference"
+import {useCallback, useContext, useEffect, useState} from "react"
+import {AppContext} from "../App"
+import {SESSION_DATA_VERSION} from "../types/session"
+import {assertNonNullable} from "../utils"
+import web3 from "../web3"
 
 export type UnknownSession = {status: "unknown"}
 export type KnownSession = {status: "known"}
@@ -31,45 +31,50 @@ interface SessionLocalStorageType {
   setLocalStorageValue: (value: any) => void
 }
 
-function getSession(info: GetSessionInfo): Session {
-  if (info.address && info.signature) {
-    const signature = info.signature
-    const signatureBlockNum = info.signatureBlockNum
-    return {status: "authenticated", signature, signatureBlockNum}
+function getSession(info: GetSessionInfo | undefined): Session {
+  if (info) {
+    if (info.address && info.signature) {
+      const signature = info.signature
+      const signatureBlockNum = info.signatureBlockNum
+      return {status: "authenticated", signature, signatureBlockNum}
+    } else {
+      return {status: "known"}
+    }
+  } else {
+    return {status: "unknown"}
   }
-  if (info.address && !info.signature) {
-    return {status: "known"}
-  }
-  return {status: "unknown"}
 }
 
 export function useSession(): Session {
   const {sessionData, user} = useContext(AppContext)
   return getSession(
-    sessionData
-      ? {
-          address: user.address,
-          signature: sessionData.signature,
-          signatureBlockNum: sessionData.signatureBlockNum,
-          signatureBlockNumTimestamp: sessionData.signatureBlockNumTimestamp,
-          version: sessionData.version,
-        }
-      : {address: user.address, signature: undefined, signatureBlockNum: undefined}
+    user
+      ? sessionData
+        ? {
+            address: user.address,
+            signature: sessionData.signature,
+            signatureBlockNum: sessionData.signatureBlockNum,
+            signatureBlockNumTimestamp: sessionData.signatureBlockNumTimestamp,
+            version: sessionData.version,
+          }
+        : {address: user.address, signature: undefined, signatureBlockNum: undefined}
+      : undefined
   )
 }
 
 export function useSignIn(): [status: Session, signIn: () => Promise<Session>] {
-  const {setSessionData, user} = useContext(AppContext)
+  const {setSessionData, user, currentBlock} = useContext(AppContext)
   const session = useSession()
 
   const signIn = useCallback(
     async function () {
+      assertNonNullable(user)
       assertNonNullable(setSessionData)
+      assertNonNullable(currentBlock)
 
       const provider = new ethers.providers.Web3Provider(web3.currentProvider as any)
       const signer = provider.getSigner(user.address)
 
-      const currentBlock = getBlockInfo(await getCurrentBlock())
       const signatureBlockNum = currentBlock.number
       const signatureBlockNumTimestamp = currentBlock.timestamp
       const version = SESSION_DATA_VERSION
@@ -77,7 +82,7 @@ export function useSignIn(): [status: Session, signIn: () => Promise<Session>] {
       setSessionData({signature, signatureBlockNum, signatureBlockNumTimestamp, version})
       return getSession({address: user.address, signature, signatureBlockNum, signatureBlockNumTimestamp, version})
     },
-    [user, setSessionData]
+    [user, setSessionData, currentBlock]
   )
 
   return [session, signIn]

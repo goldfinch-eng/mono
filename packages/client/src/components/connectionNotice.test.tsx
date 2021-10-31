@@ -1,10 +1,9 @@
 import _ from "lodash"
 import React from "react"
 import ConnectionNotice, {ConnectionNoticeProps, strategies} from "./connectionNotice"
-import {Matcher, render, screen, waitFor} from "@testing-library/react"
+import {Matcher, render, screen} from "@testing-library/react"
 import {MemoryRouter} from "react-router-dom"
 import {AppContext, GlobalState} from "../App"
-import {defaultUser, UNLOCK_THRESHOLD} from "../ethereum/user"
 import "@testing-library/jest-dom"
 import {CreditLine, defaultCreditLine} from "../ethereum/creditLine"
 import {AsyncResult} from "../hooks/useAsync"
@@ -38,8 +37,11 @@ const scenarios: Scenario[] = [
   },
   {
     devName: "pool_paused",
-    setUpMatch: ({props}) => {
+    setUpMatch: ({store, props}) => {
       props.isPaused = true
+      store.user = {
+        info: {loaded: true, value: {goListed: true}},
+      }
     },
     setUpFallthrough: (_props) => {},
     expectedText: /The pool is currently paused/,
@@ -63,20 +65,23 @@ const scenarios: Scenario[] = [
   {
     devName: "not_connected_to_metamask",
     setUpMatch: ({store}) => {
-      store.user.web3Connected = true
-      store.user.address = ""
+      store.user = undefined
     },
     setUpFallthrough: ({store}) => {
-      store.user.web3Connected = true
-      store.user.address = "0xtest"
+      store.user = {
+        web3Connected: true,
+        address: "0xtest",
+      }
     },
     expectedText: /You are not currently connected to Metamask./,
   },
   {
     devName: "connected_user_with_expired_session",
     setUpMatch: ({store, props}) => {
-      store.user.web3Connected = true
-      store.user.address = "0xtest"
+      store.user = {
+        web3Connected: true,
+        address: "0xtest",
+      }
       store.sessionData = undefined
     },
     setUpFallthrough: ({store}) => {
@@ -89,8 +94,10 @@ const scenarios: Scenario[] = [
     devName: "no_credit_line",
     setUpMatch: ({store, props}) => {
       defaultCreditLine.loaded = true
-      store.user.loaded = true
-      props.creditLine = defaultCreditLine as CreditLine
+      store.user = {
+        info: {loaded: true},
+      }
+      props.creditLine = defaultCreditLine as unknown as CreditLine
     },
     setUpFallthrough: ({store}) => {
       defaultCreditLine.loaded = false
@@ -102,8 +109,9 @@ const scenarios: Scenario[] = [
   {
     devName: "no_golist",
     setUpMatch: ({store, props}) => {
-      store.user.goListed = false
-      store.user.loaded = true
+      store.user = {
+        info: {loaded: true, value: {goListed: false}},
+      }
       props.requireGolist = true
     },
     setUpFallthrough: ({props}) => {
@@ -114,8 +122,11 @@ const scenarios: Scenario[] = [
   },
   {
     devName: "kyc_error",
-    setUpMatch: ({props}) => {
+    setUpMatch: ({store, props}) => {
       const erroredResult: AsyncResult<KYC> = {status: "errored", error: new Error("test")}
+      store.user = {
+        info: {loaded: true, value: {goListed: false}},
+      }
       props.requireKYC = {
         kyc: erroredResult,
         condition: (_) => true,
@@ -128,8 +139,11 @@ const scenarios: Scenario[] = [
   },
   {
     devName: "kyc_loading",
-    setUpMatch: ({props}) => {
+    setUpMatch: ({store, props}) => {
       const loadingResult: AsyncResult<KYC> = {status: "loading"}
+      store.user = {
+        info: {loaded: true, value: {goListed: false}},
+      }
       props.requireKYC = {
         kyc: loadingResult,
         condition: (_) => true,
@@ -143,7 +157,9 @@ const scenarios: Scenario[] = [
   {
     devName: "kyc_succeeded",
     setUpMatch: ({store, props}) => {
-      store.user.loaded = true
+      store.user = {
+        info: {loaded: true, value: {goListed: false}},
+      }
       const kyc: AsyncResult<KYC> = {
         status: "succeeded",
         value: {
@@ -177,8 +193,9 @@ const scenarios: Scenario[] = [
     devName: "require_unlock",
     setUpMatch: ({store, props, context}) => {
       context.route = "/pools/senior"
-      store.user.loaded = true
-      store.user.poolAllowance = UNLOCK_THRESHOLD
+      store.user = {
+        info: {loaded: true, value: {usdcIsUnlocked: {earn: {isUnlocked: false, unlockAddress: "0xtestpooladdress"}}}},
+      }
       props.requireUnlock = true
     },
     setUpFallthrough: ({props}) => {
@@ -204,7 +221,7 @@ describe("ConnectionNotice", () => {
     let goldfinchProtocol = new GoldfinchProtocol(network)
     await goldfinchProtocol.initialize()
     store = {
-      user: defaultUser(),
+      user: undefined,
       usdc: getERC20(Tickers.USDC, goldfinchProtocol),
       network,
     }

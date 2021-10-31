@@ -8,7 +8,6 @@ import useSendFromUser from "../hooks/useSendFromUser"
 import useNonNullContext from "../hooks/useNonNullContext"
 import BigNumber from "bignumber.js"
 import {decimalPlaces} from "../ethereum/utils"
-import {useStakingRewards} from "../hooks/useStakingRewards"
 import useERC20Permit from "../hooks/useERC20Permit"
 
 interface DepositFormProps {
@@ -17,9 +16,8 @@ interface DepositFormProps {
 }
 
 function DepositForm(props: DepositFormProps) {
-  const {pool, usdc, user, goldfinchConfig} = useNonNullContext(AppContext)
+  const {pool, usdc, user, goldfinchConfig, stakingRewards} = useNonNullContext(AppContext)
   const sendFromUser = useSendFromUser()
-  const stakingRewards = useStakingRewards()
   const {gatherPermitSignature} = useERC20Permit()
 
   async function action({transactionAmount}) {
@@ -28,7 +26,7 @@ function DepositForm(props: DepositFormProps) {
     // USDC permit doesn't work on mainnet forking due to mismatch between hardcoded chain id in the contract
     if (process.env.REACT_APP_HARDHAT_FORK) {
       const alreadyApprovedAmount = new BigNumber(
-        await usdc.contract.methods.allowance(user.address, stakingRewards.address).call()
+        await usdc.contract.methods.allowance(user.address, stakingRewards.address).call(undefined, "latest")
       )
       const amountRequiringApproval = new BigNumber(depositAmountString).minus(alreadyApprovedAmount)
       const approval = amountRequiringApproval.gt(0)
@@ -44,7 +42,7 @@ function DepositForm(props: DepositFormProps) {
       return approval
         .then(() =>
           sendFromUser(stakingRewards.contract.methods.depositAndStake(depositAmountString), {
-            type: "Supply",
+            type: "Supply and Stake",
             amount: transactionAmount,
           })
         )
@@ -64,7 +62,7 @@ function DepositForm(props: DepositFormProps) {
           signatureData.s
         ),
         {
-          type: "Supply",
+          type: "Supply and Stake",
           amount: transactionAmount,
         }
       ).then(props.actionComplete)
@@ -73,14 +71,14 @@ function DepositForm(props: DepositFormProps) {
 
   function renderForm({formMethods}) {
     let warningMessage, disabled, submitDisabled
-    if (user.usdcBalance.eq(0)) {
+    if (!user || user.info.value.usdcBalance.eq(0)) {
       disabled = true
       warningMessage = (
         <p className="form-message">
           You don't have any USDC to supply. You'll need to first send USDC to your address to supply capital.
         </p>
       )
-    } else if (pool.gf?.totalPoolAssets.gte(goldfinchConfig.totalFundsLimit)) {
+    } else if (pool.info.value.poolData.totalPoolAssets.gte(goldfinchConfig.totalFundsLimit)) {
       disabled = true
       warningMessage = (
         <p className="form-message">
@@ -96,9 +94,13 @@ function DepositForm(props: DepositFormProps) {
     }
     submitDisabled = submitDisabled || disabled
 
-    const remainingPoolCapacity = pool.gf.remainingCapacity(goldfinchConfig.totalFundsLimit)
+    const remainingPoolCapacity = pool.info.value.poolData.remainingCapacity(goldfinchConfig.totalFundsLimit)
     const maxTxAmountInDollars = usdcFromAtomic(
-      BigNumber.min(remainingPoolCapacity, goldfinchConfig.transactionLimit, user.usdcBalance)
+      BigNumber.min(
+        remainingPoolCapacity,
+        goldfinchConfig.transactionLimit,
+        user ? user.info.value.usdcBalance : new BigNumber(0)
+      )
     )
 
     return (
@@ -147,10 +149,14 @@ function DepositForm(props: DepositFormProps) {
                 </button>
               }
               validations={{
-                wallet: (value) => user.usdcBalanceInDollars.gte(value) || "You do not have enough USDC",
+                wallet: (value) =>
+                  (user && user.info.value.usdcBalanceInDollars.gte(value)) || "You do not have enough USDC",
                 transactionLimit: (value) =>
                   goldfinchConfig.transactionLimit.gte(usdcToAtomic(value)) ||
-                  `This is over the per-transaction limit of $${usdcFromAtomic(goldfinchConfig.transactionLimit)}`,
+                  `This is over the per-transaction limit of ${displayDollars(
+                    usdcFromAtomic(goldfinchConfig.transactionLimit),
+                    0
+                  )}`,
                 totalFundsLimit: (value) => {
                   return (
                     remainingPoolCapacity.gte(usdcToAtomic(value)) ||
@@ -170,7 +176,7 @@ function DepositForm(props: DepositFormProps) {
   return (
     <TransactionForm
       title="Supply"
-      headerMessage={`Available to supply: ${displayDollars(user.usdcBalanceInDollars)}`}
+      headerMessage={`Available to supply: ${displayDollars(user ? user.info.value.usdcBalanceInDollars : undefined)}`}
       render={renderForm}
       closeForm={props.closeForm}
     />

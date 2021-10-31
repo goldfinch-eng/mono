@@ -2,25 +2,34 @@ import React, {useContext, useEffect, useState} from "react"
 import _ from "lodash"
 import ConnectionNotice from "./connectionNotice"
 import {AppContext} from "../App"
-import {displayDollars} from "../utils"
+import {BlockInfo, displayDollars} from "../utils"
 import {MAX_UINT} from "../ethereum/utils"
 import BigNumber from "bignumber.js"
 import {iconCircleUpLg, iconCircleDownLg, iconCircleCheckLg, iconOutArrow} from "./icons"
 import {mapEventsToTx} from "../ethereum/events"
+import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
+import {TranchedPool} from "../ethereum/tranchedPool"
 
 function Transactions(props) {
-  const {user, network, goldfinchProtocol} = useContext(AppContext)
+  const {user, network, goldfinchProtocol, currentBlock} = useContext(AppContext)
   const [tranchedPoolTxs, setTranchedPoolTxs] = useState()
 
   async function loadTranchedPoolEvents(
-    tranchedPools,
-    events = ["DepositMade", "WithdrawalMade", "PaymentApplied", "DrawdownMade"]
+    tranchedPools: {[address: string]: TranchedPool},
+    goldfinchProtocol: GoldfinchProtocol,
+    currentBlock: BlockInfo
   ) {
     const tranchedPoolsAddresses = Object.keys(tranchedPools)
     let combinedEvents = _.flatten(
       await Promise.all(
-        // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
-        tranchedPoolsAddresses.map((address) => goldfinchProtocol.queryEvents(tranchedPools[address].contract, events))
+        tranchedPoolsAddresses.map((address) =>
+          goldfinchProtocol.queryEvents(
+            tranchedPools[address]!.contract,
+            ["DepositMade", "WithdrawalMade", "PaymentApplied", "DrawdownMade"],
+            undefined,
+            currentBlock.number
+          )
+        )
       )
     )
     // @ts-expect-error ts-migrate(2345) FIXME: Argument of type '{ type: any; name: any; amount: ... Remove this comment to see the full error message
@@ -28,13 +37,12 @@ function Transactions(props) {
   }
 
   useEffect(() => {
-    const borrower = (user as any).borrower
-    if (!borrower) {
+    if (!user || !user.borrower || !goldfinchProtocol || !currentBlock) {
       return
     }
-    loadTranchedPoolEvents((user as any).borrower.tranchedPools)
+    loadTranchedPoolEvents(user.borrower.tranchedPools, goldfinchProtocol, currentBlock)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user])
+  }, [user, goldfinchProtocol, currentBlock])
 
   function transactionRow(tx) {
     // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
@@ -108,8 +116,10 @@ function Transactions(props) {
   }
 
   // Only show txs from currentTxs that are not already in user.pastTxs
-  let pendingTxs = _.differenceBy(props.currentTXs, user.pastTxs, "id")
-  let allTxs = _.reverse(_.sortBy(_.compact(_.concat(pendingTxs, user.pastTxs, tranchedPoolTxs)), "blockNumber"))
+  let pendingTxs = _.differenceBy(props.currentTXs, user ? user.info.value.pastTxs : [], "id")
+  let allTxs = _.reverse(
+    _.sortBy(_.compact(_.concat(pendingTxs, user ? user.info.value.pastTxs : [], tranchedPoolTxs)), "blockNumber")
+  )
   allTxs = _.uniqBy(allTxs, "eventId")
   let transactionRows = (
     <tr className="empty-row">
@@ -128,7 +138,7 @@ function Transactions(props) {
     <div className="content-section">
       <div className="page-header">Transactions</div>
       <ConnectionNotice requireUnlock={false} />
-      <table className={`table transactions-table ${user.address ? "" : "placeholder"}`}>
+      <table className={`table transactions-table ${user ? "" : "placeholder"}`}>
         <thead>
           <tr>
             <th>Type</th>

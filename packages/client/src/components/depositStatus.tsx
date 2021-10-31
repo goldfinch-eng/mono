@@ -5,21 +5,17 @@ import {displayDollars, displayPercent} from "../utils"
 import AnnualGrowthTooltipContent from "./AnnualGrowthTooltipContent"
 
 interface DepositStatusProps {
-  poolData?: PoolData
-  capitalProvider: CapitalProvider
+  poolData: PoolData | undefined
+  capitalProvider: CapitalProvider | undefined
 }
 
 function DepositStatus(props: DepositStatusProps) {
-  const portfolioBalance = props.capitalProvider.totalSeniorPoolBalanceInDollars
-  const portfolioBalanceDisplay = displayDollars(portfolioBalance)
+  if (props.poolData && props.capitalProvider) {
+    const portfolioBalance = props.capitalProvider.totalSeniorPoolBalanceInDollars
+    const portfolioBalanceDisplay = displayDollars(portfolioBalance)
 
-  let apyDisplay: string,
-    estimatedApy: BigNumber | undefined,
-    estimatedApyFromSupplying: BigNumber | undefined,
-    estimatedApyFromGfi: BigNumber | undefined
-  if (props.poolData?.loaded) {
     const globalEstimatedApyFromSupplying = props.poolData.estimatedApy
-    estimatedApyFromSupplying = globalEstimatedApyFromSupplying
+    const estimatedApyFromSupplying = globalEstimatedApyFromSupplying
 
     const globalEstimatedApyFromGfi = props.poolData.estimatedApyFromGfi || new BigNumber(0)
     const balancePortionEarningGfi = portfolioBalance.gt(0)
@@ -31,15 +27,11 @@ function DepositStatus(props: DepositStatusProps) {
     // (which they could have achieved by interacting with the contract directly, rather than using
     // our frontend).
     const userEstimatedApyFromGfi = balancePortionEarningGfi.multipliedBy(globalEstimatedApyFromGfi)
-    estimatedApyFromGfi = portfolioBalance.gt(0) ? userEstimatedApyFromGfi : globalEstimatedApyFromGfi
+    const estimatedApyFromGfi = portfolioBalance.gt(0) ? userEstimatedApyFromGfi : globalEstimatedApyFromGfi
 
-    estimatedApy = estimatedApyFromSupplying.plus(estimatedApyFromGfi)
-    apyDisplay = `${displayPercent(estimatedApy)}`
-  } else {
-    apyDisplay = `${displayPercent(estimatedApy)}`
-  }
+    const estimatedApy = estimatedApyFromSupplying.plus(estimatedApyFromGfi)
+    const apyDisplay = `${displayPercent(estimatedApy)}`
 
-  if (portfolioBalance.gt(0) && estimatedApy && estimatedApyFromSupplying && estimatedApyFromGfi) {
     const estimatedGrowth = portfolioBalance.multipliedBy(estimatedApy)
     const estimatedGrowthDisplay = displayDollars(estimatedGrowth)
 
@@ -80,11 +72,11 @@ function DepositStatus(props: DepositStatusProps) {
       <div className="deposit-status background-container-inner">
         <div className="deposit-status-item">
           <div className="label">Portfolio balance</div>
-          <div className="value">{portfolioBalanceDisplay}</div>
+          <div className="value">{displayDollars(undefined, 2)}</div>
         </div>
         <div className="deposit-status-item">
           <div className="label">Est. Annual Growth</div>
-          <div className="value">{`${apyDisplay} APY${estimatedApyFromGfi?.gt(0) ? " (with GFI)" : ""}`}</div>
+          <div className="value">{`${displayPercent(undefined, 2)} APY`}</div>
         </div>
       </div>
     )

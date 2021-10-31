@@ -1,21 +1,27 @@
-import React, {useState, useEffect, useContext} from "react"
-import {useHistory} from "react-router-dom"
-import {CapitalProvider, fetchCapitalProviderData, PoolData, SeniorPool, StakingRewards} from "../ethereum/pool"
-import {AppContext} from "../App"
-import {usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
-import {displayDollars, displayPercent, roundDownPenny} from "../utils"
-import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
-import {PoolBacker, TranchedPool} from "../ethereum/tranchedPool"
 import {PoolCreated} from "@goldfinch-eng/protocol/typechain/web3/GoldfinchFactory"
 import BigNumber from "bignumber.js"
-import {User} from "../ethereum/user"
-import ConnectionNotice from "./connectionNotice"
+import React, {useContext, useEffect, useState} from "react"
+import {useHistory} from "react-router-dom"
+import {AppContext} from "../App"
 import {useEarn} from "../contexts/EarnContext"
-import Badge from "./badge"
-import {InfoIcon} from "../ui/icons"
-import {useStakingRewards} from "../hooks/useStakingRewards"
-import AnnualGrowthTooltipContent from "./AnnualGrowthTooltipContent"
+import {usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
+import {GFILoaded} from "../ethereum/gfi"
+import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
+import {
+  CapitalProvider,
+  fetchCapitalProviderData,
+  PoolData,
+  SeniorPoolLoaded,
+  StakingRewardsLoaded,
+} from "../ethereum/pool"
+import {PoolBacker, TranchedPool} from "../ethereum/tranchedPool"
+import {User, UserLoaded} from "../ethereum/user"
 import {Loadable, Loaded} from "../types/loadable"
+import {InfoIcon} from "../ui/icons"
+import {BlockInfo, displayDollars, displayPercent, roundDownPenny} from "../utils"
+import AnnualGrowthTooltipContent from "./AnnualGrowthTooltipContent"
+import Badge from "./badge"
+import ConnectionNotice from "./connectionNotice"
 
 // Filter out 0 limit (inactive) and test pools
 const MIN_POOL_LIMIT = usdcToAtomic(process.env.REACT_APP_POOL_FILTER_LIMIT || "200")
@@ -63,7 +69,7 @@ function PortfolioOverview({
   capitalProvider: Loaded<CapitalProvider>
   poolBackers: Loaded<PoolBacker[]>
 }) {
-  const loaded = !!poolData?.loaded && capitalProvider.loaded && poolBackers.loaded
+  const loaded = poolData && capitalProvider.loaded && poolBackers.loaded
   if (!loaded) {
     return <></>
   }
@@ -229,7 +235,15 @@ export function TranchedPoolCard({poolBacker, disabled}: {poolBacker: PoolBacker
   )
 }
 
-function usePoolBackers({goldfinchProtocol, user}: {goldfinchProtocol?: GoldfinchProtocol; user?: User}): {
+function usePoolBackers({
+  goldfinchProtocol,
+  user,
+  currentBlock,
+}: {
+  goldfinchProtocol: GoldfinchProtocol | undefined
+  user: User | undefined
+  currentBlock: BlockInfo | undefined
+}): {
   backers: Loadable<PoolBacker[]>
   poolsAddresses: Loadable<string[]>
 } {
@@ -243,22 +257,25 @@ function usePoolBackers({goldfinchProtocol, user}: {goldfinchProtocol?: Goldfinc
   })
 
   useEffect(() => {
-    async function loadTranchedPools(goldfinchProtocol: GoldfinchProtocol, user: User) {
-      let poolEvents = (await goldfinchProtocol.queryEvents("GoldfinchFactory", [
-        "PoolCreated",
-      ])) as unknown as PoolCreated[]
+    async function loadTranchedPools(goldfinchProtocol: GoldfinchProtocol, user: User, currentBlock: BlockInfo) {
+      let poolEvents = (await goldfinchProtocol.queryEvents(
+        "GoldfinchFactory",
+        ["PoolCreated"],
+        undefined,
+        currentBlock.number
+      )) as unknown as PoolCreated[]
       let poolAddresses = poolEvents.map((e) => e.returnValues.pool)
       setPoolsAddresses({
         loaded: true,
         value: poolAddresses,
       })
       let tranchedPools = poolAddresses.map((a) => new TranchedPool(a, goldfinchProtocol))
-      await Promise.all(tranchedPools.map((p) => p.initialize()))
+      await Promise.all(tranchedPools.map((p) => p.initialize(currentBlock)))
       tranchedPools = tranchedPools.filter((p) => p.metadata)
       const activePoolBackers = tranchedPools
         .filter((p) => p.creditLine.limit.gte(MIN_POOL_LIMIT))
         .map((p) => new PoolBacker(user.address, p, goldfinchProtocol))
-      await Promise.all(activePoolBackers.map((b) => b.initialize()))
+      await Promise.all(activePoolBackers.map((b) => b.initialize(currentBlock)))
       setBackers({
         loaded: true,
         value: activePoolBackers.sort(
@@ -273,39 +290,54 @@ function usePoolBackers({goldfinchProtocol, user}: {goldfinchProtocol?: Goldfinc
       })
     }
 
-    if (goldfinchProtocol && user) {
-      loadTranchedPools(goldfinchProtocol, user)
+    if (goldfinchProtocol && user && currentBlock) {
+      loadTranchedPools(goldfinchProtocol, user, currentBlock)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [goldfinchProtocol, user])
+  }, [goldfinchProtocol, user, currentBlock])
 
   return {backers, poolsAddresses}
 }
 
 function Earn() {
-  const {pool, usdc, user, goldfinchProtocol, goldfinchConfig} = useContext(AppContext)
+  const {pool, usdc, user, goldfinchProtocol, goldfinchConfig, stakingRewards, gfi, currentBlock} =
+    useContext(AppContext)
   const {earnStore, setEarnStore} = useEarn()
   const [capitalProvider, setCapitalProvider] = useState<Loadable<CapitalProvider>>({
     loaded: false,
     value: undefined,
   })
-  const {backers, poolsAddresses} = usePoolBackers({goldfinchProtocol, user})
-  const stakingRewards = useStakingRewards()
+  const {backers, poolsAddresses} = usePoolBackers({goldfinchProtocol, user, currentBlock})
 
   useEffect(() => {
-    if (pool) {
-      const capitalProviderAddress: string | undefined = user.loaded ? user.address : undefined
-      refreshCapitalProviderData(pool, stakingRewards, capitalProviderAddress)
+    if (pool && stakingRewards && gfi && user) {
+      refreshCapitalProviderData(pool, stakingRewards, gfi, user)
     }
-  }, [pool, stakingRewards, usdc, user])
+  }, [pool, stakingRewards, gfi, usdc, user])
 
   async function refreshCapitalProviderData(
-    pool: SeniorPool,
-    stakingRewards: StakingRewards | undefined,
-    address: string | undefined
+    pool: SeniorPoolLoaded,
+    stakingRewards: StakingRewardsLoaded,
+    gfi: GFILoaded,
+    user: UserLoaded
   ) {
-    const capitalProvider = await fetchCapitalProviderData(pool, stakingRewards, address)
-    setCapitalProvider(capitalProvider)
+    // TODO Would be ideal to refactor this component so that the child components it renders all
+    // receive state that is consistent, i.e. using `pool.poolData`, `capitalProvider` state,
+    // `stakingRewards`, `gfi`, and `user` that are guaranteed to be based on the same block number. For now, here
+    // we ensure that the derivation of `capitalProvider` state is done using `pool.poolData`,
+    // `stakingRewards`, `gfi`, and `user` that are consistent with each other.
+    const poolBlockNumber = pool.info.value.currentBlock.number
+    const stakingRewardsBlockNumber = stakingRewards.info.value.currentBlock.number
+    const gfiBlockNumber = gfi.info.value.currentBlock.number
+    const userBlockNumber = user.info.value.currentBlock.number
+    if (
+      poolBlockNumber === stakingRewardsBlockNumber &&
+      poolBlockNumber === gfiBlockNumber &&
+      poolBlockNumber === userBlockNumber
+    ) {
+      const capitalProvider = await fetchCapitalProviderData(pool, stakingRewards, gfi, user)
+      setCapitalProvider(capitalProvider)
+    }
   }
 
   useEffect(() => {
@@ -319,7 +351,7 @@ function Earn() {
   const capitalProviderData = earnStore.capitalProvider
   const backersData = earnStore.backers
 
-  const isLoading = !capitalProviderData.loaded || !backersData.loaded || user.noWeb3
+  const isLoading = !pool || !capitalProviderData.loaded || !backersData.loaded || !user || user.noWeb3
   const earnMessage = isLoading ? "Loading..." : "Pools"
 
   return (
@@ -327,13 +359,15 @@ function Earn() {
       <div className="page-header">
         <div>{earnMessage}</div>
       </div>
+      <ConnectionNotice requireUnlock={false} />
       {isLoading ? (
         <PortfolioOverviewSkeleton />
       ) : (
-        <>
-          <ConnectionNotice requireUnlock={false} />
-          <PortfolioOverview poolData={pool?.gf} capitalProvider={capitalProviderData} poolBackers={backersData} />
-        </>
+        <PortfolioOverview
+          poolData={pool.info.value.poolData}
+          capitalProvider={capitalProviderData}
+          poolBackers={backersData}
+        />
       )}
       <div className="pools">
         <PoolList title="Senior Pool">
@@ -341,11 +375,15 @@ function Earn() {
             <SeniorPoolCardSkeleton />
           ) : (
             <SeniorPoolCard
-              balance={displayDollars(usdcFromAtomic(pool?.gf.totalPoolAssets))}
+              balance={displayDollars(usdcFromAtomic(pool.info.value.poolData.totalPoolAssets))}
               userBalance={displayDollars(capitalProviderData.value.availableToWithdrawInDollars)}
-              apy={displayPercent(pool?.gf.estimatedApy)}
-              limit={displayDollars(usdcFromAtomic(goldfinchConfig?.totalFundsLimit), 0)}
-              remainingCapacity={pool?.gf.remainingCapacity(goldfinchConfig?.totalFundsLimit)}
+              apy={displayPercent(pool.info.value.poolData.estimatedApy)}
+              limit={displayDollars(goldfinchConfig ? usdcFromAtomic(goldfinchConfig.totalFundsLimit) : undefined, 0)}
+              remainingCapacity={
+                goldfinchConfig
+                  ? pool.info.value.poolData.remainingCapacity(goldfinchConfig.totalFundsLimit)
+                  : undefined
+              }
             />
           )}
         </PoolList>

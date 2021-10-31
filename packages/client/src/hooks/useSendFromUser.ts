@@ -1,6 +1,6 @@
 import {useContext} from "react"
 import {AppContext} from "../App"
-import {assertNonNullable} from "../utils"
+import {assertError, assertNonNullable} from "../utils"
 import web3 from "../web3"
 
 type UseSendFromUserOptions = {
@@ -12,10 +12,12 @@ type SendTransactionOptions = {
 }
 
 function useSendFromUser() {
-  const {refreshUserData, user, networkMonitor} = useContext(AppContext)
+  const {refreshCurrentBlock, user, networkMonitor} = useContext(AppContext)
 
   async function sendTransaction(unsentAction, txData, gasPrice, options: SendTransactionOptions) {
+    assertNonNullable(refreshCurrentBlock)
     assertNonNullable(networkMonitor)
+    assertNonNullable(user)
     // unsent action could be a promise that returns the action, so resolve it
     unsentAction = await Promise.resolve(unsentAction)
 
@@ -30,19 +32,17 @@ function useSendFromUser() {
             if (res.status === "success") {
               const txResult = JSON.parse(res.result)
               networkMonitor.watch(txResult.txHash, txData, () => {
-                assertNonNullable(refreshUserData)
-                refreshUserData()
+                refreshCurrentBlock()
                 resolve()
               })
             } else {
-              // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
-              networkMonitor.markTXErrored(txData, {message: res.message})
+              networkMonitor.markTXErrored(txData, new Error(res.message))
               resolve()
             }
           })
           .catch((err: unknown) => {
-            // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
-            networkMonitor.markTXErrored(txData, {message: err.message})
+            assertError(err)
+            networkMonitor.markTXErrored(txData, err)
 
             if (options.rejectOnError) {
               reject(err)
@@ -53,7 +53,7 @@ function useSendFromUser() {
       })
     }
 
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       unsentAction
         .send({
           from: user.address,
@@ -64,9 +64,7 @@ function useSendFromUser() {
         })
         .once("transactionHash", (transactionHash) => {
           txData = networkMonitor.watch(transactionHash, txData, () => {
-            // @ts-expect-error ts-migrate(2722) FIXME: Cannot invoke an object which is possibly 'undefin... Remove this comment to see the full error message
-            refreshUserData()
-            // @ts-expect-error ts-migrate(2794) FIXME: Expected 1 arguments, but got 0. Did you forget to... Remove this comment to see the full error message
+            refreshCurrentBlock()
             resolve()
           })
         })
@@ -79,7 +77,6 @@ function useSendFromUser() {
           if (options.rejectOnError) {
             reject(err)
           } else {
-            // @ts-expect-error ts-migrate(2794) FIXME: Expected 1 arguments, but got 0. Did you forget to... Remove this comment to see the full error message
             resolve()
           }
         })

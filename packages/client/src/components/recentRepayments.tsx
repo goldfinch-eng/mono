@@ -6,18 +6,18 @@ import {displayDollars, croppedAddress, assertNonNullable} from "../utils"
 import {iconOutArrow} from "./icons"
 
 function RecentRepayments() {
-  const {pool, user, network, goldfinchProtocol} = useContext(AppContext)
+  const {pool, user, network, goldfinchProtocol, currentBlock} = useContext(AppContext)
   const [repayments, setRepayments] = useState([])
   let transactionRows
 
   useEffect(() => {
-    if (pool && pool.gf && goldfinchProtocol) {
-      pool.gf.getRepaymentEvents(goldfinchProtocol).then((repayments) => {
+    if (pool && goldfinchProtocol && currentBlock) {
+      pool.info.value.poolData.getRepaymentEvents(pool, goldfinchProtocol, currentBlock).then((repayments) => {
         // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'any[]' is not assignable to para... Remove this comment to see the full error message
         setRepayments(_.slice(repayments, 0, 3))
       })
     }
-  }, [pool, goldfinchProtocol])
+  }, [pool, goldfinchProtocol, currentBlock])
 
   function createTransactionRows(tx) {
     assertNonNullable(network)
@@ -25,18 +25,18 @@ function RecentRepayments() {
     let yourPortion
     let yourPortionClass
 
-    if (user.loaded && pool && pool.gf.loaded) {
+    if (user && pool) {
       let yourPortionValue = usdcFromAtomic(
         user
           .poolBalanceAsOf(tx.blockNumber)
-          .dividedBy(pool.gf.assetsAsOf(tx.blockNumber))
+          .dividedBy(pool.info.value.poolData.assetsAsOf(tx.blockNumber))
           .multipliedBy(tx.interestAmountBN)
       )
 
       yourPortion = displayDollars(yourPortionValue, 4)
       // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'string' is not assignable to par... Remove this comment to see the full error message
       yourPortionClass = isFinite(yourPortionValue) && yourPortionValue > 0 ? "" : "zero"
-    } else if (!user.loaded && !user.address) {
+    } else if (!user) {
       yourPortion = displayDollars(0, 4)
     } else {
       yourPortion = "Loading..."

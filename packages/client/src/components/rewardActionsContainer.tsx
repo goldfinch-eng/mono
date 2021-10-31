@@ -1,16 +1,13 @@
+import {MerkleDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types"
+import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
+import BigNumber from "bignumber.js"
+import _ from "lodash"
 import React, {useState} from "react"
 import {useMediaQuery} from "react-responsive"
-import _ from "lodash"
-import BigNumber from "bignumber.js"
-import {MerkleDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types"
-import {gfiFromAtomic} from "../ethereum/gfi"
-import {WIDTH_TYPES} from "./styleConstants"
-import {MerkleDistributor, CommunityRewardsGrant, CommunityRewards} from "../ethereum/communityRewards"
-import {StakingRewards, StakingRewardsPosition} from "../ethereum/pool"
+import {CommunityRewardsGrant, CommunityRewardsLoaded, MerkleDistributorLoaded} from "../ethereum/communityRewards"
+import {gfiFromAtomic, gfiInDollars, GFILoaded, gfiToDollarsAtomic} from "../ethereum/gfi"
+import {StakingRewardsLoaded, StakingRewardsPosition} from "../ethereum/pool"
 import useSendFromUser from "../hooks/useSendFromUser"
-import {displayNumber, displayDollars, assertNonNullable} from "../utils"
-import LoadingButton from "./loadingButton"
-import TransactionForm from "./transactionForm"
 import {
   Column,
   ColumnsContainer,
@@ -20,9 +17,12 @@ import {
   DetailValue,
   EtherscanLinkContainer,
 } from "../pages/rewards/styles"
+import {assertNonNullable, displayDollars, displayNumber} from "../utils"
 import EtherscanLink from "./etherscanLink"
 import {iconCarrotDown, iconCarrotUp, iconOutArrow} from "./icons"
-import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
+import LoadingButton from "./loadingButton"
+import {WIDTH_TYPES} from "./styleConstants"
+import TransactionForm from "./transactionForm"
 
 interface ActionButtonProps {
   text: string
@@ -265,8 +265,10 @@ function capitalizeMerkleDistributorGrantReason(reason: string): string {
 }
 
 interface RewardActionsContainerProps {
-  merkleDistributor: MerkleDistributor
-  stakingRewards: StakingRewards
+  gfi: GFILoaded
+  merkleDistributor: MerkleDistributorLoaded
+  stakingRewards: StakingRewardsLoaded
+  communityRewards: CommunityRewardsLoaded
   item: CommunityRewardsGrant | StakingRewardsPosition | MerkleDistributorGrantInfo
 }
 
@@ -279,7 +281,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     setShowAction(false)
   }
 
-  function handleClaim(rewards: CommunityRewards | StakingRewards, tokenId: string) {
+  function handleClaim(rewards: CommunityRewardsLoaded | StakingRewardsLoaded, tokenId: string) {
     assertNonNullable(rewards)
     return sendFromUser(rewards.contract.methods.getReward(tokenId), {
       type: "Claim",
@@ -339,8 +341,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
       )
     }
 
-    const reward =
-      item instanceof StakingRewardsPosition ? props.stakingRewards : props.merkleDistributor.communityRewards
+    const reward = item instanceof StakingRewardsPosition ? props.stakingRewards : props.communityRewards
     return (
       <ClaimForm
         action={async (): Promise<void> => {
@@ -349,7 +350,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
         }}
         disabled={item.claimable.eq(0)}
         claimable={item.claimable}
-        totalUSD={new BigNumber("")} // TODO: this needs to be updated once we have a price for GFI in USD.
+        totalUSD={gfiInDollars(gfiToDollarsAtomic(item.claimable, props.gfi.info.value.price))}
         onCloseForm={onCloseForm}
       />
     )

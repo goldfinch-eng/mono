@@ -1,11 +1,13 @@
-import web3 from "../web3"
 import BigNumber from "bignumber.js"
-import * as ERC20Contract from "./ERC20.json"
-import {decimals, USDC_ADDRESSES, USDT_ADDRESSES, BUSD_ADDRESSES} from "./utils"
 import {memoize} from "lodash"
 import {Contract} from "web3-eth-contract"
 import {AbiItem} from "web3-utils/types"
+import {BlockInfo} from "../utils"
+import web3 from "../web3"
+import * as ERC20Contract from "./ERC20.json"
+import {FIDU_DECIMALS} from "./fidu"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
+import {BUSD_ADDRESSES, decimals, USDC_ADDRESSES, USDT_ADDRESSES} from "./utils"
 
 const Tickers = {
   USDC: "USDC",
@@ -59,13 +61,21 @@ class ERC20 {
     return this.contract.options.address
   }
 
-  async getAllowance(opts): Promise<BigNumber> {
-    const {owner, spender} = opts
-    return new BigNumber(await this.contract.methods.allowance(owner, spender).call())
+  async getAllowance(
+    {owner, spender}: {owner: string; spender: string},
+    currentBlock: BlockInfo | undefined
+  ): Promise<BigNumber> {
+    return new BigNumber(
+      await this.contract.methods
+        .allowance(owner, spender)
+        .call(undefined, currentBlock ? currentBlock.number : "latest")
+    )
   }
 
-  async getBalance(address): Promise<BigNumber> {
-    return new BigNumber(await this.contract.methods.balanceOf(address).call())
+  async getBalance(address: string, currentBlock: BlockInfo | undefined): Promise<BigNumber> {
+    return new BigNumber(
+      await this.contract.methods.balanceOf(address).call(undefined, currentBlock ? currentBlock.number : "latest")
+    )
   }
 
   atomicAmount(decimalAmount) {
@@ -134,16 +144,45 @@ let getERC20 = memoize(
   (...args) => JSON.stringify(args)
 )
 
-function usdcFromAtomic(amount) {
+function usdcFromAtomic(amount: string | BigNumber): string {
   return new BigNumber(String(amount)).div(decimals.toString()).toString(10)
 }
 
-function usdcToAtomic(amount) {
+function usdcToAtomic(amount: string | BigNumber): string {
   return new BigNumber(String(amount)).multipliedBy(decimals.toString()).toString(10)
+}
+
+function usdcToFidu(usdcAmount: BigNumber): BigNumber {
+  return usdcAmount.multipliedBy(FIDU_DECIMALS).dividedBy(decimals.toString())
+}
+
+function getNumSharesFromUsdc(usdcAmount: BigNumber, sharePrice: BigNumber): BigNumber {
+  return (
+    usdcToFidu(usdcAmount)
+      .multipliedBy(
+        // This might be better thought of as multiplying by the share-price mantissa,
+        // which happens to be the same as `FIDU_DECIMALS`.
+        FIDU_DECIMALS
+      )
+      // We use `.dividedToIntegerBy()` rather than `.dividedBy()` because we want to end
+      // up with an integer, for the sake of parity with how num shares are represented
+      // in the EVM, namely as a 256-bit integer.
+      .dividedToIntegerBy(sharePrice)
+  )
 }
 
 function minimumNumber(...args) {
   return BigNumber.minimum(...args).toString(10)
 }
 
-export {getERC20, decimals, usdcFromAtomic, usdcToAtomic, minimumNumber, Tickers, ERC20}
+export {
+  getERC20,
+  decimals,
+  usdcFromAtomic,
+  usdcToAtomic,
+  usdcToFidu,
+  getNumSharesFromUsdc,
+  minimumNumber,
+  Tickers,
+  ERC20,
+}

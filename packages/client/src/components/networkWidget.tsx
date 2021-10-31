@@ -7,14 +7,14 @@ import useCloseOnClickOrEsc from "../hooks/useCloseOnClickOrEsc"
 import NetworkErrors from "./networkErrors"
 import {iconCheck, iconOutArrow} from "./icons"
 import {usdcFromAtomic} from "../ethereum/erc20"
-import {User} from "../ethereum/user"
+import {UserLoaded} from "../ethereum/user"
 import {AppContext, NetworkConfig} from "../App"
 import {isSessionDataInvalid, useSession, useSignIn} from "../hooks/useSignIn"
 
 interface NetworkWidgetProps {
-  user: User
+  user: UserLoaded | undefined
   currentBlock: BlockInfo | undefined
-  network: NetworkConfig
+  network: NetworkConfig | undefined
   currentErrors: any[]
   currentTXs: any[]
 
@@ -30,11 +30,11 @@ function NetworkWidget(props: NetworkWidgetProps) {
   const currentTimestamp = props.currentBlock?.timestamp
 
   useEffect(() => {
-    if (props.user.address && session.status !== "authenticated" && showSignIn) {
+    if (props.user && session.status !== "authenticated" && showSignIn) {
       signIn()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.user.address, showSignIn])
+  }, [props.user?.address, showSignIn])
 
   function enableMetamask() {
     if (session.status === "known" && !isSessionDataInvalid(sessionData, currentTimestamp)) {
@@ -61,17 +61,15 @@ function NetworkWidget(props: NetworkWidgetProps) {
   }
 
   let transactions: JSX.Element = <></>
-  let enabledText = croppedAddress(props.user.address)
-  let userAddressForDisplay = croppedAddress(props.user.address)
+  let enabledText = croppedAddress(props.user?.address)
+  let userAddressForDisplay = croppedAddress(props.user?.address)
   let enabledClass = ""
 
   function transactionItem(tx) {
     const transactionlabel = tx.name === "Approval" ? tx.name : `$${tx.amount} ${tx.name}`
     let etherscanSubdomain
-    if (props.network.name === "mainnet") {
-      etherscanSubdomain = ""
-    } else {
-      etherscanSubdomain = `${props.network}.`
+    if (props.network) {
+      etherscanSubdomain = props.network.name === "mainnet" ? "" : props.network.name
     }
 
     let confirmationMessage: JSX.Element = <></>
@@ -131,7 +129,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
     enabledClass = "success"
   }
 
-  let allTx = _.compact(_.concat(props.currentTXs, _.slice(props.user.pastTxs, 0, 5)))
+  let allTx = _.compact(_.concat(props.currentTXs, _.slice(props.user ? props.user.info.value.pastTxs : [], 0, 5)))
   allTx = _.uniqBy(allTx, "id")
   if (allTx.length > 0) {
     transactions = (
@@ -190,7 +188,10 @@ function NetworkWidget(props: NetworkWidgetProps) {
         <div className="network-widget-section address">{userAddressForDisplay}</div>
         <NetworkErrors currentErrors={props.currentErrors} />
         <div className="network-widget-section">
-          USDC balance <span className="value">{displayNumber(usdcFromAtomic(props.user.usdcBalance), 2)}</span>
+          USDC balance{" "}
+          <span className="value">
+            {displayNumber(props.user ? usdcFromAtomic(props.user.info.value.usdcBalance) : undefined, 2)}
+          </span>
         </div>
         {transactions}
       </div>
@@ -205,7 +206,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
         </a>
       </div>
     )
-  } else if (!props.user.loaded && !props.user.web3Connected) {
+  } else if (!props.user || !props.user.web3Connected) {
     return (
       <div ref={node} className="network-widget">
         <div className="network-widget-button">
@@ -216,7 +217,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
         </div>
       </div>
     )
-  } else if (web3 && props.network.name && !props.network.supported) {
+  } else if (web3 && props.network && props.network.name && !props.network.supported) {
     return (
       <div ref={node} className="network-widget">
         <div className="network-widget-button disabled">Wrong Network</div>
