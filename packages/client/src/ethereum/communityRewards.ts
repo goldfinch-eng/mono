@@ -44,7 +44,9 @@ export class MerkleDistributor {
     }
 
     const merkleDistributorInfo = await getMerkleDistributorInfo()
-    if (!merkleDistributorInfo) return
+    if (!merkleDistributorInfo) {
+      throw new Error("Failed to retrieve MerkleDistributor info.")
+    }
 
     this.info = {
       loaded: true,
