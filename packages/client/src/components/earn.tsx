@@ -359,17 +359,15 @@ function Earn() {
       <div className="page-header">
         <div>{earnMessage}</div>
       </div>
+      <ConnectionNotice requireUnlock={false} />
       {isLoading ? (
         <PortfolioOverviewSkeleton />
       ) : (
-        <>
-          <ConnectionNotice requireUnlock={false} />
-          <PortfolioOverview
-            poolData={pool.info.value.poolData}
-            capitalProvider={capitalProviderData}
-            poolBackers={backersData}
-          />
-        </>
+        <PortfolioOverview
+          poolData={pool.info.value.poolData}
+          capitalProvider={capitalProviderData}
+          poolBackers={backersData}
+        />
       )}
       <div className="pools">
         <PoolList title="Senior Pool">
