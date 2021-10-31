@@ -543,14 +543,6 @@ export class User {
     }
 
     const usdc = this.goldfinchProtocol.getERC20(Tickers.USDC)
-    const poolBlockNumber = pool.info.value.currentBlock.number
-    const gfiBlockNumber = gfi.info.value.currentBlock.number
-    if (poolBlockNumber !== currentBlock.number) {
-      throw new Error("`pool` is not based on current block number.")
-    }
-    if (poolBlockNumber !== gfiBlockNumber) {
-      throw new Error("`pool` and `gfi` are not based on the same block number.")
-    }
 
     const usdcBalance = await usdc.getBalance(this.address, currentBlock)
     const usdcBalanceInDollars = new BigNumber(usdcFromAtomic(usdcBalance))
