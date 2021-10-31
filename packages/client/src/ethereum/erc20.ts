@@ -1,14 +1,13 @@
-import web3 from "../web3"
 import BigNumber from "bignumber.js"
-import * as ERC20Contract from "./ERC20.json"
-import {decimals, USDC_ADDRESSES, USDT_ADDRESSES, BUSD_ADDRESSES} from "./utils"
 import {memoize} from "lodash"
 import {Contract} from "web3-eth-contract"
 import {AbiItem} from "web3-utils/types"
-import {GoldfinchProtocol} from "./GoldfinchProtocol"
-import {FIDU_DECIMALS} from "./fidu"
 import {BlockInfo} from "../utils"
-import BN from "bn.js"
+import web3 from "../web3"
+import * as ERC20Contract from "./ERC20.json"
+import {FIDU_DECIMALS} from "./fidu"
+import {GoldfinchProtocol} from "./GoldfinchProtocol"
+import {BUSD_ADDRESSES, decimals, USDC_ADDRESSES, USDT_ADDRESSES} from "./utils"
 
 const Tickers = {
   USDC: "USDC",

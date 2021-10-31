@@ -1,8 +1,4 @@
-import {
-  GrantReason,
-  MerkleDistributorGrantInfo,
-  MerkleDistributorInfo,
-} from "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types"
+import {GrantReason, MerkleDistributorInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types"
 import {CommunityRewards as CommunityRewardsContract} from "@goldfinch-eng/protocol/typechain/web3/CommunityRewards"
 import {MerkleDistributor as MerkleDistributorContract} from "@goldfinch-eng/protocol/typechain/web3/MerkleDistributor"
 import BigNumber from "bignumber.js"
