@@ -10,6 +10,7 @@ import {usdcFromAtomic} from "../ethereum/erc20"
 import {UserLoaded} from "../ethereum/user"
 import {AppContext, NetworkConfig} from "../App"
 import {isSessionDataInvalid, useSession, useSignIn} from "../hooks/useSignIn"
+import {isString} from "@goldfinch-eng/utils/src/type"
 
 interface NetworkWidgetProps {
   user: UserLoaded | undefined
@@ -67,7 +68,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
 
   function transactionItem(tx) {
     const transactionlabel = tx.name === "Approval" || tx.name === "Mint UID" ? tx.name : `$${tx.amount} ${tx.name}`
-    let etherscanSubdomain: string
+    let etherscanSubdomain: string | undefined
     if (props.network) {
       etherscanSubdomain = props.network.name === "mainnet" ? "" : props.network.name
     }
@@ -95,7 +96,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
         {web3.utils.isHexStrict(tx.id) && (
           <a
             className="inline-button"
-            href={`https://${etherscanSubdomain}etherscan.io/tx/${tx.id}`}
+            href={isString(etherscanSubdomain) ? `https://${etherscanSubdomain}etherscan.io/tx/${tx.id}` : ""}
             target="_blank"
             rel="noopener noreferrer"
           >
