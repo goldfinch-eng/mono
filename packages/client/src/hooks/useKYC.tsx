@@ -18,7 +18,7 @@ export function useKYC(): AsyncResult<KYC> {
     const client = new DefaultGoldfinchClient(network.name, session, setSessionData)
     const promise = client.fetchKYCStatus(user.address)
     return promise.then((response) => response.json)
-  }, [session.status, network, setSessionData, user])
+  }, [session.status, network, setSessionData, user?.address])
 
   return result
 }

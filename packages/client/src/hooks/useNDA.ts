@@ -23,7 +23,7 @@ export function useFetchNDA({user, tranchedPool}: {user?: UserLoaded; tranchedPo
     }
     const client = new DefaultGoldfinchClient(network.name!, session, setSessionData)
     return client.fetchNDA(user.address, tranchedPool!.address).then((r) => r.json)
-  }, [session.status, network, user, tranchedPool?.address])
+  }, [session.status, network, user?.address, tranchedPool?.address])
   const nda = useStaleWhileRevalidating(result)
 
   useEffect(refresh, [refresh])

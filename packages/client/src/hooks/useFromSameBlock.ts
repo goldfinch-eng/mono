@@ -71,7 +71,7 @@ export function useFromSameBlock<
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [...deps, currentBlock])
+  }, [...deps, currentBlock?.number])
 
   return value
 }

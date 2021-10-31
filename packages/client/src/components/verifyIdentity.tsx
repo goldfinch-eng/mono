@@ -223,7 +223,7 @@ function VerifyIdentity() {
       getSignatureAndKycStatus(session)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [network?.name, user, session])
+  }, [network?.name, user?.address, session])
 
   async function fetchKYCStatus(session: Session) {
     if (session.status !== "authenticated") {
