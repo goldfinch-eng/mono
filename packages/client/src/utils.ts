@@ -47,9 +47,9 @@ function commaFormat(numberString): string {
   return `${_.join(_.reverse(withCommas), "")}${decimalString}`
 }
 
-export function displayDollars(val: number | string | BigNumber | undefined, decimals = 2, displayZero = false) {
+export function displayDollars(val: number | string | BigNumber | undefined, decimals = 2) {
   let prefix = ""
-  if (!val || (BigNumber.isBigNumber(val) && (!val.isFinite() || (val.eq(0) && !displayZero)))) {
+  if (!val || (BigNumber.isBigNumber(val) && (!val.isFinite() || val.eq(0)))) {
     return "$--.--"
   }
 
@@ -65,9 +65,9 @@ export function displayDollars(val: number | string | BigNumber | undefined, dec
   return `${prefix}$${displayNumber(val, decimals)}`
 }
 
-export function displayPercent(val: BigNumber | undefined, decimals = 2, displayZero = false) {
+export function displayPercent(val: BigNumber | undefined, decimals = 2) {
   let valDisplay: string
-  if (!val || !val.isFinite() || (val.eq(0) && !displayZero)) {
+  if (!val || !val.isFinite() || val.eq(0)) {
     valDisplay = "--.--"
   } else {
     valDisplay = displayNumber(val.multipliedBy(100), decimals)
