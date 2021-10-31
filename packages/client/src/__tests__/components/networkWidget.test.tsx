@@ -2,7 +2,6 @@ import "@testing-library/jest-dom"
 import {AppContext} from "../../App"
 import {render, screen, fireEvent} from "@testing-library/react"
 import NetworkWidget from "../../components/networkWidget"
-import * as utils from "../../utils"
 
 function renderNetworkWidget(sessionData, address) {
   let store = {
@@ -20,6 +19,10 @@ function renderNetworkWidget(sessionData, address) {
     },
     sessionData: sessionData,
     setSessionData: () => {},
+    currentBlock: {
+      number: 42,
+      timestamp: 1631996519,
+    },
   }
 
   return render(
@@ -64,8 +67,6 @@ describe("network widget sign in", () => {
     global.window.ethereum.request = () => {
       return Promise.resolve()
     }
-    const spy = jest.spyOn(utils, "secondsSinceEpoch")
-    spy.mockReturnValue(1631996519)
 
     renderNetworkWidget(
       {signature: "foo", signatureBlockNum: 42, signatureBlockNumTimestamp: 1631996519, version: 1},
@@ -80,9 +81,6 @@ describe("network widget sign in", () => {
       return Promise.resolve()
     }
 
-    const spy = jest.spyOn(utils, "secondsSinceEpoch")
-    spy.mockReturnValue(1631996519)
-
     renderNetworkWidget(
       {signature: "foo", signatureBlockNum: 42, signatureBlockNumTimestamp: 1631996519, version: 1},
       ""
@@ -95,7 +93,7 @@ describe("network widget sign in", () => {
     global.window.ethereum.request = () => {
       return Promise.resolve()
     }
-    renderNetworkWidget({signatureBlockNum: 42, signatureBlockNumTimestamp: 47}, "0x000")
+    renderNetworkWidget({signatureBlockNum: 42, signatureBlockNumTimestamp: 1631996519}, "0x000")
     expect(screen.getAllByText("Connect Metamask")[0]).toBeInTheDocument()
   })
 })
