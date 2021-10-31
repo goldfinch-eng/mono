@@ -96,6 +96,7 @@ class UserStakingRewards {
               .positions(tokenId)
               .call(undefined, currentBlock.number)
               .then(async (rawPosition) => {
+                // TODO Perform these steps in parallel with retrieving position.
                 const storedPosition = UserStakingRewards.parseStoredPosition(rawPosition)
                 const [stakedEvent, optimisticIncrement] = await Promise.all([
                   stakingRewards.getStakedEvent(address, tokenId, currentBlock.number),
@@ -104,6 +105,7 @@ class UserStakingRewards {
                 if (!stakedEvent) {
                   throw new Error(`Failed to retrieve Staked event for tokenId: ${tokenId}`)
                 }
+
                 return new StakingRewardsPosition(tokenId, stakedEvent, storedPosition, optimisticIncrement)
               })
           )
