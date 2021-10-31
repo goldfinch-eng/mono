@@ -50,7 +50,7 @@ function EarnActionsContainer(props: EarnActionsContainerProps) {
   if (
     readyAndEligible &&
     goldfinchConfig &&
-    consistent?.[0].info.value.poolData?.remainingCapacity(goldfinchConfig.totalFundsLimit).gt("0")
+    consistent?.[0].info.value.poolData.remainingCapacity(goldfinchConfig.totalFundsLimit).gt("0")
   ) {
     depositAction = (e) => {
       setShowAction("deposit")
