@@ -145,7 +145,7 @@ let getERC20 = memoize(
   (...args) => JSON.stringify(args)
 )
 
-function usdcFromAtomic(amount: string | BigNumber | BN): string {
+function usdcFromAtomic(amount: string | BigNumber): string {
   return new BigNumber(String(amount)).div(decimals.toString()).toString(10)
 }
 

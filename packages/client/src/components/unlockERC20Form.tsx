@@ -24,7 +24,7 @@ function UnlockERC20Form(props: UnlockERC20Props) {
     // The txData parameters must use the schema defined in src/ethereum/events:mapEventToTx
     return sendFromUser(erc20.contract.methods.approve(unlockAddress, MAX_UINT), {
       type: "Approval",
-      amount: usdcFromAtomic(MAX_UINT),
+      amount: usdcFromAtomic(MAX_UINT.toString()),
       // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'BN' is not assignable to paramet... Remove this comment to see the full error message
       amountBN: new BigNumber(MAX_UINT),
       erc20: erc20,
