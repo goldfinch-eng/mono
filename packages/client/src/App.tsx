@@ -269,10 +269,10 @@ function App() {
 
     const accounts = await web3.eth.getAccounts()
     const _userAddress = accounts && accounts[0]
-    if (!_userAddress) {
-      throw new Error("Web3 connected but failed to obtain user address.")
-    }
     const userAddress = overrideAddress || _userAddress
+    if (!userAddress) {
+      return
+    }
 
     const user = await getUserData(
       userAddress,
