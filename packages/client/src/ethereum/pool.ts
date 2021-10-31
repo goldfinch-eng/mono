@@ -404,7 +404,7 @@ async function fetchPoolData(
 
 async function getDepositEventsByCapitalProvider(
   pool: SeniorPoolLoaded,
-  stakingRewards: StakingRewards,
+  stakingRewards: StakingRewardsLoaded,
   capitalProviderAddress: string,
   currentBlock: BlockInfo
 ): Promise<EventData[]> {
