@@ -6,12 +6,11 @@ import {Link} from "react-router-dom"
 import {AppContext} from "../../App"
 import RewardActionsContainer from "../../components/rewardActionsContainer"
 import {WIDTH_TYPES} from "../../components/styleConstants"
-import {CommunityRewardsGrant, MerkleDistributorLoaded} from "../../ethereum/communityRewards"
+import {CommunityRewardsGrant, CommunityRewardsLoaded, MerkleDistributorLoaded} from "../../ethereum/communityRewards"
 import {gfiFromAtomic, gfiInDollars, GFILoaded, gfiToDollarsAtomic} from "../../ethereum/gfi"
 import {StakingRewardsLoaded, StakingRewardsPosition} from "../../ethereum/pool"
-import {UserLoaded, UserStakingRewardsLoaded} from "../../ethereum/user"
+import {UserCommunityRewardsLoaded, UserLoaded, UserStakingRewardsLoaded} from "../../ethereum/user"
 import {useFromSameBlock} from "../../hooks/useFromSameBlock"
-import {useMerkleDistributor} from "../../hooks/useMerkleDistributor"
 import {displayDollars, displayNumber} from "../../utils"
 
 interface RewardsSummaryProps {
@@ -122,12 +121,12 @@ const getClaimable = (sortable: SortableRewards): BigNumber => {
 
 function getSortedRewards(
   userStakingRewards: UserStakingRewardsLoaded,
-  merkleDistributor: MerkleDistributorLoaded
+  userCommunityRewards: UserCommunityRewardsLoaded
 ): SortableRewards[] {
   /* NOTE: First order by 0 or >0 claimable rewards (0 claimable at the bottom), then group by type
    (e.g. all the staking together, then all the airdrops), then order by most recent first */
   const stakes = userStakingRewards.info.value.positions
-  const grants = merkleDistributor.info.value.communityRewards.info.value.grants
+  const grants = userCommunityRewards.info.value.grants
 
   const sorted: SortableRewards[] = [
     ...stakes.map(
@@ -162,16 +161,22 @@ function getSortedRewards(
 }
 
 function Rewards() {
-  const {stakingRewards: _stakingRewards, gfi: _gfi, user: _user, currentBlock} = useContext(AppContext)
-  const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
-  const _merkleDistributor = useMerkleDistributor()
-  const consistent = useFromSameBlock<StakingRewardsLoaded, GFILoaded, MerkleDistributorLoaded, UserLoaded>(
+  const {
+    stakingRewards: _stakingRewards,
+    gfi: _gfi,
+    user: _user,
+    merkleDistributor: _merkleDistributor,
+    communityRewards: _communityRewards,
     currentBlock,
-    _stakingRewards,
-    _gfi,
-    _merkleDistributor,
-    _user
-  )
+  } = useContext(AppContext)
+  const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
+  const consistent = useFromSameBlock<
+    StakingRewardsLoaded,
+    GFILoaded,
+    UserLoaded,
+    MerkleDistributorLoaded,
+    CommunityRewardsLoaded
+  >(currentBlock, _stakingRewards, _gfi, _user, _merkleDistributor, _communityRewards)
 
   let loaded: boolean = false
   let claimable: BigNumber | undefined
@@ -183,22 +188,25 @@ function Rewards() {
   if (consistent) {
     const stakingRewards = consistent[0]
     const gfi = consistent[1]
-    const merkleDistributor = consistent[2]
-    const user = consistent[3]
+    const user = consistent[2]
+    const merkleDistributor = consistent[3]
+    const communityRewards = consistent[4]
 
-    loaded = stakingRewards.info.loaded && gfi.info.loaded && merkleDistributor.info.loaded && user.info.loaded
+    loaded = true
 
     const userStakingRewards = user.info.value.stakingRewards
-    const sortedRewards = getSortedRewards(userStakingRewards, merkleDistributor)
+    const userCommunityRewards = user.info.value.communityRewards
+    const userMerkleDistributor = user.info.value.merkleDistributor
+    const sortedRewards = getSortedRewards(userStakingRewards, userCommunityRewards)
 
     const emptyRewards =
-      !merkleDistributor.info.value.communityRewards.info.value.grants.length &&
-      !merkleDistributor.info.value.actionRequiredAirdrops.length &&
+      !userCommunityRewards.info.value.grants.length &&
+      !userMerkleDistributor.info.value.airdrops.notAccepted.length &&
       !userStakingRewards.info.value.positions.length
 
-    claimable = userStakingRewards.info.value.claimable.plus(merkleDistributor.info.value.claimable)
-    unvested = userStakingRewards.info.value.unvested.plus(merkleDistributor.info.value.unvested)
-    granted = userStakingRewards.info.value.granted.plus(merkleDistributor.info.value.granted)
+    claimable = userStakingRewards.info.value.claimable.plus(userCommunityRewards.info.value.claimable)
+    unvested = userStakingRewards.info.value.unvested.plus(userCommunityRewards.info.value.unvested)
+    granted = userStakingRewards.info.value.granted.plus(userCommunityRewards.info.value.granted)
 
     gfiBalance = user.info.value.gfiBalance
 
@@ -208,14 +216,15 @@ function Rewards() {
       <NoRewards />
     ) : (
       <>
-        {merkleDistributor &&
-          merkleDistributor.info.value.actionRequiredAirdrops.map((item) => (
+        {userMerkleDistributor &&
+          userMerkleDistributor.info.value.airdrops.notAccepted.map((item) => (
             <RewardActionsContainer
               key={`airdrop-${item.index}`}
               item={item}
               gfi={gfi}
               merkleDistributor={merkleDistributor}
               stakingRewards={stakingRewards}
+              communityRewards={communityRewards}
             />
           ))}
 
@@ -228,6 +237,7 @@ function Rewards() {
                 gfi={gfi}
                 merkleDistributor={merkleDistributor}
                 stakingRewards={stakingRewards}
+                communityRewards={communityRewards}
               />
             )
           })}

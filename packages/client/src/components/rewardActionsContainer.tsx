@@ -4,9 +4,9 @@ import BigNumber from "bignumber.js"
 import _ from "lodash"
 import React, {useState} from "react"
 import {useMediaQuery} from "react-responsive"
-import {CommunityRewards, CommunityRewardsGrant, MerkleDistributorLoaded} from "../ethereum/communityRewards"
+import {CommunityRewardsGrant, CommunityRewardsLoaded, MerkleDistributorLoaded} from "../ethereum/communityRewards"
 import {gfiFromAtomic, gfiInDollars, GFILoaded, gfiToDollarsAtomic} from "../ethereum/gfi"
-import {StakingRewards, StakingRewardsLoaded, StakingRewardsPosition} from "../ethereum/pool"
+import {StakingRewardsLoaded, StakingRewardsPosition} from "../ethereum/pool"
 import useSendFromUser from "../hooks/useSendFromUser"
 import {
   Column,
@@ -268,6 +268,7 @@ interface RewardActionsContainerProps {
   gfi: GFILoaded
   merkleDistributor: MerkleDistributorLoaded
   stakingRewards: StakingRewardsLoaded
+  communityRewards: CommunityRewardsLoaded
   item: CommunityRewardsGrant | StakingRewardsPosition | MerkleDistributorGrantInfo
 }
 
@@ -280,7 +281,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     setShowAction(false)
   }
 
-  function handleClaim(rewards: CommunityRewards | StakingRewards, tokenId: string) {
+  function handleClaim(rewards: CommunityRewardsLoaded | StakingRewardsLoaded, tokenId: string) {
     assertNonNullable(rewards)
     return sendFromUser(rewards.contract.methods.getReward(tokenId), {
       type: "Claim",
@@ -340,10 +341,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
       )
     }
 
-    const reward =
-      item instanceof StakingRewardsPosition
-        ? props.stakingRewards
-        : props.merkleDistributor.info.value.communityRewards
+    const reward = item instanceof StakingRewardsPosition ? props.stakingRewards : props.communityRewards
     return (
       <ClaimForm
         action={async (): Promise<void> => {

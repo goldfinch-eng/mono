@@ -35,6 +35,12 @@ import {assertWithLoadedInfo} from "./types/loadable"
 import {assertNonNullable, BlockInfo, getBlockInfo, getCurrentBlock} from "./utils"
 import {GFI, GFILoaded} from "./ethereum/gfi"
 import {useFromSameBlock} from "./hooks/useFromSameBlock"
+import {
+  CommunityRewards,
+  CommunityRewardsLoaded,
+  MerkleDistributor,
+  MerkleDistributorLoaded,
+} from "./ethereum/communityRewards"
 
 export interface NetworkConfig {
   name: string
@@ -56,6 +62,8 @@ export interface GlobalState {
   currentBlock?: BlockInfo
   gfi?: GFILoaded
   stakingRewards?: StakingRewardsLoaded
+  communityRewards?: CommunityRewardsLoaded
+  merkleDistributor?: MerkleDistributorLoaded
   pool?: SeniorPoolLoaded
   creditDesk?: CreditDesk
   user?: UserLoaded
@@ -78,6 +86,8 @@ const AppContext = React.createContext<GlobalState>({})
 function App() {
   const [_gfi, setGfi] = useState<GFILoaded>()
   const [_stakingRewards, setStakingRewards] = useState<StakingRewardsLoaded>()
+  const [_communityRewards, setCommunityRewards] = useState<CommunityRewardsLoaded>()
+  const [_merkleDistributor, setMerkleDistributor] = useState<MerkleDistributorLoaded>()
   const [pool, setPool] = useState<SeniorPoolLoaded>()
   const [creditDesk, setCreditDesk] = useState<CreditDesk>()
   const [usdc, setUSDC] = useState<ERC20>()
@@ -96,9 +106,14 @@ function App() {
     {},
     currentBlock?.timestamp
   )
-  const consistent = useFromSameBlock(currentBlock, _gfi, _stakingRewards)
+  const consistent = useFromSameBlock(currentBlock, _gfi, _stakingRewards, _communityRewards, _merkleDistributor)
   const gfi = consistent?.[0]
   const stakingRewards = consistent?.[1]
+  const communityRewards = consistent?.[2]
+  const merkleDistributor = consistent?.[3]
+
+  // TODO We should use `useFromSameBlock()` again to make gfi, stakingRewards, communityRewards,
+  // merkleDistributor, and pool be from same block.
 
   const toggleRewards = process.env.REACT_APP_TOGGLE_REWARDS === "true"
 
@@ -114,7 +129,7 @@ function App() {
 
   useEffect(() => {
     if (goldfinchProtocol && currentBlock) {
-      refreshGfiAndStakingRewards()
+      refreshGfiAndRewards()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [goldfinchProtocol, currentBlock])
@@ -130,6 +145,7 @@ function App() {
     if (goldfinchProtocol && pool && creditDesk && network && stakingRewards && gfi && currentBlock) {
       refreshUserData()
     }
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [usdc, pool, overrideAddress])
 
@@ -186,7 +202,7 @@ function App() {
     }
   }
 
-  async function refreshGfiAndStakingRewards(): Promise<void> {
+  async function refreshGfiAndRewards(): Promise<void> {
     if (!(await ensureWeb3())) {
       return
     }
@@ -196,14 +212,25 @@ function App() {
 
     const gfi = new GFI(goldfinchProtocol)
     const stakingRewards = new StakingRewards(goldfinchProtocol)
+    const communityRewards = new CommunityRewards(goldfinchProtocol)
+    const merkleDistributor = new MerkleDistributor(goldfinchProtocol)
 
-    await Promise.all([gfi.initialize(currentBlock), stakingRewards.initialize(currentBlock)])
+    await Promise.all([
+      gfi.initialize(currentBlock),
+      stakingRewards.initialize(currentBlock),
+      communityRewards.initialize(currentBlock),
+      merkleDistributor.initialize(currentBlock),
+    ])
 
     assertWithLoadedInfo(gfi)
     assertWithLoadedInfo(stakingRewards)
+    assertWithLoadedInfo(communityRewards)
+    assertWithLoadedInfo(merkleDistributor)
 
     setGfi(gfi)
     setStakingRewards(stakingRewards)
+    setCommunityRewards(communityRewards)
+    setMerkleDistributor(merkleDistributor)
   }
 
   async function refreshPool(): Promise<void> {
@@ -227,6 +254,8 @@ function App() {
     assertNonNullable(currentBlock)
     assertNonNullable(stakingRewards)
     assertNonNullable(gfi)
+    assertNonNullable(communityRewards)
+    assertNonNullable(merkleDistributor)
 
     const accounts = await web3.eth.getAccounts()
     const _userAddress = accounts && accounts[0]
@@ -243,6 +272,8 @@ function App() {
       network.name,
       stakingRewards,
       gfi,
+      communityRewards,
+      merkleDistributor,
       currentBlock
     )
 
@@ -268,6 +299,8 @@ function App() {
     currentBlock,
     stakingRewards,
     gfi,
+    communityRewards,
+    merkleDistributor,
     pool,
     creditDesk,
     user,

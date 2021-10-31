@@ -1,4 +1,5 @@
 import {
+  GrantReason,
   MerkleDistributorGrantInfo,
   MerkleDistributorInfo,
 } from "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types"
@@ -6,19 +7,14 @@ import {CommunityRewards as CommunityRewardsContract} from "@goldfinch-eng/proto
 import {MerkleDistributor as MerkleDistributorContract} from "@goldfinch-eng/protocol/typechain/web3/MerkleDistributor"
 import BigNumber from "bignumber.js"
 import {EventData} from "web3-eth-contract"
-import {assertWithLoadedInfo, Loadable, WithLoadedInfo} from "../types/loadable"
-import {assertNonNullable, BlockInfo} from "../utils"
+import {Loadable, WithLoadedInfo} from "../types/loadable"
+import {BlockInfo} from "../utils"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {getMerkleDistributorInfo} from "./utils"
 
 type MerkleDistributorLoadedInfo = {
   currentBlock: BlockInfo
-  communityRewards: CommunityRewardsLoaded
   merkleDistributorInfo: MerkleDistributorInfo
-  actionRequiredAirdrops: MerkleDistributorGrantInfo[]
-  claimable: BigNumber
-  unvested: BigNumber
-  granted: BigNumber
 }
 
 export type MerkleDistributorLoaded = WithLoadedInfo<MerkleDistributor, MerkleDistributorLoadedInfo>
@@ -39,11 +35,9 @@ export class MerkleDistributor {
     }
   }
 
-  async initialize(recipient: string, currentBlock: BlockInfo): Promise<void> {
-    const communityRewards = new CommunityRewards(this.goldfinchProtocol)
-
+  async initialize(currentBlock: BlockInfo): Promise<void> {
     const contractAddress = await this.contract.methods.communityRewards().call(undefined, currentBlock.number)
-    if (contractAddress !== communityRewards.address) {
+    if (contractAddress !== this.goldfinchProtocol.getAddress("CommunityRewards")) {
       throw new Error(
         "MerkleDistributor community rewards address doesn't match with deployed CommunityRewards address"
       )
@@ -52,62 +46,11 @@ export class MerkleDistributor {
     const merkleDistributorInfo = await getMerkleDistributorInfo()
     if (!merkleDistributorInfo) return
 
-    await communityRewards.initialize(recipient, currentBlock)
-    assertWithLoadedInfo(communityRewards)
-
-    const claimable = MerkleDistributor.calculateClaimable(communityRewards.info.value.grants)
-    const unvested = MerkleDistributor.calculateUnvested(communityRewards.info.value.grants)
-    const granted = MerkleDistributor.calculateGranted(communityRewards.info.value.grants)
-
-    const airdropsForRecipient = MerkleDistributor.getAirdropsForRecipient(merkleDistributorInfo.grants, recipient)
-    const actionRequiredAirdrops = await this.getActionRequiredAirdrops(airdropsForRecipient, currentBlock)
-
-    await Promise.all(
-      communityRewards.info.value.grants.map(async (acceptedGrant): Promise<void> => {
-        const events = await this.goldfinchProtocol.queryEvent(
-          this.contract,
-          "GrantAccepted",
-          {tokenId: acceptedGrant.tokenId},
-          currentBlock.number
-        )
-        if (events.length === 1) {
-          const grantAcceptedEvent = events[0]
-          assertNonNullable(grantAcceptedEvent)
-          const airdrop = airdropsForRecipient.find(
-            (airdrop) => parseInt(grantAcceptedEvent.returnValues.index, 10) === airdrop.index
-          )
-          if (airdrop) {
-            acceptedGrant._reason = airdrop.reason
-          } else {
-            throw new Error(
-              `Failed to identify airdrop corresponding to GrantAccepted event ${acceptedGrant.tokenId}, among user's airdrops.`
-            )
-          }
-        } else if (events.length === 0) {
-          // This is not necessarily an error, because in theory it's possible the grant was accepted
-          // not via the `MerkleDistributor.acceptGrant()`, but instead by having been issued directly
-          // via `CommunityRewards.grant()`.
-          console.warn(
-            `Failed to identify GrantAccepted event corresponding to CommunityRewards grant ${acceptedGrant.tokenId}.`
-          )
-        } else {
-          throw new Error(
-            `Identified more than one GrantAccepted event corresponding to CommunityRewards grant ${acceptedGrant.tokenId}.`
-          )
-        }
-      })
-    )
-
     this.info = {
       loaded: true,
       value: {
         currentBlock,
         merkleDistributorInfo,
-        communityRewards,
-        actionRequiredAirdrops,
-        claimable,
-        unvested,
-        granted,
       },
     }
   }
@@ -125,35 +68,6 @@ export class MerkleDistributor {
       })
     ).then((results) => results.filter((val): val is NonNullable<typeof val> => !!val))
   }
-
-  static getAirdropsForRecipient(
-    allAirdrops: MerkleDistributorGrantInfo[],
-    recipient: string
-  ): MerkleDistributorGrantInfo[] {
-    return allAirdrops.filter((grantInfo) => grantInfo.account === recipient)
-  }
-
-  static calculateClaimable(grants: CommunityRewardsGrant[]): BigNumber {
-    if (grants.length === 0) return new BigNumber(0)
-    const claimableResults = grants.map((grant) => grant.claimable)
-    return BigNumber.sum.apply(null, claimableResults)
-  }
-
-  static calculateUnvested(grants: CommunityRewardsGrant[]): BigNumber {
-    if (grants.length === 0) return new BigNumber(0)
-    return BigNumber.sum.apply(
-      null,
-      grants.map((grant) => grant.rewards.totalGranted.minus(grant.rewards.totalClaimed.plus(grant.claimable)))
-    )
-  }
-
-  static calculateGranted(grants: CommunityRewardsGrant[]): BigNumber {
-    if (grants.length === 0) return new BigNumber(0)
-    return BigNumber.sum.apply(
-      null,
-      grants.map((grant) => grant.rewards.totalGranted)
-    )
-  }
 }
 
 interface CommunityRewardsVestingRewards {
@@ -168,16 +82,20 @@ interface CommunityRewardsVestingRewards {
 
 export class CommunityRewardsGrant {
   tokenId: string
-  user: string
   claimable: BigNumber
   rewards: CommunityRewardsVestingRewards
-  _reason?: string
+  _reason: GrantReason | undefined
 
-  constructor(tokenId: string, user: string, claimable: BigNumber, rewards: CommunityRewardsVestingRewards) {
+  constructor(
+    tokenId: string,
+    claimable: BigNumber,
+    rewards: CommunityRewardsVestingRewards,
+    reason: GrantReason | undefined
+  ) {
     this.tokenId = tokenId
-    this.user = user
     this.rewards = rewards
     this.claimable = claimable
+    this._reason = reason
   }
 
   get reason(): string {
@@ -193,34 +111,8 @@ export class CommunityRewardsGrant {
   }
 }
 
-function parseCommunityRewardsGrant(
-  tokenId: string,
-  user: string,
-  claimable: string,
-  tuple: {
-    0: string
-    1: string
-    2: string
-    3: string
-    4: string
-    5: string
-    6: string
-  }
-): CommunityRewardsGrant {
-  return new CommunityRewardsGrant(tokenId, user, new BigNumber(claimable), {
-    totalGranted: new BigNumber(tuple[0]),
-    totalClaimed: new BigNumber(tuple[1]),
-    startTime: parseInt(tuple[2], 10),
-    endTime: parseInt(tuple[3], 10),
-    cliffLength: new BigNumber(tuple[4]),
-    vestingInterval: new BigNumber(tuple[5]),
-    revokedAt: parseInt(tuple[6], 10),
-  })
-}
-
 type CommunityRewardsLoadedInfo = {
   currentBlock: BlockInfo
-  grants: CommunityRewardsGrant[]
 }
 
 export type CommunityRewardsLoaded = WithLoadedInfo<CommunityRewards, CommunityRewardsLoadedInfo>
@@ -241,36 +133,11 @@ export class CommunityRewards {
     }
   }
 
-  async initialize(recipient: string, currentBlock: BlockInfo): Promise<void> {
-    // NOTE: In defining `this.grants`, we want to use `balanceOf()` plus `tokenOfOwnerByIndex`
-    // to determine `tokenIds`, rather than using the set of Granted events for the `recipient`.
-    // The former approach reflects any token transfers that may have occurred to or from the
-    // `recipient`, whereas the latter does not.
-    const numPositions = parseInt(
-      await this.contract.methods.balanceOf(recipient).call(undefined, currentBlock.number),
-      10
-    )
-    const tokenIds: string[] = await Promise.all(
-      Array(numPositions)
-        .fill("")
-        .map((val, i) => this.contract.methods.tokenOfOwnerByIndex(recipient, i).call(undefined, currentBlock.number))
-    )
-    const grants = await Promise.all(
-      tokenIds.map((tokenId) =>
-        this.contract.methods
-          .grants(tokenId)
-          .call(undefined, currentBlock.number)
-          .then(async (grant) => {
-            const claimable = await this.contract.methods.claimableRewards(tokenId).call(undefined, currentBlock.number)
-            return parseCommunityRewardsGrant(tokenId, recipient, claimable, grant)
-          })
-      )
-    )
+  async initialize(currentBlock: BlockInfo): Promise<void> {
     this.info = {
       loaded: true,
       value: {
         currentBlock,
-        grants,
       },
     }
   }

@@ -1,11 +1,16 @@
+import {
+  GrantReason,
+  MerkleDistributorGrantInfo,
+} from "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types"
 import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
 import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/web3/GoldfinchConfig"
 import BigNumber from "bignumber.js"
 import _ from "lodash"
 import {EventData} from "web3-eth-contract"
 import {assertWithLoadedInfo, Loadable, WithLoadedInfo} from "../types/loadable"
-import {BlockInfo} from "../utils"
+import {assertNonNullable, BlockInfo} from "../utils"
 import {BorrowerInterface, getBorrowerContract} from "./borrower"
+import {CommunityRewardsGrant, CommunityRewardsLoaded, MerkleDistributorLoaded} from "./communityRewards"
 import {ERC20, Tickers, usdcFromAtomic} from "./erc20"
 import {getBalanceAsOf, mapEventsToTx} from "./events"
 import {GFILoaded} from "./gfi"
@@ -25,12 +30,14 @@ export async function getUserData(
   networkId: string,
   stakingRewards: StakingRewardsLoaded,
   gfi: GFILoaded,
+  communityRewards: CommunityRewardsLoaded,
+  merkleDistributor: MerkleDistributorLoaded,
   currentBlock: BlockInfo
 ): Promise<UserLoaded> {
   const borrower = await getBorrowerContract(address, goldfinchProtocol, currentBlock)
 
   const user = new User(address, networkId, creditDesk, goldfinchProtocol, borrower)
-  await user.initialize(pool, stakingRewards, gfi, currentBlock)
+  await user.initialize(pool, stakingRewards, gfi, communityRewards, merkleDistributor, currentBlock)
   assertWithLoadedInfo(user)
   return user
 }
@@ -62,14 +69,14 @@ class UserStakingRewards {
     if (stakingRewards.info.value.currentBlock.number !== currentBlock.number) {
       throw new Error("`stakingRewards` is based on a different block number from `currentBlock`.")
     }
+    // NOTE: In defining `positions`, we want to use `balanceOf()` plus `tokenOfOwnerByIndex()`
+    // to determine `tokenIds`, rather than using the set of Staked events for the `recipient`.
+    // The former approach reflects any token transfers that may have occurred to or from the
+    // `recipient`, whereas the latter does not.
     const positions = await stakingRewards.contract.methods
       .balanceOf(address)
       .call(undefined, currentBlock.number)
       .then((balance: string) => {
-        // NOTE: In defining `this.positions`, we want to use `balanceOf()` plus `tokenOfOwnerByIndex()`
-        // to determine `tokenIds`, rather than using the set of Staked events for the `recipient`.
-        // The former approach reflects any token transfers that may have occurred to or from the
-        // `recipient`, whereas the latter does not.
         const numPositions = parseInt(balance, 10)
         return numPositions
       })
@@ -187,6 +194,266 @@ class UserStakingRewards {
 
 export type UserStakingRewardsLoaded = WithLoadedInfo<UserStakingRewards, UserStakingRewardsLoadedInfo>
 
+type UserCommunityRewardsLoadedInfo = {
+  currentBlock: BlockInfo
+  grants: CommunityRewardsGrant[]
+  claimable: BigNumber
+  unvested: BigNumber
+  granted: BigNumber
+}
+
+class UserCommunityRewards {
+  goldfinchProtocol: GoldfinchProtocol
+  info: Loadable<UserCommunityRewardsLoadedInfo>
+
+  constructor(goldfinchProtocol: GoldfinchProtocol) {
+    this.goldfinchProtocol = goldfinchProtocol
+    this.info = {
+      loaded: false,
+      value: undefined,
+    }
+  }
+
+  async initialize(
+    address: string,
+    communityRewards: CommunityRewardsLoaded,
+    merkleDistributor: MerkleDistributorLoaded,
+    userMerkleDistributor: UserMerkleDistributorLoaded,
+    currentBlock: BlockInfo
+  ): Promise<void> {
+    if (communityRewards.info.value.currentBlock.number !== currentBlock.number) {
+      throw new Error("`communityRewards` is based on a different block number from `currentBlock`.")
+    }
+    if (merkleDistributor.info.value.currentBlock.number !== currentBlock.number) {
+      throw new Error("`merkleDistributor` is based on a different block number from `currentBlock`.")
+    }
+    if (userMerkleDistributor.info.value.currentBlock.number !== currentBlock.number) {
+      throw new Error("`userMerkleDistributor` is based on a different block number from `currentBlock`.")
+    }
+
+    // NOTE: In defining `grants`, we want to use `balanceOf()` plus `tokenOfOwnerByIndex`
+    // to determine `tokenIds`, rather than using the set of Granted events for the `recipient`.
+    // The former approach reflects any token transfers that may have occurred to or from the
+    // `recipient`, whereas the latter does not.
+    const grants = await communityRewards.contract.methods
+      .balanceOf(address)
+      .call(undefined, currentBlock.number)
+      .then((balance: string) => parseInt(balance, 10))
+      .then((numPositions: number) =>
+        Promise.all(
+          Array(numPositions)
+            .fill("")
+            .map((val, i) =>
+              communityRewards.contract.methods.tokenOfOwnerByIndex(address, i).call(undefined, currentBlock.number)
+            )
+        )
+      )
+      .then((tokenIds: string[]) =>
+        Promise.all([
+          tokenIds,
+          Promise.all(
+            tokenIds.map((tokenId) =>
+              communityRewards.contract.methods.grants(tokenId).call(undefined, currentBlock.number)
+            )
+          ),
+          Promise.all(
+            tokenIds.map((tokenId) =>
+              communityRewards.contract.methods.claimableRewards(tokenId).call(undefined, currentBlock.number)
+            )
+          ),
+          Promise.all(
+            tokenIds.map(async (tokenId) => {
+              const events = await this.goldfinchProtocol.queryEvent(
+                merkleDistributor.contract,
+                "GrantAccepted",
+                {tokenId},
+                currentBlock.number
+              )
+              if (events.length === 1) {
+                const grantAcceptedEvent = events[0]
+                assertNonNullable(grantAcceptedEvent)
+                const airdrop = userMerkleDistributor.info.value.airdrops.accepted.find(
+                  (airdrop) => parseInt(grantAcceptedEvent.returnValues.index, 10) === airdrop.index
+                )
+                if (airdrop) {
+                  return airdrop.reason
+                } else {
+                  throw new Error(
+                    `Failed to identify airdrop corresponding to GrantAccepted event ${tokenId}, among user's accepted airdrops.`
+                  )
+                }
+              } else if (events.length === 0) {
+                // This is not necessarily an error, because in theory it's possible the grant was accepted
+                // not via the `MerkleDistributor.acceptGrant()`, but instead by having been issued directly
+                // via `CommunityRewards.grant()`.
+                console.warn(
+                  `Failed to identify GrantAccepted event corresponding to CommunityRewards grant ${tokenId}.`
+                )
+                return
+              } else {
+                throw new Error(
+                  `Identified more than one GrantAccepted event corresponding to CommunityRewards grant ${tokenId}.`
+                )
+              }
+            })
+          ),
+        ])
+      )
+      .then(([tokenIds, rawGrants, claimables, reasons]) =>
+        tokenIds.map((tokenId, i): CommunityRewardsGrant => {
+          const rawGrant = rawGrants[i]
+          assertNonNullable(rawGrant)
+          const claimable = claimables[i]
+          assertNonNullable(claimable)
+          const reason = reasons[i]
+          return UserCommunityRewards.parseCommunityRewardsGrant(tokenId, new BigNumber(claimable), rawGrant, reason)
+        })
+      )
+
+    const claimable = UserCommunityRewards.calculateClaimable(grants)
+    const unvested = UserCommunityRewards.calculateUnvested(grants)
+    const granted = UserCommunityRewards.calculateGranted(grants)
+
+    this.info = {
+      loaded: true,
+      value: {
+        currentBlock,
+        grants,
+        claimable,
+        unvested,
+        granted,
+      },
+    }
+  }
+
+  static calculateClaimable(grants: CommunityRewardsGrant[]): BigNumber {
+    if (grants.length === 0) return new BigNumber(0)
+    const claimableResults = grants.map((grant) => grant.claimable)
+    return BigNumber.sum.apply(null, claimableResults)
+  }
+
+  static calculateUnvested(grants: CommunityRewardsGrant[]): BigNumber {
+    if (grants.length === 0) return new BigNumber(0)
+    return BigNumber.sum.apply(
+      null,
+      grants.map((grant) => grant.rewards.totalGranted.minus(grant.rewards.totalClaimed.plus(grant.claimable)))
+    )
+  }
+
+  static calculateGranted(grants: CommunityRewardsGrant[]): BigNumber {
+    if (grants.length === 0) return new BigNumber(0)
+    return BigNumber.sum.apply(
+      null,
+      grants.map((grant) => grant.rewards.totalGranted)
+    )
+  }
+
+  static parseCommunityRewardsGrant(
+    tokenId: string,
+    claimable: BigNumber,
+    tuple: {
+      0: string
+      1: string
+      2: string
+      3: string
+      4: string
+      5: string
+      6: string
+    },
+    reason: GrantReason | undefined
+  ): CommunityRewardsGrant {
+    return new CommunityRewardsGrant(
+      tokenId,
+      claimable,
+      {
+        totalGranted: new BigNumber(tuple[0]),
+        totalClaimed: new BigNumber(tuple[1]),
+        startTime: parseInt(tuple[2], 10),
+        endTime: parseInt(tuple[3], 10),
+        cliffLength: new BigNumber(tuple[4]),
+        vestingInterval: new BigNumber(tuple[5]),
+        revokedAt: parseInt(tuple[6], 10),
+      },
+      reason
+    )
+  }
+}
+
+export type UserCommunityRewardsLoaded = WithLoadedInfo<UserCommunityRewards, UserCommunityRewardsLoadedInfo>
+
+type UserMerkleDistributorLoadedInfo = {
+  currentBlock: BlockInfo
+  airdrops: {
+    accepted: MerkleDistributorGrantInfo[]
+    notAccepted: MerkleDistributorGrantInfo[]
+  }
+}
+
+class UserMerkleDistributor {
+  info: Loadable<UserMerkleDistributorLoadedInfo>
+
+  constructor() {
+    this.info = {
+      loaded: false,
+      value: undefined,
+    }
+  }
+
+  async initialize(
+    address: string,
+    merkleDistributor: MerkleDistributorLoaded,
+    currentBlock: BlockInfo
+  ): Promise<void> {
+    if (merkleDistributor.info.value.currentBlock.number !== currentBlock.number) {
+      throw new Error("`merkleDistributor` is based on a different block number from `currentBlock`.")
+    }
+
+    const airdropsForRecipient = UserMerkleDistributor.getAirdropsForRecipient(
+      merkleDistributor.info.value.merkleDistributorInfo.grants,
+      address
+    )
+    const withAcceptance = await Promise.all(
+      airdropsForRecipient.map(async (grantInfo) => ({
+        grantInfo,
+        isAccepted: await merkleDistributor.contract.methods
+          .isGrantAccepted(grantInfo.index)
+          .call(undefined, currentBlock.number),
+      }))
+    )
+    const airdrops = withAcceptance.reduce<{
+      accepted: MerkleDistributorGrantInfo[]
+      notAccepted: MerkleDistributorGrantInfo[]
+    }>(
+      (acc, curr) => {
+        if (curr.isAccepted) {
+          acc.accepted.push(curr.grantInfo)
+        } else {
+          acc.notAccepted.push(curr.grantInfo)
+        }
+        return acc
+      },
+      {accepted: [], notAccepted: []}
+    )
+
+    this.info = {
+      loaded: true,
+      value: {
+        currentBlock,
+        airdrops,
+      },
+    }
+  }
+
+  static getAirdropsForRecipient(
+    allAirdrops: MerkleDistributorGrantInfo[],
+    recipient: string
+  ): MerkleDistributorGrantInfo[] {
+    return allAirdrops.filter((grantInfo) => grantInfo.account === recipient)
+  }
+}
+
+export type UserMerkleDistributorLoaded = WithLoadedInfo<UserMerkleDistributor, UserMerkleDistributorLoadedInfo>
+
 type UserLoadedInfo = {
   currentBlock: BlockInfo
   usdcBalance: BigNumber
@@ -208,6 +475,8 @@ type UserLoadedInfo = {
     }
   }
   stakingRewards: UserStakingRewardsLoaded
+  communityRewards: UserCommunityRewardsLoaded
+  merkleDistributor: UserMerkleDistributorLoaded
 }
 
 export type UserLoaded = WithLoadedInfo<User, UserLoadedInfo>
@@ -251,6 +520,8 @@ export class User {
     pool: SeniorPoolLoaded,
     stakingRewards: StakingRewardsLoaded,
     gfi: GFILoaded,
+    communityRewards: CommunityRewardsLoaded,
+    merkleDistributor: MerkleDistributorLoaded,
     currentBlock: BlockInfo
   ) {
     if (pool.info.value.currentBlock.number !== currentBlock.number) {
@@ -261,6 +532,12 @@ export class User {
     }
     if (pool.info.value.currentBlock.number !== gfi.info.value.currentBlock.number) {
       throw new Error("`pool` and `gfi` are based on different block numbers.")
+    }
+    if (pool.info.value.currentBlock.number !== communityRewards.info.value.currentBlock.number) {
+      throw new Error("`pool` and `communityRewards` are based on different block numbers.")
+    }
+    if (pool.info.value.currentBlock.number !== merkleDistributor.info.value.currentBlock.number) {
+      throw new Error("`pool` and `merkleDistributor` are based on different block numbers.")
     }
 
     const usdc = this.goldfinchProtocol.getERC20(Tickers.USDC)
@@ -297,8 +574,24 @@ export class User {
     )
 
     const userStakingRewards = new UserStakingRewards()
-    await userStakingRewards.initialize(this.address, stakingRewards, currentBlock)
+    const userMerkleDistributor = new UserMerkleDistributor()
+
+    await Promise.all([
+      userStakingRewards.initialize(this.address, stakingRewards, currentBlock),
+      userMerkleDistributor.initialize(this.address, merkleDistributor, currentBlock),
+    ])
     assertWithLoadedInfo(userStakingRewards)
+    assertWithLoadedInfo(userMerkleDistributor)
+
+    const userCommunityRewards = new UserCommunityRewards(this.goldfinchProtocol)
+    await userCommunityRewards.initialize(
+      this.address,
+      communityRewards,
+      merkleDistributor,
+      userMerkleDistributor,
+      currentBlock
+    )
+    assertWithLoadedInfo(userCommunityRewards)
 
     this.info = {
       loaded: true,
@@ -323,6 +616,8 @@ export class User {
           },
         },
         stakingRewards: userStakingRewards,
+        communityRewards: userCommunityRewards,
+        merkleDistributor: userMerkleDistributor,
       },
     }
   }
