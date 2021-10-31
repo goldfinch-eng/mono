@@ -27,7 +27,7 @@ function TextBanner({children}: React.PropsWithChildren<{}>) {
 }
 
 interface ConditionProps extends ConnectionNoticeProps {
-  network: NetworkConfig
+  network: NetworkConfig | undefined
   user: UserLoaded | undefined
   session: Session
   location: any
@@ -52,7 +52,7 @@ export const strategies: ConnectionNoticeStrategy[] = [
   },
   {
     devName: "wrong_network",
-    match: ({network}) => !!network.name && !network.supported,
+    match: ({network}) => !!network && !network.supported,
     render: (_props) => (
       <TextBanner>
         It looks like you aren't on the right Ethereum network. To use Goldfinch, you should connect to Ethereum Mainnet
@@ -173,19 +173,17 @@ function ConnectionNotice(props: ConnectionNoticeProps) {
   const session = useSession()
   let location = useLocation()
 
-  if (network) {
-    const strategyProps = {
-      network,
-      user,
-      session,
-      location,
-      ...props,
-    }
+  const strategyProps = {
+    network,
+    user,
+    session,
+    location,
+    ...props,
+  }
 
-    for (let strategy of strategies) {
-      if (strategy.match(strategyProps)) {
-        return strategy.render(strategyProps)
-      }
+  for (let strategy of strategies) {
+    if (strategy.match(strategyProps)) {
+      return strategy.render(strategyProps)
     }
   }
 
