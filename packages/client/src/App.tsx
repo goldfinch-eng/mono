@@ -142,7 +142,17 @@ function App() {
   }, [stakingRewards, gfi])
 
   useEffect(() => {
-    if (goldfinchProtocol && pool && creditDesk && network && stakingRewards && gfi && currentBlock) {
+    if (
+      goldfinchProtocol &&
+      pool &&
+      creditDesk &&
+      network &&
+      stakingRewards &&
+      gfi &&
+      communityRewards &&
+      merkleDistributor &&
+      currentBlock
+    ) {
       refreshUserData()
     }
 
