@@ -22,7 +22,7 @@ export const DetailsContainer = styled.div<DetailsContainerProps>`
         color: ${theme.colors.sandXxDark};
         pointer-events: none;
       }
-      
+
       ${EtherscanLinkContainer} svg path {
         fill: ${theme.colors.sandXxDark};
       }
@@ -49,7 +49,7 @@ export const ColumnsContainer = styled.div`
     margin-left: 12px;
 
     ${({theme}) => mediaPoint(theme).screenL} {
-      margin-left: 0;
+      margin: 24px 0 0 0;
     }
   }
 `
@@ -57,7 +57,6 @@ export const ColumnsContainer = styled.div`
 export const Detail = styled.div`
   display: flex;
   flex-direction: column;
-  padding: 0 0 24px 0;
 
   > * + * {
     margin: 8px 0 0 0;
@@ -78,10 +77,10 @@ export const Column = styled.div`
   width: 100%;
 
   > * + * {
-    margin: 0 12px 0 0;
+    margin: 24px 12px 0 0;
   }
 `
 
 export const EtherscanLinkContainer = styled.div`
-  margin-top: 16px;
+  margin-top: 40px;
 `
