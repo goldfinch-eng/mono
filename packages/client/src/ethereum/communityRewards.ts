@@ -56,20 +56,6 @@ export class MerkleDistributor {
       },
     }
   }
-
-  async getActionRequiredAirdrops(
-    airdropsForRecipient: MerkleDistributorGrantInfo[],
-    currentBlock: BlockInfo
-  ): Promise<MerkleDistributorGrantInfo[]> {
-    return Promise.all(
-      airdropsForRecipient.map(async (grantInfo) => {
-        const isAccepted = await this.contract.methods
-          .isGrantAccepted(grantInfo.index)
-          .call(undefined, currentBlock.number)
-        return !isAccepted ? grantInfo : undefined
-      })
-    ).then((results) => results.filter((val): val is NonNullable<typeof val> => !!val))
-  }
 }
 
 interface CommunityRewardsVestingRewards {
