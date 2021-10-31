@@ -151,15 +151,10 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
     )
     const backerLimit = tranchedPool.creditLine.limit.multipliedBy(backerLimitPercent)
     const maxTxAmountInDollars = usdcFromAtomic(
-      BigNumber.min(
-        backerLimit,
-        remainingJuniorCapacity,
-        user ? user.info.value.usdcBalance : new BigNumber(0),
-        goldfinchConfig.transactionLimit
-      )
+      BigNumber.min(backerLimit, remainingJuniorCapacity, user.info.value.usdcBalance, goldfinchConfig.transactionLimit)
     )
 
-    if (!user || user.info.value.usdcBalance.eq(0)) {
+    if (user.info.value.usdcBalance.eq(0)) {
       disabled = true
       warningMessage = (
         <p className="form-message">
@@ -213,8 +208,7 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
               </button>
             }
             validations={{
-              wallet: (value) =>
-                (user && user.info.value.usdcBalanceInDollars.gte(value)) || "You do not have enough USDC",
+              wallet: (value) => user.info.value.usdcBalanceInDollars.gte(value) || "You do not have enough USDC",
               backerLimit: (value) => {
                 const backerDeposits = backer.principalAmount.minus(backer.principalRedeemed).plus(usdcToAtomic(value))
                 return (
@@ -247,7 +241,7 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
   return (
     <TransactionForm
       title="Supply"
-      headerMessage={`Available to supply: ${displayDollars(user ? user.info.value.usdcBalanceInDollars : undefined)}`}
+      headerMessage={`Available to supply: ${displayDollars(user.info.value.usdcBalanceInDollars)}`}
       render={renderForm}
       closeForm={closeForm}
     />
@@ -322,8 +316,7 @@ function TranchedPoolWithdrawForm({backer, tranchedPool, actionComplete, closeFo
               </button>
             }
             validations={{
-              wallet: (value) =>
-                (user && user.info.value.usdcBalanceInDollars.gte(value)) || "You do not have enough USDC",
+              wallet: (value) => user.info.value.usdcBalanceInDollars.gte(value) || "You do not have enough USDC",
               transactionLimit: (value) =>
                 goldfinchConfig.transactionLimit.gte(usdcToAtomic(value)) ||
                 `This is over the per-transaction limit of ${displayDollars(
