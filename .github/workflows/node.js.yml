@@ -5,7 +5,7 @@ name: Node.js CI
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
   pull_request:
     branches: [ '**' ]
 
@@ -21,6 +21,12 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
+    - name: Changed files
+      id: changed-files
+      uses: tj-actions/changed-files@v11.2
+      with:
+        files: |
+          packages\/autotasks\/.+\.ts
     - name: Cache node modules
       uses: actions/cache@v2
       env:
@@ -41,7 +47,7 @@ jobs:
         AUTOTASK_API_KEY: ${{ secrets.AUTOTASK_API_KEY }}
         AUTOTASK_API_SECRET: ${{ secrets.AUTOTASK_API_SECRET }}
       run: npx lerna run deploy --stream --scope @goldfinch-eng/autotasks
-      if: github.ref == 'refs/heads/master'
+      if: github.ref == 'refs/heads/main' && steps.changed-files.outputs.any_changed == 'true'
 
   lint:
     runs-on: ubuntu-latest
@@ -133,7 +139,7 @@ jobs:
     - name: Run tests
       env:
         ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
-      run: npx lerna run mainnet-test --stream --scope @goldfinch-eng/protocol
+      run: npx lerna run test:mainnet-forking --stream --scope @goldfinch-eng/protocol
 
   client:
     runs-on: ubuntu-latest
@@ -189,6 +195,12 @@ jobs:
             ${{ runner.os }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
             ${{ runner.os }}-
+      - name: Changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v11.2
+        with:
+          files: |
+            packages\/functions\/src\/.+\.ts
       - name: Cache Firestore emulator
         uses: actions/cache@v2
         env:
@@ -203,9 +215,9 @@ jobs:
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         run: npx lerna run ci_functions_config_set_dev --stream --scope @goldfinch-eng/functions && npx lerna exec --scope @goldfinch-eng/functions "npm run pre-deploy && npx firebase deploy --only functions --project dev"
-        if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/main' && steps.changed-files.outputs.any_changed == 'true'
       - name: deploy-prod
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         run: npx lerna run ci_functions_config_set_prod --stream --scope @goldfinch-eng/functions && npx lerna exec --scope @goldfinch-eng/functions "npm run pre-deploy && npx firebase deploy --only functions --project prod"
-        if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/main' && steps.changed-files.outputs.any_changed == 'true'

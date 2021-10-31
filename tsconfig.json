@@ -5,6 +5,7 @@
     "paths": {
       "@goldfinch-eng/utils": ["packages/utils/src"],
       "@goldfinch-eng/protocol": ["packages/protocol"],
+      "@goldfinch-eng/protocol/*": ["packages/protocol/*"],
       "@goldfinch-eng/server": ["packages/server"],
       "@goldfinch-eng/autotasks": ["packages/autotasks"],
       "@goldfinch-eng/subgraph": ["packages/subgraph"],

@@ -51,34 +51,23 @@ contract UniqueIdentity is ERC1155PresetPauserUpgradeable, IUniqueIdentity {
   }
 
   function mint(
-    address to,
     uint256 id,
+    uint256 expiresAt,
     bytes calldata signature
-  )
-    public
-    payable
-    override
-    onlySigner(keccak256(abi.encodePacked(to, id, nonces[to], block.chainid)), signature)
-    incrementNonce(to)
-  {
+  ) public payable override onlySigner(_msgSender(), id, expiresAt, signature) incrementNonce(_msgSender()) {
     require(msg.value >= MINT_COST_PER_TOKEN, "Token mint requires 0.00083 ETH");
-    require(to != address(0), "Cannot mint to the zero address");
     require(id == ID_VERSION_0, "Token id not supported");
-    require(balanceOf(to, id) == 0, "Balance before mint must be 0");
+    require(balanceOf(_msgSender(), id) == 0, "Balance before mint must be 0");
 
-    _mint(to, id, 1, "");
+    _mint(_msgSender(), id, 1, "");
   }
 
   function burn(
     address account,
     uint256 id,
+    uint256 expiresAt,
     bytes calldata signature
-  )
-    public
-    override
-    onlySigner(keccak256(abi.encodePacked(account, id, nonces[account], block.chainid)), signature)
-    incrementNonce(account)
-  {
+  ) public override onlySigner(account, id, expiresAt, signature) incrementNonce(account) {
     _burn(account, id, 1);
 
     uint256 accountBalance = balanceOf(account, id);
@@ -100,7 +89,15 @@ contract UniqueIdentity is ERC1155PresetPauserUpgradeable, IUniqueIdentity {
     super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
   }
 
-  modifier onlySigner(bytes32 hash, bytes calldata signature) {
+  modifier onlySigner(
+    address account,
+    uint256 id,
+    uint256 expiresAt,
+    bytes calldata signature
+  ) {
+    require(block.timestamp < expiresAt, "Signature has expired");
+
+    bytes32 hash = keccak256(abi.encodePacked(account, id, expiresAt, address(this), nonces[account], block.chainid));
     bytes32 ethSignedMessage = ECDSAUpgradeable.toEthSignedMessageHash(hash);
     require(hasRole(SIGNER_ROLE, ECDSAUpgradeable.recover(ethSignedMessage, signature)), "Invalid signer");
     _;

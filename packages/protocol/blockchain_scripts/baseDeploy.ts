@@ -17,6 +17,8 @@ import {
   ContractDeployer,
   DISTRIBUTOR_ROLE,
   TRUFFLE_CONTRACT_PROVIDER,
+  SIGNER_ROLE,
+  getEthersContract,
 } from "./deployHelpers"
 import {HardhatRuntimeEnvironment} from "hardhat/types"
 import {DeployFunction} from "hardhat-deploy/types"
@@ -47,13 +49,15 @@ import {
   TestERC20Instance,
   TestUniqueIdentityInstance,
 } from "../typechain/truffle"
-import {assertIsString} from "@goldfinch-eng/utils"
+import {assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
 import {StakingRewards} from "../typechain/ethers/StakingRewards"
 import {UNIQUE_IDENTITY_METADATA_URI} from "./uniqueIdentity/constants"
+import {toEthers} from "../test/testHelpers"
+import {getDeployEffects, DeployEffects} from "./migrations/deployEffects"
 
-let logger: Logger
+const logger: Logger = console.log
 
-type Deployed<T> = {
+export type Deployed<T> = {
   name: string
   contract: T
 }
@@ -62,8 +66,10 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   if (isMainnetForking()) {
     return
   }
+
+  const deployEffects = await getDeployEffects()
+
   const {getNamedAccounts, getChainId} = hre
-  logger = console.log
   const deployer = new ContractDeployer(logger, hre)
   logger("Starting deploy...")
   const {gf_deployer} = await getNamedAccounts()
@@ -94,11 +100,16 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   const communityRewards = await deployCommunityRewards(deployer, {config})
   await deployMerkleDistributor(deployer, {communityRewards})
 
-  const uniqueIdentity = await deployUniqueIdentity(deployer)
-  await deployGo(deployer, {config, uniqueIdentity})
+  const {protocol_owner: trustedSigner} = await deployer.getNamedAccounts()
+  assertNonNullable(trustedSigner)
+  const uniqueIdentity = await deployUniqueIdentity({deployer, trustedSigner, deployEffects})
+
+  const go = await deployGo(deployer, {configAddress: config.address, uniqueIdentity, deployEffects})
 
   logger("Granting ownership of Pool to CreditDesk")
   await grantOwnershipOfPoolToCreditDesk(pool, creditDesk.address)
+
+  await deployEffects.executeDeferred()
 
   // Internal functions.
 
@@ -361,65 +372,95 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
 
     return deployed
   }
+}
 
-  async function deployUniqueIdentity(
-    deployer: ContractDeployer
-  ): Promise<Deployed<UniqueIdentityInstance | TestUniqueIdentityInstance>> {
-    const contractName = isTestEnv() ? "TestUniqueIdentity" : "UniqueIdentity"
-    logger(`About to deploy ${contractName}...`)
-    assertIsString(gf_deployer)
-    const protocol_owner = await getProtocolOwner()
-    const uniqueIdentity = await deployer.deploy(contractName, {
-      from: gf_deployer,
-      gasLimit: 4000000,
-      proxy: {
-        execute: {
-          init: {
-            methodName: "initialize",
-            args: [protocol_owner, UNIQUE_IDENTITY_METADATA_URI],
-          },
+export async function deployUniqueIdentity({
+  deployer,
+  trustedSigner,
+  deployEffects,
+}: {
+  deployer: ContractDeployer
+  trustedSigner: string
+  deployEffects: DeployEffects
+}): Promise<Deployed<UniqueIdentityInstance | TestUniqueIdentityInstance>> {
+  const contractName = isTestEnv() ? "TestUniqueIdentity" : "UniqueIdentity"
+  logger(`About to deploy ${contractName}...`)
+  const {gf_deployer} = await deployer.getNamedAccounts()
+  assertIsString(gf_deployer)
+  const protocol_owner = await getProtocolOwner()
+  const uniqueIdentity = await deployer.deploy(contractName, {
+    from: gf_deployer,
+    gasLimit: 4000000,
+    proxy: {
+      proxyContract: "EIP173Proxy",
+      execute: {
+        init: {
+          methodName: "initialize",
+          args: [protocol_owner, UNIQUE_IDENTITY_METADATA_URI],
         },
       },
-    })
-    const contract = await getContract<
-      UniqueIdentity | TestUniqueIdentity,
-      UniqueIdentityInstance | TestUniqueIdentityInstance
-    >(contractName, TRUFFLE_CONTRACT_PROVIDER, {at: uniqueIdentity.address})
-    return {name: contractName, contract}
+    },
+  })
+  const truffleContract = await getContract<
+    UniqueIdentity | TestUniqueIdentity,
+    UniqueIdentityInstance | TestUniqueIdentityInstance
+  >(contractName, TRUFFLE_CONTRACT_PROVIDER, {at: uniqueIdentity.address})
+  const ethersContract = (await toEthers<UniqueIdentity>(truffleContract)).connect(await getProtocolOwner())
+
+  await deployEffects.add({
+    deferred: [await ethersContract.populateTransaction.grantRole(SIGNER_ROLE, trustedSigner)],
+  })
+
+  return {
+    name: contractName,
+    contract: truffleContract,
   }
+}
 
-  async function deployGo(
-    deployer: ContractDeployer,
-    {
-      config,
-      uniqueIdentity,
-    }: {config: GoldfinchConfig; uniqueIdentity: Deployed<UniqueIdentityInstance | TestUniqueIdentityInstance>}
-  ): Promise<Deployed<GoInstance>> {
-    const contractName = "Go"
-    logger(`About to deploy ${contractName}...`)
-    assertIsString(gf_deployer)
-    const protocol_owner = await getProtocolOwner()
-    const go = await deployer.deploy(contractName, {
-      from: gf_deployer,
-      gasLimit: 4000000,
-      proxy: {
-        execute: {
-          init: {
-            methodName: "initialize",
-            args: [protocol_owner, config.address, uniqueIdentity.contract.address],
-          },
+export async function deployGo(
+  deployer: ContractDeployer,
+  {
+    configAddress,
+    uniqueIdentity,
+    deployEffects,
+  }: {
+    configAddress: string
+    uniqueIdentity: Deployed<UniqueIdentityInstance | TestUniqueIdentityInstance>
+    deployEffects: DeployEffects
+  }
+): Promise<Deployed<GoInstance>> {
+  const contractName = "Go"
+  logger(`About to deploy ${contractName}...`)
+  const {gf_deployer} = await deployer.getNamedAccounts()
+  assertIsString(gf_deployer)
+  const protocol_owner = await getProtocolOwner()
+  const go = await deployer.deploy(contractName, {
+    from: gf_deployer,
+    gasLimit: 4000000,
+    proxy: {
+      execute: {
+        init: {
+          methodName: "initialize",
+          args: [protocol_owner, configAddress, uniqueIdentity.contract.address],
         },
       },
-    })
-    const contract = await getContract<Go, GoInstance>(contractName, TRUFFLE_CONTRACT_PROVIDER, {
-      at: go.address,
-    })
+    },
+  })
+  const contract = await getContract<Go, GoInstance>(contractName, TRUFFLE_CONTRACT_PROVIDER, {
+    at: go.address,
+  })
 
-    logger("Updating config...")
-    await updateConfig(config, "address", CONFIG_KEYS.Go, contract.address, {logger})
-    logger("Updated Go config address to:", contract.address)
+  const goldfinchConfig = (await getEthersContract<GoldfinchConfig>("GoldfinchConfig", {at: configAddress})).connect(
+    await getProtocolOwner()
+  )
 
-    return {name: contractName, contract}
+  await deployEffects.add({
+    deferred: [await goldfinchConfig.populateTransaction.setAddress(CONFIG_KEYS.Go, contract.address)],
+  })
+
+  return {
+    name: contractName,
+    contract,
   }
 }
 

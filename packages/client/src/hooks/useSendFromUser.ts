@@ -4,7 +4,8 @@ import {assertError, assertNonNullable} from "../utils"
 import web3 from "../web3"
 
 type UseSendFromUserOptions = {
-  rejectOnError: boolean
+  value?: string
+  rejectOnError?: boolean
 }
 
 type SendTransactionOptions = {
@@ -14,7 +15,12 @@ type SendTransactionOptions = {
 function useSendFromUser() {
   const {refreshCurrentBlock, user, networkMonitor} = useContext(AppContext)
 
-  async function sendTransaction(unsentAction, txData, gasPrice, options: SendTransactionOptions) {
+  async function sendTransaction(
+    unsentAction,
+    txData,
+    {gasPrice, value}: {gasPrice: string; value: string | undefined},
+    options: SendTransactionOptions
+  ) {
     assertNonNullable(refreshCurrentBlock)
     assertNonNullable(networkMonitor)
     assertNonNullable(user)
@@ -57,7 +63,8 @@ function useSendFromUser() {
       unsentAction
         .send({
           from: user.address,
-          gasPrice: gasPrice,
+          gasPrice,
+          value,
         })
         .once("sent", (_) => {
           txData = networkMonitor.addPendingTX(txData)
@@ -83,11 +90,16 @@ function useSendFromUser() {
     })
   }
 
-  return (unsentAction, txData, options: UseSendFromUserOptions = {rejectOnError: false}) => {
+  return (unsentAction, txData, options: UseSendFromUserOptions = {}) => {
     return web3.eth.getGasPrice().then(
       async (gasPrice) => {
         try {
-          await sendTransaction(unsentAction, txData, gasPrice, options)
+          await sendTransaction(
+            unsentAction,
+            txData,
+            {gasPrice, value: options.value},
+            {rejectOnError: options.rejectOnError || false}
+          )
         } catch (err: unknown) {
           console.log(`Error sending transaction: ${err}`)
 

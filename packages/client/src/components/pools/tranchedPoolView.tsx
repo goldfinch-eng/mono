@@ -428,7 +428,8 @@ function ActionsContainer({
     backer &&
     tranchedPool?.state === PoolState.Open &&
     tranchedPool?.remainingCapacity().gt(new BigNumber(0)) &&
-    !tranchedPool?.metadata?.disabled
+    !tranchedPool?.metadata?.disabled &&
+    user?.info.value.goListed
   ) {
     depositAction = (e) => {
       setAction("deposit")
@@ -442,7 +443,8 @@ function ActionsContainer({
     session.status === "authenticated" &&
     backer &&
     !backer.availableToWithdrawInDollars.isZero() &&
-    !tranchedPool?.metadata?.disabled
+    !tranchedPool?.metadata?.disabled &&
+    user?.info.value.goListed
   ) {
     withdrawAction = (e) => {
       setAction("withdraw")

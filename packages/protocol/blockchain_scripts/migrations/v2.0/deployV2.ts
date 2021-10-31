@@ -7,10 +7,10 @@ import {
   deploySeniorPoolStrategy,
   deployBorrower,
   deployClImplementation,
-} from "../baseDeploy"
-import {UpgradedContracts} from "../mainnetForkingHelpers"
+} from "../../baseDeploy"
+import {UpgradedContracts} from "../../mainnetForkingHelpers"
 import {asNonNullable} from "@goldfinch-eng/utils"
-import {Fidu, GoldfinchConfig} from "packages/protocol/typechain/ethers"
+import {Fidu, GoldfinchConfig} from "../../../typechain/ethers"
 
 async function deployV2(contracts: UpgradedContracts, opts: {noFidu?: boolean} = {}) {
   const config = asNonNullable(contracts.GoldfinchConfig?.UpgradedContract) as GoldfinchConfig

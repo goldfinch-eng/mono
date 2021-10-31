@@ -213,5 +213,6 @@ export {
   getFromBlock,
   chainIdToNetworkID,
   MAINNET,
+  LOCAL,
   getPoolEvents,
 }

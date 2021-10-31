@@ -17,6 +17,7 @@ import {GFILoaded} from "./gfi"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {SeniorPoolLoaded, StakingRewardsLoaded, StakingRewardsPosition, StoredPosition} from "./pool"
 import {getFromBlock, MAINNET} from "./utils"
+import {Go} from "@goldfinch-eng/protocol/typechain/web3/Go"
 
 declare let window: any
 
@@ -465,6 +466,7 @@ type UserLoadedInfo = {
   pastTxs: any[]
   poolTxs: any[]
   goListed: boolean
+  legacyGolisted: boolean
   gfiBalance: BigNumber
   usdcIsUnlocked: {
     earn: {
@@ -562,7 +564,11 @@ export class User {
     ])
     const poolTxs = await mapEventsToTx(poolEvents)
     const pastTxs = _.reverse(_.sortBy(_.compact(_.concat(usdcTxs, poolTxs, creditDeskTxs)), "blockNumber"))
-    const goListed = await this.isGoListed(this.address, currentBlock)
+
+    const golistStatus = await this.fetchGolistStatus(this.address, currentBlock)
+    const goListed = golistStatus.golisted
+    const legacyGolisted = golistStatus.legacyGolisted
+
     const gfiBalance = new BigNumber(
       await gfi.contract.methods.balanceOf(this.address).call(undefined, currentBlock.number)
     )
@@ -598,6 +604,7 @@ export class User {
         pastTxs,
         poolTxs,
         goListed,
+        legacyGolisted,
         gfiBalance,
         usdcIsUnlocked: {
           earn: {
@@ -620,12 +627,23 @@ export class User {
     return !allowance || allowance.gte(UNLOCK_THRESHOLD)
   }
 
-  private async isGoListed(address: string, currentBlock: BlockInfo): Promise<boolean> {
+  private async fetchGolistStatus(address: string, currentBlock: BlockInfo) {
     if (process.env.REACT_APP_ENFORCE_GO_LIST || this.networkId === MAINNET) {
-      let config = this.goldfinchProtocol.getContract<GoldfinchConfig>("GoldfinchConfig")
-      return await config.methods.goList(address).call(undefined, currentBlock.number)
+      const config = this.goldfinchProtocol.getContract<GoldfinchConfig>("GoldfinchConfig")
+      const legacyGolisted = await config.methods.goList(address).call(undefined, currentBlock.number)
+
+      const go = this.goldfinchProtocol.getContract<Go>("Go")
+      const golisted = await go.methods.go(address).call(undefined, currentBlock.number)
+
+      return {
+        legacyGolisted,
+        golisted,
+      }
     } else {
-      return true
+      return {
+        legacyGolisted: true,
+        golisted: true,
+      }
     }
   }
 
