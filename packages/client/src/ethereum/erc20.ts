@@ -73,8 +73,10 @@ class ERC20 {
     )
   }
 
-  async getBalance(address: string, currentBlock: BlockInfo): Promise<BigNumber> {
-    return new BigNumber(await this.contract.methods.balanceOf(address).call(undefined, currentBlock.number))
+  async getBalance(address: string, currentBlock: BlockInfo | undefined): Promise<BigNumber> {
+    return new BigNumber(
+      await this.contract.methods.balanceOf(address).call(undefined, currentBlock ? currentBlock.number : "latest")
+    )
   }
 
   atomicAmount(decimalAmount) {
