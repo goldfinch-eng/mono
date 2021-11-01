@@ -10,7 +10,7 @@
     "start:local:liquidity-mining": "npx lerna run generate-merkle-root:local && MERKLE_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkleDistributor/merkleDistributorInfo.dev.json REACT_APP_TOGGLE_REWARDS=true npm run start:local",
     "start:murmuration": "npx lerna run start:murmuration --parallel",
     "start:murmuration:liquidity-mining": "npx lerna run generate-merkle-root:murmuration && MERKLE_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkleDistributor/merkleDistributorInfo.murmuration.json npx lerna run start:murmuration:liquidity-mining --parallel",
-    "kill-ports": "for i in 4000 4001 3000 5001 8545 8080; do lsof -t -i:$i | xargs kill; done",
+    "kill-ports": "for i in 4000 4001 3000 5001 8545 8080; do lsof -t -i:$i | xargs -r kill; done",
     "test": "npx lerna run test --stream",
     "test:client": "npm run test -- --scope @goldfinch-eng/client",
     "lint": "npx lerna run lint --no-bail",
