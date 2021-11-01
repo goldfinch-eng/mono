@@ -15,11 +15,13 @@ import {GET_SENIOR_POOL_AND_PROVIDER_DATA} from "../../graphql/queries"
 import {getSeniorPoolAndProviders, getSeniorPoolAndProvidersVariables} from "../../graphql/types"
 import {GraphSeniorPoolData, GraphUserData, isGraphSeniorPoolData, isGraphUserData} from "../../graphql/utils"
 import {parseSeniorPool, parseUser} from "../../graphql/parsers"
+import * as Sentry from "@sentry/react"
 
 function SeniorPoolView(): JSX.Element {
-  const {pool, user, goldfinchConfig} = useContext(AppContext)
+  const {pool, user, goldfinchConfig, networkMonitor} = useContext(AppContext)
   const [capitalProvider, setCapitalProvider] = useState<CapitalProvider | GraphUserData>()
   const [poolData, setPoolData] = useState<PoolData | GraphSeniorPoolData>()
+  const [graphBlockNumber, setGraphBlockNumber] = useState<number>()
   const kycResult = useKYC()
   const kyc = useStaleWhileRevalidating(kycResult)
   const [fetchSeniorPoolAndProviderData, {data, refetch}] = useLazyQuery<
@@ -43,6 +45,17 @@ function SeniorPoolView(): JSX.Element {
   }, [])
 
   useEffect(() => {
+    if (
+      networkMonitor?.currentBlockNumber &&
+      graphBlockNumber &&
+      graphBlockNumber + 10 < networkMonitor?.currentBlockNumber
+    ) {
+      Sentry.captureMessage("The Graph block number is out of date.")
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [graphBlockNumber])
+
+  useEffect(() => {
     const capitalProviderAddress = user.loaded && user.address
     if (pool) {
       fetchData(capitalProviderAddress)
@@ -54,10 +67,11 @@ function SeniorPoolView(): JSX.Element {
     async function setGraphData() {
       assertNonNullable(data)
 
-      const {seniorPools, user} = data
+      const {seniorPools, user, _meta} = data
       let seniorPool = seniorPools[0]!
       setPoolData(await parseSeniorPool(seniorPool, pool))
       setCapitalProvider(await parseUser(user, seniorPool, pool?.fidu))
+      setGraphBlockNumber(_meta?.block.number)
     }
     if (data) {
       setGraphData()
