@@ -227,55 +227,6 @@ describe("PoolRewards", () => {
     })
   })
 
-  // TODO @sanjay integration test
-  // describe("setPoolTokenAccRewardsPerPrincipalDollarAtMint()", () => {
-  //   const maxInterestDollarsEligible = 1_000_000_000
-  //   const totalRewards = bigVal(3_000_000) // 3% of 100m
-
-  //   beforeEach(async () => {
-  //     await poolRewards.setMaxInterestDollarsEligible(bigVal(maxInterestDollarsEligible))
-  //     await poolRewards.setTotalRewards(totalRewards)
-  //   })
-
-  //   it("properly sets a tokens accRewardsPerPrincipalDollarAtMint to the current value", async () => {
-  //     const previousInterestReceived = 0
-  //     const juniorTranchePrincipal = 100_000
-  //     await poolRewards.setTotalInterestReceived(fiduToUSDC(bigVal(previousInterestReceived)))
-  //     const response = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(juniorTranchePrincipal))
-  //     const logs = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")
-  //     const firstLog = getFirstLog(logs)
-  //     const tokenId = firstLog.args.tokenId
-  //     await tranchedPool.lockJuniorCapital({from: borrower})
-  //     await tranchedPool.lockPool({from: borrower})
-  //     await tranchedPool.drawdown(usdcVal(juniorTranchePrincipal), {from: borrower})
-  //     await advanceTime({days: new BN(365).toNumber()})
-  //     const payAmount = usdcVal(juniorTranchePrincipal)
-  //     await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
-  //     await tranchedPool.pay(payAmount, {from: borrower})
-
-  //     const {testPoolTokenClaimableRewards, testAccRewardsPerPrincipalDollar} = testCalcAccRewardsPerPrincipalDollar({
-  //       interestPaymentAmount: 5000,
-  //       maxInterestDollarsEligible,
-  //       percent: 3,
-  //       totalGFISupply: 100_000_000,
-  //       juniorTranchePrincipal,
-  //       previousInterestReceived,
-  //     })
-
-  //     // verify accRewardsPerPrincipalDollar
-  //     const accRewardsPerPrincipalDollar = await poolRewards.pools(tranchedPool.address)
-  //     expect(accRewardsPerPrincipalDollar).to.bignumber.equal(testAccRewardsPerPrincipalDollar)
-
-  //     // TODO: replace this with the new drawdown logic
-  //     await poolRewards.setPoolTokenAccRewardsPerPrincipalDollarAtMint(tokenId)
-
-  //     const investorTokens = await poolRewards.tokens(tokenId)
-  //     const investorRewardsClaimed = investorTokens["accRewardsPerPrincipalDollarAtMint"]
-
-  //     expect(investorRewardsClaimed).to.bignumber.equal(accRewardsPerPrincipalDollar)
-  //   })
-  // })
-
   describe("setMaxInterestDollarsEligible()", () => {
     it("properly sets maxInterestDollarsEligible", async () => {
       const maxInterestDollarsEligible = bigVal(1_000)
@@ -1133,7 +1084,7 @@ describe("PoolRewards", () => {
       })
     })
 
-    // TODO @sanjay integration test
+    // TODO @sanjay - need to test multiple drawdowns w/ mint price changing
     context("Principal share price at deposit time is not zero", () => {
       it("properly handles calculating the difference in share price and share price at mint", async () => {
         // AnotherUser deposits 100% of $100k
