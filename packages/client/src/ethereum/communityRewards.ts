@@ -8,6 +8,7 @@ import {BlockInfo, displayNumber} from "../utils"
 import {gfiFromAtomic} from "./gfi"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {getMerkleDistributorInfo} from "./utils"
+import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
 import startCase from "lodash/startCase"
 
 type MerkleDistributorLoadedInfo = {
@@ -55,11 +56,24 @@ export class MerkleDistributor {
     }
   }
 
-  static getDisplayReason(reason: GrantReason): string {
+  static getDisplayTitle(reason: GrantReason): string {
     return reason
       .split("_")
       .map((s) => startCase(s))
       .join(" ")
+  }
+
+  static getDisplayReason(reason: GrantReason): string {
+    switch (reason) {
+      case "flight_academy":
+        return "in Flight Academy"
+      case "goldfinch_investment":
+        return "as a Goldfinch investor"
+      case "liquidity_provider":
+        return "as a Liquidity Provider"
+      default:
+        assertUnreachable(reason)
+    }
   }
 }
 
@@ -91,8 +105,11 @@ export class CommunityRewardsGrant {
     this.reason = reason
   }
 
+  get displayTitle(): string {
+    return this.reason ? MerkleDistributor.getDisplayTitle(this.reason) : "Community Rewards"
+  }
   get displayReason(): string {
-    return this.reason ? MerkleDistributor.getDisplayReason(this.reason) : "Community Rewards"
+    return this.reason ? MerkleDistributor.getDisplayReason(this.reason) : "in Community Rewards"
   }
 
   get description(): string {
@@ -101,7 +118,7 @@ export class CommunityRewardsGrant {
       month: "short",
       day: "numeric",
     })
-    return `${displayNumber(gfiFromAtomic(this.granted))} GFI reward on ${transactionDate} for participating in ${
+    return `${displayNumber(gfiFromAtomic(this.granted))} GFI reward on ${transactionDate} for participating ${
       this.displayReason
     }`
   }
@@ -120,11 +137,6 @@ export class CommunityRewardsGrant {
 
   get claimed(): BigNumber {
     return this.rewards.totalClaimed
-  }
-
-  get currentEarnRate(): BigNumber {
-    const duration = this.rewards.endTime - this.rewards.startTime
-    return duration ? this.granted.dividedToIntegerBy(new BigNumber(duration)) : new BigNumber(0)
   }
 }
 

@@ -295,7 +295,7 @@ function getGrantVestingCliffDisplay(cliffLength: BigNumber): string | undefined
       return undefined
     default:
       console.error(`Unexpected cliff length: ${cliffLengthString}`)
-      return `, with ${cliffLengthString}-second cliff,`
+      return `, with ${cliffLengthString}-second cliff`
   }
 }
 function getGrantVestingIntervalDisplay(vestingInterval: BigNumber): string | undefined {
@@ -336,7 +336,9 @@ function getGrantVestingSchedule(
           day: "numeric",
         })}`
       : `${getGrantVestingLengthDisplay(end.value)}`
-    return `Linear${displayInterval || ""}${displayCliff || ""} until 100%${displayEnd}`
+    return `Linear${displayInterval || ""}${displayCliff || ""}${
+      displayInterval || displayCliff ? "," : ""
+    } until 100%${displayEnd}`
   } else {
     return "None"
   }
@@ -410,8 +412,8 @@ function getStakingOrCommunityRewardsDetails(
             }
           : null
       ),
-      claimStatus: getClaimStatus(item.claimed, item.vested),
-      currentEarnRate: getCurrentEarnRate(item.currentEarnRate),
+      claimStatus: undefined,
+      currentEarnRate: undefined,
       vestingStatus: getVestingStatus(item.vested, item.granted),
       etherscanAddress: communityRewards.address,
     }
@@ -462,7 +464,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
   }
 
   if (item instanceof CommunityRewardsGrant || item instanceof StakingRewardsPosition) {
-    const title = item instanceof StakingRewardsPosition ? item.description : item.displayReason
+    const title = item instanceof StakingRewardsPosition ? item.description : item.displayTitle
     const details = getStakingOrCommunityRewardsDetails(item, props.stakingRewards, props.communityRewards)
 
     if (item.claimable.eq(0)) {
@@ -515,7 +517,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     return (
       <RewardsListItem
         status={RewardStatus.Acceptable}
-        title={MerkleDistributor.getDisplayReason(item.reason)}
+        title={MerkleDistributor.getDisplayTitle(item.reason)}
         grantedGFI={new BigNumber(item.grant.amount)}
         claimableGFI={new BigNumber(0)}
         handleOnClick={() => handleAccept(item)}
