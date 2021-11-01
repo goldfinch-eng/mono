@@ -4,9 +4,12 @@ import {MerkleDistributor as MerkleDistributorContract} from "@goldfinch-eng/pro
 import BigNumber from "bignumber.js"
 import {EventData} from "web3-eth-contract"
 import {Loadable, WithLoadedInfo} from "../types/loadable"
-import {BlockInfo} from "../utils"
+import {BlockInfo, displayNumber} from "../utils"
+import {gfiFromAtomic} from "./gfi"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {getMerkleDistributorInfo} from "./utils"
+import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
+import startCase from "lodash/startCase"
 
 type MerkleDistributorLoadedInfo = {
   currentBlock: BlockInfo
@@ -52,6 +55,26 @@ export class MerkleDistributor {
       },
     }
   }
+
+  static getDisplayTitle(reason: GrantReason): string {
+    return reason
+      .split("_")
+      .map((s) => startCase(s))
+      .join(" ")
+  }
+
+  static getDisplayReason(reason: GrantReason): string {
+    switch (reason) {
+      case "flight_academy":
+        return "in Flight Academy"
+      case "goldfinch_investment":
+        return "as a Goldfinch investor"
+      case "liquidity_provider":
+        return "as a Liquidity Provider"
+      default:
+        assertUnreachable(reason)
+    }
+  }
 }
 
 interface CommunityRewardsVestingRewards {
@@ -68,7 +91,7 @@ export class CommunityRewardsGrant {
   tokenId: string
   claimable: BigNumber
   rewards: CommunityRewardsVestingRewards
-  _reason: GrantReason | undefined
+  reason: GrantReason | undefined
 
   constructor(
     tokenId: string,
@@ -79,15 +102,37 @@ export class CommunityRewardsGrant {
     this.tokenId = tokenId
     this.rewards = rewards
     this.claimable = claimable
-    this._reason = reason
+    this.reason = reason
   }
 
-  get reason(): string {
-    return !this._reason ? "Community Rewards" : this._reason
+  get displayTitle(): string {
+    return this.reason ? MerkleDistributor.getDisplayTitle(this.reason) : "Community Rewards"
+  }
+  get displayReason(): string {
+    return this.reason ? MerkleDistributor.getDisplayReason(this.reason) : "in Community Rewards"
+  }
+
+  get description(): string {
+    const transactionDate = new Date(this.rewards.startTime * 1000).toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
+    return `${displayNumber(gfiFromAtomic(this.granted))} GFI reward on ${transactionDate} for participating ${
+      this.displayReason
+    }`
   }
 
   get granted(): BigNumber {
     return this.rewards.totalGranted
+  }
+
+  get vested(): BigNumber {
+    return this.rewards.totalClaimed.plus(this.claimable)
+  }
+
+  get unvested(): BigNumber {
+    return this.granted.minus(this.vested)
   }
 
   get claimed(): BigNumber {
