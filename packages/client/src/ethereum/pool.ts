@@ -17,7 +17,7 @@ import {gfiInDollars, GFILoaded, gfiToDollarsAtomic, GFI_DECIMALS} from "./gfi"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {getMetadataStore} from "./tranchedPool"
 import {UserLoaded, UserStakingRewardsLoaded} from "./user"
-import {fetchDataFromAttributes, getPoolEvents, INTEREST_DECIMALS, USDC_DECIMALS} from "./utils"
+import {fetchDataFromAttributes, getPoolEvents, INTEREST_DECIMALS, ONE_YEAR_SECONDS, USDC_DECIMALS} from "./utils"
 
 class Pool {
   goldfinchProtocol: GoldfinchProtocol
@@ -328,7 +328,7 @@ type PoolData = {
   cumulativeDrawdowns: BigNumber
   estimatedTotalInterest: BigNumber
   estimatedApy: BigNumber
-  estimatedApyFromGfi: BigNumber | undefined
+  estimatedApyFromGfi: BigNumber
   defaultRate: BigNumber
   poolEvents: EventData[]
   assetsAsOf: typeof assetsAsOf
@@ -368,7 +368,8 @@ async function fetchPoolData(
   let poolEvents = await getAllDepositAndWithdrawalEvents(pool, currentBlock)
   let estimatedTotalInterest = await getEstimatedTotalInterest(pool, currentBlock)
   let estimatedApy = estimatedTotalInterest.dividedBy(totalPoolAssets)
-  const estimatedApyFromGfi = gfiToDollarsAtomic(stakingRewards.info.value.currentEarnRate, gfi.info.value.price)
+  const currentEarnRatePerYear = stakingRewards.info.value.currentEarnRate.multipliedBy(ONE_YEAR_SECONDS)
+  const estimatedApyFromGfi = gfiToDollarsAtomic(currentEarnRatePerYear, gfi.info.value.price)
     .multipliedBy(
       // This might be better thought of as the share-price mantissa, which happens to be the
       // same as `FIDU_DECIMALS`.

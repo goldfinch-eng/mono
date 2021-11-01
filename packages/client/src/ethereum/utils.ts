@@ -189,6 +189,8 @@ async function getPoolEvents(
   return _.compact(_.flatten(events))
 }
 
+const ONE_YEAR_SECONDS = new BigNumber(60 * 60 * 24 * 365)
+
 export {
   getDeployments,
   getMerkleDistributorInfo,
@@ -215,4 +217,5 @@ export {
   MAINNET,
   LOCAL,
   getPoolEvents,
+  ONE_YEAR_SECONDS,
 }

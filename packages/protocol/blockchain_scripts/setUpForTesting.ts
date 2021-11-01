@@ -1,4 +1,5 @@
 import {assertIsString, assertNonNullable, findEnvLocal} from "@goldfinch-eng/utils"
+import BigNumber from "bignumber.js"
 import BN from "bn.js"
 import dotenv from "dotenv"
 import {Contract, ContractReceipt} from "ethers"
@@ -196,8 +197,15 @@ async function setUpRewards(getOrNull: (name: string) => Promise<Deployment | nu
   await stakingRewards.loadRewards(rewardsAmount.toString(10))
   await stakingRewards.setRewardsParameters(
     toAtomic(new BN(1000), FIDU_DECIMALS),
-    toAtomic(new BN(4), GFI_DECIMALS),
-    toAtomic(new BN(9), GFI_DECIMALS),
+    new BigNumber("10000000000")
+      .multipliedBy(
+        // This is just an arbitrary number meant to be in the same ballpark as how many FIDU the test user might
+        // stake, so that given a GFI price around $1, the APY from GFI can work out to a reasonable-looking
+        // double-digit percent.
+        new BigNumber(75000)
+      )
+      .toString(10),
+    new BigNumber("20000000000").multipliedBy(new BigNumber(75000)).toString(10),
     toAtomic(new BN(3), STAKING_REWARDS_MULTIPLIER_DECIMALS), // 300%
     toAtomic(new BN(0.5), STAKING_REWARDS_MULTIPLIER_DECIMALS) // 50%
   )
