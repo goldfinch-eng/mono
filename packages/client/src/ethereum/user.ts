@@ -91,27 +91,58 @@ class UserStakingRewards {
         )
       )
       .then((tokenIds: string[]) =>
-        Promise.all(
-          tokenIds.map((tokenId) =>
-            stakingRewards.contract.methods
-              .positions(tokenId)
-              .call(undefined, currentBlock.number)
-              .then(async (rawPosition) => {
-                // TODO Perform these steps in parallel with retrieving position.
-                const storedPosition = UserStakingRewards.parseStoredPosition(rawPosition)
-                const [stakedEvent, optimisticIncrement] = await Promise.all([
-                  stakingRewards.getStakedEvent(address, tokenId, currentBlock.number),
-                  stakingRewards.calculatePositionOptimisticIncrement(tokenId, storedPosition.rewards, currentBlock),
-                ])
-                if (!stakedEvent) {
-                  throw new Error(`Failed to retrieve Staked event for tokenId: ${tokenId}`)
-                }
-
-                return new StakingRewardsPosition(tokenId, stakedEvent, storedPosition, optimisticIncrement)
-              })
-          )
-        )
+        Promise.all([
+          tokenIds,
+          Promise.all(
+            tokenIds.map((tokenId) =>
+              stakingRewards.contract.methods
+                .positions(tokenId)
+                .call(undefined, currentBlock.number)
+                .then(async (rawPosition) => {
+                  const storedPosition = UserStakingRewards.parseStoredPosition(rawPosition)
+                  const optimisticIncrement = await stakingRewards.calculatePositionOptimisticIncrement(
+                    tokenId,
+                    storedPosition.rewards,
+                    currentBlock
+                  )
+                  return {storedPosition, optimisticIncrement}
+                })
+            )
+          ),
+          Promise.all(
+            tokenIds.map(async (tokenId) => {
+              const stakedEvent = await stakingRewards.getStakedEvent(address, tokenId, currentBlock.number)
+              if (!stakedEvent) {
+                throw new Error(`Failed to retrieve Staked event for tokenId: ${tokenId}`)
+              }
+              return stakedEvent
+            })
+          ),
+          Promise.all(
+            tokenIds.map((tokenId) =>
+              stakingRewards.contract.methods.positionCurrentEarnRate(tokenId).call(undefined, currentBlock.number)
+            )
+          ),
+        ])
       )
+      .then(([tokenIds, storedAndIncrements, stakedEvents, currentEarnRates]) => {
+        return tokenIds.map((tokenId, i) => {
+          const storedAndIncrement = storedAndIncrements[i]
+          assertNonNullable(storedAndIncrement)
+          const {storedPosition, optimisticIncrement} = storedAndIncrement
+          const stakedEvent = stakedEvents[i]
+          assertNonNullable(stakedEvent)
+          const currentEarnRate = currentEarnRates[i]
+          assertNonNullable(currentEarnRate)
+          return new StakingRewardsPosition(
+            tokenId,
+            stakedEvent,
+            new BigNumber(currentEarnRate),
+            storedPosition,
+            optimisticIncrement
+          )
+        })
+      })
 
     const claimable = UserStakingRewards.calculateClaimableRewards(positions)
     const unvested = UserStakingRewards.calculateUnvestedRewards(positions)
@@ -339,7 +370,7 @@ class UserCommunityRewards {
     if (grants.length === 0) return new BigNumber(0)
     return BigNumber.sum.apply(
       null,
-      grants.map((grant) => grant.rewards.totalGranted.minus(grant.rewards.totalClaimed.plus(grant.claimable)))
+      grants.map((grant) => grant.unvested)
     )
   }
 
@@ -347,7 +378,7 @@ class UserCommunityRewards {
     if (grants.length === 0) return new BigNumber(0)
     return BigNumber.sum.apply(
       null,
-      grants.map((grant) => grant.rewards.totalGranted)
+      grants.map((grant) => grant.granted)
     )
   }
 

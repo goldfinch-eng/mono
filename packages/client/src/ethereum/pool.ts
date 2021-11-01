@@ -649,22 +649,25 @@ interface StakingRewardsVesting {
 class StakingRewardsPosition {
   tokenId: string
   stakedEvent: EventData
+  currentEarnRate: BigNumber
   storedPosition: StoredPosition
   optimisticIncrement: PositionOptimisticIncrement
 
   constructor(
     tokenId: string,
     stakedEvent: EventData,
+    currentEarnRate: BigNumber,
     storedPosition: StoredPosition,
     optimisticIncrement: PositionOptimisticIncrement
   ) {
     this.tokenId = tokenId
     this.stakedEvent = stakedEvent
+    this.currentEarnRate = currentEarnRate
     this.storedPosition = storedPosition
     this.optimisticIncrement = optimisticIncrement
   }
 
-  get reason(): string {
+  get description(): string {
     const date = new Date(this.storedPosition.rewards.startTime * 1000).toLocaleDateString(undefined, {
       month: "short",
       day: "numeric",
