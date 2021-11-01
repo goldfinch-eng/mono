@@ -113,8 +113,8 @@ app.post("/advanceTimeOneDay", async (req, res) => {
 admin.initializeApp({projectId: "goldfinch-frontends-dev"})
 
 app.post("/kycStatus", async (req, res) => {
-  if (process.env.NODE_ENV === "production" || process.env.MURMURATION) {
-    return res.status(404).send({message: "kycStatus only available on local"})
+  if (process.env.NODE_ENV === "production") {
+    return res.status(404).send({message: "kycStatus only available on local and murmuration"})
   }
 
   const {address, countryCode, kycStatus} = req.body
@@ -148,7 +148,7 @@ app.post("/kycStatus", async (req, res) => {
       }
     })
   } catch (e) {
-    console.error(e)
+    console.error("kycStatus error", e)
     return res.status(500).send({status: "error", message: (e as Error)?.message})
   }
 
