@@ -135,6 +135,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     trancheInfo.principalDeposited = trancheInfo.principalDeposited.add(amount);
     IPoolTokens.MintParams memory params = IPoolTokens.MintParams({tranche: tranche, principalAmount: amount});
     tokenId = config.getPoolTokens().mint(params, msg.sender);
+    // TODO: Call PoolRewards.mintPoolToken()
     safeERC20TransferFrom(config.getUSDC(), msg.sender, address(this), amount);
     emit DepositMade(msg.sender, tranche, tokenId, amount);
     return tokenId;
@@ -564,6 +565,8 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   ) internal returns (uint256 totalReserveAmount) {
     safeERC20TransferFrom(config.getUSDC(), from, address(this), principal.add(interest), "Failed to collect payment");
 
+    // TODO @sanjay: Require pool is locked
+
     (uint256 interestAccrued, uint256 principalAccrued) = getTotalInterestAndPrincipal();
     uint256 reserveFeePercent = ONE_HUNDRED.div(config.getReserveDenominator()); // Convert the denonminator to percent
 
@@ -673,6 +676,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     );
   }
 
+  // TODO
   function getTrancheInfo(uint256 tranche) internal view returns (TrancheInfo storage) {
     require(
       tranche == uint256(ITranchedPool.Tranches.Senior) || tranche == uint256(ITranchedPool.Tranches.Junior),

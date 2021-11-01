@@ -67,11 +67,17 @@ function usdcVal(number) {
   return new BN(number).mul(USDC_DECIMALS)
 }
 
-function usdcToFidu(number) {
+function usdcToFidu(number: BN | number) {
+  if (!(number instanceof BN)) {
+    number = new BN(number)
+  }
   return number.mul(decimals.div(USDCDecimals))
 }
 
-function fiduToUSDC(number) {
+function fiduToUSDC(number: BN | number) {
+  if (!(number instanceof BN)) {
+    number = new BN(number)
+  }
   return number.div(decimals.div(USDCDecimals))
 }
 

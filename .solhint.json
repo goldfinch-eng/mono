@@ -142,7 +142,9 @@
           "getReward": []
         },
         "**/PoolRewards.sol:PoolRewards": {
-          "allocateRewards": ["onlyPool"]
+          "allocateRewards": ["onlyPool"],
+          "setPoolTokenAccRewardsPerPrincipalDollarAtMint": ["onlyPool"],
+          "withdraw": []
         },
         "**/MerkleDistributor.sol:MerkleDistributor": {
           "_setGrantAccepted": [],

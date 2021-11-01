@@ -4,4 +4,6 @@ pragma experimental ABIEncoderV2;
 
 interface IPoolRewards {
   function allocateRewards(uint256 _interestPaymentAmount) external;
+
+  function setPoolTokenAccRewardsPerPrincipalDollarAtMint(uint256 tokenId) external;
 }
