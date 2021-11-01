@@ -676,7 +676,6 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     );
   }
 
-  // TODO
   function getTrancheInfo(uint256 tranche) internal view returns (TrancheInfo storage) {
     require(
       tranche == uint256(ITranchedPool.Tranches.Senior) || tranche == uint256(ITranchedPool.Tranches.Junior),

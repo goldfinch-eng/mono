@@ -24,7 +24,7 @@ const {deployments, artifacts} = hre
 import {ecsign} from "ethereumjs-util"
 const CreditLine = artifacts.require("CreditLine")
 import {getApprovalDigest, getWallet} from "./permitHelpers"
-import {TranchedPoolInstance} from "../typechain/truffle"
+import {TranchedPoolInstance, PoolRewardsInstance} from "../typechain/truffle"
 import {JuniorTrancheLocked, DepositMade} from "../typechain/truffle/TranchedPool"
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
 import {assertNonNullable} from "@goldfinch-eng/utils"
@@ -72,8 +72,9 @@ describe("TranchedPool", () => {
     goldfinchFactory,
     creditLine,
     treasury,
-    configHelper
-  let tranchedPool: TranchedPoolInstance
+    configHelper,
+    poolRewards: PoolRewardsInstance,
+    tranchedPool: TranchedPoolInstance
   const limit = usdcVal(1000)
   let interestApr = interestAprAsBN("5.00")
   const paymentPeriodInDays = new BN(30)
@@ -98,7 +99,7 @@ describe("TranchedPool", () => {
   const testSetup = deployments.createFixture(async ({deployments}) => {
     // Just to be crystal clear
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;({usdc, goldfinchConfig, goldfinchFactory, poolTokens} = await deployAllContracts(deployments))
+    ;({usdc, goldfinchConfig, goldfinchFactory, poolTokens, poolRewards} = await deployAllContracts(deployments))
     await goldfinchConfig.bulkAddToGoList([owner, borrower, otherPerson])
     await goldfinchConfig.setTreasuryReserve(treasury)
     await erc20Transfer(usdc, [otherPerson], usdcVal(10000), owner)
@@ -1699,6 +1700,42 @@ describe("TranchedPool", () => {
           const totalInterest = totalPartialInterest.add(remainingInterest)
           expect(totalInterest.div(new BN(10))).to.bignumber.closeTo(expectedTotalProtocolFee, tolerance)
           expect(await usdc.balanceOf(treasury)).to.bignumber.eq(expectedTotalProtocolFee)
+        })
+      })
+
+      describe("Calls PoolRewards", () => {
+        it("Updates accRewardsPerPrincipalDollar", async () => {
+          // Ensure a full term has passed
+          await advanceTime({days: termInDays.toNumber()})
+          let accRewardsPerPrincipalDollar = await poolRewards.pools(tranchedPool.address)
+          expect(accRewardsPerPrincipalDollar).to.bignumber.equal(new BN(0))
+
+          const receipt = await tranchedPool.pay(usdcVal(10).add(usdcVal(100)), {from: borrower})
+          expectPaymentRelatedEventsEmitted(receipt, borrower, tranchedPool, {
+            interest: usdcVal(10),
+            principal: usdcVal(100),
+            remaining: new BN(0),
+            reserve: usdcVal(1),
+          })
+
+          expect(await creditLine.interestApr()).to.bignumber.eq(interestAprAsBN("10"))
+
+          // 100$ loan, with 10% interest. 80% senior and 20% junior. Junior fee of 20%. Reserve fee of 10%
+          // Senior share of interest 8$. Net interest = 8 * (100 - junior fee percent + reserve fee percent) = 5.6
+          // Junior share of interest 2$. Net interest = 2 + (8 * junior fee percent) - (2 * reserve fee percent) = 3.4
+          // Protocol fee = 1$. Total = 5.6 + 3.4 + 1 = 10
+          let interestAmount, principalAmount
+          ;[interestAmount, principalAmount] = await getTrancheAmounts(await tranchedPool.getTranche(TRANCHES.Senior))
+          expect(interestAmount).to.bignumber.eq(usdcVal(56).div(new BN(10)))
+          expect(principalAmount).to.bignumber.eq(usdcVal(80))
+          ;[interestAmount, principalAmount] = await getTrancheAmounts(await tranchedPool.getTranche(TRANCHES.Junior))
+          expect(interestAmount).to.bignumber.eq(usdcVal(34).div(new BN(10)))
+          expect(principalAmount).to.bignumber.eq(usdcVal(20))
+
+          expect(await usdc.balanceOf(treasury)).to.bignumber.eq(usdcVal(1))
+
+          accRewardsPerPrincipalDollar = await poolRewards.pools(tranchedPool.address)
+          expect(accRewardsPerPrincipalDollar).to.not.equal(new BN(0))
         })
       })
     })
