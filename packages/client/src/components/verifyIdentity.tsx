@@ -549,7 +549,16 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
             <Link className="form-link" to="/">
               Borrower Pools
             </Link>
-            .
+            .<br></br>
+            View your UID on{" "}
+            <a
+              className="form-link"
+              target="_blank"
+              rel="noopener noreferrer"
+              href={`https://opensea.io/${user.address}/uid?search[sortBy]=LISTING_DATE`}
+            >
+              OpenSea
+            </a>
           </>
         }
       />
