@@ -32,7 +32,7 @@ To use the client with the murmuration blockchain, you will need to add a custom
       --project=goldfinch-frontends-dev
     ```
 1. In the Google Cloud console, create a Compute Engine instance group using the template from the previous step.
-    - Turn off autoscaling. Set the number of instances to 1.
+    - Configure the min number and max number of instances to `1`. There's no point to having more than one instance, because the blockchain served by hardhat lives in memory on an instance.
 1. Create a firewall rule that will allow the load balancer's health checking and request forwarding. The firewall rule's target tags should be the tags of the instance group template.
     ```
     gcloud compute firewall-rules create \
@@ -56,4 +56,6 @@ To use the client with the murmuration blockchain, you will need to add a custom
 
 When viewing the Compute Engine instance group in the Google Cloud console (i.e. https://console.cloud.google.com/compute/instanceGroups/list?project=goldfinch-frontends-dev), you can SSH into an instance, from within your web browser.
 
-Once you've SSH'ed into an instance, you can see what Docker process are running via `docker ps`. You can view the logs for a Docker process via `docker logs $CONTAINER_ID`, where `$CONTAINER_ID` is the container id value for the `us.gcr.io/goldfinch-frontends-dev/goldfinch-protocol/murmuration-goldfinch-finance:latest` image shown in the `docker ps` output. These logs are essential for understanding the outcome of the `npm run murmuration-start` command!
+Once you've SSH'ed into an instance, you can see what Docker processes are running via `docker ps`. You can view the logs for a Docker process via `docker logs $CONTAINER_ID`, where `$CONTAINER_ID` is the container id value for the `us.gcr.io/goldfinch-frontends-dev/goldfinch-protocol/murmuration-goldfinch-finance:latest` image shown in the `docker ps` output. These logs are essential for understanding the outcome of the `npm run start:murmuration` command!
+
+To run the docker instance locally from the root run `docker build . -f ./murmuration/Dockerfile -t murmuration:latest`

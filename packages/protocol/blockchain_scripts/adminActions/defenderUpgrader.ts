@@ -115,7 +115,27 @@ class DefenderUpgrader {
     this.logger("Defender URL: ", this.defenderUrl(contract.address))
   }
 
-  async send({method, contract, args, contractName, title, description, via, viaType, metadata = {}}) {
+  async send({
+    method,
+    contract,
+    args,
+    contractName,
+    title,
+    description,
+    via,
+    viaType,
+    metadata = {},
+  }: {
+    method: string
+    contract: Pick<Truffle.ContractInstance, "abi" | "address">
+    args: any[]
+    contractName: string
+    title: string
+    description: string
+    via: string
+    viaType: "Gnosis Safe"
+    metadata: any
+  }) {
     via = via || this.safeAddress
     viaType = viaType || "Gnosis Safe"
     if (method === "pause") {
@@ -132,7 +152,7 @@ class DefenderUpgrader {
       )
     } else {
       const functionInterface = contract.abi.filter((funcAbi) => {
-        return funcAbi.name === method && funcAbi.inputs.length == args.length
+        return funcAbi.name === method && funcAbi.inputs?.length == args.length
       })[0]
       title = title || `Calling ${method} with args of ${args}`
       description = description || "No description provided"

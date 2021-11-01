@@ -1,13 +1,15 @@
 import * as dotenv from "dotenv"
 dotenv.config({path: ".env.local"})
-import {fromAtomic, getContract} from "./deployHelpers"
+import {fromAtomic, getContract, TRUFFLE_CONTRACT_PROVIDER} from "./deployHelpers"
 import {SeniorPoolInstance, PoolTokensInstance, TranchedPoolInstance} from "../typechain/truffle"
 import {default as DefenderProposer} from "./DefenderProposer"
 import hre from "hardhat"
+import {PoolTokens, SeniorPool, TranchedPool} from "../typechain/ethers"
+import {assertError} from "@goldfinch-eng/utils"
 
 async function main() {
-  const seniorPool = (await getContract("SeniorPool")) as SeniorPoolInstance
-  const poolTokens = (await getContract("PoolTokens")) as PoolTokensInstance
+  const seniorPool = await getContract<SeniorPool, SeniorPoolInstance>("SeniorPool", TRUFFLE_CONTRACT_PROVIDER)
+  const poolTokens = await getContract<PoolTokens, PoolTokensInstance>("PoolTokens", TRUFFLE_CONTRACT_PROVIDER)
   const {getChainId} = hre
   const chainId = await getChainId()
   const poolProposer = new RedeemTranchedPoolProposer({hre, logger: console.log, chainId})
@@ -22,7 +24,11 @@ async function main() {
   for (const event of events) {
     const tokenId = event.returnValues.tokenId
     const poolAddress = event.returnValues.pool
-    const tranchedPool = (await getContract("TranchedPool", {at: poolAddress})) as TranchedPoolInstance
+    const tranchedPool = await getContract<TranchedPool, TranchedPoolInstance>(
+      "TranchedPool",
+      TRUFFLE_CONTRACT_PROVIDER,
+      {at: poolAddress}
+    )
     let interest
     let principal
 
@@ -30,8 +36,9 @@ async function main() {
       const res = await tranchedPool.availableToWithdraw(tokenId)
       interest = res[0]
       principal = res[1]
-    } catch (ex) {
-      console.log(`Failed to calculate token ${tokenId} for ${poolAddress} (${(ex as Error).message})`)
+    } catch (ex: unknown) {
+      assertError(ex)
+      console.log(`Failed to calculate token ${tokenId} for ${poolAddress} (${ex.message})`)
       continue
     }
 

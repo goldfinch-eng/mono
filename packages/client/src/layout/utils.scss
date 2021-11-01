@@ -26,7 +26,10 @@
   font-weight: bold;
 }
 
-@function url-encoded-color($color) {
-  @return '%23' + str-slice('#{$color}', 2, - 1)
+.font-small {
+  font-size: $sans-size-s;
 }
 
+@function url-encoded-color($color) {
+  @return "%23" + str-slice("#{$color}", 2, -1);
+}

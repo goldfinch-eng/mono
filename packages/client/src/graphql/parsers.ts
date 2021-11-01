@@ -33,6 +33,7 @@ export async function parseSeniorPool(seniorPool: SeniorPoolGQL, pool?: SeniorPo
   const defaultRate = cumulativeWritedowns.dividedBy(cumulativeDrawdowns)
   const rawBalance = new BigNumber(latestPoolStatus.rawBalance)
   const estimatedApy = estimatedTotalInterest.dividedBy(totalPoolAssets)
+  const isPaused = pool?.isPaused
 
   return {
     type: "GraphSeniorPoolData",
@@ -49,6 +50,7 @@ export async function parseSeniorPool(seniorPool: SeniorPoolGQL, pool?: SeniorPo
     cumulativeDrawdowns,
     cumulativeWritedowns,
     remainingCapacity,
+    isPaused,
   }
 }
 

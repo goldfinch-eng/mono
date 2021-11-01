@@ -31,6 +31,7 @@ function SeniorPoolView(): JSX.Element {
 
   const loadedCapitalProvider = isGraphUserData(capitalProvider) || capitalProvider?.loaded
   const loadedPoolData = isGraphSeniorPoolData(poolData) || poolData?.loaded
+  const isPaused = isGraphSeniorPoolData(poolData) ? poolData.isPaused : !!poolData?.pool?.isPaused
 
   useEffect(() => {
     if (enableSeniorPoolV2) {
@@ -42,7 +43,7 @@ function SeniorPoolView(): JSX.Element {
   }, [])
 
   useEffect(() => {
-    const capitalProviderAddress = user.loaded && "0x001be549fa377710b9e59d57bbdf593ce1e379ca"
+    const capitalProviderAddress = user.loaded && user.address
     if (pool) {
       fetchData(capitalProviderAddress)
     }
@@ -123,7 +124,10 @@ function SeniorPoolView(): JSX.Element {
   return (
     <div className="content-section">
       <div className="page-header"> {earnMessage}</div>
-      <ConnectionNotice requireKYC={{kyc: kycResult, condition: (kyc) => eligibleForSeniorPool(kyc, user)}} />
+      <ConnectionNotice
+        requireKYC={{kyc: kycResult, condition: (kyc) => eligibleForSeniorPool(kyc, user)}}
+        isPaused={isPaused}
+      />
       {maxCapacityNotice}
       <InvestorNotice />
       <EarnActionsContainer

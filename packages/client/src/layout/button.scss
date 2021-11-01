@@ -8,7 +8,7 @@ button {
   color: $purp-dark;
 }
 
-.button{
+.button {
   border-radius: 6px;
   font-size: $sans-size-m;
   color: $purp-dark;
@@ -16,74 +16,76 @@ button {
   outline: none;
   background-color: $blue-xlight;
 
-  &:hover{
+  &:hover {
     background-color: $blue-light;
   }
 
-  .icon{
+  .icon {
     vertical-align: middle;
     height: 22px;
     margin: -4px 8px 0 0;
     width: 22px;
   }
 
-  &.right-icon .icon{
+  &.right-icon .icon {
     margin: -4px 0 0 8px;
   }
 
-  &.dark{
+  &.dark {
     background-color: $purp;
     color: $sand-xlight;
   }
 
-  &.dark:hover{
+  &.dark:hover {
     background-color: $purp-dark;
   }
 
-  &.dark .icon path{
+  &.dark .icon path {
     fill: $sand-xlight;
   }
 
-  &.pending{
+  &.pending {
     cursor: auto;
     pointer-events: none;
     opacity: 0.5;
   }
 
-  &.subtle{
+  &.subtle {
     background-color: $sand-light;
   }
 
-  &.subtle:hover{
+  &.subtle:hover {
     background-color: $sand;
   }
 
   &.disabled,
-  &.disabled.dark{
+  &.disabled.dark,
+  &.disabled:hover,
+  &:disabled {
     background-color: $sand;
     color: $sand-xxdark;
     cursor: auto;
 
-    & .icon path{
+    & .icon path {
       fill: $sand-xxdark;
     }
   }
 }
 
 @media only screen and (min-width: $screen-l) {
-  .button{
+  .button {
     border-radius: 8px;
     font-size: $sans-size-base;
     height: 70px;
 
-    .icon{
+    .icon {
       height: 24px;
       margin-right: 12px;
       vertical-align: middle;
       width: 24px;
     }
 
-    &.right-icon .icon{
+    &.right-icon .icon {
       margin-left: 12px;
     }
   }

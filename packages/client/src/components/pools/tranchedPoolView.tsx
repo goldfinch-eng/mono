@@ -399,7 +399,8 @@ function ActionsContainer({
     backer &&
     tranchedPool?.state === PoolState.Open &&
     tranchedPool?.remainingCapacity().gt(new BigNumber(0)) &&
-    !tranchedPool?.metadata?.disabled
+    !tranchedPool?.metadata?.disabled &&
+    user.goListed
   ) {
     depositAction = (e) => {
       setAction("deposit")
@@ -413,7 +414,8 @@ function ActionsContainer({
     session.status === "authenticated" &&
     backer &&
     !backer.availableToWithdrawInDollars.isZero() &&
-    !tranchedPool?.metadata?.disabled
+    !tranchedPool?.metadata?.disabled &&
+    user.goListed
   ) {
     withdrawAction = (e) => {
       setAction("withdraw")
@@ -789,7 +791,7 @@ function TranchedPoolView() {
   return (
     <div className="content-section">
       <div className="page-header">{earnMessage}</div>
-      <ConnectionNotice requireUnlock={false} requireGolist={true} />
+      <ConnectionNotice requireUnlock={false} requireGolist={true} isPaused={!!tranchedPool?.isPaused} />
       {unlockForm}
       {user.loaded && (
         <>

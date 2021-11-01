@@ -111,7 +111,7 @@ describe("Goldfinch", async () => {
       return tranchedPool
     }
 
-    async function depositToFund(amount, investor?) {
+    async function depositToSeniorPool(amount, investor?) {
       investor = investor || investor1
       await seniorPool.deposit(amount, {from: investor})
     }
@@ -185,7 +185,7 @@ describe("Goldfinch", async () => {
       return grossAmount.sub(grossAmount.div(feeDenominator))
     }
 
-    async function withdrawFromFund(usdcAmount, investor?) {
+    async function withdrawFromSeniorPool(usdcAmount, investor?) {
       investor = investor || investor1
       if (usdcAmount === "max") {
         const numShares = await getBalance(investor, fidu)
@@ -195,7 +195,7 @@ describe("Goldfinch", async () => {
       return seniorPool.withdraw(usdcAmount, {from: investor})
     }
 
-    async function withdrawFromFundInFidu(fiduAmount, investor) {
+    async function withdrawFromSeniorPoolInFidu(fiduAmount, investor) {
       return seniorPool.withdrawInFidu(fiduAmount, {from: investor})
     }
 
@@ -218,8 +218,8 @@ describe("Goldfinch", async () => {
         tranchedPool = await createTranchedPool({_paymentPeriodInDays: paymentPeriodInDays})
 
         await expectAction(async () => {
-          await depositToFund(amount)
-          await depositToFund(amount, investor2)
+          await depositToSeniorPool(amount)
+          await depositToSeniorPool(amount, investor2)
           await depositToPool(tranchedPool, juniorAmount)
           await depositToPool(tranchedPool, juniorAmount, investor2)
         }).toChange([
@@ -264,8 +264,8 @@ describe("Goldfinch", async () => {
         const expectedReturn = await afterWithdrawalFees(grossExpectedReturn)
         const availableFidu = await getBalance(investor2, fidu)
         await expectAction(async () => {
-          await withdrawFromFund("max")
-          await withdrawFromFundInFidu(availableFidu, investor2) // Withdraw everything in fidu terms
+          await withdrawFromSeniorPool("max")
+          await withdrawFromSeniorPoolInFidu(availableFidu, investor2) // Withdraw everything in fidu terms
         }).toChange([
           [() => getBalance(investor1, usdc), {byCloseTo: expectedReturn}],
           [() => getBalance(investor2, usdc), {byCloseTo: expectedReturn}], // Also ensures share price is correctly incorporated
@@ -289,8 +289,8 @@ describe("Goldfinch", async () => {
         const juniorAmount = usdcVal(1000)
         const drawdownAmount = amount.div(new BN(2))
 
-        await depositToFund(amount)
-        await depositToFund(amount, investor2)
+        await depositToSeniorPool(amount)
+        await depositToSeniorPool(amount, investor2)
         await createTranchedPool({_paymentPeriodInDays: paymentPeriodInDays})
         await depositToPool(tranchedPool, juniorAmount)
         await depositToPool(tranchedPool, juniorAmount, investor2)
@@ -310,8 +310,8 @@ describe("Goldfinch", async () => {
 
         // All the main actions should still work as expected!
         await expect(drawdown(tranchedPool, new BN(10))).to.be.rejected
-        await depositToFund(new BN(10))
-        await withdrawFromFund(new BN(10))
+        await depositToSeniorPool(new BN(10))
+        await withdrawFromSeniorPool(new BN(10))
         await makePayment(tranchedPool, new BN(10))
       })
 
@@ -322,8 +322,8 @@ describe("Goldfinch", async () => {
         const amount = usdcVal(10000)
         const drawdownAmount = amount.div(new BN(2))
 
-        await depositToFund(amount)
-        await depositToFund(amount, investor2)
+        await depositToSeniorPool(amount)
+        await depositToSeniorPool(amount, investor2)
         const creditLine = await createTranchedPool({
           _paymentPeriodInDays: paymentPeriodInDays,
           _lateFeesApr: interestAprAsBN("3.0"),

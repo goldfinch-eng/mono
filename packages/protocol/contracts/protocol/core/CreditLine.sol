@@ -25,6 +25,8 @@ import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 contract CreditLine is BaseUpgradeablePausable, ICreditLine {
   uint256 public constant SECONDS_PER_DAY = 60 * 60 * 24;
 
+  event GoldfinchConfigUpdated(address indexed who, address configAddress);
+
   // Credit line terms
   address public override borrower;
   uint256 public override limit;
@@ -100,6 +102,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
    */
   function updateGoldfinchConfig() external onlyAdmin {
     config = GoldfinchConfig(config.configAddress());
+    emit GoldfinchConfigUpdated(msg.sender, address(config));
   }
 
   function setLateFeeApr(uint256 newLateFeeApr) external onlyAdmin {

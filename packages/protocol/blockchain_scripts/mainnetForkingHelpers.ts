@@ -15,6 +15,7 @@ import {
   currentChainId,
   assertIsChainId,
   assertIsTicker,
+  ContractDeployer,
 } from "../blockchain_scripts/deployHelpers"
 import _ from "lodash"
 import {CONFIG_KEYS} from "./configKeys"
@@ -28,6 +29,10 @@ const {ethers, artifacts} = hre
 const MAINNET_MULTISIG = "0xBEb28978B2c755155f20fd3d09Cb37e300A6981f"
 const MAINNET_UNDERWRITER = "0x79ea65C834EC137170E1aA40A42b9C80df9c0Bb4"
 
+import {mergeABIs} from "hardhat-deploy/dist/src/utils"
+import {FormatTypes} from "ethers/lib/utils"
+import {Logger} from "./types"
+
 async function getProxyImplAddress(proxyContract: Contract) {
   if (!proxyContract) {
     return null
@@ -37,25 +42,39 @@ async function getProxyImplAddress(proxyContract: Contract) {
   return ethers.utils.hexStripZeros(currentImpl)
 }
 
-async function upgradeContracts(
-  contractsToUpgrade: string[],
-  contracts: ExistingContracts,
-  signer: string | Signer,
-  deployFrom: any,
-  deployments: DeploymentsExtension,
-  changeImplementation = true
-): Promise<UpgradedContracts> {
-  console.log("Deploying the accountant")
-  const accountantDeployResult = await deployments.deploy("Accountant", {from: deployFrom, gasLimit: 4000000, args: []})
-  console.log("Deployed...")
-  // Ensure a test forwarder is available. Using the test forwarder instead of the real forwarder on mainnet
-  // gives us the ability to debug the forwarded transactions.
-  console.log("Deploying test forwarder...")
-  await deployments.deploy("TestForwarder", {from: deployFrom, gasLimit: 4000000, args: []})
-  console.log("Deployed...")
+async function upgradeContracts({
+  contractsToUpgrade = [],
+  contracts,
+  signer,
+  deployFrom,
+  deployer,
+  deployTestForwarder = false,
+  logger = console.log,
+}: {
+  contractsToUpgrade: string[]
+  contracts: ExistingContracts
+  signer: string | Signer
+  deployFrom: any
+  deployer: ContractDeployer
+  deployTestForwarder?: boolean
+  logger: Logger
+}): Promise<UpgradedContracts> {
+  logger("Deploying accountant")
+  const accountantDeployResult = await deployer.deployLibrary("Accountant", {
+    from: deployFrom,
+    gasLimit: 4000000,
+    args: [],
+  })
+
+  if (deployTestForwarder) {
+    logger("Deploying test forwarder")
+    // Ensure a test forwarder is available. Using the test forwarder instead of the real forwarder on mainnet
+    // gives us the ability to debug the forwarded transactions.
+    await deployer.deploy("TestForwarder", {from: deployFrom, gasLimit: 4000000, args: []})
+  }
 
   const dependencies: DepList = {
-    CreditDesk: {["Accountant"]: accountantDeployResult.address},
+    CreditLine: {["Accountant"]: accountantDeployResult.address},
   }
 
   const upgradedContracts: UpgradedContracts = {}
@@ -68,35 +87,59 @@ async function upgradeContracts(
       contractToDeploy = `Test${contractName}`
     }
 
-    console.log("Trying to deploy", contractToDeploy)
-    const deployResult = await deployments.deploy(contractToDeploy, {
-      from: deployFrom,
-      args: [],
-      libraries: dependencies[contractName],
-    })
-    console.log("Deployed...")
-    // Get a contract object with the latest ABI, attached to the signer
+    logger("Trying to deploy", contractToDeploy)
     const ethersSigner = typeof signer === "string" ? await ethers.getSigner(signer) : signer
-    let upgradedContract = await ethers.getContractAt(deployResult.abi, deployResult.address, ethersSigner)
-    const upgradedImplAddress = deployResult.address
-
-    if (contract.ProxyContract && changeImplementation) {
-      if (!isTestEnv()) {
-        console.log(
-          `Changing implementation of ${contractName} from ${contract.ExistingImplAddress} to ${deployResult.address}`
-        )
-      }
-      await contract.ProxyContract.connect(ethersSigner).changeImplementation(deployResult.address, "0x")
-      upgradedContract = upgradedContract.attach(contract.ProxyContract.address)
-    }
+    const upgradedContract = (
+      await deployer.deploy(contractToDeploy, {
+        from: deployFrom,
+        args: [],
+        libraries: dependencies[contractName],
+      })
+    ).connect(ethersSigner)
+    // Get a contract object with the latest ABI, attached to the signer
+    const upgradedImplAddress = upgradedContract.address
 
     upgradedContracts[contractName] = {
       ...contract,
       UpgradedContract: upgradedContract,
       UpgradedImplAddress: upgradedImplAddress,
     }
+
+    await rewriteUpgradedDeployment(contractName, upgradedContract, contract.ProxyContract)
   }
   return upgradedContracts
+}
+
+/**
+ * Rewrite a proxy upgrade in the deployments directory. hardhat-deploy creates 3 different deployment files for a proxied contract:
+ *
+ *   - Contract_Proxy.json. Proxy ABI.
+ *   - Contract_Implementation.json. Implementation ABI.
+ *   - Contract.json. Combined Proxy and Implementation ABI.
+ *
+ * When using `hre.deployments.deploy` with the `proxy` key, hardhat-deploy will write out the combined ABI. But since
+ * we run our own deploy logic (without the `proxy` key, see `upgradeContracts`), only the implementation ABI is written out.
+ * Work around this by rewriting the ABI ourselves.
+ */
+async function rewriteUpgradedDeployment(deploymentName: string, impl: Contract, proxy: Contract) {
+  const implAbi = JSON.parse(String(impl.interface.format(FormatTypes.json)))
+  const proxyAbi = JSON.parse(String(proxy.interface.format(FormatTypes.json)))
+
+  const mergedABI = mergeABIs([implAbi, proxyAbi], {
+    check: false,
+    skipSupportsInterface: false,
+  })
+
+  const deployment = await hre.deployments.get(deploymentName)
+  deployment.abi = mergedABI
+  deployment.address = proxy.address
+  await hre.deployments.save(deploymentName, deployment)
+
+  const implDeploymentName = deploymentName + "_Implementation"
+  const implDeployment = await hre.deployments.get(implDeploymentName)
+  implDeployment.abi = implAbi
+  implDeployment.address = impl.address
+  await hre.deployments.save(implDeploymentName, implDeployment)
 }
 
 export type ContractHolder = {
@@ -139,7 +182,7 @@ async function getExistingContracts(
   return contracts
 }
 
-async function fundWithWhales(currencies: string[], recipients: string[], amount?: any) {
+async function fundWithWhales(currencies: Ticker[], recipients: string[], amount?: any) {
   const whales: Record<Ticker, AddressString> = {
     USDC: "0xf977814e90da44bfa03b6295a0616a897441acec",
     USDT: "0x28c6c06298d514db089934071355e5743bf21d60",
@@ -160,7 +203,7 @@ async function fundWithWhales(currencies: string[], recipients: string[], amount
         await impersonateAccount(hre, whale)
         const signer = ethers.provider.getSigner(whale)
         assertNonNullable(signer)
-        await signer.sendTransaction({to: recipient, value: ethers.utils.parseEther("5.0")})
+        await signer.sendTransaction({to: recipient, value: ethers.utils.parseEther("10.0")})
       } else {
         const erc20Address = getERC20Address(currency, chainId)
         assertIsString(erc20Address)
