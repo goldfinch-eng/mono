@@ -381,7 +381,6 @@ function getMerkleDistributorGrantInfoDetails(
     claimStatus: undefined,
     currentEarnRate: undefined,
     vestingStatus: `${displayDollars(undefined)} (${displayNumber(undefined)} GFI) vested`,
-    // TODO[PR] Could link to public release of airdrop info instead.
     etherscanAddress: merkleDistributor.address,
   }
 }
