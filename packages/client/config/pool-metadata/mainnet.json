@@ -1,11 +1,4 @@
 {
-  "0xf74ea34ac88862b7ff419e60e476be2651433e68": {
-    "name": "Divibank",
-    "category": "SMB Loans in Latin America",
-    "description": "Divibank is a data-driven financing platform that helps online businesses in Latin America scale by providing quick and affordable growth capital. The company provides revenue share loans along with a marketing analytics product to help online businesses scale in a capital-efficient way.",
-    "icon": "%PUBLIC_URL%/icons/divibank.png",
-    "v1StyleDeal": true
-  },
   "0xaa2ccc5547f64c5dffd0a624eb4af2543a67ba65": {
     "name": "Tugende",
     "category": "Asset Finance Loans in Kenya",
