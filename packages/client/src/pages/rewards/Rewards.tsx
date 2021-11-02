@@ -211,7 +211,6 @@ function Rewards() {
     gfiBalance = user.info.value.gfiBalance
 
     totalUSD = gfiInDollars(gfiToDollarsAtomic(granted, gfi.info.value.price))
-
     rewards = emptyRewards ? (
       <NoRewards />
     ) : (

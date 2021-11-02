@@ -1,6 +1,7 @@
 import "@testing-library/jest-dom"
 import {mock, resetMocks} from "depay-web3-mock"
 import {render, screen} from "@testing-library/react"
+import {MerkleDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types"
 import {BrowserRouter as Router} from "react-router-dom"
 import {AppContext} from "../../App"
 import web3 from "../../web3"
@@ -15,259 +16,23 @@ import {GFI, GFILoaded} from "../../ethereum/gfi"
 import {User} from "../../ethereum/user"
 import {SeniorPool, StakingRewards, StakingRewardsLoaded} from "../../ethereum/pool"
 import {UserLoaded} from "../../ethereum/user"
-import {
-  blockchain,
-  blockInfo,
-  communityRewardsABI,
-  DEPLOYMENTS,
-  erc20ABI,
-  gfiABI,
-  merkleDistributorABI,
-  network,
-  recipient,
-  stakingRewardsABI,
-} from "../constants"
+import {blockchain, blockInfo, DEPLOYMENTS, network, recipient} from "../constants"
 import {assertWithLoadedInfo} from "../../types/loadable"
 import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
 import * as utils from "../../ethereum/utils"
+import {
+  mockStakingRewardsContractCalls,
+  mockMerkleDistributorContractCalls,
+  mockUserInitializationContractCalls,
+  setupMocksForAcceptedAirdrop,
+  assertAllMocksAreCalled,
+} from "../mocks"
 
 mock({
   blockchain: "ethereum",
 })
 
 web3.setProvider(global.ethereum)
-
-interface StakingRewardsMockData {
-  hasRewards: boolean
-  hasCommunityRewards: boolean
-  positionsRes?:
-    | {
-        0: string
-        1: [string, string, string, string, string, string]
-        2: string
-        3: string
-      }
-    | undefined
-  earnedSince?: string | undefined
-  totalVestedAt?: string | undefined
-  currentTimestamp?: string | undefined
-  positionCurrentEarnRate?: string | undefined
-}
-
-function mockUserInitializationContractCalls(
-  user: User,
-  stakingRewards: StakingRewards,
-  gfi: GFI,
-  communityRewards: CommunityRewards,
-  stakingRewardsMock?: StakingRewardsMockData | undefined
-) {
-  user.fetchTxs = (usdc, pool, currentBlock) => {
-    return [[], [], []]
-  }
-  user.fetchGolistStatus = (address, currentBlock) => {
-    return {
-      legacyGolisted: true,
-      golisted: true,
-    }
-  }
-
-  let stakingRewardsBalance = 0
-  if (stakingRewardsMock?.hasRewards) {
-    stakingRewardsBalance = 1
-  }
-
-  let callGFIBalanceMock = mock({
-    blockchain,
-    call: {
-      to: gfi.address,
-      api: gfiABI,
-      method: "balanceOf",
-      params: [recipient],
-      return: "0",
-    },
-  })
-
-  let callUSDCBalanceMock = mock({
-    blockchain,
-    call: {
-      to: "0x0000000000000000000000000000000000000002",
-      api: erc20ABI,
-      method: "balanceOf",
-      params: [recipient],
-      return: "0",
-    },
-  })
-  let callUSDCAllowanceMock = mock({
-    blockchain,
-    call: {
-      to: "0x0000000000000000000000000000000000000002",
-      api: erc20ABI,
-      method: "allowance",
-      params: [recipient, "0x0000000000000000000000000000000000000005"],
-      return: "0",
-    },
-  })
-  let callStakingRewardsBalanceMock = mock({
-    blockchain,
-    call: {
-      to: stakingRewards.address,
-      api: stakingRewardsABI,
-      method: "balanceOf",
-      params: [recipient],
-      return: stakingRewardsBalance,
-    },
-  })
-
-  let callTokenOfOwnerByIndexMock
-  let callPositionsMock
-  let callEarnedSinceLastCheckpointMock
-  let callTotalVestedAt
-  let callPositionCurrentEarnRate
-  if (stakingRewardsMock) {
-    let positionsRes = stakingRewardsMock.positionsRes || [
-      "50000000000000000000000",
-      ["0", "0", "0", "0", "1641391907", "1672927907"],
-      "1000000000000000000",
-      "0",
-    ]
-    let earnedSince = stakingRewardsMock.earnedSince || "0"
-    let totalVestedAt = stakingRewardsMock.totalVestedAt || "0"
-    let positionCurrentEarnRate = stakingRewardsMock.positionCurrentEarnRate || "750000000000000"
-    let currentTimestamp = stakingRewardsMock.currentTimestamp || "1640783491"
-    let stakedEvent = {returnValues: {amount: "50000000000000000000000"}}
-
-    callTokenOfOwnerByIndexMock = mock({
-      blockchain,
-      call: {
-        to: stakingRewards.address,
-        api: stakingRewardsABI,
-        method: "tokenOfOwnerByIndex",
-        params: [recipient, "0"],
-        return: "1",
-      },
-    })
-    callPositionsMock = mock({
-      blockchain,
-      call: {
-        to: stakingRewards.address,
-        api: stakingRewardsABI,
-        method: "positions",
-        params: "1",
-        return: positionsRes,
-      },
-    })
-    callEarnedSinceLastCheckpointMock = mock({
-      blockchain,
-      call: {
-        to: stakingRewards.address,
-        api: stakingRewardsABI,
-        method: "earnedSinceLastCheckpoint",
-        params: ["1"],
-        return: earnedSince,
-      },
-    })
-
-    callTotalVestedAt = mock({
-      blockchain,
-      call: {
-        to: stakingRewards.address,
-        api: stakingRewardsABI,
-        method: "totalVestedAt",
-        params: [positionsRes[1][4], positionsRes[1][5], currentTimestamp, earnedSince],
-        return: totalVestedAt,
-      },
-    })
-    stakingRewards.getStakedEvent = (address, tokenId, number) => {
-      return stakedEvent
-    }
-    callPositionCurrentEarnRate = mock({
-      blockchain,
-      call: {
-        to: stakingRewards.address,
-        api: stakingRewardsABI,
-        method: "positionCurrentEarnRate",
-        params: ["1"],
-        return: positionCurrentEarnRate,
-      },
-    })
-  }
-
-  let communityRewardsBalance = "0"
-  if (stakingRewardsMock?.hasCommunityRewards) {
-    communityRewardsBalance = "1"
-  }
-
-  let callCommunityRewardsBalanceMock = mock({
-    blockchain,
-    call: {
-      to: communityRewards.address,
-      api: communityRewardsABI,
-      method: "balanceOf",
-      params: [recipient],
-      return: communityRewardsBalance,
-    },
-  })
-
-  // if (stakingRewardsMock?.hasCommunityRewards) {
-  //   // continue with the calls
-  // }
-
-  return {
-    callGFIBalanceMock,
-    callUSDCBalanceMock,
-    callUSDCAllowanceMock,
-    callStakingRewardsBalanceMock,
-    callCommunityRewardsBalanceMock,
-    callTokenOfOwnerByIndexMock,
-    callPositionsMock,
-    callEarnedSinceLastCheckpointMock,
-    callTotalVestedAt,
-    callPositionCurrentEarnRate,
-  }
-}
-
-function mockStakingRewardsContractCalls(stakingRewards, currentEarnRatePerToken?: string | undefined) {
-  if (!currentEarnRatePerToken) {
-    currentEarnRatePerToken = "10000000000000000000"
-  }
-
-  let callPausedMock = mock({
-    blockchain,
-    call: {
-      to: stakingRewards.address,
-      api: stakingRewardsABI,
-      method: "paused",
-      return: false,
-    },
-  })
-  let callCurrentEarnRatePerToken = mock({
-    blockchain,
-    call: {
-      to: stakingRewards.address,
-      api: stakingRewardsABI,
-      method: "currentEarnRatePerToken",
-      return: currentEarnRatePerToken,
-    },
-  })
-
-  return {callPausedMock, callCurrentEarnRatePerToken}
-}
-
-function mockMerkleDistributorContractCalls(
-  merkle,
-  communityRewardsAddress = "0x0000000000000000000000000000000000000008"
-) {
-  let callCommunityRewardsMock = mock({
-    blockchain,
-    call: {
-      to: merkle.address,
-      api: merkleDistributorABI,
-      method: "communityRewards",
-      return: communityRewardsAddress,
-    },
-  })
-  return {callCommunityRewardsMock}
-}
 
 function renderRewards(
   stakingRewards: StakingRewardsLoaded | undefined,
@@ -364,19 +129,12 @@ describe("Rewards portfolio overview", () => {
     const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
 
     const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
-    const {
-      callGFIBalanceMock,
-      callUSDCBalanceMock,
-      callUSDCAllowanceMock,
-      callStakingRewardsBalanceMock,
-      callCommunityRewardsBalanceMock,
-    } = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, false)
+    const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
+      hasStakingRewards: false,
+      hasCommunityRewards: false,
+    })
     await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
-    expect(callGFIBalanceMock).toHaveBeenCalled()
-    expect(callUSDCBalanceMock).toHaveBeenCalled()
-    expect(callUSDCAllowanceMock).toHaveBeenCalled()
-    expect(callStakingRewardsBalanceMock).toHaveBeenCalled()
-    expect(callCommunityRewardsBalanceMock).toHaveBeenCalled()
+    assertAllMocksAreCalled(mocks)
     assertWithLoadedInfo(user)
 
     renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
@@ -391,13 +149,14 @@ describe("Rewards portfolio overview", () => {
   it("staking rewards with zero dont count for portfolio", async () => {
     const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
     const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
-    mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
-      hasRewards: true,
+    const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
+      hasStakingRewards: true,
       hasCommunityRewards: false,
     })
     await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
 
     assertWithLoadedInfo(user)
+    assertAllMocksAreCalled(mocks)
 
     renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
 
@@ -415,14 +174,14 @@ describe("Rewards portfolio overview", () => {
     expect(summaryValues[3]?.textContent).toEqual("0.00")
   })
 
-  it("vesting staking rewards appear on portfolio", async () => {
-    const updatedBlockInfo = blockInfo
+  it("vesting staking rewards appears on portfolio", async () => {
+    const updatedBlockInfo = {...blockInfo}
     updatedBlockInfo.timestamp = 1641564707
 
     const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
     const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
-    mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
-      hasRewards: true,
+    const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
+      hasStakingRewards: true,
       hasCommunityRewards: false,
       currentTimestamp: String(updatedBlockInfo.timestamp),
       earnedSince: "129600000000000000000",
@@ -431,6 +190,7 @@ describe("Rewards portfolio overview", () => {
     await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, updatedBlockInfo)
 
     assertWithLoadedInfo(user)
+    assertAllMocksAreCalled(mocks)
 
     renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
 
@@ -448,29 +208,216 @@ describe("Rewards portfolio overview", () => {
     expect(summaryValues[3]?.textContent).toEqual("129.60")
   })
 
-  // it("shows community rewards on portfolio", async () => {
-  //   const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
-  //   const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
-  //   mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
-  //     hasRewards: false,
-  //     hasCommunityRewards: true,
-  //   })
-  //   await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
+  it("shows community rewards on portfolio", async () => {
+    const airdrop = {
+      index: 0,
+      account: recipient,
+      reason: "flight_academy",
+      grant: {
+        amount: "0x3635c9adc5dea00000",
+        vestingLength: "0x00",
+        cliffLength: "0x00",
+        vestingInterval: "0x01",
+      },
+      proof: ["0x00", "0x00", "0x00"],
+    }
+    setupMocksForAcceptedAirdrop(airdrop)
 
-  //   assertWithLoadedInfo(user)
-  //   renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
+    const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
+    const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
+    const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
+      hasStakingRewards: false,
+      hasCommunityRewards: true,
+      airdrop: airdrop as MerkleDistributorGrantInfo,
+    })
+    await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
 
-  //   expect(await screen.findByText("Wallet balance")).toBeVisible()
-  //   expect(await screen.findByText("Claimable")).toBeVisible()
-  //   expect(await screen.findByText("Still vesting")).toBeVisible()
-  //   expect(await screen.findByText("Total GFI balance")).toBeVisible()
+    assertWithLoadedInfo(user)
+    assertAllMocksAreCalled(mocks)
 
-  //   const element = screen.getByTestId("rewards-summary")
-  //   expect(element.getElementsByClassName("value").length).toBe(4)
-  //   const summaryValues = await element.getElementsByClassName("value")
-  //   expect(summaryValues[0]?.textContent).toEqual("0.00")
-  //   expect(summaryValues[1]?.textContent).toEqual("1,000.00")
-  //   expect(summaryValues[2]?.textContent).toEqual("0.00")
-  //   expect(summaryValues[3]?.textContent).toEqual("1,000.00")
-  // })
+    renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
+
+    expect(await screen.findByText("Wallet balance")).toBeVisible()
+    expect(await screen.findByText("Claimable")).toBeVisible()
+    expect(await screen.findByText("Still vesting")).toBeVisible()
+    expect(await screen.findByText("Total GFI balance")).toBeVisible()
+
+    const element = screen.getByTestId("rewards-summary")
+    expect(element.getElementsByClassName("value").length).toBe(4)
+    const summaryValues = await element.getElementsByClassName("value")
+    expect(summaryValues[0]?.textContent).toEqual("0.00")
+    expect(summaryValues[1]?.textContent).toEqual("1,000.00")
+    expect(summaryValues[2]?.textContent).toEqual("0.00")
+    expect(summaryValues[3]?.textContent).toEqual("1,000.00")
+  })
+
+  it("non accepted airdrops dont count for portfolio", async () => {
+    const airdrop = {
+      index: 0,
+      account: recipient,
+      reason: "flight_academy",
+      grant: {
+        amount: "0x3635c9adc5dea00000",
+        vestingLength: "0x00",
+        cliffLength: "0x00",
+        vestingInterval: "0x01",
+      },
+      proof: ["0x00", "0x00", "0x00"],
+    }
+    setupMocksForAcceptedAirdrop(airdrop, false)
+    const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
+    const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
+    const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
+      hasStakingRewards: false,
+      hasCommunityRewards: false,
+    })
+    await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
+
+    assertWithLoadedInfo(user)
+    assertAllMocksAreCalled(mocks)
+
+    renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
+
+    expect(await screen.findByText("Total GFI balance")).toBeVisible()
+    expect(await screen.findByText("Wallet balance")).toBeVisible()
+    expect(await screen.findByText("Claimable")).toBeVisible()
+    expect(await screen.findByText("Still vesting")).toBeVisible()
+    const element = screen.getByTestId("rewards-summary")
+    expect(element.getElementsByClassName("disabled-value").length).toBe(4)
+  })
+
+  it("shows community rewards and staking rewards on portfolio", async () => {
+    const updatedBlockInfo = {...blockInfo}
+    updatedBlockInfo.timestamp = 1641564707
+
+    const airdrop = {
+      index: 0,
+      account: recipient,
+      reason: "flight_academy",
+      grant: {
+        amount: "0x3635c9adc5dea00000",
+        vestingLength: "0x00",
+        cliffLength: "0x00",
+        vestingInterval: "0x01",
+      },
+      proof: ["0x00", "0x00", "0x00"],
+    }
+    setupMocksForAcceptedAirdrop(airdrop)
+
+    const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
+    const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
+    const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
+      hasStakingRewards: true,
+      hasCommunityRewards: true,
+      currentTimestamp: String(updatedBlockInfo.timestamp),
+      earnedSince: "129600000000000000000",
+      totalVestedAt: "710136986301369863",
+      airdrop: airdrop as MerkleDistributorGrantInfo,
+    })
+    await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, updatedBlockInfo)
+
+    assertWithLoadedInfo(user)
+    assertAllMocksAreCalled(mocks)
+
+    renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
+
+    expect(await screen.findByText("Total GFI balance")).toBeVisible()
+    expect(await screen.findByText("Wallet balance")).toBeVisible()
+    expect(await screen.findByText("Claimable")).toBeVisible()
+    expect(await screen.findByText("Still vesting")).toBeVisible()
+
+    const element = screen.getByTestId("rewards-summary")
+    expect(element.getElementsByClassName("value").length).toBe(4)
+    const summaryValues = await element.getElementsByClassName("value")
+    expect(summaryValues[0]?.textContent).toEqual("0.00")
+    expect(summaryValues[1]?.textContent).toEqual("1,000.71")
+    expect(summaryValues[2]?.textContent).toEqual("128.89")
+    expect(summaryValues[3]?.textContent).toEqual("1,129.60")
+  })
+
+  it("vesting community rewards appears on portfolio", async () => {
+    const airdrop = {
+      index: 2,
+      account: recipient,
+      reason: "goldfinch_investment",
+      grant: {
+        amount: "0x3635c9adc5dea00000",
+        vestingLength: "0x1770",
+        cliffLength: "0x00",
+        vestingInterval: "0x012c",
+      },
+      proof: ["0x00", "0x00", "0x00"],
+    }
+    setupMocksForAcceptedAirdrop(airdrop)
+
+    const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
+    const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
+    const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
+      hasStakingRewards: false,
+      hasCommunityRewards: true,
+      airdrop: airdrop as MerkleDistributorGrantInfo,
+      grantRes: ["1000000000000000000000", "0", "1641576557", "1641582557", "0", "300", "0"],
+      claimable: "0",
+    })
+    await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
+
+    assertWithLoadedInfo(user)
+    assertAllMocksAreCalled(mocks)
+
+    renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
+
+    expect(await screen.findByText("Wallet balance")).toBeVisible()
+    expect(await screen.findByText("Claimable")).toBeVisible()
+    expect(await screen.findByText("Still vesting")).toBeVisible()
+    expect(await screen.findByText("Total GFI balance")).toBeVisible()
+
+    const element = screen.getByTestId("rewards-summary")
+    expect(element.getElementsByClassName("value").length).toBe(4)
+    const summaryValues = await element.getElementsByClassName("value")
+    expect(summaryValues[0]?.textContent).toEqual("0.00")
+    expect(summaryValues[1]?.textContent).toEqual("0.00")
+    expect(summaryValues[2]?.textContent).toEqual("1,000.00")
+    expect(summaryValues[3]?.textContent).toEqual("1,000.00")
+  })
+
+  it("staking rewards partially claimed appears on portfolio", async () => {
+    const updatedBlockInfo = {...blockInfo}
+    updatedBlockInfo.timestamp = 1641750579
+
+    const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
+    const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
+    const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
+      hasStakingRewards: true,
+      hasCommunityRewards: false,
+      currentTimestamp: String(updatedBlockInfo.timestamp),
+      earnedSince: "129600000000000000000",
+      totalVestedAt: "3059493996955859969",
+      granted: "269004000000000000000",
+      positionsRes: [
+        "50000000000000000000000",
+        ["138582358057838660579", "821641942161339421", "0", "821641942161339421", "1641391907", "1672927907"],
+        "1000000000000000000",
+        "0",
+      ],
+    })
+    await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, updatedBlockInfo)
+
+    assertWithLoadedInfo(user)
+    assertAllMocksAreCalled(mocks)
+
+    renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
+
+    expect(await screen.findByText("Wallet balance")).toBeVisible()
+    expect(await screen.findByText("Claimable")).toBeVisible()
+    expect(await screen.findByText("Still vesting")).toBeVisible()
+    expect(await screen.findByText("Total GFI balance")).toBeVisible()
+
+    const element = screen.getByTestId("rewards-summary")
+    expect(element.getElementsByClassName("value").length).toBe(4)
+    const summaryValues = await element.getElementsByClassName("value")
+    expect(summaryValues[0]?.textContent).toEqual("0.00")
+    expect(summaryValues[1]?.textContent).toEqual("2.24")
+    expect(summaryValues[2]?.textContent).toEqual("265.94")
+    expect(summaryValues[3]?.textContent).toEqual("269.00")
+  })
 })

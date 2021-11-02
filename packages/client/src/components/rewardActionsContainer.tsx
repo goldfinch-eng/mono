@@ -162,7 +162,7 @@ function ClaimForm(props: ClaimFormProps) {
     return (
       <div className="info-banner background-container subtle">
         <div className="message">
-          Claim the total available {displayNumber(gfiFromAtomic(props.claimable), 2)} GFI ($
+          Claim the total available {displayNumber(gfiFromAtomic(props.claimable), 2)} GFI (
           {displayDollars(props.totalUSD)}) that has vested.
         </div>
         <LoadingButton text="Submit" action={props.action} disabled={props.disabled} />

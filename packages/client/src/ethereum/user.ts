@@ -423,7 +423,7 @@ type UserMerkleDistributorLoadedInfo = {
   }
 }
 
-class UserMerkleDistributor {
+export class UserMerkleDistributor {
   info: Loadable<UserMerkleDistributorLoadedInfo>
 
   constructor() {
@@ -446,13 +446,10 @@ class UserMerkleDistributor {
       merkleDistributor.info.value.merkleDistributorInfo.grants,
       address
     )
-    const withAcceptance = await Promise.all(
-      airdropsForRecipient.map(async (grantInfo) => ({
-        grantInfo,
-        isAccepted: await merkleDistributor.contract.methods
-          .isGrantAccepted(grantInfo.index)
-          .call(undefined, currentBlock.number),
-      }))
+    const withAcceptance = await UserMerkleDistributor.getAirdropsWithAcceptance(
+      airdropsForRecipient,
+      merkleDistributor,
+      currentBlock
     )
     const airdrops = withAcceptance.reduce<{
       accepted: MerkleDistributorGrantInfo[]
@@ -476,6 +473,21 @@ class UserMerkleDistributor {
         airdrops,
       },
     }
+  }
+
+  static async getAirdropsWithAcceptance(
+    airdropsForRecipient: MerkleDistributorGrantInfo[],
+    merkleDistributor: MerkleDistributorLoaded,
+    currentBlock: BlockInfo
+  ) {
+    return await Promise.all(
+      airdropsForRecipient.map(async (grantInfo) => ({
+        grantInfo,
+        isAccepted: await merkleDistributor.contract.methods
+          .isGrantAccepted(grantInfo.index)
+          .call(undefined, currentBlock.number),
+      }))
+    )
   }
 
   static getAirdropsForRecipient(
