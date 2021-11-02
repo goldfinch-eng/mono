@@ -27,7 +27,7 @@ function RewardsSummary(props: RewardsSummaryProps) {
   const valueDisabledClass = totalGFI && totalGFI.gt(0) ? "value" : "disabled-value"
 
   return (
-    <div className="rewards-summary background-container">
+    <div className="rewards-summary background-container" data-testid="rewards-summary">
       <div className="rewards-summary-left-item">
         <span className="total-gfi-balance">Total GFI balance</span>
         <span className="total-gfi">{displayNumber(totalGFI ? gfiFromAtomic(totalGFI) : undefined, 2)}</span>
@@ -269,7 +269,9 @@ function Rewards() {
             </>
           )}
         </div>
-        <ul className="rewards-list">{loaded ? rewards : <span>Loading...</span>}</ul>
+        <ul className="rewards-list" data-testid="rewards-list">
+          {loaded ? rewards : <span>Loading...</span>}
+        </ul>
       </div>
     </div>
   )

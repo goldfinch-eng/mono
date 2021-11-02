@@ -581,18 +581,7 @@ export class User {
     const usdcBalanceInDollars = new BigNumber(usdcFromAtomic(usdcBalance))
     const poolAllowance = await usdc.getAllowance({owner: this.address, spender: pool.address}, currentBlock)
 
-    const [usdcTxs, poolEvents, creditDeskTxs] = await Promise.all([
-      // NOTE: We have no need to include usdc txs for `pool.v1Pool` among the txs in
-      // `this.pastTxs`. So we don't get them. We only need usdc txs for `this.pool`.
-      getAndTransformERC20Events(usdc, pool.address, this.address, currentBlock),
-      getPoolEvents(pool, this.address, currentBlock),
-      // Credit desk events could've come from the user directly or the borrower contract, we need to filter by both
-      getAndTransformCreditDeskEvents(
-        this.creditDesk,
-        _.compact([this.address, this.borrower?.borrowerAddress]),
-        currentBlock
-      ),
-    ])
+    const [usdcTxs, poolEvents, creditDeskTxs] = await this.fetchTxs(usdc, pool, currentBlock)
     const poolTxs = await mapEventsToTx(poolEvents)
     const pastTxs = _.reverse(_.sortBy(_.compact(_.concat(usdcTxs, poolTxs, creditDeskTxs)), "blockNumber"))
 
@@ -652,6 +641,21 @@ export class User {
         merkleDistributor: userMerkleDistributor,
       },
     }
+  }
+
+  private async fetchTxs(usdc: ERC20, pool: SeniorPoolLoaded, currentBlock: BlockInfo) {
+    return await Promise.all([
+      // NOTE: We have no need to include usdc txs for `pool.v1Pool` among the txs in
+      // `this.pastTxs`. So we don't get them. We only need usdc txs for `this.pool`.
+      getAndTransformERC20Events(usdc, pool.address, this.address, currentBlock),
+      getPoolEvents(pool, this.address, currentBlock),
+      // Credit desk events could've come from the user directly or the borrower contract, we need to filter by both
+      getAndTransformCreditDeskEvents(
+        this.creditDesk,
+        _.compact([this.address, this.borrower?.borrowerAddress]),
+        currentBlock
+      ),
+    ])
   }
 
   isUnlocked(allowance: BigNumber | undefined) {

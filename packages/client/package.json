@@ -20,6 +20,8 @@
     "bignumber.js": "^9.0.0",
     "bnc-notify": "^1.5.1",
     "classnames": "^2.2.6",
+    "depay-web3-blockchains": "^2.6.0",
+    "depay-web3-mock": "^8.2.7",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "focus-within-polyfill": "^5.1.0",
