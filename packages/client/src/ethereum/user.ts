@@ -116,7 +116,6 @@ class Web3User implements User {
     this.pastTxs = _.reverse(_.sortBy(_.compact(_.concat(usdcTxs, poolTxs, creditDeskTxs)), "blockNumber"))
 
     const golistStatus = await this.fetchGolistStatus(this.address)
-    console.log(golistStatus)
     this.goListed = golistStatus.golisted
     this.legacyGolisted = golistStatus.legacyGolisted
     this.hasUID = golistStatus.hasUID
