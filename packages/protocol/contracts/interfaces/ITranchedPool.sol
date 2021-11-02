@@ -9,7 +9,11 @@ abstract contract ITranchedPool {
   IV2CreditLine public creditLine;
   uint256 public createdAt;
 
-  enum Tranches {Reserved, Senior, Junior}
+  enum Tranches {
+    Reserved,
+    Senior,
+    Junior
+  }
 
   struct TrancheInfo {
     uint256 id;

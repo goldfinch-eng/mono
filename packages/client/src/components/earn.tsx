@@ -243,7 +243,7 @@ function usePoolBackers({goldfinchProtocol, user}: {goldfinchProtocol?: Goldfinc
   return {backers, backersStatus, poolsAddresses, poolsAddressesStatus}
 }
 
-function Earn(props) {
+function Earn() {
   const {pool, usdc, user, goldfinchProtocol, goldfinchConfig} = useContext(AppContext)
   const [capitalProvider, setCapitalProvider] = useState<CapitalProvider>()
   const {

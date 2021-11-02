@@ -15,12 +15,15 @@ export interface ConnectionNoticeProps {
   requireGolist?: boolean
   requireUnlock?: boolean
   requireKYC?: {kyc: AsyncResult<KYC>; condition: (KYC: KYC) => boolean}
+  isPaused?: boolean
 }
 
 function TextBanner({children}: React.PropsWithChildren<{}>) {
   return (
     <div className="info-banner background-container">
-      <div className="message">{children}</div>
+      <div className="message">
+        <p>{children}</p>
+      </div>
     </div>
   )
 }
@@ -137,6 +140,16 @@ export const strategies: ConnectionNoticeStrategy[] = [
       assertNonNullable(unlockStatus)
       return <UnlockUSDCForm unlockAddress={unlockStatus.unlockAddress} />
     },
+  },
+  {
+    devName: "pool_paused",
+    match: ({isPaused}) => !!isPaused,
+    render: () => (
+      <TextBanner>
+        The pool is currently paused. Join our <a href="https://discord.gg/HVeaca3fN8">Discord</a> for updates on when
+        the cap is raised.
+      </TextBanner>
+    ),
   },
 ]
 

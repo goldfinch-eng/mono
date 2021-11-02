@@ -24,4 +24,8 @@ contract TestTranchedPool is TranchedPool {
   function _setLimit(uint256 limit) public {
     creditLine.setLimit(limit);
   }
+
+  function _modifyJuniorTrancheLockedUntil(uint256 lockedUntil) public {
+    juniorTranche.lockedUntil = lockedUntil;
+  }
 }

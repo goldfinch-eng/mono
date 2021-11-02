@@ -6,7 +6,7 @@ import web3 from "../web3"
 function useSendFromUser() {
   const {refreshUserData, user, networkMonitor} = useContext(AppContext)
 
-  async function sendTransaction(unsentAction, txData, gasPrice) {
+  async function sendTransaction(unsentAction, txData, {gasPrice, value}) {
     assertNonNullable(networkMonitor)
     // unsent action could be a promise tha returns the action, so resolve it
     unsentAction = await Promise.resolve(unsentAction)
@@ -44,7 +44,8 @@ function useSendFromUser() {
       unsentAction
         .send({
           from: user.address,
-          gasPrice: gasPrice,
+          gasPrice,
+          value,
         })
         .once("sent", (_) => {
           txData = networkMonitor.addPendingTX(txData)
@@ -68,11 +69,11 @@ function useSendFromUser() {
     })
   }
 
-  return (unsentAction, txData) => {
+  return (unsentAction, txData, {value}: {value?: string} = {}) => {
     return web3.eth.getGasPrice().then(
       async (gasPrice) => {
         try {
-          await sendTransaction(unsentAction, txData, gasPrice)
+          await sendTransaction(unsentAction, txData, {gasPrice, value})
         } catch (err) {
           console.log(`Error sending transaction: ${err}`)
         }
