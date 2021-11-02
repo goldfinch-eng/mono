@@ -26,6 +26,7 @@ contract Pool is BaseUpgradeablePausable, IPool {
   event PrincipalCollected(address indexed payer, uint256 amount);
   event ReserveFundsCollected(address indexed user, uint256 amount);
   event PrincipalWrittendown(address indexed creditline, int256 amount);
+  event GoldfinchConfigUpdated(address indexed who, address configAddress);
 
   /**
    * @notice Run only once, on initialization
@@ -343,6 +344,7 @@ contract Pool is BaseUpgradeablePausable, IPool {
 
   function updateGoldfinchConfig() external onlyAdmin {
     config = GoldfinchConfig(config.configAddress());
+    emit GoldfinchConfigUpdated(msg.sender, address(config));
   }
 
   function fiduMantissa() internal pure returns (uint256) {

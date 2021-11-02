@@ -9,6 +9,7 @@
   "include": [
     "hardhat.config.ts",
     "hardhat.config.base.ts",
+    "./index.ts",
     "./blockchain_scripts",
     "./deploy",
     "./test",

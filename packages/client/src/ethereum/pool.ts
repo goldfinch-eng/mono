@@ -44,6 +44,7 @@ class SeniorPool {
   address: string
   _loaded: boolean
   gf!: PoolData
+  isPaused!: boolean
 
   constructor(goldfinchProtocol: GoldfinchProtocol) {
     this.goldfinchProtocol = goldfinchProtocol
@@ -59,6 +60,7 @@ class SeniorPool {
   async initialize() {
     let poolData = await fetchPoolData(this, this.usdc)
     this.gf = poolData
+    this.isPaused = await this.contract.methods.paused().call()
   }
 
   async getPoolEvents(

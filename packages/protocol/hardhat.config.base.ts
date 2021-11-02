@@ -1,3 +1,8 @@
+import {
+  TEST_MERKLE_DISTRIBUTOR_RECIPIENT_A,
+  TEST_MERKLE_DISTRIBUTOR_RECIPIENT_B,
+} from "./test/blockchain_scripts/merkleDistributor/fixtures"
+
 import {findEnvLocal} from "@goldfinch-eng/utils"
 import dotenv from "dotenv"
 dotenv.config({path: findEnvLocal()})
@@ -24,7 +29,7 @@ export default {
       forking: process.env.HARDHAT_FORK
         ? {
             url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
-            blockNumber: 13154356, // Sep-03-2021 06:26:27 PM +UTC
+            blockNumber: 13514817, // Oct-29-2021 10:37:33 PM +UTC
           }
         : undefined,
     },
@@ -54,6 +59,15 @@ export default {
           },
         },
       },
+      {
+        version: "0.8.4",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+        },
+      },
     ],
   },
   namedAccounts: {
@@ -66,6 +80,12 @@ export default {
       default: 1,
       1: "0xa083880F7a5df37Bf00a25380C3eB9AF9cD92D8f",
       4: "0xf3c9B38c155410456b5A98fD8bBf5E35B87F6d96",
+    },
+    test_merkle_distributor_recipient_a: {
+      hardhat: TEST_MERKLE_DISTRIBUTOR_RECIPIENT_A,
+    },
+    test_merkle_distributor_recipient_b: {
+      hardhat: TEST_MERKLE_DISTRIBUTOR_RECIPIENT_B,
     },
   },
   gasReporter: {

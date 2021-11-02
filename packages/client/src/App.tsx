@@ -6,6 +6,7 @@ import Earn from "./components/earn"
 import Transactions from "./components/transactions"
 import NetworkWidget from "./components/networkWidget"
 import Sidebar from "./components/sidebar"
+import DevTools from "./components/devTools"
 import Footer from "./components/footer"
 import TermsOfService from "./components/termsOfService"
 import PrivacyPolicy from "./components/privacyPolicy"
@@ -43,6 +44,7 @@ interface GeolocationData {
   timezone: string
 }
 
+export type SetSessionFn = (data: SessionData | undefined) => void
 export interface GlobalState {
   pool?: SeniorPool
   creditDesk?: any
@@ -56,7 +58,7 @@ export interface GlobalState {
   geolocationData?: GeolocationData
   setGeolocationData?: (geolocationData: GeolocationData) => void
   sessionData?: SessionData
-  setSessionData?: (data: SessionData | undefined) => void
+  setSessionData?: SetSessionFn
 }
 
 declare let window: any
@@ -205,6 +207,7 @@ function App() {
       <EarnProvider>
         <BorrowProvider>
           <Router>
+            {(process.env.NODE_ENV === "development" || process.env.MURMURATION === "yes") && <DevTools />}
             <Sidebar />
             <div>
               <Switch>

@@ -2,21 +2,20 @@ import {findEnvLocal, assertNonNullable} from "@goldfinch-eng/utils"
 import dotenv from "dotenv"
 dotenv.config({path: findEnvLocal()})
 
-import express from "express"
-import cors from "cors"
-const app = express()
 import {relay} from "./relayer/relay"
-import hre from "hardhat"
+import * as uniqueIdentitySigner from "./unique-identity-signer"
+import {hardhat as hre} from "@goldfinch-eng/protocol"
 import {TypedDataUtils} from "eth-sig-util"
 import {bufferToHex} from "ethereumjs-util"
-import {ERC165UpgradeSafe} from "packages/protocol/typechain/ethers"
+import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers"
 
-const port = process.env.RELAY_SERVER_PORT
+assertNonNullable(
+  process.env.FORWARDER_ADDRESS,
+  "FORWARDER_ADDRESS must be passed as an envvar when running the development server"
+)
+
 const FORWARDER_ADDRESS = process.env.FORWARDER_ADDRESS
 const ALLOWED_SENDERS = (process.env.ALLOWED_SENDERS || "").split(",").filter((val) => !!val)
-
-app.use(express.json())
-app.use(cors())
 
 async function hardhatRelay(txData) {
   const {protocol_owner} = await hre.getNamedAccounts()
@@ -80,7 +79,7 @@ async function createContext() {
   }
 }
 
-const relayHandler = async (req, res) => {
+export async function relayHandler(req, res) {
   try {
     console.log(`Forwarding: ${JSON.stringify(req.body)}`)
     const context = await createContext()
@@ -92,8 +91,24 @@ const relayHandler = async (req, res) => {
   }
 }
 
-app.post("/relay", relayHandler)
+export async function uniqueIdentitySignerHandler(req, res) {
+  try {
+    console.log(`Forwarding: ${JSON.stringify(req.body)}`)
 
-app.listen(port, () => {
-  console.log(`App listening at http://localhost:${port}`)
-})
+    // Set up params / dependencies for handler logic
+    const deployment = await hre.deployments.get("UniqueIdentity")
+    const uniqueIdentity = (await hre.ethers.getContractAt(deployment.abi, deployment.address)) as UniqueIdentity
+    const signer = uniqueIdentity.signer
+    assertNonNullable(signer.provider, "Signer provider is null")
+    const network = await signer.provider.getNetwork()
+
+    const auth = req.body.auth
+
+    // Run handler
+    const result = await uniqueIdentitySigner.main({auth, signer, network, uniqueIdentity})
+    res.status(200).send({status: "success", result: JSON.stringify(result)})
+  } catch (error: any) {
+    console.log(`Failed: ${error}`)
+    res.status(500).send({status: "error", message: error.toString()})
+  }
+}

@@ -22,6 +22,7 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
 
   event BorrowerCreated(address indexed borrower, address indexed owner);
   event PoolCreated(address indexed pool, address indexed borrower);
+  event GoldfinchConfigUpdated(address indexed who, address configAddress);
   event CreditLineCreated(address indexed creditLine);
 
   function initialize(address owner, GoldfinchConfig _config) public initializer {
@@ -126,6 +127,7 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
 
   function updateGoldfinchConfig() external onlyAdmin {
     config = GoldfinchConfig(config.configAddress());
+    emit GoldfinchConfigUpdated(msg.sender, address(config));
   }
 
   // Stolen from:
