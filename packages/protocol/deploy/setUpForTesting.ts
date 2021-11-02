@@ -13,6 +13,7 @@ import {
   TestERC20,
   TestForwarder,
   TranchedPool,
+  UniqueIdentity,
 } from "../typechain/ethers"
 import {Contract, ContractReceipt} from "ethers"
 const {ethers} = hre
@@ -61,6 +62,7 @@ async function main(hre: HardhatRuntimeEnvironment, options: OverrideOptions) {
   const deployer = new ContractDeployer(logger, hre)
   assertIsString(protocol_owner)
   assertIsString(gf_deployer)
+  const protocolOwnerSigner = ethers.provider.getSigner(protocol_owner)
 
   const chainId = await getChainId()
   assertIsChainId(chainId)
@@ -90,14 +92,22 @@ async function main(hre: HardhatRuntimeEnvironment, options: OverrideOptions) {
     underwriter = protocol_owner
     await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [protocol_owner, gf_deployer, borrower], new BN("75000"))
     logger(`Finished funding with whales.`)
+
+    // Grant local signer role
+    await impersonateAccount(hre, protocol_owner)
+    const uniqueIdentity = (await getDeployedAsEthersContract<UniqueIdentity>(getOrNull, "UniqueIdentity")).connect(
+      protocolOwnerSigner
+    )
+    const {protocol_owner: trustedSigner} = await getNamedAccounts()
+    assertNonNullable(trustedSigner)
+    const tx = await uniqueIdentity.grantRole(SIGNER_ROLE, trustedSigner)
+    await tx.wait()
   }
   await impersonateAccount(hre, protocol_owner)
   await setupTestForwarder(deployer, config, getOrNull, protocol_owner)
 
   let seniorPool: SeniorPool = await getDeployedAsEthersContract<SeniorPool>(getOrNull, "SeniorPool")
 
-  const protocolOwnerSigner = ethers.provider.getSigner(protocol_owner)
-  assertNonNullable(protocolOwnerSigner)
   config = config.connect(protocolOwnerSigner)
 
   await updateConfig(config, "number", CONFIG_KEYS.TotalFundsLimit, String(usdcVal(40000000)))

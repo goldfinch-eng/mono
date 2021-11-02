@@ -505,7 +505,7 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
       return
     }
 
-    if (user.goListed) {
+    if (user.hasUID) {
       dispatch({type: END})
     }
   })
@@ -534,22 +534,7 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
     }
   }
 
-  if (user.legacyGolisted) {
-    return (
-      <VerificationNotice
-        icon={iconCircleCheck}
-        notice={
-          <>
-            Your verification was approved to participate in{" "}
-            <Link className="form-link" to="/">
-              Borrower Pools
-            </Link>
-            .
-          </>
-        }
-      />
-    )
-  } else if (user.goListed) {
+  if (user.hasUID) {
     return (
       <VerificationNotice
         icon={iconCircleCheck}
@@ -572,6 +557,28 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
           </>
         }
       />
+    )
+  } else if (user.legacyGolisted) {
+    return (
+      <FormProvider {...formMethods}>
+        <div className={`verify-card background-container subtle ${disabled && "placeholder"}`}>
+          <h1 className="title">Create your UID</h1>
+          <div className="info-banner subtle">
+            <div className="message">
+              <div>
+                <p className="font-small mb-2">
+                  Your verification was approved to participate in{" "}
+                  <Link className="form-link" to="/">
+                    Borrower Pools
+                  </Link>
+                  . However, there may be future opportunities that require you to mint a UID.
+                </p>
+              </div>
+            </div>
+            <LoadingButton disabled={disabled} action={action} text="Create UID" />
+          </div>
+        </div>
+      </FormProvider>
     )
   } else if (errored) {
     return <ErrorCard title="Create your UID" />
