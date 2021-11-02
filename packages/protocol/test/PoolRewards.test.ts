@@ -872,6 +872,67 @@ describe("PoolRewards", () => {
           testPoolTokenClaimableRewards.div(new BN(2))
         )
       })
+
+      it("Handles proportionately 66%/33%", async () => {
+        const maxInterestDollarsEligible = 1_000_000_000
+        const totalGFISupply = 100_000_000
+        const totalRewards = 3_000_000 // 3% of 100m
+        const previousInterestReceived = 5000
+        const juniorTranchePrincipal = 100_000
+
+        await setupPoolRewardsContract({
+          totalGFISupply,
+          maxInterestDollarsEligible,
+          totalRewards,
+          previousInterestReceived,
+        })
+
+        let logs, firstLog
+        await poolRewards.setTotalInterestReceived(usdcVal(previousInterestReceived))
+
+        await erc20Approve(usdc, tranchedPool.address, usdcVal(100_000), [anotherUser])
+        const anotherUserResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(100_000), {from: anotherUser})
+        logs = decodeLogs<DepositMade>(anotherUserResponse.receipt.rawLogs, tranchedPool, "DepositMade")
+        firstLog = getFirstLog(logs)
+        const anotherUserTokenId = firstLog.args.tokenId
+
+        await erc20Approve(usdc, tranchedPool.address, usdcVal(50_000), [investor])
+        const investorResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(50_000), {from: investor})
+        logs = decodeLogs<DepositMade>(investorResponse.receipt.rawLogs, tranchedPool, "DepositMade")
+        firstLog = getFirstLog(logs)
+        const investorTokenId = firstLog.args.tokenId
+
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        await tranchedPool.lockPool({from: borrower})
+        await tranchedPool.drawdown(usdcVal(juniorTranchePrincipal), {from: borrower})
+        await advanceTime({days: new BN(365).toNumber()})
+        const payAmount = usdcVal(juniorTranchePrincipal)
+
+        await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
+        await tranchedPool.pay(payAmount, {from: borrower})
+
+        const {testPoolTokenClaimableRewards} = testCalcAccRewardsPerPrincipalDollar({
+          interestPaymentAmount: 5000,
+          maxInterestDollarsEligible: 1_000_000_000,
+          totalRewards,
+          totalGFISupply: 100_000_000,
+          juniorTranchePrincipal,
+          previousInterestReceived,
+        })
+
+        // investor gets 33.333% of the pool
+        let expectedPoolTokenClaimableRewards
+        expectedPoolTokenClaimableRewards = await poolRewards.poolTokenClaimableRewards(investorTokenId)
+        expect(new BN(expectedPoolTokenClaimableRewards)).to.bignumber.equal(
+          testPoolTokenClaimableRewards.div(new BN(3))
+        )
+
+        // anotherUser gets 66.666% of pool
+        expectedPoolTokenClaimableRewards = await poolRewards.poolTokenClaimableRewards(anotherUserTokenId)
+        expect(new BN(expectedPoolTokenClaimableRewards)).to.bignumber.equal(
+          testPoolTokenClaimableRewards.div(new BN(3)).mul(new BN(2))
+        )
+      })
     })
   })
 
