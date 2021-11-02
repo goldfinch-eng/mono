@@ -2,7 +2,7 @@
   "name": "@goldfinch-eng/client",
   "version": "0.1.0",
   "private": true,
-  "author": "Blake West <blake@goldfinch.finance>",
+  "author": "The Goldfinch Community <engineering@goldfinch.finance>",
   "dependencies": {
     "@gnosis.pm/safe-apps-sdk": "^0.4.2",
     "@goldfinch-eng/protocol": "^0.1.0",

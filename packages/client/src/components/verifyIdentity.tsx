@@ -1,20 +1,26 @@
 import {ErrorMessage} from "@hookform/error-message"
 import Persona from "persona"
-import {useContext, useState} from "react"
+import {useContext, useEffect, useReducer, useState} from "react"
 import {FormProvider, useForm} from "react-hook-form"
 import {Link} from "react-router-dom"
-import {AppContext} from "../App"
-import DefaultGoldfinchClient from "../hooks/useGoldfinchClient"
+import {AppContext, NetworkConfig, SetSessionFn} from "../App"
+import {User} from "../ethereum/user"
+import {LOCAL} from "../ethereum/utils"
+import DefaultGoldfinchClient, {KYC} from "../hooks/useGoldfinchClient"
+import useNonNullContext from "../hooks/useNonNullContext"
+import useSendFromUser from "../hooks/useSendFromUser"
 import {Session, useSignIn} from "../hooks/useSignIn"
 import {assertNonNullable} from "../utils"
 import ConnectionNotice from "./connectionNotice"
-import {iconAlert, iconCircleCheck, iconClock} from "./icons.js"
+import {iconAlert, iconCircleCheck} from "./icons"
 import LoadingButton from "./loadingButton"
 import TransactionForm from "./transactionForm"
+import {UniqueIdentity as UniqueIdentityContract} from "@goldfinch-eng/protocol/typechain/web3/UniqueIdentity"
+import web3 from "web3"
 
 function VerificationNotice({icon, notice}) {
   return (
-    <div className="info-banner background-container subtle">
+    <div className="verify-card info-banner background-container subtle">
       <div className="message">
         {icon}
         <p>{notice}</p>
@@ -226,13 +232,39 @@ function SignInForm({action, disabled}) {
   )
 }
 
-function VerifyIdentity() {
+function VerifyCard({
+  children,
+  title,
+  disabled = false,
+}: React.PropsWithChildren<{title?: string; disabled?: boolean}>) {
+  return (
+    <div className={`background-container ${disabled && "placeholder"} verify-card`}>
+      {title && <h1 className="title">{title}</h1>}
+      {children}
+    </div>
+  )
+}
+
+function isElligible(kyc: KYC | undefined, user: User) {
+  return (kyc && kyc.status === "approved" && kyc.countryCode !== "US" && kyc.countryCode !== "") || user.goListed
+}
+
+function VerifyAddress({disabled, dispatch}: {disabled: boolean; dispatch: React.Dispatch<Action>}) {
   const {user, network, setSessionData} = useContext(AppContext)
-  const [kycStatus, setKycStatus] = useState<string>("")
+  const [kyc, setKYC] = useState<KYC>()
   // Determines the form to show. Can be empty, "US" or "entity"
-  const [countryCode, setCountryCode] = useState<string>("")
   const [entityType, setEntityType] = useState<string>("")
-  const [session, signIn] = useSignIn()
+  const [session] = useSignIn()
+  const [loading, setLoading] = useState<boolean>(false)
+  const [errored, setErrored] = useState<boolean>(false)
+
+  useEffect(() => {
+    if (!kyc && session.status === "authenticated") {
+      fetchKYCStatus(session)
+    } else if (isElligible(kyc, user) && !disabled) {
+      dispatch({type: CREATE_UID})
+    }
+  })
 
   async function fetchKYCStatus(session: Session) {
     if (session.status !== "authenticated") {
@@ -240,20 +272,21 @@ function VerifyIdentity() {
     }
     assertNonNullable(network)
     assertNonNullable(setSessionData)
+    setLoading(true)
     const client = new DefaultGoldfinchClient(network.name!, session, setSessionData)
-    const response = await client.fetchKYCStatus(user.address)
-    if (response.ok) {
-      setKycStatus(response.json.status)
-      if (response.json.countryCode === "US") {
-        setEntityType("US")
-        setCountryCode("US")
+    try {
+      const response = await client.fetchKYCStatus(user.address)
+      if (response.ok) {
+        setKYC(response.json)
+        if (response.json.countryCode === "US") {
+          setEntityType("US")
+        }
       }
+    } catch (error: any) {
+      setErrored(true)
+    } finally {
+      setLoading(false)
     }
-  }
-
-  async function getSignatureAndKycStatus() {
-    const session = await signIn()
-    await fetchKYCStatus(session)
   }
 
   function chooseEntity(chosenType) {
@@ -262,10 +295,29 @@ function VerifyIdentity() {
 
   function renderForm() {
     if (user.goListed) {
-      return <VerificationNotice icon={iconCircleCheck} notice="Your address verification is complete." />
-    } else if (kycStatus === "") {
-      return <SignInForm disabled={!user.address} action={() => getSignatureAndKycStatus()} />
-    } else if (kycStatus === "failed") {
+      return (
+        <VerificationNotice
+          icon={iconCircleCheck}
+          notice={
+            <>
+              Your verification was approved to participate in the{" "}
+              <Link className="form-link" to="/pools/senior">
+                Senior Pool
+              </Link>
+              .
+            </>
+          }
+        />
+      )
+    } else if (loading) {
+      return <LoadingCard title="Verify your address" />
+    } else if (errored) {
+      return (
+        <VerifyCard title="Verify your address" disabled={false}>
+          Oops, there was an error. Try refreshing the page.
+        </VerifyCard>
+      )
+    } else if (kyc?.status === "failed") {
       return (
         <VerificationNotice
           icon={iconAlert}
@@ -275,7 +327,7 @@ function VerifyIdentity() {
     } else if (entityType === "US") {
       return (
         <USForm
-          kycStatus={kycStatus}
+          kycStatus={kyc?.status}
           entityType={entityType}
           onClose={() => setEntityType("")}
           network={network?.name!}
@@ -285,14 +337,17 @@ function VerifyIdentity() {
       )
     } else if (entityType === "entity") {
       return <EntityForm onClose={() => setEntityType("")} />
-    } else if (kycStatus === "approved" && countryCode !== "US") {
+    } else if (isElligible(kyc, user)) {
       return (
         <VerificationNotice
-          icon={iconClock}
+          icon={iconCircleCheck}
           notice={
             <>
-              Your verification was approved to immediately access the <Link to="/pools/senior">Senior Pool</Link>.
-              Later, we'll email you when you are on the Backer list and can supply to Borrower Pools.
+              Your verification was approved to participate in the{" "}
+              <Link className="form-link" to="/pools/senior">
+                Senior Pool
+              </Link>
+              .
             </>
           }
         />
@@ -308,37 +363,256 @@ function VerifyIdentity() {
         />
       )
     } else {
-      const nonUSDisabled = countryCode === "US" ? "disabled" : ""
+      const nonUSDisabled = kyc?.countryCode === "US" ? "disabled" : ""
       return (
-        <>
-          <div className={"background-container"}>
-            <div className="form-message">Who is verifying this address?</div>
-            <div className="verify-types">
-              <button
-                className={`button ${nonUSDisabled}`}
-                disabled={nonUSDisabled === "disabled"}
-                onClick={() => chooseEntity("non-US")}
-              >
-                Non-U.S. Individual
-              </button>
-              <button className={"button"} onClick={() => chooseEntity("US")}>
-                U.S. Individual
-              </button>
-              <button className={"button"} onClick={() => chooseEntity("entity")}>
-                Entity
-              </button>
-            </div>
+        <VerifyCard title="Verify your address" disabled={disabled}>
+          <div className="form-message">Who is verifying this address?</div>
+          <div className="verify-types">
+            <button
+              className={`button ${nonUSDisabled}`}
+              disabled={nonUSDisabled === "disabled"}
+              onClick={() => chooseEntity("non-US")}
+            >
+              Non-U.S. Individual
+            </button>
+            <button className={"button"} onClick={() => chooseEntity("US")}>
+              U.S. Individual
+            </button>
+            <button className={"button"} onClick={() => chooseEntity("entity")}>
+              Entity
+            </button>
           </div>
-        </>
+        </VerifyCard>
       )
     }
   }
 
+  return renderForm()
+}
+
+function LoadingCard({title}: {title?: string}) {
   return (
-    <div className="content-section">
-      <div className="page-header">Verify Address</div>
+    <VerifyCard disabled={true} title={title}>
+      <p>Loading...</p>
+    </VerifyCard>
+  )
+}
+
+const UNIQUE_IDENTITY_SIGNER_URLS = {
+  [LOCAL]: "/uniqueIdentitySigner", // Proxied by webpack to packages/server/index.ts
+}
+
+const UNIQUE_IDENTITY_MINT_PRICE = web3.utils.toWei("0.00083", "ether")
+
+const START = "start"
+const SIGN_IN = "sign_in"
+const VERIFY_ADDRESS = "verify_address"
+const CREATE_UID = "create_uid"
+const END = "end"
+type Step = typeof START | typeof SIGN_IN | typeof VERIFY_ADDRESS | typeof CREATE_UID | typeof END
+
+const initialState: {step: Step} = {
+  step: START,
+}
+
+type Action = {type: Step}
+const reducer = (state: typeof initialState, action: Action): typeof initialState => {
+  if (action.type === SIGN_IN) {
+    return {
+      ...state,
+      step: SIGN_IN,
+    }
+  } else if (action.type === VERIFY_ADDRESS) {
+    return {
+      ...state,
+      step: VERIFY_ADDRESS,
+    }
+  } else if (action.type === CREATE_UID) {
+    return {
+      ...state,
+      step: CREATE_UID,
+    }
+  } else if (action.type === END) {
+    return {
+      ...state,
+      step: END,
+    }
+  }
+  return state
+}
+
+type SignatureResponse = {signature: string; expiresAt: number}
+function asSignatureResponse(obj: any): SignatureResponse {
+  if (typeof obj.result !== "string") {
+    throw new Error(`${obj} is not a signature response`)
+  }
+  const result = JSON.parse(obj.result)
+  if (typeof result.signature !== "string") {
+    throw new Error(`${obj} is not a signature response`)
+  }
+  if (typeof result.expiresAt !== "number") {
+    throw new Error(`${obj} is not a signature response`)
+  }
+  return result
+}
+
+async function fetchTrustedSignature({
+  network,
+  session,
+  setSessionData,
+  user,
+}: {
+  network: NetworkConfig
+  session: Session
+  setSessionData: SetSessionFn
+  user: User
+}): Promise<SignatureResponse> {
+  assertNonNullable(network.name)
+  if (session.status !== "authenticated") {
+    throw new Error("not authenticated")
+  }
+  const client = new DefaultGoldfinchClient(network.name, session, setSessionData)
+  const headers = client._getAuthHeaders(user.address)
+
+  const response = await fetch(UNIQUE_IDENTITY_SIGNER_URLS[network.name], {
+    headers: {
+      ...headers,
+      "Content-Type": "application/json",
+    },
+    method: "POST",
+  })
+  const body = await response.json()
+  return asSignatureResponse(body)
+}
+
+function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dispatch<Action>}) {
+  const formMethods = useForm()
+  const {user, network, setSessionData, goldfinchProtocol, refreshUserData} = useNonNullContext(AppContext)
+  const [session] = useSignIn()
+  const sendFromUser = useSendFromUser()
+
+  useEffect(() => {
+    if (disabled) {
+      return
+    }
+
+    if (user.goListed) {
+      dispatch({type: END})
+    }
+  })
+
+  const action = async () => {
+    const trustedSignature = await fetchTrustedSignature({
+      network,
+      session,
+      setSessionData,
+      user,
+    })
+    const uniqueIdentity = goldfinchProtocol.getContract<UniqueIdentityContract>("UniqueIdentity")
+    const version = await uniqueIdentity.methods.ID_VERSION_0().call()
+    await sendFromUser(
+      uniqueIdentity.methods.mint(version, trustedSignature.expiresAt, trustedSignature.signature),
+      {
+        type: "Mint UID",
+      },
+      {value: UNIQUE_IDENTITY_MINT_PRICE}
+    )
+    refreshUserData()
+  }
+
+  if (user.legacyGolisted) {
+    return (
+      <VerificationNotice
+        icon={iconCircleCheck}
+        notice={
+          <>
+            Your verification was approved to participate in{" "}
+            <Link className="form-link" to="/">
+              Borrower Pools
+            </Link>
+            .
+          </>
+        }
+      />
+    )
+  } else if (user.goListed) {
+    return (
+      <VerificationNotice
+        icon={iconCircleCheck}
+        notice={
+          <>
+            Your UID has been created. You can now participate in{" "}
+            <Link className="form-link" to="/">
+              Borrower Pools
+            </Link>
+            .
+          </>
+        }
+      />
+    )
+  } else {
+    return (
+      <FormProvider {...formMethods}>
+        <div className={`verify-card background-container subtle ${disabled && "placeholder"}`}>
+          <h1 className="title">Create your UID</h1>
+          <div className="info-banner subtle">
+            <div className="message">
+              <p className="font-small">
+                Your UID, or "Unique Identity", is an NFT that represents your unique identity and grants you access to
+                participate in Borrower Pools. You do not need your UID to participate in the Senior Pool.
+              </p>
+            </div>
+            <LoadingButton disabled={disabled} action={action} text="Create UID" />
+          </div>
+        </div>
+      </FormProvider>
+    )
+  }
+}
+
+function VerifyIdentity() {
+  const {user} = useContext(AppContext)
+  const [session, signIn] = useSignIn()
+  const [state, dispatch] = useReducer(reducer, initialState)
+
+  useEffect(() => {
+    if (state.step === START && session.status !== "authenticated") {
+      dispatch({type: SIGN_IN})
+    } else if ((state.step === START || state.step === SIGN_IN) && session.status === "authenticated") {
+      dispatch({type: VERIFY_ADDRESS})
+    }
+  })
+
+  let children: JSX.Element
+  if (state.step === START) {
+    children = <></>
+  } else if (state.step === SIGN_IN) {
+    children = (
+      <SignInForm
+        disabled={!user.address}
+        action={async () => {
+          const session = await signIn()
+          if (session.status !== "authenticated") {
+            throw new Error("not authenticated")
+          }
+          dispatch({type: VERIFY_ADDRESS})
+        }}
+      />
+    )
+  } else {
+    children = (
+      <>
+        <VerifyAddress disabled={state.step !== VERIFY_ADDRESS} dispatch={dispatch} />
+        <CreateUID disabled={state.step !== CREATE_UID} dispatch={dispatch} />
+      </>
+    )
+  }
+
+  return (
+    <div className="content-section verify-identity">
+      <div className="page-header">Verify your identity</div>
       <ConnectionNotice />
-      {renderForm()}
+      {children}
     </div>
   )
 }

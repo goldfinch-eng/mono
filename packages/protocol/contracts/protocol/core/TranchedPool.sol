@@ -381,6 +381,11 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
       safeERC20TransferFrom(config.getUSDC(), originalClAddr, newClAddr, clBalance);
     }
 
+    if (originalCl.borrower() != newCl.borrower()) {
+      revokeRole(LOCKER_ROLE, originalCl.borrower());
+      grantRole(LOCKER_ROLE, newCl.borrower());
+    }
+
     // Close out old CL
     originalCl.setBalance(0);
     originalCl.setLimit(0);

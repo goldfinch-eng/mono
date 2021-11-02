@@ -21,6 +21,9 @@ import BN from "bn.js"
 import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
 import setUpForTesting from "@goldfinch-eng/protocol/deploy/setUpForTesting"
 import {hardhat as hre} from "@goldfinch-eng/protocol"
+import admin, {firestore} from "firebase-admin"
+
+import {getDb, getUsers} from "@goldfinch-eng/functions/db"
 
 const app = express()
 app.use(express.json())
@@ -33,7 +36,7 @@ assertNonNullable(
 const port = process.env.RELAY_SERVER_PORT
 
 app.post("/relay", relayHandler)
-app.post("/unique-identity-signer", uniqueIdentitySignerHandler)
+app.post("/uniqueIdentitySigner", uniqueIdentitySignerHandler)
 
 app.post("/fundWithWhales", async (req, res) => {
   if (process.env.NODE_ENV === "production") {
@@ -42,7 +45,7 @@ app.post("/fundWithWhales", async (req, res) => {
 
   const {address} = req.body
   await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [address], new BN("75000"))
-  res.status(200).send({status: "success", result: JSON.stringify({success: true})})
+  return res.status(200).send({status: "success", result: JSON.stringify({success: true})})
 })
 
 app.post("/setupForTesting", async (req, res) => {
@@ -59,7 +62,52 @@ app.post("/setupForTesting", async (req, res) => {
     return res.status(404).send({message: "setupForTesting error"})
   }
 
-  res.status(200).send({status: "success", result: JSON.stringify({success: true})})
+  return res.status(200).send({status: "success", result: JSON.stringify({success: true})})
+})
+
+admin.initializeApp({projectId: "goldfinch-frontends-dev"})
+
+app.post("/kycStatus", async (req, res) => {
+  if (process.env.NODE_ENV === "production" || process.env.MURMURATION) {
+    return res.status(404).send({message: "kycStatus only available on local"})
+  }
+
+  const {address, countryCode, kycStatus} = req.body
+  const db = getDb(admin.firestore())
+  const userRef = getUsers(admin.firestore()).doc(`${address.toLowerCase()}`)
+
+  try {
+    await db.runTransaction(async (t: firestore.Transaction) => {
+      const doc = await t.get(userRef)
+      console.log(doc.data())
+
+      if (doc.exists) {
+        t.update(userRef, {
+          persona: {
+            id: "fake",
+            status: kycStatus,
+          },
+          countryCode: countryCode,
+          updatedAt: Date.now(),
+        })
+      } else {
+        t.set(userRef, {
+          address: address,
+          persona: {
+            id: "fake",
+            status: kycStatus,
+          },
+          countryCode: countryCode,
+          updatedAt: Date.now(),
+        })
+      }
+    })
+  } catch (e) {
+    console.error(e)
+    return res.status(500).send({status: "error", message: (e as Error)?.message})
+  }
+
+  return res.status(200).send({status: "success"})
 })
 
 app.listen(port, () => {

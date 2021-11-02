@@ -29,6 +29,9 @@ const {ethers, artifacts} = hre
 const MAINNET_MULTISIG = "0xBEb28978B2c755155f20fd3d09Cb37e300A6981f"
 const MAINNET_UNDERWRITER = "0x79ea65C834EC137170E1aA40A42b9C80df9c0Bb4"
 
+import {mergeABIs} from "hardhat-deploy/dist/src/utils"
+import {FormatTypes} from "ethers/lib/utils"
+
 async function getProxyImplAddress(proxyContract: Contract) {
   if (!proxyContract) {
     return null
@@ -38,25 +41,35 @@ async function getProxyImplAddress(proxyContract: Contract) {
   return ethers.utils.hexStripZeros(currentImpl)
 }
 
-async function upgradeContracts(
-  contractsToUpgrade: string[],
-  contracts: ExistingContracts,
-  signer: string | Signer,
-  deployFrom: any,
-  deployer: ContractDeployer,
-  changeImplementation = true
-): Promise<UpgradedContracts> {
+async function upgradeContracts({
+  contractsToUpgrade = [],
+  contracts,
+  signer,
+  deployFrom,
+  deployer,
+  deployTestForwarder = false,
+}: {
+  contractsToUpgrade: string[]
+  contracts: ExistingContracts
+  signer: string | Signer
+  deployFrom: any
+  deployer: ContractDeployer
+  deployTestForwarder?: boolean
+}): Promise<UpgradedContracts> {
   const accountantDeployResult = await deployer.deployLibrary("Accountant", {
     from: deployFrom,
     gasLimit: 4000000,
     args: [],
   })
-  // Ensure a test forwarder is available. Using the test forwarder instead of the real forwarder on mainnet
-  // gives us the ability to debug the forwarded transactions.
-  await deployer.deploy("TestForwarder", {from: deployFrom, gasLimit: 4000000, args: []})
+
+  if (deployTestForwarder) {
+    // Ensure a test forwarder is available. Using the test forwarder instead of the real forwarder on mainnet
+    // gives us the ability to debug the forwarded transactions.
+    await deployer.deploy("TestForwarder", {from: deployFrom, gasLimit: 4000000, args: []})
+  }
 
   const dependencies: DepList = {
-    CreditDesk: {["Accountant"]: accountantDeployResult.address},
+    CreditLine: {["Accountant"]: accountantDeployResult.address},
   }
 
   const upgradedContracts: UpgradedContracts = {}
@@ -70,33 +83,58 @@ async function upgradeContracts(
     }
 
     console.log("Trying to deploy", contractToDeploy)
-    const deployResult = await deployer.deploy(contractToDeploy, {
-      from: deployFrom,
-      args: [],
-      libraries: dependencies[contractName],
-    })
-    // Get a contract object with the latest ABI, attached to the signer
     const ethersSigner = typeof signer === "string" ? await ethers.getSigner(signer) : signer
-    let upgradedContract = await ethers.getContractAt(deployResult.abi, deployResult.address, ethersSigner)
-    const upgradedImplAddress = deployResult.address
-
-    if (contract.ProxyContract && changeImplementation) {
-      if (!isTestEnv()) {
-        console.log(
-          `Changing implementation of ${contractName} from ${contract.ExistingImplAddress} to ${deployResult.address}`
-        )
-      }
-      await contract.ProxyContract.connect(ethersSigner).changeImplementation(deployResult.address, "0x")
-      upgradedContract = upgradedContract.attach(contract.ProxyContract.address)
-    }
+    const upgradedContract = (
+      await deployer.deploy(contractToDeploy, {
+        from: deployFrom,
+        args: [],
+        libraries: dependencies[contractName],
+      })
+    ).connect(ethersSigner)
+    // Get a contract object with the latest ABI, attached to the signer
+    const upgradedImplAddress = upgradedContract.address
 
     upgradedContracts[contractName] = {
       ...contract,
       UpgradedContract: upgradedContract,
       UpgradedImplAddress: upgradedImplAddress,
     }
+
+    await rewriteUpgradedDeployment(contractName, upgradedContract, contract.ProxyContract)
   }
   return upgradedContracts
+}
+
+/**
+ * Rewrite a proxy upgrade in the deployments directory. hardhat-deploy creates 3 different deployment files for a proxied contract:
+ *
+ *   - Contract_Proxy.json. Proxy ABI.
+ *   - Contract_Implementation.json. Implementation ABI.
+ *   - Contract.json. Combined Proxy and Implementation ABI.
+ *
+ * When using `hre.deployments.deploy` with the `proxy` key, hardhat-deploy will write out the combined ABI. But since
+ * we run our own deploy logic (without the `proxy` key, see `upgradeContracts`), only the implementation ABI is written out.
+ * Work around this by rewriting the ABI ourselves.
+ */
+async function rewriteUpgradedDeployment(deploymentName: string, impl: Contract, proxy: Contract) {
+  const implAbi = JSON.parse(String(impl.interface.format(FormatTypes.json)))
+  const proxyAbi = JSON.parse(String(proxy.interface.format(FormatTypes.json)))
+
+  const mergedABI = mergeABIs([implAbi, proxyAbi], {
+    check: false,
+    skipSupportsInterface: false,
+  })
+
+  const deployment = await hre.deployments.get(deploymentName)
+  deployment.abi = mergedABI
+  deployment.address = proxy.address
+  await hre.deployments.save(deploymentName, deployment)
+
+  const implDeploymentName = deploymentName + "_Implementation"
+  const implDeployment = await hre.deployments.get(implDeploymentName)
+  implDeployment.abi = implAbi
+  implDeployment.address = impl.address
+  await hre.deployments.save(implDeploymentName, implDeployment)
 }
 
 export type ContractHolder = {

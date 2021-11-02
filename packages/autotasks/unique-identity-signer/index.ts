@@ -1,13 +1,15 @@
 import _ from "lodash"
-import {Signer, ethers} from "ethers"
+import {ethers, Signer} from "ethers"
 import axios from "axios"
-import {DefenderRelaySigner, DefenderRelayProvider} from "defender-relay-client/lib/ethers"
+import {DefenderRelayProvider, DefenderRelaySigner} from "defender-relay-client/lib/ethers"
 import {HandlerParams, Request} from "../types"
 import {assertNonNullable, isPlainObject, isString} from "@goldfinch-eng/utils"
 import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers"
 import {keccak256} from "@ethersproject/keccak256"
 import {pack} from "@ethersproject/solidity"
 import UniqueIdentityAbi from "./UniqueIdentity.json"
+
+const SIGNATURE_EXPIRY_IN_SECONDS = 3600 // 1 hour
 
 export interface KYC {
   status: "unknown" | "approved" | "failed"
@@ -18,7 +20,7 @@ const isKYC = (obj: unknown): obj is KYC => isPlainObject(obj) && isStatus(obj.s
 
 const API_URLS = {
   1: "https://us-central1-goldfinch-frontends-prod.cloudfunctions.net",
-  31337: "https://us-central1-goldfinch-frontends-dev.cloudfunctions.net",
+  31337: "http://localhost:5001/goldfinch-frontends-dev/us-central1",
 }
 
 const UNIQUE_IDENTITY_ADDRESS = {
@@ -78,14 +80,16 @@ export async function main({
     throw new Error("Does not meet mint requirements")
   }
 
+  const currentBlock = await signer.provider.getBlock("latest")
+  const expiresAt = currentBlock.timestamp + SIGNATURE_EXPIRY_IN_SECONDS
   const userAddress = forwardedHeaders["x-goldfinch-address"]
   const nonce = await uniqueIdentity.nonces(userAddress)
   const idVersion = await uniqueIdentity.ID_VERSION_0()
-  const signTypes = ["address", "uint256", "uint256", "uint256"]
-  const signParams = [userAddress, idVersion, nonce, network.chainId]
+  const signTypes = ["address", "uint256", "uint256", "address", "uint256", "uint256"]
+  const signParams = [userAddress, idVersion, expiresAt, uniqueIdentity.address, nonce, network.chainId]
   const encoded = pack(signTypes, signParams)
   const hashed = keccak256(encoded)
   const signature = await signer.signMessage(ethers.utils.arrayify(hashed))
 
-  return {signature}
+  return {signature, expiresAt}
 }

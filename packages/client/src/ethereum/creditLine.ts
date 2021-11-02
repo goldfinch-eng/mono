@@ -81,6 +81,7 @@ class DefaultCreditLine extends BaseCreditLine {
   remainingPeriodDueAmount: BigNumber
   remainingTotalDueAmount: BigNumber
   availableCredit: BigNumber
+  isDefaultObject: boolean
 
   constructor() {
     super()
@@ -97,6 +98,7 @@ class DefaultCreditLine extends BaseCreditLine {
     this.loaded = true
     this.creditLines = []
     this.name = "No Credit Lines"
+    this.isDefaultObject = true
   }
 }
 
@@ -317,5 +319,12 @@ async function fetchCreditLineData(creditLineAddresses: string | string[], goldf
 }
 
 const defaultCreditLine = new DefaultCreditLine()
+
+export function displayDueDate(cl: CreditLine): string {
+  if (cl.isLate) {
+    return "now"
+  }
+  return cl.dueDate
+}
 
 export {buildCreditLine, fetchCreditLineData, defaultCreditLine, CreditLine}

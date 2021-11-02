@@ -10,6 +10,10 @@ Goldfinch is a lending protocol built on the blockchain. This is a monorepo cont
 [Setup your GPG key for github signing commits](https://docs.github.com/en/authentication/managing-commit-signature-verification)
 
 ### Cloud setup
+We use Github Codespaces for cloud development. Goldfinch eng team members can simply click "Code" from the main repo page, and create a Codespace. Some key things to be aware of.
+  - You can actually use your local VS Code instance (highly recommended) and connect directly to the cloud. You can also use a browser instance of VSCode if you like.
+  - I would recommend going into your [personal codespace settings](https://github.com/settings/codespaces), and turning your Editor preference to "Visual Studio Code". This will default new Codespace instances to open up in your local VSCode, rather than the browser.
+  - Choosing a 4-core machine is sufficient.
 
 We use Github Codespaces for cloud development. Goldfinch eng team members can simply click "Code" from the main repo page, and create a Codespace. Some key things to be aware of.
   - You can actually use your local VS Code instance (highly recommended) and connect directly to the cloud. You can also use a browser instance of VSCode if you like.
@@ -99,10 +103,13 @@ To get a test transaction, write a MainnetForking test, log the transaction hash
 
 ```
 # Run from the protocol directory
-npm run tenderly-test
+npm run test:tenderly
 ```
 
 Pick up the transaction hash from the output of the test and run export as above
+
+### Contributing
+- See the [`CONTRIBUTING.MD`](./CONTRIBUTING.MD)
 
 ### Gasless transactions
 

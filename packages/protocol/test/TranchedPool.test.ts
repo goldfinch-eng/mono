@@ -27,6 +27,7 @@ import {getApprovalDigest, getWallet} from "./permitHelpers"
 import {TranchedPoolInstance, PoolRewardsInstance} from "../typechain/truffle"
 import {JuniorTrancheLocked, DepositMade} from "../typechain/truffle/TranchedPool"
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
+import {JuniorTrancheLocked, DepositMade} from "../typechain/truffle/MigratedTranchedPool"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 
 const RESERVE_FUNDS_COLLECTED_EVENT = "ReserveFundsCollected"
@@ -245,6 +246,15 @@ describe("TranchedPool", () => {
       ])
       // New creditline should have the usdc
       expect(await getBalance(await tranchedPool.creditLine(), usdc)).to.bignumber.eq(amount)
+    })
+
+    it("should reassign the LOCKER_ROLE to the new borrower", async () => {
+      const newBorrower = otherPerson
+      await tranchedPool.migrateCreditLine(newBorrower, limit, interestApr, paymentPeriodInDays, termInDays, lateFeeApr)
+      const lockerRole = await tranchedPool.LOCKER_ROLE()
+
+      expect(await tranchedPool.hasRole(lockerRole, newBorrower)).to.be.true
+      expect(await tranchedPool.hasRole(lockerRole, borrower)).to.be.false
     })
   })
 
