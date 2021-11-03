@@ -51,6 +51,8 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
 
   mapping(address => PoolRewardsInfo) public pools; // pool.address -> PoolRewardsInfo
 
+  event PoolRewardsClaimed(address indexed owner, uint256 indexed tokenId, uint256 amount);
+
   // solhint-disable-next-line func-name-mixedcase
   function __initialize__(address owner, GoldfinchConfig _config) public initializer {
     require(owner != address(0) && address(_config) != address(0), "Owner and config addresses cannot be empty");
@@ -99,9 +101,11 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
    set accRewardsPerPrincipalDollarAtMint to the current accRewardsPerPrincipalDollar price
    * @param tokenId Pool token id
    */
-  function setPoolTokenAccRewardsPerPrincipalDollarAtMint(uint256 tokenId) external override onlyPool {
+  function setPoolTokenAccRewardsPerPrincipalDollarAtMint(address poolAddress, uint256 tokenId) external override {
+    require(config.getPoolTokens().validPool(poolAddress), "Invalid pool!");
     IPoolTokens poolTokens = config.getPoolTokens();
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
+    require(poolAddress == tokenInfo.pool, "PoolAddress must equal PoolToken pool address");
 
     tokens[tokenId].accRewardsPerPrincipalDollarAtMint = pools[tokenInfo.pool].accRewardsPerPrincipalDollar;
   }
@@ -126,7 +130,19 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
   }
 
   /**
-   * @notice PoolToken request to withdraw currently allocated rewards
+   * @notice PoolToken request to withdraw multiple PoolTokens allocated rewards
+   * @param tokenIds Array of pool token id
+   */
+  function withdrawMultiple(uint256[] calldata tokenIds) public {
+    require(tokenIds.length > 0, "TokensIds length must not be 0");
+
+    for (uint256 i = 0; i < tokenIds.length; i++) {
+      withdraw(tokenIds[i]);
+    }
+  }
+
+  /**
+   * @notice PoolToken request to withdraw all allocated rewards
    * @param tokenId Pool token id
    */
   function withdraw(uint256 tokenId) public {
@@ -143,7 +159,10 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
 
     tokens[tokenId].rewardsClaimed = poolTokenRewardsClaimed.add(totalClaimableRewards);
     safeERC20Transfer(config.getGFI(), poolTokens.ownerOf(tokenId), totalClaimableRewards);
+    emit PoolRewardsClaimed(msg.sender, tokenId, totalClaimableRewards);
   }
+
+  // TODO: bulk-claim for multiple tokenId's
 
   /* Internal functions  */
   function _allocateRewards(uint256 _interestPaymentAmount) internal {

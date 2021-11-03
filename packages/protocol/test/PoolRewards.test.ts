@@ -1143,6 +1143,86 @@ describe("PoolRewards", () => {
       })
     })
 
+    context("withdrawMultiple()", () => {
+      it("successfully updates claimed amount and transfers gfi for multiple pooltokens", async () => {
+        const previousInterestReceived = 5000
+        const juniorTranchePrincipal = 100_000
+        let logs, firstLog
+        await poolRewards.setTotalInterestReceived(usdcVal(previousInterestReceived))
+
+        // AnotherUser deposits 50% of $100k
+        await erc20Approve(usdc, tranchedPool.address, usdcVal(50_000), [anotherUser])
+        const anotherUserResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(50_000), {from: anotherUser})
+        logs = decodeLogs<DepositMade>(anotherUserResponse.receipt.rawLogs, tranchedPool, "DepositMade")
+        firstLog = getFirstLog(logs)
+        const anotherUserTokenId = firstLog.args.tokenId
+
+        // Investor deposits 50% of $100k
+        await erc20Approve(usdc, tranchedPool.address, usdcVal(50_000), [investor])
+        const investorResponse = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(50_000), {from: investor})
+        logs = decodeLogs<DepositMade>(investorResponse.receipt.rawLogs, tranchedPool, "DepositMade")
+        firstLog = getFirstLog(logs)
+        const investorTokenId = firstLog.args.tokenId
+
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        await tranchedPool.lockPool({from: borrower})
+        await tranchedPool.drawdown(usdcVal(juniorTranchePrincipal), {from: borrower})
+        await advanceTime({days: new BN(365).toNumber()})
+        const payAmount = usdcVal(juniorTranchePrincipal)
+        await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
+        await tranchedPool.pay(payAmount, {from: borrower})
+
+        const {testPoolTokenClaimableRewards} = testCalcAccRewardsPerPrincipalDollar({
+          interestPaymentAmount: 5000,
+          maxInterestDollarsEligible,
+          totalRewards,
+          totalGFISupply,
+          juniorTranchePrincipal,
+          previousInterestReceived,
+        })
+
+        let expectedPoolTokenClaimableRewards
+
+        // ensure each user gets 50% of the pool
+        // total rewards = 2,778.629048005770000000
+        expectedPoolTokenClaimableRewards = await poolRewards.poolTokenClaimableRewards(investorTokenId)
+        expect(new BN(expectedPoolTokenClaimableRewards)).to.bignumber.equal(
+          testPoolTokenClaimableRewards.div(new BN(2))
+        )
+
+        expectedPoolTokenClaimableRewards = await poolRewards.poolTokenClaimableRewards(anotherUserTokenId)
+        expect(new BN(expectedPoolTokenClaimableRewards)).to.bignumber.equal(
+          testPoolTokenClaimableRewards.div(new BN(2))
+        )
+
+        const contractGfiBalanceBefore = await gfi.balanceOf(investor)
+        expect(contractGfiBalanceBefore).to.bignumber.equal(new BN(0))
+
+        // Investor&AnotherUser: claim all of the token
+        await expect(poolRewards.withdrawMultiple([investorTokenId, anotherUserTokenId])).to.be.fulfilled
+
+        // Verify Investor got tokens properly allocated
+        const investorTokens = await poolRewards.tokens(investorTokenId)
+        const investorRewardsClaimed = investorTokens["rewardsClaimed"]
+        await expect(investorRewardsClaimed).to.bignumber.equal(testPoolTokenClaimableRewards.div(new BN(2)))
+        // make sure the gfi transferred
+        expect(await gfi.balanceOf(investor)).to.bignumber.equal(testPoolTokenClaimableRewards.div(new BN(2)))
+        // make sure investor has no more claimable tokens
+        expectedPoolTokenClaimableRewards = await poolRewards.poolTokenClaimableRewards(investorTokenId)
+        expect(new BN(expectedPoolTokenClaimableRewards)).to.bignumber.equal(new BN("0"))
+
+        // Verify AnotherUser got tokens properly allocated
+        const anotherUserTokens = await poolRewards.tokens(anotherUserTokenId)
+        const anotherUserRewardsClaimed = await anotherUserTokens["rewardsClaimed"]
+        expect(anotherUserRewardsClaimed).to.bignumber.equal(testPoolTokenClaimableRewards.div(new BN(2)))
+        expect(await gfi.balanceOf(anotherUser)).to.bignumber.equal(testPoolTokenClaimableRewards.div(new BN(2)))
+        // make sure anotherUser has no more claimable tokens
+        expectedPoolTokenClaimableRewards = await poolRewards.poolTokenClaimableRewards(anotherUserTokenId)
+        expect(new BN(expectedPoolTokenClaimableRewards)).to.bignumber.equal(new BN("0"))
+      })
+
+    })
+
     // TODO @sanjay - need to test multiple drawdowns w/ mint price changing
     context("Principal share price at deposit time is not zero", () => {
       it("properly handles calculating the difference in share price and share price at mint", async () => {

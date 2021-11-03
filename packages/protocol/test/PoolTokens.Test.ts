@@ -24,15 +24,15 @@ const testSetup = deployments.createFixture(async ({deployments, getNamedAccount
   const person2 = asNonNullable(_person2)
   const person3 = asNonNullable(_person3)
 
-  const {poolTokens, goldfinchConfig, goldfinchFactory, usdc, uniqueIdentity} = await deployAllContracts(deployments)
+  const {poolTokens, goldfinchConfig, goldfinchFactory, poolRewards, usdc, uniqueIdentity} = await deployAllContracts(deployments)
   await goldfinchConfig.bulkAddToGoList([owner, person2])
   await erc20Transfer(usdc, [person2], usdcVal(1000), owner)
 
-  return {owner, person2, person3, poolTokens, goldfinchConfig, goldfinchFactory, usdc, uniqueIdentity}
+  return {owner, person2, person3, poolTokens, poolRewards, goldfinchConfig, goldfinchFactory, usdc, uniqueIdentity}
 })
 
 describe("PoolTokens", () => {
-  let owner, person2, person3, goldfinchConfig, poolTokens, pool, goldfinchFactory, usdc, uniqueIdentity
+  let owner, person2, person3, goldfinchConfig, poolTokens, pool, goldfinchFactory, usdc, uniqueIdentity, poolRewards
 
   const withPoolSender = async (func, otherPoolAddress?) => {
     // We need to fake the address so we can bypass the pool
@@ -131,6 +131,16 @@ describe("PoolTokens", () => {
       expect(tokenInfo.principalAmount).to.bignumber.equal(amount)
       expect(tokenInfo.principalRedeemed).to.bignumber.equal(new BN(0))
       expect(tokenInfo.interestRedeemed).to.bignumber.equal(new BN(0))
+    })
+
+    it("should call PoolRewards with tokenId after minting", async () => {
+      const amount = usdcVal(5)
+      const result = await pool.deposit(new BN(1), amount, {from: person2})
+      const event = decodeLogs(result.receipt.rawLogs, poolTokens, "TokenMinted")[0]
+      assertNonNullable(event)
+      const poolRewardsTokenInfo = await poolRewards.tokens(event.args.tokenId)
+      const accRewardsPerPrincipalDollarAtMint = poolRewardsTokenInfo["accRewardsPerPrincipalDollarAtMint"]
+      expect(accRewardsPerPrincipalDollarAtMint).to.bignumber.equal(0);
     })
 
     it("allows minting even after the limit on the PoolInfo", async () => {
