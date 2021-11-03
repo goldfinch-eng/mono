@@ -47,7 +47,7 @@ function SeniorPoolView(): JSX.Element {
     if (
       networkMonitor?.currentBlockNumber &&
       graphBlockNumber &&
-      graphBlockNumber + 5 < networkMonitor?.currentBlockNumber
+      graphBlockNumber + 10 < networkMonitor?.currentBlockNumber
     ) {
       console.error(`
         [The Graph] Block ingestor lagging behind: Block number is out of date.
