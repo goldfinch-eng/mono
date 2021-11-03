@@ -64,6 +64,10 @@ export interface getSeniorPoolAndProviders_user_capitalProviderStatus {
 
 export interface getSeniorPoolAndProviders_user_seniorPoolDeposits {
   __typename: "SeniorPoolDeposit"
+  /**
+   * tx hash
+   */
+  id: string
   amount: any
   shares: any
   blockNumber: any

@@ -40,6 +40,7 @@ export const GET_SENIOR_POOL_AND_PROVIDER_DATA = gql`
         unrealizedGainsInDollars
       }
       seniorPoolDeposits {
+        id
         amount
         shares
         blockNumber
