@@ -321,20 +321,23 @@ export function mockMerkleDistributorContractCalls(
 }
 
 export function setupMocksForAcceptedAirdrop(airdrop, isAccepted = true) {
+  const grants = airdrop ? [airdrop] : []
   jest.spyOn(utils, "getMerkleDistributorInfo").mockImplementation(() => {
     return {
       merkleRoot: "0x0",
-      amount: airdrop.grant.amount,
-      grants: [airdrop],
+      amount: "0x010f0cf064dd59200000",
+      grants: grants,
     }
   })
   UserMerkleDistributor.getAirdropsWithAcceptance = (airdropsForRecipient, merkleDistributor, currentBlock) => {
-    return [
-      {
-        grantInfo: airdrop,
-        isAccepted: isAccepted,
-      },
-    ]
+    return grants
+      ? [
+          {
+            grantInfo: airdrop,
+            isAccepted: isAccepted,
+          },
+        ]
+      : []
   }
 }
 
