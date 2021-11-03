@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom"
 import {mock, resetMocks} from "depay-web3-mock"
-import {render, screen, fireEvent} from "@testing-library/react"
+import {render, screen} from "@testing-library/react"
 import {MerkleDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types"
 import {BrowserRouter as Router} from "react-router-dom"
 import {AppContext} from "../../App"
@@ -16,7 +16,7 @@ import {GFI, GFILoaded} from "../../ethereum/gfi"
 import {User} from "../../ethereum/user"
 import {SeniorPool, StakingRewards, StakingRewardsLoaded} from "../../ethereum/pool"
 import {UserLoaded} from "../../ethereum/user"
-import {blockchain, blockInfo, DEPLOYMENTS, network, recipient} from "../constants"
+import {blockchain, blockInfo, DEPLOYMENTS, network, recipient} from "./constants"
 import {assertWithLoadedInfo} from "../../types/loadable"
 import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
 import * as utils from "../../ethereum/utils"
@@ -26,7 +26,7 @@ import {
   mockUserInitializationContractCalls,
   setupMocksForAcceptedAirdrop,
   assertAllMocksAreCalled,
-} from "../mocks"
+} from "./mocks"
 
 mock({
   blockchain: "ethereum",

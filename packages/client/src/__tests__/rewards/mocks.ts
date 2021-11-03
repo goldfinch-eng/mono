@@ -1,10 +1,10 @@
 import "@testing-library/jest-dom"
 import {mock} from "depay-web3-mock"
 import {MerkleDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types"
-import {CommunityRewards} from "../ethereum/communityRewards"
-import {GFI} from "../ethereum/gfi"
-import {User, UserMerkleDistributor} from "../ethereum/user"
-import {StakingRewards} from "../ethereum/pool"
+import {CommunityRewards} from "../../ethereum/communityRewards"
+import {GFI} from "../../ethereum/gfi"
+import {User, UserMerkleDistributor} from "../../ethereum/user"
+import {StakingRewards} from "../../ethereum/pool"
 import {
   blockchain,
   communityRewardsABI,
@@ -14,7 +14,7 @@ import {
   recipient,
   stakingRewardsABI,
 } from "./constants"
-import * as utils from "../ethereum/utils"
+import * as utils from "../../ethereum/utils"
 
 interface RewardsMockData {
   hasStakingRewards: boolean
