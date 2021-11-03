@@ -42,6 +42,8 @@ abstract contract ITranchedPool {
 
   function lockPool() external virtual;
 
+  function unlockPool() external virtual;
+
   function drawdown(uint256 amount) external virtual;
 
   function deposit(uint256 tranche, uint256 amount) external virtual returns (uint256 tokenId);

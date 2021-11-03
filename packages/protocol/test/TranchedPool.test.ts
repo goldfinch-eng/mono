@@ -24,7 +24,7 @@ const {deployments, artifacts} = hre
 import {ecsign} from "ethereumjs-util"
 const CreditLine = artifacts.require("CreditLine")
 import {getApprovalDigest, getWallet} from "./permitHelpers"
-import {TranchedPoolInstance, PoolRewardsInstance} from "../typechain/truffle"
+import {CreditLineInstance, TranchedPoolInstance, PoolRewardsInstance} from "../typechain/truffle"
 import {JuniorTrancheLocked, DepositMade} from "../typechain/truffle/TranchedPool"
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
 import {assertNonNullable} from "@goldfinch-eng/utils"
@@ -1748,6 +1748,108 @@ describe("TranchedPool", () => {
         })
       })
     })
+  })
+
+  describe("multiple drawdowns", async () => {
+    let tranchedPool : TranchedPoolInstance, creditLine : CreditLineInstance
+    beforeEach(async () => {
+      interestApr = interestAprAsBN("10.00")
+      termInDays = new BN(365)
+      ;({ tranchedPool, creditLine } = await createPoolWithCreditLine({ interestApr, termInDays }))
+    })
+
+    async function depositAndGetTokenId(pool: TranchedPoolInstance, tranche, value) {
+      const receipt = await pool.deposit(tranche, value)
+      const logs = decodeLogs<DepositMade>(receipt.receipt.rawLogs, tranchedPool, "DepositMade")
+      return getFirstLog(logs).args.tokenId
+    }
+
+    it.only("distributes interest correctly across different drawdowns", async () => {
+      let principalAmount, interestAmount, seniorInfo, juniorInfo
+      const firstTrancheJunior = await depositAndGetTokenId(tranchedPool, TRANCHES.Junior, usdcVal(20))
+      await tranchedPool.lockJuniorCapital({from: borrower})
+      const firstTrancheSenior = await depositAndGetTokenId(tranchedPool, TRANCHES.Senior, usdcVal(80))
+      await tranchedPool.lockPool({from: borrower})
+
+      await tranchedPool.drawdown(usdcVal(100), {from: borrower})
+
+      // Advance a quarter way through, and pay back what's owed. Then
+      const halfOfTerm = termInDays.div(new BN(2))
+      await advanceTime({days: halfOfTerm.toNumber() + 1})
+
+      const expectedNetInterest = new BN("4438356")
+      const expectedProtocolFee = new BN("493150")
+      const expectedTotalInterest = expectedNetInterest.add(expectedProtocolFee)
+
+      const receipt = await tranchedPool.pay(usdcVal(5), {from: borrower})
+      expectPaymentRelatedEventsEmitted(receipt, borrower, tranchedPool, {
+        interest: expectedTotalInterest,
+        principal: new BN(68494),
+        remaining: new BN(0),
+        reserve: expectedProtocolFee,
+      })
+      expect((await tranchedPool.availableToWithdraw(firstTrancheJunior))["0"]).to.bignumber.eq(new BN(1676714))
+      expect((await tranchedPool.availableToWithdraw(firstTrancheJunior))["1"]).to.bignumber.eq(new BN(13698))
+      expect((await tranchedPool.availableToWithdraw(firstTrancheSenior))["0"]).to.bignumber.eq(new BN(2761643))
+      expect((await tranchedPool.availableToWithdraw(firstTrancheSenior))["1"]).to.bignumber.eq(new BN(54795))
+
+      seniorInfo = await tranchedPool.getTranche(TRANCHES.Senior)
+      expect(await tranchedPool.sharePriceToUsdc(seniorInfo.interestSharePrice, seniorInfo.principalDeposited)).to.bignumber.eq(new BN(2761643))
+
+
+      await tranchedPool.unlockPool({from: borrower})
+
+      const secondTrancheJunior = await depositAndGetTokenId(tranchedPool, TRANCHES.Junior, usdcVal(60))
+      await tranchedPool.lockJuniorCapital({from: borrower})
+      const secondTrancheSenior = await depositAndGetTokenId(tranchedPool, TRANCHES.Senior, usdcVal(240))
+      await tranchedPool.lockPool({from: borrower})
+
+      await tranchedPool.drawdown(usdcVal(300), {from: borrower})
+
+      // This won't be same, because when share price increased we didn't
+      seniorInfo = await tranchedPool.getTranche(TRANCHES.Senior)
+      expect(await tranchedPool.sharePriceToUsdc(seniorInfo.interestSharePrice, seniorInfo.principalDeposited)).to.bignumber.eq(new BN(2761643))
+
+
+      await advanceTime({days: halfOfTerm.toNumber() + 1})
+      await hre.ethers.provider.send("evm_mine", [])
+
+      // Available to withdraw for initial depositors should not change
+      expect((await tranchedPool.availableToWithdraw(firstTrancheJunior))["0"]).to.bignumber.eq(new BN(1676714))
+      // expect((await tranchedPool.availableToWithdraw(firstTrancheJunior))["1"]).to.bignumber.eq(new BN(13698))
+      expect((await tranchedPool.availableToWithdraw(firstTrancheSenior))["0"]).to.bignumber.eq(new BN(2761643))
+      // expect((await tranchedPool.availableToWithdraw(firstTrancheSenior))["1"]).to.bignumber.eq(new BN(54795))
+
+
+      const secondReceipt = await tranchedPool.pay(usdcVal(420), {from: borrower})
+      expectPaymentRelatedEventsEmitted(secondReceipt, borrower, tranchedPool, {
+        interest: new BN(20023919),
+        principal: new BN(400000000).sub(new BN(68494)),
+        remaining: new BN(44575),
+        reserve: new BN(2006848),
+      })
+      expect(await creditLine.balance()).to.bignumber.eq("0")
+      juniorInfo = await tranchedPool.getTranche(TRANCHES.Junior)
+      seniorInfo = await tranchedPool.getTranche(TRANCHES.Senior)
+      //incorrect?
+      expect(await tranchedPool.sharePriceToUsdc(juniorInfo.interestSharePrice, juniorInfo.principalDeposited)).to.bignumber.eq(new BN(21840037))
+      expect(await tranchedPool.sharePriceToUsdc(juniorInfo.principalSharePrice, juniorInfo.principalDeposited)).to.bignumber.eq(new BN(79999999))
+      expect(await tranchedPool.sharePriceToUsdc(seniorInfo.interestSharePrice, seniorInfo.principalDeposited)).to.bignumber.eq(new BN(13975038))
+      expect(await tranchedPool.sharePriceToUsdc(seniorInfo.principalSharePrice, seniorInfo.principalDeposited)).to.bignumber.eq(new BN(319999999))
+
+      //incrrect? because levarage ratio changed?
+      expect((await tranchedPool.availableToWithdraw(firstTrancheJunior))["0"]).to.bignumber.eq(new BN(5974333))
+      expect((await tranchedPool.availableToWithdraw(firstTrancheJunior))["1"]).to.bignumber.eq(new BN(19999999))
+      expect((await tranchedPool.availableToWithdraw(firstTrancheSenior))["0"]).to.bignumber.eq(new BN(3493759))
+      expect((await tranchedPool.availableToWithdraw(firstTrancheSenior))["1"]).to.bignumber.eq(new BN(79999999))
+
+      expect((await tranchedPool.availableToWithdraw(secondTrancheJunior))["0"]).to.bignumber.eq(new BN(14935832))
+      expect((await tranchedPool.availableToWithdraw(secondTrancheJunior))["1"]).to.bignumber.eq(new BN(49999999))
+      expect((await tranchedPool.availableToWithdraw(secondTrancheSenior))["0"]).to.bignumber.eq(new BN(10917998))
+      expect((await tranchedPool.availableToWithdraw(secondTrancheSenior))["1"]).to.bignumber.eq(new BN(249999999))
+    })
+
+
   })
 
   describe("updateGoldfinchConfig", async () => {
