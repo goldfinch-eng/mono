@@ -15,7 +15,6 @@ import {GET_SENIOR_POOL_AND_PROVIDER_DATA} from "../../graphql/queries"
 import {getSeniorPoolAndProviders, getSeniorPoolAndProvidersVariables} from "../../graphql/types"
 import {GraphSeniorPoolData, GraphUserData, isGraphSeniorPoolData, isGraphUserData} from "../../graphql/utils"
 import {parseSeniorPool, parseUser} from "../../graphql/parsers"
-import * as Sentry from "@sentry/react"
 
 function SeniorPoolView(): JSX.Element {
   const {pool, user, goldfinchConfig, networkMonitor} = useContext(AppContext)
@@ -24,10 +23,10 @@ function SeniorPoolView(): JSX.Element {
   const [graphBlockNumber, setGraphBlockNumber] = useState<number>()
   const kycResult = useKYC()
   const kyc = useStaleWhileRevalidating(kycResult)
-  const [fetchSeniorPoolAndProviderData, {data, refetch}] = useLazyQuery<
+  const [fetchSeniorPoolAndProviderData, {data, error, refetch}] = useLazyQuery<
     getSeniorPoolAndProviders,
     getSeniorPoolAndProvidersVariables
-  >(GET_SENIOR_POOL_AND_PROVIDER_DATA)
+  >(GET_SENIOR_POOL_AND_PROVIDER_DATA, {fetchPolicy: "no-cache"})
 
   const enableSeniorPoolV2 = process.env.REACT_APP_TOGGLE_THE_GRAPH === "true"
 
@@ -48,9 +47,12 @@ function SeniorPoolView(): JSX.Element {
     if (
       networkMonitor?.currentBlockNumber &&
       graphBlockNumber &&
-      graphBlockNumber + 10 < networkMonitor?.currentBlockNumber
+      graphBlockNumber + 5 < networkMonitor?.currentBlockNumber
     ) {
-      Sentry.captureMessage("The Graph block number is out of date.")
+      console.error(`
+        [The Graph] Block ingestor lagging behind: Block number is out of date.
+        The latest block is ${networkMonitor?.currentBlockNumber}, 
+        but The Graph API returned ${graphBlockNumber}.`)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [graphBlockNumber])
@@ -76,8 +78,12 @@ function SeniorPoolView(): JSX.Element {
     if (data) {
       setGraphData()
     }
+
+    if (error) {
+      console.error(`[The Graph] Queries: failed request from the subgraph API: ${error.message}`)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data])
+  }, [data, error])
 
   async function refreshAllData(capitalProviderAddress) {
     assertNonNullable(pool)
