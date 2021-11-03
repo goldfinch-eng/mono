@@ -162,8 +162,6 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
     emit PoolRewardsClaimed(msg.sender, tokenId, totalClaimableRewards);
   }
 
-  // TODO: bulk-claim for multiple tokenId's
-
   /* Internal functions  */
   function _allocateRewards(uint256 _interestPaymentAmount) internal {
     uint256 _totalInterestReceived = totalInterestReceived;
