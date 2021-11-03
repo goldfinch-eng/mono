@@ -43,6 +43,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   struct PoolSlice {
     TrancheInfo seniorTranche;
     TrancheInfo juniorTranche;
+    uint256 totalInterestAccrued;
   }
 
 //  PoolSlice[] internal poolSlices;
@@ -137,11 +138,13 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     require(amount > 0, "Must deposit more than zero");
 
     trancheInfo.principalDeposited = trancheInfo.principalDeposited.add(amount);
+    console.log("Tranche %s is now %s", trancheInfo.id, trancheInfo.principalDeposited);
     totalDeposits = totalDeposits.add(amount);
     IPoolTokens.MintParams memory params = IPoolTokens.MintParams({tranche: tranche, principalAmount: amount});
     tokenId = config.getPoolTokens().mint(params, msg.sender);
     safeERC20TransferFrom(config.getUSDC(), msg.sender, address(this), amount);
     emit DepositMade(msg.sender, tranche, tokenId, amount);
+    console.log("Deposited: %s into %s. Total: %s", amount, tranche, totalDeposited(poolSlices[numSlices-1]));
     return tokenId;
   }
 
@@ -231,7 +234,8 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     // Update the share price to reflect the amount remaining in the pool
     PoolSlice storage currentSlice = poolSlices[numSlices-1];
     console.log("Slice: %s, total deposited: %s", numSlices, totalDeposited(currentSlice));
-    uint256 amountRemaining = totalDeposited(currentSlice).sub(creditLine.balance());
+    //TODO: This won't work for multiple drawdowns
+    uint256 amountRemaining = totalDeposited(currentSlice).sub(amount);
     uint256 oldJuniorPrincipalSharePrice = currentSlice.juniorTranche.principalSharePrice;
     uint256 oldSeniorPrincipalSharePrice = currentSlice.seniorTranche.principalSharePrice;
     currentSlice.juniorTranche.principalSharePrice = calculateExpectedSharePrice(amountRemaining, currentSlice.juniorTranche, currentSlice);
@@ -603,8 +607,10 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     });
     poolSlices[numSlices] = PoolSlice({
       seniorTranche: seniorTranche,
-      juniorTranche: juniorTranche
+      juniorTranche: juniorTranche,
+      totalInterestAccrued: 0
     });
+    console.log("Senior Tranche id: %s, junior tranche id: %s", poolSlices[numSlices].seniorTranche.id, poolSlices[numSlices].juniorTranche.id);
     numSlices = numSlices + 1;
   }
 
@@ -620,6 +626,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     uint256 reserveFeePercent = ONE_HUNDRED.div(config.getReserveDenominator()); // Convert the denonminator to percent
 
     for (uint256 i = 0; i< numSlices; i++) {
+      console.log("***** Slice %s *****", i);
       PoolSlice storage currentSlice = poolSlices[i];
       uint256 sliceTotal = currentSlice.seniorTranche.principalDeposited.add(currentSlice.juniorTranche.principalDeposited);
 
@@ -692,6 +699,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
       expectedPrincipalSharePrice,
       slice.seniorTranche
     );
+    console.log("Final Senior interest: %s, senior principal: %s", sharePriceToUsdc(slice.seniorTranche.interestSharePrice, slice.seniorTranche.principalDeposited), sharePriceToUsdc(slice.seniorTranche.principalSharePrice, slice.seniorTranche.principalDeposited));
     console.log("After senior interest remaining: %s, principal remaining: %s", interestRemaining, principalRemaining);
     return (interestRemaining, principalRemaining, reserveDeduction);
   }
@@ -729,6 +737,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
       0,
       slice.juniorTranche
     );
+    console.log("Final Junior interest: %s, senior principal: %s", sharePriceToUsdc(slice.juniorTranche.interestSharePrice, slice.juniorTranche.principalDeposited), sharePriceToUsdc(slice.juniorTranche.principalSharePrice, slice.juniorTranche.principalDeposited));
     return (interestRemaining, principalRemaining, reserveDeduction);
   }
 
@@ -740,7 +749,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     // be 0.7 and not 0)
     // TODO: this is incorrect. May need to look at total deposits and scale by fraction?
     principalAccrued = principalAccrued.add(totalDeposited(slice).sub(creditLine.balance()));
-    return (interestAccrued, principalAccrued);
+    return (slice.totalInterestAccrued, principalAccrued);
   }
 
   function calculateExpectedSharePrice(uint256 amount, TrancheInfo memory tranche, PoolSlice memory slice) internal view returns (uint256) {
@@ -776,8 +785,9 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   }
 
   function getTrancheInfo(uint256 tranche) internal view returns (TrancheInfo storage) {
+    require(tranche > 0, "Invalid tranche id");
     require(tranche <= numSlices * NUM_TRANCHES, "Unsupported tranche");
-    uint256 sliceId = tranche % NUM_TRANCHES;
+    uint256 sliceId = ((tranche + (tranche % NUM_TRANCHES)) / NUM_TRANCHES) - 1;
     PoolSlice storage slice = poolSlices[sliceId];
     TrancheInfo storage trancheInfo = tranche % NUM_TRANCHES == 1 ? slice.seniorTranche : slice.juniorTranche;
     return trancheInfo;
@@ -917,7 +927,19 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   }
 
   function _assess() internal {
+    uint256 interestAccrued = creditLine.totalInterestAccrued();
     (uint256 paymentRemaining, uint256 interestPayment, uint256 principalPayment) = creditLine.assess();
+    interestAccrued = creditLine.totalInterestAccrued().sub(interestAccrued);
+
+    // Split the interest accrued proportionally across slices so we know how much interest goes to each slice
+    // We need this because the slice start at different times, so we cannot retroactively allocate the interest linearly
+    for (uint256 i=0; i < numSlices; i++) {
+      PoolSlice storage slice = poolSlices[i];
+      uint256 interestForSlice = scaleByFraction(interestAccrued, slice.juniorTranche.principalDeposited.add(slice.seniorTranche.principalDeposited), totalDeposits);
+      console.log("Interest Accrued: %s, for slice: %s", interestAccrued, interestForSlice);
+      slice.totalInterestAccrued = slice.totalInterestAccrued.add(interestForSlice);
+    }
+
     console.log("Interest: %s, principal: %s, remaining: %s", interestPayment, principalPayment, paymentRemaining);
     if (interestPayment > 0 || principalPayment > 0) {
       config.getPoolRewards().allocateRewards(interestPayment);
