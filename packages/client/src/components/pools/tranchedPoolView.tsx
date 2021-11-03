@@ -614,7 +614,12 @@ function CreditStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
           <td className="numeric">{displayDollars(usdcFromAtomic(amount))}</td>
           <td className="numeric">{displayDollars(usdcFromAtomic(yourPortion))}</td>
           <td className="transaction-link">
-            <a href={`https://etherscan.io/tx/${tx.txHash}`} target="_blank" rel="noopener noreferrer">
+            <a
+              className="inline-button"
+              href={`https://etherscan.io/tx/${tx.txHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               {iconOutArrow}
             </a>
           </td>
