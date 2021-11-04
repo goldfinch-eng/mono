@@ -1220,7 +1220,6 @@ describe("PoolRewards", () => {
         expectedPoolTokenClaimableRewards = await poolRewards.poolTokenClaimableRewards(anotherUserTokenId)
         expect(new BN(expectedPoolTokenClaimableRewards)).to.bignumber.equal(new BN("0"))
       })
-
     })
 
     // TODO @sanjay - need to test multiple drawdowns w/ mint price changing
