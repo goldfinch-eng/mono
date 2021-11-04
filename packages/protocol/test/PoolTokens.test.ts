@@ -8,6 +8,8 @@ import {
   deployAllContracts,
   erc20Transfer,
   erc20Approve,
+  SECONDS_PER_DAY,
+  getCurrentTimestamp,
 } from "./testHelpers"
 import {OWNER_ROLE, interestAprAsBN, GO_LISTER_ROLE} from "../blockchain_scripts/deployHelpers"
 import hre from "hardhat"
@@ -17,6 +19,7 @@ const {deployments} = hre
 const TranchedPool = artifacts.require("TranchedPool")
 import {expectEvent} from "@openzeppelin/test-helpers"
 import {mint} from "./uniqueIdentityHelpers"
+import {PoolRewardsInstance} from "../typechain/truffle"
 
 const testSetup = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
   const [_owner, _person2, _person3] = await web3.eth.getAccounts()
@@ -34,7 +37,16 @@ const testSetup = deployments.createFixture(async ({deployments, getNamedAccount
 })
 
 describe("PoolTokens", () => {
-  let owner, person2, person3, goldfinchConfig, poolTokens, pool, goldfinchFactory, usdc, uniqueIdentity, poolRewards
+  let owner,
+    person2,
+    person3,
+    goldfinchConfig,
+    poolTokens,
+    pool,
+    goldfinchFactory,
+    usdc,
+    uniqueIdentity,
+    poolRewards: PoolRewardsInstance
 
   const withPoolSender = async (func, otherPoolAddress?) => {
     // We need to fake the address so we can bypass the pool
@@ -47,7 +59,7 @@ describe("PoolTokens", () => {
 
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;({owner, person2, person3, poolTokens, goldfinchConfig, goldfinchFactory, usdc, uniqueIdentity} =
+    ;({owner, person2, person3, poolTokens, goldfinchConfig, goldfinchFactory, usdc, uniqueIdentity, poolRewards} =
       await testSetup())
 
     await poolTokens._disablePoolValidation(true)
@@ -62,7 +74,8 @@ describe("PoolTokens", () => {
 
   async function mintUniqueIdentityToken(recipient, signer) {
     const uniqueIdentityTokenId = new BN(0)
-    await mint(hre, uniqueIdentity, uniqueIdentityTokenId, new BN(0), new BN(0), signer, undefined, recipient)
+    const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
+    await mint(hre, uniqueIdentity, uniqueIdentityTokenId, expiresAt, new BN(0), signer, undefined, recipient)
     expect(await uniqueIdentity.balanceOf(recipient, uniqueIdentityTokenId)).to.bignumber.equal(new BN(1))
   }
 
@@ -142,7 +155,7 @@ describe("PoolTokens", () => {
       assertNonNullable(event)
       const poolRewardsTokenInfo = await poolRewards.tokens(event.args.tokenId)
       const accRewardsPerPrincipalDollarAtMint = poolRewardsTokenInfo["accRewardsPerPrincipalDollarAtMint"]
-      expect(accRewardsPerPrincipalDollarAtMint).to.bignumber.equal(0)
+      expect(accRewardsPerPrincipalDollarAtMint).to.bignumber.equal(new BN(0))
     })
 
     it("allows minting even after the limit on the PoolInfo", async () => {
