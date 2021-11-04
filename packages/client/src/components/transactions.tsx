@@ -1,4 +1,4 @@
-import {assertUnreachable, genExhaustiveTuple, isString} from "@goldfinch-eng/utils/src/type"
+import {assertUnreachable, isString} from "@goldfinch-eng/utils/src/type"
 import _ from "lodash"
 import React, {useContext, useEffect, useState} from "react"
 import {AppContext} from "../App"

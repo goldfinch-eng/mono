@@ -16,6 +16,7 @@ import {Tickers, USDC, usdcFromAtomic} from "./erc20"
 import {
   ApprovalEventType,
   APPROVAL_EVENT,
+  APPROVAL_EVENT_TYPES,
   CommunityRewardsEventType,
   COMMUNITY_REWARDS_EVENT_TYPES,
   CreditDeskEventType,
@@ -58,6 +59,7 @@ import {
   USDC_APPROVAL_TX_TYPE,
   UNSTAKE_TX_NAME,
   WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
+  FIDU_APPROVAL_TX_TYPE,
 } from "./transactions"
 import {getFromBlock, MAINNET} from "./utils"
 
@@ -646,6 +648,7 @@ export class User {
 
     const [
       usdcTxs,
+      fiduTxs,
       poolEventsAndTxs,
       creditDeskTxs,
       stakingRewardsEventsAndTxs,
@@ -655,7 +658,7 @@ export class User {
       // NOTE: We have no need to include usdc txs for `pool.v1Pool` among the txs in
       // `this.pastTxs`. So we don't get them. We only need usdc txs for `pool`.
       getAndTransformUSDCEvents(usdc, pool.address, this.address, currentBlock),
-
+      getAndTransformFIDUEvents(this.goldfinchProtocol, this.address, currentBlock),
       getPoolEvents(pool, this.address, currentBlock).then(async (poolEvents) => {
         return {
           poolEvents,
@@ -775,6 +778,7 @@ export class User {
       _.sortBy(
         [
           ...usdcTxs,
+          ...fiduTxs,
           ...poolTxs,
           ...creditDeskTxs,
           ...stakingRewardsTxs,
@@ -894,7 +898,10 @@ async function getAndTransformUSDCEvents(
     .compact()
     .map((e) => _.set(e, "erc20", usdc))
     .value()
-  return await mapEventsToTx<ApprovalEventType>(approvalEvents, [APPROVAL_EVENT], {
+  // TODO Filter out approval events that are emitted as part of performing a transfer and are
+  // therefore not informative for the user; the approval events we want are those representing
+  // an approval the user performed manually.
+  return await mapEventsToTx<ApprovalEventType>(approvalEvents, APPROVAL_EVENT_TYPES, {
     parseName: (eventData: KnownEventData<ApprovalEventType>) => {
       switch (eventData.event) {
         case APPROVAL_EVENT:
@@ -909,6 +916,44 @@ async function getAndTransformUSDCEvents(
           return {
             amount: eventData.returnValues.value,
             units: "usdc",
+          }
+        }
+        default:
+          assertUnreachable(eventData.event)
+      }
+    },
+  })
+}
+
+async function getAndTransformFIDUEvents(
+  goldfinchProtocol: GoldfinchProtocol,
+  owner: string,
+  currentBlock: BlockInfo
+): Promise<HistoricalTx<ApprovalEventType>[]> {
+  const approvalEvents = await goldfinchProtocol.queryEvents(
+    "Fidu",
+    APPROVAL_EVENT_TYPES,
+    undefined,
+    currentBlock.number
+  )
+  // TODO Filter out approval events that are emitted as part of performing a transfer and are
+  // therefore not informative for the user; the approval events we want are those representing
+  // an approval the user performed manually.
+  return await mapEventsToTx<ApprovalEventType>(approvalEvents, APPROVAL_EVENT_TYPES, {
+    parseName: (eventData: KnownEventData<ApprovalEventType>) => {
+      switch (eventData.event) {
+        case APPROVAL_EVENT:
+          return FIDU_APPROVAL_TX_TYPE
+        default:
+          assertUnreachable(eventData.event)
+      }
+    },
+    parseAmount: (eventData: KnownEventData<ApprovalEventType>) => {
+      switch (eventData.event) {
+        case APPROVAL_EVENT: {
+          return {
+            amount: eventData.returnValues.value,
+            units: "fidu",
           }
         }
         default:

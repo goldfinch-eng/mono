@@ -15,7 +15,7 @@ export const STAKE_TX_TYPE = "Stake"
 export const MINT_UID_TX_TYPE = "Mint UID"
 export const WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE = "Withdraw from Borrower Pool"
 export const WITHDRAW_FROM_SENIOR_POOL_TX_TYPE = "Withdraw from Senior Pool"
-export const UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE = "Unstake and Withdraw from Senior Pool"
+export const UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE = "Unstake and Withdraw"
 export const SUPPLY_TX_TYPE = "Supply"
 
 /**
