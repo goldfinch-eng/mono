@@ -29,6 +29,19 @@ contract Go is IGo, BaseUpgradeablePausable {
   uint256 public constant ID_VERSION_8 = 8;
   uint256 public constant ID_VERSION_9 = 9;
   uint256 public constant ID_VERSION_10 = 10;
+  uint256[] public versions = [
+    ID_VERSION_0,
+    ID_VERSION_1,
+    ID_VERSION_2,
+    ID_VERSION_3,
+    ID_VERSION_4,
+    ID_VERSION_5,
+    ID_VERSION_6,
+    ID_VERSION_7,
+    ID_VERSION_8,
+    ID_VERSION_9,
+    ID_VERSION_10
+  ];
 
   event GoldfinchConfigUpdated(address indexed who, address configAddress);
 
@@ -61,9 +74,27 @@ contract Go is IGo, BaseUpgradeablePausable {
    */
   function go(address account) public view override returns (bool) {
     require(account != address(0), "Zero address is not go-listed");
-    // NOTE: If UniqueIdentity is upgraded to support token ids besides 0, this contract should
-    // be upgraded to handle the set of possible ids.
-    uint256 balance = IUniqueIdentity0612(uniqueIdentity).balanceOf(account, ID_VERSION_0);
-    return balance > 0 || config.goList(account);
+    address[] memory accounts = new address[](1);
+    accounts[0] = account;
+    uint256[] memory balances = IUniqueIdentity0612(uniqueIdentity).balanceOfBatch(accounts, versions);
+    for (uint256 i = 0; i < balances.length; ++i) {
+      if (balances[i] > 0) {
+        return true;
+      }
+    }
+    return config.goList(account);
+  }
+
+  function go(address account, uint256[] memory onlyVersions) public view override returns (bool) {
+    require(account != address(0), "Zero address is not go-listed");
+    address[] memory accounts = new address[](1);
+    accounts[0] = account;
+    uint256[] memory balances = IUniqueIdentity0612(uniqueIdentity).balanceOfBatch(accounts, onlyVersions);
+    for (uint256 i = 0; i < balances.length; ++i) {
+      if (balances[i] > 0) {
+        return true;
+      }
+    }
+    return config.goList(account);
   }
 }

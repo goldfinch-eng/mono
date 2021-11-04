@@ -29,6 +29,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   uint256 public constant ONE_HUNDRED = 100; // Need this because we cannot call .div on a literal 100
   uint256 public juniorFeePercent;
   bool public drawdownsPaused;
+  uint256[] public allowedUIDTypes;
 
   TrancheInfo internal seniorTranche;
   TrancheInfo internal juniorTranche;
@@ -76,7 +77,8 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     uint256 _interestApr,
     uint256 _paymentPeriodInDays,
     uint256 _termInDays,
-    uint256 _lateFeeApr
+    uint256 _lateFeeApr,
+    uint256[] calldata _allowedUIDTypes
   ) public override initializer {
     require(
       address(_config) != address(0) && address(_borrower) != address(0),
@@ -105,6 +107,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
 
     createdAt = block.timestamp;
     juniorFeePercent = _juniorFeePercent;
+    allowedUIDTypes = _allowedUIDTypes;
 
     _setupRole(LOCKER_ROLE, _borrower);
     _setupRole(LOCKER_ROLE, owner);
@@ -131,6 +134,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     TrancheInfo storage trancheInfo = getTrancheInfo(tranche);
     require(trancheInfo.lockedUntil == 0, "Tranche has been locked");
     require(amount > 0, "Must deposit more than zero");
+    require(config.getGo().go(msg.sender, allowedUIDTypes), "This address has not been go-listed");
 
     trancheInfo.principalDeposited = trancheInfo.principalDeposited.add(amount);
     IPoolTokens.MintParams memory params = IPoolTokens.MintParams({tranche: tranche, principalAmount: amount});
@@ -504,6 +508,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
 
     require(amount <= netRedeemable, "Invalid redeem amount");
     require(currentTime() > trancheInfo.lockedUntil, "Tranche is locked");
+    require(config.getGo().go(msg.sender, allowedUIDTypes), "This address has not been go-listed");
 
     // If the tranche has not been locked, ensure the deposited amount is correct
     if (trancheInfo.lockedUntil == 0) {

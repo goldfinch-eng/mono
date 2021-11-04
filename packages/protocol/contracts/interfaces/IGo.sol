@@ -9,5 +9,7 @@ interface IGo {
 
   function go(address account) external view returns (bool);
 
+  function go(address account, uint256[] calldata onlyVersions) external view returns (bool);
+
   function updateGoldfinchConfig() external;
 }
