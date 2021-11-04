@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom"
 import {mock, resetMocks} from "depay-web3-mock"
-import {render, screen} from "@testing-library/react"
+import {render, screen, fireEvent} from "@testing-library/react"
 import {BrowserRouter as Router} from "react-router-dom"
 import {AppContext} from "../../App"
 import web3 from "../../web3"
@@ -29,6 +29,8 @@ import {
   setupVestingCommunityReward,
   setupPartiallyClaimedStakingReward,
 } from "./__utils__/scenarios"
+import {ThemeProvider} from "styled-components"
+import {defaultTheme} from "../../styles/theme"
 
 mock({
   blockchain: "ethereum",
@@ -55,9 +57,11 @@ function renderRewards(
 
   return render(
     <AppContext.Provider value={store}>
-      <Router>
-        <Rewards />
-      </Router>
+      <ThemeProvider theme={defaultTheme}>
+        <Router>
+          <Rewards />
+        </Router>
+      </ThemeProvider>
     </AppContext.Provider>
   )
 }
@@ -265,7 +269,7 @@ describe("Rewards portfolio overview", () => {
   })
 })
 
-describe("Rewards list", () => {
+describe("Rewards list and detail", () => {
   let seniorPool
   let goldfinchProtocol = new GoldfinchProtocol(network)
 
@@ -316,6 +320,26 @@ describe("Rewards list", () => {
     expect(await screen.findByText("Staked 50,000.00 FIDU on Jan 5, 2022")).toBeVisible()
     expect(await screen.findByText("Vesting")).toBeVisible()
     expect((await screen.findAllByText("0.00")).length).toBe(7)
+
+    fireEvent.click(screen.getByText("Staked 50,000.00 FIDU on Jan 5, 2022"))
+
+    expect(await screen.findByText("Transaction details")).toBeVisible()
+    expect(await screen.findByText("Vesting schedule")).toBeVisible()
+    expect(await screen.findByText("Linear until 100% on Jan 5, 2023")).toBeVisible()
+
+    expect(await screen.findByText("Claim status")).toBeVisible()
+    expect(await screen.findByText("0.00 claimed of your total vested 0.00 GFI")).toBeVisible()
+
+    expect(await screen.findByText("Current earn rate")).toBeVisible()
+    expect(await screen.findByText("+453.60 granted per week")).toBeVisible()
+
+    expect(await screen.findByText("Vesting status")).toBeVisible()
+    expect(await screen.findByText("--.--% (0.00 GFI) vested")).toBeVisible()
+
+    expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
+      "href",
+      `https://${network.name}.etherscan.io/address/${stakingRewards.address}`
+    )
   })
 
   it("shows claimable staking rewards on rewards list", async () => {
@@ -334,6 +358,26 @@ describe("Rewards list", () => {
     const summaryValues = await element.getElementsByClassName("detail-label-value")
     expect(summaryValues[0]?.textContent).toEqual("129.60") // granted
     expect(summaryValues[1]?.textContent).toEqual("0.71") // claimable
+
+    fireEvent.click(screen.getByText("Staked 50,000.00 FIDU on Jan 5, 2022"))
+
+    expect(await screen.findByText("Transaction details")).toBeVisible()
+    expect(await screen.findByText("Vesting schedule")).toBeVisible()
+    expect(await screen.findByText("Linear until 100% on Jan 5, 2023")).toBeVisible()
+
+    expect(await screen.findByText("Claim status")).toBeVisible()
+    expect(await screen.findByText("0.00 claimed of your total vested 0.71 GFI")).toBeVisible()
+
+    expect(await screen.findByText("Current earn rate")).toBeVisible()
+    expect(await screen.findByText("+453.60 granted per week")).toBeVisible()
+
+    expect(await screen.findByText("Vesting status")).toBeVisible()
+    expect(await screen.findByText("0.55% (0.71 GFI) vested")).toBeVisible()
+
+    expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
+      "href",
+      `https://${network.name}.etherscan.io/address/${stakingRewards.address}`
+    )
   })
 
   it("shows claimable community rewards on rewards list", async () => {
@@ -352,6 +396,24 @@ describe("Rewards list", () => {
     const summaryValues = await element.getElementsByClassName("detail-label-value")
     expect(summaryValues[0]?.textContent).toEqual("1,000.00") // granted
     expect(summaryValues[1]?.textContent).toEqual("1,000.00") // claimable
+
+    fireEvent.click(screen.getByText("Flight Academy"))
+
+    expect(await screen.findByText("Transaction details")).toBeVisible()
+    expect(
+      await screen.findByText("1,000.00 GFI reward on Jan 7, 2022 for participating in Flight Academy")
+    ).toBeVisible()
+
+    expect(await screen.findByText("Vesting status")).toBeVisible()
+    expect(await screen.findByText("100.00% (1,000.00 GFI) vested")).toBeVisible()
+
+    expect(await screen.findByText("Vesting schedule")).toBeVisible()
+    expect(await screen.findByText("None")).toBeVisible()
+
+    expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
+      "href",
+      `https://${network.name}.etherscan.io/address/${communityRewards.address}`
+    )
   })
 
   it("shows community rewards on rewards list", async () => {
@@ -370,6 +432,24 @@ describe("Rewards list", () => {
     const summaryValues = await element.getElementsByClassName("detail-label-value")
     expect(summaryValues[0]?.textContent).toEqual("1,000.00") // granted
     expect(summaryValues[1]?.textContent).toEqual("0.00") // claimable
+
+    fireEvent.click(screen.getByText("Goldfinch Investment"))
+
+    expect(await screen.findByText("Transaction details")).toBeVisible()
+    expect(
+      await screen.findByText("1,000.00 GFI reward on Jan 7, 2022 for participating as a Goldfinch investor")
+    ).toBeVisible()
+
+    expect(await screen.findByText("Vesting status")).toBeVisible()
+    expect(await screen.findByText("--.--% (0.00 GFI) vested")).toBeVisible()
+
+    expect(await screen.findByText("Vesting schedule")).toBeVisible()
+    expect(await screen.findByText("Linear, vesting every 300 seconds, until 100% on Jan 7, 2022")).toBeVisible()
+
+    expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
+      "href",
+      `https://${network.name}.etherscan.io/address/${communityRewards.address}`
+    )
   })
 
   it("shows airdrops from merkle distributor", async () => {
@@ -388,6 +468,22 @@ describe("Rewards list", () => {
     const summaryValues = await element.getElementsByClassName("detail-label-value")
     expect(summaryValues[0]?.textContent).toEqual("1,000.00") // granted
     expect(summaryValues[1]?.textContent).toEqual("0.00") // claimable
+
+    fireEvent.click(screen.getByText("Flight Academy"))
+
+    expect(await screen.findByText("Transaction details")).toBeVisible()
+    expect(await screen.findByText("1,000.00 GFI reward for participating in Flight Academy")).toBeVisible()
+
+    expect(await screen.findByText("Vesting status")).toBeVisible()
+    expect(await screen.findByText("$--.-- ( GFI) vested")).toBeVisible()
+
+    expect(await screen.findByText("Vesting schedule")).toBeVisible()
+    expect(await screen.findByText("None")).toBeVisible()
+
+    expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
+      "href",
+      `https://${network.name}.etherscan.io/address/${merkleDistributor.address}`
+    )
   })
 
   it("shows community rewards and staking rewards ", async () => {
@@ -409,6 +505,43 @@ describe("Rewards list", () => {
     expect(summaryValues[1]?.textContent).toEqual("1,000.00") // claimable
     expect(summaryValues[2]?.textContent).toEqual("129.60") // granted
     expect(summaryValues[3]?.textContent).toEqual("0.71") // claimable
+
+    fireEvent.click(screen.getByText("Staked 50,000.00 FIDU on Jan 5, 2022"))
+    expect(await screen.findByText("Transaction details")).toBeVisible()
+    expect(await screen.findByText("Vesting schedule")).toBeVisible()
+    expect(await screen.findByText("Linear until 100% on Jan 5, 2023")).toBeVisible()
+
+    expect(await screen.findByText("Claim status")).toBeVisible()
+    expect(await screen.findByText("0.00 claimed of your total vested 0.71 GFI")).toBeVisible()
+
+    expect(await screen.findByText("Current earn rate")).toBeVisible()
+    expect(await screen.findByText("+453.60 granted per week")).toBeVisible()
+
+    expect(await screen.findByText("Vesting status")).toBeVisible()
+    expect(await screen.findByText("0.55% (0.71 GFI) vested")).toBeVisible()
+
+    expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
+      "href",
+      `https://${network.name}.etherscan.io/address/${stakingRewards.address}`
+    )
+    fireEvent.click(screen.getAllByText("Staked 50,000.00 FIDU on Jan 5, 2022")[1])
+
+    fireEvent.click(screen.getByText("Flight Academy"))
+    expect(await screen.findByText("Transaction details")).toBeVisible()
+    expect(
+      await screen.findByText("1,000.00 GFI reward on Jan 7, 2022 for participating in Flight Academy")
+    ).toBeVisible()
+
+    expect(await screen.findByText("Vesting status")).toBeVisible()
+    expect(await screen.findByText("100.00% (1,000.00 GFI) vested")).toBeVisible()
+
+    expect(await screen.findByText("Vesting schedule")).toBeVisible()
+    expect(await screen.findByText("None")).toBeVisible()
+
+    expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
+      "href",
+      `https://${network.name}.etherscan.io/address/${communityRewards.address}`
+    )
   })
 
   it("staking rewards partially claimed appears on list", async () => {
@@ -427,5 +560,24 @@ describe("Rewards list", () => {
     const summaryValues = await element.getElementsByClassName("detail-label-value")
     expect(summaryValues[0]?.textContent).toEqual("269.00") // granted
     expect(summaryValues[1]?.textContent).toEqual("2.24") // claimable
+
+    fireEvent.click(screen.getByText("Staked 50,000.00 FIDU on Jan 5, 2022"))
+    expect(await screen.findByText("Transaction details")).toBeVisible()
+    expect(await screen.findByText("Vesting schedule")).toBeVisible()
+    expect(await screen.findByText("Linear until 100% on Jan 5, 2023")).toBeVisible()
+
+    expect(await screen.findByText("Claim status")).toBeVisible()
+    expect(await screen.findByText("0.82 claimed of your total vested 3.06 GFI")).toBeVisible()
+
+    expect(await screen.findByText("Current earn rate")).toBeVisible()
+    expect(await screen.findByText("+453.60 granted per week")).toBeVisible()
+
+    expect(await screen.findByText("Vesting status")).toBeVisible()
+    expect(await screen.findByText("1.14% (3.06 GFI) vested")).toBeVisible()
+
+    expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
+      "href",
+      `https://${network.name}.etherscan.io/address/${stakingRewards.address}`
+    )
   })
 })
