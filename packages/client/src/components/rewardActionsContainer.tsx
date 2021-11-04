@@ -376,7 +376,7 @@ function getMerkleDistributorGrantInfoDetails(
   const displayReason = MerkleDistributor.getDisplayReason(grantInfo.reason)
   const vestingLength = new BigNumber(grantInfo.grant.vestingLength).toNumber()
   return {
-    transactionDetails: `${displayNumber(gfiFromAtomic(amount))} GFI reward for participating in ${displayReason}`,
+    transactionDetails: `${displayNumber(gfiFromAtomic(amount))} GFI reward for participating ${displayReason}`,
     vestingSchedule: getGrantVestingSchedule(
       new BigNumber(grantInfo.grant.cliffLength),
       new BigNumber(grantInfo.grant.vestingInterval),
