@@ -24,7 +24,9 @@ const testSetup = deployments.createFixture(async ({deployments, getNamedAccount
   const person2 = asNonNullable(_person2)
   const person3 = asNonNullable(_person3)
 
-  const {poolTokens, goldfinchConfig, goldfinchFactory, poolRewards, usdc, uniqueIdentity} = await deployAllContracts(deployments)
+  const {poolTokens, goldfinchConfig, goldfinchFactory, poolRewards, usdc, uniqueIdentity} = await deployAllContracts(
+    deployments
+  )
   await goldfinchConfig.bulkAddToGoList([owner, person2])
   await erc20Transfer(usdc, [person2], usdcVal(1000), owner)
 
@@ -60,7 +62,7 @@ describe("PoolTokens", () => {
 
   async function mintUniqueIdentityToken(recipient, signer) {
     const uniqueIdentityTokenId = new BN(0)
-    await mint(hre, uniqueIdentity, uniqueIdentityTokenId, new BN(0), signer, undefined, recipient)
+    await mint(hre, uniqueIdentity, uniqueIdentityTokenId, new BN(0), new BN(0), signer, undefined, recipient)
     expect(await uniqueIdentity.balanceOf(recipient, uniqueIdentityTokenId)).to.bignumber.equal(new BN(1))
   }
 
