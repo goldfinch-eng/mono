@@ -64,7 +64,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
   let enabledClass = ""
 
   function transactionItem(tx) {
-    const transactionlabel = tx.name === "Approval" ? tx.name : `$${tx.amount} ${tx.name}`
+    const transactionlabel = tx.name === "Approval" || tx.name === "Mint UID" ? tx.name : `$${tx.amount} ${tx.name}`
     let etherscanSubdomain
     if (props.network.name === "mainnet") {
       etherscanSubdomain = ""
@@ -92,14 +92,16 @@ function NetworkWidget(props: NetworkWidgetProps) {
           </div>
         </div>
         {transactionlabel}&nbsp;
-        <a
-          className="inline-button"
-          href={`https://${etherscanSubdomain}etherscan.io/tx/${tx.id}`}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {iconOutArrow}
-        </a>
+        {web3.utils.isHexStrict(tx.id) && (
+          <a
+            className="inline-button"
+            href={`https://${etherscanSubdomain}etherscan.io/tx/${tx.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {iconOutArrow}
+          </a>
+        )}
         {confirmationMessage}
       </div>
     )
@@ -220,7 +222,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
         <div className="network-widget-button disabled">Wrong Network</div>
       </div>
     )
-  } else if (props.user.web3Connected && session.status !== "authenticated" && isSessionDataInvalid(sessionData)) {
+  } else if ((props.user.web3Connected && session.status !== "authenticated") || isSessionDataInvalid(sessionData)) {
     return connectMetamaskNetworkWidget
   } else {
     return enabledNetworkWidget

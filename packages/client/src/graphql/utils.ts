@@ -15,6 +15,7 @@ export interface GraphSeniorPoolData {
   cumulativeDrawdowns: BigNumber
   cumulativeWritedowns: BigNumber
   remainingCapacity: (this: any, maxCapacity: BigNumber) => BigNumber
+  isPaused?: boolean
 }
 
 export interface GraphUserData {

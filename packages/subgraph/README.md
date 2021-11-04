@@ -87,3 +87,11 @@ In practical terms, logs should be added to monitor the progress of the applicat
 - [Subgraph Monitor](https://github.com/gnosis/thegraph-subgraphs-monitor)
 - [Subgraph Toolkit](https://github.com/protofire/subgraph-toolkit)
 - [Create Subgraph](https://thegraph.com/docs/developer/create-subgraph-hosted)
+
+
+## Troubleshooting
+- To see any additional logs for the local subgraph deploy, run:
+  - ```docker ps``` to find the address for the graph node container.
+  - ```docker logs <CONTAINER ADDRESS>```
+- `Received invalid block tag`
+  - If you get this error try deleting everything under `packages/data` and starting again.

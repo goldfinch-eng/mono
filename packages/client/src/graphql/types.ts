@@ -7,6 +7,25 @@
 // GraphQL query operation: getSeniorPoolAndProviders
 // ====================================================
 
+export interface getSeniorPoolAndProviders__meta_block {
+  __typename: "_Block_"
+  /**
+   * The block number
+   */
+  number: number
+}
+
+export interface getSeniorPoolAndProviders__meta {
+  __typename: "_Meta_"
+  /**
+   * Information about a specific subgraph block. The hash of the block
+   * will be null if the _meta field has a block constraint that asks for
+   * a block number. It will be filled if the _meta field has no block constraint
+   * and therefore asks for the latest  block
+   */
+  block: getSeniorPoolAndProviders__meta_block
+}
+
 export interface getSeniorPoolAndProviders_seniorPools_lastestPoolStatus {
   __typename: "SeniorPoolStatus"
   id: string
@@ -45,6 +64,10 @@ export interface getSeniorPoolAndProviders_user_capitalProviderStatus {
 
 export interface getSeniorPoolAndProviders_user_seniorPoolDeposits {
   __typename: "SeniorPoolDeposit"
+  /**
+   * tx hash
+   */
+  id: string
   amount: any
   shares: any
   blockNumber: any
@@ -60,6 +83,10 @@ export interface getSeniorPoolAndProviders_user {
 }
 
 export interface getSeniorPoolAndProviders {
+  /**
+   * Access to subgraph metadata
+   */
+  _meta: getSeniorPoolAndProviders__meta | null
   seniorPools: getSeniorPoolAndProviders_seniorPools[]
   user: getSeniorPoolAndProviders_user | null
 }

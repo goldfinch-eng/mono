@@ -20,8 +20,8 @@ contract TestForwarder {
 
   string public constant GENERIC_PARAMS = "address from,address to,uint256 value,uint256 gas,uint256 nonce,bytes data";
 
-  string
-    public constant EIP712_DOMAIN_TYPE = "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"; // solhint-disable-line max-line-length
+  string public constant EIP712_DOMAIN_TYPE =
+    "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"; // solhint-disable-line max-line-length
 
   mapping(bytes32 => bool) public typeHashes;
   mapping(bytes32 => bool) public domains;

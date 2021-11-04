@@ -17,24 +17,51 @@ import {GraphSeniorPoolData, GraphUserData, isGraphSeniorPoolData, isGraphUserDa
 import {parseSeniorPool, parseUser} from "../../graphql/parsers"
 
 function SeniorPoolView(): JSX.Element {
-  const {pool, user, goldfinchConfig} = useContext(AppContext)
+  const {pool, user, goldfinchConfig, networkMonitor} = useContext(AppContext)
   const [capitalProvider, setCapitalProvider] = useState<CapitalProvider | GraphUserData>()
   const [poolData, setPoolData] = useState<PoolData | GraphSeniorPoolData>()
+  const [graphBlockNumber, setGraphBlockNumber] = useState<number>()
   const kycResult = useKYC()
   const kyc = useStaleWhileRevalidating(kycResult)
-  const [fetchSeniorPoolAndProviderData, {data, refetch}] = useLazyQuery<
+  const [fetchSeniorPoolAndProviderData, {data, error, refetch}] = useLazyQuery<
     getSeniorPoolAndProviders,
     getSeniorPoolAndProvidersVariables
-  >(GET_SENIOR_POOL_AND_PROVIDER_DATA)
+  >(GET_SENIOR_POOL_AND_PROVIDER_DATA, {fetchPolicy: "no-cache"})
 
   const enableSeniorPoolV2 = process.env.REACT_APP_TOGGLE_THE_GRAPH === "true"
 
   const loadedCapitalProvider = isGraphUserData(capitalProvider) || capitalProvider?.loaded
   const loadedPoolData = isGraphSeniorPoolData(poolData) || poolData?.loaded
+  const isPaused = isGraphSeniorPoolData(poolData) ? poolData.isPaused : !!poolData?.pool?.isPaused
+
+  useEffect(() => {
+    if (enableSeniorPoolV2) {
+      fetchSeniorPoolAndProviderData({
+        variables: {userID: ""},
+      })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    if (
+      networkMonitor?.currentBlockNumber &&
+      graphBlockNumber &&
+      graphBlockNumber + 10 < networkMonitor?.currentBlockNumber
+    ) {
+      console.error(`
+        [The Graph] Block ingestor lagging behind: Block number is out of date.
+        The latest block is ${networkMonitor?.currentBlockNumber}, 
+        but The Graph API returned ${graphBlockNumber}.`)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [graphBlockNumber])
 
   useEffect(() => {
     const capitalProviderAddress = user.loaded && user.address
-    fetchData(capitalProviderAddress)
+    if (pool) {
+      fetchData(capitalProviderAddress)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pool, user])
 
@@ -42,21 +69,24 @@ function SeniorPoolView(): JSX.Element {
     async function setGraphData() {
       assertNonNullable(data)
 
-      const {seniorPools, user} = data
+      const {seniorPools, user, _meta} = data
       let seniorPool = seniorPools[0]!
       setPoolData(await parseSeniorPool(seniorPool, pool))
       setCapitalProvider(await parseUser(user, seniorPool, pool?.fidu))
+      setGraphBlockNumber(_meta?.block.number)
     }
     if (data) {
       setGraphData()
     }
+
+    if (error) {
+      console.error(`[The Graph] Queries: failed request from the subgraph API: ${error.message}`)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data])
+  }, [data, error])
 
   async function refreshAllData(capitalProviderAddress) {
-    if (!pool) {
-      return
-    }
+    assertNonNullable(pool)
 
     refreshPoolData(pool)
     refreshCapitalProviderData(pool, capitalProviderAddress)
@@ -114,7 +144,10 @@ function SeniorPoolView(): JSX.Element {
   return (
     <div className="content-section">
       <div className="page-header"> {earnMessage}</div>
-      <ConnectionNotice requireKYC={{kyc: kycResult, condition: (kyc) => eligibleForSeniorPool(kyc, user)}} />
+      <ConnectionNotice
+        requireKYC={{kyc: kycResult, condition: (kyc) => eligibleForSeniorPool(kyc, user)}}
+        isPaused={isPaused}
+      />
       {maxCapacityNotice}
       <InvestorNotice />
       <EarnActionsContainer

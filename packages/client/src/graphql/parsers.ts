@@ -27,12 +27,13 @@ export async function parseSeniorPool(seniorPool: SeniorPoolGQL, pool?: SeniorPo
     .div(FIDU_DECIMALS.toString())
   let totalPoolAssets = totalPoolAssetsInDollars.multipliedBy(USDC_DECIMALS.toString())
   const totalLoansOutstanding = new BigNumber(latestPoolStatus.totalLoansOutstanding)
-  const estimatedTotalInterest = pool ? await getEstimatedTotalInterest(pool) : zero
-  const cumulativeDrawdowns = pool ? await getCumulativeDrawdowns(pool) : zero
   const cumulativeWritedowns = pool ? await getCumulativeWritedowns(pool) : zero
+  const cumulativeDrawdowns = pool ? await getCumulativeDrawdowns(pool) : zero
+  const estimatedTotalInterest = pool ? await getEstimatedTotalInterest(pool) : zero
+  const estimatedApy = estimatedTotalInterest.dividedBy(totalPoolAssets)
   const defaultRate = cumulativeWritedowns.dividedBy(cumulativeDrawdowns)
   const rawBalance = new BigNumber(latestPoolStatus.rawBalance)
-  const estimatedApy = estimatedTotalInterest.dividedBy(totalPoolAssets)
+  const isPaused = pool?.isPaused
 
   return {
     type: "GraphSeniorPoolData",
@@ -49,6 +50,7 @@ export async function parseSeniorPool(seniorPool: SeniorPoolGQL, pool?: SeniorPo
     cumulativeDrawdowns,
     cumulativeWritedowns,
     remainingCapacity,
+    isPaused,
   }
 }
 

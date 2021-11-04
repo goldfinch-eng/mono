@@ -1,18 +1,18 @@
-.value-option{
+.value-option {
   font-size: $sans-size-s;
   margin: 0 0 18px;
   position: relative;
 
-  input{
+  input {
     position: absolute;
     visibility: hidden;
   }
 
-  .font-bold{
+  .font-bold {
     font-weight: bold;
   }
 
-  input ~ .radio-check{
+  input ~ .radio-check {
     border: 2px solid $purp;
     border-radius: 100%;
     height: 14px;
@@ -22,12 +22,12 @@
     width: 14px;
   }
 
-  input:checked ~ .radio-check{
+  input:checked ~ .radio-check {
     background-color: $purp-dark;
     border: none;
   }
 
-  label{
+  label {
     display: inline-block;
     padding-left: 26px;
     position: relative;
@@ -36,21 +36,21 @@
 }
 
 @media only screen and (min-width: $screen-l) {
-  .value-options{
+  .value-options {
     margin-bottom: 40px;
   }
 
-  .value-option{
+  .value-option {
     font-size: $sans-size-m;
     margin: 0 0 20px;
 
-    input ~ .radio-check{
+    input ~ .radio-check {
       height: 16px;
       top: 2px;
       width: 16px;
     }
 
-    label{
+    label {
       padding-left: 30px;
     }
   }

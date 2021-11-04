@@ -1,12 +1,13 @@
 {
   "extends": "solhint:recommended",
   "rules": {
-    "compiler-version": ["error", "^0.6.12"],
+    "compiler-version": ["error", "^0.6.12 || ^0.8.4"],
     "prettier/prettier": "error",
     "not-rely-on-time": "off",
     "reason-string": ["warn",{"maxLength":120}],
     "max-line-length": ["error", 120],
     "modifiers/ensure-modifiers": ["error", {
+      "ignoreContractKind": ["interface"],
       "required": {
         "*": ["onlyAdmin"]
       },
@@ -110,8 +111,49 @@
           "withdrawSeniorInFidu": [],
           "transferPosition": []
         },
-        "**/FixedLeverageRatioStrategy.sol:FixedLeverageRatioStrategy": {
-          "invest": []
+        "**/DynamicLeverageRatioStrategy.sol:DynamicLeverageRatioStrategy": {
+          "setLeverageRatio": ["onlySetterRole"]
+        },
+        "**/GFI.sol:GFI": {
+          "mint": ["onlyMinter"],
+          "setCap": ["onlyOwner"],
+          "pause": ["onlyPauser"],
+          "unpause": ["onlyPauser"]
+        },
+        "**/StakingRewards.sol:StakingRewards": {
+          "stake": [],
+          "stakeWithLockup": [],
+          "depositAndStake": [],
+          "depositWithPermitAndStake": [],
+          "depositAndStakeWithLockup": [],
+          "depositWithPermitAndStakeWithLockup": [],
+          "unstake": [],
+          "unstakeAndWithdraw": [],
+          "unstakeAndWithdrawMultiple": [],
+          "unstakeAndWithdrawInFidu": [],
+          "unstakeAndWithdrawMultipleInFidu": [],
+          "getReward": [],
+          "kick": [],
+          "exit": [],
+          "exitAndWithdraw": []
+        },
+        "**/CommunityRewards.sol:CommunityRewards": {
+          "grant": ["nonReentrant", "whenNotPaused", "onlyDistributor"],
+          "getReward": []
+        },
+        "**/MerkleDistributor.sol:MerkleDistributor": {
+          "_setGrantAccepted": [],
+          "acceptGrant": ["onlyGrantRecipient"]
+        },
+        "**/ERC1155PresetPauserUpgradeable.sol:ERC1155PresetPauserUpgradeable": {
+          "pause": [],
+          "unpause": []
+        },
+        "**/UniqueIdentity.sol:UniqueIdentity": {
+          "mint": ["onlySigner"],
+          "safeTransferFrom": [],
+          "safeBatchTransferFrom": [],
+          "burn": ["onlySigner"]
         },
         "**/contracts/test/**": {
           "*.*": []

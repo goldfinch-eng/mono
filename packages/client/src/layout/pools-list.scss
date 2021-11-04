@@ -72,7 +72,8 @@
 
 @media only screen and (max-width: 480px), only screen and (min-width: $screen-m) and (max-width: 750px) {
   .table-spaced.pools-list {
-    .balance, .limit {
+    .balance,
+    .limit {
       display: none;
     }
 
@@ -90,8 +91,8 @@
 }
 
 @media only screen and (min-width: $screen-m) {
-  .pools-list{
-    .pool-info .icon{
+  .pools-list {
+    .pool-info .icon {
       height: 36px;
       width: 36px;
     }
@@ -99,12 +100,12 @@
 }
 
 @media only screen and (min-width: $screen-l) {
-  .pools-list{
+  .pools-list {
     .subheader {
       font-size: $sans-size-s;
     }
 
-    .pool-info .icon{
+    .pool-info .icon {
       margin-right: 18px;
       height: 45px;
       width: 45px;

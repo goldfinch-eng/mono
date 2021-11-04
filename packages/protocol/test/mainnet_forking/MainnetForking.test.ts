@@ -42,8 +42,8 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   // Note: base_deploy always returns when mainnet forking, however
   // we need it here, because the "fixture" part is what let's hardhat
   // snapshot and give us a clean blockchain before each test.
-  // Otherewise, we have state leaking across tests.
-  await deployments.fixture("base_deploy")
+  // Otherwise, we have state leaking across tests.
+  await deployments.fixture("base_deploy", {keepExistingDeployments: true})
 
   const [owner, bwr] = await web3.eth.getAccounts()
   assertNonNullable(owner)
@@ -89,7 +89,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   return {seniorPool, seniorPoolStrategy, usdc, fidu, goldfinchConfig, goldfinchFactory, cUSDC}
 })
 
-const TEST_TIMEOUT = 180000 // 3 mins
+export const TEST_TIMEOUT = 180000 // 3 mins
 
 /*
 These tests are special. They use existing mainnet state, so
@@ -99,10 +99,6 @@ and contracts.
 describe("mainnet forking tests", async function () {
   this.retries(2)
 
-  // Hack way to only run this suite when we actually want to.
-  if (!isMainnetForking()) {
-    return
-  }
   // eslint-disable-next-line no-unused-vars
   let accounts, owner, bwr, person3, usdc, fidu, goldfinchConfig
   let goldfinchFactory, busd, usdt, cUSDC
@@ -153,6 +149,7 @@ describe("mainnet forking tests", async function () {
   describe("drawing down into another currency", async function () {
     let bwrCon, oneSplit
     beforeEach(async function () {
+      this.timeout(TEST_TIMEOUT)
       oneSplit = await IOneSplit.at(MAINNET_ONE_SPLIT_ADDRESS)
       bwrCon = await createBorrowerContract()
       ;({tranchedPool} = await createPoolWithCreditLine({
