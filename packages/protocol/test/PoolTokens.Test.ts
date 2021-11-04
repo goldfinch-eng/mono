@@ -140,7 +140,7 @@ describe("PoolTokens", () => {
       assertNonNullable(event)
       const poolRewardsTokenInfo = await poolRewards.tokens(event.args.tokenId)
       const accRewardsPerPrincipalDollarAtMint = poolRewardsTokenInfo["accRewardsPerPrincipalDollarAtMint"]
-      expect(accRewardsPerPrincipalDollarAtMint).to.bignumber.equal(0);
+      expect(accRewardsPerPrincipalDollarAtMint).to.bignumber.equal(0)
     })
 
     it("allows minting even after the limit on the PoolInfo", async () => {
