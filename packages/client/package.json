@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "author": "The Goldfinch Community <engineering@goldfinch.finance>",
+  "jest": {
+    "testPathIgnorePatterns": ["/__utils__/"]
+  },
   "dependencies": {
     "@gnosis.pm/safe-apps-sdk": "^0.4.2",
     "@goldfinch-eng/protocol": "^0.1.0",

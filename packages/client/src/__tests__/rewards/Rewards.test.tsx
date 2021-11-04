@@ -10,11 +10,15 @@ import {GFILoaded} from "../../ethereum/gfi"
 import {User} from "../../ethereum/user"
 import {SeniorPool, StakingRewardsLoaded} from "../../ethereum/pool"
 import {UserLoaded} from "../../ethereum/user"
-import {blockchain, blockInfo, DEPLOYMENTS, network, recipient} from "./constants"
+import {blockchain, blockInfo, DEPLOYMENTS, network, recipient} from "./__utils__/constants"
 import {assertWithLoadedInfo} from "../../types/loadable"
 import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
 import * as utils from "../../ethereum/utils"
-import {mockUserInitializationContractCalls, setupMocksForAcceptedAirdrop, assertAllMocksAreCalled} from "./mocks"
+import {
+  mockUserInitializationContractCalls,
+  setupMocksForAcceptedAirdrop,
+  assertAllMocksAreCalled,
+} from "./__utils__/mocks"
 import {
   getDefaultClasses,
   setupNewStakingReward,
@@ -24,7 +28,7 @@ import {
   setupCommunityRewardAndStakingReward,
   setupVestingCommunityReward,
   setupPartiallyClaimedStakingReward,
-} from "./scenarios"
+} from "./__utils__/scenarios"
 
 mock({
   blockchain: "ethereum",

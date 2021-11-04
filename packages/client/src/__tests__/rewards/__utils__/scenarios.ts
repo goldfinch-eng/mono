@@ -1,11 +1,11 @@
 import "@testing-library/jest-dom"
 import {MerkleDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types"
-import {MerkleDistributor, CommunityRewards} from "../../ethereum/communityRewards"
-import {GFI} from "../../ethereum/gfi"
-import {User} from "../../ethereum/user"
-import {StakingRewards} from "../../ethereum/pool"
+import {MerkleDistributor, CommunityRewards} from "../../../ethereum/communityRewards"
+import {GFI} from "../../../ethereum/gfi"
+import {User} from "../../../ethereum/user"
+import {StakingRewards} from "../../../ethereum/pool"
 import {blockInfo, network, recipient} from "./constants"
-import {assertWithLoadedInfo} from "../../types/loadable"
+import {assertWithLoadedInfo} from "../../../types/loadable"
 import {
   mockStakingRewardsContractCalls,
   mockMerkleDistributorContractCalls,
