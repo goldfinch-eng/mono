@@ -17,6 +17,7 @@ import LoadingButton from "./loadingButton"
 import TransactionForm from "./transactionForm"
 import {UniqueIdentity as UniqueIdentityContract} from "@goldfinch-eng/protocol/typechain/web3/UniqueIdentity"
 import web3 from "web3"
+import {MINT_UID_TX_TYPE} from "../ethereum/transactions"
 
 function VerificationNotice({icon, notice}) {
   return (
@@ -521,7 +522,8 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
     await sendFromUser(
       uniqueIdentity.methods.mint(version, trustedSignature.expiresAt, trustedSignature.signature),
       {
-        type: "Mint UID",
+        type: MINT_UID_TX_TYPE,
+        data: {},
       },
       {value: UNIQUE_IDENTITY_MINT_PRICE}
     )

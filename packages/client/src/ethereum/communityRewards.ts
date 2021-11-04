@@ -1,15 +1,17 @@
 import {GrantReason, MerkleDistributorInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types"
 import {CommunityRewards as CommunityRewardsContract} from "@goldfinch-eng/protocol/typechain/web3/CommunityRewards"
 import {MerkleDistributor as MerkleDistributorContract} from "@goldfinch-eng/protocol/typechain/web3/MerkleDistributor"
+import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
-import {EventData} from "web3-eth-contract"
+import startCase from "lodash/startCase"
+import {Filter} from "web3-eth-contract"
 import {Loadable, WithLoadedInfo} from "../types/loadable"
 import {BlockInfo, displayNumber} from "../utils"
+import {CommunityRewardsEventType, KnownEventData, MerkleDistributorEventType} from "./events"
 import {gfiFromAtomic} from "./gfi"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {getMerkleDistributorInfo} from "./utils"
-import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
-import startCase from "lodash/startCase"
+import {BlockNumber} from "web3-core"
 
 type MerkleDistributorLoadedInfo = {
   currentBlock: BlockInfo
@@ -54,6 +56,24 @@ export class MerkleDistributor {
         merkleDistributorInfo,
       },
     }
+  }
+
+  async getEvents<T extends MerkleDistributorEventType>(
+    address: string,
+    eventNames: T[],
+    filter: Filter | undefined,
+    toBlock: BlockNumber
+  ): Promise<KnownEventData<T>[]> {
+    const events = await this.goldfinchProtocol.queryEvents(
+      this.contract,
+      eventNames,
+      {
+        ...(filter || {}),
+        user: address,
+      },
+      toBlock
+    )
+    return events
   }
 
   static getDisplayTitle(reason: GrantReason): string {
@@ -171,13 +191,20 @@ export class CommunityRewards {
     }
   }
 
-  async getGrantedEvents(recipient: string, currentBlock: BlockInfo): Promise<EventData[]> {
-    const eventNames = ["Granted"]
+  async getEvents<T extends CommunityRewardsEventType>(
+    address: string,
+    eventNames: T[],
+    filter: Filter | undefined,
+    toBlock: BlockNumber
+  ): Promise<KnownEventData<T>[]> {
     const events = await this.goldfinchProtocol.queryEvents(
       this.contract,
       eventNames,
-      {user: recipient},
-      currentBlock.number
+      {
+        ...(filter || {}),
+        user: address,
+      },
+      toBlock
     )
     return events
   }

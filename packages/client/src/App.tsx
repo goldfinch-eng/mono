@@ -1,46 +1,47 @@
-import React, {useState, useEffect} from "react"
-import {BrowserRouter as Router, Switch, Route, Redirect} from "react-router-dom"
+import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
+import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/web3/GoldfinchConfig"
 import * as Sentry from "@sentry/react"
+import React, {useEffect, useState} from "react"
+import {BrowserRouter as Router, Redirect, Route, Switch} from "react-router-dom"
+import {ThemeProvider} from "styled-components"
 import Borrow from "./components/borrow"
-import Earn from "./components/earn"
-import Transactions from "./components/transactions"
-import NetworkWidget from "./components/networkWidget"
-import Sidebar from "./components/sidebar"
 import DevTools from "./components/devTools"
+import Earn from "./components/earn"
 import Footer from "./components/footer"
-import TermsOfService from "./components/termsOfService"
+import NetworkWidget from "./components/networkWidget"
+import SeniorPoolView from "./components/pools/seniorPoolView"
+import TranchedPoolView from "./components/pools/tranchedPoolView"
 import PrivacyPolicy from "./components/privacyPolicy"
 import SeniorPoolAgreementNonUS from "./components/seniorPoolAgreementNonUS"
-import web3, {SESSION_DATA_KEY} from "./web3"
-import {ERC20, Tickers} from "./ethereum/erc20"
-import {GoldfinchConfigData, refreshGoldfinchConfigData} from "./ethereum/goldfinchConfig"
-import {getUserData, UserLoaded} from "./ethereum/user"
-import {mapNetworkToID, SUPPORTED_NETWORKS} from "./ethereum/utils"
-import {NetworkMonitor} from "./ethereum/networkMonitor"
-import {SeniorPool, SeniorPoolLoaded, StakingRewards, StakingRewardsLoaded} from "./ethereum/pool"
-import {GoldfinchProtocol} from "./ethereum/GoldfinchProtocol"
-import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/web3/GoldfinchConfig"
-import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
-import SeniorPoolView from "./components/pools/seniorPoolView"
+import Sidebar from "./components/sidebar"
+import TermsOfService from "./components/termsOfService"
+import Transactions from "./components/transactions"
 import VerifyIdentity from "./components/verifyIdentity"
-import TranchedPoolView from "./components/pools/tranchedPoolView"
-import Rewards from "./pages/rewards"
-import {ThemeProvider} from "styled-components"
-import {defaultTheme} from "./styles/theme"
-import {SessionData} from "./types/session"
-import {useSessionLocalStorage} from "./hooks/useSignIn"
-import {EarnProvider} from "./contexts/EarnContext"
 import {BorrowProvider} from "./contexts/BorrowContext"
-import {assertWithLoadedInfo} from "./types/loadable"
-import {assertNonNullable, BlockInfo, getBlockInfo, getCurrentBlock} from "./utils"
-import {GFI, GFILoaded} from "./ethereum/gfi"
-import {useFromSameBlock} from "./hooks/useFromSameBlock"
+import {EarnProvider} from "./contexts/EarnContext"
 import {
   CommunityRewards,
   CommunityRewardsLoaded,
   MerkleDistributor,
   MerkleDistributorLoaded,
 } from "./ethereum/communityRewards"
+import {ERC20, Tickers} from "./ethereum/erc20"
+import {GFI, GFILoaded} from "./ethereum/gfi"
+import {GoldfinchConfigData, refreshGoldfinchConfigData} from "./ethereum/goldfinchConfig"
+import {GoldfinchProtocol} from "./ethereum/GoldfinchProtocol"
+import {NetworkMonitor} from "./ethereum/networkMonitor"
+import {SeniorPool, SeniorPoolLoaded, StakingRewards, StakingRewardsLoaded} from "./ethereum/pool"
+import {CurrentTx, TxType} from "./ethereum/transactions"
+import {getUserData, UserLoaded} from "./ethereum/user"
+import {mapNetworkToID, SUPPORTED_NETWORKS} from "./ethereum/utils"
+import {useFromSameBlock} from "./hooks/useFromSameBlock"
+import {useSessionLocalStorage} from "./hooks/useSignIn"
+import Rewards from "./pages/rewards"
+import {defaultTheme} from "./styles/theme"
+import {assertWithLoadedInfo} from "./types/loadable"
+import {SessionData} from "./types/session"
+import {assertNonNullable, BlockInfo, getBlockInfo, getCurrentBlock} from "./utils"
+import web3, {SESSION_DATA_KEY} from "./web3"
 
 export interface NetworkConfig {
   name: string
@@ -96,7 +97,7 @@ function App() {
   const [user, setUser] = useState<UserLoaded>()
   const [currentBlock, setCurrentBlock] = useState<BlockInfo>()
   const [goldfinchConfig, setGoldfinchConfig] = useState<GoldfinchConfigData>()
-  const [currentTXs, setCurrentTXs] = useState<any[]>([])
+  const [currentTxs, setCurrentTxs] = useState<CurrentTx<TxType>[]>([])
   const [currentErrors, setCurrentErrors] = useState<any[]>([])
   const [network, setNetwork] = useState<NetworkConfig>()
   const [networkMonitor, setNetworkMonitor] = useState<NetworkMonitor>()
@@ -205,7 +206,7 @@ function App() {
       setGoldfinchProtocol(protocol)
 
       const monitor = new NetworkMonitor(web3, {
-        setCurrentTXs,
+        setCurrentTxs,
         setCurrentErrors,
       })
       monitor.initialize(currentBlock) // initialize async, no need to block on this
@@ -335,7 +336,7 @@ function App() {
           currentBlock={currentBlock}
           network={network}
           currentErrors={currentErrors}
-          currentTXs={currentTXs}
+          currentTxs={currentTxs}
           connectionComplete={setupWeb3}
         />
         <EarnProvider>
@@ -361,7 +362,7 @@ function App() {
                     <Borrow />
                   </Route>
                   <Route path="/transactions">
-                    <Transactions currentTXs={currentTXs} />
+                    <Transactions currentTxs={currentTxs} />
                   </Route>
                   <Route path="/pools/senior">
                     <SeniorPoolView />

@@ -6,6 +6,7 @@ import {ERC20, Tickers} from "./erc20"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {PoolState, TranchedPool} from "./tranchedPool"
 import {BlockInfo} from "../utils"
+import {BORROWER_CREATED_EVENT, POOL_CREATED_EVENT} from "./events"
 
 class BorrowerInterface {
   userAddress: string
@@ -40,7 +41,7 @@ class BorrowerInterface {
   async initialize(currentBlock: BlockInfo) {
     let poolEvents = await this.goldfinchProtocol.queryEvents(
       "GoldfinchFactory",
-      ["PoolCreated"],
+      [POOL_CREATED_EVENT],
       {
         borrower: [this.borrowerAddress, this.userAddress],
       },
@@ -71,7 +72,7 @@ class BorrowerInterface {
     }
   }
 
-  get shouldUseGasless() {
+  get shouldUseGasless(): boolean {
     return process.env.REACT_APP_DISABLE_GASLESS !== "true" && (window as any).disableGasless !== true
   }
 
@@ -169,7 +170,7 @@ async function getBorrowerContract(
 ): Promise<BorrowerInterface | undefined> {
   const borrowerCreatedEvents = await goldfinchProtocol.queryEvents(
     "GoldfinchFactory",
-    "BorrowerCreated",
+    [BORROWER_CREATED_EVENT],
     {
       owner: ownerAddress,
     },

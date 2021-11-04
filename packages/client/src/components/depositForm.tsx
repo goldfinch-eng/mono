@@ -9,6 +9,7 @@ import useNonNullContext from "../hooks/useNonNullContext"
 import BigNumber from "bignumber.js"
 import {decimalPlaces} from "../ethereum/utils"
 import useERC20Permit from "../hooks/useERC20Permit"
+import {USDC_APPROVAL_TX_TYPE, SUPPLY_AND_STAKE_TX_TYPE} from "../ethereum/transactions"
 
 interface DepositFormProps {
   actionComplete: () => void
@@ -33,8 +34,10 @@ function DepositForm(props: DepositFormProps) {
         ? sendFromUser(
             usdc.contract.methods.approve(stakingRewards.address, amountRequiringApproval.toString(10)),
             {
-              type: "Approve",
-              amount: usdcFromAtomic(amountRequiringApproval),
+              type: USDC_APPROVAL_TX_TYPE,
+              data: {
+                amount: usdcFromAtomic(amountRequiringApproval),
+              },
             },
             {rejectOnError: true}
           )
@@ -42,8 +45,10 @@ function DepositForm(props: DepositFormProps) {
       return approval
         .then(() =>
           sendFromUser(stakingRewards.contract.methods.depositAndStake(depositAmountString), {
-            type: "Supply and Stake",
-            amount: transactionAmount,
+            type: SUPPLY_AND_STAKE_TX_TYPE,
+            data: {
+              amount: transactionAmount,
+            },
           })
         )
         .then(props.actionComplete)
@@ -62,8 +67,10 @@ function DepositForm(props: DepositFormProps) {
           signatureData.s
         ),
         {
-          type: "Supply and Stake",
-          amount: transactionAmount,
+          type: SUPPLY_AND_STAKE_TX_TYPE,
+          data: {
+            amount: transactionAmount,
+          },
         }
       ).then(props.actionComplete)
     }

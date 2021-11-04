@@ -7,6 +7,7 @@ import {iconInfo} from "./icons"
 import useSendFromUser from "../hooks/useSendFromUser"
 import {ERC20, usdcFromAtomic} from "../ethereum/erc20"
 import {assertNonNullable} from "../utils"
+import {ERC20_APPROVAL_TX_TYPE} from "../ethereum/transactions"
 
 type UnlockERC20Props = {
   erc20: ERC20 | undefined
@@ -23,11 +24,13 @@ function UnlockERC20Form(props: UnlockERC20Props) {
     assertNonNullable(erc20)
     // The txData parameters must use the schema defined in src/ethereum/events:mapEventToTx
     return sendFromUser(erc20.contract.methods.approve(unlockAddress, MAX_UINT), {
-      type: "Approval",
-      amount: usdcFromAtomic(MAX_UINT.toString()),
-      // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'BN' is not assignable to paramet... Remove this comment to see the full error message
-      amountBN: new BigNumber(MAX_UINT),
-      erc20: erc20,
+      type: ERC20_APPROVAL_TX_TYPE,
+      data: {
+        amount: usdcFromAtomic(MAX_UINT.toString()),
+        // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'BN' is not assignable to paramet... Remove this comment to see the full error message
+        amountBN: new BigNumber(MAX_UINT),
+        erc20: erc20,
+      },
     }).then(onUnlock)
   }
 

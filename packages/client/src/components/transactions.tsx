@@ -1,18 +1,57 @@
-import React, {useContext, useEffect, useState} from "react"
+import {assertUnreachable, genExhaustiveTuple, isString} from "@goldfinch-eng/utils/src/type"
 import _ from "lodash"
-import ConnectionNotice from "./connectionNotice"
+import React, {useContext, useEffect, useState} from "react"
 import {AppContext} from "../App"
-import {BlockInfo, displayDollars} from "../utils"
-import {MAX_UINT} from "../ethereum/utils"
-import BigNumber from "bignumber.js"
-import {iconCircleUpLg, iconCircleDownLg, iconCircleCheckLg, iconOutArrow} from "./icons"
-import {mapEventsToTx} from "../ethereum/events"
+import {
+  DEPOSIT_MADE_EVENT,
+  DRAWDOWN_MADE_EVENT,
+  KnownEventData,
+  mapEventsToTx,
+  PAYMENT_APPLIED_EVENT,
+  TranchedPoolEventType,
+  TRANCHED_POOL_EVENT_TYPES,
+  WITHDRAWAL_MADE_EVENT,
+} from "../ethereum/events"
 import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
 import {TranchedPool} from "../ethereum/tranchedPool"
+import {
+  ACCEPT_TX_TYPE,
+  BORROW_TX_TYPE,
+  CLAIM_TX_TYPE,
+  CurrentTx,
+  DRAWDOWN_TX_NAME,
+  ERC20_APPROVAL_TX_TYPE,
+  FIDU_APPROVAL_TX_TYPE,
+  HistoricalTx,
+  INTEREST_COLLECTED_TX_NAME,
+  INTEREST_PAYMENT_TX_NAME,
+  MINT_UID_TX_TYPE,
+  PAYMENT_TX_TYPE,
+  PRINCIPAL_COLLECTED_TX_NAME,
+  RESERVE_FUNDS_COLLECTED_TX_NAME,
+  STAKE_TX_TYPE,
+  SUPPLY_AND_STAKE_TX_TYPE,
+  SUPPLY_TX_TYPE,
+  Tx,
+  TxType,
+  UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
+  UNSTAKE_TX_NAME,
+  USDC_APPROVAL_TX_TYPE,
+  WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE,
+  WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
+} from "../ethereum/transactions"
+import {getEtherscanSubdomain, MAX_UINT} from "../ethereum/utils"
+import {BlockInfo, displayDollars, displayNumber} from "../utils"
+import ConnectionNotice from "./connectionNotice"
+import {iconCircleCheckLg, iconCircleDownLg, iconCircleUpLg, iconOutArrow} from "./icons"
 
-function Transactions(props) {
+type TransactionsProps = {
+  currentTxs: CurrentTx<TxType>[]
+}
+
+function Transactions(props: TransactionsProps) {
   const {user, network, goldfinchProtocol, currentBlock} = useContext(AppContext)
-  const [tranchedPoolTxs, setTranchedPoolTxs] = useState()
+  const [tranchedPoolTxs, setTranchedPoolTxs] = useState<HistoricalTx<TranchedPoolEventType>[]>()
 
   async function loadTranchedPoolEvents(
     tranchedPools: {[address: string]: TranchedPool},
@@ -25,15 +64,63 @@ function Transactions(props) {
         tranchedPoolsAddresses.map((address) =>
           goldfinchProtocol.queryEvents(
             tranchedPools[address]!.contract,
-            ["DepositMade", "WithdrawalMade", "PaymentApplied", "DrawdownMade"],
+            TRANCHED_POOL_EVENT_TYPES,
             undefined,
             currentBlock.number
           )
         )
       )
     )
-    // @ts-expect-error ts-migrate(2345) FIXME: Argument of type '{ type: any; name: any; amount: ... Remove this comment to see the full error message
-    setTranchedPoolTxs(await mapEventsToTx(combinedEvents))
+    setTranchedPoolTxs(
+      await mapEventsToTx(combinedEvents, TRANCHED_POOL_EVENT_TYPES, {
+        parseName: (eventData: KnownEventData<TranchedPoolEventType>) => {
+          switch (eventData.event) {
+            case DEPOSIT_MADE_EVENT:
+              return SUPPLY_TX_TYPE
+            case WITHDRAWAL_MADE_EVENT:
+              return WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE
+            case PAYMENT_APPLIED_EVENT:
+              return INTEREST_PAYMENT_TX_NAME
+            case DRAWDOWN_MADE_EVENT:
+              return BORROW_TX_TYPE
+            default:
+              assertUnreachable(eventData.event)
+          }
+        },
+        parseAmount: (eventData: KnownEventData<TranchedPoolEventType>) => {
+          switch (eventData.event) {
+            case DEPOSIT_MADE_EVENT: {
+              return {
+                amount: eventData.returnValues.amount,
+                units: "usdc",
+              }
+            }
+            case WITHDRAWAL_MADE_EVENT: {
+              return {
+                // TODO[PR] Is it correct to prioritize the interest withdrawal here --
+                // or what about the `principalWithdrawn` amount?
+                amount: eventData.returnValues.interestWithdrawn,
+                units: "usdc",
+              }
+            }
+            case PAYMENT_APPLIED_EVENT: {
+              return {
+                amount: eventData.returnValues.interestAmount,
+                units: "usdc",
+              }
+            }
+            case DRAWDOWN_MADE_EVENT: {
+              return {
+                amount: eventData.returnValues.amount,
+                units: "usdc",
+              }
+            }
+            default:
+              assertUnreachable(eventData.event)
+          }
+        },
+      })
+    )
   }
 
   useEffect(() => {
@@ -44,35 +131,138 @@ function Transactions(props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, goldfinchProtocol, currentBlock])
 
-  function transactionRow(tx) {
-    // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
-    const etherscanSubdomain = network.name === "mainnet" ? "" : `${network.name}.`
+  function transactionRow(tx: Tx) {
+    const etherscanSubdomain = getEtherscanSubdomain(network)
 
-    let typeLabel = tx.name
+    let typeLabel: string = tx.name
     let typeCssClass = ""
     let icon = iconCircleCheckLg
     let amountPrefix = ""
-    let amount = displayDollars(tx.amount)
+    let amount = ""
+    let amountSuffix = ""
+    let statusCssClass = ""
+    let txDate = ""
 
-    if (["Supply", "Payment"].includes(tx.name)) {
-      typeCssClass = "inflow"
-      icon = iconCircleUpLg
-      amountPrefix = "+"
-    } else if (["Withdrawal", "Drawdown"].includes(tx.name)) {
-      typeCssClass = "outflow"
-      icon = iconCircleDownLg
-      amountPrefix = "-"
-    } else if (tx.name === "Approval") {
-      typeLabel = `${tx.erc20 && tx.erc20.ticker} Approval`
-      let txAmount = tx.amountBN.shiftedBy(tx.amountBN.decimalPlaces())
-      let max = new BigNumber(MAX_UINT.toString())
-      if (txAmount.isEqualTo(max)) {
-        amount = "Maximum"
+    if (tx.current) {
+      switch (tx.name) {
+        case MINT_UID_TX_TYPE:
+        case CLAIM_TX_TYPE:
+        case ACCEPT_TX_TYPE:
+          break
+        case USDC_APPROVAL_TX_TYPE:
+        case FIDU_APPROVAL_TX_TYPE:
+        case ERC20_APPROVAL_TX_TYPE: {
+          const txAmount = (tx.data as CurrentTx<typeof tx.name>["data"]).amount
+          let max = MAX_UINT.toString()
+          if (txAmount === max) {
+            amount = "Maximum"
+          } else {
+            amount = displayDollars(txAmount)
+          }
+          break
+        }
+        case SUPPLY_AND_STAKE_TX_TYPE:
+        case SUPPLY_TX_TYPE:
+        case PAYMENT_TX_TYPE:
+          typeCssClass = "inflow"
+          icon = iconCircleUpLg
+          amountPrefix = "+"
+          amount = displayDollars((tx.data as CurrentTx<typeof tx.name>["data"]).amount)
+          break
+        case WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE:
+        case BORROW_TX_TYPE: {
+          typeCssClass = "outflow"
+          icon = iconCircleDownLg
+          amountPrefix = "-"
+          amount = displayDollars((tx.data as CurrentTx<typeof tx.name>["data"]).amount)
+          break
+        }
+        case WITHDRAW_FROM_SENIOR_POOL_TX_TYPE:
+        case UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE: {
+          typeCssClass = "outflow"
+          icon = iconCircleDownLg
+          amountPrefix = "-"
+          amount = displayNumber((tx.data as CurrentTx<typeof tx.name>["data"]).fiduAmount)
+          amountSuffix = " FIDU"
+          break
+        }
+        case STAKE_TX_TYPE:
+          amount = displayNumber((tx.data as CurrentTx<typeof tx.name>["data"]).fiduAmount)
+          amountSuffix = " FIDU"
+          break
+        default:
+          assertUnreachable(tx)
+      }
+    } else {
+      txDate = tx.date
+
+      switch (tx.amount.units) {
+        case "usdc":
+          amount = displayDollars(tx.amount.display)
+          break
+        case "fidu":
+          amount = displayNumber(tx.amount.display)
+          amountSuffix = " FIDU"
+          break
+        case "gfi":
+          amount = displayNumber(tx.amount.display)
+          amountSuffix = " GFI"
+          break
+        default:
+          assertUnreachable(tx.amount.units)
+      }
+
+      switch (tx.name) {
+        case SUPPLY_TX_TYPE:
+        case PAYMENT_TX_TYPE:
+        case SUPPLY_AND_STAKE_TX_TYPE:
+          typeCssClass = "inflow"
+          icon = iconCircleUpLg
+          amountPrefix = "+"
+          break
+        case WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE:
+        case BORROW_TX_TYPE:
+        case WITHDRAW_FROM_SENIOR_POOL_TX_TYPE:
+        case UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE:
+          // TODO[PR] Because we describe `WITHDRAW_FROM_SENIOR_POOL_TX_TYPE` and
+          // `UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE` in units of FIDU when
+          // the transaction is in its "current" form, arguably we should describe
+          // it also in units of FIDU here in its "historical" form. Or perhaps
+          // include both units, indicating that the dollar amount in the transaction's
+          // "current" form is an estimate because it uses a share price that is
+          // not guaranteed to hold at the time the tranasction executes.
+
+          typeCssClass = "outflow"
+          icon = iconCircleDownLg
+          amountPrefix = "-"
+          break
+        case CLAIM_TX_TYPE:
+        case ACCEPT_TX_TYPE:
+        case STAKE_TX_TYPE:
+        case MINT_UID_TX_TYPE:
+        case UNSTAKE_TX_NAME:
+          break
+        case USDC_APPROVAL_TX_TYPE:
+        case FIDU_APPROVAL_TX_TYPE:
+        case ERC20_APPROVAL_TX_TYPE: {
+          const txAmount = tx.amount.atomic
+          let max = MAX_UINT.toString()
+          if (txAmount.isEqualTo(max)) {
+            amount = "Maximum"
+          }
+          break
+        }
+        case INTEREST_COLLECTED_TX_NAME:
+        case PRINCIPAL_COLLECTED_TX_NAME:
+        case RESERVE_FUNDS_COLLECTED_TX_NAME:
+        case INTEREST_PAYMENT_TX_NAME:
+        case DRAWDOWN_TX_NAME:
+          break
+        default:
+          assertUnreachable(tx)
       }
     }
 
-    let statusCssClass = ""
-    let txDate = tx.date
     if (tx.status === "error") {
       statusCssClass = "error"
       typeLabel = typeLabel + " (failed)"
@@ -91,20 +281,20 @@ function Transactions(props) {
     }
 
     return (
-      <tr key={tx.eventId} className={`transaction-row ${typeCssClass} ${statusCssClass}`}>
+      <tr
+        key={tx.current ? `current:${tx.id}` : `historical:${tx.eventId}`}
+        className={`transaction-row ${typeCssClass} ${statusCssClass}`}
+      >
         <td className="transaction-type">
           {icon}
           {typeLabel}
         </td>
-        <td className="numeric">
-          {amountPrefix}
-          {amount}
-        </td>
+        <td className="numeric">{amount ? `${amountPrefix}${amount}${amountSuffix}` : ""}</td>
         <td className="transaction-date">{txDate}</td>
         <td className="transaction-link">
           <a
             className="inline-button"
-            href={`https://${etherscanSubdomain}etherscan.io/tx/${tx.id}`}
+            href={isString(etherscanSubdomain) ? `https://${etherscanSubdomain}etherscan.io/tx/${tx.id}` : ""}
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -116,21 +306,23 @@ function Transactions(props) {
   }
 
   // Only show txs from currentTxs that are not already in user.pastTxs
-  let pendingTxs = _.differenceBy(props.currentTXs, user ? user.info.value.pastTxs : [], "id")
+  let pendingTxs = _.differenceBy(props.currentTxs, user ? user.info.value.pastTxs : [], "id")
   let allTxs = _.reverse(
-    _.sortBy(_.compact(_.concat(pendingTxs, user ? user.info.value.pastTxs : [], tranchedPoolTxs)), "blockNumber")
+    _.sortBy(
+      _.compact([...pendingTxs, ...(user ? user.info.value.pastTxs : []), ...(tranchedPoolTxs || [])]),
+      "blockNumber"
+    )
   )
   allTxs = _.uniqBy(allTxs, "eventId")
-  let transactionRows = (
-    <tr className="empty-row">
+  let transactionRows: React.ReactNode[] = [
+    <tr key="empty-row" className="empty-row">
       <td>No transactions</td>
       <td></td>
       <td></td>
       <td></td>
-    </tr>
-  )
+    </tr>,
+  ]
   if (allTxs.length > 0) {
-    // @ts-expect-error ts-migrate(2739) FIXME: Type 'Element[]' is missing the following properti... Remove this comment to see the full error message
     transactionRows = allTxs.map(transactionRow)
   }
 

@@ -5,6 +5,10 @@ import {getNumSharesFromUsdc, minimumNumber, usdcFromAtomic, usdcToAtomic} from 
 import {fiduFromAtomic} from "../ethereum/fidu"
 import {gfiFromAtomic, gfiInDollars, gfiToDollarsAtomic} from "../ethereum/gfi"
 import {CapitalProvider, PoolData, StakingRewardsPosition} from "../ethereum/pool"
+import {
+  UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
+  WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
+} from "../ethereum/transactions"
 import useDebounce from "../hooks/useDebounce"
 import useNonNullContext from "../hooks/useNonNullContext"
 import useSendFromUser from "../hooks/useSendFromUser"
@@ -57,6 +61,11 @@ function WithdrawalForm(props: WithdrawalFormProps) {
   const debouncedSetTransactionAmount = useDebounce(setTransactionAmount, 200)
 
   function getWithdrawalInfo(withdrawalAmount: BigNumber): WithdrawalInfo {
+    // We prefer to perform withdrawals in FIDU, rather than USDC, as this ensures we can withdraw
+    // unstaked FIDU completely and exit staked positions completely. If we performed the withdrawal
+    // in USDC, it would be possible for unstaked FIDU not to be withdrawan completely, or for staked
+    // positions not to be exited completely, if the share price were to change between the time this
+    // logic executes and the time the transaction were executed.
     const withdrawalFiduAmount = getNumSharesFromUsdc(withdrawalAmount, props.capitalProvider.sharePrice)
 
     if (!withdrawalFiduAmount.gt(0)) {
@@ -170,8 +179,10 @@ function WithdrawalForm(props: WithdrawalFormProps) {
         ? sendFromUser(
             pool.contract.methods.withdrawInFidu(info.withdraw.fiduAmount.toString(10)),
             {
-              type: "Withdraw",
-              fiduAmount: fiduFromAtomic(info.withdraw.fiduAmount),
+              type: WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
+              data: {
+                fiduAmount: fiduFromAtomic(info.withdraw.fiduAmount),
+              },
             },
             {
               rejectOnError: true,
@@ -191,9 +202,14 @@ function WithdrawalForm(props: WithdrawalFormProps) {
                   info.unstakeAndWithdraw.tokens.map((info) => info.fiduAmount.toString(10))
                 ),
             {
-              type: "Unstake and Withdraw",
-              tokens: info.unstakeAndWithdraw.tokens.map((info) => info.tokenId),
-              fiduAmounts: info.unstakeAndWithdraw.tokens.map((info) => fiduFromAtomic(info.fiduAmount)),
+              type: UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
+              data: {
+                fiduAmount: fiduFromAtomic(info.unstakeAndWithdraw.fiduSum),
+                tokens: info.unstakeAndWithdraw.tokens.map((info) => ({
+                  id: info.tokenId,
+                  fiduAmount: fiduFromAtomic(info.fiduAmount),
+                })),
+              },
             }
           )
         : Promise.resolve()
