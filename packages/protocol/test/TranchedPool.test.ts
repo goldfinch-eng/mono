@@ -1826,7 +1826,7 @@ describe("TranchedPool", () => {
         interest: new BN(20023919),
         principal: new BN(400000000).sub(new BN(68494)),
         remaining: new BN(44575),
-        reserve: new BN(2008641),
+        reserve: new BN(2006846),
       })
       expect(await creditLine.balance()).to.bignumber.eq("0")
       juniorInfo = await tranchedPool.getTranche(TRANCHES.Junior)
@@ -1838,13 +1838,13 @@ describe("TranchedPool", () => {
       // expect(await tranchedPool.sharePriceToUsdc(seniorInfo.principalSharePrice, seniorInfo.principalDeposited)).to.bignumber.eq(new BN(319999999))
 
       //incrrect? because levarage ratio changed?
-      expect((await tranchedPool.availableToWithdraw(firstTrancheJunior))["0"]).to.bignumber.eq(new BN(3446509))
+      expect((await tranchedPool.availableToWithdraw(firstTrancheJunior))["0"]).to.bignumber.eq(new BN(3409521))
       expect((await tranchedPool.availableToWithdraw(firstTrancheJunior))["1"]).to.bignumber.eq(new BN(20000000))
       expect((await tranchedPool.availableToWithdraw(firstTrancheSenior))["0"]).to.bignumber.eq(new BN(5553492))
       expect((await tranchedPool.availableToWithdraw(firstTrancheSenior))["1"]).to.bignumber.eq(new BN(80000000))
 
-      expect((await tranchedPool.availableToWithdraw(secondTrancheJunior))["0"]).to.bignumber.eq(new BN(5140597))
-      expect((await tranchedPool.availableToWithdraw(secondTrancheJunior))["1"]).to.bignumber.eq(new BN(59982060))
+      expect((await tranchedPool.availableToWithdraw(secondTrancheJunior))["0"]).to.bignumber.eq(new BN(5161438))
+      expect((await tranchedPool.availableToWithdraw(secondTrancheJunior))["1"]).to.bignumber.eq(new BN(60000000))
       expect((await tranchedPool.availableToWithdraw(secondTrancheSenior))["0"]).to.bignumber.eq(new BN(8375547))
       expect((await tranchedPool.availableToWithdraw(secondTrancheSenior))["1"]).to.bignumber.eq(new BN(240000000))
     })
