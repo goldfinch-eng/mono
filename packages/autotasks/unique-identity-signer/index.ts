@@ -2,7 +2,7 @@ import _ from "lodash"
 import {ethers, Signer} from "ethers"
 import axios from "axios"
 import {DefenderRelayProvider, DefenderRelaySigner} from "defender-relay-client/lib/ethers"
-import {HandlerParams, Request} from "../types"
+import {HandlerParams} from "../types"
 import {assertNonNullable, isPlainObject, isString} from "@goldfinch-eng/utils"
 import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers"
 import {keccak256} from "@ethersproject/keccak256"
@@ -23,6 +23,9 @@ const API_URLS = {
   31337: "http://localhost:5001/goldfinch-frontends-dev/us-central1",
 }
 
+/**
+ * Mapping of chain-id -> deployed address
+ */
 const UNIQUE_IDENTITY_ADDRESS = {
   1: "0xba0439088dc1e75F58e0A7C107627942C15cbb41",
 }
