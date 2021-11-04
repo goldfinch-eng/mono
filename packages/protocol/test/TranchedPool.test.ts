@@ -72,7 +72,6 @@ describe("TranchedPool", () => {
     goldfinchFactory,
     creditLine,
     treasury,
-    configHelper,
     poolRewards: PoolRewardsInstance,
     tranchedPool: TranchedPoolInstance
   const limit = usdcVal(1000)
@@ -188,7 +187,7 @@ describe("TranchedPool", () => {
     })
 
     it("should set new values you send it", async () => {
-      const limit = usdcVal(1234)
+      const maxLimit = usdcVal(1234)
       const borrower = otherPerson
       const interestApr = interestAprAsBN("12.3456")
       const paymentPeriodInDays = new BN(123)
@@ -196,9 +195,9 @@ describe("TranchedPool", () => {
       const lateFeeApr = interestAprAsBN("0.9783")
 
       await expectAction(async () =>
-        tranchedPool.migrateCreditLine(borrower, limit, interestApr, paymentPeriodInDays, termInDays, lateFeeApr)
+        tranchedPool.migrateCreditLine(borrower, maxLimit, interestApr, paymentPeriodInDays, termInDays, lateFeeApr)
       ).toChange([
-        [tranchedPool.limit, {to: limit}],
+        [tranchedPool.maxLimit, {to: maxLimit}],
         [tranchedPool.borrower, {to: borrower, bignumber: false}],
         [tranchedPool.interestApr, {to: interestApr}],
         [tranchedPool.paymentPeriodInDays, {to: paymentPeriodInDays}],
@@ -1192,7 +1191,7 @@ describe("TranchedPool", () => {
 
       describe("validations", async () => {
         it("does not allow drawing down more than the limit", async () => {
-          await expect(tranchedPool.drawdown(usdcVal(20))).to.be.rejectedWith(/Cannot drawdown more than the limit/)
+          await expect(tranchedPool.drawdown(usdcVal(20))).to.be.rejectedWith(/Cannot drawdown more than whats available/)
         })
 
         it("does not allow drawing down when payments are late", async () => {
@@ -1764,8 +1763,8 @@ describe("TranchedPool", () => {
       return getFirstLog(logs).args.tokenId
     }
 
-    it.only("distributes interest correctly across different drawdowns", async () => {
-      let principalAmount, interestAmount, seniorInfo, juniorInfo
+    it("distributes interest correctly across different drawdowns", async () => {
+      let seniorInfo, juniorInfo
       const firstTrancheJunior = await depositAndGetTokenId(tranchedPool, TRANCHES.Junior, usdcVal(20))
       await tranchedPool.lockJuniorCapital({from: borrower})
       const firstTrancheSenior = await depositAndGetTokenId(tranchedPool, TRANCHES.Senior, usdcVal(80))
@@ -1829,15 +1828,14 @@ describe("TranchedPool", () => {
         reserve: new BN(2006846),
       })
       expect(await creditLine.balance()).to.bignumber.eq("0")
-      juniorInfo = await tranchedPool.getTranche(TRANCHES.Junior)
-      seniorInfo = await tranchedPool.getTranche(TRANCHES.Senior)
-      //incorrect?
+      // juniorInfo = await tranchedPool.getTranche(TRANCHES.Junior)
+      // seniorInfo = await tranchedPool.getTranche(TRANCHES.Senior)
+
       // expect(await tranchedPool.sharePriceToUsdc(juniorInfo.interestSharePrice, juniorInfo.principalDeposited)).to.bignumber.eq(new BN(21840037))
       // expect(await tranchedPool.sharePriceToUsdc(juniorInfo.principalSharePrice, juniorInfo.principalDeposited)).to.bignumber.eq(new BN(79999999))
       // expect(await tranchedPool.sharePriceToUsdc(seniorInfo.interestSharePrice, seniorInfo.principalDeposited)).to.bignumber.eq(new BN(13975038))
       // expect(await tranchedPool.sharePriceToUsdc(seniorInfo.principalSharePrice, seniorInfo.principalDeposited)).to.bignumber.eq(new BN(319999999))
 
-      //incrrect? because levarage ratio changed?
       expect((await tranchedPool.availableToWithdraw(firstTrancheJunior))["0"]).to.bignumber.eq(new BN(3409521))
       expect((await tranchedPool.availableToWithdraw(firstTrancheJunior))["1"]).to.bignumber.eq(new BN(20000000))
       expect((await tranchedPool.availableToWithdraw(firstTrancheSenior))["0"]).to.bignumber.eq(new BN(5553492))
@@ -1848,8 +1846,6 @@ describe("TranchedPool", () => {
       expect((await tranchedPool.availableToWithdraw(secondTrancheSenior))["0"]).to.bignumber.eq(new BN(8375547))
       expect((await tranchedPool.availableToWithdraw(secondTrancheSenior))["1"]).to.bignumber.eq(new BN(240000000))
     })
-
-
   })
 
   describe("updateGoldfinchConfig", async () => {

@@ -8,6 +8,8 @@ interface ICreditLine {
 
   function limit() external view returns (uint256);
 
+  function maxLimit() external view returns (uint256);
+
   function interestApr() external view returns (uint256);
 
   function paymentPeriodInDays() external view returns (uint256);

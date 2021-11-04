@@ -33,7 +33,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   uint256 public constant NUM_TRANCHES = 2;
   uint256 public juniorFeePercent;
   bool public drawdownsPaused;
-  uint256 totalDeposits;
+  uint256 public totalDeposits;
 
   Counters.Counter public _trancheIdTracker;
 
@@ -48,7 +48,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
 
 //  PoolSlice[] internal poolSlices;
   mapping (uint256 => PoolSlice) internal poolSlices;
-  uint8 numSlices;
+  uint8 public numSlices;
 
   event DepositMade(address indexed owner, uint256 indexed tranche, uint256 indexed tokenId, uint256 amount);
   event WithdrawalMade(
@@ -228,14 +228,19 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
       // Assumes the senior pool has invested already (saves the borrower a separate transaction to lock the pool)
       _lockPool();
     }
+    // Drawdown only draws down from the current slice for simplicity. It's harder to account for how much
+    // money is available from previous slices since depositors can redeem after unlock.
+    PoolSlice storage currentSlice = poolSlices[numSlices-1];
+    uint256 amountAvailable = sharePriceToUsdc(currentSlice.juniorTranche.principalSharePrice, currentSlice.juniorTranche.principalDeposited);
+    amountAvailable = amountAvailable.add(sharePriceToUsdc(currentSlice.seniorTranche.principalSharePrice, currentSlice.seniorTranche.principalDeposited));
+    console.log("Slice: %s, total deposited: %s. Available: %s", numSlices, totalDeposited(currentSlice), amountAvailable);
+
+    require(amount <= amountAvailable, "Cannot drawdown more than whats available");
 
     creditLine.drawdown(amount);
 
     // Update the share price to reflect the amount remaining in the pool
-    PoolSlice storage currentSlice = poolSlices[numSlices-1];
-    console.log("Slice: %s, total deposited: %s", numSlices, totalDeposited(currentSlice));
-    //TODO: This won't work for multiple drawdowns
-    uint256 amountRemaining = totalDeposited(currentSlice).sub(amount);
+    uint256 amountRemaining = amountAvailable.sub(amount);
     uint256 oldJuniorPrincipalSharePrice = currentSlice.juniorTranche.principalSharePrice;
     uint256 oldSeniorPrincipalSharePrice = currentSlice.seniorTranche.principalSharePrice;
     currentSlice.juniorTranche.principalSharePrice = calculateExpectedSharePrice(amountRemaining, currentSlice.juniorTranche, currentSlice);
@@ -351,7 +356,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   /**
    * @notice Migrates the accounting variables from the current creditline to a brand new one
    * @param _borrower The borrower address
-   * @param _limit The new limit
+   * @param _maxLimit The new limit
    * @param _interestApr The new interest APR
    * @param _paymentPeriodInDays The new payment period in days
    * @param _termInDays The new term in days
@@ -359,7 +364,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
    */
   function migrateCreditLine(
     address _borrower,
-    uint256 _limit,
+    uint256 _maxLimit,
     uint256 _interestApr,
     uint256 _paymentPeriodInDays,
     uint256 _termInDays,
@@ -372,7 +377,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     address originalClAddr = address(creditLine);
     IV2CreditLine originalCl = IV2CreditLine(originalClAddr);
 
-    createAndSetCreditLine(_borrower, _limit, _interestApr, _paymentPeriodInDays, _termInDays, _lateFeeApr);
+    createAndSetCreditLine(_borrower, _maxLimit, _interestApr, _paymentPeriodInDays, _termInDays, _lateFeeApr);
 
     IV2CreditLine newCl = creditLine;
     address newClAddr = address(newCl);
@@ -381,6 +386,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
 
     // Copy over all accounting variables
     newCl.setBalance(originalCl.balance());
+    newCl.setLimit(originalCl.limit());
     newCl.setInterestOwed(originalCl.interestOwed());
     newCl.setPrincipalOwed(originalCl.principalOwed());
     newCl.setTermEndTime(originalCl.termEndTime());
@@ -437,6 +443,10 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   // CreditLine proxy methods, for convenience
   function limit() public view returns (uint256) {
     return creditLine.limit();
+  }
+
+  function maxLimit() public view returns (uint256) {
+    return creditLine.maxLimit();
   }
 
   function borrower() public view returns (address) {
@@ -570,8 +580,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   function _lockPool() internal {
     PoolSlice storage currentSlice = poolSlices[numSlices - 1];
     require(currentSlice.juniorTranche.lockedUntil > 0, "Junior tranche must be locked first");
-    // TODO: Maybe this shuold increase existing limit by current slice deposited?
-    creditLine.setLimit(totalDeposits);
+    creditLine.setLimit(Math.min(totalDeposits, creditLine.maxLimit()));
 
     // We start the drawdown period, so backers can withdraw unused capital after borrower draws down
     uint256 lockPeriod = config.getDrawdownPeriodInSeconds();
@@ -776,6 +785,8 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     // drawdowns appropriately. (e.g. if 300K was drawndown from a 1M loan, current and expected share price should
     // be 0.7 and not 0)
     // TODO: this is incorrect. May need to look at total deposits and scale by fraction?
+    // TODO: How to handle the fact that the drawdown is only from the most recent slice?
+    // TODO: Also needs to account for principal amortization.
     principalAccrued = principalAccrued.add(totalDeposited(slice).sub(creditLine.balance()));
     return (slice.totalInterestAccrued, principalAccrued);
   }
@@ -813,8 +824,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   }
 
   function getTrancheInfo(uint256 tranche) internal view returns (TrancheInfo storage) {
-    require(tranche > 0, "Invalid tranche id");
-    require(tranche <= numSlices * NUM_TRANCHES, "Unsupported tranche");
+    require(tranche > 0 && tranche <= numSlices * NUM_TRANCHES, "Unsupported tranche");
     uint256 sliceId = ((tranche + (tranche % NUM_TRANCHES)) / NUM_TRANCHES) - 1;
     PoolSlice storage slice = poolSlices[sliceId];
     TrancheInfo storage trancheInfo = tranche % NUM_TRANCHES == 1 ? slice.seniorTranche : slice.juniorTranche;
