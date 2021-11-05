@@ -900,9 +900,6 @@ async function getAndTransformUSDCEvents(
     .compact()
     .map((e) => _.set(e, "erc20", usdc))
     .value()
-  // TODO Filter out approval events that are emitted as part of performing a transfer and are
-  // therefore not informative for the user; the approval events we want are those representing
-  // an approval the user performed manually.
   return await mapEventsToTx<ApprovalEventType>(approvalEvents, APPROVAL_EVENT_TYPES, {
     parseName: (eventData: KnownEventData<ApprovalEventType>) => {
       switch (eventData.event) {
@@ -938,9 +935,6 @@ async function getAndTransformFIDUEvents(
     undefined,
     currentBlock.number
   )
-  // TODO Filter out approval events that are emitted as part of performing a transfer and are
-  // therefore not informative for the user; the approval events we want are those representing
-  // an approval the user performed manually.
   return await mapEventsToTx<ApprovalEventType>(approvalEvents, APPROVAL_EVENT_TYPES, {
     parseName: (eventData: KnownEventData<ApprovalEventType>) => {
       switch (eventData.event) {
