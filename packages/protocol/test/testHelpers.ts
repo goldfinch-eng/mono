@@ -71,7 +71,7 @@ function usdcToFidu(number) {
   return number.mul(decimals.div(USDCDecimals))
 }
 
-function fiduToUSDC(number) {
+function fiduToUSDC(number: BN) {
   return number.div(decimals.div(USDCDecimals))
 }
 
