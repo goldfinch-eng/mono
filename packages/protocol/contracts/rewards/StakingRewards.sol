@@ -717,9 +717,6 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     uint256 multiplier
   );
   event Unstaked(address indexed user, uint256 indexed tokenId, uint256 amount);
-  // TODO[PR] Should we include reserve amount in these *AndWithdrew events? We cannot do so
-  // without upgrading `SeniorPool._withdraw()` to return the reserve amount collected; see
-  // `StakingRewards._unstakeAndWithdrawInFidu()`'s usage of `SeniorPool.withdrawInFidu()`.
   event UnstakedAndWithdrew(address indexed user, uint256 usdcReceivedAmount, uint256 indexed tokenId, uint256 amount);
   event UnstakedAndWithdrewMultiple(
     address indexed user,
