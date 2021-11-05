@@ -79,9 +79,11 @@ export type CurrentTxDataByType = {
   [MINT_UID_TX_TYPE]: {}
   [WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE]: AmountStringData
   [WITHDRAW_FROM_SENIOR_POOL_TX_TYPE]: {
+    recognizableUsdcAmount: string
     fiduAmount: string
-  }
+}
   [UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE]: {
+    recognizableUsdcAmount: string
     fiduAmount: string
     tokens: Array<{
       id: string

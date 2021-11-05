@@ -155,6 +155,10 @@ function usdcToFidu(usdcAmount: BigNumber): BigNumber {
   return usdcAmount.multipliedBy(FIDU_DECIMALS).dividedBy(decimals.toString())
 }
 
+function fiduToUsdc(fiduAmount: BigNumber): BigNumber {
+  return fiduAmount.multipliedBy(decimals.toString()).dividedBy(FIDU_DECIMALS)
+}
+
 function getNumSharesFromUsdc(usdcAmount: BigNumber, sharePrice: BigNumber): BigNumber {
   return (
     usdcToFidu(usdcAmount)
@@ -170,6 +174,22 @@ function getNumSharesFromUsdc(usdcAmount: BigNumber, sharePrice: BigNumber): Big
   )
 }
 
+function getUsdcFromNumShares(fiduAmount: BigNumber, sharePrice: BigNumber): BigNumber {
+  return (
+    fiduToUsdc(fiduAmount)
+      .multipliedBy(sharePrice)
+      .dividedToIntegerBy(
+        // This might be better thought of as dividing by the share-price mantissa,
+        // which happens to be the same as `FIDU_DECIMALS`.
+        FIDU_DECIMALS
+      )
+  )
+}
+
+function getUsdcAmountNetOfProtocolFee(usdcAmount: BigNumber): BigNumber {
+  return usdcAmount.multipliedBy(995).dividedToIntegerBy(1000)
+}
+
 function minimumNumber(...args) {
   return BigNumber.minimum(...args).toString(10)
 }
@@ -181,6 +201,8 @@ export {
   usdcToAtomic,
   usdcToFidu,
   getNumSharesFromUsdc,
+  getUsdcFromNumShares,
+  getUsdcAmountNetOfProtocolFee,
   minimumNumber,
   Tickers,
   ERC20,

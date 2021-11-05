@@ -1011,8 +1011,6 @@ async function getAndTransformCreditDeskEvents(
         case DRAWDOWN_MADE_EVENT:
           return {
             amount: eventData.returnValues.drawdownAmount,
-            // TODO[PR] Is this necessarily USDC, or couldn't it also have been
-            // in USDT or BUSD? But the event doesn't provide such a distinction.
             units: "usdc",
           }
         default:

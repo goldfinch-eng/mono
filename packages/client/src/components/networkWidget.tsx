@@ -110,9 +110,12 @@ function NetworkWidget(props: NetworkWidgetProps) {
           transactionLabel = `${displayDollars((tx.data as CurrentTx<typeof tx.name>["data"]).amount)} ${tx.name}`
           break
         }
-        case STAKE_TX_TYPE:
         case WITHDRAW_FROM_SENIOR_POOL_TX_TYPE:
         case UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE: {
+          transactionLabel = `${displayDollars((tx.data as CurrentTx<typeof tx.name>["data"]).recognizableUsdcAmount)} ${tx.name}`
+          break
+        }
+        case STAKE_TX_TYPE: {
           transactionLabel = `${displayNumber((tx.data as CurrentTx<typeof tx.name>["data"]).fiduAmount)} FIDU ${
             tx.name
           }`

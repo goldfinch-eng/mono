@@ -183,8 +183,7 @@ function Transactions(props: TransactionsProps) {
           typeCssClass = "outflow"
           icon = iconCircleDownLg
           amountPrefix = "-"
-          amount = displayNumber((tx.data as CurrentTx<typeof tx.name>["data"]).fiduAmount)
-          amountSuffix = " FIDU"
+          amount = displayDollars((tx.data as CurrentTx<typeof tx.name>["data"]).recognizableUsdcAmount)
           break
         }
         case STAKE_TX_TYPE:
@@ -225,14 +224,6 @@ function Transactions(props: TransactionsProps) {
         case BORROW_TX_TYPE:
         case WITHDRAW_FROM_SENIOR_POOL_TX_TYPE:
         case UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE:
-          // TODO[PR] Because we describe `WITHDRAW_FROM_SENIOR_POOL_TX_TYPE` and
-          // `UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE` in units of FIDU when
-          // the transaction is in its "current" form, arguably we should describe
-          // it also in units of FIDU here in its "historical" form. Or perhaps
-          // include both units, indicating that the dollar amount in the transaction's
-          // "current" form is an estimate because it uses a share price that is
-          // not guaranteed to hold at the time the tranasction executes.
-
           typeCssClass = "outflow"
           icon = iconCircleDownLg
           amountPrefix = "-"
