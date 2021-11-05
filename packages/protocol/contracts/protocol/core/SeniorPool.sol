@@ -106,7 +106,10 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
    * @param usdcAmount The amount of USDC to withdraw
    */
   function withdraw(uint256 usdcAmount) external override whenNotPaused nonReentrant returns (uint256 amount) {
-    require(config.getGo().go(msg.sender), "This address has not been go-listed");
+    require(
+      config.getGo().go(msg.sender, [config.getGo().ID_VERSION_0, config.getGo().ID_VERSION_1]),
+      "This address has not been go-listed"
+    );
     require(usdcAmount > 0, "Must withdraw more than zero");
     // This MUST happen before calculating withdrawShares, otherwise the share price
     // changes between calculation and burning of Fidu, which creates a asset/liability mismatch
