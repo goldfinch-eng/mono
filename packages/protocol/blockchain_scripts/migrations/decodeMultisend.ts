@@ -9,7 +9,7 @@ interface NamedDeployment {
   deployment: Deployment
 }
 
-async function getAddressToDeployment({
+async function getAddressesToDeployments({
   hre,
 }: {
   hre: HardhatRuntimeEnvironment
@@ -73,7 +73,7 @@ export async function main({transactionsBytes, hre}: {transactionsBytes: string;
     i = i + operationSize + toSize + valueSize + dataLengthSize + Number(dataLength)
   }
 
-  const addressToDeployment = await getAddressToDeployment({hre})
+  const addressToDeployment = await getAddressesToDeployments({hre})
 
   decodedTxs.forEach((tx) => {
     const namedDeployment = addressToDeployment[tx.to]
