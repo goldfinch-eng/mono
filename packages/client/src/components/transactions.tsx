@@ -43,7 +43,8 @@ import {getEtherscanSubdomain, MAX_UINT} from "../ethereum/utils"
 import {BlockInfo, displayDollars, displayNumber} from "../utils"
 import ConnectionNotice from "./connectionNotice"
 import {iconCircleCheckLg, iconCircleDownLg, iconCircleUpLg, iconOutArrow} from "./icons"
-import { mapEventsToTx } from "../ethereum/events"
+import {mapEventsToTx} from "../ethereum/events"
+import BigNumber from "bignumber.js"
 
 type TransactionsProps = {
   currentTxs: CurrentTx<TxType>[]
@@ -96,10 +97,10 @@ function Transactions(props: TransactionsProps) {
               }
             }
             case WITHDRAWAL_MADE_EVENT: {
+              const sum = new BigNumber(eventData.returnValues.interestWithdrawn)
+                .plus(new BigNumber(eventData.returnValues.principalWithdrawn))
               return {
-                // TODO[PR] Is it correct to prioritize the interest withdrawal here --
-                // or what about the `principalWithdrawn` amount?
-                amount: eventData.returnValues.interestWithdrawn,
+                amount: sum.toString(10),
                 units: "usdc",
               }
             }
