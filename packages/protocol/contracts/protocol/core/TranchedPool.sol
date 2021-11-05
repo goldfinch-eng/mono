@@ -134,7 +134,10 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     TrancheInfo storage trancheInfo = getTrancheInfo(tranche);
     require(trancheInfo.lockedUntil == 0, "Tranche has been locked");
     require(amount > 0, "Must deposit more than zero");
-    require(config.getGo().go(msg.sender, allowedUIDTypes), "This address has not been go-listed");
+    require(
+      config.getGo().go(msg.sender, allowedUIDTypes || [config.getGo().ID_VERSION_0]),
+      "This address has not been go-listed"
+    );
 
     trancheInfo.principalDeposited = trancheInfo.principalDeposited.add(amount);
     IPoolTokens.MintParams memory params = IPoolTokens.MintParams({tranche: tranche, principalAmount: amount});
@@ -508,7 +511,10 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
 
     require(amount <= netRedeemable, "Invalid redeem amount");
     require(currentTime() > trancheInfo.lockedUntil, "Tranche is locked");
-    require(config.getGo().go(msg.sender, allowedUIDTypes), "This address has not been go-listed");
+    require(
+      config.getGo().go(msg.sender, allowedUIDTypes || [config.getGo().ID_VERSION_0]),
+      "This address has not been go-listed"
+    );
 
     // If the tranche has not been locked, ensure the deposited amount is correct
     if (trancheInfo.lockedUntil == 0) {
