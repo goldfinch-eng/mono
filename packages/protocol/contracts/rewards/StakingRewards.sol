@@ -721,13 +721,10 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   // without upgrading `SeniorPool._withdraw()` to return the reserve amount collected; see
   // `StakingRewards._unstakeAndWithdrawInFidu()`'s usage of `SeniorPool.withdrawInFidu()`.
   event UnstakedAndWithdrew(address indexed user, uint256 usdcReceivedAmount, uint256 indexed tokenId, uint256 amount);
-  // TODO[PR] There may be little benefit to indexing `tokenIds`, as I believe to filter
-  // against this the ordering must be anticipated, because the underlying indexed value is
-  // a hash of the array.
   event UnstakedAndWithdrewMultiple(
     address indexed user,
     uint256 usdcReceivedAmount,
-    uint256[] indexed tokenIds,
+    uint256[] tokenIds,
     uint256[] amounts
   );
   event RewardPaid(address indexed user, uint256 indexed tokenId, uint256 reward);
