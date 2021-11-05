@@ -9,7 +9,7 @@ import useNonNullContext from "../hooks/useNonNullContext"
 import BigNumber from "bignumber.js"
 import {decimalPlaces} from "../ethereum/utils"
 import useERC20Permit from "../hooks/useERC20Permit"
-import {USDC_APPROVAL_TX_TYPE, SUPPLY_AND_STAKE_TX_TYPE} from "../ethereum/transactions"
+import {USDC_APPROVAL_TX_TYPE, SUPPLY_AND_STAKE_TX_TYPE} from "../types/transactions"
 
 interface DepositFormProps {
   actionComplete: () => void

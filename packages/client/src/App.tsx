@@ -31,7 +31,7 @@ import {GoldfinchConfigData, refreshGoldfinchConfigData} from "./ethereum/goldfi
 import {GoldfinchProtocol} from "./ethereum/GoldfinchProtocol"
 import {NetworkMonitor} from "./ethereum/networkMonitor"
 import {SeniorPool, SeniorPoolLoaded, StakingRewards, StakingRewardsLoaded} from "./ethereum/pool"
-import {CurrentTx, TxType} from "./ethereum/transactions"
+import {CurrentTx, TxType} from "./types/transactions"
 import {getUserData, UserLoaded} from "./ethereum/user"
 import {mapNetworkToID, SUPPORTED_NETWORKS} from "./ethereum/utils"
 import {useFromSameBlock} from "./hooks/useFromSameBlock"

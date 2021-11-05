@@ -13,7 +13,7 @@ import {useOneInchQuote, formatQuote} from "../hooks/useOneInchQuote"
 import useDebounce from "../hooks/useDebounce"
 import BigNumber from "bignumber.js"
 import {assertNonNullable, displayDollars} from "../utils"
-import {PAYMENT_TX_TYPE} from "../ethereum/transactions"
+import {PAYMENT_TX_TYPE} from "../types/transactions"
 
 function PaymentForm(props) {
   const {borrower, creditLine, actionComplete} = props

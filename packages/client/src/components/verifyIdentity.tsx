@@ -17,7 +17,7 @@ import LoadingButton from "./loadingButton"
 import TransactionForm from "./transactionForm"
 import {UniqueIdentity as UniqueIdentityContract} from "@goldfinch-eng/protocol/typechain/web3/UniqueIdentity"
 import web3 from "web3"
-import {MINT_UID_TX_TYPE} from "../ethereum/transactions"
+import {MINT_UID_TX_TYPE} from "../types/transactions"
 
 function VerificationNotice({icon, notice}) {
   return (

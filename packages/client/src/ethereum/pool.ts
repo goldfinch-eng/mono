@@ -14,12 +14,9 @@ import {buildCreditLine} from "./creditLine"
 import {Tickers, usdcFromAtomic} from "./erc20"
 import {
   DRAWDOWN_MADE_EVENT,
-  getBalanceAsOf,
-  getPoolEventAmount,
   INTEREST_COLLECTED_EVENT,
   KnownEventData,
   KnownEventName,
-  mapEventsToTx,
   PoolEventType,
   POOL_EVENT_TYPES,
   PRINCIPAL_COLLECTED_EVENT,
@@ -27,7 +24,7 @@ import {
   RESERVE_FUNDS_COLLECTED_EVENT,
   StakingRewardsEventType,
   WITHDRAWAL_MADE_EVENT,
-} from "./events"
+} from "../types/events"
 import {fiduFromAtomic, fiduInDollars, fiduToDollarsAtomic, FIDU_DECIMALS} from "./fidu"
 import {gfiInDollars, GFILoaded, gfiToDollarsAtomic, GFI_DECIMALS} from "./gfi"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
@@ -38,9 +35,10 @@ import {
   PRINCIPAL_COLLECTED_TX_NAME,
   RESERVE_FUNDS_COLLECTED_TX_NAME,
   HistoricalTx,
-} from "./transactions"
+} from "../types/transactions"
 import {UserLoaded, UserStakingRewardsLoaded} from "./user"
 import {fetchDataFromAttributes, getPoolEvents, INTEREST_DECIMALS, ONE_YEAR_SECONDS, USDC_DECIMALS} from "./utils"
+import { getBalanceAsOf, getPoolEventAmount, mapEventsToTx } from "./events"
 
 class Pool {
   goldfinchProtocol: GoldfinchProtocol

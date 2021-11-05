@@ -6,12 +6,11 @@ import {
   DEPOSIT_MADE_EVENT,
   DRAWDOWN_MADE_EVENT,
   KnownEventData,
-  mapEventsToTx,
   PAYMENT_APPLIED_EVENT,
   TranchedPoolEventType,
   TRANCHED_POOL_EVENT_TYPES,
   WITHDRAWAL_MADE_EVENT,
-} from "../ethereum/events"
+} from "../types/events"
 import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
 import {TranchedPool} from "../ethereum/tranchedPool"
 import {
@@ -39,11 +38,12 @@ import {
   USDC_APPROVAL_TX_TYPE,
   WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE,
   WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
-} from "../ethereum/transactions"
+} from "../types/transactions"
 import {getEtherscanSubdomain, MAX_UINT} from "../ethereum/utils"
 import {BlockInfo, displayDollars, displayNumber} from "../utils"
 import ConnectionNotice from "./connectionNotice"
 import {iconCircleCheckLg, iconCircleDownLg, iconCircleUpLg, iconOutArrow} from "./icons"
+import { mapEventsToTx } from "../ethereum/events"
 
 type TransactionsProps = {
   currentTxs: CurrentTx<TxType>[]

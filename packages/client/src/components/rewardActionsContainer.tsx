@@ -11,7 +11,7 @@ import {
 } from "../ethereum/communityRewards"
 import {gfiFromAtomic, gfiInDollars, GFILoaded, gfiToDollarsAtomic} from "../ethereum/gfi"
 import {StakingRewardsLoaded, StakingRewardsPosition} from "../ethereum/pool"
-import {ACCEPT_TX_TYPE, CLAIM_TX_TYPE} from "../ethereum/transactions"
+import {ACCEPT_TX_TYPE, CLAIM_TX_TYPE} from "../types/transactions"
 import useSendFromUser from "../hooks/useSendFromUser"
 import {
   Column,

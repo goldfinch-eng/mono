@@ -26,7 +26,7 @@ import {
   USDC_APPROVAL_TX_TYPE,
   WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE,
   WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
-} from "../ethereum/transactions"
+} from "../types/transactions"
 import {UserLoaded, UserLoadedInfo} from "../ethereum/user"
 import {CONFIRMATION_THRESHOLD, getEtherscanSubdomain} from "../ethereum/utils"
 import useCloseOnClickOrEsc from "../hooks/useCloseOnClickOrEsc"

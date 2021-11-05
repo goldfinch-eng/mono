@@ -14,6 +14,11 @@ import {BorrowerInterface, getBorrowerContract} from "./borrower"
 import {CommunityRewardsGrant, CommunityRewardsLoaded, MerkleDistributorLoaded} from "./communityRewards"
 import {Tickers, USDC, usdcFromAtomic} from "./erc20"
 import {
+  getBalanceAsOf,
+  getPoolEventAmount,
+  mapEventsToTx,
+} from "./events"
+import {
   ApprovalEventType,
   APPROVAL_EVENT,
   APPROVAL_EVENT_TYPES,
@@ -24,11 +29,8 @@ import {
   DEPOSITED_AND_STAKED_EVENT,
   DEPOSIT_MADE_EVENT,
   DRAWDOWN_MADE_EVENT,
-  getBalanceAsOf,
-  getPoolEventAmount,
   GRANT_ACCEPTED_EVENT,
   KnownEventData,
-  mapEventsToTx,
   MerkleDistributorEventType,
   MERKLE_DISTRIBUTOR_EVENT_TYPES,
   PAYMENT_COLLECTED_EVENT,
@@ -42,7 +44,7 @@ import {
   UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT,
   UNSTAKED_EVENT,
   WITHDRAWAL_MADE_EVENT,
-} from "./events"
+} from "../types/events"
 import {GFILoaded} from "./gfi"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {SeniorPoolLoaded, StakingRewardsLoaded, StakingRewardsPosition, StoredPosition} from "./pool"
@@ -60,7 +62,7 @@ import {
   UNSTAKE_TX_NAME,
   WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
   FIDU_APPROVAL_TX_TYPE,
-} from "./transactions"
+} from "../types/transactions"
 import {getFromBlock, MAINNET} from "./utils"
 
 declare let window: any

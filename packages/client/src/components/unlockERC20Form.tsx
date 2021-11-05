@@ -7,7 +7,7 @@ import {iconInfo} from "./icons"
 import useSendFromUser from "../hooks/useSendFromUser"
 import {ERC20, usdcFromAtomic} from "../ethereum/erc20"
 import {assertNonNullable} from "../utils"
-import {ERC20_APPROVAL_TX_TYPE} from "../ethereum/transactions"
+import {ERC20_APPROVAL_TX_TYPE} from "../types/transactions"
 
 type UnlockERC20Props = {
   erc20: ERC20 | undefined

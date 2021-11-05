@@ -7,7 +7,7 @@ import {Subscription} from "web3-core-subscriptions"
 import {BlockHeader} from "web3-eth"
 import {AbstractProvider} from "web3-core"
 import {assertNonNullable, BlockInfo} from "../utils"
-import {CurrentTx, CurrentTxDataByType, FailedCurrentTx, PendingCurrentTx, TxType} from "./transactions"
+import {CurrentTx, CurrentTxDataByType, FailedCurrentTx, PendingCurrentTx, TxType} from "../types/transactions"
 import {PlainObject} from "@goldfinch-eng/utils/src/type"
 
 const NOTIFY_API_KEY = "8447e1ef-75ab-4f77-b98f-f1ade3bb1982"

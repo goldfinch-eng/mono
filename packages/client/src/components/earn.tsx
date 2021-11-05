@@ -4,7 +4,7 @@ import {useHistory} from "react-router-dom"
 import {AppContext} from "../App"
 import {useEarn} from "../contexts/EarnContext"
 import {usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
-import {POOL_CREATED_EVENT} from "../ethereum/events"
+import {POOL_CREATED_EVENT} from "../types/events"
 import {GFILoaded} from "../ethereum/gfi"
 import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
 import {

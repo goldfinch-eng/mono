@@ -1,6 +1,6 @@
 import {useContext} from "react"
 import {AppContext} from "../App"
-import {CurrentTxDataByType, PendingCurrentTx, TxType} from "../ethereum/transactions"
+import {CurrentTxDataByType, PendingCurrentTx, TxType} from "../types/transactions"
 import {assertError, assertNonNullable} from "../utils"
 import web3 from "../web3"
 

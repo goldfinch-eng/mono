@@ -8,7 +8,7 @@ import {CapitalProvider, PoolData, StakingRewardsPosition} from "../ethereum/poo
 import {
   UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
   WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
-} from "../ethereum/transactions"
+} from "../types/transactions"
 import useDebounce from "../hooks/useDebounce"
 import useNonNullContext from "../hooks/useNonNullContext"
 import useSendFromUser from "../hooks/useSendFromUser"

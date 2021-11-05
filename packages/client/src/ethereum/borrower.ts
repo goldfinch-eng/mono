@@ -6,7 +6,7 @@ import {ERC20, Tickers} from "./erc20"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {PoolState, TranchedPool} from "./tranchedPool"
 import {BlockInfo} from "../utils"
-import {BORROWER_CREATED_EVENT, POOL_CREATED_EVENT} from "./events"
+import {BORROWER_CREATED_EVENT, POOL_CREATED_EVENT} from "../types/events"
 
 class BorrowerInterface {
   userAddress: string

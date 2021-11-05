@@ -1,6 +1,6 @@
 import {isNumber, isPlainObject, isString} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
-import {ERC20} from "./erc20"
+import {ERC20} from "../ethereum/erc20"
 import {isKnownEventName, KnownEventName} from "./events"
 
 export const USDC_APPROVAL_TX_TYPE = "USDC Approval"

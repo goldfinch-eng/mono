@@ -16,10 +16,10 @@ import {
   KnownEventData,
   PAYMENT_APPLIED_EVENT,
   SHARE_PRICE_UPDATED_EVENT,
-} from "./events"
+} from "../types/events"
 import {fiduFromAtomic} from "./fidu"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
-import {DRAWDOWN_TX_NAME, INTEREST_PAYMENT_TX_NAME} from "./transactions"
+import {DRAWDOWN_TX_NAME, INTEREST_PAYMENT_TX_NAME} from "../types/transactions"
 
 const ZERO = new BigNumber(0)
 const ONE = new BigNumber(1)
