@@ -65,6 +65,7 @@ async function mapEventToTx<T extends KnownEventName>(
         amount: getRichAmount(parsedAmount),
         id: eventData.transactionHash,
         blockNumber: eventData.blockNumber,
+        transactionIndex: eventData.transactionIndex,
         blockTime: block.timestamp,
         date: moment.unix(block.timestamp).format("MMM D, h:mma"),
         status: "successful",

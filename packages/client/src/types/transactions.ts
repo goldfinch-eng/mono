@@ -150,6 +150,7 @@ export type HistoricalTx<T extends KnownEventName> = {
   amount: RichAmount
   id: string
   blockNumber: number
+  transactionIndex: number
   blockTime: number
   date: string
   status: "successful"
@@ -164,6 +165,7 @@ export function isHistoricalTx(obj: unknown): obj is HistoricalTx<KnownEventName
     isRichAmount(obj.amount) &&
     isString(obj.id) &&
     isNumber(obj.blockNumber) &&
+    isNumber(obj.transactionIndex) &&
     isNumber(obj.blockTime) &&
     isString(obj.date) &&
     obj.status === "successful" &&

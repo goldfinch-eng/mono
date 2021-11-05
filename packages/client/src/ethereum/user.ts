@@ -787,8 +787,7 @@ export class User {
           ...communityRewardsTxs,
           ...merkleDistributorTxs,
         ],
-        // TODO Sort also by transaction index (i.e. according to chain).
-        "blockNumber"
+        ["blockNumber", "transactionIndex"]
       )
     )
 
