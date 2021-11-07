@@ -659,7 +659,7 @@ describe("SeniorPool", () => {
         // where the juniors take "more than their share".
 
         const expectedLimit = usdcVal(100000)
-        expect(await tranchedPool.limit()).to.bignumber.equal(expectedLimit)
+        expect(await tranchedPool.maxLimit()).to.bignumber.equal(expectedLimit)
 
         await tranchedPool.lockJuniorCapital({from: borrower})
         expect(await goldfinchConfig.getAddress(CONFIG_KEYS.SeniorPoolStrategy)).to.equal(
@@ -791,7 +791,7 @@ describe("SeniorPool", () => {
         expect(juniorTranche.principalDeposited).to.bignumber.equal(juniorInvestmentAmount)
 
         const expectedLimit = usdcVal(100000)
-        expect(await tranchedPool.limit()).to.bignumber.equal(expectedLimit)
+        expect(await tranchedPool.maxLimit()).to.bignumber.equal(expectedLimit)
 
         const reducedLimit = seniorPoolJuniorInvestmentAmount.sub(new BN(1))
         await tranchedPool._setLimit(reducedLimit)

@@ -11,7 +11,6 @@ import "../../interfaces/IERC20withDec.sol";
 import "../../interfaces/ICreditLine.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
-import "hardhat/console.sol";
 
 /**
  * @title CreditLine
@@ -251,9 +250,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
       uint256
     )
   {
-    console.log("Balance: %s, payment: %s", balance, paymentAmount);
     (uint256 newInterestOwed, uint256 newPrincipalOwed) = updateAndGetInterestAndPrincipalOwedAsOf(timestamp);
-    console.log("interest owed: %s, principal owed: %s, total interest: %s", newInterestOwed, newPrincipalOwed, totalInterestAccrued);
     Accountant.PaymentAllocation memory pa = Accountant.allocatePayment(
       paymentAmount,
       balance,

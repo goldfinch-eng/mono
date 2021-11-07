@@ -8,7 +8,6 @@ import "../../interfaces/ICreditLine.sol";
 import "../../external/FixedPoint.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
-import "hardhat/console.sol";
 
 /**
  * @title The Accountant
@@ -43,7 +42,6 @@ library Accountant {
     uint256 balance = cl.balance(); // gas optimization
     uint256 interestAccrued = calculateInterestAccrued(cl, balance, timestamp, lateFeeGracePeriod);
     uint256 principalAccrued = calculatePrincipalAccrued(cl, balance, timestamp);
-    console.log("interest Accrued: %s, principal: %s", interestAccrued, principalAccrued);
     return (interestAccrued, principalAccrued);
   }
 
@@ -160,11 +158,9 @@ library Accountant {
     uint256 secondsElapsed = endTime.sub(startTime);
     uint256 totalInterestPerYear = balance.mul(cl.interestApr()).div(INTEREST_DECIMALS);
     interestOwed = totalInterestPerYear.mul(secondsElapsed).div(SECONDS_PER_YEAR);
-    console.log("Total interest per year: %s, Seconds elapsed: %s", totalInterestPerYear, secondsElapsed);
     if (lateFeeApplicable(cl, endTime, lateFeeGracePeriodInDays)) {
       uint256 lateFeeInterestPerYear = balance.mul(cl.lateFeeApr()).div(INTEREST_DECIMALS);
       uint256 additionalLateFeeInterest = lateFeeInterestPerYear.mul(secondsElapsed).div(SECONDS_PER_YEAR);
-      console.log("late fee: %s", lateFeeInterestPerYear);
       interestOwed = interestOwed.add(additionalLateFeeInterest);
     }
 
