@@ -8,7 +8,7 @@ import sinon from "sinon"
 import {FirebaseConfig, getAgreements, getNDAs, getUsers, setEnvForTest} from "../src/db"
 import {fetchNDA, kycStatus, personaCallback, signAgreement, signNDA} from "../src"
 
-chai.use(chaiSubset as any)
+chai.use(chaiSubset)
 const expect = chai.expect
 import firestore = admin.firestore
 import Firestore = firestore.Firestore
