@@ -18,6 +18,7 @@ import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {SeniorPoolLoaded, StakingRewardsLoaded, StakingRewardsPosition, StoredPosition} from "./pool"
 import {getFromBlock, MAINNET} from "./utils"
 import {Go} from "@goldfinch-eng/protocol/typechain/web3/Go"
+import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/web3/UniqueIdentity"
 
 declare let window: any
 
@@ -498,6 +499,7 @@ type UserLoadedInfo = {
   poolTxs: any[]
   goListed: boolean
   legacyGolisted: boolean
+  hasUID: boolean
   gfiBalance: BigNumber
   usdcIsUnlocked: {
     earn: {
@@ -599,6 +601,7 @@ export class User {
     const golistStatus = await this.fetchGolistStatus(this.address, currentBlock)
     const goListed = golistStatus.golisted
     const legacyGolisted = golistStatus.legacyGolisted
+    const hasUID = golistStatus.hasUID
 
     const gfiBalance = new BigNumber(
       await gfi.contract.methods.balanceOf(this.address).call(undefined, currentBlock.number)
@@ -636,6 +639,7 @@ export class User {
         poolTxs,
         goListed,
         legacyGolisted,
+        hasUID,
         gfiBalance,
         usdcIsUnlocked: {
           earn: {
@@ -666,14 +670,21 @@ export class User {
       const go = this.goldfinchProtocol.getContract<Go>("Go")
       const golisted = await go.methods.go(address).call(undefined, currentBlock.number)
 
+      const uniqueIdentity = this.goldfinchProtocol.getContract<UniqueIdentity>("UniqueIdentity")
+      const hasUID = !new BigNumber(
+        await uniqueIdentity.methods.balanceOf(address, 0).call(undefined, currentBlock.number)
+      ).isZero()
+
       return {
         legacyGolisted,
         golisted,
+        hasUID,
       }
     } else {
       return {
         legacyGolisted: true,
         golisted: true,
+        hasUID: true,
       }
     }
   }
