@@ -22,7 +22,7 @@ import {time} from "@openzeppelin/test-helpers"
 const TranchedPool = artifacts.require("TranchedPool")
 const CreditLine = artifacts.require("CreditLine")
 
-const TEST_TIMEOUT = 30_000
+const TEST_TIMEOUT = 40_000
 
 // eslint-disable-next-line no-unused-vars
 let accounts, owner, underwriter, borrower, investor1, investor2
