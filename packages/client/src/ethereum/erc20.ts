@@ -1,3 +1,4 @@
+import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
 import {memoize} from "lodash"
 import {Contract} from "web3-eth-contract"
@@ -9,15 +10,16 @@ import {FIDU_DECIMALS} from "./fidu"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {BUSD_ADDRESSES, decimals, USDC_ADDRESSES, USDT_ADDRESSES} from "./utils"
 
-const Tickers = {
+const Tickers: Record<Ticker, Ticker> = {
   USDC: "USDC",
   USDT: "USDT",
   BUSD: "BUSD",
 }
+export type Ticker = "USDC" | "USDT" | "BUSD"
 
-class ERC20 {
+abstract class ERC20 {
   name: string
-  ticker: string
+  ticker: Ticker
   networksToAddress: any
   localContractName?: string
   permitVersion?: string
@@ -25,9 +27,9 @@ class ERC20 {
   contract!: Contract
   goldfinchProtocol: GoldfinchProtocol
 
-  constructor(goldfinchProtocol) {
+  constructor(goldfinchProtocol, ticker: Ticker) {
     this.name = "ERC20"
-    this.ticker = "ERC20"
+    this.ticker = ticker
     this.goldfinchProtocol = goldfinchProtocol
     this.networksToAddress = {}
     this.decimals = 18
@@ -90,10 +92,9 @@ class ERC20 {
 }
 
 class USDC extends ERC20 {
-  constructor(networkId) {
-    super(networkId)
+  constructor(goldfinchProtocol: GoldfinchProtocol) {
+    super(goldfinchProtocol, Tickers.USDC)
     this.name = "USD Coin"
-    this.ticker = Tickers.USDC
     this.networksToAddress = USDC_ADDRESSES
     this.localContractName = "TestERC20"
     this.decimals = 6
@@ -102,40 +103,38 @@ class USDC extends ERC20 {
 }
 
 class USDT extends ERC20 {
-  constructor(networkId) {
-    super(networkId)
+  constructor(goldfinchProtocol: GoldfinchProtocol) {
+    super(goldfinchProtocol, Tickers.USDT)
     this.name = "Tether USD"
-    this.ticker = Tickers.USDT
     this.networksToAddress = USDT_ADDRESSES
     this.decimals = 6
   }
 }
 
 class BUSD extends ERC20 {
-  constructor(networkId) {
-    super(networkId)
+  constructor(goldfinchProtocol: GoldfinchProtocol) {
+    super(goldfinchProtocol, Tickers.BUSD)
     this.name = "Binance USD"
-    this.ticker = Tickers.BUSD
     this.networksToAddress = BUSD_ADDRESSES
     this.decimals = 18
   }
 }
 
 let getERC20 = memoize(
-  (ticker, goldfinchProtocol) => {
+  (ticker: Ticker, goldfinchProtocol: GoldfinchProtocol) => {
     let erc20
     switch (ticker) {
-      case Tickers.USDC:
+      case "USDC":
         erc20 = new USDC(goldfinchProtocol)
         break
-      case Tickers.USDT:
+      case "USDT":
         erc20 = new USDT(goldfinchProtocol)
         break
-      case Tickers.BUSD:
+      case "BUSD":
         erc20 = new BUSD(goldfinchProtocol)
         break
       default:
-        throw new Error("Unsupported currency")
+        assertUnreachable(ticker)
     }
 
     erc20.initialize()
@@ -156,6 +155,10 @@ function usdcToFidu(usdcAmount: BigNumber): BigNumber {
   return usdcAmount.multipliedBy(FIDU_DECIMALS).dividedBy(decimals.toString())
 }
 
+function fiduToUsdc(fiduAmount: BigNumber): BigNumber {
+  return fiduAmount.multipliedBy(decimals.toString()).dividedBy(FIDU_DECIMALS)
+}
+
 function getNumSharesFromUsdc(usdcAmount: BigNumber, sharePrice: BigNumber): BigNumber {
   return (
     usdcToFidu(usdcAmount)
@@ -171,6 +174,18 @@ function getNumSharesFromUsdc(usdcAmount: BigNumber, sharePrice: BigNumber): Big
   )
 }
 
+function getUsdcFromNumShares(fiduAmount: BigNumber, sharePrice: BigNumber): BigNumber {
+  return fiduToUsdc(fiduAmount).multipliedBy(sharePrice).dividedToIntegerBy(
+    // This might be better thought of as dividing by the share-price mantissa,
+    // which happens to be the same as `FIDU_DECIMALS`.
+    FIDU_DECIMALS
+  )
+}
+
+function getUsdcAmountNetOfProtocolFee(usdcAmount: BigNumber): BigNumber {
+  return usdcAmount.multipliedBy(995).dividedToIntegerBy(1000)
+}
+
 function minimumNumber(...args) {
   return BigNumber.minimum(...args).toString(10)
 }
@@ -182,7 +197,10 @@ export {
   usdcToAtomic,
   usdcToFidu,
   getNumSharesFromUsdc,
+  getUsdcFromNumShares,
+  getUsdcAmountNetOfProtocolFee,
   minimumNumber,
   Tickers,
   ERC20,
+  USDC,
 }

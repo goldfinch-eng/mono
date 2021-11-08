@@ -483,21 +483,29 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   }
 
   function unstakeAndWithdraw(uint256 tokenId, uint256 usdcAmount) public nonReentrant whenNotPaused {
-    _unstakeAndWithdraw(tokenId, usdcAmount);
+    (uint256 usdcReceivedAmount, uint256 fiduAmount) = _unstakeAndWithdraw(tokenId, usdcAmount);
+
+    emit UnstakedAndWithdrew(msg.sender, usdcReceivedAmount, tokenId, fiduAmount);
   }
 
-  function _unstakeAndWithdraw(uint256 tokenId, uint256 usdcAmount) internal updateReward(tokenId) {
+  function _unstakeAndWithdraw(uint256 tokenId, uint256 usdcAmount)
+    internal
+    updateReward(tokenId)
+    returns (uint256 usdcAmountReceived, uint256 fiduUsed)
+  {
     ISeniorPool seniorPool = config.getSeniorPool();
     IFidu fidu = config.getFidu();
 
     uint256 fiduBalanceBefore = fidu.balanceOf(address(this));
 
-    uint256 usdcAmountReceived = seniorPool.withdraw(usdcAmount);
+    usdcAmountReceived = seniorPool.withdraw(usdcAmount);
 
-    uint256 fiduUsed = fiduBalanceBefore.sub(fidu.balanceOf(address(this)));
+    fiduUsed = fiduBalanceBefore.sub(fidu.balanceOf(address(this)));
 
     _unstake(tokenId, fiduUsed);
     config.getUSDC().safeTransfer(msg.sender, usdcAmountReceived);
+
+    return (usdcAmountReceived, fiduUsed);
   }
 
   function unstakeAndWithdrawMultiple(uint256[] calldata tokenIds, uint256[] calldata usdcAmounts)
@@ -507,19 +515,33 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   {
     require(tokenIds.length == usdcAmounts.length, "tokenIds and usdcAmounts must be the same length");
 
+    uint256 usdcReceivedAmountTotal = 0;
+    uint256[] storage fiduAmounts;
     for (uint256 i = 0; i < usdcAmounts.length; i++) {
-      _unstakeAndWithdraw(tokenIds[i], usdcAmounts[i]);
+      (uint256 usdcReceivedAmount, uint256 fiduAmount) = _unstakeAndWithdraw(tokenIds[i], usdcAmounts[i]);
+
+      usdcReceivedAmountTotal = usdcReceivedAmountTotal.add(usdcReceivedAmount);
+      fiduAmounts.push(fiduAmount);
     }
+
+    emit UnstakedAndWithdrewMultiple(msg.sender, usdcReceivedAmountTotal, tokenIds, fiduAmounts);
   }
 
   function unstakeAndWithdrawInFidu(uint256 tokenId, uint256 fiduAmount) public nonReentrant whenNotPaused {
-    _unstakeAndWithdrawInFidu(tokenId, fiduAmount);
+    uint256 usdcReceivedAmount = _unstakeAndWithdrawInFidu(tokenId, fiduAmount);
+
+    emit UnstakedAndWithdrew(msg.sender, usdcReceivedAmount, tokenId, fiduAmount);
   }
 
-  function _unstakeAndWithdrawInFidu(uint256 tokenId, uint256 fiduAmount) internal updateReward(tokenId) {
-    uint256 usdcAmount = config.getSeniorPool().withdrawInFidu(fiduAmount);
+  function _unstakeAndWithdrawInFidu(uint256 tokenId, uint256 fiduAmount)
+    internal
+    updateReward(tokenId)
+    returns (uint256 usdcReceivedAmount)
+  {
+    usdcReceivedAmount = config.getSeniorPool().withdrawInFidu(fiduAmount);
     _unstake(tokenId, fiduAmount);
-    config.getUSDC().safeTransfer(msg.sender, usdcAmount);
+    config.getUSDC().safeTransfer(msg.sender, usdcReceivedAmount);
+    return usdcReceivedAmount;
   }
 
   function unstakeAndWithdrawMultipleInFidu(uint256[] calldata tokenIds, uint256[] calldata fiduAmounts)
@@ -529,9 +551,14 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   {
     require(tokenIds.length == fiduAmounts.length, "tokenIds and usdcAmounts must be the same length");
 
+    uint256 usdcReceivedAmountTotal = 0;
     for (uint256 i = 0; i < fiduAmounts.length; i++) {
-      _unstakeAndWithdrawInFidu(tokenIds[i], fiduAmounts[i]);
+      uint256 usdcReceivedAmount = _unstakeAndWithdrawInFidu(tokenIds[i], fiduAmounts[i]);
+
+      usdcReceivedAmountTotal = usdcReceivedAmountTotal.add(usdcReceivedAmount);
     }
+
+    emit UnstakedAndWithdrewMultiple(msg.sender, usdcReceivedAmountTotal, tokenIds, fiduAmounts);
   }
 
   function _unstake(uint256 tokenId, uint256 amount) internal {
@@ -690,5 +717,12 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     uint256 multiplier
   );
   event Unstaked(address indexed user, uint256 indexed tokenId, uint256 amount);
+  event UnstakedAndWithdrew(address indexed user, uint256 usdcReceivedAmount, uint256 indexed tokenId, uint256 amount);
+  event UnstakedAndWithdrewMultiple(
+    address indexed user,
+    uint256 usdcReceivedAmount,
+    uint256[] tokenIds,
+    uint256[] amounts
+  );
   event RewardPaid(address indexed user, uint256 indexed tokenId, uint256 reward);
 }

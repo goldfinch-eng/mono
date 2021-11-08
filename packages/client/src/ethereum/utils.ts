@@ -7,7 +7,10 @@ import BigNumber from "bignumber.js"
 import BN from "bn.js"
 import _ from "lodash"
 import {BlockNumber} from "web3-core"
-import {Contract, EventData} from "web3-eth-contract"
+import {Contract} from "web3-eth-contract"
+import {NetworkConfig} from "../App"
+import {KnownEventData, PoolEventType} from "../types/events"
+import {reduceToKnown} from "./events"
 import {Pool, SeniorPool} from "./pool"
 
 const decimalPlaces = 6
@@ -170,12 +173,12 @@ function fetchDataFromAttributes(
     })
 }
 
-async function getPoolEvents(
+async function getPoolEvents<T extends PoolEventType>(
   pool: SeniorPool | Pool,
   address: string | undefined,
-  eventNames: string[],
+  eventNames: T[],
   toBlock: BlockNumber
-): Promise<EventData[]> {
+): Promise<KnownEventData<T>[]> {
   const fromBlock = getFromBlock(pool.chain)
   const events = await Promise.all(
     eventNames.map((eventName) => {
@@ -186,8 +189,12 @@ async function getPoolEvents(
       })
     })
   )
-  return _.compact(_.flatten(events))
+  const compacted = _.compact(_.flatten(events))
+  return reduceToKnown(compacted, eventNames)
 }
+
+const getEtherscanSubdomain = (network: NetworkConfig | undefined): string | undefined =>
+  network ? (network.name === "mainnet" ? "" : `${network.name}.`) : undefined
 
 const ONE_YEAR_SECONDS = new BigNumber(60 * 60 * 24 * 365)
 
@@ -217,5 +224,6 @@ export {
   MAINNET,
   LOCAL,
   getPoolEvents,
+  getEtherscanSubdomain,
   ONE_YEAR_SECONDS,
 }

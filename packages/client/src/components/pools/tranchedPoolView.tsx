@@ -1,9 +1,23 @@
+import {BigNumber} from "bignumber.js"
+import _ from "lodash"
+import moment from "moment"
 import {useContext, useState} from "react"
 import {useParams} from "react-router-dom"
-import ConnectionNotice from "../connectionNotice"
 import {AppContext} from "../../App"
-import InvestorNotice from "../investorNotice"
+import {usdcFromAtomic, usdcToAtomic} from "../../ethereum/erc20"
+import {DEPOSIT_MADE_EVENT} from "../../types/events"
 import {PoolBacker, PoolState, TokenInfo, TranchedPool, TRANCHES} from "../../ethereum/tranchedPool"
+import {SUPPLY_TX_TYPE, WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE} from "../../types/transactions"
+import {decimalPlaces} from "../../ethereum/utils"
+import {useAsync} from "../../hooks/useAsync"
+import useCurrencyUnlocked from "../../hooks/useCurrencyUnlocked"
+import useERC20Permit from "../../hooks/useERC20Permit"
+import DefaultGoldfinchClient from "../../hooks/useGoldfinchClient"
+import {useFetchNDA} from "../../hooks/useNDA"
+import useNonNullContext from "../../hooks/useNonNullContext"
+import useSendFromUser from "../../hooks/useSendFromUser"
+import {useSession} from "../../hooks/useSignIn"
+import {useBacker, useTranchedPool} from "../../hooks/useTranchedPool"
 import {
   assertError,
   assertNonNullable,
@@ -14,30 +28,17 @@ import {
   roundDownPenny,
   roundUpPenny,
 } from "../../utils"
-import InfoSection from "../infoSection"
-import {usdcFromAtomic, usdcToAtomic} from "../../ethereum/erc20"
-import {iconDownArrow, iconOutArrow, iconUpArrow} from "../icons"
-import useSendFromUser from "../../hooks/useSendFromUser"
-import useNonNullContext from "../../hooks/useNonNullContext"
-import TransactionInput from "../transactionInput"
-import {BigNumber} from "bignumber.js"
-import LoadingButton from "../loadingButton"
-import TransactionForm from "../transactionForm"
-import {useAsync} from "../../hooks/useAsync"
-import useERC20Permit from "../../hooks/useERC20Permit"
-import useCurrencyUnlocked from "../../hooks/useCurrencyUnlocked"
-import UnlockERC20Form from "../unlockERC20Form"
+import ConnectionNotice from "../connectionNotice"
 import CreditBarViz from "../creditBarViz"
-import {DepositMade} from "@goldfinch-eng/protocol/typechain/web3/TranchedPool"
-import moment from "moment"
-import {useBacker, useTranchedPool} from "../../hooks/useTranchedPool"
-import {useSession} from "../../hooks/useSignIn"
-import _ from "lodash"
-import DefaultGoldfinchClient from "../../hooks/useGoldfinchClient"
-import NdaPrompt from "../ndaPrompt"
-import {useFetchNDA} from "../../hooks/useNDA"
-import {decimalPlaces} from "../../ethereum/utils"
 import EtherscanLink from "../etherscanLink"
+import {iconDownArrow, iconOutArrow, iconUpArrow} from "../icons"
+import InfoSection from "../infoSection"
+import InvestorNotice from "../investorNotice"
+import LoadingButton from "../loadingButton"
+import NdaPrompt from "../ndaPrompt"
+import TransactionForm from "../transactionForm"
+import TransactionInput from "../transactionInput"
+import UnlockERC20Form from "../unlockERC20Form"
 
 function useRecentPoolTransactions({
   tranchedPool,
@@ -64,9 +65,9 @@ function useUniqueJuniorSuppliers({tranchedPool}: {tranchedPool?: TranchedPool})
     if (!tranchedPool || !goldfinchProtocol || !currentBlock) {
       return []
     }
-    return await goldfinchProtocol.queryEvent<DepositMade>(
+    return await goldfinchProtocol.queryEvents(
       tranchedPool.contract,
-      "DepositMade",
+      [DEPOSIT_MADE_EVENT],
       {
         tranche: TRANCHES.Junior.toString(),
       },
@@ -108,7 +109,7 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
       assertError(e)
 
       // Although it's not really a transaction error, this feels cleaner and more consistent than showing a form error
-      const txData = networkMonitor.addPendingTX({status: "pending", type: "Deposit", amount: transactionAmount})
+      const txData = networkMonitor.addPendingTX({type: SUPPLY_TX_TYPE, data: {amount: transactionAmount}})
       networkMonitor.markTXErrored(txData, e)
       return
     }
@@ -117,8 +118,10 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
     // USDC permit doesn't work on mainnet forking due to mismatch between hardcoded chain id in the contract
     if (process.env.REACT_APP_HARDHAT_FORK) {
       return sendFromUser(tranchedPool.contract.methods.deposit(TRANCHES.Junior, depositAmount), {
-        type: "Deposit",
-        amount: transactionAmount,
+        type: SUPPLY_TX_TYPE,
+        data: {
+          amount: transactionAmount,
+        },
       }).then(actionComplete)
     } else {
       let signatureData = await gatherPermitSignature({
@@ -136,8 +139,10 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
           signatureData.s
         ),
         {
-          type: "Deposit",
-          amount: transactionAmount,
+          type: SUPPLY_TX_TYPE,
+          data: {
+            amount: transactionAmount,
+          },
         }
       ).then(actionComplete)
     }
@@ -283,13 +288,17 @@ function TranchedPoolWithdrawForm({backer, tranchedPool, actionComplete, closeFo
     if (new BigNumber(withdrawAmount).gt(firstToken.principalRedeemable.plus(firstToken.interestRedeemable))) {
       let splits = splitWithdrawAmount(new BigNumber(withdrawAmount), backer.tokenInfos)
       return sendFromUser(tranchedPool.contract.methods.withdrawMultiple(splits.tokenIds, splits.amounts), {
-        type: "Withdraw",
-        amount: withdrawAmount,
+        type: WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE,
+        data: {
+          amount: withdrawAmount,
+        },
       }).then(actionComplete)
     } else {
       return sendFromUser(tranchedPool.contract.methods.withdraw(backer.tokenInfos[0]!.id, withdrawAmount), {
-        type: "Withdraw",
-        amount: withdrawAmount,
+        type: WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE,
+        data: {
+          amount: withdrawAmount,
+        },
       }).then(actionComplete)
     }
   }
