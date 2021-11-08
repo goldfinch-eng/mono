@@ -4,11 +4,11 @@ import BigNumber from "bignumber.js"
 import _ from "lodash"
 import {BlockNumber} from "web3-core"
 import {Contract, Filter} from "web3-eth-contract"
-import { KnownEventData, KnownEventName } from "../types/events"
+import {KnownEventData, KnownEventName} from "../types/events"
 import {BlockInfo} from "../utils"
 import web3 from "../web3"
 import {ERC20, getERC20, Ticker} from "./erc20"
-import { reduceToKnown } from "./events"
+import {reduceToKnown} from "./events"
 import {getDeployments, getFromBlock} from "./utils"
 
 class GoldfinchProtocol {

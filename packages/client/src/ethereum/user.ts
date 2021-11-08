@@ -13,11 +13,7 @@ import {assertNonNullable, BlockInfo, WithCurrentBlock} from "../utils"
 import {BorrowerInterface, getBorrowerContract} from "./borrower"
 import {CommunityRewardsGrant, CommunityRewardsLoaded, MerkleDistributorLoaded} from "./communityRewards"
 import {Tickers, USDC, usdcFromAtomic} from "./erc20"
-import {
-  getBalanceAsOf,
-  getPoolEventAmount,
-  mapEventsToTx,
-} from "./events"
+import {getBalanceAsOf, getPoolEventAmount, mapEventsToTx} from "./events"
 import {
   ApprovalEventType,
   APPROVAL_EVENT,

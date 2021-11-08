@@ -38,7 +38,7 @@ import {
 } from "../types/transactions"
 import {UserLoaded, UserStakingRewardsLoaded} from "./user"
 import {fetchDataFromAttributes, getPoolEvents, INTEREST_DECIMALS, ONE_YEAR_SECONDS, USDC_DECIMALS} from "./utils"
-import { getBalanceAsOf, getPoolEventAmount, mapEventsToTx } from "./events"
+import {getBalanceAsOf, getPoolEventAmount, mapEventsToTx} from "./events"
 
 class Pool {
   goldfinchProtocol: GoldfinchProtocol

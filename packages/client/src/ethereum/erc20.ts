@@ -175,14 +175,10 @@ function getNumSharesFromUsdc(usdcAmount: BigNumber, sharePrice: BigNumber): Big
 }
 
 function getUsdcFromNumShares(fiduAmount: BigNumber, sharePrice: BigNumber): BigNumber {
-  return (
-    fiduToUsdc(fiduAmount)
-      .multipliedBy(sharePrice)
-      .dividedToIntegerBy(
-        // This might be better thought of as dividing by the share-price mantissa,
-        // which happens to be the same as `FIDU_DECIMALS`.
-        FIDU_DECIMALS
-      )
+  return fiduToUsdc(fiduAmount).multipliedBy(sharePrice).dividedToIntegerBy(
+    // This might be better thought of as dividing by the share-price mantissa,
+    // which happens to be the same as `FIDU_DECIMALS`.
+    FIDU_DECIMALS
   )
 }
 

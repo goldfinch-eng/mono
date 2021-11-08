@@ -3,7 +3,14 @@ import BigNumber from "bignumber.js"
 import _ from "lodash"
 import moment from "moment"
 import {EventData} from "web3-eth-contract"
-import { DEPOSIT_MADE_EVENT, isKnownEventData, KnownEventData, KnownEventName, PoolEventType, WITHDRAWAL_MADE_EVENT } from "../types/events"
+import {
+  DEPOSIT_MADE_EVENT,
+  isKnownEventData,
+  KnownEventData,
+  KnownEventName,
+  PoolEventType,
+  WITHDRAWAL_MADE_EVENT,
+} from "../types/events"
 import {assertNumber} from "../utils"
 import web3 from "../web3"
 import {usdcFromAtomic} from "./erc20"

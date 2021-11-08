@@ -97,8 +97,9 @@ function Transactions(props: TransactionsProps) {
               }
             }
             case WITHDRAWAL_MADE_EVENT: {
-              const sum = new BigNumber(eventData.returnValues.interestWithdrawn)
-                .plus(new BigNumber(eventData.returnValues.principalWithdrawn))
+              const sum = new BigNumber(eventData.returnValues.interestWithdrawn).plus(
+                new BigNumber(eventData.returnValues.principalWithdrawn)
+              )
               return {
                 amount: sum.toString(10),
                 units: "usdc",

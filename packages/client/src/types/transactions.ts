@@ -81,7 +81,7 @@ export type CurrentTxDataByType = {
   [WITHDRAW_FROM_SENIOR_POOL_TX_TYPE]: {
     recognizableUsdcAmount: string
     fiduAmount: string
-}
+  }
   [UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE]: {
     recognizableUsdcAmount: string
     fiduAmount: string
