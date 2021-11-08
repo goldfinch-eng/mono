@@ -530,7 +530,7 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
       await sendFromUser(
         uniqueIdentity.methods.mint(version, trustedSignature.expiresAt, trustedSignature.signature),
         {
-          type: "Mint UID",
+          type: MINT_UID_TX_TYPE,
           data: {},
         },
         {value: UNIQUE_IDENTITY_MINT_PRICE}
