@@ -18,7 +18,6 @@ import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {SeniorPoolLoaded, StakingRewardsLoaded, StakingRewardsPosition, StoredPosition} from "./pool"
 import {getFromBlock, MAINNET} from "./utils"
 import {Go} from "@goldfinch-eng/protocol/typechain/web3/Go"
-import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/web3/GoldfinchConfig"
 import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/web3/UniqueIdentity"
 
 declare let window: any
