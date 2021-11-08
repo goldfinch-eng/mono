@@ -268,11 +268,8 @@ function Earn() {
   }
 
   useEffect(() => {
-    if (capitalProvider?.loaded) {
-      setEarnStore({...earnStore, capitalProvider})
-    }
-    if (backers.length > 0) {
-      setEarnStore({...earnStore, backers})
+    if (capitalProvider?.loaded || backers.length > 0) {
+      setEarnStore({...earnStore, capitalProvider, backers})
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [capitalProvider, backers])
