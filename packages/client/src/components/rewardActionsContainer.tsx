@@ -248,38 +248,42 @@ function RewardsListItem(props: RewardsListItemProps) {
   return (
     <>
       {isTabletOrMobile ? (
-        <li onClick={() => setOpen(!open)}>
-          <div className="rewards-list-item background-container clickable mobile">
-            <div className="item-header">
-              <div>{props.title}</div>
-              <OpenDetails open={open} />
-            </div>
-            <div className="item-details">
-              <div className="detail-container">
-                <span className="detail-label">Granted GFI</span>
-                <div className={`${valueDisabledClass}`}>{displayNumber(gfiFromAtomic(props.grantedGFI), 2)}</div>
+        <li>
+          <div onClick={() => setOpen(!open)}>
+            <div className="rewards-list-item background-container clickable mobile">
+              <div className="item-header">
+                <div>{props.title}</div>
+                <OpenDetails open={open} />
               </div>
-              <div className="detail-container">
-                <span className="detail-label">Claimable GFI</span>
-                <div className={`${valueDisabledClass}`}>{displayNumber(gfiFromAtomic(props.claimableGFI), 2)}</div>
+              <div className="item-details">
+                <div className="detail-container">
+                  <span className="detail-label">Granted GFI</span>
+                  <div className={`${valueDisabledClass}`}>{displayNumber(gfiFromAtomic(props.grantedGFI), 2)}</div>
+                </div>
+                <div className="detail-container">
+                  <span className="detail-label">Claimable GFI</span>
+                  <div className={`${valueDisabledClass}`}>{displayNumber(gfiFromAtomic(props.claimableGFI), 2)}</div>
+                </div>
               </div>
+              {actionButtonComponent}
             </div>
-            {actionButtonComponent}
           </div>
           {open && detailsComponent}
         </li>
       ) : (
-        <li onClick={() => setOpen(!open)}>
-          <div className="rewards-list-item table-row background-container clickable">
-            <div className="table-cell col32">{props.title}</div>
-            <div className={`table-cell col20 numeric ${valueDisabledClass}`}>
-              {displayNumber(gfiFromAtomic(props.grantedGFI), 2)}
+        <li>
+          <div onClick={() => setOpen(!open)}>
+            <div className="rewards-list-item table-row background-container clickable">
+              <div className="table-cell col32">{props.title}</div>
+              <div className={`table-cell col20 numeric ${valueDisabledClass}`}>
+                {displayNumber(gfiFromAtomic(props.grantedGFI), 2)}
+              </div>
+              <div className={`table-cell col20 numeric ${valueDisabledClass}`}>
+                {displayNumber(gfiFromAtomic(props.claimableGFI), 2)}
+              </div>
+              {actionButtonComponent}
+              <OpenDetails open={open} />
             </div>
-            <div className={`table-cell col20 numeric ${valueDisabledClass}`}>
-              {displayNumber(gfiFromAtomic(props.claimableGFI), 2)}
-            </div>
-            {actionButtonComponent}
-            <OpenDetails open={open} />
           </div>
           {open && detailsComponent}
         </li>
