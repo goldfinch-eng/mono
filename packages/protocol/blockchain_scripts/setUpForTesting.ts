@@ -54,7 +54,7 @@ type OverrideOptions = {
 }
 
 let logger: Logger
-async function main(hre: HardhatRuntimeEnvironment, options: OverrideOptions) {
+export async function setUpForTesting(hre: HardhatRuntimeEnvironment, options: OverrideOptions = {}) {
   const {getNamedAccounts, deployments, getChainId} = hre
   const {getOrNull, log} = deployments
   logger = log
