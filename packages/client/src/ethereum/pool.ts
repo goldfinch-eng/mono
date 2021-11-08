@@ -674,7 +674,6 @@ class StakingRewardsPosition {
       day: "numeric",
     })
     const origStakedAmount = new Intl.NumberFormat(undefined, {
-      minimumSignificantDigits: 1,
       notation: "compact",
       compactDisplay: "short",
     }).format(Number(fiduFromAtomic(this.stakedEvent.returnValues.amount)))
