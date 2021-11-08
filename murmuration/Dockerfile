@@ -1,20 +1,29 @@
 # Dockerfile for building the `https://murmuration.goldfinch.finance` application
 # deployed to Google Compute Engine.
 
-FROM node:12-alpine3.13
+FROM node:12.18.3
 
 RUN wget https://github.com/ethereum/solidity/releases/download/v0.6.8/solc-static-linux -O /bin/solc && chmod +x /bin/solc
 
+# Install Java 8 (cf. https://stackoverflow.com/a/49914935). This is needed by the Firestore emulator.
+RUN apt-get update && apt-get -y --fix-missing install software-properties-common
+RUN \
+  echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | debconf-set-selections && \
+  add-apt-repository -y ppa:webupd8team/java && \
+  apt-get update && \
+  apt-get install -y oracle-java8-installer --allow-unauthenticated && \
+  rm -rf /var/lib/apt/lists/* && \
+  rm -rf /var/cache/oracle-jdk8-installer
+ENV JAVA_HOME /usr/lib/jvm/java-8-oracle
+
 # Install Google Cloud SDK (cf. https://stackoverflow.com/a/28372329)
-RUN apk add --update curl python2 which bash
 RUN curl https://dl.google.com/dl/cloudsdk/release/google-cloud-sdk.tar.gz > /tmp/google-cloud-sdk.tar.gz
 RUN mkdir -p /usr/local/gcloud \
   && tar -C /usr/local/gcloud -xvf /tmp/google-cloud-sdk.tar.gz \
   && /usr/local/gcloud/google-cloud-sdk/install.sh --quiet
 ENV PATH $PATH:/usr/local/gcloud/google-cloud-sdk/bin
 
-# Install Java 8 and the Firestore emulator, which is necessary for running cloud functions locally.
-RUN apk --update --no-cache add openjdk8-jre
+# Install the Firestore emulator, which is necessary for running Google Cloud functions locally.
 RUN gcloud components install cloud-firestore-emulator beta --quiet
 
 WORKDIR /goldfinch-protocol
