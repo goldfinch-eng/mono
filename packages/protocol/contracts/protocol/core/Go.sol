@@ -18,31 +18,6 @@ contract Go is IGo, BaseUpgradeablePausable {
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
 
-  uint256 public constant ID_VERSION_0 = 0;
-  uint256 public constant ID_VERSION_1 = 1;
-  uint256 public constant ID_VERSION_2 = 2;
-  uint256 public constant ID_VERSION_3 = 3;
-  uint256 public constant ID_VERSION_4 = 4;
-  uint256 public constant ID_VERSION_5 = 5;
-  uint256 public constant ID_VERSION_6 = 6;
-  uint256 public constant ID_VERSION_7 = 7;
-  uint256 public constant ID_VERSION_8 = 8;
-  uint256 public constant ID_VERSION_9 = 9;
-  uint256 public constant ID_VERSION_10 = 10;
-  uint256[] public versions = [
-    ID_VERSION_0,
-    ID_VERSION_1,
-    ID_VERSION_2,
-    ID_VERSION_3,
-    ID_VERSION_4,
-    ID_VERSION_5,
-    ID_VERSION_6,
-    ID_VERSION_7,
-    ID_VERSION_8,
-    ID_VERSION_9,
-    ID_VERSION_10
-  ];
-
   event GoldfinchConfigUpdated(address indexed who, address configAddress);
 
   function initialize(
@@ -65,33 +40,54 @@ contract Go is IGo, BaseUpgradeablePausable {
   }
 
   /**
-   * @notice Returns whether the provided account is go-listed for use of the Goldfinch protocol.
+   * @notice Returns whether the provided account is go-listed for use of the Goldfinch protocol
+   * for any of the UID token types.
    * This status is defined as: whether `balanceOf(account, id)` on the UniqueIdentity
    * contract is non-zero (where `id` is a supported token id on UniqueIdentity), falling back to the
    * account's status on the legacy go-list maintained on GoldfinchConfig.
    * @param account The account whose go status to obtain
    * @return The account's go status
    */
-  function go(address account) public view override returns (bool) {
+  function go(address account) external override returns (bool) {
     require(account != address(0), "Zero address is not go-listed");
-    address[] memory accounts = new address[](1);
-    accounts[0] = account;
-    uint256[] memory balances = IUniqueIdentity0612(uniqueIdentity).balanceOfBatch(accounts, versions);
-    for (uint256 i = 0; i < balances.length; ++i) {
-      if (balances[i] > 0) {
+    for (uint256 i = 0; i < allIdTypes.length; ++i) {
+      uint256 idTypeBalance = IUniqueIdentity0612(uniqueIdentity).balanceOf(account, allIdTypes[i]);
+      if (idTypeBalance > 0) {
         return true;
       }
     }
     return config.goList(account);
   }
 
-  function go(address account, uint256[] memory onlyVersions) public view override returns (bool) {
+  /**
+   * @notice Returns whether the provided account is go-listed for use of the Goldfinch protocol
+   * for defined UID token types
+   * @param account The account whose go status to obtain
+   * @param onlyIdTypes Array of id types to check balances
+   * @return The account's go status
+   */
+  function goOnlyIdTypes(address account, uint256[] memory onlyIdTypes) external override returns (bool) {
     require(account != address(0), "Zero address is not go-listed");
-    address[] memory accounts = new address[](1);
-    accounts[0] = account;
-    uint256[] memory balances = IUniqueIdentity0612(uniqueIdentity).balanceOfBatch(accounts, onlyVersions);
-    for (uint256 i = 0; i < balances.length; ++i) {
-      if (balances[i] > 0) {
+    for (uint256 i = 0; i < onlyIdTypes.length; ++i) {
+      uint256 idTypeBalance = IUniqueIdentity0612(uniqueIdentity).balanceOf(account, onlyIdTypes[i]);
+      if (idTypeBalance > 0) {
+        return true;
+      }
+    }
+    return config.goList(account);
+  }
+
+  /**
+   * @notice Returns whether the provided account is go-listed for use of the SeniorPool on the Goldfinch protocol.
+   * @param account The account whose go status to obtain
+   * @return The account's go status
+   */
+  function goSeniorPool(address account) external override returns (bool) {
+    require(account != address(0), "Zero address is not go-listed");
+    uint256[2] memory seniorPoolIdTypes = [ID_TYPE_0, ID_TYPE_1];
+    for (uint256 i = 0; i < seniorPoolIdTypes.length; ++i) {
+      uint256 idTypeBalance = IUniqueIdentity0612(uniqueIdentity).balanceOf(account, seniorPoolIdTypes[i]);
+      if (idTypeBalance > 0) {
         return true;
       }
     }

@@ -236,6 +236,7 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
     // We're migrating from 1e8 decimal precision of interest rates to 1e18
     // So multiply the legacy rates by 1e10 to normalize them.
     uint256 interestMigrationFactor = 1e10;
+    uint256[] memory allowedUIDTypes;
     address pool = getGoldfinchFactory().createMigratedPool(
       borrower,
       20, // junior fee percent
@@ -243,7 +244,8 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
       clToMigrate.interestApr().mul(interestMigrationFactor),
       clToMigrate.paymentPeriodInDays(),
       clToMigrate.termInDays(),
-      clToMigrate.lateFeeApr()
+      clToMigrate.lateFeeApr(),
+      allowedUIDTypes
     );
 
     IV2CreditLine newCl = IMigratedTranchedPool(pool).migrateCreditLineToV2(

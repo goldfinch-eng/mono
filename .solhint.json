@@ -141,6 +141,11 @@
           "grant": ["nonReentrant", "whenNotPaused", "onlyDistributor"],
           "getReward": []
         },
+        "**/Go.sol:Go": {
+          "go": [],
+          "goOnlyIdTypes": [],
+          "goSeniorPool": []
+        },
         "**/MerkleDistributor.sol:MerkleDistributor": {
           "_setGrantAccepted": [],
           "acceptGrant": ["onlyGrantRecipient"]

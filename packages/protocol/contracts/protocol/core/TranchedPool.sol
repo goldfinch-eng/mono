@@ -107,7 +107,12 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
 
     createdAt = block.timestamp;
     juniorFeePercent = _juniorFeePercent;
-    allowedUIDTypes = _allowedUIDTypes;
+    if (_allowedUIDTypes.length == 0) {
+      uint256[1] memory defaultAllowedUIDTypes = [config.getGo().ID_TYPE_0()];
+      allowedUIDTypes = defaultAllowedUIDTypes;
+    } else {
+      allowedUIDTypes = _allowedUIDTypes;
+    }
 
     _setupRole(LOCKER_ROLE, _borrower);
     _setupRole(LOCKER_ROLE, owner);
@@ -116,6 +121,10 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     // Unlock self for infinite amount
     bool success = config.getUSDC().approve(address(this), uint256(-1));
     require(success, "Failed to approve USDC");
+  }
+
+  function setAllowedIdTypes(uint256[] calldata ids) public onlyAdmin {
+    allowedUIDTypes = ids;
   }
 
   /**
@@ -134,10 +143,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     TrancheInfo storage trancheInfo = getTrancheInfo(tranche);
     require(trancheInfo.lockedUntil == 0, "Tranche has been locked");
     require(amount > 0, "Must deposit more than zero");
-    require(
-      config.getGo().go(msg.sender, allowedUIDTypes || [config.getGo().ID_VERSION_0]),
-      "This address has not been go-listed"
-    );
+    require(config.getGo().goOnlyIdTypes(msg.sender, allowedUIDTypes), "This address has not been go-listed");
 
     trancheInfo.principalDeposited = trancheInfo.principalDeposited.add(amount);
     IPoolTokens.MintParams memory params = IPoolTokens.MintParams({tranche: tranche, principalAmount: amount});
@@ -511,10 +517,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
 
     require(amount <= netRedeemable, "Invalid redeem amount");
     require(currentTime() > trancheInfo.lockedUntil, "Tranche is locked");
-    require(
-      config.getGo().go(msg.sender, allowedUIDTypes || [config.getGo().ID_VERSION_0]),
-      "This address has not been go-listed"
-    );
+    require(config.getGo().goOnlyIdTypes(msg.sender, allowedUIDTypes), "This address has not been go-listed");
 
     // If the tranche has not been locked, ensure the deposited amount is correct
     if (trancheInfo.lockedUntil == 0) {

@@ -509,7 +509,7 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
       user,
     })
     const uniqueIdentity = goldfinchProtocol.getContract<UniqueIdentityContract>("UniqueIdentity")
-    const version = await uniqueIdentity.methods.ID_VERSION_0().call()
+    const version = await uniqueIdentity.methods.ID_TYPE_0().call()
     await sendFromUser(
       uniqueIdentity.methods.mint(version, trustedSignature.expiresAt, trustedSignature.signature),
       {
