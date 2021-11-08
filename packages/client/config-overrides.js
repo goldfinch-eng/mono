@@ -99,6 +99,7 @@ const murmuration = () => (config) => {
       // was in sharing the contracts definitions in `packages/protocol/deployments/all_dev.json` and in
       // maintaining the chain state held in memory by the hardhat node process.)
       "/_chain": "http://localhost:8545",
+      "/_gcloudfunctions": "http://localhost:5001/goldfinch-frontends-dev/us-central1",
     }
   }
   return config

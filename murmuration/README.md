@@ -54,8 +54,12 @@ To use the client with the murmuration blockchain, you will need to add a custom
 
 # Debugging
 
+## Remote
+
 When viewing the Compute Engine instance group in the Google Cloud console (i.e. https://console.cloud.google.com/compute/instanceGroups/list?project=goldfinch-frontends-dev), you can SSH into an instance, from within your web browser.
 
 Once you've SSH'ed into an instance, you can see what Docker processes are running via `docker ps`. You can view the logs for a Docker process via `docker logs $CONTAINER_ID`, where `$CONTAINER_ID` is the container id value for the `us.gcr.io/goldfinch-frontends-dev/goldfinch-protocol/murmuration-goldfinch-finance:latest` image shown in the `docker ps` output. These logs are essential for understanding the outcome of the `npm run start:murmuration` command!
 
-To run the docker instance locally from the root run `docker build . -f ./murmuration/Dockerfile -t murmuration:latest`
+## Local
+
+To build the Docker image locally, run this command from the repo root: `docker build . -f ./murmuration/Dockerfile -t murmuration:latest`
