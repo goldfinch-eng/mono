@@ -136,9 +136,7 @@ function Transactions(props: TransactionsProps) {
     const etherscanSubdomain = getEtherscanSubdomain(network)
 
     let typeLabel: string = tx.name
-    let typeCssClass = ""
-    let icon = iconCircleCheckLg
-    let amountPrefix = ""
+    let direction: "inflow" | "outflow" | null = null
     let amount = ""
     let amountSuffix = ""
     let statusCssClass = ""
@@ -165,24 +163,18 @@ function Transactions(props: TransactionsProps) {
         case SUPPLY_AND_STAKE_TX_TYPE:
         case SUPPLY_TX_TYPE:
         case PAYMENT_TX_TYPE:
-          typeCssClass = "inflow"
-          icon = iconCircleUpLg
-          amountPrefix = "+"
+          direction = "inflow"
           amount = displayDollars((tx.data as CurrentTx<typeof tx.name>["data"]).amount)
           break
         case WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE:
         case BORROW_TX_TYPE: {
-          typeCssClass = "outflow"
-          icon = iconCircleDownLg
-          amountPrefix = "-"
+          direction = "outflow"
           amount = displayDollars((tx.data as CurrentTx<typeof tx.name>["data"]).amount)
           break
         }
         case WITHDRAW_FROM_SENIOR_POOL_TX_TYPE:
         case UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE: {
-          typeCssClass = "outflow"
-          icon = iconCircleDownLg
-          amountPrefix = "-"
+          direction = "outflow"
           amount = displayDollars((tx.data as CurrentTx<typeof tx.name>["data"]).recognizableUsdcAmount)
           break
         }
@@ -216,23 +208,13 @@ function Transactions(props: TransactionsProps) {
         case SUPPLY_TX_TYPE:
         case PAYMENT_TX_TYPE:
         case SUPPLY_AND_STAKE_TX_TYPE:
-          typeCssClass = "inflow"
-          icon = iconCircleUpLg
-          amountPrefix = "+"
+          direction = "inflow"
           break
         case WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE:
         case BORROW_TX_TYPE:
         case WITHDRAW_FROM_SENIOR_POOL_TX_TYPE:
         case UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE:
-          typeCssClass = "outflow"
-          icon = iconCircleDownLg
-          amountPrefix = "-"
-          break
-        case CLAIM_TX_TYPE:
-        case ACCEPT_TX_TYPE:
-        case STAKE_TX_TYPE:
-        case MINT_UID_TX_TYPE:
-        case UNSTAKE_TX_NAME:
+          direction = "outflow"
           break
         case USDC_APPROVAL_TX_TYPE:
         case FIDU_APPROVAL_TX_TYPE:
@@ -244,6 +226,11 @@ function Transactions(props: TransactionsProps) {
           }
           break
         }
+        case CLAIM_TX_TYPE:
+        case ACCEPT_TX_TYPE:
+        case STAKE_TX_TYPE:
+        case MINT_UID_TX_TYPE:
+        case UNSTAKE_TX_NAME:
         case INTEREST_COLLECTED_TX_NAME:
         case PRINCIPAL_COLLECTED_TX_NAME:
         case RESERVE_FUNDS_COLLECTED_TX_NAME:
@@ -253,6 +240,26 @@ function Transactions(props: TransactionsProps) {
         default:
           assertUnreachable(tx)
       }
+    }
+
+    let typeCssClass = ""
+    let icon = iconCircleCheckLg
+    let amountPrefix = ""
+    switch (direction) {
+      case "inflow":
+        typeCssClass = "inflow"
+        icon = iconCircleUpLg
+        amountPrefix = "+"
+        break
+      case "outflow":
+        typeCssClass = "outflow"
+        icon = iconCircleDownLg
+        amountPrefix = "-"
+        break
+      case null:
+        break
+      default:
+        assertUnreachable(direction)
     }
 
     if (tx.status === "error") {
