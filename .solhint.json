@@ -144,7 +144,8 @@
         "**/PoolRewards.sol:PoolRewards": {
           "allocateRewards": ["onlyPool"],
           "setPoolTokenAccRewardsPerPrincipalDollarAtMint": [],
-          "withdraw": []
+          "withdraw": [],
+          "withdrawMultiple": []
         },
         "**/MerkleDistributor.sol:MerkleDistributor": {
           "_setGrantAccepted": [],

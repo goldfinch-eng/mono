@@ -121,12 +121,22 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
 
     // Note: If a TranchedPool is oversubscribed, reward allocation's scale down proportionately.
 
-    uint256 claimableRewards = usdcToAtomic(tokenInfo.principalAmount)
-      .mul(pools[tokenInfo.pool].accRewardsPerPrincipalDollar.sub(tokens[tokenId].accRewardsPerPrincipalDollarAtMint))
-      .sub(tokens[tokenId].rewardsClaimed.mul(mantissa()))
-      .div(mantissa());
+    uint256 diffOfAccRewardsPerPrincipalDollar = pools[tokenInfo.pool].accRewardsPerPrincipalDollar.sub(
+      tokens[tokenId].accRewardsPerPrincipalDollarAtMint
+    );
+    uint256 rewardsClaimed = tokens[tokenId].rewardsClaimed.mul(mantissa());
 
-    return claimableRewards;
+    /*
+      equation for token claimable rewards:
+        token.principalAmount
+        * (pool.accRewardsPerPrincipalDollar - token.accRewardsPerPrincipalDollarAtMint)
+        - token.rewardsClaimed
+    */
+
+    return
+      usdcToAtomic(tokenInfo.principalAmount).mul(diffOfAccRewardsPerPrincipalDollar).sub(rewardsClaimed).div(
+        mantissa()
+      );
   }
 
   /**
