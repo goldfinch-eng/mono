@@ -9,7 +9,7 @@ import _ from "lodash"
 import {BlockNumber} from "web3-core"
 import {Contract} from "web3-eth-contract"
 import {NetworkConfig} from "../App"
-import { KnownEventData, PoolEventType } from "../types/events"
+import {KnownEventData, PoolEventType} from "../types/events"
 import {reduceToKnown} from "./events"
 import {Pool, SeniorPool} from "./pool"
 
