@@ -15,6 +15,7 @@ import {
   ZERO,
   decodeLogs,
   getFirstLog,
+  getCurrentTimestamp,
 } from "./testHelpers"
 import {interestAprAsBN, TRANCHES, MAX_UINT, OWNER_ROLE, PAUSER_ROLE} from "../blockchain_scripts/deployHelpers"
 import {expectEvent, time} from "@openzeppelin/test-helpers"
@@ -24,10 +25,11 @@ const {deployments, artifacts} = hre
 import {ecsign} from "ethereumjs-util"
 const CreditLine = artifacts.require("CreditLine")
 import {getApprovalDigest, getWallet} from "./permitHelpers"
-import {TranchedPoolInstance} from "../typechain/truffle"
+import {GoldfinchConfigInstance, TranchedPoolInstance, TestUniqueIdentityInstance} from "../typechain/truffle"
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
 import {JuniorTrancheLocked, DepositMade} from "../typechain/truffle/MigratedTranchedPool"
 import {assertNonNullable} from "@goldfinch-eng/utils"
+import {mint} from "./uniqueIdentityHelpers"
 
 const RESERVE_FUNDS_COLLECTED_EVENT = "ReserveFundsCollected"
 const PAYMENT_APPLIED_EVENT = "PaymentApplied"
@@ -66,10 +68,11 @@ describe("TranchedPool", () => {
   let owner,
     borrower,
     otherPerson,
-    goldfinchConfig,
+    goldfinchConfig: GoldfinchConfigInstance,
     usdc,
     poolTokens,
     goldfinchFactory,
+    uniqueIdentity: TestUniqueIdentityInstance,
     creditLine,
     treasury,
     configHelper
@@ -98,7 +101,7 @@ describe("TranchedPool", () => {
   const testSetup = deployments.createFixture(async ({deployments}) => {
     // Just to be crystal clear
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;({usdc, goldfinchConfig, goldfinchFactory, poolTokens} = await deployAllContracts(deployments))
+    ;({usdc, goldfinchConfig, goldfinchFactory, poolTokens, uniqueIdentity} = await deployAllContracts(deployments))
     await goldfinchConfig.bulkAddToGoList([owner, borrower, otherPerson])
     await goldfinchConfig.setTreasuryReserve(treasury)
     await erc20Transfer(usdc, [otherPerson], usdcVal(10000), owner)
@@ -140,6 +143,7 @@ describe("TranchedPool", () => {
       expect(seniorTranche.principalDeposited).to.bignumber.eq("0")
       expect(seniorTranche.lockedUntil).to.bignumber.eq("0")
 
+      expect(await tranchedPool.allowedUIDTypes(0)).to.bignumber.equal(new BN(0))
       expect(await tranchedPool.creditLine()).to.eq(creditLine.address)
     })
   })
@@ -316,6 +320,39 @@ describe("TranchedPool", () => {
 
   describe("deposit", async () => {
     describe("junior tranche", async () => {
+      it("fails if not legacy golisted and does not have allowed UID token", async () => {
+        await tranchedPool.setAllowedUIDTypes([])
+        await goldfinchConfig.bulkRemoveFromGoList([owner])
+        await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(1), {from: owner})).to.be.rejectedWith(
+          /This address has not been go-listed/
+        )
+      })
+
+      it("fails if not legacy golisted and has incorrect UID token", async () => {
+        await goldfinchConfig.bulkRemoveFromGoList([owner])
+        await uniqueIdentity.setSupportedUIDTypes([1, 2, 3], [true, true, true])
+        const uidTokenId = new BN(3)
+        const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
+        await mint(hre, uniqueIdentity, uidTokenId, expiresAt, new BN(0), owner, undefined, owner)
+        await tranchedPool.setAllowedUIDTypes([1])
+
+        await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(1), {from: owner})).to.be.rejectedWith(
+          /This address has not been go-listed/
+        )
+      })
+
+      it("if granted allowed UID token, does not fail for go-listed error", async () => {
+        await uniqueIdentity.setSupportedUIDTypes([1, 2, 3], [true, true, true])
+        const uidTokenId = new BN(1)
+        const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
+        await mint(hre, uniqueIdentity, uidTokenId, expiresAt, new BN(0), owner, undefined, owner)
+        await tranchedPool.setAllowedUIDTypes([1])
+
+        await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(1), {from: owner})).to.be.not.rejectedWith(
+          /This address has not been go-listed/
+        )
+      })
+
       it("does not allow deposits when pool is locked", async () => {
         await tranchedPool.lockJuniorCapital({from: borrower})
         await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(10))).to.be.rejectedWith(/Tranche has been locked/)
@@ -544,6 +581,53 @@ describe("TranchedPool", () => {
 
   describe("withdraw", async () => {
     describe("validations", async () => {
+      it("fails if not legacy golisted and does not have allowed UID token", async () => {
+        await tranchedPool.setAllowedUIDTypes([])
+        const receipt = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(1), {from: owner})
+        await goldfinchConfig.bulkRemoveFromGoList([owner])
+        const logs = decodeLogs<DepositMade>(receipt.receipt.rawLogs, tranchedPool, "DepositMade")
+        const firstLog = getFirstLog(logs)
+        const tokenId = firstLog.args.tokenId
+
+        await expect(tranchedPool.withdraw(tokenId, usdcVal(0), {from: owner})).to.be.rejectedWith(
+          /This address has not been go-listed/
+        )
+      })
+
+      it("fails if not legacy golisted and has incorrect UID token", async () => {
+        await uniqueIdentity.setSupportedUIDTypes([1, 2, 3], [true, true, true])
+        const uidTokenId = new BN(3)
+        const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
+        await mint(hre, uniqueIdentity, uidTokenId, expiresAt, new BN(0), owner, undefined, owner)
+        await tranchedPool.setAllowedUIDTypes([1])
+        const receipt = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(1), {from: owner})
+        await goldfinchConfig.bulkRemoveFromGoList([owner])
+        const logs = decodeLogs<DepositMade>(receipt.receipt.rawLogs, tranchedPool, "DepositMade")
+        const firstLog = getFirstLog(logs)
+        const tokenId = firstLog.args.tokenId
+
+        await expect(tranchedPool.withdraw(tokenId, usdcVal(0), {from: owner})).to.be.rejectedWith(
+          /This address has not been go-listed/
+        )
+      })
+
+      it("if granted allowed UID token, does not fail for go-listed error", async () => {
+        await uniqueIdentity.setSupportedUIDTypes([1, 2, 3], [true, true, true])
+        const uidTokenId = new BN(1)
+        const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
+        await mint(hre, uniqueIdentity, uidTokenId, expiresAt, new BN(0), owner, undefined, owner)
+        await tranchedPool.setAllowedUIDTypes([1])
+        const receipt = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(1), {from: owner})
+        await goldfinchConfig.bulkRemoveFromGoList([owner])
+        const logs = decodeLogs<DepositMade>(receipt.receipt.rawLogs, tranchedPool, "DepositMade")
+        const firstLog = getFirstLog(logs)
+        const tokenId = firstLog.args.tokenId
+
+        await expect(tranchedPool.withdraw(tokenId, usdcVal(0), {from: owner})).to.be.not.rejectedWith(
+          /This address has not been go-listed/
+        )
+      })
+
       it("does not allow you to withdraw if you don't own the pool token", async () => {
         const receipt = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(10), {from: owner})
         const logs = decodeLogs<DepositMade>(receipt.receipt.rawLogs, tranchedPool, "DepositMade")
@@ -919,6 +1003,16 @@ describe("TranchedPool", () => {
           principalWithdrawn: seniorDeposit.mul(new BN(20)).div(new BN(100)),
         })
       })
+    })
+  })
+
+  describe("setAllowedUIDTypes", () => {
+    it("sets array of id types", async () => {
+      await tranchedPool.setAllowedUIDTypes([1])
+      expect(await tranchedPool.allowedUIDTypes(0)).to.bignumber.equal(new BN(1))
+      await tranchedPool.setAllowedUIDTypes([1, 2])
+      expect(await tranchedPool.allowedUIDTypes(0)).to.bignumber.equal(new BN(1))
+      expect(await tranchedPool.allowedUIDTypes(1)).to.bignumber.equal(new BN(2))
     })
   })
 

@@ -401,6 +401,7 @@ const createPoolWithCreditLine = async ({
     paymentPeriodInDays,
     termInDays,
     lateFeeApr,
+    [],
     {from: thisOwner}
   )
   const event = result.logs[result.logs.length - 1]

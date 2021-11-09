@@ -123,7 +123,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     require(success, "Failed to approve USDC");
   }
 
-  function setAllowedIdTypes(uint256[] calldata ids) public onlyAdmin {
+  function setAllowedUIDTypes(uint256[] calldata ids) public onlyAdmin {
     allowedUIDTypes = ids;
   }
 
@@ -511,13 +511,13 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     uint256 tokenId,
     uint256 amount
   ) internal returns (uint256 interestWithdrawn, uint256 principalWithdrawn) {
+    require(config.getGo().goOnlyIdTypes(msg.sender, allowedUIDTypes), "This address has not been go-listed");
     require(amount > 0, "Must withdraw more than zero");
     (uint256 interestRedeemable, uint256 principalRedeemable) = redeemableInterestAndPrincipal(trancheInfo, tokenInfo);
     uint256 netRedeemable = interestRedeemable.add(principalRedeemable);
 
     require(amount <= netRedeemable, "Invalid redeem amount");
     require(currentTime() > trancheInfo.lockedUntil, "Tranche is locked");
-    require(config.getGo().goOnlyIdTypes(msg.sender, allowedUIDTypes), "This address has not been go-listed");
 
     // If the tranche has not been locked, ensure the deposited amount is correct
     if (trancheInfo.lockedUntil == 0) {

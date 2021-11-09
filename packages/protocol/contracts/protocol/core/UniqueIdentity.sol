@@ -55,7 +55,7 @@ contract UniqueIdentity is ERC1155PresetPauserUpgradeable, IUniqueIdentity {
 
   function setSupportedUIDTypes(uint256[] calldata ids, bool[] calldata values) public onlyAdmin {
     for (uint256 i = 0; i < ids.length; ++i) {
-      supportedUIDTypes[i] = values[i];
+      supportedUIDTypes[ids[i]] = values[i];
     }
   }
 
