@@ -114,6 +114,12 @@ function App() {
   const communityRewards = consistent?.[2]
   const merkleDistributor = consistent?.[3]
 
+  if (process.env.REACT_APP_ISTHISWORKING) {
+    console.log("It is working")
+  } else {
+    console.error("It is not working")
+  }
+
   // TODO We should use `useFromSameBlock()` again to make gfi, stakingRewards, communityRewards,
   // merkleDistributor, and pool be from same block.
 
