@@ -42,7 +42,7 @@ import {
 } from "../types/events"
 import {GFILoaded} from "./gfi"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
-import {SeniorPoolLoaded, StakingRewards, StakingRewardsLoaded, StakingRewardsPosition, StoredPosition} from "./pool"
+import {SeniorPoolLoaded, StakingRewardsLoaded, StakingRewardsPosition, StoredPosition} from "./pool"
 import {
   ACCEPT_TX_TYPE,
   BORROW_TX_TYPE,
