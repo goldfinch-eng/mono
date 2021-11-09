@@ -3,7 +3,6 @@ import {
   MerkleDistributorGrantInfo,
 } from "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types"
 import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
-import {Go} from "@goldfinch-eng/protocol/typechain/web3/Go"
 import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/web3/GoldfinchConfig"
 import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
@@ -60,6 +59,7 @@ import {
   FIDU_APPROVAL_TX_TYPE,
 } from "../types/transactions"
 import {getFromBlock, MAINNET} from "./utils"
+import {Go} from "@goldfinch-eng/protocol/typechain/web3/Go"
 import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/web3/UniqueIdentity"
 
 declare let window: any
