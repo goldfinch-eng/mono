@@ -313,6 +313,18 @@ describe("PoolRewards", () => {
         ).to.be.rejectedWith(/PoolAddress must equal PoolToken pool address/)
       })
     })
+
+    context("Mint price has already been set", () => {
+      it("should error", async () => {
+        // TODO @sanjay integration test to make sure that if a accRewardsPerPrincipalDollarAtMint is not zero, it cannot be overriden again
+      })
+    })
+
+    context("Successfully updates", () => {
+      it("should succeed", async () => {
+        // TODO @sanjay integration test to make sure that after a second drawdown, you cannot successfully set the mint price
+      })
+    })
   })
 
   describe("tranchedPool interest repayment", () => {
