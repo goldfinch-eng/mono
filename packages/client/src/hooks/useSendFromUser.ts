@@ -1,5 +1,6 @@
 import {useContext} from "react"
 import {AppContext} from "../App"
+import {CurrentTxDataByType, PendingCurrentTx, TxType} from "../types/transactions"
 import {assertError, assertNonNullable} from "../utils"
 import web3 from "../web3"
 
@@ -12,12 +13,18 @@ type SendTransactionOptions = {
   rejectOnError: boolean
 }
 
+export type TxData<T extends TxType> = {
+  type: T
+  data: CurrentTxDataByType[T]
+  gasless?: boolean
+}
+
 function useSendFromUser() {
   const {refreshCurrentBlock, user, networkMonitor} = useContext(AppContext)
 
-  async function sendTransaction(
+  async function sendTransaction<T extends TxType>(
     unsentAction,
-    txData,
+    txData: TxData<T>,
     {gasPrice, value}: {gasPrice: string; value: string | undefined},
     options: SendTransactionOptions
   ) {
@@ -31,24 +38,24 @@ function useSendFromUser() {
     if (txData.gasless) {
       // We need to assign it a temporary id, so we can update it if we get an error back
       // (since we only get a txid if relay call succeed)
-      txData = networkMonitor.addPendingTX({status: "pending", ...txData})
+      const pendingTx = networkMonitor.addPendingTX(txData)
       return new Promise<void>((resolve, reject) => {
         unsentAction()
           .then((res) => {
             if (res.status === "success") {
               const txResult = JSON.parse(res.result)
-              networkMonitor.watch(txResult.txHash, txData, () => {
+              networkMonitor.watch(txResult.txHash, pendingTx, () => {
                 refreshCurrentBlock()
                 resolve()
               })
             } else {
-              networkMonitor.markTXErrored(txData, new Error(res.message))
+              networkMonitor.markTXErrored(pendingTx, new Error(res.message))
               resolve()
             }
           })
           .catch((err: unknown) => {
             assertError(err)
-            networkMonitor.markTXErrored(txData, err)
+            networkMonitor.markTXErrored(pendingTx, err)
 
             if (options.rejectOnError) {
               reject(err)
@@ -60,6 +67,7 @@ function useSendFromUser() {
     }
 
     return new Promise<void>((resolve, reject) => {
+      let working: PendingCurrentTx<T> | undefined
       unsentAction
         .send({
           from: user.address,
@@ -67,19 +75,27 @@ function useSendFromUser() {
           value,
         })
         .once("sent", (_) => {
-          txData = networkMonitor.addPendingTX(txData)
+          working = networkMonitor.addPendingTX(txData)
         })
         .once("transactionHash", (transactionHash) => {
-          txData = networkMonitor.watch(transactionHash, txData, () => {
-            refreshCurrentBlock()
-            resolve()
-          })
+          if (working) {
+            working = networkMonitor.watch(transactionHash, working, () => {
+              refreshCurrentBlock()
+              resolve()
+            })
+          } else {
+            reject("Expected transaction to have been sent.")
+          }
         })
         .on("error", (err) => {
-          if (err.code === -32603) {
-            err.message = "Something went wrong with your transaction."
+          if (working) {
+            if (err.code === -32603) {
+              err.message = "Something went wrong with your transaction."
+            }
+            networkMonitor.markTXErrored(working, err)
+          } else {
+            reject("Expected transaction to have been sent.")
           }
-          networkMonitor.markTXErrored(txData, err)
 
           if (options.rejectOnError) {
             reject(err)
@@ -90,7 +106,11 @@ function useSendFromUser() {
     })
   }
 
-  return (unsentAction, txData, options: UseSendFromUserOptions = {}) => {
+  return function sendFromUser<U extends TxType>(
+    unsentAction,
+    txData: TxData<U>,
+    options: UseSendFromUserOptions = {}
+  ) {
     return web3.eth.getGasPrice().then(
       async (gasPrice) => {
         try {

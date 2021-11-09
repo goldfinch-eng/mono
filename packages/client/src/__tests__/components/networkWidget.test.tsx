@@ -33,7 +33,7 @@ function renderNetworkWidget(sessionData, address) {
         user={store.user}
         network={store.network}
         currentErrors={[]}
-        currentTXs={[]}
+        currentTxs={[]}
         connectionComplete={() => {}}
       />
     </AppContext.Provider>

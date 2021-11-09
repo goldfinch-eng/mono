@@ -1,10 +1,18 @@
 import BigNumber from "bignumber.js"
 import {useState} from "react"
 import {AppContext} from "../App"
-import {getNumSharesFromUsdc, minimumNumber, usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
+import {
+  getNumSharesFromUsdc,
+  getUsdcAmountNetOfProtocolFee,
+  getUsdcFromNumShares,
+  minimumNumber,
+  usdcFromAtomic,
+  usdcToAtomic,
+} from "../ethereum/erc20"
 import {fiduFromAtomic} from "../ethereum/fidu"
 import {gfiFromAtomic, gfiInDollars, gfiToDollarsAtomic} from "../ethereum/gfi"
 import {CapitalProvider, PoolData, StakingRewardsPosition} from "../ethereum/pool"
+import {UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE, WITHDRAW_FROM_SENIOR_POOL_TX_TYPE} from "../types/transactions"
 import useDebounce from "../hooks/useDebounce"
 import useNonNullContext from "../hooks/useNonNullContext"
 import useSendFromUser from "../hooks/useSendFromUser"
@@ -25,8 +33,11 @@ type UnstakeTokensAccumulator = {
 
 type WithdrawInfo = {
   fiduAmount: BigNumber
+  recognizableUsdcAmount: BigNumber
 }
-type UnstakeAndWithdrawInfo = UnstakeTokensAccumulator
+type UnstakeAndWithdrawInfo = UnstakeTokensAccumulator & {
+  recognizableUsdcAmount: BigNumber
+}
 
 type WithdrawalInfo =
   | {
@@ -57,6 +68,11 @@ function WithdrawalForm(props: WithdrawalFormProps) {
   const debouncedSetTransactionAmount = useDebounce(setTransactionAmount, 200)
 
   function getWithdrawalInfo(withdrawalAmount: BigNumber): WithdrawalInfo {
+    // We prefer to perform withdrawals in FIDU, rather than USDC, as this ensures we can withdraw
+    // unstaked FIDU completely and exit staked positions completely. If we performed the withdrawal
+    // in USDC, it would be possible for unstaked FIDU not to be withdrawan completely, or for staked
+    // positions not to be exited completely, if the share price were to change between the time this
+    // logic executes and the time the transaction were executed.
     const withdrawalFiduAmount = getNumSharesFromUsdc(withdrawalAmount, props.capitalProvider.sharePrice)
 
     if (!withdrawalFiduAmount.gt(0)) {
@@ -75,7 +91,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
 
     // If user holds any unstaked FIDU, withdraw that first. Prioritizing unstaked FIDU in this
     // way is intended to be user-friendly, because unstaked FIDU is not earning rewards.
-    let withdraw: WithdrawInfo | undefined
+    let withdraw: Omit<WithdrawInfo, "recognizableUsdcAmount"> | undefined
     if (props.capitalProvider.shares.parts.notStaked.gt(0)) {
       const fiduAmount = BigNumber.min(withdrawalFiduAmountRemaining, props.capitalProvider.shares.parts.notStaked)
 
@@ -92,7 +108,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
     // they continue to earn vested (i.e. claimable) rewards. Also, note that among the (unstakeable) positions
     // whose rewards vesting schedule has completed, there is no reason to prefer exiting one position versus
     // another, as all such positions earn rewards at the same rate.
-    let unstakeAndWithdraw: UnstakeAndWithdrawInfo | undefined
+    let unstakeAndWithdraw: Omit<UnstakeAndWithdrawInfo, "recognizableUsdcAmount"> | undefined
     if (withdrawalFiduAmountRemaining.gt(0)) {
       const positions = props.capitalProvider.unstakeablePositions
       const sorted = positions
@@ -147,12 +163,44 @@ function WithdrawalForm(props: WithdrawalFormProps) {
       throw new Error("Failed to prepare withdrawals of desired FIDU amount.")
     }
 
+    // We perform the withdrawal transactions in FIDU, but want to be able to describe the
+    // transaction (e.g. in the recent transactions shown in the network widget) in USDC
+    // amounts that are recognizable to the user, i.e. that accord with the USDC amount
+    // they entered into the form. So here we define the "recognizable" USDC amount corresponding
+    // to the withdraw transaction and the unstake-and-withdraw transaction, ensuring that
+    // they sum to the `withdrawalAmount` (which is what the user has entered into the form),
+    // which would not otherwise be guaranteed, because converting from USDC -> FIDU -> USDC
+    // could lose precision due to integer division. Note also that in defining these recognizable
+    // amounts, we don't reflect the fee taken by the protocol; that deduction will be reflected
+    // only in displaying the transactions in their "historical" form.
     if (withdraw && unstakeAndWithdraw) {
-      return {withdraw, unstakeAndWithdraw}
+      const recognizableUsdcAmountWithdraw = getUsdcFromNumShares(withdraw.fiduAmount, props.capitalProvider.sharePrice)
+      return {
+        withdraw: {
+          ...withdraw,
+          recognizableUsdcAmount: recognizableUsdcAmountWithdraw,
+        },
+        unstakeAndWithdraw: {
+          ...unstakeAndWithdraw,
+          recognizableUsdcAmount: withdrawalAmount.minus(recognizableUsdcAmountWithdraw),
+        },
+      }
     } else if (withdraw && !unstakeAndWithdraw) {
-      return {withdraw, unstakeAndWithdraw}
+      return {
+        withdraw: {
+          ...withdraw,
+          recognizableUsdcAmount: withdrawalAmount,
+        },
+        unstakeAndWithdraw,
+      }
     } else if (!withdraw && unstakeAndWithdraw) {
-      return {withdraw, unstakeAndWithdraw}
+      return {
+        withdraw,
+        unstakeAndWithdraw: {
+          ...unstakeAndWithdraw,
+          recognizableUsdcAmount: withdrawalAmount,
+        },
+      }
     } else {
       throw new Error("Failed to identify withdraw and/or unstake-and-withdraw transaction info.")
     }
@@ -170,8 +218,11 @@ function WithdrawalForm(props: WithdrawalFormProps) {
         ? sendFromUser(
             pool.contract.methods.withdrawInFidu(info.withdraw.fiduAmount.toString(10)),
             {
-              type: "Withdraw",
-              fiduAmount: fiduFromAtomic(info.withdraw.fiduAmount),
+              type: WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
+              data: {
+                recognizableUsdcAmount: usdcFromAtomic(info.withdraw.recognizableUsdcAmount),
+                fiduAmount: fiduFromAtomic(info.withdraw.fiduAmount),
+              },
             },
             {
               rejectOnError: true,
@@ -191,9 +242,15 @@ function WithdrawalForm(props: WithdrawalFormProps) {
                   info.unstakeAndWithdraw.tokens.map((info) => info.fiduAmount.toString(10))
                 ),
             {
-              type: "Unstake and Withdraw",
-              tokens: info.unstakeAndWithdraw.tokens.map((info) => info.tokenId),
-              fiduAmounts: info.unstakeAndWithdraw.tokens.map((info) => fiduFromAtomic(info.fiduAmount)),
+              type: UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
+              data: {
+                recognizableUsdcAmount: usdcFromAtomic(info.unstakeAndWithdraw.recognizableUsdcAmount),
+                fiduAmount: fiduFromAtomic(info.unstakeAndWithdraw.fiduSum),
+                tokens: info.unstakeAndWithdraw.tokens.map((info) => ({
+                  id: info.tokenId,
+                  fiduAmount: fiduFromAtomic(info.fiduAmount),
+                })),
+              },
             }
           )
         : Promise.resolve()
@@ -268,7 +325,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
                 {"You will "}
                 <span className="font-bold">
                   {"receive "}
-                  {displayDollars(usdcFromAtomic(withdrawalAmount.multipliedBy(995).dividedToIntegerBy(1000)), 2)}
+                  {displayDollars(usdcFromAtomic(getUsdcAmountNetOfProtocolFee(withdrawalAmount)), 2)}
                 </span>
                 {" net of protocol reserves and "}
                 <span className="font-bold">
