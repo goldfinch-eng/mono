@@ -7,13 +7,16 @@ import {displayDollars, displayPercent} from "../utils"
 import {iconOutArrow} from "./icons"
 import {PoolData} from "../ethereum/pool"
 import {BigNumber} from "bignumber.js"
+import {isGraphSeniorPoolData, GraphSeniorPoolData} from "../graphql/utils"
 
 interface PoolStatusProps {
-  poolData?: PoolData
+  poolData?: PoolData | GraphSeniorPoolData
 }
 
 function PoolStatus({poolData}: PoolStatusProps) {
   const {goldfinchConfig} = useContext(AppContext)
+  let loaded = isGraphSeniorPoolData(poolData) || poolData?.loaded
+  let poolAddress = isGraphSeniorPoolData(poolData) ? poolData.address : poolData?.pool?.address
 
   function deriveRows() {
     let defaultRate: BigNumber | undefined
@@ -21,7 +24,8 @@ function PoolStatus({poolData}: PoolStatusProps) {
     let totalLoansOutstanding: string | undefined
     let capacityRemaining: BigNumber | undefined
     let maxPoolCapacity = goldfinchConfig.totalFundsLimit
-    if (poolData?.loaded) {
+
+    if (poolData && loaded) {
       defaultRate = poolData.defaultRate
       poolBalance = usdcFromAtomic(poolData.totalPoolAssets)
       totalLoansOutstanding = usdcFromAtomic(poolData.totalLoansOutstanding)
@@ -38,7 +42,7 @@ function PoolStatus({poolData}: PoolStatusProps) {
   }
 
   return (
-    <div className={`pool-status background-container ${poolData?.loaded ? "" : "placeholder"}`}>
+    <div className={`pool-status background-container ${loaded ? "" : "placeholder"}`}>
       <h2>Pool Status</h2>
       <InfoSection rows={deriveRows()} />
       <RecentRepayments />
@@ -46,7 +50,7 @@ function PoolStatus({poolData}: PoolStatusProps) {
         <a href={"https://dune.xyz/goldfinch/goldfinch"} target="_blank" rel="noopener noreferrer">
           Dashboard<span className="outbound-link">{iconOutArrow}</span>
         </a>
-        <a href={`https://etherscan.io/address/${poolData?.pool.address}`} target="_blank" rel="noopener noreferrer">
+        <a href={`https://etherscan.io/address/${poolAddress}`} target="_blank" rel="noopener noreferrer">
           Pool<span className="outbound-link">{iconOutArrow}</span>
         </a>
       </div>
