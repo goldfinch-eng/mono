@@ -343,10 +343,9 @@ class TranchedPool {
 
   getIsClosedToUser(userAddress: string, participants: string[]): boolean {
     return (
-      !!userAddress &&
       !!this.participationLimits &&
       participants.length >= this.participationLimits.numParticipants &&
-      !participants.includes(userAddress)
+      !(userAddress && participants.includes(userAddress))
     )
   }
 
