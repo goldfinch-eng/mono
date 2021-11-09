@@ -7,6 +7,7 @@ import {User, UserMerkleDistributor} from "../../../ethereum/user"
 import {StakingRewards} from "../../../ethereum/pool"
 import {
   blockchain,
+  blockInfo,
   communityRewardsABI,
   erc20ABI,
   gfiABI,
@@ -15,6 +16,7 @@ import {
   stakingRewardsABI,
 } from "./constants"
 import * as utils from "../../../ethereum/utils"
+import * as userModule from "../../../ethereum/user"
 
 interface RewardsMockData {
   hasStakingRewards: boolean
@@ -55,7 +57,15 @@ export function mockUserInitializationContractCalls(
   stakingRewardsMock?: RewardsMockData | undefined
 ) {
   user.fetchTxs = (usdc, pool, currentBlock) => {
-    return [[], [], []]
+    return Promise.resolve([
+      [],
+      [],
+      {poolEvents: [], poolTxs: []},
+      [],
+      {stakedEvents: {currentBlock: blockInfo, value: []}, stakingRewardsTxs: []},
+      [],
+      [],
+    ])
   }
   user.fetchGolistStatus = (address, currentBlock) => {
     return {
@@ -117,18 +127,18 @@ export function mockUserInitializationContractCalls(
   let callTotalVestedAt
   let callPositionCurrentEarnRate
   if (stakingRewardsMock?.hasStakingRewards) {
-    let positionsRes = stakingRewardsMock.positionsRes || [
+    const positionsRes = stakingRewardsMock.positionsRes || [
       "50000000000000000000000",
       ["0", "0", "0", "0", "1641391907", "1672927907"],
       "1000000000000000000",
       "0",
     ]
-    let earnedSince = stakingRewardsMock.earnedSince || "0"
-    let totalVestedAt = stakingRewardsMock.totalVestedAt || "0"
-    let positionCurrentEarnRate = stakingRewardsMock.positionCurrentEarnRate || "750000000000000"
-    let currentTimestamp = stakingRewardsMock.currentTimestamp || "1640783491"
-    let stakedEvent = {returnValues: {amount: "50000000000000000000000"}}
-    let granted = stakingRewardsMock.granted || earnedSince
+    const earnedSince = stakingRewardsMock.earnedSince || "0"
+    const totalVestedAt = stakingRewardsMock.totalVestedAt || "0"
+    const positionCurrentEarnRate = stakingRewardsMock.positionCurrentEarnRate || "750000000000000"
+    const currentTimestamp = stakingRewardsMock.currentTimestamp || "1640783491"
+    const stakedEvent = {returnValues: {tokenId: "1", amount: "50000000000000000000000"}}
+    const granted = stakingRewardsMock.granted || earnedSince
 
     callTokenOfOwnerByIndexMock = mock({
       blockchain,
@@ -156,7 +166,7 @@ export function mockUserInitializationContractCalls(
         to: stakingRewards.address,
         api: stakingRewardsABI,
         method: "earnedSinceLastCheckpoint",
-        params: ["1"],
+        params: "1",
         return: earnedSince,
       },
     })
@@ -171,8 +181,16 @@ export function mockUserInitializationContractCalls(
         return: totalVestedAt,
       },
     })
-    stakingRewards.getStakedEvent = (address, tokenId, number) => {
-      return stakedEvent
+    user.fetchTxs = (usdc, pool, currentBlock) => {
+      return Promise.resolve([
+        [],
+        [],
+        {poolEvents: [], poolTxs: []},
+        [],
+        {stakedEvents: {currentBlock: blockInfo, value: [stakedEvent]}, stakingRewardsTxs: []},
+        [],
+        [],
+      ])
     }
     callPositionCurrentEarnRate = mock({
       blockchain,
@@ -255,7 +273,7 @@ export function mockUserInitializationContractCalls(
         return: claimable,
       },
     })
-    stakingRewards.goldfinchProtocol.queryEvent = (contract, event, filter, extra) => {
+    stakingRewards.goldfinchProtocol.queryEvents = (contract, event, filter, extra) => {
       return acceptedGrantRes
     }
   }
