@@ -239,6 +239,13 @@ describe("Go", () => {
       })
     })
 
+    context("goOnlyIdTypes", () => {
+      // @TODO
+    })
+    context("goSeniorPool", () => {
+      // @TODO
+    })
+
     context("paused", () => {
       beforeEach(async () => {
         const tokenId = new BN(0)
