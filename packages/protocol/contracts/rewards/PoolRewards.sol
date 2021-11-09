@@ -66,7 +66,10 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
    * @param _interestPaymentAmount The amount of total dollars the interest payment, expects 10^6 value
    */
   function allocateRewards(uint256 _interestPaymentAmount) external override onlyPool {
-    _allocateRewards(_interestPaymentAmount);
+    // note: do not use a require statment because that will TranchedPool kill execution
+    if (_interestPaymentAmount > 0) {
+      _allocateRewards(_interestPaymentAmount);
+    }
   }
 
   /**
@@ -102,7 +105,11 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
    * @param tokenId Pool token id
    */
   function setPoolTokenAccRewardsPerPrincipalDollarAtMint(address poolAddress, uint256 tokenId) external override {
+    require(_msgSender() == config.poolTokensAddress(), "Invalid sender!");
     require(config.getPoolTokens().validPool(poolAddress), "Invalid pool!");
+    if (tokens[tokenId].accRewardsPerPrincipalDollarAtMint != 0) {
+      return;
+    }
     IPoolTokens poolTokens = config.getPoolTokens();
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
     require(poolAddress == tokenInfo.pool, "PoolAddress must equal PoolToken pool address");
@@ -162,10 +169,13 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
 
     address poolAddr = tokenInfo.pool;
-    require(poolAddr != address(0), "Invalid tokenId");
+    require(config.getPoolTokens().validPool(poolAddr), "Invalid pool!");
 
     BaseUpgradeablePausable pool = BaseUpgradeablePausable(poolAddr);
     require(!pool.paused(), "Pool withdraw paused");
+
+    ITranchedPool tranchedPool = ITranchedPool(poolAddr);
+    require(!tranchedPool.creditLine().isLate(), "Pool is late on payments");
 
     tokens[tokenId].rewardsClaimed = poolTokenRewardsClaimed.add(totalClaimableRewards);
     safeERC20Transfer(config.getGFI(), poolTokens.ownerOf(tokenId), totalClaimableRewards);
@@ -185,6 +195,7 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
     uint256 newGrossRewards = _calculateNewGrossGFIRewardsForInterestAmount(_interestPaymentAmount);
 
     ITranchedPool pool = ITranchedPool(_poolAddress);
+    // TODO @sanjay - loop through juniorTranche slices
     ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
     PoolRewardsInfo storage _poolInfo = pools[_poolAddress];
 

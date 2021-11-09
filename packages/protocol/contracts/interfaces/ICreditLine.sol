@@ -16,7 +16,7 @@ interface ICreditLine {
 
   function lateFeeApr() external view returns (uint256);
 
-  function isLate(uint256 timestamp) external view returns (bool);
+  function isLate() external view returns (bool);
 
   // Accounting variables
   function balance() external view returns (uint256);

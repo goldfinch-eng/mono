@@ -217,8 +217,8 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     return block.timestamp;
   }
 
-  function isLate(uint256 timestamp) external view override returns (bool) {
-    return _isLate(timestamp);
+  function isLate() external view override returns (bool) {
+    return _isLate(block.timestamp);
   }
 
   function _isLate(uint256 timestamp) internal view returns (bool) {
