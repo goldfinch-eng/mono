@@ -205,7 +205,6 @@ export async function setupPartiallyClaimedStakingReward(goldfinchProtocol, seni
 export async function getDefaultClasses(goldfinchProtocol) {
   const gfi = new GFI(goldfinchProtocol)
   await gfi.initialize(blockInfo)
-
   const stakingRewards = new StakingRewards(goldfinchProtocol)
   mockStakingRewardsContractCalls(stakingRewards)
   await stakingRewards.initialize(blockInfo)
