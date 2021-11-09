@@ -7,6 +7,7 @@ import "hardhat-deploy"
 import "hardhat-gas-reporter"
 import "hardhat-contract-sizer" // npx hardhat size-contracts
 import "@tenderly/hardhat-tenderly"
+import "./blockchain_scripts/migrations/decodeMultisend"
 
 import config from "./hardhat.config.base"
 

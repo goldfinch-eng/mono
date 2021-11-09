@@ -11,6 +11,7 @@ import {
 } from "../ethereum/communityRewards"
 import {gfiFromAtomic, gfiInDollars, GFILoaded, gfiToDollarsAtomic} from "../ethereum/gfi"
 import {StakingRewardsLoaded, StakingRewardsPosition} from "../ethereum/pool"
+import {ACCEPT_TX_TYPE, CLAIM_TX_TYPE} from "../types/transactions"
 import useSendFromUser from "../hooks/useSendFromUser"
 import {
   Column,
@@ -443,7 +444,8 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
   function handleClaim(rewards: CommunityRewardsLoaded | StakingRewardsLoaded, tokenId: string) {
     assertNonNullable(rewards)
     return sendFromUser(rewards.contract.methods.getReward(tokenId), {
-      type: "Claim",
+      type: CLAIM_TX_TYPE,
+      data: {},
     })
   }
 
@@ -460,8 +462,10 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
         info.proof
       ),
       {
-        type: "Accept",
-        index: info.index,
+        type: ACCEPT_TX_TYPE,
+        data: {
+          index: info.index,
+        },
       }
     )
   }

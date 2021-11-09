@@ -17,7 +17,7 @@ const ONE_DAY_SECONDS = 60 * 60 * 24
 // This is not a secret, so it's ok to hardcode this
 const INFURA_PROJECT_ID = "d8e13fc4893e4be5aae875d94fee67b7"
 
-const setCORSHeaders = (req: any, res: any) => {
+const setCORSHeaders = (req: Request, res: Response) => {
   const allowedOrigins = (getConfig(functions).kyc.allowed_origins || "").split(",")
   const origin = req.headers.origin || ""
   if (originAllowed(allowedOrigins, origin)) {
@@ -179,7 +179,7 @@ const verifySignature = async (req: Request, res: Response): Promise<SignatureVe
   return {res: undefined, address}
 }
 
-export const genRequestHandler = (config: RequestHandlerConfig) => {
+export const genRequestHandler = (config: RequestHandlerConfig): functions.HttpsFunction => {
   return functions.https.onRequest(
     wrapWithSentry(async (req, res): Promise<Response> => {
       if (config.cors) {

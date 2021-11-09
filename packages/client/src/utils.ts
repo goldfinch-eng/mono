@@ -127,3 +127,7 @@ export function getBlockInfo(block: AsyncReturnType<typeof getCurrentBlock>): Bl
     timestamp: block.timestamp,
   }
 }
+
+export type WithCurrentBlock<T> = T & {currentBlock: BlockInfo}
+
+export type ArrayItemType<T> = T extends Array<infer U> ? U : never

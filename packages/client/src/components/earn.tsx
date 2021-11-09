@@ -1,10 +1,10 @@
-import {PoolCreated} from "@goldfinch-eng/protocol/typechain/web3/GoldfinchFactory"
 import BigNumber from "bignumber.js"
 import React, {useContext, useEffect, useState} from "react"
 import {useHistory} from "react-router-dom"
 import {AppContext} from "../App"
 import {useEarn} from "../contexts/EarnContext"
 import {usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
+import {POOL_CREATED_EVENT} from "../types/events"
 import {GFILoaded} from "../ethereum/gfi"
 import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
 import {
@@ -258,12 +258,12 @@ function usePoolBackers({
 
   useEffect(() => {
     async function loadTranchedPools(goldfinchProtocol: GoldfinchProtocol, user: User, currentBlock: BlockInfo) {
-      let poolEvents = (await goldfinchProtocol.queryEvents(
+      let poolEvents = await goldfinchProtocol.queryEvents(
         "GoldfinchFactory",
-        ["PoolCreated"],
+        [POOL_CREATED_EVENT],
         undefined,
         currentBlock.number
-      )) as unknown as PoolCreated[]
+      )
       let poolAddresses = poolEvents.map((e) => e.returnValues.pool)
       setPoolsAddresses({
         loaded: true,
