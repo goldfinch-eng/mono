@@ -340,7 +340,6 @@ function getGrantVestingSchedule(
   end: {absolute: boolean; value: number} | null,
   currentTimestamp: number | undefined
 ): string {
-  console.log(end, "end")
   if (end) {
     const displayCliff = getGrantVestingCliffDisplay(cliffLength)
     const displayInterval = getGrantVestingIntervalDisplay(vestingInterval)
