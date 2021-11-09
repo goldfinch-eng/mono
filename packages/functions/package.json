@@ -15,7 +15,7 @@
     "ci_functions_config_set_dev": "npm run ci_functions_config_set -- --project=dev",
     "ci_functions_config_set_prod": "npm run ci_functions_config_set -- --project=prod",
     "pre-push": "",
-    "pre-commit": "lint-staged",
+    "pre-commit": "npx lint-staged",
     "pre-deploy": "npx ts-node scripts/preDeploy.ts && npm install"
   },
   "engines": {
