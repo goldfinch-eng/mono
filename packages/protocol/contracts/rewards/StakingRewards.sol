@@ -165,6 +165,8 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   ///   rewards in the balance of this contract, then we shouldn't be giving them out.
   /// @return Amount of rewards denominated in `rewardsToken().decimals()`.
   function additionalRewardsPerTokenSinceLastUpdate(uint256 time) internal view returns (uint256) {
+    require(time >= lastUpdateTime, "Invalid end time for range");
+
     if (totalLeveragedStakedSupply == 0) {
       return 0;
     }
