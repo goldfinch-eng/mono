@@ -8,10 +8,11 @@ import {croppedAddress, roundDownPenny, secondsSinceEpoch} from "../utils"
 import _ from "lodash"
 import {ContractEventLog} from "@goldfinch-eng/protocol/typechain/web3/types"
 import web3 from "../web3"
-import {usdcFromAtomic} from "./erc20"
+import {usdcFromAtomic, usdcToAtomic} from "./erc20"
 import {CONFIG_KEYS} from "@goldfinch-eng/protocol/blockchain_scripts/configKeys"
 import {SeniorPool as SeniorPoolContract} from "@goldfinch-eng/protocol/typechain/web3/SeniorPool"
 import {getCreditDesk} from "./creditDesk"
+import {EventData} from "web3-eth-contract"
 
 const ZERO = new BigNumber(0)
 const ONE = new BigNumber(1)
@@ -126,10 +127,24 @@ class TranchedPool {
   isMigrated!: boolean
   isPaused!: boolean
 
+  participationLimits: {
+    numParticipants: number
+    supplyPerParticipant: BigNumber
+  } | null
+
   constructor(address: string, goldfinchProtocol: GoldfinchProtocol) {
     this.address = address
     this.goldfinchProtocol = goldfinchProtocol
     this.contract = this.goldfinchProtocol.getContract<TranchedPoolContract>("TranchedPool", address)
+
+    if (address === process.env.REACT_APP_CAURIS_POOL_ADDRESS) {
+      this.participationLimits = {
+        numParticipants: 80,
+        supplyPerParticipant: new BigNumber(usdcToAtomic("30000")),
+      }
+    } else {
+      this.participationLimits = null
+    }
   }
 
   async initialize() {
@@ -312,6 +327,43 @@ class TranchedPool {
     const result = {}
     blockTimestamps.map((t) => (result[t.blockNumber] = t.timestamp))
     return result
+  }
+
+  async getUniqueParticipants(): Promise<string[]> {
+    return this.contract
+      .getPastEvents("DepositMade", {
+        filter: undefined,
+        fromBlock: undefined,
+        toBlock: "pending",
+      })
+      .then((events: EventData[]) => {
+        return _.uniq(events.map((eventData: EventData) => eventData.returnValues.owner))
+      })
+  }
+
+  getIsClosedToUser(userAddress: string, uniqueParticipants: string[]): boolean {
+    return (
+      !!userAddress &&
+      !!this.participationLimits &&
+      uniqueParticipants.length >= this.participationLimits.numParticipants &&
+      !uniqueParticipants.includes(userAddress)
+    )
+  }
+
+  getIsFull(userAddress: string, uniqueParticipants: string[] | undefined): boolean | undefined {
+    if (this.remainingCapacity().isZero()) {
+      return true
+    } else {
+      if (this.participationLimits) {
+        if (uniqueParticipants) {
+          return this.getIsClosedToUser(userAddress, uniqueParticipants)
+        } else {
+          return
+        }
+      } else {
+        return false
+      }
+    }
   }
 
   /**

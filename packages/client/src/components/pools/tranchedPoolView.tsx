@@ -1,10 +1,18 @@
-import {useContext, useState} from "react"
+import {useContext, useEffect, useState} from "react"
 import {useParams} from "react-router-dom"
 import ConnectionNotice from "../connectionNotice"
 import {AppContext} from "../../App"
 import InvestorNotice from "../investorNotice"
 import {PoolBacker, PoolState, TokenInfo, TranchedPool, TRANCHES} from "../../ethereum/tranchedPool"
-import {assertError, croppedAddress, displayDollars, displayPercent, roundDownPenny, roundUpPenny} from "../../utils"
+import {
+  assertBoolean,
+  assertError,
+  croppedAddress,
+  displayDollars,
+  displayPercent,
+  roundDownPenny,
+  roundUpPenny,
+} from "../../utils"
 import InfoSection from "../infoSection"
 import {usdcFromAtomic, usdcToAtomic} from "../../ethereum/erc20"
 import {iconDownArrow, iconOutArrow, iconUpArrow} from "../icons"
@@ -23,12 +31,15 @@ import {DepositMade} from "@goldfinch-eng/protocol/typechain/web3/TranchedPool"
 import moment from "moment"
 import {useBacker, useTranchedPool} from "../../hooks/useTranchedPool"
 import {useSession} from "../../hooks/useSignIn"
-import _ from "lodash"
+import isUndefined from "lodash/isUndefined"
+import compact from "lodash/compact"
 import DefaultGoldfinchClient from "../../hooks/useGoldfinchClient"
 import NdaPrompt from "../ndaPrompt"
 import {useFetchNDA} from "../../hooks/useNDA"
 import {decimalPlaces} from "../../ethereum/utils"
 import EtherscanLink from "../etherscanLink"
+
+class ParticipantsLimitError extends Error {}
 
 function useRecentPoolTransactions({tranchedPool}: {tranchedPool?: TranchedPool}): Record<string, any>[] {
   let recentTransactions = useAsync(() => tranchedPool && tranchedPool.recentTransactions(), [tranchedPool])
@@ -58,18 +69,52 @@ function useUniqueJuniorSuppliers({tranchedPool}: {tranchedPool?: TranchedPool})
   return uniqueSuppliers
 }
 
-interface TranchedPoolActionFormProps {
+interface TranchedPoolDepositFormProps {
   backer: PoolBacker
   tranchedPool: TranchedPool
   actionComplete: () => void
   closeForm: () => void
+  isFull: boolean
 }
 
-function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeForm}: TranchedPoolActionFormProps) {
-  const {user, goldfinchConfig, usdc, network, networkMonitor, setSessionData} = useNonNullContext(AppContext)
+function TranchedPoolDepositForm({
+  backer,
+  tranchedPool,
+  actionComplete,
+  closeForm,
+  isFull,
+}: TranchedPoolDepositFormProps) {
+  const {
+    user,
+    goldfinchConfig,
+    usdc,
+    network,
+    networkMonitor,
+    setSessionData,
+    uniqParticipantsByTranchedPoolAddress,
+    setUniqParticipantsByTranchedPoolAddress,
+  } = useNonNullContext(AppContext)
   const {gatherPermitSignature} = useERC20Permit()
   const sendFromUser = useSendFromUser()
   const session = useSession()
+
+  async function enforceParticipantsLimit(): Promise<void> {
+    const limits = tranchedPool.participationLimits
+    if (limits) {
+      // Refresh the list of unique participants, since it could have grown since the tranched
+      // pool was loaded.
+      return tranchedPool.getUniqueParticipants().then((uniqParticipants) => {
+        setUniqParticipantsByTranchedPoolAddress({
+          ...uniqParticipantsByTranchedPoolAddress,
+          [tranchedPool.address]: uniqParticipants,
+        })
+
+        if (tranchedPool.getIsClosedToUser(user.address, uniqParticipants)) {
+          throw new ParticipantsLimitError("Pool participants limit reached.")
+        }
+      })
+    }
+  }
 
   async function action({transactionAmount, fullName}) {
     try {
@@ -93,52 +138,77 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
     const depositAmount = usdcToAtomic(transactionAmount)
     // USDC permit doesn't work on mainnet forking due to mismatch between hardcoded chain id in the contract
     if (process.env.REACT_APP_HARDHAT_FORK) {
-      return sendFromUser(tranchedPool.contract.methods.deposit(TRANCHES.Junior, depositAmount), {
-        type: "Deposit",
-        amount: transactionAmount,
-      }).then(actionComplete)
+      return enforceParticipantsLimit()
+        .then(() =>
+          sendFromUser(tranchedPool.contract.methods.deposit(TRANCHES.Junior, depositAmount), {
+            type: "Deposit",
+            amount: transactionAmount,
+          })
+        )
+        .then(actionComplete)
+        .catch((err: unknown) => {
+          if (err instanceof ParticipantsLimitError) {
+            console.log("Participants limit reached after initial loading but before sending transaction.")
+          } else {
+            throw err
+          }
+        })
     } else {
       let signatureData = await gatherPermitSignature({
         token: usdc,
         value: new BigNumber(depositAmount),
         spender: tranchedPool.address,
       })
-      return sendFromUser(
-        tranchedPool.contract.methods.depositWithPermit(
-          TRANCHES.Junior,
-          signatureData.value,
-          signatureData.deadline,
-          signatureData.v,
-          signatureData.r,
-          signatureData.s
-        ),
-        {
-          type: "Deposit",
-          amount: transactionAmount,
-        }
-      ).then(actionComplete)
+      return enforceParticipantsLimit()
+        .then(() =>
+          sendFromUser(
+            tranchedPool.contract.methods.depositWithPermit(
+              TRANCHES.Junior,
+              signatureData.value,
+              signatureData.deadline,
+              signatureData.v,
+              signatureData.r,
+              signatureData.s
+            ),
+            {
+              type: "Deposit",
+              amount: transactionAmount,
+            }
+          )
+        )
+        .then(actionComplete)
+        .catch((err: unknown) => {
+          if (err instanceof ParticipantsLimitError) {
+            console.log("Participants limit reached after initial loading but before sending transaction.")
+          } else {
+            throw err
+          }
+        })
     }
   }
 
   function renderForm({formMethods}) {
-    let warningMessage, disabled
     const remainingJuniorCapacity = tranchedPool?.remainingJuniorCapacity()
     const backerLimitPercent = new BigNumber(
       tranchedPool.metadata?.backerLimit ?? process.env.REACT_APP_GLOBAL_BACKER_LIMIT ?? "1"
     )
     const backerLimit = tranchedPool.creditLine.limit.multipliedBy(backerLimitPercent)
-    const maxTxAmountInDollars = usdcFromAtomic(
-      BigNumber.min(backerLimit, remainingJuniorCapacity, user.usdcBalance, goldfinchConfig.transactionLimit)
+    let maxTxAmountInDollars = BigNumber.min(
+      backerLimit,
+      remainingJuniorCapacity,
+      user.usdcBalance,
+      goldfinchConfig.transactionLimit
     )
-
-    if (user.usdcBalance.eq(0)) {
-      disabled = true
-      warningMessage = (
-        <p className="form-message">
-          You don't have any USDC to deposit. You'll need to first send USDC to your address to deposit.
-        </p>
-      )
+    if (tranchedPool.participationLimits) {
+      maxTxAmountInDollars = BigNumber.min(maxTxAmountInDollars, tranchedPool.participationLimits.supplyPerParticipant)
     }
+
+    const disabled = isFull || user.usdcBalance.eq(0)
+    const warningMessage = user.usdcBalance.eq(0) ? (
+      <p className="form-message">
+        You don't have any USDC to deposit. You'll need to first send USDC to your address to deposit.
+      </p>
+    ) : undefined
 
     return (
       <div className="form-inputs">
@@ -165,7 +235,7 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
           <TransactionInput
             formMethods={formMethods}
             disabled={disabled}
-            maxAmount={remainingJuniorCapacity}
+            maxAmount={maxTxAmountInDollars}
             rightDecoration={
               <button
                 className="enter-max-amount"
@@ -173,7 +243,7 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
                 onClick={() => {
                   formMethods.setValue(
                     "transactionAmount",
-                    new BigNumber(maxTxAmountInDollars).decimalPlaces(decimalPlaces, 1).toString(10),
+                    new BigNumber(usdcFromAtomic(maxTxAmountInDollars)).decimalPlaces(decimalPlaces, 1).toString(10),
                     {
                       shouldValidate: true,
                       shouldDirty: true,
@@ -247,7 +317,14 @@ function splitWithdrawAmount(
   return {tokenIds, amounts}
 }
 
-function TranchedPoolWithdrawForm({backer, tranchedPool, actionComplete, closeForm}: TranchedPoolActionFormProps) {
+interface TranchedPoolWithdrawFormProps {
+  backer: PoolBacker
+  tranchedPool: TranchedPool
+  actionComplete: () => void
+  closeForm: () => void
+}
+
+function TranchedPoolWithdrawForm({backer, tranchedPool, actionComplete, closeForm}: TranchedPoolWithdrawFormProps) {
   const {user, goldfinchConfig} = useNonNullContext(AppContext)
   const sendFromUser = useSendFromUser()
 
@@ -369,11 +446,11 @@ function ActionsContainer({
   onComplete,
   backer,
 }: {
-  tranchedPool?: TranchedPool
+  tranchedPool: TranchedPool | undefined
   onComplete: () => Promise<any>
-  backer?: PoolBacker
+  backer: PoolBacker | undefined
 }) {
-  const {user} = useContext(AppContext)
+  const {user, uniqParticipantsByTranchedPoolAddress} = useContext(AppContext)
   const [action, setAction] = useState<"" | "deposit" | "withdraw">("")
   const session = useSession()
 
@@ -394,11 +471,13 @@ function ActionsContainer({
 
   let depositAction
   let depositClass = "disabled"
+  const isFull = tranchedPool?.getIsFull(user.address, uniqParticipantsByTranchedPoolAddress?.[tranchedPool.address])
   if (
     session.status === "authenticated" &&
     backer &&
     tranchedPool?.state === PoolState.Open &&
-    tranchedPool?.remainingCapacity().gt(new BigNumber(0)) &&
+    !isUndefined(isFull) &&
+    !isFull &&
     !tranchedPool?.metadata?.disabled &&
     user.goListed
   ) {
@@ -424,12 +503,14 @@ function ActionsContainer({
   }
 
   if (action === "deposit") {
+    assertBoolean(isFull)
     return (
       <TranchedPoolDepositForm
         backer={backer!}
         tranchedPool={tranchedPool!}
         closeForm={closeForm}
         actionComplete={actionComplete}
+        isFull={isFull}
       />
     )
   } else if (action === "withdraw") {
@@ -668,7 +749,7 @@ function Overview({tranchedPool, handleDetails}: OverviewProps) {
   if (tranchedPool) {
     let backerAPY = tranchedPool.estimateJuniorAPY(tranchedPool.estimatedLeverageRatio)
     let backerBoost = backerAPY.minus(tranchedPool.creditLine.interestAprDecimal)
-    rows = _.compact([
+    rows = compact([
       {label: "Credit limit", value: displayDollars(roundUpPenny(usdcFromAtomic(tranchedPool.creditLine.limit)))},
       {label: "Base Borrower APR", value: displayPercent(tranchedPool.creditLine.interestAprDecimal)},
       !backerBoost.isZero() && {label: "Est. Backer APR boost", value: displayPercent(backerBoost)},
@@ -723,7 +804,15 @@ interface TranchedPoolViewURLParams {
 
 function TranchedPoolView() {
   const {poolAddress} = useParams<TranchedPoolViewURLParams>()
-  const {goldfinchProtocol, usdc, user, network, setSessionData} = useNonNullContext(AppContext)
+  const {
+    goldfinchProtocol,
+    usdc,
+    user,
+    network,
+    setSessionData,
+    uniqParticipantsByTranchedPoolAddress,
+    setUniqParticipantsByTranchedPoolAddress,
+  } = useNonNullContext(AppContext)
   const session = useSession()
   const [tranchedPool, refreshTranchedPool] = useTranchedPool({address: poolAddress, goldfinchProtocol})
   const [showModal, setShowModal] = useState(false)
@@ -736,6 +825,20 @@ function TranchedPoolView() {
     spender: tranchedPool?.address,
     minimum: null,
   })
+
+  useEffect(() => {
+    async function getAndSetUniqueParticipants(tranchedPool: TranchedPool) {
+      const uniqueParticipants = await tranchedPool.getUniqueParticipants()
+      setUniqParticipantsByTranchedPoolAddress({
+        ...uniqParticipantsByTranchedPoolAddress,
+        [tranchedPool.address]: uniqueParticipants,
+      })
+    }
+    if (tranchedPool?.participationLimits && !uniqParticipantsByTranchedPoolAddress[tranchedPool.address]) {
+      getAndSetUniqueParticipants(tranchedPool)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tranchedPool?.address])
 
   function openDetailsUrl() {
     window.open(tranchedPool?.metadata?.detailsUrl, "_blank")
@@ -767,41 +870,47 @@ function TranchedPoolView() {
       })
   }
 
-  let unlockForm = <></>
+  const earnMessage = tranchedPool
+    ? `Pools / ${tranchedPool.metadata?.name ?? croppedAddress(tranchedPool.address)}`
+    : "Loading..."
 
-  let earnMessage = "Loading..."
-  if (tranchedPool) {
-    earnMessage = `Pools / ${tranchedPool.metadata?.name ?? croppedAddress(tranchedPool.address)}`
-  }
-
-  if (process.env.REACT_APP_HARDHAT_FORK && !unlocked) {
-    unlockForm = (
+  const unlockForm =
+    process.env.REACT_APP_HARDHAT_FORK && !unlocked ? (
       <UnlockERC20Form erc20={usdc} onUnlock={() => (refreshUnlocked as any)()} unlockAddress={tranchedPool?.address} />
+    ) : (
+      <></>
     )
-  }
 
   const isAtMaxCapacity = tranchedPool?.remainingCapacity().isZero()
-
-  let maxCapacityNotice = <></>
-  if (isAtMaxCapacity) {
-    maxCapacityNotice = (
-      <div className="info-banner background-container">
-        <div className="message">
-          <span>This borrower pool has reached its capital limit and is closed to additional capital.</span>
-        </div>
+  const maxCapacityNotice = isAtMaxCapacity ? (
+    <div className="info-banner background-container">
+      <div className="message">
+        <span>This borrower pool has reached its capital limit and is closed to additional capital.</span>
       </div>
-    )
-  }
+    </div>
+  ) : (
+    <></>
+  )
+
+  const uniqParticipants = tranchedPool ? uniqParticipantsByTranchedPoolAddress[tranchedPool.address] : undefined
+  const isClosedToUser = uniqParticipants ? !!tranchedPool?.getIsClosedToUser(user.address, uniqParticipants) : false
+
+  const showActionsContainer = !isAtMaxCapacity || !backer?.balanceInDollars.isZero()
 
   return (
     <div className="content-section">
       <div className="page-header">{earnMessage}</div>
-      <ConnectionNotice requireUnlock={false} requireGolist={true} isPaused={!!tranchedPool?.isPaused} />
+      <ConnectionNotice
+        requireUnlock={false}
+        requireGolist={true}
+        isPaused={!!tranchedPool?.isPaused}
+        isClosedToUser={isClosedToUser}
+      />
       {unlockForm}
       {user.loaded && (
         <>
           {maxCapacityNotice}
-          {(!isAtMaxCapacity || !backer?.balanceInDollars.isZero()) && (
+          {showActionsContainer ? (
             <>
               <InvestorNotice />
               <ActionsContainer
@@ -810,7 +919,7 @@ function TranchedPoolView() {
                 onComplete={async () => refreshTranchedPool()}
               />
             </>
-          )}
+          ) : undefined}
         </>
       )}
       <CreditStatus tranchedPool={tranchedPool} />
