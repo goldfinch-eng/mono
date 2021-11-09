@@ -148,6 +148,8 @@ describe("PoolTokens", () => {
       expect(tokenInfo.interestRedeemed).to.bignumber.equal(new BN(0))
     })
 
+    // TODO: @sanjay update this with multiple drawdown scenario for making sure mint
+    // price is set higher then 0
     it("should call PoolRewards with tokenId after minting", async () => {
       const amount = usdcVal(5)
       const result = await pool.deposit(new BN(1), amount, {from: person2})
