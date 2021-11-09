@@ -329,7 +329,7 @@ class TranchedPool {
     return result
   }
 
-  async getUniqueParticipants(): Promise<string[]> {
+  async getParticipants(): Promise<string[]> {
     return this.contract
       .getPastEvents("DepositMade", {
         filter: undefined,
@@ -341,22 +341,22 @@ class TranchedPool {
       })
   }
 
-  getIsClosedToUser(userAddress: string, uniqueParticipants: string[]): boolean {
+  getIsClosedToUser(userAddress: string, participants: string[]): boolean {
     return (
       !!userAddress &&
       !!this.participationLimits &&
-      uniqueParticipants.length >= this.participationLimits.numParticipants &&
-      !uniqueParticipants.includes(userAddress)
+      participants.length >= this.participationLimits.numParticipants &&
+      !participants.includes(userAddress)
     )
   }
 
-  getIsFull(userAddress: string, uniqueParticipants: string[] | undefined): boolean | undefined {
+  getIsFull(userAddress: string, participants: string[] | undefined): boolean | undefined {
     if (this.remainingCapacity().isZero()) {
       return true
     } else {
       if (this.participationLimits) {
-        if (uniqueParticipants) {
-          return this.getIsClosedToUser(userAddress, uniqueParticipants)
+        if (participants) {
+          return this.getIsClosedToUser(userAddress, participants)
         } else {
           return
         }

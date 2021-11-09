@@ -91,8 +91,8 @@ function TranchedPoolDepositForm({
     network,
     networkMonitor,
     setSessionData,
-    uniqParticipantsByTranchedPoolAddress,
-    setUniqParticipantsByTranchedPoolAddress,
+    participantsByTranchedPoolAddress,
+    setParticipantsByTranchedPoolAddress,
   } = useNonNullContext(AppContext)
   const {gatherPermitSignature} = useERC20Permit()
   const sendFromUser = useSendFromUser()
@@ -103,13 +103,13 @@ function TranchedPoolDepositForm({
     if (limits) {
       // Refresh the list of unique participants, since it could have grown since the tranched
       // pool was loaded.
-      return tranchedPool.getUniqueParticipants().then((uniqParticipants) => {
-        setUniqParticipantsByTranchedPoolAddress({
-          ...uniqParticipantsByTranchedPoolAddress,
-          [tranchedPool.address]: uniqParticipants,
+      return tranchedPool.getParticipants().then((participants) => {
+        setParticipantsByTranchedPoolAddress({
+          ...participantsByTranchedPoolAddress,
+          [tranchedPool.address]: participants,
         })
 
-        if (tranchedPool.getIsClosedToUser(user.address, uniqParticipants)) {
+        if (tranchedPool.getIsClosedToUser(user.address, participants)) {
           throw new ParticipantsLimitError("Pool participants limit reached.")
         }
       })
@@ -450,7 +450,7 @@ function ActionsContainer({
   onComplete: () => Promise<any>
   backer: PoolBacker | undefined
 }) {
-  const {user, uniqParticipantsByTranchedPoolAddress} = useContext(AppContext)
+  const {user, participantsByTranchedPoolAddress} = useContext(AppContext)
   const [action, setAction] = useState<"" | "deposit" | "withdraw">("")
   const session = useSession()
 
@@ -471,7 +471,7 @@ function ActionsContainer({
 
   let depositAction
   let depositClass = "disabled"
-  const isFull = tranchedPool?.getIsFull(user.address, uniqParticipantsByTranchedPoolAddress?.[tranchedPool.address])
+  const isFull = tranchedPool?.getIsFull(user.address, participantsByTranchedPoolAddress?.[tranchedPool.address])
   if (
     session.status === "authenticated" &&
     backer &&
@@ -810,8 +810,8 @@ function TranchedPoolView() {
     user,
     network,
     setSessionData,
-    uniqParticipantsByTranchedPoolAddress,
-    setUniqParticipantsByTranchedPoolAddress,
+    participantsByTranchedPoolAddress,
+    setParticipantsByTranchedPoolAddress,
   } = useNonNullContext(AppContext)
   const session = useSession()
   const [tranchedPool, refreshTranchedPool] = useTranchedPool({address: poolAddress, goldfinchProtocol})
@@ -827,15 +827,15 @@ function TranchedPoolView() {
   })
 
   useEffect(() => {
-    async function getAndSetUniqueParticipants(tranchedPool: TranchedPool) {
-      const uniqueParticipants = await tranchedPool.getUniqueParticipants()
-      setUniqParticipantsByTranchedPoolAddress({
-        ...uniqParticipantsByTranchedPoolAddress,
-        [tranchedPool.address]: uniqueParticipants,
+    async function getAndSetParticipants(tranchedPool: TranchedPool) {
+      const participants = await tranchedPool.getParticipants()
+      setParticipantsByTranchedPoolAddress({
+        ...participantsByTranchedPoolAddress,
+        [tranchedPool.address]: participants,
       })
     }
-    if (tranchedPool?.participationLimits && !uniqParticipantsByTranchedPoolAddress[tranchedPool.address]) {
-      getAndSetUniqueParticipants(tranchedPool)
+    if (tranchedPool?.participationLimits && !participantsByTranchedPoolAddress[tranchedPool.address]) {
+      getAndSetParticipants(tranchedPool)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tranchedPool?.address])
@@ -892,8 +892,8 @@ function TranchedPoolView() {
     <></>
   )
 
-  const uniqParticipants = tranchedPool ? uniqParticipantsByTranchedPoolAddress[tranchedPool.address] : undefined
-  const isClosedToUser = uniqParticipants ? !!tranchedPool?.getIsClosedToUser(user.address, uniqParticipants) : false
+  const participants = tranchedPool ? participantsByTranchedPoolAddress[tranchedPool.address] : undefined
+  const isClosedToUser = participants ? !!tranchedPool?.getIsClosedToUser(user.address, participants) : false
 
   const showActionsContainer = !isAtMaxCapacity || !backer?.balanceInDollars.isZero()
 

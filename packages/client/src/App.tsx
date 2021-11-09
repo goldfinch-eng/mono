@@ -46,7 +46,7 @@ interface GeolocationData {
 
 export type SetSessionFn = (data: SessionData | undefined) => void
 
-export type UniqParticipantsByTranchedPoolAddress = {[address: string]: string[]}
+export type ParticipantsByTranchedPoolAddress = {[address: string]: string[]}
 
 export interface GlobalState {
   pool?: SeniorPool
@@ -62,8 +62,8 @@ export interface GlobalState {
   setGeolocationData?: (geolocationData: GeolocationData) => void
   sessionData?: SessionData
   setSessionData?: SetSessionFn
-  uniqParticipantsByTranchedPoolAddress?: UniqParticipantsByTranchedPoolAddress
-  setUniqParticipantsByTranchedPoolAddress?: (newVal: UniqParticipantsByTranchedPoolAddress) => void
+  participantsByTranchedPoolAddress?: ParticipantsByTranchedPoolAddress
+  setParticipantsByTranchedPoolAddress?: (newVal: ParticipantsByTranchedPoolAddress) => void
 }
 
 declare let window: any
@@ -86,8 +86,8 @@ function App() {
     SESSION_DATA_KEY,
     {}
   )
-  const [uniqParticipantsByTranchedPoolAddress, setUniqParticipantsByTranchedPoolAddress] =
-    useState<UniqParticipantsByTranchedPoolAddress>({})
+  const [participantsByTranchedPoolAddress, setParticipantsByTranchedPoolAddress] =
+    useState<ParticipantsByTranchedPoolAddress>({})
 
   useEffect(() => {
     setupWeb3()
@@ -200,8 +200,8 @@ function App() {
     setGeolocationData,
     sessionData,
     setSessionData,
-    uniqParticipantsByTranchedPoolAddress,
-    setUniqParticipantsByTranchedPoolAddress,
+    participantsByTranchedPoolAddress,
+    setParticipantsByTranchedPoolAddress,
   }
 
   return (

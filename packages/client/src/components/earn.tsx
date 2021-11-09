@@ -1,7 +1,7 @@
 import React, {useState, useEffect, useContext} from "react"
 import {useHistory} from "react-router-dom"
 import {CapitalProvider, fetchCapitalProviderData, PoolData, SeniorPool} from "../ethereum/pool"
-import {AppContext, UniqParticipantsByTranchedPoolAddress} from "../App"
+import {AppContext, ParticipantsByTranchedPoolAddress} from "../App"
 import {usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
 import {displayDollars, displayPercent, roundDownPenny} from "../utils"
 import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
@@ -157,11 +157,11 @@ function TranchedPoolCardSkeleton() {
 
 export function TranchedPoolCard({
   poolBacker,
-  uniqParticipants,
+  participants,
   disabled,
 }: {
   poolBacker: PoolBacker
-  uniqParticipants: string[] | undefined
+  participants: string[] | undefined
   disabled: boolean
 }) {
   const history = useHistory()
@@ -173,7 +173,7 @@ export function TranchedPoolCard({
 
   const disabledClass = disabled ? "disabled" : ""
   const balanceDisabledClass = poolBacker?.tokenInfos.length === 0 ? "disabled" : ""
-  const isFull = tranchedPool.getIsFull(poolBacker.address, uniqParticipants)
+  const isFull = tranchedPool.getIsFull(poolBacker.address, participants)
   const badge = isUndefined(isFull) ? undefined : isFull ? (
     <Badge text="Full" variant="gray" fixedWidth />
   ) : (
@@ -205,13 +205,13 @@ export function TranchedPoolCard({
 function usePoolBackers({
   goldfinchProtocol,
   user,
-  uniqParticipantsByTranchedPoolAddress,
-  setUniqParticipantsByTranchedPoolAddress,
+  participantsByTranchedPoolAddress,
+  setParticipantsByTranchedPoolAddress,
 }: {
   goldfinchProtocol?: GoldfinchProtocol
   user?: User
-  uniqParticipantsByTranchedPoolAddress?: UniqParticipantsByTranchedPoolAddress
-  setUniqParticipantsByTranchedPoolAddress?: (newVal: UniqParticipantsByTranchedPoolAddress) => void
+  participantsByTranchedPoolAddress?: ParticipantsByTranchedPoolAddress
+  setParticipantsByTranchedPoolAddress?: (newVal: ParticipantsByTranchedPoolAddress) => void
 }): {
   backers: PoolBacker[]
   backersStatus: string
@@ -227,8 +227,8 @@ function usePoolBackers({
     async function loadTranchedPools(
       goldfinchProtocol: GoldfinchProtocol,
       user: User,
-      uniqParticipantsByTranchedPoolAddress: UniqParticipantsByTranchedPoolAddress,
-      setUniqParticipantsByTranchedPoolAddress: (newVal: UniqParticipantsByTranchedPoolAddress) => void
+      participantsByTranchedPoolAddress: ParticipantsByTranchedPoolAddress,
+      setParticipantsByTranchedPoolAddress: (newVal: ParticipantsByTranchedPoolAddress) => void
     ) {
       let poolEvents = (await goldfinchProtocol.queryEvents("GoldfinchFactory", [
         "PoolCreated",
@@ -257,36 +257,29 @@ function usePoolBackers({
       )
       setBackersStatus("loaded")
 
-      const uniqParticipantsByActivePoolAddress = fromPairs(
+      const participantsByActivePoolAddress = fromPairs(
         compact(
           await Promise.all(
             activePoolBackers.map((b) =>
               b.tranchedPool.participationLimits
-                ? b.tranchedPool
-                    .getUniqueParticipants()
-                    .then((uniqParticipants) => [b.tranchedPool.address, uniqParticipants])
+                ? b.tranchedPool.getParticipants().then((participants) => [b.tranchedPool.address, participants])
                 : undefined
             )
           )
         )
       )
-      setUniqParticipantsByTranchedPoolAddress({
-        ...uniqParticipantsByTranchedPoolAddress,
-        ...uniqParticipantsByActivePoolAddress,
+      setParticipantsByTranchedPoolAddress({
+        ...participantsByTranchedPoolAddress,
+        ...participantsByActivePoolAddress,
       })
     }
 
-    if (
-      goldfinchProtocol &&
-      user &&
-      uniqParticipantsByTranchedPoolAddress &&
-      setUniqParticipantsByTranchedPoolAddress
-    ) {
+    if (goldfinchProtocol && user && participantsByTranchedPoolAddress && setParticipantsByTranchedPoolAddress) {
       loadTranchedPools(
         goldfinchProtocol,
         user,
-        uniqParticipantsByTranchedPoolAddress,
-        setUniqParticipantsByTranchedPoolAddress
+        participantsByTranchedPoolAddress,
+        setParticipantsByTranchedPoolAddress
       )
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -302,8 +295,8 @@ function Earn() {
     user,
     goldfinchProtocol,
     goldfinchConfig,
-    uniqParticipantsByTranchedPoolAddress,
-    setUniqParticipantsByTranchedPoolAddress,
+    participantsByTranchedPoolAddress,
+    setParticipantsByTranchedPoolAddress,
   } = useContext(AppContext)
   const [capitalProvider, setCapitalProvider] = useState<CapitalProvider>()
   const {
@@ -314,8 +307,8 @@ function Earn() {
   } = usePoolBackers({
     goldfinchProtocol,
     user,
-    uniqParticipantsByTranchedPoolAddress,
-    setUniqParticipantsByTranchedPoolAddress,
+    participantsByTranchedPoolAddress,
+    setParticipantsByTranchedPoolAddress,
   })
   const {earnStore, setEarnStore} = useEarn()
 
@@ -394,7 +387,7 @@ function Earn() {
               <TranchedPoolCard
                 key={`${p.tranchedPool.address}`}
                 poolBacker={p}
-                uniqParticipants={uniqParticipantsByTranchedPoolAddress?.[p.tranchedPool.address]}
+                participants={participantsByTranchedPoolAddress?.[p.tranchedPool.address]}
                 disabled={disabled}
               />
             ))}
