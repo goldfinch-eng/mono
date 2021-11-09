@@ -1,28 +1,19 @@
 /* global web3 */
 import BN from "bn.js"
 import hre from "hardhat"
-import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
+import {asNonNullable} from "@goldfinch-eng/utils"
 const GoldfinchConfig = artifacts.require("GoldfinchConfig")
 const PoolRewards = artifacts.require("PoolRewards")
 import {
   ERC20Instance,
   GFIInstance,
-  PoolRewardsInstance,
   SeniorPoolInstance,
   TranchedPoolInstance,
   PoolTokensInstance,
   GoldfinchFactoryInstance,
   GoldfinchConfigInstance,
 } from "../typechain/truffle"
-import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
-import {fundWithWhales, impersonateAccount, getExistingContracts} from "../blockchain_scripts/mainnetForkingHelpers"
-import {
-  TRANCHES,
-  interestAprAsBN,
-  OWNER_ROLE,
-  getDeployedContract,
-  getSignerForAddress,
-} from "../blockchain_scripts/deployHelpers"
+import {TRANCHES, interestAprAsBN, OWNER_ROLE} from "../blockchain_scripts/deployHelpers"
 import {DepositMade} from "../typechain/truffle/TranchedPool"
 
 const decimals = new BN(String(1e18))
@@ -40,15 +31,13 @@ import {
   fiduToUSDC,
   ZERO_ADDRESS,
   erc20Transfer,
-  fundWithEthFromLocalWhale,
 } from "./testHelpers"
-import {PoolTokens} from "../typechain/ethers"
+import {TestPoolRewardsInstance} from "../typechain/truffle/TestPoolRewards"
 
-const {deployments, ethers} = hre
+const {deployments} = hre
 
 describe("PoolRewards", () => {
   let owner: string,
-    protocolOwner: string,
     borrower: string,
     investor: string,
     anotherUser: string,
@@ -57,10 +46,19 @@ describe("PoolRewards", () => {
     goldfinchConfig: GoldfinchConfigInstance,
     gfi: GFIInstance,
     usdc: ERC20Instance,
-    poolRewards: PoolRewardsInstance,
+    poolRewards: TestPoolRewardsInstance,
     seniorPool: SeniorPoolInstance,
     tranchedPool: TranchedPoolInstance,
     poolTokens: PoolTokensInstance
+
+  const withPoolSender = async (func, otherPoolAddress?) => {
+    // We need to fake the address so we can bypass the pool
+    await poolRewards._setSender(otherPoolAddress || tranchedPool.address)
+    return func().then(async (res) => {
+      await poolRewards._setSender("0x0000000000000000000000000000000000000000")
+      return res
+    })
+  }
 
   const testCalcAccRewardsPerPrincipalDollar = ({
     accRewardsPerPrincipalDollar = 0,
@@ -132,8 +130,6 @@ describe("PoolRewards", () => {
 
   const testSetup = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
     const [_owner, _borrower, _investor, _anotherUser, _anotherAnotherUser] = await web3.eth.getAccounts()
-    const {protocol_owner} = await getNamedAccounts()
-    const protocolOwner = asNonNullable(protocol_owner)
     const owner = asNonNullable(_owner)
     const investor = asNonNullable(_investor)
     const borrower = asNonNullable(_borrower)
@@ -168,7 +164,6 @@ describe("PoolRewards", () => {
     })
     return {
       owner,
-      protocolOwner,
       goldfinchFactory,
       borrower,
       investor,
@@ -188,7 +183,6 @@ describe("PoolRewards", () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
     ;({
       owner,
-      protocolOwner,
       borrower,
       investor,
       anotherUser,
@@ -209,7 +203,7 @@ describe("PoolRewards", () => {
       goldfinchConfig = await GoldfinchConfig.new({from: owner})
       await goldfinchConfig.initialize(owner)
 
-      poolRewards = await PoolRewards.new({from: owner})
+      poolRewards = (await PoolRewards.new({from: owner})) as TestPoolRewardsInstance
       await poolRewards.__initialize__(owner, goldfinchConfig.address)
     })
 
@@ -270,8 +264,9 @@ describe("PoolRewards", () => {
 
     context("Should not execute if interestPayment is 0", () => {
       const interestPaymentAmount = new BN(0)
-      it("should error", async () => {
-        await expect(poolRewards.allocateRewards(interestPaymentAmount)).to.be.fulfilled
+      it("should be fulfilled, not error", async () => {
+        await expect(withPoolSender(() => poolRewards.allocateRewards(interestPaymentAmount), tranchedPool.address)).to
+          .be.fulfilled
       })
     })
   })
@@ -285,51 +280,39 @@ describe("PoolRewards", () => {
         const firstLog = getFirstLog(logs)
         const tokenId = firstLog.args.tokenId
 
-        await expect(
+        return expect(
           poolRewards.setPoolTokenAccRewardsPerPrincipalDollarAtMint(tranchedPool.address, tokenId)
         ).to.be.rejectedWith(/Invalid sender/)
       })
     })
 
-    // context("Invalid pool", () => {
-    //   it("should error", async () => {
-    //     const juniorTranchePrincipal = 100_000
-    //     const response = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(juniorTranchePrincipal))
-    //     const logs = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")
-    //     const firstLog = getFirstLog(logs)
-    //     const tokenId = firstLog.args.tokenId
+    context("Invalid pool", () => {
+      it("should error", async () => {
+        const juniorTranchePrincipal = 100_000
+        const response = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(juniorTranchePrincipal))
+        const logs = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")
+        const firstLog = getFirstLog(logs)
+        const tokenId = firstLog.args.tokenId
 
-    //     const protocolOwnerAccount = await getSignerForAddress(protocolOwner)
-    //     assertNonNullable(protocolOwnerAccount)
-    //     await protocolOwnerAccount.sendTransaction({to: poolTokens.address, value: ethers.utils.parseEther("10.0")})
-    //     await impersonateAccount(hre, poolTokens.address)
-    //     const poolTokenSigner = ethers.provider.getSigner(poolTokens.address)
-    //     const existingContracts = await getExistingContracts(["PoolTokens"], poolTokenSigner)
-    //     assertNonNullable(existingContracts.PoolTokens)
+        await expect(
+          withPoolSender(
+            () => poolRewards.setPoolTokenAccRewardsPerPrincipalDollarAtMint(ZERO_ADDRESS, tokenId),
+            poolTokens.address
+          )
+        ).to.be.rejectedWith(/Invalid pool/)
+      })
+    })
 
-    //     await expect(
-    //       poolRewards.setPoolTokenAccRewardsPerPrincipalDollarAtMint(tranchedPool.address, tokenId, {
-    //         from: poolTokens.address,
-    //       })
-    //     ).to.be.rejectedWith(/Invalid pool/)
-    //   })
-    // })
-
-    // context("Pool address does not match token address", () => {
-    //   it("should error", async () => {
-    //     const juniorTranchePrincipal = 100_000
-    //     const response = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(juniorTranchePrincipal))
-    //     const logs = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")
-    //     const firstLog = getFirstLog(logs)
-    //     const tokenId = firstLog.args.tokenId
-
-    //     await expect(
-    //       poolRewards.setPoolTokenAccRewardsPerPrincipalDollarAtMint(ZERO_ADDRESS, tokenId, {
-    //         from: poolTokens.address,
-    //       })
-    //     ).to.be.rejectedWith(/PoolAddress must equal PoolToken pool address/)
-    //   })
-    // })
+    context("Pool address does not match token address", () => {
+      it("should error", async () => {
+        return expect(
+          withPoolSender(
+            () => poolRewards.setPoolTokenAccRewardsPerPrincipalDollarAtMint(tranchedPool.address, "0"),
+            poolTokens.address
+          )
+        ).to.be.rejectedWith(/PoolAddress must equal PoolToken pool address/)
+      })
+    })
   })
 
   describe("tranchedPool interest repayment", () => {

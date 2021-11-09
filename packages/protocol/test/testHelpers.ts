@@ -34,7 +34,6 @@ import {
   GFIInstance,
   StakingRewardsInstance,
   CommunityRewardsInstance,
-  PoolRewardsInstance,
   MerkleDistributorInstance,
   GoInstance,
   TestUniqueIdentityInstance,
@@ -50,6 +49,7 @@ const SECONDS_PER_YEAR = SECONDS_PER_DAY.mul(new BN(365))
 const UNIT_SHARE_PRICE = new BN("1000000000000000000") // Corresponds to share price of 100% (no interest or writedowns)
 import ChaiBN from "chai-bn"
 import {BaseContract} from "ethers"
+import {TestPoolRewardsInstance} from "../typechain/truffle/TestPoolRewards"
 chai.use(ChaiBN(BN))
 
 const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
@@ -244,7 +244,7 @@ async function deployAllContracts(
   transferRestrictedVault: TransferRestrictedVaultInstance
   gfi: GFIInstance
   stakingRewards: StakingRewardsInstance
-  poolRewards: PoolRewardsInstance
+  poolRewards: TestPoolRewardsInstance
   communityRewards: CommunityRewardsInstance
   merkleDistributor: MerkleDistributorInstance | null
   uniqueIdentity: TestUniqueIdentityInstance
@@ -281,7 +281,7 @@ async function deployAllContracts(
   )
   const gfi = await getDeployedAsTruffleContract<GFIInstance>(deployments, "GFI")
   const stakingRewards = await getDeployedAsTruffleContract<StakingRewardsInstance>(deployments, "StakingRewards")
-  const poolRewards = await getDeployedAsTruffleContract<PoolRewardsInstance>(deployments, "PoolRewards")
+  const poolRewards = await getDeployedAsTruffleContract<TestPoolRewardsInstance>(deployments, "PoolRewards")
 
   const communityRewards = await getContract<CommunityRewards, CommunityRewardsInstance>(
     "CommunityRewards",

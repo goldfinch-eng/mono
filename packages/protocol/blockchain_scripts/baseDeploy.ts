@@ -56,6 +56,7 @@ import {PoolRewards} from "../typechain/ethers/PoolRewards"
 import {UNIQUE_IDENTITY_METADATA_URI} from "./uniqueIdentity/constants"
 import {toEthers} from "../test/testHelpers"
 import {getDeployEffects, DeployEffects} from "./migrations/deployEffects"
+import {TestPoolRewards} from "../typechain/ethers/TestPoolRewards"
 
 const logger: Logger = console.log
 
@@ -298,8 +299,12 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   async function deployPoolRewards(
     deployer: ContractDeployer,
     {config}: {config: GoldfinchConfig}
-  ): Promise<PoolRewards> {
-    const contractName = "PoolRewards"
+  ): Promise<PoolRewards | TestPoolRewards> {
+    let contractName = "PoolRewards"
+    console.log("isTestEnv", isTestEnv())
+    if (isTestEnv()) {
+      contractName = "TestPoolRewards"
+    }
     logger("About to deploy PoolRewards...")
     assertIsString(gf_deployer)
     const protocol_owner = await getProtocolOwner()
