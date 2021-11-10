@@ -75,6 +75,7 @@ describe("PoolTokens", () => {
   async function mintUniqueIdentityToken(recipient, signer) {
     const uniqueIdentityTokenId = new BN(0)
     const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
+    await uniqueIdentity.setSupportedUIDTypes([uniqueIdentityTokenId], [true])
     await mint(hre, uniqueIdentity, uniqueIdentityTokenId, expiresAt, new BN(0), signer, undefined, recipient)
     expect(await uniqueIdentity.balanceOf(recipient, uniqueIdentityTokenId)).to.bignumber.equal(new BN(1))
   }
