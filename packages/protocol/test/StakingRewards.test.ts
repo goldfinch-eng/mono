@@ -9,10 +9,9 @@ import {
   SeniorPoolInstance,
   StakingRewardsInstance,
 } from "../typechain/truffle"
-const {ethers} = hre
+const {ethers, deployments} = hre
 import {DepositMade} from "../typechain/truffle/SeniorPool"
 import {DepositedAndStaked, RewardPaid, Staked} from "../typechain/truffle/StakingRewards"
-const {deployments} = hre
 import {
   usdcVal,
   deployAllContracts,
@@ -26,7 +25,6 @@ import {
   expectAction,
   MAX_UINT,
   getCurrentTimestamp,
-  USDC_DECIMALS,
   usdcToFidu,
   decimals,
 } from "./testHelpers"

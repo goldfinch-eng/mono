@@ -12,6 +12,7 @@ import "../../interfaces/ICreditDesk.sol";
 import "../../interfaces/IERC20withDec.sol";
 import "../../interfaces/ICUSDCContract.sol";
 import "../../interfaces/IPoolTokens.sol";
+import "../../interfaces/IPoolRewards.sol";
 import "../../interfaces/IGoldfinchFactory.sol";
 import "../../interfaces/IGo.sol";
 
@@ -55,6 +56,10 @@ library ConfigHelper {
     return IPoolTokens(poolTokensAddress(config));
   }
 
+  function getPoolRewards(GoldfinchConfig config) internal view returns (IPoolRewards) {
+    return IPoolRewards(poolRewardsAddress(config));
+  }
+
   function getGoldfinchFactory(GoldfinchConfig config) internal view returns (IGoldfinchFactory) {
     return IGoldfinchFactory(goldfinchFactoryAddress(config));
   }
@@ -89,6 +94,10 @@ library ConfigHelper {
 
   function poolTokensAddress(GoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.PoolTokens));
+  }
+
+  function poolRewardsAddress(GoldfinchConfig config) internal view returns (address) {
+    return config.getAddress(uint256(ConfigOptions.Addresses.PoolRewards));
   }
 
   function seniorPoolAddress(GoldfinchConfig config) internal view returns (address) {

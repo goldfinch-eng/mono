@@ -44,7 +44,8 @@ library ConfigOptions {
     MigratedTranchedPoolImplementation,
     BorrowerImplementation,
     GFI,
-    Go
+    Go,
+    PoolRewards
   }
 
   function getNumberName(uint256 number) public pure returns (string memory) {
@@ -119,6 +120,9 @@ library ConfigOptions {
     }
     if (Addresses.PoolTokens == addressName) {
       return "PoolTokens";
+    }
+    if (Addresses.PoolRewards == addressName) {
+      return "PoolRewards";
     }
     if (Addresses.TranchedPoolImplementation == addressName) {
       return "TranchedPoolImplementation";
