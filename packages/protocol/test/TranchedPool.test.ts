@@ -30,6 +30,7 @@ import {
   TranchedPoolInstance,
   TestUniqueIdentityInstance,
   PoolRewardsInstance,
+  GoldfinchFactoryInstance,
 } from "../typechain/truffle"
 import {JuniorTrancheLocked, DepositMade} from "../typechain/truffle/TranchedPool"
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
@@ -76,11 +77,10 @@ describe("TranchedPool", () => {
     goldfinchConfig: GoldfinchConfigInstance,
     usdc,
     poolTokens,
-    goldfinchFactory,
+    goldfinchFactory: GoldfinchFactoryInstance,
     uniqueIdentity: TestUniqueIdentityInstance,
     creditLine,
     treasury,
-    configHelper,
     poolRewards: PoolRewardsInstance,
     tranchedPool: TranchedPoolInstance
   const limit = usdcVal(1000)

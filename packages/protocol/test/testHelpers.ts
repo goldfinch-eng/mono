@@ -13,7 +13,6 @@ import {
   ZERO_ADDRESS,
   DISTRIBUTOR_ROLE,
   getContract,
-  GetContractOptions,
   TRUFFLE_CONTRACT_PROVIDER,
 } from "../blockchain_scripts/deployHelpers"
 import {DeploymentsExtension} from "hardhat-deploy/types"
@@ -39,7 +38,7 @@ import {
   TestUniqueIdentityInstance,
 } from "../typechain/truffle"
 import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/DynamicLeverageRatioStrategy"
-import {MerkleDistributor, CommunityRewards, UniqueIdentity, Go, TestUniqueIdentity} from "../typechain/ethers"
+import {MerkleDistributor, CommunityRewards, Go, TestUniqueIdentity} from "../typechain/ethers"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import "./types"
 const decimals = new BN(String(1e18))

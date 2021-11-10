@@ -65,7 +65,10 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
    * @param amount The amount of USDC to deposit
    */
   function deposit(uint256 amount) public override whenNotPaused nonReentrant returns (uint256 depositShares) {
-    require(config.getGo().goSeniorPool(msg.sender), "This address has not been go-listed");
+    require(
+      config.getGo().goSeniorPool(msg.sender) || msg.sender == config.stakingRewardsAddress(),
+      "This address has not been go-listed"
+    );
     require(amount > 0, "Must deposit more than zero");
     // Check if the amount of new shares to be added is within limits
     depositShares = getNumShares(amount);
@@ -103,7 +106,10 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
    * @param usdcAmount The amount of USDC to withdraw
    */
   function withdraw(uint256 usdcAmount) external override whenNotPaused nonReentrant returns (uint256 amount) {
-    require(config.getGo().goSeniorPool(msg.sender), "This address has not been go-listed");
+    require(
+      config.getGo().goSeniorPool(msg.sender) || msg.sender == config.stakingRewardsAddress(),
+      "This address has not been go-listed"
+    );
     require(usdcAmount > 0, "Must withdraw more than zero");
     // This MUST happen before calculating withdrawShares, otherwise the share price
     // changes between calculation and burning of Fidu, which creates a asset/liability mismatch

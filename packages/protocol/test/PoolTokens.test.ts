@@ -103,10 +103,11 @@ describe("PoolTokens", () => {
         new BN(30),
         new BN(365),
         new BN(0),
+        [],
         {from: owner}
       )
       const event = result.logs[result.logs.length - 1]
-      pool = await TranchedPool.at(event.args.pool)
+      pool = await TranchedPool.at(event?.args.pool)
       await erc20Approve(usdc, pool.address, usdcVal(100000), [person2])
     })
 
@@ -129,7 +130,8 @@ describe("PoolTokens", () => {
           new BN(15000),
           new BN(30),
           new BN(360),
-          new BN(350)
+          new BN(350),
+          []
         )
 
         return expect(fakePool.deposit(new BN(1), usdcVal(5), {from: person2})).to.be.rejectedWith(/Invalid pool/)
@@ -198,10 +200,11 @@ describe("PoolTokens", () => {
         new BN(30),
         new BN(365),
         new BN(0),
+        [],
         {from: owner}
       )
       let event = result.logs[result.logs.length - 1]
-      pool = await TranchedPool.at(event.args.pool)
+      pool = await TranchedPool.at(event?.args.pool)
 
       await erc20Approve(usdc, pool.address, usdcVal(100000), [person2])
 
@@ -332,10 +335,11 @@ describe("PoolTokens", () => {
         new BN(30),
         new BN(365),
         new BN(0),
+        [],
         {from: owner}
       )
       let event = result.logs[result.logs.length - 1]
-      pool = await TranchedPool.at(event.args.pool)
+      pool = await TranchedPool.at(event?.args.pool)
 
       await erc20Approve(usdc, pool.address, usdcVal(100000), [person2])
 
@@ -412,10 +416,11 @@ describe("PoolTokens", () => {
         new BN(30),
         new BN(365),
         new BN(0),
+        [],
         {from: owner}
       )
       const event = result.logs[result.logs.length - 1]
-      pool = await TranchedPool.at(event.args.pool)
+      pool = await TranchedPool.at(event?.args.pool)
     })
     describe("mint", async () => {
       beforeEach(async function () {

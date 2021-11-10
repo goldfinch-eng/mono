@@ -35,6 +35,7 @@ describe("Goldfinch", async () => {
   let interestApr = interestAprAsBN("25")
   let lateFeeApr = interestAprAsBN("0")
   const juniorFeePercent = new BN(20)
+  const allowedUIDTypes = [0]
   let paymentPeriodInDays = new BN(1)
   let termInDays = new BN(365)
   let paymentPeriodInSeconds = SECONDS_PER_DAY.mul(paymentPeriodInDays)
@@ -87,6 +88,7 @@ describe("Goldfinch", async () => {
       _interestApr,
       _termInDays,
       _lateFeesApr,
+      _allowedUIDTypes,
     }: {
       _paymentPeriodInDays?: Numberish
       _borrower?: string
@@ -94,6 +96,7 @@ describe("Goldfinch", async () => {
       _interestApr?: Numberish
       _termInDays?: Numberish
       _lateFeesApr?: Numberish
+      _allowedUIDTypes?: Array<Numberish>
     } = {}) {
       const result = await goldfinchFactory.createPool(
         borrower || _borrower,
@@ -103,6 +106,7 @@ describe("Goldfinch", async () => {
         _paymentPeriodInDays || paymentPeriodInDays,
         termInDays || _termInDays,
         lateFeeApr || _lateFeesApr,
+        allowedUIDTypes || _allowedUIDTypes,
         {from: owner}
       )
       const poolCreatedEvent = result.logs[result.logs.length - 1]

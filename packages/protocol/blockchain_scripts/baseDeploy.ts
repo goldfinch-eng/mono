@@ -278,10 +278,11 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
     deployer: ContractDeployer,
     {config}: {config: GoldfinchConfig}
   ): Promise<StakingRewards> {
+    const contractName = "StakingRewards"
     logger("About to deploy LPStakingRewards...")
     assertIsString(gf_deployer)
     const protocol_owner = await getProtocolOwner()
-    const stakingRewards = await deployer.deploy<StakingRewards>("StakingRewards", {
+    const stakingRewards = await deployer.deploy<StakingRewards>(contractName, {
       from: gf_deployer,
       gasLimit: 4000000,
       proxy: {
@@ -293,6 +294,15 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
         },
       },
     })
+
+    const contract = await getContract<PoolRewards, PoolRewardsInstance>(contractName, TRUFFLE_CONTRACT_PROVIDER, {
+      at: stakingRewards.address,
+    })
+
+    logger("Updating config...")
+    await updateConfig(config, "address", CONFIG_KEYS.StakingRewards, contract.address, {logger})
+    logger("Updated PoolRewards config address to:", contract.address)
+
     return stakingRewards
   }
 

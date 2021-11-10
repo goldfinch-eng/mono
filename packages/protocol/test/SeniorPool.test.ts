@@ -33,6 +33,7 @@ import {expectEvent} from "@openzeppelin/test-helpers"
 import {ecsign} from "ethereumjs-util"
 import {getApprovalDigest, getWallet} from "./permitHelpers"
 import {assertNonNullable} from "@goldfinch-eng/utils"
+import {TranchedPoolInstance} from "../typechain/truffle"
 const WITHDRAWL_FEE_DENOMINATOR = new BN(200)
 
 const simulateMaliciousTranchedPool = async (goldfinchConfig: any, person2: any): Promise<string> => {
@@ -42,7 +43,7 @@ const simulateMaliciousTranchedPool = async (goldfinchConfig: any, person2: any)
     from: person2,
     libraries: {["Accountant"]: accountant.address},
   })
-  const unknownPool = await artifacts.require("TranchedPool").at(poolDeployResult.address)
+  const unknownPool = (await artifacts.require("TranchedPool").at(poolDeployResult.address)) as TranchedPoolInstance
   const creditLineResult = await deployments.deploy("CreditLine", {
     from: person2,
     libraries: {["Accountant"]: accountant.address},
@@ -66,7 +67,8 @@ const simulateMaliciousTranchedPool = async (goldfinchConfig: any, person2: any)
     interestAprAsBN("0"),
     new BN(1),
     new BN(10),
-    interestAprAsBN("0")
+    interestAprAsBN("0"),
+    []
   )
   await unknownPool.lockJuniorCapital({from: person2})
 
