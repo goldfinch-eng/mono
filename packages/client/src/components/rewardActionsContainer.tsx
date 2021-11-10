@@ -323,14 +323,13 @@ function getGrantVestingIntervalDisplay(vestingInterval: BigNumber): string | un
   }
 }
 function getGrantVestingLengthDisplay(duration: number, currentTimestamp: number | undefined): string {
-  const endDate =
-    currentTimestamp !== undefined
-      ? new Date(currentTimestamp * 1000 + duration).toLocaleDateString(undefined, {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-        })
-      : ""
+  const endDate = currentTimestamp
+    ? new Date(currentTimestamp * 1000 + duration).toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      })
+    : null
   switch (duration) {
     case 0:
       throw new Error("Grant without vesting length should have avoided calling this method.")
@@ -338,7 +337,7 @@ function getGrantVestingLengthDisplay(duration: number, currentTimestamp: number
       return " after 1 year"
     default:
       console.error(`Unexpected vesting length: ${duration}`)
-      return ` on ${endDate}`
+      return endDate ? ` on ${endDate}` : `after ${duration} seconds`
   }
 }
 function getGrantVestingSchedule(
@@ -361,17 +360,16 @@ function getGrantVestingSchedule(
       displayInterval || displayCliff ? "," : ""
     } until 100%${displayEnd}`
   } else {
-    // Since the vestingLength will be 0 here, we don't need to add the duration to the current timestamp
-    // to show the end date.
-    const endDate =
-      currentTimestamp !== undefined
-        ? new Date(currentTimestamp * 1000).toLocaleDateString(undefined, {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-          })
-        : ""
-    return endDate !== "" ? `Linear until 100% on ${endDate}` : "Linear"
+    // Since we will not have a vesting length here, we don't need to sum the duration to
+    // the current timestamp to show the end date.
+    const endDate = currentTimestamp
+      ? new Date(currentTimestamp * 1000).toLocaleDateString(undefined, {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        })
+      : null
+    return endDate ? `Linear until 100% on ${endDate}` : "None"
   }
 }
 function getStakingRewardsVestingSchedule(endTime: number) {
