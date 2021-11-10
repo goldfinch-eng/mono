@@ -177,6 +177,30 @@ describe("UniqueIdentity", () => {
     })
   })
 
+  describe("setSupportedUIDTypes", () => {
+    it("requires sender to be admin", async () => {
+      expect(await uniqueIdentity.hasRole(OWNER_ROLE, anotherUser)).to.equal(false)
+      await expect(uniqueIdentity.setSupportedUIDTypes([], [], {from: anotherUser})).to.be.rejectedWith(
+        /Must have admin role to perform this action/
+      )
+    })
+
+    it("checks the length of ids and values is equivalent", async () => {
+      await expect(uniqueIdentity.setSupportedUIDTypes([1], [])).to.be.rejectedWith(/accounts and ids length mismatch/)
+      await expect(uniqueIdentity.setSupportedUIDTypes([], [true])).to.be.rejectedWith(
+        /accounts and ids length mismatch/
+      )
+    })
+
+    it("properly sets supportedUIDTypes", async () => {
+      await uniqueIdentity.setSupportedUIDTypes([0, 1], [true, true])
+      expect(await uniqueIdentity.supportedUIDTypes(0)).to.equal(true)
+      expect(await uniqueIdentity.supportedUIDTypes(1)).to.equal(true)
+      await uniqueIdentity.setSupportedUIDTypes([0, 1], [true, false])
+      expect(await uniqueIdentity.supportedUIDTypes(1)).to.equal(false)
+    })
+  })
+
   describe("balanceOf", () => {
     it("returns 0 for a non-minted token", async () => {
       const recipient = anotherUser
