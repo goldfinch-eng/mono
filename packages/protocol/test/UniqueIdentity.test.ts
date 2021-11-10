@@ -209,12 +209,14 @@ describe("UniqueIdentity", () => {
     it("returns the amount for a minted token", async () => {
       const recipient = anotherUser
       const tokenId = new BN(0)
+      await uniqueIdentity.setSupportedUIDTypes([tokenId], [true])
       await mint(tokenId, new BN(0), owner, undefined, recipient)
       expect(await uniqueIdentity.balanceOf(recipient, tokenId)).to.bignumber.equal(new BN(1))
     })
     it("returns 0 for a token that was minted and then burned", async () => {
       const recipient = anotherUser
       const tokenId = new BN(0)
+      await uniqueIdentity.setSupportedUIDTypes([tokenId], [true])
       await mint(tokenId, new BN(0), owner, undefined, recipient)
       await burn(recipient, tokenId, new BN(1), owner)
       expect(await uniqueIdentity.balanceOf(recipient, tokenId)).to.bignumber.equal(new BN(0))
@@ -260,6 +262,7 @@ describe("UniqueIdentity", () => {
     beforeEach(async () => {
       recipient = anotherUser
       tokenId = new BN(0)
+      await uniqueIdentity.setSupportedUIDTypes([tokenId], [true])
       timestamp = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
     })
 
@@ -367,13 +370,16 @@ describe("UniqueIdentity", () => {
     })
 
     describe("validates id", () => {
+      beforeEach(async () => {
+        await uniqueIdentity.setSupportedUIDTypes([0, 1], [true, false])
+      })
       it("allows token id of 0", async () => {
-        await expect(mint(new BN(0), new BN(0), owner, undefined, recipient)).to.be.fulfilled
+        const tokenId = new BN(0)
+        await expect(mint(tokenId, new BN(0), owner, undefined, recipient)).to.be.fulfilled
       })
       it("rejects token id > 0", async () => {
-        await expect(mint(new BN(1), new BN(0), owner, undefined, recipient)).to.be.rejectedWith(
-          /Token id not supported/
-        )
+        const tokenId = new BN(1)
+        await expect(mint(tokenId, new BN(0), owner, undefined, recipient)).to.be.rejectedWith(/Token id not supported/)
       })
     })
 
@@ -401,7 +407,7 @@ describe("UniqueIdentity", () => {
         value: MINT_PAYMENT,
       })
       const tolerance = new BN(50)
-      expect(new BN(receipt.receipt.gasUsed)).to.bignumber.closeTo(new BN(86137), tolerance)
+      expect(new BN(receipt.receipt.gasUsed)).to.bignumber.closeTo(new BN(88330), tolerance)
     })
 
     context("paused", () => {
@@ -419,7 +425,7 @@ describe("UniqueIdentity", () => {
 
     beforeEach(async () => {
       tokenId = new BN(0)
-
+      await uniqueIdentity.setSupportedUIDTypes([tokenId], [true])
       await mint(tokenId, new BN(0), owner, undefined, anotherUser)
     })
 
@@ -479,7 +485,7 @@ describe("UniqueIdentity", () => {
 
     beforeEach(async () => {
       tokenId = new BN(0)
-
+      await uniqueIdentity.setSupportedUIDTypes([tokenId], [true])
       await mint(tokenId, new BN(0), owner, undefined, anotherUser)
     })
 
@@ -540,6 +546,7 @@ describe("UniqueIdentity", () => {
     beforeEach(async () => {
       recipient = anotherUser
       tokenId = new BN(0)
+      await uniqueIdentity.setSupportedUIDTypes([tokenId], [true])
       timestamp = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
 
       await mint(tokenId, new BN(0), owner, undefined, recipient)
@@ -653,7 +660,7 @@ describe("UniqueIdentity", () => {
         // Retaining the ability to burn a token of id for which minting is not supported is useful for at least two reasons:
         // (1) in case such tokens should never have been mintable but were somehow minted; (2) in case we have deprecated
         // the ability to mint tokens of that id.
-        const unsupportedTokenId = tokenId.add(new BN(1))
+        const unsupportedTokenId = tokenId.add(new BN(3))
         expect(await uniqueIdentity.balanceOf(recipient, unsupportedTokenId)).to.bignumber.equal(new BN(0))
         await expect(mint(unsupportedTokenId, new BN(1), owner, undefined, recipient)).to.be.rejectedWith(
           /Token id not supported/

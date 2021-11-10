@@ -5,7 +5,6 @@ import {
   ERC20Instance,
   FiduInstance,
   GFIInstance,
-  GoldfinchConfigInstance,
   SeniorPoolInstance,
   StakingRewardsInstance,
 } from "../typechain/truffle"
@@ -59,7 +58,6 @@ describe("StakingRewards", function () {
   let owner: string,
     investor: string,
     anotherUser: string,
-    goldfinchConfig: GoldfinchConfigInstance,
     gfi: GFIInstance,
     usdc: ERC20Instance,
     seniorPool: SeniorPoolInstance,
@@ -189,7 +187,6 @@ describe("StakingRewards", function () {
       owner,
       investor,
       anotherUser,
-      goldfinchConfig,
       seniorPool,
       gfi,
       stakingRewards,
@@ -521,9 +518,6 @@ describe("StakingRewards", function () {
         assertNonNullable(wallet)
         const {v, r, s} = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(wallet.privateKey.slice(2), "hex"))
 
-        const balanceBefore = await usdc.balanceOf(investor)
-        const seniorPoolAssetsBefore = await seniorPool.assets()
-
         await stakingRewards.pause()
         await expect(
           stakingRewards.depositWithPermitAndStakeWithLockup(
@@ -854,7 +848,6 @@ describe("StakingRewards", function () {
     it("unstakes fidu and withdraws from the senior pool for multiple position tokens", async () => {
       const firstTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: firstTokenAmount})
       const secondTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: secondTokenAmount})
-      const thirdTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: thirdTokenAmount})
 
       const totalWithdrawalAmountInFidu = firstTokenAmount.add(secondTokenAmount)
       const totalWithdrawalAmountInUsdc = firstTokenWithdrawAmount.add(secondTokenWithdrawAmount)
