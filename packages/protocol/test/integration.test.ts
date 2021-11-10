@@ -28,6 +28,8 @@ let fidu, goldfinchConfig, reserve, usdc, seniorPool, creditLine, tranchedPool, 
 
 const ONE_HUNDRED = new BN(100)
 
+const TEST_TIMEOUT = 30000
+
 describe("Goldfinch", async () => {
   let limit = usdcVal(10000)
   let interestApr = interestAprAsBN("25")
@@ -282,7 +284,7 @@ describe("Goldfinch", async () => {
           [() => getBalance(investor1, usdc), {byCloseTo: expectedJuniorReturn}],
           [() => getBalance(investor2, usdc), {byCloseTo: expectedJuniorReturn}],
         ])
-      })
+      }).timeout(TEST_TIMEOUT)
 
       it("should handle writedowns correctly", async () => {
         const amount = usdcVal(10000)

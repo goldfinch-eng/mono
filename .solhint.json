@@ -146,6 +146,12 @@
           "goOnlyIdTypes": [],
           "goSeniorPool": []
         },
+        "**/PoolRewards.sol:PoolRewards": {
+          "allocateRewards": ["onlyPool"],
+          "setPoolTokenAccRewardsPerPrincipalDollarAtMint": [],
+          "withdraw": [],
+          "withdrawMultiple": []
+        },
         "**/MerkleDistributor.sol:MerkleDistributor": {
           "_setGrantAccepted": [],
           "acceptGrant": ["onlyGrantRecipient"]
