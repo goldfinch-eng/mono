@@ -19,11 +19,11 @@ function renderTranchedPoolCard(
     getContract: () => {
       return
     },
-    isPaused,
   } as unknown as GoldfinchProtocol)
   tranchedPool.creditLine = defaultCreditLine as any
   tranchedPool.remainingCapacity = () => remainingCapacity
   tranchedPool.metadata = {maxBackers} as TranchedPoolMetadata
+  tranchedPool.isPaused = isPaused
 
   const poolBacker = {
     address: userAddress,
@@ -47,7 +47,7 @@ describe("Tranched pool card", () => {
 
   describe("pool is paused", () => {
     it("should show paused badge", async () => {
-      renderTranchedPoolCard("", false, new BigNumber(0), maxBackers, undefined)
+      renderTranchedPoolCard("", true, new BigNumber(0), maxBackers, undefined)
 
       await waitFor(() => {
         expect(screen.getByText("Paused")).toBeInTheDocument()
