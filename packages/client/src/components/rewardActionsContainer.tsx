@@ -31,8 +31,22 @@ import TransactionForm from "./transactionForm"
 
 const ONE_WEEK_SECONDS = new BigNumber(60 * 60 * 24 * 7)
 
+enum RewardStatus {
+  Acceptable,
+  Claimable,
+  TemporarilyAllClaimed,
+  PermanentlyAllClaimed,
+}
+
+enum ActionButtonTexts {
+  accept = "Accept",
+  accepting = "Accepting...",
+  claimGFI = "Claim GFI",
+  claimed = "Claimed",
+}
+
 interface ActionButtonProps {
-  text: string
+  text: ActionButtonTexts
   disabled: boolean
   onClick: () => Promise<void>
 }
@@ -42,15 +56,20 @@ function ActionButton(props: ActionButtonProps) {
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
   const disabledClass = props.disabled || isPending ? "disabled-button" : ""
 
-  async function action(): Promise<void> {
+  async function action(e): Promise<void> {
+    if (e.target === e.currentTarget) {
+      e.stopPropagation()
+    }
     setIsPending(true)
     await props.onClick()
     setIsPending(false)
   }
 
+  const isAccepting = props.text === ActionButtonTexts.accept && isPending
+
   return (
     <button className={`${!isTabletOrMobile && "table-cell"} action ${disabledClass}`} onClick={action}>
-      {props.text}
+      {isAccepting ? ActionButtonTexts.accepting : props.text}
     </button>
   )
 }
@@ -174,13 +193,6 @@ function ClaimForm(props: ClaimFormProps) {
   return <TransactionForm headerMessage="Claim" render={renderForm} closeForm={props.onCloseForm} />
 }
 
-enum RewardStatus {
-  Acceptable,
-  Claimable,
-  TemporarilyAllClaimed,
-  PermanentlyAllClaimed,
-}
-
 function getActionButtonProps(props: RewardsListItemProps): ActionButtonProps {
   const baseProps: Pick<ActionButtonProps, "onClick"> = {
     onClick: props.handleOnClick,
@@ -189,25 +201,25 @@ function getActionButtonProps(props: RewardsListItemProps): ActionButtonProps {
     case RewardStatus.Acceptable:
       return {
         ...baseProps,
-        text: "Accept",
+        text: ActionButtonTexts.accept,
         disabled: false,
       }
     case RewardStatus.Claimable:
       return {
         ...baseProps,
-        text: "Claim GFI",
+        text: ActionButtonTexts.claimGFI,
         disabled: false,
       }
     case RewardStatus.TemporarilyAllClaimed:
       return {
         ...baseProps,
-        text: "Claim GFI",
+        text: ActionButtonTexts.claimGFI,
         disabled: true,
       }
     case RewardStatus.PermanentlyAllClaimed:
       return {
         ...baseProps,
-        text: "Claimed",
+        text: ActionButtonTexts.claimed,
         disabled: true,
       }
     default:
