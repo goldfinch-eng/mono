@@ -883,7 +883,7 @@ function TranchedPoolView() {
   )
 
   const backers = tranchedPool ? backersByTranchedPoolAddress[tranchedPool.address] : undefined
-  const isClosedToUser = backers ? !!tranchedPool?.getIsClosedToUser(user.address, backers) : false
+  const isClosedToUser = tranchedPool && backers ? tranchedPool.getIsClosedToUser(user.address, backers) : false
 
   const showActionsContainer = !isAtMaxCapacity || !backer?.balanceInDollars.isZero()
 
