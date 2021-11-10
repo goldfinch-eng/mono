@@ -1,7 +1,7 @@
 import {CONFIG_KEYS} from "@goldfinch-eng/protocol/blockchain_scripts/configKeys"
 import {IPoolTokens} from "@goldfinch-eng/protocol/typechain/web3/IPoolTokens"
 import {SeniorPool as SeniorPoolContract} from "@goldfinch-eng/protocol/typechain/web3/SeniorPool"
-import {DepositMade, TranchedPool as TranchedPoolContract} from "@goldfinch-eng/protocol/typechain/web3/TranchedPool"
+import {TranchedPool as TranchedPoolContract} from "@goldfinch-eng/protocol/typechain/web3/TranchedPool"
 import {ContractEventLog} from "@goldfinch-eng/protocol/typechain/web3/types"
 import BigNumber from "bignumber.js"
 import _ from "lodash"
@@ -10,8 +10,16 @@ import web3 from "../web3"
 import {getCreditDesk} from "./creditDesk"
 import {CreditLine} from "./creditLine"
 import {usdcFromAtomic} from "./erc20"
+import {
+  DEPOSIT_MADE_EVENT,
+  DRAWDOWN_MADE_EVENT,
+  KnownEventData,
+  PAYMENT_APPLIED_EVENT,
+  SHARE_PRICE_UPDATED_EVENT,
+} from "../types/events"
 import {fiduFromAtomic} from "./fidu"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
+import {DRAWDOWN_TX_NAME, INTEREST_PAYMENT_TX_NAME} from "../types/transactions"
 
 const ZERO = new BigNumber(0)
 const ONE = new BigNumber(1)
@@ -244,7 +252,7 @@ class TranchedPool {
     let oldTransactions: any[] = []
     let transactions = await this.goldfinchProtocol.queryEvents(
       this.contract,
-      ["DrawdownMade", "PaymentApplied"],
+      [DRAWDOWN_MADE_EVENT, PAYMENT_APPLIED_EVENT],
       undefined,
       currentBlock.number
     )
@@ -271,20 +279,20 @@ class TranchedPool {
         juniorPrincipalDelta: new BigNumber(sharePriceUpdate?.returnValues.principalDelta),
         timestamp: blockTimestamps[e.blockNumber],
       }
-      if (e.event === "DrawdownMade") {
+      if (e.event === DRAWDOWN_MADE_EVENT) {
         let amount = e.returnValues.amount || e.returnValues.drawdownAmount
 
         Object.assign(event, {
-          name: "Drawdown",
+          name: DRAWDOWN_TX_NAME,
           amount: new BigNumber(amount),
         })
-      } else if (e.event === "PaymentApplied") {
+      } else if (e.event === PAYMENT_APPLIED_EVENT) {
         const interestAmount = new BigNumber(e.returnValues.interestAmount)
         const totalPrincipalAmount = new BigNumber(e.returnValues.principalAmount).plus(
           new BigNumber(e.returnValues.remainingAmount)
         )
         Object.assign(event, {
-          name: "Interest payment",
+          name: INTEREST_PAYMENT_TX_NAME,
           amount: interestAmount.plus(totalPrincipalAmount),
           interestAmount: new BigNumber(interestAmount),
           principalAmount: new BigNumber(totalPrincipalAmount),
@@ -302,7 +310,7 @@ class TranchedPool {
     const creditDesk = await getCreditDesk(this.goldfinchProtocol.networkId)
     return await this.goldfinchProtocol.queryEvents(
       creditDesk,
-      ["DrawdownMade", "PaymentApplied"],
+      [DRAWDOWN_MADE_EVENT, PAYMENT_APPLIED_EVENT],
       {
         creditLine: oldCreditlineAddress,
       },
@@ -317,7 +325,7 @@ class TranchedPool {
   async sharePriceUpdatesByTx(tranche: number, currentBlock: BlockInfo) {
     let transactions = await this.goldfinchProtocol.queryEvents(
       this.contract,
-      ["SharePriceUpdated"],
+      [SHARE_PRICE_UPDATED_EVENT],
       {
         tranche: tranche,
       },
@@ -372,11 +380,11 @@ class PoolBacker {
   }
 
   async initialize(currentBlock: BlockInfo) {
-    let events: DepositMade[] = []
+    let events: KnownEventData<typeof DEPOSIT_MADE_EVENT>[] = []
     if (this.address) {
-      events = await this.goldfinchProtocol.queryEvent<DepositMade>(
+      events = await this.goldfinchProtocol.queryEvents(
         this.tranchedPool.contract,
-        "DepositMade",
+        [DEPOSIT_MADE_EVENT],
         {
           owner: this.address,
         },

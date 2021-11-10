@@ -30,6 +30,10 @@
   font-size: $sans-size-s;
 }
 
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+
 @function url-encoded-color($color) {
   @return "%23" + str-slice("#{$color}", 2, -1);
 }

@@ -4,6 +4,7 @@ import {FormProvider, useForm} from "react-hook-form"
 import {AppContext} from "../App"
 import {fiduFromAtomic, FIDU_DECIMALS} from "../ethereum/fidu"
 import {CapitalProvider} from "../ethereum/pool"
+import {FIDU_APPROVAL_TX_TYPE, STAKE_TX_TYPE} from "../types/transactions"
 import {useFromSameBlock} from "../hooks/useFromSameBlock"
 import {KYC} from "../hooks/useGoldfinchClient"
 import {eligibleForSeniorPool} from "../hooks/useKYC"
@@ -43,8 +44,10 @@ export default function StakeFiduBanner(props: StakeFiduBannerProps) {
       ? sendFromUser(
           pool.fidu.methods.approve(stakingRewards.address, amountRequiringApproval.toString(10)),
           {
-            type: "Approve",
-            amount: fiduFromAtomic(amountRequiringApproval),
+            type: FIDU_APPROVAL_TX_TYPE,
+            data: {
+              amount: fiduFromAtomic(amountRequiringApproval),
+            },
           },
           {rejectOnError: true}
         )
@@ -52,8 +55,10 @@ export default function StakeFiduBanner(props: StakeFiduBannerProps) {
     return approval
       .then(() =>
         sendFromUser(stakingRewards.contract.methods.stake(amount.toString(10)), {
-          type: "Stake",
-          amount: fiduFromAtomic(amount),
+          type: STAKE_TX_TYPE,
+          data: {
+            fiduAmount: fiduFromAtomic(amount),
+          },
         })
       )
       .then(props.actionComplete)
