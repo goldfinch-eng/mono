@@ -393,10 +393,20 @@ async function createPoolForBorrower({
   const termInDays = String(new BN(360))
   const lateFeeApr = String(new BN(0))
   const underwriterSigner = ethers.provider.getSigner(underwriter)
+  const allowedUIDTypes = [0]
   const result = await (
     await goldfinchFactory
       .connect(underwriterSigner)
-      .createPool(borrower, juniorFeePercent, limit, interestApr, paymentPeriodInDays, termInDays, lateFeeApr)
+      .createPool(
+        borrower,
+        juniorFeePercent,
+        limit,
+        interestApr,
+        paymentPeriodInDays,
+        termInDays,
+        lateFeeApr,
+        allowedUIDTypes
+      )
   ).wait()
   const lastEventArgs = getLastEventArgs(result)
   const poolAddress = lastEventArgs[0]
