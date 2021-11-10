@@ -87,12 +87,6 @@ export function assertNumber(val: unknown): asserts val is number {
   }
 }
 
-export function assertBoolean(val: unknown): asserts val is boolean {
-  if (typeof val !== "boolean") {
-    throw new AssertionError(`Value ${val} is not a boolean.`)
-  }
-}
-
 export function assertError(val: unknown): asserts val is Error {
   if (!(val instanceof Error)) {
     throw new AssertionError(`Value ${val} is not an instance of Error.`)

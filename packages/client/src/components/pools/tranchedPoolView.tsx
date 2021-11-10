@@ -4,15 +4,7 @@ import ConnectionNotice from "../connectionNotice"
 import {AppContext} from "../../App"
 import InvestorNotice from "../investorNotice"
 import {PoolBacker, PoolState, TokenInfo, TranchedPool, TRANCHES} from "../../ethereum/tranchedPool"
-import {
-  assertBoolean,
-  assertError,
-  croppedAddress,
-  displayDollars,
-  displayPercent,
-  roundDownPenny,
-  roundUpPenny,
-} from "../../utils"
+import {assertError, croppedAddress, displayDollars, displayPercent, roundDownPenny, roundUpPenny} from "../../utils"
 import InfoSection from "../infoSection"
 import {usdcFromAtomic, usdcToAtomic} from "../../ethereum/erc20"
 import {iconDownArrow, iconOutArrow, iconUpArrow} from "../icons"
@@ -495,7 +487,6 @@ function ActionsContainer({
   }
 
   if (action === "deposit") {
-    assertBoolean(isFull)
     return (
       <TranchedPoolDepositForm
         backer={backer!}
