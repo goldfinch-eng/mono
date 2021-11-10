@@ -156,7 +156,7 @@ class TranchedPool {
 
     this.isV1StyleDeal = !!this.metadata?.v1StyleDeal
     this.isMigrated = !!this.metadata?.migrated
-    this.isPaused = await pool.methods.paused().call()
+    this.isPaused = await this.contract.methods.paused().call()
 
     let now = secondsSinceEpoch()
     if (now < seniorTranche.lockedUntil) {

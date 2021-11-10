@@ -147,8 +147,7 @@ export const strategies: ConnectionNoticeStrategy[] = [
     match: ({isPaused}) => !!isPaused,
     render: () => (
       <TextBanner>
-        The pool is currently paused. Join our <a href="https://discord.gg/HVeaca3fN8">Discord</a> for updates on when
-        the cap is raised.
+        The pool is currently paused. Join our <a href="https://discord.gg/HVeaca3fN8">Discord</a> for updates.
       </TextBanner>
     ),
   },
