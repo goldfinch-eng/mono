@@ -261,7 +261,7 @@ function usePoolBackers({
         compact(
           await Promise.all(
             activePoolBackers.map((b) =>
-              b.tranchedPool.participationLimits
+              b.tranchedPool.maxParticipants
                 ? b.tranchedPool.getParticipants().then((participants) => [b.tranchedPool.address, participants])
                 : undefined
             )

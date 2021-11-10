@@ -99,8 +99,8 @@ function TranchedPoolDepositForm({
   const session = useSession()
 
   async function enforceParticipantsLimit(): Promise<void> {
-    const limits = tranchedPool.participationLimits
-    if (limits) {
+    const maxParticipants = tranchedPool.maxParticipants
+    if (maxParticipants) {
       // Refresh the list of unique participants, since it could have grown since the tranched
       // pool was loaded.
       return tranchedPool.getParticipants().then((participants) => {
@@ -199,9 +199,6 @@ function TranchedPoolDepositForm({
       user.usdcBalance,
       goldfinchConfig.transactionLimit
     )
-    if (tranchedPool.participationLimits) {
-      maxTxAmountInDollars = BigNumber.min(maxTxAmountInDollars, tranchedPool.participationLimits.supplyPerParticipant)
-    }
 
     const disabled = isFull || user.usdcBalance.eq(0)
     const warningMessage = user.usdcBalance.eq(0) ? (
@@ -834,7 +831,7 @@ function TranchedPoolView() {
         [tranchedPool.address]: participants,
       })
     }
-    if (tranchedPool?.participationLimits && !participantsByTranchedPoolAddress[tranchedPool.address]) {
+    if (tranchedPool?.maxParticipants && !participantsByTranchedPoolAddress[tranchedPool.address]) {
       getAndSetParticipants(tranchedPool)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

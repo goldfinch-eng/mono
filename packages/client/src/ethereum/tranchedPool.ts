@@ -127,10 +127,7 @@ class TranchedPool {
   isMigrated!: boolean
   isPaused!: boolean
 
-  participationLimits: {
-    numParticipants: number
-    supplyPerParticipant: BigNumber
-  } | null
+  maxParticipants: number | null
 
   constructor(address: string, goldfinchProtocol: GoldfinchProtocol) {
     this.address = address
@@ -138,12 +135,9 @@ class TranchedPool {
     this.contract = this.goldfinchProtocol.getContract<TranchedPoolContract>("TranchedPool", address)
 
     if (address === process.env.REACT_APP_CAURIS_POOL_ADDRESS) {
-      this.participationLimits = {
-        numParticipants: 80,
-        supplyPerParticipant: new BigNumber(usdcToAtomic("30000")),
-      }
+      this.maxParticipants = 80
     } else {
-      this.participationLimits = null
+      this.maxParticipants = null
     }
   }
 
@@ -343,8 +337,8 @@ class TranchedPool {
 
   getIsClosedToUser(userAddress: string, participants: string[]): boolean {
     return (
-      !!this.participationLimits &&
-      participants.length >= this.participationLimits.numParticipants &&
+      !!this.maxParticipants &&
+      participants.length >= this.maxParticipants &&
       !(userAddress && participants.includes(userAddress))
     )
   }
@@ -353,7 +347,7 @@ class TranchedPool {
     if (this.remainingCapacity().isZero()) {
       return true
     } else {
-      if (this.participationLimits) {
+      if (this.maxParticipants) {
         if (participants) {
           return this.getIsClosedToUser(userAddress, participants)
         } else {
