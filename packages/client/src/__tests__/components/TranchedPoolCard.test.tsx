@@ -4,13 +4,13 @@ import {render, screen, waitFor} from "@testing-library/react"
 import {TranchedPoolCard} from "../../components/earn"
 import {defaultCreditLine} from "../../ethereum/creditLine"
 import BigNumber from "bignumber.js"
-import {TranchedPool} from "../../ethereum/tranchedPool"
+import {TranchedPoolMetadata, TranchedPool} from "../../ethereum/tranchedPool"
 import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
 
 function renderTranchedPoolCard(
   userAddress: string,
   remainingCapacity: BigNumber,
-  maxParticipants: TranchedPool["maxParticipants"],
+  maxParticipants: number | undefined,
   participants: string[] | undefined
 ) {
   // Mock tranched pool.
@@ -21,7 +21,7 @@ function renderTranchedPoolCard(
   } as unknown as GoldfinchProtocol)
   tranchedPool.creditLine = defaultCreditLine as any
   tranchedPool.remainingCapacity = () => remainingCapacity
-  tranchedPool.maxParticipants = maxParticipants
+  tranchedPool.metadata = {maxParticipants} as TranchedPoolMetadata
 
   const poolBacker = {
     address: userAddress,
@@ -55,7 +55,7 @@ describe("Tranched pool card", () => {
     })
     describe("does not have participation limits", () => {
       it("should show full badge", async () => {
-        renderTranchedPoolCard("", new BigNumber(0), null, undefined)
+        renderTranchedPoolCard("", new BigNumber(0), undefined, undefined)
 
         await waitFor(() => {
           expect(screen.getByText("Full")).toBeInTheDocument()
@@ -154,7 +154,7 @@ describe("Tranched pool card", () => {
     })
     describe("does not have participation limits", () => {
       it("should show open badge", async () => {
-        renderTranchedPoolCard("", new BigNumber(100), null, undefined)
+        renderTranchedPoolCard("", new BigNumber(100), undefined, undefined)
 
         await waitFor(() => {
           expect(screen.getByText("Open")).toBeInTheDocument()

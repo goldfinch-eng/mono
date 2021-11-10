@@ -8,7 +8,7 @@ import {croppedAddress, roundDownPenny, secondsSinceEpoch} from "../utils"
 import _ from "lodash"
 import {ContractEventLog} from "@goldfinch-eng/protocol/typechain/web3/types"
 import web3 from "../web3"
-import {usdcFromAtomic, usdcToAtomic} from "./erc20"
+import {usdcFromAtomic} from "./erc20"
 import {CONFIG_KEYS} from "@goldfinch-eng/protocol/blockchain_scripts/configKeys"
 import {SeniorPool as SeniorPoolContract} from "@goldfinch-eng/protocol/typechain/web3/SeniorPool"
 import {getCreditDesk} from "./creditDesk"
@@ -19,7 +19,7 @@ const ONE = new BigNumber(1)
 const ONE_HUNDRED = new BigNumber(100)
 
 interface MetadataStore {
-  [address: string]: PoolMetadata
+  [address: string]: TranchedPoolMetadata
 }
 let _metadataStore: MetadataStore
 async function getMetadataStore(networkId: string): Promise<MetadataStore> {
@@ -41,7 +41,7 @@ async function getMetadataStore(networkId: string): Promise<MetadataStore> {
       if (addr === "default") {
         return
       }
-      let metadata: PoolMetadata = loadedStore[addr]
+      let metadata: TranchedPoolMetadata = loadedStore[addr]
       if (metadata.icon && metadata.icon.startsWith("%PUBLIC_URL%")) {
         metadata.icon = metadata.icon.replace("%PUBLIC_URL%", process.env.PUBLIC_URL)
       }
@@ -60,7 +60,7 @@ async function getMetadataStore(networkId: string): Promise<MetadataStore> {
   }
 }
 
-interface PoolMetadata {
+export interface TranchedPoolMetadata {
   name: string
   category: string
   icon: string
@@ -73,6 +73,7 @@ interface PoolMetadata {
   migrated?: boolean
   migratedFrom?: string
   NDAUrl?: string
+  maxParticipants?: number
 }
 
 enum PoolState {
@@ -113,7 +114,7 @@ class TranchedPool {
   creditLine!: CreditLine
   creditLineAddress!: string
   state!: PoolState
-  metadata?: PoolMetadata
+  metadata?: TranchedPoolMetadata
   juniorFeePercent!: BigNumber
   reserveFeePercent!: BigNumber
   estimatedLeverageRatio!: BigNumber
@@ -127,18 +128,10 @@ class TranchedPool {
   isMigrated!: boolean
   isPaused!: boolean
 
-  maxParticipants: number | null
-
   constructor(address: string, goldfinchProtocol: GoldfinchProtocol) {
     this.address = address
     this.goldfinchProtocol = goldfinchProtocol
     this.contract = this.goldfinchProtocol.getContract<TranchedPoolContract>("TranchedPool", address)
-
-    if (address === process.env.REACT_APP_CAURIS_POOL_ADDRESS) {
-      this.maxParticipants = 80
-    } else {
-      this.maxParticipants = null
-    }
   }
 
   async initialize() {
@@ -177,7 +170,7 @@ class TranchedPool {
     }
   }
 
-  private async loadPoolMetadata(): Promise<PoolMetadata | undefined> {
+  private async loadPoolMetadata(): Promise<TranchedPoolMetadata | undefined> {
     let store = await getMetadataStore(this.goldfinchProtocol.networkId)
     return store[this.address.toLowerCase()]
   }
@@ -364,6 +357,10 @@ class TranchedPool {
    */
   get displayName(): string {
     return this.metadata?.name ?? croppedAddress(this.address)
+  }
+
+  get maxParticipants(): number | undefined {
+    return this.metadata?.maxParticipants
   }
 }
 
