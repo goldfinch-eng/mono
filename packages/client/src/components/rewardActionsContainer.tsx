@@ -11,6 +11,7 @@ import {
 } from "../ethereum/communityRewards"
 import {gfiFromAtomic, gfiInDollars, GFILoaded, gfiToDollarsAtomic} from "../ethereum/gfi"
 import {StakingRewardsLoaded, StakingRewardsPosition} from "../ethereum/pool"
+import {ACCEPT_TX_TYPE, CLAIM_TX_TYPE} from "../types/transactions"
 import useSendFromUser from "../hooks/useSendFromUser"
 import {
   Column,
@@ -31,8 +32,23 @@ import {AppContext} from "../App"
 
 const ONE_WEEK_SECONDS = new BigNumber(60 * 60 * 24 * 7)
 
+enum RewardStatus {
+  Acceptable,
+  Claimable,
+  TemporarilyAllClaimed,
+  PermanentlyAllClaimed,
+  FullyUnstakedAndClaimed,
+}
+
+enum ActionButtonTexts {
+  accept = "Accept",
+  accepting = "Accepting...",
+  claimGFI = "Claim GFI",
+  claimed = "Claimed",
+}
+
 interface ActionButtonProps {
-  text: string
+  text: ActionButtonTexts
   disabled: boolean
   onClick: () => Promise<void>
 }
@@ -42,15 +58,20 @@ function ActionButton(props: ActionButtonProps) {
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
   const disabledClass = props.disabled || isPending ? "disabled-button" : ""
 
-  async function action(): Promise<void> {
+  async function action(e): Promise<void> {
+    if (e.target === e.currentTarget) {
+      e.stopPropagation()
+    }
     setIsPending(true)
     await props.onClick()
     setIsPending(false)
   }
 
+  const isAccepting = props.text === ActionButtonTexts.accept && isPending
+
   return (
     <button className={`${!isTabletOrMobile && "table-cell"} action ${disabledClass}`} onClick={action}>
-      {props.text}
+      {isAccepting ? ActionButtonTexts.accepting : props.text}
     </button>
   )
 }
@@ -174,14 +195,6 @@ function ClaimForm(props: ClaimFormProps) {
   return <TransactionForm headerMessage="Claim" render={renderForm} closeForm={props.onCloseForm} />
 }
 
-enum RewardStatus {
-  Acceptable,
-  Claimable,
-  TemporarilyAllClaimed,
-  PermanentlyAllClaimed,
-  FullyUnstakedAndClaimed,
-}
-
 function getActionButtonProps(props: RewardsListItemProps): ActionButtonProps {
   const baseProps: Pick<ActionButtonProps, "onClick"> = {
     onClick: props.handleOnClick,
@@ -190,31 +203,31 @@ function getActionButtonProps(props: RewardsListItemProps): ActionButtonProps {
     case RewardStatus.Acceptable:
       return {
         ...baseProps,
-        text: "Accept",
+        text: ActionButtonTexts.accept,
         disabled: false,
       }
     case RewardStatus.Claimable:
       return {
         ...baseProps,
-        text: "Claim GFI",
+        text: ActionButtonTexts.claimGFI,
         disabled: false,
       }
     case RewardStatus.TemporarilyAllClaimed:
       return {
         ...baseProps,
-        text: "Claim GFI",
+        text: ActionButtonTexts.claimGFI,
         disabled: true,
       }
     case RewardStatus.PermanentlyAllClaimed:
       return {
         ...baseProps,
-        text: "Claimed",
+        text: ActionButtonTexts.claimed,
         disabled: true,
       }
     case RewardStatus.FullyUnstakedAndClaimed:
       return {
         ...baseProps,
-        text: "Claimed",
+        text: ActionButtonTexts.claimed,
         disabled: true,
       }
     default:
@@ -473,7 +486,8 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
   function handleClaim(rewards: CommunityRewardsLoaded | StakingRewardsLoaded, tokenId: string) {
     assertNonNullable(rewards)
     return sendFromUser(rewards.contract.methods.getReward(tokenId), {
-      type: "Claim",
+      type: CLAIM_TX_TYPE,
+      data: {},
     })
   }
 
@@ -490,8 +504,10 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
         info.proof
       ),
       {
-        type: "Accept",
-        index: info.index,
+        type: ACCEPT_TX_TYPE,
+        data: {
+          index: info.index,
+        },
       }
     )
   }

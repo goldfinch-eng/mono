@@ -3,6 +3,7 @@ import {Pool as PoolContract} from "@goldfinch-eng/protocol/typechain/web3/Pool"
 import {SeniorPool as SeniorPoolContract} from "@goldfinch-eng/protocol/typechain/web3/SeniorPool"
 import {StakingRewards as StakingRewardsContract} from "@goldfinch-eng/protocol/typechain/web3/StakingRewards"
 import {TranchedPool} from "@goldfinch-eng/protocol/typechain/web3/TranchedPool"
+import {assertUnreachable, genExhaustiveTuple} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
 import _ from "lodash"
 import {BlockNumber} from "web3-core"
@@ -11,13 +12,33 @@ import {Loadable, Loaded, WithLoadedInfo} from "../types/loadable"
 import {assertBigNumber, BlockInfo, displayNumber, roundDownPenny} from "../utils"
 import {buildCreditLine} from "./creditLine"
 import {Tickers, usdcFromAtomic} from "./erc20"
-import {getBalanceAsOf, mapEventsToTx} from "./events"
+import {
+  DRAWDOWN_MADE_EVENT,
+  INTEREST_COLLECTED_EVENT,
+  KnownEventData,
+  KnownEventName,
+  PoolEventType,
+  POOL_EVENT_TYPES,
+  PRINCIPAL_COLLECTED_EVENT,
+  PRINCIPAL_WRITTEN_DOWN_EVENT,
+  RESERVE_FUNDS_COLLECTED_EVENT,
+  StakingRewardsEventType,
+  WITHDRAWAL_MADE_EVENT,
+} from "../types/events"
 import {fiduFromAtomic, fiduInDollars, fiduToDollarsAtomic, FIDU_DECIMALS} from "./fidu"
 import {gfiInDollars, GFILoaded, gfiToDollarsAtomic, GFI_DECIMALS} from "./gfi"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {getMetadataStore} from "./tranchedPool"
+import {
+  AmountWithUnits,
+  INTEREST_COLLECTED_TX_NAME,
+  PRINCIPAL_COLLECTED_TX_NAME,
+  RESERVE_FUNDS_COLLECTED_TX_NAME,
+  HistoricalTx,
+} from "../types/transactions"
 import {UserLoaded, UserStakingRewardsLoaded} from "./user"
 import {fetchDataFromAttributes, getPoolEvents, INTEREST_DECIMALS, ONE_YEAR_SECONDS, USDC_DECIMALS} from "./utils"
+import {getBalanceAsOf, getPoolEventAmount, mapEventsToTx} from "./events"
 
 class Pool {
   goldfinchProtocol: GoldfinchProtocol
@@ -83,12 +104,12 @@ class SeniorPool {
     }
   }
 
-  async getPoolEvents(
+  async getPoolEvents<T extends PoolEventType>(
     address: string | undefined,
-    eventNames: string[] = ["DepositMade", "WithdrawalMade"],
+    eventNames: T[],
     includeV1Pool: boolean = true,
     toBlock: BlockNumber
-  ): Promise<EventData[]> {
+  ): Promise<KnownEventData<T>[]> {
     if (includeV1Pool) {
       // In migrating from v1 to v2 (i.e. from the `Pool` contract as modeling the senior pool,
       // to the `SeniorPool` contract as modeling the senior pool), we transferred contract state
@@ -330,7 +351,7 @@ type PoolData = {
   estimatedApy: BigNumber
   estimatedApyFromGfi: BigNumber
   defaultRate: BigNumber
-  poolEvents: EventData[]
+  poolEvents: KnownEventData<PoolEventType>[]
   assetsAsOf: typeof assetsAsOf
   getRepaymentEvents: typeof getRepaymentEvents
   remainingCapacity: typeof remainingCapacity
@@ -365,7 +386,7 @@ async function fetchPoolData(
   )
   let cumulativeWritedowns = await getCumulativeWritedowns(pool, currentBlock)
   let cumulativeDrawdowns = await getCumulativeDrawdowns(pool, currentBlock)
-  let poolEvents = await getAllDepositAndWithdrawalEvents(pool, currentBlock)
+  let poolEvents = await getAllPoolEvents(pool, currentBlock)
   let estimatedTotalInterest = await getEstimatedTotalInterest(pool, currentBlock)
   let estimatedApy = estimatedTotalInterest.dividedBy(totalPoolAssets)
   const currentEarnRatePerYear = stakingRewards.info.value.currentEarnRate.multipliedBy(ONE_YEAR_SECONDS)
@@ -415,7 +436,7 @@ async function getDepositEventsByCapitalProvider(
     true,
     currentBlock.number
   )
-  const depositedAndStakedEventsByCapitalProvider: EventData[] = await stakingRewards.getStakingEvents(
+  const depositedAndStakedEventsByCapitalProvider: EventData[] = await stakingRewards.getEvents(
     capitalProviderAddress,
     ["DepositedAndStaked"],
     undefined,
@@ -494,7 +515,7 @@ async function getCumulativeWritedowns(pool: SeniorPool, currentBlock: BlockInfo
 
   const events = await pool.goldfinchProtocol.queryEvents(
     pool.contract,
-    "PrincipalWrittenDown",
+    [PRINCIPAL_WRITTEN_DOWN_EVENT],
     undefined,
     currentBlock.number
   )
@@ -515,7 +536,7 @@ async function getCumulativeDrawdowns(pool: SeniorPool, currentBlock: BlockInfo)
   )
   let allDrawdownEvents = _.flatten(
     await Promise.all(
-      tranchedPools.map((pool) => protocol.queryEvents(pool, "DrawdownMade", undefined, currentBlock.number))
+      tranchedPools.map((pool) => protocol.queryEvents(pool, [DRAWDOWN_MADE_EVENT], undefined, currentBlock.number))
     )
   )
   const sum: BigNumber = allDrawdownEvents.length
@@ -527,47 +548,125 @@ async function getCumulativeDrawdowns(pool: SeniorPool, currentBlock: BlockInfo)
   return sum
 }
 
+type RepaymentEventType =
+  | typeof INTEREST_COLLECTED_EVENT
+  | typeof PRINCIPAL_COLLECTED_EVENT
+  | typeof RESERVE_FUNDS_COLLECTED_EVENT
+const REPAYMENT_EVENT_TYPES = genExhaustiveTuple<RepaymentEventType>()(
+  INTEREST_COLLECTED_EVENT,
+  PRINCIPAL_COLLECTED_EVENT,
+  RESERVE_FUNDS_COLLECTED_EVENT
+)
+
+export type CombinedRepaymentTx = {
+  type: "CombinedRepayment"
+  name: "CombinedRepayment"
+  amount: string
+  amountBN: BigNumber
+  interestAmountBN: BigNumber
+} & Omit<HistoricalTx<KnownEventName>, "type" | "name" | "amount">
+
+const parseRepaymentEventName = (eventData: KnownEventData<RepaymentEventType>) => {
+  switch (eventData.event) {
+    case INTEREST_COLLECTED_EVENT:
+      return INTEREST_COLLECTED_TX_NAME
+    case PRINCIPAL_COLLECTED_EVENT:
+      return PRINCIPAL_COLLECTED_TX_NAME
+    case RESERVE_FUNDS_COLLECTED_EVENT:
+      return RESERVE_FUNDS_COLLECTED_TX_NAME
+    default:
+      assertUnreachable(eventData.event)
+  }
+}
+const parseOldPoolRepaymentEventAmount = (eventData: KnownEventData<RepaymentEventType>): AmountWithUnits => {
+  switch (eventData.event) {
+    case INTEREST_COLLECTED_EVENT:
+      return {
+        amount: eventData.returnValues.poolAmount,
+        units: "usdc",
+      }
+    case PRINCIPAL_COLLECTED_EVENT:
+    case RESERVE_FUNDS_COLLECTED_EVENT: {
+      return {
+        amount: eventData.returnValues.amount,
+        units: "usdc",
+      }
+    }
+    default:
+      assertUnreachable(eventData.event)
+  }
+}
+const parsePoolRepaymentEventAmount = (eventData: KnownEventData<RepaymentEventType>): AmountWithUnits => {
+  switch (eventData.event) {
+    case INTEREST_COLLECTED_EVENT:
+    case PRINCIPAL_COLLECTED_EVENT:
+    case RESERVE_FUNDS_COLLECTED_EVENT: {
+      return {
+        amount: eventData.returnValues.amount,
+        units: "usdc",
+      }
+    }
+    default:
+      assertUnreachable(eventData.event)
+  }
+}
+
 async function getRepaymentEvents(
   pool: SeniorPoolLoaded,
   goldfinchProtocol: GoldfinchProtocol,
   currentBlock: BlockInfo
-) {
-  const eventNames = ["InterestCollected", "PrincipalCollected", "ReserveFundsCollected"]
-  let events = await goldfinchProtocol.queryEvents(pool.contract, eventNames, undefined, currentBlock.number)
-  const oldEvents = await goldfinchProtocol.queryEvents("Pool", eventNames, undefined, currentBlock.number)
-  events = oldEvents.concat(events)
-  const eventTxs = await mapEventsToTx(events)
-  const combinedEvents = _.map(_.groupBy(eventTxs, "id"), (val) => {
+): Promise<CombinedRepaymentTx[]> {
+  const events = await goldfinchProtocol.queryEvents(
+    pool.contract,
+    REPAYMENT_EVENT_TYPES,
+    undefined,
+    currentBlock.number
+  )
+  const oldEvents = await goldfinchProtocol.queryEvents("Pool", REPAYMENT_EVENT_TYPES, undefined, currentBlock.number)
+  const [eventTxs, oldEventTxs] = await Promise.all([
+    mapEventsToTx<RepaymentEventType>(events, REPAYMENT_EVENT_TYPES, {
+      parseName: parseRepaymentEventName,
+      parseAmount: parsePoolRepaymentEventAmount,
+    }),
+    mapEventsToTx<RepaymentEventType>(oldEvents, REPAYMENT_EVENT_TYPES, {
+      parseName: parseRepaymentEventName,
+      parseAmount: parseOldPoolRepaymentEventAmount,
+    }),
+  ])
+  const combined = _.map(_.groupBy(eventTxs.concat(oldEventTxs), "id"), (val): CombinedRepaymentTx | null => {
     const interestPayment = _.find(val, (event) => event.type === "InterestCollected")
-    const principalPayment = _.find(val, (event) => event.type === "PrincipalCollected") || {
-      amountBN: new BigNumber(0),
-    }
-    const reserveCollection = _.find(val, (event) => event.type === "ReserveFundsCollected") || {
-      amountBN: new BigNumber(0),
-    }
+    const principalPayment = _.find(val, (event) => event.type === "PrincipalCollected")
+    const reserveCollection = _.find(val, (event) => event.type === "ReserveFundsCollected")
     if (!interestPayment) {
       // This usually  means it's just ReserveFundsCollected, from a withdraw, and not a repayment
       return null
     }
-    const merged: any = {...interestPayment, ...principalPayment, ...reserveCollection}
-    merged.amountBN = interestPayment.amountBN.plus(principalPayment.amountBN).plus(reserveCollection.amountBN)
-    merged.amount = usdcFromAtomic(merged.amountBN)
-    merged.interestAmountBN = interestPayment.amountBN
-    merged.type = "CombinedRepayment"
-    merged.name = "CombinedRepayment"
-    return merged
+    const amountBN = interestPayment.amount.atomic
+      .plus(principalPayment ? principalPayment.amount.atomic : new BigNumber(0))
+      .plus(reserveCollection ? reserveCollection.amount.atomic : new BigNumber(0))
+    const combined: CombinedRepaymentTx = {
+      ...interestPayment,
+      ...principalPayment,
+      ...reserveCollection,
+      amountBN,
+      amount: usdcFromAtomic(amountBN),
+      interestAmountBN: interestPayment.amount.atomic,
+      type: "CombinedRepayment",
+      name: "CombinedRepayment",
+    }
+
+    return combined
   })
-  return _.compact(combinedEvents)
+  return _.compact(combined)
 }
 
-async function getAllDepositAndWithdrawalEvents(pool: SeniorPool, currentBlock: BlockInfo): Promise<EventData[]> {
-  const eventNames = ["DepositMade", "WithdrawalMade"]
-  const poolEvents = await pool.getPoolEvents(undefined, eventNames, true, currentBlock.number)
+async function getAllPoolEvents(pool: SeniorPool, currentBlock: BlockInfo): Promise<KnownEventData<PoolEventType>[]> {
+  const poolEvents = await pool.getPoolEvents(undefined, POOL_EVENT_TYPES, true, currentBlock.number)
   return poolEvents
 }
 
 function assetsAsOf(this: PoolData, blockNumExclusive: number): BigNumber {
-  return getBalanceAsOf(this.poolEvents, blockNumExclusive, "WithdrawalMade")
+  return getBalanceAsOf(this.poolEvents, blockNumExclusive, WITHDRAWAL_MADE_EVENT, getPoolEventAmount)
 }
 
 /**
@@ -792,32 +891,18 @@ class StakingRewards {
     }
   }
 
-  async getStakedEvent(recipient: string, tokenId: string, toBlock: BlockNumber): Promise<EventData | undefined> {
-    const events = await this.getStakingEvents(recipient, ["Staked"], {tokenId}, toBlock)
-    if (events.length) {
-      if (events.length === 1) {
-        const event = events[0]
-        return event
-      } else {
-        throw new Error(`Expected only one Staked event for tokenId: ${tokenId}`)
-      }
-    } else {
-      return
-    }
-  }
-
-  async getStakingEvents(
-    recipient: string,
-    eventNames: ["Staked"] | ["DepositedAndStaked"] | ["Staked", "DepositedAndStaked"],
+  async getEvents<T extends StakingRewardsEventType>(
+    address: string,
+    eventNames: T[],
     filter: Filter | undefined,
     toBlock: BlockNumber
-  ): Promise<EventData[]> {
+  ): Promise<KnownEventData<T>[]> {
     const events = await this.goldfinchProtocol.queryEvents(
       this.contract,
       eventNames,
       {
         ...(filter || {}),
-        user: recipient,
+        user: address,
       },
       toBlock
     )

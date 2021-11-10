@@ -1,6 +1,7 @@
 import React, {useContext, useState} from "react"
 import {AppContext} from "../App"
 import {minimumNumber, usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
+import {BORROW_TX_TYPE} from "../types/transactions"
 import useCurrencyUnlocked from "../hooks/useCurrencyUnlocked"
 import useDebounce from "../hooks/useDebounce"
 import {formatQuote, useOneInchQuote} from "../hooks/useOneInchQuote"
@@ -54,8 +55,10 @@ function DrawdownForm(props) {
     }
 
     return sendFromUser(unsentAction, {
-      type: "Borrow",
-      amount: transactionAmount,
+      type: BORROW_TX_TYPE,
+      data: {
+        amount: transactionAmount,
+      },
       gasless: props.borrower.shouldUseGasless,
     }).then(props.actionComplete)
   }

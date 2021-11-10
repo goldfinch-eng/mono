@@ -7,6 +7,8 @@ import {Subscription} from "web3-core-subscriptions"
 import {BlockHeader} from "web3-eth"
 import {AbstractProvider} from "web3-core"
 import {assertNonNullable, BlockInfo} from "../utils"
+import {CurrentTx, CurrentTxDataByType, FailedCurrentTx, PendingCurrentTx, TxType} from "../types/transactions"
+import {PlainObject} from "@goldfinch-eng/utils/src/type"
 
 const NOTIFY_API_KEY = "8447e1ef-75ab-4f77-b98f-f1ade3bb1982"
 const MURMURATION_CHAIN_ID = 31337
@@ -14,8 +16,8 @@ const MURMURATION_CHAIN_ID = 31337
 class NetworkMonitor {
   web3: Web3
   currentBlockNumber: number
-  currentTXs: any[]
-  setCurrentTXs: (fn: (currentTx: any[]) => any[]) => void
+  currentTxs: CurrentTx<TxType>[]
+  setCurrentTxs: (fn: (currentTx: CurrentTx<TxType>[]) => CurrentTx<TxType>[]) => void
   setCurrentErrors: (fn: (currentErrors: any[]) => any[]) => void
   networkId!: number
   notifySdk!: NotifyAPI
@@ -24,8 +26,8 @@ class NetworkMonitor {
   constructor(web3, state) {
     this.web3 = web3
     this.currentBlockNumber = 0
-    this.currentTXs = []
-    this.setCurrentTXs = state.setCurrentTXs
+    this.currentTxs = []
+    this.setCurrentTxs = state.setCurrentTxs
     this.setCurrentErrors = state.setCurrentErrors
   }
 
@@ -61,29 +63,31 @@ class NetworkMonitor {
     }
   }
 
-  updatePendingTxs() {
-    _.filter(this.currentTXs, {status: "pending"}).forEach((tx) => {
-      if (tx.blockNumber) {
-        const confirmations = this.currentBlockNumber - tx.blockNumber + 1
-        this.updateTX(tx, {confirmations: confirmations})
+  updatePendingTxs(): void {
+    this.currentTxs
+      .filter((tx): tx is CurrentTx<TxType> & {status: "pending"} => tx.status === "pending")
+      .forEach((tx) => {
+        if (tx.blockNumber) {
+          const confirmations = this.currentBlockNumber - tx.blockNumber + 1
+          this.updateTX(tx, {confirmations: confirmations})
 
-        if (confirmations === 1 && tx.onConfirm) {
-          tx.onConfirm(tx)
-        }
+          if (confirmations === 1 && tx.onConfirm) {
+            tx.onConfirm(tx)
+          }
 
-        if (confirmations >= CONFIRMATION_THRESHOLD) {
-          this.markTXSuccessful(tx)
-        } else if (this.isLocalNetwork && confirmations >= 1) {
-          this.markTXSuccessful(tx)
+          if (confirmations >= CONFIRMATION_THRESHOLD) {
+            this.markTXSuccessful(tx)
+          } else if (this.isLocalNetwork && confirmations >= 1) {
+            this.markTXSuccessful(tx)
+          }
         }
-      }
-    })
+      })
   }
 
-  watch(txHash, tx, onConfirm) {
+  watch<T extends TxType>(txHash: string, tx: PendingCurrentTx<T>, onConfirm): PendingCurrentTx<T> | undefined {
     let txData = tx
 
-    // First ensure, the tx hash is upto date (pending transactions could have a different id)
+    // First ensure, the tx hash is up-to-date (pending transactions could have a different id)
     this.updateTX(txData, {id: txHash, onConfirm: onConfirm})
     txData.id = txHash
 
@@ -108,25 +112,38 @@ class NetworkMonitor {
     return txData
   }
 
-  updateTX(txToUpdate, updates) {
-    this.setCurrentTXs((currentTXs) => {
-      const matches = _.remove(currentTXs, {id: txToUpdate.id})
-      const tx = matches && matches[0]
-      const newTXs = _.reverse(_.sortBy(_.concat(currentTXs, {...tx, ...updates}), "blockTime"))
+  updateTX<T extends TxType, U extends PlainObject>(txToUpdate: PendingCurrentTx<T>, updates: U): void {
+    this.setCurrentTxs((currentTxs) => {
+      const matches = _.remove(currentTxs, {id: txToUpdate.id})
+      const match = matches && matches[0]
+      let tx: CurrentTx<TxType>
+      if (match) {
+        tx = {
+          ...match,
+          ...updates,
+        }
+      } else {
+        throw new Error("Failed to identify transaction to update.")
+      }
+      const newTXs = _.reverse(_.sortBy(_.concat(currentTxs, tx), "blockTime"))
 
-      this.currentTXs = newTXs // Update local copy
+      this.currentTxs = newTXs // Update local copy
       return newTXs
     })
   }
 
-  addPendingTX(txData) {
+  addPendingTX<T extends TxType>(txData: {type: T; data: CurrentTxDataByType[T]}) {
     const randomID = Math.floor(Math.random() * Math.floor(1000000000))
-    const tx = {
+    const tx: PendingCurrentTx<T> = {
+      current: true,
       status: "pending",
       id: randomID,
+      blockNumber: undefined,
       blockTime: moment().unix(),
-      name: txData["type"],
+      name: txData.type,
       confirmations: 0,
+      onConfirm: undefined,
+      errorMessage: undefined,
       ...txData,
     }
     if (this.isLocalNetwork) {
@@ -134,27 +151,35 @@ class NetworkMonitor {
       // We set this so that we can listen for the block to be mined and mark it successful in updatePendingTxs
       tx.blockNumber = this.currentBlockNumber + 1
     }
-    this.setCurrentTXs((currentTXs) => {
-      const newTxs = _.concat(currentTXs, tx)
-      this.currentTXs = newTxs
+    this.setCurrentTxs((currentTxs) => {
+      const newTxs: CurrentTx<TxType>[] = currentTxs.concat([tx as CurrentTx<TxType>])
+      this.currentTxs = newTxs
       return newTxs
     })
     return tx
   }
 
-  markTXSuccessful(tx) {
+  markTXSuccessful<T extends TxType>(tx: PendingCurrentTx<T>) {
     this.updateTX(tx, {status: "successful"})
   }
 
-  markTXErrored(failedTX, error: Error) {
-    this.setCurrentTXs((currentPendingTXs) => {
-      const matches = _.remove(currentPendingTXs, {id: failedTX.id})
-      const tx = matches && matches[0]
-      tx.status = "error"
-      tx.errorMessage = error.message
-      const newPendingTxs = _.concat(currentPendingTXs, tx)
-      this.currentTXs = newPendingTxs
-      return newPendingTxs
+  markTXErrored<T extends TxType>(failedTX: PendingCurrentTx<T>, error: Error) {
+    this.setCurrentTxs((currentTxs) => {
+      const matches = _.remove(currentTxs, {id: failedTX.id}) as PendingCurrentTx<T>[]
+      const match = matches && matches[0]
+      let tx: FailedCurrentTx<T>
+      if (match) {
+        tx = {
+          ...match,
+          status: "error",
+          errorMessage: error.message,
+        }
+      } else {
+        throw new Error("Failed to identify pending transaction to mark as failed.")
+      }
+      const newTxs = currentTxs.concat([tx as CurrentTx<TxType>])
+      this.currentTxs = newTxs
+      return newTxs
     })
     this.setCurrentErrors((currentErrors) => {
       return _.concat(currentErrors, {id: failedTX.id, message: error.message})

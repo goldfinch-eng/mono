@@ -35,6 +35,8 @@ import {getApprovalDigest, getWallet} from "./permitHelpers"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 const WITHDRAWL_FEE_DENOMINATOR = new BN(200)
 
+const TEST_TIMEOUT = 30_000
+
 const simulateMaliciousTranchedPool = async (goldfinchConfig: any, person2: any): Promise<string> => {
   // Simulate someone deploying their own malicious TranchedPool using our contracts
   const accountant = await deployments.deploy("Accountant", {from: person2, args: []})
@@ -529,7 +531,7 @@ describe("SeniorPool", () => {
         const unknownPoolAddress = await simulateMaliciousTranchedPool(goldfinchConfig, person2)
 
         await expect(seniorPool.invest(unknownPoolAddress)).to.be.rejectedWith(/Pool must be valid/)
-      })
+      }).timeout(TEST_TIMEOUT)
     })
 
     it("should return the strategy's estimated investment", async () => {
