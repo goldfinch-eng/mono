@@ -178,7 +178,7 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
       tranchedPool.metadata?.backerLimit ?? process.env.REACT_APP_GLOBAL_BACKER_LIMIT ?? "1"
     )
     const backerLimit = tranchedPool.creditLine.limit.multipliedBy(backerLimitPercent)
-    let maxTxAmountInDollars = BigNumber.min(
+    let maxTxAmount = BigNumber.min(
       backerLimit,
       remainingJuniorCapacity,
       user.usdcBalance,
@@ -217,7 +217,7 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
           <TransactionInput
             formMethods={formMethods}
             disabled={disabled}
-            maxAmount={maxTxAmountInDollars}
+            maxAmount={maxTxAmount}
             rightDecoration={
               <button
                 className="enter-max-amount"
@@ -225,7 +225,7 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
                 onClick={() => {
                   formMethods.setValue(
                     "transactionAmount",
-                    new BigNumber(usdcFromAtomic(maxTxAmountInDollars)).decimalPlaces(decimalPlaces, 1).toString(10),
+                    new BigNumber(usdcFromAtomic(maxTxAmount)).decimalPlaces(decimalPlaces, 1).toString(10),
                     {
                       shouldValidate: true,
                       shouldDirty: true,
