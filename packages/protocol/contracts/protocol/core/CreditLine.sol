@@ -94,7 +94,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     balance = balance.add(amount);
 
     updateCreditLineAccounting(balance, _interestOwed, _principalOwed);
-    require(!isLate(timestamp), "Cannot drawdown when payments are past due");
+    require(!_isLate(timestamp), "Cannot drawdown when payments are past due");
   }
 
   /**
@@ -169,7 +169,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     require(balance > 0, "Must have balance to assess credit line");
 
     // Don't assess credit lines early!
-    if (currentTime() < nextDueTime && !isLate(currentTime())) {
+    if (currentTime() < nextDueTime && !_isLate(currentTime())) {
       return (0, 0, 0);
     }
     uint256 timeToAssess = calculateNextDueTime();
@@ -217,7 +217,11 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     return block.timestamp;
   }
 
-  function isLate(uint256 timestamp) internal view returns (bool) {
+  function isLate() external view override returns (bool) {
+    return _isLate(block.timestamp);
+  }
+
+  function _isLate(uint256 timestamp) internal view returns (bool) {
     uint256 secondsElapsedSinceFullPayment = timestamp.sub(lastFullPaymentTime);
     return secondsElapsedSinceFullPayment > paymentPeriodInDays.mul(SECONDS_PER_DAY);
   }

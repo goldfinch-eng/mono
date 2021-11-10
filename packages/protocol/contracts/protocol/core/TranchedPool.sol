@@ -569,6 +569,8 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   ) internal returns (uint256 totalReserveAmount) {
     safeERC20TransferFrom(config.getUSDC(), from, address(this), principal.add(interest), "Failed to collect payment");
 
+    // TODO @sanjay: Require pool is locked cannot collect interest payments while the new drawdown is in progress
+
     (uint256 interestAccrued, uint256 principalAccrued) = getTotalInterestAndPrincipal();
     uint256 reserveFeePercent = ONE_HUNDRED.div(config.getReserveDenominator()); // Convert the denonminator to percent
 
@@ -817,6 +819,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   function _assess() internal {
     (uint256 paymentRemaining, uint256 interestPayment, uint256 principalPayment) = creditLine.assess();
     if (interestPayment > 0 || principalPayment > 0) {
+      config.getPoolRewards().allocateRewards(interestPayment);
       uint256 reserveAmount = collectInterestAndPrincipal(
         address(creditLine),
         interestPayment,
