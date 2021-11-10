@@ -321,6 +321,11 @@ class TranchedPool {
       .getPastEvents("DepositMade", {
         filter: undefined,
         fromBlock: undefined,
+        // NOTE: We want to use the pending block, rather than the latest block, in order
+        // to err on the side of caution about the number of backers; we prefer to overestimate
+        // that number (by including pending transactions that may not end up succeeding), rather
+        // than underestimate it, because more participants can always be included if we've
+        // overestimated, but we can't remove participants if we've underestimated.
         toBlock: "pending",
       })
       .then((events: EventData[]) => {
