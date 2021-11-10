@@ -145,7 +145,6 @@ function TranchedPoolDepositForm({
             amount: transactionAmount,
           })
         )
-        .then(actionComplete)
         .catch((err: unknown) => {
           if (err instanceof MaxBackersError) {
             console.log("Backers limit reached after initial loading but before sending transaction.")
@@ -153,6 +152,7 @@ function TranchedPoolDepositForm({
             throw err
           }
         })
+        .then(actionComplete)
     } else {
       let signatureData = await gatherPermitSignature({
         token: usdc,
@@ -176,7 +176,6 @@ function TranchedPoolDepositForm({
             }
           )
         )
-        .then(actionComplete)
         .catch((err: unknown) => {
           if (err instanceof MaxBackersError) {
             console.log("Backers limit reached after initial loading but before sending transaction.")
@@ -184,6 +183,7 @@ function TranchedPoolDepositForm({
             throw err
           }
         })
+        .then(actionComplete)
     }
   }
 
