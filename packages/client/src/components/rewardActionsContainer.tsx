@@ -328,7 +328,7 @@ function getGrantVestingLengthDisplay(duration: number, currentTimestamp: number
     case 0:
       throw new Error("Grant without vesting length should have avoided calling this method.")
     case 31536000:
-      return ` on ${endDate}`
+      return " after 1 year"
     default:
       console.error(`Unexpected vesting length: ${duration}`)
       return ` on ${endDate}`
@@ -354,7 +354,17 @@ function getGrantVestingSchedule(
       displayInterval || displayCliff ? "," : ""
     } until 100%${displayEnd}`
   } else {
-    return "Linear"
+    // Since the vestingLength will be 0 here, we don't need to add the duration to the current timestamp
+    // to show the end date.
+    const endDate =
+      currentTimestamp !== undefined
+        ? new Date(currentTimestamp * 1000).toLocaleDateString(undefined, {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          })
+        : ""
+    return endDate !== "" ? `Linear until 100% on ${endDate}` : "Linear"
   }
 }
 function getStakingRewardsVestingSchedule(endTime: number) {
