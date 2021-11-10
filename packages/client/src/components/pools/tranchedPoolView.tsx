@@ -828,7 +828,7 @@ function TranchedPoolView() {
       getAndSetBackers(tranchedPool)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tranchedPool?.address])
+  }, [tranchedPool?.maxBackers])
 
   function openDetailsUrl() {
     window.open(tranchedPool?.metadata?.detailsUrl, "_blank")
