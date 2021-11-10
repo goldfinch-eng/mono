@@ -334,7 +334,7 @@ class TranchedPool {
   }
 
   getIsClosedToUser(userAddress: string, backers: string[]): boolean {
-    return !!this.maxBackers && backers.length > this.maxBackers && !(userAddress && backers.includes(userAddress))
+    return !!this.maxBackers && backers.length >= this.maxBackers && !(userAddress && backers.includes(userAddress))
   }
 
   getIsFull(userAddress: string, backers: string[] | undefined): boolean | undefined {
