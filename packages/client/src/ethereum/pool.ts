@@ -425,7 +425,7 @@ async function fetchPoolData(
   }
 }
 
-export async function getDepositEventsByCapitalProvider(
+async function getDepositEventsByCapitalProvider(
   pool: SeniorPoolLoaded,
   stakingRewards: StakingRewardsLoaded,
   capitalProviderAddress: string,
