@@ -99,8 +99,8 @@ function TranchedPoolDepositForm({
   const session = useSession()
 
   async function enforceParticipantsLimit(): Promise<void> {
-    const maxParticipants = tranchedPool.maxParticipants
-    if (maxParticipants) {
+    const maxBackers = tranchedPool.maxBackers
+    if (maxBackers) {
       // Refresh the list of unique participants, since it could have grown since the tranched
       // pool was loaded.
       return tranchedPool.getParticipants().then((participants) => {
@@ -831,7 +831,7 @@ function TranchedPoolView() {
         [tranchedPool.address]: participants,
       })
     }
-    if (tranchedPool?.maxParticipants && !participantsByTranchedPoolAddress[tranchedPool.address]) {
+    if (tranchedPool?.maxBackers && !participantsByTranchedPoolAddress[tranchedPool.address]) {
       getAndSetParticipants(tranchedPool)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

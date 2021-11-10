@@ -10,7 +10,7 @@ import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
 function renderTranchedPoolCard(
   userAddress: string,
   remainingCapacity: BigNumber,
-  maxParticipants: number | undefined,
+  maxBackers: number | undefined,
   participants: string[] | undefined
 ) {
   // Mock tranched pool.
@@ -21,7 +21,7 @@ function renderTranchedPoolCard(
   } as unknown as GoldfinchProtocol)
   tranchedPool.creditLine = defaultCreditLine as any
   tranchedPool.remainingCapacity = () => remainingCapacity
-  tranchedPool.metadata = {maxParticipants} as TranchedPoolMetadata
+  tranchedPool.metadata = {maxBackers} as TranchedPoolMetadata
 
   const poolBacker = {
     address: userAddress,
@@ -41,12 +41,12 @@ function renderTranchedPoolCard(
 }
 
 describe("Tranched pool card", () => {
-  const maxParticipants = 2
+  const maxBackers = 2
 
   describe("remaining capacity is 0", () => {
     describe("has participation limits", () => {
       it("should show full badge", async () => {
-        renderTranchedPoolCard("", new BigNumber(0), maxParticipants, undefined)
+        renderTranchedPoolCard("", new BigNumber(0), maxBackers, undefined)
 
         await waitFor(() => {
           expect(screen.getByText("Full")).toBeInTheDocument()
@@ -70,7 +70,7 @@ describe("Tranched pool card", () => {
           describe("user with address", () => {
             describe("user is a participant", () => {
               it("should show open badge", async () => {
-                renderTranchedPoolCard("0xtest", new BigNumber(100), maxParticipants, ["0xtest", "0xfoo"])
+                renderTranchedPoolCard("0xtest", new BigNumber(100), maxBackers, ["0xtest", "0xfoo"])
 
                 await waitFor(() => {
                   expect(screen.getByText("Open")).toBeInTheDocument()
@@ -79,7 +79,7 @@ describe("Tranched pool card", () => {
             })
             describe("user is not a participant", () => {
               it("should show full badge", async () => {
-                renderTranchedPoolCard("0xtest", new BigNumber(100), maxParticipants, ["0xfoo", "0xbar"])
+                renderTranchedPoolCard("0xtest", new BigNumber(100), maxBackers, ["0xfoo", "0xbar"])
 
                 await waitFor(() => {
                   expect(screen.getByText("Full")).toBeInTheDocument()
@@ -89,7 +89,7 @@ describe("Tranched pool card", () => {
           })
           describe("user without address", () => {
             it("should show full badge", async () => {
-              renderTranchedPoolCard("", new BigNumber(100), maxParticipants, ["0xfoo", "0xbar"])
+              renderTranchedPoolCard("", new BigNumber(100), maxBackers, ["0xfoo", "0xbar"])
 
               await waitFor(() => {
                 expect(screen.getByText("Full")).toBeInTheDocument()
@@ -101,7 +101,7 @@ describe("Tranched pool card", () => {
           describe("user with address", () => {
             describe("user is a participant", () => {
               it("should show open badge", async () => {
-                renderTranchedPoolCard("0xtest", new BigNumber(100), maxParticipants, ["0xtest"])
+                renderTranchedPoolCard("0xtest", new BigNumber(100), maxBackers, ["0xtest"])
 
                 await waitFor(() => {
                   expect(screen.getByText("Open")).toBeInTheDocument()
@@ -110,7 +110,7 @@ describe("Tranched pool card", () => {
             })
             describe("user is not a participant", () => {
               it("should show open badge", async () => {
-                renderTranchedPoolCard("0xtest", new BigNumber(100), maxParticipants, ["0xfoo"])
+                renderTranchedPoolCard("0xtest", new BigNumber(100), maxBackers, ["0xfoo"])
 
                 await waitFor(() => {
                   expect(screen.getByText("Open")).toBeInTheDocument()
@@ -120,7 +120,7 @@ describe("Tranched pool card", () => {
           })
           describe("user without address", () => {
             it("should show open badge", async () => {
-              renderTranchedPoolCard("", new BigNumber(100), maxParticipants, ["0xfoo"])
+              renderTranchedPoolCard("", new BigNumber(100), maxBackers, ["0xfoo"])
 
               await waitFor(() => {
                 expect(screen.getByText("Open")).toBeInTheDocument()
@@ -132,7 +132,7 @@ describe("Tranched pool card", () => {
       describe("participants are undefined", () => {
         describe("user with address", () => {
           it("should not show a badge", async () => {
-            renderTranchedPoolCard("0xtest", new BigNumber(100), maxParticipants, undefined)
+            renderTranchedPoolCard("0xtest", new BigNumber(100), maxBackers, undefined)
 
             await waitFor(() => {
               expect(screen.queryByText("Open")).toBeNull()
@@ -142,7 +142,7 @@ describe("Tranched pool card", () => {
         })
         describe("user without address", () => {
           it("should not show a badge", async () => {
-            renderTranchedPoolCard("", new BigNumber(100), maxParticipants, undefined)
+            renderTranchedPoolCard("", new BigNumber(100), maxBackers, undefined)
 
             await waitFor(() => {
               expect(screen.queryByText("Open")).toBeNull()

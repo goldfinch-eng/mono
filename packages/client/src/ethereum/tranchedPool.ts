@@ -73,7 +73,7 @@ export interface TranchedPoolMetadata {
   migrated?: boolean
   migratedFrom?: string
   NDAUrl?: string
-  maxParticipants?: number
+  maxBackers?: number
 }
 
 enum PoolState {
@@ -330,8 +330,8 @@ class TranchedPool {
 
   getIsClosedToUser(userAddress: string, participants: string[]): boolean {
     return (
-      !!this.maxParticipants &&
-      participants.length >= this.maxParticipants &&
+      !!this.maxBackers &&
+      participants.length >= this.maxBackers &&
       !(userAddress && participants.includes(userAddress))
     )
   }
@@ -340,7 +340,7 @@ class TranchedPool {
     if (this.remainingCapacity().isZero()) {
       return true
     } else {
-      if (this.maxParticipants) {
+      if (this.maxBackers) {
         if (participants) {
           return this.getIsClosedToUser(userAddress, participants)
         } else {
@@ -359,8 +359,8 @@ class TranchedPool {
     return this.metadata?.name ?? croppedAddress(this.address)
   }
 
-  get maxParticipants(): number | undefined {
-    return this.metadata?.maxParticipants
+  get maxBackers(): number | undefined {
+    return this.metadata?.maxBackers
   }
 }
 
