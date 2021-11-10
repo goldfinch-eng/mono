@@ -13,6 +13,7 @@ import {useOneInchQuote, formatQuote} from "../hooks/useOneInchQuote"
 import useDebounce from "../hooks/useDebounce"
 import BigNumber from "bignumber.js"
 import {assertNonNullable, displayDollars} from "../utils"
+import {PAYMENT_TX_TYPE} from "../types/transactions"
 
 function PaymentForm(props) {
   const {borrower, creditLine, actionComplete} = props
@@ -149,8 +150,10 @@ function PaymentForm(props) {
       }
     }
     return sendFromUser(unsentAction, {
-      type: "Payment",
-      amount: transactionAmount,
+      type: PAYMENT_TX_TYPE,
+      data: {
+        amount: transactionAmount,
+      },
       gasless: borrower.shouldUseGasless,
     }).then(actionComplete)
   }
