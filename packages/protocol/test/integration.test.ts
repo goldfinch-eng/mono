@@ -267,8 +267,8 @@ describe("Goldfinch", async () => {
           await withdrawFromSeniorPool("max")
           await withdrawFromSeniorPoolInFidu(availableFidu, investor2) // Withdraw everything in fidu terms
         }).toChange([
-          [async () => await getBalance(investor1, usdc), {byCloseTo: expectedReturn}],
-          [async () => await getBalance(investor2, usdc), {byCloseTo: expectedReturn}], // Also ensures share price is correctly incorporated
+          [() => getBalance(investor1, usdc), {byCloseTo: expectedReturn}],
+          [() => getBalance(investor2, usdc), {byCloseTo: expectedReturn}], // Also ensures share price is correctly incorporated
         ])
 
         // Only 2 junior investors, and both were for the same amount. 10% was drawdown, so 90% of junior principal is redeemable
@@ -279,8 +279,8 @@ describe("Goldfinch", async () => {
           await withdrawFromPool(tranchedPool, "max")
           await withdrawFromPool(tranchedPool, expectedJuniorReturn, investor2)
         }).toChange([
-          [async () => await getBalance(investor1, usdc), {byCloseTo: expectedJuniorReturn}],
-          [async () => await getBalance(investor2, usdc), {byCloseTo: expectedJuniorReturn}],
+          [() => getBalance(investor1, usdc), {byCloseTo: expectedJuniorReturn}],
+          [() => getBalance(investor2, usdc), {byCloseTo: expectedJuniorReturn}],
         ])
       })
 
