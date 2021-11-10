@@ -324,8 +324,8 @@ class TranchedPool {
         // NOTE: We want to use the pending block, rather than the latest block, in order
         // to err on the side of caution about the number of backers; we prefer to overestimate
         // that number (by including pending transactions that may not end up succeeding), rather
-        // than underestimate it, because more participants can always be included if we've
-        // overestimated, but we can't remove participants if we've underestimated.
+        // than underestimate it, because more backers can always be included if we've
+        // overestimated, but we can't remove backers if we've underestimated.
         toBlock: "pending",
       })
       .then((events: EventData[]) => {
@@ -333,21 +333,17 @@ class TranchedPool {
       })
   }
 
-  getIsClosedToUser(userAddress: string, participants: string[]): boolean {
-    return (
-      !!this.maxBackers &&
-      participants.length >= this.maxBackers &&
-      !(userAddress && participants.includes(userAddress))
-    )
+  getIsClosedToUser(userAddress: string, backers: string[]): boolean {
+    return !!this.maxBackers && backers.length >= this.maxBackers && !(userAddress && backers.includes(userAddress))
   }
 
-  getIsFull(userAddress: string, participants: string[] | undefined): boolean | undefined {
+  getIsFull(userAddress: string, backers: string[] | undefined): boolean | undefined {
     if (this.remainingCapacity().isZero()) {
       return true
     } else {
       if (this.maxBackers) {
-        if (participants) {
-          return this.getIsClosedToUser(userAddress, participants)
+        if (backers) {
+          return this.getIsClosedToUser(userAddress, backers)
         } else {
           return
         }

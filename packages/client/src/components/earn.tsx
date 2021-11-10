@@ -157,11 +157,11 @@ function TranchedPoolCardSkeleton() {
 
 export function TranchedPoolCard({
   poolBacker,
-  participants,
+  backers,
   disabled,
 }: {
   poolBacker: PoolBacker
-  participants: string[] | undefined
+  backers: string[] | undefined
   disabled: boolean
 }) {
   const history = useHistory()
@@ -173,7 +173,7 @@ export function TranchedPoolCard({
 
   const disabledClass = disabled ? "disabled" : ""
   const balanceDisabledClass = poolBacker?.tokenInfos.length === 0 ? "disabled" : ""
-  const isFull = tranchedPool.getIsFull(poolBacker.address, participants)
+  const isFull = tranchedPool.getIsFull(poolBacker.address, backers)
   const badge = isUndefined(isFull) ? undefined : isFull ? (
     <Badge text="Full" variant="gray" fixedWidth />
   ) : (
@@ -205,12 +205,12 @@ export function TranchedPoolCard({
 function usePoolBackers({
   goldfinchProtocol,
   user,
-  participantsByTranchedPoolAddress,
+  backersByTranchedPoolAddress,
   setBackersByTranchedPoolAddress,
 }: {
   goldfinchProtocol?: GoldfinchProtocol
   user?: User
-  participantsByTranchedPoolAddress?: BackersByTranchedPoolAddress
+  backersByTranchedPoolAddress?: BackersByTranchedPoolAddress
   setBackersByTranchedPoolAddress?: (newVal: BackersByTranchedPoolAddress) => void
 }): {
   backers: PoolBacker[]
@@ -227,7 +227,7 @@ function usePoolBackers({
     async function loadTranchedPools(
       goldfinchProtocol: GoldfinchProtocol,
       user: User,
-      participantsByTranchedPoolAddress: BackersByTranchedPoolAddress,
+      backersByTranchedPoolAddress: BackersByTranchedPoolAddress,
       setBackersByTranchedPoolAddress: (newVal: BackersByTranchedPoolAddress) => void
     ) {
       let poolEvents = (await goldfinchProtocol.queryEvents("GoldfinchFactory", [
@@ -257,25 +257,25 @@ function usePoolBackers({
       )
       setBackersStatus("loaded")
 
-      const participantsByActivePoolAddress = fromPairs(
+      const backersByActivePoolAddress = fromPairs(
         compact(
           await Promise.all(
             activePoolBackers.map((b) =>
               b.tranchedPool.maxBackers
-                ? b.tranchedPool.getBackers().then((participants) => [b.tranchedPool.address, participants])
+                ? b.tranchedPool.getBackers().then((backers) => [b.tranchedPool.address, backers])
                 : undefined
             )
           )
         )
       )
       setBackersByTranchedPoolAddress({
-        ...participantsByTranchedPoolAddress,
-        ...participantsByActivePoolAddress,
+        ...backersByTranchedPoolAddress,
+        ...backersByActivePoolAddress,
       })
     }
 
-    if (goldfinchProtocol && user && participantsByTranchedPoolAddress && setBackersByTranchedPoolAddress) {
-      loadTranchedPools(goldfinchProtocol, user, participantsByTranchedPoolAddress, setBackersByTranchedPoolAddress)
+    if (goldfinchProtocol && user && backersByTranchedPoolAddress && setBackersByTranchedPoolAddress) {
+      loadTranchedPools(goldfinchProtocol, user, backersByTranchedPoolAddress, setBackersByTranchedPoolAddress)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [goldfinchProtocol, user])
@@ -290,7 +290,7 @@ function Earn() {
     user,
     goldfinchProtocol,
     goldfinchConfig,
-    participantsByTranchedPoolAddress,
+    backersByTranchedPoolAddress,
     setBackersByTranchedPoolAddress,
   } = useContext(AppContext)
   const [capitalProvider, setCapitalProvider] = useState<CapitalProvider>()
@@ -302,7 +302,7 @@ function Earn() {
   } = usePoolBackers({
     goldfinchProtocol,
     user,
-    participantsByTranchedPoolAddress,
+    backersByTranchedPoolAddress,
     setBackersByTranchedPoolAddress,
   })
   const {earnStore, setEarnStore} = useEarn()
@@ -379,7 +379,7 @@ function Earn() {
               <TranchedPoolCard
                 key={`${p.tranchedPool.address}`}
                 poolBacker={p}
-                participants={participantsByTranchedPoolAddress?.[p.tranchedPool.address]}
+                backers={backersByTranchedPoolAddress?.[p.tranchedPool.address]}
                 disabled={disabled}
               />
             ))}

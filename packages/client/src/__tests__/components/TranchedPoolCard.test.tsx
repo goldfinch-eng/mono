@@ -11,7 +11,7 @@ function renderTranchedPoolCard(
   userAddress: string,
   remainingCapacity: BigNumber,
   maxBackers: number | undefined,
-  participants: string[] | undefined
+  backers: string[] | undefined
 ) {
   // Mock tranched pool.
   const tranchedPool = new TranchedPool("0xasdf", {
@@ -35,7 +35,7 @@ function renderTranchedPoolCard(
 
   return render(
     <AppContext.Provider value={store}>
-      <TranchedPoolCard poolBacker={poolBacker as any} participants={participants} disabled={false} />
+      <TranchedPoolCard poolBacker={poolBacker as any} backers={backers} disabled={false} />
     </AppContext.Provider>
   )
 }
@@ -65,8 +65,8 @@ describe("Tranched pool card", () => {
   })
   describe("remaining capacity is not 0", () => {
     describe("has participation limits", () => {
-      describe("participants are defined", () => {
-        describe("number of participants has reached limit", () => {
+      describe("backers are defined", () => {
+        describe("number of backers has reached limit", () => {
           describe("user with address", () => {
             describe("user is a participant", () => {
               it("should show open badge", async () => {
@@ -97,7 +97,7 @@ describe("Tranched pool card", () => {
             })
           })
         })
-        describe("number of participants is under limit", () => {
+        describe("number of backers is under limit", () => {
           describe("user with address", () => {
             describe("user is a participant", () => {
               it("should show open badge", async () => {
@@ -129,7 +129,7 @@ describe("Tranched pool card", () => {
           })
         })
       })
-      describe("participants are undefined", () => {
+      describe("backers are undefined", () => {
         describe("user with address", () => {
           it("should not show a badge", async () => {
             renderTranchedPoolCard("0xtest", new BigNumber(100), maxBackers, undefined)

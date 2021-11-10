@@ -91,7 +91,7 @@ function TranchedPoolDepositForm({
     network,
     networkMonitor,
     setSessionData,
-    participantsByTranchedPoolAddress,
+    backersByTranchedPoolAddress,
     setBackersByTranchedPoolAddress,
   } = useNonNullContext(AppContext)
   const {gatherPermitSignature} = useERC20Permit()
@@ -101,16 +101,16 @@ function TranchedPoolDepositForm({
   async function enforceMaxBackers(): Promise<void> {
     const maxBackers = tranchedPool.maxBackers
     if (maxBackers) {
-      // Refresh the list of unique participants, since it could have grown since the tranched
+      // Refresh the list of unique backers, since it could have grown since the tranched
       // pool was loaded.
-      return tranchedPool.getBackers().then((participants) => {
+      return tranchedPool.getBackers().then((backers) => {
         setBackersByTranchedPoolAddress({
-          ...participantsByTranchedPoolAddress,
-          [tranchedPool.address]: participants,
+          ...backersByTranchedPoolAddress,
+          [tranchedPool.address]: backers,
         })
 
-        if (tranchedPool.getIsClosedToUser(user.address, participants)) {
-          throw new MaxBackersError("Pool participants limit reached.")
+        if (tranchedPool.getIsClosedToUser(user.address, backers)) {
+          throw new MaxBackersError("Pool backers limit reached.")
         }
       })
     }
@@ -447,7 +447,7 @@ function ActionsContainer({
   onComplete: () => Promise<any>
   backer: PoolBacker | undefined
 }) {
-  const {user, participantsByTranchedPoolAddress} = useContext(AppContext)
+  const {user, backersByTranchedPoolAddress} = useContext(AppContext)
   const [action, setAction] = useState<"" | "deposit" | "withdraw">("")
   const session = useSession()
 
@@ -468,7 +468,7 @@ function ActionsContainer({
 
   let depositAction
   let depositClass = "disabled"
-  const isFull = tranchedPool?.getIsFull(user.address, participantsByTranchedPoolAddress?.[tranchedPool.address])
+  const isFull = tranchedPool?.getIsFull(user.address, backersByTranchedPoolAddress?.[tranchedPool.address])
   if (
     session.status === "authenticated" &&
     backer &&
@@ -807,7 +807,7 @@ function TranchedPoolView() {
     user,
     network,
     setSessionData,
-    participantsByTranchedPoolAddress,
+    backersByTranchedPoolAddress,
     setBackersByTranchedPoolAddress,
   } = useNonNullContext(AppContext)
   const session = useSession()
@@ -825,13 +825,13 @@ function TranchedPoolView() {
 
   useEffect(() => {
     async function getAndSetBackers(tranchedPool: TranchedPool) {
-      const participants = await tranchedPool.getBackers()
+      const backers = await tranchedPool.getBackers()
       setBackersByTranchedPoolAddress({
-        ...participantsByTranchedPoolAddress,
-        [tranchedPool.address]: participants,
+        ...backersByTranchedPoolAddress,
+        [tranchedPool.address]: backers,
       })
     }
-    if (tranchedPool?.maxBackers && !participantsByTranchedPoolAddress[tranchedPool.address]) {
+    if (tranchedPool?.maxBackers && !backersByTranchedPoolAddress[tranchedPool.address]) {
       getAndSetBackers(tranchedPool)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -889,8 +889,8 @@ function TranchedPoolView() {
     <></>
   )
 
-  const participants = tranchedPool ? participantsByTranchedPoolAddress[tranchedPool.address] : undefined
-  const isClosedToUser = participants ? !!tranchedPool?.getIsClosedToUser(user.address, participants) : false
+  const backers = tranchedPool ? backersByTranchedPoolAddress[tranchedPool.address] : undefined
+  const isClosedToUser = backers ? !!tranchedPool?.getIsClosedToUser(user.address, backers) : false
 
   const showActionsContainer = !isAtMaxCapacity || !backer?.balanceInDollars.isZero()
 
