@@ -212,9 +212,6 @@ describe("Goldfinch", async () => {
     }
 
     describe("scenarios", async () => {
-      beforeEach(function () {
-        this.timeout(TEST_TIMEOUT)
-      })
       it("should accrue interest with multiple investors", async () => {
         const amount = usdcVal(10000)
         const juniorAmount = usdcVal(1000)
@@ -287,7 +284,7 @@ describe("Goldfinch", async () => {
           [() => getBalance(investor1, usdc), {byCloseTo: expectedJuniorReturn}],
           [() => getBalance(investor2, usdc), {byCloseTo: expectedJuniorReturn}],
         ])
-      })
+      }).timeout(TEST_TIMEOUT)
 
       it("should handle writedowns correctly", async () => {
         const amount = usdcVal(10000)
