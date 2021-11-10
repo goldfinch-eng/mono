@@ -181,7 +181,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     // See: https://twitter.com/Mudit__Gupta/status/1409463917290557440
     require(
       additionalRewardsPerToken <= rewardsSinceLastUpdate,
-      "additional rewardPerToken cannot exceed rewardsSinceLastUpdate"
+      "additionalRewardsPerToken cannot exceed rewardsSinceLastUpdate"
     );
     return additionalRewardsPerToken;
   }

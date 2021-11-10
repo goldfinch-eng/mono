@@ -1942,7 +1942,7 @@ describe("StakingRewards", function () {
         await advanceTime({seconds: 1000})
 
         await expect(stakingRewards.getReward(tokenId, {from: investor})).to.be.rejectedWith(
-          /additional rewardPerToken cannot exceed rewardsSinceLastUpdate/
+          /additionalRewardsPerToken cannot exceed rewardsSinceLastUpdate/
         )
       })
     })
