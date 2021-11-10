@@ -74,16 +74,9 @@ interface TranchedPoolDepositFormProps {
   tranchedPool: TranchedPool
   actionComplete: () => void
   closeForm: () => void
-  isFull: boolean
 }
 
-function TranchedPoolDepositForm({
-  backer,
-  tranchedPool,
-  actionComplete,
-  closeForm,
-  isFull,
-}: TranchedPoolDepositFormProps) {
+function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeForm}: TranchedPoolDepositFormProps) {
   const {
     user,
     goldfinchConfig,
@@ -200,13 +193,7 @@ function TranchedPoolDepositForm({
       goldfinchConfig.transactionLimit
     )
 
-    // We include `isFull` here because this condition can become `true` after the initial rendering
-    // of the form in which it was `false`, due to the fact that we refresh full status (by re-fetching
-    // the set of backers) upon submit.
-    //
-    // We don't, though, check whether `tranchedPool.isPaused` here, because we rely on that having been
-    // done upstream and controlling whether the form gets rendered.
-    const disabled = isFull || user.usdcBalance.eq(0)
+    const disabled = user.usdcBalance.eq(0)
     const warningMessage = user.usdcBalance.eq(0) ? (
       <p className="form-message">
         You don't have any USDC to deposit. You'll need to first send USDC to your address to deposit.
@@ -515,7 +502,6 @@ function ActionsContainer({
         tranchedPool={tranchedPool!}
         closeForm={closeForm}
         actionComplete={actionComplete}
-        isFull={isFull}
       />
     )
   } else if (action === "withdraw") {
