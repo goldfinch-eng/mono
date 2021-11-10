@@ -65,6 +65,7 @@ export async function mint(
   overrideFrom?: string,
   overrideChainId?: BN
 ): Promise<void> {
+  await uniqueIdentity.setSupportedUIDTypes([tokenId], [true])
   const contractBalanceBefore = await web3.eth.getBalance(uniqueIdentity.address)
   const tokenBalanceBefore = await uniqueIdentity.balanceOf(overrideFrom as string, tokenId)
 

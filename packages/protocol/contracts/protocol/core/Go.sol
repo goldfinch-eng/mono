@@ -12,6 +12,19 @@ import "../../interfaces/IUniqueIdentity0612.sol";
 
 contract Go is IGo, BaseUpgradeablePausable {
   address public override uniqueIdentity;
+  uint256[11] public allIdTypes = [
+    ID_TYPE_0,
+    ID_TYPE_1,
+    ID_TYPE_2,
+    ID_TYPE_3,
+    ID_TYPE_4,
+    ID_TYPE_5,
+    ID_TYPE_6,
+    ID_TYPE_7,
+    ID_TYPE_8,
+    ID_TYPE_9,
+    ID_TYPE_10
+  ];
 
   using SafeMath for uint256;
 
@@ -34,7 +47,7 @@ contract Go is IGo, BaseUpgradeablePausable {
     uniqueIdentity = _uniqueIdentity;
   }
 
-  function updateGoldfinchConfig() external override onlyAdmin {
+  function updateGoldfinchConfig() public override onlyAdmin {
     config = GoldfinchConfig(config.configAddress());
     emit GoldfinchConfigUpdated(msg.sender, address(config));
   }
@@ -48,7 +61,7 @@ contract Go is IGo, BaseUpgradeablePausable {
    * @param account The account whose go status to obtain
    * @return The account's go status
    */
-  function go(address account) external override returns (bool) {
+  function go(address account) public view override returns (bool) {
     require(account != address(0), "Zero address is not go-listed");
     for (uint256 i = 0; i < allIdTypes.length; ++i) {
       uint256 idTypeBalance = IUniqueIdentity0612(uniqueIdentity).balanceOf(account, allIdTypes[i]);
@@ -66,7 +79,7 @@ contract Go is IGo, BaseUpgradeablePausable {
    * @param onlyIdTypes Array of id types to check balances
    * @return The account's go status
    */
-  function goOnlyIdTypes(address account, uint256[] memory onlyIdTypes) external override returns (bool) {
+  function goOnlyIdTypes(address account, uint256[] memory onlyIdTypes) public view override returns (bool) {
     require(account != address(0), "Zero address is not go-listed");
     for (uint256 i = 0; i < onlyIdTypes.length; ++i) {
       uint256 idTypeBalance = IUniqueIdentity0612(uniqueIdentity).balanceOf(account, onlyIdTypes[i]);
@@ -82,7 +95,7 @@ contract Go is IGo, BaseUpgradeablePausable {
    * @param account The account whose go status to obtain
    * @return The account's go status
    */
-  function goSeniorPool(address account) external override returns (bool) {
+  function goSeniorPool(address account) public view override returns (bool) {
     require(account != address(0), "Zero address is not go-listed");
     uint256[2] memory seniorPoolIdTypes = [ID_TYPE_0, ID_TYPE_1];
     for (uint256 i = 0; i < seniorPoolIdTypes.length; ++i) {

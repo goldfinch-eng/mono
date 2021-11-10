@@ -2,7 +2,7 @@
 import hre from "hardhat"
 import {constants as ethersConstants} from "ethers"
 import {asNonNullable} from "@goldfinch-eng/utils"
-import {deployAllContracts, getCurrentTimestamp, SECONDS_PER_DAY} from "./testHelpers"
+import {deployAllContracts, getCurrentTimestamp, SECONDS_PER_DAY, ZERO_ADDRESS} from "./testHelpers"
 import {
   getContract,
   GO_LISTER_ROLE,
@@ -228,22 +228,85 @@ describe("Go", () => {
           expect(await go.go(anotherUser)).to.equal(true)
         })
       })
+
       context("account is not on legacy go-list", () => {
         beforeEach(async () => {
           expect(await goldfinchConfig.goList(anotherUser)).to.equal(false)
         })
 
         it("returns true", async () => {
+          console.log("go", await go.go(anotherUser))
           expect(await go.go(anotherUser)).to.equal(true)
         })
       })
     })
 
     context("goOnlyIdTypes", () => {
-      // @TODO
+      it("Validates zero address", async () => {
+        await expect(go.goOnlyIdTypes(ZERO_ADDRESS, [])).to.be.rejectedWith(/Zero address is not go-listed/)
+      })
+
+      it("returns true if has UID and not legacy golisted", async () => {
+        const tokenId = new BN(0)
+        const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
+        await mint(hre, uniqueIdentity, tokenId, expiresAt, new BN(0), owner, undefined, anotherUser)
+        expect(await uniqueIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(new BN(1))
+        expect(await goldfinchConfig.goList(anotherUser)).to.equal(false)
+        expect(await goldfinchConfig.hasRole(GO_LISTER_ROLE, owner)).to.equal(true)
+        expect(await go.goOnlyIdTypes(anotherUser, [tokenId])).to.equal(true)
+      })
+
+      it("returns true if legacy golisted", async () => {
+        expect(await goldfinchConfig.goList(anotherUser)).to.equal(false)
+        expect(await goldfinchConfig.hasRole(GO_LISTER_ROLE, owner)).to.equal(true)
+        await goldfinchConfig.addToGoList(anotherUser, {from: owner})
+        expect(await goldfinchConfig.goList(anotherUser)).to.equal(true)
+        expect(await go.goOnlyIdTypes(anotherUser, [])).to.equal(true)
+      })
+
+      it("returns false if not legacy golisted and no included UID", async () => {
+        const tokenId = new BN(0)
+        const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
+        await mint(hre, uniqueIdentity, tokenId, expiresAt, new BN(0), owner, undefined, anotherUser)
+        expect(await uniqueIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(new BN(1))
+        expect(await goldfinchConfig.goList(anotherUser)).to.equal(false)
+        expect(await goldfinchConfig.hasRole(GO_LISTER_ROLE, owner)).to.equal(true)
+        expect(await go.goOnlyIdTypes(anotherUser, [1])).to.equal(false)
+      })
     })
+
     context("goSeniorPool", () => {
-      // @TODO
+      it("Validates zero address", async () => {
+        await expect(go.goSeniorPool(ZERO_ADDRESS)).to.be.rejectedWith(/Zero address is not go-listed/)
+      })
+
+      it("returns true if has UID and not legacy golisted", async () => {
+        const tokenId = new BN(0)
+        const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
+        await mint(hre, uniqueIdentity, tokenId, expiresAt, new BN(0), owner, undefined, anotherUser)
+        expect(await uniqueIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(new BN(1))
+        expect(await goldfinchConfig.goList(anotherUser)).to.equal(false)
+        expect(await goldfinchConfig.hasRole(GO_LISTER_ROLE, owner)).to.equal(true)
+        expect(await go.goSeniorPool(anotherUser)).to.equal(true)
+      })
+
+      it("returns true if legacy golisted", async () => {
+        expect(await goldfinchConfig.goList(anotherUser)).to.equal(false)
+        expect(await goldfinchConfig.hasRole(GO_LISTER_ROLE, owner)).to.equal(true)
+        await goldfinchConfig.addToGoList(anotherUser, {from: owner})
+        expect(await goldfinchConfig.goList(anotherUser)).to.equal(true)
+        expect(await go.goSeniorPool(anotherUser)).to.equal(true)
+      })
+
+      it("returns false if not legacy golisted and no included UID", async () => {
+        const tokenId = new BN(2)
+        const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
+        await mint(hre, uniqueIdentity, tokenId, expiresAt, new BN(0), owner, undefined, anotherUser)
+        expect(await uniqueIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(new BN(1))
+        expect(await goldfinchConfig.goList(anotherUser)).to.equal(false)
+        expect(await goldfinchConfig.hasRole(GO_LISTER_ROLE, owner)).to.equal(true)
+        expect(await go.goSeniorPool(anotherUser)).to.equal(false)
+      })
     })
 
     context("paused", () => {
