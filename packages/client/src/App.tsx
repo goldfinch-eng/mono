@@ -48,7 +48,7 @@ interface GeolocationData {
 
 export type SetSessionFn = (data: SessionData | undefined) => void
 
-export type ParticipantsByTranchedPoolAddress = {[address: string]: string[]}
+export type BackersByTranchedPoolAddress = {[address: string]: string[]}
 
 export interface GlobalState {
   pool?: SeniorPool
@@ -64,8 +64,8 @@ export interface GlobalState {
   setGeolocationData?: (geolocationData: GeolocationData) => void
   sessionData?: SessionData
   setSessionData?: SetSessionFn
-  participantsByTranchedPoolAddress?: ParticipantsByTranchedPoolAddress
-  setParticipantsByTranchedPoolAddress?: (newVal: ParticipantsByTranchedPoolAddress) => void
+  participantsByTranchedPoolAddress?: BackersByTranchedPoolAddress
+  setBackersByTranchedPoolAddress?: (newVal: BackersByTranchedPoolAddress) => void
 }
 
 declare let window: any
@@ -88,8 +88,9 @@ function App() {
     SESSION_DATA_KEY,
     {}
   )
-  const [participantsByTranchedPoolAddress, setParticipantsByTranchedPoolAddress] =
-    useState<ParticipantsByTranchedPoolAddress>({})
+  const [participantsByTranchedPoolAddress, setBackersByTranchedPoolAddress] = useState<BackersByTranchedPoolAddress>(
+    {}
+  )
   const [apolloClient, setApolloClient] = useState<ApolloClient<NormalizedCacheObject>>(getApolloClient())
 
   useEffect(() => {
@@ -209,7 +210,7 @@ function App() {
     sessionData,
     setSessionData,
     participantsByTranchedPoolAddress,
-    setParticipantsByTranchedPoolAddress,
+    setBackersByTranchedPoolAddress,
   }
 
   return (

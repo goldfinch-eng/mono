@@ -39,7 +39,7 @@ import {useFetchNDA} from "../../hooks/useNDA"
 import {decimalPlaces} from "../../ethereum/utils"
 import EtherscanLink from "../etherscanLink"
 
-class ParticipantsLimitError extends Error {}
+class MaxBackersError extends Error {}
 
 function useRecentPoolTransactions({tranchedPool}: {tranchedPool?: TranchedPool}): Record<string, any>[] {
   let recentTransactions = useAsync(() => tranchedPool && tranchedPool.recentTransactions(), [tranchedPool])
@@ -92,25 +92,25 @@ function TranchedPoolDepositForm({
     networkMonitor,
     setSessionData,
     participantsByTranchedPoolAddress,
-    setParticipantsByTranchedPoolAddress,
+    setBackersByTranchedPoolAddress,
   } = useNonNullContext(AppContext)
   const {gatherPermitSignature} = useERC20Permit()
   const sendFromUser = useSendFromUser()
   const session = useSession()
 
-  async function enforceParticipantsLimit(): Promise<void> {
+  async function enforceMaxBackers(): Promise<void> {
     const maxBackers = tranchedPool.maxBackers
     if (maxBackers) {
       // Refresh the list of unique participants, since it could have grown since the tranched
       // pool was loaded.
-      return tranchedPool.getParticipants().then((participants) => {
-        setParticipantsByTranchedPoolAddress({
+      return tranchedPool.getBackers().then((participants) => {
+        setBackersByTranchedPoolAddress({
           ...participantsByTranchedPoolAddress,
           [tranchedPool.address]: participants,
         })
 
         if (tranchedPool.getIsClosedToUser(user.address, participants)) {
-          throw new ParticipantsLimitError("Pool participants limit reached.")
+          throw new MaxBackersError("Pool participants limit reached.")
         }
       })
     }
@@ -138,7 +138,7 @@ function TranchedPoolDepositForm({
     const depositAmount = usdcToAtomic(transactionAmount)
     // USDC permit doesn't work on mainnet forking due to mismatch between hardcoded chain id in the contract
     if (process.env.REACT_APP_HARDHAT_FORK) {
-      return enforceParticipantsLimit()
+      return enforceMaxBackers()
         .then(() =>
           sendFromUser(tranchedPool.contract.methods.deposit(TRANCHES.Junior, depositAmount), {
             type: "Deposit",
@@ -147,8 +147,8 @@ function TranchedPoolDepositForm({
         )
         .then(actionComplete)
         .catch((err: unknown) => {
-          if (err instanceof ParticipantsLimitError) {
-            console.log("Participants limit reached after initial loading but before sending transaction.")
+          if (err instanceof MaxBackersError) {
+            console.log("Backers limit reached after initial loading but before sending transaction.")
           } else {
             throw err
           }
@@ -159,7 +159,7 @@ function TranchedPoolDepositForm({
         value: new BigNumber(depositAmount),
         spender: tranchedPool.address,
       })
-      return enforceParticipantsLimit()
+      return enforceMaxBackers()
         .then(() =>
           sendFromUser(
             tranchedPool.contract.methods.depositWithPermit(
@@ -178,8 +178,8 @@ function TranchedPoolDepositForm({
         )
         .then(actionComplete)
         .catch((err: unknown) => {
-          if (err instanceof ParticipantsLimitError) {
-            console.log("Participants limit reached after initial loading but before sending transaction.")
+          if (err instanceof MaxBackersError) {
+            console.log("Backers limit reached after initial loading but before sending transaction.")
           } else {
             throw err
           }
@@ -808,7 +808,7 @@ function TranchedPoolView() {
     network,
     setSessionData,
     participantsByTranchedPoolAddress,
-    setParticipantsByTranchedPoolAddress,
+    setBackersByTranchedPoolAddress,
   } = useNonNullContext(AppContext)
   const session = useSession()
   const [tranchedPool, refreshTranchedPool] = useTranchedPool({address: poolAddress, goldfinchProtocol})
@@ -824,15 +824,15 @@ function TranchedPoolView() {
   })
 
   useEffect(() => {
-    async function getAndSetParticipants(tranchedPool: TranchedPool) {
-      const participants = await tranchedPool.getParticipants()
-      setParticipantsByTranchedPoolAddress({
+    async function getAndSetBackers(tranchedPool: TranchedPool) {
+      const participants = await tranchedPool.getBackers()
+      setBackersByTranchedPoolAddress({
         ...participantsByTranchedPoolAddress,
         [tranchedPool.address]: participants,
       })
     }
     if (tranchedPool?.maxBackers && !participantsByTranchedPoolAddress[tranchedPool.address]) {
-      getAndSetParticipants(tranchedPool)
+      getAndSetBackers(tranchedPool)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tranchedPool?.address])

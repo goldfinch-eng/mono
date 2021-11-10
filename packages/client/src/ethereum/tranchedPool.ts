@@ -316,7 +316,7 @@ class TranchedPool {
     return result
   }
 
-  async getParticipants(): Promise<string[]> {
+  async getBackers(): Promise<string[]> {
     return this.contract
       .getPastEvents("DepositMade", {
         filter: undefined,
