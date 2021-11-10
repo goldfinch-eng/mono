@@ -200,6 +200,12 @@ function TranchedPoolDepositForm({
       goldfinchConfig.transactionLimit
     )
 
+    // We include `isFull` here because this condition can become `true` after the initial rendering
+    // of the form in which it was `false`, due to the fact that we refresh full status (by re-fetching
+    // the set of backers) upon submit.
+    //
+    // We don't, though, check whether `tranchedPool.isPaused` here, because we rely on that having been
+    // done upstream and controlling whether the form gets rendered.
     const disabled = isFull || user.usdcBalance.eq(0)
     const warningMessage = user.usdcBalance.eq(0) ? (
       <p className="form-message">
@@ -467,11 +473,12 @@ function ActionsContainer({
   }
 
   let depositAction
-  let depositClass = "disabled"
+  let depositDisabled = true
   const isFull = tranchedPool?.getIsFull(user.address, backersByTranchedPoolAddress?.[tranchedPool.address])
   if (
     session.status === "authenticated" &&
     backer &&
+    !tranchedPool?.isPaused &&
     tranchedPool?.state === PoolState.Open &&
     !isUndefined(isFull) &&
     !isFull &&
@@ -481,14 +488,15 @@ function ActionsContainer({
     depositAction = (e) => {
       setAction("deposit")
     }
-    depositClass = ""
+    depositDisabled = false
   }
 
   let withdrawAction
-  let withdrawClass = "disabled"
+  let withdrawDisabled = true
   if (
     session.status === "authenticated" &&
     backer &&
+    !tranchedPool?.isPaused &&
     !backer.availableToWithdrawInDollars.isZero() &&
     !tranchedPool?.metadata?.disabled &&
     user.goListed
@@ -496,7 +504,7 @@ function ActionsContainer({
     withdrawAction = (e) => {
       setAction("withdraw")
     }
-    withdrawClass = ""
+    withdrawDisabled = false
   }
 
   if (action === "deposit") {
@@ -524,10 +532,18 @@ function ActionsContainer({
       <div className={`background-container ${placeholderClass}`}>
         <DepositStatus backer={backer} tranchedPool={tranchedPool} />
         <div className="form-start">
-          <button className={`button ${depositClass}`} onClick={depositAction}>
+          <button
+            className={`button ${depositDisabled ? "disabled" : ""}`}
+            disabled={depositDisabled}
+            onClick={depositAction}
+          >
             {iconUpArrow} Supply
           </button>
-          <button className={`button ${withdrawClass}`} onClick={withdrawAction}>
+          <button
+            className={`button ${withdrawDisabled ? "disabled" : ""}`}
+            disabled={withdrawDisabled}
+            onClick={withdrawAction}
+          >
             {iconDownArrow} Withdraw
           </button>
         </div>

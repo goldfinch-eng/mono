@@ -9,6 +9,7 @@ import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
 
 function renderTranchedPoolCard(
   userAddress: string,
+  isPaused: boolean,
   remainingCapacity: BigNumber,
   maxBackers: number | undefined,
   backers: string[] | undefined
@@ -18,6 +19,7 @@ function renderTranchedPoolCard(
     getContract: () => {
       return
     },
+    isPaused,
   } as unknown as GoldfinchProtocol)
   tranchedPool.creditLine = defaultCreditLine as any
   tranchedPool.remainingCapacity = () => remainingCapacity
@@ -43,43 +45,63 @@ function renderTranchedPoolCard(
 describe("Tranched pool card", () => {
   const maxBackers = 2
 
-  describe("remaining capacity is 0", () => {
-    describe("has participation limits", () => {
-      it("should show full badge", async () => {
-        renderTranchedPoolCard("", new BigNumber(0), maxBackers, undefined)
+  describe("pool is paused", () => {
+    it("should show paused badge", async () => {
+      renderTranchedPoolCard("", false, new BigNumber(0), maxBackers, undefined)
 
-        await waitFor(() => {
-          expect(screen.getByText("Full")).toBeInTheDocument()
-        })
-      })
-    })
-    describe("does not have participation limits", () => {
-      it("should show full badge", async () => {
-        renderTranchedPoolCard("", new BigNumber(0), undefined, undefined)
-
-        await waitFor(() => {
-          expect(screen.getByText("Full")).toBeInTheDocument()
-        })
+      await waitFor(() => {
+        expect(screen.getByText("Paused")).toBeInTheDocument()
       })
     })
   })
-  describe("remaining capacity is not 0", () => {
-    describe("has participation limits", () => {
-      describe("backers are defined", () => {
-        describe("number of backers has reached limit", () => {
-          describe("user with address", () => {
-            describe("user is a participant", () => {
-              it("should show open badge", async () => {
-                renderTranchedPoolCard("0xtest", new BigNumber(100), maxBackers, ["0xtest", "0xfoo"])
+  describe("pool is not paused", () => {
+    describe("remaining capacity is 0", () => {
+      describe("has participation limits", () => {
+        it("should show full badge", async () => {
+          renderTranchedPoolCard("", false, new BigNumber(0), maxBackers, undefined)
 
-                await waitFor(() => {
-                  expect(screen.getByText("Open")).toBeInTheDocument()
+          await waitFor(() => {
+            expect(screen.getByText("Full")).toBeInTheDocument()
+          })
+        })
+      })
+      describe("does not have participation limits", () => {
+        it("should show full badge", async () => {
+          renderTranchedPoolCard("", false, new BigNumber(0), undefined, undefined)
+
+          await waitFor(() => {
+            expect(screen.getByText("Full")).toBeInTheDocument()
+          })
+        })
+      })
+    })
+    describe("remaining capacity is not 0", () => {
+      describe("has participation limits", () => {
+        describe("backers are defined", () => {
+          describe("number of backers has reached limit", () => {
+            describe("user with address", () => {
+              describe("user is a participant", () => {
+                it("should show open badge", async () => {
+                  renderTranchedPoolCard("0xtest", false, new BigNumber(100), maxBackers, ["0xtest", "0xfoo"])
+
+                  await waitFor(() => {
+                    expect(screen.getByText("Open")).toBeInTheDocument()
+                  })
+                })
+              })
+              describe("user is not a participant", () => {
+                it("should show full badge", async () => {
+                  renderTranchedPoolCard("0xtest", false, new BigNumber(100), maxBackers, ["0xfoo", "0xbar"])
+
+                  await waitFor(() => {
+                    expect(screen.getByText("Full")).toBeInTheDocument()
+                  })
                 })
               })
             })
-            describe("user is not a participant", () => {
+            describe("user without address", () => {
               it("should show full badge", async () => {
-                renderTranchedPoolCard("0xtest", new BigNumber(100), maxBackers, ["0xfoo", "0xbar"])
+                renderTranchedPoolCard("", false, new BigNumber(100), maxBackers, ["0xfoo", "0xbar"])
 
                 await waitFor(() => {
                   expect(screen.getByText("Full")).toBeInTheDocument()
@@ -87,77 +109,68 @@ describe("Tranched pool card", () => {
               })
             })
           })
-          describe("user without address", () => {
-            it("should show full badge", async () => {
-              renderTranchedPoolCard("", new BigNumber(100), maxBackers, ["0xfoo", "0xbar"])
+          describe("number of backers is under limit", () => {
+            describe("user with address", () => {
+              describe("user is a participant", () => {
+                it("should show open badge", async () => {
+                  renderTranchedPoolCard("0xtest", false, new BigNumber(100), maxBackers, ["0xtest"])
 
-              await waitFor(() => {
-                expect(screen.getByText("Full")).toBeInTheDocument()
+                  await waitFor(() => {
+                    expect(screen.getByText("Open")).toBeInTheDocument()
+                  })
+                })
+              })
+              describe("user is not a participant", () => {
+                it("should show open badge", async () => {
+                  renderTranchedPoolCard("0xtest", false, new BigNumber(100), maxBackers, ["0xfoo"])
+
+                  await waitFor(() => {
+                    expect(screen.getByText("Open")).toBeInTheDocument()
+                  })
+                })
+              })
+            })
+            describe("user without address", () => {
+              it("should show open badge", async () => {
+                renderTranchedPoolCard("", false, new BigNumber(100), maxBackers, ["0xfoo"])
+
+                await waitFor(() => {
+                  expect(screen.getByText("Open")).toBeInTheDocument()
+                })
               })
             })
           })
         })
-        describe("number of backers is under limit", () => {
+        describe("backers are undefined", () => {
           describe("user with address", () => {
-            describe("user is a participant", () => {
-              it("should show open badge", async () => {
-                renderTranchedPoolCard("0xtest", new BigNumber(100), maxBackers, ["0xtest"])
+            it("should not show a badge", async () => {
+              renderTranchedPoolCard("0xtest", false, new BigNumber(100), maxBackers, undefined)
 
-                await waitFor(() => {
-                  expect(screen.getByText("Open")).toBeInTheDocument()
-                })
-              })
-            })
-            describe("user is not a participant", () => {
-              it("should show open badge", async () => {
-                renderTranchedPoolCard("0xtest", new BigNumber(100), maxBackers, ["0xfoo"])
-
-                await waitFor(() => {
-                  expect(screen.getByText("Open")).toBeInTheDocument()
-                })
+              await waitFor(() => {
+                expect(screen.queryByText("Open")).toBeNull()
+                expect(screen.queryByText("Full")).toBeNull()
               })
             })
           })
           describe("user without address", () => {
-            it("should show open badge", async () => {
-              renderTranchedPoolCard("", new BigNumber(100), maxBackers, ["0xfoo"])
+            it("should not show a badge", async () => {
+              renderTranchedPoolCard("", false, new BigNumber(100), maxBackers, undefined)
 
               await waitFor(() => {
-                expect(screen.getByText("Open")).toBeInTheDocument()
+                expect(screen.queryByText("Open")).toBeNull()
+                expect(screen.queryByText("Full")).toBeNull()
               })
             })
           })
         })
       })
-      describe("backers are undefined", () => {
-        describe("user with address", () => {
-          it("should not show a badge", async () => {
-            renderTranchedPoolCard("0xtest", new BigNumber(100), maxBackers, undefined)
+      describe("does not have participation limits", () => {
+        it("should show open badge", async () => {
+          renderTranchedPoolCard("", false, new BigNumber(100), undefined, undefined)
 
-            await waitFor(() => {
-              expect(screen.queryByText("Open")).toBeNull()
-              expect(screen.queryByText("Full")).toBeNull()
-            })
+          await waitFor(() => {
+            expect(screen.getByText("Open")).toBeInTheDocument()
           })
-        })
-        describe("user without address", () => {
-          it("should not show a badge", async () => {
-            renderTranchedPoolCard("", new BigNumber(100), maxBackers, undefined)
-
-            await waitFor(() => {
-              expect(screen.queryByText("Open")).toBeNull()
-              expect(screen.queryByText("Full")).toBeNull()
-            })
-          })
-        })
-      })
-    })
-    describe("does not have participation limits", () => {
-      it("should show open badge", async () => {
-        renderTranchedPoolCard("", new BigNumber(100), undefined, undefined)
-
-        await waitFor(() => {
-          expect(screen.getByText("Open")).toBeInTheDocument()
         })
       })
     })
