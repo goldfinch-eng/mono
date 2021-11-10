@@ -179,6 +179,7 @@ enum RewardStatus {
   Claimable,
   TemporarilyAllClaimed,
   PermanentlyAllClaimed,
+  FullyUnstakedAndClaimed,
 }
 
 function getActionButtonProps(props: RewardsListItemProps): ActionButtonProps {
@@ -205,6 +206,12 @@ function getActionButtonProps(props: RewardsListItemProps): ActionButtonProps {
         disabled: true,
       }
     case RewardStatus.PermanentlyAllClaimed:
+      return {
+        ...baseProps,
+        text: "Claimed",
+        disabled: true,
+      }
+    case RewardStatus.FullyUnstakedAndClaimed:
       return {
         ...baseProps,
         text: "Claimed",
@@ -501,14 +508,24 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     )
 
     if (item.claimable.eq(0)) {
-      const status: RewardStatus =
-        item instanceof CommunityRewardsGrant
-          ? item.claimed.lt(item.granted)
-            ? RewardStatus.TemporarilyAllClaimed
-            : RewardStatus.PermanentlyAllClaimed
-          : // Staking rewards are never "permanently" all-claimed; even after vesting is finished, stakings keep
-            // earning rewards that vest immediately.
-            RewardStatus.TemporarilyAllClaimed
+      let status: RewardStatus
+      if (item instanceof CommunityRewardsGrant) {
+        if (item.claimed.lt(item.granted)) {
+          status = RewardStatus.TemporarilyAllClaimed
+        } else {
+          status = RewardStatus.PermanentlyAllClaimed
+        }
+      } else {
+        const origStakedAmount = item.stakedEvent.returnValues.amount
+        const remainingAmount = item.storedPosition.amount
+        if (!remainingAmount.isEqualTo(origStakedAmount) && remainingAmount.isZero()) {
+          status = RewardStatus.FullyUnstakedAndClaimed
+        } else {
+          // Staking rewards are never "permanently" all-claimed; even after vesting is finished, stakings keep
+          // earning rewards that vest immediately.
+          status = RewardStatus.TemporarilyAllClaimed
+        }
+      }
       return (
         <RewardsListItem
           status={status}
