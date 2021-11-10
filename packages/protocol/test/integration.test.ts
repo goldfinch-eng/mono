@@ -22,15 +22,13 @@ import {time} from "@openzeppelin/test-helpers"
 const TranchedPool = artifacts.require("TranchedPool")
 const CreditLine = artifacts.require("CreditLine")
 
-const TEST_TIMEOUT = 40_000
-
 // eslint-disable-next-line no-unused-vars
 let accounts, owner, underwriter, borrower, investor1, investor2
 let fidu, goldfinchConfig, reserve, usdc, seniorPool, creditLine, tranchedPool, goldfinchFactory, poolTokens
 
 const ONE_HUNDRED = new BN(100)
 
-const TEST_TIMEOUT = 30000
+const TEST_TIMEOUT = 40000
 
 describe("Goldfinch", async () => {
   let limit = usdcVal(10000)
