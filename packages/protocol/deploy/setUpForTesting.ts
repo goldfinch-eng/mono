@@ -41,7 +41,8 @@ import {assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
 import {Result} from "ethers/lib/utils"
 import {advanceTime, toEthers, usdcVal} from "../test/testHelpers"
 
-import * as migrate from "../blockchain_scripts/migrations/v2.1/migrate"
+import * as migratev21 from "../blockchain_scripts/migrations/v2.1/migrate"
+import * as migratev22 from "../blockchain_scripts/migrations/v2.2/migrate"
 
 /*
 This deployment deposits some funds to the pool, and creates an underwriter, and a credit line.
@@ -89,7 +90,8 @@ async function main(hre: HardhatRuntimeEnvironment, options: OverrideOptions) {
     const protocolOwner = await getProtocolOwner()
     await impersonateAccount(hre, protocolOwner)
     await fundWithWhales(["ETH"], [protocolOwner])
-    await migrate.main()
+    await migratev21.main()
+    await migratev22.main()
 
     logger("Funding protocol_owner with whales")
     underwriter = protocol_owner
@@ -393,7 +395,7 @@ async function createPoolForBorrower({
   const termInDays = String(new BN(360))
   const lateFeeApr = String(new BN(0))
   const underwriterSigner = ethers.provider.getSigner(underwriter)
-  const allowedUIDTypes = [0]
+  const allowedUIDTypes = []
   const result = await (
     await goldfinchFactory
       .connect(underwriterSigner)
