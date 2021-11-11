@@ -320,19 +320,7 @@ function getGrantVestingCliffDisplay(cliffLength: BigNumber): string | undefined
       return undefined
     default:
       console.error(`Unexpected cliff length: ${cliffLengthString}`)
-      return `, with ${cliffLengthString}-second cliff`
-  }
-}
-function getGrantVestingIntervalDisplay(vestingInterval: BigNumber): string | undefined {
-  const vestingIntervalString = vestingInterval.toString(10)
-  switch (vestingIntervalString) {
-    case "1":
-      return undefined
-    case "2628000":
-      return ", vesting every month"
-    default:
-      console.error(`Unexpected vesting interval: ${vestingIntervalString}`)
-      return `, vesting every ${vestingIntervalString} seconds`
+      return ` with ${cliffLengthString}-second cliff`
   }
 }
 function getGrantVestingLengthDisplay(duration: number, currentTimestamp: number | undefined): string {
@@ -355,13 +343,11 @@ function getGrantVestingLengthDisplay(duration: number, currentTimestamp: number
 }
 function getGrantVestingSchedule(
   cliffLength: BigNumber,
-  vestingInterval: BigNumber,
   end: {absolute: boolean; value: number} | null,
   currentTimestamp: number | undefined
 ): string {
   if (end) {
     const displayCliff = getGrantVestingCliffDisplay(cliffLength)
-    const displayInterval = getGrantVestingIntervalDisplay(vestingInterval)
     const displayEnd = end.absolute
       ? ` on ${new Date(end.value * 1000).toLocaleDateString(undefined, {
           year: "numeric",
@@ -369,9 +355,7 @@ function getGrantVestingSchedule(
           day: "numeric",
         })}`
       : `${getGrantVestingLengthDisplay(end.value, currentTimestamp)}`
-    return `Linear${displayInterval || ""}${displayCliff || ""}${
-      displayInterval || displayCliff ? "," : ""
-    } until 100%${displayEnd}`
+    return `Linear ${displayCliff || ""}${displayCliff ? "," : ""} until 100%${displayEnd}`
   } else {
     // Since we will not have a vesting length here, we don't need to sum the duration to
     // the current timestamp to show the end date.
@@ -418,7 +402,6 @@ function getMerkleDistributorGrantInfoDetails(
     transactionDetails: `${displayNumber(gfiFromAtomic(amount))} GFI reward for participating in ${displayReason}`,
     vestingSchedule: getGrantVestingSchedule(
       new BigNumber(grantInfo.grant.cliffLength),
-      new BigNumber(grantInfo.grant.vestingInterval),
       vestingLength ? {absolute: false, value: vestingLength} : null,
       currentTimestamp
     ),
@@ -448,7 +431,6 @@ function getStakingOrCommunityRewardsDetails(
       transactionDetails: item.description,
       vestingSchedule: getGrantVestingSchedule(
         item.rewards.cliffLength,
-        item.rewards.vestingInterval,
         item.rewards.endTime > item.rewards.startTime
           ? {
               absolute: true,
