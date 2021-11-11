@@ -28,6 +28,7 @@ export class ContractUpgrader {
       signer: gf_deployer,
       deployFrom: gf_deployer,
       deployer: this.deployer,
+      logger: this.logger,
     })
     return upgradedContracts
   }

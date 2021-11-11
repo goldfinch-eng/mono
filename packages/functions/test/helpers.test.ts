@@ -2,7 +2,7 @@ import chai from "chai"
 import chaiSubset from "chai-subset"
 import {originAllowed} from "../src/helpers"
 
-chai.use(chaiSubset as any)
+chai.use(chaiSubset)
 const expect = chai.expect
 
 describe("originAllowed", () => {
