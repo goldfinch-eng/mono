@@ -38,7 +38,7 @@ import {
   TestUniqueIdentityInstance,
 } from "../typechain/truffle"
 import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/DynamicLeverageRatioStrategy"
-import {MerkleDistributor, CommunityRewards, Go, TestUniqueIdentity} from "../typechain/ethers"
+import {MerkleDistributor, CommunityRewards, Go, TestUniqueIdentity, ERC20} from "../typechain/ethers"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import "./types"
 const decimals = new BN(String(1e18))
@@ -56,6 +56,8 @@ const fiduTolerance = decimals.div(USDC_DECIMALS)
 const EMPTY_DATA = "0x"
 const BLOCKS_PER_DAY = 5760
 const ZERO = new BN(0)
+
+export type $TSFixMe = any
 
 // Helper functions. These should be pretty generic.
 function bigVal(number) {
@@ -390,6 +392,18 @@ const createPoolWithCreditLine = async ({
   termInDays = new BN(365),
   limit = usdcVal(10000),
   lateFeeApr = interestAprAsBN("3.0"),
+  allowedUIDTypes = [],
+}: {
+  people: {owner: string; borrower: string}
+  usdc: ERC20
+  goldfinchFactory: GoldfinchFactoryInstance
+  juniorFeePercent?: Numberish
+  interestApr?: Numberish
+  paymentPeriodInDays?: Numberish
+  termInDays?: Numberish
+  limit?: Numberish
+  lateFeeApr?: Numberish
+  allowedUIDTypes?: Numberish[]
 }): Promise<{tranchedPool: TranchedPoolInstance; creditLine: CreditLineInstance}> => {
   const thisOwner = people.owner
   const thisBorrower = people.borrower
@@ -410,10 +424,11 @@ const createPoolWithCreditLine = async ({
     paymentPeriodInDays,
     termInDays,
     lateFeeApr,
-    [],
+    allowedUIDTypes,
     {from: thisOwner}
   )
-  const event = result.logs[result.logs.length - 1]
+
+  const event = result.logs[result.logs.length - 1] as $TSFixMe
   const pool = await getTruffleContract<TranchedPoolInstance>("TranchedPool", event.args.pool)
   const creditLine = await getTruffleContract<CreditLineInstance>("CreditLine", await pool.creditLine())
 
