@@ -1,4 +1,12 @@
 {
+  "0xc9BDd0D3B80CC6EfE79a82d850f44EC9B55387Ae": {
+    "name": "Cauris",
+    "category": "Global multi-sector loans",
+    "description": "Cauris is a credit fund created to bring decentralized financing to fintechs in emerging markets. This facility will be used by Cauris to provide debt capital to vetted consumer and SMB lenders in the Global South and Europe, who pledge well-performing loan portfolios to pledge as collateral.",
+    "icon": "%PUBLIC_URL%/icons/cauris.png",
+    "backerLimit": "0.006",
+    "maxBackers": 90
+  },
   "0xf74ea34ac88862b7ff419e60e476be2651433e68": {
     "name": "Divibank",
     "category": "SMB Loans in Latin America",
