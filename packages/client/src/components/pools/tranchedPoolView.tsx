@@ -307,7 +307,7 @@ interface TranchedPoolWithdrawFormProps {
 }
 
 function TranchedPoolWithdrawForm({backer, tranchedPool, actionComplete, closeForm}: TranchedPoolWithdrawFormProps) {
-  const {user, goldfinchConfig} = useNonNullContext(AppContext)
+  const {goldfinchConfig} = useNonNullContext(AppContext)
   const sendFromUser = useSendFromUser()
 
   async function action({transactionAmount}) {
@@ -349,7 +349,6 @@ function TranchedPoolWithdrawForm({backer, tranchedPool, actionComplete, closeFo
               </button>
             }
             validations={{
-              wallet: (value) => user.usdcBalanceInDollars.gte(value) || "You do not have enough USDC",
               transactionLimit: (value) =>
                 goldfinchConfig.transactionLimit.gte(usdcToAtomic(value)) ||
                 `This is over the per-transaction limit of $${usdcFromAtomic(goldfinchConfig.transactionLimit)}`,
