@@ -1155,6 +1155,12 @@ describe("TranchedPool", () => {
           await expect(tranchedPool.lockPool({from: actor})).to.be.rejectedWith(/Must have locker role/)
         })
       })
+
+      it("does not allow locking twice", async () => {
+        const actor = owner
+        await tranchedPool.lockPool({from: actor})
+        await expect(tranchedPool.lockPool({from: actor})).to.be.rejectedWith(/Lock cannot be extended/)
+      })
     })
   })
   describe("drawdown", async () => {
