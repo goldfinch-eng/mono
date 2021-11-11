@@ -4,7 +4,7 @@ import {getOneInchContract} from "./oneInch"
 import {Contract} from "web3-eth-contract"
 import {ERC20, Tickers} from "./erc20"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
-import {PoolState, TranchedPool} from "./tranchedPool"
+import {TranchedPool} from "./tranchedPool"
 
 class BorrowerInterface {
   userAddress: string
@@ -44,9 +44,7 @@ class BorrowerInterface {
     for (let address of this.borrowerPoolAddresses) {
       const tranchedPool = new TranchedPool(address, this.goldfinchProtocol)
       await tranchedPool.initialize()
-      if (tranchedPool.state >= PoolState.SeniorLocked) {
-        this.creditLinesAddresses.push(tranchedPool.creditLineAddress)
-      }
+      this.creditLinesAddresses.push(tranchedPool.creditLineAddress)
       this.tranchedPoolByCreditLine[tranchedPool.creditLineAddress] = tranchedPool
       this.tranchedPools[address] = tranchedPool
     }
