@@ -315,12 +315,13 @@ function RewardsListItem(props: RewardsListItemProps) {
 
 function getGrantVestingCliffDisplay(cliffLength: BigNumber): string | undefined {
   const cliffLengthString = cliffLength.toString(10)
+  const cliffLengthInDays = Math.floor(Number(cliffLengthString) / (3600 * 24))
   switch (cliffLengthString) {
     case "0":
       return undefined
     default:
       console.error(`Unexpected cliff length: ${cliffLengthString}`)
-      return ` with ${cliffLengthString}-second cliff`
+      return ` with ${cliffLengthInDays}${cliffLengthInDays === 1 ? " day" : " days"} cliff`
   }
 }
 function getGrantVestingLengthDisplay(duration: number, currentTimestamp: number | undefined): string {
