@@ -12,13 +12,14 @@ import {usdcFromAtomic} from "./erc20"
 import {CONFIG_KEYS} from "@goldfinch-eng/protocol/blockchain_scripts/configKeys"
 import {SeniorPool as SeniorPoolContract} from "@goldfinch-eng/protocol/typechain/web3/SeniorPool"
 import {getCreditDesk} from "./creditDesk"
+import {EventData} from "web3-eth-contract"
 
 const ZERO = new BigNumber(0)
 const ONE = new BigNumber(1)
 const ONE_HUNDRED = new BigNumber(100)
 
 interface MetadataStore {
-  [address: string]: PoolMetadata
+  [address: string]: TranchedPoolMetadata
 }
 let _metadataStore: MetadataStore
 async function getMetadataStore(networkId: string): Promise<MetadataStore> {
@@ -40,7 +41,7 @@ async function getMetadataStore(networkId: string): Promise<MetadataStore> {
       if (addr === "default") {
         return
       }
-      let metadata: PoolMetadata = loadedStore[addr]
+      let metadata: TranchedPoolMetadata = loadedStore[addr]
       if (metadata.icon && metadata.icon.startsWith("%PUBLIC_URL%")) {
         metadata.icon = metadata.icon.replace("%PUBLIC_URL%", process.env.PUBLIC_URL)
       }
@@ -59,7 +60,7 @@ async function getMetadataStore(networkId: string): Promise<MetadataStore> {
   }
 }
 
-interface PoolMetadata {
+export interface TranchedPoolMetadata {
   name: string
   category: string
   icon: string
@@ -72,6 +73,7 @@ interface PoolMetadata {
   migrated?: boolean
   migratedFrom?: string
   NDAUrl?: string
+  maxBackers?: number
 }
 
 enum PoolState {
@@ -112,7 +114,7 @@ class TranchedPool {
   creditLine!: CreditLine
   creditLineAddress!: string
   state!: PoolState
-  metadata?: PoolMetadata
+  metadata?: TranchedPoolMetadata
   juniorFeePercent!: BigNumber
   reserveFeePercent!: BigNumber
   estimatedLeverageRatio!: BigNumber
@@ -154,7 +156,7 @@ class TranchedPool {
 
     this.isV1StyleDeal = !!this.metadata?.v1StyleDeal
     this.isMigrated = !!this.metadata?.migrated
-    this.isPaused = await pool.methods.paused().call()
+    this.isPaused = await this.contract.methods.paused().call()
 
     let now = secondsSinceEpoch()
     if (now < seniorTranche.lockedUntil) {
@@ -168,7 +170,7 @@ class TranchedPool {
     }
   }
 
-  private async loadPoolMetadata(): Promise<PoolMetadata | undefined> {
+  private async loadPoolMetadata(): Promise<TranchedPoolMetadata | undefined> {
     let store = await getMetadataStore(this.goldfinchProtocol.networkId)
     return store[this.address.toLowerCase()]
   }
@@ -314,11 +316,52 @@ class TranchedPool {
     return result
   }
 
+  async getBackers(): Promise<string[]> {
+    return this.contract
+      .getPastEvents("DepositMade", {
+        filter: undefined,
+        fromBlock: undefined,
+        // NOTE: We want to use the pending block, rather than the latest block, in order
+        // to err on the side of caution about the number of backers; we prefer to overestimate
+        // that number (by including pending transactions that may not end up succeeding), rather
+        // than underestimate it, because more backers can always be included if we've
+        // overestimated, but we can't remove backers if we've underestimated.
+        toBlock: "pending",
+      })
+      .then((events: EventData[]) => {
+        return _.uniq(events.map((eventData: EventData) => eventData.returnValues.owner))
+      })
+  }
+
+  getIsClosedToUser(userAddress: string, backers: string[]): boolean {
+    return !!this.maxBackers && backers.length >= this.maxBackers && !(userAddress && backers.includes(userAddress))
+  }
+
+  getIsFull(userAddress: string, backers: string[] | undefined): boolean | undefined {
+    if (this.remainingCapacity().isZero()) {
+      return true
+    } else {
+      if (this.maxBackers) {
+        if (backers) {
+          return this.getIsClosedToUser(userAddress, backers)
+        } else {
+          return
+        }
+      } else {
+        return false
+      }
+    }
+  }
+
   /**
    * The name to use for display / UI purposes.
    */
   get displayName(): string {
     return this.metadata?.name ?? croppedAddress(this.address)
+  }
+
+  get maxBackers(): number | undefined {
+    return this.metadata?.maxBackers
   }
 }
 

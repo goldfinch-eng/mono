@@ -407,7 +407,6 @@ export async function deployUniqueIdentity({
   const {gf_deployer} = await deployer.getNamedAccounts()
   assertIsString(gf_deployer)
   const protocol_owner = await getProtocolOwner()
-  console.log(gf_deployer, protocol_owner)
   const uniqueIdentity = await deployer.deploy(contractName, {
     from: gf_deployer,
     gasLimit: 4000000,
@@ -425,7 +424,7 @@ export async function deployUniqueIdentity({
     UniqueIdentity | TestUniqueIdentity,
     UniqueIdentityInstance | TestUniqueIdentityInstance
   >(contractName, TRUFFLE_CONTRACT_PROVIDER, {at: uniqueIdentity.address})
-  const ethersContract = await toEthers<UniqueIdentity>(truffleContract)
+  const ethersContract = (await toEthers<UniqueIdentity>(truffleContract)).connect(await getProtocolOwner())
 
   await deployEffects.add({
     deferred: [await ethersContract.populateTransaction.grantRole(SIGNER_ROLE, trustedSigner)],
@@ -517,7 +516,9 @@ export async function deployGo(
     at: go.address,
   })
 
-  const goldfinchConfig = await getEthersContract<GoldfinchConfig>("GoldfinchConfig", {at: configAddress})
+  const goldfinchConfig = (await getEthersContract<GoldfinchConfig>("GoldfinchConfig", {at: configAddress})).connect(
+    await getProtocolOwner()
+  )
 
   await deployEffects.add({
     deferred: [await goldfinchConfig.populateTransaction.setAddress(CONFIG_KEYS.Go, contract.address)],

@@ -102,8 +102,10 @@ export async function uniqueIdentitySignerHandler(req, res) {
     assertNonNullable(signer.provider, "Signer provider is null")
     const network = await signer.provider.getNetwork()
 
+    const auth = req.body.auth
+
     // Run handler
-    const result = await uniqueIdentitySigner.main({headers: req.headers, signer, network, uniqueIdentity})
+    const result = await uniqueIdentitySigner.main({auth, signer, network, uniqueIdentity})
     res.status(200).send({status: "success", result: JSON.stringify(result)})
   } catch (error: any) {
     console.log(`Failed: ${error}`)

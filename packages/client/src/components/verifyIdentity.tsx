@@ -5,7 +5,7 @@ import {FormProvider, useForm} from "react-hook-form"
 import {Link} from "react-router-dom"
 import {AppContext, NetworkConfig, SetSessionFn} from "../App"
 import {User} from "../ethereum/user"
-import {LOCAL} from "../ethereum/utils"
+import {LOCAL, MAINNET} from "../ethereum/utils"
 import DefaultGoldfinchClient, {KYC} from "../hooks/useGoldfinchClient"
 import useNonNullContext from "../hooks/useNonNullContext"
 import useSendFromUser from "../hooks/useSendFromUser"
@@ -245,6 +245,14 @@ function VerifyCard({
   )
 }
 
+function ErrorCard({title}: {title: string}) {
+  return (
+    <VerifyCard title={title} disabled={false}>
+      <p className="font-small">Oops, there was an error. Try refreshing the page.</p>
+    </VerifyCard>
+  )
+}
+
 function isElligible(kyc: KYC | undefined, user: User) {
   return (kyc && kyc.status === "approved" && kyc.countryCode !== "US" && kyc.countryCode !== "") || user.goListed
 }
@@ -259,6 +267,10 @@ function VerifyAddress({disabled, dispatch}: {disabled: boolean; dispatch: React
   const [errored, setErrored] = useState<boolean>(false)
 
   useEffect(() => {
+    if (errored || loading) {
+      return
+    }
+
     if (!kyc && session.status === "authenticated") {
       fetchKYCStatus(session)
     } else if (isElligible(kyc, user) && !disabled) {
@@ -312,11 +324,7 @@ function VerifyAddress({disabled, dispatch}: {disabled: boolean; dispatch: React
     } else if (loading) {
       return <LoadingCard title="Verify your address" />
     } else if (errored) {
-      return (
-        <VerifyCard title="Verify your address" disabled={false}>
-          Oops, there was an error. Try refreshing the page.
-        </VerifyCard>
-      )
+      return <ErrorCard title="Verify your address" />
     } else if (kyc?.status === "failed") {
       return (
         <VerificationNotice
@@ -400,6 +408,8 @@ function LoadingCard({title}: {title?: string}) {
 
 const UNIQUE_IDENTITY_SIGNER_URLS = {
   [LOCAL]: "/uniqueIdentitySigner", // Proxied by webpack to packages/server/index.ts
+  [MAINNET]:
+    "https://api.defender.openzeppelin.com/autotasks/bc31d6f7-0ab4-4170-9ba0-4978a6ed6034/runs/webhook/6a51e904-1439-4c68-981b-5f22f1c0b560/3fwK6xbVKfeBHZjSdsYQWe",
 }
 
 const UNIQUE_IDENTITY_MINT_PRICE = web3.utils.toWei("0.00083", "ether")
@@ -472,13 +482,11 @@ async function fetchTrustedSignature({
     throw new Error("not authenticated")
   }
   const client = new DefaultGoldfinchClient(network.name, session, setSessionData)
-  const headers = client._getAuthHeaders(user.address)
+  const auth = client._getAuthHeaders(user.address)
 
   const response = await fetch(UNIQUE_IDENTITY_SIGNER_URLS[network.name], {
-    headers: {
-      ...headers,
-      "Content-Type": "application/json",
-    },
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({auth}),
     method: "POST",
   })
   const body = await response.json()
@@ -490,52 +498,43 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
   const {user, network, setSessionData, goldfinchProtocol, refreshUserData} = useNonNullContext(AppContext)
   const [session] = useSignIn()
   const sendFromUser = useSendFromUser()
+  const [errored, setErrored] = useState<boolean>(false)
 
   useEffect(() => {
     if (disabled) {
       return
     }
 
-    if (user.goListed) {
+    if (user.hasUID) {
       dispatch({type: END})
     }
   })
 
   const action = async () => {
-    const trustedSignature = await fetchTrustedSignature({
-      network,
-      session,
-      setSessionData,
-      user,
-    })
-    const uniqueIdentity = goldfinchProtocol.getContract<UniqueIdentityContract>("UniqueIdentity")
-    const version = await uniqueIdentity.methods.ID_TYPE_0().call()
-    await sendFromUser(
-      uniqueIdentity.methods.mint(version, trustedSignature.expiresAt, trustedSignature.signature),
-      {
-        type: "Mint UID",
-      },
-      {value: UNIQUE_IDENTITY_MINT_PRICE}
-    )
-    refreshUserData()
+    try {
+      const trustedSignature = await fetchTrustedSignature({
+        network,
+        session,
+        setSessionData,
+        user,
+      })
+      const uniqueIdentity = goldfinchProtocol.getContract<UniqueIdentityContract>("UniqueIdentity")
+      const version = await uniqueIdentity.methods.ID_TYPE_0().call()
+      await sendFromUser(
+        uniqueIdentity.methods.mint(version, trustedSignature.expiresAt, trustedSignature.signature),
+        {
+          type: "Mint UID",
+        },
+        {value: UNIQUE_IDENTITY_MINT_PRICE}
+      )
+      refreshUserData()
+    } catch (error: any) {
+      setErrored(true)
+      console.error(error)
+    }
   }
 
-  if (user.legacyGolisted) {
-    return (
-      <VerificationNotice
-        icon={iconCircleCheck}
-        notice={
-          <>
-            Your verification was approved to participate in{" "}
-            <Link className="form-link" to="/">
-              Borrower Pools
-            </Link>
-            .
-          </>
-        }
-      />
-    )
-  } else if (user.goListed) {
+  if (user.hasUID) {
     return (
       <VerificationNotice
         icon={iconCircleCheck}
@@ -545,11 +544,44 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
             <Link className="form-link" to="/">
               Borrower Pools
             </Link>
-            .
+            .<br></br>
+            View your UID on{" "}
+            <a
+              className="form-link"
+              target="_blank"
+              rel="noopener noreferrer"
+              href={`https://opensea.io/${user.address}/uid?search[sortBy]=LISTING_DATE`}
+            >
+              OpenSea
+            </a>
           </>
         }
       />
     )
+  } else if (user.legacyGolisted) {
+    return (
+      <FormProvider {...formMethods}>
+        <div className={`verify-card background-container subtle ${disabled && "placeholder"}`}>
+          <h1 className="title">Create your UID</h1>
+          <div className="info-banner subtle">
+            <div className="message">
+              <div>
+                <p className="font-small mb-2">
+                  Your verification was approved to participate in{" "}
+                  <Link className="form-link" to="/">
+                    Borrower Pools
+                  </Link>
+                  . However, there may be future opportunities that require you to mint a UID.
+                </p>
+              </div>
+            </div>
+            <LoadingButton disabled={disabled} action={action} text="Create UID" />
+          </div>
+        </div>
+      </FormProvider>
+    )
+  } else if (errored) {
+    return <ErrorCard title="Create your UID" />
   } else {
     return (
       <FormProvider {...formMethods}>

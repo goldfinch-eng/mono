@@ -9,6 +9,7 @@ import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {EventData} from "web3-eth-contract"
 import {Go} from "@goldfinch-eng/protocol/typechain/web3/Go"
 import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/web3/GoldfinchConfig"
+import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/web3/UniqueIdentity"
 
 declare let window: any
 
@@ -40,6 +41,7 @@ interface User {
   poolTxs: any[]
   goListed: boolean
   legacyGolisted: boolean
+  hasUID: boolean
   noWeb3: boolean
 
   initialize(): Promise<void>
@@ -63,6 +65,7 @@ class Web3User implements User {
   poolTxs: any[]
   goListed!: boolean
   legacyGolisted!: boolean
+  hasUID!: boolean
   noWeb3: boolean
   goldfinchProtocol: GoldfinchProtocol
 
@@ -115,6 +118,7 @@ class Web3User implements User {
     const golistStatus = await this.fetchGolistStatus(this.address)
     this.goListed = golistStatus.golisted
     this.legacyGolisted = golistStatus.legacyGolisted
+    this.hasUID = golistStatus.hasUID
 
     this.loaded = true
   }
@@ -150,14 +154,19 @@ class Web3User implements User {
       const go = this.goldfinchProtocol.getContract<Go>("Go")
       const golisted = await go.methods.go(address).call()
 
+      const uniqueIdentity = this.goldfinchProtocol.getContract<UniqueIdentity>("UniqueIdentity")
+      const hasUID = !new BigNumber(await uniqueIdentity.methods.balanceOf(address, 0).call()).isZero()
+
       return {
         legacyGolisted,
         golisted,
+        hasUID,
       }
     } else {
       return {
         legacyGolisted: true,
         golisted: true,
+        hasUID: true,
       }
     }
   }
@@ -184,6 +193,7 @@ class DefaultUser implements User {
   poolTxs: any[]
   goListed: boolean
   legacyGolisted: boolean
+  hasUID: boolean
   noWeb3: boolean
 
   constructor() {
@@ -202,6 +212,7 @@ class DefaultUser implements User {
     this.poolTxs = []
     this.goListed = false
     this.legacyGolisted = false
+    this.hasUID = false
   }
 
   async initialize() {}
