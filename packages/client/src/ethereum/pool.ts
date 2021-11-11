@@ -1,3 +1,4 @@
+import * as poolModule from "./pool"
 import {Fidu as FiduContract} from "@goldfinch-eng/protocol/typechain/web3/Fidu"
 import {Pool as PoolContract} from "@goldfinch-eng/protocol/typechain/web3/Pool"
 import {SeniorPool as SeniorPoolContract} from "@goldfinch-eng/protocol/typechain/web3/SeniorPool"
@@ -291,7 +292,7 @@ async function fetchCapitalProviderData(
   const allowance = new BigNumber(
     await pool.usdc.methods.allowance(address, pool.address).call(undefined, currentBlock.number)
   )
-  const weightedAverageSharePrice = await getWeightedAverageSharePrice(
+  const weightedAverageSharePrice = await poolModule.getWeightedAverageSharePrice(
     pool,
     stakingRewards,
     address,
@@ -456,7 +457,7 @@ async function getDepositEventsByCapitalProvider(
 // for your shares, and we would fail out, and return a "-" on the front-end.
 // NOTE: This also does not take into account realized gains, which we are also
 // punting on.
-async function getWeightedAverageSharePrice(
+export async function getWeightedAverageSharePrice(
   pool: SeniorPoolLoaded,
   stakingRewards: StakingRewardsLoaded,
   capitalProviderAddress: string,
