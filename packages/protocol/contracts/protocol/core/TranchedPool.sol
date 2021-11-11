@@ -29,15 +29,12 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   uint256 public constant FP_SCALING_FACTOR = 1e18;
   uint256 public constant SECONDS_PER_DAY = 60 * 60 * 24;
   uint256 public constant ONE_HUNDRED = 100; // Need this because we cannot call .div on a literal 100
-  uint256 public constant NUM_TRANCHES = 2;
+  uint256 public constant NUM_TRANCHES_PER_SLICE = 2;
   uint256 public juniorFeePercent;
   bool public drawdownsPaused;
   uint256 public totalDeployed;
 
   Counters.Counter public _trancheIdTracker;
-
-  //  TrancheInfo internal seniorTranche;
-  //  TrancheInfo internal juniorTranche;
 
   struct PoolSlice {
     TrancheInfo seniorTranche;
@@ -46,9 +43,8 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     uint256 principalDeployed;
   }
 
-  //  PoolSlice[] internal poolSlices;
   mapping(uint256 => PoolSlice) internal poolSlices;
-  uint8 public numSlices;
+  uint256 public numSlices;
 
   event DepositMade(address indexed owner, uint256 indexed tranche, uint256 indexed tokenId, uint256 amount);
   event WithdrawalMade(
@@ -82,8 +78,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   event DrawdownsPaused(address indexed pool);
   event DrawdownsUnpaused(address indexed pool);
   event EmergencyShutdown(address indexed pool);
-  event JuniorTrancheLocked(address indexed pool, uint256 lockedUntil);
-  event SeniorTrancheLocked(address indexed pool, uint256 lockedUntil);
+  event TrancheLocked(address indexed pool, uint256 trancheId, uint256 lockedUntil);
 
   function initialize(
     address _config,
@@ -105,7 +100,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     require(owner != address(0), "Owner address cannot be empty");
     __BaseUpgradeablePausable__init(owner);
     _trancheIdTracker.increment(); // Start with 1 for backwards compatibility
-    initializeNextSlice();
+    _initializeNextSlice();
     createAndSetCreditLine(_borrower, _limit, _interestApr, _paymentPeriodInDays, _termInDays, _lateFeeApr);
 
     createdAt = block.timestamp;
@@ -235,7 +230,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
       sharePriceToUsdc(seniorTranche.principalSharePrice, seniorTranche.principalDeposited)
     );
 
-    require(amount <= amountAvailable, "Cannot drawdown more than whats available");
+    require(amount <= amountAvailable, "Insufficient funds in slice");
 
     creditLine.drawdown(amount);
 
@@ -285,8 +280,12 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     _lockPool();
   }
 
-  function unlockPool() external override onlyLocker whenNotPaused {
-    _unlockPool();
+  function initializeNextSlice() external override onlyLocker whenNotPaused {
+    require(locked(), "Cannot initialize next slice while current slice is active");
+    // require(!creditline.isLate()) // Waiting on Greg's PR
+    // require(within principal grace period) // waiting on Will's PR
+    _initializeNextSlice();
+    //events
   }
 
   /**
@@ -357,7 +356,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   /**
    * @notice Migrates the accounting variables from the current creditline to a brand new one
    * @param _borrower The borrower address
-   * @param _maxLimit The new limit
+   * @param _maxLimit The new max limit
    * @param _interestApr The new interest APR
    * @param _paymentPeriodInDays The new payment period in days
    * @param _termInDays The new term in days
@@ -534,7 +533,6 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     // If the tranche has not been locked, ensure the deposited amount is correct
     if (trancheInfo.lockedUntil == 0) {
       trancheInfo.principalDeposited = trancheInfo.principalDeposited.sub(amount);
-      //      totalDeposits = totalDeposits.sub(amount);
     }
 
     uint256 interestToRedeem = Math.min(interestRedeemable, amount);
@@ -574,7 +572,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     uint256 lockedUntil = currentTime().add(config.getDrawdownPeriodInSeconds());
     currentSlice.juniorTranche.lockedUntil = lockedUntil;
 
-    emit JuniorTrancheLocked(address(this), lockedUntil);
+    emit TrancheLocked(address(this), currentSlice.juniorTranche.id, lockedUntil);
   }
 
   function _lockPool() internal {
@@ -595,17 +593,11 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     uint256 lockPeriod = config.getDrawdownPeriodInSeconds();
     currentSlice.seniorTranche.lockedUntil = currentTime().add(lockPeriod);
     currentSlice.juniorTranche.lockedUntil = currentTime().add(lockPeriod);
-    emit SeniorTrancheLocked(address(this), currentSlice.seniorTranche.lockedUntil);
-    emit JuniorTrancheLocked(address(this), currentSlice.juniorTranche.lockedUntil);
+    emit TrancheLocked(address(this), currentSlice.seniorTranche.id, currentSlice.seniorTranche.lockedUntil);
+    emit TrancheLocked(address(this), currentSlice.juniorTranche.id, currentSlice.juniorTranche.lockedUntil);
   }
 
-  function _unlockPool() internal {
-    // requires
-    initializeNextSlice();
-    //events
-  }
-
-  function initializeNextSlice() internal {
+  function _initializeNextSlice() internal {
     require(numSlices < 5, "Only a maximum of 5 slices are supported");
     TrancheInfo memory seniorTranche = TrancheInfo({
       id: _trancheIdTracker.current(),
@@ -644,9 +636,9 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     ApplyResult memory seniorApplyResult = ApplyResult({interestRemaining: 0, principalRemaining: 0, reserveAmount: 0});
 
     for (uint256 i = 0; i < numSlices; i++) {
-      PoolSlice storage currentSlice = poolSlices[i];
+      PoolSlice storage workingSlice = poolSlices[i];
 
-      (uint256 interestAccrued, uint256 principalAccrued) = getTotalInterestAndPrincipal(currentSlice);
+      (uint256 interestAccrued, uint256 principalAccrued) = getTotalInterestAndPrincipal(workingSlice);
 
       SliceInfo memory sliceInfo = SliceInfo({
         reserveFeePercent: reserveFeePercent,
@@ -656,17 +648,17 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
 
       // Since slices cannot be created when the loan is late, all interest collected can be assumed to split
       // pro-rata across the slices
-      uint256 interestForSlice = scaleByFraction(interest, currentSlice.principalDeployed, totalDeployed);
-      uint256 principalForSlice = scaleByFraction(principal, currentSlice.principalDeployed, totalDeployed);
+      uint256 interestForSlice = scaleByFraction(interest, workingSlice.principalDeployed, totalDeployed);
+      uint256 principalForSlice = scaleByFraction(principal, workingSlice.principalDeployed, totalDeployed);
 
-      ApplyResult memory result = applyToSeniorTranche(currentSlice, interestForSlice, principalForSlice, sliceInfo);
+      ApplyResult memory result = applyToSeniorTranche(workingSlice, interestForSlice, principalForSlice, sliceInfo);
       seniorApplyResult.interestRemaining = seniorApplyResult.interestRemaining.add(result.interestRemaining);
       seniorApplyResult.principalRemaining = seniorApplyResult.principalRemaining.add(result.principalRemaining);
       totalReserveAmount = totalReserveAmount.add(result.reserveAmount);
     }
     for (uint256 i = 0; i < numSlices; i++) {
-      PoolSlice storage currentSlice = poolSlices[i];
-      (uint256 interestAccrued, uint256 principalAccrued) = getTotalInterestAndPrincipal(currentSlice);
+      PoolSlice storage workingSlice = poolSlices[i];
+      (uint256 interestAccrued, uint256 principalAccrued) = getTotalInterestAndPrincipal(workingSlice);
 
       SliceInfo memory sliceInfo = SliceInfo({
         reserveFeePercent: reserveFeePercent,
@@ -674,18 +666,18 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
         principalAccrued: principalAccrued
       });
 
-      // Any remaining interest and principal is then shared pro-rate with the junior slices
+      // Any remaining interest and principal is then shared pro-rata with the junior slices
       uint256 interestForSlice = scaleByFraction(
         seniorApplyResult.interestRemaining,
-        currentSlice.principalDeployed,
+        workingSlice.principalDeployed,
         totalDeployed
       );
       uint256 principalForSlice = scaleByFraction(
         seniorApplyResult.principalRemaining,
-        currentSlice.principalDeployed,
+        workingSlice.principalDeployed,
         totalDeployed
       );
-      ApplyResult memory result = applyToJuniorTranche(currentSlice, interestForSlice, principalForSlice, sliceInfo);
+      ApplyResult memory result = applyToJuniorTranche(workingSlice, interestForSlice, principalForSlice, sliceInfo);
       totalReserveAmount = totalReserveAmount.add(result.reserveAmount);
     }
 
@@ -802,11 +794,15 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     returns (uint256 interestAccrued, uint256 principalAccrued)
   {
     principalAccrued = creditLine.principalOwed();
-    // Add any remaining balance we have to the principal accrued so expected share price will reflect partial
-    // drawdowns appropriately. (e.g. if 300K was drawndown from a 1M loan, current and expected share price should
-    // be 0.7 and not 0)
+    // In additiona to principal actually owed, we need to account for early principal payments
+    // If the borrower pays back 5K early on a 10K loan, the actual principal accrued should be
+    // 5K (balance- deployed) + 0 (principal owed)
     principalAccrued = totalDeployed.sub(creditLine.balance()).add(principalAccrued);
+    // Now we need to scale that correctly for the slice we're interested in
     principalAccrued = scaleByFraction(principalAccrued, slice.principalDeployed, totalDeployed);
+    // Finally, we need to account for partial drawdowns. e.g. If 20K was deposited, and only 10K was drawn down,
+    // Then principal accrued should start at 10K (total deposited - principal deployed), not 0. This is because
+    // share price starts at 1, and is decremented by what was drawn down.
     uint256 totalDeposited = slice.seniorTranche.principalDeposited.add(slice.juniorTranche.principalDeposited);
     principalAccrued = totalDeposited.sub(slice.principalDeployed).add(principalAccrued);
     return (slice.totalInterestAccrued, principalAccrued);
@@ -829,7 +825,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
 
   function createAndSetCreditLine(
     address _borrower,
-    uint256 _limit,
+    uint256 _maxLimit,
     uint256 _interestApr,
     uint256 _paymentPeriodInDays,
     uint256 _termInDays,
@@ -841,7 +837,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
       address(config),
       address(this), // Set self as the owner
       _borrower,
-      _limit,
+      _maxLimit,
       _interestApr,
       _paymentPeriodInDays,
       _termInDays,
@@ -849,11 +845,13 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     );
   }
 
-  function getTrancheInfo(uint256 tranche) internal view returns (TrancheInfo storage) {
-    require(tranche > 0 && tranche <= numSlices * NUM_TRANCHES, "Unsupported tranche");
-    uint256 sliceId = ((tranche + (tranche % NUM_TRANCHES)) / NUM_TRANCHES) - 1;
+  function getTrancheInfo(uint256 trancheId) internal view returns (TrancheInfo storage) {
+    require(trancheId > 0 && trancheId <= numSlices.mul(NUM_TRANCHES_PER_SLICE), "Unsupported tranche");
+    uint256 sliceId = ((trancheId.add(trancheId.mod(NUM_TRANCHES_PER_SLICE))).div(NUM_TRANCHES_PER_SLICE)).sub(1);
     PoolSlice storage slice = poolSlices[sliceId];
-    TrancheInfo storage trancheInfo = tranche % NUM_TRANCHES == 1 ? slice.seniorTranche : slice.juniorTranche;
+    TrancheInfo storage trancheInfo = trancheId.mod(NUM_TRANCHES_PER_SLICE) == 1
+      ? slice.seniorTranche
+      : slice.juniorTranche;
     return trancheInfo;
   }
 

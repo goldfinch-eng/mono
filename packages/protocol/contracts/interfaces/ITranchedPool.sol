@@ -42,7 +42,7 @@ abstract contract ITranchedPool {
 
   function lockPool() external virtual;
 
-  function unlockPool() external virtual;
+  function initializeNextSlice() external virtual;
 
   function drawdown(uint256 amount) external virtual;
 

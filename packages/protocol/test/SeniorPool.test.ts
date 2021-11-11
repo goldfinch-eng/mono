@@ -658,8 +658,8 @@ describe("SeniorPool", () => {
         // to prohibit that, so that we are able to maintain the leverage ratio in a case
         // where the juniors take "more than their share".
 
-        const expectedLimit = usdcVal(100000)
-        expect(await tranchedPool.maxLimit()).to.bignumber.equal(expectedLimit)
+        const expectedMaxLimit = usdcVal(100000)
+        expect(await tranchedPool.maxLimit()).to.bignumber.equal(expectedMaxLimit)
 
         await tranchedPool.lockJuniorCapital({from: borrower})
         expect(await goldfinchConfig.getAddress(CONFIG_KEYS.SeniorPoolStrategy)).to.equal(
