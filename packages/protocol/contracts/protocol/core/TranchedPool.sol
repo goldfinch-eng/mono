@@ -579,7 +579,13 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
 
   function _lockPool() internal {
     PoolSlice storage currentSlice = poolSlices[numSlices - 1];
+
     require(currentSlice.juniorTranche.lockedUntil > 0, "Junior tranche must be locked first");
+    // Allow locking the pool only once; do not allow extending the lock of an
+    // already-locked pool. Otherwise the locker could keep the pool locked
+    // indefinitely, preventing withdrawals.
+    require(currentSlice.seniorTranche.lockedUntil == 0, "Lock cannot be extended");
+
     uint256 currentTotal = currentSlice.juniorTranche.principalDeposited.add(
       currentSlice.seniorTranche.principalDeposited
     );
