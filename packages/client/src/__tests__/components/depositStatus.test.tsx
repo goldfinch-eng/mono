@@ -129,7 +129,7 @@ describe("Senior pool page deposit status ", () => {
     expect(tooltipRow[2]?.textContent).toContain("Total Est. APY0.48%")
   })
 
-  it("shows portfolio with senior pool and claimable staking reward", async () => {
+  it("shows deposit status with senior pool and claimable staking reward", async () => {
     const {gfi, stakingRewards, user} = await setupClaimableStakingReward(goldfinchProtocol, seniorPool)
 
     mockCapitalProviderCalls("1000456616980000000", "50000000000000000000", "0", "1")
@@ -160,7 +160,7 @@ describe("Senior pool page deposit status ", () => {
     expect(tooltipRow[2]?.textContent).toContain("Total Est. APY47.72%")
   })
 
-  it("shows portfolio with senior pool and vesting staking reward", async () => {
+  it("shows deposit status with senior pool and vesting staking reward", async () => {
     const {gfi, stakingRewards, user} = await setupNewStakingReward(goldfinchProtocol, seniorPool)
 
     mockCapitalProviderCalls("1000456616980000000", "50000000000000000000", "0", "1")
@@ -191,7 +191,7 @@ describe("Senior pool page deposit status ", () => {
     expect(tooltipRow[2]?.textContent).toContain("Total Est. APY47.72%")
   })
 
-  it("shows portfolio with senior pool and partially claimed staking reward", async () => {
+  it("shows deposit status with senior pool and partially claimed staking reward", async () => {
     const {gfi, stakingRewards, user} = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool)
 
     mockCapitalProviderCalls("1000456616980000000", "50000000000000000000", "0", "1")
