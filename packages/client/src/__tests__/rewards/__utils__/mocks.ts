@@ -1,7 +1,8 @@
 import "@testing-library/jest-dom"
 import {mock} from "depay-web3-mock"
+import BigNumber from "bignumber.js"
 import {MerkleDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types"
-import {CommunityRewards} from "../../../ethereum/communityRewards"
+import {CommunityRewards, MerkleDistributor} from "../../../ethereum/communityRewards"
 import {GFI} from "../../../ethereum/gfi"
 import {User, UserMerkleDistributor} from "../../../ethereum/user"
 import {StakingRewards} from "../../../ethereum/pool"
@@ -18,7 +19,6 @@ import {
 } from "./constants"
 import * as utils from "../../../ethereum/utils"
 import * as poolModule from "../../../ethereum/pool"
-import BigNumber from "bignumber.js"
 
 export function mockCapitalProviderCalls(
   sharePrice: string,
@@ -331,7 +331,10 @@ export function mockUserInitializationContractCalls(
   }
 }
 
-export function mockStakingRewardsContractCalls(stakingRewards, currentEarnRatePerToken?: string | undefined) {
+export function mockStakingRewardsContractCalls(
+  stakingRewards: StakingRewards,
+  currentEarnRatePerToken?: string | undefined
+) {
   if (!currentEarnRatePerToken) {
     currentEarnRatePerToken = "10000000000000000000"
   }
@@ -359,8 +362,8 @@ export function mockStakingRewardsContractCalls(stakingRewards, currentEarnRateP
 }
 
 export function mockMerkleDistributorContractCalls(
-  merkle,
-  communityRewardsAddress = "0x0000000000000000000000000000000000000008"
+  merkle: MerkleDistributor,
+  communityRewardsAddress: string = "0x0000000000000000000000000000000000000008"
 ) {
   let callCommunityRewardsMock = mock({
     blockchain,
