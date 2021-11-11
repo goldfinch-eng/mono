@@ -90,7 +90,7 @@ async function main(hre: HardhatRuntimeEnvironment, options: OverrideOptions) {
     const protocolOwner = await getProtocolOwner()
     await impersonateAccount(hre, protocolOwner)
     await fundWithWhales(["ETH"], [protocolOwner])
-    await migratev21.main()
+    // await migratev21.main() // migration completed
     await migratev22.main()
 
     logger("Funding protocol_owner with whales")

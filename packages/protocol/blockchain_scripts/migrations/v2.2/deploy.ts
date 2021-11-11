@@ -11,7 +11,7 @@ export async function deploy(deployEffects: DeployEffects) {
   const config = await getTruffleContract<GoldfinchConfigInstance>("GoldfinchConfig", {from: await getProtocolOwner()})
   const poolRewards = await deployPoolRewards(deployer, {configAddress: config.address, deployEffects})
 
-  const upgradedContracts = await upgrader.upgrade({contracts: ["SeniorPool", "Go"]}) // "Go", "UniqueIdentity", "PoolTokens", "CreditLine"
+  const upgradedContracts = await upgrader.upgrade({contracts: ["SeniorPool", "Go", "UniqueIdentity", "PoolTokens"]})
 
   return {
     deployedContracts: {
