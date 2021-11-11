@@ -70,6 +70,9 @@ async function upgradeContracts({
 
   const dependencies: DepList = {
     CreditLine: {["Accountant"]: accountantDeployResult.address},
+    SeniorPool: {["Accountant"]: accountantDeployResult.address},
+    GoldfinchFactory: {["Accountant"]: accountantDeployResult.address},
+    CreditDesk: {["Accountant"]: accountantDeployResult.address},
   }
 
   const upgradedContracts: UpgradedContracts = {}
