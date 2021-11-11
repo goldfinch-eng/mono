@@ -1388,6 +1388,128 @@ describe("StakingRewards", function () {
     })
   })
 
+  describe("currentEarnRatePerToken", async () => {
+    let rewardRate: BN
+
+    beforeEach(async function () {
+      rewardRate = new BN(String(2e18))
+      await stakingRewards.setRewardsParameters(
+        targetCapacity,
+        rewardRate,
+        rewardRate,
+        minRateAtPercent,
+        maxRateAtPercent
+      )
+
+      const totalRewards = rewardRate.mul(yearInSeconds)
+      await mintRewards(totalRewards)
+    })
+
+    context("`lastUpdateTime` is in the past", () => {
+      it("returns the rewards earned per second for staking one FIDU token", async () => {
+        await stake({amount: fiduAmount, from: anotherUser})
+        await stake({amount: fiduAmount, from: anotherUser})
+
+        const timestampAfterStaking = await getCurrentTimestamp()
+
+        await advanceTime({seconds: halfYearInSeconds})
+        await ethers.provider.send("evm_mine", [])
+
+        const currentTimestamp = await getCurrentTimestamp()
+        expect(currentTimestamp).to.bignumber.equal(timestampAfterStaking.add(halfYearInSeconds))
+        const lastUpdateTime = await stakingRewards.lastUpdateTime()
+        expect(lastUpdateTime).to.bignumber.equal(timestampAfterStaking)
+
+        const expectedTotalLeveragedStakedSupply = fiduAmount.mul(new BN(2))
+        expect(await stakingRewards.currentEarnRatePerToken()).to.bignumber.equal(
+          rewardRate.mul(halfYearInSeconds).mul(decimals).div(expectedTotalLeveragedStakedSupply).div(halfYearInSeconds)
+        )
+      })
+    })
+
+    context("`lastUpdateTime` is the current timestamp", () => {
+      it("returns the rewards earned per second for staking one FIDU token", async () => {
+        await advanceTime({seconds: halfYearInSeconds})
+        await ethers.provider.send("evm_mine", [])
+
+        await stake({amount: fiduAmount, from: anotherUser})
+        await stake({amount: fiduAmount, from: anotherUser})
+        const timestampAfterStaking = await getCurrentTimestamp()
+
+        const lastUpdateTime = await stakingRewards.lastUpdateTime()
+        expect(lastUpdateTime).to.bignumber.equal(timestampAfterStaking)
+
+        const expectedTotalLeveragedStakedSupply = fiduAmount.mul(new BN(2))
+        expect(await stakingRewards.currentEarnRatePerToken()).to.bignumber.equal(
+          rewardRate.mul(decimals).div(expectedTotalLeveragedStakedSupply)
+        )
+      })
+    })
+  })
+
+  describe("positionCurrentEarnRate", async () => {
+    let rewardRate: BN
+
+    beforeEach(async function () {
+      rewardRate = new BN(String(2e18))
+      await stakingRewards.setRewardsParameters(
+        targetCapacity,
+        rewardRate,
+        rewardRate,
+        minRateAtPercent,
+        maxRateAtPercent
+      )
+
+      const totalRewards = rewardRate.mul(yearInSeconds)
+      await mintRewards(totalRewards)
+    })
+
+    context("`lastUpdateTime` is in the past", () => {
+      it("returns the rewards earned per second for the position", async () => {
+        const tokenId = await stake({amount: fiduAmount, from: anotherUser})
+        await stake({amount: fiduAmount, from: anotherUser})
+
+        const timestampAfterStaking = await getCurrentTimestamp()
+
+        await advanceTime({seconds: halfYearInSeconds})
+        await ethers.provider.send("evm_mine", [])
+
+        const currentTimestamp = await getCurrentTimestamp()
+        expect(currentTimestamp).to.bignumber.equal(timestampAfterStaking.add(halfYearInSeconds))
+        const lastUpdateTime = await stakingRewards.lastUpdateTime()
+        expect(lastUpdateTime).to.bignumber.equal(timestampAfterStaking)
+
+        const expectedTotalLeveragedStakedSupply = fiduAmount.mul(new BN(2))
+        expect(await stakingRewards.positionCurrentEarnRate(tokenId)).to.bignumber.equal(
+          rewardRate
+            .mul(halfYearInSeconds)
+            .mul(fiduAmount)
+            .div(expectedTotalLeveragedStakedSupply)
+            .div(halfYearInSeconds)
+        )
+      })
+    })
+
+    context("`lastUpdateTime` is the current timestamp", () => {
+      it("returns the rewards earned per second for staking one FIDU token", async () => {
+        await advanceTime({seconds: halfYearInSeconds})
+        await ethers.provider.send("evm_mine", [])
+
+        const tokenId = await stake({amount: fiduAmount, from: anotherUser})
+        await stake({amount: fiduAmount, from: anotherUser})
+        const timestampAfterStaking = await getCurrentTimestamp()
+
+        const lastUpdateTime = await stakingRewards.lastUpdateTime()
+        expect(lastUpdateTime).to.bignumber.equal(timestampAfterStaking)
+
+        const expectedTotalLeveragedStakedSupply = fiduAmount.mul(new BN(2))
+        expect(await stakingRewards.positionCurrentEarnRate(tokenId)).to.bignumber.equal(
+          rewardRate.mul(fiduAmount).div(expectedTotalLeveragedStakedSupply)
+        )
+      })
+    })
+  })
+
   describe("exit", async () => {
     let rewardRate: BN
 
