@@ -62,7 +62,7 @@ function renderRewards(
   )
 }
 
-describe("Rewards portfolio overview", () => {
+describe("Rewards summary overview", () => {
   let seniorPool
   let goldfinchProtocol = new GoldfinchProtocol(network)
 
