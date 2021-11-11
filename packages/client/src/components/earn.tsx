@@ -60,7 +60,7 @@ function PortfolioOverviewSkeleton() {
   )
 }
 
-function PortfolioOverview({
+export function PortfolioOverview({
   poolData,
   capitalProvider,
   poolBackers,
@@ -85,7 +85,6 @@ function PortfolioOverview({
     const estimatedJuniorApy = p.tranchedPool.estimateJuniorAPY(p.tranchedPool.estimatedLeverageRatio)
     estimatedAnnualGrowth = estimatedAnnualGrowth.plus(p.balanceInDollars.multipliedBy(estimatedJuniorApy))
   })
-
   const userEstimatedApyFromSupplying = estimatedAnnualGrowth.dividedBy(totalBalance)
   const estimatedApyFromSupplying = totalBalance.gt(0) ? userEstimatedApyFromSupplying : globalEstimatedApyFromSupplying
 

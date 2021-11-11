@@ -331,7 +331,7 @@ describe("Earn page portfolio overview", () => {
 
     const subValue = await container.getElementsByClassName("sub-value")
     expect(subValue[0]?.textContent).toContain("$36.71 (0.06%)") // Portfolio balance
-    expect(subValue[1]?.textContent).toContain("49.05% APY (with GFI)") // Est. Annual Growth
+    expect(subValue[1]?.textContent).toContain("41.18% APY (with GFI)") // Est. Annual Growth
 
     // tooltip
     expect(
@@ -341,7 +341,7 @@ describe("Earn page portfolio overview", () => {
     ).toBeInTheDocument()
     const tooltipRow = await container.getElementsByClassName("tooltip-row")
     expect(tooltipRow[0]?.textContent).toContain("Pool APY1.82%")
-    expect(tooltipRow[1]?.textContent).toContain("GFI Rewards APY47.24%")
-    expect(tooltipRow[2]?.textContent).toContain("Total Est. APY49.05%")
+    expect(tooltipRow[1]?.textContent).toContain("GFI Rewards APY39.36%")
+    expect(tooltipRow[2]?.textContent).toContain("Total Est. APY41.18%")
   })
 })
