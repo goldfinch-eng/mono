@@ -337,7 +337,7 @@ function getGrantVestingIntervalDisplay(vestingInterval: BigNumber): string | un
 }
 function getGrantVestingLengthDisplay(duration: number, currentTimestamp: number | undefined): string {
   const endDate = currentTimestamp
-    ? new Date(currentTimestamp * 1000 + duration).toLocaleDateString(undefined, {
+    ? new Date((currentTimestamp + duration) * 1000).toLocaleDateString(undefined, {
         year: "numeric",
         month: "short",
         day: "numeric",
