@@ -7,7 +7,7 @@ import {AppContext} from "../../App"
 import web3 from "../../web3"
 import {fetchCapitalProviderData, SeniorPool} from "../../ethereum/pool"
 import {User} from "../../ethereum/user"
-import {blockchain, blockInfo, DEPLOYMENTS, erc20ABI, fiduABI, network, recipient} from "../rewards/__utils__/constants"
+import {blockInfo, DEPLOYMENTS, network, recipient} from "../rewards/__utils__/constants"
 import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
 import {
   getDefaultClasses,
@@ -16,9 +16,12 @@ import {
   setupPartiallyClaimedStakingReward,
 } from "../rewards/__utils__/scenarios"
 import {assertWithLoadedInfo, Loaded} from "../../types/loadable"
-import {mockUserInitializationContractCalls, setupMocksForAcceptedAirdrop} from "../rewards/__utils__/mocks"
+import {
+  mockCapitalProviderCalls,
+  mockUserInitializationContractCalls,
+  setupMocksForAcceptedAirdrop,
+} from "../rewards/__utils__/mocks"
 import * as utils from "../../ethereum/utils"
-import * as poolModule from "../../ethereum/pool"
 import {PortfolioOverview} from "../../components/earn"
 
 mock({
@@ -26,40 +29,6 @@ mock({
 })
 
 web3.setProvider(global.ethereum)
-
-function mockCapitalProviderCalls(
-  sharePrice: string,
-  numSharesNotStaked: string,
-  allowance: string,
-  weightedAverageSharePrice: string
-) {
-  jest.spyOn(utils, "fetchDataFromAttributes").mockImplementation(() => {
-    return Promise.resolve({sharePrice: new BigNumber(sharePrice)})
-  })
-  jest.spyOn(poolModule, "getWeightedAverageSharePrice").mockImplementation(() => {
-    return Promise.resolve(new BigNumber(weightedAverageSharePrice))
-  })
-  mock({
-    blockchain,
-    call: {
-      to: "0x0000000000000000000000000000000000000004",
-      api: fiduABI,
-      method: "balanceOf",
-      params: [recipient],
-      return: numSharesNotStaked,
-    },
-  })
-  mock({
-    blockchain,
-    call: {
-      to: "0x0000000000000000000000000000000000000002",
-      api: erc20ABI,
-      method: "allowance",
-      params: [recipient, "0x0000000000000000000000000000000000000005"],
-      return: allowance,
-    },
-  })
-}
 
 function renderPortfolioOverview(poolData, capitalProvider, poolBackers?: Loaded<unknown[]> | undefined) {
   const store = {}

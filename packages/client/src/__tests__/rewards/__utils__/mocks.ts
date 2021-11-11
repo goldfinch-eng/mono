@@ -10,13 +10,49 @@ import {
   blockInfo,
   communityRewardsABI,
   erc20ABI,
+  fiduABI,
   gfiABI,
   merkleDistributorABI,
   recipient,
   stakingRewardsABI,
 } from "./constants"
 import * as utils from "../../../ethereum/utils"
-import * as userModule from "../../../ethereum/user"
+import * as poolModule from "../../../ethereum/pool"
+import BigNumber from "bignumber.js"
+
+export function mockCapitalProviderCalls(
+  sharePrice: string,
+  numSharesNotStaked: string,
+  allowance: string,
+  weightedAverageSharePrice: string
+) {
+  jest.spyOn(utils, "fetchDataFromAttributes").mockImplementation(() => {
+    return Promise.resolve({sharePrice: new BigNumber(sharePrice)})
+  })
+  jest.spyOn(poolModule, "getWeightedAverageSharePrice").mockImplementation(() => {
+    return Promise.resolve(new BigNumber(weightedAverageSharePrice))
+  })
+  mock({
+    blockchain,
+    call: {
+      to: "0x0000000000000000000000000000000000000004",
+      api: fiduABI,
+      method: "balanceOf",
+      params: [recipient],
+      return: numSharesNotStaked,
+    },
+  })
+  mock({
+    blockchain,
+    call: {
+      to: "0x0000000000000000000000000000000000000002",
+      api: erc20ABI,
+      method: "allowance",
+      params: [recipient, "0x0000000000000000000000000000000000000005"],
+      return: allowance,
+    },
+  })
+}
 
 interface RewardsMockData {
   hasStakingRewards: boolean
