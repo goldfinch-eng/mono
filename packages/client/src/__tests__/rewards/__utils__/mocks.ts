@@ -21,16 +21,21 @@ import * as utils from "../../../ethereum/utils"
 import * as poolModule from "../../../ethereum/pool"
 
 export function mockCapitalProviderCalls(
-  sharePrice: string,
-  numSharesNotStaked: string,
-  allowance: string,
-  weightedAverageSharePrice: string
+  sharePrice?: string | undefined,
+  numSharesNotStaked?: string | undefined,
+  allowance?: string | undefined,
+  weightedAverageSharePrice?: string | undefined
 ) {
+  const defaultSharePrice = sharePrice ? sharePrice : "1000456616980000000"
+  const defaultNumSharesNotStaked = numSharesNotStaked ? numSharesNotStaked : "50000000000000000000"
+  const defaultAllowance = allowance ? allowance : "0"
+  const defaultWeightedAverageSharePrice = weightedAverageSharePrice ? weightedAverageSharePrice : "1"
+
   jest.spyOn(utils, "fetchDataFromAttributes").mockImplementation(() => {
-    return Promise.resolve({sharePrice: new BigNumber(sharePrice)})
+    return Promise.resolve({sharePrice: new BigNumber(defaultSharePrice)})
   })
   jest.spyOn(poolModule, "getWeightedAverageSharePrice").mockImplementation(() => {
-    return Promise.resolve(new BigNumber(weightedAverageSharePrice))
+    return Promise.resolve(new BigNumber(defaultWeightedAverageSharePrice))
   })
   mock({
     blockchain,
@@ -39,7 +44,7 @@ export function mockCapitalProviderCalls(
       api: fiduABI,
       method: "balanceOf",
       params: [recipient],
-      return: numSharesNotStaked,
+      return: defaultNumSharesNotStaked,
     },
   })
   mock({
@@ -49,7 +54,7 @@ export function mockCapitalProviderCalls(
       api: erc20ABI,
       method: "allowance",
       params: [recipient, "0x0000000000000000000000000000000000000005"],
-      return: allowance,
+      return: defaultAllowance,
     },
   })
 }

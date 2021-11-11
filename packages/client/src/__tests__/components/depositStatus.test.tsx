@@ -82,7 +82,7 @@ describe("Senior pool page deposit status ", () => {
     assertWithLoadedInfo(user)
     assertWithLoadedInfo(seniorPool)
 
-    mockCapitalProviderCalls("1000456616980000000", "50000000000000000000", "0", "1")
+    mockCapitalProviderCalls()
     capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
   })
 
@@ -132,7 +132,7 @@ describe("Senior pool page deposit status ", () => {
   it("shows deposit status with senior pool and claimable staking reward", async () => {
     const {gfi, stakingRewards, user} = await setupClaimableStakingReward(goldfinchProtocol, seniorPool)
 
-    mockCapitalProviderCalls("1000456616980000000", "50000000000000000000", "0", "1")
+    mockCapitalProviderCalls()
     const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
 
     const poolData = {
@@ -163,7 +163,7 @@ describe("Senior pool page deposit status ", () => {
   it("shows deposit status with senior pool and vesting staking reward", async () => {
     const {gfi, stakingRewards, user} = await setupNewStakingReward(goldfinchProtocol, seniorPool)
 
-    mockCapitalProviderCalls("1000456616980000000", "50000000000000000000", "0", "1")
+    mockCapitalProviderCalls()
     const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
 
     const poolData = {
@@ -194,7 +194,7 @@ describe("Senior pool page deposit status ", () => {
   it("shows deposit status with senior pool and partially claimed staking reward", async () => {
     const {gfi, stakingRewards, user} = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool)
 
-    mockCapitalProviderCalls("1000456616980000000", "50000000000000000000", "0", "1")
+    mockCapitalProviderCalls()
     const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
 
     const poolData = {
