@@ -518,12 +518,12 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     require(tokenIds.length == usdcAmounts.length, "tokenIds and usdcAmounts must be the same length");
 
     uint256 usdcReceivedAmountTotal = 0;
-    uint256[] storage fiduAmounts;
+    uint256[] memory fiduAmounts = new uint256[](usdcAmounts.length);
     for (uint256 i = 0; i < usdcAmounts.length; i++) {
       (uint256 usdcReceivedAmount, uint256 fiduAmount) = _unstakeAndWithdraw(tokenIds[i], usdcAmounts[i]);
 
       usdcReceivedAmountTotal = usdcReceivedAmountTotal.add(usdcReceivedAmount);
-      fiduAmounts.push(fiduAmount);
+      fiduAmounts[i] = fiduAmount;
     }
 
     emit UnstakedAndWithdrewMultiple(msg.sender, usdcReceivedAmountTotal, tokenIds, fiduAmounts);
