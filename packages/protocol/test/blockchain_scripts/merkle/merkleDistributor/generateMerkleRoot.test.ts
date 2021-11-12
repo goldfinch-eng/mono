@@ -1,5 +1,5 @@
-import {generateMerkleRoot} from "../../../blockchain_scripts/merkle/merkleDistributor/generateMerkleRoot"
-import {JsonAccountedGrant, MerkleDistributorInfo} from "../../../blockchain_scripts/merkle/merkleDistributor/types"
+import {generateMerkleRoot} from "../../../../blockchain_scripts/merkle/merkleDistributor/generateMerkleRoot"
+import {JsonAccountedGrant, MerkleDistributorInfo} from "../../../../blockchain_scripts/merkle/merkleDistributor/types"
 import fixtures from "./fixtures"
 
 describe("generateMerkleRoot", () => {
