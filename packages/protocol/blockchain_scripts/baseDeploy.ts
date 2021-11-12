@@ -19,6 +19,7 @@ import {
   TRUFFLE_CONTRACT_PROVIDER,
   SIGNER_ROLE,
   getEthersContract,
+  getTruffleContract,
 } from "./deployHelpers"
 import {HardhatRuntimeEnvironment} from "hardhat/types"
 import {DeployFunction} from "hardhat-deploy/types"
@@ -295,13 +296,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
       },
     })
 
-    const contract = await getContract<StakingRewards, StakingRewardsInstance>(
-      contractName,
-      TRUFFLE_CONTRACT_PROVIDER,
-      {
-        at: stakingRewards.address,
-      }
-    )
+    const contract = await getTruffleContract<StakingRewardsInstance>("StakingRewards", {at: stakingRewards.address})
 
     logger("Updating config...")
     await updateConfig(config, "address", CONFIG_KEYS.StakingRewards, contract.address, {logger})
@@ -466,9 +461,7 @@ async function deployPoolRewards(
     },
   })
 
-  const contract = await getContract<PoolRewards, PoolRewardsInstance>(contractName, TRUFFLE_CONTRACT_PROVIDER, {
-    at: poolRewards.address,
-  })
+  const contract = await getTruffleContract<PoolRewardsInstance>("PoolRewards", {at: poolRewards.address})
 
   const goldfinchConfig = await getEthersContract<GoldfinchConfig>("GoldfinchConfig", {at: configAddress})
 

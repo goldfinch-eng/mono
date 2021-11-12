@@ -257,12 +257,13 @@ describe("Go", () => {
         expect(await go.goOnlyIdTypes(anotherUser, [tokenId])).to.equal(true)
       })
 
-      it("returns true if legacy golisted", async () => {
+      it("returns true if legacy golisted and doesnt have UID", async () => {
+        const tokenId = new BN(0)
         expect(await goldfinchConfig.goList(anotherUser)).to.equal(false)
         expect(await goldfinchConfig.hasRole(GO_LISTER_ROLE, owner)).to.equal(true)
         await goldfinchConfig.addToGoList(anotherUser, {from: owner})
         expect(await goldfinchConfig.goList(anotherUser)).to.equal(true)
-        expect(await go.goOnlyIdTypes(anotherUser, [])).to.equal(true)
+        expect(await go.goOnlyIdTypes(anotherUser, [tokenId])).to.equal(true)
       })
 
       it("returns false if not legacy golisted and no included UID", async () => {
@@ -280,6 +281,10 @@ describe("Go", () => {
     context("goSeniorPool", () => {
       it("Validates zero address", async () => {
         await expect(go.goSeniorPool(ZERO_ADDRESS)).to.be.rejectedWith(/Zero address is not go-listed/)
+      })
+
+      it("Validates if staking rewards contract", () => {
+        // TODO
       })
 
       it("returns true if has UID and not legacy golisted", async () => {

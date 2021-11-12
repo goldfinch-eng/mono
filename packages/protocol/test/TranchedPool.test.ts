@@ -329,7 +329,7 @@ describe("TranchedPool", () => {
   describe("deposit", async () => {
     describe("junior tranche", async () => {
       it("fails if not legacy golisted and does not have allowed UID token", async () => {
-        await tranchedPool.setAllowedUIDTypes([])
+        await tranchedPool.setAllowedUIDTypes([], {from: borrower})
         await goldfinchConfig.bulkRemoveFromGoList([owner])
         await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(1), {from: owner})).to.be.rejectedWith(
           /This address has not been go-listed/
@@ -342,7 +342,7 @@ describe("TranchedPool", () => {
         const uidTokenId = new BN(3)
         const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
         await mint(hre, uniqueIdentity, uidTokenId, expiresAt, new BN(0), owner, undefined, owner)
-        await tranchedPool.setAllowedUIDTypes([1])
+        await tranchedPool.setAllowedUIDTypes([1], {from: borrower})
 
         await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(1), {from: owner})).to.be.rejectedWith(
           /This address has not been go-listed/
@@ -354,7 +354,7 @@ describe("TranchedPool", () => {
         const uidTokenId = new BN(1)
         const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
         await mint(hre, uniqueIdentity, uidTokenId, expiresAt, new BN(0), owner, undefined, owner)
-        await tranchedPool.setAllowedUIDTypes([1])
+        await tranchedPool.setAllowedUIDTypes([1], {from: borrower})
 
         await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(1), {from: owner})).to.be.not.rejectedWith(
           /This address has not been go-listed/
@@ -590,7 +590,7 @@ describe("TranchedPool", () => {
   describe("withdraw", async () => {
     describe("validations", async () => {
       it("fails if not legacy golisted and does not have allowed UID token", async () => {
-        await tranchedPool.setAllowedUIDTypes([])
+        await tranchedPool.setAllowedUIDTypes([0], {from: borrower})
         const receipt = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(1), {from: owner})
         await goldfinchConfig.bulkRemoveFromGoList([owner])
         const logs = decodeLogs<DepositMade>(receipt.receipt.rawLogs, tranchedPool, "DepositMade")
@@ -607,8 +607,9 @@ describe("TranchedPool", () => {
         const uidTokenId = new BN(3)
         const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
         await mint(hre, uniqueIdentity, uidTokenId, expiresAt, new BN(0), owner, undefined, owner)
-        await tranchedPool.setAllowedUIDTypes([1])
+        await tranchedPool.setAllowedUIDTypes([uidTokenId], {from: borrower})
         const receipt = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(1), {from: owner})
+        await tranchedPool.setAllowedUIDTypes([0], {from: borrower})
         await goldfinchConfig.bulkRemoveFromGoList([owner])
         const logs = decodeLogs<DepositMade>(receipt.receipt.rawLogs, tranchedPool, "DepositMade")
         const firstLog = getFirstLog(logs)
@@ -624,7 +625,7 @@ describe("TranchedPool", () => {
         const uidTokenId = new BN(1)
         const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
         await mint(hre, uniqueIdentity, uidTokenId, expiresAt, new BN(0), owner, undefined, owner)
-        await tranchedPool.setAllowedUIDTypes([1])
+        await tranchedPool.setAllowedUIDTypes([1], {from: borrower})
         const receipt = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(1), {from: owner})
         await goldfinchConfig.bulkRemoveFromGoList([owner])
         const logs = decodeLogs<DepositMade>(receipt.receipt.rawLogs, tranchedPool, "DepositMade")
@@ -1016,11 +1017,15 @@ describe("TranchedPool", () => {
 
   describe("setAllowedUIDTypes", () => {
     it("sets array of id types", async () => {
-      await tranchedPool.setAllowedUIDTypes([1])
+      await tranchedPool.setAllowedUIDTypes([1], {from: borrower})
       expect(await tranchedPool.allowedUIDTypes(0)).to.bignumber.equal(new BN(1))
-      await tranchedPool.setAllowedUIDTypes([1, 2])
+      await tranchedPool.setAllowedUIDTypes([1, 2], {from: borrower})
       expect(await tranchedPool.allowedUIDTypes(0)).to.bignumber.equal(new BN(1))
       expect(await tranchedPool.allowedUIDTypes(1)).to.bignumber.equal(new BN(2))
+    })
+
+    it("validate must be borrower", () => {
+      // TODO
     })
   })
 

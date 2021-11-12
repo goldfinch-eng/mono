@@ -300,6 +300,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   }
 
   function depositToSeniorPool(uint256 usdcAmount) internal returns (uint256 fiduAmount) {
+    require(config.getGo().goSeniorPool(msg.sender), "This address has not been go-listed");
     IERC20withDec usdc = config.getUSDC();
     usdc.safeTransferFrom(msg.sender, address(this), usdcAmount);
 
@@ -442,6 +443,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   }
 
   function _unstakeAndWithdraw(uint256 tokenId, uint256 usdcAmount) internal updateReward(tokenId) {
+    require(config.getGo().goSeniorPool(msg.sender), "This address has not been go-listed");
     ISeniorPool seniorPool = config.getSeniorPool();
     IFidu fidu = config.getFidu();
 
@@ -512,11 +514,6 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
     emit Unstaked(msg.sender, tokenId, amount);
   }
-
-  /// @notice "Kick" a user's reward multiplier. If they are past their lock-up period, their reward
-  ///   multipler will be reset to 1x.
-  /// @dev This will also checkpoint their rewards up to the current time.
-  function kick(uint256 tokenId) public nonReentrant whenNotPaused updateReward(tokenId) {}
 
   /// @notice Claim rewards for a given staked position
   /// @param tokenId A staking position token ID

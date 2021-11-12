@@ -47,7 +47,7 @@ contract Go is IGo, BaseUpgradeablePausable {
     uniqueIdentity = _uniqueIdentity;
   }
 
-  function updateGoldfinchConfig() public override onlyAdmin {
+  function updateGoldfinchConfig() external override onlyAdmin {
     config = GoldfinchConfig(config.configAddress());
     emit GoldfinchConfigUpdated(msg.sender, address(config));
   }
@@ -63,13 +63,16 @@ contract Go is IGo, BaseUpgradeablePausable {
    */
   function go(address account) public view override returns (bool) {
     require(account != address(0), "Zero address is not go-listed");
-    for (uint256 i = 0; i < allIdTypes.length; ++i) {
+    if (config.goList(account) || IUniqueIdentity0612(uniqueIdentity).balanceOf(account, ID_TYPE_0) > 0) {
+      return true;
+    }
+    for (uint256 i = 1; i < allIdTypes.length; ++i) {
       uint256 idTypeBalance = IUniqueIdentity0612(uniqueIdentity).balanceOf(account, allIdTypes[i]);
       if (idTypeBalance > 0) {
         return true;
       }
     }
-    return config.goList(account);
+    return false;
   }
 
   /**
@@ -82,12 +85,15 @@ contract Go is IGo, BaseUpgradeablePausable {
   function goOnlyIdTypes(address account, uint256[] memory onlyIdTypes) public view override returns (bool) {
     require(account != address(0), "Zero address is not go-listed");
     for (uint256 i = 0; i < onlyIdTypes.length; ++i) {
+      if (onlyIdTypes[i] == ID_TYPE_0 && config.goList(account)) {
+        return true;
+      }
       uint256 idTypeBalance = IUniqueIdentity0612(uniqueIdentity).balanceOf(account, onlyIdTypes[i]);
       if (idTypeBalance > 0) {
         return true;
       }
     }
-    return config.goList(account);
+    return false;
   }
 
   /**
@@ -97,13 +103,19 @@ contract Go is IGo, BaseUpgradeablePausable {
    */
   function goSeniorPool(address account) public view override returns (bool) {
     require(account != address(0), "Zero address is not go-listed");
+    if (account == config.stakingRewardsAddress()) {
+      return true;
+    }
     uint256[2] memory seniorPoolIdTypes = [ID_TYPE_0, ID_TYPE_1];
     for (uint256 i = 0; i < seniorPoolIdTypes.length; ++i) {
+      if (seniorPoolIdTypes[i] == ID_TYPE_0 && config.goList(account)) {
+        return true;
+      }
       uint256 idTypeBalance = IUniqueIdentity0612(uniqueIdentity).balanceOf(account, seniorPoolIdTypes[i]);
       if (idTypeBalance > 0) {
         return true;
       }
     }
-    return config.goList(account);
+    return false;
   }
 }

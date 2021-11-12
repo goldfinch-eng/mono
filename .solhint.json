@@ -73,6 +73,7 @@
           "drawdown": []
         },
         "**/TranchedPool.sol:TranchedPool": {
+          "setAllowedUIDTypes": ["onlyBorrower"],
           "deposit": ["whenNotPaused"],
           "depositWithPermit": [],
           "lockJuniorCapital": ["whenNotPaused", "onlyLocker"],
