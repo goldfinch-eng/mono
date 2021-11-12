@@ -13,24 +13,30 @@ const accountedGrant0: JsonAccountedDirectGrant = {
   },
 }
 const accountedGrant1: JsonAccountedDirectGrant = {
+  account: TEST_MERKLE_DIRECT_DISTRIBUTOR_RECIPIENT_A,
+  grant: {
+    amount: "3000",
+  },
+}
+const accountedGrant2: JsonAccountedDirectGrant = {
   account: TEST_MERKLE_DIRECT_DISTRIBUTOR_RECIPIENT_B,
   grant: {
     amount: "2000",
   },
 }
-const accountedGrants: JsonAccountedDirectGrant[] = [accountedGrant0, accountedGrant1]
+const accountedGrants: JsonAccountedDirectGrant[] = [accountedGrant0, accountedGrant1, accountedGrant2]
 
 export const merkleDirectDistributorInfo: MerkleDirectDistributorInfo = {
-  merkleRoot: "0x07bdbde09cbab017c205db413d294c4d936a502ff5068199c683e7cad85ea008",
-  amountTotal: "0x0bb8",
+  merkleRoot: "0x511e1628933bd68ad4eb62ff4bbec21bea72d5305cb5b421d5b8742a7b22c235",
+  amountTotal: "0x1770",
   grants: [
     {
       index: 0,
-      account: accountedGrant1.account,
+      account: accountedGrant2.account,
       grant: {
         amount: "0x07d0",
       },
-      proof: ["0x7725724b56159fe03d2348eec5ccb2057e7eb8c09773325ae70d29a5eb41bae6"],
+      proof: ["0x08eeb896964f4eb5c03602f111f1b8d3a7b80a177037c9b9a1e985ddfc71096b"],
     },
     {
       index: 1,
@@ -38,7 +44,21 @@ export const merkleDirectDistributorInfo: MerkleDirectDistributorInfo = {
       grant: {
         amount: "0x03e8",
       },
-      proof: ["0xef364c7d355eb30a5f72ffc8c4a72b13d0b8f841899c4a24ccc6c178e337cf51"],
+      proof: [
+        "0x432f84707ecf0aae803fb91ff905d0213afcb4f74923521f47e7fc4f5cfae295",
+        "0xef364c7d355eb30a5f72ffc8c4a72b13d0b8f841899c4a24ccc6c178e337cf51",
+      ],
+    },
+    {
+      index: 2,
+      account: accountedGrant1.account,
+      grant: {
+        amount: "0x0bb8",
+      },
+      proof: [
+        "0x7725724b56159fe03d2348eec5ccb2057e7eb8c09773325ae70d29a5eb41bae6",
+        "0xef364c7d355eb30a5f72ffc8c4a72b13d0b8f841899c4a24ccc6c178e337cf51",
+      ],
     },
   ],
 }

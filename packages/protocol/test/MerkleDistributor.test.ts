@@ -311,18 +311,6 @@ describe("MerkleDistributor", () => {
       await expect(acceptance).to.be.rejectedWith(/Invalid proof/)
     })
 
-    it("rejects an existent grant index with incorrect account", async () => {
-      const otherGrantInfo = fixtures.output.grants[1]
-      assertNonNullable(otherGrantInfo)
-      const invalidAccount = otherGrantInfo.account
-      expect(invalidAccount).not.to.equal(acceptGrantParams.from)
-      const acceptance = acceptGrant({
-        ...acceptGrantParams,
-        from: invalidAccount,
-      })
-      await expect(acceptance).to.be.rejectedWith(/Invalid proof/)
-    })
-
     it("rejects an existent grant index with incorrect (lesser) amount", async () => {
       const invalidLesserAmount = acceptGrantParams.amount.sub(new BN(1))
       const acceptance = acceptGrant({

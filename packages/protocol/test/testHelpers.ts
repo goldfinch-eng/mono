@@ -13,7 +13,6 @@ import {
   ZERO_ADDRESS,
   DISTRIBUTOR_ROLE,
   getContract,
-  GetContractOptions,
   TRUFFLE_CONTRACT_PROVIDER,
 } from "../blockchain_scripts/deployHelpers"
 import {DeploymentsExtension} from "hardhat-deploy/types"
@@ -37,9 +36,10 @@ import {
   MerkleDistributorInstance,
   GoInstance,
   TestUniqueIdentityInstance,
+  MerkleDirectDistributorInstance,
 } from "../typechain/truffle"
 import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/DynamicLeverageRatioStrategy"
-import {MerkleDistributor, CommunityRewards, UniqueIdentity, Go, TestUniqueIdentity} from "../typechain/ethers"
+import {MerkleDistributor, CommunityRewards, Go, TestUniqueIdentity, MerkleDirectDistributor} from "../typechain/ethers"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import "./types"
 const decimals = new BN(String(1e18))
@@ -223,6 +223,10 @@ type DeployAllContractsOptions = {
     fromAccount: string
     root: string
   }
+  deployMerkleDirectDistributor?: {
+    fromAccount: string
+    root: string
+  }
 }
 
 async function deployAllContracts(
@@ -247,6 +251,7 @@ async function deployAllContracts(
   poolRewards: TestPoolRewardsInstance
   communityRewards: CommunityRewardsInstance
   merkleDistributor: MerkleDistributorInstance | null
+  merkleDirectDistributor: MerkleDirectDistributorInstance | null
   uniqueIdentity: TestUniqueIdentityInstance
   go: GoInstance
 }> {
@@ -301,6 +306,19 @@ async function deployAllContracts(
     await communityRewards.grantRole(DISTRIBUTOR_ROLE, merkleDistributor.address)
   }
 
+  let merkleDirectDistributor: MerkleDirectDistributorInstance | null = null
+  if (options.deployMerkleDirectDistributor) {
+    await deployments.deploy("MerkleDirectDistributor", {
+      args: [gfi.address, options.deployMerkleDirectDistributor.root],
+      from: options.deployMerkleDirectDistributor.fromAccount,
+      gasLimit: 4000000,
+    })
+    merkleDirectDistributor = await getContract<MerkleDirectDistributor, MerkleDirectDistributorInstance>(
+      "MerkleDirectDistributor",
+      TRUFFLE_CONTRACT_PROVIDER
+    )
+  }
+
   const uniqueIdentity = await getContract<TestUniqueIdentity, TestUniqueIdentityInstance>(
     "TestUniqueIdentity",
     TRUFFLE_CONTRACT_PROVIDER
@@ -325,6 +343,7 @@ async function deployAllContracts(
     stakingRewards,
     communityRewards,
     merkleDistributor,
+    merkleDirectDistributor,
     uniqueIdentity,
     go,
     poolRewards,
