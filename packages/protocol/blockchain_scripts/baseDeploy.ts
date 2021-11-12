@@ -118,28 +118,6 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
 
   // Internal functions.
 
-  async function deployConfig(deployer: ContractDeployer): Promise<GoldfinchConfig> {
-    let contractName = "GoldfinchConfig"
-
-    if (isTestEnv()) {
-      contractName = "TestGoldfinchConfig"
-    }
-
-    assertIsString(gf_deployer)
-    const config = await deployer.deploy<GoldfinchConfig>(contractName, {from: gf_deployer})
-    const checkAddress = await config.getAddress(CONFIG_KEYS.TreasuryReserve)
-    if (checkAddress === ZERO_ADDRESS) {
-      logger("Config newly deployed, initializing...")
-      const protocol_owner = await getProtocolOwner()
-      assertIsString(protocol_owner)
-      await (await config.initialize(protocol_owner)).wait()
-    }
-
-    await setInitialConfigVals(config, logger)
-
-    return config
-  }
-
   async function getOrDeployUSDC(deployer: ContractDeployer) {
     assertIsChainId(chainId)
     let usdcAddress = getUSDCAddress(chainId)
@@ -385,6 +363,29 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
 
     return deployed
   }
+}
+
+export async function deployConfig(deployer: ContractDeployer): Promise<GoldfinchConfig> {
+  const {gf_deployer} = await deployer.getNamedAccounts()
+  let contractName = "GoldfinchConfig"
+
+  if (isTestEnv()) {
+    contractName = "TestGoldfinchConfig"
+  }
+
+  assertIsString(gf_deployer)
+  const config = await deployer.deploy<GoldfinchConfig>(contractName, {from: gf_deployer})
+  const checkAddress = await config.getAddress(CONFIG_KEYS.TreasuryReserve)
+  if (checkAddress === ZERO_ADDRESS) {
+    logger("Config newly deployed, initializing...")
+    const protocol_owner = await getProtocolOwner()
+    assertIsString(protocol_owner)
+    await (await config.initialize(protocol_owner)).wait()
+  }
+
+  await setInitialConfigVals(config, logger)
+
+  return config
 }
 
 export async function deployUniqueIdentity({
