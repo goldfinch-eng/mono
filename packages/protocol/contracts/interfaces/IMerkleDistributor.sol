@@ -19,7 +19,6 @@ interface IMerkleDistributor {
   /// the inputs are invalid.
   function acceptGrant(
     uint256 index,
-    address account,
     uint256 amount,
     uint256 vestingLength,
     uint256 cliffLength,
