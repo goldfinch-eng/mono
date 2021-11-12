@@ -15,8 +15,8 @@ interface IMerkleDistributor {
   /// @notice Returns true if the index has been marked accepted.
   function isGrantAccepted(uint256 index) external view returns (bool);
 
-  /// @notice Causes the given `account` to accept the grant consisting of the given details. Reverts if
-  /// the inputs are invalid.
+  /// @notice Causes the sender to accept the grant consisting of the given details. Reverts if
+  /// the inputs (which includes who the sender is) are invalid.
   function acceptGrant(
     uint256 index,
     uint256 amount,
