@@ -1,47 +1,75 @@
-[![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/goldfinch-eng/goldfinch-protocol)
-
 # Goldfinch Protocol
-Goldfinch is a lending protocol built on the blockchain. This is a monorepo containing Goldfinch's smart contracts, web3 frontend and other supporting code.
+Goldfinch is a decentralized lending protocol built on the blockchain. This is a monorepo containing Goldfinch's smart contracts, web3 frontend and other supporting code.
 
-## Getting Started
-
-### Github setup
-
-[Setup your GPG key for github signing commits](https://docs.github.com/en/authentication/managing-commit-signature-verification)
-
-### Cloud setup
-We use Github Codespaces for cloud development. Goldfinch eng team members can simply click "Code" from the main repo page, and create a Codespace. Some key things to be aware of.
-  - You can actually use your local VS Code instance (highly recommended) and connect directly to the cloud. You can also use a browser instance of VSCode if you like.
-  - I would recommend going into your [personal codespace settings](https://github.com/settings/codespaces), and turning your Editor preference to "Visual Studio Code". This will default new Codespace instances to open up in your local VSCode, rather than the browser.
-  - Choosing a 4-core machine is sufficient.
-
-We use Github Codespaces for cloud development. Goldfinch eng team members can simply click "Code" from the main repo page, and create a Codespace. Some key things to be aware of.
-  - You can actually use your local VS Code instance (highly recommended) and connect directly to the cloud. You can also use a browser instance of VSCode if you like.
-  - I would recommend going into your [personal codespace settings](https://github.com/settings/codespaces), and turning your Editor preference to "Visual Studio Code". This will default new Codespace instances to open up in your local VSCode, rather than the browser.
-  - Choosing a 4-core machine is sufficient.
-
-**Tips**
-  - Codespaces has awesome "personalization" support through the use of `dotfiles` repos. If you set up a public repo called `dotfiles` under your Github handle, then Codespaces will automatically pull this in and run setup scripts, or use the bash_profile or what have you. It actually just takes all the files that start with `.` within that repo, and symlinks them to the Codespaces home directory. You can fork my dotfiles repo [here](https://github.com/blakewest/dotfiles) if you want.
-  - Once forked (or if you have your own), then go to your [personal codespace settings](https://github.com/settings/codespaces) and turn on "Automatically import Dotfiles", and from then on it will "just work", and your coding experience will feel right at home.
-  - Codespaces always use VSCode. But VS Code has plugins for 'vim mode" if you want that.
-
-### Local setup
-
+## Installing
 #### Node version
 
 You will need the correct version of node/npm on your local machine.
 
 Using nvm, you can do this with `nvm install 12.18.3`. If you don't have `nvm`, see [here](https://github.com/nvm-sh/nvm#installing-and-updating) for installation instructions.
 
-
-#### Installing
+#### Packages
 
 The repository is organized as a monorepo using [lerna](https://lerna.js.org/). Run the following to install lerna and then use it to install all package dependencies:
 
 ```shell
+# Just the first time
 npm install
 npm run bootstrap
 ```
+
+From here on out, every time you pull the repo and any packages change, you'll need to run
+
+```shell
+npm install
+# Note use lerna bootstrap, and not npm run bootstrap. It's much faster
+npx lerna bootstrap
+```
+
+## Developing
+
+### Smart Contract Development
+All contracts are located under `packages/protocol/contracts`
+1. Make your changes
+2. Write tests, which should be placed under `packages/protocol/test`
+    - There are two kinds of tests. "Regular" (all local state) and "mainnet forking" (uses state from mainnet). They are located in different folders. Sometimes you write both for the same feature. Use your judgement depending on the change.
+3. Write great commit messages, and put up your PR!
+
+### Frontend Development
+- `npm run start:local`
+  - The simplest way to get going. All fresh, local state.
+- `npm run start`
+  - This will run a local, [mainnet-forked](https://hardhat.org/hardhat-network/guides/mainnet-forking.html) blockchain. Extremely useful for certain changes.
+  - Requires an Alchemy API key. Sign up for free at https://www.alchemy.com/. To use it, see the one-time setup below.
+
+Both options will start several processes, including your local blockchain and front-end server, which will pop up on http://localhost:3000. It takes a min to spin up.
+
+#### One time setup (only necessary for front-end development)
+- Ensure you have Java installed (Firebase emulator requires the JVM)
+- Copy `.env.example` to `.env.local` (the local will be ignored by git).
+- Add the following into your new `.env.local` file. Our local dev scripts will use these vars to automatically send you test ETH, and give you a credit line and USDC to play with.
+
+  ```
+  ALCHEMY_API_KEY={your alchemy api key}
+  TEST_USERS={your metamask address}`
+  ALLOWED_SENDERS={your metamask address}`
+  ```
+
+- If you want the `client` to use variables in your `.env.local`, create a symlink to this file from inside the `packages/client` dir, or else create a separate `packages/client/.env.local` file.
+
+#### Running the front-end app
+
+Changes to the frontend should be automatically hotloaded using react-refresh.
+
+Changes to smart contracts will require re-compiling and re-deploying. You can do this by re-running your start command.
+
+#### Other ways to run
+* `npm run start:no-gasless` is available if gasless transactions are giving you trouble, or if you're having trouble finding the borrower contract address.
+
+***Note** When running with `start:local`, the Fake USDC address that we create will also not be visible to Metamask by default. So you'll need to add this as well
+by looking at the terminal output of the `@goldfinch-eng/protocol` start command. Search "USDC Address", and you should see something. Take that address, and
+then go to `Add Token` in Metamask, and paste it in there. Your fake USDC balance should show up.
+
 
 ### Directory structure
 
@@ -52,41 +80,6 @@ npm run bootstrap
   * [`autotasks/`](./packages/autotasks) (`@goldfinch-eng/functions`): [Defender Autotasks and Relay](https://docs.openzeppelin.com/defender/autotasks) code for supporting gasless transactions and triggering periodic on-chain calls.
   * [`utils/`](./packages/utils) (`@goldfinch-eng/utils`): Generally useful utilities that are shared across packages.
 * [`murmuration/`](./murmuration): Provisioning scripts for our cloud staging environment, called Murmuration.
-
-### Front-end development
-
-#### One time setup
-
-- Create a Goldfinch specific Metamask, which you can use for testing. The easiest way to do this is by creating a separate Chrome profile for Goldfinch, and then simply installing the Metamask extension.
-- Ensure you have Java installed (Firebase emulator requires the JVM) -> *Not required if you use Codespaces*
-- Copy `.env.example` to `.env.local` (the local will be ignored from git).
-- Add the following into your new `.env.local` file. Our local dev scripts will use these vars to automatically send you test ETH, and give you a credit line and USDC to play with.
-
-  ```
-  TEST_USERS={your Goldfinch Metamask address}`
-  ALLOWED_SENDERS=<your Goldfinch Metamask address>`
-  ```
-
-- If you want the `client` to use variables in your `.env.local`, create a symlink to this file from inside the `packages/client` dir, or else create a separate `packages/client/.env.local` file.
-
-#### Running the stack
-
-Run `npm run start` from the project root directory.
-
-  - This will run a local, [mainnet-forked](https://hardhat.org/hardhat-network/guides/mainnet-forking.html) blockchain, deploy our smart contracts, and set up useful state for the frontend (give your user a Credit Line, ETH, and USDC, etc.)
-  - This will also start the front-end server, which will pop up on http://localhost:3000.
-
-Changes to the frontend should be automatically hotloaded using react-refresh.
-
-Changes to smart contracts will require re-compiling and re-deploying. You can do this by re-running `npm run start`.
-
-#### Other ways to run
-* `npm run start:no-gasless` is available if gasless transactions are giving you trouble, or if you're having trouble finding the borrower contract address.
-* `npm run start:local` is available for running a non-forked local chain. The contracts will be deployed to a clean-slate, local blockchain.
-
-***Note** When running with `start:local`, the Fake USDC address that we create will also not be visible to Metamask by default. So you'll need to add this as well
-by looking at the terminal output of the `@goldfinch-eng/protocol` start command. Search "USDC Address", and you should see something. Take that address, and
-then go to `Add Token` in Metamask, and paste it in there. Your fake USDC balance should show up.*
 
 ### Tenderly debugging
 We have the ability to debug/profile local transactions via [Tenderly](Tenderly.co). To do this, get hold of a transaction hash and then run:
@@ -111,23 +104,15 @@ Pick up the transaction hash from the output of the test and run export as above
 ### Contributing
 - See the [`CONTRIBUTING.MD`](./CONTRIBUTING.MD)
 
+### Security
+- See the [`SECURITY.MD`](./SECURITY.MD)
+
 ### Gasless transactions
 
 To support gasless transactions, we need to collect the signature from the client, perform some server side checks to validate
 the sender and receiving contract (e.g. it's a known borrower interacting with our borrower contracts, we don't want to subsidize any arbitrary transaction).
 We use [Defender Relay](https://docs.openzeppelin.com/defender/relay) to do this. For local development, we mimic this by running a local server that executes the gasless logic.
 We've configured webpack to proxy to this server when running `npm run start` for local development. If you're having problems with gasless transactions, make sure you've added your address to `.env.local`'s `ALLOWED_SENDERS`.
-
-### Getting Testnet ETH and USDC
-
-If you're going to test or develop on Testnet (eg. Ropsten, or Rinkeby), you'll want some testnet ETH and USDC to play around with the app locally. The following sites should work for the `ropsten` testnet.
-
-- https://faucet.ropsten.be/
-- https://usdcfaucet.com/
-  - Note, to see your test tokens on Metamask, you will need to add the Ropsted USDC Contract address. You can do so by following these steps:
-  - Open Metamask and click `Add Token`
-  - Then click the `Custom Token` tab on the right.
-  - Then input the test contract address, which is `0x07865c6e87b9f70255377e024ace6630c1eaa37f`.
 
 ### Testing
 - Run `npm test` to run tests for all packages.
@@ -168,9 +153,11 @@ custom build scripts in `packages/protocol/blockchain_scripts`.
 
 #### Testnet deployments
 
- Right now, we support Ropsten and Rinkeby testnets. We are already deployed to these. Re-running is idempotent. But if we want to blow away the existing deployments for whatever reason, we can do the following:
+ Right now, we (sort-of) support Rinkeby testnet. We are already deployed there. However, it's not used much. Re-running deployment on Rinkeby is idempotent. But if we want to blow away the existing deployments for whatever reason, we can do the following:
 
-Redeploy with: `TEST_USERS={YOUR_METAMASK_ADDRESS} npx buidler deploy --network {ropsten|rinkeby} --export-all ./config/deployments.json --reset`
+Redeploy with: `TEST_USERS={YOUR_METAMASK_ADDRESS} npx buidler deploy --network {rinkeby} --export-all ./config/deployments.json --reset`
+
+  Generally speaking, we only use Rinkeby to test deployment scripts in a more "real" setting. But we default to using mainnet forking for testing.
 
 #### Mainnet deployments:
 
@@ -180,9 +167,9 @@ Contracts are already deployed to mainnet. We write custom scripts to do upgrade
 
 Front-end blockchain development is still early, and has rough edges. Here are some issues you might run into. If you see others, please add them here!
 
+- `Authorization required` Make sure you have your Alchemy API key set in `.env.local`
 - `Cannot set headers of undefined`. If you see this on the front-end, and the whole app blew up, then try switching your metamask off of the current network, and then back again (eg. to Ropsten and then back to Localhost)
 - `Error: [ethjs-rpc] rpc error with payload`. This may look like a failed transaction, and Metamask is just throwing some random error with no help. If you're pretty sure everything should be fine, then try to shut down your local server, restart it, and then before you try any transactions, reset your Metamask account, and switch away and back to the local network (eg. local -> rinkeby -> local).
   To reset your Metamask account, click Metamask --> Settings --> Advanced --> Reset Account. This is fast and painless
-- `Incompatible EIP-155 v 134343 with Chain ID {some_id}`. If you see this, you probably created an incorrect Gitpod Local RPC network on Metamask. Check the settings of the network, and ensure you have the correct Chain ID, which should be 31337 for localhost. Or if you're on local host, go into Metamask --> Settings --> Network, and make sure your Chain ID is set to 31337
-- If Metamask is unable to / times-out while trying to connect to Localhost 8545: `rm deployments/localhost`, and then re-running `npm run local-start`, was observed to fix this problem and enable Metamask to connect.
+- If Metamask is unable to / times-out while trying to connect to Localhost 8545: `rm deployments/localhost`, and then re-running `npm run start:local`, was observed to fix this problem and enable Metamask to connect.
 - `Error: a provider or signer is needed to resolve ENS names`. You probably have an undefined address somewhere. But generally it means Ethers doesn't understand the address and is trying to interpret it as an ENS address.

@@ -1,32 +1,32 @@
 import {BigNumber} from "bignumber.js"
 import {CapitalProvider, PoolData} from "../ethereum/pool"
+import {isGraphSeniorPoolData, GraphSeniorPoolData, GraphUserData} from "../graphql/utils"
 import {displayDollars, displayPercent} from "../utils"
 
 interface DepositStatusProps {
-  poolData?: PoolData
-  capitalProvider: CapitalProvider
+  poolData?: PoolData | GraphSeniorPoolData
+  capitalProvider?: CapitalProvider | GraphUserData
 }
 
 function DepositStatus(props: DepositStatusProps) {
-  const portfolioBalance = props.capitalProvider.availableToWithdrawInDollars
+  const {capitalProvider, poolData} = props
+  const portfolioBalance = capitalProvider?.availableToWithdrawInDollars || new BigNumber("0")
   const portfolioBalanceDisplay = displayDollars(portfolioBalance)
 
-  let apyDisplay: string, estimatedAPY: BigNumber | null
-  if (props.poolData?.loaded) {
-    estimatedAPY = props.poolData.estimatedApy
-    apyDisplay = `${displayPercent(estimatedAPY)}`
-  } else {
-    estimatedAPY = null
-    apyDisplay = `${displayPercent(estimatedAPY)}`
+  let estimatedAPY: BigNumber | null = null
+
+  if (isGraphSeniorPoolData(poolData) || poolData?.loaded) {
+    estimatedAPY = poolData.estimatedApy
   }
+  let apyDisplay: string = `${displayPercent(estimatedAPY)}`
 
   if (portfolioBalance.gt(0) && estimatedAPY) {
     const estimatedGrowth = estimatedAPY.multipliedBy(portfolioBalance)
     const estimatedGrowthDisplay = displayDollars(estimatedGrowth)
 
-    let unrealizedGainsPrefix = props.capitalProvider.unrealizedGainsInDollars.gte(0) ? "+" : ""
-    let unrealizedGainsDisplay = displayDollars(props.capitalProvider.unrealizedGainsInDollars)
-    let unrealizedGainsPercentDisplay = displayPercent(props.capitalProvider.unrealizedGainsPercentage)
+    let unrealizedGainsPrefix = capitalProvider?.unrealizedGainsInDollars.gte(0) ? "+" : ""
+    let unrealizedGainsDisplay = displayDollars(capitalProvider?.unrealizedGainsInDollars)
+    let unrealizedGainsPercentDisplay = displayPercent(capitalProvider?.unrealizedGainsPercentage)
 
     return (
       <div className="deposit-status background-container-inner">
