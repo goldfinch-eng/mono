@@ -147,6 +147,10 @@
           "withdraw": [],
           "withdrawMultiple": []
         },
+        "**/MerkleDirectDistributor.sol:MerkleDirectDistributor": {
+          "_setGrantAccepted": [],
+          "acceptGrant": []
+        },
         "**/MerkleDistributor.sol:MerkleDistributor": {
           "_setGrantAccepted": [],
           "acceptGrant": []
