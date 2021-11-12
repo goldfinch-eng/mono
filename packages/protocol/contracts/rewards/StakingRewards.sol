@@ -515,6 +515,11 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     emit Unstaked(msg.sender, tokenId, amount);
   }
 
+  /// @notice "Kick" a user's reward multiplier. If they are past their lock-up period, their reward
+  ///   multipler will be reset to 1x.
+  /// @dev This will also checkpoint their rewards up to the current time.
+  function kick(uint256 tokenId) public nonReentrant whenNotPaused updateReward(tokenId) {}
+
   /// @notice Claim rewards for a given staked position
   /// @param tokenId A staking position token ID
   function getReward(uint256 tokenId) public nonReentrant whenNotPaused updateReward(tokenId) {

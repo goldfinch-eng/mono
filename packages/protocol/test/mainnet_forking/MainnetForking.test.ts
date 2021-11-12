@@ -2,7 +2,6 @@ import hre from "hardhat"
 import {
   getUSDCAddress,
   MAINNET_ONE_SPLIT_ADDRESS,
-  isMainnetForking,
   getSignerForAddress,
   interestAprAsBN,
   MAINNET_CUSDC_ADDRESS,
