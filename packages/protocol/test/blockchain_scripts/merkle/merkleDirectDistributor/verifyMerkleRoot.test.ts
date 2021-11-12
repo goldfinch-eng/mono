@@ -9,7 +9,7 @@ import {verifyMerkleRoot} from "../../../../blockchain_scripts/merkle/merkleDire
 import {genDifferentHexString} from "../../../testHelpers"
 import fixtures from "./fixtures"
 
-const genInvalidMerkleDistributorInfo = (
+const genInvalidMerkleDirectDistributorInfo = (
   genInvalidLastGrantInfo: (lastGrantInfo: MerkleDirectDistributorGrantInfo) => MerkleDirectDistributorGrantInfo
 ): MerkleDirectDistributorInfo => {
   const grants = fixtures.output.grants.slice()
@@ -34,7 +34,7 @@ describe("verifyMerkleRoot", () => {
   })
 
   it("rejects an invalid index for a grant", async () => {
-    const json = genInvalidMerkleDistributorInfo((lastGrantInfo) => ({
+    const json = genInvalidMerkleDirectDistributorInfo((lastGrantInfo) => ({
       ...lastGrantInfo,
       index: lastGrantInfo.index + 1,
     }))
@@ -42,7 +42,7 @@ describe("verifyMerkleRoot", () => {
   })
 
   it("rejects an invalid amount for a grant", async () => {
-    const json = genInvalidMerkleDistributorInfo((lastGrantInfo) => ({
+    const json = genInvalidMerkleDirectDistributorInfo((lastGrantInfo) => ({
       ...lastGrantInfo,
       grant: {
         ...lastGrantInfo.grant,
@@ -53,7 +53,7 @@ describe("verifyMerkleRoot", () => {
   })
 
   it("rejects an invalid (empty) proof array for a grant", async () => {
-    const json = genInvalidMerkleDistributorInfo((lastGrantInfo) => ({
+    const json = genInvalidMerkleDirectDistributorInfo((lastGrantInfo) => ({
       ...lastGrantInfo,
       proof: [],
     }))
@@ -61,7 +61,7 @@ describe("verifyMerkleRoot", () => {
   })
 
   it("rejects an invalid (empty) proof string for a grant", async () => {
-    const json = genInvalidMerkleDistributorInfo((lastGrantInfo) => {
+    const json = genInvalidMerkleDirectDistributorInfo((lastGrantInfo) => {
       const invalidProof: string[] = lastGrantInfo.proof.slice()
       assertNonEmptyArray(invalidProof)
       invalidProof[invalidProof.length - 1] = web3.utils.asciiToHex("")
@@ -74,7 +74,7 @@ describe("verifyMerkleRoot", () => {
   })
 
   it("rejects an invalid (non-empty) proof string for a grant", async () => {
-    const json = genInvalidMerkleDistributorInfo((lastGrantInfo) => {
+    const json = genInvalidMerkleDirectDistributorInfo((lastGrantInfo) => {
       const invalidProof: string[] = lastGrantInfo.proof.slice()
       const lastElement = invalidProof[invalidProof.length - 1]
       assertNonNullable(lastElement)
