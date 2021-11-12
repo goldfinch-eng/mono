@@ -428,4 +428,4 @@ describe("Goldfinch", async () => {
       })
     })
   })
-})
+}).timeout(TEST_TIMEOUT)

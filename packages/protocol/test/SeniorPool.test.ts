@@ -566,7 +566,7 @@ describe("SeniorPool", () => {
         const unknownPoolAddress = await simulateMaliciousTranchedPool(goldfinchConfig, person2)
 
         await expect(seniorPool.invest(unknownPoolAddress)).to.be.rejectedWith(/Pool must be valid/)
-      })
+      }).timeout(TEST_TIMEOUT)
     })
 
     context("Pool's senior tranche is not empty", () => {
@@ -705,7 +705,7 @@ describe("SeniorPool", () => {
         await expect(seniorPool.investJunior(unknownPoolAddress, seniorPoolJuniorInvestmentAmount)).to.be.rejectedWith(
           /Pool must be valid/
         )
-      })
+      }).timeout(TEST_TIMEOUT)
     })
 
     context("Pool's junior tranche is locked", () => {
