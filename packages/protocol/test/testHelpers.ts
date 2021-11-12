@@ -38,7 +38,7 @@ import {
   TestUniqueIdentityInstance,
 } from "../typechain/truffle"
 import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/DynamicLeverageRatioStrategy"
-import {MerkleDistributor, CommunityRewards, Go, TestUniqueIdentity, ERC20} from "../typechain/ethers"
+import {MerkleDistributor, CommunityRewards, Go, TestUniqueIdentity} from "../typechain/ethers"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import "./types"
 const decimals = new BN(String(1e18))
@@ -392,10 +392,10 @@ const createPoolWithCreditLine = async ({
   termInDays = new BN(365),
   limit = usdcVal(10000),
   lateFeeApr = interestAprAsBN("3.0"),
-  allowedUIDTypes = [],
+  allowedUIDTypes = [0],
 }: {
   people: {owner: string; borrower: string}
-  usdc: ERC20
+  usdc: ERC20Instance
   goldfinchFactory: GoldfinchFactoryInstance
   juniorFeePercent?: Numberish
   interestApr?: Numberish

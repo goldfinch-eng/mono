@@ -57,7 +57,6 @@ import {PoolRewards} from "../typechain/ethers/PoolRewards"
 import {UNIQUE_IDENTITY_METADATA_URI} from "./uniqueIdentity/constants"
 import {toEthers} from "../test/testHelpers"
 import {getDeployEffects, DeployEffects} from "./migrations/deployEffects"
-import {TestPoolRewards} from "../typechain/ethers/TestPoolRewards"
 
 const logger: Logger = console.log
 
@@ -448,7 +447,6 @@ async function deployPoolRewards(
 ): Promise<PoolRewardsInstance> {
   const {gf_deployer} = await deployer.getNamedAccounts()
   let contractName = "PoolRewards"
-  console.log("isTestEnv", isTestEnv())
   if (isTestEnv()) {
     contractName = "TestPoolRewards"
   }

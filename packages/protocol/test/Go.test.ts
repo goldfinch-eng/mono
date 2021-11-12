@@ -236,7 +236,6 @@ describe("Go", () => {
         })
 
         it("returns true", async () => {
-          console.log("go", await go.go(anotherUser))
           expect(await go.go(anotherUser)).to.equal(true)
         })
       })

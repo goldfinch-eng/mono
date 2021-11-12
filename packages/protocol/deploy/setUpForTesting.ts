@@ -1,5 +1,4 @@
 import {HardhatRuntimeEnvironment} from "hardhat/types"
-import {DeploymentsExtension} from "hardhat-deploy/types"
 import {Logger} from "../blockchain_scripts/types"
 import fs from "fs"
 
@@ -11,7 +10,6 @@ import {
   GoldfinchFactory,
   SeniorPool,
   TestERC20,
-  TestForwarder,
   TranchedPool,
   UniqueIdentity,
 } from "../typechain/ethers"
@@ -42,7 +40,6 @@ import {assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
 import {Result} from "ethers/lib/utils"
 import {advanceTime, toEthers, usdcVal} from "../test/testHelpers"
 
-import * as migratev21 from "../blockchain_scripts/migrations/v2.1/migrate"
 import * as migratev22 from "../blockchain_scripts/migrations/v2.2/migrate"
 
 /*
@@ -92,7 +89,6 @@ async function main(hre: HardhatRuntimeEnvironment, options: OverrideOptions) {
     const protocolOwner = await getProtocolOwner()
     await impersonateAccount(hre, protocolOwner)
     await fundWithWhales(["ETH"], [protocolOwner])
-    // await migratev21.main() // migration completed
     await migratev22.main()
 
     logger("Funding protocol_owner with whales")
