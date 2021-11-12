@@ -125,7 +125,7 @@ function getRoot<G extends BaseGrant>(
   return root
 }
 
-type VerificationResult = {
+export type VerificationResult = {
   reconstructedMerkleRoot: string
   matchesRootInJson: boolean
 }

@@ -3,7 +3,11 @@
 import {program} from "commander"
 import {BigNumber} from "ethers"
 import fs from "fs"
-import {GrantTypesAndValues, verifyMerkleRoot} from "../common/verifyMerkleRoot"
+import {
+  GrantTypesAndValues,
+  VerificationResult,
+  verifyMerkleRoot as _verifyMerkleRoot,
+} from "../common/verifyMerkleRoot"
 import {Grant, isMerkleDistributorInfo, MerkleDistributorGrantInfo} from "./types"
 
 /**
@@ -33,6 +37,10 @@ const parseGrantInfo = (info: MerkleDistributorGrantInfo) => ({
   },
 })
 
+export function verifyMerkleRoot(json: unknown): VerificationResult {
+  return _verifyMerkleRoot(json, isMerkleDistributorInfo, parseGrantInfo, getGrantTypesAndValues)
+}
+
 if (require.main === module) {
   program
     .version("0.0.0")
@@ -46,7 +54,7 @@ if (require.main === module) {
   const options = program.opts()
   const json = JSON.parse(fs.readFileSync(options.input, {encoding: "utf8"}))
 
-  const result = verifyMerkleRoot(json, isMerkleDistributorInfo, parseGrantInfo, getGrantTypesAndValues)
+  const result = verifyMerkleRoot(json)
 
   console.log("Reconstructed Merkle root:", result.reconstructedMerkleRoot)
   if (result.matchesRootInJson) {
