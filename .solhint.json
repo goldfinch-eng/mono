@@ -93,7 +93,8 @@
           "deposit": [],
           "depositWithPermit": [],
           "withdraw": [],
-          "withdrawInFidu": []
+          "withdrawInFidu": [],
+          "redeem": []
         },
         "**/SeniorPoolFidu.sol:SeniorPoolFidu": {
           "__initialize__": [],
