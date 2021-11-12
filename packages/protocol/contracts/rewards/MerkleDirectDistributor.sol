@@ -4,10 +4,13 @@
 pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/cryptography/MerkleProof.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/SafeERC20.sol";
 import "../interfaces/IERC20withDec.sol";
 import "../interfaces/IMerkleDirectDistributor.sol";
 
 contract MerkleDirectDistributor is IMerkleDirectDistributor {
+  using SafeERC20 for IERC20withDec;
+
   address public immutable override gfi;
   bytes32 public immutable override merkleRoot;
 
