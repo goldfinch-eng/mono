@@ -16,18 +16,17 @@ export async function deploy(deployEffects: DeployEffects) {
   const deployer = new ContractDeployer(console.log, hre)
   const upgrader = new ContractUpgrader(deployer)
 
-  const upgradedContracts = await upgrader.upgrade({contracts: ["SeniorPool", "Go", "UniqueIdentity", "PoolTokens"]})
+  const upgradedContracts = await upgrader.upgrade({
+    contracts: ["SeniorPool", "Go", "UniqueIdentity", "PoolTokens", "GoldfinchConfig"],
+  })
 
   // Need to deploy and migrate to a new config
   await deployConfig(deployer)
   await migrateToNewConfig(upgradedContracts, [
-    "CreditDesk", // can remove?
     "CreditLine",
     "Fidu",
     "FixedLeverageRatioStrategy",
     "Go",
-    "MigratedTranchedPool", // can remove?
-    "Pool", // can remove?
     "PoolTokens",
     "SeniorPool",
   ])
