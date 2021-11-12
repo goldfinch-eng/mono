@@ -4,7 +4,7 @@ import {program} from "commander"
 import {BigNumber} from "ethers"
 import fs from "fs"
 import {GrantTypesAndValues, verifyMerkleRoot} from "../common/verifyMerkleRoot"
-import {Grant, isMerkleDistributorInfo, MerkleDistributorGrantInfo} from "./types"
+import {DirectGrant, isMerkleDirectDistributorInfo, MerkleDirectDistributorGrantInfo} from "./types"
 
 /**
  * Script for verifying the Merkle root of a rewards distribution, from the publicly-released JSON file
@@ -17,19 +17,16 @@ import {Grant, isMerkleDistributorInfo, MerkleDistributorGrantInfo} from "./type
  * which is licensed under the GPL v3.0 license.
  */
 
-const getGrantTypesAndValues = (grant: Grant): GrantTypesAndValues => ({
-  types: ["uint256", "uint256", "uint256", "uint256"],
-  values: [grant.amount, grant.vestingLength, grant.cliffLength, grant.vestingInterval],
+const getGrantTypesAndValues = (grant: DirectGrant): GrantTypesAndValues => ({
+  types: ["uint256"],
+  values: [grant.amount],
 })
 
-const parseGrantInfo = (info: MerkleDistributorGrantInfo) => ({
+const parseGrantInfo = (info: MerkleDirectDistributorGrantInfo) => ({
   index: info.index,
   account: info.account,
   grant: {
     amount: BigNumber.from(info.grant.amount),
-    vestingLength: BigNumber.from(info.grant.vestingLength),
-    cliffLength: BigNumber.from(info.grant.cliffLength),
-    vestingInterval: BigNumber.from(info.grant.vestingInterval),
   },
 })
 
@@ -46,7 +43,7 @@ if (require.main === module) {
   const options = program.opts()
   const json = JSON.parse(fs.readFileSync(options.input, {encoding: "utf8"}))
 
-  const result = verifyMerkleRoot(json, isMerkleDistributorInfo, parseGrantInfo, getGrantTypesAndValues)
+  const result = verifyMerkleRoot(json, isMerkleDirectDistributorInfo, parseGrantInfo, getGrantTypesAndValues)
 
   console.log("Reconstructed Merkle root:", result.reconstructedMerkleRoot)
   if (result.matchesRootInJson) {
