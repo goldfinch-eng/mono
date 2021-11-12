@@ -232,14 +232,6 @@ describe("SeniorPool", () => {
     })
   })
 
-  describe("setupRedeemerRole", () => {
-    it("should call _setupRole", async () => {
-      expect(await seniorPool.hasRole(REDEEMER_ROLE, owner)).to.equal(false)
-      await seniorPool.setupRedeemerRole()
-      expect(await seniorPool.hasRole(REDEEMER_ROLE, owner)).to.equal(true)
-    })
-  })
-
   describe("deposit", () => {
     describe("before you have approved the senior pool to transfer funds on your behalf", async () => {
       it("should fail", async () => {
@@ -842,12 +834,6 @@ describe("SeniorPool", () => {
       await goldfinchConfig.addToGoList(seniorPool.address)
 
       await tranchedPool.deposit(TRANCHES.Junior, juniorInvestmentAmount)
-    })
-
-    context("called by non-governance", async () => {
-      it("should revert", async () => {
-        return expect(seniorPool.redeem(42, {from: person2})).to.be.rejectedWith(/Must have admin/)
-      })
     })
 
     it("should redeem the maximum from the TranchedPool", async () => {
