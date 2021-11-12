@@ -49,7 +49,7 @@ To use the client with the murmuration blockchain, you will need to add a custom
 1. In the Google Cloud console, create an HTTPS load balancer that uses the health check you created when creating the instance group.
     - In doing this, create an SSL certificate for `murmuration.goldfinch.finance` and use that as the load balancer's certificate.
     - Be sure to specify that the load balancer have a static IP address, rather than ephemeral IP address.
-1. For continuous deployment, the deploy command in `cloudbuild.yaml` should use the appropriate instance group and template name, i.e. `murmuration-goldfinch-finance-3`.
+1. For continuous deployment, the deploy command in `cloudbuild.yaml` should use the appropriate instance group name and template name (NOTE: over time these names might diverge, due to creating new instance templates but continuing to use the same instance group).
 1. Wherever DNS records are maintained, create an `A` record and an `AAAA` record for `murmuration.goldfinch.finance`, where the value is the static IP address that was assigned to the load balancer.
 
 # Debugging
