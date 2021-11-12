@@ -10,7 +10,7 @@ import hre from "hardhat"
 import {GoldfinchConfigInstance} from "../../../typechain/truffle"
 import {DeployEffects} from "../deployEffects"
 import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/ethers"
-import {migrateToNewConfig, upgradeContracts} from "../../mainnetForkingHelpers"
+import {migrateToNewConfig} from "../../mainnetForkingHelpers"
 
 export async function deploy(deployEffects: DeployEffects) {
   const deployer = new ContractDeployer(console.log, hre)
@@ -20,7 +20,7 @@ export async function deploy(deployEffects: DeployEffects) {
 
   // Need to deploy and migrate to a new config
   await deployConfig(deployer)
-  await migrateToNewConfig(upgradeContracts, [
+  await migrateToNewConfig(upgradedContracts, [
     "CreditDesk", // can remove?
     "CreditLine",
     "Fidu",
