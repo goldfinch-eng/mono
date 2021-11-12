@@ -195,15 +195,14 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
     uint256 newGrossRewards = _calculateNewGrossGFIRewardsForInterestAmount(_interestPaymentAmount);
 
     ITranchedPool pool = ITranchedPool(_poolAddress);
-    // TODO @sanjay - loop through juniorTranche slices
-    ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
     PoolRewardsInfo storage _poolInfo = pools[_poolAddress];
 
-    require(juniorTranche.principalDeposited > 0, "Principal balance cannot be zero");
+    uint256 totalJuniorDeposits = pool.totalJuniorDeposits();
+    require(totalJuniorDeposits > 0, "Principal balance cannot be zero");
 
     // example: (6708203932437400000000 * 10^18) / (100000*10^18)
     _poolInfo.accRewardsPerPrincipalDollar = _poolInfo.accRewardsPerPrincipalDollar.add(
-      newGrossRewards.mul(mantissa()).div(usdcToAtomic(juniorTranche.principalDeposited))
+      newGrossRewards.mul(mantissa()).div(usdcToAtomic(totalJuniorDeposits))
     );
 
     totalInterestReceived = _totalInterestReceived.add(_interestPaymentAmount);

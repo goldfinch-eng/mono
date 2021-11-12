@@ -281,8 +281,8 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   }
 
   function initializeNextSlice() external override onlyLocker whenNotPaused {
-    require(locked(), "Cannot initialize next slice while current slice is active");
-    // require(!creditline.isLate()) // Waiting on Greg's PR
+    require(locked(), "Current slice still active");
+    require(!creditLine.isLate(), "Creditline is late");
     // require(within principal grace period) // waiting on Will's PR
     _initializeNextSlice();
     //events
@@ -494,6 +494,18 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   }
 
   /**
+   * @notice Returns the total junior capital deposited
+   * @return The total USDC amount deposited into all junior tranches
+   */
+  function totalJuniorDeposits() external view override returns (uint256) {
+    uint256 total;
+    for (uint256 i = 0; i < numSlices; i++) {
+      total = total.add(poolSlices[i].juniorTranche.principalDeposited);
+    }
+    return total;
+  }
+
+  /**
    * @notice Determines the amount of interest and principal redeemable by a particular tokenId
    * @param tokenId The token representing the position
    * @return interestRedeemable The interest available to redeem
@@ -598,7 +610,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   }
 
   function _initializeNextSlice() internal {
-    require(numSlices < 5, "Only a maximum of 5 slices are supported");
+    require(numSlices < 5, "Cannot exceed 5 slices");
     TrancheInfo memory seniorTranche = TrancheInfo({
       id: _trancheIdTracker.current(),
       principalSharePrice: usdcToSharePrice(1, 1),
@@ -629,7 +641,6 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     uint256 principal
   ) internal returns (uint256 totalReserveAmount) {
     safeERC20TransferFrom(config.getUSDC(), from, address(this), principal.add(interest), "Failed to collect payment");
-    // TODO @sanjay: Require pool is locked cannot collect interest payments while the new drawdown is in progress
 
     totalReserveAmount = 0;
     uint256 reserveFeePercent = ONE_HUNDRED.div(config.getReserveDenominator()); // Convert the denonminator to percent
@@ -983,6 +994,11 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   }
 
   function _assess() internal {
+    // We need to make sure the pool is locked before we allocate rewards to ensure it's not
+    // possible to game rewards by sandwiching an interest payment to an unlocked pool
+    // It also causes issues trying to allocate payments to an empty slice (divide by zero)
+    require(locked(), "Pool is not locked");
+
     uint256 interestAccrued = creditLine.totalInterestAccrued();
     (uint256 paymentRemaining, uint256 interestPayment, uint256 principalPayment) = creditLine.assess();
     interestAccrued = creditLine.totalInterestAccrued().sub(interestAccrued);

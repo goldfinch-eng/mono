@@ -229,7 +229,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
 
   function _isLate(uint256 timestamp) internal view returns (bool) {
     uint256 secondsElapsedSinceFullPayment = timestamp.sub(lastFullPaymentTime);
-    return secondsElapsedSinceFullPayment > paymentPeriodInDays.mul(SECONDS_PER_DAY);
+    return balance > 0 && secondsElapsedSinceFullPayment > paymentPeriodInDays.mul(SECONDS_PER_DAY);
   }
 
   /**
