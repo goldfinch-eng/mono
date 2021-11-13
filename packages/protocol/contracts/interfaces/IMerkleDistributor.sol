@@ -28,6 +28,7 @@ interface IMerkleDistributor {
 
   /// @notice This event is triggered whenever a call to #acceptGrant succeeds.
   event GrantAccepted(
+    uint256 indexed tokenId,
     uint256 indexed index,
     address indexed account,
     uint256 amount,

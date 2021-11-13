@@ -58,8 +58,14 @@ contract MerkleDistributor is IMerkleDistributor {
 
     // Mark it accepted and perform the granting.
     _setGrantAccepted(index);
-    ICommunityRewards(communityRewards).grant(msg.sender, amount, vestingLength, cliffLength, vestingInterval);
+    uint256 tokenId = ICommunityRewards(communityRewards).grant(
+      msg.sender,
+      amount,
+      vestingLength,
+      cliffLength,
+      vestingInterval
+    );
 
-    emit GrantAccepted(index, msg.sender, amount, vestingLength, cliffLength, vestingInterval);
+    emit GrantAccepted(tokenId, index, msg.sender, amount, vestingLength, cliffLength, vestingInterval);
   }
 }
