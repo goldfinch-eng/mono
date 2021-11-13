@@ -4,21 +4,23 @@
 pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/cryptography/MerkleProof.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/SafeERC20.sol";
+import "../interfaces/IERC20withDec.sol";
+import "../interfaces/IMerkleDirectDistributor.sol";
 
-import "../interfaces/ICommunityRewards.sol";
-import "../interfaces/IMerkleDistributor.sol";
+contract MerkleDirectDistributor is IMerkleDirectDistributor {
+  using SafeERC20 for IERC20withDec;
 
-contract MerkleDistributor is IMerkleDistributor {
-  address public immutable override communityRewards;
+  address public immutable override gfi;
   bytes32 public immutable override merkleRoot;
 
   // @dev This is a packed array of booleans.
   mapping(uint256 => uint256) private acceptedBitMap;
 
-  constructor(address communityRewards_, bytes32 merkleRoot_) public {
-    require(communityRewards_ != address(0), "Cannot use the null address");
+  constructor(address gfi_, bytes32 merkleRoot_) public {
+    require(gfi_ != address(0), "Cannot use the null address");
     require(merkleRoot_ != 0, "Invalid merkle root provided");
-    communityRewards = communityRewards_;
+    gfi = gfi_;
     merkleRoot = merkleRoot_;
   }
 
@@ -39,33 +41,18 @@ contract MerkleDistributor is IMerkleDistributor {
   function acceptGrant(
     uint256 index,
     uint256 amount,
-    uint256 vestingLength,
-    uint256 cliffLength,
-    uint256 vestingInterval,
     bytes32[] calldata merkleProof
   ) external override {
     require(!isGrantAccepted(index), "Grant already accepted");
 
     // Verify the merkle proof.
-    //
-    /// @dev Per the Warning in
-    /// https://github.com/ethereum/solidity/blob/v0.6.12/docs/abi-spec.rst#non-standard-packed-mode,
-    /// it is important that no more than one of the arguments to `abi.encodePacked()` here be a
-    /// dynamic type (see definition in
-    /// https://github.com/ethereum/solidity/blob/v0.6.12/docs/abi-spec.rst#formal-specification-of-the-encoding).
-    bytes32 node = keccak256(abi.encodePacked(index, msg.sender, amount, vestingLength, cliffLength, vestingInterval));
+    bytes32 node = keccak256(abi.encodePacked(index, msg.sender, amount));
     require(MerkleProof.verify(merkleProof, merkleRoot, node), "Invalid proof");
 
     // Mark it accepted and perform the granting.
     _setGrantAccepted(index);
-    uint256 tokenId = ICommunityRewards(communityRewards).grant(
-      msg.sender,
-      amount,
-      vestingLength,
-      cliffLength,
-      vestingInterval
-    );
+    IERC20withDec(gfi).safeTransfer(msg.sender, amount);
 
-    emit GrantAccepted(tokenId, index, msg.sender, amount, vestingLength, cliffLength, vestingInterval);
+    emit GrantAccepted(index, msg.sender, amount);
   }
 }

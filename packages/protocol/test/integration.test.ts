@@ -317,7 +317,7 @@ describe("Goldfinch", async function () {
         await depositToSeniorPool(new BN(10))
         await withdrawFromSeniorPool(new BN(10))
         await makePayment(tranchedPool, new BN(10))
-      }).timeout(TEST_TIMEOUT)
+      })
 
       // This test fails now, but should pass once we fix late fee logic.
       // We *should* charge interest after term end date, when you're so late that

@@ -149,9 +149,13 @@
           "withdraw": [],
           "withdrawMultiple": []
         },
+        "**/MerkleDirectDistributor.sol:MerkleDirectDistributor": {
+          "_setGrantAccepted": [],
+          "acceptGrant": []
+        },
         "**/MerkleDistributor.sol:MerkleDistributor": {
           "_setGrantAccepted": [],
-          "acceptGrant": ["onlyGrantRecipient"]
+          "acceptGrant": []
         },
         "**/ERC1155PresetPauserUpgradeable.sol:ERC1155PresetPauserUpgradeable": {
           "pause": [],
