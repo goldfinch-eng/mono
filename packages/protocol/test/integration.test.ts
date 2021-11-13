@@ -22,15 +22,17 @@ import {time} from "@openzeppelin/test-helpers"
 const TranchedPool = artifacts.require("TranchedPool")
 const CreditLine = artifacts.require("CreditLine")
 
-const TEST_TIMEOUT = 40_000
-
 // eslint-disable-next-line no-unused-vars
 let accounts, owner, underwriter, borrower, investor1, investor2
 let fidu, goldfinchConfig, reserve, usdc, seniorPool, creditLine, tranchedPool, goldfinchFactory, poolTokens
 
 const ONE_HUNDRED = new BN(100)
 
-describe("Goldfinch", async () => {
+const TEST_TIMEOUT = 60000
+
+describe("Goldfinch", async function () {
+  this.timeout(TEST_TIMEOUT)
+
   let limit = usdcVal(10000)
   let interestApr = interestAprAsBN("25")
   let lateFeeApr = interestAprAsBN("0")
@@ -284,7 +286,7 @@ describe("Goldfinch", async () => {
           [() => getBalance(investor1, usdc), {byCloseTo: expectedJuniorReturn}],
           [() => getBalance(investor2, usdc), {byCloseTo: expectedJuniorReturn}],
         ])
-      }).timeout(TEST_TIMEOUT)
+      })
 
       it("should handle writedowns correctly", async () => {
         const amount = usdcVal(10000)
@@ -428,4 +430,4 @@ describe("Goldfinch", async () => {
       })
     })
   })
-}).timeout(TEST_TIMEOUT)
+})
