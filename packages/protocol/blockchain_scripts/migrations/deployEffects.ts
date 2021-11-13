@@ -56,7 +56,7 @@ export async function changeImplementations({contracts}: {contracts: UpgradedCon
     Object.keys(contracts).map(async (contractName) => {
       const contractHolder = contracts[contractName]
       assertNonNullable(contractHolder, "contractHolder is undefined")
-      const proxy = contractHolder.ProxyContract
+      const proxy = contractHolder.ProxyContract.connect(await getProtocolOwner())
       // hardhat-deploy changed the method name in newer versions
       const upgradeMethod =
         proxy.populateTransaction["changeImplementation"] || proxy.populateTransaction["upgradeToAndCall"]
@@ -85,6 +85,8 @@ export abstract class MultisendEffects implements DeployEffects {
   }
 
   async runTxs(txs: PopulatedTransaction[]): Promise<void> {
+    console.log("DeployEffects transactions")
+    console.log(txs)
     await this.execute(txs.map(this.toSafeTx))
   }
 

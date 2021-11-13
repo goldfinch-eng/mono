@@ -15,6 +15,7 @@ import {
   ZERO,
   decodeLogs,
   getFirstLog,
+  setupPoolRewards,
 } from "./testHelpers"
 import {interestAprAsBN, TRANCHES, MAX_UINT, OWNER_ROLE, PAUSER_ROLE} from "../blockchain_scripts/deployHelpers"
 import {expectEvent, time} from "@openzeppelin/test-helpers"
@@ -24,14 +25,14 @@ const {deployments, artifacts} = hre
 import {ecsign} from "ethereumjs-util"
 const CreditLine = artifacts.require("CreditLine")
 import {getApprovalDigest, getWallet} from "./permitHelpers"
-import {TranchedPoolInstance, PoolRewardsInstance} from "../typechain/truffle"
-import {JuniorTrancheLocked, DepositMade} from "../typechain/truffle/TranchedPool"
+import {CreditLineInstance, TranchedPoolInstance, PoolRewardsInstance, GFIInstance} from "../typechain/truffle"
+import {TrancheLocked, DepositMade} from "../typechain/truffle/TranchedPool"
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 
 const RESERVE_FUNDS_COLLECTED_EVENT = "ReserveFundsCollected"
 const PAYMENT_APPLIED_EVENT = "PaymentApplied"
-const EXPECTED_JUNIOR_CAPITAL_LOCKED_EVENT_ARGS = ["0", "1", "__length__", "lockedUntil", "pool"]
+const EXPECTED_JUNIOR_CAPITAL_LOCKED_EVENT_ARGS = ["0", "1", "2", "__length__", "lockedUntil", "pool", "trancheId"]
 
 const expectPaymentRelatedEventsEmitted = (
   receipt: unknown,
@@ -72,9 +73,9 @@ describe("TranchedPool", () => {
     goldfinchFactory,
     creditLine,
     treasury,
-    configHelper,
     poolRewards: PoolRewardsInstance,
-    tranchedPool: TranchedPoolInstance
+    tranchedPool: TranchedPoolInstance,
+    gfi: GFIInstance
   const limit = usdcVal(1000)
   let interestApr = interestAprAsBN("5.00")
   const paymentPeriodInDays = new BN(30)
@@ -99,9 +100,10 @@ describe("TranchedPool", () => {
   const testSetup = deployments.createFixture(async ({deployments}) => {
     // Just to be crystal clear
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;({usdc, goldfinchConfig, goldfinchFactory, poolTokens, poolRewards} = await deployAllContracts(deployments))
+    ;({usdc, goldfinchConfig, goldfinchFactory, poolTokens, poolRewards, gfi} = await deployAllContracts(deployments))
     await goldfinchConfig.bulkAddToGoList([owner, borrower, otherPerson])
     await goldfinchConfig.setTreasuryReserve(treasury)
+    await setupPoolRewards(gfi, poolRewards, owner)
     await erc20Transfer(usdc, [otherPerson], usdcVal(10000), owner)
     await erc20Transfer(usdc, [borrower], usdcVal(10000), owner)
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
@@ -188,23 +190,29 @@ describe("TranchedPool", () => {
     })
 
     it("should set new values you send it", async () => {
-      const limit = usdcVal(1234)
+      const maxLimit = usdcVal(1234)
       const borrower = otherPerson
       const interestApr = interestAprAsBN("12.3456")
       const paymentPeriodInDays = new BN(123)
       const termInDays = new BN(321)
       const lateFeeApr = interestAprAsBN("0.9783")
 
+      // Limit starts at 0 until drawdown happens.
+      expect(await tranchedPool.limit()).to.bignumber.eq("0")
+
       await expectAction(async () =>
-        tranchedPool.migrateCreditLine(borrower, limit, interestApr, paymentPeriodInDays, termInDays, lateFeeApr)
+        tranchedPool.migrateCreditLine(borrower, maxLimit, interestApr, paymentPeriodInDays, termInDays, lateFeeApr)
       ).toChange([
-        [tranchedPool.limit, {to: limit}],
+        [tranchedPool.maxLimit, {to: maxLimit}],
         [tranchedPool.borrower, {to: borrower, bignumber: false}],
         [tranchedPool.interestApr, {to: interestApr}],
         [tranchedPool.paymentPeriodInDays, {to: paymentPeriodInDays}],
         [tranchedPool.termInDays, {to: termInDays}],
         [tranchedPool.lateFeeApr, {to: lateFeeApr}],
       ])
+
+      // Limit does not change
+      expect(await tranchedPool.limit()).to.bignumber.eq("0")
     })
 
     it("should copy over the accounting vars", async () => {
@@ -383,12 +391,14 @@ describe("TranchedPool", () => {
           // need to advance the blockchain to a known point in time
           await advanceTime({toSecond: startingTimeInSeconds})
           const tx = await tranchedPool.lockPool({from: owner})
-          expectEvent(tx, "JuniorTrancheLocked", {
+          expectEvent(tx, "TrancheLocked", {
             pool: tranchedPool.address,
+            trancheId: new BN(TRANCHES.Junior),
             lockedUntil: expectedLockedUntil,
           })
-          expectEvent(tx, "SeniorTrancheLocked", {
+          expectEvent(tx, "TrancheLocked", {
             pool: tranchedPool.address,
+            trancheId: new BN(TRANCHES.Senior),
             lockedUntil: expectedLockedUntil,
           })
         })
@@ -1046,10 +1056,11 @@ describe("TranchedPool", () => {
           await expectAction(async () => {
             const receipt = await tranchedPool.lockJuniorCapital({from: actor})
 
-            const logs = decodeLogs<JuniorTrancheLocked>(receipt.receipt.rawLogs, tranchedPool, "JuniorTrancheLocked")
+            const logs = decodeLogs<TrancheLocked>(receipt.receipt.rawLogs, tranchedPool, "TrancheLocked")
             const firstLog = getFirstLog(logs)
             expect(Object.keys(firstLog.args).sort()).to.eql(EXPECTED_JUNIOR_CAPITAL_LOCKED_EVENT_ARGS)
             expect(firstLog.args.pool).to.equal(tranchedPool.address)
+            expect(firstLog.args.trancheId).to.equal(TRANCHES.Junior.toString())
             expect(firstLog.args.lockedUntil).to.be.bignumber.closeTo(oneDayFromNow, new BN(5))
 
             return receipt
@@ -1072,10 +1083,11 @@ describe("TranchedPool", () => {
           await expectAction(async () => {
             const receipt = await tranchedPool.lockJuniorCapital({from: borrower})
 
-            const logs = decodeLogs<JuniorTrancheLocked>(receipt.receipt.rawLogs, tranchedPool, "JuniorTrancheLocked")
+            const logs = decodeLogs<TrancheLocked>(receipt.receipt.rawLogs, tranchedPool, "TrancheLocked")
             const firstLog = getFirstLog(logs)
             expect(Object.keys(firstLog.args).sort()).to.eql(EXPECTED_JUNIOR_CAPITAL_LOCKED_EVENT_ARGS)
             expect(firstLog.args.pool).to.equal(tranchedPool.address)
+            expect(firstLog.args.trancheId).to.equal(TRANCHES.Junior.toString())
             expect(firstLog.args.lockedUntil).to.be.bignumber.closeTo(oneDayFromNow, new BN(5))
 
             return receipt
@@ -1156,6 +1168,12 @@ describe("TranchedPool", () => {
           await expect(tranchedPool.lockPool({from: actor})).to.be.rejectedWith(/Must have locker role/)
         })
       })
+
+      it("does not allow locking twice", async () => {
+        const actor = owner
+        await tranchedPool.lockPool({from: actor})
+        await expect(tranchedPool.lockPool({from: actor})).to.be.rejectedWith(/Lock cannot be extended/)
+      })
     })
   })
   describe("drawdown", async () => {
@@ -1192,7 +1210,7 @@ describe("TranchedPool", () => {
 
       describe("validations", async () => {
         it("does not allow drawing down more than the limit", async () => {
-          await expect(tranchedPool.drawdown(usdcVal(20))).to.be.rejectedWith(/Cannot drawdown more than the limit/)
+          await expect(tranchedPool.drawdown(usdcVal(20))).to.be.rejectedWith(/Insufficient funds in slice/)
         })
 
         it("does not allow drawing down when payments are late", async () => {
@@ -1746,6 +1764,332 @@ describe("TranchedPool", () => {
           accRewardsPerPrincipalDollar = await poolRewards.pools(tranchedPool.address)
           expect(accRewardsPerPrincipalDollar).to.not.equal(new BN(0))
         })
+      })
+    })
+  })
+
+  describe("multiple drawdowns", async () => {
+    // Reference: https://docs.google.com/spreadsheets/d/1d1rJ1vMhQ1-fdW9YhMPJKWrhylp6rXQ8dakDe4pN0RY/edit#gid=0
+
+    let tranchedPool: TranchedPoolInstance, creditLine: CreditLineInstance
+    beforeEach(async () => {
+      interestApr = interestAprAsBN("10.00")
+      termInDays = new BN(365)
+      ;({tranchedPool, creditLine} = await createPoolWithCreditLine({interestApr, termInDays}))
+    })
+
+    async function depositAndGetTokenId(pool: TranchedPoolInstance, tranche, value): Promise<BN> {
+      const receipt = await pool.deposit(tranche, value)
+      const logs = decodeLogs<DepositMade>(receipt.receipt.rawLogs, tranchedPool, "DepositMade")
+      return getFirstLog(logs).args.tokenId
+    }
+
+    async function expectAvailable(tokenId: BN, expectedInterestInUSD: string, expectedPrincipalInUSD: string) {
+      const {"0": actualInterest, "1": actualPrincipal} = await tranchedPool.availableToWithdraw(tokenId)
+      const halfCent = usdcVal(1).div(new BN(200))
+      expect(actualInterest).to.bignumber.closeTo(new BN(parseFloat(expectedInterestInUSD) * 1e6), halfCent)
+      expect(actualPrincipal).to.bignumber.closeTo(new BN(parseFloat(expectedPrincipalInUSD) * 1e6), halfCent)
+    }
+
+    describe("initializeNextSlice", async () => {
+      it("creates a new slice", async () => {
+        const firstSliceJunior = await depositAndGetTokenId(tranchedPool, TRANCHES.Junior, usdcVal(20))
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        const firstSliceSenior = await depositAndGetTokenId(tranchedPool, TRANCHES.Senior, usdcVal(80))
+        await tranchedPool.lockPool({from: borrower})
+
+        expect((await poolTokens.getTokenInfo(firstSliceJunior)).tranche).to.eq(TRANCHES.Junior.toString())
+        expect((await poolTokens.getTokenInfo(firstSliceSenior)).tranche).to.eq(TRANCHES.Senior.toString())
+
+        await expectAction(async () => tranchedPool.initializeNextSlice({from: borrower})).toChange([
+          [tranchedPool.numSlices, {to: new BN(2)}],
+        ])
+
+        const secondSliceJunior = await depositAndGetTokenId(tranchedPool, "3", usdcVal(20))
+        const secondSliceSenior = await depositAndGetTokenId(tranchedPool, "4", usdcVal(80))
+
+        expect((await poolTokens.getTokenInfo(secondSliceJunior)).tranche).to.eq("3")
+        expect((await poolTokens.getTokenInfo(secondSliceSenior)).tranche).to.eq("4")
+      })
+
+      it("does not allow creating a slice when current slice is still active", async () => {
+        await expect(tranchedPool.initializeNextSlice({from: borrower})).to.be.rejectedWith(
+          /Current slice still active/
+        )
+
+        await tranchedPool.lockJuniorCapital({from: borrower})
+
+        // Senior must also be locked
+        await expect(tranchedPool.initializeNextSlice({from: borrower})).to.be.rejectedWith(
+          /Current slice still active/
+        )
+
+        await tranchedPool.lockPool({from: borrower})
+
+        await expect(tranchedPool.initializeNextSlice({from: borrower})).to.not.be.rejected
+      })
+
+      it("does not allow creating a slice when borrower is late", async () => {
+        await depositAndGetTokenId(tranchedPool, TRANCHES.Junior, usdcVal(20))
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        await depositAndGetTokenId(tranchedPool, TRANCHES.Senior, usdcVal(80))
+        await tranchedPool.lockPool({from: borrower})
+
+        await tranchedPool.drawdown(usdcVal(100), {from: borrower})
+
+        // Advance half way through
+        const halfOfTerm = termInDays.div(new BN(2))
+        await advanceTime({days: halfOfTerm.toNumber() + 1})
+
+        await tranchedPool.assess()
+        await expect(tranchedPool.initializeNextSlice({from: borrower})).to.be.rejectedWith(/Creditline is late/)
+      })
+
+      it("does not allow creating more than 5 slices", async () => {
+        for (let i = 0; i < 4; i++) {
+          await tranchedPool.lockJuniorCapital({from: borrower})
+          await tranchedPool.lockPool({from: borrower})
+          await tranchedPool.initializeNextSlice({from: borrower})
+        }
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        await tranchedPool.lockPool({from: borrower})
+
+        await expect(tranchedPool.initializeNextSlice({from: borrower})).to.be.rejectedWith(/Cannot exceed 5 slices/)
+      })
+    })
+
+    it("does not allow payments when pool is unlocked", async () => {
+      await depositAndGetTokenId(tranchedPool, TRANCHES.Junior, usdcVal(20))
+      await tranchedPool.lockJuniorCapital({from: borrower})
+      await depositAndGetTokenId(tranchedPool, TRANCHES.Senior, usdcVal(80))
+      await tranchedPool.lockPool({from: borrower})
+
+      await tranchedPool.drawdown(usdcVal(100), {from: borrower})
+      await tranchedPool.initializeNextSlice({from: borrower})
+      await advanceTime({days: termInDays.div(new BN(2))})
+
+      await expect(tranchedPool.pay(usdcVal(100), {from: borrower})).to.be.rejectedWith(/Pool is not locked/)
+    })
+
+    it("distributes interest correctly across different drawdowns", async () => {
+      const firstSliceJunior = await depositAndGetTokenId(tranchedPool, TRANCHES.Junior, usdcVal(20))
+      await tranchedPool.lockJuniorCapital({from: borrower})
+      const firstSliceSenior = await depositAndGetTokenId(tranchedPool, TRANCHES.Senior, usdcVal(80))
+      await tranchedPool.lockPool({from: borrower})
+
+      await tranchedPool.drawdown(usdcVal(100), {from: borrower})
+
+      // Advance half way through, and pay back interest owed.
+      const halfOfTerm = termInDays.div(new BN(2))
+      await advanceTime({days: halfOfTerm.toNumber() + 1})
+
+      const expectedNetInterest = new BN("4438356")
+      const expectedProtocolFee = new BN("493150")
+      const expectedTotalInterest = expectedNetInterest.add(expectedProtocolFee)
+
+      const receipt = await tranchedPool.pay(usdcVal(5), {from: borrower})
+      expectPaymentRelatedEventsEmitted(receipt, borrower, tranchedPool, {
+        interest: expectedTotalInterest,
+        principal: new BN(68494),
+        remaining: new BN(0),
+        reserve: expectedProtocolFee,
+      })
+      await expectAvailable(firstSliceJunior, "1.675", "0.01")
+      await expectAvailable(firstSliceSenior, "2.76", "0.05")
+
+      await tranchedPool.initializeNextSlice({from: borrower})
+      const secondSliceJunior = await depositAndGetTokenId(tranchedPool, 4, usdcVal(60))
+      await tranchedPool.lockJuniorCapital({from: borrower})
+      const secondSliceSenior = await depositAndGetTokenId(tranchedPool, 3, usdcVal(240))
+      await tranchedPool.lockPool({from: borrower})
+
+      await tranchedPool.drawdown(usdcVal(300), {from: borrower})
+
+      await advanceTime({days: halfOfTerm.toNumber() + 1})
+      await hre.ethers.provider.send("evm_mine", [])
+
+      // Available to withdraw for initial depositors should not change
+      await expectAvailable(firstSliceJunior, "1.675", "0.01")
+      await expectAvailable(firstSliceSenior, "2.76", "0.05")
+
+      const secondReceipt = await tranchedPool.pay(usdcVal(420), {from: borrower})
+      expectPaymentRelatedEventsEmitted(secondReceipt, borrower, tranchedPool, {
+        interest: new BN(20023919),
+        principal: new BN(400000000).sub(new BN(68494)),
+        remaining: new BN(44575),
+        reserve: new BN(2006847),
+      })
+      expect(await creditLine.balance()).to.bignumber.eq("0")
+
+      // The interest is a little bit different from the the spreadsheet model because payment period interest calculation
+      // rounding. Because of that we pay off some of the principal in the first payment which changes the interest owed
+      // the rest of term
+      await expectAvailable(firstSliceJunior, "3.400", "20.00")
+      await expectAvailable(firstSliceSenior, "5.553", "80.00")
+      await expectAvailable(secondSliceJunior, "5.171", "60.00")
+      await expectAvailable(secondSliceSenior, "8.375", "240.00")
+    })
+
+    describe("when there is a shortfall", async () => {
+      it("distributes the payment across all senior tranches first before junior", async () => {
+        const firstSliceJunior = await depositAndGetTokenId(tranchedPool, TRANCHES.Junior, usdcVal(20))
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        const firstSliceSenior = await depositAndGetTokenId(tranchedPool, TRANCHES.Senior, usdcVal(80))
+        await tranchedPool.lockPool({from: borrower})
+
+        await tranchedPool.drawdown(usdcVal(100), {from: borrower})
+
+        // Advance half way through, and pay back what's owed. Then
+        const halfOfTerm = termInDays.div(new BN(2))
+        await advanceTime({days: halfOfTerm.toNumber() + 1})
+
+        await tranchedPool.pay(usdcVal(5), {from: borrower})
+        await expectAvailable(firstSliceJunior, "1.675", "0.01")
+        await expectAvailable(firstSliceSenior, "2.76", "0.05")
+
+        await tranchedPool.initializeNextSlice({from: borrower})
+
+        const secondSliceJunior = await depositAndGetTokenId(tranchedPool, 4, usdcVal(60))
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        const secondSliceSenior = await depositAndGetTokenId(tranchedPool, 3, usdcVal(240))
+        await tranchedPool.lockPool({from: borrower})
+        await tranchedPool.drawdown(usdcVal(300), {from: borrower})
+
+        await advanceTime({days: halfOfTerm.toNumber() + 1})
+        await hre.ethers.provider.send("evm_mine", [])
+
+        // Pay 10$ of interest. This should go entirely to both senior tranche's interest
+        await tranchedPool.pay(usdcVal(10), {from: borrower})
+
+        // First slice: Junior is unchanged. Senior receives it's share of interest
+        await expectAvailable(firstSliceJunior, "1.675", "0.01")
+        await expectAvailable(firstSliceSenior, "5.011", "0.05")
+        // Second slice: Junior doesn't receive anything yet. Senior receives it's share of interest. No principal yet
+        await expectAvailable(secondSliceJunior, "0", "0")
+        await expectAvailable(secondSliceSenior, "6.75", "0")
+
+        // Pay remaining interest and partial interest payment
+        await tranchedPool.pay(usdcVal(110), {from: borrower})
+        // First slice: Junior receives remaining interest, no principal. Senior receives it's share of principal
+        await expectAvailable(firstSliceJunior, "3.390", "0.01")
+        await expectAvailable(firstSliceSenior, "5.553", "25.04")
+
+        // Second slice: Junior receives remaining interest, no principal. Senior receives it's share of principal
+        await expectAvailable(secondSliceJunior, "5.140", "0")
+        await expectAvailable(secondSliceSenior, "8.375", "74.99")
+
+        // pay off remaining
+        await tranchedPool.pay(usdcVal(300), {from: borrower})
+        expect(await creditLine.balance()).to.bignumber.eq("0")
+        // Everyone made whole
+        await expectAvailable(firstSliceJunior, "3.399", "20.00")
+        await expectAvailable(firstSliceSenior, "5.553", "80.00")
+        await expectAvailable(secondSliceJunior, "5.171", "60.00")
+        await expectAvailable(secondSliceSenior, "8.375", "240.00")
+      })
+    })
+
+    describe("when the principal was drawn down disproportionately", async () => {
+      it("distributes interest according to ratio of principal deployed", async () => {
+        const firstSliceJunior = await depositAndGetTokenId(tranchedPool, TRANCHES.Junior, usdcVal(40))
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        const firstSliceSenior = await depositAndGetTokenId(tranchedPool, TRANCHES.Senior, usdcVal(160))
+        await tranchedPool.lockPool({from: borrower})
+
+        await tranchedPool.drawdown(usdcVal(100), {from: borrower})
+
+        // Advance half way through, and pay back what's owed. Then
+        const halfOfTerm = termInDays.div(new BN(2))
+        await advanceTime({days: halfOfTerm.toNumber() + 1})
+
+        await tranchedPool.pay(usdcVal(5), {from: borrower})
+        await expectAvailable(firstSliceJunior, "1.675", "20.01")
+        await expectAvailable(firstSliceSenior, "2.76", "80.05")
+
+        await tranchedPool.initializeNextSlice({from: borrower})
+        const secondSliceJunior = await depositAndGetTokenId(tranchedPool, 4, usdcVal(60))
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        const secondSliceSenior = await depositAndGetTokenId(tranchedPool, 3, usdcVal(240))
+        await tranchedPool.lockPool({from: borrower})
+
+        await tranchedPool.drawdown(usdcVal(300), {from: borrower})
+
+        await advanceTime({days: halfOfTerm.toNumber() + 1})
+        await hre.ethers.provider.send("evm_mine", [])
+
+        // Available to withdraw for initial depositors should not change
+        await expectAvailable(firstSliceJunior, "1.675", "20.01")
+        await expectAvailable(firstSliceSenior, "2.76", "80.05")
+
+        await tranchedPool.pay(usdcVal(420), {from: borrower})
+        expect(await creditLine.balance()).to.bignumber.eq("0")
+
+        await expectAvailable(firstSliceJunior, "3.399", "40.00")
+        await expectAvailable(firstSliceSenior, "5.553", "160.00")
+        await expectAvailable(secondSliceJunior, "5.171", "60.00")
+        await expectAvailable(secondSliceSenior, "8.375", "240.00")
+      })
+    })
+
+    describe("full term of the loan", async () => {
+      it("distributes interest and principal correctly", async () => {
+        const firstSliceJunior = await depositAndGetTokenId(tranchedPool, TRANCHES.Junior, usdcVal(40))
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        const firstSliceSenior = await depositAndGetTokenId(tranchedPool, TRANCHES.Senior, usdcVal(160))
+        await tranchedPool.lockPool({from: borrower})
+        await tranchedPool.drawdown(usdcVal(100), {from: borrower})
+        await tranchedPool.initializeNextSlice({from: borrower})
+        const secondSliceJunior = await depositAndGetTokenId(tranchedPool, 4, usdcVal(60))
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        const secondSliceSenior = await depositAndGetTokenId(tranchedPool, 3, usdcVal(240))
+        await tranchedPool.lockPool({from: borrower})
+
+        // The spreadsheet assumed 300, but for half the term, since this is going to be for the full term, drawdown
+        // half the amount so the same amount of interest will be owed.
+        await tranchedPool.drawdown(usdcVal(150), {from: borrower})
+
+        await advanceTime({days: termInDays.toNumber() + 1})
+        await hre.ethers.provider.send("evm_mine", [])
+
+        await tranchedPool.pay(usdcVal(275), {from: borrower})
+        expect(await creditLine.balance()).to.bignumber.eq("0")
+
+        // Exactly matches the interest and principal owed for each tranche from the spreadsheet
+        await expectAvailable(firstSliceJunior, "3.4", "40.00")
+        await expectAvailable(firstSliceSenior, "5.6", "160.00")
+        await expectAvailable(secondSliceJunior, "5.1", "60.00")
+        await expectAvailable(secondSliceSenior, "8.4", "240.00")
+      })
+
+      it("distributes all excess payments to the junoir tranches only", async () => {
+        const firstSliceJunior = await depositAndGetTokenId(tranchedPool, TRANCHES.Junior, usdcVal(40))
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        const firstSliceSenior = await depositAndGetTokenId(tranchedPool, TRANCHES.Senior, usdcVal(160))
+        await tranchedPool.lockPool({from: borrower})
+        await tranchedPool.drawdown(usdcVal(100), {from: borrower})
+        await tranchedPool.initializeNextSlice({from: borrower})
+        const secondSliceJunior = await depositAndGetTokenId(tranchedPool, 4, usdcVal(60))
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        const secondSliceSenior = await depositAndGetTokenId(tranchedPool, 3, usdcVal(240))
+        await tranchedPool.lockPool({from: borrower})
+
+        // The spreadsheet assumed 300, but for half the term, since this is going to be for the full term, drawdown
+        // half the amount so the same amount of interest will be owed.
+        await tranchedPool.drawdown(usdcVal(150), {from: borrower})
+
+        await advanceTime({days: termInDays.toNumber() + 1})
+        await hre.ethers.provider.send("evm_mine", [])
+
+        await tranchedPool.pay(usdcVal(280), {from: borrower})
+        expect(await creditLine.balance()).to.bignumber.eq("0")
+
+        // Excess interest is given to the junior tranches in proportion to principal deployed
+        // 5$ of excess interest => 4.5 after fees. 100/(100+150) * 4.5 = 1.8 additional to first slice
+        // And 150/(100+150) * 4.5 = 2.7 additional to the second slice junior. Senior tranches unchanged
+        await expectAvailable(firstSliceJunior, "5.2", "40.00")
+        await expectAvailable(firstSliceSenior, "5.6", "160.00")
+        await expectAvailable(secondSliceJunior, "7.8", "60.00")
+        await expectAvailable(secondSliceSenior, "8.4", "240.00")
       })
     })
   })

@@ -1,22 +1,15 @@
 import {deployUniqueIdentity, deployGo} from "../../baseDeploy"
-import {
-  ContractDeployer,
-  ContractUpgrader,
-  ETHERS_CONTRACT_PROVIDER,
-  getContract,
-  getProtocolOwner,
-  getTruffleContract,
-  isMainnet,
-} from "../../deployHelpers"
+import {ContractDeployer, ContractUpgrader, getProtocolOwner, getTruffleContract, isMainnet} from "../../deployHelpers"
 import hre from "hardhat"
-import {GoldfinchConfig} from "../../../typechain/ethers"
 import {GoldfinchConfigInstance} from "../../../typechain/truffle"
 import {DeployEffects} from "../deployEffects"
 import {assertNonNullable} from "packages/utils/src/type"
 
+const MAINNET_TRUSTED_SIGNER_ADDRESS = "0x125cde169191c6c6c5e71c4a814bb7f7b8ee2e3f"
+
 async function trustedSignerAddress(): Promise<string> {
   if (await isMainnet()) {
-    throw new Error("TODO: define trustedSignerAddress for mainnet")
+    return MAINNET_TRUSTED_SIGNER_ADDRESS
   } else {
     const {protocol_owner: trustedSigner} = await hre.getNamedAccounts()
     assertNonNullable(trustedSigner)

@@ -1,4 +1,19 @@
 {
+  "0xc9BDd0D3B80CC6EfE79a82d850f44EC9B55387Ae": {
+    "name": "Cauris",
+    "category": "Global multi-sector loans",
+    "description": "Cauris is a credit fund created to bring decentralized financing to fintechs in emerging markets. This facility will be used by Cauris to provide debt capital to vetted consumer and SMB lenders in the Global South and Europe, who pledge well-performing loan portfolios as collateral.",
+    "icon": "%PUBLIC_URL%/icons/cauris.png",
+    "backerLimit": "0.006",
+    "maxBackers": 90
+  },
+  "0xf74ea34ac88862b7ff419e60e476be2651433e68": {
+    "name": "Divibank",
+    "category": "SMB Loans in Latin America",
+    "description": "Divibank is a data-driven financing platform that helps online businesses in Latin America scale by providing quick and affordable growth capital. The company provides revenue share loans along with a marketing analytics product to help online businesses scale in a capital-efficient way.",
+    "icon": "%PUBLIC_URL%/icons/divibank.png",
+    "v1StyleDeal": true
+  },
   "0xaa2ccc5547f64c5dffd0a624eb4af2543a67ba65": {
     "name": "Tugende",
     "category": "Asset Finance Loans in Kenya",

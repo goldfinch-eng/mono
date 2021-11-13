@@ -23,10 +23,12 @@ import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/web3/GoldfinchC
 import SeniorPoolView from "./components/pools/seniorPoolView"
 import VerifyIdentity from "./components/verifyIdentity"
 import TranchedPoolView from "./components/pools/tranchedPoolView"
+import {ApolloClient, ApolloProvider, NormalizedCacheObject} from "@apollo/client"
 import {SessionData} from "./types/session"
 import {useSessionLocalStorage} from "./hooks/useSignIn"
 import {EarnProvider} from "./contexts/EarnContext"
 import {BorrowProvider} from "./contexts/BorrowContext"
+import getApolloClient from "./graphql/client"
 
 export interface NetworkConfig {
   name?: string
@@ -45,6 +47,9 @@ interface GeolocationData {
 }
 
 export type SetSessionFn = (data: SessionData | undefined) => void
+
+export type BackersByTranchedPoolAddress = {[address: string]: string[]}
+
 export interface GlobalState {
   pool?: SeniorPool
   creditDesk?: any
@@ -59,6 +64,8 @@ export interface GlobalState {
   setGeolocationData?: (geolocationData: GeolocationData) => void
   sessionData?: SessionData
   setSessionData?: SetSessionFn
+  backersByTranchedPoolAddress?: BackersByTranchedPoolAddress
+  setBackersByTranchedPoolAddress?: (newVal: BackersByTranchedPoolAddress) => void
 }
 
 declare let window: any
@@ -81,6 +88,8 @@ function App() {
     SESSION_DATA_KEY,
     {}
   )
+  const [backersByTranchedPoolAddress, setBackersByTranchedPoolAddress] = useState<BackersByTranchedPoolAddress>({})
+  const [apolloClient, setApolloClient] = useState<ApolloClient<NormalizedCacheObject>>(getApolloClient())
 
   useEffect(() => {
     setupWeb3()
@@ -98,6 +107,11 @@ function App() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [usdc, pool, creditDesk, network, goldfinchProtocol])
+
+  useEffect(() => {
+    setApolloClient(getApolloClient(network))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [network])
 
   async function ensureWeb3() {
     if (!window.ethereum) {
@@ -193,62 +207,66 @@ function App() {
     setGeolocationData,
     sessionData,
     setSessionData,
+    backersByTranchedPoolAddress,
+    setBackersByTranchedPoolAddress,
   }
 
   return (
-    <AppContext.Provider value={store}>
-      <NetworkWidget
-        user={user}
-        network={network}
-        currentErrors={currentErrors}
-        currentTXs={currentTXs}
-        connectionComplete={setupWeb3}
-      />
-      <EarnProvider>
-        <BorrowProvider>
-          <Router>
-            {(process.env.NODE_ENV === "development" || process.env.MURMURATION === "yes") && <DevTools />}
-            <Sidebar />
-            <div>
-              <Switch>
-                <Route exact path="/">
-                  <Redirect to="/earn" />
-                </Route>
-                <Route path="/about">{/* <About /> */}</Route>
-                <Route path="/earn">
-                  <Earn />
-                </Route>
-                <Route path="/borrow">
-                  <Borrow />
-                </Route>
-                <Route path="/transactions">
-                  <Transactions currentTXs={currentTXs} />
-                </Route>
-                <Route path="/pools/senior">
-                  <SeniorPoolView />
-                </Route>
-                <Route path="/pools/:poolAddress">
-                  <TranchedPoolView />
-                </Route>
-                <Route path="/verify">
-                  <VerifyIdentity />
-                </Route>
-                <Route path="/terms">
-                  <TermsOfService />
-                </Route>
-                <Route path="/privacy">
-                  <PrivacyPolicy />
-                </Route>
-                <Route path="/senior-pool-agreement-non-us">
-                  <SeniorPoolAgreementNonUS />
-                </Route>
-              </Switch>
-            </div>
-          </Router>
-        </BorrowProvider>
-      </EarnProvider>
-      <Footer />
-    </AppContext.Provider>
+    <ApolloProvider client={apolloClient}>
+      <AppContext.Provider value={store}>
+        <NetworkWidget
+          user={user}
+          network={network}
+          currentErrors={currentErrors}
+          currentTXs={currentTXs}
+          connectionComplete={setupWeb3}
+        />
+        <EarnProvider>
+          <BorrowProvider>
+            <Router>
+              {(process.env.NODE_ENV === "development" || process.env.MURMURATION === "yes") && <DevTools />}
+              <Sidebar />
+              <div>
+                <Switch>
+                  <Route exact path="/">
+                    <Redirect to="/earn" />
+                  </Route>
+                  <Route path="/about">{/* <About /> */}</Route>
+                  <Route path="/earn">
+                    <Earn />
+                  </Route>
+                  <Route path="/borrow">
+                    <Borrow />
+                  </Route>
+                  <Route path="/transactions">
+                    <Transactions currentTXs={currentTXs} />
+                  </Route>
+                  <Route path="/pools/senior">
+                    <SeniorPoolView />
+                  </Route>
+                  <Route path="/pools/:poolAddress">
+                    <TranchedPoolView />
+                  </Route>
+                  <Route path="/verify">
+                    <VerifyIdentity />
+                  </Route>
+                  <Route path="/terms">
+                    <TermsOfService />
+                  </Route>
+                  <Route path="/privacy">
+                    <PrivacyPolicy />
+                  </Route>
+                  <Route path="/senior-pool-agreement-non-us">
+                    <SeniorPoolAgreementNonUS />
+                  </Route>
+                </Switch>
+              </div>
+            </Router>
+          </BorrowProvider>
+        </EarnProvider>
+        <Footer />
+      </AppContext.Provider>
+    </ApolloProvider>
   )
 }
 
