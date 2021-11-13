@@ -144,7 +144,9 @@ describe("PoolTokens", () => {
           new BN(15000),
           new BN(30),
           new BN(360),
-          new BN(350)
+          new BN(350),
+          new BN(180),
+          new BN(0)
         )
         // grant role so the person can deposit into the senior tranche
         await fakePool.grantRole(await fakePool.SENIOR_ROLE(), person2)

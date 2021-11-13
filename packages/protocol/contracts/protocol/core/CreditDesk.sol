@@ -243,7 +243,9 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
       clToMigrate.interestApr().mul(interestMigrationFactor),
       clToMigrate.paymentPeriodInDays(),
       clToMigrate.termInDays(),
-      clToMigrate.lateFeeApr()
+      clToMigrate.lateFeeApr(),
+      0,
+      0
     );
 
     IV2CreditLine newCl = IMigratedTranchedPool(pool).migrateCreditLineToV2(

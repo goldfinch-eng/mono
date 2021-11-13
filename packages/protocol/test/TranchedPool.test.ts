@@ -16,6 +16,7 @@ import {
   decodeLogs,
   getFirstLog,
   setupPoolRewards,
+  getCurrentTimestamp,
 } from "./testHelpers"
 import {interestAprAsBN, TRANCHES, MAX_UINT, OWNER_ROLE, PAUSER_ROLE} from "../blockchain_scripts/deployHelpers"
 import {expectEvent, time} from "@openzeppelin/test-helpers"
@@ -90,6 +91,8 @@ describe("TranchedPool", () => {
   let interestApr = interestAprAsBN("5.00")
   const paymentPeriodInDays = new BN(30)
   let termInDays = new BN(365)
+  const principalGracePeriodInDays = new BN(185)
+  const fundableAt = new BN(0)
   const lateFeeApr = new BN(0)
   const juniorFeePercent = new BN(20)
 
@@ -103,6 +106,8 @@ describe("TranchedPool", () => {
       termInDays,
       lateFeeApr,
       juniorFeePercent,
+      principalGracePeriodInDays,
+      fundableAt,
       usdc,
     })
 
@@ -182,7 +187,8 @@ describe("TranchedPool", () => {
           await creditLine.interestApr(),
           await creditLine.paymentPeriodInDays(),
           await creditLine.termInDays(),
-          await creditLine.lateFeeApr()
+          await creditLine.lateFeeApr(),
+          await creditLine.principalGracePeriodInDays()
         )
       ).toChange([[tranchedPool.creditLine, {beDifferent: true}]])
     })
@@ -197,6 +203,7 @@ describe("TranchedPool", () => {
           await creditLine.paymentPeriodInDays(),
           await creditLine.termInDays(),
           await creditLine.lateFeeApr(),
+          await creditLine.principalGracePeriodInDays(),
           {from: owner}
         )
       ).to.be.fulfilled
@@ -209,6 +216,7 @@ describe("TranchedPool", () => {
           await creditLine.paymentPeriodInDays(),
           await creditLine.termInDays(),
           await creditLine.lateFeeApr(),
+          await creditLine.principalGracePeriodInDays(),
           {from: borrower}
         )
       ).to.be.rejectedWith(/Must have admin role/)
@@ -221,12 +229,21 @@ describe("TranchedPool", () => {
       const paymentPeriodInDays = new BN(123)
       const termInDays = new BN(321)
       const lateFeeApr = interestAprAsBN("0.9783")
+      const principalGracePeriodInDays = new BN(30)
 
       // Limit starts at 0 until drawdown happens.
       expect(await tranchedPool.limit()).to.bignumber.eq("0")
 
       await expectAction(async () =>
-        tranchedPool.migrateCreditLine(borrower, maxLimit, interestApr, paymentPeriodInDays, termInDays, lateFeeApr)
+        tranchedPool.migrateCreditLine(
+          borrower,
+          maxLimit,
+          interestApr,
+          paymentPeriodInDays,
+          termInDays,
+          lateFeeApr,
+          principalGracePeriodInDays
+        )
       ).toChange([
         [tranchedPool.maxLimit, {to: maxLimit}],
         [tranchedPool.borrower, {to: borrower, bignumber: false}],
@@ -234,6 +251,7 @@ describe("TranchedPool", () => {
         [tranchedPool.paymentPeriodInDays, {to: paymentPeriodInDays}],
         [tranchedPool.termInDays, {to: termInDays}],
         [tranchedPool.lateFeeApr, {to: lateFeeApr}],
+        [tranchedPool.principalGracePeriodInDays, {to: principalGracePeriodInDays}],
       ])
 
       // Limit does not change
@@ -251,7 +269,15 @@ describe("TranchedPool", () => {
       await tranchedPool.lockJuniorCapital({from: borrower})
       await tranchedPool.drawdown(usdcVal(1000), {from: borrower})
 
-      tranchedPool.migrateCreditLine(borrower, limit, interestApr, paymentPeriodInDays, termInDays, lateFeeApr)
+      tranchedPool.migrateCreditLine(
+        borrower,
+        limit,
+        interestApr,
+        paymentPeriodInDays,
+        termInDays,
+        lateFeeApr,
+        principalGracePeriodInDays
+      )
       const newCl = await CreditLine.at(await tranchedPool.creditLine())
 
       expect(originalBalance).to.bignumber.eq(await newCl.balance())
@@ -270,7 +296,15 @@ describe("TranchedPool", () => {
       await tranchedPool.drawdown(usdcVal(1000), {from: borrower})
 
       await expectAction(async () =>
-        tranchedPool.migrateCreditLine(borrower, limit, interestApr, paymentPeriodInDays, termInDays, lateFeeApr)
+        tranchedPool.migrateCreditLine(
+          borrower,
+          limit,
+          interestApr,
+          paymentPeriodInDays,
+          termInDays,
+          lateFeeApr,
+          principalGracePeriodInDays
+        )
       ).toChange([
         [creditLine.balance, {to: new BN(0)}],
         [creditLine.limit, {to: new BN(0)}],
@@ -282,7 +316,15 @@ describe("TranchedPool", () => {
 
     it("should reassign the LOCKER_ROLE to the new borrower", async () => {
       const newBorrower = otherPerson
-      await tranchedPool.migrateCreditLine(newBorrower, limit, interestApr, paymentPeriodInDays, termInDays, lateFeeApr)
+      await tranchedPool.migrateCreditLine(
+        newBorrower,
+        limit,
+        interestApr,
+        paymentPeriodInDays,
+        termInDays,
+        lateFeeApr,
+        principalGracePeriodInDays
+      )
       const lockerRole = await tranchedPool.LOCKER_ROLE()
 
       expect(await tranchedPool.hasRole(lockerRole, newBorrower)).to.be.true
@@ -1845,7 +1887,7 @@ describe("TranchedPool", () => {
         expect((await poolTokens.getTokenInfo(firstSliceJunior)).tranche).to.eq(TRANCHES.Junior.toString())
         expect((await poolTokens.getTokenInfo(firstSliceSenior)).tranche).to.eq(TRANCHES.Senior.toString())
 
-        await expectAction(async () => tranchedPool.initializeNextSlice({from: borrower})).toChange([
+        await expectAction(async () => tranchedPool.initializeNextSlice(fundableAt, {from: borrower})).toChange([
           [tranchedPool.numSlices, {to: new BN(2)}],
         ])
 
@@ -1857,20 +1899,20 @@ describe("TranchedPool", () => {
       })
 
       it("does not allow creating a slice when current slice is still active", async () => {
-        await expect(tranchedPool.initializeNextSlice({from: borrower})).to.be.rejectedWith(
+        await expect(tranchedPool.initializeNextSlice(fundableAt, {from: borrower})).to.be.rejectedWith(
           /Current slice still active/
         )
 
         await tranchedPool.lockJuniorCapital({from: borrower})
 
         // Senior must also be locked
-        await expect(tranchedPool.initializeNextSlice({from: borrower})).to.be.rejectedWith(
+        await expect(tranchedPool.initializeNextSlice(fundableAt, {from: borrower})).to.be.rejectedWith(
           /Current slice still active/
         )
 
         await tranchedPool.lockPool({from: borrower})
 
-        await expect(tranchedPool.initializeNextSlice({from: borrower})).to.not.be.rejected
+        await expect(tranchedPool.initializeNextSlice(fundableAt, {from: borrower})).to.not.be.rejected
       })
 
       it("does not allow creating a slice when borrower is late", async () => {
@@ -1886,19 +1928,61 @@ describe("TranchedPool", () => {
         await advanceTime({days: halfOfTerm.toNumber() + 1})
 
         await tranchedPool.assess()
-        await expect(tranchedPool.initializeNextSlice({from: borrower})).to.be.rejectedWith(/Creditline is late/)
+        await expect(tranchedPool.initializeNextSlice(fundableAt, {from: borrower})).to.be.rejectedWith(
+          /Creditline is late/
+        )
+      })
+
+      it("does not allow depositing before the fundableAt", async () => {
+        await depositAndGetTokenId(tranchedPool, TRANCHES.Junior, usdcVal(20))
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        await depositAndGetTokenId(tranchedPool, TRANCHES.Senior, usdcVal(80))
+        await tranchedPool.lockPool({from: borrower})
+        await tranchedPool.drawdown(usdcVal(100), {from: borrower})
+
+        // one day in the future
+        const newFundableAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
+        await tranchedPool.initializeNextSlice(newFundableAt, {from: borrower})
+        await expect(tranchedPool.deposit("3", usdcVal(10))).to.be.rejectedWith(/Not yet open for funding/)
+
+        // advance 2 days, and it should work
+        await advanceTime({days: 2})
+        await expect(tranchedPool.deposit("3", usdcVal(10))).to.be.fulfilled
+      })
+
+      it("does not allow creating a slice beyond the principal graceperiod", async () => {
+        await depositAndGetTokenId(tranchedPool, TRANCHES.Junior, usdcVal(20))
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        await depositAndGetTokenId(tranchedPool, TRANCHES.Senior, usdcVal(80))
+        await tranchedPool.lockPool({from: borrower})
+        await tranchedPool.drawdown(usdcVal(100), {from: borrower})
+
+        // Go through 1 payment period and pay everything off we will be current on payments
+        await advanceTime({days: paymentPeriodInDays.add(new BN(2))})
+        await tranchedPool.pay(usdcVal(101), {from: borrower})
+
+        // Advance most of the way through
+        await advanceTime({days: termInDays.toNumber() - 30})
+        await hre.ethers.provider.send("evm_mine", [])
+
+        expect(await creditLine.withinPrincipalGracePeriod()).to.be.false
+        await expect(tranchedPool.initializeNextSlice(fundableAt, {from: borrower})).to.be.rejectedWith(
+          /Beyond principal grace period/
+        )
       })
 
       it("does not allow creating more than 5 slices", async () => {
         for (let i = 0; i < 4; i++) {
           await tranchedPool.lockJuniorCapital({from: borrower})
           await tranchedPool.lockPool({from: borrower})
-          await tranchedPool.initializeNextSlice({from: borrower})
+          await tranchedPool.initializeNextSlice(fundableAt, {from: borrower})
         }
         await tranchedPool.lockJuniorCapital({from: borrower})
         await tranchedPool.lockPool({from: borrower})
 
-        await expect(tranchedPool.initializeNextSlice({from: borrower})).to.be.rejectedWith(/Cannot exceed 5 slices/)
+        await expect(tranchedPool.initializeNextSlice(fundableAt, {from: borrower})).to.be.rejectedWith(
+          /Cannot exceed 5 slices/
+        )
       })
     })
 
@@ -1909,7 +1993,7 @@ describe("TranchedPool", () => {
       await tranchedPool.lockPool({from: borrower})
 
       await tranchedPool.drawdown(usdcVal(100), {from: borrower})
-      await tranchedPool.initializeNextSlice({from: borrower})
+      await tranchedPool.initializeNextSlice(fundableAt, {from: borrower})
       await advanceTime({days: termInDays.div(new BN(2))})
 
       await expect(tranchedPool.pay(usdcVal(100), {from: borrower})).to.be.rejectedWith(/Pool is not locked/)
@@ -1941,7 +2025,7 @@ describe("TranchedPool", () => {
       await expectAvailable(firstSliceJunior, "1.675", "0.01")
       await expectAvailable(firstSliceSenior, "2.76", "0.05")
 
-      await tranchedPool.initializeNextSlice({from: borrower})
+      await tranchedPool.initializeNextSlice(fundableAt, {from: borrower})
       const secondSliceJunior = await depositAndGetTokenId(tranchedPool, 4, usdcVal(60))
       await tranchedPool.lockJuniorCapital({from: borrower})
       const secondSliceSenior = await depositAndGetTokenId(tranchedPool, 3, usdcVal(240))
@@ -1991,7 +2075,7 @@ describe("TranchedPool", () => {
         await expectAvailable(firstSliceJunior, "1.675", "0.01")
         await expectAvailable(firstSliceSenior, "2.76", "0.05")
 
-        await tranchedPool.initializeNextSlice({from: borrower})
+        await tranchedPool.initializeNextSlice(fundableAt, {from: borrower})
 
         const secondSliceJunior = await depositAndGetTokenId(tranchedPool, 4, usdcVal(60))
         await tranchedPool.lockJuniorCapital({from: borrower})
@@ -2050,7 +2134,7 @@ describe("TranchedPool", () => {
         await expectAvailable(firstSliceJunior, "1.675", "20.01")
         await expectAvailable(firstSliceSenior, "2.76", "80.05")
 
-        await tranchedPool.initializeNextSlice({from: borrower})
+        await tranchedPool.initializeNextSlice(fundableAt, {from: borrower})
         const secondSliceJunior = await depositAndGetTokenId(tranchedPool, 4, usdcVal(60))
         await tranchedPool.lockJuniorCapital({from: borrower})
         const secondSliceSenior = await depositAndGetTokenId(tranchedPool, 3, usdcVal(240))
@@ -2082,7 +2166,7 @@ describe("TranchedPool", () => {
         const firstSliceSenior = await depositAndGetTokenId(tranchedPool, TRANCHES.Senior, usdcVal(160))
         await tranchedPool.lockPool({from: borrower})
         await tranchedPool.drawdown(usdcVal(100), {from: borrower})
-        await tranchedPool.initializeNextSlice({from: borrower})
+        await tranchedPool.initializeNextSlice(fundableAt, {from: borrower})
         const secondSliceJunior = await depositAndGetTokenId(tranchedPool, 4, usdcVal(60))
         await tranchedPool.lockJuniorCapital({from: borrower})
         const secondSliceSenior = await depositAndGetTokenId(tranchedPool, 3, usdcVal(240))
@@ -2111,7 +2195,7 @@ describe("TranchedPool", () => {
         const firstSliceSenior = await depositAndGetTokenId(tranchedPool, TRANCHES.Senior, usdcVal(160))
         await tranchedPool.lockPool({from: borrower})
         await tranchedPool.drawdown(usdcVal(100), {from: borrower})
-        await tranchedPool.initializeNextSlice({from: borrower})
+        await tranchedPool.initializeNextSlice(fundableAt, {from: borrower})
         const secondSliceJunior = await depositAndGetTokenId(tranchedPool, 4, usdcVal(60))
         await tranchedPool.lockJuniorCapital({from: borrower})
         const secondSliceSenior = await depositAndGetTokenId(tranchedPool, 3, usdcVal(240))

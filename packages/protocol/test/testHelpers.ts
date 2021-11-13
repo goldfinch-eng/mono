@@ -419,6 +419,8 @@ const createPoolWithCreditLine = async ({
   termInDays = new BN(365),
   limit = usdcVal(10000),
   lateFeeApr = interestAprAsBN("3.0"),
+  principalGracePeriodInDays = new BN(185),
+  fundableAt = new BN(0),
 }): Promise<{tranchedPool: TranchedPoolInstance; creditLine: CreditLineInstance}> => {
   const thisOwner = people.owner
   const thisBorrower = people.borrower
@@ -439,6 +441,8 @@ const createPoolWithCreditLine = async ({
     paymentPeriodInDays,
     termInDays,
     lateFeeApr,
+    principalGracePeriodInDays,
+    fundableAt,
     {from: thisOwner}
   )
   const event = result.logs[result.logs.length - 1]
