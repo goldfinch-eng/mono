@@ -95,7 +95,7 @@ These tests are special. They use existing mainnet state, so
 that we can easily and realistically test interactions with outside protocols
 and contracts.
 */
-describe("mainnet forking tests", async function () {
+xdescribe("mainnet forking tests", async function () {
   this.retries(2)
 
   // eslint-disable-next-line no-unused-vars

@@ -1024,8 +1024,11 @@ describe("TranchedPool", () => {
       expect(await tranchedPool.allowedUIDTypes(1)).to.bignumber.equal(new BN(2))
     })
 
-    it("validate must be borrower", () => {
-      // TODO
+    it("validate must be borrower", async () => {
+      await expect(tranchedPool.setAllowedUIDTypes([1], {from: borrower})).to.be.fulfilled
+      await expect(tranchedPool.setAllowedUIDTypes([1], {from: owner})).to.be.rejectedWith(
+        /Must be borrower perform this actiond/
+      )
     })
   })
 

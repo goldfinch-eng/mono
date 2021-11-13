@@ -66,6 +66,7 @@ contract Go is IGo, BaseUpgradeablePausable {
     if (config.goList(account) || IUniqueIdentity0612(uniqueIdentity).balanceOf(account, ID_TYPE_0) > 0) {
       return true;
     }
+    // start loop at index 1
     for (uint256 i = 1; i < allIdTypes.length; ++i) {
       uint256 idTypeBalance = IUniqueIdentity0612(uniqueIdentity).balanceOf(account, allIdTypes[i]);
       if (idTypeBalance > 0) {
@@ -103,14 +104,11 @@ contract Go is IGo, BaseUpgradeablePausable {
    */
   function goSeniorPool(address account) public view override returns (bool) {
     require(account != address(0), "Zero address is not go-listed");
-    if (account == config.stakingRewardsAddress()) {
+    if (account == config.stakingRewardsAddress() || config.goList(account)) {
       return true;
     }
     uint256[2] memory seniorPoolIdTypes = [ID_TYPE_0, ID_TYPE_1];
     for (uint256 i = 0; i < seniorPoolIdTypes.length; ++i) {
-      if (seniorPoolIdTypes[i] == ID_TYPE_0 && config.goList(account)) {
-        return true;
-      }
       uint256 idTypeBalance = IUniqueIdentity0612(uniqueIdentity).balanceOf(account, seniorPoolIdTypes[i]);
       if (idTypeBalance > 0) {
         return true;

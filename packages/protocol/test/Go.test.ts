@@ -10,8 +10,13 @@ import {
   PAUSER_ROLE,
   TRUFFLE_CONTRACT_PROVIDER,
 } from "../blockchain_scripts/deployHelpers"
-import {Go} from "../typechain/ethers"
-import {GoInstance, GoldfinchConfigInstance, TestUniqueIdentityInstance} from "../typechain/truffle"
+import {Go, StakingRewards} from "../typechain/ethers"
+import {
+  GoInstance,
+  GoldfinchConfigInstance,
+  StakingRewardsInstance,
+  TestUniqueIdentityInstance,
+} from "../typechain/truffle"
 import {mint} from "./uniqueIdentityHelpers"
 import {BN} from "ethereumjs-tx/node_modules/ethereumjs-util"
 import {DeployResult} from "hardhat-deploy/types"
@@ -283,8 +288,15 @@ describe("Go", () => {
         await expect(go.goSeniorPool(ZERO_ADDRESS)).to.be.rejectedWith(/Zero address is not go-listed/)
       })
 
-      it("Validates if staking rewards contract", () => {
-        // TODO
+      it("returns true if called by staking rewards contract", async () => {
+        const tokenId = new BN(0)
+        await uniqueIdentity.setSupportedUIDTypes([], [])
+        expect(await uniqueIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(new BN(0))
+        const stakingRewardsContract = await getContract<StakingRewards, StakingRewardsInstance>(
+          "StakingRewards",
+          TRUFFLE_CONTRACT_PROVIDER
+        )
+        await expect(go.goSeniorPool(stakingRewardsContract.address)).to.be.fulfilled
       })
 
       it("returns true if has UID and not legacy golisted", async () => {
