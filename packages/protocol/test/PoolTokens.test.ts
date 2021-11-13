@@ -10,6 +10,8 @@ import {
   erc20Approve,
   SECONDS_PER_DAY,
   getCurrentTimestamp,
+  advanceTime,
+  setupPoolRewards,
 } from "./testHelpers"
 import {OWNER_ROLE, interestAprAsBN, GO_LISTER_ROLE} from "../blockchain_scripts/deployHelpers"
 import hre from "hardhat"
@@ -19,7 +21,7 @@ const {deployments} = hre
 const TranchedPool = artifacts.require("TranchedPool")
 import {expectEvent} from "@openzeppelin/test-helpers"
 import {mint} from "./uniqueIdentityHelpers"
-import {PoolRewardsInstance} from "../typechain/truffle"
+import {GFIInstance, PoolRewardsInstance} from "../typechain/truffle"
 
 const testSetup = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
   const [_owner, _person2, _person3] = await web3.eth.getAccounts()
@@ -27,13 +29,23 @@ const testSetup = deployments.createFixture(async ({deployments, getNamedAccount
   const person2 = asNonNullable(_person2)
   const person3 = asNonNullable(_person3)
 
-  const {poolTokens, goldfinchConfig, goldfinchFactory, poolRewards, usdc, uniqueIdentity} = await deployAllContracts(
-    deployments
-  )
+  const {poolTokens, goldfinchConfig, goldfinchFactory, poolRewards, usdc, uniqueIdentity, gfi} =
+    await deployAllContracts(deployments)
   await goldfinchConfig.bulkAddToGoList([owner, person2])
   await erc20Transfer(usdc, [person2], usdcVal(1000), owner)
 
-  return {owner, person2, person3, poolTokens, poolRewards, goldfinchConfig, goldfinchFactory, usdc, uniqueIdentity}
+  return {
+    owner,
+    person2,
+    person3,
+    poolTokens,
+    poolRewards,
+    goldfinchConfig,
+    goldfinchFactory,
+    usdc,
+    uniqueIdentity,
+    gfi,
+  }
 })
 
 describe("PoolTokens", () => {
@@ -46,7 +58,8 @@ describe("PoolTokens", () => {
     goldfinchFactory,
     usdc,
     uniqueIdentity,
-    poolRewards: PoolRewardsInstance
+    poolRewards: PoolRewardsInstance,
+    gfi: GFIInstance
 
   const withPoolSender = async (func, otherPoolAddress?) => {
     // We need to fake the address so we can bypass the pool
@@ -59,7 +72,7 @@ describe("PoolTokens", () => {
 
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;({owner, person2, person3, poolTokens, goldfinchConfig, goldfinchFactory, usdc, uniqueIdentity, poolRewards} =
+    ;({owner, person2, person3, poolTokens, goldfinchConfig, goldfinchFactory, usdc, uniqueIdentity, poolRewards, gfi} =
       await testSetup())
 
     await poolTokens._disablePoolValidation(true)
@@ -151,8 +164,6 @@ describe("PoolTokens", () => {
       expect(tokenInfo.interestRedeemed).to.bignumber.equal(new BN(0))
     })
 
-    // TODO: @sanjay update this with multiple drawdown scenario for making sure mint
-    // price is set higher then 0
     it("should call PoolRewards with tokenId after minting", async () => {
       const amount = usdcVal(5)
       const result = await pool.deposit(new BN(1), amount, {from: person2})
@@ -161,6 +172,29 @@ describe("PoolTokens", () => {
       const poolRewardsTokenInfo = await poolRewards.tokens(event.args.tokenId)
       const accRewardsPerPrincipalDollarAtMint = poolRewardsTokenInfo["accRewardsPerPrincipalDollarAtMint"]
       expect(accRewardsPerPrincipalDollarAtMint).to.bignumber.equal(new BN(0))
+    })
+
+    it("should use the current rewardsPerPrincipalShare when it's a second drawdown", async () => {
+      await setupPoolRewards(gfi, poolRewards, owner)
+
+      const amount = usdcVal(5)
+      await pool.deposit(new BN(1), amount, {from: person2})
+      await pool.deposit(new BN(2), amount, {from: person2})
+      await pool.lockJuniorCapital({from: person2})
+      await pool.lockPool({from: person2})
+      await pool.drawdown(usdcVal(10), {from: person2})
+
+      // Ensure pool has some interest rewards allocated to it advancing time and paying interest
+      await advanceTime({days: new BN(100)})
+      await pool.pay(usdcVal(5), {from: person2})
+      await pool.initializeNextSlice({from: person2})
+
+      const result = await pool.deposit(new BN(3), amount, {from: person2})
+      const event = decodeLogs(result.receipt.rawLogs, poolTokens, "TokenMinted")[0]
+      assertNonNullable(event)
+      const poolRewardsTokenInfo = await poolRewards.tokens(event.args.tokenId)
+      const accRewardsPerPrincipalDollarAtMint = poolRewardsTokenInfo["accRewardsPerPrincipalDollarAtMint"]
+      expect(accRewardsPerPrincipalDollarAtMint).to.bignumber.gt(new BN(0))
     })
 
     it("allows minting even after the limit on the PoolInfo", async () => {

@@ -78,6 +78,7 @@
           "depositWithPermit": [],
           "lockJuniorCapital": ["whenNotPaused", "onlyLocker"],
           "lockPool": ["whenNotPaused", "onlyLocker"],
+          "initializeNextSlice": ["whenNotPaused", "onlyLocker"],
           "withdraw": ["whenNotPaused", "onlyTokenHolder"],
           "withdrawMax": ["whenNotPaused", "onlyTokenHolder"],
           "withdrawMultiple": [],
@@ -94,7 +95,8 @@
           "deposit": [],
           "depositWithPermit": [],
           "withdraw": [],
-          "withdrawInFidu": []
+          "withdrawInFidu": [],
+          "redeem": []
         },
         "**/SeniorPoolFidu.sol:SeniorPoolFidu": {
           "__initialize__": [],
