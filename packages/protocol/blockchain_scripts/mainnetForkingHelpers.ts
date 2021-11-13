@@ -77,7 +77,6 @@ async function upgradeContracts({
     CreditLine: {["Accountant"]: accountantDeployResult.address},
     SeniorPool: {["Accountant"]: accountantDeployResult.address},
     GoldfinchFactory: {["Accountant"]: accountantDeployResult.address},
-    CreditDesk: {["Accountant"]: accountantDeployResult.address},
   }
 
   const upgradedContracts: UpgradedContracts = {}
