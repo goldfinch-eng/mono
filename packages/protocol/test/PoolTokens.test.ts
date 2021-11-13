@@ -120,6 +120,8 @@ describe("PoolTokens", () => {
       )
       const event = result.logs[result.logs.length - 1]
       pool = await TranchedPool.at(event.args.pool)
+      // grant role so the person can deposit into the senior tranche
+      await pool.grantRole(await pool.SENIOR_ROLE(), person2)
       await erc20Approve(usdc, pool.address, usdcVal(100000), [person2])
     })
 
@@ -144,6 +146,8 @@ describe("PoolTokens", () => {
           new BN(360),
           new BN(350)
         )
+        // grant role so the person can deposit into the senior tranche
+        await fakePool.grantRole(await fakePool.SENIOR_ROLE(), person2)
 
         return expect(fakePool.deposit(new BN(1), usdcVal(5), {from: person2})).to.be.rejectedWith(/Invalid pool/)
       })
@@ -236,6 +240,8 @@ describe("PoolTokens", () => {
       )
       let event = result.logs[result.logs.length - 1]
       pool = await TranchedPool.at(event.args.pool)
+      // grant role so the person can deposit into the senior tranche
+      await pool.grantRole(await pool.SENIOR_ROLE(), person2)
 
       await erc20Approve(usdc, pool.address, usdcVal(100000), [person2])
 
@@ -370,6 +376,8 @@ describe("PoolTokens", () => {
       )
       let event = result.logs[result.logs.length - 1]
       pool = await TranchedPool.at(event.args.pool)
+      // grant role so the person can deposit into the senior tranche
+      await pool.grantRole(await pool.SENIOR_ROLE(), person2)
 
       await erc20Approve(usdc, pool.address, usdcVal(100000), [person2])
 

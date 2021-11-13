@@ -25,8 +25,17 @@ const {deployments, artifacts} = hre
 import {ecsign} from "ethereumjs-util"
 const CreditLine = artifacts.require("CreditLine")
 import {getApprovalDigest, getWallet} from "./permitHelpers"
-import {CreditLineInstance, TranchedPoolInstance, PoolRewardsInstance, GFIInstance} from "../typechain/truffle"
-import {TrancheLocked, DepositMade} from "../typechain/truffle/TranchedPool"
+import {DepositMade, TrancheLocked} from "../typechain/truffle/TranchedPool"
+import {
+  CreditLineInstance,
+  GoldfinchConfigInstance,
+  GoldfinchFactoryInstance,
+  PoolTokensInstance,
+  SeniorPoolInstance,
+  TranchedPoolInstance,
+  PoolRewardsInstance,
+  GFIInstance,
+} from "../typechain/truffle"
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 
@@ -67,15 +76,16 @@ describe("TranchedPool", () => {
   let owner,
     borrower,
     otherPerson,
-    goldfinchConfig,
+    goldfinchConfig: GoldfinchConfigInstance,
     usdc,
-    poolTokens,
-    goldfinchFactory,
-    creditLine,
+    poolTokens: PoolTokensInstance,
+    goldfinchFactory: GoldfinchFactoryInstance,
+    creditLine: CreditLineInstance,
     treasury,
     poolRewards: PoolRewardsInstance,
     tranchedPool: TranchedPoolInstance,
-    gfi: GFIInstance
+    gfi: GFIInstance,
+    seniorPool: SeniorPoolInstance
   const limit = usdcVal(1000)
   let interestApr = interestAprAsBN("5.00")
   const paymentPeriodInDays = new BN(30)
@@ -84,7 +94,7 @@ describe("TranchedPool", () => {
   const juniorFeePercent = new BN(20)
 
   const createPoolWithCreditLine = async ({interestApr = interestAprAsBN("5.00"), termInDays = new BN(365)}) => {
-    return await _createPoolWithCreditLine({
+    const {tranchedPool, ...others} = await _createPoolWithCreditLine({
       people: {owner, borrower},
       goldfinchFactory,
       limit,
@@ -95,17 +105,27 @@ describe("TranchedPool", () => {
       juniorFeePercent,
       usdc,
     })
+
+    // grant the senior role to the owner so that the owner is able to directly
+    // deposit into the senior tranche
+    const seniorRole = await tranchedPool.SENIOR_ROLE()
+    await tranchedPool.grantRole(seniorRole, owner)
+
+    return {tranchedPool, ...others}
   }
 
   const testSetup = deployments.createFixture(async ({deployments}) => {
     // Just to be crystal clear
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;({usdc, goldfinchConfig, goldfinchFactory, poolTokens, poolRewards, gfi} = await deployAllContracts(deployments))
+    ;({usdc, goldfinchConfig, goldfinchFactory, poolTokens, poolRewards, seniorPool, gfi} = await deployAllContracts(
+      deployments
+    ))
     await goldfinchConfig.bulkAddToGoList([owner, borrower, otherPerson])
     await goldfinchConfig.setTreasuryReserve(treasury)
     await setupPoolRewards(gfi, poolRewards, owner)
     await erc20Transfer(usdc, [otherPerson], usdcVal(10000), owner)
     await erc20Transfer(usdc, [borrower], usdcVal(10000), owner)
+    await erc20Transfer(usdc, [seniorPool.address], usdcVal(1000), owner)
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
     ;({tranchedPool, creditLine} = await createPoolWithCreditLine({}))
   })
@@ -144,6 +164,11 @@ describe("TranchedPool", () => {
       expect(seniorTranche.lockedUntil).to.bignumber.eq("0")
 
       expect(await tranchedPool.creditLine()).to.eq(creditLine.address)
+    })
+
+    it("grants the senior pool the SENIOR_ROLE", async () => {
+      const seniorRole = await tranchedPool.SENIOR_ROLE()
+      expect(await tranchedPool.hasRole(seniorRole, seniorPool.address)).to.be.true
     })
   })
 
@@ -409,6 +434,25 @@ describe("TranchedPool", () => {
         await tranchedPool.lockJuniorCapital({from: borrower})
         await tranchedPool.lockPool({from: borrower})
         await expect(tranchedPool.deposit(TRANCHES.Senior, usdcVal(10))).to.be.rejectedWith(/Tranche has been locked/)
+      })
+
+      it("allows deposits from the senior pool", async () => {
+        await tranchedPool.deposit(TRANCHES.Junior, usdcVal(10), {from: owner})
+        await tranchedPool.lockJuniorCapital({from: owner})
+
+        expect(tranchedPool.deposit(TRANCHES.Senior, usdcVal(10), {from: borrower})).to.be.rejectedWith(
+          /Must have SENIOR_ROLE to deposit into the senior tranche/i
+        )
+        const tx = await seniorPool.invest(tranchedPool.address)
+        expectEvent(tx, "InvestmentMadeInSenior")
+      })
+
+      it("forbids deposits from accounts without the SENIOR_ROLE", async () => {
+        const seniorRole = await tranchedPool.SENIOR_ROLE()
+        expect(await tranchedPool.hasRole(seniorRole, borrower)).to.be.false
+        expect(tranchedPool.deposit(TRANCHES.Senior, usdcVal(10), {from: borrower})).to.be.rejectedWith(
+          /Must have SENIOR_ROLE to deposit into the senior tranche/i
+        )
       })
 
       it("fails for invalid tranches", async () => {

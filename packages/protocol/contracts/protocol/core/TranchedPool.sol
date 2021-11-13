@@ -26,6 +26,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   using Counters for Counters.Counter;
 
   bytes32 public constant LOCKER_ROLE = keccak256("LOCKER_ROLE");
+  bytes32 public constant SENIOR_ROLE = keccak256("SENIOR_ROLE");
   uint256 public constant FP_SCALING_FACTOR = 1e18;
   uint256 public constant SECONDS_PER_DAY = 60 * 60 * 24;
   uint256 public constant ONE_HUNDRED = 100; // Need this because we cannot call .div on a literal 100
@@ -109,6 +110,10 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     _setupRole(LOCKER_ROLE, _borrower);
     _setupRole(LOCKER_ROLE, owner);
     _setRoleAdmin(LOCKER_ROLE, OWNER_ROLE);
+    _setRoleAdmin(SENIOR_ROLE, OWNER_ROLE);
+
+    // Give the senior pool the ability to deposit into the senior pool
+    _setupRole(SENIOR_ROLE, address(config.getSeniorPool()));
 
     // Unlock self for infinite amount
     bool success = config.getUSDC().approve(address(this), uint256(-1));
@@ -131,6 +136,10 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     TrancheInfo storage trancheInfo = getTrancheInfo(tranche);
     require(trancheInfo.lockedUntil == 0, "Tranche has been locked");
     require(amount > 0, "Must deposit more than zero");
+    // senior tranche ids are always odd numbered
+    if (_isSeniorTrancheId(trancheInfo.id)) {
+      require(hasRole(SENIOR_ROLE, _msgSender()), "Must have SENIOR_ROLE to deposit into the senior tranche");
+    }
 
     trancheInfo.principalDeposited = trancheInfo.principalDeposited.add(amount);
     IPoolTokens.MintParams memory params = IPoolTokens.MintParams({tranche: tranche, principalAmount: amount});
@@ -556,6 +565,10 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     emit WithdrawalMade(msg.sender, tokenInfo.tranche, tokenId, interestToRedeem, principalToRedeem);
 
     return (interestToRedeem, principalToRedeem);
+  }
+
+  function _isSeniorTrancheId(uint256 trancheId) internal pure returns (bool) {
+    return trancheId.mod(NUM_TRANCHES_PER_SLICE) == 1;
   }
 
   function redeemableInterestAndPrincipal(TrancheInfo storage trancheInfo, IPoolTokens.TokenInfo memory tokenInfo)
