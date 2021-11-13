@@ -324,7 +324,6 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
     const contract = await getContract<PoolRewards, PoolRewardsInstance>(contractName, TRUFFLE_CONTRACT_PROVIDER, {
       at: poolRewards.address,
     })
-
     logger("Updating config...")
     await updateConfig(config, "address", CONFIG_KEYS.PoolRewards, contract.address, {logger})
     logger("Updated PoolRewards config address to:", contract.address)

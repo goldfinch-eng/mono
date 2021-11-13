@@ -558,7 +558,7 @@ describe("SeniorPool", () => {
         const unknownPoolAddress = await simulateMaliciousTranchedPool(goldfinchConfig, person2)
 
         await expect(seniorPool.invest(unknownPoolAddress)).to.be.rejectedWith(/Pool must be valid/)
-      })
+      }).timeout(TEST_TIMEOUT)
     })
 
     context("Pool's senior tranche is not empty", () => {
@@ -650,8 +650,8 @@ describe("SeniorPool", () => {
         // to prohibit that, so that we are able to maintain the leverage ratio in a case
         // where the juniors take "more than their share".
 
-        const expectedLimit = usdcVal(100000)
-        expect(await tranchedPool.limit()).to.bignumber.equal(expectedLimit)
+        const expectedMaxLimit = usdcVal(100000)
+        expect(await tranchedPool.maxLimit()).to.bignumber.equal(expectedMaxLimit)
 
         await tranchedPool.lockJuniorCapital({from: borrower})
         expect(await goldfinchConfig.getAddress(CONFIG_KEYS.SeniorPoolStrategy)).to.equal(
@@ -697,7 +697,7 @@ describe("SeniorPool", () => {
         await expect(seniorPool.investJunior(unknownPoolAddress, seniorPoolJuniorInvestmentAmount)).to.be.rejectedWith(
           /Pool must be valid/
         )
-      })
+      }).timeout(TEST_TIMEOUT)
     })
 
     context("Pool's junior tranche is locked", () => {
@@ -783,7 +783,7 @@ describe("SeniorPool", () => {
         expect(juniorTranche.principalDeposited).to.bignumber.equal(juniorInvestmentAmount)
 
         const expectedLimit = usdcVal(100000)
-        expect(await tranchedPool.limit()).to.bignumber.equal(expectedLimit)
+        expect(await tranchedPool.maxLimit()).to.bignumber.equal(expectedLimit)
 
         const reducedLimit = seniorPoolJuniorInvestmentAmount.sub(new BN(1))
         await tranchedPool._setLimit(reducedLimit)

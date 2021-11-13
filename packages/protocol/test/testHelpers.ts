@@ -37,6 +37,7 @@ import {
   MerkleDistributorInstance,
   GoInstance,
   TestUniqueIdentityInstance,
+  PoolRewardsInstance,
 } from "../typechain/truffle"
 import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/DynamicLeverageRatioStrategy"
 import {MerkleDistributor, CommunityRewards, UniqueIdentity, Go, TestUniqueIdentity} from "../typechain/ethers"
@@ -99,6 +100,14 @@ const getDeployedAsTruffleContract = async <T extends Truffle.ContractInstance>(
 
 async function getTruffleContract<T extends Truffle.ContractInstance>(name: string, address: string): Promise<T> {
   return (await artifacts.require(name).at(address)) as T
+}
+
+async function setupPoolRewards(gfi: GFIInstance, poolRewards: PoolRewardsInstance, owner: string) {
+  const gfiAmount = bigVal(100_000_000) // 100M
+  await gfi.setCap(gfiAmount)
+  await gfi.mint(owner, gfiAmount)
+  await poolRewards.setMaxInterestDollarsEligible(bigVal(1_000_000_000)) // 1B
+  await poolRewards.setTotalRewards(bigVal(3_000_000)) // 3% of 100M, 3M
 }
 
 const tolerance = usdcVal(1).div(new BN(1000)) // 0.001$
@@ -495,4 +504,5 @@ export {
   genDifferentHexString,
   toEthers,
   fundWithEthFromLocalWhale,
+  setupPoolRewards,
 }
