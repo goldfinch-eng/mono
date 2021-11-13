@@ -430,4 +430,4 @@ describe("Goldfinch", async function () {
       })
     })
   })
-})
+}).timeout(TEST_TIMEOUT)
