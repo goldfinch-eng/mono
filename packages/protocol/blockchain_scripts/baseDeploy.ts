@@ -19,6 +19,7 @@ import {
   TRUFFLE_CONTRACT_PROVIDER,
   SIGNER_ROLE,
   getEthersContract,
+  getTruffleContract,
 } from "./deployHelpers"
 import {HardhatRuntimeEnvironment} from "hardhat/types"
 import {DeployFunction} from "hardhat-deploy/types"
@@ -279,7 +280,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
         initialCap, //initialCap
       ],
     })
-    const contract = await getContract<GFI, GFIInstance>(contractName, TRUFFLE_CONTRACT_PROVIDER, {at: gfi.address})
+    const contract = await getTruffleContract<GFIInstance>(contractName, {at: gfi.address})
 
     const deployed: Deployed<GFIInstance> = {
       name: contractName,
@@ -467,11 +468,9 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
       gasLimit: 4000000,
       args: [gfi.contract.address, merkleRoot],
     })
-    const contract = await getContract<MerkleDirectDistributor, MerkleDirectDistributorInstance>(
-      contractName,
-      TRUFFLE_CONTRACT_PROVIDER,
-      {at: merkleDirectDistributor.address}
-    )
+    const contract = await getTruffleContract<MerkleDirectDistributorInstance>(contractName, {
+      at: merkleDirectDistributor.address,
+    })
 
     const deployed: Deployed<MerkleDirectDistributorInstance> = {
       name: contractName,
