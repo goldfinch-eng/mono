@@ -182,6 +182,7 @@ describe("unique-identity-signer", () => {
           "x-goldfinch-signature": "test_signature",
           "x-goldfinch-signature-block-num": "fake_block_number",
         }
+        await uniqueIdentity.setSupportedUIDTypes([0], [true])
 
         let result = await uniqueIdentitySigner.main({
           auth,
