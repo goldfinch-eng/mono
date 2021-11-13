@@ -111,7 +111,7 @@ describe("MerkleDistributor", () => {
     )
     expect(grantAcceptedEvent.args.tokenId).to.bignumber.equal(tokenId)
     expect(grantAcceptedEvent.args.index).to.bignumber.equal(new BN(index))
-    expect(grantAcceptedEvent.args.account).to.equal(account)
+    expect(grantAcceptedEvent.args.account).to.equal(from)
     expect(grantAcceptedEvent.args.amount).to.bignumber.equal(amount)
     expect(grantAcceptedEvent.args.vestingLength).to.bignumber.equal(vestingLength)
     expect(grantAcceptedEvent.args.cliffLength).to.bignumber.equal(cliffLength)
@@ -424,7 +424,7 @@ describe("MerkleDistributor", () => {
         acceptGrantParams.proof,
         {from: acceptGrantParams.from}
       )
-      expect(receipt.receipt.gasUsed).to.eq(366104)
+      expect(receipt.receipt.gasUsed).to.eq(365667)
     })
   })
 })
