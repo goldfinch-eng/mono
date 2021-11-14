@@ -301,8 +301,8 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     _lockPool();
   }
 
-  function setFundableAt(uint256 timestamp) external override onlyLocker {
-    fundableAt = timestamp;
+  function setFundableAt(uint256 newFundableAt) external override onlyLocker {
+    fundableAt = newFundableAt;
   }
 
   function initializeNextSlice(uint256 _fundableAt) external override onlyLocker whenNotPaused {
@@ -657,7 +657,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     emit TrancheLocked(address(this), currentSlice.juniorTranche.id, currentSlice.juniorTranche.lockedUntil);
   }
 
-  function _initializeNextSlice(uint256 timestamp) internal {
+  function _initializeNextSlice(uint256 newFundableAt) internal {
     require(poolSlices.length < 5, "Cannot exceed 5 slices");
     TrancheInfo memory seniorTranche = TrancheInfo({
       id: _trancheIdTracker.current(),
@@ -682,7 +682,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
         principalDeployed: 0
       })
     );
-    fundableAt = timestamp;
+    fundableAt = newFundableAt;
   }
 
   function collectInterestAndPrincipal(
