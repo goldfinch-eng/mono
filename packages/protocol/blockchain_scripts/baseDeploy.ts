@@ -520,6 +520,7 @@ async function deployPoolRewards(
     from: gf_deployer,
     gasLimit: 4000000,
     proxy: {
+      owner: protocol_owner,
       execute: {
         init: {
           methodName: "__initialize__",
