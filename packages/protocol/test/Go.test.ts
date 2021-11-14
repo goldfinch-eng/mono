@@ -258,14 +258,12 @@ describe("Go", () => {
         await mint(hre, uniqueIdentity, tokenId, expiresAt, new BN(0), owner, undefined, anotherUser)
         expect(await uniqueIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(new BN(1))
         expect(await goldfinchConfig.goList(anotherUser)).to.equal(false)
-        expect(await goldfinchConfig.hasRole(GO_LISTER_ROLE, owner)).to.equal(true)
         expect(await go.goOnlyIdTypes(anotherUser, [tokenId])).to.equal(true)
       })
 
       it("returns true if legacy golisted and doesnt have UID", async () => {
         const tokenId = new BN(0)
         expect(await goldfinchConfig.goList(anotherUser)).to.equal(false)
-        expect(await goldfinchConfig.hasRole(GO_LISTER_ROLE, owner)).to.equal(true)
         await goldfinchConfig.addToGoList(anotherUser, {from: owner})
         expect(await goldfinchConfig.goList(anotherUser)).to.equal(true)
         expect(await go.goOnlyIdTypes(anotherUser, [tokenId])).to.equal(true)
@@ -278,7 +276,6 @@ describe("Go", () => {
         await mint(hre, uniqueIdentity, tokenId, expiresAt, new BN(0), owner, undefined, anotherUser)
         expect(await uniqueIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(new BN(1))
         expect(await goldfinchConfig.goList(anotherUser)).to.equal(false)
-        expect(await goldfinchConfig.hasRole(GO_LISTER_ROLE, owner)).to.equal(true)
         expect(await go.goOnlyIdTypes(anotherUser, [1])).to.equal(false)
       })
     })

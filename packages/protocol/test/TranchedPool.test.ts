@@ -1038,9 +1038,7 @@ describe("TranchedPool", () => {
 
     it("validate must be borrower", async () => {
       await expect(tranchedPool.setAllowedUIDTypes([1], {from: borrower})).to.be.fulfilled
-      await expect(tranchedPool.setAllowedUIDTypes([1], {from: owner})).to.be.rejectedWith(
-        /Must be borrower perform this action/
-      )
+      await expect(tranchedPool.setAllowedUIDTypes([1], {from: owner})).to.be.fulfilled
     })
   })
 

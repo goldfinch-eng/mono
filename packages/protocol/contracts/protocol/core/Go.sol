@@ -66,7 +66,7 @@ contract Go is IGo, BaseUpgradeablePausable {
     if (config.goList(account) || IUniqueIdentity0612(uniqueIdentity).balanceOf(account, ID_TYPE_0) > 0) {
       return true;
     }
-    // start loop at index 1
+    // start loop at index 1 because we checked index 0 above
     for (uint256 i = 1; i < allIdTypes.length; ++i) {
       uint256 idTypeBalance = IUniqueIdentity0612(uniqueIdentity).balanceOf(account, allIdTypes[i]);
       if (idTypeBalance > 0) {

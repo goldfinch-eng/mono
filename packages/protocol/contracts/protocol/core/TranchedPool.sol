@@ -123,7 +123,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     require(success, "Failed to approve USDC");
   }
 
-  function setAllowedUIDTypes(uint256[] calldata ids) public onlyBorrower {
+  function setAllowedUIDTypes(uint256[] calldata ids) public onlyLocker {
     allowedUIDTypes = ids;
   }
 
@@ -1056,11 +1056,6 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
 
   modifier onlyLocker() {
     require(hasRole(LOCKER_ROLE, msg.sender), "Must have locker role to perform this action");
-    _;
-  }
-
-  modifier onlyBorrower() {
-    require(msg.sender == creditLine.borrower(), "Must be borrower perform this action");
     _;
   }
 
