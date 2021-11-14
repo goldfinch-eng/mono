@@ -36,10 +36,11 @@ import {
   MerkleDistributorInstance,
   GoInstance,
   TestUniqueIdentityInstance,
+  MerkleDirectDistributorInstance,
   PoolRewardsInstance,
 } from "../typechain/truffle"
 import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/DynamicLeverageRatioStrategy"
-import {MerkleDistributor, CommunityRewards, Go, TestUniqueIdentity} from "../typechain/ethers"
+import {MerkleDistributor, CommunityRewards, Go, TestUniqueIdentity, MerkleDirectDistributor} from "../typechain/ethers"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import "./types"
 const decimals = new BN(String(1e18))
@@ -233,6 +234,10 @@ type DeployAllContractsOptions = {
     fromAccount: string
     root: string
   }
+  deployMerkleDirectDistributor?: {
+    fromAccount: string
+    root: string
+  }
 }
 
 async function deployAllContracts(
@@ -257,6 +262,7 @@ async function deployAllContracts(
   poolRewards: TestPoolRewardsInstance
   communityRewards: CommunityRewardsInstance
   merkleDistributor: MerkleDistributorInstance | null
+  merkleDirectDistributor: MerkleDirectDistributorInstance | null
   uniqueIdentity: TestUniqueIdentityInstance
   go: GoInstance
 }> {
@@ -311,6 +317,19 @@ async function deployAllContracts(
     await communityRewards.grantRole(DISTRIBUTOR_ROLE, merkleDistributor.address)
   }
 
+  let merkleDirectDistributor: MerkleDirectDistributorInstance | null = null
+  if (options.deployMerkleDirectDistributor) {
+    await deployments.deploy("MerkleDirectDistributor", {
+      args: [gfi.address, options.deployMerkleDirectDistributor.root],
+      from: options.deployMerkleDirectDistributor.fromAccount,
+      gasLimit: 4000000,
+    })
+    merkleDirectDistributor = await getContract<MerkleDirectDistributor, MerkleDirectDistributorInstance>(
+      "MerkleDirectDistributor",
+      TRUFFLE_CONTRACT_PROVIDER
+    )
+  }
+
   const uniqueIdentity = await getContract<TestUniqueIdentity, TestUniqueIdentityInstance>(
     "TestUniqueIdentity",
     TRUFFLE_CONTRACT_PROVIDER
@@ -335,6 +354,7 @@ async function deployAllContracts(
     stakingRewards,
     communityRewards,
     merkleDistributor,
+    merkleDirectDistributor,
     uniqueIdentity,
     go,
     poolRewards,
@@ -401,6 +421,8 @@ const createPoolWithCreditLine = async ({
   termInDays = new BN(365),
   limit = usdcVal(10000),
   lateFeeApr = interestAprAsBN("3.0"),
+  principalGracePeriodInDays = new BN(185),
+  fundableAt = new BN(0),
   allowedUIDTypes = [0],
 }: {
   people: {owner: string; borrower: string}
@@ -412,6 +434,8 @@ const createPoolWithCreditLine = async ({
   termInDays?: Numberish
   limit?: Numberish
   lateFeeApr?: Numberish
+  principalGracePeriodInDays?: Numberish
+  fundableAt?: Numberish
   allowedUIDTypes?: Numberish[]
 }): Promise<{tranchedPool: TranchedPoolInstance; creditLine: CreditLineInstance}> => {
   const thisOwner = people.owner
@@ -433,6 +457,8 @@ const createPoolWithCreditLine = async ({
     paymentPeriodInDays,
     termInDays,
     lateFeeApr,
+    principalGracePeriodInDays,
+    fundableAt,
     allowedUIDTypes,
     {from: thisOwner}
   )

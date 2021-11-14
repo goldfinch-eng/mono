@@ -95,6 +95,7 @@ These tests are special. They use existing mainnet state, so
 that we can easily and realistically test interactions with outside protocols
 and contracts.
 */
+// TODO: This is broken until we fix contract upgrades
 xdescribe("mainnet forking tests", async function () {
   this.retries(2)
 

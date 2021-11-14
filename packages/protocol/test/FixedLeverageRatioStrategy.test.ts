@@ -41,7 +41,9 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const strategy = await FixedLeverageRatioStrategy.new({from: owner})
   await strategy.initialize(owner, goldfinchConfig.address)
 
+  const seniorRole = await tranchedPool.SENIOR_ROLE()
   await tranchedPool.deposit(TRANCHES.Junior, juniorInvestmentAmount)
+  await tranchedPool.grantRole(seniorRole, owner)
 
   return {goldfinchConfig, tranchedPool, seniorPool, strategy, owner, borrower, juniorInvestmentAmount}
 })

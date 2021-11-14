@@ -1,10 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
-import {program} from "commander"
-import fs from "fs"
-import {BigNumber, utils} from "ethers"
-import {Grant, isMerkleDistributorInfo, MerkleDistributorGrantInfo} from "./types"
 import {assertNonNullable} from "@goldfinch-eng/utils"
+import {BigNumber, utils} from "ethers"
 
 /**
  * Script for verifying the Merkle root of a rewards distribution, from the publicly-released JSON file
@@ -33,16 +30,37 @@ const combinedHash = (
   )
 }
 
-const toNode = (index: number, account: string, grant: Grant): Buffer => {
-  const pairHex = utils.solidityKeccak256(
-    ["uint256", "address", "uint256", "uint256", "uint256", "uint256"],
-    [index, account, grant.amount, grant.vestingLength, grant.cliffLength, grant.vestingInterval]
-  )
+type BaseGrant = {[key: string]: BigNumber}
+
+export type GrantTypesAndValues = {types: string[]; values: BigNumber[]}
+
+function toNode<G extends BaseGrant>(
+  index: number,
+  account: string,
+  grant: G,
+  getGrantTypesAndValues: (grant: G) => GrantTypesAndValues
+): Buffer {
+  const {types: grantTypes, values: grantValues} = getGrantTypesAndValues(grant)
+  if (grantTypes.length !== grantValues.length) {
+    throw new Error("Failed to extract types and values for node from grant.")
+  }
+
+  const types = ["uint256", "address"].concat(grantTypes)
+  const baseValues: Array<string | number | BigNumber> = [index, account]
+  const values = baseValues.concat(grantValues)
+  const pairHex = utils.solidityKeccak256(types, values)
   return Buffer.from(pairHex.slice(2), "hex")
 }
 
-const verifyProof = (index: number, account: string, grant: Grant, proof: Buffer[], root: Buffer): boolean => {
-  let pair = toNode(index, account, grant)
+function verifyProof<G extends BaseGrant>(
+  index: number,
+  account: string,
+  grant: G,
+  getGrantTypesAndValues: (grant: G) => GrantTypesAndValues,
+  proof: Buffer[],
+  root: Buffer
+): boolean {
+  let pair = toNode(index, account, grant, getGrantTypesAndValues)
   for (const item of proof) {
     pair = combinedHash({first: pair, second: item})
   }
@@ -61,15 +79,18 @@ const getNextLayer = (elements: Buffer[]): Buffer[] => {
   }, [])
 }
 
-type ParsedGrantInfo = {
+export type ParsedGrantInfo<G extends BaseGrant> = {
   index: number
   account: string
-  grant: Grant
+  grant: G
 }
 
-const getRoot = (parsed: ParsedGrantInfo[]): Buffer => {
+function getRoot<G extends BaseGrant>(
+  parsed: ParsedGrantInfo<G>[],
+  getGrantTypesAndValues: (grant: G) => GrantTypesAndValues
+): Buffer {
   let nodes = parsed
-    .map((parsedInfo) => toNode(parsedInfo.index, parsedInfo.account, parsedInfo.grant))
+    .map((parsedInfo) => toNode(parsedInfo.index, parsedInfo.account, parsedInfo.grant, getGrantTypesAndValues))
     // sort by lexicographical order
     .sort(Buffer.compare)
 
@@ -104,36 +125,47 @@ const getRoot = (parsed: ParsedGrantInfo[]): Buffer => {
   return root
 }
 
-type VerificationResult = {
+export type VerificationResult = {
   reconstructedMerkleRoot: string
   matchesRootInJson: boolean
 }
 
-export function verifyMerkleRoot(json: unknown): VerificationResult {
-  if (!isMerkleDistributorInfo(json)) {
+type GrantInfo<G extends BaseGrant> = {
+  index: number
+  account: string
+  grant: {[key in keyof G]: string}
+  proof: string[]
+}
+
+type DistributorInfo<G extends BaseGrant> = {
+  merkleRoot: string
+  amountTotal: string
+  grants: GrantInfo<G>[]
+}
+
+export function verifyMerkleRoot<G extends BaseGrant>(
+  json: unknown,
+  isDistributorInfo: (json: unknown) => json is DistributorInfo<G>,
+  parseGrantInfo: (info: GrantInfo<G>) => ParsedGrantInfo<G>,
+  getGrantTypesAndValues: (grant: G) => GrantTypesAndValues
+): VerificationResult {
+  if (!isDistributorInfo(json)) {
     throw new Error("Invalid JSON.")
   }
 
   const merkleRootHex = json.merkleRoot
   const merkleRoot = Buffer.from(merkleRootHex.slice(2), "hex")
 
-  const parsed: ParsedGrantInfo[] = []
+  const parsed: ParsedGrantInfo<G>[] = []
   let valid = true
 
-  json.grants.forEach((info: MerkleDistributorGrantInfo) => {
+  json.grants.forEach((info: GrantInfo<G>) => {
     const proof = info.proof.map((p: string) => Buffer.from(p.slice(2), "hex"))
-    const parsedInfo: ParsedGrantInfo = {
-      index: info.index,
-      account: info.account,
-      grant: {
-        amount: BigNumber.from(info.grant.amount),
-        vestingLength: BigNumber.from(info.grant.vestingLength),
-        cliffLength: BigNumber.from(info.grant.cliffLength),
-        vestingInterval: BigNumber.from(info.grant.vestingInterval),
-      },
-    }
+    const parsedInfo: ParsedGrantInfo<G> = parseGrantInfo(info)
     parsed.push(parsedInfo)
-    if (verifyProof(parsedInfo.index, parsedInfo.account, parsedInfo.grant, proof, merkleRoot)) {
+    if (
+      verifyProof(parsedInfo.index, parsedInfo.account, parsedInfo.grant, getGrantTypesAndValues, proof, merkleRoot)
+    ) {
       console.log("Verified proof for", info.index, info.account)
     } else {
       console.log("Verification for", info.index, info.account, "failed")
@@ -146,32 +178,9 @@ export function verifyMerkleRoot(json: unknown): VerificationResult {
   }
   console.log("Done!")
 
-  const rootHex = `0x${getRoot(parsed).toString("hex")}`
+  const rootHex = `0x${getRoot(parsed, getGrantTypesAndValues).toString("hex")}`
   return {
     reconstructedMerkleRoot: rootHex,
     matchesRootInJson: rootHex === merkleRootHex,
-  }
-}
-
-if (require.main === module) {
-  program
-    .version("0.0.0")
-    .requiredOption(
-      "-i, --input <path>",
-      "input JSON file location containing the Merkle proof for each grant and the Merkle root"
-    )
-
-  program.parse(process.argv)
-
-  const options = program.opts()
-  const json = JSON.parse(fs.readFileSync(options.input, {encoding: "utf8"}))
-
-  const result = verifyMerkleRoot(json)
-
-  console.log("Reconstructed Merkle root:", result.reconstructedMerkleRoot)
-  if (result.matchesRootInJson) {
-    console.log("Reconstructed root matches root from JSON.")
-  } else {
-    throw new Error("Reconstructed root does not match root from JSON.")
   }
 }

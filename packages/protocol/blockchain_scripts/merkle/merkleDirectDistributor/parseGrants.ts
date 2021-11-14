@@ -2,22 +2,19 @@ import {BigNumber} from "ethers"
 import _ from "lodash"
 
 import GrantTree from "./grantTree"
-import {AccountedGrant, MerkleDistributorGrantInfo, MerkleDistributorInfo} from "./types"
+import {AccountedDirectGrant, MerkleDirectDistributorGrantInfo, MerkleDirectDistributorInfo} from "./types"
 
-export function parseGrants(unsortedGrants: AccountedGrant[]): MerkleDistributorInfo {
-  const sortedGrants = _.sortBy(unsortedGrants, "account")
+export function parseGrants(unsortedGrants: AccountedDirectGrant[]): MerkleDirectDistributorInfo {
+  const sortedGrants = _.sortBy(unsortedGrants, [(grant) => grant.account, (grant) => grant.grant.amount])
 
   const tree = new GrantTree(sortedGrants)
 
   const grants = sortedGrants.map(
-    (accountedGrant: AccountedGrant, index: number): MerkleDistributorGrantInfo => ({
+    (accountedGrant: AccountedDirectGrant, index: number): MerkleDirectDistributorGrantInfo => ({
       index,
       account: accountedGrant.account,
       grant: {
         amount: accountedGrant.grant.amount.toHexString(),
-        vestingLength: accountedGrant.grant.vestingLength.toHexString(),
-        cliffLength: accountedGrant.grant.cliffLength.toHexString(),
-        vestingInterval: accountedGrant.grant.vestingInterval.toHexString(),
       },
       proof: tree.getProof(index, accountedGrant.account, accountedGrant.grant),
     })

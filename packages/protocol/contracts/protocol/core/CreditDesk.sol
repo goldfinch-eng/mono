@@ -245,6 +245,8 @@ contract CreditDesk is BaseUpgradeablePausable, ICreditDesk {
       clToMigrate.paymentPeriodInDays(),
       clToMigrate.termInDays(),
       clToMigrate.lateFeeApr(),
+      0,
+      0,
       allowedUIDTypes
     );
 

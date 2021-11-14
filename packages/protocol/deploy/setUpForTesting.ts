@@ -400,6 +400,8 @@ async function createPoolForBorrower({
   const paymentPeriodInDays = String(new BN(30))
   const termInDays = String(new BN(360))
   const lateFeeApr = String(new BN(0))
+  const principalGracePeriodInDays = String(new BN(185))
+  const fundableAt = String(new BN(0))
   const underwriterSigner = ethers.provider.getSigner(underwriter)
   const allowedUIDTypes = []
   const result = await (
@@ -413,6 +415,8 @@ async function createPoolForBorrower({
         paymentPeriodInDays,
         termInDays,
         lateFeeApr,
+        principalGracePeriodInDays,
+        fundableAt,
         allowedUIDTypes
       )
   ).wait()

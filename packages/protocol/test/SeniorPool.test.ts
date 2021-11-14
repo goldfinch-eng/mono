@@ -4,7 +4,6 @@ import {
   TRANCHES,
   MAX_UINT,
   OWNER_ROLE,
-  REDEEMER_ROLE,
   PAUSER_ROLE,
   ETHDecimals,
 } from "../blockchain_scripts/deployHelpers"
@@ -59,7 +58,8 @@ const simulateMaliciousTranchedPool = async (goldfinchConfig: any, person2: any)
     interestAprAsBN("0"),
     new BN(1),
     new BN(10),
-    interestAprAsBN("0")
+    interestAprAsBN("0"),
+    new BN(30)
   )
   await unknownPool.initialize(
     goldfinchConfig.address,
@@ -70,6 +70,8 @@ const simulateMaliciousTranchedPool = async (goldfinchConfig: any, person2: any)
     new BN(1),
     new BN(10),
     interestAprAsBN("0"),
+    new BN(30),
+    new BN(0),
     []
   )
   await unknownPool.lockJuniorCapital({from: person2})

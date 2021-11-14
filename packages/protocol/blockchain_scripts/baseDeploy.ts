@@ -39,9 +39,10 @@ import {
   UniqueIdentity,
   Go,
   TestUniqueIdentity,
+  MerkleDirectDistributor,
 } from "../typechain/ethers"
 import {Logger, DeployOpts} from "./types"
-import {isMerkleDistributorInfo} from "./merkleDistributor/types"
+import {isMerkleDistributorInfo} from "./merkle/merkleDistributor/types"
 import {
   CommunityRewardsInstance,
   GoInstance,
@@ -51,6 +52,8 @@ import {
   MerkleDistributorInstance,
   TestERC20Instance,
   TestUniqueIdentityInstance,
+  GFIInstance,
+  MerkleDirectDistributorInstance,
 } from "../typechain/truffle"
 import {assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
 import {StakingRewards} from "../typechain/ethers/StakingRewards"
@@ -58,6 +61,8 @@ import {PoolRewards} from "../typechain/ethers/PoolRewards"
 import {UNIQUE_IDENTITY_METADATA_URI} from "./uniqueIdentity/constants"
 import {toEthers} from "../test/testHelpers"
 import {getDeployEffects, DeployEffects} from "./migrations/deployEffects"
+import {TestPoolRewards} from "../typechain/ethers/TestPoolRewards"
+import {isMerkleDirectDistributorInfo} from "./merkle/merkleDirectDistributor/types"
 
 const logger: Logger = console.log
 
@@ -99,10 +104,11 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   await deployGoldfinchFactory(deployer, {config})
   await deployClImplementation(deployer, {config})
 
-  await deployGFI(deployer, {config})
+  const gfi = await deployGFI(deployer, {config})
   await deployLPStakingRewards(deployer, {config})
   const communityRewards = await deployCommunityRewards(deployer, {config})
   await deployMerkleDistributor(deployer, {communityRewards})
+  await deployMerkleDirectDistributor(deployer, {gfi})
 
   const {protocol_owner: trustedSigner} = await deployer.getNamedAccounts()
   assertNonNullable(trustedSigner)
@@ -234,12 +240,16 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
     return fidu
   }
 
-  async function deployGFI(deployer: ContractDeployer, {config}: {config: GoldfinchConfig}): Promise<GFI> {
+  async function deployGFI(
+    deployer: ContractDeployer,
+    {config}: {config: GoldfinchConfig}
+  ): Promise<Deployed<GFIInstance>> {
+    const contractName = "GFI"
     logger("About to deploy GFI...")
     assertIsString(gf_deployer)
     const initialCap = "100000000000000000000000000"
     const protocol_owner = await getProtocolOwner()
-    const gfi = await deployer.deploy<GFI>("GFI", {
+    const gfi = await deployer.deploy<GFI>(contractName, {
       from: gf_deployer,
       gasLimit: 4000000,
       args: [
@@ -249,8 +259,16 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
         initialCap, //initialCap
       ],
     })
+    const contract = await getTruffleContract<GFIInstance>(contractName, {at: gfi.address})
+
+    const deployed: Deployed<GFIInstance> = {
+      name: contractName,
+      contract,
+    }
+
     await updateConfig(config, "address", CONFIG_KEYS.GFI, gfi.address, {logger})
-    return gfi
+
+    return deployed
   }
 
   async function deployLPStakingRewards(
@@ -315,12 +333,12 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   async function getMerkleDistributorRoot(): Promise<string | undefined> {
     const path = process.env.MERKLE_DISTRIBUTOR_INFO_PATH
     if (!path) {
-      logger("Merkle distributor info path is undefined.")
+      logger("MerkleDistributor info path is undefined.")
       return
     }
     const json = JSON.parse(fs.readFileSync(path, {encoding: "utf8"}))
     if (!isMerkleDistributorInfo(json)) {
-      logger("Merkle distributor info json failed type guard.")
+      logger("MerkleDistributor info json failed type guard.")
       return
     }
     return json.merkleRoot
@@ -360,6 +378,55 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
       contract,
     }
     await grantDistributorRoleToMerkleDistributor(communityRewards, deployed)
+
+    return deployed
+  }
+
+  async function getMerkleDirectDistributorRoot(): Promise<string | undefined> {
+    const path = process.env.MERKLE_DIRECT_DISTRIBUTOR_INFO_PATH
+    if (!path) {
+      logger("MerkleDirectDistributor info path is undefined.")
+      return
+    }
+    const json = JSON.parse(fs.readFileSync(path, {encoding: "utf8"}))
+    if (!isMerkleDirectDistributorInfo(json)) {
+      logger("MerkleDirectDistributor info json failed type guard.")
+      return
+    }
+    return json.merkleRoot
+  }
+
+  async function deployMerkleDirectDistributor(
+    deployer: ContractDeployer,
+    {
+      gfi,
+    }: {
+      gfi: Deployed<GFIInstance>
+    }
+  ): Promise<Deployed<MerkleDirectDistributorInstance> | undefined> {
+    const contractName = "MerkleDirectDistributor"
+
+    const merkleRoot = await getMerkleDirectDistributorRoot()
+    if (!merkleRoot) {
+      logger(`Merkle root is undefined. Skipping deploy of ${contractName}`)
+      return
+    }
+
+    logger(`About to deploy ${contractName}...`)
+    assertIsString(gf_deployer)
+    const merkleDirectDistributor = await deployer.deploy(contractName, {
+      from: gf_deployer,
+      gasLimit: 4000000,
+      args: [gfi.contract.address, merkleRoot],
+    })
+    const contract = await getTruffleContract<MerkleDirectDistributorInstance>(contractName, {
+      at: merkleDirectDistributor.address,
+    })
+
+    const deployed: Deployed<MerkleDirectDistributorInstance> = {
+      name: contractName,
+      contract,
+    }
 
     return deployed
   }

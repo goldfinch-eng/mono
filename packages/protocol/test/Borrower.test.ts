@@ -45,6 +45,8 @@ describe("Borrower", async () => {
     })
 
     // Ready the pool for drawdown
+    const seniorRole = await res.tranchedPool.SENIOR_ROLE()
+    await res.tranchedPool.grantRole(seniorRole, owner)
     await res.tranchedPool.deposit(TRANCHES.Junior, usdcVal(2000))
     await bwrConToUse.lockJuniorCapital(res.tranchedPool.address, {from: bwr})
     await res.tranchedPool.deposit(TRANCHES.Senior, usdcVal(8000))
