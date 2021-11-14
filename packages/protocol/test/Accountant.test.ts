@@ -14,9 +14,6 @@ import {
 import hre from "hardhat"
 const {deployments, artifacts, web3} = hre
 import {interestAprAsBN, INTEREST_DECIMALS, ETHDecimals, ContractDeployer} from "../blockchain_scripts/deployHelpers"
-const Accountant = artifacts.require("Accountant")
-const TestAccountant = artifacts.require("TestAccountant")
-const CreditLine = artifacts.require("CreditLine")
 
 describe("Accountant", async () => {
   let accountant, owner, borrower, testAccountant, goldfinchConfig, creditLine
@@ -25,14 +22,14 @@ describe("Accountant", async () => {
 
   const setupTest = deployments.createFixture(async ({deployments}) => {
     const accountantDeploy = await deployer.deployLibrary("Accountant", {from: owner})
-    const creditLineDeploy = await deployer.deploy("CreditLine", {
+    await deployer.deploy("CreditLine", {
       from: owner,
       libraries: {["Accountant"]: accountantDeploy.address},
     })
 
     const contracts = await deployAllContracts(deployments)
     const goldfinchConfig = contracts.goldfinchConfig
-    const testAccountantDeploy = await deployer.deploy("TestAccountant", {
+    await deployer.deploy("TestAccountant", {
       from: owner,
       libraries: {["Accountant"]: accountantDeploy.address},
     })
@@ -76,6 +73,7 @@ describe("Accountant", async () => {
       interestApr = interestAprAsBN("3.00")
       lateFeeApr = interestAprAsBN("3")
       lateFeeGracePeriod = new BN(1)
+      const principalGracePeriod = new BN(185)
       termInDays = new BN(360)
       paymentPeriodInDays = new BN(30)
       lateFeeGracePeriodInDays = lateFeeGracePeriod.mul(paymentPeriodInDays)
@@ -87,7 +85,8 @@ describe("Accountant", async () => {
         interestApr,
         paymentPeriodInDays,
         termInDays,
-        lateFeeApr
+        lateFeeApr,
+        principalGracePeriod
       )
       const currentTime = new BN(Date.now() / 1000)
       await creditLine.setInterestAccruedAsOf(currentTime)
@@ -180,6 +179,7 @@ describe("Accountant", async () => {
       paymentPeriodInDays = _paymentPeriodInDays || new BN(30)
       gracePeriod = new BN(30)
       maxLatePeriods = new BN(120)
+      const principalGracePeriod = new BN(185)
       termEndTime = new BN(Date.now() / 1000) // Current time in seconds
       const lateFeeApr = interestAprAsBN("0")
 
@@ -191,7 +191,8 @@ describe("Accountant", async () => {
         interestApr,
         paymentPeriodInDays,
         termInDays,
-        lateFeeApr
+        lateFeeApr,
+        principalGracePeriod
       )
       await creditLine.setBalance(balance)
       await creditLine.setTermEndTime(termEndTime) // Some time in the future

@@ -39,6 +39,8 @@ describe("Goldfinch", async function () {
   const juniorFeePercent = new BN(20)
   let paymentPeriodInDays = new BN(1)
   let termInDays = new BN(365)
+  const principalGracePeriod = new BN(185)
+  const fundableAt = new BN(0)
   let paymentPeriodInSeconds = SECONDS_PER_DAY.mul(paymentPeriodInDays)
 
   const setupTest = deployments.createFixture(async ({deployments}) => {
@@ -105,6 +107,8 @@ describe("Goldfinch", async function () {
         _paymentPeriodInDays || paymentPeriodInDays,
         termInDays || _termInDays,
         lateFeeApr || _lateFeesApr,
+        principalGracePeriod,
+        fundableAt,
         {from: owner}
       )
       const poolCreatedEvent = result.logs[result.logs.length - 1]

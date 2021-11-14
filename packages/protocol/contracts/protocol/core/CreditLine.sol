@@ -34,6 +34,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
   uint256 public override interestApr;
   uint256 public override paymentPeriodInDays;
   uint256 public override termInDays;
+  uint256 public override principalGracePeriodInDays;
   uint256 public override lateFeeApr;
 
   // Accounting variables
@@ -57,7 +58,8 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     uint256 _interestApr,
     uint256 _paymentPeriodInDays,
     uint256 _termInDays,
-    uint256 _lateFeeApr
+    uint256 _lateFeeApr,
+    uint256 _principalGracePeriodInDays
   ) public initializer {
     require(_config != address(0) && owner != address(0) && _borrower != address(0), "Zero address passed in");
     __BaseUpgradeablePausable__init(owner);
@@ -68,6 +70,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     paymentPeriodInDays = _paymentPeriodInDays;
     termInDays = _termInDays;
     lateFeeApr = _lateFeeApr;
+    principalGracePeriodInDays = _principalGracePeriodInDays;
     interestAccruedAsOf = block.timestamp;
 
     // Unlock owner, which is a TranchedPool, for infinite amount
@@ -119,8 +122,24 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     currentLimit = newAmount;
   }
 
+  function setMaxLimit(uint256 newAmount) external onlyAdmin {
+    maxLimit = newAmount;
+  }
+
   function termStartTime() external view returns (uint256) {
-    return termEndTime.sub(SECONDS_PER_DAY.mul(termInDays));
+    return _termStartTime();
+  }
+
+  function isLate() external view override returns (bool) {
+    return _isLate(block.timestamp);
+  }
+
+  function withinPrincipalGracePeriod() external view override returns (bool) {
+    if (termEndTime == 0) {
+      // Loan hasn't started yet
+      return true;
+    }
+    return block.timestamp < _termStartTime().add(principalGracePeriodInDays.mul(SECONDS_PER_DAY));
   }
 
   function setTermEndTime(uint256 newTermEndTime) public onlyAdmin {
@@ -223,13 +242,13 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     return block.timestamp;
   }
 
-  function isLate() external view override returns (bool) {
-    return _isLate(block.timestamp);
-  }
-
   function _isLate(uint256 timestamp) internal view returns (bool) {
     uint256 secondsElapsedSinceFullPayment = timestamp.sub(lastFullPaymentTime);
     return balance > 0 && secondsElapsedSinceFullPayment > paymentPeriodInDays.mul(SECONDS_PER_DAY);
+  }
+
+  function _termStartTime() internal view returns (uint256) {
+    return termEndTime.sub(SECONDS_PER_DAY.mul(termInDays));
   }
 
   /**

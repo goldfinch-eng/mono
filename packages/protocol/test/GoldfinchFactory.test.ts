@@ -40,8 +40,10 @@ describe("GoldfinchFactory", async () => {
     const limit = usdcVal(5000)
     const interestApr = interestAprAsBN("0.05")
     const paymentPeriodInDays = new BN("30")
+    const principalGracePeriod = new BN("30")
     const termInDays = new BN("360")
     const lateFeeApr = new BN("0")
+    const fundableAt = new BN("0")
 
     it("user with admin role can call", async () => {
       const caller = owner
@@ -57,6 +59,8 @@ describe("GoldfinchFactory", async () => {
         paymentPeriodInDays,
         termInDays,
         lateFeeApr,
+        principalGracePeriod,
+        fundableAt,
         {from: caller}
       )
 
@@ -77,6 +81,8 @@ describe("GoldfinchFactory", async () => {
         paymentPeriodInDays,
         termInDays,
         lateFeeApr,
+        principalGracePeriod,
+        fundableAt,
         {from: caller}
       )
 
@@ -100,6 +106,8 @@ describe("GoldfinchFactory", async () => {
           paymentPeriodInDays,
           termInDays,
           lateFeeApr,
+          principalGracePeriod,
+          fundableAt,
           {from: caller}
         )
       ).to.be.rejectedWith(/Must have admin or borrower role to perform this action/i)
