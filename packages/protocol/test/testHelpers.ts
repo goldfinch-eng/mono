@@ -37,7 +37,7 @@ import {
   GoInstance,
   TestUniqueIdentityInstance,
   MerkleDirectDistributorInstance,
-  PoolRewardsInstance,
+  BackerRewardsInstance,
 } from "../typechain/truffle"
 import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/DynamicLeverageRatioStrategy"
 import {MerkleDistributor, CommunityRewards, Go, TestUniqueIdentity, MerkleDirectDistributor} from "../typechain/ethers"
@@ -50,7 +50,7 @@ const SECONDS_PER_YEAR = SECONDS_PER_DAY.mul(new BN(365))
 const UNIT_SHARE_PRICE = new BN("1000000000000000000") // Corresponds to share price of 100% (no interest or writedowns)
 import ChaiBN from "chai-bn"
 import {BaseContract} from "ethers"
-import {TestPoolRewardsInstance} from "../typechain/truffle/TestPoolRewards"
+import {TestBackerRewardsInstance} from "../typechain/truffle/TestBackerRewards"
 chai.use(ChaiBN(BN))
 
 const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
@@ -104,12 +104,12 @@ async function getTruffleContract<T extends Truffle.ContractInstance>(name: stri
   return (await artifacts.require(name).at(address)) as T
 }
 
-async function setupPoolRewards(gfi: GFIInstance, poolRewards: PoolRewardsInstance, owner: string) {
+async function setupBackerRewards(gfi: GFIInstance, backerRewards: BackerRewardsInstance, owner: string) {
   const gfiAmount = bigVal(100_000_000) // 100M
   await gfi.setCap(gfiAmount)
   await gfi.mint(owner, gfiAmount)
-  await poolRewards.setMaxInterestDollarsEligible(bigVal(1_000_000_000)) // 1B
-  await poolRewards.setTotalRewards(bigVal(3_000_000)) // 3% of 100M, 3M
+  await backerRewards.setMaxInterestDollarsEligible(bigVal(1_000_000_000)) // 1B
+  await backerRewards.setTotalRewards(bigVal(3_000_000)) // 3% of 100M, 3M
 }
 
 const tolerance = usdcVal(1).div(new BN(1000)) // 0.001$
@@ -259,7 +259,7 @@ async function deployAllContracts(
   transferRestrictedVault: TransferRestrictedVaultInstance
   gfi: GFIInstance
   stakingRewards: StakingRewardsInstance
-  poolRewards: TestPoolRewardsInstance
+  backerRewards: TestBackerRewardsInstance
   communityRewards: CommunityRewardsInstance
   merkleDistributor: MerkleDistributorInstance | null
   merkleDirectDistributor: MerkleDirectDistributorInstance | null
@@ -297,7 +297,7 @@ async function deployAllContracts(
   )
   const gfi = await getDeployedAsTruffleContract<GFIInstance>(deployments, "GFI")
   const stakingRewards = await getDeployedAsTruffleContract<StakingRewardsInstance>(deployments, "StakingRewards")
-  const poolRewards = await getDeployedAsTruffleContract<TestPoolRewardsInstance>(deployments, "PoolRewards")
+  const backerRewards = await getDeployedAsTruffleContract<TestBackerRewardsInstance>(deployments, "BackerRewards")
 
   const communityRewards = await getContract<CommunityRewards, CommunityRewardsInstance>(
     "CommunityRewards",
@@ -357,7 +357,7 @@ async function deployAllContracts(
     merkleDirectDistributor,
     uniqueIdentity,
     go,
-    poolRewards,
+    backerRewards,
   }
 }
 
@@ -545,5 +545,5 @@ export {
   genDifferentHexString,
   toEthers,
   fundWithEthFromLocalWhale,
-  setupPoolRewards,
+  setupBackerRewards,
 }

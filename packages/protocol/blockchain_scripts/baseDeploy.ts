@@ -46,7 +46,7 @@ import {isMerkleDistributorInfo} from "./merkle/merkleDistributor/types"
 import {
   CommunityRewardsInstance,
   GoInstance,
-  PoolRewardsInstance,
+  BackerRewardsInstance,
   StakingRewardsInstance,
   UniqueIdentityInstance,
   MerkleDistributorInstance,
@@ -57,11 +57,11 @@ import {
 } from "../typechain/truffle"
 import {assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
 import {StakingRewards} from "../typechain/ethers/StakingRewards"
-import {PoolRewards} from "../typechain/ethers/PoolRewards"
+import {BackerRewards} from "../typechain/ethers/BackerRewards"
 import {UNIQUE_IDENTITY_METADATA_URI} from "./uniqueIdentity/constants"
 import {toEthers} from "../test/testHelpers"
 import {getDeployEffects, DeployEffects} from "./migrations/deployEffects"
-import {TestPoolRewards} from "../typechain/ethers/TestPoolRewards"
+import {TestBackerRewards} from "../typechain/ethers/TestBackerRewards"
 import {isMerkleDirectDistributorInfo} from "./merkle/merkleDirectDistributor/types"
 
 const logger: Logger = console.log
@@ -115,7 +115,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   const uniqueIdentity = await deployUniqueIdentity({deployer, trustedSigner, deployEffects})
 
   await deployGo(deployer, {configAddress: config.address, uniqueIdentity, deployEffects})
-  await deployPoolRewards(deployer, {configAddress: config.address, deployEffects})
+  await deployBackerRewards(deployer, {configAddress: config.address, deployEffects})
 
   logger("Granting ownership of Pool to CreditDesk")
   await grantOwnershipOfPoolToCreditDesk(pool, creditDesk.address)
@@ -498,7 +498,7 @@ export async function deployUniqueIdentity({
   }
 }
 
-async function deployPoolRewards(
+async function deployBackerRewards(
   deployer: ContractDeployer,
   {
     configAddress,
@@ -507,16 +507,16 @@ async function deployPoolRewards(
     configAddress: string
     deployEffects: DeployEffects
   }
-): Promise<PoolRewardsInstance> {
+): Promise<BackerRewardsInstance> {
   const {gf_deployer} = await deployer.getNamedAccounts()
-  let contractName = "PoolRewards"
+  let contractName = "BackerRewards"
   if (isTestEnv()) {
-    contractName = "TestPoolRewards"
+    contractName = "TestBackerRewards"
   }
-  logger("About to deploy PoolRewards...")
+  logger("About to deploy BackerRewards...")
   assertIsString(gf_deployer)
   const protocol_owner = await getProtocolOwner()
-  const poolRewards = await deployer.deploy<PoolRewards>(contractName, {
+  const backerRewards = await deployer.deploy<BackerRewards>(contractName, {
     from: gf_deployer,
     gasLimit: 4000000,
     proxy: {
@@ -530,15 +530,15 @@ async function deployPoolRewards(
     },
   })
 
-  const contract = await getTruffleContract<PoolRewardsInstance>("PoolRewards", {at: poolRewards.address})
+  const contract = await getTruffleContract<BackerRewardsInstance>("BackerRewards", {at: backerRewards.address})
 
   const goldfinchConfig = await getEthersContract<GoldfinchConfig>("GoldfinchConfig", {at: configAddress})
 
   logger("Updating config...")
   await deployEffects.add({
-    deferred: [await goldfinchConfig.populateTransaction.setAddress(CONFIG_KEYS.PoolRewards, contract.address)],
+    deferred: [await goldfinchConfig.populateTransaction.setAddress(CONFIG_KEYS.BackerRewards, contract.address)],
   })
-  logger("Updated PoolRewards config address to:", contract.address)
+  logger("Updated BackerRewards config address to:", contract.address)
 
   return contract
 }
@@ -842,7 +842,7 @@ async function deployBorrower(deployer: ContractDeployer, {config}: DeployOpts):
 export {
   baseDeploy,
   deployPoolTokens,
-  deployPoolRewards,
+  deployBackerRewards,
   deployTransferRestrictedVault,
   deployTranchedPool,
   deploySeniorPool,

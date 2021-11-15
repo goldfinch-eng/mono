@@ -45,7 +45,7 @@ library ConfigOptions {
     BorrowerImplementation,
     GFI,
     Go,
-    PoolRewards,
+    BackerRewards,
     StakingRewards
   }
 
@@ -122,8 +122,8 @@ library ConfigOptions {
     if (Addresses.PoolTokens == addressName) {
       return "PoolTokens";
     }
-    if (Addresses.PoolRewards == addressName) {
-      return "PoolRewards";
+    if (Addresses.BackerRewards == addressName) {
+      return "BackerRewards";
     }
     if (Addresses.TranchedPoolImplementation == addressName) {
       return "TranchedPoolImplementation";

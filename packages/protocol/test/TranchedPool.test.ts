@@ -15,7 +15,7 @@ import {
   ZERO,
   decodeLogs,
   getFirstLog,
-  setupPoolRewards,
+  setupBackerRewards,
   getCurrentTimestamp,
 } from "./testHelpers"
 import {interestAprAsBN, TRANCHES, MAX_UINT, OWNER_ROLE, PAUSER_ROLE} from "../blockchain_scripts/deployHelpers"
@@ -35,7 +35,7 @@ import {
   TestUniqueIdentityInstance,
   SeniorPoolInstance,
   TranchedPoolInstance,
-  PoolRewardsInstance,
+  BackerRewardsInstance,
   GFIInstance,
 } from "../typechain/truffle"
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
@@ -87,7 +87,7 @@ describe("TranchedPool", () => {
     goldfinchFactory: GoldfinchFactoryInstance,
     creditLine: CreditLineInstance,
     treasury,
-    poolRewards: PoolRewardsInstance,
+    backerRewards: BackerRewardsInstance,
     tranchedPool: TranchedPoolInstance,
     gfi: GFIInstance,
     seniorPool: SeniorPoolInstance
@@ -126,11 +126,11 @@ describe("TranchedPool", () => {
   const testSetup = deployments.createFixture(async ({deployments}) => {
     // Just to be crystal clear
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;({usdc, goldfinchConfig, goldfinchFactory, poolTokens, poolRewards, uniqueIdentity, seniorPool, gfi} =
+    ;({usdc, goldfinchConfig, goldfinchFactory, poolTokens, backerRewards, uniqueIdentity, seniorPool, gfi} =
       await deployAllContracts(deployments))
     await goldfinchConfig.bulkAddToGoList([owner, borrower, otherPerson])
     await goldfinchConfig.setTreasuryReserve(treasury)
-    await setupPoolRewards(gfi, poolRewards, owner)
+    await setupBackerRewards(gfi, backerRewards, owner)
     await erc20Transfer(usdc, [otherPerson], usdcVal(10000), owner)
     await erc20Transfer(usdc, [borrower], usdcVal(10000), owner)
     await erc20Transfer(usdc, [seniorPool.address], usdcVal(1000), owner)
@@ -1113,9 +1113,12 @@ describe("TranchedPool", () => {
       expect(await tranchedPool.allowedUIDTypes(1)).to.bignumber.equal(new BN(2))
     })
 
-    it("validate must be borrower", async () => {
+    it("validate must be locker", async () => {
       await expect(tranchedPool.setAllowedUIDTypes([1], {from: borrower})).to.be.fulfilled
       await expect(tranchedPool.setAllowedUIDTypes([1], {from: owner})).to.be.fulfilled
+      await expect(tranchedPool.setAllowedUIDTypes([1], {from: otherPerson})).to.be.rejectedWith(
+        /Must have locker role to perform this action/
+      )
     })
   })
 
@@ -1916,11 +1919,11 @@ describe("TranchedPool", () => {
         })
       })
 
-      describe("Calls PoolRewards", () => {
+      describe("Calls BackerRewards", () => {
         it("Updates accRewardsPerPrincipalDollar", async () => {
           // Ensure a full term has passed
           await advanceTime({days: termInDays.toNumber()})
-          let accRewardsPerPrincipalDollar = await poolRewards.pools(tranchedPool.address)
+          let accRewardsPerPrincipalDollar = await backerRewards.pools(tranchedPool.address)
           expect(accRewardsPerPrincipalDollar).to.bignumber.equal(new BN(0))
 
           const receipt = await tranchedPool.pay(usdcVal(10).add(usdcVal(100)), {from: borrower})
@@ -1947,7 +1950,7 @@ describe("TranchedPool", () => {
 
           expect(await usdc.balanceOf(treasury)).to.bignumber.eq(usdcVal(1))
 
-          accRewardsPerPrincipalDollar = await poolRewards.pools(tranchedPool.address)
+          accRewardsPerPrincipalDollar = await backerRewards.pools(tranchedPool.address)
           expect(accRewardsPerPrincipalDollar).to.not.equal(new BN(0))
         })
       })

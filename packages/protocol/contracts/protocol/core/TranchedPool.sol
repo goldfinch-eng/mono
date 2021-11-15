@@ -1093,7 +1093,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
         totalDeployed = totalDeployed.sub(principalPaymentsPerSlice[i]);
       }
 
-      config.getPoolRewards().allocateRewards(interestPayment);
+      config.getBackerRewards().allocateRewards(interestPayment);
 
       emit PaymentApplied(
         creditLine.borrower(),
