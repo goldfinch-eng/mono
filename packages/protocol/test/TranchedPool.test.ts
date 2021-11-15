@@ -41,11 +41,11 @@ import {
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import {mint} from "./uniqueIdentityHelpers"
-import {TIMEOUT} from "dns"
 
 const RESERVE_FUNDS_COLLECTED_EVENT = "ReserveFundsCollected"
 const PAYMENT_APPLIED_EVENT = "PaymentApplied"
 const EXPECTED_JUNIOR_CAPITAL_LOCKED_EVENT_ARGS = ["0", "1", "2", "__length__", "lockedUntil", "pool", "trancheId"]
+const TEST_TIMEOUT = 30000
 
 const expectPaymentRelatedEventsEmitted = (
   receipt: unknown,
@@ -2215,7 +2215,7 @@ describe("TranchedPool", () => {
         await expectAvailable(firstSliceSenior, "5.553", "80.00")
         await expectAvailable(secondSliceJunior, "5.171", "60.00")
         await expectAvailable(secondSliceSenior, "8.375", "240.00")
-      }).timeout(TIMEOUT)
+      }).timeout(TEST_TIMEOUT)
     })
 
     describe("when the principal was drawn down disproportionately", async () => {
