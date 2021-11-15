@@ -2,7 +2,7 @@ import {hardhat, deployAllContracts, toEthers} from "@goldfinch-eng/protocol/tes
 const {deployments} = hardhat
 import {togglePause} from "../senior-pool-pauser/index"
 let seniorPool
-describe("assessor", () => {
+describe("togglePause", () => {
   const setupTest = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
     const {seniorPool} = await deployAllContracts(deployments)
     return {seniorPool}
