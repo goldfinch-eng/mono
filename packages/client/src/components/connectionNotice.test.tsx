@@ -48,8 +48,11 @@ const scenarios: Scenario[] = [
   },
   {
     devName: "pool_closed_to_user",
-    setUpMatch: ({props}) => {
+    setUpMatch: ({store, props}) => {
       props.isClosedToUser = true
+      store.user = {
+        info: {loaded: true, value: {goListed: true}},
+      }
     },
     setUpFallthrough: (_props) => {},
     expectedText: /The pool is currently closed to new participants\./,
