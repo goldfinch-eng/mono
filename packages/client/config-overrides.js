@@ -99,6 +99,27 @@ const murmuration = () => (config) => {
       // was in sharing the contracts definitions in `packages/protocol/deployments/all_dev.json` and in
       // maintaining the chain state held in memory by the hardhat node process.)
       "/_chain": "http://localhost:8545",
+
+      // Proxy for cloud functions running locally.
+      "/_gcloudfunctions": {
+        target: "http://localhost:5001/goldfinch-frontends-dev/us-central1",
+        pathRewrite: {
+          // Rewrite the path of the proxied request, to drop the `/_gcloudfunctions` path segment, as
+          // that segment would otherwise cause the request to fail to match the paths of the cloud functions.
+          "^/_gcloudfunctions": "",
+        },
+        onProxyReq: (proxyReq, req, res) => {
+          // Because the request to `/_gcloudfunctions` is not cross-origin (i.e. whereas a request to
+          // e.g. `https://us-central1-goldfinch-frontends-dev.cloudfunctions.net` is cross-origin), we expect
+          // the `origin` header not to have been set by the user's browswer, and so we need to add that header
+          // ourselves, so that the cloud functions can infer from it which blockchain they should use.
+          if (req.headers.origin) {
+            console.warn(`Expected \`origin\` header not to be defined, but it was: ${req.headers.origin}`)
+          } else {
+            proxyReq.setHeader("origin", "https://murmuration.goldfinch.finance")
+          }
+        },
+      },
     }
   }
   return config
