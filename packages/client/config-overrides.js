@@ -109,10 +109,10 @@ const murmuration = () => (config) => {
           "^/_gcloudfunctions": "",
         },
         onProxyReq: (proxyReq, req, res) => {
-          // Because the request to `/_gcloudfunctions` is not cross-origin (i.e. whereas it is cross-origin
-          // to e.g. `https://us-central1-goldfinch-frontends-dev.cloudfunctions.net`), we expect the `origin`
-          // header not to have been set by the user's browswer, and so we need to add that header ourselves,
-          // so that the cloud functions can infer from it which blockchain to use.
+          // Because the request to `/_gcloudfunctions` is not cross-origin (i.e. whereas a request to
+          // e.g. `https://us-central1-goldfinch-frontends-dev.cloudfunctions.net` is cross-origin), we expect
+          // the `origin` header not to have been set by the user's browswer, and so we need to add that header
+          // ourselves, so that the cloud functions can infer from it which blockchain they should use.
           if (req.headers.origin) {
             console.warn(`Expected \`origin\` header not to be defined, but it was: ${req.headers.origin}`)
           } else {
