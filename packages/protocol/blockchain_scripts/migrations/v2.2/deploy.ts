@@ -1,4 +1,4 @@
-import {deployPoolRewards, deployTranchedPool, deployConfig} from "../../baseDeploy"
+import {deployBackerRewards, deployTranchedPool, deployConfig} from "../../baseDeploy"
 import {
   ContractDeployer,
   ContractUpgrader,
@@ -36,11 +36,11 @@ export async function deploy(deployEffects: DeployEffects) {
   const tranchedPool = await deployTranchedPool(deployer, {config: goldfinchConfigContract})
   goldfinchConfigContract.setTranchedPoolImplementation(tranchedPool.address)
 
-  const poolRewards = await deployPoolRewards(deployer, {configAddress: config.address, deployEffects})
+  const backerRewards = await deployBackerRewards(deployer, {configAddress: config.address, deployEffects})
 
   return {
     deployedContracts: {
-      poolRewards,
+      backerRewards,
     },
     upgradedContracts,
   }

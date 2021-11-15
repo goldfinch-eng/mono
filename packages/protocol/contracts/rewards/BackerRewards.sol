@@ -11,7 +11,7 @@ import "../protocol/core/ConfigHelper.sol";
 import "../protocol/core/BaseUpgradeablePausable.sol";
 import "../interfaces/IPoolTokens.sol";
 import "../interfaces/ITranchedPool.sol";
-import "../interfaces/IPoolRewards.sol";
+import "../interfaces/IBackerRewards.sol";
 
 // Basically, Every time a interest payment comes back
 // we keep a running total of dollars (totalInterestReceived) until it reaches the maxInterestDollarsEligible limit
@@ -28,16 +28,16 @@ import "../interfaces/IPoolRewards.sol";
 // Every time a PoolToken withdraws rewards, we determine the allocated rewards,
 // increase that PoolToken's rewardsClaimed, and transfer the owner the gfi
 
-contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer {
+contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Transfer {
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
   using SafeMath for uint256;
 
-  struct PoolRewardsInfo {
+  struct BackerRewardsInfo {
     uint256 accRewardsPerPrincipalDollar; // accumulator gfi per interest dollar
   }
 
-  struct PoolRewardsTokenInfo {
+  struct BackerRewardsTokenInfo {
     uint256 rewardsClaimed; // gfi claimed
     uint256 accRewardsPerPrincipalDollarAtMint; // Pool's accRewardsPerPrincipalDollar at PoolToken mint()
   }
@@ -47,11 +47,11 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
   uint256 public totalInterestReceived; // counter of total interest repayments, times 1e6
   uint256 public totalRewardPercentOfTotalGFI; // totalRewards/totalGFISupply, times 1e18
 
-  mapping(uint256 => PoolRewardsTokenInfo) public tokens; // poolTokenId -> PoolRewardsTokenInfo
+  mapping(uint256 => BackerRewardsTokenInfo) public tokens; // poolTokenId -> BackerRewardsTokenInfo
 
-  mapping(address => PoolRewardsInfo) public pools; // pool.address -> PoolRewardsInfo
+  mapping(address => BackerRewardsInfo) public pools; // pool.address -> BackerRewardsInfo
 
-  event PoolRewardsClaimed(address indexed owner, uint256 indexed tokenId, uint256 amount);
+  event BackerRewardsClaimed(address indexed owner, uint256 indexed tokenId, uint256 amount);
 
   // solhint-disable-next-line func-name-mixedcase
   function __initialize__(address owner, GoldfinchConfig _config) public initializer {
@@ -179,7 +179,7 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
 
     tokens[tokenId].rewardsClaimed = poolTokenRewardsClaimed.add(totalClaimableRewards);
     safeERC20Transfer(config.getGFI(), poolTokens.ownerOf(tokenId), totalClaimableRewards);
-    emit PoolRewardsClaimed(msg.sender, tokenId, totalClaimableRewards);
+    emit BackerRewardsClaimed(msg.sender, tokenId, totalClaimableRewards);
   }
 
   /* Internal functions  */
@@ -195,7 +195,7 @@ contract PoolRewards is IPoolRewards, BaseUpgradeablePausable, SafeERC20Transfer
     uint256 newGrossRewards = _calculateNewGrossGFIRewardsForInterestAmount(_interestPaymentAmount);
 
     ITranchedPool pool = ITranchedPool(_poolAddress);
-    PoolRewardsInfo storage _poolInfo = pools[_poolAddress];
+    BackerRewardsInfo storage _poolInfo = pools[_poolAddress];
 
     uint256 totalJuniorDeposits = pool.totalJuniorDeposits();
     require(totalJuniorDeposits > 0, "Principal balance cannot be zero");

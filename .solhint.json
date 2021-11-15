@@ -150,7 +150,7 @@
           "goOnlyIdTypes": [],
           "goSeniorPool": []
         },
-        "**/PoolRewards.sol:PoolRewards": {
+        "**/BackerRewards.sol:BackerRewards": {
           "allocateRewards": ["onlyPool"],
           "setPoolTokenAccRewardsPerPrincipalDollarAtMint": [],
           "withdraw": [],
