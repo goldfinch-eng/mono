@@ -4,11 +4,12 @@ import {program} from "commander"
 import {BigNumber} from "ethers"
 import fs from "fs"
 import {
+  GrantInfo,
   GrantTypesAndValues,
   VerificationResult,
   verifyMerkleRoot as _verifyMerkleRoot,
 } from "../common/verifyMerkleRoot"
-import {DirectGrant, isMerkleDirectDistributorInfo, MerkleDirectDistributorGrantInfo} from "./types"
+import {DirectGrant, isMerkleDirectDistributorInfo} from "./types"
 
 /**
  * Script for verifying the Merkle root of a rewards distribution, from the publicly-released JSON file
@@ -26,7 +27,7 @@ const getGrantTypesAndValues = (grant: DirectGrant): GrantTypesAndValues => ({
   values: [grant.amount],
 })
 
-const parseGrantInfo = (info: MerkleDirectDistributorGrantInfo) => ({
+const parseGrantInfo = (info: GrantInfo<DirectGrant>) => ({
   index: info.index,
   account: info.account,
   grant: {

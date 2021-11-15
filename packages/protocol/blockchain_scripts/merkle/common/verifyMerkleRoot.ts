@@ -130,7 +130,7 @@ export type VerificationResult = {
   matchesRootInJson: boolean
 }
 
-type GrantInfo<G extends BaseGrant> = {
+export type GrantInfo<G extends BaseGrant> = {
   index: number
   account: string
   grant: {[key in keyof G]: string}
