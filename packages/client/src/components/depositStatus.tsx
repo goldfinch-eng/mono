@@ -1,4 +1,4 @@
-import {BigNumber} from "bignumber.js"
+import {GFI} from "../ethereum/gfi"
 import {CapitalProvider, PoolData} from "../ethereum/pool"
 import {InfoIcon} from "../ui/icons"
 import {displayDollars, displayPercent} from "../utils"
@@ -17,17 +17,12 @@ function DepositStatus(props: DepositStatusProps) {
     const globalEstimatedApyFromSupplying = props.poolData.estimatedApy
     const estimatedApyFromSupplying = globalEstimatedApyFromSupplying
 
-    const globalEstimatedApyFromGfi = props.poolData.estimatedApyFromGfi || new BigNumber(0)
-    const balancePortionEarningGfi = portfolioBalance.gt(0)
-      ? props.capitalProvider.stakedSeniorPoolBalanceInDollars.div(portfolioBalance)
-      : new BigNumber(0)
-    // NOTE: Because our frontend does not currently support staking with lockup, we do not
-    // worry here about adjusting for the portion of the user's balance that is not only earning
-    // GFI from staking, but is earning that GFI at a boosted rate due to having staked-with-lockup
-    // (which they could have achieved by interacting with the contract directly, rather than using
-    // our frontend).
-    const userEstimatedApyFromGfi = balancePortionEarningGfi.multipliedBy(globalEstimatedApyFromGfi)
-    const estimatedApyFromGfi = portfolioBalance.gt(0) ? userEstimatedApyFromGfi : globalEstimatedApyFromGfi
+    const globalEstimatedApyFromGfi = props.poolData.estimatedApyFromGfi
+    const estimatedApyFromGfi = GFI.estimateApyFromGfi(
+      props.capitalProvider.stakedSeniorPoolBalanceInDollars,
+      portfolioBalance,
+      globalEstimatedApyFromGfi
+    )
 
     const estimatedApy = estimatedApyFromSupplying.plus(estimatedApyFromGfi)
     const apyDisplay = `${displayPercent(estimatedApy)}`

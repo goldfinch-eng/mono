@@ -228,7 +228,7 @@ async function setUpRewards(
   // Have the protocol owner deposit-and-stake something, so that `stakingRewards.currentEarnRatePerToken()` will
   // not be 0 (due to a 0 staked supply), so that there's a non-zero APY from GFI rewards.
   const signer = ethers.provider.getSigner(protocolOwner)
-  const usdcAmount = String(usdcVal(1000))
+  const usdcAmount = String(usdcVal(50000))
   await erc20.connect(signer).approve(stakingRewards.address, usdcAmount)
   await stakingRewards.depositAndStake(usdcAmount, {from: protocolOwner})
 }

@@ -5,7 +5,7 @@ import {useEarn} from "../contexts/EarnContext"
 import {AppContext, BackersByTranchedPoolAddress} from "../App"
 import {usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
 import {POOL_CREATED_EVENT} from "../types/events"
-import {GFILoaded} from "../ethereum/gfi"
+import {GFI, GFILoaded} from "../ethereum/gfi"
 import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
 import {
   CapitalProvider,
@@ -92,14 +92,12 @@ function PortfolioOverview({
   const userEstimatedApyFromSupplying = estimatedAnnualGrowth.dividedBy(totalBalance)
   const estimatedApyFromSupplying = totalBalance.gt(0) ? userEstimatedApyFromSupplying : globalEstimatedApyFromSupplying
 
-  const globalEstimatedApyFromGfi = poolData.estimatedApyFromGfi || new BigNumber(0)
-  // NOTE: Same comment applies here as in `DepositStatus()` in `components/depositStatus`, that
-  // we do not worry about adjusting `userEstimatedApyFromGfi` here for a boosted reward rate the user
-  // would receive from having staked-with-lockup. The frontend does not currently support staking
-  // with lockup, so we punt on that subtlety.
-  const balancePortionEarningGfi = capitalProvider.value.stakedSeniorPoolBalanceInDollars.div(totalBalance)
-  const userEstimatedApyFromGfi = balancePortionEarningGfi.multipliedBy(globalEstimatedApyFromGfi)
-  const estimatedApyFromGfi = totalBalance.gt(0) ? userEstimatedApyFromGfi : globalEstimatedApyFromGfi
+  const globalEstimatedApyFromGfi = poolData.estimatedApyFromGfi
+  const estimatedApyFromGfi = GFI.estimateApyFromGfi(
+    capitalProvider.value.stakedSeniorPoolBalanceInDollars,
+    totalBalance,
+    globalEstimatedApyFromGfi
+  )
 
   const estimatedApy = estimatedApyFromSupplying.plus(estimatedApyFromGfi)
 
