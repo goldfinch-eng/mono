@@ -77,6 +77,8 @@
           "depositWithPermit": [],
           "lockJuniorCapital": ["whenNotPaused", "onlyLocker"],
           "lockPool": ["whenNotPaused", "onlyLocker"],
+          "setFundableAt": ["onlyLocker"],
+          "initializeNextSlice": ["whenNotPaused", "onlyLocker"],
           "withdraw": ["whenNotPaused", "onlyTokenHolder"],
           "withdrawMax": ["whenNotPaused", "onlyTokenHolder"],
           "withdrawMultiple": [],
@@ -93,7 +95,8 @@
           "deposit": [],
           "depositWithPermit": [],
           "withdraw": [],
-          "withdrawInFidu": []
+          "withdrawInFidu": [],
+          "redeem": []
         },
         "**/SeniorPoolFidu.sol:SeniorPoolFidu": {
           "__initialize__": [],
@@ -141,9 +144,19 @@
           "grant": ["nonReentrant", "whenNotPaused", "onlyDistributor"],
           "getReward": []
         },
+        "**/PoolRewards.sol:PoolRewards": {
+          "allocateRewards": ["onlyPool"],
+          "setPoolTokenAccRewardsPerPrincipalDollarAtMint": [],
+          "withdraw": [],
+          "withdrawMultiple": []
+        },
+        "**/MerkleDirectDistributor.sol:MerkleDirectDistributor": {
+          "_setGrantAccepted": [],
+          "acceptGrant": []
+        },
         "**/MerkleDistributor.sol:MerkleDistributor": {
           "_setGrantAccepted": [],
-          "acceptGrant": ["onlyGrantRecipient"]
+          "acceptGrant": []
         },
         "**/ERC1155PresetPauserUpgradeable.sol:ERC1155PresetPauserUpgradeable": {
           "pause": [],

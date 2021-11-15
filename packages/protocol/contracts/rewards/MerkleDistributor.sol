@@ -16,8 +16,8 @@ contract MerkleDistributor is IMerkleDistributor {
   mapping(uint256 => uint256) private acceptedBitMap;
 
   constructor(address communityRewards_, bytes32 merkleRoot_) public {
-    require(communityRewards_ != address(0), "Cannot use the null address as the community rewards contract address");
-    require(merkleRoot_ != 0, "invalid merkle root provided");
+    require(communityRewards_ != address(0), "Cannot use the null address");
+    require(merkleRoot_ != 0, "Invalid merkle root provided");
     communityRewards = communityRewards_;
     merkleRoot = merkleRoot_;
   }
@@ -38,14 +38,13 @@ contract MerkleDistributor is IMerkleDistributor {
 
   function acceptGrant(
     uint256 index,
-    address account,
     uint256 amount,
     uint256 vestingLength,
     uint256 cliffLength,
     uint256 vestingInterval,
     bytes32[] calldata merkleProof
-  ) external override onlyGrantRecipient(account) {
-    require(!isGrantAccepted(index), "MerkleDistributor: Grant already accepted.");
+  ) external override {
+    require(!isGrantAccepted(index), "Grant already accepted");
 
     // Verify the merkle proof.
     //
@@ -54,24 +53,19 @@ contract MerkleDistributor is IMerkleDistributor {
     /// it is important that no more than one of the arguments to `abi.encodePacked()` here be a
     /// dynamic type (see definition in
     /// https://github.com/ethereum/solidity/blob/v0.6.12/docs/abi-spec.rst#formal-specification-of-the-encoding).
-    bytes32 node = keccak256(abi.encodePacked(index, account, amount, vestingLength, cliffLength, vestingInterval));
-    require(MerkleProof.verify(merkleProof, merkleRoot, node), "MerkleDistributor: Invalid proof.");
+    bytes32 node = keccak256(abi.encodePacked(index, msg.sender, amount, vestingLength, cliffLength, vestingInterval));
+    require(MerkleProof.verify(merkleProof, merkleRoot, node), "Invalid proof");
 
     // Mark it accepted and perform the granting.
     _setGrantAccepted(index);
     uint256 tokenId = ICommunityRewards(communityRewards).grant(
-      account,
+      msg.sender,
       amount,
       vestingLength,
       cliffLength,
       vestingInterval
     );
 
-    emit GrantAccepted(tokenId, index, account, amount, vestingLength, cliffLength, vestingInterval);
-  }
-
-  modifier onlyGrantRecipient(address recipient) {
-    require(msg.sender == recipient, "Only the grant recipient can accept a grant");
-    _;
+    emit GrantAccepted(tokenId, index, msg.sender, amount, vestingLength, cliffLength, vestingInterval);
   }
 }

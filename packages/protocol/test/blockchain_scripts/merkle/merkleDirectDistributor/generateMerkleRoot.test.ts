@@ -1,9 +1,8 @@
-import {generateMerkleRoot} from "../../../blockchain_scripts/merkleDistributor/generateMerkleRoot"
+import {generateMerkleRoot} from "../../../../blockchain_scripts/merkle/merkleDirectDistributor/generateMerkleRoot"
 import {
-  JsonAccountedGrant,
-  MerkleDistributorGrantInfo,
-  MerkleDistributorInfo,
-} from "../../../blockchain_scripts/merkleDistributor/types"
+  JsonAccountedDirectGrant,
+  MerkleDirectDistributorInfo,
+} from "../../../../blockchain_scripts/merkle/merkleDirectDistributor/types"
 import fixtures from "./fixtures"
 
 describe("generateMerkleRoot", () => {
@@ -13,9 +12,6 @@ describe("generateMerkleRoot", () => {
         account: "0xd4ad17f7F7f62915A1F225BB1CB88d2492F89769",
         grant: {
           amount: 1000,
-          vestingLength: 0,
-          cliffLength: 0,
-          vestingInterval: 1,
         },
       },
     ]
@@ -23,13 +19,13 @@ describe("generateMerkleRoot", () => {
   })
 
   it("rejects empty grants info", async () => {
-    const json: JsonAccountedGrant[] = []
+    const json: JsonAccountedDirectGrant[] = []
     expect(() => generateMerkleRoot(json)).to.throw("Grants array must not be empty.")
   })
 
   it("generates the Merkle root, amount total, and grant details of the rewards distribution", async () => {
-    const json: JsonAccountedGrant[] = fixtures.input
-    const expectedMerkleDistributorInfo: MerkleDistributorInfo = fixtures.output
+    const json: JsonAccountedDirectGrant[] = fixtures.input
+    const expectedMerkleDistributorInfo: MerkleDirectDistributorInfo = fixtures.output
 
     const merkleDistributorInfo = generateMerkleRoot(json)
     expect(merkleDistributorInfo).to.eql(expectedMerkleDistributorInfo)

@@ -1,6 +1,6 @@
-import {JsonAccountedGrant, MerkleDistributorInfo} from "../blockchain_scripts/merkleDistributor/types"
+import {JsonAccountedGrant, MerkleDistributorInfo} from "../blockchain_scripts/merkle/merkleDistributor/types"
 
-import blockchainScriptsFixtures from "./blockchain_scripts/merkleDistributor/fixtures"
+import blockchainScriptsFixtures from "./blockchain_scripts/merkle/merkleDistributor/fixtures"
 
 export const fixtures: {
   input: JsonAccountedGrant[]

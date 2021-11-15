@@ -26,6 +26,7 @@ describe("CreditLine", () => {
   const interestApr = interestAprAsBN("5.00")
   const paymentPeriodInDays = new BN(30)
   const lateFeeApr = new BN(0)
+  const principalGracePeriod = new BN(185)
   let termEndTime, termInDays
   let usdc
   let creditLine
@@ -82,6 +83,7 @@ describe("CreditLine", () => {
       paymentPeriodInDays,
       termInDays,
       lateFeeApr,
+      principalGracePeriod,
       {from: thisOwner}
     )
 
