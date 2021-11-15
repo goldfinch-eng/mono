@@ -35,8 +35,10 @@ import {
 import {TestBackerRewardsInstance} from "../typechain/truffle/TestBackerRewards"
 
 const {deployments} = hre
+const TEST_TIMEOUT = 30_000
 
-describe("BackerRewards", () => {
+describe("BackerRewards", function () {
+  this.timeout(TEST_TIMEOUT)
   let owner: string,
     borrower: string,
     investor: string,
