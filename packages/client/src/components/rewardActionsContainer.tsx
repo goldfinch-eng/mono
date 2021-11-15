@@ -223,7 +223,7 @@ function getActionButtonProps(props: RewardsListItemProps): ActionButtonProps {
         disabled: true,
       }
     default:
-      assertUnreachable(props.status)
+      return assertUnreachable(props.status)
   }
 }
 
@@ -462,7 +462,6 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     return sendFromUser(
       props.merkleDistributor.contract.methods.acceptGrant(
         info.index,
-        info.account,
         info.grant.amount,
         info.grant.vestingLength,
         info.grant.cliffLength,
