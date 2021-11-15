@@ -73,6 +73,7 @@
           "drawdown": []
         },
         "**/TranchedPool.sol:TranchedPool": {
+          "setAllowedUIDTypes": ["onlyLocker"],
           "deposit": ["whenNotPaused"],
           "depositWithPermit": [],
           "lockJuniorCapital": ["whenNotPaused", "onlyLocker"],
@@ -143,6 +144,11 @@
         "**/CommunityRewards.sol:CommunityRewards": {
           "grant": ["nonReentrant", "whenNotPaused", "onlyDistributor"],
           "getReward": []
+        },
+        "**/Go.sol:Go": {
+          "go": [],
+          "goOnlyIdTypes": [],
+          "goSeniorPool": []
         },
         "**/PoolRewards.sol:PoolRewards": {
           "allocateRewards": ["onlyPool"],

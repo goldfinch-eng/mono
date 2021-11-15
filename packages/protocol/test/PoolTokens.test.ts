@@ -88,6 +88,7 @@ describe("PoolTokens", () => {
   async function mintUniqueIdentityToken(recipient, signer) {
     const uniqueIdentityTokenId = new BN(0)
     const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
+    await uniqueIdentity.setSupportedUIDTypes([uniqueIdentityTokenId], [true])
     await mint(hre, uniqueIdentity, uniqueIdentityTokenId, expiresAt, new BN(0), signer, undefined, recipient)
     expect(await uniqueIdentity.balanceOf(recipient, uniqueIdentityTokenId)).to.bignumber.equal(new BN(1))
   }
@@ -118,6 +119,7 @@ describe("PoolTokens", () => {
         new BN(0),
         new BN(185),
         new BN(0),
+        [],
         {from: owner}
       )
       const event = result.logs[result.logs.length - 1]
@@ -148,7 +150,8 @@ describe("PoolTokens", () => {
           new BN(360),
           new BN(350),
           new BN(180),
-          new BN(0)
+          new BN(0),
+          []
         )
         // grant role so the person can deposit into the senior tranche
         await fakePool.grantRole(await fakePool.SENIOR_ROLE(), person2)
@@ -242,6 +245,7 @@ describe("PoolTokens", () => {
         new BN(0),
         new BN(185),
         new BN(0),
+        [],
         {from: owner}
       )
       let event = result.logs[result.logs.length - 1]
@@ -380,6 +384,7 @@ describe("PoolTokens", () => {
         new BN(0),
         new BN(185),
         new BN(0),
+        [],
         {from: owner}
       )
       let event = result.logs[result.logs.length - 1]
@@ -464,10 +469,11 @@ describe("PoolTokens", () => {
         new BN(0),
         new BN(185),
         new BN(0),
+        [],
         {from: owner}
       )
       const event = result.logs[result.logs.length - 1]
-      pool = await TranchedPool.at(event.args.pool)
+      pool = await TranchedPool.at(event?.args.pool)
     })
     describe("mint", async () => {
       beforeEach(async function () {

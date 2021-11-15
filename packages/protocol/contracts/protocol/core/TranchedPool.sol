@@ -33,6 +33,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   uint256 public constant NUM_TRANCHES_PER_SLICE = 2;
   uint256 public juniorFeePercent;
   bool public drawdownsPaused;
+  uint256[] public allowedUIDTypes;
   uint256 public totalDeployed;
   uint256 public fundableAt;
 
@@ -92,7 +93,8 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     uint256 _termInDays,
     uint256 _lateFeeApr,
     uint256 _principalGracePeriodInDays,
-    uint256 _fundableAt
+    uint256 _fundableAt,
+    uint256[] calldata _allowedUIDTypes
   ) public override initializer {
     require(
       address(_config) != address(0) && address(_borrower) != address(0),
@@ -117,6 +119,12 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
 
     createdAt = block.timestamp;
     juniorFeePercent = _juniorFeePercent;
+    if (_allowedUIDTypes.length == 0) {
+      uint256[1] memory defaultAllowedUIDTypes = [config.getGo().ID_TYPE_0()];
+      allowedUIDTypes = defaultAllowedUIDTypes;
+    } else {
+      allowedUIDTypes = _allowedUIDTypes;
+    }
 
     _setupRole(LOCKER_ROLE, _borrower);
     _setupRole(LOCKER_ROLE, owner);
@@ -129,6 +137,10 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     // Unlock self for infinite amount
     bool success = config.getUSDC().approve(address(this), uint256(-1));
     require(success, "Failed to approve USDC");
+  }
+
+  function setAllowedUIDTypes(uint256[] calldata ids) public onlyLocker {
+    allowedUIDTypes = ids;
   }
 
   /**
@@ -147,6 +159,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     TrancheInfo storage trancheInfo = getTrancheInfo(tranche);
     require(trancheInfo.lockedUntil == 0, "Tranche has been locked");
     require(amount > 0, "Must deposit more than zero");
+    require(config.getGo().goOnlyIdTypes(msg.sender, allowedUIDTypes), "This address has not been go-listed");
     require(block.timestamp > fundableAt, "Not yet open for funding");
     // senior tranche ids are always odd numbered
     if (_isSeniorTrancheId(trancheInfo.id)) {
@@ -579,6 +592,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     uint256 tokenId,
     uint256 amount
   ) internal returns (uint256 interestWithdrawn, uint256 principalWithdrawn) {
+    require(config.getGo().goOnlyIdTypes(msg.sender, allowedUIDTypes), "This address has not been go-listed");
     require(amount > 0, "Must withdraw more than zero");
     (uint256 interestRedeemable, uint256 principalRedeemable) = redeemableInterestAndPrincipal(trancheInfo, tokenInfo);
     uint256 netRedeemable = interestRedeemable.add(principalRedeemable);
@@ -873,7 +887,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     uint256 amount,
     TrancheInfo memory tranche,
     PoolSlice memory slice
-  ) internal view returns (uint256) {
+  ) internal pure returns (uint256) {
     uint256 sharePrice = usdcToSharePrice(amount, tranche.principalDeposited);
     return scaleByPercentOwnership(sharePrice, tranche, slice);
   }
@@ -922,7 +936,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     uint256 amount,
     TrancheInfo memory tranche,
     PoolSlice memory slice
-  ) internal view returns (uint256) {
+  ) internal pure returns (uint256) {
     uint256 totalDeposited = slice.juniorTranche.principalDeposited.add(slice.seniorTranche.principalDeposited);
     return scaleByFraction(amount, tranche.principalDeposited, totalDeposited);
   }

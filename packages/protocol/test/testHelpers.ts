@@ -59,6 +59,8 @@ const EMPTY_DATA = "0x"
 const BLOCKS_PER_DAY = 5760
 const ZERO = new BN(0)
 
+export type $TSFixMe = any
+
 // Helper functions. These should be pretty generic.
 function bigVal(number) {
   return new BN(number).mul(decimals)
@@ -421,6 +423,20 @@ const createPoolWithCreditLine = async ({
   lateFeeApr = interestAprAsBN("3.0"),
   principalGracePeriodInDays = new BN(185),
   fundableAt = new BN(0),
+  allowedUIDTypes = [0],
+}: {
+  people: {owner: string; borrower: string}
+  usdc: ERC20Instance
+  goldfinchFactory: GoldfinchFactoryInstance
+  juniorFeePercent?: Numberish
+  interestApr?: Numberish
+  paymentPeriodInDays?: Numberish
+  termInDays?: Numberish
+  limit?: Numberish
+  lateFeeApr?: Numberish
+  principalGracePeriodInDays?: Numberish
+  fundableAt?: Numberish
+  allowedUIDTypes?: Numberish[]
 }): Promise<{tranchedPool: TranchedPoolInstance; creditLine: CreditLineInstance}> => {
   const thisOwner = people.owner
   const thisBorrower = people.borrower
@@ -443,9 +459,11 @@ const createPoolWithCreditLine = async ({
     lateFeeApr,
     principalGracePeriodInDays,
     fundableAt,
+    allowedUIDTypes,
     {from: thisOwner}
   )
-  const event = result.logs[result.logs.length - 1]
+
+  const event = result.logs[result.logs.length - 1] as $TSFixMe
   const pool = await getTruffleContract<TranchedPoolInstance>("TranchedPool", event.args.pool)
   const creditLine = await getTruffleContract<CreditLineInstance>("CreditLine", await pool.creditLine())
 

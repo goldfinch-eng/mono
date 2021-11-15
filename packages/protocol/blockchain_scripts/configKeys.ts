@@ -33,6 +33,7 @@ const CONFIG_KEYS_BY_TYPE = {
     GFI: 18,
     Go: 19,
     PoolRewards: 20,
+    StakingRewards: 21,
   },
 }
 

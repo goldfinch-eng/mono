@@ -47,6 +47,7 @@ import {
   CommunityRewardsInstance,
   GoInstance,
   PoolRewardsInstance,
+  StakingRewardsInstance,
   UniqueIdentityInstance,
   MerkleDistributorInstance,
   TestERC20Instance,
@@ -105,7 +106,6 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
 
   const gfi = await deployGFI(deployer, {config})
   await deployLPStakingRewards(deployer, {config})
-  await deployPoolRewards(deployer, {config})
   const communityRewards = await deployCommunityRewards(deployer, {config})
   await deployMerkleDistributor(deployer, {communityRewards})
   await deployMerkleDirectDistributor(deployer, {gfi})
@@ -114,7 +114,8 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   assertNonNullable(trustedSigner)
   const uniqueIdentity = await deployUniqueIdentity({deployer, trustedSigner, deployEffects})
 
-  const go = await deployGo(deployer, {configAddress: config.address, uniqueIdentity, deployEffects})
+  await deployGo(deployer, {configAddress: config.address, uniqueIdentity, deployEffects})
+  await deployPoolRewards(deployer, {configAddress: config.address, deployEffects})
 
   logger("Granting ownership of Pool to CreditDesk")
   await grantOwnershipOfPoolToCreditDesk(pool, creditDesk.address)
@@ -122,28 +123,6 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   await deployEffects.executeDeferred()
 
   // Internal functions.
-
-  async function deployConfig(deployer: ContractDeployer): Promise<GoldfinchConfig> {
-    let contractName = "GoldfinchConfig"
-
-    if (isTestEnv()) {
-      contractName = "TestGoldfinchConfig"
-    }
-
-    assertIsString(gf_deployer)
-    const config = await deployer.deploy<GoldfinchConfig>(contractName, {from: gf_deployer})
-    const checkAddress = await config.getAddress(CONFIG_KEYS.TreasuryReserve)
-    if (checkAddress === ZERO_ADDRESS) {
-      logger("Config newly deployed, initializing...")
-      const protocol_owner = await getProtocolOwner()
-      assertIsString(protocol_owner)
-      await (await config.initialize(protocol_owner)).wait()
-    }
-
-    await setInitialConfigVals(config, logger)
-
-    return config
-  }
 
   async function getOrDeployUSDC(deployer: ContractDeployer) {
     assertIsChainId(chainId)
@@ -296,37 +275,11 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
     deployer: ContractDeployer,
     {config}: {config: GoldfinchConfig}
   ): Promise<StakingRewards> {
+    const contractName = "StakingRewards"
     logger("About to deploy LPStakingRewards...")
     assertIsString(gf_deployer)
     const protocol_owner = await getProtocolOwner()
-    const stakingRewards = await deployer.deploy<StakingRewards>("StakingRewards", {
-      from: gf_deployer,
-      gasLimit: 4000000,
-      proxy: {
-        execute: {
-          init: {
-            methodName: "__initialize__",
-            args: [protocol_owner, config.address],
-          },
-        },
-      },
-    })
-    return stakingRewards
-  }
-
-  async function deployPoolRewards(
-    deployer: ContractDeployer,
-    {config}: {config: GoldfinchConfig}
-  ): Promise<PoolRewards | TestPoolRewards> {
-    let contractName = "PoolRewards"
-    console.log("isTestEnv", isTestEnv())
-    if (isTestEnv()) {
-      contractName = "TestPoolRewards"
-    }
-    logger("About to deploy PoolRewards...")
-    assertIsString(gf_deployer)
-    const protocol_owner = await getProtocolOwner()
-    const poolRewards = await deployer.deploy<PoolRewards>(contractName, {
+    const stakingRewards = await deployer.deploy<StakingRewards>(contractName, {
       from: gf_deployer,
       gasLimit: 4000000,
       proxy: {
@@ -339,14 +292,13 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
       },
     })
 
-    const contract = await getContract<PoolRewards, PoolRewardsInstance>(contractName, TRUFFLE_CONTRACT_PROVIDER, {
-      at: poolRewards.address,
-    })
+    const contract = await getTruffleContract<StakingRewardsInstance>("StakingRewards", {at: stakingRewards.address})
+
     logger("Updating config...")
-    await updateConfig(config, "address", CONFIG_KEYS.PoolRewards, contract.address, {logger})
-    logger("Updated PoolRewards config address to:", contract.address)
+    await updateConfig(config, "address", CONFIG_KEYS.StakingRewards, contract.address, {logger})
+    logger("Updated StakingRewards config address to:", contract.address)
 
-    return poolRewards
+    return stakingRewards
   }
 
   async function deployCommunityRewards(
@@ -480,6 +432,29 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   }
 }
 
+export async function deployConfig(deployer: ContractDeployer): Promise<GoldfinchConfig> {
+  const {gf_deployer} = await deployer.getNamedAccounts()
+  let contractName = "GoldfinchConfig"
+
+  if (isTestEnv()) {
+    contractName = "TestGoldfinchConfig"
+  }
+
+  assertIsString(gf_deployer)
+  const config = await deployer.deploy<GoldfinchConfig>(contractName, {from: gf_deployer})
+  const checkAddress = await config.getAddress(CONFIG_KEYS.TreasuryReserve)
+  if (checkAddress === ZERO_ADDRESS) {
+    logger("Config newly deployed, initializing...")
+    const protocol_owner = await getProtocolOwner()
+    assertIsString(protocol_owner)
+    await (await config.initialize(protocol_owner)).wait()
+  }
+
+  await setInitialConfigVals(config, logger)
+
+  return config
+}
+
 export async function deployUniqueIdentity({
   deployer,
   trustedSigner,
@@ -521,6 +496,51 @@ export async function deployUniqueIdentity({
     name: contractName,
     contract: truffleContract,
   }
+}
+
+async function deployPoolRewards(
+  deployer: ContractDeployer,
+  {
+    configAddress,
+    deployEffects,
+  }: {
+    configAddress: string
+    deployEffects: DeployEffects
+  }
+): Promise<PoolRewardsInstance> {
+  const {gf_deployer} = await deployer.getNamedAccounts()
+  let contractName = "PoolRewards"
+  if (isTestEnv()) {
+    contractName = "TestPoolRewards"
+  }
+  logger("About to deploy PoolRewards...")
+  assertIsString(gf_deployer)
+  const protocol_owner = await getProtocolOwner()
+  const poolRewards = await deployer.deploy<PoolRewards>(contractName, {
+    from: gf_deployer,
+    gasLimit: 4000000,
+    proxy: {
+      owner: protocol_owner,
+      execute: {
+        init: {
+          methodName: "__initialize__",
+          args: [protocol_owner, configAddress],
+        },
+      },
+    },
+  })
+
+  const contract = await getTruffleContract<PoolRewardsInstance>("PoolRewards", {at: poolRewards.address})
+
+  const goldfinchConfig = await getEthersContract<GoldfinchConfig>("GoldfinchConfig", {at: configAddress})
+
+  logger("Updating config...")
+  await deployEffects.add({
+    deferred: [await goldfinchConfig.populateTransaction.setAddress(CONFIG_KEYS.PoolRewards, contract.address)],
+  })
+  logger("Updated PoolRewards config address to:", contract.address)
+
+  return contract
 }
 
 export async function deployGo(
@@ -822,6 +842,7 @@ async function deployBorrower(deployer: ContractDeployer, {config}: DeployOpts):
 export {
   baseDeploy,
   deployPoolTokens,
+  deployPoolRewards,
   deployTransferRestrictedVault,
   deployTranchedPool,
   deploySeniorPool,

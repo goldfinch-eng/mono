@@ -15,7 +15,8 @@ interface IGoldfinchFactory {
     uint256 _interestApr,
     uint256 _paymentPeriodInDays,
     uint256 _termInDays,
-    uint256 _lateFeeApr
+    uint256 _lateFeeApr,
+    uint256[] calldata _allowedUIDTypes
   ) external returns (address);
 
   function createMigratedPool(
@@ -25,7 +26,8 @@ interface IGoldfinchFactory {
     uint256 _interestApr,
     uint256 _paymentPeriodInDays,
     uint256 _termInDays,
-    uint256 _lateFeeApr
+    uint256 _lateFeeApr,
+    uint256[] calldata _allowedUIDTypes
   ) external returns (address);
 
   function updateGoldfinchConfig() external;

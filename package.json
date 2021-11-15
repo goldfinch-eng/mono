@@ -12,6 +12,7 @@
     "test": "npx lerna run test --stream",
     "test:client": "npm run test -- --scope @goldfinch-eng/client",
     "test:protocol": "npm run test -- --scope @goldfinch-eng/protocol",
+    "test:autotasks": "npm run test -- --scope @goldfinch-eng/autotasks",
     "lint": "npx lerna run lint --no-bail",
     "lint:fix": "npx lerna run lint:fix --no-bail",
     "prepare": "husky install",
