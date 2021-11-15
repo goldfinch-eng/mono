@@ -1,5 +1,4 @@
 import {BigNumber} from "bignumber.js"
-import _ from "lodash"
 import moment from "moment"
 import {useContext, useEffect, useState} from "react"
 import {useParams} from "react-router-dom"
