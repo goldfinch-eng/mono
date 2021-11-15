@@ -5,6 +5,7 @@ import {
   ERC20Instance,
   FiduInstance,
   GFIInstance,
+  GoldfinchConfigInstance,
   SeniorPoolInstance,
   StakingRewardsInstance,
 } from "../typechain/truffle"
@@ -74,7 +75,8 @@ describe("StakingRewards", function () {
     usdc: ERC20Instance,
     seniorPool: SeniorPoolInstance,
     fidu: FiduInstance,
-    stakingRewards: StakingRewardsInstance
+    stakingRewards: StakingRewardsInstance,
+    goldfinchConfig: GoldfinchConfigInstance
 
   let fiduAmount: BN
   let anotherUserFiduAmount: BN
@@ -147,7 +149,9 @@ describe("StakingRewards", function () {
     const owner = asNonNullable(_owner)
     const investor = asNonNullable(_investor)
     const anotherUser = asNonNullable(_anotherUser)
-    const {goldfinchConfig, seniorPool, gfi, stakingRewards, fidu, usdc} = await deployAllContracts(deployments)
+    const {goldfinchConfig, seniorPool, gfi, stakingRewards, fidu, usdc, ...others} = await deployAllContracts(
+      deployments
+    )
     await goldfinchConfig.bulkAddToGoList([owner, investor, anotherUser])
     await erc20Approve(usdc, investor, usdcVal(10000), [owner])
     await erc20Transfer(usdc, [investor], usdcVal(10000), owner)
@@ -190,6 +194,7 @@ describe("StakingRewards", function () {
       minRateAtPercent,
       fiduAmount,
       anotherUserFiduAmount,
+      ...others,
     }
   })
 
@@ -211,6 +216,7 @@ describe("StakingRewards", function () {
       minRateAtPercent,
       fiduAmount,
       anotherUserFiduAmount,
+      goldfinchConfig,
     } = await testSetup())
   })
 
@@ -2414,6 +2420,32 @@ describe("StakingRewards", function () {
         await expect(stakingRewards.setVestingSchedule(vestingLength, {from: anotherUser})).to.be.rejectedWith(
           /Must have admin role/
         )
+      })
+    })
+  })
+
+  describe("updateGoldfinchConfig", async () => {
+    let otherConfig: GoldfinchConfigInstance
+
+    const updateGoldfinchConfigTestSetup = deployments.createFixture(async ({deployments}) => {
+      const deployment = await deployments.deploy("GoldfinchConfig", {from: owner})
+      const goldfinchConfig = await artifacts.require("GoldfinchConfig").at(deployment.address)
+      return {goldfinchConfig}
+    })
+
+    beforeEach(async () => {
+      // eslint-disable-next-line @typescript-eslint/no-extra-semi
+      ;({goldfinchConfig: otherConfig} = await updateGoldfinchConfigTestSetup())
+    })
+
+    describe("setting it", async () => {
+      it("emits an event", async () => {
+        await goldfinchConfig.setGoldfinchConfig(otherConfig.address, {from: owner})
+        const tx = await stakingRewards.updateGoldfinchConfig({from: owner})
+        expectEvent(tx, "GoldfinchConfigUpdated", {
+          who: owner,
+          configAddress: otherConfig.address,
+        })
       })
     })
   })

@@ -51,8 +51,6 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
 
   mapping(address => BackerRewardsInfo) public pools; // pool.address -> BackerRewardsInfo
 
-  event BackerRewardsClaimed(address indexed owner, uint256 indexed tokenId, uint256 amount);
-
   // solhint-disable-next-line func-name-mixedcase
   function __initialize__(address owner, GoldfinchConfig _config) public initializer {
     require(owner != address(0) && address(_config) != address(0), "Owner and config addresses cannot be empty");
@@ -306,8 +304,19 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     return amount.div(mantissa().div(usdcMantissa()));
   }
 
+  function updateGoldfinchConfig() external onlyAdmin {
+    config = GoldfinchConfig(config.configAddress());
+    emit GoldfinchConfigUpdated(_msgSender(), address(config));
+  }
+
+  /* ======== MODIFIERS  ======== */
+
   modifier onlyPool() {
     require(config.getPoolTokens().validPool(_msgSender()), "Invalid pool!");
     _;
   }
+
+  /* ======== EVENTS ======== */
+  event GoldfinchConfigUpdated(address indexed who, address configAddress);
+  event BackerRewardsClaimed(address indexed owner, uint256 indexed tokenId, uint256 amount);
 }

@@ -2,6 +2,7 @@
 import BN from "bn.js"
 import hre from "hardhat"
 import {asNonNullable} from "@goldfinch-eng/utils"
+import {expectEvent} from "@openzeppelin/test-helpers"
 const GoldfinchConfig = artifacts.require("GoldfinchConfig")
 const BackerRewards = artifacts.require("BackerRewards")
 import {
@@ -36,6 +37,7 @@ import {TestBackerRewardsInstance} from "../typechain/truffle/TestBackerRewards"
 
 const {deployments} = hre
 const TEST_TIMEOUT = 30_000
+const LONG_TEST_TIMEOUT = 40_000
 
 describe("BackerRewards", function () {
   this.timeout(TEST_TIMEOUT)
@@ -1411,6 +1413,32 @@ describe("BackerRewards", function () {
       // verify claimable rewards
       expectedPoolTokenClaimableRewards = await backerRewards.poolTokenClaimableRewards(tokenId)
       expect(expectedPoolTokenClaimableRewards).to.bignumber.equal(newTestPoolTokenClaimableRewards)
+    }).timeout(LONG_TEST_TIMEOUT)
+  })
+
+  describe("updateGoldfinchConfig", async () => {
+    let otherConfig: GoldfinchConfigInstance
+
+    const updateGoldfinchConfigTestSetup = deployments.createFixture(async ({deployments}) => {
+      const deployment = await deployments.deploy("GoldfinchConfig", {from: owner})
+      const goldfinchConfig = await artifacts.require("GoldfinchConfig").at(deployment.address)
+      return {goldfinchConfig}
+    })
+
+    beforeEach(async () => {
+      // eslint-disable-next-line @typescript-eslint/no-extra-semi
+      ;({goldfinchConfig: otherConfig} = await updateGoldfinchConfigTestSetup())
+    })
+
+    describe("setting it", async () => {
+      it("emits an event", async () => {
+        await goldfinchConfig.setGoldfinchConfig(otherConfig.address, {from: owner})
+        const tx = await backerRewards.updateGoldfinchConfig({from: owner})
+        expectEvent(tx, "GoldfinchConfigUpdated", {
+          who: owner,
+          configAddress: otherConfig.address,
+        })
+      })
     })
   })
 })

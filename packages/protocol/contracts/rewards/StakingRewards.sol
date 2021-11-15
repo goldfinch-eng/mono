@@ -660,6 +660,11 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     emit VestingScheduleUpdated(msg.sender, vestingLength);
   }
 
+  function updateGoldfinchConfig() external onlyAdmin {
+    config = GoldfinchConfig(config.configAddress());
+    emit GoldfinchConfigUpdated(_msgSender(), address(config));
+  }
+
   /* ========== MODIFIERS ========== */
 
   modifier updateReward(uint256 tokenId) {
@@ -730,4 +735,5 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     uint256[] amounts
   );
   event RewardPaid(address indexed user, uint256 indexed tokenId, uint256 reward);
+  event GoldfinchConfigUpdated(address indexed who, address configAddress);
 }

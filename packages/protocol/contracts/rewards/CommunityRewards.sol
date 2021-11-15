@@ -21,6 +21,10 @@ contract CommunityRewards is ICommunityRewards, ERC721PresetMinterPauserAutoIdUp
 
   using CommunityRewardsVesting for CommunityRewardsVesting.Rewards;
 
+  /* ==========     EVENTS      ========== */
+
+  event GoldfinchConfigUpdated(address indexed who, address configAddress);
+
   /* ========== STATE VARIABLES ========== */
 
   bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
@@ -101,6 +105,12 @@ contract CommunityRewards is ICommunityRewards, ERC721PresetMinterPauserAutoIdUp
     grant.revokedAt = block.timestamp;
 
     emit GrantRevoked(tokenId, totalUnvested);
+  }
+
+  /// @notice updates current config
+  function updateGoldfinchConfig() external onlyAdmin {
+    config = GoldfinchConfig(config.configAddress());
+    emit GoldfinchConfigUpdated(_msgSender(), address(config));
   }
 
   /* ========== MUTATIVE, NON-ADMIN-ONLY FUNCTIONS ========== */
