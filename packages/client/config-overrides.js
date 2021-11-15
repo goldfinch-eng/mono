@@ -99,7 +99,14 @@ const murmuration = () => (config) => {
       // was in sharing the contracts definitions in `packages/protocol/deployments/all_dev.json` and in
       // maintaining the chain state held in memory by the hardhat node process.)
       "/_chain": "http://localhost:8545",
-      "/_gcloudfunctions/us-central1": "http://localhost:5001/goldfinch-frontends-dev/us-central1",
+      "/_gcloudfunctions": {
+        target: "http://localhost:5001/goldfinch-frontends-dev/us-central1",
+        pathRewrite: {
+          // Rewrite the path of the proxied request, to drop the `/_gcloudfunctions` path segment, as
+          // that segment would otherwise cause the request to fail to match the paths of the cloud functions.
+          "^/_gcloudfunctions": "",
+        },
+      },
     }
   }
   return config
