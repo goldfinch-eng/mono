@@ -4,7 +4,7 @@
   "scripts": {
     "lint": "eslint --ext .js,.ts .",
     "lint:fix": "eslint --fix --ext .js,.ts .",
-    "build": "./node_modules/typescript/bin/tsc",
+    "build": "tsc",
     "serve": "npm run build && npx firebase emulators:exec --ui --project=dev \"tsc -w --preserveWatchOutput\"",
     "shell": "npm run build && npx firebase functions:shell",
     "start": "npm run serve",
