@@ -25,12 +25,9 @@ export class ContractDeployer {
   }
 
   async deploy<T extends BaseContract | Contract = Contract>(contractName: string, options: DeployOptions): Promise<T> {
-    if (options?.proxy && !options?.proxy.owner) {
+    if (options?.proxy && !options?.proxy?.owner) {
       const protocol_owner = await getProtocolOwner()
-      options = {
-        ...options,
-        proxy: {owner: protocol_owner, ...options.proxy},
-      }
+      Object.assign(options.proxy, {owner: protocol_owner, ...options.proxy})
     }
     const result = await this.hre.deployments.deploy(contractName, options)
     this.logger(`${contractName} was deployed to: ${result.address}`)
