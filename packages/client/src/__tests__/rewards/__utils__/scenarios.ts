@@ -124,7 +124,7 @@ export async function setupVestingCommunityReward(goldfinchProtocol: GoldfinchPr
   const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
   const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
     community: {
-      airdrop: airdrop as MerkleDistributorGrantInfo,
+      airdrop: airdrop,
       grantRes: ["1000000000000000000000", "0", "1641576557", "1641582557", "0", "300", "0"],
       claimable: "0",
     },

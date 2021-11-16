@@ -357,7 +357,7 @@ export function setupMocksForAirdrop(airdrop: MerkleDistributorGrantInfo, isAcce
     }
     return Promise.resolve(result)
   })
-  UserMerkleDistributor.getAirdropsWithAcceptance = (
+  UserMerkleDistributor.getAcceptedAirdrops = (
     airdropsForRecipient: MerkleDistributorGrantInfo[],
     merkleDistributor: MerkleDistributorLoaded,
     currentBlock: BlockInfo
