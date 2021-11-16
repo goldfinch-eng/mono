@@ -180,7 +180,8 @@ export async function setupCommunityRewardAndStakingReward(
 
 export async function setupPartiallyClaimedStakingReward(
   goldfinchProtocol: GoldfinchProtocol,
-  seniorPool: SeniorPoolLoaded
+  seniorPool: SeniorPoolLoaded,
+  gfiBalance?: string
 ) {
   const updatedBlockInfo = {...blockInfo}
   updatedBlockInfo.timestamp = 1641750579
@@ -200,6 +201,7 @@ export async function setupPartiallyClaimedStakingReward(
         "0",
       ],
     },
+    gfi: {gfiBalance},
   })
   await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, updatedBlockInfo)
 

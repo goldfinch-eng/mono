@@ -21,7 +21,7 @@ import {
 import * as utils from "../../../ethereum/utils"
 import {BlockInfo} from "../../../utils"
 
-interface RewardsMockData {
+export interface RewardsMockData {
   staking?: {
     earnedSince?: string
     totalVestedAt?: string
