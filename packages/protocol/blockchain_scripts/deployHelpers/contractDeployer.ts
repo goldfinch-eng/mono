@@ -1,10 +1,10 @@
 import {HardhatRuntimeEnvironment} from "hardhat/types"
 import {ethers} from "hardhat"
-import {DeployOptions, DeployResult, ProxyOptions} from "hardhat-deploy/types"
+import {DeployOptions, DeployResult} from "hardhat-deploy/types"
 import {Contract, BaseContract} from "ethers"
 
 import {Logger} from "../types"
-import {getProtocolOwner} from "."
+import {getProtocolOwner} from "./"
 
 export class ContractDeployer {
   public readonly logger: Logger
