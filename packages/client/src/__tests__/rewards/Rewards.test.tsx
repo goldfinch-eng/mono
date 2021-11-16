@@ -149,7 +149,7 @@ describe("Rewards portfolio overview", () => {
     expect(await screen.getByTestId("summary-total-balance").textContent).toEqual("0.00")
   })
 
-  it("unvested staking reward dont appear on portfolio", async () => {
+  it("unvested staking reward don't appear on portfolio", async () => {
     const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupNewStakingReward(
       goldfinchProtocol,
       seniorPool
@@ -197,7 +197,7 @@ describe("Rewards portfolio overview", () => {
     expect(await screen.getByTestId("summary-total-balance").className).toEqual("value")
   })
 
-  it("community reward appear on portfolio", async () => {
+  it("community reward appears on portfolio", async () => {
     const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupClaimableCommunityReward(
       goldfinchProtocol,
       seniorPool
@@ -220,7 +220,7 @@ describe("Rewards portfolio overview", () => {
     expect(await screen.getByTestId("summary-total-balance").className).toEqual("value")
   })
 
-  it("non accepted airdrops dont appear on portfolio", async () => {
+  it("non accepted airdrops don't appear on portfolio", async () => {
     const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupAirdrop(
       goldfinchProtocol,
       seniorPool
@@ -268,7 +268,7 @@ describe("Rewards portfolio overview", () => {
     expect(await screen.getByTestId("summary-total-balance").className).toEqual("value")
   })
 
-  it("vesting community reward appear on portfolio", async () => {
+  it("vesting community reward appears on portfolio", async () => {
     const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupVestingCommunityReward(
       goldfinchProtocol,
       seniorPool
