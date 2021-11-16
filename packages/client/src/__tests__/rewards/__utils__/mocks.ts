@@ -59,13 +59,29 @@ interface RewardsMockData {
   }
 }
 
+type ContractCallsMocks = {
+  callGFIBalanceMock: any
+  callUSDCBalanceMock: any
+  callUSDCAllowanceMock: any
+  callStakingRewardsBalanceMock: any
+  callCommunityRewardsBalanceMock: any
+  callTokenOfOwnerByIndexMock: any
+  callPositionsMock: any
+  callEarnedSinceLastCheckpointMock: any
+  callTotalVestedAt: any
+  callPositionCurrentEarnRate: any
+  callCommunityRewardsTokenOfOwnerMock: any
+  callGrantsMock: any
+  callClaimableRewardsMock: any
+}
+
 export function mockUserInitializationContractCalls(
   user: User,
   stakingRewards: StakingRewards,
   gfi: GFI,
   communityRewards: CommunityRewards,
   rewardsMock?: RewardsMockData
-) {
+): ContractCallsMocks {
   user.fetchTxs = (usdc, pool, currentBlock) => {
     return Promise.resolve([
       [],
@@ -77,11 +93,12 @@ export function mockUserInitializationContractCalls(
       [],
     ])
   }
-  user.fetchGolistStatus = (address, currentBlock) => {
-    return {
+  user.fetchGolistStatus = (address: string, currentBlock: BlockInfo) => {
+    return Promise.resolve({
       legacyGolisted: true,
       golisted: true,
-    }
+      hasUID: true,
+    })
   }
 
   let stakingRewardsBalance = 0
@@ -96,7 +113,7 @@ export function mockUserInitializationContractCalls(
       api: gfiABI,
       method: "balanceOf",
       params: [recipient],
-      return: "0",
+      return: rewardsMock?.gfi?.gfiBalance || "0",
     },
   })
 
@@ -362,33 +379,12 @@ export function setupMocksForAirdrop(airdrop: MerkleDistributorGrantInfo, isAcce
     merkleDistributor: MerkleDistributorLoaded,
     currentBlock: BlockInfo
   ) => {
-    const airdropsAccepted = grants
-      ? [
-          {
-            grantInfo: airdrop,
-            isAccepted: isAccepted,
-          },
-        ]
-      : []
+    const airdropsAccepted = grants.map((val) => ({grantInfo: airdrop, isAccepted}))
     return Promise.resolve(airdropsAccepted)
   }
 }
 
-export function assertAllMocksAreCalled(mocks: {
-  callGFIBalanceMock: any
-  callUSDCBalanceMock: any
-  callUSDCAllowanceMock: any
-  callStakingRewardsBalanceMock: any
-  callCommunityRewardsBalanceMock: any
-  callTokenOfOwnerByIndexMock: any
-  callPositionsMock: any
-  callEarnedSinceLastCheckpointMock: any
-  callTotalVestedAt: any
-  callPositionCurrentEarnRate: any
-  callCommunityRewardsTokenOfOwnerMock: any
-  callGrantsMock: any
-  callClaimableRewardsMock: any
-}) {
+export function assertAllMocksAreCalled(mocks: ContractCallsMocks) {
   Object.keys(mocks).forEach((key: string) => {
     const mock = mocks[key as keyof typeof mocks]
     if (mock) {
