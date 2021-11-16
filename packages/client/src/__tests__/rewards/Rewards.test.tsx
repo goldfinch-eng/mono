@@ -14,11 +14,7 @@ import {blockchain, blockInfo, DEPLOYMENTS, network, recipient} from "./__utils_
 import {assertWithLoadedInfo} from "../../types/loadable"
 import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
 import * as utils from "../../ethereum/utils"
-import {
-  mockUserInitializationContractCalls,
-  setupMocksForAcceptedAirdrop,
-  assertAllMocksAreCalled,
-} from "./__utils__/mocks"
+import {mockUserInitializationContractCalls, setupMocksForAirdrop, assertAllMocksAreCalled} from "./__utils__/mocks"
 import {
   getDefaultClasses,
   setupNewStakingReward,
@@ -89,7 +85,7 @@ describe("Rewards portfolio overview", () => {
     jest.spyOn(utils, "getDeployments").mockImplementation(() => {
       return DEPLOYMENTS
     })
-    setupMocksForAcceptedAirdrop(undefined) // reset
+    setupMocksForAirdrop(undefined) // reset
 
     await goldfinchProtocol.initialize()
     seniorPoolLoaded = new SeniorPool(goldfinchProtocol)

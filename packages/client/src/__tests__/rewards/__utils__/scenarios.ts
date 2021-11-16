@@ -3,14 +3,14 @@ import {MerkleDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scr
 import {MerkleDistributor, CommunityRewards} from "../../../ethereum/communityRewards"
 import {GFI} from "../../../ethereum/gfi"
 import {User} from "../../../ethereum/user"
-import {SeniorPool, SeniorPoolLoaded, StakingRewards} from "../../../ethereum/pool"
+import {SeniorPoolLoaded, StakingRewards} from "../../../ethereum/pool"
 import {blockInfo, network, recipient} from "./constants"
 import {assertWithLoadedInfo} from "../../../types/loadable"
 import {
   mockStakingRewardsContractCalls,
   mockMerkleDistributorContractCalls,
   mockUserInitializationContractCalls,
-  setupMocksForAcceptedAirdrop,
+  setupMocksForAirdrop,
   assertAllMocksAreCalled,
 } from "./mocks"
 import {GoldfinchProtocol} from "../../../ethereum/GoldfinchProtocol"
@@ -51,7 +51,7 @@ export async function setupClaimableCommunityReward(
   goldfinchProtocol: GoldfinchProtocol,
   seniorPool: SeniorPoolLoaded
 ) {
-  const airdrop = {
+  const airdrop: MerkleDistributorGrantInfo = {
     index: 0,
     account: recipient,
     reason: "flight_academy",
@@ -63,13 +63,13 @@ export async function setupClaimableCommunityReward(
     },
     proof: ["0x00", "0x00", "0x00"],
   }
-  setupMocksForAcceptedAirdrop(airdrop)
+  setupMocksForAirdrop(airdrop)
 
   const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
   const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
   const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
     community: {
-      airdrop: airdrop as MerkleDistributorGrantInfo,
+      airdrop: airdrop,
     },
   })
   await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
@@ -81,7 +81,7 @@ export async function setupClaimableCommunityReward(
 }
 
 export async function setupAirdrop(goldfinchProtocol: GoldfinchProtocol, seniorPool: SeniorPoolLoaded) {
-  const airdrop = {
+  const airdrop: MerkleDistributorGrantInfo = {
     index: 0,
     account: recipient,
     reason: "flight_academy",
@@ -93,7 +93,7 @@ export async function setupAirdrop(goldfinchProtocol: GoldfinchProtocol, seniorP
     },
     proof: ["0x00", "0x00", "0x00"],
   }
-  setupMocksForAcceptedAirdrop(airdrop, false)
+  setupMocksForAirdrop(airdrop, false)
   const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
   const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
   const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {})
@@ -106,7 +106,7 @@ export async function setupAirdrop(goldfinchProtocol: GoldfinchProtocol, seniorP
 }
 
 export async function setupVestingCommunityReward(goldfinchProtocol: GoldfinchProtocol, seniorPool: SeniorPoolLoaded) {
-  const airdrop = {
+  const airdrop: MerkleDistributorGrantInfo = {
     index: 2,
     account: recipient,
     reason: "goldfinch_investment",
@@ -118,7 +118,7 @@ export async function setupVestingCommunityReward(goldfinchProtocol: GoldfinchPr
     },
     proof: ["0x00", "0x00", "0x00"],
   }
-  setupMocksForAcceptedAirdrop(airdrop)
+  setupMocksForAirdrop(airdrop)
 
   const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
   const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
@@ -144,7 +144,7 @@ export async function setupCommunityRewardAndStakingReward(
   const updatedBlockInfo = {...blockInfo}
   updatedBlockInfo.timestamp = 1641564707
 
-  const airdrop = {
+  const airdrop: MerkleDistributorGrantInfo = {
     index: 0,
     account: recipient,
     reason: "flight_academy",
@@ -156,7 +156,7 @@ export async function setupCommunityRewardAndStakingReward(
     },
     proof: ["0x00", "0x00", "0x00"],
   }
-  setupMocksForAcceptedAirdrop(airdrop)
+  setupMocksForAirdrop(airdrop)
 
   const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
   const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
@@ -167,7 +167,7 @@ export async function setupCommunityRewardAndStakingReward(
       totalVestedAt: "710136986301369863",
     },
     community: {
-      airdrop: airdrop as MerkleDistributorGrantInfo,
+      airdrop: airdrop,
     },
   })
   await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, updatedBlockInfo)
