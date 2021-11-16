@@ -8,7 +8,7 @@ import Rewards from "../../pages/rewards"
 import {MerkleDistributorLoaded, CommunityRewardsLoaded} from "../../ethereum/communityRewards"
 import {GFILoaded} from "../../ethereum/gfi"
 import {User} from "../../ethereum/user"
-import {SeniorPool, StakingRewardsLoaded} from "../../ethereum/pool"
+import {SeniorPool, SeniorPoolLoaded, StakingRewardsLoaded} from "../../ethereum/pool"
 import {UserLoaded} from "../../ethereum/user"
 import {blockchain, blockInfo, DEPLOYMENTS, network, recipient} from "./__utils__/constants"
 import {assertWithLoadedInfo} from "../../types/loadable"
@@ -62,8 +62,28 @@ function renderRewards(
   )
 }
 
+async function getUserLoaded(
+  goldfinchProtocol: GoldfinchProtocol,
+  seniorPoolLoaded: SeniorPoolLoaded,
+  stakingRewards: StakingRewardsLoaded,
+  gfi: GFILoaded,
+  communityRewards: CommunityRewardsLoaded,
+  merkleDistributor: MerkleDistributorLoaded
+): Promise<UserLoaded> {
+  const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
+  const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
+    hasStakingRewards: false,
+    hasCommunityRewards: false,
+  })
+
+  await user.initialize(seniorPoolLoaded, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
+  assertAllMocksAreCalled(mocks)
+  assertWithLoadedInfo(user)
+  return user
+}
+
 describe("Rewards portfolio overview", () => {
-  let seniorPool
+  let seniorPoolLoaded: any
   let goldfinchProtocol = new GoldfinchProtocol(network)
 
   beforeEach(resetMocks)
@@ -75,11 +95,12 @@ describe("Rewards portfolio overview", () => {
     setupMocksForAcceptedAirdrop(undefined) // reset
 
     await goldfinchProtocol.initialize()
-    seniorPool = new SeniorPool(goldfinchProtocol)
-    seniorPool.info = {
+    seniorPoolLoaded = new SeniorPool(goldfinchProtocol)
+    seniorPoolLoaded.info = {
       loaded: true,
       value: {
         currentBlock: blockInfo,
+        // @ts-ignore
         poolData: {},
         isPaused: false,
       },
@@ -87,38 +108,26 @@ describe("Rewards portfolio overview", () => {
   })
 
   it("shows loading message when all requirements are empty", async () => {
-    let stakingRewards
-    let gfi
-    let user
-    let merkleDistributor
-    let communityRewards
-    renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
-
+    renderRewards(undefined, undefined, undefined, undefined, undefined)
     expect(await screen.findByText("Loading...")).toBeVisible()
   })
 
   it("shows loading message when some requirements are empty", async () => {
-    let gfi
-    let user
-    let merkleDistributor
-    let communityRewards
     const {stakingRewards} = await getDefaultClasses(goldfinchProtocol)
-    renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
-
+    renderRewards(stakingRewards, undefined, undefined, undefined, undefined)
     expect(await screen.findByText("Loading...")).toBeVisible()
   })
 
   it("don't show loading message when all requirements loaded", async () => {
     const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
-
-    const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
-    mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
-      hasStakingRewards: false,
-      hasCommunityRewards: false,
-    })
-    await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
-
-    assertWithLoadedInfo(user)
+    const user = await getUserLoaded(
+      goldfinchProtocol,
+      seniorPoolLoaded,
+      stakingRewards,
+      gfi,
+      communityRewards,
+      merkleDistributor
+    )
     renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
 
     expect(await screen.queryByText("Loading...")).not.toBeInTheDocument()
@@ -126,16 +135,14 @@ describe("Rewards portfolio overview", () => {
 
   it("shows empty portfolio", async () => {
     const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
-
-    const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
-    const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
-      hasStakingRewards: false,
-      hasCommunityRewards: false,
-    })
-    await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
-    assertAllMocksAreCalled(mocks)
-    assertWithLoadedInfo(user)
-
+    const user = await getUserLoaded(
+      goldfinchProtocol,
+      seniorPoolLoaded,
+      stakingRewards,
+      gfi,
+      communityRewards,
+      merkleDistributor
+    )
     renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
 
     expect(await screen.findByText("Total GFI balance")).toBeVisible()
@@ -152,7 +159,7 @@ describe("Rewards portfolio overview", () => {
   it("unvested staking reward don't appear on portfolio", async () => {
     const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupNewStakingReward(
       goldfinchProtocol,
-      seniorPool
+      seniorPoolLoaded
     )
 
     renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
@@ -176,7 +183,7 @@ describe("Rewards portfolio overview", () => {
   it("claimable staking reward appears on portfolio", async () => {
     const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupClaimableStakingReward(
       goldfinchProtocol,
-      seniorPool
+      seniorPoolLoaded
     )
 
     renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
@@ -200,7 +207,7 @@ describe("Rewards portfolio overview", () => {
   it("community reward appears on portfolio", async () => {
     const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupClaimableCommunityReward(
       goldfinchProtocol,
-      seniorPool
+      seniorPoolLoaded
     )
     renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
 
@@ -223,7 +230,7 @@ describe("Rewards portfolio overview", () => {
   it("non accepted airdrops don't appear on portfolio", async () => {
     const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupAirdrop(
       goldfinchProtocol,
-      seniorPool
+      seniorPoolLoaded
     )
 
     renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
@@ -247,7 +254,7 @@ describe("Rewards portfolio overview", () => {
   it("community reward and staking reward appear on portfolio", async () => {
     const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupCommunityRewardAndStakingReward(
       goldfinchProtocol,
-      seniorPool
+      seniorPoolLoaded
     )
 
     renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
@@ -271,7 +278,7 @@ describe("Rewards portfolio overview", () => {
   it("vesting community reward appears on portfolio", async () => {
     const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupVestingCommunityReward(
       goldfinchProtocol,
-      seniorPool
+      seniorPoolLoaded
     )
     renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
 
@@ -294,7 +301,7 @@ describe("Rewards portfolio overview", () => {
   it("staking reward partially claimed appear on portfolio", async () => {
     const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupPartiallyClaimedStakingReward(
       goldfinchProtocol,
-      seniorPool
+      seniorPoolLoaded
     )
 
     renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
