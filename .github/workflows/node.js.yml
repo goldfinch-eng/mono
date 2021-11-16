@@ -168,7 +168,7 @@ jobs:
           ${{ runner.os }}-
     - run: npx lerna bootstrap --ci
     - run: npm run build
-    - run: npx lerna run test --stream --scope @goldfinch-eng/client
+    - run: npx lerna run ci_test --stream --scope @goldfinch-eng/client
 
   functions:
     runs-on: ubuntu-latest
