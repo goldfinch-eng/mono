@@ -25,7 +25,7 @@ export class ContractDeployer {
   }
 
   async deploy<T extends BaseContract | Contract = Contract>(contractName: string, options: DeployOptions): Promise<T> {
-    if (typeof options === "object" && options?.proxy && !options?.proxy?.owner) {
+    if (typeof options === "object" && typeof options?.proxy === "object" && options?.proxy && !options?.proxy?.owner) {
       const protocol_owner = await getProtocolOwner()
       options = {proxy: {owner: protocol_owner, ...options.proxy}, ...options}
     }
