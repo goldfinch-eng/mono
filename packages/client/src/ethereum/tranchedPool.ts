@@ -80,7 +80,6 @@ export interface TranchedPoolMetadata {
   migrated?: boolean
   migratedFrom?: string
   NDAUrl?: string
-  maxBackers?: number
 }
 
 enum PoolState {
@@ -357,10 +356,6 @@ class TranchedPool {
    */
   get displayName(): string {
     return this.metadata?.name ?? croppedAddress(this.address)
-  }
-
-  get maxBackers(): number | undefined {
-    return this.metadata?.maxBackers
   }
 }
 

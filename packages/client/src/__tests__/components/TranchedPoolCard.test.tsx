@@ -35,8 +35,6 @@ function renderTranchedPoolCard(isPaused: boolean, remainingCapacity: BigNumber)
 }
 
 describe("Tranched pool card", () => {
-  const maxBackers = 2
-
   describe("pool is paused", () => {
     describe("remaining capacity is 0", () => {
       it("should show paused badge", async () => {
