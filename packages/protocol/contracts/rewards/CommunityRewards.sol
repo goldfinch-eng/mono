@@ -59,7 +59,7 @@ contract CommunityRewards is ICommunityRewards, ERC721PresetMinterPauserAutoIdUp
 
   /* ========== VIEWS ========== */
 
-  /// @notice The address of the token being disbursed as rewards
+  /// @notice The token being disbursed as rewards
   function rewardsToken() public view override returns (IERC20withDec) {
     return config.getGFI();
   }

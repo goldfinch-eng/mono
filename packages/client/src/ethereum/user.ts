@@ -1,7 +1,7 @@
 import {
   GrantReason,
   MerkleDistributorGrantInfo,
-} from "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types"
+} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
 import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
 import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/web3/GoldfinchConfig"
 import {assertUnreachable} from "@goldfinch-eng/utils/src/type"

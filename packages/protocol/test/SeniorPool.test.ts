@@ -58,7 +58,8 @@ const simulateMaliciousTranchedPool = async (goldfinchConfig: any, person2: any)
     interestAprAsBN("0"),
     new BN(1),
     new BN(10),
-    interestAprAsBN("0")
+    interestAprAsBN("0"),
+    new BN(30)
   )
   await unknownPool.initialize(
     goldfinchConfig.address,
@@ -68,7 +69,9 @@ const simulateMaliciousTranchedPool = async (goldfinchConfig: any, person2: any)
     interestAprAsBN("0"),
     new BN(1),
     new BN(10),
-    interestAprAsBN("0")
+    interestAprAsBN("0"),
+    new BN(30),
+    new BN(0)
   )
   await unknownPool.lockJuniorCapital({from: person2})
 
@@ -229,14 +232,6 @@ describe("SeniorPool", () => {
           configAddress: newConfig.address,
         })
       })
-    })
-  })
-
-  describe("setupRedeemerRole", () => {
-    it("should call _setupRole", async () => {
-      expect(await seniorPool.hasRole(REDEEMER_ROLE, owner)).to.equal(false)
-      await seniorPool.setupRedeemerRole()
-      expect(await seniorPool.hasRole(REDEEMER_ROLE, owner)).to.equal(true)
     })
   })
 
@@ -566,7 +561,7 @@ describe("SeniorPool", () => {
         const unknownPoolAddress = await simulateMaliciousTranchedPool(goldfinchConfig, person2)
 
         await expect(seniorPool.invest(unknownPoolAddress)).to.be.rejectedWith(/Pool must be valid/)
-      })
+      }).timeout(TEST_TIMEOUT)
     })
 
     context("Pool's senior tranche is not empty", () => {
@@ -658,8 +653,8 @@ describe("SeniorPool", () => {
         // to prohibit that, so that we are able to maintain the leverage ratio in a case
         // where the juniors take "more than their share".
 
-        const expectedLimit = usdcVal(100000)
-        expect(await tranchedPool.limit()).to.bignumber.equal(expectedLimit)
+        const expectedMaxLimit = usdcVal(100000)
+        expect(await tranchedPool.maxLimit()).to.bignumber.equal(expectedMaxLimit)
 
         await tranchedPool.lockJuniorCapital({from: borrower})
         expect(await goldfinchConfig.getAddress(CONFIG_KEYS.SeniorPoolStrategy)).to.equal(
@@ -705,7 +700,7 @@ describe("SeniorPool", () => {
         await expect(seniorPool.investJunior(unknownPoolAddress, seniorPoolJuniorInvestmentAmount)).to.be.rejectedWith(
           /Pool must be valid/
         )
-      })
+      }).timeout(TEST_TIMEOUT)
     })
 
     context("Pool's junior tranche is locked", () => {
@@ -791,7 +786,7 @@ describe("SeniorPool", () => {
         expect(juniorTranche.principalDeposited).to.bignumber.equal(juniorInvestmentAmount)
 
         const expectedLimit = usdcVal(100000)
-        expect(await tranchedPool.limit()).to.bignumber.equal(expectedLimit)
+        expect(await tranchedPool.maxLimit()).to.bignumber.equal(expectedLimit)
 
         const reducedLimit = seniorPoolJuniorInvestmentAmount.sub(new BN(1))
         await tranchedPool._setLimit(reducedLimit)
@@ -842,12 +837,6 @@ describe("SeniorPool", () => {
       await goldfinchConfig.addToGoList(seniorPool.address)
 
       await tranchedPool.deposit(TRANCHES.Junior, juniorInvestmentAmount)
-    })
-
-    context("called by non-governance", async () => {
-      it("should revert", async () => {
-        return expect(seniorPool.redeem(42, {from: person2})).to.be.rejectedWith(/Must have admin/)
-      })
     })
 
     it("should redeem the maximum from the TranchedPool", async () => {
