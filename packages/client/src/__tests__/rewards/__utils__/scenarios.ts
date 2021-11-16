@@ -18,10 +18,7 @@ import {GoldfinchProtocol} from "../../../ethereum/GoldfinchProtocol"
 export async function setupNewStakingReward(goldfinchProtocol: GoldfinchProtocol, seniorPool: SeniorPoolLoaded) {
   const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
   const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
-  const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
-    hasStakingRewards: true,
-    hasCommunityRewards: false,
-  })
+  const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {staking: {}})
   await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
 
   assertWithLoadedInfo(user)
@@ -36,11 +33,11 @@ export async function setupClaimableStakingReward(goldfinchProtocol, seniorPool)
   const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
   const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
   const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
-    hasStakingRewards: true,
-    hasCommunityRewards: false,
-    currentTimestamp: String(updatedBlockInfo.timestamp),
-    earnedSince: "129600000000000000000",
-    totalVestedAt: "710136986301369863",
+    staking: {
+      currentTimestamp: String(updatedBlockInfo.timestamp),
+      earnedSince: "129600000000000000000",
+      totalVestedAt: "710136986301369863",
+    },
   })
   await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, updatedBlockInfo)
 
@@ -71,9 +68,9 @@ export async function setupClaimableCommunityReward(
   const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
   const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
   const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
-    hasStakingRewards: false,
-    hasCommunityRewards: true,
-    airdrop: airdrop as MerkleDistributorGrantInfo,
+    community: {
+      airdrop: airdrop as MerkleDistributorGrantInfo,
+    },
   })
   await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
 
@@ -99,10 +96,7 @@ export async function setupAirdrop(goldfinchProtocol: GoldfinchProtocol, seniorP
   setupMocksForAcceptedAirdrop(airdrop, false)
   const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
   const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
-  const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
-    hasStakingRewards: false,
-    hasCommunityRewards: false,
-  })
+  const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {})
   await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
 
   assertWithLoadedInfo(user)
@@ -129,11 +123,11 @@ export async function setupVestingCommunityReward(goldfinchProtocol: GoldfinchPr
   const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
   const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
   const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
-    hasStakingRewards: false,
-    hasCommunityRewards: true,
-    airdrop: airdrop as MerkleDistributorGrantInfo,
-    grantRes: ["1000000000000000000000", "0", "1641576557", "1641582557", "0", "300", "0"],
-    claimable: "0",
+    community: {
+      airdrop: airdrop as MerkleDistributorGrantInfo,
+      grantRes: ["1000000000000000000000", "0", "1641576557", "1641582557", "0", "300", "0"],
+      claimable: "0",
+    },
   })
   await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
 
@@ -167,12 +161,14 @@ export async function setupCommunityRewardAndStakingReward(
   const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
   const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
   const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
-    hasStakingRewards: true,
-    hasCommunityRewards: true,
-    currentTimestamp: String(updatedBlockInfo.timestamp),
-    earnedSince: "129600000000000000000",
-    totalVestedAt: "710136986301369863",
-    airdrop: airdrop as MerkleDistributorGrantInfo,
+    staking: {
+      currentTimestamp: String(updatedBlockInfo.timestamp),
+      earnedSince: "129600000000000000000",
+      totalVestedAt: "710136986301369863",
+    },
+    community: {
+      airdrop: airdrop as MerkleDistributorGrantInfo,
+    },
   })
   await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, updatedBlockInfo)
 
@@ -192,18 +188,18 @@ export async function setupPartiallyClaimedStakingReward(
   const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
   const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
   const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
-    hasStakingRewards: true,
-    hasCommunityRewards: false,
-    currentTimestamp: String(updatedBlockInfo.timestamp),
-    earnedSince: "129600000000000000000",
-    totalVestedAt: "3059493996955859969",
-    granted: "269004000000000000000",
-    positionsRes: [
-      "50000000000000000000000",
-      ["138582358057838660579", "821641942161339421", "0", "821641942161339421", "1641391907", "1672927907"],
-      "1000000000000000000",
-      "0",
-    ],
+    staking: {
+      currentTimestamp: String(updatedBlockInfo.timestamp),
+      earnedSince: "129600000000000000000",
+      totalVestedAt: "3059493996955859969",
+      granted: "269004000000000000000",
+      positionsRes: [
+        "50000000000000000000000",
+        ["138582358057838660579", "821641942161339421", "0", "821641942161339421", "1641391907", "1672927907"],
+        "1000000000000000000",
+        "0",
+      ],
+    },
   })
   await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, updatedBlockInfo)
 

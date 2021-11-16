@@ -71,10 +71,7 @@ async function getUserLoaded(
   merkleDistributor: MerkleDistributorLoaded
 ): Promise<UserLoaded> {
   const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
-  const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
-    hasStakingRewards: false,
-    hasCommunityRewards: false,
-  })
+  const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {})
 
   await user.initialize(seniorPoolLoaded, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
   assertAllMocksAreCalled(mocks)

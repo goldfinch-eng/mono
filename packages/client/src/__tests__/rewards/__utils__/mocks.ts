@@ -18,34 +18,35 @@ import {
 import * as utils from "../../../ethereum/utils"
 
 interface RewardsMockData {
-  hasStakingRewards: boolean
-  earnedSince?: string | undefined
-  totalVestedAt?: string | undefined
-  currentTimestamp?: string | undefined
-  granted?: string | undefined
-  positionCurrentEarnRate?: string | undefined
-  positionsRes?:
-    | {
-        0: string
-        1: [string, string, string, string, string, string]
-        2: string
-        3: string
-      }
-    | undefined
-  hasCommunityRewards: boolean
-  airdrop?: MerkleDistributorGrantInfo
-  grantRes?:
-    | {
-        0: string
-        1: string
-        2: string
-        3: string
-        4: string
-        5: string
-        6: string
-      }
-    | undefined
-  claimable?: string
+  staking?: {
+    earnedSince?: string
+    totalVestedAt?: string
+    currentTimestamp?: string
+    granted?: string
+    positionCurrentEarnRate?: string
+    positionsRes?: {
+      0: string
+      1: [string, string, string, string, string, string]
+      2: string
+      3: string
+    }
+  }
+  community?: {
+    airdrop?: MerkleDistributorGrantInfo
+    grantRes?: {
+      0: string
+      1: string
+      2: string
+      3: string
+      4: string
+      5: string
+      6: string
+    }
+    claimable?: string
+  }
+  gfi?: {
+    gfiBalance?: string
+  }
 }
 
 export function mockUserInitializationContractCalls(
@@ -53,7 +54,7 @@ export function mockUserInitializationContractCalls(
   stakingRewards: StakingRewards,
   gfi: GFI,
   communityRewards: CommunityRewards,
-  stakingRewardsMock?: RewardsMockData | undefined
+  rewardsMock?: RewardsMockData | undefined
 ) {
   user.fetchTxs = (usdc, pool, currentBlock) => {
     return Promise.resolve([
@@ -74,7 +75,7 @@ export function mockUserInitializationContractCalls(
   }
 
   let stakingRewardsBalance = 0
-  if (stakingRewardsMock?.hasStakingRewards) {
+  if (rewardsMock?.staking) {
     stakingRewardsBalance = 1
   }
 
@@ -125,19 +126,19 @@ export function mockUserInitializationContractCalls(
   let callEarnedSinceLastCheckpointMock
   let callTotalVestedAt
   let callPositionCurrentEarnRate
-  if (stakingRewardsMock?.hasStakingRewards) {
-    const positionsRes = stakingRewardsMock.positionsRes || [
+  if (rewardsMock?.staking) {
+    const positionsRes = rewardsMock.staking?.positionsRes || [
       "50000000000000000000000",
       ["0", "0", "0", "0", "1641391907", "1672927907"],
       "1000000000000000000",
       "0",
     ]
-    const earnedSince = stakingRewardsMock.earnedSince || "0"
-    const totalVestedAt = stakingRewardsMock.totalVestedAt || "0"
-    const positionCurrentEarnRate = stakingRewardsMock.positionCurrentEarnRate || "750000000000000"
-    const currentTimestamp = stakingRewardsMock.currentTimestamp || "1640783491"
+    const earnedSince = rewardsMock.staking?.earnedSince || "0"
+    const totalVestedAt = rewardsMock.staking?.totalVestedAt || "0"
+    const positionCurrentEarnRate = rewardsMock.staking?.positionCurrentEarnRate || "750000000000000"
+    const currentTimestamp = rewardsMock.staking?.currentTimestamp || "1640783491"
     const stakedEvent = {returnValues: {tokenId: "1", amount: "50000000000000000000000"}}
-    const granted = stakingRewardsMock.granted || earnedSince
+    const granted = rewardsMock.staking?.granted || earnedSince
 
     callTokenOfOwnerByIndexMock = mock({
       blockchain,
@@ -204,7 +205,7 @@ export function mockUserInitializationContractCalls(
   }
 
   let communityRewardsBalance = "0"
-  if (stakingRewardsMock?.hasCommunityRewards) {
+  if (rewardsMock?.community) {
     communityRewardsBalance = "1"
   }
 
@@ -222,8 +223,8 @@ export function mockUserInitializationContractCalls(
   let callCommunityRewardsTokenOfOwnerMock
   let callGrantsMock
   let callClaimableRewardsMock
-  if (stakingRewardsMock?.hasCommunityRewards) {
-    const grant = stakingRewardsMock.grantRes || [
+  if (rewardsMock?.community) {
+    const grant = rewardsMock.community?.grantRes || [
       "1000000000000000000000",
       "0",
       "1641574558",
@@ -232,13 +233,13 @@ export function mockUserInitializationContractCalls(
       "1",
       "0",
     ]
-    const claimable = stakingRewardsMock.claimable || "1000000000000000000000"
+    const claimable = rewardsMock.community?.claimable || "1000000000000000000000"
     const acceptedGrantRes = [
       {
         returnValues: {
-          index: stakingRewardsMock.airdrop?.index || 0,
+          index: rewardsMock.community?.airdrop?.index || 0,
           account: recipient,
-          reason: stakingRewardsMock.airdrop?.reason,
+          reason: rewardsMock.community?.airdrop?.reason,
         },
       },
     ]
