@@ -61,8 +61,6 @@ interface GeolocationData {
 
 export type SetSessionFn = (data: SessionData | undefined) => void
 
-export type BackersByTranchedPoolAddress = {[address: string]: string[]}
-
 export interface GlobalState {
   currentBlock?: BlockInfo
   gfi?: GFILoaded
@@ -82,8 +80,6 @@ export interface GlobalState {
   sessionData?: SessionData
   setSessionData?: SetSessionFn
   refreshCurrentBlock?: () => Promise<void>
-  backersByTranchedPoolAddress?: BackersByTranchedPoolAddress
-  setBackersByTranchedPoolAddress?: (newVal: BackersByTranchedPoolAddress) => void
 }
 
 declare let window: any
@@ -123,7 +119,6 @@ function App() {
   // merkleDistributor, and pool be from same block.
 
   const toggleRewards = process.env.REACT_APP_TOGGLE_REWARDS === "true"
-  const [backersByTranchedPoolAddress, setBackersByTranchedPoolAddress] = useState<BackersByTranchedPoolAddress>({})
 
   useEffect(() => {
     setupWeb3()
@@ -332,8 +327,6 @@ function App() {
     sessionData,
     setSessionData,
     refreshCurrentBlock,
-    backersByTranchedPoolAddress,
-    setBackersByTranchedPoolAddress,
   }
 
   return (

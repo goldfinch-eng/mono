@@ -16,7 +16,6 @@ export interface ConnectionNoticeProps {
   requireUnlock?: boolean
   requireKYC?: {kyc: AsyncResult<KYC>; condition: (KYC: KYC) => boolean}
   isPaused?: boolean
-  isClosedToUser?: boolean
 }
 
 function TextBanner({children}: React.PropsWithChildren<{}>) {
@@ -150,11 +149,6 @@ export const strategies: ConnectionNoticeStrategy[] = [
         The pool is currently paused. Join our <a href="https://discord.gg/HVeaca3fN8">Discord</a> for updates.
       </TextBanner>
     ),
-  },
-  {
-    devName: "pool_closed_to_user",
-    match: ({isClosedToUser}) => !!isClosedToUser,
-    render: () => <TextBanner>The pool is currently closed to new participants.</TextBanner>,
   },
 ]
 
