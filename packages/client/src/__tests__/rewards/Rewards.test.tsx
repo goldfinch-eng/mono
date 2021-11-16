@@ -86,7 +86,7 @@ describe("Rewards portfolio overview", () => {
     }
   })
 
-  it("shows loading message", async () => {
+  it("shows loading message when all requirements are empty", async () => {
     let stakingRewards
     let gfi
     let user
@@ -95,6 +95,33 @@ describe("Rewards portfolio overview", () => {
     renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
 
     expect(await screen.findByText("Loading...")).toBeVisible()
+  })
+
+  it("shows loading message when some requirements are empty", async () => {
+    let gfi
+    let user
+    let merkleDistributor
+    let communityRewards
+    const {stakingRewards} = await getDefaultClasses(goldfinchProtocol)
+    renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
+
+    expect(await screen.findByText("Loading...")).toBeVisible()
+  })
+
+  it("don't show loading message when all requirements loaded", async () => {
+    const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
+
+    const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
+    mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
+      hasStakingRewards: false,
+      hasCommunityRewards: false,
+    })
+    await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
+
+    assertWithLoadedInfo(user)
+    renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
+
+    expect(await screen.queryByText("Loading...")).not.toBeInTheDocument()
   })
 
   it("shows empty portfolio", async () => {
@@ -115,7 +142,11 @@ describe("Rewards portfolio overview", () => {
     expect(await screen.findByText("Wallet balance")).toBeVisible()
     expect(await screen.findByText("Claimable")).toBeVisible()
     expect(await screen.findByText("Still vesting")).toBeVisible()
-    expect(await screen.getAllByText("0.00")[0]).toBeVisible()
+
+    expect(await screen.getByTestId("summary-wallet-balance").textContent).toEqual("0.00")
+    expect(await screen.getByTestId("summary-claimable").textContent).toEqual("0.00")
+    expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("0.00")
+    expect(await screen.getByTestId("summary-total-balance").textContent).toEqual("0.00")
   })
 
   it("unvested staking reward dont appear on portfolio", async () => {
@@ -131,13 +162,15 @@ describe("Rewards portfolio overview", () => {
     expect(await screen.findByText("Claimable")).toBeVisible()
     expect(await screen.findByText("Still vesting")).toBeVisible()
 
-    const element = screen.getByTestId("rewards-summary")
-    expect(element.getElementsByClassName("disabled-value").length).toBe(4)
-    const summaryValues = await element.getElementsByClassName("disabled-value")
-    expect(summaryValues[0]?.textContent).toEqual("0.00")
-    expect(summaryValues[1]?.textContent).toEqual("0.00")
-    expect(summaryValues[2]?.textContent).toEqual("0.00")
-    expect(summaryValues[3]?.textContent).toEqual("0.00")
+    expect(await screen.getByTestId("summary-wallet-balance").textContent).toEqual("0.00")
+    expect(await screen.getByTestId("summary-claimable").textContent).toEqual("0.00")
+    expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("0.00")
+    expect(await screen.getByTestId("summary-total-balance").textContent).toEqual("0.00")
+
+    expect(await screen.getByTestId("summary-wallet-balance").className).toEqual("disabled-value")
+    expect(await screen.getByTestId("summary-claimable").className).toEqual("disabled-value")
+    expect(await screen.getByTestId("summary-still-vesting").className).toEqual("disabled-value")
+    expect(await screen.getByTestId("summary-total-balance").className).toEqual("disabled-value")
   })
 
   it("claimable staking reward appears on portfolio", async () => {
@@ -153,13 +186,15 @@ describe("Rewards portfolio overview", () => {
     expect(await screen.findByText("Claimable")).toBeVisible()
     expect(await screen.findByText("Still vesting")).toBeVisible()
 
-    const element = screen.getByTestId("rewards-summary")
-    expect(element.getElementsByClassName("value").length).toBe(4)
-    const summaryValues = await element.getElementsByClassName("value")
-    expect(summaryValues[0]?.textContent).toEqual("0.00")
-    expect(summaryValues[1]?.textContent).toEqual("0.71")
-    expect(summaryValues[2]?.textContent).toEqual("128.89")
-    expect(summaryValues[3]?.textContent).toEqual("129.60")
+    expect(await screen.getByTestId("summary-wallet-balance").textContent).toEqual("0.00")
+    expect(await screen.getByTestId("summary-claimable").textContent).toEqual("0.71")
+    expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("128.89")
+    expect(await screen.getByTestId("summary-total-balance").textContent).toEqual("129.60")
+
+    expect(await screen.getByTestId("summary-wallet-balance").className).toEqual("value")
+    expect(await screen.getByTestId("summary-claimable").className).toEqual("value")
+    expect(await screen.getByTestId("summary-still-vesting").className).toEqual("value")
+    expect(await screen.getByTestId("summary-total-balance").className).toEqual("value")
   })
 
   it("community reward appear on portfolio", async () => {
@@ -174,13 +209,15 @@ describe("Rewards portfolio overview", () => {
     expect(await screen.findByText("Still vesting")).toBeVisible()
     expect(await screen.findByText("Total GFI balance")).toBeVisible()
 
-    const element = screen.getByTestId("rewards-summary")
-    expect(element.getElementsByClassName("value").length).toBe(4)
-    const summaryValues = await element.getElementsByClassName("value")
-    expect(summaryValues[0]?.textContent).toEqual("0.00")
-    expect(summaryValues[1]?.textContent).toEqual("1,000.00")
-    expect(summaryValues[2]?.textContent).toEqual("0.00")
-    expect(summaryValues[3]?.textContent).toEqual("1,000.00")
+    expect(await screen.getByTestId("summary-wallet-balance").textContent).toEqual("0.00")
+    expect(await screen.getByTestId("summary-claimable").textContent).toEqual("1,000.00")
+    expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("0.00")
+    expect(await screen.getByTestId("summary-total-balance").textContent).toEqual("1,000.00")
+
+    expect(await screen.getByTestId("summary-wallet-balance").className).toEqual("value")
+    expect(await screen.getByTestId("summary-claimable").className).toEqual("value")
+    expect(await screen.getByTestId("summary-still-vesting").className).toEqual("value")
+    expect(await screen.getByTestId("summary-total-balance").className).toEqual("value")
   })
 
   it("non accepted airdrops dont appear on portfolio", async () => {
@@ -195,8 +232,16 @@ describe("Rewards portfolio overview", () => {
     expect(await screen.findByText("Wallet balance")).toBeVisible()
     expect(await screen.findByText("Claimable")).toBeVisible()
     expect(await screen.findByText("Still vesting")).toBeVisible()
-    const element = screen.getByTestId("rewards-summary")
-    expect(element.getElementsByClassName("disabled-value").length).toBe(4)
+
+    expect(await screen.getByTestId("summary-wallet-balance").textContent).toEqual("0.00")
+    expect(await screen.getByTestId("summary-claimable").textContent).toEqual("0.00")
+    expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("0.00")
+    expect(await screen.getByTestId("summary-total-balance").textContent).toEqual("0.00")
+
+    expect(await screen.getByTestId("summary-wallet-balance").className).toEqual("disabled-value")
+    expect(await screen.getByTestId("summary-claimable").className).toEqual("disabled-value")
+    expect(await screen.getByTestId("summary-still-vesting").className).toEqual("disabled-value")
+    expect(await screen.getByTestId("summary-total-balance").className).toEqual("disabled-value")
   })
 
   it("community reward and staking reward appear on portfolio", async () => {
@@ -212,13 +257,15 @@ describe("Rewards portfolio overview", () => {
     expect(await screen.findByText("Claimable")).toBeVisible()
     expect(await screen.findByText("Still vesting")).toBeVisible()
 
-    const element = screen.getByTestId("rewards-summary")
-    expect(element.getElementsByClassName("value").length).toBe(4)
-    const summaryValues = await element.getElementsByClassName("value")
-    expect(summaryValues[0]?.textContent).toEqual("0.00")
-    expect(summaryValues[1]?.textContent).toEqual("1,000.71")
-    expect(summaryValues[2]?.textContent).toEqual("128.89")
-    expect(summaryValues[3]?.textContent).toEqual("1,129.60")
+    expect(await screen.getByTestId("summary-wallet-balance").textContent).toEqual("0.00")
+    expect(await screen.getByTestId("summary-claimable").textContent).toEqual("1,000.71")
+    expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("128.89")
+    expect(await screen.getByTestId("summary-total-balance").textContent).toEqual("1,129.60")
+
+    expect(await screen.getByTestId("summary-wallet-balance").className).toEqual("value")
+    expect(await screen.getByTestId("summary-claimable").className).toEqual("value")
+    expect(await screen.getByTestId("summary-still-vesting").className).toEqual("value")
+    expect(await screen.getByTestId("summary-total-balance").className).toEqual("value")
   })
 
   it("vesting community reward appear on portfolio", async () => {
@@ -233,13 +280,15 @@ describe("Rewards portfolio overview", () => {
     expect(await screen.findByText("Still vesting")).toBeVisible()
     expect(await screen.findByText("Total GFI balance")).toBeVisible()
 
-    const element = screen.getByTestId("rewards-summary")
-    expect(element.getElementsByClassName("value").length).toBe(4)
-    const summaryValues = await element.getElementsByClassName("value")
-    expect(summaryValues[0]?.textContent).toEqual("0.00")
-    expect(summaryValues[1]?.textContent).toEqual("0.00")
-    expect(summaryValues[2]?.textContent).toEqual("1,000.00")
-    expect(summaryValues[3]?.textContent).toEqual("1,000.00")
+    expect(await screen.getByTestId("summary-wallet-balance").textContent).toEqual("0.00")
+    expect(await screen.getByTestId("summary-claimable").textContent).toEqual("0.00")
+    expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("1,000.00")
+    expect(await screen.getByTestId("summary-total-balance").textContent).toEqual("1,000.00")
+
+    expect(await screen.getByTestId("summary-wallet-balance").className).toEqual("value")
+    expect(await screen.getByTestId("summary-claimable").className).toEqual("value")
+    expect(await screen.getByTestId("summary-still-vesting").className).toEqual("value")
+    expect(await screen.getByTestId("summary-total-balance").className).toEqual("value")
   })
 
   it("staking reward partially claimed appear on portfolio", async () => {
@@ -255,12 +304,14 @@ describe("Rewards portfolio overview", () => {
     expect(await screen.findByText("Still vesting")).toBeVisible()
     expect(await screen.findByText("Total GFI balance")).toBeVisible()
 
-    const element = screen.getByTestId("rewards-summary")
-    expect(element.getElementsByClassName("value").length).toBe(4)
-    const summaryValues = await element.getElementsByClassName("value")
-    expect(summaryValues[0]?.textContent).toEqual("0.00")
-    expect(summaryValues[1]?.textContent).toEqual("2.24")
-    expect(summaryValues[2]?.textContent).toEqual("265.94")
-    expect(summaryValues[3]?.textContent).toEqual("269.00")
+    expect(await screen.getByTestId("summary-wallet-balance").textContent).toEqual("0.00")
+    expect(await screen.getByTestId("summary-claimable").textContent).toEqual("2.24")
+    expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("265.94")
+    expect(await screen.getByTestId("summary-total-balance").textContent).toEqual("269.00")
+
+    expect(await screen.getByTestId("summary-wallet-balance").className).toEqual("value")
+    expect(await screen.getByTestId("summary-claimable").className).toEqual("value")
+    expect(await screen.getByTestId("summary-still-vesting").className).toEqual("value")
+    expect(await screen.getByTestId("summary-total-balance").className).toEqual("value")
   })
 })

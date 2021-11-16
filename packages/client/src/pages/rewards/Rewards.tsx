@@ -27,7 +27,7 @@ function RewardsSummary(props: RewardsSummaryProps) {
   const valueDisabledClass = totalGFI && totalGFI.gt(0) ? "value" : "disabled-value"
 
   return (
-    <div className="rewards-summary background-container" data-testid="rewards-summary">
+    <div className="rewards-summary background-container">
       <div className="rewards-summary-left-item">
         <span className="total-gfi-balance">Total GFI balance</span>
         <span className="total-gfi">{displayNumber(totalGFI ? gfiFromAtomic(totalGFI) : undefined, 2)}</span>
@@ -38,7 +38,7 @@ function RewardsSummary(props: RewardsSummaryProps) {
         <div className="details-item">
           <span>Wallet balance</span>
           <div>
-            <span className={valueDisabledClass}>
+            <span className={valueDisabledClass} data-testid="summary-wallet-balance">
               {displayNumber(walletBalance ? gfiFromAtomic(walletBalance) : undefined, 2)}
             </span>
             <span>GFI</span>
@@ -47,7 +47,7 @@ function RewardsSummary(props: RewardsSummaryProps) {
         <div className="details-item">
           <span>Claimable</span>
           <div>
-            <span className={valueDisabledClass}>
+            <span className={valueDisabledClass} data-testid="summary-claimable">
               {displayNumber(claimable ? gfiFromAtomic(claimable) : undefined, 2)}
             </span>
             <span>GFI</span>
@@ -56,7 +56,7 @@ function RewardsSummary(props: RewardsSummaryProps) {
         <div className="details-item">
           <span>Still vesting</span>
           <div>
-            <span className={valueDisabledClass}>
+            <span className={valueDisabledClass} data-testid="summary-still-vesting">
               {displayNumber(unvested ? gfiFromAtomic(unvested) : undefined, 2)}
             </span>
             <span>GFI</span>
@@ -65,7 +65,7 @@ function RewardsSummary(props: RewardsSummaryProps) {
         <div className="details-item total-balance">
           <span>Total balance</span>
           <div>
-            <span className={valueDisabledClass}>
+            <span className={valueDisabledClass} data-testid="summary-total-balance">
               {displayNumber(totalGFI ? gfiFromAtomic(totalGFI) : undefined, 2)}
             </span>
             <span>GFI</span>
