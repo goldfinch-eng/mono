@@ -65,4 +65,60 @@ type User @entity {
   goListed: Boolean
 
   seniorPoolDeposits: [SeniorPoolDeposit!]! @derivedFrom(field: "user")
+  poolBackerActivities: [PoolBackerActivity!] @derivedFrom(field: "user")
+}
+
+type SeniorTrancheInfo @entity {
+  id: ID!
+  lockedUntil: BigInt!
+}
+
+type JuniorTrancheInfo @entity {
+  id: ID!
+  lockedUntil: BigInt!
+  principalDeposited: BigInt
+}
+
+type TranchedPoolDeposit @entity {
+  """
+  tx hash
+  """
+  id: ID!
+  user: User!
+  shares: BigInt!
+  amount: BigInt!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+}
+
+type PoolBackerActivity @entity {
+  id: ID! # tranched pool ID
+  user: User!
+  deposits: [TranchedPoolDeposit!]!
+  balance: BigInt!
+  unrealizedGains: BigInt!
+  principalAmount: BigInt!
+  principalRedeemed: BigInt!
+  interestRedeemed: BigInt!
+  principalAtRisk: BigInt!
+}
+
+type CreditLineStatus @entity {
+  id: ID!
+  limit: BigInt!
+  interestApr: BigInt!
+  balance: BigInt!
+}
+
+type TranchedPool @entity {
+  id: ID!
+  estimatedJuniorApy: BigInt!
+  estimatedTotalAssets: BigInt!
+  estimatedLeverageRatio: BigInt!
+  remainingCapacity: BigInt!
+  remainingJuniorCapacity: BigInt!
+  seniorTranche: SeniorTrancheInfo!
+  juniorTranche: JuniorTrancheInfo!
+  creditLine: CreditLineStatus!
+  isPaused: Boolean!
 }
