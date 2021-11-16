@@ -102,12 +102,10 @@ function DepositForm(props: DepositFormProps) {
     submitDisabled = submitDisabled || disabled
 
     const remainingPoolCapacity = pool.info.value.poolData.remainingCapacity(goldfinchConfig.totalFundsLimit)
-    const maxTxAmountInDollars = usdcFromAtomic(
-      BigNumber.min(
-        remainingPoolCapacity,
-        goldfinchConfig.transactionLimit,
-        user ? user.info.value.usdcBalance : new BigNumber(0)
-      )
+    const maxTxAmount = BigNumber.min(
+      remainingPoolCapacity,
+      goldfinchConfig.transactionLimit,
+      user ? user.info.value.usdcBalance : new BigNumber(0)
     )
 
     return (
@@ -136,7 +134,7 @@ function DepositForm(props: DepositFormProps) {
             <TransactionInput
               formMethods={formMethods}
               disabled={disabled}
-              maxAmount={remainingPoolCapacity}
+              maxAmount={maxTxAmount}
               rightDecoration={
                 <button
                   className="enter-max-amount"
@@ -144,7 +142,7 @@ function DepositForm(props: DepositFormProps) {
                   onClick={() => {
                     formMethods.setValue(
                       "transactionAmount",
-                      new BigNumber(maxTxAmountInDollars).decimalPlaces(decimalPlaces, 1).toString(10),
+                      new BigNumber(usdcFromAtomic(maxTxAmount)).decimalPlaces(decimalPlaces, 1).toString(10),
                       {
                         shouldValidate: true,
                         shouldDirty: true,

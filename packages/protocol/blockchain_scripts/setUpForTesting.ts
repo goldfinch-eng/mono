@@ -188,11 +188,15 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, options: O
 
     await seniorPool.redeem(tokenId)
 
-    await setUpRewards(getOrNull, protocol_owner)
+    await setUpRewards(erc20, getOrNull, protocol_owner)
   }
 }
 
-async function setUpRewards(getOrNull: (name: string) => Promise<Deployment | null>, protocolOwner: string) {
+async function setUpRewards(
+  erc20: any,
+  getOrNull: (name: string) => Promise<Deployment | null>,
+  protocolOwner: string
+) {
   const amount = new BN(String(1e8)).mul(GFI_DECIMALS)
   const communityRewards = await getDeployedAsEthersContract<CommunityRewards>(getOrNull, "CommunityRewards")
   const stakingRewards = await getDeployedAsEthersContract<StakingRewards>(getOrNull, "StakingRewards")
@@ -220,6 +224,13 @@ async function setUpRewards(getOrNull: (name: string) => Promise<Deployment | nu
     toAtomic(new BN(3), STAKING_REWARDS_MULTIPLIER_DECIMALS), // 300%
     toAtomic(new BN(0.5), STAKING_REWARDS_MULTIPLIER_DECIMALS) // 50%
   )
+
+  // Have the protocol owner deposit-and-stake something, so that `stakingRewards.currentEarnRatePerToken()` will
+  // not be 0 (due to a 0 staked supply), so that there's a non-zero APY from GFI rewards.
+  const signer = ethers.provider.getSigner(protocolOwner)
+  const usdcAmount = String(usdcVal(50000))
+  await erc20.connect(signer).approve(stakingRewards.address, usdcAmount)
+  await stakingRewards.depositAndStake(usdcAmount, {from: protocolOwner})
 }
 
 export async function getERC20s({hre, chainId}) {
@@ -438,11 +449,23 @@ async function createPoolForBorrower({
   const paymentPeriodInDays = String(new BN(30))
   const termInDays = String(new BN(360))
   const lateFeeApr = String(new BN(0))
+  const principalGracePeriodInDays = String(new BN(185))
+  const fundableAt = String(new BN(0))
   const underwriterSigner = ethers.provider.getSigner(underwriter)
   const result = await (
     await goldfinchFactory
       .connect(underwriterSigner)
-      .createPool(borrower, juniorFeePercent, limit, interestApr, paymentPeriodInDays, termInDays, lateFeeApr)
+      .createPool(
+        borrower,
+        juniorFeePercent,
+        limit,
+        interestApr,
+        paymentPeriodInDays,
+        termInDays,
+        lateFeeApr,
+        principalGracePeriodInDays,
+        fundableAt
+      )
   ).wait()
   const lastEventArgs = getLastEventArgs(result)
   const poolAddress = lastEventArgs[0]

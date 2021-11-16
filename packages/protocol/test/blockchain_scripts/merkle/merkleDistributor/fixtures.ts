@@ -1,10 +1,10 @@
 import {
   FLIGHT_ACADEMY_GRANT_REASON,
   GOLDFINCH_INVESTMENT_GRANT_REASON,
-  JsonAccountedGrant,
   LIQUIDITY_PROVIDER_GRANT_REASON,
+  JsonAccountedGrant,
   MerkleDistributorInfo,
-} from "../../../blockchain_scripts/merkleDistributor/types"
+} from "../../../../blockchain_scripts/merkle/merkleDistributor/types"
 
 export const TEST_MERKLE_DISTRIBUTOR_RECIPIENT_A = "0xd4ad17f7F7f62915A1F225BB1CB88d2492F89769"
 export const TEST_MERKLE_DISTRIBUTOR_RECIPIENT_B = "0xb5c52599dFc7F9858F948f003362A7f4B5E678A5"

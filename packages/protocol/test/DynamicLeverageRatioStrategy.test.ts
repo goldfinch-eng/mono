@@ -53,6 +53,9 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
 
   await tranchedPool.deposit(TRANCHES.Junior, juniorInvestmentAmount)
 
+  const seniorRole = await tranchedPool.SENIOR_ROLE()
+  await tranchedPool.grantRole(seniorRole, owner)
+
   return {goldfinchConfig, tranchedPool, seniorPool, strategy, owner, borrower, juniorInvestmentAmount, person2}
 })
 
