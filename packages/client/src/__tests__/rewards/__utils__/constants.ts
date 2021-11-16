@@ -1,11 +1,18 @@
-import deployments from "@goldfinch-eng/protocol/deployments/all_dev.json"
+import deployments from "@goldfinch-eng/protocol/deployments/all_client_test.json"
 
 export const blockchain = "ethereum"
 export const recipient = "0x0000000000000000000000000000000000000001"
 export const network = {name: "localhost", supported: true}
 export const blockInfo = {number: 94, timestamp: 1640783491}
 
-const getAbi = (contractName: string) => deployments["31337"].localhost.contracts[contractName].abi
+const getAbi = (contractName: string) => {
+  const contract = deployments["31337"].hardhat.contracts[contractName]
+  if (contract) {
+    return contract.abi
+  } else {
+    throw new Error(`Failed to identify deployment info for contract: ${contractName}`)
+  }
+}
 
 export const stakingRewardsABI = getAbi("StakingRewards")
 

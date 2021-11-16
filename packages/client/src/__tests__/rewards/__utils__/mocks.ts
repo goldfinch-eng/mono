@@ -3,7 +3,7 @@ import {mock} from "depay-web3-mock"
 import {
   MerkleDistributorGrantInfo,
   MerkleDistributorInfo,
-} from "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types"
+} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
 import {CommunityRewards, MerkleDistributor, MerkleDistributorLoaded} from "../../../ethereum/communityRewards"
 import {GFI} from "../../../ethereum/gfi"
 import {User, UserMerkleDistributor} from "../../../ethereum/user"

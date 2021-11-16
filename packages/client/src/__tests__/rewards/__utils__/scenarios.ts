@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom"
-import {MerkleDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types"
+import {MerkleDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
 import {MerkleDistributor, CommunityRewards} from "../../../ethereum/communityRewards"
 import {GFI} from "../../../ethereum/gfi"
 import {User} from "../../../ethereum/user"
