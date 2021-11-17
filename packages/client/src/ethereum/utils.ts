@@ -1,7 +1,7 @@
 import {
   isMerkleDistributorInfo,
   MerkleDistributorInfo,
-} from "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types"
+} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
 import {BaseContract} from "@goldfinch-eng/protocol/typechain/web3/types"
 import BigNumber from "bignumber.js"
 import BN from "bn.js"
@@ -107,7 +107,7 @@ async function getMerkleDistributorInfo(): Promise<MerkleDistributorInfo | undef
   const fileNameSuffix =
     process.env.REACT_APP_MURMURATION === "yes" ? ".murmuration" : process.env.NODE_ENV === "development" ? ".dev" : ""
   return import(
-    `@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/merkleDistributorInfo${fileNameSuffix}.json`
+    `@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/merkleDistributorInfo${fileNameSuffix}.json`
   )
     .then((result: unknown): MerkleDistributorInfo => {
       const plain = _.toPlainObject(result)

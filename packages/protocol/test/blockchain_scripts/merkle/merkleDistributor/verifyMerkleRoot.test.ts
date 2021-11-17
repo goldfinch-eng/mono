@@ -1,12 +1,12 @@
-import {generateMerkleRoot} from "../../../blockchain_scripts/merkleDistributor/generateMerkleRoot"
+import {generateMerkleRoot} from "../../../../blockchain_scripts/merkle/merkleDistributor/generateMerkleRoot"
 import {
   JsonAccountedGrant,
   MerkleDistributorInfo,
   MerkleDistributorGrantInfo,
-} from "../../../blockchain_scripts/merkleDistributor/types"
-import {verifyMerkleRoot} from "../../../blockchain_scripts/merkleDistributor/verifyMerkleRoot"
+} from "../../../../blockchain_scripts/merkle/merkleDistributor/types"
+import {verifyMerkleRoot} from "../../../../blockchain_scripts/merkle/merkleDistributor/verifyMerkleRoot"
 import {assertNonEmptyArray, assertNonNullable} from "@goldfinch-eng/utils"
-import {genDifferentHexString} from "../../testHelpers"
+import {genDifferentHexString} from "../../../testHelpers"
 import fixtures from "./fixtures"
 
 const genInvalidMerkleDistributorInfo = (

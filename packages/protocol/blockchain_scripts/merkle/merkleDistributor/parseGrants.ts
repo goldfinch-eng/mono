@@ -5,7 +5,13 @@ import GrantTree from "./grantTree"
 import {AccountedGrant, MerkleDistributorGrantInfo, MerkleDistributorInfo} from "./types"
 
 export function parseGrants(unsortedGrants: AccountedGrant[]): MerkleDistributorInfo {
-  const sortedGrants = _.sortBy(unsortedGrants, "account")
+  const sortedGrants = _.sortBy(unsortedGrants, [
+    (grant) => grant.account,
+    (grant) => grant.grant.amount,
+    (grant) => grant.grant.vestingLength,
+    (grant) => grant.grant.cliffLength,
+    (grant) => grant.grant.vestingInterval,
+  ])
 
   const tree = new GrantTree(sortedGrants)
 
