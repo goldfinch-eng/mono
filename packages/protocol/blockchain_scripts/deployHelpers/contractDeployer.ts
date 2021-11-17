@@ -12,7 +12,7 @@ export class ContractDeployer {
 
   constructor(logger: Logger, hre: HardhatRuntimeEnvironment) {
     // eslint-disable-next-line @typescript-eslint/no-empty-function
-    this.logger = process.env.NODE_ENV === "test" ? () => {} : logger
+    this.logger = process.env.CI ? () => {} : logger
     this.hre = hre
   }
 
@@ -30,8 +30,8 @@ export class ContractDeployer {
       options = {proxy: {owner: protocol_owner, ...options.proxy}, ...options}
     }
     const result = await this.hre.deployments.deploy(contractName, options)
-    this.logger(`${contractName} was deployed to: ${result.address}`)
     const sizeInKiloBytes = result.bytecode!.length / 2 / 1204
+    this.logger(`${contractName} was deployed to: ${result.address} (${sizeInKiloBytes}kb)`)
     if (sizeInKiloBytes > 23) {
       throw new Error(`${contractName} too big: ${sizeInKiloBytes}kb`)
     }
@@ -40,7 +40,8 @@ export class ContractDeployer {
 
   async deployLibrary(libraryName: string, options: DeployOptions): Promise<DeployResult> {
     const result = await this.hre.deployments.deploy(libraryName, options)
-    this.logger(`${libraryName} library was deployed to: ${result.address}`)
+    const sizeInKiloBytes = result.bytecode!.length / 2 / 1204
+    this.logger(`${libraryName} library was deployed to: ${result.address} (${sizeInKiloBytes}kb)`)
     return result
   }
 }

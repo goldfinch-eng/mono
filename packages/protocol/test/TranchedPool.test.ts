@@ -158,7 +158,7 @@ describe.only("TranchedPool", () => {
   })
 
   describe("initialization", async () => {
-    it.only("sets the right defaults", async () => {
+    it("sets the right defaults", async () => {
       const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
       const seniorTranche = await tranchedPool.getTranche(TRANCHES.Senior)
       expect(juniorTranche.principalSharePrice).to.bignumber.eq(UNIT_SHARE_PRICE)

@@ -23,6 +23,13 @@ abstract contract ITranchedPool {
     uint256 lockedUntil;
   }
 
+  struct PoolSlice {
+    TrancheInfo seniorTranche;
+    TrancheInfo juniorTranche;
+    uint256 totalInterestAccrued;
+    uint256 principalDeployed;
+  }
+
   function initialize(
     address _config,
     address _borrower,
