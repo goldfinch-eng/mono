@@ -22,6 +22,7 @@ import {asNonNullable} from "@goldfinch-eng/utils"
 import {Contract} from "ethers"
 import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/ethers"
 import {GFIInstance} from "@goldfinch-eng/protocol/typechain/truffle"
+import {CONFIG_KEYS_BY_TYPE} from "../../configKeys"
 
 async function updateGoldfinchConfigs({
   existingConfig,
@@ -56,7 +57,13 @@ export async function deploy(deployEffects: DeployEffects) {
   })
   const config = (await deployConfigProxy(deployer, {deployEffects})).connect(protocolOwner)
   await deployEffects.add({
-    deferred: [await config.populateTransaction.initializeFromOtherConfig(existingConfigDeployment.address, 10, 20)],
+    deferred: [
+      await config.populateTransaction.initializeFromOtherConfig(
+        existingConfigDeployment.address,
+        Object.keys(CONFIG_KEYS_BY_TYPE.numbers).length,
+        Object.keys(CONFIG_KEYS_BY_TYPE.addresses).length
+      ),
+    ],
   })
   const updateConfigContracts = [
     "Fidu",
@@ -85,7 +92,7 @@ export async function deploy(deployEffects: DeployEffects) {
   const merkleDirectDistributor = await deployMerkleDirectDistributor(deployer, {gfi, deployEffects})
 
   // 3.
-  // TODO: Mint GFI, distribute to contracts / EOAs, set reward parameters
+  // TODO: Mint GFI, distribute to contracts / EOAs, set reward parameters, set GFI in config
 
   // 4.
   // Deploy DynamicLeverageRatioStrategy (unused for now)
@@ -93,6 +100,7 @@ export async function deploy(deployEffects: DeployEffects) {
 
   return {
     deployedContracts: {
+      config,
       lpStakingRewards,
       communityRewards,
       merkleDistributor,
