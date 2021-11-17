@@ -128,11 +128,12 @@ export class CommunityRewardsGrant {
     this.reason = reason
   }
 
-  get displayTitle(): string {
-    return this.reason ? MerkleDistributor.getDisplayTitle(this.reason) : "Community Rewards"
-  }
   get displayReason(): string {
     return this.reason ? MerkleDistributor.getDisplayReason(this.reason) : "in Community Rewards"
+  }
+
+  get title(): string {
+    return this.reason ? MerkleDistributor.getDisplayTitle(this.reason) : "Community Rewards"
   }
 
   get description(): string {
