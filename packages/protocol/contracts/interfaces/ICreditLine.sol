@@ -8,13 +8,21 @@ interface ICreditLine {
 
   function limit() external view returns (uint256);
 
+  function maxLimit() external view returns (uint256);
+
   function interestApr() external view returns (uint256);
 
   function paymentPeriodInDays() external view returns (uint256);
 
+  function principalGracePeriodInDays() external view returns (uint256);
+
   function termInDays() external view returns (uint256);
 
   function lateFeeApr() external view returns (uint256);
+
+  function isLate() external view returns (bool);
+
+  function withinPrincipalGracePeriod() external view returns (bool);
 
   // Accounting variables
   function balance() external view returns (uint256);

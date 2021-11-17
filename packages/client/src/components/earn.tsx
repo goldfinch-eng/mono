@@ -1,11 +1,11 @@
 import BigNumber from "bignumber.js"
 import React, {useContext, useEffect, useState} from "react"
 import {useHistory} from "react-router-dom"
-import {AppContext} from "../App"
 import {useEarn} from "../contexts/EarnContext"
+import {AppContext, BackersByTranchedPoolAddress} from "../App"
 import {usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
 import {POOL_CREATED_EVENT} from "../types/events"
-import {GFILoaded} from "../ethereum/gfi"
+import {GFI, GFILoaded} from "../ethereum/gfi"
 import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
 import {
   CapitalProvider,
@@ -22,6 +22,9 @@ import {BlockInfo, displayDollars, displayPercent, roundDownPenny} from "../util
 import AnnualGrowthTooltipContent from "./AnnualGrowthTooltipContent"
 import Badge from "./badge"
 import ConnectionNotice from "./connectionNotice"
+import isUndefined from "lodash/isUndefined"
+import compact from "lodash/compact"
+import fromPairs from "lodash/fromPairs"
 
 // Filter out 0 limit (inactive) and test pools
 const MIN_POOL_LIMIT = usdcToAtomic(process.env.REACT_APP_POOL_FILTER_LIMIT || "200")
@@ -89,14 +92,12 @@ function PortfolioOverview({
   const userEstimatedApyFromSupplying = estimatedAnnualGrowth.dividedBy(totalBalance)
   const estimatedApyFromSupplying = totalBalance.gt(0) ? userEstimatedApyFromSupplying : globalEstimatedApyFromSupplying
 
-  const globalEstimatedApyFromGfi = poolData.estimatedApyFromGfi || new BigNumber(0)
-  // NOTE: Same comment applies here as in `DepositStatus()` in `components/depositStatus`, that
-  // we do not worry about adjusting `userEstimatedApyFromGfi` here for a boosted reward rate the user
-  // would receive from having staked-with-lockup. The frontend does not currently support staking
-  // with lockup, so we punt on that subtlety.
-  const balancePortionEarningGfi = capitalProvider.value.stakedSeniorPoolBalanceInDollars.div(totalBalance)
-  const userEstimatedApyFromGfi = balancePortionEarningGfi.multipliedBy(globalEstimatedApyFromGfi)
-  const estimatedApyFromGfi = totalBalance.gt(0) ? userEstimatedApyFromGfi : globalEstimatedApyFromGfi
+  const globalEstimatedApyFromGfi = poolData.estimatedApyFromGfi
+  const estimatedApyFromGfi = GFI.estimateApyFromGfi(
+    capitalProvider.value.stakedSeniorPoolBalanceInDollars,
+    totalBalance,
+    globalEstimatedApyFromGfi
+  )
 
   const estimatedApy = estimatedApyFromSupplying.plus(estimatedApyFromGfi)
 
@@ -193,19 +194,32 @@ function TranchedPoolCardSkeleton() {
   )
 }
 
-export function TranchedPoolCard({poolBacker, disabled}: {poolBacker: PoolBacker; disabled: boolean}) {
+export function TranchedPoolCard({
+  poolBacker,
+  backers,
+  disabled,
+}: {
+  poolBacker: PoolBacker
+  backers: string[] | undefined
+  disabled: boolean
+}) {
   const history = useHistory()
   const tranchedPool = poolBacker.tranchedPool
   const leverageRatio = tranchedPool.estimatedLeverageRatio
   const limit = usdcFromAtomic(tranchedPool.creditLine.limit)
 
-  let estimatedApy = new BigNumber(NaN)
-  if (leverageRatio) {
-    estimatedApy = tranchedPool.estimateJuniorAPY(leverageRatio)
-  }
+  const estimatedApy = leverageRatio ? tranchedPool.estimateJuniorAPY(leverageRatio) : new BigNumber(NaN)
 
   const disabledClass = disabled ? "disabled" : ""
   const balanceDisabledClass = poolBacker?.tokenInfos.length === 0 ? "disabled" : ""
+  const isFull = tranchedPool.getIsFull(poolBacker.address, backers)
+  const badge = tranchedPool.isPaused ? (
+    <Badge text="Paused" variant="gray" fixedWidth={false} />
+  ) : isUndefined(isFull) ? undefined : isFull ? (
+    <Badge text="Full" variant="gray" fixedWidth={true} />
+  ) : (
+    <Badge text="Open" variant="blue" fixedWidth={true} />
+  )
 
   return (
     <div
@@ -224,13 +238,7 @@ export function TranchedPoolCard({poolBacker, disabled}: {poolBacker: PoolBacker
       </div>
       <div className={`table-cell col22 numeric limit ${disabledClass}`}>{displayDollars(limit, 0)}</div>
       <div className={`table-cell col16 numeric apy ${disabledClass}`}>{displayPercent(estimatedApy)}</div>
-      <div className="pool-capacity">
-        {tranchedPool.remainingCapacity().isZero() ? (
-          <Badge text="Full" variant="gray" fixedWidth />
-        ) : (
-          <Badge text="Open" variant="blue" fixedWidth />
-        )}
-      </div>
+      <div className="pool-capacity">{badge}</div>
     </div>
   )
 }
@@ -238,10 +246,14 @@ export function TranchedPoolCard({poolBacker, disabled}: {poolBacker: PoolBacker
 function usePoolBackers({
   goldfinchProtocol,
   user,
+  backersByTranchedPoolAddress,
+  setBackersByTranchedPoolAddress,
   currentBlock,
 }: {
   goldfinchProtocol: GoldfinchProtocol | undefined
   user: User | undefined
+  backersByTranchedPoolAddress: BackersByTranchedPoolAddress | undefined
+  setBackersByTranchedPoolAddress: ((newVal: BackersByTranchedPoolAddress) => void) | undefined
   currentBlock: BlockInfo | undefined
 }): {
   backers: Loadable<PoolBacker[]>
@@ -257,7 +269,13 @@ function usePoolBackers({
   })
 
   useEffect(() => {
-    async function loadTranchedPools(goldfinchProtocol: GoldfinchProtocol, user: User, currentBlock: BlockInfo) {
+    async function loadTranchedPools(
+      goldfinchProtocol: GoldfinchProtocol,
+      user: User,
+      backersByTranchedPoolAddress: BackersByTranchedPoolAddress,
+      setBackersByTranchedPoolAddress: (newVal: BackersByTranchedPoolAddress) => void,
+      currentBlock: BlockInfo
+    ) {
       let poolEvents = await goldfinchProtocol.queryEvents(
         "GoldfinchFactory",
         [POOL_CREATED_EVENT],
@@ -288,10 +306,32 @@ function usePoolBackers({
             a.tranchedPool.displayName.localeCompare(b.tranchedPool.displayName)
         ),
       })
+
+      const backersByActivePoolAddress = fromPairs(
+        compact(
+          await Promise.all(
+            activePoolBackers.map((b) =>
+              b.tranchedPool.maxBackers
+                ? b.tranchedPool.getBackers().then((backers) => [b.tranchedPool.address, backers])
+                : undefined
+            )
+          )
+        )
+      )
+      setBackersByTranchedPoolAddress({
+        ...backersByTranchedPoolAddress,
+        ...backersByActivePoolAddress,
+      })
     }
 
-    if (goldfinchProtocol && user && currentBlock) {
-      loadTranchedPools(goldfinchProtocol, user, currentBlock)
+    if (goldfinchProtocol && user && backersByTranchedPoolAddress && setBackersByTranchedPoolAddress && currentBlock) {
+      loadTranchedPools(
+        goldfinchProtocol,
+        user,
+        backersByTranchedPoolAddress,
+        setBackersByTranchedPoolAddress,
+        currentBlock
+      )
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [goldfinchProtocol, user, currentBlock])
@@ -300,14 +340,30 @@ function usePoolBackers({
 }
 
 function Earn() {
-  const {pool, usdc, user, goldfinchProtocol, goldfinchConfig, stakingRewards, gfi, currentBlock} =
-    useContext(AppContext)
+  const {
+    pool,
+    usdc,
+    user,
+    goldfinchProtocol,
+    goldfinchConfig,
+    stakingRewards,
+    gfi,
+    backersByTranchedPoolAddress,
+    setBackersByTranchedPoolAddress,
+    currentBlock,
+  } = useContext(AppContext)
   const {earnStore, setEarnStore} = useEarn()
   const [capitalProvider, setCapitalProvider] = useState<Loadable<CapitalProvider>>({
     loaded: false,
     value: undefined,
   })
-  const {backers, poolsAddresses} = usePoolBackers({goldfinchProtocol, user, currentBlock})
+  const {backers, poolsAddresses} = usePoolBackers({
+    goldfinchProtocol,
+    user,
+    backersByTranchedPoolAddress,
+    setBackersByTranchedPoolAddress,
+    currentBlock,
+  })
 
   useEffect(() => {
     if (pool && stakingRewards && gfi && user) {
@@ -402,7 +458,12 @@ function Earn() {
 
           {backersData.loaded &&
             backersData.value.map((p) => (
-              <TranchedPoolCard key={`${p.tranchedPool.address}`} poolBacker={p} disabled={isLoading} />
+              <TranchedPoolCard
+                key={`${p.tranchedPool.address}`}
+                poolBacker={p}
+                backers={backersByTranchedPoolAddress?.[p.tranchedPool.address]}
+                disabled={isLoading}
+              />
             ))}
         </PoolList>
       </div>

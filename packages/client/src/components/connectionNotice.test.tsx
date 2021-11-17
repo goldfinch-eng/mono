@@ -47,6 +47,17 @@ const scenarios: Scenario[] = [
     expectedText: /The pool is currently paused/,
   },
   {
+    devName: "pool_closed_to_user",
+    setUpMatch: ({store, props}) => {
+      props.isClosedToUser = true
+      store.user = {
+        info: {loaded: true, value: {goListed: true}},
+      }
+    },
+    setUpFallthrough: (_props) => {},
+    expectedText: /The pool is currently closed to new participants\./,
+  },
+  {
     devName: "wrong_network",
     setUpMatch: ({store}) => {
       store.network = {

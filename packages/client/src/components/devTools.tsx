@@ -138,6 +138,18 @@ export default function DevTools(props) {
           >
             advanceTimeOneDay
           </DevToolsButton>
+          <DevToolsButton
+            disabled={disabled}
+            setDisabled={setDisabled}
+            onClick={async () =>
+              fetch("/advanceTimeThirtyDays", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+              })
+            }
+          >
+            advanceTimeThirtyDays
+          </DevToolsButton>
           <DevToolsButton disabled={disabled} setDisabled={setDisabled} onClick={async () => setPanel("kyc")}>
             KYC
           </DevToolsButton>

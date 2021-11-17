@@ -1,8 +1,7 @@
-import * as userModule from "./user"
 import {
   GrantReason,
   MerkleDistributorGrantInfo,
-} from "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types"
+} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
 import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
 import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/web3/GoldfinchConfig"
 import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
@@ -504,12 +503,12 @@ export class UserMerkleDistributor {
       merkleDistributor.info.value.merkleDistributorInfo.grants,
       address
     )
-    const withAcceptance = await UserMerkleDistributor.getAirdropsWithAcceptance(
+    const accepted = await UserMerkleDistributor.getAcceptedAirdrops(
       airdropsForRecipient,
       merkleDistributor,
       currentBlock
     )
-    const airdrops = withAcceptance.reduce<{
+    const airdrops = accepted.reduce<{
       accepted: MerkleDistributorGrantInfo[]
       notAccepted: MerkleDistributorGrantInfo[]
     }>(
@@ -533,7 +532,7 @@ export class UserMerkleDistributor {
     }
   }
 
-  static async getAirdropsWithAcceptance(
+  static async getAcceptedAirdrops(
     airdropsForRecipient: MerkleDistributorGrantInfo[],
     merkleDistributor: MerkleDistributorLoaded,
     currentBlock: BlockInfo
@@ -801,74 +800,72 @@ export class User {
         currentBlock
       ),
 
-      userModule
-        .getOverlappingStakingRewardsEvents(this.address, stakingRewards)
-        .then(async (overlappingStakingRewardsEvents) => {
-          const nonOverlappingEvents = getNonOverlappingStakingRewardsEvents(overlappingStakingRewardsEvents.value)
-          const stakedEvents: KnownEventData<typeof STAKED_EVENT>[] = overlappingStakingRewardsEvents.value.filter(
-            (
-              eventData: KnownEventData<StakingRewardsEventType>
-            ): eventData is KnownEventData<StakingRewardsEventType> & {event: typeof STAKED_EVENT} =>
-              eventData.event === STAKED_EVENT
-          )
-          return {
-            stakedEvents: {
-              currentBlock: overlappingStakingRewardsEvents.currentBlock,
-              value: stakedEvents,
+      getOverlappingStakingRewardsEvents(this.address, stakingRewards).then(async (overlappingStakingRewardsEvents) => {
+        const nonOverlappingEvents = getNonOverlappingStakingRewardsEvents(overlappingStakingRewardsEvents.value)
+        const stakedEvents: KnownEventData<typeof STAKED_EVENT>[] = overlappingStakingRewardsEvents.value.filter(
+          (
+            eventData: KnownEventData<StakingRewardsEventType>
+          ): eventData is KnownEventData<StakingRewardsEventType> & {event: typeof STAKED_EVENT} =>
+            eventData.event === STAKED_EVENT
+        )
+        return {
+          stakedEvents: {
+            currentBlock: overlappingStakingRewardsEvents.currentBlock,
+            value: stakedEvents,
+          },
+          stakingRewardsTxs: await mapEventsToTx(nonOverlappingEvents, STAKING_REWARDS_EVENT_TYPES, {
+            parseName: (eventData: KnownEventData<StakingRewardsEventType>) => {
+              switch (eventData.event) {
+                case STAKED_EVENT:
+                  return STAKE_TX_TYPE
+                case DEPOSITED_AND_STAKED_EVENT:
+                  return SUPPLY_AND_STAKE_TX_TYPE
+                case UNSTAKED_EVENT:
+                  return UNSTAKE_TX_NAME
+                case UNSTAKED_AND_WITHDREW_EVENT:
+                case UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT:
+                  return UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE
+                case REWARD_PAID_EVENT:
+                  return CLAIM_TX_TYPE
+                default:
+                  assertUnreachable(eventData.event)
+              }
             },
-            stakingRewardsTxs: await mapEventsToTx(nonOverlappingEvents, STAKING_REWARDS_EVENT_TYPES, {
-              parseName: (eventData: KnownEventData<StakingRewardsEventType>) => {
-                switch (eventData.event) {
-                  case STAKED_EVENT:
-                    return STAKE_TX_TYPE
-                  case DEPOSITED_AND_STAKED_EVENT:
-                    return SUPPLY_AND_STAKE_TX_TYPE
-                  case UNSTAKED_EVENT:
-                    return UNSTAKE_TX_NAME
-                  case UNSTAKED_AND_WITHDREW_EVENT:
-                  case UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT:
-                    return UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE
-                  case REWARD_PAID_EVENT:
-                    return CLAIM_TX_TYPE
-                  default:
-                    assertUnreachable(eventData.event)
-                }
-              },
-              parseAmount: (eventData: KnownEventData<StakingRewardsEventType>) => {
-                switch (eventData.event) {
-                  case STAKED_EVENT:
-                    return {
-                      amount: eventData.returnValues.amount,
-                      units: "fidu",
-                    }
-                  case DEPOSITED_AND_STAKED_EVENT:
-                    return {
-                      amount: eventData.returnValues.depositedAmount,
-                      units: "usdc",
-                    }
-                  case UNSTAKED_EVENT:
-                    return {
-                      amount: eventData.returnValues.amount,
-                      units: "fidu",
-                    }
-                  case UNSTAKED_AND_WITHDREW_EVENT:
-                  case UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT:
-                    return {
-                      amount: eventData.returnValues.usdcReceivedAmount,
-                      units: "usdc",
-                    }
-                  case REWARD_PAID_EVENT:
-                    return {
-                      amount: eventData.returnValues.reward,
-                      units: "gfi",
-                    }
-                  default:
-                    assertUnreachable(eventData.event)
-                }
-              },
-            }),
-          }
-        }),
+            parseAmount: (eventData: KnownEventData<StakingRewardsEventType>) => {
+              switch (eventData.event) {
+                case STAKED_EVENT:
+                  return {
+                    amount: eventData.returnValues.amount,
+                    units: "fidu",
+                  }
+                case DEPOSITED_AND_STAKED_EVENT:
+                  return {
+                    amount: eventData.returnValues.depositedAmount,
+                    units: "usdc",
+                  }
+                case UNSTAKED_EVENT:
+                  return {
+                    amount: eventData.returnValues.amount,
+                    units: "fidu",
+                  }
+                case UNSTAKED_AND_WITHDREW_EVENT:
+                case UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT:
+                  return {
+                    amount: eventData.returnValues.usdcReceivedAmount,
+                    units: "usdc",
+                  }
+                case REWARD_PAID_EVENT:
+                  return {
+                    amount: eventData.returnValues.reward,
+                    units: "gfi",
+                  }
+                default:
+                  assertUnreachable(eventData.event)
+              }
+            },
+          }),
+        }
+      }),
       getAndTransformCommunityRewardsEvents(this.address, communityRewards),
       getAndTransformMerkleDistributorEvents(this.address, merkleDistributor),
     ])

@@ -14,6 +14,8 @@ abstract contract IV2CreditLine is ICreditLine {
 
   function setLimit(uint256 newAmount) external virtual;
 
+  function setMaxLimit(uint256 newAmount) external virtual;
+
   function setBalance(uint256 newBalance) external virtual;
 
   function setPrincipal(uint256 _principal) external virtual;
@@ -39,7 +41,8 @@ abstract contract IV2CreditLine is ICreditLine {
     uint256 _interestApr,
     uint256 _paymentPeriodInDays,
     uint256 _termInDays,
-    uint256 _lateFeeApr
+    uint256 _lateFeeApr,
+    uint256 _principalGracePeriodInDays
   ) public virtual;
 
   function setTermEndTime(uint256 newTermEndTime) external virtual;
