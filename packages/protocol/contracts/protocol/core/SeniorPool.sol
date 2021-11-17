@@ -25,7 +25,6 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
 
   uint256 public compoundBalance;
   mapping(ITranchedPool => uint256) public writedowns;
-  bytes32 public constant REDEEMER_ROLE = keccak256("REDEEMER_ROLE");
 
   event DepositMade(address indexed capitalProvider, uint256 amount, uint256 shares);
   event WithdrawalMade(address indexed capitalProvider, uint256 userAmount, uint256 reserveAmount);
@@ -159,13 +158,6 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     require(success, "Failed to approve USDC for compound");
   }
 
-  // Grants `role` redeemer to `account` & sets `adminRole` as `role`'s admin role.
-  function setupRedeemerRole() external onlyAdmin whenNotPaused {
-    _setupRole(REDEEMER_ROLE, config.protocolAdminAddress());
-    _setRoleAdmin(REDEEMER_ROLE, OWNER_ROLE);
-    require(hasRole(REDEEMER_ROLE, config.protocolAdminAddress()), "Failed to set redeemer role to owner");
-  }
-
   /**
    * @notice Moves any USDC from Compound back to the SeniorPool, and recognizes interest earned.
    * This is done automatically on drawdown or withdraw, but can be called manually if necessary.
@@ -230,7 +222,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
    * @notice Redeem interest and/or principal from an ITranchedPool investment
    * @param tokenId the ID of an IPoolTokens token to be redeemed
    */
-  function redeem(uint256 tokenId) public override whenNotPaused nonReentrant onlyAdmin {
+  function redeem(uint256 tokenId) public override whenNotPaused nonReentrant {
     IPoolTokens poolTokens = config.getPoolTokens();
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
 

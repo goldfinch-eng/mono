@@ -1,4 +1,4 @@
-import {MerkleDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types"
+import {MerkleDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
 import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
 import React, {useState} from "react"
@@ -223,7 +223,7 @@ function getActionButtonProps(props: RewardsListItemProps): ActionButtonProps {
         disabled: true,
       }
     default:
-      assertUnreachable(props.status)
+      return assertUnreachable(props.status)
   }
 }
 
@@ -462,7 +462,6 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     return sendFromUser(
       props.merkleDistributor.contract.methods.acceptGrant(
         info.index,
-        info.account,
         info.grant.amount,
         info.grant.vestingLength,
         info.grant.cliffLength,

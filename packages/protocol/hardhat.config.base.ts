@@ -1,10 +1,13 @@
+import {findEnvLocal} from "@goldfinch-eng/utils"
+import dotenv from "dotenv"
 import {
   TEST_MERKLE_DISTRIBUTOR_RECIPIENT_A,
   TEST_MERKLE_DISTRIBUTOR_RECIPIENT_B,
-} from "./test/blockchain_scripts/merkleDistributor/fixtures"
-
-import {findEnvLocal} from "@goldfinch-eng/utils"
-import dotenv from "dotenv"
+} from "./test/blockchain_scripts/merkle/merkleDistributor/fixtures"
+import {
+  TEST_MERKLE_DIRECT_DISTRIBUTOR_RECIPIENT_A,
+  TEST_MERKLE_DIRECT_DISTRIBUTOR_RECIPIENT_B,
+} from "./test/blockchain_scripts/merkle/merkleDirectDistributor/fixtures"
 dotenv.config({path: findEnvLocal()})
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY
 const ALCHEMY_RINKEBY_API_KEY = process.env.ALCHEMY_RINKEBY_API_KEY
@@ -86,6 +89,12 @@ export default {
     },
     test_merkle_distributor_recipient_b: {
       hardhat: TEST_MERKLE_DISTRIBUTOR_RECIPIENT_B,
+    },
+    test_merkle_direct_distributor_recipient_a: {
+      hardhat: TEST_MERKLE_DIRECT_DISTRIBUTOR_RECIPIENT_A,
+    },
+    test_merkle_direct_distributor_recipient_b: {
+      hardhat: TEST_MERKLE_DIRECT_DISTRIBUTOR_RECIPIENT_B,
     },
   },
   gasReporter: {
