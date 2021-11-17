@@ -33,7 +33,8 @@ abstract contract ITranchedPool {
     uint256 _termInDays,
     uint256 _lateFeeApr,
     uint256 _principalGracePeriodInDays,
-    uint256 _fundableAt
+    uint256 _fundableAt,
+    uint256[] calldata _allowedUIDTypes
   ) public virtual;
 
   function getTranche(uint256 tranche) external view virtual returns (TrancheInfo memory);

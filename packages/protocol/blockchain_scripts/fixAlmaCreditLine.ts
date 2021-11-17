@@ -48,7 +48,13 @@ async function main() {
   assertIsChainId(chainId)
   const deployer = new ContractDeployer(console.log, hre)
   const existingContracts = await getExistingContracts(contractsToUpgrade, owner, chainId)
-  const upgradedContracts = await upgradeContracts(contractsToUpgrade, existingContracts, owner, gf_deployer, deployer)
+  const upgradedContracts = await upgradeContracts({
+    contractsToUpgrade,
+    contracts: existingContracts,
+    signer: owner,
+    deployFrom: gf_deployer,
+    deployer,
+  })
 
   const goldfinchFactoryAddress = asNonNullable(upgradedContracts.GoldfinchFactory).ProxyContract.address
   const goldfinchFactory = await getContract<GoldfinchFactory, GoldfinchFactoryInstance>(

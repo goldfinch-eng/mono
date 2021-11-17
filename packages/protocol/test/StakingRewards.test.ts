@@ -71,12 +71,12 @@ describe("StakingRewards", function () {
   let owner: string,
     investor: string,
     anotherUser: string,
-    goldfinchConfig: GoldfinchConfigInstance,
     gfi: GFIInstance,
     usdc: ERC20Instance,
     seniorPool: SeniorPoolInstance,
     fidu: FiduInstance,
-    stakingRewards: StakingRewardsInstance
+    stakingRewards: StakingRewardsInstance,
+    goldfinchConfig: GoldfinchConfigInstance
 
   let fiduAmount: BN
   let anotherUserFiduAmount: BN
@@ -149,7 +149,9 @@ describe("StakingRewards", function () {
     const owner = asNonNullable(_owner)
     const investor = asNonNullable(_investor)
     const anotherUser = asNonNullable(_anotherUser)
-    const {goldfinchConfig, seniorPool, gfi, stakingRewards, fidu, usdc} = await deployAllContracts(deployments)
+    const {goldfinchConfig, seniorPool, gfi, stakingRewards, fidu, usdc, ...others} = await deployAllContracts(
+      deployments
+    )
     await goldfinchConfig.bulkAddToGoList([owner, investor, anotherUser])
     await erc20Approve(usdc, investor, usdcVal(10000), [owner])
     await erc20Transfer(usdc, [investor], usdcVal(10000), owner)
@@ -192,6 +194,7 @@ describe("StakingRewards", function () {
       minRateAtPercent,
       fiduAmount,
       anotherUserFiduAmount,
+      ...others,
     }
   })
 
@@ -201,7 +204,6 @@ describe("StakingRewards", function () {
       owner,
       investor,
       anotherUser,
-      goldfinchConfig,
       seniorPool,
       gfi,
       stakingRewards,
@@ -214,6 +216,7 @@ describe("StakingRewards", function () {
       minRateAtPercent,
       fiduAmount,
       anotherUserFiduAmount,
+      goldfinchConfig,
     } = await testSetup())
   })
 
@@ -603,9 +606,6 @@ describe("StakingRewards", function () {
         assertNonNullable(wallet)
         const {v, r, s} = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(wallet.privateKey.slice(2), "hex"))
 
-        const balanceBefore = await usdc.balanceOf(investor)
-        const seniorPoolAssetsBefore = await seniorPool.assets()
-
         await stakingRewards.pause()
         await expect(
           stakingRewards.depositWithPermitAndStakeWithLockup(
@@ -986,7 +986,6 @@ describe("StakingRewards", function () {
     it("unstakes fidu and withdraws from the senior pool for multiple position tokens", async () => {
       const firstTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: firstTokenAmount})
       const secondTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: secondTokenAmount})
-      const thirdTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: thirdTokenAmount})
 
       const totalWithdrawalAmountInFidu = firstTokenAmount.add(secondTokenAmount)
       const totalWithdrawalAmountInUsdc = firstTokenWithdrawAmount.add(secondTokenWithdrawAmount)
@@ -2421,6 +2420,32 @@ describe("StakingRewards", function () {
         await expect(stakingRewards.setVestingSchedule(vestingLength, {from: anotherUser})).to.be.rejectedWith(
           /Must have admin role/
         )
+      })
+    })
+  })
+
+  describe("updateGoldfinchConfig", async () => {
+    let otherConfig: GoldfinchConfigInstance
+
+    const updateGoldfinchConfigTestSetup = deployments.createFixture(async ({deployments}) => {
+      const deployment = await deployments.deploy("GoldfinchConfig", {from: owner})
+      const goldfinchConfig = await artifacts.require("GoldfinchConfig").at(deployment.address)
+      return {goldfinchConfig}
+    })
+
+    beforeEach(async () => {
+      // eslint-disable-next-line @typescript-eslint/no-extra-semi
+      ;({goldfinchConfig: otherConfig} = await updateGoldfinchConfigTestSetup())
+    })
+
+    describe("setting it", async () => {
+      it("emits an event", async () => {
+        await goldfinchConfig.setGoldfinchConfig(otherConfig.address, {from: owner})
+        const tx = await stakingRewards.updateGoldfinchConfig({from: owner})
+        expectEvent(tx, "GoldfinchConfigUpdated", {
+          who: owner,
+          configAddress: otherConfig.address,
+        })
       })
     })
   })

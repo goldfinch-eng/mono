@@ -43,6 +43,8 @@ import {
   UniqueIdentity,
 } from "../typechain/ethers"
 
+import * as migratev22 from "../blockchain_scripts/migrations/v2.2/migrate"
+
 dotenv.config({path: findEnvLocal()})
 
 /*
@@ -89,6 +91,11 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, options: O
   }
 
   if (isMainnetForking()) {
+    const protocolOwner = await getProtocolOwner()
+    await impersonateAccount(hre, protocolOwner)
+    await fundWithWhales(["ETH"], [protocolOwner])
+    await migratev22.main()
+
     logger("Funding protocol_owner with whales")
     underwriter = protocol_owner
     await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [protocol_owner, gf_deployer, borrower], new BN("75000"))
@@ -452,6 +459,7 @@ async function createPoolForBorrower({
   const principalGracePeriodInDays = String(new BN(185))
   const fundableAt = String(new BN(0))
   const underwriterSigner = ethers.provider.getSigner(underwriter)
+  const allowedUIDTypes = []
   const result = await (
     await goldfinchFactory
       .connect(underwriterSigner)
@@ -464,7 +472,8 @@ async function createPoolForBorrower({
         termInDays,
         lateFeeApr,
         principalGracePeriodInDays,
-        fundableAt
+        fundableAt,
+        allowedUIDTypes
       )
   ).wait()
   const lastEventArgs = getLastEventArgs(result)
