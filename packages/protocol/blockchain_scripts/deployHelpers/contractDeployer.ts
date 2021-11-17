@@ -31,6 +31,10 @@ export class ContractDeployer {
     }
     const result = await this.hre.deployments.deploy(contractName, options)
     this.logger(`${contractName} was deployed to: ${result.address}`)
+    const sizeInKiloBytes = result.bytecode!.length / 2 / 1204
+    if (sizeInKiloBytes > 23) {
+      throw new Error(`${contractName} too big: ${sizeInKiloBytes}kb`)
+    }
     return (await ethers.getContractAt(result.abi, result.address)) as T
   }
 

@@ -625,8 +625,10 @@ async function deployTranchedPool(deployer: ContractDeployer, {config}: DeployOp
   }
 
   assertIsString(gf_deployer)
+  const tranchedPoolHelper = await deployer.deployLibrary("TranchedPoolHelper", {from: gf_deployer, args: []})
   const tranchedPoolImpl = await deployer.deploy(contractName, {
     from: gf_deployer,
+    libraries: {["TranchedPoolHelper"]: tranchedPoolHelper.address},
   })
   logger("Updating config...")
   await updateConfig(config, "address", CONFIG_KEYS.TranchedPoolImplementation, tranchedPoolImpl.address, {logger})
