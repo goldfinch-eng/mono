@@ -41,7 +41,7 @@ All contracts are located under `packages/protocol/contracts`
 - `npm run start`
   - This will run a local, [mainnet-forked](https://hardhat.org/hardhat-network/guides/mainnet-forking.html) blockchain. Extremely useful for certain changes.
   - Requires an Alchemy API key. Sign up for free at https://www.alchemy.com/. To use it, see the one-time setup below.
-  - This will also create and deploy our subgraph to a local graph node (when `REACT_APP_TOGGLE_THE_GRAPH` is enabled).
+  - If `REACT_APP_TOGGLE_THE_GRAPH` is enabled, this will also create and deploy our subgraph to a local graph node. Please note: it may take up to a few hours to finish the subgraph's indexing when deploying it for the first time.
 
 Both options will start several processes, including your local blockchain and front-end server, which will pop up on http://localhost:3000. It takes a min to spin up.
 
