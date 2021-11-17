@@ -321,7 +321,8 @@ function getGrantVestingCliffDisplay(cliffLength: BigNumber): string | undefined
       return undefined
     default:
       console.error(`Unexpected cliff length: ${cliffLengthString}`)
-      return ` with ${cliffLengthInDays}${cliffLengthInDays === 1 ? " day" : " days"} cliff`
+      const cliffDisplayText = ` with ${cliffLengthInDays}${cliffLengthInDays === 1 ? " day" : " days"} cliff`
+      return cliffLengthInDays ? cliffDisplayText : ""
   }
 }
 function getGrantVestingLengthDisplay(duration: number, currentTimestamp: number | undefined): string {
