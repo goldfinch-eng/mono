@@ -14,10 +14,11 @@ import {
   assertAllMocksAreCalled,
 } from "./mocks"
 import {GoldfinchProtocol} from "../../../ethereum/GoldfinchProtocol"
+import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
 
 export async function setupNewStakingReward(goldfinchProtocol: GoldfinchProtocol, seniorPool: SeniorPoolLoaded) {
   const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
-  const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
+  const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
   const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, merkleDistributor, {
     staking: {},
   })
@@ -33,7 +34,7 @@ export async function setupClaimableStakingReward(goldfinchProtocol, seniorPool)
   updatedBlockInfo.timestamp = 1641564707
 
   const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
-  const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
+  const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
   const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, merkleDistributor, {
     staking: {
       currentTimestamp: String(updatedBlockInfo.timestamp),
@@ -68,7 +69,7 @@ export async function setupClaimableCommunityReward(
   setupMocksForAirdrop(airdrop)
 
   const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
-  const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
+  const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
   const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, merkleDistributor, {
     community: {
       airdrop: airdrop,
@@ -97,7 +98,7 @@ export async function setupAirdrop(goldfinchProtocol: GoldfinchProtocol, seniorP
   }
   setupMocksForAirdrop(airdrop, false)
   const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
-  const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
+  const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
   const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, merkleDistributor, {})
   await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
 
@@ -123,7 +124,7 @@ export async function setupVestingCommunityReward(goldfinchProtocol: GoldfinchPr
   setupMocksForAirdrop(airdrop)
 
   const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
-  const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
+  const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
   const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, merkleDistributor, {
     community: {
       airdrop: airdrop,
@@ -161,7 +162,7 @@ export async function setupCommunityRewardAndStakingReward(
   setupMocksForAirdrop(airdrop)
 
   const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
-  const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
+  const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
   const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, merkleDistributor, {
     staking: {
       currentTimestamp: String(updatedBlockInfo.timestamp),
@@ -189,7 +190,7 @@ export async function setupPartiallyClaimedStakingReward(
   updatedBlockInfo.timestamp = 1641750579
 
   const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
-  const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
+  const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
   const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, merkleDistributor, {
     staking: {
       currentTimestamp: String(updatedBlockInfo.timestamp),
