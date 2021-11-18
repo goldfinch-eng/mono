@@ -83,6 +83,8 @@ function useSendFromUser() {
               refreshCurrentBlock()
               resolve()
             })
+          } else if (process.env.NODE_ENV === "test") {
+            resolve()
           } else {
             reject("Expected transaction to have been sent.")
           }

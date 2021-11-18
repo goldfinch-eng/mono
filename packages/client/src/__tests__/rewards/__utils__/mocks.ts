@@ -7,9 +7,10 @@ import "@testing-library/jest-dom"
 import {mock} from "depay-web3-mock"
 import {BlockNumber} from "web3-core"
 import {Filter} from "web3-eth-contract"
+import {BigNumber} from "bignumber.js"
 import {CommunityRewards, MerkleDistributor, MerkleDistributorLoaded} from "../../../ethereum/communityRewards"
 import {GFI} from "../../../ethereum/gfi"
-import {StakingRewards} from "../../../ethereum/pool"
+import {StakingRewards, SeniorPoolLoaded, StakingRewardsLoaded} from "../../../ethereum/pool"
 import {User, UserMerkleDistributor} from "../../../ethereum/user"
 import * as utils from "../../../ethereum/utils"
 import {GRANT_ACCEPTED_EVENT, KnownEventData, KnownEventName} from "../../../types/events"
@@ -18,6 +19,7 @@ import {
   blockchain,
   blockInfo,
   communityRewardsABI,
+  DEPLOYMENTS,
   erc20ABI,
   gfiABI,
   merkleDistributorABI,
@@ -25,6 +27,8 @@ import {
   stakingRewardsABI,
 } from "./constants"
 import isEqual from "lodash/isEqual"
+import web3 from "../../../web3"
+import * as poolModule from "../../../ethereum/pool"
 
 export interface RewardsMockData {
   staking?: {
@@ -412,5 +416,106 @@ export function assertAllMocksAreCalled(mocks: ContractCallsMocks) {
     if (mock) {
       expect(mock).toHaveBeenCalled()
     }
+  })
+}
+
+export function mockStakeFiduBannerCalls(toApproveAmount: string, allowanceAmount: string, notStakedFidu: string) {
+  const balanceMock = mock({
+    blockchain,
+    call: {
+      to: DEPLOYMENTS.contracts.Fidu.address,
+      api: DEPLOYMENTS.contracts.Fidu.abi,
+      method: "balanceOf",
+      params: recipient,
+      return: notStakedFidu,
+    },
+  })
+  const allowanceMock = mock({
+    blockchain,
+    call: {
+      to: DEPLOYMENTS.contracts.Fidu.address,
+      api: DEPLOYMENTS.contracts.Fidu.abi,
+      method: "allowance",
+      params: [recipient, DEPLOYMENTS.contracts.StakingRewards.address],
+      return: allowanceAmount,
+    },
+  })
+  web3.eth.getGasPrice = () => {
+    return Promise.resolve("100000000")
+  }
+  const approvalMock = mock({
+    blockchain,
+    transaction: {
+      to: DEPLOYMENTS.contracts.Fidu.address,
+      api: DEPLOYMENTS.contracts.Fidu.abi,
+      method: "approve",
+      params: {spender: DEPLOYMENTS.contracts.StakingRewards.address, amount: toApproveAmount},
+    },
+  })
+  const stakeMock = mock({
+    blockchain,
+    transaction: {
+      to: DEPLOYMENTS.contracts.StakingRewards.address,
+      api: DEPLOYMENTS.contracts.StakingRewards.abi,
+      method: "stake",
+      params: notStakedFidu,
+    },
+  })
+  return {
+    balanceMock,
+    allowanceMock,
+    approvalMock,
+    stakeMock,
+  }
+}
+
+export function mockCapitalProviderCalls(
+  sharePrice: string,
+  numSharesNotStaked: string,
+  allowance: string,
+  weightedAverageSharePrice: string
+) {
+  mock({
+    blockchain,
+    call: {
+      to: DEPLOYMENTS.contracts.SeniorPool.address,
+      api: DEPLOYMENTS.contracts.SeniorPool.abi,
+      method: "sharePrice",
+      params: [],
+      return: sharePrice,
+    },
+  })
+  jest
+    .spyOn(poolModule, "getWeightedAverageSharePrice")
+    .mockImplementation(
+      (
+        pool: SeniorPoolLoaded,
+        stakingRewards: StakingRewardsLoaded,
+        capitalProviderAddress: string,
+        capitalProviderTotalShares: BigNumber,
+        currentBlock: BlockInfo
+      ) => {
+        return Promise.resolve(new BigNumber(weightedAverageSharePrice))
+      }
+    )
+  mock({
+    blockchain,
+    call: {
+      to: DEPLOYMENTS.contracts.Fidu.address,
+      api: DEPLOYMENTS.contracts.Fidu.abi,
+      method: "balanceOf",
+      params: [recipient],
+      return: numSharesNotStaked,
+    },
+  })
+  mock({
+    blockchain,
+    call: {
+      to: DEPLOYMENTS.contracts.TestERC20.address,
+      api: DEPLOYMENTS.contracts.TestERC20.abi,
+      method: "allowance",
+      params: [recipient, DEPLOYMENTS.contracts.SeniorPool.address],
+      return: allowance,
+    },
   })
 }
