@@ -71,7 +71,7 @@ describe("Stake unstaked fidu", () => {
     stakingRewards: StakingRewardsLoaded,
     communityRewards: CommunityRewardsLoaded,
     merkleDistributor: MerkleDistributorLoaded,
-    user: any
+    user: UserLoaded
 
   beforeEach(async () => {
     jest.spyOn(utils, "getDeployments").mockImplementation(() => {
@@ -99,12 +99,11 @@ describe("Stake unstaked fidu", () => {
     communityRewards = results.communityRewards
     merkleDistributor = results.merkleDistributor
 
-    const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
-    mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, merkleDistributor, {})
-    await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
-
-    assertWithLoadedInfo(user)
-    assertWithLoadedInfo(seniorPool)
+    const _user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
+    mockUserInitializationContractCalls(_user, stakingRewards, gfi, communityRewards, merkleDistributor, {})
+    await _user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
+    assertWithLoadedInfo(_user)
+    user = _user
   })
 
   afterEach(() => {
