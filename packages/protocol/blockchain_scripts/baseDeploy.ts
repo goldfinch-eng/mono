@@ -63,6 +63,9 @@ import {toEthers} from "../test/testHelpers"
 import {getDeployEffects, DeployEffects} from "./migrations/deployEffects"
 import {TestBackerRewards} from "../typechain/ethers/TestBackerRewards"
 import {isMerkleDirectDistributorInfo} from "./merkle/merkleDirectDistributor/types"
+import {PoolRewardsInstance} from "../typechain/truffle/PoolRewards"
+import {PoolRewards} from "../typechain/ethers/PoolRewards"
+import {TestPoolRewards} from "../typechain/ethers/TestPoolRewards"
 
 const logger: Logger = console.log
 
@@ -354,13 +357,13 @@ async function deployPoolRewards(
     },
   })
 
-  const contract = await getContract<PoolRewards, PoolRewardsInstance>(contractName, TRUFFLE_CONTRACT_PROVIDER, {
+  const contract = await getEthersContract<PoolRewards>(contractName, {
     at: poolRewards.address,
   })
   logger("Updating config...")
 
   await deployEffects.add({
-    deferred: [await config.populateTransaction.setAddress(CONFIG_KEYS.PoolRewards, contract.address)],
+    deferred: [await config.populateTransaction.setAddress(CONFIG_KEYS.BackerRewards, contract.address)],
   })
 
   return poolRewards
