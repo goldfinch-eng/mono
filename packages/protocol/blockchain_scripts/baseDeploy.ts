@@ -107,10 +107,11 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   await deployClImplementation(deployer, {config})
 
   const gfi = await deployGFI(deployer, {config})
-  await deployLPStakingRewards(deployer, {config})
-  const communityRewards = await deployCommunityRewards(deployer, {config})
-  await deployMerkleDistributor(deployer, {communityRewards})
-  await deployMerkleDirectDistributor(deployer, {gfi})
+  await deployLPStakingRewards(deployer, {config, deployEffects})
+  await deployPoolRewards(deployer, {config, deployEffects})
+  const communityRewards = await deployCommunityRewards(deployer, {config, deployEffects})
+  await deployMerkleDistributor(deployer, {communityRewards, deployEffects})
+  await deployMerkleDirectDistributor(deployer, {gfi, deployEffects})
 
   const {protocol_owner: trustedSigner} = await deployer.getNamedAccounts()
   assertNonNullable(trustedSigner)
@@ -273,177 +274,246 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
 
     return deployed
   }
+}
 
-  async function deployLPStakingRewards(
-    deployer: ContractDeployer,
-    {config}: {config: GoldfinchConfig}
-  ): Promise<StakingRewards> {
-    const contractName = "StakingRewards"
-    logger("About to deploy LPStakingRewards...")
-    assertIsString(gf_deployer)
-    const protocol_owner = await getProtocolOwner()
-    const stakingRewards = await deployer.deploy<StakingRewards>(contractName, {
-      from: gf_deployer,
-      gasLimit: 4000000,
-      proxy: {
-        owner: protocol_owner,
-        execute: {
-          init: {
-            methodName: "__initialize__",
-            args: [protocol_owner, config.address],
-          },
+export async function deployConfigProxy(
+  deployer: ContractDeployer,
+  {deployEffects}: {deployEffects: DeployEffects}
+): Promise<GoldfinchConfig> {
+  const {gf_deployer} = await deployer.getNamedAccounts()
+  assertNonNullable(gf_deployer)
+  const protocolOwner = await getProtocolOwner()
+  const config = await deployer.deploy<GoldfinchConfig>("GoldfinchConfig", {
+    from: gf_deployer,
+    proxy: {
+      owner: protocolOwner,
+      execute: {
+        init: {
+          methodName: "initialize",
+          args: [protocolOwner],
         },
       },
-    })
+    },
+  })
+  return config
+}
 
-    const contract = await getTruffleContract<StakingRewardsInstance>("StakingRewards", {at: stakingRewards.address})
-
-    logger("Updating config...")
-    await updateConfig(config, "address", CONFIG_KEYS.StakingRewards, contract.address, {logger})
-    logger("Updated StakingRewards config address to:", contract.address)
-
-    return stakingRewards
-  }
-
-  async function deployCommunityRewards(
-    deployer: ContractDeployer,
-    {config}: {config: GoldfinchConfig}
-  ): Promise<Deployed<CommunityRewardsInstance>> {
-    const contractName = "CommunityRewards"
-    logger(`About to deploy ${contractName}...`)
-    assertIsString(gf_deployer)
-    const protocol_owner = await getProtocolOwner()
-    const communityRewards = await deployer.deploy(contractName, {
-      from: gf_deployer,
-      gasLimit: 4000000,
-      proxy: {
-        owner: protocol_owner,
-        execute: {
-          init: {
-            methodName: "__initialize__",
-            args: [protocol_owner, config.address, TOKEN_LAUNCH_TIME_IN_SECONDS],
-          },
+export async function deployLPStakingRewards(
+  deployer: ContractDeployer,
+  {config, deployEffects}: {config: GoldfinchConfig; deployEffects: DeployEffects}
+): Promise<StakingRewards> {
+  logger("About to deploy LPStakingRewards...")
+  const {gf_deployer} = await deployer.getNamedAccounts()
+  assertIsString(gf_deployer)
+  const protocol_owner = await getProtocolOwner()
+  const stakingRewards = await deployer.deploy<StakingRewards>("StakingRewards", {
+    from: gf_deployer,
+    gasLimit: 4000000,
+    proxy: {
+      owner: protocol_owner,
+      execute: {
+        init: {
+          methodName: "__initialize__",
+          args: [protocol_owner, config.address],
         },
       },
-    })
-    const contract = await getContract<CommunityRewards, CommunityRewardsInstance>(
-      contractName,
-      TRUFFLE_CONTRACT_PROVIDER,
-      {at: communityRewards.address}
-    )
+    },
+  })
+  return stakingRewards
+}
 
-    return {name: contractName, contract}
+async function deployPoolRewards(
+  deployer: ContractDeployer,
+  {config, deployEffects}: {config: GoldfinchConfig; deployEffects: DeployEffects}
+): Promise<PoolRewards | TestPoolRewards> {
+  const {gf_deployer} = await deployer.getNamedAccounts()
+  let contractName = "PoolRewards"
+  console.log("isTestEnv", isTestEnv())
+  if (isTestEnv()) {
+    contractName = "TestPoolRewards"
   }
-
-  async function getMerkleDistributorRoot(): Promise<string | undefined> {
-    const path = process.env.MERKLE_DISTRIBUTOR_INFO_PATH
-    if (!path) {
-      logger("MerkleDistributor info path is undefined.")
-      return
-    }
-    const json = JSON.parse(fs.readFileSync(path, {encoding: "utf8"}))
-    if (!isMerkleDistributorInfo(json)) {
-      logger("MerkleDistributor info json failed type guard.")
-      return
-    }
-    return json.merkleRoot
-  }
-
-  async function deployMerkleDistributor(
-    deployer: ContractDeployer,
-    {
-      communityRewards,
-    }: {
-      communityRewards: Deployed<CommunityRewardsInstance>
-    }
-  ): Promise<Deployed<MerkleDistributorInstance> | undefined> {
-    const contractName = "MerkleDistributor"
-
-    const merkleRoot = await getMerkleDistributorRoot()
-    if (!merkleRoot) {
-      logger(`Merkle root is undefined. Skipping deploy of ${contractName}`)
-      return
-    }
-
-    logger(`About to deploy ${contractName}...`)
-    assertIsString(gf_deployer)
-    const merkleDistributor = await deployer.deploy(contractName, {
-      from: gf_deployer,
-      gasLimit: 4000000,
-      args: [communityRewards.contract.address, merkleRoot],
-    })
-    const contract = await getContract<MerkleDistributor, MerkleDistributorInstance>(
-      contractName,
-      TRUFFLE_CONTRACT_PROVIDER,
-      {at: merkleDistributor.address}
-    )
-
-    const deployed: Deployed<MerkleDistributorInstance> = {
-      name: contractName,
-      contract,
-    }
-    await grantDistributorRoleToMerkleDistributor(communityRewards, deployed)
-
-    return deployed
-  }
-
-  async function getMerkleDirectDistributorRoot(): Promise<string | undefined> {
-    const path = process.env.MERKLE_DIRECT_DISTRIBUTOR_INFO_PATH
-    if (!path) {
-      logger("MerkleDirectDistributor info path is undefined.")
-      return
-    }
-    const json = JSON.parse(fs.readFileSync(path, {encoding: "utf8"}))
-    if (!isMerkleDirectDistributorInfo(json)) {
-      logger("MerkleDirectDistributor info json failed type guard.")
-      return
-    }
-    return json.merkleRoot
-  }
-
-  async function deployMerkleDirectDistributor(
-    deployer: ContractDeployer,
-    {
-      gfi,
-    }: {
-      gfi: Deployed<GFIInstance>
-    }
-  ): Promise<Deployed<MerkleDirectDistributorInstance> | undefined> {
-    const contractName = "MerkleDirectDistributor"
-
-    const merkleRoot = await getMerkleDirectDistributorRoot()
-    if (!merkleRoot) {
-      logger(`Merkle root is undefined. Skipping deploy of ${contractName}`)
-      return
-    }
-
-    logger(`About to deploy ${contractName}...`)
-    assertIsString(gf_deployer)
-    const protocol_owner = await getProtocolOwner()
-    const merkleDirectDistributor = await deployer.deploy(contractName, {
-      from: gf_deployer,
-      gasLimit: 4000000,
-      proxy: {
-        owner: protocol_owner,
-        execute: {
-          init: {
-            methodName: "initialize",
-            args: [protocol_owner, gfi.contract.address, merkleRoot],
-          },
+  logger("About to deploy PoolRewards...")
+  assertIsString(gf_deployer)
+  const protocol_owner = await getProtocolOwner()
+  const poolRewards = await deployer.deploy<PoolRewards>(contractName, {
+    from: gf_deployer,
+    gasLimit: 4000000,
+    proxy: {
+      execute: {
+        init: {
+          methodName: "__initialize__",
+          args: [protocol_owner, config.address],
         },
       },
-    })
-    const contract = await getTruffleContract<MerkleDirectDistributorInstance>(contractName, {
-      at: merkleDirectDistributor.address,
-    })
+    },
+  })
 
-    const deployed: Deployed<MerkleDirectDistributorInstance> = {
-      name: contractName,
-      contract,
-    }
+  const contract = await getContract<PoolRewards, PoolRewardsInstance>(contractName, TRUFFLE_CONTRACT_PROVIDER, {
+    at: poolRewards.address,
+  })
+  logger("Updating config...")
 
-    return deployed
+  await deployEffects.add({
+    deferred: [await config.populateTransaction.setAddress(CONFIG_KEYS.PoolRewards, contract.address)],
+  })
+
+  return poolRewards
+}
+
+export async function deployCommunityRewards(
+  deployer: ContractDeployer,
+  {
+    config,
+    deployEffects,
+  }: {
+    config: GoldfinchConfig
+
+    deployEffects: DeployEffects
   }
+): Promise<Deployed<CommunityRewardsInstance>> {
+  const contractName = "CommunityRewards"
+  logger(`About to deploy ${contractName}...`)
+  const {gf_deployer} = await deployer.getNamedAccounts()
+  assertIsString(gf_deployer)
+  const protocol_owner = await getProtocolOwner()
+  const communityRewards = await deployer.deploy(contractName, {
+    from: gf_deployer,
+    gasLimit: 4000000,
+    proxy: {
+      owner: protocol_owner,
+      execute: {
+        init: {
+          methodName: "__initialize__",
+          args: [protocol_owner, config.address, TOKEN_LAUNCH_TIME_IN_SECONDS],
+        },
+      },
+    },
+  })
+  const contract = await getContract<CommunityRewards, CommunityRewardsInstance>(
+    contractName,
+    TRUFFLE_CONTRACT_PROVIDER,
+    {at: communityRewards.address}
+  )
+
+  return {name: contractName, contract}
+}
+
+async function getMerkleDistributorRoot(): Promise<string | undefined> {
+  const path = process.env.MERKLE_DISTRIBUTOR_INFO_PATH
+  if (!path) {
+    logger("Merkle distributor info path is undefined.")
+    return
+  }
+  const json = JSON.parse(fs.readFileSync(path, {encoding: "utf8"}))
+  if (!isMerkleDistributorInfo(json)) {
+    logger("Merkle distributor info json failed type guard.")
+    return
+  }
+  return json.merkleRoot
+}
+
+export async function deployMerkleDistributor(
+  deployer: ContractDeployer,
+  {
+    communityRewards,
+    deployEffects,
+  }: {
+    communityRewards: Deployed<CommunityRewardsInstance>
+    deployEffects: DeployEffects
+  }
+): Promise<Deployed<MerkleDistributorInstance> | undefined> {
+  const contractName = "MerkleDistributor"
+
+  const merkleRoot = await getMerkleDistributorRoot()
+  if (!merkleRoot) {
+    logger(`Merkle root is undefined. Skipping deploy of ${contractName}`)
+    return
+  }
+
+  logger(`About to deploy ${contractName}...`)
+  const {gf_deployer} = await deployer.getNamedAccounts()
+  assertIsString(gf_deployer)
+  const merkleDistributor = await deployer.deploy(contractName, {
+    from: gf_deployer,
+    gasLimit: 4000000,
+    args: [communityRewards.contract.address, merkleRoot],
+  })
+  const contract = await getContract<MerkleDistributor, MerkleDistributorInstance>(
+    contractName,
+    TRUFFLE_CONTRACT_PROVIDER,
+    {at: merkleDistributor.address}
+  )
+
+  const deployed: Deployed<MerkleDistributorInstance> = {
+    name: contractName,
+    contract,
+  }
+
+  await grantDistributorRoleToMerkleDistributor(communityRewards, deployed, deployEffects)
+
+  return deployed
+}
+
+async function getMerkleDirectDistributorRoot(): Promise<string | undefined> {
+  const path = process.env.MERKLE_DIRECT_DISTRIBUTOR_INFO_PATH
+  if (!path) {
+    logger("MerkleDirectDistributor info path is undefined.")
+    return
+  }
+  const json = JSON.parse(fs.readFileSync(path, {encoding: "utf8"}))
+  if (!isMerkleDirectDistributorInfo(json)) {
+    logger("MerkleDirectDistributor info json failed type guard.")
+    return
+  }
+  return json.merkleRoot
+}
+
+export async function deployMerkleDirectDistributor(
+  deployer: ContractDeployer,
+  {
+    gfi,
+    deployEffects,
+  }: {
+    gfi: Deployed<GFIInstance>
+    deployEffects: DeployEffects
+  }
+): Promise<Deployed<MerkleDirectDistributorInstance> | undefined> {
+  const {gf_deployer} = await deployer.getNamedAccounts()
+  const protocol_owner = await getProtocolOwner()
+
+  const contractName = "MerkleDirectDistributor"
+
+  const merkleRoot = await getMerkleDirectDistributorRoot()
+  if (!merkleRoot) {
+    logger(`Merkle root is undefined. Skipping deploy of ${contractName}`)
+    return
+  }
+
+  logger(`About to deploy ${contractName}...`)
+  assertIsString(gf_deployer)
+  const merkleDirectDistributor = await deployer.deploy(contractName, {
+    from: gf_deployer,
+    gasLimit: 4000000,
+    proxy: {
+      owner: protocol_owner,
+      execute: {
+        init: {
+          methodName: "initialize",
+          args: [protocol_owner, gfi.contract.address, merkleRoot],
+        },
+      },
+    },
+  })
+  const contract = await getTruffleContract<MerkleDirectDistributorInstance>(contractName, {
+    at: merkleDirectDistributor.address,
+  })
+
+  const deployed: Deployed<MerkleDirectDistributorInstance> = {
+    name: contractName,
+    contract,
+  }
+
+  return deployed
 }
 
 export async function deployConfig(deployer: ContractDeployer): Promise<GoldfinchConfig> {
@@ -608,19 +678,23 @@ export async function deployGo(
 
 async function grantDistributorRoleToMerkleDistributor(
   communityRewards: Deployed<CommunityRewardsInstance>,
-  merkleDistributor: Deployed<MerkleDistributorInstance>
+  merkleDistributor: Deployed<MerkleDistributorInstance>,
+  deployEffects: DeployEffects
 ): Promise<void> {
-  let hasDistributorRole = await communityRewards.contract.hasRole(DISTRIBUTOR_ROLE, merkleDistributor.contract.address)
+  const hasDistributorRole = await communityRewards.contract.hasRole(
+    DISTRIBUTOR_ROLE,
+    merkleDistributor.contract.address
+  )
   if (hasDistributorRole) {
     throw new Error(`${merkleDistributor.name} already has DISTRIBUTOR_ROLE on ${communityRewards.name}.`)
   }
-  await communityRewards.contract.grantRole(DISTRIBUTOR_ROLE, merkleDistributor.contract.address)
-  hasDistributorRole = await communityRewards.contract.hasRole(DISTRIBUTOR_ROLE, merkleDistributor.contract.address)
-  if (hasDistributorRole) {
-    logger(`Granted distributor role on ${communityRewards.name} to ${merkleDistributor.name}.`)
-  } else {
-    throw new Error(`Failed to grant DISTRIBUTOR_ROLE on ${communityRewards.name} to ${merkleDistributor.name}.`)
-  }
+  const protocolOwner = await getProtocolOwner()
+  const communityRewardsEthers = (await toEthers<CommunityRewards>(communityRewards.contract)).connect(protocolOwner)
+  await deployEffects.add({
+    deferred: [
+      await communityRewardsEthers.populateTransaction.grantRole(DISTRIBUTOR_ROLE, merkleDistributor.contract.address),
+    ],
+  })
 }
 
 async function grantMinterRoleToPool(fidu: Fidu, pool: any) {
@@ -819,7 +893,9 @@ async function deployFixedLeverageRatioStrategy(
   return strategy
 }
 
-async function deployDynamicLeverageRatioStrategy(deployer: ContractDeployer): Promise<DynamicLeverageRatioStrategy> {
+export async function deployDynamicLeverageRatioStrategy(
+  deployer: ContractDeployer
+): Promise<DynamicLeverageRatioStrategy> {
   const {gf_deployer} = await deployer.getNamedAccounts()
   const protocol_owner = await getProtocolOwner()
 
