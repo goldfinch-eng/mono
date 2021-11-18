@@ -8,6 +8,7 @@ import {
   TEST_MERKLE_DIRECT_DISTRIBUTOR_RECIPIENT_A,
   TEST_MERKLE_DIRECT_DISTRIBUTOR_RECIPIENT_B,
 } from "./test/blockchain_scripts/merkle/merkleDirectDistributor/fixtures"
+import "hardhat-contract-sizer"
 dotenv.config({path: findEnvLocal()})
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY
 const ALCHEMY_RINKEBY_API_KEY = process.env.ALCHEMY_RINKEBY_API_KEY
@@ -111,5 +112,8 @@ export default {
     project: "goldfinch-protocol",
     username: "goldfinch",
     forkNetwork: "1", //Network id of the network we want to fork
+  },
+  contractSizer: {
+    runOnCompile: true,
   },
 }

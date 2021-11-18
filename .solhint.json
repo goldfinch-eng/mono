@@ -174,7 +174,7 @@
           "safeBatchTransferFrom": [],
           "burn": ["onlySigner"]
         },
-        "**/TranchedPoolHelper.sol:*": {
+        "**/TranchingLogic.sol:*": {
           "applyToAllSeniorTranches":  [],
           "applyToAllJuniorTranches": [],
           "applyToSeniorTranche":  [],

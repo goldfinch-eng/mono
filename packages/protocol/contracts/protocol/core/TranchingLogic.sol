@@ -11,12 +11,12 @@ import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 
 /**
- * @title The Accountant
- * @notice Library for helper logic related to the tranched pool
+ * @title TranchingLogic
+ * @notice Library for handling the payments waterfall
  * @author Goldfinch
  */
 
-library TranchedPoolHelper {
+library TranchingLogic {
   using SafeMath for uint256;
   using FixedPoint for FixedPoint.Unsigned;
   using FixedPoint for uint256;

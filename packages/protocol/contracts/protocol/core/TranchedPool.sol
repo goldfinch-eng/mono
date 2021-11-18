@@ -16,15 +16,15 @@ import "./BaseUpgradeablePausable.sol";
 import "./ConfigHelper.sol";
 import "../../external/FixedPoint.sol";
 import "../../library/SafeERC20Transfer.sol";
-import "./TranchedPoolHelper.sol";
+import "./TranchingLogic.sol";
 
 contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transfer {
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
   using FixedPoint for FixedPoint.Unsigned;
   using FixedPoint for uint256;
-  using TranchedPoolHelper for PoolSlice;
-  using TranchedPoolHelper for TrancheInfo;
+  using TranchingLogic for PoolSlice;
+  using TranchingLogic for TrancheInfo;
 
   bytes32 public constant LOCKER_ROLE = keccak256("LOCKER_ROLE");
   bytes32 public constant SENIOR_ROLE = keccak256("SENIOR_ROLE");
@@ -423,8 +423,8 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     );
 
     address newClAddr = address(creditLine);
-    TranchedPoolHelper.migrateAccountingVariables(originalClAddr, newClAddr);
-    TranchedPoolHelper.closeCreditLine(originalClAddr);
+    TranchingLogic.migrateAccountingVariables(originalClAddr, newClAddr);
+    TranchingLogic.closeCreditLine(originalClAddr);
     address originalBorrower = IV2CreditLine(originalClAddr).borrower();
     address newBorrower = IV2CreditLine(newClAddr).borrower();
     // Ensure Roles
@@ -451,7 +451,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     if (clBalance > 0) {
       safeERC20TransferFrom(config.getUSDC(), originalClAddr, newCl, clBalance);
     }
-    TranchedPoolHelper.closeCreditLine(originalClAddr);
+    TranchingLogic.closeCreditLine(originalClAddr);
     // set new CL
     creditLine = IV2CreditLine(newCl);
     // sanity check that the new address is in fact a creditline
@@ -480,7 +480,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
    * @return The share price of the input amount
    */
   function usdcToSharePrice(uint256 amount, uint256 totalShares) public pure returns (uint256) {
-    return TranchedPoolHelper.usdcToSharePrice(amount, totalShares);
+    return TranchingLogic.usdcToSharePrice(amount, totalShares);
   }
 
   /**
@@ -490,7 +490,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
    * @return The USDC amount of the input share price
    */
   function sharePriceToUsdc(uint256 sharePrice, uint256 totalShares) public pure returns (uint256) {
-    return TranchedPoolHelper.sharePriceToUsdc(sharePrice, totalShares);
+    return TranchingLogic.sharePriceToUsdc(sharePrice, totalShares);
   }
 
   /**
@@ -655,7 +655,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     safeERC20TransferFrom(config.getUSDC(), from, address(this), principal.add(interest), "Failed to collect payment");
     uint256 reserveFeePercent = ONE_HUNDRED.div(config.getReserveDenominator()); // Convert the denonminator to percent
 
-    ApplyResult memory result = TranchedPoolHelper.applyToAllSeniorTranches(
+    ApplyResult memory result = TranchingLogic.applyToAllSeniorTranches(
       poolSlices,
       interest,
       principal,
@@ -666,7 +666,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     );
 
     totalReserveAmount = result.reserveDeduction.add(
-      TranchedPoolHelper.applyToAllJuniorTranches(
+      TranchingLogic.applyToAllJuniorTranches(
         poolSlices,
         result.interestRemaining,
         result.principalRemaining,
@@ -754,12 +754,12 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     // linearly
     uint256[] memory principalPaymentsPerSlice = new uint256[](poolSlices.length);
     for (uint256 i = 0; i < poolSlices.length; i++) {
-      uint256 interestForSlice = TranchedPoolHelper.scaleByFraction(
+      uint256 interestForSlice = TranchingLogic.scaleByFraction(
         interestAccrued,
         poolSlices[i].principalDeployed,
         totalDeployed
       );
-      principalPaymentsPerSlice[i] = TranchedPoolHelper.scaleByFraction(
+      principalPaymentsPerSlice[i] = TranchingLogic.scaleByFraction(
         principalPayment,
         poolSlices[i].principalDeployed,
         totalDeployed
