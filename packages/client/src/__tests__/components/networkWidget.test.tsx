@@ -1,17 +1,24 @@
 import "@testing-library/jest-dom"
-import {AppContext} from "../../App"
+import {AppContext, GlobalState} from "../../App"
 import {render, screen, fireEvent} from "@testing-library/react"
 import NetworkWidget from "../../components/networkWidget"
+import {UserLoaded} from "../../ethereum/user"
+
+let global: any
 
 function renderNetworkWidget(sessionData, address) {
   let store = {
+    web3Status: {
+      type: "connected",
+      networkName: "localhost",
+      address,
+    },
     network: {
       name: "localhost",
       supported: true,
     },
     user: {
       address,
-      web3Connected: true,
       info: {
         loaded: true,
         value: {},
@@ -26,11 +33,10 @@ function renderNetworkWidget(sessionData, address) {
   }
 
   return render(
-    // @ts-expect-error ts-migrate(2322) FIXME: Type '{ network: { name: string; supported: boolea... Remove this comment to see the full error message
-    <AppContext.Provider value={store}>
+    <AppContext.Provider value={store as unknown as GlobalState}>
       <NetworkWidget
-        // @ts-expect-error ts-migrate(2322) FIXME: Type '{ loaded: boolean; web3Connected: boolean; }... Remove this comment to see the full error message
-        user={store.user}
+        currentBlock={store.currentBlock}
+        user={store.user as UserLoaded}
         network={store.network}
         currentErrors={[]}
         currentTxs={[]}
@@ -42,8 +48,8 @@ function renderNetworkWidget(sessionData, address) {
 
 describe("network widget sign in", () => {
   it("shows modal with terms of service", async () => {
-    ;(global.window as any).ethereum = jest.fn()
-    ;(global.window as any).ethereum.request = () => {
+    global.window.ethereum = jest.fn()
+    global.window.ethereum.request = () => {
       return Promise.resolve()
     }
     renderNetworkWidget(undefined, "0x000")
