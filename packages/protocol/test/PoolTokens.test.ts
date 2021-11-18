@@ -11,7 +11,7 @@ import {
   SECONDS_PER_DAY,
   getCurrentTimestamp,
   advanceTime,
-  setupPoolRewards,
+  setupBackerRewards,
 } from "./testHelpers"
 import {OWNER_ROLE, interestAprAsBN, GO_LISTER_ROLE} from "../blockchain_scripts/deployHelpers"
 import hre from "hardhat"
@@ -21,7 +21,7 @@ const {deployments} = hre
 const TranchedPool = artifacts.require("TranchedPool")
 import {expectEvent} from "@openzeppelin/test-helpers"
 import {mint} from "./uniqueIdentityHelpers"
-import {GFIInstance, PoolRewardsInstance} from "../typechain/truffle"
+import {GFIInstance, BackerRewardsInstance} from "../typechain/truffle"
 
 const testSetup = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
   const [_owner, _person2, _person3] = await web3.eth.getAccounts()
@@ -29,7 +29,7 @@ const testSetup = deployments.createFixture(async ({deployments, getNamedAccount
   const person2 = asNonNullable(_person2)
   const person3 = asNonNullable(_person3)
 
-  const {poolTokens, goldfinchConfig, goldfinchFactory, poolRewards, usdc, uniqueIdentity, gfi} =
+  const {poolTokens, goldfinchConfig, goldfinchFactory, backerRewards, usdc, uniqueIdentity, gfi} =
     await deployAllContracts(deployments)
   await goldfinchConfig.bulkAddToGoList([owner, person2])
   await erc20Transfer(usdc, [person2], usdcVal(1000), owner)
@@ -39,7 +39,7 @@ const testSetup = deployments.createFixture(async ({deployments, getNamedAccount
     person2,
     person3,
     poolTokens,
-    poolRewards,
+    backerRewards,
     goldfinchConfig,
     goldfinchFactory,
     usdc,
@@ -58,7 +58,7 @@ describe("PoolTokens", () => {
     goldfinchFactory,
     usdc,
     uniqueIdentity,
-    poolRewards: PoolRewardsInstance,
+    backerRewards: BackerRewardsInstance,
     gfi: GFIInstance
 
   const withPoolSender = async (func, otherPoolAddress?) => {
@@ -72,8 +72,18 @@ describe("PoolTokens", () => {
 
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;({owner, person2, person3, poolTokens, goldfinchConfig, goldfinchFactory, usdc, uniqueIdentity, poolRewards, gfi} =
-      await testSetup())
+    ;({
+      owner,
+      person2,
+      person3,
+      poolTokens,
+      goldfinchConfig,
+      goldfinchFactory,
+      usdc,
+      uniqueIdentity,
+      backerRewards,
+      gfi,
+    } = await testSetup())
 
     await poolTokens._disablePoolValidation(true)
   })
@@ -88,6 +98,7 @@ describe("PoolTokens", () => {
   async function mintUniqueIdentityToken(recipient, signer) {
     const uniqueIdentityTokenId = new BN(0)
     const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
+    await uniqueIdentity.setSupportedUIDTypes([uniqueIdentityTokenId], [true])
     await mint(hre, uniqueIdentity, uniqueIdentityTokenId, expiresAt, new BN(0), signer, undefined, recipient)
     expect(await uniqueIdentity.balanceOf(recipient, uniqueIdentityTokenId)).to.bignumber.equal(new BN(1))
   }
@@ -118,6 +129,7 @@ describe("PoolTokens", () => {
         new BN(0),
         new BN(185),
         new BN(0),
+        [],
         {from: owner}
       )
       const event = result.logs[result.logs.length - 1]
@@ -148,7 +160,8 @@ describe("PoolTokens", () => {
           new BN(360),
           new BN(350),
           new BN(180),
-          new BN(0)
+          new BN(0),
+          []
         )
         // grant role so the person can deposit into the senior tranche
         await fakePool.grantRole(await fakePool.SENIOR_ROLE(), person2)
@@ -169,18 +182,18 @@ describe("PoolTokens", () => {
       expect(tokenInfo.interestRedeemed).to.bignumber.equal(new BN(0))
     })
 
-    it("should call PoolRewards with tokenId after minting", async () => {
+    it("should call BackerRewards with tokenId after minting", async () => {
       const amount = usdcVal(5)
       const result = await pool.deposit(new BN(1), amount, {from: person2})
       const event = decodeLogs(result.receipt.rawLogs, poolTokens, "TokenMinted")[0]
       assertNonNullable(event)
-      const poolRewardsTokenInfo = await poolRewards.tokens(event.args.tokenId)
-      const accRewardsPerPrincipalDollarAtMint = poolRewardsTokenInfo["accRewardsPerPrincipalDollarAtMint"]
+      const backerRewardsTokenInfo = await backerRewards.tokens(event.args.tokenId)
+      const accRewardsPerPrincipalDollarAtMint = backerRewardsTokenInfo["accRewardsPerPrincipalDollarAtMint"]
       expect(accRewardsPerPrincipalDollarAtMint).to.bignumber.equal(new BN(0))
     })
 
     it("should use the current rewardsPerPrincipalShare when it's a second drawdown", async () => {
-      await setupPoolRewards(gfi, poolRewards, owner)
+      await setupBackerRewards(gfi, backerRewards, owner)
 
       const amount = usdcVal(5)
       await pool.deposit(new BN(1), amount, {from: person2})
@@ -197,8 +210,8 @@ describe("PoolTokens", () => {
       const result = await pool.deposit(new BN(3), amount, {from: person2})
       const event = decodeLogs(result.receipt.rawLogs, poolTokens, "TokenMinted")[0]
       assertNonNullable(event)
-      const poolRewardsTokenInfo = await poolRewards.tokens(event.args.tokenId)
-      const accRewardsPerPrincipalDollarAtMint = poolRewardsTokenInfo["accRewardsPerPrincipalDollarAtMint"]
+      const backerRewardsTokenInfo = await backerRewards.tokens(event.args.tokenId)
+      const accRewardsPerPrincipalDollarAtMint = backerRewardsTokenInfo["accRewardsPerPrincipalDollarAtMint"]
       expect(accRewardsPerPrincipalDollarAtMint).to.bignumber.gt(new BN(0))
     })
 
@@ -242,6 +255,7 @@ describe("PoolTokens", () => {
         new BN(0),
         new BN(185),
         new BN(0),
+        [],
         {from: owner}
       )
       let event = result.logs[result.logs.length - 1]
@@ -380,6 +394,7 @@ describe("PoolTokens", () => {
         new BN(0),
         new BN(185),
         new BN(0),
+        [],
         {from: owner}
       )
       let event = result.logs[result.logs.length - 1]
@@ -464,10 +479,11 @@ describe("PoolTokens", () => {
         new BN(0),
         new BN(185),
         new BN(0),
+        [],
         {from: owner}
       )
       const event = result.logs[result.logs.length - 1]
-      pool = await TranchedPool.at(event.args.pool)
+      pool = await TranchedPool.at(event?.args.pool)
     })
     describe("mint", async () => {
       beforeEach(async function () {

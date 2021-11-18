@@ -21,6 +21,7 @@ import {interestAprAsBN, MAX_UINT} from "../blockchain_scripts/deployHelpers"
 import {ecsign} from "ethereumjs-util"
 import {getApprovalDigest, getWallet} from "./permitHelpers"
 import {assertNonNullable} from "@goldfinch-eng/utils"
+import {GoldfinchFactoryInstance} from "../typechain/truffle"
 const WITHDRAWL_FEE_DENOMINATOR = new BN(200)
 
 let owner,
@@ -32,7 +33,7 @@ let owner,
   tranchedPool,
   transferRestrictedVault,
   treasury,
-  goldfinchFactory,
+  goldfinchFactory: GoldfinchFactoryInstance,
   seniorPool,
   fidu
 
