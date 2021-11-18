@@ -1,13 +1,16 @@
-import "@testing-library/jest-dom"
-import {mock} from "depay-web3-mock"
 import {
   MerkleDistributorGrantInfo,
   MerkleDistributorInfo,
 } from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
+import "@testing-library/jest-dom"
+import {mock} from "depay-web3-mock"
 import {CommunityRewards, MerkleDistributor, MerkleDistributorLoaded} from "../../../ethereum/communityRewards"
 import {GFI} from "../../../ethereum/gfi"
-import {User, UserMerkleDistributor} from "../../../ethereum/user"
 import {StakingRewards} from "../../../ethereum/pool"
+import {User, UserMerkleDistributor} from "../../../ethereum/user"
+import * as utils from "../../../ethereum/utils"
+import {KnownEventData, KnownEventName, REWARD_PAID_EVENT} from "../../../types/events"
+import {BlockInfo} from "../../../utils"
 import {
   blockchain,
   blockInfo,
@@ -18,8 +21,6 @@ import {
   recipient,
   stakingRewardsABI,
 } from "./constants"
-import * as utils from "../../../ethereum/utils"
-import {BlockInfo} from "../../../utils"
 
 export interface RewardsMockData {
   staking?: {
@@ -299,9 +300,19 @@ export function mockUserInitializationContractCalls(
         return: claimable,
       },
     })
-    communityRewards.goldfinchProtocol.queryEvents = (contract, event, filter, extra) => {
-      return Promise.resolve(acceptedGrantRes)
+    const mockQueryEvents = <T extends KnownEventName>(
+      contract,
+      eventNames: T[],
+      filter,
+      extra
+    ): Promise<KnownEventData<T>[]> => {
+      if (eventNames.length === 1 && eventNames[0] === REWARD_PAID_EVENT) {
+        return Promise.resolve([acceptedGrantRes as unknown as KnownEventData<T>])
+      } else {
+        throw new Error(`Unexpected event names: ${eventNames}`)
+      }
     }
+    communityRewards.goldfinchProtocol.queryEvents = mockQueryEvents
   }
 
   return {
@@ -364,7 +375,7 @@ export function mockMerkleDistributorContractCalls(
   return {callCommunityRewardsMock}
 }
 
-export function setupMocksForAirdrop(airdrop: MerkleDistributorGrantInfo, isAccepted = true) {
+export function setupMocksForAirdrop(airdrop: MerkleDistributorGrantInfo | undefined, isAccepted = true) {
   const grants = airdrop ? [airdrop] : []
   jest.spyOn(utils, "getMerkleDistributorInfo").mockImplementation(() => {
     const result: MerkleDistributorInfo | undefined = {
@@ -379,7 +390,7 @@ export function setupMocksForAirdrop(airdrop: MerkleDistributorGrantInfo, isAcce
     merkleDistributor: MerkleDistributorLoaded,
     currentBlock: BlockInfo
   ) => {
-    const airdropsAccepted = grants.map((val) => ({grantInfo: airdrop, isAccepted}))
+    const airdropsAccepted = grants.map((val) => ({grantInfo: val, isAccepted}))
     return Promise.resolve(airdropsAccepted)
   }
 }

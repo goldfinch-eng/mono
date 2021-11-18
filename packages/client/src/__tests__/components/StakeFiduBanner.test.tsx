@@ -13,9 +13,10 @@ import {blockchain, blockInfo, DEPLOYMENTS, erc20ABI, fiduABI, network, recipien
 import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
 import {getDefaultClasses} from "../rewards/__utils__/scenarios"
 import {assertWithLoadedInfo} from "../../types/loadable"
-import {mockUserInitializationContractCalls, setupMocksForAcceptedAirdrop} from "../rewards/__utils__/mocks"
+import {mockUserInitializationContractCalls, setupMocksForAirdrop} from "../rewards/__utils__/mocks"
 import * as utils from "../../ethereum/utils"
 import * as poolModule from "../../ethereum/pool"
+import {Context} from "react-responsive"
 
 mock({
   blockchain: "ethereum",
@@ -82,7 +83,7 @@ function renderStakeFiduBanner(
   )
 }
 
-describe("Stake unstake fidu", () => {
+describe("Stake unstaked fidu", () => {
   let seniorPool
   let goldfinchProtocol = new GoldfinchProtocol(network)
 
@@ -90,7 +91,7 @@ describe("Stake unstake fidu", () => {
     jest.spyOn(utils, "getDeployments").mockImplementation(() => {
       return DEPLOYMENTS
     })
-    setupMocksForAcceptedAirdrop(undefined) // reset
+    setupMocksForAirdrop(undefined) // reset
 
     await goldfinchProtocol.initialize()
     seniorPool = new SeniorPool(goldfinchProtocol)
@@ -111,10 +112,7 @@ describe("Stake unstake fidu", () => {
   it("do not show banner when user has no unstaked fidu", async () => {
     const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
     const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
-    mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
-      hasStakingRewards: false,
-      hasCommunityRewards: false,
-    })
+    mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {})
     await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
 
     assertWithLoadedInfo(user)
@@ -128,10 +126,7 @@ describe("Stake unstake fidu", () => {
   it("shows banner when user has unstaked fidu", async () => {
     const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
     const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
-    mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
-      hasStakingRewards: false,
-      hasCommunityRewards: false,
-    })
+    mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {})
     await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
 
     assertWithLoadedInfo(user)
@@ -146,18 +141,15 @@ describe("Stake unstake fidu", () => {
     expect(stakeButton).toBeInTheDocument()
 
     const message = await container.getElementsByClassName("message")
-    expect(message[0]?.textContent).toContain(
-      "You have 50.00 FIDU ($50.02) that is not staked. Stake FIDU to earn an additional estimated --.--% APY"
+    expect(message[0]?.textContent).toBe(
+      "You have 50.00 FIDU ($50.02) that is not staked. Stake your FIDU to earn an estimated --.--% APY in GFI rewards."
     )
   })
 
   it("shows banner when user has little unstaked fidu", async () => {
     const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
     const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
-    mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
-      hasStakingRewards: false,
-      hasCommunityRewards: false,
-    })
+    mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {})
     await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
 
     assertWithLoadedInfo(user)
@@ -172,54 +164,67 @@ describe("Stake unstake fidu", () => {
     expect(stakeButton).toBeInTheDocument()
 
     const message = await container.getElementsByClassName("message")
-    expect(message[0]?.textContent).toContain(
-      "You have <0.01 FIDU (<$0.01) that is not staked. Stake FIDU to earn an additional estimated --.--% APY"
+    expect(message[0]?.textContent).toBe(
+      "You have <0.01 FIDU (<$0.01) that is not staked. Stake your FIDU to earn an estimated --.--% APY in GFI rewards."
     )
   })
 
-  it("click to stake", async () => {
-    const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
-    const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
-    mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
-      hasStakingRewards: false,
-      hasCommunityRewards: false,
+  describe("staking transaction(s)", () => {
+    describe("with 0 FIDU already approved for transfer by StakingRewards", () => {
+      it("clicking button triggers sending `approve()` then `stake()` transactions", async () => {
+        const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
+        const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
+        mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {})
+        await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
+
+        assertWithLoadedInfo(user)
+        assertWithLoadedInfo(seniorPool)
+
+        mockCapitalProviderCalls("1000456616980000000", "50000000000000000000", "0", "1")
+
+        const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
+        renderStakeFiduBanner(seniorPool, stakingRewards, gfi, user, capitalProvider.value)
+
+        web3.eth.getGasPrice = jest.fn()
+
+        mock({
+          blockchain,
+          call: {
+            to: "0x0000000000000000000000000000000000000004",
+            api: fiduABI,
+            method: "balanceOf",
+            params: recipient,
+            return: "0",
+          },
+        })
+        mock({
+          blockchain,
+          call: {
+            to: "0x0000000000000000000000000000000000000004",
+            api: fiduABI,
+            method: "allowance",
+            params: [recipient, stakingRewards.address],
+            return: "0",
+          },
+        })
+
+        await act(async () => {
+          fireEvent.click(await screen.getByText("Stake all FIDU"))
+          expect(await screen.getByText("Submitting...")).toBeInTheDocument()
+
+          // TODO[PR] Expect that `approve()` and `stake()` are being called correctly.
+        })
+      })
     })
-    await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
-
-    assertWithLoadedInfo(user)
-    assertWithLoadedInfo(seniorPool)
-
-    mockCapitalProviderCalls("1000456616980000000", "50000000000000000000", "0", "1")
-
-    const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
-    renderStakeFiduBanner(seniorPool, stakingRewards, gfi, user, capitalProvider.value)
-
-    web3.eth.getGasPrice = jest.fn()
-
-    mock({
-      blockchain,
-      call: {
-        to: "0x0000000000000000000000000000000000000004",
-        api: fiduABI,
-        method: "balanceOf",
-        params: recipient,
-        return: "0",
-      },
+    describe("with some FIDU already approved for transfer by StakingRewards", () => {
+      it("clicking button triggers sending `approve()` then `stake()` transactions", async () => {
+        // TODO[PR] Expect that `approve()` and `stake()` are being called correctly.
+      })
     })
-    mock({
-      blockchain,
-      call: {
-        to: "0x0000000000000000000000000000000000000004",
-        api: fiduABI,
-        method: "allowance",
-        params: [recipient, stakingRewards.address],
-        return: "0",
-      },
-    })
-
-    await act(async () => {
-      fireEvent.click(await screen.getByText("Stake all FIDU"))
-      expect(await screen.getByText("Submitting...")).toBeInTheDocument()
+    describe("with all FIDU already approved for transfer by StakingRewards", () => {
+      it("clicking button triggers sending `stake()` transactions", async () => {
+        // TODO[PR] Expect that `approve()` was not called, and `stake()` was called correctly.
+      })
     })
   })
 })
