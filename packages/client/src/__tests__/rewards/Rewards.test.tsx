@@ -378,27 +378,30 @@ describe("Rewards portfolio overview", () => {
 })
 
 describe("Rewards list and detail", () => {
-  let seniorPool
+  let seniorPool: SeniorPoolLoaded
   let goldfinchProtocol = new GoldfinchProtocol(network)
 
   beforeEach(resetMocks)
   beforeEach(() => mock({blockchain, accounts: {return: [recipient]}}))
   beforeEach(async () => {
     jest.spyOn(utils, "getDeployments").mockImplementation(() => {
-      return DEPLOYMENTS
+      return Promise.resolve(DEPLOYMENTS)
     })
     setupMocksForAirdrop(undefined) // reset
 
     await goldfinchProtocol.initialize()
-    seniorPool = new SeniorPool(goldfinchProtocol)
-    seniorPool.info = {
+    const _seniorPoolLoaded = new SeniorPool(goldfinchProtocol)
+    _seniorPoolLoaded.info = {
       loaded: true,
       value: {
         currentBlock: blockInfo,
+        // @ts-ignore
         poolData: {},
         isPaused: false,
       },
     }
+    assertWithLoadedInfo(_seniorPoolLoaded)
+    seniorPool = _seniorPoolLoaded
   })
 
   it("shows empty list", async () => {
