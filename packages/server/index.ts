@@ -110,6 +110,22 @@ app.post("/advanceTimeOneDay", async (req, res) => {
   return res.status(200).send({status: "success", result: JSON.stringify({success: true})})
 })
 
+app.post("/advanceTimeThirtyDays", async (req, res) => {
+  if (process.env.NODE_ENV === "production") {
+    return res.status(404).send({message: "advanceTimeThirtyDays only available on local and murmuration"})
+  }
+
+  try {
+    await advanceTime({days: 30})
+    await mineBlock()
+  } catch (e) {
+    console.error("advanceTimeThirtyDays error", e)
+    return res.status(500).send({message: "advanceTimeThirtyDays error"})
+  }
+
+  return res.status(200).send({status: "success", result: JSON.stringify({success: true})})
+})
+
 admin.initializeApp({projectId: "goldfinch-frontends-dev"})
 
 app.post("/kycStatus", async (req, res) => {

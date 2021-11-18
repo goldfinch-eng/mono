@@ -1,5 +1,5 @@
-import MerkleTree from "./merkleTree"
-import {BigNumber, utils} from "ethers"
+import MerkleTree from "../common/merkleTree"
+import {utils} from "ethers"
 import {AccountedGrant, Grant} from "./types"
 
 export default class GrantTree {

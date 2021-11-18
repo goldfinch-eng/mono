@@ -27,7 +27,7 @@ function RewardsSummary(props: RewardsSummaryProps) {
   const valueDisabledClass = totalGFI && totalGFI.gt(0) ? "value" : "disabled-value"
 
   return (
-    <div className="rewards-summary background-container" data-testid="rewards-summary">
+    <div className="rewards-summary background-container">
       <div className="rewards-summary-left-item">
         <span className="total-gfi-balance">Total GFI balance</span>
         <span className="total-gfi">{displayNumber(totalGFI ? gfiFromAtomic(totalGFI) : undefined, 2)}</span>
@@ -38,7 +38,7 @@ function RewardsSummary(props: RewardsSummaryProps) {
         <div className="details-item">
           <span>Wallet balance</span>
           <div>
-            <span className={valueDisabledClass}>
+            <span className={valueDisabledClass} data-testid="summary-wallet-balance">
               {displayNumber(walletBalance ? gfiFromAtomic(walletBalance) : undefined, 2)}
             </span>
             <span>GFI</span>
@@ -47,7 +47,7 @@ function RewardsSummary(props: RewardsSummaryProps) {
         <div className="details-item">
           <span>Claimable</span>
           <div>
-            <span className={valueDisabledClass}>
+            <span className={valueDisabledClass} data-testid="summary-claimable">
               {displayNumber(claimable ? gfiFromAtomic(claimable) : undefined, 2)}
             </span>
             <span>GFI</span>
@@ -56,7 +56,7 @@ function RewardsSummary(props: RewardsSummaryProps) {
         <div className="details-item">
           <span>Still vesting</span>
           <div>
-            <span className={valueDisabledClass}>
+            <span className={valueDisabledClass} data-testid="summary-still-vesting">
               {displayNumber(unvested ? gfiFromAtomic(unvested) : undefined, 2)}
             </span>
             <span>GFI</span>
@@ -65,7 +65,7 @@ function RewardsSummary(props: RewardsSummaryProps) {
         <div className="details-item total-balance">
           <span>Total balance</span>
           <div>
-            <span className={valueDisabledClass}>
+            <span className={valueDisabledClass} data-testid="summary-total-balance">
               {displayNumber(totalGFI ? gfiFromAtomic(totalGFI) : undefined, 2)}
             </span>
             <span>GFI</span>
@@ -181,9 +181,9 @@ function Rewards() {
   let loaded: boolean = false
   let claimable: BigNumber | undefined
   let unvested: BigNumber | undefined
-  let granted: BigNumber | undefined
   let totalUSD: BigNumber | undefined
   let gfiBalance: BigNumber | undefined
+  let totalBalance: BigNumber | undefined
   let rewards: React.ReactNode | undefined
   if (consistent) {
     const stakingRewards = consistent[0]
@@ -206,11 +206,10 @@ function Rewards() {
 
     claimable = userStakingRewards.info.value.claimable.plus(userCommunityRewards.info.value.claimable)
     unvested = userStakingRewards.info.value.unvested.plus(userCommunityRewards.info.value.unvested)
-    granted = userStakingRewards.info.value.granted.plus(userCommunityRewards.info.value.granted)
 
     gfiBalance = user.info.value.gfiBalance
-
-    totalUSD = gfiInDollars(gfiToDollarsAtomic(granted, gfi.info.value.price))
+    totalBalance = gfiBalance.plus(claimable).plus(unvested)
+    totalUSD = gfiInDollars(gfiToDollarsAtomic(totalBalance, gfi.info.value.price))
     rewards = emptyRewards ? (
       <NoRewards />
     ) : (
@@ -253,7 +252,7 @@ function Rewards() {
       <RewardsSummary
         claimable={claimable}
         unvested={unvested}
-        totalGFI={granted}
+        totalGFI={totalBalance}
         totalUSD={totalUSD}
         walletBalance={gfiBalance}
       />

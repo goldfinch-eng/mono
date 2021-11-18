@@ -32,6 +32,7 @@ const CONFIG_KEYS_BY_TYPE = {
     BorrowerImplementation: 17,
     GFI: 18,
     Go: 19,
+    PoolRewards: 20,
   },
 }
 

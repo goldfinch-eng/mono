@@ -29,10 +29,12 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
 
   // Credit line terms
   address public override borrower;
-  uint256 public override limit;
+  uint256 public currentLimit;
+  uint256 public override maxLimit;
   uint256 public override interestApr;
   uint256 public override paymentPeriodInDays;
   uint256 public override termInDays;
+  uint256 public override principalGracePeriodInDays;
   uint256 public override lateFeeApr;
 
   // Accounting variables
@@ -52,26 +54,32 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     address _config,
     address owner,
     address _borrower,
-    uint256 _limit,
+    uint256 _maxLimit,
     uint256 _interestApr,
     uint256 _paymentPeriodInDays,
     uint256 _termInDays,
-    uint256 _lateFeeApr
+    uint256 _lateFeeApr,
+    uint256 _principalGracePeriodInDays
   ) public initializer {
     require(_config != address(0) && owner != address(0) && _borrower != address(0), "Zero address passed in");
     __BaseUpgradeablePausable__init(owner);
     config = GoldfinchConfig(_config);
     borrower = _borrower;
-    limit = _limit;
+    maxLimit = _maxLimit;
     interestApr = _interestApr;
     paymentPeriodInDays = _paymentPeriodInDays;
     termInDays = _termInDays;
     lateFeeApr = _lateFeeApr;
+    principalGracePeriodInDays = _principalGracePeriodInDays;
     interestAccruedAsOf = block.timestamp;
 
     // Unlock owner, which is a TranchedPool, for infinite amount
     bool success = config.getUSDC().approve(owner, uint256(-1));
     require(success, "Failed to approve USDC");
+  }
+
+  function limit() external view override returns (uint256) {
+    return currentLimit;
   }
 
   /**
@@ -80,7 +88,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
    * @param amount The amount in USDC that has been drawndown
    */
   function drawdown(uint256 amount) external onlyAdmin {
-    require(amount.add(balance) <= limit, "Cannot drawdown more than the limit");
+    require(amount.add(balance) <= currentLimit, "Cannot drawdown more than the limit");
     uint256 timestamp = currentTime();
 
     if (balance == 0) {
@@ -94,7 +102,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     balance = balance.add(amount);
 
     updateCreditLineAccounting(balance, _interestOwed, _principalOwed);
-    require(!isLate(timestamp), "Cannot drawdown when payments are past due");
+    require(!_isLate(timestamp), "Cannot drawdown when payments are past due");
   }
 
   /**
@@ -110,11 +118,28 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
   }
 
   function setLimit(uint256 newAmount) external onlyAdmin {
-    limit = newAmount;
+    require(newAmount <= maxLimit, "Cannot be more than the max limit");
+    currentLimit = newAmount;
+  }
+
+  function setMaxLimit(uint256 newAmount) external onlyAdmin {
+    maxLimit = newAmount;
   }
 
   function termStartTime() external view returns (uint256) {
-    return termEndTime.sub(SECONDS_PER_DAY.mul(termInDays));
+    return _termStartTime();
+  }
+
+  function isLate() external view override returns (bool) {
+    return _isLate(block.timestamp);
+  }
+
+  function withinPrincipalGracePeriod() external view override returns (bool) {
+    if (termEndTime == 0) {
+      // Loan hasn't started yet
+      return true;
+    }
+    return block.timestamp < _termStartTime().add(principalGracePeriodInDays.mul(SECONDS_PER_DAY));
   }
 
   function setTermEndTime(uint256 newTermEndTime) public onlyAdmin {
@@ -169,7 +194,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     require(balance > 0, "Must have balance to assess credit line");
 
     // Don't assess credit lines early!
-    if (currentTime() < nextDueTime && !isLate(currentTime())) {
+    if (currentTime() < nextDueTime && !_isLate(currentTime())) {
       return (0, 0, 0);
     }
     uint256 timeToAssess = calculateNextDueTime();
@@ -217,9 +242,13 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     return block.timestamp;
   }
 
-  function isLate(uint256 timestamp) internal view returns (bool) {
+  function _isLate(uint256 timestamp) internal view returns (bool) {
     uint256 secondsElapsedSinceFullPayment = timestamp.sub(lastFullPaymentTime);
-    return secondsElapsedSinceFullPayment > paymentPeriodInDays.mul(SECONDS_PER_DAY);
+    return balance > 0 && secondsElapsedSinceFullPayment > paymentPeriodInDays.mul(SECONDS_PER_DAY);
+  }
+
+  function _termStartTime() internal view returns (uint256) {
+    return termEndTime.sub(SECONDS_PER_DAY.mul(termInDays));
   }
 
   /**
@@ -241,7 +270,6 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     )
   {
     (uint256 newInterestOwed, uint256 newPrincipalOwed) = updateAndGetInterestAndPrincipalOwedAsOf(timestamp);
-
     Accountant.PaymentAllocation memory pa = Accountant.allocatePayment(
       paymentAmount,
       balance,

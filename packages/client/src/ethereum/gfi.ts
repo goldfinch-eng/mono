@@ -32,6 +32,25 @@ class GFI {
       },
     }
   }
+
+  static estimateApyFromGfi(
+    stakedBalanceInDollars: BigNumber,
+    portfolioBalanceInDollars: BigNumber,
+    globalEstimatedApyFromGfi: BigNumber
+  ) {
+    if (portfolioBalanceInDollars.gt(0)) {
+      const balancePortionEarningGfi = stakedBalanceInDollars.div(portfolioBalanceInDollars)
+      // NOTE: Because our frontend does not currently support staking with lockup, we do not
+      // worry here about adjusting for the portion of the user's balance that is not only earning
+      // GFI from staking, but is earning that GFI at a boosted rate due to having staked-with-lockup
+      // (which they could have achieved by interacting with the contract directly, rather than using
+      // our frontend).
+      const userEstimatedApyFromGfi = balancePortionEarningGfi.multipliedBy(globalEstimatedApyFromGfi)
+      return userEstimatedApyFromGfi
+    } else {
+      return globalEstimatedApyFromGfi
+    }
+  }
 }
 
 export type GFILoaded = WithLoadedInfo<GFI, GFILoadedInfo>
