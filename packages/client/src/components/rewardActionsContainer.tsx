@@ -306,6 +306,8 @@ function getGrantVestingCliffDisplay(cliffLength: BigNumber): string | undefined
   switch (cliffLengthString) {
     case "0":
       return undefined
+    case "15768000":
+      return ", with six-month cliff"
     default:
       console.error(`Unexpected cliff length: ${cliffLengthString}`)
       return `, with ${cliffLengthString}-second cliff`
