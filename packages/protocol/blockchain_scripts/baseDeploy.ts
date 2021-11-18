@@ -39,7 +39,6 @@ import {
   UniqueIdentity,
   Go,
   TestUniqueIdentity,
-  MerkleDirectDistributor,
 } from "../typechain/ethers"
 import {Logger, DeployOpts} from "./types"
 import {isMerkleDistributorInfo} from "./merkle/merkleDistributor/types"
@@ -47,7 +46,6 @@ import {
   CommunityRewardsInstance,
   GoInstance,
   BackerRewardsInstance,
-  StakingRewardsInstance,
   UniqueIdentityInstance,
   MerkleDistributorInstance,
   TestERC20Instance,
@@ -92,7 +90,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   await deployPoolTokens(deployer, {config})
   await deployTransferRestrictedVault(deployer, {config})
   const pool = await deployPool(deployer, {config})
-  await deployTranchedPool(deployer, {config})
+  await deployTranchedPool(deployer, {config, deployEffects})
   logger("Granting minter role to Pool")
   await grantMinterRoleToPool(fidu, pool)
   const creditDesk = await deployCreditDesk(deployer, {config})
@@ -663,7 +661,10 @@ async function grantMinterRoleToPool(fidu: Fidu, pool: any) {
   }
 }
 
-async function deployTranchedPool(deployer: ContractDeployer, {config}: DeployOpts) {
+async function deployTranchedPool(
+  deployer: ContractDeployer,
+  {config, deployEffects}: {config: GoldfinchConfig; deployEffects: DeployEffects}
+) {
   const logger = console.log
   const {gf_deployer} = await deployer.getNamedAccounts()
 
@@ -678,9 +679,10 @@ async function deployTranchedPool(deployer: ContractDeployer, {config}: DeployOp
   const tranchedPoolImpl = await deployer.deploy(contractName, {
     from: gf_deployer,
   })
-  logger("Updating config...")
-  await updateConfig(config, "address", CONFIG_KEYS.TranchedPoolImplementation, tranchedPoolImpl.address, {logger})
-  logger("Updated TranchedPool config address to:", tranchedPoolImpl.address)
+  await deployEffects.add({
+    deferred: [await config.populateTransaction.setTranchedPoolImplementation(tranchedPoolImpl.address)],
+  })
+
   return tranchedPoolImpl
 }
 

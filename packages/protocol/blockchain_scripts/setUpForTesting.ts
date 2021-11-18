@@ -43,7 +43,8 @@ import {
   UniqueIdentity,
 } from "../typechain/ethers"
 
-import * as migrate from "../blockchain_scripts/migrations/v2.2/migrate"
+import * as migratev22 from "../blockchain_scripts/migrations/v2.2/migrate"
+import * as migratev23 from "../blockchain_scripts/migrations/v2.3/migrate"
 
 dotenv.config({path: findEnvLocal()})
 
@@ -110,7 +111,8 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, options: O
     const tx = await uniqueIdentity.grantRole(SIGNER_ROLE, trustedSigner)
     await tx.wait()
 
-    await migrate.main()
+    await migratev22.main()
+    await migratev23.main()
 
     // TODO: temporary while GoldfinchFactory upgrade hasn't been deployed
     return
