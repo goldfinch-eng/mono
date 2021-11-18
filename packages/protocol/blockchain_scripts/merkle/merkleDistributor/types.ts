@@ -1,11 +1,5 @@
 import {BigNumber} from "ethers"
-import {
-  genIsArrayOf,
-  isArrayOfNonEmptyString,
-  isNonEmptyString,
-  isNumber,
-  isPlainObject,
-} from "@goldfinch-eng/utils/src/type"
+import {genIsArrayOf, isArrayOfNonEmptyString, isNonEmptyString, isNumber, isPlainObject} from "@goldfinch-eng/utils"
 
 export const FLIGHT_ACADEMY_GRANT_REASON = "flight_academy"
 export type FLIGHT_ACADEMY_GRANT_REASON = typeof FLIGHT_ACADEMY_GRANT_REASON
