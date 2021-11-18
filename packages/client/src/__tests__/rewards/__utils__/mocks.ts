@@ -13,8 +13,8 @@ import {
   blockchain,
   blockInfo,
   communityRewardsABI,
+  DEPLOYMENTS,
   erc20ABI,
-  fiduABI,
   gfiABI,
   merkleDistributorABI,
   recipient,
@@ -25,27 +25,44 @@ import * as utils from "../../../ethereum/utils"
 import * as poolModule from "../../../ethereum/pool"
 
 export function mockCapitalProviderCalls(
-  sharePrice?: string | undefined,
-  numSharesNotStaked?: string | undefined,
-  allowance?: string | undefined,
-  weightedAverageSharePrice?: string | undefined
+  sharePrice?: string,
+  numSharesNotStaked?: string,
+  allowance?: string,
+  weightedAverageSharePrice?: string
 ) {
   const defaultSharePrice = sharePrice ? sharePrice : "1000456616980000000"
   const defaultNumSharesNotStaked = numSharesNotStaked ? numSharesNotStaked : "50000000000000000000"
   const defaultAllowance = allowance ? allowance : "0"
   const defaultWeightedAverageSharePrice = weightedAverageSharePrice ? weightedAverageSharePrice : "1"
 
-  jest.spyOn(utils, "fetchDataFromAttributes").mockImplementation(() => {
-    return Promise.resolve({sharePrice: new BigNumber(defaultSharePrice)})
-  })
-  jest.spyOn(poolModule, "getWeightedAverageSharePrice").mockImplementation(() => {
-    return Promise.resolve(new BigNumber(defaultWeightedAverageSharePrice))
-  })
   mock({
     blockchain,
     call: {
-      to: "0x0000000000000000000000000000000000000004",
-      api: fiduABI,
+      to: DEPLOYMENTS.contracts.SeniorPool.address,
+      api: DEPLOYMENTS.contracts.SeniorPool.abi,
+      method: "sharePrice",
+      params: [],
+      return: defaultSharePrice,
+    },
+  })
+  jest
+    .spyOn(poolModule, "getWeightedAverageSharePrice")
+    .mockImplementation(
+      (
+        pool: poolModule.SeniorPoolLoaded,
+        stakingRewards: poolModule.StakingRewardsLoaded,
+        capitalProviderAddress: string,
+        capitalProviderTotalShares: BigNumber,
+        currentBlock: BlockInfo
+      ) => {
+        return Promise.resolve(new BigNumber(defaultWeightedAverageSharePrice))
+      }
+    )
+  mock({
+    blockchain,
+    call: {
+      to: DEPLOYMENTS.contracts.Fidu.address,
+      api: DEPLOYMENTS.contracts.Fidu.abi,
       method: "balanceOf",
       params: [recipient],
       return: defaultNumSharesNotStaked,
@@ -54,10 +71,10 @@ export function mockCapitalProviderCalls(
   mock({
     blockchain,
     call: {
-      to: "0x0000000000000000000000000000000000000002",
-      api: erc20ABI,
+      to: DEPLOYMENTS.contracts.TestERC20.address,
+      api: DEPLOYMENTS.contracts.TestERC20.abi,
       method: "allowance",
-      params: [recipient, "0x0000000000000000000000000000000000000005"],
+      params: [recipient, DEPLOYMENTS.contracts.SeniorPool.address],
       return: defaultAllowance,
     },
   })

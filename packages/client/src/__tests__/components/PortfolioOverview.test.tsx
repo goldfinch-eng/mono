@@ -19,7 +19,7 @@ import {assertWithLoadedInfo, Loaded} from "../../types/loadable"
 import {
   mockCapitalProviderCalls,
   mockUserInitializationContractCalls,
-  setupMocksForAcceptedAirdrop,
+  setupMocksForAirdrop,
 } from "../rewards/__utils__/mocks"
 import * as utils from "../../ethereum/utils"
 import {PortfolioOverview} from "../../components/earn"
@@ -70,7 +70,7 @@ describe("Earn page portfolio overview", () => {
     jest.spyOn(utils, "getDeployments").mockImplementation(() => {
       return DEPLOYMENTS
     })
-    setupMocksForAcceptedAirdrop(undefined) // reset
+    setupMocksForAirdrop(undefined) // reset
 
     await goldfinchProtocol.initialize()
     seniorPool = new SeniorPool(goldfinchProtocol)
@@ -93,10 +93,7 @@ describe("Earn page portfolio overview", () => {
     merkleDistributor = result.merkleDistributor
 
     user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
-    mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
-      hasStakingRewards: false,
-      hasCommunityRewards: false,
-    })
+    mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {})
     await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
 
     assertWithLoadedInfo(user)
@@ -116,15 +113,12 @@ describe("Earn page portfolio overview", () => {
       estimatedApyFromGfi: "",
       loaded: true,
     }
-    const {container} = renderPortfolioOverview(poolData, capitalProvider)
+    renderPortfolioOverview(poolData, capitalProvider)
 
-    const value = await container.getElementsByClassName("value")
-    expect(value[0]?.textContent).toContain("$50.02") // Portfolio balance
-    expect(value[1]?.textContent).toContain("$--.--") // Est. Annual Growth
-
-    const subValue = await container.getElementsByClassName("sub-value")
-    expect(subValue[0]?.textContent).toContain("$0.02 (0.04%)") // Portfolio balance
-    expect(subValue[1]?.textContent).toContain("--.--% APY") // Est. Annual Growth
+    expect(screen.getByTestId("portfolio-total-balance").textContent).toEqual("$50.02")
+    expect(screen.getByTestId("portfolio-est-growth").textContent).toEqual("$--.--")
+    expect(screen.getByTestId("portfolio-total-balance-perc").textContent).toEqual("$0.02 (0.04%)")
+    expect(screen.getByTestId("portfolio-est-growth-perc").textContent).toEqual("--.--% APY")
 
     // tooltip
     expect(
@@ -132,10 +126,10 @@ describe("Earn page portfolio overview", () => {
         "Includes the combined yield from supplying to the senior pool and borrower pools, plus GFI rewards:"
       )
     ).toBeInTheDocument()
-    const tooltipRow = await container.getElementsByClassName("tooltip-row")
-    expect(tooltipRow[0]?.textContent).toContain("Pool APY--.--%")
-    expect(tooltipRow[1]?.textContent).toContain("GFI Rewards APY--.--%")
-    expect(tooltipRow[2]?.textContent).toContain("Total Est. APY--.--%")
+    expect(screen.getByText("Pool APY")).toBeInTheDocument()
+    expect(screen.getByTestId("tooltip-estimated-apy").textContent).toEqual("--.--%")
+    expect(screen.getByTestId("tooltip-gfi-apy").textContent).toEqual("--.--%")
+    expect(screen.getByTestId("tooltip-total-apy").textContent).toEqual("--.--%")
   })
 
   it("shows portfolio only with senior pool info", async () => {
@@ -144,15 +138,12 @@ describe("Earn page portfolio overview", () => {
       estimatedApyFromGfi: new BigNumber("0"),
       loaded: true,
     }
-    const {container} = renderPortfolioOverview(poolData, capitalProvider)
+    renderPortfolioOverview(poolData, capitalProvider)
 
-    const value = await container.getElementsByClassName("value")
-    expect(value[0]?.textContent).toContain("$50.02") // Portfolio balance
-    expect(value[1]?.textContent).toContain("$0.24") // Est. Annual Growth
-
-    const subValue = await container.getElementsByClassName("sub-value")
-    expect(subValue[0]?.textContent).toContain("$0.02 (0.04%)") // Portfolio balance
-    expect(subValue[1]?.textContent).toContain("0.48% APY") // Est. Annual Growth
+    expect(screen.getByTestId("portfolio-total-balance").textContent).toEqual("$50.02")
+    expect(screen.getByTestId("portfolio-est-growth").textContent).toEqual("$0.24")
+    expect(screen.getByTestId("portfolio-total-balance-perc").textContent).toEqual("$0.02 (0.04%)")
+    expect(screen.getByTestId("portfolio-est-growth-perc").textContent).toEqual("0.48% APY")
 
     // tooltip
     expect(
@@ -160,10 +151,10 @@ describe("Earn page portfolio overview", () => {
         "Includes the combined yield from supplying to the senior pool and borrower pools, plus GFI rewards:"
       )
     ).toBeInTheDocument()
-    const tooltipRow = await container.getElementsByClassName("tooltip-row")
-    expect(tooltipRow[0]?.textContent).toContain("Pool APY0.48%")
-    expect(tooltipRow[1]?.textContent).toContain("GFI Rewards APY--.--%")
-    expect(tooltipRow[2]?.textContent).toContain("Total Est. APY0.48%")
+    expect(screen.getByText("Pool APY")).toBeInTheDocument()
+    expect(screen.getByTestId("tooltip-estimated-apy").textContent).toEqual("0.48%")
+    expect(screen.getByTestId("tooltip-gfi-apy").textContent).toEqual("--.--%")
+    expect(screen.getByTestId("tooltip-total-apy").textContent).toEqual("0.48%")
   })
 
   it("shows portfolio with senior pool and claimable staking reward", async () => {
@@ -177,15 +168,12 @@ describe("Earn page portfolio overview", () => {
       estimatedApyFromGfi: new BigNumber("0.47282410048716433449"),
       loaded: true,
     }
-    const {container} = renderPortfolioOverview(poolData, capitalProvider)
+    renderPortfolioOverview(poolData, capitalProvider)
 
-    const value = await container.getElementsByClassName("value")
-    expect(value[0]?.textContent).toContain("50,072.85") // Portfolio balance
-    expect(value[1]?.textContent).toContain("$242.28") // Est. Annual Growth
-
-    const subValue = await container.getElementsByClassName("sub-value")
-    expect(subValue[0]?.textContent).toContain("$22.85 (0.05%)") // Portfolio balance
-    expect(subValue[1]?.textContent).toContain("47.72% APY (with GFI)") // Est. Annual Growth
+    expect(screen.getByTestId("portfolio-total-balance").textContent).toEqual("$50,072.85")
+    expect(screen.getByTestId("portfolio-est-growth").textContent).toEqual("$242.28")
+    expect(screen.getByTestId("portfolio-total-balance-perc").textContent).toEqual("$22.85 (0.05%)")
+    expect(screen.getByTestId("portfolio-est-growth-perc").textContent).toEqual("47.72% APY (with GFI)")
 
     // tooltip
     expect(
@@ -193,10 +181,10 @@ describe("Earn page portfolio overview", () => {
         "Includes the combined yield from supplying to the senior pool and borrower pools, plus GFI rewards:"
       )
     ).toBeInTheDocument()
-    const tooltipRow = await container.getElementsByClassName("tooltip-row")
-    expect(tooltipRow[0]?.textContent).toContain("Pool APY0.48%")
-    expect(tooltipRow[1]?.textContent).toContain("GFI Rewards APY47.24%")
-    expect(tooltipRow[2]?.textContent).toContain("Total Est. APY47.72%")
+    expect(screen.getByText("Pool APY")).toBeInTheDocument()
+    expect(screen.getByTestId("tooltip-estimated-apy").textContent).toEqual("0.48%")
+    expect(screen.getByTestId("tooltip-gfi-apy").textContent).toEqual("47.24%")
+    expect(screen.getByTestId("tooltip-total-apy").textContent).toEqual("47.72%")
   })
 
   it("shows portfolio with senior pool and vesting staking reward", async () => {
@@ -210,15 +198,12 @@ describe("Earn page portfolio overview", () => {
       estimatedApyFromGfi: new BigNumber("0.47282410048716433449"),
       loaded: true,
     }
-    const {container} = renderPortfolioOverview(poolData, capitalProvider)
+    renderPortfolioOverview(poolData, capitalProvider)
 
-    const value = await container.getElementsByClassName("value")
-    expect(value[0]?.textContent).toContain("50,072.85") // Portfolio balance
-    expect(value[1]?.textContent).toContain("$242.28") // Est. Annual Growth
-
-    const subValue = await container.getElementsByClassName("sub-value")
-    expect(subValue[0]?.textContent).toContain("$22.85 (0.05%)") // Portfolio balance
-    expect(subValue[1]?.textContent).toContain("47.72% APY (with GFI)") // Est. Annual Growth
+    expect(screen.getByTestId("portfolio-total-balance").textContent).toEqual("$50,072.85")
+    expect(screen.getByTestId("portfolio-est-growth").textContent).toEqual("$242.28")
+    expect(screen.getByTestId("portfolio-total-balance-perc").textContent).toEqual("$22.85 (0.05%)")
+    expect(screen.getByTestId("portfolio-est-growth-perc").textContent).toEqual("47.72% APY (with GFI)")
 
     // tooltip
     expect(
@@ -226,10 +211,10 @@ describe("Earn page portfolio overview", () => {
         "Includes the combined yield from supplying to the senior pool and borrower pools, plus GFI rewards:"
       )
     ).toBeInTheDocument()
-    const tooltipRow = await container.getElementsByClassName("tooltip-row")
-    expect(tooltipRow[0]?.textContent).toContain("Pool APY0.48%")
-    expect(tooltipRow[1]?.textContent).toContain("GFI Rewards APY47.24%")
-    expect(tooltipRow[2]?.textContent).toContain("Total Est. APY47.72%")
+    expect(screen.getByText("Pool APY")).toBeInTheDocument()
+    expect(screen.getByTestId("tooltip-estimated-apy").textContent).toEqual("0.48%")
+    expect(screen.getByTestId("tooltip-gfi-apy").textContent).toEqual("47.24%")
+    expect(screen.getByTestId("tooltip-total-apy").textContent).toEqual("47.72%")
   })
 
   it("shows portfolio with senior pool and partially claimed staking reward", async () => {
@@ -243,15 +228,12 @@ describe("Earn page portfolio overview", () => {
       estimatedApyFromGfi: new BigNumber("0.47282410048716433449"),
       loaded: true,
     }
-    const {container} = renderPortfolioOverview(poolData, capitalProvider)
+    renderPortfolioOverview(poolData, capitalProvider)
 
-    const value = await container.getElementsByClassName("value")
-    expect(value[0]?.textContent).toContain("50,072.85") // Portfolio balance
-    expect(value[1]?.textContent).toContain("$242.28") // Est. Annual Growth
-
-    const subValue = await container.getElementsByClassName("sub-value")
-    expect(subValue[0]?.textContent).toContain("$22.85 (0.05%)") // Portfolio balance
-    expect(subValue[1]?.textContent).toContain("47.72% APY (with GFI)") // Est. Annual Growth
+    expect(screen.getByTestId("portfolio-total-balance").textContent).toEqual("$50,072.85")
+    expect(screen.getByTestId("portfolio-est-growth").textContent).toEqual("$242.28")
+    expect(screen.getByTestId("portfolio-total-balance-perc").textContent).toEqual("$22.85 (0.05%)")
+    expect(screen.getByTestId("portfolio-est-growth-perc").textContent).toEqual("47.72% APY (with GFI)")
 
     // tooltip
     expect(
@@ -259,10 +241,10 @@ describe("Earn page portfolio overview", () => {
         "Includes the combined yield from supplying to the senior pool and borrower pools, plus GFI rewards:"
       )
     ).toBeInTheDocument()
-    const tooltipRow = await container.getElementsByClassName("tooltip-row")
-    expect(tooltipRow[0]?.textContent).toContain("Pool APY0.48%")
-    expect(tooltipRow[1]?.textContent).toContain("GFI Rewards APY47.24%")
-    expect(tooltipRow[2]?.textContent).toContain("Total Est. APY47.72%")
+    expect(screen.getByText("Pool APY")).toBeInTheDocument()
+    expect(screen.getByTestId("tooltip-estimated-apy").textContent).toEqual("0.48%")
+    expect(screen.getByTestId("tooltip-gfi-apy").textContent).toEqual("47.24%")
+    expect(screen.getByTestId("tooltip-total-apy").textContent).toEqual("47.72%")
   })
 
   it("shows portfolio with senior pool, claimable staking reward, and backers", async () => {
@@ -292,15 +274,12 @@ describe("Earn page portfolio overview", () => {
       ],
     }
     // @ts-ignore
-    const {container} = renderPortfolioOverview(poolData, capitalProvider, poolBackers)
+    renderPortfolioOverview(poolData, capitalProvider, poolBackers)
 
-    const value = await container.getElementsByClassName("value")
-    expect(value[0]?.textContent).toContain("$60,086.71") // Portfolio balance
-    expect(value[1]?.textContent).toContain("$1,093.45") // Est. Annual Growth
-
-    const subValue = await container.getElementsByClassName("sub-value")
-    expect(subValue[0]?.textContent).toContain("$36.71 (0.06%)") // Portfolio balance
-    expect(subValue[1]?.textContent).toContain("41.18% APY (with GFI)") // Est. Annual Growth
+    expect(screen.getByTestId("portfolio-total-balance").textContent).toEqual("$60,086.71")
+    expect(screen.getByTestId("portfolio-est-growth").textContent).toEqual("$1,093.45")
+    expect(screen.getByTestId("portfolio-total-balance-perc").textContent).toEqual("$36.71 (0.06%)")
+    expect(screen.getByTestId("portfolio-est-growth-perc").textContent).toEqual("41.18% APY (with GFI)")
 
     // tooltip
     expect(
@@ -308,9 +287,9 @@ describe("Earn page portfolio overview", () => {
         "Includes the combined yield from supplying to the senior pool and borrower pools, plus GFI rewards:"
       )
     ).toBeInTheDocument()
-    const tooltipRow = await container.getElementsByClassName("tooltip-row")
-    expect(tooltipRow[0]?.textContent).toContain("Pool APY1.82%")
-    expect(tooltipRow[1]?.textContent).toContain("GFI Rewards APY39.36%")
-    expect(tooltipRow[2]?.textContent).toContain("Total Est. APY41.18%")
+    expect(screen.getByText("Pool APY")).toBeInTheDocument()
+    expect(screen.getByTestId("tooltip-estimated-apy").textContent).toEqual("1.82%")
+    expect(screen.getByTestId("tooltip-gfi-apy").textContent).toEqual("39.36%")
+    expect(screen.getByTestId("tooltip-total-apy").textContent).toEqual("41.18%")
   })
 })

@@ -108,8 +108,10 @@ export function PortfolioOverview({
       <div className="background-container-inner">
         <div className="deposit-status-item">
           <div className="label">Portfolio balance</div>
-          <div className="value">{displayDollars(totalBalance)}</div>
-          <div className="sub-value">
+          <div className="value" data-testid="portfolio-total-balance">
+            {displayDollars(totalBalance)}
+          </div>
+          <div className="sub-value" data-testid="portfolio-total-balance-perc">
             {displayDollars(displayUnrealizedGains)} ({displayPercent(unrealizedGainsPercent)})
           </div>
         </div>
@@ -120,8 +122,10 @@ export function PortfolioOverview({
               <InfoIcon />
             </span>
           </div>
-          <div className="value">{displayDollars(roundDownPenny(estimatedAnnualGrowth))}</div>
-          <div className="sub-value">{`${displayPercent(estimatedApy)} APY${
+          <div className="value" data-testid="portfolio-est-growth">
+            {displayDollars(roundDownPenny(estimatedAnnualGrowth))}
+          </div>
+          <div className="sub-value" data-testid="portfolio-est-growth-perc">{`${displayPercent(estimatedApy)} APY${
             estimatedApyFromGfi.gt(0) ? " (with GFI)" : ""
           }`}</div>
         </div>
