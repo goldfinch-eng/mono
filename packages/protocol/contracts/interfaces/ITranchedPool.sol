@@ -30,6 +30,20 @@ abstract contract ITranchedPool {
     uint256 principalDeployed;
   }
 
+  struct SliceInfo {
+    uint256 reserveFeePercent;
+    uint256 interestAccrued;
+    uint256 principalAccrued;
+  }
+
+  struct ApplyResult {
+    uint256 interestRemaining;
+    uint256 principalRemaining;
+    uint256 reserveDeduction;
+    uint256 oldInterestSharePrice;
+    uint256 oldPrincipalSharePrice;
+  }
+
   function initialize(
     address _config,
     address _borrower,
