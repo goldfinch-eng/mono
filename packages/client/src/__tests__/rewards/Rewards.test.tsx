@@ -568,7 +568,7 @@ describe("Rewards list and detail", () => {
     expect(await screen.findByText("1,000.00 GFI reward for participating in Flight Academy")).toBeVisible()
 
     expect(await screen.findByText("Vesting status")).toBeVisible()
-    expect(await screen.findByText("$--.-- ( GFI) vested")).toBeVisible()
+    expect(await screen.findByText("$--.-- (0.00 GFI) vested")).toBeVisible()
 
     expect(await screen.findByText("Vesting schedule")).toBeVisible()
     expect(await screen.findByText("None")).toBeVisible()

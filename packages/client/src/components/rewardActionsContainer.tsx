@@ -391,6 +391,7 @@ function getMerkleDistributorGrantInfoDetails(
   const amount = new BigNumber(grantInfo.grant.amount)
   const displayReason = MerkleDistributor.getDisplayReason(grantInfo.reason)
   const vestingLength = new BigNumber(grantInfo.grant.vestingLength).toNumber()
+  const zero = new BigNumber(0)
   return {
     transactionDetails: `${displayNumber(gfiFromAtomic(amount))} GFI reward for participating ${displayReason}`,
     vestingSchedule: getGrantVestingSchedule(
@@ -400,7 +401,7 @@ function getMerkleDistributorGrantInfoDetails(
     ),
     claimStatus: undefined,
     currentEarnRate: undefined,
-    vestingStatus: `${displayDollars(undefined)} (${displayNumber(undefined)} GFI) vested`,
+    vestingStatus: `${displayDollars(undefined)} (${displayNumber(zero)} GFI) vested`,
     etherscanAddress: merkleDistributor.address,
   }
 }
