@@ -112,7 +112,7 @@ describe("Stake unstaked fidu", () => {
   it("do not show banner when user has no unstaked fidu", async () => {
     const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
     const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
-    mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {})
+    mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, merkleDistributor, {})
     await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
 
     assertWithLoadedInfo(user)
@@ -126,7 +126,7 @@ describe("Stake unstaked fidu", () => {
   it("shows banner when user has unstaked fidu", async () => {
     const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
     const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
-    mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {})
+    mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, merkleDistributor, {})
     await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
 
     assertWithLoadedInfo(user)
@@ -149,7 +149,7 @@ describe("Stake unstaked fidu", () => {
   it("shows banner when user has little unstaked fidu", async () => {
     const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
     const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
-    mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {})
+    mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, merkleDistributor, {})
     await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
 
     assertWithLoadedInfo(user)
@@ -174,7 +174,7 @@ describe("Stake unstaked fidu", () => {
       it("clicking button triggers sending `approve()` then `stake()` transactions", async () => {
         const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
         const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
-        mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {})
+        mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, merkleDistributor, {})
         await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
 
         assertWithLoadedInfo(user)
