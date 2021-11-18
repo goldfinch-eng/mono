@@ -1,4 +1,7 @@
-import {GrantReason, MerkleDistributorInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types"
+import {
+  GrantReason,
+  MerkleDistributorInfo,
+} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
 import {CommunityRewards as CommunityRewardsContract} from "@goldfinch-eng/protocol/typechain/web3/CommunityRewards"
 import {MerkleDistributor as MerkleDistributorContract} from "@goldfinch-eng/protocol/typechain/web3/MerkleDistributor"
 import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
@@ -125,11 +128,12 @@ export class CommunityRewardsGrant {
     this.reason = reason
   }
 
-  get displayTitle(): string {
-    return this.reason ? MerkleDistributor.getDisplayTitle(this.reason) : "Community Rewards"
-  }
   get displayReason(): string {
     return this.reason ? MerkleDistributor.getDisplayReason(this.reason) : "in Community Rewards"
+  }
+
+  get title(): string {
+    return this.reason ? MerkleDistributor.getDisplayTitle(this.reason) : "Community Rewards"
   }
 
   get description(): string {

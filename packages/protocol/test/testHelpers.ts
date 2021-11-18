@@ -13,7 +13,6 @@ import {
   ZERO_ADDRESS,
   DISTRIBUTOR_ROLE,
   getContract,
-  GetContractOptions,
   TRUFFLE_CONTRACT_PROVIDER,
 } from "../blockchain_scripts/deployHelpers"
 import {DeploymentsExtension} from "hardhat-deploy/types"
@@ -37,9 +36,11 @@ import {
   MerkleDistributorInstance,
   GoInstance,
   TestUniqueIdentityInstance,
+  MerkleDirectDistributorInstance,
+  PoolRewardsInstance,
 } from "../typechain/truffle"
 import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/DynamicLeverageRatioStrategy"
-import {MerkleDistributor, CommunityRewards, UniqueIdentity, Go, TestUniqueIdentity} from "../typechain/ethers"
+import {MerkleDistributor, CommunityRewards, Go, TestUniqueIdentity, MerkleDirectDistributor} from "../typechain/ethers"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import "./types"
 const decimals = new BN(String(1e18))
@@ -50,6 +51,7 @@ const SECONDS_PER_YEAR = SECONDS_PER_DAY.mul(new BN(365))
 const UNIT_SHARE_PRICE = new BN("1000000000000000000") // Corresponds to share price of 100% (no interest or writedowns)
 import ChaiBN from "chai-bn"
 import {BaseContract} from "ethers"
+import {TestPoolRewardsInstance} from "../typechain/truffle/TestPoolRewards"
 chai.use(ChaiBN(BN))
 
 const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
@@ -67,11 +69,17 @@ function usdcVal(number) {
   return new BN(number).mul(USDC_DECIMALS)
 }
 
-function usdcToFidu(number) {
+function usdcToFidu(number: BN | number) {
+  if (!(number instanceof BN)) {
+    number = new BN(number)
+  }
   return number.mul(decimals.div(USDCDecimals))
 }
 
-function fiduToUSDC(number) {
+function fiduToUSDC(number: BN | number) {
+  if (!(number instanceof BN)) {
+    number = new BN(number)
+  }
   return number.div(decimals.div(USDCDecimals))
 }
 
@@ -93,6 +101,14 @@ const getDeployedAsTruffleContract = async <T extends Truffle.ContractInstance>(
 
 async function getTruffleContract<T extends Truffle.ContractInstance>(name: string, address: string): Promise<T> {
   return (await artifacts.require(name).at(address)) as T
+}
+
+async function setupPoolRewards(gfi: GFIInstance, poolRewards: PoolRewardsInstance, owner: string) {
+  const gfiAmount = bigVal(100_000_000) // 100M
+  await gfi.setCap(gfiAmount)
+  await gfi.mint(owner, gfiAmount)
+  await poolRewards.setMaxInterestDollarsEligible(bigVal(1_000_000_000)) // 1B
+  await poolRewards.setTotalRewards(bigVal(3_000_000)) // 3% of 100M, 3M
 }
 
 const tolerance = usdcVal(1).div(new BN(1000)) // 0.001$
@@ -217,6 +233,10 @@ type DeployAllContractsOptions = {
     fromAccount: string
     root: string
   }
+  deployMerkleDirectDistributor?: {
+    fromAccount: string
+    root: string
+  }
 }
 
 async function deployAllContracts(
@@ -238,8 +258,10 @@ async function deployAllContracts(
   transferRestrictedVault: TransferRestrictedVaultInstance
   gfi: GFIInstance
   stakingRewards: StakingRewardsInstance
+  poolRewards: TestPoolRewardsInstance
   communityRewards: CommunityRewardsInstance
   merkleDistributor: MerkleDistributorInstance | null
+  merkleDirectDistributor: MerkleDirectDistributorInstance | null
   uniqueIdentity: TestUniqueIdentityInstance
   go: GoInstance
 }> {
@@ -274,6 +296,7 @@ async function deployAllContracts(
   )
   const gfi = await getDeployedAsTruffleContract<GFIInstance>(deployments, "GFI")
   const stakingRewards = await getDeployedAsTruffleContract<StakingRewardsInstance>(deployments, "StakingRewards")
+  const poolRewards = await getDeployedAsTruffleContract<TestPoolRewardsInstance>(deployments, "PoolRewards")
 
   const communityRewards = await getContract<CommunityRewards, CommunityRewardsInstance>(
     "CommunityRewards",
@@ -291,6 +314,19 @@ async function deployAllContracts(
       TRUFFLE_CONTRACT_PROVIDER
     )
     await communityRewards.grantRole(DISTRIBUTOR_ROLE, merkleDistributor.address)
+  }
+
+  let merkleDirectDistributor: MerkleDirectDistributorInstance | null = null
+  if (options.deployMerkleDirectDistributor) {
+    await deployments.deploy("MerkleDirectDistributor", {
+      args: [gfi.address, options.deployMerkleDirectDistributor.root],
+      from: options.deployMerkleDirectDistributor.fromAccount,
+      gasLimit: 4000000,
+    })
+    merkleDirectDistributor = await getContract<MerkleDirectDistributor, MerkleDirectDistributorInstance>(
+      "MerkleDirectDistributor",
+      TRUFFLE_CONTRACT_PROVIDER
+    )
   }
 
   const uniqueIdentity = await getContract<TestUniqueIdentity, TestUniqueIdentityInstance>(
@@ -317,8 +353,10 @@ async function deployAllContracts(
     stakingRewards,
     communityRewards,
     merkleDistributor,
+    merkleDirectDistributor,
     uniqueIdentity,
     go,
+    poolRewards,
   }
 }
 
@@ -386,6 +424,8 @@ const createPoolWithCreditLine = async ({
   termInDays = new BN(365),
   limit = usdcVal(10000),
   lateFeeApr = interestAprAsBN("3.0"),
+  principalGracePeriodInDays = new BN(185),
+  fundableAt = new BN(0),
 }): Promise<{tranchedPool: TranchedPoolInstance; creditLine: CreditLineInstance}> => {
   const thisOwner = people.owner
   const thisBorrower = people.borrower
@@ -406,6 +446,8 @@ const createPoolWithCreditLine = async ({
     paymentPeriodInDays,
     termInDays,
     lateFeeApr,
+    principalGracePeriodInDays,
+    fundableAt,
     {from: thisOwner}
   )
   const event = result.logs[result.logs.length - 1]
@@ -492,4 +534,5 @@ export {
   genDifferentHexString,
   toEthers,
   fundWithEthFromLocalWhale,
+  setupPoolRewards,
 }

@@ -14,7 +14,7 @@
     "reason": "flight_academy",
     "grant": {
         "amount": "1000000000000000000000",
-        "vestingLength": "6000",
+        "vestingLength": "31536000",
         "cliffLength": "0",
         "vestingInterval": "1"
     }
@@ -24,9 +24,9 @@
     "reason": "goldfinch_investment",
     "grant": {
         "amount": "1000000000000000000000",
-        "vestingLength": "6000",
+        "vestingLength": "31536000",
         "cliffLength": "0",
-        "vestingInterval": "300"
+        "vestingInterval": "2628000"
     }
   },
   {
@@ -34,8 +34,8 @@
     "reason": "liquidity_provider",
     "grant": {
         "amount": "1000000000000000000000",
-        "vestingLength": "6000",
-        "cliffLength": "1000",
+        "vestingLength": "31536000",
+        "cliffLength": "15768000",
         "vestingInterval": "1"
     }
   },
@@ -44,9 +44,9 @@
     "reason": "liquidity_provider",
     "grant": {
         "amount": "1000000000000000000000",
-        "vestingLength": "6000",
-        "cliffLength": "1000",
-        "vestingInterval": "300"
+        "vestingLength": "31536000",
+        "cliffLength": "15768000",
+        "vestingInterval": "2628000"
     }
   }
 ]

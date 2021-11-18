@@ -1,4 +1,4 @@
-import {MerkleDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types"
+import {MerkleDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
 import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
 import React, {useState} from "react"
@@ -31,8 +31,23 @@ import TransactionForm from "./transactionForm"
 
 const ONE_WEEK_SECONDS = new BigNumber(60 * 60 * 24 * 7)
 
+enum RewardStatus {
+  Acceptable,
+  Claimable,
+  TemporarilyAllClaimed,
+  PermanentlyAllClaimed,
+}
+
+enum ActionButtonTexts {
+  accept = "Accept",
+  accepting = "Accepting...",
+  claimGFI = "Claim GFI",
+  claimed = "Claimed",
+  vesting = "Vesting",
+}
+
 interface ActionButtonProps {
-  text: string
+  text: ActionButtonTexts
   disabled: boolean
   onClick: () => Promise<void>
 }
@@ -42,15 +57,20 @@ function ActionButton(props: ActionButtonProps) {
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
   const disabledClass = props.disabled || isPending ? "disabled-button" : ""
 
-  async function action(): Promise<void> {
+  async function action(e): Promise<void> {
+    if (e.target === e.currentTarget) {
+      e.stopPropagation()
+    }
     setIsPending(true)
     await props.onClick()
     setIsPending(false)
   }
 
+  const isAccepting = props.text === ActionButtonTexts.accept && isPending
+
   return (
     <button className={`${!isTabletOrMobile && "table-cell"} action ${disabledClass}`} onClick={action}>
-      {props.text}
+      {isAccepting ? ActionButtonTexts.accepting : props.text}
     </button>
   )
 }
@@ -174,13 +194,6 @@ function ClaimForm(props: ClaimFormProps) {
   return <TransactionForm headerMessage="Claim" render={renderForm} closeForm={props.onCloseForm} />
 }
 
-enum RewardStatus {
-  Acceptable,
-  Claimable,
-  TemporarilyAllClaimed,
-  PermanentlyAllClaimed,
-}
-
 function getActionButtonProps(props: RewardsListItemProps): ActionButtonProps {
   const baseProps: Pick<ActionButtonProps, "onClick"> = {
     onClick: props.handleOnClick,
@@ -189,29 +202,29 @@ function getActionButtonProps(props: RewardsListItemProps): ActionButtonProps {
     case RewardStatus.Acceptable:
       return {
         ...baseProps,
-        text: "Accept",
+        text: ActionButtonTexts.accept,
         disabled: false,
       }
     case RewardStatus.Claimable:
       return {
         ...baseProps,
-        text: "Claim GFI",
+        text: ActionButtonTexts.claimGFI,
         disabled: false,
       }
     case RewardStatus.TemporarilyAllClaimed:
       return {
         ...baseProps,
-        text: "Vesting",
+        text: ActionButtonTexts.vesting,
         disabled: true,
       }
     case RewardStatus.PermanentlyAllClaimed:
       return {
         ...baseProps,
-        text: "Claimed",
+        text: ActionButtonTexts.claimed,
         disabled: true,
       }
     default:
-      assertUnreachable(props.status)
+      return assertUnreachable(props.status)
   }
 }
 
@@ -298,6 +311,8 @@ function getGrantVestingCliffDisplay(cliffLength: BigNumber): string | undefined
   switch (cliffLengthString) {
     case "0":
       return undefined
+    case "15768000":
+      return ", with six-month cliff"
     default:
       console.error(`Unexpected cliff length: ${cliffLengthString}`)
       return `, with ${cliffLengthString}-second cliff`
@@ -454,7 +469,6 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     return sendFromUser(
       props.merkleDistributor.contract.methods.acceptGrant(
         info.index,
-        info.account,
         info.grant.amount,
         info.grant.vestingLength,
         info.grant.cliffLength,
@@ -471,7 +485,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
   }
 
   if (item instanceof CommunityRewardsGrant || item instanceof StakingRewardsPosition) {
-    const title = item instanceof StakingRewardsPosition ? item.description : item.displayTitle
+    const title = item.title
     const details = getStakingOrCommunityRewardsDetails(item, props.stakingRewards, props.communityRewards)
 
     if (item.claimable.eq(0)) {

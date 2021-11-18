@@ -1,7 +1,7 @@
 /* global web3 */
 import {BN} from "ethereumjs-tx/node_modules/ethereumjs-util"
-import hre, {ethers, getNamedAccounts} from "hardhat"
-import {MerkleDistributorGrantInfo} from "../blockchain_scripts/merkleDistributor/types"
+import hre, {getNamedAccounts} from "hardhat"
+import {MerkleDistributorGrantInfo} from "../blockchain_scripts/merkle/merkleDistributor/types"
 import {GFIInstance} from "../typechain/truffle/GFI"
 import {GrantAccepted, MerkleDistributorInstance} from "../typechain/truffle/MerkleDistributor"
 import {Granted, CommunityRewardsInstance} from "../typechain/truffle/CommunityRewards"
@@ -54,7 +54,6 @@ describe("MerkleDistributor", () => {
   async function acceptGrant({
     from,
     index,
-    account,
     amount,
     vestingLength,
     cliffLength,
@@ -63,7 +62,6 @@ describe("MerkleDistributor", () => {
   }: {
     from: string
     index: number
-    account: string
     amount: BN
     vestingLength: BN
     cliffLength: BN
@@ -74,7 +72,6 @@ describe("MerkleDistributor", () => {
 
     const receipt = await merkleDistributor.acceptGrant(
       index,
-      account,
       amount,
       vestingLength,
       cliffLength,
@@ -90,15 +87,14 @@ describe("MerkleDistributor", () => {
     // Verify the Granted event emitted by CommunityRewards.
     const grantedEvent = getOnlyLog<Granted>(decodeLogs(receipt.receipt.rawLogs, communityRewards, "Granted"))
     const tokenId = grantedEvent.args.tokenId
-    expect(grantedEvent.args.user).to.equal(account)
+    expect(grantedEvent.args.user).to.equal(from)
     expect(grantedEvent.args.amount).to.bignumber.equal(amount)
     expect(grantedEvent.args.vestingLength).to.bignumber.equal(vestingLength)
     expect(grantedEvent.args.cliffLength).to.bignumber.equal(cliffLength)
     expect(grantedEvent.args.vestingInterval).to.bignumber.equal(vestingInterval)
 
-    // Verify that ownership of the NFT minted by CommunityRewards belongs to the
-    // address to whom the grant belongs (e.g. as opposed to `from`).
-    expect(await communityRewards.ownerOf(tokenId)).to.equal(account)
+    // Verify that ownership of the NFT minted by CommunityRewards belongs to the accepter.
+    expect(await communityRewards.ownerOf(tokenId)).to.equal(from)
 
     // Verify that rewards available has been decremented reflecting the amount of the grant.
     expect(rewardsAvailableBefore.sub(rewardsAvailableAfter)).to.bignumber.equal(amount)
@@ -115,7 +111,7 @@ describe("MerkleDistributor", () => {
     )
     expect(grantAcceptedEvent.args.tokenId).to.bignumber.equal(tokenId)
     expect(grantAcceptedEvent.args.index).to.bignumber.equal(new BN(index))
-    expect(grantAcceptedEvent.args.account).to.equal(account)
+    expect(grantAcceptedEvent.args.account).to.equal(from)
     expect(grantAcceptedEvent.args.amount).to.bignumber.equal(amount)
     expect(grantAcceptedEvent.args.vestingLength).to.bignumber.equal(vestingLength)
     expect(grantAcceptedEvent.args.cliffLength).to.bignumber.equal(cliffLength)
@@ -153,7 +149,6 @@ describe("MerkleDistributor", () => {
       acceptGrantParams = {
         from: grantInfo.account,
         index,
-        account: grantInfo.account,
         amount: web3.utils.toBN(grantInfo.grant.amount),
         vestingLength: web3.utils.toBN(grantInfo.grant.vestingLength),
         cliffLength: web3.utils.toBN(grantInfo.grant.cliffLength),
@@ -206,7 +201,6 @@ describe("MerkleDistributor", () => {
       await acceptGrant({
         from: grantInfo2.account,
         index: grantInfo2.index,
-        account: grantInfo2.account,
         amount: web3.utils.toBN(grantInfo2.grant.amount),
         vestingLength: web3.utils.toBN(grantInfo2.grant.vestingLength),
         cliffLength: web3.utils.toBN(grantInfo2.grant.cliffLength),
@@ -235,7 +229,6 @@ describe("MerkleDistributor", () => {
       acceptGrantParams = {
         from: grantInfo.account,
         index,
-        account: grantInfo.account,
         amount: web3.utils.toBN(grantInfo.grant.amount),
         vestingLength: web3.utils.toBN(grantInfo.grant.vestingLength),
         cliffLength: web3.utils.toBN(grantInfo.grant.cliffLength),
@@ -249,18 +242,17 @@ describe("MerkleDistributor", () => {
     it("rejects sender who is not the recipient of the grant", async () => {
       const otherGrantInfo = fixtures.output.grants[1]
       assertNonNullable(otherGrantInfo)
-      expect(otherGrantInfo.account).not.to.equal(acceptGrantParams.account)
+      expect(otherGrantInfo.account).not.to.equal(acceptGrantParams.from)
       const nonRecipient = otherGrantInfo.account
       await expect(
         acceptGrant({
           ...acceptGrantParams,
           from: nonRecipient,
         })
-      ).to.be.rejectedWith(/Only the grant recipient can accept a grant/)
+      ).to.be.rejectedWith(/Invalid proof/)
     })
 
     it("allows sender who is the recipient of the grant", async () => {
-      expect(acceptGrantParams.from).to.equal(acceptGrantParams.account)
       await expect(acceptGrant(acceptGrantParams)).to.be.fulfilled
     })
 
@@ -273,7 +265,7 @@ describe("MerkleDistributor", () => {
       const isGrantAccepted2 = await merkleDistributor.isGrantAccepted(index)
       expect(isGrantAccepted2).to.be.true
 
-      await expect(acceptGrant(acceptGrantParams)).to.be.rejectedWith(/MerkleDistributor: Grant already accepted\./)
+      await expect(acceptGrant(acceptGrantParams)).to.be.rejectedWith(/Grant already accepted/)
     })
 
     it("rejection does not perform granting", async () => {
@@ -287,7 +279,7 @@ describe("MerkleDistributor", () => {
       const rewardsAvailableBefore = await communityRewards.rewardsAvailable()
       expect(rewardsAvailableBefore).to.bignumber.equal(new BN(1e3))
 
-      await expect(acceptGrant(acceptGrantParams)).to.be.rejectedWith(/MerkleDistributor: Grant already accepted\./)
+      await expect(acceptGrant(acceptGrantParams)).to.be.rejectedWith(/Grant already accepted/)
 
       // Check that rewards available was not decremented as part of the rejection.
       const rewardsAvailableAfter = await communityRewards.rewardsAvailable()
@@ -300,7 +292,6 @@ describe("MerkleDistributor", () => {
       const otherGrantedTokenId = await acceptGrant({
         from: otherGrantInfo.account,
         index: otherIndex,
-        account: otherGrantInfo.account,
         amount: web3.utils.toBN(otherGrantInfo.grant.amount),
         vestingLength: web3.utils.toBN(otherGrantInfo.grant.vestingLength),
         cliffLength: web3.utils.toBN(otherGrantInfo.grant.cliffLength),
@@ -318,20 +309,7 @@ describe("MerkleDistributor", () => {
         ...acceptGrantParams,
         index: invalidIndex,
       })
-      await expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
-    })
-
-    it("rejects an existent grant index with incorrect account", async () => {
-      const otherGrantInfo = fixtures.output.grants[1]
-      assertNonNullable(otherGrantInfo)
-      const invalidAccount = otherGrantInfo.account
-      expect(invalidAccount).not.to.equal(acceptGrantParams.account)
-      const acceptance = acceptGrant({
-        ...acceptGrantParams,
-        from: invalidAccount,
-        account: invalidAccount,
-      })
-      await expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
+      await expect(acceptance).to.be.rejectedWith(/Invalid proof/)
     })
 
     it("rejects an existent grant index with incorrect (lesser) amount", async () => {
@@ -340,7 +318,7 @@ describe("MerkleDistributor", () => {
         ...acceptGrantParams,
         amount: invalidLesserAmount,
       })
-      await expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
+      await expect(acceptance).to.be.rejectedWith(/Invalid proof/)
     })
 
     it("rejects an existent grant index with incorrect (greater) amount", async () => {
@@ -349,7 +327,7 @@ describe("MerkleDistributor", () => {
         ...acceptGrantParams,
         amount: invalidGreaterAmount,
       })
-      await expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
+      await expect(acceptance).to.be.rejectedWith(/Invalid proof/)
     })
 
     it("rejects an existent grant index with incorrect vesting length", async () => {
@@ -358,7 +336,7 @@ describe("MerkleDistributor", () => {
         ...acceptGrantParams,
         vestingLength: invalidVestingLength,
       })
-      await expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
+      await expect(acceptance).to.be.rejectedWith(/Invalid proof/)
     })
 
     it("rejects an existent grant index with incorrect cliff length", async () => {
@@ -368,7 +346,7 @@ describe("MerkleDistributor", () => {
         ...acceptGrantParams,
         cliffLength: invalidCliffLength,
       })
-      await expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
+      await expect(acceptance).to.be.rejectedWith(/Invalid proof/)
     })
 
     it("rejects an existent grant index with incorrect vesting interval", async () => {
@@ -379,7 +357,7 @@ describe("MerkleDistributor", () => {
         ...acceptGrantParams,
         vestingInterval: invalidVestingInterval,
       })
-      await expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
+      await expect(acceptance).to.be.rejectedWith(/Invalid proof/)
     })
 
     it("rejects an existent grant index with incorrect (empty) proof array", async () => {
@@ -388,7 +366,7 @@ describe("MerkleDistributor", () => {
         ...acceptGrantParams,
         proof: invalidProof,
       })
-      await expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
+      await expect(acceptance).to.be.rejectedWith(/Invalid proof/)
     })
 
     it("rejects an existent grant index with incorrect (empty) proof string", async () => {
@@ -399,7 +377,7 @@ describe("MerkleDistributor", () => {
         ...acceptGrantParams,
         proof: invalidProof,
       })
-      await expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
+      await expect(acceptance).to.be.rejectedWith(/Invalid proof/)
     })
 
     it("rejects an existent grant index with incorrect (non-empty) proof", async () => {
@@ -411,7 +389,7 @@ describe("MerkleDistributor", () => {
         ...acceptGrantParams,
         proof: invalidProof,
       })
-      await expect(acceptance).to.be.rejectedWith(/MerkleDistributor: Invalid proof\./)
+      await expect(acceptance).to.be.rejectedWith(/Invalid proof/)
     })
 
     it("sets the grant as accepted, calls `CommunityRewards.grant()`, and emits an event", async () => {
@@ -423,7 +401,7 @@ describe("MerkleDistributor", () => {
       await mintAndLoadRewards(gfi, communityRewards, owner, web3.utils.toBN(grantInfo.grant.amount))
 
       const directIssuance = communityRewards.grant(
-        acceptGrantParams.account,
+        acceptGrantParams.from,
         acceptGrantParams.amount,
         acceptGrantParams.vestingLength,
         acceptGrantParams.cliffLength,
@@ -439,7 +417,6 @@ describe("MerkleDistributor", () => {
     it("uses the expected amount of gas", async () => {
       const receipt = await merkleDistributor.acceptGrant(
         acceptGrantParams.index,
-        acceptGrantParams.account,
         acceptGrantParams.amount,
         acceptGrantParams.vestingLength,
         acceptGrantParams.cliffLength,
@@ -447,7 +424,7 @@ describe("MerkleDistributor", () => {
         acceptGrantParams.proof,
         {from: acceptGrantParams.from}
       )
-      expect(receipt.receipt.gasUsed).to.eq(366104)
+      expect(receipt.receipt.gasUsed).to.eq(365667)
     })
   })
 })

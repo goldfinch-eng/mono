@@ -1,8 +1,11 @@
 import "@testing-library/jest-dom"
 import {mock} from "depay-web3-mock"
 import BigNumber from "bignumber.js"
-import {MerkleDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkleDistributor/types"
-import {CommunityRewards, MerkleDistributor} from "../../../ethereum/communityRewards"
+import {
+  MerkleDistributorGrantInfo,
+  MerkleDistributorInfo,
+} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
+import {CommunityRewards, MerkleDistributor, MerkleDistributorLoaded} from "../../../ethereum/communityRewards"
 import {GFI} from "../../../ethereum/gfi"
 import {User, UserMerkleDistributor} from "../../../ethereum/user"
 import {StakingRewards} from "../../../ethereum/pool"
@@ -17,6 +20,7 @@ import {
   recipient,
   stakingRewardsABI,
 } from "./constants"
+import {BlockInfo} from "../../../utils"
 import * as utils from "../../../ethereum/utils"
 import * as poolModule from "../../../ethereum/pool"
 
@@ -59,35 +63,58 @@ export function mockCapitalProviderCalls(
   })
 }
 
-interface RewardsMockData {
-  hasStakingRewards: boolean
-  earnedSince?: string | undefined
-  totalVestedAt?: string | undefined
-  currentTimestamp?: string | undefined
-  granted?: string | undefined
-  positionCurrentEarnRate?: string | undefined
-  positionsRes?:
-    | {
-        0: string
-        1: [string, string, string, string, string, string]
-        2: string
-        3: string
+export interface RewardsMockData {
+  staking?: {
+    earnedSince?: string
+    totalVestedAt?: string
+    currentTimestamp?: string
+    granted?: string
+    positionCurrentEarnRate?: string
+    positionsRes?: {
+      0: string
+      1: [string, string, string, string, string, string]
+      2: string
+      3: string
+    }
+  }
+  community?: {
+    airdrop?: MerkleDistributorGrantInfo
+    grantRes?: {
+      0: string
+      1: string
+      2: string
+      3: string
+      4: string
+      5: string
+      6: string
+    }
+    claimable?: string
+    acceptedGrantRes?: {
+      returnValues: {
+        index: Number
+        account: string
       }
-    | undefined
-  hasCommunityRewards: boolean
-  airdrop?: MerkleDistributorGrantInfo
-  grantRes?:
-    | {
-        0: string
-        1: string
-        2: string
-        3: string
-        4: string
-        5: string
-        6: string
-      }
-    | undefined
-  claimable?: string
+    }
+  }
+  gfi?: {
+    gfiBalance?: string
+  }
+}
+
+type ContractCallsMocks = {
+  callGFIBalanceMock: any
+  callUSDCBalanceMock: any
+  callUSDCAllowanceMock: any
+  callStakingRewardsBalanceMock: any
+  callCommunityRewardsBalanceMock: any
+  callTokenOfOwnerByIndexMock: any
+  callPositionsMock: any
+  callEarnedSinceLastCheckpointMock: any
+  callTotalVestedAt: any
+  callPositionCurrentEarnRate: any
+  callCommunityRewardsTokenOfOwnerMock: any
+  callGrantsMock: any
+  callClaimableRewardsMock: any
 }
 
 export function mockUserInitializationContractCalls(
@@ -95,8 +122,8 @@ export function mockUserInitializationContractCalls(
   stakingRewards: StakingRewards,
   gfi: GFI,
   communityRewards: CommunityRewards,
-  stakingRewardsMock?: RewardsMockData | undefined
-) {
+  rewardsMock?: RewardsMockData
+): ContractCallsMocks {
   user.fetchTxs = (usdc, pool, currentBlock) => {
     return Promise.resolve([
       [],
@@ -108,15 +135,16 @@ export function mockUserInitializationContractCalls(
       [],
     ])
   }
-  user.fetchGolistStatus = (address, currentBlock) => {
-    return {
+  user.fetchGolistStatus = (address: string, currentBlock: BlockInfo) => {
+    return Promise.resolve({
       legacyGolisted: true,
       golisted: true,
-    }
+      hasUID: true,
+    })
   }
 
   let stakingRewardsBalance = 0
-  if (stakingRewardsMock?.hasStakingRewards) {
+  if (rewardsMock?.staking) {
     stakingRewardsBalance = 1
   }
 
@@ -127,7 +155,7 @@ export function mockUserInitializationContractCalls(
       api: gfiABI,
       method: "balanceOf",
       params: [recipient],
-      return: "0",
+      return: rewardsMock?.gfi?.gfiBalance || "0",
     },
   })
 
@@ -162,24 +190,24 @@ export function mockUserInitializationContractCalls(
     },
   })
 
-  let callTokenOfOwnerByIndexMock
-  let callPositionsMock
-  let callEarnedSinceLastCheckpointMock
-  let callTotalVestedAt
-  let callPositionCurrentEarnRate
-  if (stakingRewardsMock?.hasStakingRewards) {
-    const positionsRes = stakingRewardsMock.positionsRes || [
+  let callTokenOfOwnerByIndexMock: any
+  let callPositionsMock: any
+  let callEarnedSinceLastCheckpointMock: any
+  let callTotalVestedAt: any
+  let callPositionCurrentEarnRate: any
+  if (rewardsMock?.staking) {
+    const positionsRes = rewardsMock.staking?.positionsRes || [
       "50000000000000000000000",
       ["0", "0", "0", "0", "1641391907", "1672927907"],
       "1000000000000000000",
       "0",
     ]
-    const earnedSince = stakingRewardsMock.earnedSince || "0"
-    const totalVestedAt = stakingRewardsMock.totalVestedAt || "0"
-    const positionCurrentEarnRate = stakingRewardsMock.positionCurrentEarnRate || "750000000000000"
-    const currentTimestamp = stakingRewardsMock.currentTimestamp || "1640783491"
+    const earnedSince = rewardsMock.staking?.earnedSince || "0"
+    const totalVestedAt = rewardsMock.staking?.totalVestedAt || "0"
+    const positionCurrentEarnRate = rewardsMock.staking?.positionCurrentEarnRate || "750000000000000"
+    const currentTimestamp = rewardsMock.staking?.currentTimestamp || "1640783491"
     const stakedEvent = {returnValues: {tokenId: "1", amount: "50000000000000000000000"}}
-    const granted = stakingRewardsMock.granted || earnedSince
+    const granted = rewardsMock.staking?.granted || earnedSince
 
     callTokenOfOwnerByIndexMock = mock({
       blockchain,
@@ -246,7 +274,7 @@ export function mockUserInitializationContractCalls(
   }
 
   let communityRewardsBalance = "0"
-  if (stakingRewardsMock?.hasCommunityRewards) {
+  if (rewardsMock?.community) {
     communityRewardsBalance = "1"
   }
 
@@ -261,11 +289,11 @@ export function mockUserInitializationContractCalls(
     },
   })
 
-  let callCommunityRewardsTokenOfOwnerMock
-  let callGrantsMock
-  let callClaimableRewardsMock
-  if (stakingRewardsMock?.hasCommunityRewards) {
-    const grant = stakingRewardsMock.grantRes || [
+  let callCommunityRewardsTokenOfOwnerMock: any
+  let callGrantsMock: any
+  let callClaimableRewardsMock: any
+  if (rewardsMock?.community) {
+    const grant = rewardsMock.community?.grantRes || [
       "1000000000000000000000",
       "0",
       "1641574558",
@@ -274,13 +302,12 @@ export function mockUserInitializationContractCalls(
       "1",
       "0",
     ]
-    const claimable = stakingRewardsMock.claimable || "1000000000000000000000"
-    const acceptedGrantRes = [
+    const claimable = rewardsMock.community?.claimable || "1000000000000000000000"
+    const acceptedGrantRes = rewardsMock.community?.acceptedGrantRes || [
       {
         returnValues: {
-          index: stakingRewardsMock.airdrop?.index || 0,
+          index: rewardsMock.community?.airdrop?.index || 0,
           account: recipient,
-          reason: stakingRewardsMock.airdrop?.reason,
         },
       },
     ]
@@ -314,8 +341,8 @@ export function mockUserInitializationContractCalls(
         return: claimable,
       },
     })
-    stakingRewards.goldfinchProtocol.queryEvents = (contract, event, filter, extra) => {
-      return acceptedGrantRes
+    communityRewards.goldfinchProtocol.queryEvents = (contract, event, filter, extra) => {
+      return Promise.resolve(acceptedGrantRes)
     }
   }
 
@@ -336,10 +363,7 @@ export function mockUserInitializationContractCalls(
   }
 }
 
-export function mockStakingRewardsContractCalls(
-  stakingRewards: StakingRewards,
-  currentEarnRatePerToken?: string | undefined
-) {
+export function mockStakingRewardsContractCalls(stakingRewards: StakingRewards, currentEarnRatePerToken?: string) {
   if (!currentEarnRatePerToken) {
     currentEarnRatePerToken = "10000000000000000000"
   }
@@ -382,81 +406,31 @@ export function mockMerkleDistributorContractCalls(
   return {callCommunityRewardsMock}
 }
 
-export function setupMocksForAcceptedAirdrop(airdrop, isAccepted = true) {
+export function setupMocksForAirdrop(airdrop: MerkleDistributorGrantInfo | undefined, isAccepted = true) {
   const grants = airdrop ? [airdrop] : []
   jest.spyOn(utils, "getMerkleDistributorInfo").mockImplementation(() => {
-    return {
+    const result: MerkleDistributorInfo | undefined = {
       merkleRoot: "0x0",
-      amount: "0x010f0cf064dd59200000",
+      amountTotal: "0x010f0cf064dd59200000",
       grants: grants,
     }
+    return Promise.resolve(result)
   })
-  UserMerkleDistributor.getAirdropsWithAcceptance = (airdropsForRecipient, merkleDistributor, currentBlock) => {
-    return grants
-      ? [
-          {
-            grantInfo: airdrop,
-            isAccepted: isAccepted,
-          },
-        ]
-      : []
+  UserMerkleDistributor.getAcceptedAirdrops = (
+    airdropsForRecipient: MerkleDistributorGrantInfo[],
+    merkleDistributor: MerkleDistributorLoaded,
+    currentBlock: BlockInfo
+  ) => {
+    const airdropsAccepted = grants.map((val) => ({grantInfo: airdrop, isAccepted}))
+    return Promise.resolve(airdropsAccepted)
   }
 }
 
-export function assertAllMocksAreCalled(mocks) {
-  const {
-    callGFIBalanceMock,
-    callUSDCBalanceMock,
-    callUSDCAllowanceMock,
-    callStakingRewardsBalanceMock,
-    callCommunityRewardsBalanceMock,
-    callTokenOfOwnerByIndexMock,
-    callPositionsMock,
-    callEarnedSinceLastCheckpointMock,
-    callTotalVestedAt,
-    callPositionCurrentEarnRate,
-    callCommunityRewardsTokenOfOwnerMock,
-    callGrantsMock,
-    callClaimableRewardsMock,
-  } = mocks
-
-  if (callGFIBalanceMock) {
-    expect(callGFIBalanceMock).toHaveBeenCalled()
-  }
-  if (callUSDCBalanceMock) {
-    expect(callUSDCBalanceMock).toHaveBeenCalled()
-  }
-  if (callUSDCAllowanceMock) {
-    expect(callUSDCAllowanceMock).toHaveBeenCalled()
-  }
-  if (callStakingRewardsBalanceMock) {
-    expect(callStakingRewardsBalanceMock).toHaveBeenCalled()
-  }
-  if (callCommunityRewardsBalanceMock) {
-    expect(callCommunityRewardsBalanceMock).toHaveBeenCalled()
-  }
-  if (callTokenOfOwnerByIndexMock) {
-    expect(callTokenOfOwnerByIndexMock).toHaveBeenCalled()
-  }
-  if (callPositionsMock) {
-    expect(callPositionsMock).toHaveBeenCalled()
-  }
-  if (callEarnedSinceLastCheckpointMock) {
-    expect(callEarnedSinceLastCheckpointMock).toHaveBeenCalled()
-  }
-  if (callTotalVestedAt) {
-    expect(callTotalVestedAt).toHaveBeenCalled()
-  }
-  if (callPositionCurrentEarnRate) {
-    expect(callPositionCurrentEarnRate).toHaveBeenCalled()
-  }
-  if (callCommunityRewardsTokenOfOwnerMock) {
-    expect(callCommunityRewardsTokenOfOwnerMock).toHaveBeenCalled()
-  }
-  if (callGrantsMock) {
-    expect(callGrantsMock).toHaveBeenCalled()
-  }
-  if (callClaimableRewardsMock) {
-    expect(callClaimableRewardsMock).toHaveBeenCalled()
-  }
+export function assertAllMocksAreCalled(mocks: ContractCallsMocks) {
+  Object.keys(mocks).forEach((key: string) => {
+    const mock = mocks[key as keyof typeof mocks]
+    if (mock) {
+      expect(mock).toHaveBeenCalled()
+    }
+  })
 }

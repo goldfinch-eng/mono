@@ -768,6 +768,19 @@ class StakingRewardsPosition {
     this.optimisticIncrement = optimisticIncrement
   }
 
+  get title(): string {
+    const date = new Date(this.storedPosition.rewards.startTime * 1000).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+    })
+    const origStakedAmount = new Intl.NumberFormat(undefined, {
+      notation: "compact",
+      compactDisplay: "short",
+    }).format(Number(fiduFromAtomic(this.stakedEvent.returnValues.amount)))
+
+    return `Staked ${origStakedAmount} FIDU on ${date}`
+  }
+
   get description(): string {
     const date = new Date(this.storedPosition.rewards.startTime * 1000).toLocaleDateString(undefined, {
       month: "short",
