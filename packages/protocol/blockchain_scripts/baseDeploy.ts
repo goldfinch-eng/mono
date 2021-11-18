@@ -326,6 +326,11 @@ export async function deployLPStakingRewards(
       },
     },
   })
+
+  await deployEffects.add({
+    deferred: [await config.populateTransaction.setAddress(CONFIG_KEYS.StakingRewards, stakingRewards.address)],
+  })
+
   return stakingRewards
 }
 
