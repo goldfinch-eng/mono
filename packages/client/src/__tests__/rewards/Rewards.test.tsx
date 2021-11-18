@@ -385,7 +385,7 @@ describe("Rewards list and detail", () => {
     jest.spyOn(utils, "getDeployments").mockImplementation(() => {
       return DEPLOYMENTS
     })
-    setupMocksForAcceptedAirdrop(undefined) // reset
+    setupMocksForAirdrop(undefined) // reset
 
     await goldfinchProtocol.initialize()
     seniorPool = new SeniorPool(goldfinchProtocol)
@@ -403,17 +403,16 @@ describe("Rewards list and detail", () => {
     const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
 
     const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
-    const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
-      hasStakingRewards: false,
-      hasCommunityRewards: false,
-    })
+    const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {})
     await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
     assertAllMocksAreCalled(mocks)
     assertWithLoadedInfo(user)
 
-    renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
+    const {container} = renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
 
-    expect(await screen.getByText("pools")).toBeVisible()
+    const list = container.getElementsByClassName("rewards-list-item")
+    expect(list.length).toEqual(1)
+    expect(list[0]?.textContent).toContain("You have no rewards. You can earn rewards by supplying")
   })
 
   it("shows staking rewards on rewards list", async () => {
@@ -459,11 +458,8 @@ describe("Rewards list and detail", () => {
     expect(await screen.findByText("Staked 50,000.00 FIDU on Jan 5, 2022")).toBeVisible()
     expect(await screen.findByText("Claim GFI")).toBeVisible()
 
-    const element = screen.getByTestId("rewards-list")
-    expect(element.getElementsByClassName("detail-label-value").length).toBe(2)
-    const summaryValues = await element.getElementsByClassName("detail-label-value")
-    expect(summaryValues[0]?.textContent).toEqual("129.60") // granted
-    expect(summaryValues[1]?.textContent).toEqual("0.71") // claimable
+    expect(screen.getByTestId("detail-granted").textContent).toEqual("129.60")
+    expect(screen.getByTestId("detail-claimable").textContent).toEqual("0.71")
 
     fireEvent.click(screen.getByText("Staked 50,000.00 FIDU on Jan 5, 2022"))
 
@@ -497,11 +493,8 @@ describe("Rewards list and detail", () => {
     expect(await screen.findByText("Flight Academy")).toBeVisible()
     expect(await screen.findByText("Claim GFI")).toBeVisible()
 
-    const element = screen.getByTestId("rewards-list")
-    expect(element.getElementsByClassName("detail-label-value").length).toBe(2)
-    const summaryValues = await element.getElementsByClassName("detail-label-value")
-    expect(summaryValues[0]?.textContent).toEqual("1,000.00") // granted
-    expect(summaryValues[1]?.textContent).toEqual("1,000.00") // claimable
+    expect(screen.getByTestId("detail-granted").textContent).toEqual("1,000.00")
+    expect(screen.getByTestId("detail-claimable").textContent).toEqual("1,000.00")
 
     fireEvent.click(screen.getByText("Flight Academy"))
 
@@ -533,11 +526,8 @@ describe("Rewards list and detail", () => {
     expect(await screen.findByText("Goldfinch Investment")).toBeVisible()
     expect(await screen.findByText("Vesting")).toBeVisible()
 
-    const element = screen.getByTestId("rewards-list")
-    expect(element.getElementsByClassName("detail-label-value").length).toBe(2)
-    const summaryValues = await element.getElementsByClassName("detail-label-value")
-    expect(summaryValues[0]?.textContent).toEqual("1,000.00") // granted
-    expect(summaryValues[1]?.textContent).toEqual("0.00") // claimable
+    expect(screen.getByTestId("detail-granted").textContent).toEqual("1,000.00")
+    expect(screen.getByTestId("detail-claimable").textContent).toEqual("0.00")
 
     fireEvent.click(screen.getByText("Goldfinch Investment"))
 
@@ -569,11 +559,8 @@ describe("Rewards list and detail", () => {
     expect(await screen.findByText("Flight Academy")).toBeVisible()
     expect(await screen.findByText("Accept")).toBeVisible()
 
-    const element = screen.getByTestId("rewards-list")
-    expect(element.getElementsByClassName("detail-label-value").length).toBe(2)
-    const summaryValues = await element.getElementsByClassName("detail-label-value")
-    expect(summaryValues[0]?.textContent).toEqual("1,000.00") // granted
-    expect(summaryValues[1]?.textContent).toEqual("0.00") // claimable
+    expect(screen.getByTestId("detail-granted").textContent).toEqual("1,000.00")
+    expect(screen.getByTestId("detail-claimable").textContent).toEqual("0.00")
 
     fireEvent.click(screen.getByText("Flight Academy"))
 
@@ -604,13 +591,10 @@ describe("Rewards list and detail", () => {
     expect(await screen.findByText("Flight Academy")).toBeVisible()
     expect(await screen.getAllByText("Claim GFI").length).toBe(2)
 
-    const element = screen.getByTestId("rewards-list")
-    expect(element.getElementsByClassName("detail-label-value").length).toBe(4)
-    const summaryValues = await element.getElementsByClassName("detail-label-value")
-    expect(summaryValues[0]?.textContent).toEqual("1,000.00") // granted
-    expect(summaryValues[1]?.textContent).toEqual("1,000.00") // claimable
-    expect(summaryValues[2]?.textContent).toEqual("129.60") // granted
-    expect(summaryValues[3]?.textContent).toEqual("0.71") // claimable
+    expect(screen.getAllByTestId("detail-granted")[0]?.textContent).toEqual("1,000.00")
+    expect(screen.getAllByTestId("detail-claimable")[0]?.textContent).toEqual("1,000.00")
+    expect(screen.getAllByTestId("detail-granted")[1]?.textContent).toEqual("129.60")
+    expect(screen.getAllByTestId("detail-claimable")[1]?.textContent).toEqual("0.71")
 
     fireEvent.click(screen.getByText("Staked 50,000.00 FIDU on Jan 5, 2022"))
     expect(await screen.findByText("Transaction details")).toBeVisible()
@@ -661,11 +645,8 @@ describe("Rewards list and detail", () => {
     expect(await screen.findByText("Staked 50,000.00 FIDU on Jan 5, 2022")).toBeVisible()
     expect(await screen.findByText("Claim GFI")).toBeVisible()
 
-    const element = screen.getByTestId("rewards-list")
-    expect(element.getElementsByClassName("detail-label-value").length).toBe(2)
-    const summaryValues = await element.getElementsByClassName("detail-label-value")
-    expect(summaryValues[0]?.textContent).toEqual("269.00") // granted
-    expect(summaryValues[1]?.textContent).toEqual("2.24") // claimable
+    expect(screen.getByTestId("detail-granted").textContent).toEqual("269.00")
+    expect(screen.getByTestId("detail-claimable").textContent).toEqual("2.24")
 
     fireEvent.click(screen.getByText("Staked 50,000.00 FIDU on Jan 5, 2022"))
     expect(await screen.findByText("Transaction details")).toBeVisible()
