@@ -18,7 +18,7 @@
     "lint": "npx lerna run lint --no-bail",
     "lint:fix": "npx lerna run lint:fix --no-bail",
     "prepare": "husky install",
-    "build": "npx lerna run build",
+    "build": "npx lerna run build --stream",
     "pre-push": "npx lerna run pre-push --stream --concurrency 1 --since HEAD --exclude-dependents",
     "pre-commit": "npx lerna run pre-commit --stream --concurrency 1 --since HEAD --exclude-dependents"
   },
