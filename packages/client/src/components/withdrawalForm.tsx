@@ -208,7 +208,6 @@ function WithdrawalForm(props: WithdrawalFormProps) {
 
   function action({transactionAmount}) {
     assertNonNullable(stakingRewards)
-
     const withdrawalAmountString = usdcToAtomic(transactionAmount)
     const withdrawalAmount = new BigNumber(withdrawalAmountString)
     const info = getWithdrawalInfo(withdrawalAmount)
@@ -370,7 +369,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
             }
             notes={notes}
           />
-          <LoadingButton disabled={!withdrawalInfo} action={action} />
+          <LoadingButton disabled={false} action={action} />
         </div>
       </div>
     )

@@ -8,6 +8,12 @@ declare module "depay-web3-mock" {
       params?: unknown
       return: unknown
     }
+    transaction?: {
+      to: string
+      api: PlainObject
+      method: string
+      params?: unknown
+    }
     accounts?: {
       delay?: number
       return: string[]
