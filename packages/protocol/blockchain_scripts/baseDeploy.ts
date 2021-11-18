@@ -61,11 +61,7 @@ import {BackerRewards} from "../typechain/ethers/BackerRewards"
 import {UNIQUE_IDENTITY_METADATA_URI} from "./uniqueIdentity/constants"
 import {toEthers} from "../test/testHelpers"
 import {getDeployEffects, DeployEffects} from "./migrations/deployEffects"
-import {TestBackerRewards} from "../typechain/ethers/TestBackerRewards"
 import {isMerkleDirectDistributorInfo} from "./merkle/merkleDirectDistributor/types"
-import {PoolRewardsInstance} from "../typechain/truffle/PoolRewards"
-import {PoolRewards} from "../typechain/ethers/PoolRewards"
-import {TestPoolRewards} from "../typechain/ethers/TestPoolRewards"
 
 const logger: Logger = console.log
 
@@ -111,7 +107,6 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
 
   const gfi = await deployGFI(deployer, {config})
   await deployLPStakingRewards(deployer, {config, deployEffects})
-  await deployPoolRewards(deployer, {config, deployEffects})
   const communityRewards = await deployCommunityRewards(deployer, {config, deployEffects})
   await deployMerkleDistributor(deployer, {communityRewards, deployEffects})
   await deployMerkleDirectDistributor(deployer, {gfi, deployEffects})
@@ -332,44 +327,6 @@ export async function deployLPStakingRewards(
     },
   })
   return stakingRewards
-}
-
-async function deployPoolRewards(
-  deployer: ContractDeployer,
-  {config, deployEffects}: {config: GoldfinchConfig; deployEffects: DeployEffects}
-): Promise<PoolRewards | TestPoolRewards> {
-  const {gf_deployer} = await deployer.getNamedAccounts()
-  let contractName = "PoolRewards"
-  console.log("isTestEnv", isTestEnv())
-  if (isTestEnv()) {
-    contractName = "TestPoolRewards"
-  }
-  logger("About to deploy PoolRewards...")
-  assertIsString(gf_deployer)
-  const protocol_owner = await getProtocolOwner()
-  const poolRewards = await deployer.deploy<PoolRewards>(contractName, {
-    from: gf_deployer,
-    gasLimit: 4000000,
-    proxy: {
-      execute: {
-        init: {
-          methodName: "__initialize__",
-          args: [protocol_owner, config.address],
-        },
-      },
-    },
-  })
-
-  const contract = await getEthersContract<PoolRewards>(contractName, {
-    at: poolRewards.address,
-  })
-  logger("Updating config...")
-
-  await deployEffects.add({
-    deferred: [await config.populateTransaction.setAddress(CONFIG_KEYS.BackerRewards, contract.address)],
-  })
-
-  return poolRewards
 }
 
 export async function deployCommunityRewards(
