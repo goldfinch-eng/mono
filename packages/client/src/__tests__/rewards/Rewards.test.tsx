@@ -1,34 +1,34 @@
+import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
 import "@testing-library/jest-dom"
-import {mock, resetMocks} from "depay-web3-mock"
 import {render, screen} from "@testing-library/react"
+import {mock, resetMocks} from "depay-web3-mock"
 import {BrowserRouter as Router} from "react-router-dom"
 import {AppContext} from "../../App"
-import web3 from "../../web3"
-import Rewards from "../../pages/rewards"
-import {MerkleDistributorLoaded, CommunityRewardsLoaded} from "../../ethereum/communityRewards"
+import {CommunityRewardsLoaded, MerkleDistributorLoaded} from "../../ethereum/communityRewards"
 import {GFILoaded} from "../../ethereum/gfi"
-import {User} from "../../ethereum/user"
-import {SeniorPool, SeniorPoolLoaded, StakingRewardsLoaded} from "../../ethereum/pool"
-import {UserLoaded} from "../../ethereum/user"
-import {blockchain, blockInfo, DEPLOYMENTS, network, recipient} from "./__utils__/constants"
-import {assertWithLoadedInfo} from "../../types/loadable"
 import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
+import {SeniorPool, SeniorPoolLoaded, StakingRewardsLoaded} from "../../ethereum/pool"
+import {User, UserLoaded} from "../../ethereum/user"
 import * as utils from "../../ethereum/utils"
+import Rewards from "../../pages/rewards"
+import {assertWithLoadedInfo} from "../../types/loadable"
+import web3 from "../../web3"
+import {blockchain, blockInfo, DEPLOYMENTS, network, recipient} from "./__utils__/constants"
 import {
-  mockUserInitializationContractCalls,
-  setupMocksForAirdrop,
   assertAllMocksAreCalled,
+  mockUserInitializationContractCalls,
   RewardsMockData,
+  setupMocksForAirdrop,
 } from "./__utils__/mocks"
 import {
   getDefaultClasses,
-  setupNewStakingReward,
-  setupClaimableStakingReward,
-  setupClaimableCommunityReward,
   setupAirdrop,
+  setupClaimableCommunityReward,
+  setupClaimableStakingReward,
   setupCommunityRewardAndStakingReward,
-  setupVestingCommunityReward,
+  setupNewStakingReward,
   setupPartiallyClaimedStakingReward,
+  setupVestingCommunityReward,
 } from "./__utils__/scenarios"
 
 mock({
@@ -72,7 +72,7 @@ async function getUserLoaded(
   merkleDistributor: MerkleDistributorLoaded,
   rewardsMock?: RewardsMockData
 ): Promise<UserLoaded> {
-  const user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
+  const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
   const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, rewardsMock)
 
   await user.initialize(seniorPoolLoaded, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
@@ -82,20 +82,20 @@ async function getUserLoaded(
 }
 
 describe("Rewards portfolio overview", () => {
-  let seniorPoolLoaded: any
+  let seniorPoolLoaded: SeniorPoolLoaded
   let goldfinchProtocol = new GoldfinchProtocol(network)
 
   beforeEach(resetMocks)
   beforeEach(() => mock({blockchain, accounts: {return: [recipient]}}))
   beforeEach(async () => {
     jest.spyOn(utils, "getDeployments").mockImplementation(() => {
-      return DEPLOYMENTS
+      return Promise.resolve(DEPLOYMENTS)
     })
     setupMocksForAirdrop(undefined) // reset
 
     await goldfinchProtocol.initialize()
-    seniorPoolLoaded = new SeniorPool(goldfinchProtocol)
-    seniorPoolLoaded.info = {
+    const _seniorPoolLoaded = new SeniorPool(goldfinchProtocol)
+    _seniorPoolLoaded.info = {
       loaded: true,
       value: {
         currentBlock: blockInfo,
@@ -104,6 +104,8 @@ describe("Rewards portfolio overview", () => {
         isPaused: false,
       },
     }
+    assertWithLoadedInfo(_seniorPoolLoaded)
+    seniorPoolLoaded = _seniorPoolLoaded
   })
 
   it("shows loading message when all requirements are empty", async () => {

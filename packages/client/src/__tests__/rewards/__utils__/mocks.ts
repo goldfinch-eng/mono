@@ -364,7 +364,7 @@ export function mockMerkleDistributorContractCalls(
   return {callCommunityRewardsMock}
 }
 
-export function setupMocksForAirdrop(airdrop: MerkleDistributorGrantInfo, isAccepted = true) {
+export function setupMocksForAirdrop(airdrop: MerkleDistributorGrantInfo | undefined, isAccepted = true) {
   const grants = airdrop ? [airdrop] : []
   jest.spyOn(utils, "getMerkleDistributorInfo").mockImplementation(() => {
     const result: MerkleDistributorInfo | undefined = {
