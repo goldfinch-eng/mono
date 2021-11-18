@@ -6,7 +6,13 @@ import {BigNumber} from "bignumber.js"
 import {BrowserRouter as Router} from "react-router-dom"
 import {AppContext} from "../../App"
 import web3 from "../../web3"
-import {CapitalProvider, fetchCapitalProviderData, SeniorPool, StakingRewardsLoaded} from "../../ethereum/pool"
+import {
+  CapitalProvider,
+  fetchCapitalProviderData,
+  SeniorPool,
+  SeniorPoolLoaded,
+  StakingRewardsLoaded,
+} from "../../ethereum/pool"
 import {User, UserLoaded} from "../../ethereum/user"
 import {blockchain, blockInfo, DEPLOYMENTS, network, recipient, stakingRewardsABI} from "../rewards/__utils__/constants"
 import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
@@ -24,6 +30,8 @@ import {
 import WithdrawalForm from "../../components/withdrawalForm"
 import {usdcToAtomic} from "../../ethereum/erc20"
 import * as utils from "../../ethereum/utils"
+import {CommunityRewardsLoaded, MerkleDistributorLoaded} from "../../ethereum/communityRewards"
+import {GFILoaded} from "../../ethereum/gfi"
 
 mock({
   blockchain: "ethereum",
@@ -66,28 +74,39 @@ function renderWithdrawalForm(
 }
 
 describe("Earn page portfolio overview", () => {
-  let seniorPool
+  const networkMonitor = {
+    addPendingTX: () => {},
+    watch: () => {},
+    markTXErrored: () => {},
+  }
+  let seniorPool: SeniorPoolLoaded
   let goldfinchProtocol = new GoldfinchProtocol(network)
-  let gfi, stakingRewards, communityRewards, merkleDistributor, user, capitalProvider
+  let gfi: GFILoaded,
+    stakingRewards: StakingRewardsLoaded,
+    communityRewards: CommunityRewardsLoaded,
+    merkleDistributor: MerkleDistributorLoaded,
+    user: UserLoaded,
+    capitalProvider: Loaded<CapitalProvider>
 
   beforeEach(async () => {
     jest.spyOn(utils, "getDeployments").mockImplementation(() => {
-      return DEPLOYMENTS
+      return Promise.resolve(DEPLOYMENTS)
     })
     setupMocksForAirdrop(undefined) // reset
 
     await goldfinchProtocol.initialize()
-    seniorPool = new SeniorPool(goldfinchProtocol)
-    seniorPool.info = {
+    const _seniorPoolLoaded = new SeniorPool(goldfinchProtocol)
+    _seniorPoolLoaded.info = {
       loaded: true,
       value: {
         currentBlock: blockInfo,
-        poolData: {
-          estimatedApy: new BigNumber("0.00483856000534281158"),
-        },
+        // @ts-ignore
+        poolData: {},
         isPaused: false,
       },
     }
+    assertWithLoadedInfo(_seniorPoolLoaded)
+    seniorPool = _seniorPoolLoaded
   })
   beforeEach(async () => {
     const result = await getDefaultClasses(goldfinchProtocol)
@@ -96,12 +115,12 @@ describe("Earn page portfolio overview", () => {
     communityRewards = result.communityRewards
     merkleDistributor = result.merkleDistributor
 
-    const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
-    mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {})
-    await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
+    const _user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
+    mockUserInitializationContractCalls(_user, stakingRewards, gfi, communityRewards, {})
+    await _user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
 
-    assertWithLoadedInfo(user)
-    assertWithLoadedInfo(seniorPool)
+    assertWithLoadedInfo(_user)
+    user = _user
 
     mockCapitalProviderCalls()
     capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
@@ -264,11 +283,6 @@ describe("Earn page portfolio overview", () => {
     web3.eth.getGasPrice = () => {
       return Promise.resolve("100000000")
     }
-    const networkMonitor = {
-      addPendingTX: () => {},
-      watch: () => {},
-      markTXErrored: () => {},
-    }
     const refreshCurrentBlock = jest.fn()
     renderWithdrawalForm(
       poolData,
@@ -313,11 +327,6 @@ describe("Earn page portfolio overview", () => {
     })
     web3.eth.getGasPrice = () => {
       return Promise.resolve("100000000")
-    }
-    const networkMonitor = {
-      addPendingTX: () => {},
-      watch: () => {},
-      markTXErrored: () => {},
     }
     const refreshCurrentBlock = jest.fn()
     renderWithdrawalForm(
@@ -373,11 +382,6 @@ describe("Earn page portfolio overview", () => {
     })
     web3.eth.getGasPrice = () => {
       return Promise.resolve("100000000")
-    }
-    const networkMonitor = {
-      addPendingTX: () => {},
-      watch: () => {},
-      markTXErrored: () => {},
     }
     const refreshCurrentBlock = jest.fn()
     renderWithdrawalForm(
