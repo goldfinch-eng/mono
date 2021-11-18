@@ -26,6 +26,7 @@ import {
 } from "../rewards/__utils__/mocks"
 import * as utils from "../../ethereum/utils"
 import {CommunityRewardsLoaded, MerkleDistributorLoaded} from "../../ethereum/communityRewards"
+import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
 
 mock({
   blockchain: "ethereum",
@@ -64,7 +65,7 @@ function renderStakeFiduBanner(
 
 describe("Stake unstaked fidu", () => {
   const stakeButtonCopy = "Stake all FIDU"
-  let seniorPool: any
+  let seniorPool: SeniorPoolLoaded
   let goldfinchProtocol = new GoldfinchProtocol(network)
   let gfi: GFILoaded,
     stakingRewards: StakingRewardsLoaded,
@@ -74,20 +75,23 @@ describe("Stake unstaked fidu", () => {
 
   beforeEach(async () => {
     jest.spyOn(utils, "getDeployments").mockImplementation(() => {
-      return DEPLOYMENTS
+      return Promise.resolve(DEPLOYMENTS)
     })
     setupMocksForAirdrop(undefined) // reset
 
     await goldfinchProtocol.initialize()
-    seniorPool = new SeniorPool(goldfinchProtocol)
-    seniorPool.info = {
+    const _seniorPoolLoaded = new SeniorPool(goldfinchProtocol)
+    _seniorPoolLoaded.info = {
       loaded: true,
       value: {
         currentBlock: blockInfo,
+        // @ts-ignore
         poolData: {},
         isPaused: false,
       },
     }
+    assertWithLoadedInfo(_seniorPoolLoaded)
+    seniorPool = _seniorPoolLoaded
 
     const results = await getDefaultClasses(goldfinchProtocol)
     gfi = results.gfi
@@ -95,7 +99,7 @@ describe("Stake unstaked fidu", () => {
     communityRewards = results.communityRewards
     merkleDistributor = results.merkleDistributor
 
-    user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
+    const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
     mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, merkleDistributor, {})
     await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
 
