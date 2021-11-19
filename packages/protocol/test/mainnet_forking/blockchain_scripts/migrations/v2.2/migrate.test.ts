@@ -59,7 +59,8 @@ describe("v2.2 migration", async function () {
 
       for (const [k, v] of Object.entries(CONFIG_KEYS_BY_TYPE.addresses)) {
         // Ignore GoldfinchConfig, since it should only be set in the old config
-        if (k !== "GoldfinchConfig") {
+        // Ignore StakingRewards, since it gets deployed and set only in the new config
+        if (!["GoldfinchConfig", "StakingRewards"].includes(k)) {
           expect(await oldConfig.getAddress(v), k).to.eq(await newConfig.getAddress(v))
         }
       }
