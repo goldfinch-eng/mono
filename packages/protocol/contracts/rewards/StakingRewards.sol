@@ -134,10 +134,10 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
     vestingLength = 365 days;
 
-    // Set defaults for leverage multipliers
-    leverageMultipliers[LockupPeriod.SixMonths] = uint256(15).mul(MULTIPLIER_DECIMALS).div(10); // 1.5x
-    leverageMultipliers[LockupPeriod.TwelveMonths] = uint256(2).mul(MULTIPLIER_DECIMALS); // 2x
-    leverageMultipliers[LockupPeriod.TwentyFourMonths] = uint256(3).mul(MULTIPLIER_DECIMALS); // 3x
+    // Set defaults for leverage multipliers (no boosting)
+    leverageMultipliers[LockupPeriod.SixMonths] = MULTIPLIER_DECIMALS; // 1x
+    leverageMultipliers[LockupPeriod.TwelveMonths] = MULTIPLIER_DECIMALS; // 1x
+    leverageMultipliers[LockupPeriod.TwentyFourMonths] = MULTIPLIER_DECIMALS; // 1x
   }
 
   /* ========== VIEWS ========== */
