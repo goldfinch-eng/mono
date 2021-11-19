@@ -1,7 +1,7 @@
 import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
 import "@testing-library/jest-dom"
 import {mock, resetMocks} from "depay-web3-mock"
-import {render, screen, fireEvent, waitFor, act} from "@testing-library/react"
+import {render, screen, fireEvent, waitFor} from "@testing-library/react"
 import {BrowserRouter as Router} from "react-router-dom"
 import {AppContext} from "../../App"
 import {CommunityRewardsLoaded, MerkleDistributorLoaded} from "../../ethereum/communityRewards"
