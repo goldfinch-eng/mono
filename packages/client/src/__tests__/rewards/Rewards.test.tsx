@@ -7,7 +7,7 @@ import {AppContext} from "../../App"
 import {CommunityRewardsLoaded, MerkleDistributorLoaded} from "../../ethereum/communityRewards"
 import {GFILoaded} from "../../ethereum/gfi"
 import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
-import {SeniorPool, SeniorPoolLoaded, StakingRewardsLoaded} from "../../ethereum/pool"
+import {PoolData, SeniorPool, SeniorPoolLoaded, StakingRewardsLoaded} from "../../ethereum/pool"
 import {User, UserLoaded} from "../../ethereum/user"
 import * as utils from "../../ethereum/utils"
 import Rewards from "../../pages/rewards"
@@ -103,8 +103,7 @@ describe("Rewards portfolio overview", () => {
       loaded: true,
       value: {
         currentBlock: blockInfo,
-        // @ts-ignore
-        poolData: {},
+        poolData: {} as PoolData,
         isPaused: false,
       },
     }
@@ -395,8 +394,7 @@ describe("Rewards list and detail", () => {
       loaded: true,
       value: {
         currentBlock: blockInfo,
-        // @ts-ignore
-        poolData: {},
+        poolData: {} as PoolData,
         isPaused: false,
       },
     }
