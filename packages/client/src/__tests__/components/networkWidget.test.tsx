@@ -4,8 +4,6 @@ import {render, screen, fireEvent} from "@testing-library/react"
 import NetworkWidget from "../../components/networkWidget"
 import {UserLoaded} from "../../ethereum/user"
 
-let global: any
-
 function renderNetworkWidget(sessionData, address) {
   let store = {
     web3Status: {
@@ -48,8 +46,8 @@ function renderNetworkWidget(sessionData, address) {
 
 describe("network widget sign in", () => {
   it("shows modal with terms of service", async () => {
-    global.window.ethereum = jest.fn()
-    global.window.ethereum.request = () => {
+    ;(global.window as any).ethereum = jest.fn()
+    ;(global.window as any).ethereum.request = () => {
       return Promise.resolve()
     }
     renderNetworkWidget(undefined, "0x000")
@@ -60,8 +58,8 @@ describe("network widget sign in", () => {
   })
 
   it("shows connect with metamask if session data is invalid", async () => {
-    global.window.ethereum = jest.fn()
-    global.window.ethereum.request = () => {
+    ;(global.window as any).ethereum = jest.fn()
+    ;(global.window as any).ethereum.request = () => {
       return Promise.resolve()
     }
     renderNetworkWidget(undefined, "0x000")
@@ -69,8 +67,8 @@ describe("network widget sign in", () => {
   })
 
   it("shows signed in with correct session data", async () => {
-    global.window.ethereum = jest.fn()
-    global.window.ethereum.request = () => {
+    ;(global.window as any).ethereum = jest.fn()
+    ;(global.window as any).ethereum.request = () => {
       return Promise.resolve()
     }
 
@@ -82,8 +80,8 @@ describe("network widget sign in", () => {
   })
 
   it("shows signed in when user has session data but address doesn't exist", async () => {
-    global.window.ethereum = jest.fn()
-    global.window.ethereum.request = () => {
+    ;(global.window as any).ethereum = jest.fn()
+    ;(global.window as any).ethereum.request = () => {
       return Promise.resolve()
     }
 
@@ -95,8 +93,8 @@ describe("network widget sign in", () => {
   })
 
   it("shows connect with metamask with missing signature", async () => {
-    global.window.ethereum = jest.fn()
-    global.window.ethereum.request = () => {
+    ;(global.window as any).ethereum = jest.fn()
+    ;(global.window as any).ethereum.request = () => {
       return Promise.resolve()
     }
     renderNetworkWidget({signatureBlockNum: 42, signatureBlockNumTimestamp: 1631996519}, "0x000")
