@@ -29,9 +29,8 @@ function WithdrawalForm(props: WithdrawalFormProps) {
     }).then(actionComplete)
   }
 
-  const availableAmount = capitalProvider?.availableToWithdrawInDollars
-  const availableToWithdraw = minimumNumber(
-    availableAmount,
+  const availableToWithdrawInDollars = minimumNumber(
+    capitalProvider?.availableToWithdrawInDollars,
     usdcFromAtomic(poolData.balance),
     usdcFromAtomic(goldfinchConfig.transactionLimit)
   )
@@ -43,13 +42,13 @@ function WithdrawalForm(props: WithdrawalFormProps) {
         <div className="form-inputs-footer">
           <TransactionInput
             formMethods={formMethods}
-            maxAmount={availableToWithdraw}
+            maxAmountInDollars={availableToWithdrawInDollars}
             rightDecoration={
               <button
                 className="enter-max-amount"
                 type="button"
                 onClick={() => {
-                  formMethods.setValue("transactionAmount", roundDownPenny(availableToWithdraw), {
+                  formMethods.setValue("transactionAmount", roundDownPenny(availableToWithdrawInDollars), {
                     shouldValidate: true,
                     shouldDirty: true,
                   })
@@ -68,10 +67,9 @@ function WithdrawalForm(props: WithdrawalFormProps) {
   return (
     <TransactionForm
       title="Withdraw"
-      headerMessage={`Available to withdraw: ${displayDollars(availableAmount)}`}
+      headerMessage={`Available to withdraw: ${displayDollars(availableToWithdrawInDollars)}`}
       render={renderForm}
       closeForm={closeForm}
-      maxAmount={availableToWithdraw}
     />
   )
 }
