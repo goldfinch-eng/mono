@@ -209,14 +209,6 @@ const scenarios: Scenario[] = [
     setUpFallthrough: (_props) => {},
     expectedText: /The pool is currently paused/,
   },
-  {
-    devName: "pool_closed_to_user",
-    setUpMatch: ({store, props}) => {
-      props.isClosedToUser = true
-    },
-    setUpFallthrough: (_props) => {},
-    expectedText: /The pool is currently closed to new participants\./,
-  },
 ]
 
 const scenariosMap = _.keyBy(scenarios, (s) => s.devName)
