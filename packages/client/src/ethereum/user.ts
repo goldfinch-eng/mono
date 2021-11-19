@@ -537,7 +537,7 @@ export class UserMerkleDistributor {
     merkleDistributor: MerkleDistributorLoaded,
     currentBlock: BlockInfo
   ) {
-    return await Promise.all(
+    return Promise.all(
       airdropsForRecipient.map(async (grantInfo) => ({
         grantInfo,
         isAccepted: await merkleDistributor.contract.methods
@@ -751,7 +751,7 @@ export class User {
     merkleDistributor: MerkleDistributorLoaded,
     currentBlock: BlockInfo
   ) {
-    return await Promise.all([
+    return Promise.all([
       // NOTE: We have no need to include usdc txs for `pool.v1Pool` among the txs in
       // `this.pastTxs`. So we don't get them. We only need usdc txs for `pool`.
       getAndTransformUSDCEvents(usdc, pool.address, this.address, currentBlock),
@@ -1042,7 +1042,7 @@ async function getAndTransformCreditDeskEvents(
   })
 }
 
-export async function getOverlappingStakingRewardsEvents(
+async function getOverlappingStakingRewardsEvents(
   address: string,
   stakingRewards: StakingRewardsLoaded
 ): Promise<WithCurrentBlock<{value: KnownEventData<StakingRewardsEventType>[]}>> {
