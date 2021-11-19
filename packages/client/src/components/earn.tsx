@@ -341,6 +341,7 @@ function usePoolBackers({
 
 function Earn() {
   const {
+    web3Status,
     pool,
     usdc,
     user,
@@ -407,8 +408,8 @@ function Earn() {
   const capitalProviderData = earnStore.capitalProvider
   const backersData = earnStore.backers
 
-  const isLoading = !pool || !capitalProviderData.loaded || !backersData.loaded || !user || user.noWeb3
-  const earnMessage = isLoading ? "Loading..." : "Pools"
+  const loaded = pool && capitalProviderData.loaded && backersData.loaded && user
+  const earnMessage = web3Status?.type === "no_web3" || loaded ? "Pools" : "Loading..."
 
   return (
     <div className="content-section">
@@ -416,7 +417,7 @@ function Earn() {
         <div>{earnMessage}</div>
       </div>
       <ConnectionNotice requireUnlock={false} />
-      {isLoading ? (
+      {web3Status?.type === "no_web3" || !loaded ? (
         <PortfolioOverviewSkeleton />
       ) : (
         <PortfolioOverview
@@ -427,7 +428,7 @@ function Earn() {
       )}
       <div className="pools">
         <PoolList title="Senior Pool">
-          {isLoading ? (
+          {web3Status?.type === "no_web3" || !loaded ? (
             <SeniorPoolCardSkeleton />
           ) : (
             <SeniorPoolCard
@@ -462,7 +463,7 @@ function Earn() {
                 key={`${p.tranchedPool.address}`}
                 poolBacker={p}
                 backers={backersByTranchedPoolAddress?.[p.tranchedPool.address]}
-                disabled={isLoading}
+                disabled={!loaded}
               />
             ))}
         </PoolList>

@@ -1,15 +1,18 @@
+import "@testing-library/jest-dom"
+import {Matcher, render, screen} from "@testing-library/react"
 import _ from "lodash"
 import React from "react"
-import ConnectionNotice, {ConnectionNoticeProps, strategies} from "./connectionNotice"
-import {Matcher, render, screen} from "@testing-library/react"
 import {MemoryRouter} from "react-router-dom"
 import {AppContext, GlobalState} from "../App"
-import "@testing-library/jest-dom"
 import {CreditLine, defaultCreditLine} from "../ethereum/creditLine"
-import {AsyncResult} from "../hooks/useAsync"
-import {KYC} from "../hooks/useGoldfinchClient"
 import {getERC20, Tickers} from "../ethereum/erc20"
 import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
+import {UserLoaded} from "../ethereum/user"
+import {AsyncResult} from "../hooks/useAsync"
+import {KYC} from "../hooks/useGoldfinchClient"
+import {SessionData} from "../types/session"
+import {Web3Status} from "../types/web3"
+import ConnectionNotice, {ConnectionNoticeProps, strategies} from "./connectionNotice"
 
 interface Scenario {
   devName: string
@@ -26,36 +29,33 @@ interface Scenario {
   expectedText: Matcher
 }
 
+const testUserAddress = "0xtest"
+const noWeb3: Web3Status = {
+  type: "no_web3",
+  networkName: undefined,
+  address: undefined,
+}
+const hasWeb3: Web3Status = {
+  type: "has_web3",
+  networkName: "localhost",
+  address: undefined,
+}
+const connected: Web3Status = {
+  type: "connected",
+  networkName: "localhost",
+  address: testUserAddress,
+}
+
 const scenarios: Scenario[] = [
   {
     devName: "install_metamask",
-    setUpMatch: (_props) => {},
-    setUpFallthrough: (_props) => {
-      ;(window as any).ethereum = "fake_ethereum_provider"
+    setUpMatch: ({store}) => {
+      store.web3Status = noWeb3
+    },
+    setUpFallthrough: ({store}) => {
+      store.web3Status = hasWeb3
     },
     expectedText: /you'll first need to download and install the Metamask plug-in/,
-  },
-  {
-    devName: "pool_paused",
-    setUpMatch: ({store, props}) => {
-      props.isPaused = true
-      store.user = {
-        info: {loaded: true, value: {goListed: true}},
-      }
-    },
-    setUpFallthrough: (_props) => {},
-    expectedText: /The pool is currently paused/,
-  },
-  {
-    devName: "pool_closed_to_user",
-    setUpMatch: ({store, props}) => {
-      props.isClosedToUser = true
-      store.user = {
-        info: {loaded: true, value: {goListed: true}},
-      }
-    },
-    setUpFallthrough: (_props) => {},
-    expectedText: /The pool is currently closed to new participants\./,
   },
   {
     devName: "wrong_network",
@@ -76,53 +76,47 @@ const scenarios: Scenario[] = [
   {
     devName: "not_connected_to_metamask",
     setUpMatch: ({store}) => {
-      store.user = undefined
+      store.web3Status = hasWeb3
     },
     setUpFallthrough: ({store}) => {
+      store.web3Status = connected
       store.user = {
-        web3Connected: true,
-        address: "0xtest",
-      }
+        address: testUserAddress,
+        info: {loaded: true, value: {goListed: false}},
+      } as UserLoaded
     },
     expectedText: /You are not currently connected to Metamask./,
   },
   {
     devName: "connected_user_with_expired_session",
     setUpMatch: ({store, props}) => {
+      store.web3Status = connected
       store.user = {
-        web3Connected: true,
-        address: "0xtest",
-      }
-      store.sessionData = undefined
+        address: testUserAddress,
+        info: {loaded: true, value: {goListed: false}},
+      } as UserLoaded
+      store.sessionData = {signatureBlockNum: 42, signatureBlockNumTimestamp: 47} as SessionData
     },
     setUpFallthrough: ({store}) => {
-      // @ts-expect-error ts-migrate(2741) FIXME: Property 'version' is missing in type '{ signature... Remove this comment to see the full error message
-      store.sessionData = {signature: "foo", signatureBlockNum: 42, signatureBlockNumTimestamp: 47}
+      store.sessionData = {signature: "foo", signatureBlockNum: 42, signatureBlockNumTimestamp: 47, version: 1}
     },
     expectedText: /Your session has expired. To use Goldfinch, you first need to reconnect to Metamask./,
   },
   {
     devName: "no_credit_line",
     setUpMatch: ({store, props}) => {
+      store.sessionData = {signature: "foo", signatureBlockNum: 42, signatureBlockNumTimestamp: 47, version: 1}
       defaultCreditLine.loaded = true
-      store.user = {
-        info: {loaded: true},
-      }
       props.creditLine = defaultCreditLine as unknown as CreditLine
     },
     setUpFallthrough: ({store}) => {
       defaultCreditLine.loaded = false
-      // @ts-expect-error ts-migrate(2741) FIXME: Property 'version' is missing in type '{ signature... Remove this comment to see the full error message
-      store.sessionData = {signature: "foo", signatureBlockNum: 42, signatureBlockNumTimestamp: 47}
     },
     expectedText: /You do not have any credit lines./,
   },
   {
     devName: "no_golist",
     setUpMatch: ({store, props}) => {
-      store.user = {
-        info: {loaded: true, value: {goListed: false}},
-      }
       props.requireGolist = true
     },
     setUpFallthrough: ({props}) => {
@@ -135,9 +129,6 @@ const scenarios: Scenario[] = [
     devName: "kyc_error",
     setUpMatch: ({store, props}) => {
       const erroredResult: AsyncResult<KYC> = {status: "errored", error: new Error("test")}
-      store.user = {
-        info: {loaded: true, value: {goListed: false}},
-      }
       props.requireKYC = {
         kyc: erroredResult,
         condition: (_) => true,
@@ -152,25 +143,17 @@ const scenarios: Scenario[] = [
     devName: "kyc_loading",
     setUpMatch: ({store, props}) => {
       const loadingResult: AsyncResult<KYC> = {status: "loading"}
-      store.user = {
-        info: {loaded: true, value: {goListed: false}},
-      }
       props.requireKYC = {
         kyc: loadingResult,
         condition: (_) => true,
       }
     },
-    setUpFallthrough: ({props}) => {
-      props.requireKYC = undefined
-    },
+    setUpFallthrough: ({props}) => {},
     expectedText: /Loading/,
   },
   {
     devName: "kyc_succeeded",
     setUpMatch: ({store, props}) => {
-      store.user = {
-        info: {loaded: true, value: {goListed: false}},
-      }
       const kyc: AsyncResult<KYC> = {
         status: "succeeded",
         value: {
@@ -205,14 +188,34 @@ const scenarios: Scenario[] = [
     setUpMatch: ({store, props, context}) => {
       context.route = "/pools/senior"
       store.user = {
-        info: {loaded: true, value: {usdcIsUnlocked: {earn: {isUnlocked: false, unlockAddress: "0xtestpooladdress"}}}},
-      }
+        address: testUserAddress,
+        info: {
+          loaded: true,
+          value: {usdcIsUnlocked: {earn: {isUnlocked: false, unlockAddress: "0xtestpooladdress"}}},
+        },
+      } as UserLoaded
       props.requireUnlock = true
     },
     setUpFallthrough: ({props}) => {
       props.requireUnlock = false
     },
     expectedText: /Unlock USDC/,
+  },
+  {
+    devName: "pool_paused",
+    setUpMatch: ({store, props}) => {
+      props.isPaused = true
+    },
+    setUpFallthrough: (_props) => {},
+    expectedText: /The pool is currently paused/,
+  },
+  {
+    devName: "pool_closed_to_user",
+    setUpMatch: ({store, props}) => {
+      props.isClosedToUser = true
+    },
+    setUpFallthrough: (_props) => {},
+    expectedText: /The pool is currently closed to new participants\./,
   },
 ]
 
