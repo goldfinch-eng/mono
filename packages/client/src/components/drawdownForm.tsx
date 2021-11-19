@@ -69,7 +69,7 @@ function DrawdownForm(props) {
     }).then(props.actionComplete)
   }
 
-  const maxAmount = minimumNumber(
+  const maxAmountInDollars = minimumNumber(
     props.creditLine.availableCreditInDollars,
     usdcFromAtomic((poolData as any).balance),
     usdcFromAtomic(goldfinchConfig.transactionLimit)
@@ -125,7 +125,7 @@ function DrawdownForm(props) {
             <div className="form-inputs-footer">
               <TransactionInput
                 formMethods={formMethods}
-                maxAmount={maxAmount}
+                maxAmountInDollars={maxAmountInDollars}
                 disabled={disabled}
                 onChange={(e) => {
                   debouncedSetTransactionAmount(formMethods.getValues("transactionAmount"))
@@ -136,7 +136,7 @@ function DrawdownForm(props) {
                     type="button"
                     disabled={disabled}
                     onClick={() => {
-                      formMethods.setValue("transactionAmount", roundDownPenny(maxAmount), {
+                      formMethods.setValue("transactionAmount", roundDownPenny(maxAmountInDollars), {
                         shouldValidate: true,
                         shouldDirty: true,
                       })
