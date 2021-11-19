@@ -27,6 +27,7 @@ import {
   setupClaimableStakingReward,
   setupCommunityRewardAndStakingReward,
   setupNewStakingReward,
+  setupPartiallyClaimedCommunityReward,
   setupPartiallyClaimedStakingReward,
   setupVestingCommunityReward,
 } from "./__utils__/scenarios"
@@ -407,6 +408,27 @@ describe("Rewards portfolio overview", () => {
       expect(await screen.getByTestId("summary-still-vesting").className).toEqual("value")
       expect(await screen.getByTestId("summary-total-balance").className).toEqual("value")
     })
+
+    it("community reward partially claimed and still vesting appears on portfolio", async () => {
+      const {gfi, stakingRewards, communityRewards, merkleDistributor, user} =
+        await setupPartiallyClaimedCommunityReward(goldfinchProtocol, seniorPoolLoaded, "5480000000000000000")
+      renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
+
+      expect(await screen.findByText("Wallet balance")).toBeVisible()
+      expect(await screen.findByText("Claimable")).toBeVisible()
+      expect(await screen.findByText("Still vesting")).toBeVisible()
+      expect(await screen.findByText("Total GFI balance")).toBeVisible()
+
+      expect(await screen.getByTestId("summary-wallet-balance").textContent).toEqual("5.48")
+      expect(await screen.getByTestId("summary-claimable").textContent).toEqual("10.96")
+      expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("983.56")
+      expect(await screen.getByTestId("summary-total-balance").textContent).toEqual("1,000.00")
+
+      expect(await screen.getByTestId("summary-wallet-balance").className).toEqual("value")
+      expect(await screen.getByTestId("summary-claimable").className).toEqual("value")
+      expect(await screen.getByTestId("summary-still-vesting").className).toEqual("value")
+      expect(await screen.getByTestId("summary-total-balance").className).toEqual("value")
+    })
   })
 })
 
@@ -453,7 +475,7 @@ describe("Rewards list and detail", () => {
     expect(list[0]?.textContent).toContain("You have no rewards. You can earn rewards by supplying")
   })
 
-  it("shows staking rewards on rewards list", async () => {
+  it("shows staking reward on rewards list", async () => {
     const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupNewStakingReward(
       goldfinchProtocol,
       seniorPool
@@ -485,7 +507,7 @@ describe("Rewards list and detail", () => {
     )
   })
 
-  it("shows claimable staking rewards on rewards list", async () => {
+  it("shows claimable staking reward on rewards list", async () => {
     const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupClaimableStakingReward(
       goldfinchProtocol,
       seniorPool
@@ -520,7 +542,7 @@ describe("Rewards list and detail", () => {
     )
   })
 
-  it("shows claimable community rewards on rewards list", async () => {
+  it("shows claimable community reward on rewards list", async () => {
     const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupClaimableCommunityReward(
       goldfinchProtocol,
       seniorPool
@@ -553,7 +575,7 @@ describe("Rewards list and detail", () => {
     )
   })
 
-  it("shows community rewards on rewards list", async () => {
+  it("shows vesting community reward on rewards list", async () => {
     const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupVestingCommunityReward(
       goldfinchProtocol,
       seniorPool
@@ -586,7 +608,7 @@ describe("Rewards list and detail", () => {
     )
   })
 
-  it("shows airdrops from merkle distributor", async () => {
+  it("shows airdrop from merkle distributor", async () => {
     const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupAirdrop(
       goldfinchProtocol,
       seniorPool
@@ -617,7 +639,7 @@ describe("Rewards list and detail", () => {
     )
   })
 
-  it("shows community rewards and staking rewards ", async () => {
+  it("shows community reward and staking reward ", async () => {
     const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupCommunityRewardAndStakingReward(
       goldfinchProtocol,
       seniorPool
@@ -672,7 +694,7 @@ describe("Rewards list and detail", () => {
     )
   })
 
-  it("staking rewards partially claimed appears on list", async () => {
+  it("staking reward partially claimed appears on list", async () => {
     const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupPartiallyClaimedStakingReward(
       goldfinchProtocol,
       seniorPool
@@ -703,6 +725,39 @@ describe("Rewards list and detail", () => {
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
       `https://${network.name}.etherscan.io/address/${stakingRewards.address}`
+    )
+  })
+
+  it("shows partially claimed community reward on rewards list", async () => {
+    const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupPartiallyClaimedCommunityReward(
+      goldfinchProtocol,
+      seniorPool
+    )
+
+    renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
+
+    expect(await screen.findByText("Goldfinch Investment")).toBeVisible()
+    expect(await screen.findByText("Claim GFI")).toBeVisible()
+
+    expect(screen.getByTestId("detail-granted").textContent).toEqual("1,000.00")
+    expect(screen.getByTestId("detail-claimable").textContent).toEqual("10.96")
+
+    fireEvent.click(screen.getByText("Goldfinch Investment"))
+
+    expect(await screen.findByText("Transaction details")).toBeVisible()
+    expect(
+      await screen.findByText("1,000.00 GFI reward on Jan 22, 2022 for participating as a Goldfinch investor")
+    ).toBeVisible()
+
+    expect(await screen.findByText("Vesting status")).toBeVisible()
+    expect(await screen.findByText("1.64% (16.44 GFI) vested")).toBeVisible()
+
+    expect(await screen.findByText("Vesting schedule")).toBeVisible()
+    expect(await screen.findByText("Linear until 100% on Jan 7, 2023")).toBeVisible()
+
+    expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
+      "href",
+      `https://${network.name}.etherscan.io/address/${communityRewards.address}`
     )
   })
 })
