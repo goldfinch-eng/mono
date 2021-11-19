@@ -204,10 +204,10 @@ function Rewards() {
       !userMerkleDistributor.info.value.airdrops.notAccepted.length &&
       !userStakingRewards.info.value.positions.length
 
+    gfiBalance = user.info.value.gfiBalance
     claimable = userStakingRewards.info.value.claimable.plus(userCommunityRewards.info.value.claimable)
     unvested = userStakingRewards.info.value.unvested.plus(userCommunityRewards.info.value.unvested)
 
-    gfiBalance = user.info.value.gfiBalance
     totalBalance = gfiBalance.plus(claimable).plus(unvested)
     totalUSD = gfiInDollars(gfiToDollarsAtomic(totalBalance, gfi.info.value.price))
     rewards = emptyRewards ? (
@@ -250,11 +250,11 @@ function Rewards() {
       </div>
 
       <RewardsSummary
+        walletBalance={gfiBalance}
         claimable={claimable}
         unvested={unvested}
         totalGFI={totalBalance}
         totalUSD={totalUSD}
-        walletBalance={gfiBalance}
       />
 
       <div className="gfi-rewards table-spaced">

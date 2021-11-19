@@ -7,7 +7,7 @@ import {AppContext} from "../../App"
 import {CommunityRewardsLoaded, MerkleDistributorLoaded} from "../../ethereum/communityRewards"
 import {GFILoaded} from "../../ethereum/gfi"
 import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
-import {SeniorPool, SeniorPoolLoaded, StakingRewardsLoaded} from "../../ethereum/pool"
+import {PoolData, SeniorPool, SeniorPoolLoaded, StakingRewardsLoaded} from "../../ethereum/pool"
 import {User, UserLoaded} from "../../ethereum/user"
 import * as utils from "../../ethereum/utils"
 import Rewards from "../../pages/rewards"
@@ -99,8 +99,7 @@ describe("Rewards portfolio overview", () => {
       loaded: true,
       value: {
         currentBlock: blockInfo,
-        // @ts-ignore
-        poolData: {},
+        poolData: {} as PoolData,
         isPaused: false,
       },
     }
@@ -113,13 +112,44 @@ describe("Rewards portfolio overview", () => {
     expect(await screen.findByText("Loading...")).toBeVisible()
   })
 
-  it("shows loading message when some requirements are empty", async () => {
+  it("shows loading message when all but one requirement are empty", async () => {
     const {stakingRewards} = await getDefaultClasses(goldfinchProtocol)
     renderRewards(stakingRewards, undefined, undefined, undefined, undefined)
     expect(await screen.findByText("Loading...")).toBeVisible()
   })
+  it("shows loading message when all but two requirements are empty", async () => {
+    const {stakingRewards, gfi} = await getDefaultClasses(goldfinchProtocol)
+    renderRewards(stakingRewards, gfi, undefined, undefined, undefined)
+    expect(await screen.findByText("Loading...")).toBeVisible()
+  })
+  it("shows loading message when all but three requirements are empty", async () => {
+    const {stakingRewards, gfi, merkleDistributor, communityRewards} = await getDefaultClasses(goldfinchProtocol)
+    const user = await getUserLoaded(
+      goldfinchProtocol,
+      seniorPoolLoaded,
+      stakingRewards,
+      gfi,
+      communityRewards,
+      merkleDistributor
+    )
+    renderRewards(stakingRewards, gfi, user, undefined, undefined)
+    expect(await screen.findByText("Loading...")).toBeVisible()
+  })
+  it("shows loading message when all but four requirements are empty", async () => {
+    const {stakingRewards, gfi, merkleDistributor, communityRewards} = await getDefaultClasses(goldfinchProtocol)
+    const user = await getUserLoaded(
+      goldfinchProtocol,
+      seniorPoolLoaded,
+      stakingRewards,
+      gfi,
+      communityRewards,
+      merkleDistributor
+    )
+    renderRewards(stakingRewards, gfi, user, merkleDistributor, undefined)
+    expect(await screen.findByText("Loading...")).toBeVisible()
+  })
 
-  it("don't show loading message when all requirements loaded", async () => {
+  it("doesn't show loading message when all requirements are loaded", async () => {
     const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
     const user = await getUserLoaded(
       goldfinchProtocol,
