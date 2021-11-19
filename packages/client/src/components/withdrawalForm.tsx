@@ -305,7 +305,6 @@ function WithdrawalForm(props: WithdrawalFormProps) {
         {" the protocol will deduct a 0.50% fee from your withdrawal amount for protocol reserves."}
       </div>
     )
-
     let notes: React.ReactNode[] = []
     let withdrawalInfo: WithdrawalInfo | undefined
     if (transactionAmount) {
@@ -369,7 +368,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
             }
             notes={notes}
           />
-          <LoadingButton disabled={false} action={action} />
+          <LoadingButton disabled={!getWithdrawalInfo} action={action} />
         </div>
       </div>
     )

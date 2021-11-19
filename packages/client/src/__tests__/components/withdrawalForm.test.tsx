@@ -73,7 +73,7 @@ function renderWithdrawalForm(
   )
 }
 
-describe("Earn page portfolio overview", () => {
+describe("withdrawal form", () => {
   const networkMonitor = {
     addPendingTX: () => {},
     watch: () => {},
@@ -262,149 +262,142 @@ describe("Earn page portfolio overview", () => {
     )
   })
 
-  it("withdrawal calls correct contract methods with all fidu staked", async () => {
-    const {user, stakingRewards} = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool)
+  describe("withdrawal transaction(s)", () => {
+    it("clicking button with all fidu staked triggers `unstakeAndWithdrawInFidu()`", async () => {
+      const {user, stakingRewards} = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool)
 
-    mockCapitalProviderCalls(undefined, "0")
-    const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
-    const poolData = {
-      balance: new BigNumber(usdcToAtomic("50000000")),
-      loaded: true,
-    }
-    const mockTransaction = mock({
-      blockchain,
-      transaction: {
-        to: DEPLOYMENTS.contracts.StakingRewards.address,
-        api: stakingRewardsABI,
-        method: "unstakeAndWithdrawInFidu",
-        params: {tokenId: "1", fiduAmount: "19990871828478113245933"},
-      },
-    })
-    web3.eth.getGasPrice = () => {
-      return Promise.resolve("100000000")
-    }
-    const refreshCurrentBlock = jest.fn()
-    renderWithdrawalForm(
-      poolData,
-      capitalProvider,
-      stakingRewards,
-      seniorPool,
-      refreshCurrentBlock,
-      networkMonitor,
-      user
-    )
+      mockCapitalProviderCalls(undefined, "0")
+      const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
+      const poolData = {
+        balance: new BigNumber(usdcToAtomic("50000000")),
+        loaded: true,
+      }
+      const mockTransaction = mock({
+        blockchain,
+        transaction: {
+          to: DEPLOYMENTS.contracts.StakingRewards.address,
+          api: stakingRewardsABI,
+          method: "unstakeAndWithdrawInFidu",
+          params: {tokenId: "1", fiduAmount: "19990871828478113245933"},
+        },
+      })
+      web3.eth.getGasPrice = () => {
+        return Promise.resolve("100000000")
+      }
+      const refreshCurrentBlock = jest.fn()
+      renderWithdrawalForm(
+        poolData,
+        capitalProvider,
+        stakingRewards,
+        seniorPool,
+        refreshCurrentBlock,
+        networkMonitor,
+        user
+      )
 
-    fireEvent.click(screen.getByText("Max", {selector: "button"}))
-    await waitFor(async () => {
-      expect(screen.getByPlaceholderText("0")).toHaveProperty("value", "20,000")
-    })
+      fireEvent.change(screen.getByPlaceholderText("0"), {target: {value: "20,000"}})
+      fireEvent.click(screen.getByText("Submit"))
+      await waitFor(async () => {
+        expect(screen.getByPlaceholderText("0")).toHaveProperty("value", "20,000")
+        expect(await screen.getByText("Submitting...")).toBeInTheDocument()
+      })
 
-    fireEvent.click(screen.getByText("Submit"))
-    await waitFor(async () => {
-      expect(await screen.getByText("Submitting...")).toBeInTheDocument()
-    })
-
-    expect(mockTransaction).toHaveBeenCalled()
-  })
-
-  it("withdrawal calls correct contract methods with all fidu unstaked", async () => {
-    const {user, stakingRewards} = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool)
-
-    mockCapitalProviderCalls(undefined, "500000000000000000000000")
-    const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
-    const poolData = {
-      balance: new BigNumber(usdcToAtomic("50000000")),
-      loaded: true,
-    }
-    const mockTransaction = mock({
-      blockchain,
-      transaction: {
-        to: DEPLOYMENTS.contracts.SeniorPool.address,
-        api: DEPLOYMENTS.contracts.SeniorPool.abi,
-        method: "withdrawInFidu",
-        params: "19990871828478113245933",
-      },
-    })
-    web3.eth.getGasPrice = () => {
-      return Promise.resolve("100000000")
-    }
-    const refreshCurrentBlock = jest.fn()
-    renderWithdrawalForm(
-      poolData,
-      capitalProvider,
-      stakingRewards,
-      seniorPool,
-      refreshCurrentBlock,
-      networkMonitor,
-      user
-    )
-
-    fireEvent.click(screen.getByText("Max", {selector: "button"}))
-    await waitFor(async () => {
-      expect(screen.getByPlaceholderText("0")).toHaveProperty("value", "20,000")
+      expect(mockTransaction).toHaveBeenCalled()
     })
 
-    fireEvent.click(screen.getByText("Submit"))
-    await waitFor(async () => {
-      expect(await screen.getByText("Submitting...")).toBeInTheDocument()
+    it("clicking button with all fidu unstaked triggers `withdrawInFidu()` ", async () => {
+      const {user, stakingRewards} = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool)
+
+      mockCapitalProviderCalls(undefined, "500000000000000000000000")
+      const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
+      const poolData = {
+        balance: new BigNumber(usdcToAtomic("50000000")),
+        loaded: true,
+      }
+      const mockTransaction = mock({
+        blockchain,
+        transaction: {
+          to: DEPLOYMENTS.contracts.SeniorPool.address,
+          api: DEPLOYMENTS.contracts.SeniorPool.abi,
+          method: "withdrawInFidu",
+          params: "19990871828478113245933",
+        },
+      })
+      web3.eth.getGasPrice = () => {
+        return Promise.resolve("100000000")
+      }
+      const refreshCurrentBlock = jest.fn()
+      renderWithdrawalForm(
+        poolData,
+        capitalProvider,
+        stakingRewards,
+        seniorPool,
+        refreshCurrentBlock,
+        networkMonitor,
+        user
+      )
+
+      fireEvent.change(screen.getByPlaceholderText("0"), {target: {value: "20,000"}})
+      fireEvent.click(screen.getByText("Submit"))
+      await waitFor(async () => {
+        expect(screen.getByPlaceholderText("0")).toHaveProperty("value", "20,000")
+        expect(await screen.getByText("Submitting...")).toBeInTheDocument()
+      })
+
+      expect(mockTransaction).toHaveBeenCalled()
     })
 
-    expect(mockTransaction).toHaveBeenCalled()
-  })
+    it("clicking button with fidu unstaked and staked triggers `withdrawInFidu()` and `unstakeAndWithdrawInFidu()`", async () => {
+      const {user, stakingRewards} = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool)
 
-  it("withdrawal calls correct contract methods with fidu unstaked and fidu staked", async () => {
-    const {user, stakingRewards} = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool)
+      mockCapitalProviderCalls(undefined, "10000000000000000000000")
+      const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
+      const poolData = {
+        balance: new BigNumber(usdcToAtomic("50000000")),
+        loaded: true,
+      }
 
-    mockCapitalProviderCalls(undefined, "10000000000000000000000")
-    const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
-    const poolData = {
-      balance: new BigNumber(usdcToAtomic("50000000")),
-      loaded: true,
-    }
+      const mockSeniorPoolTransaction = mock({
+        blockchain,
+        transaction: {
+          to: DEPLOYMENTS.contracts.SeniorPool.address,
+          api: DEPLOYMENTS.contracts.SeniorPool.abi,
+          method: "withdrawInFidu",
+          params: "10000000000000000000000",
+        },
+      })
+      const mockStakingRewardsTransaction = mock({
+        blockchain,
+        transaction: {
+          to: DEPLOYMENTS.contracts.StakingRewards.address,
+          api: stakingRewardsABI,
+          method: "unstakeAndWithdrawInFidu",
+          params: {tokenId: "1", fiduAmount: "9990871828478113245933"},
+        },
+      })
+      web3.eth.getGasPrice = () => {
+        return Promise.resolve("100000000")
+      }
+      const refreshCurrentBlock = jest.fn()
+      renderWithdrawalForm(
+        poolData,
+        capitalProvider,
+        stakingRewards,
+        seniorPool,
+        refreshCurrentBlock,
+        networkMonitor,
+        user
+      )
 
-    const mockSeniorPoolTransaction = mock({
-      blockchain,
-      transaction: {
-        to: DEPLOYMENTS.contracts.SeniorPool.address,
-        api: DEPLOYMENTS.contracts.SeniorPool.abi,
-        method: "withdrawInFidu",
-        params: "10000000000000000000000",
-      },
+      fireEvent.change(screen.getByPlaceholderText("0"), {target: {value: "20,000"}})
+      fireEvent.click(screen.getByText("Submit"))
+      await waitFor(async () => {
+        expect(screen.getByPlaceholderText("0")).toHaveProperty("value", "20,000")
+        expect(await screen.getByText("Submitting...")).toBeInTheDocument()
+      })
+
+      expect(mockSeniorPoolTransaction).toHaveBeenCalled()
+      expect(mockStakingRewardsTransaction).toHaveBeenCalled()
     })
-    const mockStakingRewardsTransaction = mock({
-      blockchain,
-      transaction: {
-        to: DEPLOYMENTS.contracts.StakingRewards.address,
-        api: stakingRewardsABI,
-        method: "unstakeAndWithdrawInFidu",
-        params: {tokenId: "1", fiduAmount: "9990871828478113245933"},
-      },
-    })
-    web3.eth.getGasPrice = () => {
-      return Promise.resolve("100000000")
-    }
-    const refreshCurrentBlock = jest.fn()
-    renderWithdrawalForm(
-      poolData,
-      capitalProvider,
-      stakingRewards,
-      seniorPool,
-      refreshCurrentBlock,
-      networkMonitor,
-      user
-    )
-
-    fireEvent.click(screen.getByText("Max", {selector: "button"}))
-    await waitFor(async () => {
-      expect(screen.getByPlaceholderText("0")).toHaveProperty("value", "20,000")
-    })
-
-    fireEvent.click(screen.getByText("Submit"))
-    await waitFor(async () => {
-      expect(await screen.getByText("Submitting...")).toBeInTheDocument()
-    })
-
-    expect(mockSeniorPoolTransaction).toHaveBeenCalled()
-    expect(mockStakingRewardsTransaction).toHaveBeenCalled()
   })
 })
