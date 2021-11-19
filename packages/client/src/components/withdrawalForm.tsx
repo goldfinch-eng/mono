@@ -1,5 +1,5 @@
 import BigNumber from "bignumber.js"
-import {useState} from "react"
+import React, {useState} from "react"
 import {AppContext} from "../App"
 import {
   getNumSharesFromUsdc,
@@ -260,9 +260,8 @@ function WithdrawalForm(props: WithdrawalFormProps) {
     )
   }
 
-  const availableAmount = props.capitalProvider.availableToWithdrawInDollars
-  const availableToWithdraw = minimumNumber(
-    availableAmount,
+  const availableToWithdrawInDollars = minimumNumber(
+    props.capitalProvider?.availableToWithdrawInDollars,
     usdcFromAtomic(props.poolData.balance),
     usdcFromAtomic(goldfinchConfig.transactionLimit)
   )
@@ -310,7 +309,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
       </div>
     )
 
-    let notes: React.ReactNode[] = []
+    let notes: Array<{key: string; content: React.ReactNode}> = []
     let withdrawalInfo: WithdrawalInfo | undefined
     if (transactionAmount) {
       const withdrawalAmountString = usdcToAtomic(transactionAmount)
@@ -367,16 +366,16 @@ function WithdrawalForm(props: WithdrawalFormProps) {
         <div className="form-inputs-footer">
           <TransactionInput
             formMethods={formMethods}
-            maxAmount={availableToWithdraw}
             onChange={(e) => {
               debouncedSetTransactionAmount(formMethods.getValues("transactionAmount"))
             }}
+            maxAmountInDollars={availableToWithdrawInDollars}
             rightDecoration={
               <button
                 className="enter-max-amount"
                 type="button"
                 onClick={() => {
-                  formMethods.setValue("transactionAmount", roundDownPenny(availableToWithdraw), {
+                  formMethods.setValue("transactionAmount", roundDownPenny(availableToWithdrawInDollars), {
                     shouldValidate: true,
                     shouldDirty: true,
                   })
@@ -403,7 +402,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
   return (
     <TransactionForm
       title="Withdraw"
-      headerMessage={`Available to withdraw: ${displayDollars(availableAmount)}`}
+      headerMessage={`Available to withdraw: ${displayDollars(availableToWithdrawInDollars)}`}
       render={renderForm}
       closeForm={props.closeForm}
     />
