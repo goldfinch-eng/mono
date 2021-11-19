@@ -1,4 +1,3 @@
-import * as poolModule from "./pool"
 import {Fidu as FiduContract} from "@goldfinch-eng/protocol/typechain/web3/Fidu"
 import {Pool as PoolContract} from "@goldfinch-eng/protocol/typechain/web3/Pool"
 import {SeniorPool as SeniorPoolContract} from "@goldfinch-eng/protocol/typechain/web3/SeniorPool"
@@ -292,7 +291,7 @@ async function fetchCapitalProviderData(
   const allowance = new BigNumber(
     await pool.usdc.methods.allowance(address, pool.address).call(undefined, currentBlock.number)
   )
-  const weightedAverageSharePrice = await poolModule.getWeightedAverageSharePrice(
+  const weightedAverageSharePrice = await getWeightedAverageSharePrice(
     pool,
     stakingRewards,
     address,
@@ -457,13 +456,13 @@ async function getDepositEventsByCapitalProvider(
 // for your shares, and we would fail out, and return a "-" on the front-end.
 // NOTE: This also does not take into account realized gains, which we are also
 // punting on.
-export async function getWeightedAverageSharePrice(
+let getWeightedAverageSharePrice = async (
   pool: SeniorPoolLoaded,
   stakingRewards: StakingRewardsLoaded,
   capitalProviderAddress: string,
   capitalProviderTotalShares: BigNumber,
   currentBlock: BlockInfo
-) {
+) => {
   const events = await getDepositEventsByCapitalProvider(pool, stakingRewards, capitalProviderAddress, currentBlock)
   const sorted = _.reverse(_.sortBy(events, ["blockNumber", "transactionIndex"]))
   const prepared = sorted.map((eventData) => {
@@ -922,6 +921,10 @@ class StakingRewards {
     )
     return events
   }
+}
+
+export function mockGetWeightedAverageSharePrice(mock: typeof getWeightedAverageSharePrice): void {
+  getWeightedAverageSharePrice = mock
 }
 
 export {fetchCapitalProviderData, fetchPoolData, SeniorPool, Pool, StakingRewards, StakingRewardsPosition}

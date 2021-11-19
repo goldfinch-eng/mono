@@ -1,6 +1,7 @@
 import "@testing-library/jest-dom"
 import {mock} from "depay-web3-mock"
 import {BrowserRouter as Router} from "react-router-dom"
+import BigNumber from "bignumber.js"
 import {render, screen, fireEvent, waitFor} from "@testing-library/react"
 import {AppContext} from "../../App"
 import web3 from "../../web3"
@@ -86,7 +87,7 @@ describe("Stake unstaked fidu", () => {
       value: {
         currentBlock: blockInfo,
         // @ts-ignore
-        poolData: {},
+        poolData: {estimatedApyFromGfi: new BigNumber(0.1)},
         isPaused: false,
       },
     }
@@ -121,13 +122,13 @@ describe("Stake unstaked fidu", () => {
     const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
     const {container} = renderStakeFiduBanner(seniorPool, stakingRewards, gfi, user, capitalProvider.value)
 
-    const stakeButton = screen.queryByText("Stake all FIDU")
+    const stakeButton = screen.queryByText(stakeButtonCopy)
     expect(stakeButton).toBeInTheDocument()
 
     const message = await container.getElementsByClassName("message")
     expect(message.length).toEqual(1)
     expect(message[0]?.textContent).toBe(
-      "You have 50.00 FIDU ($50.02) that is not staked. Stake your FIDU to earn an estimated --.--% APY in GFI rewards."
+      "You have 50.00 FIDU ($50.02) that is not staked. Stake your FIDU to earn an estimated 10.00% APY in GFI rewards."
     )
   })
 
@@ -136,13 +137,13 @@ describe("Stake unstaked fidu", () => {
     const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
     const {container} = renderStakeFiduBanner(seniorPool, stakingRewards, gfi, user, capitalProvider.value)
 
-    const stakeButton = screen.queryByText("Stake all FIDU")
+    const stakeButton = screen.queryByText(stakeButtonCopy)
     expect(stakeButton).toBeInTheDocument()
 
     const message = await container.getElementsByClassName("message")
     expect(message.length).toEqual(1)
     expect(message[0]?.textContent).toBe(
-      "You have <0.01 FIDU (<$0.01) that is not staked. Stake your FIDU to earn an estimated --.--% APY in GFI rewards."
+      "You have <0.01 FIDU (<$0.01) that is not staked. Stake your FIDU to earn an estimated 10.00% APY in GFI rewards."
     )
   })
 
@@ -176,7 +177,7 @@ describe("Stake unstaked fidu", () => {
           notStakedFidu
         )
 
-        fireEvent.click(await screen.getByText("Stake all FIDU"))
+        fireEvent.click(await screen.getByText(stakeButtonCopy))
         await waitFor(async () => {
           expect(await screen.getByText("Submitting...")).toBeInTheDocument()
         })
@@ -216,7 +217,7 @@ describe("Stake unstaked fidu", () => {
           allowanceAmount,
           notStakedFidu
         )
-        fireEvent.click(await screen.getByText("Stake all FIDU"))
+        fireEvent.click(await screen.getByText(stakeButtonCopy))
         await waitFor(async () => {
           expect(await screen.getByText("Submitting...")).toBeInTheDocument()
         })
@@ -257,7 +258,7 @@ describe("Stake unstaked fidu", () => {
           notStakedFidu
         )
 
-        fireEvent.click(await screen.getByText("Stake all FIDU"))
+        fireEvent.click(await screen.getByText(stakeButtonCopy))
         await waitFor(async () => {
           expect(await screen.getByText("Submitting...")).toBeInTheDocument()
         })

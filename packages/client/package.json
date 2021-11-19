@@ -25,7 +25,7 @@
     "bnc-notify": "^1.5.1",
     "classnames": "^2.2.6",
     "depay-web3-blockchains": "^2.6.0",
-    "depay-web3-mock": "https://github.com/goldfinch-eng/depay-web3-mock.git",
+    "depay-web3-mock": "https://github.com/goldfinch-eng/depay-web3-mock.git#b74c94e03c3fdf9b875da7060b0b7d4d237ddc8f",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "focus-within-polyfill": "^5.1.0",

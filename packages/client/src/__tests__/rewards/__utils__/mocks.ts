@@ -10,7 +10,12 @@ import {Filter} from "web3-eth-contract"
 import {BigNumber} from "bignumber.js"
 import {CommunityRewards, MerkleDistributor, MerkleDistributorLoaded} from "../../../ethereum/communityRewards"
 import {GFI} from "../../../ethereum/gfi"
-import {StakingRewards, SeniorPoolLoaded, StakingRewardsLoaded} from "../../../ethereum/pool"
+import {
+  mockGetWeightedAverageSharePrice,
+  SeniorPoolLoaded,
+  StakingRewards,
+  StakingRewardsLoaded,
+} from "../../../ethereum/pool"
 import {User, UserMerkleDistributor} from "../../../ethereum/user"
 import * as utils from "../../../ethereum/utils"
 import {GRANT_ACCEPTED_EVENT, KnownEventData, KnownEventName} from "../../../types/events"
@@ -28,7 +33,6 @@ import {
 } from "./constants"
 import isEqual from "lodash/isEqual"
 import web3 from "../../../web3"
-import * as poolModule from "../../../ethereum/pool"
 
 export interface RewardsMockData {
   staking?: {
@@ -485,19 +489,16 @@ export function mockCapitalProviderCalls(
       return: sharePrice,
     },
   })
-  jest
-    .spyOn(poolModule, "getWeightedAverageSharePrice")
-    .mockImplementation(
-      (
-        pool: SeniorPoolLoaded,
-        stakingRewards: StakingRewardsLoaded,
-        capitalProviderAddress: string,
-        capitalProviderTotalShares: BigNumber,
-        currentBlock: BlockInfo
-      ) => {
-        return Promise.resolve(new BigNumber(weightedAverageSharePrice))
-      }
-    )
+  const mockReturn = (
+    pool: SeniorPoolLoaded,
+    stakingRewards: StakingRewardsLoaded,
+    capitalProviderAddress: string,
+    capitalProviderTotalShares: BigNumber,
+    currentBlock: BlockInfo
+  ) => {
+    return Promise.resolve(new BigNumber(weightedAverageSharePrice))
+  }
+  mockGetWeightedAverageSharePrice(mockReturn)
   mock({
     blockchain,
     call: {
