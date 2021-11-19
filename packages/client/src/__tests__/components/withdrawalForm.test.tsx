@@ -299,7 +299,8 @@ describe("withdrawal form", () => {
       fireEvent.click(screen.getByText("Submit"))
       await waitFor(async () => {
         expect(screen.getByPlaceholderText("0")).toHaveProperty("value", "20,000")
-        expect(await screen.getByText("Submitting...")).toBeInTheDocument()
+        expect(screen.getByText("Submit")).not.toBeDisabled()
+        fireEvent.click(screen.getByText("Submit"))
       })
 
       expect(mockTransaction).toHaveBeenCalled()
@@ -341,7 +342,8 @@ describe("withdrawal form", () => {
       fireEvent.click(screen.getByText("Submit"))
       await waitFor(async () => {
         expect(screen.getByPlaceholderText("0")).toHaveProperty("value", "20,000")
-        expect(await screen.getByText("Submitting...")).toBeInTheDocument()
+        expect(screen.getByText("Submit")).not.toBeDisabled()
+        fireEvent.click(screen.getByText("Submit"))
       })
 
       expect(mockTransaction).toHaveBeenCalled()
@@ -390,10 +392,10 @@ describe("withdrawal form", () => {
       )
 
       fireEvent.change(screen.getByPlaceholderText("0"), {target: {value: "20,000"}})
-      fireEvent.click(screen.getByText("Submit"))
-      await waitFor(async () => {
+      await waitFor(() => {
         expect(screen.getByPlaceholderText("0")).toHaveProperty("value", "20,000")
-        expect(await screen.getByText("Submitting...")).toBeInTheDocument()
+        expect(screen.getByText("Submit")).not.toBeDisabled()
+        fireEvent.click(screen.getByText("Submit"))
       })
 
       expect(mockSeniorPoolTransaction).toHaveBeenCalled()
