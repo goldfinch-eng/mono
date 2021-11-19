@@ -16,7 +16,7 @@ const performMigration = deployments.createFixture(async ({deployments}) => {
   return await migrate.main()
 })
 
-describe.only("v2.3 migration", async function () {
+describe("v2.3 migration", async function () {
   this.timeout(TEST_TIMEOUT)
 
   let migration: Awaited<ReturnType<typeof migrate.main>>
@@ -36,7 +36,7 @@ describe.only("v2.3 migration", async function () {
     oldSeniorPoolDeployment = await deployments.get("SeniorPool")
     oldUniqueIdentityDeployment = await deployments.get("UniqueIdentity")
     oldPoolTokensDeployment = await deployments.get("PoolTokens")
-    oldTranchedPoolDeployment = await deployments.get("PoolTokens")
+    oldTranchedPoolDeployment = await deployments.get("TranchedPool")
     oldDeployments = {
       PoolTokens: oldPoolTokensDeployment,
       UniqueIdentity: oldUniqueIdentityDeployment,
@@ -80,28 +80,40 @@ describe.only("v2.3 migration", async function () {
       }
     })
 
-    it.only("Deploy TranchedPool and set TranchedPoolImpl", async () => {
-      const contractName = "TranchedPool"
-      const newDeployment: Deployment = await deployments.get(contractName)
-      const newDeployedContract = migration.deployedContracts.backerRewards
+    it("Deploy TranchedPool and set TranchedPoolImpl", async () => {
+      const newDeployment: Deployment = await deployments.get("TestTranchedPool")
+      const newDeployedContract = migration.deployedContracts.tranchedPool
+      expect(newDeployment.address).to.eq(newDeployedContract.address)
+      expect(oldTranchedPoolDeployment.address).to.not.eq(newDeployment.address)
       console.log("oldTranchedPoolDeployment.address", oldTranchedPoolDeployment.address)
       console.log("newDeployment.address", newDeployment.address)
-      // console.log(newDeployedContract.address)
-      console.log(await goldfinchConfig.getAddress(CONFIG_KEYS[contractName]))
-      // expect(newDeployment.address).to.eq(newDeployedContract.address)
-      const contract = await getEthersContract(contractName)
+      console.log("newDeployedContract.address", newDeployedContract.address)
+      console.log(await goldfinchConfig.getAddress(CONFIG_KEYS.TranchedPoolImplementation))
 
       // config points to new contract
-      // expect(await goldfinchConfig.getAddress(CONFIG_KEYS[contractName])).to.eq(newDeployment.address)
+      expect(await goldfinchConfig.getAddress(CONFIG_KEYS.TranchedPoolImplementation)).to.eq(
+        newDeployedContract.address
+      )
+
       // contract points to goldfinch config
+      // @TODO
+      // const contract = await getEthersContract("TestTranchedPool")
       // expect(await contract.config()).to.eq(goldfinchConfig.address)
     })
 
-    // it("deploy backer rewards", async () => {
-    // const newBackerRewards = migration.deployedContracts.backerRewards
+    it("Deploy BackerRewards", async () => {
+      const newDeployment: Deployment = await deployments.get("TestBackerRewards")
+      const newDeployedContract = migration.deployedContracts.backerRewards
+      expect(newDeployment.address).to.eq(newDeployedContract.address)
+      console.log(await goldfinchConfig.getAddress(CONFIG_KEYS.BackerRewards))
 
-    // make sure goldfinch config address is set
-    // })
+      // config points to new contract
+      expect(await goldfinchConfig.getAddress(CONFIG_KEYS.BackerRewards)).to.eq(newDeployedContract.address)
+
+      // contract points to goldfinch config
+      const contract = await getEthersContract("TestBackerRewards")
+      expect(await contract.config()).to.eq(goldfinchConfig.address)
+    })
 
     // it(write tests for Go upgrade)
 

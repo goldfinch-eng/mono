@@ -676,14 +676,15 @@ async function deployTranchedPool(
   }
 
   assertIsString(gf_deployer)
-  const tranchedPoolImpl = await deployer.deploy(contractName, {
+  const tranchedPool = await deployer.deploy(contractName, {
     from: gf_deployer,
   })
+
   await deployEffects.add({
-    deferred: [await config.populateTransaction.setTranchedPoolImplementation(tranchedPoolImpl.address)],
+    deferred: [await config.populateTransaction.setTranchedPoolImplementation(tranchedPool.address)],
   })
 
-  return tranchedPoolImpl
+  return tranchedPool
 }
 
 async function deployClImplementation(deployer: ContractDeployer, {config}: DeployOpts) {
