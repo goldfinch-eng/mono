@@ -450,8 +450,7 @@ describe("Rewards list and detail", () => {
       loaded: true,
       value: {
         currentBlock: blockInfo,
-        // @ts-ignore
-        poolData: {},
+        poolData: {} as PoolData,
         isPaused: false,
       },
     }
