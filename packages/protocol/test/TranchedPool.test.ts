@@ -1401,6 +1401,10 @@ describe("TranchedPool", () => {
           await expect(tranchedPool.drawdown(usdcVal(20))).to.be.rejectedWith(/Insufficient funds in slice/)
         })
 
+        it("does not allow drawing down 0", async () => {
+          await expect(tranchedPool.drawdown(usdcVal(0))).to.be.rejectedWith(/Invalid drawdown amount/)
+        })
+
         it("does not allow drawing down when payments are late", async () => {
           await tranchedPool.drawdown(usdcVal(5))
           await advanceTime({days: paymentPeriodInDays.mul(new BN(3))})

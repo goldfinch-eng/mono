@@ -14,15 +14,12 @@ import "../../interfaces/IPoolTokens.sol";
 import "./GoldfinchConfig.sol";
 import "./BaseUpgradeablePausable.sol";
 import "./ConfigHelper.sol";
-import "../../external/FixedPoint.sol";
 import "../../library/SafeERC20Transfer.sol";
 import "./TranchingLogic.sol";
 
 contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transfer {
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
-  using FixedPoint for FixedPoint.Unsigned;
-  using FixedPoint for uint256;
   using TranchingLogic for PoolSlice;
   using TranchingLogic for TrancheInfo;
 

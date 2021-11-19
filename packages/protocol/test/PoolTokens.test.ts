@@ -21,7 +21,7 @@ const {deployments} = hre
 const TranchedPool = artifacts.require("TranchedPool")
 import {expectEvent} from "@openzeppelin/test-helpers"
 import {mint} from "./uniqueIdentityHelpers"
-import {GFIInstance, BackerRewardsInstance} from "../typechain/truffle"
+import {GFIInstance, BackerRewardsInstance, TranchedPoolInstance} from "../typechain/truffle"
 
 const testSetup = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
   const [_owner, _person2, _person3] = await web3.eth.getAccounts()
@@ -149,7 +149,12 @@ describe("PoolTokens", () => {
 
       it("should disallow invalidly created pools", async () => {
         // Wasn't created through our factory
-        const fakePool = await TranchedPool.new()
+        const tranchingLogic = await deployments.deploy("TranchingLogic", {from: person2, args: []})
+        const poolDeployResult = await deployments.deploy("TranchedPool", {
+          from: person2,
+          libraries: {["TranchingLogic"]: tranchingLogic.address},
+        })
+        const fakePool = (await artifacts.require("TranchedPool").at(poolDeployResult.address)) as TranchedPoolInstance
         await fakePool.initialize(
           goldfinchConfig.address,
           person2,
