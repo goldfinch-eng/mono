@@ -3,7 +3,7 @@ import BN from "bn.js"
 import hre from "hardhat"
 import {expectEvent} from "@openzeppelin/test-helpers"
 import {DISTRIBUTOR_ROLE, OWNER_ROLE} from "../blockchain_scripts/deployHelpers"
-import {GFIInstance} from "../typechain/truffle"
+import {GFIInstance, GoldfinchConfigInstance} from "../typechain/truffle"
 import {
   CommunityRewardsInstance,
   Granted,
@@ -26,16 +26,20 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const owner = asNonNullable(_owner)
   const anotherUser = asNonNullable(_anotherUser)
 
-  const deployed = await deployAllContracts(deployments)
-  return {owner, anotherUser, gfi: deployed.gfi, communityRewards: deployed.communityRewards}
+  const {gfi, communityRewards, ...others} = await deployAllContracts(deployments)
+  return {owner, anotherUser, gfi, communityRewards, ...others}
 })
 
 describe("CommunityRewards", () => {
-  let owner: string, anotherUser: string, gfi: GFIInstance, communityRewards: CommunityRewardsInstance
+  let owner: string,
+    anotherUser: string,
+    gfi: GFIInstance,
+    communityRewards: CommunityRewardsInstance,
+    goldfinchConfig: GoldfinchConfigInstance
 
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;({owner, anotherUser, gfi, communityRewards} = await setupTest())
+    ;({owner, anotherUser, gfi, communityRewards, goldfinchConfig} = await setupTest())
   })
 
   async function grant({
@@ -921,6 +925,32 @@ describe("CommunityRewards", () => {
     context("reentrancy", async () => {
       it("reverts", async () => {
         // TODO
+      })
+    })
+  })
+
+  describe("updateGoldfinchConfig", async () => {
+    let otherConfig: GoldfinchConfigInstance
+
+    const updateGoldfinchConfigTestSetup = deployments.createFixture(async ({deployments}) => {
+      const deployment = await deployments.deploy("GoldfinchConfig", {from: owner})
+      const goldfinchConfig = await artifacts.require("GoldfinchConfig").at(deployment.address)
+      return {goldfinchConfig}
+    })
+
+    beforeEach(async () => {
+      // eslint-disable-next-line @typescript-eslint/no-extra-semi
+      ;({goldfinchConfig: otherConfig} = await updateGoldfinchConfigTestSetup())
+    })
+
+    describe("setting it", async () => {
+      it("emits an event", async () => {
+        await goldfinchConfig.setGoldfinchConfig(otherConfig.address, {from: owner})
+        const tx = await communityRewards.updateGoldfinchConfig({from: owner})
+        expectEvent(tx, "GoldfinchConfigUpdated", {
+          who: owner,
+          configAddress: otherConfig.address,
+        })
       })
     })
   })

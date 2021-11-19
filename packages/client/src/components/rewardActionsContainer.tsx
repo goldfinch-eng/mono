@@ -306,6 +306,8 @@ function getGrantVestingCliffDisplay(cliffLength: BigNumber): string | undefined
   switch (cliffLengthString) {
     case "0":
       return undefined
+    case "15768000":
+      return ", with six-month cliff"
     default:
       console.error(`Unexpected cliff length: ${cliffLengthString}`)
       return `, with ${cliffLengthString}-second cliff`
@@ -478,7 +480,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
   }
 
   if (item instanceof CommunityRewardsGrant || item instanceof StakingRewardsPosition) {
-    const title = item instanceof StakingRewardsPosition ? item.description : item.displayTitle
+    const title = item.title
     const details = getStakingOrCommunityRewardsDetails(item, props.stakingRewards, props.communityRewards)
 
     if (item.claimable.eq(0)) {

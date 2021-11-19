@@ -134,6 +134,7 @@ const localRelayer = () => (config) => {
     "/setupForTesting": "http://localhost:4000",
     "/fundWithWhales": "http://localhost:4000",
     "/advanceTimeOneDay": "http://localhost:4000",
+    "/advanceTimeThirtyDays": "http://localhost:4000",
     "/kycStatus": "http://localhost:4000",
     "/uniqueIdentitySigner": "http://localhost:4000",
   }

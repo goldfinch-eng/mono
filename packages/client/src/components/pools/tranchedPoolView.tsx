@@ -154,11 +154,8 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
       tranchedPool.metadata?.backerLimit ?? process.env.REACT_APP_GLOBAL_BACKER_LIMIT ?? "1"
     )
     const backerLimit = tranchedPool.creditLine.limit.multipliedBy(backerLimitPercent)
-    const maxTxAmount = BigNumber.min(
-      backerLimit,
-      remainingJuniorCapacity,
-      user.info.value.usdcBalance,
-      goldfinchConfig.transactionLimit
+    const maxTxAmountInDollars = usdcFromAtomic(
+      BigNumber.min(backerLimit, remainingJuniorCapacity, user.info.value.usdcBalance, goldfinchConfig.transactionLimit)
     )
 
     const disabled = user.info.value.usdcBalance.eq(0)
@@ -193,7 +190,7 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
           <TransactionInput
             formMethods={formMethods}
             disabled={disabled}
-            maxAmount={maxTxAmount}
+            maxAmountInDollars={maxTxAmountInDollars}
             rightDecoration={
               <button
                 className="enter-max-amount"
@@ -201,7 +198,7 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
                 onClick={() => {
                   formMethods.setValue(
                     "transactionAmount",
-                    new BigNumber(usdcFromAtomic(maxTxAmount)).decimalPlaces(decimalPlaces, 1).toString(10),
+                    new BigNumber(maxTxAmountInDollars).decimalPlaces(decimalPlaces, 1).toString(10),
                     {
                       shouldValidate: true,
                       shouldDirty: true,
@@ -316,7 +313,7 @@ function TranchedPoolWithdrawForm({backer, tranchedPool, actionComplete, closeFo
         <div className="form-inputs-footer">
           <TransactionInput
             formMethods={formMethods}
-            maxAmount={backer.availableToWithdrawInDollars}
+            maxAmountInDollars={backer.availableToWithdrawInDollars.toString(10)}
             rightDecoration={
               <button
                 className="enter-max-amount"

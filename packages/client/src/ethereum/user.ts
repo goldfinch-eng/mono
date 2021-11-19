@@ -62,8 +62,6 @@ import {getFromBlock, MAINNET} from "./utils"
 import {Go} from "@goldfinch-eng/protocol/typechain/web3/Go"
 import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/web3/UniqueIdentity"
 
-declare let window: any
-
 export const UNLOCK_THRESHOLD = new BigNumber(10000)
 
 export async function getUserData(
@@ -583,9 +581,7 @@ export type UserLoaded = WithLoadedInfo<User, UserLoadedInfo>
 
 export class User {
   address: string
-  web3Connected: boolean
   networkId: string
-  noWeb3: boolean
   borrower: BorrowerInterface | undefined
   info: Loadable<UserLoadedInfo>
 
@@ -604,9 +600,7 @@ export class User {
       throw new Error("User must have an address.")
     }
     this.address = address
-    this.web3Connected = true
     this.networkId = networkId
-    this.noWeb3 = !window.ethereum
     this.borrower = borrower
     this.goldfinchProtocol = goldfinchProtocol
     this.creditDesk = creditDesk

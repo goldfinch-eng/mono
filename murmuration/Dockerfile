@@ -32,6 +32,9 @@ ENV PATH $PATH:/usr/local/gcloud/google-cloud-sdk/bin
 # Install the Firestore emulator, which is necessary for running Google Cloud functions locally.
 RUN gcloud components install cloud-firestore-emulator beta --quiet
 
+# Install lsof (needed by our `kill-ports` npm script).
+RUN apt-get update && apt-get install lsof
+
 WORKDIR /goldfinch-protocol
 
 COPY . .

@@ -4,6 +4,7 @@
     "baseUrl": ".",
     "paths": {
       "@goldfinch-eng/utils": ["packages/utils/src"],
+      "@goldfinch-eng/utils/*": ["packages/utils/*"],
       "@goldfinch-eng/protocol": ["packages/protocol"],
       "@goldfinch-eng/protocol/*": ["packages/protocol/*"],
       "@goldfinch-eng/server": ["packages/server"],

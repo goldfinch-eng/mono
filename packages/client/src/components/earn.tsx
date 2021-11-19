@@ -296,7 +296,7 @@ function usePoolBackers({
 }
 
 function Earn() {
-  const {pool, usdc, user, goldfinchProtocol, goldfinchConfig, stakingRewards, gfi, currentBlock} =
+  const {web3Status, pool, usdc, user, goldfinchProtocol, goldfinchConfig, stakingRewards, gfi, currentBlock} =
     useContext(AppContext)
   const {earnStore, setEarnStore} = useEarn()
   const [capitalProvider, setCapitalProvider] = useState<Loadable<CapitalProvider>>({
@@ -351,8 +351,8 @@ function Earn() {
   const capitalProviderData = earnStore.capitalProvider
   const backersData = earnStore.backers
 
-  const isLoading = !pool || !capitalProviderData.loaded || !backersData.loaded || !user || user.noWeb3
-  const earnMessage = isLoading ? "Loading..." : "Pools"
+  const loaded = pool && capitalProviderData.loaded && backersData.loaded && user
+  const earnMessage = web3Status?.type === "no_web3" || loaded ? "Pools" : "Loading..."
 
   return (
     <div className="content-section">
@@ -360,7 +360,7 @@ function Earn() {
         <div>{earnMessage}</div>
       </div>
       <ConnectionNotice requireUnlock={false} />
-      {isLoading ? (
+      {web3Status?.type === "no_web3" || !loaded ? (
         <PortfolioOverviewSkeleton />
       ) : (
         <PortfolioOverview
@@ -371,7 +371,7 @@ function Earn() {
       )}
       <div className="pools">
         <PoolList title="Senior Pool">
-          {isLoading ? (
+          {web3Status?.type === "no_web3" || !loaded ? (
             <SeniorPoolCardSkeleton />
           ) : (
             <SeniorPoolCard
@@ -402,7 +402,7 @@ function Earn() {
 
           {backersData.loaded &&
             backersData.value.map((p) => (
-              <TranchedPoolCard key={`${p.tranchedPool.address}`} poolBacker={p} disabled={isLoading} />
+              <TranchedPoolCard key={`${p.tranchedPool.address}`} poolBacker={p} disabled={!loaded} />
             ))}
         </PoolList>
       </div>

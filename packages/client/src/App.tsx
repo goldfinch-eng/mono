@@ -42,11 +42,8 @@ import {assertWithLoadedInfo} from "./types/loadable"
 import {SessionData} from "./types/session"
 import {assertNonNullable, BlockInfo, getBlockInfo, getCurrentBlock} from "./utils"
 import web3, {SESSION_DATA_KEY} from "./web3"
-
-export interface NetworkConfig {
-  name: string
-  supported: boolean
-}
+import {Web3Status} from "./types/web3"
+import {NetworkConfig} from "./types/network"
 
 interface GeolocationData {
   ip: string
@@ -62,6 +59,7 @@ interface GeolocationData {
 export type SetSessionFn = (data: SessionData | undefined) => void
 
 export interface GlobalState {
+  web3Status?: Web3Status
   currentBlock?: BlockInfo
   gfi?: GFILoaded
   stakingRewards?: StakingRewardsLoaded
@@ -87,6 +85,7 @@ declare let window: any
 const AppContext = React.createContext<GlobalState>({})
 
 function App() {
+  const [web3Status, setWeb3Status] = useState<Web3Status>()
   const [_gfi, setGfi] = useState<GFILoaded>()
   const [_stakingRewards, setStakingRewards] = useState<StakingRewardsLoaded>()
   const [_communityRewards, setCommunityRewards] = useState<CommunityRewardsLoaded>()
@@ -154,35 +153,48 @@ function App() {
       gfi &&
       communityRewards &&
       merkleDistributor &&
+      web3Status &&
+      web3Status.type === "connected" &&
       currentBlock
     ) {
-      refreshUserData()
+      refreshUserData(web3Status.address, overrideAddress)
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [usdc, pool, overrideAddress])
+  }, [usdc, pool, web3Status?.address, overrideAddress])
 
-  async function ensureWeb3() {
+  async function getWeb3Status(): Promise<Web3Status> {
     if (!window.ethereum) {
-      return false
+      return {type: "no_web3", networkName: undefined, address: undefined}
     }
+    let networkName: string
     try {
       // Sometimes it's possible that we can't communicate with the provider, in which case
-      // treat as if we don't have web3
-      await web3.eth.net.getNetworkType()
+      // treat as if we don't have web3.
+      networkName = await web3.eth.net.getNetworkType()
+      if (!networkName) {
+        throw new Error("Falsy network type.")
+      }
     } catch (e) {
-      return false
+      return {type: "no_web3", networkName: undefined, address: undefined}
     }
-    return true
+    const accounts = await web3.eth.getAccounts()
+    const address = accounts[0]
+    if (address) {
+      return {type: "connected", networkName, address}
+    } else {
+      return {type: "has_web3", networkName, address: undefined}
+    }
   }
 
   async function setupWeb3() {
-    if (!(await ensureWeb3())) {
+    const _web3Status = await getWeb3Status()
+    setWeb3Status(_web3Status)
+    if (_web3Status.type === "no_web3") {
       return
     }
 
-    const networkName = await web3.eth.net.getNetworkType()
-    const networkId = mapNetworkToID[networkName] || networkName
+    const networkId = mapNetworkToID[_web3Status.networkName] || _web3Status.networkName
     const name = networkId
     const supported = SUPPORTED_NETWORKS[networkId] || false
     const networkConfig: NetworkConfig = {name, supported}
@@ -216,10 +228,6 @@ function App() {
   }
 
   async function refreshGfiAndRewards(): Promise<void> {
-    if (!(await ensureWeb3())) {
-      return
-    }
-
     assertNonNullable(goldfinchProtocol)
     assertNonNullable(currentBlock)
 
@@ -259,7 +267,7 @@ function App() {
     setPool(pool)
   }
 
-  async function refreshUserData(): Promise<void> {
+  async function refreshUserData(userAddress: string, overrideAddress: string | undefined): Promise<void> {
     assertNonNullable(goldfinchProtocol)
     assertNonNullable(pool)
     assertNonNullable(creditDesk)
@@ -270,15 +278,9 @@ function App() {
     assertNonNullable(communityRewards)
     assertNonNullable(merkleDistributor)
 
-    const accounts = await web3.eth.getAccounts()
-    const _userAddress = accounts && accounts[0]
-    const userAddress = overrideAddress || _userAddress
-    if (!userAddress) {
-      return
-    }
-
+    const address = overrideAddress || userAddress
     const user = await getUserData(
-      userAddress,
+      address,
       goldfinchProtocol,
       pool,
       creditDesk,
@@ -297,7 +299,7 @@ function App() {
       // copy state about the identifying information that Goldfinch stores.
       id: user.address,
       address: user.address,
-      isOverrideOf: overrideAddress ? _userAddress : undefined,
+      isOverrideOf: overrideAddress ? userAddress : undefined,
     })
 
     setUser(user)
@@ -309,6 +311,7 @@ function App() {
   }
 
   const store: GlobalState = {
+    web3Status,
     currentBlock,
     stakingRewards,
     gfi,
