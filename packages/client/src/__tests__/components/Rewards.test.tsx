@@ -13,13 +13,13 @@ import * as utils from "../../ethereum/utils"
 import Rewards from "../../pages/rewards"
 import {assertWithLoadedInfo} from "../../types/loadable"
 import web3 from "../../web3"
-import {blockchain, blockInfo, DEPLOYMENTS, network, recipient} from "./__utils__/constants"
+import {blockchain, blockInfo, DEPLOYMENTS, network, recipient} from "../rewards/__utils__/constants"
 import {
   assertAllMocksAreCalled,
   mockUserInitializationContractCalls,
   RewardsMockData,
   setupMocksForAirdrop,
-} from "./__utils__/mocks"
+} from "../rewards/__utils__/mocks"
 import {
   getDefaultClasses,
   setupAirdrop,
@@ -29,7 +29,7 @@ import {
   setupNewStakingReward,
   setupPartiallyClaimedStakingReward,
   setupVestingCommunityReward,
-} from "./__utils__/scenarios"
+} from "../rewards/__utils__/scenarios"
 
 mock({
   blockchain: "ethereum",
