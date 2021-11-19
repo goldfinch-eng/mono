@@ -68,6 +68,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
   const debouncedSetTransactionAmount = useDebounce(setTransactionAmount, 200)
 
   function getWithdrawalInfo(withdrawalAmount: BigNumber): WithdrawalInfo {
+    console.log("getWithdrawalInfo")
     // We prefer to perform withdrawals in FIDU, rather than USDC, as this ensures we can withdraw
     // unstaked FIDU completely and exit staked positions completely. If we performed the withdrawal
     // in USDC, it would be possible for unstaked FIDU not to be withdrawan completely, or for staked
@@ -368,7 +369,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
             }
             notes={notes}
           />
-          <LoadingButton disabled={!getWithdrawalInfo} action={action} />
+          <LoadingButton disabled={!withdrawalInfo} action={action} />
         </div>
       </div>
     )
