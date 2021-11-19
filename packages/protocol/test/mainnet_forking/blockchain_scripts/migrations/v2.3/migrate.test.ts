@@ -20,16 +20,29 @@ describe.only("v2.3 migration", async function () {
   this.timeout(TEST_TIMEOUT)
 
   let migration: Awaited<ReturnType<typeof migrate.main>>
-  let oldConfigDeployment: Deployment, oldGoDeployment: Deployment, oldSeniorPoolDeployment: Deployment, oldUniqueIdentityDeployment: Deployment, oldPoolTokensDeployment: Deployment
+  let oldGoDeployment: Deployment,
+    oldSeniorPoolDeployment: Deployment,
+    oldUniqueIdentityDeployment: Deployment,
+    oldPoolTokensDeployment: Deployment,
+    oldTranchedPoolDeployment: Deployment
+  let oldDeployments: {
+    [key: string]: Deployment
+  }
 
   before(async () => {
     // We need to store the old config address because deployments don't get reset
     // due to the use of keepExistingDeployments above (which is needed for mainnet-forking tests)
-    oldConfigDeployment = await deployments.get("GoldfinchConfig")
     oldGoDeployment = await deployments.get("Go")
     oldSeniorPoolDeployment = await deployments.get("SeniorPool")
     oldUniqueIdentityDeployment = await deployments.get("UniqueIdentity")
     oldPoolTokensDeployment = await deployments.get("PoolTokens")
+    oldTranchedPoolDeployment = await deployments.get("PoolTokens")
+    oldDeployments = {
+      PoolTokens: oldPoolTokensDeployment,
+      UniqueIdentity: oldUniqueIdentityDeployment,
+      SeniorPool: oldSeniorPoolDeployment,
+      Go: oldGoDeployment,
+    }
   })
 
   beforeEach(async () => {
@@ -39,60 +52,59 @@ describe.only("v2.3 migration", async function () {
   })
 
   context("token launch", async () => {
+    let goldfinchConfigDeployment: Deployment, goldfinchConfig: GoldfinchConfig
     beforeEach(async () => {
       migration = await performMigration()
+      goldfinchConfigDeployment = await deployments.get("GoldfinchConfig")
+      goldfinchConfig = await getEthersContract<GoldfinchConfig>("GoldfinchConfig", {
+        at: goldfinchConfigDeployment.address,
+      })
     })
     it("upgrades new contracts", async () => {
-      const newGoDeployment: Deployment = await deployments.get("Go")
-      const newGo = migration.upgradedContracts.Go
-
-      const newSeniorPoolDeployment: Deployment = await deployments.get("SeniorPool")
-      const newSeniorPool = migration.upgradedContracts.SeniorPool
-
-      const newUniqueIdentityDeployment: Deployment = await deployments.get("UniqueIdentity")
-      const newUniqueIdentity = migration.upgradedContracts.UniqueIdentity
-
-      const newPoolTokensDeployment: Deployment = await deployments.get("PoolTokens")
-      const newPoolTokens = migration.upgradedContracts.PoolTokens
-
-      console.log('oldPoolTokens.address', oldPoolTokensDeployment.address)
-      console.log('newPoolTokensDeployment.address', newPoolTokensDeployment.address)
-      console.log('PoolTokens?.ProxyContract.address', newPoolTokens?.ProxyContract.address)
-      console.log('PoolTokens?.UpgradedImplAddress', newPoolTokens?.UpgradedImplAddress)
-      // expect(newPoolTokensDeployment.address).to.not.eq(oldPoolTokensDeployment.address)
-      // expect(newPoolTokensDeployment.address).to.eq(newPoolTokensDeployment.address)
-
-
-      const goldfinchConfig = await getEthersContract<GoldfinchConfig>("GoldfinchConfig", {
-        at: oldConfigDeployment.address,
-      })
-
-      const updateConfigContracts = ["SeniorPool", "PoolTokens", "Go", "UniqueIdentity"]
+      const updateConfigContracts = ["PoolTokens", "SeniorPool", "UniqueIdentity"]
       for (const contractName of updateConfigContracts) {
+        const newDeployment: Deployment = await deployments.get(contractName)
+        const newUpgradedContract = migration.upgradedContracts[contractName]
+        expect(newDeployment.address).to.eq(oldDeployments[contractName]?.address)
+        expect(newDeployment.address).to.eq(newUpgradedContract?.ProxyContract.address)
+        expect(newDeployment.address).to.not.eq(newUpgradedContract?.UpgradedImplAddress)
         const contract = await getEthersContract(contractName)
-        // contract points to goldfinch config
-        expect(await contract.config()).to.eq(goldfinchConfig.address)
 
-        // config points to new contract
-        console.log(contractName, await goldfinchConfig.getAddress(CONFIG_KEYS[contractName]))
-        console.log(contractName, contract.address)
-        expect(await goldfinchConfig.getAddress(CONFIG_KEYS[contractName])).to.eq(contract.address)
+        // UID has no knowledge of GoldfinchConfig
+        if (contractName != "UniqueIdentity") {
+          // config points to new contract
+          expect(await goldfinchConfig.getAddress(CONFIG_KEYS[contractName])).to.eq(newDeployment.address)
+          // contract points to goldfinch config
+          expect(await contract.config()).to.eq(goldfinchConfig.address)
+        }
       }
     })
 
-    // it("deploy tranchedpool and set tranchedpoolimplementation", async () => {
-      // const newTranchedPoolDeployment: Deployment = await deployments.get("Go")
-      // const newTranchedPool = migration.deployedContracts.tranchedPool
+    it.only("Deploy TranchedPool and set TranchedPoolImpl", async () => {
+      const contractName = "TranchedPool"
+      const newDeployment: Deployment = await deployments.get(contractName)
+      const newDeployedContract = migration.deployedContracts.backerRewards
+      console.log("oldTranchedPoolDeployment.address", oldTranchedPoolDeployment.address)
+      console.log("newDeployment.address", newDeployment.address)
+      // console.log(newDeployedContract.address)
+      console.log(await goldfinchConfig.getAddress(CONFIG_KEYS[contractName]))
+      // expect(newDeployment.address).to.eq(newDeployedContract.address)
+      const contract = await getEthersContract(contractName)
 
-      // make sure goldfinch config address is set
-      // expect(await goldfinchConfig.getAddress(CONFIG_KEYS[contractName])).to.eq(contract.address)
-
-    // })
+      // config points to new contract
+      // expect(await goldfinchConfig.getAddress(CONFIG_KEYS[contractName])).to.eq(newDeployment.address)
+      // contract points to goldfinch config
+      // expect(await contract.config()).to.eq(goldfinchConfig.address)
+    })
 
     // it("deploy backer rewards", async () => {
-      // const newBackerRewards = migration.deployedContracts.backerRewards
+    // const newBackerRewards = migration.deployedContracts.backerRewards
 
-      // make sure goldfinch config address is set
+    // make sure goldfinch config address is set
     // })
+
+    // it(write tests for Go upgrade)
+
+    // it(write tests for storage slots)
   })
 })

@@ -15,12 +15,9 @@ export async function deploy(deployEffects: DeployEffects) {
     from: protocolOwner,
   })
 
-  // await existingConfig.populateTransaction.setAddress(CONFIG_KEYS.Go, contract.address)
-  // await existingConfig.setTranchedPoolImplementation(tranchedPool.address)
-
   // 1.
   // Upgrade existing contracts
-  const upgradedContracts = await upgrader.upgrade({contracts: ["PoolTokens", "SeniorPool", "Go", "UniqueIdentity"]})
+  const upgradedContracts = await upgrader.upgrade({contracts: ["PoolTokens", "SeniorPool", "UniqueIdentity"]})
 
   // 2.
   // Deploy TranchedPool & set TranchedPoolImplementation
@@ -29,6 +26,11 @@ export async function deploy(deployEffects: DeployEffects) {
   // 3.
   // Deploy BackerRewards
   const backerRewards = await deployBackerRewards(deployer, {configAddress: existingConfig.address, deployEffects})
+
+  // 4.
+  // Upgrade Go contract
+  // @TODO Need to upgrade + call Go.updateGoldfinchConfig + Upgrade Go in gfconfig + hardcode old golist
+  // await existingConfig.populateTransaction.setAddress(CONFIG_KEYS.Go, contract.address)
 
   return {
     deployedContracts: {
