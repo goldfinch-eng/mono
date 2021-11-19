@@ -145,13 +145,18 @@ function DrawdownForm(props) {
                     Max
                   </button>
                 }
-                notes={[
-                  transactionAmountQuote &&
-                    !isQuoteLoading && {
-                      key: "quote",
-                      content: <p>You will receive ~${formatQuote({erc20: erc20, quote: transactionAmountQuote})}</p>,
-                    },
-                ]}
+                notes={
+                  transactionAmountQuote && !isQuoteLoading
+                    ? [
+                        {
+                          key: "quote",
+                          content: (
+                            <p>You will receive ~${formatQuote({erc20: erc20, quote: transactionAmountQuote})}</p>
+                          ),
+                        },
+                      ]
+                    : undefined
+                }
               />
               <LoadingButton action={action} disabled={disabled} />
             </div>

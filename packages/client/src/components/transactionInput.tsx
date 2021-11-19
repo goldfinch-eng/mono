@@ -12,15 +12,15 @@ type TransactionInputProps = {
   disabled?: boolean
   onChange?: (val: unknown) => void
   inputClass?: string
-  ticker?: keyof typeof Tickers
+  ticker?: string
   notes?: Array<{
     key: string
     content: React.ReactNode
   }>
   formMethods: any
-  maxAmountInDollars: string
+  maxAmountInDollars?: string
   validations?: {
-    [name: string]: (val: unknown) => boolean | string
+    [name: string]: (val: string) => boolean | string
   }
   rightDecoration?: React.ReactNode
 }
@@ -69,10 +69,12 @@ function TransactionInput(props: TransactionInputProps) {
             rules={{
               required: "Amount is required",
               min: {value: 0.0000001, message: "Must be greater than 0"},
-              max: {
-                value: props.maxAmountInDollars,
-                message: `Amount is above the max allowed (${displayDollars(props.maxAmountInDollars)}). `,
-              },
+              max: props.maxAmountInDollars
+                ? {
+                    value: props.maxAmountInDollars,
+                    message: `Amount is above the max allowed (${displayDollars(props.maxAmountInDollars)}). `,
+                  }
+                : undefined,
               validate: {
                 decimals: (value) => new BigNumber(value).decimalPlaces() <= 6 || "Maximum allowed decimal places is 6",
                 ...validations,
