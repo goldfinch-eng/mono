@@ -20,7 +20,7 @@ export async function deploy(deployEffects: DeployEffects) {
 
   // 1.
   // Upgrade existing contracts
-  const upgradedContracts = await upgrader.upgrade({contracts: ["PoolTokens","SeniorPool", "Go", "UniqueIdentity"]})
+  const upgradedContracts = await upgrader.upgrade({contracts: ["PoolTokens", "SeniorPool", "Go", "UniqueIdentity"]})
 
   // 2.
   // Deploy TranchedPool & set TranchedPoolImplementation

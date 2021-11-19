@@ -80,19 +80,19 @@ describe.only("v2.3 migration", async function () {
       }
     })
 
-    it("deploy tranchedpool and set tranchedpoolimplementation", async () => {
+    // it("deploy tranchedpool and set tranchedpoolimplementation", async () => {
       // const newTranchedPoolDeployment: Deployment = await deployments.get("Go")
-      const newTranchedPool = migration.deployedContracts.tranchedPool
+      // const newTranchedPool = migration.deployedContracts.tranchedPool
 
       // make sure goldfinch config address is set
       // expect(await goldfinchConfig.getAddress(CONFIG_KEYS[contractName])).to.eq(contract.address)
 
-    })
+    // })
 
-    it("deploy backer rewards", async () => {
-      const newBackerRewards = migration.deployedContracts.backerRewards
+    // it("deploy backer rewards", async () => {
+      // const newBackerRewards = migration.deployedContracts.backerRewards
 
       // make sure goldfinch config address is set
-    })
+    // })
   })
 })
