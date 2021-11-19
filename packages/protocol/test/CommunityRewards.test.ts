@@ -279,7 +279,7 @@ describe("CommunityRewards", () => {
       const receipt = await communityRewards.grant(anotherUser, new BN(1e3), new BN(0), new BN(0), new BN(1), {
         from: owner,
       })
-      expect(receipt.receipt.gasUsed).to.eq(319268)
+      expect(receipt.receipt.gasUsed).to.eq(319274)
     })
 
     context("paused", async () => {

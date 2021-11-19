@@ -10,6 +10,7 @@ import {
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
 import hre from "hardhat"
 const {deployments, artifacts} = hre
+const CreditLine = artifacts.require("CreditLine")
 import {
   advanceTime,
   expect,
@@ -40,9 +41,10 @@ const TEST_TIMEOUT = 30_000
 const simulateMaliciousTranchedPool = async (goldfinchConfig: any, person2: any): Promise<string> => {
   // Simulate someone deploying their own malicious TranchedPool using our contracts
   const accountant = await deployments.deploy("Accountant", {from: person2, args: []})
+  const tranchingLogic = await deployments.deploy("TranchingLogic", {from: person2, args: []})
   const poolDeployResult = await deployments.deploy("TranchedPool", {
     from: person2,
-    libraries: {["Accountant"]: accountant.address},
+    libraries: {["TranchingLogic"]: tranchingLogic.address},
   })
   const unknownPool = (await artifacts.require("TranchedPool").at(poolDeployResult.address)) as TranchedPoolInstance
   const creditLineResult = await deployments.deploy("CreditLine", {
@@ -655,7 +657,8 @@ describe("SeniorPool", () => {
         // where the juniors take "more than their share".
 
         const expectedMaxLimit = usdcVal(100000)
-        expect(await tranchedPool.maxLimit()).to.bignumber.equal(expectedMaxLimit)
+        const creditLine = await CreditLine.at(await tranchedPool.creditLine())
+        expect(await creditLine.maxLimit()).to.bignumber.equal(expectedMaxLimit)
 
         await tranchedPool.lockJuniorCapital({from: borrower})
         expect(await goldfinchConfig.getAddress(CONFIG_KEYS.SeniorPoolStrategy)).to.equal(
@@ -665,7 +668,7 @@ describe("SeniorPool", () => {
 
         const reducedLimit = investmentAmount.sub(new BN(1))
         await tranchedPool._setLimit(reducedLimit)
-        expect(await tranchedPool.limit()).to.bignumber.equal(reducedLimit)
+        expect(await creditLine.limit()).to.bignumber.equal(reducedLimit)
 
         await seniorPool.invest(tranchedPool.address)
 
@@ -787,11 +790,12 @@ describe("SeniorPool", () => {
         expect(juniorTranche.principalDeposited).to.bignumber.equal(juniorInvestmentAmount)
 
         const expectedLimit = usdcVal(100000)
-        expect(await tranchedPool.maxLimit()).to.bignumber.equal(expectedLimit)
+        const creditLine = await CreditLine.at(await tranchedPool.creditLine())
+        expect(await creditLine.maxLimit()).to.bignumber.equal(expectedLimit)
 
         const reducedLimit = seniorPoolJuniorInvestmentAmount.sub(new BN(1))
         await tranchedPool._setLimit(reducedLimit)
-        expect(await tranchedPool.limit()).to.bignumber.equal(reducedLimit)
+        expect(await creditLine.limit()).to.bignumber.equal(reducedLimit)
 
         await seniorPool.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount)
 

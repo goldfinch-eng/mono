@@ -12,6 +12,7 @@ import {
   TestERC20,
   TranchedPool,
   UniqueIdentity,
+  CreditLine,
 } from "../typechain/ethers"
 import {Contract, ContractReceipt} from "ethers"
 const {ethers} = hre
@@ -170,7 +171,10 @@ async function main(hre: HardhatRuntimeEnvironment, options: OverrideOptions) {
     const tokenId = depositEvent.args.tokenId
 
     await commonPool.lockPool()
-    const amount = (await commonPool.limit()).div(2)
+    let creditLine = await getDeployedAsEthersContract<CreditLine>(getOrNull, "CreditLine")
+    creditLine = creditLine.attach(await commonPool.creditLine())
+
+    const amount = (await creditLine.limit()).div(2)
     await commonPool.drawdown(amount)
 
     await advanceTime({days: 32})

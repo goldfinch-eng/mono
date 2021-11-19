@@ -89,6 +89,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
    */
   function drawdown(uint256 amount) external onlyAdmin {
     require(amount.add(balance) <= currentLimit, "Cannot drawdown more than the limit");
+    require(amount > 0, "Invalid drawdown amount");
     uint256 timestamp = currentTime();
 
     if (balance == 0) {
