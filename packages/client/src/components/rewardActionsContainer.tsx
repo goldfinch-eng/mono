@@ -271,13 +271,13 @@ function RewardsListItem(props: RewardsListItemProps) {
             <div className="item-details">
               <div className="detail-container">
                 <span className="detail-label">Granted GFI</span>
-                <div className={`${valueDisabledClass} detail-label-value`}>
+                <div className={`${valueDisabledClass}`} data-testid="detail-granted">
                   {displayNumber(gfiFromAtomic(props.grantedGFI), 2)}
                 </div>
               </div>
               <div className="detail-container">
                 <span className="detail-label">Claimable GFI</span>
-                <div className={`${valueDisabledClass} detail-label-value`}>
+                <div className={`${valueDisabledClass}`} data-testid="detail-claimable">
                   {displayNumber(gfiFromAtomic(props.claimableGFI), 2)}
                 </div>
               </div>
@@ -290,10 +290,10 @@ function RewardsListItem(props: RewardsListItemProps) {
         <li onClick={() => setOpen(!open)}>
           <div className="rewards-list-item table-row background-container clickable">
             <div className="table-cell col32">{props.title}</div>
-            <div className={`table-cell col20 numeric ${valueDisabledClass} detail-label-value`}>
+            <div className={`table-cell col20 numeric ${valueDisabledClass}`} data-testid="detail-granted">
               {displayNumber(gfiFromAtomic(props.grantedGFI), 2)}
             </div>
-            <div className={`table-cell col20 numeric ${valueDisabledClass} detail-label-value`}>
+            <div className={`table-cell col20 numeric ${valueDisabledClass}`} data-testid="detail-claimable">
               {displayNumber(gfiFromAtomic(props.claimableGFI), 2)}
             </div>
             {actionButtonComponent}
@@ -391,8 +391,9 @@ function getMerkleDistributorGrantInfoDetails(
   const amount = new BigNumber(grantInfo.grant.amount)
   const displayReason = MerkleDistributor.getDisplayReason(grantInfo.reason)
   const vestingLength = new BigNumber(grantInfo.grant.vestingLength).toNumber()
+  const zero = new BigNumber(0)
   return {
-    transactionDetails: `${displayNumber(gfiFromAtomic(amount))} GFI reward for participating in ${displayReason}`,
+    transactionDetails: `${displayNumber(gfiFromAtomic(amount))} GFI reward for participating ${displayReason}`,
     vestingSchedule: getGrantVestingSchedule(
       new BigNumber(grantInfo.grant.cliffLength),
       new BigNumber(grantInfo.grant.vestingInterval),
@@ -400,7 +401,7 @@ function getMerkleDistributorGrantInfoDetails(
     ),
     claimStatus: undefined,
     currentEarnRate: undefined,
-    vestingStatus: `${displayDollars(undefined)} (${displayNumber(undefined)} GFI) vested`,
+    vestingStatus: `${displayDollars(undefined)} (${displayNumber(zero)} GFI) vested`,
     etherscanAddress: merkleDistributor.address,
   }
 }

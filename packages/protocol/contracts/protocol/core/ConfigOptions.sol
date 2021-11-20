@@ -45,7 +45,8 @@ library ConfigOptions {
     BorrowerImplementation,
     GFI,
     Go,
-    PoolRewards
+    BackerRewards,
+    StakingRewards
   }
 
   function getNumberName(uint256 number) public pure returns (string memory) {
@@ -121,8 +122,8 @@ library ConfigOptions {
     if (Addresses.PoolTokens == addressName) {
       return "PoolTokens";
     }
-    if (Addresses.PoolRewards == addressName) {
-      return "PoolRewards";
+    if (Addresses.BackerRewards == addressName) {
+      return "BackerRewards";
     }
     if (Addresses.TranchedPoolImplementation == addressName) {
       return "TranchedPoolImplementation";
@@ -144,6 +145,9 @@ library ConfigOptions {
     }
     if (Addresses.Go == addressName) {
       return "Go";
+    }
+    if (Addresses.StakingRewards == addressName) {
+      return "StakingRewards";
     }
     revert("Unknown value passed to getAddressName");
   }

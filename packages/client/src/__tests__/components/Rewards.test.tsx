@@ -1,7 +1,7 @@
 import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
 import "@testing-library/jest-dom"
-import {render, screen} from "@testing-library/react"
 import {mock, resetMocks} from "depay-web3-mock"
+import {render, screen, fireEvent} from "@testing-library/react"
 import {BrowserRouter as Router} from "react-router-dom"
 import {AppContext} from "../../App"
 import {CommunityRewardsLoaded, MerkleDistributorLoaded} from "../../ethereum/communityRewards"
@@ -27,9 +27,12 @@ import {
   setupClaimableStakingReward,
   setupCommunityRewardAndStakingReward,
   setupNewStakingReward,
+  setupPartiallyClaimedCommunityReward,
   setupPartiallyClaimedStakingReward,
   setupVestingCommunityReward,
 } from "../rewards/__utils__/scenarios"
+import {ThemeProvider} from "styled-components"
+import {defaultTheme} from "../../styles/theme"
 
 mock({
   blockchain: "ethereum",
@@ -56,9 +59,11 @@ function renderRewards(
 
   return render(
     <AppContext.Provider value={store}>
-      <Router>
-        <Rewards />
-      </Router>
+      <ThemeProvider theme={defaultTheme}>
+        <Router>
+          <Rewards />
+        </Router>
+      </ThemeProvider>
     </AppContext.Provider>
   )
 }
@@ -362,7 +367,7 @@ describe("Rewards portfolio overview", () => {
       expect(await screen.getByTestId("summary-total-balance").className).toEqual("disabled-value")
     })
 
-    it("community reward that is vesting appears on portfolio", async () => {
+    it("community reward with vesting appears on portfolio", async () => {
       const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupVestingCommunityReward(
         goldfinchProtocol,
         seniorPoolLoaded
@@ -407,6 +412,27 @@ describe("Rewards portfolio overview", () => {
       expect(await screen.getByTestId("summary-still-vesting").className).toEqual("value")
       expect(await screen.getByTestId("summary-total-balance").className).toEqual("value")
     })
+
+    it("community reward partially claimed and still vesting appears on portfolio", async () => {
+      const {gfi, stakingRewards, communityRewards, merkleDistributor, user} =
+        await setupPartiallyClaimedCommunityReward(goldfinchProtocol, seniorPoolLoaded, "5480000000000000000")
+      renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
+
+      expect(await screen.findByText("Wallet balance")).toBeVisible()
+      expect(await screen.findByText("Claimable")).toBeVisible()
+      expect(await screen.findByText("Still vesting")).toBeVisible()
+      expect(await screen.findByText("Total GFI balance")).toBeVisible()
+
+      expect(await screen.getByTestId("summary-wallet-balance").textContent).toEqual("5.48")
+      expect(await screen.getByTestId("summary-claimable").textContent).toEqual("10.96")
+      expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("983.56")
+      expect(await screen.getByTestId("summary-total-balance").textContent).toEqual("1,000.00")
+
+      expect(await screen.getByTestId("summary-wallet-balance").className).toEqual("value")
+      expect(await screen.getByTestId("summary-claimable").className).toEqual("value")
+      expect(await screen.getByTestId("summary-still-vesting").className).toEqual("value")
+      expect(await screen.getByTestId("summary-total-balance").className).toEqual("value")
+    })
   })
 
   describe("Staking and community rewards", () => {
@@ -431,5 +457,334 @@ describe("Rewards portfolio overview", () => {
       expect(await screen.getByTestId("summary-still-vesting").className).toEqual("value")
       expect(await screen.getByTestId("summary-total-balance").className).toEqual("value")
     })
+  })
+})
+
+describe("Rewards list and detail", () => {
+  let seniorPool: SeniorPoolLoaded
+  let goldfinchProtocol = new GoldfinchProtocol(network)
+
+  beforeEach(resetMocks)
+  beforeEach(() => mock({blockchain, accounts: {return: [recipient]}}))
+  beforeEach(async () => {
+    jest.spyOn(utils, "getDeployments").mockImplementation(() => {
+      return Promise.resolve(DEPLOYMENTS)
+    })
+    setupMocksForAirdrop(undefined) // reset
+
+    await goldfinchProtocol.initialize()
+    const _seniorPoolLoaded = new SeniorPool(goldfinchProtocol)
+    _seniorPoolLoaded.info = {
+      loaded: true,
+      value: {
+        currentBlock: blockInfo,
+        poolData: {} as PoolData,
+        isPaused: false,
+      },
+    }
+    assertWithLoadedInfo(_seniorPoolLoaded)
+    seniorPool = _seniorPoolLoaded
+  })
+
+  it("shows empty list", async () => {
+    const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
+
+    const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
+    const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {})
+    await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
+    assertAllMocksAreCalled(mocks)
+    assertWithLoadedInfo(user)
+
+    const {container} = renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
+
+    const list = container.getElementsByClassName("rewards-list-item")
+    expect(list.length).toEqual(1)
+    expect(list[0]?.textContent).toContain("You have no rewards. You can earn rewards by supplying")
+  })
+
+  it("shows staking reward on rewards list", async () => {
+    const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupNewStakingReward(
+      goldfinchProtocol,
+      seniorPool
+    )
+    renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
+
+    expect(await screen.findByText("Staked 50K FIDU on Dec 29")).toBeVisible()
+    expect(await screen.findByText("Vesting")).toBeVisible()
+    expect((await screen.findAllByText("0.00")).length).toBe(7)
+
+    fireEvent.click(screen.getByText("Staked 50K FIDU on Dec 29"))
+
+    expect(await screen.findByText("Transaction details")).toBeVisible()
+    expect(await screen.findByText("Vesting schedule")).toBeVisible()
+    expect(await screen.findByText("Linear until 100% on Dec 29, 2022")).toBeVisible()
+
+    expect(await screen.findByText("Claim status")).toBeVisible()
+    expect(await screen.findByText("0.00 claimed of your total vested 0.00 GFI")).toBeVisible()
+
+    expect(await screen.findByText("Current earn rate")).toBeVisible()
+    expect(await screen.findByText("+453.60 granted per week")).toBeVisible()
+
+    expect(await screen.findByText("Vesting status")).toBeVisible()
+    expect(await screen.findByText("--.--% (0.00 GFI) vested")).toBeVisible()
+
+    expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
+      "href",
+      `https://${network.name}.etherscan.io/address/${stakingRewards.address}`
+    )
+  })
+
+  it("shows claimable staking reward on rewards list", async () => {
+    const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupClaimableStakingReward(
+      goldfinchProtocol,
+      seniorPool
+    )
+
+    renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
+
+    expect(await screen.findByText("Staked 50K FIDU on Dec 29")).toBeVisible()
+    expect(await screen.findByText("Claim GFI")).toBeVisible()
+
+    expect(screen.getByTestId("detail-granted").textContent).toEqual("129.60")
+    expect(screen.getByTestId("detail-claimable").textContent).toEqual("0.71")
+
+    fireEvent.click(screen.getByText("Staked 50K FIDU on Dec 29"))
+
+    expect(await screen.findByText("Transaction details")).toBeVisible()
+    expect(await screen.findByText("Vesting schedule")).toBeVisible()
+    expect(await screen.findByText("Linear until 100% on Dec 29, 2022")).toBeVisible()
+
+    expect(await screen.findByText("Claim status")).toBeVisible()
+    expect(await screen.findByText("0.00 claimed of your total vested 0.71 GFI")).toBeVisible()
+
+    expect(await screen.findByText("Current earn rate")).toBeVisible()
+    expect(await screen.findByText("+453.60 granted per week")).toBeVisible()
+
+    expect(await screen.findByText("Vesting status")).toBeVisible()
+    expect(await screen.findByText("0.55% (0.71 GFI) vested")).toBeVisible()
+
+    expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
+      "href",
+      `https://${network.name}.etherscan.io/address/${stakingRewards.address}`
+    )
+  })
+
+  it("shows claimable community reward on rewards list", async () => {
+    const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupClaimableCommunityReward(
+      goldfinchProtocol,
+      seniorPool
+    )
+
+    renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
+
+    expect(await screen.findByText("Flight Academy")).toBeVisible()
+    expect(await screen.findByText("Claim GFI")).toBeVisible()
+
+    expect(screen.getByTestId("detail-granted").textContent).toEqual("1,000.00")
+    expect(screen.getByTestId("detail-claimable").textContent).toEqual("1,000.00")
+
+    fireEvent.click(screen.getByText("Flight Academy"))
+
+    expect(await screen.findByText("Transaction details")).toBeVisible()
+    expect(
+      await screen.findByText("1,000.00 GFI reward on Jan 7, 2022 for participating in Flight Academy")
+    ).toBeVisible()
+
+    expect(await screen.findByText("Vesting status")).toBeVisible()
+    expect(await screen.findByText("100.00% (1,000.00 GFI) vested")).toBeVisible()
+
+    expect(await screen.findByText("Vesting schedule")).toBeVisible()
+    expect(await screen.findByText("None")).toBeVisible()
+
+    expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
+      "href",
+      `https://${network.name}.etherscan.io/address/${communityRewards.address}`
+    )
+  })
+
+  it("shows vesting community reward on rewards list", async () => {
+    const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupVestingCommunityReward(
+      goldfinchProtocol,
+      seniorPool
+    )
+
+    renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
+
+    expect(await screen.findByText("Goldfinch Investment")).toBeVisible()
+    expect(await screen.findByText("Vesting")).toBeVisible()
+
+    expect(screen.getByTestId("detail-granted").textContent).toEqual("1,000.00")
+    expect(screen.getByTestId("detail-claimable").textContent).toEqual("0.00")
+
+    fireEvent.click(screen.getByText("Goldfinch Investment"))
+
+    expect(await screen.findByText("Transaction details")).toBeVisible()
+    expect(
+      await screen.findByText("1,000.00 GFI reward on Jan 7, 2022 for participating as a Goldfinch investor")
+    ).toBeVisible()
+
+    expect(await screen.findByText("Vesting status")).toBeVisible()
+    expect(await screen.findByText("--.--% (0.00 GFI) vested")).toBeVisible()
+
+    expect(await screen.findByText("Vesting schedule")).toBeVisible()
+    expect(await screen.findByText("Linear, vesting every 300 seconds, until 100% on Jan 7, 2022")).toBeVisible()
+
+    expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
+      "href",
+      `https://${network.name}.etherscan.io/address/${communityRewards.address}`
+    )
+  })
+
+  it("shows airdrop from merkle distributor", async () => {
+    const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupAirdrop(
+      goldfinchProtocol,
+      seniorPool
+    )
+
+    renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
+
+    expect(await screen.findByText("Flight Academy")).toBeVisible()
+    expect(await screen.findByText("Accept")).toBeVisible()
+
+    expect(screen.getByTestId("detail-granted").textContent).toEqual("1,000.00")
+    expect(screen.getByTestId("detail-claimable").textContent).toEqual("0.00")
+
+    fireEvent.click(screen.getByText("Flight Academy"))
+
+    expect(await screen.findByText("Transaction details")).toBeVisible()
+    expect(await screen.findByText("1,000.00 GFI reward for participating in Flight Academy")).toBeVisible()
+
+    expect(await screen.findByText("Vesting status")).toBeVisible()
+    expect(await screen.findByText("$--.-- (0.00 GFI) vested")).toBeVisible()
+
+    expect(await screen.findByText("Vesting schedule")).toBeVisible()
+    expect(await screen.findByText("None")).toBeVisible()
+
+    expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
+      "href",
+      `https://${network.name}.etherscan.io/address/${merkleDistributor.address}`
+    )
+  })
+
+  it("shows community reward and staking reward", async () => {
+    const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupCommunityRewardAndStakingReward(
+      goldfinchProtocol,
+      seniorPool
+    )
+
+    renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
+
+    expect(await screen.findByText("Staked 50K FIDU on Dec 29")).toBeVisible()
+    expect(await screen.findByText("Flight Academy")).toBeVisible()
+    expect(await screen.getAllByText("Claim GFI").length).toBe(2)
+
+    expect(screen.getAllByTestId("detail-granted")[0]?.textContent).toEqual("1,000.00")
+    expect(screen.getAllByTestId("detail-claimable")[0]?.textContent).toEqual("1,000.00")
+    expect(screen.getAllByTestId("detail-granted")[1]?.textContent).toEqual("129.60")
+    expect(screen.getAllByTestId("detail-claimable")[1]?.textContent).toEqual("0.71")
+
+    fireEvent.click(screen.getByText("Staked 50K FIDU on Dec 29"))
+    expect(await screen.findByText("Transaction details")).toBeVisible()
+    expect(await screen.findByText("Vesting schedule")).toBeVisible()
+    expect(await screen.findByText("Linear until 100% on Dec 29, 2022")).toBeVisible()
+
+    expect(await screen.findByText("Claim status")).toBeVisible()
+    expect(await screen.findByText("0.00 claimed of your total vested 0.71 GFI")).toBeVisible()
+
+    expect(await screen.findByText("Current earn rate")).toBeVisible()
+    expect(await screen.findByText("+453.60 granted per week")).toBeVisible()
+
+    expect(await screen.findByText("Vesting status")).toBeVisible()
+    expect(await screen.findByText("0.55% (0.71 GFI) vested")).toBeVisible()
+
+    expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
+      "href",
+      `https://${network.name}.etherscan.io/address/${stakingRewards.address}`
+    )
+    fireEvent.click(screen.getByText("Staked 50K FIDU on Dec 29"))
+
+    fireEvent.click(screen.getByText("Flight Academy"))
+    expect(await screen.findByText("Transaction details")).toBeVisible()
+    expect(
+      await screen.findByText("1,000.00 GFI reward on Jan 7, 2022 for participating in Flight Academy")
+    ).toBeVisible()
+
+    expect(await screen.findByText("Vesting status")).toBeVisible()
+    expect(await screen.findByText("100.00% (1,000.00 GFI) vested")).toBeVisible()
+
+    expect(await screen.findByText("Vesting schedule")).toBeVisible()
+    expect(await screen.findByText("None")).toBeVisible()
+
+    expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
+      "href",
+      `https://${network.name}.etherscan.io/address/${communityRewards.address}`
+    )
+  })
+
+  it("staking reward partially claimed appears on list", async () => {
+    const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupPartiallyClaimedStakingReward(
+      goldfinchProtocol,
+      seniorPool
+    )
+
+    renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
+
+    expect(await screen.findByText("Staked 50K FIDU on Dec 29")).toBeVisible()
+    expect(await screen.findByText("Claim GFI")).toBeVisible()
+
+    expect(screen.getByTestId("detail-granted").textContent).toEqual("269.00")
+    expect(screen.getByTestId("detail-claimable").textContent).toEqual("2.24")
+
+    fireEvent.click(screen.getByText("Staked 50K FIDU on Dec 29"))
+    expect(await screen.findByText("Transaction details")).toBeVisible()
+    expect(await screen.findByText("Vesting schedule")).toBeVisible()
+    expect(await screen.findByText("Linear until 100% on Dec 29, 2022")).toBeVisible()
+
+    expect(await screen.findByText("Claim status")).toBeVisible()
+    expect(await screen.findByText("0.82 claimed of your total vested 3.06 GFI")).toBeVisible()
+
+    expect(await screen.findByText("Current earn rate")).toBeVisible()
+    expect(await screen.findByText("+453.60 granted per week")).toBeVisible()
+
+    expect(await screen.findByText("Vesting status")).toBeVisible()
+    expect(await screen.findByText("1.14% (3.06 GFI) vested")).toBeVisible()
+
+    expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
+      "href",
+      `https://${network.name}.etherscan.io/address/${stakingRewards.address}`
+    )
+  })
+
+  it("community reward partially claimed appears on list", async () => {
+    const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupPartiallyClaimedCommunityReward(
+      goldfinchProtocol,
+      seniorPool
+    )
+
+    renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
+
+    expect(await screen.findByText("Goldfinch Investment")).toBeVisible()
+    expect(await screen.findByText("Claim GFI")).toBeVisible()
+
+    expect(screen.getByTestId("detail-granted").textContent).toEqual("1,000.00")
+    expect(screen.getByTestId("detail-claimable").textContent).toEqual("10.96")
+
+    fireEvent.click(screen.getByText("Goldfinch Investment"))
+
+    expect(await screen.findByText("Transaction details")).toBeVisible()
+    expect(
+      await screen.findByText("1,000.00 GFI reward on Jan 22, 2022 for participating as a Goldfinch investor")
+    ).toBeVisible()
+
+    expect(await screen.findByText("Vesting status")).toBeVisible()
+    expect(await screen.findByText("1.64% (16.44 GFI) vested")).toBeVisible()
+
+    expect(await screen.findByText("Vesting schedule")).toBeVisible()
+    expect(await screen.findByText("Linear until 100% on Jan 7, 2023")).toBeVisible()
+
+    expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
+      "href",
+      `https://${network.name}.etherscan.io/address/${communityRewards.address}`
+    )
   })
 })
