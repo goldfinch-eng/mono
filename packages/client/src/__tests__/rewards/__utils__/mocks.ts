@@ -36,7 +36,7 @@ import web3 from "../../../web3"
 
 export interface RewardsMockData {
   staking?: {
-    earnedSince?: string
+    earnedSinceLastCheckpoint?: string
     totalVestedAt?: string
     currentTimestamp?: string
     granted?: string
@@ -87,6 +87,9 @@ type ContractCallsMocks = {
   callGrantsMock: ReturnType<typeof mock> | undefined
   callClaimableRewardsMock: ReturnType<typeof mock> | undefined
 }
+
+export const DEFAULT_STAKING_REWARDS_START_TIME = String(blockInfo.timestamp)
+export const DEFAULT_STAKING_REWARDS_END_TIME = "1672319491"
 
 export function mockUserInitializationContractCalls(
   user: User,
@@ -165,17 +168,18 @@ export function mockUserInitializationContractCalls(
   let callTotalVestedAt: ReturnType<typeof mock> | undefined
   let callPositionCurrentEarnRate: ReturnType<typeof mock> | undefined
   if (rewardsMock?.staking) {
+    const stakedAmount = "50000000000000000000000"
     const positionsRes = rewardsMock.staking?.positionsRes || [
-      "50000000000000000000000",
-      ["0", "0", "0", "0", "1641391907", "1672927907"],
+      stakedAmount,
+      ["0", "0", "0", "0", DEFAULT_STAKING_REWARDS_START_TIME, DEFAULT_STAKING_REWARDS_END_TIME],
       "1000000000000000000",
       "0",
     ]
-    const earnedSince = rewardsMock.staking?.earnedSince || "0"
+    const earnedSince = rewardsMock.staking?.earnedSinceLastCheckpoint || "0"
     const totalVestedAt = rewardsMock.staking?.totalVestedAt || "0"
     const positionCurrentEarnRate = rewardsMock.staking?.positionCurrentEarnRate || "750000000000000"
-    const currentTimestamp = rewardsMock.staking?.currentTimestamp || "1640783491"
-    const stakedEvent = {returnValues: {tokenId: "1", amount: "50000000000000000000000"}}
+    const currentTimestamp = rewardsMock.staking?.currentTimestamp || DEFAULT_STAKING_REWARDS_START_TIME
+    const stakedEvent = {returnValues: {tokenId: "1", amount: stakedAmount}}
     const granted = rewardsMock.staking?.granted || earnedSince
     const stakingRewardsTokenId = "1"
 
@@ -260,16 +264,10 @@ export function mockUserInitializationContractCalls(
   let callGrantsMock: ReturnType<typeof mock> | undefined
   let callClaimableRewardsMock: ReturnType<typeof mock> | undefined
   if (rewardsMock?.community) {
-    const grant = rewardsMock.community?.grantRes || [
-      "1000000000000000000000",
-      "0",
-      "1641574558",
-      "1641574558",
-      "0",
-      "1",
-      "0",
-    ]
-    const claimable = rewardsMock.community?.claimable || "1000000000000000000000"
+    const startTime = "1641574558"
+    const amount = "1000000000000000000000"
+    const grant = rewardsMock.community?.grantRes || [amount, "0", startTime, startTime, "0", "1", "0"]
+    const claimable = rewardsMock.community?.claimable || amount
     const acceptedGrantRes = rewardsMock.community?.acceptedGrantRes || {
       returnValues: {
         index: rewardsMock.community?.airdrop?.index || 0,
