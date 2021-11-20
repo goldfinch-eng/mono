@@ -171,54 +171,55 @@ describe("Rewards portfolio overview", () => {
     })
   })
 
-  describe("claimable amount is 0", () => {
-    it("shows empty portfolio", async () => {
-      const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
-      const user = await getUserLoaded(
-        goldfinchProtocol,
-        seniorPoolLoaded,
-        stakingRewards,
-        gfi,
-        communityRewards,
-        merkleDistributor
-      )
-      renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
+  it("shows empty portfolio", async () => {
+    const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
+    const user = await getUserLoaded(
+      goldfinchProtocol,
+      seniorPoolLoaded,
+      stakingRewards,
+      gfi,
+      communityRewards,
+      merkleDistributor
+    )
+    renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
 
-      expect(await screen.findByText("Total GFI balance")).toBeVisible()
-      expect(await screen.findByText("Wallet balance")).toBeVisible()
-      expect(await screen.findByText("Claimable")).toBeVisible()
-      expect(await screen.findByText("Still vesting")).toBeVisible()
+    expect(await screen.findByText("Total GFI balance")).toBeVisible()
+    expect(await screen.findByText("Wallet balance")).toBeVisible()
+    expect(await screen.findByText("Claimable")).toBeVisible()
+    expect(await screen.findByText("Still vesting")).toBeVisible()
 
-      expect(await screen.getByTestId("summary-wallet-balance").textContent).toEqual("0.00")
-      expect(await screen.getByTestId("summary-claimable").textContent).toEqual("0.00")
-      expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("0.00")
-      expect(await screen.getByTestId("summary-total-balance").textContent).toEqual("0.00")
-    })
+    expect(await screen.getByTestId("summary-wallet-balance").textContent).toEqual("0.00")
+    expect(await screen.getByTestId("summary-claimable").textContent).toEqual("0.00")
+    expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("0.00")
+    expect(await screen.getByTestId("summary-total-balance").textContent).toEqual("0.00")
+  })
 
-    it("shows wallet balance on portfolio", async () => {
-      const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
-      const user = await getUserLoaded(
-        goldfinchProtocol,
-        seniorPoolLoaded,
-        stakingRewards,
-        gfi,
-        communityRewards,
-        merkleDistributor,
-        {gfi: {gfiBalance: "1000000000000000000"}}
-      )
-      renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
+  it("shows wallet balance on portfolio", async () => {
+    const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
+    const user = await getUserLoaded(
+      goldfinchProtocol,
+      seniorPoolLoaded,
+      stakingRewards,
+      gfi,
+      communityRewards,
+      merkleDistributor,
+      {gfi: {gfiBalance: "1000000000000000000"}}
+    )
+    renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
 
-      expect(await screen.findByText("Total GFI balance")).toBeVisible()
-      expect(await screen.findByText("Wallet balance")).toBeVisible()
-      expect(await screen.findByText("Claimable")).toBeVisible()
-      expect(await screen.findByText("Still vesting")).toBeVisible()
+    expect(await screen.findByText("Total GFI balance")).toBeVisible()
+    expect(await screen.findByText("Wallet balance")).toBeVisible()
+    expect(await screen.findByText("Claimable")).toBeVisible()
+    expect(await screen.findByText("Still vesting")).toBeVisible()
 
-      expect(await screen.getByTestId("summary-wallet-balance").textContent).toEqual("1.00")
-      expect(await screen.getByTestId("summary-claimable").textContent).toEqual("0.00")
-      expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("0.00")
-      expect(await screen.getByTestId("summary-total-balance").textContent).toEqual("1.00")
-    })
-    it("staking reward before checkpoint (but still vesting) don't appear on portfolio", async () => {
+    expect(await screen.getByTestId("summary-wallet-balance").textContent).toEqual("1.00")
+    expect(await screen.getByTestId("summary-claimable").textContent).toEqual("0.00")
+    expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("0.00")
+    expect(await screen.getByTestId("summary-total-balance").textContent).toEqual("1.00")
+  })
+
+  describe("Staking rewards", () => {
+    it("in same block as staking, staking reward won't be reflected in portfolio, as nothing has vested and there is no optimistic increment", async () => {
       const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupNewStakingReward(
         goldfinchProtocol,
         seniorPoolLoaded
@@ -242,7 +243,100 @@ describe("Rewards portfolio overview", () => {
       expect(await screen.getByTestId("summary-total-balance").className).toEqual("disabled-value")
     })
 
-    it("non accepted airdrops don't appear on portfolio", async () => {
+    xit("after staking but before unstaking or getting rewards, staking reward is reflected in portfolio, as optimistic increment", async () => {
+      // TODO
+    })
+
+    xit("after partially unstaking, staking reward is reflected in portfolio, as sum of vested amount plus optimistic increment", async () => {
+      // TODO
+    })
+
+    xit("after fully unstaking, staking reward is reflected in portfolio, as vested amount", async () => {
+      // TODO
+    })
+
+    xit("after getting rewards, staking reward is reflected in portfolio, as sum of claimed amount and optimistic increment", async () => {
+      // TODO
+    })
+
+    xit("after getting rewards and then partially unstaking, staking reward is reflected in portfolio, as sum of claimed amount, vested amount, and optimistic increment", async () => {
+      // TODO
+    })
+
+    it("staking reward with non-zero claimable amount appears on portfolio", async () => {
+      const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupClaimableStakingReward(
+        goldfinchProtocol,
+        seniorPoolLoaded
+      )
+
+      renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
+
+      expect(await screen.findByText("Total GFI balance")).toBeVisible()
+      expect(await screen.findByText("Wallet balance")).toBeVisible()
+      expect(await screen.findByText("Claimable")).toBeVisible()
+      expect(await screen.findByText("Still vesting")).toBeVisible()
+
+      expect(await screen.getByTestId("summary-wallet-balance").textContent).toEqual("0.00")
+      expect(await screen.getByTestId("summary-claimable").textContent).toEqual("0.71")
+      expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("128.89")
+      expect(await screen.getByTestId("summary-total-balance").textContent).toEqual("129.60")
+
+      expect(await screen.getByTestId("summary-wallet-balance").className).toEqual("value")
+      expect(await screen.getByTestId("summary-claimable").className).toEqual("value")
+      expect(await screen.getByTestId("summary-still-vesting").className).toEqual("value")
+      expect(await screen.getByTestId("summary-total-balance").className).toEqual("value")
+    })
+
+    describe("wallet balance is 0", () => {
+      it("partially-claimed staking reward appears on portfolio", async () => {
+        const {gfi, stakingRewards, communityRewards, merkleDistributor, user} =
+          await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPoolLoaded)
+
+        renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
+
+        expect(await screen.findByText("Wallet balance")).toBeVisible()
+        expect(await screen.findByText("Claimable")).toBeVisible()
+        expect(await screen.findByText("Still vesting")).toBeVisible()
+        expect(await screen.findByText("Total GFI balance")).toBeVisible()
+
+        expect(await screen.getByTestId("summary-wallet-balance").textContent).toEqual("0.00")
+        expect(await screen.getByTestId("summary-claimable").textContent).toEqual("2.24")
+        expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("265.94")
+        expect(await screen.getByTestId("summary-total-balance").textContent).toEqual("268.18")
+
+        expect(await screen.getByTestId("summary-wallet-balance").className).toEqual("value")
+        expect(await screen.getByTestId("summary-claimable").className).toEqual("value")
+        expect(await screen.getByTestId("summary-still-vesting").className).toEqual("value")
+        expect(await screen.getByTestId("summary-total-balance").className).toEqual("value")
+      })
+    })
+    describe("wallet balance is > 0", () => {
+      it("partially-claimed staking reward appears on portfolio", async () => {
+        const {gfi, stakingRewards, communityRewards, merkleDistributor, user} =
+          await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPoolLoaded, "1000000000000000000")
+
+        renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
+
+        expect(await screen.findByText("Wallet balance")).toBeVisible()
+        expect(await screen.findByText("Claimable")).toBeVisible()
+        expect(await screen.findByText("Still vesting")).toBeVisible()
+        expect(await screen.findByText("Total GFI balance")).toBeVisible()
+
+        expect(await screen.getByTestId("summary-wallet-balance").textContent).toEqual("1.00")
+        expect(await screen.getByTestId("summary-claimable").textContent).toEqual("2.24")
+        expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("265.94")
+        expect(await screen.getByTestId("summary-total-balance").textContent).toEqual("269.18")
+
+        expect(await screen.getByTestId("summary-wallet-balance").className).toEqual("value")
+        expect(await screen.getByTestId("summary-claimable").className).toEqual("value")
+        expect(await screen.getByTestId("summary-still-vesting").className).toEqual("value")
+        expect(await screen.getByTestId("summary-total-balance").className).toEqual("value")
+      })
+    })
+  })
+
+  describe("Community rewards", () => {
+    it("airdrops that have not been accepted are not counted in portfolio", async () => {
       const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupAirdrop(
         goldfinchProtocol,
         seniorPoolLoaded
@@ -266,7 +360,7 @@ describe("Rewards portfolio overview", () => {
       expect(await screen.getByTestId("summary-total-balance").className).toEqual("disabled-value")
     })
 
-    it("vesting community reward appears on portfolio", async () => {
+    it("community reward with vesting appears on portfolio", async () => {
       const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupVestingCommunityReward(
         goldfinchProtocol,
         seniorPoolLoaded
@@ -282,32 +376,6 @@ describe("Rewards portfolio overview", () => {
       expect(await screen.getByTestId("summary-claimable").textContent).toEqual("0.00")
       expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("1,000.00")
       expect(await screen.getByTestId("summary-total-balance").textContent).toEqual("1,000.00")
-
-      expect(await screen.getByTestId("summary-wallet-balance").className).toEqual("value")
-      expect(await screen.getByTestId("summary-claimable").className).toEqual("value")
-      expect(await screen.getByTestId("summary-still-vesting").className).toEqual("value")
-      expect(await screen.getByTestId("summary-total-balance").className).toEqual("value")
-    })
-  })
-
-  describe("claimable amount > 0", () => {
-    it("claimable staking reward appears on portfolio", async () => {
-      const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupClaimableStakingReward(
-        goldfinchProtocol,
-        seniorPoolLoaded
-      )
-
-      renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
-
-      expect(await screen.findByText("Total GFI balance")).toBeVisible()
-      expect(await screen.findByText("Wallet balance")).toBeVisible()
-      expect(await screen.findByText("Claimable")).toBeVisible()
-      expect(await screen.findByText("Still vesting")).toBeVisible()
-
-      expect(await screen.getByTestId("summary-wallet-balance").textContent).toEqual("0.00")
-      expect(await screen.getByTestId("summary-claimable").textContent).toEqual("0.71")
-      expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("128.89")
-      expect(await screen.getByTestId("summary-total-balance").textContent).toEqual("129.60")
 
       expect(await screen.getByTestId("summary-wallet-balance").className).toEqual("value")
       expect(await screen.getByTestId("summary-claimable").className).toEqual("value")
@@ -338,6 +406,29 @@ describe("Rewards portfolio overview", () => {
       expect(await screen.getByTestId("summary-total-balance").className).toEqual("value")
     })
 
+    it("community reward partially claimed and still vesting appears on portfolio", async () => {
+      const {gfi, stakingRewards, communityRewards, merkleDistributor, user} =
+        await setupPartiallyClaimedCommunityReward(goldfinchProtocol, seniorPoolLoaded, "5480000000000000000")
+      renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
+
+      expect(await screen.findByText("Wallet balance")).toBeVisible()
+      expect(await screen.findByText("Claimable")).toBeVisible()
+      expect(await screen.findByText("Still vesting")).toBeVisible()
+      expect(await screen.findByText("Total GFI balance")).toBeVisible()
+
+      expect(await screen.getByTestId("summary-wallet-balance").textContent).toEqual("5.48")
+      expect(await screen.getByTestId("summary-claimable").textContent).toEqual("10.96")
+      expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("983.56")
+      expect(await screen.getByTestId("summary-total-balance").textContent).toEqual("1,000.00")
+
+      expect(await screen.getByTestId("summary-wallet-balance").className).toEqual("value")
+      expect(await screen.getByTestId("summary-claimable").className).toEqual("value")
+      expect(await screen.getByTestId("summary-still-vesting").className).toEqual("value")
+      expect(await screen.getByTestId("summary-total-balance").className).toEqual("value")
+    })
+  })
+
+  describe("Staking and community rewards", () => {
     it("community reward and staking reward appear on portfolio", async () => {
       const {gfi, stakingRewards, communityRewards, merkleDistributor, user} =
         await setupCommunityRewardAndStakingReward(goldfinchProtocol, seniorPoolLoaded)
@@ -353,76 +444,6 @@ describe("Rewards portfolio overview", () => {
       expect(await screen.getByTestId("summary-claimable").textContent).toEqual("1,000.71")
       expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("128.89")
       expect(await screen.getByTestId("summary-total-balance").textContent).toEqual("1,129.60")
-
-      expect(await screen.getByTestId("summary-wallet-balance").className).toEqual("value")
-      expect(await screen.getByTestId("summary-claimable").className).toEqual("value")
-      expect(await screen.getByTestId("summary-still-vesting").className).toEqual("value")
-      expect(await screen.getByTestId("summary-total-balance").className).toEqual("value")
-    })
-
-    it("staking reward partially claimed (but with 0 wallet balance) appears on portfolio", async () => {
-      const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupPartiallyClaimedStakingReward(
-        goldfinchProtocol,
-        seniorPoolLoaded
-      )
-
-      renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
-
-      expect(await screen.findByText("Wallet balance")).toBeVisible()
-      expect(await screen.findByText("Claimable")).toBeVisible()
-      expect(await screen.findByText("Still vesting")).toBeVisible()
-      expect(await screen.findByText("Total GFI balance")).toBeVisible()
-
-      expect(await screen.getByTestId("summary-wallet-balance").textContent).toEqual("0.00")
-      expect(await screen.getByTestId("summary-claimable").textContent).toEqual("2.24")
-      expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("265.94")
-      expect(await screen.getByTestId("summary-total-balance").textContent).toEqual("268.18")
-
-      expect(await screen.getByTestId("summary-wallet-balance").className).toEqual("value")
-      expect(await screen.getByTestId("summary-claimable").className).toEqual("value")
-      expect(await screen.getByTestId("summary-still-vesting").className).toEqual("value")
-      expect(await screen.getByTestId("summary-total-balance").className).toEqual("value")
-    })
-
-    it("staking reward partially claimed (but with wallet balance) appears on portfolio", async () => {
-      const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupPartiallyClaimedStakingReward(
-        goldfinchProtocol,
-        seniorPoolLoaded,
-        "1000000000000000000"
-      )
-
-      renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
-
-      expect(await screen.findByText("Wallet balance")).toBeVisible()
-      expect(await screen.findByText("Claimable")).toBeVisible()
-      expect(await screen.findByText("Still vesting")).toBeVisible()
-      expect(await screen.findByText("Total GFI balance")).toBeVisible()
-
-      expect(await screen.getByTestId("summary-wallet-balance").textContent).toEqual("1.00")
-      expect(await screen.getByTestId("summary-claimable").textContent).toEqual("2.24")
-      expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("265.94")
-      expect(await screen.getByTestId("summary-total-balance").textContent).toEqual("269.18")
-
-      expect(await screen.getByTestId("summary-wallet-balance").className).toEqual("value")
-      expect(await screen.getByTestId("summary-claimable").className).toEqual("value")
-      expect(await screen.getByTestId("summary-still-vesting").className).toEqual("value")
-      expect(await screen.getByTestId("summary-total-balance").className).toEqual("value")
-    })
-
-    it("community reward partially claimed and still vesting appears on portfolio", async () => {
-      const {gfi, stakingRewards, communityRewards, merkleDistributor, user} =
-        await setupPartiallyClaimedCommunityReward(goldfinchProtocol, seniorPoolLoaded, "5480000000000000000")
-      renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
-
-      expect(await screen.findByText("Wallet balance")).toBeVisible()
-      expect(await screen.findByText("Claimable")).toBeVisible()
-      expect(await screen.findByText("Still vesting")).toBeVisible()
-      expect(await screen.findByText("Total GFI balance")).toBeVisible()
-
-      expect(await screen.getByTestId("summary-wallet-balance").textContent).toEqual("5.48")
-      expect(await screen.getByTestId("summary-claimable").textContent).toEqual("10.96")
-      expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("983.56")
-      expect(await screen.getByTestId("summary-total-balance").textContent).toEqual("1,000.00")
 
       expect(await screen.getByTestId("summary-wallet-balance").className).toEqual("value")
       expect(await screen.getByTestId("summary-claimable").className).toEqual("value")
