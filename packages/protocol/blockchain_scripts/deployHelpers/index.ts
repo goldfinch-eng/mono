@@ -26,7 +26,7 @@ import {AdminClient} from "defender-admin-client"
 import PROTOCOL_CONFIG from "../../protocol_config.json"
 import {CONFIG_KEYS} from "../configKeys"
 import {GoldfinchConfig} from "../../typechain/ethers"
-import {DeploymentsExtension, DeployResult, DeployOptions} from "hardhat-deploy/types"
+import {DeploymentsExtension} from "hardhat-deploy/types"
 import {Contract, BaseContract, Signer} from "ethers"
 import {
   AssertionError,
@@ -36,8 +36,6 @@ import {
   genExhaustiveTuple,
 } from "@goldfinch-eng/utils"
 import {getExistingContracts, MAINNET_MULTISIG} from "../mainnetForkingHelpers"
-import {HardhatRuntimeEnvironment} from "hardhat/types"
-import {Logger} from "../types"
 
 import {ContractDeployer} from "./contractDeployer"
 import {ContractUpgrader} from "./contractUpgrader"
@@ -345,8 +343,10 @@ function getDefenderClient() {
 }
 
 const ETHERS_CONTRACT_PROVIDER = "ethers"
+// eslint-disable-next-line @typescript-eslint/no-redeclare
 type ETHERS_CONTRACT_PROVIDER = typeof ETHERS_CONTRACT_PROVIDER
 const TRUFFLE_CONTRACT_PROVIDER = "truffle"
+// eslint-disable-next-line @typescript-eslint/no-redeclare
 type TRUFFLE_CONTRACT_PROVIDER = typeof TRUFFLE_CONTRACT_PROVIDER
 type ContractProvider = ETHERS_CONTRACT_PROVIDER | TRUFFLE_CONTRACT_PROVIDER
 

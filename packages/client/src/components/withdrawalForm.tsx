@@ -1,5 +1,5 @@
 import BigNumber from "bignumber.js"
-import {useState} from "react"
+import React, {useState} from "react"
 import {AppContext} from "../App"
 import {
   getNumSharesFromUsdc,
@@ -12,14 +12,17 @@ import {
 import {fiduFromAtomic} from "../ethereum/fidu"
 import {gfiFromAtomic, gfiInDollars, gfiToDollarsAtomic} from "../ethereum/gfi"
 import {CapitalProvider, PoolData, StakingRewardsPosition} from "../ethereum/pool"
-import {UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE, WITHDRAW_FROM_SENIOR_POOL_TX_TYPE} from "../types/transactions"
 import useDebounce from "../hooks/useDebounce"
 import useNonNullContext from "../hooks/useNonNullContext"
 import useSendFromUser from "../hooks/useSendFromUser"
+import {UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE, WITHDRAW_FROM_SENIOR_POOL_TX_TYPE} from "../types/transactions"
 import {assertNonNullable, displayDollars, displayNumber, roundDownPenny} from "../utils"
 import LoadingButton from "./loadingButton"
 import TransactionForm from "./transactionForm"
 import TransactionInput from "./transactionInput"
+
+export class WithdrawalInfoError extends Error {}
+export class ExcessiveWithdrawalError extends Error {}
 
 type UnstakeTokensAccumulator = {
   fiduSum: BigNumber
@@ -70,17 +73,17 @@ function WithdrawalForm(props: WithdrawalFormProps) {
   function getWithdrawalInfo(withdrawalAmount: BigNumber): WithdrawalInfo {
     // We prefer to perform withdrawals in FIDU, rather than USDC, as this ensures we can withdraw
     // unstaked FIDU completely and exit staked positions completely. If we performed the withdrawal
-    // in USDC, it would be possible for unstaked FIDU not to be withdrawan completely, or for staked
+    // in USDC, it would be possible for unstaked FIDU not to be withdrawn completely, or for staked
     // positions not to be exited completely, if the share price were to change between the time this
     // logic executes and the time the transaction were executed.
     const withdrawalFiduAmount = getNumSharesFromUsdc(withdrawalAmount, props.capitalProvider.sharePrice)
 
     if (!withdrawalFiduAmount.gt(0)) {
-      throw new Error("Withdrawal amount in FIDU must be greater than 0.")
+      throw new WithdrawalInfoError("Withdrawal amount in FIDU must be greater than 0.")
     }
 
     if (withdrawalFiduAmount.gt(props.capitalProvider.shares.aggregates.withdrawable)) {
-      throw new Error(
+      throw new ExcessiveWithdrawalError(
         `Tried to withdraw more shares (${withdrawalFiduAmount.toString(
           10
         )}) than are withdrawable (${props.capitalProvider.shares.aggregates.withdrawable.toString(10)}).`
@@ -159,7 +162,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
     }
 
     if (!withdrawalFiduAmountRemaining.eq(0)) {
-      throw new Error("Failed to prepare withdrawals of desired FIDU amount.")
+      throw new WithdrawalInfoError("Failed to prepare withdrawals of desired FIDU amount.")
     }
 
     // We perform the withdrawal transactions in FIDU, but want to be able to describe the
@@ -255,9 +258,8 @@ function WithdrawalForm(props: WithdrawalFormProps) {
     )
   }
 
-  const availableAmount = props.capitalProvider.availableToWithdrawInDollars
-  const availableToWithdraw = minimumNumber(
-    availableAmount,
+  const availableToWithdrawInDollars = minimumNumber(
+    props.capitalProvider?.availableToWithdrawInDollars,
     usdcFromAtomic(props.poolData.balance),
     usdcFromAtomic(goldfinchConfig.transactionLimit)
   )
@@ -304,16 +306,31 @@ function WithdrawalForm(props: WithdrawalFormProps) {
         {" the protocol will deduct a 0.50% fee from your withdrawal amount for protocol reserves."}
       </div>
     )
-    let notes: React.ReactNode[] = []
+
+    let notes: Array<{key: string; content: React.ReactNode}> = []
     let withdrawalInfo: WithdrawalInfo | undefined
     if (transactionAmount) {
       const withdrawalAmountString = usdcToAtomic(transactionAmount)
       const withdrawalAmount = new BigNumber(withdrawalAmountString)
       if (withdrawalAmount.gt(0)) {
-        withdrawalInfo = getWithdrawalInfo(withdrawalAmount)
-        const forfeitedGfi = withdrawalInfo.unstakeAndWithdraw
-          ? withdrawalInfo.unstakeAndWithdraw.forfeitedGfiSum
-          : new BigNumber(0)
+        try {
+          withdrawalInfo = getWithdrawalInfo(withdrawalAmount)
+        } catch (err: unknown) {
+          if (err instanceof ExcessiveWithdrawalError) {
+            // It's possible for this case to arise due to the asynchronicity between when the form is
+            // reset after a successful withdrawal and when the `props.capitalProvider` data (which
+            // specify how many FIDU are withdrawable) are refreshed. That is, it's transiently possible
+            // for the transaction amount (in FIDU) from the successful withdrawal to exceed the number
+            // of withdrawable shares, if the `props.capitalProvider` data managed to be refreshed before
+            // the form was reset. So we catch this error and ignore it, as we expect it to be transient.
+          } else {
+            throw err
+          }
+        }
+        const forfeitedGfi =
+          withdrawalInfo && withdrawalInfo.unstakeAndWithdraw
+            ? withdrawalInfo.unstakeAndWithdraw.forfeitedGfiSum
+            : new BigNumber(0)
         notes = [
           {
             key: "advisory",
@@ -347,16 +364,16 @@ function WithdrawalForm(props: WithdrawalFormProps) {
         <div className="form-inputs-footer">
           <TransactionInput
             formMethods={formMethods}
-            maxAmount={availableToWithdraw}
             onChange={(e) => {
               debouncedSetTransactionAmount(formMethods.getValues("transactionAmount"))
             }}
+            maxAmountInDollars={availableToWithdrawInDollars}
             rightDecoration={
               <button
                 className="enter-max-amount"
                 type="button"
                 onClick={() => {
-                  formMethods.setValue("transactionAmount", roundDownPenny(availableToWithdraw), {
+                  formMethods.setValue("transactionAmount", roundDownPenny(availableToWithdrawInDollars), {
                     shouldValidate: true,
                     shouldDirty: true,
                   })
@@ -367,7 +384,14 @@ function WithdrawalForm(props: WithdrawalFormProps) {
             }
             notes={notes}
           />
-          <LoadingButton disabled={!withdrawalInfo} action={action} />
+          <LoadingButton
+            disabled={!withdrawalInfo}
+            action={async (data): Promise<void> => {
+              await action(data)
+              formMethods.reset()
+              debouncedSetTransactionAmount(0)
+            }}
+          />
         </div>
       </div>
     )
@@ -376,10 +400,9 @@ function WithdrawalForm(props: WithdrawalFormProps) {
   return (
     <TransactionForm
       title="Withdraw"
-      headerMessage={`Available to withdraw: ${displayDollars(availableAmount)}`}
+      headerMessage={`Available to withdraw: ${displayDollars(availableToWithdrawInDollars)}`}
       render={renderForm}
       closeForm={props.closeForm}
-      maxAmount={availableToWithdraw}
     />
   )
 }

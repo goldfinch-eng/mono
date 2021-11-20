@@ -72,6 +72,12 @@ contract GoldfinchConfig is BaseUpgradeablePausable {
     addresses[key] = newAddress;
   }
 
+  function setTranchedPoolImplementation(address newAddress) public onlyAdmin {
+    uint256 key = uint256(ConfigOptions.Addresses.TranchedPoolImplementation);
+    emit AddressUpdated(msg.sender, key, addresses[key], newAddress);
+    addresses[key] = newAddress;
+  }
+
   function setBorrowerImplementation(address newAddress) public onlyAdmin {
     uint256 key = uint256(ConfigOptions.Addresses.BorrowerImplementation);
     emit AddressUpdated(msg.sender, key, addresses[key], newAddress);

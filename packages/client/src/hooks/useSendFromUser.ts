@@ -86,7 +86,16 @@ function useSendFromUser() {
           } else if (process.env.NODE_ENV === "test") {
             resolve()
           } else {
-            reject("Expected transaction to have been sent.")
+            if (process.env.NODE_ENV === "test") {
+              // HACK: In testing environment (where we mock web3 calls using the depay-web3-mock library),
+              // we observed the `sent` event not being emitted before the `transactionHash` event. This
+              // may be a flaw in that library, which we'll let slide here because -- as long as we don't
+              // reject here -- that flaw doesn't impact our ability to establish in our tests that we sent
+              // the transaction we intended to send.
+              resolve()
+            } else {
+              reject("Expected transaction to have been sent, before `transactionHash` event.")
+            }
           }
         })
         .on("error", (err) => {
@@ -96,7 +105,7 @@ function useSendFromUser() {
             }
             networkMonitor.markTXErrored(working, err)
           } else {
-            reject("Expected transaction to have been sent.")
+            reject("Expected transaction to have been sent, before `error` event.")
           }
 
           if (options.rejectOnError) {
