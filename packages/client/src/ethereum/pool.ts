@@ -1,4 +1,3 @@
-import * as poolModule from "./pool"
 import {Fidu as FiduContract} from "@goldfinch-eng/protocol/typechain/web3/Fidu"
 import {Pool as PoolContract} from "@goldfinch-eng/protocol/typechain/web3/Pool"
 import {SeniorPool as SeniorPoolContract} from "@goldfinch-eng/protocol/typechain/web3/SeniorPool"
@@ -293,7 +292,7 @@ async function fetchCapitalProviderData(
   const allowance = new BigNumber(
     await pool.usdc.methods.allowance(address, pool.address).call(undefined, currentBlock.number)
   )
-  const weightedAverageSharePrice = await poolModule.getWeightedAverageSharePrice(
+  const weightedAverageSharePrice = await getWeightedAverageSharePrice(
     pool,
     stakingRewards,
     address,
