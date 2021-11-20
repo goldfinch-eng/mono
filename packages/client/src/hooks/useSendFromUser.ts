@@ -83,8 +83,6 @@ function useSendFromUser() {
               refreshCurrentBlock()
               resolve()
             })
-          } else if (process.env.NODE_ENV === "test") {
-            resolve()
           } else {
             if (process.env.NODE_ENV === "test") {
               // HACK: In testing environment (where we mock web3 calls using the depay-web3-mock library),
