@@ -166,7 +166,7 @@ export async function setupPartiallyClaimedCommunityReward(
 
   const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
   const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
-  const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
+  const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, merkleDistributor, {
     community: {
       airdrop: airdrop,
       grantRes: ["1000000000000000000000", "5480149670218163368", "1642867698", "1673112557", "0", "1", "0"],
