@@ -80,25 +80,17 @@ describe("v2.3 migration", async function () {
       }
     })
 
-    it("Deploy TranchedPool and set TranchedPoolImpl", async () => {
+    it("Deploy TranchedPool and set TranchedPoolImplementation to new contract", async () => {
       const newDeployment: Deployment = await deployments.get("TestTranchedPool")
       const newDeployedContract = migration.deployedContracts.tranchedPool
       expect(newDeployment.address).to.eq(newDeployedContract.address)
       expect(oldTranchedPoolDeployment.address).to.not.eq(newDeployment.address)
-      console.log("oldTranchedPoolDeployment.address", oldTranchedPoolDeployment.address)
-      console.log("newDeployment.address", newDeployment.address)
-      console.log("newDeployedContract.address", newDeployedContract.address)
-      console.log(await goldfinchConfig.getAddress(CONFIG_KEYS.TranchedPoolImplementation))
 
       // config points to new contract
       expect(await goldfinchConfig.getAddress(CONFIG_KEYS.TranchedPoolImplementation)).to.eq(
         newDeployedContract.address
       )
-
-      // contract points to goldfinch config
-      // @TODO
-      // const contract = await getEthersContract("TestTranchedPool")
-      // expect(await contract.config()).to.eq(goldfinchConfig.address)
+      // note: contract.config() is 0x because it is deployed by deployMinimal in createPool
     })
 
     it("Deploy BackerRewards", async () => {

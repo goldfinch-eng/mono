@@ -680,9 +680,11 @@ async function deployTranchedPool(
     from: gf_deployer,
   })
 
+  logger("Updating config...")
   await deployEffects.add({
     deferred: [await config.populateTransaction.setTranchedPoolImplementation(tranchedPool.address)],
   })
+  logger("Updated TranchedPoolImplementation config address to:", tranchedPool.address)
 
   return tranchedPool
 }
