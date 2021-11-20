@@ -314,7 +314,7 @@ function getGrantVestingCliffDisplay(cliffLength: BigNumber): string | undefined
     case "15768000":
       return ", with six-month cliff"
     default:
-      console.error(`Unexpected cliff length: ${cliffLengthString}`)
+      console.warn(`Unexpected cliff length: ${cliffLengthString}`)
       return `, with ${cliffLengthString}-second cliff`
   }
 }
@@ -326,7 +326,7 @@ function getGrantVestingIntervalDisplay(vestingInterval: BigNumber): string | un
     case "2628000":
       return ", vesting every month"
     default:
-      console.error(`Unexpected vesting interval: ${vestingIntervalString}`)
+      console.warn(`Unexpected vesting interval: ${vestingIntervalString}`)
       return `, vesting every ${vestingIntervalString} seconds`
   }
 }
@@ -337,7 +337,7 @@ function getGrantVestingLengthDisplay(duration: number): string {
     case 31536000:
       return " after 1 year"
     default:
-      console.error(`Unexpected vesting length: ${duration}`)
+      console.warn(`Unexpected vesting length: ${duration}`)
       return ` after ${duration} seconds`
   }
 }

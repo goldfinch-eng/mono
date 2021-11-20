@@ -3,7 +3,7 @@ import Persona from "persona"
 import {useContext, useEffect, useReducer, useState} from "react"
 import {FormProvider, useForm} from "react-hook-form"
 import {Link} from "react-router-dom"
-import {AppContext, NetworkConfig, SetSessionFn} from "../App"
+import {AppContext, SetSessionFn} from "../App"
 import {User, UserLoaded} from "../ethereum/user"
 import {LOCAL, MAINNET} from "../ethereum/utils"
 import DefaultGoldfinchClient, {KYC} from "../hooks/useGoldfinchClient"
@@ -18,6 +18,7 @@ import TransactionForm from "./transactionForm"
 import {UniqueIdentity as UniqueIdentityContract} from "@goldfinch-eng/protocol/typechain/web3/UniqueIdentity"
 import web3 from "web3"
 import {MINT_UID_TX_TYPE} from "../types/transactions"
+import {NetworkConfig} from "../types/network"
 
 function VerificationNotice({icon, notice}) {
   return (
@@ -526,7 +527,7 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
         user,
       })
       const uniqueIdentity = goldfinchProtocol.getContract<UniqueIdentityContract>("UniqueIdentity")
-      const version = await uniqueIdentity.methods.ID_VERSION_0().call(undefined, currentBlock.number)
+      const version = await uniqueIdentity.methods.ID_TYPE_0().call(undefined, currentBlock.number)
       await sendFromUser(
         uniqueIdentity.methods.mint(version, trustedSignature.expiresAt, trustedSignature.signature),
         {

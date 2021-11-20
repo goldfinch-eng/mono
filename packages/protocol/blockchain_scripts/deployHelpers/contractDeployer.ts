@@ -4,6 +4,7 @@ import {DeployOptions, DeployResult} from "hardhat-deploy/types"
 import {Contract, BaseContract} from "ethers"
 
 import {Logger} from "../types"
+import {getProtocolOwner} from "./"
 
 export class ContractDeployer {
   public readonly logger: Logger
@@ -24,6 +25,10 @@ export class ContractDeployer {
   }
 
   async deploy<T extends BaseContract | Contract = Contract>(contractName: string, options: DeployOptions): Promise<T> {
+    if (typeof options === "object" && typeof options?.proxy === "object" && options?.proxy && !options?.proxy?.owner) {
+      const protocol_owner = await getProtocolOwner()
+      options = {proxy: {owner: protocol_owner, ...options.proxy}, ...options}
+    }
     const result = await this.hre.deployments.deploy(contractName, options)
     this.logger(`${contractName} was deployed to: ${result.address}`)
     return (await ethers.getContractAt(result.abi, result.address)) as T

@@ -1,7 +1,7 @@
 import {assertUnreachable, isString} from "@goldfinch-eng/utils/src/type"
 import _ from "lodash"
 import React, {useContext, useEffect, useState} from "react"
-import {AppContext, NetworkConfig} from "../App"
+import {AppContext} from "../App"
 import {usdcFromAtomic} from "../ethereum/erc20"
 import {
   ACCEPT_TX_TYPE,
@@ -35,6 +35,7 @@ import {ArrayItemType, BlockInfo, croppedAddress, displayDollars, displayNumber}
 import web3 from "../web3"
 import {iconCheck, iconOutArrow} from "./icons"
 import NetworkErrors from "./networkErrors"
+import {NetworkConfig} from "../types/network"
 
 interface NetworkWidgetProps {
   user: UserLoaded | undefined
@@ -47,7 +48,7 @@ interface NetworkWidgetProps {
 }
 
 function NetworkWidget(props: NetworkWidgetProps) {
-  const {sessionData} = useContext(AppContext)
+  const {web3Status, sessionData} = useContext(AppContext)
   const session = useSession()
   const [, signIn] = useSignIn()
   const [showSignIn, setShowSignIn] = useState<Boolean>(false)
@@ -288,7 +289,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
     </div>
   )
 
-  if (!(window as any).ethereum) {
+  if (web3Status?.type === "no_web3") {
     return (
       <div ref={node} className="network-widget">
         <a href="https://metamask.io" className="network-widget-button bold">
@@ -296,7 +297,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
         </a>
       </div>
     )
-  } else if (!props.user || !props.user.web3Connected) {
+  } else if (!web3Status || (web3Status.type === "connected" && !props.user)) {
     return (
       <div ref={node} className="network-widget">
         <div className="network-widget-button">
@@ -314,7 +315,8 @@ function NetworkWidget(props: NetworkWidgetProps) {
       </div>
     )
   } else if (
-    (props.user.web3Connected && session.status !== "authenticated") ||
+    web3Status.type === "has_web3" ||
+    (web3Status.type === "connected" && session.status !== "authenticated") ||
     isSessionDataInvalid(sessionData, currentTimestamp)
   ) {
     return connectMetamaskNetworkWidget
