@@ -14,6 +14,7 @@ import {
   StakingRewardsLoaded,
   CapitalProvider,
   mockGetWeightedAverageSharePrice,
+  PoolData,
 } from "../../ethereum/pool"
 import {User, UserLoaded} from "../../ethereum/user"
 import {blockInfo, DEPLOYMENTS, network, recipient} from "../rewards/__utils__/constants"
@@ -29,6 +30,7 @@ import {
 import * as utils from "../../ethereum/utils"
 import {CommunityRewardsLoaded, MerkleDistributorLoaded} from "../../ethereum/communityRewards"
 import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
+import {KYC} from "../../hooks/useGoldfinchClient"
 
 mock({
   blockchain: "ethereum",
@@ -55,7 +57,7 @@ function renderStakeFiduBanner(
     refreshCurrentBlock,
     networkMonitor,
   }
-  const kyc = {status: "approved", countryCode: "BR"}
+  const kyc: KYC = {status: "approved", countryCode: "BR"}
   return render(
     <AppContext.Provider value={store}>
       <Router>
@@ -87,8 +89,7 @@ describe("Stake unstaked fidu", () => {
       loaded: true,
       value: {
         currentBlock: blockInfo,
-        // @ts-ignore
-        poolData: {estimatedApyFromGfi: new BigNumber(0.1)},
+        poolData: {estimatedApyFromGfi: new BigNumber(0.1)} as PoolData,
         isPaused: false,
       },
     }
