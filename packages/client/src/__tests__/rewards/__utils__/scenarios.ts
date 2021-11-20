@@ -21,7 +21,9 @@ import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
 export async function setupNewStakingReward(goldfinchProtocol: GoldfinchProtocol, seniorPool: SeniorPoolLoaded) {
   const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
   const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
-  const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {staking: {}})
+  const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, merkleDistributor, {
+    staking: {},
+  })
   await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
 
   assertWithLoadedInfo(user)
@@ -35,7 +37,7 @@ export async function setupClaimableStakingReward(goldfinchProtocol, seniorPool)
 
   const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
   const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
-  const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
+  const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, merkleDistributor, {
     staking: {
       currentTimestamp: String(updatedBlockInfo.timestamp),
       earnedSinceLastCheckpoint: "129600000000000000000",
@@ -70,7 +72,7 @@ export async function setupClaimableCommunityReward(
 
   const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
   const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
-  const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
+  const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, merkleDistributor, {
     community: {
       airdrop: airdrop,
     },
@@ -99,7 +101,7 @@ export async function setupAirdrop(goldfinchProtocol: GoldfinchProtocol, seniorP
   setupMocksForAirdrop(airdrop, false)
   const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
   const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
-  const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {})
+  const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, merkleDistributor, {})
   await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
 
   assertWithLoadedInfo(user)
@@ -125,7 +127,7 @@ export async function setupVestingCommunityReward(goldfinchProtocol: GoldfinchPr
 
   const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
   const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
-  const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
+  const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, merkleDistributor, {
     community: {
       airdrop: airdrop,
       grantRes: ["1000000000000000000000", "0", "1641576557", "1641582557", "0", "300", "0"],
@@ -164,7 +166,7 @@ export async function setupPartiallyClaimedCommunityReward(
 
   const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
   const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
-  const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
+  const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, merkleDistributor, {
     community: {
       airdrop: airdrop,
       grantRes: ["1000000000000000000000", "5480149670218163368", "1642867698", "1673112557", "0", "1", "0"],
@@ -203,7 +205,7 @@ export async function setupCommunityRewardAndStakingReward(
 
   const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
   const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
-  const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
+  const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, merkleDistributor, {
     staking: {
       currentTimestamp: String(updatedBlockInfo.timestamp),
       earnedSinceLastCheckpoint: "129600000000000000000",
@@ -231,7 +233,7 @@ export async function setupPartiallyClaimedStakingReward(
 
   const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
   const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
-  const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
+  const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, merkleDistributor, {
     staking: {
       currentTimestamp: String(updatedBlockInfo.timestamp),
       earnedSinceLastCheckpoint: "129600000000000000000",
@@ -263,7 +265,6 @@ export async function setupPartiallyClaimedStakingReward(
 export async function getDefaultClasses(goldfinchProtocol: GoldfinchProtocol) {
   const gfi = new GFI(goldfinchProtocol)
   await gfi.initialize(blockInfo)
-
   const stakingRewards = new StakingRewards(goldfinchProtocol)
   mockStakingRewardsContractCalls(stakingRewards)
   await stakingRewards.initialize(blockInfo)
