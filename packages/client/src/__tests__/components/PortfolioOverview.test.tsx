@@ -8,6 +8,7 @@ import web3 from "../../web3"
 import {
   CapitalProvider,
   fetchCapitalProviderData,
+  PoolData,
   SeniorPool,
   SeniorPoolLoaded,
   StakingRewardsLoaded,
@@ -32,6 +33,7 @@ import {PortfolioOverview} from "../../components/earn"
 import {CommunityRewardsLoaded, MerkleDistributorLoaded} from "../../ethereum/communityRewards"
 import {GFILoaded} from "../../ethereum/gfi"
 import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
+import {PoolBacker} from "../../ethereum/tranchedPool"
 
 mock({
   blockchain: "ethereum",
@@ -39,9 +41,9 @@ mock({
 
 web3.setProvider(global.ethereum)
 
-function renderPortfolioOverview(poolData, capitalProvider, poolBackers?: Loaded<unknown[]> | undefined) {
+function renderPortfolioOverview(poolData: PoolData, capitalProvider, poolBackers: Loaded<PoolBacker[]> | undefined) {
   const store = {}
-  const defaultPoolBackers = {
+  const defaultPoolBackers: Loaded<PoolBacker[]> = {
     loaded: true,
     value: [
       {
@@ -53,7 +55,7 @@ function renderPortfolioOverview(poolData, capitalProvider, poolBackers?: Loaded
           },
           estimatedLeverageRatio: new BigNumber(4),
         },
-      },
+      } as PoolBacker,
     ],
   }
   return render(
@@ -62,7 +64,6 @@ function renderPortfolioOverview(poolData, capitalProvider, poolBackers?: Loaded
         <PortfolioOverview
           poolData={poolData}
           capitalProvider={capitalProvider}
-          // @ts-ignore
           poolBackers={poolBackers ? poolBackers : defaultPoolBackers}
         />
       </Router>
