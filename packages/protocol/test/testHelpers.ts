@@ -37,7 +37,7 @@ import {
   GoInstance,
   TestUniqueIdentityInstance,
   MerkleDirectDistributorInstance,
-  PoolRewardsInstance,
+  BackerRewardsInstance,
 } from "../typechain/truffle"
 import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/DynamicLeverageRatioStrategy"
 import {MerkleDistributor, CommunityRewards, Go, TestUniqueIdentity, MerkleDirectDistributor} from "../typechain/ethers"
@@ -51,7 +51,7 @@ const SECONDS_PER_YEAR = SECONDS_PER_DAY.mul(new BN(365))
 const UNIT_SHARE_PRICE = new BN("1000000000000000000") // Corresponds to share price of 100% (no interest or writedowns)
 import ChaiBN from "chai-bn"
 import {BaseContract} from "ethers"
-import {TestPoolRewardsInstance} from "../typechain/truffle/TestPoolRewards"
+import {TestBackerRewardsInstance} from "../typechain/truffle/TestBackerRewards"
 chai.use(ChaiBN(BN))
 
 const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
@@ -59,6 +59,8 @@ const fiduTolerance = decimals.div(USDC_DECIMALS)
 const EMPTY_DATA = "0x"
 const BLOCKS_PER_DAY = 5760
 const ZERO = new BN(0)
+
+export type $TSFixMe = any
 
 // Helper functions. These should be pretty generic.
 function bigVal(number) {
@@ -103,12 +105,12 @@ async function getTruffleContract<T extends Truffle.ContractInstance>(name: stri
   return (await artifacts.require(name).at(address)) as T
 }
 
-async function setupPoolRewards(gfi: GFIInstance, poolRewards: PoolRewardsInstance, owner: string) {
+async function setupBackerRewards(gfi: GFIInstance, backerRewards: BackerRewardsInstance, owner: string) {
   const gfiAmount = bigVal(100_000_000) // 100M
   await gfi.setCap(gfiAmount)
   await gfi.mint(owner, gfiAmount)
-  await poolRewards.setMaxInterestDollarsEligible(bigVal(1_000_000_000)) // 1B
-  await poolRewards.setTotalRewards(bigVal(3_000_000)) // 3% of 100M, 3M
+  await backerRewards.setMaxInterestDollarsEligible(bigVal(1_000_000_000)) // 1B
+  await backerRewards.setTotalRewards(bigVal(3_000_000)) // 3% of 100M, 3M
 }
 
 const tolerance = usdcVal(1).div(new BN(1000)) // 0.001$
@@ -258,7 +260,7 @@ async function deployAllContracts(
   transferRestrictedVault: TransferRestrictedVaultInstance
   gfi: GFIInstance
   stakingRewards: StakingRewardsInstance
-  poolRewards: TestPoolRewardsInstance
+  backerRewards: TestBackerRewardsInstance
   communityRewards: CommunityRewardsInstance
   merkleDistributor: MerkleDistributorInstance | null
   merkleDirectDistributor: MerkleDirectDistributorInstance | null
@@ -296,7 +298,7 @@ async function deployAllContracts(
   )
   const gfi = await getDeployedAsTruffleContract<GFIInstance>(deployments, "GFI")
   const stakingRewards = await getDeployedAsTruffleContract<StakingRewardsInstance>(deployments, "StakingRewards")
-  const poolRewards = await getDeployedAsTruffleContract<TestPoolRewardsInstance>(deployments, "PoolRewards")
+  const backerRewards = await getDeployedAsTruffleContract<TestBackerRewardsInstance>(deployments, "BackerRewards")
 
   const communityRewards = await getContract<CommunityRewards, CommunityRewardsInstance>(
     "CommunityRewards",
@@ -356,7 +358,7 @@ async function deployAllContracts(
     merkleDirectDistributor,
     uniqueIdentity,
     go,
-    poolRewards,
+    backerRewards,
   }
 }
 
@@ -426,6 +428,20 @@ const createPoolWithCreditLine = async ({
   lateFeeApr = interestAprAsBN("3.0"),
   principalGracePeriodInDays = new BN(185),
   fundableAt = new BN(0),
+  allowedUIDTypes = [0],
+}: {
+  people: {owner: string; borrower: string}
+  usdc: ERC20Instance
+  goldfinchFactory: GoldfinchFactoryInstance
+  juniorFeePercent?: Numberish
+  interestApr?: Numberish
+  paymentPeriodInDays?: Numberish
+  termInDays?: Numberish
+  limit?: Numberish
+  lateFeeApr?: Numberish
+  principalGracePeriodInDays?: Numberish
+  fundableAt?: Numberish
+  allowedUIDTypes?: Numberish[]
 }): Promise<{tranchedPool: TranchedPoolInstance; creditLine: CreditLineInstance}> => {
   const thisOwner = people.owner
   const thisBorrower = people.borrower
@@ -448,9 +464,11 @@ const createPoolWithCreditLine = async ({
     lateFeeApr,
     principalGracePeriodInDays,
     fundableAt,
+    allowedUIDTypes,
     {from: thisOwner}
   )
-  const event = result.logs[result.logs.length - 1]
+
+  const event = result.logs[result.logs.length - 1] as $TSFixMe
   const pool = await getTruffleContract<TranchedPoolInstance>("TranchedPool", event.args.pool)
   const creditLine = await getTruffleContract<CreditLineInstance>("CreditLine", await pool.creditLine())
 
@@ -534,5 +552,5 @@ export {
   genDifferentHexString,
   toEthers,
   fundWithEthFromLocalWhale,
-  setupPoolRewards,
+  setupBackerRewards,
 }

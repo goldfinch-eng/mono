@@ -2,9 +2,9 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../rewards/PoolRewards.sol";
+import "../rewards/BackerRewards.sol";
 
-contract TestPoolRewards is PoolRewards {
+contract TestBackerRewards is BackerRewards {
   address payable public sender;
 
   // solhint-disable-next-line modifiers/ensure-modifiers

@@ -75,6 +75,8 @@ async function upgradeContracts({
 
   const dependencies: DepList = {
     CreditLine: {["Accountant"]: accountantDeployResult.address},
+    SeniorPool: {["Accountant"]: accountantDeployResult.address},
+    GoldfinchFactory: {["Accountant"]: accountantDeployResult.address},
   }
 
   const upgradedContracts: UpgradedContracts = {}
@@ -252,10 +254,20 @@ async function performPostUpgradeMigration(upgradedContracts: any, deployments: 
   assertNonNullable(deployed)
   const forwarder = await ethers.getContractAt(deployed.abi, "0xa530F85085C6FE2f866E7FdB716849714a89f4CD")
   await forwarder.registerDomainSeparator("Defender", "1")
-  await migrateToNewConfig(upgradedContracts)
+  await migrateToNewConfig(upgradedContracts, [
+    "CreditDesk",
+    "CreditLine",
+    "Fidu",
+    "FixedLeverageRatioStrategy",
+    "Go",
+    "MigratedTranchedPool",
+    "Pool",
+    "PoolTokens",
+    "SeniorPool",
+  ])
 }
 
-async function migrateToNewConfig(upgradedContracts: any) {
+export async function migrateToNewConfig(upgradedContracts: any, contractsToUpgrade: string[]) {
   const newConfig = upgradedContracts.GoldfinchConfig.UpgradedContract
   const existingConfig = upgradedContracts.GoldfinchConfig.ExistingContract
   const safeAddress = SAFE_CONFIG[MAINNET_CHAIN_ID].safeAddress
@@ -265,7 +277,6 @@ async function migrateToNewConfig(upgradedContracts: any) {
   await newConfig.initializeFromOtherConfig(existingConfig.address)
   await updateConfig(existingConfig, "address", CONFIG_KEYS.GoldfinchConfig, newConfig.address)
 
-  const contractsToUpgrade = ["Fidu", "Pool", "CreditDesk", "CreditLineFactory"]
   await Promise.all(
     contractsToUpgrade.map(async (contract) => {
       await (await upgradedContracts[contract].UpgradedContract.updateGoldfinchConfig()).wait()
