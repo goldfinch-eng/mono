@@ -12,6 +12,8 @@ import {
   mockUserInitializationContractCalls,
   setupMocksForAirdrop,
   assertAllMocksAreCalled,
+  DEFAULT_STAKING_REWARDS_START_TIME,
+  DEFAULT_STAKING_REWARDS_END_TIME,
 } from "./mocks"
 import {GoldfinchProtocol} from "../../../ethereum/GoldfinchProtocol"
 import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
@@ -36,7 +38,7 @@ export async function setupClaimableStakingReward(goldfinchProtocol, seniorPool)
   const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
     staking: {
       currentTimestamp: String(updatedBlockInfo.timestamp),
-      earnedSince: "129600000000000000000",
+      earnedSinceLastCheckpoint: "129600000000000000000",
       totalVestedAt: "710136986301369863",
     },
   })
@@ -164,7 +166,7 @@ export async function setupCommunityRewardAndStakingReward(
   const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
     staking: {
       currentTimestamp: String(updatedBlockInfo.timestamp),
-      earnedSince: "129600000000000000000",
+      earnedSinceLastCheckpoint: "129600000000000000000",
       totalVestedAt: "710136986301369863",
     },
     community: {
@@ -192,12 +194,19 @@ export async function setupPartiallyClaimedStakingReward(
   const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {
     staking: {
       currentTimestamp: String(updatedBlockInfo.timestamp),
-      earnedSince: "129600000000000000000",
+      earnedSinceLastCheckpoint: "129600000000000000000",
       totalVestedAt: "3059493996955859969",
       granted: "269004000000000000000",
       positionsRes: [
         "50000000000000000000000",
-        ["138582358057838660579", "821641942161339421", "0", "821641942161339421", "1641391907", "1672927907"],
+        [
+          "138582358057838660579",
+          "821641942161339421",
+          "0",
+          "821641942161339421",
+          DEFAULT_STAKING_REWARDS_START_TIME,
+          DEFAULT_STAKING_REWARDS_END_TIME,
+        ],
         "1000000000000000000",
         "0",
       ],
