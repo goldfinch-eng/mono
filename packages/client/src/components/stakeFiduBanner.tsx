@@ -101,8 +101,7 @@ export default function StakeFiduBanner(props: StakeFiduBannerProps) {
               // estimating values that would differ for different users, it seems better to consistently
               // report, in this context, one estimated value that is the same for all users.
               pool.info.value.poolData.estimatedApyFromGfi
-            )} APY
-          in GFI rewards.`}
+            )} APY in GFI rewards.`}
           </div>
           <LoadingButton disabled={disabled} action={stake} text="Stake all FIDU" />
         </div>

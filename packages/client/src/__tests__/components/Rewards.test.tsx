@@ -78,7 +78,14 @@ async function getUserLoaded(
   rewardsMock?: RewardsMockData
 ): Promise<UserLoaded> {
   const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
-  const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, rewardsMock)
+  const mocks = mockUserInitializationContractCalls(
+    user,
+    stakingRewards,
+    gfi,
+    communityRewards,
+    merkleDistributor,
+    rewardsMock
+  )
 
   await user.initialize(seniorPoolLoaded, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
   assertAllMocksAreCalled(mocks)

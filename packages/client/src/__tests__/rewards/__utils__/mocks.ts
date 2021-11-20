@@ -1,25 +1,38 @@
-import "@testing-library/jest-dom"
-import {mock} from "depay-web3-mock"
 import {
   MerkleDistributorGrantInfo,
   MerkleDistributorInfo,
 } from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
+import {MerkleDistributor as MerkleDistributorContract} from "@goldfinch-eng/protocol/typechain/web3/MerkleDistributor"
+import "@testing-library/jest-dom"
+import {mock} from "depay-web3-mock"
+import {BlockNumber} from "web3-core"
+import {Filter} from "web3-eth-contract"
+import {BigNumber} from "bignumber.js"
 import {CommunityRewards, MerkleDistributor, MerkleDistributorLoaded} from "../../../ethereum/communityRewards"
 import {GFI} from "../../../ethereum/gfi"
+import {
+  mockGetWeightedAverageSharePrice,
+  SeniorPoolLoaded,
+  StakingRewards,
+  StakingRewardsLoaded,
+} from "../../../ethereum/pool"
 import {User, UserMerkleDistributor} from "../../../ethereum/user"
-import {StakingRewards} from "../../../ethereum/pool"
+import * as utils from "../../../ethereum/utils"
+import {GRANT_ACCEPTED_EVENT, KnownEventData, KnownEventName} from "../../../types/events"
+import {BlockInfo} from "../../../utils"
 import {
   blockchain,
   blockInfo,
   communityRewardsABI,
+  DEPLOYMENTS,
   erc20ABI,
   gfiABI,
   merkleDistributorABI,
   recipient,
   stakingRewardsABI,
 } from "./constants"
-import * as utils from "../../../ethereum/utils"
-import {BlockInfo} from "../../../utils"
+import isEqual from "lodash/isEqual"
+import web3 from "../../../web3"
 
 export interface RewardsMockData {
   staking?: {
@@ -60,19 +73,19 @@ export interface RewardsMockData {
 }
 
 type ContractCallsMocks = {
-  callGFIBalanceMock: any
-  callUSDCBalanceMock: any
-  callUSDCAllowanceMock: any
-  callStakingRewardsBalanceMock: any
-  callCommunityRewardsBalanceMock: any
-  callTokenOfOwnerByIndexMock: any
-  callPositionsMock: any
-  callEarnedSinceLastCheckpointMock: any
-  callTotalVestedAt: any
-  callPositionCurrentEarnRate: any
-  callCommunityRewardsTokenOfOwnerMock: any
-  callGrantsMock: any
-  callClaimableRewardsMock: any
+  callGFIBalanceMock: ReturnType<typeof mock>
+  callUSDCBalanceMock: ReturnType<typeof mock>
+  callUSDCAllowanceMock: ReturnType<typeof mock>
+  callStakingRewardsBalanceMock: ReturnType<typeof mock>
+  callCommunityRewardsBalanceMock: ReturnType<typeof mock>
+  callTokenOfOwnerByIndexMock: ReturnType<typeof mock> | undefined
+  callPositionsMock: ReturnType<typeof mock> | undefined
+  callEarnedSinceLastCheckpointMock: ReturnType<typeof mock> | undefined
+  callTotalVestedAt: ReturnType<typeof mock> | undefined
+  callPositionCurrentEarnRate: ReturnType<typeof mock> | undefined
+  callCommunityRewardsTokenOfOwnerMock: ReturnType<typeof mock> | undefined
+  callGrantsMock: ReturnType<typeof mock> | undefined
+  callClaimableRewardsMock: ReturnType<typeof mock> | undefined
 }
 
 export const DEFAULT_STAKING_REWARDS_START_TIME = String(blockInfo.timestamp)
@@ -83,6 +96,7 @@ export function mockUserInitializationContractCalls(
   stakingRewards: StakingRewards,
   gfi: GFI,
   communityRewards: CommunityRewards,
+  merkleDistributor: MerkleDistributor,
   rewardsMock?: RewardsMockData
 ): ContractCallsMocks {
   user.fetchTxs = (usdc, pool, currentBlock) => {
@@ -104,12 +118,9 @@ export function mockUserInitializationContractCalls(
     })
   }
 
-  let stakingRewardsBalance = 0
-  if (rewardsMock?.staking) {
-    stakingRewardsBalance = 1
-  }
+  const stakingRewardsBalance = rewardsMock?.staking ? 1 : 0
 
-  let callGFIBalanceMock = mock({
+  const callGFIBalanceMock = mock({
     blockchain,
     call: {
       to: gfi.address,
@@ -120,7 +131,7 @@ export function mockUserInitializationContractCalls(
     },
   })
 
-  let callUSDCBalanceMock = mock({
+  const callUSDCBalanceMock = mock({
     blockchain,
     call: {
       to: "0x0000000000000000000000000000000000000002",
@@ -130,7 +141,7 @@ export function mockUserInitializationContractCalls(
       return: "0",
     },
   })
-  let callUSDCAllowanceMock = mock({
+  const callUSDCAllowanceMock = mock({
     blockchain,
     call: {
       to: "0x0000000000000000000000000000000000000002",
@@ -140,7 +151,7 @@ export function mockUserInitializationContractCalls(
       return: "0",
     },
   })
-  let callStakingRewardsBalanceMock = mock({
+  const callStakingRewardsBalanceMock = mock({
     blockchain,
     call: {
       to: stakingRewards.address,
@@ -151,11 +162,11 @@ export function mockUserInitializationContractCalls(
     },
   })
 
-  let callTokenOfOwnerByIndexMock: any
-  let callPositionsMock: any
-  let callEarnedSinceLastCheckpointMock: any
-  let callTotalVestedAt: any
-  let callPositionCurrentEarnRate: any
+  let callTokenOfOwnerByIndexMock: ReturnType<typeof mock> | undefined
+  let callPositionsMock: ReturnType<typeof mock> | undefined
+  let callEarnedSinceLastCheckpointMock: ReturnType<typeof mock> | undefined
+  let callTotalVestedAt: ReturnType<typeof mock> | undefined
+  let callPositionCurrentEarnRate: ReturnType<typeof mock> | undefined
   if (rewardsMock?.staking) {
     const stakedAmount = "50000000000000000000000"
     const positionsRes = rewardsMock.staking?.positionsRes || [
@@ -170,6 +181,7 @@ export function mockUserInitializationContractCalls(
     const currentTimestamp = rewardsMock.staking?.currentTimestamp || DEFAULT_STAKING_REWARDS_START_TIME
     const stakedEvent = {returnValues: {tokenId: "1", amount: stakedAmount}}
     const granted = rewardsMock.staking?.granted || earnedSince
+    const stakingRewardsTokenId = "1"
 
     callTokenOfOwnerByIndexMock = mock({
       blockchain,
@@ -178,7 +190,7 @@ export function mockUserInitializationContractCalls(
         api: stakingRewardsABI,
         method: "tokenOfOwnerByIndex",
         params: [recipient, "0"],
-        return: "1",
+        return: stakingRewardsTokenId,
       },
     })
     callPositionsMock = mock({
@@ -187,7 +199,7 @@ export function mockUserInitializationContractCalls(
         to: stakingRewards.address,
         api: stakingRewardsABI,
         method: "positions",
-        params: "1",
+        params: stakingRewardsTokenId,
         return: positionsRes,
       },
     })
@@ -197,7 +209,7 @@ export function mockUserInitializationContractCalls(
         to: stakingRewards.address,
         api: stakingRewardsABI,
         method: "earnedSinceLastCheckpoint",
-        params: "1",
+        params: stakingRewardsTokenId,
         return: earnedSince,
       },
     })
@@ -229,18 +241,15 @@ export function mockUserInitializationContractCalls(
         to: stakingRewards.address,
         api: stakingRewardsABI,
         method: "positionCurrentEarnRate",
-        params: ["1"],
+        params: [stakingRewardsTokenId],
         return: positionCurrentEarnRate,
       },
     })
   }
 
-  let communityRewardsBalance = "0"
-  if (rewardsMock?.community) {
-    communityRewardsBalance = "1"
-  }
+  const communityRewardsBalance = rewardsMock?.community ? "1" : "0"
 
-  let callCommunityRewardsBalanceMock = mock({
+  const callCommunityRewardsBalanceMock = mock({
     blockchain,
     call: {
       to: communityRewards.address,
@@ -251,22 +260,21 @@ export function mockUserInitializationContractCalls(
     },
   })
 
-  let callCommunityRewardsTokenOfOwnerMock: any
-  let callGrantsMock: any
-  let callClaimableRewardsMock: any
+  let callCommunityRewardsTokenOfOwnerMock: ReturnType<typeof mock> | undefined
+  let callGrantsMock: ReturnType<typeof mock> | undefined
+  let callClaimableRewardsMock: ReturnType<typeof mock> | undefined
   if (rewardsMock?.community) {
     const startTime = "1641574558"
     const amount = "1000000000000000000000"
     const grant = rewardsMock.community?.grantRes || [amount, "0", startTime, startTime, "0", "1", "0"]
     const claimable = rewardsMock.community?.claimable || amount
-    const acceptedGrantRes = rewardsMock.community?.acceptedGrantRes || [
-      {
-        returnValues: {
-          index: rewardsMock.community?.airdrop?.index || 0,
-          account: recipient,
-        },
+    const acceptedGrantRes = rewardsMock.community?.acceptedGrantRes || {
+      returnValues: {
+        index: rewardsMock.community?.airdrop?.index || 0,
+        account: recipient,
       },
-    ]
+    }
+    const communityRewardsTokenId = "1"
     callCommunityRewardsTokenOfOwnerMock = mock({
       blockchain,
       call: {
@@ -274,7 +282,7 @@ export function mockUserInitializationContractCalls(
         api: communityRewardsABI,
         method: "tokenOfOwnerByIndex",
         params: [recipient, "0"],
-        return: "1",
+        return: communityRewardsTokenId,
       },
     })
     callGrantsMock = mock({
@@ -283,7 +291,7 @@ export function mockUserInitializationContractCalls(
         to: communityRewards.address,
         api: communityRewardsABI,
         method: "grants",
-        params: "1",
+        params: communityRewardsTokenId,
         return: grant,
       },
     })
@@ -293,13 +301,35 @@ export function mockUserInitializationContractCalls(
         to: communityRewards.address,
         api: communityRewardsABI,
         method: "claimableRewards",
-        params: "1",
+        params: communityRewardsTokenId,
         return: claimable,
       },
     })
-    communityRewards.goldfinchProtocol.queryEvents = (contract, event, filter, extra) => {
-      return Promise.resolve(acceptedGrantRes)
+    const mockQueryEvents = <T extends KnownEventName>(
+      contract: MerkleDistributorContract,
+      eventNames: T[],
+      filter: Filter | undefined,
+      toBlock: BlockNumber
+    ): Promise<KnownEventData<T>[]> => {
+      if (contract === merkleDistributor.contract) {
+        if (eventNames.length === 1 && eventNames[0] === GRANT_ACCEPTED_EVENT) {
+          if (isEqual(filter, {tokenId: communityRewardsTokenId})) {
+            if (toBlock === 94) {
+              return Promise.resolve([acceptedGrantRes as unknown as KnownEventData<T>])
+            } else {
+              throw new Error(`Unexpected toBlock: ${toBlock}`)
+            }
+          } else {
+            throw new Error(`Unexpected filter: ${filter}`)
+          }
+        } else {
+          throw new Error(`Unexpected event names: ${eventNames}`)
+        }
+      } else {
+        throw new Error("Unexpected contract.")
+      }
     }
+    user.goldfinchProtocol.queryEvents = mockQueryEvents
   }
 
   return {
@@ -377,7 +407,7 @@ export function setupMocksForAirdrop(airdrop: MerkleDistributorGrantInfo | undef
     merkleDistributor: MerkleDistributorLoaded,
     currentBlock: BlockInfo
   ) => {
-    const airdropsAccepted = grants.map((val) => ({grantInfo: airdrop, isAccepted}))
+    const airdropsAccepted = grants.map((val) => ({grantInfo: val, isAccepted}))
     return Promise.resolve(airdropsAccepted)
   }
 }
@@ -388,5 +418,103 @@ export function assertAllMocksAreCalled(mocks: ContractCallsMocks) {
     if (mock) {
       expect(mock).toHaveBeenCalled()
     }
+  })
+}
+
+export function mockStakeFiduBannerCalls(toApproveAmount: string, allowanceAmount: string, notStakedFidu: string) {
+  const balanceMock = mock({
+    blockchain,
+    call: {
+      to: DEPLOYMENTS.contracts.Fidu.address,
+      api: DEPLOYMENTS.contracts.Fidu.abi,
+      method: "balanceOf",
+      params: recipient,
+      return: notStakedFidu,
+    },
+  })
+  const allowanceMock = mock({
+    blockchain,
+    call: {
+      to: DEPLOYMENTS.contracts.Fidu.address,
+      api: DEPLOYMENTS.contracts.Fidu.abi,
+      method: "allowance",
+      params: [recipient, DEPLOYMENTS.contracts.StakingRewards.address],
+      return: allowanceAmount,
+    },
+  })
+  web3.eth.getGasPrice = () => {
+    return Promise.resolve("100000000")
+  }
+  const approvalMock = mock({
+    blockchain,
+    transaction: {
+      to: DEPLOYMENTS.contracts.Fidu.address,
+      api: DEPLOYMENTS.contracts.Fidu.abi,
+      method: "approve",
+      params: {spender: DEPLOYMENTS.contracts.StakingRewards.address, amount: toApproveAmount},
+    },
+  })
+  const stakeMock = mock({
+    blockchain,
+    transaction: {
+      to: DEPLOYMENTS.contracts.StakingRewards.address,
+      api: DEPLOYMENTS.contracts.StakingRewards.abi,
+      method: "stake",
+      params: notStakedFidu,
+    },
+  })
+  return {
+    balanceMock,
+    allowanceMock,
+    approvalMock,
+    stakeMock,
+  }
+}
+
+export function mockCapitalProviderCalls(
+  sharePrice: string,
+  numSharesNotStaked: string,
+  allowance: string,
+  weightedAverageSharePrice: string
+) {
+  mock({
+    blockchain,
+    call: {
+      to: DEPLOYMENTS.contracts.SeniorPool.address,
+      api: DEPLOYMENTS.contracts.SeniorPool.abi,
+      method: "sharePrice",
+      params: [],
+      return: sharePrice,
+    },
+  })
+  const mockReturn = (
+    pool: SeniorPoolLoaded,
+    stakingRewards: StakingRewardsLoaded,
+    capitalProviderAddress: string,
+    capitalProviderTotalShares: BigNumber,
+    currentBlock: BlockInfo
+  ) => {
+    return Promise.resolve(new BigNumber(weightedAverageSharePrice))
+  }
+  mockGetWeightedAverageSharePrice(mockReturn)
+  mock({
+    blockchain,
+    call: {
+      to: DEPLOYMENTS.contracts.Fidu.address,
+      api: DEPLOYMENTS.contracts.Fidu.abi,
+      method: "balanceOf",
+      params: [recipient],
+      return: numSharesNotStaked,
+    },
+  })
+  mock({
+    blockchain,
+    call: {
+      to: DEPLOYMENTS.contracts.TestERC20.address,
+      api: DEPLOYMENTS.contracts.TestERC20.abi,
+      method: "allowance",
+      params: [recipient, DEPLOYMENTS.contracts.SeniorPool.address],
+      return: allowance,
+    },
   })
 }
