@@ -35,6 +35,7 @@ import {
   PRINCIPAL_COLLECTED_TX_NAME,
   RESERVE_FUNDS_COLLECTED_TX_NAME,
   HistoricalTx,
+  TxName,
 } from "../types/transactions"
 import {UserLoaded, UserStakingRewardsLoaded} from "./user"
 import {fetchDataFromAttributes, getPoolEvents, INTEREST_DECIMALS, ONE_YEAR_SECONDS, USDC_DECIMALS} from "./utils"
@@ -567,7 +568,7 @@ export type CombinedRepaymentTx = {
   interestAmountBN: BigNumber
 } & Omit<HistoricalTx<KnownEventName>, "type" | "name" | "amount">
 
-const parseRepaymentEventName = (eventData: KnownEventData<RepaymentEventType>) => {
+const parseRepaymentEventName = (eventData: KnownEventData<RepaymentEventType>): TxName => {
   switch (eventData.event) {
     case INTEREST_COLLECTED_EVENT:
       return INTEREST_COLLECTED_TX_NAME
@@ -576,7 +577,7 @@ const parseRepaymentEventName = (eventData: KnownEventData<RepaymentEventType>) 
     case RESERVE_FUNDS_COLLECTED_EVENT:
       return RESERVE_FUNDS_COLLECTED_TX_NAME
     default:
-      assertUnreachable(eventData.event)
+      return assertUnreachable(eventData.event)
   }
 }
 const parseOldPoolRepaymentEventAmount = (eventData: KnownEventData<RepaymentEventType>): AmountWithUnits => {
@@ -594,7 +595,7 @@ const parseOldPoolRepaymentEventAmount = (eventData: KnownEventData<RepaymentEve
       }
     }
     default:
-      assertUnreachable(eventData.event)
+      return assertUnreachable(eventData.event)
   }
 }
 const parsePoolRepaymentEventAmount = (eventData: KnownEventData<RepaymentEventType>): AmountWithUnits => {
@@ -608,7 +609,7 @@ const parsePoolRepaymentEventAmount = (eventData: KnownEventData<RepaymentEventT
       }
     }
     default:
-      assertUnreachable(eventData.event)
+      return assertUnreachable(eventData.event)
   }
 }
 

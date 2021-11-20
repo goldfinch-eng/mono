@@ -121,7 +121,7 @@ describe("Stake unstaked fidu", () => {
   })
 
   it("shows banner when user has unstaked fidu", async () => {
-    mockCapitalProviderCalls("1000456616980000000", "50000000000000000000", "0", "1")
+    mockCapitalProviderCalls()
     const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
     const {container} = renderStakeFiduBanner(seniorPool, stakingRewards, gfi, user, capitalProvider.value)
 
@@ -136,7 +136,7 @@ describe("Stake unstaked fidu", () => {
   })
 
   it("shows banner when user has little unstaked fidu", async () => {
-    mockCapitalProviderCalls("1000456616980000000", "50000000000", "0", "1")
+    mockCapitalProviderCalls(undefined, "50000000000", undefined, undefined)
     const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
     const {container} = renderStakeFiduBanner(seniorPool, stakingRewards, gfi, user, capitalProvider.value)
 
@@ -153,7 +153,7 @@ describe("Stake unstaked fidu", () => {
   describe("staking transaction(s)", () => {
     describe("with 0 FIDU already approved for transfer by StakingRewards", () => {
       it("clicking button triggers sending `approve()` then `stake()` transactions", async () => {
-        mockCapitalProviderCalls("1000456616980000000", "50000000000000000000", "0", "1")
+        mockCapitalProviderCalls()
         const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
         const networkMonitor = {
           addPendingTX: () => {},
@@ -194,7 +194,7 @@ describe("Stake unstaked fidu", () => {
 
     describe("with some FIDU already approved for transfer by StakingRewards", () => {
       it("clicking button triggers sending `approve()` then `stake()` transactions", async () => {
-        mockCapitalProviderCalls("1000456616980000000", "50000000000000000000", "0", "1")
+        mockCapitalProviderCalls()
         const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
         const networkMonitor = {
           addPendingTX: () => {},
@@ -234,7 +234,7 @@ describe("Stake unstaked fidu", () => {
 
     describe("with all FIDU already approved for transfer by StakingRewards", () => {
       it("clicking button triggers sending `stake()` transactions", async () => {
-        mockCapitalProviderCalls("1000456616980000000", "50000000000000000000", "0", "1")
+        mockCapitalProviderCalls()
         const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
         const networkMonitor = {
           addPendingTX: () => {},

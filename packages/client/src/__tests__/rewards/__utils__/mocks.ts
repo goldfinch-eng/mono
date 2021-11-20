@@ -1,3 +1,4 @@
+import "@testing-library/jest-dom"
 import {
   MerkleDistributorGrantInfo,
   MerkleDistributorInfo,
@@ -471,11 +472,16 @@ export function mockStakeFiduBannerCalls(toApproveAmount: string, allowanceAmoun
   }
 }
 
+const DEFAULT_SHARE_PRICE = "1000456616980000000"
+const DEFAULT_NUM_SHARES_NOT_STAKED = "50000000000000000000"
+const DEFAULT_ALLOWANCE = "0"
+const DEFAULT_WEIGHTED_AVERAGE_SHARE_PRICE = "1"
+
 export function mockCapitalProviderCalls(
-  sharePrice: string,
-  numSharesNotStaked: string,
-  allowance: string,
-  weightedAverageSharePrice: string
+  sharePrice?: string,
+  numSharesNotStaked?: string,
+  allowance?: string,
+  weightedAverageSharePrice?: string
 ) {
   mock({
     blockchain,
@@ -484,7 +490,7 @@ export function mockCapitalProviderCalls(
       api: DEPLOYMENTS.contracts.SeniorPool.abi,
       method: "sharePrice",
       params: [],
-      return: sharePrice,
+      return: sharePrice || DEFAULT_SHARE_PRICE,
     },
   })
   const mockReturn = (
@@ -494,7 +500,7 @@ export function mockCapitalProviderCalls(
     capitalProviderTotalShares: BigNumber,
     currentBlock: BlockInfo
   ) => {
-    return Promise.resolve(new BigNumber(weightedAverageSharePrice))
+    return Promise.resolve(new BigNumber(weightedAverageSharePrice || DEFAULT_WEIGHTED_AVERAGE_SHARE_PRICE))
   }
   mockGetWeightedAverageSharePrice(mockReturn)
   mock({
@@ -504,7 +510,7 @@ export function mockCapitalProviderCalls(
       api: DEPLOYMENTS.contracts.Fidu.abi,
       method: "balanceOf",
       params: [recipient],
-      return: numSharesNotStaked,
+      return: numSharesNotStaked || DEFAULT_NUM_SHARES_NOT_STAKED,
     },
   })
   mock({
@@ -514,7 +520,7 @@ export function mockCapitalProviderCalls(
       api: DEPLOYMENTS.contracts.TestERC20.abi,
       method: "allowance",
       params: [recipient, DEPLOYMENTS.contracts.SeniorPool.address],
-      return: allowance,
+      return: allowance || DEFAULT_ALLOWANCE,
     },
   })
 }
