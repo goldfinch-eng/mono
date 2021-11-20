@@ -41,7 +41,11 @@ mock({
 
 web3.setProvider(global.ethereum)
 
-function renderPortfolioOverview(poolData: PoolData, capitalProvider, poolBackers: Loaded<PoolBacker[]> | undefined) {
+function renderPortfolioOverview(
+  poolData: Partial<PoolData>,
+  capitalProvider: Loaded<CapitalProvider>,
+  poolBackers?: Loaded<PoolBacker[]>
+) {
   const store = {}
   const defaultPoolBackers: Loaded<PoolBacker[]> = {
     loaded: true,
@@ -62,7 +66,7 @@ function renderPortfolioOverview(poolData: PoolData, capitalProvider, poolBacker
     <AppContext.Provider value={store}>
       <Router>
         <PortfolioOverview
-          poolData={poolData}
+          poolData={poolData as PoolData}
           capitalProvider={capitalProvider}
           poolBackers={poolBackers ? poolBackers : defaultPoolBackers}
         />
@@ -125,12 +129,7 @@ describe("Earn page portfolio overview", () => {
   })
 
   it("shows portfolio with empty info", async () => {
-    const poolData = {
-      estimatedApy: "",
-      estimatedApyFromGfi: "",
-      loaded: true,
-    }
-    renderPortfolioOverview(poolData, capitalProvider)
+    renderPortfolioOverview({}, capitalProvider)
 
     expect(screen.getByTestId("portfolio-total-balance").textContent).toEqual("$50.02")
     expect(screen.getByTestId("portfolio-est-growth").textContent).toEqual("$--.--")
