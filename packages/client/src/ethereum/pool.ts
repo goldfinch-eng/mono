@@ -456,7 +456,7 @@ async function getDepositEventsByCapitalProvider(
 // for your shares, and we would fail out, and return a "-" on the front-end.
 // NOTE: This also does not take into account realized gains, which we are also
 // punting on.
-let getWeightedAverageSharePrice = async (
+const _getWeightedAverageSharePrice = async (
   pool: SeniorPoolLoaded,
   stakingRewards: StakingRewardsLoaded,
   capitalProviderAddress: string,
@@ -507,6 +507,7 @@ let getWeightedAverageSharePrice = async (
     return totalAmountPaid.dividedBy(capitalProviderTotalShares)
   }
 }
+export let getWeightedAverageSharePrice = _getWeightedAverageSharePrice
 
 async function getCumulativeWritedowns(pool: SeniorPool, currentBlock: BlockInfo) {
   // In theory, we'd also want to include `PrincipalWrittendown` events emitted by `pool.v1Pool` here.
@@ -923,8 +924,8 @@ class StakingRewards {
   }
 }
 
-export function mockGetWeightedAverageSharePrice(mock: typeof getWeightedAverageSharePrice): void {
-  getWeightedAverageSharePrice = mock
+export function mockGetWeightedAverageSharePrice(mock: typeof getWeightedAverageSharePrice | undefined): void {
+  getWeightedAverageSharePrice = mock || _getWeightedAverageSharePrice
 }
 
 export {fetchCapitalProviderData, fetchPoolData, SeniorPool, Pool, StakingRewards, StakingRewardsPosition}

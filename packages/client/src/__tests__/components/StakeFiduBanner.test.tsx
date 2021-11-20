@@ -13,6 +13,7 @@ import {
   SeniorPoolLoaded,
   StakingRewardsLoaded,
   CapitalProvider,
+  mockGetWeightedAverageSharePrice,
 } from "../../ethereum/pool"
 import {User, UserLoaded} from "../../ethereum/user"
 import {blockInfo, DEPLOYMENTS, network, recipient} from "../rewards/__utils__/constants"
@@ -108,6 +109,7 @@ describe("Stake unstaked fidu", () => {
   })
 
   afterEach(() => {
+    mockGetWeightedAverageSharePrice(undefined)
     jest.clearAllMocks()
   })
 
