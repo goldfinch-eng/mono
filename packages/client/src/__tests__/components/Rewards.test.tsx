@@ -502,15 +502,15 @@ describe("Rewards list and detail", () => {
     )
     renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
 
-    expect(await screen.findByText("Staked 50K FIDU on Jan 5")).toBeVisible()
+    expect(await screen.findByText("Staked 50K FIDU on Dec 29")).toBeVisible()
     expect(await screen.findByText("Vesting")).toBeVisible()
     expect((await screen.findAllByText("0.00")).length).toBe(7)
 
-    fireEvent.click(screen.getByText("Staked 50K FIDU on Jan 5"))
+    fireEvent.click(screen.getByText("Staked 50K FIDU on Dec 29"))
 
     expect(await screen.findByText("Transaction details")).toBeVisible()
     expect(await screen.findByText("Vesting schedule")).toBeVisible()
-    expect(await screen.findByText("Linear until 100% on Jan 5, 2023")).toBeVisible()
+    expect(await screen.findByText("Linear until 100% on Dec 29, 2022")).toBeVisible()
 
     expect(await screen.findByText("Claim status")).toBeVisible()
     expect(await screen.findByText("0.00 claimed of your total vested 0.00 GFI")).toBeVisible()
@@ -535,17 +535,17 @@ describe("Rewards list and detail", () => {
 
     renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
 
-    expect(await screen.findByText("Staked 50K FIDU on Jan 5")).toBeVisible()
+    expect(await screen.findByText("Staked 50K FIDU on Dec 29")).toBeVisible()
     expect(await screen.findByText("Claim GFI")).toBeVisible()
 
     expect(screen.getByTestId("detail-granted").textContent).toEqual("129.60")
     expect(screen.getByTestId("detail-claimable").textContent).toEqual("0.71")
 
-    fireEvent.click(screen.getByText("Staked 50K FIDU on Jan 5"))
+    fireEvent.click(screen.getByText("Staked 50K FIDU on Dec 29"))
 
     expect(await screen.findByText("Transaction details")).toBeVisible()
     expect(await screen.findByText("Vesting schedule")).toBeVisible()
-    expect(await screen.findByText("Linear until 100% on Jan 5, 2023")).toBeVisible()
+    expect(await screen.findByText("Linear until 100% on Dec 29, 2022")).toBeVisible()
 
     expect(await screen.findByText("Claim status")).toBeVisible()
     expect(await screen.findByText("0.00 claimed of your total vested 0.71 GFI")).toBeVisible()
@@ -667,7 +667,7 @@ describe("Rewards list and detail", () => {
 
     renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
 
-    expect(await screen.findByText("Staked 50K FIDU on Jan 5")).toBeVisible()
+    expect(await screen.findByText("Staked 50K FIDU on Dec 29")).toBeVisible()
     expect(await screen.findByText("Flight Academy")).toBeVisible()
     expect(await screen.getAllByText("Claim GFI").length).toBe(2)
 
@@ -676,10 +676,10 @@ describe("Rewards list and detail", () => {
     expect(screen.getAllByTestId("detail-granted")[1]?.textContent).toEqual("129.60")
     expect(screen.getAllByTestId("detail-claimable")[1]?.textContent).toEqual("0.71")
 
-    fireEvent.click(screen.getByText("Staked 50K FIDU on Jan 5"))
+    fireEvent.click(screen.getByText("Staked 50K FIDU on Dec 29"))
     expect(await screen.findByText("Transaction details")).toBeVisible()
     expect(await screen.findByText("Vesting schedule")).toBeVisible()
-    expect(await screen.findByText("Linear until 100% on Jan 5, 2023")).toBeVisible()
+    expect(await screen.findByText("Linear until 100% on Dec 29, 2022")).toBeVisible()
 
     expect(await screen.findByText("Claim status")).toBeVisible()
     expect(await screen.findByText("0.00 claimed of your total vested 0.71 GFI")).toBeVisible()
@@ -694,7 +694,7 @@ describe("Rewards list and detail", () => {
       "href",
       `https://${network.name}.etherscan.io/address/${stakingRewards.address}`
     )
-    fireEvent.click(screen.getByText("Staked 50K FIDU on Jan 5"))
+    fireEvent.click(screen.getByText("Staked 50K FIDU on Dec 29"))
 
     fireEvent.click(screen.getByText("Flight Academy"))
     expect(await screen.findByText("Transaction details")).toBeVisible()
@@ -722,16 +722,16 @@ describe("Rewards list and detail", () => {
 
     renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards)
 
-    expect(await screen.findByText("Staked 50K FIDU on Jan 5")).toBeVisible()
+    expect(await screen.findByText("Staked 50K FIDU on Dec 29")).toBeVisible()
     expect(await screen.findByText("Claim GFI")).toBeVisible()
 
     expect(screen.getByTestId("detail-granted").textContent).toEqual("269.00")
     expect(screen.getByTestId("detail-claimable").textContent).toEqual("2.24")
 
-    fireEvent.click(screen.getByText("Staked 50K FIDU on Jan 5"))
+    fireEvent.click(screen.getByText("Staked 50K FIDU on Dec 29"))
     expect(await screen.findByText("Transaction details")).toBeVisible()
     expect(await screen.findByText("Vesting schedule")).toBeVisible()
-    expect(await screen.findByText("Linear until 100% on Jan 5, 2023")).toBeVisible()
+    expect(await screen.findByText("Linear until 100% on Dec 29, 2022")).toBeVisible()
 
     expect(await screen.findByText("Claim status")).toBeVisible()
     expect(await screen.findByText("0.82 claimed of your total vested 3.06 GFI")).toBeVisible()
