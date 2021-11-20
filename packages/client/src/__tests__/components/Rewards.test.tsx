@@ -659,7 +659,7 @@ describe("Rewards list and detail", () => {
     )
   })
 
-  it("shows community reward and staking reward ", async () => {
+  it("shows community reward and staking reward", async () => {
     const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupCommunityRewardAndStakingReward(
       goldfinchProtocol,
       seniorPool
@@ -748,7 +748,7 @@ describe("Rewards list and detail", () => {
     )
   })
 
-  it("shows partially claimed community reward on rewards list", async () => {
+  it("community reward partially claimed appears on list", async () => {
     const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupPartiallyClaimedCommunityReward(
       goldfinchProtocol,
       seniorPool
