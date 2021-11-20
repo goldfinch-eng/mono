@@ -43,6 +43,7 @@ enum ActionButtonTexts {
   accepting = "Accepting...",
   claimGFI = "Claim GFI",
   claimed = "Claimed",
+  vesting = "Vesting",
 }
 
 interface ActionButtonProps {
@@ -182,7 +183,7 @@ function ClaimForm(props: ClaimFormProps) {
     return (
       <div className="info-banner background-container subtle">
         <div className="message">
-          Claim the total available {displayNumber(gfiFromAtomic(props.claimable), 2)} GFI ($
+          Claim the total available {displayNumber(gfiFromAtomic(props.claimable), 2)} GFI (
           {displayDollars(props.totalUSD)}) that has vested.
         </div>
         <LoadingButton text="Submit" action={props.action} disabled={props.disabled} />
@@ -213,7 +214,7 @@ function getActionButtonProps(props: RewardsListItemProps): ActionButtonProps {
     case RewardStatus.TemporarilyAllClaimed:
       return {
         ...baseProps,
-        text: ActionButtonTexts.claimGFI,
+        text: ActionButtonTexts.vesting,
         disabled: true,
       }
     case RewardStatus.PermanentlyAllClaimed:
@@ -270,11 +271,15 @@ function RewardsListItem(props: RewardsListItemProps) {
             <div className="item-details">
               <div className="detail-container">
                 <span className="detail-label">Granted GFI</span>
-                <div className={`${valueDisabledClass}`}>{displayNumber(gfiFromAtomic(props.grantedGFI), 2)}</div>
+                <div className={`${valueDisabledClass} detail-label-value`}>
+                  {displayNumber(gfiFromAtomic(props.grantedGFI), 2)}
+                </div>
               </div>
               <div className="detail-container">
                 <span className="detail-label">Claimable GFI</span>
-                <div className={`${valueDisabledClass}`}>{displayNumber(gfiFromAtomic(props.claimableGFI), 2)}</div>
+                <div className={`${valueDisabledClass} detail-label-value`}>
+                  {displayNumber(gfiFromAtomic(props.claimableGFI), 2)}
+                </div>
               </div>
             </div>
             {actionButtonComponent}
@@ -285,10 +290,10 @@ function RewardsListItem(props: RewardsListItemProps) {
         <li onClick={() => setOpen(!open)}>
           <div className="rewards-list-item table-row background-container clickable">
             <div className="table-cell col32">{props.title}</div>
-            <div className={`table-cell col20 numeric ${valueDisabledClass}`}>
+            <div className={`table-cell col20 numeric ${valueDisabledClass} detail-label-value`}>
               {displayNumber(gfiFromAtomic(props.grantedGFI), 2)}
             </div>
-            <div className={`table-cell col20 numeric ${valueDisabledClass}`}>
+            <div className={`table-cell col20 numeric ${valueDisabledClass} detail-label-value`}>
               {displayNumber(gfiFromAtomic(props.claimableGFI), 2)}
             </div>
             {actionButtonComponent}

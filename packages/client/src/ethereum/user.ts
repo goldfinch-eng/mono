@@ -11,7 +11,7 @@ import {assertWithLoadedInfo, Loadable, WithLoadedInfo} from "../types/loadable"
 import {assertNonNullable, BlockInfo, WithCurrentBlock} from "../utils"
 import {BorrowerInterface, getBorrowerContract} from "./borrower"
 import {CommunityRewardsGrant, CommunityRewardsLoaded, MerkleDistributorLoaded} from "./communityRewards"
-import {Tickers, USDC, usdcFromAtomic} from "./erc20"
+import {ERC20, Tickers, USDC, usdcFromAtomic} from "./erc20"
 import {getBalanceAsOf, getPoolEventAmount, mapEventsToTx} from "./events"
 import {
   ApprovalEventType,
@@ -478,7 +478,7 @@ type UserMerkleDistributorLoadedInfo = {
   }
 }
 
-class UserMerkleDistributor {
+export class UserMerkleDistributor {
   info: Loadable<UserMerkleDistributorLoadedInfo>
 
   constructor() {
@@ -501,15 +501,12 @@ class UserMerkleDistributor {
       merkleDistributor.info.value.merkleDistributorInfo.grants,
       address
     )
-    const withAcceptance = await Promise.all(
-      airdropsForRecipient.map(async (grantInfo) => ({
-        grantInfo,
-        isAccepted: await merkleDistributor.contract.methods
-          .isGrantAccepted(grantInfo.index)
-          .call(undefined, currentBlock.number),
-      }))
+    const accepted = await UserMerkleDistributor.getAcceptedAirdrops(
+      airdropsForRecipient,
+      merkleDistributor,
+      currentBlock
     )
-    const airdrops = withAcceptance.reduce<{
+    const airdrops = accepted.reduce<{
       accepted: MerkleDistributorGrantInfo[]
       notAccepted: MerkleDistributorGrantInfo[]
     }>(
@@ -531,6 +528,21 @@ class UserMerkleDistributor {
         airdrops,
       },
     }
+  }
+
+  static async getAcceptedAirdrops(
+    airdropsForRecipient: MerkleDistributorGrantInfo[],
+    merkleDistributor: MerkleDistributorLoaded,
+    currentBlock: BlockInfo
+  ) {
+    return Promise.all(
+      airdropsForRecipient.map(async (grantInfo) => ({
+        grantInfo,
+        isAccepted: await merkleDistributor.contract.methods
+          .isGrantAccepted(grantInfo.index)
+          .call(undefined, currentBlock.number),
+      }))
+    )
   }
 
   static getAirdropsForRecipient(
@@ -648,7 +660,92 @@ export class User {
       stakingRewardsEventsAndTxs,
       communityRewardsTxs,
       merkleDistributorTxs,
-    ] = await Promise.all([
+    ] = await this.fetchTxs(usdc, pool, stakingRewards, communityRewards, merkleDistributor, currentBlock)
+    const {poolEvents, poolTxs} = poolEventsAndTxs
+    const {stakedEvents, stakingRewardsTxs} = stakingRewardsEventsAndTxs
+    const pastTxs = _.reverse(
+      _.sortBy(
+        [
+          ...usdcTxs,
+          ...fiduTxs,
+          ...poolTxs,
+          ...creditDeskTxs,
+          ...stakingRewardsTxs,
+          ...communityRewardsTxs,
+          ...merkleDistributorTxs,
+        ],
+        ["blockNumber", "transactionIndex"]
+      )
+    )
+
+    const golistStatus = await this.fetchGolistStatus(this.address, currentBlock)
+    const goListed = golistStatus.golisted
+    const legacyGolisted = golistStatus.legacyGolisted
+    const hasUID = golistStatus.hasUID
+
+    const gfiBalance = new BigNumber(
+      await gfi.contract.methods.balanceOf(this.address).call(undefined, currentBlock.number)
+    )
+
+    const userStakingRewards = new UserStakingRewards()
+    const userMerkleDistributor = new UserMerkleDistributor()
+    await Promise.all([
+      userStakingRewards.initialize(this.address, stakingRewards, stakedEvents, currentBlock),
+      userMerkleDistributor.initialize(this.address, merkleDistributor, currentBlock),
+    ])
+    assertWithLoadedInfo(userStakingRewards)
+    assertWithLoadedInfo(userMerkleDistributor)
+
+    const userCommunityRewards = new UserCommunityRewards(this.goldfinchProtocol)
+    await userCommunityRewards.initialize(
+      this.address,
+      communityRewards,
+      merkleDistributor,
+      userMerkleDistributor,
+      currentBlock
+    )
+    assertWithLoadedInfo(userCommunityRewards)
+
+    this.info = {
+      loaded: true,
+      value: {
+        currentBlock,
+        usdcBalance,
+        usdcBalanceInDollars,
+        poolAllowance,
+        poolEvents,
+        pastTxs,
+        poolTxs,
+        goListed,
+        legacyGolisted,
+        hasUID,
+        gfiBalance,
+        usdcIsUnlocked: {
+          earn: {
+            unlockAddress: pool.address,
+            isUnlocked: this.isUnlocked(poolAllowance),
+          },
+          borrow: {
+            unlockAddress: this.borrower?.borrowerAddress || this.address,
+            isUnlocked: this.borrower?.allowance ? this.isUnlocked(this.borrower.allowance) : false,
+          },
+        },
+        stakingRewards: userStakingRewards,
+        communityRewards: userCommunityRewards,
+        merkleDistributor: userMerkleDistributor,
+      },
+    }
+  }
+
+  private async fetchTxs(
+    usdc: ERC20,
+    pool: SeniorPoolLoaded,
+    stakingRewards: StakingRewardsLoaded,
+    communityRewards: CommunityRewardsLoaded,
+    merkleDistributor: MerkleDistributorLoaded,
+    currentBlock: BlockInfo
+  ) {
+    return Promise.all([
       // NOTE: We have no need to include usdc txs for `pool.v1Pool` among the txs in
       // `this.pastTxs`. So we don't get them. We only need usdc txs for `pool`.
       getAndTransformUSDCEvents(usdc, pool.address, this.address, currentBlock),
@@ -766,81 +863,6 @@ export class User {
       getAndTransformCommunityRewardsEvents(this.address, communityRewards),
       getAndTransformMerkleDistributorEvents(this.address, merkleDistributor),
     ])
-    const {poolEvents, poolTxs} = poolEventsAndTxs
-    const {stakedEvents, stakingRewardsTxs} = stakingRewardsEventsAndTxs
-    const pastTxs = _.reverse(
-      _.sortBy(
-        [
-          ...usdcTxs,
-          ...fiduTxs,
-          ...poolTxs,
-          ...creditDeskTxs,
-          ...stakingRewardsTxs,
-          ...communityRewardsTxs,
-          ...merkleDistributorTxs,
-        ],
-        ["blockNumber", "transactionIndex"]
-      )
-    )
-
-    const golistStatus = await this.fetchGolistStatus(this.address, currentBlock)
-    const goListed = golistStatus.golisted
-    const legacyGolisted = golistStatus.legacyGolisted
-    const hasUID = golistStatus.hasUID
-
-    const gfiBalance = new BigNumber(
-      await gfi.contract.methods.balanceOf(this.address).call(undefined, currentBlock.number)
-    )
-
-    const userStakingRewards = new UserStakingRewards()
-    const userMerkleDistributor = new UserMerkleDistributor()
-
-    await Promise.all([
-      userStakingRewards.initialize(this.address, stakingRewards, stakedEvents, currentBlock),
-      userMerkleDistributor.initialize(this.address, merkleDistributor, currentBlock),
-    ])
-    assertWithLoadedInfo(userStakingRewards)
-    assertWithLoadedInfo(userMerkleDistributor)
-
-    const userCommunityRewards = new UserCommunityRewards(this.goldfinchProtocol)
-    await userCommunityRewards.initialize(
-      this.address,
-      communityRewards,
-      merkleDistributor,
-      userMerkleDistributor,
-      currentBlock
-    )
-    assertWithLoadedInfo(userCommunityRewards)
-
-    this.info = {
-      loaded: true,
-      value: {
-        currentBlock,
-        usdcBalance,
-        usdcBalanceInDollars,
-        poolAllowance,
-        poolEvents,
-        pastTxs,
-        poolTxs,
-        goListed,
-        legacyGolisted,
-        hasUID,
-        gfiBalance,
-        usdcIsUnlocked: {
-          earn: {
-            unlockAddress: pool.address,
-            isUnlocked: this.isUnlocked(poolAllowance),
-          },
-          borrow: {
-            unlockAddress: this.borrower?.borrowerAddress || this.address,
-            isUnlocked: this.borrower?.allowance ? this.isUnlocked(this.borrower.allowance) : false,
-          },
-        },
-        stakingRewards: userStakingRewards,
-        communityRewards: userCommunityRewards,
-        merkleDistributor: userMerkleDistributor,
-      },
-    }
   }
 
   isUnlocked(allowance: BigNumber | undefined) {
