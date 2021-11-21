@@ -19,7 +19,7 @@ import {
 } from "../../../ethereum/pool"
 import {User, UserMerkleDistributor} from "../../../ethereum/user"
 import * as utils from "../../../ethereum/utils"
-import {GRANT_ACCEPTED_EVENT, KnownEventData, KnownEventName} from "../../../types/events"
+import {GRANT_ACCEPTED_EVENT, KnownEventData, KnownEventName, STAKED_EVENT} from "../../../types/events"
 import {BlockInfo} from "../../../utils"
 import {
   blockchain,
@@ -100,7 +100,7 @@ export function mockUserInitializationContractCalls(
   merkleDistributor: MerkleDistributor,
   rewardsMock?: RewardsMockData
 ): ContractCallsMocks {
-  user.fetchTxs = (usdc, pool, currentBlock) => {
+  user._fetchTxs = (usdc, pool, currentBlock) => {
     return Promise.resolve([
       [],
       [],
@@ -111,7 +111,7 @@ export function mockUserInitializationContractCalls(
       [],
     ])
   }
-  user.fetchGolistStatus = (address: string, currentBlock: BlockInfo) => {
+  user._fetchGolistStatus = (address: string, currentBlock: BlockInfo) => {
     return Promise.resolve({
       legacyGolisted: true,
       golisted: true,
@@ -180,7 +180,9 @@ export function mockUserInitializationContractCalls(
     const totalVestedAt = rewardsMock.staking?.totalVestedAt || "0"
     const positionCurrentEarnRate = rewardsMock.staking?.positionCurrentEarnRate || "750000000000000"
     const currentTimestamp = rewardsMock.staking?.currentTimestamp || DEFAULT_STAKING_REWARDS_START_TIME
-    const stakedEvent = {returnValues: {tokenId: "1", amount: stakedAmount}}
+    const stakedEvent = {returnValues: {tokenId: "1", amount: stakedAmount}} as unknown as KnownEventData<
+      typeof STAKED_EVENT
+    >
     const granted = rewardsMock.staking?.granted || earnedSince
     const stakingRewardsTokenId = "1"
 
@@ -225,7 +227,7 @@ export function mockUserInitializationContractCalls(
         return: totalVestedAt,
       },
     })
-    user.fetchTxs = (usdc, pool, currentBlock) => {
+    user._fetchTxs = (usdc, pool, currentBlock) => {
       return Promise.resolve([
         [],
         [],

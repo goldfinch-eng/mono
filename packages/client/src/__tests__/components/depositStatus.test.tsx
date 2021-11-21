@@ -36,7 +36,7 @@ mock({
   blockchain: "ethereum",
 })
 
-web3.setProvider(global.ethereum)
+web3.setProvider((global.window as any).ethereum)
 
 function renderDepositStatus(poolData: Partial<PoolData>, capitalProvider?: Loaded<CapitalProvider>) {
   const store = {}
@@ -59,7 +59,7 @@ describe("Senior pool page deposit status", () => {
 
   beforeEach(async () => {
     jest.spyOn(utils, "getDeployments").mockImplementation(() => {
-      return DEPLOYMENTS
+      return Promise.resolve(DEPLOYMENTS)
     })
     setupMocksForAirdrop(undefined) // reset
 

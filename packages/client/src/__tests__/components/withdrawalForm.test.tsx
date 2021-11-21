@@ -32,21 +32,22 @@ import {usdcToAtomic} from "../../ethereum/erc20"
 import * as utils from "../../ethereum/utils"
 import {CommunityRewardsLoaded, MerkleDistributorLoaded} from "../../ethereum/communityRewards"
 import {GFILoaded} from "../../ethereum/gfi"
+import {NetworkMonitor} from "../../ethereum/networkMonitor"
 
 mock({
   blockchain: "ethereum",
 })
 
-web3.setProvider(global.ethereum)
+web3.setProvider((global.window as any).ethereum)
 
 function renderWithdrawalForm(
   poolData,
   capitalProvider: Loaded<CapitalProvider>,
-  stakingRewards?: StakingRewardsLoaded | undefined,
-  pool?: SeniorPool | undefined,
-  refreshCurrentBlock?: unknown,
-  networkMonitor?: unknown,
-  user?: UserLoaded | undefined
+  stakingRewards?: StakingRewardsLoaded,
+  pool?: SeniorPoolLoaded,
+  refreshCurrentBlock?: () => Promise<void>,
+  networkMonitor?: NetworkMonitor,
+  user?: UserLoaded
 ) {
   const store = {
     goldfinchConfig: {
@@ -78,7 +79,7 @@ describe("withdrawal form", () => {
     addPendingTX: () => {},
     watch: () => {},
     markTXErrored: () => {},
-  }
+  } as unknown as NetworkMonitor
   let seniorPool: SeniorPoolLoaded
   let goldfinchProtocol = new GoldfinchProtocol(network)
   let gfi: GFILoaded,
@@ -116,7 +117,7 @@ describe("withdrawal form", () => {
     merkleDistributor = result.merkleDistributor
 
     const _user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
-    mockUserInitializationContractCalls(_user, stakingRewards, gfi, communityRewards, {})
+    mockUserInitializationContractCalls(_user, stakingRewards, gfi, communityRewards, merkleDistributor, {})
     await _user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
 
     assertWithLoadedInfo(_user)
@@ -235,7 +236,7 @@ describe("withdrawal form", () => {
     })
   })
 
-  it("show withdrawal form with partially claimed staking reward", async () => {
+  it("shows withdrawal form with partially claimed staking reward", async () => {
     const {user} = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool)
 
     mockCapitalProviderCalls()

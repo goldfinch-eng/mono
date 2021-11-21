@@ -41,7 +41,7 @@ mock({
   blockchain: "ethereum",
 })
 
-web3.setProvider(global.ethereum)
+web3.setProvider((global.window as any).ethereum)
 
 function renderPortfolioOverview(
   poolData: Partial<PoolData>,
