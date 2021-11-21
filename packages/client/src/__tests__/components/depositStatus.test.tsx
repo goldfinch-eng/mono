@@ -31,6 +31,7 @@ import {
 import * as utils from "../../ethereum/utils"
 import DepositStatus from "../../components/depositStatus"
 import {toDisplayPercent} from "../rewards/__utils__/display"
+import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
 
 mock({
   blockchain: "ethereum",
@@ -85,7 +86,7 @@ describe("Senior pool page deposit status", () => {
     communityRewards = result.communityRewards
     merkleDistributor = result.merkleDistributor
 
-    user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
+    user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
     mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, merkleDistributor, {})
     await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
 
