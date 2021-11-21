@@ -24,13 +24,13 @@ import {BlockInfo} from "../../../utils"
 import {
   blockchain,
   blockInfo,
-  communityRewardsABI,
-  DEPLOYMENTS,
-  erc20ABI,
-  gfiABI,
-  merkleDistributorABI,
+  communityRewardsAbiPromise,
+  erc20AbiPromise,
+  getDeployments,
+  gfiAbiPromise,
+  merkleDistributorAbiPromise,
   recipient,
-  stakingRewardsABI,
+  stakingRewardsAbiPromise,
 } from "./constants"
 import isEqual from "lodash/isEqual"
 import web3 from "../../../web3"
@@ -131,7 +131,7 @@ export function mockUserInitializationContractCalls(
     blockchain,
     call: {
       to: gfi.address,
-      api: gfiABI,
+      api: gfiAbiPromise,
       method: "balanceOf",
       params: [recipient],
       return: rewardsMock?.gfi?.gfiBalance || "0",
@@ -142,7 +142,7 @@ export function mockUserInitializationContractCalls(
     blockchain,
     call: {
       to: "0x0000000000000000000000000000000000000002",
-      api: erc20ABI,
+      api: erc20AbiPromise,
       method: "balanceOf",
       params: [recipient],
       return: "0",
@@ -152,7 +152,7 @@ export function mockUserInitializationContractCalls(
     blockchain,
     call: {
       to: "0x0000000000000000000000000000000000000002",
-      api: erc20ABI,
+      api: erc20AbiPromise,
       method: "allowance",
       params: [recipient, "0x0000000000000000000000000000000000000005"],
       return: "0",
@@ -162,7 +162,7 @@ export function mockUserInitializationContractCalls(
     blockchain,
     call: {
       to: stakingRewards.address,
-      api: stakingRewardsABI,
+      api: stakingRewardsAbiPromise,
       method: "balanceOf",
       params: [recipient],
       return: stakingRewardsBalance,
@@ -201,7 +201,7 @@ export function mockUserInitializationContractCalls(
       blockchain,
       call: {
         to: stakingRewards.address,
-        api: stakingRewardsABI,
+        api: stakingRewardsAbiPromise,
         method: "tokenOfOwnerByIndex",
         params: [recipient, String(parseInt(stakingRewardsTokenId, 10) - 1)],
         return: stakingRewardsTokenId,
@@ -211,7 +211,7 @@ export function mockUserInitializationContractCalls(
       blockchain,
       call: {
         to: stakingRewards.address,
-        api: stakingRewardsABI,
+        api: stakingRewardsAbiPromise,
         method: "positions",
         params: stakingRewardsTokenId,
         return: positionsRes,
@@ -221,7 +221,7 @@ export function mockUserInitializationContractCalls(
       blockchain,
       call: {
         to: stakingRewards.address,
-        api: stakingRewardsABI,
+        api: stakingRewardsAbiPromise,
         method: "earnedSinceLastCheckpoint",
         params: stakingRewardsTokenId,
         return: earnedSince,
@@ -232,7 +232,7 @@ export function mockUserInitializationContractCalls(
       blockchain,
       call: {
         to: stakingRewards.address,
-        api: stakingRewardsABI,
+        api: stakingRewardsAbiPromise,
         method: "totalVestedAt",
         params: [positionsRes[1][4], positionsRes[1][5], currentTimestamp, granted],
         return: totalVestedAt,
@@ -253,7 +253,7 @@ export function mockUserInitializationContractCalls(
       blockchain,
       call: {
         to: stakingRewards.address,
-        api: stakingRewardsABI,
+        api: stakingRewardsAbiPromise,
         method: "positionCurrentEarnRate",
         params: [stakingRewardsTokenId],
         return: positionCurrentEarnRate,
@@ -267,7 +267,7 @@ export function mockUserInitializationContractCalls(
     blockchain,
     call: {
       to: communityRewards.address,
-      api: communityRewardsABI,
+      api: communityRewardsAbiPromise,
       method: "balanceOf",
       params: [recipient],
       return: communityRewardsBalance,
@@ -293,7 +293,7 @@ export function mockUserInitializationContractCalls(
       blockchain,
       call: {
         to: communityRewards.address,
-        api: communityRewardsABI,
+        api: communityRewardsAbiPromise,
         method: "tokenOfOwnerByIndex",
         params: [recipient, "0"],
         return: communityRewardsTokenId,
@@ -303,7 +303,7 @@ export function mockUserInitializationContractCalls(
       blockchain,
       call: {
         to: communityRewards.address,
-        api: communityRewardsABI,
+        api: communityRewardsAbiPromise,
         method: "grants",
         params: communityRewardsTokenId,
         return: grant,
@@ -313,7 +313,7 @@ export function mockUserInitializationContractCalls(
       blockchain,
       call: {
         to: communityRewards.address,
-        api: communityRewardsABI,
+        api: communityRewardsAbiPromise,
         method: "claimableRewards",
         params: communityRewardsTokenId,
         return: claimable,
@@ -372,7 +372,7 @@ export function mockStakingRewardsContractCalls(stakingRewards: StakingRewards, 
     blockchain,
     call: {
       to: stakingRewards.address,
-      api: stakingRewardsABI,
+      api: stakingRewardsAbiPromise,
       method: "paused",
       return: false,
     },
@@ -381,7 +381,7 @@ export function mockStakingRewardsContractCalls(stakingRewards: StakingRewards, 
     blockchain,
     call: {
       to: stakingRewards.address,
-      api: stakingRewardsABI,
+      api: stakingRewardsAbiPromise,
       method: "currentEarnRatePerToken",
       return: currentEarnRatePerToken,
     },
@@ -398,7 +398,7 @@ export function mockMerkleDistributorContractCalls(
     blockchain,
     call: {
       to: merkle.address,
-      api: merkleDistributorABI,
+      api: merkleDistributorAbiPromise,
       method: "communityRewards",
       return: communityRewardsAddress,
     },
@@ -435,7 +435,12 @@ export function assertAllMocksAreCalled(mocks: Partial<ContractCallsMocks>) {
   })
 }
 
-export function mockStakeFiduBannerCalls(toApproveAmount: string, allowanceAmount: string, notStakedFidu: string) {
+export async function mockStakeFiduBannerCalls(
+  toApproveAmount: string,
+  allowanceAmount: string,
+  notStakedFidu: string
+) {
+  const DEPLOYMENTS = await getDeployments()
   const balanceMock = mock({
     blockchain,
     call: {
@@ -490,12 +495,13 @@ const DEFAULT_NUM_SHARES_NOT_STAKED = "50000000000000000000"
 const DEFAULT_ALLOWANCE = "0"
 const DEFAULT_WEIGHTED_AVERAGE_SHARE_PRICE = "1"
 
-export function mockCapitalProviderCalls(
+export async function mockCapitalProviderCalls(
   sharePrice?: string,
   numSharesNotStaked?: string,
   allowance?: string,
   weightedAverageSharePrice?: string
 ) {
+  const DEPLOYMENTS = await getDeployments()
   mock({
     blockchain,
     call: {

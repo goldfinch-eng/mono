@@ -14,7 +14,7 @@ import {
   SeniorPoolLoaded,
 } from "../../ethereum/pool"
 import {User} from "../../ethereum/user"
-import {blockInfo, DEPLOYMENTS, network, recipient} from "../rewards/__utils__/constants"
+import {blockInfo, getDeployments, network, recipient} from "../rewards/__utils__/constants"
 import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
 import {
   getDefaultClasses,
@@ -60,7 +60,7 @@ describe("Senior pool page deposit status", () => {
 
   beforeEach(async () => {
     jest.spyOn(utils, "getDeployments").mockImplementation(() => {
-      return Promise.resolve(DEPLOYMENTS)
+      return getDeployments()
     })
     setupMocksForAirdrop(undefined) // reset
 

@@ -15,7 +15,7 @@ import {
   StakingRewardsLoaded,
 } from "../../ethereum/pool"
 import {User, UserLoaded} from "../../ethereum/user"
-import {blockInfo, DEPLOYMENTS, network, recipient} from "../rewards/__utils__/constants"
+import {blockInfo, getDeployments, network, recipient} from "../rewards/__utils__/constants"
 import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
 import {
   getDefaultClasses,
@@ -89,7 +89,7 @@ describe("Earn page portfolio overview", () => {
 
   beforeEach(async () => {
     jest.spyOn(utils, "getDeployments").mockImplementation(() => {
-      return Promise.resolve(DEPLOYMENTS)
+      return getDeployments()
     })
     setupMocksForAirdrop(undefined) // reset
 

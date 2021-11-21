@@ -17,7 +17,7 @@ import {
   PoolData,
 } from "../../ethereum/pool"
 import {User, UserLoaded} from "../../ethereum/user"
-import {blockInfo, DEPLOYMENTS, network, recipient} from "../rewards/__utils__/constants"
+import {blockInfo, getDeployments, network, recipient} from "../rewards/__utils__/constants"
 import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
 import {getDefaultClasses} from "../rewards/__utils__/scenarios"
 import {assertWithLoadedInfo} from "../../types/loadable"
@@ -79,7 +79,7 @@ describe("Stake unstaked fidu", () => {
 
   beforeEach(async () => {
     jest.spyOn(utils, "getDeployments").mockImplementation(() => {
-      return Promise.resolve(DEPLOYMENTS)
+      return getDeployments()
     })
     setupMocksForAirdrop(undefined) // reset
 
@@ -174,7 +174,7 @@ describe("Stake unstaked fidu", () => {
         const toApproveAmount = "50000000000000000000"
         const allowanceAmount = "0"
         const notStakedFidu = "50000000000000000000"
-        const {balanceMock, allowanceMock, approvalMock, stakeMock} = mockStakeFiduBannerCalls(
+        const {balanceMock, allowanceMock, approvalMock, stakeMock} = await mockStakeFiduBannerCalls(
           toApproveAmount,
           allowanceAmount,
           notStakedFidu
@@ -215,7 +215,7 @@ describe("Stake unstaked fidu", () => {
         const toApproveAmount = "25000000000000000000"
         const allowanceAmount = "25000000000000000000"
         const notStakedFidu = "50000000000000000000"
-        const {balanceMock, allowanceMock, approvalMock, stakeMock} = mockStakeFiduBannerCalls(
+        const {balanceMock, allowanceMock, approvalMock, stakeMock} = await mockStakeFiduBannerCalls(
           toApproveAmount,
           allowanceAmount,
           notStakedFidu
@@ -255,7 +255,7 @@ describe("Stake unstaked fidu", () => {
         const toApproveAmount = "50000000000000000000"
         const allowanceAmount = "50000000000000000000"
         const notStakedFidu = "50000000000000000000"
-        const {balanceMock, allowanceMock, approvalMock, stakeMock} = mockStakeFiduBannerCalls(
+        const {balanceMock, allowanceMock, approvalMock, stakeMock} = await mockStakeFiduBannerCalls(
           toApproveAmount,
           allowanceAmount,
           notStakedFidu

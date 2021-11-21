@@ -16,7 +16,14 @@ import {
   StakingRewardsLoaded,
 } from "../../ethereum/pool"
 import {User, UserLoaded} from "../../ethereum/user"
-import {blockchain, blockInfo, DEPLOYMENTS, network, recipient, stakingRewardsABI} from "../rewards/__utils__/constants"
+import {
+  blockchain,
+  blockInfo,
+  getDeployments,
+  network,
+  recipient,
+  stakingRewardsAbiPromise,
+} from "../rewards/__utils__/constants"
 import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
 import {
   getDefaultClasses,
@@ -95,7 +102,7 @@ describe("withdrawal form", () => {
 
   beforeEach(async () => {
     jest.spyOn(utils, "getDeployments").mockImplementation(() => {
-      return Promise.resolve(DEPLOYMENTS)
+      return getDeployments()
     })
     setupMocksForAirdrop(undefined) // reset
 
@@ -270,11 +277,12 @@ describe("withdrawal form", () => {
       const poolData = {
         balance: new BigNumber(usdcToAtomic("50000000")),
       }
+      const DEPLOYMENTS = await getDeployments()
       const mockTransaction = mock({
         blockchain,
         transaction: {
           to: DEPLOYMENTS.contracts.StakingRewards.address,
-          api: stakingRewardsABI,
+          api: stakingRewardsAbiPromise,
           method: "unstakeAndWithdrawInFidu",
           params: {tokenId: "1", fiduAmount: "19990871828478113245933"},
         },
@@ -312,6 +320,7 @@ describe("withdrawal form", () => {
       const poolData = {
         balance: new BigNumber(usdcToAtomic("50000000")),
       }
+      const DEPLOYMENTS = await getDeployments()
       const mockTransaction = mock({
         blockchain,
         transaction: {
@@ -355,6 +364,7 @@ describe("withdrawal form", () => {
         balance: new BigNumber(usdcToAtomic("50000000")),
       }
 
+      const DEPLOYMENTS = await getDeployments()
       const mockSeniorPoolTransaction = mock({
         blockchain,
         transaction: {
@@ -368,7 +378,7 @@ describe("withdrawal form", () => {
         blockchain,
         transaction: {
           to: DEPLOYMENTS.contracts.StakingRewards.address,
-          api: stakingRewardsABI,
+          api: stakingRewardsAbiPromise,
           method: "unstakeAndWithdrawInFidu",
           params: {tokenId: "1", fiduAmount: "9990871828478113245933"},
         },
@@ -409,6 +419,7 @@ describe("withdrawal form", () => {
         balance: new BigNumber(usdcToAtomic("50000000")),
       }
 
+      const DEPLOYMENTS = await getDeployments()
       const mockSeniorPoolTransaction = mock({
         blockchain,
         transaction: {
@@ -422,7 +433,7 @@ describe("withdrawal form", () => {
         blockchain,
         transaction: {
           to: DEPLOYMENTS.contracts.StakingRewards.address,
-          api: stakingRewardsABI,
+          api: stakingRewardsAbiPromise,
           method: "unstakeAndWithdrawMultipleInFidu",
           params: {tokenIds: ["2", "1"], fiduAmounts: ["5000000000000000000000", "4999998169337911394299"]},
         },
