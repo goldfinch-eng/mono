@@ -33,6 +33,7 @@ import * as utils from "../../ethereum/utils"
 import {CommunityRewardsLoaded, MerkleDistributorLoaded} from "../../ethereum/communityRewards"
 import {GFILoaded} from "../../ethereum/gfi"
 import {NetworkMonitor} from "../../ethereum/networkMonitor"
+import {GoldfinchConfigData} from "../../ethereum/goldfinchConfig"
 
 mock({
   blockchain: "ethereum",
@@ -52,7 +53,7 @@ function renderWithdrawalForm(
   const store = {
     goldfinchConfig: {
       transactionLimit: new BigNumber(usdcToAtomic("20000")),
-    },
+    } as GoldfinchConfigData,
     stakingRewards,
     pool,
     user,
@@ -165,7 +166,7 @@ describe("withdrawal form", () => {
 
     const formParagraph = await container.getElementsByClassName("paragraph")
     expect(formParagraph[0]?.textContent).toContain(
-      "You have 128.89 GFI ($128.89) that is still vesting until Jan 5, 2023. If you withdraw before then, you might forfeit a portion of your unvested GFI"
+      "You have 128.89 GFI ($128.89) that is still vesting until Dec 29, 2022. If you withdraw before then, you might forfeit a portion of your unvested GFI"
     )
     expect(formParagraph[1]?.textContent).toContain(
       "Also as a reminder, the protocol will deduct a 0.50% fee from your withdrawal amount for protocol reserves."
@@ -256,7 +257,7 @@ describe("withdrawal form", () => {
 
     const formParagraph = await container.getElementsByClassName("paragraph")
     expect(formParagraph[0]?.textContent).toContain(
-      "You have 265.94 GFI ($265.94) that is still vesting until Jan 5, 2023. If you withdraw before then, you might forfeit a portion of your unvested GFI"
+      "You have 265.94 GFI ($265.94) that is still vesting until Dec 29, 2022. If you withdraw before then, you might forfeit a portion of your unvested GFI"
     )
     expect(formParagraph[1]?.textContent).toContain(
       "Also as a reminder, the protocol will deduct a 0.50% fee from your withdrawal amount for protocol reserves."
