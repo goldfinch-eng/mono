@@ -9,7 +9,12 @@ let _deploymentsJson: PlainObject
 
 const getDeploymentsJson = async () => {
   if (!_deploymentsJson) {
-    _deploymentsJson = await import("@goldfinch-eng/protocol/deployments/all_client_test.json")
+    const json = (await import("@goldfinch-eng/protocol/deployments/all_client_test.json" as any)) as unknown
+    if (isPlainObject(json)) {
+      _deploymentsJson = json
+    } else {
+      throw new Error("Failed to import deployments json.")
+    }
   }
   return _deploymentsJson
 }
