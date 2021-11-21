@@ -48,6 +48,8 @@ export interface RewardsMockData {
       2: string
       3: string
     }
+    stakingRewardsBalance?: number
+    stakingRewardsTokenId?: string
   }
   community?: {
     airdrop?: MerkleDistributorGrantInfo
@@ -119,7 +121,11 @@ export function mockUserInitializationContractCalls(
     })
   }
 
-  const stakingRewardsBalance = rewardsMock?.staking ? 1 : 0
+  const stakingRewardsBalance = rewardsMock?.staking
+    ? rewardsMock?.staking.stakingRewardsBalance
+      ? rewardsMock?.staking.stakingRewardsBalance
+      : 1
+    : 0
 
   const callGFIBalanceMock = mock({
     blockchain,
@@ -180,11 +186,16 @@ export function mockUserInitializationContractCalls(
     const totalVestedAt = rewardsMock.staking?.totalVestedAt || "0"
     const positionCurrentEarnRate = rewardsMock.staking?.positionCurrentEarnRate || "750000000000000"
     const currentTimestamp = rewardsMock.staking?.currentTimestamp || DEFAULT_STAKING_REWARDS_START_TIME
-    const stakedEvent = {returnValues: {tokenId: "1", amount: stakedAmount}} as unknown as KnownEventData<
-      typeof STAKED_EVENT
-    >
+    const stakingRewardsTokenId = rewardsMock.staking.stakingRewardsTokenId || "1"
+    const stakedEvents = Array(stakingRewardsBalance)
+      .fill("")
+      .map(
+        (_val, i: number) =>
+          ({
+            returnValues: {tokenId: String(i + 1), amount: stakedAmount},
+          } as unknown as KnownEventData<typeof STAKED_EVENT>)
+      )
     const granted = rewardsMock.staking?.granted || earnedSince
-    const stakingRewardsTokenId = "1"
 
     callTokenOfOwnerByIndexMock = mock({
       blockchain,
@@ -192,7 +203,7 @@ export function mockUserInitializationContractCalls(
         to: stakingRewards.address,
         api: stakingRewardsABI,
         method: "tokenOfOwnerByIndex",
-        params: [recipient, "0"],
+        params: [recipient, String(parseInt(stakingRewardsTokenId, 10) - 1)],
         return: stakingRewardsTokenId,
       },
     })
@@ -233,7 +244,7 @@ export function mockUserInitializationContractCalls(
         [],
         {poolEvents: [], poolTxs: []},
         [],
-        {stakedEvents: {currentBlock: blockInfo, value: [stakedEvent]}, stakingRewardsTxs: []},
+        {stakedEvents: {currentBlock: blockInfo, value: stakedEvents}, stakingRewardsTxs: []},
         [],
         [],
       ])
@@ -415,7 +426,7 @@ export function setupMocksForAirdrop(airdrop: MerkleDistributorGrantInfo | undef
   }
 }
 
-export function assertAllMocksAreCalled(mocks: ContractCallsMocks) {
+export function assertAllMocksAreCalled(mocks: Partial<ContractCallsMocks>) {
   Object.keys(mocks).forEach((key: string) => {
     const mock = mocks[key as keyof typeof mocks]
     if (mock) {

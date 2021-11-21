@@ -9,6 +9,7 @@ import web3 from "../../web3"
 import {
   CapitalProvider,
   fetchCapitalProviderData,
+  mockGetWeightedAverageSharePrice,
   PoolData,
   SeniorPool,
   SeniorPoolLoaded,
@@ -20,6 +21,7 @@ import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
 import {
   getDefaultClasses,
   setupClaimableStakingReward,
+  setupMultiplePartiallyClaimedStakingRewards,
   setupPartiallyClaimedStakingReward,
 } from "../rewards/__utils__/scenarios"
 import {assertWithLoadedInfo, Loaded} from "../../types/loadable"
@@ -103,8 +105,7 @@ describe("withdrawal form", () => {
       loaded: true,
       value: {
         currentBlock: blockInfo,
-        // @ts-ignore
-        poolData: {},
+        poolData: {} as PoolData,
         isPaused: false,
       },
     }
@@ -130,13 +131,13 @@ describe("withdrawal form", () => {
   })
 
   afterEach(() => {
+    mockGetWeightedAverageSharePrice(undefined)
     jest.clearAllMocks()
   })
 
   it("shows withdrawal form", async () => {
     const poolData = {
       balance: new BigNumber(usdcToAtomic("50000000")),
-      loaded: true,
     }
     renderWithdrawalForm(poolData, capitalProvider)
 
@@ -147,7 +148,7 @@ describe("withdrawal form", () => {
     expect(await screen.findByText("Withdraw")).toBeVisible()
   })
 
-  it("show withdrawal form with claimable staking reward", async () => {
+  it("shows withdrawal form, to user with claimable staking reward", async () => {
     const {user} = await setupClaimableStakingReward(goldfinchProtocol, seniorPool)
 
     mockCapitalProviderCalls()
@@ -155,7 +156,6 @@ describe("withdrawal form", () => {
 
     const poolData = {
       balance: new BigNumber(usdcToAtomic("50000000")),
-      loaded: true,
     }
     const {container} = renderWithdrawalForm(poolData, capitalProvider)
 
@@ -167,14 +167,14 @@ describe("withdrawal form", () => {
 
     const formParagraph = await container.getElementsByClassName("paragraph")
     expect(formParagraph[0]?.textContent).toContain(
-      "You have 128.89 GFI ($128.89) that is still vesting until Dec 29, 2022. If you withdraw before then, you might forfeit a portion of your unvested GFI"
+      "You have 128.89 GFI ($128.89) that is still vesting until Dec 29, 2022. If you withdraw before then, you might forfeit a portion of your unvested GFI."
     )
     expect(formParagraph[1]?.textContent).toContain(
       "Also as a reminder, the protocol will deduct a 0.50% fee from your withdrawal amount for protocol reserves."
     )
   })
 
-  it("fills max amount with transactionLimit when using claimable staking reward", async () => {
+  it("fills max amount with `transactionLimit` when appropriate", async () => {
     const {user} = await setupClaimableStakingReward(goldfinchProtocol, seniorPool)
 
     mockCapitalProviderCalls()
@@ -182,7 +182,6 @@ describe("withdrawal form", () => {
 
     const poolData = {
       balance: new BigNumber(usdcToAtomic("50000000")),
-      loaded: true,
     }
     renderWithdrawalForm(poolData, capitalProvider)
 
@@ -195,7 +194,7 @@ describe("withdrawal form", () => {
     })
   })
 
-  it("fills max amount with pool balance when using claimable staking reward", async () => {
+  it("fills max amount with pool balance when appropriate", async () => {
     const {user} = await setupClaimableStakingReward(goldfinchProtocol, seniorPool)
 
     mockCapitalProviderCalls()
@@ -203,7 +202,6 @@ describe("withdrawal form", () => {
 
     const poolData = {
       balance: new BigNumber(usdcToAtomic("10000")),
-      loaded: true,
     }
     renderWithdrawalForm(poolData, capitalProvider)
 
@@ -216,7 +214,7 @@ describe("withdrawal form", () => {
     })
   })
 
-  it("fills max amount with availableAmount when using claimable staking reward", async () => {
+  it("fills max amount with `availableToWithdrawInDollars` when appropriate", async () => {
     const {user} = await setupClaimableStakingReward(goldfinchProtocol, seniorPool)
 
     mockCapitalProviderCalls()
@@ -225,7 +223,6 @@ describe("withdrawal form", () => {
 
     const poolData = {
       balance: new BigNumber(usdcToAtomic("50000000")),
-      loaded: true,
     }
     renderWithdrawalForm(poolData, capitalProvider)
 
@@ -238,7 +235,7 @@ describe("withdrawal form", () => {
     })
   })
 
-  it("shows withdrawal form with partially claimed staking reward", async () => {
+  it("shows withdrawal form, to user with partially claimed staking reward", async () => {
     const {user} = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool)
 
     mockCapitalProviderCalls()
@@ -246,7 +243,6 @@ describe("withdrawal form", () => {
 
     const poolData = {
       balance: new BigNumber(usdcToAtomic("50000000")),
-      loaded: true,
     }
     const {container} = renderWithdrawalForm(poolData, capitalProvider)
 
@@ -266,14 +262,13 @@ describe("withdrawal form", () => {
   })
 
   describe("withdrawal transaction(s)", () => {
-    it("clicking button with all fidu staked triggers `unstakeAndWithdrawInFidu()`", async () => {
+    it("clicking button with all FIDU staked in one position triggers `unstakeAndWithdrawInFidu()`", async () => {
       const {user, stakingRewards} = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool)
 
       mockCapitalProviderCalls(undefined, "0")
       const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
       const poolData = {
         balance: new BigNumber(usdcToAtomic("50000000")),
-        loaded: true,
       }
       const mockTransaction = mock({
         blockchain,
@@ -309,14 +304,13 @@ describe("withdrawal form", () => {
       expect(mockTransaction).toHaveBeenCalled()
     })
 
-    it("clicking button with all fidu unstaked triggers `withdrawInFidu()` ", async () => {
+    it("clicking button with all FIDU unstaked triggers `withdrawInFidu()` ", async () => {
       const {user, stakingRewards} = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool)
 
       mockCapitalProviderCalls(undefined, "500000000000000000000000")
       const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
       const poolData = {
         balance: new BigNumber(usdcToAtomic("50000000")),
-        loaded: true,
       }
       const mockTransaction = mock({
         blockchain,
@@ -352,14 +346,13 @@ describe("withdrawal form", () => {
       expect(mockTransaction).toHaveBeenCalled()
     })
 
-    it("clicking button with fidu unstaked and staked triggers `withdrawInFidu()` and `unstakeAndWithdrawInFidu()`", async () => {
+    it("clicking button with some FIDU unstaked and some FIDU staked triggers `withdrawInFidu()` and then `unstakeAndWithdrawInFidu()`, when staked amount in one position suffices for withdrawal amount", async () => {
       const {user, stakingRewards} = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool)
 
       mockCapitalProviderCalls(undefined, "10000000000000000000000")
       const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
       const poolData = {
         balance: new BigNumber(usdcToAtomic("50000000")),
-        loaded: true,
       }
 
       const mockSeniorPoolTransaction = mock({
@@ -401,6 +394,61 @@ describe("withdrawal form", () => {
         fireEvent.click(screen.getByText("Submit"))
       })
 
+      // TODO How to establish that this was called first?
+      expect(mockSeniorPoolTransaction).toHaveBeenCalled()
+      expect(mockStakingRewardsTransaction).toHaveBeenCalled()
+    })
+
+    it("clicking button with some FIDU unstaked and some FIDU staked triggers `withdrawInFidu()` and then `unstakeAndWithdrawMultipleInFidu()`, when staked amount across multiple positions is necessary to cover withdrawal amount", async () => {
+      const {user, stakingRewards} = await setupMultiplePartiallyClaimedStakingRewards(goldfinchProtocol, seniorPool)
+
+      const numSharesNotStaked = "100000000000000000000"
+      mockCapitalProviderCalls(undefined, numSharesNotStaked)
+      const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
+      const poolData = {
+        balance: new BigNumber(usdcToAtomic("50000000")),
+      }
+
+      const mockSeniorPoolTransaction = mock({
+        blockchain,
+        transaction: {
+          to: DEPLOYMENTS.contracts.SeniorPool.address,
+          api: DEPLOYMENTS.contracts.SeniorPool.abi,
+          method: "withdrawInFidu",
+          params: numSharesNotStaked,
+        },
+      })
+      const mockStakingRewardsTransaction = mock({
+        blockchain,
+        transaction: {
+          to: DEPLOYMENTS.contracts.StakingRewards.address,
+          api: stakingRewardsABI,
+          method: "unstakeAndWithdrawMultipleInFidu",
+          params: {tokenIds: ["2", "1"], fiduAmounts: ["5000000000000000000000", "4999998169337911394299"]},
+        },
+      })
+      web3.eth.getGasPrice = () => {
+        return Promise.resolve("100000000")
+      }
+      const refreshCurrentBlock = jest.fn()
+      renderWithdrawalForm(
+        poolData,
+        capitalProvider,
+        stakingRewards,
+        seniorPool,
+        refreshCurrentBlock,
+        networkMonitor,
+        user
+      )
+
+      fireEvent.change(screen.getByPlaceholderText("0"), {target: {value: "10,104.61"}})
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText("0")).toHaveProperty("value", "10,104.61")
+        expect(screen.getByText("Submit")).not.toBeDisabled()
+        fireEvent.click(screen.getByText("Submit"))
+      })
+
+      // TODO How to establish that this was called first?
       expect(mockSeniorPoolTransaction).toHaveBeenCalled()
       expect(mockStakingRewardsTransaction).toHaveBeenCalled()
     })

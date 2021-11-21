@@ -14,9 +14,11 @@ import {
   assertAllMocksAreCalled,
   DEFAULT_STAKING_REWARDS_START_TIME,
   DEFAULT_STAKING_REWARDS_END_TIME,
+  RewardsMockData,
 } from "./mocks"
 import {GoldfinchProtocol} from "../../../ethereum/GoldfinchProtocol"
 import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
+import omit from "lodash/omit"
 
 export async function setupNewStakingReward(goldfinchProtocol: GoldfinchProtocol, seniorPool: SeniorPoolLoaded) {
   const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
@@ -259,6 +261,92 @@ export async function setupPartiallyClaimedStakingReward(
 
   assertWithLoadedInfo(user)
   assertAllMocksAreCalled(mocks)
+  return {gfi, stakingRewards, communityRewards, merkleDistributor, user}
+}
+
+export async function setupMultiplePartiallyClaimedStakingRewards(
+  goldfinchProtocol: GoldfinchProtocol,
+  seniorPool: SeniorPoolLoaded,
+  gfiBalance?: string
+) {
+  const updatedBlockInfo = {...blockInfo}
+  updatedBlockInfo.timestamp = 1641750579
+
+  const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
+  const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
+  const amount = "5000000000000000000000"
+  const leverageMultiplier = "1000000000000000000"
+  const lockedUntil = "0"
+  const totalUnvested = "138582358057838660579"
+  const totalVested = "821641942161339421"
+  const totalPreviouslyVested = "0"
+  const totalClaimed = "821641942161339421"
+  const mockedPositionRes1: NonNullable<NonNullable<RewardsMockData["staking"]>["positionsRes"]> = [
+    amount,
+    [
+      totalUnvested,
+      totalVested,
+      totalPreviouslyVested,
+      totalClaimed,
+      DEFAULT_STAKING_REWARDS_START_TIME,
+      DEFAULT_STAKING_REWARDS_END_TIME,
+    ],
+    leverageMultiplier,
+    lockedUntil,
+  ]
+  const mockedStaking1: NonNullable<RewardsMockData["staking"]> = {
+    currentTimestamp: String(updatedBlockInfo.timestamp),
+    earnedSinceLastCheckpoint: "129600000000000000000",
+    totalVestedAt: "3059493996955859969",
+    granted: "269004000000000000000",
+    positionsRes: mockedPositionRes1,
+    stakingRewardsBalance: 2,
+    stakingRewardsTokenId: "1",
+  }
+  const mockedPositionRes2: NonNullable<NonNullable<RewardsMockData["staking"]>["positionsRes"]> = [
+    amount,
+    [
+      totalUnvested,
+      totalVested,
+      totalPreviouslyVested,
+      totalClaimed,
+      DEFAULT_STAKING_REWARDS_END_TIME,
+      String(
+        parseInt(DEFAULT_STAKING_REWARDS_END_TIME, 10) +
+          (parseInt(DEFAULT_STAKING_REWARDS_END_TIME, 10) - parseInt(DEFAULT_STAKING_REWARDS_START_TIME, 10))
+      ),
+    ],
+    leverageMultiplier,
+    lockedUntil,
+  ]
+  const mockedStaking2 = {
+    ...mockedStaking1,
+    positionsRes: mockedPositionRes2,
+    stakingRewardsTokenId: "2",
+  }
+  const mocks1 = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, merkleDistributor, {
+    staking: mockedStaking1,
+  })
+  const mocks2 = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, merkleDistributor, {
+    staking: mockedStaking2,
+    gfi: {gfiBalance},
+  })
+  await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, updatedBlockInfo)
+
+  assertWithLoadedInfo(user)
+  assertAllMocksAreCalled(
+    omit(mocks1, [
+      "callGFIBalanceMock",
+      "callUSDCBalanceMock",
+      "callUSDCAllowanceMock",
+      "callStakingRewardsBalanceMock",
+      "callCommunityRewardsBalanceMock",
+      "callCommunityRewardsTokenOfOwnerMock",
+      "callGrantsMock",
+      "callClaimableRewardsMock",
+    ])
+  )
+  assertAllMocksAreCalled(mocks2)
   return {gfi, stakingRewards, communityRewards, merkleDistributor, user}
 }
 
