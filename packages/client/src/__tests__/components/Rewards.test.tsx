@@ -1,7 +1,7 @@
 import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
 import "@testing-library/jest-dom"
 import {mock, resetMocks} from "depay-web3-mock"
-import {render, screen, fireEvent} from "@testing-library/react"
+import {render, screen, fireEvent, waitFor} from "@testing-library/react"
 import {BrowserRouter as Router} from "react-router-dom"
 import {AppContext} from "../../App"
 import {CommunityRewardsLoaded, MerkleDistributorLoaded} from "../../ethereum/communityRewards"
@@ -33,6 +33,7 @@ import {
 } from "../rewards/__utils__/scenarios"
 import {ThemeProvider} from "styled-components"
 import {defaultTheme} from "../../styles/theme"
+import {NetworkMonitor} from "../../ethereum/networkMonitor"
 
 mock({
   blockchain: "ethereum",
@@ -45,7 +46,9 @@ function renderRewards(
   gfi: GFILoaded | undefined,
   user: UserLoaded | undefined,
   merkleDistributor: MerkleDistributorLoaded | undefined,
-  communityRewards: CommunityRewardsLoaded | undefined
+  communityRewards: CommunityRewardsLoaded | undefined,
+  refreshCurrentBlock?: () => Promise<void>,
+  networkMonitor?: NetworkMonitor
 ) {
   const store = {
     currentBlock: blockInfo,
@@ -55,6 +58,8 @@ function renderRewards(
     user,
     merkleDistributor,
     communityRewards,
+    refreshCurrentBlock,
+    networkMonitor,
   }
 
   return render(
@@ -793,5 +798,141 @@ describe("Rewards list and detail", () => {
       "href",
       `https://${network.name}.etherscan.io/address/${communityRewards.address}`
     )
+  })
+
+  describe("rewards transactions", () => {
+    it("clicking button triggers sending `acceptGrant()`", async () => {
+      const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupAirdrop(
+        goldfinchProtocol,
+        seniorPool
+      )
+      const networkMonitor = {
+        addPendingTX: () => {},
+        watch: () => {},
+        markTXErrored: () => {},
+      } as unknown as NetworkMonitor
+      const refreshCurrentBlock = jest.fn()
+
+      renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards, refreshCurrentBlock, networkMonitor)
+
+      expect(await screen.findByText("Flight Academy")).toBeVisible()
+      expect(await screen.findByText("Accept")).toBeVisible()
+
+      web3.eth.getGasPrice = () => {
+        return Promise.resolve("100000000")
+      }
+      const DEPLOYMENTS = await getDeployments()
+      const acceptMock = mock({
+        blockchain,
+        transaction: {
+          to: DEPLOYMENTS.contracts.MerkleDistributor.address,
+          api: DEPLOYMENTS.contracts.MerkleDistributor.abi,
+          method: "acceptGrant",
+          params: [
+            "0",
+            "1000000000000000000000",
+            "0",
+            "0",
+            "1",
+            [
+              "0x0000000000000000000000000000000000000000000000000000000000000000",
+              "0x0000000000000000000000000000000000000000000000000000000000000000",
+              "0x0000000000000000000000000000000000000000000000000000000000000000",
+            ],
+          ],
+        },
+      })
+
+      fireEvent.click(screen.getByText("Accept"))
+      await waitFor(async () => {
+        expect(await screen.getByText("Accepting...")).toBeInTheDocument()
+      })
+      expect(acceptMock).toHaveBeenCalled()
+    })
+
+    it("clicking community rewards button triggers sending `getReward()`", async () => {
+      const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupClaimableCommunityReward(
+        goldfinchProtocol,
+        seniorPool
+      )
+      const networkMonitor = {
+        addPendingTX: () => {},
+        watch: () => {},
+        markTXErrored: () => {},
+      } as unknown as NetworkMonitor
+      const refreshCurrentBlock = jest.fn()
+
+      renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards, refreshCurrentBlock, networkMonitor)
+
+      expect(await screen.findByText("Flight Academy")).toBeVisible()
+      expect(await screen.findByText("Claim GFI")).toBeVisible()
+
+      web3.eth.getGasPrice = () => {
+        return Promise.resolve("100000000")
+      }
+      const DEPLOYMENTS = await getDeployments()
+      const getRewardMock = mock({
+        blockchain,
+        transaction: {
+          to: DEPLOYMENTS.contracts.CommunityRewards.address,
+          api: DEPLOYMENTS.contracts.CommunityRewards.abi,
+          method: "getReward",
+          params: "1",
+        },
+      })
+
+      fireEvent.click(screen.getByText("Claim GFI"))
+      await waitFor(async () => {
+        expect(screen.getByText("Submit")).not.toBeDisabled()
+      })
+      fireEvent.click(screen.getByText("Submit"))
+      await waitFor(async () => {
+        expect(await screen.getByText("Submitting...")).toBeInTheDocument()
+      })
+
+      expect(getRewardMock).toHaveBeenCalled()
+    })
+
+    it("clicking staking reward button triggers sending `getReward()`", async () => {
+      const {gfi, stakingRewards, communityRewards, merkleDistributor, user} = await setupClaimableStakingReward(
+        goldfinchProtocol,
+        seniorPool
+      )
+      const networkMonitor = {
+        addPendingTX: () => {},
+        watch: () => {},
+        markTXErrored: () => {},
+      } as unknown as NetworkMonitor
+      const refreshCurrentBlock = jest.fn()
+
+      renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards, refreshCurrentBlock, networkMonitor)
+
+      expect(await screen.findByText("Claim GFI")).toBeVisible()
+
+      web3.eth.getGasPrice = () => {
+        return Promise.resolve("100000000")
+      }
+      const DEPLOYMENTS = await getDeployments()
+      const getRewardMock = mock({
+        blockchain,
+        transaction: {
+          to: DEPLOYMENTS.contracts.StakingRewards.address,
+          api: DEPLOYMENTS.contracts.StakingRewards.abi,
+          method: "getReward",
+          params: "1",
+        },
+      })
+
+      fireEvent.click(screen.getByText("Claim GFI"))
+      await waitFor(async () => {
+        expect(screen.getByText("Submit")).not.toBeDisabled()
+      })
+      fireEvent.click(screen.getByText("Submit"))
+      await waitFor(async () => {
+        expect(await screen.getByText("Submitting...")).toBeInTheDocument()
+      })
+
+      expect(getRewardMock).toHaveBeenCalled()
+    })
   })
 })
