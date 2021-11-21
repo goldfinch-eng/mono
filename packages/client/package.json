@@ -57,7 +57,7 @@
     "build": "react-app-rewired build",
     "test": "cd ../protocol && npm run deploy-for-client-test && cd ../client && react-app-rewired test --env=jsdom",
     "eject": "react-scripts eject",
-    "lint": "npx eslint .",
+    "lint": "npm run tsc && npx eslint .",
     "lint:fix": "eslint . --fix && prettier . --write",
     "pre-commit": "lint-staged",
     "tsc": "tsc",

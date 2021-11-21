@@ -660,7 +660,7 @@ export class User {
       stakingRewardsEventsAndTxs,
       communityRewardsTxs,
       merkleDistributorTxs,
-    ] = await this.fetchTxs(usdc, pool, stakingRewards, communityRewards, merkleDistributor, currentBlock)
+    ] = await this._fetchTxs(usdc, pool, stakingRewards, communityRewards, merkleDistributor, currentBlock)
     const {poolEvents, poolTxs} = poolEventsAndTxs
     const {stakedEvents, stakingRewardsTxs} = stakingRewardsEventsAndTxs
     const pastTxs = _.reverse(
@@ -678,7 +678,7 @@ export class User {
       )
     )
 
-    const golistStatus = await this.fetchGolistStatus(this.address, currentBlock)
+    const golistStatus = await this._fetchGolistStatus(this.address, currentBlock)
     const goListed = golistStatus.golisted
     const legacyGolisted = golistStatus.legacyGolisted
     const hasUID = golistStatus.hasUID
@@ -737,7 +737,7 @@ export class User {
     }
   }
 
-  private async fetchTxs(
+  async _fetchTxs(
     usdc: ERC20,
     pool: SeniorPoolLoaded,
     stakingRewards: StakingRewardsLoaded,
@@ -761,7 +761,7 @@ export class User {
                 case WITHDRAWAL_MADE_EVENT:
                   return WITHDRAW_FROM_SENIOR_POOL_TX_TYPE
                 default:
-                  assertUnreachable(eventData.event)
+                  return assertUnreachable(eventData.event)
               }
             },
             parseAmount: (eventData: KnownEventData<PoolEventType>) => {
@@ -779,7 +779,7 @@ export class User {
                   }
                 }
                 default:
-                  assertUnreachable(eventData.event)
+                  return assertUnreachable(eventData.event)
               }
             },
           }),
@@ -822,7 +822,7 @@ export class User {
                 case REWARD_PAID_EVENT:
                   return CLAIM_TX_TYPE
                 default:
-                  assertUnreachable(eventData.event)
+                  return assertUnreachable(eventData.event)
               }
             },
             parseAmount: (eventData: KnownEventData<StakingRewardsEventType>) => {
@@ -854,7 +854,7 @@ export class User {
                     units: "gfi",
                   }
                 default:
-                  assertUnreachable(eventData.event)
+                  return assertUnreachable(eventData.event)
               }
             },
           }),
@@ -869,7 +869,7 @@ export class User {
     return !allowance || allowance.gte(UNLOCK_THRESHOLD)
   }
 
-  private async fetchGolistStatus(address: string, currentBlock: BlockInfo) {
+  async _fetchGolistStatus(address: string, currentBlock: BlockInfo) {
     if (process.env.REACT_APP_ENFORCE_GO_LIST || this.networkId === MAINNET) {
       const config = this.goldfinchProtocol.getContract<GoldfinchConfig>("GoldfinchConfig")
       const legacyGolisted = await config.methods.goList(address).call(undefined, currentBlock.number)
@@ -928,7 +928,7 @@ async function getAndTransformUSDCEvents(
         case APPROVAL_EVENT:
           return USDC_APPROVAL_TX_TYPE
         default:
-          assertUnreachable(eventData.event)
+          return assertUnreachable(eventData.event)
       }
     },
     parseAmount: (eventData: KnownEventData<ApprovalEventType>) => {
@@ -940,7 +940,7 @@ async function getAndTransformUSDCEvents(
           }
         }
         default:
-          assertUnreachable(eventData.event)
+          return assertUnreachable(eventData.event)
       }
     },
   })
@@ -963,7 +963,7 @@ async function getAndTransformFIDUEvents(
         case APPROVAL_EVENT:
           return FIDU_APPROVAL_TX_TYPE
         default:
-          assertUnreachable(eventData.event)
+          return assertUnreachable(eventData.event)
       }
     },
     parseAmount: (eventData: KnownEventData<ApprovalEventType>) => {
@@ -975,7 +975,7 @@ async function getAndTransformFIDUEvents(
           }
         }
         default:
-          assertUnreachable(eventData.event)
+          return assertUnreachable(eventData.event)
       }
     },
   })
@@ -1014,7 +1014,7 @@ async function getAndTransformCreditDeskEvents(
         case DRAWDOWN_MADE_EVENT:
           return BORROW_TX_TYPE
         default:
-          assertUnreachable(eventData.event)
+          return assertUnreachable(eventData.event)
       }
     },
     parseAmount: (eventData: KnownEventData<CreditDeskEventType>) => {
@@ -1030,7 +1030,7 @@ async function getAndTransformCreditDeskEvents(
             units: "usdc",
           }
         default:
-          assertUnreachable(eventData.event)
+          return assertUnreachable(eventData.event)
       }
     },
   })
@@ -1139,7 +1139,7 @@ async function getAndTransformCommunityRewardsEvents(
             case REWARD_PAID_EVENT:
               return CLAIM_TX_TYPE
             default:
-              assertUnreachable(eventData.event)
+              return assertUnreachable(eventData.event)
           }
         },
         parseAmount: (eventData: KnownEventData<CommunityRewardsEventType>) => {
@@ -1150,7 +1150,7 @@ async function getAndTransformCommunityRewardsEvents(
                 units: "gfi",
               }
             default:
-              assertUnreachable(eventData.event)
+              return assertUnreachable(eventData.event)
           }
         },
       })
@@ -1170,7 +1170,7 @@ async function getAndTransformMerkleDistributorEvents(
             case GRANT_ACCEPTED_EVENT:
               return ACCEPT_TX_TYPE
             default:
-              assertUnreachable(eventData.event)
+              return assertUnreachable(eventData.event)
           }
         },
         parseAmount: (eventData: KnownEventData<MerkleDistributorEventType>) => {
@@ -1181,7 +1181,7 @@ async function getAndTransformMerkleDistributorEvents(
                 units: "gfi",
               }
             default:
-              assertUnreachable(eventData.event)
+              return assertUnreachable(eventData.event)
           }
         },
       })

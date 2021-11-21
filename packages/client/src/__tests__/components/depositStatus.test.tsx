@@ -14,7 +14,7 @@ import {
   SeniorPoolLoaded,
 } from "../../ethereum/pool"
 import {User} from "../../ethereum/user"
-import {blockInfo, DEPLOYMENTS, network, recipient} from "../rewards/__utils__/constants"
+import {blockInfo, getDeployments, network, recipient} from "../rewards/__utils__/constants"
 import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
 import {
   getDefaultClasses,
@@ -31,12 +31,13 @@ import {
 import * as utils from "../../ethereum/utils"
 import DepositStatus from "../../components/depositStatus"
 import {toDisplayPercent} from "../rewards/__utils__/display"
+import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
 
 mock({
   blockchain: "ethereum",
 })
 
-web3.setProvider(global.ethereum)
+web3.setProvider((global.window as any).ethereum)
 
 function renderDepositStatus(poolData: Partial<PoolData>, capitalProvider?: Loaded<CapitalProvider>) {
   const store = {}
@@ -59,7 +60,7 @@ describe("Senior pool page deposit status", () => {
 
   beforeEach(async () => {
     jest.spyOn(utils, "getDeployments").mockImplementation(() => {
-      return DEPLOYMENTS
+      return getDeployments()
     })
     setupMocksForAirdrop(undefined) // reset
 
@@ -85,14 +86,14 @@ describe("Senior pool page deposit status", () => {
     communityRewards = result.communityRewards
     merkleDistributor = result.merkleDistributor
 
-    user = new User(recipient, network.name, undefined, goldfinchProtocol, undefined)
-    mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, merkleDistributor, {})
+    user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
+    await mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, merkleDistributor, {})
     await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
 
     assertWithLoadedInfo(user)
     assertWithLoadedInfo(seniorPool)
 
-    mockCapitalProviderCalls()
+    await mockCapitalProviderCalls()
     capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
   })
 
@@ -133,7 +134,7 @@ describe("Senior pool page deposit status", () => {
   it("shows deposit status with senior pool and claimable staking reward", async () => {
     const {gfi, stakingRewards, user} = await setupClaimableStakingReward(goldfinchProtocol, seniorPool)
 
-    mockCapitalProviderCalls()
+    await mockCapitalProviderCalls()
     const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
 
     const stakedSeniorPoolBalanceInDollars = capitalProvider.value.stakedSeniorPoolBalanceInDollars
@@ -176,7 +177,7 @@ describe("Senior pool page deposit status", () => {
   it("shows deposit status with senior pool and vesting staking reward", async () => {
     const {gfi, stakingRewards, user} = await setupNewStakingReward(goldfinchProtocol, seniorPool)
 
-    mockCapitalProviderCalls()
+    await mockCapitalProviderCalls()
     const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
 
     const stakedSeniorPoolBalanceInDollars = capitalProvider.value.stakedSeniorPoolBalanceInDollars
@@ -219,7 +220,7 @@ describe("Senior pool page deposit status", () => {
   it("shows deposit status with senior pool and partially claimed staking reward", async () => {
     const {gfi, stakingRewards, user} = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool)
 
-    mockCapitalProviderCalls()
+    await mockCapitalProviderCalls()
     const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
 
     const stakedSeniorPoolBalanceInDollars = capitalProvider.value.stakedSeniorPoolBalanceInDollars

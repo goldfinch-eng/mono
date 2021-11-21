@@ -1,44 +1,83 @@
-import deployments from "@goldfinch-eng/protocol/deployments/all_client_test.json"
+import {genIsArrayOf, isPlainObject, PlainObject} from "@goldfinch-eng/utils/src/type"
 
 export const blockchain = "ethereum"
 export const recipient = "0x0000000000000000000000000000000000000001"
 export const network = {name: "localhost", supported: true}
 export const blockInfo = {number: 94, timestamp: 1640783491}
 
-const getAbi = (contractName: string) => {
-  const contract = deployments["31337"].hardhat.contracts[contractName]
-  if (contract) {
+let _deploymentsJson: PlainObject
+
+const getDeploymentsJson = async () => {
+  if (!_deploymentsJson) {
+    const json = (await import("@goldfinch-eng/protocol/deployments/all_client_test.json" as any)) as unknown
+    if (isPlainObject(json)) {
+      _deploymentsJson = json
+    } else {
+      throw new Error("Failed to import deployments json.")
+    }
+  }
+  return _deploymentsJson
+}
+
+const isArrayOfPlainObject = genIsArrayOf(isPlainObject)
+const getAbi = async (contractName: string): Promise<PlainObject[]> => {
+  const deploymentsJson = await getDeploymentsJson()
+  const contract = (deploymentsJson as any)["31337"].hardhat.contracts[contractName]
+  if (contract && isArrayOfPlainObject(contract.abi)) {
     return contract.abi
   } else {
     throw new Error(`Failed to identify deployment info for contract: ${contractName}`)
   }
 }
 
-export const stakingRewardsABI = getAbi("StakingRewards")
+export const getStakingRewardsAbi = () => getAbi("StakingRewards")
 
-export const merkleDistributorABI = getAbi("MerkleDistributor")
+export const getMerkleDistributorAbi = () => getAbi("MerkleDistributor")
 
-export const communityRewardsABI = getAbi("CommunityRewards")
+export const getCommunityRewardsAbi = () => getAbi("CommunityRewards")
 
-export const gfiABI = getAbi("GFI")
+export const getGfiAbi = () => getAbi("GFI")
 
-export const seniorPoolABI = getAbi("SeniorPool")
+export const getSeniorPoolAbi = () => getAbi("SeniorPool")
 
-export const fiduABI = getAbi("Fidu")
+export const getFiduAbi = () => getAbi("Fidu")
 
-export const poolABI = getAbi("Pool")
+export const getPoolAbi = () => getAbi("Pool")
 
-export const erc20ABI = getAbi("TestERC20")
+export const getErc20Abi = () => getAbi("TestERC20")
 
-export const DEPLOYMENTS = {
-  contracts: {
-    StakingRewards: {address: "0x0000000000000000000000000000000000000009", abi: stakingRewardsABI},
-    CommunityRewards: {address: "0x0000000000000000000000000000000000000008", abi: communityRewardsABI},
-    MerkleDistributor: {address: "0x0000000000000000000000000000000000000007", abi: merkleDistributorABI},
-    GFI: {address: "0x0000000000000000000000000000000000000006", abi: gfiABI},
-    SeniorPool: {address: "0x0000000000000000000000000000000000000005", abi: seniorPoolABI},
-    Fidu: {address: "0x0000000000000000000000000000000000000004", abi: fiduABI},
-    Pool: {address: "0x0000000000000000000000000000000000000003", abi: poolABI},
-    TestERC20: {address: "0x0000000000000000000000000000000000000002", abi: erc20ABI},
-  },
+type ContractName =
+  | "StakingRewards"
+  | "CommunityRewards"
+  | "MerkleDistributor"
+  | "GFI"
+  | "SeniorPool"
+  | "Fidu"
+  | "Pool"
+  | "TestERC20"
+type Deployments = {
+  contracts: Record<ContractName, {address: string; abi: PlainObject[]}>
+}
+
+let _deployments: Deployments
+
+export const getDeployments = async () => {
+  if (!_deployments) {
+    _deployments = {
+      contracts: {
+        StakingRewards: {address: "0x0000000000000000000000000000000000000009", abi: await getStakingRewardsAbi()},
+        CommunityRewards: {address: "0x0000000000000000000000000000000000000008", abi: await getCommunityRewardsAbi()},
+        MerkleDistributor: {
+          address: "0x0000000000000000000000000000000000000007",
+          abi: await getMerkleDistributorAbi(),
+        },
+        GFI: {address: "0x0000000000000000000000000000000000000006", abi: await getGfiAbi()},
+        SeniorPool: {address: "0x0000000000000000000000000000000000000005", abi: await getSeniorPoolAbi()},
+        Fidu: {address: "0x0000000000000000000000000000000000000004", abi: await getFiduAbi()},
+        Pool: {address: "0x0000000000000000000000000000000000000003", abi: await getPoolAbi()},
+        TestERC20: {address: "0x0000000000000000000000000000000000000002", abi: await getErc20Abi()},
+      },
+    }
+  }
+  return _deployments
 }

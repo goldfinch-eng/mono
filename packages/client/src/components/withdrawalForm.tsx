@@ -89,7 +89,6 @@ function WithdrawalForm(props: WithdrawalFormProps) {
         )}) than are withdrawable (${props.capitalProvider.shares.aggregates.withdrawable.toString(10)}).`
       )
     }
-
     let withdrawalFiduAmountRemaining = withdrawalFiduAmount
 
     // If user holds any unstaked FIDU, withdraw that first. Prioritizing unstaked FIDU in this
@@ -211,7 +210,6 @@ function WithdrawalForm(props: WithdrawalFormProps) {
 
   function action({transactionAmount}) {
     assertNonNullable(stakingRewards)
-
     const withdrawalAmountString = usdcToAtomic(transactionAmount)
     const withdrawalAmount = new BigNumber(withdrawalAmountString)
     const info = getWithdrawalInfo(withdrawalAmount)
@@ -402,7 +400,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
   return (
     <TransactionForm
       title="Withdraw"
-      headerMessage={`Available to withdraw: ${displayDollars(availableToWithdrawInDollars)}`}
+      headerMessage={`Available to withdraw: ${displayDollars(props.capitalProvider?.availableToWithdrawInDollars)}`}
       render={renderForm}
       closeForm={props.closeForm}
     />

@@ -13,7 +13,7 @@ import * as utils from "../../ethereum/utils"
 import Rewards from "../../pages/rewards"
 import {assertWithLoadedInfo} from "../../types/loadable"
 import web3 from "../../web3"
-import {blockchain, blockInfo, DEPLOYMENTS, network, recipient} from "../rewards/__utils__/constants"
+import {blockchain, blockInfo, getDeployments, network, recipient} from "../rewards/__utils__/constants"
 import {
   assertAllMocksAreCalled,
   mockUserInitializationContractCalls,
@@ -83,7 +83,7 @@ async function getUserLoaded(
   rewardsMock?: RewardsMockData
 ): Promise<UserLoaded> {
   const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
-  const mocks = mockUserInitializationContractCalls(
+  const mocks = await mockUserInitializationContractCalls(
     user,
     stakingRewards,
     gfi,
@@ -106,7 +106,7 @@ describe("Rewards portfolio overview", () => {
   beforeEach(() => mock({blockchain, accounts: {return: [recipient]}}))
   beforeEach(async () => {
     jest.spyOn(utils, "getDeployments").mockImplementation(() => {
-      return Promise.resolve(DEPLOYMENTS)
+      return getDeployments()
     })
     setupMocksForAirdrop(undefined) // reset
 
@@ -473,7 +473,7 @@ describe("Rewards list and detail", () => {
   beforeEach(() => mock({blockchain, accounts: {return: [recipient]}}))
   beforeEach(async () => {
     jest.spyOn(utils, "getDeployments").mockImplementation(() => {
-      return Promise.resolve(DEPLOYMENTS)
+      return getDeployments()
     })
     setupMocksForAirdrop(undefined) // reset
 
@@ -495,7 +495,7 @@ describe("Rewards list and detail", () => {
     const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
 
     const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
-    const mocks = mockUserInitializationContractCalls(
+    const mocks = await mockUserInitializationContractCalls(
       user,
       stakingRewards,
       gfi,
@@ -821,6 +821,7 @@ describe("Rewards list and detail", () => {
       web3.eth.getGasPrice = () => {
         return Promise.resolve("100000000")
       }
+      const DEPLOYMENTS = await getDeployments()
       const acceptMock = mock({
         blockchain,
         transaction: {
@@ -869,6 +870,7 @@ describe("Rewards list and detail", () => {
       web3.eth.getGasPrice = () => {
         return Promise.resolve("100000000")
       }
+      const DEPLOYMENTS = await getDeployments()
       const getRewardMock = mock({
         blockchain,
         transaction: {
@@ -910,6 +912,7 @@ describe("Rewards list and detail", () => {
       web3.eth.getGasPrice = () => {
         return Promise.resolve("100000000")
       }
+      const DEPLOYMENTS = await getDeployments()
       const getRewardMock = mock({
         blockchain,
         transaction: {
