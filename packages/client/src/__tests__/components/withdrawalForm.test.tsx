@@ -22,7 +22,7 @@ import {
   getDeployments,
   network,
   recipient,
-  stakingRewardsAbiPromise,
+  getStakingRewardsAbi,
 } from "../rewards/__utils__/constants"
 import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
 import {
@@ -127,13 +127,13 @@ describe("withdrawal form", () => {
     merkleDistributor = result.merkleDistributor
 
     const _user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
-    mockUserInitializationContractCalls(_user, stakingRewards, gfi, communityRewards, merkleDistributor, {})
+    await mockUserInitializationContractCalls(_user, stakingRewards, gfi, communityRewards, merkleDistributor, {})
     await _user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
 
     assertWithLoadedInfo(_user)
     user = _user
 
-    mockCapitalProviderCalls()
+    await mockCapitalProviderCalls()
     capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
   })
 
@@ -158,7 +158,7 @@ describe("withdrawal form", () => {
   it("shows withdrawal form, to user with claimable staking reward", async () => {
     const {user} = await setupClaimableStakingReward(goldfinchProtocol, seniorPool)
 
-    mockCapitalProviderCalls()
+    await mockCapitalProviderCalls()
     const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
 
     const poolData = {
@@ -184,7 +184,7 @@ describe("withdrawal form", () => {
   it("fills max amount with `transactionLimit` when appropriate", async () => {
     const {user} = await setupClaimableStakingReward(goldfinchProtocol, seniorPool)
 
-    mockCapitalProviderCalls()
+    await mockCapitalProviderCalls()
     const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
 
     const poolData = {
@@ -204,7 +204,7 @@ describe("withdrawal form", () => {
   it("fills max amount with pool balance when appropriate", async () => {
     const {user} = await setupClaimableStakingReward(goldfinchProtocol, seniorPool)
 
-    mockCapitalProviderCalls()
+    await mockCapitalProviderCalls()
     const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
 
     const poolData = {
@@ -224,7 +224,7 @@ describe("withdrawal form", () => {
   it("fills max amount with `availableToWithdrawInDollars` when appropriate", async () => {
     const {user} = await setupClaimableStakingReward(goldfinchProtocol, seniorPool)
 
-    mockCapitalProviderCalls()
+    await mockCapitalProviderCalls()
     const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
     capitalProvider.value.availableToWithdrawInDollars = new BigNumber("8000")
 
@@ -245,7 +245,7 @@ describe("withdrawal form", () => {
   it("shows withdrawal form, to user with partially claimed staking reward", async () => {
     const {user} = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool)
 
-    mockCapitalProviderCalls()
+    await mockCapitalProviderCalls()
     const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
 
     const poolData = {
@@ -272,7 +272,7 @@ describe("withdrawal form", () => {
     it("clicking button with all FIDU staked in one position triggers `unstakeAndWithdrawInFidu()`", async () => {
       const {user, stakingRewards} = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool)
 
-      mockCapitalProviderCalls(undefined, "0")
+      await mockCapitalProviderCalls(undefined, "0")
       const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
       const poolData = {
         balance: new BigNumber(usdcToAtomic("50000000")),
@@ -282,7 +282,7 @@ describe("withdrawal form", () => {
         blockchain,
         transaction: {
           to: DEPLOYMENTS.contracts.StakingRewards.address,
-          api: stakingRewardsAbiPromise,
+          api: await getStakingRewardsAbi(),
           method: "unstakeAndWithdrawInFidu",
           params: {tokenId: "1", fiduAmount: "19990871828478113245933"},
         },
@@ -315,7 +315,7 @@ describe("withdrawal form", () => {
     it("clicking button with all FIDU unstaked triggers `withdrawInFidu()` ", async () => {
       const {user, stakingRewards} = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool)
 
-      mockCapitalProviderCalls(undefined, "500000000000000000000000")
+      await mockCapitalProviderCalls(undefined, "500000000000000000000000")
       const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
       const poolData = {
         balance: new BigNumber(usdcToAtomic("50000000")),
@@ -358,7 +358,7 @@ describe("withdrawal form", () => {
     it("clicking button with some FIDU unstaked and some FIDU staked triggers `withdrawInFidu()` and then `unstakeAndWithdrawInFidu()`, when staked amount in one position suffices for withdrawal amount", async () => {
       const {user, stakingRewards} = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool)
 
-      mockCapitalProviderCalls(undefined, "10000000000000000000000")
+      await mockCapitalProviderCalls(undefined, "10000000000000000000000")
       const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
       const poolData = {
         balance: new BigNumber(usdcToAtomic("50000000")),
@@ -378,7 +378,7 @@ describe("withdrawal form", () => {
         blockchain,
         transaction: {
           to: DEPLOYMENTS.contracts.StakingRewards.address,
-          api: stakingRewardsAbiPromise,
+          api: await getStakingRewardsAbi(),
           method: "unstakeAndWithdrawInFidu",
           params: {tokenId: "1", fiduAmount: "9990871828478113245933"},
         },
@@ -413,7 +413,7 @@ describe("withdrawal form", () => {
       const {user, stakingRewards} = await setupMultiplePartiallyClaimedStakingRewards(goldfinchProtocol, seniorPool)
 
       const numSharesNotStaked = "100000000000000000000"
-      mockCapitalProviderCalls(undefined, numSharesNotStaked)
+      await mockCapitalProviderCalls(undefined, numSharesNotStaked)
       const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
       const poolData = {
         balance: new BigNumber(usdcToAtomic("50000000")),
@@ -433,7 +433,7 @@ describe("withdrawal form", () => {
         blockchain,
         transaction: {
           to: DEPLOYMENTS.contracts.StakingRewards.address,
-          api: stakingRewardsAbiPromise,
+          api: await getStakingRewardsAbi(),
           method: "unstakeAndWithdrawMultipleInFidu",
           params: {tokenIds: ["2", "1"], fiduAmounts: ["5000000000000000000000", "4999998169337911394299"]},
         },

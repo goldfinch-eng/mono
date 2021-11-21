@@ -78,7 +78,7 @@ async function getUserLoaded(
   rewardsMock?: RewardsMockData
 ): Promise<UserLoaded> {
   const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
-  const mocks = mockUserInitializationContractCalls(
+  const mocks = await mockUserInitializationContractCalls(
     user,
     stakingRewards,
     gfi,
@@ -490,7 +490,7 @@ describe("Rewards list and detail", () => {
     const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
 
     const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
-    const mocks = mockUserInitializationContractCalls(
+    const mocks = await mockUserInitializationContractCalls(
       user,
       stakingRewards,
       gfi,

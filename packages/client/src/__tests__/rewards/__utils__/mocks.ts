@@ -24,13 +24,13 @@ import {BlockInfo} from "../../../utils"
 import {
   blockchain,
   blockInfo,
-  communityRewardsAbiPromise,
-  erc20AbiPromise,
+  getCommunityRewardsAbi,
+  getErc20Abi,
   getDeployments,
-  gfiAbiPromise,
-  merkleDistributorAbiPromise,
+  getGfiAbi,
+  getMerkleDistributorAbi,
   recipient,
-  stakingRewardsAbiPromise,
+  getStakingRewardsAbi,
 } from "./constants"
 import isEqual from "lodash/isEqual"
 import web3 from "../../../web3"
@@ -94,14 +94,14 @@ type ContractCallsMocks = {
 export const DEFAULT_STAKING_REWARDS_START_TIME = String(blockInfo.timestamp)
 export const DEFAULT_STAKING_REWARDS_END_TIME = "1672319491"
 
-export function mockUserInitializationContractCalls(
+export async function mockUserInitializationContractCalls(
   user: User,
   stakingRewards: StakingRewards,
   gfi: GFI,
   communityRewards: CommunityRewards,
   merkleDistributor: MerkleDistributor,
   rewardsMock?: RewardsMockData
-): ContractCallsMocks {
+): Promise<ContractCallsMocks> {
   user._fetchTxs = (usdc, pool, currentBlock) => {
     return Promise.resolve([
       [],
@@ -131,7 +131,7 @@ export function mockUserInitializationContractCalls(
     blockchain,
     call: {
       to: gfi.address,
-      api: gfiAbiPromise,
+      api: await getGfiAbi(),
       method: "balanceOf",
       params: [recipient],
       return: rewardsMock?.gfi?.gfiBalance || "0",
@@ -142,7 +142,7 @@ export function mockUserInitializationContractCalls(
     blockchain,
     call: {
       to: "0x0000000000000000000000000000000000000002",
-      api: erc20AbiPromise,
+      api: await getErc20Abi(),
       method: "balanceOf",
       params: [recipient],
       return: "0",
@@ -152,7 +152,7 @@ export function mockUserInitializationContractCalls(
     blockchain,
     call: {
       to: "0x0000000000000000000000000000000000000002",
-      api: erc20AbiPromise,
+      api: await getErc20Abi(),
       method: "allowance",
       params: [recipient, "0x0000000000000000000000000000000000000005"],
       return: "0",
@@ -162,7 +162,7 @@ export function mockUserInitializationContractCalls(
     blockchain,
     call: {
       to: stakingRewards.address,
-      api: stakingRewardsAbiPromise,
+      api: await getStakingRewardsAbi(),
       method: "balanceOf",
       params: [recipient],
       return: stakingRewardsBalance,
@@ -201,7 +201,7 @@ export function mockUserInitializationContractCalls(
       blockchain,
       call: {
         to: stakingRewards.address,
-        api: stakingRewardsAbiPromise,
+        api: await getStakingRewardsAbi(),
         method: "tokenOfOwnerByIndex",
         params: [recipient, String(parseInt(stakingRewardsTokenId, 10) - 1)],
         return: stakingRewardsTokenId,
@@ -211,7 +211,7 @@ export function mockUserInitializationContractCalls(
       blockchain,
       call: {
         to: stakingRewards.address,
-        api: stakingRewardsAbiPromise,
+        api: await getStakingRewardsAbi(),
         method: "positions",
         params: stakingRewardsTokenId,
         return: positionsRes,
@@ -221,7 +221,7 @@ export function mockUserInitializationContractCalls(
       blockchain,
       call: {
         to: stakingRewards.address,
-        api: stakingRewardsAbiPromise,
+        api: await getStakingRewardsAbi(),
         method: "earnedSinceLastCheckpoint",
         params: stakingRewardsTokenId,
         return: earnedSince,
@@ -232,7 +232,7 @@ export function mockUserInitializationContractCalls(
       blockchain,
       call: {
         to: stakingRewards.address,
-        api: stakingRewardsAbiPromise,
+        api: await getStakingRewardsAbi(),
         method: "totalVestedAt",
         params: [positionsRes[1][4], positionsRes[1][5], currentTimestamp, granted],
         return: totalVestedAt,
@@ -253,7 +253,7 @@ export function mockUserInitializationContractCalls(
       blockchain,
       call: {
         to: stakingRewards.address,
-        api: stakingRewardsAbiPromise,
+        api: await getStakingRewardsAbi(),
         method: "positionCurrentEarnRate",
         params: [stakingRewardsTokenId],
         return: positionCurrentEarnRate,
@@ -267,7 +267,7 @@ export function mockUserInitializationContractCalls(
     blockchain,
     call: {
       to: communityRewards.address,
-      api: communityRewardsAbiPromise,
+      api: await getCommunityRewardsAbi(),
       method: "balanceOf",
       params: [recipient],
       return: communityRewardsBalance,
@@ -293,7 +293,7 @@ export function mockUserInitializationContractCalls(
       blockchain,
       call: {
         to: communityRewards.address,
-        api: communityRewardsAbiPromise,
+        api: await getCommunityRewardsAbi(),
         method: "tokenOfOwnerByIndex",
         params: [recipient, "0"],
         return: communityRewardsTokenId,
@@ -303,7 +303,7 @@ export function mockUserInitializationContractCalls(
       blockchain,
       call: {
         to: communityRewards.address,
-        api: communityRewardsAbiPromise,
+        api: await getCommunityRewardsAbi(),
         method: "grants",
         params: communityRewardsTokenId,
         return: grant,
@@ -313,7 +313,7 @@ export function mockUserInitializationContractCalls(
       blockchain,
       call: {
         to: communityRewards.address,
-        api: communityRewardsAbiPromise,
+        api: await getCommunityRewardsAbi(),
         method: "claimableRewards",
         params: communityRewardsTokenId,
         return: claimable,
@@ -363,7 +363,10 @@ export function mockUserInitializationContractCalls(
   }
 }
 
-export function mockStakingRewardsContractCalls(stakingRewards: StakingRewards, currentEarnRatePerToken?: string) {
+export async function mockStakingRewardsContractCalls(
+  stakingRewards: StakingRewards,
+  currentEarnRatePerToken?: string
+) {
   if (!currentEarnRatePerToken) {
     currentEarnRatePerToken = "10000000000000000000"
   }
@@ -372,7 +375,7 @@ export function mockStakingRewardsContractCalls(stakingRewards: StakingRewards, 
     blockchain,
     call: {
       to: stakingRewards.address,
-      api: stakingRewardsAbiPromise,
+      api: await getStakingRewardsAbi(),
       method: "paused",
       return: false,
     },
@@ -381,7 +384,7 @@ export function mockStakingRewardsContractCalls(stakingRewards: StakingRewards, 
     blockchain,
     call: {
       to: stakingRewards.address,
-      api: stakingRewardsAbiPromise,
+      api: await getStakingRewardsAbi(),
       method: "currentEarnRatePerToken",
       return: currentEarnRatePerToken,
     },
@@ -390,7 +393,7 @@ export function mockStakingRewardsContractCalls(stakingRewards: StakingRewards, 
   return {callPausedMock, callCurrentEarnRatePerToken}
 }
 
-export function mockMerkleDistributorContractCalls(
+export async function mockMerkleDistributorContractCalls(
   merkle: MerkleDistributor,
   communityRewardsAddress: string = "0x0000000000000000000000000000000000000008"
 ) {
@@ -398,7 +401,7 @@ export function mockMerkleDistributorContractCalls(
     blockchain,
     call: {
       to: merkle.address,
-      api: merkleDistributorAbiPromise,
+      api: await getMerkleDistributorAbi(),
       method: "communityRewards",
       return: communityRewardsAddress,
     },

@@ -115,13 +115,13 @@ describe("Earn page portfolio overview", () => {
     merkleDistributor = result.merkleDistributor
 
     user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
-    mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, merkleDistributor, {})
+    await mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, merkleDistributor, {})
     await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
 
     assertWithLoadedInfo(user)
     assertWithLoadedInfo(seniorPool)
 
-    mockCapitalProviderCalls()
+    await mockCapitalProviderCalls()
     capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
   })
 
@@ -177,7 +177,7 @@ describe("Earn page portfolio overview", () => {
   it("shows portfolio with senior pool and claimable staking reward", async () => {
     const {gfi, stakingRewards, user} = await setupClaimableStakingReward(goldfinchProtocol, seniorPool)
 
-    mockCapitalProviderCalls()
+    await mockCapitalProviderCalls()
     const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
 
     const stakedSeniorPoolBalanceInDollars = capitalProvider.value.stakedSeniorPoolBalanceInDollars
@@ -223,7 +223,7 @@ describe("Earn page portfolio overview", () => {
   it("shows portfolio with senior pool and vesting staking reward", async () => {
     const {gfi, stakingRewards, user} = await setupNewStakingReward(goldfinchProtocol, seniorPool)
 
-    mockCapitalProviderCalls()
+    await mockCapitalProviderCalls()
     const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
 
     const stakedSeniorPoolBalanceInDollars = capitalProvider.value.stakedSeniorPoolBalanceInDollars
@@ -268,7 +268,7 @@ describe("Earn page portfolio overview", () => {
   it("shows portfolio with senior pool and partially claimed staking reward", async () => {
     const {gfi, stakingRewards, user} = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool)
 
-    mockCapitalProviderCalls()
+    await mockCapitalProviderCalls()
     const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
 
     const stakedSeniorPoolBalanceInDollars = capitalProvider.value.stakedSeniorPoolBalanceInDollars
@@ -314,7 +314,7 @@ describe("Earn page portfolio overview", () => {
   it("shows portfolio with senior pool, claimable staking reward, and backers", async () => {
     const {gfi, stakingRewards, user} = await setupClaimableStakingReward(goldfinchProtocol, seniorPool)
 
-    mockCapitalProviderCalls()
+    await mockCapitalProviderCalls()
     const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
 
     const stakedSeniorPoolBalanceInDollars = capitalProvider.value.stakedSeniorPoolBalanceInDollars
