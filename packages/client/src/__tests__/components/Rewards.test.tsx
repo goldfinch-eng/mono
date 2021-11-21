@@ -33,12 +33,13 @@ import {
 } from "../rewards/__utils__/scenarios"
 import {ThemeProvider} from "styled-components"
 import {defaultTheme} from "../../styles/theme"
+import {NetworkMonitor} from "../../ethereum/networkMonitor"
 
 mock({
   blockchain: "ethereum",
 })
 
-web3.setProvider(global.ethereum)
+web3.setProvider((global.window as any).ethereum)
 
 function renderRewards(
   stakingRewards: StakingRewardsLoaded | undefined,
@@ -46,8 +47,8 @@ function renderRewards(
   user: UserLoaded | undefined,
   merkleDistributor: MerkleDistributorLoaded | undefined,
   communityRewards: CommunityRewardsLoaded | undefined,
-  refreshCurrentBlock?: any,
-  networkMonitor?: any
+  refreshCurrentBlock?: () => Promise<void>,
+  networkMonitor?: NetworkMonitor
 ) {
   const store = {
     currentBlock: blockInfo,
@@ -494,7 +495,14 @@ describe("Rewards list and detail", () => {
     const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
 
     const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
-    const mocks = mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, {})
+    const mocks = mockUserInitializationContractCalls(
+      user,
+      stakingRewards,
+      gfi,
+      communityRewards,
+      merkleDistributor,
+      {}
+    )
     await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
     assertAllMocksAreCalled(mocks)
     assertWithLoadedInfo(user)
@@ -802,7 +810,7 @@ describe("Rewards list and detail", () => {
         addPendingTX: () => {},
         watch: () => {},
         markTXErrored: () => {},
-      }
+      } as unknown as NetworkMonitor
       const refreshCurrentBlock = jest.fn()
 
       renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards, refreshCurrentBlock, networkMonitor)
@@ -850,7 +858,7 @@ describe("Rewards list and detail", () => {
         addPendingTX: () => {},
         watch: () => {},
         markTXErrored: () => {},
-      }
+      } as unknown as NetworkMonitor
       const refreshCurrentBlock = jest.fn()
 
       renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards, refreshCurrentBlock, networkMonitor)
@@ -874,7 +882,10 @@ describe("Rewards list and detail", () => {
       fireEvent.click(screen.getByText("Claim GFI"))
       await waitFor(async () => {
         expect(screen.getByText("Submit")).not.toBeDisabled()
-        fireEvent.click(screen.getByText("Submit"))
+      })
+      fireEvent.click(screen.getByText("Submit"))
+      await waitFor(async () => {
+        expect(await screen.getByText("Submitting...")).toBeInTheDocument()
       })
 
       expect(getRewardMock).toHaveBeenCalled()
@@ -889,7 +900,7 @@ describe("Rewards list and detail", () => {
         addPendingTX: () => {},
         watch: () => {},
         markTXErrored: () => {},
-      }
+      } as unknown as NetworkMonitor
       const refreshCurrentBlock = jest.fn()
 
       renderRewards(stakingRewards, gfi, user, merkleDistributor, communityRewards, refreshCurrentBlock, networkMonitor)
@@ -912,7 +923,10 @@ describe("Rewards list and detail", () => {
       fireEvent.click(screen.getByText("Claim GFI"))
       await waitFor(async () => {
         expect(screen.getByText("Submit")).not.toBeDisabled()
-        fireEvent.click(screen.getByText("Submit"))
+      })
+      fireEvent.click(screen.getByText("Submit"))
+      await waitFor(async () => {
+        expect(await screen.getByText("Submitting...")).toBeInTheDocument()
       })
 
       expect(getRewardMock).toHaveBeenCalled()
