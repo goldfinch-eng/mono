@@ -9,6 +9,7 @@ import web3 from "../../web3"
 import {
   CapitalProvider,
   fetchCapitalProviderData,
+  PoolData,
   SeniorPool,
   SeniorPoolLoaded,
   StakingRewardsLoaded,
@@ -42,7 +43,7 @@ mock({
 web3.setProvider((global.window as any).ethereum)
 
 function renderWithdrawalForm(
-  poolData,
+  poolData: Partial<PoolData>,
   capitalProvider: Loaded<CapitalProvider>,
   stakingRewards?: StakingRewardsLoaded,
   pool?: SeniorPoolLoaded,
@@ -65,7 +66,7 @@ function renderWithdrawalForm(
     <AppContext.Provider value={store}>
       <Router>
         <WithdrawalForm
-          poolData={poolData}
+          poolData={poolData as PoolData}
           capitalProvider={capitalProvider.value}
           actionComplete={() => {}}
           closeForm={() => {}}
