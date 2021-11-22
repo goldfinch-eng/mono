@@ -1,6 +1,4 @@
 import {
-  deployUniqueIdentity,
-  deployGo,
   deployLPStakingRewards,
   deployCommunityRewards,
   deployMerkleDistributor,
@@ -14,28 +12,32 @@ import {
   getEthersContract,
   getProtocolOwner,
   getTruffleContract,
-  isMainnet,
 } from "../../deployHelpers"
 import hre, {deployments} from "hardhat"
 import {DeployEffects, Effects} from "../deployEffects"
-import {asNonNullable} from "@goldfinch-eng/utils"
-import {Contract} from "ethers"
-import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/ethers"
+import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
+import {CreditLine, GoldfinchConfig, TranchedPool} from "@goldfinch-eng/protocol/typechain/ethers"
 import {GFIInstance} from "@goldfinch-eng/protocol/typechain/truffle"
 import {CONFIG_KEYS_BY_TYPE} from "../../configKeys"
+import poolMetadata from "@goldfinch-eng/client/config/pool-metadata/mainnet.json"
+import {Contract} from "ethers"
 
 async function updateGoldfinchConfigs({
   existingConfig,
   newConfig,
-  contractNames,
+  contracts,
 }: {
   existingConfig: GoldfinchConfig
   newConfig: GoldfinchConfig
-  contractNames: string[]
+  contracts: Array<string | Contract>
 }): Promise<Effects> {
   const protocolOwner = await getProtocolOwner()
-  const contracts = await Promise.all(contractNames.map((c) => getEthersContract(c, {from: protocolOwner})))
-  const updates = await Promise.all(contracts.map((c) => asNonNullable(c.populateTransaction.updateGoldfinchConfig)()))
+  const ethersContracts = await Promise.all(
+    contracts.map((c) => (typeof c === "string" ? getEthersContract(c, {from: protocolOwner}) : c))
+  )
+  const updates = await Promise.all(
+    ethersContracts.map((c) => asNonNullable(c.populateTransaction.updateGoldfinchConfig)())
+  )
 
   return {
     deferred: [await existingConfig.populateTransaction.setGoldfinchConfig(newConfig.address), ...updates],
@@ -65,19 +67,24 @@ export async function deploy(deployEffects: DeployEffects) {
       ),
     ],
   })
+
+  const tranchedPoolAddresses = Object.keys(poolMetadata)
+  const tranchedPoolContracts = await Promise.all(
+    tranchedPoolAddresses.map(async (address) => getEthersContract<TranchedPool>("TranchedPool", {at: address}))
+  )
   const updateConfigContracts = [
     "Fidu",
     "FixedLeverageRatioStrategy",
     "GoldfinchFactory",
     "SeniorPool",
     "PoolTokens",
-    // TODO: Should we update individiual TranchedPools and CreditLines?
+    ...tranchedPoolContracts,
   ]
   await deployEffects.add(
     await updateGoldfinchConfigs({
       existingConfig,
       newConfig: config,
-      contractNames: updateConfigContracts,
+      contracts: updateConfigContracts,
     })
   )
 
