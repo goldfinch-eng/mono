@@ -225,6 +225,23 @@ describe("BackerRewards", function () {
   })
 
   describe("setTotalRewards()", () => {
+    it("emits an event", async () => {
+      const totalGFISupply = 100_000_000
+      const totalRewards = 1_000
+      const maxInterestDollarsEligible = 1_000_000_000
+      await setupBackerRewardsContract({
+        totalGFISupply,
+        maxInterestDollarsEligible,
+        totalRewards,
+        previousInterestReceived: 0,
+      })
+      const tx = await backerRewards.setTotalRewards(bigVal(Math.round(totalRewards * 100)).div(new BN(100)))
+      expectEvent(tx, "BackerRewardsSetTotalRewards", {
+        owner,
+        totalRewards: bigVal(totalRewards),
+        totalRewardPercentOfTotalGFI: bigVal(totalRewards).div(new BN(totalGFISupply)).mul(new BN(100)),
+      })
+    })
     it("properly sets totalRewards and totalRewardPercentOfTotalGFI", async () => {
       const totalGFISupply = 100_000_000
       const totalRewards = 1_000
@@ -243,6 +260,14 @@ describe("BackerRewards", function () {
   })
 
   describe("setMaxInterestDollarsEligible()", () => {
+    it("emits an event", async () => {
+      const maxInterestDollarsEligible = bigVal(1_000)
+      const tx = await backerRewards.setMaxInterestDollarsEligible(maxInterestDollarsEligible)
+      expectEvent(tx, "BackerRewardsSetMaxInterestDollarsEligible", {
+        owner,
+        maxInterestDollarsEligible,
+      })
+    })
     it("properly sets maxInterestDollarsEligible", async () => {
       const maxInterestDollarsEligible = bigVal(1_000)
       await backerRewards.setMaxInterestDollarsEligible(maxInterestDollarsEligible)
@@ -251,6 +276,14 @@ describe("BackerRewards", function () {
   })
 
   describe("setTotalInterestReceived()", () => {
+    it("emits an event", async () => {
+      const totalInterestReceived = usdcVal(1_000)
+      const tx = await backerRewards.setTotalInterestReceived(totalInterestReceived)
+      expectEvent(tx, "BackerRewardsSetTotalInterestReceived", {
+        owner,
+        totalInterestReceived,
+      })
+    })
     it("properly sets setTotalInterestReceived", async () => {
       const totalInterestReceived = usdcVal(1_000)
       await backerRewards.setTotalInterestReceived(totalInterestReceived)
