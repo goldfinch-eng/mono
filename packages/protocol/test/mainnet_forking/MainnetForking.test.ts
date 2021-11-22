@@ -74,6 +74,8 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
 
   const fidu = await artifacts.require("Fidu").at(existingContracts.Fidu.ExistingContract.address)
 
+  const go = await artifacts.require("Go").at(existingContracts.Go?.ExistingContract.address)
+
   const goldfinchConfig = await artifacts
     .require("GoldfinchConfig")
     .at(existingContracts.GoldfinchConfig.ExistingContract.address)
@@ -85,7 +87,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const seniorPoolStrategyAddress = await goldfinchConfig.getAddress(CONFIG_KEYS.SeniorPoolStrategy)
   const seniorPoolStrategy = await artifacts.require("FixedLeverageRatioStrategy").at(seniorPoolStrategyAddress)
 
-  return {seniorPool, seniorPoolStrategy, usdc, fidu, goldfinchConfig, goldfinchFactory, cUSDC}
+  return {seniorPool, seniorPoolStrategy, usdc, fidu, goldfinchConfig, goldfinchFactory, cUSDC, go}
 })
 
 export const TEST_TIMEOUT = 180000 // 3 mins
@@ -102,7 +104,7 @@ xdescribe("mainnet forking tests", async function () {
   // eslint-disable-next-line no-unused-vars
   let accounts, owner, bwr, person3, usdc, fidu, goldfinchConfig
   let goldfinchFactory, busd, usdt, cUSDC
-  let reserveAddress, tranchedPool, borrower, seniorPool, seniorPoolStrategy
+  let reserveAddress, tranchedPool, borrower, seniorPool, seniorPoolStrategy, go
 
   async function setupSeniorPool() {
     seniorPoolStrategy = await artifacts.require("ISeniorPoolStrategy").at(seniorPoolStrategy.address)
@@ -133,7 +135,7 @@ xdescribe("mainnet forking tests", async function () {
     this.timeout(TEST_TIMEOUT)
     accounts = await web3.eth.getAccounts()
     ;[owner, bwr, person3] = accounts
-    ;({usdc, goldfinchFactory, seniorPool, seniorPoolStrategy, fidu, goldfinchConfig, cUSDC} = await setupTest())
+    ;({usdc, goldfinchFactory, seniorPool, seniorPoolStrategy, fidu, goldfinchConfig, cUSDC, go} = await setupTest())
     const usdcAddress = getUSDCAddress(MAINNET_CHAIN_ID)
     assertIsString(usdcAddress)
     const busdAddress = "0x4fabb145d64652a948d72533023f6e7a623c7c53"
@@ -402,6 +404,18 @@ xdescribe("mainnet forking tests", async function () {
         expect(await getBalance(bwrCon.address, usdc)).to.bignumber.eq(new BN(0))
         expect(await getBalance(bwrCon.address, usdt)).to.bignumber.eq(new BN(0))
       }).timeout(TEST_TIMEOUT)
+    })
+  })
+
+  describe("Go", async () => {
+    const GOLDFINCH_CONFIG_WITH_GO_LIST = "0x4eb844Ff521B4A964011ac8ecd42d500725C95CC"
+    const KNOWN_ADDRESS_ON_GO_LIST = "0x483e2BaF7F4e0Ac7D90c2C3Efc13c3AF5050F3c2"
+    it("has the config with the go list set as the goListOverride", async () => {
+      expect(await go.goListOverride()).to.be.eq(GOLDFINCH_CONFIG_WITH_GO_LIST)
+    })
+
+    it("goListOverride is working correctly", async () => {
+      expect(await go.go(KNOWN_ADDRESS_ON_GO_LIST)).to.be.true
     })
   })
 
