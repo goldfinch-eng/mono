@@ -24,16 +24,16 @@ const AnnualGrowthTooltipContent = ({
       </p>
       <div className="tooltip-row">
         <p>{supplyingCombined ? "Pool APY" : "Senior Pool APY"}</p>
-        <span>{displayPercent(estimatedApyFromSupplying)}</span>
+        <span data-testid="tooltip-estimated-apy">{displayPercent(estimatedApyFromSupplying)}</span>
       </div>
       <div className="tooltip-row">
         <p>GFI Rewards APY</p>
-        <span>{displayPercent(estimatedApyFromGfi)}</span>
+        <span data-testid="tooltip-gfi-apy">{displayPercent(estimatedApyFromGfi)}</span>
       </div>
       <div className="tooltip-divider"></div>
       <div className="tooltip-row">
         <p>Total Est. APY</p>
-        <span>{displayPercent(estimatedApy)}</span>
+        <span data-testid="tooltip-total-apy">{displayPercent(estimatedApy)}</span>
       </div>
     </div>
   </Tooltip>
