@@ -694,24 +694,6 @@ describe("TranchedPool", () => {
         )
       })
 
-      it("fails if not legacy golisted and has incorrect UID token", async () => {
-        await uniqueIdentity.setSupportedUIDTypes([1, 2, 3], [true, true, true])
-        const uidTokenId = new BN(3)
-        const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
-        await mint(hre, uniqueIdentity, uidTokenId, expiresAt, new BN(0), owner, undefined, owner)
-        await tranchedPool.setAllowedUIDTypes([uidTokenId], {from: borrower})
-        const receipt = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(1), {from: owner})
-        await tranchedPool.setAllowedUIDTypes([0], {from: borrower})
-        await goldfinchConfig.bulkRemoveFromGoList([owner])
-        const logs = decodeLogs<DepositMade>(receipt.receipt.rawLogs, tranchedPool, "DepositMade")
-        const firstLog = getFirstLog(logs)
-        const tokenId = firstLog.args.tokenId
-
-        await expect(tranchedPool.withdraw(tokenId, usdcVal(1), {from: owner})).to.be.rejectedWith(
-          /Address not go-listed/
-        )
-      })
-
       it("if granted allowed UID token, does not fail for go-listed error", async () => {
         await uniqueIdentity.setSupportedUIDTypes([1, 2, 3], [true, true, true])
         const uidTokenId = new BN(1)
