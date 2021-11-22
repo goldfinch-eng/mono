@@ -1119,6 +1119,21 @@ describe("TranchedPool", () => {
         /Must have locker role/
       )
     })
+
+    it("validate no principal has been deposited", async () => {
+      await uniqueIdentity.setSupportedUIDTypes([1, 2, 3], [true, true, true])
+      await expect(tranchedPool.setAllowedUIDTypes([1], {from: borrower})).to.be.fulfilled
+      const uidTokenId = new BN(1)
+      const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
+      await mint(hre, uniqueIdentity, uidTokenId, expiresAt, new BN(0), owner, undefined, owner)
+      await tranchedPool.setAllowedUIDTypes([1], {from: borrower})
+
+      await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(1), {from: owner})).to.be.fulfilled
+
+      await expect(tranchedPool.setAllowedUIDTypes([1], {from: borrower})).to.be.rejectedWith(
+        /Cannot change allowed UID types after funds have been raised/
+      )
+    })
   })
 
   describe("access controls", () => {

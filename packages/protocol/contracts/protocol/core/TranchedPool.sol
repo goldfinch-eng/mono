@@ -127,6 +127,10 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   }
 
   function setAllowedUIDTypes(uint256[] calldata ids) public onlyLocker {
+    require(
+      poolSlices[0].juniorTranche.principalDeposited == 0,
+      "Cannot change allowed UID types after funds have been raised"
+    );
     allowedUIDTypes = ids;
   }
 
