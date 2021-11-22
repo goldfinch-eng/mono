@@ -196,7 +196,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     BackerRewardsInfo storage _poolInfo = pools[_poolAddress];
 
     uint256 totalJuniorDeposits = pool.totalJuniorDeposits();
-    if (totalJuniorDeposits > 0) {
+    if (totalJuniorDeposits == 0) {
       return;
     }
 
