@@ -104,8 +104,7 @@ async function getDeployments(networkId) {
 }
 
 async function getMerkleDistributorInfo(): Promise<MerkleDistributorInfo | undefined> {
-  const fileNameSuffix =
-    process.env.REACT_APP_MURMURATION === "yes" ? ".murmuration" : process.env.NODE_ENV === "development" ? ".dev" : ""
+  const fileNameSuffix = process.env.NODE_ENV === "development" ? ".dev" : ""
   return import(
     `@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/merkleDistributorInfo${fileNameSuffix}.json`
   )
