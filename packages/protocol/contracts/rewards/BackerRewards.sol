@@ -168,6 +168,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
 
     address poolAddr = tokenInfo.pool;
     require(config.getPoolTokens().validPool(poolAddr), "Invalid pool!");
+    require(msg.sender == poolTokens.ownerOf(tokenId), "Must be owner of PoolToken");
 
     BaseUpgradeablePausable pool = BaseUpgradeablePausable(poolAddr);
     require(!pool.paused(), "Pool withdraw paused");
