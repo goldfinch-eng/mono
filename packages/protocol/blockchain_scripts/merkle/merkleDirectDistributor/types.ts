@@ -1,11 +1,14 @@
 import {BigNumber} from "ethers"
 import {genIsArrayOf, isArrayOfNonEmptyString, isNonEmptyString, isNumber, isPlainObject} from "@goldfinch-eng/utils"
+import {GrantReason} from "../merkleDistributor/types"
 
 export type DirectGrant = {
   amount: BigNumber
 }
 export const isDirectGrant = (obj: unknown): obj is DirectGrant =>
   isPlainObject(obj) && BigNumber.isBigNumber(obj.amount)
+
+export type DirectGrantReason = GrantReason
 
 export type JsonDirectGrant = {
   [K in keyof DirectGrant]: DirectGrant[K] extends BigNumber ? string : DirectGrant[K]

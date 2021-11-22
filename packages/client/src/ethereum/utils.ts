@@ -1,4 +1,8 @@
 import {
+  isMerkleDirectDistributorInfo,
+  MerkleDirectDistributorInfo,
+} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/types"
+import {
   isMerkleDistributorInfo,
   MerkleDistributorInfo,
 } from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
@@ -123,6 +127,25 @@ async function getMerkleDistributorInfo(): Promise<MerkleDistributorInfo | undef
     })
 }
 
+async function getMerkleDirectDistributorInfo(): Promise<MerkleDirectDistributorInfo | undefined> {
+  const fileNameSuffix = process.env.NODE_ENV === "development" ? ".dev" : ""
+  return import(
+    `@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/merkleDirectDistributorInfo${fileNameSuffix}.json`
+  )
+    .then((result: unknown): MerkleDirectDistributorInfo => {
+      const plain = _.toPlainObject(result)
+      if (isMerkleDirectDistributorInfo(plain)) {
+        return plain
+      } else {
+        throw new Error("Merkle direct distributor info failed type guard.")
+      }
+    })
+    .catch((err: unknown): undefined => {
+      console.error(err)
+      return
+    })
+}
+
 function transformedConfig(config) {
   return _.reduce(
     config,
@@ -201,6 +224,7 @@ const ONE_YEAR_SECONDS = new BigNumber(60 * 60 * 24 * 365)
 export {
   getDeployments,
   getMerkleDistributorInfo,
+  getMerkleDirectDistributorInfo,
   mapNetworkToID,
   transformedConfig,
   fetchDataFromAttributes,

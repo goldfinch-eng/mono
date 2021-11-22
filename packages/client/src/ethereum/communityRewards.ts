@@ -2,18 +2,28 @@ import {
   GrantReason,
   MerkleDistributorInfo,
 } from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
+import {
+  DirectGrantReason,
+  MerkleDirectDistributorInfo,
+} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/types"
 import {CommunityRewards as CommunityRewardsContract} from "@goldfinch-eng/protocol/typechain/web3/CommunityRewards"
 import {MerkleDistributor as MerkleDistributorContract} from "@goldfinch-eng/protocol/typechain/web3/MerkleDistributor"
+import {MerkleDirectDistributor as MerkleDirectDistributorContract} from "@goldfinch-eng/protocol/typechain/web3/MerkleDirectDistributor"
 import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
 import startCase from "lodash/startCase"
 import {Filter} from "web3-eth-contract"
 import {Loadable, WithLoadedInfo} from "../types/loadable"
 import {BlockInfo, displayNumber} from "../utils"
-import {CommunityRewardsEventType, KnownEventData, MerkleDistributorEventType} from "../types/events"
+import {
+  CommunityRewardsEventType,
+  KnownEventData,
+  MerkleDirectDistributorEventType,
+  MerkleDistributorEventType,
+} from "../types/events"
 import {gfiFromAtomic} from "./gfi"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
-import {getMerkleDistributorInfo} from "./utils"
+import {getMerkleDirectDistributorInfo, getMerkleDistributorInfo} from "./utils"
 import {BlockNumber} from "web3-core"
 
 type MerkleDistributorLoadedInfo = {
@@ -211,5 +221,75 @@ export class CommunityRewards {
       toBlock
     )
     return events
+  }
+}
+
+type MerkleDirectDistributorLoadedInfo = {
+  currentBlock: BlockInfo
+  merkleDirectDistributorInfo: MerkleDirectDistributorInfo
+}
+
+export type MerkleDirectDistributorLoaded = WithLoadedInfo<MerkleDirectDistributor, MerkleDirectDistributorLoadedInfo>
+
+export class MerkleDirectDistributor {
+  goldfinchProtocol: GoldfinchProtocol
+  contract: MerkleDirectDistributorContract
+  address: string
+  info: Loadable<MerkleDirectDistributorLoadedInfo>
+
+  constructor(goldfinchProtocol: GoldfinchProtocol) {
+    this.goldfinchProtocol = goldfinchProtocol
+    this.contract = goldfinchProtocol.getContract<MerkleDirectDistributorContract>("MerkleDirectDistributor")
+    this.address = goldfinchProtocol.getAddress("MerkleDirectDistributor")
+    this.info = {
+      loaded: false,
+      value: undefined,
+    }
+  }
+
+  async initialize(currentBlock: BlockInfo): Promise<void> {
+    const contractAddress = await this.contract.methods.gfi().call(undefined, currentBlock.number)
+    if (contractAddress !== this.goldfinchProtocol.getAddress("GFI")) {
+      throw new Error("MerkleDirectDistributor address of GFI contract doesn't match with deployed GFI address")
+    }
+
+    const merkleDirectDistributorInfo = await getMerkleDirectDistributorInfo()
+    if (!merkleDirectDistributorInfo) {
+      throw new Error("Failed to retrieve MerkleDirectDistributor info.")
+    }
+
+    this.info = {
+      loaded: true,
+      value: {
+        currentBlock,
+        merkleDirectDistributorInfo,
+      },
+    }
+  }
+
+  async getEvents<T extends MerkleDirectDistributorEventType>(
+    address: string,
+    eventNames: T[],
+    filter: Filter | undefined,
+    toBlock: BlockNumber
+  ): Promise<KnownEventData<T>[]> {
+    const events = await this.goldfinchProtocol.queryEvents(
+      this.contract,
+      eventNames,
+      {
+        ...(filter || {}),
+        user: address,
+      },
+      toBlock
+    )
+    return events
+  }
+
+  static getDisplayTitle(reason: DirectGrantReason): string {
+    return MerkleDistributor.getDisplayTitle(reason)
+  }
+
+  static getDisplayReason(reason: DirectGrantReason): string {
+    return MerkleDistributor.getDisplayReason(reason)
   }
 }
