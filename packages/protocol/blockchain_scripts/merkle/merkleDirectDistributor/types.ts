@@ -1,15 +1,24 @@
 import {BigNumber} from "ethers"
-import {genIsArrayOf, isArrayOfNonEmptyString, isNonEmptyString, isNumber, isPlainObject} from "@goldfinch-eng/utils"
-import {GrantReason, isGrantReason} from "../merkleDistributor/types"
+import {
+  genIsArrayOf,
+  isArrayOfNonEmptyString,
+  isNonEmptyString,
+  isNumber,
+  isPlainObject,
+} from "@goldfinch-eng/utils/src/type"
+
+export const FLIGHT_ACADEMY_DIRECT_GRANT_REASON = "flight_academy"
+export type FLIGHT_ACADEMY_DIRECT_GRANT_REASON = typeof FLIGHT_ACADEMY_DIRECT_GRANT_REASON
+
+export type DirectGrantReason = FLIGHT_ACADEMY_DIRECT_GRANT_REASON
+export const isDirectGrantReason = (obj: unknown): obj is DirectGrantReason =>
+  obj === FLIGHT_ACADEMY_DIRECT_GRANT_REASON
 
 export type DirectGrant = {
   amount: BigNumber
 }
 export const isDirectGrant = (obj: unknown): obj is DirectGrant =>
   isPlainObject(obj) && BigNumber.isBigNumber(obj.amount)
-
-export type DirectGrantReason = GrantReason
-export const isDirectGrantReason = (obj: unknown): obj is DirectGrantReason => isGrantReason(obj)
 
 export type JsonDirectGrant = {
   [K in keyof DirectGrant]: DirectGrant[K] extends BigNumber ? string : DirectGrant[K]
@@ -19,18 +28,20 @@ export const isJsonDirectGrant = (obj: unknown): obj is JsonDirectGrant =>
 
 export type AccountedDirectGrant = {
   account: string
+  reason: DirectGrantReason
   grant: DirectGrant
 }
 export const isAccountedDirectGrant = (obj: unknown): obj is AccountedDirectGrant =>
-  isPlainObject(obj) && isNonEmptyString(obj.account) && isDirectGrant(obj.grant)
+  isPlainObject(obj) && isNonEmptyString(obj.account) && isDirectGrantReason(obj.reason) && isDirectGrant(obj.grant)
 export const isArrayOfAccountedDirectGrant = genIsArrayOf(isAccountedDirectGrant)
 
 export type JsonAccountedDirectGrant = {
   account: string
+  reason: DirectGrantReason
   grant: JsonDirectGrant
 }
 export const isJsonAccountedDirectGrant = (obj: unknown): obj is JsonAccountedDirectGrant =>
-  isPlainObject(obj) && isNonEmptyString(obj.account) && isJsonDirectGrant(obj.grant)
+  isPlainObject(obj) && isNonEmptyString(obj.account) && isDirectGrantReason(obj.reason) && isJsonDirectGrant(obj.grant)
 export const isArrayOfJsonAccountedDirectGrant = genIsArrayOf(isJsonAccountedDirectGrant)
 
 export type MerkleDirectDistributorGrantInfo = {
