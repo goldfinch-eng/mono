@@ -1,6 +1,6 @@
 import {BigNumber} from "ethers"
 import {genIsArrayOf, isArrayOfNonEmptyString, isNonEmptyString, isNumber, isPlainObject} from "@goldfinch-eng/utils"
-import {GrantReason} from "../merkleDistributor/types"
+import {GrantReason, isGrantReason} from "../merkleDistributor/types"
 
 export type DirectGrant = {
   amount: BigNumber
@@ -9,6 +9,7 @@ export const isDirectGrant = (obj: unknown): obj is DirectGrant =>
   isPlainObject(obj) && BigNumber.isBigNumber(obj.amount)
 
 export type DirectGrantReason = GrantReason
+export const isDirectGrantReason = (obj: unknown): obj is DirectGrantReason => isGrantReason(obj)
 
 export type JsonDirectGrant = {
   [K in keyof DirectGrant]: DirectGrant[K] extends BigNumber ? string : DirectGrant[K]
@@ -35,6 +36,7 @@ export const isArrayOfJsonAccountedDirectGrant = genIsArrayOf(isJsonAccountedDir
 export type MerkleDirectDistributorGrantInfo = {
   index: number
   account: string
+  reason: DirectGrantReason
   grant: {
     amount: string
   }
@@ -44,6 +46,7 @@ export const isMerkleDirectDistributorGrantInfo = (obj: unknown): obj is MerkleD
   isPlainObject(obj) &&
   isNumber(obj.index) &&
   isNonEmptyString(obj.account) &&
+  isDirectGrantReason(obj.reason) &&
   isPlainObject(obj.grant) &&
   isNonEmptyString(obj.grant.amount) &&
   isArrayOfNonEmptyString(obj.proof)

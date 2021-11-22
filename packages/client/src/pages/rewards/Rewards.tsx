@@ -6,7 +6,12 @@ import {Link} from "react-router-dom"
 import {AppContext} from "../../App"
 import RewardActionsContainer from "../../components/rewardActionsContainer"
 import {WIDTH_TYPES} from "../../components/styleConstants"
-import {CommunityRewardsGrant, CommunityRewardsLoaded, MerkleDistributorLoaded} from "../../ethereum/communityRewards"
+import {
+  CommunityRewardsGrant,
+  CommunityRewardsLoaded,
+  MerkleDirectDistributorLoaded,
+  MerkleDistributorLoaded,
+} from "../../ethereum/communityRewards"
 import {gfiFromAtomic, gfiInDollars, GFILoaded, gfiToDollarsAtomic} from "../../ethereum/gfi"
 import {StakingRewardsLoaded, StakingRewardsPosition} from "../../ethereum/pool"
 import {UserCommunityRewardsLoaded, UserLoaded, UserStakingRewardsLoaded} from "../../ethereum/user"
@@ -166,6 +171,7 @@ function Rewards() {
     gfi: _gfi,
     user: _user,
     merkleDistributor: _merkleDistributor,
+    merkleDirectDistributor: _merkleDirectDistributor,
     communityRewards: _communityRewards,
     currentBlock,
   } = useContext(AppContext)
@@ -175,8 +181,9 @@ function Rewards() {
     GFILoaded,
     UserLoaded,
     MerkleDistributorLoaded,
+    MerkleDirectDistributorLoaded,
     CommunityRewardsLoaded
-  >(currentBlock, _stakingRewards, _gfi, _user, _merkleDistributor, _communityRewards)
+  >(currentBlock, _stakingRewards, _gfi, _user, _merkleDistributor, _merkleDirectDistributor, _communityRewards)
 
   let loaded: boolean = false
   let claimable: BigNumber | undefined
@@ -190,18 +197,21 @@ function Rewards() {
     const gfi = consistent[1]
     const user = consistent[2]
     const merkleDistributor = consistent[3]
-    const communityRewards = consistent[4]
+    const merkleDirectDistributor = consistent[4]
+    const communityRewards = consistent[5]
 
     loaded = true
 
     const userStakingRewards = user.info.value.stakingRewards
     const userCommunityRewards = user.info.value.communityRewards
     const userMerkleDistributor = user.info.value.merkleDistributor
+    const userMerkleDirectDistributor = user.info.value.merkleDirectDistributor
     const sortedRewards = getSortedRewards(userStakingRewards, userCommunityRewards)
 
     const emptyRewards =
       !userCommunityRewards.info.value.grants.length &&
       !userMerkleDistributor.info.value.airdrops.notAccepted.length &&
+      !userMerkleDirectDistributor.info.value.airdrops.notAccepted.length &&
       !userStakingRewards.info.value.positions.length
 
     gfiBalance = user.info.value.gfiBalance
@@ -217,10 +227,26 @@ function Rewards() {
         {userMerkleDistributor &&
           userMerkleDistributor.info.value.airdrops.notAccepted.map((item) => (
             <RewardActionsContainer
-              key={`airdrop-${item.index}`}
+              key={`merkle-distributor-airdrop-${item.index}`}
+              type="merkleDistributor"
               item={item}
               gfi={gfi}
               merkleDistributor={merkleDistributor}
+              merkleDirectDistributor={merkleDirectDistributor}
+              stakingRewards={stakingRewards}
+              communityRewards={communityRewards}
+            />
+          ))}
+
+        {userMerkleDirectDistributor &&
+          userMerkleDirectDistributor.info.value.airdrops.notAccepted.map((item) => (
+            <RewardActionsContainer
+              key={`merkle-direct-distributor-airdrop-${item.index}`}
+              type="merkleDirectDistributor"
+              item={item}
+              gfi={gfi}
+              merkleDistributor={merkleDistributor}
+              merkleDirectDistributor={merkleDirectDistributor}
               stakingRewards={stakingRewards}
               communityRewards={communityRewards}
             />
@@ -228,16 +254,36 @@ function Rewards() {
 
         {sortedRewards &&
           sortedRewards.map((item) => {
-            return (
-              <RewardActionsContainer
-                key={`${item.type}-${item.value.tokenId}`}
-                item={item.value}
-                gfi={gfi}
-                merkleDistributor={merkleDistributor}
-                stakingRewards={stakingRewards}
-                communityRewards={communityRewards}
-              />
-            )
+            switch (item.type) {
+              case "communityRewards":
+                return (
+                  <RewardActionsContainer
+                    key={`${item.type}-${item.value.tokenId}`}
+                    type={item.type}
+                    item={item.value}
+                    gfi={gfi}
+                    merkleDistributor={merkleDistributor}
+                    merkleDirectDistributor={merkleDirectDistributor}
+                    stakingRewards={stakingRewards}
+                    communityRewards={communityRewards}
+                  />
+                )
+              case "stakingRewards":
+                return (
+                  <RewardActionsContainer
+                    key={`${item.type}-${item.value.tokenId}`}
+                    type={item.type}
+                    item={item.value}
+                    gfi={gfi}
+                    merkleDistributor={merkleDistributor}
+                    merkleDirectDistributor={merkleDirectDistributor}
+                    stakingRewards={stakingRewards}
+                    communityRewards={communityRewards}
+                  />
+                )
+              default:
+                assertUnreachable(item)
+            }
           })}
       </>
     )
