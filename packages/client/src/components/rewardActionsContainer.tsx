@@ -361,7 +361,7 @@ function getGrantVestingSchedule(
           day: "numeric",
         })}`
       : `${getGrantVestingLengthDisplay(end.value)}`
-    return `Linear ${displayInterval || ""}${displayCliff || ""}${
+    return `Linear${displayInterval || ""}${displayCliff || ""}${
       displayInterval || displayCliff ? "," : ""
     } until 100%${displayEnd}`
   } else {
