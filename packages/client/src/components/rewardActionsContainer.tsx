@@ -31,13 +31,13 @@ import TransactionForm from "./transactionForm"
 import {AppContext} from "../App"
 
 const ONE_WEEK_SECONDS = new BigNumber(60 * 60 * 24 * 7)
+const TOKEN_LAUNCH_TIME_IN_SECONDS = 1638900000 // Tuesday, December 7, 2021 10:00:00 AM GMT-08:00
 
 enum RewardStatus {
   Acceptable,
   Claimable,
   TemporarilyAllClaimed,
   PermanentlyAllClaimed,
-  FullyUnstakedAndClaimed,
 }
 
 enum ActionButtonTexts {
@@ -318,9 +318,13 @@ function RewardsListItem(props: RewardsListItemProps) {
   )
 }
 
+function getGrantVestingIntervalDisplay(vestingInterval: BigNumber): string | undefined {
+  // Right now we decided that it was best not to show the vesting interval for now.
+  return undefined
+}
 function getGrantVestingCliffDisplay(cliffLength: BigNumber): string | undefined {
   const cliffLengthString = cliffLength.toString(10)
-  const cliffLengthInDays = Math.floor(Number(cliffLengthString) / (3600 * 24))
+  const cliffLengthInDays = Math.ceil(Number(cliffLengthString) / (3600 * 24))
   switch (cliffLengthString) {
     case "0":
       return undefined
@@ -328,30 +332,17 @@ function getGrantVestingCliffDisplay(cliffLength: BigNumber): string | undefined
       return ", with six-month cliff"
     default:
       console.warn(`Unexpected cliff length: ${cliffLengthString}`)
-      const cliffDisplayText = ` with ${cliffLengthInDays}${cliffLengthInDays === 1 ? " day" : " days"} cliff`
+      const cliffDisplayText = ` with ${cliffLengthInDays}${cliffLengthInDays === 1 ? "-day" : " days"} cliff`
       return cliffLengthInDays ? cliffDisplayText : ""
   }
 }
-function getGrantVestingIntervalDisplay(vestingInterval: BigNumber): string | undefined {
-  const vestingIntervalString = vestingInterval.toString(10)
-  switch (vestingIntervalString) {
-    case "1":
-      return undefined
-    case "2628000":
-      return ", vesting every month"
-    default:
-      console.warn(`Unexpected vesting interval: ${vestingIntervalString}`)
-      return `, vesting every ${vestingIntervalString} seconds`
-  }
-}
 function getGrantVestingLengthDisplay(duration: number, currentTimestamp: number | undefined): string {
-  const endDate = currentTimestamp
-    ? new Date((currentTimestamp + duration) * 1000).toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      })
-    : null
+  const startDate = TOKEN_LAUNCH_TIME_IN_SECONDS
+  const endDate = new Date((startDate + duration) * 1000).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  })
   switch (duration) {
     case 0:
       throw new Error("Grant without vesting length should have avoided calling this method.")
@@ -364,11 +355,13 @@ function getGrantVestingLengthDisplay(duration: number, currentTimestamp: number
 }
 function getGrantVestingSchedule(
   cliffLength: BigNumber,
+  vestingInterval: BigNumber,
   end: {absolute: boolean; value: number} | null,
   currentTimestamp: number | undefined
 ): string {
   if (end) {
     const displayCliff = getGrantVestingCliffDisplay(cliffLength)
+    const displayInterval = getGrantVestingIntervalDisplay(vestingInterval)
     const displayEnd = end.absolute
       ? ` on ${new Date(end.value * 1000).toLocaleDateString(undefined, {
           year: "numeric",
@@ -376,18 +369,13 @@ function getGrantVestingSchedule(
           day: "numeric",
         })}`
       : `${getGrantVestingLengthDisplay(end.value, currentTimestamp)}`
-    return `Linear ${displayCliff || ""}${displayCliff ? "," : ""} until 100%${displayEnd}`
+    return `Linear ${displayInterval || ""}${displayCliff || ""}${
+      displayInterval || displayCliff ? "," : ""
+    } until 100%${displayEnd}`
   } else {
-    // Since we will not have a vesting length here, we don't need to sum the duration to
-    // the current timestamp to show the end date.
-    const endDate = currentTimestamp
-      ? new Date(currentTimestamp * 1000).toLocaleDateString(undefined, {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-        })
-      : null
-    return endDate ? `Linear until 100% on ${endDate}` : "None"
+    // Since we will not have a vesting length here, we don't need to make calculations to show
+    // end date. Note that showing the current timestamp can be misleading.
+    return "Immediate"
   }
 }
 function getStakingRewardsVestingSchedule(endTime: number) {
@@ -424,6 +412,7 @@ function getMerkleDistributorGrantInfoDetails(
     transactionDetails: `${displayNumber(gfiFromAtomic(amount))} GFI reward for participating ${displayReason}`,
     vestingSchedule: getGrantVestingSchedule(
       new BigNumber(grantInfo.grant.cliffLength),
+      new BigNumber(grantInfo.grant.vestingInterval),
       vestingLength ? {absolute: false, value: vestingLength} : null,
       currentTimestamp
     ),
@@ -453,6 +442,7 @@ function getStakingOrCommunityRewardsDetails(
       transactionDetails: item.description,
       vestingSchedule: getGrantVestingSchedule(
         item.rewards.cliffLength,
+        item.rewards.vestingInterval,
         item.rewards.endTime > item.rewards.startTime
           ? {
               absolute: true,
@@ -533,13 +523,10 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
           status = RewardStatus.PermanentlyAllClaimed
         }
       } else {
-        const origStakedAmount = item.stakedEvent.returnValues.amount
         const remainingAmount = item.storedPosition.amount
-        if (!remainingAmount.isEqualTo(origStakedAmount) && remainingAmount.isZero()) {
-          status = RewardStatus.FullyUnstakedAndClaimed
+        if (remainingAmount.isZero()) {
+          status = RewardStatus.PermanentlyAllClaimed
         } else {
-          // Staking rewards are never "permanently" all-claimed; even after vesting is finished, stakings keep
-          // earning rewards that vest immediately.
           status = RewardStatus.TemporarilyAllClaimed
         }
       }
