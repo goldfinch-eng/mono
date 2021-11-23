@@ -367,8 +367,7 @@ export async function deployCommunityRewards(
   return {name: contractName, contract}
 }
 
-async function getMerkleDistributorRoot(): Promise<string | undefined> {
-  const path = process.env.MERKLE_DISTRIBUTOR_INFO_PATH
+async function getMerkleDistributorRoot(path?: string): Promise<string | undefined> {
   if (!path) {
     logger("Merkle distributor info path is undefined.")
     return
@@ -386,14 +385,16 @@ export async function deployMerkleDistributor(
   {
     communityRewards,
     deployEffects,
+    merkleDistributorInfoPath = process.env.MERKLE_DISTRIBUTOR_INFO_PATH,
   }: {
     communityRewards: Deployed<CommunityRewardsInstance>
     deployEffects: DeployEffects
+    merkleDistributorInfoPath?: string
   }
 ): Promise<Deployed<MerkleDistributorInstance> | undefined> {
   const contractName = "MerkleDistributor"
 
-  const merkleRoot = await getMerkleDistributorRoot()
+  const merkleRoot = await getMerkleDistributorRoot(merkleDistributorInfoPath)
   if (!merkleRoot) {
     logger(`Merkle root is undefined. Skipping deploy of ${contractName}`)
     return
@@ -423,8 +424,7 @@ export async function deployMerkleDistributor(
   return deployed
 }
 
-async function getMerkleDirectDistributorRoot(): Promise<string | undefined> {
-  const path = process.env.MERKLE_DIRECT_DISTRIBUTOR_INFO_PATH
+async function getMerkleDirectDistributorRoot(path?: string): Promise<string | undefined> {
   if (!path) {
     logger("MerkleDirectDistributor info path is undefined.")
     return
@@ -442,16 +442,18 @@ export async function deployMerkleDirectDistributor(
   {
     gfi,
     deployEffects,
+    merkleDirectDistributorInfoPath = process.env.MERKLE_DIRECT_DISTRIBUTOR_INFO_PATH,
   }: {
     gfi: Deployed<GFIInstance>
     deployEffects: DeployEffects
+    merkleDirectDistributorInfoPath?: string
   }
 ): Promise<Deployed<MerkleDirectDistributorInstance> | undefined> {
   const {gf_deployer} = await deployer.getNamedAccounts()
 
   const contractName = "MerkleDirectDistributor"
 
-  const merkleRoot = await getMerkleDirectDistributorRoot()
+  const merkleRoot = await getMerkleDirectDistributorRoot(merkleDirectDistributorInfoPath)
   if (!merkleRoot) {
     logger(`Merkle root is undefined. Skipping deploy of ${contractName}`)
     return
