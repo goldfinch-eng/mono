@@ -21,6 +21,10 @@ import {GFIInstance} from "@goldfinch-eng/protocol/typechain/truffle"
 import {CONFIG_KEYS_BY_TYPE} from "../../configKeys"
 import poolMetadata from "@goldfinch-eng/client/config/pool-metadata/mainnet.json"
 import {Contract} from "ethers"
+import {generateMerkleRoot as generateMerkleDirectRoot} from "../../merkle/merkleDirectDistributor/generateMerkleRoot"
+import {generateMerkleRoot} from "../../merkle/merkleDistributor/generateMerkleRoot"
+import {promises as fs} from "fs"
+import path from "path"
 
 async function updateGoldfinchConfigs({
   existingConfig,
@@ -44,7 +48,16 @@ async function updateGoldfinchConfigs({
   }
 }
 
-export async function deploy(deployEffects: DeployEffects) {
+export async function deploy(
+  deployEffects: DeployEffects,
+  {
+    noVestingGrants,
+    vestingGrants,
+  }: {
+    noVestingGrants: string
+    vestingGrants: string
+  }
+) {
   const deployer = new ContractDeployer(console.log, hre)
   const upgrader = new ContractUpgrader(deployer)
   const protocolOwner = await getProtocolOwner()
@@ -95,8 +108,23 @@ export async function deploy(deployEffects: DeployEffects) {
 
   const lpStakingRewards = await deployLPStakingRewards(deployer, {config, deployEffects})
   const communityRewards = await deployCommunityRewards(deployer, {config, deployEffects})
-  const merkleDistributor = await deployMerkleDistributor(deployer, {communityRewards, deployEffects})
-  const merkleDirectDistributor = await deployMerkleDirectDistributor(deployer, {gfi, deployEffects})
+
+  const vestingMerkleInfo = generateMerkleRoot(JSON.parse(await fs.readFile(vestingGrants, {encoding: "utf8"})))
+  await fs.writeFile(path.join(__dirname, "./vestingMerkleInfo.json"), JSON.stringify(vestingMerkleInfo, null, 2))
+  const noVestingMerkleInfo = generateMerkleDirectRoot(
+    JSON.parse(await fs.readFile(noVestingGrants, {encoding: "utf8"}))
+  )
+  await fs.writeFile(path.join(__dirname, "./noVestingMerkleInfo.json"), JSON.stringify(noVestingMerkleInfo, null, 2))
+  const merkleDistributor = await deployMerkleDistributor(deployer, {
+    communityRewards,
+    deployEffects,
+    merkleDistributorInfoPath: path.join(__dirname, "./vestingMerkleInfo.json"),
+  })
+  const merkleDirectDistributor = await deployMerkleDirectDistributor(deployer, {
+    gfi,
+    deployEffects,
+    merkleDirectDistributorInfoPath: path.join(__dirname, "./noVestingMerkleInfo.json"),
+  })
 
   // 3.
   // TODO: Mint GFI, distribute to contracts / EOAs, set reward parameters, set GFI in config
