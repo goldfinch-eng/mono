@@ -1,7 +1,7 @@
 import {MerkleDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
 import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
-import React, {useContext, useState} from "react"
+import React, {useState} from "react"
 import {useMediaQuery} from "react-responsive"
 import {
   CommunityRewardsGrant,
@@ -28,7 +28,6 @@ import {iconCarrotDown, iconCarrotUp, iconOutArrow} from "./icons"
 import LoadingButton from "./loadingButton"
 import {WIDTH_TYPES} from "./styleConstants"
 import TransactionForm from "./transactionForm"
-import {AppContext} from "../App"
 
 const ONE_WEEK_SECONDS = new BigNumber(60 * 60 * 24 * 7)
 const TOKEN_LAUNCH_TIME_IN_SECONDS = 1638900000 // Tuesday, December 7, 2021 10:00:00 AM GMT-08:00
@@ -458,7 +457,6 @@ interface RewardActionsContainerProps {
 
 function RewardActionsContainer(props: RewardActionsContainerProps) {
   const sendFromUser = useSendFromUser()
-  const {currentBlock} = useContext(AppContext)
   const [showAction, setShowAction] = useState<boolean>(false)
   const {item} = props
 
