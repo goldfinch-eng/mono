@@ -319,7 +319,7 @@ function RewardsListItem(props: RewardsListItemProps) {
 }
 
 function getGrantVestingIntervalDisplay(vestingInterval: BigNumber): string | undefined {
-  // Right now we decided that it was best not to show the vesting interval for now.
+  // Right now we decided that it was best not to show the vesting interval.
   return undefined
 }
 function getGrantVestingCliffDisplay(cliffLength: BigNumber): string | undefined {
