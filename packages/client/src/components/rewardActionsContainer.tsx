@@ -336,7 +336,7 @@ function getGrantVestingCliffDisplay(cliffLength: BigNumber): string | undefined
       return cliffLengthInDays ? cliffDisplayText : ""
   }
 }
-function getGrantVestingLengthDisplay(duration: number, currentTimestamp: number | undefined): string {
+function getGrantVestingLengthDisplay(duration: number): string {
   const startDate = TOKEN_LAUNCH_TIME_IN_SECONDS
   const endDate = new Date((startDate + duration) * 1000).toLocaleDateString(undefined, {
     year: "numeric",
@@ -356,8 +356,7 @@ function getGrantVestingLengthDisplay(duration: number, currentTimestamp: number
 function getGrantVestingSchedule(
   cliffLength: BigNumber,
   vestingInterval: BigNumber,
-  end: {absolute: boolean; value: number} | null,
-  currentTimestamp: number | undefined
+  end: {absolute: boolean; value: number} | null
 ): string {
   if (end) {
     const displayCliff = getGrantVestingCliffDisplay(cliffLength)
@@ -368,7 +367,7 @@ function getGrantVestingSchedule(
           month: "short",
           day: "numeric",
         })}`
-      : `${getGrantVestingLengthDisplay(end.value, currentTimestamp)}`
+      : `${getGrantVestingLengthDisplay(end.value)}`
     return `Linear ${displayInterval || ""}${displayCliff || ""}${
       displayInterval || displayCliff ? "," : ""
     } until 100%${displayEnd}`
@@ -401,8 +400,7 @@ function getCurrentEarnRate(currentEarnRate: BigNumber): string {
 
 function getMerkleDistributorGrantInfoDetails(
   grantInfo: MerkleDistributorGrantInfo,
-  merkleDistributor: MerkleDistributorLoaded,
-  currentTimestamp: number | undefined
+  merkleDistributor: MerkleDistributorLoaded
 ): ItemDetails {
   const amount = new BigNumber(grantInfo.grant.amount)
   const displayReason = MerkleDistributor.getDisplayReason(grantInfo.reason)
@@ -413,8 +411,7 @@ function getMerkleDistributorGrantInfoDetails(
     vestingSchedule: getGrantVestingSchedule(
       new BigNumber(grantInfo.grant.cliffLength),
       new BigNumber(grantInfo.grant.vestingInterval),
-      vestingLength ? {absolute: false, value: vestingLength} : null,
-      currentTimestamp
+      vestingLength ? {absolute: false, value: vestingLength} : null
     ),
     claimStatus: undefined,
     currentEarnRate: undefined,
@@ -425,8 +422,7 @@ function getMerkleDistributorGrantInfoDetails(
 function getStakingOrCommunityRewardsDetails(
   item: StakingRewardsPosition | CommunityRewardsGrant,
   stakingRewards: StakingRewardsLoaded,
-  communityRewards: CommunityRewardsLoaded,
-  currentTimestamp: number | undefined
+  communityRewards: CommunityRewardsLoaded
 ): ItemDetails {
   if (item instanceof StakingRewardsPosition) {
     return {
@@ -448,8 +444,7 @@ function getStakingOrCommunityRewardsDetails(
               absolute: true,
               value: item.rewards.endTime,
             }
-          : null,
-        currentTimestamp
+          : null
       ),
       claimStatus: undefined,
       currentEarnRate: undefined,
@@ -507,12 +502,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
 
   if (item instanceof CommunityRewardsGrant || item instanceof StakingRewardsPosition) {
     const title = item.title
-    const details = getStakingOrCommunityRewardsDetails(
-      item,
-      props.stakingRewards,
-      props.communityRewards,
-      currentBlock?.timestamp
-    )
+    const details = getStakingOrCommunityRewardsDetails(item, props.stakingRewards, props.communityRewards)
 
     if (item.claimable.eq(0)) {
       let status: RewardStatus
@@ -567,7 +557,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
       />
     )
   } else {
-    const details = getMerkleDistributorGrantInfoDetails(item, props.merkleDistributor, currentBlock?.timestamp)
+    const details = getMerkleDistributorGrantInfoDetails(item, props.merkleDistributor)
     return (
       <RewardsListItem
         status={RewardStatus.Acceptable}
