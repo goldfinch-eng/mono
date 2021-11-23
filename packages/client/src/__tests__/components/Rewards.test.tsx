@@ -636,7 +636,7 @@ describe("Rewards list and detail", () => {
     ).toBeVisible()
 
     expect(await screen.findByText("Vesting status")).toBeVisible()
-    expect(await screen.findByText("--.--% (0.00 GFI) vested")).toBeVisible()
+    expect(await screen.findByText("0.00% (0.00 GFI) vested")).toBeVisible()
 
     expect(await screen.findByText("Vesting schedule")).toBeVisible()
     expect(await screen.findByText("Linear, vesting every 300 seconds, until 100% on Jan 7, 2022")).toBeVisible()
