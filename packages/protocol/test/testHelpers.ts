@@ -216,6 +216,10 @@ function decodeLogs<T extends Truffle.AnyEvent>(logs, emitter, eventName): Decod
     .map((decoded) => ({event: eventName, args: decoded}))
 }
 
+function decodeAndGetFirstLog<T extends Truffle.AnyEvent>(logs, emitter, eventName): DecodedLog<T> {
+  return getFirstLog<T>(decodeLogs<T>(logs, emitter, eventName))
+}
+
 function getFirstLog<T extends Truffle.AnyEvent>(logs: DecodedLog<T>[]): DecodedLog<T> {
   const firstLog = logs[0]
   assertNonNullable(firstLog)
@@ -540,6 +544,7 @@ export {
   createPoolWithCreditLine,
   decodeLogs,
   getFirstLog,
+  decodeAndGetFirstLog,
   getOnlyLog,
   toTruffle,
   genDifferentHexString,

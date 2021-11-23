@@ -15,6 +15,7 @@ import {
   ZERO,
   decodeLogs,
   getFirstLog,
+  decodeAndGetFirstLog,
   setupBackerRewards,
   getCurrentTimestamp,
 } from "./testHelpers"
@@ -26,7 +27,7 @@ const {deployments, artifacts} = hre
 import {ecsign} from "ethereumjs-util"
 const CreditLine = artifacts.require("CreditLine")
 import {getApprovalDigest, getWallet} from "./permitHelpers"
-import {DepositMade, TrancheLocked} from "../typechain/truffle/TranchedPool"
+import {DepositMade, TrancheLocked, PaymentApplied, SharePriceUpdated} from "../typechain/truffle/TranchedPool"
 import {
   CreditLineInstance,
   GoldfinchConfigInstance,
@@ -46,6 +47,7 @@ const RESERVE_FUNDS_COLLECTED_EVENT = "ReserveFundsCollected"
 const PAYMENT_APPLIED_EVENT = "PaymentApplied"
 const EXPECTED_JUNIOR_CAPITAL_LOCKED_EVENT_ARGS = ["0", "1", "2", "__length__", "lockedUntil", "pool", "trancheId"]
 const TEST_TIMEOUT = 30000
+const HALF_CENT = usdcVal(1).div(new BN(200))
 
 const expectPaymentRelatedEventsEmitted = (
   receipt: unknown,
@@ -1988,9 +1990,8 @@ describe("TranchedPool", () => {
 
     async function expectAvailable(tokenId: BN, expectedInterestInUSD: string, expectedPrincipalInUSD: string) {
       const {"0": actualInterest, "1": actualPrincipal} = await tranchedPool.availableToWithdraw(tokenId)
-      const halfCent = usdcVal(1).div(new BN(200))
-      expect(actualInterest).to.bignumber.closeTo(new BN(parseFloat(expectedInterestInUSD) * 1e6), halfCent)
-      expect(actualPrincipal).to.bignumber.closeTo(new BN(parseFloat(expectedPrincipalInUSD) * 1e6), halfCent)
+      expect(actualInterest).to.bignumber.closeTo(new BN(parseFloat(expectedInterestInUSD) * 1e6), HALF_CENT)
+      expect(actualPrincipal).to.bignumber.closeTo(new BN(parseFloat(expectedPrincipalInUSD) * 1e6), HALF_CENT)
     }
 
     describe("initializeNextSlice", async () => {
@@ -2009,9 +2010,15 @@ describe("TranchedPool", () => {
 
         const secondSliceJunior = await depositAndGetTokenId(tranchedPool, "3", usdcVal(20))
         const secondSliceSenior = await depositAndGetTokenId(tranchedPool, "4", usdcVal(80))
-
         expect((await poolTokens.getTokenInfo(secondSliceJunior)).tranche).to.eq("3")
         expect((await poolTokens.getTokenInfo(secondSliceSenior)).tranche).to.eq("4")
+
+        const secondSliceJuniorInfo = await tranchedPool.getTranche("3")
+        const secondSliceSeniorInfo = await tranchedPool.getTranche("4")
+        expect(secondSliceJuniorInfo.id).to.bignumber.eq("3")
+        expect(secondSliceJuniorInfo.principalDeposited).to.bignumber.eq(usdcVal(20))
+        expect(secondSliceSeniorInfo.id).to.bignumber.eq("4")
+        expect(secondSliceSeniorInfo.principalDeposited).to.bignumber.eq(usdcVal(80))
       })
 
       it("does not allow creating a slice when current slice is still active", async () => {
@@ -2129,12 +2136,13 @@ describe("TranchedPool", () => {
 
       const expectedNetInterest = new BN("4438356")
       const expectedProtocolFee = new BN("493150")
+      const expectedExcessPrincipal = new BN(68494)
       const expectedTotalInterest = expectedNetInterest.add(expectedProtocolFee)
 
       const receipt = await tranchedPool.pay(usdcVal(5), {from: borrower})
       expectPaymentRelatedEventsEmitted(receipt, borrower, tranchedPool, {
         interest: expectedTotalInterest,
-        principal: new BN(68494),
+        principal: expectedExcessPrincipal,
         remaining: new BN(0),
         reserve: expectedProtocolFee,
       })
@@ -2157,13 +2165,31 @@ describe("TranchedPool", () => {
       await expectAvailable(firstSliceSenior, "2.76", "0.05")
 
       const secondReceipt = await tranchedPool.pay(usdcVal(420), {from: borrower})
-      // TODO @sanjay - fix flaky failing test
-      // expectPaymentRelatedEventsEmitted(secondReceipt, borrower, tranchedPool, {
-      //   interest: new BN(20023919),
-      //   principal: new BN(400000000).sub(new BN(68494)),
-      //   remaining: new BN(44575),
-      //   reserve: new BN(2006847),
-      // })
+      const paymentEvent = decodeAndGetFirstLog<PaymentApplied>(
+        secondReceipt.receipt.rawLogs,
+        tranchedPool,
+        "PaymentApplied"
+      )
+      const expectedInterest = new BN(20023919)
+      const expectedReserve = new BN(2006847)
+      const expectedRemaining = new BN(44575)
+      expect(paymentEvent.args.interestAmount).to.bignumber.closeTo(expectedInterest, HALF_CENT)
+      expect(paymentEvent.args.principalAmount).to.bignumber.closeTo(
+        usdcVal(400).sub(expectedExcessPrincipal),
+        HALF_CENT
+      )
+      expect(paymentEvent.args.remainingAmount).to.bignumber.closeTo(expectedRemaining, HALF_CENT)
+      expect(paymentEvent.args.reserveAmount).to.bignumber.closeTo(expectedReserve, HALF_CENT)
+
+      const sharePriceEvents = decodeLogs<SharePriceUpdated>(
+        secondReceipt.receipt.rawLogs,
+        tranchedPool,
+        "SharePriceUpdated"
+      )
+      expect(sharePriceEvents.length).to.eq(4)
+      const tranches = sharePriceEvents.map((e) => e.args.tranche.toString()).sort()
+      expect(tranches).to.deep.eq(["1", "2", "3", "4"]) // Every tranche should have an share price update event
+
       expect(await creditLine.balance()).to.bignumber.eq("0")
 
       // The interest is a little bit different from the the spreadsheet model because payment period interest calculation
