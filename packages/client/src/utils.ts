@@ -14,6 +14,7 @@ export function croppedAddress(address) {
 export function displayNumber(val: number | string | BigNumber | undefined, decimals = 2, displayZero = true): string {
   if (
     val === undefined ||
+    (isNumber(val) && isNaN(val)) ||
     (BigNumber.isBigNumber(val) && !val.isFinite()) ||
     (!displayZero &&
       (val === 0 || (BigNumber.isBigNumber(val) && val.eq(0)) || (isString(val) && parseFloat(val) === 0)))
@@ -56,6 +57,7 @@ export function displayDollars(val: number | string | BigNumber | undefined, dec
   let prefix = ""
   if (
     val === undefined ||
+    (isNumber(val) && isNaN(val)) ||
     (BigNumber.isBigNumber(val) && !val.isFinite()) ||
     (!displayZero &&
       (val === 0 || (BigNumber.isBigNumber(val) && val.eq(0)) || (isString(val) && parseFloat(val) === 0)))
