@@ -2006,9 +2006,15 @@ describe("TranchedPool", () => {
 
         const secondSliceJunior = await depositAndGetTokenId(tranchedPool, "3", usdcVal(20))
         const secondSliceSenior = await depositAndGetTokenId(tranchedPool, "4", usdcVal(80))
-
         expect((await poolTokens.getTokenInfo(secondSliceJunior)).tranche).to.eq("3")
         expect((await poolTokens.getTokenInfo(secondSliceSenior)).tranche).to.eq("4")
+
+        const secondSliceJuniorInfo = await tranchedPool.getTranche("3")
+        const secondSliceSeniorInfo = await tranchedPool.getTranche("4")
+        expect(secondSliceJuniorInfo.id).to.bignumber.eq("3")
+        expect(secondSliceJuniorInfo.principalDeposited).to.bignumber.eq(usdcVal(20))
+        expect(secondSliceSeniorInfo.id).to.bignumber.eq("4")
+        expect(secondSliceSeniorInfo.principalDeposited).to.bignumber.eq(usdcVal(80))
       })
 
       it("does not allow creating a slice when current slice is still active", async () => {
