@@ -440,13 +440,11 @@ describe("TranchedPool", () => {
 
       it("does not allow deposits when pool is locked", async () => {
         await tranchedPool.lockJuniorCapital({from: borrower})
-        await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(10))).to.be.rejectedWith(/Tranche has been locked/)
+        await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(10))).to.be.rejectedWith(/Tranche locked/)
       })
 
       it("does not allow 0 value deposits", async () => {
-        await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(0))).to.be.rejectedWith(
-          /Must deposit more than zero/
-        )
+        await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(0))).to.be.rejectedWith(/Must deposit > zero/)
       })
 
       it("fails for invalid tranches", async () => {
@@ -521,7 +519,7 @@ describe("TranchedPool", () => {
         await tranchedPool.deposit(TRANCHES.Junior, usdcVal(10))
         await tranchedPool.lockJuniorCapital({from: borrower})
         await tranchedPool.lockPool({from: borrower})
-        await expect(tranchedPool.deposit(TRANCHES.Senior, usdcVal(10))).to.be.rejectedWith(/Tranche has been locked/)
+        await expect(tranchedPool.deposit(TRANCHES.Senior, usdcVal(10))).to.be.rejectedWith(/Tranche locked/)
       })
 
       it("allows deposits from the senior pool", async () => {
@@ -529,7 +527,7 @@ describe("TranchedPool", () => {
         await tranchedPool.lockJuniorCapital({from: owner})
 
         await expect(tranchedPool.deposit(TRANCHES.Senior, usdcVal(10), {from: borrower})).to.be.rejectedWith(
-          /Must have SENIOR_ROLE/i
+          /Req SENIOR_ROLE/i
         )
         const tx = await seniorPool.invest(tranchedPool.address)
         expectEvent(tx, "InvestmentMadeInSenior")
@@ -539,7 +537,7 @@ describe("TranchedPool", () => {
         const seniorRole = await tranchedPool.SENIOR_ROLE()
         expect(await tranchedPool.hasRole(seniorRole, borrower)).to.be.false
         await expect(tranchedPool.deposit(TRANCHES.Senior, usdcVal(10), {from: borrower})).to.be.rejectedWith(
-          /Must have SENIOR_ROLE/i
+          /Req SENIOR_ROLE/i
         )
       })
 
@@ -548,9 +546,7 @@ describe("TranchedPool", () => {
       })
 
       it("does not allow 0 value deposits", async () => {
-        await expect(tranchedPool.deposit(TRANCHES.Senior, usdcVal(0))).to.be.rejectedWith(
-          /Must deposit more than zero/
-        )
+        await expect(tranchedPool.deposit(TRANCHES.Senior, usdcVal(0))).to.be.rejectedWith(/Must deposit > zero/)
       })
 
       it("updates the tranche info and mints the token", async () => {
@@ -690,24 +686,6 @@ describe("TranchedPool", () => {
       it("fails if not legacy golisted and does not have allowed UID token", async () => {
         await tranchedPool.setAllowedUIDTypes([0], {from: borrower})
         const receipt = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(1), {from: owner})
-        await goldfinchConfig.bulkRemoveFromGoList([owner])
-        const logs = decodeLogs<DepositMade>(receipt.receipt.rawLogs, tranchedPool, "DepositMade")
-        const firstLog = getFirstLog(logs)
-        const tokenId = firstLog.args.tokenId
-
-        await expect(tranchedPool.withdraw(tokenId, usdcVal(1), {from: owner})).to.be.rejectedWith(
-          /Address not go-listed/
-        )
-      })
-
-      it("fails if not legacy golisted and has incorrect UID token", async () => {
-        await uniqueIdentity.setSupportedUIDTypes([1, 2, 3], [true, true, true])
-        const uidTokenId = new BN(3)
-        const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
-        await mint(hre, uniqueIdentity, uidTokenId, expiresAt, new BN(0), owner, undefined, owner)
-        await tranchedPool.setAllowedUIDTypes([uidTokenId], {from: borrower})
-        const receipt = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(1), {from: owner})
-        await tranchedPool.setAllowedUIDTypes([0], {from: borrower})
         await goldfinchConfig.bulkRemoveFromGoList([owner])
         const logs = decodeLogs<DepositMade>(receipt.receipt.rawLogs, tranchedPool, "DepositMade")
         const firstLog = getFirstLog(logs)
@@ -960,7 +938,7 @@ describe("TranchedPool", () => {
       it("reverts if array lengths don't match", async () => {
         await expect(
           tranchedPool.withdrawMultiple([firstToken, thirdTokenFromDifferentUser], [usdcVal(50)])
-        ).to.be.rejectedWith(/TokensIds and Amounts mistmatch/)
+        ).to.be.rejectedWith(/TokensIds and Amounts mismatch/)
       })
     })
 
@@ -1124,6 +1102,32 @@ describe("TranchedPool", () => {
       await expect(tranchedPool.setAllowedUIDTypes([1], {from: otherPerson})).to.be.rejectedWith(
         /Must have locker role/
       )
+    })
+
+    it("validate no principal has been deposited to jr pool", async () => {
+      await uniqueIdentity.setSupportedUIDTypes([1, 2, 3], [true, true, true])
+      await expect(tranchedPool.setAllowedUIDTypes([1], {from: borrower})).to.be.fulfilled
+      const uidTokenId = new BN(1)
+      const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
+      await mint(hre, uniqueIdentity, uidTokenId, expiresAt, new BN(0), owner, undefined, owner)
+      await tranchedPool.setAllowedUIDTypes([1], {from: borrower})
+
+      await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(1), {from: owner})).to.be.fulfilled
+
+      await expect(tranchedPool.setAllowedUIDTypes([1], {from: borrower})).to.be.rejectedWith(/Must not have balance/)
+    })
+
+    it("validate no principal has been deposited to sr pool", async () => {
+      await uniqueIdentity.setSupportedUIDTypes([1, 2, 3], [true, true, true])
+      await expect(tranchedPool.setAllowedUIDTypes([1], {from: borrower})).to.be.fulfilled
+      const uidTokenId = new BN(1)
+      const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
+      await mint(hre, uniqueIdentity, uidTokenId, expiresAt, new BN(0), owner, undefined, owner)
+      await tranchedPool.setAllowedUIDTypes([1], {from: borrower})
+
+      await expect(tranchedPool.deposit(TRANCHES.Senior, usdcVal(1), {from: owner})).to.be.fulfilled
+
+      await expect(tranchedPool.setAllowedUIDTypes([1], {from: borrower})).to.be.rejectedWith(/Must not have balance/)
     })
   })
 
@@ -1425,7 +1429,7 @@ describe("TranchedPool", () => {
           await expect(tranchedPool.drawdown(usdcVal(1))).to.be.fulfilled
           const pauseTxn = await tranchedPool.pauseDrawdowns()
           expectEvent(pauseTxn, "DrawdownsPaused", {pool: tranchedPool.address})
-          await expect(tranchedPool.drawdown(usdcVal(1))).to.be.rejectedWith(/Drawdowns are currently paused/)
+          await expect(tranchedPool.drawdown(usdcVal(1))).to.be.rejectedWith(/Drawdowns are paused/)
           const unpauseTxn = await tranchedPool.unpauseDrawdowns()
           expectEvent(unpauseTxn, "DrawdownsUnpaused", {pool: tranchedPool.address})
           await expect(tranchedPool.drawdown(usdcVal(1))).to.be.fulfilled
@@ -2055,7 +2059,7 @@ describe("TranchedPool", () => {
         // one day in the future
         const newFundableAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
         await tranchedPool.initializeNextSlice(newFundableAt, {from: borrower})
-        await expect(tranchedPool.deposit("3", usdcVal(10))).to.be.rejectedWith(/Not yet open for funding/)
+        await expect(tranchedPool.deposit("3", usdcVal(10))).to.be.rejectedWith(/Not open for funding/)
 
         // advance 2 days, and it should work
         await advanceTime({days: 2})

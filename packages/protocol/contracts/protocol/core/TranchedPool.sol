@@ -87,7 +87,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     uint256 _fundableAt,
     uint256[] calldata _allowedUIDTypes
   ) public override initializer {
-    require(address(_config) != address(0) && address(_borrower) != address(0), "Config and borrower invalid");
+    require(address(_config) != address(0) && address(_borrower) != address(0), "Config/borrower invalid");
 
     config = GoldfinchConfig(_config);
     address owner = config.protocolAdminAddress();
@@ -127,6 +127,10 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   }
 
   function setAllowedUIDTypes(uint256[] calldata ids) public onlyLocker {
+    require(
+      poolSlices[0].juniorTranche.principalDeposited == 0 && poolSlices[0].seniorTranche.principalDeposited == 0,
+      "Must not have balance"
+    );
     allowedUIDTypes = ids;
   }
 
@@ -144,13 +148,13 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     returns (uint256 tokenId)
   {
     TrancheInfo storage trancheInfo = getTrancheInfo(tranche);
-    require(trancheInfo.lockedUntil == 0, "Tranche has been locked");
-    require(amount > 0, "Must deposit more than zero");
+    require(trancheInfo.lockedUntil == 0, "Tranche locked");
+    require(amount > 0, "Must deposit > zero");
     require(config.getGo().goOnlyIdTypes(msg.sender, allowedUIDTypes), "Address not go-listed");
-    require(block.timestamp > fundableAt, "Not yet open for funding");
+    require(block.timestamp > fundableAt, "Not open for funding");
     // senior tranche ids are always odd numbered
     if (_isSeniorTrancheId(trancheInfo.id)) {
-      require(hasRole(SENIOR_ROLE, _msgSender()), "Must have SENIOR_ROLE");
+      require(hasRole(SENIOR_ROLE, _msgSender()), "Req SENIOR_ROLE");
     }
 
     trancheInfo.principalDeposited = trancheInfo.principalDeposited.add(amount);
@@ -183,7 +187,6 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   function withdraw(uint256 tokenId, uint256 amount)
     public
     override
-    onlyTokenHolder(tokenId)
     nonReentrant
     whenNotPaused
     returns (uint256 interestWithdrawn, uint256 principalWithdrawn)
@@ -200,7 +203,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
    * @param amounts An array of amounts to withdraw from the corresponding tokenIds
    */
   function withdrawMultiple(uint256[] calldata tokenIds, uint256[] calldata amounts) public override {
-    require(tokenIds.length == amounts.length, "TokensIds and Amounts mistmatch");
+    require(tokenIds.length == amounts.length, "TokensIds and Amounts mismatch");
 
     for (uint256 i = 0; i < amounts.length; i++) {
       withdraw(tokenIds[i], amounts[i]);
@@ -216,7 +219,6 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   function withdrawMax(uint256 tokenId)
     external
     override
-    onlyTokenHolder(tokenId)
     nonReentrant
     whenNotPaused
     returns (uint256 interestWithdrawn, uint256 principalWithdrawn)
@@ -236,7 +238,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
    * @param amount The amount to drawdown from the creditline (must be < limit)
    */
   function drawdown(uint256 amount) external override onlyLocker whenNotPaused {
-    require(!drawdownsPaused, "Drawdowns are currently paused");
+    require(!drawdownsPaused, "Drawdowns are paused");
     if (!locked()) {
       // Assumes the senior pool has invested already (saves the borrower a separate transaction to lock the pool)
       _lockPool();
@@ -536,6 +538,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     uint256 tokenId,
     uint256 amount
   ) internal returns (uint256 interestWithdrawn, uint256 principalWithdrawn) {
+    require(config.getPoolTokens().isApprovedOrOwner(msg.sender, tokenId), "Not token owner");
     require(config.getGo().goOnlyIdTypes(msg.sender, allowedUIDTypes), "Address not go-listed");
     require(amount > 0, "Must withdraw more than zero");
     (uint256 interestRedeemable, uint256 principalRedeemable) = redeemableInterestAndPrincipal(trancheInfo, tokenInfo);
@@ -795,11 +798,6 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
 
   modifier onlyLocker() {
     require(hasRole(LOCKER_ROLE, msg.sender), "Must have locker role");
-    _;
-  }
-
-  modifier onlyTokenHolder(uint256 tokenId) {
-    require(config.getPoolTokens().isApprovedOrOwner(msg.sender, tokenId), "Not token owner");
     _;
   }
 }

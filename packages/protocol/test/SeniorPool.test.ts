@@ -723,7 +723,7 @@ describe("SeniorPool", () => {
 
         return expect(
           seniorPool.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount)
-        ).to.be.rejectedWith(/Tranche has been locked/)
+        ).to.be.rejectedWith(/Tranche locked/)
       })
     })
 
