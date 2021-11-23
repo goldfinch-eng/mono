@@ -127,7 +127,7 @@ describe("Senior pool page deposit status", () => {
     ).toBeInTheDocument()
     expect(screen.getByText("Senior Pool APY")).toBeInTheDocument()
     expect(screen.getByTestId("tooltip-estimated-apy").textContent).toEqual("0.48%")
-    expect(screen.getByTestId("tooltip-gfi-apy").textContent).toEqual("--.--%")
+    expect(screen.getByTestId("tooltip-gfi-apy").textContent).toEqual("0.00%")
     expect(screen.getByTestId("tooltip-total-apy").textContent).toEqual("0.48%")
   })
 
