@@ -191,7 +191,6 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     whenNotPaused
     returns (uint256 interestWithdrawn, uint256 principalWithdrawn)
   {
-    require(config.getPoolTokens().isApprovedOrOwner(msg.sender, tokenId), "Not token owner");
     IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
     TrancheInfo storage trancheInfo = getTrancheInfo(tokenInfo.tranche);
 
@@ -224,7 +223,6 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     whenNotPaused
     returns (uint256 interestWithdrawn, uint256 principalWithdrawn)
   {
-    require(config.getPoolTokens().isApprovedOrOwner(msg.sender, tokenId), "Not token owner");
     IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
     TrancheInfo storage trancheInfo = getTrancheInfo(tokenInfo.tranche);
 
@@ -540,6 +538,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     uint256 tokenId,
     uint256 amount
   ) internal returns (uint256 interestWithdrawn, uint256 principalWithdrawn) {
+    require(config.getPoolTokens().isApprovedOrOwner(msg.sender, tokenId), "Not token owner");
     require(config.getGo().goOnlyIdTypes(msg.sender, allowedUIDTypes), "Address not go-listed");
     require(amount > 0, "Must withdraw more than zero");
     (uint256 interestRedeemable, uint256 principalRedeemable) = redeemableInterestAndPrincipal(trancheInfo, tokenInfo);
