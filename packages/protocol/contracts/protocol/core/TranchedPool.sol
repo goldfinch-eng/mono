@@ -466,6 +466,10 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     return creditLine.setLimit(newAmount);
   }
 
+  function setMaxLimit(uint256 newAmount) external onlyAdmin {
+    return creditLine.setMaxLimit(newAmount);
+  }
+
   function getTranche(uint256 tranche) public view override returns (TrancheInfo memory) {
     return getTrancheInfo(tranche);
   }

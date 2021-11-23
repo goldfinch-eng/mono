@@ -360,18 +360,24 @@ describe("TranchedPool", () => {
     })
   })
 
-  describe("setLimit", async () => {
+  describe("setLimit and setMaxLimit", async () => {
     const newLimit = new BN(500)
     beforeEach(async () => {
       await createPoolWithCreditLine({})
     })
     it("can only be called by governance", async () => {
       await expect(tranchedPool.setLimit(newLimit, {from: otherPerson})).to.be.rejectedWith(/Must have admin role/)
+      await expect(tranchedPool.setMaxLimit(newLimit, {from: otherPerson})).to.be.rejectedWith(/Must have admin role/)
     })
     it("should update the TranchedPool limit", async () => {
       const clFnFromPool = async (pool, fnName) => (await CreditLine.at(await pool.creditLine()))[fnName]()
       await expectAction(() => tranchedPool.setLimit(newLimit)).toChange([
         [async () => clFnFromPool(tranchedPool, "limit"), {to: newLimit}],
+        [async () => clFnFromPool(tranchedPool, "maxLimit"), {unchanged: true}],
+      ])
+      await expectAction(() => tranchedPool.setMaxLimit(newLimit)).toChange([
+        [async () => clFnFromPool(tranchedPool, "limit"), {unchanged: true}],
+        [async () => clFnFromPool(tranchedPool, "maxLimit"), {to: newLimit}],
       ])
     })
   })
