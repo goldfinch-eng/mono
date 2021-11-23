@@ -47,7 +47,7 @@ const RESERVE_FUNDS_COLLECTED_EVENT = "ReserveFundsCollected"
 const PAYMENT_APPLIED_EVENT = "PaymentApplied"
 const EXPECTED_JUNIOR_CAPITAL_LOCKED_EVENT_ARGS = ["0", "1", "2", "__length__", "lockedUntil", "pool", "trancheId"]
 const TEST_TIMEOUT = 30000
-const halfCent = usdcVal(1).div(new BN(200))
+const HALF_CENT = usdcVal(1).div(new BN(200))
 
 const expectPaymentRelatedEventsEmitted = (
   receipt: unknown,
@@ -1986,8 +1986,8 @@ describe("TranchedPool", () => {
 
     async function expectAvailable(tokenId: BN, expectedInterestInUSD: string, expectedPrincipalInUSD: string) {
       const {"0": actualInterest, "1": actualPrincipal} = await tranchedPool.availableToWithdraw(tokenId)
-      expect(actualInterest).to.bignumber.closeTo(new BN(parseFloat(expectedInterestInUSD) * 1e6), halfCent)
-      expect(actualPrincipal).to.bignumber.closeTo(new BN(parseFloat(expectedPrincipalInUSD) * 1e6), halfCent)
+      expect(actualInterest).to.bignumber.closeTo(new BN(parseFloat(expectedInterestInUSD) * 1e6), HALF_CENT)
+      expect(actualPrincipal).to.bignumber.closeTo(new BN(parseFloat(expectedPrincipalInUSD) * 1e6), HALF_CENT)
     }
 
     describe("initializeNextSlice", async () => {
@@ -2166,13 +2166,16 @@ describe("TranchedPool", () => {
         tranchedPool,
         "PaymentApplied"
       )
-      expect(paymentEvent.args.interestAmount).to.bignumber.closeTo(new BN(20023919), halfCent)
+      const expectedInterest = new BN(20023919)
+      const expectedReserve = new BN(2006847)
+      const expectedRemaining = new BN(44575)
+      expect(paymentEvent.args.interestAmount).to.bignumber.closeTo(expectedInterest, HALF_CENT)
       expect(paymentEvent.args.principalAmount).to.bignumber.closeTo(
         usdcVal(400).sub(expectedExcessPrincipal),
-        halfCent
+        HALF_CENT
       )
-      expect(paymentEvent.args.remainingAmount).to.bignumber.closeTo(new BN(44575), halfCent)
-      expect(paymentEvent.args.reserveAmount).to.bignumber.closeTo(new BN(2006847), halfCent)
+      expect(paymentEvent.args.remainingAmount).to.bignumber.closeTo(expectedRemaining, HALF_CENT)
+      expect(paymentEvent.args.reserveAmount).to.bignumber.closeTo(expectedReserve, HALF_CENT)
 
       const sharePriceEvents = decodeLogs<SharePriceUpdated>(
         secondReceipt.receipt.rawLogs,
