@@ -155,7 +155,6 @@ class CreditLine extends BaseCreditLine {
       {method: "termInDays"},
       {method: "nextDueTime"},
       {method: "limit", name: "currentLimit"},
-      {method: "maxLimit"},
       {method: "interestOwed"},
       {method: "termEndTime"},
       {method: "lastFullPaymentTime"},
@@ -164,6 +163,14 @@ class CreditLine extends BaseCreditLine {
     attributes.forEach((info) => {
       this[info.name || info.method] = new BigNumber(data[info.method])
     })
+
+    // maxLimit is not available on older versions of the creditline, so fall back to limit in that case
+    try {
+      data = await fetchDataFromAttributes(this.creditLine, [{method: "maxLimit"}])
+      this["maxLimit"] = new BigNumber(data["maxLimit"])
+    } catch (e) {
+      this["maxLimit"] = this["currentLimit"]
+    }
 
     const formattedNextDueDate = moment.unix(this.nextDueTime.toNumber()).format("MMM D")
 
