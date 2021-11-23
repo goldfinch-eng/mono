@@ -39,6 +39,35 @@ dataSources:
       file: ./src/mappings/senior_pool_proxy.ts
 
   - kind: ethereum/contract
+    name: GoldfinchFactoryProxy
+    network: mainnet
+    source:
+      address: "0xd20508E1E971b80EE172c73517905bfFfcBD87f9"
+      abi: GoldfinchFactory
+      startBlock: 13096000
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - User
+      abis:
+        - name: GoldfinchFactory_Implementation
+          file: ./abis/GoldfinchFactory_Implementation.json
+        - name: TranchedPool
+          file: ./abis/TranchedPool.json
+        - name: GoldfinchFactory_Proxy
+          file: ./abis/GoldfinchFactory_Proxy.json
+        - name: GoldfinchFactory
+          file: ./abis/GoldfinchFactory.json
+      eventHandlers:
+        - event: OwnershipTransferred(indexed address,indexed address)
+          handler: handleOwnershipTransferred
+        - event: ProxyImplementationUpdated(indexed address,indexed address)
+          handler: handleProxyImplementationUpdated
+      file: ./src/mappings/goldfinch_factory_proxy.ts
+
+  - kind: ethereum/contract
     name: PoolProxy
     network: mainnet
     source:
@@ -165,4 +194,72 @@ templates:
         - event: WithdrawalMade(indexed address,uint256,uint256)
           handler: handleWithdrawalMade
 
+  - name: GoldfinchFactory
+    kind: ethereum/contract
+    network: mainnet
+    source:
+      abi: GoldfinchFactory
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      file: ./src/mappings/goldfinch_factory.ts
+      entities:
+        - User
+        - TranchedPool
+      abis:
+        - name: GoldfinchFactory
+          file: ./abis/GoldfinchFactory.json
+        - name: GoldfinchFactory_Implementation
+          file: ./abis/GoldfinchFactory_Implementation.json
+        - name: TranchedPool
+          file: ./abis/TranchedPool.json
+      eventHandlers:
+        - event: BorrowerCreated(indexed address,indexed address)
+          handler: handlerBorrowerCreated
+        - event: Paused(address)
+          handler: handlerPaused
+        - event: PoolCreated(indexed address,indexed address)
+          handler: handlerPoolCreated
+        - event: RoleGranted(indexed bytes32,indexed address,indexed address)
+          handler: handlerRoleGranted
+        - event: RoleRevoked(indexed bytes32,indexed address,indexed address)
+          handler: handlerRoleRevoked
+        - event: Unpaused(address)
+          handler: handlerUnpaused
 
+  - name: TranchedPool
+    kind: ethereum/contract
+    network: mainnet
+    source:
+      abi: TranchedPool
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      file: ./src/mappings/tranched_pool.ts
+      entities: []
+      abis:
+        - name: TranchedPool
+          file: ./abis/TranchedPool.json
+        - name: Fidu_Implementation
+          file: ./abis/Fidu_Implementation.json
+        - name: Fidu
+          file: ./abis/Fidu.json
+        - name: Fidu_Proxy
+          file: ./abis/Fidu_Proxy.json
+        - name: CreditLine
+          file: ./abis/CreditLine.json
+      eventHandlers:
+        - event: CreditLineMigrated(indexed address,indexed address)
+          handler: handlerCreditLineMigrated
+        - event: DepositMade(indexed address,indexed uint256,indexed uint256,uint256)
+          handler: handlerDepositMade
+        - event: DrawdownsPaused(indexed address)
+          handler: handlerDrawdownsPaused
+        - event: DrawdownsUnpaused(indexed address)
+          handler: handlerDrawdownsUnpaused
+        - event: EmergencyShutdown(indexed address)
+          handler: handlerEmergencyShutdown
+        - event: WithdrawalMade(indexed address,indexed uint256,indexed uint256,uint256,uint256)
+          handler: handlerWithdrawalMade
