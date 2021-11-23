@@ -1,4 +1,4 @@
-import {isNumber} from "@goldfinch-eng/utils/src/type"
+import {isNumber, isString} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
 import _ from "lodash"
 import {AsyncReturnType} from "./types/util"
@@ -11,8 +11,13 @@ export function croppedAddress(address) {
   return `${address.slice(0, 6)}...${address.slice(-4)}`
 }
 
-export function displayNumber(val: number | string | BigNumber | undefined, decimals = 2): string {
-  if (!val || (BigNumber.isBigNumber(val) && !val.isFinite())) {
+export function displayNumber(val: number | string | BigNumber | undefined, decimals = 2, displayZero = true): string {
+  if (
+    val === undefined ||
+    (BigNumber.isBigNumber(val) && !val.isFinite()) ||
+    (!displayZero &&
+      (val === 0 || (BigNumber.isBigNumber(val) && val.eq(0)) || (isString(val) && parseFloat(val) === 0)))
+  ) {
     return ""
   }
 
@@ -47,9 +52,14 @@ function commaFormat(numberString): string {
   return `${_.join(_.reverse(withCommas), "")}${decimalString}`
 }
 
-export function displayDollars(val: number | string | BigNumber | undefined, decimals = 2) {
+export function displayDollars(val: number | string | BigNumber | undefined, decimals = 2, displayZero = true) {
   let prefix = ""
-  if (!val || (BigNumber.isBigNumber(val) && (!val.isFinite() || val.eq(0)))) {
+  if (
+    val === undefined ||
+    (BigNumber.isBigNumber(val) && !val.isFinite()) ||
+    (!displayZero &&
+      (val === 0 || (BigNumber.isBigNumber(val) && val.eq(0)) || (isString(val) && parseFloat(val) === 0)))
+  ) {
     return "$--.--"
   }
 
@@ -65,9 +75,9 @@ export function displayDollars(val: number | string | BigNumber | undefined, dec
   return `${prefix}$${displayNumber(val, decimals)}`
 }
 
-export function displayPercent(val: BigNumber | undefined, decimals = 2) {
+export function displayPercent(val: BigNumber | undefined, decimals = 2, displayZero = true) {
   let valDisplay: string
-  if (!val || !val.isFinite() || val.eq(0)) {
+  if (val === undefined || !val.isFinite() || (!displayZero && val.eq(0))) {
     valDisplay = "--.--"
   } else {
     valDisplay = displayNumber(val.multipliedBy(100), decimals)
