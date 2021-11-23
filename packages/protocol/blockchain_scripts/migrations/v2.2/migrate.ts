@@ -1,17 +1,20 @@
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import {changeImplementations, getDeployEffects} from "../deployEffects"
 import {deploy} from "./deploy"
+import path from "path"
 
-export async function main({
-  vestingGrants = process.env.VESTING_GRANTS_PATH,
-  noVestingGrants = process.env.NO_VESTING_GRANTS_PATH,
-}: {
-  vestingGrants?: string
-  noVestingGrants?: string
-} = {}) {
-  assertNonNullable(vestingGrants, "VESTING_GRANTS_PATH must be defined")
-  assertNonNullable(noVestingGrants, "NO_VESTING_GRANTS_PATH must be defined")
-
+export async function main(
+  {
+    vestingGrants,
+    noVestingGrants,
+  }: {
+    vestingGrants: string
+    noVestingGrants: string
+  } = {
+    vestingGrants: path.join(__dirname, "../../airdrop/community/grants.vesting.json"),
+    noVestingGrants: path.join(__dirname, "../../airdrop/community/grants.no_vesting.json"),
+  }
+) {
   const effects = await getDeployEffects()
   const {deployedContracts, upgradedContracts} = await deploy(effects, {
     noVestingGrants,
