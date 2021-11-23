@@ -2,6 +2,7 @@ import {hardhat, deployAllContracts, toEthers} from "@goldfinch-eng/protocol/tes
 const {deployments} = hardhat
 import {togglePause} from "../senior-pool-pauser/index"
 let seniorPool
+
 describe("togglePause", () => {
   const setupTest = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
     const {seniorPool} = await deployAllContracts(deployments)
@@ -20,16 +21,16 @@ describe("togglePause", () => {
       seniorPoolAsEthers = await toEthers(seniorPool)
     })
 
-    context("when the pool is not already paused", async () => {
-      it("should pause the pool", async () => {
+    context("when the contract is not already paused", async () => {
+      it("should pause the contract", async () => {
         expect(await seniorPoolAsEthers.paused()).to.be.false
         await togglePause(seniorPoolAsEthers)
         expect(await seniorPoolAsEthers.paused()).to.be.true
       })
     })
 
-    context("when the pool is already paused", async () => {
-      it("should pause the pool", async () => {
+    context("when the contract is already paused", async () => {
+      it("should unpause the contract", async () => {
         await togglePause(seniorPoolAsEthers)
         expect(await seniorPoolAsEthers.paused()).to.be.true
         await togglePause(seniorPoolAsEthers)
