@@ -13,14 +13,10 @@ import {Deployment} from "hardhat-deploy/types"
 import {CONFIG_KEYS, CONFIG_KEYS_BY_TYPE} from "@goldfinch-eng/protocol/blockchain_scripts/configKeys"
 import {GoldfinchConfig, TranchedPool} from "@goldfinch-eng/protocol/typechain/ethers"
 import poolMetadata from "@goldfinch-eng/client/config/pool-metadata/mainnet.json"
-import path from "path"
 
 const performMigration = deployments.createFixture(async ({deployments}) => {
   await deployments.fixture("base_deploy", {keepExistingDeployments: true})
-  return await migrate.main({
-    vestingGrants: path.join(__dirname, "../../../../../blockchain_scripts/airdrop/community/grants.vesting.json"),
-    noVestingGrants: path.join(__dirname, "../../../../../blockchain_scripts/airdrop/community/grants.no_vesting.json"),
-  })
+  return await migrate.main()
 })
 
 export function expectProxyOwner({toBe, forContracts}: {toBe: () => Promise<string>; forContracts: string[]}) {
