@@ -3,13 +3,9 @@ import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/mainnet
 import {assertIsString} from "@goldfinch-eng/utils"
 import * as migrate from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.2/migrate"
 import {
-  ETHDecimals,
+  DISTRIBUTOR_ROLE,
   getEthersContract,
   getProtocolOwner,
-  MINTER_ROLE,
-  OWNER_ROLE,
-  PAUSER_ROLE,
-  SIGNER_ROLE,
 } from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
 import {Awaited} from "@goldfinch-eng/protocol/blockchain_scripts/types"
 import {TEST_TIMEOUT} from "../../../MainnetForking.test"
@@ -17,10 +13,14 @@ import {Deployment} from "hardhat-deploy/types"
 import {CONFIG_KEYS, CONFIG_KEYS_BY_TYPE} from "@goldfinch-eng/protocol/blockchain_scripts/configKeys"
 import {GoldfinchConfig, TranchedPool} from "@goldfinch-eng/protocol/typechain/ethers"
 import poolMetadata from "@goldfinch-eng/client/config/pool-metadata/mainnet.json"
+import path from "path"
 
 const performMigration = deployments.createFixture(async ({deployments}) => {
   await deployments.fixture("base_deploy", {keepExistingDeployments: true})
-  return await migrate.main()
+  return await migrate.main({
+    vestingGrants: path.join(__dirname, "../../../../../blockchain_scripts/airdrop/community/grants.vesting.json"),
+    noVestingGrants: path.join(__dirname, "../../../../../blockchain_scripts/airdrop/community/grants.no_vesting.json"),
+  })
 })
 
 export function expectProxyOwner({toBe, forContracts}: {toBe: () => Promise<string>; forContracts: string[]}) {
@@ -52,7 +52,7 @@ export function expectRoles(expectations: RoleExpectation[]) {
   })
 }
 
-describe("v2.2 migration", async function () {
+describe("V2.2 migration", async function () {
   this.timeout(TEST_TIMEOUT)
 
   let oldConfigDeployment: Deployment
@@ -140,19 +140,19 @@ describe("v2.2 migration", async function () {
       }
     })
 
-    // it("deploys merkle distributors", async () => {
-    //   for (const contractName of ["MerkleDistributor", "MerkleDirectDistributor"]) {
-    //     await expect(deployments.get(contractName)).to.not.be.rejected
-    //   }
-    // })
+    it("deploys merkle distributors", async () => {
+      for (const contractName of ["MerkleDistributor", "MerkleDirectDistributor"]) {
+        await expect(deployments.get(contractName)).to.not.be.rejected
+      }
+    })
 
-    // expectRoles([
-    //   {
-    //     contractName: "CommunityRewards",
-    //     roles: [SIGNER_ROLE],
-    //     address: async () => (await deployments.get("MerkleDistributor")).address,
-    //   },
-    // ])
+    expectRoles([
+      {
+        contractName: "CommunityRewards",
+        roles: [DISTRIBUTOR_ROLE],
+        address: async () => (await deployments.get("MerkleDistributor")).address,
+      },
+    ])
 
     // it("mints and distributes GFI to the correct addresses", async () => {})
   })
