@@ -225,12 +225,6 @@ function getActionButtonProps(props: RewardsListItemProps): ActionButtonProps {
         text: ActionButtonTexts.claimed,
         disabled: true,
       }
-    case RewardStatus.FullyUnstakedAndClaimed:
-      return {
-        ...baseProps,
-        text: ActionButtonTexts.claimed,
-        disabled: true,
-      }
     default:
       return assertUnreachable(props.status)
   }
