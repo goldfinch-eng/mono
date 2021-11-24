@@ -15,6 +15,7 @@ import {
   ZERO,
   decodeLogs,
   getFirstLog,
+  decodeAndGetFirstLog,
   setupBackerRewards,
   getCurrentTimestamp,
 } from "./testHelpers"
@@ -26,7 +27,7 @@ const {deployments, artifacts} = hre
 import {ecsign} from "ethereumjs-util"
 const CreditLine = artifacts.require("CreditLine")
 import {getApprovalDigest, getWallet} from "./permitHelpers"
-import {DepositMade, TrancheLocked} from "../typechain/truffle/TranchedPool"
+import {DepositMade, TrancheLocked, PaymentApplied, SharePriceUpdated} from "../typechain/truffle/TranchedPool"
 import {
   CreditLineInstance,
   GoldfinchConfigInstance,
@@ -46,6 +47,7 @@ const RESERVE_FUNDS_COLLECTED_EVENT = "ReserveFundsCollected"
 const PAYMENT_APPLIED_EVENT = "PaymentApplied"
 const EXPECTED_JUNIOR_CAPITAL_LOCKED_EVENT_ARGS = ["0", "1", "2", "__length__", "lockedUntil", "pool", "trancheId"]
 const TEST_TIMEOUT = 30000
+const HALF_CENT = usdcVal(1).div(new BN(200))
 
 const expectPaymentRelatedEventsEmitted = (
   receipt: unknown,
@@ -235,8 +237,9 @@ describe("TranchedPool", () => {
       const lateFeeApr = interestAprAsBN("0.9783")
       const principalGracePeriodInDays = new BN(30)
 
+      const clFnFromPool = async (pool, fnName) => (await CreditLine.at(await pool.creditLine()))[fnName]()
       // Limit starts at 0 until drawdown happens.
-      expect(await tranchedPool.limit()).to.bignumber.eq("0")
+      expect(await clFnFromPool(tranchedPool, "limit")).to.bignumber.eq("0")
 
       await expectAction(async () =>
         tranchedPool.migrateCreditLine(
@@ -249,17 +252,18 @@ describe("TranchedPool", () => {
           principalGracePeriodInDays
         )
       ).toChange([
-        [tranchedPool.maxLimit, {to: maxLimit}],
-        [tranchedPool.borrower, {to: borrower, bignumber: false}],
-        [tranchedPool.interestApr, {to: interestApr}],
-        [tranchedPool.paymentPeriodInDays, {to: paymentPeriodInDays}],
-        [tranchedPool.termInDays, {to: termInDays}],
-        [tranchedPool.lateFeeApr, {to: lateFeeApr}],
-        [tranchedPool.principalGracePeriodInDays, {to: principalGracePeriodInDays}],
+        [async () => await tranchedPool.creditLine(), {beDifferent: true}],
+        [async () => clFnFromPool(tranchedPool, "maxLimit"), {to: maxLimit}],
+        [async () => clFnFromPool(tranchedPool, "borrower"), {to: borrower, bignumber: false}],
+        [async () => clFnFromPool(tranchedPool, "interestApr"), {to: interestApr}],
+        [async () => clFnFromPool(tranchedPool, "paymentPeriodInDays"), {to: paymentPeriodInDays}],
+        [async () => clFnFromPool(tranchedPool, "termInDays"), {to: termInDays}],
+        [async () => clFnFromPool(tranchedPool, "lateFeeApr"), {to: lateFeeApr}],
+        [async () => clFnFromPool(tranchedPool, "principalGracePeriodInDays"), {to: principalGracePeriodInDays}],
       ])
 
       // Limit does not change
-      expect(await tranchedPool.limit()).to.bignumber.eq("0")
+      expect(await clFnFromPool(tranchedPool, "limit")).to.bignumber.eq("0")
     })
 
     it("should copy over the accounting vars", async () => {
@@ -358,16 +362,25 @@ describe("TranchedPool", () => {
     })
   })
 
-  describe("setLimit", async () => {
+  describe("setLimit and setMaxLimit", async () => {
     const newLimit = new BN(500)
     beforeEach(async () => {
       await createPoolWithCreditLine({})
     })
     it("can only be called by governance", async () => {
       await expect(tranchedPool.setLimit(newLimit, {from: otherPerson})).to.be.rejectedWith(/Must have admin role/)
+      await expect(tranchedPool.setMaxLimit(newLimit, {from: otherPerson})).to.be.rejectedWith(/Must have admin role/)
     })
     it("should update the TranchedPool limit", async () => {
-      await expectAction(() => tranchedPool.setLimit(newLimit)).toChange([[tranchedPool.limit, {to: newLimit}]])
+      const clFnFromPool = async (pool, fnName) => (await CreditLine.at(await pool.creditLine()))[fnName]()
+      await expectAction(() => tranchedPool.setLimit(newLimit)).toChange([
+        [async () => clFnFromPool(tranchedPool, "limit"), {to: newLimit}],
+        [async () => clFnFromPool(tranchedPool, "maxLimit"), {unchanged: true}],
+      ])
+      await expectAction(() => tranchedPool.setMaxLimit(newLimit)).toChange([
+        [async () => clFnFromPool(tranchedPool, "limit"), {unchanged: true}],
+        [async () => clFnFromPool(tranchedPool, "maxLimit"), {to: newLimit}],
+      ])
     })
   })
 
@@ -400,7 +413,7 @@ describe("TranchedPool", () => {
         await tranchedPool.setAllowedUIDTypes([], {from: borrower})
         await goldfinchConfig.bulkRemoveFromGoList([owner])
         await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(1), {from: owner})).to.be.rejectedWith(
-          /This address has not been go-listed/
+          /Address not go-listed/
         )
       })
 
@@ -413,7 +426,7 @@ describe("TranchedPool", () => {
         await tranchedPool.setAllowedUIDTypes([1], {from: borrower})
 
         await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(1), {from: owner})).to.be.rejectedWith(
-          /This address has not been go-listed/
+          /Address not go-listed/
         )
       })
 
@@ -424,20 +437,16 @@ describe("TranchedPool", () => {
         await mint(hre, uniqueIdentity, uidTokenId, expiresAt, new BN(0), owner, undefined, owner)
         await tranchedPool.setAllowedUIDTypes([1], {from: borrower})
 
-        await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(1), {from: owner})).to.be.not.rejectedWith(
-          /This address has not been go-listed/
-        )
+        await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(1), {from: owner})).to.be.fulfilled
       })
 
       it("does not allow deposits when pool is locked", async () => {
         await tranchedPool.lockJuniorCapital({from: borrower})
-        await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(10))).to.be.rejectedWith(/Tranche has been locked/)
+        await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(10))).to.be.rejectedWith(/Tranche locked/)
       })
 
       it("does not allow 0 value deposits", async () => {
-        await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(0))).to.be.rejectedWith(
-          /Must deposit more than zero/
-        )
+        await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(0))).to.be.rejectedWith(/Must deposit > zero/)
       })
 
       it("fails for invalid tranches", async () => {
@@ -512,15 +521,15 @@ describe("TranchedPool", () => {
         await tranchedPool.deposit(TRANCHES.Junior, usdcVal(10))
         await tranchedPool.lockJuniorCapital({from: borrower})
         await tranchedPool.lockPool({from: borrower})
-        await expect(tranchedPool.deposit(TRANCHES.Senior, usdcVal(10))).to.be.rejectedWith(/Tranche has been locked/)
+        await expect(tranchedPool.deposit(TRANCHES.Senior, usdcVal(10))).to.be.rejectedWith(/Tranche locked/)
       })
 
       it("allows deposits from the senior pool", async () => {
         await tranchedPool.deposit(TRANCHES.Junior, usdcVal(10), {from: owner})
         await tranchedPool.lockJuniorCapital({from: owner})
 
-        expect(tranchedPool.deposit(TRANCHES.Senior, usdcVal(10), {from: borrower})).to.be.rejectedWith(
-          /Must have SENIOR_ROLE to deposit into the senior tranche/i
+        await expect(tranchedPool.deposit(TRANCHES.Senior, usdcVal(10), {from: borrower})).to.be.rejectedWith(
+          /Req SENIOR_ROLE/i
         )
         const tx = await seniorPool.invest(tranchedPool.address)
         expectEvent(tx, "InvestmentMadeInSenior")
@@ -529,8 +538,8 @@ describe("TranchedPool", () => {
       it("forbids deposits from accounts without the SENIOR_ROLE", async () => {
         const seniorRole = await tranchedPool.SENIOR_ROLE()
         expect(await tranchedPool.hasRole(seniorRole, borrower)).to.be.false
-        expect(tranchedPool.deposit(TRANCHES.Senior, usdcVal(10), {from: borrower})).to.be.rejectedWith(
-          /Must have SENIOR_ROLE to deposit into the senior tranche/i
+        await expect(tranchedPool.deposit(TRANCHES.Senior, usdcVal(10), {from: borrower})).to.be.rejectedWith(
+          /Req SENIOR_ROLE/i
         )
       })
 
@@ -539,9 +548,7 @@ describe("TranchedPool", () => {
       })
 
       it("does not allow 0 value deposits", async () => {
-        await expect(tranchedPool.deposit(TRANCHES.Senior, usdcVal(0))).to.be.rejectedWith(
-          /Must deposit more than zero/
-        )
+        await expect(tranchedPool.deposit(TRANCHES.Senior, usdcVal(0))).to.be.rejectedWith(/Must deposit > zero/)
       })
 
       it("updates the tranche info and mints the token", async () => {
@@ -686,26 +693,8 @@ describe("TranchedPool", () => {
         const firstLog = getFirstLog(logs)
         const tokenId = firstLog.args.tokenId
 
-        await expect(tranchedPool.withdraw(tokenId, usdcVal(0), {from: owner})).to.be.rejectedWith(
-          /This address has not been go-listed/
-        )
-      })
-
-      it("fails if not legacy golisted and has incorrect UID token", async () => {
-        await uniqueIdentity.setSupportedUIDTypes([1, 2, 3], [true, true, true])
-        const uidTokenId = new BN(3)
-        const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
-        await mint(hre, uniqueIdentity, uidTokenId, expiresAt, new BN(0), owner, undefined, owner)
-        await tranchedPool.setAllowedUIDTypes([uidTokenId], {from: borrower})
-        const receipt = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(1), {from: owner})
-        await tranchedPool.setAllowedUIDTypes([0], {from: borrower})
-        await goldfinchConfig.bulkRemoveFromGoList([owner])
-        const logs = decodeLogs<DepositMade>(receipt.receipt.rawLogs, tranchedPool, "DepositMade")
-        const firstLog = getFirstLog(logs)
-        const tokenId = firstLog.args.tokenId
-
-        await expect(tranchedPool.withdraw(tokenId, usdcVal(0), {from: owner})).to.be.rejectedWith(
-          /This address has not been go-listed/
+        await expect(tranchedPool.withdraw(tokenId, usdcVal(1), {from: owner})).to.be.rejectedWith(
+          /Address not go-listed/
         )
       })
 
@@ -721,9 +710,7 @@ describe("TranchedPool", () => {
         const firstLog = getFirstLog(logs)
         const tokenId = firstLog.args.tokenId
 
-        await expect(tranchedPool.withdraw(tokenId, usdcVal(0), {from: owner})).to.be.not.rejectedWith(
-          /This address has not been go-listed/
-        )
+        await expect(tranchedPool.withdraw(tokenId, usdcVal(1), {from: owner})).to.be.fulfilled
       })
 
       it("does not allow you to withdraw if you don't own the pool token", async () => {
@@ -733,11 +720,9 @@ describe("TranchedPool", () => {
         const tokenId = firstLog.args.tokenId
 
         await expect(tranchedPool.withdraw(tokenId, usdcVal(10), {from: otherPerson})).to.be.rejectedWith(
-          /Only the token owner is allowed/
+          /Not token owner/
         )
-        await expect(tranchedPool.withdrawMax(tokenId, {from: otherPerson})).to.be.rejectedWith(
-          /Only the token owner is allowed/
-        )
+        await expect(tranchedPool.withdrawMax(tokenId, {from: otherPerson})).to.be.rejectedWith(/Not token owner/)
       })
       it("does not allow you to withdraw if pool token is from a different pool", async () => {
         await tranchedPool.deposit(TRANCHES.Junior, usdcVal(10), {from: owner})
@@ -943,7 +928,7 @@ describe("TranchedPool", () => {
       it("reverts if any token id is not owned by the sender", async () => {
         await expect(
           tranchedPool.withdrawMultiple([firstToken, thirdTokenFromDifferentUser], [usdcVal(50), usdcVal(200)])
-        ).to.be.rejectedWith(/Only the token owner/)
+        ).to.be.rejectedWith(/Not token owner/)
       })
 
       it("reverts if any amount exceeds withdrawable amount for that token", async () => {
@@ -955,7 +940,7 @@ describe("TranchedPool", () => {
       it("reverts if array lengths don't match", async () => {
         await expect(
           tranchedPool.withdrawMultiple([firstToken, thirdTokenFromDifferentUser], [usdcVal(50)])
-        ).to.be.rejectedWith(/same length/)
+        ).to.be.rejectedWith(/TokensIds and Amounts mismatch/)
       })
     })
 
@@ -1117,8 +1102,34 @@ describe("TranchedPool", () => {
       await expect(tranchedPool.setAllowedUIDTypes([1], {from: borrower})).to.be.fulfilled
       await expect(tranchedPool.setAllowedUIDTypes([1], {from: owner})).to.be.fulfilled
       await expect(tranchedPool.setAllowedUIDTypes([1], {from: otherPerson})).to.be.rejectedWith(
-        /Must have locker role to perform this action/
+        /Must have locker role/
       )
+    })
+
+    it("validate no principal has been deposited to jr pool", async () => {
+      await uniqueIdentity.setSupportedUIDTypes([1, 2, 3], [true, true, true])
+      await expect(tranchedPool.setAllowedUIDTypes([1], {from: borrower})).to.be.fulfilled
+      const uidTokenId = new BN(1)
+      const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
+      await mint(hre, uniqueIdentity, uidTokenId, expiresAt, new BN(0), owner, undefined, owner)
+      await tranchedPool.setAllowedUIDTypes([1], {from: borrower})
+
+      await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(1), {from: owner})).to.be.fulfilled
+
+      await expect(tranchedPool.setAllowedUIDTypes([1], {from: borrower})).to.be.rejectedWith(/Must not have balance/)
+    })
+
+    it("validate no principal has been deposited to sr pool", async () => {
+      await uniqueIdentity.setSupportedUIDTypes([1, 2, 3], [true, true, true])
+      await expect(tranchedPool.setAllowedUIDTypes([1], {from: borrower})).to.be.fulfilled
+      const uidTokenId = new BN(1)
+      const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
+      await mint(hre, uniqueIdentity, uidTokenId, expiresAt, new BN(0), owner, undefined, owner)
+      await tranchedPool.setAllowedUIDTypes([1], {from: borrower})
+
+      await expect(tranchedPool.deposit(TRANCHES.Senior, usdcVal(1), {from: owner})).to.be.fulfilled
+
+      await expect(tranchedPool.setAllowedUIDTypes([1], {from: borrower})).to.be.rejectedWith(/Must not have balance/)
     })
   })
 
@@ -1402,6 +1413,10 @@ describe("TranchedPool", () => {
           await expect(tranchedPool.drawdown(usdcVal(20))).to.be.rejectedWith(/Insufficient funds in slice/)
         })
 
+        it("does not allow drawing down 0", async () => {
+          await expect(tranchedPool.drawdown(usdcVal(0))).to.be.rejectedWith(/Invalid drawdown amount/)
+        })
+
         it("does not allow drawing down when payments are late", async () => {
           await tranchedPool.drawdown(usdcVal(5))
           await advanceTime({days: paymentPeriodInDays.mul(new BN(3))})
@@ -1416,7 +1431,7 @@ describe("TranchedPool", () => {
           await expect(tranchedPool.drawdown(usdcVal(1))).to.be.fulfilled
           const pauseTxn = await tranchedPool.pauseDrawdowns()
           expectEvent(pauseTxn, "DrawdownsPaused", {pool: tranchedPool.address})
-          await expect(tranchedPool.drawdown(usdcVal(1))).to.be.rejectedWith(/Drawdowns are currently paused/)
+          await expect(tranchedPool.drawdown(usdcVal(1))).to.be.rejectedWith(/Drawdowns are paused/)
           const unpauseTxn = await tranchedPool.unpauseDrawdowns()
           expectEvent(unpauseTxn, "DrawdownsUnpaused", {pool: tranchedPool.address})
           await expect(tranchedPool.drawdown(usdcVal(1))).to.be.fulfilled
@@ -1975,9 +1990,8 @@ describe("TranchedPool", () => {
 
     async function expectAvailable(tokenId: BN, expectedInterestInUSD: string, expectedPrincipalInUSD: string) {
       const {"0": actualInterest, "1": actualPrincipal} = await tranchedPool.availableToWithdraw(tokenId)
-      const halfCent = usdcVal(1).div(new BN(200))
-      expect(actualInterest).to.bignumber.closeTo(new BN(parseFloat(expectedInterestInUSD) * 1e6), halfCent)
-      expect(actualPrincipal).to.bignumber.closeTo(new BN(parseFloat(expectedPrincipalInUSD) * 1e6), halfCent)
+      expect(actualInterest).to.bignumber.closeTo(new BN(parseFloat(expectedInterestInUSD) * 1e6), HALF_CENT)
+      expect(actualPrincipal).to.bignumber.closeTo(new BN(parseFloat(expectedPrincipalInUSD) * 1e6), HALF_CENT)
     }
 
     describe("initializeNextSlice", async () => {
@@ -1996,9 +2010,15 @@ describe("TranchedPool", () => {
 
         const secondSliceJunior = await depositAndGetTokenId(tranchedPool, "3", usdcVal(20))
         const secondSliceSenior = await depositAndGetTokenId(tranchedPool, "4", usdcVal(80))
-
         expect((await poolTokens.getTokenInfo(secondSliceJunior)).tranche).to.eq("3")
         expect((await poolTokens.getTokenInfo(secondSliceSenior)).tranche).to.eq("4")
+
+        const secondSliceJuniorInfo = await tranchedPool.getTranche("3")
+        const secondSliceSeniorInfo = await tranchedPool.getTranche("4")
+        expect(secondSliceJuniorInfo.id).to.bignumber.eq("3")
+        expect(secondSliceJuniorInfo.principalDeposited).to.bignumber.eq(usdcVal(20))
+        expect(secondSliceSeniorInfo.id).to.bignumber.eq("4")
+        expect(secondSliceSeniorInfo.principalDeposited).to.bignumber.eq(usdcVal(80))
       })
 
       it("does not allow creating a slice when current slice is still active", async () => {
@@ -2046,7 +2066,7 @@ describe("TranchedPool", () => {
         // one day in the future
         const newFundableAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
         await tranchedPool.initializeNextSlice(newFundableAt, {from: borrower})
-        await expect(tranchedPool.deposit("3", usdcVal(10))).to.be.rejectedWith(/Not yet open for funding/)
+        await expect(tranchedPool.deposit("3", usdcVal(10))).to.be.rejectedWith(/Not open for funding/)
 
         // advance 2 days, and it should work
         await advanceTime({days: 2})
@@ -2116,12 +2136,13 @@ describe("TranchedPool", () => {
 
       const expectedNetInterest = new BN("4438356")
       const expectedProtocolFee = new BN("493150")
+      const expectedExcessPrincipal = new BN(68494)
       const expectedTotalInterest = expectedNetInterest.add(expectedProtocolFee)
 
       const receipt = await tranchedPool.pay(usdcVal(5), {from: borrower})
       expectPaymentRelatedEventsEmitted(receipt, borrower, tranchedPool, {
         interest: expectedTotalInterest,
-        principal: new BN(68494),
+        principal: expectedExcessPrincipal,
         remaining: new BN(0),
         reserve: expectedProtocolFee,
       })
@@ -2144,13 +2165,31 @@ describe("TranchedPool", () => {
       await expectAvailable(firstSliceSenior, "2.76", "0.05")
 
       const secondReceipt = await tranchedPool.pay(usdcVal(420), {from: borrower})
-      // TODO @sanjay - fix flaky failing test
-      // expectPaymentRelatedEventsEmitted(secondReceipt, borrower, tranchedPool, {
-      //   interest: new BN(20023919),
-      //   principal: new BN(400000000).sub(new BN(68494)),
-      //   remaining: new BN(44575),
-      //   reserve: new BN(2006847),
-      // })
+      const paymentEvent = decodeAndGetFirstLog<PaymentApplied>(
+        secondReceipt.receipt.rawLogs,
+        tranchedPool,
+        "PaymentApplied"
+      )
+      const expectedInterest = new BN(20023919)
+      const expectedReserve = new BN(2006847)
+      const expectedRemaining = new BN(44575)
+      expect(paymentEvent.args.interestAmount).to.bignumber.closeTo(expectedInterest, HALF_CENT)
+      expect(paymentEvent.args.principalAmount).to.bignumber.closeTo(
+        usdcVal(400).sub(expectedExcessPrincipal),
+        HALF_CENT
+      )
+      expect(paymentEvent.args.remainingAmount).to.bignumber.closeTo(expectedRemaining, HALF_CENT)
+      expect(paymentEvent.args.reserveAmount).to.bignumber.closeTo(expectedReserve, HALF_CENT)
+
+      const sharePriceEvents = decodeLogs<SharePriceUpdated>(
+        secondReceipt.receipt.rawLogs,
+        tranchedPool,
+        "SharePriceUpdated"
+      )
+      expect(sharePriceEvents.length).to.eq(4)
+      const tranches = sharePriceEvents.map((e) => e.args.tranche.toString()).sort()
+      expect(tranches).to.deep.eq(["1", "2", "3", "4"]) // Every tranche should have an share price update event
+
       expect(await creditLine.balance()).to.bignumber.eq("0")
 
       // The interest is a little bit different from the the spreadsheet model because payment period interest calculation

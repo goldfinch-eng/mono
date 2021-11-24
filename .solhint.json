@@ -80,8 +80,8 @@
           "lockPool": ["whenNotPaused", "onlyLocker"],
           "setFundableAt": ["onlyLocker"],
           "initializeNextSlice": ["whenNotPaused", "onlyLocker"],
-          "withdraw": ["whenNotPaused", "onlyTokenHolder"],
-          "withdrawMax": ["whenNotPaused", "onlyTokenHolder"],
+          "withdraw": ["whenNotPaused"],
+          "withdrawMax": ["whenNotPaused"],
           "withdrawMultiple": [],
           "drawdown": ["whenNotPaused"],
           "assess": ["whenNotPaused"],
@@ -173,6 +173,16 @@
           "safeTransferFrom": [],
           "safeBatchTransferFrom": [],
           "burn": ["onlySigner"]
+        },
+        "**/TranchingLogic.sol:*": {
+          "applyToAllSeniorTranches":  [],
+          "applyToAllJuniorTranches": [],
+          "applyToSeniorTranche":  [],
+          "applyToJuniorTranche": [],
+          "applyBySharePrice":  [],
+          "applyByAmount": [],
+          "migrateAccountingVariables":  [],
+          "closeCreditLine": []
         },
         "**/contracts/test/**": {
           "*.*": []

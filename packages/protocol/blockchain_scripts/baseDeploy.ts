@@ -66,6 +66,8 @@ import {isMerkleDirectDistributorInfo} from "./merkle/merkleDirectDistributor/ty
 
 const logger: Logger = console.log
 
+export const TOKEN_LAUNCH_TIME_IN_SECONDS = 1638900000 // Tuesday, December 7, 2021 10:00:00 AM GMT-08:00
+
 export type Deployed<T> = {
   name: string
   contract: T
@@ -316,7 +318,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
         execute: {
           init: {
             methodName: "__initialize__",
-            args: [protocol_owner, config.address],
+            args: [protocol_owner, config.address, TOKEN_LAUNCH_TIME_IN_SECONDS],
           },
         },
       },
@@ -625,8 +627,10 @@ async function deployTranchedPool(deployer: ContractDeployer, {config}: DeployOp
   }
 
   assertIsString(gf_deployer)
+  const tranchingLogic = await deployer.deployLibrary("TranchingLogic", {from: gf_deployer, args: []})
   const tranchedPoolImpl = await deployer.deploy(contractName, {
     from: gf_deployer,
+    libraries: {["TranchingLogic"]: tranchingLogic.address},
   })
   logger("Updating config...")
   await updateConfig(config, "address", CONFIG_KEYS.TranchedPoolImplementation, tranchedPoolImpl.address, {logger})
