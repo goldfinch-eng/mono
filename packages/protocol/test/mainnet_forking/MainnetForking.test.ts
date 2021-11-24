@@ -146,7 +146,9 @@ describe("mainnet forking tests", async function () {
     await erc20Approve(usdc, pool.address, usdcVal(100000), [owner])
     await pool.deposit(TRANCHES.Junior, usdcVal(2000))
     await bwrCon.lockJuniorCapital(pool.address, {from: bwr})
+    await pool.grantRole(await pool.SENIOR_ROLE(), owner, {from: MAINNET_MULTISIG})
     await pool.deposit(TRANCHES.Senior, usdcVal(8000))
+    await pool.revokeRole(await pool.SENIOR_ROLE(), owner, {from: MAINNET_MULTISIG})
   }
 
   beforeEach(async function () {

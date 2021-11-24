@@ -691,7 +691,10 @@ async function deployTranchedPool(
   return tranchedPool
 }
 
-async function deployClImplementation(deployer: ContractDeployer, {config}: DeployOpts) {
+async function deployClImplementation(
+  deployer: ContractDeployer,
+  {config, deployEffects}: {config: GoldfinchConfig; deployEffects?: DeployEffects}
+) {
   const {gf_deployer} = await deployer.getNamedAccounts()
 
   assertIsString(gf_deployer)
@@ -702,7 +705,14 @@ async function deployClImplementation(deployer: ContractDeployer, {config}: Depl
     from: gf_deployer,
     libraries: {["Accountant"]: accountant.address},
   })
-  await updateConfig(config, "address", CONFIG_KEYS.CreditLineImplementation, clDeployResult.address, {logger})
+
+  if (deployEffects !== undefined) {
+    await deployEffects.add({
+      deferred: [await config.populateTransaction.setCreditLineImplementation(clDeployResult.address)],
+    })
+  } else {
+    await updateConfig(config, "address", CONFIG_KEYS.CreditLineImplementation, clDeployResult.address, {logger})
+  }
 }
 
 async function deployMigratedTranchedPool(deployer: ContractDeployer, {config}: DeployOpts) {
