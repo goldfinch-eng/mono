@@ -8,7 +8,7 @@ import {Awaited} from "@goldfinch-eng/protocol/blockchain_scripts/types"
 import {TEST_TIMEOUT} from "../../../MainnetForking.test"
 import {Deployment} from "hardhat-deploy/types"
 import {CONFIG_KEYS} from "@goldfinch-eng/protocol/blockchain_scripts/configKeys"
-import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/ethers"
+import {GoldfinchConfig, GoldfinchFactory} from "@goldfinch-eng/protocol/typechain/ethers"
 import {GoInstance} from "@goldfinch-eng/protocol/typechain/truffle"
 
 const performMigration = deployments.createFixture(async ({deployments}) => {
@@ -57,12 +57,17 @@ describe("v2.3 migration", async function () {
 
   context("token launch", async () => {
     let goldfinchConfigDeployment: Deployment, goldfinchConfig: GoldfinchConfig
+    let goldfinchFactoryDeployment: Deployment, goldfinchFactory: GoldfinchFactory
     let goDeployment: Deployment, go: GoInstance
     beforeEach(async () => {
       migration = await performMigration()
       goldfinchConfigDeployment = await deployments.get("GoldfinchConfig")
       goldfinchConfig = await getEthersContract<GoldfinchConfig>("GoldfinchConfig", {
         at: goldfinchConfigDeployment.address,
+      })
+      goldfinchFactoryDeployment = await deployments.get("GoldfinchFactory")
+      goldfinchFactory = await getEthersContract<GoldfinchFactory>("GoldfinchFactory", {
+        at: goldfinchFactoryDeployment.address,
       })
       goDeployment = await deployments.get("Go")
       go = await getTruffleContract<GoInstance>("Go", {at: goDeployment.address})
@@ -112,6 +117,14 @@ describe("v2.3 migration", async function () {
       // contract points to goldfinch config
       const contract = await getEthersContract("TestBackerRewards")
       expect(await contract.config()).to.eq(goldfinchConfig.address)
+    })
+
+    describe("GoldfinchFactory", async () => {
+      it("OWNER_ROLE is the admin of BORROWER_ROLE", async () => {
+        const ownerRole = await goldfinchFactory.OWNER_ROLE()
+        const borrowerRole = await goldfinchFactory.BORROWER_ROLE()
+        expect(await goldfinchFactory.getRoleAdmin(borrowerRole)).to.be.eq(ownerRole)
+      })
     })
 
     describe("Go", async () => {
