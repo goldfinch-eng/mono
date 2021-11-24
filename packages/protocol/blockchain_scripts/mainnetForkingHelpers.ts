@@ -34,7 +34,6 @@ const MAINNET_UNDERWRITER = "0x79ea65C834EC137170E1aA40A42b9C80df9c0Bb4"
 import {mergeABIs} from "hardhat-deploy/dist/src/utils"
 import {FormatTypes} from "ethers/lib/utils"
 import {Logger} from "./types"
-import {openzeppelin_assertIsValidImplementation} from "./deployHelpers/openzeppelin-upgrade-validation"
 
 async function getProxyImplAddress(proxyContract: Contract) {
   if (!proxyContract) {
@@ -103,7 +102,6 @@ async function upgradeContracts({
     })
 
     const implDepoyment = await hre.deployments.get(`${contractToDeploy}_Implementation`)
-    await openzeppelin_assertIsValidImplementation(implDepoyment)
 
     const upgradedContract = (await getEthersContract(contractToDeploy, {at: implDepoyment.address})).connect(
       ethersSigner

@@ -3,6 +3,7 @@ import {ContractDeployer, currentChainId} from "./"
 import {getExistingContracts, upgradeContracts, UpgradedContracts} from "../mainnetForkingHelpers"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import {Logger} from "../types"
+import {openzeppelin_assertIsValidImplementation} from "./openzeppelin-upgrade-validation"
 
 export class ContractUpgrader {
   private readonly logger: Logger
@@ -22,6 +23,10 @@ export class ContractUpgrader {
     const chainId = await currentChainId()
     this.logger(`Upgrading contracts: ${contracts}`)
     const existingContracts = await getExistingContracts(contracts, gf_deployer, chainId)
+    contracts.forEach(async (c) => {
+      const implDepoyment = await this.hre.deployments.get(`${c}_Implementation`)
+      await openzeppelin_assertIsValidImplementation(implDepoyment)
+    })
     const upgradedContracts = await upgradeContracts({
       contractsToUpgrade: contracts,
       contracts: existingContracts,
