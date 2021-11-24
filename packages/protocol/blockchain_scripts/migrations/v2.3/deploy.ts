@@ -40,6 +40,7 @@ export async function deploy(deployEffects: DeployEffects) {
     deferred: [
       await go.populateTransaction.setGoListOverride(goConfigAddress),
       await go.populateTransaction.updateGoldfinchConfig(),
+      await go.populateTransaction.performUpgrade(),
     ],
   })
 
