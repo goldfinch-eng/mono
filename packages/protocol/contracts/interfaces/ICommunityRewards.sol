@@ -19,7 +19,7 @@ interface ICommunityRewards is IERC721 {
     uint256 vestingInterval,
     uint256 revokedAt,
     uint256 time
-  ) external view returns (uint256 rewards);
+  ) external pure returns (uint256 rewards);
 
   function grant(
     address recipient,

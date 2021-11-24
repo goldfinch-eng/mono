@@ -94,7 +94,7 @@ contract CommunityRewards is ICommunityRewards, ERC721PresetMinterPauserAutoIdUp
     uint256 vestingInterval,
     uint256 revokedAt,
     uint256 time
-  ) external pure returns (uint256 rewards) {
+  ) external pure override returns (uint256 rewards) {
     return CommunityRewardsVesting.getTotalVestedAt(start, end, granted, cliffLength, vestingInterval, revokedAt, time);
   }
 
