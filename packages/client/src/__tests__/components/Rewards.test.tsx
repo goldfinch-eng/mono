@@ -684,17 +684,17 @@ describe("Rewards list and detail", () => {
 
     renderRewards(stakingRewards, gfi, user, merkleDistributor, merkleDirectDistributor, communityRewards)
 
-    expect(await screen.findByText("Flight Academy")).toBeVisible()
+    expect(await screen.findByText("Goldfinch Investment")).toBeVisible()
     expect(await screen.findByText("Claim GFI")).toBeVisible()
 
     expect(screen.getByTestId("detail-granted").textContent).toEqual("1,000.00")
     expect(screen.getByTestId("detail-claimable").textContent).toEqual("1,000.00")
 
-    fireEvent.click(screen.getByText("Flight Academy"))
+    fireEvent.click(screen.getByText("Goldfinch Investment"))
     await waitFor(async () => {
       expect(await screen.findByText("Transaction details")).toBeVisible()
       expect(
-        await screen.findByText("1,000.00 GFI reward on Jan 7, 2022 for participating in Flight Academy")
+        await screen.findByText("1,000.00 GFI reward on Jan 7, 2022 for participating as a Goldfinch investor")
       ).toBeVisible()
 
       expect(await screen.findByText("Vesting status")).toBeVisible()
@@ -748,16 +748,16 @@ describe("Rewards list and detail", () => {
 
     renderRewards(stakingRewards, gfi, user, merkleDistributor, merkleDirectDistributor, communityRewards)
 
-    expect(await screen.findByText("Flight Academy")).toBeVisible()
+    expect(await screen.findByText("Goldfinch Investment")).toBeVisible()
     expect(await screen.findByText("Accept")).toBeVisible()
 
     expect(screen.getByTestId("detail-granted").textContent).toEqual("1,000.00")
     expect(screen.getByTestId("detail-claimable").textContent).toEqual("0.00")
 
-    fireEvent.click(screen.getByText("Flight Academy"))
+    fireEvent.click(screen.getByText("Goldfinch Investment"))
     await waitFor(async () => {
       expect(await screen.findByText("Transaction details")).toBeVisible()
-      expect(await screen.findByText("1,000.00 GFI reward for participating in Flight Academy")).toBeVisible()
+      expect(await screen.findByText("1,000.00 GFI reward for participating as a Goldfinch investor")).toBeVisible()
 
       expect(await screen.findByText("Vesting status")).toBeVisible()
       expect(await screen.findByText("$--.-- (0.00 GFI) vested")).toBeVisible()
@@ -809,7 +809,7 @@ describe("Rewards list and detail", () => {
     renderRewards(stakingRewards, gfi, user, merkleDistributor, merkleDirectDistributor, communityRewards)
 
     expect(await screen.findByText("Staked 50K FIDU on Dec 29")).toBeVisible()
-    expect(await screen.findByText("Flight Academy")).toBeVisible()
+    expect(await screen.findByText("Goldfinch Investment")).toBeVisible()
     expect(await screen.getAllByText("Claim GFI").length).toBe(2)
 
     expect(screen.getAllByTestId("detail-granted")[0]?.textContent).toEqual("1,000.00")
@@ -839,11 +839,11 @@ describe("Rewards list and detail", () => {
     })
     fireEvent.click(screen.getByText("Staked 50K FIDU on Dec 29"))
 
-    fireEvent.click(screen.getByText("Flight Academy"))
+    fireEvent.click(screen.getByText("Goldfinch Investment"))
     await waitFor(async () => {
       expect(await screen.findByText("Transaction details")).toBeVisible()
       expect(
-        await screen.findByText("1,000.00 GFI reward on Jan 7, 2022 for participating in Flight Academy")
+        await screen.findByText("1,000.00 GFI reward on Jan 7, 2022 for participating as a Goldfinch investor")
       ).toBeVisible()
 
       expect(await screen.findByText("Vesting status")).toBeVisible()
@@ -1112,7 +1112,7 @@ describe("Rewards list and detail", () => {
         networkMonitor
       )
 
-      expect(await screen.findByText("Flight Academy")).toBeVisible()
+      expect(await screen.findByText("Goldfinch Investment")).toBeVisible()
       expect(await screen.findByText("Accept")).toBeVisible()
 
       web3.eth.getGasPrice = () => {
@@ -1221,7 +1221,7 @@ describe("Rewards list and detail", () => {
         networkMonitor
       )
 
-      expect(await screen.findByText("Flight Academy")).toBeVisible()
+      expect(await screen.findByText("Goldfinch Investment")).toBeVisible()
       expect(await screen.findByText("Claim GFI")).toBeVisible()
 
       web3.eth.getGasPrice = () => {

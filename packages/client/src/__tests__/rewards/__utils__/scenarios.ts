@@ -91,23 +91,24 @@ export async function setupClaimableStakingReward(goldfinchProtocol, seniorPool)
   return {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user}
 }
 
+const merkleDistributorAirdropNoVesting: MerkleDistributorGrantInfo = {
+  index: 0,
+  account: recipient,
+  reason: "goldfinch_investment",
+  grant: {
+    amount: "0x3635c9adc5dea00000",
+    vestingLength: "0x00",
+    cliffLength: "0x00",
+    vestingInterval: "0x01",
+  },
+  proof: ["0x00", "0x00", "0x00"],
+}
+
 export async function setupClaimableCommunityReward(
   goldfinchProtocol: GoldfinchProtocol,
   seniorPool: SeniorPoolLoaded
 ) {
-  const airdrop: MerkleDistributorGrantInfo = {
-    index: 0,
-    account: recipient,
-    reason: "flight_academy",
-    grant: {
-      amount: "0x3635c9adc5dea00000",
-      vestingLength: "0x00",
-      cliffLength: "0x00",
-      vestingInterval: "0x01",
-    },
-    proof: ["0x00", "0x00", "0x00"],
-  }
-  setupMocksForMerkleDistributorAirdrop(airdrop, true)
+  setupMocksForMerkleDistributorAirdrop(merkleDistributorAirdropNoVesting, true)
 
   const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor} = await getDefaultClasses(
     goldfinchProtocol
@@ -121,7 +122,7 @@ export async function setupClaimableCommunityReward(
     merkleDistributor,
     {
       community: {
-        airdrop: airdrop,
+        airdrop: merkleDistributorAirdropNoVesting,
       },
     }
   )
@@ -145,19 +146,7 @@ export async function setupMerkleDistributorAirdrop(
   goldfinchProtocol: GoldfinchProtocol,
   seniorPool: SeniorPoolLoaded
 ) {
-  const airdrop: MerkleDistributorGrantInfo = {
-    index: 0,
-    account: recipient,
-    reason: "flight_academy",
-    grant: {
-      amount: "0x3635c9adc5dea00000",
-      vestingLength: "0x00",
-      cliffLength: "0x00",
-      vestingInterval: "0x01",
-    },
-    proof: ["0x00", "0x00", "0x00"],
-  }
-  setupMocksForMerkleDistributorAirdrop(airdrop, false)
+  setupMocksForMerkleDistributorAirdrop(merkleDistributorAirdropNoVesting, false)
   const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor} = await getDefaultClasses(
     goldfinchProtocol
   )
@@ -299,19 +288,7 @@ export async function setupCommunityRewardAndStakingReward(
   const updatedBlockInfo = {...blockInfo}
   updatedBlockInfo.timestamp = 1641564707
 
-  const airdrop: MerkleDistributorGrantInfo = {
-    index: 0,
-    account: recipient,
-    reason: "flight_academy",
-    grant: {
-      amount: "0x3635c9adc5dea00000",
-      vestingLength: "0x00",
-      cliffLength: "0x00",
-      vestingInterval: "0x01",
-    },
-    proof: ["0x00", "0x00", "0x00"],
-  }
-  setupMocksForMerkleDistributorAirdrop(airdrop, true)
+  setupMocksForMerkleDistributorAirdrop(merkleDistributorAirdropNoVesting, true)
 
   const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor} = await getDefaultClasses(
     goldfinchProtocol
@@ -330,7 +307,7 @@ export async function setupCommunityRewardAndStakingReward(
         totalVestedAt: "710136986301369863",
       },
       community: {
-        airdrop: airdrop,
+        airdrop: merkleDistributorAirdropNoVesting,
       },
     }
   )
@@ -453,19 +430,7 @@ export async function setupCommunityRewardAndDirectRewardAndStakingReward(
   const updatedBlockInfo = {...blockInfo}
   updatedBlockInfo.timestamp = 1641564707
 
-  const merkleDistributorAirdrop: MerkleDistributorGrantInfo = {
-    index: 0,
-    account: recipient,
-    reason: "goldfinch_investment",
-    grant: {
-      amount: "0x3635c9adc5dea00000",
-      vestingLength: "0x00",
-      cliffLength: "0x00",
-      vestingInterval: "0x01",
-    },
-    proof: ["0x00", "0x00", "0x00"],
-  }
-  setupMocksForMerkleDistributorAirdrop(merkleDistributorAirdrop, true)
+  setupMocksForMerkleDistributorAirdrop(merkleDistributorAirdropNoVesting, true)
 
   setupMocksForMerkleDirectDistributorAirdrop(merkleDirectDistributorAirdrop, true)
 
@@ -486,7 +451,7 @@ export async function setupCommunityRewardAndDirectRewardAndStakingReward(
         totalVestedAt: "710136986301369863",
       },
       community: {
-        airdrop: merkleDistributorAirdrop,
+        airdrop: merkleDistributorAirdropNoVesting,
       },
       gfi: {
         gfiBalance: merkleDirectDistributorAirdropAmount,
