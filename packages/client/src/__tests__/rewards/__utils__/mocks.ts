@@ -4,12 +4,19 @@ import {
   MerkleDistributorInfo,
 } from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
 import {MerkleDistributor as MerkleDistributorContract} from "@goldfinch-eng/protocol/typechain/web3/MerkleDistributor"
+import {MerkleDirectDistributor as MerkleDirectDistributorContract} from "@goldfinch-eng/protocol/typechain/web3/MerkleDirectDistributor"
 import "@testing-library/jest-dom"
 import {mock} from "depay-web3-mock"
 import {BlockNumber} from "web3-core"
 import {Filter} from "web3-eth-contract"
 import {BigNumber} from "bignumber.js"
-import {CommunityRewards, MerkleDistributor, MerkleDistributorLoaded} from "../../../ethereum/communityRewards"
+import {
+  CommunityRewards,
+  MerkleDirectDistributor,
+  MerkleDirectDistributorLoaded,
+  MerkleDistributor,
+  MerkleDistributorLoaded,
+} from "../../../ethereum/communityRewards"
 import {GFI} from "../../../ethereum/gfi"
 import {
   mockGetWeightedAverageSharePrice,
@@ -17,7 +24,7 @@ import {
   StakingRewards,
   StakingRewardsLoaded,
 } from "../../../ethereum/pool"
-import {User, UserMerkleDistributor} from "../../../ethereum/user"
+import {User, UserMerkleDirectDistributor, UserMerkleDistributor} from "../../../ethereum/user"
 import * as utils from "../../../ethereum/utils"
 import {GRANT_ACCEPTED_EVENT, KnownEventData, KnownEventName, STAKED_EVENT} from "../../../types/events"
 import {BlockInfo} from "../../../utils"
@@ -31,9 +38,14 @@ import {
   getMerkleDistributorAbi,
   recipient,
   getStakingRewardsAbi,
+  getMerkleDirectDistributorAbi,
 } from "./constants"
 import isEqual from "lodash/isEqual"
 import web3 from "../../../web3"
+import {
+  MerkleDirectDistributorGrantInfo,
+  MerkleDirectDistributorInfo,
+} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/types"
 
 export interface RewardsMockData {
   staking?: {
@@ -65,7 +77,7 @@ export interface RewardsMockData {
     claimable?: string
     acceptedGrantRes?: {
       returnValues: {
-        index: Number
+        index: number
         account: string
       }
     }
@@ -109,6 +121,7 @@ export async function mockUserInitializationContractCalls(
       {poolEvents: [], poolTxs: []},
       [],
       {stakedEvents: {currentBlock: blockInfo, value: []}, stakingRewardsTxs: []},
+      [],
       [],
       [],
     ])
@@ -245,6 +258,7 @@ export async function mockUserInitializationContractCalls(
         {poolEvents: [], poolTxs: []},
         [],
         {stakedEvents: {currentBlock: blockInfo, value: stakedEvents}, stakingRewardsTxs: []},
+        [],
         [],
         [],
       ])
@@ -409,7 +423,26 @@ export async function mockMerkleDistributorContractCalls(
   return {callCommunityRewardsMock}
 }
 
-export function setupMocksForAirdrop(airdrop: MerkleDistributorGrantInfo | undefined, isAccepted = true) {
+export async function mockMerkleDirectDistributorContractCalls(
+  merkle: MerkleDirectDistributor,
+  gfiAddress: string = "0x0000000000000000000000000000000000000006"
+) {
+  let callGfiMock = mock({
+    blockchain,
+    call: {
+      to: merkle.address,
+      api: await getMerkleDirectDistributorAbi(),
+      method: "gfi",
+      return: gfiAddress,
+    },
+  })
+  return {callGfiMock}
+}
+
+export function setupMocksForMerkleDistributorAirdrop(
+  airdrop: MerkleDistributorGrantInfo | undefined,
+  isAccepted: boolean
+) {
   const grants = airdrop ? [airdrop] : []
   jest.spyOn(utils, "getMerkleDistributorInfo").mockImplementation(() => {
     const result: MerkleDistributorInfo | undefined = {
@@ -427,6 +460,34 @@ export function setupMocksForAirdrop(airdrop: MerkleDistributorGrantInfo | undef
     const airdropsAccepted = grants.map((val) => ({grantInfo: val, isAccepted}))
     return Promise.resolve(airdropsAccepted)
   }
+}
+
+export function setupMocksForMerkleDirectDistributorAirdrop(
+  airdrop: MerkleDirectDistributorGrantInfo | undefined,
+  isAccepted: boolean
+) {
+  const grants = airdrop ? [airdrop] : []
+  jest.spyOn(utils, "getMerkleDirectDistributorInfo").mockImplementation(() => {
+    const result: MerkleDirectDistributorInfo | undefined = {
+      merkleRoot: "0x0",
+      amountTotal: "0x010f0cf064dd59200000",
+      grants: grants,
+    }
+    return Promise.resolve(result)
+  })
+  UserMerkleDirectDistributor.getAcceptedAirdrops = (
+    airdropsForRecipient: MerkleDirectDistributorGrantInfo[],
+    merkleDistributor: MerkleDirectDistributorLoaded,
+    currentBlock: BlockInfo
+  ) => {
+    const airdropsAccepted = grants.map((val) => ({grantInfo: val, isAccepted}))
+    return Promise.resolve(airdropsAccepted)
+  }
+}
+
+export function resetAirdropMocks(): void {
+  setupMocksForMerkleDistributorAirdrop(undefined, true)
+  setupMocksForMerkleDirectDistributorAirdrop(undefined, true)
 }
 
 export function assertAllMocksAreCalled(mocks: Partial<ContractCallsMocks>) {

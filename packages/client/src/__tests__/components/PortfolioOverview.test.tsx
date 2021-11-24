@@ -1,10 +1,18 @@
+import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
 import "@testing-library/jest-dom"
-import {mock} from "depay-web3-mock"
-import {BigNumber} from "bignumber.js"
-import {BrowserRouter as Router} from "react-router-dom"
 import {render, screen} from "@testing-library/react"
+import {BigNumber} from "bignumber.js"
+import {mock} from "depay-web3-mock"
+import {BrowserRouter as Router} from "react-router-dom"
 import {AppContext} from "../../App"
-import web3 from "../../web3"
+import {PortfolioOverview} from "../../components/earn"
+import {
+  CommunityRewardsLoaded,
+  MerkleDirectDistributorLoaded,
+  MerkleDistributorLoaded,
+} from "../../ethereum/communityRewards"
+import {GFILoaded} from "../../ethereum/gfi"
+import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
 import {
   CapitalProvider,
   fetchCapitalProviderData,
@@ -14,28 +22,24 @@ import {
   SeniorPoolLoaded,
   StakingRewardsLoaded,
 } from "../../ethereum/pool"
+import {PoolBacker, TranchedPool} from "../../ethereum/tranchedPool"
 import {User, UserLoaded} from "../../ethereum/user"
+import * as utils from "../../ethereum/utils"
+import {assertWithLoadedInfo, Loaded} from "../../types/loadable"
+import web3 from "../../web3"
 import {blockInfo, getDeployments, network, recipient} from "../rewards/__utils__/constants"
-import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
+import {toDisplayPercent} from "../rewards/__utils__/display"
+import {
+  mockCapitalProviderCalls,
+  mockUserInitializationContractCalls,
+  resetAirdropMocks,
+} from "../rewards/__utils__/mocks"
 import {
   getDefaultClasses,
   setupClaimableStakingReward,
   setupNewStakingReward,
   setupPartiallyClaimedStakingReward,
 } from "../rewards/__utils__/scenarios"
-import {assertWithLoadedInfo, Loaded} from "../../types/loadable"
-import {
-  mockCapitalProviderCalls,
-  mockUserInitializationContractCalls,
-  setupMocksForAirdrop,
-} from "../rewards/__utils__/mocks"
-import * as utils from "../../ethereum/utils"
-import {PortfolioOverview} from "../../components/earn"
-import {CommunityRewardsLoaded, MerkleDistributorLoaded} from "../../ethereum/communityRewards"
-import {GFILoaded} from "../../ethereum/gfi"
-import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
-import {PoolBacker, TranchedPool} from "../../ethereum/tranchedPool"
-import {toDisplayPercent} from "../rewards/__utils__/display"
 
 mock({
   blockchain: "ethereum",
@@ -84,6 +88,7 @@ describe("Earn page portfolio overview", () => {
     stakingRewards: StakingRewardsLoaded,
     communityRewards: CommunityRewardsLoaded,
     merkleDistributor: MerkleDistributorLoaded,
+    merkleDirectDistributor: MerkleDirectDistributorLoaded,
     user: User | UserLoaded,
     capitalProvider: Loaded<CapitalProvider>
 
@@ -91,7 +96,7 @@ describe("Earn page portfolio overview", () => {
     jest.spyOn(utils, "getDeployments").mockImplementation(() => {
       return getDeployments()
     })
-    setupMocksForAirdrop(undefined) // reset
+    resetAirdropMocks()
 
     await goldfinchProtocol.initialize()
     const _seniorPoolLoaded = new SeniorPool(goldfinchProtocol)
@@ -113,10 +118,19 @@ describe("Earn page portfolio overview", () => {
     stakingRewards = result.stakingRewards
     communityRewards = result.communityRewards
     merkleDistributor = result.merkleDistributor
+    merkleDirectDistributor = result.merkleDirectDistributor
 
     user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
     await mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, merkleDistributor, {})
-    await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
+    await user.initialize(
+      seniorPool,
+      stakingRewards,
+      gfi,
+      communityRewards,
+      merkleDistributor,
+      merkleDirectDistributor,
+      blockInfo
+    )
 
     assertWithLoadedInfo(user)
     assertWithLoadedInfo(seniorPool)

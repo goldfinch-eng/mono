@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom"
 import {MerkleDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
-import {MerkleDistributor, CommunityRewards} from "../../../ethereum/communityRewards"
+import {MerkleDistributor, CommunityRewards, MerkleDirectDistributor} from "../../../ethereum/communityRewards"
 import {GFI} from "../../../ethereum/gfi"
 import {User} from "../../../ethereum/user"
 import {SeniorPoolLoaded, StakingRewards} from "../../../ethereum/pool"
@@ -10,18 +10,23 @@ import {
   mockStakingRewardsContractCalls,
   mockMerkleDistributorContractCalls,
   mockUserInitializationContractCalls,
-  setupMocksForAirdrop,
+  setupMocksForMerkleDistributorAirdrop,
   assertAllMocksAreCalled,
   DEFAULT_STAKING_REWARDS_START_TIME,
   DEFAULT_STAKING_REWARDS_END_TIME,
   RewardsMockData,
+  mockMerkleDirectDistributorContractCalls,
+  setupMocksForMerkleDirectDistributorAirdrop,
 } from "./mocks"
 import {GoldfinchProtocol} from "../../../ethereum/GoldfinchProtocol"
 import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
 import omit from "lodash/omit"
+import {MerkleDirectDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/types"
 
 export async function setupNewStakingReward(goldfinchProtocol: GoldfinchProtocol, seniorPool: SeniorPoolLoaded) {
-  const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
+  const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor} = await getDefaultClasses(
+    goldfinchProtocol
+  )
   const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
   const mocks = await mockUserInitializationContractCalls(
     user,
@@ -33,18 +38,28 @@ export async function setupNewStakingReward(goldfinchProtocol: GoldfinchProtocol
       staking: {},
     }
   )
-  await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
+  await user.initialize(
+    seniorPool,
+    stakingRewards,
+    gfi,
+    communityRewards,
+    merkleDistributor,
+    merkleDirectDistributor,
+    blockInfo
+  )
 
   assertWithLoadedInfo(user)
   assertAllMocksAreCalled(mocks)
-  return {gfi, stakingRewards, communityRewards, merkleDistributor, user}
+  return {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user}
 }
 
 export async function setupClaimableStakingReward(goldfinchProtocol, seniorPool) {
   const updatedBlockInfo = {...blockInfo}
   updatedBlockInfo.timestamp = 1641564707
 
-  const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
+  const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor} = await getDefaultClasses(
+    goldfinchProtocol
+  )
   const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
   const mocks = await mockUserInitializationContractCalls(
     user,
@@ -60,12 +75,20 @@ export async function setupClaimableStakingReward(goldfinchProtocol, seniorPool)
       },
     }
   )
-  await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, updatedBlockInfo)
+  await user.initialize(
+    seniorPool,
+    stakingRewards,
+    gfi,
+    communityRewards,
+    merkleDistributor,
+    merkleDirectDistributor,
+    updatedBlockInfo
+  )
 
   assertWithLoadedInfo(user)
   assertAllMocksAreCalled(mocks)
 
-  return {gfi, stakingRewards, communityRewards, merkleDistributor, user}
+  return {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user}
 }
 
 export async function setupClaimableCommunityReward(
@@ -84,9 +107,11 @@ export async function setupClaimableCommunityReward(
     },
     proof: ["0x00", "0x00", "0x00"],
   }
-  setupMocksForAirdrop(airdrop)
+  setupMocksForMerkleDistributorAirdrop(airdrop, true)
 
-  const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
+  const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor} = await getDefaultClasses(
+    goldfinchProtocol
+  )
   const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
   const mocks = await mockUserInitializationContractCalls(
     user,
@@ -100,15 +125,26 @@ export async function setupClaimableCommunityReward(
       },
     }
   )
-  await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
+  await user.initialize(
+    seniorPool,
+    stakingRewards,
+    gfi,
+    communityRewards,
+    merkleDistributor,
+    merkleDirectDistributor,
+    blockInfo
+  )
 
   assertWithLoadedInfo(user)
   assertAllMocksAreCalled(mocks)
 
-  return {gfi, stakingRewards, communityRewards, merkleDistributor, user}
+  return {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user}
 }
 
-export async function setupAirdrop(goldfinchProtocol: GoldfinchProtocol, seniorPool: SeniorPoolLoaded) {
+export async function setupMerkleDistributorAirdrop(
+  goldfinchProtocol: GoldfinchProtocol,
+  seniorPool: SeniorPoolLoaded
+) {
   const airdrop: MerkleDistributorGrantInfo = {
     index: 0,
     account: recipient,
@@ -121,8 +157,10 @@ export async function setupAirdrop(goldfinchProtocol: GoldfinchProtocol, seniorP
     },
     proof: ["0x00", "0x00", "0x00"],
   }
-  setupMocksForAirdrop(airdrop, false)
-  const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
+  setupMocksForMerkleDistributorAirdrop(airdrop, false)
+  const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor} = await getDefaultClasses(
+    goldfinchProtocol
+  )
   const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
   const mocks = await mockUserInitializationContractCalls(
     user,
@@ -132,12 +170,20 @@ export async function setupAirdrop(goldfinchProtocol: GoldfinchProtocol, seniorP
     merkleDistributor,
     {}
   )
-  await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
+  await user.initialize(
+    seniorPool,
+    stakingRewards,
+    gfi,
+    communityRewards,
+    merkleDistributor,
+    merkleDirectDistributor,
+    blockInfo
+  )
 
   assertWithLoadedInfo(user)
   assertAllMocksAreCalled(mocks)
 
-  return {gfi, stakingRewards, communityRewards, merkleDistributor, user}
+  return {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user}
 }
 
 export async function setupVestingCommunityReward(goldfinchProtocol: GoldfinchProtocol, seniorPool: SeniorPoolLoaded) {
@@ -153,9 +199,11 @@ export async function setupVestingCommunityReward(goldfinchProtocol: GoldfinchPr
     },
     proof: ["0x00", "0x00", "0x00"],
   }
-  setupMocksForAirdrop(airdrop)
+  setupMocksForMerkleDistributorAirdrop(airdrop, true)
 
-  const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
+  const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor} = await getDefaultClasses(
+    goldfinchProtocol
+  )
   const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
   const mocks = await mockUserInitializationContractCalls(
     user,
@@ -171,12 +219,20 @@ export async function setupVestingCommunityReward(goldfinchProtocol: GoldfinchPr
       },
     }
   )
-  await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
+  await user.initialize(
+    seniorPool,
+    stakingRewards,
+    gfi,
+    communityRewards,
+    merkleDistributor,
+    merkleDirectDistributor,
+    blockInfo
+  )
 
   assertWithLoadedInfo(user)
   assertAllMocksAreCalled(mocks)
 
-  return {gfi, stakingRewards, communityRewards, merkleDistributor, user}
+  return {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user}
 }
 
 export async function setupPartiallyClaimedCommunityReward(
@@ -199,9 +255,11 @@ export async function setupPartiallyClaimedCommunityReward(
     },
     proof: ["0x00", "0x00", "0x00"],
   }
-  setupMocksForAirdrop(airdrop)
+  setupMocksForMerkleDistributorAirdrop(airdrop, true)
 
-  const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
+  const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor} = await getDefaultClasses(
+    goldfinchProtocol
+  )
   const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
   const mocks = await mockUserInitializationContractCalls(
     user,
@@ -218,12 +276,20 @@ export async function setupPartiallyClaimedCommunityReward(
       gfi: {gfiBalance},
     }
   )
-  await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
+  await user.initialize(
+    seniorPool,
+    stakingRewards,
+    gfi,
+    communityRewards,
+    merkleDistributor,
+    merkleDirectDistributor,
+    blockInfo
+  )
 
   assertWithLoadedInfo(user)
   assertAllMocksAreCalled(mocks)
 
-  return {gfi, stakingRewards, communityRewards, merkleDistributor, user}
+  return {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user}
 }
 
 export async function setupCommunityRewardAndStakingReward(
@@ -245,9 +311,11 @@ export async function setupCommunityRewardAndStakingReward(
     },
     proof: ["0x00", "0x00", "0x00"],
   }
-  setupMocksForAirdrop(airdrop)
+  setupMocksForMerkleDistributorAirdrop(airdrop, true)
 
-  const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
+  const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor} = await getDefaultClasses(
+    goldfinchProtocol
+  )
   const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
   const mocks = await mockUserInitializationContractCalls(
     user,
@@ -266,12 +334,20 @@ export async function setupCommunityRewardAndStakingReward(
       },
     }
   )
-  await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, updatedBlockInfo)
+  await user.initialize(
+    seniorPool,
+    stakingRewards,
+    gfi,
+    communityRewards,
+    merkleDistributor,
+    merkleDirectDistributor,
+    updatedBlockInfo
+  )
 
   assertWithLoadedInfo(user)
   assertAllMocksAreCalled(mocks)
 
-  return {gfi, stakingRewards, communityRewards, merkleDistributor, user}
+  return {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user}
 }
 
 export async function setupPartiallyClaimedStakingReward(
@@ -282,7 +358,9 @@ export async function setupPartiallyClaimedStakingReward(
   const updatedBlockInfo = {...blockInfo}
   updatedBlockInfo.timestamp = 1641750579
 
-  const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
+  const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor} = await getDefaultClasses(
+    goldfinchProtocol
+  )
   const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
   const mocks = await mockUserInitializationContractCalls(
     user,
@@ -313,11 +391,19 @@ export async function setupPartiallyClaimedStakingReward(
       gfi: {gfiBalance},
     }
   )
-  await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, updatedBlockInfo)
+  await user.initialize(
+    seniorPool,
+    stakingRewards,
+    gfi,
+    communityRewards,
+    merkleDistributor,
+    merkleDirectDistributor,
+    updatedBlockInfo
+  )
 
   assertWithLoadedInfo(user)
   assertAllMocksAreCalled(mocks)
-  return {gfi, stakingRewards, communityRewards, merkleDistributor, user}
+  return {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user}
 }
 
 export async function setupMultiplePartiallyClaimedStakingRewards(
@@ -328,7 +414,9 @@ export async function setupMultiplePartiallyClaimedStakingRewards(
   const updatedBlockInfo = {...blockInfo}
   updatedBlockInfo.timestamp = 1641750579
 
-  const {gfi, stakingRewards, communityRewards, merkleDistributor} = await getDefaultClasses(goldfinchProtocol)
+  const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor} = await getDefaultClasses(
+    goldfinchProtocol
+  )
   const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
   const amount = "5000000000000000000000"
   const leverageMultiplier = "1000000000000000000"
@@ -401,7 +489,15 @@ export async function setupMultiplePartiallyClaimedStakingRewards(
       gfi: {gfiBalance},
     }
   )
-  await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, updatedBlockInfo)
+  await user.initialize(
+    seniorPool,
+    stakingRewards,
+    gfi,
+    communityRewards,
+    merkleDistributor,
+    merkleDirectDistributor,
+    updatedBlockInfo
+  )
 
   assertWithLoadedInfo(user)
   assertAllMocksAreCalled(
@@ -434,15 +530,107 @@ export async function getDefaultClasses(goldfinchProtocol: GoldfinchProtocol) {
   await mockMerkleDistributorContractCalls(merkleDistributor)
   await merkleDistributor.initialize(blockInfo)
 
+  const merkleDirectDistributor = new MerkleDirectDistributor(goldfinchProtocol)
+  await mockMerkleDirectDistributorContractCalls(merkleDirectDistributor)
+  await merkleDirectDistributor.initialize(blockInfo)
+
   assertWithLoadedInfo(gfi)
   assertWithLoadedInfo(stakingRewards)
   assertWithLoadedInfo(communityRewards)
   assertWithLoadedInfo(merkleDistributor)
+  assertWithLoadedInfo(merkleDirectDistributor)
 
   return {
     gfi,
     stakingRewards,
     communityRewards,
     merkleDistributor,
+    merkleDirectDistributor,
   }
+}
+
+export async function setupMerkleDirectDistributorAirdrop(
+  goldfinchProtocol: GoldfinchProtocol,
+  seniorPool: SeniorPoolLoaded
+) {
+  const airdrop: MerkleDirectDistributorGrantInfo = {
+    index: 0,
+    account: recipient,
+    reason: "flight_academy",
+    grant: {
+      amount: "0x878678326eac900000",
+    },
+    proof: ["0x00", "0x00", "0x00"],
+  }
+  setupMocksForMerkleDirectDistributorAirdrop(airdrop, false)
+  const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor} = await getDefaultClasses(
+    goldfinchProtocol
+  )
+  const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
+  const mocks = await mockUserInitializationContractCalls(
+    user,
+    stakingRewards,
+    gfi,
+    communityRewards,
+    merkleDistributor,
+    {}
+  )
+  await user.initialize(
+    seniorPool,
+    stakingRewards,
+    gfi,
+    communityRewards,
+    merkleDistributor,
+    merkleDirectDistributor,
+    blockInfo
+  )
+
+  assertWithLoadedInfo(user)
+  assertAllMocksAreCalled(mocks)
+
+  return {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user}
+}
+
+export async function setupAcceptedDirectReward(goldfinchProtocol: GoldfinchProtocol, seniorPool: SeniorPoolLoaded) {
+  const airdrop: MerkleDirectDistributorGrantInfo = {
+    index: 0,
+    account: recipient,
+    reason: "flight_academy",
+    grant: {
+      amount: "0x878678326eac900000",
+    },
+    proof: ["0x00", "0x00", "0x00"],
+  }
+  setupMocksForMerkleDirectDistributorAirdrop(airdrop, true)
+
+  const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor} = await getDefaultClasses(
+    goldfinchProtocol
+  )
+  const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
+  const mocks = await mockUserInitializationContractCalls(
+    user,
+    stakingRewards,
+    gfi,
+    communityRewards,
+    merkleDistributor,
+    {
+      gfi: {
+        gfiBalance: "2500000000000000000000",
+      },
+    }
+  )
+  await user.initialize(
+    seniorPool,
+    stakingRewards,
+    gfi,
+    communityRewards,
+    merkleDistributor,
+    merkleDirectDistributor,
+    blockInfo
+  )
+
+  assertWithLoadedInfo(user)
+  assertAllMocksAreCalled(mocks)
+
+  return {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user}
 }

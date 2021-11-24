@@ -1,11 +1,21 @@
-import "@testing-library/jest-dom"
-import {render, screen, fireEvent, waitFor} from "@testing-library/react"
 import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
-import {mock} from "depay-web3-mock"
+import "@testing-library/jest-dom"
+import {fireEvent, render, screen, waitFor} from "@testing-library/react"
 import {BigNumber} from "bignumber.js"
+import {mock} from "depay-web3-mock"
 import {BrowserRouter as Router} from "react-router-dom"
 import {AppContext} from "../../App"
-import web3 from "../../web3"
+import WithdrawalForm from "../../components/withdrawalForm"
+import {
+  CommunityRewardsLoaded,
+  MerkleDirectDistributorLoaded,
+  MerkleDistributorLoaded,
+} from "../../ethereum/communityRewards"
+import {usdcToAtomic} from "../../ethereum/erc20"
+import {GFILoaded} from "../../ethereum/gfi"
+import {GoldfinchConfigData} from "../../ethereum/goldfinchConfig"
+import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
+import {NetworkMonitor} from "../../ethereum/networkMonitor"
 import {
   CapitalProvider,
   fetchCapitalProviderData,
@@ -16,34 +26,28 @@ import {
   StakingRewardsLoaded,
 } from "../../ethereum/pool"
 import {User, UserLoaded} from "../../ethereum/user"
+import * as utils from "../../ethereum/utils"
+import {assertWithLoadedInfo, Loaded} from "../../types/loadable"
+import web3 from "../../web3"
 import {
   blockchain,
   blockInfo,
   getDeployments,
+  getStakingRewardsAbi,
   network,
   recipient,
-  getStakingRewardsAbi,
 } from "../rewards/__utils__/constants"
-import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
+import {
+  mockCapitalProviderCalls,
+  mockUserInitializationContractCalls,
+  resetAirdropMocks,
+} from "../rewards/__utils__/mocks"
 import {
   getDefaultClasses,
   setupClaimableStakingReward,
   setupMultiplePartiallyClaimedStakingRewards,
   setupPartiallyClaimedStakingReward,
 } from "../rewards/__utils__/scenarios"
-import {assertWithLoadedInfo, Loaded} from "../../types/loadable"
-import {
-  mockCapitalProviderCalls,
-  mockUserInitializationContractCalls,
-  setupMocksForAirdrop,
-} from "../rewards/__utils__/mocks"
-import WithdrawalForm from "../../components/withdrawalForm"
-import {usdcToAtomic} from "../../ethereum/erc20"
-import * as utils from "../../ethereum/utils"
-import {CommunityRewardsLoaded, MerkleDistributorLoaded} from "../../ethereum/communityRewards"
-import {GFILoaded} from "../../ethereum/gfi"
-import {NetworkMonitor} from "../../ethereum/networkMonitor"
-import {GoldfinchConfigData} from "../../ethereum/goldfinchConfig"
 
 mock({
   blockchain: "ethereum",
@@ -97,6 +101,7 @@ describe("withdrawal form", () => {
     stakingRewards: StakingRewardsLoaded,
     communityRewards: CommunityRewardsLoaded,
     merkleDistributor: MerkleDistributorLoaded,
+    merkleDirectDistributor: MerkleDirectDistributorLoaded,
     user: UserLoaded,
     capitalProvider: Loaded<CapitalProvider>
 
@@ -104,7 +109,7 @@ describe("withdrawal form", () => {
     jest.spyOn(utils, "getDeployments").mockImplementation(() => {
       return getDeployments()
     })
-    setupMocksForAirdrop(undefined) // reset
+    resetAirdropMocks()
 
     await goldfinchProtocol.initialize()
     const _seniorPoolLoaded = new SeniorPool(goldfinchProtocol)
@@ -125,10 +130,19 @@ describe("withdrawal form", () => {
     stakingRewards = result.stakingRewards
     communityRewards = result.communityRewards
     merkleDistributor = result.merkleDistributor
+    merkleDirectDistributor = result.merkleDirectDistributor
 
     const _user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
     await mockUserInitializationContractCalls(_user, stakingRewards, gfi, communityRewards, merkleDistributor, {})
-    await _user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
+    await _user.initialize(
+      seniorPool,
+      stakingRewards,
+      gfi,
+      communityRewards,
+      merkleDistributor,
+      merkleDirectDistributor,
+      blockInfo
+    )
 
     assertWithLoadedInfo(_user)
     user = _user
