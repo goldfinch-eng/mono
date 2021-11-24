@@ -172,6 +172,10 @@ export class CommunityRewardsGrant {
   get claimed(): BigNumber {
     return this.rewards.totalClaimed
   }
+
+  get revoked(): boolean {
+    return this.rewards.revokedAt > 0
+  }
 }
 
 type CommunityRewardsLoadedInfo = {

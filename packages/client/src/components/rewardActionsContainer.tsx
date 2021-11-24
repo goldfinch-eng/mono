@@ -580,7 +580,9 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
       const status: RewardStatus =
         item instanceof CommunityRewardsGrant
           ? item.claimed.lt(item.granted)
-            ? RewardStatus.TemporarilyAllClaimed
+            ? item.revoked
+              ? RewardStatus.PermanentlyAllClaimed
+              : RewardStatus.TemporarilyAllClaimed
             : RewardStatus.PermanentlyAllClaimed
           : // Staking rewards are never "permanently" all-claimed; even after vesting is finished, stakings keep
             // earning rewards that vest immediately.
