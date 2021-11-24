@@ -17,7 +17,9 @@ export async function deploy(deployEffects: DeployEffects) {
 
   // 1.
   // Upgrade existing contracts
-  const upgradedContracts = await upgrader.upgrade({contracts: ["PoolTokens", "SeniorPool", "UniqueIdentity", "Go"]})
+  const upgradedContracts = await upgrader.upgrade({
+    contracts: ["PoolTokens", "SeniorPool", "UniqueIdentity", "Go", "GoldfinchFactory"],
+  })
 
   // 2.
   // Deploy TranchedPool & set TranchedPoolImplementation
@@ -29,23 +31,17 @@ export async function deploy(deployEffects: DeployEffects) {
 
   // 4.
   // Upgrade Go contract
-  const oldGo = await getEthersContract("Go", {
-    at: upgradedContracts.Go?.ExistingContract.address,
-    from: protocolOwner,
-  })
+  const go = await getEthersContract<Go>("Go", {at: upgradedContracts.Go?.ProxyContract.address})
+  const goConfigAddress = await go.config()
 
   await deployEffects.add(await changeImplementations({contracts: upgradedContracts}))
 
-  const upgradedGo = await getEthersContract<Go>("Go", {
-    at: upgradedContracts.Go?.ProxyContract.address,
-    from: protocolOwner,
-  })
   await deployEffects.add({
-    deferred: [await upgradedGo.populateTransaction.setGoListOverride(await oldGo.config())],
+    deferred: [
+      await go.populateTransaction.setGoListOverride(goConfigAddress),
+      await go.populateTransaction.updateGoldfinchConfig(),
+    ],
   })
-
-  // 5. update goldfinch config with new go contract
-  // await existingConfig.populateTransaction.setAddress(CONFIG_KEYS.Go, contract.address)
 
   return {
     deployedContracts: {

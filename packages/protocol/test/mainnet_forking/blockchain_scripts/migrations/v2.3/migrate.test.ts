@@ -116,8 +116,9 @@ describe("v2.3 migration", async function () {
 
     describe("Go", async () => {
       const KNOWN_ADDRESS_ON_GO_LIST = "0x483e2BaF7F4e0Ac7D90c2C3Efc13c3AF5050F3c2"
+      const GOLDFINCH_CONFIG_ADDRESS_WITH_GO_LIST = "0x4eb844Ff521B4A964011ac8ecd42d500725C95CC"
       it("has the config with the go list set as the goListOverride", async () => {
-        expect(await go.goListOverride()).to.be.eq(oldGoldfinchConfigDeployment.address)
+        expect(await go.goListOverride()).to.be.eq(GOLDFINCH_CONFIG_ADDRESS_WITH_GO_LIST)
       })
 
       it("goListOverride is working correctly", async () => {

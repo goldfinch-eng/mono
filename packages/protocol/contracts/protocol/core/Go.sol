@@ -12,6 +12,12 @@ import "../../interfaces/IUniqueIdentity0612.sol";
 
 contract Go is IGo, BaseUpgradeablePausable {
   address public override uniqueIdentity;
+  using SafeMath for uint256;
+
+  GoldfinchConfig public config;
+  using ConfigHelper for GoldfinchConfig;
+  GoldfinchConfig public goListOverride;
+
   uint256[11] public allIdTypes = [
     ID_TYPE_0,
     ID_TYPE_1,
@@ -26,12 +32,6 @@ contract Go is IGo, BaseUpgradeablePausable {
     ID_TYPE_10
   ];
 
-  using SafeMath for uint256;
-
-  GoldfinchConfig public config;
-  using ConfigHelper for GoldfinchConfig;
-
-  GoldfinchConfig public goListOverride;
   event GoldfinchConfigUpdated(address indexed who, address configAddress);
 
   function initialize(
