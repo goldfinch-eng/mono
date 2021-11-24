@@ -12,26 +12,14 @@ import "../../interfaces/IUniqueIdentity0612.sol";
 
 contract Go is IGo, BaseUpgradeablePausable {
   address public override uniqueIdentity;
-  uint256[11] public allIdTypes = [
-    ID_TYPE_0,
-    ID_TYPE_1,
-    ID_TYPE_2,
-    ID_TYPE_3,
-    ID_TYPE_4,
-    ID_TYPE_5,
-    ID_TYPE_6,
-    ID_TYPE_7,
-    ID_TYPE_8,
-    ID_TYPE_9,
-    ID_TYPE_10
-  ];
-
   using SafeMath for uint256;
 
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
-
   GoldfinchConfig public goListOverride;
+
+  uint256[11] public allIdTypes;
+
   event GoldfinchConfigUpdated(address indexed who, address configAddress);
 
   function initialize(
@@ -44,6 +32,7 @@ contract Go is IGo, BaseUpgradeablePausable {
       "Owner and config and UniqueIdentity addresses cannot be empty"
     );
     __BaseUpgradeablePausable__init(owner);
+    performUpgrade();
     config = _config;
     uniqueIdentity = _uniqueIdentity;
   }
@@ -51,6 +40,20 @@ contract Go is IGo, BaseUpgradeablePausable {
   function updateGoldfinchConfig() external override onlyAdmin {
     config = GoldfinchConfig(config.configAddress());
     emit GoldfinchConfigUpdated(msg.sender, address(config));
+  }
+
+  function performUpgrade() public onlyAdmin {
+    allIdTypes[0] = ID_TYPE_0;
+    allIdTypes[1] = ID_TYPE_1;
+    allIdTypes[2] = ID_TYPE_2;
+    allIdTypes[3] = ID_TYPE_3;
+    allIdTypes[4] = ID_TYPE_4;
+    allIdTypes[5] = ID_TYPE_5;
+    allIdTypes[6] = ID_TYPE_6;
+    allIdTypes[7] = ID_TYPE_7;
+    allIdTypes[8] = ID_TYPE_8;
+    allIdTypes[9] = ID_TYPE_9;
+    allIdTypes[10] = ID_TYPE_10;
   }
 
   /**

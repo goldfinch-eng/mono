@@ -8,6 +8,7 @@ import {
   TRANCHES,
   MAINNET_CHAIN_ID,
   getProtocolOwner,
+  getTruffleContract,
 } from "../../blockchain_scripts/deployHelpers"
 import {
   MAINNET_MULTISIG,
@@ -36,6 +37,17 @@ import {
   createPoolWithCreditLine,
 } from "../testHelpers"
 import {assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
+import {
+  BorrowerInstance,
+  FiduInstance,
+  FixedLeverageRatioStrategyInstance,
+  GoInstance,
+  GoldfinchConfigInstance,
+  GoldfinchFactoryInstance,
+  SeniorPoolInstance,
+} from "@goldfinch-eng/protocol/typechain/truffle"
+import * as migrate22 from "../../blockchain_scripts/migrations/v2.2/migrate"
+import * as migrate23 from "../../blockchain_scripts/migrations/v2.3/migrate"
 
 const setupTest = deployments.createFixture(async ({deployments}) => {
   // Note: base_deploy always returns when mainnet forking, however
@@ -43,6 +55,9 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   // snapshot and give us a clean blockchain before each test.
   // Otherwise, we have state leaking across tests.
   await deployments.fixture("base_deploy", {keepExistingDeployments: true})
+
+  await migrate22.main()
+  await migrate23.main()
 
   const [owner, bwr] = await web3.eth.getAccounts()
   assertNonNullable(owner)
@@ -57,7 +72,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   await impersonateAccount(hre, MAINNET_MULTISIG)
 
   const mainnetMultisigSigner = ethers.provider.getSigner(MAINNET_MULTISIG)
-  const contractNames = ["SeniorPool", "Fidu", "GoldfinchFactory", "GoldfinchConfig"]
+  const contractNames = ["SeniorPool", "Fidu", "GoldfinchFactory", "GoldfinchConfig", "Go"]
   const existingContracts = await getExistingContracts(contractNames, mainnetMultisigSigner)
 
   const usdcAddress = getUSDCAddress(MAINNET_CHAIN_ID)
@@ -70,22 +85,26 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   assertNonNullable(existingContracts.GoldfinchConfig)
   assertNonNullable(existingContracts.GoldfinchFactory)
 
-  const seniorPool = await artifacts.require("SeniorPool").at(existingContracts.SeniorPool.ExistingContract.address)
+  const seniorPool: SeniorPoolInstance = await artifacts
+    .require("SeniorPool")
+    .at(existingContracts.SeniorPool.ExistingContract.address)
 
-  const fidu = await artifacts.require("Fidu").at(existingContracts.Fidu.ExistingContract.address)
+  const fidu: FiduInstance = await artifacts.require("Fidu").at(existingContracts.Fidu.ExistingContract.address)
 
-  const go = await artifacts.require("Go").at(existingContracts.Go?.ExistingContract.address)
+  const go: GoInstance = await artifacts.require("Go").at(existingContracts.Go?.ExistingContract.address)
 
-  const goldfinchConfig = await artifacts
+  const goldfinchConfig: GoldfinchConfigInstance = await artifacts
     .require("GoldfinchConfig")
     .at(existingContracts.GoldfinchConfig.ExistingContract.address)
 
-  const goldfinchFactory = await artifacts
+  const goldfinchFactory: GoldfinchFactoryInstance = await artifacts
     .require("GoldfinchFactory")
     .at(existingContracts.GoldfinchFactory.ExistingContract.address)
 
   const seniorPoolStrategyAddress = await goldfinchConfig.getAddress(CONFIG_KEYS.SeniorPoolStrategy)
-  const seniorPoolStrategy = await artifacts.require("FixedLeverageRatioStrategy").at(seniorPoolStrategyAddress)
+  const seniorPoolStrategy: FixedLeverageRatioStrategyInstance = await artifacts
+    .require("FixedLeverageRatioStrategy")
+    .at(seniorPoolStrategyAddress)
 
   return {seniorPool, seniorPoolStrategy, usdc, fidu, goldfinchConfig, goldfinchFactory, cUSDC, go}
 })
@@ -97,8 +116,7 @@ These tests are special. They use existing mainnet state, so
 that we can easily and realistically test interactions with outside protocols
 and contracts.
 */
-// TODO: This is broken until we fix contract upgrades
-xdescribe("mainnet forking tests", async function () {
+describe("mainnet forking tests", async function () {
   this.retries(2)
 
   // eslint-disable-next-line no-unused-vars
@@ -149,8 +167,8 @@ xdescribe("mainnet forking tests", async function () {
   })
 
   describe("drawing down into another currency", async function () {
-    let bwrCon, oneSplit
-    beforeEach(async function () {
+    let bwrCon: BorrowerInstance, oneSplit
+    beforeEach(async () => {
       this.timeout(TEST_TIMEOUT)
       oneSplit = await IOneSplit.at(MAINNET_ONE_SPLIT_ADDRESS)
       bwrCon = await createBorrowerContract()
@@ -404,18 +422,6 @@ xdescribe("mainnet forking tests", async function () {
         expect(await getBalance(bwrCon.address, usdc)).to.bignumber.eq(new BN(0))
         expect(await getBalance(bwrCon.address, usdt)).to.bignumber.eq(new BN(0))
       }).timeout(TEST_TIMEOUT)
-    })
-  })
-
-  describe("Go", async () => {
-    const GOLDFINCH_CONFIG_WITH_GO_LIST = "0x4eb844Ff521B4A964011ac8ecd42d500725C95CC"
-    const KNOWN_ADDRESS_ON_GO_LIST = "0x483e2BaF7F4e0Ac7D90c2C3Efc13c3AF5050F3c2"
-    it("has the config with the go list set as the goListOverride", async () => {
-      expect(await go.goListOverride()).to.be.eq(GOLDFINCH_CONFIG_WITH_GO_LIST)
-    })
-
-    it("goListOverride is working correctly", async () => {
-      expect(await go.go(KNOWN_ADDRESS_ON_GO_LIST)).to.be.true
     })
   })
 

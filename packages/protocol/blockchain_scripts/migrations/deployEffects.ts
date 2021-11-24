@@ -14,11 +14,12 @@ import {
   isMainnetForking,
   LOCAL_CHAIN_ID,
 } from "../deployHelpers"
-import {fundWithWhales, UpgradedContracts} from "../mainnetForkingHelpers"
+import {fundWithWhales, impersonateAccount, UpgradedContracts} from "../mainnetForkingHelpers"
 import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
 import {DefenderUpgrader} from "../adminActions/defenderUpgrader"
 import {PopulatedTransaction} from "@ethersproject/contracts"
 import {BigNumber} from "ethers"
+import {bigVal, BN, fundWithEthFromLocalWhale} from "@goldfinch-eng/protocol/test/testHelpers"
 
 /**
  * Interface for performing bulk actions during protocol upgrades. The underlying
@@ -191,6 +192,8 @@ class DefenderMultisendEffects extends MultisendEffects {
  */
 class IndividualTxEffects extends MultisendEffects {
   async execute(safeTxs: SafeTransactionDataPartial[]): Promise<void> {
+    await impersonateAccount(hre, await getProtocolOwner())
+    await fundWithWhales(["ETH"], [await getProtocolOwner()], bigVal(5))
     const signer = ethers.provider.getSigner(await getProtocolOwner())
 
     for (const tx of safeTxs) {
