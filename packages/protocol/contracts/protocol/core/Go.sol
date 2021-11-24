@@ -32,7 +32,7 @@ contract Go is IGo, BaseUpgradeablePausable {
       "Owner and config and UniqueIdentity addresses cannot be empty"
     );
     __BaseUpgradeablePausable__init(owner);
-    performUpgrade();
+    _performUpgrade();
     config = _config;
     uniqueIdentity = _uniqueIdentity;
   }
@@ -42,7 +42,11 @@ contract Go is IGo, BaseUpgradeablePausable {
     emit GoldfinchConfigUpdated(msg.sender, address(config));
   }
 
-  function performUpgrade() public onlyAdmin {
+  function performUpgrade() external onlyAdmin {
+    return _performUpgrade();
+  }
+
+  function _performUpgrade() internal {
     allIdTypes[0] = ID_TYPE_0;
     allIdTypes[1] = ID_TYPE_1;
     allIdTypes[2] = ID_TYPE_2;

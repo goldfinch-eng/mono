@@ -1,8 +1,8 @@
-import {deployBackerRewards, deployTranchedPool} from "../../baseDeploy"
+import {deployBackerRewards, deployClImplementation, deployTranchedPool} from "../../baseDeploy"
 import {ContractDeployer, ContractUpgrader, getEthersContract, getProtocolOwner} from "../../deployHelpers"
 import hre, {deployments} from "hardhat"
 import {changeImplementations, DeployEffects} from "../deployEffects"
-import {Go, GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/ethers"
+import {Go, GoldfinchConfig, GoldfinchFactory} from "@goldfinch-eng/protocol/typechain/ethers"
 
 export async function deploy(deployEffects: DeployEffects) {
   const deployer = new ContractDeployer(console.log, hre)
@@ -25,11 +25,15 @@ export async function deploy(deployEffects: DeployEffects) {
   // Deploy TranchedPool & set TranchedPoolImplementation
   const tranchedPool = await deployTranchedPool(deployer, {config: existingConfig, deployEffects})
 
-  // 3.
+  // 4.
+  // Deploy CreditLine & set CreditLineImplementation
+  await deployClImplementation(deployer, {config: existingConfig, deployEffects})
+
+  // 5.
   // Deploy BackerRewards
   const backerRewards = await deployBackerRewards(deployer, {configAddress: existingConfig.address, deployEffects})
 
-  // 4.
+  // 6.
   // Upgrade Go contract
   const go = await getEthersContract<Go>("Go", {at: upgradedContracts.Go?.ProxyContract.address})
   const goConfigAddress = await go.config()
@@ -42,6 +46,14 @@ export async function deploy(deployEffects: DeployEffects) {
       await go.populateTransaction.updateGoldfinchConfig(),
       await go.populateTransaction.performUpgrade(),
     ],
+  })
+
+  // 7. upgrade goldfinch factory
+  const goldfinchFactory = await getEthersContract<GoldfinchFactory>("GoldfinchFactory", {
+    at: upgradedContracts.GoldfinchFactory?.ProxyContract.address,
+  })
+  await deployEffects.add({
+    deferred: [await goldfinchFactory.populateTransaction.performUpgrade()],
   })
 
   return {
