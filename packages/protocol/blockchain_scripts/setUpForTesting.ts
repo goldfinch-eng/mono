@@ -36,6 +36,7 @@ import {
   GFI,
   GoldfinchConfig,
   GoldfinchFactory,
+  MerkleDirectDistributor,
   SeniorPool,
   StakingRewards,
   TestERC20,
@@ -207,7 +208,11 @@ async function setUpRewards(
   const amount = new BN(String(1e8)).mul(GFI_DECIMALS)
   const communityRewards = await getDeployedAsEthersContract<CommunityRewards>(getOrNull, "CommunityRewards")
   const stakingRewards = await getDeployedAsEthersContract<StakingRewards>(getOrNull, "StakingRewards")
-  const rewardsAmount = amount.div(new BN(2))
+  const merkleDirectDistributor = await getDeployedAsEthersContract<MerkleDirectDistributor>(
+    getOrNull,
+    "MerkleDirectDistributor"
+  )
+  const rewardsAmount = amount.div(new BN(3))
 
   const gfi = await getDeployedAsEthersContract<GFI>(getOrNull, "GFI")
   await gfi.mint(protocolOwner, amount.toString(10))
@@ -238,6 +243,9 @@ async function setUpRewards(
   const usdcAmount = String(usdcVal(50000))
   await erc20.connect(signer).approve(stakingRewards.address, usdcAmount)
   await stakingRewards.depositAndStake(usdcAmount, {from: protocolOwner})
+
+  // Fund the MerkleDirectDistributor's GFI balance, so that it has GFI to disburse.
+  await gfi.transfer(merkleDirectDistributor.address, rewardsAmount.toString(10), {from: protocolOwner})
 }
 
 export async function getERC20s({hre, chainId}) {

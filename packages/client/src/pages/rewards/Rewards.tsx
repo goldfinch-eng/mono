@@ -212,6 +212,7 @@ function Rewards() {
       !userCommunityRewards.info.value.grants.length &&
       !userMerkleDistributor.info.value.airdrops.notAccepted.length &&
       !userMerkleDirectDistributor.info.value.airdrops.notAccepted.length &&
+      !userMerkleDirectDistributor.info.value.airdrops.accepted.length &&
       !userStakingRewards.info.value.positions.length
 
     gfiBalance = user.info.value.gfiBalance
@@ -235,6 +236,7 @@ function Rewards() {
               merkleDirectDistributor={merkleDirectDistributor}
               stakingRewards={stakingRewards}
               communityRewards={communityRewards}
+              extra={undefined}
             />
           ))}
 
@@ -249,6 +251,21 @@ function Rewards() {
               merkleDirectDistributor={merkleDirectDistributor}
               stakingRewards={stakingRewards}
               communityRewards={communityRewards}
+              extra={{accepted: false}}
+            />
+          ))}
+        {userMerkleDirectDistributor &&
+          userMerkleDirectDistributor.info.value.airdrops.accepted.map((item) => (
+            <RewardActionsContainer
+              key={`merkle-direct-distributor-airdrop-${item.index}`}
+              type="merkleDirectDistributor"
+              item={item}
+              gfi={gfi}
+              merkleDistributor={merkleDistributor}
+              merkleDirectDistributor={merkleDirectDistributor}
+              stakingRewards={stakingRewards}
+              communityRewards={communityRewards}
+              extra={{accepted: true}}
             />
           ))}
 
@@ -266,6 +283,7 @@ function Rewards() {
                     merkleDirectDistributor={merkleDirectDistributor}
                     stakingRewards={stakingRewards}
                     communityRewards={communityRewards}
+                    extra={undefined}
                   />
                 )
               case "stakingRewards":
@@ -279,10 +297,11 @@ function Rewards() {
                     merkleDirectDistributor={merkleDirectDistributor}
                     stakingRewards={stakingRewards}
                     communityRewards={communityRewards}
+                    extra={undefined}
                   />
                 )
               default:
-                assertUnreachable(item)
+                return assertUnreachable(item)
             }
           })}
       </>

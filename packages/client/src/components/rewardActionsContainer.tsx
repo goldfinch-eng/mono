@@ -502,18 +502,24 @@ type RewardActionsContainerProps = {
   | {
       type: CommunityRewardsRewardType
       item: CommunityRewardsGrant
+      extra: undefined
     }
   | {
       type: StakingRewardsRewardType
       item: StakingRewardsPosition
+      extra: undefined
     }
   | {
       type: MerkleDistributorRewardType
       item: MerkleDistributorGrantInfo
+      extra: undefined
     }
   | {
       type: MerkleDirectDistributorRewardType
       item: MerkleDirectDistributorGrantInfo
+      extra: {
+        accepted: boolean
+      }
     }
 )
 
@@ -633,7 +639,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     const details = getMerkleDirectDistributorGrantInfoDetails(item, props.merkleDirectDistributor)
     return (
       <RewardsListItem
-        status={RewardStatus.Acceptable}
+        status={props.extra.accepted ? RewardStatus.PermanentlyAllClaimed : RewardStatus.Acceptable}
         title={MerkleDirectDistributor.getDisplayTitle(item.reason)}
         grantedGFI={new BigNumber(item.grant.amount)}
         claimableGFI={new BigNumber(0)}
