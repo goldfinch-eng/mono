@@ -350,22 +350,23 @@ export async function setupCommunityRewardAndStakingReward(
   return {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user}
 }
 
+const merkleDirectDistributorAirdropAmountHex = "0x878678326eac900000"
+const merkleDirectDistributorAirdropAmount = "2500000000000000000000"
+const merkleDirectDistributorAirdrop: MerkleDirectDistributorGrantInfo = {
+  index: 0,
+  account: recipient,
+  reason: "flight_academy",
+  grant: {
+    amount: merkleDirectDistributorAirdropAmountHex,
+  },
+  proof: ["0x00", "0x00", "0x00"],
+}
+
 export async function setupDirectReward(goldfinchProtocol: GoldfinchProtocol, seniorPool: SeniorPoolLoaded) {
   const updatedBlockInfo = {...blockInfo}
   updatedBlockInfo.timestamp = 1641564707
 
-  const amountHex = "0x878678326eac900000"
-  const amount = "2500000000000000000000"
-  const airdrop: MerkleDirectDistributorGrantInfo = {
-    index: 0,
-    account: recipient,
-    reason: "flight_academy",
-    grant: {
-      amount: amountHex,
-    },
-    proof: ["0x00", "0x00", "0x00"],
-  }
-  setupMocksForMerkleDirectDistributorAirdrop(airdrop, true)
+  setupMocksForMerkleDirectDistributorAirdrop(merkleDirectDistributorAirdrop, true)
 
   const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor} = await getDefaultClasses(
     goldfinchProtocol
@@ -379,7 +380,7 @@ export async function setupDirectReward(goldfinchProtocol: GoldfinchProtocol, se
     merkleDistributor,
     {
       gfi: {
-        gfiBalance: amount,
+        gfiBalance: merkleDirectDistributorAirdropAmount,
       },
     }
   )
@@ -406,18 +407,7 @@ export async function setupDirectRewardAndStakingReward(
   const updatedBlockInfo = {...blockInfo}
   updatedBlockInfo.timestamp = 1641564707
 
-  const amountHex = "0x878678326eac900000"
-  const amount = "2500000000000000000000"
-  const airdrop: MerkleDirectDistributorGrantInfo = {
-    index: 0,
-    account: recipient,
-    reason: "flight_academy",
-    grant: {
-      amount: amountHex,
-    },
-    proof: ["0x00", "0x00", "0x00"],
-  }
-  setupMocksForMerkleDirectDistributorAirdrop(airdrop, true)
+  setupMocksForMerkleDirectDistributorAirdrop(merkleDirectDistributorAirdrop, true)
 
   const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor} = await getDefaultClasses(
     goldfinchProtocol
@@ -436,7 +426,7 @@ export async function setupDirectRewardAndStakingReward(
         totalVestedAt: "710136986301369863",
       },
       gfi: {
-        gfiBalance: amount,
+        gfiBalance: merkleDirectDistributorAirdropAmount,
       },
     }
   )
@@ -477,17 +467,6 @@ export async function setupCommunityRewardAndDirectRewardAndStakingReward(
   }
   setupMocksForMerkleDistributorAirdrop(merkleDistributorAirdrop, true)
 
-  const amountHex = "0x878678326eac900000"
-  const amount = "2500000000000000000000"
-  const merkleDirectDistributorAirdrop: MerkleDirectDistributorGrantInfo = {
-    index: 0,
-    account: recipient,
-    reason: "flight_academy",
-    grant: {
-      amount: amountHex,
-    },
-    proof: ["0x00", "0x00", "0x00"],
-  }
   setupMocksForMerkleDirectDistributorAirdrop(merkleDirectDistributorAirdrop, true)
 
   const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor} = await getDefaultClasses(
@@ -510,7 +489,7 @@ export async function setupCommunityRewardAndDirectRewardAndStakingReward(
         airdrop: merkleDistributorAirdrop,
       },
       gfi: {
-        gfiBalance: amount,
+        gfiBalance: merkleDirectDistributorAirdropAmount,
       },
     }
   )
@@ -733,16 +712,7 @@ export async function setupMerkleDirectDistributorAirdrop(
   goldfinchProtocol: GoldfinchProtocol,
   seniorPool: SeniorPoolLoaded
 ) {
-  const airdrop: MerkleDirectDistributorGrantInfo = {
-    index: 0,
-    account: recipient,
-    reason: "flight_academy",
-    grant: {
-      amount: "0x878678326eac900000",
-    },
-    proof: ["0x00", "0x00", "0x00"],
-  }
-  setupMocksForMerkleDirectDistributorAirdrop(airdrop, false)
+  setupMocksForMerkleDirectDistributorAirdrop(merkleDirectDistributorAirdrop, false)
   const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor} = await getDefaultClasses(
     goldfinchProtocol
   )
@@ -772,18 +742,7 @@ export async function setupMerkleDirectDistributorAirdrop(
 }
 
 export async function setupAcceptedDirectReward(goldfinchProtocol: GoldfinchProtocol, seniorPool: SeniorPoolLoaded) {
-  const amountHex = "0x878678326eac900000"
-  const amount = "2500000000000000000000"
-  const airdrop: MerkleDirectDistributorGrantInfo = {
-    index: 0,
-    account: recipient,
-    reason: "flight_academy",
-    grant: {
-      amount: amountHex,
-    },
-    proof: ["0x00", "0x00", "0x00"],
-  }
-  setupMocksForMerkleDirectDistributorAirdrop(airdrop, true)
+  setupMocksForMerkleDirectDistributorAirdrop(merkleDirectDistributorAirdrop, true)
 
   const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor} = await getDefaultClasses(
     goldfinchProtocol
@@ -797,7 +756,7 @@ export async function setupAcceptedDirectReward(goldfinchProtocol: GoldfinchProt
     merkleDistributor,
     {
       gfi: {
-        gfiBalance: amount,
+        gfiBalance: merkleDirectDistributorAirdropAmount,
       },
     }
   )
