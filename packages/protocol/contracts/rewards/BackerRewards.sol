@@ -168,6 +168,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
 
     address poolAddr = tokenInfo.pool;
     require(config.getPoolTokens().validPool(poolAddr), "Invalid pool!");
+    require(msg.sender == poolTokens.ownerOf(tokenId), "Must be owner of PoolToken");
 
     BaseUpgradeablePausable pool = BaseUpgradeablePausable(poolAddr);
     require(!pool.paused(), "Pool withdraw paused");
@@ -196,7 +197,9 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     BackerRewardsInfo storage _poolInfo = pools[_poolAddress];
 
     uint256 totalJuniorDeposits = pool.totalJuniorDeposits();
-    require(totalJuniorDeposits > 0, "Principal balance cannot be zero");
+    if (totalJuniorDeposits == 0) {
+      return;
+    }
 
     // example: (6708203932437400000000 * 10^18) / (100000*10^18)
     _poolInfo.accRewardsPerPrincipalDollar = _poolInfo.accRewardsPerPrincipalDollar.add(

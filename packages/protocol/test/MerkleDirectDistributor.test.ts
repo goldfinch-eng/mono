@@ -312,7 +312,7 @@ describe("MerkleDirectDistributor", () => {
         acceptGrantParams.proof,
         {from: acceptGrantParams.from}
       )
-      expect(receipt.receipt.gasUsed).to.eq(79090)
+      expect(receipt.receipt.gasUsed).to.eq(79100)
     })
   })
 })
