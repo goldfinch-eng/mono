@@ -1,5 +1,4 @@
-
-import { TranchedPool as TranchedPoolTemplate } from "packages/subgraph/generated/templates"
+import { TranchedPool as TranchedPoolTemplate } from "../../generated/templates"
 import {
   BorrowerCreated,
   Paused,
@@ -20,7 +19,5 @@ export function handlerPoolCreated(event: PoolCreated): void {
 export function handlerRoleGranted(event: RoleGranted): void {}
 
 export function handlerRoleRevoked(event: RoleRevoked): void {}
-
-export function handlerUnpaused(event: Unpaused): void {}
 
 export function handlerUnpaused(event: Unpaused): void {}
