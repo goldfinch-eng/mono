@@ -58,6 +58,13 @@ enum UserType {
   BORROWER
 }
 
+enum PoolState {
+  Open
+  JuniorLocked
+  SeniorLocked
+  WithdrawalsUnlocked
+}
+
 type User @entity {
   id: ID!
   type: UserType
@@ -65,18 +72,26 @@ type User @entity {
   goListed: Boolean
 
   seniorPoolDeposits: [SeniorPoolDeposit!]! @derivedFrom(field: "user")
-  poolBackerActivities: [PoolBackerActivity!] @derivedFrom(field: "user")
+  tranchedPoolsDeposits: [TranchedPoolDeposit!]! @derivedFrom(field: "user")
+  poolBackerStatuses: [PoolBacker!] @derivedFrom(field: "user")
 }
 
 type SeniorTrancheInfo @entity {
   id: ID!
+  tranchedPool: TranchedPool
   lockedUntil: BigInt!
+  principalDeposited: BigInt!
+  principalSharePrice: BigInt!
+  interestSharePrice: BigInt!
 }
 
 type JuniorTrancheInfo @entity {
   id: ID!
+  tranchedPool: TranchedPool
   lockedUntil: BigInt!
-  principalDeposited: BigInt
+  principalDeposited: BigInt!
+  principalSharePrice: BigInt!
+  interestSharePrice: BigInt!
 }
 
 type TranchedPoolDeposit @entity {
@@ -85,40 +100,87 @@ type TranchedPoolDeposit @entity {
   """
   id: ID!
   user: User!
-  shares: BigInt!
+  tranchedPool: TranchedPool!
+  tranche: BigInt!
+  tokenId: BigInt!
   amount: BigInt!
   blockNumber: BigInt!
   timestamp: BigInt!
 }
 
-type PoolBackerActivity @entity {
-  id: ID! # tranched pool ID
+type PoolBacker @entity {
+  id: ID! # Set to `${tranchedPool.id}-${user.id}`
   user: User!
-  deposits: [TranchedPoolDeposit!]!
+  tranchedPool: TranchedPool!
   balance: BigInt!
   unrealizedGains: BigInt!
   principalAmount: BigInt!
   principalRedeemed: BigInt!
   interestRedeemed: BigInt!
   principalAtRisk: BigInt!
+  principalRedeemable: BigInt!
+  interestRedeemable: BigInt!
+  availableToWithdraw: BigInt!
 }
 
-type CreditLineStatus @entity {
+type CreditLine @entity {
   id: ID!
+  tranchedPool: TranchedPool!
   limit: BigInt!
   interestApr: BigInt!
   balance: BigInt!
+  remainingPeriodDueAmount: BigInt!
+  remainingTotalDueAmount: BigInt!
+  availableCredit: BigInt!
+  interestAccruedAsOf: BigInt!
+  paymentPeriodInDays: BigInt!
+  termInDays: BigInt!
+  nextDueTime: BigInt!
+  interestOwed: BigInt!
+  termEndTime: BigInt!
+  lastFullPaymentTime: BigInt!
+  termEndDate: BigInt!
+  periodDueAmount: BigInt
+  interestAprDecimal: BigInt
+  collectedPaymentBalance: BigInt
+  totalDueAmount: BigInt
+  dueDate: String
+  name: String
 }
 
 type TranchedPool @entity {
+  """
+    Using reverse lookups to create virtual fields:
+    https://thegraph.com/docs/developer/create-subgraph-hosted#reverse-lookups
+  """
   id: ID!
   estimatedJuniorApy: BigInt!
   estimatedTotalAssets: BigInt!
   estimatedLeverageRatio: BigInt!
   remainingCapacity: BigInt!
   remainingJuniorCapacity: BigInt!
-  seniorTranche: SeniorTrancheInfo!
-  juniorTranche: JuniorTrancheInfo!
-  creditLine: CreditLineStatus!
+  creditLine: CreditLine!
   isPaused: Boolean!
+  state: PoolState! 
+  juniorFeePercent: BigInt!
+  reserveFeePercent: BigInt!
+  totalDeposited: BigInt!
+  estimatedSeniorPoolContribution: BigInt!
+  deposits: [TranchedPoolDeposit!] @derivedFrom(field: "tranchedPool")
+  backers: [PoolBacker!] @derivedFrom(field: "tranchedPool")
+  tokens: [TranchedPoolToken!] @derivedFrom(field: "tranchedPool")
+  seniorTranches: [SeniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
+  juniorTranches: [JuniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
+}
+
+type TranchedPoolToken @entity {
+  id: ID!
+  user: User!
+  tranchedPool: TranchedPool!
+  tranche: BigInt!
+  principalAmount: BigInt!
+  principalRedeemed: BigInt!
+  interestRedeemed: BigInt!
+  interestRedeemable: BigInt!
+  principalRedeemable: BigInt!
 }
