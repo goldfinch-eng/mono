@@ -44,7 +44,7 @@ dataSources:
     source:
       address: "0xd20508E1E971b80EE172c73517905bfFfcBD87f9"
       abi: GoldfinchFactory
-      startBlock: 13096000
+      startBlock: 11370655
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.5
@@ -105,7 +105,7 @@ dataSources:
     source:
       address: "0x57686612C601Cb5213b01AA8e80AfEb24BBd01df"
       abi: PoolTokens
-      startBlock: 13096000
+      startBlock: 13097225
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.5
