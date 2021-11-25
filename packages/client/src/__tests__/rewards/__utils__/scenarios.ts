@@ -630,6 +630,7 @@ export async function setupMultiplePartiallyClaimedStakingRewards(
       "callUSDCBalanceMock",
       "callUSDCAllowanceMock",
       "callStakingRewardsBalanceMock",
+      "callCommunityRewardsTokenLaunchTimeInSecondsMock",
       "callCommunityRewardsBalanceMock",
       "callCommunityRewardsTokenOfOwnerMock",
       "callGrantsMock",

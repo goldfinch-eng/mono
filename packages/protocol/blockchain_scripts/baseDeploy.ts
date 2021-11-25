@@ -60,7 +60,6 @@ import {BackerRewards} from "../typechain/ethers/BackerRewards"
 import {UNIQUE_IDENTITY_METADATA_URI} from "./uniqueIdentity/constants"
 import {toEthers} from "../test/testHelpers"
 import {getDeployEffects, DeployEffects} from "./migrations/deployEffects"
-import {TestBackerRewards} from "../typechain/ethers/TestBackerRewards"
 import {isMerkleDirectDistributorInfo} from "./merkle/merkleDirectDistributor/types"
 
 const logger: Logger = console.log

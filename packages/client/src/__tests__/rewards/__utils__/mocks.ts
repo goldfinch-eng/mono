@@ -92,6 +92,7 @@ type ContractCallsMocks = {
   callUSDCBalanceMock: ReturnType<typeof mock>
   callUSDCAllowanceMock: ReturnType<typeof mock>
   callStakingRewardsBalanceMock: ReturnType<typeof mock>
+  callCommunityRewardsTokenLaunchTimeInSecondsMock: ReturnType<typeof mock>
   callCommunityRewardsBalanceMock: ReturnType<typeof mock>
   callTokenOfOwnerByIndexMock: ReturnType<typeof mock> | undefined
   callPositionsMock: ReturnType<typeof mock> | undefined
@@ -275,6 +276,17 @@ export async function mockUserInitializationContractCalls(
     })
   }
 
+  const grantStartTime = rewardsMock?.community?.grantRes?.[2] || "1641574558"
+  const callCommunityRewardsTokenLaunchTimeInSecondsMock = mock({
+    blockchain,
+    call: {
+      to: communityRewards.address,
+      api: await getCommunityRewardsAbi(),
+      method: "tokenLaunchTimeInSeconds",
+      return: grantStartTime,
+    },
+  })
+
   const communityRewardsBalance = rewardsMock?.community ? "1" : "0"
 
   const callCommunityRewardsBalanceMock = mock({
@@ -292,9 +304,8 @@ export async function mockUserInitializationContractCalls(
   let callGrantsMock: ReturnType<typeof mock> | undefined
   let callClaimableRewardsMock: ReturnType<typeof mock> | undefined
   if (rewardsMock?.community) {
-    const startTime = "1641574558"
     const amount = "1000000000000000000000"
-    const grant = rewardsMock.community?.grantRes || [amount, "0", startTime, startTime, "0", "1", "0"]
+    const grant = rewardsMock.community?.grantRes || [amount, "0", grantStartTime, grantStartTime, "0", "1", "0"]
     const claimable = rewardsMock.community?.claimable || amount
     const acceptedGrantRes = rewardsMock.community?.acceptedGrantRes || {
       returnValues: {
@@ -365,6 +376,7 @@ export async function mockUserInitializationContractCalls(
     callUSDCBalanceMock,
     callUSDCAllowanceMock,
     callStakingRewardsBalanceMock,
+    callCommunityRewardsTokenLaunchTimeInSecondsMock,
     callCommunityRewardsBalanceMock,
     callTokenOfOwnerByIndexMock,
     callPositionsMock,
