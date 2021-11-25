@@ -99,6 +99,36 @@ dataSources:
           handler: handleProxyImplementationUpdated
       file: ./src/mappings/v1_pool_proxy.ts
 
+  - kind: ethereum/contract
+    name: PoolTokensProxy
+    network: mainnet
+    source:
+      address: "0x57686612C601Cb5213b01AA8e80AfEb24BBd01df"
+      abi: PoolTokens
+      startBlock: 13096000
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - User
+        - TranchedPool
+        - PoolTokens
+      abis:
+        - name: PoolTokens
+          file: ./abis/PoolTokens.json
+        - name: PoolTokens_Implementation
+          file: ./abis/PoolTokens_Implementation.json
+        - name: PoolTokens_Proxy
+          file: ./abis/PoolTokens_Proxy.json
+      eventHandlers:
+        - event: OwnershipTransferred(indexed address,indexed address)
+          handler: handleOwnershipTransferred
+        - event: ProxyImplementationUpdated(indexed address,indexed address)
+          handler: handleProxyImplementationUpdated
+      file: ./src/mappings/pool_tokens_proxy.ts
+
+
 templates:
   - name: SeniorPool
     kind: ethereum/contract
@@ -271,3 +301,34 @@ templates:
           handler: handlerEmergencyShutdown
         - event: WithdrawalMade(indexed address,indexed uint256,indexed uint256,uint256,uint256)
           handler: handlerWithdrawalMade
+
+  - name: PoolTokens
+    kind: ethereum/contract
+    network: mainnet
+    source:
+      abi: PoolTokens
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      file: ./src/mappings/pool_tokens.ts
+      entities:
+        - User
+        - TranchedPool
+        - PoolTokens
+      abis:
+        - name: PoolTokens
+          file: ./abis/PoolTokens.json
+        - name: PoolTokens_Implementation
+          file: ./abis/PoolTokens_Implementation.json
+      eventHandlers:
+        - event: TokenBurned(indexed address,indexed address,indexed uint256)
+          handler: handleTokenBurned
+        - event: TokenMinted(indexed address,indexed address,indexed uint256,uint256,uint256)
+          handler: handleTokenMinted
+        - event: TokenRedeemed(indexed address,indexed address,indexed uint256,uint256,uint256,uint256)
+          handler: handleTokenRedeemed
+        - event: GoldfinchConfigUpdated(indexed address,address)
+          handler: handleGoldfinchConfigUpdated
+        - event: Transfer(indexed address,indexed address,indexed uint256)
+          handler: handleTransfer
