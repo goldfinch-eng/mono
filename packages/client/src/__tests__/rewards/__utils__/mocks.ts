@@ -452,7 +452,7 @@ export function setupMocksForMerkleDistributorAirdrop(
     }
     return Promise.resolve(result)
   })
-  UserMerkleDistributor.getAcceptedAirdrops = (
+  UserMerkleDistributor.getAirdropsWithAcceptance = (
     airdropsForRecipient: MerkleDistributorGrantInfo[],
     merkleDistributor: MerkleDistributorLoaded,
     currentBlock: BlockInfo
@@ -475,7 +475,7 @@ export function setupMocksForMerkleDirectDistributorAirdrop(
     }
     return Promise.resolve(result)
   })
-  UserMerkleDirectDistributor.getAcceptedAirdrops = (
+  UserMerkleDirectDistributor.getAirdropsWithAcceptance = (
     airdropsForRecipient: MerkleDirectDistributorGrantInfo[],
     merkleDistributor: MerkleDirectDistributorLoaded,
     currentBlock: BlockInfo

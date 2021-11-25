@@ -31,6 +31,11 @@ import {iconCarrotDown, iconCarrotUp, iconOutArrow} from "./icons"
 import LoadingButton from "./loadingButton"
 import {WIDTH_TYPES} from "./styleConstants"
 import TransactionForm from "./transactionForm"
+import {NotAcceptedMerkleDistributorGrant} from "../types/merkleDistributor"
+import {
+  AcceptedMerkleDirectDistributorGrant,
+  NotAcceptedMerkleDirectDistributorGrant,
+} from "../types/merkleDirectDistributor"
 
 const ONE_WEEK_SECONDS = new BigNumber(60 * 60 * 24 * 7)
 
@@ -302,7 +307,15 @@ function RewardsListItem(props: RewardsListItemProps) {
                 </div>
               </div>
               <div className="detail-container">
-                <span className="detail-label">Claimable GFI</span>
+                <span className="detail-label">
+                  {
+                    // NOTE: Consistently with our approach in the rewards summary, we describe
+                    // the value to the user here as what's vested, though the value we use is what's
+                    // claimable. What's claimable is the relevant piece of information that informs
+                    // their understanding of whether they should be able to take any action with the button.
+                    "Vested GFI"
+                  }
+                </span>
                 <div className={`${valueDisabledClass}`} data-testid="detail-claimable">
                   {displayNumber(gfiFromAtomic(props.claimableGFI), 2)}
                 </div>
@@ -413,40 +426,44 @@ function getCurrentEarnRate(currentEarnRate: BigNumber): string {
   return `+${displayNumber(gfiFromAtomic(currentEarnRate.multipliedBy(ONE_WEEK_SECONDS)), 2)} granted per week`
 }
 
-function getMerkleDistributorGrantInfoDetails(
-  grantInfo: MerkleDistributorGrantInfo,
+function getNotAcceptedMerkleDistributorGrantDetails(
+  item: NotAcceptedMerkleDistributorGrant,
+  gfi: GFILoaded,
   merkleDistributor: MerkleDistributorLoaded
 ): MerkleDistributorGrantDetails {
-  const amount = new BigNumber(grantInfo.grant.amount)
-  const displayReason = MerkleDistributor.getDisplayReason(grantInfo.reason)
-  const vestingLength = new BigNumber(grantInfo.grant.vestingLength).toNumber()
+  const displayReason = MerkleDistributor.getDisplayReason(item.grantInfo.reason)
+  const vestingLength = new BigNumber(item.grantInfo.grant.vestingLength).toNumber()
   return {
     type: "merkleDistributor",
-    transactionDetails: `${displayNumber(gfiFromAtomic(amount))} GFI reward for participating ${displayReason}`,
+    transactionDetails: `${displayNumber(gfiFromAtomic(item.granted))} GFI reward for participating ${displayReason}`,
     vestingSchedule: getGrantVestingSchedule(
-      new BigNumber(grantInfo.grant.cliffLength),
-      new BigNumber(grantInfo.grant.vestingInterval),
+      new BigNumber(item.grantInfo.grant.cliffLength),
+      new BigNumber(item.grantInfo.grant.vestingInterval),
       vestingLength ? {absolute: false, value: vestingLength} : null
     ),
     claimStatus: undefined,
     currentEarnRate: undefined,
-    vestingStatus: `${displayDollars(undefined)} (${displayNumber(new BigNumber(0))} GFI) vested`,
+    vestingStatus: `${displayDollars(
+      gfiInDollars(gfiToDollarsAtomic(item.vested, gfi.info.value.price))
+    )} (${displayNumber(gfiFromAtomic(item.vested))} GFI) vested`,
     etherscanAddress: merkleDistributor.address,
   }
 }
-function getMerkleDirectDistributorGrantInfoDetails(
-  grantInfo: MerkleDirectDistributorGrantInfo,
+function getMerkleDirectDistributorGrantDetails(
+  item: AcceptedMerkleDirectDistributorGrant | NotAcceptedMerkleDirectDistributorGrant,
+  gfi: GFILoaded,
   merkleDirectDistributor: MerkleDirectDistributorLoaded
 ): MerkleDirectDistributorGrantDetails {
-  const amount = new BigNumber(grantInfo.grant.amount)
-  const displayReason = MerkleDirectDistributor.getDisplayReason(grantInfo.reason)
+  const displayReason = MerkleDirectDistributor.getDisplayReason(item.grantInfo.reason)
   return {
     type: "merkleDirectDistributor",
-    transactionDetails: `${displayNumber(gfiFromAtomic(amount))} GFI reward for participating ${displayReason}`,
+    transactionDetails: `${displayNumber(gfiFromAtomic(item.granted))} GFI reward for participating ${displayReason}`,
     vestingSchedule: getDirectGrantVestingSchedule(),
     claimStatus: undefined,
     currentEarnRate: undefined,
-    vestingStatus: `${displayDollars(undefined)} (${displayNumber(new BigNumber(0))} GFI) vested`,
+    vestingStatus: `${displayDollars(
+      gfiInDollars(gfiToDollarsAtomic(item.vested, gfi.info.value.price))
+    )} (${displayNumber(gfiFromAtomic(item.vested))} GFI) vested`,
     etherscanAddress: merkleDirectDistributor.address,
   }
 }
@@ -502,24 +519,18 @@ type RewardActionsContainerProps = {
   | {
       type: CommunityRewardsRewardType
       item: CommunityRewardsGrant
-      extra: undefined
     }
   | {
       type: StakingRewardsRewardType
       item: StakingRewardsPosition
-      extra: undefined
     }
   | {
       type: MerkleDistributorRewardType
-      item: MerkleDistributorGrantInfo
-      extra: undefined
+      item: NotAcceptedMerkleDistributorGrant
     }
   | {
       type: MerkleDirectDistributorRewardType
-      item: MerkleDirectDistributorGrantInfo
-      extra: {
-        accepted: boolean
-      }
+      item: AcceptedMerkleDirectDistributorGrant | NotAcceptedMerkleDirectDistributorGrant
     }
 )
 
@@ -625,27 +636,27 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     )
   } else if (props.type === "merkleDistributor") {
     const item = props.item
-    const details = getMerkleDistributorGrantInfoDetails(item, props.merkleDistributor)
+    const details = getNotAcceptedMerkleDistributorGrantDetails(item, props.gfi, props.merkleDistributor)
     return (
       <RewardsListItem
         status={RewardStatus.Acceptable}
-        title={MerkleDistributor.getDisplayTitle(item.reason)}
-        grantedGFI={new BigNumber(item.grant.amount)}
-        claimableGFI={new BigNumber(0)}
-        handleOnClick={() => handleAcceptMerkleDistributorGrant(item)}
+        title={MerkleDistributor.getDisplayTitle(item.grantInfo.reason)}
+        grantedGFI={item.granted}
+        claimableGFI={item.claimable}
+        handleOnClick={() => handleAcceptMerkleDistributorGrant(item.grantInfo)}
         details={details}
       />
     )
   } else if (props.type === "merkleDirectDistributor") {
     const item = props.item
-    const details = getMerkleDirectDistributorGrantInfoDetails(item, props.merkleDirectDistributor)
+    const details = getMerkleDirectDistributorGrantDetails(item, props.gfi, props.merkleDirectDistributor)
     return (
       <RewardsListItem
-        status={props.extra.accepted ? RewardStatus.PermanentlyAllClaimed : RewardStatus.Acceptable}
-        title={MerkleDirectDistributor.getDisplayTitle(item.reason)}
-        grantedGFI={new BigNumber(item.grant.amount)}
-        claimableGFI={new BigNumber(0)}
-        handleOnClick={() => handleAcceptMerkleDirectDistributorGrant(item)}
+        status={item.accepted ? RewardStatus.PermanentlyAllClaimed : RewardStatus.Acceptable}
+        title={MerkleDirectDistributor.getDisplayTitle(item.grantInfo.reason)}
+        grantedGFI={item.granted}
+        claimableGFI={item.claimable}
+        handleOnClick={() => handleAcceptMerkleDirectDistributorGrant(item.grantInfo)}
         details={details}
       />
     )

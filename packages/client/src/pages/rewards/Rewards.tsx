@@ -50,7 +50,14 @@ function RewardsSummary(props: RewardsSummaryProps) {
           </div>
         </div>
         <div className="details-item">
-          <span>Claimable</span>
+          <span>
+            {
+              // NOTE: We describe the value here to the user as what's vested, but the value we use is what's
+              // claimable, so as to avoid double-counting any amount that had vested previously and was claimed
+              // previously and that is now counted by "Wallet balance".
+              "Fully vested"
+            }
+          </span>
           <div>
             <span className={valueDisabledClass} data-testid="summary-claimable">
               {displayNumber(claimable ? gfiFromAtomic(claimable) : undefined, 2)}
@@ -216,8 +223,21 @@ function Rewards() {
       !userStakingRewards.info.value.positions.length
 
     gfiBalance = user.info.value.gfiBalance
-    claimable = userStakingRewards.info.value.claimable.plus(userCommunityRewards.info.value.claimable)
-    unvested = userStakingRewards.info.value.unvested.plus(userCommunityRewards.info.value.unvested)
+    claimable = userStakingRewards.info.value.claimable
+      .plus(userCommunityRewards.info.value.claimable)
+      .plus(
+        // NOTE: To avoid double-counting vis-a-vis the claimable amount that is tracked by `userCommunityRewards`,
+        // we do not count the claimable amount here of accepted grants; only not-accepted grants.
+        userMerkleDistributor.info.value.notAcceptedClaimable
+      )
+      .plus(userMerkleDirectDistributor.info.value.claimable)
+    unvested = userStakingRewards.info.value.unvested
+      .plus(userCommunityRewards.info.value.unvested)
+      .plus(
+        // Same comment as for `claimable`, regarding avoiding double-counting vis-a-vis `userCommunityRewards`.
+        userMerkleDistributor.info.value.notAcceptedUnvested
+      )
+      .plus(userMerkleDirectDistributor.info.value.unvested)
 
     totalBalance = gfiBalance.plus(claimable).plus(unvested)
     totalUSD = gfiInDollars(gfiToDollarsAtomic(totalBalance, gfi.info.value.price))
@@ -228,7 +248,7 @@ function Rewards() {
         {userMerkleDistributor &&
           userMerkleDistributor.info.value.airdrops.notAccepted.map((item) => (
             <RewardActionsContainer
-              key={`merkle-distributor-airdrop-${item.index}`}
+              key={`merkle-distributor-airdrop-${item.grantInfo.index}`}
               type="merkleDistributor"
               item={item}
               gfi={gfi}
@@ -236,14 +256,13 @@ function Rewards() {
               merkleDirectDistributor={merkleDirectDistributor}
               stakingRewards={stakingRewards}
               communityRewards={communityRewards}
-              extra={undefined}
             />
           ))}
 
         {userMerkleDirectDistributor &&
           userMerkleDirectDistributor.info.value.airdrops.notAccepted.map((item) => (
             <RewardActionsContainer
-              key={`merkle-direct-distributor-airdrop-${item.index}`}
+              key={`merkle-direct-distributor-airdrop-${item.grantInfo.index}`}
               type="merkleDirectDistributor"
               item={item}
               gfi={gfi}
@@ -251,13 +270,12 @@ function Rewards() {
               merkleDirectDistributor={merkleDirectDistributor}
               stakingRewards={stakingRewards}
               communityRewards={communityRewards}
-              extra={{accepted: false}}
             />
           ))}
         {userMerkleDirectDistributor &&
           userMerkleDirectDistributor.info.value.airdrops.accepted.map((item) => (
             <RewardActionsContainer
-              key={`merkle-direct-distributor-airdrop-${item.index}`}
+              key={`merkle-direct-distributor-airdrop-${item.grantInfo.index}`}
               type="merkleDirectDistributor"
               item={item}
               gfi={gfi}
@@ -265,7 +283,6 @@ function Rewards() {
               merkleDirectDistributor={merkleDirectDistributor}
               stakingRewards={stakingRewards}
               communityRewards={communityRewards}
-              extra={{accepted: true}}
             />
           ))}
 
@@ -283,7 +300,6 @@ function Rewards() {
                     merkleDirectDistributor={merkleDirectDistributor}
                     stakingRewards={stakingRewards}
                     communityRewards={communityRewards}
-                    extra={undefined}
                   />
                 )
               case "stakingRewards":
@@ -297,7 +313,6 @@ function Rewards() {
                     merkleDirectDistributor={merkleDirectDistributor}
                     stakingRewards={stakingRewards}
                     communityRewards={communityRewards}
-                    extra={undefined}
                   />
                 )
               default:
