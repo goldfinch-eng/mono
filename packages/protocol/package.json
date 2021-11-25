@@ -19,6 +19,7 @@
     "upgrade-multisig": "npx hardhat run ./blockchain_scripts/upgrade.js --network",
     "autotask-update": "node autotasks/deployAutoTasks.js",
     "advance-time": "npx hardhat run ./blockchain_scripts/advanceTime.js --network localhost",
+    "generate-manifest": "npx hardhat run ./blockchain_scripts/deployHelpers/generateHardhatUpgradesManifest.ts",
     "pool-admin": "npx hardhat run ./blockchain_scripts/tranchedPoolAdmin.ts --network",
     "typechain": "npx hardhat typechain && npx hardhat run ./blockchain_scripts/typechain-ethers.ts && npx hardhat run ./blockchain_scripts/typechain-web3.ts",
     "tsc": "tsc",

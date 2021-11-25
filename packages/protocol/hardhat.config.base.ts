@@ -5,6 +5,7 @@ import {
 
 import {findEnvLocal} from "@goldfinch-eng/utils"
 import dotenv from "dotenv"
+import "@openzeppelin/hardhat-upgrades"
 dotenv.config({path: findEnvLocal()})
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY
 const ALCHEMY_RINKEBY_API_KEY = process.env.ALCHEMY_RINKEBY_API_KEY

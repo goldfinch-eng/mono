@@ -1,34 +1,57 @@
+import hre from "hardhat"
 import {HardhatRuntimeEnvironment} from "hardhat/types"
-import {ContractDeployer, currentChainId} from "./"
-import {getExistingContracts, upgradeContracts, UpgradedContracts} from "../mainnetForkingHelpers"
-import {assertNonNullable} from "@goldfinch-eng/utils"
+import {fixProvider} from "./"
 import {Logger} from "../types"
 import {openzeppelin_saveDeploymentManifest} from "./openzeppelin-upgrade-validation"
 
-export class ContractUpgrader {
+const logger: Logger = console.log
+
+async function main() {
+  const hardhatUpgrades = new HardhatUpgradesManifest({hre, logger})
+  await hardhatUpgrades.writeManifest({
+    contracts: ["SeniorPool", "Go", "Fidu", "StakingRewards", "CommunityRewards", "UniqueIdentity", "PoolTokens"],
+  })
+}
+
+export class HardhatUpgradesManifest {
   private readonly logger: Logger
   private readonly hre: HardhatRuntimeEnvironment
 
-  constructor(deployer: ContractDeployer) {
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
+  constructor(deployer: {logger: Logger; hre: HardhatRuntimeEnvironment}) {
     this.logger = deployer.logger
     this.hre = deployer.hre
   }
 
-  async writeManifest({contracts}: {contracts: string[]}): Promise<UpgradedContracts> {
+  async writeManifest({contracts}: {contracts: string[]}): Promise<void> {
     const {network} = this.hre
-    const {gf_deployer} = await this.hre.getNamedAccounts()
-    assertNonNullable(gf_deployer)
-    const chainId = await currentChainId()
-    this.logger(`Upgrading contracts: ${contracts}`)
-    const existingContracts = await getExistingContracts(contracts, gf_deployer, chainId)
-    contracts.forEach(async (contract) => {
-      console.log("existingContracts", existingContracts[contract])
-      await openzeppelin_saveDeploymentManifest(
-        provider,
-        existingContracts[contract]?.ProxyContract,
-        existingContracts[contract]?.ExistingContract
-      )
-    })
+    this.logger(`Writing manifest: ${contracts}`)
+    for (const i in contracts) {
+      const contract = contracts[i]
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+      this.logger(`Saving deployment manifest: ${contract} & ${contract}_Implementation`)
+      const proxyContractDeployment = await this.hre.deployments.get(`${contract}`)
+      const implContractDeployment = await this.hre.deployments.get(`${contract}_Implementation`)
+      try {
+        await openzeppelin_saveDeploymentManifest(
+          fixProvider(network.provider),
+          proxyContractDeployment,
+          implContractDeployment
+        )
+      } catch (e) {
+        this.logger(`Error saving manifest for ${contract}: ${e}`)
+      }
+    }
   }
 }
+
+if (require.main === module) {
+  // If this is run as a script, then call main. If it's imported (for tests), this block will not run
+  main()
+    .then(() => process.exit(0))
+    .catch((error) => {
+      console.error(error)
+      process.exit(1)
+    })
+}
+
+export default HardhatUpgradesManifest
