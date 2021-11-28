@@ -3,7 +3,8 @@ import {genIsArrayOf, isPlainObject, PlainObject} from "@goldfinch-eng/utils/src
 export const blockchain = "ethereum"
 export const recipient = "0x0000000000000000000000000000000000000001"
 export const network = {name: "localhost", supported: true}
-export const blockInfo = {number: 94, timestamp: 1640783491}
+
+export const defaultCurrentBlock = {number: 94, timestamp: 1640783491}
 
 let _deploymentsJson: PlainObject
 

@@ -28,10 +28,11 @@ import {
 import {User, UserLoaded} from "../../ethereum/user"
 import * as utils from "../../ethereum/utils"
 import {assertWithLoadedInfo, Loaded} from "../../types/loadable"
+import {BlockInfo} from "../../utils"
 import web3 from "../../web3"
 import {
   blockchain,
-  blockInfo,
+  defaultCurrentBlock,
   getDeployments,
   getStakingRewardsAbi,
   network,
@@ -58,13 +59,15 @@ web3.setProvider((global.window as any).ethereum)
 function renderWithdrawalForm(
   poolData: Partial<PoolData>,
   capitalProvider: Loaded<CapitalProvider>,
-  stakingRewards?: StakingRewardsLoaded,
-  pool?: SeniorPoolLoaded,
+  stakingRewards: StakingRewardsLoaded | undefined,
+  pool: SeniorPoolLoaded | undefined,
+  currentBlock: BlockInfo,
   refreshCurrentBlock?: () => Promise<void>,
   networkMonitor?: NetworkMonitor,
   user?: UserLoaded
 ) {
   const store = {
+    currentBlock,
     goldfinchConfig: {
       transactionLimit: new BigNumber(usdcToAtomic("20000")),
     } as GoldfinchConfigData,
@@ -104,6 +107,7 @@ describe("withdrawal form", () => {
     merkleDirectDistributor: MerkleDirectDistributorLoaded,
     user: UserLoaded,
     capitalProvider: Loaded<CapitalProvider>
+  const currentBlock = defaultCurrentBlock
 
   beforeEach(async () => {
     jest.spyOn(utils, "getDeployments").mockImplementation(() => {
@@ -116,7 +120,7 @@ describe("withdrawal form", () => {
     _seniorPoolLoaded.info = {
       loaded: true,
       value: {
-        currentBlock: blockInfo,
+        currentBlock,
         poolData: {} as PoolData,
         isPaused: false,
       },
@@ -125,7 +129,7 @@ describe("withdrawal form", () => {
     seniorPool = _seniorPoolLoaded
   })
   beforeEach(async () => {
-    const result = await getDefaultClasses(goldfinchProtocol)
+    const result = await getDefaultClasses(goldfinchProtocol, currentBlock)
     gfi = result.gfi
     stakingRewards = result.stakingRewards
     communityRewards = result.communityRewards
@@ -133,7 +137,9 @@ describe("withdrawal form", () => {
     merkleDirectDistributor = result.merkleDirectDistributor
 
     const _user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
-    await mockUserInitializationContractCalls(_user, stakingRewards, gfi, communityRewards, merkleDistributor, {})
+    await mockUserInitializationContractCalls(_user, stakingRewards, gfi, communityRewards, merkleDistributor, {
+      currentBlock,
+    })
     await _user.initialize(
       seniorPool,
       stakingRewards,
@@ -141,7 +147,7 @@ describe("withdrawal form", () => {
       communityRewards,
       merkleDistributor,
       merkleDirectDistributor,
-      blockInfo
+      currentBlock
     )
 
     assertWithLoadedInfo(_user)
@@ -160,7 +166,7 @@ describe("withdrawal form", () => {
     const poolData = {
       balance: new BigNumber(usdcToAtomic("50000000")),
     }
-    renderWithdrawalForm(poolData, capitalProvider)
+    renderWithdrawalForm(poolData, capitalProvider, undefined, undefined, currentBlock)
 
     expect(await screen.findByText("Available to withdraw: $50.02")).toBeVisible()
     expect(await screen.findByText("Max")).toBeVisible()
@@ -170,7 +176,7 @@ describe("withdrawal form", () => {
   })
 
   it("shows withdrawal form, to user with claimable staking reward", async () => {
-    const {user} = await setupClaimableStakingReward(goldfinchProtocol, seniorPool)
+    const {user} = await setupClaimableStakingReward(goldfinchProtocol, seniorPool, currentBlock)
 
     await mockCapitalProviderCalls()
     const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
@@ -178,7 +184,7 @@ describe("withdrawal form", () => {
     const poolData = {
       balance: new BigNumber(usdcToAtomic("50000000")),
     }
-    const {container} = renderWithdrawalForm(poolData, capitalProvider)
+    const {container} = renderWithdrawalForm(poolData, capitalProvider, undefined, undefined, currentBlock)
 
     expect(await screen.findByText("Available to withdraw: $50,072.85")).toBeVisible()
     expect(await screen.findByText("Max")).toBeVisible()
@@ -196,7 +202,7 @@ describe("withdrawal form", () => {
   })
 
   it("fills max amount with `transactionLimit` when appropriate", async () => {
-    const {user} = await setupClaimableStakingReward(goldfinchProtocol, seniorPool)
+    const {user} = await setupClaimableStakingReward(goldfinchProtocol, seniorPool, currentBlock)
 
     await mockCapitalProviderCalls()
     const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
@@ -204,7 +210,7 @@ describe("withdrawal form", () => {
     const poolData = {
       balance: new BigNumber(usdcToAtomic("50000000")),
     }
-    renderWithdrawalForm(poolData, capitalProvider)
+    renderWithdrawalForm(poolData, capitalProvider, undefined, undefined, currentBlock)
 
     fireEvent.click(screen.getByText("Max", {selector: "button"}))
 
@@ -216,7 +222,7 @@ describe("withdrawal form", () => {
   })
 
   it("fills max amount with pool balance when appropriate", async () => {
-    const {user} = await setupClaimableStakingReward(goldfinchProtocol, seniorPool)
+    const {user} = await setupClaimableStakingReward(goldfinchProtocol, seniorPool, currentBlock)
 
     await mockCapitalProviderCalls()
     const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
@@ -224,7 +230,7 @@ describe("withdrawal form", () => {
     const poolData = {
       balance: new BigNumber(usdcToAtomic("10000")),
     }
-    renderWithdrawalForm(poolData, capitalProvider)
+    renderWithdrawalForm(poolData, capitalProvider, undefined, undefined, currentBlock)
 
     fireEvent.click(screen.getByText("Max", {selector: "button"}))
 
@@ -236,7 +242,7 @@ describe("withdrawal form", () => {
   })
 
   it("fills max amount with `availableToWithdrawInDollars` when appropriate", async () => {
-    const {user} = await setupClaimableStakingReward(goldfinchProtocol, seniorPool)
+    const {user} = await setupClaimableStakingReward(goldfinchProtocol, seniorPool, currentBlock)
 
     await mockCapitalProviderCalls()
     const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
@@ -245,7 +251,7 @@ describe("withdrawal form", () => {
     const poolData = {
       balance: new BigNumber(usdcToAtomic("50000000")),
     }
-    renderWithdrawalForm(poolData, capitalProvider)
+    renderWithdrawalForm(poolData, capitalProvider, undefined, undefined, currentBlock)
 
     fireEvent.click(screen.getByText("Max", {selector: "button"}))
 
@@ -257,7 +263,7 @@ describe("withdrawal form", () => {
   })
 
   it("shows withdrawal form, to user with partially claimed staking reward", async () => {
-    const {user} = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool)
+    const {user} = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool, undefined, currentBlock)
 
     await mockCapitalProviderCalls()
     const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
@@ -265,7 +271,7 @@ describe("withdrawal form", () => {
     const poolData = {
       balance: new BigNumber(usdcToAtomic("50000000")),
     }
-    const {container} = renderWithdrawalForm(poolData, capitalProvider)
+    const {container} = renderWithdrawalForm(poolData, capitalProvider, undefined, undefined, currentBlock)
 
     expect(await screen.findByText("Available to withdraw: $50,072.85")).toBeVisible()
     expect(await screen.findByText("Max")).toBeVisible()
@@ -284,7 +290,12 @@ describe("withdrawal form", () => {
 
   describe("withdrawal transaction(s)", () => {
     it("clicking button with all FIDU staked in one position triggers `unstakeAndWithdrawInFidu()`", async () => {
-      const {user, stakingRewards} = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool)
+      const {user, stakingRewards} = await setupPartiallyClaimedStakingReward(
+        goldfinchProtocol,
+        seniorPool,
+        undefined,
+        currentBlock
+      )
 
       await mockCapitalProviderCalls(undefined, "0")
       const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
@@ -310,6 +321,7 @@ describe("withdrawal form", () => {
         capitalProvider,
         stakingRewards,
         seniorPool,
+        currentBlock,
         refreshCurrentBlock,
         networkMonitor,
         user
@@ -327,7 +339,12 @@ describe("withdrawal form", () => {
     })
 
     it("clicking button with all FIDU unstaked triggers `withdrawInFidu()` ", async () => {
-      const {user, stakingRewards} = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool)
+      const {user, stakingRewards} = await setupPartiallyClaimedStakingReward(
+        goldfinchProtocol,
+        seniorPool,
+        undefined,
+        currentBlock
+      )
 
       await mockCapitalProviderCalls(undefined, "500000000000000000000000")
       const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
@@ -353,6 +370,7 @@ describe("withdrawal form", () => {
         capitalProvider,
         stakingRewards,
         seniorPool,
+        currentBlock,
         refreshCurrentBlock,
         networkMonitor,
         user
@@ -370,7 +388,12 @@ describe("withdrawal form", () => {
     })
 
     it("clicking button with some FIDU unstaked and some FIDU staked triggers `withdrawInFidu()` and then `unstakeAndWithdrawInFidu()`, when staked amount in one position suffices for withdrawal amount", async () => {
-      const {user, stakingRewards} = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool)
+      const {user, stakingRewards} = await setupPartiallyClaimedStakingReward(
+        goldfinchProtocol,
+        seniorPool,
+        undefined,
+        currentBlock
+      )
 
       await mockCapitalProviderCalls(undefined, "10000000000000000000000")
       const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
@@ -406,6 +429,7 @@ describe("withdrawal form", () => {
         capitalProvider,
         stakingRewards,
         seniorPool,
+        currentBlock,
         refreshCurrentBlock,
         networkMonitor,
         user
@@ -424,7 +448,12 @@ describe("withdrawal form", () => {
     })
 
     it("clicking button with some FIDU unstaked and some FIDU staked triggers `withdrawInFidu()` and then `unstakeAndWithdrawMultipleInFidu()`, when staked amount across multiple positions is necessary to cover withdrawal amount", async () => {
-      const {user, stakingRewards} = await setupMultiplePartiallyClaimedStakingRewards(goldfinchProtocol, seniorPool)
+      const {user, stakingRewards} = await setupMultiplePartiallyClaimedStakingRewards(
+        goldfinchProtocol,
+        seniorPool,
+        undefined,
+        currentBlock
+      )
 
       const numSharesNotStaked = "100000000000000000000"
       await mockCapitalProviderCalls(undefined, numSharesNotStaked)
@@ -461,6 +490,7 @@ describe("withdrawal form", () => {
         capitalProvider,
         stakingRewards,
         seniorPool,
+        currentBlock,
         refreshCurrentBlock,
         networkMonitor,
         user

@@ -25,8 +25,9 @@ import {
 import {User, UserLoaded} from "../../ethereum/user"
 import * as utils from "../../ethereum/utils"
 import {assertWithLoadedInfo, Loaded} from "../../types/loadable"
+import {BlockInfo} from "../../utils"
 import web3 from "../../web3"
-import {blockInfo, getDeployments, network, recipient} from "../rewards/__utils__/constants"
+import {defaultCurrentBlock, getDeployments, network, recipient} from "../rewards/__utils__/constants"
 import {toDisplayPercent} from "../rewards/__utils__/display"
 import {
   mockCapitalProviderCalls,
@@ -46,8 +47,12 @@ mock({
 
 web3.setProvider((global.window as any).ethereum)
 
-function renderDepositStatus(poolData: Partial<PoolData>, capitalProvider?: Loaded<CapitalProvider>) {
-  const store = {}
+function renderDepositStatus(
+  poolData: Partial<PoolData>,
+  capitalProvider: Loaded<CapitalProvider> | undefined,
+  currentBlock: BlockInfo
+) {
+  const store = {currentBlock}
   return render(
     <AppContext.Provider value={store}>
       <Router>
@@ -71,6 +76,8 @@ describe("Senior pool page deposit status", () => {
     user: User | UserLoaded,
     capitalProvider: Loaded<CapitalProvider>
 
+  const currentBlock = defaultCurrentBlock
+
   beforeEach(async () => {
     jest.spyOn(utils, "getDeployments").mockImplementation(() => {
       return getDeployments()
@@ -82,7 +89,7 @@ describe("Senior pool page deposit status", () => {
     _seniorPoolLoaded.info = {
       loaded: true,
       value: {
-        currentBlock: blockInfo,
+        currentBlock,
         poolData: {
           estimatedApy: new BigNumber("0.00483856000534281158"),
         } as PoolData,
@@ -93,7 +100,7 @@ describe("Senior pool page deposit status", () => {
     seniorPool = _seniorPoolLoaded
   })
   beforeEach(async () => {
-    const result = await getDefaultClasses(goldfinchProtocol)
+    const result = await getDefaultClasses(goldfinchProtocol, currentBlock)
     gfi = result.gfi
     stakingRewards = result.stakingRewards
     communityRewards = result.communityRewards
@@ -101,7 +108,9 @@ describe("Senior pool page deposit status", () => {
     merkleDirectDistributor = result.merkleDirectDistributor
 
     user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
-    await mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, merkleDistributor, {})
+    await mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, merkleDistributor, {
+      currentBlock,
+    })
     await user.initialize(
       seniorPool,
       stakingRewards,
@@ -109,7 +118,7 @@ describe("Senior pool page deposit status", () => {
       communityRewards,
       merkleDistributor,
       merkleDirectDistributor,
-      blockInfo
+      currentBlock
     )
 
     assertWithLoadedInfo(user)
@@ -126,7 +135,7 @@ describe("Senior pool page deposit status", () => {
 
   it("shows deposit status without capital provider", async () => {
     const poolData = {}
-    renderDepositStatus(poolData)
+    renderDepositStatus(poolData, undefined, currentBlock)
     expect(screen.getByTestId("portfolio-total-balance").textContent).toContain("$--.--")
     expect(screen.getByTestId("portfolio-est-growth").textContent).toContain("--.--% APY")
   })
@@ -136,7 +145,7 @@ describe("Senior pool page deposit status", () => {
       estimatedApy: new BigNumber("0.00483856000534281158"),
       estimatedApyFromGfi: new BigNumber("0"),
     }
-    renderDepositStatus(poolData, capitalProvider)
+    renderDepositStatus(poolData, capitalProvider, currentBlock)
 
     expect(screen.getByTestId("portfolio-total-balance").textContent).toContain("$50.02")
     expect(screen.getByTestId("portfolio-est-growth").textContent).toContain("$0.24")
@@ -154,7 +163,7 @@ describe("Senior pool page deposit status", () => {
   })
 
   it("shows deposit status with senior pool and claimable staking reward", async () => {
-    const {gfi, stakingRewards, user} = await setupClaimableStakingReward(goldfinchProtocol, seniorPool)
+    const {gfi, stakingRewards, user} = await setupClaimableStakingReward(goldfinchProtocol, seniorPool, currentBlock)
 
     await mockCapitalProviderCalls()
     const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
@@ -174,7 +183,7 @@ describe("Senior pool page deposit status", () => {
       estimatedApy: estimatedPoolApy,
       estimatedApyFromGfi: globalEstimatedApyFromGfi,
     }
-    renderDepositStatus(poolData, capitalProvider)
+    renderDepositStatus(poolData, capitalProvider, currentBlock)
 
     const expectedDisplayPoolApy = toDisplayPercent(estimatedPoolApy)
     const expectedDisplayGfiApy = toDisplayPercent(expectedUserEstimatedApyFromGfi)
@@ -197,7 +206,7 @@ describe("Senior pool page deposit status", () => {
   })
 
   it("shows deposit status with senior pool and vesting staking reward", async () => {
-    const {gfi, stakingRewards, user} = await setupNewStakingReward(goldfinchProtocol, seniorPool)
+    const {gfi, stakingRewards, user} = await setupNewStakingReward(goldfinchProtocol, seniorPool, currentBlock)
 
     await mockCapitalProviderCalls()
     const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
@@ -217,7 +226,7 @@ describe("Senior pool page deposit status", () => {
       estimatedApy: estimatedPoolApy,
       estimatedApyFromGfi: globalEstimatedApyFromGfi,
     }
-    renderDepositStatus(poolData, capitalProvider)
+    renderDepositStatus(poolData, capitalProvider, currentBlock)
 
     const expectedDisplayPoolApy = toDisplayPercent(estimatedPoolApy)
     const expectedDisplayGfiApy = toDisplayPercent(expectedUserEstimatedApyFromGfi)
@@ -240,7 +249,12 @@ describe("Senior pool page deposit status", () => {
   })
 
   it("shows deposit status with senior pool and partially claimed staking reward", async () => {
-    const {gfi, stakingRewards, user} = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool)
+    const {gfi, stakingRewards, user} = await setupPartiallyClaimedStakingReward(
+      goldfinchProtocol,
+      seniorPool,
+      undefined,
+      currentBlock
+    )
 
     await mockCapitalProviderCalls()
     const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
@@ -260,7 +274,7 @@ describe("Senior pool page deposit status", () => {
       estimatedApy: estimatedPoolApy,
       estimatedApyFromGfi: globalEstimatedApyFromGfi,
     }
-    renderDepositStatus(poolData, capitalProvider)
+    renderDepositStatus(poolData, capitalProvider, currentBlock)
 
     const expectedDisplayPoolApy = toDisplayPercent(estimatedPoolApy)
     const expectedDisplayGfiApy = toDisplayPercent(expectedUserEstimatedApyFromGfi)

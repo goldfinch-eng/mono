@@ -566,9 +566,9 @@ export class UserMerkleDistributor {
             .totalVestedAt(
               tokenLaunchTime.toString(10),
               tokenLaunchTime.plus(grantInfo.grant.vestingLength).toString(10),
-              grantInfo.grant.amount,
-              grantInfo.grant.cliffLength,
-              grantInfo.grant.vestingInterval,
+              new BigNumber(grantInfo.grant.amount).toString(10),
+              new BigNumber(grantInfo.grant.cliffLength).toString(10),
+              new BigNumber(grantInfo.grant.vestingInterval).toString(10),
               0,
               currentBlock.timestamp
             )

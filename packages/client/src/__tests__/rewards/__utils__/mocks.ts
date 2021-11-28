@@ -4,7 +4,6 @@ import {
   MerkleDistributorInfo,
 } from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
 import {MerkleDistributor as MerkleDistributorContract} from "@goldfinch-eng/protocol/typechain/web3/MerkleDistributor"
-import {MerkleDirectDistributor as MerkleDirectDistributorContract} from "@goldfinch-eng/protocol/typechain/web3/MerkleDirectDistributor"
 import "@testing-library/jest-dom"
 import {mock} from "depay-web3-mock"
 import {BlockNumber} from "web3-core"
@@ -30,7 +29,7 @@ import {GRANT_ACCEPTED_EVENT, KnownEventData, KnownEventName, STAKED_EVENT} from
 import {BlockInfo} from "../../../utils"
 import {
   blockchain,
-  blockInfo,
+  defaultCurrentBlock,
   getCommunityRewardsAbi,
   getErc20Abi,
   getDeployments,
@@ -47,11 +46,13 @@ import {
   MerkleDirectDistributorInfo,
 } from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/types"
 
+class ImproperlyConfiguredMockError extends Error {}
+
 export interface RewardsMockData {
+  currentBlock: BlockInfo
   staking?: {
     earnedSinceLastCheckpoint?: string
     totalVestedAt?: string
-    currentTimestamp?: string
     granted?: string
     positionCurrentEarnRate?: string
     positionsRes?: {
@@ -82,6 +83,14 @@ export interface RewardsMockData {
       }
     }
   }
+  notAcceptedMerkleDistributorGrant?: {
+    amount: string
+    vestingLength: string
+    cliffLength: string
+    vestingInterval: string
+    revokedAt: string
+    totalVestedAt: string
+  }
   gfi?: {
     gfiBalance?: string
   }
@@ -97,15 +106,17 @@ type ContractCallsMocks = {
   callTokenOfOwnerByIndexMock: ReturnType<typeof mock> | undefined
   callPositionsMock: ReturnType<typeof mock> | undefined
   callEarnedSinceLastCheckpointMock: ReturnType<typeof mock> | undefined
-  callTotalVestedAt: ReturnType<typeof mock> | undefined
+  callStakingRewardsTotalVestedAt: ReturnType<typeof mock> | undefined
   callPositionCurrentEarnRate: ReturnType<typeof mock> | undefined
   callCommunityRewardsTokenOfOwnerMock: ReturnType<typeof mock> | undefined
   callGrantsMock: ReturnType<typeof mock> | undefined
   callClaimableRewardsMock: ReturnType<typeof mock> | undefined
+  callCommunityRewardsTotalVestedAt: ReturnType<typeof mock> | undefined
 }
 
-export const DEFAULT_STAKING_REWARDS_START_TIME = String(blockInfo.timestamp)
-export const DEFAULT_STAKING_REWARDS_END_TIME = "1672319491"
+const defaultStakingRewardsStartTime = String(defaultCurrentBlock.timestamp)
+export const defaultStakingRewardsVestingLength = 31536000
+const defaultStakingRewardsEndTime = String(defaultCurrentBlock.timestamp + defaultStakingRewardsVestingLength)
 
 export async function mockUserInitializationContractCalls(
   user: User,
@@ -113,7 +124,7 @@ export async function mockUserInitializationContractCalls(
   gfi: GFI,
   communityRewards: CommunityRewards,
   merkleDistributor: MerkleDistributor,
-  rewardsMock?: RewardsMockData
+  rewardsMock: RewardsMockData
 ): Promise<ContractCallsMocks> {
   user._fetchTxs = (usdc, pool, currentBlock) => {
     return Promise.resolve([
@@ -121,7 +132,7 @@ export async function mockUserInitializationContractCalls(
       [],
       {poolEvents: [], poolTxs: []},
       [],
-      {stakedEvents: {currentBlock: blockInfo, value: []}, stakingRewardsTxs: []},
+      {stakedEvents: {currentBlock: rewardsMock.currentBlock, value: []}, stakingRewardsTxs: []},
       [],
       [],
       [],
@@ -186,20 +197,24 @@ export async function mockUserInitializationContractCalls(
   let callTokenOfOwnerByIndexMock: ReturnType<typeof mock> | undefined
   let callPositionsMock: ReturnType<typeof mock> | undefined
   let callEarnedSinceLastCheckpointMock: ReturnType<typeof mock> | undefined
-  let callTotalVestedAt: ReturnType<typeof mock> | undefined
+  let callStakingRewardsTotalVestedAt: ReturnType<typeof mock> | undefined
   let callPositionCurrentEarnRate: ReturnType<typeof mock> | undefined
   if (rewardsMock?.staking) {
     const stakedAmount = "50000000000000000000000"
+
     const positionsRes = rewardsMock.staking?.positionsRes || [
       stakedAmount,
-      ["0", "0", "0", "0", DEFAULT_STAKING_REWARDS_START_TIME, DEFAULT_STAKING_REWARDS_END_TIME],
+      ["0", "0", "0", "0", defaultStakingRewardsStartTime, defaultStakingRewardsEndTime],
       "1000000000000000000",
       "0",
     ]
+    if (rewardsMock.currentBlock.timestamp < parseInt(positionsRes[1][4], 10)) {
+      throw new ImproperlyConfiguredMockError("Expected current timestamp not to be less than position start time.")
+    }
+
     const earnedSince = rewardsMock.staking?.earnedSinceLastCheckpoint || "0"
     const totalVestedAt = rewardsMock.staking?.totalVestedAt || "0"
     const positionCurrentEarnRate = rewardsMock.staking?.positionCurrentEarnRate || "750000000000000"
-    const currentTimestamp = rewardsMock.staking?.currentTimestamp || DEFAULT_STAKING_REWARDS_START_TIME
     const stakingRewardsTokenId = rewardsMock.staking.stakingRewardsTokenId || "1"
     const stakedEvents = Array(stakingRewardsBalance)
       .fill("")
@@ -242,13 +257,13 @@ export async function mockUserInitializationContractCalls(
       },
     })
 
-    callTotalVestedAt = mock({
+    callStakingRewardsTotalVestedAt = mock({
       blockchain,
       call: {
         to: stakingRewards.address,
         api: await getStakingRewardsAbi(),
         method: "totalVestedAt",
-        params: [positionsRes[1][4], positionsRes[1][5], currentTimestamp, granted],
+        params: [positionsRes[1][4], positionsRes[1][5], rewardsMock.currentBlock.timestamp, granted],
         return: totalVestedAt,
       },
     })
@@ -258,7 +273,7 @@ export async function mockUserInitializationContractCalls(
         [],
         {poolEvents: [], poolTxs: []},
         [],
-        {stakedEvents: {currentBlock: blockInfo, value: stakedEvents}, stakingRewardsTxs: []},
+        {stakedEvents: {currentBlock: rewardsMock.currentBlock, value: stakedEvents}, stakingRewardsTxs: []},
         [],
         [],
         [],
@@ -276,14 +291,14 @@ export async function mockUserInitializationContractCalls(
     })
   }
 
-  const grantStartTime = rewardsMock?.community?.grantRes?.[2] || "1641574558"
+  const tokenLaunchTime = rewardsMock?.community?.grantRes?.[2] || String(defaultCurrentBlock.timestamp)
   const callCommunityRewardsTokenLaunchTimeInSecondsMock = mock({
     blockchain,
     call: {
       to: communityRewards.address,
       api: await getCommunityRewardsAbi(),
       method: "tokenLaunchTimeInSeconds",
-      return: grantStartTime,
+      return: tokenLaunchTime,
     },
   })
 
@@ -305,7 +320,7 @@ export async function mockUserInitializationContractCalls(
   let callClaimableRewardsMock: ReturnType<typeof mock> | undefined
   if (rewardsMock?.community) {
     const amount = "1000000000000000000000"
-    const grant = rewardsMock.community?.grantRes || [amount, "0", grantStartTime, grantStartTime, "0", "1", "0"]
+    const grant = rewardsMock.community?.grantRes || [amount, "0", tokenLaunchTime, tokenLaunchTime, "0", "1", "0"]
     const claimable = rewardsMock.community?.claimable || amount
     const acceptedGrantRes = rewardsMock.community?.acceptedGrantRes || {
       returnValues: {
@@ -371,6 +386,35 @@ export async function mockUserInitializationContractCalls(
     user.goldfinchProtocol.queryEvents = mockQueryEvents
   }
 
+  let callCommunityRewardsTotalVestedAt: ReturnType<typeof mock> | undefined
+  if (rewardsMock?.notAcceptedMerkleDistributorGrant) {
+    const info = rewardsMock.notAcceptedMerkleDistributorGrant
+    if (rewardsMock.currentBlock.timestamp < parseInt(tokenLaunchTime, 10)) {
+      throw new ImproperlyConfiguredMockError("Expected current timestamp not to be less than `tokenLaunchTime`.")
+    }
+    if (parseInt(info.vestingLength, 10) === 0 && info.totalVestedAt !== info.amount) {
+      throw new ImproperlyConfiguredMockError("Expected grant with no vesting to be fully vested.")
+    }
+    callCommunityRewardsTotalVestedAt = mock({
+      blockchain,
+      call: {
+        to: communityRewards.address,
+        api: await getCommunityRewardsAbi(),
+        method: "totalVestedAt",
+        params: [
+          tokenLaunchTime,
+          String(parseInt(tokenLaunchTime, 10) + parseInt(info.vestingLength, 10)),
+          info.amount,
+          info.cliffLength,
+          info.vestingInterval,
+          info.revokedAt,
+          rewardsMock.currentBlock.timestamp,
+        ],
+        return: info.totalVestedAt,
+      },
+    })
+  }
+
   return {
     callGFIBalanceMock,
     callUSDCBalanceMock,
@@ -381,11 +425,12 @@ export async function mockUserInitializationContractCalls(
     callTokenOfOwnerByIndexMock,
     callPositionsMock,
     callEarnedSinceLastCheckpointMock,
-    callTotalVestedAt,
+    callStakingRewardsTotalVestedAt,
     callPositionCurrentEarnRate,
     callCommunityRewardsTokenOfOwnerMock,
     callGrantsMock,
     callClaimableRewardsMock,
+    callCommunityRewardsTotalVestedAt,
   }
 }
 

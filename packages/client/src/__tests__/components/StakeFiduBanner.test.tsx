@@ -26,8 +26,9 @@ import {User, UserLoaded} from "../../ethereum/user"
 import * as utils from "../../ethereum/utils"
 import {KYC} from "../../hooks/useGoldfinchClient"
 import {assertWithLoadedInfo} from "../../types/loadable"
+import {BlockInfo} from "../../utils"
 import web3 from "../../web3"
-import {blockInfo, getDeployments, network, recipient} from "../rewards/__utils__/constants"
+import {defaultCurrentBlock, getDeployments, network, recipient} from "../rewards/__utils__/constants"
 import {
   mockCapitalProviderCalls,
   mockStakeFiduBannerCalls,
@@ -48,11 +49,12 @@ function renderStakeFiduBanner(
   gfi: GFILoaded | undefined,
   user: UserLoaded | undefined,
   capitalProvider: CapitalProvider | undefined,
+  currentBlock: BlockInfo | undefined,
   refreshCurrentBlock?: any,
   networkMonitor?: any
 ) {
   const store = {
-    currentBlock: blockInfo,
+    currentBlock,
     network,
     stakingRewards,
     gfi,
@@ -81,6 +83,7 @@ describe("Stake unstaked fidu", () => {
     merkleDistributor: MerkleDistributorLoaded,
     merkleDirectDistributor: MerkleDirectDistributorLoaded,
     user: UserLoaded
+  const currentBlock = defaultCurrentBlock
 
   beforeEach(async () => {
     jest.spyOn(utils, "getDeployments").mockImplementation(() => {
@@ -93,7 +96,7 @@ describe("Stake unstaked fidu", () => {
     _seniorPoolLoaded.info = {
       loaded: true,
       value: {
-        currentBlock: blockInfo,
+        currentBlock,
         poolData: {estimatedApyFromGfi: new BigNumber(0.1)} as PoolData,
         isPaused: false,
       },
@@ -101,7 +104,7 @@ describe("Stake unstaked fidu", () => {
     assertWithLoadedInfo(_seniorPoolLoaded)
     seniorPool = _seniorPoolLoaded
 
-    const results = await getDefaultClasses(goldfinchProtocol)
+    const results = await getDefaultClasses(goldfinchProtocol, currentBlock)
     gfi = results.gfi
     stakingRewards = results.stakingRewards
     communityRewards = results.communityRewards
@@ -109,7 +112,9 @@ describe("Stake unstaked fidu", () => {
     merkleDirectDistributor = results.merkleDirectDistributor
 
     const _user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
-    await mockUserInitializationContractCalls(_user, stakingRewards, gfi, communityRewards, merkleDistributor, {})
+    await mockUserInitializationContractCalls(_user, stakingRewards, gfi, communityRewards, merkleDistributor, {
+      currentBlock,
+    })
     await _user.initialize(
       seniorPool,
       stakingRewards,
@@ -117,7 +122,7 @@ describe("Stake unstaked fidu", () => {
       communityRewards,
       merkleDistributor,
       merkleDirectDistributor,
-      blockInfo
+      currentBlock
     )
     assertWithLoadedInfo(_user)
     user = _user
@@ -129,7 +134,7 @@ describe("Stake unstaked fidu", () => {
   })
 
   it("do not show banner when user has no unstaked fidu", async () => {
-    renderStakeFiduBanner(seniorPool, stakingRewards, gfi, user, undefined)
+    renderStakeFiduBanner(seniorPool, stakingRewards, gfi, user, undefined, currentBlock)
     const stakeButton = screen.queryByText(stakeButtonCopy)
     expect(stakeButton).not.toBeInTheDocument()
   })
@@ -137,7 +142,14 @@ describe("Stake unstaked fidu", () => {
   it("shows banner when user has unstaked fidu", async () => {
     await mockCapitalProviderCalls()
     const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
-    const {container} = renderStakeFiduBanner(seniorPool, stakingRewards, gfi, user, capitalProvider.value)
+    const {container} = renderStakeFiduBanner(
+      seniorPool,
+      stakingRewards,
+      gfi,
+      user,
+      capitalProvider.value,
+      currentBlock
+    )
 
     const stakeButton = screen.queryByText(stakeButtonCopy)
     expect(stakeButton).toBeInTheDocument()
@@ -152,7 +164,14 @@ describe("Stake unstaked fidu", () => {
   it("shows banner when user has little unstaked fidu", async () => {
     await mockCapitalProviderCalls(undefined, "50000000000", undefined, undefined)
     const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
-    const {container} = renderStakeFiduBanner(seniorPool, stakingRewards, gfi, user, capitalProvider.value)
+    const {container} = renderStakeFiduBanner(
+      seniorPool,
+      stakingRewards,
+      gfi,
+      user,
+      capitalProvider.value,
+      currentBlock
+    )
 
     const stakeButton = screen.queryByText(stakeButtonCopy)
     expect(stakeButton).toBeInTheDocument()
@@ -181,6 +200,7 @@ describe("Stake unstaked fidu", () => {
           gfi,
           user,
           capitalProvider.value,
+          currentBlock,
           refreshCurrentBlock,
           networkMonitor
         )
@@ -222,6 +242,7 @@ describe("Stake unstaked fidu", () => {
           gfi,
           user,
           capitalProvider.value,
+          currentBlock,
           refreshCurrentBlock,
           networkMonitor
         )
@@ -262,6 +283,7 @@ describe("Stake unstaked fidu", () => {
           gfi,
           user,
           capitalProvider.value,
+          currentBlock,
           refreshCurrentBlock,
           networkMonitor
         )
