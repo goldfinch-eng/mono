@@ -50,8 +50,8 @@ export class MerkleDistributor {
   }
 
   async initialize(currentBlock: BlockInfo): Promise<void> {
-    const contractAddress = await this.contract.methods.communityRewards().call(undefined, currentBlock.number)
-    if (contractAddress !== this.goldfinchProtocol.getAddress("CommunityRewards")) {
+    const communityRewardsAddress = await this.contract.methods.communityRewards().call(undefined, currentBlock.number)
+    if (communityRewardsAddress !== this.goldfinchProtocol.getAddress("CommunityRewards")) {
       throw new Error(
         "MerkleDistributor community rewards address doesn't match with deployed CommunityRewards address"
       )
@@ -252,8 +252,8 @@ export class MerkleDirectDistributor {
   }
 
   async initialize(currentBlock: BlockInfo): Promise<void> {
-    const contractAddress = await this.contract.methods.gfi().call(undefined, currentBlock.number)
-    if (contractAddress !== this.goldfinchProtocol.getAddress("GFI")) {
+    const gfiAddress = await this.contract.methods.gfi().call(undefined, currentBlock.number)
+    if (gfiAddress !== this.goldfinchProtocol.getAddress("GFI")) {
       throw new Error("MerkleDirectDistributor address of GFI contract doesn't match with deployed GFI address")
     }
 
