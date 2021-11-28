@@ -1,6 +1,7 @@
 import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
 import "@testing-library/jest-dom"
 import {fireEvent, render, screen, waitFor} from "@testing-library/react"
+import BigNumber from "bignumber.js"
 import {mock, resetMocks} from "depay-web3-mock"
 import {BrowserRouter as Router} from "react-router-dom"
 import {ThemeProvider} from "styled-components"
@@ -30,6 +31,7 @@ import {
 } from "../rewards/__utils__/mocks"
 import {
   getDefaultClasses,
+  merkleDistributorAirdropVesting,
   setupAcceptedDirectReward,
   setupClaimableCommunityReward,
   setupClaimableStakingReward,
@@ -39,6 +41,7 @@ import {
   setupDirectRewardAndStakingReward,
   setupMerkleDirectDistributorAirdrop,
   setupMerkleDistributorAirdropNoVesting,
+  setupMerkleDistributorAirdropVesting,
   setupNewStakingReward,
   setupPartiallyClaimedCommunityReward,
   setupPartiallyClaimedStakingReward,
@@ -476,8 +479,40 @@ describe("Rewards portfolio overview", () => {
       expect(await screen.getByTestId("summary-total-balance").className).toEqual("value")
     })
 
-    xit("MerkleDistributor airdrop with vesting that has not been accepted is counted in portfolio", async () => {
-      // TODO
+    it("MerkleDistributor airdrop with vesting that has not been accepted is counted in portfolio", async () => {
+      const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user} =
+        await setupMerkleDistributorAirdropVesting(
+          goldfinchProtocol,
+          seniorPoolLoaded,
+          String(currentBlock.timestamp - parseInt(merkleDistributorAirdropVesting.grant.vestingLength, 16) / 2),
+          new BigNumber(merkleDistributorAirdropVesting.grant.amount).dividedBy(2).toString(10),
+          currentBlock
+        )
+
+      renderRewards(
+        stakingRewards,
+        gfi,
+        user,
+        merkleDistributor,
+        merkleDirectDistributor,
+        communityRewards,
+        currentBlock
+      )
+
+      expect(await screen.findByText("Total GFI balance")).toBeVisible()
+      expect(await screen.findByText("Wallet balance")).toBeVisible()
+      expect(await screen.findByText("Fully vested")).toBeVisible()
+      expect(await screen.findByText("Still vesting")).toBeVisible()
+
+      expect(await screen.getByTestId("summary-wallet-balance").textContent).toEqual("0.00")
+      expect(await screen.getByTestId("summary-claimable").textContent).toEqual("500.00")
+      expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("500.00")
+      expect(await screen.getByTestId("summary-total-balance").textContent).toEqual("1,000.00")
+
+      expect(await screen.getByTestId("summary-wallet-balance").className).toEqual("value")
+      expect(await screen.getByTestId("summary-claimable").className).toEqual("value")
+      expect(await screen.getByTestId("summary-still-vesting").className).toEqual("value")
+      expect(await screen.getByTestId("summary-total-balance").className).toEqual("value")
     })
 
     it("accepted community reward with vesting appears on portfolio", async () => {
@@ -861,7 +896,7 @@ describe("Rewards list and detail", () => {
     )
   })
 
-  it("shows airdrop from MerkleDistributor", async () => {
+  it("shows airdrop from MerkleDistributor without vesting", async () => {
     const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user} =
       await setupMerkleDistributorAirdropNoVesting(goldfinchProtocol, seniorPool, currentBlock)
 
@@ -882,6 +917,40 @@ describe("Rewards list and detail", () => {
 
     expect(await screen.findByText("Vesting schedule")).toBeVisible()
     expect(await screen.findByText("None")).toBeVisible()
+
+    expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
+      "href",
+      `https://${network.name}.etherscan.io/address/${merkleDistributor.address}`
+    )
+  })
+
+  it("shows airdrop from MerkleDistributor with vesting", async () => {
+    const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user} =
+      await setupMerkleDistributorAirdropVesting(
+        goldfinchProtocol,
+        seniorPool,
+        String(currentBlock.timestamp - parseInt(merkleDistributorAirdropVesting.grant.vestingLength, 16) / 2),
+        new BigNumber(merkleDistributorAirdropVesting.grant.amount).dividedBy(2).toString(10),
+        currentBlock
+      )
+
+    renderRewards(stakingRewards, gfi, user, merkleDistributor, merkleDirectDistributor, communityRewards, currentBlock)
+
+    expect(await screen.findByText("Goldfinch Investment")).toBeVisible()
+    expect(await screen.findByText("Accept")).toBeVisible()
+
+    expect(screen.getByTestId("detail-granted").textContent).toEqual("1,000.00")
+    expect(screen.getByTestId("detail-claimable").textContent).toEqual("500.00")
+
+    fireEvent.click(screen.getByText("Goldfinch Investment"))
+    expect(await screen.findByText("Transaction details")).toBeVisible()
+    expect(await screen.findByText("1,000.00 GFI reward for participating as a Goldfinch investor")).toBeVisible()
+
+    expect(await screen.findByText("Vesting status")).toBeVisible()
+    expect(await screen.findByText("$500.00 (500.00 GFI) vested")).toBeVisible()
+
+    expect(await screen.findByText("Vesting schedule")).toBeVisible()
+    expect(await screen.findByText("Linear until 100% after 1 year")).toBeVisible()
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",

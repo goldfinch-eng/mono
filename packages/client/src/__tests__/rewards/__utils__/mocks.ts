@@ -64,6 +64,7 @@ export interface RewardsMockData {
     stakingRewardsBalance?: number
     stakingRewardsTokenId?: string
   }
+  tokenLaunchTime?: string
   community?: {
     airdrop?: MerkleDistributorGrantInfo
     grantRes?: {
@@ -291,7 +292,7 @@ export async function mockUserInitializationContractCalls(
     })
   }
 
-  const tokenLaunchTime = rewardsMock?.community?.grantRes?.[2] || String(defaultCurrentBlock.timestamp)
+  const tokenLaunchTime = rewardsMock?.tokenLaunchTime || String(defaultCurrentBlock.timestamp)
   const callCommunityRewardsTokenLaunchTimeInSecondsMock = mock({
     blockchain,
     call: {
@@ -320,6 +321,10 @@ export async function mockUserInitializationContractCalls(
   let callClaimableRewardsMock: ReturnType<typeof mock> | undefined
   if (rewardsMock?.community) {
     const amount = "1000000000000000000000"
+
+    if (rewardsMock.community?.grantRes && rewardsMock.community?.grantRes[2] !== tokenLaunchTime) {
+      throw new ImproperlyConfiguredMockError("Invalid grant response token launch time.")
+    }
     const grant = rewardsMock.community?.grantRes || [amount, "0", tokenLaunchTime, tokenLaunchTime, "0", "1", "0"]
     const claimable = rewardsMock.community?.claimable || amount
     const acceptedGrantRes = rewardsMock.community?.acceptedGrantRes || {

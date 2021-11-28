@@ -100,13 +100,26 @@ export async function setupClaimableStakingReward(
   return {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user}
 }
 
-const merkleDistributorAirdropNoVesting: MerkleDistributorGrantInfo = {
+export const merkleDistributorAirdropNoVesting: MerkleDistributorGrantInfo = {
   index: 0,
   account: recipient,
   reason: "goldfinch_investment",
   grant: {
     amount: "0x3635c9adc5dea00000",
     vestingLength: "0x00",
+    cliffLength: "0x00",
+    vestingInterval: "0x01",
+  },
+  proof: ["0x00", "0x00", "0x00"],
+}
+
+export const merkleDistributorAirdropVesting: MerkleDistributorGrantInfo = {
+  index: 0,
+  account: recipient,
+  reason: "goldfinch_investment",
+  grant: {
+    amount: "0x3635c9adc5dea00000",
+    vestingLength: "0x1e13380",
     cliffLength: "0x00",
     vestingInterval: "0x01",
   },
@@ -180,6 +193,54 @@ export async function setupMerkleDistributorAirdropNoVesting(
         vestingInterval: new BigNumber(merkleDistributorAirdropNoVesting.grant.vestingInterval).toString(10),
         revokedAt: "0",
         totalVestedAt: new BigNumber(merkleDistributorAirdropNoVesting.grant.amount).toString(10),
+      },
+    }
+  )
+  await user.initialize(
+    seniorPool,
+    stakingRewards,
+    gfi,
+    communityRewards,
+    merkleDistributor,
+    merkleDirectDistributor,
+    currentBlock
+  )
+
+  assertWithLoadedInfo(user)
+  assertAllMocksAreCalled(mocks)
+
+  return {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user}
+}
+
+export async function setupMerkleDistributorAirdropVesting(
+  goldfinchProtocol: GoldfinchProtocol,
+  seniorPool: SeniorPoolLoaded,
+  tokenLaunchTime: string,
+  totalVestedAt: string,
+  currentBlock: BlockInfo
+) {
+  setupMocksForMerkleDistributorAirdrop(merkleDistributorAirdropVesting, false)
+  const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor} = await getDefaultClasses(
+    goldfinchProtocol,
+    currentBlock
+  )
+  const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
+  const mocks = await mockUserInitializationContractCalls(
+    user,
+    stakingRewards,
+    gfi,
+    communityRewards,
+    merkleDistributor,
+    {
+      currentBlock,
+      tokenLaunchTime,
+      notAcceptedMerkleDistributorGrant: {
+        amount: new BigNumber(merkleDistributorAirdropVesting.grant.amount).toString(10),
+        vestingLength: new BigNumber(merkleDistributorAirdropVesting.grant.vestingLength).toString(10),
+        cliffLength: new BigNumber(merkleDistributorAirdropVesting.grant.cliffLength).toString(10),
+        vestingInterval: new BigNumber(merkleDistributorAirdropVesting.grant.vestingInterval).toString(10),
+        revokedAt: "0",
+        totalVestedAt,
       },
     }
   )
@@ -287,6 +348,7 @@ export async function setupPartiallyClaimedCommunityReward(
     currentBlock
   )
   const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
+  const tokenLaunchTime = String(currentBlock.timestamp - 518422)
   const mocks = await mockUserInitializationContractCalls(
     user,
     stakingRewards,
@@ -295,12 +357,13 @@ export async function setupPartiallyClaimedCommunityReward(
     merkleDistributor,
     {
       currentBlock,
+      tokenLaunchTime,
       community: {
         airdrop: airdrop,
         grantRes: [
           "1000000000000000000000",
           "5480149670218163368",
-          String(currentBlock.timestamp - 518422),
+          tokenLaunchTime,
           String(currentBlock.timestamp + 29726437),
           "0",
           "1",
