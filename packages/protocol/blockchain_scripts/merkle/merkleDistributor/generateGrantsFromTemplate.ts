@@ -14,7 +14,7 @@ dotenv.config({path: findEnvLocal()})
  * environment variable, falling back to the address read from the TEST_USER environment variable.
  */
 
-export function generateGrantsDevFromTemplate(templateJson: unknown): JsonAccountedGrant[] {
+export function generateGrantsFromTemplate(templateJson: unknown): JsonAccountedGrant[] {
   if (!isArrayOfJsonAccountedGrant(templateJson)) {
     throw new Error("Invalid JSON.")
   }
@@ -54,5 +54,5 @@ if (require.main === module) {
   const options = program.opts()
   const json = JSON.parse(fs.readFileSync(options.input, {encoding: "utf8"}))
 
-  console.log(JSON.stringify(generateGrantsDevFromTemplate(json), null, 2))
+  console.log(JSON.stringify(generateGrantsFromTemplate(json), null, 2))
 }
