@@ -82,7 +82,7 @@ export class MerkleDistributor {
       eventNames,
       {
         ...(filter || {}),
-        user: address,
+        account: address,
       },
       toBlock
     )
@@ -282,7 +282,7 @@ export class MerkleDirectDistributor {
       eventNames,
       {
         ...(filter || {}),
-        user: address,
+        account: address,
       },
       toBlock
     )
