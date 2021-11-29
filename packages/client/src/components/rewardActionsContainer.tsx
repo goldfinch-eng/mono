@@ -38,6 +38,7 @@ import {
 } from "../types/merkleDirectDistributor"
 
 const ONE_WEEK_SECONDS = new BigNumber(60 * 60 * 24 * 7)
+const TOKEN_LAUNCH_TIME_IN_SECONDS = 1638900000 // Tuesday, December 7, 2021 10:00:00 AM GMT-08:00
 
 enum RewardStatus {
   Acceptable,
@@ -293,50 +294,54 @@ function RewardsListItem(props: RewardsListItemProps) {
   return (
     <>
       {isTabletOrMobile ? (
-        <li onClick={() => setOpen(!open)}>
-          <div className="rewards-list-item background-container clickable mobile">
-            <div className="item-header">
-              <div>{props.title}</div>
-              <OpenDetails open={open} />
-            </div>
-            <div className="item-details">
-              <div className="detail-container">
-                <span className="detail-label">Granted GFI</span>
-                <div className={`${valueDisabledClass}`} data-testid="detail-granted">
-                  {displayNumber(gfiFromAtomic(props.grantedGFI), 2)}
+        <li>
+          <div onClick={() => setOpen(!open)}>
+            <div className="rewards-list-item background-container clickable mobile">
+              <div className="item-header">
+                <div>{props.title}</div>
+                <OpenDetails open={open} />
+              </div>
+              <div className="item-details">
+                <div className="detail-container">
+                  <span className="detail-label">Granted GFI</span>
+                  <div className={`${valueDisabledClass}`} data-testid="detail-granted">
+                    {displayNumber(gfiFromAtomic(props.grantedGFI), 2)}
+                  </div>
+                </div>
+                <div className="detail-container">
+                  <span className="detail-label">
+                    {
+                      // NOTE: Consistently with our approach in the rewards summary, we describe
+                      // the value to the user here as what's vested, though the value we use is what's
+                      // claimable. What's claimable is the relevant piece of information that informs
+                      // their understanding of whether they should be able to take any action with the button.
+                      "Vested GFI"
+                    }
+                  </span>
+                  <div className={`${valueDisabledClass}`} data-testid="detail-claimable">
+                    {displayNumber(gfiFromAtomic(props.claimableGFI), 2)}
+                  </div>
                 </div>
               </div>
-              <div className="detail-container">
-                <span className="detail-label">
-                  {
-                    // NOTE: Consistently with our approach in the rewards summary, we describe
-                    // the value to the user here as what's vested, though the value we use is what's
-                    // claimable. What's claimable is the relevant piece of information that informs
-                    // their understanding of whether they should be able to take any action with the button.
-                    "Vested GFI"
-                  }
-                </span>
-                <div className={`${valueDisabledClass}`} data-testid="detail-claimable">
-                  {displayNumber(gfiFromAtomic(props.claimableGFI), 2)}
-                </div>
-              </div>
+              {actionButtonComponent}
             </div>
-            {actionButtonComponent}
           </div>
           {open && detailsComponent}
         </li>
       ) : (
-        <li onClick={() => setOpen(!open)}>
-          <div className="rewards-list-item table-row background-container clickable">
-            <div className="table-cell col32">{props.title}</div>
-            <div className={`table-cell col20 numeric ${valueDisabledClass}`} data-testid="detail-granted">
-              {displayNumber(gfiFromAtomic(props.grantedGFI), 2)}
+        <li>
+          <div onClick={() => setOpen(!open)}>
+            <div className="rewards-list-item table-row background-container clickable">
+              <div className="table-cell col32">{props.title}</div>
+              <div className={`table-cell col20 numeric ${valueDisabledClass}`} data-testid="detail-granted">
+                {displayNumber(gfiFromAtomic(props.grantedGFI), 2)}
+              </div>
+              <div className={`table-cell col20 numeric ${valueDisabledClass}`} data-testid="detail-claimable">
+                {displayNumber(gfiFromAtomic(props.claimableGFI), 2)}
+              </div>
+              {actionButtonComponent}
+              <OpenDetails open={open} />
             </div>
-            <div className={`table-cell col20 numeric ${valueDisabledClass}`} data-testid="detail-claimable">
-              {displayNumber(gfiFromAtomic(props.claimableGFI), 2)}
-            </div>
-            {actionButtonComponent}
-            <OpenDetails open={open} />
           </div>
           {open && detailsComponent}
         </li>
@@ -345,8 +350,13 @@ function RewardsListItem(props: RewardsListItemProps) {
   )
 }
 
+function getGrantVestingIntervalDisplay(vestingInterval: BigNumber): string | undefined {
+  // Right now we decided that it was best not to show the vesting interval.
+  return undefined
+}
 function getGrantVestingCliffDisplay(cliffLength: BigNumber): string | undefined {
   const cliffLengthString = cliffLength.toString(10)
+  const cliffLengthInDays = Math.ceil(Number(cliffLengthString) / (3600 * 24))
   switch (cliffLengthString) {
     case "0":
       return undefined
@@ -354,22 +364,17 @@ function getGrantVestingCliffDisplay(cliffLength: BigNumber): string | undefined
       return ", with six-month cliff"
     default:
       console.warn(`Unexpected cliff length: ${cliffLengthString}`)
-      return `, with ${cliffLengthString}-second cliff`
-  }
-}
-function getGrantVestingIntervalDisplay(vestingInterval: BigNumber): string | undefined {
-  const vestingIntervalString = vestingInterval.toString(10)
-  switch (vestingIntervalString) {
-    case "1":
-      return undefined
-    case "2628000":
-      return ", vesting every month"
-    default:
-      console.warn(`Unexpected vesting interval: ${vestingIntervalString}`)
-      return `, vesting every ${vestingIntervalString} seconds`
+      const cliffDisplayText = ` with ${cliffLengthInDays}${cliffLengthInDays === 1 ? "-day" : " days"} cliff`
+      return cliffLengthInDays ? cliffDisplayText : ""
   }
 }
 function getGrantVestingLengthDisplay(duration: number): string {
+  const startDate = TOKEN_LAUNCH_TIME_IN_SECONDS
+  const endDate = new Date((startDate + duration) * 1000).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  })
   switch (duration) {
     case 0:
       throw new Error("Grant without vesting length should have avoided calling this method.")
@@ -377,7 +382,7 @@ function getGrantVestingLengthDisplay(duration: number): string {
       return " after 1 year"
     default:
       console.warn(`Unexpected vesting length: ${duration}`)
-      return ` after ${duration} seconds`
+      return endDate ? ` on ${endDate}` : `after ${duration} seconds`
   }
 }
 function getGrantVestingSchedule(
@@ -399,11 +404,13 @@ function getGrantVestingSchedule(
       displayInterval || displayCliff ? "," : ""
     } until 100%${displayEnd}`
   } else {
-    return "None"
+    // Since we will not have a vesting length here, we don't need to make calculations to show
+    // end date. Note that showing the current timestamp can be misleading.
+    return "Immediate"
   }
 }
 function getDirectGrantVestingSchedule(): string {
-  return "None"
+  return "Immediate"
 }
 function getStakingRewardsVestingSchedule(endTime: number) {
   const vestingEndDate = new Date(endTime * 1000).toLocaleDateString(undefined, {
@@ -595,9 +602,9 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
               ? RewardStatus.PermanentlyAllClaimed
               : RewardStatus.TemporarilyAllClaimed
             : RewardStatus.PermanentlyAllClaimed
-          : // Staking rewards are never "permanently" all-claimed; even after vesting is finished, stakings keep
-            // earning rewards that vest immediately.
-            RewardStatus.TemporarilyAllClaimed
+          : item.storedPosition.amount.eq(0)
+          ? RewardStatus.PermanentlyAllClaimed
+          : RewardStatus.TemporarilyAllClaimed
       return (
         <RewardsListItem
           status={status}
