@@ -441,6 +441,27 @@ async function currentChainId(): Promise<ChainId> {
   return chainId
 }
 
+function fixProvider(providerGiven: any): any {
+  // alow it to be used by ethers without any change
+  if (providerGiven.sendAsync === undefined) {
+    providerGiven.sendAsync = (
+      req: {
+        id: number
+        jsonrpc: string
+        method: string
+        params: any[]
+      },
+      callback: (error: any, result: any) => void
+    ) => {
+      providerGiven
+        .send(req.method, req.params)
+        .then((result: any) => callback(null, {result, id: req.id, jsonrpc: req.jsonrpc}))
+        .catch((error: any) => callback(error, null))
+    }
+  }
+  return providerGiven
+}
+
 export {
   CHAIN_NAME_BY_ID,
   ZERO_ADDRESS,
@@ -488,4 +509,5 @@ export {
   assertIsTicker,
   ContractDeployer,
   ContractUpgrader,
+  fixProvider,
 }
