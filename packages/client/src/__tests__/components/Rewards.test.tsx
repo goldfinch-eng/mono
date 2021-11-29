@@ -950,7 +950,7 @@ describe("Rewards list and detail", () => {
     expect(await screen.findByText("$500.00 (500.00 GFI) vested")).toBeVisible()
 
     expect(await screen.findByText("Vesting schedule")).toBeVisible()
-    expect(await screen.findByText("Linear until 100% after 1 year")).toBeVisible()
+    expect(await screen.findByText("Linear until 100% on Dec 7, 2022")).toBeVisible()
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
