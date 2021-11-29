@@ -202,26 +202,6 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   }
 
   /**
-   * @notice Invest in an ITranchedPool's junior tranche.
-   * @param pool An ITranchedPool whose junior tranche to invest in
-   */
-  function investJunior(ITranchedPool pool, uint256 amount) public override whenNotPaused nonReentrant onlyAdmin {
-    require(validPool(pool), "Pool must be valid");
-
-    if (compoundBalance > 0) {
-      _sweepFromCompound();
-    }
-
-    require(amount > 0, "Investment amount must be positive");
-
-    approvePool(pool, amount);
-    pool.deposit(uint256(ITranchedPool.Tranches.Junior), amount);
-
-    emit InvestmentMadeInJunior(address(pool), amount);
-    totalLoansOutstanding = totalLoansOutstanding.add(amount);
-  }
-
-  /**
    * @notice Redeem interest and/or principal from an ITranchedPool investment
    * @param tokenId the ID of an IPoolTokens token to be redeemed
    */
