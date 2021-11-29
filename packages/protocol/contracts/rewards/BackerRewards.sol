@@ -78,7 +78,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     totalRewards = _totalRewards;
     uint256 totalGFISupply = config.getGFI().totalSupply();
     totalRewardPercentOfTotalGFI = _totalRewards.mul(mantissa()).div(totalGFISupply).mul(100);
-    emit BackerRewardsSetTotalRewards(msg.sender, _totalRewards, totalRewardPercentOfTotalGFI);
+    emit BackerRewardsSetTotalRewards(_msgSender(), _totalRewards, totalRewardPercentOfTotalGFI);
   }
 
   /**
@@ -88,7 +88,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
    */
   function setTotalInterestReceived(uint256 _totalInterestReceived) public onlyAdmin {
     totalInterestReceived = _totalInterestReceived;
-    emit BackerRewardsSetTotalInterestReceived(msg.sender, _totalInterestReceived);
+    emit BackerRewardsSetTotalInterestReceived(_msgSender(), _totalInterestReceived);
   }
 
   /**
@@ -97,7 +97,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
    */
   function setMaxInterestDollarsEligible(uint256 _maxInterestDollarsEligible) public onlyAdmin {
     maxInterestDollarsEligible = _maxInterestDollarsEligible;
-    emit BackerRewardsSetMaxInterestDollarsEligible(msg.sender, _maxInterestDollarsEligible);
+    emit BackerRewardsSetMaxInterestDollarsEligible(_msgSender(), _maxInterestDollarsEligible);
   }
 
   /**
@@ -180,7 +180,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
 
     tokens[tokenId].rewardsClaimed = poolTokenRewardsClaimed.add(totalClaimableRewards);
     safeERC20Transfer(config.getGFI(), poolTokens.ownerOf(tokenId), totalClaimableRewards);
-    emit BackerRewardsClaimed(msg.sender, tokenId, totalClaimableRewards);
+    emit BackerRewardsClaimed(_msgSender(), tokenId, totalClaimableRewards);
   }
 
   /* Internal functions  */
