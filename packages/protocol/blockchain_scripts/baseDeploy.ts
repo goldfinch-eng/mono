@@ -416,10 +416,18 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
 
     logger(`About to deploy ${contractName}...`)
     assertIsString(gf_deployer)
+    const protocol_owner = await getProtocolOwner()
     const merkleDirectDistributor = await deployer.deploy(contractName, {
       from: gf_deployer,
       gasLimit: 4000000,
-      args: [gfi.contract.address, merkleRoot],
+      proxy: {
+        execute: {
+          init: {
+            methodName: "initialize",
+            args: [protocol_owner, gfi.contract.address, merkleRoot],
+          },
+        },
+      },
     })
     const contract = await getTruffleContract<MerkleDirectDistributorInstance>(contractName, {
       at: merkleDirectDistributor.address,
