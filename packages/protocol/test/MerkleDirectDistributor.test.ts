@@ -312,7 +312,17 @@ describe("MerkleDirectDistributor", () => {
         acceptGrantParams.proof,
         {from: acceptGrantParams.from}
       )
-      expect(receipt.receipt.gasUsed).to.eq(79100)
+      expect(receipt.receipt.gasUsed).to.eq(90394)
+    })
+
+    context("paused", async () => {
+      it("reverts", async () => {
+        expect(await merkleDirectDistributor.paused()).to.equal(false)
+        await merkleDirectDistributor.pause()
+        expect(await merkleDirectDistributor.paused()).to.equal(true)
+        const acceptance = acceptGrant(acceptGrantParams)
+        await expect(acceptance).to.be.rejectedWith(/paused/)
+      })
     })
   })
 })

@@ -51,7 +51,7 @@ contract MerkleDirectDistributor is IMerkleDirectDistributor, BaseUpgradeablePau
     uint256 index,
     uint256 amount,
     bytes32[] calldata merkleProof
-  ) external override {
+  ) external override whenNotPaused {
     require(!isGrantAccepted(index), "Grant already accepted");
 
     // Verify the merkle proof.
