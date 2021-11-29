@@ -7,12 +7,13 @@ import "@openzeppelin/contracts/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/SafeERC20.sol";
 import "../interfaces/IERC20withDec.sol";
 import "../interfaces/IMerkleDirectDistributor.sol";
+import "../protocol/core/BaseUpgradeablePausable.sol";
 
 contract MerkleDirectDistributor is IMerkleDirectDistributor, BaseUpgradeablePausable {
   using SafeERC20 for IERC20withDec;
 
-  address public immutable override gfi;
-  bytes32 public immutable override merkleRoot;
+  address public override gfi;
+  bytes32 public override merkleRoot;
 
   // @dev This is a packed array of booleans.
   mapping(uint256 => uint256) private acceptedBitMap;
