@@ -8,8 +8,11 @@ const logger: Logger = console.log
 
 async function main() {
   const hardhatUpgrades = new HardhatUpgradesManifest({hre, logger})
+  const proxyContracts = Object.keys(await hre.deployments.all())
+    .filter((x) => x.includes("_Proxy") && x != "CreditDesk_Proxy" && x != "Pool_Proxy")
+    .map((x) => x.replace("_Proxy", ""))
   await hardhatUpgrades.writeManifest({
-    contracts: ["SeniorPool", "Go", "Fidu", "StakingRewards", "CommunityRewards", "UniqueIdentity", "PoolTokens"],
+    contracts: proxyContracts,
   })
 }
 
@@ -26,7 +29,7 @@ export class HardhatUpgradesManifest {
     const {network} = this.hre
     this.logger(`Writing manifest: ${contracts}`)
     for (const i in contracts) {
-      const contract = contracts[i]
+      const contract = contracts[i] as string
       await new Promise((resolve) => setTimeout(resolve, 1000))
       this.logger(`Saving deployment manifest: ${contract} & ${contract}_Implementation`)
       const proxyContractDeployment = await this.hre.deployments.get(`${contract}`)
