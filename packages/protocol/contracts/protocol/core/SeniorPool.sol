@@ -221,7 +221,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
    *  made repayments that restore confidence that the full loan will be repaid.
    * @param tokenId the ID of an IPoolTokens token to be considered for writedown
    */
-  function writedown(uint256 tokenId) public override whenNotPaused nonReentrant onlyAdmin {
+  function writedown(uint256 tokenId) public override whenNotPaused nonReentrant {
     IPoolTokens poolTokens = config.getPoolTokens();
     require(address(this) == poolTokens.ownerOf(tokenId), "Only tokens owned by the senior pool can be written down");
 

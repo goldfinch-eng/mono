@@ -825,8 +825,8 @@ describe("SeniorPool", () => {
     })
 
     context("called by non-governance", async () => {
-      it("should revert", async () => {
-        return expect(seniorPool.writedown(tokenId, {from: person2})).to.be.rejectedWith(/Must have admin/)
+      it("should not revert", async () => {
+        expect(seniorPool.writedown(tokenId, {from: person2})).to.not.be.rejected
       })
     })
 
