@@ -33,6 +33,7 @@ import {advanceTime, GFI_DECIMALS, toEthers, usdcVal} from "../test/testHelpers"
 import {
   Borrower,
   CommunityRewards,
+  CreditLine,
   GFI,
   GoldfinchConfig,
   GoldfinchFactory,
@@ -42,6 +43,7 @@ import {
   TranchedPool,
   UniqueIdentity,
 } from "../typechain/ethers"
+import * as migratev22 from "../blockchain_scripts/migrations/v2.2/migrate"
 
 dotenv.config({path: findEnvLocal()})
 
@@ -92,6 +94,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, options: O
     const protocolOwner = await getProtocolOwner()
     await impersonateAccount(hre, protocolOwner)
     await fundWithWhales(["ETH"], [protocolOwner])
+    await migratev22.main()
 
     logger("Funding protocol_owner with whales")
     underwriter = protocol_owner
@@ -175,7 +178,10 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, options: O
     const tokenId = depositEvent.args.tokenId
 
     await commonPool.lockPool()
-    const amount = (await commonPool.limit()).div(2)
+    let creditLine = await getDeployedAsEthersContract<CreditLine>(getOrNull, "CreditLine")
+    creditLine = creditLine.attach(await commonPool.creditLine())
+
+    const amount = (await creditLine.limit()).div(2)
     await commonPool.drawdown(amount)
 
     await advanceTime({days: 32})
