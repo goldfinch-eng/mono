@@ -367,22 +367,15 @@ function getGrantVestingCliffDisplay(cliffLength: BigNumber): string | undefined
       return ` with ${cliffLengthInDays}-day cliff`
   }
 }
-function getGrantVestingLengthDisplay(duration: number): string {
-  const startDate = TOKEN_LAUNCH_TIME_IN_SECONDS
-  const endDate = new Date((startDate + duration) * 1000).toLocaleDateString(undefined, {
+function getGrantVestingLengthDisplay(end: {absolute: boolean; value: number}): string {
+  const endDate = new Date(
+    (end.absolute ? end.value : TOKEN_LAUNCH_TIME_IN_SECONDS + end.value) * 1000
+  ).toLocaleDateString(undefined, {
     year: "numeric",
     month: "short",
     day: "numeric",
   })
-  switch (duration) {
-    case 0:
-      throw new Error("Grant without vesting length should have avoided calling this method.")
-    case 31536000:
-      return " after 1 year"
-    default:
-      console.warn(`Unexpected vesting length: ${duration}`)
-      return endDate ? ` on ${endDate}` : `after ${duration} seconds`
-  }
+  return ` on ${endDate}`
 }
 function getGrantVestingSchedule(
   cliffLength: BigNumber,
@@ -392,19 +385,11 @@ function getGrantVestingSchedule(
   if (end) {
     const displayCliff = getGrantVestingCliffDisplay(cliffLength)
     const displayInterval = getGrantVestingIntervalDisplay(vestingInterval)
-    const displayEnd = end.absolute
-      ? ` on ${new Date(end.value * 1000).toLocaleDateString(undefined, {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-        })}`
-      : `${getGrantVestingLengthDisplay(end.value)}`
+    const displayEnd = getGrantVestingLengthDisplay(end)
     return `Linear${displayInterval || ""}${displayCliff || ""}${
       displayInterval || displayCliff ? "," : ""
     } until 100%${displayEnd}`
   } else {
-    // Since we will not have a vesting length here, we don't need to make calculations to show
-    // end date. Note that showing the current timestamp can be misleading.
     return "Immediate"
   }
 }
