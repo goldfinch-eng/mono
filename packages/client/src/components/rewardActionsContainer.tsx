@@ -356,7 +356,6 @@ function getGrantVestingIntervalDisplay(vestingInterval: BigNumber): string | un
 }
 function getGrantVestingCliffDisplay(cliffLength: BigNumber): string | undefined {
   const cliffLengthString = cliffLength.toString(10)
-  const cliffLengthInDays = Math.ceil(Number(cliffLengthString) / (3600 * 24))
   switch (cliffLengthString) {
     case "0":
       return undefined
@@ -364,8 +363,8 @@ function getGrantVestingCliffDisplay(cliffLength: BigNumber): string | undefined
       return ", with six-month cliff"
     default:
       console.warn(`Unexpected cliff length: ${cliffLengthString}`)
-      const cliffDisplayText = ` with ${cliffLengthInDays}${cliffLengthInDays === 1 ? "-day" : " days"} cliff`
-      return cliffLengthInDays ? cliffDisplayText : ""
+      const cliffLengthInDays = Math.ceil(parseInt(cliffLengthString, 10) / (3600 * 24))
+      return ` with ${cliffLengthInDays}-day cliff`
   }
 }
 function getGrantVestingLengthDisplay(duration: number): string {
