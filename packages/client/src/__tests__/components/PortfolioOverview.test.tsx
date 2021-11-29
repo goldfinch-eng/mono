@@ -190,7 +190,7 @@ describe("Earn page portfolio overview", () => {
     ).toBeInTheDocument()
     expect(screen.getByText("Pool APY")).toBeInTheDocument()
     expect(screen.getByTestId("tooltip-estimated-apy").textContent).toEqual("0.48%")
-    expect(screen.getByTestId("tooltip-gfi-apy").textContent).toEqual("--.--%")
+    expect(screen.getByTestId("tooltip-gfi-apy").textContent).toEqual("0.00%")
     expect(screen.getByTestId("tooltip-total-apy").textContent).toEqual("0.48%")
   })
 
