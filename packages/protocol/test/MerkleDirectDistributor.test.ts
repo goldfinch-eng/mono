@@ -1,6 +1,7 @@
 /* global web3 */
 import {BN} from "ethereumjs-tx/node_modules/ethereumjs-util"
 import hre, {getNamedAccounts} from "hardhat"
+import {constants as ethersConstants} from "ethers"
 import {MerkleDirectDistributorGrantInfo} from "../blockchain_scripts/merkle/merkleDirectDistributor/types"
 import {GFIInstance} from "../typechain/truffle/GFI"
 import {GrantAccepted, MerkleDirectDistributorInstance} from "../typechain/truffle/MerkleDirectDistributor"
@@ -12,17 +13,21 @@ import {
   fundWithEthFromLocalWhale,
   genDifferentHexString,
   getOnlyLog,
+  getTruffleContract,
 } from "./testHelpers"
+import {getDeployedContract, OWNER_ROLE, PAUSER_ROLE} from "../blockchain_scripts/deployHelpers"
 const {deployments} = hre
 
 const setupTest = deployments.createFixture(async ({deployments}) => {
+  const {deploy} = deployments
   const amount = new BN("1")
   const {test_merkle_direct_distributor_recipient_a, test_merkle_direct_distributor_recipient_b} =
     await getNamedAccounts()
   assertNonNullable(test_merkle_direct_distributor_recipient_a)
   assertNonNullable(test_merkle_direct_distributor_recipient_b)
-  const [_owner] = await web3.eth.getAccounts()
+  const [_owner, _anotherUser] = await web3.eth.getAccounts()
   const owner = asNonNullable(_owner)
+  const uninitializedMerkleDirectDistributorDeployer = asNonNullable(_anotherUser)
 
   const deployed = await deployAllContracts(deployments, {
     deployMerkleDirectDistributor: {fromAccount: owner, root: fixtures.output.merkleRoot},
@@ -35,15 +40,40 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   assertNonNullable(deployed.merkleDirectDistributor)
   const merkleDirectDistributor = deployed.merkleDirectDistributor
 
-  return {gfi, merkleDirectDistributor}
+  const uninitializedMerkleDirectDistributorDeployResult = await deploy("MerkleDirectDistributor", {
+    from: owner,
+    gasLimit: 4000000,
+  })
+  const uninitializedMerkleDirectDistributor = await getTruffleContract<MerkleDirectDistributorInstance>(
+    "MerkleDirectDistributor",
+    uninitializedMerkleDirectDistributorDeployResult.address
+  )
+
+  return {
+    owner,
+    uninitializedMerkleDirectDistributorDeployer,
+    gfi,
+    merkleDirectDistributor,
+    uninitializedMerkleDirectDistributor,
+  }
 })
 
 describe("MerkleDirectDistributor", () => {
-  let gfi: GFIInstance, merkleDirectDistributor: MerkleDirectDistributorInstance
+  let owner: string,
+    uninitializedMerkleDirectDistributorDeployer: string,
+    gfi: GFIInstance,
+    merkleDirectDistributor: MerkleDirectDistributorInstance,
+    uninitializedMerkleDirectDistributor: MerkleDirectDistributorInstance
 
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;({gfi, merkleDirectDistributor} = await setupTest())
+    ;({
+      owner,
+      uninitializedMerkleDirectDistributorDeployer,
+      gfi,
+      merkleDirectDistributor,
+      uninitializedMerkleDirectDistributor,
+    } = await setupTest())
   })
 
   async function acceptGrant({
@@ -86,6 +116,17 @@ describe("MerkleDirectDistributor", () => {
     expect(rewardsAvailableBefore.sub(rewardsAvailableAfter)).to.bignumber.equal(amount)
   }
 
+  describe("deployment", () => {
+    it("should respect the `owner` option specified for the proxy contract", async () => {
+      const {protocol_owner} = await getNamedAccounts()
+      assertNonNullable(protocol_owner)
+      const proxy = await getDeployedContract(deployments, "MerkleDirectDistributor_Proxy", protocol_owner)
+
+      const owner = await proxy.owner()
+      expect(owner).to.equal(protocol_owner)
+    })
+  })
+
   describe("gfi", () => {
     it("returns the address of the GFI contract", async () => {
       const gfiAddress = await merkleDirectDistributor.gfi()
@@ -99,6 +140,71 @@ describe("MerkleDirectDistributor", () => {
       const merkleRoot = await merkleDirectDistributor.merkleRoot()
       expect(merkleRoot).to.be.ok
       expect(merkleRoot).to.equal(fixtures.output.merkleRoot)
+    })
+  })
+
+  describe("initialize", () => {
+    const fakeMerkleRoot = web3.utils.keccak256("FOO")
+
+    it("rejects zero address owner", async () => {
+      const initialized = uninitializedMerkleDirectDistributor.initialize(
+        ethersConstants.AddressZero,
+        gfi.address,
+        fakeMerkleRoot
+      )
+      await expect(initialized).to.be.rejectedWith(/Owner address cannot be empty/)
+    })
+    it("rejects zero address for GFI contract", async () => {
+      const initialized = uninitializedMerkleDirectDistributor.initialize(
+        owner,
+        ethersConstants.AddressZero,
+        fakeMerkleRoot
+      )
+      await expect(initialized).to.be.rejectedWith(/GFI address cannot be empty/)
+    })
+    it("rejects zero value for Merkle root", async () => {
+      const initialized = uninitializedMerkleDirectDistributor.initialize(owner, gfi.address, ethersConstants.HashZero)
+      await expect(initialized).to.be.rejectedWith(/Invalid Merkle root/)
+    })
+    it("grants owner the owner and pauser roles", async () => {
+      await uninitializedMerkleDirectDistributor.initialize(owner, gfi.address, fakeMerkleRoot, {
+        from: uninitializedMerkleDirectDistributorDeployer,
+      })
+      expect(await uninitializedMerkleDirectDistributor.hasRole(OWNER_ROLE, owner)).to.equal(true)
+      expect(await uninitializedMerkleDirectDistributor.hasRole(PAUSER_ROLE, owner)).to.equal(true)
+
+      expect(await merkleDirectDistributor.hasRole(OWNER_ROLE, owner)).to.equal(true)
+      expect(await merkleDirectDistributor.hasRole(PAUSER_ROLE, owner)).to.equal(true)
+    })
+    it("does not grant deployer the owner and pauser roles", async () => {
+      await uninitializedMerkleDirectDistributor.initialize(owner, gfi.address, fakeMerkleRoot, {
+        from: uninitializedMerkleDirectDistributorDeployer,
+      })
+      expect(
+        await uninitializedMerkleDirectDistributor.hasRole(OWNER_ROLE, uninitializedMerkleDirectDistributorDeployer)
+      ).to.equal(false)
+      expect(
+        await uninitializedMerkleDirectDistributor.hasRole(PAUSER_ROLE, uninitializedMerkleDirectDistributorDeployer)
+      ).to.equal(false)
+    })
+    it("sets GFI address and Merkle root in state", async () => {
+      expect(await uninitializedMerkleDirectDistributor.gfi()).to.equal(ethersConstants.AddressZero)
+      expect(await uninitializedMerkleDirectDistributor.merkleRoot()).to.equal(ethersConstants.HashZero)
+      await uninitializedMerkleDirectDistributor.initialize(owner, gfi.address, fakeMerkleRoot, {
+        from: uninitializedMerkleDirectDistributorDeployer,
+      })
+      expect(await uninitializedMerkleDirectDistributor.gfi()).to.equal(gfi.address)
+      expect(await uninitializedMerkleDirectDistributor.merkleRoot()).to.equal(fakeMerkleRoot)
+    })
+    it("cannot be called twice", async () => {
+      await uninitializedMerkleDirectDistributor.initialize(owner, gfi.address, fakeMerkleRoot, {
+        from: uninitializedMerkleDirectDistributorDeployer,
+      })
+      await expect(
+        uninitializedMerkleDirectDistributor.initialize(owner, gfi.address, fakeMerkleRoot, {
+          from: uninitializedMerkleDirectDistributorDeployer,
+        })
+      ).to.be.rejectedWith(/Contract instance has already been initialized/)
     })
   })
 
@@ -312,7 +418,17 @@ describe("MerkleDirectDistributor", () => {
         acceptGrantParams.proof,
         {from: acceptGrantParams.from}
       )
-      expect(receipt.receipt.gasUsed).to.eq(79100)
+      expect(receipt.receipt.gasUsed).to.eq(90394)
+    })
+
+    context("paused", async () => {
+      it("reverts", async () => {
+        expect(await merkleDirectDistributor.paused()).to.equal(false)
+        await merkleDirectDistributor.pause()
+        expect(await merkleDirectDistributor.paused()).to.equal(true)
+        const acceptance = acceptGrant(acceptGrantParams)
+        await expect(acceptance).to.be.rejectedWith(/paused/)
+      })
     })
   })
 })
