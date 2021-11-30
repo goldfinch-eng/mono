@@ -96,7 +96,6 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, options: O
     const protocolOwner = await getProtocolOwner()
     await impersonateAccount(hre, protocolOwner)
     await fundWithWhales(["ETH"], [protocolOwner])
-    await migratev22.main()
 
     logger("Funding protocol_owner with whales")
     underwriter = protocol_owner
