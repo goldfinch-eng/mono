@@ -95,6 +95,7 @@
         "**/SeniorPool.sol:SeniorPool": {
           "deposit": [],
           "depositWithPermit": [],
+          "invest": [],
           "withdraw": [],
           "withdrawInFidu": [],
           "redeem": [],

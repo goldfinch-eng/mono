@@ -176,7 +176,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
    * @notice Invest in an ITranchedPool's senior tranche using the senior pool's strategy
    * @param pool An ITranchedPool whose senior tranche should be considered for investment
    */
-  function invest(ITranchedPool pool) public override whenNotPaused nonReentrant onlyAdmin {
+  function invest(ITranchedPool pool) public override whenNotPaused nonReentrant {
     require(validPool(pool), "Pool must be valid");
 
     if (compoundBalance > 0) {
