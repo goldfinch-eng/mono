@@ -31,6 +31,7 @@ contract Go is IGo, BaseUpgradeablePausable {
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
 
+  GoldfinchConfig public goListOverride;
   event GoldfinchConfigUpdated(address indexed who, address configAddress);
 
   function initialize(
@@ -53,6 +54,15 @@ contract Go is IGo, BaseUpgradeablePausable {
   }
 
   /**
+   * @notice sets the config that will be used as the source of truth for the go
+   * list instead of the config currently associated. To use the associated config for to list, set the override
+   * to the null address.
+   */
+  function setGoListOverride(GoldfinchConfig _goListOverride) external onlyAdmin {
+    goListOverride = _goListOverride;
+  }
+
+  /**
    * @notice Returns whether the provided account is go-listed for use of the Goldfinch protocol
    * for any of the UID token types.
    * This status is defined as: whether `balanceOf(account, id)` on the UniqueIdentity
@@ -63,9 +73,12 @@ contract Go is IGo, BaseUpgradeablePausable {
    */
   function go(address account) public view override returns (bool) {
     require(account != address(0), "Zero address is not go-listed");
-    if (config.goList(account) || IUniqueIdentity0612(uniqueIdentity).balanceOf(account, ID_TYPE_0) > 0) {
+
+    GoldfinchConfig goListSource = _getGoldfinchConfigWithGoList();
+    if (goListSource.goList(account) || IUniqueIdentity0612(uniqueIdentity).balanceOf(account, ID_TYPE_0) > 0) {
       return true;
     }
+
     // start loop at index 1 because we checked index 0 above
     for (uint256 i = 1; i < allIdTypes.length; ++i) {
       uint256 idTypeBalance = IUniqueIdentity0612(uniqueIdentity).balanceOf(account, allIdTypes[i]);
@@ -85,8 +98,9 @@ contract Go is IGo, BaseUpgradeablePausable {
    */
   function goOnlyIdTypes(address account, uint256[] memory onlyIdTypes) public view override returns (bool) {
     require(account != address(0), "Zero address is not go-listed");
+    GoldfinchConfig goListSource = _getGoldfinchConfigWithGoList();
     for (uint256 i = 0; i < onlyIdTypes.length; ++i) {
-      if (onlyIdTypes[i] == ID_TYPE_0 && config.goList(account)) {
+      if (onlyIdTypes[i] == ID_TYPE_0 && goListSource.goList(account)) {
         return true;
       }
       uint256 idTypeBalance = IUniqueIdentity0612(uniqueIdentity).balanceOf(account, onlyIdTypes[i]);
@@ -104,7 +118,8 @@ contract Go is IGo, BaseUpgradeablePausable {
    */
   function goSeniorPool(address account) public view override returns (bool) {
     require(account != address(0), "Zero address is not go-listed");
-    if (account == config.stakingRewardsAddress() || config.goList(account)) {
+    GoldfinchConfig goListSource = _getGoldfinchConfigWithGoList();
+    if (account == config.stakingRewardsAddress() || goListSource.goList(account)) {
       return true;
     }
     uint256[2] memory seniorPoolIdTypes = [ID_TYPE_0, ID_TYPE_1];
@@ -115,5 +130,9 @@ contract Go is IGo, BaseUpgradeablePausable {
       }
     }
     return false;
+  }
+
+  function _getGoldfinchConfigWithGoList() internal view returns (GoldfinchConfig) {
+    return address(goListOverride) == address(0) ? config : goListOverride;
   }
 }
