@@ -31,7 +31,7 @@ contract Go is IGo, BaseUpgradeablePausable {
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
 
-  GoldfinchConfig public goListOverride;
+  GoldfinchConfig public legacyGoList;
   event GoldfinchConfigUpdated(address indexed who, address configAddress);
 
   function initialize(
@@ -58,8 +58,8 @@ contract Go is IGo, BaseUpgradeablePausable {
    * list instead of the config currently associated. To use the associated config for to list, set the override
    * to the null address.
    */
-  function setGoListOverride(GoldfinchConfig _goListOverride) external onlyAdmin {
-    goListOverride = _goListOverride;
+  function setLegacyGoList(GoldfinchConfig _legacyGoList) external onlyAdmin {
+    legacyGoList = _legacyGoList;
   }
 
   /**
@@ -74,8 +74,10 @@ contract Go is IGo, BaseUpgradeablePausable {
   function go(address account) public view override returns (bool) {
     require(account != address(0), "Zero address is not go-listed");
 
-    GoldfinchConfig goListSource = _getGoldfinchConfigWithGoList();
-    if (goListSource.goList(account) || IUniqueIdentity0612(uniqueIdentity).balanceOf(account, ID_TYPE_0) > 0) {
+    if (
+      _getGoldfinchConfigWithGoList().goList(account) ||
+      IUniqueIdentity0612(uniqueIdentity).balanceOf(account, ID_TYPE_0) > 0
+    ) {
       return true;
     }
 
@@ -118,8 +120,7 @@ contract Go is IGo, BaseUpgradeablePausable {
    */
   function goSeniorPool(address account) public view override returns (bool) {
     require(account != address(0), "Zero address is not go-listed");
-    GoldfinchConfig goListSource = _getGoldfinchConfigWithGoList();
-    if (account == config.stakingRewardsAddress() || goListSource.goList(account)) {
+    if (account == config.stakingRewardsAddress() || _getGoldfinchConfigWithGoList().goList(account)) {
       return true;
     }
     uint256[2] memory seniorPoolIdTypes = [ID_TYPE_0, ID_TYPE_1];
@@ -133,6 +134,6 @@ contract Go is IGo, BaseUpgradeablePausable {
   }
 
   function _getGoldfinchConfigWithGoList() internal view returns (GoldfinchConfig) {
-    return address(goListOverride) == address(0) ? config : goListOverride;
+    return address(legacyGoList) == address(0) ? config : legacyGoList;
   }
 }
