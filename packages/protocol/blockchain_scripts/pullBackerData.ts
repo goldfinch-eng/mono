@@ -1,5 +1,6 @@
 import fs from "fs"
 import hre from "hardhat"
+import axios from "axios"
 const {deployments} = hre
 const {ethers} = hre
 import {Block} from "@ethersproject/abstract-provider"
@@ -11,6 +12,16 @@ import admin from "firebase-admin"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import {BigNumber} from "bignumber.js"
 import {BigNumberish} from "ethers"
+const PERSONA_BASE_URL = "https://withpersona.com/api/v1"
+const PERSONA_API_KEY = process.env.PERSONA_API_KEY
+if (!PERSONA_API_KEY) {
+  throw new Error("Persona API key required. Set with PERSONA_API_KEY={Your Key}")
+}
+const PERSONA_HEADERS = {
+  Accept: "application/json",
+  "Persona-Version": "2021-05-14",
+  Authorization: `Bearer ${PERSONA_API_KEY}`,
+}
 
 function usdcFromAtomic(amount: BigNumberish) {
   return new BigNumber(String(amount)).div(USDCDecimals.toString()).toString(10)
@@ -60,6 +71,14 @@ async function main() {
 
       const users = getUsers(admin.firestore())
       const user = await users.doc(`${addr.toLowerCase()}`).get()
+      const personaInquiryId = user.data()?.persona.id
+      let emailAddress
+      if (personaInquiryId) {
+        const response = await axios.get(`${PERSONA_BASE_URL}/inquiries/${personaInquiryId}`, {
+          headers: PERSONA_HEADERS,
+        })
+        emailAddress = response.data.data.attributes.emailAddress
+      }
 
       return {
         address: addr,
@@ -68,6 +87,7 @@ async function main() {
         secondsSinceEpoch: block.timestamp,
         timestamp: String(new Date(block.timestamp * 1000)),
         fullName: fullName,
+        emailAddress: emailAddress,
       }
     })
   )
