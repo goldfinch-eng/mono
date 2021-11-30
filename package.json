@@ -5,7 +5,6 @@
     "bootstrap": "npx lerna bootstrap && npm run stub-dev-deployments && npm run build",
     "stub-dev-deployments": "sh -c \"[ ! -e \"packages/protocol/deployments/all_dev.json\" ] && echo {} > packages/protocol/deployments/all_dev.json || true\"",
     "start": "npm run kill-ports && REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet npx lerna run start --parallel",
-    "start:liquidity-mining": "npx lerna run generate-merkle-root:local && MERKLE_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/merkleDistributor/merkleDistributorInfo.dev.json REACT_APP_TOGGLE_REWARDS=true npm run start",
     "start:no-gasless": "npm run kill-ports && REACT_APP_DISABLE_GASLESS=true REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet npx lerna run start --parallel",
     "start:local": "npm run kill-ports && REACT_APP_HARDHAT_FORK= HARDHAT_FORK= npx lerna run start --parallel",
     "start:local:liquidity-mining": "npx lerna run generate-merkle-distributor-root:local && MERKLE_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/merkleDistributor/merkleDistributorInfo.dev.json REACT_APP_TOGGLE_REWARDS=true npm run start:local",
