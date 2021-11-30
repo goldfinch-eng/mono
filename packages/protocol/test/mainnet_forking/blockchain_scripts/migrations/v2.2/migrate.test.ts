@@ -69,7 +69,7 @@ describe("V2.2 migration", async function () {
 
   expectProxyOwner({
     toBe: async () => getProtocolOwner(),
-    forContracts: ["StakingRewards", "CommunityRewards"],
+    forContracts: ["StakingRewards", "CommunityRewards", "GoldfinchConfig", "MerkleDirectDistributor"],
   })
 
   context("GoldfinchConfig", async () => {
