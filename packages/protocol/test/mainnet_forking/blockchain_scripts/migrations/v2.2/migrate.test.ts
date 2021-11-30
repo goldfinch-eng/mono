@@ -13,40 +13,12 @@ import {Deployment} from "hardhat-deploy/types"
 import {CONFIG_KEYS, CONFIG_KEYS_BY_TYPE} from "@goldfinch-eng/protocol/blockchain_scripts/configKeys"
 import {GoldfinchConfig, TranchedPool} from "@goldfinch-eng/protocol/typechain/ethers"
 import poolMetadata from "@goldfinch-eng/client/config/pool-metadata/mainnet.json"
+import {expectProxyOwner, expectRoles} from "@goldfinch-eng/protocol/test/testHelpers"
 
 const performMigration = deployments.createFixture(async ({deployments}) => {
   await deployments.fixture("base_deploy", {keepExistingDeployments: true})
   return await migrate.main()
 })
-
-export function expectProxyOwner({toBe, forContracts}: {toBe: () => Promise<string>; forContracts: string[]}) {
-  describe("proxy owners", async () => {
-    forContracts.forEach((contractName) => {
-      it(`sets the correct proxy owner for ${contractName}`, async () => {
-        const proxyDeployment = await deployments.get(`${contractName}_Proxy`)
-        const proxyContract = await ethers.getContractAt(proxyDeployment.abi, proxyDeployment.address)
-        expect(await proxyContract.owner()).to.eq(await toBe())
-      })
-    })
-  })
-}
-
-export type RoleExpectation = {contractName: string; roles: string[]; address: () => Promise<string>}
-export function expectRoles(expectations: RoleExpectation[]) {
-  describe("roles", async () => {
-    for (const {contractName, roles, address} of expectations) {
-      for (const role of roles) {
-        it(`assigns the ${role} role`, async () => {
-          const addr = await address()
-          const deployment = await deployments.get(contractName)
-          const contract = await ethers.getContractAt(deployment.abi, deployment.address)
-
-          expect(await contract.hasRole(role, addr)).to.be.true
-        })
-      }
-    }
-  })
-}
 
 describe("V2.2 migration", async function () {
   this.timeout(TEST_TIMEOUT)
