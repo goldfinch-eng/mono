@@ -321,6 +321,7 @@ export async function deployLPStakingRewards(
       },
     },
   })
+  logger(`deployed staking rewards to ${stakingRewards.address}`)
 
   await deployEffects.add({
     deferred: [await config.populateTransaction.setAddress(CONFIG_KEYS.StakingRewards, stakingRewards.address)],
