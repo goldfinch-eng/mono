@@ -15,7 +15,7 @@ import {
   getOnlyLog,
   getTruffleContract,
 } from "./testHelpers"
-import {OWNER_ROLE, PAUSER_ROLE} from "../blockchain_scripts/deployHelpers"
+import {getDeployedContract, OWNER_ROLE, PAUSER_ROLE} from "../blockchain_scripts/deployHelpers"
 const {deployments} = hre
 
 const setupTest = deployments.createFixture(async ({deployments}) => {
@@ -115,6 +115,17 @@ describe("MerkleDirectDistributor", () => {
     // Verify that rewards available has been decremented reflecting the amount of the grant.
     expect(rewardsAvailableBefore.sub(rewardsAvailableAfter)).to.bignumber.equal(amount)
   }
+
+  describe("deployment", () => {
+    it("should respect the `owner` option specified for the proxy contract", async () => {
+      const {protocol_owner} = await getNamedAccounts()
+      assertNonNullable(protocol_owner)
+      const proxy = await getDeployedContract(deployments, "MerkleDirectDistributor_Proxy", protocol_owner)
+
+      const owner = await proxy.owner()
+      expect(owner).to.equal(protocol_owner)
+    })
+  })
 
   describe("gfi", () => {
     it("returns the address of the GFI contract", async () => {

@@ -330,6 +330,7 @@ async function deployAllContracts(
       from: options.deployMerkleDirectDistributor.fromAccount,
       gasLimit: 4000000,
       proxy: {
+        owner: protocol_owner,
         execute: {
           init: {
             methodName: "initialize",
