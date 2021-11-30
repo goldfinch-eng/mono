@@ -43,6 +43,7 @@ import {
   BorrowerInstance,
   FiduInstance,
   FixedLeverageRatioStrategyInstance,
+  GFIInstance,
   GoInstance,
   GoldfinchConfigInstance,
   GoldfinchFactoryInstance,
@@ -99,6 +100,10 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
 
   const go: GoInstance = await artifacts.require("Go").at(existingContracts.Go?.ExistingContract.address)
 
+  const backerRewards: BackerRewardsInstance = await artifacts
+    .require("BackerRewards")
+    .at(existingContracts.BackerRewards?.ExistingContract.address)
+
   const goldfinchConfig: GoldfinchConfigInstance = await artifacts
     .require("GoldfinchConfig")
     .at(existingContracts.GoldfinchConfig.ExistingContract.address)
@@ -106,10 +111,6 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const newGoldfinchConfig: GoldfinchConfigInstance = await artifacts
     .require("GoldfinchConfig")
     .at(await goldfinchConfig.getAddress(CONFIG_KEYS.GoldfinchConfig))
-
-  const backerRewards: BackerRewardsInstance = await artifacts
-    .require("BackerRewards")
-    .at(await newGoldfinchConfig.getAddress(CONFIG_KEYS.BackerRewards))
 
   const goldfinchFactory: GoldfinchFactoryInstance = await artifacts
     .require("GoldfinchFactory")
@@ -124,6 +125,8 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
     .require("StakingRewards")
     .at(await newGoldfinchConfig.getAddress(CONFIG_KEYS.StakingRewards))
 
+  const gfi: GFIInstance = await artifacts.require("GFI").at(await newGoldfinchConfig.getAddress(CONFIG_KEYS.GFI))
+
   return {
     seniorPool,
     seniorPoolStrategy,
@@ -135,6 +138,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
     go,
     stakingRewards,
     backerRewards,
+    gfi,
   }
 })
 
@@ -158,7 +162,8 @@ describe("mainnet forking tests", async function () {
     seniorPoolStrategy,
     go: GoInstance,
     stakingRewards: StakingRewardsInstance,
-    backerRewards: BackerRewardsInstance
+    backerRewards: BackerRewardsInstance,
+    gfi: GFIInstance
 
   async function setupSeniorPool() {
     seniorPoolStrategy = await artifacts.require("ISeniorPoolStrategy").at(seniorPoolStrategy.address)
@@ -202,6 +207,7 @@ describe("mainnet forking tests", async function () {
       go,
       stakingRewards,
       backerRewards,
+      gfi,
     } = await setupTest())
     const usdcAddress = getUSDCAddress(MAINNET_CHAIN_ID)
     assertIsString(usdcAddress)
@@ -471,37 +477,6 @@ describe("mainnet forking tests", async function () {
         expect(await getBalance(bwrCon.address, usdc)).to.bignumber.eq(new BN(0))
         expect(await getBalance(bwrCon.address, usdt)).to.bignumber.eq(new BN(0))
       }).timeout(TEST_TIMEOUT)
-    })
-  })
-
-  describe("Allocating backer rewards", async function () {
-    let bwrCon, cl
-    const amount = usdcVal(100)
-    beforeEach(async function () {
-      this.timeout(TEST_TIMEOUT)
-      bwrCon = await createBorrowerContract()
-      ;({tranchedPool, creditLine: cl} = await createPoolWithCreditLine({
-        people: {owner: MAINNET_MULTISIG, borrower: bwrCon.address},
-        goldfinchFactory,
-        usdc,
-      }))
-
-      await initializeTranchedPool(tranchedPool, bwrCon)
-      await bwrCon.drawdown(tranchedPool.address, amount, bwr, {from: bwr})
-    })
-
-    describe("if backerrewards is not configured", () => {
-      it("should not allocate rewards", async () => {})
-    })
-
-    describe("if backerrewards contract is configured", () => {
-      beforeEach(() => {
-        await mintGFI(totalGFISupply)
-        await backerRewards.setMaxInterestDollarsEligible(bigVal(maxInterestDollarsEligible))
-        await backerRewards.setTotalRewards(bigVal(Math.round(totalRewards * 100)).div(new BN(100)))
-        await backerRewards.setTotalInterestReceived(usdcVal(previousInterestReceived))
-      })
-      it("properly allocates rewards", async () => {})
     })
   })
 
@@ -803,15 +778,46 @@ describe("mainnet forking tests", async function () {
           await tranchedPool.lockPool({from: bwr})
         })
 
-        describe("when I drawdown and pay back", async () => {
-          it("it works", async () => {
+        describe("if backerrewards contract is configured", () => {
+          beforeEach(async () => {
+            const totalGFISupply = 100_000_000
+            const totalRewards = 1_000
+            const maxInterestDollarsEligible = 1_000_000_000
+            const gfiAmount = bigVal(totalGFISupply)
+            await gfi.setCap(gfiAmount, {from: owner})
+            await gfi.mint(owner, gfiAmount)
+            await gfi.approve(owner, gfiAmount)
+            await backerRewards.setMaxInterestDollarsEligible(bigVal(maxInterestDollarsEligible))
+            await backerRewards.setTotalRewards(bigVal(Math.round(totalRewards * 100)).div(new BN(100)))
+            await backerRewards.setTotalInterestReceived(usdcVal(0))
+          })
+          it("properly allocates rewards", async () => {
             await expect(bwrCon.drawdown(tranchedPool.address, usdcVal(10_000), bwr, {from: bwr})).to.be.fulfilled
             await advanceTime({days: 90})
             await ethers.provider.send("evm_mine", [])
             await expect(bwrCon.pay(tranchedPool.address, usdcVal(10_000), {from: bwr})).to.be.fulfilled
-            const rewards = await expect(backerRewards.poolTokenClaimableRewards(backerTokenId)).to.be.fulfilled
-            // right now rewards rates aren't set, so no rewards should be claimable
-            expect(rewards).to.bignumber.eq("0")
+
+            // verify accRewardsPerPrincipalDollar
+            const accRewardsPerPrincipalDollar = await backerRewards.pools(tranchedPool.address)
+            expect(accRewardsPerPrincipalDollar).to.bignumber.equal(new BN(0))
+
+            // verify claimable rewards
+            const expectedPoolTokenClaimableRewards = await backerRewards.poolTokenClaimableRewards(backerTokenId)
+            expect(new BN(expectedPoolTokenClaimableRewards)).to.bignumber.equal(new BN(0))
+          })
+        })
+
+        describe("if backerrewards contract is not configured", () => {
+          describe("when I drawdown and pay back", async () => {
+            it("it works", async () => {
+              await expect(bwrCon.drawdown(tranchedPool.address, usdcVal(10_000), bwr, {from: bwr})).to.be.fulfilled
+              await advanceTime({days: 90})
+              await ethers.provider.send("evm_mine", [])
+              await expect(bwrCon.pay(tranchedPool.address, usdcVal(10_000), {from: bwr})).to.be.fulfilled
+              const rewards = await expect(backerRewards.poolTokenClaimableRewards(backerTokenId)).to.be.fulfilled
+              // right now rewards rates aren't set, so no rewards should be claimable
+              expect(rewards).to.bignumber.eq("0")
+            })
           })
         })
       })
