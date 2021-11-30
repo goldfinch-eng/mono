@@ -107,6 +107,7 @@ async function upgradeContracts({
       libraries: dependencies[contractName],
     })
 
+    logger("Assert valid implementation and upgrade", contractToDeploy)
     const proxyDeployment = await hre.deployments.get(`${contractToDeploy}`)
     const implDeployment = await hre.deployments.get(`${contractToDeploy}_Implementation`)
     await openzeppelin_assertIsValidImplementation(implDeployment)
