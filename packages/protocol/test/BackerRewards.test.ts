@@ -405,6 +405,29 @@ describe("BackerRewards", function () {
       }
     )
 
+    it("should handle not allocating any rewards if backerrewards is not yet configured", async () => {
+      const juniorTranchePrincipal = 100_000
+      const response = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(juniorTranchePrincipal))
+      const logs = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")
+      const firstLog = getFirstLog(logs)
+      const tokenId = firstLog.args.tokenId
+      await tranchedPool.lockJuniorCapital({from: borrower})
+      await tranchedPool.lockPool({from: borrower})
+      await tranchedPool.drawdown(usdcVal(juniorTranchePrincipal), {from: borrower})
+      await advanceTime({days: new BN(365).toNumber()})
+      const payAmount = usdcVal(juniorTranchePrincipal)
+      await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
+      await tranchedPool.pay(payAmount, {from: borrower})
+
+      // verify accRewardsPerPrincipalDollar
+      const accRewardsPerPrincipalDollar = await backerRewards.pools(tranchedPool.address)
+      expect(accRewardsPerPrincipalDollar).to.bignumber.equal(new BN(0))
+
+      // verify claimable rewards
+      const expectedPoolTokenClaimableRewards = await backerRewards.poolTokenClaimableRewards(tokenId)
+      expect(new BN(expectedPoolTokenClaimableRewards)).to.bignumber.equal(new BN(0))
+    })
+
     // set a pool to $1 below it's max interest dollar limit
     // have a $5000 interest payment come in
     // expect only the last $1 of gfi rewards earned

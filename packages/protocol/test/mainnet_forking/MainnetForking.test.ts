@@ -427,6 +427,37 @@ describe("mainnet forking tests", async function () {
     })
   })
 
+  describe("Allocating backer rewards", async function () {
+    let bwrCon, cl
+    const amount = usdcVal(100)
+    beforeEach(async function () {
+      this.timeout(TEST_TIMEOUT)
+      bwrCon = await createBorrowerContract()
+      ;({tranchedPool, creditLine: cl} = await createPoolWithCreditLine({
+        people: {owner: MAINNET_MULTISIG, borrower: bwrCon.address},
+        goldfinchFactory,
+        usdc,
+      }))
+
+      await initializeTranchedPool(tranchedPool, bwrCon)
+      await bwrCon.drawdown(tranchedPool.address, amount, bwr, {from: bwr})
+    })
+
+    describe("if backerrewards is not configured", () => {
+      it("should not allocate rewards", async () => {})
+    })
+
+    describe("if backerrewards contract is configured", () => {
+      beforeEach(() => {
+        await mintGFI(totalGFISupply)
+        await backerRewards.setMaxInterestDollarsEligible(bigVal(maxInterestDollarsEligible))
+        await backerRewards.setTotalRewards(bigVal(Math.round(totalRewards * 100)).div(new BN(100)))
+        await backerRewards.setTotalInterestReceived(usdcVal(previousInterestReceived))
+      })
+      it("properly allocates rewards", async () => {})
+    })
+  })
+
   describe("SeniorPool", async () => {
     describe("compound integration", async () => {
       beforeEach(async function () {
