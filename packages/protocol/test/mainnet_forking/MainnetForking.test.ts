@@ -1,4 +1,4 @@
-import hre from "hardhat"
+import hre, {getNamedAccounts} from "hardhat"
 import {
   getUSDCAddress,
   MAINNET_ONE_SPLIT_ADDRESS,
@@ -9,6 +9,7 @@ import {
   MAINNET_CHAIN_ID,
   getProtocolOwner,
   getTruffleContract,
+  OWNER_ROLE,
 } from "../../blockchain_scripts/deployHelpers"
 import {
   MAINNET_MULTISIG,
@@ -36,6 +37,7 @@ import {
   USDC_DECIMALS,
   createPoolWithCreditLine,
   decodeLogs,
+  getDeployedAsTruffleContract,
 } from "../testHelpers"
 import {asNonNullable, assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
 import {
@@ -100,10 +102,6 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
 
   const go: GoInstance = await artifacts.require("Go").at(existingContracts.Go?.ExistingContract.address)
 
-  const backerRewards: BackerRewardsInstance = await artifacts
-    .require("BackerRewards")
-    .at(existingContracts.BackerRewards?.ExistingContract.address)
-
   const goldfinchConfig: GoldfinchConfigInstance = await artifacts
     .require("GoldfinchConfig")
     .at(existingContracts.GoldfinchConfig.ExistingContract.address)
@@ -111,6 +109,10 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const newGoldfinchConfig: GoldfinchConfigInstance = await artifacts
     .require("GoldfinchConfig")
     .at(await goldfinchConfig.getAddress(CONFIG_KEYS.GoldfinchConfig))
+
+  const backerRewards: BackerRewardsInstance = await artifacts
+    .require("BackerRewards")
+    .at(await newGoldfinchConfig.getAddress(CONFIG_KEYS.BackerRewards))
 
   const goldfinchFactory: GoldfinchFactoryInstance = await artifacts
     .require("GoldfinchFactory")
@@ -125,7 +127,21 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
     .require("StakingRewards")
     .at(await newGoldfinchConfig.getAddress(CONFIG_KEYS.StakingRewards))
 
-  const gfi: GFIInstance = await artifacts.require("GFI").at(await newGoldfinchConfig.getAddress(CONFIG_KEYS.GFI))
+  const protocolOwner = await getProtocolOwner()
+  const {temp_multisig} = await getNamedAccounts()
+
+  const tempMultisig = "0x60D2bE34bCe277F5f5889ADFD4991bAEFA17461c"
+  console.log(temp_multisig)
+  assertIsString(temp_multisig)
+
+  await fundWithWhales(["ETH"], [temp_multisig])
+  const gfi = await getDeployedAsTruffleContract<GFIInstance>(deployments, "GFI")
+  console.log("xxx")
+  await gfi.grantRole(await gfi.MINTER_ROLE(), protocolOwner, {from: temp_multisig})
+  console.log(await gfi.hasRole(await gfi.MINTER_ROLE(), tempMultisig))
+  console.log(await gfi.hasRole(await gfi.MINTER_ROLE(), protocolOwner))
+  await gfi.mint(protocolOwner, bigVal(100_000_000), {from: protocolOwner})
+  // await gfi.mint(protocolOwner, bigVal(100_000_000), {from: protocolOwner})
 
   return {
     seniorPool,
@@ -780,18 +796,18 @@ describe("mainnet forking tests", async function () {
 
         describe("if backerrewards contract is configured", () => {
           beforeEach(async () => {
-            const totalGFISupply = 100_000_000
             const totalRewards = 1_000
             const maxInterestDollarsEligible = 1_000_000_000
-            const gfiAmount = bigVal(totalGFISupply)
-            await gfi.setCap(gfiAmount, {from: owner})
-            await gfi.mint(owner, gfiAmount)
-            await gfi.approve(owner, gfiAmount)
-            await backerRewards.setMaxInterestDollarsEligible(bigVal(maxInterestDollarsEligible))
-            await backerRewards.setTotalRewards(bigVal(Math.round(totalRewards * 100)).div(new BN(100)))
-            await backerRewards.setTotalInterestReceived(usdcVal(0))
+            const protocolOwner = await getProtocolOwner()
+            await backerRewards.setMaxInterestDollarsEligible(bigVal(maxInterestDollarsEligible), {from: protocolOwner})
+            await backerRewards.setTotalRewards(bigVal(Math.round(totalRewards * 100)).div(new BN(100)), {
+              from: protocolOwner,
+            })
+            await backerRewards.setTotalInterestReceived(usdcVal(0), {from: protocolOwner})
           })
+
           it("properly allocates rewards", async () => {
+            console.log("xxx", tranchedPool)
             await expect(bwrCon.drawdown(tranchedPool.address, usdcVal(10_000), bwr, {from: bwr})).to.be.fulfilled
             await advanceTime({days: 90})
             await ethers.provider.send("evm_mine", [])
