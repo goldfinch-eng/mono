@@ -84,6 +84,20 @@ contract CommunityRewards is ICommunityRewards, ERC721PresetMinterPauserAutoIdUp
     return grants[tokenId].claimable();
   }
 
+  /// @notice Returns the rewards that will have vested for some grant with the given params.
+  /// @return rewards Amount of rewards denominated in `rewardsToken()`
+  function totalVestedAt(
+    uint256 start,
+    uint256 end,
+    uint256 granted,
+    uint256 cliffLength,
+    uint256 vestingInterval,
+    uint256 revokedAt,
+    uint256 time
+  ) external pure override returns (uint256 rewards) {
+    return CommunityRewardsVesting.getTotalVestedAt(start, end, granted, cliffLength, vestingInterval, revokedAt, time);
+  }
+
   /* ========== MUTATIVE, ADMIN-ONLY FUNCTIONS ========== */
 
   /// @notice Transfer rewards from msg.sender, to be used for reward distribution
