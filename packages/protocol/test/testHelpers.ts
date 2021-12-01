@@ -1,5 +1,5 @@
 import chai from "chai"
-import hardhat, {artifacts, web3, ethers} from "hardhat"
+import hardhat, {artifacts, web3, ethers, getNamedAccounts} from "hardhat"
 import AsPromised from "chai-as-promised"
 chai.use(AsPromised)
 const expect = chai.expect
@@ -324,10 +324,20 @@ async function deployAllContracts(
 
   let merkleDirectDistributor: MerkleDirectDistributorInstance | null = null
   if (options.deployMerkleDirectDistributor) {
+    const {protocol_owner} = await getNamedAccounts()
+    assertNonNullable(protocol_owner)
     await deployments.deploy("MerkleDirectDistributor", {
-      args: [gfi.address, options.deployMerkleDirectDistributor.root],
       from: options.deployMerkleDirectDistributor.fromAccount,
       gasLimit: 4000000,
+      proxy: {
+        owner: protocol_owner,
+        execute: {
+          init: {
+            methodName: "initialize",
+            args: [protocol_owner, gfi.address, options.deployMerkleDirectDistributor.root],
+          },
+        },
+      },
     })
     merkleDirectDistributor = await getContract<MerkleDirectDistributor, MerkleDirectDistributorInstance>(
       "MerkleDirectDistributor",

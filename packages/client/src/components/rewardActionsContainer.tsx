@@ -9,8 +9,6 @@ import {
   CommunityRewardsLoaded,
   MerkleDirectDistributor,
   MerkleDirectDistributorLoaded,
-  MerkleDistributor,
-  MerkleDistributorLoaded,
 } from "../ethereum/communityRewards"
 import {gfiFromAtomic, gfiInDollars, GFILoaded, gfiToDollarsAtomic} from "../ethereum/gfi"
 import {StakingRewardsLoaded, StakingRewardsPosition} from "../ethereum/pool"
@@ -36,6 +34,7 @@ import {
   AcceptedMerkleDirectDistributorGrant,
   NotAcceptedMerkleDirectDistributorGrant,
 } from "../types/merkleDirectDistributor"
+import {MerkleDistributor, MerkleDistributorLoaded} from "../ethereum/merkleDistributor"
 
 const ONE_WEEK_SECONDS = new BigNumber(60 * 60 * 24 * 7)
 const TOKEN_LAUNCH_TIME_IN_SECONDS = 1638900000 // Tuesday, December 7, 2021 10:00:00 AM GMT-08:00
@@ -579,16 +578,24 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     const details = getStakingOrCommunityRewardsDetails(item, props.stakingRewards, props.communityRewards)
 
     if (item.claimable.eq(0)) {
-      const status: RewardStatus =
-        item instanceof CommunityRewardsGrant
-          ? item.claimed.lt(item.granted)
-            ? item.revoked
-              ? RewardStatus.PermanentlyAllClaimed
-              : RewardStatus.TemporarilyAllClaimed
-            : RewardStatus.PermanentlyAllClaimed
-          : item.storedPosition.amount.eq(0)
-          ? RewardStatus.PermanentlyAllClaimed
-          : RewardStatus.TemporarilyAllClaimed
+      let status: RewardStatus
+      if (item instanceof CommunityRewardsGrant) {
+        if (item.claimed.lt(item.granted)) {
+          if (item.revoked) {
+            status = RewardStatus.PermanentlyAllClaimed
+          } else {
+            status = RewardStatus.TemporarilyAllClaimed
+          }
+        } else {
+          status = RewardStatus.PermanentlyAllClaimed
+        }
+      } else {
+        if (item.storedPosition.amount.eq(0)) {
+          status = RewardStatus.PermanentlyAllClaimed
+        } else {
+          status = RewardStatus.TemporarilyAllClaimed
+        }
+      }
       return (
         <RewardsListItem
           status={status}

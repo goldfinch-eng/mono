@@ -6,13 +6,10 @@ import {mock} from "depay-web3-mock"
 import {BrowserRouter as Router} from "react-router-dom"
 import {AppContext} from "../../App"
 import DepositStatus from "../../components/depositStatus"
-import {
-  CommunityRewardsLoaded,
-  MerkleDirectDistributorLoaded,
-  MerkleDistributorLoaded,
-} from "../../ethereum/communityRewards"
+import {CommunityRewardsLoaded, MerkleDirectDistributorLoaded} from "../../ethereum/communityRewards"
 import {GFILoaded} from "../../ethereum/gfi"
 import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
+import {MerkleDistributorLoaded} from "../../ethereum/merkleDistributor"
 import {
   CapitalProvider,
   fetchCapitalProviderData,
@@ -137,7 +134,7 @@ describe("Senior pool page deposit status", () => {
     const poolData = {}
     renderDepositStatus(poolData, undefined, currentBlock)
     expect(screen.getByTestId("portfolio-total-balance").textContent).toContain("$--.--")
-    expect(screen.getByTestId("portfolio-est-growth").textContent).toContain("--.--% APY")
+    expect(screen.getByTestId("portfolio-est-growth").textContent).toContain("$--.--")
   })
 
   it("shows deposit status without GFI rewards", async () => {
@@ -158,7 +155,7 @@ describe("Senior pool page deposit status", () => {
     ).toBeInTheDocument()
     expect(screen.getByText("Senior Pool APY")).toBeInTheDocument()
     expect(screen.getByTestId("tooltip-estimated-apy").textContent).toEqual("0.48%")
-    expect(screen.getByTestId("tooltip-gfi-apy").textContent).toEqual("--.--%")
+    expect(screen.getByTestId("tooltip-gfi-apy").textContent).toEqual("0.00%")
     expect(screen.getByTestId("tooltip-total-apy").textContent).toEqual("0.48%")
   })
 

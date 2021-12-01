@@ -10,9 +10,9 @@ import {
   CommunityRewardsGrant,
   CommunityRewardsLoaded,
   MerkleDirectDistributorLoaded,
-  MerkleDistributorLoaded,
 } from "../../ethereum/communityRewards"
 import {gfiFromAtomic, gfiInDollars, GFILoaded, gfiToDollarsAtomic} from "../../ethereum/gfi"
+import {MerkleDistributorLoaded} from "../../ethereum/merkleDistributor"
 import {StakingRewardsLoaded, StakingRewardsPosition} from "../../ethereum/pool"
 import {UserCommunityRewardsLoaded, UserLoaded, UserStakingRewardsLoaded} from "../../ethereum/user"
 import {useFromSameBlock} from "../../hooks/useFromSameBlock"

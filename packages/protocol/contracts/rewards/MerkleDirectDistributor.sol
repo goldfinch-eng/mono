@@ -7,21 +7,30 @@ import "@openzeppelin/contracts/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/SafeERC20.sol";
 import "../interfaces/IERC20withDec.sol";
 import "../interfaces/IMerkleDirectDistributor.sol";
+import "../protocol/core/BaseUpgradeablePausable.sol";
 
-contract MerkleDirectDistributor is IMerkleDirectDistributor {
+contract MerkleDirectDistributor is IMerkleDirectDistributor, BaseUpgradeablePausable {
   using SafeERC20 for IERC20withDec;
 
-  address public immutable override gfi;
-  bytes32 public immutable override merkleRoot;
+  address public override gfi;
+  bytes32 public override merkleRoot;
 
   // @dev This is a packed array of booleans.
   mapping(uint256 => uint256) private acceptedBitMap;
 
-  constructor(address gfi_, bytes32 merkleRoot_) public {
-    require(gfi_ != address(0), "Cannot use the null address");
-    require(merkleRoot_ != 0, "Invalid merkle root provided");
-    gfi = gfi_;
-    merkleRoot = merkleRoot_;
+  function initialize(
+    address owner,
+    address _gfi,
+    bytes32 _merkleRoot
+  ) public initializer {
+    require(owner != address(0), "Owner address cannot be empty");
+    require(_gfi != address(0), "GFI address cannot be empty");
+    require(_merkleRoot != 0, "Invalid Merkle root");
+
+    __BaseUpgradeablePausable__init(owner);
+
+    gfi = _gfi;
+    merkleRoot = _merkleRoot;
   }
 
   function isGrantAccepted(uint256 index) public view override returns (bool) {
@@ -42,7 +51,7 @@ contract MerkleDirectDistributor is IMerkleDirectDistributor {
     uint256 index,
     uint256 amount,
     bytes32[] calldata merkleProof
-  ) external override {
+  ) external override whenNotPaused {
     require(!isGrantAccepted(index), "Grant already accepted");
 
     // Verify the merkle proof.

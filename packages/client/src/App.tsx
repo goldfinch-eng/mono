@@ -24,8 +24,6 @@ import {
   CommunityRewardsLoaded,
   MerkleDirectDistributor,
   MerkleDirectDistributorLoaded,
-  MerkleDistributor,
-  MerkleDistributorLoaded,
 } from "./ethereum/communityRewards"
 import {ERC20, Tickers} from "./ethereum/erc20"
 import {GFI, GFILoaded} from "./ethereum/gfi"
@@ -46,6 +44,7 @@ import {assertNonNullable, BlockInfo, getBlockInfo, getCurrentBlock} from "./uti
 import web3, {SESSION_DATA_KEY} from "./web3"
 import {Web3Status} from "./types/web3"
 import {NetworkConfig} from "./types/network"
+import {MerkleDistributor, MerkleDistributorLoaded} from "./ethereum/merkleDistributor"
 
 interface GeolocationData {
   ip: string
