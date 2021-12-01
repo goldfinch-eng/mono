@@ -23,17 +23,15 @@ dataSources:
           file: ./abis/SeniorPool_Implementation.json
         - name: SeniorPool_Proxy
           file: ./abis/SeniorPool_Proxy.json
+        - name: SeniorPool
+          file: ./abis/SeniorPool.json
         - name: Fidu_Implementation
           file: ./abis/Fidu_Implementation.json
         - name: Fidu
           file: ./abis/Fidu.json
         - name: Fidu_Proxy
           file: ./abis/Fidu_Proxy.json
-        - name: SeniorPool
-          file: ./abis/SeniorPool.json
       eventHandlers:
-        - event: OwnershipTransferred(indexed address,indexed address)
-          handler: handleOwnershipTransferred
         - event: ProxyImplementationUpdated(indexed address,indexed address)
           handler: handleProxyImplementationUpdated
       file: ./src/mappings/senior_pool_proxy.ts
@@ -43,7 +41,7 @@ dataSources:
     network: mainnet
     source:
       address: "0xd20508E1E971b80EE172c73517905bfFfcBD87f9"
-      abi: GoldfinchFactory
+      abi: GoldfinchFactory_Proxy
       startBlock: 11370655
     mapping:
       kind: ethereum/events
@@ -61,8 +59,6 @@ dataSources:
         - name: GoldfinchFactory
           file: ./abis/GoldfinchFactory.json
       eventHandlers:
-        - event: OwnershipTransferred(indexed address,indexed address)
-          handler: handleOwnershipTransferred
         - event: ProxyImplementationUpdated(indexed address,indexed address)
           handler: handleProxyImplementationUpdated
       file: ./src/mappings/goldfinch_factory_proxy.ts
@@ -93,8 +89,6 @@ dataSources:
         - name: Fidu_Proxy
           file: ./abis/Fidu_Proxy.json
       eventHandlers:
-        - event: OwnershipTransferred(indexed address,indexed address)
-          handler: handleOwnershipTransferred
         - event: ProxyImplementationUpdated(indexed address,indexed address)
           handler: handleProxyImplementationUpdated
       file: ./src/mappings/v1_pool_proxy.ts
@@ -104,7 +98,7 @@ dataSources:
     network: mainnet
     source:
       address: "0x57686612C601Cb5213b01AA8e80AfEb24BBd01df"
-      abi: PoolTokens
+      abi: PoolTokens_Proxy
       startBlock: 13097225
     mapping:
       kind: ethereum/events
@@ -122,8 +116,6 @@ dataSources:
         - name: PoolTokens_Proxy
           file: ./abis/PoolTokens_Proxy.json
       eventHandlers:
-        - event: OwnershipTransferred(indexed address,indexed address)
-          handler: handleOwnershipTransferred
         - event: ProxyImplementationUpdated(indexed address,indexed address)
           handler: handleProxyImplementationUpdated
       file: ./src/mappings/pool_tokens_proxy.ts
@@ -165,20 +157,12 @@ templates:
           handler: handleInvestmentMadeInJunior
         - event: InvestmentMadeInSenior(indexed address,uint256)
           handler: handleInvestmentMadeInSenior
-        - event: Paused(address)
-          handler: handlePaused
         - event: PrincipalCollected(indexed address,uint256)
           handler: handlePrincipalCollected
         - event: PrincipalWrittenDown(indexed address,int256)
           handler: handlePrincipalWrittenDown
         - event: ReserveFundsCollected(indexed address,uint256)
           handler: handleReserveFundsCollected
-        - event: RoleGranted(indexed bytes32,indexed address,indexed address)
-          handler: handleRoleGranted
-        - event: RoleRevoked(indexed bytes32,indexed address,indexed address)
-          handler: handleRoleRevoked
-        - event: Unpaused(address)
-          handler: handleUnpaused
         - event: WithdrawalMade(indexed address,uint256,uint256)
           handler: handleWithdrawalMade
 
@@ -203,26 +187,6 @@ templates:
       eventHandlers:
         - event: DepositMade(indexed address,uint256,uint256)
           handler: handleDepositMade
-        - event: InterestCollected(indexed address,uint256,uint256)
-          handler: handleInterestCollected
-        - event: Paused(address)
-          handler: handlePaused
-        - event: PrincipalCollected(indexed address,uint256)
-          handler: handlePrincipalCollected
-        - event: PrincipalWrittendown(indexed address,int256)
-          handler: handlePrincipalWrittendown
-        - event: ReserveFundsCollected(indexed address,uint256)
-          handler: handleReserveFundsCollected
-        - event: RoleGranted(indexed bytes32,indexed address,indexed address)
-          handler: handleRoleGranted
-        - event: RoleRevoked(indexed bytes32,indexed address,indexed address)
-          handler: handleRoleRevoked
-        - event: TransferMade(indexed address,indexed address,uint256)
-          handler: handleTransferMade
-        - event: Unpaused(address)
-          handler: handleUnpaused
-        - event: WithdrawalMade(indexed address,uint256,uint256)
-          handler: handleWithdrawalMade
 
   - name: GoldfinchFactory
     kind: ethereum/contract
@@ -245,18 +209,8 @@ templates:
         - name: TranchedPool
           file: ./abis/TranchedPool.json
       eventHandlers:
-        - event: BorrowerCreated(indexed address,indexed address)
-          handler: handlerBorrowerCreated
-        - event: Paused(address)
-          handler: handlerPaused
         - event: PoolCreated(indexed address,indexed address)
           handler: handlerPoolCreated
-        - event: RoleGranted(indexed bytes32,indexed address,indexed address)
-          handler: handlerRoleGranted
-        - event: RoleRevoked(indexed bytes32,indexed address,indexed address)
-          handler: handlerRoleRevoked
-        - event: Unpaused(address)
-          handler: handlerUnpaused
 
   - name: TranchedPool
     kind: ethereum/contract
@@ -297,8 +251,6 @@ templates:
           handler: handlerDrawdownsPaused
         - event: DrawdownsUnpaused(indexed address)
           handler: handlerDrawdownsUnpaused
-        - event: EmergencyShutdown(indexed address)
-          handler: handlerEmergencyShutdown
         - event: WithdrawalMade(indexed address,indexed uint256,indexed uint256,uint256,uint256)
           handler: handlerWithdrawalMade
 
@@ -315,7 +267,7 @@ templates:
       entities:
         - User
         - TranchedPool
-        - PoolTokens
+        - TranchedPoolToken
       abis:
         - name: PoolTokens
           file: ./abis/PoolTokens.json
@@ -328,7 +280,5 @@ templates:
           handler: handleTokenMinted
         - event: TokenRedeemed(indexed address,indexed address,indexed uint256,uint256,uint256,uint256)
           handler: handleTokenRedeemed
-        - event: GoldfinchConfigUpdated(indexed address,address)
-          handler: handleGoldfinchConfigUpdated
         - event: Transfer(indexed address,indexed address,indexed uint256)
           handler: handleTransfer
