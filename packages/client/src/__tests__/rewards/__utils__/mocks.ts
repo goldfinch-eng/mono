@@ -13,8 +13,6 @@ import {
   CommunityRewards,
   MerkleDirectDistributor,
   MerkleDirectDistributorLoaded,
-  MerkleDistributor,
-  MerkleDistributorLoaded,
 } from "../../../ethereum/communityRewards"
 import {GFI} from "../../../ethereum/gfi"
 import {
@@ -45,6 +43,7 @@ import {
   MerkleDirectDistributorGrantInfo,
   MerkleDirectDistributorInfo,
 } from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/types"
+import {MerkleDistributor, MerkleDistributorLoaded} from "../../../ethereum/merkleDistributor"
 
 class ImproperlyConfiguredMockError extends Error {}
 

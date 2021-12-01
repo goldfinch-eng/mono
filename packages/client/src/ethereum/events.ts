@@ -11,7 +11,7 @@ import {
   PoolEventType,
   WITHDRAWAL_MADE_EVENT,
 } from "../types/events"
-import {assertNumber} from "../utils"
+import {assertNumber, defaultSum} from "../utils"
 import web3 from "../web3"
 import {usdcFromAtomic} from "./erc20"
 import {fiduFromAtomic} from "./fidu"
@@ -93,11 +93,7 @@ function getBalanceAsOf<T extends KnownEventName, U extends T>(
   getEventAmount: (eventData: KnownEventData<T>) => BigNumber
 ): BigNumber {
   const filtered = events.filter((eventData: KnownEventData<T>) => eventData.blockNumber < blockNumExclusive)
-  if (!filtered.length) {
-    return new BigNumber(0)
-  }
-  return BigNumber.sum.apply(
-    null,
+  return defaultSum(
     filtered.map((eventData) => {
       const amount = getEventAmount(eventData)
       if (eventData.event === subtractiveEventName) {
