@@ -6,13 +6,10 @@ import {mock} from "depay-web3-mock"
 import {BrowserRouter as Router} from "react-router-dom"
 import {AppContext} from "../../App"
 import {PortfolioOverview} from "../../components/earn"
-import {
-  CommunityRewardsLoaded,
-  MerkleDirectDistributorLoaded,
-  MerkleDistributorLoaded,
-} from "../../ethereum/communityRewards"
+import {CommunityRewardsLoaded, MerkleDirectDistributorLoaded} from "../../ethereum/communityRewards"
 import {GFILoaded} from "../../ethereum/gfi"
 import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
+import {MerkleDistributorLoaded} from "../../ethereum/merkleDistributor"
 import {
   CapitalProvider,
   fetchCapitalProviderData,

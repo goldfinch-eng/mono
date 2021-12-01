@@ -9,8 +9,6 @@ import {
   CommunityRewardsLoaded,
   MerkleDirectDistributor,
   MerkleDirectDistributorLoaded,
-  MerkleDistributor,
-  MerkleDistributorLoaded,
 } from "../ethereum/communityRewards"
 import {gfiFromAtomic, gfiInDollars, GFILoaded, gfiToDollarsAtomic} from "../ethereum/gfi"
 import {StakingRewardsLoaded, StakingRewardsPosition} from "../ethereum/pool"
@@ -36,6 +34,7 @@ import {
   AcceptedMerkleDirectDistributorGrant,
   NotAcceptedMerkleDirectDistributorGrant,
 } from "../types/merkleDirectDistributor"
+import {MerkleDistributor, MerkleDistributorLoaded} from "../ethereum/merkleDistributor"
 
 const ONE_WEEK_SECONDS = new BigNumber(60 * 60 * 24 * 7)
 

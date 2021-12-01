@@ -6,12 +6,7 @@ import _ from "lodash"
 import {assertWithLoadedInfo, Loadable, WithLoadedInfo} from "../types/loadable"
 import {assertNonNullable, BlockInfo, defaultSum, WithCurrentBlock} from "../utils"
 import {BorrowerInterface, getBorrowerContract} from "./borrower"
-import {
-  CommunityRewardsGrant,
-  CommunityRewardsLoaded,
-  MerkleDirectDistributorLoaded,
-  MerkleDistributorLoaded,
-} from "./communityRewards"
+import {CommunityRewardsGrant, CommunityRewardsLoaded, MerkleDirectDistributorLoaded} from "./communityRewards"
 import {ERC20, Tickers, USDC, usdcFromAtomic} from "./erc20"
 import {getBalanceAsOf, getPoolEventAmount, mapEventsToTx} from "./events"
 import {
@@ -74,6 +69,7 @@ import {
   AcceptedMerkleDirectDistributorGrant,
   NotAcceptedMerkleDirectDistributorGrant,
 } from "../types/merkleDirectDistributor"
+import {MerkleDistributorLoaded} from "./merkleDistributor"
 
 export const UNLOCK_THRESHOLD = new BigNumber(10000)
 
