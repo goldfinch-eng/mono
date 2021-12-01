@@ -32,8 +32,6 @@ abstract contract ISeniorPool {
 
   function estimateInvestment(ITranchedPool pool) public view virtual returns (uint256);
 
-  function investJunior(ITranchedPool pool, uint256 amount) public virtual;
-
   function redeem(uint256 tokenId) public virtual;
 
   function writedown(uint256 tokenId) public virtual;

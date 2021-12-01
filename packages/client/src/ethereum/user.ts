@@ -11,7 +11,7 @@ import {assertWithLoadedInfo, Loadable, WithLoadedInfo} from "../types/loadable"
 import {assertNonNullable, BlockInfo, WithCurrentBlock} from "../utils"
 import {BorrowerInterface, getBorrowerContract} from "./borrower"
 import {CommunityRewardsGrant, CommunityRewardsLoaded, MerkleDistributorLoaded} from "./communityRewards"
-import {Tickers, USDC, usdcFromAtomic} from "./erc20"
+import {ERC20, Tickers, USDC, usdcFromAtomic} from "./erc20"
 import {getBalanceAsOf, getPoolEventAmount, mapEventsToTx} from "./events"
 import {
   ApprovalEventType,
@@ -61,8 +61,6 @@ import {
 import {getFromBlock, MAINNET} from "./utils"
 import {Go} from "@goldfinch-eng/protocol/typechain/web3/Go"
 import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/web3/UniqueIdentity"
-
-declare let window: any
 
 export const UNLOCK_THRESHOLD = new BigNumber(10000)
 
@@ -480,7 +478,7 @@ type UserMerkleDistributorLoadedInfo = {
   }
 }
 
-class UserMerkleDistributor {
+export class UserMerkleDistributor {
   info: Loadable<UserMerkleDistributorLoadedInfo>
 
   constructor() {
@@ -503,15 +501,12 @@ class UserMerkleDistributor {
       merkleDistributor.info.value.merkleDistributorInfo.grants,
       address
     )
-    const withAcceptance = await Promise.all(
-      airdropsForRecipient.map(async (grantInfo) => ({
-        grantInfo,
-        isAccepted: await merkleDistributor.contract.methods
-          .isGrantAccepted(grantInfo.index)
-          .call(undefined, currentBlock.number),
-      }))
+    const accepted = await UserMerkleDistributor.getAcceptedAirdrops(
+      airdropsForRecipient,
+      merkleDistributor,
+      currentBlock
     )
-    const airdrops = withAcceptance.reduce<{
+    const airdrops = accepted.reduce<{
       accepted: MerkleDistributorGrantInfo[]
       notAccepted: MerkleDistributorGrantInfo[]
     }>(
@@ -533,6 +528,21 @@ class UserMerkleDistributor {
         airdrops,
       },
     }
+  }
+
+  static async getAcceptedAirdrops(
+    airdropsForRecipient: MerkleDistributorGrantInfo[],
+    merkleDistributor: MerkleDistributorLoaded,
+    currentBlock: BlockInfo
+  ) {
+    return Promise.all(
+      airdropsForRecipient.map(async (grantInfo) => ({
+        grantInfo,
+        isAccepted: await merkleDistributor.contract.methods
+          .isGrantAccepted(grantInfo.index)
+          .call(undefined, currentBlock.number),
+      }))
+    )
   }
 
   static getAirdropsForRecipient(
@@ -583,9 +593,7 @@ export type UserLoaded = WithLoadedInfo<User, UserLoadedInfo>
 
 export class User {
   address: string
-  web3Connected: boolean
   networkId: string
-  noWeb3: boolean
   borrower: BorrowerInterface | undefined
   info: Loadable<UserLoadedInfo>
 
@@ -604,9 +612,7 @@ export class User {
       throw new Error("User must have an address.")
     }
     this.address = address
-    this.web3Connected = true
     this.networkId = networkId
-    this.noWeb3 = !window.ethereum
     this.borrower = borrower
     this.goldfinchProtocol = goldfinchProtocol
     this.creditDesk = creditDesk
@@ -654,124 +660,7 @@ export class User {
       stakingRewardsEventsAndTxs,
       communityRewardsTxs,
       merkleDistributorTxs,
-    ] = await Promise.all([
-      // NOTE: We have no need to include usdc txs for `pool.v1Pool` among the txs in
-      // `this.pastTxs`. So we don't get them. We only need usdc txs for `pool`.
-      getAndTransformUSDCEvents(usdc, pool.address, this.address, currentBlock),
-      getAndTransformFIDUEvents(this.goldfinchProtocol, this.address, currentBlock),
-      getPoolEvents(pool, this.address, currentBlock).then(async (poolEvents) => {
-        return {
-          poolEvents,
-          poolTxs: await mapEventsToTx(poolEvents, POOL_EVENT_TYPES, {
-            parseName: (eventData: KnownEventData<PoolEventType>) => {
-              switch (eventData.event) {
-                case DEPOSIT_MADE_EVENT:
-                  return SUPPLY_TX_TYPE
-                case WITHDRAWAL_MADE_EVENT:
-                  return WITHDRAW_FROM_SENIOR_POOL_TX_TYPE
-                default:
-                  assertUnreachable(eventData.event)
-              }
-            },
-            parseAmount: (eventData: KnownEventData<PoolEventType>) => {
-              switch (eventData.event) {
-                case DEPOSIT_MADE_EVENT: {
-                  return {
-                    amount: eventData.returnValues.amount,
-                    units: "usdc",
-                  }
-                }
-                case WITHDRAWAL_MADE_EVENT: {
-                  return {
-                    amount: eventData.returnValues.userAmount,
-                    units: "usdc",
-                  }
-                }
-                default:
-                  assertUnreachable(eventData.event)
-              }
-            },
-          }),
-        }
-      }),
-
-      // Credit desk events could've come from the user directly or the borrower contract, we need to filter by both
-      getAndTransformCreditDeskEvents(
-        this.creditDesk,
-        _.compact([this.address, this.borrower?.borrowerAddress]),
-        this.goldfinchProtocol.networkId,
-        currentBlock
-      ),
-
-      getOverlappingStakingRewardsEvents(this.address, stakingRewards).then(async (overlappingStakingRewardsEvents) => {
-        const nonOverlappingEvents = getNonOverlappingStakingRewardsEvents(overlappingStakingRewardsEvents.value)
-        const stakedEvents: KnownEventData<typeof STAKED_EVENT>[] = overlappingStakingRewardsEvents.value.filter(
-          (
-            eventData: KnownEventData<StakingRewardsEventType>
-          ): eventData is KnownEventData<StakingRewardsEventType> & {event: typeof STAKED_EVENT} =>
-            eventData.event === STAKED_EVENT
-        )
-        return {
-          stakedEvents: {
-            currentBlock: overlappingStakingRewardsEvents.currentBlock,
-            value: stakedEvents,
-          },
-          stakingRewardsTxs: await mapEventsToTx(nonOverlappingEvents, STAKING_REWARDS_EVENT_TYPES, {
-            parseName: (eventData: KnownEventData<StakingRewardsEventType>) => {
-              switch (eventData.event) {
-                case STAKED_EVENT:
-                  return STAKE_TX_TYPE
-                case DEPOSITED_AND_STAKED_EVENT:
-                  return SUPPLY_AND_STAKE_TX_TYPE
-                case UNSTAKED_EVENT:
-                  return UNSTAKE_TX_NAME
-                case UNSTAKED_AND_WITHDREW_EVENT:
-                case UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT:
-                  return UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE
-                case REWARD_PAID_EVENT:
-                  return CLAIM_TX_TYPE
-                default:
-                  assertUnreachable(eventData.event)
-              }
-            },
-            parseAmount: (eventData: KnownEventData<StakingRewardsEventType>) => {
-              switch (eventData.event) {
-                case STAKED_EVENT:
-                  return {
-                    amount: eventData.returnValues.amount,
-                    units: "fidu",
-                  }
-                case DEPOSITED_AND_STAKED_EVENT:
-                  return {
-                    amount: eventData.returnValues.depositedAmount,
-                    units: "usdc",
-                  }
-                case UNSTAKED_EVENT:
-                  return {
-                    amount: eventData.returnValues.amount,
-                    units: "fidu",
-                  }
-                case UNSTAKED_AND_WITHDREW_EVENT:
-                case UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT:
-                  return {
-                    amount: eventData.returnValues.usdcReceivedAmount,
-                    units: "usdc",
-                  }
-                case REWARD_PAID_EVENT:
-                  return {
-                    amount: eventData.returnValues.reward,
-                    units: "gfi",
-                  }
-                default:
-                  assertUnreachable(eventData.event)
-              }
-            },
-          }),
-        }
-      }),
-      getAndTransformCommunityRewardsEvents(this.address, communityRewards),
-      getAndTransformMerkleDistributorEvents(this.address, merkleDistributor),
-    ])
+    ] = await this._fetchTxs(usdc, pool, stakingRewards, communityRewards, merkleDistributor, currentBlock)
     const {poolEvents, poolTxs} = poolEventsAndTxs
     const {stakedEvents, stakingRewardsTxs} = stakingRewardsEventsAndTxs
     const pastTxs = _.reverse(
@@ -789,7 +678,7 @@ export class User {
       )
     )
 
-    const golistStatus = await this.fetchGolistStatus(this.address, currentBlock)
+    const golistStatus = await this._fetchGolistStatus(this.address, currentBlock)
     const goListed = golistStatus.golisted
     const legacyGolisted = golistStatus.legacyGolisted
     const hasUID = golistStatus.hasUID
@@ -800,7 +689,6 @@ export class User {
 
     const userStakingRewards = new UserStakingRewards()
     const userMerkleDistributor = new UserMerkleDistributor()
-
     await Promise.all([
       userStakingRewards.initialize(this.address, stakingRewards, stakedEvents, currentBlock),
       userMerkleDistributor.initialize(this.address, merkleDistributor, currentBlock),
@@ -849,11 +737,139 @@ export class User {
     }
   }
 
+  async _fetchTxs(
+    usdc: ERC20,
+    pool: SeniorPoolLoaded,
+    stakingRewards: StakingRewardsLoaded,
+    communityRewards: CommunityRewardsLoaded,
+    merkleDistributor: MerkleDistributorLoaded,
+    currentBlock: BlockInfo
+  ) {
+    return Promise.all([
+      // NOTE: We have no need to include usdc txs for `pool.v1Pool` among the txs in
+      // `this.pastTxs`. So we don't get them. We only need usdc txs for `pool`.
+      getAndTransformUSDCEvents(usdc, pool.address, this.address, currentBlock),
+      getAndTransformFIDUEvents(this.goldfinchProtocol, this.address, currentBlock),
+      getPoolEvents(pool, this.address, currentBlock).then(async (poolEvents) => {
+        return {
+          poolEvents,
+          poolTxs: await mapEventsToTx(poolEvents, POOL_EVENT_TYPES, {
+            parseName: (eventData: KnownEventData<PoolEventType>) => {
+              switch (eventData.event) {
+                case DEPOSIT_MADE_EVENT:
+                  return SUPPLY_TX_TYPE
+                case WITHDRAWAL_MADE_EVENT:
+                  return WITHDRAW_FROM_SENIOR_POOL_TX_TYPE
+                default:
+                  return assertUnreachable(eventData.event)
+              }
+            },
+            parseAmount: (eventData: KnownEventData<PoolEventType>) => {
+              switch (eventData.event) {
+                case DEPOSIT_MADE_EVENT: {
+                  return {
+                    amount: eventData.returnValues.amount,
+                    units: "usdc",
+                  }
+                }
+                case WITHDRAWAL_MADE_EVENT: {
+                  return {
+                    amount: eventData.returnValues.userAmount,
+                    units: "usdc",
+                  }
+                }
+                default:
+                  return assertUnreachable(eventData.event)
+              }
+            },
+          }),
+        }
+      }),
+
+      // Credit desk events could've come from the user directly or the borrower contract, we need to filter by both
+      getAndTransformCreditDeskEvents(
+        this.creditDesk,
+        _.compact([this.address, this.borrower?.borrowerAddress]),
+        this.goldfinchProtocol.networkId,
+        currentBlock
+      ),
+
+      getOverlappingStakingRewardsEvents(this.address, stakingRewards).then(async (overlappingStakingRewardsEvents) => {
+        const nonOverlappingEvents = getNonOverlappingStakingRewardsEvents(overlappingStakingRewardsEvents.value)
+        const stakedEvents: KnownEventData<typeof STAKED_EVENT>[] = overlappingStakingRewardsEvents.value.filter(
+          (
+            eventData: KnownEventData<StakingRewardsEventType>
+          ): eventData is KnownEventData<StakingRewardsEventType> & {event: typeof STAKED_EVENT} =>
+            eventData.event === STAKED_EVENT
+        )
+        return {
+          stakedEvents: {
+            currentBlock: overlappingStakingRewardsEvents.currentBlock,
+            value: stakedEvents,
+          },
+          stakingRewardsTxs: await mapEventsToTx(nonOverlappingEvents, STAKING_REWARDS_EVENT_TYPES, {
+            parseName: (eventData: KnownEventData<StakingRewardsEventType>) => {
+              switch (eventData.event) {
+                case STAKED_EVENT:
+                  return STAKE_TX_TYPE
+                case DEPOSITED_AND_STAKED_EVENT:
+                  return SUPPLY_AND_STAKE_TX_TYPE
+                case UNSTAKED_EVENT:
+                  return UNSTAKE_TX_NAME
+                case UNSTAKED_AND_WITHDREW_EVENT:
+                case UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT:
+                  return UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE
+                case REWARD_PAID_EVENT:
+                  return CLAIM_TX_TYPE
+                default:
+                  return assertUnreachable(eventData.event)
+              }
+            },
+            parseAmount: (eventData: KnownEventData<StakingRewardsEventType>) => {
+              switch (eventData.event) {
+                case STAKED_EVENT:
+                  return {
+                    amount: eventData.returnValues.amount,
+                    units: "fidu",
+                  }
+                case DEPOSITED_AND_STAKED_EVENT:
+                  return {
+                    amount: eventData.returnValues.depositedAmount,
+                    units: "usdc",
+                  }
+                case UNSTAKED_EVENT:
+                  return {
+                    amount: eventData.returnValues.amount,
+                    units: "fidu",
+                  }
+                case UNSTAKED_AND_WITHDREW_EVENT:
+                case UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT:
+                  return {
+                    amount: eventData.returnValues.usdcReceivedAmount,
+                    units: "usdc",
+                  }
+                case REWARD_PAID_EVENT:
+                  return {
+                    amount: eventData.returnValues.reward,
+                    units: "gfi",
+                  }
+                default:
+                  return assertUnreachable(eventData.event)
+              }
+            },
+          }),
+        }
+      }),
+      getAndTransformCommunityRewardsEvents(this.address, communityRewards),
+      getAndTransformMerkleDistributorEvents(this.address, merkleDistributor),
+    ])
+  }
+
   isUnlocked(allowance: BigNumber | undefined) {
     return !allowance || allowance.gte(UNLOCK_THRESHOLD)
   }
 
-  private async fetchGolistStatus(address: string, currentBlock: BlockInfo) {
+  async _fetchGolistStatus(address: string, currentBlock: BlockInfo) {
     if (process.env.REACT_APP_ENFORCE_GO_LIST || this.networkId === MAINNET) {
       const config = this.goldfinchProtocol.getContract<GoldfinchConfig>("GoldfinchConfig")
       const legacyGolisted = await config.methods.goList(address).call(undefined, currentBlock.number)
@@ -912,7 +928,7 @@ async function getAndTransformUSDCEvents(
         case APPROVAL_EVENT:
           return USDC_APPROVAL_TX_TYPE
         default:
-          assertUnreachable(eventData.event)
+          return assertUnreachable(eventData.event)
       }
     },
     parseAmount: (eventData: KnownEventData<ApprovalEventType>) => {
@@ -924,7 +940,7 @@ async function getAndTransformUSDCEvents(
           }
         }
         default:
-          assertUnreachable(eventData.event)
+          return assertUnreachable(eventData.event)
       }
     },
   })
@@ -947,7 +963,7 @@ async function getAndTransformFIDUEvents(
         case APPROVAL_EVENT:
           return FIDU_APPROVAL_TX_TYPE
         default:
-          assertUnreachable(eventData.event)
+          return assertUnreachable(eventData.event)
       }
     },
     parseAmount: (eventData: KnownEventData<ApprovalEventType>) => {
@@ -959,7 +975,7 @@ async function getAndTransformFIDUEvents(
           }
         }
         default:
-          assertUnreachable(eventData.event)
+          return assertUnreachable(eventData.event)
       }
     },
   })
@@ -998,7 +1014,7 @@ async function getAndTransformCreditDeskEvents(
         case DRAWDOWN_MADE_EVENT:
           return BORROW_TX_TYPE
         default:
-          assertUnreachable(eventData.event)
+          return assertUnreachable(eventData.event)
       }
     },
     parseAmount: (eventData: KnownEventData<CreditDeskEventType>) => {
@@ -1014,7 +1030,7 @@ async function getAndTransformCreditDeskEvents(
             units: "usdc",
           }
         default:
-          assertUnreachable(eventData.event)
+          return assertUnreachable(eventData.event)
       }
     },
   })
@@ -1123,7 +1139,7 @@ async function getAndTransformCommunityRewardsEvents(
             case REWARD_PAID_EVENT:
               return CLAIM_TX_TYPE
             default:
-              assertUnreachable(eventData.event)
+              return assertUnreachable(eventData.event)
           }
         },
         parseAmount: (eventData: KnownEventData<CommunityRewardsEventType>) => {
@@ -1134,7 +1150,7 @@ async function getAndTransformCommunityRewardsEvents(
                 units: "gfi",
               }
             default:
-              assertUnreachable(eventData.event)
+              return assertUnreachable(eventData.event)
           }
         },
       })
@@ -1154,7 +1170,7 @@ async function getAndTransformMerkleDistributorEvents(
             case GRANT_ACCEPTED_EVENT:
               return ACCEPT_TX_TYPE
             default:
-              assertUnreachable(eventData.event)
+              return assertUnreachable(eventData.event)
           }
         },
         parseAmount: (eventData: KnownEventData<MerkleDistributorEventType>) => {
@@ -1165,7 +1181,7 @@ async function getAndTransformMerkleDistributorEvents(
                 units: "gfi",
               }
             default:
-              assertUnreachable(eventData.event)
+              return assertUnreachable(eventData.event)
           }
         },
       })

@@ -63,7 +63,7 @@ function DrawdownForm(props) {
     }).then(props.actionComplete)
   }
 
-  const maxAmount = minimumNumber(
+  const maxAmountInDollars = minimumNumber(
     props.creditLine.availableCreditInDollars,
     pool ? usdcFromAtomic(pool.info.value.poolData.balance) : undefined,
     goldfinchConfig ? usdcFromAtomic(goldfinchConfig.transactionLimit) : undefined
@@ -118,7 +118,7 @@ function DrawdownForm(props) {
             <div className="form-inputs-footer">
               <TransactionInput
                 formMethods={formMethods}
-                maxAmount={maxAmount}
+                maxAmountInDollars={maxAmountInDollars}
                 disabled={disabled}
                 onChange={(e) => {
                   debouncedSetTransactionAmount(formMethods.getValues("transactionAmount"))
@@ -129,7 +129,7 @@ function DrawdownForm(props) {
                     type="button"
                     disabled={disabled}
                     onClick={() => {
-                      formMethods.setValue("transactionAmount", roundDownPenny(maxAmount), {
+                      formMethods.setValue("transactionAmount", roundDownPenny(maxAmountInDollars), {
                         shouldValidate: true,
                         shouldDirty: true,
                       })
@@ -138,13 +138,18 @@ function DrawdownForm(props) {
                     Max
                   </button>
                 }
-                notes={[
-                  transactionAmountQuote &&
-                    !isQuoteLoading && {
-                      key: "quote",
-                      content: <p>You will receive ~${formatQuote({erc20: erc20, quote: transactionAmountQuote})}</p>,
-                    },
-                ]}
+                notes={
+                  transactionAmountQuote && !isQuoteLoading
+                    ? [
+                        {
+                          key: "quote",
+                          content: (
+                            <p>You will receive ~${formatQuote({erc20: erc20, quote: transactionAmountQuote})}</p>
+                          ),
+                        },
+                      ]
+                    : undefined
+                }
               />
               <LoadingButton action={action} disabled={disabled} />
             </div>

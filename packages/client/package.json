@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "author": "The Goldfinch Community <engineering@goldfinch.finance>",
+  "jest": {
+    "testPathIgnorePatterns": ["/__utils__/"]
+  },
   "dependencies": {
     "@apollo/client": "^3.4.16",
     "@gnosis.pm/safe-apps-sdk": "^0.4.2",
@@ -21,6 +24,8 @@
     "bignumber.js": "^9.0.0",
     "bnc-notify": "^1.5.1",
     "classnames": "^2.2.6",
+    "depay-web3-blockchains": "^2.6.0",
+    "depay-web3-mock": "https://github.com/goldfinch-eng/depay-web3-mock.git#b74c94e03c3fdf9b875da7060b0b7d4d237ddc8f",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "focus-within-polyfill": "^5.1.0",
@@ -50,9 +55,9 @@
     "start:murmuration": "PORT=80 REACT_APP_DISABLE_GASLESS=true REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet MURMURATION=yes npm run start",
     "start:murmuration:liquidity-mining": "PORT=80 REACT_APP_DISABLE_GASLESS=true REACT_APP_HARDHAT_FORK= HARDHAT_FORK= MURMURATION=yes npm run start",
     "build": "react-app-rewired build",
-    "test": "react-app-rewired test --env=jsdom",
+    "test": "cd ../protocol && npm run deploy-for-client-test && cd ../client && react-app-rewired test --env=jsdom",
     "eject": "react-scripts eject",
-    "lint": "npx eslint .",
+    "lint": "npm run tsc && npx eslint .",
     "lint:fix": "eslint . --fix && prettier . --write",
     "pre-commit": "lint-staged",
     "tsc": "tsc",
