@@ -1,5 +1,5 @@
 import React, {useState, useEffect} from "react"
-import {PublicAddress, Button} from "rimble-ui"
+import {Button} from "rimble-ui"
 import styles from "./Web3Info.module.scss"
 
 export default function Web3Info(props) {

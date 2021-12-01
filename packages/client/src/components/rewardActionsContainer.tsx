@@ -43,6 +43,7 @@ enum ActionButtonTexts {
   accepting = "Accepting...",
   claimGFI = "Claim GFI",
   claimed = "Claimed",
+  vesting = "Vesting",
 }
 
 interface ActionButtonProps {
@@ -182,7 +183,7 @@ function ClaimForm(props: ClaimFormProps) {
     return (
       <div className="info-banner background-container subtle">
         <div className="message">
-          Claim the total available {displayNumber(gfiFromAtomic(props.claimable), 2)} GFI ($
+          Claim the total available {displayNumber(gfiFromAtomic(props.claimable), 2)} GFI (
           {displayDollars(props.totalUSD)}) that has vested.
         </div>
         <LoadingButton text="Submit" action={props.action} disabled={props.disabled} />
@@ -213,7 +214,7 @@ function getActionButtonProps(props: RewardsListItemProps): ActionButtonProps {
     case RewardStatus.TemporarilyAllClaimed:
       return {
         ...baseProps,
-        text: ActionButtonTexts.claimGFI,
+        text: ActionButtonTexts.vesting,
         disabled: true,
       }
     case RewardStatus.PermanentlyAllClaimed:
@@ -270,11 +271,15 @@ function RewardsListItem(props: RewardsListItemProps) {
             <div className="item-details">
               <div className="detail-container">
                 <span className="detail-label">Granted GFI</span>
-                <div className={`${valueDisabledClass}`}>{displayNumber(gfiFromAtomic(props.grantedGFI), 2)}</div>
+                <div className={`${valueDisabledClass}`} data-testid="detail-granted">
+                  {displayNumber(gfiFromAtomic(props.grantedGFI), 2)}
+                </div>
               </div>
               <div className="detail-container">
                 <span className="detail-label">Claimable GFI</span>
-                <div className={`${valueDisabledClass}`}>{displayNumber(gfiFromAtomic(props.claimableGFI), 2)}</div>
+                <div className={`${valueDisabledClass}`} data-testid="detail-claimable">
+                  {displayNumber(gfiFromAtomic(props.claimableGFI), 2)}
+                </div>
               </div>
             </div>
             {actionButtonComponent}
@@ -285,10 +290,10 @@ function RewardsListItem(props: RewardsListItemProps) {
         <li onClick={() => setOpen(!open)}>
           <div className="rewards-list-item table-row background-container clickable">
             <div className="table-cell col32">{props.title}</div>
-            <div className={`table-cell col20 numeric ${valueDisabledClass}`}>
+            <div className={`table-cell col20 numeric ${valueDisabledClass}`} data-testid="detail-granted">
               {displayNumber(gfiFromAtomic(props.grantedGFI), 2)}
             </div>
-            <div className={`table-cell col20 numeric ${valueDisabledClass}`}>
+            <div className={`table-cell col20 numeric ${valueDisabledClass}`} data-testid="detail-claimable">
               {displayNumber(gfiFromAtomic(props.claimableGFI), 2)}
             </div>
             {actionButtonComponent}
@@ -309,7 +314,7 @@ function getGrantVestingCliffDisplay(cliffLength: BigNumber): string | undefined
     case "15768000":
       return ", with six-month cliff"
     default:
-      console.error(`Unexpected cliff length: ${cliffLengthString}`)
+      console.warn(`Unexpected cliff length: ${cliffLengthString}`)
       return `, with ${cliffLengthString}-second cliff`
   }
 }
@@ -321,7 +326,7 @@ function getGrantVestingIntervalDisplay(vestingInterval: BigNumber): string | un
     case "2628000":
       return ", vesting every month"
     default:
-      console.error(`Unexpected vesting interval: ${vestingIntervalString}`)
+      console.warn(`Unexpected vesting interval: ${vestingIntervalString}`)
       return `, vesting every ${vestingIntervalString} seconds`
   }
 }
@@ -332,7 +337,7 @@ function getGrantVestingLengthDisplay(duration: number): string {
     case 31536000:
       return " after 1 year"
     default:
-      console.error(`Unexpected vesting length: ${duration}`)
+      console.warn(`Unexpected vesting length: ${duration}`)
       return ` after ${duration} seconds`
   }
 }
@@ -386,8 +391,9 @@ function getMerkleDistributorGrantInfoDetails(
   const amount = new BigNumber(grantInfo.grant.amount)
   const displayReason = MerkleDistributor.getDisplayReason(grantInfo.reason)
   const vestingLength = new BigNumber(grantInfo.grant.vestingLength).toNumber()
+  const zero = new BigNumber(0)
   return {
-    transactionDetails: `${displayNumber(gfiFromAtomic(amount))} GFI reward for participating in ${displayReason}`,
+    transactionDetails: `${displayNumber(gfiFromAtomic(amount))} GFI reward for participating ${displayReason}`,
     vestingSchedule: getGrantVestingSchedule(
       new BigNumber(grantInfo.grant.cliffLength),
       new BigNumber(grantInfo.grant.vestingInterval),
@@ -395,7 +401,7 @@ function getMerkleDistributorGrantInfoDetails(
     ),
     claimStatus: undefined,
     currentEarnRate: undefined,
-    vestingStatus: `${displayDollars(undefined)} (${displayNumber(undefined)} GFI) vested`,
+    vestingStatus: `${displayDollars(undefined)} (${displayNumber(zero)} GFI) vested`,
     etherscanAddress: merkleDistributor.address,
   }
 }

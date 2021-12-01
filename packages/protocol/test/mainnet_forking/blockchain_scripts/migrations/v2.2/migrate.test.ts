@@ -6,6 +6,7 @@ import {
   DISTRIBUTOR_ROLE,
   getEthersContract,
   getProtocolOwner,
+  getTruffleContract,
 } from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
 import {Awaited} from "@goldfinch-eng/protocol/blockchain_scripts/types"
 import {TEST_TIMEOUT} from "../../../MainnetForking.test"
@@ -13,46 +14,21 @@ import {Deployment} from "hardhat-deploy/types"
 import {CONFIG_KEYS, CONFIG_KEYS_BY_TYPE} from "@goldfinch-eng/protocol/blockchain_scripts/configKeys"
 import {GoldfinchConfig, TranchedPool} from "@goldfinch-eng/protocol/typechain/ethers"
 import poolMetadata from "@goldfinch-eng/client/config/pool-metadata/mainnet.json"
+import {expectProxyOwner, expectRoles} from "@goldfinch-eng/protocol/test/testHelpers"
+import {GoldfinchConfigInstance} from "@goldfinch-eng/protocol/typechain/truffle"
 
 const performMigration = deployments.createFixture(async ({deployments}) => {
   await deployments.fixture("base_deploy", {keepExistingDeployments: true})
   return await migrate.main()
 })
 
-export function expectProxyOwner({toBe, forContracts}: {toBe: () => Promise<string>; forContracts: string[]}) {
-  describe("proxy owners", async () => {
-    forContracts.forEach((contractName) => {
-      it(`sets the correct proxy owner for ${contractName}`, async () => {
-        const proxyDeployment = await deployments.get(`${contractName}_Proxy`)
-        const proxyContract = await ethers.getContractAt(proxyDeployment.abi, proxyDeployment.address)
-        expect(await proxyContract.owner()).to.eq(await toBe())
-      })
-    })
-  })
-}
-
-export type RoleExpectation = {contractName: string; roles: string[]; address: () => Promise<string>}
-export function expectRoles(expectations: RoleExpectation[]) {
-  describe("roles", async () => {
-    for (const {contractName, roles, address} of expectations) {
-      for (const role of roles) {
-        it(`assigns the ${role} role`, async () => {
-          const addr = await address()
-          const deployment = await deployments.get(contractName)
-          const contract = await ethers.getContractAt(deployment.abi, deployment.address)
-
-          expect(await contract.hasRole(role, addr)).to.be.true
-        })
-      }
-    }
-  })
-}
-
 describe("V2.2 migration", async function () {
   this.timeout(TEST_TIMEOUT)
 
   let oldConfigDeployment: Deployment
   let migration: Awaited<ReturnType<typeof migrate.main>>
+  let newConfigDeployment: Deployment
+  let newConfig: GoldfinchConfigInstance
 
   before(async () => {
     // We need to store the old config address because deployments don't get reset
@@ -65,11 +41,15 @@ describe("V2.2 migration", async function () {
     assertIsString(gf_deployer)
     await fundWithWhales(["ETH"], [gf_deployer])
     migration = await performMigration()
+    newConfigDeployment = await deployments.get("GoldfinchConfig")
+    newConfig = await getTruffleContract<GoldfinchConfigInstance>("GoldfinchConfig", {
+      at: newConfigDeployment.address,
+    })
   })
 
   expectProxyOwner({
     toBe: async () => getProtocolOwner(),
-    forContracts: ["StakingRewards", "CommunityRewards"],
+    forContracts: ["StakingRewards", "CommunityRewards", "GoldfinchConfig", "MerkleDirectDistributor"],
   })
 
   context("GoldfinchConfig", async () => {
@@ -90,10 +70,17 @@ describe("V2.2 migration", async function () {
       for (const [k, v] of Object.entries(CONFIG_KEYS_BY_TYPE.addresses)) {
         // Ignore GoldfinchConfig, since it should only be set in the old config
         // Ignore StakingRewards, since it gets deployed and set only in the new config
-        if (!["GoldfinchConfig", "StakingRewards"].includes(k)) {
+        // Ignore GFI, since it set only in the new config
+        if (!["GoldfinchConfig", "StakingRewards", "GFI"].includes(k)) {
           expect(await oldConfig.getAddress(v), k).to.eq(await newConfig.getAddress(v))
         }
       }
+    })
+
+    it("has GFI address set", async () => {
+      const gfi = await deployments.get("GFI")
+      const address = await expect(newConfig.getAddress(CONFIG_KEYS.GFI)).to.be.fulfilled
+      expect(address).to.eq(gfi.address)
     })
 
     it("updates the config address on various contracts", async () => {

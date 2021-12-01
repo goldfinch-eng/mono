@@ -63,6 +63,8 @@ import {isMerkleDirectDistributorInfo} from "./merkle/merkleDirectDistributor/ty
 
 const logger: Logger = console.log
 
+export const TOKEN_LAUNCH_TIME_IN_SECONDS = 1638900000 // Tuesday, December 7, 2021 10:00:00 AM GMT-08:00
+
 export type Deployed<T> = {
   name: string
   contract: T
@@ -223,6 +225,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
     const fidu = await deployer.deploy<Fidu>("Fidu", {
       from: gf_deployer,
       proxy: {
+        owner: protocol_owner,
         execute: {
           init: {
             methodName: "__initialize__",
@@ -321,7 +324,6 @@ export async function deployLPStakingRewards(
       },
     },
   })
-  logger(`deployed staking rewards to ${stakingRewards.address}`)
 
   await deployEffects.add({
     deferred: [await config.populateTransaction.setAddress(CONFIG_KEYS.StakingRewards, stakingRewards.address)],
@@ -354,7 +356,7 @@ export async function deployCommunityRewards(
       execute: {
         init: {
           methodName: "__initialize__",
-          args: [protocol_owner, config.address],
+          args: [protocol_owner, config.address, TOKEN_LAUNCH_TIME_IN_SECONDS],
         },
       },
     },
@@ -451,6 +453,7 @@ export async function deployMerkleDirectDistributor(
   }
 ): Promise<Deployed<MerkleDirectDistributorInstance> | undefined> {
   const {gf_deployer} = await deployer.getNamedAccounts()
+  const protocol_owner = await getProtocolOwner()
 
   const contractName = "MerkleDirectDistributor"
 
@@ -465,7 +468,15 @@ export async function deployMerkleDirectDistributor(
   const merkleDirectDistributor = await deployer.deploy(contractName, {
     from: gf_deployer,
     gasLimit: 4000000,
-    args: [gfi.contract.address, merkleRoot],
+    proxy: {
+      owner: protocol_owner,
+      execute: {
+        init: {
+          methodName: "initialize",
+          args: [protocol_owner, gfi.contract.address, merkleRoot],
+        },
+      },
+    },
   })
   const contract = await getTruffleContract<MerkleDirectDistributorInstance>(contractName, {
     at: merkleDirectDistributor.address,
@@ -520,6 +531,7 @@ export async function deployUniqueIdentity({
     from: gf_deployer,
     gasLimit: 4000000,
     proxy: {
+      owner: protocol_owner,
       proxyContract: "EIP173Proxy",
       execute: {
         init: {
@@ -611,6 +623,7 @@ export async function deployGo(
     from: gf_deployer,
     gasLimit: 4000000,
     proxy: {
+      owner: protocol_owner,
       execute: {
         init: {
           methodName: "initialize",
@@ -679,8 +692,10 @@ async function deployTranchedPool(
   }
 
   assertIsString(gf_deployer)
-  const tranchedPool = await deployer.deploy(contractName, {
+  const tranchingLogic = await deployer.deployLibrary("TranchingLogic", {from: gf_deployer, args: []})
+  const tranchedPoolImpl = await deployer.deploy(contractName, {
     from: gf_deployer,
+    libraries: {["TranchingLogic"]: tranchingLogic.address},
   })
 
   logger("Updating config...")
@@ -752,6 +767,7 @@ async function deployTransferRestrictedVault(
   return await deployer.deploy<TransferRestrictedVault>(contractName, {
     from: gf_deployer,
     proxy: {
+      owner: protocol_owner,
       execute: {
         init: {
           methodName: "__initialize__",
@@ -805,6 +821,7 @@ async function deployPool(deployer: ContractDeployer, {config}: DeployOpts) {
   const pool = await deployer.deploy(contractName, {
     from: gf_deployer,
     proxy: {
+      owner: protocol_owner,
       execute: {
         init: {
           methodName: "initialize",

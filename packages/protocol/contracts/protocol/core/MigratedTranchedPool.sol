@@ -69,6 +69,6 @@ contract MigratedTranchedPool is TranchedPool, IMigratedTranchedPool {
     currentSlice.seniorTranche.principalSharePrice = 0;
 
     // Set junior's sharePrice correctly
-    applyToTrancheByAmount(totalInterestPaid, balancePaid, totalInterestPaid, balancePaid, currentSlice.juniorTranche);
+    currentSlice.juniorTranche.applyByAmount(totalInterestPaid, balancePaid, totalInterestPaid, balancePaid);
   }
 }

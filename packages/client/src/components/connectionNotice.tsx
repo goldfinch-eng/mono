@@ -1,5 +1,5 @@
 import {useLocation} from "react-router-dom"
-import {AppContext, NetworkConfig} from "../App"
+import {AppContext} from "../App"
 import {CreditLine} from "../ethereum/creditLine"
 import {UnlockedStatus, UserLoaded} from "../ethereum/user"
 import {Session, useSession} from "../hooks/useSignIn"
@@ -9,6 +9,8 @@ import {KYC} from "../hooks/useGoldfinchClient"
 import {AsyncResult} from "../hooks/useAsync"
 import {assertNonNullable} from "../utils"
 import {useContext} from "react"
+import {NetworkConfig} from "../types/network"
+import {Web3Status} from "../types/web3"
 
 export interface ConnectionNoticeProps {
   creditLine?: CreditLine
@@ -16,7 +18,6 @@ export interface ConnectionNoticeProps {
   requireUnlock?: boolean
   requireKYC?: {kyc: AsyncResult<KYC>; condition: (KYC: KYC) => boolean}
   isPaused?: boolean
-  isClosedToUser?: boolean
 }
 
 function TextBanner({children}: React.PropsWithChildren<{}>) {
@@ -32,6 +33,7 @@ function TextBanner({children}: React.PropsWithChildren<{}>) {
 interface ConditionProps extends ConnectionNoticeProps {
   network: NetworkConfig | undefined
   user: UserLoaded | undefined
+  web3Status: Web3Status | undefined
   session: Session
   location: any
 }
@@ -45,7 +47,7 @@ interface ConnectionNoticeStrategy {
 export const strategies: ConnectionNoticeStrategy[] = [
   {
     devName: "install_metamask",
-    match: (_props) => !(window as any).ethereum,
+    match: ({web3Status}) => web3Status?.type === "no_web3",
     render: (_props) => (
       <TextBanner>
         In order to use Goldfinch, you'll first need to download and install the Metamask plug-in from{" "}
@@ -65,7 +67,8 @@ export const strategies: ConnectionNoticeStrategy[] = [
   },
   {
     devName: "not_connected_to_metamask",
-    match: ({user, session}) => !user || (user.web3Connected && session.status === "unknown"),
+    match: ({session, web3Status}) =>
+      web3Status?.type === "has_web3" || (web3Status?.type === "connected" && session.status === "unknown"),
     render: (_props) => (
       <TextBanner>
         You are not currently connected to Metamask. To use Goldfinch, you first need to connect to Metamask.
@@ -74,7 +77,7 @@ export const strategies: ConnectionNoticeStrategy[] = [
   },
   {
     devName: "connected_user_with_expired_session",
-    match: ({user, session}) => !!user && user.web3Connected && session.status === "known",
+    match: ({session, web3Status}) => web3Status?.type === "connected" && session.status === "known",
     render: (_props) => (
       <TextBanner>Your session has expired. To use Goldfinch, you first need to reconnect to Metamask.</TextBanner>
     ),
@@ -151,11 +154,6 @@ export const strategies: ConnectionNoticeStrategy[] = [
       </TextBanner>
     ),
   },
-  {
-    devName: "pool_closed_to_user",
-    match: ({isClosedToUser}) => !!isClosedToUser,
-    render: () => <TextBanner>The pool is currently closed to new participants.</TextBanner>,
-  },
 ]
 
 function getUnlockStatus({location, user}: {location: any; user: UserLoaded | undefined}): UnlockedStatus | null {
@@ -176,7 +174,7 @@ function ConnectionNotice(props: ConnectionNoticeProps) {
     requireGolist: false,
     ...props,
   }
-  const {network, user} = useContext(AppContext)
+  const {network, user, web3Status} = useContext(AppContext)
   const session = useSession()
   let location = useLocation()
 
@@ -185,6 +183,7 @@ function ConnectionNotice(props: ConnectionNoticeProps) {
     user,
     session,
     location,
+    web3Status,
     ...props,
   }
 

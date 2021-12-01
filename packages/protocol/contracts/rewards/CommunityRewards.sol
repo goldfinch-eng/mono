@@ -35,11 +35,18 @@ contract CommunityRewards is ICommunityRewards, ERC721PresetMinterPauserAutoIdUp
   /// @notice Total rewards available for granting, denominated in `rewardsToken()`
   uint256 public rewardsAvailable;
 
+  /// @notice Token launch time in seconds. This is used in vesting.
+  uint256 public tokenLaunchTimeInSeconds;
+
   /// @dev NFT tokenId => rewards grant
   mapping(uint256 => CommunityRewardsVesting.Rewards) public grants;
 
   // solhint-disable-next-line func-name-mixedcase
-  function __initialize__(address owner, GoldfinchConfig _config) external initializer {
+  function __initialize__(
+    address owner,
+    GoldfinchConfig _config,
+    uint256 _tokenLaunchTimeInSeconds
+  ) external initializer {
     require(owner != address(0) && address(_config) != address(0), "Owner and config addresses cannot be empty");
 
     __Context_init_unchained();
@@ -57,6 +64,8 @@ contract CommunityRewards is ICommunityRewards, ERC721PresetMinterPauserAutoIdUp
     _setRoleAdmin(OWNER_ROLE, OWNER_ROLE);
     _setRoleAdmin(PAUSER_ROLE, OWNER_ROLE);
     _setRoleAdmin(DISTRIBUTOR_ROLE, OWNER_ROLE);
+
+    tokenLaunchTimeInSeconds = _tokenLaunchTimeInSeconds;
 
     config = _config;
   }
@@ -107,6 +116,10 @@ contract CommunityRewards is ICommunityRewards, ERC721PresetMinterPauserAutoIdUp
     emit GrantRevoked(tokenId, totalUnvested);
   }
 
+  function setTokenLaunchTimeInSeconds(uint256 _tokenLaunchTimeInSeconds) external onlyAdmin {
+    tokenLaunchTimeInSeconds = _tokenLaunchTimeInSeconds;
+  }
+
   /// @notice updates current config
   function updateGoldfinchConfig() external onlyAdmin {
     config = GoldfinchConfig(config.configAddress());
@@ -154,8 +167,8 @@ contract CommunityRewards is ICommunityRewards, ERC721PresetMinterPauserAutoIdUp
     grants[tokenId] = CommunityRewardsVesting.Rewards({
       totalGranted: amount,
       totalClaimed: 0,
-      startTime: block.timestamp,
-      endTime: block.timestamp.add(vestingLength),
+      startTime: tokenLaunchTimeInSeconds,
+      endTime: tokenLaunchTimeInSeconds.add(vestingLength),
       cliffLength: cliffLength,
       vestingInterval: vestingInterval,
       revokedAt: 0

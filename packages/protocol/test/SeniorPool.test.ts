@@ -10,6 +10,7 @@ import {
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
 import hre from "hardhat"
 const {deployments, artifacts} = hre
+const CreditLine = artifacts.require("CreditLine")
 import {
   advanceTime,
   expect,
@@ -40,9 +41,10 @@ const TEST_TIMEOUT = 30_000
 const simulateMaliciousTranchedPool = async (goldfinchConfig: any, person2: any): Promise<string> => {
   // Simulate someone deploying their own malicious TranchedPool using our contracts
   const accountant = await deployments.deploy("Accountant", {from: person2, args: []})
+  const tranchingLogic = await deployments.deploy("TranchingLogic", {from: person2, args: []})
   const poolDeployResult = await deployments.deploy("TranchedPool", {
     from: person2,
-    libraries: {["Accountant"]: accountant.address},
+    libraries: {["TranchingLogic"]: tranchingLogic.address},
   })
   const unknownPool = (await artifacts.require("TranchedPool").at(poolDeployResult.address)) as TranchedPoolInstance
   const creditLineResult = await deployments.deploy("CreditLine", {
@@ -181,10 +183,6 @@ describe("SeniorPool", () => {
 
       it("disallows invest", async () => {
         await expect(seniorPool.invest(tranchedPool.address)).to.be.rejectedWith(/Pausable: paused/)
-      })
-
-      it("disallows investJunior", async () => {
-        await expect(seniorPool.investJunior(tranchedPool.address, new BN(100))).to.be.rejectedWith(/Pausable: paused/)
       })
 
       it("disallows redeem", async () => {
@@ -552,8 +550,10 @@ describe("SeniorPool", () => {
     })
 
     context("called by non-governance", async () => {
-      it("should revert", async () => {
-        return expect(seniorPool.invest(tranchedPool.address, {from: person2})).to.be.rejectedWith(/Must have admin/)
+      it("should not revert", async () => {
+        return expect(seniorPool.invest(tranchedPool.address, {from: person2})).to.not.be.rejectedWith(
+          /Must have admin role to perform this action/i
+        )
       })
     })
 
@@ -655,7 +655,8 @@ describe("SeniorPool", () => {
         // where the juniors take "more than their share".
 
         const expectedMaxLimit = usdcVal(100000)
-        expect(await tranchedPool.maxLimit()).to.bignumber.equal(expectedMaxLimit)
+        const creditLine = await CreditLine.at(await tranchedPool.creditLine())
+        expect(await creditLine.maxLimit()).to.bignumber.equal(expectedMaxLimit)
 
         await tranchedPool.lockJuniorCapital({from: borrower})
         expect(await goldfinchConfig.getAddress(CONFIG_KEYS.SeniorPoolStrategy)).to.equal(
@@ -665,161 +666,12 @@ describe("SeniorPool", () => {
 
         const reducedLimit = investmentAmount.sub(new BN(1))
         await tranchedPool._setLimit(reducedLimit)
-        expect(await tranchedPool.limit()).to.bignumber.equal(reducedLimit)
+        expect(await creditLine.limit()).to.bignumber.equal(reducedLimit)
 
         await seniorPool.invest(tranchedPool.address)
 
         const seniorTranche = await tranchedPool.getTranche(TRANCHES.Senior)
         expect(seniorTranche.principalDeposited).to.bignumber.equal(investmentAmount)
-      })
-    })
-  })
-
-  describe("investJunior", () => {
-    const juniorInvestmentAmount = usdcVal(10000)
-    const seniorPoolJuniorInvestmentAmount = usdcVal(30000)
-
-    beforeEach(async () => {
-      await erc20Approve(usdc, seniorPool.address, usdcVal(100000), [owner])
-      await makeDeposit(owner, usdcVal(100000))
-      await goldfinchConfig.addToGoList(seniorPool.address)
-      await tranchedPool.deposit(TRANCHES.Junior, juniorInvestmentAmount)
-    })
-
-    context("called by non-governance", async () => {
-      it("should revert", async () => {
-        return expect(
-          seniorPool.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount, {from: person2})
-        ).to.be.rejectedWith(/Must have admin/)
-      })
-    })
-
-    context("Pool is not valid", () => {
-      it("reverts", async () => {
-        const unknownPoolAddress = await simulateMaliciousTranchedPool(goldfinchConfig, person2)
-
-        await expect(seniorPool.investJunior(unknownPoolAddress, seniorPoolJuniorInvestmentAmount)).to.be.rejectedWith(
-          /Pool must be valid/
-        )
-      }).timeout(TEST_TIMEOUT)
-    })
-
-    context("Pool's junior tranche is locked", () => {
-      it("reverts", async () => {
-        const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
-        const seniorTranche = await tranchedPool.getTranche(TRANCHES.Senior)
-        expect(juniorTranche.lockedUntil).to.bignumber.equal(new BN(0))
-        expect(seniorTranche.lockedUntil).to.bignumber.equal(new BN(0))
-
-        await tranchedPool.lockJuniorCapital({from: borrower})
-
-        const juniorTranche2 = await tranchedPool.getTranche(TRANCHES.Junior)
-        const seniorTranche2 = await tranchedPool.getTranche(TRANCHES.Senior)
-        expect(juniorTranche2.lockedUntil).to.bignumber.gt(new BN(0))
-        expect(seniorTranche2.lockedUntil).to.bignumber.equal(new BN(0))
-
-        return expect(
-          seniorPool.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount)
-        ).to.be.rejectedWith(/Tranche has been locked/)
-      })
-    })
-
-    context("amount is > 0", () => {
-      it("should deposit amount into the junior tranche", async () => {
-        await expectAction(
-          async () => await seniorPool.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount)
-        ).toChange([
-          [async () => await getBalance(seniorPool.address, usdc), {by: seniorPoolJuniorInvestmentAmount.neg()}],
-          [
-            async () => new BN((await tranchedPool.getTranche(TRANCHES.Junior)).principalDeposited),
-            {by: seniorPoolJuniorInvestmentAmount},
-          ],
-        ])
-      })
-
-      it("should emit an InvestmentMadeInJunior event", async () => {
-        const receipt = await seniorPool.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount)
-        const event = receipt.logs[0]
-
-        expect(event.event).to.equal("InvestmentMadeInJunior")
-        expect(event.args.tranchedPool).to.equal(tranchedPool.address)
-        expect(event.args.amount).to.bignumber.equal(seniorPoolJuniorInvestmentAmount)
-      })
-
-      it("Should allow senior pool to invest in junior tranche if already invested in senior tranche", async () => {
-        await tranchedPool._setSeniorTranchePrincipalDeposited(new BN(1))
-        const seniorTranche = await tranchedPool.getTranche(TRANCHES.Senior)
-        expect(seniorTranche.principalDeposited).to.bignumber.equal(new BN(1))
-
-        const receipt = await seniorPool.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount)
-        const event = receipt.logs[0]
-        expect(event.event).to.equal("InvestmentMadeInJunior")
-        expect(event.args.tranchedPool).to.equal(tranchedPool.address)
-        expect(event.args.amount).to.bignumber.equal(seniorPoolJuniorInvestmentAmount)
-      })
-
-      it("should track the investment in the assets calculation", async () => {
-        await expectAction(() =>
-          seniorPool.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount)
-        ).toChange([
-          [seniorPool.totalLoansOutstanding, {by: seniorPoolJuniorInvestmentAmount}],
-          [() => getBalance(seniorPool.address, usdc), {by: seniorPoolJuniorInvestmentAmount.neg()}],
-          [seniorPool.assets, {by: new BN(0)}], // loans outstanding + balance cancel out
-        ])
-      })
-    })
-
-    context("amount is 0", async () => {
-      it("reverts", async () => {
-        await expect(seniorPool.investJunior(tranchedPool.address, new BN(0))).to.be.rejectedWith(
-          /amount must be positive/
-        )
-      })
-    })
-
-    context("amount exceeds tranched pool's limit", async () => {
-      it("allows investing in the junior tranche", async () => {
-        // NOTE: This test is a relic from when we considered prohibiting an investment
-        // amount that exceeded the tranched pool's limit, but then decided we didn't want
-        // to prohibit that, for parity with not doing so in `invest()`.
-
-        const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
-        expect(juniorTranche.principalDeposited).to.bignumber.equal(juniorInvestmentAmount)
-
-        const expectedLimit = usdcVal(100000)
-        expect(await tranchedPool.maxLimit()).to.bignumber.equal(expectedLimit)
-
-        const reducedLimit = seniorPoolJuniorInvestmentAmount.sub(new BN(1))
-        await tranchedPool._setLimit(reducedLimit)
-        expect(await tranchedPool.limit()).to.bignumber.equal(reducedLimit)
-
-        await seniorPool.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount)
-
-        const juniorTranche2 = await tranchedPool.getTranche(TRANCHES.Junior)
-        expect(juniorTranche2.principalDeposited).to.bignumber.equal(
-          juniorInvestmentAmount.add(seniorPoolJuniorInvestmentAmount)
-        )
-      })
-    })
-
-    context("has already invested in junior tranche", async () => {
-      it("allows investing in the junior tranche again", async () => {
-        const juniorTranche = await tranchedPool.getTranche(TRANCHES.Junior)
-        expect(juniorTranche.principalDeposited).to.bignumber.equal(juniorInvestmentAmount)
-
-        await seniorPool.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount)
-
-        const juniorTranche2 = await tranchedPool.getTranche(TRANCHES.Junior)
-        expect(juniorTranche2.principalDeposited).to.bignumber.equal(
-          juniorInvestmentAmount.add(seniorPoolJuniorInvestmentAmount)
-        )
-
-        await seniorPool.investJunior(tranchedPool.address, seniorPoolJuniorInvestmentAmount)
-
-        const juniorTranche3 = await tranchedPool.getTranche(TRANCHES.Junior)
-        expect(juniorTranche3.principalDeposited).to.bignumber.equal(
-          juniorInvestmentAmount.add(seniorPoolJuniorInvestmentAmount).add(seniorPoolJuniorInvestmentAmount)
-        )
       })
     })
   })
@@ -975,8 +827,8 @@ describe("SeniorPool", () => {
     })
 
     context("called by non-governance", async () => {
-      it("should revert", async () => {
-        return expect(seniorPool.writedown(tokenId, {from: person2})).to.be.rejectedWith(/Must have admin/)
+      it("should not revert", async () => {
+        expect(seniorPool.writedown(tokenId, {from: person2})).to.not.be.rejected
       })
     })
 
