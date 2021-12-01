@@ -41,7 +41,7 @@ dataSources:
     network: mainnet
     source:
       address: "0xd20508E1E971b80EE172c73517905bfFfcBD87f9"
-      abi: GoldfinchFactory_Proxy
+      abi: GoldfinchFactory
       startBlock: 11370655
     mapping:
       kind: ethereum/events
@@ -50,12 +50,8 @@ dataSources:
       entities:
         - User
       abis:
-        - name: GoldfinchFactory_Implementation
-          file: ./abis/GoldfinchFactory_Implementation.json
         - name: TranchedPool
           file: ./abis/TranchedPool.json
-        - name: GoldfinchFactory_Proxy
-          file: ./abis/GoldfinchFactory_Proxy.json
         - name: GoldfinchFactory
           file: ./abis/GoldfinchFactory.json
       eventHandlers:
@@ -204,8 +200,6 @@ templates:
       abis:
         - name: GoldfinchFactory
           file: ./abis/GoldfinchFactory.json
-        - name: GoldfinchFactory_Implementation
-          file: ./abis/GoldfinchFactory_Implementation.json
         - name: TranchedPool
           file: ./abis/TranchedPool.json
       eventHandlers:
