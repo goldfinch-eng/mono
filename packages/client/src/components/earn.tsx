@@ -18,7 +18,7 @@ import {PoolBacker, TranchedPool} from "../ethereum/tranchedPool"
 import {User, UserLoaded} from "../ethereum/user"
 import {Loadable, Loaded} from "../types/loadable"
 import {InfoIcon} from "../ui/icons"
-import {BlockInfo, displayDollars, displayPercent, roundDownPenny} from "../utils"
+import {assertNonNullable, BlockInfo, displayDollars, displayPercent, roundDownPenny} from "../utils"
 import AnnualGrowthTooltipContent from "./AnnualGrowthTooltipContent"
 import Badge from "./badge"
 import ConnectionNotice from "./connectionNotice"
@@ -299,8 +299,18 @@ function usePoolBackers({
 }
 
 function Earn() {
-  const {web3Status, pool, usdc, user, goldfinchProtocol, goldfinchConfig, stakingRewards, gfi, currentBlock} =
-    useContext(AppContext)
+  const {
+    web3Status,
+    pool,
+    usdc,
+    user,
+    goldfinchProtocol,
+    goldfinchConfig,
+    stakingRewards,
+    gfi,
+    currentBlock,
+    setLeafCurrentBlock,
+  } = useContext(AppContext)
   const {earnStore, setEarnStore} = useEarn()
   const [capitalProvider, setCapitalProvider] = useState<Loadable<CapitalProvider>>({
     loaded: false,
@@ -312,11 +322,15 @@ function Earn() {
     currentBlock,
   })
 
-  useEffect(() => {
-    if (pool && stakingRewards && gfi && user) {
-      refreshCapitalProviderData(pool, stakingRewards, gfi, user)
-    }
-  }, [pool, stakingRewards, gfi, usdc, user])
+  useEffect(
+    () => {
+      if (pool && stakingRewards && gfi && user) {
+        refreshCapitalProviderData(pool, stakingRewards, gfi, user)
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [pool, stakingRewards, gfi, usdc, user]
+  )
 
   async function refreshCapitalProviderData(
     pool: SeniorPoolLoaded,
@@ -324,6 +338,8 @@ function Earn() {
     gfi: GFILoaded,
     user: UserLoaded
   ) {
+    assertNonNullable(setLeafCurrentBlock)
+
     // TODO Would be ideal to refactor this component so that the child components it renders all
     // receive state that is consistent, i.e. using `pool.poolData`, `capitalProvider` state,
     // `stakingRewards`, `gfi`, and `user` that are guaranteed to be based on the same block number. For now, here
@@ -340,6 +356,7 @@ function Earn() {
     ) {
       const capitalProvider = await fetchCapitalProviderData(pool, stakingRewards, gfi, user)
       setCapitalProvider(capitalProvider)
+      setLeafCurrentBlock(pool.info.value.currentBlock)
     }
   }
 

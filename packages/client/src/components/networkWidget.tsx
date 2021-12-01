@@ -43,7 +43,6 @@ interface NetworkWidgetProps {
   network: NetworkConfig | undefined
   currentErrors: any[]
   currentTxs: CurrentTx<TxType>[]
-
   connectionComplete: () => any
 }
 

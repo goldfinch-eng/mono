@@ -40,7 +40,7 @@ import {
   WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
 } from "../types/transactions"
 import {getEtherscanSubdomain, MAX_UINT} from "../ethereum/utils"
-import {BlockInfo, displayDollars, displayNumber} from "../utils"
+import {assertNonNullable, BlockInfo, displayDollars, displayNumber} from "../utils"
 import ConnectionNotice from "./connectionNotice"
 import {iconCircleCheckLg, iconCircleDownLg, iconCircleUpLg, iconOutArrow} from "./icons"
 import {mapEventsToTx} from "../ethereum/events"
@@ -51,7 +51,7 @@ type TransactionsProps = {
 }
 
 function Transactions(props: TransactionsProps) {
-  const {user, network, goldfinchProtocol, currentBlock} = useContext(AppContext)
+  const {user, network, goldfinchProtocol, currentBlock, setLeafCurrentBlock} = useContext(AppContext)
   const [tranchedPoolTxs, setTranchedPoolTxs] = useState<HistoricalTx<TranchedPoolEventType>[]>()
 
   async function loadTranchedPoolEvents(
@@ -59,6 +59,8 @@ function Transactions(props: TransactionsProps) {
     goldfinchProtocol: GoldfinchProtocol,
     currentBlock: BlockInfo
   ) {
+    assertNonNullable(setLeafCurrentBlock)
+
     const tranchedPoolsAddresses = Object.keys(tranchedPools)
     let combinedEvents = _.flatten(
       await Promise.all(
@@ -72,57 +74,57 @@ function Transactions(props: TransactionsProps) {
         )
       )
     )
-    setTranchedPoolTxs(
-      await mapEventsToTx(combinedEvents, TRANCHED_POOL_EVENT_TYPES, {
-        parseName: (eventData: KnownEventData<TranchedPoolEventType>) => {
-          switch (eventData.event) {
-            case DEPOSIT_MADE_EVENT:
-              return SUPPLY_TX_TYPE
-            case WITHDRAWAL_MADE_EVENT:
-              return WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE
-            case PAYMENT_APPLIED_EVENT:
-              return INTEREST_PAYMENT_TX_NAME
-            case DRAWDOWN_MADE_EVENT:
-              return BORROW_TX_TYPE
-            default:
-              assertUnreachable(eventData.event)
+    const poolTxs = await mapEventsToTx(combinedEvents, TRANCHED_POOL_EVENT_TYPES, {
+      parseName: (eventData: KnownEventData<TranchedPoolEventType>) => {
+        switch (eventData.event) {
+          case DEPOSIT_MADE_EVENT:
+            return SUPPLY_TX_TYPE
+          case WITHDRAWAL_MADE_EVENT:
+            return WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE
+          case PAYMENT_APPLIED_EVENT:
+            return INTEREST_PAYMENT_TX_NAME
+          case DRAWDOWN_MADE_EVENT:
+            return BORROW_TX_TYPE
+          default:
+            assertUnreachable(eventData.event)
+        }
+      },
+      parseAmount: (eventData: KnownEventData<TranchedPoolEventType>) => {
+        switch (eventData.event) {
+          case DEPOSIT_MADE_EVENT: {
+            return {
+              amount: eventData.returnValues.amount,
+              units: "usdc",
+            }
           }
-        },
-        parseAmount: (eventData: KnownEventData<TranchedPoolEventType>) => {
-          switch (eventData.event) {
-            case DEPOSIT_MADE_EVENT: {
-              return {
-                amount: eventData.returnValues.amount,
-                units: "usdc",
-              }
+          case WITHDRAWAL_MADE_EVENT: {
+            const sum = new BigNumber(eventData.returnValues.interestWithdrawn).plus(
+              new BigNumber(eventData.returnValues.principalWithdrawn)
+            )
+            return {
+              amount: sum.toString(10),
+              units: "usdc",
             }
-            case WITHDRAWAL_MADE_EVENT: {
-              const sum = new BigNumber(eventData.returnValues.interestWithdrawn).plus(
-                new BigNumber(eventData.returnValues.principalWithdrawn)
-              )
-              return {
-                amount: sum.toString(10),
-                units: "usdc",
-              }
-            }
-            case PAYMENT_APPLIED_EVENT: {
-              return {
-                amount: eventData.returnValues.interestAmount,
-                units: "usdc",
-              }
-            }
-            case DRAWDOWN_MADE_EVENT: {
-              return {
-                amount: eventData.returnValues.amount,
-                units: "usdc",
-              }
-            }
-            default:
-              assertUnreachable(eventData.event)
           }
-        },
-      })
-    )
+          case PAYMENT_APPLIED_EVENT: {
+            return {
+              amount: eventData.returnValues.interestAmount,
+              units: "usdc",
+            }
+          }
+          case DRAWDOWN_MADE_EVENT: {
+            return {
+              amount: eventData.returnValues.amount,
+              units: "usdc",
+            }
+          }
+          default:
+            assertUnreachable(eventData.event)
+        }
+      },
+    })
+    setTranchedPoolTxs(poolTxs)
+    setLeafCurrentBlock(currentBlock)
   }
 
   useEffect(() => {

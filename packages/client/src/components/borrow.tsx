@@ -11,6 +11,9 @@ import {useBorrow} from "../contexts/BorrowContext"
 import {assertNonNullable} from "../utils"
 
 function Borrow(props) {
+  // TODO Use `setLeafCurrentBlock()` in this view, after refactoring to use the
+  // Loadable pattern.
+
   const {creditDesk, user, goldfinchProtocol} = useContext(AppContext)
   const [creditLinesAddresses, setCreditLinesAddresses] = useState<string[]>([])
   const [creditLine, setCreditLine] = useState(defaultCreditLine)

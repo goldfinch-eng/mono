@@ -1,19 +1,35 @@
-import {useEffect, useState} from "react"
+import {useContext, useEffect, useState} from "react"
+import {AppContext} from "../App"
 import {Loadable, WithLoadedInfo} from "../types/loadable"
-import {BlockInfo} from "../utils"
+import {assertNonNullable, BlockInfo} from "../utils"
+
+type UseFromSameBlockConfig = {
+  // Whether, upon a change in the `currentBlock` passed to the hook or in the `deps` dependencies,
+  // the `currentBlock` should be set as the leaf current block in app state, if `currentBlock`
+  // matches the current block of all the `deps`.
+  setAsLeaf: boolean
+}
 
 type InfoWithCurrentBlock = {currentBlock: BlockInfo}
 
 export function useFromSameBlock<
   T extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
   U extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>
->(currentBlock: BlockInfo | undefined, ...deps: [T | undefined, U | undefined]): [T, U] | undefined
+>(
+  config: UseFromSameBlockConfig,
+  currentBlock: BlockInfo | undefined,
+  ...deps: [T | undefined, U | undefined]
+): [T, U] | undefined
 
 export function useFromSameBlock<
   T extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
   U extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
   V extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>
->(currentBlock: BlockInfo | undefined, ...deps: [T | undefined, U | undefined, V | undefined]): [T, U, V] | undefined
+>(
+  config: UseFromSameBlockConfig,
+  currentBlock: BlockInfo | undefined,
+  ...deps: [T | undefined, U | undefined, V | undefined]
+): [T, U, V] | undefined
 
 export function useFromSameBlock<
   T extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
@@ -21,6 +37,7 @@ export function useFromSameBlock<
   V extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
   W extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>
 >(
+  config: UseFromSameBlockConfig,
   currentBlock: BlockInfo | undefined,
   ...deps: [T | undefined, U | undefined, V | undefined, W | undefined]
 ): [T, U, V, W] | undefined
@@ -32,6 +49,7 @@ export function useFromSameBlock<
   W extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
   X extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>
 >(
+  config: UseFromSameBlockConfig,
   currentBlock: BlockInfo | undefined,
   ...deps: [T | undefined, U | undefined, V | undefined, W | undefined, X | undefined]
 ): [T, U, V, W, X] | undefined
@@ -50,7 +68,8 @@ export function useFromSameBlock<
  */
 export function useFromSameBlock<
   T extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>
->(currentBlock: BlockInfo | undefined, ...deps: Array<T | undefined>): T[] | undefined {
+>(config: UseFromSameBlockConfig, currentBlock: BlockInfo | undefined, ...deps: Array<T | undefined>): T[] | undefined {
+  const {setLeafCurrentBlock} = useContext(AppContext)
   const [value, setValue] = useState<T[]>()
 
   useEffect(() => {
@@ -68,6 +87,11 @@ export function useFromSameBlock<
       }, [])
       if (reduced && reduced.length) {
         setValue(reduced)
+
+        if (config.setAsLeaf) {
+          assertNonNullable(setLeafCurrentBlock)
+          setLeafCurrentBlock(currentBlock)
+        }
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

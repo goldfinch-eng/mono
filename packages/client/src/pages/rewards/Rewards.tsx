@@ -176,7 +176,7 @@ function Rewards() {
     UserLoaded,
     MerkleDistributorLoaded,
     CommunityRewardsLoaded
-  >(currentBlock, _stakingRewards, _gfi, _user, _merkleDistributor, _communityRewards)
+  >({setAsLeaf: true}, currentBlock, _stakingRewards, _gfi, _user, _merkleDistributor, _communityRewards)
 
   let loaded: boolean = false
   let claimable: BigNumber | undefined

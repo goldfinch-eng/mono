@@ -612,7 +612,7 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
 }
 
 function VerifyIdentity() {
-  const {user} = useContext(AppContext)
+  const {user, currentBlock, setLeafCurrentBlock} = useContext(AppContext)
   const [session, signIn] = useSignIn()
   const [state, dispatch] = useReducer(reducer, initialState)
 
@@ -623,6 +623,17 @@ function VerifyIdentity() {
       dispatch({type: VERIFY_ADDRESS})
     }
   })
+
+  useEffect(
+    () => {
+      if (currentBlock) {
+        assertNonNullable(setLeafCurrentBlock)
+        setLeafCurrentBlock(currentBlock)
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [currentBlock?.number]
+  )
 
   let children: JSX.Element
   if (state.step === START) {

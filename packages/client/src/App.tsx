@@ -8,7 +8,6 @@ import Borrow from "./components/borrow"
 import DevTools from "./components/devTools"
 import Earn from "./components/earn"
 import Footer from "./components/footer"
-import NetworkWidget from "./components/networkWidget"
 import SeniorPoolView from "./components/pools/seniorPoolView"
 import TranchedPoolView from "./components/pools/tranchedPoolView"
 import PrivacyPolicy from "./components/privacyPolicy"
@@ -44,6 +43,7 @@ import {assertNonNullable, BlockInfo, getBlockInfo, getCurrentBlock} from "./uti
 import web3, {SESSION_DATA_KEY} from "./web3"
 import {Web3Status} from "./types/web3"
 import {NetworkConfig} from "./types/network"
+import NetworkIndicators from "./components/networkIndicators"
 
 interface GeolocationData {
   ip: string
@@ -60,7 +60,37 @@ export type SetSessionFn = (data: SessionData | undefined) => void
 
 export interface GlobalState {
   web3Status?: Web3Status
+
+  // This tracks the latest block that the application knows about. Think of this as a
+  // global or root-level piece of state; it applies to the entire application.
   currentBlock?: BlockInfo
+  // This handler is for use whenever something has happened (e.g. the user took some action)
+  // to which we want to react by refreshing chain data (and values derived thereof). Refreshing
+  // the application's understanding of the current block is meant to be sufficient (i.e. it's
+  // the developer's responsibility to accomplish this) to trigger cascading refreshing of the
+  // data depended on by the mounted components in the component tree.
+  refreshCurrentBlock?: () => Promise<void>
+  // This tracks the latest block that the application knows about *at the current leaf of the
+  // component tree*, that is, which corresponds to the chain data being shown to the user. Tracking
+  // this separately from `currentBlock` is useful because it enables us -- assuming the developer
+  // has implemented the necessary usage of `refreshCurrentBlock()` to trigger refreshing, and of
+  // `setLeafCurrentBlock()` when the refresh has finished -- to display an indicator in the UI
+  // that the chain data are being refreshed, if the `leafCurrentBlock` is lagging behind the
+  // `currentBlock`.
+  // TODO An improvement would be to index this value by "refresh scope" (e.g. route), and have the
+  // RefreshIndicator use the value for the current scope (e.g. route). That would put each
+  // scope effectively in control of whether the RefreshIndicator would indicate that
+  // data are being refreshed, based on what *each scope* knows about its own data dependencies.
+  leafCurrentBlock?: BlockInfo
+  // This setter should be called when the "last" data dependency of a view has finished refreshing,
+  // as defined by a change (increase) in the current block associated with that data dependency; the
+  // setter should be called with that new current block. What is meant by "last"? It's the data
+  // dependency that can be thought of being the closest to a leaf node of the component tree. The
+  // point is that once it's done refreshing, we know that nothing else remains to be refreshed. In
+  // practice, this means we probably want to call `setLeafCurrentBlock()` once per application
+  // route in which the user can take some state-changing action.
+  setLeafCurrentBlock?: (leafCurrentBlock: BlockInfo) => void
+
   gfi?: GFILoaded
   stakingRewards?: StakingRewardsLoaded
   communityRewards?: CommunityRewardsLoaded
@@ -70,14 +100,16 @@ export interface GlobalState {
   user?: UserLoaded
   usdc?: ERC20
   goldfinchConfig?: GoldfinchConfigData
-  network?: NetworkConfig
   goldfinchProtocol?: GoldfinchProtocol
+
+  network?: NetworkConfig
   networkMonitor?: NetworkMonitor
+
   geolocationData?: GeolocationData
   setGeolocationData?: (geolocationData: GeolocationData) => void
+
   sessionData?: SessionData
   setSessionData?: SetSessionFn
-  refreshCurrentBlock?: () => Promise<void>
 }
 
 declare let window: any
@@ -96,6 +128,7 @@ function App() {
   const [overrideAddress, setOverrideAdress] = useState<string>()
   const [user, setUser] = useState<UserLoaded>()
   const [currentBlock, setCurrentBlock] = useState<BlockInfo>()
+  const [leafCurrentBlock, setLeafCurrentBlock] = useState<BlockInfo>()
   const [goldfinchConfig, setGoldfinchConfig] = useState<GoldfinchConfigData>()
   const [currentTxs, setCurrentTxs] = useState<CurrentTx<TxType>[]>([])
   const [currentErrors, setCurrentErrors] = useState<any[]>([])
@@ -108,7 +141,14 @@ function App() {
     {},
     currentBlock?.timestamp
   )
-  const consistent = useFromSameBlock(currentBlock, _gfi, _stakingRewards, _communityRewards, _merkleDistributor)
+  const consistent = useFromSameBlock(
+    {setAsLeaf: false},
+    currentBlock,
+    _gfi,
+    _stakingRewards,
+    _communityRewards,
+    _merkleDistributor
+  )
   const gfi = consistent?.[0]
   const stakingRewards = consistent?.[1]
   const communityRewards = consistent?.[2]
@@ -313,6 +353,7 @@ function App() {
   const store: GlobalState = {
     web3Status,
     currentBlock,
+    leafCurrentBlock,
     stakingRewards,
     gfi,
     communityRewards,
@@ -330,18 +371,20 @@ function App() {
     sessionData,
     setSessionData,
     refreshCurrentBlock,
+    setLeafCurrentBlock,
   }
 
   return (
     <AppContext.Provider value={store}>
       <ThemeProvider theme={defaultTheme}>
-        <NetworkWidget
+        <NetworkIndicators
           user={user}
-          currentBlock={currentBlock}
           network={network}
           currentErrors={currentErrors}
           currentTxs={currentTxs}
           connectionComplete={setupWeb3}
+          rootCurrentBlock={currentBlock}
+          leafCurrentBlock={leafCurrentBlock}
         />
         <EarnProvider>
           <BorrowProvider>
