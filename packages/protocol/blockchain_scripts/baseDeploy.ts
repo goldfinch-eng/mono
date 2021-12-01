@@ -700,11 +700,11 @@ async function deployTranchedPool(
 
   logger("Updating config...")
   await deployEffects.add({
-    deferred: [await config.populateTransaction.setTranchedPoolImplementation(tranchedPool.address)],
+    deferred: [await config.populateTransaction.setTranchedPoolImplementation(tranchedPoolImpl.address)],
   })
-  logger("Updated TranchedPoolImplementation config address to:", tranchedPool.address)
+  logger("Updated TranchedPoolImplementation config address to:", tranchedPoolImpl.address)
 
-  return tranchedPool
+  return tranchedPoolImpl
 }
 
 async function deployClImplementation(
