@@ -9,7 +9,7 @@ import _ from "lodash"
 import {BlockNumber} from "web3-core"
 import {Contract, EventData, Filter} from "web3-eth-contract"
 import {Loadable, Loaded, WithLoadedInfo} from "../types/loadable"
-import {assertBigNumber, BlockInfo, displayNumber, roundDownPenny} from "../utils"
+import {assertBigNumber, BlockInfo, defaultSum, displayNumber, roundDownPenny} from "../utils"
 import {buildCreditLine} from "./creditLine"
 import {Tickers, usdcFromAtomic} from "./erc20"
 import {
@@ -222,18 +222,8 @@ function getCapitalProviderStakingInfo(
   return {
     gfiPrice,
     shares: {
-      locked: lockedPositions.length
-        ? BigNumber.sum.apply(
-            null,
-            lockedPositions.map((val) => val.storedPosition.amount)
-          )
-        : new BigNumber(0),
-      unlocked: unlockedPositions.length
-        ? BigNumber.sum.apply(
-            null,
-            unlockedPositions.map((val) => val.storedPosition.amount)
-          )
-        : new BigNumber(0),
+      locked: defaultSum(lockedPositions.map((val) => val.storedPosition.amount)),
+      unlocked: defaultSum(unlockedPositions.map((val) => val.storedPosition.amount)),
     },
     // Any position that is not locked can be unstaked.
     unstakeablePositions: unlockedPositions,
@@ -521,12 +511,7 @@ async function getCumulativeWritedowns(pool: SeniorPool, currentBlock: BlockInfo
     undefined,
     currentBlock.number
   )
-  const sum: BigNumber = events.length
-    ? BigNumber.sum.apply(
-        null,
-        events.map((eventData) => new BigNumber(eventData.returnValues.amount))
-      )
-    : new BigNumber(0)
+  const sum: BigNumber = defaultSum(events.map((eventData) => new BigNumber(eventData.returnValues.amount)))
   return sum.negated()
 }
 
@@ -541,12 +526,7 @@ async function getCumulativeDrawdowns(pool: SeniorPool, currentBlock: BlockInfo)
       tranchedPools.map((pool) => protocol.queryEvents(pool, [DRAWDOWN_MADE_EVENT], undefined, currentBlock.number))
     )
   )
-  const sum: BigNumber = allDrawdownEvents.length
-    ? BigNumber.sum.apply(
-        null,
-        allDrawdownEvents.map((eventData) => new BigNumber(eventData.returnValues.amount))
-      )
-    : new BigNumber(0)
+  const sum: BigNumber = defaultSum(allDrawdownEvents.map((eventData) => new BigNumber(eventData.returnValues.amount)))
   return sum
 }
 

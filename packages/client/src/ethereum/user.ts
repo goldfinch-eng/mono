@@ -4,7 +4,7 @@ import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
 import _ from "lodash"
 import {assertWithLoadedInfo, Loadable, WithLoadedInfo} from "../types/loadable"
-import {assertNonNullable, BlockInfo, WithCurrentBlock} from "../utils"
+import {assertNonNullable, BlockInfo, defaultSum, WithCurrentBlock} from "../utils"
 import {BorrowerInterface, getBorrowerContract} from "./borrower"
 import {
   CommunityRewardsGrant,
@@ -258,27 +258,15 @@ class UserStakingRewards {
   }
 
   static calculateClaimableRewards(positions: StakingRewardsPosition[]): BigNumber {
-    if (positions.length === 0) return new BigNumber(0)
-    return BigNumber.sum.apply(
-      null,
-      positions.map((position) => position.claimable)
-    )
+    return defaultSum(positions.map((position) => position.claimable))
   }
 
   static calculateUnvestedRewards(positions: StakingRewardsPosition[]): BigNumber {
-    if (positions.length === 0) return new BigNumber(0)
-    return BigNumber.sum.apply(
-      null,
-      positions.map((position) => position.unvested)
-    )
+    return defaultSum(positions.map((position) => position.unvested))
   }
 
   static calculateGrantedRewards(positions: StakingRewardsPosition[]): BigNumber {
-    if (positions.length === 0) return new BigNumber(0)
-    return BigNumber.sum.apply(
-      null,
-      positions.map((position) => position.granted)
-    )
+    return defaultSum(positions.map((position) => position.granted))
   }
 
   static parseStoredPosition(tuple: {
@@ -438,25 +426,15 @@ class UserCommunityRewards {
   }
 
   static calculateClaimable(grants: CommunityRewardsGrant[]): BigNumber {
-    if (grants.length === 0) return new BigNumber(0)
-    const claimableResults = grants.map((grant) => grant.claimable)
-    return BigNumber.sum.apply(null, claimableResults)
+    return defaultSum(grants.map((grant) => grant.claimable))
   }
 
   static calculateUnvested(grants: CommunityRewardsGrant[]): BigNumber {
-    if (grants.length === 0) return new BigNumber(0)
-    return BigNumber.sum.apply(
-      null,
-      grants.map((grant) => grant.unvested)
-    )
+    return defaultSum(grants.map((grant) => grant.unvested))
   }
 
   static calculateGranted(grants: CommunityRewardsGrant[]): BigNumber {
-    if (grants.length === 0) return new BigNumber(0)
-    return BigNumber.sum.apply(
-      null,
-      grants.map((grant) => grant.granted)
-    )
+    return defaultSum(grants.map((grant) => grant.granted))
   }
 
   static parseCommunityRewardsGrant(
@@ -586,19 +564,9 @@ export class UserMerkleDistributor {
       })
     )
 
-    const notAcceptedClaimable = notAccepted.length
-      ? BigNumber.sum.apply(
-          null,
-          notAccepted.map((val) => val.claimable)
-        )
-      : new BigNumber(0)
+    const notAcceptedClaimable = defaultSum(notAccepted.map((val) => val.claimable))
 
-    const notAcceptedUnvested = notAccepted.length
-      ? BigNumber.sum.apply(
-          null,
-          notAccepted.map((val) => val.unvested)
-        )
-      : new BigNumber(0)
+    const notAcceptedUnvested = defaultSum(notAccepted.map((val) => val.unvested))
 
     this.info = {
       loaded: true,
@@ -717,32 +685,12 @@ export class UserMerkleDirectDistributor {
       }
     })
 
-    const acceptedClaimable = accepted.length
-      ? BigNumber.sum.apply(
-          null,
-          accepted.map((val) => val.claimable)
-        )
-      : new BigNumber(0)
-    const notAcceptedClaimable = notAccepted.length
-      ? BigNumber.sum.apply(
-          null,
-          notAccepted.map((val) => val.claimable)
-        )
-      : new BigNumber(0)
+    const acceptedClaimable = defaultSum(accepted.map((val) => val.claimable))
+    const notAcceptedClaimable = defaultSum(notAccepted.map((val) => val.claimable))
     const claimable = acceptedClaimable.plus(notAcceptedClaimable)
 
-    const acceptedUnvested = accepted.length
-      ? BigNumber.sum.apply(
-          null,
-          accepted.map((val) => val.unvested)
-        )
-      : new BigNumber(0)
-    const notAcceptedUnvested = notAccepted.length
-      ? BigNumber.sum.apply(
-          null,
-          notAccepted.map((val) => val.unvested)
-        )
-      : new BigNumber(0)
+    const acceptedUnvested = defaultSum(accepted.map((val) => val.unvested))
+    const notAcceptedUnvested = defaultSum(notAccepted.map((val) => val.unvested))
     const unvested = acceptedUnvested.plus(notAcceptedUnvested)
 
     this.info = {
