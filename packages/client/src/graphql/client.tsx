@@ -3,7 +3,7 @@ import {NetworkConfig} from "../App"
 
 const API_URLS = {
   mainnet: "https://api.thegraph.com/subgraphs/name/goldfinch-eng/goldfinch",
-  localhost: "https://api.thegraph.com/subgraphs/name/goldfinch-eng/goldfinch",
+  localhost: "http://localhost:8000/subgraphs/name/goldfinch-subgraph",
 }
 
 const getApolloClient = (network?: NetworkConfig): ApolloClient<NormalizedCacheObject> => {
