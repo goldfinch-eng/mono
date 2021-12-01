@@ -587,16 +587,18 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     const details = getStakingOrCommunityRewardsDetails(item, props.stakingRewards, props.communityRewards)
 
     if (item.claimable.eq(0)) {
-      const status: RewardStatus =
-        item instanceof CommunityRewardsGrant
-          ? item.claimed.lt(item.granted)
-            ? item.revoked
-              ? RewardStatus.PermanentlyAllClaimed
-              : RewardStatus.TemporarilyAllClaimed
-            : RewardStatus.PermanentlyAllClaimed
-          : // Staking rewards are never "permanently" all-claimed; even after vesting is finished, stakings keep
-            // earning rewards that vest immediately.
-            RewardStatus.TemporarilyAllClaimed
+      let status: RewardStatus
+      if (item instanceof CommunityRewardsGrant) {
+        if (item.claimed.lt(item.granted)) {
+          status = item.revoked ? RewardStatus.PermanentlyAllClaimed : RewardStatus.TemporarilyAllClaimed
+        } else {
+          status = RewardStatus.PermanentlyAllClaimed
+        }
+      } else {
+        // Staking rewards are never "permanently" all-claimed; even after vesting is finished, stakings keep
+        // earning rewards that vest immediately.
+        status = RewardStatus.TemporarilyAllClaimed
+      }
       return (
         <RewardsListItem
           status={status}
