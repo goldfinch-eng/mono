@@ -152,14 +152,14 @@ function DepositForm(props: DepositFormProps) {
           <label className="checkbox-label with-note" htmlFor={STAKING_FORM_VAL}>
             <div>
               <div className="checkbox-label-primary">
-                <div>{`I want to stake my supply to earn GFI rewards (${displayPercent(
+                <div>{`I want to stake my supply to earn GFI rewards (additional ${displayPercent(
                   pool.info.value.poolData.estimatedApyFromGfi
                 )} APY).`}</div>
               </div>
               <div className="form-input-note">
                 <p>
-                  GFI rewards incentivize long-term capital investment: the longer you stake, the more rewards you can
-                  earn. You will be required to pay a gas fee to stake.
+                  Goldfinch incentivizes long term investment. Maximum GFI rewards will be earned by those who hold for
+                  at least 12 months. Staking incurs additional gas.
                 </p>
               </div>
             </div>
