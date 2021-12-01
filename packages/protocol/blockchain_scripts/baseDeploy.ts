@@ -226,6 +226,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
     const fidu = await deployer.deploy<Fidu>("Fidu", {
       from: gf_deployer,
       proxy: {
+        owner: protocol_owner,
         execute: {
           init: {
             methodName: "__initialize__",
@@ -283,6 +284,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
       from: gf_deployer,
       gasLimit: 4000000,
       proxy: {
+        owner: protocol_owner,
         execute: {
           init: {
             methodName: "__initialize__",
@@ -313,6 +315,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
       from: gf_deployer,
       gasLimit: 4000000,
       proxy: {
+        owner: protocol_owner,
         execute: {
           init: {
             methodName: "__initialize__",
@@ -414,10 +417,19 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
 
     logger(`About to deploy ${contractName}...`)
     assertIsString(gf_deployer)
+    const protocol_owner = await getProtocolOwner()
     const merkleDirectDistributor = await deployer.deploy(contractName, {
       from: gf_deployer,
       gasLimit: 4000000,
-      args: [gfi.contract.address, merkleRoot],
+      proxy: {
+        owner: protocol_owner,
+        execute: {
+          init: {
+            methodName: "initialize",
+            args: [protocol_owner, gfi.contract.address, merkleRoot],
+          },
+        },
+      },
     })
     const contract = await getTruffleContract<MerkleDirectDistributorInstance>(contractName, {
       at: merkleDirectDistributor.address,
@@ -473,6 +485,7 @@ export async function deployUniqueIdentity({
     from: gf_deployer,
     gasLimit: 4000000,
     proxy: {
+      owner: protocol_owner,
       proxyContract: "EIP173Proxy",
       execute: {
         init: {
@@ -564,6 +577,7 @@ export async function deployGo(
     from: gf_deployer,
     gasLimit: 4000000,
     proxy: {
+      owner: protocol_owner,
       execute: {
         init: {
           methodName: "initialize",
@@ -686,6 +700,7 @@ async function deployTransferRestrictedVault(
   return await deployer.deploy<TransferRestrictedVault>(contractName, {
     from: gf_deployer,
     proxy: {
+      owner: protocol_owner,
       execute: {
         init: {
           methodName: "__initialize__",
@@ -739,6 +754,7 @@ async function deployPool(deployer: ContractDeployer, {config}: DeployOpts) {
   const pool = await deployer.deploy(contractName, {
     from: gf_deployer,
     proxy: {
+      owner: protocol_owner,
       execute: {
         init: {
           methodName: "initialize",

@@ -137,7 +137,7 @@ describe("Senior pool page deposit status", () => {
     const poolData = {}
     renderDepositStatus(poolData, undefined, currentBlock)
     expect(screen.getByTestId("portfolio-total-balance").textContent).toContain("$--.--")
-    expect(screen.getByTestId("portfolio-est-growth").textContent).toContain("--.--% APY")
+    expect(screen.getByTestId("portfolio-est-growth").textContent).toContain("$--.--")
   })
 
   it("shows deposit status without GFI rewards", async () => {
