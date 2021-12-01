@@ -16,9 +16,9 @@ import {
 import hre, {deployments} from "hardhat"
 import {DeployEffects, Effects} from "../deployEffects"
 import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
-import {CreditLine, GoldfinchConfig, TranchedPool} from "@goldfinch-eng/protocol/typechain/ethers"
+import {CreditLine, GFI, GoldfinchConfig, TranchedPool} from "@goldfinch-eng/protocol/typechain/ethers"
 import {GFIInstance} from "@goldfinch-eng/protocol/typechain/truffle"
-import {CONFIG_KEYS_BY_TYPE} from "../../configKeys"
+import {CONFIG_KEYS, CONFIG_KEYS_BY_TYPE} from "../../configKeys"
 import poolMetadata from "@goldfinch-eng/client/config/pool-metadata/mainnet.json"
 import {Contract} from "ethers"
 import {generateMerkleRoot as generateMerkleDirectRoot} from "../../merkle/merkleDirectDistributor/generateMerkleRoot"
@@ -127,7 +127,11 @@ export async function deploy(
   })
 
   // 3.
-  // TODO: Mint GFI, distribute to contracts / EOAs, set reward parameters, set GFI in config
+  // TODO: Mint GFI, distribute to contracts / EOAs, set reward parameters
+  // 3.1 set goldfinch config address for GFI
+  await deployEffects.add({
+    deferred: [await config.populateTransaction.setAddress(CONFIG_KEYS.GFI, gfi.contract.address)],
+  })
 
   // 4.
   // Deploy DynamicLeverageRatioStrategy (unused for now)
