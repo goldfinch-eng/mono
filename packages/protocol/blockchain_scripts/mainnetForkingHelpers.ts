@@ -17,6 +17,7 @@ import {
   assertIsTicker,
   ContractDeployer,
   getEthersContract,
+  getProtocolOwner,
 } from "../blockchain_scripts/deployHelpers"
 import _ from "lodash"
 import {CONFIG_KEYS} from "./configKeys"
@@ -94,11 +95,17 @@ async function upgradeContracts({
     const ethersSigner = typeof signer === "string" ? await ethers.getSigner(signer) : signer
     await deployer.deploy(contractToDeploy, {
       from: deployFrom,
-      proxy: true,
+      proxy: {
+        owner: await getProtocolOwner(),
+      },
       libraries: dependencies[contractName],
     })
 
-    const upgradedContract = (await getEthersContract(`${contractToDeploy}_Implementation`)).connect(ethersSigner)
+    const implDepoyment = await hre.deployments.get(`${contractToDeploy}_Implementation`)
+
+    const upgradedContract = (await getEthersContract(contractToDeploy, {at: implDepoyment.address})).connect(
+      ethersSigner
+    )
     // Get a contract object with the latest ABI, attached to the signer
     const upgradedImplAddress = upgradedContract.address
 
