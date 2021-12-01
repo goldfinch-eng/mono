@@ -16,7 +16,7 @@ function displayNumber(val, decimals) {
   const valFloat = parseFloat(val)
   if (!decimals && Math.floor(valFloat) === valFloat) {
     decimals = 0
-  } else if (!decimals) {
+  } else if (decimals === undefined) {
     decimals = valFloat.toString().split(".")[1]?.length || 0
   }
 
