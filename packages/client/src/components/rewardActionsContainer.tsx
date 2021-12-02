@@ -69,11 +69,7 @@ function ActionButton(props: ActionButtonProps) {
   const isAccepting = props.text === ActionButtonTexts.accept && isPending
 
   return (
-    <button
-      disabled={props.disabled}
-      className={`${!isTabletOrMobile && "table-cell"} action ${disabledClass}`}
-      onClick={action}
-    >
+    <button className={`${!isTabletOrMobile && "table-cell"} action ${disabledClass}`} onClick={action}>
       {isAccepting ? ActionButtonTexts.accepting : props.text}
     </button>
   )
@@ -207,13 +203,13 @@ function getActionButtonProps(props: RewardsListItemProps): ActionButtonProps {
       return {
         ...baseProps,
         text: ActionButtonTexts.accept,
-        disabled: props.disabled,
+        disabled: false,
       }
     case RewardStatus.Claimable:
       return {
         ...baseProps,
         text: ActionButtonTexts.claimGFI,
-        disabled: props.disabled,
+        disabled: false,
       }
     case RewardStatus.TemporarilyAllClaimed:
       return {
@@ -238,7 +234,6 @@ interface RewardsListItemProps {
   claimableGFI: BigNumber
   status: RewardStatus
   details: ItemDetails
-  disabled: boolean
   handleOnClick: () => Promise<void>
 }
 
@@ -451,7 +446,6 @@ interface RewardActionsContainerProps {
   stakingRewards: StakingRewardsLoaded
   communityRewards: CommunityRewardsLoaded
   item: CommunityRewardsGrant | StakingRewardsPosition | MerkleDistributorGrantInfo
-  disabled: boolean
 }
 
 function RewardActionsContainer(props: RewardActionsContainerProps) {
@@ -512,7 +506,6 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
           claimableGFI={item.claimable}
           handleOnClick={() => Promise.resolve()}
           details={details}
-          disabled={props.disabled}
         />
       )
     } else if (!showAction) {
@@ -524,7 +517,6 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
           claimableGFI={item.claimable}
           handleOnClick={async () => setShowAction(true)}
           details={details}
-          disabled={props.disabled}
         />
       )
     }
@@ -552,7 +544,6 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
         claimableGFI={new BigNumber(0)}
         handleOnClick={() => handleAccept(item)}
         details={details}
-        disabled={props.disabled}
       />
     )
   }

@@ -13,7 +13,6 @@ import {displayDollars, displayNumber, displayPercent, assertNonNullable} from "
 import LoadingButton from "./loadingButton"
 
 interface StakeFiduBannerProps {
-  disabled: boolean
   capitalProvider: CapitalProvider | undefined
   kyc: KYC | undefined
   actionComplete: () => void
@@ -75,8 +74,7 @@ export default function StakeFiduBanner(props: StakeFiduBannerProps) {
     // relation to the other actions on the senior pool page, we condition here on having satisfied the
     // same base requirement(s) that the other actions require.
     const userSatisfiesSeniorPoolRequirements = eligibleForSeniorPool(props.kyc, user)
-    const disabled =
-      props.disabled || !userSatisfiesSeniorPoolRequirements || !stakingRewards || stakingRewards.info.value.isPaused
+    const disabled = !userSatisfiesSeniorPoolRequirements || !stakingRewards || stakingRewards.info.value.isPaused
 
     const placeholderClass = disabled ? "placeholder" : ""
 
