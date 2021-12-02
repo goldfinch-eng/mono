@@ -58,11 +58,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
   useEffect(() => {
     if (props.user && session.status !== "authenticated" && showSignIn) {
       signIn().then((session) => {
-        // If the user didn't authenticate successfully, reset `showSignIn`, so that clicking the "Connect Metamask"
-        // button again will initiate another sign-in flow.
-        if (session.status !== "authenticated") {
-          setShowSignIn(false)
-        }
+        setShowSignIn(false)
       })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
