@@ -1,4 +1,4 @@
-import hre from "hardhat"
+import hre, {getNamedAccounts} from "hardhat"
 import {
   getUSDCAddress,
   MAINNET_ONE_SPLIT_ADDRESS,
@@ -9,6 +9,7 @@ import {
   MAINNET_CHAIN_ID,
   getProtocolOwner,
   getTruffleContract,
+  OWNER_ROLE,
 } from "../../blockchain_scripts/deployHelpers"
 import {
   MAINNET_MULTISIG,
@@ -35,19 +36,27 @@ import {
   decimals,
   USDC_DECIMALS,
   createPoolWithCreditLine,
+  decodeLogs,
+  getDeployedAsTruffleContract,
 } from "../testHelpers"
-import {assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
+import {asNonNullable, assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
 import {
+  BackerRewardsInstance,
   BorrowerInstance,
   FiduInstance,
   FixedLeverageRatioStrategyInstance,
+  GFIInstance,
   GoInstance,
   GoldfinchConfigInstance,
   GoldfinchFactoryInstance,
   SeniorPoolInstance,
+  StakingRewardsInstance,
+  TranchedPoolInstance,
 } from "@goldfinch-eng/protocol/typechain/truffle"
 import * as migrate22 from "../../blockchain_scripts/migrations/v2.2/migrate"
 import * as migrate23 from "../../blockchain_scripts/migrations/v2.3/migrate"
+import {DepositMade} from "@goldfinch-eng/protocol/typechain/truffle/TranchedPool"
+import {Staked} from "@goldfinch-eng/protocol/typechain/truffle/StakingRewards"
 
 const setupTest = deployments.createFixture(async ({deployments}) => {
   // Note: base_deploy always returns when mainnet forking, however
@@ -97,6 +106,14 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
     .require("GoldfinchConfig")
     .at(existingContracts.GoldfinchConfig.ExistingContract.address)
 
+  const newGoldfinchConfig: GoldfinchConfigInstance = await artifacts
+    .require("GoldfinchConfig")
+    .at(await goldfinchConfig.getAddress(CONFIG_KEYS.GoldfinchConfig))
+
+  const backerRewards: BackerRewardsInstance = await artifacts
+    .require("BackerRewards")
+    .at(await newGoldfinchConfig.getAddress(CONFIG_KEYS.BackerRewards))
+
   const goldfinchFactory: GoldfinchFactoryInstance = await artifacts
     .require("GoldfinchFactory")
     .at(existingContracts.GoldfinchFactory.ExistingContract.address)
@@ -106,7 +123,34 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
     .require("FixedLeverageRatioStrategy")
     .at(seniorPoolStrategyAddress)
 
-  return {seniorPool, seniorPoolStrategy, usdc, fidu, goldfinchConfig, goldfinchFactory, cUSDC, go}
+  const stakingRewards: StakingRewardsInstance = await artifacts
+    .require("StakingRewards")
+    .at(await newGoldfinchConfig.getAddress(CONFIG_KEYS.StakingRewards))
+
+  // GFI is deployed by the temp multisig
+  const gfi = await getDeployedAsTruffleContract<GFIInstance>(deployments, "GFI")
+
+  // make protocolOwner the GFI owner and mint
+  const protocolOwner = await getProtocolOwner()
+  const {temp_multisig} = await getNamedAccounts()
+  assertIsString(temp_multisig)
+  await fundWithWhales(["ETH"], [temp_multisig])
+  await gfi.grantRole(await gfi.MINTER_ROLE(), protocolOwner, {from: temp_multisig})
+  await gfi.mint(protocolOwner, bigVal(100_000_000), {from: protocolOwner})
+
+  return {
+    seniorPool,
+    seniorPoolStrategy,
+    usdc,
+    fidu,
+    goldfinchConfig,
+    goldfinchFactory,
+    cUSDC,
+    go,
+    stakingRewards,
+    backerRewards,
+    gfi,
+  }
 })
 
 export const TEST_TIMEOUT = 180000 // 3 mins
@@ -122,7 +166,15 @@ describe("mainnet forking tests", async function () {
   // eslint-disable-next-line no-unused-vars
   let accounts, owner, bwr, person3, usdc, fidu, goldfinchConfig
   let goldfinchFactory, busd, usdt, cUSDC
-  let reserveAddress, tranchedPool, borrower, seniorPool, seniorPoolStrategy, go
+  let reserveAddress,
+    tranchedPool: TranchedPoolInstance,
+    borrower,
+    seniorPool: SeniorPoolInstance,
+    seniorPoolStrategy,
+    go: GoInstance,
+    stakingRewards: StakingRewardsInstance,
+    backerRewards: BackerRewardsInstance,
+    gfi: GFIInstance
 
   async function setupSeniorPool() {
     seniorPoolStrategy = await artifacts.require("ISeniorPoolStrategy").at(seniorPoolStrategy.address)
@@ -155,7 +207,19 @@ describe("mainnet forking tests", async function () {
     this.timeout(TEST_TIMEOUT)
     accounts = await web3.eth.getAccounts()
     ;[owner, bwr, person3] = accounts
-    ;({usdc, goldfinchFactory, seniorPool, seniorPoolStrategy, fidu, goldfinchConfig, cUSDC, go} = await setupTest())
+    ;({
+      usdc,
+      goldfinchFactory,
+      seniorPool,
+      seniorPoolStrategy,
+      fidu,
+      goldfinchConfig,
+      cUSDC,
+      go,
+      stakingRewards,
+      backerRewards,
+      gfi,
+    } = await setupTest())
     const usdcAddress = getUSDCAddress(MAINNET_CHAIN_ID)
     assertIsString(usdcAddress)
     const busdAddress = "0x4fabb145d64652a948d72533023f6e7a623c7c53"
@@ -164,7 +228,7 @@ describe("mainnet forking tests", async function () {
     usdt = await artifacts.require("IERC20withDec").at(usdtAddress)
     await fundWithWhales(["USDC", "BUSD", "USDT"], [owner, bwr, person3])
     await erc20Approve(usdc, seniorPool.address, MAX_UINT, accounts)
-    await goldfinchConfig.bulkAddToGoList(accounts, {from: MAINNET_MULTISIG})
+    await goldfinchConfig.bulkAddToGoList([owner, bwr, person3], {from: MAINNET_MULTISIG})
     await setupSeniorPool()
   })
 
@@ -548,6 +612,225 @@ describe("mainnet forking tests", async function () {
         await expect(seniorPool.sweepToCompound({from: bwr})).to.be.rejectedWith(/Must have admin role/)
         await expect(seniorPool.sweepFromCompound({from: bwr})).to.be.rejectedWith(/Must have admin role/)
       }).timeout(TEST_TIMEOUT)
+    })
+  })
+
+  describe("integration tests", async () => {
+    let bwrCon: BorrowerInstance
+    describe("as a not user on the go list and without a UID", async () => {
+      let unGoListedUser: string
+
+      beforeEach(async () => {
+        const [, , , maybeUser] = await hre.getUnnamedAccounts()
+        unGoListedUser = asNonNullable(maybeUser)
+        ;({tranchedPool} = await createPoolWithCreditLine({
+          people: {borrower: bwr, owner: MAINNET_MULTISIG},
+          usdc,
+          goldfinchFactory,
+        }))
+        await fundWithWhales(["USDC"], [unGoListedUser])
+        await erc20Approve(usdc, seniorPool.address, MAX_UINT, [unGoListedUser])
+        await erc20Approve(usdc, tranchedPool.address, MAX_UINT, [unGoListedUser])
+        await erc20Approve(usdc, stakingRewards.address, MAX_UINT, [unGoListedUser])
+        await expect(go.go(unGoListedUser)).to.eventually.be.false
+      })
+
+      describe("when I deposit and subsequently withdraw into the senior pool", async () => {
+        it("it reverts", async () => {
+          await expect(seniorPool.deposit(usdcVal(10), {from: unGoListedUser})).to.be.rejected
+          await expect(seniorPool.withdraw(usdcVal(10), {from: unGoListedUser})).to.be.rejected
+        })
+      })
+
+      describe("when I deposit and subsequently withdraw from a tranched pool's junior tranche", async () => {
+        it("it reverts", async () => {
+          await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(10), {from: unGoListedUser})).to.be.rejected
+          await expect(tranchedPool.withdraw(new BN("0"), usdcVal(10), {from: unGoListedUser})).to.be.rejected
+        })
+      })
+
+      describe("when I deposit and stake", async () => {
+        it("it reverts", async () => {
+          await expect(stakingRewards.depositAndStake(usdcVal(10), {from: unGoListedUser})).to.be.rejectedWith(
+            /This address has not been go-listed/i
+          )
+        })
+      })
+    })
+
+    describe("as a user on the go list", async () => {
+      let goListedUser: string
+
+      beforeEach(async () => {
+        const [, , , , maybeUser, maybeBorrower] = await hre.getUnnamedAccounts()
+        goListedUser = asNonNullable(maybeUser)
+        borrower = asNonNullable(maybeBorrower)
+        ;({tranchedPool} = await createPoolWithCreditLine({
+          people: {borrower, owner: MAINNET_MULTISIG},
+          usdc,
+          goldfinchFactory,
+        }))
+        await fundWithWhales(["USDC"], [goListedUser])
+        const goldfinchConfigWithGoListAddress = await go.goListOverride()
+        const goldfinchConfigWithGoList = await getTruffleContract<GoldfinchConfigInstance>("GoldfinchConfig", {
+          at: goldfinchConfigWithGoListAddress,
+        })
+        await goldfinchConfigWithGoList.addToGoList(goListedUser)
+        await erc20Approve(usdc, seniorPool.address, MAX_UINT, [goListedUser])
+        await erc20Approve(usdc, tranchedPool.address, MAX_UINT, [goListedUser])
+        await erc20Approve(usdc, stakingRewards.address, MAX_UINT, [goListedUser])
+        await expect(go.go(goListedUser)).to.eventually.be.true
+      })
+
+      describe("when I deposit and subsequently withdraw into the senior pool", async () => {
+        it("it works", async () => {
+          await expect(seniorPool.deposit(usdcVal(10), {from: goListedUser})).to.be.fulfilled
+          await expect(seniorPool.withdraw(usdcVal(10), {from: goListedUser})).to.be.fulfilled
+        })
+      })
+
+      describe("when I deposit and subsequently withdraw from a tranched pool's junior tranche", async () => {
+        it("it works", async () => {
+          const tx = await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(10), {from: goListedUser})).to.be
+            .fulfilled
+          const logs = decodeLogs<DepositMade>(tx.receipt.rawLogs, tranchedPool, "DepositMade")
+          let depositMadeEvent = logs[0]
+          expect(depositMadeEvent).to.not.be.undefined
+          depositMadeEvent = asNonNullable(depositMadeEvent)
+          const tokenId = depositMadeEvent.args.tokenId
+          await expect(tranchedPool.withdraw(tokenId, usdcVal(10), {from: goListedUser})).to.be.fulfilled
+        })
+      })
+
+      describe("when I deposit and stake and then exit", async () => {
+        it("it works", async () => {
+          const tx = await expect(stakingRewards.depositAndStake(usdcVal(10_000), {from: goListedUser})).to.be.fulfilled
+          const logs = decodeLogs<Staked>(tx.receipt.rawLogs, stakingRewards, "Staked")
+          const stakedEvent = asNonNullable(logs[0])
+          const tokenId = stakedEvent?.args.tokenId
+          await expect(stakingRewards.exit(tokenId, {from: goListedUser})).to.be.fulfilled
+        })
+      })
+
+      describe("when I deposit and stake with lockup, and then exit", async () => {
+        it("it works", async () => {
+          const tx = await expect(
+            stakingRewards.depositAndStakeWithLockup(usdcVal(10_000), new BN(0), {from: goListedUser})
+          ).to.be.fulfilled
+          const logs = decodeLogs<Staked>(tx.receipt.rawLogs, stakingRewards, "Staked")
+          const stakedEvent = asNonNullable(logs[0])
+          const tokenId = stakedEvent?.args.tokenId
+          await advanceTime({days: 30})
+          // before lockup expires
+          await expect(stakingRewards.exit(tokenId, {from: goListedUser})).to.be.rejectedWith(
+            /staked funds are locked/i
+          )
+          await advanceTime({days: 6 * 31})
+          await expect(stakingRewards.exit(tokenId, {from: goListedUser})).to.be.fulfilled
+        })
+      })
+    })
+
+    describe("as a go listed borrower", async () => {
+      describe("with a pool that I don't own", async () => {
+        beforeEach(async () => {
+          // eslint-disable-next-line @typescript-eslint/no-extra-semi
+          ;({tranchedPool} = await createPoolWithCreditLine({
+            people: {
+              owner: MAINNET_MULTISIG,
+              borrower: person3,
+            },
+            usdc,
+            goldfinchFactory,
+          }))
+          bwr = person3
+          bwrCon = await createBorrowerContract()
+          await erc20Approve(usdc, tranchedPool.address, MAX_UINT, [bwr, owner])
+          await erc20Approve(usdc, bwrCon.address, MAX_UINT, [bwr, owner])
+          await tranchedPool.deposit(TRANCHES.Junior, usdcVal(100), {from: owner})
+          await tranchedPool.lockJuniorCapital({from: MAINNET_MULTISIG})
+          await tranchedPool.grantRole(await tranchedPool.SENIOR_ROLE(), owner, {from: MAINNET_MULTISIG})
+          await tranchedPool.deposit(TRANCHES.Senior, usdcVal(300), {from: owner})
+          await tranchedPool.revokeRole(await tranchedPool.SENIOR_ROLE(), owner, {from: MAINNET_MULTISIG})
+          await tranchedPool.lockPool({from: MAINNET_MULTISIG})
+        })
+
+        describe("when I try to withdraw", async () => {
+          it("it fails", async () => {
+            await expect(bwrCon.drawdown(tranchedPool.address, usdcVal(400), bwr, {from: bwr})).to.be.rejectedWith(
+              /Must have locker role/i
+            )
+          })
+        })
+      })
+
+      describe("with a pool that I own", async () => {
+        let backerTokenId
+        beforeEach(async () => {
+          // eslint-disable-next-line @typescript-eslint/no-extra-semi
+          ;({tranchedPool} = await createPoolWithCreditLine({
+            people: {
+              owner: MAINNET_MULTISIG,
+              borrower: bwr,
+            },
+            usdc,
+            goldfinchFactory,
+          }))
+          await erc20Approve(usdc, tranchedPool.address, MAX_UINT, [bwr, owner])
+          await erc20Approve(usdc, bwrCon.address, MAX_UINT, [bwr, owner])
+          const tx = await tranchedPool.deposit(TRANCHES.Junior, usdcVal(2_500), {from: owner})
+          const logs = decodeLogs<DepositMade>(tx.receipt.rawLogs, tranchedPool, "DepositMade")
+          const depositMadeEvent = asNonNullable(logs[0])
+          backerTokenId = depositMadeEvent.args.tokenId
+          await tranchedPool.lockJuniorCapital({from: bwr})
+          await tranchedPool.grantRole(await tranchedPool.SENIOR_ROLE(), owner, {from: MAINNET_MULTISIG})
+          await tranchedPool.deposit(TRANCHES.Senior, usdcVal(7_500), {from: owner})
+          await tranchedPool.revokeRole(await tranchedPool.SENIOR_ROLE(), owner, {from: MAINNET_MULTISIG})
+          await tranchedPool.lockPool({from: bwr})
+        })
+
+        describe("if backerrewards contract is configured", () => {
+          beforeEach(async () => {
+            const totalRewards = 1_000
+            const maxInterestDollarsEligible = 1_000_000_000
+            const protocolOwner = await getProtocolOwner()
+            await backerRewards.setMaxInterestDollarsEligible(bigVal(maxInterestDollarsEligible), {from: protocolOwner})
+            await backerRewards.setTotalRewards(bigVal(Math.round(totalRewards * 100)).div(new BN(100)), {
+              from: protocolOwner,
+            })
+            await backerRewards.setTotalInterestReceived(usdcVal(0), {from: protocolOwner})
+          })
+
+          it("properly allocates rewards", async () => {
+            await expect(bwrCon.drawdown(tranchedPool.address, usdcVal(10_000), bwr, {from: bwr})).to.be.fulfilled
+            await advanceTime({days: 90})
+            await ethers.provider.send("evm_mine", [])
+            await expect(bwrCon.pay(tranchedPool.address, usdcVal(10_000), {from: bwr})).to.be.fulfilled
+
+            // verify accRewardsPerPrincipalDollar
+            const accRewardsPerPrincipalDollar = await backerRewards.pools(tranchedPool.address)
+            expect(accRewardsPerPrincipalDollar).to.bignumber.equal(new BN(0))
+
+            // verify claimable rewards
+            const expectedPoolTokenClaimableRewards = await backerRewards.poolTokenClaimableRewards(backerTokenId)
+            expect(new BN(expectedPoolTokenClaimableRewards)).to.bignumber.equal(new BN(0))
+          })
+        })
+
+        describe("if backerrewards contract is not configured", () => {
+          describe("when I drawdown and pay back", async () => {
+            it("it works", async () => {
+              await expect(bwrCon.drawdown(tranchedPool.address, usdcVal(10_000), bwr, {from: bwr})).to.be.fulfilled
+              await advanceTime({days: 90})
+              await ethers.provider.send("evm_mine", [])
+              await expect(bwrCon.pay(tranchedPool.address, usdcVal(10_000), {from: bwr})).to.be.fulfilled
+              const rewards = await expect(backerRewards.poolTokenClaimableRewards(backerTokenId)).to.be.fulfilled
+              // right now rewards rates aren't set, so no rewards should be claimable
+              expect(rewards).to.bignumber.eq("0")
+            })
+          })
+        })
+      })
     })
   })
 })

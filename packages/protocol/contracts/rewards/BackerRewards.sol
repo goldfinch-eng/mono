@@ -78,6 +78,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     totalRewards = _totalRewards;
     uint256 totalGFISupply = config.getGFI().totalSupply();
     totalRewardPercentOfTotalGFI = _totalRewards.mul(mantissa()).div(totalGFISupply).mul(100);
+    emit BackerRewardsSetTotalRewards(_msgSender(), _totalRewards, totalRewardPercentOfTotalGFI);
   }
 
   /**
@@ -87,6 +88,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
    */
   function setTotalInterestReceived(uint256 _totalInterestReceived) public onlyAdmin {
     totalInterestReceived = _totalInterestReceived;
+    emit BackerRewardsSetTotalInterestReceived(_msgSender(), _totalInterestReceived);
   }
 
   /**
@@ -95,6 +97,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
    */
   function setMaxInterestDollarsEligible(uint256 _maxInterestDollarsEligible) public onlyAdmin {
     maxInterestDollarsEligible = _maxInterestDollarsEligible;
+    emit BackerRewardsSetMaxInterestDollarsEligible(_msgSender(), _maxInterestDollarsEligible);
   }
 
   /**
@@ -168,6 +171,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
 
     address poolAddr = tokenInfo.pool;
     require(config.getPoolTokens().validPool(poolAddr), "Invalid pool!");
+    require(msg.sender == poolTokens.ownerOf(tokenId), "Must be owner of PoolToken");
 
     BaseUpgradeablePausable pool = BaseUpgradeablePausable(poolAddr);
     require(!pool.paused(), "Pool withdraw paused");
@@ -177,7 +181,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
 
     tokens[tokenId].rewardsClaimed = poolTokenRewardsClaimed.add(totalClaimableRewards);
     safeERC20Transfer(config.getGFI(), poolTokens.ownerOf(tokenId), totalClaimableRewards);
-    emit BackerRewardsClaimed(msg.sender, tokenId, totalClaimableRewards);
+    emit BackerRewardsClaimed(_msgSender(), tokenId, totalClaimableRewards);
   }
 
   /* Internal functions  */
@@ -196,7 +200,9 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     BackerRewardsInfo storage _poolInfo = pools[_poolAddress];
 
     uint256 totalJuniorDeposits = pool.totalJuniorDeposits();
-    require(totalJuniorDeposits > 0, "Principal balance cannot be zero");
+    if (totalJuniorDeposits == 0) {
+      return;
+    }
 
     // example: (6708203932437400000000 * 10^18) / (100000*10^18)
     _poolInfo.accRewardsPerPrincipalDollar = _poolInfo.accRewardsPerPrincipalDollar.add(
@@ -319,4 +325,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   /* ======== EVENTS ======== */
   event GoldfinchConfigUpdated(address indexed who, address configAddress);
   event BackerRewardsClaimed(address indexed owner, uint256 indexed tokenId, uint256 amount);
+  event BackerRewardsSetTotalRewards(address indexed owner, uint256 totalRewards, uint256 totalRewardPercentOfTotalGFI);
+  event BackerRewardsSetTotalInterestReceived(address indexed owner, uint256 totalInterestReceived);
+  event BackerRewardsSetMaxInterestDollarsEligible(address indexed owner, uint256 maxInterestDollarsEligible);
 }

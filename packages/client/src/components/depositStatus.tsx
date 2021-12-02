@@ -38,8 +38,10 @@ function DepositStatus(props: DepositStatusProps) {
       <div className="deposit-status background-container-inner">
         <div className="deposit-status-item">
           <div className="label">Portfolio balance</div>
-          <div className="value">{portfolioBalanceDisplay}</div>
-          <div className="sub-value">
+          <div className="value" data-testid="portfolio-total-balance">
+            {portfolioBalanceDisplay}
+          </div>
+          <div className="sub-value" data-testid="portfolio-total-balance-perc">
             {unrealizedGainsPrefix}
             {unrealizedGainsDisplay} ({unrealizedGainsPercentDisplay})
           </div>
@@ -51,8 +53,12 @@ function DepositStatus(props: DepositStatusProps) {
               <InfoIcon />
             </span>
           </div>
-          <div className="value">{estimatedGrowthDisplay}</div>
-          <div className="sub-value">{`${apyDisplay} APY${estimatedApyFromGfi?.gt(0) ? " (with GFI)" : ""}`}</div>
+          <div className="value" data-testid="portfolio-est-growth">
+            {estimatedGrowthDisplay}
+          </div>
+          <div className="sub-value" data-testid="portfolio-est-growth-perc">{`${apyDisplay} APY${
+            estimatedApyFromGfi?.gt(0) ? " (with GFI)" : ""
+          }`}</div>
         </div>
         <AnnualGrowthTooltipContent
           supplyingCombined={false}
@@ -67,11 +73,13 @@ function DepositStatus(props: DepositStatusProps) {
       <div className="deposit-status background-container-inner">
         <div className="deposit-status-item">
           <div className="label">Portfolio balance</div>
-          <div className="value">{displayDollars(undefined, 2)}</div>
+          <div className="value" data-testid="portfolio-total-balance">
+            {displayDollars(undefined, 2)}
+          </div>
         </div>
         <div className="deposit-status-item">
           <div className="label">Est. Annual Growth</div>
-          <div className="value">{`${displayPercent(undefined, 2)} APY`}</div>
+          <div className="value" data-testid="portfolio-est-growth">{`${displayDollars(undefined)}`}</div>
         </div>
       </div>
     )

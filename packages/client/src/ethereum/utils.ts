@@ -8,8 +8,8 @@ import BN from "bn.js"
 import _ from "lodash"
 import {BlockNumber} from "web3-core"
 import {Contract} from "web3-eth-contract"
-import {NetworkConfig} from "../App"
 import {KnownEventData, PoolEventType} from "../types/events"
+import {NetworkConfig} from "../types/network"
 import {reduceToKnown} from "./events"
 import {Pool, SeniorPool} from "./pool"
 
@@ -104,8 +104,7 @@ async function getDeployments(networkId) {
 }
 
 async function getMerkleDistributorInfo(): Promise<MerkleDistributorInfo | undefined> {
-  const fileNameSuffix =
-    process.env.REACT_APP_MURMURATION === "yes" ? ".murmuration" : process.env.NODE_ENV === "development" ? ".dev" : ""
+  const fileNameSuffix = process.env.NODE_ENV === "development" ? ".dev" : ""
   return import(
     `@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/merkleDistributorInfo${fileNameSuffix}.json`
   )
