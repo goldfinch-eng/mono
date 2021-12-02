@@ -4,7 +4,7 @@ import difference from "lodash/difference"
 import {useCallback, useContext, useEffect, useState} from "react"
 import {AppContext} from "../App"
 import {SESSION_DATA_VERSION} from "../types/session"
-import {assertError, assertNonNullable} from "../utils"
+import {assertNonNullable} from "../utils"
 import web3 from "../web3"
 
 export type UnknownSession = {status: "unknown"}
