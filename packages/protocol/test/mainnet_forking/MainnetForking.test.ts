@@ -1,4 +1,4 @@
-import hre from "hardhat"
+import hre, {getNamedAccounts} from "hardhat"
 import {
   getUSDCAddress,
   MAINNET_ONE_SPLIT_ADDRESS,
@@ -9,6 +9,7 @@ import {
   MAINNET_CHAIN_ID,
   getProtocolOwner,
   getTruffleContract,
+  OWNER_ROLE,
 } from "../../blockchain_scripts/deployHelpers"
 import {
   MAINNET_MULTISIG,
@@ -36,6 +37,7 @@ import {
   USDC_DECIMALS,
   createPoolWithCreditLine,
   decodeLogs,
+  getDeployedAsTruffleContract,
 } from "../testHelpers"
 import {asNonNullable, assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
 import {
@@ -43,6 +45,7 @@ import {
   BorrowerInstance,
   FiduInstance,
   FixedLeverageRatioStrategyInstance,
+  GFIInstance,
   GoInstance,
   GoldfinchConfigInstance,
   GoldfinchFactoryInstance,
@@ -124,6 +127,17 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
     .require("StakingRewards")
     .at(await newGoldfinchConfig.getAddress(CONFIG_KEYS.StakingRewards))
 
+  // GFI is deployed by the temp multisig
+  const gfi = await getDeployedAsTruffleContract<GFIInstance>(deployments, "GFI")
+
+  // make protocolOwner the GFI owner and mint
+  const protocolOwner = await getProtocolOwner()
+  const {temp_multisig} = await getNamedAccounts()
+  assertIsString(temp_multisig)
+  await fundWithWhales(["ETH"], [temp_multisig])
+  await gfi.grantRole(await gfi.MINTER_ROLE(), protocolOwner, {from: temp_multisig})
+  await gfi.mint(protocolOwner, bigVal(100_000_000), {from: protocolOwner})
+
   return {
     seniorPool,
     seniorPoolStrategy,
@@ -135,6 +149,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
     go,
     stakingRewards,
     backerRewards,
+    gfi,
   }
 })
 
@@ -158,7 +173,8 @@ describe("mainnet forking tests", async function () {
     seniorPoolStrategy,
     go: GoInstance,
     stakingRewards: StakingRewardsInstance,
-    backerRewards: BackerRewardsInstance
+    backerRewards: BackerRewardsInstance,
+    gfi: GFIInstance
 
   async function setupSeniorPool() {
     seniorPoolStrategy = await artifacts.require("ISeniorPoolStrategy").at(seniorPoolStrategy.address)
@@ -202,6 +218,7 @@ describe("mainnet forking tests", async function () {
       go,
       stakingRewards,
       backerRewards,
+      gfi,
     } = await setupTest())
     const usdcAddress = getUSDCAddress(MAINNET_CHAIN_ID)
     assertIsString(usdcAddress)
@@ -772,15 +789,45 @@ describe("mainnet forking tests", async function () {
           await tranchedPool.lockPool({from: bwr})
         })
 
-        describe("when I drawdown and pay back", async () => {
-          it("it works", async () => {
+        describe("if backerrewards contract is configured", () => {
+          beforeEach(async () => {
+            const totalRewards = 1_000
+            const maxInterestDollarsEligible = 1_000_000_000
+            const protocolOwner = await getProtocolOwner()
+            await backerRewards.setMaxInterestDollarsEligible(bigVal(maxInterestDollarsEligible), {from: protocolOwner})
+            await backerRewards.setTotalRewards(bigVal(Math.round(totalRewards * 100)).div(new BN(100)), {
+              from: protocolOwner,
+            })
+            await backerRewards.setTotalInterestReceived(usdcVal(0), {from: protocolOwner})
+          })
+
+          it("properly allocates rewards", async () => {
             await expect(bwrCon.drawdown(tranchedPool.address, usdcVal(10_000), bwr, {from: bwr})).to.be.fulfilled
             await advanceTime({days: 90})
             await ethers.provider.send("evm_mine", [])
             await expect(bwrCon.pay(tranchedPool.address, usdcVal(10_000), {from: bwr})).to.be.fulfilled
-            const rewards = await expect(backerRewards.poolTokenClaimableRewards(backerTokenId)).to.be.fulfilled
-            // right now rewards rates aren't set, so no rewards should be claimable
-            expect(rewards).to.bignumber.eq("0")
+
+            // verify accRewardsPerPrincipalDollar
+            const accRewardsPerPrincipalDollar = await backerRewards.pools(tranchedPool.address)
+            expect(accRewardsPerPrincipalDollar).to.bignumber.equal(new BN(0))
+
+            // verify claimable rewards
+            const expectedPoolTokenClaimableRewards = await backerRewards.poolTokenClaimableRewards(backerTokenId)
+            expect(new BN(expectedPoolTokenClaimableRewards)).to.bignumber.equal(new BN(0))
+          })
+        })
+
+        describe("if backerrewards contract is not configured", () => {
+          describe("when I drawdown and pay back", async () => {
+            it("it works", async () => {
+              await expect(bwrCon.drawdown(tranchedPool.address, usdcVal(10_000), bwr, {from: bwr})).to.be.fulfilled
+              await advanceTime({days: 90})
+              await ethers.provider.send("evm_mine", [])
+              await expect(bwrCon.pay(tranchedPool.address, usdcVal(10_000), {from: bwr})).to.be.fulfilled
+              const rewards = await expect(backerRewards.poolTokenClaimableRewards(backerTokenId)).to.be.fulfilled
+              // right now rewards rates aren't set, so no rewards should be claimable
+              expect(rewards).to.bignumber.eq("0")
+            })
           })
         })
       })
