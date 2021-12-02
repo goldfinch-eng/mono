@@ -802,7 +802,6 @@ describe("mainnet forking tests", async function () {
           })
 
           it("properly allocates rewards", async () => {
-            console.log("xxx", tranchedPool)
             await expect(bwrCon.drawdown(tranchedPool.address, usdcVal(10_000), bwr, {from: bwr})).to.be.fulfilled
             await advanceTime({days: 90})
             await ethers.provider.send("evm_mine", [])
