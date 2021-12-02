@@ -1,12 +1,4 @@
 import {
-  deployLPStakingRewards,
-  deployCommunityRewards,
-  deployMerkleDistributor,
-  deployConfigProxy,
-  deployMerkleDirectDistributor,
-  deployDynamicLeverageRatioStrategy,
-} from "../../baseDeploy"
-import {
   ContractDeployer,
   ContractUpgrader,
   getEthersContract,
@@ -25,6 +17,12 @@ import {generateMerkleRoot as generateMerkleDirectRoot} from "../../merkle/merkl
 import {generateMerkleRoot} from "../../merkle/merkleDistributor/generateMerkleRoot"
 import {promises as fs} from "fs"
 import path from "path"
+import {deployCommunityRewards} from "../../baseDeploy/deployCommunityRewards"
+import {deployConfigProxy} from "../../baseDeploy/deployConfigProxy"
+import {deployDynamicLeverageRatioStrategy} from "../../baseDeploy/deployDynamicLeverageRatioStrategy"
+import {deployLPStakingRewards} from "../../baseDeploy/deployLPStakingRewards"
+import {deployMerkleDirectDistributor} from "../../baseDeploy/deployMerkleDirectDistributor"
+import {deployMerkleDistributor} from "../../baseDeploy/deployMerkleDistributor"
 
 async function updateGoldfinchConfigs({
   existingConfig,
