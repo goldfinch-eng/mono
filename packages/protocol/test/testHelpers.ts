@@ -525,6 +525,35 @@ async function fundWithEthFromLocalWhale(userToFund: string, amount: BN) {
   })
 }
 
+export function expectProxyOwner({toBe, forContracts}: {toBe: () => Promise<string>; forContracts: string[]}) {
+  describe("proxy owners", async () => {
+    forContracts.forEach((contractName) => {
+      it(`sets the correct proxy owner for ${contractName}`, async () => {
+        const proxyDeployment = await hardhat.deployments.get(`${contractName}_Proxy`)
+        const proxyContract = await ethers.getContractAt(proxyDeployment.abi, proxyDeployment.address)
+        expect(await proxyContract.owner()).to.eq(await toBe())
+      })
+    })
+  })
+}
+
+export type RoleExpectation = {contractName: string; roles: string[]; address: () => Promise<string>}
+export function expectRoles(expectations: RoleExpectation[]) {
+  describe("roles", async () => {
+    for (const {contractName, roles, address} of expectations) {
+      for (const role of roles) {
+        it(`assigns the ${role} role`, async () => {
+          const addr = await address()
+          const deployment = await hardhat.deployments.get(contractName)
+          const contract = await ethers.getContractAt(deployment.abi, deployment.address)
+
+          expect(await contract.hasRole(role, addr)).to.be.true
+        })
+      }
+    }
+  })
+}
+
 export {
   hardhat,
   chai,

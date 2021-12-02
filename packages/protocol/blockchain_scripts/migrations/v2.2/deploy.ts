@@ -1,47 +1,151 @@
-import {deployBackerRewards, deployTranchedPool, deployConfig} from "../../baseDeploy"
+import {
+  deployLPStakingRewards,
+  deployCommunityRewards,
+  deployMerkleDistributor,
+  deployConfigProxy,
+  deployMerkleDirectDistributor,
+  deployDynamicLeverageRatioStrategy,
+} from "../../baseDeploy"
 import {
   ContractDeployer,
   ContractUpgrader,
-  getDeployedContract,
+  getEthersContract,
   getProtocolOwner,
   getTruffleContract,
 } from "../../deployHelpers"
-import hre from "hardhat"
-import {GoldfinchConfigInstance} from "../../../typechain/truffle"
-import {DeployEffects} from "../deployEffects"
-import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/ethers"
-import {migrateToNewConfig} from "../../mainnetForkingHelpers"
+import hre, {deployments} from "hardhat"
+import {DeployEffects, Effects} from "../deployEffects"
+import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
+import {CreditLine, GFI, GoldfinchConfig, TranchedPool} from "@goldfinch-eng/protocol/typechain/ethers"
+import {GFIInstance} from "@goldfinch-eng/protocol/typechain/truffle"
+import {CONFIG_KEYS, CONFIG_KEYS_BY_TYPE} from "../../configKeys"
+import poolMetadata from "@goldfinch-eng/client/config/pool-metadata/mainnet.json"
+import {Contract} from "ethers"
+import {generateMerkleRoot as generateMerkleDirectRoot} from "../../merkle/merkleDirectDistributor/generateMerkleRoot"
+import {generateMerkleRoot} from "../../merkle/merkleDistributor/generateMerkleRoot"
+import {promises as fs} from "fs"
+import path from "path"
 
-export async function deploy(deployEffects: DeployEffects) {
+async function updateGoldfinchConfigs({
+  existingConfig,
+  newConfig,
+  contracts,
+}: {
+  existingConfig: GoldfinchConfig
+  newConfig: GoldfinchConfig
+  contracts: Array<string | Contract>
+}): Promise<Effects> {
+  const protocolOwner = await getProtocolOwner()
+  const ethersContracts = await Promise.all(
+    contracts.map((c) => (typeof c === "string" ? getEthersContract(c, {from: protocolOwner}) : c))
+  )
+  const updates = await Promise.all(
+    ethersContracts.map((c) => asNonNullable(c.populateTransaction.updateGoldfinchConfig)())
+  )
+
+  return {
+    deferred: [await existingConfig.populateTransaction.setGoldfinchConfig(newConfig.address), ...updates],
+  }
+}
+
+export async function deploy(
+  deployEffects: DeployEffects,
+  {
+    noVestingGrants,
+    vestingGrants,
+  }: {
+    noVestingGrants: string
+    vestingGrants: string
+  }
+) {
   const deployer = new ContractDeployer(console.log, hre)
   const upgrader = new ContractUpgrader(deployer)
+  const protocolOwner = await getProtocolOwner()
 
-  const upgradedContracts = await upgrader.upgrade({
-    contracts: ["SeniorPool", "Go", "UniqueIdentity", "PoolTokens", "GoldfinchConfig"],
+  // 1.
+  // Deploy a proxied GoldfinchConfig so we don't need to keep calling updateGoldfinchConfig
+  // on an increasing number of contracts
+  const existingConfigDeployment = await deployments.get("GoldfinchConfig")
+  const existingConfig = await getEthersContract<GoldfinchConfig>("GoldfinchConfig", {
+    at: existingConfigDeployment.address,
+    from: protocolOwner,
+  })
+  const config = (await deployConfigProxy(deployer, {deployEffects})).connect(protocolOwner)
+  await deployEffects.add({
+    deferred: [
+      await config.populateTransaction.initializeFromOtherConfig(
+        existingConfigDeployment.address,
+        Object.keys(CONFIG_KEYS_BY_TYPE.numbers).length,
+        Object.keys(CONFIG_KEYS_BY_TYPE.addresses).length
+      ),
+    ],
   })
 
-  // Need to deploy and migrate to a new config
-  await deployConfig(deployer)
-  await migrateToNewConfig(upgradedContracts, [
-    "CreditLine",
+  const tranchedPoolAddresses = Object.keys(poolMetadata)
+  const tranchedPoolContracts = await Promise.all(
+    tranchedPoolAddresses.map(async (address) => getEthersContract<TranchedPool>("TranchedPool", {at: address}))
+  )
+  const updateConfigContracts = [
     "Fidu",
     "FixedLeverageRatioStrategy",
-    "Go",
-    "PoolTokens",
+    "GoldfinchFactory",
     "SeniorPool",
-  ])
-  const config = await getTruffleContract<GoldfinchConfigInstance>("GoldfinchConfig", {from: await getProtocolOwner()})
-  const goldfinchConfigContract = await getDeployedContract<GoldfinchConfig>(hre.deployments, "GoldfinchConfig")
+    "PoolTokens",
+    ...tranchedPoolContracts,
+  ]
+  await deployEffects.add(
+    await updateGoldfinchConfigs({
+      existingConfig,
+      newConfig: config,
+      contracts: updateConfigContracts,
+    })
+  )
 
-  const tranchedPool = await deployTranchedPool(deployer, {config: goldfinchConfigContract})
-  goldfinchConfigContract.setTranchedPoolImplementation(tranchedPool.address)
+  // 2.
+  // Deploy liquidity mining + airdrop contracts
+  const gfiContract = await getTruffleContract<GFIInstance>("GFI")
+  const gfi = {name: "GFI", contract: gfiContract}
 
-  const backerRewards = await deployBackerRewards(deployer, {configAddress: config.address, deployEffects})
+  const lpStakingRewards = await deployLPStakingRewards(deployer, {config, deployEffects})
+  const communityRewards = await deployCommunityRewards(deployer, {config, deployEffects})
+
+  const vestingMerkleInfo = generateMerkleRoot(JSON.parse(await fs.readFile(vestingGrants, {encoding: "utf8"})))
+  await fs.writeFile(path.join(__dirname, "./vestingMerkleInfo.json"), JSON.stringify(vestingMerkleInfo, null, 2))
+  const noVestingMerkleInfo = generateMerkleDirectRoot(
+    JSON.parse(await fs.readFile(noVestingGrants, {encoding: "utf8"}))
+  )
+  await fs.writeFile(path.join(__dirname, "./noVestingMerkleInfo.json"), JSON.stringify(noVestingMerkleInfo, null, 2))
+  const merkleDistributor = await deployMerkleDistributor(deployer, {
+    communityRewards,
+    deployEffects,
+    merkleDistributorInfoPath: path.join(__dirname, "./vestingMerkleInfo.json"),
+  })
+  const merkleDirectDistributor = await deployMerkleDirectDistributor(deployer, {
+    gfi,
+    deployEffects,
+    merkleDirectDistributorInfoPath: path.join(__dirname, "./noVestingMerkleInfo.json"),
+  })
+
+  // 3.
+  // TODO: Mint GFI, distribute to contracts / EOAs, set reward parameters
+  // 3.1 set goldfinch config address for GFI
+  await deployEffects.add({
+    deferred: [await config.populateTransaction.setAddress(CONFIG_KEYS.GFI, gfi.contract.address)],
+  })
+
+  // 4.
+  // Deploy DynamicLeverageRatioStrategy (unused for now)
+  const dynamicLeverageRatioStrategy = await deployDynamicLeverageRatioStrategy(deployer)
 
   return {
     deployedContracts: {
-      backerRewards,
+      config,
+      lpStakingRewards,
+      communityRewards,
+      merkleDistributor,
+      merkleDirectDistributor,
+      dynamicLeverageRatioStrategy,
     },
-    upgradedContracts,
+    upgradedContracts: {},
   }
 }

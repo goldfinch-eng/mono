@@ -45,6 +45,8 @@ import {
 } from "../typechain/ethers"
 import * as migratev22 from "../blockchain_scripts/migrations/v2.2/migrate"
 
+import * as migrate from "../blockchain_scripts/migrations/v2.2/migrate"
+
 dotenv.config({path: findEnvLocal()})
 
 /*
@@ -94,7 +96,6 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, options: O
     const protocolOwner = await getProtocolOwner()
     await impersonateAccount(hre, protocolOwner)
     await fundWithWhales(["ETH"], [protocolOwner])
-    await migratev22.main()
 
     logger("Funding protocol_owner with whales")
     underwriter = protocol_owner
@@ -110,6 +111,8 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, options: O
     assertNonNullable(trustedSigner)
     const tx = await uniqueIdentity.grantRole(SIGNER_ROLE, trustedSigner)
     await tx.wait()
+
+    await migrate.main()
 
     // TODO: temporary while GoldfinchFactory upgrade hasn't been deployed
     return
@@ -205,6 +208,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, options: O
   }
 }
 
+// TODO: need to deal with this in the migration script
 async function setUpRewards(
   erc20: any,
   getOrNull: (name: string) => Promise<Deployment | null>,
