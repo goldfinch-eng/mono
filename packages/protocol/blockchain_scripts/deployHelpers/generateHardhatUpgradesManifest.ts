@@ -30,7 +30,6 @@ export class HardhatUpgradesManifest {
     this.logger(`Writing manifest: ${contracts}`)
     for (const i in contracts) {
       const contract = contracts[i] as string
-      await new Promise((resolve) => setTimeout(resolve, 1000))
       this.logger(`Saving deployment manifest: ${contract} & ${contract}_Implementation`)
       const proxyContractDeployment = await this.hre.deployments.get(`${contract}`)
       const implContractDeployment = await this.hre.deployments.get(`${contract}_Implementation`)
