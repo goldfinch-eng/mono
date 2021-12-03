@@ -21,7 +21,6 @@ import {
 } from "../typechain/truffle/StakingRewards"
 import {
   usdcVal,
-  deployAllContracts,
   erc20Transfer,
   expect,
   decodeLogs,
@@ -39,6 +38,7 @@ import {time, expectEvent} from "@openzeppelin/test-helpers"
 import {getApprovalDigest, getWallet} from "./permitHelpers"
 import {ecsign} from "ethereumjs-util"
 import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
+import {deployBaseFixture} from "./util/fixtures"
 
 const MULTIPLIER_DECIMALS = new BN(String(1e18))
 
@@ -149,9 +149,7 @@ describe("StakingRewards", function () {
     const owner = asNonNullable(_owner)
     const investor = asNonNullable(_investor)
     const anotherUser = asNonNullable(_anotherUser)
-    const {goldfinchConfig, seniorPool, gfi, stakingRewards, fidu, usdc, ...others} = await deployAllContracts(
-      deployments
-    )
+    const {goldfinchConfig, seniorPool, gfi, stakingRewards, fidu, usdc, ...others} = await deployBaseFixture()
     await goldfinchConfig.bulkAddToGoList([owner, investor, anotherUser])
     await erc20Approve(usdc, investor, usdcVal(10000), [owner])
     await erc20Transfer(usdc, [investor], usdcVal(10000), owner)

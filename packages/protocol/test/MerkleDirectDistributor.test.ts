@@ -15,6 +15,7 @@ import {
   getOnlyLog,
   getTruffleContract,
 } from "./testHelpers"
+import {deployBaseFixture} from "./util/fixtures"
 import {getDeployedContract, OWNER_ROLE, PAUSER_ROLE} from "../blockchain_scripts/deployHelpers"
 const {deployments} = hre
 
@@ -29,8 +30,11 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const owner = asNonNullable(_owner)
   const uninitializedMerkleDirectDistributorDeployer = asNonNullable(_anotherUser)
 
-  const deployed = await deployAllContracts(deployments, {
-    deployMerkleDirectDistributor: {fromAccount: owner, root: fixtures.output.merkleRoot},
+  const deployed = await deployBaseFixture({
+    deployMerkleDirectDistributor: {
+      fromAccount: owner,
+      root: fixtures.output.merkleRoot,
+    },
   })
 
   await fundWithEthFromLocalWhale(test_merkle_direct_distributor_recipient_a, amount)

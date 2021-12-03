@@ -16,7 +16,6 @@ import {
   expect,
   BN,
   getBalance,
-  deployAllContracts,
   erc20Transfer,
   erc20Approve,
   expectAction,
@@ -24,7 +23,6 @@ import {
   USDC_DECIMALS,
   SECONDS_PER_DAY,
   usdcVal,
-  createPoolWithCreditLine,
   fiduTolerance,
   tolerance,
   decodeLogs,
@@ -33,25 +31,20 @@ import {expectEvent} from "@openzeppelin/test-helpers"
 import {ecsign} from "ethereumjs-util"
 import {getApprovalDigest, getWallet} from "./permitHelpers"
 import {assertNonNullable} from "@goldfinch-eng/utils"
-import {TranchedPoolInstance} from "../typechain/truffle"
+import {
+  deployBaseFixture,
+  deployUninitializedCreditLineFixture,
+  deployUninitializedTranchedPoolFixture,
+  deployTranchedPoolWithGoldfinchFactoryFixture,
+} from "./util/fixtures"
 const WITHDRAWL_FEE_DENOMINATOR = new BN(200)
 
 const TEST_TIMEOUT = 30_000
 
 const simulateMaliciousTranchedPool = async (goldfinchConfig: any, person2: any): Promise<string> => {
   // Simulate someone deploying their own malicious TranchedPool using our contracts
-  const accountant = await deployments.deploy("Accountant", {from: person2, args: []})
-  const tranchingLogic = await deployments.deploy("TranchingLogic", {from: person2, args: []})
-  const poolDeployResult = await deployments.deploy("TranchedPool", {
-    from: person2,
-    libraries: {["TranchingLogic"]: tranchingLogic.address},
-  })
-  const unknownPool = (await artifacts.require("TranchedPool").at(poolDeployResult.address)) as TranchedPoolInstance
-  const creditLineResult = await deployments.deploy("CreditLine", {
-    from: person2,
-    libraries: {["Accountant"]: accountant.address},
-  })
-  const creditLine = await artifacts.require("CreditLine").at(creditLineResult.address)
+  const {tranchedPool: unknownPool} = await deployUninitializedTranchedPoolFixture()
+  const {creditLine} = await deployUninitializedCreditLineFixture()
   await creditLine.initialize(
     goldfinchConfig.address,
     person2,
@@ -113,23 +106,23 @@ describe("SeniorPool", () => {
 
   const setupTest = deployments.createFixture(async ({deployments}) => {
     const {seniorPool, seniorPoolFixedStrategy, usdc, fidu, goldfinchFactory, goldfinchConfig, poolTokens} =
-      await deployAllContracts(deployments)
+      await deployBaseFixture()
     // A bit of setup for our test users
     await erc20Approve(usdc, seniorPool.address, usdcVal(100000), [person2])
     await erc20Transfer(usdc, [person2, person3], usdcVal(10000), owner)
     await goldfinchConfig.setTreasuryReserve(reserve)
 
     await goldfinchConfig.bulkAddToGoList([owner, person2, person3, reserve, seniorPool.address])
-    ;({tranchedPool, creditLine} = await createPoolWithCreditLine({
-      people: {owner, borrower},
-      goldfinchFactory,
+    ;({tranchedPool, creditLine} = await deployTranchedPoolWithGoldfinchFactoryFixture({
+      borrower,
+      usdcAddress: usdc.address,
       limit,
       interestApr,
       paymentPeriodInDays,
       termInDays,
       lateFeeApr,
       juniorFeePercent,
-      usdc,
+      id: "TranchedPool",
     }))
 
     return {usdc, seniorPool, seniorPoolFixedStrategy, tranchedPool, creditLine, fidu, goldfinchConfig, poolTokens}
@@ -167,10 +160,14 @@ describe("SeniorPool", () => {
 
   describe("Pausability", () => {
     describe("after pausing", async () => {
-      beforeEach(async () => {
+      const testSetup = deployments.createFixture(async () => {
         await makeDeposit()
         await seniorPool.pause()
         await goldfinchConfig.addToGoList(seniorPool.address)
+      })
+
+      beforeEach(async () => {
+        await testSetup()
       })
 
       it("disallows deposits", async () => {
@@ -244,10 +241,15 @@ describe("SeniorPool", () => {
 
     describe("after you have approved the senior pool to transfer funds", async () => {
       let capitalProvider
-      beforeEach(async () => {
+
+      const testSetup = deployments.createFixture(async () => {
         await usdc.approve(seniorPool.address, new BN(100000).mul(USDC_DECIMALS), {from: person2})
         await usdc.approve(seniorPool.address, new BN(100000).mul(USDC_DECIMALS), {from: owner})
         capitalProvider = person2
+      })
+
+      beforeEach(async () => {
+        await testSetup()
       })
 
       it("increases the senior pool's balance of the ERC20 token when you call deposit", async () => {
@@ -349,11 +351,16 @@ describe("SeniorPool", () => {
 
   describe("withdraw", () => {
     let capitalProvider
-    beforeEach(async () => {
+
+    const testSetup = deployments.createFixture(async () => {
       await usdc.approve(seniorPool.address, new BN(100000).mul(USDC_DECIMALS), {from: person2})
       await usdc.approve(seniorPool.address, new BN(100000).mul(USDC_DECIMALS), {from: owner})
 
       capitalProvider = person2
+    })
+
+    beforeEach(async () => {
+      await testSetup()
     })
 
     it("withdraws the correct amount of value from the contract when you call withdraw", async () => {
@@ -458,9 +465,13 @@ describe("SeniorPool", () => {
     describe("totalFundsLimit", async () => {
       describe("once it's set", async () => {
         const limit = new BN(5000)
-        beforeEach(async () => {
+        const testSetup = deployments.createFixture(async () => {
           await goldfinchConfig.setNumber(CONFIG_KEYS.TotalFundsLimit, limit.mul(USDC_DECIMALS))
           await goldfinchConfig.setNumber(CONFIG_KEYS.TransactionLimit, limit.mul(new BN(2)).mul(USDC_DECIMALS))
+        })
+
+        beforeEach(async () => {
+          await testSetup()
         })
 
         it("should accept deposits before the limit is reached", async () => {
@@ -512,12 +523,15 @@ describe("SeniorPool", () => {
 
   describe("estimateInvestment", () => {
     const juniorInvestmentAmount = usdcVal(10000)
-
-    beforeEach(async () => {
+    const testSetup = deployments.createFixture(async () => {
       await erc20Approve(usdc, seniorPool.address, usdcVal(100000), [owner])
       await makeDeposit(owner, usdcVal(100000))
       await goldfinchConfig.addToGoList(seniorPool.address)
       await tranchedPool.deposit(TRANCHES.Junior, juniorInvestmentAmount)
+    })
+
+    beforeEach(async () => {
+      await testSetup()
     })
 
     context("Pool is not valid", () => {
@@ -542,11 +556,15 @@ describe("SeniorPool", () => {
   describe("invest", () => {
     const juniorInvestmentAmount = usdcVal(10000)
 
-    beforeEach(async () => {
+    const testSetup = deployments.createFixture(async () => {
       await erc20Approve(usdc, seniorPool.address, usdcVal(100000), [owner])
       await makeDeposit(owner, usdcVal(100000))
       await goldfinchConfig.addToGoList(seniorPool.address)
       await tranchedPool.deposit(TRANCHES.Junior, juniorInvestmentAmount)
+    })
+
+    beforeEach(async () => {
+      await testSetup()
     })
 
     context("called by non-governance", async () => {
@@ -809,7 +827,7 @@ describe("SeniorPool", () => {
     let tokenId, juniorTokenId
     const juniorInvestmentAmount = usdcVal(20)
 
-    beforeEach(async () => {
+    const testSetup = deployments.createFixture(async () => {
       await makeDeposit(person2, usdcVal(100))
 
       const juniorReceipt = await tranchedPool.deposit(TRANCHES.Junior, juniorInvestmentAmount)
@@ -824,6 +842,10 @@ describe("SeniorPool", () => {
 
       originalSharePrice = await seniorPool.sharePrice()
       originalTotalShares = await fidu.totalSupply()
+    })
+
+    beforeEach(async () => {
+      await testSetup()
     })
 
     context("called by non-governance", async () => {
@@ -964,8 +986,7 @@ describe("SeniorPool", () => {
   describe("calculateWritedown", async () => {
     let tokenId
     const juniorInvestmentAmount = usdcVal(20)
-
-    beforeEach(async () => {
+    const testSetup = deployments.createFixture(async () => {
       await makeDeposit(person2, usdcVal(100))
 
       await tranchedPool.deposit(TRANCHES.Junior, juniorInvestmentAmount)
@@ -976,6 +997,10 @@ describe("SeniorPool", () => {
       tokenId = depositEvent.args.tokenId
       await tranchedPool.lockPool({from: borrower})
       await tranchedPool.drawdown(usdcVal(100), {from: borrower})
+    })
+
+    beforeEach(async () => {
+      await testSetup()
     })
 
     it("returns writedown amount", async () => {

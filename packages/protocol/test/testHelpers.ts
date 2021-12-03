@@ -231,7 +231,7 @@ function getOnlyLog<T extends Truffle.AnyEvent>(logs: DecodedLog<T>[]): DecodedL
   return getFirstLog(logs)
 }
 
-type DeployAllContractsOptions = {
+export type DeployAllContractsOptions = {
   deployForwarder?: {
     fromAccount: string
   }

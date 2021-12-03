@@ -1,14 +1,10 @@
 import {deployments} from "hardhat"
-import {getDeployedAsTruffleContract} from "./testHelpers"
 import BN from "bn.js"
 import {expectEvent} from "@openzeppelin/test-helpers"
 import {GFIInstance} from "../typechain/truffle"
-import {assertNonNullable} from "@goldfinch-eng/utils"
+import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
 import {ETHDecimals} from "../blockchain_scripts/deployHelpers"
-
-interface TestSetupReturn {
-  gfi: GFIInstance
-}
+import {deployBaseFixture} from "./util/fixtures"
 
 describe("GFI", () => {
   let deployer: string
@@ -16,29 +12,23 @@ describe("GFI", () => {
   let notMinter: string
   let gfi: GFIInstance
 
-  const testSetup: (options?: any) => Promise<TestSetupReturn> = deployments.createFixture(
-    async ({deployments, getNamedAccounts}) => {
-      const {protocol_owner: owner, gf_deployer} = await getNamedAccounts()
-      assertNonNullable(gf_deployer)
-      deployer = gf_deployer
-      await deployments.run("base_deploy")
-      const gfi = await getDeployedAsTruffleContract<GFIInstance>(deployments, "GFI")
+  const testSetup = deployments.createFixture(async (hre, options) => {
+    const {protocol_owner: owner, gf_deployer: deployer} = await hre.getNamedAccounts()
+    assertNonNullable(owner)
+    assertNonNullable(deployer)
 
-      return {gfi}
-    }
-  )
+    const {gfi, ...others} = await deployBaseFixture()
+    const [, , maybeNotMinter] = await web3.eth.getAccounts()
+    const notMinter = asNonNullable(maybeNotMinter)
+
+    await gfi.mint(owner, new BN(10000))
+
+    return {owner, deployer, gfi, notMinter, ...others}
+  })
 
   beforeEach(async () => {
-    const [maybeOwner, maybeMinter, maybeNotMinter] = await web3.eth.getAccounts()
-    assertNonNullable(maybeOwner)
-    assertNonNullable(maybeNotMinter)
-    assertNonNullable(maybeMinter)
-    owner = maybeOwner
-    notMinter = maybeNotMinter
-
-    const deployments = await testSetup()
-    gfi = deployments.gfi
-    await gfi.mint(owner, new BN(10000))
+    // eslint-disable-next-line @typescript-eslint/no-extra-semi
+    ;({deployer, owner, notMinter, gfi} = await testSetup())
   })
 
   describe("symbol", () => {

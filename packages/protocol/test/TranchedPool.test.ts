@@ -3,13 +3,11 @@ import {
   expect,
   usdcVal,
   expectAction,
-  deployAllContracts,
   advanceTime,
   erc20Approve,
   erc20Transfer,
   getBalance,
   tolerance,
-  createPoolWithCreditLine as _createPoolWithCreditLine,
   SECONDS_PER_DAY,
   UNIT_SHARE_PRICE,
   ZERO,
@@ -42,6 +40,7 @@ import {
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import {mint} from "./uniqueIdentityHelpers"
+import {deployBaseFixture, deployTranchedPoolWithGoldfinchFactoryFixture} from "./util/fixtures"
 
 const RESERVE_FUNDS_COLLECTED_EVENT = "ReserveFundsCollected"
 const PAYMENT_APPLIED_EVENT = "PaymentApplied"
@@ -102,34 +101,11 @@ describe("TranchedPool", () => {
   const lateFeeApr = new BN(0)
   const juniorFeePercent = new BN(20)
 
-  const createPoolWithCreditLine = async ({interestApr = interestAprAsBN("5.00"), termInDays = new BN(365)}) => {
-    const {tranchedPool, ...others} = await _createPoolWithCreditLine({
-      people: {owner, borrower},
-      goldfinchFactory,
-      limit,
-      interestApr,
-      paymentPeriodInDays,
-      termInDays,
-      lateFeeApr,
-      juniorFeePercent,
-      principalGracePeriodInDays,
-      fundableAt,
-      usdc,
-    })
-
-    // grant the senior role to the owner so that the owner is able to directly
-    // deposit into the senior tranche
-    const seniorRole = await tranchedPool.SENIOR_ROLE()
-    await tranchedPool.grantRole(seniorRole, owner)
-
-    return {tranchedPool, ...others}
-  }
-
   const testSetup = deployments.createFixture(async ({deployments}) => {
     // Just to be crystal clear
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
     ;({usdc, goldfinchConfig, goldfinchFactory, poolTokens, backerRewards, uniqueIdentity, seniorPool, gfi} =
-      await deployAllContracts(deployments))
+      await deployBaseFixture())
     await goldfinchConfig.bulkAddToGoList([owner, borrower, otherPerson])
     await goldfinchConfig.setTreasuryReserve(treasury)
     await setupBackerRewards(gfi, backerRewards, owner)
@@ -137,7 +113,21 @@ describe("TranchedPool", () => {
     await erc20Transfer(usdc, [borrower], usdcVal(10000), owner)
     await erc20Transfer(usdc, [seniorPool.address], usdcVal(1000), owner)
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;({tranchedPool, creditLine} = await createPoolWithCreditLine({}))
+    const {tranchedPool, creditLine} = await deployTranchedPoolWithGoldfinchFactoryFixture({
+      usdcAddress: usdc.address,
+      borrower,
+      principalGracePeriodInDays,
+      limit,
+      interestApr,
+      paymentPeriodInDays,
+      termInDays,
+      fundableAt,
+      lateFeeApr,
+      juniorFeePercent,
+      id: "TranchedPool",
+    })
+    await tranchedPool.grantRole(await tranchedPool.SENIOR_ROLE(), owner)
+    return {tranchedPool, creditLine}
   })
 
   const getTrancheAmounts = async (trancheInfo) => {
@@ -156,7 +146,7 @@ describe("TranchedPool", () => {
     // Pull in our unlocked accounts
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
     ;[owner, borrower, treasury, otherPerson] = await web3.eth.getAccounts()
-    await testSetup()
+    ;({tranchedPool, creditLine} = await testSetup())
   })
 
   describe("initialization", async () => {
@@ -365,7 +355,21 @@ describe("TranchedPool", () => {
   describe("setLimit and setMaxLimit", async () => {
     const newLimit = new BN(500)
     beforeEach(async () => {
-      await createPoolWithCreditLine({})
+      // eslint-disable-next-line @typescript-eslint/no-extra-semi
+      ;({tranchedPool, creditLine} = await deployTranchedPoolWithGoldfinchFactoryFixture({
+        usdcAddress: usdc.address,
+        borrower,
+        principalGracePeriodInDays,
+        limit,
+        interestApr,
+        paymentPeriodInDays,
+        termInDays,
+        fundableAt,
+        lateFeeApr,
+        juniorFeePercent,
+        id: "TranchedPool",
+      }))
+      await tranchedPool.grantRole(await tranchedPool.SENIOR_ROLE(), owner)
     })
     it("can only be called by governance", async () => {
       await expect(tranchedPool.setLimit(newLimit, {from: otherPerson})).to.be.rejectedWith(/Must have admin role/)
@@ -387,8 +391,22 @@ describe("TranchedPool", () => {
   describe("migrateAndSetNewCreditLine", async () => {
     let otherCreditLine: string
     beforeEach(async () => {
-      const {creditLine} = await createPoolWithCreditLine({})
+      // eslint-disable-next-line @typescript-eslint/no-extra-semi
       otherCreditLine = creditLine.address
+      ;({tranchedPool, creditLine} = await deployTranchedPoolWithGoldfinchFactoryFixture({
+        usdcAddress: usdc.address,
+        borrower,
+        principalGracePeriodInDays,
+        limit,
+        interestApr,
+        paymentPeriodInDays,
+        termInDays,
+        fundableAt,
+        lateFeeApr,
+        juniorFeePercent,
+        id: "newPool",
+      }))
+      await tranchedPool.grantRole(await tranchedPool.SENIOR_ROLE(), owner)
     })
     it("should set the new creditline", async () => {
       await expectAction(() => tranchedPool.migrateAndSetNewCreditLine(otherCreditLine)).toChange([
@@ -726,7 +744,21 @@ describe("TranchedPool", () => {
       })
       it("does not allow you to withdraw if pool token is from a different pool", async () => {
         await tranchedPool.deposit(TRANCHES.Junior, usdcVal(10), {from: owner})
-        const {tranchedPool: otherTranchedPool} = await createPoolWithCreditLine({})
+        // eslint-disable-next-line @typescript-eslint/no-extra-semi
+        const {tranchedPool: otherTranchedPool} = await deployTranchedPoolWithGoldfinchFactoryFixture({
+          usdcAddress: usdc.address,
+          borrower,
+          principalGracePeriodInDays,
+          limit,
+          interestApr,
+          paymentPeriodInDays,
+          termInDays,
+          fundableAt,
+          lateFeeApr,
+          juniorFeePercent,
+          id: "newPool",
+        })
+        await tranchedPool.grantRole(await tranchedPool.SENIOR_ROLE(), owner)
 
         const otherReceipt = await otherTranchedPool.deposit(TRANCHES.Junior, usdcVal(10), {from: owner})
         const logs = decodeLogs<DepositMade>(otherReceipt.receipt.rawLogs, otherTranchedPool, "DepositMade")
@@ -1510,7 +1542,19 @@ describe("TranchedPool", () => {
       // 100$ creditline with 10% interest. Senior tranche gets 8% of the total interest, and junior tranche gets 2%
       interestApr = interestAprAsBN("10.00")
       termInDays = new BN(365)
-      ;({tranchedPool, creditLine} = await createPoolWithCreditLine({interestApr, termInDays}))
+      ;({tranchedPool, creditLine} = await deployTranchedPoolWithGoldfinchFactoryFixture({
+        usdcAddress: usdc.address,
+        borrower,
+        interestApr,
+        termInDays,
+        principalGracePeriodInDays,
+        limit,
+        paymentPeriodInDays,
+        fundableAt,
+        lateFeeApr,
+        id: "TranchedPool",
+      }))
+      await tranchedPool.grantRole(await tranchedPool.SENIOR_ROLE(), owner)
     })
 
     it("calculates share price using term start time", async () => {
@@ -1979,7 +2023,19 @@ describe("TranchedPool", () => {
     beforeEach(async () => {
       interestApr = interestAprAsBN("10.00")
       termInDays = new BN(365)
-      ;({tranchedPool, creditLine} = await createPoolWithCreditLine({interestApr, termInDays}))
+      ;({tranchedPool, creditLine} = await deployTranchedPoolWithGoldfinchFactoryFixture({
+        usdcAddress: usdc.address,
+        borrower,
+        interestApr,
+        termInDays,
+        principalGracePeriodInDays,
+        limit,
+        paymentPeriodInDays,
+        fundableAt,
+        lateFeeApr,
+        id: "TranchedPool",
+      }))
+      await tranchedPool.grantRole(await tranchedPool.SENIOR_ROLE(), owner)
     })
 
     async function depositAndGetTokenId(pool: TranchedPoolInstance, tranche, value): Promise<BN> {
