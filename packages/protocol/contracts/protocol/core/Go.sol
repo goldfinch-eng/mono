@@ -12,13 +12,11 @@ import "../../interfaces/IUniqueIdentity0612.sol";
 
 contract Go is IGo, BaseUpgradeablePausable {
   address public override uniqueIdentity;
+
   using SafeMath for uint256;
 
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
-  GoldfinchConfig public goListOverride;
-
-  uint256[11] public allIdTypes;
 
   GoldfinchConfig public legacyGoList;
   uint256[11] public allIdTypes;
