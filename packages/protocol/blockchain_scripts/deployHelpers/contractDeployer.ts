@@ -36,8 +36,29 @@ export class ContractDeployer {
         },
       }
     }
-    const result = await this.hre.deployments.deploy(contractName, options)
-    this.logger(`${contractName} was deployed to: ${result.address} (${this.sizeInKb(result).toFixed(3)}kb)`)
+    let result: DeployResult
+    const unsignedTx = await this.hre.deployments.catchUnknownSigner(
+      async () => {
+        await this.hre.deployments.deploy(contractName, options)
+      },
+      {log: false}
+    )
+
+    if (!unsignedTx) {
+      result = {newlyDeployed: true, ...(await this.hre.deployments.get(contractName))}
+      this.logger(`${contractName} was deployed to: ${result.address} (${this.sizeInKb(result).toFixed(3)}kb)`)
+    } else {
+      // This happens when deploying a new proxy implementation. We want hardhat-deploy to correctly write out
+      // the implementation deployment file. But its default behavior is to attempt to change the implementation
+      // which we can't do because our owner is a multisig.
+      const impl = await this.hre.deployments.get(`${contractName}_Implementation`)
+      // Be consistent with hardhat-deploy's behavior of returning the proxy deployment
+      // (rather than impl deployment) for proxy deploys
+      result = {newlyDeployed: false, ...(await this.hre.deployments.get(contractName))}
+      this.logger(
+        `${contractName} implementation was deployed to: ${result.address} (${this.sizeInKb(result).toFixed(3)}kb)`
+      )
+    }
 
     return (await ethers.getContractAt(result.abi, result.address)) as T
   }

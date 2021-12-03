@@ -95,42 +95,26 @@ function OpenDetails(props: OpenDetailsProps) {
   return <button className="expand">{iconCarrotDown}</button>
 }
 
-type StakingRewardsDetails = {
-  type: StakingRewardsRewardType
+type BaseItemDetails = {
   transactionDetails: string
   vestingSchedule: string
+  vestingStatus: string
+  etherscanAddress: string
+}
+type FullItemDetails<T> = BaseItemDetails & {
+  type: T
   claimStatus: string
   currentEarnRate: string
-  vestingStatus: string
-  etherscanAddress: string
 }
-type CommunityRewardsDetails = {
-  type: CommunityRewardsRewardType
-  transactionDetails: string
-  vestingSchedule: string
+type LimitedItemDetails<T> = BaseItemDetails & {
+  type: T
   claimStatus: undefined
   currentEarnRate: undefined
-  vestingStatus: string
-  etherscanAddress: string
 }
-type MerkleDistributorGrantDetails = {
-  type: MerkleDistributorRewardType
-  transactionDetails: string
-  vestingSchedule: string
-  claimStatus: undefined
-  currentEarnRate: undefined
-  vestingStatus: string
-  etherscanAddress: string
-}
-type MerkleDirectDistributorGrantDetails = {
-  type: MerkleDirectDistributorRewardType
-  transactionDetails: string
-  vestingSchedule: string
-  claimStatus: undefined
-  currentEarnRate: undefined
-  vestingStatus: string
-  etherscanAddress: string
-}
+type StakingRewardsDetails = FullItemDetails<StakingRewardsRewardType>
+type CommunityRewardsDetails = LimitedItemDetails<CommunityRewardsRewardType>
+type MerkleDistributorGrantDetails = LimitedItemDetails<MerkleDistributorRewardType>
+type MerkleDirectDistributorGrantDetails = LimitedItemDetails<MerkleDirectDistributorRewardType>
 type ItemDetails =
   | MerkleDistributorGrantDetails
   | MerkleDirectDistributorGrantDetails

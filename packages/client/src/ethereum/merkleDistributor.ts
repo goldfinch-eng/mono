@@ -88,9 +88,11 @@ export class MerkleDistributor {
       case "flight_academy":
         return "in Flight Academy"
       case "goldfinch_investment":
-        return "as a Goldfinch investor"
+        return "as a Goldfinch participant"
       case "liquidity_provider":
         return "as a Liquidity Provider"
+      case "flight_academy_and_liquidity_provider":
+        return "in Flight Academy and as a Liquidity Provider"
       default:
         assertUnreachable(reason)
     }
