@@ -88,7 +88,7 @@ export class MerkleDistributor {
       case "flight_academy":
         return "in Flight Academy"
       case "goldfinch_investment":
-        return "as a Goldfinch investor"
+        return "as a Goldfinch participant"
       case "liquidity_provider":
         return "as a Liquidity Provider"
       default:

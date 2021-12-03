@@ -848,7 +848,7 @@ describe("Rewards list and detail", () => {
     fireEvent.click(screen.getByText("Goldfinch Investment"))
     expect(await screen.findByText("Transaction details")).toBeVisible()
     expect(
-      await screen.findByText("1,000.00 GFI reward on Dec 29, 2021 for participating as a Goldfinch investor")
+      await screen.findByText("1,000.00 GFI reward on Dec 29, 2021 for participating as a Goldfinch participant")
     ).toBeVisible()
 
     expect(await screen.findByText("Vesting status")).toBeVisible()
@@ -878,7 +878,7 @@ describe("Rewards list and detail", () => {
     fireEvent.click(screen.getByText("Goldfinch Investment"))
     expect(await screen.findByText("Transaction details")).toBeVisible()
     expect(
-      await screen.findByText("1,000.00 GFI reward on Dec 29, 2021 for participating as a Goldfinch investor")
+      await screen.findByText("1,000.00 GFI reward on Dec 29, 2021 for participating as a Goldfinch participant")
     ).toBeVisible()
 
     expect(await screen.findByText("Vesting status")).toBeVisible()
@@ -907,7 +907,7 @@ describe("Rewards list and detail", () => {
 
     fireEvent.click(screen.getByText("Goldfinch Investment"))
     expect(await screen.findByText("Transaction details")).toBeVisible()
-    expect(await screen.findByText("1,000.00 GFI reward for participating as a Goldfinch investor")).toBeVisible()
+    expect(await screen.findByText("1,000.00 GFI reward for participating as a Goldfinch participant")).toBeVisible()
 
     expect(await screen.findByText("Vesting status")).toBeVisible()
     expect(await screen.findByText("$1,000.00 (1,000.00 GFI) vested")).toBeVisible()
@@ -941,7 +941,7 @@ describe("Rewards list and detail", () => {
 
     fireEvent.click(screen.getByText("Goldfinch Investment"))
     expect(await screen.findByText("Transaction details")).toBeVisible()
-    expect(await screen.findByText("1,000.00 GFI reward for participating as a Goldfinch investor")).toBeVisible()
+    expect(await screen.findByText("1,000.00 GFI reward for participating as a Goldfinch participant")).toBeVisible()
 
     expect(await screen.findByText("Vesting status")).toBeVisible()
     expect(await screen.findByText("$500.00 (500.00 GFI) vested")).toBeVisible()
@@ -1021,7 +1021,7 @@ describe("Rewards list and detail", () => {
     fireEvent.click(screen.getByText("Goldfinch Investment"))
     expect(await screen.findByText("Transaction details")).toBeVisible()
     expect(
-      await screen.findByText("1,000.00 GFI reward on Dec 29, 2021 for participating as a Goldfinch investor")
+      await screen.findByText("1,000.00 GFI reward on Dec 29, 2021 for participating as a Goldfinch participant")
     ).toBeVisible()
 
     expect(await screen.findByText("Vesting status")).toBeVisible()
@@ -1130,7 +1130,7 @@ describe("Rewards list and detail", () => {
     fireEvent.click(screen.getByText("Goldfinch Investment"))
     expect(await screen.findByText("Transaction details")).toBeVisible()
     expect(
-      await screen.findByText("1,000.00 GFI reward on Dec 29, 2021 for participating as a Goldfinch investor")
+      await screen.findByText("1,000.00 GFI reward on Dec 29, 2021 for participating as a Goldfinch participant")
     ).toBeVisible()
 
     expect(await screen.findByText("Vesting status")).toBeVisible()
@@ -1210,7 +1210,7 @@ describe("Rewards list and detail", () => {
     fireEvent.click(screen.getByText("Goldfinch Investment"))
     expect(await screen.findByText("Transaction details")).toBeVisible()
     expect(
-      await screen.findByText("1,000.00 GFI reward on Dec 23, 2021 for participating as a Goldfinch investor")
+      await screen.findByText("1,000.00 GFI reward on Dec 23, 2021 for participating as a Goldfinch participant")
     ).toBeVisible()
 
     expect(await screen.findByText("Vesting status")).toBeVisible()
