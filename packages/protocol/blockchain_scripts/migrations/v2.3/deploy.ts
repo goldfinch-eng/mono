@@ -1,8 +1,10 @@
-import {deployBackerRewards, deployClImplementation, deployTranchedPool} from "../../baseDeploy"
 import {ContractDeployer, ContractUpgrader, getEthersContract, getProtocolOwner} from "../../deployHelpers"
 import hre, {deployments} from "hardhat"
 import {changeImplementations, DeployEffects} from "../deployEffects"
 import {Go, GoldfinchConfig, GoldfinchFactory} from "@goldfinch-eng/protocol/typechain/ethers"
+import {deployBackerRewards} from "../../baseDeploy"
+import {deployClImplementation} from "../../baseDeploy/deployClImplementation"
+import {deployTranchedPool} from "../../baseDeploy/deployTranchedPool"
 
 export async function deploy(deployEffects: DeployEffects) {
   const deployer = new ContractDeployer(console.log, hre)
@@ -42,7 +44,7 @@ export async function deploy(deployEffects: DeployEffects) {
 
   await deployEffects.add({
     deferred: [
-      await go.populateTransaction.setGoListOverride(goConfigAddress),
+      await go.populateTransaction.setLegacyGoList(goConfigAddress),
       await go.populateTransaction.updateGoldfinchConfig(),
       await go.populateTransaction.performUpgrade(),
     ],
