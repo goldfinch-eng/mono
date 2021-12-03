@@ -88,7 +88,7 @@ describe("Go", () => {
     expect(await go.paused()).to.equal(true)
   }
 
-  describe("setGoListOverride", async () => {
+  describe("setLegacyGoList", async () => {
     const testAddress = "0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
 
     describe("when set with a valid GoldfinchConfig address", async () => {
@@ -103,7 +103,7 @@ describe("Go", () => {
 
         await goldfinchConfigWithGoList.initialize(owner)
         await goldfinchConfigWithGoList.addToGoList(testAddress, {from: owner})
-        await go.setGoListOverride(goldfinchConfigWithGoList.address)
+        await go.setLegacyGoList(goldfinchConfigWithGoList.address)
       })
 
       it("it should use the other config for the go list", async () => {
