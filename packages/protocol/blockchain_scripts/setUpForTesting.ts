@@ -37,6 +37,7 @@ import {
   GFI,
   GoldfinchConfig,
   GoldfinchFactory,
+  MerkleDirectDistributor,
   SeniorPool,
   StakingRewards,
   TestERC20,
@@ -218,7 +219,11 @@ async function setUpRewards(
   const amount = new BN(String(1e8)).mul(GFI_DECIMALS)
   const communityRewards = await getDeployedAsEthersContract<CommunityRewards>(getOrNull, "CommunityRewards")
   const stakingRewards = await getDeployedAsEthersContract<StakingRewards>(getOrNull, "StakingRewards")
-  const rewardsAmount = amount.div(new BN(2))
+  const merkleDirectDistributor = await getDeployedAsEthersContractOrNull<MerkleDirectDistributor>(
+    getOrNull,
+    "MerkleDirectDistributor"
+  )
+  const rewardsAmount = amount.div(new BN(3))
 
   const gfi = await getDeployedAsEthersContract<GFI>(getOrNull, "GFI")
   await gfi.mint(protocolOwner, amount.toString(10))
@@ -249,6 +254,11 @@ async function setUpRewards(
   const usdcAmount = String(usdcVal(50000))
   await erc20.connect(signer).approve(stakingRewards.address, usdcAmount)
   await stakingRewards.depositAndStake(usdcAmount, {from: protocolOwner})
+
+  // If the MerkleDirectDistributor contract is deployed, fund its GFI balance, so that it has GFI to disburse.
+  if (merkleDirectDistributor) {
+    await gfi.transfer(merkleDirectDistributor.address, rewardsAmount.toString(10), {from: protocolOwner})
+  }
 }
 
 export async function getERC20s({hre, chainId}) {
@@ -434,16 +444,32 @@ export async function fundFromLocalWhale(userToFund: string, erc20s: any, hre: H
 
 // Ideally the type would be T extends BaseContract, but there appears to be some issue
 // in the generated types that prevents that. See https://github.com/ethers-io/ethers.js/issues/1384 for relevant info
-async function getDeployedAsEthersContract<T>(getter: any, name: string): Promise<T> {
+async function getDeployedAsEthersContractOrNull<T>(
+  getter: (name: string) => Promise<Deployment | null>,
+  name: string
+): Promise<T | null> {
   logger("Trying to get the deployed version of...", name)
   let deployed = await getter(name)
   if (!deployed && isTestEnv()) {
     deployed = await getter(`Test${name}`)
   }
-  if (!deployed) {
+  if (deployed) {
+    return await toEthers<T>(deployed as Parameters<typeof toEthers>[0])
+  } else {
+    return null
+  }
+}
+
+async function getDeployedAsEthersContract<T>(
+  getter: (name: string) => Promise<Deployment | null>,
+  name: string
+): Promise<T> {
+  const deployed = await getDeployedAsEthersContractOrNull<T>(getter, name)
+  if (deployed) {
+    return deployed
+  } else {
     throw new Error("Contract is not deployed")
   }
-  return await toEthers<T>(deployed)
 }
 
 async function createPoolForBorrower({

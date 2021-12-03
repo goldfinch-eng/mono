@@ -1,11 +1,12 @@
 /* global web3 */
 import hre from "hardhat"
 const {deployments, artifacts} = hre
-import {expect, BN, deployAllContracts, usdcVal, createPoolWithCreditLine} from "./testHelpers"
+import {expect, BN, usdcVal, createPoolWithCreditLine} from "./testHelpers"
 import {interestAprAsBN, LEVERAGE_RATIO_DECIMALS, TRANCHES} from "../blockchain_scripts/deployHelpers"
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
 import {assertNonNullable} from "packages/utils/src/type"
 import {expectEvent} from "@openzeppelin/test-helpers"
+import {deployBaseFixture} from "./util/fixtures"
 const FixedLeverageRatioStrategy = artifacts.require("FixedLeverageRatioStrategy")
 
 const EXPECTED_LEVERAGE_RATIO: BN = new BN(String(4e18))
@@ -15,7 +16,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   assertNonNullable(owner)
   assertNonNullable(borrower)
 
-  const {seniorPool, goldfinchConfig, goldfinchFactory, usdc} = await deployAllContracts(deployments)
+  const {seniorPool, goldfinchConfig, goldfinchFactory, usdc} = await deployBaseFixture()
 
   await goldfinchConfig.bulkAddToGoList([owner, borrower])
 

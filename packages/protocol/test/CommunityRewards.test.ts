@@ -16,9 +16,10 @@ import {
   expectStateAfterGetReward,
   mintAndLoadRewards,
 } from "./communityRewardsHelpers"
-import {advanceTime, decodeLogs, deployAllContracts, expect, getCurrentTimestamp, getOnlyLog} from "./testHelpers"
+import {advanceTime, decodeLogs, expect, getCurrentTimestamp, getOnlyLog} from "./testHelpers"
 import {asNonNullable} from "../../utils/src"
 import {TOKEN_LAUNCH_TIME_IN_SECONDS} from "../blockchain_scripts/baseDeploy"
+import {deployBaseFixture} from "./util/fixtures"
 const {ethers} = hre
 const {deployments} = hre
 
@@ -27,8 +28,8 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const owner = asNonNullable(_owner)
   const anotherUser = asNonNullable(_anotherUser)
 
-  const {gfi, communityRewards, ...others} = await deployAllContracts(deployments)
-  return {owner, anotherUser, gfi, communityRewards, ...others}
+  const deployed = await deployBaseFixture()
+  return {owner, anotherUser, ...deployed}
 })
 
 describe("CommunityRewards", () => {

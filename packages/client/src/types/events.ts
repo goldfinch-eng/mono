@@ -125,6 +125,10 @@ export const COMMUNITY_REWARDS_EVENT_TYPES = genExhaustiveTuple<CommunityRewards
 export type MerkleDistributorEventType = typeof GRANT_ACCEPTED_EVENT
 export const MERKLE_DISTRIBUTOR_EVENT_TYPES = genExhaustiveTuple<MerkleDistributorEventType>()(GRANT_ACCEPTED_EVENT)
 
+export type MerkleDirectDistributorEventType = typeof GRANT_ACCEPTED_EVENT
+export const MERKLE_DIRECT_DISTRIBUTOR_EVENT_TYPES =
+  genExhaustiveTuple<MerkleDirectDistributorEventType>()(GRANT_ACCEPTED_EVENT)
+
 export type KnownEventData<T extends KnownEventName> = EventData & {event: T}
 export function isKnownEventData<T extends KnownEventName>(obj: EventData, types: T[]): obj is KnownEventData<T> {
   return (types as string[]).includes(obj.event)

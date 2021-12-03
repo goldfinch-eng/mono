@@ -7,44 +7,28 @@ import {
   usdcVal,
   SECONDS_PER_DAY,
   SECONDS_PER_YEAR,
-  deployAllContracts,
   Numberish,
-  getDeployedAsTruffleContract,
 } from "./testHelpers"
 import hre from "hardhat"
-const {deployments, artifacts, web3} = hre
-import {interestAprAsBN, INTEREST_DECIMALS, ETHDecimals, ContractDeployer} from "../blockchain_scripts/deployHelpers"
+const {deployments, web3} = hre
+import {interestAprAsBN, INTEREST_DECIMALS, ETHDecimals} from "../blockchain_scripts/deployHelpers"
+import {deployBaseFixture, deployUninitializedCreditLineFixture} from "./util/fixtures"
 
 describe("Accountant", async () => {
   let accountant, owner, borrower, testAccountant, goldfinchConfig, creditLine
 
-  const deployer = new ContractDeployer(deployments.log, hre)
+  const testSetup = deployments.createFixture(async () => {
+    const baseFixtures = await deployBaseFixture()
+    const creditLineFixture = await deployUninitializedCreditLineFixture()
 
-  const setupTest = deployments.createFixture(async ({deployments}) => {
-    const accountantDeploy = await deployer.deployLibrary("Accountant", {from: owner})
-    await deployer.deploy("CreditLine", {
-      from: owner,
-      libraries: {["Accountant"]: accountantDeploy.address},
-    })
-
-    const contracts = await deployAllContracts(deployments)
-    const goldfinchConfig = contracts.goldfinchConfig
-    await deployer.deploy("TestAccountant", {
-      from: owner,
-      libraries: {["Accountant"]: accountantDeploy.address},
-    })
-
-    const accountant = await getDeployedAsTruffleContract(deployments, "Accountant")
-    const creditLine = await getDeployedAsTruffleContract(deployments, "CreditLine")
-    const testAccountant = await getDeployedAsTruffleContract(deployments, "TestAccountant")
-    return {...contracts, goldfinchConfig, testAccountant, accountant, creditLine}
+    return {...baseFixtures, ...creditLineFixture}
   })
 
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
     ;[owner, borrower] = await web3.eth.getAccounts()
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;({goldfinchConfig, testAccountant, accountant, creditLine} = await setupTest())
+    ;({goldfinchConfig, testAccountant, accountant, creditLine} = await testSetup())
   })
 
   describe("calculateInterestAndPrincipalAccrued", async () => {

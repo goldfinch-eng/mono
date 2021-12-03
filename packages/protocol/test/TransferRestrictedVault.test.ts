@@ -1,11 +1,8 @@
 /* global web3  */
 import BN from "bn.js"
-import hre from "hardhat"
-const {deployments} = hre
 import {
   createPoolWithCreditLine,
   usdcVal,
-  deployAllContracts,
   erc20Transfer,
   erc20Approve,
   expect,
@@ -22,6 +19,7 @@ import {ecsign} from "ethereumjs-util"
 import {getApprovalDigest, getWallet} from "./permitHelpers"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import {GoldfinchFactoryInstance} from "../typechain/truffle"
+import {deployBaseFixture} from "./util/fixtures"
 const WITHDRAWL_FEE_DENOMINATOR = new BN(200)
 
 let owner,
@@ -42,7 +40,7 @@ describe("TransferRestrictedVault", async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
     ;[owner, borrower, treasury, otherPerson] = await web3.eth.getAccounts()
     ;({usdc, goldfinchConfig, goldfinchFactory, poolTokens, transferRestrictedVault, seniorPool, fidu} =
-      await deployAllContracts(deployments))
+      await deployBaseFixture())
     await goldfinchConfig.bulkAddToGoList([owner, borrower, otherPerson, transferRestrictedVault.address])
     await goldfinchConfig.setTreasuryReserve(treasury)
     await erc20Transfer(usdc, [otherPerson], usdcVal(10000), owner)

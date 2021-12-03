@@ -20,7 +20,6 @@ import {DepositMade} from "../typechain/truffle/TranchedPool"
 const decimals = new BN(String(1e18))
 
 import {
-  deployAllContracts,
   bigVal,
   expect,
   createPoolWithCreditLine,
@@ -34,6 +33,7 @@ import {
   erc20Transfer,
 } from "./testHelpers"
 import {TestBackerRewardsInstance} from "../typechain/truffle/TestBackerRewards"
+import {deployBaseFixture} from "./util/fixtures"
 
 const {deployments} = hre
 const TEST_TIMEOUT = 30_000
@@ -140,9 +140,7 @@ describe("BackerRewards", function () {
     const anotherUser = asNonNullable(_anotherUser)
     const anotherAnotherUser = asNonNullable(_anotherAnotherUser)
 
-    const {goldfinchConfig, gfi, backerRewards, usdc, goldfinchFactory, poolTokens} = await deployAllContracts(
-      deployments
-    )
+    const {goldfinchConfig, gfi, backerRewards, usdc, goldfinchFactory, poolTokens} = await deployBaseFixture()
     await goldfinchConfig.bulkAddToGoList([owner, investor, borrower, anotherUser, anotherAnotherUser])
 
     await erc20Transfer(usdc, [anotherUser], usdcVal(100_000), owner)
@@ -203,12 +201,16 @@ describe("BackerRewards", function () {
   })
 
   describe("initialization", () => {
-    beforeEach(async () => {
+    const testSetup = deployments.createFixture(async () => {
       goldfinchConfig = await GoldfinchConfig.new({from: owner})
       await goldfinchConfig.initialize(owner)
 
       backerRewards = (await BackerRewards.new({from: owner})) as TestBackerRewardsInstance
       await backerRewards.__initialize__(owner, goldfinchConfig.address)
+    })
+
+    beforeEach(async () => {
+      await testSetup()
     })
 
     it("should not allow it to be called twice", async () => {
@@ -1076,8 +1078,7 @@ describe("BackerRewards", function () {
     const totalGFISupply = 100_000_000
     const totalRewards = 3_000_000 // 3% of 100m
     const previousInterestReceived = 0
-
-    beforeEach(async () => {
+    const testSetup = deployments.createFixture(async () => {
       await setupBackerRewardsContract({
         totalGFISupply,
         maxInterestDollarsEligible,
@@ -1087,6 +1088,10 @@ describe("BackerRewards", function () {
       // transfer GFI to BackerRewards contract
       await gfi.approve(backerRewards.address, bigVal(totalRewards))
       await erc20Transfer(gfi, [backerRewards.address], bigVal(totalRewards), owner)
+    })
+
+    beforeEach(async () => {
+      await testSetup()
     })
 
     it("validates must be owner of token", async () => {

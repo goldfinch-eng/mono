@@ -74,6 +74,9 @@ export default {
       },
     ],
   },
+  mocha: {
+    reporter: "list",
+  },
   namedAccounts: {
     protocol_owner: {
       default: 0,
