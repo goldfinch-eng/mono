@@ -1,13 +1,16 @@
-import {ethers, getNamedAccounts, deployments} from "hardhat"
-import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
-import {assertIsString} from "@goldfinch-eng/utils"
+import {getNamedAccounts, deployments, getChainId} from "hardhat"
+import {fundWithWhales, getAllExistingContracts} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
+import {assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
 import * as migrate22 from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.2/migrate"
 import * as migrate23 from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.3/migrate"
 import {
+  assertIsChainId,
   DISTRIBUTOR_ROLE,
   getEthersContract,
   getProtocolOwner,
   getTruffleContract,
+  isMainnetForking,
+  MAINNET_CHAIN_ID,
 } from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
 import {Awaited} from "@goldfinch-eng/protocol/blockchain_scripts/types"
 import {TEST_TIMEOUT} from "../../../MainnetForking.test"
@@ -33,31 +36,15 @@ describe("V2.2 & v2.3 migration", async function () {
   let v23migration: Awaited<ReturnType<typeof migrate23.main>>
   let newConfigDeployment: Deployment
   let newConfig: GoldfinchConfigInstance
-  let oldConfigDeployment: Deployment,
-    oldGoDeployment: Deployment,
-    oldSeniorPoolDeployment: Deployment,
-    oldUniqueIdentityDeployment: Deployment,
-    oldPoolTokensDeployment: Deployment,
-    oldTranchedPoolDeployment: Deployment
-  let oldDeployments: {
-    [key: string]: Deployment
-  }
+  let existingContracts
 
   before(async () => {
-    // We need to store the old config address because deployments don't get reset
-    // due to the use of keepExistingDeployments above (which is needed for mainnet-forking tests)
-    oldConfigDeployment = await deployments.get("GoldfinchConfig")
-    oldGoDeployment = await deployments.get("Go")
-    oldSeniorPoolDeployment = await deployments.get("SeniorPool")
-    oldUniqueIdentityDeployment = await deployments.get("UniqueIdentity")
-    oldPoolTokensDeployment = await deployments.get("PoolTokens")
-    oldTranchedPoolDeployment = await deployments.get("TranchedPool")
-    oldDeployments = {
-      PoolTokens: oldPoolTokensDeployment,
-      UniqueIdentity: oldUniqueIdentityDeployment,
-      SeniorPool: oldSeniorPoolDeployment,
-      Go: oldGoDeployment,
-    }
+    const {gf_deployer} = await getNamedAccounts()
+    assertNonNullable(gf_deployer)
+    const chainId = isMainnetForking() ? MAINNET_CHAIN_ID : await getChainId()
+    assertIsChainId(chainId)
+
+    existingContracts = await getAllExistingContracts(chainId)
   })
 
   beforeEach(async () => {
@@ -83,10 +70,10 @@ describe("V2.2 & v2.3 migration", async function () {
         const newConfigDeployment = await deployments.get("GoldfinchConfig")
         const newConfig = v22migration.deployedContracts.config
         const oldConfig = await getEthersContract<GoldfinchConfig>("GoldfinchConfig", {
-          at: oldConfigDeployment.address,
+          at: existingContracts.GoldfinchConfig.address,
         })
 
-        expect(newConfigDeployment.address).to.not.eq(oldConfigDeployment.address)
+        expect(newConfigDeployment.address).to.not.eq(existingContracts.GoldfinchConfig.address)
         expect(newConfigDeployment.address).to.eq(newConfig.address)
 
         for (const [k, v] of Object.entries(CONFIG_KEYS_BY_TYPE.numbers)) {
@@ -111,7 +98,7 @@ describe("V2.2 & v2.3 migration", async function () {
 
       it("updates the config address on various contracts", async () => {
         const oldConfig = await getEthersContract<GoldfinchConfig>("GoldfinchConfig", {
-          at: oldConfigDeployment.address,
+          at: existingContracts.GoldfinchConfig.address,
         })
         const newConfig = v22migration.deployedContracts.config
 
@@ -203,7 +190,7 @@ describe("V2.2 & v2.3 migration", async function () {
         for (const contractName of updateConfigContracts) {
           const newDeployment: Deployment = await deployments.get(contractName)
           const newUpgradedContract = v23migration.upgradedContracts[contractName]
-          expect(newDeployment.address).to.eq(oldDeployments[contractName]?.address)
+          expect(newDeployment.address).to.eq(existingContracts[contractName]?.address)
           expect(newDeployment.address).to.eq(newUpgradedContract?.ProxyContract.address)
           expect(newDeployment.address).to.not.eq(newUpgradedContract?.UpgradedImplAddress)
           const contract = await getEthersContract(contractName)
@@ -222,7 +209,7 @@ describe("V2.2 & v2.3 migration", async function () {
         const newDeployment: Deployment = await deployments.get("TestTranchedPool")
         const newDeployedContract = v23migration.deployedContracts.tranchedPool
         expect(newDeployment.address).to.eq(newDeployedContract.address)
-        expect(oldTranchedPoolDeployment.address).to.not.eq(newDeployment.address)
+        expect(existingContracts.TranchedPool.address).to.not.eq(newDeployment.address)
 
         // config points to new contract
         expect(await goldfinchConfig.getAddress(CONFIG_KEYS.TranchedPoolImplementation)).to.eq(
