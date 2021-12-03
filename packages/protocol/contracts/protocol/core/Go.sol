@@ -65,15 +65,6 @@ contract Go is IGo, BaseUpgradeablePausable {
    * list instead of the config currently associated. To use the associated config for to list, set the override
    * to the null address.
    */
-  function setGoListOverride(GoldfinchConfig _goListOverride) external onlyAdmin {
-    goListOverride = _goListOverride;
-  }
-
-  /**
-   * @notice sets the config that will be used as the source of truth for the go
-   * list instead of the config currently associated. To use the associated config for to list, set the override
-   * to the null address.
-   */
   function setLegacyGoList(GoldfinchConfig _legacyGoList) external onlyAdmin {
     legacyGoList = _legacyGoList;
   }
