@@ -1,16 +1,12 @@
-import {
-  GrantReason,
-  MerkleDistributorGrantInfo,
-} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
 import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
 import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/web3/GoldfinchConfig"
 import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
 import _ from "lodash"
 import {assertWithLoadedInfo, Loadable, WithLoadedInfo} from "../types/loadable"
-import {assertNonNullable, BlockInfo, WithCurrentBlock} from "../utils"
+import {assertNonNullable, BlockInfo, defaultSum, WithCurrentBlock} from "../utils"
 import {BorrowerInterface, getBorrowerContract} from "./borrower"
-import {CommunityRewardsGrant, CommunityRewardsLoaded, MerkleDistributorLoaded} from "./communityRewards"
+import {CommunityRewardsGrant, CommunityRewardsLoaded, MerkleDirectDistributorLoaded} from "./communityRewards"
 import {ERC20, Tickers, USDC, usdcFromAtomic} from "./erc20"
 import {getBalanceAsOf, getPoolEventAmount, mapEventsToTx} from "./events"
 import {
@@ -26,7 +22,9 @@ import {
   DRAWDOWN_MADE_EVENT,
   GRANT_ACCEPTED_EVENT,
   KnownEventData,
+  MerkleDirectDistributorEventType,
   MerkleDistributorEventType,
+  MERKLE_DIRECT_DISTRIBUTOR_EVENT_TYPES,
   MERKLE_DISTRIBUTOR_EVENT_TYPES,
   PAYMENT_COLLECTED_EVENT,
   PoolEventType,
@@ -61,6 +59,17 @@ import {
 import {getFromBlock, MAINNET} from "./utils"
 import {Go} from "@goldfinch-eng/protocol/typechain/web3/Go"
 import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/web3/UniqueIdentity"
+import {MerkleDirectDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/types"
+import {AcceptedMerkleDistributorGrant, NotAcceptedMerkleDistributorGrant} from "../types/merkleDistributor"
+import {
+  GrantReason,
+  MerkleDistributorGrantInfo,
+} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
+import {
+  AcceptedMerkleDirectDistributorGrant,
+  NotAcceptedMerkleDirectDistributorGrant,
+} from "../types/merkleDirectDistributor"
+import {MerkleDistributorLoaded} from "./merkleDistributor"
 
 export const UNLOCK_THRESHOLD = new BigNumber(10000)
 
@@ -74,12 +83,21 @@ export async function getUserData(
   gfi: GFILoaded,
   communityRewards: CommunityRewardsLoaded,
   merkleDistributor: MerkleDistributorLoaded,
+  merkleDirectDistributor: MerkleDirectDistributorLoaded,
   currentBlock: BlockInfo
 ): Promise<UserLoaded> {
   const borrower = await getBorrowerContract(address, goldfinchProtocol, currentBlock)
 
   const user = new User(address, networkId, creditDesk, goldfinchProtocol, borrower)
-  await user.initialize(pool, stakingRewards, gfi, communityRewards, merkleDistributor, currentBlock)
+  await user.initialize(
+    pool,
+    stakingRewards,
+    gfi,
+    communityRewards,
+    merkleDistributor,
+    merkleDirectDistributor,
+    currentBlock
+  )
   assertWithLoadedInfo(user)
   return user
 }
@@ -236,27 +254,15 @@ class UserStakingRewards {
   }
 
   static calculateClaimableRewards(positions: StakingRewardsPosition[]): BigNumber {
-    if (positions.length === 0) return new BigNumber(0)
-    return BigNumber.sum.apply(
-      null,
-      positions.map((position) => position.claimable)
-    )
+    return defaultSum(positions.map((position) => position.claimable))
   }
 
   static calculateUnvestedRewards(positions: StakingRewardsPosition[]): BigNumber {
-    if (positions.length === 0) return new BigNumber(0)
-    return BigNumber.sum.apply(
-      null,
-      positions.map((position) => position.unvested)
-    )
+    return defaultSum(positions.map((position) => position.unvested))
   }
 
   static calculateGrantedRewards(positions: StakingRewardsPosition[]): BigNumber {
-    if (positions.length === 0) return new BigNumber(0)
-    return BigNumber.sum.apply(
-      null,
-      positions.map((position) => position.granted)
-    )
+    return defaultSum(positions.map((position) => position.granted))
   }
 
   static parseStoredPosition(tuple: {
@@ -362,10 +368,10 @@ class UserCommunityRewards {
                 const grantAcceptedEvent = events[0]
                 assertNonNullable(grantAcceptedEvent)
                 const airdrop = userMerkleDistributor.info.value.airdrops.accepted.find(
-                  (airdrop) => parseInt(grantAcceptedEvent.returnValues.index, 10) === airdrop.index
+                  (airdrop) => parseInt(grantAcceptedEvent.returnValues.index, 10) === airdrop.grantInfo.index
                 )
                 if (airdrop) {
-                  return airdrop.reason
+                  return airdrop.grantInfo.reason
                 } else {
                   throw new Error(
                     `Failed to identify airdrop corresponding to GrantAccepted event ${tokenId}, among user's accepted airdrops.`
@@ -416,25 +422,15 @@ class UserCommunityRewards {
   }
 
   static calculateClaimable(grants: CommunityRewardsGrant[]): BigNumber {
-    if (grants.length === 0) return new BigNumber(0)
-    const claimableResults = grants.map((grant) => grant.claimable)
-    return BigNumber.sum.apply(null, claimableResults)
+    return defaultSum(grants.map((grant) => grant.claimable))
   }
 
   static calculateUnvested(grants: CommunityRewardsGrant[]): BigNumber {
-    if (grants.length === 0) return new BigNumber(0)
-    return BigNumber.sum.apply(
-      null,
-      grants.map((grant) => grant.unvested)
-    )
+    return defaultSum(grants.map((grant) => grant.unvested))
   }
 
   static calculateGranted(grants: CommunityRewardsGrant[]): BigNumber {
-    if (grants.length === 0) return new BigNumber(0)
-    return BigNumber.sum.apply(
-      null,
-      grants.map((grant) => grant.granted)
-    )
+    return defaultSum(grants.map((grant) => grant.granted))
   }
 
   static parseCommunityRewardsGrant(
@@ -473,9 +469,11 @@ export type UserCommunityRewardsLoaded = WithLoadedInfo<UserCommunityRewards, Us
 type UserMerkleDistributorLoadedInfo = {
   currentBlock: BlockInfo
   airdrops: {
-    accepted: MerkleDistributorGrantInfo[]
-    notAccepted: MerkleDistributorGrantInfo[]
+    accepted: AcceptedMerkleDistributorGrant[]
+    notAccepted: NotAcceptedMerkleDistributorGrant[]
   }
+  notAcceptedClaimable: BigNumber
+  notAcceptedUnvested: BigNumber
 }
 
 export class UserMerkleDistributor {
@@ -491,22 +489,26 @@ export class UserMerkleDistributor {
   async initialize(
     address: string,
     merkleDistributor: MerkleDistributorLoaded,
+    communityRewards: CommunityRewardsLoaded,
     currentBlock: BlockInfo
   ): Promise<void> {
     if (merkleDistributor.info.value.currentBlock.number !== currentBlock.number) {
       throw new Error("`merkleDistributor` is based on a different block number from `currentBlock`.")
+    }
+    if (communityRewards.info.value.currentBlock.number !== currentBlock.number) {
+      throw new Error("`communityRewards` is based on a different block number from `currentBlock`.")
     }
 
     const airdropsForRecipient = UserMerkleDistributor.getAirdropsForRecipient(
       merkleDistributor.info.value.merkleDistributorInfo.grants,
       address
     )
-    const accepted = await UserMerkleDistributor.getAcceptedAirdrops(
-      airdropsForRecipient,
-      merkleDistributor,
-      currentBlock
-    )
-    const airdrops = accepted.reduce<{
+    const [withAcceptance, _tokenLaunchTime] = await Promise.all([
+      UserMerkleDistributor.getAirdropsWithAcceptance(airdropsForRecipient, merkleDistributor, currentBlock),
+      communityRewards.contract.methods.tokenLaunchTimeInSeconds().call(undefined, currentBlock.number),
+    ])
+    const tokenLaunchTime = new BigNumber(_tokenLaunchTime)
+    const airdrops = withAcceptance.reduce<{
       accepted: MerkleDistributorGrantInfo[]
       notAccepted: MerkleDistributorGrantInfo[]
     }>(
@@ -520,17 +522,63 @@ export class UserMerkleDistributor {
       },
       {accepted: [], notAccepted: []}
     )
+    const accepted = airdrops.accepted.map(
+      (grantInfo): AcceptedMerkleDistributorGrant => ({
+        accepted: true,
+        grantInfo,
+        granted: undefined,
+        vested: undefined,
+        claimable: undefined,
+        unvested: undefined,
+      })
+    )
+    const notAccepted = await Promise.all(
+      airdrops.notAccepted.map(async (grantInfo): Promise<NotAcceptedMerkleDistributorGrant> => {
+        const granted = new BigNumber(grantInfo.grant.amount)
+        const optimisticVested = new BigNumber(
+          await communityRewards.contract.methods
+            .totalVestedAt(
+              tokenLaunchTime.toString(10),
+              tokenLaunchTime.plus(new BigNumber(grantInfo.grant.vestingLength)).toString(10),
+              new BigNumber(grantInfo.grant.amount).toString(10),
+              new BigNumber(grantInfo.grant.cliffLength).toString(10),
+              new BigNumber(grantInfo.grant.vestingInterval).toString(10),
+              0,
+              currentBlock.timestamp
+            )
+            .call(undefined, currentBlock.number)
+        )
+        const vested = optimisticVested
+        return {
+          accepted: false,
+          grantInfo,
+          granted,
+          vested,
+          claimable: vested,
+          unvested: granted.minus(vested),
+        }
+      })
+    )
+
+    const notAcceptedClaimable = defaultSum(notAccepted.map((val) => val.claimable))
+
+    const notAcceptedUnvested = defaultSum(notAccepted.map((val) => val.unvested))
 
     this.info = {
       loaded: true,
       value: {
         currentBlock,
-        airdrops,
+        airdrops: {
+          accepted,
+          notAccepted,
+        },
+        notAcceptedClaimable,
+        notAcceptedUnvested,
       },
     }
   }
 
-  static async getAcceptedAirdrops(
+  static async getAirdropsWithAcceptance(
     airdropsForRecipient: MerkleDistributorGrantInfo[],
     merkleDistributor: MerkleDistributorLoaded,
     currentBlock: BlockInfo
@@ -555,6 +603,134 @@ export class UserMerkleDistributor {
 
 export type UserMerkleDistributorLoaded = WithLoadedInfo<UserMerkleDistributor, UserMerkleDistributorLoadedInfo>
 
+type UserMerkleDirectDistributorLoadedInfo = {
+  currentBlock: BlockInfo
+  airdrops: {
+    accepted: AcceptedMerkleDirectDistributorGrant[]
+    notAccepted: NotAcceptedMerkleDirectDistributorGrant[]
+  }
+  claimable: BigNumber
+  unvested: BigNumber
+}
+
+export class UserMerkleDirectDistributor {
+  info: Loadable<UserMerkleDirectDistributorLoadedInfo>
+
+  constructor() {
+    this.info = {
+      loaded: false,
+      value: undefined,
+    }
+  }
+
+  async initialize(
+    address: string,
+    merkleDirectDistributor: MerkleDirectDistributorLoaded,
+    currentBlock: BlockInfo
+  ): Promise<void> {
+    if (merkleDirectDistributor.info.value.currentBlock.number !== currentBlock.number) {
+      throw new Error("`merkleDirectDistributor` is based on a different block number from `currentBlock`.")
+    }
+
+    const airdropsForRecipient = UserMerkleDirectDistributor.getAirdropsForRecipient(
+      merkleDirectDistributor.info.value.merkleDirectDistributorInfo.grants,
+      address
+    )
+    const withAcceptance = await UserMerkleDirectDistributor.getAirdropsWithAcceptance(
+      airdropsForRecipient,
+      merkleDirectDistributor,
+      currentBlock
+    )
+    const airdrops = withAcceptance.reduce<{
+      accepted: MerkleDirectDistributorGrantInfo[]
+      notAccepted: MerkleDirectDistributorGrantInfo[]
+    }>(
+      (acc, curr) => {
+        if (curr.isAccepted) {
+          acc.accepted.push(curr.grantInfo)
+        } else {
+          acc.notAccepted.push(curr.grantInfo)
+        }
+        return acc
+      },
+      {accepted: [], notAccepted: []}
+    )
+    const accepted = airdrops.accepted.map((grantInfo): AcceptedMerkleDirectDistributorGrant => {
+      const granted = new BigNumber(grantInfo.grant.amount)
+      const vested = granted
+      return {
+        accepted: true,
+        grantInfo,
+        granted,
+        vested,
+        // Direct grants that have been accepted have no further claimable amount.
+        claimable: new BigNumber(0),
+        unvested: granted.minus(vested),
+      }
+    })
+    const notAccepted = airdrops.notAccepted.map((grantInfo): NotAcceptedMerkleDirectDistributorGrant => {
+      const granted = new BigNumber(grantInfo.grant.amount)
+      const vested = granted
+      return {
+        accepted: false,
+        grantInfo,
+        granted,
+        vested,
+        claimable: vested,
+        unvested: granted.minus(vested),
+      }
+    })
+
+    const acceptedClaimable = defaultSum(accepted.map((val) => val.claimable))
+    const notAcceptedClaimable = defaultSum(notAccepted.map((val) => val.claimable))
+    const claimable = acceptedClaimable.plus(notAcceptedClaimable)
+
+    const acceptedUnvested = defaultSum(accepted.map((val) => val.unvested))
+    const notAcceptedUnvested = defaultSum(notAccepted.map((val) => val.unvested))
+    const unvested = acceptedUnvested.plus(notAcceptedUnvested)
+
+    this.info = {
+      loaded: true,
+      value: {
+        currentBlock,
+        airdrops: {
+          accepted,
+          notAccepted,
+        },
+        claimable,
+        unvested,
+      },
+    }
+  }
+
+  static async getAirdropsWithAcceptance(
+    airdropsForRecipient: MerkleDirectDistributorGrantInfo[],
+    merkleDirectDistributor: MerkleDirectDistributorLoaded,
+    currentBlock: BlockInfo
+  ) {
+    return Promise.all(
+      airdropsForRecipient.map(async (grantInfo) => ({
+        grantInfo,
+        isAccepted: await merkleDirectDistributor.contract.methods
+          .isGrantAccepted(grantInfo.index)
+          .call(undefined, currentBlock.number),
+      }))
+    )
+  }
+
+  static getAirdropsForRecipient(
+    allAirdrops: MerkleDirectDistributorGrantInfo[],
+    recipient: string
+  ): MerkleDirectDistributorGrantInfo[] {
+    return allAirdrops.filter((grantInfo) => grantInfo.account === recipient)
+  }
+}
+
+export type UserMerkleDirectDistributorLoaded = WithLoadedInfo<
+  UserMerkleDirectDistributor,
+  UserMerkleDirectDistributorLoadedInfo
+>
+
 export type UserLoadedInfo = {
   currentBlock: BlockInfo
   usdcBalance: BigNumber
@@ -568,6 +744,7 @@ export type UserLoadedInfo = {
     | StakingRewardsEventType
     | CommunityRewardsEventType
     | MerkleDistributorEventType
+    | MerkleDirectDistributorEventType
   >[]
   poolTxs: HistoricalTx<PoolEventType>[]
   goListed: boolean
@@ -587,6 +764,7 @@ export type UserLoadedInfo = {
   stakingRewards: UserStakingRewardsLoaded
   communityRewards: UserCommunityRewardsLoaded
   merkleDistributor: UserMerkleDistributorLoaded
+  merkleDirectDistributor: UserMerkleDirectDistributorLoaded
 }
 
 export type UserLoaded = WithLoadedInfo<User, UserLoadedInfo>
@@ -628,6 +806,7 @@ export class User {
     gfi: GFILoaded,
     communityRewards: CommunityRewardsLoaded,
     merkleDistributor: MerkleDistributorLoaded,
+    merkleDirectDistributor: MerkleDirectDistributorLoaded,
     currentBlock: BlockInfo
   ) {
     if (pool.info.value.currentBlock.number !== currentBlock.number) {
@@ -645,6 +824,9 @@ export class User {
     if (pool.info.value.currentBlock.number !== merkleDistributor.info.value.currentBlock.number) {
       throw new Error("`pool` and `merkleDistributor` are based on different block numbers.")
     }
+    if (pool.info.value.currentBlock.number !== merkleDirectDistributor.info.value.currentBlock.number) {
+      throw new Error("`pool` and `merkleDirectDistributor` are based on different block numbers.")
+    }
 
     const usdc = this.goldfinchProtocol.getERC20(Tickers.USDC)
 
@@ -660,7 +842,16 @@ export class User {
       stakingRewardsEventsAndTxs,
       communityRewardsTxs,
       merkleDistributorTxs,
-    ] = await this._fetchTxs(usdc, pool, stakingRewards, communityRewards, merkleDistributor, currentBlock)
+      merkleDirectDistributorTxs,
+    ] = await this._fetchTxs(
+      usdc,
+      pool,
+      stakingRewards,
+      communityRewards,
+      merkleDistributor,
+      merkleDirectDistributor,
+      currentBlock
+    )
     const {poolEvents, poolTxs} = poolEventsAndTxs
     const {stakedEvents, stakingRewardsTxs} = stakingRewardsEventsAndTxs
     const pastTxs = _.reverse(
@@ -673,6 +864,7 @@ export class User {
           ...stakingRewardsTxs,
           ...communityRewardsTxs,
           ...merkleDistributorTxs,
+          ...merkleDirectDistributorTxs,
         ],
         ["blockNumber", "transactionIndex"]
       )
@@ -689,12 +881,15 @@ export class User {
 
     const userStakingRewards = new UserStakingRewards()
     const userMerkleDistributor = new UserMerkleDistributor()
+    const userMerkleDirectDistributor = new UserMerkleDirectDistributor()
     await Promise.all([
       userStakingRewards.initialize(this.address, stakingRewards, stakedEvents, currentBlock),
-      userMerkleDistributor.initialize(this.address, merkleDistributor, currentBlock),
+      userMerkleDistributor.initialize(this.address, merkleDistributor, communityRewards, currentBlock),
+      userMerkleDirectDistributor.initialize(this.address, merkleDirectDistributor, currentBlock),
     ])
     assertWithLoadedInfo(userStakingRewards)
     assertWithLoadedInfo(userMerkleDistributor)
+    assertWithLoadedInfo(userMerkleDirectDistributor)
 
     const userCommunityRewards = new UserCommunityRewards(this.goldfinchProtocol)
     await userCommunityRewards.initialize(
@@ -733,6 +928,7 @@ export class User {
         stakingRewards: userStakingRewards,
         communityRewards: userCommunityRewards,
         merkleDistributor: userMerkleDistributor,
+        merkleDirectDistributor: userMerkleDirectDistributor,
       },
     }
   }
@@ -743,6 +939,7 @@ export class User {
     stakingRewards: StakingRewardsLoaded,
     communityRewards: CommunityRewardsLoaded,
     merkleDistributor: MerkleDistributorLoaded,
+    merkleDirectDistributor: MerkleDirectDistributorLoaded,
     currentBlock: BlockInfo
   ) {
     return Promise.all([
@@ -862,6 +1059,7 @@ export class User {
       }),
       getAndTransformCommunityRewardsEvents(this.address, communityRewards),
       getAndTransformMerkleDistributorEvents(this.address, merkleDistributor),
+      getAndTransformMerkleDirectDistributorEvents(this.address, merkleDirectDistributor),
     ])
   }
 
@@ -1174,6 +1372,42 @@ async function getAndTransformMerkleDistributorEvents(
           }
         },
         parseAmount: (eventData: KnownEventData<MerkleDistributorEventType>) => {
+          switch (eventData.event) {
+            case GRANT_ACCEPTED_EVENT:
+              return {
+                amount: eventData.returnValues.amount,
+                units: "gfi",
+              }
+            default:
+              return assertUnreachable(eventData.event)
+          }
+        },
+      })
+    )
+}
+
+async function getAndTransformMerkleDirectDistributorEvents(
+  address: string,
+  merkleDirectDistributor: MerkleDirectDistributorLoaded
+): Promise<HistoricalTx<MerkleDirectDistributorEventType>[]> {
+  return merkleDirectDistributor
+    .getEvents(
+      address,
+      MERKLE_DIRECT_DISTRIBUTOR_EVENT_TYPES,
+      undefined,
+      merkleDirectDistributor.info.value.currentBlock.number
+    )
+    .then((events) =>
+      mapEventsToTx(events, MERKLE_DIRECT_DISTRIBUTOR_EVENT_TYPES, {
+        parseName: (eventData: KnownEventData<MerkleDirectDistributorEventType>) => {
+          switch (eventData.event) {
+            case GRANT_ACCEPTED_EVENT:
+              return ACCEPT_TX_TYPE
+            default:
+              return assertUnreachable(eventData.event)
+          }
+        },
+        parseAmount: (eventData: KnownEventData<MerkleDirectDistributorEventType>) => {
           switch (eventData.event) {
             case GRANT_ACCEPTED_EVENT:
               return {
