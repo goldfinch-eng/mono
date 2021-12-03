@@ -204,7 +204,7 @@ templates:
           file: ./abis/TranchedPool.json
       eventHandlers:
         - event: PoolCreated(indexed address,indexed address)
-          handler: handlerPoolCreated
+          handler: handlePoolCreated
 
   - name: TranchedPool
     kind: ethereum/contract
@@ -238,15 +238,15 @@ templates:
           file: ./abis/PoolTokens_Implementation.json
       eventHandlers:
         - event: CreditLineMigrated(indexed address,indexed address)
-          handler: handlerCreditLineMigrated
+          handler: handleCreditLineMigrated
         - event: DepositMade(indexed address,indexed uint256,indexed uint256,uint256)
-          handler: handlerDepositMade
+          handler: handleDepositMade
         - event: DrawdownsPaused(indexed address)
-          handler: handlerDrawdownsPaused
+          handler: handleDrawdownsPaused
         - event: DrawdownsUnpaused(indexed address)
-          handler: handlerDrawdownsUnpaused
+          handler: handleDrawdownsUnpaused
         - event: WithdrawalMade(indexed address,indexed uint256,indexed uint256,uint256,uint256)
-          handler: handlerWithdrawalMade
+          handler: handleWithdrawalMade
 
   - name: PoolTokens
     kind: ethereum/contract
