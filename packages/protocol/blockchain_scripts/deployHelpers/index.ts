@@ -384,22 +384,17 @@ async function getContract<
     opts.at = await getExistingAddress(contractName)
   }
   const at = opts.at
+  const from = opts.from || (await getProtocolOwner())
   switch (as) {
     case ETHERS_CONTRACT_PROVIDER: {
       const abi = await artifacts.require(contractName).abi
       const contract = await ethers.getContractAt(abi, at)
-      if (opts.from) {
-        const signer = await ethers.getSigner(opts.from)
-        return contract.connect(signer) as unknown as ProvidedContract<P, E, T>
-      } else {
-        return contract as unknown as ProvidedContract<P, E, T>
-      }
+      const signer = await ethers.getSigner(from)
+      return contract.connect(signer) as unknown as ProvidedContract<P, E, T>
     }
     case TRUFFLE_CONTRACT_PROVIDER: {
       const contract = await artifacts.require(contractName)
-      if (opts.from) {
-        contract.defaults({from: opts.from})
-      }
+      contract.defaults({from})
       return contract.at(at) as unknown as ProvidedContract<P, E, T>
     }
     default:
