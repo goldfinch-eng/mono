@@ -148,7 +148,7 @@ describe("v2.3 migration", async function () {
       })
 
       it("has the config with the go list set as the goListOverride", async () => {
-        expect(await go.goListOverride()).to.be.eq(GOLDFINCH_CONFIG_ADDRESS_WITH_GO_LIST)
+        expect(await go.legacyGoList()).to.be.eq(GOLDFINCH_CONFIG_ADDRESS_WITH_GO_LIST)
       })
 
       it("goListOverride is working correctly", async () => {
