@@ -671,7 +671,7 @@ describe("mainnet forking tests", async function () {
           goldfinchFactory,
         }))
         await fundWithWhales(["USDC"], [goListedUser])
-        const goldfinchConfigWithGoListAddress = await go.goListOverride()
+        const goldfinchConfigWithGoListAddress = await go.legacyGoList()
         const goldfinchConfigWithGoList = await getTruffleContract<GoldfinchConfigInstance>("GoldfinchConfig", {
           at: goldfinchConfigWithGoListAddress,
         })
