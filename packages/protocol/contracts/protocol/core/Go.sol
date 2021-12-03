@@ -21,6 +21,7 @@ contract Go is IGo, BaseUpgradeablePausable {
   uint256[11] public allIdTypes;
 
   GoldfinchConfig public legacyGoList;
+  uint256[11] public allIdTypes;
   event GoldfinchConfigUpdated(address indexed who, address configAddress);
 
   function initialize(
@@ -59,15 +60,6 @@ contract Go is IGo, BaseUpgradeablePausable {
     allIdTypes[8] = ID_TYPE_8;
     allIdTypes[9] = ID_TYPE_9;
     allIdTypes[10] = ID_TYPE_10;
-  }
-
-  /**
-   * @notice sets the config that will be used as the source of truth for the go
-   * list instead of the config currently associated. To use the associated config for to list, set the override
-   * to the null address.
-   */
-  function setGoListOverride(GoldfinchConfig _goListOverride) external onlyAdmin {
-    goListOverride = _goListOverride;
   }
 
   /**
