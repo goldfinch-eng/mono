@@ -39,7 +39,6 @@ import {
   UniqueIdentity,
   Go,
   TestUniqueIdentity,
-  MerkleDirectDistributor,
 } from "../typechain/ethers"
 import {Logger, DeployOpts} from "./types"
 import {isMerkleDistributorInfo} from "./merkle/merkleDistributor/types"
