@@ -48,8 +48,8 @@ describe("GFI", () => {
   })
 
   describe("name", () => {
-    it("is GFI", async () => {
-      expect(await gfi.name()).to.eq("GFI")
+    it("is Goldfinch", async () => {
+      expect(await gfi.name()).to.eq("Goldfinch")
     })
   })
 

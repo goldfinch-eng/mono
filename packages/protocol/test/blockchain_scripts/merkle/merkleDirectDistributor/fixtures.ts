@@ -1,4 +1,5 @@
 import {
+  FLIGHT_ACADEMY_DIRECT_GRANT_REASON,
   JsonAccountedDirectGrant,
   MerkleDirectDistributorInfo,
 } from "../../../../blockchain_scripts/merkle/merkleDirectDistributor/types"
@@ -8,18 +9,21 @@ export const TEST_MERKLE_DIRECT_DISTRIBUTOR_RECIPIENT_B = "0xb5c52599dFc7F9858F9
 
 const accountedGrant0: JsonAccountedDirectGrant = {
   account: TEST_MERKLE_DIRECT_DISTRIBUTOR_RECIPIENT_A,
+  reason: FLIGHT_ACADEMY_DIRECT_GRANT_REASON,
   grant: {
     amount: "1000",
   },
 }
 const accountedGrant1: JsonAccountedDirectGrant = {
   account: TEST_MERKLE_DIRECT_DISTRIBUTOR_RECIPIENT_A,
+  reason: FLIGHT_ACADEMY_DIRECT_GRANT_REASON,
   grant: {
     amount: "3000",
   },
 }
 const accountedGrant2: JsonAccountedDirectGrant = {
   account: TEST_MERKLE_DIRECT_DISTRIBUTOR_RECIPIENT_B,
+  reason: FLIGHT_ACADEMY_DIRECT_GRANT_REASON,
   grant: {
     amount: "2000",
   },
@@ -33,6 +37,7 @@ export const merkleDirectDistributorInfo: MerkleDirectDistributorInfo = {
     {
       index: 0,
       account: accountedGrant2.account,
+      reason: accountedGrant2.reason,
       grant: {
         amount: "0x07d0",
       },
@@ -41,6 +46,7 @@ export const merkleDirectDistributorInfo: MerkleDirectDistributorInfo = {
     {
       index: 1,
       account: accountedGrant0.account,
+      reason: accountedGrant0.reason,
       grant: {
         amount: "0x03e8",
       },
@@ -52,6 +58,7 @@ export const merkleDirectDistributorInfo: MerkleDirectDistributorInfo = {
     {
       index: 2,
       account: accountedGrant1.account,
+      reason: accountedGrant1.reason,
       grant: {
         amount: "0x0bb8",
       },
