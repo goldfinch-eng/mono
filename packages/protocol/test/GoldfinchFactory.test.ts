@@ -4,15 +4,11 @@ import {expectEvent} from "@openzeppelin/test-helpers"
 import {GoldfinchFactoryInstance, GoldfinchConfigInstance} from "../typechain/truffle"
 import {interestAprAsBN} from "../blockchain_scripts/deployHelpers"
 import {BN} from "ethereumjs-util"
+import {deployBaseFixture} from "./util/fixtures"
 
 describe("GoldfinchFactory", async () => {
   const testSetup = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
-    await deployments.run("base_deploy")
-    const goldfinchConfig = await getDeployedAsTruffleContract<GoldfinchConfigInstance>(deployments, "GoldfinchConfig")
-    const goldfinchFactory = await getDeployedAsTruffleContract<GoldfinchFactoryInstance>(
-      deployments,
-      "GoldfinchFactory"
-    )
+    const {goldfinchFactory, goldfinchConfig, ...deployed} = await deployBaseFixture()
     const [owner, borrower, otherPerson] = await web3.eth.getAccounts()
     const borrowerRole = await goldfinchFactory.BORROWER_ROLE()
     await goldfinchFactory.grantRole(borrowerRole, borrower as string, {from: owner})
@@ -22,6 +18,7 @@ describe("GoldfinchFactory", async () => {
       owner: owner as string,
       borrower: borrower as string,
       otherPerson: otherPerson as string,
+      ...deployed,
     }
   })
 

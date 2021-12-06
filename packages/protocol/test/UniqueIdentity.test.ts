@@ -23,8 +23,9 @@ import {
   MINT_MESSAGE_ELEMENT_TYPES,
   MINT_PAYMENT,
 } from "./uniqueIdentityHelpers"
-import {deployAllContracts, getCurrentTimestamp, SECONDS_PER_DAY} from "./testHelpers"
+import {getCurrentTimestamp, SECONDS_PER_DAY} from "./testHelpers"
 import {mint as mintHelper, burn as burnHelper, sign as signHelper} from "./uniqueIdentityHelpers"
+import {deployBaseFixture} from "./util/fixtures"
 const {deployments} = hre
 
 const setupTest = deployments.createFixture(async ({deployments}) => {
@@ -35,7 +36,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const anotherUser2 = asNonNullable(_anotherUser2)
   const uninitializedUniqueIdentityDeployer = asNonNullable(_anotherUser3)
 
-  const deployed = await deployAllContracts(deployments)
+  const deployed = await deployBaseFixture()
 
   const uniqueIdentity = deployed.uniqueIdentity
 

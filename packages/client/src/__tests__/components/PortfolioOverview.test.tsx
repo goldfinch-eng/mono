@@ -1,10 +1,15 @@
+import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
 import "@testing-library/jest-dom"
-import {mock} from "depay-web3-mock"
-import {BigNumber} from "bignumber.js"
-import {BrowserRouter as Router} from "react-router-dom"
 import {render, screen} from "@testing-library/react"
+import {BigNumber} from "bignumber.js"
+import {mock} from "depay-web3-mock"
+import {BrowserRouter as Router} from "react-router-dom"
 import {AppContext} from "../../App"
-import web3 from "../../web3"
+import {PortfolioOverview} from "../../components/earn"
+import {CommunityRewardsLoaded, MerkleDirectDistributorLoaded} from "../../ethereum/communityRewards"
+import {GFILoaded} from "../../ethereum/gfi"
+import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
+import {MerkleDistributorLoaded} from "../../ethereum/merkleDistributor"
 import {
   CapitalProvider,
   fetchCapitalProviderData,
@@ -14,28 +19,25 @@ import {
   SeniorPoolLoaded,
   StakingRewardsLoaded,
 } from "../../ethereum/pool"
+import {PoolBacker, TranchedPool} from "../../ethereum/tranchedPool"
 import {User, UserLoaded} from "../../ethereum/user"
-import {blockInfo, getDeployments, network, recipient} from "../rewards/__utils__/constants"
-import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
+import * as utils from "../../ethereum/utils"
+import {assertWithLoadedInfo, Loaded} from "../../types/loadable"
+import {BlockInfo} from "../../utils"
+import web3 from "../../web3"
+import {defaultCurrentBlock, getDeployments, network, recipient} from "../rewards/__utils__/constants"
+import {toDisplayPercent} from "../rewards/__utils__/display"
+import {
+  mockCapitalProviderCalls,
+  mockUserInitializationContractCalls,
+  resetAirdropMocks,
+} from "../rewards/__utils__/mocks"
 import {
   getDefaultClasses,
   setupClaimableStakingReward,
   setupNewStakingReward,
   setupPartiallyClaimedStakingReward,
 } from "../rewards/__utils__/scenarios"
-import {assertWithLoadedInfo, Loaded} from "../../types/loadable"
-import {
-  mockCapitalProviderCalls,
-  mockUserInitializationContractCalls,
-  setupMocksForAirdrop,
-} from "../rewards/__utils__/mocks"
-import * as utils from "../../ethereum/utils"
-import {PortfolioOverview} from "../../components/earn"
-import {CommunityRewardsLoaded, MerkleDistributorLoaded} from "../../ethereum/communityRewards"
-import {GFILoaded} from "../../ethereum/gfi"
-import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
-import {PoolBacker, TranchedPool} from "../../ethereum/tranchedPool"
-import {toDisplayPercent} from "../rewards/__utils__/display"
 
 mock({
   blockchain: "ethereum",
@@ -46,9 +48,10 @@ web3.setProvider((global.window as any).ethereum)
 function renderPortfolioOverview(
   poolData: Partial<PoolData>,
   capitalProvider: Loaded<CapitalProvider>,
-  poolBackers?: Loaded<PoolBacker[]>
+  poolBackers: Loaded<PoolBacker[]> | undefined,
+  currentBlock: BlockInfo
 ) {
-  const store = {}
+  const store = {currentBlock}
   const defaultPoolBackers: Loaded<PoolBacker[]> = {
     loaded: true,
     value: [
@@ -84,21 +87,23 @@ describe("Earn page portfolio overview", () => {
     stakingRewards: StakingRewardsLoaded,
     communityRewards: CommunityRewardsLoaded,
     merkleDistributor: MerkleDistributorLoaded,
+    merkleDirectDistributor: MerkleDirectDistributorLoaded,
     user: User | UserLoaded,
     capitalProvider: Loaded<CapitalProvider>
+  const currentBlock = defaultCurrentBlock
 
   beforeEach(async () => {
     jest.spyOn(utils, "getDeployments").mockImplementation(() => {
       return getDeployments()
     })
-    setupMocksForAirdrop(undefined) // reset
+    resetAirdropMocks()
 
     await goldfinchProtocol.initialize()
     const _seniorPoolLoaded = new SeniorPool(goldfinchProtocol)
     _seniorPoolLoaded.info = {
       loaded: true,
       value: {
-        currentBlock: blockInfo,
+        currentBlock,
         poolData: {} as PoolData,
         isPaused: false,
       },
@@ -108,15 +113,27 @@ describe("Earn page portfolio overview", () => {
   })
 
   beforeEach(async () => {
-    const result = await getDefaultClasses(goldfinchProtocol)
+    const currentBlock = defaultCurrentBlock
+    const result = await getDefaultClasses(goldfinchProtocol, currentBlock)
     gfi = result.gfi
     stakingRewards = result.stakingRewards
     communityRewards = result.communityRewards
     merkleDistributor = result.merkleDistributor
+    merkleDirectDistributor = result.merkleDirectDistributor
 
     user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
-    await mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, merkleDistributor, {})
-    await user.initialize(seniorPool, stakingRewards, gfi, communityRewards, merkleDistributor, blockInfo)
+    await mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, merkleDistributor, {
+      currentBlock,
+    })
+    await user.initialize(
+      seniorPool,
+      stakingRewards,
+      gfi,
+      communityRewards,
+      merkleDistributor,
+      merkleDirectDistributor,
+      currentBlock
+    )
 
     assertWithLoadedInfo(user)
     assertWithLoadedInfo(seniorPool)
@@ -131,7 +148,7 @@ describe("Earn page portfolio overview", () => {
   })
 
   it("shows portfolio with empty info", async () => {
-    renderPortfolioOverview({}, capitalProvider)
+    renderPortfolioOverview({}, capitalProvider, undefined, currentBlock)
 
     expect(screen.getByTestId("portfolio-total-balance").textContent).toEqual("$50.02")
     expect(screen.getByTestId("portfolio-est-growth").textContent).toEqual("$--.--")
@@ -155,7 +172,7 @@ describe("Earn page portfolio overview", () => {
       estimatedApy: new BigNumber("0.00483856000534281158"),
       estimatedApyFromGfi: new BigNumber("0"),
     }
-    renderPortfolioOverview(poolData, capitalProvider)
+    renderPortfolioOverview(poolData, capitalProvider, undefined, currentBlock)
 
     expect(screen.getByTestId("portfolio-total-balance").textContent).toEqual("$50.02")
     expect(screen.getByTestId("portfolio-est-growth").textContent).toEqual("$0.24")
@@ -170,12 +187,12 @@ describe("Earn page portfolio overview", () => {
     ).toBeInTheDocument()
     expect(screen.getByText("Pool APY")).toBeInTheDocument()
     expect(screen.getByTestId("tooltip-estimated-apy").textContent).toEqual("0.48%")
-    expect(screen.getByTestId("tooltip-gfi-apy").textContent).toEqual("--.--%")
+    expect(screen.getByTestId("tooltip-gfi-apy").textContent).toEqual("0.00%")
     expect(screen.getByTestId("tooltip-total-apy").textContent).toEqual("0.48%")
   })
 
   it("shows portfolio with senior pool and claimable staking reward", async () => {
-    const {gfi, stakingRewards, user} = await setupClaimableStakingReward(goldfinchProtocol, seniorPool)
+    const {gfi, stakingRewards, user} = await setupClaimableStakingReward(goldfinchProtocol, seniorPool, currentBlock)
 
     await mockCapitalProviderCalls()
     const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
@@ -195,7 +212,7 @@ describe("Earn page portfolio overview", () => {
       estimatedApy: estimatedPoolApy,
       estimatedApyFromGfi: globalEstimatedApyFromGfi,
     }
-    renderPortfolioOverview(poolData, capitalProvider)
+    renderPortfolioOverview(poolData, capitalProvider, undefined, currentBlock)
 
     const expectedDisplayPoolApy = toDisplayPercent(estimatedPoolApy)
     const expectedDisplayGfiApy = toDisplayPercent(expectedUserEstimatedApyFromGfi)
@@ -221,7 +238,7 @@ describe("Earn page portfolio overview", () => {
   })
 
   it("shows portfolio with senior pool and vesting staking reward", async () => {
-    const {gfi, stakingRewards, user} = await setupNewStakingReward(goldfinchProtocol, seniorPool)
+    const {gfi, stakingRewards, user} = await setupNewStakingReward(goldfinchProtocol, seniorPool, currentBlock)
 
     await mockCapitalProviderCalls()
     const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
@@ -241,7 +258,7 @@ describe("Earn page portfolio overview", () => {
       estimatedApy: estimatedPoolApy,
       estimatedApyFromGfi: globalEstimatedApyFromGfi,
     }
-    renderPortfolioOverview(poolData, capitalProvider)
+    renderPortfolioOverview(poolData, capitalProvider, undefined, currentBlock)
 
     const expectedDisplayPoolApy = toDisplayPercent(estimatedPoolApy)
     const expectedDisplayGfiApy = toDisplayPercent(expectedUserEstimatedApyFromGfi)
@@ -266,7 +283,12 @@ describe("Earn page portfolio overview", () => {
   })
 
   it("shows portfolio with senior pool and partially claimed staking reward", async () => {
-    const {gfi, stakingRewards, user} = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool)
+    const {gfi, stakingRewards, user} = await setupPartiallyClaimedStakingReward(
+      goldfinchProtocol,
+      seniorPool,
+      undefined,
+      currentBlock
+    )
 
     await mockCapitalProviderCalls()
     const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
@@ -286,7 +308,7 @@ describe("Earn page portfolio overview", () => {
       estimatedApy: estimatedPoolApy,
       estimatedApyFromGfi: globalEstimatedApyFromGfi,
     }
-    renderPortfolioOverview(poolData, capitalProvider)
+    renderPortfolioOverview(poolData, capitalProvider, undefined, currentBlock)
 
     const expectedDisplayPoolApy = toDisplayPercent(estimatedPoolApy)
     const expectedDisplayGfiApy = toDisplayPercent(expectedUserEstimatedApyFromGfi)
@@ -312,7 +334,7 @@ describe("Earn page portfolio overview", () => {
   })
 
   it("shows portfolio with senior pool, claimable staking reward, and backers", async () => {
-    const {gfi, stakingRewards, user} = await setupClaimableStakingReward(goldfinchProtocol, seniorPool)
+    const {gfi, stakingRewards, user} = await setupClaimableStakingReward(goldfinchProtocol, seniorPool, currentBlock)
 
     await mockCapitalProviderCalls()
     const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
@@ -345,7 +367,7 @@ describe("Earn page portfolio overview", () => {
         } as PoolBacker,
       ],
     }
-    renderPortfolioOverview(poolData, capitalProvider, poolBackers)
+    renderPortfolioOverview(poolData, capitalProvider, poolBackers, currentBlock)
 
     const expectedUserEstimatedApyFromGfi = globalEstimatedApyFromGfi
       .multipliedBy(stakedSeniorPoolBalanceInDollars)

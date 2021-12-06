@@ -79,7 +79,7 @@ function DepositStatus(props: DepositStatusProps) {
         </div>
         <div className="deposit-status-item">
           <div className="label">Est. Annual Growth</div>
-          <div className="value" data-testid="portfolio-est-growth">{`${displayPercent(undefined, 2)} APY`}</div>
+          <div className="value" data-testid="portfolio-est-growth">{`${displayDollars(undefined)}`}</div>
         </div>
       </div>
     )

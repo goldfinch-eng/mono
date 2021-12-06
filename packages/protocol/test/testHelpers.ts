@@ -1,5 +1,5 @@
 import chai from "chai"
-import hardhat, {artifacts, web3, ethers} from "hardhat"
+import hardhat, {artifacts, web3, ethers, getNamedAccounts} from "hardhat"
 import AsPromised from "chai-as-promised"
 chai.use(AsPromised)
 const expect = chai.expect
@@ -231,7 +231,7 @@ function getOnlyLog<T extends Truffle.AnyEvent>(logs: DecodedLog<T>[]): DecodedL
   return getFirstLog(logs)
 }
 
-type DeployAllContractsOptions = {
+export type DeployAllContractsOptions = {
   deployForwarder?: {
     fromAccount: string
   }
@@ -324,10 +324,20 @@ async function deployAllContracts(
 
   let merkleDirectDistributor: MerkleDirectDistributorInstance | null = null
   if (options.deployMerkleDirectDistributor) {
+    const {protocol_owner} = await getNamedAccounts()
+    assertNonNullable(protocol_owner)
     await deployments.deploy("MerkleDirectDistributor", {
-      args: [gfi.address, options.deployMerkleDirectDistributor.root],
       from: options.deployMerkleDirectDistributor.fromAccount,
       gasLimit: 4000000,
+      proxy: {
+        owner: protocol_owner,
+        execute: {
+          init: {
+            methodName: "initialize",
+            args: [protocol_owner, gfi.address, options.deployMerkleDirectDistributor.root],
+          },
+        },
+      },
     })
     merkleDirectDistributor = await getContract<MerkleDirectDistributor, MerkleDirectDistributorInstance>(
       "MerkleDirectDistributor",
@@ -512,6 +522,35 @@ async function fundWithEthFromLocalWhale(userToFund: string, amount: BN) {
   await protocol_owner.sendTransaction({
     to: userToFund,
     value: ethers.utils.parseEther(amount.toString()),
+  })
+}
+
+export function expectProxyOwner({toBe, forContracts}: {toBe: () => Promise<string>; forContracts: string[]}) {
+  describe("proxy owners", async () => {
+    forContracts.forEach((contractName) => {
+      it(`sets the correct proxy owner for ${contractName}`, async () => {
+        const proxyDeployment = await hardhat.deployments.get(`${contractName}_Proxy`)
+        const proxyContract = await ethers.getContractAt(proxyDeployment.abi, proxyDeployment.address)
+        expect(await proxyContract.owner()).to.eq(await toBe())
+      })
+    })
+  })
+}
+
+export type RoleExpectation = {contractName: string; roles: string[]; address: () => Promise<string>}
+export function expectRoles(expectations: RoleExpectation[]) {
+  describe("roles", async () => {
+    for (const {contractName, roles, address} of expectations) {
+      for (const role of roles) {
+        it(`assigns the ${role} role`, async () => {
+          const addr = await address()
+          const deployment = await hardhat.deployments.get(contractName)
+          const contract = await ethers.getContractAt(deployment.abi, deployment.address)
+
+          expect(await contract.hasRole(role, addr)).to.be.true
+        })
+      }
+    }
   })
 }
 

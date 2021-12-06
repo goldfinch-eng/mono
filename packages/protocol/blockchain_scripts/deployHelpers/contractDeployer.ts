@@ -5,7 +5,7 @@ import {Contract, BaseContract} from "ethers"
 
 import {Logger} from "../types"
 import {getProtocolOwner} from "./"
-import {assertIsString} from "../../../utils"
+import {assertIsString, isPlainObject} from "../../../utils"
 
 export class ContractDeployer {
   public readonly logger: Logger
@@ -26,12 +26,39 @@ export class ContractDeployer {
   }
 
   async deploy<T extends BaseContract | Contract = Contract>(contractName: string, options: DeployOptions): Promise<T> {
-    if (typeof options === "object" && typeof options?.proxy === "object" && options?.proxy && !options?.proxy?.owner) {
+    if (isPlainObject(options) && isPlainObject(options?.proxy) && !options?.proxy?.owner) {
       const protocol_owner = await getProtocolOwner()
-      options = {proxy: {owner: protocol_owner, ...options.proxy}, ...options}
+      options = {
+        ...options,
+        proxy: {
+          ...options.proxy,
+          owner: protocol_owner,
+        },
+      }
     }
-    const result = await this.hre.deployments.deploy(contractName, options)
-    this.logger(`${contractName} was deployed to: ${result.address} (${this.sizeInKb(result).toFixed(3)}kb)`)
+    let result: DeployResult
+    const unsignedTx = await this.hre.deployments.catchUnknownSigner(
+      async () => {
+        await this.hre.deployments.deploy(contractName, options)
+      },
+      {log: false}
+    )
+
+    if (!unsignedTx) {
+      result = {newlyDeployed: true, ...(await this.hre.deployments.get(contractName))}
+      this.logger(`${contractName} was deployed to: ${result.address} (${this.sizeInKb(result).toFixed(3)}kb)`)
+    } else {
+      // This happens when deploying a new proxy implementation. We want hardhat-deploy to correctly write out
+      // the implementation deployment file. But its default behavior is to attempt to change the implementation
+      // which we can't do because our owner is a multisig.
+      const impl = await this.hre.deployments.get(`${contractName}_Implementation`)
+      // Be consistent with hardhat-deploy's behavior of returning the proxy deployment
+      // (rather than impl deployment) for proxy deploys
+      result = {newlyDeployed: false, ...(await this.hre.deployments.get(contractName))}
+      this.logger(
+        `${contractName} implementation was deployed to: ${result.address} (${this.sizeInKb(result).toFixed(3)}kb)`
+      )
+    }
 
     return (await ethers.getContractAt(result.abi, result.address)) as T
   }

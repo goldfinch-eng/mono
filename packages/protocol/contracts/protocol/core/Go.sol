@@ -12,25 +12,14 @@ import "../../interfaces/IUniqueIdentity0612.sol";
 
 contract Go is IGo, BaseUpgradeablePausable {
   address public override uniqueIdentity;
-  uint256[11] public allIdTypes = [
-    ID_TYPE_0,
-    ID_TYPE_1,
-    ID_TYPE_2,
-    ID_TYPE_3,
-    ID_TYPE_4,
-    ID_TYPE_5,
-    ID_TYPE_6,
-    ID_TYPE_7,
-    ID_TYPE_8,
-    ID_TYPE_9,
-    ID_TYPE_10
-  ];
 
   using SafeMath for uint256;
 
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
 
+  GoldfinchConfig public legacyGoList;
+  uint256[11] public allIdTypes;
   event GoldfinchConfigUpdated(address indexed who, address configAddress);
 
   function initialize(
@@ -43,6 +32,7 @@ contract Go is IGo, BaseUpgradeablePausable {
       "Owner and config and UniqueIdentity addresses cannot be empty"
     );
     __BaseUpgradeablePausable__init(owner);
+    _performUpgrade();
     config = _config;
     uniqueIdentity = _uniqueIdentity;
   }
@@ -50,6 +40,33 @@ contract Go is IGo, BaseUpgradeablePausable {
   function updateGoldfinchConfig() external override onlyAdmin {
     config = GoldfinchConfig(config.configAddress());
     emit GoldfinchConfigUpdated(msg.sender, address(config));
+  }
+
+  function performUpgrade() external onlyAdmin {
+    return _performUpgrade();
+  }
+
+  function _performUpgrade() internal {
+    allIdTypes[0] = ID_TYPE_0;
+    allIdTypes[1] = ID_TYPE_1;
+    allIdTypes[2] = ID_TYPE_2;
+    allIdTypes[3] = ID_TYPE_3;
+    allIdTypes[4] = ID_TYPE_4;
+    allIdTypes[5] = ID_TYPE_5;
+    allIdTypes[6] = ID_TYPE_6;
+    allIdTypes[7] = ID_TYPE_7;
+    allIdTypes[8] = ID_TYPE_8;
+    allIdTypes[9] = ID_TYPE_9;
+    allIdTypes[10] = ID_TYPE_10;
+  }
+
+  /**
+   * @notice sets the config that will be used as the source of truth for the go
+   * list instead of the config currently associated. To use the associated config for to list, set the override
+   * to the null address.
+   */
+  function setLegacyGoList(GoldfinchConfig _legacyGoList) external onlyAdmin {
+    legacyGoList = _legacyGoList;
   }
 
   /**
@@ -63,9 +80,11 @@ contract Go is IGo, BaseUpgradeablePausable {
    */
   function go(address account) public view override returns (bool) {
     require(account != address(0), "Zero address is not go-listed");
-    if (config.goList(account) || IUniqueIdentity0612(uniqueIdentity).balanceOf(account, ID_TYPE_0) > 0) {
+
+    if (_getLegacyGoList().goList(account) || IUniqueIdentity0612(uniqueIdentity).balanceOf(account, ID_TYPE_0) > 0) {
       return true;
     }
+
     // start loop at index 1 because we checked index 0 above
     for (uint256 i = 1; i < allIdTypes.length; ++i) {
       uint256 idTypeBalance = IUniqueIdentity0612(uniqueIdentity).balanceOf(account, allIdTypes[i]);
@@ -85,8 +104,9 @@ contract Go is IGo, BaseUpgradeablePausable {
    */
   function goOnlyIdTypes(address account, uint256[] memory onlyIdTypes) public view override returns (bool) {
     require(account != address(0), "Zero address is not go-listed");
+    GoldfinchConfig goListSource = _getLegacyGoList();
     for (uint256 i = 0; i < onlyIdTypes.length; ++i) {
-      if (onlyIdTypes[i] == ID_TYPE_0 && config.goList(account)) {
+      if (onlyIdTypes[i] == ID_TYPE_0 && goListSource.goList(account)) {
         return true;
       }
       uint256 idTypeBalance = IUniqueIdentity0612(uniqueIdentity).balanceOf(account, onlyIdTypes[i]);
@@ -104,7 +124,7 @@ contract Go is IGo, BaseUpgradeablePausable {
    */
   function goSeniorPool(address account) public view override returns (bool) {
     require(account != address(0), "Zero address is not go-listed");
-    if (account == config.stakingRewardsAddress() || config.goList(account)) {
+    if (account == config.stakingRewardsAddress() || _getLegacyGoList().goList(account)) {
       return true;
     }
     uint256[2] memory seniorPoolIdTypes = [ID_TYPE_0, ID_TYPE_1];
@@ -115,5 +135,9 @@ contract Go is IGo, BaseUpgradeablePausable {
       }
     }
     return false;
+  }
+
+  function _getLegacyGoList() internal view returns (GoldfinchConfig) {
+    return address(legacyGoList) == address(0) ? config : legacyGoList;
   }
 }

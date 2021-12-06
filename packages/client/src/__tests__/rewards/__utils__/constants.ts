@@ -3,7 +3,8 @@ import {genIsArrayOf, isPlainObject, PlainObject} from "@goldfinch-eng/utils/src
 export const blockchain = "ethereum"
 export const recipient = "0x0000000000000000000000000000000000000001"
 export const network = {name: "localhost", supported: true}
-export const blockInfo = {number: 94, timestamp: 1640783491}
+
+export const defaultCurrentBlock = {number: 94, timestamp: 1640783491}
 
 let _deploymentsJson: PlainObject
 
@@ -34,6 +35,8 @@ export const getStakingRewardsAbi = () => getAbi("StakingRewards")
 
 export const getMerkleDistributorAbi = () => getAbi("MerkleDistributor")
 
+export const getMerkleDirectDistributorAbi = () => getAbi("MerkleDirectDistributor")
+
 export const getCommunityRewardsAbi = () => getAbi("CommunityRewards")
 
 export const getGfiAbi = () => getAbi("GFI")
@@ -50,6 +53,7 @@ type ContractName =
   | "StakingRewards"
   | "CommunityRewards"
   | "MerkleDistributor"
+  | "MerkleDirectDistributor"
   | "GFI"
   | "SeniorPool"
   | "Fidu"
@@ -65,6 +69,10 @@ export const getDeployments = async () => {
   if (!_deployments) {
     _deployments = {
       contracts: {
+        MerkleDirectDistributor: {
+          address: "0x0000000000000000000000000000000000000010",
+          abi: await getMerkleDirectDistributorAbi(),
+        },
         StakingRewards: {address: "0x0000000000000000000000000000000000000009", abi: await getStakingRewardsAbi()},
         CommunityRewards: {address: "0x0000000000000000000000000000000000000008", abi: await getCommunityRewardsAbi()},
         MerkleDistributor: {
