@@ -207,13 +207,16 @@ function PaymentForm(props) {
               }}
               validations={validations}
               inputClass={inputClass}
-              notes={[
-                transactionAmountQuote &&
-                  !isQuoteLoading && {
-                    key: "quote",
-                    content: <p>~${formatQuote({erc20: usdc, quote: transactionAmountQuote})}</p>,
-                  },
-              ]}
+              notes={
+                transactionAmountQuote && !isQuoteLoading
+                  ? [
+                      {
+                        key: "quote",
+                        content: <p>~${formatQuote({erc20: usdc, quote: transactionAmountQuote})}</p>,
+                      },
+                    ]
+                  : undefined
+              }
             />
             <LoadingButton action={action} disabled={!unlocked || isQuoteLoading} />
           </div>

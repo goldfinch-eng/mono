@@ -20,7 +20,6 @@ import {
 import {fiduFromAtomic} from "./fidu"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {DRAWDOWN_TX_NAME, INTEREST_PAYMENT_TX_NAME} from "../types/transactions"
-import {EventData} from "web3-eth-contract"
 
 const ZERO = new BigNumber(0)
 const ONE = new BigNumber(1)
@@ -81,7 +80,6 @@ export interface TranchedPoolMetadata {
   migrated?: boolean
   migratedFrom?: string
   NDAUrl?: string
-  maxBackers?: number
 }
 
 enum PoolState {
@@ -349,41 +347,8 @@ class TranchedPool {
     return result
   }
 
-  async getBackers(): Promise<string[]> {
-    return this.contract
-      .getPastEvents("DepositMade", {
-        filter: undefined,
-        fromBlock: undefined,
-        // NOTE: We want to use the pending block, rather than the latest block, in order
-        // to err on the side of caution about the number of backers; we prefer to overestimate
-        // that number (by including pending transactions that may not end up succeeding), rather
-        // than underestimate it, because more backers can always be included if we've
-        // overestimated, but we can't remove backers if we've underestimated.
-        toBlock: "pending",
-      })
-      .then((events: EventData[]) => {
-        return _.uniq(events.map((eventData: EventData) => eventData.returnValues.owner))
-      })
-  }
-
-  getIsClosedToUser(userAddress: string | undefined, backers: string[]): boolean {
-    return !!this.maxBackers && backers.length >= this.maxBackers && !(userAddress && backers.includes(userAddress))
-  }
-
-  getIsFull(userAddress: string | undefined, backers: string[] | undefined): boolean | undefined {
-    if (this.remainingCapacity().isZero()) {
-      return true
-    } else {
-      if (this.maxBackers) {
-        if (backers) {
-          return this.getIsClosedToUser(userAddress, backers)
-        } else {
-          return
-        }
-      } else {
-        return false
-      }
-    }
+  get isFull(): boolean {
+    return this.remainingCapacity().isZero()
   }
 
   /**
@@ -391,10 +356,6 @@ class TranchedPool {
    */
   get displayName(): string {
     return this.metadata?.name ?? croppedAddress(this.address)
-  }
-
-  get maxBackers(): number | undefined {
-    return this.metadata?.maxBackers
   }
 }
 

@@ -5,7 +5,6 @@ import {
   BN,
   advanceTime,
   usdcVal,
-  deployAllContracts,
   erc20Transfer,
   expectAction,
   SECONDS_PER_DAY,
@@ -17,6 +16,7 @@ import {expectEvent} from "@openzeppelin/test-helpers"
 import {OWNER_ROLE, PAUSER_ROLE, interestAprAsBN} from "../blockchain_scripts/deployHelpers"
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
 import {time} from "@openzeppelin/test-helpers"
+import {deployBaseFixture} from "./util/fixtures"
 
 let accounts, owner, person2, person3, goldfinchConfig
 
@@ -100,7 +100,7 @@ describe("CreditLine", () => {
   }
 
   const setupTest = deployments.createFixture(async ({deployments}) => {
-    const {usdc, fidu, goldfinchConfig} = await deployAllContracts(deployments)
+    const {usdc, fidu, goldfinchConfig} = await deployBaseFixture()
 
     await erc20Transfer(usdc, [person2], usdcVal(1000), owner)
     await goldfinchConfig.bulkAddToGoList(accounts)

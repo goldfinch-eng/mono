@@ -9,7 +9,7 @@ import _ from "lodash"
 import {BlockNumber} from "web3-core"
 import {Contract, EventData, Filter} from "web3-eth-contract"
 import {Loadable, Loaded, WithLoadedInfo} from "../types/loadable"
-import {assertBigNumber, BlockInfo, displayNumber, roundDownPenny} from "../utils"
+import {assertBigNumber, BlockInfo, defaultSum, displayNumber, roundDownPenny} from "../utils"
 import {buildCreditLine} from "./creditLine"
 import {Tickers, usdcFromAtomic} from "./erc20"
 import {
@@ -35,6 +35,7 @@ import {
   PRINCIPAL_COLLECTED_TX_NAME,
   RESERVE_FUNDS_COLLECTED_TX_NAME,
   HistoricalTx,
+  TxName,
 } from "../types/transactions"
 import {UserLoaded, UserStakingRewardsLoaded} from "./user"
 import {fetchDataFromAttributes, getPoolEvents, INTEREST_DECIMALS, ONE_YEAR_SECONDS, USDC_DECIMALS} from "./utils"
@@ -221,18 +222,8 @@ function getCapitalProviderStakingInfo(
   return {
     gfiPrice,
     shares: {
-      locked: lockedPositions.length
-        ? BigNumber.sum.apply(
-            null,
-            lockedPositions.map((val) => val.storedPosition.amount)
-          )
-        : new BigNumber(0),
-      unlocked: unlockedPositions.length
-        ? BigNumber.sum.apply(
-            null,
-            unlockedPositions.map((val) => val.storedPosition.amount)
-          )
-        : new BigNumber(0),
+      locked: defaultSum(lockedPositions.map((val) => val.storedPosition.amount)),
+      unlocked: defaultSum(unlockedPositions.map((val) => val.storedPosition.amount)),
     },
     // Any position that is not locked can be unstaked.
     unstakeablePositions: unlockedPositions,
@@ -456,13 +447,13 @@ async function getDepositEventsByCapitalProvider(
 // for your shares, and we would fail out, and return a "-" on the front-end.
 // NOTE: This also does not take into account realized gains, which we are also
 // punting on.
-async function getWeightedAverageSharePrice(
+const _getWeightedAverageSharePrice = async (
   pool: SeniorPoolLoaded,
   stakingRewards: StakingRewardsLoaded,
   capitalProviderAddress: string,
   capitalProviderTotalShares: BigNumber,
   currentBlock: BlockInfo
-) {
+) => {
   const events = await getDepositEventsByCapitalProvider(pool, stakingRewards, capitalProviderAddress, currentBlock)
   const sorted = _.reverse(_.sortBy(events, ["blockNumber", "transactionIndex"]))
   const prepared = sorted.map((eventData) => {
@@ -507,6 +498,7 @@ async function getWeightedAverageSharePrice(
     return totalAmountPaid.dividedBy(capitalProviderTotalShares)
   }
 }
+export let getWeightedAverageSharePrice = _getWeightedAverageSharePrice
 
 async function getCumulativeWritedowns(pool: SeniorPool, currentBlock: BlockInfo) {
   // In theory, we'd also want to include `PrincipalWrittendown` events emitted by `pool.v1Pool` here.
@@ -519,12 +511,7 @@ async function getCumulativeWritedowns(pool: SeniorPool, currentBlock: BlockInfo
     undefined,
     currentBlock.number
   )
-  const sum: BigNumber = events.length
-    ? BigNumber.sum.apply(
-        null,
-        events.map((eventData) => new BigNumber(eventData.returnValues.amount))
-      )
-    : new BigNumber(0)
+  const sum: BigNumber = defaultSum(events.map((eventData) => new BigNumber(eventData.returnValues.amount)))
   return sum.negated()
 }
 
@@ -539,12 +526,7 @@ async function getCumulativeDrawdowns(pool: SeniorPool, currentBlock: BlockInfo)
       tranchedPools.map((pool) => protocol.queryEvents(pool, [DRAWDOWN_MADE_EVENT], undefined, currentBlock.number))
     )
   )
-  const sum: BigNumber = allDrawdownEvents.length
-    ? BigNumber.sum.apply(
-        null,
-        allDrawdownEvents.map((eventData) => new BigNumber(eventData.returnValues.amount))
-      )
-    : new BigNumber(0)
+  const sum: BigNumber = defaultSum(allDrawdownEvents.map((eventData) => new BigNumber(eventData.returnValues.amount)))
   return sum
 }
 
@@ -566,7 +548,7 @@ export type CombinedRepaymentTx = {
   interestAmountBN: BigNumber
 } & Omit<HistoricalTx<KnownEventName>, "type" | "name" | "amount">
 
-const parseRepaymentEventName = (eventData: KnownEventData<RepaymentEventType>) => {
+const parseRepaymentEventName = (eventData: KnownEventData<RepaymentEventType>): TxName => {
   switch (eventData.event) {
     case INTEREST_COLLECTED_EVENT:
       return INTEREST_COLLECTED_TX_NAME
@@ -575,7 +557,7 @@ const parseRepaymentEventName = (eventData: KnownEventData<RepaymentEventType>) 
     case RESERVE_FUNDS_COLLECTED_EVENT:
       return RESERVE_FUNDS_COLLECTED_TX_NAME
     default:
-      assertUnreachable(eventData.event)
+      return assertUnreachable(eventData.event)
   }
 }
 const parseOldPoolRepaymentEventAmount = (eventData: KnownEventData<RepaymentEventType>): AmountWithUnits => {
@@ -593,7 +575,7 @@ const parseOldPoolRepaymentEventAmount = (eventData: KnownEventData<RepaymentEve
       }
     }
     default:
-      assertUnreachable(eventData.event)
+      return assertUnreachable(eventData.event)
   }
 }
 const parsePoolRepaymentEventAmount = (eventData: KnownEventData<RepaymentEventType>): AmountWithUnits => {
@@ -607,7 +589,7 @@ const parsePoolRepaymentEventAmount = (eventData: KnownEventData<RepaymentEventT
       }
     }
     default:
-      assertUnreachable(eventData.event)
+      return assertUnreachable(eventData.event)
   }
 }
 
@@ -921,6 +903,10 @@ class StakingRewards {
     )
     return events
   }
+}
+
+export function mockGetWeightedAverageSharePrice(mock: typeof getWeightedAverageSharePrice | undefined): void {
+  getWeightedAverageSharePrice = mock || _getWeightedAverageSharePrice
 }
 
 export {fetchCapitalProviderData, fetchPoolData, SeniorPool, Pool, StakingRewards, StakingRewardsPosition}

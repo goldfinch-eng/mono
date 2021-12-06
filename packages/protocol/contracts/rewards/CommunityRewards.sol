@@ -35,11 +35,18 @@ contract CommunityRewards is ICommunityRewards, ERC721PresetMinterPauserAutoIdUp
   /// @notice Total rewards available for granting, denominated in `rewardsToken()`
   uint256 public rewardsAvailable;
 
+  /// @notice Token launch time in seconds. This is used in vesting.
+  uint256 public tokenLaunchTimeInSeconds;
+
   /// @dev NFT tokenId => rewards grant
   mapping(uint256 => CommunityRewardsVesting.Rewards) public grants;
 
   // solhint-disable-next-line func-name-mixedcase
-  function __initialize__(address owner, GoldfinchConfig _config) external initializer {
+  function __initialize__(
+    address owner,
+    GoldfinchConfig _config,
+    uint256 _tokenLaunchTimeInSeconds
+  ) external initializer {
     require(owner != address(0) && address(_config) != address(0), "Owner and config addresses cannot be empty");
 
     __Context_init_unchained();
@@ -58,6 +65,8 @@ contract CommunityRewards is ICommunityRewards, ERC721PresetMinterPauserAutoIdUp
     _setRoleAdmin(PAUSER_ROLE, OWNER_ROLE);
     _setRoleAdmin(DISTRIBUTOR_ROLE, OWNER_ROLE);
 
+    tokenLaunchTimeInSeconds = _tokenLaunchTimeInSeconds;
+
     config = _config;
   }
 
@@ -73,6 +82,20 @@ contract CommunityRewards is ICommunityRewards, ERC721PresetMinterPauserAutoIdUp
   /// @return rewards Amount of rewards denominated in `rewardsToken()`
   function claimableRewards(uint256 tokenId) public view override returns (uint256 rewards) {
     return grants[tokenId].claimable();
+  }
+
+  /// @notice Returns the rewards that will have vested for some grant with the given params.
+  /// @return rewards Amount of rewards denominated in `rewardsToken()`
+  function totalVestedAt(
+    uint256 start,
+    uint256 end,
+    uint256 granted,
+    uint256 cliffLength,
+    uint256 vestingInterval,
+    uint256 revokedAt,
+    uint256 time
+  ) external pure override returns (uint256 rewards) {
+    return CommunityRewardsVesting.getTotalVestedAt(start, end, granted, cliffLength, vestingInterval, revokedAt, time);
   }
 
   /* ========== MUTATIVE, ADMIN-ONLY FUNCTIONS ========== */
@@ -105,6 +128,10 @@ contract CommunityRewards is ICommunityRewards, ERC721PresetMinterPauserAutoIdUp
     grant.revokedAt = block.timestamp;
 
     emit GrantRevoked(tokenId, totalUnvested);
+  }
+
+  function setTokenLaunchTimeInSeconds(uint256 _tokenLaunchTimeInSeconds) external onlyAdmin {
+    tokenLaunchTimeInSeconds = _tokenLaunchTimeInSeconds;
   }
 
   /// @notice updates current config
@@ -154,8 +181,8 @@ contract CommunityRewards is ICommunityRewards, ERC721PresetMinterPauserAutoIdUp
     grants[tokenId] = CommunityRewardsVesting.Rewards({
       totalGranted: amount,
       totalClaimed: 0,
-      startTime: block.timestamp,
-      endTime: block.timestamp.add(vestingLength),
+      startTime: tokenLaunchTimeInSeconds,
+      endTime: tokenLaunchTimeInSeconds.add(vestingLength),
       cliffLength: cliffLength,
       vestingInterval: vestingInterval,
       revokedAt: 0

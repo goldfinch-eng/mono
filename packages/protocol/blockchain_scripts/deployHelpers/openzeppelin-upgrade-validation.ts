@@ -12,6 +12,7 @@ import {
   withValidationDefaults,
 } from "@openzeppelin/upgrades-core"
 import {Address, Deployment} from "hardhat-deploy/dist/types"
+import hre from "hardhat"
 
 // Checks the old implementation against the new implementation and
 // ensures that it's valid.
@@ -83,7 +84,6 @@ export const openzeppelin_saveDeploymentManifest = async (
 const getVersionAndValidations = async (implementation: {bytecode?: string}) => {
   if (implementation.bytecode === undefined) throw Error("No bytecode for implementation")
 
-  // @ts-expect-error `hre` is actually defined globally
   const validations = await readValidations(hre)
   const unlinkedBytecode = getUnlinkedBytecode(validations, implementation.bytecode)
   const version = getVersion(unlinkedBytecode, implementation.bytecode)

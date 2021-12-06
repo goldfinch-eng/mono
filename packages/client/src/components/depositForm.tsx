@@ -1,15 +1,21 @@
 import {usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
 import {AppContext} from "../App"
-import {assertNonNullable, displayDollars} from "../utils"
+import {assertNonNullable, displayDollars, displayPercent} from "../utils"
 import TransactionForm from "./transactionForm"
 import TransactionInput from "./transactionInput"
 import LoadingButton from "./loadingButton"
 import useSendFromUser from "../hooks/useSendFromUser"
 import useNonNullContext from "../hooks/useNonNullContext"
 import BigNumber from "bignumber.js"
-import {decimalPlaces} from "../ethereum/utils"
+import {decimalPlaces, MAX_UINT} from "../ethereum/utils"
 import useERC20Permit from "../hooks/useERC20Permit"
-import {USDC_APPROVAL_TX_TYPE, SUPPLY_AND_STAKE_TX_TYPE} from "../types/transactions"
+import {USDC_APPROVAL_TX_TYPE, SUPPLY_AND_STAKE_TX_TYPE, SUPPLY_TX_TYPE} from "../types/transactions"
+import {SeniorPoolLoaded, StakingRewardsLoaded} from "../ethereum/pool"
+
+const STAKING_FORM_VAL = "staking"
+const defaultValues = {
+  [STAKING_FORM_VAL]: true,
+}
 
 interface DepositFormProps {
   actionComplete: () => void
@@ -21,58 +27,80 @@ function DepositForm(props: DepositFormProps) {
   const sendFromUser = useSendFromUser()
   const {gatherPermitSignature} = useERC20Permit()
 
-  async function action({transactionAmount}) {
+  async function approve(depositAmount: string, operator: SeniorPoolLoaded | StakingRewardsLoaded): Promise<void> {
+    const alreadyApprovedAmount = new BigNumber(
+      await usdc.contract.methods.allowance(user.address, operator.address).call(undefined, "latest")
+    )
+    const amountRequiringApproval = new BigNumber(depositAmount).minus(alreadyApprovedAmount)
+    return amountRequiringApproval.gt(0)
+      ? sendFromUser(
+          usdc.contract.methods.approve(
+            operator.address,
+            // Since we have to ask for approval, we'll ask for the max amount, so that the user will never
+            // need to grant approval again (i.e. which saves them the gas cost of ever having to approve again).
+            MAX_UINT
+          ),
+          {
+            type: USDC_APPROVAL_TX_TYPE,
+            data: {
+              amount: usdcFromAtomic(MAX_UINT.toString()),
+            },
+          },
+          {rejectOnError: true}
+        )
+      : Promise.resolve()
+  }
+
+  async function action(formValues: {transactionAmount: string; [STAKING_FORM_VAL]: boolean}) {
+    const {transactionAmount, staking} = formValues
     assertNonNullable(stakingRewards)
     const depositAmountString = usdcToAtomic(transactionAmount)
-    // USDC permit doesn't work on mainnet forking due to mismatch between hardcoded chain id in the contract
-    if (process.env.REACT_APP_HARDHAT_FORK) {
-      const alreadyApprovedAmount = new BigNumber(
-        await usdc.contract.methods.allowance(user.address, stakingRewards.address).call(undefined, "latest")
-      )
-      const amountRequiringApproval = new BigNumber(depositAmountString).minus(alreadyApprovedAmount)
-      const approval = amountRequiringApproval.gt(0)
-        ? sendFromUser(
-            usdc.contract.methods.approve(stakingRewards.address, amountRequiringApproval.toString(10)),
-            {
-              type: USDC_APPROVAL_TX_TYPE,
+    if (staking) {
+      // USDC permit doesn't work on mainnet forking due to mismatch between hardcoded chain id in the contract
+      if (process.env.REACT_APP_HARDHAT_FORK) {
+        return approve(depositAmountString, stakingRewards)
+          .then(() =>
+            sendFromUser(stakingRewards.contract.methods.depositAndStake(depositAmountString), {
+              type: SUPPLY_AND_STAKE_TX_TYPE,
               data: {
-                amount: usdcFromAtomic(amountRequiringApproval),
+                amount: transactionAmount,
               },
-            },
-            {rejectOnError: true}
+            })
           )
-        : Promise.resolve()
-      return approval
-        .then(() =>
-          sendFromUser(stakingRewards.contract.methods.depositAndStake(depositAmountString), {
+          .then(props.actionComplete)
+      } else {
+        let signatureData = await gatherPermitSignature({
+          token: usdc,
+          value: new BigNumber(depositAmountString),
+          spender: stakingRewards.address,
+        })
+        return sendFromUser(
+          stakingRewards.contract.methods.depositWithPermitAndStake(
+            signatureData.value,
+            signatureData.deadline,
+            signatureData.v,
+            signatureData.r,
+            signatureData.s
+          ),
+          {
             type: SUPPLY_AND_STAKE_TX_TYPE,
+            data: {
+              amount: transactionAmount,
+            },
+          }
+        ).then(props.actionComplete)
+      }
+    } else {
+      return approve(depositAmountString, pool)
+        .then(() =>
+          sendFromUser(pool.contract.methods.deposit(depositAmountString), {
+            type: SUPPLY_TX_TYPE,
             data: {
               amount: transactionAmount,
             },
           })
         )
         .then(props.actionComplete)
-    } else {
-      let signatureData = await gatherPermitSignature({
-        token: usdc,
-        value: new BigNumber(depositAmountString),
-        spender: stakingRewards.address,
-      })
-      return sendFromUser(
-        stakingRewards.contract.methods.depositWithPermitAndStake(
-          signatureData.value,
-          signatureData.deadline,
-          signatureData.v,
-          signatureData.r,
-          signatureData.s
-        ),
-        {
-          type: SUPPLY_AND_STAKE_TX_TYPE,
-          data: {
-            amount: transactionAmount,
-          },
-        }
-      ).then(props.actionComplete)
     }
   }
 
@@ -102,15 +130,41 @@ function DepositForm(props: DepositFormProps) {
     submitDisabled = submitDisabled || disabled
 
     const remainingPoolCapacity = pool.info.value.poolData.remainingCapacity(goldfinchConfig.totalFundsLimit)
-    const maxTxAmount = BigNumber.min(
-      remainingPoolCapacity,
-      goldfinchConfig.transactionLimit,
-      user ? user.info.value.usdcBalance : new BigNumber(0)
+    const maxTxAmountInDollars = usdcFromAtomic(
+      BigNumber.min(
+        remainingPoolCapacity,
+        goldfinchConfig.transactionLimit,
+        user ? user.info.value.usdcBalance : new BigNumber(0)
+      )
     )
 
     return (
       <div className="form-inputs">
         {warningMessage}
+        <div className="checkbox-container form-input-label">
+          <input
+            className="checkbox"
+            type="checkbox"
+            name={STAKING_FORM_VAL}
+            id={STAKING_FORM_VAL}
+            ref={(ref) => formMethods.register(ref)}
+          />
+          <label className="checkbox-label with-note" htmlFor={STAKING_FORM_VAL}>
+            <div>
+              <div className="checkbox-label-primary">
+                <div>{`I want to stake my supply to earn GFI rewards (additional ${displayPercent(
+                  pool.info.value.poolData.estimatedApyFromGfi
+                )} APY).`}</div>
+              </div>
+              <div className="form-input-note">
+                <p>
+                  Goldfinch incentivizes long term participation. Maximum GFI rewards will be earned by those who hold
+                  for at least 12 months. Staking incurs additional gas.
+                </p>
+              </div>
+            </div>
+          </label>
+        </div>
         <div className="checkbox-container form-input-label">
           <input
             className="checkbox"
@@ -134,7 +188,7 @@ function DepositForm(props: DepositFormProps) {
             <TransactionInput
               formMethods={formMethods}
               disabled={disabled}
-              maxAmount={maxTxAmount}
+              maxAmountInDollars={maxTxAmountInDollars}
               rightDecoration={
                 <button
                   className="enter-max-amount"
@@ -142,7 +196,7 @@ function DepositForm(props: DepositFormProps) {
                   onClick={() => {
                     formMethods.setValue(
                       "transactionAmount",
-                      new BigNumber(usdcFromAtomic(maxTxAmount)).decimalPlaces(decimalPlaces, 1).toString(10),
+                      new BigNumber(maxTxAmountInDollars).decimalPlaces(decimalPlaces, 1).toString(10),
                       {
                         shouldValidate: true,
                         shouldDirty: true,
@@ -184,6 +238,7 @@ function DepositForm(props: DepositFormProps) {
       headerMessage={`Available to supply: ${displayDollars(user ? user.info.value.usdcBalanceInDollars : undefined)}`}
       render={renderForm}
       closeForm={props.closeForm}
+      defaultValues={defaultValues}
     />
   )
 }

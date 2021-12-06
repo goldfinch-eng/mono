@@ -8,6 +8,7 @@ import {
   TEST_MERKLE_DIRECT_DISTRIBUTOR_RECIPIENT_A,
   TEST_MERKLE_DIRECT_DISTRIBUTOR_RECIPIENT_B,
 } from "./test/blockchain_scripts/merkle/merkleDirectDistributor/fixtures"
+import "hardhat-contract-sizer"
 import "@openzeppelin/hardhat-upgrades"
 dotenv.config({path: findEnvLocal()})
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY
@@ -59,7 +60,7 @@ export default {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 200,
+            runs: 100,
           },
         },
       },
@@ -68,11 +69,14 @@ export default {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 200,
+            runs: 100,
           },
         },
       },
     ],
+  },
+  mocha: {
+    reporter: "list",
   },
   namedAccounts: {
     protocol_owner: {
@@ -84,6 +88,10 @@ export default {
       default: 1,
       1: "0xa083880F7a5df37Bf00a25380C3eB9AF9cD92D8f",
       4: "0xf3c9B38c155410456b5A98fD8bBf5E35B87F6d96",
+    },
+    temp_multisig: {
+      1: "0x60d2be34bce277f5f5889adfd4991baefa17461c",
+      31337: "0x60d2be34bce277f5f5889adfd4991baefa17461c",
     },
     test_merkle_distributor_recipient_a: {
       hardhat: TEST_MERKLE_DISTRIBUTOR_RECIPIENT_A,
@@ -112,5 +120,8 @@ export default {
     project: "goldfinch-protocol",
     username: "goldfinch",
     forkNetwork: "1", //Network id of the network we want to fork
+  },
+  contractSizer: {
+    runOnCompile: true,
   },
 }

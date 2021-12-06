@@ -12,14 +12,14 @@ import "../../interfaces/IUniqueIdentity0612.sol";
 
 contract Go is IGo, BaseUpgradeablePausable {
   address public override uniqueIdentity;
+
   using SafeMath for uint256;
 
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
-  GoldfinchConfig public goListOverride;
 
+  GoldfinchConfig public legacyGoList;
   uint256[11] public allIdTypes;
-
   event GoldfinchConfigUpdated(address indexed who, address configAddress);
 
   function initialize(
@@ -65,8 +65,8 @@ contract Go is IGo, BaseUpgradeablePausable {
    * list instead of the config currently associated. To use the associated config for to list, set the override
    * to the null address.
    */
-  function setGoListOverride(GoldfinchConfig _goListOverride) external onlyAdmin {
-    goListOverride = _goListOverride;
+  function setLegacyGoList(GoldfinchConfig _legacyGoList) external onlyAdmin {
+    legacyGoList = _legacyGoList;
   }
 
   /**
@@ -81,8 +81,7 @@ contract Go is IGo, BaseUpgradeablePausable {
   function go(address account) public view override returns (bool) {
     require(account != address(0), "Zero address is not go-listed");
 
-    GoldfinchConfig goListSource = _getGoldfinchConfigWithGoList();
-    if (goListSource.goList(account) || IUniqueIdentity0612(uniqueIdentity).balanceOf(account, ID_TYPE_0) > 0) {
+    if (_getLegacyGoList().goList(account) || IUniqueIdentity0612(uniqueIdentity).balanceOf(account, ID_TYPE_0) > 0) {
       return true;
     }
 
@@ -105,7 +104,7 @@ contract Go is IGo, BaseUpgradeablePausable {
    */
   function goOnlyIdTypes(address account, uint256[] memory onlyIdTypes) public view override returns (bool) {
     require(account != address(0), "Zero address is not go-listed");
-    GoldfinchConfig goListSource = _getGoldfinchConfigWithGoList();
+    GoldfinchConfig goListSource = _getLegacyGoList();
     for (uint256 i = 0; i < onlyIdTypes.length; ++i) {
       if (onlyIdTypes[i] == ID_TYPE_0 && goListSource.goList(account)) {
         return true;
@@ -125,8 +124,7 @@ contract Go is IGo, BaseUpgradeablePausable {
    */
   function goSeniorPool(address account) public view override returns (bool) {
     require(account != address(0), "Zero address is not go-listed");
-    GoldfinchConfig goListSource = _getGoldfinchConfigWithGoList();
-    if (account == config.stakingRewardsAddress() || goListSource.goList(account)) {
+    if (account == config.stakingRewardsAddress() || _getLegacyGoList().goList(account)) {
       return true;
     }
     uint256[2] memory seniorPoolIdTypes = [ID_TYPE_0, ID_TYPE_1];
@@ -139,7 +137,7 @@ contract Go is IGo, BaseUpgradeablePausable {
     return false;
   }
 
-  function _getGoldfinchConfigWithGoList() internal view returns (GoldfinchConfig) {
-    return address(goListOverride) == address(0) ? config : goListOverride;
+  function _getLegacyGoList() internal view returns (GoldfinchConfig) {
+    return address(legacyGoList) == address(0) ? config : legacyGoList;
   }
 }

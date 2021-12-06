@@ -1,4 +1,8 @@
 import {
+  isMerkleDirectDistributorInfo,
+  MerkleDirectDistributorInfo,
+} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/types"
+import {
   isMerkleDistributorInfo,
   MerkleDistributorInfo,
 } from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
@@ -8,8 +12,8 @@ import BN from "bn.js"
 import _ from "lodash"
 import {BlockNumber} from "web3-core"
 import {Contract} from "web3-eth-contract"
-import {NetworkConfig} from "../App"
 import {KnownEventData, PoolEventType} from "../types/events"
+import {NetworkConfig} from "../types/network"
 import {reduceToKnown} from "./events"
 import {Pool, SeniorPool} from "./pool"
 
@@ -104,8 +108,7 @@ async function getDeployments(networkId) {
 }
 
 async function getMerkleDistributorInfo(): Promise<MerkleDistributorInfo | undefined> {
-  const fileNameSuffix =
-    process.env.REACT_APP_MURMURATION === "yes" ? ".murmuration" : process.env.NODE_ENV === "development" ? ".dev" : ""
+  const fileNameSuffix = process.env.NODE_ENV === "development" ? ".dev" : ""
   return import(
     `@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/merkleDistributorInfo${fileNameSuffix}.json`
   )
@@ -115,6 +118,25 @@ async function getMerkleDistributorInfo(): Promise<MerkleDistributorInfo | undef
         return plain
       } else {
         throw new Error("Merkle distributor info failed type guard.")
+      }
+    })
+    .catch((err: unknown): undefined => {
+      console.error(err)
+      return
+    })
+}
+
+async function getMerkleDirectDistributorInfo(): Promise<MerkleDirectDistributorInfo | undefined> {
+  const fileNameSuffix = process.env.NODE_ENV === "development" ? ".dev" : ""
+  return import(
+    `@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/merkleDirectDistributorInfo${fileNameSuffix}.json`
+  )
+    .then((result: unknown): MerkleDirectDistributorInfo => {
+      const plain = _.toPlainObject(result)
+      if (isMerkleDirectDistributorInfo(plain)) {
+        return plain
+      } else {
+        throw new Error("Merkle direct distributor info failed type guard.")
       }
     })
     .catch((err: unknown): undefined => {
@@ -201,6 +223,7 @@ const ONE_YEAR_SECONDS = new BigNumber(60 * 60 * 24 * 365)
 export {
   getDeployments,
   getMerkleDistributorInfo,
+  getMerkleDirectDistributorInfo,
   mapNetworkToID,
   transformedConfig,
   fetchDataFromAttributes,

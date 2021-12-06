@@ -21,7 +21,6 @@ import {
 } from "../typechain/truffle/StakingRewards"
 import {
   usdcVal,
-  deployAllContracts,
   erc20Transfer,
   expect,
   decodeLogs,
@@ -39,6 +38,7 @@ import {time, expectEvent} from "@openzeppelin/test-helpers"
 import {getApprovalDigest, getWallet} from "./permitHelpers"
 import {ecsign} from "ethereumjs-util"
 import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
+import {deployBaseFixture} from "./util/fixtures"
 
 const MULTIPLIER_DECIMALS = new BN(String(1e18))
 
@@ -149,9 +149,7 @@ describe("StakingRewards", function () {
     const owner = asNonNullable(_owner)
     const investor = asNonNullable(_investor)
     const anotherUser = asNonNullable(_anotherUser)
-    const {goldfinchConfig, seniorPool, gfi, stakingRewards, fidu, usdc, ...others} = await deployAllContracts(
-      deployments
-    )
+    const {goldfinchConfig, seniorPool, gfi, stakingRewards, fidu, usdc, ...others} = await deployBaseFixture()
     await goldfinchConfig.bulkAddToGoList([owner, investor, anotherUser])
     await erc20Approve(usdc, investor, usdcVal(10000), [owner])
     await erc20Transfer(usdc, [investor], usdcVal(10000), owner)
@@ -218,6 +216,14 @@ describe("StakingRewards", function () {
       anotherUserFiduAmount,
       goldfinchConfig,
     } = await testSetup())
+  })
+
+  it("defaults the staking multipliers to be 1x", async () => {
+    expect(await stakingRewards.getLeverageMultiplier(LockupPeriod.SixMonths)).to.bignumber.eq(MULTIPLIER_DECIMALS)
+    expect(await stakingRewards.getLeverageMultiplier(LockupPeriod.TwelveMonths)).to.bignumber.eq(MULTIPLIER_DECIMALS)
+    expect(await stakingRewards.getLeverageMultiplier(LockupPeriod.TwentyFourMonths)).to.bignumber.eq(
+      MULTIPLIER_DECIMALS
+    )
   })
 
   describe("stake", () => {
@@ -459,6 +465,15 @@ describe("StakingRewards", function () {
   })
 
   describe("depositAndStakeWithLockup", async () => {
+    beforeEach(async () => {
+      await stakingRewards.setLeverageMultiplier(
+        LockupPeriod.SixMonths,
+        new BN(15).mul(MULTIPLIER_DECIMALS).div(new BN(10))
+      )
+      await stakingRewards.setLeverageMultiplier(LockupPeriod.TwelveMonths, new BN(2).mul(MULTIPLIER_DECIMALS))
+      await stakingRewards.setLeverageMultiplier(LockupPeriod.TwentyFourMonths, new BN(3).mul(MULTIPLIER_DECIMALS))
+    })
+
     it("deposits into senior pool and stakes resulting shares with lockup", async () => {
       const amount = usdcVal(1000)
       const balanceBefore = await usdc.balanceOf(investor)
@@ -515,6 +530,15 @@ describe("StakingRewards", function () {
   })
 
   describe("depositWithPermitAndStakeWithLockup", async () => {
+    beforeEach(async () => {
+      await stakingRewards.setLeverageMultiplier(
+        LockupPeriod.SixMonths,
+        new BN(15).mul(MULTIPLIER_DECIMALS).div(new BN(10))
+      )
+      await stakingRewards.setLeverageMultiplier(LockupPeriod.TwelveMonths, new BN(2).mul(MULTIPLIER_DECIMALS))
+      await stakingRewards.setLeverageMultiplier(LockupPeriod.TwentyFourMonths, new BN(3).mul(MULTIPLIER_DECIMALS))
+    })
+
     it("deposits into senior pool and stakes resulting shares with lockup", async () => {
       const nonce = await (usdc as any).nonces(investor)
       const deadline = MAX_UINT
@@ -1476,6 +1500,15 @@ describe("StakingRewards", function () {
     })
 
     context("boosting", async () => {
+      beforeEach(async () => {
+        await stakingRewards.setLeverageMultiplier(
+          LockupPeriod.SixMonths,
+          new BN(15).mul(MULTIPLIER_DECIMALS).div(new BN(10))
+        )
+        await stakingRewards.setLeverageMultiplier(LockupPeriod.TwelveMonths, new BN(2).mul(MULTIPLIER_DECIMALS))
+        await stakingRewards.setLeverageMultiplier(LockupPeriod.TwentyFourMonths, new BN(3).mul(MULTIPLIER_DECIMALS))
+      })
+
       it("accounts for boosting", async () => {
         await stake({amount: fiduAmount, from: anotherUser})
         const tokenId = await stakeWithLockup({
@@ -1774,6 +1807,13 @@ describe("StakingRewards", function () {
 
       // Disable vesting, to make testing base staking functionality easier
       await stakingRewards.setVestingSchedule(new BN(0))
+
+      await stakingRewards.setLeverageMultiplier(
+        LockupPeriod.SixMonths,
+        new BN(15).mul(MULTIPLIER_DECIMALS).div(new BN(10))
+      )
+      await stakingRewards.setLeverageMultiplier(LockupPeriod.TwelveMonths, new BN(2).mul(MULTIPLIER_DECIMALS))
+      await stakingRewards.setLeverageMultiplier(LockupPeriod.TwentyFourMonths, new BN(3).mul(MULTIPLIER_DECIMALS))
     })
 
     describe("stakeWithLockup", async () => {

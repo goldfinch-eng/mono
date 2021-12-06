@@ -6,8 +6,13 @@ import {Link} from "react-router-dom"
 import {AppContext} from "../../App"
 import RewardActionsContainer from "../../components/rewardActionsContainer"
 import {WIDTH_TYPES} from "../../components/styleConstants"
-import {CommunityRewardsGrant, CommunityRewardsLoaded, MerkleDistributorLoaded} from "../../ethereum/communityRewards"
+import {
+  CommunityRewardsGrant,
+  CommunityRewardsLoaded,
+  MerkleDirectDistributorLoaded,
+} from "../../ethereum/communityRewards"
 import {gfiFromAtomic, gfiInDollars, GFILoaded, gfiToDollarsAtomic} from "../../ethereum/gfi"
+import {MerkleDistributorLoaded} from "../../ethereum/merkleDistributor"
 import {StakingRewardsLoaded, StakingRewardsPosition} from "../../ethereum/pool"
 import {UserCommunityRewardsLoaded, UserLoaded, UserStakingRewardsLoaded} from "../../ethereum/user"
 import {useFromSameBlock} from "../../hooks/useFromSameBlock"
@@ -38,16 +43,23 @@ function RewardsSummary(props: RewardsSummaryProps) {
         <div className="details-item">
           <span>Wallet balance</span>
           <div>
-            <span className={valueDisabledClass}>
+            <span className={valueDisabledClass} data-testid="summary-wallet-balance">
               {displayNumber(walletBalance ? gfiFromAtomic(walletBalance) : undefined, 2)}
             </span>
             <span>GFI</span>
           </div>
         </div>
         <div className="details-item">
-          <span>Claimable</span>
+          <span>
+            {
+              // NOTE: We describe the value here to the user as what's vested, but the value we use is what's
+              // claimable, so as to avoid double-counting any amount that had vested previously and was claimed
+              // previously and that is now counted by "Wallet balance".
+              "Fully vested"
+            }
+          </span>
           <div>
-            <span className={valueDisabledClass}>
+            <span className={valueDisabledClass} data-testid="summary-claimable">
               {displayNumber(claimable ? gfiFromAtomic(claimable) : undefined, 2)}
             </span>
             <span>GFI</span>
@@ -56,7 +68,7 @@ function RewardsSummary(props: RewardsSummaryProps) {
         <div className="details-item">
           <span>Still vesting</span>
           <div>
-            <span className={valueDisabledClass}>
+            <span className={valueDisabledClass} data-testid="summary-still-vesting">
               {displayNumber(unvested ? gfiFromAtomic(unvested) : undefined, 2)}
             </span>
             <span>GFI</span>
@@ -65,7 +77,7 @@ function RewardsSummary(props: RewardsSummaryProps) {
         <div className="details-item total-balance">
           <span>Total balance</span>
           <div>
-            <span className={valueDisabledClass}>
+            <span className={valueDisabledClass} data-testid="summary-total-balance">
               {displayNumber(totalGFI ? gfiFromAtomic(totalGFI) : undefined, 2)}
             </span>
             <span>GFI</span>
@@ -166,6 +178,7 @@ function Rewards() {
     gfi: _gfi,
     user: _user,
     merkleDistributor: _merkleDistributor,
+    merkleDirectDistributor: _merkleDirectDistributor,
     communityRewards: _communityRewards,
     currentBlock,
   } = useContext(AppContext)
@@ -175,43 +188,59 @@ function Rewards() {
     GFILoaded,
     UserLoaded,
     MerkleDistributorLoaded,
+    MerkleDirectDistributorLoaded,
     CommunityRewardsLoaded
-  >(currentBlock, _stakingRewards, _gfi, _user, _merkleDistributor, _communityRewards)
+  >(currentBlock, _stakingRewards, _gfi, _user, _merkleDistributor, _merkleDirectDistributor, _communityRewards)
 
   let loaded: boolean = false
   let claimable: BigNumber | undefined
   let unvested: BigNumber | undefined
-  let granted: BigNumber | undefined
   let totalUSD: BigNumber | undefined
   let gfiBalance: BigNumber | undefined
+  let totalBalance: BigNumber | undefined
   let rewards: React.ReactNode | undefined
   if (consistent) {
     const stakingRewards = consistent[0]
     const gfi = consistent[1]
     const user = consistent[2]
     const merkleDistributor = consistent[3]
-    const communityRewards = consistent[4]
+    const merkleDirectDistributor = consistent[4]
+    const communityRewards = consistent[5]
 
     loaded = true
 
     const userStakingRewards = user.info.value.stakingRewards
     const userCommunityRewards = user.info.value.communityRewards
     const userMerkleDistributor = user.info.value.merkleDistributor
+    const userMerkleDirectDistributor = user.info.value.merkleDirectDistributor
     const sortedRewards = getSortedRewards(userStakingRewards, userCommunityRewards)
 
     const emptyRewards =
       !userCommunityRewards.info.value.grants.length &&
       !userMerkleDistributor.info.value.airdrops.notAccepted.length &&
+      !userMerkleDirectDistributor.info.value.airdrops.notAccepted.length &&
+      !userMerkleDirectDistributor.info.value.airdrops.accepted.length &&
       !userStakingRewards.info.value.positions.length
 
-    claimable = userStakingRewards.info.value.claimable.plus(userCommunityRewards.info.value.claimable)
-    unvested = userStakingRewards.info.value.unvested.plus(userCommunityRewards.info.value.unvested)
-    granted = userStakingRewards.info.value.granted.plus(userCommunityRewards.info.value.granted)
-
     gfiBalance = user.info.value.gfiBalance
+    claimable = userStakingRewards.info.value.claimable
+      .plus(userCommunityRewards.info.value.claimable)
+      .plus(
+        // NOTE: To avoid double-counting vis-a-vis the claimable amount that is tracked by `userCommunityRewards`,
+        // we do not count the claimable amount here of accepted grants; only not-accepted grants.
+        userMerkleDistributor.info.value.notAcceptedClaimable
+      )
+      .plus(userMerkleDirectDistributor.info.value.claimable)
+    unvested = userStakingRewards.info.value.unvested
+      .plus(userCommunityRewards.info.value.unvested)
+      .plus(
+        // Same comment as for `claimable`, regarding avoiding double-counting vis-a-vis `userCommunityRewards`.
+        userMerkleDistributor.info.value.notAcceptedUnvested
+      )
+      .plus(userMerkleDirectDistributor.info.value.unvested)
 
-    totalUSD = gfiInDollars(gfiToDollarsAtomic(granted, gfi.info.value.price))
-
+    totalBalance = gfiBalance.plus(claimable).plus(unvested)
+    totalUSD = gfiInDollars(gfiToDollarsAtomic(totalBalance, gfi.info.value.price))
     rewards = emptyRewards ? (
       <NoRewards />
     ) : (
@@ -219,10 +248,39 @@ function Rewards() {
         {userMerkleDistributor &&
           userMerkleDistributor.info.value.airdrops.notAccepted.map((item) => (
             <RewardActionsContainer
-              key={`airdrop-${item.index}`}
+              key={`merkle-distributor-airdrop-${item.grantInfo.index}`}
+              type="merkleDistributor"
               item={item}
               gfi={gfi}
               merkleDistributor={merkleDistributor}
+              merkleDirectDistributor={merkleDirectDistributor}
+              stakingRewards={stakingRewards}
+              communityRewards={communityRewards}
+            />
+          ))}
+
+        {userMerkleDirectDistributor &&
+          userMerkleDirectDistributor.info.value.airdrops.notAccepted.map((item) => (
+            <RewardActionsContainer
+              key={`merkle-direct-distributor-airdrop-${item.grantInfo.index}`}
+              type="merkleDirectDistributor"
+              item={item}
+              gfi={gfi}
+              merkleDistributor={merkleDistributor}
+              merkleDirectDistributor={merkleDirectDistributor}
+              stakingRewards={stakingRewards}
+              communityRewards={communityRewards}
+            />
+          ))}
+        {userMerkleDirectDistributor &&
+          userMerkleDirectDistributor.info.value.airdrops.accepted.map((item) => (
+            <RewardActionsContainer
+              key={`merkle-direct-distributor-airdrop-${item.grantInfo.index}`}
+              type="merkleDirectDistributor"
+              item={item}
+              gfi={gfi}
+              merkleDistributor={merkleDistributor}
+              merkleDirectDistributor={merkleDirectDistributor}
               stakingRewards={stakingRewards}
               communityRewards={communityRewards}
             />
@@ -230,16 +288,36 @@ function Rewards() {
 
         {sortedRewards &&
           sortedRewards.map((item) => {
-            return (
-              <RewardActionsContainer
-                key={`${item.type}-${item.value.tokenId}`}
-                item={item.value}
-                gfi={gfi}
-                merkleDistributor={merkleDistributor}
-                stakingRewards={stakingRewards}
-                communityRewards={communityRewards}
-              />
-            )
+            switch (item.type) {
+              case "communityRewards":
+                return (
+                  <RewardActionsContainer
+                    key={`${item.type}-${item.value.tokenId}`}
+                    type={item.type}
+                    item={item.value}
+                    gfi={gfi}
+                    merkleDistributor={merkleDistributor}
+                    merkleDirectDistributor={merkleDirectDistributor}
+                    stakingRewards={stakingRewards}
+                    communityRewards={communityRewards}
+                  />
+                )
+              case "stakingRewards":
+                return (
+                  <RewardActionsContainer
+                    key={`${item.type}-${item.value.tokenId}`}
+                    type={item.type}
+                    item={item.value}
+                    gfi={gfi}
+                    merkleDistributor={merkleDistributor}
+                    merkleDirectDistributor={merkleDirectDistributor}
+                    stakingRewards={stakingRewards}
+                    communityRewards={communityRewards}
+                  />
+                )
+              default:
+                return assertUnreachable(item)
+            }
           })}
       </>
     )
@@ -252,11 +330,11 @@ function Rewards() {
       </div>
 
       <RewardsSummary
+        walletBalance={gfiBalance}
         claimable={claimable}
         unvested={unvested}
-        totalGFI={granted}
+        totalGFI={totalBalance}
         totalUSD={totalUSD}
-        walletBalance={gfiBalance}
       />
 
       <div className="gfi-rewards table-spaced">
@@ -269,7 +347,9 @@ function Rewards() {
             </>
           )}
         </div>
-        <ul className="rewards-list">{loaded ? rewards : <span>Loading...</span>}</ul>
+        <ul className="rewards-list" data-testid="rewards-list">
+          {loaded ? rewards : <span>Loading...</span>}
+        </ul>
       </div>
     </div>
   )

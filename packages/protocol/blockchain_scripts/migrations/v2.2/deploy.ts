@@ -1,12 +1,4 @@
 import {
-  deployLPStakingRewards,
-  deployCommunityRewards,
-  deployMerkleDistributor,
-  deployConfigProxy,
-  deployMerkleDirectDistributor,
-  deployDynamicLeverageRatioStrategy,
-} from "../../baseDeploy"
-import {
   ContractDeployer,
   ContractUpgrader,
   getEthersContract,
@@ -16,15 +8,21 @@ import {
 import hre, {deployments} from "hardhat"
 import {DeployEffects, Effects} from "../deployEffects"
 import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
-import {CreditLine, GoldfinchConfig, TranchedPool} from "@goldfinch-eng/protocol/typechain/ethers"
+import {CreditLine, GFI, GoldfinchConfig, TranchedPool} from "@goldfinch-eng/protocol/typechain/ethers"
 import {GFIInstance} from "@goldfinch-eng/protocol/typechain/truffle"
-import {CONFIG_KEYS_BY_TYPE} from "../../configKeys"
+import {CONFIG_KEYS, CONFIG_KEYS_BY_TYPE} from "../../configKeys"
 import poolMetadata from "@goldfinch-eng/client/config/pool-metadata/mainnet.json"
 import {Contract} from "ethers"
 import {generateMerkleRoot as generateMerkleDirectRoot} from "../../merkle/merkleDirectDistributor/generateMerkleRoot"
 import {generateMerkleRoot} from "../../merkle/merkleDistributor/generateMerkleRoot"
 import {promises as fs} from "fs"
 import path from "path"
+import {deployCommunityRewards} from "../../baseDeploy/deployCommunityRewards"
+import {deployConfigProxy} from "../../baseDeploy/deployConfigProxy"
+import {deployDynamicLeverageRatioStrategy} from "../../baseDeploy/deployDynamicLeverageRatioStrategy"
+import {deployLPStakingRewards} from "../../baseDeploy/deployLPStakingRewards"
+import {deployMerkleDirectDistributor} from "../../baseDeploy/deployMerkleDirectDistributor"
+import {deployMerkleDistributor} from "../../baseDeploy/deployMerkleDistributor"
 
 async function updateGoldfinchConfigs({
   existingConfig,
@@ -127,7 +125,11 @@ export async function deploy(
   })
 
   // 3.
-  // TODO: Mint GFI, distribute to contracts / EOAs, set reward parameters, set GFI in config
+  // TODO: Mint GFI, distribute to contracts / EOAs, set reward parameters
+  // 3.1 set goldfinch config address for GFI
+  await deployEffects.add({
+    deferred: [await config.populateTransaction.setAddress(CONFIG_KEYS.GFI, gfi.contract.address)],
+  })
 
   // 4.
   // Deploy DynamicLeverageRatioStrategy (unused for now)

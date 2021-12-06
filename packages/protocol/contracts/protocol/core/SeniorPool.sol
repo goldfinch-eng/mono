@@ -176,7 +176,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
    * @notice Invest in an ITranchedPool's senior tranche using the senior pool's strategy
    * @param pool An ITranchedPool whose senior tranche should be considered for investment
    */
-  function invest(ITranchedPool pool) public override whenNotPaused nonReentrant onlyAdmin {
+  function invest(ITranchedPool pool) public override whenNotPaused nonReentrant {
     require(validPool(pool), "Pool must be valid");
 
     if (compoundBalance > 0) {
@@ -202,26 +202,6 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   }
 
   /**
-   * @notice Invest in an ITranchedPool's junior tranche.
-   * @param pool An ITranchedPool whose junior tranche to invest in
-   */
-  function investJunior(ITranchedPool pool, uint256 amount) public override whenNotPaused nonReentrant onlyAdmin {
-    require(validPool(pool), "Pool must be valid");
-
-    if (compoundBalance > 0) {
-      _sweepFromCompound();
-    }
-
-    require(amount > 0, "Investment amount must be positive");
-
-    approvePool(pool, amount);
-    pool.deposit(uint256(ITranchedPool.Tranches.Junior), amount);
-
-    emit InvestmentMadeInJunior(address(pool), amount);
-    totalLoansOutstanding = totalLoansOutstanding.add(amount);
-  }
-
-  /**
    * @notice Redeem interest and/or principal from an ITranchedPool investment
    * @param tokenId the ID of an IPoolTokens token to be redeemed
    */
@@ -241,7 +221,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
    *  made repayments that restore confidence that the full loan will be repaid.
    * @param tokenId the ID of an IPoolTokens token to be considered for writedown
    */
-  function writedown(uint256 tokenId) public override whenNotPaused nonReentrant onlyAdmin {
+  function writedown(uint256 tokenId) public override whenNotPaused nonReentrant {
     IPoolTokens poolTokens = config.getPoolTokens();
     require(address(this) == poolTokens.ownerOf(tokenId), "Only tokens owned by the senior pool can be written down");
 

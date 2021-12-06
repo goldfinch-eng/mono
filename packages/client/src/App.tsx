@@ -22,8 +22,8 @@ import {EarnProvider} from "./contexts/EarnContext"
 import {
   CommunityRewards,
   CommunityRewardsLoaded,
-  MerkleDistributor,
-  MerkleDistributorLoaded,
+  MerkleDirectDistributor,
+  MerkleDirectDistributorLoaded,
 } from "./ethereum/communityRewards"
 import {ERC20, Tickers} from "./ethereum/erc20"
 import {GFI, GFILoaded} from "./ethereum/gfi"
@@ -42,11 +42,9 @@ import {assertWithLoadedInfo} from "./types/loadable"
 import {SessionData} from "./types/session"
 import {assertNonNullable, BlockInfo, getBlockInfo, getCurrentBlock} from "./utils"
 import web3, {SESSION_DATA_KEY} from "./web3"
-
-export interface NetworkConfig {
-  name: string
-  supported: boolean
-}
+import {Web3Status} from "./types/web3"
+import {NetworkConfig} from "./types/network"
+import {MerkleDistributor, MerkleDistributorLoaded} from "./ethereum/merkleDistributor"
 
 interface GeolocationData {
   ip: string
@@ -61,14 +59,14 @@ interface GeolocationData {
 
 export type SetSessionFn = (data: SessionData | undefined) => void
 
-export type BackersByTranchedPoolAddress = {[address: string]: string[]}
-
 export interface GlobalState {
+  web3Status?: Web3Status
   currentBlock?: BlockInfo
   gfi?: GFILoaded
   stakingRewards?: StakingRewardsLoaded
   communityRewards?: CommunityRewardsLoaded
   merkleDistributor?: MerkleDistributorLoaded
+  merkleDirectDistributor?: MerkleDirectDistributorLoaded
   pool?: SeniorPoolLoaded
   creditDesk?: CreditDesk
   user?: UserLoaded
@@ -82,8 +80,6 @@ export interface GlobalState {
   sessionData?: SessionData
   setSessionData?: SetSessionFn
   refreshCurrentBlock?: () => Promise<void>
-  backersByTranchedPoolAddress?: BackersByTranchedPoolAddress
-  setBackersByTranchedPoolAddress?: (newVal: BackersByTranchedPoolAddress) => void
 }
 
 declare let window: any
@@ -91,10 +87,12 @@ declare let window: any
 const AppContext = React.createContext<GlobalState>({})
 
 function App() {
+  const [web3Status, setWeb3Status] = useState<Web3Status>()
   const [_gfi, setGfi] = useState<GFILoaded>()
   const [_stakingRewards, setStakingRewards] = useState<StakingRewardsLoaded>()
   const [_communityRewards, setCommunityRewards] = useState<CommunityRewardsLoaded>()
   const [_merkleDistributor, setMerkleDistributor] = useState<MerkleDistributorLoaded>()
+  const [_merkleDirectDistributor, setMerkleDirectDistributor] = useState<MerkleDirectDistributorLoaded>()
   const [pool, setPool] = useState<SeniorPoolLoaded>()
   const [creditDesk, setCreditDesk] = useState<CreditDesk>()
   const [usdc, setUSDC] = useState<ERC20>()
@@ -113,17 +111,24 @@ function App() {
     {},
     currentBlock?.timestamp
   )
-  const consistent = useFromSameBlock(currentBlock, _gfi, _stakingRewards, _communityRewards, _merkleDistributor)
+  const consistent = useFromSameBlock(
+    currentBlock,
+    _gfi,
+    _stakingRewards,
+    _communityRewards,
+    _merkleDistributor,
+    _merkleDirectDistributor
+  )
   const gfi = consistent?.[0]
   const stakingRewards = consistent?.[1]
   const communityRewards = consistent?.[2]
   const merkleDistributor = consistent?.[3]
+  const merkleDirectDistributor = consistent?.[4]
 
   // TODO We should use `useFromSameBlock()` again to make gfi, stakingRewards, communityRewards,
-  // merkleDistributor, and pool be from same block.
+  // merkleDistributor, merkleDirectDistributor, and pool be from same block.
 
   const toggleRewards = process.env.REACT_APP_TOGGLE_REWARDS === "true"
-  const [backersByTranchedPoolAddress, setBackersByTranchedPoolAddress] = useState<BackersByTranchedPoolAddress>({})
 
   useEffect(() => {
     setupWeb3()
@@ -159,35 +164,49 @@ function App() {
       gfi &&
       communityRewards &&
       merkleDistributor &&
+      merkleDirectDistributor &&
+      web3Status &&
+      web3Status.type === "connected" &&
       currentBlock
     ) {
-      refreshUserData()
+      refreshUserData(web3Status.address, overrideAddress)
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [usdc, pool, overrideAddress])
+  }, [usdc, pool, web3Status?.address, overrideAddress])
 
-  async function ensureWeb3() {
+  async function getWeb3Status(): Promise<Web3Status> {
     if (!window.ethereum) {
-      return false
+      return {type: "no_web3", networkName: undefined, address: undefined}
     }
+    let networkName: string
     try {
       // Sometimes it's possible that we can't communicate with the provider, in which case
-      // treat as if we don't have web3
-      await web3.eth.net.getNetworkType()
+      // treat as if we don't have web3.
+      networkName = await web3.eth.net.getNetworkType()
+      if (!networkName) {
+        throw new Error("Falsy network type.")
+      }
     } catch (e) {
-      return false
+      return {type: "no_web3", networkName: undefined, address: undefined}
     }
-    return true
+    const accounts = await web3.eth.getAccounts()
+    const address = accounts[0]
+    if (address) {
+      return {type: "connected", networkName, address}
+    } else {
+      return {type: "has_web3", networkName, address: undefined}
+    }
   }
 
   async function setupWeb3() {
-    if (!(await ensureWeb3())) {
+    const _web3Status = await getWeb3Status()
+    setWeb3Status(_web3Status)
+    if (_web3Status.type === "no_web3") {
       return
     }
 
-    const networkName = await web3.eth.net.getNetworkType()
-    const networkId = mapNetworkToID[networkName] || networkName
+    const networkId = mapNetworkToID[_web3Status.networkName] || _web3Status.networkName
     const name = networkId
     const supported = SUPPORTED_NETWORKS[networkId] || false
     const networkConfig: NetworkConfig = {name, supported}
@@ -221,10 +240,6 @@ function App() {
   }
 
   async function refreshGfiAndRewards(): Promise<void> {
-    if (!(await ensureWeb3())) {
-      return
-    }
-
     assertNonNullable(goldfinchProtocol)
     assertNonNullable(currentBlock)
 
@@ -232,23 +247,27 @@ function App() {
     const stakingRewards = new StakingRewards(goldfinchProtocol)
     const communityRewards = new CommunityRewards(goldfinchProtocol)
     const merkleDistributor = new MerkleDistributor(goldfinchProtocol)
+    const merkleDirectDistributor = new MerkleDirectDistributor(goldfinchProtocol)
 
     await Promise.all([
       gfi.initialize(currentBlock),
       stakingRewards.initialize(currentBlock),
       communityRewards.initialize(currentBlock),
       merkleDistributor.initialize(currentBlock),
+      merkleDirectDistributor.initialize(currentBlock),
     ])
 
     assertWithLoadedInfo(gfi)
     assertWithLoadedInfo(stakingRewards)
     assertWithLoadedInfo(communityRewards)
     assertWithLoadedInfo(merkleDistributor)
+    assertWithLoadedInfo(merkleDirectDistributor)
 
     setGfi(gfi)
     setStakingRewards(stakingRewards)
     setCommunityRewards(communityRewards)
     setMerkleDistributor(merkleDistributor)
+    setMerkleDirectDistributor(merkleDirectDistributor)
   }
 
   async function refreshPool(): Promise<void> {
@@ -264,7 +283,7 @@ function App() {
     setPool(pool)
   }
 
-  async function refreshUserData(): Promise<void> {
+  async function refreshUserData(userAddress: string, overrideAddress: string | undefined): Promise<void> {
     assertNonNullable(goldfinchProtocol)
     assertNonNullable(pool)
     assertNonNullable(creditDesk)
@@ -274,16 +293,11 @@ function App() {
     assertNonNullable(gfi)
     assertNonNullable(communityRewards)
     assertNonNullable(merkleDistributor)
+    assertNonNullable(merkleDirectDistributor)
 
-    const accounts = await web3.eth.getAccounts()
-    const _userAddress = accounts && accounts[0]
-    const userAddress = overrideAddress || _userAddress
-    if (!userAddress) {
-      return
-    }
-
+    const address = overrideAddress || userAddress
     const user = await getUserData(
-      userAddress,
+      address,
       goldfinchProtocol,
       pool,
       creditDesk,
@@ -292,6 +306,7 @@ function App() {
       gfi,
       communityRewards,
       merkleDistributor,
+      merkleDirectDistributor,
       currentBlock
     )
 
@@ -302,7 +317,7 @@ function App() {
       // copy state about the identifying information that Goldfinch stores.
       id: user.address,
       address: user.address,
-      isOverrideOf: overrideAddress ? _userAddress : undefined,
+      isOverrideOf: overrideAddress ? userAddress : undefined,
     })
 
     setUser(user)
@@ -314,11 +329,13 @@ function App() {
   }
 
   const store: GlobalState = {
+    web3Status,
     currentBlock,
     stakingRewards,
     gfi,
     communityRewards,
     merkleDistributor,
+    merkleDirectDistributor,
     pool,
     creditDesk,
     user,
@@ -332,8 +349,6 @@ function App() {
     sessionData,
     setSessionData,
     refreshCurrentBlock,
-    backersByTranchedPoolAddress,
-    setBackersByTranchedPoolAddress,
   }
 
   return (

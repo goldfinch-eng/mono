@@ -15,7 +15,7 @@ import PoolStatus from "../poolStatus"
 import StakeFiduBanner from "../stakeFiduBanner"
 
 function SeniorPoolView(): JSX.Element {
-  const {pool, user, goldfinchConfig, stakingRewards, gfi, refreshCurrentBlock} = useContext(AppContext)
+  const {web3Status, pool, user, goldfinchConfig, stakingRewards, gfi, refreshCurrentBlock} = useContext(AppContext)
   const [capitalProvider, setCapitalProvider] = useState<Loadable<CapitalProvider>>({
     loaded: false,
     value: undefined,
@@ -59,10 +59,7 @@ function SeniorPoolView(): JSX.Element {
     refreshCurrentBlock()
   }
 
-  let earnMessage = "Loading..."
-  if (capitalProvider.loaded || (user && user.noWeb3)) {
-    earnMessage = "Pools / Senior Pool"
-  }
+  const earnMessage = web3Status?.type === "no_web3" || capitalProvider.loaded ? "Pools / Senior Pool" : "Loading..."
 
   let maxCapacityNotice = <></>
   if (

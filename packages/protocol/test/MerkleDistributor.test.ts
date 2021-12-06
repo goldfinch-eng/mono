@@ -8,13 +8,8 @@ import {Granted, CommunityRewardsInstance} from "../typechain/truffle/CommunityR
 import {asNonNullable, assertNonEmptyArray, assertNonNullable} from "@goldfinch-eng/utils"
 import {mintAndLoadRewards} from "./communityRewardsHelpers"
 import {fixtures} from "./merkleDistributorHelpers"
-import {
-  decodeLogs,
-  deployAllContracts,
-  fundWithEthFromLocalWhale,
-  genDifferentHexString,
-  getOnlyLog,
-} from "./testHelpers"
+import {decodeLogs, fundWithEthFromLocalWhale, genDifferentHexString, getOnlyLog} from "./testHelpers"
+import {deployBaseFixture} from "./util/fixtures"
 const {deployments} = hre
 
 const setupTest = deployments.createFixture(async ({deployments}) => {
@@ -25,7 +20,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const [_owner] = await web3.eth.getAccounts()
   const owner = asNonNullable(_owner)
 
-  const deployed = await deployAllContracts(deployments, {
+  const deployed = await deployBaseFixture({
     deployMerkleDistributor: {fromAccount: owner, root: fixtures.output.merkleRoot},
   })
 
@@ -424,7 +419,7 @@ describe("MerkleDistributor", () => {
         acceptGrantParams.proof,
         {from: acceptGrantParams.from}
       )
-      expect(receipt.receipt.gasUsed).to.eq(365667)
+      expect(receipt.receipt.gasUsed).to.be.lte(367853)
     })
   })
 })
