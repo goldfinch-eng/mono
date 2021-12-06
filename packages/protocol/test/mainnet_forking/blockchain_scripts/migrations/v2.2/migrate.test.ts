@@ -18,8 +18,9 @@ import {Deployment} from "hardhat-deploy/types"
 import {CONFIG_KEYS, CONFIG_KEYS_BY_TYPE} from "@goldfinch-eng/protocol/blockchain_scripts/configKeys"
 import {GoldfinchConfig, GoldfinchFactory, TranchedPool} from "@goldfinch-eng/protocol/typechain/ethers"
 import poolMetadata from "@goldfinch-eng/client/config/pool-metadata/mainnet.json"
-import {expectProxyOwner, expectRoles} from "@goldfinch-eng/protocol/test/testHelpers"
+import {expectOwnerRole, expectProxyOwner, expectRoles} from "@goldfinch-eng/protocol/test/testHelpers"
 import {GoInstance, GoldfinchConfigInstance} from "@goldfinch-eng/protocol/typechain/truffle"
+import {OWNER_ROLE} from "dist/blockchain_scripts/deployHelpers"
 
 const v22PerformMigration = deployments.createFixture(async ({deployments}) => {
   await deployments.fixture("base_deploy", {keepExistingDeployments: true})
@@ -62,6 +63,17 @@ describe("V2.2 & v2.3 migration", async function () {
   expectProxyOwner({
     toBe: async () => getProtocolOwner(),
     forContracts: ["StakingRewards", "CommunityRewards", "GoldfinchConfig", "MerkleDirectDistributor"],
+  })
+
+  expectOwnerRole({
+    toBe: async () => getProtocolOwner(),
+    forContracts: [
+      "StakingRewards",
+      "CommunityRewards",
+      "GoldfinchConfig",
+      "MerkleDirectDistributor",
+      "DynamicLeverageRatioStrategy",
+    ],
   })
 
   describe("v2.2 migration", () => {
@@ -183,6 +195,16 @@ describe("V2.2 & v2.3 migration", async function () {
         })
         goDeployment = await deployments.get("Go")
         go = await getTruffleContract<GoInstance>("Go", {at: goDeployment.address})
+      })
+
+      expectProxyOwner({
+        toBe: () => getProtocolOwner(),
+        forContracts: ["PoolTokens", "SeniorPool", "UniqueIdentity", "Go", "GoldfinchFactory", "TestBackerRewards"],
+      })
+
+      expectOwnerRole({
+        toBe: () => getProtocolOwner(),
+        forContracts: ["PoolTokens", "SeniorPool", "UniqueIdentity", "Go", "GoldfinchFactory", "TestBackerRewards"],
       })
 
       it("upgrades new contracts", async () => {

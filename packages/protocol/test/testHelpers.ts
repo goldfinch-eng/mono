@@ -14,6 +14,7 @@ import {
   DISTRIBUTOR_ROLE,
   getContract,
   TRUFFLE_CONTRACT_PROVIDER,
+  OWNER_ROLE,
 } from "../blockchain_scripts/deployHelpers"
 import {DeploymentsExtension} from "hardhat-deploy/types"
 import {
@@ -552,6 +553,15 @@ export function expectRoles(expectations: RoleExpectation[]) {
       }
     }
   })
+}
+
+export function expectOwnerRole({toBe, forContracts}: {toBe: () => Promise<string>; forContracts: string[]}) {
+  const expectations: RoleExpectation[] = forContracts.map((contract) => ({
+    contractName: contract,
+    roles: [OWNER_ROLE],
+    address: toBe,
+  }))
+  expectRoles(expectations)
 }
 
 export {
