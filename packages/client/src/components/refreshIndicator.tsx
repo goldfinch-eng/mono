@@ -1,5 +1,13 @@
 import React from "react"
+import CircularProgress from "@mui/material/CircularProgress"
+import Box from "@mui/material/Box"
 import {BlockInfo} from "../utils"
+import colors from "../styles/theme/colors"
+
+const styles = {
+  box: {display: "flex"},
+  circular: {color: colors.blue},
+}
 
 interface RefreshIndicatorProps {
   rootCurrentBlock: BlockInfo | undefined
@@ -11,7 +19,11 @@ function RefreshIndicator(props: RefreshIndicatorProps) {
     props.rootCurrentBlock && props.leafCurrentBlock && props.rootCurrentBlock.number > props.leafCurrentBlock.number
   return (
     <div className="refresh-indicator">
-      {isRefreshing ? <div style={{backgroundColor: "red"}}>refreshing...</div> : undefined}
+      {isRefreshing ? (
+        <Box sx={styles.box}>
+          <CircularProgress size="26px" sx={styles.circular} />
+        </Box>
+      ) : undefined}
     </div>
   )
 }
