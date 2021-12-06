@@ -1,5 +1,28 @@
 import {BigNumber} from "ethers"
-import {genIsArrayOf, isArrayOfNonEmptyString, isNonEmptyString, isNumber, isPlainObject} from "@goldfinch-eng/utils"
+import {
+  genIsArrayOf,
+  isArrayOfNonEmptyString,
+  isNonEmptyString,
+  isNumber,
+  isPlainObject,
+} from "@goldfinch-eng/utils/src/type"
+
+export const FLIGHT_ACADEMY_DIRECT_GRANT_REASON = "flight_academy"
+export type FLIGHT_ACADEMY_DIRECT_GRANT_REASON = typeof FLIGHT_ACADEMY_DIRECT_GRANT_REASON
+export const LIQUIDITY_PROVIDER_DIRECT_GRANT_REASON = "liquidity_provider"
+export type LIQUIDITY_PROVIDER_DIRECT_GRANT_REASON = typeof LIQUIDITY_PROVIDER_DIRECT_GRANT_REASON
+export const FLIGHT_ACADEMY_AND_LIQUIDITY_PROVIDER_DIRECT_GRANT_REASON = "flight_academy_and_liquidity_provider"
+export type FLIGHT_ACADEMY_AND_LIQUIDITY_PROVIDER_DIRECT_GRANT_REASON =
+  typeof FLIGHT_ACADEMY_AND_LIQUIDITY_PROVIDER_DIRECT_GRANT_REASON
+
+export type DirectGrantReason =
+  | FLIGHT_ACADEMY_DIRECT_GRANT_REASON
+  | LIQUIDITY_PROVIDER_DIRECT_GRANT_REASON
+  | FLIGHT_ACADEMY_AND_LIQUIDITY_PROVIDER_DIRECT_GRANT_REASON
+export const isDirectGrantReason = (obj: unknown): obj is DirectGrantReason =>
+  obj === FLIGHT_ACADEMY_DIRECT_GRANT_REASON ||
+  obj === LIQUIDITY_PROVIDER_DIRECT_GRANT_REASON ||
+  obj === FLIGHT_ACADEMY_AND_LIQUIDITY_PROVIDER_DIRECT_GRANT_REASON
 
 export type DirectGrant = {
   amount: BigNumber
@@ -15,23 +38,26 @@ export const isJsonDirectGrant = (obj: unknown): obj is JsonDirectGrant =>
 
 export type AccountedDirectGrant = {
   account: string
+  reason: DirectGrantReason
   grant: DirectGrant
 }
 export const isAccountedDirectGrant = (obj: unknown): obj is AccountedDirectGrant =>
-  isPlainObject(obj) && isNonEmptyString(obj.account) && isDirectGrant(obj.grant)
+  isPlainObject(obj) && isNonEmptyString(obj.account) && isDirectGrantReason(obj.reason) && isDirectGrant(obj.grant)
 export const isArrayOfAccountedDirectGrant = genIsArrayOf(isAccountedDirectGrant)
 
 export type JsonAccountedDirectGrant = {
   account: string
+  reason: DirectGrantReason
   grant: JsonDirectGrant
 }
 export const isJsonAccountedDirectGrant = (obj: unknown): obj is JsonAccountedDirectGrant =>
-  isPlainObject(obj) && isNonEmptyString(obj.account) && isJsonDirectGrant(obj.grant)
+  isPlainObject(obj) && isNonEmptyString(obj.account) && isDirectGrantReason(obj.reason) && isJsonDirectGrant(obj.grant)
 export const isArrayOfJsonAccountedDirectGrant = genIsArrayOf(isJsonAccountedDirectGrant)
 
 export type MerkleDirectDistributorGrantInfo = {
   index: number
   account: string
+  reason: DirectGrantReason
   grant: {
     amount: string
   }
@@ -41,6 +67,7 @@ export const isMerkleDirectDistributorGrantInfo = (obj: unknown): obj is MerkleD
   isPlainObject(obj) &&
   isNumber(obj.index) &&
   isNonEmptyString(obj.account) &&
+  isDirectGrantReason(obj.reason) &&
   isPlainObject(obj.grant) &&
   isNonEmptyString(obj.grant.amount) &&
   isArrayOfNonEmptyString(obj.proof)

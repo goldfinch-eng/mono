@@ -16,6 +16,8 @@ import {
   assertIsChainId,
   assertIsTicker,
   ContractDeployer,
+  getEthersContract,
+  getProtocolOwner,
 } from "../blockchain_scripts/deployHelpers"
 import _ from "lodash"
 import {CONFIG_KEYS} from "./configKeys"
@@ -91,13 +93,19 @@ async function upgradeContracts({
 
     logger("Trying to deploy", contractToDeploy)
     const ethersSigner = typeof signer === "string" ? await ethers.getSigner(signer) : signer
-    const upgradedContract = (
-      await deployer.deploy(contractToDeploy, {
-        from: deployFrom,
-        args: [],
-        libraries: dependencies[contractName],
-      })
-    ).connect(ethersSigner)
+    await deployer.deploy(contractToDeploy, {
+      from: deployFrom,
+      proxy: {
+        owner: await getProtocolOwner(),
+      },
+      libraries: dependencies[contractName],
+    })
+
+    const implDepoyment = await hre.deployments.get(`${contractToDeploy}_Implementation`)
+
+    const upgradedContract = (await getEthersContract(contractToDeploy, {at: implDepoyment.address})).connect(
+      ethersSigner
+    )
     // Get a contract object with the latest ABI, attached to the signer
     const upgradedImplAddress = upgradedContract.address
 
@@ -120,8 +128,8 @@ async function upgradeContracts({
  *   - Contract.json. Combined Proxy and Implementation ABI.
  *
  * When using `hre.deployments.deploy` with the `proxy` key, hardhat-deploy will write out the combined ABI. But since
- * we run our own deploy logic (without the `proxy` key, see `upgradeContracts`), only the implementation ABI is written out.
- * Work around this by rewriting the ABI ourselves.
+ * we use a multisig to change the proxy's implementation, only the implementation ABI is written out by hardhat-deploy.
+ * Work around this by rewriting the ABI the combined ABI ourselves.
  */
 async function rewriteUpgradedDeployment(deploymentName: string, impl: Contract, proxy: Contract) {
   const implAbi = JSON.parse(String(impl.interface.format(FormatTypes.json)))
@@ -134,14 +142,8 @@ async function rewriteUpgradedDeployment(deploymentName: string, impl: Contract,
 
   const deployment = await hre.deployments.get(deploymentName)
   deployment.abi = mergedABI
-  deployment.address = proxy.address
+  deployment.implementation = impl.address
   await hre.deployments.save(deploymentName, deployment)
-
-  const implDeploymentName = deploymentName + "_Implementation"
-  const implDeployment = await hre.deployments.get(implDeploymentName)
-  implDeployment.abi = implAbi
-  implDeployment.address = impl.address
-  await hre.deployments.save(implDeploymentName, implDeployment)
 }
 
 export type ContractHolder = {

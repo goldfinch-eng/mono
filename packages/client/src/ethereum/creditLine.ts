@@ -15,7 +15,8 @@ const zero = new BigNumber(0)
 abstract class BaseCreditLine {
   address!: string | string[]
 
-  abstract readonly limit: BigNumber
+  abstract readonly currentLimit: BigNumber
+  abstract readonly maxLimit: BigNumber
   abstract readonly remainingPeriodDueAmount: BigNumber
   abstract readonly remainingTotalDueAmount: BigNumber
   abstract readonly availableCredit: BigNumber
@@ -56,6 +57,14 @@ abstract class BaseCreditLine {
     return this.creditLines.length > 1
   }
 
+  get limit() {
+    if (this.currentLimit.gt(0)) {
+      return this.currentLimit
+    } else {
+      return this.maxLimit
+    }
+  }
+
   // Is next payment due
   get isPaymentDue() {
     return this.remainingPeriodDueAmount.gt(0)
@@ -77,7 +86,8 @@ abstract class BaseCreditLine {
 }
 
 class DefaultCreditLine extends BaseCreditLine {
-  limit: BigNumber
+  currentLimit: BigNumber
+  maxLimit: BigNumber
   remainingPeriodDueAmount: BigNumber
   remainingTotalDueAmount: BigNumber
   availableCredit: BigNumber
@@ -86,7 +96,8 @@ class DefaultCreditLine extends BaseCreditLine {
   constructor() {
     super()
     this.balance = zero
-    this.limit = zero
+    this.currentLimit = zero
+    this.maxLimit = zero
     this.periodDueAmount = zero
     this.remainingPeriodDueAmount = zero
     this.interestAprDecimal = zero
@@ -104,7 +115,8 @@ class DefaultCreditLine extends BaseCreditLine {
 
 class CreditLine extends BaseCreditLine {
   address: string
-  limit!: BigNumber
+  currentLimit!: BigNumber
+  maxLimit!: BigNumber
   remainingPeriodDueAmount!: BigNumber
   remainingTotalDueAmount!: BigNumber
   availableCredit!: BigNumber
@@ -142,15 +154,23 @@ class CreditLine extends BaseCreditLine {
       {method: "paymentPeriodInDays"},
       {method: "termInDays"},
       {method: "nextDueTime"},
-      {method: "limit"},
+      {method: "limit", name: "currentLimit"},
       {method: "interestOwed"},
       {method: "termEndTime"},
       {method: "lastFullPaymentTime"},
     ]
     let data = await fetchDataFromAttributes(this.creditLine, attributes, {blockNumber: currentBlock.number})
     attributes.forEach((info) => {
-      this[info.method] = new BigNumber(data[info.method])
+      this[info.name || info.method] = new BigNumber(data[info.method])
     })
+
+    // maxLimit is not available on older versions of the creditline, so fall back to limit in that case
+    try {
+      data = await fetchDataFromAttributes(this.creditLine, [{method: "maxLimit"}])
+      this["maxLimit"] = new BigNumber(data["maxLimit"])
+    } catch (e) {
+      this["maxLimit"] = this["currentLimit"]
+    }
 
     const formattedNextDueDate = moment.unix(this.nextDueTime.toNumber()).format("MMM D")
 
@@ -270,6 +290,14 @@ class MultipleCreditLines extends BaseCreditLine {
 
   get limit() {
     return this.creditLines.reduce((val, cl) => val.plus(cl.limit), zero)
+  }
+
+  get currentLimit() {
+    return this.creditLines.reduce((val, cl) => val.plus(cl.currentLimit), zero)
+  }
+
+  get maxLimit() {
+    return this.creditLines.reduce((val, cl) => val.plus(cl.maxLimit), zero)
   }
 
   get remainingPeriodDueAmount() {

@@ -80,8 +80,8 @@
           "lockPool": ["whenNotPaused", "onlyLocker"],
           "setFundableAt": ["onlyLocker"],
           "initializeNextSlice": ["whenNotPaused", "onlyLocker"],
-          "withdraw": ["whenNotPaused", "onlyTokenHolder"],
-          "withdrawMax": ["whenNotPaused", "onlyTokenHolder"],
+          "withdraw": ["whenNotPaused"],
+          "withdrawMax": ["whenNotPaused"],
           "withdrawMultiple": [],
           "drawdown": ["whenNotPaused"],
           "assess": ["whenNotPaused"],
@@ -95,9 +95,11 @@
         "**/SeniorPool.sol:SeniorPool": {
           "deposit": [],
           "depositWithPermit": [],
+          "invest": [],
           "withdraw": [],
           "withdrawInFidu": [],
-          "redeem": []
+          "redeem": [],
+          "writedown": []
         },
         "**/SeniorPoolFidu.sol:SeniorPoolFidu": {
           "__initialize__": [],
@@ -173,6 +175,16 @@
           "safeTransferFrom": [],
           "safeBatchTransferFrom": [],
           "burn": ["onlySigner"]
+        },
+        "**/TranchingLogic.sol:*": {
+          "applyToAllSeniorTranches":  [],
+          "applyToAllJuniorTranches": [],
+          "applyToSeniorTranche":  [],
+          "applyToJuniorTranche": [],
+          "applyBySharePrice":  [],
+          "applyByAmount": [],
+          "migrateAccountingVariables":  [],
+          "closeCreditLine": []
         },
         "**/contracts/test/**": {
           "*.*": []

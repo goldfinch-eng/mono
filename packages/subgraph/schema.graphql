@@ -1,6 +1,8 @@
 """
 Notes
 - address are mapped as IDs
+- We are using reverse lookups to create virtual fields:
+  https://thegraph.com/docs/developer/create-subgraph-hosted#reverse-lookups
 """
 
 type SeniorPool @entity {
@@ -58,7 +60,7 @@ enum UserType {
   BORROWER
 }
 
-enum PoolState {
+enum TranchedPoolState {
   Open
   JuniorLocked
   SeniorLocked
@@ -73,12 +75,12 @@ type User @entity {
 
   seniorPoolDeposits: [SeniorPoolDeposit!]! @derivedFrom(field: "user")
   tranchedPoolsDeposits: [TranchedPoolDeposit!]! @derivedFrom(field: "user")
-  poolBackerStatuses: [PoolBacker!] @derivedFrom(field: "user")
+  poolBackers: [PoolBacker!]! @derivedFrom(field: "user")
 }
 
 type SeniorTrancheInfo @entity {
   id: ID!
-  tranchedPool: TranchedPool
+  tranchedPool: TranchedPool!
   lockedUntil: BigInt!
   principalDeposited: BigInt!
   principalSharePrice: BigInt!
@@ -87,7 +89,7 @@ type SeniorTrancheInfo @entity {
 
 type JuniorTrancheInfo @entity {
   id: ID!
-  tranchedPool: TranchedPool
+  tranchedPool: TranchedPool!
   lockedUntil: BigInt!
   principalDeposited: BigInt!
   principalSharePrice: BigInt!
@@ -95,10 +97,7 @@ type JuniorTrancheInfo @entity {
 }
 
 type TranchedPoolDeposit @entity {
-  """
-  tx hash
-  """
-  id: ID!
+  id: ID! # Set to transaction hash
   user: User!
   tranchedPool: TranchedPool!
   tranche: BigInt!
@@ -140,6 +139,9 @@ type CreditLine @entity {
   termEndTime: BigInt!
   lastFullPaymentTime: BigInt!
   termEndDate: BigInt!
+  # These fields are marked as nullable as they
+  # whether require information not yet available on the subgraph,
+  # or are not used on the pages we are integrating.
   periodDueAmount: BigInt
   interestAprDecimal: BigInt
   collectedPaymentBalance: BigInt
@@ -149,10 +151,6 @@ type CreditLine @entity {
 }
 
 type TranchedPool @entity {
-  """
-    Using reverse lookups to create virtual fields:
-    https://thegraph.com/docs/developer/create-subgraph-hosted#reverse-lookups
-  """
   id: ID!
   estimatedJuniorApy: BigInt!
   estimatedTotalAssets: BigInt!
@@ -161,7 +159,7 @@ type TranchedPool @entity {
   remainingJuniorCapacity: BigInt!
   creditLine: CreditLine!
   isPaused: Boolean!
-  state: PoolState! 
+  state: TranchedPoolState! 
   juniorFeePercent: BigInt!
   reserveFeePercent: BigInt!
   totalDeposited: BigInt!

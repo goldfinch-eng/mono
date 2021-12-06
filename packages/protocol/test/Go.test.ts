@@ -2,9 +2,10 @@
 import hre from "hardhat"
 import {constants as ethersConstants} from "ethers"
 import {asNonNullable} from "@goldfinch-eng/utils"
-import {deployAllContracts, getCurrentTimestamp, SECONDS_PER_DAY, ZERO_ADDRESS} from "./testHelpers"
+import {getCurrentTimestamp, SECONDS_PER_DAY, ZERO_ADDRESS} from "./testHelpers"
 import {
   getContract,
+  getTruffleContract,
   GO_LISTER_ROLE,
   OWNER_ROLE,
   PAUSER_ROLE,
@@ -21,6 +22,7 @@ import {mint} from "./uniqueIdentityHelpers"
 import {BN} from "ethereumjs-tx/node_modules/ethereumjs-util"
 import {DeployResult} from "hardhat-deploy/types"
 import {expectEvent} from "@openzeppelin/test-helpers"
+import {deployBaseFixture} from "./util/fixtures"
 const {deployments} = hre
 
 const setupTest = deployments.createFixture(async ({deployments}) => {
@@ -31,7 +33,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const anotherUser2 = asNonNullable(_anotherUser2)
   const uninitializedGoDeployer = asNonNullable(_anotherUser3)
 
-  const deployed = await deployAllContracts(deployments)
+  const deployed = await deployBaseFixture()
 
   const goldfinchConfig = deployed.goldfinchConfig
   const uniqueIdentity = deployed.uniqueIdentity
@@ -86,6 +88,38 @@ describe("Go", () => {
     await go.pause()
     expect(await go.paused()).to.equal(true)
   }
+
+  describe("setLegacyGoList", async () => {
+    const testAddress = "0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+
+    describe("when set with a valid GoldfinchConfig address", async () => {
+      let goldfinchConfigWithGoList: GoldfinchConfigInstance
+      beforeEach(async () => {
+        const newConfigDeployment = await deployments.deploy("GoldfinchConfig", {
+          from: owner,
+        })
+        goldfinchConfigWithGoList = await getTruffleContract<GoldfinchConfigInstance>("GoldfinchConfig", {
+          at: newConfigDeployment.address,
+        })
+
+        await goldfinchConfigWithGoList.initialize(owner)
+        await goldfinchConfigWithGoList.addToGoList(testAddress, {from: owner})
+        await go.setLegacyGoList(goldfinchConfigWithGoList.address)
+      })
+
+      it("it should use the other config for the go list", async () => {
+        expect(await go.go(testAddress)).to.be.true
+      })
+    })
+
+    describe("by default", async () => {
+      it("works correctly", async () => {
+        expect(await go.go(testAddress)).to.be.false
+        await goldfinchConfig.addToGoList(testAddress, {from: owner})
+        expect(await go.go(testAddress)).to.be.true
+      })
+    })
+  })
 
   describe("initialize", () => {
     it("rejects zero address owner", async () => {
