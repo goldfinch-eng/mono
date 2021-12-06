@@ -58,7 +58,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   await deployPoolTokens(deployer, {config})
   await deployTransferRestrictedVault(deployer, {config})
   const pool = await deployPool(deployer, {config})
-  await deployTranchedPool(deployer, {config})
+  await deployTranchedPool(deployer, {config, deployEffects})
   logger("Granting minter role to Pool")
   await grantMinterRoleToPool(fidu, pool)
   const creditDesk = await deployCreditDesk(deployer, {config})

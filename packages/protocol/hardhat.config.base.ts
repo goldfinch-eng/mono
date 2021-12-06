@@ -88,6 +88,10 @@ export default {
       1: "0xa083880F7a5df37Bf00a25380C3eB9AF9cD92D8f",
       4: "0xf3c9B38c155410456b5A98fD8bBf5E35B87F6d96",
     },
+    temp_multisig: {
+      1: "0x60d2be34bce277f5f5889adfd4991baefa17461c",
+      31337: "0x60d2be34bce277f5f5889adfd4991baefa17461c",
+    },
     test_merkle_distributor_recipient_a: {
       hardhat: TEST_MERKLE_DISTRIBUTOR_RECIPIENT_A,
     },

@@ -1,9 +1,12 @@
+import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/ethers"
 import {assertIsString} from "@goldfinch-eng/utils"
-import {CONFIG_KEYS} from "../configKeys"
-import {ContractDeployer, isTestEnv, updateConfig} from "../deployHelpers"
-import {DeployOpts} from "../types"
+import {ContractDeployer, isTestEnv} from "../deployHelpers"
+import {DeployEffects} from "../migrations/deployEffects"
 
-export async function deployTranchedPool(deployer: ContractDeployer, {config}: DeployOpts) {
+export async function deployTranchedPool(
+  deployer: ContractDeployer,
+  {config, deployEffects}: {config: GoldfinchConfig; deployEffects: DeployEffects}
+) {
   const logger = console.log
   const {gf_deployer} = await deployer.getNamedAccounts()
 
@@ -21,7 +24,9 @@ export async function deployTranchedPool(deployer: ContractDeployer, {config}: D
     libraries: {["TranchingLogic"]: tranchingLogic.address},
   })
   logger("Updating config...")
-  await updateConfig(config, "address", CONFIG_KEYS.TranchedPoolImplementation, tranchedPoolImpl.address, {logger})
-  logger("Updated TranchedPool config address to:", tranchedPoolImpl.address)
+  await deployEffects.add({
+    deferred: [await config.populateTransaction.setTranchedPoolImplementation(tranchedPoolImpl.address)],
+  })
+  logger("Updated TranchedPoolImplementation config address to:", tranchedPoolImpl.address)
   return tranchedPoolImpl
 }
