@@ -71,6 +71,7 @@ export const DetailLabel = styled.span`
 export const DetailValue = styled.span`
   color: ${({theme}) => theme.colors.purpDark};
   font-size: ${({theme}) => theme.typography.fontSize.sansSizeS};
+  line-height: 24px;
 `
 
 export const Column = styled.div`

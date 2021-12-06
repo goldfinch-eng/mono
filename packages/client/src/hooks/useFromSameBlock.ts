@@ -54,6 +54,19 @@ export function useFromSameBlock<
   ...deps: [T | undefined, U | undefined, V | undefined, W | undefined, X | undefined]
 ): [T, U, V, W, X] | undefined
 
+export function useFromSameBlock<
+  T extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
+  U extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
+  V extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
+  W extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
+  X extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
+  Y extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>
+>(
+  config: UseFromSameBlockConfig,
+  currentBlock: BlockInfo | undefined,
+  ...deps: [T | undefined, U | undefined, V | undefined, W | undefined, X | undefined, Y | undefined]
+): [T, U, V, W, X, Y] | undefined
+
 /**
  * Hook for ensuring that the loadable items provided to it are all loaded with
  * data from the same block. Note that this hook does not actually perform any

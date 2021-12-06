@@ -46,20 +46,34 @@ library CommunityRewardsVesting {
   }
 
   function totalVestedAt(Rewards storage rewards, uint256 time) internal view returns (uint256) {
-    uint256 start = rewards.startTime;
-    uint256 end = rewards.endTime;
-    uint256 granted = rewards.totalGranted;
+    return
+      getTotalVestedAt(
+        rewards.startTime,
+        rewards.endTime,
+        rewards.totalGranted,
+        rewards.cliffLength,
+        rewards.vestingInterval,
+        rewards.revokedAt,
+        time
+      );
+  }
 
-    if (time < start.add(rewards.cliffLength)) {
+  function getTotalVestedAt(
+    uint256 start,
+    uint256 end,
+    uint256 granted,
+    uint256 cliffLength,
+    uint256 vestingInterval,
+    uint256 revokedAt,
+    uint256 time
+  ) internal pure returns (uint256) {
+    if (time < start.add(cliffLength)) {
       return 0;
     }
 
     if (end <= start) {
       return granted;
     }
-
-    uint256 revokedAt = rewards.revokedAt;
-    uint256 vestingInterval = rewards.vestingInterval;
 
     uint256 elapsedVestingTimestamp = revokedAt > 0 ? Math.min(revokedAt, time) : time;
     uint256 elapsedVestingUnits = (elapsedVestingTimestamp.sub(start)).div(vestingInterval);

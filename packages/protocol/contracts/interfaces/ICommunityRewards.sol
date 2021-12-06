@@ -11,6 +11,16 @@ interface ICommunityRewards is IERC721 {
 
   function claimableRewards(uint256 tokenId) external view returns (uint256 rewards);
 
+  function totalVestedAt(
+    uint256 start,
+    uint256 end,
+    uint256 granted,
+    uint256 cliffLength,
+    uint256 vestingInterval,
+    uint256 revokedAt,
+    uint256 time
+  ) external pure returns (uint256 rewards);
+
   function grant(
     address recipient,
     uint256 amount,

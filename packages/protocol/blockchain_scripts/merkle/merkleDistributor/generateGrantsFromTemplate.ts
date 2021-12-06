@@ -10,11 +10,11 @@ dotenv.config({path: findEnvLocal()})
  * the blob can be saved to a file and used as the input to the `generateMerkleRoot` script.
  *
  * This script expects as input an array of "template" JsonAccountedGrant objects, whose account
- * will be replaced using the addresses read from the MERKLE_DISTRIBUTOR_GRANT_RECIPIENTS
+ * will be replaced using the addresses read from the MERKLE_GRANT_RECIPIENTS
  * environment variable, falling back to the address read from the TEST_USER environment variable.
  */
 
-export function generateGrantsDevFromTemplate(templateJson: unknown): JsonAccountedGrant[] {
+export function generateGrantsFromTemplate(templateJson: unknown): JsonAccountedGrant[] {
   if (!isArrayOfJsonAccountedGrant(templateJson)) {
     throw new Error("Invalid JSON.")
   }
@@ -22,7 +22,7 @@ export function generateGrantsDevFromTemplate(templateJson: unknown): JsonAccoun
     throw new Error("Grants array must not be empty.")
   }
 
-  const accounts = (process.env.MERKLE_DISTRIBUTOR_GRANT_RECIPIENTS || process.env.TEST_USER || "")
+  const accounts = (process.env.MERKLE_GRANT_RECIPIENTS || process.env.TEST_USER || "")
     .split(",")
     .filter((val) => !!val)
   if (!accounts.length) {
@@ -54,5 +54,5 @@ if (require.main === module) {
   const options = program.opts()
   const json = JSON.parse(fs.readFileSync(options.input, {encoding: "utf8"}))
 
-  console.log(JSON.stringify(generateGrantsDevFromTemplate(json), null, 2))
+  console.log(JSON.stringify(generateGrantsFromTemplate(json), null, 2))
 }
