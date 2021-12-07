@@ -38,9 +38,6 @@ import {
 import poolMetadata from "@goldfinch-eng/client/config/pool-metadata/mainnet.json"
 import {expectOwnerRole, expectProxyOwner, expectRoles} from "@goldfinch-eng/protocol/test/testHelpers"
 import {GoInstance, GoldfinchConfigInstance} from "@goldfinch-eng/protocol/typechain/truffle"
-import {OWNER_ROLE} from "dist/blockchain_scripts/deployHelpers"
-import {FunctionFragment} from "@ethersproject/abi"
-import {PopulatedTransaction} from "@ethersproject/contracts"
 
 const v22PerformMigration = deployments.createFixture(async ({deployments}) => {
   await deployments.fixture("base_deploy", {keepExistingDeployments: true})
