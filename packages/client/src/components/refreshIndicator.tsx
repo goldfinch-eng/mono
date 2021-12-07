@@ -6,7 +6,7 @@ import colors from "../styles/theme/colors"
 
 const styles = {
   box: {display: "flex"},
-  circular: {color: colors.blue},
+  circularProgress: {color: colors.blue},
 }
 
 interface RefreshIndicatorProps {
@@ -21,7 +21,7 @@ function RefreshIndicator(props: RefreshIndicatorProps) {
     <div className="refresh-indicator">
       {isRefreshing ? (
         <Box sx={styles.box}>
-          <CircularProgress size="26px" sx={styles.circular} />
+          <CircularProgress size="26px" sx={styles.circularProgress} />
         </Box>
       ) : undefined}
     </div>
