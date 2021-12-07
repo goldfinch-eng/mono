@@ -25,7 +25,7 @@ export function displayNumber(val: number | string | BigNumber | undefined, deci
   const valFloat = BigNumber.isBigNumber(val) ? parseFloat(val.toString(10)) : isNumber(val) ? val : parseFloat(val)
   if (!decimals && Math.floor(valFloat) === valFloat) {
     decimals = 0
-  } else if (!decimals) {
+  } else if (decimals === undefined) {
     decimals = valFloat.toString().split(".")[1]?.length || 0
   }
 
