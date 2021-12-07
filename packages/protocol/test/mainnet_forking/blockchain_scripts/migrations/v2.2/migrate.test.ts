@@ -20,6 +20,8 @@ import {GoldfinchConfig, GoldfinchFactory, TranchedPool} from "@goldfinch-eng/pr
 import poolMetadata from "@goldfinch-eng/client/config/pool-metadata/mainnet.json"
 import {expectProxyOwner, expectRoles} from "@goldfinch-eng/protocol/test/testHelpers"
 import {GoInstance, GoldfinchConfigInstance} from "@goldfinch-eng/protocol/typechain/truffle"
+import {StakingRewardsInstance} from "@goldfinch-eng/protocol/typechain/truffle"
+import {STAKING_REWARDS_PARAMS} from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.2/deploy"
 
 const v22PerformMigration = deployments.createFixture(async ({deployments}) => {
   await deployments.fixture("base_deploy", {keepExistingDeployments: true})
@@ -37,6 +39,8 @@ describe("V2.2 & v2.3 migration", async function () {
   let newConfigDeployment: Deployment
   let newConfig: GoldfinchConfigInstance
   let existingContracts
+  let oldConfigDeployment: Deployment
+  let stakingRewards: StakingRewardsInstance
 
   before(async () => {
     const {gf_deployer} = await getNamedAccounts()
@@ -57,6 +61,7 @@ describe("V2.2 & v2.3 migration", async function () {
     newConfig = await getTruffleContract<GoldfinchConfigInstance>("GoldfinchConfig", {
       at: newConfigDeployment.address,
     })
+    stakingRewards = await getTruffleContract<StakingRewardsInstance>("StakingRewards")
   })
 
   expectProxyOwner({
@@ -88,6 +93,15 @@ describe("V2.2 & v2.3 migration", async function () {
             expect(await oldConfig.getAddress(v), k).to.eq(await newConfig.getAddress(v))
           }
         }
+      })
+
+      context("StakingRewards", async () => {
+        it("has expected parameters set", async () => {
+          expect(await stakingRewards.minRate()).to.be.bignumber.eq(STAKING_REWARDS_PARAMS.minRate)
+          expect(await stakingRewards.maxRate()).to.be.bignumber.eq(STAKING_REWARDS_PARAMS.maxRate)
+          expect(await stakingRewards.minRateAtPercent()).to.be.bignumber.eq(STAKING_REWARDS_PARAMS.minRateAtPercent)
+          expect(await stakingRewards.maxRateAtPercent()).to.be.bignumber.eq(STAKING_REWARDS_PARAMS.maxRateAtPercent)
+        })
       })
 
       it("has GFI address set", async () => {
