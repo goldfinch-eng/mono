@@ -136,7 +136,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   assertIsString(temp_multisig)
   await fundWithWhales(["ETH"], [temp_multisig])
   await gfi.grantRole(await gfi.MINTER_ROLE(), protocolOwner, {from: temp_multisig})
-  await gfi.mint(protocolOwner, bigVal(100_000_000), {from: protocolOwner})
+  await gfi.mint(protocolOwner, bigVal(999_999), {from: protocolOwner})
 
   return {
     seniorPool,
