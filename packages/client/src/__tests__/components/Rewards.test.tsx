@@ -62,8 +62,13 @@ function renderRewards(
   refreshCurrentBlock?: () => Promise<void>,
   networkMonitor?: NetworkMonitor
 ) {
+  const setLeafCurrentBlock = (currentBlock: BlockInfo) => {
+    // pass
+  }
   const store = {
     currentBlock,
+    refreshCurrentBlock,
+    setLeafCurrentBlock,
     network,
     stakingRewards,
     gfi,
@@ -71,7 +76,6 @@ function renderRewards(
     merkleDistributor,
     merkleDirectDistributor,
     communityRewards,
-    refreshCurrentBlock,
     networkMonitor,
   }
 
