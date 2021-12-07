@@ -88,8 +88,7 @@ export interface GlobalState {
   // setter should be called with that new current block. What is meant by "last"? It's the data
   // dependency that can be thought of being the closest to a leaf node of the component tree. The
   // point is that once it's done refreshing, we know that nothing else remains to be refreshed. In
-  // practice, this means we probably want to call `setLeafCurrentBlock()` once per application
-  // route in which the user can take some state-changing action.
+  // practice, this means we probably want to call `setLeafCurrentBlock()` once per application route.
   setLeafCurrentBlock?: (leafCurrentBlock: BlockInfo) => void
 
   gfi?: GFILoaded
