@@ -1,5 +1,9 @@
-import {getNamedAccounts, deployments, getChainId} from "hardhat"
-import {fundWithWhales, getAllExistingContracts} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
+import hre, {getNamedAccounts, deployments, getChainId, ethers} from "hardhat"
+import {
+  fundWithWhales,
+  getAllExistingContracts,
+  impersonateAccount,
+} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
 import {assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
 import * as migrate22 from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.2/migrate"
 import * as migrate23 from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.3/migrate"
@@ -11,16 +15,32 @@ import {
   getTruffleContract,
   isMainnetForking,
   MAINNET_CHAIN_ID,
+  ZERO_ADDRESS,
 } from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
 import {Awaited} from "@goldfinch-eng/protocol/blockchain_scripts/types"
 import {TEST_TIMEOUT} from "../../../MainnetForking.test"
 import {Deployment} from "hardhat-deploy/types"
 import {CONFIG_KEYS, CONFIG_KEYS_BY_TYPE} from "@goldfinch-eng/protocol/blockchain_scripts/configKeys"
-import {GoldfinchConfig, GoldfinchFactory, TranchedPool} from "@goldfinch-eng/protocol/typechain/ethers"
+import {
+  CommunityRewards,
+  DynamicLeverageRatioStrategy,
+  Go,
+  GoldfinchConfig,
+  GoldfinchFactory,
+  MerkleDirectDistributor,
+  PoolTokens,
+  SeniorPool,
+  StakingRewards,
+  TestBackerRewards,
+  TranchedPool,
+  UniqueIdentity,
+} from "@goldfinch-eng/protocol/typechain/ethers"
 import poolMetadata from "@goldfinch-eng/client/config/pool-metadata/mainnet.json"
 import {expectOwnerRole, expectProxyOwner, expectRoles} from "@goldfinch-eng/protocol/test/testHelpers"
 import {GoInstance, GoldfinchConfigInstance} from "@goldfinch-eng/protocol/typechain/truffle"
 import {OWNER_ROLE} from "dist/blockchain_scripts/deployHelpers"
+import {FunctionFragment} from "@ethersproject/abi"
+import {PopulatedTransaction} from "@ethersproject/contracts"
 
 const v22PerformMigration = deployments.createFixture(async ({deployments}) => {
   await deployments.fixture("base_deploy", {keepExistingDeployments: true})
@@ -170,6 +190,34 @@ describe("V2.2 & v2.3 migration", async function () {
         await expect(deployments.get("DynamicLeverageRatioStrategy")).to.not.be.rejected
       })
     })
+
+    context("initialization", async () => {
+      it("initializes all contracts", async () => {
+        await impersonateAccount(hre, await getProtocolOwner())
+        await fundWithWhales(["ETH"], [await getProtocolOwner()])
+        await expect(
+          (await getEthersContract<StakingRewards>("StakingRewards")).__initialize__(ZERO_ADDRESS, ZERO_ADDRESS)
+        ).to.be.rejectedWith(/initialized/)
+        await expect(
+          (
+            await getEthersContract<CommunityRewards>("CommunityRewards")
+          ).__initialize__(ZERO_ADDRESS, ZERO_ADDRESS, "12345")
+        ).to.be.rejectedWith(/initialized/)
+        await expect(
+          (await getEthersContract<GoldfinchConfig>("GoldfinchConfig")).initialize(ZERO_ADDRESS)
+        ).to.be.rejectedWith(/initialized/)
+        await expect(
+          (
+            await getEthersContract<MerkleDirectDistributor>("MerkleDirectDistributor")
+          ).initialize(ZERO_ADDRESS, ZERO_ADDRESS, web3.utils.keccak256("test"))
+        ).to.be.rejectedWith(/initialized/)
+        await expect(
+          (
+            await getEthersContract<DynamicLeverageRatioStrategy>("DynamicLeverageRatioStrategy")
+          ).initialize(ZERO_ADDRESS)
+        ).to.be.rejectedWith(/initialized/)
+      })
+    })
   })
 
   describe("v2.3 migration", () => {
@@ -205,6 +253,32 @@ describe("V2.2 & v2.3 migration", async function () {
       expectOwnerRole({
         toBe: () => getProtocolOwner(),
         forContracts: ["PoolTokens", "SeniorPool", "UniqueIdentity", "Go", "GoldfinchFactory", "TestBackerRewards"],
+      })
+
+      context("initialization", async () => {
+        it("initializes all contracts", async () => {
+          await impersonateAccount(hre, await getProtocolOwner())
+          await fundWithWhales(["ETH"], [await getProtocolOwner()])
+
+          await expect(
+            (await getEthersContract<PoolTokens>("PoolTokens")).__initialize__(ZERO_ADDRESS, ZERO_ADDRESS)
+          ).to.be.rejectedWith(/initialized/)
+          await expect(
+            (await getEthersContract<SeniorPool>("SeniorPool")).initialize(ZERO_ADDRESS, ZERO_ADDRESS)
+          ).to.be.rejectedWith(/initialized/)
+          await expect(
+            (await getEthersContract<UniqueIdentity>("UniqueIdentity")).initialize(ZERO_ADDRESS, "http://example.com")
+          ).to.be.rejectedWith(/initialized/)
+          await expect(
+            (await getEthersContract<Go>("Go")).initialize(ZERO_ADDRESS, ZERO_ADDRESS, ZERO_ADDRESS)
+          ).to.be.rejectedWith(/initialized/)
+          await expect(
+            (await getEthersContract<GoldfinchFactory>("GoldfinchFactory")).initialize(ZERO_ADDRESS, ZERO_ADDRESS)
+          ).to.be.rejectedWith(/initialized/)
+          await expect(
+            (await getEthersContract<TestBackerRewards>("TestBackerRewards")).__initialize__(ZERO_ADDRESS, ZERO_ADDRESS)
+          ).to.be.rejectedWith(/initialized/)
+        })
       })
 
       it("upgrades new contracts", async () => {
