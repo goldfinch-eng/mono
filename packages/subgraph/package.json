@@ -3,8 +3,6 @@
   "scripts": {
     "codegen": "graph codegen",
     "build": "graph codegen",
-    "kill-containers": "docker kill $(docker ps -qa) 2>/dev/null || true",
-    "start": "npm run kill-containers && bash start-local.sh",
     "deploy": "graph build && graph deploy --node https://api.studio.thegraph.com/deploy/ goldfinch-subgraph",
     "create-local": "graph create --node http://localhost:8020/ goldfinch-subgraph",
     "remove-local": "graph remove --node http://localhost:8020/ goldfinch-subgraph",

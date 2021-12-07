@@ -23,11 +23,6 @@ export function displayNumber(val: number | string | BigNumber | undefined, deci
   }
 
   const valFloat = BigNumber.isBigNumber(val) ? parseFloat(val.toString(10)) : isNumber(val) ? val : parseFloat(val)
-  if (!decimals && Math.floor(valFloat) === valFloat) {
-    decimals = 0
-  } else if (decimals === undefined) {
-    decimals = valFloat.toString().split(".")[1]?.length || 0
-  }
 
   if (decimals === 2 && valFloat < 0.01 && valFloat > 0) {
     return "<0.01"

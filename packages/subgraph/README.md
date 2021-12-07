@@ -69,9 +69,9 @@ In practical terms, logs should be added to monitor the progress of the applicat
 
 ## Local run
 - Make sure you have docker and docker-compose installed
-- Start the frontend with `npm run start` to start the hardhat node and create a local subgraph node.
-  - It will also execute `npm run kill-containers` to kill all containers and prevent connection issues.
-  - To see how the local graph node is created, check `./start-local.sh` or `reset-start-local.sh`.
+- Start the frontend with npm run start to start the hardhat node
+- On another terminal, clone the subgraph and go to the subgraph folder
+- Run: `./start-local.sh` or `./reset-start-local.sh`
   - If you are on linux, the Graph Node Docker Compose setup uses host.docker.internal as the alias for the host machine. On Linux, this is not supported yet. The detault script already replaces the host name with the host IP address. If you have issues, run `ifconfig -a` and get the address of the docker0
 - The indexing of the subgraph should start immediately.
 - Urls available are:
@@ -87,11 +87,3 @@ In practical terms, logs should be added to monitor the progress of the applicat
 - [Subgraph Monitor](https://github.com/gnosis/thegraph-subgraphs-monitor)
 - [Subgraph Toolkit](https://github.com/protofire/subgraph-toolkit)
 - [Create Subgraph](https://thegraph.com/docs/developer/create-subgraph-hosted)
-
-
-## Troubleshooting
-- To see any additional logs for the local subgraph deploy, run:
-  - ```docker ps``` to find the address for the graph node container.
-  - ```docker logs <CONTAINER ADDRESS>```
-- `Received invalid block tag`
-  - If you get this error try deleting everything under `packages/data` and starting again.
