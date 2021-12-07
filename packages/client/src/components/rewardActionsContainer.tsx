@@ -294,10 +294,11 @@ function RewardsListItem(props: RewardsListItemProps) {
                 <div className="detail-container">
                   <span className="detail-label">
                     {
-                      // NOTE: Consistently with our approach in the rewards summary, we describe
-                      // the value to the user here as what's vested, though the value we use is what's
-                      // claimable. What's claimable is the relevant piece of information that informs
-                      // their understanding of whether they should be able to take any action with the button.
+                      // NOTE: Consistently with our approach in the rewards summary and rewards list item
+                      // column labels, we describe the value to the user here as what's vested, though the
+                      // value we use is what's claimable. What's claimable is the relevant piece of information
+                      // that informs their understanding of whether they should be able to take any action
+                      // with the list item button.
                       "Vested GFI"
                     }
                   </span>

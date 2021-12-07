@@ -352,7 +352,16 @@ function Rewards() {
           {!isTabletOrMobile && (
             <>
               <div className="table-cell col20 numeric balance break-granted-column">Granted GFI</div>
-              <div className="table-cell col20 numeric limit break-claimable-column">Claimable GFI</div>
+              <div className="table-cell col20 numeric limit break-claimable-column">
+                {
+                  // NOTE: Consistently with our approach in the rewards summary and rewards list item
+                  // details, we describe the value to the user here as what's vested, though the value
+                  // we use is what's claimable. What's claimable is the relevant piece of information
+                  // that informs their understanding of whether they should be able to take any action
+                  // with the list item button.
+                  "Vested GFI"
+                }
+              </div>
             </>
           )}
         </div>
