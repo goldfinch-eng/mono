@@ -140,7 +140,7 @@ type CreditLine @entity {
   lastFullPaymentTime: BigInt!
   termEndDate: BigInt!
   # These fields are marked as nullable as they
-  # whether require information not yet available on the subgraph,
+  # either require information not yet available on the subgraph,
   # or are not used on the pages we are integrating.
   periodDueAmount: BigInt
   interestAprDecimal: BigInt
@@ -159,7 +159,7 @@ type TranchedPool @entity {
   remainingJuniorCapacity: BigInt!
   creditLine: CreditLine!
   isPaused: Boolean!
-  state: TranchedPoolState! 
+  state: TranchedPoolState!
   juniorFeePercent: BigInt!
   reserveFeePercent: BigInt!
   totalDeposited: BigInt!
