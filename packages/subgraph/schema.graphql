@@ -164,9 +164,9 @@ type TranchedPool @entity {
   reserveFeePercent: BigInt!
   totalDeposited: BigInt!
   estimatedSeniorPoolContribution: BigInt!
-  deposits: [TranchedPoolDeposit!] @derivedFrom(field: "tranchedPool")
-  backers: [PoolBacker!] @derivedFrom(field: "tranchedPool")
-  tokens: [TranchedPoolToken!] @derivedFrom(field: "tranchedPool")
+  deposits: [TranchedPoolDeposit!]! @derivedFrom(field: "tranchedPool")
+  backers: [PoolBacker!]! @derivedFrom(field: "tranchedPool")
+  tokens: [TranchedPoolToken!]! @derivedFrom(field: "tranchedPool")
   seniorTranches: [SeniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
   juniorTranches: [JuniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
 }
