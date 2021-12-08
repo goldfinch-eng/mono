@@ -29,6 +29,7 @@ import {GoldfinchConfig} from "../../typechain/ethers"
 import {DeploymentsExtension} from "hardhat-deploy/types"
 import {Contract, BaseContract, Signer} from "ethers"
 import {
+  asNonNullable,
   AssertionError,
   assertIsString,
   assertNonNullable,
@@ -418,6 +419,11 @@ async function getExistingAddress(contractName: string): Promise<string> {
   }
   assertIsString(existingAddress)
   return existingAddress
+}
+
+export async function getTempMultisig(): Promise<string> {
+  const {temp_multisig} = await hre.getNamedAccounts()
+  return asNonNullable(temp_multisig)
 }
 
 async function getProtocolOwner(): Promise<string> {

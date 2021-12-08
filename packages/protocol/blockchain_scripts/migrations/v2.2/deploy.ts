@@ -4,12 +4,17 @@ import {
   ETHDecimals,
   getEthersContract,
   getProtocolOwner,
+  getTempMultisig,
   getTruffleContract,
+  isMainnet,
+  MINTER_ROLE,
+  OWNER_ROLE,
+  PAUSER_ROLE,
 } from "../../deployHelpers"
 import hre, {deployments} from "hardhat"
 import {DeployEffects, Effects} from "../deployEffects"
-import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
-import {GoldfinchConfig, TranchedPool} from "@goldfinch-eng/protocol/typechain/ethers"
+import {asNonNullable} from "@goldfinch-eng/utils"
+import {CommunityRewards, GFI, GoldfinchConfig, TranchedPool} from "@goldfinch-eng/protocol/typechain/ethers"
 import {GFIInstance} from "@goldfinch-eng/protocol/typechain/truffle"
 import {CONFIG_KEYS, CONFIG_KEYS_BY_TYPE} from "../../configKeys"
 import poolMetadata from "@goldfinch-eng/client/config/pool-metadata/mainnet.json"
@@ -26,8 +31,9 @@ import {deployMerkleDirectDistributor} from "../../baseDeploy/deployMerkleDirect
 import {deployMerkleDistributor} from "../../baseDeploy/deployMerkleDistributor"
 import BN from "bn.js"
 import {bigVal} from "@goldfinch-eng/protocol/test/testHelpers"
+import {gfiTotalSupply} from "../../../blockchain_scripts/airdrop/community/calculation"
+import BigNumber from "bignumber.js"
 
-// https://docs.google.com/spreadsheets/d/1GL42WwB4EUFvzVXv05R3kNp8YpCZG_zoHXHZg55nfdo/edit?usp=sharing
 export const STAKING_REWARDS_PARAMS = {
   targetCapacity: bigVal(100_000_000),
   minRate: new BN("0"),
@@ -75,6 +81,7 @@ async function updateGoldfinchConfigs({
 
 export async function deploy(
   deployEffects: DeployEffects,
+  anonDeployEffects: DeployEffects,
   {
     noVestingGrants,
     vestingGrants,
@@ -151,14 +158,14 @@ export async function deploy(
     merkleDirectDistributorInfoPath: path.join(__dirname, "./noVestingMerkleInfo.json"),
   })
 
-  // 3.
-  // TODO: Mint GFI, distribute to contracts / EOAs, set reward parameters
+  // 3. Deploy GFI and set staking rewards parameters
+  const gfiEthersContract = await getEthersContract<GFI>("GFI")
   // 3.1 set goldfinch config address for GFI
   await deployEffects.add({
     deferred: [await config.populateTransaction.setAddress(CONFIG_KEYS.GFI, gfi.contract.address)],
   })
 
-  // 3.x (TODO: number this after gfi config set)
+  // 3.2 Set staking rewards parameters
   console.log(`creating transaction for setting staking rewards params`)
   console.log(` targetCapacity   = ${STAKING_REWARDS_PARAMS.targetCapacity}`)
   console.log(` minRate          = ${STAKING_REWARDS_PARAMS.minRate}`)
@@ -175,6 +182,124 @@ export async function deploy(
         STAKING_REWARDS_PARAMS.minRateAtPercent.toString(),
         STAKING_REWARDS_PARAMS.maxRateAtPercent.toString()
       ),
+    ],
+  })
+
+  const tempMultisig = await getTempMultisig()
+
+  console.log(`Using address "${tempMultisig}" as current GFI owner`)
+  console.log("Beginning transfer of GFI to Goldfinch Governance")
+  console.log(" creating transactions to grant permissions to the multisig")
+  // 3.3 transfer ownership from anon to multisig
+  await anonDeployEffects.add({
+    deferred: [
+      await gfiEthersContract.populateTransaction.grantRole(OWNER_ROLE, await getProtocolOwner()),
+      await gfiEthersContract.populateTransaction.grantRole(MINTER_ROLE, await getProtocolOwner()),
+      await gfiEthersContract.populateTransaction.grantRole(PAUSER_ROLE, await getProtocolOwner()),
+    ],
+  })
+
+  // 3.4 revoke ownership from anon
+  console.log(" creating transactions to revoke permissions from the temp multisig")
+  await deployEffects.add({
+    deferred: [
+      await gfiEthersContract.populateTransaction.revokeRole(OWNER_ROLE, tempMultisig),
+      await gfiEthersContract.populateTransaction.revokeRole(MINTER_ROLE, tempMultisig),
+      await gfiEthersContract.populateTransaction.revokeRole(PAUSER_ROLE, tempMultisig),
+    ],
+  })
+
+  // 3.5 increase cap of GFI
+  await deployEffects.add({
+    deferred: [await gfiEthersContract.populateTransaction.setCap(gfiTotalSupply.toString())],
+  })
+
+  if (await isMainnet()) {
+    throw new Error("This script should not be run on mainnet!")
+  }
+  const goldfinchCoinbaseCustodyAddress = "0x483e2BaF7F4e0Ac7D90c2C3Efc13c3AF5050F3c2" // TODO(will): find actual address
+
+  const getPercentOfGfi = (percent) => {
+    return new BigNumber(gfiTotalSupply.toString()).multipliedBy(percent).toPrecision()
+  }
+
+  // Some GFI has already been minted, so we need to account for it
+  const existingSupply = await gfi.contract.totalSupply()
+
+  const gfiAllocationsByAddress = {
+    [goldfinchCoinbaseCustodyAddress]: new BN(getPercentOfGfi("0.4704"))
+      // v- this portion is unallocated
+      .add(new BN("4125714275400000000000000"))
+      .sub(existingSupply)
+      .toString(),
+    [communityRewards.contract.address]: getPercentOfGfi("0.1118").toString(),
+    [asNonNullable(merkleDirectDistributor).contract.address]: getPercentOfGfi("0.0373").toString(),
+    [protocolOwner]: getPercentOfGfi("0.2444").toString(),
+    [lpStakingRewards.address]: getPercentOfGfi("0.1").toString(), // 10%
+  }
+
+  console.log("Created transactions for minting GFI")
+  for (const [address, amount] of Object.entries(gfiAllocationsByAddress)) {
+    console.log(` minting ${amount} GFI to ${address}`)
+  }
+
+  const totalAllocation = Object.values(gfiAllocationsByAddress).reduce((acc, x) => acc.add(new BN(x)), new BN(0))
+  const expectedAllocation = gfiTotalSupply.sub(existingSupply)
+  if (!totalAllocation.eq(expectedAllocation)) {
+    throw new Error(
+      `All of GFI has not been allocated! expected ${expectedAllocation.toString()} ; found ${totalAllocation.toString()}`
+    )
+  }
+
+  console.log(`Amount of GFI allocated: ${totalAllocation}`)
+
+  const communityRewardsEthersContract = await getEthersContract<CommunityRewards>("CommunityRewards", {
+    at: (await deployments.get("CommunityRewards")).address,
+  })
+
+  console.log(`creating transaction to set GFI cap to ${gfiTotalSupply.toString()}`)
+  await deployEffects.add({
+    deferred: [await gfiEthersContract.populateTransaction.setCap(gfiTotalSupply.toString())],
+  })
+
+  console.log("creating transactions for minting GFI")
+  await deployEffects.add({
+    deferred: [
+      await gfiEthersContract.populateTransaction.mint(
+        goldfinchCoinbaseCustodyAddress,
+        gfiAllocationsByAddress[goldfinchCoinbaseCustodyAddress] as string
+      ),
+      // // BEGIN LOADING COMMUNITY REWARDS
+      await gfiEthersContract.populateTransaction.mint(
+        protocolOwner,
+        gfiAllocationsByAddress[communityRewardsEthersContract.address] as string
+      ),
+      await gfiEthersContract.populateTransaction.approve(
+        communityRewardsEthersContract.address,
+        gfiAllocationsByAddress[communityRewardsEthersContract.address] as string
+      ),
+      await communityRewardsEthersContract.populateTransaction.loadRewards(
+        gfiAllocationsByAddress[communityRewardsEthersContract.address] as string
+      ),
+      // // END LOADING COMMUNITY REWARDS
+      await gfiEthersContract.populateTransaction.mint(
+        merkleDirectDistributor?.contract.address as string,
+        gfiAllocationsByAddress[merkleDirectDistributor?.contract.address as string] as string
+      ),
+      await gfiEthersContract.populateTransaction.mint(protocolOwner, gfiAllocationsByAddress[protocolOwner] as string),
+      // BEGIN LOADING LPSTAKING REWARDS
+      await gfiEthersContract.populateTransaction.mint(
+        protocolOwner,
+        gfiAllocationsByAddress[lpStakingRewards.address] as string
+      ),
+      await gfiEthersContract.populateTransaction.approve(
+        lpStakingRewards.address,
+        gfiAllocationsByAddress[lpStakingRewards.address] as string
+      ),
+      await lpStakingRewards.populateTransaction.loadRewards(
+        gfiAllocationsByAddress[lpStakingRewards.address] as string
+      ),
+      // END LOADING LPSTAKING REWARDS
     ],
   })
 
