@@ -70,6 +70,7 @@ import {
   NotAcceptedMerkleDirectDistributorGrant,
 } from "../types/merkleDirectDistributor"
 import {MerkleDistributorLoaded} from "./merkleDistributor"
+import {checkSameBlock} from "./currentBlock"
 
 export const UNLOCK_THRESHOLD = new BigNumber(10000)
 
@@ -131,12 +132,7 @@ class UserStakingRewards {
     stakedEvents: WithCurrentBlock<{value: KnownEventData<typeof STAKED_EVENT>[]}>,
     currentBlock: BlockInfo
   ): Promise<void> {
-    if (stakingRewards.info.value.currentBlock.number !== currentBlock.number) {
-      throw new Error("`stakingRewards` is based on a different block number from `currentBlock`.")
-    }
-    if (stakedEvents.currentBlock.number !== currentBlock.number) {
-      throw new Error("`stakedEvents` is based on a different block number from `currentBlock`.")
-    }
+    checkSameBlock(currentBlock, stakingRewards.info.value.currentBlock, stakedEvents.currentBlock)
     // NOTE: In defining `positions`, we want to use `balanceOf()` plus `tokenOfOwnerByIndex()`
     // to determine `tokenIds`, rather than using the set of Staked events for the `recipient`.
     // The former approach reflects any token transfers that may have occurred to or from the
@@ -316,15 +312,12 @@ class UserCommunityRewards {
     userMerkleDistributor: UserMerkleDistributorLoaded,
     currentBlock: BlockInfo
   ): Promise<void> {
-    if (communityRewards.info.value.currentBlock.number !== currentBlock.number) {
-      throw new Error("`communityRewards` is based on a different block number from `currentBlock`.")
-    }
-    if (merkleDistributor.info.value.currentBlock.number !== currentBlock.number) {
-      throw new Error("`merkleDistributor` is based on a different block number from `currentBlock`.")
-    }
-    if (userMerkleDistributor.info.value.currentBlock.number !== currentBlock.number) {
-      throw new Error("`userMerkleDistributor` is based on a different block number from `currentBlock`.")
-    }
+    checkSameBlock(
+      currentBlock,
+      communityRewards.info.value.currentBlock,
+      merkleDistributor.info.value.currentBlock,
+      userMerkleDistributor.info.value.currentBlock
+    )
 
     // NOTE: In defining `grants`, we want to use `balanceOf()` plus `tokenOfOwnerByIndex`
     // to determine `tokenIds`, rather than using the set of Granted events for the `recipient`.
@@ -492,12 +485,7 @@ export class UserMerkleDistributor {
     communityRewards: CommunityRewardsLoaded,
     currentBlock: BlockInfo
   ): Promise<void> {
-    if (merkleDistributor.info.value.currentBlock.number !== currentBlock.number) {
-      throw new Error("`merkleDistributor` is based on a different block number from `currentBlock`.")
-    }
-    if (communityRewards.info.value.currentBlock.number !== currentBlock.number) {
-      throw new Error("`communityRewards` is based on a different block number from `currentBlock`.")
-    }
+    checkSameBlock(currentBlock, merkleDistributor.info.value.currentBlock, communityRewards.info.value.currentBlock)
 
     const airdropsForRecipient = UserMerkleDistributor.getAirdropsForRecipient(
       merkleDistributor.info.value.merkleDistributorInfo.grants,
@@ -628,9 +616,7 @@ export class UserMerkleDirectDistributor {
     merkleDirectDistributor: MerkleDirectDistributorLoaded,
     currentBlock: BlockInfo
   ): Promise<void> {
-    if (merkleDirectDistributor.info.value.currentBlock.number !== currentBlock.number) {
-      throw new Error("`merkleDirectDistributor` is based on a different block number from `currentBlock`.")
-    }
+    checkSameBlock(currentBlock, merkleDirectDistributor.info.value.currentBlock)
 
     const airdropsForRecipient = UserMerkleDirectDistributor.getAirdropsForRecipient(
       merkleDirectDistributor.info.value.merkleDirectDistributorInfo.grants,
@@ -809,24 +795,15 @@ export class User {
     merkleDirectDistributor: MerkleDirectDistributorLoaded,
     currentBlock: BlockInfo
   ) {
-    if (pool.info.value.currentBlock.number !== currentBlock.number) {
-      throw new Error("`pool` is based on a different block number from `currentBlock`.")
-    }
-    if (pool.info.value.currentBlock.number !== stakingRewards.info.value.currentBlock.number) {
-      throw new Error("`pool` and `stakingRewards` are based on different block numbers.")
-    }
-    if (pool.info.value.currentBlock.number !== gfi.info.value.currentBlock.number) {
-      throw new Error("`pool` and `gfi` are based on different block numbers.")
-    }
-    if (pool.info.value.currentBlock.number !== communityRewards.info.value.currentBlock.number) {
-      throw new Error("`pool` and `communityRewards` are based on different block numbers.")
-    }
-    if (pool.info.value.currentBlock.number !== merkleDistributor.info.value.currentBlock.number) {
-      throw new Error("`pool` and `merkleDistributor` are based on different block numbers.")
-    }
-    if (pool.info.value.currentBlock.number !== merkleDirectDistributor.info.value.currentBlock.number) {
-      throw new Error("`pool` and `merkleDirectDistributor` are based on different block numbers.")
-    }
+    checkSameBlock(
+      currentBlock,
+      pool.info.value.currentBlock,
+      stakingRewards.info.value.currentBlock,
+      gfi.info.value.currentBlock,
+      communityRewards.info.value.currentBlock,
+      merkleDistributor.info.value.currentBlock,
+      merkleDirectDistributor.info.value.currentBlock
+    )
 
     const usdc = this.goldfinchProtocol.getERC20(Tickers.USDC)
 
