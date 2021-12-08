@@ -371,7 +371,7 @@ class UserCommunityRewards {
                   (airdrop) => parseInt(grantAcceptedEvent.returnValues.index, 10) === airdrop.grantInfo.index
                 )
                 if (airdrop) {
-                  return airdrop.grantInfo.reason
+                  return airdrop.grantInfo
                 } else {
                   throw new Error(
                     `Failed to identify airdrop corresponding to GrantAccepted event ${tokenId}, among user's accepted airdrops.`
@@ -394,14 +394,14 @@ class UserCommunityRewards {
           ),
         ])
       )
-      .then(([tokenIds, rawGrants, claimables, reasons]) =>
+      .then(([tokenIds, rawGrants, claimables, grantInfos]) =>
         tokenIds.map((tokenId, i): CommunityRewardsGrant => {
           const rawGrant = rawGrants[i]
           assertNonNullable(rawGrant)
           const claimable = claimables[i]
           assertNonNullable(claimable)
-          const reason = reasons[i]
-          return UserCommunityRewards.parseCommunityRewardsGrant(tokenId, new BigNumber(claimable), rawGrant, reason)
+          const grantInfo = grantInfos[i]
+          return UserCommunityRewards.parseCommunityRewardsGrant(tokenId, new BigNumber(claimable), rawGrant, grantInfo)
         })
       )
 
@@ -445,7 +445,7 @@ class UserCommunityRewards {
       5: string
       6: string
     },
-    reason: GrantReason | undefined
+    grantInfo: MerkleDistributorGrantInfo | undefined
   ): CommunityRewardsGrant {
     return new CommunityRewardsGrant(
       tokenId,
@@ -459,7 +459,7 @@ class UserCommunityRewards {
         vestingInterval: new BigNumber(tuple[5]),
         revokedAt: parseInt(tuple[6], 10),
       },
-      reason
+      grantInfo
     )
   }
 }

@@ -2,7 +2,10 @@ import {
   DirectGrantReason,
   MerkleDirectDistributorInfo,
 } from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/types"
-import {GrantReason} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
+import {
+  GrantReason,
+  MerkleDistributorGrantInfo,
+} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
 import {CommunityRewards as CommunityRewardsContract} from "@goldfinch-eng/protocol/typechain/web3/CommunityRewards"
 import {MerkleDirectDistributor as MerkleDirectDistributorContract} from "@goldfinch-eng/protocol/typechain/web3/MerkleDirectDistributor"
 import BigNumber from "bignumber.js"
@@ -30,26 +33,26 @@ export class CommunityRewardsGrant {
   tokenId: string
   claimable: BigNumber
   rewards: CommunityRewardsVestingRewards
-  reason: GrantReason | undefined
+  grantInfo: MerkleDistributorGrantInfo | undefined
 
   constructor(
     tokenId: string,
     claimable: BigNumber,
     rewards: CommunityRewardsVestingRewards,
-    reason: GrantReason | undefined
+    grantInfo: MerkleDistributorGrantInfo | undefined
   ) {
     this.tokenId = tokenId
     this.rewards = rewards
     this.claimable = claimable
-    this.reason = reason
+    this.grantInfo = grantInfo
   }
 
   get displayReason(): string {
-    return this.reason ? MerkleDistributor.getDisplayReason(this.reason) : "in Community Rewards"
+    return this.grantInfo ? MerkleDistributor.getDisplayReason(this.grantInfo.reason) : "in Community Rewards"
   }
 
   get title(): string {
-    return this.reason ? MerkleDistributor.getDisplayTitle(this.reason) : "Community Rewards"
+    return this.grantInfo ? MerkleDistributor.getDisplayTitle(this.grantInfo.reason) : "Community Rewards"
   }
 
   get description(): string {

@@ -32,6 +32,7 @@ import TransactionForm from "./transactionForm"
 import {NotAcceptedMerkleDistributorGrant} from "../types/merkleDistributor"
 import {
   AcceptedMerkleDirectDistributorGrant,
+  MerkleDirectDistributorGrant,
   NotAcceptedMerkleDirectDistributorGrant,
 } from "../types/merkleDirectDistributor"
 import {MerkleDistributor, MerkleDistributorLoaded} from "../ethereum/merkleDistributor"
@@ -429,7 +430,7 @@ function getNotAcceptedMerkleDistributorGrantDetails(
   }
 }
 function getMerkleDirectDistributorGrantDetails(
-  item: AcceptedMerkleDirectDistributorGrant | NotAcceptedMerkleDirectDistributorGrant,
+  item: MerkleDirectDistributorGrant,
   gfi: GFILoaded,
   merkleDirectDistributor: MerkleDirectDistributorLoaded
 ): MerkleDirectDistributorGrantDetails {
@@ -510,7 +511,7 @@ type RewardActionsContainerProps = {
     }
   | {
       type: MerkleDirectDistributorRewardType
-      item: AcceptedMerkleDirectDistributorGrant | NotAcceptedMerkleDirectDistributorGrant
+      item: MerkleDirectDistributorGrant
     }
 )
 

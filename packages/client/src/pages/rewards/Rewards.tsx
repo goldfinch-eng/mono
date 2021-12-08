@@ -1,5 +1,6 @@
 import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
+import {isUndefined} from "lodash"
 import React, {useContext} from "react"
 import {useMediaQuery} from "react-responsive"
 import {Link} from "react-router-dom"
@@ -15,9 +16,11 @@ import {
 import {gfiFromAtomic, gfiInDollars, GFILoaded, gfiToDollarsAtomic} from "../../ethereum/gfi"
 import {MerkleDistributorLoaded} from "../../ethereum/merkleDistributor"
 import {StakingRewardsLoaded, StakingRewardsPosition} from "../../ethereum/pool"
-import {UserCommunityRewardsLoaded, UserLoaded, UserStakingRewardsLoaded} from "../../ethereum/user"
+import {UserLoaded} from "../../ethereum/user"
 import {useFromSameBlock} from "../../hooks/useFromSameBlock"
 import {useSession} from "../../hooks/useSignIn"
+import {MerkleDirectDistributorGrant} from "../../types/merkleDirectDistributor"
+import {NotAcceptedMerkleDistributorGrant} from "../../types/merkleDistributor"
 import {displayDollars, displayNumber} from "../../utils"
 
 interface RewardsSummaryProps {
@@ -102,77 +105,43 @@ function NoRewards() {
   )
 }
 
-type SortableRewards =
-  | {
-      type: "stakingRewards"
-      value: StakingRewardsPosition
-    }
-  | {
-      type: "communityRewards"
-      value: CommunityRewardsGrant
-    }
+type SortableMerkleDistributorRewards =
+  | {type: "communityRewards"; value: CommunityRewardsGrant}
+  | {type: "merkleDistributor"; value: NotAcceptedMerkleDistributorGrant}
 
-const getStartTime = (sortable: SortableRewards): number => {
+const getMerkleDistributorGrantIndex = (sortable: SortableMerkleDistributorRewards): number | undefined => {
   switch (sortable.type) {
-    case "stakingRewards":
-      return sortable.value.storedPosition.rewards.startTime
     case "communityRewards":
-      return sortable.value.rewards.startTime
-    default:
-      assertUnreachable(sortable)
-  }
-}
-const getClaimable = (sortable: SortableRewards): BigNumber => {
-  switch (sortable.type) {
-    case "stakingRewards":
-      return sortable.value.claimable
-    case "communityRewards":
-      return sortable.value.claimable
+      return sortable.value.grantInfo?.index
+    case "merkleDistributor":
+      return sortable.value.grantInfo.index
     default:
       assertUnreachable(sortable)
   }
 }
 
-function getSortedRewards(
-  userStakingRewards: UserStakingRewardsLoaded,
-  userCommunityRewards: UserCommunityRewardsLoaded
-): SortableRewards[] {
-  /* NOTE: First order by 0 or >0 claimable rewards (0 claimable at the bottom), then group by type
-   (e.g. all the staking together, then all the airdrops), then order by most recent first */
-  const stakes = userStakingRewards.info.value.positions
-  const grants = userCommunityRewards.info.value.grants
+const compareStakingRewards = (a: StakingRewardsPosition, b: StakingRewardsPosition) =>
+  // Order staking rewards by start time.
+  a.storedPosition.rewards.startTime - b.storedPosition.rewards.startTime
 
-  const sorted: SortableRewards[] = [
-    ...stakes.map(
-      (value): SortableRewards => ({
-        type: "stakingRewards",
-        value,
-      })
-    ),
-    ...grants.map(
-      (value): SortableRewards => ({
-        type: "communityRewards",
-        value,
-      })
-    ),
-  ]
-  sorted.sort((i1, i2) => getStartTime(i1) - getStartTime(i2))
-  sorted.sort((i1, i2) => {
-    const comparedByClaimable = getClaimable(i1).minus(getClaimable(i2))
-    if (!comparedByClaimable.isZero()) return comparedByClaimable.isPositive() ? -1 : 1
-
-    if (i1.type === "stakingRewards" && i2.type === "communityRewards") {
-      return -1
-    }
-
-    if (i1.type === "communityRewards" && i2.type === "stakingRewards") {
-      return 1
-    }
-
-    return getStartTime(i2) - getStartTime(i1)
-  })
-  return sorted
+const compareMerkleDistributorRewards = (a: SortableMerkleDistributorRewards, b: SortableMerkleDistributorRewards) => {
+  // Order MerkleDistributor rewards by grant index.
+  const aIndex = getMerkleDistributorGrantIndex(a)
+  const bIndex = getMerkleDistributorGrantIndex(b)
+  if (isUndefined(aIndex) && isUndefined(bIndex)) {
+    return 0
+  } else if (isUndefined(aIndex)) {
+    return -1
+  } else if (isUndefined(bIndex)) {
+    return 1
+  } else {
+    return aIndex - bIndex
+  }
 }
+
+const compareMerkleDirectDistributorGrants = (a: MerkleDirectDistributorGrant, b: MerkleDirectDistributorGrant) =>
+  // Order MerkleDirectDistributor rewards by grant index.
+  a.grantInfo.index - b.grantInfo.index
 
 function Rewards() {
   const {
@@ -217,7 +186,6 @@ function Rewards() {
     const userCommunityRewards = user.info.value.communityRewards
     const userMerkleDistributor = user.info.value.merkleDistributor
     const userMerkleDirectDistributor = user.info.value.merkleDirectDistributor
-    const sortedRewards = getSortedRewards(userStakingRewards, userCommunityRewards)
 
     const emptyRewards =
       !userCommunityRewards.info.value.grants.length &&
@@ -245,64 +213,51 @@ function Rewards() {
 
     totalBalance = gfiBalance.plus(claimable).plus(unvested)
     totalUSD = gfiInDollars(gfiToDollarsAtomic(totalBalance, gfi.info.value.price))
-    rewards = emptyRewards ? (
-      <NoRewards />
-    ) : (
-      <>
-        {userMerkleDistributor &&
-          userMerkleDistributor.info.value.airdrops.notAccepted.map((item) => (
-            <RewardActionsContainer
-              key={`merkle-distributor-airdrop-${item.grantInfo.index}`}
-              type="merkleDistributor"
-              disabled={disabled}
-              item={item}
-              gfi={gfi}
-              merkleDistributor={merkleDistributor}
-              merkleDirectDistributor={merkleDirectDistributor}
-              stakingRewards={stakingRewards}
-              communityRewards={communityRewards}
-            />
-          ))}
 
-        {userMerkleDirectDistributor &&
-          userMerkleDirectDistributor.info.value.airdrops.notAccepted.map((item) => (
-            <RewardActionsContainer
-              key={`merkle-direct-distributor-airdrop-${item.grantInfo.index}`}
-              type="merkleDirectDistributor"
-              disabled={disabled}
-              item={item}
-              gfi={gfi}
-              merkleDistributor={merkleDistributor}
-              merkleDirectDistributor={merkleDirectDistributor}
-              stakingRewards={stakingRewards}
-              communityRewards={communityRewards}
-            />
-          ))}
-        {userMerkleDirectDistributor &&
-          userMerkleDirectDistributor.info.value.airdrops.accepted.map((item) => (
-            <RewardActionsContainer
-              key={`merkle-direct-distributor-airdrop-${item.grantInfo.index}`}
-              type="merkleDirectDistributor"
-              disabled={disabled}
-              item={item}
-              gfi={gfi}
-              merkleDistributor={merkleDistributor}
-              merkleDirectDistributor={merkleDirectDistributor}
-              stakingRewards={stakingRewards}
-              communityRewards={communityRewards}
-            />
-          ))}
+    if (emptyRewards) {
+      rewards = <NoRewards />
+    } else {
+      const sortedStakingRewards: StakingRewardsPosition[] =
+        userStakingRewards.info.value.positions.sort(compareStakingRewards)
+      const sortedMerkleDistributorRewards: SortableMerkleDistributorRewards[] = [
+        ...userCommunityRewards.info.value.grants.map<SortableMerkleDistributorRewards>((grant) => ({
+          type: "communityRewards",
+          value: grant,
+        })),
+        ...userMerkleDistributor.info.value.airdrops.notAccepted.map<SortableMerkleDistributorRewards>((grantInfo) => ({
+          type: "merkleDistributor",
+          value: grantInfo,
+        })),
+      ].sort(compareMerkleDistributorRewards)
+      const sortedMerkleDirectDistributorRewards: MerkleDirectDistributorGrant[] = [
+        ...userMerkleDirectDistributor.info.value.airdrops.accepted,
+        ...userMerkleDirectDistributor.info.value.airdrops.notAccepted,
+      ].sort(compareMerkleDirectDistributorGrants)
 
-        {sortedRewards &&
-          sortedRewards.map((item) => {
-            switch (item.type) {
+      rewards = (
+        <>
+          {sortedStakingRewards.map((position) => (
+            <RewardActionsContainer
+              key={`stakingRewards-${position.tokenId}`}
+              disabled={disabled}
+              type="stakingRewards"
+              item={position}
+              gfi={gfi}
+              merkleDistributor={merkleDistributor}
+              merkleDirectDistributor={merkleDirectDistributor}
+              stakingRewards={stakingRewards}
+              communityRewards={communityRewards}
+            />
+          ))}
+          {sortedMerkleDistributorRewards.map((sorted) => {
+            switch (sorted.type) {
               case "communityRewards":
                 return (
                   <RewardActionsContainer
-                    key={`${item.type}-${item.value.tokenId}`}
+                    key={`communityRewards-${sorted.value.tokenId}`}
                     disabled={disabled}
-                    type={item.type}
-                    item={item.value}
+                    type="communityRewards"
+                    item={sorted.value}
                     gfi={gfi}
                     merkleDistributor={merkleDistributor}
                     merkleDirectDistributor={merkleDirectDistributor}
@@ -310,13 +265,13 @@ function Rewards() {
                     communityRewards={communityRewards}
                   />
                 )
-              case "stakingRewards":
+              case "merkleDistributor":
                 return (
                   <RewardActionsContainer
-                    key={`${item.type}-${item.value.tokenId}`}
+                    key={`merkleDistributor-${sorted.value.grantInfo.index}`}
+                    type="merkleDistributor"
                     disabled={disabled}
-                    type={item.type}
-                    item={item.value}
+                    item={sorted.value}
                     gfi={gfi}
                     merkleDistributor={merkleDistributor}
                     merkleDirectDistributor={merkleDirectDistributor}
@@ -325,11 +280,25 @@ function Rewards() {
                   />
                 )
               default:
-                return assertUnreachable(item)
+                return assertUnreachable(sorted)
             }
           })}
-      </>
-    )
+          {sortedMerkleDirectDistributorRewards.map((sorted) => (
+            <RewardActionsContainer
+              key={`merkleDirectDistributor-${sorted.grantInfo.index}`}
+              type="merkleDirectDistributor"
+              disabled={disabled}
+              item={sorted}
+              gfi={gfi}
+              merkleDistributor={merkleDistributor}
+              merkleDirectDistributor={merkleDirectDistributor}
+              stakingRewards={stakingRewards}
+              communityRewards={communityRewards}
+            />
+          ))}
+        </>
+      )
+    }
   }
 
   return (
