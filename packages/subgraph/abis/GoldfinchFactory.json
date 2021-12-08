@@ -2,21 +2,60 @@
   {
     "anonymous": false,
     "inputs": [
-      {"indexed": true, "internalType": "address", "name": "capitalProvider", "type": "address"},
-      {"indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256"},
-      {"indexed": false, "internalType": "uint256", "name": "shares", "type": "uint256"}
+      {"indexed": true, "internalType": "address", "name": "previousOwner", "type": "address"},
+      {"indexed": true, "internalType": "address", "name": "newOwner", "type": "address"}
     ],
-    "name": "DepositMade",
+    "name": "OwnershipTransferred",
     "type": "event"
   },
   {
     "anonymous": false,
     "inputs": [
-      {"indexed": true, "internalType": "address", "name": "payer", "type": "address"},
-      {"indexed": false, "internalType": "uint256", "name": "poolAmount", "type": "uint256"},
-      {"indexed": false, "internalType": "uint256", "name": "reserveAmount", "type": "uint256"}
+      {"indexed": true, "internalType": "address", "name": "previousImplementation", "type": "address"},
+      {"indexed": true, "internalType": "address", "name": "newImplementation", "type": "address"}
     ],
-    "name": "InterestCollected",
+    "name": "ProxyImplementationUpdated",
+    "type": "event"
+  },
+  {"stateMutability": "payable", "type": "fallback"},
+  {
+    "inputs": [
+      {"internalType": "address", "name": "newImplementation", "type": "address"},
+      {"internalType": "bytes", "name": "data", "type": "bytes"}
+    ],
+    "name": "changeImplementation",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{"internalType": "bytes4", "name": "id", "type": "bytes4"}],
+    "name": "supportsInterface",
+    "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{"internalType": "address", "name": "newOwner", "type": "address"}],
+    "name": "transferOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {"indexed": true, "internalType": "address", "name": "borrower", "type": "address"},
+      {"indexed": true, "internalType": "address", "name": "owner", "type": "address"}
+    ],
+    "name": "BorrowerCreated",
     "type": "event"
   },
   {
@@ -28,28 +67,10 @@
   {
     "anonymous": false,
     "inputs": [
-      {"indexed": true, "internalType": "address", "name": "payer", "type": "address"},
-      {"indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256"}
+      {"indexed": true, "internalType": "address", "name": "pool", "type": "address"},
+      {"indexed": true, "internalType": "address", "name": "borrower", "type": "address"}
     ],
-    "name": "PrincipalCollected",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {"indexed": true, "internalType": "address", "name": "creditline", "type": "address"},
-      {"indexed": false, "internalType": "int256", "name": "amount", "type": "int256"}
-    ],
-    "name": "PrincipalWrittendown",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {"indexed": true, "internalType": "address", "name": "user", "type": "address"},
-      {"indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256"}
-    ],
-    "name": "ReserveFundsCollected",
+    "name": "PoolCreated",
     "type": "event"
   },
   {
@@ -74,28 +95,8 @@
   },
   {
     "anonymous": false,
-    "inputs": [
-      {"indexed": true, "internalType": "address", "name": "from", "type": "address"},
-      {"indexed": true, "internalType": "address", "name": "to", "type": "address"},
-      {"indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256"}
-    ],
-    "name": "TransferMade",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
     "inputs": [{"indexed": false, "internalType": "address", "name": "account", "type": "address"}],
     "name": "Unpaused",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {"indexed": true, "internalType": "address", "name": "capitalProvider", "type": "address"},
-      {"indexed": false, "internalType": "uint256", "name": "userAmount", "type": "uint256"},
-      {"indexed": false, "internalType": "uint256", "name": "reserveAmount", "type": "uint256"}
-    ],
-    "name": "WithdrawalMade",
     "type": "event"
   },
   {
@@ -129,60 +130,52 @@
   {"inputs": [], "name": "__PauserPausable__init", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
   {
     "inputs": [],
-    "name": "assets",
-    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {"internalType": "address", "name": "from", "type": "address"},
-      {"internalType": "uint256", "name": "interest", "type": "uint256"},
-      {"internalType": "uint256", "name": "principal", "type": "uint256"}
-    ],
-    "name": "collectInterestAndPrincipal",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "compoundBalance",
-    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "config",
     "outputs": [{"internalType": "contract GoldfinchConfig", "name": "", "type": "address"}],
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "inputs": [{"internalType": "uint256", "name": "amount", "type": "uint256"}],
-    "name": "deposit",
-    "outputs": [],
+    "inputs": [{"internalType": "address", "name": "owner", "type": "address"}],
+    "name": "createBorrower",
+    "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "createCreditLine",
+    "outputs": [{"internalType": "address", "name": "", "type": "address"}],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "inputs": [
-      {"internalType": "address", "name": "creditlineAddress", "type": "address"},
-      {"internalType": "int256", "name": "writedownDelta", "type": "int256"}
+      {"internalType": "address", "name": "_borrower", "type": "address"},
+      {"internalType": "uint256", "name": "_juniorFeePercent", "type": "uint256"},
+      {"internalType": "uint256", "name": "_limit", "type": "uint256"},
+      {"internalType": "uint256", "name": "_interestApr", "type": "uint256"},
+      {"internalType": "uint256", "name": "_paymentPeriodInDays", "type": "uint256"},
+      {"internalType": "uint256", "name": "_termInDays", "type": "uint256"},
+      {"internalType": "uint256", "name": "_lateFeeApr", "type": "uint256"}
     ],
-    "name": "distributeLosses",
-    "outputs": [],
+    "name": "createMigratedPool",
+    "outputs": [{"internalType": "address", "name": "pool", "type": "address"}],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "inputs": [
-      {"internalType": "address", "name": "to", "type": "address"},
-      {"internalType": "uint256", "name": "amount", "type": "uint256"}
+      {"internalType": "address", "name": "_borrower", "type": "address"},
+      {"internalType": "uint256", "name": "_juniorFeePercent", "type": "uint256"},
+      {"internalType": "uint256", "name": "_limit", "type": "uint256"},
+      {"internalType": "uint256", "name": "_interestApr", "type": "uint256"},
+      {"internalType": "uint256", "name": "_paymentPeriodInDays", "type": "uint256"},
+      {"internalType": "uint256", "name": "_termInDays", "type": "uint256"},
+      {"internalType": "uint256", "name": "_lateFeeApr", "type": "uint256"}
     ],
-    "name": "drawdown",
-    "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
+    "name": "createPool",
+    "outputs": [{"internalType": "address", "name": "pool", "type": "address"}],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -247,7 +240,6 @@
     "stateMutability": "view",
     "type": "function"
   },
-  {"inputs": [], "name": "migrateToSeniorPool", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
   {"inputs": [], "name": "pause", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
   {
     "inputs": [],
@@ -276,40 +268,6 @@
     "stateMutability": "nonpayable",
     "type": "function"
   },
-  {
-    "inputs": [],
-    "name": "sharePrice",
-    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {"inputs": [], "name": "sweepFromCompound", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
-  {"inputs": [], "name": "sweepToCompound", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
-  {
-    "inputs": [
-      {"internalType": "address", "name": "from", "type": "address"},
-      {"internalType": "address", "name": "to", "type": "address"},
-      {"internalType": "uint256", "name": "amount", "type": "uint256"}
-    ],
-    "name": "transferFrom",
-    "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
   {"inputs": [], "name": "unpause", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
-  {"inputs": [], "name": "updateGoldfinchConfig", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
-  {
-    "inputs": [{"internalType": "uint256", "name": "usdcAmount", "type": "uint256"}],
-    "name": "withdraw",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [{"internalType": "uint256", "name": "fiduAmount", "type": "uint256"}],
-    "name": "withdrawInFidu",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  }
+  {"inputs": [], "name": "updateGoldfinchConfig", "outputs": [], "stateMutability": "nonpayable", "type": "function"}
 ]

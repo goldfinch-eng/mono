@@ -3,13 +3,9 @@ import {
   InterestCollected,
   InvestmentMadeInJunior,
   InvestmentMadeInSenior,
-  Paused,
   PrincipalCollected,
   PrincipalWrittenDown,
   ReserveFundsCollected,
-  RoleGranted,
-  RoleRevoked,
-  Unpaused,
   WithdrawalMade
 } from "../../generated/templates/SeniorPool/SeniorPool"
 import { updatePoolCapitalProviders, updatePoolStatus } from '../entities/senior_pool';
@@ -59,11 +55,3 @@ export function handleWithdrawalMade(event: WithdrawalMade): void {
   updatePoolStatus(event.address)
   updateUser(event.address, event.params.capitalProvider)
 }
-
-export function handleRoleGranted(event: RoleGranted): void {}
-
-export function handleRoleRevoked(event: RoleRevoked): void {}
-
-export function handleUnpaused(event: Unpaused): void {}
-
-export function handlePaused(event: Paused): void {}
