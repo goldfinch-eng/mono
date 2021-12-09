@@ -1,14 +1,12 @@
+import {MerkleDirectDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/types"
+import {MerkleDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
 import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
+import {Go} from "@goldfinch-eng/protocol/typechain/web3/Go"
 import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/web3/GoldfinchConfig"
+import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/web3/UniqueIdentity"
 import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
 import _ from "lodash"
-import {assertWithLoadedInfo, Loadable, WithLoadedInfo} from "../types/loadable"
-import {assertNonNullable, BlockInfo, defaultSum, WithCurrentBlock} from "../utils"
-import {BorrowerInterface, getBorrowerContract} from "./borrower"
-import {CommunityRewardsGrant, CommunityRewardsLoaded, MerkleDirectDistributorLoaded} from "./communityRewards"
-import {ERC20, Tickers, USDC, usdcFromAtomic} from "./erc20"
-import {getBalanceAsOf, getPoolEventAmount, mapEventsToTx} from "./events"
 import {
   ApprovalEventType,
   APPROVAL_EVENT,
@@ -38,39 +36,38 @@ import {
   UNSTAKED_EVENT,
   WITHDRAWAL_MADE_EVENT,
 } from "../types/events"
-import {GFILoaded} from "./gfi"
-import {GoldfinchProtocol} from "./GoldfinchProtocol"
-import {SeniorPoolLoaded, StakingRewardsLoaded, StakingRewardsPosition, StoredPosition} from "./pool"
-import {
-  ACCEPT_TX_TYPE,
-  BORROW_TX_TYPE,
-  CLAIM_TX_TYPE,
-  PAYMENT_TX_TYPE,
-  STAKE_TX_TYPE,
-  SUPPLY_AND_STAKE_TX_TYPE,
-  SUPPLY_TX_TYPE,
-  HistoricalTx,
-  UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
-  USDC_APPROVAL_TX_TYPE,
-  UNSTAKE_TX_NAME,
-  WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
-  FIDU_APPROVAL_TX_TYPE,
-} from "../types/transactions"
-import {getFromBlock, MAINNET} from "./utils"
-import {Go} from "@goldfinch-eng/protocol/typechain/web3/Go"
-import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/web3/UniqueIdentity"
-import {MerkleDirectDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/types"
-import {AcceptedMerkleDistributorGrant, NotAcceptedMerkleDistributorGrant} from "../types/merkleDistributor"
-import {
-  GrantReason,
-  MerkleDistributorGrantInfo,
-} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
+import {assertWithLoadedInfo, Loadable, WithLoadedInfo} from "../types/loadable"
 import {
   AcceptedMerkleDirectDistributorGrant,
   NotAcceptedMerkleDirectDistributorGrant,
 } from "../types/merkleDirectDistributor"
+import {AcceptedMerkleDistributorGrant, NotAcceptedMerkleDistributorGrant} from "../types/merkleDistributor"
+import {
+  ACCEPT_TX_TYPE,
+  BORROW_TX_TYPE,
+  CLAIM_TX_TYPE,
+  FIDU_APPROVAL_TX_TYPE,
+  HistoricalTx,
+  PAYMENT_TX_TYPE,
+  STAKE_TX_TYPE,
+  SUPPLY_AND_STAKE_TX_TYPE,
+  SUPPLY_TX_TYPE,
+  UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
+  UNSTAKE_TX_NAME,
+  USDC_APPROVAL_TX_TYPE,
+  WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
+} from "../types/transactions"
+import {assertNonNullable, BlockInfo, defaultSum, WithCurrentBlock} from "../utils"
+import {BorrowerInterface, getBorrowerContract} from "./borrower"
+import {CommunityRewardsGrant, CommunityRewardsLoaded, MerkleDirectDistributorLoaded} from "./communityRewards"
+import {ERC20, Tickers, USDC, usdcFromAtomic} from "./erc20"
+import {getBalanceAsOf, getPoolEventAmount, mapEventsToTx} from "./events"
+import {GFILoaded} from "./gfi"
+import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {MerkleDistributorLoaded} from "./merkleDistributor"
 import {checkSameBlock} from "./currentBlock"
+import {SeniorPoolLoaded, StakingRewardsLoaded, StakingRewardsPosition, StoredPosition} from "./pool"
+import {getFromBlock, MAINNET} from "./utils"
 
 export const UNLOCK_THRESHOLD = new BigNumber(10000)
 
@@ -364,7 +361,7 @@ class UserCommunityRewards {
                   (airdrop) => parseInt(grantAcceptedEvent.returnValues.index, 10) === airdrop.grantInfo.index
                 )
                 if (airdrop) {
-                  return airdrop.grantInfo.reason
+                  return airdrop.grantInfo
                 } else {
                   throw new Error(
                     `Failed to identify airdrop corresponding to GrantAccepted event ${tokenId}, among user's accepted airdrops.`
@@ -387,14 +384,14 @@ class UserCommunityRewards {
           ),
         ])
       )
-      .then(([tokenIds, rawGrants, claimables, reasons]) =>
+      .then(([tokenIds, rawGrants, claimables, grantInfos]) =>
         tokenIds.map((tokenId, i): CommunityRewardsGrant => {
           const rawGrant = rawGrants[i]
           assertNonNullable(rawGrant)
           const claimable = claimables[i]
           assertNonNullable(claimable)
-          const reason = reasons[i]
-          return UserCommunityRewards.parseCommunityRewardsGrant(tokenId, new BigNumber(claimable), rawGrant, reason)
+          const grantInfo = grantInfos[i]
+          return UserCommunityRewards.parseCommunityRewardsGrant(tokenId, new BigNumber(claimable), rawGrant, grantInfo)
         })
       )
 
@@ -438,7 +435,7 @@ class UserCommunityRewards {
       5: string
       6: string
     },
-    reason: GrantReason | undefined
+    grantInfo: MerkleDistributorGrantInfo | undefined
   ): CommunityRewardsGrant {
     return new CommunityRewardsGrant(
       tokenId,
@@ -452,7 +449,7 @@ class UserCommunityRewards {
         vestingInterval: new BigNumber(tuple[5]),
         revokedAt: parseInt(tuple[6], 10),
       },
-      reason
+      grantInfo
     )
   }
 }

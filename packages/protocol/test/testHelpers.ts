@@ -64,7 +64,7 @@ const ZERO = new BN(0)
 export type $TSFixMe = any
 
 // Helper functions. These should be pretty generic.
-function bigVal(number) {
+function bigVal(number): BN {
   return new BN(number).mul(decimals)
 }
 

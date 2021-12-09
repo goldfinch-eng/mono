@@ -1,5 +1,5 @@
-import {MerkleDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
 import {MerkleDirectDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/types"
+import {MerkleDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
 import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
 import React, {useState} from "react"
@@ -11,8 +11,8 @@ import {
   MerkleDirectDistributorLoaded,
 } from "../ethereum/communityRewards"
 import {gfiFromAtomic, gfiInDollars, GFILoaded, gfiToDollarsAtomic} from "../ethereum/gfi"
+import {MerkleDistributor, MerkleDistributorLoaded} from "../ethereum/merkleDistributor"
 import {StakingRewardsLoaded, StakingRewardsPosition} from "../ethereum/pool"
-import {ACCEPT_TX_TYPE, CLAIM_TX_TYPE} from "../types/transactions"
 import useSendFromUser from "../hooks/useSendFromUser"
 import {
   Column,
@@ -23,21 +23,18 @@ import {
   DetailValue,
   EtherscanLinkContainer,
 } from "../pages/rewards/styles"
+import {MerkleDirectDistributorGrant} from "../types/merkleDirectDistributor"
+import {NotAcceptedMerkleDistributorGrant} from "../types/merkleDistributor"
+import {ACCEPT_TX_TYPE, CLAIM_TX_TYPE} from "../types/transactions"
 import {assertNonNullable, displayDollars, displayNumber, displayPercent} from "../utils"
 import EtherscanLink from "./etherscanLink"
 import {iconCarrotDown, iconCarrotUp, iconOutArrow} from "./icons"
 import LoadingButton from "./loadingButton"
 import {WIDTH_TYPES} from "./styleConstants"
 import TransactionForm from "./transactionForm"
-import {NotAcceptedMerkleDistributorGrant} from "../types/merkleDistributor"
-import {
-  AcceptedMerkleDirectDistributorGrant,
-  NotAcceptedMerkleDirectDistributorGrant,
-} from "../types/merkleDirectDistributor"
-import {MerkleDistributor, MerkleDistributorLoaded} from "../ethereum/merkleDistributor"
 
 const ONE_WEEK_SECONDS = new BigNumber(60 * 60 * 24 * 7)
-const TOKEN_LAUNCH_TIME_IN_SECONDS = 1638900000 // Tuesday, December 7, 2021 10:00:00 AM GMT-08:00
+export const TOKEN_LAUNCH_TIME_IN_SECONDS = 1641924000 // Tuesday, January 11, 2022 10:00:00 AM GMT-08:00
 
 enum RewardStatus {
   Acceptable,
@@ -77,7 +74,11 @@ function ActionButton(props: ActionButtonProps) {
   const isAccepting = props.text === ActionButtonTexts.accept && isPending
 
   return (
-    <button className={`${!isTabletOrMobile && "table-cell"} action ${disabledClass}`} onClick={action}>
+    <button
+      disabled={props.disabled}
+      className={`${!isTabletOrMobile && "table-cell"} action ${disabledClass}`}
+      onClick={action}
+    >
       {isAccepting ? ActionButtonTexts.accepting : props.text}
     </button>
   )
@@ -229,13 +230,13 @@ function getActionButtonProps(props: RewardsListItemProps): ActionButtonProps {
       return {
         ...baseProps,
         text: ActionButtonTexts.accept,
-        disabled: false,
+        disabled: props.disabled,
       }
     case RewardStatus.Claimable:
       return {
         ...baseProps,
         text: ActionButtonTexts.claimGFI,
-        disabled: false,
+        disabled: props.disabled,
       }
     case RewardStatus.TemporarilyAllClaimed:
       return {
@@ -260,6 +261,7 @@ interface RewardsListItemProps {
   claimableGFI: BigNumber
   status: RewardStatus
   details: ItemDetails
+  disabled: boolean
   handleOnClick: () => Promise<void>
 }
 
@@ -424,7 +426,7 @@ function getNotAcceptedMerkleDistributorGrantDetails(
   }
 }
 function getMerkleDirectDistributorGrantDetails(
-  item: AcceptedMerkleDirectDistributorGrant | NotAcceptedMerkleDirectDistributorGrant,
+  item: MerkleDirectDistributorGrant,
   gfi: GFILoaded,
   merkleDirectDistributor: MerkleDirectDistributorLoaded
 ): MerkleDirectDistributorGrantDetails {
@@ -484,6 +486,7 @@ type MerkleDistributorRewardType = "merkleDistributor"
 type MerkleDirectDistributorRewardType = "merkleDirectDistributor"
 
 type RewardActionsContainerProps = {
+  disabled: boolean
   gfi: GFILoaded
   merkleDistributor: MerkleDistributorLoaded
   merkleDirectDistributor: MerkleDirectDistributorLoaded
@@ -504,7 +507,7 @@ type RewardActionsContainerProps = {
     }
   | {
       type: MerkleDirectDistributorRewardType
-      item: AcceptedMerkleDirectDistributorGrant | NotAcceptedMerkleDirectDistributorGrant
+      item: MerkleDirectDistributorGrant
     }
 )
 
@@ -588,6 +591,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
           claimableGFI={item.claimable}
           handleOnClick={() => Promise.resolve()}
           details={details}
+          disabled={props.disabled}
         />
       )
     } else if (!showAction) {
@@ -599,6 +603,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
           claimableGFI={item.claimable}
           handleOnClick={async () => setShowAction(true)}
           details={details}
+          disabled={props.disabled}
         />
       )
     }
@@ -627,6 +632,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
         claimableGFI={item.claimable}
         handleOnClick={() => handleAcceptMerkleDistributorGrant(item.grantInfo)}
         details={details}
+        disabled={props.disabled}
       />
     )
   } else if (props.type === "merkleDirectDistributor") {
@@ -640,6 +646,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
         claimableGFI={item.claimable}
         handleOnClick={() => handleAcceptMerkleDirectDistributorGrant(item.grantInfo)}
         details={details}
+        disabled={props.disabled}
       />
     )
   } else {
