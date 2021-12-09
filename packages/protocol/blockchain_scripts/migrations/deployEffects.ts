@@ -163,15 +163,18 @@ const MULTISEND = {
  */
 class DefenderMultisendEffects extends MultisendEffects {
   private readonly chainId: ChainId
+  private readonly via?: string
 
-  constructor({chainId}: {chainId: ChainId}) {
+  constructor({chainId, via}: {chainId: ChainId; via?: string}) {
     super()
     this.chainId = chainId
+    this.via = via
   }
 
   async execute(safeTxs: SafeTransactionDataPartial[]): Promise<void> {
     const multisendData = encodeMultiSendData(safeTxs.map(standardizeMetaTransactionData))
     const defender = new DefenderUpgrader({hre, logger: console.log, chainId: this.chainId})
+    const via = this.via == undefined ? await getProtocolOwner() : this.via
     await defender.send({
       method: "multiSend",
       contract: MULTISEND,
@@ -179,7 +182,7 @@ class DefenderMultisendEffects extends MultisendEffects {
       contractName: "Multisend",
       title: "Migrator multisend",
       description: "Executing migrator multisend",
-      via: await getProtocolOwner(),
+      via,
       viaType: "Gnosis Safe",
       metadata: {operationType: "delegateCall"},
     })
@@ -201,13 +204,15 @@ class IndividualTxEffects extends MultisendEffects {
 
 const GNOSIS_EXECUTOR = "0xf13eFa505444D09E176d83A4dfd50d10E399cFd5"
 
-async function getSafe(): Promise<Safe> {
+async function getSafe(overrides?: {viaOverride?: string}): Promise<Safe> {
+  const via = overrides?.viaOverride === undefined ? await getProtocolOwner() : overrides.viaOverride
+
   await fundWithWhales(["ETH"], [GNOSIS_EXECUTOR])
   const signer = await ethers.getSigner(GNOSIS_EXECUTOR)
   const ethAdapter = new EthersAdapter({ethers, signer})
   const safe = await Safe.create({
     ethAdapter,
-    safeAddress: await getProtocolOwner(),
+    safeAddress: via,
     contractNetworks: {
       31337: {
         multiSendAddress: "0x8D29bE29923b68abfDD21e541b9374737B49cdAD",
@@ -219,15 +224,17 @@ async function getSafe(): Promise<Safe> {
   return safe
 }
 
-export async function getDeployEffects(): Promise<DeployEffects> {
+export async function getDeployEffects(params?: {via?: string}): Promise<DeployEffects> {
+  const via = params?.via
+
   if (isMainnetForking()) {
-    const safe = await getSafe()
+    const safe = await getSafe({viaOverride: via})
     return new MainnetForkingMultisendEffects({safe})
   } else if ((await currentChainId()) === LOCAL_CHAIN_ID) {
     return new IndividualTxEffects()
   } else {
     const chainId = await hre.getChainId()
     assertIsChainId(chainId)
-    return new DefenderMultisendEffects({chainId})
+    return new DefenderMultisendEffects({chainId, via})
   }
 }

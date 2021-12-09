@@ -5,7 +5,6 @@ import {
   BN,
   usdcVal,
   getBalance,
-  deployAllContracts,
   erc20Approve,
   erc20Transfer,
   SECONDS_PER_DAY,
@@ -19,6 +18,7 @@ import {
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
 import {TRANCHES, interestAprAsBN, INTEREST_DECIMALS, ETHDecimals} from "../blockchain_scripts/deployHelpers"
 import {time} from "@openzeppelin/test-helpers"
+import {deployBaseFixture} from "./util/fixtures"
 const TranchedPool = artifacts.require("TranchedPool")
 const CreditLine = artifacts.require("CreditLine")
 
@@ -46,7 +46,7 @@ describe("Goldfinch", async function () {
 
   const setupTest = deployments.createFixture(async ({deployments}) => {
     const {seniorPool, usdc, creditDesk, fidu, goldfinchConfig, goldfinchFactory, poolTokens} =
-      await deployAllContracts(deployments)
+      await deployBaseFixture()
 
     // Approve transfers for our test accounts
     await erc20Approve(usdc, seniorPool.address, usdcVal(100000), [owner, underwriter, borrower, investor1, investor2])

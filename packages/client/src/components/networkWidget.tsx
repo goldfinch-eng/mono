@@ -57,16 +57,14 @@ function NetworkWidget(props: NetworkWidgetProps) {
 
   useEffect(() => {
     if (props.user && session.status !== "authenticated" && showSignIn) {
-      signIn()
+      signIn().then((session) => {
+        setShowSignIn(false)
+      })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.user?.address, showSignIn])
 
-  function enableMetamask() {
-    if (session.status === "known" && !isSessionDataInvalid(sessionData, currentTimestamp)) {
-      return Promise.resolve()
-    }
-
+  async function enableMetamask(): Promise<void> {
     return (window as any).ethereum
       .request({method: "eth_requestAccounts"})
       .then(() => {

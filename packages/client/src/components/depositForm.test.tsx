@@ -5,7 +5,12 @@ import DepositForm from "./depositForm"
 import {render, screen, fireEvent, waitFor} from "@testing-library/react"
 import {usdcToAtomic} from "../ethereum/erc20"
 
-function renderDepositForm(transactionLimit, userBalance, remainingCapacity) {
+function renderDepositForm(
+  transactionLimit: string,
+  userBalance: string,
+  remainingCapacity: string,
+  estimatedApyFromGfi: string
+) {
   let store = {
     goldfinchConfig: {
       transactionLimit: new BigNumber(usdcToAtomic(transactionLimit)),
@@ -26,6 +31,7 @@ function renderDepositForm(transactionLimit, userBalance, remainingCapacity) {
           poolData: {
             remainingCapacity: () => new BigNumber(usdcToAtomic(remainingCapacity)),
             totalPoolAssets: new BigNumber(0),
+            estimatedApyFromGfi: new BigNumber(estimatedApyFromGfi),
           },
         },
       },
@@ -41,10 +47,11 @@ function renderDepositForm(transactionLimit, userBalance, remainingCapacity) {
 
 describe("max transaction amount for depositForm", () => {
   it("fills the transaction amount with the user balance", async () => {
-    let remainingCapacity = 300,
-      transactionLimit = 200,
-      userBalance = 100
-    renderDepositForm(transactionLimit, userBalance, remainingCapacity)
+    let remainingCapacity = "300",
+      transactionLimit = "200",
+      userBalance = "100",
+      estimatedApyFromGfi = "0.125"
+    renderDepositForm(transactionLimit, userBalance, remainingCapacity, estimatedApyFromGfi)
     fireEvent.click(screen.getByText("Supply"))
     fireEvent.click(screen.getByText("Max", {selector: "button"}))
 
@@ -54,10 +61,11 @@ describe("max transaction amount for depositForm", () => {
   })
 
   it("fills the transaction amount with the transaction limit", async () => {
-    let remainingCapacity = 300,
-      transactionLimit = 200,
-      userBalance = 500
-    renderDepositForm(transactionLimit, userBalance, remainingCapacity)
+    let remainingCapacity = "300",
+      transactionLimit = "200",
+      userBalance = "500",
+      estimatedApyFromGfi = "0.125"
+    renderDepositForm(transactionLimit, userBalance, remainingCapacity, estimatedApyFromGfi)
     fireEvent.click(screen.getByText("Supply"))
     fireEvent.click(screen.getByText("Max", {selector: "button"}))
 
@@ -67,10 +75,11 @@ describe("max transaction amount for depositForm", () => {
   })
 
   it("fills the transaction amount with the remaining limit", async () => {
-    let remainingCapacity = 300,
-      transactionLimit = 400,
-      userBalance = 500
-    renderDepositForm(transactionLimit, userBalance, remainingCapacity)
+    let remainingCapacity = "300",
+      transactionLimit = "400",
+      userBalance = "500",
+      estimatedApyFromGfi = "0.125"
+    renderDepositForm(transactionLimit, userBalance, remainingCapacity, estimatedApyFromGfi)
     fireEvent.click(screen.getByText("Supply"))
     fireEvent.click(screen.getByText("Max", {selector: "button"}))
 
@@ -80,10 +89,11 @@ describe("max transaction amount for depositForm", () => {
   })
 
   it("has no more than 6 digital places", async () => {
-    let remainingCapacity = 300,
-      transactionLimit = 200,
-      userBalance = 100.98098978
-    renderDepositForm(transactionLimit, userBalance, remainingCapacity)
+    let remainingCapacity = "300",
+      transactionLimit = "200",
+      userBalance = "100.98098978",
+      estimatedApyFromGfi = "0.125"
+    renderDepositForm(transactionLimit, userBalance, remainingCapacity, estimatedApyFromGfi)
     fireEvent.click(screen.getByText("Supply"))
     fireEvent.click(screen.getByText("Max", {selector: "button"}))
 

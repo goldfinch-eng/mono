@@ -14,6 +14,7 @@ import {
   DISTRIBUTOR_ROLE,
   getContract,
   TRUFFLE_CONTRACT_PROVIDER,
+  OWNER_ROLE,
 } from "../blockchain_scripts/deployHelpers"
 import {DeploymentsExtension} from "hardhat-deploy/types"
 import {
@@ -63,7 +64,7 @@ const ZERO = new BN(0)
 export type $TSFixMe = any
 
 // Helper functions. These should be pretty generic.
-function bigVal(number) {
+function bigVal(number): BN {
   return new BN(number).mul(decimals)
 }
 
@@ -231,7 +232,7 @@ function getOnlyLog<T extends Truffle.AnyEvent>(logs: DecodedLog<T>[]): DecodedL
   return getFirstLog(logs)
 }
 
-type DeployAllContractsOptions = {
+export type DeployAllContractsOptions = {
   deployForwarder?: {
     fromAccount: string
   }
@@ -552,6 +553,15 @@ export function expectRoles(expectations: RoleExpectation[]) {
       }
     }
   })
+}
+
+export function expectOwnerRole({toBe, forContracts}: {toBe: () => Promise<string>; forContracts: string[]}) {
+  const expectations: RoleExpectation[] = forContracts.map((contract) => ({
+    contractName: contract,
+    roles: [OWNER_ROLE],
+    address: toBe,
+  }))
+  expectRoles(expectations)
 }
 
 export {
