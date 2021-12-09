@@ -1,5 +1,9 @@
-import {getNamedAccounts, deployments, getChainId} from "hardhat"
-import {fundWithWhales, getAllExistingContracts} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
+import hre, {getNamedAccounts, deployments, getChainId, ethers} from "hardhat"
+import {
+  fundWithWhales,
+  getAllExistingContracts,
+  impersonateAccount,
+} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
 import {assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
 import * as migrate22 from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.2/migrate"
 import * as migrate23 from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.3/migrate"
@@ -8,18 +12,40 @@ import {
   DISTRIBUTOR_ROLE,
   getEthersContract,
   getProtocolOwner,
+  getTempMultisig,
   getTruffleContract,
   isMainnetForking,
   MAINNET_CHAIN_ID,
+  ZERO_ADDRESS,
+  MINTER_ROLE,
+  OWNER_ROLE,
+  PAUSER_ROLE,
 } from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
 import {Awaited} from "@goldfinch-eng/protocol/blockchain_scripts/types"
 import {TEST_TIMEOUT} from "../../../MainnetForking.test"
 import {Deployment} from "hardhat-deploy/types"
 import {CONFIG_KEYS, CONFIG_KEYS_BY_TYPE} from "@goldfinch-eng/protocol/blockchain_scripts/configKeys"
-import {GoldfinchConfig, GoldfinchFactory, TranchedPool} from "@goldfinch-eng/protocol/typechain/ethers"
+import {
+  CommunityRewards,
+  DynamicLeverageRatioStrategy,
+  GFI,
+  Go,
+  GoldfinchConfig,
+  GoldfinchFactory,
+  MerkleDirectDistributor,
+  PoolTokens,
+  SeniorPool,
+  StakingRewards,
+  TestBackerRewards,
+  TranchedPool,
+  UniqueIdentity,
+} from "@goldfinch-eng/protocol/typechain/ethers"
 import poolMetadata from "@goldfinch-eng/client/config/pool-metadata/mainnet.json"
-import {expectProxyOwner, expectRoles} from "@goldfinch-eng/protocol/test/testHelpers"
-import {GoInstance, GoldfinchConfigInstance} from "@goldfinch-eng/protocol/typechain/truffle"
+import {StakingRewardsInstance} from "@goldfinch-eng/protocol/typechain/truffle"
+import {STAKING_REWARDS_PARAMS} from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.2/deploy"
+import {bigVal, expectProxyOwner, expectRoles, expectOwnerRole} from "@goldfinch-eng/protocol/test/testHelpers"
+import {GFIInstance, GoInstance, GoldfinchConfigInstance} from "@goldfinch-eng/protocol/typechain/truffle"
+import {gfiTotalSupply} from "@goldfinch-eng/protocol/blockchain_scripts/airdrop/community/calculation"
 
 const v22PerformMigration = deployments.createFixture(async ({deployments}) => {
   await deployments.fixture("base_deploy", {keepExistingDeployments: true})
@@ -37,6 +63,9 @@ describe("V2.2 & v2.3 migration", async function () {
   let newConfigDeployment: Deployment
   let newConfig: GoldfinchConfigInstance
   let existingContracts
+  let oldConfigDeployment: Deployment
+  let stakingRewards: StakingRewardsInstance
+  let gfi: GFIInstance
 
   before(async () => {
     const {gf_deployer} = await getNamedAccounts()
@@ -57,11 +86,26 @@ describe("V2.2 & v2.3 migration", async function () {
     newConfig = await getTruffleContract<GoldfinchConfigInstance>("GoldfinchConfig", {
       at: newConfigDeployment.address,
     })
+    stakingRewards = await getTruffleContract<StakingRewardsInstance>("StakingRewards")
+    gfi = await getTruffleContract<GFIInstance>("GFI", {
+      at: await (await deployments.get("GFI")).address,
+    })
   })
 
   expectProxyOwner({
     toBe: async () => getProtocolOwner(),
     forContracts: ["StakingRewards", "CommunityRewards", "GoldfinchConfig", "MerkleDirectDistributor"],
+  })
+
+  expectOwnerRole({
+    toBe: async () => getProtocolOwner(),
+    forContracts: [
+      "StakingRewards",
+      "CommunityRewards",
+      "GoldfinchConfig",
+      "MerkleDirectDistributor",
+      "DynamicLeverageRatioStrategy",
+    ],
   })
 
   describe("v2.2 migration", () => {
@@ -88,6 +132,15 @@ describe("V2.2 & v2.3 migration", async function () {
             expect(await oldConfig.getAddress(v), k).to.eq(await newConfig.getAddress(v))
           }
         }
+      })
+
+      context("StakingRewards", async () => {
+        it("has expected parameters set", async () => {
+          expect(await stakingRewards.minRate()).to.be.bignumber.eq(STAKING_REWARDS_PARAMS.minRate)
+          expect(await stakingRewards.maxRate()).to.be.bignumber.eq(STAKING_REWARDS_PARAMS.maxRate)
+          expect(await stakingRewards.minRateAtPercent()).to.be.bignumber.eq(STAKING_REWARDS_PARAMS.minRateAtPercent)
+          expect(await stakingRewards.maxRateAtPercent()).to.be.bignumber.eq(STAKING_REWARDS_PARAMS.maxRateAtPercent)
+        })
       })
 
       it("has GFI address set", async () => {
@@ -150,12 +203,72 @@ describe("V2.2 & v2.3 migration", async function () {
         },
       ])
 
-      // it("mints and distributes GFI to the correct addresses", async () => {})
+      describe("roles", async () => {
+        describe("temp multisig for owning GFI", async () => {
+          it("does not have OWNER role", async () => {
+            expect(await gfi.hasRole(OWNER_ROLE, await getTempMultisig())).to.be.false
+          })
+          it("does not have PAUSER role", async () => {
+            expect(await gfi.hasRole(PAUSER_ROLE, await getTempMultisig())).to.be.false
+          })
+          it("does not have MINTER role", async () => {
+            expect(await gfi.hasRole(MINTER_ROLE, await getTempMultisig())).to.be.false
+          })
+        })
+
+        describe("protocol owner", async () => {
+          it("does have OWNER role", async () => {
+            expect(await gfi.hasRole(OWNER_ROLE, await getProtocolOwner())).to.be.true
+          })
+          it("does have PAUSER role", async () => {
+            expect(await gfi.hasRole(PAUSER_ROLE, await getProtocolOwner())).to.be.true
+          })
+          it("does have MINTER role", async () => {
+            expect(await gfi.hasRole(MINTER_ROLE, await getProtocolOwner())).to.be.true
+          })
+        })
+
+        it(`GFI cap should be ${gfiTotalSupply.toString()}`, async () => {
+          expect(await gfi.cap()).to.be.bignumber.eq(gfiTotalSupply)
+        })
+
+        it("100% of the cap has been minted", async () => {
+          expect(await gfi.cap()).to.be.bignumber.eq(await gfi.totalSupply())
+        })
+      })
     })
 
     context("other contracts", async () => {
       it("deploys DynamicLeverageRatioStrategy", async () => {
         await expect(deployments.get("DynamicLeverageRatioStrategy")).to.not.be.rejected
+      })
+    })
+
+    context("initialization", async () => {
+      it("initializes all contracts", async () => {
+        await impersonateAccount(hre, await getProtocolOwner())
+        await fundWithWhales(["ETH"], [await getProtocolOwner()])
+        await expect(
+          (await getEthersContract<StakingRewards>("StakingRewards")).__initialize__(ZERO_ADDRESS, ZERO_ADDRESS)
+        ).to.be.rejectedWith(/initialized/)
+        await expect(
+          (
+            await getEthersContract<CommunityRewards>("CommunityRewards")
+          ).__initialize__(ZERO_ADDRESS, ZERO_ADDRESS, "12345")
+        ).to.be.rejectedWith(/initialized/)
+        await expect(
+          (await getEthersContract<GoldfinchConfig>("GoldfinchConfig")).initialize(ZERO_ADDRESS)
+        ).to.be.rejectedWith(/initialized/)
+        await expect(
+          (
+            await getEthersContract<MerkleDirectDistributor>("MerkleDirectDistributor")
+          ).initialize(ZERO_ADDRESS, ZERO_ADDRESS, web3.utils.keccak256("test"))
+        ).to.be.rejectedWith(/initialized/)
+        await expect(
+          (
+            await getEthersContract<DynamicLeverageRatioStrategy>("DynamicLeverageRatioStrategy")
+          ).initialize(ZERO_ADDRESS)
+        ).to.be.rejectedWith(/initialized/)
       })
     })
   })
@@ -183,6 +296,42 @@ describe("V2.2 & v2.3 migration", async function () {
         })
         goDeployment = await deployments.get("Go")
         go = await getTruffleContract<GoInstance>("Go", {at: goDeployment.address})
+      })
+
+      expectProxyOwner({
+        toBe: () => getProtocolOwner(),
+        forContracts: ["PoolTokens", "SeniorPool", "UniqueIdentity", "Go", "GoldfinchFactory", "TestBackerRewards"],
+      })
+
+      expectOwnerRole({
+        toBe: () => getProtocolOwner(),
+        forContracts: ["PoolTokens", "SeniorPool", "UniqueIdentity", "Go", "GoldfinchFactory", "TestBackerRewards"],
+      })
+
+      context("initialization", async () => {
+        it("initializes all contracts", async () => {
+          await impersonateAccount(hre, await getProtocolOwner())
+          await fundWithWhales(["ETH"], [await getProtocolOwner()])
+
+          await expect(
+            (await getEthersContract<PoolTokens>("PoolTokens")).__initialize__(ZERO_ADDRESS, ZERO_ADDRESS)
+          ).to.be.rejectedWith(/initialized/)
+          await expect(
+            (await getEthersContract<SeniorPool>("SeniorPool")).initialize(ZERO_ADDRESS, ZERO_ADDRESS)
+          ).to.be.rejectedWith(/initialized/)
+          await expect(
+            (await getEthersContract<UniqueIdentity>("UniqueIdentity")).initialize(ZERO_ADDRESS, "http://example.com")
+          ).to.be.rejectedWith(/initialized/)
+          await expect(
+            (await getEthersContract<Go>("Go")).initialize(ZERO_ADDRESS, ZERO_ADDRESS, ZERO_ADDRESS)
+          ).to.be.rejectedWith(/initialized/)
+          await expect(
+            (await getEthersContract<GoldfinchFactory>("GoldfinchFactory")).initialize(ZERO_ADDRESS, ZERO_ADDRESS)
+          ).to.be.rejectedWith(/initialized/)
+          await expect(
+            (await getEthersContract<TestBackerRewards>("TestBackerRewards")).__initialize__(ZERO_ADDRESS, ZERO_ADDRESS)
+          ).to.be.rejectedWith(/initialized/)
+        })
       })
 
       it("upgrades new contracts", async () => {

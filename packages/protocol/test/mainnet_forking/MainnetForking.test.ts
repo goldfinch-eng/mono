@@ -130,14 +130,6 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   // GFI is deployed by the temp multisig
   const gfi = await getDeployedAsTruffleContract<GFIInstance>(deployments, "GFI")
 
-  // make protocolOwner the GFI owner and mint
-  const protocolOwner = await getProtocolOwner()
-  const {temp_multisig} = await getNamedAccounts()
-  assertIsString(temp_multisig)
-  await fundWithWhales(["ETH"], [temp_multisig])
-  await gfi.grantRole(await gfi.MINTER_ROLE(), protocolOwner, {from: temp_multisig})
-  await gfi.mint(protocolOwner, bigVal(100_000_000), {from: protocolOwner})
-
   return {
     seniorPool,
     seniorPoolStrategy,

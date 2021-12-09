@@ -6,6 +6,7 @@ import {CapitalProvider, fetchCapitalProviderData, SeniorPoolLoaded, StakingRewa
 import {UserLoaded} from "../../ethereum/user"
 import {useStaleWhileRevalidating} from "../../hooks/useAsync"
 import {eligibleForSeniorPool, useKYC} from "../../hooks/useKYC"
+import {useSession} from "../../hooks/useSignIn"
 import {Loadable} from "../../types/loadable"
 import {assertNonNullable, displayDollars} from "../../utils"
 import ConnectionNotice from "../connectionNotice"
@@ -23,6 +24,7 @@ function SeniorPoolView(): JSX.Element {
   })
   const kycResult = useKYC()
   const kyc = useStaleWhileRevalidating(kycResult)
+  const session = useSession()
 
   useEffect(
     () => {
@@ -87,6 +89,7 @@ function SeniorPoolView(): JSX.Element {
     )
   }
 
+  const disabled = session.status !== "authenticated"
   return (
     <div className="content-section">
       <div className="page-header"> {earnMessage}</div>
@@ -98,11 +101,13 @@ function SeniorPoolView(): JSX.Element {
       {maxCapacityNotice}
       <InvestorNotice />
       <EarnActionsContainer
+        disabled={disabled}
         capitalProvider={capitalProvider.loaded ? capitalProvider.value : undefined}
         actionComplete={actionComplete}
         kyc={kyc}
       />
       <StakeFiduBanner
+        disabled={disabled}
         capitalProvider={capitalProvider.loaded ? capitalProvider.value : undefined}
         actionComplete={actionComplete}
         kyc={kyc}

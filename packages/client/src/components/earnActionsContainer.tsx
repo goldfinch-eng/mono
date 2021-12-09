@@ -11,13 +11,14 @@ import {iconDownArrow, iconUpArrow} from "./icons"
 import WithdrawalForm from "./withdrawalForm"
 
 interface EarnActionsContainerProps {
+  disabled: boolean
   actionComplete: () => Promise<any>
   capitalProvider: CapitalProvider | undefined
   kyc: KYC | undefined
 }
 
 function EarnActionsContainer(props: EarnActionsContainerProps) {
-  const {kyc} = props
+  const {disabled, kyc} = props
   const {pool: _pool, user: _user, goldfinchConfig, currentBlock} = useContext(AppContext)
   const [showAction, setShowAction] = useState<string>()
   const consistent = useFromSameBlock({setAsLeaf: false}, currentBlock, _pool, _user)
@@ -37,7 +38,7 @@ function EarnActionsContainer(props: EarnActionsContainerProps) {
     const pool = consistent[0]
     const user = consistent[1]
     readyAndEligible =
-      !!user && !!pool.info.value.poolData && !!props.capitalProvider && eligibleForSeniorPool(kyc, user)
+      !disabled && !!user && !!pool.info.value.poolData && !!props.capitalProvider && eligibleForSeniorPool(kyc, user)
   }
 
   let placeholderClass = ""

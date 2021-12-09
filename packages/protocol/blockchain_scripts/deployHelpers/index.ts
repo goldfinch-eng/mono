@@ -29,6 +29,7 @@ import {GoldfinchConfig} from "../../typechain/ethers"
 import {DeploymentsExtension} from "hardhat-deploy/types"
 import {Contract, BaseContract, Signer} from "ethers"
 import {
+  asNonNullable,
   AssertionError,
   assertIsString,
   assertNonNullable,
@@ -420,6 +421,11 @@ async function getExistingAddress(contractName: string): Promise<string> {
   return existingAddress
 }
 
+export async function getTempMultisig(): Promise<string> {
+  const {temp_multisig} = await hre.getNamedAccounts()
+  return asNonNullable(temp_multisig)
+}
+
 async function getProtocolOwner(): Promise<string> {
   const chainId = await getChainId()
   const {protocol_owner} = await getNamedAccounts()
@@ -439,6 +445,27 @@ async function currentChainId(): Promise<ChainId> {
   const chainId = isMainnetForking() ? MAINNET_CHAIN_ID : await getChainId()
   assertIsChainId(chainId)
   return chainId
+}
+
+function fixProvider(providerGiven: any): any {
+  // alow it to be used by ethers without any change
+  if (providerGiven.sendAsync === undefined) {
+    providerGiven.sendAsync = (
+      req: {
+        id: number
+        jsonrpc: string
+        method: string
+        params: any[]
+      },
+      callback: (error: any, result: any) => void
+    ) => {
+      providerGiven
+        .send(req.method, req.params)
+        .then((result: any) => callback(null, {result, id: req.id, jsonrpc: req.jsonrpc}))
+        .catch((error: any) => callback(error, null))
+    }
+  }
+  return providerGiven
 }
 
 export {
@@ -488,4 +515,5 @@ export {
   assertIsTicker,
   ContractDeployer,
   ContractUpgrader,
+  fixProvider,
 }

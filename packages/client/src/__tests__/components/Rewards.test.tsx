@@ -17,6 +17,7 @@ import * as utils from "../../ethereum/utils"
 import Rewards from "../../pages/rewards"
 import {defaultTheme} from "../../styles/theme"
 import {assertWithLoadedInfo} from "../../types/loadable"
+import {SessionData} from "../../types/session"
 import {BlockInfo} from "../../utils"
 import web3 from "../../web3"
 import {blockchain, defaultCurrentBlock, getDeployments, network, recipient} from "../rewards/__utils__/constants"
@@ -60,8 +61,15 @@ function renderRewards(
   communityRewards: CommunityRewardsLoaded | undefined,
   currentBlock: BlockInfo,
   refreshCurrentBlock?: () => Promise<void>,
-  networkMonitor?: NetworkMonitor
+  networkMonitor?: NetworkMonitor,
+  sessionData?: SessionData
 ) {
+  sessionData = sessionData || {
+    signature: "foo",
+    signatureBlockNum: currentBlock.number,
+    signatureBlockNumTimestamp: currentBlock.timestamp,
+    version: 1,
+  }
   const setLeafCurrentBlock = (currentBlock: BlockInfo) => {
     // pass
   }
@@ -77,6 +85,7 @@ function renderRewards(
     merkleDirectDistributor,
     communityRewards,
     networkMonitor,
+    sessionData,
   }
 
   return render(
