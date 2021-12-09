@@ -17,3 +17,6 @@ export type NotAcceptedMerkleDirectDistributorGrant = {
   claimable: BigNumber
   unvested: BigNumber
 }
+export type MerkleDirectDistributorGrant =
+  | AcceptedMerkleDirectDistributorGrant
+  | NotAcceptedMerkleDirectDistributorGrant

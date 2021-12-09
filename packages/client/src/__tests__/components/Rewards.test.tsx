@@ -1002,10 +1002,10 @@ describe("Rewards list and detail", () => {
     expect(await screen.findByText("Goldfinch Investment")).toBeVisible()
     expect(await screen.getAllByText("Claim GFI").length).toBe(2)
 
-    expect(screen.getAllByTestId("detail-granted")[0]?.textContent).toEqual("1,000.00")
-    expect(screen.getAllByTestId("detail-claimable")[0]?.textContent).toEqual("1,000.00")
-    expect(screen.getAllByTestId("detail-granted")[1]?.textContent).toEqual("129.60")
-    expect(screen.getAllByTestId("detail-claimable")[1]?.textContent).toEqual("0.71")
+    expect(screen.getAllByTestId("detail-granted")[0]?.textContent).toEqual("129.60")
+    expect(screen.getAllByTestId("detail-claimable")[0]?.textContent).toEqual("0.71")
+    expect(screen.getAllByTestId("detail-granted")[1]?.textContent).toEqual("1,000.00")
+    expect(screen.getAllByTestId("detail-claimable")[1]?.textContent).toEqual("1,000.00")
 
     fireEvent.click(screen.getByText("Staked 50K FIDU on Dec 29"))
     expect(await screen.findByText("Transaction details")).toBeVisible()
@@ -1056,10 +1056,10 @@ describe("Rewards list and detail", () => {
     expect(await screen.getAllByText("Claim GFI").length).toBe(1)
     expect(await screen.getAllByText("Claimed").length).toBe(1)
 
-    expect(screen.getAllByTestId("detail-granted")[0]?.textContent).toEqual("2,500.00")
-    expect(screen.getAllByTestId("detail-claimable")[0]?.textContent).toEqual("0.00")
-    expect(screen.getAllByTestId("detail-granted")[1]?.textContent).toEqual("129.60")
-    expect(screen.getAllByTestId("detail-claimable")[1]?.textContent).toEqual("0.71")
+    expect(screen.getAllByTestId("detail-granted")[0]?.textContent).toEqual("129.60")
+    expect(screen.getAllByTestId("detail-claimable")[0]?.textContent).toEqual("0.71")
+    expect(screen.getAllByTestId("detail-granted")[1]?.textContent).toEqual("2,500.00")
+    expect(screen.getAllByTestId("detail-claimable")[1]?.textContent).toEqual("0.00")
 
     fireEvent.click(screen.getByText("Staked 50K FIDU on Dec 29"))
     expect(await screen.findByText("Transaction details")).toBeVisible()
@@ -1109,12 +1109,12 @@ describe("Rewards list and detail", () => {
     expect(await screen.getAllByText("Claim GFI").length).toBe(2)
     expect(await screen.getAllByText("Claimed").length).toBe(1)
 
-    expect(screen.getAllByTestId("detail-granted")[0]?.textContent).toEqual("2,500.00")
-    expect(screen.getAllByTestId("detail-claimable")[0]?.textContent).toEqual("0.00")
+    expect(screen.getAllByTestId("detail-granted")[0]?.textContent).toEqual("129.60")
+    expect(screen.getAllByTestId("detail-claimable")[0]?.textContent).toEqual("0.71")
     expect(screen.getAllByTestId("detail-granted")[1]?.textContent).toEqual("1,000.00")
     expect(screen.getAllByTestId("detail-claimable")[1]?.textContent).toEqual("1,000.00")
-    expect(screen.getAllByTestId("detail-granted")[2]?.textContent).toEqual("129.60")
-    expect(screen.getAllByTestId("detail-claimable")[2]?.textContent).toEqual("0.71")
+    expect(screen.getAllByTestId("detail-granted")[2]?.textContent).toEqual("2,500.00")
+    expect(screen.getAllByTestId("detail-claimable")[2]?.textContent).toEqual("0.00")
 
     fireEvent.click(screen.getByText("Staked 50K FIDU on Dec 29"))
     expect(await screen.findByText("Transaction details")).toBeVisible()
