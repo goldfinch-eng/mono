@@ -2,10 +2,7 @@ import {
   DirectGrantReason,
   MerkleDirectDistributorInfo,
 } from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/types"
-import {
-  GrantReason,
-  MerkleDistributorGrantInfo,
-} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
+import {MerkleDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
 import {CommunityRewards as CommunityRewardsContract} from "@goldfinch-eng/protocol/typechain/web3/CommunityRewards"
 import {MerkleDirectDistributor as MerkleDirectDistributorContract} from "@goldfinch-eng/protocol/typechain/web3/MerkleDirectDistributor"
 import BigNumber from "bignumber.js"
