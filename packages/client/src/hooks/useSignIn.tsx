@@ -78,9 +78,23 @@ export function useSignIn(): [status: Session, signIn: () => Promise<Session>] {
       const signatureBlockNum = currentBlock.number
       const signatureBlockNumTimestamp = currentBlock.timestamp
       const version = SESSION_DATA_VERSION
-      const signature = await signer.signMessage(`Sign in to Goldfinch: ${signatureBlockNum}`)
-      setSessionData({signature, signatureBlockNum, signatureBlockNumTimestamp, version})
-      return getSession({address: user.address, signature, signatureBlockNum, signatureBlockNumTimestamp, version})
+      let signature: string | undefined
+      try {
+        signature = await signer.signMessage(`Sign in to Goldfinch: ${signatureBlockNum}`)
+      } catch (err: unknown) {
+        if ((err as any).code === 4001) {
+          // The user denied the request.
+        } else {
+          throw err
+        }
+      }
+      if (signature) {
+        setSessionData({signature, signatureBlockNum, signatureBlockNumTimestamp, version})
+        return getSession({address: user.address, signature, signatureBlockNum, signatureBlockNumTimestamp, version})
+      } else {
+        setSessionData(undefined)
+        return getSession({address: user.address, signature: undefined, signatureBlockNum: undefined})
+      }
     },
     [user, setSessionData, currentBlock]
   )
