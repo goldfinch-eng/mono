@@ -70,8 +70,11 @@ function ActionButton(props: ActionButtonProps) {
       e.stopPropagation()
     }
     setIsPending(true)
-    await props.onClick()
-    setIsPending(false)
+    try {
+      await props.onClick()
+    } catch (e) {
+      setIsPending(false)
+    }
   }
 
   const isAccepting = props.text === ActionButtonTexts.accept && isPending
@@ -518,10 +521,14 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
 
   function handleClaim(rewards: CommunityRewardsLoaded | StakingRewardsLoaded, tokenId: string) {
     assertNonNullable(rewards)
-    return sendFromUser(rewards.contract.methods.getReward(tokenId), {
-      type: CLAIM_TX_TYPE,
-      data: {},
-    })
+    return sendFromUser(
+      rewards.contract.methods.getReward(tokenId),
+      {
+        type: CLAIM_TX_TYPE,
+        data: {},
+      },
+      {rejectOnError: true}
+    )
   }
 
   function handleAcceptMerkleDistributorGrant(info: MerkleDistributorGrantInfo): Promise<void> {
@@ -540,7 +547,8 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
         data: {
           index: info.index,
         },
-      }
+      },
+      {rejectOnError: true}
     )
   }
   function handleAcceptMerkleDirectDistributorGrant(info: MerkleDirectDistributorGrantInfo): Promise<void> {
@@ -552,7 +560,8 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
         data: {
           index: info.index,
         },
-      }
+      },
+      {rejectOnError: true}
     )
   }
 
