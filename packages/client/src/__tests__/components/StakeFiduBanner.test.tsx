@@ -64,7 +64,7 @@ function renderStakeFiduBanner(
   return render(
     <AppContext.Provider value={store}>
       <Router>
-        <StakeFiduBanner capitalProvider={capitalProvider} kyc={kyc} actionComplete={() => {}} />
+        <StakeFiduBanner capitalProvider={capitalProvider} kyc={kyc} actionComplete={() => {}} disabled={false} />
       </Router>
     </AppContext.Provider>
   )

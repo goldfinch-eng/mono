@@ -77,7 +77,11 @@ function ActionButton(props: ActionButtonProps) {
   const isAccepting = props.text === ActionButtonTexts.accept && isPending
 
   return (
-    <button className={`${!isTabletOrMobile && "table-cell"} action ${disabledClass}`} onClick={action}>
+    <button
+      disabled={props.disabled}
+      className={`${!isTabletOrMobile && "table-cell"} action ${disabledClass}`}
+      onClick={action}
+    >
       {isAccepting ? ActionButtonTexts.accepting : props.text}
     </button>
   )
@@ -229,13 +233,13 @@ function getActionButtonProps(props: RewardsListItemProps): ActionButtonProps {
       return {
         ...baseProps,
         text: ActionButtonTexts.accept,
-        disabled: false,
+        disabled: props.disabled,
       }
     case RewardStatus.Claimable:
       return {
         ...baseProps,
         text: ActionButtonTexts.claimGFI,
-        disabled: false,
+        disabled: props.disabled,
       }
     case RewardStatus.TemporarilyAllClaimed:
       return {
@@ -260,6 +264,7 @@ interface RewardsListItemProps {
   claimableGFI: BigNumber
   status: RewardStatus
   details: ItemDetails
+  disabled: boolean
   handleOnClick: () => Promise<void>
 }
 
@@ -484,6 +489,7 @@ type MerkleDistributorRewardType = "merkleDistributor"
 type MerkleDirectDistributorRewardType = "merkleDirectDistributor"
 
 type RewardActionsContainerProps = {
+  disabled: boolean
   gfi: GFILoaded
   merkleDistributor: MerkleDistributorLoaded
   merkleDirectDistributor: MerkleDirectDistributorLoaded
@@ -588,6 +594,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
           claimableGFI={item.claimable}
           handleOnClick={() => Promise.resolve()}
           details={details}
+          disabled={props.disabled}
         />
       )
     } else if (!showAction) {
@@ -599,6 +606,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
           claimableGFI={item.claimable}
           handleOnClick={async () => setShowAction(true)}
           details={details}
+          disabled={props.disabled}
         />
       )
     }
@@ -627,6 +635,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
         claimableGFI={item.claimable}
         handleOnClick={() => handleAcceptMerkleDistributorGrant(item.grantInfo)}
         details={details}
+        disabled={props.disabled}
       />
     )
   } else if (props.type === "merkleDirectDistributor") {
@@ -640,6 +649,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
         claimableGFI={item.claimable}
         handleOnClick={() => handleAcceptMerkleDirectDistributorGrant(item.grantInfo)}
         details={details}
+        disabled={props.disabled}
       />
     )
   } else {

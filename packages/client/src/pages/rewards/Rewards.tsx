@@ -4,6 +4,7 @@ import React, {useContext} from "react"
 import {useMediaQuery} from "react-responsive"
 import {Link} from "react-router-dom"
 import {AppContext} from "../../App"
+import ConnectionNotice from "../../components/connectionNotice"
 import RewardActionsContainer from "../../components/rewardActionsContainer"
 import {WIDTH_TYPES} from "../../components/styleConstants"
 import {
@@ -16,6 +17,7 @@ import {MerkleDistributorLoaded} from "../../ethereum/merkleDistributor"
 import {StakingRewardsLoaded, StakingRewardsPosition} from "../../ethereum/pool"
 import {UserCommunityRewardsLoaded, UserLoaded, UserStakingRewardsLoaded} from "../../ethereum/user"
 import {useFromSameBlock} from "../../hooks/useFromSameBlock"
+import {useSession} from "../../hooks/useSignIn"
 import {displayDollars, displayNumber} from "../../utils"
 
 interface RewardsSummaryProps {
@@ -183,6 +185,7 @@ function Rewards() {
     currentBlock,
   } = useContext(AppContext)
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
+  const session = useSession()
   const consistent = useFromSameBlock<
     StakingRewardsLoaded,
     GFILoaded,
@@ -192,6 +195,7 @@ function Rewards() {
     CommunityRewardsLoaded
   >(currentBlock, _stakingRewards, _gfi, _user, _merkleDistributor, _merkleDirectDistributor, _communityRewards)
 
+  const disabled = session.status !== "authenticated"
   let loaded: boolean = false
   let claimable: BigNumber | undefined
   let unvested: BigNumber | undefined
@@ -250,6 +254,7 @@ function Rewards() {
             <RewardActionsContainer
               key={`merkle-distributor-airdrop-${item.grantInfo.index}`}
               type="merkleDistributor"
+              disabled={disabled}
               item={item}
               gfi={gfi}
               merkleDistributor={merkleDistributor}
@@ -264,6 +269,7 @@ function Rewards() {
             <RewardActionsContainer
               key={`merkle-direct-distributor-airdrop-${item.grantInfo.index}`}
               type="merkleDirectDistributor"
+              disabled={disabled}
               item={item}
               gfi={gfi}
               merkleDistributor={merkleDistributor}
@@ -277,6 +283,7 @@ function Rewards() {
             <RewardActionsContainer
               key={`merkle-direct-distributor-airdrop-${item.grantInfo.index}`}
               type="merkleDirectDistributor"
+              disabled={disabled}
               item={item}
               gfi={gfi}
               merkleDistributor={merkleDistributor}
@@ -293,6 +300,7 @@ function Rewards() {
                 return (
                   <RewardActionsContainer
                     key={`${item.type}-${item.value.tokenId}`}
+                    disabled={disabled}
                     type={item.type}
                     item={item.value}
                     gfi={gfi}
@@ -306,6 +314,7 @@ function Rewards() {
                 return (
                   <RewardActionsContainer
                     key={`${item.type}-${item.value.tokenId}`}
+                    disabled={disabled}
                     type={item.type}
                     item={item.value}
                     gfi={gfi}
@@ -328,7 +337,7 @@ function Rewards() {
       <div className="page-header">
         <h1>Rewards</h1>
       </div>
-
+      <ConnectionNotice requireUnlock={false} />
       <RewardsSummary
         walletBalance={gfiBalance}
         claimable={claimable}
@@ -336,7 +345,6 @@ function Rewards() {
         totalGFI={totalBalance}
         totalUSD={totalUSD}
       />
-
       <div className="gfi-rewards table-spaced">
         <div className="table-header background-container-inner">
           <h2 className="table-cell col32 title">GFI Rewards</h2>
