@@ -14,9 +14,15 @@ interface RefreshIndicatorProps {
   leafCurrentBlock: BlockInfo | undefined
 }
 
+export function getIsRefreshing(
+  rootCurrentBlock: BlockInfo | undefined,
+  leafCurrentBlock: BlockInfo | undefined
+): boolean {
+  return !!rootCurrentBlock && !!leafCurrentBlock && rootCurrentBlock.number > leafCurrentBlock.number
+}
+
 function RefreshIndicator(props: RefreshIndicatorProps) {
-  const isRefreshing =
-    props.rootCurrentBlock && props.leafCurrentBlock && props.rootCurrentBlock.number > props.leafCurrentBlock.number
+  const isRefreshing = getIsRefreshing(props.rootCurrentBlock, props.leafCurrentBlock)
   return (
     <div className="refresh-indicator">
       {isRefreshing ? (
