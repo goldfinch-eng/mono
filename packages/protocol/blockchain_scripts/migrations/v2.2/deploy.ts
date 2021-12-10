@@ -83,7 +83,7 @@ async function updateGoldfinchConfigs({
   }
 }
 
-async function getOldConfig() {
+export async function getOldConfig() {
   const chainId = await getChainId()
   if (isMainnetForking()) {
     return "0x4eb844Ff521B4A964011ac8ecd42d500725C95CC"

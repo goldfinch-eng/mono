@@ -247,11 +247,25 @@ const gnosisSafeAbi = [
 class DefenderMultisendEffects extends MultisendEffects {
   private readonly chainId: ChainId
   private readonly via?: string
+  private readonly title: string
+  private readonly description: string
 
-  constructor({chainId, via}: {chainId: ChainId; via?: string}) {
+  constructor({
+    chainId,
+    via,
+    title,
+    description,
+  }: {
+    chainId: ChainId
+    via?: string
+    title?: string
+    description?: string
+  }) {
     super()
     this.chainId = chainId
     this.via = via
+    this.title = title ?? "Migrator multisend"
+    this.description = description ?? "Executing migrator multisend"
   }
 
   async execute(safeTxs: SafeTransactionDataPartial[]): Promise<void> {
@@ -265,8 +279,8 @@ class DefenderMultisendEffects extends MultisendEffects {
       contract: MULTISEND,
       args: [multisendData],
       contractName: "Multisend",
-      title: "Migrator multisend",
-      description: "Executing migrator multisend",
+      title: this.title,
+      description: this.description,
       via,
       viaType: "Gnosis Safe",
       metadata: {operationType: "delegateCall"},
@@ -365,7 +379,11 @@ async function constructSafe(params: {via?: string; executor: string}): Promise<
   return safe
 }
 
-export async function getDeployEffects(params?: {via?: string}): Promise<DeployEffects> {
+export async function getDeployEffects(params?: {
+  via?: string
+  title?: string
+  description?: string
+}): Promise<DeployEffects> {
   const via = params?.via
 
   if (isMainnetForking()) {
@@ -376,6 +394,6 @@ export async function getDeployEffects(params?: {via?: string}): Promise<DeployE
   } else {
     const chainId = await hre.getChainId()
     assertIsChainId(chainId)
-    return new DefenderMultisendEffects({chainId, via})
+    return new DefenderMultisendEffects({chainId, via, title: params?.title, description: params?.description})
   }
 }
