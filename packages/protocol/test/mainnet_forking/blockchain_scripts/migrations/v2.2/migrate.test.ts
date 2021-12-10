@@ -60,10 +60,8 @@ describe("V2.2 & v2.3 migration", async function () {
   this.timeout(TEST_TIMEOUT)
   let v22migration: Awaited<ReturnType<typeof migrate22.main>>
   let v23migration: Awaited<ReturnType<typeof migrate23.main>>
-  let newConfigDeployment: Deployment
   let newConfig: GoldfinchConfigInstance
   let existingContracts
-  let oldConfigDeployment: Deployment
   let stakingRewards: StakingRewardsInstance
   let gfi: GFIInstance
 
@@ -76,20 +74,26 @@ describe("V2.2 & v2.3 migration", async function () {
     existingContracts = await getAllExistingContracts(chainId)
   })
 
-  beforeEach(async () => {
+  const testSetup = deployments.createFixture(async () => {
     const {gf_deployer} = await getNamedAccounts()
     assertIsString(gf_deployer)
     await fundWithWhales(["ETH"], [gf_deployer])
     // migration = await performMigration()
-    v22migration = await v22PerformMigration()
-    newConfigDeployment = await deployments.get("GoldfinchConfig")
-    newConfig = await getTruffleContract<GoldfinchConfigInstance>("GoldfinchConfig", {
+    const v22migration = await v22PerformMigration()
+    const newConfigDeployment = await deployments.get("GoldfinchConfig")
+    const newConfig = await getTruffleContract<GoldfinchConfigInstance>("GoldfinchConfig", {
       at: newConfigDeployment.address,
     })
-    stakingRewards = await getTruffleContract<StakingRewardsInstance>("StakingRewards")
-    gfi = await getTruffleContract<GFIInstance>("GFI", {
+    const stakingRewards = await getTruffleContract<StakingRewardsInstance>("StakingRewards")
+    const gfi = await getTruffleContract<GFIInstance>("GFI", {
       at: await (await deployments.get("GFI")).address,
     })
+    return {v22migration, newConfig, stakingRewards, gfi}
+  })
+
+  beforeEach(async () => {
+    // eslint-disable-next-line @typescript-eslint/no-extra-semi
+    ;({gfi, v22migration, newConfig, stakingRewards, gfi} = await testSetup())
   })
 
   expectProxyOwner({
