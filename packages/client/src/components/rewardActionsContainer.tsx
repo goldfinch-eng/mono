@@ -34,7 +34,7 @@ import {WIDTH_TYPES} from "./styleConstants"
 import TransactionForm from "./transactionForm"
 
 const ONE_WEEK_SECONDS = new BigNumber(60 * 60 * 24 * 7)
-const TOKEN_LAUNCH_TIME_IN_SECONDS = 1638900000 // Tuesday, December 7, 2021 10:00:00 AM GMT-08:00
+export const TOKEN_LAUNCH_TIME_IN_SECONDS = 1641924000 // Tuesday, January 11, 2022 10:00:00 AM GMT-08:00
 
 enum RewardStatus {
   Acceptable,
