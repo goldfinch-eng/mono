@@ -45,6 +45,7 @@ import ConnectionNotice from "./connectionNotice"
 import {iconCircleCheckLg, iconCircleDownLg, iconCircleUpLg, iconOutArrow} from "./icons"
 import {mapEventsToTx} from "../ethereum/events"
 import BigNumber from "bignumber.js"
+import {useCurrentRoute} from "../hooks/useCurrentRoute"
 
 type TransactionsProps = {
   currentTxs: CurrentTx<TxType>[]
@@ -53,6 +54,7 @@ type TransactionsProps = {
 function Transactions(props: TransactionsProps) {
   const {user, network, goldfinchProtocol, currentBlock, setLeafCurrentBlock} = useContext(AppContext)
   const [tranchedPoolTxs, setTranchedPoolTxs] = useState<HistoricalTx<TranchedPoolEventType>[]>()
+  const currentRoute = useCurrentRoute()
 
   async function loadTranchedPoolEvents(
     tranchedPools: {[address: string]: TranchedPool},
@@ -60,6 +62,7 @@ function Transactions(props: TransactionsProps) {
     currentBlock: BlockInfo
   ) {
     assertNonNullable(setLeafCurrentBlock)
+    assertNonNullable(currentRoute)
 
     const tranchedPoolsAddresses = Object.keys(tranchedPools)
     let combinedEvents = _.flatten(
@@ -124,7 +127,7 @@ function Transactions(props: TransactionsProps) {
       },
     })
     setTranchedPoolTxs(poolTxs)
-    setLeafCurrentBlock(currentBlock)
+    setLeafCurrentBlock(currentRoute, currentBlock)
   }
 
   useEffect(() => {

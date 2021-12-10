@@ -1,4 +1,5 @@
 import React from "react"
+import {LeavesCurrentBlock} from "../App"
 import {UserLoaded} from "../ethereum/user"
 import {NetworkConfig} from "../types/network"
 import {CurrentTx, TxType} from "../types/transactions"
@@ -13,14 +14,14 @@ type NetworkIndicatorsProps = {
   currentTxs: CurrentTx<TxType>[]
   connectionComplete: () => any
   rootCurrentBlock: BlockInfo | undefined
-  leafCurrentBlock: BlockInfo | undefined
+  leavesCurrentBlock: LeavesCurrentBlock
 }
 
 function NetworkIndicators(props: NetworkIndicatorsProps) {
   return (
     <div className="network-indicators">
       <div className="network-indicators-inner">
-        <RefreshIndicator rootCurrentBlock={props.rootCurrentBlock} leafCurrentBlock={props.leafCurrentBlock} />
+        <RefreshIndicator rootCurrentBlock={props.rootCurrentBlock} leavesCurrentBlock={props.leavesCurrentBlock} />
         <div className="network-widget-container">
           <NetworkWidget
             user={props.user}

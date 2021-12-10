@@ -22,6 +22,7 @@ import {assertNonNullable, BlockInfo, displayDollars, displayPercent, roundDownP
 import AnnualGrowthTooltipContent from "./AnnualGrowthTooltipContent"
 import Badge from "./badge"
 import ConnectionNotice from "./connectionNotice"
+import {useCurrentRoute} from "../hooks/useCurrentRoute"
 
 // Filter out 0 limit (inactive) and test pools
 const MIN_POOL_LIMIT = usdcToAtomic(process.env.REACT_APP_POOL_FILTER_LIMIT || "200")
@@ -321,6 +322,7 @@ function Earn() {
     user,
     currentBlock,
   })
+  const currentRoute = useCurrentRoute()
 
   useEffect(
     () => {
@@ -339,6 +341,7 @@ function Earn() {
     user: UserLoaded
   ) {
     assertNonNullable(setLeafCurrentBlock)
+    assertNonNullable(currentRoute)
 
     // TODO Would be ideal to refactor this component so that the child components it renders all
     // receive state that is consistent, i.e. using `pool.poolData`, `capitalProvider` state,
@@ -356,7 +359,7 @@ function Earn() {
     ) {
       const capitalProvider = await fetchCapitalProviderData(pool, stakingRewards, gfi, user)
       setCapitalProvider(capitalProvider)
-      setLeafCurrentBlock(pool.info.value.currentBlock)
+      setLeafCurrentBlock(currentRoute, pool.info.value.currentBlock)
     }
   }
 

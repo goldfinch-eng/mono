@@ -1,24 +1,25 @@
+import {UniqueIdentity as UniqueIdentityContract} from "@goldfinch-eng/protocol/typechain/web3/UniqueIdentity"
 import {ErrorMessage} from "@hookform/error-message"
 import Persona from "persona"
 import {useContext, useEffect, useReducer, useState} from "react"
 import {FormProvider, useForm} from "react-hook-form"
 import {Link} from "react-router-dom"
+import web3 from "web3"
 import {AppContext, SetSessionFn} from "../App"
 import {User, UserLoaded} from "../ethereum/user"
 import {LOCAL, MAINNET} from "../ethereum/utils"
+import {useCurrentRoute} from "../hooks/useCurrentRoute"
 import DefaultGoldfinchClient, {KYC} from "../hooks/useGoldfinchClient"
 import useNonNullContext from "../hooks/useNonNullContext"
 import useSendFromUser from "../hooks/useSendFromUser"
 import {Session, useSignIn} from "../hooks/useSignIn"
+import {NetworkConfig} from "../types/network"
+import {MINT_UID_TX_TYPE} from "../types/transactions"
 import {assertNonNullable} from "../utils"
 import ConnectionNotice from "./connectionNotice"
 import {iconAlert, iconCircleCheck} from "./icons"
 import LoadingButton from "./loadingButton"
 import TransactionForm from "./transactionForm"
-import {UniqueIdentity as UniqueIdentityContract} from "@goldfinch-eng/protocol/typechain/web3/UniqueIdentity"
-import web3 from "web3"
-import {MINT_UID_TX_TYPE} from "../types/transactions"
-import {NetworkConfig} from "../types/network"
 
 function VerificationNotice({icon, notice}) {
   return (
@@ -615,6 +616,7 @@ function VerifyIdentity() {
   const {user, currentBlock, setLeafCurrentBlock} = useContext(AppContext)
   const [session, signIn] = useSignIn()
   const [state, dispatch] = useReducer(reducer, initialState)
+  const currentRoute = useCurrentRoute()
 
   useEffect(() => {
     if (state.step === START && session.status !== "authenticated") {
@@ -628,7 +630,8 @@ function VerifyIdentity() {
     () => {
       if (currentBlock) {
         assertNonNullable(setLeafCurrentBlock)
-        setLeafCurrentBlock(currentBlock)
+        assertNonNullable(currentRoute)
+        setLeafCurrentBlock(currentRoute, currentBlock)
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps

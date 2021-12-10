@@ -5,6 +5,7 @@ import {GFILoaded} from "../../ethereum/gfi"
 import {CapitalProvider, fetchCapitalProviderData, SeniorPoolLoaded, StakingRewardsLoaded} from "../../ethereum/pool"
 import {UserLoaded} from "../../ethereum/user"
 import {useStaleWhileRevalidating} from "../../hooks/useAsync"
+import {useCurrentRoute} from "../../hooks/useCurrentRoute"
 import {eligibleForSeniorPool, useKYC} from "../../hooks/useKYC"
 import {useSession} from "../../hooks/useSignIn"
 import {Loadable} from "../../types/loadable"
@@ -25,6 +26,7 @@ function SeniorPoolView(): JSX.Element {
   const kycResult = useKYC()
   const kyc = useStaleWhileRevalidating(kycResult)
   const session = useSession()
+  const currentRoute = useCurrentRoute()
 
   useEffect(
     () => {
@@ -43,6 +45,7 @@ function SeniorPoolView(): JSX.Element {
     user: UserLoaded
   ) {
     assertNonNullable(setLeafCurrentBlock)
+    assertNonNullable(currentRoute)
 
     // TODO Would be ideal to refactor this component so that the child components it renders all
     // receive state that is consistent, i.e. using `pool.poolData`, `capitalProvider` state,
@@ -60,7 +63,7 @@ function SeniorPoolView(): JSX.Element {
     ) {
       const capitalProvider = await fetchCapitalProviderData(pool, stakingRewards, gfi, user)
       setCapitalProvider(capitalProvider)
-      setLeafCurrentBlock(pool.info.value.currentBlock)
+      setLeafCurrentBlock(currentRoute, pool.info.value.currentBlock)
     }
   }
 

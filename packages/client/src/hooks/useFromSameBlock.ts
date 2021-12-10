@@ -2,6 +2,7 @@ import {useContext, useEffect, useState} from "react"
 import {AppContext} from "../App"
 import {Loadable, WithLoadedInfo} from "../types/loadable"
 import {assertNonNullable, BlockInfo} from "../utils"
+import {useCurrentRoute} from "./useCurrentRoute"
 
 type UseFromSameBlockConfig = {
   // Whether, upon a change in the `currentBlock` passed to the hook or in the `deps` dependencies,
@@ -84,6 +85,17 @@ export function useFromSameBlock<
 >(config: UseFromSameBlockConfig, currentBlock: BlockInfo | undefined, ...deps: Array<T | undefined>): T[] | undefined {
   const {setLeafCurrentBlock} = useContext(AppContext)
   const [value, setValue] = useState<T[]>()
+  const currentRoute = config.setAsLeaf
+    ? // ASSUMPTION: `config.setAsLeaf` does not change over the life of a component instance
+      // in which this hook is used. Therefore we can conditionally call `useCurrentRoute()` here
+      // without meaningfully violating React's rule not to call hooks conditionally.
+      // Being able in this way to avoid calling `useCurrentRoute()` is important for being
+      // able to use this `useFromSameBlock()` hook above our usage of react-router in the component
+      // tree, i.e. where `useCurrentRoute()` would fail to identify the current route because
+      // the router context does not exist.
+      // eslint-disable-next-line react-hooks/rules-of-hooks
+      useCurrentRoute()
+    : undefined
 
   useEffect(() => {
     if (currentBlock) {
@@ -103,7 +115,8 @@ export function useFromSameBlock<
 
         if (config.setAsLeaf) {
           assertNonNullable(setLeafCurrentBlock)
-          setLeafCurrentBlock(currentBlock)
+          assertNonNullable(currentRoute)
+          setLeafCurrentBlock(currentRoute, currentBlock)
         }
       }
     }

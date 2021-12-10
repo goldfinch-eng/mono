@@ -3,6 +3,8 @@ import CircularProgress from "@mui/material/CircularProgress"
 import Box from "@mui/material/Box"
 import {BlockInfo} from "../utils"
 import colors from "../styles/theme/colors"
+import {useCurrentRoute} from "../hooks/useCurrentRoute"
+import {LeavesCurrentBlock} from "../App"
 
 const styles = {
   box: {display: "flex"},
@@ -11,7 +13,7 @@ const styles = {
 
 interface RefreshIndicatorProps {
   rootCurrentBlock: BlockInfo | undefined
-  leafCurrentBlock: BlockInfo | undefined
+  leavesCurrentBlock: LeavesCurrentBlock
 }
 
 export function getIsRefreshing(
@@ -22,7 +24,14 @@ export function getIsRefreshing(
 }
 
 function RefreshIndicator(props: RefreshIndicatorProps) {
-  const isRefreshing = getIsRefreshing(props.rootCurrentBlock, props.leafCurrentBlock)
+  const currentRoute = useCurrentRoute()
+  let leafCurrentBlock: BlockInfo | undefined
+  if (currentRoute) {
+    leafCurrentBlock = props.leavesCurrentBlock[currentRoute]
+  } else {
+    console.error("Failed to identify current route for leaf current block.")
+  }
+  const isRefreshing = getIsRefreshing(props.rootCurrentBlock, leafCurrentBlock)
   return (
     <div className="refresh-indicator">
       {isRefreshing ? (
