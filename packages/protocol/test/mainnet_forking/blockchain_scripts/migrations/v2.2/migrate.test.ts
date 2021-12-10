@@ -41,7 +41,11 @@ import {
   UniqueIdentity,
 } from "@goldfinch-eng/protocol/typechain/ethers"
 import poolMetadata from "@goldfinch-eng/client/config/pool-metadata/mainnet.json"
-import {StakingRewardsInstance} from "@goldfinch-eng/protocol/typechain/truffle"
+import {
+  CommunityRewardsInstance,
+  MerkleDirectDistributorInstance,
+  StakingRewardsInstance,
+} from "@goldfinch-eng/protocol/typechain/truffle"
 import {STAKING_REWARDS_PARAMS} from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.2/deploy"
 import {bigVal, expectProxyOwner, expectRoles, expectOwnerRole} from "@goldfinch-eng/protocol/test/testHelpers"
 import {GFIInstance, GoInstance, GoldfinchConfigInstance} from "@goldfinch-eng/protocol/typechain/truffle"
@@ -63,7 +67,9 @@ describe("V2.2 & v2.3 migration", async function () {
   let newConfig: GoldfinchConfigInstance
   let existingContracts
   let stakingRewards: StakingRewardsInstance
+  let merkleDirectDistributor: MerkleDirectDistributorInstance
   let gfi: GFIInstance
+  let communityRewards: CommunityRewardsInstance
 
   before(async () => {
     const {gf_deployer} = await getNamedAccounts()
@@ -88,12 +94,22 @@ describe("V2.2 & v2.3 migration", async function () {
     const gfi = await getTruffleContract<GFIInstance>("GFI", {
       at: await (await deployments.get("GFI")).address,
     })
-    return {v22migration, newConfig, stakingRewards, gfi}
+    const merkleDirectDistributor = await getTruffleContract<MerkleDirectDistributorInstance>(
+      "MerkleDirectDistributor",
+      {
+        at: (await deployments.get("MerkleDirectDistributor")).address,
+      }
+    )
+    const communityRewards = await getTruffleContract<CommunityRewardsInstance>("CommunityRewards", {
+      at: (await deployments.get("CommunityRewards")).address,
+    })
+    return {v22migration, newConfig, stakingRewards, gfi, merkleDirectDistributor, communityRewards}
   })
 
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;({gfi, v22migration, newConfig, stakingRewards, gfi} = await testSetup())
+    ;({gfi, v22migration, newConfig, stakingRewards, gfi, merkleDirectDistributor, communityRewards} =
+      await testSetup())
   })
 
   expectProxyOwner({
@@ -113,6 +129,24 @@ describe("V2.2 & v2.3 migration", async function () {
   })
 
   describe("v2.2 migration", () => {
+    context("StakingRewards", async () => {
+      it("is paused", async () => {
+        expect(await stakingRewards.paused()).to.be.true
+      })
+    })
+
+    context("MerkelDirectDistributor", async () => {
+      it("is paused", async () => {
+        expect(await merkleDirectDistributor.paused()).to.be.true
+      })
+    })
+
+    context("CommunityRewards", async () => {
+      it("is paused", async () => {
+        expect(await communityRewards.paused()).to.be.true
+      })
+    })
+
     context("GoldfinchConfig", async () => {
       it("deploys a proxied GoldfinchConfig and initializes values", async () => {
         const newConfigDeployment = await deployments.get("GoldfinchConfig")

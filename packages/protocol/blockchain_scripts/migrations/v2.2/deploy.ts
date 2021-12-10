@@ -14,7 +14,13 @@ import {
 import hre, {deployments} from "hardhat"
 import {DeployEffects, Effects} from "../deployEffects"
 import {asNonNullable} from "@goldfinch-eng/utils"
-import {CommunityRewards, GFI, GoldfinchConfig, TranchedPool} from "@goldfinch-eng/protocol/typechain/ethers"
+import {
+  CommunityRewards,
+  GFI,
+  GoldfinchConfig,
+  MerkleDirectDistributor,
+  TranchedPool,
+} from "@goldfinch-eng/protocol/typechain/ethers"
 import {GFIInstance} from "@goldfinch-eng/protocol/typechain/truffle"
 import {CONFIG_KEYS, CONFIG_KEYS_BY_TYPE} from "../../configKeys"
 import poolMetadata from "@goldfinch-eng/client/config/pool-metadata/mainnet.json"
@@ -306,6 +312,28 @@ export async function deploy(
   // 4.
   // Deploy DynamicLeverageRatioStrategy (unused for now)
   const dynamicLeverageRatioStrategy = await deployDynamicLeverageRatioStrategy(deployer)
+
+  // 5.
+  // Pause deployed contracts
+  // CommunityRewards, MerkleDirectDistributor, StakingRewards
+  const merkleDirectDistributorEthersContract = await getEthersContract<MerkleDirectDistributor>(
+    "MerkleDirectDistributor",
+    {
+      at: merkleDirectDistributor?.contract.address,
+    }
+  )
+
+  process.stdout.write(
+    "Creating transactions to pause CommunityRewards, MerkleDirectDistributor, and StakingRewards...."
+  )
+  await deployEffects.add({
+    deferred: [
+      await communityRewardsEthersContract.populateTransaction.pause(),
+      await merkleDirectDistributorEthersContract.populateTransaction.pause(),
+      await lpStakingRewards.populateTransaction.pause(),
+    ],
+  })
+  console.log("done.")
 
   return {
     deployedContracts: {
