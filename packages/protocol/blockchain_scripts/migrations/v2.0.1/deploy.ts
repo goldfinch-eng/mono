@@ -1,4 +1,4 @@
-import {ContractDeployer, ETHDecimals} from "../../deployHelpers"
+import {ContractDeployer, ETHDecimals, getTempMultisig} from "../../deployHelpers"
 import hre, {ethers} from "hardhat"
 import {DeployEffects} from "../deployEffects"
 import {assertIsString} from "packages/utils/src/type"
@@ -17,7 +17,7 @@ export async function deploy(deployEffects: DeployEffects) {
   const initialCap = new BN(100_000_000).mul(ETHDecimals)
 
   // Temp Multisig used for anonymity
-  const owner = "0x60D2bE34bCe277F5f5889ADFD4991bAEFA17461c"
+  const owner = await getTempMultisig()
   console.log("deploying from:", gf_deployer)
   const gfi = await deployer.deploy<GFI>("GFI", {
     from: gf_deployer,
