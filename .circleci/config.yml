@@ -5,12 +5,11 @@ version: 2.1
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/2.0/configuration-reference/#jobs
 jobs:
-  test:
+  install:
     # Specify the execution environment. You can specify an image from Dockerhub or use one of our Convenience Images from CircleCI's Developer Hub.
     # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
     docker:
       - image: cimg/node:12.18.3
-    resource_class: xlarge
     # Add steps to the job
     # See: https://circleci.com/docs/2.0/configuration-reference/#steps
     steps:
@@ -19,7 +18,7 @@ jobs:
           # See the configuration reference documentation for more details on using restore_cache and save_cache steps
           # https://circleci.com/docs/2.0/configuration-reference/?section=reference#save_cache
           keys:
-            - node-deps-v1-{{ .Branch }}-{{checksum "package-lock.json"}}
+            - dep-{{ .Branch }}-{{checksum "package-lock.json"}}
       - run:
           name: Update Ubuntu
           command: |
@@ -34,21 +33,40 @@ jobs:
             npx lerna bootstrap --ci
             npx lerna run build --scope @goldfinch-eng/protocol --scope @goldfinch-eng/utils
       - save_cache:
-          key: node-deps-v1-{{ .Branch }}-{{checksum "package-lock.json"}}
+          key: dep-{{ .Branch }}-{{checksum "package-lock.json"}}
           paths:
             - ~/.npm
-            - ./**/node_modules/
+            - ./packages/protocol/node_modules/
+            - ./packages/utils/node_modules/
             - ./packages/protocol/artifacts
             - ./packages/protocol/cache
             - ./packages/protocol/typechain
             - ./packages/utils/dist
+          
+  test:
+    docker:
+      - image: cimg/node:12.18.3
+    parallelism: 4
+    steps: 
+      - checkout
+      - restore_cache:
+          # See the configuration reference documentation for more details on using restore_cache and save_cache steps
+          # https://circleci.com/docs/2.0/configuration-reference/?section=reference#save_cache
+          keys:
+            - dep-{{ .Branch }}-{{checksum "package-lock.json"}}
       - run:
           name: Test
-          command: npx lerna run test --scope @goldfinch-eng/protocol --stream
+          command: |
+            cd packages/protocol
+            tests=$(circleci tests glob "test/**/*.test.ts"| grep -v mainnet_forking | circleci tests split --split-by=timings)
+            npm run test:unfiltered $tests
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
 workflows:
   protocol:
     jobs:
-      - test
+      - install
+      - test:
+          requires:
+          - install

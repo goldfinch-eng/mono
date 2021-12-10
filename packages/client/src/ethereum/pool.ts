@@ -40,6 +40,7 @@ import {
 import {UserLoaded, UserStakingRewardsLoaded} from "./user"
 import {fetchDataFromAttributes, getPoolEvents, INTEREST_DECIMALS, ONE_YEAR_SECONDS, USDC_DECIMALS} from "./utils"
 import {getBalanceAsOf, getPoolEventAmount, mapEventsToTx} from "./events"
+import {checkSameBlock} from "./currentBlock"
 
 class Pool {
   goldfinchProtocol: GoldfinchProtocol
@@ -86,12 +87,7 @@ class SeniorPool {
   }
 
   async initialize(stakingRewards: StakingRewardsLoaded, gfi: GFILoaded, currentBlock: BlockInfo): Promise<void> {
-    if (stakingRewards.info.value.currentBlock.number !== currentBlock.number) {
-      throw new Error("`stakingRewards` is not based on current block number.")
-    }
-    if (stakingRewards.info.value.currentBlock.number !== gfi.info.value.currentBlock.number) {
-      throw new Error("`stakingRewards` and `gfi` data are based on different blocks.")
-    }
+    checkSameBlock(currentBlock, stakingRewards.info.value.currentBlock, gfi.info.value.currentBlock)
 
     const poolData = await fetchPoolData(this, this.usdc, stakingRewards, gfi, currentBlock)
     const isPaused = await this.contract.methods.paused().call(undefined, currentBlock.number)
@@ -237,16 +233,13 @@ async function fetchCapitalProviderData(
   gfi: GFILoaded,
   user: UserLoaded
 ): Promise<Loaded<CapitalProvider>> {
-  if (pool.info.value.currentBlock.number !== stakingRewards.info.value.currentBlock.number) {
-    throw new Error("`pool` and `stakingRewards` data are based on different blocks.")
-  }
-  if (pool.info.value.currentBlock.number !== gfi.info.value.currentBlock.number) {
-    throw new Error("`pool` and `gfi` data are based on different blocks.")
-  }
-  if (pool.info.value.currentBlock.number !== user.info.value.currentBlock.number) {
-    throw new Error("`pool` and `user` data are based on different blocks.")
-  }
   const currentBlock = pool.info.value.currentBlock
+  checkSameBlock(
+    currentBlock,
+    stakingRewards.info.value.currentBlock,
+    gfi.info.value.currentBlock,
+    user.info.value.currentBlock
+  )
 
   const attributes = [{method: "sharePrice"}]
   const {sharePrice} = await fetchDataFromAttributes(pool.contract, attributes, {

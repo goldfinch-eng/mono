@@ -413,6 +413,10 @@ describe("V2.2 & v2.3 migration", async function () {
           expect(await go.legacyGoList()).to.be.eq(GOLDFINCH_CONFIG_ADDRESS_WITH_GO_LIST)
         })
 
+        it("config is not the null address", async () => {
+          expect(await go.config()).to.not.eq("0x000000000000000000000000000000000000000000")
+        })
+
         it("goListOverride is working correctly", async () => {
           expect(await go.go(KNOWN_ADDRESS_ON_GO_LIST)).to.be.true
           const goldfinchConfigDeployment = await deployments.get("GoldfinchConfig")
