@@ -251,6 +251,7 @@ function Rewards() {
               disabled={disabled}
               type="stakingRewards"
               item={position}
+              user={user}
               gfi={gfi}
               merkleDistributor={merkleDistributor}
               merkleDirectDistributor={merkleDirectDistributor}
@@ -267,6 +268,7 @@ function Rewards() {
                     disabled={disabled}
                     type="communityRewards"
                     item={sorted.value}
+                    user={user}
                     gfi={gfi}
                     merkleDistributor={merkleDistributor}
                     merkleDirectDistributor={merkleDirectDistributor}
@@ -281,6 +283,7 @@ function Rewards() {
                     type="merkleDistributor"
                     disabled={disabled}
                     item={sorted.value}
+                    user={user}
                     gfi={gfi}
                     merkleDistributor={merkleDistributor}
                     merkleDirectDistributor={merkleDirectDistributor}
@@ -298,6 +301,7 @@ function Rewards() {
               type="merkleDirectDistributor"
               disabled={disabled}
               item={sorted}
+              user={user}
               gfi={gfi}
               merkleDistributor={merkleDistributor}
               merkleDirectDistributor={merkleDirectDistributor}
