@@ -4,6 +4,7 @@ import {
   encodeMultiSendData,
   standardizeMetaTransactionData,
 } from "@gnosis.pm/safe-core-sdk/dist/src/utils/transactions/utils"
+import {generatePreValidatedSignature} from "@gnosis.pm/safe-core-sdk/dist/src/utils/signatures"
 import {SafeTransactionDataPartial} from "@gnosis.pm/safe-core-sdk-types"
 
 import {
@@ -13,12 +14,16 @@ import {
   getProtocolOwner,
   isMainnetForking,
   LOCAL_CHAIN_ID,
+  MAINNET_CHAIN_ID,
+  RINKEBY_CHAIN_ID,
+  SAFE_CONFIG,
 } from "../deployHelpers"
 import {fundWithWhales, UpgradedContracts} from "../mainnetForkingHelpers"
 import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
 import {DefenderUpgrader} from "../adminActions/defenderUpgrader"
 import {PopulatedTransaction} from "@ethersproject/contracts"
 import {BigNumber} from "ethers"
+import {isSafeInteger} from "@goldfinch-eng/utils/node_modules/@types/lodash"
 
 /**
  * Interface for performing bulk actions during protocol upgrades. The underlying
@@ -85,8 +90,6 @@ export abstract class MultisendEffects implements DeployEffects {
   }
 
   async runTxs(txs: PopulatedTransaction[]): Promise<void> {
-    console.log("DeployEffects transactions")
-    console.log(txs)
     await this.execute(txs.map(this.toSafeTx))
   }
 
@@ -158,6 +161,86 @@ const MULTISEND = {
   abi: JSON.parse(MULTISEND_ABI),
 }
 
+const gnosisSafeAbi = [
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "to",
+        type: "address",
+      },
+      {
+        internalType: "uint256",
+        name: "value",
+        type: "uint256",
+      },
+      {
+        internalType: "bytes",
+        name: "data",
+        type: "bytes",
+      },
+      {
+        internalType: "enum Enum.Operation",
+        name: "operation",
+        type: "uint8",
+      },
+      {
+        internalType: "uint256",
+        name: "safeTxGas",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "baseGas",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "gasPrice",
+        type: "uint256",
+      },
+      {
+        internalType: "address",
+        name: "gasToken",
+        type: "address",
+      },
+      {
+        internalType: "address payable",
+        name: "refundReceiver",
+        type: "address",
+      },
+      {
+        internalType: "bytes",
+        name: "signatures",
+        type: "bytes",
+      },
+    ],
+    name: "execTransaction",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "success",
+        type: "bool",
+      },
+    ],
+    stateMutability: "payable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes32",
+        name: "hashToApprove",
+        type: "bytes32",
+      },
+    ],
+    name: "approveHash",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+]
+
 /**
  * Execute the deploy effects by submitting a proposal on defender to execute a multisend.
  */
@@ -172,6 +255,8 @@ class DefenderMultisendEffects extends MultisendEffects {
   }
 
   async execute(safeTxs: SafeTransactionDataPartial[]): Promise<void> {
+    await this.logSafeTx(safeTxs)
+
     const multisendData = encodeMultiSendData(safeTxs.map(standardizeMetaTransactionData))
     const defender = new DefenderUpgrader({hre, logger: console.log, chainId: this.chainId})
     const via = this.via == undefined ? await getProtocolOwner() : this.via
@@ -186,6 +271,45 @@ class DefenderMultisendEffects extends MultisendEffects {
       viaType: "Gnosis Safe",
       metadata: {operationType: "delegateCall"},
     })
+  }
+
+  /**
+   * Log the encoded Safe transaction so it can be easily simulated in tenderly.
+   */
+  private async logSafeTx(safeTxs: SafeTransactionDataPartial[]): Promise<void> {
+    const safe = await getSafe({via: this.via})
+    const safeTx = await safe.createTransaction(...safeTxs)
+    const safeTxHash = await safe.getTransactionHash(safeTx)
+    const safeContract = new ethers.Contract(safe.getAddress(), gnosisSafeAbi)
+
+    const executor = await safe.getEthAdapter().getSignerAddress()
+    const threshold = await safe.getThreshold()
+    const approvers = (await safe.getOwners()).filter((o) => o !== executor).splice(0, threshold - 1)
+
+    console.log("=== Run the following transactions in a tenderly fork to simulate the gnosis safe tx ===")
+    for (const approver of approvers) {
+      const unsignedApproveTx = await asNonNullable(safeContract.populateTransaction.approveHash)(safeTxHash)
+      unsignedApproveTx.from = approver
+      console.log("Approve tx:", unsignedApproveTx)
+    }
+
+    const signature = generatePreValidatedSignature(executor)
+    safeTx.addSignature(signature)
+    const unsignedTx = await asNonNullable(safeContract.populateTransaction.execTransaction)(
+      safeTx.data.to,
+      safeTx.data.value,
+      safeTx.data.data,
+      safeTx.data.operation,
+      safeTx.data.safeTxGas,
+      safeTx.data.baseGas,
+      safeTx.data.gasPrice,
+      safeTx.data.gasToken,
+      safeTx.data.refundReceiver,
+      safeTx.encodedSignatures()
+    )
+    unsignedTx.from = executor
+    console.log("Execute tx:", unsignedTx)
+    console.log("========================================================================================")
   }
 }
 
@@ -202,13 +326,30 @@ class IndividualTxEffects extends MultisendEffects {
   }
 }
 
-const GNOSIS_EXECUTOR = "0xf13eFa505444D09E176d83A4dfd50d10E399cFd5"
+async function getSafe(overrides?: {via?: string}): Promise<Safe> {
+  const via = overrides?.via === undefined ? await getProtocolOwner() : overrides.via
 
-async function getSafe(overrides?: {viaOverride?: string}): Promise<Safe> {
-  const via = overrides?.viaOverride === undefined ? await getProtocolOwner() : overrides.viaOverride
+  let chainId = await hre.getChainId()
+  assertIsChainId(chainId)
+  if (isMainnetForking()) {
+    chainId = MAINNET_CHAIN_ID
+  }
 
-  await fundWithWhales(["ETH"], [GNOSIS_EXECUTOR])
-  const signer = await ethers.getSigner(GNOSIS_EXECUTOR)
+  const safeConfig = SAFE_CONFIG[chainId]
+  assertNonNullable(safeConfig, `Unknown Gnosis Safe for chain id ${chainId}`)
+  const {executor} = safeConfig
+
+  if (isMainnetForking()) {
+    await fundWithWhales(["ETH"], [executor])
+  }
+
+  return constructSafe({via, executor})
+}
+
+async function constructSafe(params: {via?: string; executor: string}): Promise<Safe> {
+  const via = params?.via === undefined ? await getProtocolOwner() : params.via
+
+  const signer = await ethers.getSigner(params.executor)
   const ethAdapter = new EthersAdapter({ethers, signer})
   const safe = await Safe.create({
     ethAdapter,
@@ -228,7 +369,7 @@ export async function getDeployEffects(params?: {via?: string}): Promise<DeployE
   const via = params?.via
 
   if (isMainnetForking()) {
-    const safe = await getSafe({viaOverride: via})
+    const safe = await getSafe({via})
     return new MainnetForkingMultisendEffects({safe})
   } else if ((await currentChainId()) === LOCAL_CHAIN_ID) {
     return new IndividualTxEffects()

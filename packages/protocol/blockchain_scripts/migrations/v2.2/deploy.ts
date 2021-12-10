@@ -7,11 +7,15 @@ import {
   getTempMultisig,
   getTruffleContract,
   isMainnet,
+  isMainnetForking,
+  LOCAL_CHAIN_ID,
+  MAINNET_CHAIN_ID,
   MINTER_ROLE,
   OWNER_ROLE,
   PAUSER_ROLE,
+  RINKEBY_CHAIN_ID,
 } from "../../deployHelpers"
-import hre, {deployments} from "hardhat"
+import hre, {deployments, getChainId} from "hardhat"
 import {DeployEffects, Effects} from "../deployEffects"
 import {asNonNullable} from "@goldfinch-eng/utils"
 import {
@@ -85,6 +89,21 @@ async function updateGoldfinchConfigs({
   }
 }
 
+async function getOldConfig() {
+  const chainId = await getChainId()
+  if (isMainnetForking()) {
+    return "0x4eb844Ff521B4A964011ac8ecd42d500725C95CC"
+  } else if (chainId === LOCAL_CHAIN_ID) {
+    throw new Error("Not supported")
+  } else if (chainId === RINKEBY_CHAIN_ID) {
+    return "0x3d90Efea8C8F9E474C9A855B8Cbe647940201759"
+  } else if (chainId === MAINNET_CHAIN_ID) {
+    return "0x4eb844Ff521B4A964011ac8ecd42d500725C95CC"
+  } else {
+    throw new Error(`Unknown old GoldfinchConfig for chain id ${chainId}`)
+  }
+}
+
 export async function deploy(
   deployEffects: DeployEffects,
   anonDeployEffects: DeployEffects,
@@ -100,19 +119,22 @@ export async function deploy(
   const upgrader = new ContractUpgrader(deployer)
   const protocolOwner = await getProtocolOwner()
 
+  console.log("Starting deployment")
+
   // 1.
   // Deploy a proxied GoldfinchConfig so we don't need to keep calling updateGoldfinchConfig
   // on an increasing number of contracts
-  const existingConfigDeployment = await deployments.get("GoldfinchConfig")
+  const existingConfigAddress = await getOldConfig()
   const existingConfig = await getEthersContract<GoldfinchConfig>("GoldfinchConfig", {
-    at: existingConfigDeployment.address,
+    at: existingConfigAddress,
     from: protocolOwner,
   })
+  console.log("Deploying config proxy")
   const config = (await deployConfigProxy(deployer, {deployEffects})).connect(protocolOwner)
   await deployEffects.add({
     deferred: [
       await config.populateTransaction.initializeFromOtherConfig(
-        existingConfigDeployment.address,
+        existingConfigAddress,
         Object.keys(CONFIG_KEYS_BY_TYPE.numbers).length,
         Object.keys(CONFIG_KEYS_BY_TYPE.addresses).length
       ),
@@ -141,12 +163,14 @@ export async function deploy(
 
   // 2.
   // Deploy liquidity mining + airdrop contracts
+  console.log("Deploying liquidity mining + airdrop contracts")
   const gfiContract = await getTruffleContract<GFIInstance>("GFI")
   const gfi = {name: "GFI", contract: gfiContract}
 
   const lpStakingRewards = await deployLPStakingRewards(deployer, {config, deployEffects})
   const communityRewards = await deployCommunityRewards(deployer, {config, deployEffects})
 
+  console.log("Writing merkle roots")
   const vestingMerkleInfo = generateMerkleRoot(JSON.parse(await fs.readFile(vestingGrants, {encoding: "utf8"})))
   await fs.writeFile(path.join(__dirname, "./vestingMerkleInfo.json"), JSON.stringify(vestingMerkleInfo, null, 2))
   const noVestingMerkleInfo = generateMerkleDirectRoot(
